@@ -1,29 +1,29 @@
-"""Perforated plate oscillatory flow verification face.
+"""Perforated-plate oscillatory-flow verification face (TensorLBM).
 
-LBM solver for forced oscillation through a sharp-edged perforated plate,
-producing discharge coefficient C_d(KC, β), added-mass coefficient C_m(KC, β),
-and single-cycle energy dissipation Φ.
+Physics target
+--------------
+Forced oscillation of a viscous fluid through a sharp-edged perforated plate in
+a 2-D channel, driven by a sinusoidal body force ``F_x = F0 sin(omega t)``:
 
-Physics:
-    2-D channel + perforated plate (solid with hole array)
-    Sinusoidal body force driving: F(t) = F₀ sin(ωt)
-    Bounce-back (half-way) on solid walls and plate
-    Momentum-exchange method for wall force measurement
+* plate geometry: ``n_holes`` rectangular holes of height ``d`` in a plate of
+  thickness ``t``, open-area ratio ``beta = n_holes d / (ny - 2)``
+* numerical method: D2Q9 BGK, Guo forcing, half-way bounce-back on all solid
+  links, momentum-exchange (Ladd) force measurement
+* reduced parameters: ``KC = u_h T / d`` (hole-based Keulegan-Carpenter),
+  ``Re_h = u_h d / nu``, ``beta``
 
-Key non-dimensional groups:
-    KC = U_max · T / D   (Keulegan–Carpenter number)
-    β  = A_hole / A_total (open area ratio)
-    Re = U_max · D / ν    (Reynolds number based on hole diameter)
+Deliverables
+------------
+* ``C_d(KC, beta)`` - discharge coefficient from the unsteady pressure drop
+  ``dp = rho K_m du_h/dt + 0.5 rho K_q u_h |u_h|`` with ``K_q = 1/C_d^2``
+* ``C_m(KC, beta) = K_m / t`` - added-mass coefficient
+* ``Phi`` - energy dissipated per cycle, from two independent paths
+  (momentum exchange on the plate and pressure stations in the slab budget)
+* ``zeta_eff = Phi / (2 pi omega * 2 E_kin)`` - equivalent sloshing damping and
+  its quasi-steady analytic counterpart
 
-Outputs:
-    C_d(KC, β)  – discharge coefficient from quasi-steady pressure drop
-    C_m(KC, β)  – added-mass coefficient from inertial pressure drop
-    Φ           – energy dissipation per cycle = ∮ Δp · Q dt
-    ζ_eff       – equivalent damping for sloshing: Φ / (2π ω · 2 E_kin)
-
-Reference:
-    Idelchik, Handbook of Hydraulic Resistance (quasi-steady orifice)
-    Quasi-steady limit: Δp = ½ ρ (1/C_d²) (Q/(Aβ))² · sign(Q)
+Reference: Borda-Carnot sharp-edge orifice model ``C_d = C_c/(1 - beta C_c)``
+with ``C_c = 0.61`` (see :mod:`reference`).
 """
 
 from __future__ import annotations
@@ -31,47 +31,65 @@ from __future__ import annotations
 from .solver import (
     PerforatedPlateConfig,
     PerforatedPlateSolver,
+    compute_open_area_ratio,
     make_perforated_plate_mask,
     run_perforated_plate,
 )
 from .analysis import (
-    phase_average,
-    extract_cd_cm,
+    analyze_simulation,
+    analytic_dissipation,
     compute_energy_dissipation,
+    compute_phase_lag,
     compute_zeta_eff,
+    extract_cd_cm,
+    first_harmonic,
+    kinetic_energy,
+    phase_average,
 )
 from .reference import (
+    C_C_SHARP,
     idelchik_cd_quasi_steady,
+    loss_coefficient,
     quasi_steady_pressure_drop,
+    sharp_edge_cd,
+    stokes_layer_thickness,
+    stokes_layer_u,
+    stokes_layer_wall_shear,
     stokes_oscillating_wall_shear,
+    stokes_wall_shear_stress,
+    womersley_channel_amplitude,
+    womersley_channel_u,
+    womersley_wall_shear,
+    womersley_wall_shear_amplitude,
 )
 from .gates import (
-    GATE_THRESHOLDS,
-    check_c1_quasi_steady,
-    check_c2_phase_monotonic,
-    check_c3_cd_vs_beta,
-    check_c4_gci,
-    check_c5_negative_controls,
-    check_c6_energy_budget,
+    THRESHOLDS,
+    evaluate_all,
+    gate_A_quasi_steady,
+    gate_B_phase_monotonic,
+    gate_C_cd_vs_beta,
+    gate_D_gci,
+    gate_E_negative_controls,
+    gate_F_energy_closure,
+    spearman,
 )
 
+#: backward-compatible alias of :data:`THRESHOLDS`
+GATE_THRESHOLDS = THRESHOLDS
+
 __all__ = [
-    "PerforatedPlateConfig",
-    "PerforatedPlateSolver",
-    "make_perforated_plate_mask",
-    "run_perforated_plate",
-    "phase_average",
-    "extract_cd_cm",
-    "compute_energy_dissipation",
-    "compute_zeta_eff",
-    "idelchik_cd_quasi_steady",
-    "quasi_steady_pressure_drop",
-    "stokes_oscillating_wall_shear",
-    "GATE_THRESHOLDS",
-    "check_c1_quasi_steady",
-    "check_c2_phase_monotonic",
-    "check_c3_cd_vs_beta",
-    "check_c4_gci",
-    "check_c5_negative_controls",
-    "check_c6_energy_budget",
+    "PerforatedPlateConfig", "PerforatedPlateSolver", "run_perforated_plate",
+    "make_perforated_plate_mask", "compute_open_area_ratio",
+    "analyze_simulation", "extract_cd_cm", "compute_energy_dissipation",
+    "compute_zeta_eff", "compute_phase_lag", "phase_average", "first_harmonic",
+    "kinetic_energy", "analytic_dissipation",
+    "sharp_edge_cd", "C_C_SHARP", "idelchik_cd_quasi_steady",
+    "loss_coefficient", "quasi_steady_pressure_drop",
+    "stokes_layer_thickness", "stokes_layer_u", "stokes_layer_wall_shear",
+    "stokes_oscillating_wall_shear", "stokes_wall_shear_stress",
+    "womersley_channel_u", "womersley_channel_amplitude", "womersley_wall_shear",
+    "womersley_wall_shear_amplitude",
+    "THRESHOLDS", "GATE_THRESHOLDS", "spearman", "evaluate_all",
+    "gate_A_quasi_steady", "gate_B_phase_monotonic", "gate_C_cd_vs_beta",
+    "gate_D_gci", "gate_E_negative_controls", "gate_F_energy_closure",
 ]

@@ -1,252 +1,199 @@
-"""D2Q9 LBM solver for oscillatory flow through a perforated plate.
+"""D2Q9 LBM solver for oscillatory flow through a sharp-edged perforated plate.
 
-Geometry:
-    2-D channel of length Lx and height Ly.
-    Perforated plate at x = Lx/2 with hole array.
-    Top/bottom walls: no-slip (bounce-back).
-    Inlet/outlet: periodic (or pressure BC).
+Pure-NumPy implementation (float64, deterministic).  The previous torch based
+stub is replaced by a vectorised NumPy kernel so that whole KC/beta/resolution
+matrices can be run on the cluster.
 
-Driving:
-    Sinusoidal body force: F_x(t) = F₀ sin(ω t)
+Numerical ingredients
+---------------------
+* D2Q9, BGK collision, ``tau`` from ``nu = (tau - 1/2)/3``.
+* Guo (1993) forcing for the sinusoidal body force ``F_x(t) = F0 sin(omega t)``
+  including the ``u = (sum c f + F/2)/rho`` velocity correction.
+* Half-way bounce-back on every solid link (channel walls *and* plate), so that
+  the effective (hydrodynamic) plate thickness equals the geometric one.
+* Momentum-exchange (Ladd/Schaefer) force measurement: for every link that ends
+  inside a solid cell the momentum ``2 c_i f_i`` is handed to the solid.  This
+  gives the plate force and the wall force without requiring a pressure gradient.
+* Pressure probing on planes at fixed streamwise stations (``dp_stations``) with
+  the slab (window) momentum budget made explicit, see :meth:`step`.
 
-Boundary conditions:
-    - Bounce-back (half-way) on top/bottom walls and plate solid cells
-    - Periodic in x-direction (or Zou/He pressure BC)
-
-Force measurement:
-    - Momentum exchange on plate cells → drag force F_plate(t)
-    - Pressure drop Δp(t) from density difference across plate
-
-Output time series:
-    - Q(t): volume flow rate (integral of u_x across channel)
-    - Δp(t): pressure drop across plate
-    - F_plate(t): total force on plate
+Geometry
+--------
+Channel periodic in x, solid rows ``j = 0`` and ``j = ny-1`` (walls), plate of
+``plate_thickness`` columns at ``x = plate_col`` with ``n_holes`` rectangular
+holes of height ``hole_size`` evenly distributed over the channel height.
+``beta`` is the *actual* open-area ratio of the plate, measured from the mask.
 """
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-import torch
 
-from tensorlbm.d2q9 import C, W, OPPOSITE, equilibrium, macroscopic
-from tensorlbm.boundary.boundaries import bounce_back_cells, compute_obstacle_forces
+# ---------------------------------------------------------------------------
+# D2Q9 lattice
+# ---------------------------------------------------------------------------
+
+C = np.array(
+    [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]],
+    dtype=np.int64,
+)
+W = np.array([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36])
+OPPOSITE = np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])
+CS2 = 1.0 / 3.0
+CS4 = CS2 * CS2
 
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-@dataclass(frozen=True)
+@dataclass
 class PerforatedPlateConfig:
-    """Configuration for perforated plate oscillatory flow simulation.
+    """Configuration of the perforated-plate oscillatory-flow case.
 
-    Parameters
-    ----------
-    nx, ny : int
-        Grid resolution (nx in streamwise, ny in wall-normal).
-    plate_col : int
-        Column index of the perforated plate (default: nx // 2).
-    hole_pattern : str
-        'single' (one centered hole) or 'array' (multiple holes).
-    n_holes : int
-        Number of holes in array pattern (default: 1).
-    hole_size : int
-        Hole height in lattice units (number of fluid cells).
-    beta : float
-        Open area ratio (override; if set, hole_size is computed from it).
-    tau : float
-        BGK relaxation time (controls viscosity: ν = (τ - 0.5) / 3).
-    force_amplitude : float
-        Amplitude of sinusoidal body force F₀.
-    omega : float
-        Angular frequency of oscillation ω = 2π/T.
-    steps : int
-        Total number of time steps.
-    warmup_cycles : int
-        Number of warmup cycles before data collection.
-    samples_per_cycle : int
-        Number of samples per oscillation cycle for phase averaging.
-    n_cycles_measure : int
-        Number of cycles to measure after warmup.
-    device : str
-        Computation device ('cpu' or 'cuda').
-    dtype : str
-        Floating-point precision ('float32' or 'float64').
-    label : str
-        Simulation label for output.
+    Lengths are in lattice units, time in lattice steps (dt = 1).
     """
-    nx: int = 192
-    ny: int = 64
-    plate_col: int = -1  # auto: nx // 2
-    hole_pattern: str = "single"
-    n_holes: int = 1
-    hole_size: int = 10
-    beta: float = -1.0  # auto-compute from hole_size if < 0
-    tau: float = 1.0
-    force_amplitude: float = 1e-5
-    omega: float = 0.01
-    steps: int = 10000
+
+    nx: int = 288
+    ny: int = 96
+    plate_col: int = -1          # auto: nx // 2
+    plate_thickness: int = 2
+    hole_pattern: str = "array"  # 'array' | 'single'
+    n_holes: int = 3
+    hole_size: int = 6
+    beta: float = -1.0           # > 0 : derive hole layout from this target
+    tau: float = 0.53
+    force_amplitude: float = 1e-4
+    omega: float = 2 * math.pi / 1200.0
+    steps: int = 7200
     warmup_cycles: int = 3
-    samples_per_cycle: int = 32
-    n_cycles_measure: int = 5
-    device: str = "cpu"
-    dtype: str = "float64"
+    n_cycles_measure: int = 3
+    samples_per_cycle: int = 48
+    probe_wall_shear: bool = False   # extra full-length lower-wall force probe
+    init_profile: str = "womersley"  # 'rest' | 'womersley' (DC-free AC start)
+    device: str = "cpu"          # kept for API compatibility (NumPy only)
+    dtype: str = "float64"       # kept for API compatibility
     label: str = "perforated_plate"
 
+    # ---- derived quantities ------------------------------------------------
     @property
     def plate_col_auto(self) -> int:
         return self.plate_col if self.plate_col > 0 else self.nx // 2
 
     @property
     def nu(self) -> float:
-        """Kinematic viscosity from BGK tau."""
         return (self.tau - 0.5) / 3.0
 
     @property
     def period(self) -> float:
-        """Oscillation period T = 2π/ω."""
         return 2.0 * math.pi / self.omega
 
     @property
     def period_steps(self) -> int:
-        """Number of time steps per oscillation period."""
-        return max(1, round(self.period))
+        return max(1, int(round(self.period)))
 
     @property
     def total_cycles(self) -> int:
         return self.warmup_cycles + self.n_cycles_measure
 
-    @property
-    def u_max_estimate(self) -> float:
-        """Estimate of max velocity from force balance (Poiseuille-like)."""
-        # For channel flow: u_max ≈ F₀ · H² / (8ν)  (parabolic profile peak)
-        h = self.ny - 2  # channel height in lu
-        return self.force_amplitude * h * h / (8.0 * self.nu + 1e-15)
-
-    @property
-    def kc_estimate(self) -> float:
-        """Estimated Keulegan-Carpenter number."""
-        d_char = max(self.hole_size, 1)
-        return self.u_max_estimate * self.period / d_char
-
-    @property
-    def re_estimate(self) -> float:
-        """Estimated Reynolds number based on hole size."""
-        d_char = max(self.hole_size, 1)
-        return self.u_max_estimate * d_char / (self.nu + 1e-15)
-
     def validate(self) -> None:
         if self.nx < 32 or self.ny < 16:
-            raise ValueError("Grid too small")
+            raise ValueError("grid too small: nx>=32 and ny>=16 required")
         if self.tau <= 0.5:
-            raise ValueError("tau must be > 0.5 for stability")
-        if self.force_amplitude <= 0:
-            raise ValueError("force_amplitude must be positive")
+            raise ValueError("tau must be > 0.5 (positive viscosity)")
+        if self.force_amplitude < 0:
+            raise ValueError("force_amplitude must be >= 0")
         if self.omega <= 0:
-            raise ValueError("omega must be positive")
-        pc = self.plate_col_auto
-        if pc < 2 or pc >= self.nx - 2:
-            raise ValueError("plate_col must be interior")
-        if self.hole_size < 1:
-            raise ValueError("hole_size must be >= 1")
-        if self.hole_pattern not in ("single", "array"):
-            raise ValueError("hole_pattern must be 'single' or 'array'")
+            raise ValueError("omega must be > 0")
+        if self.plate_thickness < 1:
+            raise ValueError("plate_thickness must be >= 1")
+        if self.plate_col_auto - 1 < 1 or self.plate_col_auto + self.plate_thickness >= self.nx:
+            raise ValueError("plate does not fit inside the domain")
 
 
 # ---------------------------------------------------------------------------
-# Geometry: perforated plate mask
+# Geometry helpers
 # ---------------------------------------------------------------------------
+
+def _hole_intervals(ny: int, n_holes: int, hole_size: int) -> list[tuple[int, int]]:
+    """Evenly spaced holes over the interior rows ``1..ny-2``.
+
+    Returns list of half-open intervals ``[start, stop)`` in the y index.
+    """
+    if n_holes < 1:
+        raise ValueError("n_holes must be >= 1")
+    ny_fluid = ny - 2
+    hole_size = int(max(1, min(hole_size, ny_fluid)))
+    spacing = ny_fluid / float(n_holes)
+    intervals = []
+    for h in range(n_holes):
+        centre = 1.0 + spacing * (h + 0.5)
+        start = int(round(centre - hole_size / 2.0))
+        start = max(1, min(start, ny - 1 - hole_size))
+        intervals.append((start, start + hole_size))
+    return intervals
+
+
+def _layout_from_beta(ny: int, n_holes: int, beta: float) -> int:
+    """Hole height (lattice units) that realises ``beta`` for given hole count."""
+    ny_fluid = ny - 2
+    total_open = beta * ny_fluid
+    hole_size = int(round(total_open / n_holes))
+    return int(max(1, min(hole_size, ny_fluid // n_holes)))
+
 
 def make_perforated_plate_mask(
     nx: int,
     ny: int,
     plate_col: int,
-    hole_pattern: str = "single",
+    hole_pattern: str = "array",
     n_holes: int = 1,
     hole_size: int = 10,
-    device: torch.device = torch.device("cpu"),
-) -> torch.Tensor:
-    """Create boolean mask for perforated plate.
+    plate_thickness: int = 2,
+    beta: float = -1.0,
+    device=None,
+) -> np.ndarray:
+    """Boolean mask of the solid region, shape ``(nx, ny)``, True = solid.
 
-    True = solid (bounce-back), False = fluid (hole).
-
-    The plate is 2 cells thick (plate_col-1, plate_col) for numerical stability.
-    Holes are centered vertically and evenly spaced for array pattern.
-
-    Parameters
-    ----------
-    nx, ny : int
-        Grid dimensions.
-    plate_col : int
-        Center column of the plate.
-    hole_pattern : str
-        'single' or 'array'.
-    n_holes : int
-        Number of holes (for array pattern).
-    hole_size : int
-        Height of each hole in lattice units.
-    device : torch.device
-        Device for the tensor.
-
-    Returns
-    -------
-    mask : torch.Tensor
-        Boolean mask of shape (ny, nx), True = solid.
+    ``device`` is accepted for backward compatibility and ignored (NumPy only).
     """
-    mask = torch.zeros((ny, nx), dtype=torch.bool, device=device)
+    mask = np.zeros((nx, ny), dtype=bool)
+    mask[:, 0] = True
+    mask[:, ny - 1] = True
 
-    # Plate is 2 cells thick for half-way bounce-back
-    cols = [plate_col - 1, plate_col]
+    if beta is not None and beta >= 1.0:
+        return mask  # no plate at all
+
+    if beta is not None and beta > 0.0:
+        hole_size = _layout_from_beta(ny, n_holes, beta)
+
+    if hole_pattern == "single":
+        n_holes = 1
+
+    cols = [plate_col + k for k in range(plate_thickness)]
+    intervals = _hole_intervals(ny, n_holes, hole_size)
     for col in cols:
         if col < 0 or col >= nx:
             continue
-        if hole_pattern == "single":
-            # Single centered hole
-            hole_center = ny // 2
-            hole_half = hole_size // 2
-            hole_start = max(1, hole_center - hole_half)
-            hole_end = min(ny - 1, hole_center + hole_half)
-            mask[:, col] = True
-            mask[hole_start:hole_end, col] = False
-        elif hole_pattern == "array":
-            # Multiple evenly spaced holes
-            if n_holes < 1:
-                n_holes = 1
-            spacing = (ny - 2) // n_holes
-            for h in range(n_holes):
-                hole_center = 1 + spacing * h + spacing // 2
-                hole_half = hole_size // 2
-                hole_start = max(1, hole_center - hole_half)
-                hole_end = min(ny - 1, hole_center + hole_half)
-                mask[hole_start:hole_end, col] = False
-            mask[:, col] = True
-            # Re-open holes
-            for h in range(n_holes):
-                hole_center = 1 + spacing * h + spacing // 2
-                hole_half = hole_size // 2
-                hole_start = max(1, hole_center - hole_half)
-                hole_end = min(ny - 1, hole_center + hole_half)
-                mask[hole_start:hole_end, col] = False
-
+        mask[col, :] = True
+        for (a, b) in intervals:
+            mask[col, a:b] = False
     return mask
 
 
-def compute_open_area_ratio(
-    mask: torch.Tensor,
-    plate_col: int,
-    ny: int,
-) -> float:
-    """Compute open area ratio β from plate mask."""
-    col = plate_col
-    if col < 0 or col >= mask.shape[1]:
+def compute_open_area_ratio(mask: np.ndarray, plate_col: int, ny: int) -> float:
+    """Open-area ratio of the plate measured from the mask (2-D, i.e. length ratio)."""
+    if plate_col < 0 or plate_col >= mask.shape[0]:
         return 1.0
-    total = mask.shape[0] - 2  # exclude walls
-    fluid = (~mask[:, col]).sum().item() - 2  # exclude wall rows
-    return max(0.0, min(1.0, fluid / max(total, 1)))
+    ny_fluid = ny - 2
+    open_cells = int((~mask[plate_col, 1:ny - 1]).sum())
+    if open_cells >= ny_fluid:
+        return 1.0
+    return max(0.0, min(1.0, open_cells / float(ny_fluid)))
 
 
 # ---------------------------------------------------------------------------
@@ -254,243 +201,335 @@ def compute_open_area_ratio(
 # ---------------------------------------------------------------------------
 
 class PerforatedPlateSolver:
-    """D2Q9 LBM solver for oscillatory flow through a perforated plate.
-
-    Uses BGK collision, half-way bounce-back, and momentum-exchange force
-    measurement. Driven by sinusoidal body force.
-    """
+    """D2Q9 BGK solver, oscillatory channel flow through a perforated plate."""
 
     def __init__(self, cfg: PerforatedPlateConfig):
         cfg.validate()
         self.cfg = cfg
-        self.device = torch.device(cfg.device)
-        self.dt = torch.float32 if cfg.dtype == "float32" else torch.float64
-
-        self.nx = cfg.nx
-        self.ny = cfg.ny
-        self.plate_col = cfg.plate_col_auto
-        self.tau = cfg.tau
+        self.nx = int(cfg.nx)
+        self.ny = int(cfg.ny)
+        self.tau = float(cfg.tau)
         self.nu = cfg.nu
+        self.omega = float(cfg.omega)
 
-        # Lattice vectors
-        self.C = C.to(self.device)
-        self.W = W.to(self.device, dtype=self.dt)
-        self.OPPOSITE = OPPOSITE.to(self.device)
+        self.pc = cfg.plate_col_auto
+        self.plate_thickness = int(cfg.plate_thickness)
 
-        # Wall mask (top and bottom rows)
-        self.wall_mask = torch.zeros((self.ny, self.nx), dtype=torch.bool, device=self.device)
-        self.wall_mask[0, :] = True
-        self.wall_mask[-1, :] = True
+        # --- masks ---------------------------------------------------------
+        self.plate_mask = np.zeros((self.nx, self.ny), dtype=bool)
+        if not (cfg.beta is not None and cfg.beta >= 1.0):
+            pm = make_perforated_plate_mask(
+                self.nx, self.ny, self.pc,
+                hole_pattern=cfg.hole_pattern,
+                n_holes=cfg.n_holes,
+                hole_size=cfg.hole_size,
+                plate_thickness=self.plate_thickness,
+                beta=cfg.beta,
+            )
+            # keep only the plate columns (walls are handled separately)
+            self.plate_mask[self.pc:self.pc + self.plate_thickness, :] = \
+                pm[self.pc:self.pc + self.plate_thickness, :]
+        self.wall_mask = np.zeros((self.nx, self.ny), dtype=bool)
+        self.wall_mask[:, 0] = True
+        self.wall_mask[:, self.ny - 1] = True
+        self.solid = self.plate_mask | self.wall_mask
 
-        # Plate mask
-        self.plate_mask = make_perforated_plate_mask(
-            self.nx, self.ny, self.plate_col,
-            cfg.hole_pattern, cfg.n_holes, cfg.hole_size,
-            self.device,
+        self.beta = compute_open_area_ratio(
+            self.solid, self.pc if self.plate_mask.any() else -1, self.ny
         )
-        self.beta = compute_open_area_ratio(self.plate_mask, self.plate_col, self.ny)
+        self.ny_fluid = self.ny - 2
 
-        # Combined solid mask (walls + plate)
-        self.solid_mask = self.wall_mask | self.plate_mask
+        # --- probe stations ------------------------------------------------
+        self.i_q = max(2, self.pc - 6)                       # flow-rate probe
+        self.i_q_down = min(self.nx - 3, self.pc + self.plate_thickness + 5)
+        gap = 5
+        self.i_up = max(1, self.pc - gap)
+        self.i_down = min(self.nx - 2, self.pc + self.plate_thickness - 1 + gap)
+        self.window_width = float(self.i_down - self.i_up)
 
-        # Initialize populations at equilibrium (rest)
-        rho0 = torch.ones((self.ny, self.nx), device=self.device, dtype=self.dt)
-        ux0 = torch.zeros((self.ny, self.nx), device=self.device, dtype=self.dt)
-        uy0 = torch.zeros((self.ny, self.nx), device=self.device, dtype=self.dt)
-        self.f = equilibrium(rho0, ux0, uy0, device=self.device)
+        # --- fields --------------------------------------------------------
+        self.rho0 = 1.0
+        self.f = np.zeros((9, self.nx, self.ny), dtype=np.float64)
+        self._set_initial_field()
 
-        # Time tracking
         self.step_count = 0
+        self._build_tables()
+        self._q_hist = []
+        self._cx3 = C[:, 0].reshape(9, 1, 1).astype(np.float64)
+        self._cy3 = C[:, 1].reshape(9, 1, 1).astype(np.float64)
+        self._w3 = W.reshape(9, 1, 1)
 
-        # History
-        self.history: dict = {
-            "time": [],
-            "force_x": [],
-            "force_y": [],
-            "flow_rate": [],
-            "delta_p": [],
-            "u_center": [],
+        # window wall mask for wall-force bookkeeping
+        self._win = np.zeros(self.nx, dtype=bool)
+        self._win[self.i_up:self.i_down + 1] = True
+        self._wall_win_mask = self.wall_mask & self._win[:, None]
+        self._wall_lower_mask = np.zeros((self.nx, self.ny), dtype=bool)
+        self._wall_lower_mask[:, 0] = True
+
+    # -- initial condition ---------------------------------------------------
+    def _set_initial_field(self) -> None:
+        """Set f to a local equilibrium with the requested initial velocity.
+
+        ``init_profile = 'womersley'`` starts from the *zero-mean* oscillatory
+        solution of the unobstructed channel at t = 0.  This matters: starting
+        from rest with ``F = F0 sin(omega t)`` leaves a spurious mean flow of
+        order ``F0/omega`` which decays only on the slow wall-diffusion time
+        ``h^2/(pi^2 nu)`` and, through the quadratic plate drag, suppresses the
+        oscillatory part by two orders of magnitude.
+        """
+        ux0 = np.zeros((self.nx, self.ny), dtype=np.float64)
+        if getattr(self.cfg, "init_profile", "rest") == "womersley" and self.cfg.force_amplitude > 0:
+            try:
+                from .reference import womersley_channel_u
+                y = np.arange(self.ny, dtype=np.float64) - 0.5 * (self.ny - 1)
+                u_prof = np.asarray(
+                    womersley_channel_u(y, 0.0, float(self.ny - 2), self.nu,
+                                        float(self.cfg.force_amplitude), self.omega),
+                    dtype=np.float64,
+                )
+                ux0[:] = u_prof[None, :]
+            except Exception:                        # pragma: no cover
+                ux0[:] = 0.0
+        uy0 = np.zeros_like(ux0)
+        usq = ux0 * ux0
+        for i in range(9):
+            cu = C[i, 0] * ux0 + C[i, 1] * uy0
+            self.f[i] = W[i] * self.rho0 * (
+                1.0 + cu / CS2 + 0.5 * cu * cu / CS4 - 0.5 * usq / CS2)
+
+    # -- forcing ------------------------------------------------------------
+    def force_density(self, t: float) -> float:
+        """Body-force density F_x(t) = F0 sin(omega t)  [lattice units]."""
+        return float(self.cfg.force_amplitude) * math.sin(self.omega * t)
+
+    # -- macroscopic --------------------------------------------------------
+    def macroscopic(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rho = self.f.sum(axis=0)
+        ux = (self._cx3 * self.f).sum(axis=0) / rho
+        uy = (self._cy3 * self.f).sum(axis=0) / rho
+        return rho, ux, uy
+
+    # -- collision ----------------------------------------------------------
+    def _collide(self, fx_body: float) -> None:
+        f = self.f
+        rho = f.sum(axis=0)
+        ux = (self._cx3 * f).sum(axis=0) / rho
+        uy = (self._cy3 * f).sum(axis=0) / rho
+        # Guo velocity correction
+        ux = ux + 0.5 * fx_body / rho
+        uy = uy
+        usq = ux * ux + uy * uy
+        cu = self._cx3 * ux + self._cy3 * uy
+        feq = self._w3 * rho * (1.0 + cu / CS2 + 0.5 * cu * cu / CS4 - 0.5 * usq / CS2)
+        self.f = f - (f - feq) / self.tau + self._guo_source(fx_body, ux, uy, rho)
+
+    def _guo_source(self, fx_body: float, ux: np.ndarray, uy: np.ndarray,
+                    rho: np.ndarray) -> np.ndarray:
+        if fx_body == 0.0:
+            return np.zeros_like(self.f)
+        pref = (1.0 - 0.5 / self.tau)
+        cx = self._cx3
+        cu = cx * ux + self._cy3 * uy
+        src = self._w3 * pref * ((cx - ux) / CS2 + cu * cx / CS4) * fx_body
+        return src
+
+    # -- gather tables (built once) ----------------------------------------
+    def _build_tables(self) -> None:
+        """Pre-compute streaming gather indices and bounce-back link tables."""
+        nx, ny = self.nx, self.ny
+        n = nx * ny
+        src_idx = np.zeros((9, n), dtype=np.int64)
+        src_solid = np.zeros((9, n), dtype=bool)
+        flat_solid = self.solid.reshape(n)
+        xs = np.arange(nx)[:, None]
+        ys = np.arange(ny)[None, :]
+        for i in range(9):
+            cx, cy = int(C[i, 0]), int(C[i, 1])
+            sx = np.mod(xs - cx, nx)
+            sy = np.mod(ys - cy, ny)
+            src_idx[i] = (sx * ny + sy).reshape(n)
+            src_solid[i] = flat_solid[src_idx[i]]
+        self._src_idx = src_idx
+        self._src_solid = src_solid
+        self._link_cache: dict[int, np.ndarray] = {}
+
+    def _link_masks(self, mask: np.ndarray) -> np.ndarray:
+        """Boolean table ``(9, N)``: f_i leaves a fluid cell towards ``mask``."""
+        key = id(mask)
+        cached = self._link_cache.get(key)
+        if cached is not None and cached.shape[1] == mask.size:
+            return cached
+        n = self.nx * self.ny
+        flat = mask.reshape(n)
+        out = np.zeros((9, n), dtype=bool)
+        xs = np.arange(self.nx)[:, None]
+        ys = np.arange(self.ny)[None, :]
+        for i in range(1, 9):
+            tx = np.mod(xs + int(C[i, 0]), self.nx)
+            ty = np.mod(ys + int(C[i, 1]), self.ny)
+            tgt = flat[(tx * self.ny + ty).reshape(n)]
+            out[i] = tgt & ~self.solid.reshape(n)
+        self._link_cache[key] = out
+        return out
+
+    # -- streaming with half-way bounce-back -------------------------------
+    def _stream(self) -> None:
+        f = self.f.reshape(9, -1)
+        gathered = np.take_along_axis(f, self._src_idx, axis=1)
+        reflected = f[OPPOSITE]
+        self.f = np.where(self._src_solid, reflected, gathered).reshape(9, self.nx, self.ny)
+
+    # -- force measurement -------------------------------------------------
+    def _force_on(self, mask: np.ndarray) -> np.ndarray:
+        """Momentum-exchange force on the cells of ``mask`` (post-collision f)."""
+        links = self._link_masks(mask)
+        f = self.f.reshape(9, -1)
+        mom = 2.0 * np.einsum('ij,ij->i', f, links)   # momentum per direction
+        return C.astype(np.float64).T @ mom
+
+    # -- probes -------------------------------------------------------------
+    def _probe(self) -> dict:
+        rho, ux, uy = self.macroscopic()
+        q = float(ux[self.i_q, 1:self.ny - 1].sum())
+        q_down = float(ux[self.i_q_down, 1:self.ny - 1].sum())
+        rho_up = float(rho[self.i_up, 1:self.ny - 1].mean())
+        rho_down = float(rho[self.i_down, 1:self.ny - 1].mean())
+        dp_stations = CS2 * (rho_up - rho_down)
+        flux_up = float((rho[self.i_up, 1:self.ny - 1]
+                         * ux[self.i_up, 1:self.ny - 1] ** 2).sum())
+        flux_down = float((rho[self.i_down, 1:self.ny - 1]
+                           * ux[self.i_down, 1:self.ny - 1] ** 2).sum())
+        return {
+            "flux_up": flux_up,
+            "flux_down": flux_down,
+            "flow_rate": q,
+            "flow_rate_down": q_down,
+            "rho_up": rho_up,
+            "rho_down": rho_down,
+            "dp_stations": dp_stations,
+            "u_max_probe": float(np.abs(ux[self.i_q, 1:self.ny - 1]).max()),
         }
 
-    def _apply_body_force(self, t: float) -> None:
-        """Apply sinusoidal body force using Guo forcing scheme.
-
-        F_x(t) = F₀ sin(ωt)
-        """
-        fx = self.cfg.force_amplitude * math.sin(self.cfg.omega * t)
-        cx = self.C[:, 0].view(9, 1, 1).to(self.dt)
-
-        # Guo forcing: f_i += w_i * (1 - 1/(2τ)) * (c_i · F)
-        factor = 1.0 - 0.5 / self.tau
-        force_term = self.W.view(9, 1, 1) * cx * fx * factor
-        self.f = self.f + force_term
-
-    def _collide(self) -> None:
-        """BGK collision step."""
-        rho, ux, uy = macroscopic(self.f, device=self.device)
-        feq = equilibrium(rho, ux, uy, device=self.device)
-        self.f = self.f - (self.f - feq) / self.tau
-
-    def _stream(self) -> None:
-        """Streaming step with periodic boundaries in x."""
-        streamed = torch.empty_like(self.f)
-        for i in range(9):
-            cy = int(self.C[i, 1])
-            cx = int(self.C[i, 0])
-            if cy == 0 and cx == 0:
-                streamed[i] = self.f[i]
-            else:
-                streamed[i] = torch.roll(self.f[i], shifts=(cy, cx), dims=(-2, -1))
-        self.f = streamed
-
-    def _apply_bounce_back(self) -> None:
-        """Half-way bounce-back on solid cells."""
-        self.f = bounce_back_cells(self.f, self.solid_mask)
-
-    def _measure_flow_rate(self) -> float:
-        """Compute volume flow rate Q = ∫ u_x dy at plate location."""
-        rho, ux, uy = macroscopic(self.f, device=self.device)
-        # Integrate at plate column (use upstream side)
-        col = max(0, self.plate_col - 3)
-        q = float(ux[:, col].sum().item())
-        return q
-
-    def _measure_pressure_drop(self) -> float:
-        """Compute pressure drop Δp across the plate.
-
-        Δp = c_s² (ρ_upstream - ρ_downstream)
-        c_s² = 1/3 for D2Q9
-        """
-        rho, ux, uy = macroscopic(self.f, device=self.device)
-        col_up = max(0, self.plate_col - 4)
-        col_down = min(self.nx - 1, self.plate_col + 4)
-
-        # Average density in a band around the plate
-        band = 3
-        rho_up = rho[:, col_up - band:col_up + band + 1].mean().item()
-        rho_down = rho[:, col_down - band:col_down + band + 1].mean().item()
-
-        cs2 = 1.0 / 3.0
-        return cs2 * (rho_up - rho_down)
-
-    def _measure_plate_force(self) -> tuple[float, float]:
-        """Momentum-exchange force on the plate.
-
-        Must be called after streaming, before bounce-back.
-        """
-        # Only plate cells (not walls)
-        plate_only = self.plate_mask & (~self.wall_mask)
-        if not plate_only.any():
-            return 0.0, 0.0
-
-        cx = self.C[:, 0].view(9, 1, 1).to(self.dt)
-        cy = self.C[:, 1].view(9, 1, 1).to(self.dt)
-        mask_3d = plate_only.unsqueeze(0)
-        f_solid = self.f * mask_3d
-
-        fx = 2.0 * (cx * f_solid).sum().item()
-        fy = 2.0 * (cy * f_solid).sum().item()
-        return fx, fy
-
+    # -- one time step ------------------------------------------------------
     def step(self, t: float) -> dict:
-        """One time step: collide → stream → measure force → bounce-back → force.
+        """Advance one lattice step and return instantaneous diagnostics."""
+        fx_body = self.force_density(t)
 
-        Parameters
-        ----------
-        t : float
-            Physical time (for body force evaluation).
+        # 1) collide + body force  -> post-collision populations
+        self._collide(fx_body)
 
-        Returns
-        -------
-        dict with measured quantities.
-        """
-        # Collide
-        self._collide()
+        # 2) momentum-exchange forces (must use post-collision f)
+        f_plate = self._force_on(self.plate_mask) if self.plate_mask.any() else np.zeros(2)
+        f_wall_win = self._force_on(self._wall_win_mask)
+        f_wall_lower = (self._force_on(self._wall_lower_mask)
+                        if self.cfg.probe_wall_shear else None)
 
-        # Stream
+        # 3) stream (half-way bounce-back inside _stream)
         self._stream()
 
-        # Measure force on plate (after streaming, before bounce-back)
-        fx, fy = self._measure_plate_force()
-
-        # Apply bounce-back
-        self._apply_bounce_back()
-
-        # Apply body force
-        self._apply_body_force(t)
-
+        # 4) probes
+        probe = self._probe()
         self.step_count += 1
 
-        # Measure flow rate and pressure drop
-        q = self._measure_flow_rate()
-        dp = self._measure_pressure_drop()
+        q = probe["flow_rate"]
+        # window slab momentum budget:
+        #   dp_stations = rho*W*du_bar/dt - rho*F*W + (F_wall + F_plate)/A
+        du_bar_dt = self._du_dt(q)
+        area = float(self.ny_fluid)
+        # slab momentum budget of the pressure probe window
+        #   p_up - p_down = rho W du_bar/dt - rho F W + (F_wall + F_plate)/A
+        # and p_up - p_down = F_plate/A for a thin plate (steady or not, the
+        # plate force is the only streamwise sink inside the window).
+        dp_plate_from_force = f_plate[0] / area
+        dp_plate_from_stations = (
+            probe["dp_stations"]
+            - 1.0 * self.window_width * du_bar_dt
+            + 1.0 * fx_body * self.window_width
+            - f_wall_win[0] / area
+            + (probe["flux_up"] - probe["flux_down"]) / area
+        )
 
-        # Centerline velocity
-        rho, ux, uy = macroscopic(self.f, device=self.device)
-        u_center = float(ux[self.ny // 2, self.plate_col - 3].item())
+        if f_wall_lower is not None:
+            probe["force_lower_wall_x"] = float(f_wall_lower[0])
+        probe.update({
+            "force_plate_x": float(f_plate[0]),
+            "force_plate_y": float(f_plate[1]),
+            "force_wall_window_x": float(f_wall_win[0]),
+            "dp_plate": dp_plate_from_force,
+            "dp_plate_stations": dp_plate_from_stations,
+            "force_body": fx_body,
+        })
+        self._q_hist.append(q)
+        return probe
 
-        return {
-            "force_x": fx,
-            "force_y": fy,
-            "flow_rate": q,
-            "delta_p": dp,
-            "u_center": u_center,
-        }
+    def _du_dt(self, q_now: float) -> float:
+        """Backward-difference estimate of d(u_bar)/dt = d(Q/A)/dt."""
+        if len(self._q_hist) == 0:
+            return 0.0
+        return (q_now - self._q_hist[-1]) / (float(self.ny_fluid))
 
+    # -- full run -----------------------------------------------------------
     def run(self) -> dict:
-        """Run the full simulation.
-
-        Returns
-        -------
-        dict with time series and metadata.
-        """
         cfg = self.cfg
-        total_steps = cfg.steps
-
-        # Pre-compute measurement times
+        self._q_hist = []
         warmup_steps = cfg.warmup_cycles * cfg.period_steps
-        measure_steps = cfg.n_cycles_measure * cfg.period_steps
+        # fix the number of steps so that the measurement window is an integer
+        # number of periods
+        n_steps = warmup_steps + cfg.n_cycles_measure * cfg.period_steps
 
-        time_series = {
-            "time": [],
-            "force_x": [],
-            "force_y": [],
-            "flow_rate": [],
-            "delta_p": [],
-            "u_center": [],
-        }
+        keys = ["time", "flow_rate", "flow_rate_down", "dp_plate",
+                "dp_plate_stations", "dp_stations", "force_plate_x",
+                "force_body", "u_max_probe", "force_lower_wall_x",
+                "flux_up", "flux_down"]
+        series = {k: [] for k in keys}
+        snapshots = []
 
-        for step in range(1, total_steps + 1):
-            t = step  # lattice time = step number (dt=1)
-            result = self.step(t)
+        # snapshot schedule inside the last oscillation period
+        snap_times = set()
+        t_start = n_steps - cfg.period_steps + 1
+        for k in range(cfg.samples_per_cycle):
+            snap_times.add(t_start + int(round(k * cfg.period_steps / cfg.samples_per_cycle)))
 
-            # Record during measurement phase
+        cyc_amp = []
+        cyc_len = cfg.period_steps
+        for step in range(1, n_steps + 1):
+            res = self.step(float(step))
             if step > warmup_steps:
-                time_series["time"].append(t)
-                time_series["force_x"].append(result["force_x"])
-                time_series["force_y"].append(result["force_y"])
-                time_series["flow_rate"].append(result["flow_rate"])
-                time_series["delta_p"].append(result["delta_p"])
-                time_series["u_center"].append(result["u_center"])
+                series["time"].append(float(step))
+                for k in keys:
+                    if k == "time":
+                        continue
+                    series[k].append(res[k] if k in res else 0.0)
+                if step in snap_times:
+                    rho, ux, uy = self.macroscopic()
+                    snapshots.append({
+                        "t": step,
+                        "ux": ux.copy(),
+                        "uy": uy.copy(),
+                    })
+            # per-cycle |Q| amplitude for the stationarity check
+            if step % cyc_len == 0 and step > warmup_steps - cyc_len:
+                seg = self._q_hist[-cyc_len:]
+                cyc_amp.append(max(abs(min(seg)), abs(max(seg))))
 
-        # Convert to numpy arrays
-        for key in time_series:
-            time_series[key] = np.array(time_series[key], dtype=np.float64)
-
+        out = {k: np.asarray(v, dtype=np.float64) for k, v in series.items()}
         return {
-            "time_series": time_series,
+            "time_series": out,
+            "snapshots": snapshots,
             "config": cfg,
             "beta": self.beta,
-            "plate_col": self.plate_col,
+            "plate_col": self.pc,
             "nu": self.nu,
             "tau": self.tau,
+            "ny_fluid": self.ny_fluid,
             "warmup_steps": warmup_steps,
-            "measure_steps": measure_steps,
+            "cycle_amplitudes": cyc_amp,
+            "plate_thickness": self.plate_thickness,
         }
 
 
 def run_perforated_plate(cfg: PerforatedPlateConfig) -> dict:
-    """Convenience function to run a perforated plate simulation."""
+    """Convenience wrapper: build the solver, run it, return result + solver."""
     solver = PerforatedPlateSolver(cfg)
     result = solver.run()
     result["solver"] = solver
