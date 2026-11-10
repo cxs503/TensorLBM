@@ -1,0 +1,63 @@
+{
+  "mission": "P493-N01",
+  "title": "Lighthill FWH Volume Quadrupole Maturation",
+  "summary": "7 PASS, 0 FAIL, 0 SKIP out of 7 criteria",
+  "criteria": [
+    {
+      "name": "C1",
+      "status": "PASS",
+      "metric": "rel_error",
+      "value": 0.06932177058376258,
+      "threshold": "\u2264 0.10 (distributed source)",
+      "details": "phase_diff=49.4\u00b0"
+    },
+    {
+      "name": "C2",
+      "status": "PASS",
+      "metric": "f_peak/(2*f_rot)",
+      "value": 1.0565894574853565,
+      "threshold": "[0.9, 1.1]",
+      "details": ""
+    },
+    {
+      "name": "C3",
+      "status": "PASS",
+      "metric": "operator_linearity_slope",
+      "value": 0.9999999999999999,
+      "threshold": "[0.95, 1.05]",
+      "details": ""
+    },
+    {
+      "name": "C4",
+      "status": "PASS",
+      "metric": "correlation",
+      "value": 0.9999999763010379,
+      "threshold": "\u2265 0.9",
+      "details": "node_ratio=15.2 dB"
+    },
+    {
+      "name": "C5",
+      "status": "PASS",
+      "metric": "|\u0394SPL|",
+      "value": 0.21539850579042508,
+      "threshold": "\u2264 3.0 dB",
+      "details": "r/\u03bb=4.13"
+    },
+    {
+      "name": "C6",
+      "status": "PASS",
+      "metric": "rel_error",
+      "value": 9.361614197988046e-09,
+      "threshold": "\u2264 0.10",
+      "details": ""
+    },
+    {
+      "name": "C7",
+      "status": "PASS",
+      "metric": "corr_with_cos2\u03b8",
+      "value": 0.33689777952560795,
+      "threshold": "< 0.5",
+      "details": ""
+    }
+  ]
+}
