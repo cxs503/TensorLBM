@@ -47,6 +47,7 @@ into the next step recovers the exact ledger.  Pass ``return_mass=True`` (or use
 
 from __future__ import annotations
 
+import math
 import os
 
 import torch
@@ -314,6 +315,8 @@ def koerner_step_2d(
     bubble_pressure=None,
     cell_conversion_threshold=1e-2,
     cell_conversion_force_threshold=0.1,
+    interface_pressure_policy="const",
+    interface_force_alpha=0.0,
     free_slip_y=False,
     y_wall_mask=None,
     free_slip_mask=None,
@@ -333,6 +336,18 @@ def koerner_step_2d(
 
     ``clamp_mass`` and ``paired_liquid_debit`` are deprecated no-ops retained
     for call compatibility (the reference model has neither).
+
+    ``interface_force_alpha``
+        Blend of the interface-cell body-force weight between the Körner reference
+        (``fill``, alpha = 0, default) and the inertia-consistent value (``1``,
+        alpha = 1).  Opt-in phase-calibration lever, default-off.
+    ``interface_pressure_policy``
+        ``"const"`` (default, legacy Körner/waLBerla behaviour) applies the
+        atmospheric pressure at the *centre* of an interface cell; ``"subcell"``
+        applies it at the sub-cell surface (``drho = 3 g (fill - 1/2)``), which is
+        the phase-calibration operator of
+        :mod:`tensorlbm.free_surface_dispersion`.  Default-off, bit-identical to
+        the legacy path.
     """
     device = f.device
     f = f.clone()
@@ -356,7 +371,18 @@ def koerner_step_2d(
     fill_pre = torch.where(
         active_pre, (mass / rho_s.clamp(min=1e-6)).clamp(0.0, 1.0), torch.zeros_like(mass)
     )
-    force_weight = torch.where(iface_pre, fill_pre, torch.ones_like(fill_pre))
+    if interface_force_alpha != 0.0:
+        # Phase-calibration operator (gravity side): the Körner reference weights
+        # the body force of an interface cell by its fill, while the cell carries
+        # the *full* liquid density as inertia.  ``interface_force_alpha`` blends
+        # that weight towards the inertia-consistent value,
+        #     w = fill + alpha (1 - fill)      (alpha = 0 -> reference, 1 -> full),
+        # which is the local lever used by tensorlbm.free_surface_dispersion to
+        # calibrate the O(dx/h) part of the discrete dispersion error.
+        fw_iface = (fill_pre + float(interface_force_alpha) * (1.0 - fill_pre)).clamp(0.0, 1.0)
+    else:
+        fw_iface = fill_pre
+    force_weight = torch.where(iface_pre, fw_iface, torch.ones_like(fill_pre))
     force_weight = torch.where(active_pre, force_weight, torch.zeros_like(force_weight))
     ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
     uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
@@ -409,8 +435,10 @@ def koerner_step_2d(
         _uy_pc = _uy_pc.clamp(-0.5, 0.5)
     _rho_gas_base = float(bubble_pressure) if bubble_pressure is not None else float(rho_gas)
     rho_g_field = torch.full_like(rho, _rho_gas_base)
-    if surface_tension > 0:
+    if surface_tension != 0:
         # Laplace pressure jump inside the ABB gas density (Thürey 2007 §4.2,
+        # signed: a negative coefficient is the dispersion-calibration operator of
+        # tensorlbm.free_surface_dispersion, see phase_error_budget/e_laplace,
         # waLBerla ``computeDeltaRhoLaplacePressure``): Δρ = 3σκ, ±0.1 limit.
         gx_f = 0.5 * (fill_pre.roll(-1, dims=1) - fill_pre.roll(1, dims=1))
         gy_f = 0.5 * (fill_pre.roll(-1, dims=0) - fill_pre.roll(1, dims=0))
@@ -422,6 +450,22 @@ def koerner_step_2d(
         )
         delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
         rho_g_field = rho_g_field + torch.where(iface, delta_rho, torch.zeros_like(delta_rho))
+    if interface_pressure_policy != "const":
+        if interface_pressure_policy != "subcell":
+            raise ValueError(
+                f"interface_pressure_policy must be 'const' or 'subcell', "
+                f"got {interface_pressure_policy!r}"
+            )
+        # Sub-cell interface pressure (phase-calibration operator, see
+        # tensorlbm.free_surface_dispersion): impose p = p_atm on the sub-cell
+        # surface instead of on the interface-cell centre, i.e. raise/lower the
+        # ABB target density by rho_l g (fill - 1/2) dx  ->  drho = 3 g (fill-1/2).
+        acc = math.hypot(gx, gy)
+        if acc > 0.0:
+            delta_sub = (3.0 * acc * (fill_pre - 0.5)).clamp(-0.1, 0.1)
+            rho_g_field = rho_g_field + torch.where(
+                iface, delta_sub, torch.zeros_like(delta_sub)
+            )
     feq_gas = equilibrium(rho_g_field, _ux_pc, _uy_pc)
     f_abb = feq_gas + feq_gas[opp] - f_post[opp]
     if enable_abb:
