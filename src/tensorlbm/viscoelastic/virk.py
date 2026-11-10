@@ -1,164 +1,145 @@
-"""Virk law / MDR reference machinery for the turbulent drag-reduction side.
+"""Virk drag-reduction asymptotes for polymer solutions in turbulent pipe/channel flow.
 
-What this module *is*
----------------------
-An implementation of the classical Virk three-segment mean-velocity description
-of polymer drag-reduced turbulent channel flow, plus the machinery needed to
-judge a measured drag-reduction law:
+Virk (1975, *AIChE J.* 21:625) reduced the drag-reduction phenomenology to two
+friction-factor asymptotes in Prandtl-Karman coordinates
+``x = log10(Re sqrt(f))``, ``y = 1/sqrt(f)``:
 
-* viscous sublayer ``u+ = y+``,
-* Virk elastic (intercept-shifted log) segment ``u+ = 2.5 ln y+ + 5.5 + dB``,
-* Maximum Drag Reduction (MDR) asymptote ``u+ = 11.7 ln y+ - 17.0``,
+    Newtonian (Prandtl-von Karman):   y = 4.0  x - 0.4                  (N)
+    maximum drag reduction (MDR):     y = 19.0 x - 32.4                 (MDR)
 
-with the drag-reduced profile rendered as ``min(max(elastic, y+), MDR)`` so that
-no admissible ``dB`` can ever exceed the MDR asymptote, and a log-law intercept
-estimator (:func:`delta_b_from_log_law`) that turns a *measured* mean profile into
-``dB``.
+Polymer solutions lie *between* the two lines; Virk parametrised the family as
+``y = (4 + delta) x - 0.4 - B`` and called ``Delta B`` the *intercept increment*
+(drag-reduction increment), with the empirical maximum ``Delta B_max ~ 11.7``
+reached on the MDR asymptote around ``Re ~ 10^4``.
 
-What this module is *not*
--------------------------
-It contains **no DNS/LES of viscoelastic turbulence**.  ``dB(Wi)`` is therefore
-*not measured* in this mission: what is verified here is the reference law, the
-MDR cap and the (monotonicity + boundedness) acceptance machinery that a future
-turbulent measurement must satisfy.  Evidence grade of the drag-reduction claim:
-``WITHHELD`` -- see ``docs/VISCOELASTIC_P50_N06.md`` section 5.
-
-Convention note
----------------
-``dB`` is the intercept increment of the log law in wall units.  Virk's MDR
-asymptote has a different slope (``1/11.7`` instead of ``1/2.5``), so the
-intercept increment is not unique across conventions; the mission/BP bound used
-here is ``dB <= 11.7`` (:data:`MDR_DELTA_B_MAX`) and it is applied as an upper
-bound only.
+Everything here is an *analytic envelope* evaluated in closed form: no closure
+coefficient is fitted.  The Weissenberg dependence ``Delta B(Wi)`` is a
+**declared model** (:func:`delta_B_polymer_model`), a saturating interpolation
+between the two exact asymptotes -- it is *not* a DNS measurement.  See
+``docs/viscoelastic_verification.md`` for the honest status of the turbulent
+branch.
 """
 
 from __future__ import annotations
 
-import math
-
-import torch
+import numpy as np
 
 __all__ = [
-    "MDR_DELTA_B_MAX",
-    "MDR_INTERCEPT",
-    "MDR_SLOPE",
-    "NEWTONIAN_INTERCEPT",
     "NEWTONIAN_SLOPE",
-    "check_delta_b_bound",
-    "delta_b_from_log_law",
-    "drag_reduction_fraction",
-    "virk_mdr_profile",
-    "virk_newtonian_profile",
-    "virk_segment_labels",
-    "virk_three_segment",
+    "NEWTONIAN_INTERCEPT",
+    "MDR_SLOPE",
+    "MDR_INTERCEPT",
+    "DELTA_B_MDR",
+    "WI_MDR",
+    "friction_newtonian",
+    "friction_mdr",
+    "re_sqrt_f",
+    "delta_B_from_friction",
+    "friction_from_delta_B",
+    "drag_reduction",
+    "delta_B_polymer_model",
 ]
 
-NEWTONIAN_SLOPE = 2.5
-NEWTONIAN_INTERCEPT = 5.5
-MDR_SLOPE = 11.7
-MDR_INTERCEPT = -17.0
-MDR_DELTA_B_MAX = 11.7
-VISCOUS_SUBLAYER_END = 11.6
+NEWTONIAN_SLOPE = 4.0
+NEWTONIAN_INTERCEPT = 0.4
+MDR_SLOPE = 19.0
+MDR_INTERCEPT = 32.4
+#: Virk's MDR intercept increment at the reference condition Re ~ 1e4.
+DELTA_B_MDR = 11.7
+#: Weissenberg number at which the declared Delta B(Wi) model reaches 0.99 MDR.
+WI_MDR = 10.0
 
 
-def virk_newtonian_profile(y_plus):
-    """Newtonian reference: ``u+ = y+`` for ``y+<11.6`` else ``2.5 ln y+ + 5.5``."""
-    y = torch.as_tensor(y_plus, dtype=torch.float64)
-    log_part = NEWTONIAN_SLOPE * torch.log(y) + NEWTONIAN_INTERCEPT
-    return torch.where(y < VISCOUS_SUBLAYER_END, y, log_part)
+def _newton_solve(fun, y0=10.0, tol=1e-14, itmax=300):
+    """Scalar Newton iteration with numerical Jacobian; vectorised by caller."""
+    y = float(y0)
+    for _ in range(itmax):
+        f0 = fun(y)
+        if abs(f0) < tol:
+            return y
+        h = 1e-7 * max(1.0, abs(y))
+        d = (fun(y + h) - fun(y - h)) / (2.0 * h)
+        if not np.isfinite(d) or d == 0.0:
+            return y
+        step = f0 / d
+        y_new = y - step
+        if y_new <= 1e-8:
+            return 1e-8
+        y = y_new
+        if abs(step) < 1e-15 * max(1.0, abs(y)):
+            return y
+    return y
 
 
-def virk_mdr_profile(y_plus):
-    """Virk MDR asymptote: ``u+ = y+`` for ``y+<11.6`` else ``11.7 ln y+ - 17``."""
-    y = torch.as_tensor(y_plus, dtype=torch.float64)
-    mdr = MDR_SLOPE * torch.log(y) + MDR_INTERCEPT
-    return torch.where(y < VISCOUS_SUBLAYER_END, y, mdr)
+def friction_newtonian(re):
+    """Prandtl-von Karman friction factor: solves 1/sqrt(f) = 4 log10(Re sqrt f) - 0.4."""
+    re = np.asarray(re, dtype=float)
+    out = np.empty(re.shape, dtype=float)
+    for k, r in enumerate(re.ravel()):
+        if not np.isfinite(r) or r <= 0:
+            out.ravel()[k] = np.nan
+            continue
+        y = _newton_solve(lambda y, _r=r: NEWTONIAN_SLOPE * np.log10(_r / y)
+                          - NEWTONIAN_INTERCEPT - y, y0=8.0)
+        out.ravel()[k] = 1.0 / y ** 2
+    return out
 
 
-def virk_three_segment(y_plus, delta_b: float = 0.0):
-    """Three-segment drag-reduced profile (viscous / elastic / MDR).
+def friction_mdr(re):
+    """Virk MDR friction factor: solves 1/sqrt(f) = 19 log10(Re sqrt f) - 32.4."""
+    re = np.asarray(re, dtype=float)
+    out = np.empty(re.shape, dtype=float)
+    for k, r in enumerate(re.ravel()):
+        if not np.isfinite(r) or r <= 0:
+            out.ravel()[k] = np.nan
+            continue
+        y = _newton_solve(lambda y, _r=r: MDR_SLOPE * np.log10(_r / y)
+                          - MDR_INTERCEPT - y, y0=25.0)
+        out.ravel()[k] = 1.0 / y ** 2
+    return out
 
-    ``delta_b = 0`` recovers the Newtonian reference exactly; the profile is
-    monotone in ``delta_b`` and can never exceed the MDR asymptote.
+
+def re_sqrt_f(re, f):
+    return np.asarray(re, float) * np.sqrt(np.asarray(f, float))
+
+
+def delta_B_from_friction(re, f):
+    """Virk intercept increment of a measured ``f(Re)``: ``y - (4x - 0.4)``."""
+    y = 1.0 / np.sqrt(np.asarray(f, float))
+    x = np.log10(re_sqrt_f(re, f))
+    return y - (NEWTONIAN_SLOPE * x - NEWTONIAN_INTERCEPT)
+
+
+def friction_from_delta_B(re, delta_B, y0=10.0):
+    """Invert :func:`delta_B_from_friction`: friction factor for a given Delta B."""
+    rr, dd = np.broadcast_arrays(np.asarray(re, float), np.asarray(delta_B, float))
+    out = np.empty(rr.shape, dtype=float)
+    for k, (r, d) in enumerate(zip(rr.ravel(), dd.ravel())):
+        y = _newton_solve(lambda y, _r=r, _d=d: y
+                          - (NEWTONIAN_SLOPE * np.log10(_r / y) - NEWTONIAN_INTERCEPT)
+                          - _d, y0=y0)
+        out.ravel()[k] = 1.0 / y ** 2
+    return out
+
+
+def drag_reduction(re, f_polymer):
+    """Drag reduction percentage ``DR = 100 (1 - f_polymer / f_newtonian)``."""
+    f_n = friction_newtonian(re)
+    return 100.0 * (1.0 - np.asarray(f_polymer, float) / f_n)
+
+
+def delta_B_polymer_model(wi, delta_B_max=DELTA_B_MDR, wi_mdr=WI_MDR):
+    """**Declared model** of the drag-reduction increment ``Delta B(Wi)``.
+
+    Saturating law between the two exact asymptotes::
+
+        Delta B(Wi) = Delta_B_max * (1 - exp(-Wi / Wi_MDR))
+
+    Properties (each one tested): ``Delta B(0) = 0`` (Newtonian limit),
+    monotone increasing in ``Wi``, ``Delta B < Delta_B_max`` for all finite
+    ``Wi``, and ``-> Delta_B_max`` as ``Wi -> inf`` (Virk MDR bound).  It is a
+    phenomenological envelope *consistent with* Virk's asymptotes, not a
+    simulation result.
     """
-    check_delta_b_bound(delta_b)
-    y = torch.as_tensor(y_plus, dtype=torch.float64)
-    viscous = y
-    elastic = NEWTONIAN_SLOPE * torch.log(y) + NEWTONIAN_INTERCEPT + float(delta_b)
-    mdr = MDR_SLOPE * torch.log(y) + MDR_INTERCEPT
-    log_segment = torch.minimum(elastic, mdr)
-    return torch.where(y < VISCOUS_SUBLAYER_END, viscous, log_segment)
-
-
-def virk_segment_labels(y_plus, delta_b: float = 0.0) -> list[str]:
-    """Label each ``y+`` with its active segment: ``viscous``/``elastic``/``mdr``."""
-    y = torch.as_tensor(y_plus, dtype=torch.float64).reshape(-1)
-    labels: list[str] = []
-    for yi in y.tolist():
-        elastic = NEWTONIAN_SLOPE * math.log(yi) + NEWTONIAN_INTERCEPT + float(delta_b)
-        mdr = MDR_SLOPE * math.log(yi) + MDR_INTERCEPT
-        if yi < VISCOUS_SUBLAYER_END:
-            labels.append("viscous")
-        elif elastic <= mdr:
-            labels.append("elastic")
-        else:
-            labels.append("mdr")
-    return labels
-
-
-def check_delta_b_bound(delta_b: float, *, bound: float = MDR_DELTA_B_MAX) -> float:
-    """Acceptance guard: ``0 <= dB <= 11.7`` (MDR cap).
-
-    Raises:
-        ValueError: if ``delta_b`` is negative or exceeds the MDR bound.
-    """
-    dB = float(delta_b)
-    if not math.isfinite(dB):
-        msg = f"delta_B must be finite (got {delta_b!r})"
-        raise ValueError(msg)
-    if dB < 0.0:
-        msg = f"delta_B must be non-negative (got {dB})"
-        raise ValueError(msg)
-    if dB > bound:
-        msg = f"delta_B={dB} exceeds the MDR bound {bound}"
-        raise ValueError(msg)
-    return dB
-
-
-def delta_b_from_log_law(
-    u_plus,
-    y_plus,
-    *,
-    window: tuple[float, float] = (30.0, 100.0),
-) -> dict:
-    """Estimate ``dB`` from a measured mean profile by fitting the log-law offset.
-
-    Regresses ``u+ - 2.5 ln y+`` on a constant over ``window`` (least squares);
-    the constant is the apparent ``B`` and ``dB = B - 5.5``.  Returns the fit
-    diagnostics so a caller can judge whether the window really is logarithmic.
-    """
-    y = torch.as_tensor(y_plus, dtype=torch.float64).reshape(-1)
-    u = torch.as_tensor(u_plus, dtype=torch.float64).reshape(-1)
-    mask = (y >= window[0]) & (y <= window[1]) & (u > 0)
-    if int(mask.sum()) < 2:
-        msg = f"not enough points in window {window} to fit the log law"
-        raise ValueError(msg)
-    y_w, u_w = y[mask], u[mask]
-    residual_target = u_w - NEWTONIAN_SLOPE * torch.log(y_w)
-    b_fit = float(residual_target.mean())
-    scatter = float((residual_target - b_fit).abs().max())
-    return {
-        "b_fit": b_fit,
-        "delta_b": b_fit - NEWTONIAN_INTERCEPT,
-        "n_points": int(mask.sum()),
-        "max_scatter": scatter,
-        "window": list(window),
-    }
-
-
-def drag_reduction_fraction(q_polymer: float, q_newtonian: float) -> float:
-    """``DR = 1 - Q_p/Q_N`` at matched pressure gradient (dimensionless)."""
-    if q_newtonian == 0.0:
-        msg = "Newtonian flow rate is zero"
-        raise ValueError(msg)
-    return 1.0 - float(q_polymer) / float(q_newtonian)
+    wi = np.asarray(wi, dtype=float)
+    return delta_B_max * (1.0 - np.exp(-np.maximum(wi, 0.0) / wi_mdr))
