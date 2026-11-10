@@ -1,34 +1,39 @@
 """Von Neumann linear stability analysis for LBM collision operators.
 
-This package provides:
-- Analytical amplification matrices for D2Q9 BGK and MRT
-- Spectral radius computation over (θ, τ, Ma) grids
-- Experimental growth rate measurement from LBM simulations
-- Equivalent equation (Chapman-Enskog) analysis
-- Stability domain mapping
+Provides machine-computable dispersion relations ω(k), dissipation Im(ω),
+and stability envelopes for BGK, TRT, and MRT operators on D2Q9/D3Q19 lattices.
 
 References:
-  - Lallemand & Luo (2000), JCP 159, 1-37
-  - Dubois & Lallemand (2008), JCP 227, 4600-4625
-  - Malaspinas (2013), PhD thesis EPFL
+    - Lallemand & Luo (2000), JCP 161, 649-678.
+    - Dubois et al. (2006), Computers & Mathematics with Applications 51.
+    - Ginzburg (2006), J. Stat. Phys. 125, 157-199 (TRT magic parameter Λ=3/16).
 """
 
-from .amplification import (
-    AmplificationResult,
-    compute_spectral_radius,
-    scan_stability_domain,
+from .analysis import (
+    AmplificationMatrix,
+    von_neumann_eigenvalues,
 )
-from .d2q9_bgk import D2Q9BGKAmplification
-from .d2q9_mrt import D2Q9MRTAmplification
-from .equivalent_equations import EquivalentEquationsD2Q9
-from .experimental import ExperimentalGrowthRate
+from .collision import BGKCollision, TRTCollision, MRTCollision
+from .dispersion import (
+    compute_dispersion_curve,
+    compute_dissipation_curve,
+    fit_viscosity_from_dissipation,
+)
+from .lattice import D2Q9Lattice, D3Q19Lattice, LatticeBase
+from .stability import scan_stability_envelope, max_eigenvalue_vs_tau
 
 __all__ = [
-    "AmplificationResult",
-    "D2Q9BGKAmplification",
-    "D2Q9MRTAmplification",
-    "EquivalentEquationsD2Q9",
-    "ExperimentalGrowthRate",
-    "compute_spectral_radius",
-    "scan_stability_domain",
+    "AmplificationMatrix",
+    "von_neumann_eigenvalues",
+    "BGKCollision",
+    "TRTCollision",
+    "MRTCollision",
+    "D2Q9Lattice",
+    "D3Q19Lattice",
+    "LatticeBase",
+    "compute_dispersion_curve",
+    "compute_dissipation_curve",
+    "fit_viscosity_from_dissipation",
+    "scan_stability_envelope",
+    "max_eigenvalue_vs_tau",
 ]
