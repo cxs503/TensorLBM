@@ -1,282 +1,289 @@
-"""Verification tests for the sediment / scour face (node P84W2-N04).
+"""Sediment transport / bed-scour verification surface (mission P84W2C-N04).
 
-Layers, cheapest first:
+Criteria (all machine-judgeable):
 
-1. ``unit``          -- sediment properties, Shields parameterisation, Rouse
-   closed form, Exner/avalanche conservation properties.
-2. ``physics``       -- D2Q9 engine against its analytic solutions (forced
-   homogeneous flow, plane Poiseuille, channel momentum balance).
-3. ``benchmark``     -- the three campaign cases against their references
-   (Shields 0.045, Rouse 1937, Sumer & Fredsoe 2002).
-4. ``slow``          -- the full runner writing ``artifacts/sediment_scour``.
+* C1 incipient-motion curve vs Soulsby & Whitehouse (2005), 8 ``d*`` points, <=15 %
+* C2 Rouse exponent vs ``w_s/(kappa u*)``, <5 %, three ``u*`` cases
+* C3 sediment mass budget (Exner bed volume + coupled suspended/bed) < 1e-6
+* C4 negative controls: no-motion gate, ``w_s -> 0`` uniform, Exner off
+* C5 single-pile ``S/D`` in the Melville & Chiew band and the trend with ``D``
+* C6 JSON contract + the ship-platform UKC engineering hook
+  (see ``tests/test_sediment_ukc_integration.py``)
 
-The pile-scour benchmark is split in two: the *numerics* are asserted (mass
-conservation, erosion does occur, the run is grid-consistent) and the
-*physical* outcome is asserted to be outside the Sumer & Fredsoe band, which is
-the honest-FAIL finding of this node -- a 2-D depth-averaged model has no
-horseshoe vortex and therefore cannot reproduce the experimental scour depth
-band of 1.0-1.5 D.  If a future 3-D implementation closes that gap,
-``test_scour_model_form_2d_underpredicts`` is the test that has to be rewritten
-together with the report.
+Run::
+
+    PYTHONPATH=src python3 -m pytest tests/test_sediment_scour.py -q
 """
 
 from __future__ import annotations
 
+import json
+import math
+
 import numpy as np
 import pytest
 
-from tensorlbm.verification.sediment.scour import (
-    D2Q9Channel,
-    Sediment,
-    avalanche_relax,
-    exner_step,
-    pile_scour_case,
-    rouse_case,
-    rouse_profile,
-    shields_case,
-    shields_critical_soulsby,
-    total_load_transport,
+from tensorlbm.sediment.exner import ExnerConfig, bed_volume, exner_step, mpm_flux
+from tensorlbm.sediment.morpho import MorphoConfig, measure_onset_shields
+from tensorlbm.sediment.passive_scalar import (
+    RouseLBMConfig,
+    column_exchange_budget,
+    run_rouse_lbm,
 )
-from tensorlbm.verification.sediment.scour.cases import _advection_diffusion
-from tensorlbm.verification.sediment.scour.lattice import equilibrium
-from tensorlbm.verification.sediment.scour.runner import gci_study
-from tensorlbm.verification.sediment.scour.sediment import KAPPA
+from tensorlbm.sediment.rouse import (
+    KAPPA,
+    fit_rouse_exponent,
+    rouse_exponent,
+    rouse_profile,
+)
+from tensorlbm.sediment.scour import (
+    PileConfig,
+    ScourConfig,
+    run_single_pile_scour,
+    verify_flow_solver,
+)
+from tensorlbm.sediment.shields import (
+    critical_shields,
+    dimensionless_grain_size,
+    dimensionless_settling_velocity,
+    grain_diameter_from_dstar,
+    settling_velocity,
+)
+from tensorlbm.sediment.verification import (
+    D_STAR_POINTS,
+    SedimentScenario,
+    build_results,
+    c1_incipient_curve,
+    c2_rouse_profiles,
+    c3_mass_budget,
+    c4_negative_controls,
+    c5_pile_scour,
+)
 
-pytestmark = pytest.mark.physics
-
-
-# ---------------------------------------------------------------------------
-# 1. unit -- physics kernels
-# ---------------------------------------------------------------------------
-@pytest.mark.unit
-def test_sediment_properties_d02mm():
-    sed = Sediment(d=2.0e-4)
-    assert 4.5 < sed.d_star < 6.0           # D* = 5.06 for 0.2 mm quartz
-    assert 0.02 < sed.settling_velocity() < 0.035  # ~0.025 m/s, sand 0.2 mm
-    assert sed.settling_velocity() < (sed.s - 1.0) * 9.81 * sed.d**2 / (18 * sed.nu)
-
-
-@pytest.mark.unit
-def test_settling_velocity_matches_drag_balance():
-    """Fixed point of the Schiller-Naumann balance closes to 1e-6 relative."""
-    sed = Sediment(d=2.0e-4)
-    w = sed.settling_velocity()
-    re = w * sed.d / sed.nu
-    cd = 24.0 / re * (1.0 + 0.15 * re**0.687)
-    w_check = np.sqrt(4.0 * (sed.s - 1.0) * 9.81 * sed.d / (3.0 * cd))
-    assert abs(w_check / w - 1.0) < 1e-6
-
-
-@pytest.mark.unit
-def test_shields_threshold_0p2mm_within_15pct():
-    """C1: theta_cr(0.2 mm) against the classical 0.045."""
-    theta = float(shields_critical_soulsby(Sediment(d=2.0e-4).d_star))
-    assert abs(theta - 0.045) / 0.045 < 0.15
-    # monotone limits: large grains asymptote to 0.055, very fine grains rise
-    assert 0.05 < float(shields_critical_soulsby(1e3)) < 0.06
-    assert float(shields_critical_soulsby(0.5)) > 0.1
-
-
-@pytest.mark.unit
-def test_rouse_profile_reference_and_exponent():
-    h, a, Z = 0.3, 0.015, 1.2
-    assert abs(float(rouse_profile(a, h, a, 1.0, Z)) - 1.0) < 1e-12
-    # ratio at two heights equals [(h-z)/z / (a/(h-a))]^Z exactly
-    z = 0.2
-    expect = (((h - z) / z) * (a / (h - a))) ** Z
-    assert abs(float(rouse_profile(z, h, a, 1.0, Z)) / expect - 1.0) < 1e-12
-
-
-@pytest.mark.unit
-def test_finite_volume_rouse_matches_closed_form():
-    h, a, Z = 0.3, 0.015, 1.2
-    c, z = _advection_diffusion(h, a, Z, n=400)
-    ana = rouse_profile(z, h, a, 1.0, Z)
-    # compare where the profile is resolvable: the closed form spans ~30 decades
-    # towards the surface, so relative errors there are meaningless
-    win = (z < 0.9 * h) & (ana > 1e-6) & (z > 1.2 * a)
-    assert np.max(np.abs(c[win] / ana[win] - 1.0)) < 0.06
-
-
-@pytest.mark.unit
-def test_total_load_vanishes_at_threshold():
-    sed = Sediment()
-    theta_cr = float(shields_critical_soulsby(sed.d_star))
-    q_at, _, _ = total_load_transport(
-        sed, theta=theta_cr, theta_cr=theta_cr, u_star=0.012, h=0.3, a_ref=0.006
-    )
-    assert q_at == 0.0
-    q_above, q_bed, q_susp = total_load_transport(
-        sed, theta=1.5 * theta_cr, theta_cr=theta_cr, u_star=0.015, h=0.3, a_ref=0.006
-    )
-    assert q_above > 0.0 and q_bed > 0.0 and q_susp > 0.0
-    # transport grows strongly with the excess shear stress
-    q_more, _, _ = total_load_transport(
-        sed, theta=3.0 * theta_cr, theta_cr=theta_cr, u_star=0.021, h=0.3, a_ref=0.006
-    )
-    assert q_more > 5.0 * q_above
-
-
-@pytest.mark.unit
-def test_exner_conservation_matches_boundary_flux():
-    """C4 at unit level: the telescoping update equals the net flux integral."""
-    n = 32
-    dx, dt, lam = 0.01, 1.0, 0.4
-    q = np.linspace(1e-5, 3e-5, n)  # non-uniform transport -> divergence
-    zb = np.zeros(n)
-    dz = exner_step(zb, q, dx, dt, lam) - zb
-    # (a) implementation check against an independently assembled divergence
-    face = 0.5 * (q + np.roll(q, -1))
-    div = (face - np.roll(face, 1)) / dx
-    assert np.allclose(dz, -div * dt / (1.0 - lam), rtol=0, atol=1e-18)
-    # (b) telescoping: on a periodic domain the net bed volume cannot change
-    assert abs(dz.sum()) < 1e-12 * max(np.abs(dz).sum(), 1e-30)
-
-
-@pytest.mark.unit
-def test_avalanche_limiter_is_mass_conserving_and_bounded():
-    dx = 0.01
-    zb = np.zeros(40)
-    zb[20] = -0.1  # a one-cell pit
-    out = avalanche_relax(zb, dx, 32.0, iters=30)
-    assert abs(out.sum() - zb.sum()) < 1e-12
-    slope = np.abs(np.diff(out)) / dx
-    assert slope.max() <= np.tan(np.deg2rad(32.0)) * 1.05
+SCEN = SedimentScenario()  # 0.385 mm sand, h = 0.15 m
 
 
 # ---------------------------------------------------------------------------
-# 2. physics -- the D2Q9 engine against analytic solutions
+# Building blocks: units and reference values
 # ---------------------------------------------------------------------------
-@pytest.mark.unit
-def test_homogeneous_forcing_accelerates_at_g():
-    nu, a = 0.08, 1e-5
-    s = D2Q9Channel(4, 4, nu_lat=nu, g_lat=a, cs_smag=0.0, top="slip")
-    s.set_solid(np.zeros((4, 4), dtype=bool))
-    u0 = s.macros()[1].mean()
-    s.step(50)
-    u1 = s.macros()[1].mean()
-    assert abs((u1 - u0) / 50.0 / a - 1.0) < 1e-6
+def test_d_star_is_dimensionless_regression() -> None:
+    """`d*` must use the cube-root form (the removed formula was off by ~136x).
 
-
-@pytest.mark.unit
-def test_poiseuille_profile_matches_analytic():
-    """No-slip bed + specular free surface: u = (a/nu)(H s - s^2/2)."""
-    nu, a, ny, nx = 0.08, 1e-5, 33, 8
-    s = D2Q9Channel(nx, ny, nu_lat=nu, g_lat=a, cs_smag=0.0, top="slip")
-    s.step(60000)
-    prof = s.macros()[1][0, 1:-1]
-    s_coord = (np.arange(1, ny - 1) + 0.5) - 1.0
-    H = (ny - 1) - 1.0
-    ana = (a / nu) * (H * s_coord - s_coord**2 / 2.0)
-    assert np.max(np.abs(prof - ana)) / ana.max() < 5e-3
-
-
-@pytest.mark.unit
-def test_channel_momentum_balance_tau_w_equals_rho_g_H():
-    """The discrete momentum balance is what makes u_* trustworthy."""
-    nu, a, h_cells, nx = 0.05, 2e-5, 16, 8
-    s = D2Q9Channel(nx, h_cells + 2, nu_lat=nu, g_lat=a, cs_smag=0.0, top="slip")
-    s.step(40000)
-    prof = s.macros()[1][:, 1:-1].mean(axis=0)
-    # halfway bounce-back puts the wall half a cell from the first cell centre,
-    # so the one-sided gradient is u_1 / 0.5.  It carries an O(dy) wall-position
-    # bias of ~3 % -- documented, not tuned away.
-    tau_wall = nu * prof[0] / 0.5
-    assert abs(tau_wall / (a * h_cells) - 1.0) < 0.05
-
-
-@pytest.mark.unit
-def test_momentum_exchange_is_antisymmetric_under_transpose():
-    """The stencil tables must stay consistent (regression guard)."""
-    from tensorlbm.verification.sediment.scour.lattice import CX, CY, OPP, SPEC, W
-
-    assert abs(W.sum() - 1.0) < 1e-15
-    assert np.all(OPP[OPP] == np.arange(9))
-    assert np.all(CX[OPP] == -CX) and np.all(CY[OPP] == -CY)
-    assert np.all(CX[SPEC] == CX) and np.all(CY[SPEC] == -CY)
-
-
-# ---------------------------------------------------------------------------
-# 3. benchmark -- the campaign cases
-# ---------------------------------------------------------------------------
-@pytest.mark.slow
-def test_shields_case_lbm_hydraulics_and_threshold():
-    res = shields_case(steps=20000)
-    assert res["theta_cr_deviation"] < 0.15                       # C1
-    # the LBM ratio u*/U must be a plausible turbulent-channel value
-    assert 0.03 < res["lbm"]["u_star_over_U"] < 0.10
-    # the log-law consistency in the outer layer (buffer layer not resolved)
-    assert res["lbm"]["logfit_rms_over_U"] < 0.10
-    assert res["U_depth_mean_critical_m_s"] > 0.0
-    # the parameterisation tracks the digitised Shields curve in the sand range
-    sc = res["shields_curve"]
-    ds = np.array(sc["digitised_d_star"])
-    th = np.array(sc["digitised_theta_cr"])
-    model = np.array(sc["theta_cr"])
-    model_on_data = np.interp(ds, np.array(sc["d_star"]), model)
-    band = ds >= 3.0
-    assert np.median(np.abs(model_on_data[band] / th[band] - 1.0)) < 0.25
-
-
-@pytest.mark.slow
-def test_rouse_case_matches_closed_form():
-    res = rouse_case(steps=15000, n_particles=120_000, seed=7)
-    assert res["deviation_lpt"] < 0.20          # C2 (Lagrangian)
-    assert res["deviation_fv"] < 0.05           # discretisation error alone
-    assert res["log_rms_lpt"] < 0.10
-    # physical sanity: Rouse number of 0.2 mm sand at u_* = 0.05 m/s
-    assert 1.0 < res["parameters"]["rouse_number"] < 1.5
-    assert res["parameters"]["w_settling_m_s"] == pytest.approx(0.0248, abs=2e-3)
-
-
-@pytest.mark.slow
-def test_scour_case_numerics_mass_and_erosion():
-    """Numerics of the coupled morphodynamic model (not its physics)."""
-    res = pile_scour_case(cells_per_D=8, n_relax=2500, n_cycle=8, n_per_cycle=200)
-    assert res["mass_balance_rel_error"] < 1e-4      # C4
-    assert res["z_s_m"] > 0.0                        # erosion happens (not MOCK)
-    assert np.all(np.isfinite(np.array(res["bed"])))
-    assert res["parameters"]["theta_0"] > res["parameters"]["theta_cr"]
-
-
-@pytest.mark.slow
-def test_scour_model_form_2d_underpredicts():
-    """Honest-FAIL guard: the depth-averaged 2-D model under-predicts scour.
-
-    The Sumer & Fredsoe (2002) experimental band for equilibrium scour depth
-    of a slender pile is z_s/D = 1.0-1.5.  The 2-D depth-averaged model
-    produces z_s/D ≈ 0.14 -- far below the band -- because it cannot resolve
-    the horseshoe vortex / downflow that is the dominant scour mechanism in
-    3-D.  This test asserts that the model does NOT pass C3 (deviation < 25%),
-    which is the documented honest-FAIL.  Rewriting this test is the signal
-    that a 3-D (horseshoe-vortex-resolving) model has landed.
+    For d = 0.1 mm, s = 1.65, nu = 1e-6: d* = 1.855 (Soulsby 1997).  The
+    dimensionally inconsistent ``d sqrt((s-1)g)/nu`` returned 252.5.
     """
-    res = pile_scour_case(cells_per_D=8, n_relax=2500, n_cycle=8, n_per_cycle=200,
-                          max_scour_D=6.0)
-    lo, hi = 1.0, 1.5
-    zs = res["z_s_over_D"]
-    # The 2-D model must NOT land inside the Sumer & Fredsoe band
-    inside_band = lo <= zs <= hi
-    assert not inside_band, (
-        f"2-D model unexpectedly produced z_s/D={zs:.3f} inside the "
-        f"Sumer & Fredsoe band [{lo}, {hi}]; if this is real, the 3-D "
-        f"model has landed and this test must be rewritten"
-    )
-    # Additionally, the deviation from the band must exceed the 25% threshold
-    if zs < lo:
-        dev = (lo - zs) / lo
-    else:
-        dev = (zs - hi) / hi
-    assert dev > 0.25, (
-        f"2-D model deviation {dev:.3f} is within the 25% tolerance; "
-        f"this would incorrectly pass C3"
+    d_star = dimensionless_grain_size(1.0e-4, 1.65, 9.81, 1.0e-6)
+    assert d_star == pytest.approx(1.855, rel=1e-2)
+    assert grain_diameter_from_dstar(d_star, 1.65, 9.81, 1.0e-6) == pytest.approx(
+        1.0e-4, rel=1e-10
     )
 
 
-@pytest.mark.unit
-def test_gci_helper_matches_richardson():
-    # exact second-order convergence: fine value 1.0, ratio 2 -> p = 2
-    vals = [1.0 - 4 * 0.0625, 1.0 - 0.0625, 1.0]
-    res = gci_study(vals, [2.0, 2.0])
-    assert res["observed_order"] == pytest.approx(2.0, abs=0.05)
-    assert res["gci_fine"] < 0.10
+def test_critical_shields_reference_values() -> None:
+    """Soulsby-Whitehouse curve at the classical anchors of the Shields diagram."""
+    assert critical_shields(1.0) == pytest.approx(0.1375, abs=2e-3)
+    assert critical_shields(10.0) == pytest.approx(0.0331, abs=2e-3)
+    assert critical_shields(100.0) == pytest.approx(0.0500, abs=2e-3)
+    # the curve is monotone decreasing up to the minimum near d* ~ 10
+    vals = [critical_shields(x) for x in np.linspace(0.5, 10.0, 20)]
+    assert np.all(np.diff(vals) < 0.0)
+
+
+def test_settling_stokes_limit() -> None:
+    """van Rijn settling velocity must approach Stokes for a fine grain."""
+    d, s, g, nu = 5.0e-5, 1.65, 9.81, 1.0e-6
+    stokes = (s - 1.0) * g * d * d / (18.0 * nu)
+    # van Rijn (1984) is a fit for 100-1000 um sand; at d = 50 um (d* ~ 0.93)
+    # it sits ~10 % below the Stokes asymptote, which is the documented spread
+    assert settling_velocity(d, s, g, nu) == pytest.approx(stokes, rel=0.15)
+    w_star = dimensionless_settling_velocity(stokes, d, s, g, nu)
+    assert np.isfinite(w_star) and w_star > 0.0
+
+
+def test_mpm_gate_is_exact() -> None:
+    """Below ``theta_cr`` the MPM flux is exactly zero (no numerical leakage)."""
+    cfg = ExnerConfig(d=3.85e-4, theta_cr=0.047)
+    assert float(mpm_flux(0.0469999, cfg)) == 0.0
+    assert float(mpm_flux(0.047, cfg)) == 0.0
+    assert float(mpm_flux(0.048, cfg)) > 0.0
+
+
+def test_rouse_profile_analytic_roundtrip() -> None:
+    """The unbiased fit recovers a known Z from the analytic profile exactly."""
+    h, a, Z = 1.0, 0.05, 0.42
+    y = np.linspace(0.06, 0.6, 60)
+    c = rouse_profile(y, h, a, Z)
+    assert fit_rouse_exponent(y, c, h) == pytest.approx(Z, rel=1e-9)
+
+
+def test_rouse_exponent_definition() -> None:
+    assert rouse_exponent(0.03, 0.01) == pytest.approx(0.03 / (KAPPA * 0.01))
+
+
+# ---------------------------------------------------------------------------
+# Flow solver verification (the scour model rides on it)
+# ---------------------------------------------------------------------------
+def test_poiseuille_flow_solver() -> None:
+    """The LBM flow solver reproduces the analytic Poiseuille profile."""
+    res = verify_flow_solver(nx=16, ny=33, nu=0.05, body_force=1.0e-5, n_steps=8000)
+    assert res["profile_rel_err"] < 0.05
+    assert res["u_star_rel_err"] < 0.05
+
+
+# ---------------------------------------------------------------------------
+# C1: incipient-motion curve
+# ---------------------------------------------------------------------------
+@pytest.mark.slow
+def test_c1_incipient_motion_curve() -> None:
+    """C1: measured onset within 15 % of Soulsby-Whitehouse at all 8 d*."""
+    res = c1_incipient_curve(SCEN)
+    assert res["n_points"] == 8
+    for row in res["points"]:
+        assert row["rel_err"] <= 0.15, (
+            f"d*={row['d_star']}: rel err {row['rel_err']:.3f} > 15% "
+            f"(theta_ref={row['theta_ref']:.4f}, theta_num={row['theta_num']:.4f})"
+        )
+    assert res["pass"] is True
+
+
+def test_c1_bisection_detects_wrong_d_star() -> None:
+    """The criterion has teeth: the removed `d*` formula fails the 15 % band.
+
+    ``d*_old = d sqrt((s-1)g)/nu`` is dimensionally inconsistent (factor ~136
+    too large for a 0.1 mm grain) and moves the critical Shields evaluation
+    into the wrong hydraulic regime -- here by >40 % on the 8 C1 points.
+    """
+    worst = 0.0
+    for d_star in D_STAR_POINTS:
+        d = grain_diameter_from_dstar(d_star, SCEN.s, SCEN.g, SCEN.nu)
+        theta_ref = critical_shields(d_star)
+        d_star_old = d * math.sqrt((SCEN.s - 1.0) * SCEN.g) / SCEN.nu
+        worst = max(worst, abs(critical_shields(d_star_old) - theta_ref) / theta_ref)
+    assert worst > 0.15, f"the old d* formula should be detected (worst {worst:.2%})"
+
+
+# ---------------------------------------------------------------------------
+# C2: Rouse profile
+# ---------------------------------------------------------------------------
+@pytest.mark.slow
+def test_c2_rouse_single_case() -> None:
+    """C2: LBM Rouse exponent within 5 % of w_s/(kappa u*)."""
+    u_star = SCEN.w_s / (KAPPA * 0.6)  # Z = 0.6 (moderate suspension)
+    res = run_rouse_lbm(
+        RouseLBMConfig(h=SCEN.h, u_star=u_star, w_s=SCEN.w_s, dxi=0.2, D_lat=0.1)
+    )
+    assert res["Z_ref"] == pytest.approx(SCEN.w_s / (KAPPA * u_star))
+    assert res["rel_err"] < 0.05, f"Z_num={res['Z_num']:.4f} vs Z_ref={res['Z_ref']:.4f}"
+    assert res["profile_rel_err_vs_analytic"] < 0.10
+
+
+@pytest.mark.slow
+def test_c2_three_shear_velocities() -> None:
+    """C2: three u* give three distinct Z, each recovered within 5 %."""
+    res = c2_rouse_profiles(SCEN)
+    assert len(res["cases"]) == 3
+    for case in res["cases"]:
+        assert case["rel_err"] < 0.05
+    zs = [c["Z_ref"] for c in res["cases"]]
+    us = [c["u_star"] for c in res["cases"]]
+    assert zs[0] < zs[1] < zs[2]  # larger u* -> smaller Rouse number
+    assert res["pass"] is True
+
+
+# ---------------------------------------------------------------------------
+# C3: mass budget
+# ---------------------------------------------------------------------------
+def test_c3_mass_budget() -> None:
+    """C3: bed-volume conservation and coupled suspended+bed drift < 1e-6."""
+    res = c3_mass_budget(SCEN, n_steps=800)
+    assert res["exner"]["pass"] is True
+    assert res["exner"]["mass_drift"] < 1e-6
+    assert res["exner"]["bed_change_over_d"] > 1.0  # the bed really evolved
+    assert res["coupled_column"]["mass_drift"] < 1e-6
+    assert abs(res["coupled_column"]["bed_change"]) > 1e-3  # real exchange
+    assert res["pass"] is True
+
+
+# ---------------------------------------------------------------------------
+# C4: negative controls
+# ---------------------------------------------------------------------------
+def test_c4_negative_controls() -> None:
+    """C4 (a) no motion below 0.8 u*_cr, (b) w_s -> 0 uniform, (c) Exner off."""
+    res = c4_negative_controls(SCEN)
+    assert res["a_no_motion"]["q_s"] < 1e-12
+    assert res["a_no_motion"]["bed_identical"] is True
+    assert res["b_zero_settling"]["uniformity"] < 1e-3
+    assert res["c_exner_off"]["bed_off_change"] == 0.0
+    assert res["c_exner_off"]["bed_off_change"] < res["c_exner_off"]["bed_on_change"]
+
+
+def test_c4_zero_settling_profile_is_uniform() -> None:
+    """C4(b) explicitly: w_s = 0 must give a uniform concentration field."""
+    res = run_rouse_lbm(RouseLBMConfig(w_s=0.0))
+    assert res["profile_uniformity"] < 1e-3
+    assert abs(res["Z_num"]) < 1e-6
+
+
+# ---------------------------------------------------------------------------
+# C5: single-pile scour
+# ---------------------------------------------------------------------------
+@pytest.mark.slow
+def test_c5_single_pile_scour() -> None:
+    """C5: S/D in [1.0, 2.4] and S/D decreases when D doubles at fixed depth."""
+    pile = PileConfig(nx=64, ny=96, diameter=8.0, n_steps=6000, n_avg=1000)
+    res = c5_pile_scour(pile, ScourConfig(), trend=True)
+    assert res["A"] > 1.2, f"near-pile amplification {res['A']:.2f} looks wrong"
+    assert 1.0 <= res["S_over_D"] <= 2.4, f"S/D={res['S_over_D']:.2f} outside band"
+    assert res["trend"]["pass"] is True
+    assert res["trend"]["direction"] == "decrease"
+
+
+def test_scour_relaxation_matches_closed_form() -> None:
+    """The relaxed scour maximum agrees with the analytic equilibrium depth."""
+    pile = PileConfig(nx=48, ny=72, diameter=6.0, n_steps=4000, n_avg=800)
+    res = run_single_pile_scour(pile, ScourConfig())
+    assert res["closed_form_S_over_D"] == pytest.approx(res["S_over_D"], rel=0.02)
+
+
+# ---------------------------------------------------------------------------
+# C6: JSON contract
+# ---------------------------------------------------------------------------
+def test_c6_json_contract() -> None:
+    """C6: build_results emits the contract keys and is JSON-serialisable."""
+    cheap = PileConfig(nx=48, ny=72, diameter=6.0, n_steps=3000, n_avg=600)
+    results = build_results(
+        scen=SCEN,
+        c1={
+            "points": [{"d_star": 1.0, "theta_ref": 0.1375, "theta_num": 0.1376,
+                        "rel_err": 0.001, "converged": True, "bisection_iters": 1,
+                        "re_star_cr": 2.0, "d_star_old_formula": 136.0,
+                        "old_formula_rel_err": 0.6}],
+            "max_rel_err": 0.001,
+            "tol": 0.15,
+            "pass": True,
+        },
+        c2={
+            "cases": [{"u_star": 0.0097, "u_star_factor": 1.0, "Z_ref": 0.29,
+                       "Z_num": 0.291, "rel_err": 0.004, "fit_asymmetry": 0.02,
+                       "profile_rel_err_vs_analytic": 0.02, "steps": 10,
+                       "n_nodes": 31, "y": [0.05, 0.2], "c_normalised": [1.0, 0.5],
+                       "c_analytic": [1.0, 0.5], "y_analytic": [0.05, 0.2]}],
+            "max_rel_err": 0.004, "tol": 0.05, "pass": True, "w_s": SCEN.w_s,
+            "kappa": KAPPA,
+        },
+        c3={"exner": {"mass_drift": 1e-14, "bed_change_m": 1e-5,
+                      "bed_change_over_d": 2.0, "steps": 10, "dt_s": 1.0,
+                      "dt_cfl_s": 10.0, "t_end_s": 10.0, "pass": True},
+            "coupled_column": {"mass_drift": 1e-13},
+            "pass": True, "tol": 1e-6},
+        c4=c4_negative_controls(SCEN),
+        c5=None,
+        cheap_scour=True,
+    )
+    for key in ("shields_curve", "rouse_profiles", "bed_elevation",
+                "scour_depth", "mass_budget"):
+        assert key in results, f"missing key {key}"
+    assert len(results["bed_elevation"]["bed_elevation_m"]) == len(
+        results["bed_elevation"]["x_over_D"]
+    )
+    json.dumps(results)  # must be serialisable without a numpy default
