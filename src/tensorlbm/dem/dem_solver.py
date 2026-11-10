@@ -15,6 +15,7 @@ import torch
 
 from .cw_coupling import IceWaterDragState, MomentumExchange
 from .particle import IceParticle, ParticleSystem
+from ..drag_closure import cd_oseen, cd_oseen_bridge
 from .contact import (
     ContactModel,
     LinearSpringDashpot,
@@ -40,7 +41,9 @@ class DEMConfig:
     enable_wall_contacts : bool
         Whether to compute particle-wall contacts.
     drag_model : str
-        Drag model type: "stokes", "schiller_naumann", or "none".
+        Drag model type: "stokes", "schiller_naumann", "oseen",
+        "oseen_bridge" (Stokes->Oseen->Schiller-Naumann bridge, documented for
+        ``Re <= 50``; see :mod:`tensorlbm.drag_closure`), or "none".
     fluid_density : float
         Fluid density in kg/m³ (for drag computation).
     fluid_viscosity : float
@@ -208,6 +211,13 @@ class DEMSolver:
                 C_D = (24.0 / max(Re_p, 1e-6)) * (1.0 + 0.15 * Re_p**0.687)
             else:
                 C_D = 0.44
+        elif self.config.drag_model == "oseen":
+            # first inertial correction; documented validity Re <= 1
+            C_D = cd_oseen(max(Re_p, 1e-12))
+        elif self.config.drag_model == "oseen_bridge":
+            # Stokes -> Oseen -> Schiller-Naumann bridge, valid for Re <= 50
+            # (tensorlbm.drag_closure; node P54-W3-N11)
+            C_D = cd_oseen_bridge(max(Re_p, 1e-12))
         else:
             raise ValueError(f"Unknown drag model: {self.config.drag_model}")
         
