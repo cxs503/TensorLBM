@@ -1,0 +1,9 @@
+{
+ "8:8000:2000:forward_gradient:0.12": {
+  "spec": "8:8000:2000:forward_gradient:0.12",
+  "ok": false,
+  "error": "FloatingPointError: divergence at step 1000: {'step': 1000, 'finite': False, 'rho_min': nan, 'rho_max': nan, 'max_speed': nan, 'max_mach': nan}",
+  "trace": ", steps=int(steps), warmup_steps=int(warmup),\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/tp-agent/work/m9248/src/tensorlbm/turbulence/les_channel_verification.py\", line 503, in run_case\n    result = les.run_les(verbose=verbose)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/site-packages/torch/utils/_contextlib.py\", line 116, in decorate_context\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/tp-agent/work/m9248/src/tensorlbm/turbulence/les_channel3d.py\", line 501, in run_les\n    raise FloatingPointError(f\"divergence at step {step}: {h}\")\nFloatingPointError: divergence at step 1000: {'step': 1000, 'finite': False, 'rho_min': nan, 'rho_max': nan, 'max_speed': nan, 'max_mach': nan}\n",
+  "seconds": 123.36673593521118
+ }
+}
