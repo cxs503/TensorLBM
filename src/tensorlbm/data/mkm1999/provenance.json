@@ -1,0 +1,41 @@
+{
+  "dataset": "Moser, Kim & Mansour (1999) DNS of turbulent channel flow up to Re_tau=590",
+  "citation": "R. D. Moser, J. Kim, N. N. Mansour, Phys. Fluids 11(4), 943-945 (1999)",
+  "upstream": "https://turbulence.oden.utexas.edu/data/MKM/chandata.tar.gz",
+  "upstream_sha256": "1d8be14cb38660ca5f6be4522f5c01d1fabcb434350c693c2f498c404bf02ed2",
+  "retrieved_utc": "2026-11-08T13:28:05+00:00",
+  "normalization": "U_tau and h (half channel height); R_ij in u_tau^2 units",
+  "files": {
+    "chan180.means": {
+      "source_member": "chan180/profiles/chan180.means",
+      "sha256": "f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82",
+      "bytes": 7044
+    },
+    "chan180.reystress": {
+      "source_member": "chan180/profiles/chan180.reystress",
+      "sha256": "61f282379b80192ac8eba087aabdc41e891e854926161db866ca23fbf9111608",
+      "bytes": 7891
+    },
+    "chan395.means": {
+      "source_member": "chan395/profiles/chan395.means",
+      "sha256": "211c6b8149cc7ef5cd20323716b47a45dd98cca55486a9554acfd4a7975d737a",
+      "bytes": 12932
+    },
+    "chan395.reystress": {
+      "source_member": "chan395/profiles/chan395.reystress",
+      "sha256": "2344d3862b269a35450d2efe7139f3c7ed0a94362c19395dd79937718c0e2c15",
+      "bytes": 14611
+    },
+    "chan590.means": {
+      "source_member": "chan590/profiles/chan590.means",
+      "sha256": "878bc951794516b6136912f8f098cd6f2f96c4bbe7f21a8cea657ffb270d419d",
+      "bytes": 12932
+    },
+    "chan590.reystress": {
+      "source_member": "chan590/profiles/chan590.reystress",
+      "sha256": "ce7d21d2003137d43bb1530a7eb766180b1e4ef517d4d09bf4372c57f2d96229",
+      "bytes": 14611
+    }
+  },
+  "notes": "verbatim extraction of the upstream statistical database; parsed by tensorlbm.validation.mkm1999"
+}
