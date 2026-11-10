@@ -590,8 +590,10 @@ def collide_sc_two_component(
                      streaming across closed-box walls.
         u_eq:        Equilibrium-velocity convention: ``"self"`` (default,
                      legacy behaviour, bit-identical to the previous
-                     implementation) or ``"mixture"`` (Shan–Doolen
-                     centre-of-mass coupling).
+                     implementation), ``"mixture"`` (Shan–Doolen
+                     centre-of-mass coupling), or ``"viscous"``
+                     (viscosity-weighted velocity, Martys et al. 1996 /
+                     sailfish convention — stable for unequal tau).
 
     Returns:
         Updated ``(f1, f2)`` after collision.
@@ -605,10 +607,24 @@ def collide_sc_two_component(
     mixture form diverges for G_12 <= -1.5 while the "self" form remains
     stable.
 
+    The ``"viscous"`` form uses viscosity-weighted velocity coupling:
+    ``u_visc = (rho1*u1/tau1 + rho2*u2/tau2) / (rho1/tau1 + rho2/tau2)``.
+    This enforces velocity continuity at the diffuse interface (both
+    components relax towards the same velocity).  **Stability caveat**
+    (m8802 finding): with strong SC coupling (|G_12| >= 2) and unequal
+    relaxation times, the viscous form diverges because the velocity
+    continuity constraint conflicts with the SC interaction force that
+    maintains the interface.  It is only stable for weak coupling
+    (|G_12| < 1) or nearly equal relaxation times.
+
     References
     ----------
     Shan & Doolen (1995) J. Stat. Phys. 81:379 — multicomponent LBM with the
     barycentric (mixture) velocity in the equilibrium.
+    Martys et al. (1996) J. Comput. Phys. 126:276 — viscous coupling in
+    multicomponent LBM.
+    Inamuro et al. (2004) J. Comput. Phys. 198:628 — two-phase LBM with
+    equal-velocity constraint.
     """
     rho1, ux1, uy1 = macroscopic(f1)
     rho2, ux2, uy2 = macroscopic(f2)
@@ -627,8 +643,21 @@ def collide_sc_two_component(
         u_mix_y = (rho1_s * uy1 + rho2_s * uy2) / rho_tot
         feq1 = equilibrium(rho1, u_mix_x + tau1 * Fx1 / rho1_s, u_mix_y + tau1 * Fy1 / rho1_s)
         feq2 = equilibrium(rho2, u_mix_x + tau2 * Fx2 / rho2_s, u_mix_y + tau2 * Fy2 / rho2_s)
+    elif u_eq == "viscous":
+        # Viscosity-weighted velocity coupling (Martys et al. 1996 / sailfish).
+        # u_visc = (rho1*u1/tau1 + rho2*u2/tau2) / (rho1/tau1 + rho2/tau2)
+        # This enforces velocity continuity at the interface while conserving
+        # total momentum exactly (the weighted relaxation terms sum to zero
+        # by construction), and is stable for unequal relaxation times.
+        w1 = rho1_s / tau1
+        w2 = rho2_s / tau2
+        w_tot = w1 + w2
+        u_visc_x = (w1 * ux1 + w2 * ux2) / w_tot
+        u_visc_y = (w1 * uy1 + w2 * uy2) / w_tot
+        feq1 = equilibrium(rho1, u_visc_x + tau1 * Fx1 / rho1_s, u_visc_y + tau1 * Fy1 / rho1_s)
+        feq2 = equilibrium(rho2, u_visc_x + tau2 * Fx2 / rho2_s, u_visc_y + tau2 * Fy2 / rho2_s)
     else:
-        raise ValueError(f"u_eq must be 'self' or 'mixture', got {u_eq!r}")
+        raise ValueError(f"u_eq must be 'self', 'mixture', or 'viscous', got {u_eq!r}")
 
     f1_out = f1 - (f1 - feq1) / tau1
     f2_out = f2 - (f2 - feq2) / tau2
