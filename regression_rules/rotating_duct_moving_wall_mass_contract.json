@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "tensorlbm.rotating_duct.moving_wall_mass_contract",
+  "title": "Curved moving walls must be mass conserving; torque anchors must not use the local momentum-exchange sum on staircase walls",
+  "project": "cxs503/TensorLBM",
+  "owner": "TensorLBM maintainers",
+  "category": "numerical_contract",
+  "severity": "warning",
+  "lifecycle": "advisory",
+  "statement": "Any rotating/moving-wall case whose wall is not lattice aligned must report the measured relative mass drift together with the result; ForcedD3Q19 must be constructed with mass_conserving_walls=True (the default) for such walls; a torque anchor for a curved wall must be obtained from the profile identity T(r)=2*pi*rho*nu*L*r^2*(du_theta/dr - u_theta/r) and not from the local Ladd momentum-exchange sum.",
+  "rationale": "Measured in campaign node p158w2-n01 (TensorLBM): the naive Ladd moving-wall bounce-back injects mass at the axis-crossing corner nodes of a staircase circle. The net injection over the wall is zero but its node-wise pattern is dominated by the m=2 harmonic, which drives a spurious m=2 secondary flow: relative mass drift 2.59e-2 and profile error 13.8 % (interior) / 59.4 % (nominal) in D3Q19, against 1.1 % profile error for the same parameters in D2Q9. The per-node weighted-mean correction (mass_conserving_walls) removes the drift (1.7e-13) but not the momentum slip. Separately, the Ladd momentum-exchange torque on a coarse staircase circle is dominated by the non-cancelling pressure part (|T| ~ 1e2 for an analytic torque of 0.72), so it cannot serve as an anchor there.",
+  "scope": [
+    "src/tensorlbm/rotating_duct.py::ForcedD3Q19 (moving-wall bounce-back)",
+    "src/tensorlbm/rotating_duct.py::wall_torque_lbm",
+    "src/tensorlbm/rotating_duct.py::torque_from_profile",
+    "benchmarks/verified/rotating_duct_frame_w2/run.py"
+  ],
+  "validator": {
+    "kind": "pytest",
+    "command": "python -m pytest -q tests/test_rotating_duct.py",
+    "version": "pinned by the TensorLBM project environment"
+  },
+  "fixtures": {
+    "positive": "tests/test_rotating_duct.py::test_plane_couette_moving_wall_exact (lattice-aligned moving wall: profile exact to 1e-3 and mass conserved), ::test_annulus_geometry_and_wall_velocity (wall velocity = omega x r, tangential), ::test_couette_analytic_profile_and_torque_identity (torque identity matches 4*pi*mu*L*|B| and is r-independent).",
+    "negative": "tests/test_rotating_duct.py::test_secondary_diagnostics_single_cell_is_rejected (a single-cell field must not be reported as a vortex pair) and the D3Q19 staircase limitation recorded in benchmarks/verified/rotating_duct_frame_w2/records/rotating_duct_frame_w2.json under known_limitation."
+  },
+  "acceptance": {
+    "mass_drift": "reported for every moving-wall case and <= 1e-6 for lattice-aligned walls of the D3Q19 kernel",
+    "torque_anchor": "|torque_from_profile / (4*pi*mu*L*|B|) - 1| <= 0.03, with the r-spread of T(r) reported alongside",
+    "couette_anchor": "the Taylor-Couette verification uses the D2Q9 annulus (RotatingAnnulusD2Q9) as long as the D3Q19 staircase moving wall keeps its spurious momentum slip"
+  },
+  "remediation": "Construct ForcedD3Q19 with mass_conserving_walls=True for curved walls, record mass_drift in the benchmark record, and use the profile torque identity; do not promote a D3Q19 curved-moving-wall result to verified until an interpolated (Bouzidi-type) or otherwise slip-free wall treatment is implemented and demonstrated.",
+  "reviewed_at": null,
+  "provenance": {
+    "campaign_node": "p158w2-n01-lbm-rotating-frame",
+    "mission_id": 9831,
+    "repository": "cxs503/TensorLBM",
+    "record": "benchmarks/verified/rotating_duct_frame_w2/records/rotating_duct_frame_w2.json",
+    "report": "docs/ROTATING_DUCT_P158W2_N01.md",
+    "date": "2026-11-10"
+  }
+}
