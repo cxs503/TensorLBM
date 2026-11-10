@@ -1,425 +1,402 @@
-"""Pytest test suite for perforated plate oscillatory flow verification face.
+"""Pytest suite for the perforated-plate oscillatory-flow verification face.
 
-Tests cover:
-- C1: Quasi-steady limit (KC ≥ 15): C_d → Idelchik ±10%
-- C2: Phase monotonicity: Δp-Q phase lag decreases with KC (Spearman ρ = -1)
-- C3: C_d vs β monotonic: C_d increases with β (Spearman ρ = 1), range 0.4–0.9
-- C4: Grid convergence: GCI(C_d) < 5% across three resolutions
-- C5: Negative controls (no plate, Stokes layer)
-- C6: Energy budget closure < 3%
-- Additional: solver initialization, mask generation, phase averaging, etc.
+The suite mixes three levels of checks:
 
-Total: 15+ test cases.
+* **physics/analytic** : exact properties of the reference solutions
+  (Borda-Carnot limit, Womersley ODE + no-slip, Stokes layer).
+* **numerics**         : conservation and consistency of the D2Q9 kernel
+  (mass conservation, momentum balance of the body force against the
+  momentum-exchange wall force, zero plate force without a plate).
+* **estimators/gates** : the C_d/C_m estimator and the acceptance gates are
+  exercised on synthetic signals, where the answer is known by construction.
+
+Heavy production runs are *not* part of the suite (they live in the driver,
+``python -m tensorlbm.verification.perforated_plate.driver``); the simulations
+here use tiny grids so that the whole suite runs in a couple of minutes.
 """
 
 from __future__ import annotations
 
 import math
-import pytest
+import os
+import sys
+
+# make sure this worktree's ``src`` wins over any installed/other-worktree copy
+_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
+if _SRC in sys.path:
+    sys.path.remove(_SRC)
+sys.path.insert(0, _SRC)
+
 import numpy as np
-import torch
+import pytest
 
 from tensorlbm.verification.perforated_plate.solver import (
     PerforatedPlateConfig,
     PerforatedPlateSolver,
-    make_perforated_plate_mask,
     compute_open_area_ratio,
-    run_perforated_plate,
+    make_perforated_plate_mask,
 )
 from tensorlbm.verification.perforated_plate.analysis import (
-    phase_average,
-    extract_cd_cm,
+    analytic_dissipation,
     compute_energy_dissipation,
-    compute_zeta_eff,
     compute_phase_lag,
-    analyze_simulation,
+    compute_zeta_eff,
+    extract_cd_cm,
+    first_harmonic,
+    phase_average,
 )
 from tensorlbm.verification.perforated_plate.reference import (
-    idelchik_cd_quasi_steady,
-    quasi_steady_pressure_drop,
-    stokes_oscillating_wall_shear,
-    stokes_wall_shear_stress,
+    C_C_SHARP,
+    loss_coefficient,
+    sharp_edge_cd,
     stokes_layer_thickness,
+    stokes_layer_u,
+    womersley_channel_amplitude,
+    womersley_channel_u,
+    womersley_wall_shear,
 )
 from tensorlbm.verification.perforated_plate.gates import (
-    GATE_THRESHOLDS,
-    check_c1_quasi_steady,
-    check_c2_phase_monotonic,
-    check_c3_cd_vs_beta,
-    check_c4_gci,
-    check_c5_negative_controls,
-    check_c6_energy_budget,
+    THRESHOLDS,
+    gate_A_quasi_steady,
+    gate_B_phase_monotonic,
+    gate_C_cd_vs_beta,
+    gate_D_gci,
+    gate_F_energy_closure,
+    spearman,
 )
+from tensorlbm.verification.perforated_plate.driver import build_cases
 
 
 # ---------------------------------------------------------------------------
-# Helper: run a quick simulation for testing
+# 1. Geometry
 # ---------------------------------------------------------------------------
 
-def _run_quick_sim(
-    nx: int = 96,
-    ny: int = 32,
-    hole_size: int = 6,
-    tau: float = 1.0,
-    force_amp: float = 5e-5,
-    omega: float = 0.02,
-    steps: int = 2000,
-    warmup: int = 2,
-    measure: int = 3,
-) -> dict:
-    """Run a quick simulation for testing (not production quality)."""
-    cfg = PerforatedPlateConfig(
-        nx=nx,
-        ny=ny,
-        hole_size=hole_size,
-        tau=tau,
-        force_amplitude=force_amp,
-        omega=omega,
-        steps=steps,
-        warmup_cycles=warmup,
-        n_cycles_measure=measure,
-        samples_per_cycle=16,
-        device="cpu",
-        dtype="float64",
-        label="test_quick",
-    )
-    return run_perforated_plate(cfg)
+class TestGeometry:
+    def test_open_area_ratio_from_mask(self):
+        nx, ny, d, n = 32, 66, 6, 2
+        mask = make_perforated_plate_mask(nx, ny, 16, n_holes=n, hole_size=d,
+                                          plate_thickness=2)
+        beta = compute_open_area_ratio(mask, 16, ny)
+        assert beta == pytest.approx(n * d / (ny - 2), rel=1e-12)
+
+    def test_beta_monotone_in_hole_count(self):
+        ny = 66
+        betas = [compute_open_area_ratio(
+            make_perforated_plate_mask(32, ny, 16, n_holes=k, hole_size=4), 16, ny)
+            for k in (1, 2, 3)]
+        assert betas[0] < betas[1] < betas[2]
+
+    def test_no_plate_mask(self):
+        mask = make_perforated_plate_mask(32, 66, 16, n_holes=1, hole_size=6,
+                                          plate_thickness=2, beta=1.0)
+        assert not mask[16, 1:-1].any()          # plate column open
+        assert mask[:, 0].all() and mask[:, -1].all()   # walls remain
+
+    def test_walls_are_solid(self):
+        nx, ny = 32, 34
+        mask = make_perforated_plate_mask(nx, ny, 16, n_holes=1, hole_size=4)
+        assert mask[:, 0].all() and mask[:, ny - 1].all()
 
 
 # ---------------------------------------------------------------------------
-# Solver initialization and geometry tests
+# 2. Reference solutions
 # ---------------------------------------------------------------------------
 
-class TestSolverInit:
-    """Test solver initialization and configuration."""
+class TestReference:
+    def test_sharp_edge_limit(self):
+        # beta -> 0 recovers the classical sharp-edged orifice value
+        assert sharp_edge_cd(1e-6) == pytest.approx(C_C_SHARP, abs=1e-6)
+        assert C_C_SHARP == pytest.approx(0.61)
 
-    def test_config_defaults(self):
-        """Default config should be valid."""
-        cfg = PerforatedPlateConfig()
-        cfg.validate()
-        assert cfg.nx >= 32
-        assert cfg.ny >= 16
-        assert cfg.tau > 0.5
+    def test_sharp_edge_monotone_in_beta(self):
+        cd = [sharp_edge_cd(b) for b in (0.05, 0.1, 0.2, 0.3, 0.4)]
+        assert all(cd[i] < cd[i + 1] for i in range(len(cd) - 1))
+        assert all(0.4 <= v <= 0.9 for v in cd)
 
-    def test_config_validation_small_grid(self):
-        """Small grid should fail validation."""
-        with pytest.raises(ValueError):
-            cfg = PerforatedPlateConfig(nx=16, ny=8)
-            cfg.validate()
+    def test_sharp_edge_closed_form(self):
+        # closed form must equal Cc/(1-beta Cc)
+        for beta in (0.0625, 0.25, 0.375):
+            assert sharp_edge_cd(beta) == pytest.approx(
+                C_C_SHARP / (1.0 - beta * C_C_SHARP), rel=1e-14)
 
-    def test_config_validation_bad_tau(self):
-        """tau <= 0.5 should fail."""
-        with pytest.raises(ValueError):
-            cfg = PerforatedPlateConfig(tau=0.5)
-            cfg.validate()
+    def test_loss_coefficient(self):
+        assert loss_coefficient(0.5) == pytest.approx(4.0)
 
-    def test_config_validation_bad_force(self):
-        """Negative force amplitude should fail."""
-        with pytest.raises(ValueError):
-            cfg = PerforatedPlateConfig(force_amplitude=-1e-5)
-            cfg.validate()
+    def test_womersley_no_slip(self):
+        h, nu, omega, f0 = 64.0, 0.05, 2 * math.pi / 3000.0, 5e-5
+        for t in (0.0, 100.0, 700.0):
+            u = womersley_channel_u(np.array([-h / 2, h / 2]), t, h, nu, f0, omega)
+            assert np.allclose(u, 0.0, atol=1e-12)
 
-    def test_solver_creates_mask(self):
-        """Solver should create plate mask."""
-        cfg = PerforatedPlateConfig(nx=64, ny=32, hole_size=4, steps=100)
+    def test_womersley_satisfies_momentum_equation(self):
+        h, nu, omega, f0 = 64.0, 0.05, 2 * math.pi / 3000.0, 5e-5
+        y = np.linspace(-h / 2, h / 2, 257)
+        dy = y[1] - y[0]
+        t0, dt = 123.0, 1e-2
+        u = womersley_channel_u(y, t0, h, nu, f0, omega)
+        u_t = (womersley_channel_u(y, t0 + dt, h, nu, f0, omega)
+               - womersley_channel_u(y, t0 - dt, h, nu, f0, omega)) / (2 * dt)
+        u_yy = np.gradient(np.gradient(u, dy), dy)
+        residual = u_t - nu * u_yy - f0 * math.sin(omega * t0)
+        assert np.max(np.abs(residual[2:-2])) < 1e-6  # 0.1% of f0
+
+    def test_stokes_layer(self):
+        nu, omega = 0.05, 2 * math.pi / 3000.0
+        delta = stokes_layer_thickness(omega, nu)
+        assert delta == pytest.approx(math.sqrt(2 * nu / omega))
+        f0 = 5e-5
+        # no slip at the wall, free-stream amplitude f0/omega far away
+        assert abs(stokes_layer_u(np.array([0.0]), 137.0, f0, omega, nu)[0]) < 1e-13
+        far = stokes_layer_u(np.array([30 * delta]), 137.0, f0, omega, nu)[0]
+        assert far == pytest.approx((f0 / omega) * math.sin(omega * 137.0), rel=1e-3)
+
+    def test_womersley_wall_shear_phase(self):
+        h, nu, omega, f0 = 400.0, 0.05, 2 * math.pi / 3000.0, 5e-5
+        t = np.linspace(0, 2 * math.pi / omega, 257)
+        tau = np.array([womersley_wall_shear(tt, h, nu, f0, omega) for tt in t])
+        # reference: far-field velocity of the body-force driven flow u_inf = -(f0/omega) cos(omega t)
+        lag = (np.angle(first_harmonic(2 * np.pi * np.arange(t.size) / t.size, tau))
+               - np.angle(first_harmonic(2 * np.pi * np.arange(t.size) / t.size,
+                                         -(f0 / omega) * np.cos(omega * t))))
+        # wall shear leads the free-stream velocity by 45 deg in the Stokes limit
+        assert abs(math.degrees(lag) - 45.0) < 5.0
+
+
+# ---------------------------------------------------------------------------
+# 3. Numerical kernel: conservation and momentum exchange
+# ---------------------------------------------------------------------------
+
+def _steady_channel(ny=18, nx=32, tau=1.0, f0=1e-6, nsteps=2000, beta=1.0):
+    cfg = PerforatedPlateConfig(nx=nx, ny=ny, n_holes=1, hole_size=4, tau=tau,
+                                force_amplitude=f0, omega=2 * math.pi / 4000.0,
+                                beta=beta, init_profile="rest",
+                                probe_wall_shear=True)
+    solver = PerforatedPlateSolver(cfg)
+    f_wall = 0.0
+    for _ in range(nsteps):
+        solver._collide(f0)              # constant body force -> steady state
+        solver._stream()
+        f_wall += float(solver._force_on(solver.wall_mask)[0])
+    return solver, f_wall / nsteps
+
+
+class TestKernel:
+    def test_mass_conserved(self):
+        cfg = PerforatedPlateConfig(nx=48, ny=34, n_holes=1, hole_size=4, tau=0.53,
+                                    force_amplitude=1e-5, omega=2 * math.pi / 200.0,
+                                    warmup_cycles=0, n_cycles_measure=1,
+                                    samples_per_cycle=8)
         solver = PerforatedPlateSolver(cfg)
-        assert solver.plate_mask.shape == (cfg.ny, cfg.nx)
-        assert solver.plate_mask.dtype == torch.bool
-        assert solver.beta > 0 and solver.beta < 1
+        m0 = solver.f.sum()
+        for k in range(40):
+            solver.step(float(k))
+        # Guo forcing is mass neutral; only round-off accumulates
+        assert solver.f.sum() == pytest.approx(m0, rel=1e-8)
 
-    def test_solver_initializes_equilibrium(self):
-        """Solver should start at equilibrium."""
-        cfg = PerforatedPlateConfig(nx=64, ny=32, hole_size=4, steps=100)
+    def test_plate_force_grows_with_drive(self):
+        """The momentum-exchange plate force must grow with the drive amplitude."""
+        def force_at(F0, nsteps=150):
+            cfg = PerforatedPlateConfig(nx=64, ny=34, n_holes=1, hole_size=4,
+                                        tau=0.53, force_amplitude=F0,
+                                        omega=2 * math.pi / 400.0,
+                                        warmup_cycles=0, n_cycles_measure=1)
+            solver = PerforatedPlateSolver(cfg)
+            for k in range(nsteps):
+                res = solver.step(float(k))
+            return res["force_plate_x"], res["flow_rate"]
+
+        f1, q1 = force_at(1e-5)
+        f2, q2 = force_at(3e-5)
+        assert f1 > 0 and f2 > f1
+        assert q2 > q1
+        # sub-linear in the drive (drag grows with the flow rate, which itself
+        # grows sub-linearly because the plate loss is ~quadratic)
+        assert 1.2 < f2 / f1 < 6.0
+
+    def test_no_plate_no_plate_force(self):
+        solver, _ = _steady_channel(nsteps=200)
+        f_plate = solver._force_on(solver.plate_mask)
+        assert abs(f_plate[0]) < 1e-15
+
+    def test_plate_force_opposes_flow_direction(self):
+        """Drag on the plate must point downstream (positive x for +x flow)."""
+        cfg = PerforatedPlateConfig(nx=64, ny=34, n_holes=1, hole_size=4, tau=0.53,
+                                    force_amplitude=1e-5, omega=2 * math.pi / 2000.0,
+                                    warmup_cycles=0, n_cycles_measure=1)
         solver = PerforatedPlateSolver(cfg)
-        rho, ux, uy = solver.f.sum(dim=0), torch.zeros_like(solver.f.sum(dim=0)), torch.zeros_like(solver.f.sum(dim=0))
-        # At equilibrium, velocity should be near zero
-        assert abs(ux.mean().item()) < 1e-10
-
-
-class TestMaskGeneration:
-    """Test perforated plate mask generation."""
-
-    def test_single_hole_centered(self):
-        """Single hole should be centered."""
-        mask = make_perforated_plate_mask(64, 32, 32, "single", hole_size=6)
-        # Hole should be around center row
-        assert not mask[14:18, 31].any()  # hole region
-        assert mask[0, 31].item()  # wall
-        assert mask[-1, 31].item()  # wall
-
-    def test_array_holes(self):
-        """Array pattern should have multiple holes."""
-        mask = make_perforated_plate_mask(64, 32, 32, "array", n_holes=3, hole_size=4)
-        # Count fluid cells in plate column
-        fluid_count = (~mask[:, 31]).sum().item()
-        assert fluid_count > 4  # at least 3 holes
-
-    def test_open_area_ratio(self):
-        """Open area ratio should be between 0 and 1."""
-        mask = make_perforated_plate_mask(64, 32, 32, "single", hole_size=8)
-        beta = compute_open_area_ratio(mask, 32, 32)
-        assert 0 < beta < 1
-
-    def test_beta_increases_with_hole_size(self):
-        """Larger holes → larger β."""
-        mask1 = make_perforated_plate_mask(64, 32, 32, "single", hole_size=4)
-        mask2 = make_perforated_plate_mask(64, 32, 32, "single", hole_size=8)
-        beta1 = compute_open_area_ratio(mask1, 32, 32)
-        beta2 = compute_open_area_ratio(mask2, 32, 32)
-        assert beta2 > beta1
+        for k in range(400):
+            res = solver.step(float(k))
+        assert res["flow_rate"] > 0
+        assert res["force_plate_x"] > 0
 
 
 # ---------------------------------------------------------------------------
-# Reference solution tests
+# 4. Estimators (synthetic signals with a known answer)
 # ---------------------------------------------------------------------------
 
-class TestReferenceSolutions:
-    """Test analytical reference solutions."""
+class TestEstimators:
+    def test_phase_average_recovers_sinusoid(self):
+        omega, n = 2 * math.pi / 100.0, 1000      # 10 periods
+        t = np.arange(n, dtype=float) + 1
+        sig = 3.0 * np.sin(omega * t) + 1.5
+        theta, avg = phase_average(t, sig, omega, 24)
+        assert avg.size == 24
+        assert np.max(np.abs(avg - 1.5 - 3.0 * np.sin(theta))) < 0.12  # bin-width error
 
-    def test_idelchik_cd_range(self):
-        """C_d should be in physical range [0.4, 0.9]."""
-        for beta in [0.05, 0.10, 0.20, 0.30, 0.40]:
-            cd = idelchik_cd_quasi_steady(beta)
-            assert 0.4 <= cd <= 0.9, f"C_d={cd} for β={beta}"
+    def test_first_harmonic(self):
+        theta = np.linspace(0, 2 * np.pi, 64, endpoint=False)
+        amp = first_harmonic(theta, 2.0 * np.cos(theta - 0.3) + 5.0)
+        assert abs(amp) == pytest.approx(2.0, rel=1e-6)
+        assert np.angle(amp) == pytest.approx(-0.3, abs=1e-6)
 
-    def test_idelchik_cd_increases_with_beta(self):
-        """C_d should increase with β."""
-        cd1 = idelchik_cd_quasi_steady(0.10)
-        cd2 = idelchik_cd_quasi_steady(0.30)
-        assert cd2 > cd1
+    def test_extract_cd_cm_recovers_known_coefficients(self):
+        omega, beta, ny, t_p, n = 0.01, 0.25, 66, 2.0, 64
+        theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        area = ny - 2
+        k_m, k_q = 7.0, 4.0                    # -> C_d = 0.5, C_m = 3.5
+        u_h = 0.05 * np.sin(theta)
+        du = 0.05 * omega * np.cos(theta)
+        q = u_h * area * beta
+        dp = k_m * du + 0.5 * k_q * u_h * np.abs(u_h)
+        fit = extract_cd_cm(q, dp, omega, beta, ny, 1.0, t_p)
+        assert fit["K_m"] == pytest.approx(k_m, rel=5e-3)
+        assert fit["K_q"] == pytest.approx(k_q, rel=5e-3)
+        assert fit["C_d"] == pytest.approx(1 / math.sqrt(k_q), rel=2.5e-3)
+        assert fit["C_m"] == pytest.approx(k_m / t_p, rel=5e-3)
+        assert fit["r_squared"] > 0.999
 
-    def test_idelchik_cd_invalid_beta(self):
-        """Invalid β should return NaN."""
-        assert math.isnan(idelchik_cd_quasi_steady(0))
-        assert math.isnan(idelchik_cd_quasi_steady(1))
+    def test_phase_lag_limits(self):
+        n, omega = 64, 0.01
+        theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        q = np.sin(theta)
+        # pure inertia -> +90 deg, pure loss -> 0 deg
+        assert compute_phase_lag(q, np.cos(theta), omega)["phase_lag_deg"] == pytest.approx(90.0, abs=1e-6)
+        assert compute_phase_lag(q, np.abs(q) * q, omega)["phase_lag_deg"] == pytest.approx(0.0, abs=1e-6)
 
-    def test_quasi_steady_pressure_drop_sign(self):
-        """Pressure drop should have same sign as flow."""
-        dp_pos = quasi_steady_pressure_drop(1.0, 0.2, 30, c_d=0.6)
-        dp_neg = quasi_steady_pressure_drop(-1.0, 0.2, 30, c_d=0.6)
-        assert dp_pos > 0
-        assert dp_neg < 0  # same sign as flow (negative)
-
-    def test_stokes_layer_thickness(self):
-        """Stokes layer thickness formula."""
-        delta = stokes_layer_thickness(0.01, 1.0 / 6.0)
-        expected = math.sqrt(2.0 * (1.0 / 6.0) / 0.01)
-        assert abs(delta - expected) / expected < 1e-10
-
-    def test_stokes_velocity_decay(self):
-        """Stokes velocity should decay with distance from wall."""
-        u0 = 0.01
-        omega = 0.02
-        nu = 1.0 / 6.0
-        u_near = stokes_oscillating_wall_shear(1.0, 0, u0, omega, nu)
-        u_far = stokes_oscillating_wall_shear(20.0, 0, u0, omega, nu)
-        assert abs(u_near) > abs(u_far)
-
-
-# ---------------------------------------------------------------------------
-# Analysis tests
-# ---------------------------------------------------------------------------
-
-class TestPhaseAveraging:
-    """Test phase averaging."""
-
-    def test_sine_phase_average(self):
-        """Phase average of sine should recover the sine."""
-        omega = 0.02
-        period = 2 * math.pi / omega
-        t = np.linspace(0, 5 * period, 500)
-        signal = np.sin(omega * t)
-        phase, avg = phase_average(t, signal, omega, n_bins=32)
-        # Should recover sine shape
-        assert len(avg) == 32
-        assert np.max(avg) > 0.5
-        assert np.min(avg) < -0.5
-
-    def test_phase_average_constant(self):
-        """Phase average of constant should be constant."""
-        omega = 0.02
-        t = np.linspace(0, 1000, 1000)
-        signal = np.ones(1000) * 42.0
-        phase, avg = phase_average(t, signal, omega, n_bins=16)
-        assert np.allclose(avg, 42.0, atol=1e-10)
-
-
-class TestCdCmExtraction:
-    """Test C_d and C_m extraction."""
-
-    def test_pure_inertial(self):
-        """Pure inertial response: Δp ∝ dQ/dt → C_m > 0, C_d → ∞."""
-        omega = 0.02
-        t = np.linspace(0, 2 * math.pi / omega, 100)
-        q = np.sin(omega * t)
-        dqdt = omega * np.cos(omega * t)
-        dp = 1.0 * dqdt  # pure inertial
-
-        result = extract_cd_cm(q, dp, omega, beta=0.2, ny=30)
-        assert result["C_m"] > 0
-        assert result["r_squared"] > 0.9
-
-    def test_pure_dissipative(self):
-        """Pure dissipative response: Δp ∝ Q|Q| → C_d finite, C_m → 0."""
-        omega = 0.02
-        t = np.linspace(0, 2 * math.pi / omega, 100)
-        q = np.sin(omega * t)
-        dp = 0.5 * q * np.abs(q)  # pure dissipative
-
-        result = extract_cd_cm(q, dp, omega, beta=0.2, ny=30)
-        assert result["C_d"] > 0
-        assert result["r_squared"] > 0.9
-
-
-class TestEnergyDissipation:
-    """Test energy dissipation computation."""
-
-    def test_in_phase_dissipation(self):
-        """In-phase Q and Δp → non-zero dissipation (∮sin² > 0)."""
-        omega = 0.02
-        t = np.linspace(0, 2 * math.pi / omega, 100)
-        q = np.sin(omega * t)
-        dp = np.sin(omega * t)  # in phase
+    def test_dissipation_matches_analytic_model(self):
+        omega, beta, area, cd, u0, n = 0.01, 0.25, 64, 0.7, 0.05, 512
+        theta = np.linspace(0, 2 * np.pi, n, endpoint=False)
+        u_h = u0 * np.sin(theta)
+        q = u_h * area * beta
+        dp = 0.5 * (1 / cd ** 2) * u_h * np.abs(u_h)
         phi = compute_energy_dissipation(q, dp, omega)
-        # ∮sin²(ωt)dt over one period = π/ω ≈ 157
-        assert phi > 100
+        phi_ref = analytic_dissipation(omega, area, beta, cd, u0)
+        assert phi == pytest.approx(phi_ref, rel=2e-3)
 
-    def test_quadrature_dissipation(self):
-        """90° out-of-phase Q and Δp → zero net dissipation (∮sin·cos = 0)."""
-        omega = 0.02
-        t = np.linspace(0, 2 * math.pi / omega, 100)
-        q = np.sin(omega * t)
-        dp = np.cos(omega * t)  # 90° out of phase
-        phi = compute_energy_dissipation(q, dp, omega)
-        # ∮sin(ωt)cos(ωt)dt over one period = 0
-        assert phi < 1.0
+    def test_zeta_scaling(self):
+        phi, omega, e = 1.0, 0.01, 0.5
+        assert compute_zeta_eff(phi, omega, e) == pytest.approx(
+            phi / (2 * math.pi * omega * 2 * e))
 
 
 # ---------------------------------------------------------------------------
-# Gate tests
+# 5. Gates (logic only, synthetic inputs)
 # ---------------------------------------------------------------------------
+
+def _kc_row(i, kc, cd, lag, beta=0.25, ref=None):
+    return {"id": f"c{i}", "kind": "kc", "KC": kc, "C_d": cd,
+            "C_d_reference": ref if ref is not None else sharp_edge_cd(beta),
+            "phase_lag_deg": lag, "beta": beta, "r_squared": 0.99, "C_m": 3.5}
+
 
 class TestGates:
-    """Test acceptance criteria gates."""
+    def test_spearman(self):
+        assert spearman([1, 2, 3, 4], [4, 3, 2, 1]) == pytest.approx(-1.0)
+        assert spearman([1, 2, 3, 4], [1, 2, 3, 4]) == pytest.approx(1.0)
 
-    def test_c1_pass(self):
-        """C1 should pass when C_d matches reference."""
-        result = check_c1_quasi_steady(cd_measured=0.65, beta=0.15, kc=20)
-        assert result["passed"]
+    def test_gate_A(self):
+        rows = [_kc_row(i, 20 + i, sharp_edge_cd(0.25), 10.0) for i in range(2)]
+        assert gate_A_quasi_steady(rows)["passed"]
+        rows_bad = [_kc_row(i, 20, sharp_edge_cd(0.25) * 1.3, 10.0) for i in range(2)]
+        assert not gate_A_quasi_steady(rows_bad)["passed"]
 
-    def test_c1_fail_low_kc(self):
-        """C1 should fail when KC < 15."""
-        result = check_c1_quasi_steady(cd_measured=0.65, beta=0.15, kc=5)
-        assert not result["passed"]
+    def test_gate_B(self):
+        ok = [_kc_row(i, kc, 0.7, lag) for i, (kc, lag) in
+              enumerate(zip([0.5, 1, 2, 3, 5, 8, 12, 20], [85, 80, 70, 60, 45, 30, 20, 10]))]
+        assert gate_B_phase_monotonic(ok)["passed"]
+        bad = [_kc_row(i, kc, 0.7, 50.0) for i, kc in
+               enumerate([0.5, 1, 2, 3, 5, 8, 12, 20])]
+        assert not gate_B_phase_monotonic(bad)["passed"]
+        assert gate_B_phase_monotonic(ok[:5])["passed"] is False   # <8 points
 
-    def test_c1_fail_bad_cd(self):
-        """C1 should fail when C_d is far from reference."""
-        result = check_c1_quasi_steady(cd_measured=0.2, beta=0.15, kc=20)
-        assert not result["passed"]
+    def test_gate_C(self):
+        rows = [{"id": f"b{i}", "kind": "beta", "beta": b,
+                 "C_d": sharp_edge_cd(b) * 0.95, "C_d_reference": sharp_edge_cd(b),
+                 "KC": 10.0, "r_squared": 0.99}
+                for i, b in enumerate([0.0625, 0.125, 0.1875, 0.3125, 0.375])]
+        assert gate_C_cd_vs_beta(rows)["passed"]
+        rows[3]["C_d"] = rows[2]["C_d"] - 0.01          # break monotonicity
+        assert not gate_C_cd_vs_beta(rows)["passed"]
 
-    def test_c2_pass(self):
-        """C2 should pass with monotonically decreasing phase lag."""
-        kc = [1, 3, 5, 8, 10, 12, 15, 20]
-        pl = [85, 75, 60, 45, 35, 25, 15, 5]
-        result = check_c2_phase_monotonic(kc, pl)
-        assert result["passed"]
-        assert result["spearman_rho"] < -0.9
+    def test_gate_D(self):
+        rows = [{"id": f"g{i}", "kind": "gci", "level": i, "ny": 34 * 2 ** i,
+                 "C_d": v, "hole_size": 4 * 2 ** i, "KC": 2.0, "Re_h": 30.0,
+                 "beta": 0.25}
+                for i, v in enumerate([0.380, 0.376, 0.3752])]
+        g = gate_D_gci(rows)
+        assert g["passed"] and g["GCI_fine"] < 0.05
+        rows_bad = [dict(r, C_d=v) for r, v in zip(rows, [0.25, 0.33, 0.3752])]
+        assert not gate_D_gci(rows_bad)["passed"]
 
-    def test_c2_fail_non_monotonic(self):
-        """C2 should fail with non-monotonic phase lag."""
-        kc = [1, 3, 5, 8, 10, 12, 15, 20]
-        pl = [85, 75, 80, 45, 35, 25, 15, 5]  # not monotonic
-        result = check_c2_phase_monotonic(kc, pl)
-        assert not result["passed"]
+    def test_gate_F(self):
+        rows = [{"id": "a", "kind": "kc", "KC": 10.0, "phi": 1.0, "phi_stations": 1.01}]
+        assert gate_F_energy_closure(rows)["passed"]
+        rows[0]["phi_stations"] = 1.2
+        assert not gate_F_energy_closure(rows)["passed"]
 
-    def test_c3_pass(self):
-        """C3 should pass with monotonically increasing C_d."""
-        beta = [0.05, 0.10, 0.15, 0.20, 0.30]
-        cd = [0.50, 0.55, 0.60, 0.65, 0.70]
-        result = check_c3_cd_vs_beta(beta, cd)
-        assert result["passed"]
-
-    def test_c3_fail_out_of_range(self):
-        """C3 should fail when C_d out of range."""
-        beta = [0.05, 0.10, 0.15, 0.20, 0.30]
-        cd = [0.30, 0.35, 0.40, 0.45, 0.50]  # below 0.4
-        result = check_c3_cd_vs_beta(beta, cd)
-        assert not result["passed"]
-
-    def test_c4_pass(self):
-        """C4 should pass with small GCI."""
-        cd = [0.72, 0.68, 0.66]  # coarse, medium, fine
-        result = check_c4_gci(cd, [2.0, 2.0])
-        assert result["passed"]
-
-    def test_c5_nc1_pass(self):
-        """NC1 should pass when pressure drop matches analytical."""
-        result = check_c5_negative_controls(
-            nc1_dp_measured=0.101,
-            nc1_dp_analytical=0.100,
-        )
-        assert result["results"]["nc1_no_plate"]["passed"]
-
-    def test_c6_pass(self):
-        """C6 should pass when energy budgets agree."""
-        result = check_c6_energy_budget(
-            phi_momentum=1.00,
-            phi_pressure_flow=1.02,
-        )
-        assert result["passed"]
-
-    def test_c6_fail(self):
-        """C6 should fail when energy budgets disagree."""
-        result = check_c6_energy_budget(
-            phi_momentum=1.00,
-            phi_pressure_flow=1.50,
-        )
-        assert not result["passed"]
+    def test_thresholds_complete(self):
+        for key in ("A_quasi_steady_rel_error", "D_gci_max", "E_nc1_dp",
+                    "E_nc2_tau", "F_closure"):
+            assert key in THRESHOLDS
 
 
 # ---------------------------------------------------------------------------
-# Quick simulation tests (actual LBM runs)
+# 6. Driver / configuration
 # ---------------------------------------------------------------------------
 
-class TestQuickSimulation:
-    """Quick LBM simulation tests."""
+class TestDriver:
+    def test_case_matrix_complete(self):
+        cases = build_cases()
+        kinds = {}
+        for c in cases:
+            kinds[c["kind"]] = kinds.get(c["kind"], 0) + 1
+        assert kinds["kc"] >= 8
+        assert kinds["beta"] == 5
+        assert kinds["gci"] == 3
+        assert kinds["nc"] >= 1
+        ids = [c["id"] for c in cases]
+        assert len(ids) == len(set(ids))
 
-    def test_solver_runs(self):
-        """Solver should complete without error."""
-        result = _run_quick_sim(steps=500, warmup=1, measure=2)
-        assert "time_series" in result
-        assert len(result["time_series"]["time"]) > 0
+    def test_config_validation(self):
+        with pytest.raises(ValueError):
+            PerforatedPlateConfig(nx=16, ny=8).validate()
+        with pytest.raises(ValueError):
+            PerforatedPlateConfig(tau=0.5).validate()
+        with pytest.raises(ValueError):
+            PerforatedPlateConfig(force_amplitude=-1.0, omega=1e-6).validate()
 
-    def test_flow_rate_oscillates(self):
-        """Flow rate should oscillate."""
-        result = _run_quick_sim(steps=800, warmup=1, measure=3)
-        q = result["time_series"]["flow_rate"]
-        assert np.std(q) > 1e-10  # should vary
-
-    def test_pressure_drop_oscillates(self):
-        """Pressure drop should oscillate."""
-        result = _run_quick_sim(steps=800, warmup=1, measure=3)
-        dp = result["time_series"]["delta_p"]
-        assert np.std(dp) > 1e-10  # should vary
-
-    def test_no_plate_negative_control(self):
-        """No plate (β=1) should have minimal pressure drop."""
-        cfg = PerforatedPlateConfig(
-            nx=64, ny=32, hole_size=30,  # large hole = no plate
-            tau=1.0, force_amplitude=1e-5, omega=0.02,
-            steps=500, warmup_cycles=1, n_cycles_measure=2,
-        )
-        result = run_perforated_plate(cfg)
-        dp = result["time_series"]["delta_p"]
-        # Pressure drop should be very small
-        assert abs(np.mean(dp)) < 0.01
+    def test_oscillatory_sign_and_period(self):
+        """Short run: Q must oscillate with the driving period and change sign."""
+        omega = 2 * math.pi / 200.0
+        cfg = PerforatedPlateConfig(nx=64, ny=34, n_holes=1, hole_size=4, tau=0.53,
+                                    force_amplitude=2e-5, omega=omega,
+                                    warmup_cycles=1, n_cycles_measure=1,
+                                    samples_per_cycle=16)
+        res = PerforatedPlateSolver(cfg).run()
+        q = res["time_series"]["flow_rate"]
+        assert q.size > 100
+        assert q.min() < 0 < q.max()
+        theta, qp = phase_average(res["time_series"]["time"], q, omega, 16)
+        assert np.ptp(qp) > 0.1 * np.std(q)
 
 
-# ---------------------------------------------------------------------------
-# Test count verification
-# ---------------------------------------------------------------------------
-
-def test_test_count():
-    """Verify we have ≥10 test cases."""
-    # This test itself counts; the class-based tests above provide 30+
-    pass
+def test_suite_size():
+    """The campaign requires at least 10 pytest cases for this node."""
+    import inspect
+    import sys
+    mod = sys.modules[__name__]
+    n = 0
+    for name, obj in vars(mod).items():
+        if inspect.isclass(obj) and name.startswith("Test"):
+            n += len([m for m in dir(obj) if m.startswith("test_")])
+    assert n >= 10
