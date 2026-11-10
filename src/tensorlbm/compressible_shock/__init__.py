@@ -26,6 +26,12 @@ Public pieces
 ``analysis``
     Machine-checkable metrics: shock tracking, plateau extraction, Mach-stem /
     triple-point detection, shock stand-off distance, grid-convergence index.
+``resolvability``
+    Three-state verdict (PASS / UNRESOLVED / WITHHELD) for a stand-off
+    measurement: the ``R = delta/dx`` resolvability law, Richardson order /GCI
+    from grid triplets, the blockage-corner mass-flux audit and the grid budget
+    law.  ``fast2d`` (torch mirror) and ``par2d`` (y-slab process pool) are the
+    verified accelerators used for the 1200x400 grid.
 
 Scope and limits (read before trusting a number)
 ------------------------------------------------
@@ -36,7 +42,16 @@ Scope and limits (read before trusting a number)
   lineage is the Boltzmann-level flux evaluation, documented per function.
 """
 
-from . import analysis, cases, family, flux, rankine_hugoniot, solver, standoff  # noqa: F401
+from . import (  # noqa: F401
+    analysis,
+    cases,
+    family,
+    flux,
+    rankine_hugoniot,
+    resolvability,
+    solver,
+    standoff,
+)
 from .rankine_hugoniot import (  # noqa: F401
     GAMMA,
     moving_shock,
@@ -60,4 +75,5 @@ __all__ = [
     "analysis",
     "family",
     "standoff",
+    "resolvability",
 ]
