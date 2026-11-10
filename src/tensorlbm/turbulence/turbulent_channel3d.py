@@ -410,42 +410,37 @@ class TurbulentChannel3D:
 
         if cfg.smagorinsky_cs > 0.0:
             nu_t = self._smagorinsky(fneq, rho)
-            sp = (1.0 / (0.5 + 3.0 * (self.nu + nu_t))).view(1, self.N)
-            sm = (1.0 / (0.5 + TRT_MAGIC / (sp - 0.5))).view(1, self.N)
+            # flat (N,) so the downstream force block can reuse pre-allocated
+            # scratch tensors without a shape-changing ``out=`` (see b_tn)
+            sp = 1.0 / (0.5 + 3.0 * (self.nu + nu_t))
+            sm = 1.0 / (0.5 + TRT_MAGIC / (sp - 0.5))
         else:
             sp, sm = self.sp, self.sm
         ab = 1.0 - 0.5 * sp          # symmetric force weight
         amb = ab if cfg.force_scheme == "guo_sp" else 1.0 - 0.5 * sm
 
         fpost.copy_(f2)
-        # When Smagorinsky is on, sp/sm are per-cell tensors (1,N); use element-wise ops
-        if cfg.smagorinsky_cs > 0.0:
+        if isinstance(sp, torch.Tensor):
+            # Variable-viscosity (LES) branch: torch's scalar ``alpha`` only
+            # accepts numbers, so the SGS weights must be applied element-wise.
+            # ``sp``/``sm`` are per-cell relaxation rates there.
             fpost.addcmul_(fneq, sp + sm, value=-0.5)
-            fpost.addcmul_(fopp, sm - sp, value=0.5)
+            fpost.addcmul_(fopp, sm - sp, value=0.5)  # -0.5(sp - sm)
         else:
             fpost.add_(fneq, alpha=-0.5 * (sp + sm))
-            fpost.add_(fopp, alpha=0.5 * (sm - sp))
+            fpost.add_(fopp, alpha=0.5 * (sm - sp))   # -0.5(sp - sm)
 
         # ---- Guo forcing, closed form over (i, opposite-i) pairs ----
         #   w fx [ 3 cx (1 - sm/2) + 9 cu cx (1 - sp/2) - 3 ux (1 - sp/2) ]
         #   sum_i (i, opposite-i):  w fx [ 3 amb c_ix + 9 amb cu c_ix - 3 ab ux ]
         fx = self.accel * rho
-        if cfg.smagorinsky_cs > 0.0:
-            # Per-cell forcing: amb and ab are (1,N) tensors
-            cu.add_(1.0 / 3.0)
-            cu.mul_(self.dcol)
-            # 9 * amb * fx * cu - 3 * ab * fx * ux * w
-            term1 = (9.0 * amb * fx).view(1, self.N) * cu
-            term2 = (3.0 * ab * fx).view(1, self.N) * (self.wcol * u[0].view(1, self.N))
-            fpost.add_(term1 - term2)
-        else:
-            coef9 = (9.0 * amb) * fx
-            cu.add_(1.0 / 3.0)
-            cu.mul_(self.dcol)
-            cu.mul_(coef9.view(1, self.N))
-            torch.mul(u[0], 3.0 * ab, out=self.b_tn).mul_(fx)
-            cu.sub_(self.wcol * self.b_tn)
-            fpost.add_(cu)
+        coef9 = (9.0 * amb) * fx
+        cu.add_(1.0 / 3.0)
+        cu.mul_(self.dcol)
+        cu.mul_(coef9.view(1, self.N))
+        torch.mul(u[0], 3.0 * ab, out=self.b_tn).mul_(fx)
+        cu.sub_(self.wcol * self.b_tn)
+        fpost.add_(cu)
 
         # ---- streaming ----
         # streaming: the collision output lives in a scratch buffer, so the new
