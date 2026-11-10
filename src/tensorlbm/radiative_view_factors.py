@@ -30,6 +30,10 @@ key               configuration                                 dimensionless
 ``conc_spheres``  concentric spheres (inner -> outer)            r1, r2
 ``diff_disk``     differential plane element -> coaxial disk     R, H
 ``sky_dome``      uniform sky hemisphere -> tilted plane         beta [deg]
+``elem_sphere``   differential planar element -> sphere           R, d
+``sphere_plane``  sphere -> infinite plane (exactly 1/2)          R, h
+``elem_infcyl``   differential planar element -> inf. cylinder    R, h
+``cyl_plane``     infinite cylinder -> infinite plane (1/2)       R, h
 ================  ============================================  ==============
 
 All functions return ``F_{1->2}`` (view factor *from* surface 1 *to* 2) and
@@ -70,6 +74,14 @@ __all__ = [
     "numerical_differential_element_to_disk",
     "numerical_sky_dome_to_tilted_plane",
     "monte_carlo_view_factor_rectangles",
+    "vf_element_to_sphere",
+    "vf_sphere_to_infinite_plane",
+    "vf_element_to_infinite_cylinder",
+    "vf_infinite_cylinder_to_parallel_plane",
+    "numerical_element_to_sphere",
+    "numerical_element_to_infinite_cylinder",
+    "monte_carlo_sphere_to_infinite_plane",
+    "monte_carlo_element_to_infinite_cylinder",
 ]
 
 _GUARD = 1.0e-300
@@ -274,6 +286,266 @@ def vf_sky_dome_to_ground(beta_deg: float) -> float:
 # family registry + literature reference values
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# 7) sphere <-> plane  (球-平板)
+# ---------------------------------------------------------------------------
+
+
+def vf_element_to_sphere(R: float, d: float) -> float:
+    r"""Closed form: differential planar element -> sphere, :math:`F=R^2/d^2`.
+
+    The element sits at distance :math:`d` from the sphere centre and its
+    normal points at the centre.  The double-area integral
+
+    .. math::
+        F = \frac{1}{\pi}\int_{A_2}\frac{\cos\theta_1\cos\theta_2}{r^2}\,dA_2
+
+    with :math:`\cos\theta_1\cos\theta_2/r^2 = (d+R\cos t)(R+d\cos t)/r^4`
+    reduces (after the azimuthal integration) to a single integral over
+    :math:`u=\cos t\in[-1,-R/d]`,
+
+    .. math::
+        F = 2R^2\int_{-1}^{-R/d}\frac{(R+du)(Ru+d)}{(R^2+2Rdu+d^2)^2}\,du
+          = \frac{R^2}{d^2},
+
+    i.e. the whole geometry collapses to the ratio of the silhouette area
+    :math:`\pi R^2` to the sphere's projected... rather to
+    :math:`\pi d^2`; the result is exact for every :math:`d>R` and tends to
+    one as :math:`d\to R^+` (an element resting on the sphere sees it fill the
+    entire hemisphere).  Verified against
+    :func:`numerical_element_to_sphere` (independent surface quadrature).
+
+    This is the deck-element -> solar disk / ball-shaped fitting member case.
+    """
+    _positive("R, d", R, d)
+    if d <= R:
+        raise ValueError(f"element must lie outside the sphere (d > R), got d={d!r}, R={R!r}")
+    return float((R / d) ** 2)
+
+
+def vf_sphere_to_infinite_plane(R: float, center_height: float) -> float:
+    r"""Closed form: sphere -> infinite plane, exactly :math:`1/2`.
+
+    *Convex-body theorem.*  From any surface point of a convex body the
+    outward normal hemisphere is unobstructed, so a diffuse (cosine-weighted)
+    photon emitted there escapes and, for an infinite plane below the body,
+    reaches it whenever its direction has :math:`d_z<0`.  The probability of
+    that is :math:`\tfrac12(1-n_z)`; averaging over the sphere
+    (:math:`\langle n_z\rangle = 0`) gives exactly :math:`1/2`, independent of
+    both radius and height (for :math:`h \ge R`, i.e. the sphere not
+    intersecting the plane).  Verified against
+    :func:`monte_carlo_sphere_to_infinite_plane` (definitional ray casting).
+    """
+    _positive("R, center_height", R, center_height)
+    if center_height < R:
+        raise ValueError(
+            f"sphere must not cut the plane (center_height >= R), got "
+            f"center_height={center_height!r}, R={R!r}"
+        )
+    return 0.5
+
+
+def numerical_element_to_sphere(R: float, d: float, n_theta: int = 160, n_phi: int = 320) -> float:
+    r"""Quadrature ground truth for :func:`vf_element_to_sphere`.
+
+    Surface quadrature of the double-area integral with the element at
+    :math:`(0,0,-d)` and the sphere centred at the origin:
+    :math:`F=\frac{1}{\pi}\int \cos\theta_1\cos\theta_2 R^2\sin t/r^2\,dt\,d\phi`
+    over the visible cap :math:`t>\arccos(-R/d)`.
+    """
+    _positive("R, d", R, d)
+    if d <= R:
+        raise ValueError(f"element must lie outside the sphere (d > R), got d={d!r}, R={R!r}")
+    t0 = math.acos(-R / d)
+    tt, wt = _gauss01(n_theta)
+    tp, wp = _gauss01(n_phi)
+    t = t0 + (math.pi - t0) * tt
+    p = 2.0 * math.pi * tp
+    st, ct = np.sin(t)[:, None], np.cos(t)[:, None]
+    px = R * st * np.cos(p)[None, :]
+    py = R * st * np.sin(p)[None, :]
+    pz = np.broadcast_to(R * ct, px.shape)
+    rx = px
+    ry = py
+    rz = pz + d
+    r2 = rx * rx + ry * ry + rz * rz
+    r = np.sqrt(r2)
+    cos1 = rz / r  # element normal +z
+    cos2 = -((px * rx + py * ry + pz * rz) / (R * r))  # sphere outward normal
+    dA = R * R * np.sin(t)[:, None]
+    w2 = ((math.pi - t0) * wt)[:, None] * (2.0 * math.pi * wp)[None, :]
+    integrand = np.where(cos1 * cos2 > 0.0, cos1 * cos2 / r2 * dA, 0.0)
+    return float(np.sum(integrand * w2) / math.pi)
+
+
+def monte_carlo_sphere_to_infinite_plane(
+    R: float, center_height: float, n_rays: int = 400_000, seed: int = 0
+) -> dict:
+    r"""Definitional Monte-Carlo check of :func:`vf_sphere_to_infinite_plane`.
+
+    Points are uniform on the sphere, directions cosine-weighted about the
+    outward normal; a ray counts when it travels towards the plane
+    (:math:`d_z<0`).  The estimator is unbiased, so it certifies the
+    :math:`1/2` theorem without reusing its proof.
+    """
+    _positive("R, center_height", R, center_height)
+    if n_rays <= 0:
+        raise ValueError(f"n_rays must be > 0, got {n_rays}")
+    rng = np.random.default_rng(seed)
+    # uniform point on the sphere (z = center_height + R cos t)
+    u = rng.random(n_rays)
+    ct = 1.0 - 2.0 * u
+    st = np.sqrt(np.maximum(0.0, 1.0 - ct * ct))
+    phi = 2.0 * math.pi * rng.random(n_rays)
+    nvec = np.stack([st * np.cos(phi), st * np.sin(phi), ct], axis=1)  # outward normal
+    # cosine-weighted direction about nvec
+    r_a = rng.random(n_rays)
+    r_b = rng.random(n_rays)
+    ct_l = np.sqrt(1.0 - r_a)
+    st_l = np.sqrt(r_a)
+    ph_l = 2.0 * math.pi * r_b
+    ref = np.where(np.abs(nvec[:, 2:3]) < 0.9, np.array([[0.0, 0.0, 1.0]]), np.array([[1.0, 0.0, 0.0]]))
+    e1 = np.cross(ref, nvec)
+    e1 /= np.linalg.norm(e1, axis=1, keepdims=True)
+    e2 = np.cross(nvec, e1)
+    d = (
+        (st_l * np.cos(ph_l))[:, None] * e1
+        + (st_l * np.sin(ph_l))[:, None] * e2
+        + ct_l[:, None] * nvec
+    )
+    hits = int(np.count_nonzero(d[:, 2] < 0.0))
+    F = hits / n_rays
+    return {"F": float(F), "stderr": float(math.sqrt(max(F * (1.0 - F), 0.0) / n_rays)), "n_rays": int(n_rays)}
+
+
+# ---------------------------------------------------------------------------
+# 8) cylinder <-> plane  (圆柱-平板)
+# ---------------------------------------------------------------------------
+
+
+def vf_element_to_infinite_cylinder(R: float, h: float) -> float:
+    r"""Closed form: differential planar element -> infinite cylinder, :math:`F=R/h`.
+
+    The element sits at distance :math:`h` from the cylinder axis, its normal
+    perpendicular to the axis and pointing at it (the deck-element -> pipe /
+    funnel / rail case).
+
+    *Proof by cosine-projected solid angle.*  Cosine-weighted directions about
+    the element normal map bijectively onto the unit disk
+    :math:`(x,y)=(\sin\theta\cos\psi,\sin\theta\sin\psi)` with **uniform**
+    measure :math:`\tfrac1\pi\cos\theta\,d\omega = \pi^{-1}r\,dr\,d\psi`; hence
+    :math:`F` is the area fraction of that disk whose straight-line ray meets
+    the cylinder.  Writing :math:`\beta=R/h`, the ray
+    :math:`(x,z)=(\tau x,\tau\sqrt{1-r^2})` meets the circle
+    :math:`x^2+(z-h)^2=R^2` iff
+
+    .. math::
+        x^2 \le \beta^2(1-y^2),
+
+    an ellipse of semiaxes :math:`\beta` and 1 centred on the origin, of area
+    :math:`\pi\beta`.  Therefore :math:`F = \beta = R/h`, independent of the
+    cylinder's length (it is infinite) and exact for all :math:`h>R`.
+
+    Verified twice: against :func:`numerical_element_to_infinite_cylinder`
+    (3-D surface quadrature with a :math:`y=c\tan\psi` substitution) and
+    against :func:`monte_carlo_element_to_infinite_cylinder` (ray casting).
+    """
+    _positive("R, h", R, h)
+    if h <= R:
+        raise ValueError(
+            f"element must lie outside the cylinder (h > R), got h={h!r}, R={R!r}"
+        )
+    return float(R / h)
+
+
+def vf_infinite_cylinder_to_parallel_plane(R: float, center_height: float) -> float:
+    r"""Closed form: infinite cylinder -> parallel infinite plane, exactly :math:`1/2`.
+
+    Same convex-body theorem as :func:`vf_sphere_to_infinite_plane`: the
+    emitted hemisphere is unobstructed and every direction with
+    :math:`d_z<0` reaches the plane; averaging :math:`\tfrac12(1-n_z)` over the
+    cylinder :math:`(\langle n_z\rangle=0)` gives :math:`1/2` for any
+    :math:`h \ge R`.  Used as the limiting anchor of the cylinder-plate family.
+    """
+    _positive("R, center_height", R, center_height)
+    if center_height < R:
+        raise ValueError(
+            f"cylinder must not cut the plane (center_height >= R), got "
+            f"center_height={center_height!r}, R={R!r}"
+        )
+    return 0.5
+
+
+def numerical_element_to_infinite_cylinder(
+    R: float, h: float, n_phi: int = 240, n_psi: int = 240
+) -> float:
+    r"""Quadrature ground truth for :func:`vf_element_to_infinite_cylinder`.
+
+    Surface quadrature of the double-area integral over the cylinder
+    :math:`x^2+(z-h)^2=R^2` (axis along :math:`y`), with the element at the
+    origin and normal :math:`+z`:
+
+    .. math::
+        F = \frac{1}{\pi}\int_{\text{visible}}\!\!\int_{-\infty}^{\infty}
+            \frac{a\,b\,R\,(\varphi)}{(D(\varphi)+y^2)^2}\,dy\,d\varphi,
+        \qquad a = -(R+h\cos\varphi),\ b = h+R\cos\varphi,\
+        D = R^2+h^2+2hR\cos\varphi ,
+
+    with only the arc :math:`\cos\varphi < -R/h` facing the element.  The
+    axial integral is *not* evaluated in closed form: the substitution
+    :math:`y=\sqrt{D}\tan\psi` maps it to a smooth :math:`\cos^2\psi`
+    integrand on :math:`(-\pi/2,\pi/2)`, which keeps the estimator
+    independent of the closed-form reduction (and convergent even when the
+    cylinder almost touches the element, :math:`h\to R^+`).
+    """
+    _positive("R, h", R, h)
+    if h <= R:
+        raise ValueError(f"element must lie outside the cylinder (h > R), got h={h!r}, R={R!r}")
+    phi0 = math.acos(-R / h)
+    tp, wp = _gauss01(n_phi)
+    ts, ws = _gauss01(n_psi)
+    phi = phi0 + (2.0 * math.pi - 2.0 * phi0) * tp
+    psi = -0.5 * math.pi + math.pi * ts
+    cp = np.cos(phi)[:, None]
+    D = R * R + h * h + 2.0 * h * R * cp
+    a = -(R + h * cp)
+    b = h + R * cp
+    integrand = np.where(a > 0.0, a * b * R * np.cos(psi)[None, :] ** 2 / D**1.5, 0.0)
+    w2 = ((2.0 * math.pi - 2.0 * phi0) * wp)[:, None] * (math.pi * ws)[None, :]
+    return float(np.sum(integrand * w2) / math.pi)
+
+
+def monte_carlo_element_to_infinite_cylinder(
+    R: float, h: float, n_rays: int = 1_000_000, seed: int = 0
+) -> dict:
+    r"""Definitional ray-casting check of :func:`vf_element_to_infinite_cylinder`.
+
+    Cosine-weighted rays are launched from the element (``n = +z``, cylinder
+    axis parallel to ``y`` at ``x = 0, z = h``) and tested against the exact
+    quadratic :math:`t^2(d_x^2+d_z^2)-2thd_z+h^2-R^2=0`: a ray is a hit when
+    that quadratic has a positive real root.
+    """
+    _positive("R, h", R, h)
+    if n_rays <= 0:
+        raise ValueError(f"n_rays must be > 0, got {n_rays}")
+    rng = np.random.default_rng(seed)
+    u1 = rng.random(n_rays)
+    u2 = rng.random(n_rays)
+    r = np.sqrt(u1)
+    c = np.sqrt(1.0 - u1)
+    psi = 2.0 * math.pi * u2
+    dx, dz = r * np.cos(psi), c  # the axial (y) component does not enter the test
+    A = dx * dx + dz * dz
+    B = -2.0 * h * dz
+    C = h * h - R * R
+    disc = B * B - 4.0 * A * C
+    ok = disc >= 0.0
+    t = np.where(ok, (-B - np.sqrt(np.where(ok, disc, 0.0))) / (2.0 * np.maximum(A, _GUARD)), -1.0)
+    hits = int(np.count_nonzero(ok & (t > 0.0)))
+    F = hits / n_rays
+    return {"F": float(F), "stderr": float(math.sqrt(max(F * (1.0 - F), 0.0) / n_rays)), "n_rays": int(n_rays)}
+
+
 CLOSED_FORM_FAMILY: dict[str, dict] = {
     "parallel_rect": {
         "func": vf_parallel_equal_rectangles,
@@ -304,6 +576,26 @@ CLOSED_FORM_FAMILY: dict[str, dict] = {
         "func": vf_sky_dome_to_tilted_plane,
         "description": "uniform sky hemisphere -> tilted plane",
         "parameters": ("beta_deg",),
+    },
+    "elem_sphere": {
+        "func": vf_element_to_sphere,
+        "description": "differential planar element -> sphere (normal at centre)",
+        "parameters": ("R", "d"),
+    },
+    "sphere_plane": {
+        "func": vf_sphere_to_infinite_plane,
+        "description": "sphere -> infinite plane (convex-body theorem)",
+        "parameters": ("R", "center_height"),
+    },
+    "elem_infcyl": {
+        "func": vf_element_to_infinite_cylinder,
+        "description": "differential planar element -> infinite cylinder (normal on axis)",
+        "parameters": ("R", "h"),
+    },
+    "cyl_plane": {
+        "func": vf_infinite_cylinder_to_parallel_plane,
+        "description": "infinite cylinder -> parallel infinite plane (convex-body theorem)",
+        "parameters": ("R", "center_height"),
     },
 }
 
@@ -349,6 +641,42 @@ REFERENCE_VALUES: tuple[dict, ...] = (
         "args": (60.0,),
         "F_ref": 0.75,
         "source": "(1+cos60)/2 = 3/4 (exact)",
+    },
+    {
+        "class": "elem_sphere",
+        "args": (1.0, 2.0),
+        "F_ref": 0.25,
+        "source": "R^2/d^2 = 1/4 (exact; sympy-reduced integral)",
+    },
+    {
+        "class": "elem_sphere",
+        "args": (2.0, 2.5),
+        "F_ref": 0.64,
+        "source": "R^2/d^2 = (2/2.5)^2 = 0.64 (exact)",
+    },
+    {
+        "class": "sphere_plane",
+        "args": (1.0, 1.0),
+        "F_ref": 0.5,
+        "source": "convex-body theorem: sphere -> infinite plane = 1/2 (exact)",
+    },
+    {
+        "class": "elem_infcyl",
+        "args": (1.0, 2.0),
+        "F_ref": 0.5,
+        "source": "R/h = 1/2 (exact; cosine-projected unit-disk ellipse proof)",
+    },
+    {
+        "class": "elem_infcyl",
+        "args": (0.4, 2.0),
+        "F_ref": 0.2,
+        "source": "R/h = 0.4/2 = 0.2 (exact)",
+    },
+    {
+        "class": "cyl_plane",
+        "args": (1.0, 3.0),
+        "F_ref": 0.5,
+        "source": "convex-body theorem: infinite cylinder -> infinite plane = 1/2 (exact)",
     },
 )
 

@@ -1,0 +1,650 @@
+{
+  "mission": "P93W3-N02",
+  "node": "TensorLBM thermal radiation: view-factor family + Gauss-Seidel radiosity + deck field",
+  "criteria": {
+    "a_view_factor_closed_form": {
+      "requirement": "5 configurations (parallel rect, perpendicular rect, coaxial disks, sphere-plate, cylinder-plate) <= 1 % vs closed form / independent reference",
+      "tolerance": 0.01,
+      "pass": true,
+      "worst": 0.002615959128363146
+    },
+    "b_radiosity_iteration_residual": {
+      "requirement": "gray enclosure radiosity Gauss-Seidel iteration residual <= 1e-6",
+      "tolerance": 1e-06,
+      "pass": true,
+      "worst": 8.890897286485842e-07
+    },
+    "c_isothermal_cavity_energy": {
+      "requirement": "isothermal closed cavity net radiative flux <= 0.1 %",
+      "tolerance": 0.001,
+      "pass": true,
+      "worst": 1.781414606872427e-15
+    },
+    "d_deck_field_vs_analytic": {
+      "requirement": "deck temperature field vs analytic steady solution <= 3 %",
+      "tolerance": 0.03,
+      "pass": true,
+      "worst": 7.599753197598835e-05
+    }
+  },
+  "all_pass": true,
+  "detail": {
+    "a": {
+      "tolerance": 0.01,
+      "pass": true,
+      "worst_rel_error": 0.002615959128363146,
+      "n_configurations": 18,
+      "family_summary": {
+        "parallel_rect": {
+          "n": 4,
+          "max_rel_error": 1.700431184255681e-14
+        },
+        "perp_rect": {
+          "n": 3,
+          "max_rel_error": 0.002615959128363146
+        },
+        "coax_disks": {
+          "n": 3,
+          "max_rel_error": 4.069242258985937e-15
+        },
+        "sphere_plate": {
+          "n": 4,
+          "max_rel_error": 0.0025683864050071005
+        },
+        "cylinder_plate": {
+          "n": 4,
+          "max_rel_error": 0.00034011563931737486
+        }
+      },
+      "rows": [
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 0.5,
+            "Y": 0.5
+          },
+          "F_closed_form": 0.0685895888185526,
+          "F_reference": 0.0685895888185525,
+          "rel_error": 1.4163157459900824e-15,
+          "reference_method": "4-D Gauss-Legendre (n=60) of the double-area integral"
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 1.0,
+            "Y": 1.0
+          },
+          "F_closed_form": 0.19982489569838746,
+          "F_reference": 0.19982489569838796,
+          "rel_error": 2.5001907762054236e-15,
+          "reference_method": "4-D Gauss-Legendre (n=60) of the double-area integral"
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 1.0,
+            "Y": 2.0
+          },
+          "F_closed_form": 0.2858753848507147,
+          "F_reference": 0.28587538485071634,
+          "rel_error": 5.82538625285059e-15,
+          "reference_method": "4-D Gauss-Legendre (n=60) of the double-area integral"
+        },
+        {
+          "family": "parallel_rect",
+          "params": {
+            "X": 3.0,
+            "Y": 4.0
+          },
+          "F_closed_form": 0.5876160890333223,
+          "F_reference": 0.5876160890333323,
+          "rel_error": 1.700431184255681e-14,
+          "reference_method": "4-D Gauss-Legendre (n=60) of the double-area integral"
+        },
+        {
+          "family": "perp_rect",
+          "params": {
+            "H": 0.5,
+            "W": 0.5
+          },
+          "F_closed_form": 0.24063600617696168,
+          "F_reference": 0.24110833333333334,
+          "rel_error": 0.0019589831253101725,
+          "reference_method": "Monte-Carlo ray tracing (6e5 rays)",
+          "reference_stderr": 0.000552230484686958
+        },
+        {
+          "family": "perp_rect",
+          "params": {
+            "H": 1.0,
+            "W": 1.0
+          },
+          "F_closed_form": 0.20004377607540316,
+          "F_reference": 0.20048166666666667,
+          "rel_error": 0.002184192692250364,
+          "reference_method": "Monte-Carlo ray tracing (6e5 rays)",
+          "reference_stderr": 0.0005168635667775753
+        },
+        {
+          "family": "perp_rect",
+          "params": {
+            "H": 2.0,
+            "W": 1.0
+          },
+          "F_closed_form": 0.11642630139768095,
+          "F_reference": 0.11673166666666666,
+          "rel_error": 0.002615959128363146,
+          "reference_method": "Monte-Carlo ray tracing (6e5 rays)",
+          "reference_stderr": 0.00041453866861023727
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 1.0,
+            "R2": 1.0,
+            "S": 1.0
+          },
+          "F_closed_form": 0.3819660112501051,
+          "F_reference": 0.38196601125010354,
+          "rel_error": 4.069242258985937e-15,
+          "reference_method": "polar Gauss-Legendre quadrature (n=60)"
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 0.5,
+            "R2": 1.0,
+            "S": 1.0
+          },
+          "F_closed_form": 0.46887112585072543,
+          "F_reference": 0.4688711258507236,
+          "rel_error": 3.9069754771265815e-15,
+          "reference_method": "polar Gauss-Legendre quadrature (n=60)"
+        },
+        {
+          "family": "coax_disks",
+          "params": {
+            "R1": 2.0,
+            "R2": 1.0,
+            "S": 3.0
+          },
+          "F_closed_form": 0.07294901687515765,
+          "F_reference": 0.07294901687515752,
+          "rel_error": 1.7121559086132702e-15,
+          "reference_method": "polar Gauss-Legendre quadrature (n=60)"
+        },
+        {
+          "family": "sphere_plate",
+          "params": {
+            "R": 1.0,
+            "d": 2.0,
+            "mode": "element->sphere"
+          },
+          "F_closed_form": 0.25,
+          "F_reference": 0.24999999999999895,
+          "rel_error": 4.218847493575613e-15,
+          "reference_method": "3-D surface quadrature of the double-area integral"
+        },
+        {
+          "family": "sphere_plate",
+          "params": {
+            "R": 1.0,
+            "d": 5.0,
+            "mode": "element->sphere"
+          },
+          "F_closed_form": 0.04000000000000001,
+          "F_reference": 0.03999999999999983,
+          "rel_error": 4.510281037539718e-15,
+          "reference_method": "3-D surface quadrature of the double-area integral"
+        },
+        {
+          "family": "sphere_plate",
+          "params": {
+            "R": 2.0,
+            "d": 2.5,
+            "mode": "element->sphere"
+          },
+          "F_closed_form": 0.6400000000000001,
+          "F_reference": 0.6399999999999968,
+          "rel_error": 5.204170427930447e-15,
+          "reference_method": "3-D surface quadrature of the double-area integral"
+        },
+        {
+          "family": "sphere_plate",
+          "params": {
+            "R": 1.0,
+            "h": 1.5,
+            "mode": "sphere->infinite plane"
+          },
+          "F_closed_form": 0.5,
+          "F_reference": 0.5012875,
+          "rel_error": 0.0025683864050071005,
+          "reference_method": "Monte-Carlo ray tracing (4e5 rays)",
+          "reference_stderr": 0.0007905667940530863
+        },
+        {
+          "family": "cylinder_plate",
+          "params": {
+            "R": 1.0,
+            "h": 2.0,
+            "mode": "element->infinite cylinder"
+          },
+          "F_closed_form": 0.5,
+          "F_reference": 0.5000000000000075,
+          "rel_error": 1.5099033134901902e-14,
+          "reference_method": "3-D surface quadrature with y = sqrt(D) tan(psi) substitution"
+        },
+        {
+          "family": "cylinder_plate",
+          "params": {
+            "R": 0.4,
+            "h": 2.0,
+            "mode": "element->infinite cylinder"
+          },
+          "F_closed_form": 0.2,
+          "F_reference": 0.20000000000000304,
+          "rel_error": 1.5126788710517528e-14,
+          "reference_method": "3-D surface quadrature with y = sqrt(D) tan(psi) substitution"
+        },
+        {
+          "family": "cylinder_plate",
+          "params": {
+            "R": 0.9,
+            "h": 1.0,
+            "mode": "element->infinite cylinder"
+          },
+          "F_closed_form": 0.9,
+          "F_reference": 0.900000000000014,
+          "rel_error": 1.554312234475195e-14,
+          "reference_method": "3-D surface quadrature with y = sqrt(D) tan(psi) substitution"
+        },
+        {
+          "family": "cylinder_plate",
+          "params": {
+            "R": 0.8,
+            "h": 2.0,
+            "mode": "infinite cylinder->infinite plane"
+          },
+          "F_closed_form": 0.5,
+          "F_reference": 0.49983,
+          "rel_error": 0.00034011563931737486,
+          "reference_method": "Monte-Carlo ray tracing (4e5 rays)",
+          "reference_stderr": 0.0007905693693471814
+        }
+      ]
+    },
+    "b": {
+      "tolerance": 1e-06,
+      "pass": true,
+      "worst_residual": 8.890897286485842e-07,
+      "worst_rel_diff_vs_lu": 6.047965062071387e-06,
+      "rows": [
+        {
+          "enclosure": "cube_two_eps",
+          "n_surfaces": 6,
+          "iterations": 13,
+          "final_residual": 4.488106345407429e-07,
+          "algebraic_residual": 1.3666102947034314e-07,
+          "energy_residual_vs_lu": 7.086736962235504e-17,
+          "spectral_radius": 0.5301331794274307,
+          "max_rel_diff_vs_lu": 1.9315655702527678e-07,
+          "lu_energy_residual": 0.0,
+          "pass": true
+        },
+        {
+          "enclosure": "cube_low_eps",
+          "n_surfaces": 6,
+          "iterations": 87,
+          "final_residual": 8.890897286485842e-07,
+          "algebraic_residual": 4.298795895701152e-06,
+          "energy_residual_vs_lu": 9.559983544559519e-16,
+          "spectral_radius": 0.9332337127630642,
+          "max_rel_diff_vs_lu": 6.047965062071387e-06,
+          "lu_energy_residual": 9.882298648539277e-16,
+          "pass": true
+        },
+        {
+          "enclosure": "concentric_spheres",
+          "n_surfaces": 2,
+          "iterations": 5,
+          "final_residual": 1.2343972192203832e-07,
+          "algebraic_residual": 2.183775788725761e-09,
+          "energy_residual_vs_lu": 2.6262877231945416e-16,
+          "spectral_radius": 0.5755314341748389,
+          "max_rel_diff_vs_lu": 2.1530184105685707e-09,
+          "lu_energy_residual": 1.6939555814604793e-16,
+          "pass": true
+        },
+        {
+          "enclosure": "three_surface_reradiating",
+          "n_surfaces": 3,
+          "iterations": 25,
+          "final_residual": 6.275098404412936e-07,
+          "algebraic_residual": 3.7890079709585307e-07,
+          "energy_residual_vs_lu": 3.4330932719665273e-16,
+          "spectral_radius": 0.7914423895651891,
+          "max_rel_diff_vs_lu": 8.27963393020937e-07,
+          "lu_energy_residual": 9.7017778499831e-16,
+          "pass": true
+        },
+        {
+          "enclosure": "deck_sky_sea_open",
+          "n_surfaces": 3,
+          "iterations": 3,
+          "final_residual": 1.9037541703685258e-10,
+          "algebraic_residual": 1.5933724012600993e-16,
+          "energy_residual_vs_lu": 4.0913013713767405e-17,
+          "spectral_radius": 0.039996250585900915,
+          "max_rel_diff_vs_lu": 3.9770707522596397e-16,
+          "lu_energy_residual": 7.511594640395119e-14,
+          "pass": true
+        }
+      ]
+    },
+    "c": {
+      "tolerance": 0.001,
+      "pass": true,
+      "worst_rel_net_power": 1.781414606872427e-15,
+      "worst_surface_flux_rel": 4.4520931557341516e-07,
+      "rows": [
+        {
+          "cavity": "cube",
+          "T_K": 300.0,
+          "emissivity": 0.05,
+          "net_power_W": 6.821210263296962e-13,
+          "emitted_power_W": 551.1603935268,
+          "rel_net_power": 1.2376089326101554e-15,
+          "max_surface_flux_rel": 4.452093154847962e-07
+        },
+        {
+          "cavity": "cube",
+          "T_K": 300.0,
+          "emissivity": 0.3,
+          "net_power_W": 4.547473508864641e-13,
+          "emitted_power_W": 3306.9623611608,
+          "rel_net_power": 1.375121036233506e-16,
+          "max_surface_flux_rel": 1.6209648724271921e-07
+        },
+        {
+          "cavity": "cube",
+          "T_K": 300.0,
+          "emissivity": 0.7,
+          "net_power_W": 0.0,
+          "emitted_power_W": 7716.2455093752005,
+          "rel_net_power": 0.0,
+          "max_surface_flux_rel": 2.251910899928033e-08
+        },
+        {
+          "cavity": "cube",
+          "T_K": 300.0,
+          "emissivity": 1.0,
+          "net_power_W": 0.0,
+          "emitted_power_W": 11023.207870536,
+          "rel_net_power": 0.0,
+          "max_surface_flux_rel": 0.0
+        },
+        {
+          "cavity": "cube",
+          "T_K": 450.0,
+          "emissivity": 0.05,
+          "net_power_W": -1.8189894035458565e-12,
+          "emitted_power_W": 2790.249492229425,
+          "rel_net_power": 6.519092319921807e-16,
+          "max_surface_flux_rel": 4.4520931557341516e-07
+        },
+        {
+          "cavity": "cube",
+          "T_K": 450.0,
+          "emissivity": 0.3,
+          "net_power_W": 0.0,
+          "emitted_power_W": 16741.49695337655,
+          "rel_net_power": 0.0,
+          "max_surface_flux_rel": 1.6209648709756757e-07
+        },
+        {
+          "cavity": "cube",
+          "T_K": 450.0,
+          "emissivity": 0.7,
+          "net_power_W": -1.8189894035458565e-12,
+          "emitted_power_W": 39063.49289121195,
+          "rel_net_power": 4.6564945142298615e-17,
+          "max_surface_flux_rel": 2.2519109016087366e-08
+        },
+        {
+          "cavity": "cube",
+          "T_K": 450.0,
+          "emissivity": 1.0,
+          "net_power_W": 0.0,
+          "emitted_power_W": 55804.9898445885,
+          "rel_net_power": 0.0,
+          "max_surface_flux_rel": 0.0
+        },
+        {
+          "cavity": "cube",
+          "T_K": 700.0,
+          "emissivity": 0.05,
+          "net_power_W": 2.9103830456733704e-11,
+          "emitted_power_W": 16337.4827760228,
+          "rel_net_power": 1.781414606872427e-15,
+          "max_surface_flux_rel": 4.4520931553891905e-07
+        },
+        {
+          "cavity": "cube",
+          "T_K": 700.0,
+          "emissivity": 0.3,
+          "net_power_W": -7.275957614183426e-12,
+          "emitted_power_W": 98024.8966561368,
+          "rel_net_power": 7.422560861968446e-17,
+          "max_surface_flux_rel": 1.6209648725514172e-07
+        },
+        {
+          "cavity": "cube",
+          "T_K": 700.0,
+          "emissivity": 0.7,
+          "net_power_W": -7.275957614183426e-12,
+          "emitted_power_W": 228724.7588643192,
+          "rel_net_power": 3.181097512272191e-17,
+          "max_surface_flux_rel": 2.251910899407423e-08
+        },
+        {
+          "cavity": "cube",
+          "T_K": 700.0,
+          "emissivity": 1.0,
+          "net_power_W": 0.0,
+          "emitted_power_W": 326749.65552045597,
+          "rel_net_power": 0.0,
+          "max_surface_flux_rel": 0.0
+        },
+        {
+          "cavity": "concentric_spheres",
+          "T_K": 500.0,
+          "emissivity": 0.8,
+          "net_power_W": -1.1429047487056254e-11,
+          "emitted_power_W": 320652.11912101007,
+          "rel_net_power": 3.564313723666076e-17,
+          "max_surface_flux_rel": 9.475366162707038e-09
+        }
+      ]
+    },
+    "d": {
+      "tolerance": 0.03,
+      "pass": true,
+      "worst_rel_error": 7.599753197598835e-05,
+      "solar_components_W_m2": {
+        "direct_incident": 692.8203230275509,
+        "diffuse_incident": 120.0,
+        "ground_incident": 0.0,
+        "incident_total": 812.8203230275509,
+        "direct": 415.6921938165305,
+        "diffuse": 72.0,
+        "ground_reflected": 0.0,
+        "total": 487.6921938165305
+      },
+      "d1_through_thickness": [
+        {
+          "ny": 6,
+          "steps": 54400,
+          "converged": true,
+          "T_top_K": 304.0434445585074,
+          "T_bottom_K": 303.87596459869945,
+          "T_top_analytic_K": 304.08374960199467,
+          "q_top_W_m2": 387.5964971232336,
+          "q_analytic_W_m2": 386.88154124160013,
+          "q_rel_error": 0.0018479968812649221,
+          "max_rel_error_field": 7.364806628311119e-05,
+          "energy_residual": 9.611358315186456e-08,
+          "pass": true
+        },
+        {
+          "ny": 8,
+          "steps": 96600,
+          "converged": true,
+          "T_top_K": 304.05353476167636,
+          "T_bottom_K": 303.874174807951,
+          "T_top_analytic_K": 304.08374960199467,
+          "q_top_W_m2": 387.4175194663827,
+          "q_analytic_W_m2": 386.88154124160013,
+          "q_rel_error": 0.0013853807112701555,
+          "max_rel_error_field": 5.5189384082423814e-05,
+          "energy_residual": 9.981809961154135e-08,
+          "pass": true
+        }
+      ],
+      "d2_shadow_edge": {
+        "width_m": 0.2,
+        "nx": 32,
+        "ny": 4,
+        "steps": 24200,
+        "converged": true,
+        "T_min_K": 301.5004711253615,
+        "T_max_K": 302.87398834973925,
+        "max_rel_error_field": 7.599753197598835e-05,
+        "energy_residual": 9.124244137913948e-08,
+        "q_top_min_W_m2": 5.43238195612048,
+        "q_top_max_W_m2": 419.3767586921376,
+        "T_linearisation_K": 304.08374960199467,
+        "pass": true
+      },
+      "analytic_1d": {
+        "T_surface_K": 304.08374960199467,
+        "q_W_m2": 386.88154124160013,
+        "residual_W_m2": -1.9895196601282805e-12,
+        "resistance_K_m2_W": 0.010555555555555556
+      }
+    },
+    "solar_boundary": {
+      "rows": [
+        {
+          "tilt_deg": 0.0,
+          "F_sky": 1.0,
+          "F_sea": 0.0,
+          "direct_W_m2": 415.6921938165305,
+          "diffuse_W_m2": 72.0,
+          "ground_reflected_W_m2": 0.0,
+          "total_W_m2": 487.6921938165305,
+          "aggregate_check_rel": 0.0
+        },
+        {
+          "tilt_deg": 30.0,
+          "F_sky": 0.9330127018922194,
+          "F_sea": 0.06698729810778059,
+          "direct_W_m2": 480.0,
+          "diffuse_W_m2": 67.17691453623979,
+          "ground_reflected_W_m2": 1.670765814495914,
+          "total_W_m2": 548.8476803507357,
+          "aggregate_check_rel": 0.0
+        },
+        {
+          "tilt_deg": 60.0,
+          "F_sky": 0.75,
+          "F_sea": 0.25,
+          "direct_W_m2": 415.6921938165306,
+          "diffuse_W_m2": 54.0,
+          "ground_reflected_W_m2": 6.235382907247957,
+          "total_W_m2": 475.92757672377854,
+          "aggregate_check_rel": 0.0
+        },
+        {
+          "tilt_deg": 90.0,
+          "F_sky": 0.5,
+          "F_sea": 0.5,
+          "direct_W_m2": 240.00000000000006,
+          "diffuse_W_m2": 36.0,
+          "ground_reflected_W_m2": 12.470765814495914,
+          "total_W_m2": 288.47076581449596,
+          "aggregate_check_rel": 0.0
+        }
+      ],
+      "worst_aggregate_rel": 0.0
+    },
+    "numerical_studies": {
+      "tau_sensitivity": [
+        {
+          "tau": 1.0,
+          "dt_s": 0.25077160493827155,
+          "steps": 54400,
+          "converged": true,
+          "T_top_K": 304.0434445585074,
+          "max_rel_error_field": 7.364806628311119e-05
+        },
+        {
+          "tau": 2.0,
+          "dt_s": 0.7523148148148149,
+          "steps": 18400,
+          "converged": true,
+          "T_top_K": 304.11387987718376,
+          "max_rel_error_field": 0.00015799689272462714
+        },
+        {
+          "tau": 5.0,
+          "dt_s": 2.2569444444444446,
+          "steps": 6600,
+          "converged": true,
+          "T_top_K": 304.7844720288242,
+          "max_rel_error_field": 0.002363414492827439
+        },
+        {
+          "tau": 20.0,
+          "dt_s": 9.780092592592593,
+          "steps": 3800,
+          "converged": true,
+          "T_top_K": 312.9268760589653,
+          "max_rel_error_field": 0.029141838772462438
+        }
+      ],
+      "observed_grid_order": 1.0029379556883335
+    }
+  },
+  "figures": [
+    {
+      "name": "view_factor_family",
+      "caption": "Five-configuration closed-form view-factor family (parallel rectangles, perpendicular rectangles, coaxial disks, sphere-plate, cylinder-plate) against independent quadrature / Monte-Carlo estimators.",
+      "path": "figures/p93w3_n02/p93_fig_a_view_factors.png"
+    },
+    {
+      "name": "radiosity_convergence",
+      "caption": "Gauss-Seidel radiosity residual history for five enclosures; the annotated spectral radius rho(diag(1-eps)F) sets the asymptotic rate.",
+      "path": "figures/p93w3_n02/p93_fig_b_radiosity_convergence.png"
+    },
+    {
+      "name": "isothermal_cavity",
+      "caption": "Isothermal closed cavity: net radiative power normalised by the emitted power, over three temperatures and four emissivities (gate 0.1 %).",
+      "path": "figures/p93w3_n02/p93_fig_c_isothermal_cavity.png"
+    },
+    {
+      "name": "deck_1d_field",
+      "caption": "Through-thickness deck field: LBM (two resolutions) against the analytic bisection+linear solution, and the nonlinear surface balance whose root defines the surface temperature.",
+      "path": "figures/p93w3_n02/p93_fig_d_deck_1d_field.png"
+    },
+    {
+      "name": "deck_2d_shadow",
+      "caption": "Two-dimensional deck field across a shadow edge: LBM pcolormesh and top/bottom-row comparison with the exact cosine-series solution.",
+      "path": "figures/p93w3_n02/p93_fig_d2_shadow_edge.png"
+    },
+    {
+      "name": "solar_components",
+      "caption": "Absorbed solar flux split into direct beam, isotropic sky diffuse and ground(sea)-reflected components versus panel tilt.",
+      "path": "figures/p93w3_n02/p93_fig_solar_components.png"
+    }
+  ]
+}
