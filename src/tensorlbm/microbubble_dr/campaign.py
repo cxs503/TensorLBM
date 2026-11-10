@@ -1,355 +1,331 @@
-"""P106W2-N01 campaign driver: microbubble drag reduction in a turbulent channel.
+"""Campaign driver for IN67-N01: micro-bubble drag reduction, mechanism split.
 
-Two-stage driver so that the expensive runs can be spread over the cluster:
+Cases
+-----
+``reference``   single-phase plane channel (uniform liquid relaxation time).
+``zero_gas``    the two-phase machinery with **no gas**: negative control C4.
+``single_dN``   one bubble sized for ``d+ = N`` (5 / 10 / 20 / 40): the C5
+                size scan, ``d+ -> infinity`` limit included as the slug case.
+``void_nK``     K bubbles at ``d+ = 10``: the void-fraction path to zero (C4).
 
-``--only NAME``   run one case (single-phase baseline, gas-fraction scan, bubble
-                  diameter scan, negative controls) and write ``case_NAME.json``.
-``--merge``       read all case JSONs, run the FIK mechanism decomposition,
-                  evaluate the four machine criteria, write ``campaign.json``
-                  and the figures.
+The scan is deliberately organised as *fixed bubble count* for the size sweep and
+*fixed size* for the void-fraction sweep, because at the resolved friction
+Reynolds number (``Re_tau ~ 20``) a ``d+ = 20`` bubble is already a large
+fraction of the channel: holding the void fraction fixed across the whole size
+range is geometrically impossible, and pretending otherwise would hide the
+confound.  ``DR`` is therefore also quoted per unit void fraction.
 
-Usage::
-
-    PYTHONPATH=src python3 -m tensorlbm.microbubble_dr.campaign --out artifacts/microbubble_dr_p106w2_n01 --only baseline
-    PYTHONPATH=src python3 -m tensorlbm.microbubble_dr.campaign --out artifacts/microbubble_dr_p106w2_n01 --merge
+Usage
+-----
+``python -m tensorlbm.microbubble_dr.campaign --shard 0/3`` prints one
+``##RESULT## {...}`` line per case; ``--assemble a.json b.json ...`` merges the
+collected summaries, applies the criteria and writes ``results.json`` plus
+figures.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
-import os
+import sys
+from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
-import numpy as np
+from .channel import MicrobubbleChannel2D, MicrobubbleConfig
+from .decomposition import (
+    einstein_bubbly_viscosity,
+    laminar_wall_shear,
+    mechanism_split,
+    slip_length_drag_reduction,
+)
 
-from .channel import ChannelConfig, probe_coexistence, run_case
-from .fik import Profile, fik_decomposition, momentum_consistency, residual_stress
+ARTIFACT_DIR = Path("artifacts/microbubble_dr_in67_n01")
 
-#: Dean (1978) correlation, used only to *initialise* the drive (never as a
-#: result): Cf = 0.073 Re_b^-0.25.
-DEAN_A, DEAN_B = 0.073, 0.25
+#: case name -> (config overrides, reference label it is compared against)
+CASES: dict[str, dict[str, Any]] = {
+    "reference": {"n_bubbles": 0, "d_plus": 0.0, "void_fraction": 0.0,
+                  "viscosity_contrast": False},
+    "zero_gas": {"n_bubbles": 0, "d_plus": 10.0},
+    "single_d5": {"n_bubbles": 1, "d_plus": 5.0},
+    "single_d10": {"n_bubbles": 1, "d_plus": 10.0},
+    "single_d20": {"n_bubbles": 1, "d_plus": 20.0},
+    "single_d40": {"n_bubbles": 1, "d_plus": 40.0},
+    "void_n2": {"n_bubbles": 2, "d_plus": 10.0},
+    "void_n4": {"n_bubbles": 4, "d_plus": 10.0},
+    "void_n8": {"n_bubbles": 8, "d_plus": 10.0},
+}
 
-
-def cf_dean(re_b: float) -> float:
-    return DEAN_A * re_b ** (-DEAN_B)
-
-
-def base_config() -> dict:
-    """Common single-phase state; every case shares ``U_target`` and ``nu``."""
-    return dict(
-        nx=56,
-        ny=40,
-        nz=24,
-        Re_tau=180.0,
-        u_tau=0.006,
-        U_target=0.108,
-        rho_l=1.38,
-        rho_g=0.30,
-        G=4.3,   # measured: stable two-phase at tau~0.5024 (G=4.5 diverges)
-        g_b=-2.0e-4,
-        lam_trt=None,
-        n_warmup=1500,
-        n_steps=4500,
-        sample_every=20,
-        pump_gain=0.05,
-        seed=1234,
-    )
+BASE = dict(nx=96, ny=97, n_steps=8000, sample_every=20, control_every=50,
+            control_gain=0.02, J_target=0.18, seed=20261109)
 
 
-def cases() -> dict[str, dict]:
-    b = base_config()
-    out: dict[str, dict] = {}
-    # single-phase reference (SC switched off entirely)
-    out["baseline"] = {**b, "tag": "baseline", "G": 0.0, "alpha": 0.0}
-    # negative control 1: the SC model active, but no gas at all
-    # rho_l = 1.45 sits just above the measured coexistence liquid density, so the
-    # liquid is single-phase stable and no vapour can nucleate: gas -> 0 exactly.
-    out["neg_no_gas"] = {**b, "tag": "neg_no_gas", "alpha": 0.0, "rho_l": 1.45}
-    # gas-fraction scan at fixed bubble diameter (d+ = 60 -> 8 lattice cells)
-    for a in (0.003, 0.01, 0.03):
-        out[f"alpha_{a:g}"] = {**b, "tag": f"alpha_{a:g}", "alpha": a, "d_plus": 60.0}
-    # bubble-diameter scan at MATCHED BUBBLE COUNT (one bubble): the gas volume
-    # fraction is quantised by the domain (alpha = pi d^3/6 / V), so matching the
-    # gas *volume* is impossible at d+ = 180; matching the bubble count keeps the
-    # comparison controlled and the achieved alpha is reported per case.
-    out["dplus_120"] = {**b, "tag": "dplus_120", "alpha": 0.023, "d_plus": 120.0}
-    out["dplus_180"] = {**b, "tag": "dplus_180", "alpha": 0.078, "d_plus": 180.0}
+def build_config(name: str, **overrides: Any) -> MicrobubbleConfig:
+    if name not in CASES:
+        raise KeyError(f"unknown case {name!r}")
+    kw = {**BASE, **overrides, **CASES[name]}
+    return MicrobubbleConfig(**kw)
+
+
+def summarise(name: str, run: dict[str, Any], n_prof: int = 12,
+              keep_fields: bool = False) -> dict[str, Any]:
+    """Compact, transportable summary of one run (profiles down-sampled)."""
+    prof = run["profile"]
+    y = prof["y"]
+    idx = [int(round(i)) for i in range(0, len(y), max(1, len(y) // n_prof))]
+    keep = {
+        key: [float(prof[key][i]) for i in idx]
+        for key in ("u", "rho", "mu", "rho_uv", "alpha")
+    }
+    keep["y"] = [float(y[i]) for i in idx]
+    drop = {"profile", "tau_w_history", "bubble_centers"}
+    if not keep_fields:
+        # large field snapshots are only needed for the local visualisation case;
+        # keeping them out of the transportable summary keeps the shard logs small
+        drop |= {"alpha_field", "u_field"}
+    out = {k: v for k, v in run.items() if k not in drop}
+    out["case"] = name
+    out["profile"] = keep
+    out["bubble_centers"] = [[round(c[0], 3), round(c[1], 3)] for c in run["bubble_centers"]]
+    out["tau_w_history"] = run["tau_w_history"][::10]
     return out
 
 
-def ensure_dir(p: Path) -> Path:
-    p.mkdir(parents=True, exist_ok=True)
-    return p
+def run_case(name: str, **overrides: Any) -> dict[str, Any]:
+    cfg = build_config(name, **overrides)
+    result = MicrobubbleChannel2D(cfg).run()
+    return summarise(name, result)
 
 
-def run_one(name: str, outdir: Path, overrides: dict | None = None) -> dict:
-    params = cases()[name]
-    if overrides:
-        params.update({k: v for k, v in overrides.items() if k in params})
-    cfg = ChannelConfig(**params)
-    rec = run_case(cfg, verbose=os.environ.get("MBDR_VERBOSE", "1") != "0")
-    rec["name"] = name
-    path = ensure_dir(outdir) / f"case_{name}.json"
-    payload = json.loads(json.dumps(rec, default=lambda o: o.tolist() if hasattr(o, "tolist") else float(o)))
-    payload["config"] = params
-    path.write_text(json.dumps(payload, indent=2))
-    return payload
+def _spread(values: list[float]) -> float:
+    vals = [v for v in values if math.isfinite(v) and v > 0.0]
+    if len(vals) < 2:
+        return 0.0
+    mean = sum(vals) / len(vals)
+    return (max(vals) - min(vals)) / mean
 
 
-def _add_provenance(d: dict, files: list[Path]) -> dict:
-    d["provenance"] = {
-        "sha256": {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in files if f.exists()},
-        "generator": "tensorlbm.microbubble_dr.campaign",
-    }
-    return d
+def evaluate(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Apply criteria C1-C5 and build the mechanism table."""
+    ref = results["reference"]
+    mu_l = ref["config"]["rho_liquid"] * ref["config"]["nu_liquid"]
+    h = (ref["config"]["ny"] - 1) / 2.0
+    tau_w0 = ref["tau_w"]
+    ref_balance = ref["tau_w_balance"]
+    J_target = float(ref["config"]["J_target"])
 
-
-def merge(outdir: Path) -> dict:
-    """Decompose all cases, evaluate the criteria, write campaign.json + figures."""
-    outdir = ensure_dir(outdir)
-    recs: dict[str, dict] = {}
-    for f in sorted(outdir.glob("case_*.json")):
-        r = json.loads(f.read_text())
-        recs[r["name"]] = r
-    if "baseline" not in recs:
-        raise SystemExit("baseline case missing -- run --only baseline first")
-    base = recs["baseline"]
-
-    def prof(r: dict) -> Profile:
-        return Profile(
-            y=np.asarray(r["y"]),
-            rho=np.asarray(r["rho"]),
-            u=np.asarray(r["u"]),
-            uv=np.asarray(r["uv"]),
-            alpha=np.asarray(r["alpha"]),
-            U_b=r["U_b"],
-            F0=r["F0"],
-            H=r["H"],
-            nu=r["nu"],
-            rho_b=r["rho_b"],
-        )
-
-    base_p = prof(base)
-    out: dict = {
-        "node": "P106W2-N01",
-        "repo": "TensorLBM",
-        "module": "tensorlbm.microbubble_dr",
-        "cases": {k: {kk: v[kk] for kk in ("U_b", "U_target", "F0", "Re_tau_meas", "u_tau_meas",
-                                           "alpha_integral", "alpha_integral_drift_rel",
-                                           "mass_drift_rel", "n_samples", "runtime_s",
-                                           "d_plus_actual", "wall_units")}
-                  for k, v in recs.items()},
-        "criteria": {},
-        "mechanisms": {},
-        "profiles": {},
-    }
-
-    # ---- baseline momentum consistency (three-way u_tau) --------------------
-    mc_base = momentum_consistency(base)
-    out["criteria"]["momentum_baseline"] = {
-        "u_tau_grad": mc_base["u_tau_grad"],
-        "u_tau_reynolds": mc_base["u_tau_reynolds"],
-        "u_tau_force": mc_base["u_tau_force"],
-        "u_tau_mem": mc_base["u_tau_mem_bottom"],
-        "spread_rel": mc_base["u_tau_spread_rel"],
-        "threshold": 0.02,
-        "pass": bool(mc_base["u_tau_spread_rel"] <= 0.02),
-    }
-
-    # ---- per-case decomposition --------------------------------------------
-    for name, r in recs.items():
-        if name == "baseline":
-            continue
-        p = prof(r)
-        C_guess = r["F0"] * r["H"] / 2.0      # first guess for tau_b extraction
-        tb = residual_stress(p.y, p.u, p.rho, p.uv, p.nu, C_guess, p.F0)
-        d = fik_decomposition(p, base_p, tau_b=tb)
-        mc = momentum_consistency(r)
-        # the FIK wall shear vs the independent momentum-exchange measurement
-        closure = abs(d["tau_top"] - r["mem_top"]) / max(r["mem_top"], 1e-30)
-        out["mechanisms"][name] = {
-            "DR": d["DR"],
-            "DR_visc": d["DR_visc"],
-            "DR_turb": d["DR_turb"],
-            "DR_slip": d["DR_slip"],
-            "dCf": d["dCf"],
-            "dCf_visc": d["dCf_visc"],
-            "dCf_turb": d["dCf_turb"],
-            "dCf_slip": d["dCf_slip"],
-            "tau_top_fik": d["tau_top"],
-            "tau_top_mem": r["mem_top"],
-            "fik_vs_mem_rel": closure,
-            "sum_residual_rel": d["sum_residual_rel"],
-            "criterion_sum_pass": bool(
-                abs(d["dCf_visc"] + d["dCf_turb"] + d["dCf_slip"] - d["dCf"])
-                <= 0.03 * abs(d["dCf"]) + 1e-12
-            ),
-            "criterion_fik_mem_pass": bool(closure <= 0.03),
-            "momentum": mc,
-            "alpha_integral_drift_rel": r["alpha_integral_drift_rel"],
-            "mass_drift_rel": r["mass_drift_rel"],
+    cases: dict[str, Any] = {}
+    for name, res in results.items():
+        entry: dict[str, Any] = {
+            "d_plus_target": res["config"]["d_plus_target"],
+            "d_plus_achieved": res["d_plus_achieved"],
+            "n_bubbles": res["n_bubbles_placed"],
+            "alpha_mean": res["alpha_mean"],
+            "alpha_wall": res["alpha_wall"],
+            "tau_w": res["tau_w"],
+            "tau_w_std_rel": res["tau_w_std"] / res["tau_w"] if res["tau_w"] else None,
+            "u_tau": res["u_tau"],
+            "Re_tau": res["Re_tau"],
+            "Re_bulk": res["Re_bulk"],
+            "J": res["J"],
+            "gx": res["gx"],
+            "mass_drift": res["mass_drift"],
+            "alpha_integral_drift": res["alpha_integral_drift"],
+            "u_slip": res["u_slip"],
+            "slip_length": res["slip_length"],
+            "bubble_diameter_lattice": res["bubble_diameter_lattice"],
+            # C2: three independent friction-velocity estimates
+            "u_tau_gradient": res["u_tau_gradient"],
+            "u_tau_identity": res["u_tau_identity"],
+            "u_tau_balance": res["u_tau_balance"],
+            # C2 triad: mean-velocity gradient / Reynolds-stress identity /
+            # total shear from the momentum balance (the momentum-exchange
+            # estimator is reported separately: it carries a ~5 % wall-force
+            # offset of the bounce-back accumulator, see the report's trap list)
+            "u_tau_spread": _spread([res["u_tau_gradient"], res["u_tau_identity"],
+                                     res["u_tau_balance"]]),
+            "u_tau_exchange": res["u_tau_exchange"],
+            "tau_w_exchange": res["tau_w_exchange"],
+            "DR_balance": (ref_balance - res["tau_w_balance"]) / ref_balance,
+            "DR_exchange": (ref["tau_w_exchange"] - res["tau_w_exchange"]) / ref["tau_w_exchange"],
+            "A_viscous": res["A_viscous"],
+            "B_reynolds": res["B_reynolds"],
+            "tau_w_identity": res["tau_w_identity"],
         }
-        out["profiles"][name] = {
-            "y": r["y"],
-            "u": r["u"],
-            "rho": r["rho"],
-            "uv": r["uv"],
-            "alpha": r["alpha"],
-            "tau_b": tb.tolist(),
-        }
+        entry["DR"] = (tau_w0 - res["tau_w"]) / tau_w0
+        # the mechanism split is only defined at matched mass flux; cases whose
+        # drive hit the admissible band are flagged instead of being averaged in
+        entry["flux_matched"] = abs(res["J"] / J_target - 1.0) <= 0.02
+        entry["J_ratio"] = res["J"] / J_target
+        entry["gx_over_gx0"] = res.get("gx_over_gx0")
+        entry["DR_analytic_laminar"] = (laminar_wall_shear(mu_l, ref["J"] / ref["config"]["rho_liquid"], h)
+                                        - res["tau_w"]) / tau_w0
+        entry["nu_mix_ratio"] = res["mu_mean"] / mu_l
+        entry["DR_einstein_expectation"] = 1.0 - einstein_bubbly_viscosity(res["alpha_mean"])
+        if name != "reference":
+            entry.update(mechanism_split(ref, res, mu_l, h))
+            entry["DR_slip_analytic"] = slip_length_drag_reduction(res["slip_length"], h)
+            entry["DR_per_alpha"] = entry["DR_total"] / res["alpha_mean"] if res["alpha_mean"] > 1e-9 else None
+        cases[name] = entry
 
-    # ---- criteria ----------------------------------------------------------
-    ms = out["mechanisms"]
-    neg = ms.get("neg_no_gas", {})
-    out["criteria"]["negative_control_zero_gas"] = {
-        "DR": neg.get("DR"),
-        "dCf_over_Cf": neg.get("DR"),
-        "threshold": 0.005,
-        "pass": bool(abs(neg.get("DR", 1.0)) <= 0.005),
+    # -- criteria ---------------------------------------------------------
+    two_phase = [c for c in cases.values() if c["n_bubbles"] > 0]
+    # physical premise of the mechanism split: matched mass flux.  Cases whose
+    # drive hit the admissible band cannot be flux-matched and are reported,
+    # not silently averaged in (see the report's choke-limited note).
+    matched = [c for c in two_phase if c["flux_matched"]]
+    c1_max_mass = max(c["mass_drift"] for c in cases.values())
+    c1_max_alpha = max((c["alpha_integral_drift"] for c in two_phase), default=0.0)
+    c2_worst = max(c["u_tau_spread"] for c in cases.values())
+    c2_worst_matched = max((c["u_tau_spread"] for c in cases.values()
+                            if c["flux_matched"] and c["n_bubbles"] > 0), default=0.0)
+    c2_exchange_worst = max(abs(c["u_tau_exchange"] / c["u_tau_balance"] - 1.0)
+                            for c in cases.values())
+    c3_worst = max((abs(c["closure_rel"]) for c in matched), default=0.0)
+    c4_zero = abs(cases["zero_gas"]["DR"])
+    void_path = sorted((c["alpha_mean"], c["DR"]) for k, c in cases.items()
+                       if k.startswith("void_"))
+    # the response must grow in *magnitude* with the gas load and vanish with it;
+    # the sign of the response is physics, not a criterion (here it is a drag
+    # increase, see the report)
+    c4_monotone = all(abs(b[1]) >= abs(a[1]) - 1e-9
+                      for a, b in zip(void_path, void_path[1:]))
+    size_path = [("single_d5", 5), ("single_d10", 10), ("single_d20", 20), ("single_d40", 40)]
+    dr_size = [(d, cases[k]["DR"]) for k, d in size_path if k in cases]
+    dr_peak = max(dr_size, key=lambda t: t[1]) if dr_size else (0, 0.0)
+    c5_record = {
+        "d_plus_vs_DR": dr_size,
+        "peak_at_d_plus": dr_peak[0],
+        "later_d_plus": [t for t in dr_size if t[0] > dr_peak[0]],
+        "saturation_or_decay": all(t[1] <= dr_peak[1] * 1.05 for t in dr_size if t[0] > dr_peak[0]),
+        "all_runs_finite": all(math.isfinite(c["tau_w"]) for c in cases.values()),
     }
-    alpha_cases = {k: v for k, v in ms.items() if k.startswith("alpha_")}
-    out["criteria"]["mass_conservation"] = {
-        name: {
-            "alpha_integral_drift_rel": v["alpha_integral_drift_rel"],
-            "mass_drift_rel": v["mass_drift_rel"],
-            "pass": bool(v["alpha_integral_drift_rel"] <= 0.01),
-        }
-        for name, v in alpha_cases.items()
+    criteria = {
+        "C1_mass_conservation": {
+            "max_mass_drift": c1_max_mass,
+            "max_alpha_integral_drift": c1_max_alpha,
+            "threshold": 0.01,
+            "pass": max(c1_max_mass, c1_max_alpha) <= 0.01,
+        },
+        "C2_momentum_consistency": {
+            "worst_u_tau_spread": c2_worst,
+            "worst_u_tau_spread_flux_matched": c2_worst_matched,
+            "flux_matched_cases": [k for k, c in cases.items() if c["flux_matched"]],
+            "worst_momentum_exchange_offset": c2_exchange_worst,
+            "estimators": ["wall_gradient(quadratic fit)", "reynolds_identity A-B",
+                           "force_balance gx*int rho dy"],
+            "threshold": 0.02,
+            "pass": c2_worst <= 0.02,
+        },
+        "C3_mechanism_closure": {
+            "worst_relative_closure_error": c3_worst,
+            "evaluated_on": "flux-matched two-phase cases only",
+            "threshold": 0.03,
+            "pass": c3_worst <= 0.03,
+        },
+        "C4_negative_control_zero_gas": {
+            "DR_at_zero_gas": c4_zero,
+            "threshold": 0.005,
+            "void_path": void_path,
+            "monotone_in_void_fraction": c4_monotone,
+            "pass": (c4_zero <= 0.005) and c4_monotone,
+        },
+        "C5_size_saturation": {**c5_record, "pass": bool(c5_record["saturation_or_decay"]
+                                                         and c5_record["all_runs_finite"])},
     }
-    out["criteria"]["mechanism_sum"] = {
-        name: {
-            "sum_residual_rel": v["sum_residual_rel"],
-            "fik_vs_mem_rel": v["fik_vs_mem_rel"],
-            "pass": bool(v["criterion_sum_pass"] and v["criterion_fik_mem_pass"]),
-        }
-        for name, v in ms.items()
+    return {
+        "cases": cases,
+        "criteria": criteria,
+        "all_pass": all(v["pass"] for v in criteria.values()),
+        "reference": {
+            "tau_w": ref["tau_w"],
+            "J": ref["J"],
+            "u_tau": ref["u_tau"],
+            "Re_tau": ref["Re_tau"],
+            "Re_bulk": ref["Re_bulk"],
+            "mu_liquid": mu_l,
+            "half_height": h,
+            "rho_liquid": ref["config"]["rho_liquid"],
+            "rho_gas": ref["config"]["rho_gas"],
+            "nu_liquid": ref["config"]["nu_liquid"],
+            "nu_gas": ref["config"]["nu_gas"],
+            "n_steps": ref["config"]["n_steps"],
+        },
     }
-    # diameter saturation trend
-    dsw = {k: ms[k] for k in ("alpha_0.003", "dplus_120", "dplus_180") if k in ms}
-    if dsw:
-        order = sorted(dsw, key=lambda k: recs[k]["d_plus_actual"])
-        out["criteria"]["diameter_trend"] = {
-            "sequence": order,
-            "note": "matched bubble count (one bubble); alpha grows with d^3 by construction",
-            "d_plus": [recs[k]["d_plus_actual"] for k in order],
-            "alpha": [recs[k]["alpha_integral"] for k in order],
-            "DR": [dsw[k]["DR"] for k in order],
-            "DR_over_alpha": [dsw[k]["DR"] / max(recs[k]["alpha_integral"], 1e-12) for k in order],
-            "monotone_saturating": bool(
-                all(dsw[order[i + 1]]["DR"] <= dsw[order[i]]["DR"] + 0.02 for i in range(len(order) - 1))
-            ),
-        }
-    _add_provenance(out, list(outdir.glob("case_*.json")))
-    (outdir / "campaign.json").write_text(json.dumps(out, indent=2))
-    try:
-        make_figures(out, outdir)
-    except Exception as exc:  # pragma: no cover - plotting must not eat the result
-        out["figure_error"] = repr(exc)
-        (outdir / "campaign.json").write_text(json.dumps(out, indent=2))
-    return out
 
 
-def make_figures(out: dict, outdir: Path) -> list[str]:
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    figs = []
-    prof = out["profiles"]
-    base = prof.get("baseline")
-    fig, ax = plt.subplots(1, 3, figsize=(13, 3.6))
-    if base is not None:
-        y = np.asarray(base["y"])
-        H = float(y[-1] + 0.5)
-        for name, p in prof.items():
-            yy = np.asarray(p["y"])
-            ax[0].plot(np.asarray(p["u"]), yy / H, label=name)
-            ax[1].plot(-np.asarray(p["uv"]), yy / H, label=name)
-            ax[2].plot(np.asarray(p["alpha"]), yy / H, label=name)
-    ax[0].set_xlabel(r"$\bar u$ [lattice]")
-    ax[0].set_ylabel(r"$y/H$")
-    ax[0].set_title("mean velocity")
-    ax[1].set_xlabel(r"$-\langle u'v'\rangle$")
-    ax[1].set_title("Reynolds shear stress")
-    ax[2].set_xlabel(r"$\alpha$")
-    ax[2].set_title("gas volume fraction")
-    for a in ax:
-        a.legend(fontsize=6)
-    fig.tight_layout()
-    f1 = outdir / "fig1_profiles.png"
-    fig.savefig(f1, dpi=140)
-    plt.close(fig)
-    figs.append(f1.name)
-
-    ms = out["mechanisms"]
-    names = list(ms)
-    if names:
-        fig, ax = plt.subplots(figsize=(6, 3.6))
-        visc = [ms[n]["DR_visc"] for n in names]
-        turb = [ms[n]["DR_turb"] for n in names]
-        slip = [ms[n]["DR_slip"] for n in names]
-        x = np.arange(len(names))
-        ax.bar(x, visc, label="viscosity")
-        ax.bar(x, turb, bottom=np.array(visc), label="turbulence modulation")
-        ax.bar(x, slip, bottom=np.array(visc) + np.array(turb), label="phase slip")
-        ax.plot(x, [ms[n]["DR"] for n in names], "k*", label="total (FIK)")
-        ax.set_xticks(x)
-        ax.set_xticklabels(names, rotation=45, ha="right", fontsize=7)
-        ax.set_ylabel(r"$\Delta C_f/C_{f0}$")
-        ax.legend(fontsize=7)
-        fig.tight_layout()
-        f2 = outdir / "fig2_mechanism_split.png"
-        fig.savefig(f2, dpi=140)
-        plt.close(fig)
-        figs.append(f2.name)
-    return figs
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+def _shard_cases(i: int, n: int) -> list[str]:
+    names = list(CASES)
+    return [name for k, name in enumerate(names) if k % n == i]
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--out", required=True)
-    ap.add_argument("--only")
-    ap.add_argument("--merge", action="store_true")
-    ap.add_argument("--list", action="store_true")
-    ap.add_argument("--probe", action="store_true")
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--shard", default=None, help="i/n")
+    ap.add_argument("--cases", default=None, help="comma separated case names")
+    ap.add_argument("--n-steps", type=int, default=None)
+    ap.add_argument("--nx", type=int, default=None)
+    ap.add_argument("--out", default=None, help="write <case>.json files here")
+    ap.add_argument("--assemble", nargs="*", default=None,
+                    help="merge collected summary files and write results.json")
+    ap.add_argument("--figures", action="store_true")
     args = ap.parse_args(argv)
-    outdir = Path(args.out)
-    if args.list:
-        print("\n".join(cases()))
+
+    if args.assemble is not None:
+        results = {}
+        for path in args.assemble:
+            data = json.loads(Path(path).read_text())
+            items = data if isinstance(data, list) else [data]
+            for item in items:
+                results[item["case"]] = item
+        evaluated = evaluate(results)
+        out = Path(args.out or ARTIFACT_DIR)
+        out.mkdir(parents=True, exist_ok=True)
+        payload = {"summary": evaluated, "raw": results}
+        (out / "results.json").write_text(json.dumps(payload, indent=1))
+        if args.figures:
+            from .figures import make_all_figures
+            make_all_figures(payload, out)
+        print(json.dumps({"all_pass": evaluated["all_pass"],
+                          "criteria": {k: v["pass"] for k, v in evaluated["criteria"].items()},
+                          "out": str(out)}))
         return 0
-    if args.probe:
-        probe = probe_coexistence(ChannelConfig(**base_config()))
-        probe["config"] = base_config()
-        ensure_dir(outdir)
-        (outdir / "coexistence.json").write_text(json.dumps(probe, indent=2))
-        print(json.dumps(probe, indent=2))
-        return 0
-    if args.merge:
-        res = merge(outdir)
-        compact = {
-            "criteria": res["criteria"],
-            "mechanisms": {k: {kk: vv for kk, vv in v.items() if not isinstance(vv, (list, dict))}
-                           for k, v in res["mechanisms"].items()},
-            "cases": res["cases"],
-            "profiles": {k: {kk: [round(float(x), 6) for x in np.asarray(p[kk]).ravel()]
-                             for kk in ("y", "u", "uv", "alpha", "rho")}
-                         for k, p in res["profiles"].items()},
-        }
-        print("COMPACT_JSON_BEGIN")
-        print(json.dumps(compact))
-        print("COMPACT_JSON_END")
-        return 0
-    if not args.only:
-        raise SystemExit("need --only NAME or --merge")
-    rec = run_one(args.only, outdir)
-    print(json.dumps({k: rec[k] for k in ("name", "U_b", "F0", "Re_tau_meas", "alpha_integral",
-                                          "mass_drift_rel", "runtime_s")}, indent=2))
+
+    if args.cases:
+        names = [c.strip() for c in args.cases.split(",") if c.strip()]
+    elif args.shard:
+        i, n = (int(x) for x in args.shard.split("/"))
+        names = _shard_cases(i, n)
+    else:
+        names = list(CASES)
+
+    overrides = {}
+    if args.n_steps:
+        overrides["n_steps"] = args.n_steps
+    if args.nx:
+        overrides["nx"] = args.nx
+
+    outdir = Path(args.out) if args.out else None
+    if outdir:
+        outdir.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        try:
+            res = run_case(name, **overrides)
+        except Exception as exc:      # one unstable case must not kill the shard
+            res = {"case": name, "status": "failed", "error": repr(exc),
+                   "config": {"d_plus_target": CASES[name].get("d_plus", 0.0),
+                              "n_bubbles": CASES[name].get("n_bubbles")}}
+            print(f"##RESULT## {json.dumps(res)}", flush=True)
+            continue
+        if outdir:
+            (outdir / f"{name}.json").write_text(json.dumps(res))
+        print(f"##RESULT## {json.dumps(res)}", flush=True)
     return 0
 
 
 if __name__ == "__main__":  # pragma: no cover
-    raise SystemExit(main())
+    sys.exit(main())
