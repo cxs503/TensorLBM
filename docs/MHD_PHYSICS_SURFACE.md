@@ -131,8 +131,23 @@ from tensorlbm.mhd import (
     ShercliffCase, run_shercliff_channel,           # insulating-wall (zero net current) branch
     shercliff_mean_velocity, shercliff_profile, shercliff_grad_for_mean,
     evaluate_shercliff_criteria,                    # node gate d
+    ShearWaveCase, run_damping_case,                 # magnetic damping of a shear wave
+    damping_ladder, magnetic_decay_rate,             # gamma = nu k^2 + nu Ha^2/h^2
 )
 ```
+
+Branch III (node `p315w1-n04`): the shear-wave magnetic-damping anchor
+:mod:`tensorlbm.mhd.damping` closes the third classical low-`Rm` verification
+case.  A zero-mean shear wave `u_x = U sin(k y)` is an *exact* solution of the
+incompressible low-`Rm` MHD system (no nonlinearity, no pressure gradient) and
+
+    gamma = nu k^2 + sigma B0^2/rho = nu k^2 + nu Ha^2/h^2    (=> gamma ~ Ha^2).
+
+Its measured decay rate (modal projection of the LBM field) is an independent
+anchor of the *same* collision kernel that the wall-bounded branches use, and it
+is the only one of the three that exercises the time-dependent (unsteady) part
+of the Lorentz coupling.  See ``docs/P315W1_N04_MHD_LBM.md`` for the campaign
+report and ``artifacts/mhd_p315w1_n04/acceptance.json`` for the machine verdicts.
 
 ## 6. References
 
