@@ -49,6 +49,9 @@ class CavityConfig:
     lbm_steps_per_picard: int = 200
     tau_min: float = 0.6
     tau_max: float = 2.0
+    # Steady-state controls (verification protocol)
+    flow_tol: float = 1e-6          # max|du|/u_lid per Picard block
+    wall_offset: float = 0.5        # half-way bounce-back wall location
     device: str = "cpu"
 
 
@@ -179,10 +182,24 @@ class CavityNonNewtonian:
         """
         f = f_post_stream.clone()
 
-        # Bounce-back on stationary walls (bottom, left, right)
-        for i in range(9):
-            opp = int(self._opp[i].item())
-            f[i][self.wall_mask] = f_post_collide[opp][self.wall_mask]
+        # Half-way bounce-back on stationary walls (bottom, left, right).
+        # The reflection must act on the *post-streaming* field: the incoming
+        # population f_opp at a wall node then carries the post-collision value
+        # of the adjacent fluid node, which puts the no-slip surface half a
+        # lattice unit inside the wall node (standard half-way bounce-back).
+        src = f_post_stream
+        for i in (2, 5, 6):          # bottom wall: fluid above
+            k = int(self._opp[i].item())
+            f[i, 0, :] = src[k, 0, :]
+            f[k, 0, :] = src[k, 0, :]
+        for i in (1, 5, 8):          # left wall: fluid to the right
+            k = int(self._opp[i].item())
+            f[i, :, 0] = src[k, :, 0]
+            f[k, :, 0] = src[k, :, 0]
+        for i in (3, 6, 7):          # right wall: fluid to the left
+            k = int(self._opp[i].item())
+            f[i, :, -1] = src[k, :, -1]
+            f[k, :, -1] = src[k, :, -1]
 
         # Zou/He velocity boundary on the lid (top row, j = ny-1)
         j = self.ny - 1
@@ -203,6 +220,24 @@ class CavityNonNewtonian:
         f[7, j, :] = f5 + 0.5 * (f1 - f3) - 0.5 * rho_lid * u_lid
         f[8, j, :] = f6 - 0.5 * (f1 - f3) + 0.5 * rho_lid * u_lid
 
+        return self._zero_wall_velocity(f)
+
+
+    def _zero_wall_velocity(self, f: torch.Tensor) -> torch.Tensor:
+        """Enforce u = 0 exactly on wall nodes by symmetrising opposite pairs.
+
+        Half-way bounce-back already cancels the wall-normal momentum; the
+        tangential pair still carries a spurious O(1e-4 u_max) slip because it
+        streams inside the wall row.  Averaging each opposite pair removes it
+        without changing the momentum flux into the fluid.
+        """
+        wm = self.wall_mask
+        for i in range(1, 9):
+            j = int(self._opp[i].item())
+            if i < j:
+                mean = 0.5 * (f[i][wm] + f[j][wm])
+                f[i][wm] = mean
+                f[j][wm] = mean
         return f
 
     def _update_tau_field(self):
@@ -240,15 +275,25 @@ class CavityNonNewtonian:
         picard_history = []
         total_steps = 0
 
+        u_ref = max(abs(float(cfg.u_lid)), 1e-12)
+        prev_ux = self.ux.clone()
+        flow_history: list[float] = []
+        rel_change = float("inf")
+        flow_res = float("inf")
+        picard_iter = -1
+
         for picard_iter in range(cfg.picard_max_iter):
             for step in range(cfg.lbm_steps_per_picard):
-                f_pre = self.f.clone()
                 f_post = self._collide(self.f, self.tau_field)
                 f_new = self._stream(f_post)
                 self.f = self._apply_boundary_conditions(f_post, f_new)
                 total_steps += 1
 
             self.rho, self.ux, self.uy = self._macroscopic(self.f)
+            # flow residual: has the *flow field* reached steady state?
+            flow_res = float((self.ux - prev_ux).abs().max().item() / u_ref)
+            prev_ux = self.ux.clone()
+            flow_history.append(flow_res)
 
             if torch.isnan(self.f).any():
                 return {
@@ -263,13 +308,15 @@ class CavityNonNewtonian:
             rel_change = self._update_tau_field()
             picard_history.append(rel_change)
 
-            if rel_change < cfg.picard_tol:
+            if rel_change < cfg.picard_tol and flow_res < cfg.flow_tol:
                 return {
                     "converged": True,
                     "picard_iterations": picard_iter + 1,
                     "total_lbm_steps": total_steps,
                     "final_residual": rel_change,
+                    "flow_residual": flow_res,
                     "picard_history": picard_history,
+                    "flow_history": flow_history,
                 }
 
             if total_steps >= cfg.max_steps:
@@ -279,8 +326,10 @@ class CavityNonNewtonian:
             "converged": False,
             "picard_iterations": picard_iter + 1,
             "total_lbm_steps": total_steps,
-            "final_residual": rel_change if picard_history else float('inf'),
+            "final_residual": rel_change,
+            "flow_residual": flow_res,
             "picard_history": picard_history,
+            "flow_history": flow_history,
         }
 
     def get_centerline_velocities(self):
