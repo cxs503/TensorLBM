@@ -1,0 +1,8 @@
+{
+  "title": "LW3-N04 TensorLBM Smagorinsky LES Channel Flow Verification (Re_tau=180)",
+  "summary": "Implemented Smagorinsky LES module for TensorLBM with D3Q19 lattice. Code verified (7/7 tests pass) but physical verification criteria not met due to coarse grid (32x17x16) and short simulation (3000 steps). Honest FAIL declared.",
+  "scenario_key": "LW3-N04",
+  "mission_id": 9779,
+  "tags": ["LES", "Smagorinsky", "channel-flow", "Re_tau-180", "MKM1999", "TensorLBM", "honest-fail"],
+  "markdown": "# LES Channel Flow Verification Report\n\n## Status: IMPLEMENTED, NOT VERIFIED (Honest FAIL)\n\n## Implementation\n- D3Q19 lattice Boltzmann solver with Smagorinsky SGS model\n- Turbulent channel flow configuration (Re_tau=180)\n- Statistics accumulation (U+, u_rms+, v_rms+, w_rms+, -uv+)\n- Energy spectrum computation\n- Verification criteria evaluation framework\n\n## Results\n- Code: VERIFIED (7/7 unit tests pass)\n- Physics: NOT VERIFIED (all 4 criteria fail)\n\n## Failure Analysis\n1. Grid too coarse: 32x17x16 (need 128x65x128+)\n2. Simulation too short: 3000 steps (need 50000+)\n3. Flow not fully turbulent (laminar-like statistics)\n\n## Recommendations\n- Short-term: Increase grid to 64x33x32, run 20000+ steps\n- Medium-term: GPU acceleration, dynamic Smagorinsky\n- Long-term: Cluster computation, multi-Re_tau campaign"
+}
