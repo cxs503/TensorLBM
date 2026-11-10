@@ -136,7 +136,7 @@ def apparent_viscosity_carreau_yasuda(
 
     Args:
         shear_rate: Shear-rate magnitude γ̇.
-        nu_0: Zero-shear viscosity (must be > nu_inf).
+        nu_0: Zero-shear viscosity (> 0; nu_inf > nu_0 gives shear-thickening for n > 1).
         nu_inf: Infinite-shear viscosity (≥ 0).
         relaxation_time: λ > 0.
         flow_index: n (typically 0 < n ≤ 1 for shear-thinning).
@@ -146,8 +146,22 @@ def apparent_viscosity_carreau_yasuda(
     Returns:
         Apparent viscosity ν.
     """
-    if nu_0 <= nu_inf:
-        msg = f"nu_0 ({nu_0}) must exceed nu_inf ({nu_inf})"
+    if nu_0 <= 0.0 or nu_inf <= 0.0:
+        msg = "nu_0 and nu_inf must be > 0"
+        raise ValueError(msg)
+    if nu_0 == nu_inf:
+        # Newtonian limit (mu_0 == mu_inf): the model degenerates to nu = const
+        return torch.full_like(torch.as_tensor(shear_rate, dtype=torch.float64), nu_0)
+    # Sign consistency: the bracket ^((n-1)/a) must stay bounded as gdot -> inf,
+    # i.e. nu_0 > nu_inf for shear thinning (n < 1) and nu_0 < nu_inf for shear
+    # thickening (n > 1).
+    if flow_index < 1.0 and nu_0 < nu_inf:
+        msg = (f"nu_0 ({nu_0}) must be >= nu_inf ({nu_inf}) for shear-thinning "
+               f"n = {flow_index} < 1")
+        raise ValueError(msg)
+    if flow_index > 1.0 and nu_0 > nu_inf:
+        msg = (f"nu_0 ({nu_0}) must be <= nu_inf ({nu_inf}) for shear-thickening "
+               f"n = {flow_index} > 1")
         raise ValueError(msg)
     if relaxation_time <= 0.0:
         msg = "relaxation_time must be > 0"
@@ -414,6 +428,160 @@ def poiseuille_mean_velocity_power_law(
 
 
 # ---------------------------------------------------------------------------
+# Exact 1-D channel (Poiseuille) solution for Carreau-Yasuda fluids
+# ---------------------------------------------------------------------------
+#
+# For a fully developed pressure/body-force driven flow between parallel
+# plates the shear stress is linear in the wall distance, tau(s) = G |s|,
+# *independently of the constitutive law*.  Hence the shear rate at wall
+# distance s is the solution of the scalar equation
+#
+#     Gamma(s) * mu(Gamma(s)) = G |s|,        mu = rho * nu,
+#
+# which is monotone in Gamma and can be inverted by bisection.  The velocity
+# profile follows by quadrature:
+#
+#     u(s) = \int_s^H Gamma(s') ds'.
+#
+# This gives a *semi-analytical* reference for the Carreau-Yasuda model with
+# machine-precision quadrature error (no literature table required), which is
+# what the benchmark against ``Carreau-Yasuda`` channel flow uses.
+
+def carreau_yasuda_shear_rate(
+    wall_distance: torch.Tensor,
+    pressure_gradient: float,
+    nu_0: float,
+    nu_inf: float,
+    relaxation_time: float,
+    flow_index: float,
+    yasuda_exponent: float = 2.0,
+    n_bisect: int = 200,
+) -> torch.Tensor:
+    """Invert ``Gamma * nu(Gamma) = G * |s|`` for the Carreau-Yasuda model.
+
+    Args:
+        wall_distance: |s|, distance from the channel centreline.
+        pressure_gradient: G = -dp/dx (= body force per unit mass).
+        nu_0, nu_inf, relaxation_time, flow_index, yasuda_exponent:
+            Carreau-Yasuda parameters (kinematic viscosities).
+        n_bisect: bisection iterations (200 -> ~1e-60 relative bracket).
+
+    Returns:
+        Shear rate Gamma with the same shape as ``wall_distance``.
+    """
+    if nu_0 <= 0.0 or nu_inf <= 0.0:
+        msg = "nu_0 and nu_inf must be > 0 (finite Carreau-Yasuda plateaus)"
+        raise ValueError(msg)
+    if relaxation_time <= 0.0:
+        msg = "relaxation_time must be > 0"
+        raise ValueError(msg)
+    if pressure_gradient < 0.0:
+        msg = "pressure_gradient must be >= 0"
+        raise ValueError(msg)
+
+    tau = pressure_gradient * torch.abs(wall_distance).to(torch.float64)
+    lo = torch.full_like(tau, 1e-16)
+    hi = torch.full_like(tau, 1e8)
+    for _ in range(n_bisect):
+        mid = 0.5 * (lo + hi)
+        nu = apparent_viscosity_carreau_yasuda(
+            mid, nu_0=nu_0, nu_inf=nu_inf,
+            relaxation_time=relaxation_time, flow_index=flow_index,
+            yasuda_exponent=yasuda_exponent, shear_rate_floor=1e-300,
+        )
+        f = mid * nu - tau
+        lo = torch.where(f < 0.0, mid, lo)
+        hi = torch.where(f < 0.0, hi, mid)
+    return 0.5 * (lo + hi)
+
+
+def poiseuille_carreau_yasuda_profile(
+    y: torch.Tensor,
+    half_height: float,
+    pressure_gradient: float,
+    nu_0: float,
+    nu_inf: float,
+    relaxation_time: float,
+    flow_index: float,
+    yasuda_exponent: float = 2.0,
+    n_sub: int = 4001,
+) -> torch.Tensor:
+    """Exact (quadrature) Carreau-Yasuda velocity profile in a plane channel.
+
+    u(s) = \int_s^H Gamma(s') ds' with Gamma from
+    :func:`carreau_yasuda_shear_rate`.
+    """
+    if half_height <= 0.0:
+        msg = "half_height must be > 0"
+        raise ValueError(msg)
+    grid = torch.linspace(0.0, half_height, n_sub, dtype=torch.float64)
+    gam = carreau_yasuda_shear_rate(
+        grid, pressure_gradient, nu_0, nu_inf, relaxation_time,
+        flow_index, yasuda_exponent,
+    )
+    # cumulative integral from the centreline outwards (trapezoid)
+    ds = grid[1] - grid[0]
+    u_of_s = torch.zeros_like(grid)
+    u_of_s[-1] = 0.0
+    for i in range(n_sub - 2, -1, -1):
+        u_of_s[i] = u_of_s[i + 1] + 0.5 * ds * (gam[i] + gam[i + 1])
+    s = torch.abs(y.to(torch.float64))
+    idx = torch.clamp(s / ds, 0, n_sub - 1)
+    i0 = idx.floor().long()
+    i1 = torch.clamp(i0 + 1, max=n_sub - 1)
+    w = (idx - i0.to(torch.float64))
+    return (1.0 - w) * u_of_s[i0] + w * u_of_s[i1]
+
+
+def carreau_yasuda_max_velocity(
+    half_height: float,
+    pressure_gradient: float,
+    nu_0: float,
+    nu_inf: float,
+    relaxation_time: float,
+    flow_index: float,
+    yasuda_exponent: float = 2.0,
+    n_sub: int = 4001,
+) -> float:
+    """Centreline velocity of the exact Carreau-Yasuda channel solution."""
+    y = torch.zeros(1, dtype=torch.float64)
+    u = poiseuille_carreau_yasuda_profile(
+        y, half_height, pressure_gradient, nu_0, nu_inf,
+        relaxation_time, flow_index, yasuda_exponent, n_sub=n_sub,
+    )
+    return float(u[0])
+
+
+def solve_body_force_for_target_umax_cy(
+    half_height: float,
+    u_max_target: float,
+    nu_0: float,
+    nu_inf: float,
+    relaxation_time: float,
+    flow_index: float,
+    yasuda_exponent: float = 2.0,
+    n_iter: int = 80,
+    n_sub: int = 1201,
+) -> float:
+    """Find the body force G that gives ``u_max_target`` for Carreau-Yasuda.
+
+    Bisection on log(G); ``u_max(G)`` is monotone increasing.
+    """
+    lo, hi = 1e-14, 1e-2
+    for _ in range(n_iter):
+        mid = (lo * hi) ** 0.5
+        um = carreau_yasuda_max_velocity(
+            half_height, mid, nu_0, nu_inf, relaxation_time,
+            flow_index, yasuda_exponent, n_sub=n_sub,
+        )
+        if um < u_max_target:
+            lo = mid
+        else:
+            hi = mid
+    return (lo * hi) ** 0.5
+
+
+# ---------------------------------------------------------------------------
 # BGK collision operators with variable viscosity
 # ---------------------------------------------------------------------------
 
@@ -540,6 +708,10 @@ __all__ = [
     "poiseuille_newtonian_profile",
     "poiseuille_max_velocity_power_law",
     "poiseuille_mean_velocity_power_law",
+    "carreau_yasuda_shear_rate",
+    "poiseuille_carreau_yasuda_profile",
+    "carreau_yasuda_max_velocity",
+    "solve_body_force_for_target_umax_cy",
     # BGK collision operators
     "collide_power_law_bgk",
     "collide_carreau_yasuda_bgk",

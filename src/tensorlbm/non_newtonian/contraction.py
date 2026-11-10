@@ -57,6 +57,8 @@ class ContractionConfig:
     lbm_steps_per_picard: int = 300
     tau_min: float = 0.501
     tau_max: float = 2.0
+    flow_tol: float = 1e-6
+    shear_rate_floor: float = 1e-8
     device: str = "cpu"
 
 
@@ -137,11 +139,11 @@ class Contraction4to1:
             self._consistency_K = K
             # Estimate body force from fully-developed relation
             G = K * (U_out * (n+1)/n / H_out**((n+1)/n))**n
-            self._body_force = G * 0.5  # scale down for stability
+            self._body_force = G
         else:
             nu_ref = cfg.nu_0
             G = 8.0 * nu_ref * U_out / (4.0 * H_out * H_out)
-            self._body_force = G * 0.5
+            self._body_force = G
             self._consistency_K = nu_ref
 
     def _initialize(self):
@@ -206,14 +208,29 @@ class Contraction4to1:
         return out
 
     def _collide_with_force(self, f, tau, body_force):
-        """BGK collision with body force."""
+        """BGK collision with Guo et al. (2002) body forcing.
+
+        f_i(x+c_i) = f_i - (f_i - feq_i(rho,u*))/tau + (1 - 1/(2 tau)) S_i,
+        S_i = w_i [3 (c_i - u*).F + 9 (c_i.u*)(c_i.F)],  u* = u + F/(2 rho).
+        (The previous velocity-shift shortcut is not momentum consistent and
+        biases the steady state; see docs/non_newtonian_benchmarks_n07.md.)
+        """
         rho, ux, uy = self._macroscopic(f)
-        # Velocity correction for forcing
-        ux_corr = ux + 0.5 * body_force / torch.clamp(rho, min=1e-12)
-        uy_corr = uy
-        feq = self._equilibrium(rho, ux_corr, uy_corr)
-        omega = (1.0 / tau).unsqueeze(0)
-        return f - omega * (f - feq)
+        rho_safe = torch.clamp(rho, min=1e-12)
+        Fx = body_force
+        Fy = 0.0
+        ux_s = ux + 0.5 * Fx / rho_safe
+        uy_s = uy + 0.5 * Fy / rho_safe
+        feq = self._equilibrium(rho, ux_s, uy_s)
+
+        cx = self._c[:, 0].reshape(9, 1, 1).to(self.dtype)
+        cy = self._c[:, 1].reshape(9, 1, 1).to(self.dtype)
+        cu_F = cx * Fx + cy * Fy
+        cu_u = cx * ux_s + cy * uy_s
+        uF = ux_s * Fx + uy_s * Fy
+        S = self._w * (3.0 * (cu_F - uF) + 9.0 * cu_u * cu_F)
+        tau_s = tau.unsqueeze(0) if tau.dim() == 2 else tau
+        return f - (f - feq) / tau_s + (1.0 - 0.5 / tau_s) * S
 
     def _compute_viscosity(self, shear_rate):
         cfg = self.cfg
@@ -235,41 +252,50 @@ class Contraction4to1:
                 shear_rate_floor=1e-12,
             )
 
-    def _apply_boundary_conditions(self, f_pre, f_post):
-        """Bounce-back on walls, convective outlet."""
-        f_new = f_post.clone()
+    def _apply_boundary_conditions(self, f_post_stream):
+        """Generic half-way bounce-back on the wall mask + open inlet/outlet.
 
-        # Bounce-back on walls
-        for i in range(9):
-            opp = int(self._opp[i].item())
-            f_new[i][self.wall_mask] = f_pre[opp][self.wall_mask]
+        For every wall node and every lattice direction i whose neighbour
+        x + c_i is fluid, the incoming population (post-streaming) is
+        reflected: f_i(x_w) <- f_{opp(i)}(x_w).  This places the no-slip
+        surface on the boundary node and keeps the wall node velocity exactly
+        zero (momentum of the mirrored pair cancels).
+        """
+        f = f_post_stream.clone()
+        src = f_post_stream
+        wm = self.wall_mask
+        for i in range(1, 9):
+            k = int(self._opp[i].item())
+            cy_i = int(self._c[i, 1].item())
+            cx_i = int(self._c[i, 0].item())
+            nbr_wall = torch.roll(wm, shifts=(-cy_i, -cx_i), dims=(0, 1))
+            cond = wm & (~nbr_wall)
+            if cond.any():
+                f[i][cond] = src[k][cond]
 
-        # Inlet (left boundary): prescribed velocity profile
-        i_in = 0
-        H_in_half = self.H_in / 2.0
-        for j in range(self.ny):
-            y = j - H_in_half
-            if not self.wall_mask[j, i_in]:
-                u_target = 1.5 * self.cfg.u_inlet * (1.0 - (y / H_in_half)**2)
-                # Zou/He inlet
-                f0 = f_new[0, j, i_in]
-                f2 = f_new[2, j, i_in]
-                f4 = f_new[4, j, i_in]
-                f5 = f_new[5, j, i_in]
-                f6 = f_new[6, j, i_in]
-                # Actually use simple extrapolation for inlet
-                f_new[1, j, i_in] = f_new[1, j, i_in + 1] if i_in + 1 < self.nx else f_new[1, j, i_in]
-                f_new[5, j, i_in] = f_new[5, j, i_in + 1] if i_in + 1 < self.nx else f_new[5, j, i_in]
-                f_new[8, j, i_in] = f_new[8, j, i_in + 1] if i_in + 1 < self.nx else f_new[8, j, i_in]
+        # Inlet (left column) and outlet (right column): zero-gradient
+        # extrapolation of the outgoing populations (convective outlet).
+        f[:, :, 0] = torch.where(wm[:, 0].unsqueeze(0), f[:, :, 0], f[:, :, 1])
+        f[:, :, -1] = torch.where(wm[:, -1].unsqueeze(0), f[:, :, -1], f[:, :, -2])
+        return self._zero_wall_velocity(f)
 
-        # Outlet (right boundary): convective (zero gradient)
-        i_out = self.nx - 1
-        for j in range(self.ny):
-            if not self.wall_mask[j, i_out]:
-                for d in [1, 5, 8]:  # outgoing directions
-                    f_new[d, j, i_out] = f_new[d, j, i_out - 1]
+    def _zero_wall_velocity(self, f: torch.Tensor) -> torch.Tensor:
+        """Enforce u = 0 exactly on wall nodes by symmetrising opposite pairs.
 
-        return f_new
+        Half-way bounce-back already cancels the wall-normal momentum; the
+        tangential pair still carries a spurious O(1e-4 u_max) slip because it
+        streams inside the wall row.  Averaging each opposite pair removes it
+        without changing the momentum flux into the fluid.
+        """
+        wm = self.wall_mask
+        for i in range(1, 9):
+            j = int(self._opp[i].item())
+            if i < j:
+                mean = 0.5 * (f[i][wm] + f[j][wm])
+                f[i][wm] = mean
+                f[j][wm] = mean
+        return f
+
 
     def _update_tau_field(self):
         """Update τ field from current velocity."""
@@ -299,25 +325,38 @@ class Contraction4to1:
         picard_history = []
         total_steps = 0
 
+        u_ref = 1e-12
+        prev_ux = self.ux.clone()
+        flow_history: list[float] = []
+        rel_change = float("inf")
+        flow_res = float("inf")
+        picard_iter = -1
+        # reference velocity: outlet centre-line velocity scale
+        u_ref = max(abs(float(cfg.u_inlet)), 1e-12)
+
         for picard_iter in range(cfg.picard_max_iter):
             for step in range(cfg.lbm_steps_per_picard):
-                f_pre = self.f.clone()
                 f_post = self._collide_with_force(self.f, self.tau_field, self._body_force)
                 f_new = self._stream(f_post)
-                self.f = self._apply_boundary_conditions(f_pre, f_new)
+                self.f = self._apply_boundary_conditions(f_new)
                 total_steps += 1
 
             self.rho, self.ux, self.uy = self._macroscopic(self.f)
+            flow_res = float((self.ux - prev_ux).abs().max().item() / u_ref)
+            prev_ux = self.ux.clone()
             rel_change = self._update_tau_field()
             picard_history.append(rel_change)
+            flow_history.append(flow_res)
 
-            if rel_change < cfg.picard_tol:
+            if rel_change < cfg.picard_tol and flow_res < cfg.flow_tol:
                 return {
                     "converged": True,
                     "picard_iterations": picard_iter + 1,
                     "total_lbm_steps": total_steps,
                     "final_residual": rel_change,
+                    "flow_residual": flow_res,
                     "picard_history": picard_history,
+                    "flow_history": flow_history,
                 }
 
             if total_steps >= cfg.max_steps:
@@ -327,8 +366,10 @@ class Contraction4to1:
             "converged": False,
             "picard_iterations": picard_iter + 1,
             "total_lbm_steps": total_steps,
-            "final_residual": rel_change if picard_history else float('inf'),
+            "final_residual": rel_change,
+            "flow_residual": flow_res,
             "picard_history": picard_history,
+            "flow_history": flow_history,
         }
 
     def compute_vortex_length(self):
