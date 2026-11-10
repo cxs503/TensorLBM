@@ -88,6 +88,10 @@ def report(run_npz: Path, *, re_tau: float, u_tau: float, out_dir: Path, log_ban
         "u_prime_v_prime": wu["uv"].tolist(),
         "tke": sigma.tolist(),
     }
+    meta: dict = {}
+    meta_path = run_npz.parent / f"{run_npz.stem}_meta.json"
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text())
     gate_scalars = {
         "half_height": wu["half_height"],
         "u_tau": u_tau,
@@ -105,6 +109,7 @@ def report(run_npz: Path, *, re_tau: float, u_tau: float, out_dir: Path, log_ban
         else 10_000,
         "min_population": scalars["min_population"],
         "entropy_drop_max_collision": scalars["entropy_drop_max"],
+        "entropy_excess_max_collision": meta.get("entropy_excess_max"),
     }
     nominal = 180 if re_tau < 280 else (395 if re_tau < 500 else 590)
     mkm = mkm1999.load_profile(nominal)
@@ -114,6 +119,7 @@ def report(run_npz: Path, *, re_tau: float, u_tau: float, out_dir: Path, log_ban
 
     extra = {
         "run": str(run_npz),
+        "dns_meta": meta,
         "re_tau_target": re_tau,
         "re_tau_nominal_from_tau": re_tau,
         "re_tau_from_measured_nu": wu["re_tau_measured"],
@@ -246,13 +252,24 @@ def make_figures(result: dict, out_dir: Path, *, label: str) -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("npz")
-    ap.add_argument("--re-tau", type=float, required=True)
-    ap.add_argument("--u-tau", type=float, required=True)
+    ap.add_argument("--re-tau", type=float, default=None,
+                    help="default: take it from <npz stem>_meta.json")
+    ap.add_argument("--u-tau", type=float, default=None)
     ap.add_argument("--label", default=None)
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
     npz = Path(args.npz)
     label = args.label or npz.stem
+    meta = {}
+    meta_path = npz.parent / f"{npz.stem}_meta.json"
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text())
+    if args.re_tau is None or args.u_tau is None:
+        cfg = meta.get("config", {})
+        if args.re_tau is None:
+            args.re_tau = float(meta.get("re_tau", cfg.get("re_tau")))
+        if args.u_tau is None:
+            args.u_tau = float(meta.get("u_tau", cfg.get("u_tau")))
     out = Path(args.out) if args.out else npz.parent.parent / label
     res = report(npz, re_tau=args.re_tau, u_tau=args.u_tau, out_dir=out)
     figs = make_figures(res, out, label=label)
