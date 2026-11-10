@@ -15,11 +15,6 @@
  *  * lattice    : D3Q19, cs^2 = 1/3
  *  * collision  : TRT (two relaxation rates, magic parameter Lambda = 3/16)
  *                 or plain BGK when lambda <= 0
- *  * collision  : the regularised (Hermite-projected) path is only safe with
- *                 an active SGS viscosity.  With ``--reg 1 --cs 0`` at
- *                 tau0 - 0.5 ~ 4e-3 the run diverges (measured on
- *                 188x122x94, u_tau = 0.0125, Re_tau = 180: umax ~ 1e6 within
- *                 600 steps); the DNS arm must use ``--reg 0`` (plain TRT).
  *  * SGS        : local-equilibrium Smagorinsky
  *                   tau_t = 1/2 ( tau0 + sqrt( tau0^2 + 18 (Cs D)^2 Q/rho ) )
  *                 with Q = sqrt(2 Pi_ab^neq Pi_ab^neq), tau_tot = tau0 + 3 nu_t.
@@ -82,12 +77,12 @@ enum { S_UX, S_UY, S_UZ, S_UX2, S_UY2, S_UZ2, S_UXUY, S_RHO, S_N };
 int main(int argc, char **argv)
 {
     int nx = 200, ny = 66, nz = 100, steps = 60000, warmup = 10000, sample = 20;
-    int perturb_modes = 6, threads_req = 0, progress = 0, regularized = 1;
-    /* opt-in spectrum sampling: dump velocity planes at chosen wall-normal
-       rows so the caller can post-process 1-D energy spectra.  spec_every = 0
-       (default) disables the dump bit-for-bit. */
-    int spec_every = 0, n_spec_rows = 0;
-    int spec_rows[32];
+    /* regularized=0 by default: the second-order Hermite projection branch
+       blows up (rho -> NaN) once the flow turns turbulent at the
+       operational relaxation times of this kernel (tau0 <= 0.5125, i.e.
+       dy+ >= 3); plain TRT + Smagorinsky is stable there.  See
+       docs/p223w3_n02_turbulent_channel_dns.md section 5. */
+    int perturb_modes = 6, threads_req = 0, progress = 0, regularized = 0;
     double re_tau = 178.12, u_tau = 0.006, cs = 0.1, lambda = 0.1875, perturb = 0.05;
     unsigned long long seed = 20261108ULL;
     const char *out = "les_chan";
@@ -111,26 +106,12 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--reg")) regularized = atoi(argv[++i]);
         else if (!strcmp(a, "--seed")) seed = strtoull(argv[++i], NULL, 10);
         else if (!strcmp(a, "--out")) out = argv[++i];
-        else if (!strcmp(a, "--spec-every")) spec_every = atoi(argv[++i]);
-        else if (!strcmp(a, "--spec-rows")) {
-            const char *p = argv[++i];
-            while (*p && n_spec_rows < 32) {
-                spec_rows[n_spec_rows++] = atoi(p);
-                while (*p && *p != ',') p++;
-                if (*p == ',') p++;
-            }
-        }
         else die("unknown argument");
     }
     if (ny < 8 || nx < 8 || nz < 8) die("grid too small");
     if (!(re_tau > 1.0) || !(u_tau > 0.0)) die("bad Re_tau / u_tau");
     if (cs < 0.0 || lambda > 1.0) die("bad Cs / lambda");
     if (warmup < 0 || steps <= warmup || sample < 1) die("bad step counts");
-    if (spec_every < 0) die("bad --spec-every");
-    if (spec_every > 0 && n_spec_rows == 0)
-        die("--spec-every needs at least one --spec-rows entry");
-    for (int r = 0; r < n_spec_rows; r++)
-        if (spec_rows[r] < 1 || spec_rows[r] > ny - 2) die("--spec-rows entry outside fluid");
 #ifdef _OPENMP
     if (threads_req > 0) omp_set_num_threads(threads_req);
 #endif
@@ -192,16 +173,6 @@ int main(int argc, char **argv)
         }
     }
     memcpy(fn, f, sizeof(float) * Q * N);
-
-    /* ---------------- optional spectrum plane dump -------------------------- */
-    FILE *spec_fp = NULL;
-    long long spec_snapshots = 0;
-    if (spec_every > 0) {
-        char spath[4096];
-        snprintf(spath, sizeof(spath), "%s_spec.bin", out);
-        spec_fp = fopen(spath, "wb");
-        if (!spec_fp) die("cannot open spectrum dump file");
-    }
 
     /* ---------------- statistics accumulators ------------------------------ */
     const int n_expected = (steps - warmup) / sample + 1;
@@ -423,34 +394,6 @@ int main(int argc, char **argv)
                     ub += sum_global[(size_t)S_UX * ny + y] / (double)(samples * nx * nz);
                 ubulk_series[(size_t)samples] = ub / (double)H;
             }
-            if (spec_fp && (step % spec_every) == 0) {
-                /* raw planes: per row ux[nz*nx], uy[nz*nx], uz[nz*nx] float32,
-                   plane-major (z outer, x inner) — the layout recorded in the
-                   companion <out>_spec.json so the reader cannot guess wrong. */
-                for (int r = 0; r < n_spec_rows; r++) {
-                    const int ys = spec_rows[r];
-                    for (int comp = 0; comp < 3; comp++) {
-                        for (int z = 0; z < nz; z++) {
-                            for (int x = 0; x < nx; x++) {
-                                size_t idx = ((size_t)ys * nz + z) * nx + x;
-                                double rho = 0.0, ux = 0.0, uy = 0.0, uz = 0.0;
-                                for (int i = 0; i < Q; i++) {
-                                    double v = (double)f[(size_t)i * N + idx];
-                                    rho += v;
-                                    ux += CX[i] * v;
-                                    uy += CY[i] * v;
-                                    uz += CZ[i] * v;
-                                }
-                                double u = comp == 0 ? (ux + 0.5 * accel) / rho
-                                           : comp == 1 ? uy / rho : uz / rho;
-                                float uf = (float)u;
-                                fwrite(&uf, sizeof(float), 1, spec_fp);
-                            }
-                        }
-                    }
-                }
-                spec_snapshots++;
-            }
             if (samples == 1 || step + sample > steps) {
                 double mass = 0.0;
                 for (int i = 0; i < Q; i++) {
@@ -466,24 +409,20 @@ int main(int argc, char **argv)
     }
     umax = sqrt(umax);
 
-    if (spec_fp) {
-        fclose(spec_fp);
-        char spath[4096];
-        snprintf(spath, sizeof(spath), "%s_spec.json", out);
-        FILE *sf = fopen(spath, "w");
-        if (!sf) die("cannot write spectrum metadata");
-        fprintf(sf, "{\n  \"layout\": \"per snapshot, per row (in \\\"rows\\\" order), "
-                    "ux then uy then uz; each a float32 [nz][nx] plane, z-major\",\n");
-        fprintf(sf, "  \"nx\": %d, \"nz\": %d, \"steps_between\": %d, "
-                    "\"snapshots\": %lld, \"first_step\": %d,\n",
-                nx, nz, spec_every, spec_snapshots, warmup + spec_every);
-        fprintf(sf, "  \"rows\": [");
-        for (int r = 0; r < n_spec_rows; r++)
-            fprintf(sf, "%s%d", r ? ", " : "", spec_rows[r]);
-        fprintf(sf, "],\n");
-        fprintf(sf, "  \"bytes_per_snapshot\": %lld\n}\n",
-                (long long)n_spec_rows * 3 * nx * nz * (long long)sizeof(float));
-        fclose(sf);
+    /* ---------------- fail closed on divergence ---------------------------- */
+    /* A diverged run used to emit JSON containing ``nan``, which is not valid
+       JSON and killed every downstream consumer with a decode error instead of
+       an honest numerical failure.  Check the field before writing anything. */
+    long long nbad = 0;
+#pragma omp parallel for reduction(+ : nbad) schedule(static)
+    for (size_t j = 0; j < Q * N; j++)
+        if (!isfinite((double)f[j])) nbad++;
+    if (nbad > 0) {
+        fprintf(stderr,
+                "les_chan diverged: %lld of %lld populations are non-finite "
+                "(grid %dx%dx%d tau0=%.6f regularized=%d)\n",
+                nbad, (long long)Q * (long long)N, nx, ny, nz, tau0, regularized);
+        die("non-finite state; results not written");
     }
 
     /* ---------------- write results ---------------------------------------- */
@@ -493,7 +432,8 @@ int main(int argc, char **argv)
     if (!fp) die("cannot write json");
     const double count = (double)(samples * nx * nz);
     fprintf(fp, "{\n");
-    fprintf(fp, "  \"kernel\": \"tensorlbm-les-chan-c/1\",\n");
+    fprintf(fp, "  \"kernel\": \"tensorlbm-les-chan-c/2\",\n");
+    fprintf(fp, "  \"status\": \"ok\",\n");
     fprintf(fp, "  \"configuration\": {\"nx\": %d, \"ny\": %d, \"nz\": %d, \"steps\": %d, "
                 "\"warmup\": %d, \"sample\": %d, \"re_tau\": %.6f, \"u_tau\": %.8f, "
                 "\"cs\": %.6f, \"lambda\": %.6f, \"perturb\": %.6f, \"seed\": %llu, "
@@ -634,6 +574,27 @@ int main(int argc, char **argv)
                 uz += CZ[i] * v;
             }
             fprintf(fp, "%d,%d,%d,%.6e,%.6e,%.6e\n", y_slice, x, z,
+                    (ux + 0.5 * accel) / rho, uy / rho, uz / rho);
+        }
+    }
+    fclose(fp);
+    int y_mid = 1 + H / 2;
+    snprintf(path, sizeof(path), "%s_xzm.csv", out);
+    fp = fopen(path, "w");
+    if (!fp) die("cannot write mid-plane slice");
+    fprintf(fp, "y_index,x,z,ux,uy,uz\n");
+    for (int z = 0; z < nz; z++) {
+        for (int x = 0; x < nx; x++) {
+            size_t idx = ((size_t)y_mid * nz + z) * nx + x;
+            double rho = 0.0, ux = 0.0, uy = 0.0, uz = 0.0;
+            for (int i = 0; i < Q; i++) {
+                double v = (double)f[(size_t)i * N + idx];
+                rho += v;
+                ux += CX[i] * v;
+                uy += CY[i] * v;
+                uz += CZ[i] * v;
+            }
+            fprintf(fp, "%d,%d,%d,%.6e,%.6e,%.6e\n", y_mid, x, z,
                     (ux + 0.5 * accel) / rho, uy / rho, uz / rho);
         }
     }

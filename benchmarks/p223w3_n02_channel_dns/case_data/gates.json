@@ -1,0 +1,149 @@
+{
+ "gates": [
+  {
+   "gate": "a_log_law",
+   "criterion": "U+ vs (1/kappa)ln(y+)+B, y+ in [30,200], RMS error < 5% (kappa=0.41, B=5.2), all three Re_tau",
+   "passed": false,
+   "status": "WITHHELD",
+   "evidence": {},
+   "problems": [],
+   "withheld": [
+    "Re_tau=180: no case record (see report section 5)",
+    "Re_tau=395: no case record (see report section 5)",
+    "Re_tau=590: no case record (see report section 5)"
+   ]
+  },
+  {
+   "gate": "b_reynolds_stress",
+   "criterion": "u'u'+ peak located near y+ = 15 and its magnitude within 10% of MKM-1999 DNS at Re_tau = 180",
+   "passed": false,
+   "status": "WITHHELD",
+   "evidence": {
+    "reason": "no completed Re_tau=180 case"
+   },
+   "problems": [
+    "no completed Re_tau=180 case"
+   ],
+   "withheld": [
+    "Re_tau=180: every run diverged (see case_data/*.failed.json)"
+   ]
+  },
+  {
+   "gate": "c_energy_spectrum",
+   "criterion": "inertial-subrange slope of the streamwise spectrum within 10% of -5/3 (k+ in [0.05, 0.30])",
+   "passed": false,
+   "status": "WITHHELD",
+   "evidence": {},
+   "problems": [
+    "no completed turbulent case"
+   ],
+   "withheld": [
+    "no completed turbulent case"
+   ]
+  },
+  {
+   "gate": "d_friction_coefficient",
+   "criterion": "Cf = 2(u_tau/U_b)^2 within 5% of Dean (1978) Cf = 0.073 Re_b^-0.25",
+   "passed": false,
+   "status": "WITHHELD",
+   "evidence": {},
+   "problems": [],
+   "withheld": [
+    "Re_tau=180: no case record",
+    "Re_tau=395: no case record",
+    "Re_tau=590: no case record"
+   ]
+  },
+  {
+   "gate": "e_laminar_control",
+   "criterion": "force-driven plane Poiseuille vs analytic parabola, L2 error < 1%",
+   "passed": true,
+   "status": "PASS",
+   "evidence": {
+    "re_laminar": 10.0,
+    "steps": 38907,
+    "l2_rel_error": 0.0016475035999292476,
+    "max_rel_error": 0.0017012811354837505,
+    "u_max_sim": 0.062536767482,
+    "u_max_exact": 0.062430555555555566
+   },
+   "problems": [],
+   "withheld": []
+  },
+  {
+   "gate": "f_grid_convergence",
+   "criterion": "grid convergence at Re_tau = 180: spread of the independently measured u_tau across three resolutions < 3%",
+   "passed": false,
+   "status": "WITHHELD",
+   "evidence": {
+    "grids": {},
+    "u_tau_spread_rel": NaN,
+    "imposed_spread_rel": 0.0
+   },
+   "problems": [
+    "u_tau spread nan% over dy+ = []"
+   ],
+   "withheld": [
+    "only 0 Re_tau=180 grid(s) completed; the gate needs three (see the divergence log)"
+   ]
+  },
+  {
+   "gate": "extra_momentum_balance",
+   "criterion": "diagnostic: total-stress budget in wall units",
+   "passed": false,
+   "status": "WITHHELD",
+   "evidence": {},
+   "problems": [
+    "no completed turbulent case"
+   ],
+   "withheld": [
+    "no completed turbulent case"
+   ]
+  }
+ ],
+ "normative_passed": 1,
+ "normative_total": 6,
+ "all_normative_passed": false,
+ "dns_reference": {
+  "180": {
+   "files": [
+    "chan180.means",
+    "chan180.reystress"
+   ],
+   "sha256": [
+    "f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82",
+    "61f282379b80192ac8eba087aabdc41e891e854926161db866ca23fbf9111608"
+   ],
+   "citation": "Moser, Kim & Mansour, Phys. Fluids 11(4) 943 (1999)"
+  },
+  "395": {
+   "files": [
+    "chan395.means",
+    "chan395.reystress"
+   ],
+   "sha256": [
+    "211c6b8149cc7ef5cd20323716b47a45dd98cca55486a9554acfd4a7975d737a",
+    "2344d3862b269a35450d2efe7139f3c7ed0a94362c19395dd79937718c0e2c15"
+   ],
+   "citation": "Moser, Kim & Mansour, Phys. Fluids 11(4) 943 (1999)"
+  },
+  "590": {
+   "files": [
+    "chan590.means",
+    "chan590.reystress"
+   ],
+   "sha256": [
+    "878bc951794516b6136912f8f098cd6f2f96c4bbe7f21a8cea657ffb270d419d",
+    "ce7d21d2003137d43bb1530a7eb766180b1e4ef517d4d09bf4372c57f2d96229"
+   ],
+   "citation": "Moser, Kim & Mansour, Phys. Fluids 11(4) 943 (1999)"
+  }
+ },
+ "provenance": {
+  "kernel": "src/tensorlbm/turbulence/les_chan.c",
+  "kernel_sha256": "84d8432265fbc214e6e7d6f4d9ac671dcf2a71eb4e110f10638a401a06764d65",
+  "analysis": "benchmarks/p223w3_n02_channel_dns/analysis.py",
+  "campaign": "benchmarks/p223w3_n02_channel_dns/campaign.py",
+  "notes": "numbers computed by gates.py from case_data/*.json; no hand transcription"
+ }
+}
