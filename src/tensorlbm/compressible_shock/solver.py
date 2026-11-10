@@ -265,27 +265,27 @@ class EulerSolver2D:
             )
         return states[0], states[1]
 
-    def _rhs(self, U):
+    def face_fluxes(self, U=None):
+        """Return the interface fluxes ``(Fx, Fy)`` of ``U`` (or of ``self.U``).
+
+        ``Fx`` is shaped ``(ny, nx+1, 4)`` and ``Fy`` ``(ny+1, nx, 4)``; they are
+        the fluxes the conservative update is built from, so a control-volume
+        budget assembled from them closes to round-off.  Exposed for the
+        mass-flux audit of :mod:`tensorlbm.compressible_shock.resolvability`.
+        """
+        U = self.U if U is None else U
         saved, self.U = self.U, U
         try:
             Uh = self._haloed()
         finally:
             self.U = saved
-        # x-direction fluxes: reconstruction along axis 1
         UL, UR = self._reconstruct(Uh)
-        # drop the transverse ghost layers: keep the interior rows
-        # face f lies between cell f-1 and f in the haloed indexing, so the
-        # interior faces are f = N_GHOST .. N_GHOST+nx
         Fx = self._flux(UL, UR, self.gamma)[N_GHOST:-N_GHOST, :, :]  # (ny, nx+1, 4)
-        # y-direction fluxes: transpose the grid AND swap the momentum
-        # components, so the very same reconstruction/flux code sees u_n = v.
         Ut = np.swapaxes(Uh, 0, 1)[..., [0, 2, 1, 3]]
         UL, UR = self._reconstruct(Ut)
         Fy = self._flux(UL, UR, self.gamma)
-        # back to the physical component ordering: [rho v, rho u v, rho v^2+p, ...]
         Fy = Fy[..., [0, 2, 1, 3]]
-        Fy = np.swapaxes(Fy, 0, 1)  # (ny+1, nx+2g, 4)
-        Fy = Fy[:, N_GHOST:-N_GHOST, :]  # (ny+1, nx, 4)
+        Fy = np.swapaxes(Fy, 0, 1)[:, N_GHOST:-N_GHOST, :]  # (ny+1, nx, 4)
         if self.solid is not None:
             # Wall faces: a blocked cell must still transmit the pressure force,
             # otherwise the obstacle is transparent to pressure and mass piles up
@@ -307,6 +307,10 @@ class EulerSolver2D:
             wall_val_y = np.zeros_like(Fy)
             wall_val_y[..., 2] = p_face_y
             Fy = np.where(wall_y[..., None], wall_val_y, Fy)
+        return Fx, Fy
+
+    def _rhs(self, U):
+        Fx, Fy = self.face_fluxes(U)
         rh = -(Fx[:, 1:, :] - Fx[:, :-1, :]) / self.dx - (Fy[1:, :, :] - Fy[:-1, :, :]) / self.dy
         if self.solid is not None:
             rh = np.where(self.solid[..., None], 0.0, rh)
