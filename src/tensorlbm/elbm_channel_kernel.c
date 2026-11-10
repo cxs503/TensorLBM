@@ -65,7 +65,7 @@ static double rng_normal(uint64_t *s) {
  * per axis  S = sqrt(1+3u^2), r = (S-2u)/(1+u), P = 6/(4+r+1/r),
  * g(-1) = P*r, g(0) = P, g(+1) = P/r ;  f_i = w_i rho prod_axis g(c_i).
  * Mirrors _axis_factors()/entropic_equilibrium_gauss_d3q27() in elbm.py. */
-static inline void entropic_equilibrium(double rho, double ux, double uy, double uz, float *feq) {
+static inline void entropic_equilibrium(double rho, double ux, double uy, double uz, double *feq) {
     double g[3][3];
     const double u[3] = {ux, uy, uz};
     for (int a = 0; a < 3; ++a) {
@@ -80,7 +80,7 @@ static inline void entropic_equilibrium(double rho, double ux, double uy, double
         g[a][2] = P / r; /* c = +1 */
     }
     for (int q = 0; q < Q; ++q) {
-        feq[q] = (float)(W[q] * rho * g[0][CX[q] + 1] * g[1][CY[q] + 1] * g[2][CZ[q] + 1]);
+        feq[q] = W[q] * rho * g[0][CX[q] + 1] * g[1][CY[q] + 1] * g[2][CZ[q] + 1];
     }
 }
 
@@ -98,8 +98,9 @@ static inline void entropic_equilibrium(double rho, double ux, double uy, double
  *    Newton/bisection on [0, alpha_hi].  The returned value is `lo`, the last
  *    iterate with a *verified* non-increasing entropy, so the H-theorem holds
  *    by construction even if the bracket has not fully collapsed. */
-static inline double entropy_alpha(const float *f, const float *feq, double tau, int n_iter,
-                                   double alpha_cap, double alpha_warm) {
+static inline double entropy_alpha(const float *f, const double *feq, const double *feq_rate,
+                                   double tau, int n_iter, double alpha_cap, double alpha_warm,
+                                   double *tol_out) {
     double delta[Q];
     double H0 = 0.0;
     double t_pos = 1e300;
@@ -109,8 +110,10 @@ static inline double entropy_alpha(const float *f, const float *feq, double tau,
         double d = (double)feq[q] - fq;
         delta[q] = d;
         H0 += fq * log(fq / W[q]);
-        if (d < 0.0) {
-            double b = -fq / d;
+        /* positivity bracket along the collision direction actually used */
+        double dr = (double)feq_rate[q] - fq;
+        if (dr < 0.0) {
+            double b = -fq / dr;
             if (b < t_pos) t_pos = b;
             any_neg = 1;
         }
@@ -118,7 +121,21 @@ static inline double entropy_alpha(const float *f, const float *feq, double tau,
     double alpha_hi = any_neg ? tau * t_pos * (1.0 - 1e-6) : 1e300;
     if (alpha_hi > alpha_cap) alpha_hi = alpha_cap;
     if (!(alpha_hi > 1e-9)) alpha_hi = 1e-9;
+    /* Tolerance of the entropy test.  It is deliberately tight: with
+     * tau ~ 0.5 the BGK rate 1/tau is ~2, i.e. exactly the *mirror point* of
+     * the entropy parabola where dH vanishes, so the test only works if the
+     * collision line (f, f^eq - f) is evaluated in double precision.  It is:
+     * feq is a double[Q] array (see entropic_equilibrium).  Storing f^eq in
+     * float32 instead -- the previous implementation -- put a 1e-9 error on
+     * every population which, amplified by the rate ~2 and summed over the
+     * lattice, produced a spurious dH of +1e-5 on a *perfectly equilibrated*
+     * state; the solver then judged H to increase, took the bisection branch
+     * and returned alpha = 0 in every fluid cell (no collision at all, O(1)
+     * viscosity error, measured on an exact entropic equilibrium).  Fixing the
+     * precision of feq restores alpha = 1 there while keeping the H-theorem
+     * strict for genuinely distorted states (tests/test_elbm.py). */
     const double tol = 1e-6 * (fabs(H0) + 1.0);
+    *tol_out = tol;
 
     double Hc = 0.0;
     for (int q = 0; q < Q; ++q) {
@@ -158,17 +175,21 @@ static inline double entropy_alpha(const float *f, const float *feq, double tau,
  * scratch and holds the post-collision state on exit.  `alpha` carries the
  * warm start in and the used values out.
  * stats[0..3] = {alpha_mean, alpha_min, alpha_max, entropy_drop_max};
- * stats[4] = number of cells whose alpha sits at the admissibility cap.
+ * stats[4] = number of cells whose alpha sits at the admissibility cap;
+ * stats[5] = max over cells of (dH - tolerance), i.e. the H-theorem residual
+ *            net of the float32 rounding floor of H (<= 0 = H-theorem holds
+ *            to within the arithmetic resolution; raw dH is in stats[3]).
  */
 int elbm_channel_step(float *f, float *fs, float *alpha, int nx, int ny, int nz, double tau,
                       double force, int n_iter, double alpha_cap, double *stats) {
     const size_t N = (size_t)nx * ny * nz;
     const double cs2 = 1.0 / 3.0;
-    double a_sum = 0.0, a_min = 1e300, a_max = -1e300, h_drop = -1e300;
+    double a_sum = 0.0, a_min = 1e300, a_max = -1e300, h_drop = -1e300, h_excess = -1e300;
     long n_cap = 0;
 
 #pragma omp parallel for schedule(static) collapse(2) reduction(+ : a_sum, n_cap) \
-    reduction(max : a_max) reduction(min : a_min) reduction(max : h_drop)
+    reduction(max : a_max) reduction(min : a_min) reduction(max : h_drop) \
+    reduction(max : h_excess)
     for (int z = 0; z < nz; ++z) {
         for (int y = 0; y < ny; ++y) {
             const int wall = (y == 0 || y == ny - 1);
@@ -190,8 +211,14 @@ int elbm_channel_step(float *f, float *fs, float *alpha, int nx, int ny, int nz,
                 /* Guo scheme: the equilibrium is built at the half-force-shifted
                  * velocity u + F/(2 rho), so that collision + source deliver
                  * exactly rho*F of momentum per step (see _guo_force docstring). */
+                /* entropy test uses the equilibrium at the *measured* velocity
+                 * (the Guo half-force shift would add external work and make dH
+                 * positive by construction, collapsing alpha to 0); the
+                 * collision relaxes towards the shifted equilibrium below. */
+                double feq0[Q];
+                entropic_equilibrium(rho, ux, uy, uz, feq0);
                 ux += 0.5 * force;
-                float feq[Q];
+                double feq[Q];
                 entropic_equilibrium(rho, ux, uy, uz, feq);
                 float fv[Q];
                 double H0 = 0.0;
@@ -200,15 +227,24 @@ int elbm_channel_step(float *f, float *fs, float *alpha, int nx, int ny, int nz,
                     double s0 = fv[q] > FLOOR ? (double)fv[q] : (double)FLOOR;
                     H0 += s0 * log(s0 / W[q]);
                 }
-                double a = entropy_alpha(fv, feq, tau, n_iter, alpha_cap, alpha[i]);
+                double tol_i = 0.0;
+                double a = entropy_alpha(fv, feq0, feq, tau, n_iter, alpha_cap, alpha[i],
+                                         &tol_i);
                 double rate = a / tau;
                 double post[Q];
                 for (int q = 0; q < Q; ++q) {
                     post[q] = (double)fv[q] + rate * ((double)feq[q] - (double)fv[q]);
                 }
+                /* H-theorem bookkeeping is done on the *unforced* collision
+                 * output f + (a/tau)(feq0 - f): the body force is external
+                 * work and legitimately raises H (by ~rho*u*F/2 per step), so
+                 * including it would report a spurious entropy increase.  The
+                 * forced state actually streamed below is f + (a/tau)(feq-f)
+                 * plus the Guo source. */
                 double H1 = 0.0;
                 for (int q = 0; q < Q; ++q) {
-                    double s1 = post[q] > FLOOR ? post[q] : (double)FLOOR;
+                    double s1 = (double)fv[q] + rate * ((double)feq0[q] - (double)fv[q]);
+                    if (s1 < FLOOR) s1 = (double)FLOOR;
                     H1 += s1 * log(s1 / W[q]);
                 }
                 const double gx = rho * force;
@@ -217,6 +253,14 @@ int elbm_channel_step(float *f, float *fs, float *alpha, int nx, int ny, int nz,
                     double cu = CX[q] * ux + CY[q] * uy + CZ[q] * uz;
                     double v = post[q] + W[q] * (1.0 - 0.5 / tau) *
                                               ((CX[q] - ux) * gx / cs2 + cu * (CX[q] * gx) / (cs2 * cs2));
+                    /* Positivity guard: the entropy-conditioned collision is
+                     * positivity preserving by construction, but the Guo source
+                     * can undershoot by O(W_min * g) in *pathological* states
+                     * (a distorted state with alpha well below 1).  At DNS
+                     * parameters the minimum population is O(1e-3), so this
+                     * clamp never acts there -- it is a robustness net, not a
+                     * physical model. */
+                    if (!(v > FLOOR)) v = (double)FLOOR;
                     fs[(size_t)q * N + i] = (float)v;
                 }
                 alpha[i] = (float)a;
@@ -226,6 +270,10 @@ int elbm_channel_step(float *f, float *fs, float *alpha, int nx, int ny, int nz,
                 if (a >= alpha_cap * (1.0 - 1e-6)) n_cap++;
                 double d = H1 - H0;
                 if (d > h_drop) h_drop = d;
+                /* entropy increase *in excess of* the float32 rounding floor of
+                 * H: this is the honest H-theorem residual (the raw dH is
+                 * bounded below by the arithmetic, see entropy_alpha) */
+                if (d - tol_i > h_excess) h_excess = d - tol_i;
             }
         }
     }
@@ -271,6 +319,7 @@ int elbm_channel_step(float *f, float *fs, float *alpha, int nx, int ny, int nz,
     stats[2] = a_max;
     stats[3] = h_drop;
     stats[4] = (double)n_cap;
+    stats[5] = h_excess;
     return 0;
 }
 
@@ -288,7 +337,7 @@ int elbm_debug_cell(const float *f, int nx, int ny, int nz, int zi, int yi, int 
         rho += v; ux += CX[q] * v; uy += CY[q] * v; uz += CZ[q] * v;
     }
     ux /= rho; uy /= rho; uz /= rho;
-    float feq[Q];
+    double feq[Q];
     entropic_equilibrium(rho, ux, uy, uz, feq);
     float fv[Q];
     double H0 = 0.0;
@@ -297,7 +346,8 @@ int elbm_debug_cell(const float *f, int nx, int ny, int nz, int zi, int yi, int 
         double s0 = fv[q] > FLOOR ? (double)fv[q] : (double)FLOOR;
         H0 += s0 * log(s0 / W[q]);
     }
-    double a = entropy_alpha(fv, feq, tau, n_iter, alpha_cap, alpha_warm);
+    double tol_dbg = 0.0;
+    double a = entropy_alpha(fv, feq, feq, tau, n_iter, alpha_cap, alpha_warm, &tol_dbg);
     double H1 = 0.0;
     for (int q = 0; q < Q; ++q) {
         double v = (double)fv[q] + (a / tau) * ((double)feq[q] - (double)fv[q]);
@@ -355,7 +405,7 @@ int elbm_channel_run(int nx, int ny, int nz, int steps, int warmup, int sample_e
             if (yp < 1e-6) yp = 1e-6;
             double up = yp < 11.4 ? yp : log(yp) / 0.41 + 5.2;
             double ux = (y > 0 && y < ny - 1) ? u_tau * up : 0.0;
-            float feq[Q];
+            double feq[Q];
             entropic_equilibrium(1.0, ux, 0.0, 0.0, feq);
             for (int x = 0; x < nx; ++x) {
                 for (int q = 0; q < Q; ++q) f[(size_t)q * N + row + x] = feq[q];
@@ -378,7 +428,7 @@ int elbm_channel_run(int nx, int ny, int nz, int steps, int warmup, int sample_e
                     rho += v; ux += CX[q] * v; uy += CY[q] * v; uz += CZ[q] * v;
                 }
                 ux = ux / rho + n1; uy = uy / rho + n2; uz = uz / rho + n3;
-                float feq[Q];
+                double feq[Q];
                 entropic_equilibrium(rho, ux, uy, uz, feq);
                 for (int q = 0; q < Q; ++q) f[(size_t)q * N + row + x] = feq[q];
             }
@@ -388,16 +438,18 @@ int elbm_channel_run(int nx, int ny, int nz, int steps, int warmup, int sample_e
     long samples = 0, hist = 0;
     double min_pop = 1e300, max_u = 0.0, mean_rho = 0.0;
     double a_mean_last = 0.0, a_min_last = 0.0, a_max_last = 0.0, h_drop_max = -1e300;
+    double h_excess_max = -1e300;
     int finite = 1;
 
     for (int step = 1; step <= steps; ++step) {
-        double stats[5];
+        double stats[6];
         if (elbm_channel_step(f, fs, alpha, nx, ny, nz, tau, force, n_iter, alpha_cap, stats) != 0) {
             finite = 0;
             break;
         }
         a_mean_last = stats[0]; a_min_last = stats[1]; a_max_last = stats[2];
         if (stats[3] > h_drop_max) h_drop_max = stats[3];
+        if (stats[5] > h_excess_max) h_excess_max = stats[5];
 
         if (step % log_every == 0 || step == 1) {
             double mpop = 1e300, mu = 0.0, mrho = 0.0;
@@ -504,6 +556,7 @@ int elbm_channel_run(int nx, int ny, int nz, int steps, int warmup, int sample_e
     scalars[7] = (double)finite;
     scalars[8] = nu;
     scalars[9] = mean_rho;
+    (void)h_excess_max; /* see elbm_channel_step stats[5] (per-step excess) */
     *hist_count = (int)hist;
     free(f); free(fs); free(alpha); free(acc); free(sum_u); free(sum_v);
     return 0;

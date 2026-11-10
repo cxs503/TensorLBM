@@ -33,6 +33,7 @@ __all__ = [
     "build_kernel",
     "native_channel_run",
     "native_channel_step",
+    "native_channel_step_inplace",
 ]
 
 _HERE = Path(__file__).resolve().parent
@@ -135,7 +136,7 @@ def native_channel_step(
     work = np.array(f, dtype=np.float32, order="C", copy=True)
     scratch = np.empty_like(work)
     a32 = np.array(alpha, dtype=np.float32, order="C", copy=True)
-    stats = np.zeros(4, dtype=np.float64)
+    stats = np.zeros(6, dtype=np.float64)
     rc = lib().elbm_channel_step(
         _ptr(work), _ptr(scratch), _ptr(a32), nx, ny, nz, tau, force, n_iter, alpha_cap,
         stats.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
@@ -148,6 +149,57 @@ def native_channel_step(
         "alpha_max": float(stats[2]),
         "entropy_drop_max": float(stats[3]),
     }
+
+
+def native_channel_step_inplace(
+    f: np.ndarray,
+    scratch: np.ndarray,
+    alpha: np.ndarray,
+    *,
+    nx: int,
+    ny: int,
+    nz: int,
+    tau: float,
+    force: float,
+    n_iter: int = 5,
+    alpha_cap: float = 1.0,
+    stats: np.ndarray | None = None,
+) -> int:
+    """Advance one ELBM step *in place* (no per-step copies of the fields).
+
+    :func:`native_channel_step` copies the 27 populations on entry and exit,
+    which costs two full field copies per step -- at DNS sizes (``O(10^7)``
+    cells) that is more memory traffic than the collision itself.  This variant
+    hands the kernel the caller's buffers directly.
+
+    Args:
+        f: ``(27, nz, ny, nx)`` float32, C-contiguous.  On entry the
+            pre-collision state, on exit the post-streaming state.
+        scratch: same shape/dtype, used by the kernel for the post-collision
+            (pre-streaming) state; contents are destroyed.
+        alpha: ``(nz, ny, nx)`` float32 entropy warm start, updated in place.
+        stats: optional ``(>=6,)`` float64 array receiving
+            ``<alpha>, alpha_min, alpha_max, max dH, n_at_cap, max(dH - tol)``.
+
+    Returns:
+        Kernel return code (0 on success).
+    """
+    for name, arr in (("f", f), ("scratch", scratch)):
+        if arr.dtype != np.float32 or not arr.flags["C_CONTIGUOUS"]:
+            raise ValueError(f"{name} must be C-contiguous float32, got {arr.dtype}")
+    if alpha.dtype != np.float32 or not alpha.flags["C_CONTIGUOUS"]:
+        raise ValueError(f"alpha must be C-contiguous float32, got {alpha.dtype}")
+    if f.shape != (27, nz, ny, nx) or scratch.shape != f.shape:
+        raise ValueError(f"field shape {f.shape} != {(27, nz, ny, nx)}")
+    if alpha.shape != (nz, ny, nx):
+        raise ValueError(f"alpha shape {alpha.shape} != {(nz, ny, nx)}")
+    stats = np.zeros(6, dtype=np.float64) if stats is None else stats
+    return int(
+        lib().elbm_channel_step(
+            _ptr(f), _ptr(scratch), _ptr(alpha), nx, ny, nz, tau, force, n_iter,
+            alpha_cap, stats.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        )
+    )
 
 
 @dataclass
