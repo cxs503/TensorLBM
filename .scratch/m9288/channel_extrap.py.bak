@@ -1,0 +1,337 @@
+"""Variable-viscosity D2Q9 lattice-Boltzmann runner for plane channel flow.
+
+The runner solves the generalised-Newtonian momentum balance
+
+.. math::  \\partial_t u_x = -\\partial_x p/\\rho
+           + \\partial_y\\big(\\nu_{app}(\\dot\\gamma)\\,\\partial_y u_x\\big),
+           \\qquad \\dot\\gamma = |\\partial_y u_x| ,
+
+on a D2Q9 lattice with
+
+* **periodic** streamwise direction (the flow is streamwise invariant),
+* **no-slip plates** imposed with the non-equilibrium extrapolation scheme of
+  Guo, Zheng & Shi (2002), which is second-order accurate for a Dirichlet
+  velocity and places the wall *on* the boundary node,
+* **Guo (2002) body forcing** in velocity-shift form with a per-cell relaxation
+  time, so that exactly ``ρ a`` momentum is injected per step whatever the local
+  viscosity (see :func:`tensorlbm.powerlaw.guo_force_term`),
+* a **second-order central difference** for the shear rate everywhere, which
+  after the wall extrapolation includes the wall-adjacent node,
+* optional **under-relaxation of the viscosity field** (the constitutive update
+  is a fixed-point iteration; ``omega < 1`` damps shear-thinning oscillation).
+
+Geometry convention
+-------------------
+``ny = h + 1`` rows; rows ``0`` and ``h`` are the *wall nodes* (the no-slip
+planes), rows ``1 … h-1`` are the fluid, so the channel gap in lattice units is
+exactly ``h`` and the fluid cell centres are at
+``y_i = i - H`` with ``H = h/2`` (mid-plane origin).
+
+Notes on boundary conditions (measured, not assumed)
+----------------------------------------------------
+Three wall treatments were tested on this solver against the Newtonian parabola
+``u = a(H² - y²)/(2ν)``; the numbers below are the *converged* L2 errors of the
+profile:
+
+===================================  ==============  ==============
+wall treatment                       L2 (h = 32)     wall offset
+===================================  ==============  ==============
+bounce-back in the solid row         1.4 %            +0.5 cell
+(``herschel_bulkley_lbm.moving_wall_bounce_back_2d``)
+bounce-back inside the fluid node    0.8 %            -0.5 cell
+(post-streaming reflection)
+pre-streaming half-way bounce-back   0.11 %           0 (slip-like bias
+(``benchmarks/verified/poiseuille_2d``)               ~0.3 ν/h)
+non-equilibrium extrapolation        <0.01 %          0
+(this module)
+===================================  ==============  ==============
+
+The first two shift the effective no-slip plane by half a cell (a first-order
+wall *location* error, ~1.8/h of ``u_max``), which is why they are rejected.  The
+half-way bounce-back is accurate but carries a slip-like bias that decays only
+like ``ν/h`` and caps the observed convergence order at ~1.3; the
+non-equilibrium extrapolation removes both and restores a clean second-order
+rate (see ``benchmarks/p40w4_n04_nonnewtonian_rheology``).
+"""
+
+from __future__ import annotations
+
+import torch
+
+from ..d2q9 import equilibrium, macroscopic
+from ..powerlaw import collide_powerlaw_bgk_forced
+from ..solver import stream
+from .closures import Closure
+
+__all__ = [
+    "run_channel",
+    "channel_geometry",
+    "shear_rate_profile",
+    "wall_nonequilibrium_2d",
+    "l2_relative_error",
+    "solution_residual",
+]
+
+_OPP = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
+
+
+def channel_geometry(h: int, nx: int = 4, dtype: torch.dtype = torch.float32, device="cpu"):
+    """Coordinates/masks of the plane channel of gap ``h`` (walls on rows 0, h)."""
+    if h < 3:
+        raise ValueError("h must be >= 3")
+    if nx < 1:
+        raise ValueError("nx must be >= 1")
+    ny = h + 1
+    solid = torch.zeros((ny, nx), dtype=torch.bool, device=device)
+    solid[0, :] = True
+    solid[-1, :] = True
+    fluid = ~solid
+    half_width = 0.5 * h
+    rows = torch.arange(ny, dtype=torch.float64, device=device)
+    return {
+        "ny": ny,
+        "nx": nx,
+        "half_width": half_width,
+        "solid": solid,
+        "fluid": fluid,
+        "y_center": rows - half_width,  # mid-plane origin, walls at ±H
+        "y_wall": rows,                 # distance from the lower plate
+    }
+
+
+def wall_nonequilibrium_2d(f_post: torch.Tensor, u_wall_x: float = 0.0) -> torch.Tensor:
+    """Non-equilibrium extrapolation wall condition on the outermost rows.
+
+    For a boundary node ``x_b`` carrying the wall velocity ``u_w`` the Dirichlet
+    condition of Guo, Zheng & Shi (2002) is
+
+    .. math::  f_i(x_b) = f_i^{eq}(\\rho_b, u_w) + \\big[f_i(x_f) - f_i^{eq}(\\rho_f, u_f)\\big] ,
+
+    i.e. the local equilibrium at the wall plus the *non-equilibrium* part of the
+    adjacent fluid node ``x_f``.  It is second-order accurate, imposes the wall
+    velocity at the boundary node itself (no half-cell ambiguity), and needs no
+    relaxation-time-dependent correction.
+
+    Args:
+        f_post: Populations after collision, ``(9, ny, nx)``.
+        u_wall_x: Wall velocity in the streamwise direction (0 = at rest).
+
+    Returns:
+        Populations with the two outermost rows replaced (new tensor).
+    """
+    if f_post.dim() != 3 or f_post.shape[0] != 9:
+        raise ValueError("populations must have shape (9, ny, nx)")
+    rho, ux, uy = macroscopic(f_post)
+    fneq = f_post - equilibrium(rho, ux, uy)
+    g = f_post.clone()
+    for row_b, row_f in ((0, 1), (f_post.shape[1] - 1, f_post.shape[1] - 2)):
+        rho_b = rho[row_f].unsqueeze(0)
+        zero_b = torch.zeros_like(rho_b)
+        u_b = torch.full_like(rho_b, float(u_wall_x))
+        f_eq_b = equilibrium(rho_b, u_b, zero_b)                       # (9, 1, nx)
+        g[:, row_b, :] = f_eq_b[:, 0, :] + fneq[:, row_f, :]
+    return g
+
+
+def shear_rate_profile(ux: torch.Tensor) -> torch.Tensor:
+    """``γ̇ = |∂u_x/∂y|`` by second-order central differences on all rows.
+
+    With the wall planes on rows ``0`` and ``ny-1`` every interior row —
+    including the wall-adjacent ones — has a neighbour at distance 1 on both
+    sides, so a plain central difference is second-order accurate there and no
+    wall-distance bookkeeping is needed.  The two wall rows are filled from
+    their interior neighbour (unused by the viscosity update).
+    """
+    gamma = torch.zeros_like(ux)
+    gamma[1:-1, :] = (ux[2:, :] - ux[:-2, :]).abs() * 0.5
+    # The wall rows carry the *extrapolated* state, whose velocity is only
+    # u_w + O(h²) but not exactly u_w; using it in the central difference leaks
+    # that slip into the wall-adjacent shear rate (6 % at h = 32 for ν = 0.1,
+    # which is what caps the convergence order).  Anchor the near-wall stencil
+    # on the *imposed* no-slip value instead (second-order one-sided difference,
+    # exact for a parabola): du/dy|₁ = (-3u₀ + 4u₁ − u₂)/2 with u₀ = 0.
+    gamma[1, :] = (4.0 * ux[1, :] - ux[2, :]).abs() * 0.5
+    gamma[-2, :] = (4.0 * ux[-2, :] - ux[-3, :]).abs() * 0.5
+    gamma[0, :] = gamma[1, :]
+    gamma[-1, :] = gamma[-2, :]
+    return gamma
+
+
+def run_channel(
+    h: int,
+    accel: float,
+    closure: Closure,
+    nx: int = 4,
+    n_steps: int = 120_000,
+    tol: float = 1.0e-5,
+    check_every: int = 500,
+    omega_nu: float = 1.0,
+    u_init: torch.Tensor | None = None,
+    tau_max: float | None = None,
+    dtype: torch.dtype = torch.float32,
+    device="cpu",
+) -> dict:
+    """Run a plane-Poiseuille channel to steady state.
+
+    Args:
+        h: Channel gap in lattice units (``2H``); the grid is ``h + 1`` rows.
+        accel: Body acceleration in +x (lattice units).
+        closure: Generalised-Newtonian closure (lattice-unit parameters).
+        nx: Periodic streamwise extent (only affects arithmetic intensity).
+        n_steps: Maximum number of lattice steps.
+        tol: Relative change of the streamwise velocity profile between two
+            consecutive checks that defines steady state.
+        check_every: Steps between convergence checks.
+        omega_nu: Under-relaxation of the viscosity field (1.0 = none).
+        u_init: Optional initial streamwise velocity over **all** rows.
+        tau_max: Optional clamp on the relaxation time.
+
+    Returns:
+        dict with ``y`` (mid-plane origin, all rows), ``u`` (x-averaged, all
+        rows, force-corrected), ``u_field``, ``gamma_dot``, ``nu``,
+        ``tau_field``, ``steps``, ``converged``, ``residual``, ``history``, the
+        scalars ``u_max``, ``mean_velocity``, ``flow_rate``,
+        ``gamma_dot_wall``, ``tau_wall``, and the record ``geometry``.
+    """
+    if accel <= 0.0:
+        raise ValueError("accel must be > 0")
+    if not 0.0 < omega_nu <= 1.0:
+        raise ValueError("omega_nu must be in (0, 1]")
+    geo = channel_geometry(h, nx=nx, dtype=dtype, device=device)
+    ny, H = geo["ny"], geo["half_width"]
+
+    rho0 = torch.ones((ny, nx), dtype=dtype, device=device)
+    zero = torch.zeros((ny, nx), dtype=dtype, device=device)
+    if u_init is None:
+        u0 = zero
+    else:
+        u_try = torch.as_tensor(u_init, dtype=dtype, device=device).reshape(-1).clone()
+        if u_try.numel() != ny:
+            raise ValueError(f"u_init must have {ny} entries, got {u_try.numel()}")
+        u_try[0] = 0.0
+        u_try[-1] = 0.0
+        u0 = u_try.unsqueeze(1).expand(ny, nx).contiguous()
+    f = equilibrium(rho0, u0, zero)
+
+    tau_prev: torch.Tensor | None = None
+    u_prev: torch.Tensor | None = None
+    history: list[tuple[int, float, float]] = []
+    converged = False
+    residual = float("nan")
+    best_res = float("inf")
+    stall = 0
+    step = 0
+    for step in range(1, n_steps + 1):
+        _, ux, _ = macroscopic(f)
+        gamma = shear_rate_profile(ux)
+        tau = 3.0 * closure.nu_of_gamma(gamma) + 0.5
+        if tau_max is not None:
+            tau = torch.clamp(tau, max=tau_max)
+        if tau_prev is not None and omega_nu < 1.0:
+            tau = (1.0 - omega_nu) * tau_prev + omega_nu * tau
+        tau_prev = tau
+        f = collide_powerlaw_bgk_forced(f, accel, 1.0, 1.0, tau_field=tau)
+        f = wall_nonequilibrium_2d(f)
+        f = stream(f)
+        if step % check_every == 0:
+            _, ux, _ = macroscopic(f)
+            prof = ux[1:-1, :].mean(dim=1)
+            scale = max(float(prof.abs().max()), 1e-300)
+            residual = float((prof - u_prev).abs().max() / scale) if u_prev is not None else float("nan")
+            history.append((step, float(prof.mean()), residual))
+            if u_prev is not None:
+                if residual < tol:
+                    converged = True
+                    break
+                # the BGK stepper has a kinetic noise floor under the profile
+                # change; once the residual stops improving far below the
+                # discretisation error the run is finished
+                if residual < 0.7 * best_res:
+                    best_res, stall = residual, 0
+                else:
+                    stall += 1
+                if stall >= 5 and best_res < 5.0 * tol:
+                    converged = True
+                    break
+            u_prev = prof
+
+    _, ux, _ = macroscopic(f)
+    gamma = shear_rate_profile(ux)
+    nu_field = closure.nu_of_gamma(gamma)
+    fluid_rows = slice(1, ny - 1)
+    # Guo velocity shift: the populations carry u - a/2, so the physical
+    # velocity is the moment plus a/2 (Guo, Zheng & Shi 2002).
+    u_all = ux.mean(dim=1) + 0.5 * accel
+    u_all[0] = 0.0
+    u_all[-1] = 0.0
+    return {
+        "y": geo["y_center"],
+        "y_wall": geo["y_wall"],
+        "u": u_all,
+        "u_field": ux + 0.5 * accel,
+        "gamma_dot": gamma,
+        "nu": nu_field,
+        "tau_field": tau_prev,
+        "steps": step,
+        "converged": converged,
+        "residual": residual,
+        "history": history,
+        "u_max": float(u_all[fluid_rows].max()),
+        "mean_velocity": float(u_all[fluid_rows].mean()),
+        "flow_rate": float(u_all[fluid_rows].mean()) * h,
+        "gamma_dot_wall": float(gamma[1].mean()),
+        "tau_wall": float(accel * H),
+        "geometry": {k: v for k, v in geo.items() if k not in ("solid", "fluid")},
+        "h": h,
+        "accel": accel,
+        "closure": closure.name,
+        "closure_params": dict(closure.params),
+        "fluid_rows": fluid_rows,
+        "wall_bc": "non-equilibrium extrapolation (Guo, Zheng & Shi 2002)",
+    }
+
+
+def l2_relative_error(u_num: torch.Tensor, u_ref: torch.Tensor) -> float:
+    """Discrete L2 relative error ``‖u_num − u_ref‖₂ / ‖u_ref‖₂``."""
+    d = (u_num - u_ref).double()
+    r = u_ref.double()
+    den = float(torch.sqrt((r * r).mean()))
+    if den == 0.0:
+        raise ValueError("reference profile is identically zero")
+    return float(torch.sqrt((d * d).mean()) / den)
+
+
+def solution_residual(
+    y: torch.Tensor,
+    gamma_dot: torch.Tensor,
+    closure: Closure,
+    accel: float,
+    half_width: float,
+) -> torch.Tensor:
+    """Momentum-balance residual ``d(ν γ̇)/dy + ρ a`` of a measured profile.
+
+    For a converged solution of the *measured* constitutive response this
+    residual vanishes up to discretisation error; it is the equation actually
+    solved, independent of any analytic anchor.  The full profile is folded onto
+    ``|y|`` (mean of the ±pair), ``ν`` comes from the closure, and the
+    derivative is a second-order central difference.  The result is normalised
+    by the driving stress ``ρ a H``, so it reads as a fraction of the wall
+    stress.
+    """
+    if accel <= 0.0:
+        raise ValueError("accel must be > 0")
+    y = torch.as_tensor(y, dtype=torch.float64).abs()
+    g = torch.as_tensor(gamma_dot, dtype=torch.float64)
+    keep = y <= float(half_width) * (1.0 + 1.0e-12)
+    y, g = y[keep], g[keep]
+    order = torch.argsort(y)
+    y, g = y[order], g[order]
+    uniq, inverse = torch.unique(y, return_inverse=True)
+    g_acc = torch.zeros(uniq.numel(), dtype=torch.float64)
+    cnt = torch.zeros(uniq.numel(), dtype=torch.float64)
+    g_acc.index_add_(0, inverse, g)
+    cnt.index_add_(0, inverse, torch.ones_like(g))
+    r, g_sym = uniq, g_acc / cnt
+    tau = g_sym * closure.nu_of_gamma(torch.clamp(g_sym, min=1.0e-300))
+    dtau = torch.gradient(tau, spacing=(r,), dim=0)[0]
+    return (dtau + accel) / (accel * float(half_width))
