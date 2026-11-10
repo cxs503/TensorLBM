@@ -74,8 +74,8 @@ from typing import Any, Sequence
 import numpy as np
 import torch
 
-from .scalar_transport import (
-    scalar_collision,
+from .scalar import (
+    scalar_collide_bgk as scalar_collision,
     scalar_equilibrium,
     scalar_macroscopic,
     scalar_stream,
