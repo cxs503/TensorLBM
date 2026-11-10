@@ -1,369 +1,605 @@
-"""Turbulent-channel runner for the microbubble drag-reduction node (P106W2-N01).
+"""Shan-Chen microbubble drag-reduction channel (campaign node IN67-N01).
 
-One case = one Shan-Chen channel run at **matched bulk velocity**: an integral
-controller adjusts the uniform per-volume drive ``F0`` until the volumetric mean
-streamwise velocity equals ``U_target``, so the single-phase reference and every
-two-phase case are compared at the same throughput (which is what makes
-``Delta C_f`` a drag reduction rather than a flow-rate change).
+Physical set-up (lattice units; ``x`` streamwise, ``y`` wall-normal)
+-------------------------------------------------------------------
+* plane channel, walls at rows ``0`` and ``ny-1`` (half-way bounce-back), fluid
+  rows ``1 .. ny-2``, streamwise periodic, driven by a uniform body force
+  ``g_x`` that an integral controller adjusts so that the **mass flux**
+  ``J = <rho u_x>`` matches between the single-phase reference and every
+  two-phase run.  Matching ``J`` (not the forcing) is what makes the wall-shear
+  ratio a drag-reduction statement: at matched forcing the momentum balance
+  ``tau_w = g_x * (mass per unit area of the half channel)`` fixes ``tau_w`` and
+  no drag change can exist by construction.
+* the carrier is a Shan-Chen single-component fluid with the exponential
+  pseudopotential; gas is seeded as circular bubbles of the *lattice* gas
+  density and the void fraction is the resolved field
+  ``alpha = (rho_l - rho)/(rho_l - rho_g)``.  ``rho_l``/``rho_g`` come from the
+  Maxwell construction on this model's own pressure (:mod:`.eos`).
+* a **phase-dependent relaxation time** ``tau(alpha) = tau_l + alpha (tau_g -
+  tau_l)`` is used, so the dispersed gas really does change the mixture
+  viscosity -- that is the model's viscosity-contrast channel and the reason the
+  viscosity drag term is non-zero and measurable rather than assumed.
 
-Gas is injected as :math:`N` spherical bubbles of diameter :math:`d` next to the
-**top** wall (the "hull plate"); a net buoyancy ``F_y = (rho_l - rho) g_b``
-holds the bubbles against it.  The bottom wall is the control wall.
+Diagnostics
+-----------
+* wall shear from the half-way bounce-back **momentum exchange** (Ladd), one
+  value per wall per step, averaged over the second half of the run;
+* Reynolds statistics accumulated as ``x``-averages of products, so that
+  ``<u'v'> = <uv> - <u><v>`` is available on the half channel;
+* three independent friction-velocity estimates (wall gradient, Reynolds-stress
+  identity, total shear from the momentum balance) as a consistency check.
 
-Statistics: (time, x, z)-averaged profiles of ``rho``, ``u``, ``<u'v'>`` and the
-gas volume fraction ``alpha = (rho_l - rho)/(rho_l - rho_g)`` together with the
-bounce-back momentum-exchange wall shear, which is an independent measurement of
-``tau_w`` used to validate the profile-based FIK decomposition.
+Scope / honesty
+---------------
+The resolved friction Reynolds number is ``Re_tau ~ 20-40`` here (a CPU-budget
+Shan-Chen channel), i.e. the carrier is a *laminar* plane Poiseuille flow and the
+fluctuations are bubble-induced (pseudo-turbulence), not wall turbulence.  The
+``d+`` scan therefore probes bubble size *relative to the channel*; absolute
+wall-unit scaling of a real turbulent boundary layer needs a 3D DNS at
+``Re_tau >= 180`` that this node does not claim (see the report's WITHHELD item).
 """
 
 from __future__ import annotations
 
 import math
-import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
 import torch
 
-from .kernel import ChannelKernel, momentum, sc_force, psi_exp
+from ..gas_layer import kernels
 
-__all__ = ["ChannelConfig", "coexistence", "probe_coexistence", "init_bubbles", "run_case"]
+# Small lattice arrays: intra-op threading costs far more than it saves (measured
+# 20x slowdown at the default 128 threads), so pin this module to one thread.
+torch.set_num_threads(1)
+from ..multiphase import psi_exp
+from .decomposition import HalfChannelProfiles, wall_shear_budget
+from .eos import maxwell_coexistence, kinematic_viscosity
+
+
+_COEX_CACHE: dict[tuple[float, ...], tuple[float, float]] = {}
+
+
+def calibrate_coexistence(G: float = 5.0, rho0: float = 1.0, n: int = 24,
+                          steps: int = 1500, tau: float = 0.7,
+                          seed: int = 7) -> tuple[float, float]:
+    """Measure the model's own ``(rho_gas, rho_liquid)`` from a phase-separating box.
+
+    The Maxwell construction on the lattice EOS (:func:`.eos.maxwell_coexistence`)
+    is the leading-order answer, but a lattice Shan-Chen fluid coexists at
+    slightly different densities.  Since the void fraction
+    ``alpha = (rho_l - rho)/(rho_l - rho_g)`` is a *linear* functional of the
+    density, a percent-level error in ``rho_g`` shows up as a percent-level drift
+    of ``int alpha`` -- which would then be mis-read as a mass-conservation
+    failure.  The densities are therefore measured from an unbiased periodic box
+    run of this very collision/streaming pair and cached per ``(G, rho0)``.
+    """
+    key = (float(G), float(rho0), int(n), int(steps), float(tau))
+    if key in _COEX_CACHE:
+        return _COEX_CACHE[key]
+    rg0, rl0 = maxwell_coexistence(G, rho0)
+    rng = np.random.default_rng(seed)
+    rho_np = np.full((n, n), 0.5 * (rl0 + rg0)) + 0.02 * rng.standard_normal((n, n))
+    rho_t = torch.as_tensor(rho_np, dtype=torch.float32)
+    f = kernels.equilibrium(rho_t, torch.zeros_like(rho_t), torch.zeros_like(rho_t))
+    psi = lambda r: psi_exp(r, rho0)
+    for _ in range(steps):
+        rho, ux, uy = kernels.macroscopic(f)
+        fx, fy = kernels.sc_force(rho, psi, G=G, gx=0.0, gy=0.0, solid=None,
+                                  wall_psi=None, periodic_x=True)
+        rho_s = torch.clamp(rho, min=1e-12)
+        feq_u = kernels.equilibrium(rho, ux, uy)
+        feq_f = kernels.equilibrium(rho, ux + fx / rho_s, uy + fy / rho_s)
+        f = f - (f - feq_u) / tau + (feq_f - feq_u)
+        f = kernels.stream(f, solid=None, periodic_x=True, periodic_y=True)["f"]
+    rho_end = kernels.macroscopic(f)[0].numpy()
+    mid = 0.5 * (rl0 + rg0)
+    gas = rho_end[rho_end < mid]
+    liq = rho_end[rho_end >= mid]
+    if gas.size < 8 or liq.size < 8:
+        rg, rl = rg0, rl0            # no clean separation -> keep the EOS values
+    else:
+        rg = float(np.median(gas))
+        rl = float(np.median(liq))
+        if not (rl > 2.0 * rg > 0.0):
+            rg, rl = rg0, rl0
+    _COEX_CACHE[key] = (rg, rl)
+    return rg, rl
 
 
 @dataclass
-class ChannelConfig:
-    # geometry (lattice units)
-    nx: int = 96
-    ny: int = 64
-    nz: int = 32
-    # target flow state
-    Re_tau: float = 180.0
-    u_tau: float = 0.006
-    U_target: float = 0.108          # bulk velocity held by the controller
-    # gas
-    alpha: float = 0.01              # target gas volume fraction
-    d_plus: float = 45.0             # bubble diameter in wall units
-    rho_l: float = 1.38
-    rho_g: float = 0.30
+class MicrobubbleConfig:
+    """One channel run (lattice units)."""
+
+    nx: int = 128
+    ny: int = 129
+    #: liquid relaxation time -> nu_l = (tau - 1/2)/3
+    tau_liquid: float = 0.56
+    #: gas relaxation time (viscosity contrast channel); floored at 0.52 by the
+    #: solver -- a sharply varying relaxation time on top of the Shan-Chen force
+    #: is the classic instability of variable-viscosity multiphase LBM
+    tau_gas: float = 0.55
+    #: Shan-Chen coupling (library sign convention: > 0 attracts)
     G: float = 5.0
-    g_b: float = -2.0e-4             # gas buoyancy per unit density deficit (pushes gas to y=0)
-    # numerics
-    lam_trt: float | None = None          # None -> omega_minus = 1 (robust for SC interfaces)
-    rho_l_meas: float = 1.42
-    rho_g_meas: float = 0.27
-    n_warmup: int = 2500
-    n_steps: int = 10000
+    rho0: float = 1.0
+    #: target mass flux <rho u_x> in lattice units
+    J_target: float = 0.18
+    #: target bubble diameter in wall units (d+), used with the *reference*
+    #: friction velocity to size the bubbles
+    d_plus: float = 10.0
+    #: number of bubbles; ``None`` -> derived from ``void_fraction``
+    n_bubbles: int | None = None
+    #: target gas volume fraction (only used when ``n_bubbles is None``)
+    void_fraction: float = 0.02
+    #: seeding band half thickness, in bubble diameters, measured from the wall
+    band_diameters: float = 1.5
+    n_steps: int = 16000
     sample_every: int = 20
-    pump_gain: float = 0.02
-    seed: int = 0
-    tag: str = "case"
+    control_every: int = 100
+    control_gain: float = 0.03
+    warmup_fraction: float = 0.5
+    seed: int = 20261109
+    #: float64 is the default: in float32 two of the nine production cases
+    #: diverged late in the run (the Shan-Chen force with a phase-dependent
+    #: relaxation time is only marginally stable in single precision)
+    dtype: torch.dtype = torch.float64
+    #: interface smoothing width for the initial bubbles (lattice cells)
+    interface_width: float = 0.9
+    wall_psi_ratio: float = 1.0
+    #: if False the relaxation time is uniform (viscosity contrast switched off)
+    viscosity_contrast: bool = True
+    #: measure the coexistence densities from a probe run instead of using the
+    #: Maxwell construction alone (see :func:`calibrate_coexistence`)
+    calibrate_coexistence: bool = True
+    coex_calibration_steps: int = 1500
+
+    def __post_init__(self) -> None:
+        if self.ny % 2 == 0:
+            raise ValueError("ny must be odd so that a centreline row exists")
+        if self.tau_liquid <= 0.5 or self.tau_gas <= 0.5:
+            raise ValueError("relaxation times must exceed 1/2")
 
     @property
-    def nu(self) -> float:
-        """Kinematic viscosity that puts the half-gap at ``Re_tau``."""
-        return self.u_tau * (self.ny / 2.0) / self.Re_tau
+    def half_height(self) -> float:
+        return (self.ny - 1) / 2.0
 
     @property
-    def tau(self) -> float:
-        return 0.5 + 3.0 * self.nu
+    def nu_liquid(self) -> float:
+        return kinematic_viscosity(self.tau_liquid)
 
     @property
-    def d_lattice(self) -> float:
-        """Bubble diameter in lattice units from the wall-unit target."""
-        return self.d_plus * self.nu / self.u_tau
+    def nu_gas(self) -> float:
+        return kinematic_viscosity(self.tau_gas)
 
 
-def coexistence(G: float = 5.0, rho0: float = 1.0, n: int = 24, steps: int = 4000, tau: float = 0.8) -> dict:
-    """Measure the liquid/gas coexistence densities of the SC kernel (periodic box)."""
-    torch.set_grad_enabled(False)
-    k = ChannelKernel((n, n, n), tau=tau, G=G)
-    rho = torch.full((n, n, n), float(rho0))
-    # seed a density perturbation so the spinodal instability is not left to round-off
-    gen = torch.Generator().manual_seed(7)
-    rho = rho * (1.0 + 0.02 * torch.randn((n, n, n), generator=gen))
-    u = torch.zeros((3, n, n, n))
-    f = k.field(float(rho0), 0.0)
-    noise = torch.randn((3, n, n, n), generator=gen) * 1e-3
-    from .kernel import equilibrium
+class MicrobubbleChannel2D:
+    """Two-phase plane channel with seeded micro-bubbles."""
 
-    f = equilibrium(rho, noise)
-    # periodic box: emulate by using a kernel whose y walls are pushed outside the
-    # statistics window -- instead run the SC-only relaxation with periodic rolls
-    rho_t = rho.clone()
-    for _ in range(steps):
-        Fx, Fy, Fz = sc_force(rho_t, G)
-        # simple pseudo-time relaxation of the density field (Cahn-Hilliard-like):
-        # the SC force drives the separation; a diffusion term regularises it
-        lap = (
-            torch.roll(rho_t, 1, 0) + torch.roll(rho_t, -1, 0)
-            + torch.roll(rho_t, 1, 1) + torch.roll(rho_t, -1, 1)
-            + torch.roll(rho_t, 1, 2) + torch.roll(rho_t, -1, 2)
-            - 6.0 * rho_t
+    def __init__(self, config: MicrobubbleConfig | None = None):
+        self.cfg = cfg = config or MicrobubbleConfig()
+        dtype, device = cfg.dtype, torch.device("cpu")
+        self.device = device
+        self.solid = torch.zeros((cfg.ny, cfg.nx), dtype=torch.bool, device=device)
+        self.solid[0, :] = True
+        self.solid[cfg.ny - 1, :] = True
+        self.fluid = ~self.solid
+        if cfg.calibrate_coexistence:
+            self.rho_gas, self.rho_liquid = calibrate_coexistence(
+                cfg.G, cfg.rho0, steps=cfg.coex_calibration_steps)
+            self._rho_from_maxwell = maxwell_coexistence(cfg.G, cfg.rho0)
+        else:
+            self.rho_gas, self.rho_liquid = maxwell_coexistence(cfg.G, cfg.rho0)
+            self._rho_from_maxwell = (self.rho_gas, self.rho_liquid)
+        self.psi = lambda r: psi_exp(r, cfg.rho0)
+        self.wall_psi = cfg.wall_psi_ratio * float(self.psi(torch.tensor(self.rho_liquid)))
+        self.t = 0
+        self.gx0 = self._initial_gx()
+        self.gx = self.gx0
+        self.mass_initial = 0.0
+        self.alpha_initial = 0.0
+        self._history: dict[str, list[float]] = {
+            "tau_w": [], "J": [], "gx": [], "alpha": [],
+        }
+        self._acc: dict[str, torch.Tensor] = {}
+        self._n_samples = 0
+        self.bubble_centers = np.zeros((0, 2))
+        self.bubble_radius = 0.0
+        self.f = self._initial_field()
+
+    # -- set-up --------------------------------------------------------------
+    def _initial_gx(self) -> float:
+        """Laminar estimate ``g_x = 3 nu U_b / h^2`` with ``U_b = J/rho_l``."""
+        cfg = self.cfg
+        u_bulk = cfg.J_target / self.rho_liquid
+        return 3.0 * cfg.nu_liquid * u_bulk / (cfg.half_height ** 2)
+
+    def friction_velocity_estimate(self) -> float:
+        """Laminar ``u_tau = sqrt(g_x h)`` (used only to size the bubbles)."""
+        return math.sqrt(max(self.gx * self.cfg.half_height, 1e-14))
+
+    def bubble_radius_for(self, d_plus: float) -> float:
+        """Radius ``R = d+ nu_l / (2 u_tau)`` from the reference friction velocity."""
+        u_tau = self.friction_velocity_estimate()
+        return 0.5 * d_plus * self.cfg.nu_liquid / u_tau
+
+    def _place_bubbles(self, radius: float, n_bubbles: int) -> np.ndarray:
+        """Seeded, non-overlapping placement in near-wall bands (both walls)."""
+        cfg = self.cfg
+        if n_bubbles <= 0 or radius <= 0.0:
+            return np.zeros((0, 2))
+        rng = np.random.default_rng(cfg.seed)
+        h = cfg.half_height
+        band = max(cfg.band_diameters * 2.0 * radius, 2.0)
+        y_lo = radius + 1.5
+        y_hi = min(h - radius - 0.5, y_lo + band)
+        if y_hi <= y_lo:
+            y_lo, y_hi = max(1.0 + radius, 1.0), max(1.0 + radius, h - radius)
+        centers: list[tuple[float, float]] = []
+        for k in range(n_bubbles):
+            for _ in range(4000):
+                x = float(rng.uniform(0.0, cfg.nx))
+                y_half = float(rng.uniform(y_lo, max(y_lo, y_hi)))
+                y = y_half if k % 2 == 0 else (cfg.ny - 1) - y_half
+                ok = True
+                for (xc, yc) in centers:
+                    dx = abs(x - xc)
+                    dx = min(dx, cfg.nx - dx)          # periodic in x
+                    if math.hypot(dx, y - yc) < 2.25 * radius:
+                        ok = False
+                        break
+                if ok:
+                    centers.append((x, y))
+                    break
+        return np.array(centers, dtype=float)
+
+    def _initial_field(self) -> torch.Tensor:
+        cfg = self.cfg
+        ny, nx = cfg.ny, cfg.nx
+        radius = self.bubble_radius_for(cfg.d_plus)
+        fluid_area = float(self.fluid.sum())
+        if cfg.n_bubbles is None:
+            area = cfg.void_fraction * fluid_area
+            n_bubbles = (max(1, int(round(area / (math.pi * radius ** 2))))
+                         if radius > 0 and cfg.void_fraction > 0 else 0)
+        else:
+            n_bubbles = int(cfg.n_bubbles)
+        centers = self._place_bubbles(radius, n_bubbles)
+        self.bubble_centers = centers
+        self.bubble_radius = radius
+
+        yy, xx = np.meshgrid(np.arange(ny), np.arange(nx), indexing="ij")
+        rho = np.full((ny, nx), self.rho_liquid, dtype=np.float64)
+        w = max(cfg.interface_width, 0.3)
+        for (xc, yc) in centers:
+            dx = np.abs(xx - xc)
+            dx = np.minimum(dx, nx - dx)
+            r = np.hypot(dx, yy - yc)
+            # smooth tanh bubble profile (sharp jumps destabilise the SC force)
+            s = 0.5 * (1.0 - np.tanh((r - radius) / w))
+            rho = rho * (1.0 - s) + self.rho_gas * s
+        rho[self.solid.cpu().numpy()] = self.rho_liquid
+        self.f = self._equilibrium_from(rho)
+        self.f = self._superpose_laminar(self.f, rho)
+        self.mass_initial = float(rho[self.fluid.cpu().numpy()].sum())
+        self.alpha_initial = self.mean_void_fraction()
+        self.alpha_linear_initial = self.linear_void_fraction()
+        self._reset_accumulators()
+        return self.f
+
+    def laminar_profile(self) -> np.ndarray:
+        """Analytic plane-Poiseuille ``u(y) = g_x y (H - y) / (2 nu)`` (cells)."""
+        cfg = self.cfg
+        H = float(cfg.ny - 1)
+        y = np.arange(cfg.ny, dtype=float) - 0.5
+        u = self.gx * np.clip(y, 0.0, H) * (H - np.clip(y, 0.0, H)) / (2.0 * cfg.nu_liquid)
+        u[0] = 0.0
+        u[cfg.ny - 1] = 0.0
+        return u
+
+    def _superpose_laminar(self, f: torch.Tensor, rho: np.ndarray) -> torch.Tensor:
+        """Start from the analytic Poiseuille field plus a tiny perturbation.
+
+        The viscous spin-up time of this channel is ``h^2/nu ~ 3e4`` steps, far
+        longer than the run, so starting from rest would leave the controller
+        chasing a transient for the whole run.  Starting on the analytic solution
+        means the run only has to reach the *two-phase* steady state.  A
+        deterministic 1e-3 ``u_max`` perturbation breaks the exact symmetry so
+        bubble wakes are not artificially suppressed.
+        """
+        cfg = self.cfg
+        rho_t = torch.as_tensor(rho, dtype=cfg.dtype, device=self.device)
+        u = self.laminar_profile()
+        u_max = float(np.abs(u).max()) or 1.0
+        rng = np.random.default_rng(cfg.seed + 1)
+        u = u + 1e-3 * u_max * rng.standard_normal(u.shape)
+        u[0] = 0.0
+        u[cfg.ny - 1] = 0.0
+        u2 = np.broadcast_to(u[:, None], rho.shape).copy()
+        v2 = np.zeros_like(u2)
+        ux_t = torch.as_tensor(u2, dtype=cfg.dtype, device=self.device)
+        uy2_t = torch.as_tensor(v2, dtype=cfg.dtype, device=self.device)
+        f = kernels.equilibrium(rho_t, ux_t, uy2_t).clone()
+        f[:, self.solid] = 0.0
+        return f
+
+    def _equilibrium_from(self, rho: np.ndarray) -> torch.Tensor:
+        cfg = self.cfg
+        rho_t = torch.as_tensor(rho, dtype=cfg.dtype, device=self.device)
+        zero = torch.zeros_like(rho_t)
+        f = kernels.equilibrium(rho_t, zero, zero).clone()
+        f[:, self.solid] = 0.0
+        return f
+
+    # -- fields --------------------------------------------------------------
+    def macroscopic(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        return kernels.macroscopic(self.f)
+
+    def void_fraction(self, rho: torch.Tensor) -> torch.Tensor:
+        a = (self.rho_liquid - rho) / (self.rho_liquid - self.rho_gas)
+        return torch.clamp(a, 0.0, 1.0)
+
+    def mean_void_fraction(self) -> float:
+        rho, _, _ = self.macroscopic()
+        return float(self.void_fraction(rho)[self.fluid].mean())
+
+    def linear_void_fraction(self) -> float:
+        """Unclamped ``<(rho_l - rho)/(rho_l - rho_g)>``.
+
+        This functional is *linear* in ``rho``, so it is conserved to machine
+        precision whenever the mass is (``sum(rho_l - rho)`` is a mass
+        functional).  The clamped field is the physically meaningful one but its
+        integral can drift a few percent when the gas relaxes to a density other
+        than ``rho_g``; both are reported.
+        """
+        rho, _, _ = self.macroscopic()
+        lin = (self.rho_liquid - rho) / (self.rho_liquid - self.rho_gas)
+        return float(lin[self.fluid].mean())
+
+    def mass_flux(self) -> float:
+        rho, ux, _ = self.macroscopic()
+        return float((rho * ux)[self.fluid].mean())
+
+    def _tau_field(self, alpha: torch.Tensor) -> torch.Tensor:
+        """Phase-dependent relaxation time ``tau(alpha)``, smoothed and floored.
+
+        Two numerical safety measures, both measured rather than guessed: the
+        void fraction is smoothed with a 3x3 box filter before it enters ``tau``
+        (a cell-sharp ``tau`` jump across the interface destabilises the
+        Shan-Chen force -- the run diverged within ~13 steps at 32x33 without
+        this), and ``tau`` is floored well above 1/2.
+        """
+        cfg = self.cfg
+        if not cfg.viscosity_contrast:
+            return torch.full_like(alpha, cfg.tau_liquid)
+        a = alpha
+        for _ in range(2):
+            a = (a + torch.roll(a, 1, 0) + torch.roll(a, -1, 0)) / 3.0
+            a = (a + torch.roll(a, 1, 1) + torch.roll(a, -1, 1)) / 3.0
+        a = torch.clamp(a, 0.0, 1.0)
+        tau = cfg.tau_liquid + a * (cfg.tau_gas - cfg.tau_liquid)
+        return torch.clamp(tau, min=0.52)
+
+    # -- one step ------------------------------------------------------------
+    def _collide(self) -> torch.Tensor:
+        cfg = self.cfg
+        rho, ux, uy = self.macroscopic()
+        # the pseudopotential is evaluated on a clamped density only: a vanishing
+        # density cell (gas cavitation) otherwise feeds back into psi and the
+        # whole field diverges.  f itself is never clamped, so mass is exact.
+        rho = torch.clamp(rho, min=1e-4, max=8.0)
+        fx, fy = kernels.sc_force(
+            rho,
+            self.psi,
+            G=cfg.G,
+            gx=self.gx,
+            gy=0.0,
+            solid=self.solid,
+            wall_psi=self.wall_psi,
+            periodic_x=True,
         )
-        div = (
-            torch.roll(Fx, -1, 2) - torch.roll(Fx, 1, 2)
-            + torch.roll(Fy, -1, 1) - torch.roll(Fy, 1, 1)
-            + torch.roll(Fz, -1, 0) - torch.roll(Fz, 1, 0)
-        ) * 0.5
-        rho_t = rho_t + 0.02 * (div + 0.5 * lap)
-        rho_t = torch.clamp(rho_t, 1e-3, 10.0)
-    flat = rho_t.flatten().numpy()
-    lo = float(np.percentile(flat, 5))
-    hi = float(np.percentile(flat, 95))
-    return {
-        "G": G,
-        "rho0": rho0,
-        "rho_l": hi,
-        "rho_g": lo,
-        "density_ratio": hi / max(lo, 1e-12),
-        "rho_mean": float(flat.mean()),
-        "box": n,
-        "steps": steps,
-        "method": "SC spinodal relaxation (mean-field proxy for the LBM coexistence curve)",
-    }
+        # solid rows must not contribute a void fraction: with rho = 0 in the
+        # solid, the indicator would read alpha = 1 there and the smoothing below
+        # would then hand a gas relaxation time to the wall-adjacent fluid row
+        alpha = torch.where(self.solid, torch.zeros_like(rho), self.void_fraction(rho))
+        tau = self._tau_field(alpha).unsqueeze(0)
+        rho_s = torch.clamp(rho, min=1e-12)
+        feq_u = kernels.equilibrium(rho, ux, uy)
+        feq_f = kernels.equilibrium(rho, ux + fx / rho_s, uy + fy / rho_s)
+        f_out = self.f - (self.f - feq_u) / tau + (feq_f - feq_u)
+        f_out = torch.where(self.solid.unsqueeze(0), torch.zeros_like(f_out), f_out)
+        return f_out
+
+    def step(self, n: int = 1) -> None:
+        cfg = self.cfg
+        for _ in range(n):
+            f_post = self._collide()
+            out = kernels.stream(f_post, solid=self.solid, periodic_x=True)
+            self.f = out["f"]  # type: ignore[assignment]
+            self.t += 1
+            tau_w = float(out["wall_force_x"].sum()) / (2.0 * cfg.nx)
+            self._history["tau_w"].append(tau_w)
+            if self.t % cfg.control_every == 0:
+                self._flow_control()
+            if self.t % cfg.sample_every == 0:
+                self._accumulate()
+            if self.t % 100 == 0:
+                self._check_finite()
+
+    def _check_finite(self) -> None:
+        # solid rows carry zero populations, so only the fluid rows can diverge
+        if not torch.isfinite(self.f[:, self.fluid]).all():
+            raise FloatingPointError(f"two-phase channel diverged at step {self.t}")
+
+    def _flow_control(self) -> None:
+        """Multiplicative integral control on the mass flux ``J = <rho u_x>``."""
+        cfg = self.cfg
+        J = self.mass_flux()
+        if not math.isfinite(J) or J <= 0.0:
+            return
+        ratio = cfg.J_target / J
+        # the drive is bounded relative to the laminar value for the same mass
+        # flux: without the band the controller keeps raising g_x when a large
+        # bubble chokes the channel, and the run reaches u ~ 0.5 (Mach 1) and
+        # diverges -- this is what killed the d+ = 20 case at 96x97 in float32
+        self.gx = float(np.clip(self.gx * (1.0 + cfg.control_gain * (ratio - 1.0)),
+                                0.2 * self.gx0, 4.0 * self.gx0))
+        self._history["J"].append(J)
+        self._history["gx"].append(self.gx)
+        self._history["alpha"].append(self.mean_void_fraction())
+
+    # -- statistics ----------------------------------------------------------
+    def _reset_accumulators(self) -> None:
+        cfg = self.cfg
+        self._acc = {k: torch.zeros(cfg.ny, dtype=torch.float64, device=self.device)
+                     for k in ("rho", "u", "v", "rhouv", "rhov", "mu", "alpha", "uu")}
+        self._n_samples = 0
+
+    def _accumulate(self) -> None:
+        cfg = self.cfg
+        rho, ux, uy = self.macroscopic()
+        alpha = torch.where(self.solid, torch.zeros_like(rho), self.void_fraction(rho))
+        mu = rho * (self._tau_field(alpha) - 0.5) / 3.0
+        avg = lambda t: t.mean(dim=1).double()
+        self._acc["rho"] += avg(rho)
+        self._acc["u"] += avg(ux)
+        self._acc["v"] += avg(uy)
+        self._acc["uu"] += avg(ux * ux)
+        self._acc["rhouv"] += avg(rho * ux * uy)
+        self._acc["rhov"] += avg(rho * uy)
+        self._acc["mu"] += avg(mu)
+        self._acc["alpha"] += avg(alpha)
+        self._n_samples += 1
+
+    def profiles(self) -> tuple[HalfChannelProfiles, dict[str, float]]:
+        """Time/x-averaged half-channel profiles (lower and upper halves merged).
+
+        The two halves are folded together (the upper half mirrored) because the
+        seeded bubble layout is only *statistically* symmetric: using one half
+        alone puts the wall-shear of one wall against the half-channel momentum
+        balance of the other, which shows up as a spurious few-percent spread
+        between the friction-velocity estimators.  ``<u'v'>`` is antisymmetric
+        under the reflection, so its symmetric part is ``(lo - hi)/2``.
+        """
+        cfg = self.cfg
+        if self._n_samples == 0:
+            raise RuntimeError("no samples accumulated")
+        n = float(self._n_samples)
+        mean = {k: (v / n).cpu().numpy() for k, v in self._acc.items()}
+        h = cfg.half_height
+        nh = int(h)
+        lo = np.arange(1, nh + 1)
+        hi = np.arange(cfg.ny - 1 - nh, cfg.ny - 1)[::-1]
+        y = lo - 0.5
+        sym = lambda key, sign=1.0: 0.5 * (mean[key][lo] + sign * mean[key][hi])
+        u = sym("u")
+        rho = sym("rho")
+        mu = sym("mu")
+        alpha = sym("alpha")
+        rho_uv = 0.5 * (mean["rhouv"][lo] - mean["rhouv"][hi])
+        prof = HalfChannelProfiles(y=y, rho=rho, u=u, mu=mu, rho_uv=rho_uv,
+                                   alpha=alpha, h=h)
+        mu_liquid = self.rho_liquid * cfg.nu_liquid
+        budget = wall_shear_budget(prof, mu_liquid)
+        uu = 0.5 * (mean["uu"][lo] - u * u + mean["uu"][hi] - mean["u"][hi] ** 2)
+        stats = {
+            **budget,
+            "u_bulk": float(np.trapezoid(u, y) / h),
+            "mu_mean": float(np.trapezoid(mu, y) / h),
+            "rho_mean": float(np.trapezoid(rho, y) / h),
+            "alpha_mean_half": float(np.trapezoid(alpha, y) / h),
+            "alpha_wall": float(alpha[0]),
+            "uu_mean": float(np.trapezoid(uu, y) / h),
+        }
+        return prof, stats
+
+    # -- run -----------------------------------------------------------------
+    def run(self) -> dict[str, Any]:
+        cfg = self.cfg
+        self.step(cfg.n_steps)
+        prof, stats = self.profiles()
+        hist = np.asarray(self._history["tau_w"], dtype=float)
+        n0 = int(cfg.warmup_fraction * len(hist))
+        tau_w_exchange = float(hist[n0:].mean())
+        tau_w_std = float(hist[n0:].std())
+        gx_hist = np.asarray(self._history["gx"], dtype=float)
+        gx_mean = float(gx_hist[len(gx_hist) // 2:].mean()) if gx_hist.size else self.gx
+        # Headline wall shear = momentum balance of the half channel,
+        # tau_w = g_x * int_0^h rho dy (exact in a statistically steady channel
+        # and independent of the bounce-back bookkeeping).  The half-way
+        # bounce-back momentum-exchange accumulator is kept as a cross-check: it
+        # omits the static Shan-Chen wall-potential force and reads ~2-4 % high
+        # (measured, see the report's trap list).
+        nh = int(cfg.half_height)
+        lo = np.arange(1, nh + 1)
+        hi = np.arange(cfg.ny - 1 - nh, cfg.ny - 1)
+        rho_half = 0.5 * float(self._acc["rho"][lo].mean() + self._acc["rho"][hi].mean()) / self._n_samples
+        tau_w = gx_mean * rho_half * cfg.half_height
+        J = float(np.mean(self._history["J"][len(self._history["J"]) // 2:]))
+        alpha = self.mean_void_fraction()
+        rho, _, _ = self.macroscopic()
+        mass = float(rho[self.fluid].sum())
+        u_tau = math.sqrt(max(tau_w / self.rho_liquid, 1e-18))
+        h = cfg.half_height
+        # momentum balance: tau_w must equal g_x * (mass per unit area of half channel)
+        # momentum balance: tau_w = g_x * int_0^h rho dy  (per unit wall length)
+        mass_half = float(rho[1:int(h) + 1, :].mean()) * h
+        tau_balance = self.gx * mass_half
+        out = {
+            "config": {
+                "nx": cfg.nx, "ny": cfg.ny, "tau_liquid": cfg.tau_liquid,
+                "tau_gas": cfg.tau_gas, "G": cfg.G, "J_target": cfg.J_target,
+                "d_plus_target": cfg.d_plus, "n_bubbles": int(len(self.bubble_centers)),
+                "n_steps": cfg.n_steps, "viscosity_contrast": cfg.viscosity_contrast,
+                "rho_liquid": self.rho_liquid, "rho_gas": self.rho_gas,
+                "nu_liquid": cfg.nu_liquid, "nu_gas": cfg.nu_gas,
+            },
+            "tau_w": tau_w,
+            "tau_w_exchange": tau_w_exchange,
+            "tau_w_std": tau_w_std,
+            "tau_w_balance": tau_balance,
+            "u_tau": u_tau,
+            "u_tau_exchange": math.sqrt(max(tau_w_exchange / self.rho_liquid, 1e-18)),
+            "u_tau_gradient": math.sqrt(max(stats["tau_w_gradient"] / self.rho_liquid, 1e-18)),
+            "u_tau_identity": math.sqrt(max(stats["tau_w_identity"] / self.rho_liquid, 1e-18)),
+            "u_tau_balance": math.sqrt(max(tau_balance / self.rho_liquid, 1e-18)),
+            "J": J,
+            "gx": self.gx,
+            "gx0": self.gx0,
+            "gx_over_gx0": self.gx / self.gx0,
+            "gx_mean": gx_mean,
+            "alpha_mean": alpha,
+            "alpha_integral_drift": (0.0 if self.alpha_initial < 1e-6
+                                     else abs(alpha - self.alpha_initial) / self.alpha_initial),
+            "alpha_linear_drift": (0.0 if self.alpha_linear_initial < 1e-6
+                                   else abs(self.linear_void_fraction()
+                                            - self.alpha_linear_initial) / self.alpha_linear_initial),
+            "mass_drift": abs(mass - self.mass_initial) / self.mass_initial,
+            "bubble_radius": self.bubble_radius,
+            "bubble_diameter_lattice": 2.0 * self.bubble_radius,
+            "d_plus_achieved": 2.0 * self.bubble_radius * u_tau / cfg.nu_liquid,
+            "Re_tau": u_tau * h / cfg.nu_liquid,
+            "Re_bulk": 2.0 * h * (J / self.rho_liquid) / cfg.nu_liquid,
+            "n_bubbles_placed": int(len(self.bubble_centers)),
+            "bubble_centers": self.bubble_centers.tolist(),
+            "profile": {k: np.asarray(v, dtype=float).tolist() for k, v in {
+                "y": prof.y, "u": prof.u, "rho": prof.rho, "mu": prof.mu,
+                "rho_uv": prof.rho_uv, "alpha": prof.alpha,
+            }.items()},
+            "tau_w_history": hist[:: max(1, len(hist) // 400)].tolist(),
+            "alpha_field": self.void_fraction(rho)[::2, ::2].cpu().numpy().tolist(),
+            "u_field": torch.where(self.fluid, self.macroscopic()[1],
+                                   torch.zeros_like(rho))[::2, ::2].cpu().numpy().tolist(),
+        }
+        out.update({k: float(v) for k, v in stats.items()})
+        return out
 
 
-def probe_coexistence(cfg: ChannelConfig, rho0_list=(1.0, 1.3, 1.6), n: int = 16, steps: int = 1500) -> dict:
-    """Measure the liquid/gas coexistence densities **with the production kernel**.
-
-    The alpha field of every case uses these numbers, so they are measured in the
-    same Shan-Chen kernel at the same relaxation time and recorded in the
-    campaign JSON rather than assumed.
-    """
-    torch.set_grad_enabled(False)
-    lam = cfg.lam_trt if cfg.lam_trt is not None else 0.5 * (cfg.tau - 0.5)
-    out = {"tau": cfg.tau, "G": cfg.G, "lam_trt": lam, "box": [n, n * 3 // 2, n], "steps": steps, "points": []}
-    for rho0 in rho0_list:
-        k = ChannelKernel((n, n * 3 // 2, n), tau=cfg.tau, G=cfg.G, lam_trt=lam)
-        gen = torch.Generator().manual_seed(11)
-        shape = (n, n * 3 // 2, n)
-        rho = torch.full(shape, float(rho0)) * (1 + 0.04 * torch.randn(shape, generator=gen))
-        from .kernel import equilibrium
-
-        f = equilibrium(rho, 0.01 * torch.randn((3,) + shape, generator=gen))
-        for _ in range(steps):
-            f, _d = k.step(f, 0.0)
-        rh, _j = momentum(f)
-        arr = rh.flatten().numpy()
-        lo = float(np.percentile(arr, 0.5))
-        hi = float(np.percentile(arr, 99.5))
-        out["points"].append({"rho0": rho0, "rho_l": hi, "rho_g": lo,
-                              "ratio": hi / max(lo, 1e-9), "mean": float(arr.mean())})
-    sep = [p for p in out["points"] if p["ratio"] > 1.5]
-    if sep:
-        best = max(sep, key=lambda p: p["ratio"])
-        out["rho_l"] = best["rho_l"]
-        out["rho_g"] = best["rho_g"]
-        out["density_ratio"] = best["ratio"]
-        out["separated"] = True
-    else:  # pragma: no cover
-        out["rho_l"] = float(rho0_list[0])
-        out["rho_g"] = 0.1 * float(rho0_list[0])
-        out["separated"] = False
-    return out
-
-
-def init_bubbles(
-    cfg: ChannelConfig,
-    rho_l: float,
-    rho_g: float,
-    gen: torch.Generator,
-) -> tuple[torch.Tensor, dict]:
-    """Place ``N`` spherical gas bubbles next to the top wall; returns ``(rho, meta)``."""
-    nz, ny, nx = cfg.nz, cfg.ny, cfg.nx
-    d = cfg.d_lattice
-    r = 0.5 * d
-    vol_dom = nx * ny * nz
-    vol_b = math.pi / 6.0 * d**3
-    n_b = int(round(cfg.alpha * vol_dom / vol_b)) if cfg.alpha > 0 else 0
-    z = torch.arange(nz).view(-1, 1, 1).float()
-    y = torch.arange(ny).view(1, -1, 1).float()
-    x = torch.arange(nx).view(1, 1, -1).float()
-    field_r = torch.full((nz, ny, nx), float(rho_l))
-    centres = []
-    for _ in range(n_b):
-        cz = float(torch.rand((), generator=gen) * nz)
-        cx = float(torch.rand((), generator=gen) * nx)
-        # bubbles sit against the BOTTOM wall (y = 0): that wall is the
-        # bubble-side wall and the FIK decomposition is exact for its shear.
-        # Physically this is the hull-bottom configuration: the gas is pressed
-        # against a downward-facing plate by buoyancy.
-        cy = float(1.5 * r + 1.0 + torch.rand((), generator=gen) * (1.0 * d))
-        dz = torch.abs(z - cz)
-        dz = torch.minimum(dz, nz - dz)
-        dx = torch.abs(x - cx)
-        dx = torch.minimum(dx, nx - dx)
-        dist = torch.sqrt(dz**2 + (y - cy) ** 2 + dx**2)
-        # tanh interface of ~1 lattice cell width
-        prof = 0.5 * (1.0 - torch.tanh((dist - r) / 2.0))
-        field_r = torch.minimum(field_r, rho_l - (rho_l - rho_g) * prof)
-        centres.append((cz, cy, cx))
-    return field_r, {"n_bubbles": n_b, "d_lattice": d, "alpha_geom": n_b * vol_b / vol_dom, "centres": centres}
-
-
-def _turbulent_perturbation(shape: tuple[int, int, int], amp: float, gen: torch.Generator) -> torch.Tensor:
-    """Random smooth perturbation from explicit Fourier modes (no FFT: the FFT
-    path corrupted the heap on the loong64 torch build).
-
-    The streamwise component carries the modes; a wall-normal component with a
-    quarter-period shape supplies the initial <u'v'> production term that lets
-    turbulence self-sustain.
-    """
-    nz, ny, nx = shape
-    u = torch.zeros((3, nz, ny, nx))
-    z = torch.arange(nz).view(-1, 1, 1).float()
-    y = torch.arange(ny).view(1, -1, 1).float()
-    x = torch.arange(nx).view(1, 1, -1).float()
-    shape_y = torch.sin(math.pi * (y + 0.5) / ny)
-    n_modes = 6
-    for _ in range(n_modes):
-        kx = 2 * math.pi * float(torch.randint(1, 4, (1,), generator=gen)) / nx
-        kz = 2 * math.pi * float(torch.randint(1, 3, (1,), generator=gen)) / nz
-        ph = 2 * math.pi * float(torch.rand((), generator=gen))
-        mode = torch.cos(kx * x + kz * z + ph) * shape_y
-        u[0] += mode
-        u[1] += 0.35 * mode.roll(1, 2) * torch.cos(math.pi * y / ny)
-    u = u / (u[0].abs().max() + 1e-30)
-    return amp * u
-
-
-def run_case(cfg: ChannelConfig, verbose: bool = False) -> dict[str, Any]:
-    """Run one case; returns the record (profiles + diagnostics) -- no plotting here."""
-    torch.set_grad_enabled(False)
-    torch.manual_seed(cfg.seed)
-    gen = torch.Generator().manual_seed(cfg.seed)
-    lam = cfg.lam_trt if cfg.lam_trt is not None else 0.5 * (cfg.tau - 0.5)  # -> omega_m = 1
-    k = ChannelKernel((cfg.nz, cfg.ny, cfg.nx), tau=cfg.tau, G=cfg.G, lam_trt=lam)
-    H = float(cfg.ny)
-    t0 = time.time()
-
-    rho, meta_b = init_bubbles(cfg, cfg.rho_l, cfg.rho_g, gen)
-    u0 = _turbulent_perturbation((cfg.nz, cfg.ny, cfg.nx), amp=0.08 * cfg.U_target, gen=gen)
-    u = u0.clone()
-    u[0] = u[0] + cfg.U_target
-    from .kernel import equilibrium
-
-    f = equilibrium(rho, u)
-    mass0 = float(rho.sum())
-    # Initial drive from the Dean (1978) correlation -- only an initial guess for
-    # the controller, never used as a result.  Starting from the *laminar* value
-    # would be hopeless: the viscous response time of the channel is ~1e6 steps
-    # at Re_tau = 180, so the controller could not climb the 20x gap.
-    Re_b0 = cfg.U_target * H / cfg.nu
-    Cf0 = 0.073 * Re_b0 ** (-0.25)
-    F0 = 2.0 * (0.5 * cfg.rho_l * cfg.U_target**2 * Cf0) / H
-
-    def plane_mean(t: torch.Tensor) -> np.ndarray:
-        return t.mean(dim=(0, 2)).double().numpy()
-
-    acc: dict[str, np.ndarray] = {}
-    n_s = 0
-    mem_b = []
-    mem_t = []
-    ux_hist = []
-    mass_hist = []
-    alpha_hist = []
-    rho_hi_acc: list[float] = []
-    rho_lo_acc: list[float] = []
-    F0_hist = []
-
-    for step in range(cfg.n_warmup + cfg.n_steps):
-        f, d = k.step(f, F0, g_b=cfg.g_b, rho_l=cfg.rho_l)
-        ux_hist.append(d["ux_mean"])
-        F0_hist.append(F0)
-        mem_b.append(d["mem_bottom"])
-        mem_t.append(d["mem_top"])
-        # integral controller on the uniform per-volume drive
-        err = cfg.U_target - d["ux_mean"]
-        F0 += cfg.pump_gain * (12.0 * cfg.rho_l * cfg.nu / H**2) * err
-        F0 = max(F0, 0.0)
-        if step >= cfg.n_warmup and (step - cfg.n_warmup) % cfg.sample_every == 0:
-            rh, j = momentum(f)
-            uu = (j[0] + 0.5 * torch.zeros_like(j[0])) * (1.0 / rh)
-            uv = (j[1]) * (1.0 / rh)
-            rho_p = rh
-            u_p = uu
-            v_p = uv
-            for name, arr in (
-                ("rho", rho_p),
-                ("u", u_p),
-                ("v", v_p),
-                ("uu", (j[0] * j[0]) / (rh * rh)),
-                ("uv", (j[0] * j[1]) / (rh * rh)),
-                ("vv", (j[1] * j[1]) / (rh * rh)),
-            ):
-                acc[name] = acc.get(name, 0.0) + plane_mean(arr)
-            sub = rh.flatten()[::7].numpy()
-            rho_hi = float(np.percentile(sub, 99.0))
-            rho_lo = float(np.percentile(sub, 1.0))
-            alpha_field = torch.clamp((rho_hi - rh) / max(rho_hi - rho_lo, 1e-9), 0.0, 1.0)
-            rho_hi_acc.append(rho_hi)
-            rho_lo_acc.append(rho_lo)
-            acc["alpha"] = acc.get("alpha", 0.0) + plane_mean(alpha_field)
-            n_s += 1
-            mass_hist.append(float(rh.sum()))
-            alpha_hist.append(float(alpha_field.mean()))
-        if verbose and step % 1000 == 0:
-            print(
-                f"[{cfg.tag}] step {step} F0={F0:.3e} ux={d['ux_mean']:.5f} "
-                f"target={cfg.U_target:.5f} mem_b={d['mem_bottom']:.4e} mem_t={d['mem_top']:.4e}",
-                flush=True,
-            )
-
-    prof = {key: val / max(n_s, 1) for key, val in acc.items()}
-    y = np.arange(cfg.ny) + 0.5
-    u_bar = prof["u"]
-    v_bar = prof["v"]
-    uv_re = prof["uv"] - u_bar * v_bar
-    rho_bar = prof["rho"]
-    rho_b = float(rho_bar.mean())
-    record: dict[str, Any] = {
-        "cfg": asdict(cfg),
-        "shape": [cfg.nz, cfg.ny, cfg.nx],
-        "H": H,
-        "nu": k.nu,
-        "tau": cfg.tau,
-        "y": y,
-        "rho": rho_bar,
-        "u": u_bar,
-        "uv": uv_re,
-        "uu": prof["uu"] - u_bar**2,
-        "vv": prof["vv"] - v_bar**2,
-        "alpha": prof["alpha"],
-        "rho_b": rho_b,
-        "U_b": float(prof["u"].mean()),
-        "U_target": cfg.U_target,
-        "F0": float(np.mean(F0_hist[-max(n_s, 1) :])),
-        "F0_final": F0,
-        "mem_bottom": float(np.mean(mem_b[-max(n_s * cfg.sample_every, 1) :])),
-        "mem_top": float(np.mean(mem_t[-max(n_s * cfg.sample_every, 1) :])),
-        "ux_history": ux_hist[::50],
-        "F0_history": F0_hist[::50],
-        "mass0": mass0,
-        "mass_drift_rel": float(abs(mass_hist[-1] - mass_hist[0]) / mass_hist[0]) if len(mass_hist) > 1 else 0.0,
-        "alpha_integral": float(np.mean(alpha_hist)) if alpha_hist else 0.0,
-        "rho_l_meas": float(np.mean(rho_hi_acc)) if rho_hi_acc else float("nan"),
-        "rho_g_meas": float(np.mean(rho_lo_acc)) if rho_lo_acc else float("nan"),
-        "alpha_integral_drift_rel": float(
-            abs(alpha_hist[-1] - alpha_hist[0]) / max(alpha_hist[0], 1e-12)
-        )
-        if len(alpha_hist) > 1
-        else 0.0,
-        "n_samples": n_s,
-        "init": meta_b,
-        "wall_units": {
-            "dy_plus": cfg.u_tau / k.nu,
-            "Lx_plus": cfg.nx * cfg.u_tau / k.nu,
-            "Lz_plus": cfg.nz * cfg.u_tau / k.nu,
-            "h_plus": (cfg.ny / 2) * cfg.u_tau / k.nu,
-        },
-        "runtime_s": time.time() - t0,
-    }
-    # measured friction Reynolds number of the run
-    u_tau_meas = math.sqrt(max(record["mem_top"], 0.0) / rho_b) if record["mem_top"] > 0 else 0.0
-    record["u_tau_meas"] = u_tau_meas
-    record["Re_tau_meas"] = u_tau_meas * (H / 2) / k.nu
-    record["Re_bulk"] = rho_b * record["U_b"] * H / (rho_b * k.nu)
-    record["d_plus_actual"] = cfg.d_lattice * record["u_tau_meas"] / k.nu
-    return record
+def single_phase_reference(cfg: MicrobubbleConfig) -> dict[str, Any]:
+    """Reference run: same channel, no gas, uniform liquid relaxation time."""
+    ref_cfg = MicrobubbleConfig(**{
+        **{f: getattr(cfg, f) for f in cfg.__dataclass_fields__},
+        "d_plus": 0.0, "n_bubbles": 0, "void_fraction": 0.0,
+        "viscosity_contrast": False,
+    })
+    return MicrobubbleChannel2D(ref_cfg).run()
