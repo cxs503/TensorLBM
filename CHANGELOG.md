@@ -8,6 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.phase_change.stefan_two_phase` / `stefan_sweep`** — two-phase
+  (superheated-melt) planar Stefan similarity solution and the Stefan-number
+  sweep that verifies the enthalpy thermal LBM against it (campaign node
+  P272W2-N05).  Unlike the one-phase Neumann branches in `stefan_exact`
+  (`T = T_freeze` ahead of the front), the liquid here is initially superheated
+  (`T_i > T_m`), so the front coefficient solves the *coupled* dual-Stefan
+  relation `lam = Ste_s e^{-lam^2}/(sqrt(pi) erf lam) -
+  Ste_l e^{-lam^2}/(sqrt(pi) erfc lam)`; `Ste_l = 0` collapses it onto
+  `planar_lambda` to machine zero (1e-16), so the surface extends rather than
+  duplicates P155W1-N01.  Sweep `Ste_s = 0.1/0.5/1.0` (fixed `Ste_l = 0.2`,
+  33-cell front): front vs `s(t)=2 lam sqrt(alpha t)` **1.20 %** (worst over all
+  sampled times, tolerance 5 %), profile L-infinity **2.73 %** (< 3 %), energy
+  closure (heat input vs sensible + latent on the *same* control volume, plus an
+  independent second-order wall-flux operator) **0.35 %** (< 2 %), `0 <= f_l <= 1`
+  over the whole run, and grid order **1.40 / 1.37** at 17/33/66 front cells;
+  exact solution self-audited (analytic `Q(t) == latent + sensible` to 6e-16,
+  interface energy balance 3e-18, FD PDE residual 1e-6).  A `Ste_l = 0` rerun
+  reproduces the one-phase front to 1.43 %.  Artifacts with per-array sha256 in
+  `artifacts/stefan_two_phase_sweep/`, report
+  `docs/P272W2_N05_STEFAN_TWO_PHASE_SWEEP.md`, tests
+  `tests/test_stefan_two_phase_sweep.py` (46 cases).
 - **`tensorlbm.boundary.partial_slip_second_order`** — second-order reconstruction
   of the combined bounce-back / specular slip wall (campaign node p247w1-N10,
   source m7963-c1).  The O(1/H) amplitude bias of the mixed wall is traced to a
