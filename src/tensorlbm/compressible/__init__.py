@@ -4,10 +4,8 @@ Provides:
 - Rankine-Hugoniot exact shock relations
 - Godunov solver for 1D shock verification
 - D2Q16 lattice for compressible flow initialization
-- NACA0012 airfoil geometry and C-mesh generation
-- Ackeret linearized supersonic theory
-- Isentropic flow relations
-- 2D compressible LBM solver (DDF method)
+- NACA0012 airfoil simulation (subsonic/transonic)
+- Sonic boom N-wave simulation (supersonic wedge)
 - Verification utilities
 - Case configurations
 """
@@ -29,42 +27,23 @@ from .verification import (
     compute_shock_profile_error,
     extract_shock_position,
 )
-from .airfoil import (
+from .naca0012 import (
     naca0012_thickness,
     naca0012_coordinates,
-    naca0012_surface_points,
-    thin_airfoil_theory,
-    prandtl_glauert_correction,
-    CMeshConfig,
-    generate_c_mesh,
-    compute_surface_forces,
-    AGARD_NACA0012_REFERENCE,
-)
-from .ackeret import (
+    simulate_naca0012,
+    thin_airfoil_theory_C_L,
+    thin_airfoil_theory_slope,
     ackeret_pressure_coefficient,
-    ackeret_pressure_jump,
-    ackeret_lift_coefficient,
-    ackeret_drag_coefficient,
-    n_wave_signature,
-    compare_ackeret_vs_oblique_shock,
-    NWaveSignature,
+    ackeret_sonic_boom_dp,
+    grid_convergence_study,
+    GridConvergenceResult,
 )
-from .isentropic import (
-    isentropic_p_p0,
-    isentropic_rho_rho0,
-    isentropic_T_T0,
-    isentropic_A_Astar,
-    prandtl_meyer_angle,
-    prandtl_meyer_from_nu,
-    verify_isentropic_relations,
-    critical_conditions,
-    max_turning_angle,
-    IsentropicVerification,
-)
-from .compressible_lbm import (
-    CompressibleLBMConfig,
-    CompressibleDDFSolver,
-    run_flat_plate_shock,
+from .sonic_boom import (
+    create_wedge_mask,
+    simulate_sonic_boom,
+    SonicBoomResult,
+    oblique_shock_angle,
+    oblique_shock_pressure_ratio,
 )
 
 __all__ = [
@@ -82,84 +61,20 @@ __all__ = [
     # Verification
     "compute_shock_profile_error",
     "extract_shock_position",
-    # Airfoil
+    # NACA0012
     "naca0012_thickness",
     "naca0012_coordinates",
-    "naca0012_surface_points",
-    "thin_airfoil_theory",
-    "prandtl_glauert_correction",
-    "CMeshConfig",
-    "generate_c_mesh",
-    "compute_surface_forces",
-    "AGARD_NACA0012_REFERENCE",
-    # Ackeret
+    "simulate_naca0012",
+    "thin_airfoil_theory_C_L",
+    "thin_airfoil_theory_slope",
     "ackeret_pressure_coefficient",
-    "ackeret_pressure_jump",
-    "ackeret_lift_coefficient",
-    "ackeret_drag_coefficient",
-    "n_wave_signature",
-    "compare_ackeret_vs_oblique_shock",
-    "NWaveSignature",
-    # Isentropic
-    "isentropic_p_p0",
-    "isentropic_rho_rho0",
-    "isentropic_T_T0",
-    "isentropic_A_Astar",
-    "prandtl_meyer_angle",
-    "prandtl_meyer_from_nu",
-    "verify_isentropic_relations",
-    "critical_conditions",
-    "max_turning_angle",
-    "IsentropicVerification",
-    # Compressible LBM
-    "CompressibleLBMConfig",
-    "CompressibleDDFSolver",
-    "run_flat_plate_shock",
+    "ackeret_sonic_boom_dp",
+    "grid_convergence_study",
+    "GridConvergenceResult",
+    # Sonic boom
+    "create_wedge_mask",
+    "simulate_sonic_boom",
+    "SonicBoomResult",
+    "oblique_shock_angle",
+    "oblique_shock_pressure_ratio",
 ]
-
-# --- shock-capturing kinetic-flux solver (P153W1-N05) -----------------------
-from .kinetic_flux import (  # noqa: E402,F401
-    AnnulusMesh,
-    KineticFluxSolver,
-    NormalShock1D,
-    ShockTube1D,
-    SolverConfig,
-    build_annulus_mesh,
-    contour_loop,
-    experimental_anchor_status,
-    kfvs_flux,
-    moving_shock_ratios,
-    mesh_quality,
-    naca0012_half_thickness,
-    normal_shock_ratios,
-    radial_levels,
-    radial_levels_from_surface,
-)
-
-# --- transonic / sonic-boom verification (IN421-W2-N03) ----------------------
-from . import transonic_aero  # noqa: E402,F401
-from .transonic_aero import (  # noqa: E402,F401
-    ackeret_pressure_ratio,
-    critical_mach_from_cp_min,
-    diamond_loop,
-    gci_roache,
-    isentropic_deviation,
-    lift_slope,
-    oblique_shock_angle,
-    oblique_shock_pressure_ratio,
-    prandtl_glauert_lift_slope,
-    run_naca_case,
-    run_wedge_case,
-    shock_from_surface_mach,
-    surface_mach_from_cp,
-    thickness_corrected_lift_slope,
-    validate_geometry,
-    wedge_expansion_reference,
-    wedge_reference_table,
-)
-
-# --- NACA0012 LBM solver (P153W2-N04) ---------------------------------------
-from .naca0012_lbm import (  # noqa: E402,F401
-    NACA0012LBMConfig,
-    NACA0012LBMSolver,
-)
