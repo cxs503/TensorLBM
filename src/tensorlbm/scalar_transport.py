@@ -374,8 +374,10 @@ def apply_inlet_dirichlet(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Impose ``C = c_value`` at the inflow face (x = 0).
 
-    Unknown incoming populations (i=3, the -x direction) are set to their
-    equilibrium values.  The injected mass is returned.
+    All five populations at the boundary column are set to their
+    equilibrium values so that the macroscopic concentration is exactly
+    ``c_value``.  The injected mass (difference between old and new
+    column sum) is returned.
     """
     g = g.clone()
     ny, nx = g.shape[1], g.shape[2]
@@ -386,12 +388,13 @@ def apply_inlet_dirichlet(
     else:
         ux_col = torch.zeros(ny, dtype=dtype, device=device)
         uy_col = torch.zeros(ny, dtype=dtype, device=device)
-    w3 = W_D2Q5[3]
-    g_eq_3 = w3 * c_value * (1.0 + (-1.0) * ux_col / CS2_D2Q5)
-    injected_before = g[3, :, 0].sum()
-    g[3, :, 0] = g_eq_3
-    injected_after = g[3, :, 0].sum()
-    injected = float(injected_after - injected_before)
+    old_sum = g[:, :, 0].sum()
+    c_col = torch.full((ny, 1), c_value, dtype=dtype, device=device)
+    ux_col_2d = ux_col.unsqueeze(1)
+    uy_col_2d = uy_col.unsqueeze(1)
+    g[:, :, 0] = equilibrium_scalar_d2q5(c_col, ux_col_2d, uy_col_2d).squeeze(2)
+    new_sum = g[:, :, 0].sum()
+    injected = float(new_sum - old_sum)
     return g, injected
 
 
