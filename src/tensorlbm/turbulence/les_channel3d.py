@@ -76,7 +76,12 @@ class LESChannelConfig(TurbulentChannel3DConfig):
 
     # "fneq": strain from the non-equilibrium populations (cheap, but the
     # Guo force and single-step noise enter the estimate); "velocity_gradient":
-    # strain from central differences of the resolved velocity field.
+    # strain from central differences of the resolved velocity field (blind to
+    # the grid-scale checkerboard mode, see
+    # _strain_magnitude_structure_function); "structure_function": filter-scale
+    # strain from second-order velocity structure functions (Metais & Lesieur
+    # 1992), which is exact for a locally linear field and does see the
+    # grid-scale mode.
     strain_source: str = "fneq"
     sgs_model: str = "smagorinsky_van_driest"
     van_driest: bool = True
@@ -105,9 +110,15 @@ class LESChannelConfig(TurbulentChannel3DConfig):
             raise ValueError("spectrum_from_fraction must lie in [0, 1)")
         if self.n_blocks < 1:
             raise ValueError("n_blocks must be >= 1")
-        if self.strain_source not in ("fneq", "velocity_gradient"):
+        if self.strain_source not in (
+            "fneq",
+            "velocity_gradient",
+            "structure_function",
+            "forward_gradient",
+        ):
             raise ValueError(
-                "strain_source must be 'fneq' or 'velocity_gradient'"
+                "strain_source must be 'fneq', 'velocity_gradient', "
+                "'structure_function' or 'forward_gradient'"
             )
         if self.wall_model not in ("none", "spalding"):
             raise ValueError("wall_model must be 'none' or 'spalding'")
@@ -304,6 +315,85 @@ class LESChannel(TurbulentChannel3D):
         )
         return q.clamp(min=0.0).sqrt()
 
+    def _strain_magnitude_structure_function(self) -> torch.Tensor:
+        """Filter-scale ``|S|`` from second-order velocity structure functions.
+
+        Central differences of the grid-scale velocity are blind to the
+        odd/even (checkerboard) mode: for ``u_i = (-1)^i u0`` the central
+        difference vanishes identically, so a Smagorinsky model built on them
+        supplies *no* sub-grid dissipation at the grid scale -- exactly the
+        mode that needs it most.  This estimator follows Metais & Lesieur
+        (1992, JFM 239, 157): the sub-grid intensity is taken from the
+        second-order structure function
+
+            ``F2 = (1/6) sum_{+-x,+-y,+-z} |u(x + Delta e) - u(x)|^2``
+
+        and ``|S| = sqrt(3 F2) / Delta``.  The calibration is exact for any
+        locally linear velocity field (simple shear ``u = G y`` gives
+        ``F2 = G^2 Delta^2 / 3`` hence ``|S| = G``), so the same
+        ``C_s`` keeps its Smagorinsky meaning, while a grid-scale mode now
+        produces a finite strain and is damped.
+
+        The two solid rows are pinned to zero velocity before differencing, so
+        the wall-normal difference across the wall is the wall-to-fluid
+        velocity jump (the no-slip condition enters the model explicitly).
+        """
+        u = self.b_u.view(3, self.nz, self.ny, self.nx).clone()
+        u[:, :, 0, :] = 0.0
+        u[:, :, -1, :] = 0.0
+        # u has shape (3, nz, ny, nx): axis 1 = z (periodic), 2 = y (walls), 3 = x
+        acc = torch.zeros_like(u[0])
+        for dim in (3, 1):  # periodic streamwise (x) and spanwise (z)
+            d = torch.roll(u, -1, dims=dim) - u
+            acc += (d * d).sum(dim=0)
+        d = torch.zeros_like(u)
+        d[:, :, :-1, :] = u[:, :, 1:, :] - u[:, :, :-1, :]
+        acc += (d * d).sum(dim=0)
+        return acc.clamp(min=0.0).sqrt()
+
+    def _strain_magnitude_forward_gradient(self) -> torch.Tensor:
+        """``|S|`` from one-sided (forward) velocity gradients.
+
+        Same target as :meth:`_strain_magnitude_velocity_gradient`, but the
+        gradient tensor is built from *forward* differences instead of central
+        ones and then symmetrised.  The point is the grid-scale mode: for
+        ``u_i = (-1)^i u0`` the central difference is identically zero, so a
+        central-difference Smagorinsky model applies no dissipation to the
+        odd/even mode that most needs it (the documented cause of the
+        divergence of the ``velocity_gradient`` runs in the earlier campaign
+        wave).  A forward difference keeps that mode:
+
+        ==============================  ===========  ==============  ==============
+        velocity field                  true |S|     central diff    forward diff
+        ==============================  ===========  ==============  ==============
+        grid-scale checkerboard          > 0          0.0             2 A
+        simple shear ``u = G y``         G            G               G
+        solid-body rotation             0            0               0
+        ==============================  ===========  ==============  ==============
+
+        so the symmetry (rotation) is preserved exactly, the model constant
+        keeps its Smagorinsky calibration for any locally linear field, and
+        the undamped odd/even mode receives dissipation.
+        """
+        u = self.b_u.view(3, self.nz, self.ny, self.nx).clone()
+        u[:, :, 0, :] = 0.0
+        u[:, :, -1, :] = 0.0
+        # u axes: 1 = z (periodic), 2 = y (walls), 3 = x (periodic)
+        dudx = torch.roll(u, -1, dims=3) - u
+        dudz = torch.roll(u, -1, dims=1) - u
+        dudy = torch.zeros_like(u)
+        dudy[:, :, :-1, :] = u[:, :, 1:, :] - u[:, :, :-1, :]
+        gxx, gyx, gzx = dudx[0], dudx[1], dudx[2]
+        gxy, gyy, gzy = dudy[0], dudy[1], dudy[2]
+        gxz, gyz, gzz = dudz[0], dudz[1], dudz[2]
+        sxy = 0.5 * (gxy + gyx)
+        sxz = 0.5 * (gxz + gzx)
+        syz = 0.5 * (gyz + gzy)
+        q = 2.0 * (
+            gxx**2 + gyy**2 + gzz**2 + 2.0 * (sxy**2 + sxz**2 + syz**2)
+        )
+        return q.clamp(min=0.0).sqrt()
+
     def _damped_sgs_field(self, nu_t: torch.Tensor) -> torch.Tensor:
         """Apply the van Driest damping and the wall-model floor, row-wise."""
         cfg = self.cfg
@@ -327,6 +417,14 @@ class LESChannel(TurbulentChannel3D):
             return torch.zeros(self.N, dtype=self.dtype, device=self.device)
         if cfg.strain_source == "velocity_gradient":
             strain = self._strain_magnitude_velocity_gradient()
+            nu_t = (cfg.smagorinsky_cs**2) * strain
+            return self._damped_sgs_field(nu_t)
+        if cfg.strain_source == "structure_function":
+            strain = self._strain_magnitude_structure_function()
+            nu_t = (cfg.smagorinsky_cs**2) * strain
+            return self._damped_sgs_field(nu_t)
+        if cfg.strain_source == "forward_gradient":
+            strain = self._strain_magnitude_forward_gradient()
             nu_t = (cfg.smagorinsky_cs**2) * strain
             return self._damped_sgs_field(nu_t)
         nu_t = super()._smagorinsky(fneq, rho)

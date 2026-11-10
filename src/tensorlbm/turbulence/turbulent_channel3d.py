@@ -132,6 +132,17 @@ class TurbulentChannel3DConfig:
     # campaign tau+ = 0.505.  It survives only as an audited negative variant
     # (tests/test_turbulent_channel3d.py::test_guo_sp_force_split_underdrives).
     force_scheme: str = "trt_split"
+    # Optional cap on the TRT antisymmetric relaxation time.  With the magic
+    # parameter Lambda = 3/16 the antisymmetric rate is
+    # ``tau_minus = 0.5 + Lambda / (tau_plus - 0.5)``, which diverges as the
+    # viscosity vanishes: at Re_tau=180, u_tau=0.01, h=8 the molecular
+    # ``tau_plus = 0.5013`` implies ``tau_minus = 141`` -- the shear mode is
+    # then frozen (rate 7e-3/step) and carries the grid-scale energy that
+    # should be dissipated.  ``tau_minus_max`` clamps only the antisymmetric
+    # time (the symmetric one keeps the physical viscosity), the standard
+    # stabilisation used for low-viscosity TRT.  ``None`` keeps the historical
+    # unclamped behaviour.
+    tau_minus_max: float | None = None
     label: str = "channel3d"
     output: Path | None = None
 
@@ -177,6 +188,8 @@ class TurbulentChannel3DConfig:
     def validate(self) -> None:
         if self.nx < 8 or self.nz < 8 or self.ny < 10:
             raise ValueError("channel dimensions are too small")
+        if self.tau_minus_max is not None and self.tau_minus_max <= 0.5:
+            raise ValueError("tau_minus_max must be > 0.5 (or None)")
         if self.re_tau <= 0.0 or self.u_tau <= 0.0:
             raise ValueError("re_tau and u_tau must be positive")
         if not 0.25 <= float(self.wall_origin) < 1.0:
@@ -225,6 +238,8 @@ class TurbulentChannel3D:
 
         self.sp = 1.0 / cfg.tau_plus
         self.sm = 1.0 / cfg.tau_minus
+        if cfg.tau_minus_max is not None:
+            self.sm = max(self.sm, 1.0 / float(cfg.tau_minus_max))
         self.accel = cfg.acceleration
         self.nu = cfg.nu
 
@@ -414,6 +429,8 @@ class TurbulentChannel3D:
             # scratch tensors without a shape-changing ``out=`` (see b_tn)
             sp = 1.0 / (0.5 + 3.0 * (self.nu + nu_t))
             sm = 1.0 / (0.5 + TRT_MAGIC / (sp - 0.5))
+            if cfg.tau_minus_max is not None:
+                sm = sm.clamp(min=1.0 / float(cfg.tau_minus_max))
         else:
             sp, sm = self.sp, self.sm
         ab = 1.0 - 0.5 * sp          # symmetric force weight
