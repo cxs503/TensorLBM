@@ -1,0 +1,166 @@
+{
+  "C1_open_water_regression": [
+    {
+      "fn": 0.15,
+      "cw_ice_thin": 0.0003710562988033153,
+      "cw_open": 0.00037105604504730403,
+      "relative_error": 6.838751575499388e-07,
+      "pass_2pct": true
+    },
+    {
+      "fn": 0.2,
+      "cw_ice_thin": 0.0008987398806784202,
+      "cw_open": 0.0008987396640518571,
+      "relative_error": 2.410337184559308e-07,
+      "pass_2pct": true
+    },
+    {
+      "fn": 0.25,
+      "cw_ice_thin": 0.0010625856861289661,
+      "cw_open": 0.0010625856702690924,
+      "relative_error": 1.4925736519814825e-08,
+      "pass_2pct": true
+    },
+    {
+      "fn": 0.3,
+      "cw_ice_thin": 0.0021460616346497363,
+      "cw_open": 0.002146061522200216,
+      "relative_error": 5.239808785455336e-08,
+      "pass_2pct": true
+    },
+    {
+      "fn": 0.35,
+      "cw_ice_thin": 0.001235528937799259,
+      "cw_open": 0.001235528844948936,
+      "relative_error": 7.51502674444411e-08,
+      "pass_2pct": true
+    }
+  ],
+  "C2_dispersion": {
+    "max_relative_error": 3.8336675099811257e-16,
+    "pass_2pct": true,
+    "k_star": 2.040149214167212,
+    "c_min": 2.523194893262733,
+    "D": 191.89765458422173,
+    "m": 0.005502
+  },
+  "C3_peak_migration": {
+    "results": [
+      {
+        "h_ice": 0.003,
+        "fn_star": 0.5000000000000001,
+        "cw_max": 0.004523716085480959,
+        "c_min": 1.9473687101282768,
+        "k_star": 3.425365674735121
+      },
+      {
+        "h_ice": 0.005,
+        "fn_star": 0.5200000000000001,
+        "cw_max": 0.002849903923897462,
+        "c_min": 2.3570302646279173,
+        "k_star": 2.3370808388124655
+      },
+      {
+        "h_ice": 0.008,
+        "fn_star": 0.5800000000000001,
+        "cw_max": 0.0014020156691635852,
+        "c_min": 2.8094625350263693,
+        "k_star": 1.6430210540709724
+      },
+      {
+        "h_ice": 0.01,
+        "fn_star": 0.6000000000000001,
+        "cw_max": 0.0008632011247575828,
+        "c_min": 3.05362829535956,
+        "k_star": 1.3919663152802522
+      }
+    ],
+    "monotonic": true,
+    "h_range": [
+      0.003,
+      0.01
+    ],
+    "fn_star_range": [
+      0.5000000000000001,
+      0.6000000000000001
+    ]
+  },
+  "C4_energy_balance": [
+    {
+      "fn": 0.47,
+      "e_flux": 11.696519723340906,
+      "rw_flex_u": 11.135342259598971,
+      "relative_error": 0.047978157350693024,
+      "pass_5pct": true,
+      "is_near_zero": false,
+      "ice": "h6mm"
+    },
+    {
+      "fn": 0.5,
+      "e_flux": 26.77261283994954,
+      "rw_flex_u": 28.945599376010684,
+      "relative_error": 0.07507139540741566,
+      "pass_5pct": false,
+      "is_near_zero": false,
+      "ice": "h6mm"
+    },
+    {
+      "fn": 0.55,
+      "e_flux": 37.97856830129922,
+      "rw_flex_u": 43.332192200894596,
+      "relative_error": 0.12354842041628465,
+      "pass_5pct": false,
+      "is_near_zero": false,
+      "ice": "h6mm"
+    }
+  ],
+  "C5_rigid_lid": [
+    {
+      "fn": 0.15,
+      "rw_rigid": 3.116901717109696e-29,
+      "cw_rigid": 1.8981298644173477e-30,
+      "rw_near_zero": true
+    },
+    {
+      "fn": 0.25,
+      "rw_rigid": 1.1286724630278904e-29,
+      "cw_rigid": 2.4744190138722844e-31,
+      "rw_near_zero": true
+    },
+    {
+      "fn": 0.35,
+      "rw_rigid": 5.5514221236985946e-30,
+      "cw_rigid": 6.209455159952134e-32,
+      "rw_near_zero": true
+    }
+  ],
+  "C6_convergence": [
+    {
+      "fn": 0.47,
+      "cw_coarse": 0.0009197628670980258,
+      "cw_fine": 0.0008978533031795717,
+      "relative_change": 0.023820883297432628,
+      "pass_3pct": true,
+      "n_theta_coarse": 400,
+      "n_theta_fine": 800
+    },
+    {
+      "fn": 0.5,
+      "cw_coarse": 0.0019438018297546391,
+      "cw_fine": 0.001938587414313952,
+      "relative_change": 0.0026825859307609517,
+      "pass_3pct": true,
+      "n_theta_coarse": 400,
+      "n_theta_fine": 800
+    },
+    {
+      "fn": 0.55,
+      "cw_coarse": 0.002183084865259661,
+      "cw_fine": 0.0021804585404704376,
+      "relative_change": 0.0012030337578795148,
+      "pass_3pct": true,
+      "n_theta_coarse": 400,
+      "n_theta_fine": 800
+    }
+  ]
+}

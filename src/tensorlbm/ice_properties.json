@@ -1,0 +1,36 @@
+{
+  "_comment": "Ice material properties registry for ice-covered wave resistance calculations. Sources: Timco & Weeks (2010), ITTC Ice Committee, Squire et al. (1996).",
+  "ice_types": {
+    "freshwater_ice": {
+      "description": "Typical freshwater ice (lakes, rivers)",
+      "E_Pa": 9.5e9,
+      "nu": 0.33,
+      "rho_i_kg_m3": 917.0,
+      "source": "Timco & Weeks (2010), Cold Regions Science and Technology"
+    },
+    "sea_ice_first_year": {
+      "description": "First-year sea ice",
+      "E_Pa": 7.0e9,
+      "nu": 0.33,
+      "rho_i_kg_m3": 910.0,
+      "source": "ITTC Ice Committee recommended values"
+    },
+    "sea_ice_multi_year": {
+      "description": "Multi-year sea ice (softer, more porous)",
+      "E_Pa": 4.0e9,
+      "nu": 0.33,
+      "rho_i_kg_m3": 880.0,
+      "source": "Squire et al. (1996), Annu. Rev. Fluid Mech."
+    }
+  },
+  "water": {
+    "rho_w_kg_m3": 1025.0,
+    "g_m_s2": 9.81
+  },
+  "snow_cover": {
+    "description": "Snow mass per unit area on ice (optional)",
+    "rho_snow_kg_m3": 300.0,
+    "typical_thickness_m": 0.1
+  },
+  "default": "freshwater_ice"
+}
