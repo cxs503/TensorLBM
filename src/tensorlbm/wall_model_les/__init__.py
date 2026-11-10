@@ -14,11 +14,19 @@ Modules
 ``closure_channel`` one-dimensional wall-model-driven channel closure in wall
               units (a-priori grading of the closure itself);
 ``reference_gate`` integrity gate for channel-DNS reference tables (shape and
-              stress plausibility before any error number is formed).
+              stress plausibility before any error number is formed);
+``peak_diagnostic`` sub-sample Reynolds-stress peak location, three-grid
+              Richardson/GCI, and the wall-function peak-position correction
+              map used to separate grid quantisation from wall-model error.
 """
 
 from __future__ import annotations
 
+from .closure_channel import (
+    ChannelClosureSolution,
+    log_layer_fit,
+    solve_channel_closure,
+)
 from .laws import (
     B_DEFAULT,
     KAPPA_DEFAULT,
@@ -28,21 +36,36 @@ from .laws import (
     solve_u_tau,
     spalding_u_plus,
 )
-from .closure_channel import (
-    ChannelClosureSolution,
-    log_layer_fit,
-    solve_channel_closure,
-)
 from .models import (
     EquilibriumWallModel,
     NonEquilibriumWallModel,
     WallModelResult,
     source_term_from_resolved,
 )
+from .peak_diagnostic import (
+    GridConvergence,
+    PeakEstimate,
+    analytic_stress_profile,
+    find_stress_peak,
+    fit_offset_correction,
+    load_channel_means_table,
+    reynolds_stress_from_mean_profile,
+    richardson_gci,
+    spacing_for_tolerance,
+)
 from .reference_gate import validate_channel_dns_table
 
 __all__ = [
     "B_DEFAULT",
+    "GridConvergence",
+    "PeakEstimate",
+    "analytic_stress_profile",
+    "find_stress_peak",
+    "fit_offset_correction",
+    "load_channel_means_table",
+    "reynolds_stress_from_mean_profile",
+    "richardson_gci",
+    "spacing_for_tolerance",
     "ChannelClosureSolution",
     "KAPPA_DEFAULT",
     "EquilibriumWallModel",
