@@ -22,6 +22,16 @@ Public surface
 
 from __future__ import annotations
 
+from .channel_shear import (
+    ChannelFlow,
+    LatticeModeSpectrum,
+    channel_mode_operator,
+    lattice_mode_spectrum,
+    local_jacobian,
+    stokes_damping_benchmark,
+    time_march_growth_rate,
+)
+from .orr_sommerfeld import OSSpectrum, os_growth_rate, os_spectrum, orszag_benchmark_check
 from .von_neumann import (
     CVEL,
     CX,
@@ -43,6 +53,17 @@ from .von_neumann import (
 
 __all__ = [
     "CVEL",
+    "ChannelFlow",
+    "LatticeModeSpectrum",
+    "OSSpectrum",
+    "channel_mode_operator",
+    "lattice_mode_spectrum",
+    "local_jacobian",
+    "os_growth_rate",
+    "os_spectrum",
+    "orszag_benchmark_check",
+    "stokes_damping_benchmark",
+    "time_march_growth_rate",
     "CX",
     "CY",
     "MOMENT_ORDER",
