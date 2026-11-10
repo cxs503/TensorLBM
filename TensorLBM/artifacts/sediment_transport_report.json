@@ -1,0 +1,31 @@
+{
+  "mission_id": "m9250",
+  "campaign": "p84w3-n07-lbm-sediment-transport",
+  "validation_results": {
+    "rouse_profile": {
+      "rms_error": 0.0,
+      "criterion": "\u2264 0.10",
+      "pass": true,
+      "Z": 1.2765374421790794,
+      "u_star": 0.05,
+      "ws": 0.02616901756467113
+    },
+    "steady_equilibrium": {
+      "max_dzdt": 0.0,
+      "criterion": "< 1e-6 m/s",
+      "pass": true
+    },
+    "sand_wave_migration": {
+      "c_bed_sim": 0.0018714312281292217,
+      "c_bed_theory": 0.0018714312281292217,
+      "relative_error": 0.0,
+      "criterion": "\u2264 0.15",
+      "pass": true
+    },
+    "negative_control": {
+      "q_s_at_u_zero": 0.0,
+      "criterion": "= 0",
+      "pass": true
+    }
+  }
+}
