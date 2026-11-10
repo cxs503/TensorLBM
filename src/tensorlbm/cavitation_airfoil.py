@@ -420,6 +420,15 @@ class CavitationFlowConfig:
     without the anchor the ``p < p_v`` switch uses an arbitrary constant; see
     :mod:`tensorlbm.cavitation_numerics`.  Off by default so that the historical
     P41-N02 configuration stays reproducible bit-for-bit."""
+    nuclei_inflow: bool = False
+    """Supply nuclei at the inflow plane (``alpha = alpha_nuclei`` in the first
+    ``nuclei_inlet_columns`` columns) every step.  Without this the volume
+    fraction condenses to zero everywhere the pressure is above ``p_v`` (the
+    condensation branch is active over the whole domain) and no cavity can
+    nucleate: the seed population is finite (``alpha_nuclei``) and is never
+    replenished, which is what starved the P41-N02 runs.  Off by default so the
+    historical configuration stays bit-for-bit reproducible."""
+    nuclei_inlet_columns: int = 3
     seed: int = 0
 
     def __post_init__(self) -> None:
@@ -567,6 +576,20 @@ class MixtureCavitationSolver:
     # -- kinematics -------------------------------------------------------
     def _inlet(self) -> None:
         self.u[0, :] = 1.0
+
+    def _apply_nuclei_bc(self) -> None:
+        """Dirichlet nuclei floor on the inflow columns (``nuclei_inflow``).
+
+        Applied *after* the transport/source update -- a boundary condition on
+        the state, not a pre-step initialisation -- otherwise the condensation
+        branch erases the inflow seed within the same step.
+        """
+        cols = self.cfg.nuclei_inlet_columns
+        seeds = torch.full_like(self.alpha[:cols, :], self.cfg.alpha_nuclei)
+        self.alpha[:cols, :] = torch.where(
+            self.solid[:cols, :], self.alpha[:cols, :],
+            torch.maximum(self.alpha[:cols, :], seeds),
+        )
 
     def _advection_u(self) -> torch.Tensor:
         h = self.h
@@ -743,6 +766,8 @@ class MixtureCavitationSolver:
         ) / h
         self.alpha = (a - dt * (fx + fy) + dt * s_alpha).clamp(0.0, 1.0)
         self.alpha = self.alpha.masked_fill(self.solid, 0.0)
+        if c.nuclei_inflow:
+            self._apply_nuclei_bc()
 
         # residuals
         div = _divergence(self.u, self.v, h)
