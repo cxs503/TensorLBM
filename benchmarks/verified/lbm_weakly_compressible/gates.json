@@ -1,0 +1,452 @@
+{
+  "gates": {
+    "c0_cylinder_instrument_validation": {
+      "status": "NOT_SUPPORTED",
+      "validated": false,
+      "reference": {
+        "cd": 1.35,
+        "cd_rel_tol": 0.15,
+        "st": 0.1645,
+        "st_tol": 0.02,
+        "cl_amplitude_min": 0.15,
+        "source": "Braza et al. 1986 JFM 165 (Cd=1.35+-0.05, St=0.164-0.165)"
+      },
+      "runs": [
+        {
+          "mach": 0.01,
+          "st": 9.855102924403107,
+          "cd": 5.240962493501777,
+          "cl_amplitude": 0.014007319144165866,
+          "cd_rel_error": 2.8821944396309456,
+          "st_error": 9.690602924403107,
+          "cd_ok": false,
+          "st_ok": false,
+          "cl_saturated": false
+        },
+        {
+          "mach": 0.1,
+          "st": 0.45052145687850265,
+          "cd": 2.3977612881808903,
+          "cl_amplitude": 0.10253304880676328,
+          "cd_rel_error": 0.7761194727265853,
+          "st_error": 0.28602145687850267,
+          "cd_ok": false,
+          "st_ok": false,
+          "cl_saturated": false
+        },
+        {
+          "mach": 0.2,
+          "st": 0.18035363539100177,
+          "cd": 2.1536522188288374,
+          "cl_amplitude": 0.10011610357577999,
+          "cd_rel_error": 0.5952979398732128,
+          "st_error": 0.015853635391001764,
+          "cd_ok": false,
+          "st_ok": true,
+          "cl_saturated": false
+        },
+        {
+          "mach": 0.3,
+          "st": 0.19150959188178385,
+          "cd": 2.1225273092496497,
+          "cl_amplitude": 0.10094099766129325,
+          "cd_rel_error": 0.5722424512960367,
+          "st_error": 0.02700959188178384,
+          "cd_ok": false,
+          "st_ok": false,
+          "cl_saturated": false
+        }
+      ],
+      "reason": "the cylinder solver configuration does not reproduce the Re=100 reference hydrodynamics (see the per-run cd/st/cl checks); a Mach-independence verdict built on it would be unfounded",
+      "note": "gate 0: the Re=100 instrument must reproduce the literature hydrodynamics before C2/C5/C7 may draw conclusions from it"
+    },
+    "c1_poiseuille_ma2_scaling": {
+      "status": "FAIL",
+      "local_slopes": [
+        {
+          "mach_low": 0.05031761101543548,
+          "mach_high": 0.10084969426703008,
+          "slope": 1.2996149562819896
+        },
+        {
+          "mach_low": 0.10084969426703008,
+          "mach_high": 0.20244551119902027,
+          "slope": 1.5358688576461643
+        },
+        {
+          "mach_low": 0.20244551119902027,
+          "mach_high": 0.3046475733172763,
+          "slope": 2.1507513175044704
+        }
+      ],
+      "exponent": 1.5616489835544798,
+      "target": 2.0,
+      "tolerance": 0.2,
+      "diagnostic": "differential velocity-profile error ||u(Ma)-u(Ma_ref)||_inf / u_max with fixed nu and fixed grid",
+      "machs": [
+        0.01004508135819026,
+        0.05031761101543548,
+        0.10084969426703008,
+        0.20244551119902027,
+        0.3046475733172763
+      ],
+      "diff_err_inf": [
+        0.0,
+        0.0005082695565342688,
+        0.0012546389800613955,
+        0.0036586784741458045,
+        0.008811709575382798
+      ],
+      "reference_mach": 0.01004508135819026,
+      "fit_diff_err": {
+        "n_points": 4,
+        "raw_loglog_slope": 1.5841981707407073,
+        "exponent_plain": 1.5616489835544798,
+        "exponent": 1.5616489835544798,
+        "prefactor_plain": 0.04971058273174529
+      },
+      "absolute_error_fit": {
+        "exponent_raw": -0.005965288045085515,
+        "exponent_excess": 2.2716,
+        "r2_excess": 0.9952775402777424,
+        "err_inf": [
+          0.07085604839141098,
+          0.07087027712015609,
+          0.07083901031001039,
+          0.07014629760491928,
+          0.06911297774819881
+        ],
+        "pass": false
+      },
+      "absolute_err_inf": [
+        0.07085604839141098,
+        0.07087027712015609,
+        0.07083901031001039,
+        0.07014629760491928,
+        0.06911297774819881
+      ],
+      "density_order_same_sweep": {
+        "n_points": 5,
+        "raw_loglog_slope": 1.0256315130893103,
+        "exponent_plain": 1.0226755810218793,
+        "exponent": 1.0226755810218793,
+        "prefactor_plain": 0.09278616611521519
+      },
+      "control_body_force_channel": {
+        "configuration": "periodic body-force channel (uniform density, no pressure gradient)",
+        "exponent": 0.10739159818492015,
+        "diff_err_inf": [
+          0.0,
+          3.7128082386317374e-08,
+          4.190755709121419e-08,
+          4.429465150224132e-08,
+          4.5074635024455745e-08
+        ],
+        "max_diff_err": 4.5074635024455745e-08,
+        "absolute_err_inf": [
+          0.032322368810946606,
+          0.03232238092205234,
+          0.032322382481098595,
+          0.032322383259753805,
+          0.032322383514181124
+        ],
+        "drho_over_rho0": [
+          2.617683847461194e-12,
+          2.8317348466089243e-12,
+          2.9519720001758287e-12,
+          3.0767610681436963e-12,
+          3.133937553911892e-12
+        ],
+        "note": "unidirectional flow with periodic streamwise BC => rho is uniform (measured max|rho-1| = 1e-13) => the third-order equilibrium error terms vanish identically and the profile error is Ma-independent",
+        "control_separated": true,
+        "status": "PASS"
+      }
+    },
+    "c2_strouhal_mach_independence": {
+      "status": "NOT_SUPPORTED",
+      "instrument_validation_verdict": "NOT_SUPPORTED",
+      "measured_reference_mach": 0.01,
+      "st": [
+        9.855102924403107,
+        0.45052145687850265,
+        0.18035363539100177,
+        0.19150959188178385
+      ],
+      "machs": [
+        0.01,
+        0.1,
+        0.2,
+        0.3
+      ],
+      "rel_st_vs_lowest_usable": [
+        0.0,
+        -0.9542854640550809,
+        -0.9816994670908599,
+        -0.9805674691222585
+      ],
+      "rel_st_vs_ma_to_zero": [
+        0.920302415263977,
+        -0.9122142662123002,
+        -0.9648574424539604,
+        -0.9626836640207813
+      ],
+      "limit": 0.01,
+      "ma_to_zero": {
+        "protocol": "least squares q = q0 + b Ma^2 (exponent fixed at 2)",
+        "st0": 5.13205776656192,
+        "cd0": 3.8065273892780347,
+        "cl0": 0.05798057974301655,
+        "dst_dma2": -70.31223024763233,
+        "dcd_dma2": -23.63459134440391,
+        "dcl_dma2": 0.611528552576275,
+        "free_exponent_fit_st": {
+          "n_points": 3,
+          "raw_loglog_slope": -1.3355082275407546,
+          "exponent_plain": -1.336622606656153,
+          "exponent": -1.336622606656153,
+          "prefactor_plain": 0.020882935091932068,
+          "offset": 18.62418253843026,
+          "exponent_excess": 0.25,
+          "prefactor_excess": -29.332575443904584,
+          "r2_excess": 0.9267195976369201,
+          "rms_residual_excess": 1.2177310777175303,
+          "excess_sign": "negative"
+        }
+      },
+      "literal_ma_0p01": {
+        "status": "PASS",
+        "mach": 0.01,
+        "st": 9.855102924403107,
+        "blowup_step": -1,
+        "steps": 11085,
+        "tau": 0.5013856406460551,
+        "bc": "reg",
+        "reason": "measured"
+      },
+      "note": "the criterion names Ma=0.01 as the reference; that run is NOT_MEASURABLE in this solver (see literal_ma_0p01), so the verdict uses the measured Ma=0.05/0.1/0.2 runs against both the lowest usable Ma and the fitted Ma->0 limit"
+    },
+    "c3_density_fluctuation_order": {
+      "status": "FAIL",
+      "exponent_cylinder_steady": 0.9666237858665795,
+      "exponent_cylinder_steady_fit": {
+        "n_points": 4,
+        "raw_loglog_slope": 0.9460417999853592,
+        "exponent_plain": 0.9666237858665795,
+        "exponent": 0.9666237858665795,
+        "prefactor_plain": 2.1931574451755567
+      },
+      "exponent_pressure_poisson_deformation": 1.447451052167206,
+      "exponent_used": 1.447451052167206,
+      "target": 2.0,
+      "tolerance": 0.2,
+      "pressure_channel_total_drho_exponent": 1.0226755810218793,
+      "pressure_channel_note": "total density variation in the pressure-driven channel is dominated by the imposed hydrostatic field (~Ma at fixed nu), not by the compressibility error; it is reported for context and is NOT used as the C3 anchor"
+    },
+    "c4_acoustic_filter": {
+      "status": "PASS",
+      "basis": "acoustic-band amplitude at Ma=0.01 (see note)",
+      "target_filtered_drho": 1e-05,
+      "standard": {
+        "drho_over_rho0_peak": 0.0012278278122013209,
+        "drho_acoustic_amplitude": 4.1987107610941266e-05,
+        "drho_acoustic_amplitude_steady": 1.9517720772910252e-13,
+        "drho_over_rho0_final": 0.0005432305541515081,
+        "err_inf": 0.07085918901089609,
+        "converged": true
+      },
+      "filtered": {
+        "drho_over_rho0_peak": 0.0012278278122013209,
+        "drho_acoustic_amplitude": 1.2760777772236054e-06,
+        "drho_acoustic_amplitude_steady": 2.2180035585961377e-12,
+        "drho_over_rho0_final": 0.000543202558866307,
+        "err_inf": 0.07086135294625474,
+        "converged": true
+      },
+      "suppression_factor": 32.9032511656881,
+      "suppression_factor_steady_window": 0.08799679647612374,
+      "pass_literal_total_drho": false,
+      "note": "post-processing density low pass, NOT a Mach preconditioner; the literal total-drho reading is reported separately because the steady hydrodynamic O(Ma^2) pressure field is not removable",
+      "status_literal_total_drho": "NOT_SUPPORTED"
+    },
+    "c5_hydrodynamic_coefficient_independence": {
+      "status": "NOT_SUPPORTED",
+      "instrument_validation_verdict": "NOT_SUPPORTED",
+      "cd": [
+        5.240962493501777,
+        2.3977612881808903,
+        2.1536522188288374,
+        2.1225273092496497
+      ],
+      "cl_amplitude": [
+        0.014007319144165866,
+        0.10253304880676328,
+        0.10011610357577999,
+        0.10094099766129325
+      ],
+      "machs": [
+        0.01,
+        0.1,
+        0.2,
+        0.3
+      ],
+      "rel_cd": [
+        0.0,
+        -0.5424960031380012,
+        -0.5890731480144855,
+        -0.5950119254084812
+      ],
+      "rel_cl": [
+        0.0,
+        6.319962353357882,
+        6.147413616079345,
+        6.2063038346160475
+      ],
+      "rel_cd_vs_ma_to_zero": [
+        0.3768356188015777,
+        -0.3700922013763148,
+        -0.4342212734643399,
+        -0.4423979937125268
+      ],
+      "limit": 0.005
+    },
+    "c6_pressure_poisson": {
+      "status": "FAIL",
+      "min_r2": 0.960570556059317,
+      "r2_pass": [
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "r2_pass_machs": [
+        0.01004508135819026,
+        0.05031761101543548,
+        0.10084969426703008
+      ],
+      "r2": [
+        0.9985267294688194,
+        0.9977731550003883,
+        0.9957530851503364,
+        0.9854664789428684,
+        0.960570556059317
+      ],
+      "machs": [
+        0.01004508135819026,
+        0.05031761101543548,
+        0.10084969426703008,
+        0.20244551119902027,
+        0.3046475733172763
+      ],
+      "max_abs_dev": [
+        4.896333556880794e-06,
+        3.0494929665503268e-05,
+        8.335759052169323e-05,
+        0.00030019995082825046,
+        0.0007409127969829066
+      ],
+      "max_abs_dev_over_dynamic_pressure": [
+        0.29114901767682044,
+        0.0722668058374274,
+        0.049175324131380246,
+        0.043948652505006625,
+        0.04789860885617307
+      ],
+      "dev_order": 1.447451052167206,
+      "dev_order_target": "2.0 +- 0.4 (O(Ma^2) deviation)",
+      "poisson_iterations": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ]
+    },
+    "c7_applicability_boundary": {
+      "status": "NOT_SUPPORTED",
+      "instrument_validation_verdict": "NOT_SUPPORTED",
+      "ma_max": NaN,
+      "boundary_threshold": 0.01,
+      "hydrodynamic_error_vs_zero": [
+        0.920302415263977,
+        0.9122142662123002,
+        0.9648574424539604,
+        0.9626836640207813
+      ],
+      "exceeded_at": [
+        0.01,
+        0.1,
+        0.2,
+        0.3
+      ],
+      "triggered": true,
+      "rule": "largest Ma with |error| <= threshold vs the Ma->0 limit"
+    },
+    "c8_honest_gate": {
+      "status": "PASS",
+      "requirements": {
+        "acoustic_filter_implemented": true,
+        "preconditioning_available": false,
+        "unmeasurable_criteria_declared": [
+          "c0_cylinder_instrument_validation",
+          "c2_strouhal_mach_independence",
+          "c5_hydrodynamic_coefficient_independence",
+          "c7_applicability_boundary"
+        ]
+      },
+      "note": "NOT_SUPPORTED / NOT_MEASURABLE verdicts are declared, not hidden"
+    }
+  },
+  "provenance": {
+    "git_commit": "b74b0599d7de80d78f9b3727ee42ff7cd6e46a56",
+    "python": "3.11.6",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "machs": [
+      0.01,
+      0.05,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "cylinder_machs": [
+      0.01,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "cylinder_case": {
+      "diameter": 8.0,
+      "nx": 168,
+      "ny": 65,
+      "bc": "extrap",
+      "collision": "reg",
+      "transient_tu": 20.0,
+      "max_tu": 90.0,
+      "min_periods": 3
+    },
+    "cylinder_runs_missing": [
+      0.05
+    ],
+    "task_wall_seconds": {
+      "poiseuille_0.01": 49.028560161590576,
+      "poiseuille_0.05": 55.474480628967285,
+      "poiseuille_0.1": 53.058295011520386,
+      "poiseuille_0.2": 59.26006245613098,
+      "poiseuille_0.3": 58.56204009056091,
+      "pressure_channel_0.01": 260.52573895454407,
+      "pressure_channel_0.05": 51.875335693359375,
+      "pressure_channel_0.1": 34.781548738479614,
+      "pressure_channel_0.2": 43.91406440734863,
+      "pressure_channel_0.3": 52.98532819747925,
+      "cylinder_0.01": 154.12979817390442,
+      "cylinder_0.1": 199.69483470916748,
+      "cylinder_0.2": 68.69466209411621,
+      "cylinder_0.3": 42.58855485916138,
+      "acoustic_0.01": 170.9084222316742
+    },
+    "wall_seconds_total": 0.9484121799468994,
+    "command": "python -m tensorlbm.verification.weakly_compressible parallel",
+    "raw_dir": "benchmarks/verified/lbm_weakly_compressible/raw"
+  }
+}
