@@ -1,0 +1,7 @@
+{
+  "F1_front_error_max_pct": 2.5252,
+  "F2_temperature_L2_pct": 0.0104,
+  "F3_energy_closure_pct": 0.6058,
+  "F4_convergence_order": 1.0019,
+  "all_pass": true
+}
