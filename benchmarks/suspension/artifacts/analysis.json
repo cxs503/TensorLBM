@@ -1,0 +1,2490 @@
+{
+ "design": {
+  "cell": {
+   "nx": 48,
+   "ny": 48,
+   "nz": 57,
+   "nu": 0.1,
+   "u_wall": 0.02
+  },
+  "steps": {
+   "n_steps": 1400,
+   "sample_every": 25,
+   "wall_margin": 7
+  },
+  "dilute_phi": [
+   0.02,
+   0.05,
+   0.1
+  ],
+  "dense_phi": [
+   0.15,
+   0.25
+  ],
+  "seeds": [
+   1,
+   2,
+   3
+  ],
+  "radii": [
+   3.0,
+   4.0,
+   5.0
+  ],
+  "dense_radius": 5.0
+ },
+ "raw_file": "benchmarks/suspension/artifacts/raw_merged.json",
+ "elapsed_s": null,
+ "pure_control": {
+  "nu": 0.1,
+  "eta_eff_pure": 0.10000698973112514,
+  "eta_eff_over_nu": 1.0000698973112514,
+  "tau_wall_mem_rel_err": 1.000001829387221,
+  "gamma_dot_measured": 0.0007272712991325638,
+  "gamma_dot_nominal": 0.0007272727272727273,
+  "profile_r2": 0.9999999998735868
+ },
+ "drags": [
+  {
+   "radius": 3.0,
+   "a_eff": 3.085120754404075,
+   "drag": 0.011433407238551548,
+   "u_stream": 0.001666666666666667,
+   "beta": 0.11218620925105728,
+   "haberman_sayre_K": 1.303960657625508,
+   "a_h": 2.7910094798592313,
+   "a_h_raw": 3.639366556796271,
+   "a_h_over_a_eff": 0.9046678240632904,
+   "a_h_raw_over_a_eff": 1.1796512507982058,
+   "volume_ratio": 0.7404017433490724,
+   "volume_ratio_raw": 1.6415756353479085,
+   "err_pct_vs_stokes": 17.965125079820577,
+   "err_pct_vs_stokes_confined": 9.533217593670962,
+   "profile_r2": -9.972089820564634e-08
+  },
+  {
+   "radius": 4.0,
+   "a_eff": 3.944102303918349,
+   "drag": 0.011126814569745744,
+   "u_stream": 0.0012500000000000002,
+   "beta": 0.14342190196066723,
+   "haberman_sayre_K": 1.4197516983983565,
+   "a_h": 3.32619202196125,
+   "a_h_raw": 4.722366772378548,
+   "a_h_over_a_eff": 0.8433330998176128,
+   "a_h_raw_over_a_eff": 1.1973236007816064,
+   "volume_ratio": 0.5997875388002499,
+   "volume_ratio_raw": 1.7164637234111846,
+   "err_pct_vs_stokes": 19.73236007816066,
+   "err_pct_vs_stokes_confined": 15.666690018238704,
+   "profile_r2": 3.597828568402406e-08
+  },
+  {
+   "radius": 5.0,
+   "a_eff": 4.972478033407518,
+   "drag": 0.011639990125383649,
+   "u_stream": 0.0010000000000000002,
+   "beta": 0.18081738303300066,
+   "haberman_sayre_K": 1.5829490074618113,
+   "a_h": 3.9010773715449814,
+   "a_h_raw": 6.17520655331886,
+   "a_h_over_a_eff": 0.7845338572308721,
+   "a_h_raw_over_a_eff": 1.2418770906237953,
+   "volume_ratio": 0.482875390130781,
+   "volume_ratio_raw": 1.9152957575487748,
+   "err_pct_vs_stokes": 24.187709062379525,
+   "err_pct_vs_stokes_confined": 21.54661427691279,
+   "profile_r2": 8.461301992390702e-08
+  }
+ ],
+ "errors": [],
+ "dilute_window_primary": 0.11,
+ "dilute_window_wide": 0.11,
+ "conventions": {
+  "mask": {
+   "volume_convention": "mask",
+   "phi_key": "phi_mask",
+   "dilute": {
+    "slope": 1.62862198360255,
+    "intercept": 1.0292058786763294,
+    "slope_se": 0.2659553699499394,
+    "intercept_se": 0.013657261878969422,
+    "r2": 0.21542049089169213,
+    "r2_weighted": 0.8426941233966098,
+    "n_points": 9,
+    "phi_range": [
+     0.02040184372969461,
+     0.10246608999350228
+    ],
+    "slope_rel_err_vs_2p5": 0.34855120655898,
+    "pass_slope_5pct": false,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 1.9907589651180981,
+     "eta_intrinsic_se": 5.226556527000079e-05,
+     "phi_max": 0.63,
+     "log_rmse": 0.005158317581625973,
+     "log_r2": 0.6621404908958055,
+     "n_points": 9,
+     "phi_range": [
+      0.02040184372969461,
+      0.10246608999350228
+     ],
+     "rel_err_vs_2p5": 0.20369641395276072,
+     "pass_5pct": false
+    },
+    "label": "primary",
+    "window": 0.11,
+    "chord_slope_einstein": 2.5000000000000027,
+    "chord_slope_batchelor": 3.261781189083825,
+    "chord_slope_kd": 3.282166726213233,
+    "slope_rel_err_vs_chord_kd": 0.5037966930212725,
+    "phi_key": "phi_mask"
+   },
+   "dilute_wide": {
+    "slope": 1.62862198360255,
+    "intercept": 1.0292058786763294,
+    "slope_se": 0.2659553699499394,
+    "intercept_se": 0.013657261878969422,
+    "r2": 0.21542049089169213,
+    "r2_weighted": 0.8426941233966098,
+    "n_points": 9,
+    "phi_range": [
+     0.02040184372969461,
+     0.10246608999350228
+    ],
+    "slope_rel_err_vs_2p5": 0.34855120655898,
+    "pass_slope_5pct": false,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 1.9907589651180981,
+     "eta_intrinsic_se": 5.226556527000079e-05,
+     "phi_max": 0.63,
+     "log_rmse": 0.005158317581625973,
+     "log_r2": 0.6621404908958055,
+     "n_points": 9,
+     "phi_range": [
+      0.02040184372969461,
+      0.10246608999350228
+     ],
+     "rel_err_vs_2p5": 0.20369641395276072,
+     "pass_5pct": false
+    },
+    "label": "wide",
+    "window": 0.11,
+    "chord_slope_einstein": 2.5000000000000027,
+    "chord_slope_batchelor": 3.261781189083825,
+    "chord_slope_kd": 3.282166726213233,
+    "slope_rel_err_vs_chord_kd": 0.5037966930212725,
+    "phi_key": "phi_mask"
+   },
+   "kd_fit": {
+    "phi_max": 0.7999999999634693,
+    "rmse": 0.20536078808148653,
+    "log_r2": -14.10409553829403,
+    "eta_intrinsic": 2.5,
+    "n_points": 11,
+    "phi_range": [
+     0.02040184372969461,
+     0.18619284031838856
+    ]
+   },
+   "kd_quality": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.7999999999634693,
+    "eta_intrinsic": 2.5,
+    "r2": -20.327856674336022,
+    "r2_log": -14.10409553829403,
+    "rmse": 0.26561978363776323,
+    "max_rel_err": 0.6872335195722665,
+    "n_points": 11,
+    "pass_r2_0p95": false
+   },
+   "kd_quality_phi_max_0p63": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.63,
+    "eta_intrinsic": 2.5,
+    "r2": -22.51024274856927,
+    "r2_log": -15.323781478642783,
+    "rmse": 0.27887871489283933,
+    "max_rel_err": 0.7246042694283165,
+    "n_points": 11,
+    "pass_r2_0p95": false
+   },
+   "divergence": {
+    "slope": -0.1179135735901362,
+    "intercept": 0.05927932199730111,
+    "theory_slope": -1.999999999908673,
+    "rel_err_vs_theory": 0.9410432132022397,
+    "r2_log": 0.02823052678655391,
+    "n_points": 11,
+    "pass_divergence_10pct": false
+   },
+   "negative_control": {
+    "phi": 0.02041580368745939,
+    "eta_r": 1.0186647948064702,
+    "mu_eff_over_mu0": 1.0000698973112514,
+    "pure_control": {
+     "nu": 0.1,
+     "eta_eff_pure": 0.10000698973112514,
+     "eta_eff_over_nu": 1.0000698973112514,
+     "tau_wall_mem_rel_err": 1.000001829387221,
+     "gamma_dot_measured": 0.0007272712991325638,
+     "gamma_dot_nominal": 0.0007272727272727273,
+     "profile_r2": 0.9999999998735868
+    },
+    "n_points": 2
+   },
+   "acceptance": {
+    "volume_convention": "mask",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.34855120655898,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.0292058786763294,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.9410432132022397,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -20.327856674336022,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.6343069302153362,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.01866479480647021,
+     "smallest_fraction_phi": 0.02041580368745939,
+     "smallest_fraction_eta_r": 1.0186647948064702
+    },
+    "summary": {
+     "intrinsic_viscosity": 1.62862198360255,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -20.327856674336022,
+     "negative_control_phi": 0.02041580368745939
+    }
+   },
+   "acceptance_with_literature_phi_max": {
+    "volume_convention": "mask",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.34855120655898,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.0292058786763294,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.9410432132022397,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -22.51024274856927,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.6343069302153362,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.01866479480647021,
+     "smallest_fraction_phi": 0.02041580368745939,
+     "smallest_fraction_eta_r": 1.0186647948064702
+    },
+    "summary": {
+     "intrinsic_viscosity": 1.62862198360255,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -22.51024274856927,
+     "negative_control_phi": 0.02041580368745939
+    }
+   },
+   "acceptance_curvature_estimator": {
+    "volume_convention": "mask",
+    "intrinsic_viscosity_estimator": "curvature_consistent",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.20369641395276072,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "curvature_consistent"
+     },
+     "a_prime_intercept": {
+      "value": 0.0292058786763294,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.9410432132022397,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -20.327856674336022,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.6343069302153362,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.01866479480647021,
+     "smallest_fraction_phi": 0.02041580368745939,
+     "smallest_fraction_eta_r": 1.0186647948064702
+    },
+    "summary": {
+     "intrinsic_viscosity": 1.62862198360255,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -20.327856674336022,
+     "negative_control_phi": 0.02041580368745939
+    }
+   },
+   "points": [
+    {
+     "radius": 3.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.02040184372969461,
+     "phi_hydro": 0.01510556066500123,
+     "phi_hydro_raw": 0.03349116958284217,
+     "phi_core": 0.027044304478897503,
+     "eta_r": 1.0054399273829302,
+     "eta_r_sd": 0.031191754529573987,
+     "sem": 0.018008567874146272,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9999325966548834,
+     "n_particles": [
+      24,
+      23,
+      24
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.02042976364522417,
+     "phi_hydro": 0.012253517655039826,
+     "phi_hydro_raw": 0.035066948174891935,
+     "phi_core": 0.027081314599483198,
+     "eta_r": 1.03188966223001,
+     "eta_r_sd": 0.01666789463081197,
+     "sem": 0.00962321345192361,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998473881189717,
+     "n_particles": [
+      10,
+      10,
+      10
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.022587211663417803,
+     "phi_hydro": 0.010906808643939399,
+     "phi_hydro_raw": 0.04326119067380032,
+     "phi_core": 0.0299411875538329,
+     "eta_r": 1.064207255612123,
+     "eta_r_sd": 0.005546772208106676,
+     "sem": 0.0032024304274839246,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9997329504979946,
+     "n_particles": [
+      6,
+      6,
+      5
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.050443672839506175,
+     "phi_hydro": 0.03734858331130062,
+     "phi_hydro_raw": 0.08280710429079438,
+     "phi_core": 0.06686719422911283,
+     "eta_r": 1.021669614079558,
+     "eta_r_sd": 0.0773737861625679,
+     "sem": 0.04467177626917912,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998954313926415,
+     "n_particles": [
+      59,
+      58,
+      59
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.051012223846653666,
+     "phi_hydro": 0.03059649618971182,
+     "phi_hydro_raw": 0.08756063168331198,
+     "phi_core": 0.06762085486649438,
+     "eta_r": 1.054556927112116,
+     "eta_r_sd": 0.052524963541662674,
+     "sem": 0.030325301839954227,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9997661703557273,
+     "n_particles": [
+      25,
+      25,
+      25
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.051837130441845354,
+     "phi_hydro": 0.02503087458536626,
+     "phi_hydro_raw": 0.09928343601876885,
+     "phi_core": 0.06871433570198104,
+     "eta_r": 1.1139587085395168,
+     "eta_r_sd": 0.0009011251106595572,
+     "sem": 0.0005202648252128267,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9994359675669382,
+     "n_particles": [
+      13,
+      13,
+      13
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10046347059779077,
+     "phi_hydro": 0.07438332877350257,
+     "phi_hydro_raw": 0.1649183855758243,
+     "phi_core": 0.13317250753660637,
+     "eta_r": 1.1329578599610899,
+     "eta_r_sd": 0.022840245420708893,
+     "sem": 0.013186821842003397,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998201927508129,
+     "n_particles": [
+      117,
+      116,
+      117
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.1012553809291748,
+     "phi_hydro": 0.06073171571779152,
+     "phi_hydro_raw": 0.17380118816510923,
+     "phi_core": 0.13422224913867356,
+     "eta_r": 1.1948036681753296,
+     "eta_r_sd": 0.14994462401543832,
+     "sem": 0.08657056903885053,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9995649372350306,
+     "n_particles": [
+      50,
+      49,
+      50
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10246608999350228,
+     "phi_hydro": 0.04947835318078813,
+     "phi_hydro_raw": 0.19625286745716589,
+     "phi_core": 0.13582714254952627,
+     "eta_r": 1.123412774817086,
+     "eta_r_sd": 0.050274518936735554,
+     "sem": 0.029026007041503214,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9992091709424565,
+     "n_particles": [
+      26,
+      26,
+      25
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.15,
+     "phi_mask": 0.151650828460039,
+     "phi_hydro": 0.07322845295629747,
+     "phi_hydro_raw": 0.2904561883782697,
+     "phi_core": 0.20102551679586564,
+     "eta_r": 1.0847779258103223,
+     "eta_r_sd": 0.02654677904179912,
+     "sem": 0.015326790025900238,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9990810653956936,
+     "n_particles": [
+      38,
+      38,
+      38
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.25,
+     "phi_mask": 0.18619284031838856,
+     "phi_hydro": 0.0899079404083001,
+     "phi_hydro_raw": 0.35661435714776607,
+     "phi_core": 0.24681376507321273,
+     "eta_r": 1.0067946043924332,
+     "eta_r_sd": 0.17456659370806785,
+     "sem": 0.10078606986886901,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9987794720125405,
+     "n_particles": [
+      47,
+      46,
+      47
+     ],
+     "re_p": 0.7272727272727272
+    }
+   ]
+  },
+  "hydrodynamic": {
+   "volume_convention": "hydrodynamic",
+   "phi_key": "phi_hydro",
+   "dilute": {
+    "slope": 2.3903623885095477,
+    "intercept": 1.0533013759443888,
+    "slope_se": 0.7586027226247349,
+    "intercept_se": 0.01889147308747447,
+    "r2": -0.33614282173182275,
+    "r2_weighted": 0.5865045548734671,
+    "n_points": 9,
+    "phi_range": [
+     0.010906808643939399,
+     0.07438332877350257
+    ],
+    "slope_rel_err_vs_2p5": 0.04385504459618095,
+    "pass_slope_5pct": true,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 4.186106466492052,
+     "eta_intrinsic_se": 0.00019524880816033273,
+     "phi_max": 0.63,
+     "log_rmse": 0.009141137762245745,
+     "log_r2": -0.061012501988457535,
+     "n_points": 9,
+     "phi_range": [
+      0.010906808643939399,
+      0.07438332877350257
+     ],
+     "rel_err_vs_2p5": 0.6744425865968207,
+     "pass_5pct": false
+    },
+    "label": "primary",
+    "window": 0.11,
+    "chord_slope_einstein": 2.499999999999999,
+    "chord_slope_batchelor": 3.02879885198814,
+    "chord_slope_kd": 3.0079548361721495,
+    "slope_rel_err_vs_chord_kd": 0.20531972097311635,
+    "phi_key": "phi_hydro"
+   },
+   "dilute_wide": {
+    "slope": 2.3903623885095477,
+    "intercept": 1.0533013759443888,
+    "slope_se": 0.7586027226247349,
+    "intercept_se": 0.01889147308747447,
+    "r2": -0.33614282173182275,
+    "r2_weighted": 0.5865045548734671,
+    "n_points": 9,
+    "phi_range": [
+     0.010906808643939399,
+     0.07438332877350257
+    ],
+    "slope_rel_err_vs_2p5": 0.04385504459618095,
+    "pass_slope_5pct": true,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 4.186106466492052,
+     "eta_intrinsic_se": 0.00019524880816033273,
+     "phi_max": 0.63,
+     "log_rmse": 0.009141137762245745,
+     "log_r2": -0.061012501988457535,
+     "n_points": 9,
+     "phi_range": [
+      0.010906808643939399,
+      0.07438332877350257
+     ],
+     "rel_err_vs_2p5": 0.6744425865968207,
+     "pass_5pct": false
+    },
+    "label": "wide",
+    "window": 0.11,
+    "chord_slope_einstein": 2.499999999999999,
+    "chord_slope_batchelor": 3.02879885198814,
+    "chord_slope_kd": 3.0079548361721495,
+    "slope_rel_err_vs_chord_kd": 0.20531972097311635,
+    "phi_key": "phi_hydro"
+   },
+   "kd_fit": {
+    "phi_max": 0.7999999999634693,
+    "rmse": 0.08620914607599534,
+    "log_r2": -1.6617445043529377,
+    "eta_intrinsic": 2.5,
+    "n_points": 11,
+    "phi_range": [
+     0.010906808643939399,
+     0.0899079404083001
+    ]
+   },
+   "kd_quality": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.7999999999634693,
+    "eta_intrinsic": 2.5,
+    "r2": -1.8636583886617744,
+    "r2_log": -1.6617445043529324,
+    "rmse": 0.09733015528501943,
+    "max_rel_err": 0.2606942788661213,
+    "n_points": 11,
+    "pass_r2_0p95": false
+   },
+   "kd_quality_phi_max_0p63": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.63,
+    "eta_intrinsic": 2.5,
+    "r2": -1.9783686880593643,
+    "r2_log": -1.75733396120025,
+    "rmse": 0.0992604044696695,
+    "max_rel_err": 0.2658542761512472,
+    "n_points": 11,
+    "pass_r2_0p95": false
+   },
+   "divergence": {
+    "slope": -0.41141313167776616,
+    "intercept": 0.04843505022214034,
+    "theory_slope": -1.999999999908673,
+    "rel_err_vs_theory": 0.7942934341517236,
+    "r2_log": 0.07522296247589966,
+    "n_points": 11,
+    "pass_divergence_10pct": false
+   },
+   "negative_control": {
+    "phi": 0.010906808643939399,
+    "eta_r": 1.064207255612123,
+    "mu_eff_over_mu0": 1.0000698973112514,
+    "pure_control": {
+     "nu": 0.1,
+     "eta_eff_pure": 0.10000698973112514,
+     "eta_eff_over_nu": 1.0000698973112514,
+     "tau_wall_mem_rel_err": 1.000001829387221,
+     "gamma_dot_measured": 0.0007272712991325638,
+     "gamma_dot_nominal": 0.0007272727272727273,
+     "profile_r2": 0.9999999998735868
+    },
+    "n_points": 1
+   },
+   "acceptance": {
+    "volume_convention": "hydrodynamic",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.04385504459618095,
+      "threshold": 0.05,
+      "pass": true,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.053301375944388774,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.7942934341517236,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -1.8636583886617744,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 1.3547586726132232,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 4,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.06420725561212293,
+     "smallest_fraction_phi": 0.010906808643939399,
+     "smallest_fraction_eta_r": 1.064207255612123
+    },
+    "summary": {
+     "intrinsic_viscosity": 2.3903623885095477,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -1.8636583886617744,
+     "negative_control_phi": 0.010906808643939399
+    }
+   },
+   "acceptance_with_literature_phi_max": {
+    "volume_convention": "hydrodynamic",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.04385504459618095,
+      "threshold": 0.05,
+      "pass": true,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.053301375944388774,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.7942934341517236,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -1.9783686880593643,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 1.3547586726132232,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 4,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.06420725561212293,
+     "smallest_fraction_phi": 0.010906808643939399,
+     "smallest_fraction_eta_r": 1.064207255612123
+    },
+    "summary": {
+     "intrinsic_viscosity": 2.3903623885095477,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -1.9783686880593643,
+     "negative_control_phi": 0.010906808643939399
+    }
+   },
+   "acceptance_curvature_estimator": {
+    "volume_convention": "hydrodynamic",
+    "intrinsic_viscosity_estimator": "curvature_consistent",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.6744425865968207,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "curvature_consistent"
+     },
+     "a_prime_intercept": {
+      "value": 0.053301375944388774,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.7942934341517236,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -1.8636583886617744,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 1.3547586726132232,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.06420725561212293,
+     "smallest_fraction_phi": 0.010906808643939399,
+     "smallest_fraction_eta_r": 1.064207255612123
+    },
+    "summary": {
+     "intrinsic_viscosity": 2.3903623885095477,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -1.8636583886617744,
+     "negative_control_phi": 0.010906808643939399
+    }
+   },
+   "points": [
+    {
+     "radius": 5.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.022587211663417803,
+     "phi_hydro": 0.010906808643939399,
+     "phi_hydro_raw": 0.04326119067380032,
+     "phi_core": 0.0299411875538329,
+     "eta_r": 1.064207255612123,
+     "eta_r_sd": 0.005546772208106676,
+     "sem": 0.0032024304274839246,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9997329504979946,
+     "n_particles": [
+      6,
+      6,
+      5
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.02042976364522417,
+     "phi_hydro": 0.012253517655039826,
+     "phi_hydro_raw": 0.035066948174891935,
+     "phi_core": 0.027081314599483198,
+     "eta_r": 1.03188966223001,
+     "eta_r_sd": 0.01666789463081197,
+     "sem": 0.00962321345192361,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998473881189717,
+     "n_particles": [
+      10,
+      10,
+      10
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.02040184372969461,
+     "phi_hydro": 0.01510556066500123,
+     "phi_hydro_raw": 0.03349116958284217,
+     "phi_core": 0.027044304478897503,
+     "eta_r": 1.0054399273829302,
+     "eta_r_sd": 0.031191754529573987,
+     "sem": 0.018008567874146272,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9999325966548834,
+     "n_particles": [
+      24,
+      23,
+      24
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.051837130441845354,
+     "phi_hydro": 0.02503087458536626,
+     "phi_hydro_raw": 0.09928343601876885,
+     "phi_core": 0.06871433570198104,
+     "eta_r": 1.1139587085395168,
+     "eta_r_sd": 0.0009011251106595572,
+     "sem": 0.0005202648252128267,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9994359675669382,
+     "n_particles": [
+      13,
+      13,
+      13
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.051012223846653666,
+     "phi_hydro": 0.03059649618971182,
+     "phi_hydro_raw": 0.08756063168331198,
+     "phi_core": 0.06762085486649438,
+     "eta_r": 1.054556927112116,
+     "eta_r_sd": 0.052524963541662674,
+     "sem": 0.030325301839954227,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9997661703557273,
+     "n_particles": [
+      25,
+      25,
+      25
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.050443672839506175,
+     "phi_hydro": 0.03734858331130062,
+     "phi_hydro_raw": 0.08280710429079438,
+     "phi_core": 0.06686719422911283,
+     "eta_r": 1.021669614079558,
+     "eta_r_sd": 0.0773737861625679,
+     "sem": 0.04467177626917912,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998954313926415,
+     "n_particles": [
+      59,
+      58,
+      59
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10246608999350228,
+     "phi_hydro": 0.04947835318078813,
+     "phi_hydro_raw": 0.19625286745716589,
+     "phi_core": 0.13582714254952627,
+     "eta_r": 1.123412774817086,
+     "eta_r_sd": 0.050274518936735554,
+     "sem": 0.029026007041503214,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9992091709424565,
+     "n_particles": [
+      26,
+      26,
+      25
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.1012553809291748,
+     "phi_hydro": 0.06073171571779152,
+     "phi_hydro_raw": 0.17380118816510923,
+     "phi_core": 0.13422224913867356,
+     "eta_r": 1.1948036681753296,
+     "eta_r_sd": 0.14994462401543832,
+     "sem": 0.08657056903885053,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9995649372350306,
+     "n_particles": [
+      50,
+      49,
+      50
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.15,
+     "phi_mask": 0.151650828460039,
+     "phi_hydro": 0.07322845295629747,
+     "phi_hydro_raw": 0.2904561883782697,
+     "phi_core": 0.20102551679586564,
+     "eta_r": 1.0847779258103223,
+     "eta_r_sd": 0.02654677904179912,
+     "sem": 0.015326790025900238,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9990810653956936,
+     "n_particles": [
+      38,
+      38,
+      38
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10046347059779077,
+     "phi_hydro": 0.07438332877350257,
+     "phi_hydro_raw": 0.1649183855758243,
+     "phi_core": 0.13317250753660637,
+     "eta_r": 1.1329578599610899,
+     "eta_r_sd": 0.022840245420708893,
+     "sem": 0.013186821842003397,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998201927508129,
+     "n_particles": [
+      117,
+      116,
+      117
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.25,
+     "phi_mask": 0.18619284031838856,
+     "phi_hydro": 0.0899079404083001,
+     "phi_hydro_raw": 0.35661435714776607,
+     "phi_core": 0.24681376507321273,
+     "eta_r": 1.0067946043924332,
+     "eta_r_sd": 0.17456659370806785,
+     "sem": 0.10078606986886901,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9987794720125405,
+     "n_particles": [
+      47,
+      46,
+      47
+     ],
+     "re_p": 0.7272727272727272
+    }
+   ]
+  },
+  "core_fraction": {
+   "volume_convention": "core_fraction",
+   "phi_key": "phi_core",
+   "dilute": {
+    "slope": 1.2286095665773644,
+    "intercept": 1.0292058786763292,
+    "slope_se": 0.20063299838328524,
+    "intercept_se": 0.01365726187896926,
+    "r2": 0.21542049089169335,
+    "r2_weighted": 0.8426941233966105,
+    "n_points": 9,
+    "phi_range": [
+     0.027044304478897503,
+     0.13582714254952627
+    ],
+    "slope_rel_err_vs_2p5": 0.5085561733690542,
+    "pass_slope_5pct": false,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 1.479858939392735,
+     "eta_intrinsic_se": 3.9986388299858474e-05,
+     "phi_max": 0.63,
+     "log_rmse": 0.005308514128591369,
+     "log_r2": 0.6421788985180342,
+     "n_points": 9,
+     "phi_range": [
+      0.027044304478897503,
+      0.13582714254952627
+     ],
+     "rel_err_vs_2p5": 0.408056424242906,
+     "pass_5pct": false
+    },
+    "label": "primary",
+    "window": 0.11,
+    "chord_slope_einstein": 2.4999999999999982,
+    "chord_slope_batchelor": 3.5098029715762262,
+    "chord_slope_kd": 3.625056354451982,
+    "slope_rel_err_vs_chord_kd": 0.6610784919057902,
+    "phi_key": "phi_core"
+   },
+   "dilute_wide": {
+    "slope": 1.2286095665773644,
+    "intercept": 1.0292058786763292,
+    "slope_se": 0.20063299838328524,
+    "intercept_se": 0.01365726187896926,
+    "r2": 0.21542049089169335,
+    "r2_weighted": 0.8426941233966105,
+    "n_points": 9,
+    "phi_range": [
+     0.027044304478897503,
+     0.13582714254952627
+    ],
+    "slope_rel_err_vs_2p5": 0.5085561733690542,
+    "pass_slope_5pct": false,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 1.479858939392735,
+     "eta_intrinsic_se": 3.9986388299858474e-05,
+     "phi_max": 0.63,
+     "log_rmse": 0.005308514128591369,
+     "log_r2": 0.6421788985180342,
+     "n_points": 9,
+     "phi_range": [
+      0.027044304478897503,
+      0.13582714254952627
+     ],
+     "rel_err_vs_2p5": 0.408056424242906,
+     "pass_5pct": false
+    },
+    "label": "wide",
+    "window": 0.11,
+    "chord_slope_einstein": 2.4999999999999982,
+    "chord_slope_batchelor": 3.5098029715762262,
+    "chord_slope_kd": 3.625056354451982,
+    "slope_rel_err_vs_chord_kd": 0.6610784919057902,
+    "phi_key": "phi_core"
+   },
+   "kd_fit": {
+    "phi_max": 0.7999999999634693,
+    "rmse": 0.29998028814518835,
+    "log_r2": -31.22887272120161,
+    "eta_intrinsic": 2.5,
+    "n_points": 11,
+    "phi_range": [
+     0.027044304478897503,
+     0.24681376507321273
+    ]
+   },
+   "kd_quality": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.7999999999634693,
+    "eta_intrinsic": 2.5,
+    "r2": -53.65816074222856,
+    "r2_log": -31.228872721201597,
+    "rmse": 0.42522062215255446,
+    "max_rel_err": 1.0772863376246324,
+    "n_points": 11,
+    "pass_r2_0p95": false
+   },
+   "kd_quality_phi_max_0p63": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.63,
+    "eta_intrinsic": 2.5,
+    "r2": -62.38048975394706,
+    "r2_log": -34.84415051974254,
+    "rmse": 0.4578936356141401,
+    "max_rel_err": 1.1734512023758719,
+    "n_points": 11,
+    "pass_r2_0p95": false
+   },
+   "divergence": {
+    "slope": -0.07872875509709336,
+    "intercept": 0.06038818436352132,
+    "theory_slope": -1.999999999908673,
+    "rel_err_vs_theory": 0.9606356224496558,
+    "r2_log": 0.024417898311926978,
+    "n_points": 11,
+    "pass_divergence_10pct": false
+   },
+   "negative_control": {
+    "phi": 0.027062809539190352,
+    "eta_r": 1.0186647948064702,
+    "mu_eff_over_mu0": 1.0000698973112514,
+    "pure_control": {
+     "nu": 0.1,
+     "eta_eff_pure": 0.10000698973112514,
+     "eta_eff_over_nu": 1.0000698973112514,
+     "tau_wall_mem_rel_err": 1.000001829387221,
+     "gamma_dot_measured": 0.0007272712991325638,
+     "gamma_dot_nominal": 0.0007272727272727273,
+     "profile_r2": 0.9999999998735868
+    },
+    "n_points": 2
+   },
+   "acceptance": {
+    "volume_convention": "core_fraction",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.5085561733690542,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.029205878676329178,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.9606356224496558,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -53.65816074222856,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.7241262806887624,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.01866479480647021,
+     "smallest_fraction_phi": 0.027062809539190352,
+     "smallest_fraction_eta_r": 1.0186647948064702
+    },
+    "summary": {
+     "intrinsic_viscosity": 1.2286095665773644,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -53.65816074222856,
+     "negative_control_phi": 0.027062809539190352
+    }
+   },
+   "acceptance_with_literature_phi_max": {
+    "volume_convention": "core_fraction",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.5085561733690542,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.029205878676329178,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.9606356224496558,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -62.38048975394706,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.7241262806887624,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.01866479480647021,
+     "smallest_fraction_phi": 0.027062809539190352,
+     "smallest_fraction_eta_r": 1.0186647948064702
+    },
+    "summary": {
+     "intrinsic_viscosity": 1.2286095665773644,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -62.38048975394706,
+     "negative_control_phi": 0.027062809539190352
+    }
+   },
+   "acceptance_curvature_estimator": {
+    "volume_convention": "core_fraction",
+    "intrinsic_viscosity_estimator": "curvature_consistent",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.408056424242906,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "curvature_consistent"
+     },
+     "a_prime_intercept": {
+      "value": 0.029205878676329178,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.9606356224496558,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": -53.65816074222856,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.7241262806887624,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.01866479480647021,
+     "smallest_fraction_phi": 0.027062809539190352,
+     "smallest_fraction_eta_r": 1.0186647948064702
+    },
+    "summary": {
+     "intrinsic_viscosity": 1.2286095665773644,
+     "phi_max": 0.7999999999634693,
+     "kd_r2": -53.65816074222856,
+     "negative_control_phi": 0.027062809539190352
+    }
+   },
+   "points": [
+    {
+     "radius": 3.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.02040184372969461,
+     "phi_hydro": 0.01510556066500123,
+     "phi_hydro_raw": 0.03349116958284217,
+     "phi_core": 0.027044304478897503,
+     "eta_r": 1.0054399273829302,
+     "eta_r_sd": 0.031191754529573987,
+     "sem": 0.018008567874146272,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9999325966548834,
+     "n_particles": [
+      24,
+      23,
+      24
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.02042976364522417,
+     "phi_hydro": 0.012253517655039826,
+     "phi_hydro_raw": 0.035066948174891935,
+     "phi_core": 0.027081314599483198,
+     "eta_r": 1.03188966223001,
+     "eta_r_sd": 0.01666789463081197,
+     "sem": 0.00962321345192361,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998473881189717,
+     "n_particles": [
+      10,
+      10,
+      10
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.02,
+     "phi_mask": 0.022587211663417803,
+     "phi_hydro": 0.010906808643939399,
+     "phi_hydro_raw": 0.04326119067380032,
+     "phi_core": 0.0299411875538329,
+     "eta_r": 1.064207255612123,
+     "eta_r_sd": 0.005546772208106676,
+     "sem": 0.0032024304274839246,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9997329504979946,
+     "n_particles": [
+      6,
+      6,
+      5
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.050443672839506175,
+     "phi_hydro": 0.03734858331130062,
+     "phi_hydro_raw": 0.08280710429079438,
+     "phi_core": 0.06686719422911283,
+     "eta_r": 1.021669614079558,
+     "eta_r_sd": 0.0773737861625679,
+     "sem": 0.04467177626917912,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998954313926415,
+     "n_particles": [
+      59,
+      58,
+      59
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.051012223846653666,
+     "phi_hydro": 0.03059649618971182,
+     "phi_hydro_raw": 0.08756063168331198,
+     "phi_core": 0.06762085486649438,
+     "eta_r": 1.054556927112116,
+     "eta_r_sd": 0.052524963541662674,
+     "sem": 0.030325301839954227,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9997661703557273,
+     "n_particles": [
+      25,
+      25,
+      25
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.05,
+     "phi_mask": 0.051837130441845354,
+     "phi_hydro": 0.02503087458536626,
+     "phi_hydro_raw": 0.09928343601876885,
+     "phi_core": 0.06871433570198104,
+     "eta_r": 1.1139587085395168,
+     "eta_r_sd": 0.0009011251106595572,
+     "sem": 0.0005202648252128267,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9994359675669382,
+     "n_particles": [
+      13,
+      13,
+      13
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 3.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10046347059779077,
+     "phi_hydro": 0.07438332877350257,
+     "phi_hydro_raw": 0.1649183855758243,
+     "phi_core": 0.13317250753660637,
+     "eta_r": 1.1329578599610899,
+     "eta_r_sd": 0.022840245420708893,
+     "sem": 0.013186821842003397,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9998201927508129,
+     "n_particles": [
+      117,
+      116,
+      117
+     ],
+     "re_p": 0.26181818181818184
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.1012553809291748,
+     "phi_hydro": 0.06073171571779152,
+     "phi_hydro_raw": 0.17380118816510923,
+     "phi_core": 0.13422224913867356,
+     "eta_r": 1.1948036681753296,
+     "eta_r_sd": 0.14994462401543832,
+     "sem": 0.08657056903885053,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9995649372350306,
+     "n_particles": [
+      50,
+      49,
+      50
+     ],
+     "re_p": 0.4654545454545455
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10246608999350228,
+     "phi_hydro": 0.04947835318078813,
+     "phi_hydro_raw": 0.19625286745716589,
+     "phi_core": 0.13582714254952627,
+     "eta_r": 1.123412774817086,
+     "eta_r_sd": 0.050274518936735554,
+     "sem": 0.029026007041503214,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9992091709424565,
+     "n_particles": [
+      26,
+      26,
+      25
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.15,
+     "phi_mask": 0.151650828460039,
+     "phi_hydro": 0.07322845295629747,
+     "phi_hydro_raw": 0.2904561883782697,
+     "phi_core": 0.20102551679586564,
+     "eta_r": 1.0847779258103223,
+     "eta_r_sd": 0.02654677904179912,
+     "sem": 0.015326790025900238,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9990810653956936,
+     "n_particles": [
+      38,
+      38,
+      38
+     ],
+     "re_p": 0.7272727272727272
+    },
+    {
+     "radius": 5.0,
+     "phi_target": 0.25,
+     "phi_mask": 0.18619284031838856,
+     "phi_hydro": 0.0899079404083001,
+     "phi_hydro_raw": 0.35661435714776607,
+     "phi_core": 0.24681376507321273,
+     "eta_r": 1.0067946043924332,
+     "eta_r_sd": 0.17456659370806785,
+     "sem": 0.10078606986886901,
+     "n_seeds": 3,
+     "seeds": [
+      1,
+      2,
+      3
+     ],
+     "profile_r2_min": 0.9987794720125405,
+     "n_particles": [
+      47,
+      46,
+      47
+     ],
+     "re_p": 0.7272727272727272
+    }
+   ]
+  }
+ },
+ "restricted_window": {
+  "window": 0.105,
+  "phi_key": "phi_mask",
+  "n_points": 9,
+  "invalid_points": [],
+  "dilute": {
+   "slope": 1.62862198360255,
+   "intercept": 1.0292058786763294,
+   "slope_se": 0.2659553699499394,
+   "intercept_se": 0.013657261878969422,
+   "r2": 0.21542049089169213,
+   "r2_weighted": 0.8426941233966098,
+   "n_points": 9,
+   "phi_range": [
+    0.02040184372969461,
+    0.10246608999350228
+   ],
+   "slope_rel_err_vs_2p5": 0.34855120655898,
+   "pass_slope_5pct": false,
+   "pass_intercept_0p01": false,
+   "curvature_fit": {
+    "eta_intrinsic": 1.9907589651180981,
+    "eta_intrinsic_se": 5.226556527000079e-05,
+    "phi_max": 0.63,
+    "log_rmse": 0.005158317581625973,
+    "log_r2": 0.6621404908958055,
+    "n_points": 9,
+    "phi_range": [
+     0.02040184372969461,
+     0.10246608999350228
+    ],
+    "rel_err_vs_2p5": 0.20369641395276072,
+    "pass_5pct": false
+   },
+   "label": "restricted",
+   "window": 0.105,
+   "chord_slope_einstein": 2.5000000000000027,
+   "chord_slope_batchelor": 3.261781189083825,
+   "chord_slope_kd": 3.282166726213233,
+   "slope_rel_err_vs_chord_kd": 0.5037966930212725,
+   "phi_key": "phi_mask"
+  },
+  "kd_quality_phi_max_0p63": {
+   "model": "krieger_dougherty",
+   "phi_max": 0.63,
+   "eta_intrinsic": 2.5,
+   "r2": -2.639984350339655,
+   "r2_log": -2.076905107063104,
+   "rmse": 0.11221918906775086,
+   "max_rel_err": 0.17727428128387954,
+   "n_points": 9,
+   "pass_r2_0p95": false
+  },
+  "kd_quality_phi_max_0p63_eta_intrinsic_2p5": {
+   "model": "krieger_dougherty",
+   "phi_max": 0.63,
+   "eta_intrinsic": 2.5,
+   "r2": -2.639984350339655,
+   "r2_log": -2.076905107063104,
+   "rmse": 0.11221918906775086,
+   "max_rel_err": 0.17727428128387954,
+   "n_points": 9,
+   "pass_r2_0p95": false
+  },
+  "kd_quality_fitted_eta_intrinsic": {
+   "model": "krieger_dougherty",
+   "phi_max": 0.63,
+   "eta_intrinsic": 1.9907589651180981,
+   "r2": -0.39855473493110205,
+   "r2_log": -0.2684420863443333,
+   "rmse": 0.06955960413524515,
+   "max_rel_err": 0.11210411071954023,
+   "n_points": 9,
+   "pass_r2_0p95": false
+  },
+  "monotone": true,
+  "weighted_sem_median": 0.017911132613383434,
+  "per_radius": {
+   "3": {
+    "eta_intrinsic": 1.1101530020771904,
+    "eta_intrinsic_se": 0.0019547296514397243,
+    "n_points": 3,
+    "log_r2": 0.9440453862299081,
+    "rel_err_vs_2p5": 0.5559387991691238
+   },
+   "4": {
+    "eta_intrinsic": 1.360415110046515,
+    "eta_intrinsic_se": 0.002857486025844728,
+    "n_points": 3,
+    "log_r2": 0.810127546938774,
+    "rel_err_vs_2p5": 0.455833955981394
+   },
+   "5": {
+    "eta_intrinsic": 1.9970973399019827,
+    "eta_intrinsic_se": 3.7900042519276125e-05,
+    "n_points": 3,
+    "log_r2": 0.8008878593287696,
+    "rel_err_vs_2p5": 0.20116106403920697
+   }
+  },
+  "per_radius_spread": {
+   "min": 1.1101530020771904,
+   "max": 1.9970973399019827,
+   "mean": 1.489221817341896,
+   "rel_spread": 0.5955757077262637
+  }
+ },
+ "dilute_slope_sensitivity": {
+  "phi_mask": {
+   "slope": 1.62862198360255,
+   "intercept": 1.0292058786763294,
+   "slope_se": 0.2659553699499394,
+   "intercept_se": 0.013657261878969422,
+   "r2": 0.21542049089169213,
+   "r2_weighted": 0.8426941233966098,
+   "n_points": 9,
+   "phi_range": [
+    0.02040184372969461,
+    0.10246608999350228
+   ],
+   "slope_rel_err_vs_2p5": 0.34855120655898,
+   "pass_slope_5pct": false,
+   "pass_intercept_0p01": false,
+   "curvature_fit": {
+    "eta_intrinsic": 1.9907589651180981,
+    "eta_intrinsic_se": 5.226556527000079e-05,
+    "phi_max": 0.63,
+    "log_rmse": 0.005158317581625973,
+    "log_r2": 0.6621404908958055,
+    "n_points": 9,
+    "phi_range": [
+     0.02040184372969461,
+     0.10246608999350228
+    ],
+    "rel_err_vs_2p5": 0.20369641395276072,
+    "pass_5pct": false
+   },
+   "label": "phi_mask",
+   "window": 0.11,
+   "chord_slope_einstein": 2.5000000000000027,
+   "chord_slope_batchelor": 3.261781189083825,
+   "chord_slope_kd": 3.282166726213233,
+   "slope_rel_err_vs_chord_kd": 0.5037966930212725,
+   "phi_key": "phi_mask"
+  },
+  "phi_hydro": {
+   "slope": 2.3903623885095477,
+   "intercept": 1.0533013759443888,
+   "slope_se": 0.7586027226247349,
+   "intercept_se": 0.01889147308747447,
+   "r2": -0.33614282173182275,
+   "r2_weighted": 0.5865045548734671,
+   "n_points": 9,
+   "phi_range": [
+    0.010906808643939399,
+    0.07438332877350257
+   ],
+   "slope_rel_err_vs_2p5": 0.04385504459618095,
+   "pass_slope_5pct": true,
+   "pass_intercept_0p01": false,
+   "curvature_fit": {
+    "eta_intrinsic": 4.186106466492052,
+    "eta_intrinsic_se": 0.00019524880816033273,
+    "phi_max": 0.63,
+    "log_rmse": 0.009141137762245745,
+    "log_r2": -0.061012501988457535,
+    "n_points": 9,
+    "phi_range": [
+     0.010906808643939399,
+     0.07438332877350257
+    ],
+    "rel_err_vs_2p5": 0.6744425865968207,
+    "pass_5pct": false
+   },
+   "label": "phi_hydro",
+   "window": 0.11,
+   "chord_slope_einstein": 2.499999999999999,
+   "chord_slope_batchelor": 3.02879885198814,
+   "chord_slope_kd": 3.0079548361721495,
+   "slope_rel_err_vs_chord_kd": 0.20531972097311635,
+   "phi_key": "phi_hydro"
+  },
+  "phi_hydro_raw": {
+   "slope": 0.8982817032354344,
+   "intercept": 1.0245718368898231,
+   "slope_se": 0.11424696889093933,
+   "intercept_se": 0.01122666790226869,
+   "r2": 0.38569475743199877,
+   "r2_weighted": 0.8982867988268503,
+   "n_points": 9,
+   "phi_range": [
+    0.03349116958284217,
+    0.19625286745716589
+   ],
+   "slope_rel_err_vs_2p5": 0.6406873187058262,
+   "pass_slope_5pct": false,
+   "pass_intercept_0p01": false,
+   "curvature_fit": {
+    "eta_intrinsic": 0.9979227431026466,
+    "eta_intrinsic_se": 2.3040672046888398e-05,
+    "phi_max": 0.63,
+    "log_rmse": 0.004537577856826071,
+    "log_r2": 0.738562324896821,
+    "n_points": 9,
+    "phi_range": [
+     0.03349116958284217,
+     0.19625286745716589
+    ],
+    "rel_err_vs_2p5": 0.6008309027589414,
+    "pass_5pct": false
+   },
+   "label": "phi_hydro_raw",
+   "window": 0.11,
+   "chord_slope_einstein": 2.5000000000000004,
+   "chord_slope_batchelor": 3.9244130296480506,
+   "chord_slope_kd": 4.364206144203126,
+   "slope_rel_err_vs_chord_kd": 0.7941706524499075,
+   "phi_key": "phi_hydro_raw"
+  },
+  "phi_core": {
+   "slope": 1.2286095665773644,
+   "intercept": 1.0292058786763292,
+   "slope_se": 0.20063299838328524,
+   "intercept_se": 0.01365726187896926,
+   "r2": 0.21542049089169335,
+   "r2_weighted": 0.8426941233966105,
+   "n_points": 9,
+   "phi_range": [
+    0.027044304478897503,
+    0.13582714254952627
+   ],
+   "slope_rel_err_vs_2p5": 0.5085561733690542,
+   "pass_slope_5pct": false,
+   "pass_intercept_0p01": false,
+   "curvature_fit": {
+    "eta_intrinsic": 1.479858939392735,
+    "eta_intrinsic_se": 3.9986388299858474e-05,
+    "phi_max": 0.63,
+    "log_rmse": 0.005308514128591369,
+    "log_r2": 0.6421788985180342,
+    "n_points": 9,
+    "phi_range": [
+     0.027044304478897503,
+     0.13582714254952627
+    ],
+    "rel_err_vs_2p5": 0.408056424242906,
+    "pass_5pct": false
+   },
+   "label": "phi_core",
+   "window": 0.11,
+   "chord_slope_einstein": 2.4999999999999982,
+   "chord_slope_batchelor": 3.5098029715762262,
+   "chord_slope_kd": 3.625056354451982,
+   "slope_rel_err_vs_chord_kd": 0.6610784919057902,
+   "phi_key": "phi_core"
+  }
+ },
+ "time_converged_subset": {
+  "raw_file": "benchmarks/suspension/artifacts/raw_timeconverged.json",
+  "n_cases": 3,
+  "steps": 4200,
+  "pure_control_reused_from": "main run (time-independent: profile initialised at the walls)",
+  "mask": {
+   "volume_convention": "mask",
+   "phi_key": "phi_mask",
+   "dilute": {
+    "slope": 4.161229476426594,
+    "intercept": 0.9386011704462744,
+    "slope_se": 0.28467288757320236,
+    "intercept_se": 0.020162898302891728,
+    "r2": 0.9953417680493634,
+    "r2_weighted": 0.9953417680493634,
+    "n_points": 3,
+    "phi_range": [
+     0.03069413986354776,
+     0.10180616471734893
+    ],
+    "slope_rel_err_vs_2p5": 0.6644917905706376,
+    "pass_slope_5pct": false,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 2.7335939426762037,
+     "eta_intrinsic_se": 0.0016063567495471613,
+     "phi_max": 0.63,
+     "log_rmse": 0.017332167345744318,
+     "log_r2": 0.9705913353757682,
+     "n_points": 3,
+     "phi_range": [
+      0.03069413986354776,
+      0.10180616471734893
+     ],
+     "rel_err_vs_2p5": 0.09343757707048139,
+     "pass_5pct": false
+    },
+    "label": "primary",
+    "window": 0.11,
+    "chord_slope_einstein": 2.4999999999999996,
+    "chord_slope_batchelor": 3.3215018884015572,
+    "chord_slope_kd": 3.3484999021107877,
+    "slope_rel_err_vs_chord_kd": 0.24271452831863227,
+    "phi_key": "phi_mask"
+   },
+   "dilute_wide": {
+    "slope": 4.161229476426594,
+    "intercept": 0.9386011704462744,
+    "slope_se": 0.28467288757320236,
+    "intercept_se": 0.020162898302891728,
+    "r2": 0.9953417680493634,
+    "r2_weighted": 0.9953417680493634,
+    "n_points": 3,
+    "phi_range": [
+     0.03069413986354776,
+     0.10180616471734893
+    ],
+    "slope_rel_err_vs_2p5": 0.6644917905706376,
+    "pass_slope_5pct": false,
+    "pass_intercept_0p01": false,
+    "curvature_fit": {
+     "eta_intrinsic": 2.7335939426762037,
+     "eta_intrinsic_se": 0.0016063567495471613,
+     "phi_max": 0.63,
+     "log_rmse": 0.017332167345744318,
+     "log_r2": 0.9705913353757682,
+     "n_points": 3,
+     "phi_range": [
+      0.03069413986354776,
+      0.10180616471734893
+     ],
+     "rel_err_vs_2p5": 0.09343757707048139,
+     "pass_5pct": false
+    },
+    "label": "wide",
+    "window": 0.11,
+    "chord_slope_einstein": 2.4999999999999996,
+    "chord_slope_batchelor": 3.3215018884015572,
+    "chord_slope_kd": 3.3484999021107877,
+    "slope_rel_err_vs_chord_kd": 0.24271452831863227,
+    "phi_key": "phi_mask"
+   },
+   "kd_fit": {
+    "phi_max": 0.5000000000365308,
+    "rmse": 0.02180432728585791,
+    "log_r2": 0.9534569390201149,
+    "eta_intrinsic": 2.5,
+    "n_points": 3,
+    "phi_range": [
+     0.03069413986354776,
+     0.10180616471734893
+    ]
+   },
+   "kd_quality": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.5000000000365308,
+    "eta_intrinsic": 2.5,
+    "r2": 0.9532953595956232,
+    "r2_log": 0.953456939020115,
+    "rmse": 0.02625719161587104,
+    "max_rel_err": 0.022959524927062675,
+    "n_points": 3,
+    "pass_r2_0p95": true
+   },
+   "kd_quality_phi_max_0p63": {
+    "model": "krieger_dougherty",
+    "phi_max": 0.63,
+    "eta_intrinsic": 2.5,
+    "r2": 0.936767957416761,
+    "r2_log": 0.9394967723538695,
+    "rmse": 0.03055180424469538,
+    "max_rel_err": 0.02745716190782576,
+    "n_points": 3,
+    "pass_r2_0p95": false
+   },
+   "divergence": {
+    "slope": -1.4863292130287116,
+    "intercept": -0.02559712892841793,
+    "theory_slope": -1.250000000091327,
+    "rel_err_vs_theory": 0.18906337033609444,
+    "r2_log": 0.9840048851983859,
+    "n_points": 3,
+    "pass_divergence_10pct": false
+   },
+   "negative_control": {
+    "phi": 0.03069413986354776,
+    "eta_r": 1.0596498190874464,
+    "mu_eff_over_mu0": 1.0000698973112514,
+    "pure_control": {
+     "nu": 0.1,
+     "eta_eff_pure": 0.10000698973112514,
+     "eta_eff_over_nu": 1.0000698973112514,
+     "tau_wall_mem_rel_err": 1.000001829387221,
+     "gamma_dot_measured": 0.0007272712991325638,
+     "gamma_dot_nominal": 0.0007272727272727273,
+     "profile_r2": 0.9999999998735868
+    },
+    "n_points": 1
+   },
+   "acceptance": {
+    "volume_convention": "mask",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.6644917905706376,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.061398829553725554,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.18906337033609444,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": 0.9532953595956232,
+      "threshold": 0.95,
+      "pass": true
+     },
+     "d_limit_increment": {
+      "value": 0.2226552774878534,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 4,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.059649819087446376,
+     "smallest_fraction_phi": 0.03069413986354776,
+     "smallest_fraction_eta_r": 1.0596498190874464
+    },
+    "summary": {
+     "intrinsic_viscosity": 4.161229476426594,
+     "phi_max": 0.5000000000365308,
+     "kd_r2": 0.9532953595956232,
+     "negative_control_phi": 0.03069413986354776
+    }
+   },
+   "acceptance_with_literature_phi_max": {
+    "volume_convention": "mask",
+    "intrinsic_viscosity_estimator": "chord_slope",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.6644917905706376,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "chord_slope"
+     },
+     "a_prime_intercept": {
+      "value": 0.061398829553725554,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.18906337033609444,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": 0.936767957416761,
+      "threshold": 0.95,
+      "pass": false
+     },
+     "d_limit_increment": {
+      "value": 0.2226552774878534,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 5,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.059649819087446376,
+     "smallest_fraction_phi": 0.03069413986354776,
+     "smallest_fraction_eta_r": 1.0596498190874464
+    },
+    "summary": {
+     "intrinsic_viscosity": 4.161229476426594,
+     "phi_max": 0.5000000000365308,
+     "kd_r2": 0.936767957416761,
+     "negative_control_phi": 0.03069413986354776
+    }
+   },
+   "acceptance_curvature_estimator": {
+    "volume_convention": "mask",
+    "intrinsic_viscosity_estimator": "curvature_consistent",
+    "thresholds": {
+     "slope_rel_err_max": 0.05,
+     "intercept_abs_err_max": 0.01,
+     "divergence_rel_err_max": 0.1,
+     "r2_min": 0.95,
+     "neg_control_eta_r_rel_max": 0.01,
+     "neg_control_mu_rel_max": 0.005,
+     "neg_control_increment_rel_max": 0.2
+    },
+    "criteria": {
+     "a_einstein_slope": {
+      "value": 0.09343757707048139,
+      "threshold": 0.05,
+      "pass": false,
+      "estimator": "curvature_consistent"
+     },
+     "a_prime_intercept": {
+      "value": 0.061398829553725554,
+      "threshold": 0.01,
+      "pass": false
+     },
+     "b_divergence_exponent": {
+      "value": 0.18906337033609444,
+      "threshold": 0.1,
+      "pass": false
+     },
+     "c_full_range_r2": {
+      "value": 0.9532953595956232,
+      "threshold": 0.95,
+      "pass": true
+     },
+     "d_limit_increment": {
+      "value": 0.2226552774878534,
+      "threshold": 0.2,
+      "pass": false
+     },
+     "d_negative_control_mu": {
+      "value": 6.989731125139897e-05,
+      "threshold": 0.005,
+      "pass": true
+     }
+    },
+    "all_pass": false,
+    "n_failed": 4,
+    "diagnostics": {
+     "pure_control_eta_r_dev": 0.059649819087446376,
+     "smallest_fraction_phi": 0.03069413986354776,
+     "smallest_fraction_eta_r": 1.0596498190874464
+    },
+    "summary": {
+     "intrinsic_viscosity": 4.161229476426594,
+     "phi_max": 0.5000000000365308,
+     "kd_r2": 0.9532953595956232,
+     "negative_control_phi": 0.03069413986354776
+    }
+   },
+   "points": [
+    {
+     "radius": 4.0,
+     "phi_target": 0.03,
+     "phi_mask": 0.03069413986354776,
+     "phi_hydro": NaN,
+     "phi_hydro_raw": NaN,
+     "phi_core": 0.040687580749354,
+     "eta_r": 1.0596498190874464,
+     "eta_r_sd": 0.0,
+     "sem": NaN,
+     "n_seeds": 1,
+     "seeds": [
+      1
+     ],
+     "profile_r2_min": 0.9999057459842892,
+     "n_particles": [
+      15
+     ],
+     "re_p": 0.46545454545454545
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.06,
+     "phi_mask": 0.061182687621832356,
+     "phi_hydro": NaN,
+     "phi_hydro_raw": NaN,
+     "phi_core": 0.08110263242894056,
+     "eta_r": 1.2048840593258285,
+     "eta_r_sd": 0.0,
+     "sem": NaN,
+     "n_seeds": 1,
+     "seeds": [
+      1
+     ],
+     "profile_r2_min": 0.9998680757154972,
+     "n_particles": [
+      30
+     ],
+     "re_p": 0.46545454545454545
+    },
+    {
+     "radius": 4.0,
+     "phi_target": 0.1,
+     "phi_mask": 0.10180616471734893,
+     "phi_hydro": NaN,
+     "phi_hydro_raw": NaN,
+     "phi_core": 0.13495235788113696,
+     "eta_r": 1.357229009162047,
+     "eta_r_sd": 0.0,
+     "sem": NaN,
+     "n_seeds": 1,
+     "seeds": [
+      1
+     ],
+     "profile_r2_min": 0.9995649054001081,
+     "n_particles": [
+      50
+     ],
+     "re_p": 0.46545454545454545
+    }
+   ]
+  },
+  "hydrodynamic": {
+   "volume_convention": "hydrodynamic",
+   "phi_key": "phi_hydro",
+   "error": "fewer than 3 usable points in this convention"
+  },
+  "drags_reused": []
+ },
+ "figures": [
+  "benchmarks/suspension/artifacts/figures/eta_r_vs_phi.png",
+  "benchmarks/suspension/artifacts/figures/dilute_limit.png",
+  "benchmarks/suspension/artifacts/figures/resolution_ladder.png",
+  "benchmarks/suspension/artifacts/figures/divergence.png",
+  "benchmarks/suspension/artifacts/figures/residuals.png",
+  "benchmarks/suspension/artifacts/figures/intrinsic_vs_resolution.png"
+ ]
+}
