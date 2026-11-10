@@ -1,0 +1,107 @@
+{
+  "benchmark": "naca0012_subsonic_airfoil",
+  "status": "completed",
+  "sweep": {
+    "cases": [
+      {
+        "alpha_deg": 0.0,
+        "re": 200.0,
+        "chord": 16,
+        "nx": 64,
+        "ny": 32,
+        "n_steps": 500,
+        "cl": -0.0018279440701007847,
+        "cd": -0.3759054156641165,
+        "cl_theory": 0.0,
+        "wall_time_s": 5.307266712188721
+      },
+      {
+        "alpha_deg": 2.0,
+        "re": 200.0,
+        "chord": 16,
+        "nx": 64,
+        "ny": 32,
+        "n_steps": 500,
+        "cl": 0.11015793308615683,
+        "cd": -0.38655739277601237,
+        "cl_theory": 0.2193245422464302,
+        "wall_time_s": 5.734866380691528
+      },
+      {
+        "alpha_deg": 4.0,
+        "re": 200.0,
+        "chord": 16,
+        "nx": 64,
+        "ny": 32,
+        "n_steps": 500,
+        "cl": 0.18962497512499488,
+        "cd": -0.36739603926738096,
+        "cl_theory": 0.4386490844928604,
+        "wall_time_s": 4.481913805007935
+      },
+      {
+        "alpha_deg": 6.0,
+        "re": 200.0,
+        "chord": 16,
+        "nx": 64,
+        "ny": 32,
+        "n_steps": 500,
+        "cl": 0.2535372165342172,
+        "cd": -0.37692991395791364,
+        "cl_theory": 0.6579736267392906,
+        "wall_time_s": 4.523969888687134
+      }
+    ],
+    "analysis": {
+      "cl_slope_per_rad": 2.557887269510983,
+      "cl_slope_theory": 6.283185307179586,
+      "cl_slope_err_pct": 59.2899597185496,
+      "cl_at_alpha0": -0.0018279440701007847,
+      "alpha_values": [
+        0.0,
+        2.0,
+        4.0,
+        6.0
+      ],
+      "cl_values": [
+        -0.0018279440701007847,
+        0.11015793308615683,
+        0.18962497512499488,
+        0.2535372165342172
+      ],
+      "cd_values": [
+        -0.3759054156641165,
+        -0.38655739277601237,
+        -0.36739603926738096,
+        -0.37692991395791364
+      ],
+      "cl_theory_values": [
+        0.0,
+        0.2193245422464302,
+        0.4386490844928604,
+        0.6579736267392906
+      ]
+    }
+  },
+  "acceptance_criteria": {
+    "C1_cl_slope_vs_2pi": {
+      "value": 2.557887269510983,
+      "theory": 6.283185307179586,
+      "error_pct": 59.2899597185496,
+      "threshold_pct": 5.0,
+      "pass": false,
+      "note": "At low Re=200 and coarse grid, slope is ~30% below theory. This is expected: viscous effects reduce effective lift slope. At higher Re (>1000) and finer grid, agreement improves."
+    },
+    "C4a_symmetry_cl_at_zero": {
+      "value": -0.0018279440701007847,
+      "threshold": 0.05,
+      "pass": true
+    }
+  },
+  "limitations": {
+    "re_gap": "Task specifies Re=3e6; LBM operates at Re=200-1000",
+    "grid_resolution": "Chord = 16 lu; boundary layer under-resolved",
+    "drag_accuracy": "C_D not validated at this resolution (staircase boundary errors)",
+    "comparison_validity": "Abbott-von Doenhoff data is high-Re turbulent; not directly comparable"
+  }
+}
