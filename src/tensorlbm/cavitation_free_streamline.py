@@ -305,7 +305,13 @@ def flow_solve(
     diag = np.arange(n_pan)
     Sn_wall[diag, diag] = 0.5
     Vn_tot[diag, diag] = 0.0
-    Vt_tot[diag, diag] = 0.0
+    # Vortex self-influence at the collocation point: the tangential velocity
+    # induced by the panel's *own* constant-strength vortex sheet on the outer
+    # side is -gamma/2 (Katz & Plotkin 2001, eq. 11.47-11.50 sign convention).
+    # Omitting it biases the Kutta row (which reads q_t at the two TE panels)
+    # and halves the lift: see tests/test_cavitation_free_streamline.py::
+    # test_lifting_branch_thin_aerofoil.
+    Vt_tot[diag, diag] = -0.5
     # RHS / LHS rows: wall panels use the normal condition, cavity panels the
     # tangential (dynamic) condition.
     A = np.empty((n_pan + 1, n_pan + 1))
