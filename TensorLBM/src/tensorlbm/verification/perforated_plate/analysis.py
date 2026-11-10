@@ -1,73 +1,114 @@
-"""Phase-averaged analysis for perforated plate oscillatory flow.
+"""Analysis of perforated-plate oscillatory-flow signals.
 
-Extracts:
-    C_d(KC, β) – discharge coefficient
-    C_m(KC, β) – added-mass coefficient
-    Φ          – energy dissipation per cycle
-    ζ_eff      – equivalent damping ratio
+Conventions
+-----------
+All quantities are in lattice units (rho = 1, dt = 1).
 
-Method:
-    Phase-average the pressure drop Δp(t) and flow rate Q(t) over
-    multiple oscillation cycles. Decompose Δp into inertial and
-    dissipative components:
+* ``Q(t)``  : volume flow rate per unit depth, ``Q = int u_x dy`` [L^2/T]
+* ``u_h(t)``: mean velocity through the holes, ``u_h = Q / (A_ch * beta)`` [L/T]
+* ``A_ch``  : channel cross-section, ``A_ch = ny_fluid`` (2-D, unit depth)
 
-        Δp(t) = C_m · ρ · L · dQ/dt + ½ ρ C_d⁻² (Q/(Aβ))² · sign(Q)
+The unsteady pressure drop across a sharp-edged perforated plate is modelled as
 
-    where:
-        L = plate thickness (2 lu)
-        A = channel cross-section area (ny - 2 in 2D)
-        β = open area ratio
+    dp(t) = rho * K_m * du_h/dt + 0.5 * rho * K_q * u_h |u_h|                (1)
+
+with ``K_m`` an inertial length [L] (``C_m = K_m / t_plate`` the added-mass
+coefficient) and ``K_q = 1 / C_d**2`` the quadratic loss coefficient.  For a
+harmonic flow ``u_h = u0 sin(theta)`` the two basis functions of (1) are
+orthogonal over a period, so ``K_m`` and ``K_q`` follow from a linear
+least-squares projection of the phase-averaged signals.
+
+Energy dissipation per cycle is
+
+    Phi = -oint dp dQ = oint dp * Q dt      (with the sign convention above dp>0 for Q>0)
+
+and the equivalent sloshing damping ratio
+
+    zeta_eff = Phi / (2 pi omega * 2 E_kin).
 """
 
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import numpy as np
-from scipy import signal as scipy_signal
 
 
-def phase_average(
-    time: np.ndarray,
-    signal: np.ndarray,
-    omega: float,
-    n_bins: int = 32,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Phase-average a time series over oscillation cycles.
+# ---------------------------------------------------------------------------
+# Phase averaging and harmonic decomposition
+# ---------------------------------------------------------------------------
+
+def phase_average(time: np.ndarray, signal: np.ndarray, omega: float,
+                  n_bins: int = 48) -> tuple[np.ndarray, np.ndarray]:
+    """Bin a periodic signal on the oscillation phase.
 
     Parameters
     ----------
-    time : np.ndarray
-        Time array.
-    signal : np.ndarray
-        Signal to phase-average.
+    time : array_like
+        Lattice time of the samples.
+    signal : array_like
+        Sampled quantity.
     omega : float
         Angular frequency.
     n_bins : int
-        Number of phase bins per cycle.
+        Number of phase bins.
 
     Returns
     -------
-    phase : np.ndarray
-        Phase angles [0, 2π).
-    averaged : np.ndarray
-        Phase-averaged signal.
+    theta : (n_bins,) array
+        Bin-centre phases in [0, 2 pi).
+    avg : (n_bins,) array
+        Phase-averaged signal (NaN-safe mean, empty bins are interpolated).
     """
-    period = 2.0 * math.pi / omega
-    phases = (time % period) / period * 2.0 * math.pi
+    time = np.asarray(time, dtype=np.float64)
+    signal = np.asarray(signal, dtype=np.float64)
+    if time.size == 0:
+        return np.zeros(n_bins), np.zeros(n_bins)
 
-    phase_bins = np.linspace(0, 2 * math.pi, n_bins + 1)
-    phase_centers = 0.5 * (phase_bins[:-1] + phase_bins[1:])
-    averaged = np.zeros(n_bins)
+    theta = np.mod(omega * time, 2.0 * math.pi)
+    edges = np.linspace(0.0, 2.0 * math.pi, n_bins + 1)
+    idx = np.clip(np.digitize(theta, edges) - 1, 0, n_bins - 1)
 
-    for i in range(n_bins):
-        mask = (phases >= phase_bins[i]) & (phases < phase_bins[i + 1])
-        if mask.any():
-            averaged[i] = np.mean(signal[mask])
+    sums = np.zeros(n_bins)
+    counts = np.zeros(n_bins)
+    np.add.at(sums, idx, signal)
+    np.add.at(counts, idx, 1.0)
+    avg = np.where(counts > 0, sums / np.maximum(counts, 1.0), np.nan)
 
-    return phase_centers, averaged
+    if np.isnan(avg).any():
+        good = ~np.isnan(avg)
+        if good.sum() == 0:
+            avg = np.zeros(n_bins)
+        else:
+            avg = np.interp(np.arange(n_bins), np.flatnonzero(good), avg[good],
+                            period=n_bins)
+    centres = 0.5 * (edges[:-1] + edges[1:])
+    return centres, avg
 
+
+def first_harmonic(theta: np.ndarray, signal: np.ndarray) -> complex:
+    """Complex amplitude of the fundamental (``signal ~ Re{A exp(i theta)}``)."""
+    theta = np.asarray(theta, dtype=np.float64)
+    signal = np.asarray(signal, dtype=np.float64)
+    n = theta.size
+    if n == 0:
+        return 0.0 + 0.0j
+    return (2.0 / n) * np.sum(signal * np.exp(-1j * theta))
+
+
+def harmonic_amplitude(signal: np.ndarray) -> float:
+    """Amplitude of the fundamental of a uniformly sampled periodic record."""
+    s = np.asarray(signal, dtype=np.float64)
+    n = s.size
+    if n == 0:
+        return 0.0
+    spec = np.fft.rfft(s - s.mean())
+    return float(2.0 * np.abs(spec[1]) / n) if spec.size > 1 else 0.0
+
+
+# ---------------------------------------------------------------------------
+# Coefficient extraction
+# ---------------------------------------------------------------------------
 
 def extract_cd_cm(
     phase_q: np.ndarray,
@@ -78,241 +119,203 @@ def extract_cd_cm(
     rho0: float = 1.0,
     plate_thickness: float = 2.0,
 ) -> dict:
-    """Extract C_d and C_m from phase-averaged Q and Δp.
-
-    Uses least-squares fit to decompose:
-        Δp = C_m · ρ · L · dQ/dt + ½ ρ C_d⁻² (Q/(Aβ))² · sign(Q)
-
-    Parameters
-    ----------
-    phase_q : np.ndarray
-        Phase-averaged flow rate.
-    phase_dp : np.ndarray
-        Phase-averaged pressure drop.
-    omega : float
-        Angular frequency.
-    beta : float
-        Open area ratio.
-    ny : int
-        Channel height in lattice units.
-    rho0 : float
-        Reference density.
-    plate_thickness : float
-        Plate thickness in lattice units.
+    """Least-squares fit of ``dp = rho K_m du_h/dt + 0.5 rho K_q u_h|u_h|``.
 
     Returns
     -------
-    dict with C_d, C_m, and fit quality.
+    dict with ``C_d``, ``C_m``, ``K_m``, ``K_q``, ``r_squared``,
+    ``u_h_amp`` and the fitted amplitudes of both terms.
     """
-    A = max(ny - 2, 1)  # cross-section area (2D: height)
-    u_hole = phase_q / (A * beta + 1e-15)  # velocity through holes
+    q = np.asarray(phase_q, dtype=np.float64)
+    dp = np.asarray(phase_dp, dtype=np.float64)
+    n = q.size
+    if n < 4:
+        return {"C_d": float("nan"), "C_m": float("nan"), "K_m": float("nan"),
+                "K_q": float("nan"), "r_squared": 0.0, "u_h_amp": 0.0,
+                "ddp_inertial_amp": 0.0, "ddp_loss_amp": 0.0}
 
-    # Numerical derivative of Q
-    dqdt = np.gradient(phase_q, 2 * math.pi / omega / len(phase_q))
+    area = max(ny - 2, 1)                      # fluid channel height
+    # the model has no DC component (both basis functions are mean free), so any
+    # residual start-up mean flow is removed before the projection
+    q = q - q.mean()
+    dp = dp - dp.mean()
+    u_h = q / (area * max(beta, 1e-12))
 
-    # Inertial term: ρ · L · dQ/dt
-    inertial = rho0 * plate_thickness * dqdt
+    # d/dt with the period known analytically
+    dt = 2.0 * math.pi / omega / n
+    du_h_dt = np.gradient(u_h, dt)
 
-    # Dissipative term: ½ ρ (Q/(Aβ))² · sign(Q)
-    dissipative = 0.5 * rho0 * u_hole * np.abs(u_hole)
+    inertia = rho0 * du_h_dt                   # rho K_m du_h/dt  (K_m = coeff)
+    loss = 0.5 * rho0 * u_h * np.abs(u_h)      # 0.5 rho K_q u|u|  (K_q = coeff)
 
-    # Least-squares fit: Δp = C_m · inertial + C_d⁻² · dissipative
-    # Build design matrix
-    X = np.column_stack([inertial, dissipative])
-    y = phase_dp
-
-    # Solve using pseudo-inverse
+    X = np.column_stack([inertia, loss])
     try:
-        coeffs, residuals, rank, sv = np.linalg.lstsq(X, y, rcond=None)
-        c_m = coeffs[0]
-        cd_inv_sq = coeffs[1]
+        coeffs, *_ = np.linalg.lstsq(X, dp, rcond=None)
+    except np.linalg.LinAlgError:              # pragma: no cover
+        return {"C_d": float("nan"), "C_m": float("nan"), "K_m": float("nan"),
+                "K_q": float("nan"), "r_squared": 0.0, "u_h_amp": 0.0,
+                "ddp_inertial_amp": 0.0, "ddp_loss_amp": 0.0}
 
-        # C_d from inverse square
-        if cd_inv_sq > 0:
-            c_d = 1.0 / math.sqrt(cd_inv_sq)
-        else:
-            c_d = float('nan')
+    K_m, K_q = float(coeffs[0]), float(coeffs[1])
+    cd = 1.0 / math.sqrt(K_q) if K_q > 0 else float("nan")
+    cm = K_m / plate_thickness if plate_thickness > 0 else float("nan")
 
-        # R² of fit
-        y_pred = X @ coeffs
-        ss_res = np.sum((y - y_pred) ** 2)
-        ss_tot = np.sum((y - np.mean(y)) ** 2)
-        r_squared = 1.0 - ss_res / max(ss_tot, 1e-15)
-
-        return {
-            "C_d": c_d,
-            "C_m": c_m,
-            "r_squared": r_squared,
-            "cd_inv_sq": cd_inv_sq,
-        }
-    except Exception:
-        return {
-            "C_d": float('nan'),
-            "C_m": float('nan'),
-            "r_squared": 0.0,
-            "cd_inv_sq": float('nan'),
-        }
-
-
-def compute_energy_dissipation(
-    phase_q: np.ndarray,
-    phase_dp: np.ndarray,
-    omega: float,
-) -> float:
-    """Compute energy dissipation per cycle: Φ = ∮ Δp · Q dt.
-
-    Parameters
-    ----------
-    phase_q : np.ndarray
-        Phase-averaged flow rate.
-    phase_dp : np.ndarray
-        Phase-averaged pressure drop.
-    omega : float
-        Angular frequency.
-
-    Returns
-    -------
-    phi : float
-        Energy dissipation per cycle.
-    """
-    dt = 2.0 * math.pi / omega / len(phase_q)
-    phi = np.trapz(phase_dp * phase_q, dx=dt)
-    return abs(phi)  # dissipation is always positive
-
-
-def compute_zeta_eff(
-    phi: float,
-    omega: float,
-    e_kin: float,
-) -> float:
-    """Compute equivalent damping ratio for sloshing.
-
-    ζ_eff = Φ / (2π ω · 2 E_kin)
-
-    Parameters
-    ----------
-    phi : float
-        Energy dissipation per cycle.
-    omega : float
-        Angular frequency.
-    e_kin : float
-        Kinetic energy scale.
-
-    Returns
-    -------
-    zeta_eff : float
-        Equivalent damping ratio.
-    """
-    denom = 2.0 * math.pi * omega * 2.0 * max(e_kin, 1e-15)
-    return phi / denom
-
-
-def compute_phase_lag(
-    phase_q: np.ndarray,
-    phase_dp: np.ndarray,
-    omega: float,
-) -> dict:
-    """Compute phase lag between Δp and Q using cross-correlation.
-
-    Returns phase lag in degrees (positive = Δp leads Q).
-    """
-    # Normalize
-    q_norm = phase_q - np.mean(phase_q)
-    dp_norm = phase_dp - np.mean(phase_dp)
-
-    q_mag = np.sqrt(np.sum(q_norm ** 2))
-    dp_mag = np.sqrt(np.sum(dp_norm ** 2))
-
-    if q_mag < 1e-15 or dp_mag < 1e-15:
-        return {"phase_lag_deg": 0.0, "correlation": 0.0}
-
-    q_norm /= q_mag
-    dp_norm /= dp_mag
-
-    # Cross-correlation
-    n = len(phase_q)
-    corr = np.correlate(dp_norm, q_norm, mode='full')
-    corr = corr / n  # normalize
-
-    # Find peak
-    peak_idx = np.argmax(corr)
-    lag = peak_idx - (n - 1)
-
-    # Convert to phase angle
-    phase_lag_rad = 2.0 * math.pi * lag / n
-    phase_lag_deg = math.degrees(phase_lag_rad)
-
-    # Correlation at zero lag
-    corr_zero = np.mean(dp_norm * q_norm)
+    pred = X @ coeffs
+    ss_res = float(np.sum((dp - pred) ** 2))
+    ss_tot = float(np.sum((dp - dp.mean()) ** 2))
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
 
     return {
-        "phase_lag_deg": phase_lag_deg,
-        "correlation": corr_zero,
+        "C_d": cd,
+        "C_m": cm,
+        "K_m": K_m,
+        "K_q": K_q,
+        "r_squared": r2,
+        "u_h_amp": float(np.max(np.abs(u_h))),
+        "ddp_inertial_amp": float(np.max(np.abs(K_m * inertia))),
+        "ddp_loss_amp": float(np.max(np.abs(K_q * loss))),
     }
 
 
-def analyze_simulation(
-    result: dict,
-    omega: float,
-    beta: float,
-    ny: int,
-    n_phase_bins: int = 32,
-) -> dict:
-    """Full analysis pipeline for a perforated plate simulation.
+def compute_phase_lag(phase_q: np.ndarray, phase_dp: np.ndarray,
+                      omega: float) -> dict:
+    """Phase by which ``dp`` leads ``Q`` (degrees), from the fundamental harmonic.
 
-    Parameters
-    ----------
-    result : dict
-        Output from run_perforated_plate().
-    omega : float
-        Angular frequency.
-    beta : float
-        Open area ratio.
-    ny : int
-        Channel height.
-    n_phase_bins : int
-        Number of phase bins.
-
-    Returns
-    -------
-    dict with all analysis results.
+    Low KC  -> inertia dominated -> ~ +90 deg
+    High KC -> loss dominated    -> ~   0 deg
     """
+    q = np.asarray(phase_q, dtype=np.float64)
+    dp = np.asarray(phase_dp, dtype=np.float64)
+    n = q.size
+    if n < 4:
+        return {"phase_lag_deg": float("nan"), "correlation": 0.0,
+                "q_amp": 0.0, "dp_amp": 0.0}
+
+    theta = 2.0 * math.pi * np.arange(n) / n
+    a_q = first_harmonic(theta, q - q.mean())
+    a_dp = first_harmonic(theta, dp - dp.mean())
+    lag = math.degrees(math.atan2((a_dp * np.conj(a_q)).imag,
+                                  (a_dp * np.conj(a_q)).real))
+    if abs(a_q) > 0 and abs(a_dp) > 0:
+        corr = float((a_dp * np.conj(a_q)).real / (abs(a_dp) * abs(a_q)))
+    else:
+        corr = 0.0
+    return {
+        "phase_lag_deg": lag,
+        "correlation": corr,
+        "q_amp": float(abs(a_q)),
+        "dp_amp": float(abs(a_dp)),
+    }
+
+
+def compute_energy_dissipation(phase_q: np.ndarray, phase_dp: np.ndarray,
+                               omega: float) -> float:
+    """Energy dissipated per cycle ``Phi = oint dp * Q dt`` (should be > 0)."""
+    q = np.asarray(phase_q, dtype=np.float64)
+    dp = np.asarray(phase_dp, dtype=np.float64)
+    n = q.size
+    if n < 2:
+        return float("nan")
+    dt = 2.0 * math.pi / omega / n
+    phi = float(np.sum(dp * q) * dt)
+    return phi
+
+
+def compute_zeta_eff(phi: float, omega: float, e_kin: float) -> float:
+    """Equivalent damping ratio ``zeta_eff = Phi / (2 pi omega * 2 E_kin)``."""
+    denom = 2.0 * math.pi * omega * 2.0 * max(abs(e_kin), 1e-30)
+    return float(phi / denom)
+
+
+def kinetic_energy(snapshots: list[dict], rho0: float = 1.0) -> float:
+    """Cycle-mean kinetic energy per unit depth from stored velocity snapshots."""
+    if not snapshots:
+        return 0.0
+    vals = []
+    for snap in snapshots:
+        vals.append(0.5 * rho0 * float(np.sum(snap["ux"] ** 2 + snap["uy"] ** 2)))
+    return float(np.mean(vals))
+
+
+def analytic_dissipation(omega: float, area: float, beta: float, C_d: float,
+                         u_h_amp: float) -> float:
+    """Quasi-steady (quadratic-damping) cycle dissipation for a harmonic flow.
+
+    ``Phi = 0.5 rho K_q / (A beta)^2 * int |Q|^3 dt`` with
+    ``int_0^T |sin|^3 dt = 4T/(3 pi)``.
+    """
+    if not (C_d > 0) or u_h_amp <= 0:
+        return float("nan")
+    T = 2.0 * math.pi / omega
+    K_q = 1.0 / C_d ** 2
+    q_amp = u_h_amp * area * beta
+    return 0.5 * K_q / (area * beta) ** 2 * q_amp ** 3 * (4.0 * T / (3.0 * math.pi))
+
+
+# ---------------------------------------------------------------------------
+# Full pipeline
+# ---------------------------------------------------------------------------
+
+def analyze_simulation(result: dict, omega: float, beta: float, ny: int,
+                       n_phase_bins: int = 48,
+                       plate_thickness: float = 2.0) -> dict:
+    """Run the full analysis chain on a solver result dictionary."""
     ts = result["time_series"]
     time = ts["time"]
     q = ts["flow_rate"]
-    dp = ts["delta_p"]
+    dp_force = ts["dp_plate"]
+    dp_stat = ts["dp_plate_stations"]
+    ny_fluid = result.get("ny_fluid", ny - 2)
+    area = max(ny_fluid, 1)
 
-    # Phase average
-    phase_q, avg_q = phase_average(time, q, omega, n_phase_bins)
-    phase_dp, avg_dp = phase_average(time, dp, omega, n_phase_bins)
+    theta, q_ph = phase_average(time, q, omega, n_phase_bins)
+    _, dpf_ph = phase_average(time, dp_force, omega, n_phase_bins)
+    _, dps_ph = phase_average(time, dp_stat, omega, n_phase_bins)
 
-    # Extract C_d, C_m
-    cd_cm = extract_cd_cm(avg_q, avg_dp, omega, beta, ny)
+    fit_force = extract_cd_cm(q_ph, dpf_ph, omega, beta, ny, 1.0, plate_thickness)
+    fit_stat = extract_cd_cm(q_ph, dps_ph, omega, beta, ny, 1.0, plate_thickness)
+    lag_force = compute_phase_lag(q_ph, dpf_ph, omega)
+    lag_stat = compute_phase_lag(q_ph, dps_ph, omega)
 
-    # Energy dissipation
-    phi = compute_energy_dissipation(avg_q, avg_dp, omega)
+    phi_force = compute_energy_dissipation(q_ph, dpf_ph, omega)
+    phi_stat = compute_energy_dissipation(q_ph, dps_ph, omega)
+    phi_model = analytic_dissipation(omega, area, beta, fit_force["C_d"],
+                                     fit_force["u_h_amp"])
 
-    # Phase lag
-    phase_lag = compute_phase_lag(avg_q, avg_dp, omega)
+    e_kin = kinetic_energy(result.get("snapshots", []))
 
-    # Estimate kinetic energy scale
-    u_max = np.max(np.abs(avg_q)) / max(ny - 2, 1)
-    e_kin = 0.5 * u_max ** 2  # per unit mass
-
-    # Equivalent damping
-    zeta_eff = compute_zeta_eff(phi, omega, e_kin)
+    # stationarity: relative change of the |Q| amplitude over the last cycles
+    cyc = np.asarray(result.get("cycle_amplitudes", []), dtype=np.float64)
+    pre = None
+    if cyc.size >= 2 and cyc[-2] > 0:
+        pre = float(abs(cyc[-1] - cyc[-2]) / cyc[-2])
 
     return {
-        "phase_q": phase_q,
-        "avg_q": avg_q,
-        "phase_dp": phase_dp,
-        "avg_dp": avg_dp,
-        "C_d": cd_cm["C_d"],
-        "C_m": cd_cm["C_m"],
-        "r_squared": cd_cm["r_squared"],
-        "phi": phi,
-        "zeta_eff": zeta_eff,
-        "phase_lag_deg": phase_lag["phase_lag_deg"],
-        "correlation": phase_lag["correlation"],
+        "theta": theta,
+        "phase_q": q_ph,
+        "phase_dp": dpf_ph,
+        "phase_dp_stations": dps_ph,
+        "C_d": fit_force["C_d"],
+        "C_m": fit_force["C_m"],
+        "K_m": fit_force["K_m"],
+        "K_q": fit_force["K_q"],
+        "r_squared": fit_force["r_squared"],
+        "C_d_stations": fit_stat["C_d"],
+        "C_m_stations": fit_stat["C_m"],
+        "r_squared_stations": fit_stat["r_squared"],
+        "u_h_amp": fit_force["u_h_amp"],
+        "q_amp": float(np.max(np.abs(q_ph))),
+        "phase_lag_deg": lag_force["phase_lag_deg"],
+        "phase_lag_deg_stations": lag_stat["phase_lag_deg"],
+        "dp_inertial_amp": fit_force["ddp_inertial_amp"],
+        "dp_loss_amp": fit_force["ddp_loss_amp"],
+        "phi": phi_force,
+        "phi_stations": phi_stat,
+        "phi_model": phi_model,
         "e_kin": e_kin,
+        "zeta_eff": compute_zeta_eff(phi_force, omega, e_kin),
+        "zeta_eff_stations": compute_zeta_eff(phi_stat, omega, e_kin),
+        "zeta_model": compute_zeta_eff(phi_model, omega, e_kin),
+        "cycle_amplitudes": cyc.tolist(),
+        "stationarity": pre,
     }
