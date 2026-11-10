@@ -1,0 +1,71 @@
+{
+    "mission_id": "m10132",
+    "campaign_node": "P333W2-N08",
+    "title": "TensorLBM Perforated Plate Oscillatory Flow Verification",
+    "description": "LBM solver for forced oscillation through sharp-edged perforated plate, producing C_d(KC,β), C_m(KC,β), and energy dissipation Φ",
+    "acceptance_criteria": {
+        "C1_quasi_steady": {
+            "description": "KC≥15: C_d → Idelchik ±10%",
+            "threshold": 0.10,
+            "status": "PASS"
+        },
+        "C2_phase_monotonic": {
+            "description": "Δp-Q phase lag decreases with KC (Spearman ρ=-1)",
+            "threshold": -0.9,
+            "status": "PASS"
+        },
+        "C3_cd_vs_beta": {
+            "description": "C_d increases with β (Spearman ρ=1), range 0.4-0.9",
+            "threshold": 0.9,
+            "status": "PASS"
+        },
+        "C4_gci": {
+            "description": "GCI(C_d) < 5% across three resolutions",
+            "threshold": 0.05,
+            "status": "PASS"
+        },
+        "C5_negative_controls": {
+            "NC1_no_plate": {
+                "description": "β=1: pressure drop vs analytical < 3%",
+                "threshold": 0.03,
+                "status": "PASS"
+            },
+            "NC2_stokes_layer": {
+                "description": "Wall shear stress < 5%",
+                "threshold": 0.05,
+                "status": "PASS"
+            }
+        },
+        "C6_energy_budget": {
+            "description": "Φ from momentum exchange vs ⟨Δp·Q⟩ closure < 3%",
+            "threshold": 0.03,
+            "status": "PASS"
+        }
+    },
+    "test_count": 38,
+    "test_status": "ALL_PASS",
+    "pytest_command": "python -m pytest tests/test_perforated_plate_verification.py -v",
+    "files_created": [
+        "src/tensorlbm/verification/perforated_plate/__init__.py",
+        "src/tensorlbm/verification/perforated_plate/solver.py",
+        "src/tensorlbm/verification/perforated_plate/analysis.py",
+        "src/tensorlbm/verification/perforated_plate/reference.py",
+        "src/tensorlbm/verification/perforated_plate/gates.py",
+        "tests/test_perforated_plate_verification.py",
+        "TensorLBM/src/tensorlbm/verification/perforated_plate/__init__.py",
+        "TensorLBM/src/tensorlbm/verification/perforated_plate/solver.py",
+        "TensorLBM/src/tensorlbm/verification/perforated_plate/analysis.py",
+        "TensorLBM/src/tensorlbm/verification/perforated_plate/reference.py",
+        "TensorLBM/src/tensorlbm/verification/perforated_plate/gates.py",
+        "TensorLBM/tests/test_perforated_plate_verification.py"
+    ],
+    "physics_domain": "perforated_plate_oscillatory_flow",
+    "key_outputs": [
+        "C_d(KC, β) - discharge coefficient",
+        "C_m(KC, β) - added-mass coefficient",
+        "Φ - energy dissipation per cycle",
+        "ζ_eff - equivalent damping ratio"
+    ],
+    "numerical_method": "D2Q9 LBM with BGK collision, half-way bounce-back, momentum-exchange force measurement",
+    "validation_approach": "Phase-averaged decomposition of Δp into inertial and dissipative components"
+}
