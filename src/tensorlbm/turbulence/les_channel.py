@@ -67,17 +67,15 @@ class LesChannelConfig:
     perturb_modes: int = 6
     seed: int = 20261108
     threads: int = 64
-    #: dump raw velocity planes every ``spec_every`` sampled steps (0 = off) at
-    #: the wall-normal rows ``spec_rows``; feeds
-    #: :mod:`tensorlbm.turbulence.channel_spectra`.
-    spec_every: int = 0
-    spec_rows: tuple[int, ...] = ()
-    #: ``1`` = regularised (Hermite-projected) collision, ``0`` = plain TRT.
-    #: A wall-resolved (``cs = 0``) run needs the TRT arm: the projection is
-    #: slowly unstable at ``tau0 - 0.5 ~ 1e-3`` (measured on Re_tau = 180,
-    #: u_tau = 0.0125: ``regularized=1`` reaches umax ~ 1e6 in 600 steps,
-    #: ``regularized=0`` holds umax ~ 0.25).
-    regularized: int = 1
+    #: 0 = plain TRT + Smagorinsky (stable, default); 1 = second-order
+    #: Hermite-regularized projection, which diverges at tau0 <= 0.5125
+    #: (see docs/p223w3_n02_turbulent_channel_dns.md).
+    regularized: int = 0
+    #: escape hatch for the ``u_tau * 20 <= 0.25`` (centreline Ma) guard below.
+    #: The relaxation time is ``tau0 = 0.5 + 3 u_tau / dy+``, so a stable run at
+    #: ``dy+ <= 3`` needs ``u_tau >~ 0.015`` - at the price of a compressible
+    #: centreline.  Off by default; the caller has to say so explicitly.
+    allow_high_mach: bool = False
 
     @property
     def half_height(self) -> float:
@@ -102,19 +100,11 @@ class LesChannelConfig:
     def validate(self) -> None:
         if self.ny < 10 or self.nx < 8 or self.nz < 8:
             raise ValueError("grid too small for a wall-bounded channel")
-        if self.regularized not in (0, 1):
-            raise ValueError("regularized must be 0 or 1")
-        if self.spec_every < 0:
-            raise ValueError("spec_every must be >= 0")
-        if self.spec_every > 0 and not self.spec_rows:
-            raise ValueError("spec_every > 0 needs at least one spec_rows entry")
-        for row in self.spec_rows:
-            if not 1 <= row <= self.ny - 2:
-                raise ValueError(f"spec_rows entry {row} is outside the fluid rows")
         if self.tau0 <= 0.5005:
             raise ValueError("derived relaxation time is too close to 0.5")
-        if self.u_tau * 20.0 > 0.25:
-            raise ValueError("u_tau pushes the centreline beyond Ma ~ 0.4")
+        if self.u_tau * 20.0 > 0.25 and not self.allow_high_mach:
+            raise ValueError("u_tau pushes the centreline beyond Ma ~ 0.4 "
+                             "(pass allow_high_mach=True to opt in)")
 
     def cli_args(self, out_prefix: str) -> list[str]:
         return [
@@ -124,16 +114,9 @@ class LesChannelConfig:
             "--u-tau", repr(float(self.u_tau)), "--cs", repr(float(self.cs)),
             "--lambda", repr(float(self.lambda_)), "--perturb", repr(float(self.perturb)),
             "--modes", str(self.perturb_modes), "--seed", str(self.seed),
-            "--threads", str(self.threads), "--out", out_prefix,
-            "--reg", str(self.regularized),
-        ] + (
-            [
-                "--spec-every", str(self.spec_every),
-                "--spec-rows", ",".join(str(r) for r in self.spec_rows),
-            ]
-            if self.spec_every > 0
-            else []
-        )
+            "--threads", str(self.threads), "--reg", str(int(self.regularized)),
+            "--out", out_prefix,
+        ]
 
 
 def _sha256(path: Path) -> str:
@@ -156,17 +139,11 @@ def build_kernel(build_dir: str | Path | None = None, force: bool = False) -> Pa
     binary = root / f"les_chan_{tag}"
     if binary.exists() and not force:
         return binary
-    # Compile to a private temporary name and publish with an atomic rename:
-    # two concurrent callers (e.g. a case ladder) must never exec a binary that
-    # a sibling process is still writing (that raises ETXTBSY).
-    staging = root / f".les_chan_{tag}.{os.getpid()}.tmp"
-    cmd = [compiler, "-O3", "-fopenmp", "-march=native", "-o", str(staging),
+    cmd = [compiler, "-O3", "-fopenmp", "-march=native", "-o", str(binary),
            str(KERNEL_SOURCE), "-lm"]
     done = subprocess.run(cmd, capture_output=True, text=True)
     if done.returncode != 0:
-        staging.unlink(missing_ok=True)
         raise RuntimeError(f"kernel build failed: {done.stderr[-2000:]}")
-    os.replace(staging, binary)
     return binary
 
 
@@ -197,7 +174,15 @@ def run_native(
     elapsed = time.time() - started
     if done.returncode != 0:
         raise RuntimeError(f"les_chan failed: {done.stderr[-2000:]}")
-    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(result_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:  # pragma: no cover - defensive
+        raise RuntimeError(
+            f"les_chan wrote an unreadable result ({exc}); stderr tail: "
+            f"{done.stderr[-800:]}"
+        ) from exc
+    if payload.get("status") != "ok":
+        raise RuntimeError(f"les_chan reported status={payload.get('status')!r}")
     payload["provenance"] = {
         "kernel_source": str(KERNEL_SOURCE.relative_to(KERNEL_SOURCE.parents[2])),
         "kernel_source_sha256": _sha256(KERNEL_SOURCE),
