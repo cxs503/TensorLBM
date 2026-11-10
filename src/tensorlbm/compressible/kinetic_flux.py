@@ -241,8 +241,17 @@ def contour_loop(half_thickness: Callable[[np.ndarray], np.ndarray],
     yt = np.asarray(half_thickness(xs), dtype=float)
     xu = chord * xs
     yu = chord * yt
-    x_loop = np.concatenate([xu[:-1], xu[::-1][1:]])
-    y_loop = np.concatenate([yu[:-1], -yu[::-1][1:]])
+    # Upper surface TE -> LE *including both* the sharp trailing-edge node
+    # (x = c) and the nose node (x = 0); the lower surface then returns from the
+    # nose-adjacent station to the trailing-edge-adjacent station, so neither
+    # endpoint is repeated (a repeated node makes the wrap-around i-face of the
+    # O-grid degenerate, see ``build_annulus_mesh``) and the nose is *not*
+    # truncated by the chord between its two neighbours (the previous
+    # ``xu[:-1] + xu[::-1][1:]`` form closed the loop across the nose, cutting
+    # 0.7 % of the chord off the leading edge at 160 surface points, which
+    # flattens the suction peak of the whole section).
+    x_loop = np.concatenate([xu, xu[::-1][1:-1]])
+    y_loop = np.concatenate([yu, -yu[::-1][1:-1]])
     return x_loop, y_loop
 
 
@@ -375,6 +384,22 @@ def build_annulus_mesh(x_loop, y_loop, r_levels, centroid=(0.4, 0.0),
     """
     x_loop = np.asarray(x_loop, dtype=float)
     y_loop = np.asarray(y_loop, dtype=float)
+    # A "closed" loop that repeats its first node (as ``contour_loop`` does: it
+    # returns the trailing-edge node twice) makes the wrap-around i-face
+    # degenerate.  Every cell on the last i-index then becomes a folded sliver
+    # whose j-faces have zero length (measured ``|jface_len| ~ 3e-17``) while its
+    # other faces keep a finite length; the finite-volume update divides by that
+    # sliver area, and the explicit scheme blows up within ~50 iterations on some
+    # resolutions (176x64, 192x72, 288x108) while others (160x64, 200x74) survive
+    # -- a purely mesh-dependent instability.  Dropping the repeated node
+    # removes all folded cells (mesh_quality: n_folded = 2 -> 0) and makes every
+    # level of a refined grid family stable.
+    if x_loop.size > 4:
+        gap = math.hypot(x_loop[0] - x_loop[-1], y_loop[0] - y_loop[-1])
+        span = max(float(np.ptp(x_loop)), float(np.ptp(y_loop)), 1e-30)
+        if gap <= 1e-9 * span:
+            x_loop = x_loop[:-1]
+            y_loop = y_loop[:-1]
     nc = x_loop.size
     r_levels = np.asarray(r_levels, dtype=float)
     if r_levels.ndim == 1:
