@@ -1,0 +1,25 @@
+{
+ "grid": [
+  32,
+  32,
+  42
+ ],
+ "steps": 14000,
+ "warmup": 4000,
+ "threads": 12,
+ "re_tau": 20.0,
+ "u_tau": 0.02,
+ "renorm": true,
+ "probe_steps": 2000,
+ "max_passes": 5,
+ "shard": 3,
+ "nshards": 4,
+ "cases": [
+  "depth_h03.0_b16_s32",
+  "width_h4_b12.0_s32",
+  "spacing_h2_b4_s08.0",
+  "smooth_rt0004",
+  "smooth_rt0013"
+ ],
+ "started_utc": "2026-11-10T09:10:53Z"
+}
