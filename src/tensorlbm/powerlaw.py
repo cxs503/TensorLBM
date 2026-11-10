@@ -317,14 +317,18 @@ def guo_force_term(
     w = W.to(f.device).to(f.dtype)
     cx = c[:, 0].view(9, 1, 1)
     cy = c[:, 1].view(9, 1, 1)
-    cu = 3.0 * (cx * ust + cy * uy)  # 3·(c_i·u*), c_s² = 1/3
+    cu = cx * ust + cy * uy  # (c_i·u*)
     pref = (1.0 - 0.5 / tau_field).unsqueeze(0)  # (1, ny, nx)
+    # Guo (2002) eq. (4): F_i = w_i (1 - 1/(2τ)) [ 3(c_i - u*) + 9 (c_i·u*) c_i ]·F
+    # with c_s² = 1/3.  Keeping the second group as 9 (c_i·u*) c_i is what makes
+    # Σ_i F_i = 0 (the force must not act as a mass source): Σ_i w_i 3(c_ix - u*_x)
+    # = -3u*_x cancels Σ_i w_i 9 (c_i·u*) c_ix = 3u*_x because Σ_i w_i c_ix² = 1/3.
     return (
         w.view(9, 1, 1)
         * rho.unsqueeze(0)
         * a_t.unsqueeze(0)
         * pref
-        * (3.0 * (cx - ust.unsqueeze(0)) + 9.0 * cx * cu)
+        * (3.0 * (cx - ust.unsqueeze(0)) + 9.0 * cu * cx)
     )
 
 

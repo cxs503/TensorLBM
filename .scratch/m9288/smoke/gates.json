@@ -1,0 +1,74 @@
+{
+  "all_passed": false,
+  "gates": [
+    {
+      "id": "G1_power_law_profile",
+      "description": "power-law plane Poiseuille: L2 velocity error vs the closed-form Ostwald-de Waele profile (n = 0.7 and 1.3)",
+      "values": {
+        "n=0.7": 0.006270552518270837,
+        "n=1.3": 0.0008743885241704702
+      },
+      "worst": 0.006270552518270837,
+      "threshold": 0.03,
+      "passed": true
+    },
+    {
+      "id": "G2_carreau_yasuda",
+      "description": "Carreau-Yasuda: worst of the velocity L2 error vs the 1-D constitutive-inversion anchor and the viscosity-curve error",
+      "values": {
+        "l2_profile": 0.007310029102660638,
+        "viscosity_curve": 0.018424365890400713,
+        "closure_roundtrip": 0.0
+      },
+      "worst": 0.018424365890400713,
+      "threshold": 0.05,
+      "passed": true
+    },
+    {
+      "id": "G3_cross",
+      "description": "Cross model: worst of the velocity L2 error vs the 1-D anchor and the viscosity-curve error",
+      "values": {
+        "l2_profile": 0.040293111161695414,
+        "viscosity_curve": 0.1237230915154203,
+        "closure_roundtrip": 0.0
+      },
+      "worst": 0.1237230915154203,
+      "threshold": 0.05,
+      "passed": false
+    },
+    {
+      "id": "G4_ice_slurry_plug",
+      "description": "ice-slurry Herschel-Bulkley plug half-width: |LBM fit r_c / (tau_y/rho a) - 1| (velocity/stress detectors reported too)",
+      "values": {
+        "fit": -0.06290654240229798,
+        "velocity": -0.7355293664709204,
+        "stress": -0.8214285714285714,
+        "reference_fit_bias": -8.627888374634907e-05
+      },
+      "worst": 0.06290654240229798,
+      "threshold": 0.05,
+      "passed": false
+    },
+    {
+      "id": "G5_grid_convergence_order",
+      "description": "observed grid-convergence order of the power-law channel L2 error",
+      "values": {
+        "8->16": 1.886892119413877,
+        "16->32": 1.8985167170987223
+      },
+      "worst": 1.886892119413877,
+      "threshold": 2.0,
+      "passed": false
+    },
+    {
+      "id": "G6_pytest",
+      "description": "collected tests in tests/test_nonnewtonian_rheology_frontier.py",
+      "values": {
+        "collected": 20
+      },
+      "worst": 20,
+      "threshold": 10,
+      "passed": true
+    }
+  ]
+}
