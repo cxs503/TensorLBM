@@ -11,6 +11,9 @@ Module map
               thrust reference (``thruster_ideal_check``).
 ``shercliff`` insulating-wall (zero net current) branch: closed form, dynamic
               ``K = <u_x>`` closure, energy split and its own acceptance criteria.
+``damping``   shear-wave magnetic damping: exact ``exp(-gamma t)`` decay-rate
+              anchor with ``gamma = nu k^2 + nu Ha^2/h^2`` and the ``gamma ~ Ha^2``
+              scaling ladder (node p315w1-n04).
 
 The module owns solver-local MHD verification only (see ``docs/PROJECT_CHARTER.md``);
 campaign orchestration lives in TensorPhysics.
@@ -30,6 +33,16 @@ from .hartmann import (
     hartmann_wall_shear_coefficient,
     poiseuille_profile,
     run_hartmann_channel,
+)
+from .damping import (
+    ShearWaveCase,
+    damping_ladder,
+    evaluate_damping_criteria,
+    ha_scaling_exponent,
+    magnetic_decay_rate,
+    run_damping_case,
+    viscous_decay_rate,
+    wave_number,
 )
 from .ladder import (
     LadderResult,
@@ -59,6 +72,14 @@ from .thruster import (
 
 __all__ = [
     "HartmannConfig",
+    "ShearWaveCase",
+    "damping_ladder",
+    "evaluate_damping_criteria",
+    "ha_scaling_exponent",
+    "magnetic_decay_rate",
+    "run_damping_case",
+    "viscous_decay_rate",
+    "wave_number",
     "ShercliffCase",
     "evaluate_shercliff_criteria",
     "ideal_lorentz_thrust",
