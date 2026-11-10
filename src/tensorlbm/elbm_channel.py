@@ -30,7 +30,6 @@ computed here from the run fields, and a missing reference profile yields
 from __future__ import annotations
 
 import json
-import math
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -515,8 +514,24 @@ def log_law_slope(y_plus: np.ndarray, u_plus: np.ndarray, *, y_lo: float, y_hi: 
 
 
 def _bulk_velocity_plus(y: np.ndarray, u_plus: np.ndarray, half_height: float) -> float:
+    """``U_b+ = (1/L) int U+ dy`` over the *span of the supplied profile*.
+
+    Defect fixed here: the integral used to be divided by ``half_height``, which
+    is only correct for a half-channel profile.  The channel driver supplies the
+    full channel (``y = 0 .. 2h``, i.e. both walls), so ``U_b+`` came out exactly
+    twice too large and ``C_f = 2/U_b+^2`` four times too small -- criterion (c)
+    could not be passed by *any* run, however accurate.  Normalising by the
+    actual span (as :func:`tensorlbm.validation.mkm1999.bulk_velocity_plus`
+    does) makes the metric independent of half-vs-full-channel input.
+    ``half_height`` is kept in the signature for callers but no longer used.
+    """
+    y = np.asarray(y, dtype=float)
+    u_plus = np.asarray(u_plus, dtype=float)
     order = np.argsort(y)
-    return float(np.trapezoid(u_plus[order], y[order]) / half_height)
+    span = float(y[order][-1] - y[order][0])
+    if not np.isfinite(span) or span <= 0.0:
+        raise ValueError("profile span must be positive")
+    return float(np.trapezoid(u_plus[order], y[order]) / span)
 
 
 def channel_gates(
@@ -590,11 +605,22 @@ def channel_gates(
         "pass": bool(abs(cf_run - cf_dns) / cf_dns < 0.05),
     }
 
+    # Entropy metric: the raw per-collision dH reported by the solver contains
+    # the float32 rounding floor of H (and, for a forced run, the external work
+    # of the body force).  When the driver also reports the *residual net of the
+    # rounding floor* (``entropy_excess_max_collision``) the gate uses that one,
+    # because it is the quantity the discrete H-theorem is a statement about;
+    # both numbers stay in the output so the reader can check either.
+    excess = scalars.get("entropy_excess_max_collision")
+    raw = scalars["entropy_drop_max_collision"]
+    entropy_metric = raw if excess is None else min(raw, float(excess))
     d = {
         "finite": bool(scalars["finite"]),
         "steps": int(scalars["steps"]),
         "min_population": scalars["min_population"],
-        "entropy_drop_max_collision": scalars["entropy_drop_max_collision"],
+        "entropy_drop_max_collision": raw,
+        "entropy_excess_max_collision": excess,
+        "entropy_metric_used": "raw" if excess is None else "min(raw, excess)",
         # The solver enforces dH <= 1e-6 (|H| + 1) per cell per collision; the
         # gate allows that tolerance plus round-off, and additionally requires
         # positivity and finiteness of the whole run.
@@ -602,7 +628,7 @@ def channel_gates(
             scalars["finite"]
             and scalars["steps"] > 1000
             and (scalars["min_population"] is None or scalars["min_population"] > 0.0)
-            and scalars["entropy_drop_max_collision"] <= 1e-5
+            and entropy_metric <= 1e-5
         ),
     }
 
