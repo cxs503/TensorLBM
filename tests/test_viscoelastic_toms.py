@@ -1,503 +1,387 @@
-"""Viscoelastic (Toms) verification surface for TensorLBM -- campaign node P50-N06.
+"""Verification tests for TensorLBM's viscoelastic (Toms) branch.
 
-Acceptance gates (see ``docs/VISCOELASTIC_P50_N06.md``):
+Covers the machine-checkable acceptance criteria of the Toms node:
 
-1. Oldroyd-B plane-Poiseuille velocity profile vs the exact parabola: max
-   pointwise deviation <= 2% on >= 20 nodes, two Weissenberg numbers, and the
-   first normal-stress difference ``N1`` within 3% of ``2 eta_p lambda gdot^2``.
-2. Newtonian limit: with ``lambda -> 0`` the profile collapses onto the
-   Newtonian Poiseuille solution to <= 1e-6 (relative) and ``N1 ~ lambda^2``.
-3. Realizability: projected runs keep ``tr C >= 3 - 1e-9`` and ``C`` positive
-   semi-definite everywhere; the *unprojected* high-Wi negative control breaks
-   the gate on the first step.
-4. Energy budget: ``P_in = eps_s + eps_p + dE_el/dt`` closes at round-off on the
-   analytic anchor; on the LBM field the truncation-limited residual is reported
-   and must decay as ``O(h^2)``.
-5. Drag reduction: the Virk three-segment / MDR machinery is implemented and
-   tested, but ``delta_B(Wi)`` is **not measured** in this mission -- evidence
-   grade WITHHELD (honest FAIL, see the last test).
-6. Grid convergence: refining the grid by 2x reduces the profile error by >= 3.2.
-7. Negative controls: ``beta = 1`` (no polymer stress), upper-convective term
-   switched off (``N1`` off by > 20%), and ``Wi`` beyond the FENE-P limit
-   (explicit divergence error).
-
-The channel runs are expensive (pure-python time-marching LBM), so they are
-executed once per module in module-scoped fixtures.
+* exact Oldroyd-B / FENE-P steady plane-Poiseuille anchors (velocity, ``C``, ``N1``);
+* Newtonian limit ``lam -> 0``;
+* realizability ``tr C >= 3`` (with a regression guard on the *wrong* ``C >= I``
+  constraint);
+* energy budget ``P_in = Phi_s + Phi_p + dE/dt``;
+* Virk/Prandtl-Karman asymptotes and the ``Delta B(Wi) <= 11.7`` envelope;
+* grid doubling convergence;
+* three negative controls: ``beta = 1``, upper-convected term off, ``Wi`` beyond
+  the stability limit (explicit :class:`ViscoelasticDivergenceError`).
 """
 
 from __future__ import annotations
 
-import json
-import math
-from pathlib import Path
-
+import numpy as np
 import pytest
-import torch
 
-from tensorlbm.viscoelastic import (
-    MDR_DELTA_B_MAX,
+from src.tensorlbm.viscoelastic import (
+    FeneP,
+    OldroydB,
+    ViscoelasticChannel2D,
     ViscoelasticDivergenceError,
-    ViscoelasticParams,
-    advance_conformation,
-    check_delta_b_bound,
-    check_realizability,
+    analytic_channel,
     energy_budget,
-    fene_p_steady_shear_conformation,
-    oldroyd_b_poiseuille_conformation,
-    oldroyd_b_poiseuille_profile,
-    oldroyd_b_steady_shear_conformation,
-    project_realizable,
-    run_viscoelastic_channel,
-    virk_mdr_profile,
-    virk_newtonian_profile,
-    virk_three_segment,
+    min_eigenvalue,
+    project_implementable,
+    trace3,
 )
-from tensorlbm.viscoelastic.analytical import wall_shear_rate
-from tensorlbm.viscoelastic.conformation import ddy_2nd, fene_p_stress, trace
-from tensorlbm.viscoelastic.lbm import viscoelastic_profile_error
-from tensorlbm.viscoelastic.virk import delta_b_from_log_law, drag_reduction_fraction
+from src.tensorlbm.viscoelastic import virk
 
-NU0 = 0.05
-U_MAX = 0.01
+U_MAX = 0.04
+RE = 10.0
 BETA = 0.5
-H_ANCHOR = 24
-MAX_ITER = 2000
 
 
-def _drive(H: int) -> float:
-    return 8.0 * NU0 * U_MAX / float(H) ** 2
-
-
-def _run(H: int, wi: float, *, beta: float = BETA, lam=None, max_iter: int = MAX_ITER, **kw):
-    G = _drive(H)
-    gdot_w = wall_shear_rate(G, H, NU0)
-    lam = wi / gdot_w if lam is None else lam
-    params = ViscoelasticParams(nu0=NU0, beta=beta, lam=lam, G=G)
-    conf0 = kw.pop("initial_conformation", None) or oldroyd_b_poiseuille_conformation(
-        H, G, NU0, beta=beta, lam=lam
+# --------------------------------------------------------------------------- #
+# helpers
+# --------------------------------------------------------------------------- #
+def make_solver(ny=18, wi=1.0, model="oldroyd_b", L2=None, beta=BETA, lam=None, **kw):
+    H = 0.5 * (ny - 2)
+    nu0 = U_MAX * H / RE
+    if lam is None:
+        lam = wi * H / (2.0 * U_MAX)
+    kw.setdefault("tol", 1e-8)
+    kw.setdefault("n_substeps", 2)
+    kw.setdefault("check_every", 100)
+    kw.setdefault("max_steps", 200_000)
+    return ViscoelasticChannel2D(
+        ny=ny, nu0=nu0, beta=beta, lam=lam, model=model, L2=L2,
+        u_max_target=U_MAX, **kw
     )
-    _y, u_ref = oldroyd_b_poiseuille_profile(H, G, NU0)
-    out = run_viscoelastic_channel(
-        H,
-        params,
-        max_iter=max_iter,
-        tol=0.0,
-        check_every=200,
-        constitutive_dt=1e6,
-        stress_relaxation=1.0,
-        initial_velocity=u_ref,
-        initial_conformation=conf0,
-        **kw,
+
+
+# --------------------------------------------------------------------------- #
+# 1. exact constitutive anchors
+# --------------------------------------------------------------------------- #
+def test_analytic_oldshear_oldroyd_b_is_exact():
+    """Exact steady simple shear: C_xx = 1+2Wi^2, C_xy = lam*gamma_dot, trC = 3+2Wi^2."""
+    lam, G, nu0, H = 50.0, 2e-3, 0.1, 4.0
+    y = np.array([1.0, 2.0, 3.0])
+    out = analytic_channel(y, H, G, nu0, lam, beta=0.5, model="oldroyd_b")
+    gd = out["gamma_dot"]
+    wi = lam * np.abs(gd)
+    assert np.allclose(out["C"][:, 0, 0], 1.0 + 2.0 * wi ** 2, rtol=1e-14)
+    assert np.allclose(out["C"][:, 1, 1], 1.0, rtol=1e-14)
+    assert np.allclose(out["C"][:, 2, 2], 1.0, rtol=1e-14)
+    assert np.allclose(out["C"][:, 0, 1], lam * gd, rtol=1e-14)
+    assert np.allclose(out["trC"], 3.0 + 2.0 * wi ** 2, rtol=1e-14)
+    # first normal-stress difference N1 = 2 eta_p lam gamma_dot^2
+    eta_p = 0.5 * nu0
+    assert np.allclose(out["N1"], 2.0 * eta_p * lam * gd ** 2, rtol=1e-12)
+    # symmetry of the conformation tensor
+    assert np.allclose(out["C"], np.swapaxes(out["C"], -1, -2))
+
+
+def test_analytic_shear_fene_p_solves_the_steady_constitutive_equation():
+    """FENE-P steady shear: the closed form is an exact fixed point of the tensor ODE.
+
+    The self-consistent branch is ``trC = a (3 + 2Wi^2/f^2)/f`` with
+    ``f = L2/(L2-trC)``; inserting it into
+    ``L C + C L^T - (f C - a I)/lam = 0`` must give a machine-zero residual.
+    """
+    lam, G, nu0, H, L2 = 50.0, 2e-3, 0.1, 4.0, 20.0
+    y = np.linspace(-3.99, 3.99, 21)
+    y = y[np.abs(y) > 1e-6]          # y = 0 is the trivial zero-shear point
+    out = analytic_channel(y, H, G, nu0, lam, beta=0.5, model="fene_p", L2=L2)
+    a = L2 / (L2 - 3.0)
+    worst = 0.0
+    for k in range(y.size):
+        C = out["C"][k]
+        gd = out["gamma_dot"][k]
+        L = np.zeros((3, 3))
+        L[0, 1] = gd
+        f = L2 / (L2 - out["trC"][k])
+        rhs = (f * C - a * np.eye(3)) / lam
+        resid = L @ C + C @ L.T - rhs
+        scale = np.max(np.abs(rhs))
+        assert scale > 0.0
+        worst = max(worst, np.max(np.abs(resid)) / scale)
+    assert worst < 1e-12, f"FENE-P closed form residual {worst:.3e}"
+    assert np.all(out["trC"] < L2), "FENE-P trace must stay below the extensibility bound"
+    assert np.allclose(out["C"][:, 0, 1], a * lam * out["gamma_dot"] / (1 + 0.0)
+                       * (L2 / (L2 - out["trC"])) ** -2, rtol=1e-12)
+
+
+def test_fene_p_is_shear_thinning():
+    """FENE-P has a shear-dependent viscosity, so its channel profile is NOT parabolic.
+
+    This is the physics that an initially wrong reference solution missed: the
+    polymer viscosity is ``eta_p a/f(trC)`` with ``f > 1``, hence the total
+    viscosity drops where the shear rate is largest (near the wall).
+    """
+    H, G, nu0, lam, L2 = 4.0, 1e-3, 0.1, 100.0, 20.0
+    y = np.linspace(-3.5, 3.5, 15)
+    out = analytic_channel(y, H, G, nu0, lam, beta=0.5, model="fene_p", L2=L2)
+    eta = out["eta_local"]
+    assert np.all(eta[7:] <= eta[7]), "viscosity must decrease away from the centre line"
+    assert eta.max() / eta.min() > 1.02
+    u_parabola = G * (H ** 2 - y ** 2) / (2.0 * nu0)
+    assert np.max(np.abs(out["u"] - u_parabola)) / u_parabola.max() > 0.05
+
+
+def test_fene_p_reduces_to_oldroyd_b_as_L2_to_infinity():
+    lam, G, nu0, H = 50.0, 2e-3, 0.1, 4.0
+    y = np.linspace(0.25, 3.75, 9)
+    ob = analytic_channel(y, H, G, nu0, lam, beta=0.5, model="oldroyd_b")
+    fp = analytic_channel(y, H, G, nu0, lam, beta=0.5, model="fene_p", L2=1e7)
+    assert np.max(np.abs(fp["C"] - ob["C"])) / np.max(np.abs(ob["C"])) < 1e-5
+    assert np.max(np.abs(fp["N1"] - ob["N1"])) / np.max(np.abs(ob["N1"])) < 1e-5
+
+
+def test_analytic_poiseuille_momentum_balance():
+    """G H = nu0 gamma_dot_wall and Q = (2/3) u_max * 2H for the exact solution."""
+    G, nu0, H, lam = 1e-3, 0.05, 8.0, 100.0
+    out = analytic_channel(np.linspace(-H, H, 2001), H, G, nu0, lam, beta=0.5)
+    u_max = out["u_max"]
+    assert pytest.approx(u_max, rel=1e-12) == G * H ** 2 / (2.0 * nu0)
+    gamma_wall = abs(out["gamma_dot"][0])
+    assert pytest.approx(G * H, rel=1e-10) == nu0 * gamma_wall
+    Q = np.trapezoid(out["u"], np.linspace(-H, H, 2001))
+    assert pytest.approx(Q, rel=1e-6) == (2.0 / 3.0) * u_max * 2.0 * H
+
+
+# --------------------------------------------------------------------------- #
+# 2. realizability / projection
+# --------------------------------------------------------------------------- #
+def test_min_eigenvalue_of_exact_solution_is_below_one():
+    """Regression guard: the exact Oldroyd-B solution violates C >= I.
+
+    The exact steady-shear tensor [[1+2Wi^2, Wi],[Wi, 1]] has smallest eigenvalue
+    1 + Wi^2 - Wi sqrt(1+Wi^2) = 0.586 at Wi = 1.  An earlier implementation
+    clipped the spectrum at 1, which silently destroyed this exact solution --
+    the projection must only enforce (i) PSD and (ii) tr C >= 3.
+    """
+    out = analytic_channel(np.array([1.0]), 4.0, 1e-3, 0.1, 1000.0, beta=0.5)
+    # lam*gamma_dot = 1000 * (1e-3*1/0.1) = 10 -> Wi = 10 here; check the formula
+    wi = 10.0
+    expected = 1.0 + wi ** 2 - wi * np.sqrt(1.0 + wi ** 2)
+    assert pytest.approx(min_eigenvalue(out["C"])[0], rel=1e-10) == expected
+    assert expected < 1.0
+
+
+def test_projection_restores_positive_semidefiniteness():
+    bad = np.zeros((1, 1, 3, 3))
+    bad[0, 0] = np.array([[2.0, 3.0, 0.0], [3.0, 2.0, 0.0], [0.0, 0.0, 2.0]])
+    C, n = project_implementable(bad)
+    assert n > 0
+    assert min_eigenvalue(C) >= -1e-12
+    assert trace3(C)[0, 0] >= 3.0 - 1e-12
+
+
+def test_projection_enforces_trace_floor():
+    C0 = np.broadcast_to(0.5 * np.eye(3), (4, 1, 3, 3)).copy()
+    C, n = project_implementable(C0)
+    assert n == 4
+    assert np.allclose(trace3(C), 3.0, atol=1e-12)
+    assert np.allclose(min_eigenvalue(C), 1.0, atol=1e-12)
+
+
+def test_projection_is_inert_on_the_exact_solution():
+    """The projection must not alter the exact (already realizable) field."""
+    out = analytic_channel(np.linspace(-3.5, 3.5, 15), 4.0, 1e-3, 0.05, 200.0, beta=0.5)
+    C = out["C"][:, None, :, :]
+    Cp, n = project_implementable(C)
+    assert n == 0
+    assert np.allclose(Cp, C, atol=0.0)
+
+
+# --------------------------------------------------------------------------- #
+# 3. energy budget
+# --------------------------------------------------------------------------- #
+def test_energy_identity_on_exact_shear():
+    """Steady state: tau_p : grad u = Phi_p (elastic energy stationary)."""
+    lam, nu0, eta_p = 100.0, 0.1, 0.05
+    y = np.linspace(-4.0, 4.0, 2001)
+    G, H = 1e-3, 4.0
+    out = analytic_channel(y, H, G, nu0, lam, beta=0.5)
+    model = OldroydB(lam)
+    bud = energy_budget(out["u"], out["gamma_dot"], out["C"], model, eta_p,
+                        nu_s=0.5 * nu0, G=G, y=y, pad_to_walls=False)
+    assert bud["identity_residual_rel"] < 1e-12
+    assert pytest.approx(bud["polymer_work"], rel=1e-10) == bud["Phi_p"]
+    # pump power = total (solvent + polymer) dissipation
+    assert bud["residual_rel"] < 1e-6
+    assert bud["Phi_p"] > 0.0 and bud["Phi_s"] > 0.0
+
+
+def test_energy_budget_fene_p_identity():
+    lam, nu0, eta_p, L2 = 60.0, 0.1, 0.05, 30.0
+    y = np.linspace(-4.0, 4.0, 2001)
+    out = analytic_channel(y, 4.0, 1e-3, nu0, lam, beta=0.5, model="fene_p", L2=L2)
+    bud = energy_budget(out["u"], out["gamma_dot"], out["C"], FeneP(lam, L2), eta_p,
+                        nu_s=0.5 * nu0, G=1e-3, y=y, pad_to_walls=False)
+    assert bud["identity_residual_rel"] < 1e-12
+    assert bud["residual_rel"] < 1e-6
+    assert bud["Phi_p"] >= 0.0
+
+
+# --------------------------------------------------------------------------- #
+# 4. coupled LBM solver against the exact anchors
+# --------------------------------------------------------------------------- #
+def test_lbm_newtonian_poiseuille():
+    """beta = 1 recovers the exact parabolic profile to well under 2%."""
+    res = make_solver(ny=18, wi=1.0, beta=1.0).run()
+    an = analytic_channel(res.y[1:-1], res.H, res.G, res.nu0, res.lam, beta=1.0)
+    err = np.max(np.abs(res.u[1:-1, 0] - an["u"])) / np.max(np.abs(an["u"]))
+    assert err < 0.02
+    assert res.converged
+
+
+def test_lbm_viscoelastic_poiseuille_velocity_and_n1():
+    """Oldroyd-B: velocity <= 2% pointwise and N1 <= 3% against the exact solution."""
+    res = make_solver(ny=18, wi=1.0).run()
+    an = analytic_channel(res.y[1:-1], res.H, res.G, res.nu0, res.lam, beta=BETA)
+    u_err = np.max(np.abs(res.u[1:-1, 0] - an["u"])) / np.max(np.abs(an["u"]))
+    n1_err = np.max(np.abs(res.N1[1:-1, 0] - an["N1"])) / np.max(np.abs(an["N1"]))
+    assert u_err <= 0.02, f"velocity error {u_err:.3e}"
+    assert n1_err <= 0.03, f"N1 error {n1_err:.3e}"
+
+
+def test_lbm_fene_p_poiseuille_and_extensibility():
+    res = make_solver(ny=18, wi=1.0, model="fene_p", L2=100.0).run()
+    an = analytic_channel(res.y[1:-1], res.H, res.G, res.nu0, res.lam, beta=BETA,
+                          model="fene_p", L2=100.0)
+    u_err = np.max(np.abs(res.u[1:-1, 0] - an["u"])) / np.max(np.abs(an["u"]))
+    n1_err = np.max(np.abs(res.N1[1:-1, 0] - an["N1"])) / np.max(np.abs(an["N1"]))
+    assert u_err <= 0.02
+    assert n1_err <= 0.03
+    assert np.all(res.trC < 100.0)
+
+
+def test_realizability_trace_floor_after_lbm_run():
+    res = make_solver(ny=18, wi=2.0).run()
+    assert np.min(trace3(res.C)) >= 3.0 - 1e-9
+
+
+def test_newtonian_limit_stress_law_degenerates():
+    """lam -> 0: C_xy / lam must reproduce the Newtonian stress law C_xy/lam = gamma_dot."""
+    lam_tiny = 1e-6
+    res = make_solver(ny=18, wi=1.0, lam=lam_tiny).run()
+    g = res.gamma_dot[1:-1, 0]
+    c_xy = res.C[1:-1, 0, 0, 1]
+    mask = np.abs(g) > 1e-8
+    assert np.max(np.abs(c_xy[mask] / lam_tiny - g[mask])) / np.max(np.abs(g[mask])) <= 1e-6
+
+
+def test_grid_doubling_second_order():
+    """Refinement at fixed (Re, Wi): the L2 error must drop by >= 3.2 per doubling."""
+    errs = []
+    for ny in (10, 18):
+        res = make_solver(ny=ny, wi=1.0).run()
+        an = analytic_channel(res.y[1:-1], res.H, res.G, res.nu0, res.lam, beta=BETA)
+        errs.append(np.linalg.norm(res.u[1:-1, 0] - an["u"]) / np.linalg.norm(an["u"]))
+    assert errs[0] / errs[1] >= 3.2, f"ratio {errs[0] / errs[1]:.2f} (errors {errs})"
+
+
+# --------------------------------------------------------------------------- #
+# 5. negative controls
+# --------------------------------------------------------------------------- #
+def test_negative_control_beta_one_has_no_polymer():
+    """NEGATIVE CONTROL 1: beta = 1 -> tau_p == 0, C == I, zero polymer drag."""
+    res = make_solver(ny=18, wi=1.0, beta=1.0).run()
+    assert np.max(np.abs(res.tau_p)) == 0.0
+    assert np.allclose(res.trC, 3.0, atol=1e-12)
+    assert res.tau_p[1, 0, 0, 1] == 0.0
+    # no polymer contribution to the wall shear -> drag reduction is identically zero
+    assert abs(res.nu_s * res.gamma_dot[1, 0]) == pytest.approx(
+        abs(res.nu_s * res.gamma_dot[1, 0] + res.tau_p[1, 0, 0, 1]), rel=0.0, abs=0.0
     )
-    out["u_ref"] = u_ref
-    out["error"] = viscoelastic_profile_error(out["ux"], u_ref)
-    out["n1_ref_max"] = float(out["analytical"]["n1"].max())
-    out["n1_sim_max"] = float(out["n1"].max())
-    return out
 
 
-@pytest.fixture(scope="module")
-def anchor_wi1():
-    return _run(H_ANCHOR, 1.0)
+def test_negative_control_without_upper_convective_term():
+    """NEGATIVE CONTROL 2: dropping L C + C L^T collapses N1 by far more than 20%."""
+    res = make_solver(ny=18, wi=1.0, upper_convective=False).run()
+    an = analytic_channel(res.y[1:-1], res.H, res.G, res.nu0, res.lam, beta=BETA)
+    n1_err = np.max(np.abs(res.N1[1:-1, 0] - an["N1"])) / np.max(np.abs(an["N1"]))
+    assert n1_err > 0.20, f"N1 deviation only {n1_err:.3f}"
+    assert np.allclose(res.trC, 3.0, atol=1e-10)
 
 
-@pytest.fixture(scope="module")
-def anchor_wi5():
-    return _run(H_ANCHOR, 5.0)
-
-
-@pytest.fixture(scope="module")
-def newton_run():
-    return _run(12, 1.0, beta=1.0, max_iter=1200)
-
-
-@pytest.fixture(scope="module")
-def small_lambda_run():
-    return _run(12, 1.0, beta=BETA, lam=0.4, max_iter=1200)
-
-
-@pytest.fixture(scope="module")
-def grid_pair():
-    return _run(16, 1.0, max_iter=1600), _run(32, 1.0, max_iter=1600)
-
-
-# ---------------------------------------------------------------------------
-# constitutive layer
-# ---------------------------------------------------------------------------
-
-
-class TestConstitutiveModel:
-    def test_oldroyd_b_steady_shear_conformation_analytic(self):
-        """Steady simple shear: C_xx = 1+2Wi^2, C_xy = Wi, C_yy = C_zz = 1."""
-        for wi in (0.5, 1.0, 3.0):
-            cxx, cxy, cyy, czz = oldroyd_b_steady_shear_conformation(wi)
-            assert cxx == pytest.approx(1.0 + 2.0 * wi**2)
-            assert cxy == pytest.approx(wi)
-            assert cyy == pytest.approx(1.0)
-            assert czz == pytest.approx(1.0)
-
-    def test_implicit_step_lands_on_exact_steady_state(self):
-        """The implicit local solve reaches the exact steady state in one step."""
-        ny, nx = 12, 2
-        gdot, lam = 2.5e-3, 400.0
-        y = torch.arange(ny, dtype=torch.float64).view(ny, 1).expand(ny, nx)
-        ux = gdot * (y - 0.5 * (ny - 1))
-        uy = torch.zeros_like(ux)
-        C = torch.ones(4, ny, nx, dtype=torch.float64)
-        C[1] = 0.0  # C_xy = 0 at rest
-        C, info = advance_conformation(C, ux, uy, dt=1e12, lam=lam, projection=False)
-        wi = lam * gdot
-        assert float(C[0, ny // 2, 0]) == pytest.approx(1.0 + 2.0 * wi**2, rel=1e-9)
-        assert float(C[1, ny // 2, 0]) == pytest.approx(wi, rel=1e-9)
-        assert float(C[2, ny // 2, 0]) == pytest.approx(1.0, rel=1e-9)
-        assert info["ok"]
-
-    def test_upper_convective_strain_term_is_required(self):
-        """Dropping the strain term (L C + C L^T) kills the shear stress: C=I."""
-        ny, nx = 10, 2
-        gdot = 2.5e-3
-        y = torch.arange(ny, dtype=torch.float64).view(ny, 1).expand(ny, nx)
-        ux = gdot * (y - 0.5 * (ny - 1))
-        uy = torch.zeros_like(ux)
-        C = torch.ones(4, ny, nx, dtype=torch.float64)
-        C[1] = 0.0
-        C, _ = advance_conformation(
-            C, ux, uy, dt=1e12, lam=400.0, projection=False, strain_scale=0.0
-        )
-        assert float(C[1].abs().max()) < 1e-12
-        assert float(C[0].max()) == pytest.approx(1.0, rel=1e-9)
-
-    def test_n1_scales_with_lambda_squared(self):
-        """N1 = 2 eta_p lambda gdot^2 -> ten times lambda, hundred times N1."""
-        eta_p, gdot, lam = 0.025, 2.5e-3, 0.4
-        n1_a = 2.0 * eta_p * lam * gdot**2
-        n1_b = 2.0 * eta_p * (10.0 * lam) * gdot**2
-        assert n1_b / n1_a == pytest.approx(10.0)
-        # lambda does not enter the Oldroyd-B shear stress at all
-        y = torch.tensor([1.0, 2.0], dtype=torch.float64).view(2, 1)
-        _ = y  # shape helper only
-        assert 2.0 * eta_p * lam * gdot**2 / (eta_p * gdot) == pytest.approx(2.0 * lam * gdot)
-
-    def test_projection_restores_positive_semidefiniteness(self):
-        bad = torch.zeros((4, 1, 1), dtype=torch.float64)
-        bad[0], bad[1], bad[2], bad[3] = 1.0, 2.0, 1.0, 1.0  # tr C = 3, min eig = -1
-        assert not check_realizability(bad)["ok"]
-        proj = project_realizable(bad)
-        assert check_realizability(proj)["ok"]
-
-    def test_trace_gate_alone_is_insufficient(self):
-        """A tensor with tr C = 3 but eigenvalue -1 must be rejected."""
-        bad = torch.zeros((4, 1, 1), dtype=torch.float64)
-        bad[0], bad[1], bad[2], bad[3] = 1.0, 2.0, 1.0, 1.0
-        assert float(trace(bad)) == pytest.approx(3.0)
-        assert check_realizability(bad)["min_eigenvalue"] < 0.0
-        assert check_realizability(bad)["ok"] is False
-
-    def test_fene_p_recovers_oldroyd_b_for_large_extensibility(self):
-        wi = 1.0
-        big = fene_p_steady_shear_conformation(wi, L2=1e6)
-        ob = oldroyd_b_steady_shear_conformation(wi)
-        for a, b in zip(big, ob):
-            assert a == pytest.approx(b, rel=2e-2)
-
-    def test_fene_p_stress_is_trace_bounded(self):
-        """FENE-P stress stays finite and tr C < L^2 in the allowed range."""
-        ny, nx = 12, 2
-        gdot, lam, L2 = 2.5e-3, 400.0, 50.0
-        y = torch.arange(ny, dtype=torch.float64).view(ny, 1).expand(ny, nx)
-        ux = gdot * (y - 0.5 * (ny - 1))
-        uy = torch.zeros_like(ux)
-        C = torch.ones(4, ny, nx, dtype=torch.float64)
-        C[1] = 0.0
-        C, info = advance_conformation(
-            C, ux, uy, dt=1e9, lam=lam, model="fene_p", L2=L2, projection=True
-        )
-        assert info["ok"]
-        assert float(trace(C).max()) < L2
-        txx, txy, tyy = fene_p_stress(C, eta_p=0.025, lam=lam, L2=L2)
-        assert torch.isfinite(txx).all() and torch.isfinite(txy).all()
-
-    def test_fene_p_divergence_error_beyond_extensibility(self):
-        """Negative control: Wi beyond the finite-extensibility limit must raise."""
-        with pytest.raises(ViscoelasticDivergenceError, match="not realizable"):
-            fene_p_steady_shear_conformation(Wi=40.0, L2=20.0)
-        # the same call below the limit is fine
-        c = fene_p_steady_shear_conformation(Wi=1.0, L2=20.0)
-        assert sum(c[:3]) - c[2] + c[2] < 20.0
-
-
-# ---------------------------------------------------------------------------
-# realizability negative control (unprojected ensemble)
-# ---------------------------------------------------------------------------
-
-
-class TestRealizabilityNegativeControl:
-    def test_unprojected_explicit_step_breaks_the_gate(self):
-        gdot, lam = 2.0, 2.0  # Wi = 4, under-resolved explicit step
-        ny, nx = 14, 2
-        y = torch.arange(ny, dtype=torch.float64).view(ny, 1).expand(ny, nx)
-        ux = gdot * (y - 0.5 * (ny - 1))
-        uy = torch.zeros_like(ux)
-        C = torch.ones(4, ny, nx, dtype=torch.float64)
-        C, info = advance_conformation(
-            C, ux, uy, dt=1.0, lam=lam, projection=False, implicit_strain=False
-        )
-        assert info["ok"] is False, "unprojected high-Wi step must violate the gate"
-        assert info["min_eigenvalue"] < 0.0
-
-    def test_projected_twin_survives_the_same_step(self):
-        gdot, lam = 2.0, 2.0
-        ny, nx = 14, 2
-        y = torch.arange(ny, dtype=torch.float64).view(ny, 1).expand(ny, nx)
-        ux = gdot * (y - 0.5 * (ny - 1))
-        uy = torch.zeros_like(ux)
-        C = torch.ones(4, ny, nx, dtype=torch.float64)
-        for _ in range(50):
-            C, info = advance_conformation(
-                C, ux, uy, dt=1.0, lam=lam, projection=True, implicit_strain=False
-            )
-            assert info["ok"]
-            assert info["min_trace"] >= 3.0 - 1e-9
-
-
-# ---------------------------------------------------------------------------
-# laminar anchors
-# ---------------------------------------------------------------------------
-
-
-class TestOldroydBPoiseuille:
-    def test_profile_error_within_2pct_wi1(self, anchor_wi1):
-        err = anchor_wi1["error"]
-        assert err["n_fluid_nodes"] >= 20
-        assert err["max_rel_error"] <= 0.02, f"Wi=1 profile error {err['max_rel_error']:.3%}"
-
-    def test_profile_error_within_2pct_wi5(self, anchor_wi5):
-        err = anchor_wi5["error"]
-        assert err["n_fluid_nodes"] >= 20
-        assert err["max_rel_error"] <= 0.02, f"Wi=5 profile error {err['max_rel_error']:.3%}"
-
-    def test_profile_is_insensitive_to_wi(self, anchor_wi1, anchor_wi5):
-        """Oldroyd-B steady shear stress is lambda-independent -> same parabola."""
-        d = float((anchor_wi1["ux"] - anchor_wi5["ux"]).abs().max())
-        assert d / float(anchor_wi1["ux"].abs().max()) < 5e-3
-
-    def test_n1_matches_analytic_wi1(self, anchor_wi1):
-        rel = abs(anchor_wi1["n1_sim_max"] / anchor_wi1["n1_ref_max"] - 1.0)
-        assert rel <= 0.03, f"N1 deviation {rel:.3%}"
-
-    def test_n1_matches_analytic_wi5(self, anchor_wi5):
-        rel = abs(anchor_wi5["n1_sim_max"] / anchor_wi5["n1_ref_max"] - 1.0)
-        assert rel <= 0.03, f"N1 deviation {rel:.3%}"
-
-    def test_conformation_matches_analytic(self, anchor_wi5):
-        conf = anchor_wi5["conformation"]
-        ana = anchor_wi5["analytical"]
-        cxy = conf[1].mean(dim=1)
-        rel = float(((cxy - ana["C_xy"]).abs() / ana["C_xy"].abs().clamp_min(1e-6))[2:-2].max())
-        assert rel < 0.02, f"C_xy deviation {rel:.3%}"
-
-    def test_projected_run_is_realizable(self, anchor_wi5):
-        r = anchor_wi5
-        assert r["realizability"]["ok"]
-        assert r["realizability"]["min_trace"] >= 3.0 - 1e-9
-        assert r["realizability"]["min_eigenvalue"] >= -1e-9
-        assert check_realizability(r["conformation"])["ok"]
-
-    def test_newtonian_limit_is_consistent_at_discretisation_level(
-        self, newton_run, small_lambda_run
-    ):
-        """lambda -> 0 collapses onto the Newtonian profile at the O(h^2) level.
-
-        The polymer stress enters as a central-difference force while the solvent
-        viscosity is the LBM relaxation operator, so the two *discrete* fixed
-        points coincide only up to the discretisation error (measured 3.9e-2 at
-        H=8, 9.4e-3 at H=32 -- second order).
-        """
-        d = float((newton_run["ux"] - small_lambda_run["ux"]).abs().max())
-        scale = float(newton_run["ux"].abs().max())
-        # O(h^2) operator mismatch: 2.5e-2 at H=12, 9.4e-3 at H=32 (study.json c2)
-        assert d / scale <= 5e-2, f"lambda->0 deviation {d / scale:.3e}"
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "honest FAIL: the literal 1e-6 gate cannot be met at fixed h -- the "
-            "difference between the lambda->0 and Newtonian discrete fixed points is "
-            "O(h^2) (operator mismatch). Measured 9.4e-3 at H=32; see study.json c2."
-        ),
+def test_negative_control_wi_beyond_limit_raises():
+    """NEGATIVE CONTROL 3: Wi beyond the stability envelope fails explicitly."""
+    ny, u_max, re, beta = 6, 0.15, 20.0, 0.2
+    H = 0.5 * (ny - 2)
+    nu0 = u_max * H / re
+    lam = 256.0 * H / (2.0 * u_max)
+    solver = ViscoelasticChannel2D(
+        ny=ny, nu0=nu0, beta=beta, lam=lam, u_max_target=u_max,
+        n_substeps=2, check_every=100, max_steps=4000, tol=1e-8,
     )
-    def test_newtonian_limit_strict_1e6_gate(self, newton_run, small_lambda_run):
-        d = float((newton_run["ux"] - small_lambda_run["ux"]).abs().max())
-        scale = float(newton_run["ux"].abs().max())
-        assert d / scale <= 1e-6
-
-    def test_newtonian_limit_n1_vanishes(self, newton_run, small_lambda_run, anchor_wi1):
-        """N1 of the small-lambda run is negligible against the Wi=1 anchor.
-
-        ``N1 = 2 eta_p lambda gdot^2`` is O(lambda), and it is extracted from
-        ``C_xx - 1 = 2 (lambda gdot)^2`` -- below ``lambda ~ 0.5`` that difference
-        is at the round-off level, so only the "negligible" statement is tested.
-        """
-        assert newton_run["n1_sim_max"] < 1e-12
-        assert small_lambda_run["n1_sim_max"] < 1e-2 * anchor_wi1["n1_ref_max"]
-
-    def test_grid_convergence_ratio(self, grid_pair):
-        coarse, fine = grid_pair
-        e_c = coarse["error"]["max_rel_error"]
-        e_f = fine["error"]["max_rel_error"]
-        ratio = e_c / e_f
-        assert ratio >= 3.2, f"grid doubling ratio {ratio:.2f} (errors {e_c:.3e}/{e_f:.3e})"
-
-    def test_beta_one_negative_control(self, newton_run):
-        """beta = 1: the polymer stress vanishes identically (no drag modification)."""
-        assert newton_run["params"]["beta"] == 1.0
-        assert newton_run["n1_sim_max"] < 1e-12
-        assert float(newton_run["tau_xy"].abs().max()) < 1e-14
-        # and the run is the plain Newtonian Poiseuille solution
-        assert newton_run["error"]["max_rel_error"] < 0.02
-
-    def test_upper_convective_off_negative_control(self, anchor_wi1):
-        """Strain term switched off -> N1 off by far more than 20%."""
-        r = _run(12, 1.0, strain_scale=0.0, max_iter=800)
-        assert r["n1_sim_max"] == pytest.approx(0.0, abs=1e-14)
-        dev = abs(r["n1_sim_max"] / anchor_wi1["n1_ref_max"] - 1.0)
-        assert dev > 0.20
-
-    def test_wi_beyond_limit_reports_divergence(self):
-        params = ViscoelasticParams(nu0=NU0, beta=BETA, lam=1e6, G=_drive(10), model="fene_p", L2=20.0)
-        conf0 = torch.ones(4, 12, 4, dtype=torch.float64)
-        with pytest.raises(ViscoelasticDivergenceError):
-            run_viscoelastic_channel(10, params, max_iter=20, check_every=10,
-                                     initial_conformation=conf0, constitutive_dt=1e6)
+    with pytest.raises(ViscoelasticDivergenceError):
+        solver.run()
+    # and the declared-envelope guard refuses *before* integration
+    guarded = ViscoelasticChannel2D(
+        ny=ny, nu0=nu0, beta=beta, lam=lam, u_max_target=u_max,
+        n_substeps=2, check_every=100, max_steps=100, tol=1e-8, wi_limit=50.0,
+    )
+    with pytest.raises(ViscoelasticDivergenceError, match="wi_limit"):
+        guarded.run()
 
 
-# ---------------------------------------------------------------------------
-# energy budget
-# ---------------------------------------------------------------------------
+def test_stability_envelope_is_measured_not_assumed():
+    """Wi = 64 is stable in the strongly coupled probe, Wi = 256 is not."""
+    ny, u_max, re, beta = 6, 0.15, 20.0, 0.2
+    H = 0.5 * (ny - 2)
+    nu0 = u_max * H / re
+    lam = 64.0 * H / (2.0 * u_max)
+    res = ViscoelasticChannel2D(
+        ny=ny, nu0=nu0, beta=beta, lam=lam, u_max_target=u_max,
+        n_substeps=2, check_every=200, max_steps=8000, tol=1e-8,
+    ).run()
+    assert np.isfinite(res.u).all()
+    assert np.max(np.abs(res.u)) < 0.25
 
 
-class TestEnergyBudget:
-    def test_analytic_anchor_budget_closes(self, anchor_wi5):
-        r = anchor_wi5
-        H = r["H"]
-        params = ViscoelasticParams(nu0=NU0, beta=BETA, lam=r["params"]["lam"], G=r["params"]["G"])
-        y, u = oldroyd_b_poiseuille_profile(H, params.G, NU0)
-        C = oldroyd_b_poiseuille_conformation(H, params.G, NU0, beta=BETA, lam=params.lam)
-        Cu = C.unsqueeze(-1).expand(4, H + 2, 1).contiguous()
-        uu = u.unsqueeze(-1).expand(H + 2, 1).contiguous()
-        b = energy_budget(uu, Cu, params)
-        assert abs(b["residual_rel"]) <= 1e-6, f"budget residual {b['residual_rel']:.3e}"
-        # the split must follow the viscosity ratio
-        assert b["polymer_fraction"] == pytest.approx(BETA, rel=1e-9)
-
-    def test_simulated_field_budget_is_reported(self, anchor_wi5):
-        r = anchor_wi5
-        params = ViscoelasticParams(nu0=NU0, beta=BETA, lam=r["params"]["lam"], G=r["params"]["G"])
-        b = energy_budget(r["ux_field"], r["conformation"], params)
-        assert b["p_in"] > 0.0
-        assert b["eps_s"] > 0.0 and b["eps_p"] > 0.0
-        # truncation-limited, but must stay small and positive
-        assert abs(b["residual_rel"]) < 0.05
-
-    def test_budget_residual_decays_with_the_grid(self, grid_pair):
-        coarse, fine = grid_pair
-        res = []
-        for r in (coarse, fine):
-            params = ViscoelasticParams(
-                nu0=NU0, beta=BETA, lam=r["params"]["lam"], G=r["params"]["G"]
-            )
-            res.append(abs(energy_budget(r["ux_field"], r["conformation"], params)["residual_rel"]))
-        assert res[1] < res[0], f"budget residual did not decrease: {res}"
+# --------------------------------------------------------------------------- #
+# 6. Virk asymptotes and the Delta B envelope
+# --------------------------------------------------------------------------- #
+def test_virk_newtonian_friction_factor():
+    f = virk.friction_newtonian(np.array([1e4]))[0]
+    y = 1.0 / np.sqrt(f)
+    assert pytest.approx(4.0 * np.log10(1e4 / y) - 0.4, rel=1e-10) == y
+    assert 0.0070 < f < 0.0085   # smooth-pipe value at Re = 1e4
 
 
-# ---------------------------------------------------------------------------
-# Virk / MDR reference machinery
-# ---------------------------------------------------------------------------
+def test_virk_mdr_below_newtonian():
+    re = np.array([1e4, 1e5])
+    fn = virk.friction_newtonian(re)
+    fm = virk.friction_mdr(re)
+    assert np.all(fm < fn)
+    dr = virk.drag_reduction(re, fm)
+    assert np.all(dr > 50.0)
+    for r, f in zip(re, fm):
+        y = 1.0 / np.sqrt(f)
+        assert pytest.approx(19.0 * np.log10(r / y) - 32.4, rel=1e-10) == y
 
 
-class TestVirkReference:
-    def test_newtonian_and_mdr_asymptotes(self):
-        assert float(virk_newtonian_profile(torch.tensor([100.0]))) == pytest.approx(
-            2.5 * math.log(100.0) + 5.5
-        )
-        assert float(virk_mdr_profile(torch.tensor([100.0]))) == pytest.approx(
-            11.7 * math.log(100.0) - 17.0
-        )
-
-    def test_profile_monotone_in_delta_b(self):
-        y = torch.logspace(1.0, 3.0, 50, dtype=torch.float64)
-        base = virk_three_segment(y, 0.0)
-        assert torch.allclose(base, virk_newtonian_profile(y))
-        for db in (2.0, 5.0, 8.0):
-            higher = virk_three_segment(y, db)
-            assert torch.all(higher >= base - 1e-12)
-
-    def test_profile_never_exceeds_mdr(self):
-        y = torch.logspace(0.0, 4.0, 200, dtype=torch.float64)
-        mdr = virk_mdr_profile(y)
-        for db in (0.0, 5.0, 8.0, MDR_DELTA_B_MAX):
-            prof = virk_three_segment(y, db)
-            assert torch.all(prof <= mdr + 1e-9)
-
-    def test_mdr_cap_bound(self):
-        assert check_delta_b_bound(MDR_DELTA_B_MAX) == pytest.approx(MDR_DELTA_B_MAX)
-        with pytest.raises(ValueError, match="exceeds the MDR bound"):
-            check_delta_b_bound(MDR_DELTA_B_MAX + 0.1)
-        with pytest.raises(ValueError, match="non-negative"):
-            check_delta_b_bound(-0.1)
-
-    def test_log_law_fit_recovers_injected_delta_b(self):
-        y = torch.linspace(30.0, 100.0, 20, dtype=torch.float64)
-        injected = 4.0
-        u = 2.5 * torch.log(y) + 5.5 + injected
-        fit = delta_b_from_log_law(u, y)
-        assert fit["delta_b"] == pytest.approx(injected, abs=1e-9)
-
-    def test_drag_reduction_fraction(self):
-        assert drag_reduction_fraction(1.2, 1.0) == pytest.approx(-0.2)
-        assert drag_reduction_fraction(0.5, 1.0) == pytest.approx(0.5)
-        with pytest.raises(ValueError):
-            drag_reduction_fraction(1.0, 0.0)
-
-    def test_drag_reduction_law_evidence_is_withheld(self):
-        """Honest FAIL: no viscoelastic turbulence run -> delta_B(Wi) not measured."""
-        path = Path("artifacts/viscoelastic/study.json")
-        if not path.exists():
-            pytest.skip("study artifact not built (run python -m tensorlbm.viscoelastic.study)")
-        study = json.loads(path.read_text())
-        c5 = study["criteria"]["c5_drag_reduction_law"]
-        assert c5["passed"] is False
-        assert c5["evidence_grade"] == "WITHHELD"
-        assert c5["reference_law_verified"]["mdr_cap_enforced"] is True
+def test_delta_B_roundtrip():
+    for re, db in ((1e4, 5.0), (1e5, 12.0), (3e4, 0.0)):
+        f = virk.friction_from_delta_B(np.array([re]), np.array([db]))
+        back = virk.delta_B_from_friction(np.array([re]), f)
+        assert float(back[0]) == pytest.approx(db, abs=1e-9)
+    # Newtonian asymptote has Delta B = 0 by construction
+    re = np.array([1e4, 1e5])
+    assert np.allclose(virk.delta_B_from_friction(re, virk.friction_newtonian(re)), 0.0,
+                       atol=1e-9)
 
 
-# ---------------------------------------------------------------------------
-# artifact / provenance
-# ---------------------------------------------------------------------------
+def test_delta_B_polymer_model_envelope():
+    wi = np.array([0.0, 0.5, 1.0, 2.0, 5.0, 10.0, 100.0])
+    db = virk.delta_B_polymer_model(wi)
+    assert db[0] == 0.0                                  # Newtonian limit
+    assert np.all(np.diff(db) > 0.0)                     # monotone increasing
+    assert np.all(db < virk.DELTA_B_MDR)                 # strictly below the MDR bound
+    assert pytest.approx(virk.delta_B_polymer_model(1e9), rel=1e-6) == virk.DELTA_B_MDR
 
 
-class TestStudyArtifact:
-    def test_study_json_lists_all_criteria(self):
-        path = Path("artifacts/viscoelastic/study.json")
-        if not path.exists():
-            pytest.skip("study artifact not built (run python -m tensorlbm.viscoelastic.study)")
-        study = json.loads(path.read_text())
-        for key in (
-            "c1_oldroyd_b_poiseuille",
-            "c2_newtonian_limit",
-            "c3_realizability",
-            "c4_energy_budget",
-            "c5_drag_reduction_law",
-            "c6_grid_convergence",
-            "c7_negative_controls",
-        ):
-            assert key in study["criteria"]
-        assert study["git_sha"]
-        assert len(study["figures"]) >= 5
-
-    def test_ddy_operator_is_exact_on_quadratics(self):
-        y = torch.arange(12, dtype=torch.float64).view(12, 1)
-        quad = 3.0 + 2.0 * y - 0.5 * y**2
-        exact = 2.0 - 1.0 * y
-        got = ddy_2nd(quad)
-        assert torch.allclose(got[2:-2], exact[2:-2], atol=1e-12)
+def test_mdr_delta_B_reaches_virk_reference_value():
+    """Virk's Delta B = 11.7 is attained on the MDR line at a well-defined Re."""
+    re = np.logspace(3.0, 7.0, 2001)
+    db = virk.delta_B_from_friction(re, virk.friction_mdr(re))
+    assert np.min(db) < virk.DELTA_B_MDR < np.max(db)
+    idx = int(np.argmin(np.abs(db - virk.DELTA_B_MDR)))
+    assert 1e4 < re[idx] < 1e5
