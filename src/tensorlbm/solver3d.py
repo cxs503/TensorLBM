@@ -56,7 +56,13 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
         ]
     )
     assert np.linalg.matrix_rank(matrix) == 19, "D3Q19 MRT matrix is rank-deficient"
-    matrix_inv = np.linalg.inv(matrix)
+    # The inverse is computed with a *verified* helper instead of
+    # ``np.linalg.inv``: on loong64 + numpy 2.0.1 (the cluster nodes) numpy's
+    # LAPACK returns NaN / garbage for this 19x19 matrix, which silently made
+    # every MRT run blow up in the first step.  See ``tensorlbm.linalg_safe``.
+    from .linalg_safe import inverse_f64
+
+    matrix_inv = inverse_f64(matrix)
     return matrix.tolist(), matrix_inv.tolist()
 
 

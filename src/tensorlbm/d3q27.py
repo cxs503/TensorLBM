@@ -621,12 +621,20 @@ def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
         cx * cy * cz,  # 26
     ]
 
-    # Gram–Schmidt orthogonalisation to ensure full rank
+    # Gram–Schmidt orthogonalisation to a full rank basis, with every row
+    # L2-normalised.  Normalisation is mathematically inert for the collision
+    # operator (a row scaling D acts as M -> D M, M^-1 -> M^-1 D^-1, so
+    # M^-1 diag(s) M is unchanged) but it makes the transform orthonormal:
+    # * M^-1 = M^T exactly (no ``np.linalg.inv`` call, which returns garbage on
+    #   loong64 + numpy 2.0.1 — measured ||M M^-1 - I|| = 2.0e18 there, which
+    #   silently produced 1e16 populations and an immediate NaN),
+    # * the condition number drops to 1, so float32 storage of M / M^-1 costs
+    #   ~1e-7 instead of ~1e-2 relative error.
     orth_rows: list[np.ndarray] = []
     for row in raw_rows:
         v = row.copy()
         for prev in orth_rows:
-            v = v - (np.dot(v, prev) / np.dot(prev, prev)) * prev
+            v = v - np.dot(v, prev) * prev  # prev is unit-norm by construction
         norm = np.sqrt(np.dot(v, v))
         if norm < 1e-14:
             # Row is linearly dependent — replace with an orthogonal complement
@@ -636,15 +644,18 @@ def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
                 e_i[i] = 1.0
                 u = e_i.copy()
                 for prev in orth_rows:
-                    u = u - (np.dot(u, prev) / np.dot(prev, prev)) * prev
-                if np.sqrt(np.dot(u, u)) > 1e-10:
-                    v = u
+                    u = u - np.dot(u, prev) * prev
+                norm_u = np.sqrt(np.dot(u, u))
+                if norm_u > 1e-10:
+                    v, norm = u, norm_u
                     break
-        orth_rows.append(v)
+        orth_rows.append(v / norm)
 
     matrix = np.array(orth_rows, dtype=np.float64)
     assert np.linalg.matrix_rank(matrix) == 27, "D3Q27 MRT matrix is rank-deficient"
-    matrix_inv = np.linalg.inv(matrix)
+    eye_err = np.abs(matrix @ matrix.T - np.eye(27)).max()
+    assert eye_err < 1e-10, f"D3Q27 MRT basis is not orthonormal (err {eye_err:.2e})"
+    matrix_inv = matrix.T
     return matrix.tolist(), matrix_inv.tolist()
 
 

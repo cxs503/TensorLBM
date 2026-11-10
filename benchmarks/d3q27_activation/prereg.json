@@ -1,0 +1,115 @@
+{
+  "node": "P151-N01",
+  "mission_id": 6648,
+  "repo": "TensorLBM",
+  "branch": "agent/m6648",
+  "title": "D3Q27 activation in GeneralSimEngine — predeclared verification protocol",
+  "decision": {
+    "question": "Is LatticeModel.D3Q27 in tensorlbm.general_sim.GeneralSimEngine a REAL, verified capability (equilibrium/streaming/bounce-back/far-field/force/mass-correction on the 27-direction stencil), and does it measurably improve sphere drag accuracy over the shipped D3Q19 path at the same grid?",
+    "alternatives": [
+      "A0 (status quo): D3Q27 stays a dead enum; GeneralSimEngine remains D3Q19-only (gaps.md G7/G8).",
+      "A1 (implemented): add lbm_step_d3q27 (far-field 27 + verified main loop) and wire collide/init/mass/force dispatch; keep D3Q19 path bit-identical.",
+      "A2 (rejected): run the D3Q27 stencil through the D3Q19 kernels (wrong stencil, silent corruption) — rejected by construction."
+    ],
+    "decision_rule": "A1 accepted iff gates (a)(b)(c)(d)(e)(f)(g)(h)(i) of the campaign node all pass on the recorded artifacts; any failing gate is reported as honest FAIL and not overridden."
+  },
+  "hypotheses": {
+    "H1": "The D3Q27 lattice is not an accuracy advantage on a staircase sphere at D=20 for Re=100 drag (both lattices are 2nd order; the staircase force-integration error dominates).",
+    "H2": "Both lattices converge at >=1.8 order in space on a smooth Taylor-Green field with an exact analytic reference, D3Q27 not worse than D3Q19.",
+    "H3": "The activated D3Q27 path conserves mass to <1e-12 (relative) in a closed periodic domain and does not drift the drag plateau."
+  },
+  "metrics": {
+    "a_equilibrium_isotropy": "max rank-3 moment residual of d3q27.equilibrium27 at rest and rank-4/6 lattice-tensor identities (float64)",
+    "b_mass_conservation": "|M(t)-M(0)|/M(0) after 200 periodic D3Q27 steps with a solid sphere (float64)",
+    "c_sphere_Re100_cd_error": "|Cd_plateau - Cd_SchillerNaumann(100)| / Cd_ref * 100 (D=20, MRT, quadratic wall-pressure extrapolation)",
+    "d_sphere_Re200_cd_error": "same, Re=200, 10 000 steps",
+    "e_d3q27_vs_d3q19_cd_error_ratio": "Cd error of D3Q19 divided by Cd error of D3Q27 at identical grid/settings",
+    "f_tgv_l2_order": "observed log2(E(24)/E(48)) of the L2 velocity error vs the exact z-invariant Taylor-Green solution (grids 24/48/96, float64)",
+    "g_d3q19_degenerate_residual": "max |macroscopic27(embed(f19)) - macroscopic3d(f19)| and streaming/BB residuals on the D3Q19 subspace",
+    "h_mrt_stability_re200": "finite field after 10 000 MRT steps at Re=200 with a plateau drift < 2%",
+    "i_pytest": "tests/test_general_sim_d3q27_activation.py (>=18 tests, >=3 negative controls)"
+  },
+  "thresholds": {
+    "a_equilibrium_isotropy_max": 1e-14,
+    "b_mass_drift_max": 1e-12,
+    "c_sphere_Re100_cd_error_pct": 10.0,
+    "c_d3q19_control_expected_above_pct": 15.0,
+    "d_sphere_Re200_cd_error_pct": 15.0,
+    "e_improvement_factor_min": 1.2,
+    "f_tgv_order_min": 1.8,
+    "g_degenerate_residual_max": 1e-10,
+    "h_steps": 10000,
+    "h_plateau_drift_pct_max": 2.0,
+    "i_tests_min": 18,
+    "i_negative_controls_min": 3
+  },
+  "protocol": {
+    "sphere": {
+      "geometry": "parametric sphere, radius 0.5 m, D = 20 lattice cells",
+      "domain": "engine auto domain (70x60x60 lattice units, blockage 2.4%)",
+      "lattice_options": ["d3q19", "d3q27"],
+      "collision": "MRT (collide_mrt3d_low_memory / collide_mrt27)",
+      "wall": "half-way bounce-back",
+      "mass_correction": "every 200 steps",
+      "force_sampling_every": 10,
+      "plateau_window": "mean over the last 25% of steps; drift checked against the 50-75% window",
+      "force_integration_primary": "pressure_extrap='quadratic', p0_method='near_wall' (documented best integration; 'none' is the known G12 systematic-bias path and is run for Re=100 as a secondary diagnostic)",
+      "reference": "Schiller-Naumann 24/Re(1+0.15 Re^0.687) = 1.0917 (Re=100), 0.8064 (Re=200); Clift-Gauvin stored as cross-reference",
+      "cases": [
+        {"i": 0, "lattice": "d3q19", "re": 100, "extrap": "quadratic", "steps": 6000},
+        {"i": 1, "lattice": "d3q27", "re": 100, "extrap": "quadratic", "steps": 6000},
+        {"i": 2, "lattice": "d3q19", "re": 100, "extrap": "none", "steps": 6000},
+        {"i": 3, "lattice": "d3q27", "re": 100, "extrap": "none", "steps": 6000},
+        {"i": 4, "lattice": "d3q19", "re": 200, "extrap": "quadratic", "steps": 10000},
+        {"i": 5, "lattice": "d3q27", "re": 200, "extrap": "quadratic", "steps": 10000}
+      ]
+    },
+    "tgv": {
+      "case": "Taylor-Green on the periodic torus; z-invariant field (exact solution of the 3D incompressible Navier-Stokes: u_x = A e^{-2 nu k^2 t} sin(kx) cos(ky), u_y = -A e^{-2 nu k^2 t} cos(kx) sin(ky), u_z = 0, k = 2 pi / N)",
+      "amplitude": 0.002,
+      "tau": 0.6,
+      "nu_lb": 0.03333333333333333,
+      "steps": 500,
+      "grids": [24, 48, 96],
+      "dtype": "float64",
+      "collision": "BGK (isolates lattice + streaming)",
+      "metric": "E(N) = ||u_N(T) - u_exact(T)||_2 / ||u_exact(T)||_2 on the grid's own nodes; order = log2(E24/E48) and log2(E48/E96)"
+    }
+  },
+  "environment": {
+    "solver": "TensorLBM worktree branch agent/m6648 (tensorlbm.lbm_step_d3q27 + general_sim D3Q27 dispatch)",
+    "compute": "cluster nodes n315/n330 (loong64, 128 cores each, torch 2.13.0), CPU-only (no GPU on the nodes), torch.set_num_threads 32-48",
+    "dtype": "float32 for the sphere runs (production), float64 for the analytic gates",
+    "commands": [
+      "python benchmarks/d3q27_activation/run_tgv_convergence.py --lattice d3q27",
+      "python benchmarks/d3q27_activation/run_sphere_compare.py --case-index <i>",
+      "python benchmarks/d3q27_activation/verify.py",
+      "pytest tests/test_general_sim_d3q27_activation.py"
+    ]
+  },
+  "analysis": {
+    "aggregation": "plain arithmetic mean over the declared plateau windows; no outlier removal",
+    "uncertainty": "plateau drift between adjacent windows and the tail-window spread are reported; no uncertainty claim beyond them",
+    "stopping_rule": "fixed step counts; runs stop early only via the divergence guard (non-finite state), which is recorded",
+    "exclusions": "none"
+  },
+  "deviations": [
+    {
+      "id": "D1",
+      "statement": "The first TGV attempt used convective scaling (U0 = 0.05 fixed, tau -> 1/2 under refinement). It gave observed order 0.84 (runs/tgv_convergence_convective_scaling.json) — the O(h) acoustic-scaling regime rather than the 2nd-order diffusive regime. The gate is therefore measured with diffusive-style fixed tau and an exact analytic reference."
+    },
+    {
+      "id": "D2",
+      "statement": "A full-3D (z-dependent) Taylor-Green self-convergence study was run first (diffusive scaling, Re=20, grids 24/48/96) and did NOT converge: E(24)=2.5e-3, E(48)=2.8e-3, order -0.18; the D3Q19 control reproduced the same plateau (order -0.02), so the plateau is a property of that self-convergence protocol (grid-independent acoustic/initial-layer content), not of the D3Q27 wiring. It is reported as an honest limitation of the protocol; gate (f) is measured on the exact-reference z-invariant TG instead, which has no nonlinearity/compressibility floor."
+    },
+    {
+      "id": "D3",
+      "statement": "A pilot of 20 steps (D=12) was run only to verify the engine wiring and one 3-step timing probe to size the cluster jobs; no Cd value was inspected before these thresholds were fixed."
+    }
+  ],
+  "safety_resource_limits": {
+    "memory": "D3Q27 fields at 252k cells = 27 MB per copy (float32); the step holds at most 3 copies",
+    "cluster": "job timeout 2400-3600 s per node, 32-48 threads per shard, two nodes"
+  },
+  "locked_utc": "2026-11-08T00:00:00Z"
+}
