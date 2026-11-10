@@ -63,7 +63,6 @@ References
 
 from __future__ import annotations
 
-import functools
 from typing import Literal
 
 import torch
@@ -436,6 +435,7 @@ def solve_entropy_condition(
         raise ValueError(f"f and feq shapes differ: {tuple(f.shape)} vs {tuple(feq.shape)}")
     shape = tuple(f.shape[1:])
     dtype = f.dtype
+    out_dtype = f.dtype  # alpha/residual are returned in the caller's precision
     device = f.device
     wv = w.to(device=device, dtype=dtype)
     if wv.dim() == 1:
@@ -443,6 +443,17 @@ def solve_entropy_condition(
 
     delta = feq - f
     tau_t = torch.as_tensor(tau, dtype=dtype, device=device)
+
+    # Entropy arithmetic in float64 even when the fields are float32: the
+    # entropy-condition test compares H at the mirror point, where the exact
+    # difference is zero to all orders in float32 (see the tolerance comment).
+    if dtype == torch.float32:
+        f = f.to(torch.float64)
+        feq = feq.to(torch.float64)
+        wv = wv.to(torch.float64)
+        delta = delta.to(torch.float64)
+        tau_t = tau_t.to(torch.float64)
+        dtype = torch.float64
 
     # positivity bound on the rate t = α/τ (per cell)
     neg = delta < 0
@@ -472,6 +483,13 @@ def solve_entropy_condition(
     beyond = torch.zeros_like(alpha, dtype=torch.bool)
     alpha = torch.minimum(alpha, alpha_hi)
 
+    # Tolerance of the entropy test.  It is tight on purpose: with tau ~ 0.5 the
+    # BGK rate 1/tau is ~2, i.e. the *mirror point* of the entropy parabola where
+    # dH vanishes, so the test is only meaningful if the entropy arithmetic is
+    # done in double precision.  For float32 inputs the populations are therefore
+    # upcast (see below) -- the same defect was found in the C kernel, where
+    # storing f^eq in float32 produced a spurious dH of +1e-5 on an exactly
+    # equilibrated state and collapsed alpha to 0.
     tol = _ENTROPY_TOL * (h0.abs() + 1.0)
 
     # Stage 1: does the admissibility bound alpha_hi already satisfy the entropy
@@ -516,11 +534,11 @@ def solve_entropy_condition(
     hit_cap = alpha > alpha_cap * (1.0 - 1e-6)
     rate = alpha / tau_t
     return EntropyConditionInfo(
-        alpha=alpha,
-        residual=h_err,
+        alpha=alpha.to(out_dtype),
+        residual=h_err.to(out_dtype),
         hit_cap=hit_cap | beyond,
-        positivity_bound=alpha_pos,
-        rate=rate,
+        positivity_bound=alpha_pos.to(out_dtype),
+        rate=rate.to(out_dtype),
     )
 
 
@@ -547,8 +565,8 @@ def _collide_elbm_generic(
     return_info: bool,
     velocity_shift: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> torch.Tensor | tuple[torch.Tensor, EntropyConditionInfo]:
-    from .d3q19 import macroscopic3d as _mac19
     from .d3q19 import W_EXACT64 as _w19
+    from .d3q19 import macroscopic3d as _mac19
     from .d3q27 import W_EXACT64 as _w27
     from .d3q27 import macroscopic27 as _mac27
 
@@ -556,18 +574,32 @@ def _collide_elbm_generic(
         raise ValueError(f"{lattice} collision got {f.shape[0]} populations")
     mac = _mac19 if lattice == "d3q19" else _mac27
     rho, ux, uy, uz = mac(f)
+    # The entropy condition is solved against the equilibrium at the *measured*
+    # velocity, while the collision relaxes towards the half-force shifted one.
+    # Reason: the Guo velocity shift adds external work, and dH along the shifted
+    # direction is +O(F) *by construction* (H of the equilibrium family grows
+    # with |u|).  Testing the shifted direction therefore reports an entropy
+    # increase of magnitude ~ rho*|u|*F/2 even for a perfectly equilibrated
+    # state, and the safeguarded Newton then collapses to alpha -> 0.  Measured
+    # on an exact entropic equilibrium with h = 8, u_tau = 0.02: dH = +1.6e-5
+    # against a tolerance of 1.1e-6 -> alpha = 0 in every fluid cell.
+    feq_entropy = equilibrium_dispatch(
+        rho, ux, uy, uz, lattice=lattice, entropy=entropy, n_newton=n_newton
+    )
     if velocity_shift != (0.0, 0.0, 0.0):
-        # Guo forcing: build the equilibrium at the half-force shifted velocity
-        # so that collision + source deliver exactly rho*F of momentum per step.
+        # Guo forcing: build the collision target at the half-force shifted
+        # velocity so that collision + source deliver exactly rho*F per step.
         ux = ux + velocity_shift[0]
         uy = uy + velocity_shift[1]
         uz = uz + velocity_shift[2]
-    feq = equilibrium_dispatch(
-        rho, ux, uy, uz, lattice=lattice, entropy=entropy, n_newton=n_newton
-    )
+        feq = equilibrium_dispatch(
+            rho, ux, uy, uz, lattice=lattice, entropy=entropy, n_newton=n_newton
+        )
+    else:
+        feq = feq_entropy
     w = _w19 if lattice == "d3q19" else _w27
     info = solve_entropy_condition(
-        f, feq, tau, w=w, alpha_init=alpha_init, n_iter=n_iter, alpha_cap=alpha_cap
+        f, feq_entropy, tau, w=w, alpha_init=alpha_init, n_iter=n_iter, alpha_cap=alpha_cap
     )
     tau_t = torch.as_tensor(tau, dtype=f.dtype, device=f.device)
     out = f + (info.alpha / tau_t) * (feq - f)
