@@ -1,0 +1,118 @@
+{
+ "probe": "benchmarks/eos_maxwell",
+ "artefacts": [
+  "benchmarks/eos_maxwell/out/results.json",
+  "benchmarks/eos_maxwell/RESULTS.md",
+  "benchmarks/eos_maxwell/CRITERION.md",
+  "benchmarks/eos_maxwell/figures/fig1_radial_profiles.png",
+  "benchmarks/eos_maxwell/figures/fig2_spurious_currents.png",
+  "benchmarks/eos_maxwell/figures/fig3_stability_map.png",
+  "benchmarks/eos_maxwell/figures/fig4_ratio_maintenance.png",
+  "benchmarks/eos_maxwell/figures/fig5_tau_lever.png"
+ ],
+ "consumers": [
+  {
+   "id": "GAP-LBM-MCMP-POISEUILLE",
+   "what": "high-density-ratio branch of the two-phase (MCMP) path judgement",
+   "consumes": [
+    "verdict.tiers[*].stable / collapse_step (attainable ratio envelope)",
+    "verdict.tiers[*].ma_max (spurious-current floor per ratio)",
+    "verdict.boundary[*] (collapse onset vs Maxwell ratio, per forcing scheme)",
+    "verdict.longhold[*] (does the construct settle or drift over 80000 steps)",
+    "verdict.tau[*] / CRITERION.md D3 (is the spurious gate viscosity-tunable, per ratio)",
+    "CRITERION.md D2 (lattice-selected coexistence gap, the correction a Poiseuille comparison must carry)"
+   ],
+   "decision_supported": "whether a Shan-Chen-type two-phase solve can be run at a given density ratio, and with which forcing scheme / current-cost, before any Poiseuille comparison is attempted",
+   "anchors": [
+    {
+     "path": "docs/REPORT_qr_pilot_a.md",
+     "contains": "GAP-LBM-MCMP-POISEUILLE"
+    },
+    {
+     "path": "benchmarks/pending/two_phase_poiseuille/README.md",
+     "contains": "SC-MCMP"
+    }
+   ]
+  },
+  {
+   "id": "laplace_pr_eos (verified sigma self-test)",
+   "what": "surface-tension self-test of the PR-EOS droplet construct",
+   "consumes": [
+    "maxwell_tiers['100'] / any T_r (coexistence pair cross-check against the frozen lock)",
+    "verdict.tiers[*].ma_max (spurious-current floor that bounds the sigma measurement noise)",
+    "verdict.longhold[*].ratio / ratio_error (construct holds its contrast while sigma is fitted)"
+   ],
+   "decision_supported": "whether sigma extracted from Delta-p vs 1/R on this construct is separable from spurious-current noise at a given density ratio",
+   "anchors": [
+    {
+     "path": "benchmarks/verified/laplace_pr_eos/run.py",
+     "contains": "MAXWELL_LOCK"
+    },
+    {
+     "path": "benchmarks/verified/laplace_pr_eos/README.md",
+     "contains": "等面积 Maxwell"
+    }
+   ]
+  },
+  {
+   "id": "sc_eos_coexistence (G3 ledger Maxwell solver)",
+   "what": "dynamic validation of the analytic Maxwell pair used by the G3 cavitation ledger",
+   "consumes": [
+    "controls[*].ratio / rho_v (the coexistence pair the discrete scheme actually selects)",
+    "controls[*].ratio_error (EOS-Maxwell vs lattice-selected coexistence gap)",
+    "verdict.boundary[*] (where the gap becomes fatal, i.e. the ratio at which collapse starts)"
+   ],
+   "decision_supported": "whether 'Maxwell pair = simulated attractor' may be assumed when auditing an SC coupling claim, or must be measured per ratio",
+   "anchors": [
+    {
+     "path": "src/tensorlbm/sc_eos_coexistence.py",
+     "contains": "def maxwell_coexistence"
+    },
+    {
+     "path": "benchmarks/gaps.md",
+     "contains": "G3"
+    }
+   ]
+  },
+  {
+   "id": "multiphase_benchmarks.static_droplet",
+   "what": "library static-droplet benchmark (Laplace + spurious currents)",
+   "consumes": [
+    "verdict.tiers[*].ma_max / u_max (extends its spurious-current column to high density ratio)",
+    "figures/fig2_spurious_currents.png (saturation vs decay of the spurious current)"
+   ],
+   "decision_supported": "whether the library's static-droplet spurious-current numbers can be quoted for high-density-ratio EOS constructs, or only for the moderate-ratio models it was measured on",
+   "anchors": [
+    {
+     "path": "src/tensorlbm/multiphase_benchmarks.py",
+     "contains": "max_spurious_u"
+    },
+    {
+     "path": "src/tensorlbm/multiphase_benchmarks.py",
+     "contains": "laplace_physical_validation"
+    }
+   ]
+  },
+  {
+   "id": "multiphase EOS pseudopotential factories",
+   "what": "make_psi_eos / psi_eos_peng_robinson / psi_eos_carnahan_starling capability statement",
+   "consumes": [
+    "maxwell_tiers (what ratio each EOS point can be constructed at)",
+    "verdict.boundary[*] (stability limit of the construct built from these psi)",
+    "verdict.schemes[*] (pressure-tensor discretisation does not rescue the high-ratio path)",
+    "verdict.tau[*] (spurious-current floor is flow-regime (tau) as well as EOS dependent)"
+   ],
+   "decision_supported": "which density ratios may be claimed for the EOS pseudopotential path, and which force discretisation to use",
+   "anchors": [
+    {
+     "path": "src/tensorlbm/multiphase.py",
+     "contains": "def make_psi_eos"
+    },
+    {
+     "path": "src/tensorlbm/multiphase.py",
+     "contains": "def psi_eos_peng_robinson"
+    }
+   ]
+  }
+ ]
+}
