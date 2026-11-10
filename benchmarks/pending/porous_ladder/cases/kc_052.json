@@ -1,0 +1,53 @@
+{
+ "K_kc_150": 0.5820157331287634,
+ "K_kc_180": 0.4850131109406362,
+ "K_kc_180_at_phi_mask": 0.4867086013023371,
+ "K_kc_at_phi_eff": 1.3576748012929354,
+ "K_lbm": 1.9881625970204668,
+ "K_over_dp2": 0.01380668470153102,
+ "L": 40,
+ "accel": 0.001,
+ "case": "kc_052",
+ "d_eff": 11.0,
+ "d_p": 12.0,
+ "d_sauter_mask": 8.658341939723968,
+ "err_vs_kc180": 3.0991935107993616,
+ "err_vs_kc180_eff": 0.46438793378731624,
+ "err_vs_kc180_phi_mask": 3.084913625320227,
+ "field_file": null,
+ "kind": "kozeny_carman",
+ "kozeny_constant_eff": 122.91824853710023,
+ "kozeny_constant_effective": 43.91107653878462,
+ "mach": 0.01033079589524261,
+ "mass_drift": 0.9242558628983765,
+ "max_residual_overlap": 0.039210465695243,
+ "n_spheres": 34,
+ "nu": 0.3333333333333333,
+ "phi_eff": 0.6398534189998097,
+ "phi_mask": 0.5196875000000001,
+ "phi_nominal": 0.5193363240007617,
+ "phi_target": 0.52,
+ "provenance": {
+  "git": "54a36699",
+  "host": "36cb7828dbd5",
+  "numpy": "2.4.6",
+  "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+  "steps": {
+   "steady": false,
+   "steps": 1200,
+   "u_history_tail": [
+    0.005977401975542307,
+    0.005966612137854099
+   ],
+   "wall_s": 306.36155438423157
+  },
+  "threads": 4,
+  "timestamp_utc": "2026-11-10T21:42:31.745002+00:00",
+  "torch": "2.7.1"
+ },
+ "re_pore": 0.10313344951719046,
+ "tau": 1.5,
+ "u_mean_fluid": 0.005964487791061401,
+ "u_super": 0.002864818042144179,
+ "wall_s": 307.9503331184387
+}

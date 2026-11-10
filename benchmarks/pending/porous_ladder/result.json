@@ -1,0 +1,617 @@
+{
+ "all_pass": false,
+ "cases": {
+  "anchor_zick_homsy": {
+   "K_table": 15.402,
+   "a": 20,
+   "d_p": 17.3698137451832,
+   "offset_+0.0": {
+    "K": 6.083397194743156,
+    "K_over_d2": 0.020163032494337905,
+    "K_ref_over_d2": 0.00549016006298136,
+    "err": 2.672576439126373,
+    "phi_mask": 0.652875,
+    "steady": false,
+    "steps": 9000
+   },
+   "offset_+0.5": {
+    "K": 4.9073705449700356,
+    "K_over_d2": 0.016265167075641712,
+    "K_ref_over_d2": 0.00549016006298136,
+    "err": 1.962603437614372,
+    "phi_mask": 0.595125,
+    "steady": false,
+    "steps": 9000
+   },
+   "phi_solid_nominal": 0.343,
+   "r": 8.6849068725916
+  },
+  "bed_k": {
+   "K_kozeny_carman_180": 23.96832736383845,
+   "K_lbm": 14.623131603002548,
+   "K_over_dp2": 0.0928142217286385,
+   "accel": 0.001,
+   "case": "bed_k",
+   "cell": 24.0,
+   "d_p": 12.552,
+   "kind": "bed_permeability",
+   "mass_drift": 0.17338518237565778,
+   "nu": 0.16666666666666666,
+   "phi_mask": 0.8522858796296297,
+   "phi_nominal": 0.8501924558328041,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 2500,
+     "u_history_tail": [
+      0.0877474993467331,
+      0.087743379175663,
+      0.08774011582136154,
+      0.08773878961801529
+     ],
+     "wall_s": 152.65033102035522
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:43:36.530244+00:00",
+    "torch": "2.7.1"
+   },
+   "radius": 6.276,
+   "re_pore": 0.9760629603457637,
+   "shape": [
+    24,
+    24,
+    24
+   ],
+   "tau": 1.0,
+   "u_mean_fluid": 0.08773878961801529,
+   "u_super": 0.012960258130786112,
+   "wall_s": 152.7037706375122
+  },
+  "bj_pressure": {
+   "K_reference_case": "self",
+   "accel": 2e-05,
+   "case": "bj_pressure",
+   "decay_fit": {
+    "band": [
+     13.532799999999998,
+     65.72399999999999
+    ],
+    "decay_r2": 0.011035244128207222,
+    "lam": 306.4808813134575,
+    "n_points": 52
+   },
+   "deep_window": [
+    21.887999999999998,
+    46.9536
+   ],
+   "free_fit": {
+    "coeffs": [
+     -1.2892215786756334e-05,
+     0.002406135984181276,
+     -0.10790591985003142
+    ],
+    "curvature": -2.5784431573512668e-05,
+    "n_points": 13,
+    "rms_residual": 3.82398747508909e-06,
+    "slope": 0.00022601072577763332,
+    "u_int": 0.0033707144601914235
+   },
+   "geometry": {
+    "bed": "bcc",
+    "cell": 24.0,
+    "floor_layers": 1,
+    "floor_rows": 1,
+    "free_height": 16,
+    "layer_dy": 12.0,
+    "n_layers": 7,
+    "nx": 24,
+    "ny": 102,
+    "nz": 24,
+    "phi_bed": 0.8511704784032967,
+    "phi_bed_nominal": 0.8511704784032967,
+    "raster_offset": 0.0,
+    "raster_radius": 6.276,
+    "y_bed_top": 84.55199999999999,
+    "y_int": 84.55199999999999
+   },
+   "kind": "beavers_joseph",
+   "mode": "pressure",
+   "nu": 0.16666666666666666,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 1600,
+     "u_history_tail": [
+      0.0019034288125112653,
+      0.002024749293923378,
+      0.0020374266896396875
+     ],
+     "wall_s": 271.3711369037628
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:50:20.436601+00:00",
+    "torch": "2.7.1"
+   },
+   "tau": 1.0,
+   "u_darcy_measured": 0.0009721375407482609,
+   "wall_s": 271.5235788822174,
+   "wall_speed": 0.0,
+   "y_int": 84.55199999999999
+  },
+  "bj_shear": {
+   "K_reference_case": "self",
+   "accel": 0.0,
+   "case": "bj_shear",
+   "decay_fit": {
+    "lam": NaN,
+    "n_points": 0
+   },
+   "deep_window": [
+    21.887999999999998,
+    46.9536
+   ],
+   "free_fit": {
+    "coeffs": [
+     0.0001548647383778046,
+     -0.02660839876240436,
+     1.149062127928314
+    ],
+    "curvature": 0.0003097294767556092,
+    "n_points": 13,
+    "rms_residual": 0.0003965471932652718,
+    "slope": -0.00042015204376409654,
+    "u_int": 0.006403114046736436
+   },
+   "geometry": {
+    "bed": "bcc",
+    "cell": 24.0,
+    "floor_layers": 1,
+    "floor_rows": 1,
+    "free_height": 16,
+    "layer_dy": 12.0,
+    "n_layers": 7,
+    "nx": 24,
+    "ny": 102,
+    "nz": 24,
+    "phi_bed": 0.8511704784032967,
+    "phi_bed_nominal": 0.8511704784032967,
+    "raster_offset": 0.0,
+    "raster_radius": 6.276,
+    "y_bed_top": 84.55199999999999,
+    "y_int": 84.55199999999999
+   },
+   "kind": "beavers_joseph",
+   "mode": "shear",
+   "nu": 0.16666666666666666,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 1600,
+     "u_history_tail": [
+      0.005337768699973822,
+      0.005464458838105202,
+      0.005471634212881327
+     ],
+     "wall_s": 330.70713329315186
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:51:21.144744+00:00",
+    "torch": "2.7.1"
+   },
+   "tau": 1.0,
+   "u_darcy_measured": 1.5120087777066832e-05,
+   "wall_s": 330.9641318321228,
+   "wall_speed": 0.05,
+   "y_int": 84.55199999999999
+  },
+  "ergun_re10": {
+   "K_eff_apparent": 0.9463361852210976,
+   "K_eff_over_K_kozeny": 3.981851042495244,
+   "L": 40,
+   "accel": 0.01289549505592857,
+   "case": "ergun_re10",
+   "d_p": 12.0,
+   "ergun_inertial_fraction": 0.04762136215499376,
+   "err_inertial": 0.27964691725769475,
+   "err_vs_ergun": -0.7129841490258679,
+   "err_vs_ergun_at_phi_mask": -0.7142032888876872,
+   "grad_ergun": 0.020138971931660615,
+   "grad_ergun_at_phi_mask": 0.02022487993026001,
+   "grad_ergun_inertial": 0.0009590452757868644,
+   "grad_ergun_viscous": 0.01917992665587375,
+   "grad_measured": 0.0057802041667097325,
+   "grad_stokes_measured": 0.004552964836038516,
+   "inertial_measured": 0.0012272393306712167,
+   "kind": "ergun",
+   "mach": 0.1268222178009257,
+   "mass_drift": 1.2310461021107122,
+   "nu": 0.16666666666666666,
+   "phi_mask": 0.44823437499999996,
+   "phi_nominal": 0.4486504892949914,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 1500,
+     "u_history_tail": [
+      0.07325351983308792,
+      0.07321181148290634,
+      0.07322084158658981
+     ],
+     "wall_s": 266.00836539268494
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:49:34.724106+00:00",
+    "torch": "2.7.1"
+   },
+   "re_pore_measured": 2.3630470679188145,
+   "re_pore_target": 3.0,
+   "tau": 1.0,
+   "u_mean_fluid": 0.07322084158658981,
+   "u_super": 0.03282009816553909,
+   "wall_s": 267.9025766849518
+  },
+  "kc_038": {
+   "K_kc_150": 0.13396602553246245,
+   "K_kc_180": 0.11163835461038536,
+   "K_kc_180_at_phi_mask": 0.11203313864394003,
+   "K_kc_at_phi_eff": 0.47039356057872556,
+   "K_lbm": 0.8748270726452271,
+   "K_over_dp2": 0.0060751880044807435,
+   "L": 40,
+   "accel": 0.001,
+   "case": "kc_038",
+   "d_eff": 11.0,
+   "d_p": 12.0,
+   "d_sauter_mask": 9.121265377855888,
+   "err_vs_kc180": 6.836259103767234,
+   "err_vs_kc180_eff": 0.859776888886248,
+   "err_vs_kc180_phi_mask": 6.808645577855077,
+   "field_file": null,
+   "kind": "kozeny_carman",
+   "kozeny_constant_eff": 96.78580321954392,
+   "kozeny_constant_effective": 22.970143995553453,
+   "mach": 0.004545734812974847,
+   "mass_drift": 1.6435667079719125,
+   "max_residual_overlap": 0.28495441391761567,
+   "n_spheres": 44,
+   "nu": 0.3333333333333333,
+   "phi_eff": 0.5337900863526948,
+   "phi_mask": 0.37828125,
+   "phi_nominal": 0.377964654589221,
+   "phi_target": 0.38,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 1200,
+     "u_history_tail": [
+      0.0026361329946666956,
+      0.0026260786689817905
+     ],
+     "wall_s": 309.24238777160645
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:42:34.037842+00:00",
+    "torch": "2.7.1"
+   },
+   "re_pore": 0.05874081055968418,
+   "tau": 1.5,
+   "u_mean_fluid": 0.0026244812179356813,
+   "u_super": 0.0016316891822134494,
+   "wall_s": 311.01785802841187
+  },
+  "kc_045": {
+   "K_kc_150": 0.2851948528827152,
+   "K_kc_180": 0.23766237740226265,
+   "K_kc_180_at_phi_mask": 0.23664437422996726,
+   "K_kc_at_phi_eff": 0.7897963197737278,
+   "K_lbm": 1.2014185388882954,
+   "K_over_dp2": 0.008343184297835385,
+   "L": 40,
+   "accel": 0.001,
+   "case": "kc_045",
+   "d_eff": 11.0,
+   "d_p": 12.0,
+   "d_sauter_mask": 8.867414413660335,
+   "err_vs_kc180": 4.055148198129812,
+   "err_vs_kc180_eff": 0.5211751546683518,
+   "err_vs_kc180_phi_mask": 4.076894571433065,
+   "field_file": "_field_kc_045.pt",
+   "kind": "kozeny_carman",
+   "kozeny_constant_eff": 118.32956872033832,
+   "kozeny_constant_effective": 35.60726470226773,
+   "mach": 0.006242753851529078,
+   "mass_drift": 1.2310021198626555,
+   "max_residual_overlap": 0.050580213689942255,
+   "n_spheres": 39,
+   "nu": 0.3333333333333333,
+   "phi_eff": 0.5860717526762521,
+   "phi_mask": 0.44823437499999996,
+   "phi_nominal": 0.4486504892949914,
+   "phi_target": 0.45,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 1200,
+     "u_history_tail": [
+      0.0036152242682874203,
+      0.003605923615396023
+     ],
+     "wall_s": 403.81538367271423
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:44:09.205284+00:00",
+    "torch": "2.7.1"
+   },
+   "re_pore": 0.07159335670759903,
+   "tau": 1.5,
+   "u_mean_fluid": 0.0036042556166648865,
+   "u_super": 0.0019887043529888617,
+   "wall_s": 404.78568291664124
+  },
+  "kc_052": {
+   "K_kc_150": 0.5820157331287634,
+   "K_kc_180": 0.4850131109406362,
+   "K_kc_180_at_phi_mask": 0.4867086013023371,
+   "K_kc_at_phi_eff": 1.3576748012929354,
+   "K_lbm": 1.9881625970204668,
+   "K_over_dp2": 0.01380668470153102,
+   "L": 40,
+   "accel": 0.001,
+   "case": "kc_052",
+   "d_eff": 11.0,
+   "d_p": 12.0,
+   "d_sauter_mask": 8.658341939723968,
+   "err_vs_kc180": 3.0991935107993616,
+   "err_vs_kc180_eff": 0.46438793378731624,
+   "err_vs_kc180_phi_mask": 3.084913625320227,
+   "field_file": null,
+   "kind": "kozeny_carman",
+   "kozeny_constant_eff": 122.91824853710023,
+   "kozeny_constant_effective": 43.91107653878462,
+   "mach": 0.01033079589524261,
+   "mass_drift": 0.9242558628983765,
+   "max_residual_overlap": 0.039210465695243,
+   "n_spheres": 34,
+   "nu": 0.3333333333333333,
+   "phi_eff": 0.6398534189998097,
+   "phi_mask": 0.5196875000000001,
+   "phi_nominal": 0.5193363240007617,
+   "phi_target": 0.52,
+   "provenance": {
+    "git": "54a36699",
+    "host": "36cb7828dbd5",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "steps": {
+     "steady": false,
+     "steps": 1200,
+     "u_history_tail": [
+      0.005977401975542307,
+      0.005966612137854099
+     ],
+     "wall_s": 306.36155438423157
+    },
+    "threads": 4,
+    "timestamp_utc": "2026-11-10T21:42:31.745002+00:00",
+    "torch": "2.7.1"
+   },
+   "re_pore": 0.10313344951719046,
+   "tau": 1.5,
+   "u_mean_fluid": 0.005964487791061401,
+   "u_super": 0.002864818042144179,
+   "wall_s": 307.9503331184387
+  }
+ },
+ "gates": [
+  {
+   "detail": {
+    "grid_refinement_phi045": "not run (compute budget)",
+    "nominal_geometry_error": {
+     "kc_038": 6.836259103767234,
+     "kc_045": 4.055148198129812,
+     "kc_052": 3.0991935107993616
+    },
+    "note": "err_vs_kc180_eff compares K with Kozeny-Carman evaluated at the effective porosity/diameter implied by the node-centre wall convention; err_vs_kc180 is the nominal-geometry diagnostic",
+    "tiers": {
+     "kc_038": {
+      "K_kc_150": 0.13396602553246245,
+      "K_kc_180": 0.11163835461038536,
+      "K_kc_at_phi_eff": 0.47039356057872556,
+      "K_lbm": 0.8748270726452271,
+      "K_over_dp2": 0.0060751880044807435,
+      "d_eff": 11.0,
+      "d_p": 12.0,
+      "d_sauter_mask": 9.121265377855888,
+      "err_vs_kc180": 6.836259103767234,
+      "err_vs_kc180_at_phi_mask": 6.808645577855077,
+      "err_vs_kc180_eff": 0.859776888886248,
+      "kozeny_constant_eff": 96.78580321954392,
+      "kozeny_constant_effective": 22.970143995553453,
+      "mach": 0.004545734812974847,
+      "n_spheres": 44,
+      "phi_eff": 0.5337900863526948,
+      "phi_mask": 0.37828125,
+      "phi_nominal": 0.377964654589221,
+      "re_pore": 0.05874081055968418
+     },
+     "kc_045": {
+      "K_kc_150": 0.2851948528827152,
+      "K_kc_180": 0.23766237740226265,
+      "K_kc_at_phi_eff": 0.7897963197737278,
+      "K_lbm": 1.2014185388882954,
+      "K_over_dp2": 0.008343184297835385,
+      "d_eff": 11.0,
+      "d_p": 12.0,
+      "d_sauter_mask": 8.867414413660335,
+      "err_vs_kc180": 4.055148198129812,
+      "err_vs_kc180_at_phi_mask": 4.076894571433065,
+      "err_vs_kc180_eff": 0.5211751546683518,
+      "kozeny_constant_eff": 118.32956872033832,
+      "kozeny_constant_effective": 35.60726470226773,
+      "mach": 0.006242753851529078,
+      "n_spheres": 39,
+      "phi_eff": 0.5860717526762521,
+      "phi_mask": 0.44823437499999996,
+      "phi_nominal": 0.4486504892949914,
+      "re_pore": 0.07159335670759903
+     },
+     "kc_052": {
+      "K_kc_150": 0.5820157331287634,
+      "K_kc_180": 0.4850131109406362,
+      "K_kc_at_phi_eff": 1.3576748012929354,
+      "K_lbm": 1.9881625970204668,
+      "K_over_dp2": 0.01380668470153102,
+      "d_eff": 11.0,
+      "d_p": 12.0,
+      "d_sauter_mask": 8.658341939723968,
+      "err_vs_kc180": 3.0991935107993616,
+      "err_vs_kc180_at_phi_mask": 3.084913625320227,
+      "err_vs_kc180_eff": 0.46438793378731624,
+      "kozeny_constant_eff": 122.91824853710023,
+      "kozeny_constant_effective": 43.91107653878462,
+      "mach": 0.01033079589524261,
+      "n_spheres": 34,
+      "phi_eff": 0.6398534189998097,
+      "phi_mask": 0.5196875000000001,
+      "phi_nominal": 0.5193363240007617,
+      "re_pore": 0.10313344951719046
+     }
+    },
+    "worst_tier": "kc_038"
+   },
+   "error": 0.859776888886248,
+   "gate": "G1 Kozeny-Carman (3 porosity tiers, effective geometry)",
+   "metric": "|err|",
+   "pass": false,
+   "tolerance": 0.05
+  },
+  {
+   "detail": {
+    "diagnostic_total_form_error": {
+     "ergun_re10": -0.7129841490258679
+    },
+    "n_tiers": 1,
+    "note": "primary metric isolates the 1.75 u^2 term by removing the Stokes-measured viscous gradient; the total-form error is diagnostic because Ergun's 150 and Kozeny-Carman's 180 are different empirical fits of the same viscous physics",
+    "tier_count_note": "the second tier (target Re_p=12) went unstable (NaN) and is reported as missing, not as a pass",
+    "tiers": {
+     "ergun_re10": {
+      "K_eff_over_K_kozeny": 3.981851042495244,
+      "err_inertial": 0.27964691725769475,
+      "err_vs_ergun": -0.7129841490258679,
+      "err_vs_ergun_at_phi_mask": -0.7142032888876872,
+      "grad_ergun": 0.020138971931660615,
+      "grad_ergun_inertial": 0.0009590452757868644,
+      "grad_ergun_viscous": 0.01917992665587375,
+      "grad_measured": 0.0057802041667097325,
+      "inertial_fraction": 0.04762136215499376,
+      "inertial_measured": 0.0012272393306712167,
+      "mach": 0.1268222178009257,
+      "re_pore_measured": 2.3630470679188145,
+      "u_super": 0.03282009816553909
+     }
+    },
+    "worst_tier": "ergun_re10"
+   },
+   "error": 0.27964691725769475,
+   "gate": "G2 Ergun inertial deviation (1 pore-Re tier(s))",
+   "metric": "|err|",
+   "pass": false,
+   "tolerance": 0.1
+  },
+  {
+   "detail": {
+    "K_bed": 14.623131603002548,
+    "K_bed_over_dp2": 0.0928142217286385,
+    "alpha_pressure": 0.360325994415714,
+    "alpha_shear": -0.2509200916681229,
+    "free_fit_rms_pressure": 3.82398747508909e-06,
+    "free_fit_rms_shear": 0.0003965471932652718,
+    "phi_bed": 0.8501924558328041,
+    "slope_pressure": 0.00022601072577763332,
+    "slope_shear": -0.00042015204376409654,
+    "sqrtK": 3.824020345526753,
+    "u_darcy_pressure_from_K": 0.0014918971403427635,
+    "u_darcy_pressure_measured": 0.0009721375407482609,
+    "u_int_pressure": 0.0033707144601914235,
+    "u_int_shear": 0.006403114046736436
+   },
+   "error": -2.4360189015564995,
+   "gate": "G3 Beavers-Joseph alpha cross-mechanism consistency",
+   "metric": "|err|",
+   "pass": false,
+   "tolerance": 0.15
+  },
+  {
+   "detail": {
+    "decay_fit": {
+     "lam": NaN,
+     "n_points": 0
+    },
+    "delta_sqrt_K_over_phi": 4.147262939098364,
+    "implied_mu_eff_over_mu": NaN,
+    "lambda_measured": NaN,
+    "lambda_over_sqrtK": NaN,
+    "sqrt_K": 3.824020345526753
+   },
+   "error": NaN,
+   "gate": "G4 Brinkman screening length",
+   "metric": "|err|",
+   "pass": false,
+   "tolerance": 0.1
+  },
+  {
+   "detail": {
+    "band": [
+     78.276,
+     101.0
+    ],
+    "deviation_bed_deep": 2.5135891830196213,
+    "deviation_free_region": 15.651659725671454,
+    "deviation_overlap": 17.49131522014764,
+    "port_A_u_D": 0.0009721375407482609,
+    "port_A_u_int": 0.0033707144601914235,
+    "port_B_u_D": 0.001491897140342763,
+    "port_B_u_int": -0.11428517443897668
+   },
+   "error": 17.49131522014764,
+   "gate": "G5 port A (resolved) vs port B (volume-averaged)",
+   "metric": "|err|",
+   "pass": false,
+   "tolerance": 0.05
+  }
+ ],
+ "generated_utc": "2026-11-10T21:55:16.319735+00:00",
+ "n_pass": 0,
+ "node": "p339w2-n06-lbm-porous-media",
+ "thresholds": {
+  "G1": 0.05,
+  "G2": 0.1,
+  "G3": 0.15,
+  "G4": 0.1,
+  "G5": 0.05
+ }
+}
