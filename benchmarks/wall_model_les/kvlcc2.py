@@ -189,6 +189,24 @@ def run(out_dir: Path) -> dict:
             )
     result["form_factor_sensitivity"] = sensitivity
 
+    # ---- offline chain (no ship API needed) --------------------------------
+    result["offline_chain"] = _offline_chain(geometry=geometry, speed=speed)
+    result["criterion_d"] = _criterion_d(result["offline_chain"])
+    result["experimental_reference_search"] = {
+        "verdict": "NOT_FOUND",
+        "searched": [
+            "this repository: benchmarks/, cases/, configs/, docs/ (KVLCC2 appears only as "
+            "geometry and as caller-supplied maneuvering derivatives -- no towing-tank C_T)",
+            "ship-performance-platform checkout: backend package only, no reference dataset",
+            "platform API :8001 (resistance-advanced/ittc78): connection refused during this run",
+            "outbound network (package index / raw source host): blocked in this sandbox",
+        ],
+        "consequence": (
+            "the 'versus experiment' limb of criterion (d) stays WITHHELD; no number is "
+            "recalled from memory to fill it, and the friction limb is reported instead"
+        ),
+    }
+
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "kvlcc2.json").write_text(json.dumps(result, indent=2, default=float))
     return result
@@ -200,6 +218,109 @@ def main() -> None:
     args = parser.parse_args()
     result = run(Path(args.out))
     print(json.dumps(result.get("comparison", result), indent=2, default=float))
+
+
+
+
+# ---------------------------------------------------------------------------
+# offline chain: the friction limb, computed without the ship platform
+# ---------------------------------------------------------------------------
+def _wall_model_mean_cf(re_length: float, *, n_steps: int = 400) -> dict:
+    """Mean skin-friction coefficient at ``Re_L`` from the wall-law plate model.
+
+    The marched model (:func:`tensorlbm.wall_model_les.flat_plate.run_flat_plate`)
+    returns ``Re_theta(Re_x)``; for a flat plate the mean friction coefficient is
+    ``C_F = 2 theta(L)/L = 2 Re_theta(L)/Re_L`` -- an identity, not a fit.  This
+    is the *model's* prediction of the ship's friction at ``Re = 1.3e7``, and it
+    is compared below with the ITTC-1957 line, which is the empirical standard.
+    """
+
+    import numpy as np
+
+    from tensorlbm.wall_model_les.flat_plate import run_flat_plate
+
+    result = run_flat_plate(re_theta_start=2.0e3, re_theta_end=2.0e5, n_steps=n_steps)
+    re_x = np.asarray(result.re_x, dtype=float)
+    if not (re_x.min() <= re_length <= re_x.max()):
+        msg = (
+            f"Re_L = {re_length:.3e} outside the marched range "
+            f"[{re_x.min():.3e}, {re_x.max():.3e}]"
+        )
+        raise ValueError(msg)
+    re_theta = float(np.interp(re_length, re_x, result.re_theta))
+    cf_mean = 2.0 * re_theta / re_length
+    cf_local = float(np.interp(re_length, re_x, result.c_f))
+    return {
+        "cf_mean": float(cf_mean),
+        "cf_local": cf_local,
+        "re_theta_at_re_l": re_theta,
+        "march_re_x_range": [float(re_x.min()), float(re_x.max())],
+        "closure": result.metadata.get("closure"),
+        "pi_wake": float(result.pi_wake),
+        "kappa": float(result.kappa),
+        "b": float(result.b),
+    }
+
+
+def _offline_chain(*, geometry: dict, speed: float) -> dict:
+    """``C_T = (1+k) C_F + C_A`` with the friction coefficient from two sources."""
+
+    cf_ittc = ittc_1957_cf(RE_TARGET)
+    plate = _wall_model_mean_cf(RE_TARGET)
+    # The correlation allowance is a *common* input of both chains and therefore
+    # cancels in the relative comparison; it is reported symbolically instead of
+    # being invented here.
+    return {
+        "reynolds": RE_TARGET,
+        "form_factor": FORM_FACTOR,
+        "froude": FROUDE,
+        "speed_ms": speed,
+        "wetted_surface_m2": geometry["wetted_surface"],
+        "cf_ittc_1957": float(cf_ittc),
+        "wall_model_plate": plate,
+        "cf_wall_model": float(plate["cf_mean"]),
+        "cf_rel_difference": float(abs(plate["cf_mean"] - cf_ittc) / cf_ittc),
+        "correlation_allowance": (
+            "common input C_A (ITTC-78 allowance); it cancels in the relative "
+            "comparison, so no value is fabricated here"
+        ),
+        "residual_resistance": (
+            "NOT predicted by the wall model: C_R needs the resolved pressure "
+            "field (wave + viscous pressure), which a wall-function plate model "
+            "does not contain"
+        ),
+    }
+
+
+def _criterion_d(offline: dict) -> dict:
+    """Criterion (d) as it can be decided offline.
+
+    The literal "versus experiment" limb has no reference in this environment
+    (see ``experimental_reference`` below).  What *is* decidable is the friction
+    forecast itself: two independent friction chains -- the wall-law boundary
+    layer model and the ITTC-1957 empirical line -- at the mission Reynolds
+    number, propagated into ``C_T`` with the shared ``(1+k)`` and ``C_A``.
+    """
+
+    k = FORM_FACTOR
+    cf_wm = offline["cf_wall_model"]
+    cf_std = offline["cf_ittc_1957"]
+    ct_wm = k * cf_wm
+    ct_std = k * cf_std
+    rel = abs(ct_wm - ct_std) / ct_std
+    return {
+        "threshold": NOMINAL_CRITERION,
+        "quantity": (
+            "C_T = (1+k) C_F with C_F from the wall-law boundary-layer model vs "
+            "C_F from the ITTC-1957 line, at Re = 1.3e7"
+        ),
+        "ct_wall_model": float(ct_wm),
+        "ct_ittc_1957": float(ct_std),
+        "ct_rel_error": float(rel),
+        "verdict": "PASS" if rel <= NOMINAL_CRITERION else "FAIL",
+        "partner": "empirical standard line (ITTC-1957), NOT a measurement",
+        "experimental_limb": "WITHHELD",
+    }
 
 
 if __name__ == "__main__":
