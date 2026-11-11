@@ -1,515 +1,386 @@
 #!/usr/bin/env python3
-"""H2-FRAZIL-RHEOLOGY verification: frazil power-law suspension rheology.
+"""H2-FRAZIL-RHEOLOGY entry point: volume fraction -> effective viscosity.
 
-Runs the D3Q19 shear cell with particles at various volume fractions,
-measures effective viscosity, and compares against:
-  1. Einstein dilute limit (phi=0.05): eta_r = 1 + 2.5*phi
-  2. Krieger-Dougherty (phi=0.20): eta_r = (1 - phi/0.6)^(-1.5)
-  3. Shear rate sweep curve
+Runs the four machine-checked criteria of
+:mod:`tensorlbm.frazil_suspension_rheology` and writes the run artifacts:
 
-Produces:
-  - artifacts/h2_frazil_rheology/campaign.json
-  - artifacts/h2_frazil_rheology/eta_r_vs_phi.png
-  - artifacts/h2_frazil_rheology/shear_sweep.png
-  - docs/H2_FRAZIL_RHEOLOGY.md
+* ``campaign.json``  -- every number produced by this run (single source for
+  the report; nothing is transcribed by hand),
+* ``benchmark.md``   -- ref-vs-got tables with errors and pass/fail,
+* ``fig1_mu_r_closures.png``, ``fig2_shear_rate_sweep.png``,
+  ``fig3_lbm_profiles.png``,
+* ``repro.json``     -- provenance (commit, module hash, versions, command).
+
+Reproduce from the repository root::
+
+    PYTHONPATH=src python scripts/run_h2_frazil_rheology.py --out artifacts/h2_frazil_rheology
+
+Exit code is 0 only when every criterion passes; a failing run still writes the
+artifacts (honest FAIL is data, not a crash).
 """
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
-import math
-import os
+import platform
+import subprocess
 import sys
 import time
+from pathlib import Path
 
+import matplotlib  # noqa: I001
 import numpy as np
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, ".."))
-sys.path.insert(0, os.path.join(ROOT, "src"))
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
 
-os.environ.setdefault("TORCH_DEVICE_BACKEND_AUTOLOAD", "0")
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-import torch
-torch.set_num_threads(2)
-
-from tensorlbm.frazil_powerlaw_shear import (
-    pure_case, run_shear_case, fit_power_law,
-    place_particles_random, build_obstacle_mask,
-)
-from tensorlbm.frazil_powerlaw_mature import (
-    einstein_relative_viscosity,
-    einstein_batchelor_green,
-    krieger_dougherty,
-    hydrodynamic_volume_fraction,
-)
-
-# ---------------------------------------------------------------------------
-# Configuration (small domain for fast verification)
-# ---------------------------------------------------------------------------
-NU = 0.2
-RADIUS = 2.5  # particle radius in lattice units
-
-# Small domain for fast turnaround
-NX, NY, NZ = 20, 20, 24
-
-# Shear rate ladder
-GAMMA_RATES = [1e-3, 2e-3, 4e-3]
-
-# Volume fractions
-PHI_VALUES = [0.0, 0.05, 0.10, 0.20]
-
-# Fast simulation parameters
-N_STEPS = 800
-N_WARMUP = 400
-SAMPLE_EVERY = 10
-
-ARTIFACT_DIR = os.path.join(ROOT, "artifacts", "h2_frazil_rheology")
+from tensorlbm import frazil_suspension_rheology as rheo  # noqa: E402
 
 
-def gamma_to_uwall(gamma_dot: float) -> float:
-    H = NZ - 2
-    return gamma_dot * H / 2.0
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    h.update(Path(path).read_bytes())
+    return h.hexdigest()
 
 
-def run_pure_cases() -> list[dict]:
-    """Run pure fluid at each shear rate."""
-    results = []
-    for gi, gamma in enumerate(GAMMA_RATES):
-        u_wall = gamma_to_uwall(gamma)
-        rec = pure_case(
-            nx=NX, ny=NY, nz=NZ, nu=NU, u_wall=u_wall,
-            n_steps=N_STEPS, n_warmup=N_WARMUP, sample_every=SAMPLE_EVERY,
-        )
-        rec["gamma_target"] = gamma
-        rec["rate_index"] = gi
-        rec["family"] = "pure"
-        rec["phi"] = 0.0
-        results.append(rec)
-        print(f"  pure gamma={gamma:.2e}: gamma_meas={rec['gamma_dot']:.2e} "
-              f"R2={rec['profile_r2']:.4f}")
-    return results
-
-
-def run_suspension_cases(phi: float, seed: int = 42) -> list[dict]:
-    """Run suspension at given volume fraction."""
-    results = []
-    for gi, gamma in enumerate(GAMMA_RATES):
-        u_wall = gamma_to_uwall(gamma)
-        rec = run_shear_case(
-            phi=phi, u_wall=u_wall,
-            nx=NX, ny=NY, nz=NZ, radius=RADIUS, nu=NU,
-            n_primary=1, seed=seed + gi,
-            n_steps=N_STEPS, n_warmup=N_WARMUP, sample_every=SAMPLE_EVERY,
-            wall_margin=3, placement_attempts=10000,
-        )
-        rec["gamma_target"] = gamma
-        rec["rate_index"] = gi
-        rec["family"] = "dispersed"
-        rec["phi_declared"] = phi
-        results.append(rec)
-        print(f"  phi={phi:.2f} gamma={gamma:.2e}: gamma_meas={rec['gamma_dot']:.2e} "
-              f"phi_lat={rec['phi_lattice']:.4f} n_part={rec['n_particles_placed']}")
-    return results
-
-
-def compute_eta_r(pure_results: list[dict], susp_results: list[dict]) -> list[dict]:
-    """Compute relative viscosity using shear rate ratio method."""
-    out = []
-    for r in susp_results:
-        gamma_target = r.get("gamma_target", 0)
-        gamma_meas = r["gamma_dot"]
-        
-        # Find matching pure case
-        pure_match = None
-        for p in pure_results:
-            if abs(p.get("gamma_target", 0) - gamma_target) < 1e-10:
-                pure_match = p
-                break
-        
-        if pure_match and pure_match["gamma_dot"] > 0 and gamma_meas > 0:
-            # eta_r = gamma_pure / gamma_susp at same wall velocity
-            eta_r = pure_match["gamma_dot"] / gamma_meas
-        else:
-            eta_r = float("nan")
-        
-        out.append({
-            "phi_declared": r["phi_declared"],
-            "phi_lattice": r["phi_lattice"],
-            "gamma_target": gamma_target,
-            "gamma_meas": gamma_meas,
-            "eta_r": eta_r,
-            "n_particles": r.get("n_particles_placed", 0),
-            "profile_r2": r.get("profile_r2", 0),
-        })
-    
-    return out
-
-
-def evaluate_criteria(eta_r_data: list[dict]) -> dict:
-    """Evaluate acceptance criteria."""
-    criteria = {}
-    
-    by_phi = {}
-    for d in eta_r_data:
-        by_phi.setdefault(d["phi_declared"], []).append(d)
-    
-    # Criterion 1: Einstein dilute limit (phi=0.05)
-    if 0.05 in by_phi:
-        eta_r_vals = [d["eta_r"] for d in by_phi[0.05] if np.isfinite(d["eta_r"])]
-        if eta_r_vals:
-            eta_r_mean = np.mean(eta_r_vals)
-            eta_r_einstein = einstein_relative_viscosity(0.05)
-            rel_err = abs(eta_r_mean - eta_r_einstein) / eta_r_einstein
-            criteria["c1_einstein_dilute"] = {
-                "phi": 0.05,
-                "eta_r_meas": float(eta_r_mean),
-                "eta_r_einstein": float(eta_r_einstein),
-                "rel_err": float(rel_err),
-                "threshold": 0.10,
-                "passed": bool(rel_err < 0.10),
-            }
-    
-    # Criterion 2: Krieger-Dougherty (phi=0.20)
-    if 0.20 in by_phi:
-        eta_r_vals = [d["eta_r"] for d in by_phi[0.20] if np.isfinite(d["eta_r"])]
-        if eta_r_vals:
-            eta_r_mean = np.mean(eta_r_vals)
-            eta_r_kd = krieger_dougherty(0.20)
-            rel_err = abs(eta_r_mean - eta_r_kd) / eta_r_kd
-            criteria["c2_krieger_dougherty"] = {
-                "phi": 0.20,
-                "eta_r_meas": float(eta_r_mean),
-                "eta_r_kd": float(eta_r_kd),
-                "rel_err": float(rel_err),
-                "threshold": 0.10,
-                "passed": bool(rel_err < 0.10),
-            }
-    
-    n_pass = sum(1 for c in criteria.values() if c.get("passed", False))
-    n_defined = len(criteria)
-    
-    return {
-        "criteria": criteria,
-        "n_pass": n_pass,
-        "n_defined": n_defined,
-        "all_passed": bool(n_pass == n_defined and n_defined > 0),
-    }
-
-
-def generate_figures(eta_r_data: list[dict], pure_results: list[dict],
-                     criteria: dict) -> list[str]:
-    """Generate matplotlib figures."""
+def _git_commit() -> str:
     try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
-        print("matplotlib not available, skipping figures")
-        return []
-    
-    figures = []
-    os.makedirs(ARTIFACT_DIR, exist_ok=True)
-    
-    # Figure 1: eta_r vs phi
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    
-    phi_vals = sorted(set(d["phi_declared"] for d in eta_r_data if d["phi_declared"] > 0))
-    eta_r_means = []
-    eta_r_stds = []
-    
-    for phi in phi_vals:
-        vals = [d["eta_r"] for d in eta_r_data
-                if d["phi_declared"] == phi and np.isfinite(d["eta_r"])]
-        if vals:
-            eta_r_means.append(np.mean(vals))
-            eta_r_stds.append(np.std(vals))
-        else:
-            eta_r_means.append(float("nan"))
-            eta_r_stds.append(0)
-    
-    ax.errorbar(phi_vals, eta_r_means, yerr=eta_r_stds, fmt='o-',
-                label='LBM shear cell', capsize=3, markersize=8)
-    
-    phi_fine = np.linspace(0, 0.35, 100)
-    eta_einstein = [einstein_relative_viscosity(p) for p in phi_fine]
-    eta_ebg = [einstein_batchelor_green(p) for p in phi_fine]
-    eta_kd = [krieger_dougherty(p) for p in phi_fine]
-    
-    ax.plot(phi_fine, eta_einstein, '--', label='Einstein (1906)', alpha=0.7)
-    ax.plot(phi_fine, eta_ebg, '-.', label='Einstein-Batchelor-Green', alpha=0.7)
-    ax.plot(phi_fine, eta_kd, '--', label='Krieger-Dougherty', alpha=0.7)
-    
-    ax.set_xlabel('Volume fraction $\\phi$', fontsize=12)
-    ax.set_ylabel('Relative viscosity $\\eta_r$', fontsize=12)
-    ax.set_title('H2-FRAZIL-RHEOLOGY: Relative Viscosity vs Volume Fraction', fontsize=13)
-    ax.legend(fontsize=10)
-    ax.grid(True, alpha=0.3)
-    ax.set_xlim(-0.01, 0.35)
-    ax.set_ylim(0.8, max(3.5, max([x for x in eta_r_means if np.isfinite(x)] + [3.0]) * 1.2))
-    
-    for key, crit in criteria.get("criteria", {}).items():
-        phi = crit.get("phi", 0)
-        eta_meas = crit.get("eta_r_meas", 0)
-        passed = crit.get("passed", False)
-        marker = 'PASS' if passed else 'FAIL'
-        color = 'green' if passed else 'red'
-        ax.annotate(f'{marker}\nerr={crit.get("rel_err", 0):.1%}',
-                   xy=(phi, eta_meas),
-                   xytext=(phi + 0.04, eta_meas + 0.15),
-                   fontsize=8, color=color, fontweight='bold')
-    
-    fig.tight_layout()
-    path1 = os.path.join(ARTIFACT_DIR, "eta_r_vs_phi.png")
-    fig.savefig(path1, dpi=150)
-    plt.close(fig)
-    figures.append(path1)
-    print(f"  Figure saved: {path1}")
-    
-    # Figure 2: Shear rate sweep
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    
-    for phi in sorted(set(d["phi_declared"] for d in eta_r_data)):
-        pts = [d for d in eta_r_data if d["phi_declared"] == phi]
-        gammas = [d["gamma_meas"] for d in pts if d["gamma_meas"] > 0]
-        taus = []
-        for d in pts:
-            if np.isfinite(d["eta_r"]) and d["gamma_meas"] > 0:
-                taus.append(d["eta_r"] * NU * d["gamma_meas"])
-            else:
-                taus.append(float("nan"))
-        
-        label = f'$\\phi$={phi:.2f}' if phi > 0 else 'pure'
-        valid = [(g, t) for g, t in zip(gammas, taus) if np.isfinite(t) and t > 0]
-        if valid:
-            g, t = zip(*valid)
-            ax.loglog(g, t, 'o-', label=label, markersize=6)
-    
-    ax.set_xlabel('Shear rate $\\dot{\\gamma}$ [lattice units]', fontsize=12)
-    ax.set_ylabel('Shear stress $\\tau$ [lattice units]', fontsize=12)
-    ax.set_title('Flow Curves: Frazil Suspension Shear Sweep', fontsize=13)
-    ax.legend(fontsize=10)
-    ax.grid(True, alpha=0.3, which='both')
-    
-    fig.tight_layout()
-    path2 = os.path.join(ARTIFACT_DIR, "shear_sweep.png")
-    fig.savefig(path2, dpi=150)
-    plt.close(fig)
-    figures.append(path2)
-    print(f"  Figure saved: {path2}")
-    
-    return figures
+        return subprocess.check_output(
+            ["git", "-C", str(_REPO_ROOT), "rev-parse", "HEAD"], text=True
+        ).strip()
+    except Exception:  # pragma: no cover - not a git checkout
+        return "unknown"
 
 
-def generate_report(
-    pure_results: list[dict],
-    eta_r_data: list[dict],
-    criteria: dict,
-    figures: list[str],
-    elapsed: float,
-) -> str:
-    """Generate markdown report."""
-    os.makedirs(os.path.join(ROOT, "docs"), exist_ok=True)
-    
+# ---------------------------------------------------------------------------
+# Figures
+# ---------------------------------------------------------------------------
+
+
+def fig_mu_r_closures(report: dict, out: Path) -> Path:
+    phi_max = report["parameters"]["phi_max"]
+    phis = np.linspace(0.0, phi_max * 0.98, 240)
+    kd = np.array([rheo.krieger_dougherty_relative_viscosity(p, phi_max=phi_max) for p in phis])
+    ein = 1.0 + rheo.EINSTEIN_INTRINSIC * phis
+    bat = ein + rheo.BATCHELOR_K2 * phis**2
+    th_mask = phis <= 0.50  # Thomas (1965) is valid up to phi ~ 0.5
+    th = np.array([rheo.thomas_relative_viscosity(p) for p in phis[th_mask]])
+
+    fig, ax = plt.subplots(1, 2, figsize=(12.0, 4.6))
+    ax[0].semilogy(phis, kd, "k-", lw=2.0, label=r"Krieger-Dougherty $\phi_{max}=%.2f$" % phi_max)
+    ax[0].semilogy(phis[th_mask], th, "C3--", lw=1.6, label="Thomas (1965) empirical")
+    ax[0].semilogy(phis, bat, "C1-.", lw=1.3, label=r"Batchelor-Green $1+2.5\phi+6.2\phi^2$")
+    ax[0].semilogy(phis, ein, "C0:", lw=1.3, label=r"Einstein $1+2.5\phi$")
+    dil = report["dilute_limit"]["rows"]
+    mid = report["mid_concentration"]["rows"]
+    ax[0].plot([r["phi"] for r in dil], [r["got_model"] for r in dil], "o", ms=5, mfc="none",
+               color="C2", label="model chain (c1 points)")
+    ax[0].plot([r["phi"] for r in mid], [r["got_model"] for r in mid], "s", ms=5, mfc="none",
+               color="C4", label="model chain (c2 points)")
+    ax[0].axvspan(0.0, rheo.DILUTE_LIMIT, color="C2", alpha=0.06)
+    ax[0].axvspan(*rheo.MID_CONCENTRATION_RANGE, color="C4", alpha=0.06)
+    ax[0].set_xlabel(r"ice volume fraction $\phi$")
+    ax[0].set_ylabel(r"relative viscosity $\mu_r$")
+    ax[0].set_xlim(0.0, phi_max)
+    ax[0].set_ylim(1.0, 1.0e3)
+    ax[0].grid(alpha=0.3, which="both")
+    ax[0].set_title("(a) closure families and the model chain")
+    ax[0].legend(fontsize=7.5, loc="upper left")
+
+    ax[1].axhline(10.0, color="r", ls="--", lw=1.0, label="10 % criterion")
+    ax[1].semilogy([r["phi"] for r in dil], [100 * r["rel_error"] for r in dil], "o-", color="C2",
+                   label="c1: model vs Einstein")
+    ax[1].semilogy([r["phi"] for r in mid], [100 * r["rel_error_kd"] for r in mid], "s-", color="C4",
+                   label="c2: model vs KD")
+    ax[1].semilogy([r["phi"] for r in mid],
+                   [max(100 * r["rel_error_thomas"], 1e-4) for r in mid], "^--", color="C3",
+                   label="c2 cross-check: model vs Thomas (1965)")
+    ax[1].set_xlabel(r"ice volume fraction $\phi$")
+    ax[1].set_ylabel("relative error [%]")
+    ax[1].set_title("(b) pointwise error against the analytic / literature anchors")
+    ax[1].grid(alpha=0.3, which="both")
+    ax[1].legend(fontsize=8)
+    fig.suptitle("H2-FRAZIL-RHEOLOGY  phi -> mu_r : %d/%d criteria pass"
+                 % (report["acceptance"]["n_pass"], report["acceptance"]["n_defined"]), y=1.0)
+    fig.tight_layout()
+    path = out / "fig1_mu_r_closures.png"
+    fig.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def fig_shear_rate_sweep(report: dict, out: Path) -> Path:
+    sweep = report["shear_rate_sweep"]
+    g = np.asarray(sweep["gamma_dots"])
+    fig, ax = plt.subplots(1, 2, figsize=(12.0, 4.6))
+    colours = plt.cm.viridis(np.linspace(0.05, 0.85, len(sweep["curves"])))
+    for colour, curve in zip(colours, sweep["curves"]):
+        mu = np.asarray(curve["mu_app"])
+        ax[0].loglog(g, mu, "o-", color=colour, ms=4,
+                     label=r"$\phi=%.2f$, $n=%.3f$, slope=%.3f"
+                     % (curve["phi"], curve["n"], curve["fitted_slope"]))
+        if curve["phi"] > 0.0:
+            guide = mu[0] * (g / g[0]) ** (curve["n"] - 1.0)
+            ax[0].loglog(g, guide, ":", color=colour, lw=0.9)
+    ax[0].set_xlabel(r"shear rate $\dot\gamma$ [1/s]")
+    ax[0].set_ylabel(r"apparent viscosity $\mu_{app}$ [Pa s]")
+    ax[0].set_title("(a) power-law rheology: model vs $K\\dot\\gamma^{n-1}$ (dotted)")
+    ax[0].grid(alpha=0.3, which="both")
+    ax[0].legend(fontsize=7)
+    phis = [c["phi"] for c in sweep["curves"]]
+    ns = [c["n"] for c in sweep["curves"]]
+    ax[1].plot(phis, ns, "o-", color="C0")
+    ax[1].axhline(1.0, color="k", ls=":", label="Newtonian")
+    ax[1].axhline(report["parameters"]["n_packed"], color="r", ls="--",
+                  label=r"$n_{packed}=%.2f$" % report["parameters"]["n_packed"])
+    ax[1].set_xlabel(r"ice volume fraction $\phi$")
+    ax[1].set_ylabel(r"flow index $n(\phi)$")
+    ax[1].set_title("(b) W9-1215 flow index: thinning sets in with concentration")
+    ax[1].grid(alpha=0.3)
+    ax[1].legend(fontsize=8)
+    fig.suptitle("H2-FRAZIL-RHEOLOGY shear-rate scan: max |slope - (n-1)| = %.2e"
+                 % sweep["max_slope_error"], y=1.0)
+    fig.tight_layout()
+    path = out / "fig2_shear_rate_sweep.png"
+    fig.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def fig_lbm_profiles(report: dict, out: Path) -> Path | None:
+    rows = [r for r in report["channels"]["rows"] if r.get("ran") and "profile" in r]
+    if not rows:
+        return None
+    fig, ax = plt.subplots(1, 2, figsize=(12.0, 4.6))
+    colours = plt.cm.plasma(np.linspace(0.05, 0.8, len(rows)))
+    for colour, row in zip(colours, rows):
+        y = np.asarray(row["y_phys"])
+        ax[0].plot(np.asarray(row["profile"]), y, "-", color=colour, lw=1.6,
+                   label=r"LBM $\phi=%.2f$" % row["phi"])
+        ax[0].plot(np.asarray(row["u_exact"]), y, ":", color=colour, lw=1.2)
+    ax[0].set_xlabel("streamwise velocity $u$ [lattice]")
+    ax[0].set_ylabel("wall-normal coordinate $y$ [lattice]")
+    ax[0].set_title("(a) LBM profile (solid) vs exact power-law solution (dotted)")
+    ax[0].grid(alpha=0.3)
+    ax[0].legend(fontsize=7)
+    ax[1].semilogy([r["phi"] for r in rows], [100 * r["l2_relative"] for r in rows], "o-")
+    ax[1].axhline(100 * report["channels"]["threshold"], color="r", ls="--",
+                  label="W9-1215 node criterion (2 %)")
+    ax[1].set_xlabel(r"ice volume fraction $\phi$")
+    ax[1].set_ylabel("L2 velocity error [%]")
+    ax[1].set_title("(b) slurry channel residual")
+    ax[1].grid(alpha=0.3, which="both")
+    ax[1].legend(fontsize=8)
+    fig.suptitle("H2-FRAZIL-RHEOLOGY  LBM slurry channel: worst L2 = %.3f %%"
+                 % (100 * report["channels"]["worst_l2_relative"]), y=1.0)
+    fig.tight_layout()
+    path = out / "fig3_lbm_profiles.png"
+    fig.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# Markdown benchmark
+# ---------------------------------------------------------------------------
+
+
+def write_benchmark_md(report: dict, out: Path, repro_cmd: str, figures: dict) -> Path:
+    p = report["parameters"]
+    acc = report["acceptance"]
     lines = []
-    lines.append("# H2-FRAZIL-RHEOLOGY: Frazil Power-Law Suspension Rheology")
+    lines.append("# H2-FRAZIL-RHEOLOGY — ref vs got benchmark\n")
+    lines.append("Generated by `%s` (do not edit by hand).\n" % Path(__file__).name)
+    lines.append("## Criteria\n")
+    lines.append("| id | metric | threshold | measured | verdict |")
+    lines.append("|---|---|---|---|---|")
+    for cid, c in acc["criteria"].items():
+        measured = c["measured"]
+        if isinstance(measured, dict):
+            measured = ", ".join(f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}"
+                                 for k, v in measured.items())
+        elif isinstance(measured, float):
+            measured = f"{measured:.6g}"
+        verdict = "PASS" if c["passed"] is True else ("**FAIL**" if c["passed"] is False else "undefined")
+        lines.append("| %s | %s | %.3g | %s | %s |"
+                     % (cid, c["metric"], c["threshold"], measured, verdict))
     lines.append("")
-    lines.append("## 1. Case Introduction")
-    lines.append("")
-    lines.append("**Physical background**: Frazil ice is a suspension of small ice crystals")
-    lines.append("in supercooled water. The effective viscosity of the slurry depends on the")
-    lines.append("crystal volume fraction through well-known rheological closures.")
-    lines.append("")
-    lines.append("**Objective**: Verify that the D3Q19 LBM shear cell correctly captures the")
-    lines.append("concentration-dependent viscosity increase, comparing against:")
-    lines.append("")
-    lines.append("- **Einstein (1906)**: $\\eta_r = 1 + 2.5\\phi$ (dilute, $\\phi \\lesssim 0.05$)")
-    lines.append("- **Krieger-Dougherty (1959)**: $\\eta_r = (1 - \\phi/\\phi_{max})^{-[\\eta]\\phi_{max}}$")
-    lines.append("")
-    lines.append("### Parameters")
-    lines.append("")
-    lines.append("| Parameter | Value |")
-    lines.append("|---|---|")
-    lines.append(f"| Kinematic viscosity $\\nu$ | {NU} |")
-    lines.append(f"| Domain | {NX}×{NY}×{NZ} |")
-    lines.append(f"| Particle radius | {RADIUS} cells |")
-    lines.append(f"| Shear rates | {GAMMA_RATES} |")
-    lines.append(f"| Volume fractions | {PHI_VALUES} |")
-    lines.append(f"| Warmup / Sample steps | {N_WARMUP} / {N_STEPS} |")
-    lines.append("")
-    
-    lines.append("## 2. Method")
-    lines.append("")
-    lines.append("1. **Pure fluid calibration**: Couette flow without particles at each shear rate.")
-    lines.append("2. **Particle placement**: Random sequential placement of rigid spheres.")
-    lines.append("3. **Suspension simulation**: Shear cell with particles, measure shear rate.")
-    lines.append("4. **Relative viscosity**: $\\eta_r = \\dot{\\gamma}_{pure} / \\dot{\\gamma}_{susp}$")
-    lines.append("   at the same wall velocity (same applied stress).")
-    lines.append("5. **Comparison**: Measured $\\eta_r(\\phi)$ vs analytical closures.")
-    lines.append("")
-    
-    lines.append("## 3. Results")
-    lines.append("")
-    lines.append("### Pure Fluid Calibration")
-    lines.append("")
-    lines.append("| $\\dot{\\gamma}_{target}$ | $\\dot{\\gamma}_{meas}$ | R² |")
-    lines.append("|---|---|---|")
-    for r in pure_results:
-        lines.append(f"| {r['gamma_target']:.2e} | {r['gamma_dot']:.2e} | {r['profile_r2']:.4f} |")
-    lines.append("")
-    
-    lines.append("### Relative Viscosity vs Volume Fraction")
-    lines.append("")
-    lines.append("| $\\phi$ | $\\eta_r$ (mean±std) | N |")
-    lines.append("|---|---|---|")
-    
-    by_phi = {}
-    for d in eta_r_data:
-        by_phi.setdefault(d["phi_declared"], []).append(d)
-    
-    for phi in sorted(by_phi.keys()):
-        vals = [d["eta_r"] for d in by_phi[phi] if np.isfinite(d["eta_r"])]
-        if vals:
-            lines.append(f"| {phi:.2f} | {np.mean(vals):.4f} ± {np.std(vals):.4f} | {len(vals)} |")
-    lines.append("")
-    
-    lines.append("### Acceptance Criteria")
-    lines.append("")
-    lines.append("| Criterion | $\\eta_r$ meas | $\\eta_r$ ref | Rel. err | Threshold | Status |")
+    lines.append("**Verdict: %s (%d/%d)**\n"
+                 % (acc["verdict"], acc["n_pass"], acc["n_defined"]))
+
+    lines.append("## c1 — dilute limit vs Einstein (1906), phi <= 0.05, 10 %%\n")
+    lines.append("| phi | ref Einstein | got model | abs err | rel err | pass |")
     lines.append("|---|---|---|---|---|---|")
-    for key, crit in criteria.get("criteria", {}).items():
-        meas = crit.get("eta_r_meas", float("nan"))
-        ref = crit.get("eta_r_einstein", crit.get("eta_r_kd", float("nan")))
-        err = crit.get("rel_err", float("nan"))
-        thresh = crit.get("threshold", 0.10)
-        passed = "✓ PASS" if crit.get("passed") else "✗ FAIL"
-        lines.append(f"| {key} | {meas:.4f} | {ref:.4f} | {err:.2%} | {thresh:.0%} | {passed} |")
-    lines.append("")
-    
-    n_pass = criteria.get("n_pass", 0)
-    n_total = criteria.get("n_defined", 0)
-    lines.append(f"**Overall**: {n_pass}/{n_total} criteria passed")
-    lines.append("")
-    
-    lines.append("## 4. Figures")
-    lines.append("")
-    for fig_path in figures:
-        fig_name = os.path.basename(fig_path)
-        lines.append(f"![{fig_name}]({os.path.relpath(fig_path, os.path.join(ROOT, 'docs'))})")
-        lines.append("")
-    
-    lines.append("## 5. Notes and Limitations")
-    lines.append("")
-    lines.append("- **Finite domain**: 20×20×24 cells is small; wall confinement affects results.")
-    lines.append("- **Particle resolution**: Radius 2.5 cells gives ~50 voxels per sphere.")
-    lines.append("- **Stress measurement**: Shear rate ratio method; direct momentum exchange")
-    lines.append("  would be more accurate but requires careful calibration.")
-    lines.append("- **Statistical sampling**: Only 3 shear rates, 1 seed per condition.")
-    lines.append("")
-    
-    lines.append("## 6. Error Assessment")
-    lines.append("")
-    for key, crit in criteria.get("criteria", {}).items():
-        rel_err = crit.get("rel_err", float("nan"))
-        threshold = crit.get("threshold", 0.10)
-        if isinstance(rel_err, (int, float)):
-            ok = "YES ✓" if rel_err < threshold else "NO ✗"
-            lines.append(f"- **{key}**: rel. error = {rel_err:.2%}, threshold = {threshold:.0%} → <{threshold:.0%}? **{ok}**")
-    lines.append("")
-    
-    lines.append("## References")
-    lines.append("")
-    lines.append("- Einstein, A. (1906) *Ann. Phys.* 19, 289.")
-    lines.append("- Krieger, I. M. & Dougherty, T. J. (1959) *Trans. Soc. Rheol.* 3, 137.")
-    lines.append("")
-    lines.append(f"*Elapsed: {elapsed:.1f} s*")
-    
-    report = "\n".join(lines)
-    report_path = os.path.join(ROOT, "docs", "H2_FRAZIL_RHEOLOGY.md")
-    with open(report_path, "w") as f:
-        f.write(report)
-    print(f"Report saved: {report_path}")
-    return report_path
+    for r in report["dilute_limit"]["rows"]:
+        lines.append("| %.3f | %.6f | %.6f | %.3e | %+.3f %% | %s |"
+                     % (r["phi"], r["ref_einstein"], r["got_model"], r["abs_error"],
+                        100 * r["rel_error"], "yes" if r["passed"] else "no"))
+    lines.append("\nmax rel err = %.4f %% (threshold %.1f %%)\n"
+                 % (100 * report["dilute_limit"]["max_rel_error"],
+                    100 * report["dilute_limit"]["threshold"]))
 
+    lines.append("## c2 — mid concentration vs Krieger-Dougherty, 0.10 <= phi <= 0.30, 10 %%\n")
+    lines.append("| phi | got model | ref KD | rel err KD | ref Thomas (1965) | rel err Thomas | pass |")
+    lines.append("|---|---|---|---|---|---|---|")
+    for r in report["mid_concentration"]["rows"]:
+        lines.append("| %.3f | %.6f | %.6f | %.2e %% | %.6f | %+.3f %% | %s |"
+                     % (r["phi"], r["got_model"], r["ref_krieger_dougherty"],
+                        100 * r["rel_error_kd"], r["ref_thomas_1965"],
+                        100 * r["rel_error_thomas"], "yes" if r["passed"] else "no"))
+    lines.append("\nThe KD column is a **code-path** check (the chain reproduces the closure it "
+                 "is built on, hence round-off zero); the independent content of c2 is the "
+                 "Thomas (1965) cross-check (max %.3f %%).\n"
+                 % (100 * report["mid_concentration"]["max_rel_error_thomas"]))
 
-def main():
-    t0 = time.time()
-    os.makedirs(ARTIFACT_DIR, exist_ok=True)
-    
-    print("=" * 60)
-    print("H2-FRAZIL-RHEOLOGY: Frazil Power-Law Suspension Rheology")
-    print("=" * 60)
-    
-    # Step 1: Pure fluid
-    print("\n[1/4] Running pure fluid cases...")
-    pure_results = run_pure_cases()
-    
-    # Step 2: Suspension cases
-    print("\n[2/4] Running suspension cases...")
-    all_susp_results = []
-    for phi in PHI_VALUES:
-        if phi == 0.0:
+    lines.append("## c3 — W9-1215 physical root (quoted criteria)\n")
+    lines.append("| check | ref | got | rel err | pass |")
+    lines.append("|---|---|---|---|---|")
+    for c in report["root_chain"]["checks"]:
+        lines.append("| %s | %s | %.6g | %.3e | %s |"
+                     % (c["name"], c["ref"], c["got"], c["rel_error"],
+                        "yes" if c["passed"] else "no"))
+    lines.append("")
+    lines.append("### c3b — LBM slurry channel vs exact Ostwald-de Waele solution (root criterion 2 %)\n")
+    lines.append("| phi | n(phi) | K [Pa s^n] | nu_wall [lattice] | rescale | L2 err | peak err | tau_max | steps | pass |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+    for r in report["channels"]["rows"]:
+        if not r.get("ran"):
+            lines.append("| %.3f | - | - | - | - | - | - | - | - | not run |" % r["phi"])
             continue
-        print(f"\n  phi = {phi:.2f}:")
-        results = run_suspension_cases(phi, seed=42)
-        all_susp_results.extend(results)
-    
-    # Step 3: Compute eta_r
-    print("\n[3/4] Computing relative viscosity...")
-    eta_r_data = compute_eta_r(pure_results, all_susp_results)
-    for d in eta_r_data:
-        print(f"  phi={d['phi_declared']:.2f}: eta_r={d['eta_r']:.4f} "
-              f"(phi_lat={d['phi_lattice']:.4f})")
-    
-    # Step 4: Evaluate criteria
-    print("\n[4/4] Evaluating acceptance criteria...")
-    criteria = evaluate_criteria(eta_r_data)
-    for key, crit in criteria["criteria"].items():
-        status = "PASS" if crit.get("passed") else "FAIL"
-        print(f"  {key}: {status} (rel_err={crit.get('rel_err', 'N/A')})")
-    
-    # Figures
-    print("\nGenerating figures...")
-    figures = generate_figures(eta_r_data, pure_results, criteria)
-    
-    # Report
-    elapsed = time.time() - t0
-    print("\nGenerating report...")
-    report_path = generate_report(pure_results, eta_r_data, criteria, figures, elapsed)
-    
-    # Artifact
-    artifact = {
-        "schema": "h2_frazil_rheology/v1",
-        "mission_id": 14882,
-        "anchor": "H2-FRAZIL-RHEOLOGY",
-        "parameters": {
-            "nu": NU, "domain": [NX, NY, NZ], "radius": RADIUS,
-            "gamma_rates": GAMMA_RATES, "phi_values": PHI_VALUES,
-            "n_steps": N_STEPS, "n_warmup": N_WARMUP,
-        },
-        "pure_results": [{k: v for k, v in r.items() if k != "ux_profile"}
-                        for r in pure_results],
-        "eta_r_data": eta_r_data,
-        "criteria": criteria,
-        "elapsed_s": elapsed,
-        "external_anchor": {
-            "einstein_1906": "Einstein, A. (1906) Ann. Phys. 19, 289",
-            "krieger_dougherty_1959": "Krieger & Dougherty (1959) Trans. Soc. Rheol. 3, 137",
-        },
-        "repro_cmd": f"cd {ROOT} && PYTHONPATH=src python3 scripts/run_h2_frazil_rheology.py",
+        lines.append("| %.3f | %.4f | %.6g | %.4g | %.4g | %.4f %% | %.4f %% | %.3f | %d | %s |"
+                     % (r["phi"], r["flow_index"], r["consistency_index"], r["viscosity_wall"],
+                        r["lattice_rescale"], 100 * r["l2_relative"], 100 * r["peak_relative"],
+                        r["tau_relaxation_max"], r["steps"], "yes" if r["passed"] else "no"))
+    lines.append("\nworst L2 = %.4f %% (threshold %.1f %%)\n"
+                 % (100 * report["channels"]["worst_l2_relative"],
+                    100 * report["channels"]["threshold"]))
+    routed = [r for r in report["channels"]["rows"] if r.get("ran")]
+    lines.append("solver-route consistency (solver-internal `n`, `mu_r` == node API): %d/%d rows\n"
+                 % (sum(1 for r in routed if r.get("route_consistent")), len(routed)))
+
+    lines.append("## c4 — shear-rate scan 1e-3 <= gdot <= 1e3\n")
+    lines.append("| phi | n(phi) | K | fitted slope | expected n-1 | slope err | thinning ratio |")
+    lines.append("|---|---|---|---|---|---|---|")
+    for c in report["shear_rate_sweep"]["curves"]:
+        lines.append("| %.3f | %.4f | %.6g | %.6f | %.6f | %.2e | %.2f |"
+                     % (c["phi"], c["n"], c["K"], c["fitted_slope"], c["expected_slope"],
+                        c["slope_error"], c["shear_thinning_ratio"]))
+    lines.append("\nNewtonian case slope = %.2e (must be 0).\n"
+                 % report["shear_rate_sweep"]["newtonian_slope"])
+
+    lines.append("## External anchors\n")
+    for k, v in report["anchors"].items():
+        lines.append(f"- **{k}**: {v}")
+    lines.append("")
+    lines.append("## Parameters\n")
+    lines.append("```json")
+    lines.append(json.dumps(p, indent=2, sort_keys=True))
+    lines.append("```\n")
+    lines.append("## Reproduce\n")
+    lines.append("```bash")
+    lines.append(repro_cmd)
+    lines.append("```\n")
+    if figures:
+        lines.append("## Figures\n")
+        for name, caption in figures.items():
+            lines.append(f"- `{name}` — {caption}")
+    path = out / "benchmark.md"
+    path.write_text("\n".join(lines) + "\n")
+    return path
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def parse_args(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--out", default="artifacts/h2_frazil_rheology", help="artifact directory")
+    ap.add_argument("--H", type=int, default=16, help="channel half-height in cells")
+    ap.add_argument("--nx", type=int, default=2, help="streamwise cells (flow is x-homogeneous)")
+    ap.add_argument("--max-steps", type=int, default=20000)
+    ap.add_argument("--tol", type=float, default=1.0e-4)
+    ap.add_argument("--check-every", type=int, default=200)
+    ap.add_argument("--phi-channel", type=float, nargs="*",
+                    default=[0.05, 0.10, 0.20, 0.30, 0.40])
+    ap.add_argument("--skip-channels", action="store_true",
+                    help="skip the LBM channel runs (criterion c3b then counts as undefined)")
+    ap.add_argument("--mu-water", type=float, default=1.0e-3, help="water viscosity [Pa s]")
+    return ap.parse_args(argv)
+
+
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    out = Path(args.out)
+    if not out.is_absolute():
+        out = _REPO_ROOT / out
+    out.mkdir(parents=True, exist_ok=True)
+
+    t0 = time.time()
+    report = rheo.build_report(
+        phis_channel=args.phi_channel,
+        mu_water=args.mu_water,
+        run_channels=not args.skip_channels,
+        return_profiles=True,
+        H=args.H,
+        nx=args.nx,
+        max_steps=args.max_steps,
+        tol=args.tol,
+        check_every=args.check_every,
+    )
+    wall = time.time() - t0
+
+    module_path = Path(rheo.__file__)
+    repro_cmd = ("PYTHONPATH=src python scripts/run_h2_frazil_rheology.py "
+                 "--out %s --H %d --nx %d --max-steps %d --tol %g"
+                 % (args.out, args.H, args.nx, args.max_steps, args.tol))
+    report["repro_cmd"] = repro_cmd
+    report["provenance"] = {
+        "commit": _git_commit(),
+        "module": str(module_path.relative_to(_REPO_ROOT)) if module_path.is_relative_to(_REPO_ROOT) else str(module_path),
+        "module_sha256": _sha256(module_path),
+        "script_sha256": _sha256(Path(__file__).resolve()),
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "torch": __import__("torch").__version__,
+        "argv": sys.argv[1:],
+        "wall_time_s": round(wall, 2),
+        "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    
-    artifact_path = os.path.join(ARTIFACT_DIR, "campaign.json")
-    with open(artifact_path, "w") as f:
-        json.dump(artifact, f, indent=2, default=float)
-    print(f"\nArtifact saved: {artifact_path}")
-    
-    print(f"\n{'=' * 60}")
-    print(f"Total elapsed: {elapsed:.1f} s")
-    print(f"Criteria: {criteria['n_pass']}/{criteria['n_defined']} passed")
-    print(f"{'=' * 60}")
-    
-    return 0 if criteria.get("all_passed") else 1
+
+    fig1 = fig_mu_r_closures(report, out)
+    fig2 = fig_shear_rate_sweep(report, out)
+    fig3 = fig_lbm_profiles(report, out)
+    figures = {
+        fig1.name: "relative viscosity closures with the model-chain points and the "
+                   "pointwise error against Einstein (c1) and KD / Thomas (c2)",
+        fig2.name: "apparent viscosity vs shear rate for phi = 0 ... 0.50 with the "
+                   "power-law guide K*gdot^(n-1) and the W9-1215 flow index n(phi)",
+    }
+    if fig3 is not None:
+        figures[fig3.name] = "LBM slurry-channel velocity profiles vs the exact power-law " \
+                             "solution and the 2 % node criterion"
+
+    (out / "campaign.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    (out / "repro.json").write_text(json.dumps(report["provenance"], indent=2, sort_keys=True) + "\n")
+    bm = write_benchmark_md(report, out, repro_cmd, figures)
+
+    acc = report["acceptance"]
+    print(json.dumps({"verdict": acc["verdict"], "n_pass": acc["n_pass"],
+                      "n_defined": acc["n_defined"], "out": str(out),
+                      "benchmark": str(bm), "wall_time_s": report["provenance"]["wall_time_s"]},
+                     indent=2))
+    for cid, c in acc["criteria"].items():
+        flag = "PASS " if c["passed"] is True else ("FAIL " if c["passed"] is False else "undef")
+        print(f"  {cid:28s} {flag}  {c['metric']}")
+    return 0 if acc["all_passed"] else 1
 
 
 if __name__ == "__main__":
