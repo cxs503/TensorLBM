@@ -1065,3 +1065,71 @@ def two_point_phase_speed(
         "rel_error_max": float(max(errs)) if errs else float("nan"),
         "rel_error_span": float(max(errs) - min(errs)) if errs else float("nan"),
     }
+
+
+# ---------------------------------------------------------------------------
+# 9. Interface layer law (p495w4-n04, m13946)
+# ---------------------------------------------------------------------------
+@dataclass
+class TwoTermLaw:
+    """Two-term error law for free-surface LBM (m13946).
+    
+    err(kh,h) = -c1·ξ/h · L1(kh) + c2·(kΔx)²
+    
+    where L1(kh) = kh/sinh(2kh) is the depth sensitivity.
+    
+    Physical interpretation:
+    - Term 1: Interface layer mass deficit from tanh(d/ξ) profile
+    - Term 2: Lattice discretization error (O(k²))
+    
+    The interface layer effectively reduces the water depth by c1·ξ cells,
+    causing a phase speed error proportional to L1(kh)·(c1·ξ/h).
+    """
+    c1_xi: float  # interface layer mass deficit [cells]
+    c2: float     # lattice coefficient
+    rms_residual: float  # fit quality
+    
+    def predict(self, k: float, h: float, dx: float = 1.0) -> float:
+        """Predict phase speed error."""
+        L1 = depth_sensitivity(k, h)
+        return -self.c1_xi / h * L1 + self.c2 * (k * dx) ** 2
+    
+    def interface_term(self, k: float, h: float) -> float:
+        """Interface layer contribution."""
+        L1 = depth_sensitivity(k, h)
+        return -self.c1_xi / h * L1
+    
+    def lattice_term(self, k: float, h: float, dx: float = 1.0) -> float:
+        """Lattice discretization contribution."""
+        return self.c2 * (k * dx) ** 2
+
+
+def fit_two_term_law(measurements: list) -> TwoTermLaw:
+    """Fit two-term law to measurement data.
+    
+    Each measurement must have: kh, h, c_rel_error
+    """
+    n = len(measurements)
+    if n < 2:
+        raise ValueError("Need at least 2 measurements")
+    
+    A = np.zeros((n, 2))
+    b = np.zeros(n)
+    
+    for i, m in enumerate(measurements):
+        kh = m["kh"]
+        h = m["h"]
+        k = kh / h
+        err = m["c_rel_error"]
+        L1 = depth_sensitivity(k, h)
+        A[i, 0] = -L1 / h
+        A[i, 1] = k ** 2
+        b[i] = err
+    
+    result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    c1_xi, c2 = result
+    
+    predicted = A @ result
+    rms = float(np.sqrt(np.mean((b - predicted) ** 2)))
+    
+    return TwoTermLaw(c1_xi=float(c1_xi), c2=float(c2), rms_residual=rms)
