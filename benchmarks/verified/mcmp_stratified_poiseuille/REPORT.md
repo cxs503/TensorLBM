@@ -200,3 +200,24 @@ The full four-column table (both wall conventions x both viscosity rules) is `ar
 - tests: `tests/test_mcmp_stratified_poiseuille.py`
 - record sha256: `cp_ny25_mixture_guo.json`, `cp_ny25_mixture_shift.json`, `cp_ny25_self_guo.json`, `cp_ny25_self_shift.json`, `cp_ny25_viscous_guo.json`, `cp_ny25_viscous_shift.json` …
 
+
+---
+
+## 14. Round 2 (mission m14689) — five-criteria closure
+
+The five ledger criteria are closed in `docs/MCMP_STRATIFIED_POISEUILLE_R2.md`
+(numbers machine-generated into `result_r2.json` by
+`cases/mcmp_stratified_poiseuille/r2_benchmark.py`):
+
+| criterion | verdict | evidence |
+|---|---|---|
+| ① steady interface position <5% | **PASS** | −3.84% / −2.95% / +1.38% at ny=25/33/49 (halfway convention) |
+| ② two-phase flow rate <10% | **PASS** | −3.97%…+0.29% (mixture rule), −6.46%…−2.30% (component rule) |
+| ③ interface spurious current <0.005 U_max | **FAIL (honest)** | mirror wall gains 8.7× (`S_all/u_max` 0.745→0.086 at ny=49) but the floor is `S_ifc≈1e-2`, resolution independent; gate met only in the `\|G_12\|=2.0` static window (0.0019) whose driven ② was not run → `fail_stage=parameter-regime search` |
+| ④ resolution trend of ① | **PASS** | monotone −3.84 → −2.95 → +1.38% |
+| ⑤ paper-grade report | **PASS** | `docs/MCMP_STRATIFIED_POISEUILLE_R2.md` + 3 figures |
+
+New in round 2: neutral-wetting (`mirror`) SC wall (`wall_mode` on
+`sc_two_component_force`/`collide_sc_two_component`, `_mirror_wall_fill`), the
+time-resolved spurious-current diagnostic (`spurious_diagnostic.py`), the matrix
+driver (`run_r2_matrix.sh`) and `tests/test_mcmp_wall_neutral.py`.
