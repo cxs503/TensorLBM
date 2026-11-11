@@ -1,4 +1,15 @@
 # 被动标量输运验证面：Taylor–Aris 解析锚 + erf 扩散二阶收敛 + Schmidt 数无关性
+> **更新（2026-11-11，节点 `p405w1-n06-lbm-scalar-dispersion`）**：本文 §5.3 把缝道
+> `Pe=40` 的 `+8.685%` 归因为「`O(Ma²)` 晶格限制」——**该归因已被修正**。同一套 D2Q5 核、
+> 同一条抛物线速度场，把模态台的域长从 `L/H=7.5`（`kH=0.83`，本文设置）推到 `L/H=60`
+> （`kH=0.105`）后，误差单调收敛到 `-3.5%`：`+8.685%` 的主体是**模态测量台的有限 `kH`
+> 截断**（Taylor–Aris 系数是 `k→0` 量），不是 Mach 限制；`k→0` 后的残留项与 `u`
+> （`0.024–0.094`）无关，属横向离散偏差。`k→0` 外推 + `u_sampled ≤ 0.05` 后
+> `Pe=40` 的误差 ≤3%（`Pe∈[10,100]`、`Sc∈[0.3,10]` 亦 ≤3%）。
+> 详见 `docs/scalar_dispersion_mach_20261111.md` 与
+> `artifacts/scalar_dispersion_mach/results.json`。本文其余结论（G2 erf 收敛、G4 质量守恒、
+> §5.1 集群 LAPACK 缺陷）不受影响。
+
 
 TensorLBM · 战役节点 `p73w2b-n05-lbm-passive-scalar` · 分支 `agent/m8228` · 2026-11-09
 
