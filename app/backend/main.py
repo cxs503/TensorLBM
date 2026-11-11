@@ -53,6 +53,7 @@ for _name, _mod in [
     ("reports", "reports"),
     ("simulations", "simulations"),
     ("solver", "solver"),
+    ("sgs_les", "sgs_les"),
     ("suboff", "suboff"),
     ("templates", "templates"),
     ("xflow_projects", "xflow_projects"),
@@ -94,6 +95,7 @@ projects = _router_imports.get("projects")
 reports = _router_imports.get("reports")
 simulations = _router_imports.get("simulations")
 solver = _router_imports.get("solver")
+sgs_les = _router_imports.get("sgs_les")
 suboff = _router_imports.get("suboff")
 templates = _router_imports.get("templates")
 xflow_projects = _router_imports.get("xflow_projects")
@@ -209,6 +211,7 @@ _router_registry = [
     (lbm_d3q27, "/api/v1/calculations/lbm", "LBM D3Q27 Validation"),
     (wetting_dynamics, "/api/v1/calculations", "Wetting Dynamics"),
     (marine, "/api/marine", "Marine Engineering"),
+    (sgs_les, "/api/v1/calculations/les", "LBM-LES SGS Verification"),
 ]
 for _mod, _prefix, _tag in _router_registry:
     if _mod is not None:
