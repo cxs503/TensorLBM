@@ -14,6 +14,28 @@ import math
 
 import torch
 
+# Von Kármán constant used by the wall law injected on the prism interface.
+_KAPPA = 0.41
+
+
+def uplus_reichardt(yp: float) -> float:
+    """Reichardt (1951) composite wall law ``u+ = f(y+)``, continuous for y+ >= 0.
+
+    u+ = (1/κ) ln(1 + 0.4 y+) + 7.8 [1 − exp(−y+/11) − (y+/11) exp(−y+/3)]
+
+    Limits: ``u+ → y+`` as ``y+ → 0`` (viscous sublayer; exact to 1.6 % at
+    y+ <= 2) and ``u+ → (1/κ) ln y+ + 5.57`` in the log layer (slope 1/κ).
+
+    Replaces the previous two-branch switch (``u+ = y+`` for y+ < 5, otherwise
+    ``u+ = ln(y+)/κ + 5``), which was discontinuous at the switch:
+    u+(5⁻) = 5.00 vs u+(5⁺) = 8.93 — a 78 % jump in the wall velocity injected
+    back into the LBM (quantified in docs/G21_ORPHAN_VERIFICATION.md §2).
+    """
+    y = max(float(yp), 0.0)
+    return math.log(1.0 + 0.4 * y) / _KAPPA + 7.8 * (
+        1.0 - math.exp(-y / 11.0) - (y / 11.0) * math.exp(-y / 3.0)
+    )
+
 
 # ── Surface extraction ──
 def _surface_cells(solid: torch.Tensor) -> tuple:
@@ -115,10 +137,7 @@ class PrismCorrector:
             # u = ut * y+ = ut² * y / nu
             y_iface = cum_h[-1].item() + h[-1].item() / 2.0
             yp = y_iface * ut / nu
-            if yp < 5.0:
-                u_mag = ut * yp  # viscous sublayer
-            else:
-                u_mag = ut * (math.log(max(yp, 1.1)) / 0.41 + 5.0)  # log-law fallback
+            u_mag = ut * uplus_reichardt(yp)  # continuous composite wall law
 
             # Project interface velocity onto Cartesian components
             # Use the bulk flow direction (streamwise = x by convention)

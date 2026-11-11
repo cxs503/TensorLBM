@@ -30,17 +30,25 @@ viscosity ν_eff):
 The sub-grid eddy viscosity ν_t is computed by the turbulence model.  For
 DDES this is:
 
-    ν_t = (C_S Δ_DDES)² |S̃|                      (Smagorinsky-like LES branch)
+    ν_t = l_DDES² |S̃|                              (l_DDES replaces the SGS length)
 
-where Δ_DDES is the DDES length scale:
+where l_DDES is the Spalart et al. (2006) DDES length scale — *not* a
+max()/f_shield expression:
 
-    Δ_DDES = max(RANS_length_scale, C_DES Δ_max / f_shield)
+    l_DDES = l_RANS − f_d · max(0, l_RANS − C_DES Δ_max)
 
 with
 
     Δ_max = max(Δx, Δy, Δz)                        (filter width)
-    f_shield = 1 − tanh[(8 r_d)³]                  (DDES shielding function)
-    r_d = (ν + ν_t) / (|∇u| κ² d_w²)             (empirical ratio)
+    f_d = 1 − tanh[(8 r_d)³]                        (DDES shielding function, C_d1 = 8)
+    r_d = (ν + ν_t) / (|S| κ² d_w²)                 (empirical ratio)
+
+Limits: f_d = 0 (attached boundary layer) ⇒ l_DDES = l_RANS (RANS branch);
+f_d = 1 (separated) ⇒ l_DDES = min(l_RANS, C_DES Δ_max) (DES/LES branch).
+The LES branch can only be *reached* when C_DES Δ_max < max(l_RANS); with the
+default constants (C_S = 0.1, C_DES = 0.65, Δ = 1) it never is, so the module
+degenerates to its RANS branch — ``ddes_branch_fractions`` reports this
+(see docs/G21_ORPHAN_VERIFICATION.md §1).
 
 For SAS the additional term is derived from the modelled turbulence kinetic
 energy budget and the von Kármán length scale L_vK = κ |S| / |∇²u|.
@@ -74,6 +82,8 @@ __all__ = [
     "ddes_shielding_function",
     "ddes_length_scale",
     "ddes_eddy_viscosity",
+    "ddes_length_fields",
+    "ddes_branch_fractions",
     "sas_source_term",
     "apply_ddes_collision",
     "run_ddes_diagnostics",
@@ -111,9 +121,11 @@ class DDESResult:
 
     nu_t_mean: float
     nu_t_max: float
-    shield_fraction: float  # fraction of cells in RANS-shielded region
-    rans_fraction: float  # fraction of cells using RANS length scale
-    les_fraction: float  # fraction of cells using LES length scale
+    shield_fraction: float  # fraction of cells with f_d < 0.5
+    rans_fraction: float  # fraction of cells whose l_DDES equals l_RANS
+    les_fraction: float  # fraction of cells whose l_DDES equals C_DES Δ
+    blend_fraction: float = 0.0  # fraction of cells on the blended part of the limiter
+    les_limiter_active: bool = True  # False ⇒ l_LES >= l_RANS everywhere (RANS only)
 
 
 # ---------------------------------------------------------------------------
@@ -240,8 +252,12 @@ def ddes_eddy_viscosity(
         ones = torch.ones_like(nu_t)
         return nu_t, ones, float(nu_t.mean()), float(nu_t.max()), 0.0
 
-    # RANS length scale: Smagorinsky with van Driest damping at wall
-    l_rans = cfg.c_s * delta * d_wall / (d_wall + 1.0)  # simplified near-wall
+    # RANS length scale: l_RANS = C_S Δ d/(d+1).
+    # NOTE: this is a *simplified* damping, not the van Driest law
+    # C_S Δ (1 − exp(−d⁺/A⁺)); both tend to C_S Δ for d → ∞, but near the wall
+    # the law here is O(d) where van Driest is O(d²) (quantified in
+    # docs/G21_ORPHAN_VERIFICATION.md §1.4).
+    l_rans = cfg.c_s * delta * d_wall / (d_wall + 1.0)
 
     f_d = ddes_shielding_function(nu, nu_t_prev, S_mag, d_wall, cfg.kappa)
     l_ddes = ddes_length_scale(d_wall, f_d, delta, l_rans, cfg.c_des)
@@ -250,10 +266,58 @@ def ddes_eddy_viscosity(
     nu_t = torch.clamp(nu_t, min=0.0, max=cfg.nu_t_max)
 
     shield_frac = float((f_d < 0.5).float().mean())
-    float((l_ddes == l_rans).float().mean())
-    1.0 - shield_frac
 
     return nu_t, f_d, float(nu_t.mean()), float(nu_t.max()), shield_frac
+
+
+def ddes_length_fields(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    d_wall: torch.Tensor,
+    cfg: DDESConfig,
+    nu_t_prev: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return ``(l_rans, l_les, l_ddes, f_d)`` fields for the DDES model.
+
+    ``l_les = C_DES Δ_max``.  Exposed so that callers can report *which* branch
+    actually produced ν_t instead of inferring it from ``f_d`` (see
+    :func:`ddes_branch_fractions`).
+    """
+    delta = cfg.dx
+    S_mag = _strain_rate_magnitude(ux, uy)
+    if nu_t_prev is None:
+        nu_t_prev = torch.zeros_like(ux)
+    l_rans = cfg.c_s * delta * d_wall / (d_wall + 1.0)
+    f_d = ddes_shielding_function(cfg.nu_molecular, nu_t_prev, S_mag, d_wall, cfg.kappa)
+    l_ddes = ddes_length_scale(d_wall, f_d, delta, l_rans, cfg.c_des)
+    l_les = torch.full_like(l_ddes, cfg.c_des * delta)
+    return l_rans, l_les, l_ddes, f_d
+
+
+def ddes_branch_fractions(
+    l_rans: torch.Tensor,
+    l_les: torch.Tensor,
+    l_ddes: torch.Tensor,
+    tol: float = 1e-9,
+) -> tuple[float, float, float]:
+    """Fraction of cells on the RANS branch, LES branch and the blend.
+
+    A cell is on the RANS branch when the DES limiter is inactive
+    (``l_DDES == l_RANS``), on the LES branch when it saturates
+    (``l_DDES == l_LES``), otherwise it is a blend.
+
+    The previous diagnostic reported ``1 − mean(f_d < 0.5)`` as the "LES
+    fraction"; that is only true when ``l_RANS > l_LES`` everywhere.  With the
+    default constants ``C_S = 0.1`` and ``C_DES = 0.65`` at ``Δ = 1`` the
+    limiter never saturates, so the old number overstated LES activity
+    (docs/G21_ORPHAN_VERIFICATION.md §1.5).
+    """
+    at_rans = (l_ddes - l_rans).abs() <= tol * l_rans.abs().clamp_min(1e-30)
+    at_les = (l_ddes - l_les).abs() <= tol * l_les.abs().clamp_min(1e-30)
+    rans = float(at_rans.float().mean())
+    les = float(at_les.float().mean())
+    blend = max(0.0, 1.0 - rans - les)
+    return rans, les, blend
 
 
 # ---------------------------------------------------------------------------
@@ -358,13 +422,15 @@ def run_ddes_diagnostics(
         ux, uy, d_wall, cfg, nu_t_prev
     )
 
-    nu_t.numel()
-    rans_frac = float((f_d < 0.5).float().mean())
+    l_rans, l_les, l_ddes, _ = ddes_length_fields(ux, uy, d_wall, cfg, nu_t_prev)
+    rans_frac, les_frac, blend_frac = ddes_branch_fractions(l_rans, l_les, l_ddes)
 
     return DDESResult(
         nu_t_mean=nu_t_mean,
         nu_t_max=nu_t_max_val,
         shield_fraction=shield_frac,
         rans_fraction=rans_frac,
-        les_fraction=1.0 - rans_frac,
+        les_fraction=les_frac,
+        blend_fraction=blend_frac,
+        les_limiter_active=bool(float(l_les.min()) < float(l_rans.max())),
     )
