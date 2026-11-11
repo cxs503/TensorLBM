@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "rule_id": "tensorlbm.rotating_certification.gci_and_zero_anchor_contract",
+  "title": "Rotating-frame flow verification must state which error definition carries the convergence order, keep a zero-value anchor, and extrapolate wall-layer angles",
+  "project": "cxs503/TensorLBM",
+  "owner": "TensorLBM maintainers",
+  "category": "verification_contract",
+  "severity": "warning",
+  "lifecycle": "advisory",
+  "statement": "For any rotating-frame / moving-wall verification case reported with a grid-convergence statement: (a) the observed order must name the quantity it refers to -- on a staircase curved wall the nominal-radius profile error is O(h) with a refinement-dependent phase and must not be used for order estimation; (b) the differential case must be accompanied by a co-rotating (rigid-body, B = 0) zero-torque anchor whenever the wall treatment or the pseudo-force implementation changes; (c) a wall-layer angle quoted as a theory constant (e.g. the 45 deg Ekman spiral angle) must be extrapolated to the wall (1/delta -> 0) instead of measured at the first interior node, because that node sits one lattice unit inside the layer and carries an O(1/delta) bias (measured 40.3 deg at delta = 6 against a 45 deg wall value); (d) sub-grid curved-wall bounce-back must not be 'fixed' by whole-population linear extrapolation, which is unconditionally unstable on a moving wall.",
+  "rationale": "Measured in campaign node P158W3-N01 (TensorLBM, record benchmarks/verified/rotating_w3/records/rotating_w3.json): the nominal-radius error triplet of the D2Q9 annulus is 1.174 %, 1.812 %, 1.295 % on a 1.5x gap-refined ladder -- non-monotone, so no order exists (a naive GCI returns p = -1.07 or NaN); the staircase-immune bulk shape residual gives p = 2.77 and the effective-radius error p = 4.63. The co-rotating null test measures |T|/T_ref = 1.9e-3 where an exact zero is required, which is the only test that catches a wall-momentum sign error (the profile comparison absorbs a 1 % coefficient error). Three sub-grid wall schemes were measured on an analytic sub-grid Poiseuille channel: whole-population linear extrapolation diverges (NaN in 600 steps, boundary gain 1+q > 1), Bouzidi's split scheme degenerates to the half-way scheme in a steady state (identical error 3.7623 %), and non-equilibrium extrapolation has no effect (3.7613 %) because f^neq is flat across the first two nodes. The Ekman spiral angle measured at the first interior node is 40.31/41.61/42.90/43.53 deg for delta = 6/8/12/16 nodes, and the four-point extrapolation to 1/delta -> 0 returns 45.47 deg, i.e. the 45 deg theory is recovered only after the extrapolation.",
+  "scope": [
+    "src/tensorlbm/rotating_certification.py::gci",
+    "src/tensorlbm/rotating_certification.py::CouetteAnnulusSubgrid",
+    "src/tensorlbm/rotating_certification.py::invert_effective_radii",
+    "src/tensorlbm/rotating_certification.py::ekman_spiral_angle",
+    "src/tensorlbm/rotating_certification.py::D2Q9SubgridBase",
+    "benchmarks/verified/rotating_w3/run.py"
+  ],
+  "validator": {
+    "kind": "pytest",
+    "command": "python -m pytest -q tests/test_rotating_certification.py",
+    "version": "pinned by the TensorLBM project environment"
+  },
+  "fixtures": {
+    "positive": "tests/test_rotating_certification.py::test_gci_recovers_an_exact_second_order_sequence (a synthetic h^2 sequence returns p = 2 and the exact Richardson extrapolation), ::test_co_rotating_annulus_keeps_the_rigid_body_state (co-rotation stays rigid body and the torque vanishes), ::test_plane_channel_aligned_wall_reproduces_poiseuille, ::test_effective_radius_inversion_is_exact_for_the_nominal_geometry.",
+    "negative": "tests/test_rotating_certification.py::test_gci_flags_oscillatory_triplets (an oscillatory triplet must not produce a fake order), ::test_subgrid_wall_error_scales_like_h (the sub-grid wall error must halve with h: first order, and it must stay large), ::test_azimuthal_projection_convention (a sign flip in u_theta must be caught)."
+  },
+  "acceptance": {
+    "convergence": "the reported order names its quantity; the nominal-radius triplet is reported but never used for an order",
+    "zero_anchor": "|T|/T_ref <= 2 % for co-rotating cylinders at the finest grid",
+    "layer_angle": "the wall angle is extrapolated over at least three layer resolutions; the single-point value is reported alongside",
+    "wall_scheme": "no shipped sub-grid wall scheme on a curved moving wall without a stability argument bounded by the boundary gain (<= 1)"
+  },
+  "provenance": {
+    "node": "P158W3-N01",
+    "campaign": "P158W3",
+    "repository": "cxs503/TensorLBM",
+    "record": "benchmarks/verified/rotating_w3/records/rotating_w3.json",
+    "report": "docs/ROTATING_W3_P158W3_N01.md",
+    "platform_report_id": 12999,
+    "author": "tensor-agent (mission 12403)",
+    "review_status": "self-verified by the record's machine criteria (7/7 PASS); not yet independently reviewed",
+    "last_verified": "2026-11-11"
+  }
+}
