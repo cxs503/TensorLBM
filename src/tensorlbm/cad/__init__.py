@@ -13,12 +13,6 @@ from ..offshore_cad import (
     semi_sub_mask,
     spar_mask,
 )
-from ..propeller_cad import (
-    optimal_advance_ratio,
-    propeller_design,
-    propeller_disk_mask,
-    wageningen_b_series,
-)
 from ..ship_cad import (
     ShipHullType,
     export_hull_stl,
@@ -78,8 +72,4 @@ __all__ = [
     "offshore_statistics",
     "generate_offshore_previews",
     "export_offshore_stl",
-    "wageningen_b_series",
-    "optimal_advance_ratio",
-    "propeller_design",
-    "propeller_disk_mask",
 ]
