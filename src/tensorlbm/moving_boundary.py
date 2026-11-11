@@ -60,6 +60,7 @@ __all__ = [
     "MovingBoundaryConfig",
     "update_moving_boundary",
     "run_oscillating_airfoil",
+    "run_oscillating_foil_verification",
 ]
 
 
@@ -420,3 +421,107 @@ def run_oscillating_airfoil(
 
     _logger.info("Oscillating airfoil complete → %s", run_dir)
     return run_dir
+
+
+# ---------------------------------------------------------------------------
+# Oscillating-foil propulsion verification face
+# ---------------------------------------------------------------------------
+def run_oscillating_foil_verification(
+    chord: int = 32,
+    k: float = 1.0,
+    h0_over_c: float = 0.15,
+    alpha0_deg: float = 10.0,
+    phi_deg: float = 90.0,
+    mode: str = "coupled",
+    re: float = 500.0,
+    u_in: float = 0.15,
+    n_cycles: int = 8,
+    warmup_cycles: int = 2,
+    output_root: Path | str = Path("outputs"),
+    run_name: str | None = None,
+) -> dict:
+    """Oscillating-foil (pitch-plunge) propulsion case with a machine-checkable
+    analytic anchor.
+
+    This is the mature entry point for the pitch-plunge benchmark: it runs the
+    immersed-boundary D2Q9 solver of :mod:`tensorlbm.oscillating_foil_lbm`
+    (NACA 0012 section, solid interior, 4-point Peskin kernel, multi-direct
+    forcing) and returns cycle-averaged ``C_T``, ``C_P``, ``eta`` next to the
+    Theodorsen/Garrick closed form at the same parameters.  The full acceptance
+    suite (criteria C1..C9) lives in
+    ``benchmarks/p161w2_n05_oscillating_foil/run_sweep.py``.
+
+    Compared with :func:`run_oscillating_airfoil` this entry point
+
+    * uses a NACA 0012 section instead of a 1-cell-thick ellipse (a thin ellipse
+      is thinner than the kernel support, so the effective body becomes blunt
+      and the propulsive force is lost),
+    * averages at least ``n_cycles`` cycles instead of a single instant,
+    * reports the thrust increment ``C_T + C_D0`` and the collision efficiency
+      ``C_T/C_P`` rather than raw forces.
+
+    Returns:
+        dict with ``coeffs`` (LBM), ``theory`` (Garrick), ``grid``, ``config``
+        and the run directory.
+    """
+    from .flapping_propulsion import FlappingKinematics, garrick_coefficients  # noqa: PLC0415
+    from .oscillating_foil_lbm import (  # noqa: PLC0415
+        OscillatingFoil2D,
+        OscillatingFoilConfig,
+        cycle_statistics,
+    )
+
+    cfg = OscillatingFoilConfig(
+        chord=chord,
+        re=re,
+        U=u_in,
+        k=k,
+        h0_over_c=h0_over_c,
+        alpha0_deg=alpha0_deg,
+        phi_deg=phi_deg,
+        mode=mode,
+        n_cycles=n_cycles,
+        warmup_cycles=warmup_cycles,
+    )
+    solver = OscillatingFoil2D(cfg)
+    rows = [solver.step(diagnostics=False) for _ in range(cfg.total_steps())]
+    coeffs = cycle_statistics(rows, cfg)
+
+    kin = FlappingKinematics(
+        U=cfg.U,
+        c=float(cfg.chord),
+        h0=cfg.motion.h0,
+        alpha0=cfg.motion.alpha0,
+        phi=cfg.motion.phi,
+        a=cfg.motion.a,
+    )
+    g = garrick_coefficients(kin, cfg.k)
+    theory = {
+        "C_T": float(g.C_T),
+        "C_P": float(g.C_P),
+        "eta": float(g.eta),
+        "strouhal": float(kin.strouhal(cfg.k)),
+    }
+
+    run_dir = Path(output_root) / (run_name or f"oscillating_foil_{mode}_k{k:g}")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "config": {
+            "chord": cfg.chord,
+            "re": cfg.re,
+            "U": cfg.U,
+            "k": cfg.k,
+            "h0_over_c": cfg.h0_over_c,
+            "alpha0_deg": cfg.alpha0_deg,
+            "phi_deg": cfg.phi_deg,
+            "mode": cfg.mode,
+            "steps_per_cycle": cfg.steps_per_cycle(),
+        },
+        "grid": [solver.nx, solver.ny],
+        "coeffs": coeffs,
+        "theory": theory,
+    }
+    with (run_dir / "oscillating_foil.json").open("w") as fh:
+        json.dump(payload, fh, indent=2, default=str)
+    payload["run_dir"] = str(run_dir)
+    return payload

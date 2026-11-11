@@ -1,0 +1,22 @@
+{
+ "label": "fields_heave_k2",
+ "cfg": {
+  "chord": 32,
+  "k": 2.0,
+  "h0_over_c": 0.15,
+  "alpha0_deg": 0.0,
+  "mode": "heave",
+  "U": 0.15,
+  "Re": 500.0
+ },
+ "grid": [
+  384,
+  256
+ ],
+ "phases": [
+  0.25,
+  0.5,
+  0.75,
+  0.0
+ ]
+}
