@@ -1,0 +1,47 @@
+{
+ "node": "CASE-TAYLOR-GREEN-3D",
+ "mission_id": 15374,
+ "repo": "TensorLBM",
+ "title": "Taylor-Green 3D decay on D3Q27: predeclared verification protocol (case-pool entry)",
+ "decision": {
+  "question": "Does the TensorLBM D3Q27 (BGK, periodic, float64) path reproduce the exact Taylor-Green decay to better than 8% on every predeclared metric, and does the metric improve with grid refinement (>=1.8 order)?",
+  "alternatives": [
+   "A0 status quo: the D3Q27 decay path is only known to be 'second-order convergent' from a single previous 500-step L2 study (P151-N01 gate f); no decay-rate / energy-budget / sensitivity evidence exists.",
+   "A1 implemented (this case): run the exact-solution decay of the z-invariant Taylor-Green mode on the full 3D D3Q27 stencil over grids {24,32,48,64}, grids/tau/amplitude sweeps, and compare energy decay, decay exponent, and L2 field error against the closed-form reference. Accepted iff every metric passes its predeclared tolerance.",
+   "A2 rejected: validate the z-dependent (classic) Taylor-Green vortex against a closed form. No closed form exists: the z-dependent convective term is NOT a gradient (machine-checked by curl test in run_case.py --verify), so a 'reference' for it could only be another simulation (self-reference, not a benchmark).",
+   "A3 adopted as companion evidence: since A2 gives no reference, the z-dependent 3D branch is instead exercised by a Beltrami (ABC) flow, which is an exact unsteady 3D Navier-Stokes solution with z-dependence, decay u(t)=u0*exp(-nu*k^2*t)."
+  ],
+  "decision_rule": "PASS iff M1..M5 all inside their tolerances and M4 (observed order) >= 1.8. Any metric outside tolerance is reported as honest FAIL with its number; nothing is tuned after the fact."
+ },
+ "metrics": {
+  "M1_energy_decay_rel_err_pct": "|E_num(T)/E_num(0) - exp(-2*nu*|k|^2*T)| / exp(...) * 100 at the final step, grid 64, tau 0.6. Tolerance < 8%.",
+  "M2_decay_exponent_rel_err_pct": "|slope_fit(ln E(t)) - (-2*nu*|k|^2)| / (2*nu*|k|^2) * 100 from a least-squares fit over the whole sampled history. Tolerance < 8%.",
+  "M3_l2_field_rel_err_pct": "||u_num(T) - u_exact(T)||_2 / ||u_exact(T)||_2 * 100. Tolerance < 8%.",
+  "M4_observed_order": "log2(E_L2(24)/E_L2(48)) for the L2 velocity error at equal lattice time T=500 (same protocol as P151-N01 gate f, so the two are comparable). Target >= 1.8.",
+  "M5_mass_drift_rel": "|M(T)-M(0)|/M(0). Tolerance < 1e-12 (closed periodic domain).",
+  "S1_tau_sensitivity": "tau in {0.55,0.6,0.7,0.8}: the fitted decay exponent must track the exact 2*nu*|k|^2 within 8% at every tau (nu=(tau-1/2)/3).",
+  "S2_amplitude_sensitivity": "amp in {1e-3,2e-3,1e-2,2e-2}: L2 field error must not grow faster than the compressibility error O(Ma^2) scaling; Ma = amp*sqrt(3). Reported as a table, no pass/fail beyond the 8% band at the design amplitude."
+ },
+ "reference": {
+  "field": "u = (A sin(kx)cos(ky), -A cos(kx)sin(ky), 0), k = 2*pi/N, z-invariant, periodic box [0,2*pi)^3",
+  "exact_solution": "u(t) = u(0) exp(-nu*|k|^2 t) with |k|^2 = 2k^2; E(t) = E(0) exp(-2 nu |k|^2 t)",
+  "why_exact": "for this z-invariant field the 3D convective term reduces to a pure gradient (curl-free), absorbed by p = -(A^2/4) e^{-4 nu k^2 t} (cos 2kx + cos 2ky); the remaining balance is du/dt = nu*laplacian(u) with laplacian(u) = -|k|^2 u. Machine-checked by the spectral residual test in run_case.py --verify.",
+  "zero_hand_copy": "every reference number in the report is computed from the closed form inside the run (exact_* functions); no number was typed from a paper."
+ },
+ "environment": {
+  "lattice": "D3Q27, BGK (single relaxation time), periodic on all 6 faces, float64, CPU torch",
+  "units": "lattice units dx=dt=1; physical box L=2*pi so the box mode number k=2*pi/N",
+  "seed": "deterministic (no random input anywhere in the case)",
+  "repro": "python benchmarks/case_taylor_green_3d/run_case.py --all"
+ },
+ "stopping_rule": "fixed step budgets per sweep point (listed in the report parameter table); no adaptive extension, so no optional stopping.",
+ "deviations": [
+  {
+   "id": "D1",
+   "declared": "before results inspected",
+   "what": "primary decay N=64/2000 steps (declared 3000), sensitivity sweeps at N=48/1200 steps (declared N=64/2000)",
+   "why": "control plane saturated (load ~390 on 128 cores) and cluster_queue stopped dispatching (~300 jobs ahead, none started for >30 min); see report section 6 (ecosystem frictions)",
+   "impact": "sensitivity conclusions only need >=1 decay e-folding: at N=48, 2*nu*|k|^2*T = 2.7 over 1200 steps, so the fitted exponent is still well conditioned"
+  }
+ ]
+}
