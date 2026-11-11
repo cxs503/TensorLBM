@@ -132,3 +132,25 @@ PYTHONPATH=../../../src python run.py single 40 case_a40_b20.json
 {"v": 40.11765828987995, "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/verified/poiseuille_3d_pipe/result.json", "k": "per_grid[1].R_eff_Q"},
 {"v": "verified", "f": "/nfs/wangxi/worktrees/bm_pd/benchmarks/verified/poiseuille_3d_pipe/result.json", "k": "verdict"}]
 -->
+
+
+---
+
+## 参考几何审计（2026-11-11，m14879）——归因修订，状态仍 `not_verified`
+
+新增第三方标尺：**数字几何 Stokes 参考**（`digital_reference.py`，机器精度稀疏直接解，
+半程反弹中点无滑移闭合，充分发展直管对任意 Re 精确）。复现闸门：θ_total 复现
+5.107%/2.4318%，分环格数与 `bins_cells` 逐 bin 一致。
+
+| a | θ_total（本记录口径） | θ_num（vs 数字几何） | θ_geom（几何项） | δ_eff(LBM) |
+|---|---|---|---|---|
+| 20 | 5.107% | **6.507%** | 3.211% | +0.350 格 |
+| 40 | 2.432% | **4.845%** | 3.059% | +0.305 格 |
+
+**归因修订**：「根因=单尺度参考几何、非求解器缺陷」作*排他*归因**被证伪**——参考几何项
+确有 3.2%/3.1%，但 LBM 相对其**自身名义几何**的偏离更大（6.51%/4.85%）且两档同向；
+s^Q 净值是**两项符号相反的抵消结果**（与 Taylor–Aris kH 抵消同机制）。半程反弹在斜
+楼梯壁上的有效无滑移面位于名义中点轨迹内侧约 0.15~0.2 格（δ_eff=+0.35/+0.31 格 vs
+名义 0.5）。故 **s^Q 口径的「2.432% 通过」不得用于晋级**；维持 `not_verified`。
+详见 `docs/POISEUILLE_3D_ELLIPSE_REFERENCE_GEOMETRY_AUDIT.md`，门在
+`tests/test_poiseuille_3d_ellipse_digital_reference.py`（5 门，4.7 s）。
