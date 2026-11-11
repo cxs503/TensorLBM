@@ -1,24 +1,31 @@
-"""Sphere drag coefficient benchmark with BFL interpolated bounce-back.
+"""Sphere drag-coefficient benchmark: BFL interpolated bounce-back (D3Q19).
 
-Validates TensorLBM D3Q19 sphere flow against the Schiller–Naumann
-empirical correlation across the full Reynolds-number range.
+This is the *executable* anchor of ``GAP-LBM-SPHERE``.  It drives
+:mod:`tensorlbm.sphere_drag_bfl` (the mechanistic solver: D3Q19 TRT-LBM +
+Bouzidi–Firdaouss–Lallemand interpolated bounce-back + momentum-exchange
+force) over a Reynolds-number scan and a grid-refinement study, and writes
+the raw per-case runs plus a machine-readable ``results.json``.
 
-Re scan: 0.1, 1, 10, 50, 100, 200, 500, 1000
-Grid convergence: D = 20, 40 lattice diameters
+Reference data
+--------------
+``C_D`` is compared with the Clift–Grace–Weber (1978) compilation of
+measurements for a smooth sphere (``REFERENCE_CD_CGW`` in the solver
+module), i.e. an *external* anchor independent of the simulation.
 
-Schiller–Naumann (1933):
-    C_D = 24/Re·(1 + 0.15·Re^0.687) + 0.42/(1 + 42500/Re^1.16)
-
-Acceptance criteria:
-    Re ≤ 1:    |C_D − C_D,ref| / C_D,ref ≤ 5 %
-    1 < Re ≤ 100:  ≤ 8 %
-    100 < Re ≤ 1000: ≤ 12 %
-    Grid convergence (D=40 vs D=20, Re ≤ 100): ≤ 5 %
+Acceptance criteria (pre-declared, see ``ACCEPT`` below)
+--------------------------------------------------------
+* ``Re <= 200``  (laminar, steady): ``|C_D - C_D,ref| / C_D,ref <= 10 %``
+* ``200 < Re <= 1000`` (transitional): same 10 % band used as a *trend*
+  criterion, plus monotone decay of ``C_D(Re)``
+* grid refinement ``8 -> 12 -> 16`` lattice diameters at ``Re = 20`` and
+  ``Re = 100``: successive changes must shrink (monotone convergence) and
+  the finest-grid change must be ``< 5 %``.
 
 Usage::
-    PYTHONPATH=src python benchmarks/verified/sphere_drag_bfl/run.py
-    PYTHONPATH=src python benchmarks/verified/sphere_drag_bfl/run.py --fast
-    PYTHONPATH=src python benchmarks/verified/sphere_drag_bfl/run.py --re 100 --diameter 20
+
+    PYTHONPATH=src python benchmarks/verified/sphere_drag_bfl/run.py            # full study
+    PYTHONPATH=src python benchmarks/verified/sphere_drag_bfl/run.py --smoke    # quick check
+    PYTHONPATH=src python benchmarks/verified/sphere_drag_bfl/run.py --re 100 --diameters 12
 """
 
 from __future__ import annotations
@@ -26,285 +33,327 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import multiprocessing as mp
 import os
+import sys
 import time
-from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import torch
 
-# --------------------------------------------------------------------------- #
-# TensorLBM imports
-# --------------------------------------------------------------------------- #
-from tensorlbm.general_sim import (
-    CollisionModel,
-    GeneralSimConfig,
-    GeneralSimEngine,
-    GeometryConfig,
-    GeometrySource,
-    LatticeModel,
-    OutputConfig,
-    PhysicsConfig,
-    SolverConfig,
+from tensorlbm.sphere_drag_bfl import (
+    DEFAULT_DIAMETERS,
+    DEFAULT_RE_SCAN,
+    REFERENCE_CD_CGW,
+    SphereBFLConfig,
+    reference_cd,
+    reference_source,
+    run_sphere_case,
 )
 
 # --------------------------------------------------------------------------- #
-# Schiller–Naumann correlation
+# Study definition
 # --------------------------------------------------------------------------- #
 
-def schiller_naumann_cd(re: float) -> float:
-    """Schiller–Naumann drag coefficient for a smooth sphere.
+#: Reynolds numbers of the anchor scan (>= 5 required by the acceptance plan).
+RE_SCAN: Tuple[float, ...] = (10.0, 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0)
 
-    C_D = 24/Re·(1 + 0.15·Re^0.687) + 0.42/(1 + 42500/Re^1.16)
+#: main-scan lattice diameter and the grid-refinement ladder
+D_MAIN: int = 12
+D_GRID: Tuple[int, int, int] = (8, 12, 16)
+RE_GRID: Tuple[float, ...] = (20.0, 100.0)
 
-    Valid for Re ≲ 3×10⁵.
-    """
-    term1 = 24.0 / re * (1.0 + 0.15 * re ** 0.687)
-    term2 = 0.42 / (1.0 + 42500.0 / re ** 1.16)
-    return term1 + term2
+#: pre-declared acceptance bands
+ACCEPT = {
+    "laminar_re_max": 200.0,
+    "cd_err_max_pct_laminar": 10.0,
+    "cd_err_max_pct_transitional": 10.0,
+    "grid_finest_change_max_pct": 5.0,
+}
+
+ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_OUT = ROOT / "benchmarks" / "verified" / "sphere_drag_bfl"
+
+
+def study_cases(
+    re_scan: Sequence[float], d_main: int, d_grid: Sequence[int], re_grid: Sequence[float]
+) -> List[Tuple[float, int]]:
+    """Case list: (Re, D) with the main scan plus the refinement ladder."""
+    cases: List[Tuple[float, int]] = [(re, d_main) for re in re_scan]
+    for re in re_grid:
+        for d in d_grid:
+            if (re, d) not in cases:
+                cases.append((re, d))
+    return cases
 
 
 # --------------------------------------------------------------------------- #
-# Case definitions
+# Worker
 # --------------------------------------------------------------------------- #
 
-RE_SCAN = [0.1, 1, 10, 50, 100, 200, 500, 1000]
-DIAMETERS = [20, 40]
-
-
-def make_case_config(
-    re: float,
-    diameter: int,
-    *,
-    lattice: str = "d3q19",
-    max_steps: int = 6000,
-    device: str = "cpu",
-    output_dir: str = "/tmp/sphere_drag_bfl",
-) -> GeneralSimConfig:
-    """Create a GeneralSimConfig for a sphere drag case.
-
-    Uses physical units: ρ=1000 kg/m³, ν=1e-6 m²/s, L=1 m (sphere diameter).
-    The engine converts to lattice units automatically.
-    """
-    lat = LatticeModel.D3Q27 if lattice == "d3q27" else LatticeModel.D3Q19
-    u_phys = re * 1e-6 / 1.0  # U = Re * ν / L
-
-    tag = f"sphere_{lattice}_re{re:g}_D{diameter}"
-
-    return GeneralSimConfig(
-        name=tag,
-        geometry=GeometryConfig(
-            source=GeometrySource.PARAMETRIC_SPHERE,
-            sphere_radius=0.5,  # diameter = 1 m
-            sphere_center=(0.0, 0.0, 0.0),
-        ),
-        physics=PhysicsConfig(
-            density=1000.0,
-            viscosity=1.0e-6,
-            inlet_velocity=u_phys,
-            reference_length=1.0,
-        ),
-        solver=SolverConfig(
-            lattice=lat,
-            collision=CollisionModel.MRT,
-            resolution=diameter,  # D lattice cells
-            max_steps=max_steps,
-            device=device,
-            force_sample_interval=10,
-            snapshot_interval=10**9,
-            pressure_extrap="quadratic",
-            mass_correction=True,
-            mass_correction_interval=200,
-            divergence_check_interval=50,
-        ),
-        output=OutputConfig(directory=f"{output_dir}/{tag}", save_macroscopic=False),
+def _run_one(job: Dict[str, Any]) -> Dict[str, Any]:
+    re = float(job["re"])
+    diameter = int(job["diameter"])
+    cfg = SphereBFLConfig(
+        re=re,
+        diameter=diameter,
+        u_lb=float(job["u_lb"]),
+        max_steps=int(job["max_steps"]),
+        window=int(job["window"]),
+        tol=float(job["tol"]),
+        sample_interval=int(job["sample_interval"]),
+        threads=int(job["threads"]),
+        output_dir=str(job["out_dir"]),
+        save_fields=bool(job.get("save_fields", False)),
     )
-
-
-def run_case(
-    re: float,
-    diameter: int,
-    *,
-    lattice: str = "d3q19",
-    threads: int = 16,
-    fast: bool = False,
-) -> dict:
-    """Run a single sphere drag case and return results."""
-    torch.set_num_threads(threads)
-
-    max_steps = 3000 if fast else 6000
-    cfg = make_case_config(re, diameter, lattice=lattice, max_steps=max_steps)
-
-    eng = GeneralSimEngine(cfg)
     t0 = time.time()
-    setup = eng.setup()
-    out = eng.run(max_steps)
-    wall = time.time() - t0
+    res = run_sphere_case(cfg, progress=False)
+    res["job_wall_s"] = time.time() - t0
 
-    # Extract force history
-    hist = [
-        {k: e[k] for k in ("step", "cd_pressure", "cd_friction", "cd_total", "cl")}
-        for e in eng.forces_log
+    case_dir = Path(job["out_dir"]).resolve() / "cases"
+    case_dir.mkdir(parents=True, exist_ok=True)
+    path = case_dir / f"{cfg.tag}.json"
+    path.write_text(json.dumps(res, indent=2, default=float))
+    res["case_artifact"] = str(path.relative_to(ROOT))
+    return res
+
+
+# --------------------------------------------------------------------------- #
+# Analysis helpers
+# --------------------------------------------------------------------------- #
+
+def summarise(results: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+    rows = []
+    for r in sorted(results, key=lambda r: (r["re"], r["diameter"])):
+        status = "PASS" if (
+            r["finite"] and r["cd_err_pct"] <= ACCEPT["cd_err_max_pct_laminar"]
+        ) else "FAIL"
+        rows.append(
+            {
+                "key": f"Re{r['re']:g}_D{r['diameter']}",
+                "re": r["re"],
+                "diameter": r["diameter"],
+                "cd": r["cd"],
+                "cd_ref": r["cd_ref"],
+                "cd_err_pct": r["cd_err_pct"],
+                "reference_source": r["reference_source"],
+                "steps": r["steps"],
+                "converged": r["converged"],
+                "wall_s": r["wall_s"],
+                "tau": r["tau"],
+                "u_lb": r["u_lb"],
+                "mach": r["mach"],
+                "mass_drift_ppm": r["mass_drift_ppm"],
+                "n_cut_links": r["n_cut_links"],
+                "blockage_pct": r["blockage_pct"],
+                "domain": r["domain"],
+                "finite": r["finite"],
+                "status": status,
+            }
+        )
+
+    # --- grid refinement (per Re) -----------------------------------------
+    grid: Dict[str, Any] = {}
+    by_re: Dict[float, Dict[int, Dict[str, Any]]] = {}
+    for r in results:
+        by_re.setdefault(r["re"], {})[r["diameter"]] = r
+    for re, per_d in by_re.items():
+        ds = sorted(per_d)
+        if len(ds) < 2:
+            continue
+        changes = []
+        for d0, d1 in zip(ds[:-1], ds[1:]):
+            c0, c1 = per_d[d0]["cd"], per_d[d1]["cd"]
+            changes.append(abs(c1 - c0) / abs(c0) * 100.0 if c0 else float("nan"))
+        grid[f"Re{re:g}"] = {
+            "diameters": ds,
+            "cd": [per_d[d]["cd"] for d in ds],
+            "successive_change_pct": changes,
+            "finest_change_pct": changes[-1],
+            "monotone_convergence": all(
+                changes[i] >= changes[i + 1] - 1e-9 for i in range(len(changes) - 1)
+            ) if len(changes) > 1 else None,
+            "pass_finest_5pct": changes[-1] <= ACCEPT["grid_finest_change_max_pct"],
+        }
+
+    # --- trend monotonicity over the scan ---------------------------------
+    main = sorted((r for r in results if r["diameter"] == D_MAIN), key=lambda r: r["re"])
+    trend = [
+        {"re": a["re"], "re_next": b["re"], "cd": a["cd"], "cd_next": b["cd"],
+         "decreasing": b["cd"] < a["cd"]}
+        for a, b in zip(main[:-1], main[1:])
     ]
 
-    # Compute time-averaged Cd from the last 25% of steps
-    tail = [e for e in hist if e["step"] > 0.75 * max_steps]
-    prev = [e for e in hist if 0.5 * max_steps < e["step"] <= 0.75 * max_steps]
+    def _err(vals):
+        vals = [v for v in vals if v is not None and math.isfinite(v)]
+        return max(vals) if vals else None
 
-    if tail:
-        mean_tail = sum(e["cd_total"] for e in tail) / len(tail)
-    else:
-        mean_tail = float("nan")
-
-    if prev:
-        mean_prev = sum(e["cd_total"] for e in prev) / len(prev)
-        drift_pct = abs(mean_tail - mean_prev) / abs(mean_tail) * 100.0 if mean_tail else float("nan")
-    else:
-        mean_prev = float("nan")
-        drift_pct = float("nan")
-
-    mass_drift_ppm = (float(eng.f.sum().item()) - eng._initial_mass) / eng._initial_mass * 1e6
-
-    cd_ref = schiller_naumann_cd(re)
-    cd_err_pct = abs(mean_tail - cd_ref) / cd_ref * 100.0 if cd_ref > 0 else float("nan")
-
+    laminar = [r for r in rows if r["re"] <= ACCEPT["laminar_re_max"] and r["diameter"] == D_MAIN]
+    transitional = [r for r in rows if r["re"] > ACCEPT["laminar_re_max"] and r["diameter"] == D_MAIN]
+    diverged = [r["key"] for r in rows if not r["finite"]]
     return {
-        "re": re,
-        "diameter": diameter,
-        "lattice": lattice,
-        "cd": mean_tail,
-        "cd_ref": cd_ref,
-        "cd_err_pct": cd_err_pct,
-        "cd_prev_mean": mean_prev,
-        "plateau_drift_pct": drift_pct,
-        "mass_drift_ppm": mass_drift_ppm,
-        "diverged": out["diverged"],
-        "finite": not out["diverged"],
-        "tau": setup["tau"],
-        "u_lb": setup["u_lb"],
-        "nu_lb": setup["nu_lb"],
-        "Ma": setup["Ma"],
-        "obstacle_cells": setup["obstacle_cells"],
-        "domain_lu": setup["domain_lu"],
-        "wall_s": wall,
-        "force_history": hist[-20:] if len(hist) > 20 else hist,
+        "rows": rows,
+        "grid_convergence": grid,
+        "trend": trend,
+        "acceptance": {
+            "criteria": ACCEPT,
+            "laminar_max_err_pct": _err(r["cd_err_pct"] for r in laminar),
+            "transitional_max_err_pct": _err(r["cd_err_pct"] for r in transitional),
+            "all_finite": not diverged,
+            "diverged_cases": diverged,
+            "laminar_pass": all(
+                r["finite"] and r["cd_err_pct"] <= ACCEPT["cd_err_max_pct_laminar"]
+                for r in laminar
+            ),
+            "transitional_pass": all(
+                r["finite"] and r["cd_err_pct"] <= ACCEPT["cd_err_max_pct_transitional"]
+                for r in transitional
+            ),
+            "trend_monotone": all(t["decreasing"] for t in trend),
+            "grid_pass": all(v.get("pass_finest_5pct") for v in grid.values()) if grid else None,
+        },
     }
 
 
-def run_full_study(
-    *,
-    fast: bool = False,
-    re_list: list[float] | None = None,
-    diameter_list: list[int] | None = None,
-    threads: int = 16,
-    output_dir: str = "benchmarks/verified/sphere_drag_bfl",
-) -> dict:
-    """Run the full Re-scan and grid-convergence study."""
-    re_list = re_list or RE_SCAN
-    diameter_list = diameter_list or DIAMETERS
+def print_table(summary: Dict[str, Any]) -> None:
+    print("\n=== sphere drag: C_D vs Clift-Grace-Weber anchor ===")
+    print(f"{'case':>14} {'Cd':>8} {'ref':>8} {'err%':>7} {'steps':>7} {'conv':>5} "
+          f"{'wall_s':>7} {'Ma':>6} {'links':>6}")
+    for r in summary["rows"]:
+        print(f"{r['key']:>14} {r['cd']:8.4f} {r['cd_ref']:8.4f} {r['cd_err_pct']:7.2f} "
+              f"{r['steps']:7d} {str(r['converged']):>5} {r['wall_s']:7.1f} "
+              f"{r['mach']:6.3f} {r['n_cut_links']:6d}")
+    if summary["grid_convergence"]:
+        print("\n=== grid refinement ===")
+        for k, v in summary["grid_convergence"].items():
+            print(f"{k}: D={v['diameters']} Cd={['%.4f' % c for c in v['cd']]} "
+                  f"successive change %={['%.2f' % c for c in v['successive_change_pct']]} "
+                  f"monotone={v['monotone_convergence']} pass<5%={v['pass_finest_5pct']}")
+    print("\n=== acceptance ===")
+    for k, v in summary["acceptance"].items():
+        if k != "criteria":
+            print(f"  {k}: {v}")
 
-    if fast:
-        re_list = [100.0]
-        diameter_list = [40]
 
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+# --------------------------------------------------------------------------- #
+# Main
+# --------------------------------------------------------------------------- #
 
-    all_results: dict[str, dict] = {}
-    summary_rows: list[dict] = []
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--re", type=float, nargs="*", default=None,
+                    help="Reynolds numbers of the main scan")
+    ap.add_argument("--diameters", type=int, nargs="*", default=None,
+                    help="lattice diameters for the refinement ladder")
+    ap.add_argument("--d-main", type=int, default=D_MAIN)
+    ap.add_argument("--u", type=float, default=0.1, help="free-stream lattice velocity")
+    ap.add_argument("--max-steps", type=int, default=20000)
+    ap.add_argument("--window", type=int, default=500)
+    ap.add_argument("--tol", type=float, default=0.01)
+    ap.add_argument("--sample-interval", type=int, default=10)
+    ap.add_argument("--workers", type=int, default=min(12, os.cpu_count() or 4))
+    ap.add_argument("--threads", type=int, default=8, help="torch threads per worker")
+    ap.add_argument("--out-dir", default=str(DEFAULT_OUT))
+    ap.add_argument("--results", default=None, help="path of the combined results.json")
+    ap.add_argument("--save-fields", action="store_true")
+    ap.add_argument("--smoke", action="store_true", help="tiny run (D=8, Re=20, 400 steps)")
+    ap.add_argument("--no-pool", action="store_true", help="serial execution (debugging)")
+    args = ap.parse_args(argv)
+
+    if args.smoke:
+        args.re = [20.0]
+        args.diameters = [8]
+        args.d_main = 8
+        args.max_steps = 400
+        args.window = 100
+        args.tol = 5.0
+        args.save_fields = True
+
+    re_scan = tuple(args.re) if args.re else RE_SCAN
+    d_grid = tuple(args.diameters) if args.diameters else (
+        D_GRID if not args.smoke else (8,)
+    )
+    if args.re and args.diameters is None:
+        # a custom Re list: scan only, no refinement ladder
+        d_grid = (args.d_main,)
+
+    cases = study_cases(re_scan, args.d_main, d_grid, RE_GRID if not args.smoke else ())
+    out_dir = Path(args.out_dir).resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    jobs = [
+        {
+            "re": re, "diameter": d, "u_lb": args.u, "max_steps": args.max_steps,
+            "window": args.window, "tol": args.tol, "sample_interval": args.sample_interval,
+            "threads": args.threads, "out_dir": str(out_dir),
+            "save_fields": args.save_fields,
+        }
+        for re, d in cases
+    ]
+    print(f"running {len(jobs)} cases with {args.workers} workers "
+          f"({args.threads} threads each): {cases}", flush=True)
 
     t0 = time.time()
-    for re_val in re_list:
-        for diam in diameter_list:
-            key = f"Re{re_val:g}_D{diam}"
-            print(f"[{key}] Re={re_val} D={diam}")
-
-            result = run_case(re_val, diam, threads=threads, fast=fast)
-            all_results[key] = result
-            summary_rows.append({
-                "key": key,
-                "re": re_val,
-                "diameter": diam,
-                "cd": result["cd"],
-                "cd_ref": result["cd_ref"],
-                "cd_err_pct": result["cd_err_pct"],
-                "finite": result["finite"],
-                "wall_s": result["wall_s"],
-            })
-
-            status = "✓" if result["finite"] else "✗"
-            print(f"  {status} Cd={result['cd']:.4f}  ref={result['cd_ref']:.4f}  err={result['cd_err_pct']:.1f}%")
-
+    if args.no_pool or args.workers <= 1:
+        results = []
+        for j in jobs:
+            print(f"[case] Re={j['re']:g} D={j['diameter']}", flush=True)
+            results.append(_run_one(j))
+    else:
+        ctx = mp.get_context("fork")
+        with ctx.Pool(processes=args.workers) as pool:
+            results = []
+            for res in pool.imap_unordered(_run_one, jobs):
+                results.append(res)
+                print(f"[done] Re={res['re']:g} D={res['diameter']} "
+                      f"Cd={res['cd']:.4f} (ref {res['cd_ref']:.4f}, "
+                      f"{res['cd_err_pct']:.2f}%) steps={res['steps']}", flush=True)
     elapsed = time.time() - t0
 
-    # Grid convergence analysis
-    grid_conv: dict[str, dict] = {}
-    for re_val in re_list:
-        if re_val > 100:
-            continue
-        k20 = f"Re{re_val:g}_D20"
-        k40 = f"Re{re_val:g}_D40"
-        if k20 in all_results and k40 in all_results:
-            cd20 = all_results[k20]["cd"]
-            cd40 = all_results[k40]["cd"]
-            if cd20 and cd20 > 0:
-                rel_change = abs(cd40 - cd20) / cd20 * 100.0
-            else:
-                rel_change = float("nan")
-            grid_conv[f"Re{re_val:g}"] = {
-                "cd_D20": cd20,
-                "cd_D40": cd40,
-                "rel_change_pct": rel_change,
-                "pass_5pct": rel_change <= 5.0,
-            }
-
-    # Acceptance check
-    acceptance: dict[str, bool] = {}
-    for row in summary_rows:
-        re_val = row["re"]
-        err = row["cd_err_pct"]
-        if re_val <= 1.0:
-            acceptance[row["key"]] = err <= 5.0
-        elif re_val <= 100:
-            acceptance[row["key"]] = err <= 8.0
-        else:
-            acceptance[row["key"]] = err <= 12.0
-
-    report = {
+    summary = summarise(results)
+    payload = {
         "study": "sphere_drag_bfl",
-        "elapsed_s": round(elapsed, 1),
-        "summary": summary_rows,
-        "grid_convergence": grid_conv,
-        "acceptance": acceptance,
-        "all_results": {k: {kk: vv for kk, vv in v.items() if kk != "force_history"}
-                        for k, v in all_results.items()},
+        "method": {
+            "lattice": "D3Q19",
+            "collision": "TRT (Lambda=3/16)",
+            "boundary": "Bouzidi-Firdaouss-Lallemand interpolated bounce-back",
+            "force": "momentum exchange (Ladd) on the cut links",
+            "inlet": "equilibrium at free-stream velocity",
+            "outlet": "zero-gradient extrapolation",
+            "lateral": "free-slip specular reflection",
+            "u_lb": args.u,
+            "domain_diameters": {"upstream": 2.5, "downstream": 7.0, "lateral_half": 3.0},
+        },
+        "external_anchor": {
+            "source": "Clift, Grace & Weber (1978) Table 5.2",
+            "table": {str(k): v for k, v in REFERENCE_CD_CGW.items()},
+        },
+        "elapsed_s": elapsed,
+        "n_cases": len(results),
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "summary": summary["rows"],
+        "grid_convergence": summary["grid_convergence"],
+        "trend": summary["trend"],
+        "acceptance": summary["acceptance"],
+        "cases": [
+            {
+                "key": f"Re{r['re']:g}_D{r['diameter']}",
+                "artifact": r.get("case_artifact"),
+                "config": r.get("config"),
+                "cd_history": r.get("cd_history"),
+                "fields": r.get("fields", {}),
+            }
+            for r in sorted(results, key=lambda r: (r["re"], r["diameter"]))
+        ],
     }
-
-    # Save JSON
-    json_path = output_path / "results.json"
-    json_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(f"\nResults saved to {json_path}")
-
-    return report
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Sphere drag benchmark (BFL)")
-    parser.add_argument("--fast", action="store_true", help="Quick validation (Re=100, D=40)")
-    parser.add_argument("--re", type=float, nargs="+", help="Specific Re values")
-    parser.add_argument("--diameter", type=int, nargs="+", help="Specific diameters")
-    parser.add_argument("--threads", type=int, default=16, help="CPU threads")
-    parser.add_argument("--output-dir", default="benchmarks/verified/sphere_drag_bfl")
-    args = parser.parse_args()
-
-    run_full_study(
-        fast=args.fast,
-        re_list=args.re,
-        diameter_list=args.diameter,
-        threads=args.threads,
-        output_dir=args.output_dir,
-    )
+    results_path = Path(args.results) if args.results else out_dir / "results.json"
+    results_path.write_text(json.dumps(payload, indent=2, default=float))
+    print_table(summary)
+    print(f"\nwrote {results_path}  ({elapsed:.1f}s total)")
+    ok = bool(summary["acceptance"]["all_finite"])
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
