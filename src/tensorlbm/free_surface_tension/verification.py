@@ -152,6 +152,7 @@ def _young_laplace(
     shell: float = 3.0,
     init_laplace: bool = False,
     dtype: torch.dtype = torch.float64,
+    curvature_smooth: int = 0,
 ) -> dict:
     L = int(round(4 * radius))
     shape = (L,) * dim if dim == 3 else (L, L)
@@ -162,6 +163,7 @@ def _young_laplace(
         width=width,
         dtype=dtype,
         init_laplace=init_laplace,
+        curvature_smooth=int(curvature_smooth),
     )
     solver = CapillarySolver(shape, cfg)
     center = [0.5 * n for n in shape]
@@ -203,6 +205,7 @@ def _young_laplace(
             "shell": shell,
             "init_laplace": init_laplace,
             "dtype": str(dtype).replace("torch.", ""),
+            "curvature_smooth": int(curvature_smooth),
         },
         "metrics": {
             "dp": last["dp"],
