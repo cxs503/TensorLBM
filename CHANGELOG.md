@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.scalar_dispersion_mach`** — lattice-Mach error law of the passive-scalar
+  shear-dispersion meter and the real cause of the m8228 "Pe=40, +8.685 %" shortfall
+  (campaign node `p405w1-n06-lbm-scalar-dispersion`).  The slit-channel Taylor–Aris
+  coefficient is a `k -> 0` quantity, so a single-domain modal-decay reading is biased by
+  an `O((kH)^2)` truncation of the *meter*: at `Pe=40, H=17` the same shipped D2Q5 kernel
+  reads `+7.0 %` (`kH=0.84`), `-1.3 %` (`0.42`), `-3.1 %` (`0.21`), `-3.5 %` (`0.105`).
+  The module adds the multi-domain `(kH)^2 -> 0` Richardson limit, a LAPACK-free Thomas
+  solve for the discrete Aris auxiliary problem (cross-checked against the library solver,
+  because m8228 measured garbage solves from the cluster loong64 LAPACK), the second-order
+  `O(u^2)` Hermite scalar equilibrium (ablation), and the Mach-law fit.  With the
+  extrapolated meter: `Pe=40` in `[-2.6 %, -1.0 %]`, `Pe in [10,100]` and `Sc in [0.3,10]`
+  all within 3 %, refinement order 2.1 in `(kH)^2`; the pure advective lattice bias
+  measured on a plug-flow control follows `err = -3<u^2>` (linear in `Ma^2`), while the
+  shear-case residual is Mach *independent* — the seeded `O(Ma^2)` attribution is falsified.
 - **`tensorlbm.sloshing_forced`** — forced-sway LNG-tank sloshing verification
   surface (campaign node P88W1-N01).  A partially filled rectangular tank
   (L x B x H = 1.0 x 0.5 x 0.4 m, 50 % fill, h = 0.2 m) driven by harmonic sway
