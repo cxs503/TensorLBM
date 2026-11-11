@@ -7,6 +7,9 @@ Public API
   analytic anchors (Young-Laplace, Rayleigh period).
 * :mod:`.solver` -- a compact LBGK + Guo-forcing solver used to demonstrate the
   anchors (``CapillarySolver``).
+* :mod:`.capillary_oscillation` -- the two-fluid Rayleigh anchor: damped-phase
+  estimation, geometric interface marker, stability screening and the
+  ``nu -> 0`` extrapolation (see ``docs/P284W3_N02_SURFACE_TENSION_V2.md``).
 * :mod:`.verification` -- the acceptance-case drivers (Young-Laplace 2-D/3-D,
   droplet oscillation, Marangoni sweep, spurious-current convergence, mass
   conservation).
@@ -26,6 +29,8 @@ from .csf import (
     laplace_pressure,
     marangoni_force,
     rayleigh_period,
+    rayleigh_period_2fluid,
+    smooth_field,
     tanh_droplet_phi,
     tanh_ellipse_phi,
     tanh_flat_phi,
@@ -50,6 +55,8 @@ __all__ = [
     "laplace_pressure",
     "marangoni_force",
     "rayleigh_period",
+    "rayleigh_period_2fluid",
+    "smooth_field",
     "tanh_droplet_phi",
     "tanh_ellipse_phi",
     "tanh_flat_phi",

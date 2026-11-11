@@ -61,11 +61,13 @@ __all__ = [
     "interface_normal",
     "interface_delta",
     "curvature",
+    "smooth_field",
     "csf_force",
     "marangoni_force",
     "total_force",
     "laplace_pressure",
     "rayleigh_period",
+    "rayleigh_period_2fluid",
     "tanh_droplet_phi",
     "tanh_ellipse_phi",
     "tanh_sphere_phi",
@@ -112,7 +114,36 @@ def interface_delta(phi: torch.Tensor) -> torch.Tensor:
     return torch.sqrt(sum(gi * gi for gi in g))
 
 
-def curvature(phi: torch.Tensor) -> torch.Tensor:
+def smooth_field(field: torch.Tensor, passes: int = 1) -> torch.Tensor:
+    """Binomial ``(1/4, 1/2, 1/4)`` low-pass filter, ``passes`` sweeps per axis.
+
+    Applied once along every axis this is the separable 3x3 binomial kernel,
+    i.e. the smallest isotropic-ish smoother on the lattice.  It exists to
+    suppress the *lattice-anisotropy* component of the discrete curvature: the
+    CSF force needs ``kappa(phi)`` pointwise, and on a square lattice the
+    central-difference estimate of ``-div(n_hat)`` carries an ``O(h^2)``
+    four-fold (``cos 4 theta``) error whose amplitude can exceed the shape
+    perturbation one is trying to resolve.  Measured on a
+    ``r(0) = R (1 + eps cos 2 theta)`` ellipse with ``eps = 0.02`` the
+    ``cos 2 theta`` amplitude of ``kappa`` is ``0.70 x`` the analytic value
+    without the filter and ``0.96 x`` with one pass (``R = 16``, ``w = 2``);
+    see ``docs/P284W3_N02_SURFACE_TENSION_V2.md``.
+
+    Args:
+        field: Any scalar lattice field.
+        passes: Number of sweeps (``0`` returns the input unchanged).
+
+    Returns:
+        The filtered field (same shape/dtype/device).
+    """
+    out = field
+    for _ in range(int(passes)):
+        for ax in range(out.dim()):
+            out = 0.25 * torch.roll(out, 1, ax) + 0.5 * out + 0.25 * torch.roll(out, -1, ax)
+    return out
+
+
+def curvature(phi: torch.Tensor, smooth: int = 0) -> torch.Tensor:
     """Interface curvature ``kappa = -div(n_hat)`` (sum of principal curvatures).
 
     Positive for a convex *liquid* droplet (``phi = 1`` inside), negative for a
@@ -120,6 +151,8 @@ def curvature(phi: torch.Tensor) -> torch.Tensor:
     :func:`interface_normal`; the accuracy on a tanh-profiled circle/sphere is
     ``O(h^2)`` (see ``tests/test_free_surface_surface_tension.py``).
     """
+    if smooth:
+        phi = smooth_field(phi, smooth)
     n = interface_normal(phi)
     return -divergence(n)
 
@@ -131,6 +164,7 @@ def csf_force(
     phi: torch.Tensor,
     sigma: float,
     kappa: torch.Tensor | None = None,
+    smooth: int = 0,
 ) -> torch.Tensor:
     """CSF surface-tension force ``f = sigma * kappa * grad(phi)``.
 
@@ -138,14 +172,19 @@ def csf_force(
         phi: Interface indicator (liquid = 1, gas = 0), shape ``(*spatial)``.
         sigma: Surface-tension coefficient in lattice units.
         kappa: Optional pre-computed curvature (avoids recomputation when the
-            caller already needs it, e.g. for reporting).
+            caller already needs it, e.g. for reporting).  When given, ``smooth``
+            is ignored.
+        smooth: Binomial pre-filter passes applied to ``phi`` *before* the
+            curvature is evaluated (see :func:`smooth_field`).  The force
+            amplitude still uses the unfiltered ``grad(phi)`` so that the
+            interface delta function keeps its sharp profile.
 
     Returns:
         Force density ``(ndim, *spatial)`` (component 0 = x).
     """
     if sigma == 0.0:
         return torch.zeros((phi.dim(), *phi.shape), dtype=phi.dtype, device=phi.device)
-    k = curvature(phi) if kappa is None else kappa
+    k = curvature(phi, smooth=smooth) if kappa is None else kappa
     g = gradient(phi)
     coef = sigma * k
     return torch.stack([coef * gi for gi in g], dim=0)
@@ -180,9 +219,10 @@ def total_force(
     sigma: float,
     grad_sigma: Sequence[float] | None = None,
     kappa: torch.Tensor | None = None,
+    smooth: int = 0,
 ) -> torch.Tensor:
     """Laplace (CSF) + optional Marangoni force."""
-    f = csf_force(phi, sigma, kappa=kappa)
+    f = csf_force(phi, sigma, kappa=kappa, smooth=smooth)
     if grad_sigma is not None and any(v != 0.0 for v in grad_sigma):
         f = f + marangoni_force(phi, grad_sigma)
     return f
@@ -214,6 +254,53 @@ def rayleigh_period(
     n = int(mode)
     denom = n * (n - 1) * (n + 2) * sigma
     return 2.0 * math.pi * math.sqrt(rho * radius**3 / denom)
+
+
+def rayleigh_period_2fluid(
+    sigma: float,
+    radius: float,
+    rho_inner: float = 1.0,
+    rho_outer: float = 1.0,
+    mode: int = 2,
+    ndim: int = 2,
+) -> float:
+    """Rayleigh period of a drop surrounded by a fluid of finite density.
+
+    The classic Rayleigh (1879) formula quoted for a "droplet" is the
+    **drop-in-vacuum** result; for a drop embedded in a fluid of density
+    ``rho_outer`` the linearised normal-stress balance at the interface
+    (Lamb, *Hydrodynamics*, art. 275) replaces ``rho`` by ``rho_inner +
+    rho_outer``::
+
+        omega^2 = n (n^2 - 1) sigma / ((rho_i + rho_o) a^3)          (2-D)
+        omega^2 = n (n-1)(n+2) sigma / ((rho_i + rho_o) a^3)         (3-D)
+
+    This distinction is *not* cosmetic: a single-phase free-surface LBM has
+    one uniform density on both sides of the ``phi`` interface (it solves one
+    fluid and has no density jump), so its physically matching anchor is the
+    ``rho_i = rho_o`` limit, which is ``sqrt(2) = 41 %`` longer in period than
+    the vacuum formula.
+
+    Args:
+        sigma: Surface-tension coefficient.
+        radius: Equilibrium radius ``a``.
+        rho_inner: Density inside the drop.
+        rho_outer: Density of the surrounding fluid.
+        mode: Spherical/cylindrical harmonic mode ``n`` (``2`` = ellipse).
+        ndim: ``2`` (circular cylinder) or ``3`` (sphere).
+
+    Returns:
+        The linear oscillation period ``2 pi / omega``.
+    """
+    n = int(mode)
+    if ndim == 2:
+        factor = n * (n * n - 1)
+    elif ndim == 3:
+        factor = n * (n - 1) * (n + 2)
+    else:
+        raise ValueError("ndim must be 2 or 3")
+    omega_sq = factor * sigma / ((rho_inner + rho_outer) * radius**3)
+    return 2.0 * math.pi / math.sqrt(omega_sq)
 
 
 # --------------------------------------------------------------------------- #
