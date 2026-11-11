@@ -59,6 +59,7 @@ from .unit_converter import LBMUnitConverter
 
 # 8. Wall function (wall_model.py)
 from .wall_model import wall_function_3d
+from .input_contract import check_positive_int, check_positive_scalar
 
 # 9. Momentum exchange (momentum_exchange.py)
 
@@ -265,6 +266,26 @@ class GeneralSimConfig:
             BoundaryCondition(face="z_max", type=BoundaryType.FAR_FIELD),
         ]
 
+    def validate(self) -> "GeneralSimConfig":
+        """Reject physically meaningless configurations before a run starts.
+
+        Audit finding D5: ``GeneralSimEngine`` accepted ``viscosity=0``,
+        ``resolution=0`` and ``max_steps<0`` and only failed (or worse, silently
+        produced a degenerate field) deep inside the time loop.  Returning
+        ``self`` keeps the call usable both as a guard and as a fluent checksum.
+        """
+        check_positive_scalar(self.physics.viscosity, "viscosity", where="GeneralSimConfig")
+        check_positive_scalar(
+            self.physics.reference_length, "reference_length", where="GeneralSimConfig"
+        )
+        check_positive_scalar(self.physics.inlet_velocity, "inlet_velocity",
+                              where="GeneralSimConfig", allow_zero=True)
+        check_positive_int(self.solver.resolution, "resolution",
+                           where="GeneralSimConfig", min_value=4)
+        check_positive_int(self.solver.max_steps, "max_steps",
+                           where="GeneralSimConfig", min_value=0)
+        return self
+
     @property
     def reynolds_number(self) -> float:
         """Compute Reynolds number from physics config."""
@@ -297,6 +318,7 @@ class GeneralSimEngine:
     AUTO_DOMAIN_FACTOR = 3  # domain = geometry bbox × 3
 
     def __init__(self, config: GeneralSimConfig) -> None:
+        config.validate()
         self.config = config
         self.uc: LBMUnitConverter | None = None
         self.solid: torch.Tensor | None = None  # solid mask (nz, ny, nx)
