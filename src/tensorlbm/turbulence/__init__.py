@@ -26,12 +26,20 @@ __all__ = [
     "collide_vreman_bgk",
     "collide_vreman_bgk3d",
     "collide_vreman_bgk27",
+    # four-closure verification surface (P465W1-N05)
+    "sgs_verification",
+    "sgs_lbm_kernel",
 ]
+
+
+_SUBMODULES = ("sgs_verification", "sgs_lbm_kernel", "spectral_dit", "free_decay_isotropic")
 
 
 def __getattr__(name: str) -> Any:
     if name.startswith("__"):
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    if name in _SUBMODULES:
+        return _import_module(f"{__name__}.{name}")
     implementation = _import_module(f"{__name__}.turbulence")
     return getattr(implementation, name)
 
