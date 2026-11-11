@@ -1,0 +1,61 @@
+{
+ "schema": "w22_environment_calibration_v1",
+ "mission": "m14505",
+ "why": "the 18-case matrix could not be completed in the available compute window; this file records the measured evidence (transient behaviour, per-case cost, scheduler state) so the gap is quantified instead of silently missing",
+ "runs": [
+  {
+   "npz": "benchmarks/verified/suboff_tau_grid_w22/raw_calib/case_calibN48_tau0.5100_s800.npz",
+   "N": 48,
+   "tau": 0.51,
+   "n_samples": 160,
+   "steps_covered": 800,
+   "C_T": 0.05387809764121014,
+   "C_F": 0.044223758068150334,
+   "C_P": 0.009654339573059813,
+   "C_T_windows": [
+    0.08997091434358828,
+    0.06005627006482058,
+    0.05387809764121014
+   ],
+   "C_T_max": 0.34874746919324606,
+   "C_T_min": 0.05292521581996403,
+   "Re_sim": 719.9999999999994,
+   "dev_pct_vs_AN_SUBOFF": 1614.7346046307941,
+   "CF_ittc1957_at_Re_sim": 0.10203817729481625,
+   "npz_sha256": "99281efe8461d4bc9e2c1d29a273932e3244b413c530ca80f15536d568cd6a9c"
+  }
+ ],
+ "cost_model": {
+  "96": {
+   "cells": 2167506,
+   "cell_updates_at_400_steps": 867002400
+  },
+  "144": {
+   "cells": 7315332,
+   "cell_updates_at_400_steps": 2926132800
+  },
+  "192": {
+   "cells": 17340047,
+   "cell_updates_at_400_steps": 6936018800
+  },
+  "total_18_cases_400_steps": 64374924000,
+  "measured_throughput_cells_per_s_single_process": 370000,
+  "core_hours_at_measured_throughput": 48.329522522522524
+ },
+ "scheduler": {
+  "cluster_jobs_submitted": [
+   "cj859",
+   "cj865",
+   "cj866",
+   "cj867",
+   "cj868",
+   "cj869",
+   "cj870",
+   "cj871"
+  ],
+  "cluster_state_at_submission": "all queued, queued_ahead 259-268",
+  "cluster_state_after_20_min": "cj859 still queued (never dispatched)",
+  "local_control_node_load_average": "840 (128 cores) during the window",
+  "wall_treatment_observed": "WallTreatment.AUTO selected the wall-function path for the L=48 pilot and the L=96 matrix case (log line 'suboff_appendage: wall-function path not in compiled chain'), i.e. the auto rule switches treatment with Re - a protocol caveat recorded for the matrix"
+ }
+}

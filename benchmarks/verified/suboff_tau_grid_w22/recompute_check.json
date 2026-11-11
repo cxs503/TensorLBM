@@ -1,0 +1,85 @@
+{
+ "schema": "w22_recompute_check_v1",
+ "mission": "m14505",
+ "path": "B (independent: analytic dpS + cumsum window mean, npz only)",
+ "path_A": "build_matrix.py (stored dpS + np.mean)",
+ "tolerance_rel": 1e-06,
+ "n_cases_recomputed": 0,
+ "n_missing": 18,
+ "max_abs_rel_delta": 0.0,
+ "pass": false,
+ "rows": [
+  {
+   "tag": "tau0.5005_N96",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5050_N96",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5100_N96",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5150_N96",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5200_N96",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5300_N96",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5005_N144",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5050_N144",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5100_N144",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5150_N144",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5200_N144",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5300_N144",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5005_N192",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5050_N192",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5100_N192",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5150_N192",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5200_N192",
+   "status": "MISSING_RAW"
+  },
+  {
+   "tag": "tau0.5300_N192",
+   "status": "MISSING_RAW"
+  }
+ ]
+}

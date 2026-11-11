@@ -1,0 +1,23 @@
+{
+ "tau": 0.53,
+ "failures": [
+  {
+   "tag": "tau0.5300_N96",
+   "tau": 0.53,
+   "N": 96,
+   "returncode": 1,
+   "wall_seconds": 1182.1056628227234,
+   "stderr_tail": "Traceback (most recent call last):\n  File \"/root/tp-agent/work/m14505/benchmarks/verified/suboff_tau_grid_w22/run_case.py\", line 313, in <module>\n    main()\n  File \"/root/tp-agent/work/m14505/benchmarks/verified/suboff_tau_grid_w22/run_case.py\", line 297, in main\n    case[\"raw_npz\"] = str(npz_path.relative_to(_REPO))\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/pathlib.py\", line 730, in relative_to\n    raise ValueError(\"{!r} is not in the subpath of {!r}\"\nValueError: 'benchmarks/verified/suboff_tau_grid_w22/raw/case_tau0.5300_N96.npz' is not in the subpath of '/root/tp-agent/work/m14505' OR one path is relative and the other is absolute.\n",
+   "stdout_tail": "[compile_route] suboff_bare_hull[L96]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]\n"
+  },
+  {
+   "tag": "tau0.5300_N144",
+   "tau": 0.53,
+   "N": 144,
+   "returncode": 1,
+   "wall_seconds": 3572.7668092250824,
+   "stderr_tail": "Traceback (most recent call last):\n  File \"/root/tp-agent/work/m14505/benchmarks/verified/suboff_tau_grid_w22/run_case.py\", line 313, in <module>\n    main()\n  File \"/root/tp-agent/work/m14505/benchmarks/verified/suboff_tau_grid_w22/run_case.py\", line 297, in main\n    case[\"raw_npz\"] = str(npz_path.relative_to(_REPO))\n                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib64/python3.11/pathlib.py\", line 730, in relative_to\n    raise ValueError(\"{!r} is not in the subpath of {!r}\"\nValueError: 'benchmarks/verified/suboff_tau_grid_w22/raw/case_tau0.5300_N144.npz' is not in the subpath of '/root/tp-agent/work/m14505' OR one path is relative and the other is absolute.\n",
+   "stdout_tail": "[compile_route] suboff_bare_hull[L144]: mode=None -> eager (compile_step passthrough) [sdaa-teco_inductor]\n"
+  }
+ ]
+}
