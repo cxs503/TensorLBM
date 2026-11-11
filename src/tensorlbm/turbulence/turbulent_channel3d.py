@@ -229,8 +229,11 @@ class TurbulentChannel3D:
         self.cy = self.c[:, 1].to(self.dtype)
         self.cz = self.c[:, 2].to(self.dtype)
         # moment matrix A (4,19) = [1; cx; cy; cz] -> one GEMM per step for rho,u
+        # Built on the host first and then moved: ``self.cx`` etc. already live on
+        # ``self.device``, and ``torch.stack`` refuses to mix a CPU ``ones`` with
+        # device tensors (this kept the whole solver off every non-CPU device).
         self.A = torch.stack(
-            [torch.ones(19, dtype=self.dtype), self.cx, self.cy, self.cz]
+            [torch.ones(19, dtype=self.dtype), self.cx.cpu(), self.cy.cpu(), self.cz.cpu()]
         ).to(self.device)
         self.Ct = self.c.to(self.dtype).contiguous().to(self.device)  # (19,3)
         self.dcol = (self.w * self.cx).view(19, 1)  # w_i c_ix  (force geometry)
@@ -311,7 +314,11 @@ class TurbulentChannel3D:
             yl = torch.minimum(yl.clamp(min=0.0), 2 * h - yl.clamp(min=0.0))
             yp = yl * cfg.dy_plus
             up = torch.where(yp < 5.0, yp, log_law_u_plus(torch.clamp(yp, min=1e-3)))
-            ux = ux + (up * cfg.u_tau).to(self.dtype).view(1, self.ny, 1)
+            ux = ux + (
+                (up * cfg.u_tau)
+                .to(device=self.device, dtype=self.dtype)
+                .view(1, self.ny, 1)
+            )
             ux[0] = 0.0
             ux[-1] = 0.0
         u = torch.stack((ux, uy, uz)).reshape(3, self.N)
@@ -363,7 +370,11 @@ class TurbulentChannel3D:
         ux = ux * scale * env3
         uy = uy * scale * env3
         uz = uz * scale * env3
-        return ux.to(self.dtype), uy.to(self.dtype), uz.to(self.dtype)
+        return (
+            ux.to(device=self.device, dtype=self.dtype),
+            uy.to(device=self.device, dtype=self.dtype),
+            uz.to(device=self.device, dtype=self.dtype),
+        )
 
     # ---- kernels ---------------------------------------------------------
     def _equilibrium(self, rho: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
@@ -613,7 +624,13 @@ class TurbulentChannel3D:
 
     # ---- post-processing -------------------------------------------------
     def _fold(self, values: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Fold the channel about mid-plane (statistical symmetry) -> (y, value)."""
+        """Fold the channel about mid-plane (statistical symmetry) -> (y, value).
+
+        The fold is post-processing, so it always happens on the host in float64:
+        that keeps the reduction identical on CPU and on an accelerator instead
+        of mixing devices (which raised ``different device is not supported``).
+        """
+        values = values.detach().to("cpu", torch.float64)
         cfg = self.cfg
         ny = self.ny
         rows = list(range(1, ny - 1))
