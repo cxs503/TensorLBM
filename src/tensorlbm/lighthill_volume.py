@@ -517,7 +517,12 @@ def kirchhoff_surface_2d(
     G_prime = -0.25j * k * hankel1(1, kr)
 
     r_hat = r_vec / r_safe[..., None]
-    dG_dn = G_prime * np.sum(r_hat * surface_normals[None, :, :], axis=-1)
+    # r_vec points from the surface point to the observer, whereas the
+    # Kirchhoff normal derivative is taken with respect to the surface-point
+    # coordinate y:  dG/dn_y = ∇_y G · n = -G'(r) (r_hat · n).
+    # The minus sign is essential; omitting it produced a constant ~0.935
+    # amplitude bias (0.58 dB) between the surface and volume integrals.
+    dG_dn = -G_prime * np.sum(r_hat * surface_normals[None, :, :], axis=-1)
 
     integrand = p_surface[None, :] * dG_dn - G * dp_dn_surface[None, :]
     return np.sum(integrand * surface_weights[None, :], axis=1)
