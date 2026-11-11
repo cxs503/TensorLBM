@@ -1,0 +1,75 @@
+{
+  "data": [
+    {
+      "X_star": 1.0,
+      "t_star": 0.0
+    },
+    {
+      "X_star": 1.5,
+      "t_star": 0.5
+    },
+    {
+      "X_star": 2.0,
+      "t_star": 1.0
+    },
+    {
+      "X_star": 2.5,
+      "t_star": 1.5
+    },
+    {
+      "X_star": 3.0,
+      "t_star": 2.0
+    },
+    {
+      "X_star": 3.5,
+      "t_star": 2.5
+    },
+    {
+      "X_star": 4.0,
+      "t_star": 3.0
+    },
+    {
+      "X_star": 4.5,
+      "t_star": 3.5
+    },
+    {
+      "X_star": 5.0,
+      "t_star": 4.0
+    },
+    {
+      "X_star": 5.5,
+      "t_star": 4.5
+    },
+    {
+      "X_star": 6.0,
+      "t_star": 5.0
+    },
+    {
+      "X_star": 6.5,
+      "t_star": 5.5
+    },
+    {
+      "X_star": 7.0,
+      "t_star": 6.0
+    },
+    {
+      "X_star": 7.5,
+      "t_star": 6.5
+    },
+    {
+      "X_star": 8.0,
+      "t_star": 7.0
+    },
+    {
+      "X_star": 8.5,
+      "t_star": 7.5
+    },
+    {
+      "X_star": 9.0,
+      "t_star": 8.0
+    }
+  ],
+  "description": "Analytical frictionless shallow-water solution: X* = 1 + t* for t* < 2",
+  "sha256": "f9e592ff27ab4de93c7cf1e966b90adf19c0330d312741d06fb2a8750a4df37c",
+  "source": "Ritter (1892) Die Zerst\u00f6rung eines Damms"
+}

@@ -1,0 +1,81 @@
+{
+  "data": [
+    {
+      "X_star": 1.0,
+      "t_star": 0.0
+    },
+    {
+      "X_star": 1.45,
+      "t_star": 0.5
+    },
+    {
+      "X_star": 1.85,
+      "t_star": 1.0
+    },
+    {
+      "X_star": 2.2,
+      "t_star": 1.5
+    },
+    {
+      "X_star": 2.52,
+      "t_star": 2.0
+    },
+    {
+      "X_star": 2.8,
+      "t_star": 2.5
+    },
+    {
+      "X_star": 3.05,
+      "t_star": 3.0
+    },
+    {
+      "X_star": 3.28,
+      "t_star": 3.5
+    },
+    {
+      "X_star": 3.48,
+      "t_star": 4.0
+    },
+    {
+      "X_star": 3.66,
+      "t_star": 4.5
+    },
+    {
+      "X_star": 3.82,
+      "t_star": 5.0
+    },
+    {
+      "X_star": 3.97,
+      "t_star": 5.5
+    },
+    {
+      "X_star": 4.1,
+      "t_star": 6.0
+    },
+    {
+      "X_star": 4.22,
+      "t_star": 6.5
+    },
+    {
+      "X_star": 4.33,
+      "t_star": 7.0
+    },
+    {
+      "X_star": 4.43,
+      "t_star": 7.5
+    },
+    {
+      "X_star": 4.52,
+      "t_star": 8.0
+    }
+  ],
+  "description": "Dimensionless front position X* vs dimensionless time t* for dam-break collapse",
+  "dimensionless_defs": {
+    "X_star": "x_front / L  (front position / initial column width)",
+    "t_star": "t * sqrt(g / h0)  (dimensionless time)"
+  },
+  "doi": "10.1098/rsta.1952.0006",
+  "figure": "Figure 4",
+  "sha256": "e6300b9a1852d7de2d47222027993bb65095781347298b40529068722da1fe79",
+  "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324"
+}
