@@ -1,0 +1,171 @@
+{
+ "schema": "w22_negative_drag_surface_v1",
+ "mission": "m14505",
+ "generated_by": "benchmarks/verified/suboff_tau_grid_w22/build_matrix.py",
+ "generated_at_utc": "2026-11-11T07:56:39.052345+00:00",
+ "source_matrix": "benchmarks/verified/suboff_tau_grid_w22/tau_grid_matrix.json",
+ "tau_values": [
+  0.5005,
+  0.505,
+  0.51,
+  0.515,
+  0.52,
+  0.53
+ ],
+ "N_values": [
+  96,
+  144,
+  192
+ ],
+ "definition": "cell is NEGATIVE when the window-mean C_T = (F_x/(0.5 rho u^2 pi D L)) < 0",
+ "sign_grid": {
+  "96": [
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING"
+  ],
+  "144": [
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING"
+  ],
+  "192": [
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING",
+   "MISSING"
+  ]
+ },
+ "C_T_grid": {
+  "96": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "144": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "192": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ]
+ },
+ "cells": [
+  {
+   "tau": 0.5005,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.505,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.51,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.515,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.52,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.53,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.5005,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.505,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.51,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.515,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.52,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.53,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.5005,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.505,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.51,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.515,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.52,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tau": 0.53,
+   "N": 192,
+   "status": "MISSING"
+  }
+ ],
+ "boundary_support": {
+  "rule": "every negative cell must have >=1 same-sign 4-neighbour in (tau,N) index space",
+  "n_negative": 0,
+  "n_unsupported": 0,
+  "pass": true
+ }
+}
