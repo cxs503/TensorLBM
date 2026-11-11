@@ -133,6 +133,9 @@ def sc_two_component_force_3d(
     gy: float = 0.0,
     gz: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    G_self: float | tuple[float, float] = 0.0,
+    psi1_fn: Callable[[torch.Tensor], torch.Tensor] = psi_linear,
+    psi2_fn: Callable[[torch.Tensor], torch.Tensor] = psi_linear,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Shan-Chen interaction + body forces for two 3D components.
 
@@ -147,21 +150,61 @@ def sc_two_component_force_3d(
         gy:          y body-force acceleration.
         gz:          z body-force acceleration (negative = downward if z is up).
         solid_mask:  Optional boolean mask ``(nz, ny, nx)`` of solid/wall cells.
+        G_self:      Optional *self*-interaction coupling ``G_σσ`` (scalar,
+                     shared by both components, or ``(G_11, G_22)``).  Same
+                     operator **and sign** as ``G_12`` and as
+                     :func:`~tensorlbm.multiphase3d.collide_sc_single_component_3d`:
+                     the term is ``-G_σσ ψ_σ Σ_i w_i c_i ψ_σ(x-c_i)``, so
+                     ``G_σσ > 0`` is *attractive* within a component (phase
+                     separation) and ``G_σσ < 0`` is repulsive, exactly the
+                     library convention documented for the single-component
+                     kernel.  ``0.0`` is bit-identical to the historical
+                     behaviour.  With ψ(ρ)=ρ the self-term contributes
+                     ``(G_σσ/2) ψ²`` to the EOS.
+        psi1_fn:     Pseudopotential of component 1, default
+                     :func:`~tensorlbm.multiphase.psi_linear` (ψ=ρ, the
+                     historical model).  A non-linear ψ such as
+                     :func:`~tensorlbm.multiphase.make_psi_carnahan_starling`
+                     is what makes large density ratios reachable (linear ψ
+                     caps the coexistence ratio at ~4).
+        psi2_fn:     Pseudopotential of component 2 (default ψ=ρ).
 
     Returns:
         ``(Fx1, Fy1, Fz1, Fx2, Fy2, Fz2)`` each of shape ``(nz, ny, nx)``.
     """
-    sx2, sy2, sz2 = _sc_neighbor_weighted_sum_3d(rho2, solid_mask)
-    Fx1 = -G_12 * rho1 * sx2 + rho1 * gx
-    Fy1 = -G_12 * rho1 * sy2 + rho1 * gy
-    Fz1 = -G_12 * rho1 * sz2 + rho1 * gz
+    G11, G22 = _split_self_coupling(G_self)
+    psi1 = psi1_fn(rho1) if (G11 != 0.0 or psi1_fn is not psi_linear) else rho1
+    psi2 = psi2_fn(rho2) if (G22 != 0.0 or psi2_fn is not psi_linear) else rho2
 
-    sx1, sy1, sz1 = _sc_neighbor_weighted_sum_3d(rho1, solid_mask)
-    Fx2 = -G_12 * rho2 * sx1 + rho2 * gx
-    Fy2 = -G_12 * rho2 * sy1 + rho2 * gy
-    Fz2 = -G_12 * rho2 * sz1 + rho2 * gz
+    sx2, sy2, sz2 = _sc_neighbor_weighted_sum_3d(psi2, solid_mask)
+    Fx1 = -G_12 * psi1 * sx2 + rho1 * gx
+    Fy1 = -G_12 * psi1 * sy2 + rho1 * gy
+    Fz1 = -G_12 * psi1 * sz2 + rho1 * gz
+
+    sx1, sy1, sz1 = _sc_neighbor_weighted_sum_3d(psi1, solid_mask)
+    Fx2 = -G_12 * psi2 * sx1 + rho2 * gx
+    Fy2 = -G_12 * psi2 * sy1 + rho2 * gy
+    Fz2 = -G_12 * psi2 * sz1 + rho2 * gz
+
+    if G11 != 0.0:
+        Fx1 = Fx1 - G11 * psi1 * sx1
+        Fy1 = Fy1 - G11 * psi1 * sy1
+        Fz1 = Fz1 - G11 * psi1 * sz1
+    if G22 != 0.0:
+        Fx2 = Fx2 - G22 * psi2 * sx2
+        Fy2 = Fy2 - G22 * psi2 * sy2
+        Fz2 = Fz2 - G22 * psi2 * sz2
 
     return Fx1, Fy1, Fz1, Fx2, Fy2, Fz2
+
+
+def _split_self_coupling(G_self: float | tuple[float, float]) -> tuple[float, float]:
+    """Normalise ``G_self`` to a per-component pair ``(G_11, G_22)``."""
+    if isinstance(G_self, (tuple, list)):
+        if len(G_self) != 2:
+            raise ValueError(f"G_self sequence must have 2 entries, got {G_self!r}")
+        return float(G_self[0]), float(G_self[1])
+    return float(G_self), float(G_self)
 
 
 def collide_sc_two_component_3d(
@@ -176,6 +219,9 @@ def collide_sc_two_component_3d(
     solid_mask: torch.Tensor | None = None,
     use_guo: bool = False,
     u_eq: str = "self",
+    G_self: float | tuple[float, float] = 0.0,
+    psi1_fn: Callable[[torch.Tensor], torch.Tensor] = psi_linear,
+    psi2_fn: Callable[[torch.Tensor], torch.Tensor] = psi_linear,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D3Q19.
 
@@ -224,6 +270,14 @@ def collide_sc_two_component_3d(
                      which improves stability at high-density gradients and
                      is the standard in waLBerla (``lbm::force_model::GuoField``).
                      Only defined for ``u_eq="self"`` (see below).
+        G_self:      Optional self-coupling ``G_σσ`` (scalar or
+                     ``(G_11, G_22)``, ``> 0`` attractive), forwarded to
+                     :func:`sc_two_component_force_3d`.  ``0.0`` (default)
+                     reproduces the historical cross-coupling-only model
+                     bit-for-bit.
+        psi1_fn:     Pseudopotential of component 1 (default ψ=ρ), forwarded
+                     to :func:`sc_two_component_force_3d`.
+        psi2_fn:     Pseudopotential of component 2 (default ψ=ρ).
         u_eq:        Equilibrium-velocity convention: ``"self"`` (default,
                      legacy behaviour, bit-identical to the previous
                      implementation) or ``"mixture"`` (Shan–Doolen
@@ -272,6 +326,9 @@ def collide_sc_two_component_3d(
         gy,
         gz,
         solid_mask,
+        G_self=G_self,
+        psi1_fn=psi1_fn,
+        psi2_fn=psi2_fn,
     )
 
     rho1_s = torch.clamp(rho1, min=1e-12)
@@ -386,18 +443,25 @@ def _bgk_collision_guo_3d(
     cy = c[:, 1].float().view(19, 1, 1, 1)
     cz = c[:, 2].float().view(19, 1, 1, 1)
 
-    # Velocity-shift equilibrium for BGK step
+    # Equilibrium on the force-corrected velocity u* = u + F/(2ρ); the
+    # remaining τ - 1/2 of the forcing enters through the explicit Guo source
+    # term below (same split as the 2D guo_force_term path).  Using the
+    # velocity-shift u + τF/ρ here as well would inject F *in addition to*
+    # the source term, i.e. a total of (2 - 1/(2τ))·F per step instead of F
+    # (measured momentum gain 1.5× too large at τ = 1).
+    rho1_s = torch.clamp(rho1, min=1e-12)
+    rho2_s = torch.clamp(rho2, min=1e-12)
     feq1 = equilibrium3d(
         rho1,
-        ux1 + tau1 * Fx1 / torch.clamp(rho1, min=1e-12),
-        uy1 + tau1 * Fy1 / torch.clamp(rho1, min=1e-12),
-        uz1 + tau1 * Fz1 / torch.clamp(rho1, min=1e-12),
+        ux1 + 0.5 * Fx1 / rho1_s,
+        uy1 + 0.5 * Fy1 / rho1_s,
+        uz1 + 0.5 * Fz1 / rho1_s,
     )
     feq2 = equilibrium3d(
         rho2,
-        ux2 + tau2 * Fx2 / torch.clamp(rho2, min=1e-12),
-        uy2 + tau2 * Fy2 / torch.clamp(rho2, min=1e-12),
-        uz2 + tau2 * Fz2 / torch.clamp(rho2, min=1e-12),
+        ux2 + 0.5 * Fx2 / rho2_s,
+        uy2 + 0.5 * Fy2 / rho2_s,
+        uz2 + 0.5 * Fz2 / rho2_s,
     )
 
     f1_post = f1 - (f1 - feq1) / tau1
