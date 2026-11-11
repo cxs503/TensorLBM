@@ -260,7 +260,7 @@ def droplet_oscillation(
         width=width,
         compression=compression,
         sharpen=sharpen,
-        advection=advection,
+        advection="sl",
     )
     solver = CapillarySolver((L, L), cfg)
     solver.set_phi(
@@ -491,7 +491,7 @@ def mass_conservation(
         width=width,
         compression=compression,
         sharpen=sharpen,
-        advection=advection,
+        advection="sl",
     )
     solver = CapillarySolver((L, L), cfg)
     solver.set_phi(
