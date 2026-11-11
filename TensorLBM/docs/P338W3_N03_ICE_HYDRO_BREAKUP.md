@@ -1,5 +1,7 @@
 # p338w3-n03 冰盖水动力破坏验证：LBM 压力—DEM 键合颗粒冰盖开裂 vs 解析稳定性判据互裁
 
+> **勘误（2026-11-12，benchmark B14）**：本文档存档的 LBM 泊肃叶剖面误差（0.10 % / 0.21 %）是用**截断的 Guo 强迫源项**跑出来的：源项缺零和项 `9(c_i·u)c_ix`，每步有固定质量汇，解并不存在真稳态（振幅随步数漂移）。修复后用同一求解器复跑：`ny=34` → 0.102 %、`ny=66` → 0.024 %（`poiseuille_channel`，解析初值）。冰盖压力增益的**定性结论不变**（源项修正量为 `O(u g)`，远小于压力信号），但引用本表数值时应以修复后重跑值为准；证据链见 `benchmarks/verified/poiseuille_2d_bodyforce/`。
+
 > 本文件由 `tensorlbm.ice_hydro.run_study --stage report` 程序化生成；文中每个数字均取自 `TensorLBM/artifacts/ice_hydro_breakup/*.json`（零手抄）。
 
 ## ① 案例介绍

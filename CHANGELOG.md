@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`tensorlbm.ice_hydro.lbm_channel` — non-conservative Guo body-force source term.**
+  `_collide` kept only the first part of the Guo (2002) source,
+  `3 (c_ix - u_x)`, and dropped the zero-sum partner `9 (c_i.u) c_ix`;
+  since `sum_i S_i = -3 u_x g != 0` the channel lost mass at a fixed rate per
+  step (~`-9e-8` per step at `g=1e-5`, `tau=0.8`), so a *steady* state was
+  unreachable: the Poiseuille amplitude drifted with the step count
+  (`-0.05 % -> +0.13 %` between 10 k and 60 k steps at `H=32`) and the archived
+  "within 5 %" check passed only for the step count it happened to use.
+  The engine now carries the full zero-sum source (and the first-order
+  `simple` path no longer half-shifts the equilibrium velocity), giving mass
+  drift `1e-12` and a step-count-independent score.
+
 ### Added
+- New verified benchmark `benchmarks/verified/poiseuille_2d_bodyforce`
+  (tutorial `docs/benchmarks/tutorials/poiseuille_2d_bodyforce.md`, regression
+  battery `TensorLBM/tests/test_poiseuille_2d_bodyforce.py`): 2-D body-force
+  plane Poiseuille vs the analytic parabola, `eps_inf = 8.99e-04` and
+  `eps_2 = 1.23e-03` at `H=32` against a pre-declared 2 % gate, fitted
+  convergence order 2.00 (`H=8..64`), including the pre-fix kernel as a
+  negative control.
 - **`tensorlbm.ibm_sphere_surface_force`** — three-layer verification surface for the
   immersed-boundary *surface force* on a sphere (campaign node `p387w2-n04`).  It adds the
   piece both open force gaps were missing: an **exact spherical measure**
