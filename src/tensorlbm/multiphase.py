@@ -363,6 +363,45 @@ def _wall_fill(wall_psi: object, ref: torch.Tensor) -> torch.Tensor | float:
     return float(wall_psi)
 
 
+def _mirror_wall_fill(field: torch.Tensor, solid_mask: torch.Tensor) -> torch.Tensor:
+    """Neutral (mirror) wall fill for the SC interaction sum.
+
+    A "dry" wall (``wall_psi = 0``) contributes a *huge* artificial force on the
+    first fluid row: for a two-component mixture with ``G_12 < 0`` the missing
+    neighbour density gives ``F_y ~ -G_12 rho_sigma(x) rho_other(x)/3``, i.e.
+    ``O(|G_12| rho^2)`` — orders of magnitude above a typical body force.  That
+    artificial force wets the wall with one component, drags the interface and
+    drives a persistent transverse (spurious) current.
+
+    This helper returns the pseudo-potential field with the solid cells filled
+    from their nearest *fluid* neighbours (Jacobi average over the four
+    axis-neighbours that are fluid).  For a single row of wall cells the fill is
+    exactly the mirror image of the adjacent fluid value, so the interaction
+    sum becomes a symmetric central difference across the wall plane and the
+    wall exerts **no** net force on a uniform or linearly varying field:
+    a neutral-wetting wall with no artificial contact-line force.
+
+    Args:
+        field:       Scalar field ``(ny, nx)`` (a density or pseudo-potential).
+        solid_mask:  Boolean solid/wall mask, same shape.
+
+    Returns:
+        A copy of ``field`` with solid cells replaced by the neighbour average
+        (fluid cells are bit-identical to the input).
+    """
+    fluid = (~solid_mask).to(field.dtype)
+    num = torch.zeros_like(field)
+    den = torch.zeros_like(field)
+    for shift, dim in ((-1, -2), (1, -2), (-1, -1), (1, -1)):
+        nb_val = torch.roll(field, shift, dims=dim)
+        nb_msk = torch.roll(fluid, shift, dims=dim)
+        num = num + nb_val * nb_msk
+        den = den + nb_msk
+    fallback = field[~solid_mask].mean() if bool((~solid_mask).any()) else field.mean()
+    fill = torch.where(den > 0, num / torch.clamp(den, min=1.0), fallback)
+    return torch.where(solid_mask, fill, field)
+
+
 def _sc_neighbor_weighted_sum(
     psi: torch.Tensor,
     solid_mask: torch.Tensor | None = None,
@@ -499,6 +538,8 @@ def sc_two_component_force(
     gx: float = 0.0,
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    wall_mode: str = "dry",
+    sc_form: str = "standard",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute Shan-Chen interaction + gravity forces for two immiscible components.
 
@@ -517,6 +558,22 @@ def sc_two_component_force(
         solid_mask:  Optional boolean mask of shape ``(ny, nx)``.  Solid/wall cells
                      are zeroed in the pseudopotential sum to prevent spurious
                      boundary forces when using periodic streaming.
+        wall_mode:   How the solid cells enter the interaction sum.
+                     ``"dry"`` (default, historical) sets the neighbour density
+                     to zero inside solids — a fully non-wetting wall whose
+                     artificial force is ``O(|G_12| rho^2)`` on the first fluid
+                     row.  ``"mirror"`` fills the solid cells with the mirrored
+                     nearest-fluid density (:func:`_mirror_wall_fill`), i.e. a
+                     neutral-wetting wall that exerts no net force on a uniform
+                     field.  ``"dry"`` is bit-identical to the historical
+                     behaviour; ``"mirror"`` is the physically neutral choice
+                     for channels whose analytic reference assumes no wetting
+                     preference (e.g. a stratified Poiseuille channel).
+        sc_form:     Discretisation of the inter-component force: ``"standard"``
+                     (default, historical) ``F_s = -G12 rho_s sum_i w_i c_i
+                     rho_other(x-c_i)``, or ``"edm"`` the exact-difference
+                     (well-balanced) pair split of Kupershtokh et al. (2009).
+                     Same continuum limit; ``"standard"`` is bit-identical.
 
     Returns:
         ``(Fx1, Fy1, Fx2, Fy2)`` – force fields for each component,
@@ -524,11 +581,41 @@ def sc_two_component_force(
     """
     # Reverse gather samples x-c_i, so Σw_i c_i ρ(x-c_i) ≈ -cs²∇ρ.
     # With F=-G ρ Σw_i c_i ρ'(x-c_i), G < 0 gives repulsion.
-    sum_x2, sum_y2 = _sc_neighbor_weighted_sum(rho2, solid_mask)
+    if wall_mode not in ("dry", "mirror"):
+        raise ValueError(f"wall_mode must be 'dry' or 'mirror', got {wall_mode!r}")
+    if sc_form not in ("standard", "edm"):
+        raise ValueError(f"sc_form must be 'standard' or 'edm', got {sc_form!r}")
+
+    def _neighbour_sums(field: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        if solid_mask is not None and wall_mode == "mirror":
+            return _sc_neighbor_weighted_sum(
+                field, solid_mask, wall_psi=_mirror_wall_fill(field, solid_mask)
+            )
+        return _sc_neighbor_weighted_sum(field, solid_mask)
+
+    sum_x2, sum_y2 = _neighbour_sums(rho2)
+    sum_x1, sum_y1 = _neighbour_sums(rho1)
+
+    if sc_form == "edm":
+        # Exact-difference (well-balanced) split of the pair force, Kupershtokh
+        # et al. (2009):  -G12 rho1 grad rho2  =  -G12 [ 1/2 grad(rho1 rho2)
+        #   + 1/2 (rho1 grad rho2 - rho2 grad rho1) ].  The first term is a pure
+        # discrete gradient (balanceable by the pressure of the same operator,
+        # hence it cannot generate vorticity); the second is antisymmetric
+        # between the components and conserves their total momentum.  Same
+        # continuum limit as "standard" but no O(h^2) discrete curl.
+        sum_xS, sum_yS = _neighbour_sums(rho1 * rho2)
+        exch_x = rho1 * sum_x2 - rho2 * sum_x1
+        exch_y = rho1 * sum_y2 - rho2 * sum_y1
+        Fx1 = -G_12 * (0.5 * sum_xS + 0.5 * exch_x) + rho1 * gx
+        Fy1 = -G_12 * (0.5 * sum_yS + 0.5 * exch_y) + rho1 * gy
+        Fx2 = -G_12 * (0.5 * sum_xS - 0.5 * exch_x) + rho2 * gx
+        Fy2 = -G_12 * (0.5 * sum_yS - 0.5 * exch_y) + rho2 * gy
+        return Fx1, Fy1, Fx2, Fy2
+
     Fx1 = -G_12 * rho1 * sum_x2 + rho1 * gx
     Fy1 = -G_12 * rho1 * sum_y2 + rho1 * gy
 
-    sum_x1, sum_y1 = _sc_neighbor_weighted_sum(rho1, solid_mask)
     Fx2 = -G_12 * rho2 * sum_x1 + rho2 * gx
     Fy2 = -G_12 * rho2 * sum_y1 + rho2 * gy
 
@@ -594,6 +681,8 @@ def collide_sc_two_component(
     solid_mask: torch.Tensor | None = None,
     u_eq: str = "self",
     force_scheme: str = "shift",
+    wall_mode: str = "dry",
+    sc_form: str = "standard",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D2Q9.
 
@@ -650,6 +739,12 @@ def collide_sc_two_component(
                      velocity ``u + F/(2ρ)`` plus the explicit source term of
                      :func:`guo_force_term` with the ``1 - 1/(2τ)`` factor).
                      ``"shift"`` is bit-identical to the historical behaviour.
+        wall_mode:   ``"dry"`` (default, historical) or ``"mirror"`` (neutral
+                     wetting, no artificial wall force) — forwarded to
+                     :func:`sc_two_component_force`.
+        sc_form:     ``"standard"`` (default, historical) or ``"edm"``
+                     (exact-difference, well-balanced pair force) — forwarded
+                     to :func:`sc_two_component_force`.
 
     Returns:
         Updated ``(f1, f2)`` after collision.
@@ -684,11 +779,15 @@ def collide_sc_two_component(
     """
     if force_scheme not in ("shift", "guo"):
         raise ValueError(f"force_scheme must be 'shift' or 'guo', got {force_scheme!r}")
+    if sc_form not in ("standard", "edm"):
+        raise ValueError(f"sc_form must be 'standard' or 'edm', got {sc_form!r}")
 
     rho1, ux1, uy1 = macroscopic(f1)
     rho2, ux2, uy2 = macroscopic(f2)
 
-    Fx1, Fy1, Fx2, Fy2 = sc_two_component_force(rho1, rho2, G_12, gx, gy, solid_mask)
+    Fx1, Fy1, Fx2, Fy2 = sc_two_component_force(
+        rho1, rho2, G_12, gx, gy, solid_mask, wall_mode=wall_mode, sc_form=sc_form
+    )
 
     rho1_s = torch.clamp(rho1, min=1e-12)
     rho2_s = torch.clamp(rho2, min=1e-12)
