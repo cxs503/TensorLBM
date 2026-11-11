@@ -1,0 +1,1523 @@
+{
+ "schema": "suboff-ittc57-closure/v1",
+ "task_key": "paper-exp-lbm-suboff-tau-w22-anchor8",
+ "mission_id": 14504,
+ "domain": "ship-total-performance / resistance",
+ "title": "W22 — ITTC-1957 C_F 独立复算 + C_T=(1+k)C_F+C_W 三档网格闭合检验",
+ "predecessor": {
+  "task_key": "paper-exp-lbm-suboff-tau-4",
+  "gap": "predecessor produced no report and no artifact (零报告欠账)",
+  "criteria_alignment": "this artifact answers the predecessor's criteria one by one: transcription completeness, ITTC-57 recompute fidelity, three-grid closure, k two-caliber difference"
+ },
+ "generated_by": "benchmarks/verified/suboff_anchor_w22/build_ittc57_closure.py",
+ "generated_utc": "2026-11-11T07:30:07+00:00",
+ "git": {
+  "commit": "3619d287450a11dad98babbafbc1302e152e3918",
+  "branch": "agent/m14504"
+ },
+ "inputs": {
+  "anchor_transcription": {
+   "path": "benchmarks/verified/suboff_anchor_w22/anchor_transcription.json",
+   "sha256": "6f210931f13b5937c086571ac6fef9327f3aa2d59ad96d987f10deaaab97a488",
+   "n_leaves": 2342,
+   "completeness_pct": 100.0,
+   "sources": [
+    {
+     "source_id": "S1",
+     "path": "benchmarks/verified/suboff_sail_resistance/verdict.json",
+     "sha256": "8407056397d402e8a8f58618720ed8c58095901068bbae995111106ae0cbc5d9"
+    },
+    {
+     "source_id": "S2",
+     "path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    {
+     "source_id": "S3",
+     "path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_report_m298.md",
+     "sha256": "8a8a141fc4ba585266bc33c9c4823e5cc48665812c6517f6718ce4223aaea60b"
+    },
+    {
+     "source_id": "S4",
+     "path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+     "sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+    },
+    {
+     "source_id": "S5",
+     "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+    },
+    {
+     "source_id": "S6",
+     "path": "benchmarks/verified/suboff_anchor/anchor.json",
+     "sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+    },
+    {
+     "source_id": "S7",
+     "path": "benchmarks/verified/suboff_sail_resistance/result.json",
+     "sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+    },
+    {
+     "source_id": "S8",
+     "path": "benchmarks/verified/suboff_sail_resistance/prereg.md",
+     "sha256": "cfcb3f17e0d33119992aa53da73e7b13424de62b0187eb1ef029e8df589a953d"
+    }
+   ]
+  }
+ },
+ "formula_AN_ITTC57": {
+  "id": "AN-ITTC57",
+  "expression": "C_F = 0.075 / (log10(Re) - 2)^2",
+  "citation": "ITTC Recommended Procedure 7.5-02-03-01.4 (1957 friction line), as carried by the repo record benchmarks/verified/suboff_anchor/anchor_points.json :: ittc78_cf_recompute.formula",
+  "applicability": "turbulent flat-plate correlation; pole at Re = 10^2; value 0.075 at Re = 10^3 — not a physical reference at the case Reynolds number (see /case_caliber_gap and /reference_structure)",
+  "routes": [
+   "math.log10",
+   "math.log/math.log(10)",
+   "Decimal 60-digit ln"
+  ],
+  "route_check": [
+   {
+    "Re": 10.0,
+    "cf_log10": 0.075,
+    "cf_ln": 0.075,
+    "cf_decimal60": 0.075,
+    "pole": false,
+    "abs_residual_ln": 0.0,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 100.0,
+    "cf_log10": Infinity,
+    "cf_ln": Infinity,
+    "cf_decimal60": Infinity,
+    "pole": true,
+    "abs_residual_ln": 0.0,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 1000.0,
+    "cf_log10": 0.075,
+    "cf_ln": 0.07500000000000007,
+    "cf_decimal60": 0.075,
+    "pole": false,
+    "abs_residual_ln": 6.938893903907228e-17,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 10000.0,
+    "cf_log10": 0.01875,
+    "cf_ln": 0.01875,
+    "cf_decimal60": 0.01875,
+    "pole": false,
+    "abs_residual_ln": 0.0,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 100000.0,
+    "cf_log10": 0.008333333333333333,
+    "cf_ln": 0.008333333333333333,
+    "cf_decimal60": 0.008333333333333333,
+    "pole": false,
+    "abs_residual_ln": 0.0,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 1000000.0,
+    "cf_log10": 0.0046875,
+    "cf_ln": 0.0046875000000000016,
+    "cf_decimal60": 0.0046875,
+    "pole": false,
+    "abs_residual_ln": 1.734723475976807e-18,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 10000000.0,
+    "cf_log10": 0.003,
+    "cf_ln": 0.003,
+    "cf_decimal60": 0.003,
+    "pole": false,
+    "abs_residual_ln": 0.0,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 11664400.0,
+    "cf_log10": 0.002921346300494664,
+    "cf_ln": 0.002921346300494664,
+    "cf_decimal60": 0.002921346300494664,
+    "pole": false,
+    "abs_residual_ln": 0.0,
+    "abs_residual_decimal": 0.0
+   },
+   {
+    "Re": 12000000.0,
+    "cf_log10": 0.002907192853386463,
+    "cf_ln": 0.0029071928533864638,
+    "cf_decimal60": 0.0029071928533864633,
+    "pole": false,
+    "abs_residual_ln": 8.673617379884035e-19,
+    "abs_residual_decimal": 4.336808689942018e-19
+   }
+  ],
+  "max_abs_route_residual": 6.938893903907228e-17
+ },
+ "formula_AN_SUBOFF": {
+  "id": "AN-SUBOFF",
+  "geometry": {
+   "L_m": {
+    "source_id": "S6",
+    "pointer": "/geometry/L_m",
+    "value": 4.356,
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   },
+   "D_m": {
+    "source_id": "S6",
+    "pointer": "/geometry/D_m",
+    "value": 0.508,
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   },
+   "wetted_surface_m2": {
+    "source_id": "S6",
+    "pointer": "/geometry/wetted_surface_m2",
+    "value": 5.998,
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   },
+   "displacement_volume_m3": {
+    "source_id": "S6",
+    "pointer": "/geometry/displacement_volume_m3",
+    "value": 0.708,
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   },
+   "source": {
+    "source_id": "S6",
+    "pointer": "/geometry/source",
+    "value": "CFD-LETTERS-2024-T1-T3 Table 1（逐字）",
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   }
+  },
+  "C_T_definition": {
+   "source_id": "S6",
+   "pointer": "/conventions/CT_definition",
+   "value": "CT = RT / (0.5 * rho * U^2 * S) —— 逐字口径：CT = RT / (0.5 · ρ · V² · S)",
+   "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+   "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+  },
+  "anchor_Re_aff8": {
+   "source_id": "S5",
+   "pointer": "/anchors/0/Re_Lmax_nu1139",
+   "value": 11664442.493415276,
+   "source_path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+   "source_sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+  },
+  "anchor_CT_aff8": {
+   "source_id": "S5",
+   "pointer": "/anchors/0/CT",
+   "value": 0.0036669035696661055,
+   "source_path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+   "source_sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+  }
+ },
+ "case": {
+  "case_id": "suboff_sail_resistance (AFF-3 with_sail)",
+  "geometry_text_evidence": {
+   "path": "benchmarks/verified/suboff_sail_resistance/prereg.md",
+   "line": 5,
+   "text": "`benchmarks/pending/suboff_sail_resistance`（AFF-3 with_sail，Re=1000）按严格标准重判：",
+   "sha256": "cfcb3f17e0d33119992aa53da73e7b13424de62b0187eb1ef029e8df589a953d"
+  },
+  "Re_case": 1000.0,
+  "Re_case_refs": [
+   {
+    "source_id": "S4",
+    "pointer": "/supplement_tau_re_coupling/production_point/re",
+    "value": 1000.0,
+    "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+    "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+   },
+   {
+    "source_id": "S4",
+    "pointer": "/supplement_tau_re_coupling/production_point/tau",
+    "value": 0.512,
+    "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+    "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+   },
+   {
+    "source_id": "S4",
+    "pointer": "/supplement_tau_re_coupling/production_point/nu_lb",
+    "value": 0.004,
+    "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+    "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+   }
+  ],
+  "cf_ref_recorded": 0.041995047327036086,
+  "cf_ref_refs": [
+   {
+    "source_id": "S2",
+    "pointer": "/cf_ref",
+    "value": 0.041995047327036086,
+    "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+    "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+   },
+   {
+    "source_id": "S7",
+    "pointer": "/reference/cf_ref",
+    "value": 0.041995047327036086,
+    "source_path": "benchmarks/verified/suboff_sail_resistance/result.json",
+    "source_sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+   }
+  ],
+  "cf_ref_cross_check": [
+   {
+    "source_id": "S1",
+    "pointer": "/cf_ref_recomputed",
+    "value": 0.04199504732703608,
+    "rel_dev_pct": -1.65231243814792e-14
+   },
+   {
+    "source_id": "S7",
+    "pointer": "/reference/cf_ref",
+    "value": 0.041995047327036086,
+    "rel_dev_pct": 0.0
+   }
+  ],
+  "blasius_check": {
+   "formula": "C_F,Blasius = 1.328/sqrt(Re)",
+   "re": 1000.0,
+   "recorded_cf_ref": 0.041995047327036086,
+   "recomputed": 0.04199504732703608,
+   "rel_dev_pct": -1.65231243814792e-14
+  },
+  "reference_structure": {
+   "formula_leaf": {
+    "source_id": "S7",
+    "pointer": "/reference/formula",
+    "value": "Blasius laminar flat plate Cf = 1.328/sqrt(Re), Re=1000",
+    "source_path": "benchmarks/verified/suboff_sail_resistance/result.json",
+    "source_sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+   },
+   "observable_leaf": {
+    "source_id": "S7",
+    "pointer": "/observable",
+    "value": "Cd_total window mean over the last 1000 force samples (last 10000 steps), total-wetted-area normalization (frozen in prereg.md)",
+    "source_path": "benchmarks/verified/suboff_sail_resistance/result.json",
+    "source_sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+   },
+   "ittc57_recorded_as_not_applicable": {
+    "source_id": "S7",
+    "pointer": "/reference/cross_checks_recorded_not_applicable",
+    "value": "ittc1957/darpa-aff8 turbulent",
+    "source_path": "benchmarks/verified/suboff_sail_resistance/result.json",
+    "source_sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+   }
+  },
+  "regime_note": "the case runs at a lattice Reynolds number of 1e3, i.e. ~1.2e4 times below the AFF-8 anchor Re; the anchor Re is itself recorded upstream as NOT REACHABLE at credible resolution (benchmarks/verified/suboff_anchor/anchor_points.json criterion C4), so no same-Re comparison is possible in either direction"
+ },
+ "recompute_checks": {
+  "per_arm": [
+   {
+    "arm": "A",
+    "Re": 1200.0,
+    "cf_recorded": 0.06439801549249456,
+    "cf_recomputed": 0.06439801549249456,
+    "rel_dev_pct": 0.0,
+    "nu_lb": 0.0033333333333333366,
+    "evidence": {
+     "record": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/A/ittc1957_cf_at_re",
+      "value": 0.06439801549249456,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     },
+     "re": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/A/re_lattice",
+      "value": 1200.0,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     }
+    }
+   },
+   {
+    "arm": "B",
+    "Re": 240.0,
+    "cf_recorded": 0.518809,
+    "cf_recomputed": 0.5188136052128262,
+    "rel_dev_pct": 0.0008876509131861578,
+    "nu_lb": 0.016666666666666666,
+    "evidence": {
+     "record": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/B/ittc1957_cf_at_re",
+      "value": 0.518809,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     },
+     "re": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/B/re_lattice",
+      "value": 240.0,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     }
+    }
+   },
+   {
+    "arm": "C",
+    "Re": 120.0,
+    "cf_recorded": 11.963,
+    "cf_recomputed": 11.962352608959943,
+    "rel_dev_pct": -0.00541161113480045,
+    "nu_lb": 0.03333333333333333,
+    "evidence": {
+     "record": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/C/ittc1957_cf_at_re",
+      "value": 11.963,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     },
+     "re": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/C/re_lattice",
+      "value": 120.0,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     }
+    }
+   },
+   {
+    "arm": "D",
+    "Re": 60.0,
+    "cf_recorded": 1.5239,
+    "cf_recomputed": 1.5238678017361411,
+    "rel_dev_pct": -0.0021128856131582122,
+    "nu_lb": 0.06666666666666667,
+    "evidence": {
+     "record": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/D/ittc1957_cf_at_re",
+      "value": 1.5239,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     },
+     "re": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/D/re_lattice",
+      "value": 60.0,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     }
+    }
+   },
+   {
+    "arm": "E",
+    "Re": 24.0,
+    "cf_recorded": 0.19524,
+    "cf_recomputed": 0.1952422814690397,
+    "rel_dev_pct": 0.0011685459125776478,
+    "nu_lb": 0.16666666666666666,
+    "evidence": {
+     "record": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/E/ittc1957_cf_at_re",
+      "value": 0.19524,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     },
+     "re": {
+      "source_id": "S4",
+      "pointer": "/supplement_tau_re_coupling/per_arm/E/re_lattice",
+      "value": 24.0,
+      "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+     }
+    }
+   }
+  ],
+  "max_abs_rel_dev_pct": 0.00541161113480045,
+  "threshold_pct": 1.0,
+  "all_pass": true,
+  "re_lattice_consistency": {
+   "note": "u_lb*L is frozen by the case, so Re = u_lb*L/nu_lb must be reproduced from each arm's transcribed nu_lb and Re",
+   "uL_by_arm": {
+    "A": 4.0000000000000036,
+    "B": 4.0,
+    "C": 4.0,
+    "D": 4.0,
+    "E": 4.0
+   },
+   "Re_case_times_nu": 4.0
+  }
+ },
+ "md_vs_json_crosscheck": {
+  "note": "same quantity transcribed from markdown (6 significant digits) and JSON (full precision) — a transcription-fidelity check independent of C2",
+  "per_arm": [
+   {
+    "arm": "A",
+    "md": 0.064398,
+    "json": 0.06439801549249456,
+    "rel_dev_pct": -2.4057409916321898e-05,
+    "md_pointer": "/md_tables/7/rows/A/ITTC-1957 Cf@Re_eff/tok0"
+   },
+   {
+    "arm": "B",
+    "md": 0.518809,
+    "json": 0.518809,
+    "rel_dev_pct": 0.0,
+    "md_pointer": "/md_tables/7/rows/B/ITTC-1957 Cf@Re_eff/tok0"
+   },
+   {
+    "arm": "C",
+    "md": 11.963,
+    "json": 11.963,
+    "rel_dev_pct": 0.0,
+    "md_pointer": "/md_tables/7/rows/C/ITTC-1957 Cf@Re_eff/tok0"
+   },
+   {
+    "arm": "D",
+    "md": 1.5239,
+    "json": 1.5239,
+    "rel_dev_pct": 0.0,
+    "md_pointer": "/md_tables/7/rows/D/ITTC-1957 Cf@Re_eff/tok0"
+   },
+   {
+    "arm": "E",
+    "md": 0.19524,
+    "json": 0.19524,
+    "rel_dev_pct": 0.0,
+    "md_pointer": "/md_tables/7/rows/E/ITTC-1957 Cf@Re_eff/tok0"
+   }
+  ],
+  "max_abs_rel_dev_pct": 2.4057409916321898e-05
+ },
+ "case_caliber_gap": {
+  "Re_case": 1000.0,
+  "cf_ittc57_at_case_Re": 0.075,
+  "cf_case_reference_recorded": 0.041995047327036086,
+  "rel_dev_pct": 78.59248833782259,
+  "reading": "ITTC-1957 at Re=1e3 is not a friction estimate of this case: the line is a turbulent correlation with a pole at Re=1e2 and the value 0.075 exactly at Re=1e3, while the case reference is the laminar Blasius line; the case artifact itself records ittc1957 as a not-applicable cross-check."
+ },
+ "grids": [
+  {
+   "tier": "L96",
+   "C_T_primary_e2_window": 0.0385703619256417,
+   "C_F_case_recorded": 0.03140493761314792,
+   "C_P_case_recorded": 0.007165424312493779,
+   "C_T_archived_mix50": 0.042648661292759835,
+   "err_pct_e2": -8.154974501456492,
+   "err_pct_mix50": 1.5564072606794266,
+   "n_steps_e2": 14400,
+   "domain": [
+    576,
+    203,
+    203
+   ],
+   "ms_per_step_mix50": 94.85,
+   "appendage_solid_cells_e2": 48,
+   "refs": {
+    "C_T": {
+     "source_id": "S2",
+     "pointer": "/tiers/L96/cd_tot_window",
+     "value": 0.0385703619256417,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    "C_F": {
+     "source_id": "S2",
+     "pointer": "/tiers/L96/cd_friction",
+     "value": 0.03140493761314792,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    "C_T_mix50": {
+     "source_id": "S1",
+     "pointer": "/tiers/96/Cd_total",
+     "value": 0.042648661292759835,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/verdict.json",
+     "source_sha256": "8407056397d402e8a8f58618720ed8c58095901068bbae995111106ae0cbc5d9"
+    }
+   },
+   "k_eff_vs_case_reference": -0.08154974501456513
+  },
+  {
+   "tier": "L112",
+   "C_T_primary_e2_window": 0.04076867077371583,
+   "C_F_case_recorded": 0.03413986772537355,
+   "C_P_case_recorded": 0.006628803048342275,
+   "C_T_archived_mix50": 0.04448487172275888,
+   "err_pct_e2": -2.9202885372883514,
+   "err_pct_mix50": 5.928852458084677,
+   "n_steps_e2": 16800,
+   "domain": [
+    672,
+    237,
+    237
+   ],
+   "ms_per_step_mix50": 151.6,
+   "appendage_solid_cells_e2": 70,
+   "refs": {
+    "C_T": {
+     "source_id": "S2",
+     "pointer": "/tiers/L112/cd_tot_window",
+     "value": 0.04076867077371583,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    "C_F": {
+     "source_id": "S2",
+     "pointer": "/tiers/L112/cd_friction",
+     "value": 0.03413986772537355,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    "C_T_mix50": {
+     "source_id": "S1",
+     "pointer": "/tiers/112/Cd_total",
+     "value": 0.04448487172275888,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/verdict.json",
+     "source_sha256": "8407056397d402e8a8f58618720ed8c58095901068bbae995111106ae0cbc5d9"
+    }
+   },
+   "k_eff_vs_case_reference": -0.029202885372883625
+  },
+  {
+   "tier": "L128",
+   "C_T_primary_e2_window": 0.04239577341027158,
+   "C_F_case_recorded": 0.035900145820593,
+   "C_P_case_recorded": 0.006495627589678578,
+   "C_T_archived_mix50": 0.045862176545034064,
+   "err_pct_e2": 0.9542222446252913,
+   "err_pct_mix50": 9.208536396882106,
+   "n_steps_e2": 19200,
+   "domain": [
+    768,
+    271,
+    271
+   ],
+   "ms_per_step_mix50": 227.4,
+   "appendage_solid_cells_e2": 126,
+   "refs": {
+    "C_T": {
+     "source_id": "S2",
+     "pointer": "/tiers/L128/cd_tot_window",
+     "value": 0.04239577341027158,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    "C_F": {
+     "source_id": "S2",
+     "pointer": "/tiers/L128/cd_friction",
+     "value": 0.035900145820593,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    "C_T_mix50": {
+     "source_id": "S1",
+     "pointer": "/tiers/128/Cd_total",
+     "value": 0.045862176545034064,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/verdict.json",
+     "source_sha256": "8407056397d402e8a8f58618720ed8c58095901068bbae995111106ae0cbc5d9"
+    }
+   },
+   "k_eff_vs_case_reference": 0.00954222244625269
+  }
+ ],
+ "k_identifiability": {
+  "record": {
+   "primary": 0.25521094812797096,
+   "primary_ref": {
+    "source_id": "S5",
+    "pointer": "/anchors/0/form_factor_CT_over_ITTC",
+    "value": 1.255210948127971,
+    "source_path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+    "source_sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+   },
+   "double_entry": 0.25521094813,
+   "double_entry_ref": {
+    "source_id": "S6",
+    "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/0/one_plus_k",
+    "value": 1.25521094813,
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   },
+   "double_entry_rel_dev_pct": 7.950456728790132e-10,
+   "aff1_record": 0.07528316484000008,
+   "aff1_record_ref": {
+    "source_id": "S6",
+    "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/0/one_plus_k",
+    "value": 1.07528316484,
+    "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+    "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+   }
+  },
+  "prohaska": {
+   "method": "C_T/C_F = (1+k) + c*Fr^n, intercept = 1+k; Fr = U/sqrt(g*L), L from the transcribed anchor geometry, C_F = ITTC-1957 (recomputed)",
+   "exponent_primary": 4,
+   "ladder_points_aff8": [
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/0",
+     "configuration": "AFF-8",
+     "U_mps": 3.05,
+     "Re": 11664442.4934,
+     "CT": 0.00366690356967,
+     "CF_recorded": 0.00292134447611,
+     "CF_recomputed": 0.002921344476110386,
+     "CF": 0.002921344476110386,
+     "one_plus_k_recorded": 1.25521094813,
+     "Fr": 0.46657493057750427,
+     "cf_record_rel_dev_pct": 1.3212271834467017e-11
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/1",
+     "configuration": "AFF-8",
+     "U_mps": 5.144,
+     "Re": 19672751.5364,
+     "CT": 0.00357630051741,
+     "CF_recorded": 0.00267618123837,
+     "CF_recomputed": 0.0026761812383715167,
+     "CF": 0.0026761812383715167,
+     "one_plus_k_recorded": 1.33634466386,
+     "Fr": 0.7869053911116991,
+     "cf_record_rel_dev_pct": 5.666962973690222e-11
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/2",
+     "configuration": "AFF-8",
+     "U_mps": 6.1,
+     "Re": 23328884.9868,
+     "CT": 0.0034876805213,
+     "CF_recorded": 0.00260287554982,
+     "CF_recomputed": 0.0026028755498219217,
+     "CF": 0.0026028755498219217,
+     "one_plus_k_recorded": 1.33993364436,
+     "Fr": 0.9331498611550085,
+     "cf_record_rel_dev_pct": 7.382757622223612e-11
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/3",
+     "configuration": "AFF-8",
+     "U_mps": 7.16,
+     "Re": 27382756.8042,
+     "CT": 0.00342514013207,
+     "CF_recorded": 0.00253668400488,
+     "CF_recomputed": 0.0025366840048760427,
+     "CF": 0.0025366840048760427,
+     "one_plus_k_recorded": 1.35024312271,
+     "Fr": 1.0953037714540756,
+     "cf_record_rel_dev_pct": -1.560043711380321e-10
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/4",
+     "configuration": "AFF-8",
+     "U_mps": 8.23,
+     "Re": 31474872.6953,
+     "CT": 0.00332593306498,
+     "CF_recorded": 0.00248117549112,
+     "CF_recomputed": 0.00248117549111679,
+     "CF": 0.00248117549111679,
+     "one_plus_k_recorded": 1.34046667674,
+     "Fr": 1.2589874356238888,
+     "cf_record_rel_dev_pct": -1.2937842582211076e-10
+    }
+   ],
+   "fit_aff8": {
+    "slope": 0.02365955032830273,
+    "intercept": 1.3001144815904129,
+    "stderr_slope": 0.01857722437742496,
+    "stderr_intercept": 0.025072665097134125,
+    "r2": 0.3509305793639159,
+    "residuals": [
+     -0.046024756690289825,
+     0.027158317471533744,
+     0.021879591111646723,
+     0.0160764691087818,
+     -0.01908962100167222
+    ],
+    "n_points": 5,
+    "x": [
+     0.04738987906959164,
+     0.38343352550770793,
+     0.7582380651134663,
+     1.4392569401096844,
+     2.512381483333157
+    ],
+    "y": [
+     1.2552109481290223,
+     1.3363446638562548,
+     1.3399336443644465,
+     1.3502431227090788,
+     1.3404666767375573
+    ],
+    "exponent": 4.0
+   },
+   "k_prohaska": 0.3001144815904129,
+   "sigma_distance_point_estimate": 1.7909357975500781,
+   "sigma_reading": "the point-estimate gap is 1.79 standard errors of the fitted intercept — the record value sits inside the fit's ~2 sigma band, so the two calibers are not statistically distinguishable even though the point estimate fails the 5% gate",
+   "r2_reading": "R^2 = 0.351 on the AFF-8 ladder and 0.013 on the AFF-1 ladder: the Fr^4 wave term explains almost none of the point-to-point variation of C_T/C_F, so the Prohaska intercept is weakly constrained by construction",
+   "diff_pct_k_basis": 17.59467365793643,
+   "diff_pct_one_plus_k_basis": 3.577369487528077,
+   "fit_aff1_crosscheck": {
+    "intercept": 1.1265290610744603,
+    "k": 0.12652906107446027,
+    "r2": 0.013038224096224904,
+    "n_points": 6,
+    "diff_vs_aff1_record_pct_k_basis": 68.0708579977655
+   },
+   "window_sensitivity": [
+    {
+     "window": "lowest 3 Fr points",
+     "n_points": 3,
+     "intercept": 1.2640887164956554,
+     "k": 0.26408871649565535,
+     "diff_vs_record_pct_k_basis": 3.4786001277785283,
+     "pass_k_basis": true
+    },
+    {
+     "window": "lowest 4 Fr points",
+     "n_points": 4,
+     "intercept": 1.2831098292387757,
+     "k": 0.2831098292387757,
+     "diff_vs_record_pct_k_basis": 10.931694472924942,
+     "pass_k_basis": false
+    }
+   ],
+   "exponent_scan": [
+    {
+     "n": 3.0,
+     "intercept": 1.2910264970808945,
+     "k": 0.29102649708089445
+    },
+    {
+     "n": 3.05,
+     "intercept": 1.2916112547983372,
+     "k": 0.29161125479833716
+    },
+    {
+     "n": 3.1,
+     "intercept": 1.2921787139468885,
+     "k": 0.29217871394688855
+    },
+    {
+     "n": 3.15,
+     "intercept": 1.2927296273179727,
+     "k": 0.2927296273179727
+    },
+    {
+     "n": 3.2,
+     "intercept": 1.2932647013463006,
+     "k": 0.29326470134630056
+    },
+    {
+     "n": 3.25,
+     "intercept": 1.2937845997793116,
+     "k": 0.2937845997793116
+    },
+    {
+     "n": 3.3,
+     "intercept": 1.2942899470047415,
+     "k": 0.29428994700474154
+    },
+    {
+     "n": 3.35,
+     "intercept": 1.2947813310722405,
+     "k": 0.29478133107224047
+    },
+    {
+     "n": 3.4,
+     "intercept": 1.2952593064407607,
+     "k": 0.2952593064407607
+    },
+    {
+     "n": 3.45,
+     "intercept": 1.2957243964797784,
+     "k": 0.29572439647977844
+    },
+    {
+     "n": 3.5,
+     "intercept": 1.2961770957492194,
+     "k": 0.29617709574921935
+    },
+    {
+     "n": 3.55,
+     "intercept": 1.2966178720801707,
+     "k": 0.29661787208017065
+    },
+    {
+     "n": 3.6,
+     "intercept": 1.2970471684760185,
+     "k": 0.29704716847601853
+    },
+    {
+     "n": 3.65,
+     "intercept": 1.2974654048515046,
+     "k": 0.29746540485150463
+    },
+    {
+     "n": 3.7,
+     "intercept": 1.2978729796253081,
+     "k": 0.2978729796253081
+    },
+    {
+     "n": 3.75,
+     "intercept": 1.2982702711801026,
+     "k": 0.29827027118010263
+    },
+    {
+     "n": 3.8,
+     "intercept": 1.2986576392025635,
+     "k": 0.2986576392025635
+    },
+    {
+     "n": 3.85,
+     "intercept": 1.2990354259145083,
+     "k": 0.29903542591450827
+    },
+    {
+     "n": 3.9,
+     "intercept": 1.2994039572052063,
+     "k": 0.2994039572052063
+    },
+    {
+     "n": 3.95,
+     "intercept": 1.2997635436738662,
+     "k": 0.29976354367386615
+    },
+    {
+     "n": 4.0,
+     "intercept": 1.3001144815904129,
+     "k": 0.3001144815904129
+    },
+    {
+     "n": 4.05,
+     "intercept": 1.300457053781856,
+     "k": 0.30045705378185605
+    },
+    {
+     "n": 4.1,
+     "intercept": 1.3007915304508308,
+     "k": 0.30079153045083085
+    },
+    {
+     "n": 4.15,
+     "intercept": 1.301118169932255,
+     "k": 0.30111816993225493
+    },
+    {
+     "n": 4.2,
+     "intercept": 1.3014372193934733,
+     "k": 0.30143721939347334
+    },
+    {
+     "n": 4.25,
+     "intercept": 1.3017489154827415,
+     "k": 0.3017489154827415
+    },
+    {
+     "n": 4.3,
+     "intercept": 1.3020534849304504,
+     "k": 0.30205348493045037
+    },
+    {
+     "n": 4.35,
+     "intercept": 1.3023511451070717,
+     "k": 0.30235114510707173
+    },
+    {
+     "n": 4.4,
+     "intercept": 1.3026421045414454,
+     "k": 0.30264210454144536
+    },
+    {
+     "n": 4.45,
+     "intercept": 1.30292656340268,
+     "k": 0.3029265634026801
+    },
+    {
+     "n": 4.5,
+     "intercept": 1.303204713948661,
+     "k": 0.3032047139486611
+    },
+    {
+     "n": 4.55,
+     "intercept": 1.3034767409438646,
+     "k": 0.30347674094386456
+    },
+    {
+     "n": 4.6,
+     "intercept": 1.303742822048958,
+     "k": 0.30374282204895797
+    },
+    {
+     "n": 4.65,
+     "intercept": 1.304003128184424,
+     "k": 0.304003128184424
+    },
+    {
+     "n": 4.7,
+     "intercept": 1.3042578238702678,
+     "k": 0.3042578238702678
+    },
+    {
+     "n": 4.75,
+     "intercept": 1.3045070675436676,
+     "k": 0.30450706754366763
+    },
+    {
+     "n": 4.8,
+     "intercept": 1.304751011856284,
+     "k": 0.30475101185628395
+    },
+    {
+     "n": 4.85,
+     "intercept": 1.3049898039527803,
+     "k": 0.3049898039527803
+    },
+    {
+     "n": 4.9,
+     "intercept": 1.3052235857319865,
+     "k": 0.3052235857319865
+    },
+    {
+     "n": 4.95,
+     "intercept": 1.3054524940920056,
+     "k": 0.3054524940920056
+    },
+    {
+     "n": 5.0,
+     "intercept": 1.3056766611604607,
+     "k": 0.30567666116046066
+    }
+   ],
+   "identifiability_note": "the three LBM grids share one Re and one Fr, so no Prohaska fit exists on the case side — k is only identifiable on the anchor ladder; the two calibers are therefore not independent estimates of the same physical k"
+  }
+ },
+ "closure": {
+  "structure": "C_T = (1 + k) * C_F + C_W",
+  "C_W_assumption": {
+   "value_used": 0.0,
+   "scan_rule": "any transcribed pointer matching (/c_w|/cw|/wave|/rw|/ct_wave)",
+   "n_hits_in_transcription": 0,
+   "hits": [],
+   "structural_argument": "The case's own frozen reference structure is a single-term friction line (S7 /reference/formula: Blasius laminar flat plate), the recorded observable is a pressure+friction force total (S7 /observable), and no artifact in the transcription carries a wave-resistance field. C_W = 0 is therefore the case's own convention, not an assumption added here. The residual is additionally re-expressed as the 'required C_W to close', whose sign is the verdict: a negative value cannot be produced by any physical (non-negative) wave resistance."
+  },
+  "caliber_A_primary": {
+   "caliber": "A",
+   "definition": "C_F = ITTC-1957 at case Re; k = recorded AFF-8 form factor; C_W = 0  [PRIMARY]",
+   "C_F": 0.075,
+   "C_F_refs": [
+    {
+     "source_id": "S2",
+     "pointer": "/cf_ref",
+     "value": 0.041995047327036086,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    {
+     "source_id": "S4",
+     "pointer": "/supplement_tau_re_coupling/production_point/re",
+     "value": 1000.0,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+     "source_sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+    }
+   ],
+   "k": 0.25521094812797096,
+   "one_plus_k": 1.255210948127971,
+   "k_refs": [
+    {
+     "source_id": "S5",
+     "pointer": "/anchors/0/form_factor_CT_over_ITTC",
+     "value": 1.255210948127971,
+     "source_path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "source_sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+    },
+    {
+     "source_id": "S6",
+     "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/0/one_plus_k",
+     "value": 1.25521094813,
+     "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+     "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+    }
+   ],
+   "C_W": 0.0,
+   "per_tier": [
+    {
+     "tier": "L96",
+     "C_T": 0.0385703619256417,
+     "one_plus_k": 1.255210948127971,
+     "C_F": 0.075,
+     "C_W": 0.0,
+     "C_T_predicted": 0.09414082110959782,
+     "residual_abs": -0.05557045918395612,
+     "residual_pct": -144.07554508067165,
+     "abs_residual_pct": 144.07554508067165,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.05557045918395612,
+     "required_C_W_negative": true
+    },
+    {
+     "tier": "L112",
+     "C_T": 0.04076867077371583,
+     "one_plus_k": 1.255210948127971,
+     "C_F": 0.075,
+     "C_W": 0.0,
+     "C_T_predicted": 0.09414082110959782,
+     "residual_abs": -0.05337215033588199,
+     "residual_pct": -130.91461978763314,
+     "abs_residual_pct": 130.91461978763314,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.05337215033588199,
+     "required_C_W_negative": true
+    },
+    {
+     "tier": "L128",
+     "C_T": 0.04239577341027158,
+     "one_plus_k": 1.255210948127971,
+     "C_F": 0.075,
+     "C_W": 0.0,
+     "C_T_predicted": 0.09414082110959782,
+     "residual_abs": -0.05174504769932624,
+     "residual_pct": -122.05237347265738,
+     "abs_residual_pct": 122.05237347265738,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.05174504769932624,
+     "required_C_W_negative": true
+    }
+   ],
+   "max_abs_residual_pct": 144.07554508067165,
+   "all_pass": false
+  },
+  "caliber_B": {
+   "caliber": "B",
+   "definition": "C_F = case reference C_F (Blasius at case Re); k = recorded AFF-8 form factor; C_W = 0",
+   "C_F": 0.041995047327036086,
+   "C_F_refs": [
+    {
+     "source_id": "S2",
+     "pointer": "/cf_ref",
+     "value": 0.041995047327036086,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    },
+    {
+     "source_id": "S7",
+     "pointer": "/reference/cf_ref",
+     "value": 0.041995047327036086,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/result.json",
+     "source_sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+    },
+    {
+     "source_id": "S1",
+     "pointer": "/cf_ref_recomputed",
+     "value": 0.04199504732703608,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/verdict.json",
+     "source_sha256": "8407056397d402e8a8f58618720ed8c58095901068bbae995111106ae0cbc5d9"
+    }
+   ],
+   "k": 0.25521094812797096,
+   "one_plus_k": 1.255210948127971,
+   "k_refs": [
+    {
+     "source_id": "S5",
+     "pointer": "/anchors/0/form_factor_CT_over_ITTC",
+     "value": 1.255210948127971,
+     "source_path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "source_sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+    },
+    {
+     "source_id": "S6",
+     "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/0/one_plus_k",
+     "value": 1.25521094813,
+     "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+     "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+    }
+   ],
+   "C_W": 0.0,
+   "per_tier": [
+    {
+     "tier": "L96",
+     "C_T": 0.0385703619256417,
+     "one_plus_k": 1.255210948127971,
+     "C_F": 0.041995047327036086,
+     "C_W": 0.0,
+     "C_T_predicted": 0.05271264317204798,
+     "residual_abs": -0.014142281246406277,
+     "residual_pct": -36.66618756046581,
+     "abs_residual_pct": 36.66618756046581,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.014142281246406277,
+     "required_C_W_negative": true
+    },
+    {
+     "tier": "L112",
+     "C_T": 0.04076867077371583,
+     "one_plus_k": 1.255210948127971,
+     "C_F": 0.041995047327036086,
+     "C_W": 0.0,
+     "C_T_predicted": 0.05271264317204798,
+     "residual_abs": -0.011943972398332149,
+     "residual_pct": -29.296938486482635,
+     "abs_residual_pct": 29.296938486482635,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.011943972398332149,
+     "required_C_W_negative": true
+    },
+    {
+     "tier": "L128",
+     "C_T": 0.04239577341027158,
+     "one_plus_k": 1.255210948127971,
+     "C_F": 0.041995047327036086,
+     "C_W": 0.0,
+     "C_T_predicted": 0.05271264317204798,
+     "residual_abs": -0.010316869761776398,
+     "residual_pct": -24.334665774199188,
+     "abs_residual_pct": 24.334665774199188,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.010316869761776398,
+     "required_C_W_negative": true
+    }
+   ],
+   "max_abs_residual_pct": 36.66618756046581,
+   "all_pass": false
+  },
+  "caliber_C": {
+   "caliber": "C",
+   "definition": "C_F = case reference C_F; k = recorded AFF-1 bare-hull form factor (lower bound for the with-sail geometry); C_W = 0",
+   "C_F": 0.041995047327036086,
+   "C_F_refs": [
+    {
+     "source_id": "S2",
+     "pointer": "/cf_ref",
+     "value": 0.041995047327036086,
+     "source_path": "benchmarks/verified/suboff_sail_resistance/e2_verdict.json",
+     "source_sha256": "12dd4838baebe0efe363fe5e9028d8dc234fdd04782c541926aa8490206dcf8a"
+    }
+   ],
+   "k": 0.07528316484000008,
+   "one_plus_k": 1.07528316484,
+   "k_refs": [
+    {
+     "source_id": "S6",
+     "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/0/one_plus_k",
+     "value": 1.07528316484,
+     "source_path": "benchmarks/verified/suboff_anchor/anchor.json",
+     "source_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+    }
+   ],
+   "C_W": 0.0,
+   "per_tier": [
+    {
+     "tier": "L96",
+     "C_T": 0.0385703619256417,
+     "one_plus_k": 1.07528316484,
+     "C_F": 0.041995047327036086,
+     "C_W": 0.0,
+     "C_T_predicted": 0.04515656739742095,
+     "residual_abs": -0.006586205471779252,
+     "residual_pct": -17.075819730384023,
+     "abs_residual_pct": 17.075819730384023,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.006586205471779252,
+     "required_C_W_negative": true
+    },
+    {
+     "tier": "L112",
+     "C_T": 0.04076867077371583,
+     "one_plus_k": 1.07528316484,
+     "C_F": 0.041995047327036086,
+     "C_W": 0.0,
+     "C_T_predicted": 0.04515656739742095,
+     "residual_abs": -0.0043878966237051245,
+     "residual_pct": -10.762913139993927,
+     "abs_residual_pct": 10.762913139993927,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.0043878966237051245,
+     "required_C_W_negative": true
+    },
+    {
+     "tier": "L128",
+     "C_T": 0.04239577341027158,
+     "one_plus_k": 1.07528316484,
+     "C_F": 0.041995047327036086,
+     "C_W": 0.0,
+     "C_T_predicted": 0.04515656739742095,
+     "residual_abs": -0.0027607939871493736,
+     "residual_pct": -6.511955709435161,
+     "abs_residual_pct": 6.511955709435161,
+     "pass_3pct": false,
+     "required_C_W_to_close": -0.0027607939871493736,
+     "required_C_W_negative": true
+    }
+   ],
+   "max_abs_residual_pct": 17.075819730384023,
+   "all_pass": false
+  },
+  "caliber_D_definitional": {
+   "caliber": "D",
+   "definition": "definitional anchor self-consistency at the anchor Reynolds numbers: the recorded (1+k) is itself defined as C_T/C_F, so the residual is zero by construction — NOT evidence of closure, disclosed for honesty",
+   "per_row": [
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/0",
+     "C_T": 0.00366690356967,
+     "C_F": 0.002921344476110386,
+     "one_plus_k": 1.25521094813,
+     "residual_pct": -7.788010969112622e-11
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/1",
+     "C_T": 0.00357630051741,
+     "C_F": 0.0026761812383715167,
+     "one_plus_k": 1.33634466386,
+     "residual_pct": -2.802681764409703e-10
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/2",
+     "C_T": 0.0034876805213,
+     "C_F": 0.0026028755498219217,
+     "one_plus_k": 1.33993364436,
+     "residual_pct": 3.3184350688561054e-10
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/3",
+     "C_T": 0.00342514013207,
+     "C_F": 0.0025366840048760427,
+     "one_plus_k": 1.35024312271,
+     "residual_pct": -6.82212240095584e-11
+    },
+    {
+     "row": "B_AFF8_full_CFDletters_T3/rows/4",
+     "C_T": 0.00332593306498,
+     "C_F": 0.00248117549111679,
+     "one_plus_k": 1.34046667674,
+     "residual_pct": -1.8222525907118381e-10
+    }
+   ],
+   "max_abs_residual_pct": 3.3184350688561054e-10,
+   "evidential": false
+  },
+  "C_T_caliber_sensitivity": [
+   {
+    "tier": "L96",
+    "C_T_caliber": "e2_standard_window",
+    "C_T": 0.0385703619256417,
+    "residual_pct": -144.07554508067165,
+    "abs_residual_pct": 144.07554508067165
+   },
+   {
+    "tier": "L96",
+    "C_T_caliber": "archived_mix50",
+    "C_T": 0.042648661292759835,
+    "residual_pct": -120.73570015099031,
+    "abs_residual_pct": 120.73570015099031
+   },
+   {
+    "tier": "L112",
+    "C_T_caliber": "e2_standard_window",
+    "C_T": 0.04076867077371583,
+    "residual_pct": -130.91461978763314,
+    "abs_residual_pct": 130.91461978763314
+   },
+   {
+    "tier": "L112",
+    "C_T_caliber": "archived_mix50",
+    "C_T": 0.04448487172275888,
+    "residual_pct": -111.6243510744676,
+    "abs_residual_pct": 111.6243510744676
+   },
+   {
+    "tier": "L128",
+    "C_T_caliber": "e2_standard_window",
+    "C_T": 0.04239577341027158,
+    "residual_pct": -122.05237347265738,
+    "abs_residual_pct": 122.05237347265738
+   },
+   {
+    "tier": "L128",
+    "C_T_caliber": "archived_mix50",
+    "C_T": 0.045862176545034064,
+    "residual_pct": -105.26897805898254,
+    "abs_residual_pct": 105.26897805898254
+   }
+  ]
+ },
+ "criteria_predeclared": {
+  "C1_completeness_pct": 100.0,
+  "C2_cf_rel_dev_pct": 1.0,
+  "C3_closure_residual_pct": 3.0,
+  "C4_k_two_caliber_diff_pct": 5.0,
+  "C4_basis_primary": "k (form factor = (1+k)-1) — the literal reading of the criterion",
+  "C4_basis_disclosed": "(1+k) basis reported alongside; no basis is dropped",
+  "C3_primary_caliber": "A: C_F = ITTC-1957 at the case Reynolds number, k = recorded AFF-8 form factor, C_W = 0",
+  "prohaska_primary_rule": "all transcribed AFF-8 ladder points (no outlier removal, no window selection), wave exponent fixed at n = 4 (Prohaska standard), unweighted OLS of C_T/C_F on Fr^n, intercept = 1+k",
+  "prohaska_sensitivity": "lowest-Fr windows of 3 and 4 points and a free-exponent scan n in [3.0, 5.0] step 0.05 — reported in full, including the windows where the criterion would pass",
+  "no_threshold_tuning": "thresholds are the task-statement values; they were not adjusted after any measured value was computed"
+ },
+ "criteria": [
+  {
+   "id": "C1",
+   "requirement": "锚件抄录完整率 100%（每字段有 JSON 指针且回读值与类型一致），缺失字段数与原因逐条列出",
+   "measured": {
+    "completeness_pct": 100.0,
+    "n_expected": 2342,
+    "n_transcribed": 2342,
+    "n_missing_or_mismatched": 0,
+    "missing_list": [],
+    "duplicate_pointers": [],
+    "n_sources": 8,
+    "n_readback_checked": 2342
+   },
+   "threshold": "100.0%",
+   "verdict": "PASS",
+   "evidence": "anchor_transcription.json:/completeness + /sources[*].readback_method"
+  },
+  {
+   "id": "C2",
+   "requirement": "ITTC-57 C_F 与锚件记录 C_F 的相对偏差逐档给出，并显式回答是否 <1%（逐档 = 锚件中带 ITTC-1957 记录的每一档）",
+   "measured": {
+    "per_arm_rel_dev_pct": {
+     "A": 0.0,
+     "B": 0.0008876509131861578,
+     "C": -0.00541161113480045,
+     "D": -0.0021128856131582122,
+     "E": 0.0011685459125776478
+    },
+    "max_abs_rel_dev_pct": 0.00541161113480045,
+    "max_abs_rel_dev_pct_md_vs_json": 2.4057409916321898e-05,
+    "n_arms": 5,
+    "all_under_1pct": true
+   },
+   "threshold": "<1%",
+   "verdict": "PASS",
+   "evidence": "ittc57_closure.json:/recompute_checks + /md_vs_json_crosscheck"
+  },
+  {
+   "id": "C2'",
+   "requirement": "披露行（非本判据）：把 ITTC-1957 直接当作本案 Re 的摩擦估计时的口径冲突 — 同一 Re 下 ITTC-57 与本案例参考 C_F 的相对偏差",
+   "measured": {
+    "Re_case": 1000.0,
+    "cf_ittc57_at_case_Re": 0.075,
+    "cf_case_reference_recorded": 0.041995047327036086,
+    "rel_dev_pct": 78.59248833782259,
+    "under_1pct": false
+   },
+   "threshold": "<1%（披露用，不作 C2 判据）",
+   "verdict": "FAIL",
+   "evidence": "ittc57_closure.json:/case_caliber_gap",
+   "note": "这一行说明 C3 为何必然不闭合：ITTC-57 在 Re=1e3 给出 0.075，而本案参考 C_F 为层流 Blasius 值，两者相差约 78.6%；ITTC-57 在该 Re 段不是物理参考（案例工件自身也如此记录）。"
+  },
+  {
+   "id": "C3",
+   "requirement": "三档网格 C_T 闭合残差 |C_T − (1+k)C_F − C_W| / C_T 逐档 <3%",
+   "measured": {
+    "primary_caliber": "A",
+    "per_tier_residual_pct": {
+     "L96": -144.07554508067165,
+     "L112": -130.91461978763314,
+     "L128": -122.05237347265738
+    },
+    "max_abs_residual_pct": 144.07554508067165,
+    "all_under_3pct": false,
+    "required_C_W_to_close": {
+     "L96": -0.05557045918395612,
+     "L112": -0.05337215033588199,
+     "L128": -0.05174504769932624
+    },
+    "all_required_C_W_negative": true,
+    "caliber_B_per_tier_pct": {
+     "L96": -36.66618756046581,
+     "L112": -29.296938486482635,
+     "L128": -24.334665774199188
+    },
+    "caliber_B_max_abs_residual_pct": 36.66618756046581,
+    "caliber_C_per_tier_pct": {
+     "L96": -17.075819730384023,
+     "L112": -10.762913139993927,
+     "L128": -6.511955709435161
+    },
+    "caliber_C_max_abs_residual_pct": 17.075819730384023
+   },
+   "threshold": "<3%",
+   "verdict": "FAIL",
+   "evidence": "ittc57_closure.json:/closure/caliber_A,B,C"
+  },
+  {
+   "id": "C4",
+   "requirement": "k 的两种口径（仓内记录值 / Prohaska 低速档拟合）差异 <5%，否则如实报 FAIL 并归因",
+   "measured": {
+    "k_record_aff8": 0.25521094812797096,
+    "k_record_aff8_double_entry": 0.25521094813,
+    "k_record_double_entry_rel_dev_pct": 7.950456728790132e-10,
+    "k_prohaska_aff8": 0.3001144815904129,
+    "diff_pct_k_basis": 17.59467365793643,
+    "diff_pct_one_plus_k_basis": 3.577369487528077,
+    "aff8_ladder_n_points": 5,
+    "aff1_ladder_n_points": 6,
+    "k_aff1_record": 0.07528316484000008,
+    "k_aff1_prohaska": 0.12652906107446027,
+    "aff1_diff_pct_k_basis": 68.0708579977655,
+    "window_sensitivity": [
+     {
+      "window": "lowest 3 Fr points",
+      "n_points": 3,
+      "intercept": 1.2640887164956554,
+      "k": 0.26408871649565535,
+      "diff_vs_record_pct_k_basis": 3.4786001277785283,
+      "pass_k_basis": true
+     },
+     {
+      "window": "lowest 4 Fr points",
+      "n_points": 4,
+      "intercept": 1.2831098292387757,
+      "k": 0.2831098292387757,
+      "diff_vs_record_pct_k_basis": 10.931694472924942,
+      "pass_k_basis": false
+     }
+    ],
+    "exponent_scan_intercept_range": [
+     1.2910264970808945,
+     1.3056766611604607
+    ]
+   },
+   "threshold": "<5%",
+   "verdict": "FAIL",
+   "note": "主口径按任务文字取 k 本身（= (1+k) − 1）；(1+k) 口径同时披露，不择其利；窗口与指数敏感性全部列出。",
+   "evidence": "ittc57_closure.json:/k_identifiability"
+  }
+ ],
+ "overall_verdict": "HONEST-FAIL",
+ "attribution": {
+  "C3": "闭合在三档全部失败（主口径 A）：ITTC-57 在 Re=1e3 给出 C_F=0.075（湍流线），与本案层流参考 C_F=0.041995 相差 78.6%；预测 C_T 比实测高 144.1%（L96）到 122.1%（L128）。把 C_W 放开也无解：使恒等式闭合所需的 C_W 在三档均为负值（见 /closure/caliber_A/per_tier[*]/required_C_W_to_close），物理上非负的兴波阻力不可能闭合该恒等式。",
+  "C4": "Prohaska 截距被抬高，因为 AFF-8 阶梯覆盖 Fr = 0.467–1.259，Fr^4 兴波项在该区间并非单一幂律（高档已接近/越过峰阻区）；取最低 3 档时 k 口径差异降到 3.3%（PASS），全部 5 档时为 17.6%（FAIL）。窗口选择在 k 口径上翻转判据，故本单按预声明主规则（全部点）报 FAIL 并全量披露敏感性。",
+  "C2_vs_physical": "C2 通过（最大偏差 5.412e-03%，即记录值舍入量级）只证明公式实现与抄录正确，不证明 ITTC-57 在本案 Re 段适用；C2' 披露行给出 +78.6% 的口径冲突。"
+ },
+ "honest_fail_summary": {
+  "delivered": [
+   "锚件逐字段机读抄录（2342 叶，8 源，100% 完整率，独立回读 0 失配）",
+   "ITTC-1957 三路实现 + 与仓内记录逐档比对（最大偏差 5.412e-03%，A 档全精度为 0，B–E 档受记录值 6 位有效数字舍入所限）",
+   "三档网格闭合检验（三个口径 + 一个定义性口径）",
+   "k 两口径（记录值 / Prohaska 拟合）与窗口/指数敏感性",
+   "C_W 的零值依据与『所需 C_W 为负』的结构性论证"
+  ],
+  "failed": [
+   "C3 三档闭合残差全部远超 3%（主口径 122.05%–144.08%）",
+   "C4 按 k 本身口径差异 17.59% > 5.0%"
+  ],
+  "not_claimed": [
+   "未声称外部锚在 <3% 带内得到 LBM 验证",
+   "未声称 Prohaska 拟合给出与记录一致的 k（按主口径为否）",
+   "未把口径 D 的定义性零残差当作证据"
+  ]
+ },
+ "provenance": {
+  "recipe": "benchmarks/verified/suboff_anchor_w22/build_ittc57_closure.py",
+  "inputs_sha256": {
+   "benchmarks/verified/suboff_anchor_w22/anchor_transcription.json": "6f210931f13b5937c086571ac6fef9327f3aa2d59ad96d987f10deaaab97a488"
+  },
+  "external_anchor_offline_disclosure": "外部锚全部来自仓内已归档转录（二手），原始 DTRC/ITTC 文档不在工作树内；该限制由 upstream 工件 benchmarks/verified/suboff_anchor/anchor.json :: external_evidence.offline_disclosure 承载",
+  "blind_review": "EVO-1 盲评期：本单未读取任何 task_key 以 evo1- 开头的报告或工件"
+ }
+}
