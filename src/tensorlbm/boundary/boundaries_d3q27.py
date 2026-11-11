@@ -27,6 +27,7 @@ import torch
 
 from tensorlbm.d3q27 import OPPOSITE as OPPOSITE27
 from tensorlbm.d3q27 import equilibrium27
+from ..input_contract import check_positive_scalar
 
 # ---------------------------------------------------------------------------
 # Module-level direction-index constants (derived from the fixed D3Q27 lattice).
@@ -192,6 +193,7 @@ def zou_he_outlet_pressure_27(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     Returns:
         Updated distribution tensor (same shape).
     """
+    rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure_27")
     device = f.device
 
     sum_cx0 = (

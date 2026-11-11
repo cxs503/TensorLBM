@@ -637,11 +637,14 @@ def main() -> None:
     p2.add_argument("--u-max", type=float, default=0.04)
     p2.add_argument("--min-steps", type=int, default=20000)
     p2.add_argument("--max-steps", type=int, default=60000)
-    p2.add_argument("--device", type=str, default="cuda:2")
+    p2.add_argument("--device", type=str, default="auto",
+                    help="auto = cuda:0 when available else cpu (was cuda:2, which aborted on CPU-only hosts)")
     p2.add_argument("--seed", type=int, default=0)
     add_compile_mode_arg(p2)
 
     args = ap.parse_args()
+    if args.device == "auto":
+        args.device = "cuda:0" if torch.cuda.is_available() else "cpu"
     device = torch.device(args.device)
     compile_mode = compile_mode_from_args(args)
     if args.mode_cmd == "single":
