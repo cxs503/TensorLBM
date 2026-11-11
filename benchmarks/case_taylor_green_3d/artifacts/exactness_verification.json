@@ -1,0 +1,29 @@
+{
+ "tg": {
+  "n": 32,
+  "amp": 0.002,
+  "curl_of_convective_term_over_norm": 2.7067746365479036e-15,
+  "convective_term_is_pure_gradient": true,
+  "laplacian_identity_rel_residual": 1.5932579336939277e-14,
+  "ns_momentum_residual_rel": 1.5925555602507994e-14,
+  "exact_solution": "u(t) = u0 * exp(-nu*0.0771063*t)"
+ },
+ "tg3d": {
+  "n": 32,
+  "amp": 0.002,
+  "curl_of_convective_term_over_norm": 0.22672492052927723,
+  "convective_term_is_pure_gradient": false,
+  "exact_solution": null,
+  "note": "z-dependent Taylor-Green: convective term has a non-zero curl, so it cannot be absorbed by a pressure gradient -> no closed-form decaying solution exists."
+ },
+ "abc": {
+  "n": 32,
+  "amp": 0.002,
+  "curl_of_convective_term_over_norm": 6.529659139112127e-15,
+  "convective_term_is_pure_gradient": true,
+  "laplacian_identity_rel_residual": 2.3422541779606405e-14,
+  "ns_momentum_residual_rel": 2.3420746531729555e-14,
+  "exact_solution": "u(t) = u0 * exp(-nu*0.0385531*t)"
+ },
+ "abc_beltrami_rel_residual": 2.1446636525277925e-15
+}
