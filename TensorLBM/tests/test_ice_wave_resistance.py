@@ -136,16 +136,23 @@ class TestC2Dispersion:
         D = thin_ice.D
         m = thin_ice.m
         k_star_num = ice_k_star(D, m)
-        k_star_ana = (1025.0 * 9.81 / (4.0 * D))**0.25  # m=0 approx
+        # independent reference: brute-force minimum of c(k) on a dense grid
+        ks = np.logspace(-5, 3, 200001)
+        cs = np.array([float(np.sqrt((9.81 / k + D * k**3 / 1025.0)))
+                       for k in ks])
+        k_star_ana = float(ks[int(np.argmin(cs))])
         rel_err = abs(k_star_num - k_star_ana) / k_star_ana
         # Mass loading shifts k* by ~7%, so use 10% tolerance
         assert rel_err < 0.10, f"k* error: {rel_err:.4%}"
 
     def test_c_min_formula(self, thin_ice):
-        """c_min = (4 D g / ρ_w)^{1/4} for m=0."""
+        """c_min equals the brute-force minimum of c(k) for m=0 (erratum 2026-11-11)."""
         D = thin_ice.D
         c_min_num = ice_c_min(D, m=0.0)
-        c_min_ana = (4.0 * D * 9.81 / 1025.0)**0.25
+        ks = np.logspace(-5, 3, 200001)
+        cs = np.array([float(np.sqrt((9.81 / k + D * k**3 / 1025.0)))
+                       for k in ks])
+        c_min_ana = float(np.min(cs))
         rel_err = abs(c_min_num - c_min_ana) / c_min_ana
         assert rel_err < 0.01, f"c_min error: {rel_err:.4%}"
 

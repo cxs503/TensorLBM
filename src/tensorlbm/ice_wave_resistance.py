@@ -29,9 +29,16 @@ Key limits
 * **Open water** (``h_ice → 0`` or ``E → 0``): ``D → 0``, ``m → 0``,
   dispersion reduces to ``ω² = g k``, recovering the classical Michell result.
 * **Rigid lid** (``D → ∞``): no wave can propagate, ``R_flex → 0``.
-* **Critical speed**: the minimum phase speed ``c_min = (4 D g / ρ_w)^{1/4}``
-  (deep water, no mass loading) sets the speed below which no steady waves
-  exist; the resistance curve exhibits a sharp peak near ``U ≈ c_min``.
+* **Critical speed**: minimising ``c(k) = sqrt((g/k + D k³/ρ_w)/(1 + m k))``
+  yields ``k* = (ρ_w g / (3 D))^{1/4}`` and, for no mass loading (``m = 0``),
+
+      ``c_min = sqrt(4 g / (3 k*)) = (256 g³ D / (27 ρ_w))^{1/8}``
+
+  i.e. ``c_min ∝ D^{1/8} ∝ h^{3/8}``.  This is the speed below which no
+  steady flexural-gravity wave exists; the resistance curve peaks near
+  ``U ≈ c_min``.  (Erratum 2026-11-11: the previously documented
+  ``c_min = (4 D g/ρ_w)^{1/4}`` is neither dimensionally consistent
+  [m^{3/2} s^{-1}] nor equal to the minimum of ``c(k)``.)
 
 Energy balance
 ~~~~~~~~~~~~~~
@@ -56,6 +63,7 @@ against analytical limits (C1–C6 in the campaign DAG).
 
 from __future__ import annotations
 
+import functools
 import json
 import math
 from dataclasses import dataclass, field
@@ -198,6 +206,12 @@ def ice_dispersion_k(U: float, theta: float, D: float, m: float,
     if ct < 1e-12:
         return 0.0
 
+    # Below the critical speed no steady flexural-gravity wave exists; return
+    # the documented 0.0 instead of a Newton artefact (verified 2026-11-11:
+    # subcritical inputs used to return ~1e-15 rather than 0.0).
+    if U * ct < ice_c_min(D, m, g, rho) * (1.0 - 1e-12):
+        return 0.0
+
     # Open-water guess
     k0 = g / (U**2 * ct**2)
 
@@ -244,6 +258,16 @@ def ice_dispersion_k(U: float, theta: float, D: float, m: float,
                 break
 
     if f_lo * f_hi > 0:
+        # Tangential case: at U cosθ ≈ c_min the two roots coalesce into a
+        # double root, so no sign change exists and Newton stalls.  Return the
+        # stationary wavenumber if the residual is numerically zero there.
+        k_star = ice_k_star(D, m, g, rho)
+        if k_star > 0.0:
+            f_star = _ice_dispersion_residual(k_star, U, theta, D, m, g, rho)
+            scale = U**2 * k_star**2 * ct**2 * (1.0 + m * k_star) \
+                + g * k_star + D * k_star**5 / rho
+            if scale > 0.0 and abs(f_star) / scale < 1e-6:
+                return float(k_star)
         return 0.0  # no root found
 
     for _ in range(200):
@@ -273,49 +297,96 @@ def ice_phase_speed(k: float, D: float, m: float, g: float = G, rho: float = RHO
 def ice_group_speed(k: float, D: float, m: float, g: float = G, rho: float = RHO) -> float:
     """Group velocity ``c_g = dω/dk`` [m/s].
 
-    From ``ω² = (g k + D k⁵/ρ_w) / (1 + m k)``:
+    From ``ω² = N/T`` with ``N = g k + D k⁵/ρ_w`` and ``T = 1 + m k``:
 
-        c_g = (g + 5 D k⁴/ρ_w) / (2 ω (1 + m k)) - m ω / (2 (1 + m k)²)
+        ``2 ω c_g = dω²/dk = N'/(T) - N m/(T²)``
+
+    and since ``N = ω² T`` this is
+
+        c_g = (g + 5 D k⁴/ρ_w) / (2 ω (1 + m k)) - m ω / (2 (1 + m k))
+
+    (erratum 2026-11-11: the mass-loading term was previously divided by
+    ``(1 + m k)²`` instead of ``(1 + m k)``; the error is 0 for ``m = 0``
+    (which is why every ``m = 0`` check passed) and grows with ``m k``
+    (0.12 % at ``h = 0.3 m, k = 0.3 1/m``) — a finite-difference check of
+    ``dω/dk`` catches it.)
     """
     if k < 1e-15:
         return 0.0
     omega = math.sqrt((g * k + D * k**5 / rho) / (1.0 + m * k))
     num = g + 5.0 * D * k**4 / rho
     den1 = 2.0 * omega * (1.0 + m * k)
-    den2 = 2.0 * omega * (1.0 + m * k)**2
-    return num / den1 - m * omega / den2
+    return num / den1 - m * omega / (2.0 * (1.0 + m * k))
+
+
+@functools.lru_cache(maxsize=256)
+def _stationary_wavenumber(D: float, m: float = 0.0, g: float = G,
+                          rho: float = RHO) -> float:
+    """Wavenumber ``k*`` at which the phase speed is minimal (``dc/dk = 0``).
+
+    Setting ``d/dk`` of ``c² = (g/k + D k³/ρ_w)/(1 + m k)`` to zero and
+    clearing denominators gives the polynomial
+
+        ``p(k) = 3 D k⁴ + 2 m D k⁵ - 2 m g ρ_w k - g ρ_w = 0``
+
+    ``p`` is convex on ``k > 0`` with ``p(0⁺) = -g ρ_w < 0`` and
+    ``p(+∞) → +∞``, so the positive root is unique and is bracketed by a
+    plain bisection (no tuning).  For ``m = 0`` the closed form
+    ``k* = (ρ_w g / (3 D))^{1/4}`` is returned exactly.
+    """
+    if D < 1e-30:
+        return 0.0
+    if m < 1e-15:
+        return (rho * g / (3.0 * D))**0.25
+
+    def p(k: float) -> float:
+        return 3.0 * D * k**4 + 2.0 * m * D * k**5 - 2.0 * m * g * rho * k - g * rho
+
+    k_lo, k_hi = 1e-10, 1.0
+    while p(k_hi) < 0.0:          # widen the bracket (rare, large m)
+        k_hi *= 4.0
+        if k_hi > 1e8:
+            break
+    for _ in range(400):
+        k_mid = 0.5 * (k_lo + k_hi)
+        if p(k_mid) < 0.0:
+            k_lo = k_mid
+        else:
+            k_hi = k_mid
+        if k_hi - k_lo <= 4.0 * np.finfo(float).eps * max(k_mid, 1e-300):
+            break
+    return 0.5 * (k_lo + k_hi)
 
 
 def ice_c_min(D: float, m: float = 0.0, g: float = G, rho: float = RHO) -> float:
     """Minimum phase speed for flexural-gravity waves [m/s].
 
-    For ``m=0`` (no mass loading): ``c_min = (4 D g / ρ_w)^{1/4}``.
-    With mass loading, found numerically by minimising ``c(k)``.
+    ``c_min = c(k*) = sqrt((g/k* + D k*³/ρ_w)/(1 + m k*))``, evaluated at the
+    stationary wavenumber ``k*`` from :func:`ice_k_star`.
+
+    For ``m = 0`` this collapses to the closed form
+    ``c_min = sqrt(4 g/(3 k*)) = (256 g³ D/(27 ρ_w))^{1/8}``, so
+    ``c_min ∝ h^{3/8}`` (erratum 2026-11-11: the former
+    ``(4 D g/ρ_w)^{1/4}`` was dimensionally inconsistent and scaled like
+    ``h^{3/4}``, over-predicting the critical speed of a 0.3 m ice sheet by
+    2.6×).
     """
     if D < 1e-30:
         return 0.0
-    if m < 1e-15:
-        return (4.0 * D * g / rho)**0.25
-
-    # Numerical minimisation
-    ks = np.logspace(-3, 2, 5000)
-    cs = np.array([ice_phase_speed(float(k), D, m, g, rho) for k in ks])
-    return float(cs.min())
+    k_star = ice_k_star(D, m, g, rho)
+    if not (k_star > 0.0) or not math.isfinite(k_star):
+        return 0.0
+    return ice_phase_speed(k_star, D, m, g, rho)
 
 
 def ice_k_star(D: float, m: float = 0.0, g: float = G, rho: float = RHO) -> float:
     """Wavenumber at minimum phase speed [1/m].
 
-    For ``m=0``: ``k* = (ρ_w g / (4 D))^{1/4}``.
+    For ``m = 0``: ``k* = (ρ_w g / (3 D))^{1/4}`` (erratum 2026-11-11: the
+    former ``(ρ_w g/(4 D))^{1/4}`` was not the stationary point of ``c(k)``,
+    it differed by ``3^{1/4} = 1.316``).
     """
-    if D < 1e-30:
-        return 0.0
-    if m < 1e-15:
-        return (rho * g / (4.0 * D))**0.25
-
-    ks = np.logspace(-3, 2, 5000)
-    cs = np.array([ice_phase_speed(float(k), D, m, g, rho) for k in ks])
-    return float(ks[int(np.argmin(cs))])
+    return _stationary_wavenumber(D, m, g, rho)
 
 
 def ice_dispersion_curve(D: float, m: float, g: float = G, rho: float = RHO,
@@ -825,28 +896,80 @@ def ice_dispersion_verification(
     # Analytical phase speed
     c_ana = np.sqrt((g / ks + D * ks**3 / rho) / (1.0 + m * ks))
 
-    # Numerical: solve dispersion for normal incidence (θ=0)
-    c_num = np.zeros_like(ks)
-    for i, k in enumerate(ks):
-        omega = math.sqrt((g * k + D * k**5 / rho) / (1.0 + m * k))
-        # For θ=0: U k = ω → U = ω/k = c_phase
-        c_num[i] = omega / k
+    # Independent path: feed U = c_phase(k) into the *root solver* used by the
+    # resistance integral and check that it recovers k.  (Until 2026-11-11 the
+    # "numerical" branch simply recomputed omega/k from the same closed form,
+    # i.e. max_relative_error was <= machine epsilon by construction and the
+    # check had no discriminating power.)
+    #
+    # Caveat (verified 2026-11-11): for U > c_min the dispersion relation has
+    # TWO positive roots (the gravity branch k < k* and the flexural branch
+    # k > k*), so U -> k is only invertible on the descending branch k <= k*.
+    # There the solver must return k itself; on the ascending branch only the
+    # root residual is a well-posed assertion.
+    k_star_ref = ice_k_star(D, m, g, rho)
+    k_rec = np.zeros_like(ks)
+    ct = 1.0  # theta = 0
+    resid_rel = np.zeros_like(ks)
+    for i in range(ks.size):
+        k = float(ks[i])
+        U = ice_phase_speed(k, D, m, g, rho)
+        k_solved = ice_dispersion_k(U, 0.0, D, m, g, rho)
+        k_rec[i] = k_solved
+        scale = U**2 * k_solved**2 * ct**2 * (1.0 + m * k_solved) \
+            + g * k_solved + D * k_solved**5 / rho
+        resid = _ice_dispersion_residual(k_solved, U, 0.0, D, m, g, rho)
+        resid_rel[i] = abs(resid) / scale if scale > 0.0 else 1.0
 
-    rel_errors = np.abs(c_num - c_ana) / np.abs(c_ana)
+    descending = ks <= k_star_ref * (1.0 + 1e-12)
+    if not np.any(descending):
+        descending = ks <= ks.min()
+    rel_errors = np.abs(k_rec[descending] - ks[descending]) / ks[descending]
     max_rel_err = float(np.max(rel_errors))
+    max_rel_resid = float(np.max(resid_rel))
 
-    # k* verification
-    k_star_ana = (rho * g / (4.0 * D))**0.25 if m < 1e-15 else ice_k_star(D, m, g, rho)
-    c_min_ana = (4.0 * D * g / rho)**0.25 if m < 1e-15 else ice_c_min(D, m, g, rho)
+    # Group speed: closed form vs central finite difference of omega(k)
+    cg_ana = np.array([ice_group_speed(float(k), D, m, g, rho) for k in ks])
+
+    def _omega(k: float) -> float:
+        return math.sqrt((g * k + D * k**5 / rho) / (1.0 + m * k))
+
+    dk = 1e-6 * ks
+    cg_fd = np.array([
+        (_omega(float(k + d)) - _omega(float(k - d))) / (2.0 * float(d))
+        for k, d in zip(ks, dk)
+    ])
+    max_rel_err_cg = float(np.max(np.abs(cg_fd - cg_ana) / np.abs(cg_ana)))
+
+    # k*/c_min: closed form vs brute-force minimisation of c(k)
+    k_star_ana = ice_k_star(D, m, g, rho)
+    c_min_ana = ice_c_min(D, m, g, rho)
+    k_brute = np.logspace(-4.0, 3.0, 200001)
+    c_brute = np.array([ice_phase_speed(float(k), D, m, g, rho) for k in k_brute])
+    i_brute = int(np.argmin(c_brute))
+    c_min_brute = float(c_brute[i_brute])
+    k_star_brute = float(k_brute[i_brute])
+    rel_err_c_min = abs(c_min_ana - c_min_brute) / c_min_brute
+    rel_err_k_star = abs(k_star_ana - k_star_brute) / k_star_brute
 
     return {
         "k": ks,
         "c_phase_analytical": c_ana,
-        "c_phase_numerical": c_num,
+        "c_phase_numerical": c_ana,  # kept for backward compat (same function)
+        "k_recovered": k_rec,
+        "descending_branch_mask": descending,
+        "dispersion_residual_relative": resid_rel,
+        "max_dispersion_residual": max_rel_resid,
         "max_relative_error": max_rel_err,
-        "pass_2pct": max_rel_err < 0.02,
+        "pass_2pct": (max_rel_err < 0.02) and (max_rel_resid < 1e-6),
+        "max_relative_cg_error": max_rel_err_cg,
+        "pass_cg_2pct": max_rel_err_cg < 0.02,
         "k_star": k_star_ana,
         "c_min": c_min_ana,
+        "k_star_bruteforce": k_star_brute,
+        "c_min_bruteforce": c_min_brute,
+        "c_min_rel_error": rel_err_c_min,
+        "k_star_rel_error": rel_err_k_star,
         "D": D,
         "m": m,
     }
