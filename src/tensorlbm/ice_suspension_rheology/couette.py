@@ -87,6 +87,16 @@ class ShearCellConfig:
     device: str = "cpu"
     force_variant: str = "mem_sum"
     mode: str = "couette"          # "couette" (shear) or "drag" (uniform flow past a fixed sphere)
+    particle_shear_scale: float = 1.0
+    """Ratio of the *particle* rigid-body shear rate to the *imposed* wall shear rate.
+
+    ``1.0`` is the plain frozen-structure protocol (particles advected with the
+    nominal ``gamma_dot``).  A suspension that thickens shears more slowly than
+    the carrier would, so a particle moving at the nominal rate drags the fluid
+    along and the measured stress is biased low; setting this to the *measured*
+    bulk rate (the self-consistent fixed point) removes that bias.  See
+    :func:`tensorlbm.frazil_powerlaw_mature.self_consistent_point`.
+    """
 
     @property
     def gamma_dot(self) -> float:
@@ -156,7 +166,15 @@ class ShearCell:
                 vy = np.zeros(shape)
                 vz = np.zeros(shape)
             else:
-                vx, vy, vz = _particle_velocity(p, cfg.gamma_dot, cfg.z_mid)
+                # ``rigid_centre`` (optional, in Particle.meta) makes a group of
+                # primary crystals move as one rigid aggregate: the translation
+                # and the half-vorticity rotation are both taken about the
+                # aggregate centre instead of the primary's own centre.  Without
+                # it each primary translates with the shear at its own centre and
+                # the group deforms affinely instead of staying rigid.
+                anchor = (p.meta or {}).get("rigid_centre")
+                vx, vy, vz = _particle_velocity(
+                    p, cfg.gamma_dot * cfg.particle_shear_scale, cfg.z_mid, anchor=anchor)
             usx[p.mask] = vx[p.mask]
             usy[p.mask] = vy[p.mask]
             usz[p.mask] = vz[p.mask]
@@ -442,14 +460,19 @@ class ShearCell:
                 "best_flux": min(out, key=lambda k: out[k]["rel_err_flux"])}
 
 
-def _particle_velocity(p, gamma_dot: float, z_mid: float):
-    """Rigid-body velocity fields on a particle's nodes."""
+def _particle_velocity(p, gamma_dot: float, z_mid: float, anchor=None):
+    """Rigid-body velocity fields on a particle's nodes.
+
+    ``anchor`` is the point the rotation is taken about (default: the particle's
+    own centre).  Passing an aggregate centre makes every primary of that
+    aggregate share one rigid-body field, which is what keeps a floc rigid.
+    """
     nz, ny, nx = p.mask.shape
     z, y, x = np.meshgrid(
         np.arange(nz, dtype=float), np.arange(ny, dtype=float), np.arange(nx, dtype=float),
         indexing="ij",
     )
-    cz, cy, cx = p.centre
+    cz, cy, cx = p.centre if anchor is None else anchor
     om = 0.5 * gamma_dot
     vx = gamma_dot * (cz - z_mid) + om * (z - cz)
     vz = -om * (x - cx)
