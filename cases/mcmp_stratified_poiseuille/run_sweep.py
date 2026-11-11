@@ -100,6 +100,8 @@ def run_case(
     state_path: str | None = None,
     time_budget_s: float | None = None,
     resume: bool = False,
+    wall_mode: str = "dry",
+    sc_form: str = "standard",
 ) -> dict:
     half = ny // 2 if half is None else half
     single_phase = mode == "walls"
@@ -116,7 +118,7 @@ def run_case(
         # exceed a single scheduling window).  Only the solution state and the
         # sample history are carried over; every parameter comes from this call.
         st = torch.load(state_path, weights_only=False)
-        if st["config_core"] != [ny, nx, half, tau_lower, tau_upper, g12, u_eq, force_scheme]:
+        if st["config_core"] != [ny, nx, half, tau_lower, tau_upper, g12, u_eq, force_scheme, wall_mode, sc_form]:
             raise ValueError("checkpoint was produced with different parameters")
         f1, f2 = st["f1"], st["f2"]
         mass0 = tuple(st["mass0"])
@@ -134,6 +136,7 @@ def run_case(
         f1, f2 = collide_sc_two_component(
             f1, f2, G_12=g12, tau1=tau_lower, tau2=tau_upper,
             gx=G_x, solid_mask=wall, u_eq=u_eq, force_scheme=force_scheme,
+            wall_mode=wall_mode, sc_form=sc_form,
         )
         f1, f2 = stream(f1), stream(f2)
         f1, f2 = bounce_back_cells(f1, wall), bounce_back_cells(f2, wall)
@@ -158,7 +161,7 @@ def run_case(
                 and (time.time() - t0) > time_budget_s):
             torch.save(dict(
                 f1=f1, f2=f2, step=step, hist=hist, mass0=mass0,
-                config_core=[ny, nx, half, tau_lower, tau_upper, g12, u_eq, force_scheme],
+                config_core=[ny, nx, half, tau_lower, tau_upper, g12, u_eq, force_scheme, wall_mode, sc_form],
             ), state_path)
             print(f"checkpoint written at step {step} (time budget reached)", flush=True)
             return dict(interrupted=True, step=step, finite=True, mode=mode)
@@ -196,6 +199,7 @@ def run_case(
             ny=ny, nx=nx, half=half, tau_lower=tau_lower, tau_upper=tau_upper,
             G_x=G_x, steps=steps, G_12=g12, u_eq=u_eq, force_scheme=force_scheme,
             rho_heavy=rho_heavy, rho_light=rho_light, interface_width=interface_width,
+            wall_mode=wall_mode,
             wall="post-streaming bounce-back, walls at cell centres (rows 0 and ny-1)",
         ),
         runtime=dict(
@@ -304,6 +308,10 @@ def main(argv=None) -> int:
     ap.add_argument("--time-budget", type=float, default=None,
                     help="seconds; stop and checkpoint when exceeded")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--sc-form", default="standard", choices=["standard", "edm"])
+    ap.add_argument("--wall-mode", default="dry", choices=["dry", "mirror"],
+                    help="SC wall treatment: 'dry' (historical, artificial wall "
+                         "force) or 'mirror' (neutral wetting, no wall force)")
     args = ap.parse_args(argv)
 
     rec = run_case(
@@ -311,6 +319,7 @@ def main(argv=None) -> int:
         tau_upper=args.tau_upper, G_x=args.gx, steps=args.steps, G_12=args.g12,
         u_eq=args.u_eq, force_scheme=args.force_scheme, mode=args.mode,
         state_path=args.state, time_budget_s=args.time_budget, resume=args.resume,
+        wall_mode=args.wall_mode, sc_form=args.sc_form,
     )
     if rec.get("interrupted"):
         print(f"INTERRUPTED at step {rec['step']}")
@@ -322,7 +331,8 @@ def main(argv=None) -> int:
             fh.write(text)
     summary = dict(
         mode=rec["mode"], ny=rec["config"]["ny"], u_eq=rec["config"]["u_eq"],
-        force_scheme=rec["config"]["force_scheme"], finite=rec["finite"],
+        force_scheme=rec["config"]["force_scheme"],
+        wall_mode=rec["config"]["wall_mode"], sc_form=rec["config"]["sc_form"], finite=rec["finite"],
         steady=rec["steady"], Q1=rec["Q1"], Q2=rec["Q2"], Q_total=rec["Q_total"],
         u_max=rec["u_max"], spurious=rec["spurious"],
     )
