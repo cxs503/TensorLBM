@@ -117,3 +117,7 @@ runs/p16n7/logs/
 artifacts/P49_N01/**/*_fields.npz
 artifacts/P49_N01/**/*_probes.npz
 .scratch/
+
+# P106W3A2-N01: field dumps and resumable checkpoints are regenerable from the JSON
+artifacts/p106w3a2_n01/fields/
+artifacts/p106w3a2_n01/l1/state_*/
