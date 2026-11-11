@@ -1,0 +1,77 @@
+{
+ "id": "tkc:tensorlbm:mcmp-stratified-repair-viscous-guo",
+ "statement": "SC-MCMP 分层 Poiseuille 的两相流量误差在 u_eq='viscous'（黏性加权速度耦合）+ force_scheme='guo'（Guo 2002 二阶力项）下由 +8.5%/+9.8%（self+velocity-shift，半程壁面约定、组分粘度参考）降到 -2.7%/-2.0%（ny=25/33，对混合粘度参考为 -0.1%/+0.6%），ny=49 hold-out 为 +1.2%（混合粘度 +3.9%，45000 步未完全达稳态）。两者缺一不可：viscous 在旧 velocity-shift 力格式下发散，guo 单独使用反而使误差升到 +12.5%~+16.1%。",
+ "claim_type": "prescriptive",
+ "scope": {
+  "domain": "lattice Boltzmann multiphase",
+  "lattice": "D2Q9",
+  "model": "Shan-Chen two-component (linear psi)",
+  "conditions": [
+   "G_12 = -2.5 (stratifying)",
+   "tau=(1.0,0.75)",
+   "rho=(0.7,0.3)",
+   "G_x=5e-5",
+   "post-streaming bounce-back walls (H=ny-2)"
+  ]
+ },
+ "modality": "implemented_and_validated",
+ "epistemic_status": "established",
+ "evidence_refs": [
+  "tke:tensorlbm:m14431-repair",
+  "benchmarks/verified/mcmp_stratified_poiseuille/result.json",
+  "artifacts/mcmp_stratified_poiseuille/analysis.json",
+  "docs/MCMP_STRATIFIED_POISEUILLE_SPEC.md"
+ ],
+ "implementation": {
+  "file": "src/tensorlbm/multiphase.py",
+  "function": "collide_sc_two_component",
+  "parameter": "force_scheme='guo' (+ existing u_eq='viscous')",
+  "helper": "guo_force_term"
+ },
+ "acceptance": [
+  {
+   "tag": "cp_ny25_viscous_guo",
+   "ny": 25,
+   "steps": 20000,
+   "err_Q_mix_component_rule": -0.027292385876729833,
+   "err_Q_mix_mixture_rule": -0.0014137626969309449,
+   "steady": true,
+   "phi_contrast": 1.0
+  },
+  {
+   "tag": "cp_ny33_viscous_guo_long",
+   "ny": 33,
+   "steps": 109200,
+   "err_Q_mix_component_rule": -0.01983730750095778,
+   "err_Q_mix_mixture_rule": 0.006239656024144246,
+   "steady": true,
+   "phi_contrast": 1.0
+  },
+  {
+   "tag": "cp_ny49_viscous_guo",
+   "ny": 49,
+   "steps": 45000,
+   "err_Q_mix_component_rule": 0.011752725123397369,
+   "err_Q_mix_mixture_rule": 0.03867013292862271,
+   "steady": false,
+   "phi_contrast": 1.0
+  }
+ ],
+ "cost": {
+  "spurious_ratio": {
+   "viscous_guo": 3.014343879916136,
+   "self_shift": 2.34846029082542
+  }
+ },
+ "supersedes_note": "旧 claim tkc:tensorlbm:mcmp-viscous-velocity-coupling 判 viscous 模式'证伪'，其发散根因是当时唯一的 velocity-shift 力格式与速度连续约束不相容；换 Guo 力项后 viscous 模式在 |G_12|=2.5 稳定。旧 claim 的结论仅在 shift 力格式下成立。",
+ "reproducible_by": "PYTHONPATH=src:. python cases/mcmp_stratified_poiseuille/run_coupling.py 1 1",
+ "created_at": "2026-11-11",
+ "created_by": "agent/m14431",
+ "version": "1.0.0",
+ "status": "draft",
+ "notes": [
+  "映射 feature_ledger: GAP-LBM-MCMP-POISEUILLE",
+  "映射 mission: m14431",
+  "验收 ①：两相流量误差 <10%（经本席工装；独立复算仍待 QR 席位）"
+ ]
+}
