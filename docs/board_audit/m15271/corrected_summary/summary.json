@@ -1,0 +1,243 @@
+{
+ "tolerance_pct": 5.0,
+ "by_ra": {
+  "1e3": {
+   "ra": 1000.0,
+   "nu_ref": 1.118,
+   "direct": [
+    {
+     "ny": 32,
+     "nu": 1.0891168713569641,
+     "nu_energy": 1.0892492532730103,
+     "err_pct": 2.5834641004504464,
+     "bias_pct": -2.5834641004504464,
+     "steps": 10000,
+     "turnovers": 19.876159799998128,
+     "ma": 0.013886484944328753,
+     "tau_f": 0.6476861537179434,
+     "ma_max_target": 0.1,
+     "wall_s": 49.2,
+     "tag": "ra1000_ny32_ma0.1",
+     "nu_std": 4.921625936828378e-06,
+     "nu_imbalance": 1.1711632677666152e-05,
+     "ra_effective_by_gap": 823.974609375,
+     "source": "this_work",
+     "dtype": "fp32"
+    }
+   ],
+   "finest_ny": 32,
+   "finest_nu": 1.0891168713569641,
+   "finest_err_pct": 2.5834641004504464,
+   "finest_pass_5pct": true,
+   "extrapolation": {}
+  },
+  "1e4": {
+   "ra": 10000.0,
+   "nu_ref": 2.243,
+   "direct": [
+    {
+     "ny": 32,
+     "nu": 1.85198,
+     "nu_energy": 1.85198,
+     "err_pct": 17.43,
+     "bias_pct": -17.432902362906816,
+     "steps": null,
+     "turnovers": null,
+     "ma": null,
+     "tau_f": null,
+     "ma_max_target": 0.2,
+     "wall_s": null,
+     "tag": "ra10000_ny32_ma0.2",
+     "nu_std": null,
+     "nu_imbalance": null,
+     "ra_effective_by_gap": 8239.74609375,
+     "source": "prior_artifact:P96W3-N04_thermal_convection_validation.md#C3",
+     "dtype": "fp64"
+    },
+    {
+     "ny": 64,
+     "nu": 2.08186,
+     "nu_energy": 2.08186,
+     "err_pct": 7.18,
+     "bias_pct": -7.1841283994650045,
+     "steps": null,
+     "turnovers": null,
+     "ma": null,
+     "tau_f": null,
+     "ma_max_target": 0.2,
+     "wall_s": null,
+     "tag": "ra10000_ny64_ma0.2",
+     "nu_std": null,
+     "nu_imbalance": null,
+     "ra_effective_by_gap": 9091.49169921875,
+     "source": "prior_artifact:P96W3-N04_thermal_convection_validation.md#C3",
+     "dtype": "fp64"
+    },
+    {
+     "ny": 128,
+     "nu": 2.13279,
+     "nu_energy": 2.13279,
+     "err_pct": 4.91,
+     "bias_pct": -4.913508693713773,
+     "steps": null,
+     "turnovers": null,
+     "ma": null,
+     "tau_f": null,
+     "ma_max_target": 0.2,
+     "wall_s": null,
+     "tag": "ra10000_ny128_ma0.2",
+     "nu_std": null,
+     "nu_imbalance": null,
+     "ra_effective_by_gap": 9538.536071777344,
+     "source": "prior_artifact:P96W3-N04_thermal_convection_validation.md#C3",
+     "dtype": "fp64"
+    }
+   ],
+   "finest_ny": 128,
+   "finest_nu": 2.13279,
+   "finest_err_pct": 4.91,
+   "finest_pass_5pct": true,
+   "extrapolation": {
+    "ma0.2": {
+     "ok": true,
+     "r21": 0.5,
+     "r32": 0.5,
+     "e21": 0.22987999999999986,
+     "e32": 0.05093000000000014,
+     "p_observed": 2.1742933319378706,
+     "nu_extrapolated": 2.1472849142218497,
+     "gci_fine_pct": -19.931702436166276,
+     "err_pct": 4.267279793943386,
+     "grids": [
+      32,
+      64,
+      128
+     ]
+    }
+   },
+   "extrapolated_nu": 2.1472849142218497,
+   "extrapolated_err_pct": 4.267279793943386,
+   "extrapolated_pass_5pct": true
+  },
+  "1e5": {
+   "ra": 100000.0,
+   "nu_ref": 4.519,
+   "direct": [
+    {
+     "ny": 64,
+     "nu": 3.77563,
+     "nu_energy": 3.77563,
+     "err_pct": 16.45,
+     "bias_pct": -16.449878291657445,
+     "steps": null,
+     "turnovers": null,
+     "ma": null,
+     "tau_f": null,
+     "ma_max_target": 0.2,
+     "wall_s": null,
+     "tag": "ra100000_ny64_ma0.2",
+     "nu_std": null,
+     "nu_imbalance": null,
+     "ra_effective_by_gap": 90914.9169921875,
+     "source": "prior_artifact:P96W3-N04_thermal_convection_validation.md#C3",
+     "dtype": "fp64"
+    },
+    {
+     "ny": 128,
+     "nu": 4.11553,
+     "nu_energy": 4.11553,
+     "err_pct": 8.93,
+     "bias_pct": -8.928302721841124,
+     "steps": null,
+     "turnovers": null,
+     "ma": null,
+     "tau_f": null,
+     "ma_max_target": 0.2,
+     "wall_s": null,
+     "tag": "ra100000_ny128_ma0.2",
+     "nu_std": null,
+     "nu_imbalance": null,
+     "ra_effective_by_gap": 95385.36071777344,
+     "source": "prior_artifact:P96W3-N04_thermal_convection_validation.md#C3",
+     "dtype": "fp64"
+    }
+   ],
+   "finest_ny": 128,
+   "finest_nu": 4.11553,
+   "finest_err_pct": 8.93,
+   "finest_pass_5pct": false,
+   "extrapolation": {}
+  }
+ },
+ "verdicts": [
+  {
+   "ra": "1e3",
+   "verdict": "PASS",
+   "finest_err_pct": 2.5834641004504464,
+   "extrapolated_err_pct": null
+  },
+  {
+   "ra": "1e4",
+   "verdict": "PASS",
+   "finest_err_pct": 4.91,
+   "extrapolated_err_pct": 4.267279793943386
+  },
+  {
+   "ra": "1e5",
+   "verdict": "FAIL",
+   "finest_err_pct": 8.93,
+   "extrapolated_err_pct": null
+  }
+ ],
+ "overall": "PARTIAL",
+ "figures": [
+  "figures/repro_guo2002/fig1_isoterms_dhc.png",
+  "figures/repro_guo2002/fig2_nu_vs_ra.png",
+  "figures/repro_guo2002/fig3_grid_convergence.png"
+ ],
+ "n_runs": 6,
+ "friction": [
+  {
+   "stage": "discovery/API",
+   "blocker": "boussinesq.py 的 docstring 引用的是 Guo/Zheng/Shi 2002 PRE 65:046308（外力格式），不是本单外部锚 Guo/Shi/Zheng 2002 IJNMF 39:325（耦合 LBGK）；且该模块只有 plume dataclass，无法跑 DHC/Ra 基准",
+   "evidence": "src/tensorlbm/boussinesq.py:18-22 vs 论文题名；rb_convection_validation.py 才是双分布 DHC 求解器",
+   "suggestion": "在 boussinesq.py 顶部加 capability contract：声明它=羽流配置、并指向 rb_convection_validation/thermal 的耦合 LBGK 入口；文献条目分开登记"
+  },
+  {
+   "stage": "postprocess",
+   "blocker": "run_to_steady 只返回标量，无末态场 ⇒ 无法从库入口产出等温线/云图（论文级复现必须有场图）",
+   "evidence": "src/tensorlbm/rb_convection_validation.py run_to_steady 返回 dict 无 T 场",
+   "suggestion": "已加 return_fields=True 钩子（本轮修复）；长期建议提供统一的 field snapshot/artifact 接口"
+  },
+  {
+   "stage": "entry",
+   "blocker": "库里没有\"按论文基准表跑 DHC\"的单入口/CLI，需自写 3 个脚本（worker/ladder/analysis）",
+   "evidence": "scripts/repro_guo2002_{dhc,ladder,analysis}.py 本轮新增",
+   "suggestion": "把 ladder+Richardson+GCI 收编为通用 benchmark runner（输入=容差表，输出=判据 JSON+图）"
+  },
+  {
+   "stage": "numerics",
+   "blocker": "Ma≤0.1 约束下 α 被压到 ~0.028（τ_f≈0.56），Ra≥1e5 的热边界层仅 2–3 格，Nu 系统性偏低 8.9%（Ny=128）",
+   "evidence": "runs/repro_guo2002_dhc/ra100000_ny128_ma0.2.json vs de Vahl Davis 4.519",
+   "suggestion": "在 make_convection 里加边界层分辨诊断（δ_T/h 估计 + 警告），并暴露需 Ny≥的自动建议"
+  },
+  {
+   "stage": "numerics/geometry",
+   "blocker": "pre-streaming 半程反弹的有效流动间隙是 Ny−2（温度壁在 Ny），Ra 却按 H=Ny 定义 ⇒ 物理 Ra 高估 (Ny/(Ny−2))³=+4.8%@Ny=128",
+   "evidence": "rb_convection_validation.calibrate_gaps / docs/reports/P96W3-N04 §C3 point 6",
+   "suggestion": "make_convection 对 Ra 用 plot 间隙做一次口径校正或在 info 里显式给出 Ra_effective"
+  },
+  {
+   "stage": "infra/cluster",
+   "blocker": "集群队列严重积压：递交后 235 个作业在前，1 小时内所有作业（含调用方其他作业）都停在 queued，双节点 load 37 但不下发",
+   "evidence": "run_cluster ps：cj1001–cj1022 全 queued（最早 19:44 递交，21:00 仍未派发）",
+   "suggestion": "调度器需给出队列深度/预计等待与优先级；长作业应可在本地兜底或抢占低优先级"
+  },
+  {
+   "stage": "infra/local",
+   "blocker": "本地控制面主机 load average 583（128 核），实数步 ~1–7 ms/step（64² fp64），任何 >1e5 步的 LBM 扫描不可行；且 shell 工具超时 120s 会杀进程组，必须 setsid 后台化",
+   "evidence": "uptime load 583.51；/tmp/bench.py 输出 7.411 ms/step @64² fp64",
+   "suggestion": "控制面与计算面分离；给 agent 提供受管的后台任务接口（带存活/日志/超时）"
+  }
+ ]
+}

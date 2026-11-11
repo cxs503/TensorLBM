@@ -1,0 +1,174 @@
+{
+ "scope": "m15212 REPRO-LBM-GUO2002",
+ "repo": "TensorLBM",
+ "subject_mission": 15212,
+ "subject_status": "succeeded (auto-approved dev_acceptance)",
+ "audit_mission": 15271,
+ "verdict_by": "board-audit",
+ "declared_level": 2,
+ "level_rationale": "L2 独立功能实现：真代码（入口 scripts/repro_guo2002_dhc.py 输入 Ra/ny/Pr/ma_max → 调 tensorlbm.rb_convection_validation.run_to_steady → 输出 Nu/步数/无量纲/末态场 npz），本审计独立复跑两档网格均逐位复现（Nu=1.0891168713569641 / 1.1032668749491374，bitwise True）；有 pytest 6 passed。不到 L3：交付代码未进 TensorLBM main（merge-base --is-ancestor 01a87bfa HEAD → NOT_MERGED；main 树内 grep return_fields 命中 0），无主求解器/平台侧调用方（integration_callers 为空），不满足 gate 的 L3 grep 复核。不到 L4：基准不完整（Ra=1e5 超差 8.93%，容差<5%），6 档数据中 4 档为前作归档引用（steps/ma/tau_f 全 null，非本单实跑），Ra=1e4/1e5 无末态场与等温线图，且 tensor_benchmark_cases 对 anchor REPRO-LBM-GUO2002 零行（无机器裁判行）。",
+ "impl_files": [
+  "docs/board_audit/m15271/refs/impl/repro_guo2002_dhc.py",
+  "docs/board_audit/m15271/refs/impl/repro_guo2002_ladder.py",
+  "docs/board_audit/m15271/refs/impl/repro_guo2002_analysis.py",
+  "docs/board_audit/m15271/refs/impl/test_repro_guo2002_dhc.py",
+  "docs/board_audit/m15271/refs/impl/rb_convection_validation.py"
+ ],
+ "entry": "docs/board_audit/m15271/refs/impl/repro_guo2002_dhc.py",
+ "run_artifacts": [
+  "docs/board_audit/m15271/refs/artifacts/runs/summary.json",
+  "docs/board_audit/m15271/refs/artifacts/runs/ladder_summary.json",
+  "docs/board_audit/m15271/refs/artifacts/runs/ra1000_ny32_ma0.1.json",
+  "docs/board_audit/m15271/refs/artifacts/runs/ra1000_ny32_ma0.1.npz",
+  "docs/board_audit/m15271/refs/artifacts/runs/ra1000_ny64_ma0.1.json",
+  "docs/board_audit/m15271/refs/artifacts/runs/ra1000_ny64_ma0.1.npz",
+  "docs/board_audit/m15271/refs/artifacts/runs/ra10000_ny128_ma0.2.json",
+  "docs/board_audit/m15271/refs/artifacts/runs/ra100000_ny128_ma0.2.json",
+  "docs/board_audit/m15271/refs/artifacts/figures/fig1_isoterms_dhc.png",
+  "docs/board_audit/m15271/refs/artifacts/figures/fig2_nu_vs_ra.png",
+  "docs/board_audit/m15271/refs/artifacts/figures/fig3_grid_convergence.png",
+  "docs/board_audit/m15271/corrected_summary/summary_recomputed.json",
+  "docs/board_audit/m15271/logs/ra1000_ny32_rerun.json",
+  "docs/board_audit/m15271/logs/ra1000_ny64_rerun.json"
+ ],
+ "tests": [
+  "tests/test_repro_guo2002_dhc.py::TestFieldHook::test_default_is_json_serializable",
+  "tests/test_repro_guo2002_dhc.py::TestFieldHook::test_return_fields_shapes_and_range",
+  "tests/test_repro_guo2002_dhc.py::TestDhcSelfConsistency::test_nusselt_estimators_agree",
+  "tests/test_repro_guo2002_dhc.py::TestDhcSelfConsistency::test_deterministic_bitwise",
+  "tests/test_repro_guo2002_dhc.py::TestRichardson::test_recovers_second_order_limit",
+  "tests/test_repro_guo2002_dhc.py::TestRichardson::test_non_monotone_flagged"
+ ],
+ "tests_run_by_auditor": "python3 -m pytest tests/test_repro_guo2002_dhc.py -q → 6 passed, 1 warning in 20.04s (2026-11-11T21:22Z, /root/tp-agent/work/m15212)",
+ "integration_callers": "none：交付代码只存在于 m15212 工作树分支 agent/m15212（git merge-base --is-ancestor 01a87bfa HEAD = NOT_MERGED），TensorLBM main 树内不存在 scripts/repro_guo2002_*.py / docs/reports/REPRO-LBM-GUO2002_round1.md，src/tensorlbm/rb_convection_validation.py 的 return_fields 钩子在 main 中 grep 命中 0；无 API/CLI/战役门调用方 → 不达 L3",
+ "benchmark": {
+  "ref_source": "de Vahl Davis 1983, Int. J. Numer. Meth. Fluids 3:249-264（Pr=0.71 刚-刚方腔平均 Nu：Ra=1e3→1.118, 1e4→2.243, 1e5→4.519）",
+  "tolerance": "<5% per Ra（任务给定）",
+  "platform_referee_row": "tensor_benchmark_cases WHERE anchor_slug='REPRO-LBM-GUO2002' → 0 行（同仓仅 GAP-LBM-MCMP-POISEUILLE / GAP-LBM-SPHERE 两行）→ 平台侧无机器裁判行，实际裁判为论文基准表",
+  "rows": [
+   {
+    "ra": "1e3",
+    "ny": 32,
+    "nu_got": 1.0891168713569641,
+    "nu_ref": 1.118,
+    "err_pct": 2.58,
+    "tol_pct": 5,
+    "within_tol": true,
+    "source": "this_work (fp32, 10000 steps, 49.2s)",
+    "auditor_reproduced_bitwise": true
+   },
+   {
+    "ra": "1e3",
+    "ny": 64,
+    "nu_got": 1.1032668749491374,
+    "nu_ref": 1.118,
+    "err_pct": 1.32,
+    "tol_pct": 5,
+    "within_tol": true,
+    "source": "this_work (fp32, 22000 steps, 579.9s；但被 summary.json/报告漏统计，见 F2)",
+    "auditor_reproduced_bitwise": true
+   },
+   {
+    "ra": "1e4",
+    "ny": 128,
+    "nu_got": 2.13279,
+    "nu_ref": 2.243,
+    "err_pct": 4.91,
+    "tol_pct": 5,
+    "within_tol": true,
+    "source": "prior_artifact P96W3-N04 §C3 表行 59（steps=null，本单未实跑）"
+   },
+   {
+    "ra": "1e4",
+    "ny_extrapolated": true,
+    "nu_got": 2.1472849142218497,
+    "nu_ref": 2.243,
+    "err_pct": 4.27,
+    "tol_pct": 5,
+    "within_tol": true,
+    "source": "Richardson p_obs=2.174（输入含两档前作归档值）"
+   },
+   {
+    "ra": "1e5",
+    "ny": 128,
+    "nu_got": 4.11553,
+    "nu_ref": 4.519,
+    "err_pct": 8.93,
+    "tol_pct": 5,
+    "within_tol": false,
+    "source": "prior_artifact P96W3-N04 §C3 表行 61（steps=null，本单未实跑）"
+   }
+  ],
+  "overall": "PARTIAL：3 个 Ra 中 2 个在容差内（1e3 1.32%, 1e4 4.91%/外推 4.27%），Ra=1e5 超差 8.93%（3.93pp 越界）。交付报告 §6 已 honest-FAIL 声明，未粉饰 → 判据未全达，不得判 L4。",
+  "auditor_recomputation": "用全部 6 档 JSON 重跑 scripts/repro_guo2002_analysis.py（corrected_summary/summary_recomputed.json）：Ra=1e3 finest 由 Ny=32/2.58% 更正为 Ny=64/1.32%；Ra=1e4、1e5 与交付一致；overall 仍 PARTIAL。"
+ },
+ "repro_cmd": "cd /root/tp-agent/work/m15212 && PYTHONPATH=src python3 scripts/repro_guo2002_dhc.py --ra 1e3 --ny 32 --pr 0.71 --ma-max 0.1 --dtype fp32 --turnover 120 --min-steps 10000 --max-steps 10000 --report-every 2000 --threads 4 --out /tmp/rerun.json  → 31.4s 得 Nu=1.08912（与交付 JSON 逐位相同）；同理 --ny 64 --min-steps 22000 --max-steps 22000 → 115.8s Nu=1.10327 逐位相同。analysis：python3 scripts/repro_guo2002_analysis.py --rundir runs/repro_guo2002_dhc --figdir figures/repro_guo2002 --out runs/repro_guo2002_dhc/summary.json",
+ "external_anchor": "Guo Z., Shi B., Zheng C. (2002) A coupled lattice BGK model for the Boussinesq equations, Int. J. Numer. Meth. Fluids 39:325-342（复现靶论文，未逐式对表）；数值真值锚 = de Vahl Davis (1983) IJNMF 3:249-264 平均 Nu 三点（1.118/2.243/4.519，公开文献值）。",
+ "three_piece_verification": {
+  "run_artifacts": "PASS（有保留）：6 个 ra*_ny*_ma*.json + 2 个 .npz 末态场 + summary.json + ladder_summary.json + 3 张 png（84–165KB）均存在非空；但 4/6 档字段 steps/turnovers/ma/tau_f 全为 null、source 自标 prior_artifact → 属引用而非本单实跑。",
+  "benchmark_ref_vs_got": "PARTIAL：3 个 Ra 逐项数值可核（见 benchmark.rows），2/3 在 <5% 内，Ra=1e5 8.93% 超差；平台 tensor_benchmark_cases 无该 anchor 行，裁判依赖文献表。",
+  "repro_cmd": "PASS：本审计独立复跑 Ra=1e3 两档网格，Nu 与交付 JSON 逐位一致（1.0891168713569641 / 1.1032668749491374）；pytest 6 passed。未复跑 Ra=1e4/1e5（无本单工件可复跑，只有前作报告表；按原配置 128² fp64 84000 步约数小时，超出本单预算 — not_run）。"
+ },
+ "findings": [
+  {
+   "id": "F1",
+   "severity": "blocking(对 L4 而言)",
+   "title": "基准未全达：Ra=1e5 Nu=4.11553 vs 4.519（-8.93%）超 <5% 容差",
+   "evidence": "refs/artifacts/runs/ra100000_ny128_ma0.2.json; summary.json verdicts[2]='FAIL'; 报告 §6 honest-FAIL",
+   "note": "误差随 Ny 单调收敛（-16.45%@64 → -8.93%@128），属离散误差非模型错，但判据未达；交付定为 PARTIAL 正确。"
+  },
+  {
+   "id": "F2",
+   "severity": "material",
+   "title": "交付 summary.json/报告漏统计自己跑出的最优 1e3 档（Ny=64, err 1.32%）",
+   "evidence": "runs/ra1000_ny64_ma0.1.json (mtime 21:09) 晚于 summary.json (21:05)；报告表只列 Ny=32 并称『网格不足 3 档』；重跑 analysis 得 finest_ny=64/1.32%（corrected_summary/summary_recomputed.json）",
+   "note": "分析脚本按 rundir glob 正常，属生成时序问题（Ny=64 作业在汇总之后才落盘）→ 交付工件与其自身 back 账不自洽；不夸大结果，但报告口径与磁盘工件不符。"
+  },
+  {
+   "id": "F3",
+   "severity": "material",
+   "title": "『本单实跑』只有 1 个 Ra（1e3，两档网格），1e4/1e5 全部为前作归档引用",
+   "evidence": "4 个 JSON 的 source='prior_artifact:P96W3-N04_thermal_convection_validation.md#C3'，steps/ma/tau_f=null；前作值可溯源到 docs/reports/P96W3-N04_thermal_convection_validation.md:56-61",
+   "note": "报告 §3 表格列『来源=前作归档』，属诚实标注；但它意味着本单对『复现靶标 Ra=1e3/1e4/1e5』只完成了 1/3 的独立验证。"
+  },
+  {
+   "id": "F4",
+   "severity": "material",
+   "title": "交付代码未合入 TensorLBM main，无任何平台/求解器调用方",
+   "evidence": "git merge-base --is-ancestor 01a87bfa HEAD → NOT_MERGED；mission result.evidence.branch=null；main 树 grep return_fields 命中 0；m15212 现仅存于被回收工作树",
+   "note": "结果=能力未沉淀进生态仓，任何人按 repo main 复算拿不到这批脚本 → L3 不成立，且存在随工作树回收而丢失的风险。"
+  },
+  {
+   "id": "F5",
+   "severity": "material",
+   "title": "同名算例跨工件不一致：Ra=1e3 Ny=64 本单 1.10327 vs 前作 1.08806（+1.4%）",
+   "evidence": "refs/artifacts/runs/ra1000_ny64_ma0.1.json nu=1.1032668749491374 vs docs/reports/P96W3-N04_thermal_convection_validation.md §C3 表（1e+03/64 行 → 1.08806）",
+   "note": "本单两档网格 Nu 单调上升（1.0891→1.1033）而前作同格为 1.08806，说明至少一侧口径/收敛不同；交付未解释该差异 → 网格收敛叙事（1e3 档）的可信度打折。未定位（未跑前作配置）。"
+  },
+  {
+   "id": "F6",
+   "severity": "minor",
+   "title": "平台基准裁判缺行：tensor_benchmark_cases 无 anchor REPRO-LBM-GUO2002",
+   "evidence": "SELECT ... WHERE anchor_slug='REPRO-LBM-GUO2002' → 0 行",
+   "note": "使任何 L4 判定都只能靠人工读文献表；建议补 ref=1.118/2.243/4.519, tol=<5%, metric=mean Nu per Ra 的机器可核行。"
+  },
+  {
+   "id": "F7",
+   "severity": "minor",
+   "title": "高 Ra 档无末态场与等温线图（靶标第二条『等温线形态定性一致』只在 Ra=1e3 Ny=32 有证据）",
+   "evidence": "runs/ 下仅 ra1000_* 有 .npz；fig1_isoterms_dhc.png 只用 1e3/Ny=32",
+   "note": "报告 §4 已声明未给图，不粉饰；但靶标第二项对 1e4/1e5 未验证。"
+  }
+ ],
+ "checks_not_run": [
+  "Ra=1e4 / Ra=1e5 独立复跑（本单无对应工件；按 128² fp64 84000 步估 >1h，超出本单预算）→ not_run，前作报告表值仅做文本溯源",
+  "前作 P96W3-N04 的原始 run JSON 不在 m15212 工作树内（仅报告表）→ 其测量链未独立复核",
+  "Guo 2002 论文公式（耦合 LBGK 温度分布 g 的平衡态/力项）逐式对读未做 → 只对表数值",
+  "值 1.118/2.243/4.519 取自 de Vahl Davis 1983 公开已知值，未联网取原文（本地无该 PDF）"
+ ],
+ "claims_overstated": [
+  "mission result.checks 称『分析脚本对表/Richardson/图件跑通并落 summary.json + 3 张 png』——属实；但 summary.json 未含本单最优 1e3/Ny=64 档（F2）",
+  "报告 §3 表把 1e4/1e5 与前作值混排（来源列已标注），读者易误读为『本轮复现 3 个 Ra』；实际本单独立验证 1/3（F3）"
+ ],
+ "entry_detail": "docs/board_audit/m15271/refs/impl/repro_guo2002_dhc.py (argparse main(), 行 66-… 单跑 worker: --ra --ny --pr --ma-max --dtype --out --fields)"
+}
