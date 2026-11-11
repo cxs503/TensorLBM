@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from tensorlbm.d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
+from ..input_contract import check_positive_scalar
 
 # ---------------------------------------------------------------------------
 # Module-level direction-index constants (derived from the fixed D3Q19 lattice).
@@ -294,6 +295,7 @@ def zou_he_outlet_pressure_3d(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     Returns:
         Updated distribution tensor (same shape).
     """
+    rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure_3d")
     device = f.device
     # Directions with cx < 0 (unknown at outlet): 2,8,10,12,14
     # Their opposites (cx > 0, known): 1,7,9,11,13
@@ -628,6 +630,7 @@ def zou_he_outlet_pressure_z(f: torch.Tensor, rho_out: float = 1.0) -> torch.Ten
     Returns:
         Updated distribution tensor (same shape).
     """
+    rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure_z")
     device = f.device
     # At z=nz-1: cz>0 directions are known (streaming outward).
     sum_cz0 = (

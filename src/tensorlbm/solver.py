@@ -11,6 +11,7 @@ from .boundaries import (
     make_channel_wall_mask,
 )
 from .d2q9 import C, _c_on, _w_on, equilibrium, macroscopic
+from .input_contract import check_relaxation_time
 
 OPPOSITE_2D = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
 
@@ -65,7 +66,14 @@ def _get_d2q9_mrt_matrices(
 
 
 def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
-    """Single-relaxation-time BGK collision step."""
+    """Single-relaxation-time BGK collision step.
+
+    ``tau`` must be finite and > 0.5 (see :mod:`tensorlbm.input_contract`); the
+    check used to be missing here while sibling modules already enforced it,
+    so the same illegal ``tau`` was rejected or silently propagated depending on
+    which entry point the caller happened to use.
+    """
+    tau = check_relaxation_time(tau, where="solver.collide_bgk")
     rho, ux, uy = macroscopic(f)
     feq = equilibrium(rho, ux, uy)
     return f - (f - feq) / tau
@@ -81,6 +89,7 @@ def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
     For bf16, this avoids creating a full feq tensor (9×ny×nx) in memory,
     instead computing each direction's collision result on-the-fly.
     """
+    tau = check_relaxation_time(tau, where="solver.collide_bgk_fused")
     device = f.device
     dtype = f.dtype
     c = _c_on(device)
