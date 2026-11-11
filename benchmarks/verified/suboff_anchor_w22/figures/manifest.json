@@ -1,0 +1,52 @@
+{
+ "schema": "suboff-w22-figures/v1",
+ "task_key": "paper-exp-lbm-suboff-tau-w22-anchor8",
+ "mission_id": 14504,
+ "generated_by": "benchmarks/verified/suboff_anchor_w22/make_figures.py",
+ "inputs": {
+  "anchor_transcription_sha256": "6f210931f13b5937c086571ac6fef9327f3aa2d59ad96d987f10deaaab97a488",
+  "ittc57_closure_sha256": "8e617715ca0e623b0420bc0a4ef4079df2bfbd6d48cade4792d6d61ae771925c"
+ },
+ "figures": [
+  {
+   "file": "benchmarks/verified/suboff_anchor_w22/figures/fig1_closure.png",
+   "sha256": "52e58a695a4f0e02c2ff4d3ae8254bc705bec37bd98bc43d0944f4fc1ec0b766",
+   "caption": "Left: measured $C_T$ per grid vs the three $(1+k)C_F$ predictions. Right: the closure residual per grid for calibers A/B/C; every bar is far outside the ±3% gate.",
+   "data_evidence": [
+    "ittc57_closure.json:/grids",
+    "ittc57_closure.json:/closure/caliber_A_primary",
+    "ittc57_closure.json:/closure/caliber_B",
+    "ittc57_closure.json:/closure/caliber_C"
+   ]
+  },
+  {
+   "file": "benchmarks/verified/suboff_anchor_w22/figures/fig2_prohaska.png",
+   "sha256": "76fd9648433a2df56e33af265a28aa6b4c4d39d8cb969fdf4f281d94cadfddad",
+   "caption": "Left: Prohaska regression $C_T/C_F$ on $Fr^4$ over the five transcribed AFF-8 ladder points, with the recorded $(1+k)$ for comparison. Right: the per-point $k=C_T/C_F-1$ along the ladder, showing why the fit is weakly constrained ($R^2$ well below 1).",
+   "data_evidence": [
+    "ittc57_closure.json:/k_identifiability/prohaska/ladder_points_aff8",
+    "ittc57_closure.json:/k_identifiability/prohaska/fit_aff8",
+    "ittc57_closure.json:/k_identifiability/record"
+   ]
+  },
+  {
+   "file": "benchmarks/verified/suboff_anchor_w22/figures/fig3_ittc57_domain.png",
+   "sha256": "fa06c2ae2819e61b28189982fa401adb9e2b8b5eea6c5659436ebd50a462ea38",
+   "caption": "AN-ITTC57 as a function of Re with the case point (Re=1e3), the AFF-8 anchor point (Re≈1.17e7) and the laminar case reference. The ITTC-57 line is a turbulent correlation: it has a pole at Re=1e2 and lies ~79% above the laminar reference at the case Reynolds number, which is the structural reason the closure cannot hold.",
+   "data_evidence": [
+    "ittc57_closure.json:/formula_AN_ITTC57",
+    "ittc57_closure.json:/case",
+    "ittc57_closure.json:/formula_AN_SUBOFF"
+   ]
+  },
+  {
+   "file": "benchmarks/verified/suboff_anchor_w22/figures/fig4_transcription_census.png",
+   "sha256": "12929d53636e372e53469f97b44180372bc37cfacdb9edf95689652f892e9123",
+   "caption": "Left: number of scalar leaves transcribed per source artifact. Right: readback mismatches per source — zero everywhere, i.e. every transcribed value resolves back to its source with identical type and value.",
+   "data_evidence": [
+    "anchor_transcription.json:/sources",
+    "anchor_transcription.json:/completeness"
+   ]
+  }
+ ]
+}
