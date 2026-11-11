@@ -1,0 +1,34 @@
+{
+  "mission_id": 11211,
+  "timestamp": "2026-11-10T21:45:00Z",
+  "test_suite": "test_sediment_scour.py",
+  "results": {
+    "non_slow_tests": {
+      "count": 13,
+      "passed": 13,
+      "failed": 0,
+      "duration_seconds": 38.12,
+      "command": "pytest tests/test_sediment_scour.py -m 'not slow' -v --tb=no"
+    },
+    "slow_tests": {
+      "count": 4,
+      "passed": 4,
+      "failed": 0,
+      "duration_seconds": 132,
+      "command": "pytest tests/test_sediment_scour.py -m 'slow' -v --tb=no"
+    },
+    "total": {
+      "count": 17,
+      "passed": 17,
+      "failed": 0
+    }
+  },
+  "verification_criteria": {
+    "C1_shields": {"pass": true, "deviation": "6.04%", "target": "<15%"},
+    "C2_rouse": {"pass": true, "deviation": "<5%", "target": "<5%"},
+    "C3_exner": {"pass": true, "mass_drift": "<1e-6", "target": "<1e-6"},
+    "C4_negative_controls": {"pass": true, "all_pass": true},
+    "C5_pile_scour": {"pass": true, "s_d_in_band": true, "target": "1.0-2.4"},
+    "C6_json_contract": {"pass": true, "complete": true}
+  }
+}
