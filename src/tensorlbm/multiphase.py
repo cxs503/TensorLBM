@@ -535,6 +535,54 @@ def sc_two_component_force(
     return Fx1, Fy1, Fx2, Fy2
 
 
+def guo_force_term(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Guo (2002) second-order force term for one D2Q9 component.
+
+    Adds ``S_i = (1 - 1/(2τ)) w_i [ (c_i - u)/cs² + (c_i·u) c_i/cs⁴ ] · F``
+    to the post-collision population.  Use it together with the *force-
+    corrected* velocity ``u* = Σ_i c_i f_i / ρ + F/(2ρ)`` in the equilibrium
+    (``force_scheme="guo"`` of :func:`collide_sc_two_component`), not with the
+    velocity-shift form ``u + τ F/ρ``: the two are different discrete
+    approximations of the same Boltzmann forcing, and the shift form injects a
+    spurious ``F/2`` momentum per step that shows up as interface vorticity
+    when ``F`` is the large inter-component Shan-Chen force.
+
+    Args:
+        rho:  Density field ``(ny, nx)`` (unused in the algebra, kept so the
+              signature mirrors the force call; validated for shape only).
+        ux:   Force-corrected velocity x-component ``(ny, nx)``.
+        uy:   Force-corrected velocity y-component ``(ny, nx)``.
+        fx:   Force x-component per unit volume ``(ny, nx)``.
+        fy:   Force y-component per unit volume ``(ny, nx)``.
+        tau:  BGK relaxation time of this component.
+
+    Returns:
+        ``S`` of shape ``(9, ny, nx)`` to be added after the BGK step.
+
+    Reference: Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308, eq. (20).
+    """
+    if not (rho.shape == ux.shape == uy.shape == fx.shape == fy.shape):
+        raise ValueError("guo_force_term: rho/ux/uy/fx/fy must share one shape")
+    device = fx.device
+    c = C.to(device).float()
+    w = W.to(device)
+    cx = c[:, 0].view(9, 1, 1)
+    cy = c[:, 1].view(9, 1, 1)
+    cu = cx * ux + cy * uy
+    pref = 1.0 - 0.5 / tau
+    return pref * w.view(9, 1, 1) * (
+        ((cx - ux) / _CS2 + cu * cx / (_CS2 * _CS2)) * fx
+        + ((cy - uy) / _CS2 + cu * cy / (_CS2 * _CS2)) * fy
+    )
+
+
 def collide_sc_two_component(
     f1: torch.Tensor,
     f2: torch.Tensor,
@@ -545,6 +593,7 @@ def collide_sc_two_component(
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
     u_eq: str = "self",
+    force_scheme: str = "shift",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D2Q9.
 
@@ -594,6 +643,13 @@ def collide_sc_two_component(
                      centre-of-mass coupling), or ``"viscous"``
                      (viscosity-weighted velocity, Martys et al. 1996 /
                      sailfish convention — stable for unequal tau).
+        force_scheme: ``"shift"`` (default, legacy: the force enters only as
+                     the velocity shift ``u + τF/ρ`` inside the equilibrium,
+                     which is a first-order forcing) or ``"guo"`` (second-order
+                     Guo 2002 forcing: equilibrium on the force-corrected
+                     velocity ``u + F/(2ρ)`` plus the explicit source term of
+                     :func:`guo_force_term` with the ``1 - 1/(2τ)`` factor).
+                     ``"shift"`` is bit-identical to the historical behaviour.
 
     Returns:
         Updated ``(f1, f2)`` after collision.
@@ -626,6 +682,9 @@ def collide_sc_two_component(
     Inamuro et al. (2004) J. Comput. Phys. 198:628 — two-phase LBM with
     equal-velocity constraint.
     """
+    if force_scheme not in ("shift", "guo"):
+        raise ValueError(f"force_scheme must be 'shift' or 'guo', got {force_scheme!r}")
+
     rho1, ux1, uy1 = macroscopic(f1)
     rho2, ux2, uy2 = macroscopic(f2)
 
@@ -634,15 +693,32 @@ def collide_sc_two_component(
     rho1_s = torch.clamp(rho1, min=1e-12)
     rho2_s = torch.clamp(rho2, min=1e-12)
 
+    if force_scheme == "guo":
+        # Guo forcing: the equilibrium uses the force-corrected velocity
+        # u* = u + F/(2ρ); the F/2 half-step of momentum is delivered by the
+        # explicit source term instead of by the (τ-dependent) velocity shift.
+        ux1 = ux1 + 0.5 * Fx1 / rho1_s
+        uy1 = uy1 + 0.5 * Fy1 / rho1_s
+        ux2 = ux2 + 0.5 * Fx2 / rho2_s
+        uy2 = uy2 + 0.5 * Fy2 / rho2_s
+        # The F/2 correction is already in the equilibrium velocity, so no
+        # further velocity shift is applied inside feq; the remaining
+        # τ - 1/2 of the forcing enters through the explicit source term.
+        _shift1 = 0.0
+        _shift2 = 0.0
+    else:
+        _shift1 = tau1
+        _shift2 = tau2
+
     if u_eq == "self":
-        feq1 = equilibrium(rho1, ux1 + tau1 * Fx1 / rho1_s, uy1 + tau1 * Fy1 / rho1_s)
-        feq2 = equilibrium(rho2, ux2 + tau2 * Fx2 / rho2_s, uy2 + tau2 * Fy2 / rho2_s)
+        feq1 = equilibrium(rho1, ux1 + _shift1 * Fx1 / rho1_s, uy1 + _shift1 * Fy1 / rho1_s)
+        feq2 = equilibrium(rho2, ux2 + _shift2 * Fx2 / rho2_s, uy2 + _shift2 * Fy2 / rho2_s)
     elif u_eq == "mixture":
         rho_tot = rho1_s + rho2_s
         u_mix_x = (rho1_s * ux1 + rho2_s * ux2) / rho_tot
         u_mix_y = (rho1_s * uy1 + rho2_s * uy2) / rho_tot
-        feq1 = equilibrium(rho1, u_mix_x + tau1 * Fx1 / rho1_s, u_mix_y + tau1 * Fy1 / rho1_s)
-        feq2 = equilibrium(rho2, u_mix_x + tau2 * Fx2 / rho2_s, u_mix_y + tau2 * Fy2 / rho2_s)
+        feq1 = equilibrium(rho1, u_mix_x + _shift1 * Fx1 / rho1_s, u_mix_y + _shift1 * Fy1 / rho1_s)
+        feq2 = equilibrium(rho2, u_mix_x + _shift2 * Fx2 / rho2_s, u_mix_y + _shift2 * Fy2 / rho2_s)
     elif u_eq == "viscous":
         # Viscosity-weighted velocity coupling (Martys et al. 1996 / sailfish).
         # u_visc = (rho1*u1/tau1 + rho2*u2/tau2) / (rho1/tau1 + rho2/tau2)
@@ -654,13 +730,17 @@ def collide_sc_two_component(
         w_tot = w1 + w2
         u_visc_x = (w1 * ux1 + w2 * ux2) / w_tot
         u_visc_y = (w1 * uy1 + w2 * uy2) / w_tot
-        feq1 = equilibrium(rho1, u_visc_x + tau1 * Fx1 / rho1_s, u_visc_y + tau1 * Fy1 / rho1_s)
-        feq2 = equilibrium(rho2, u_visc_x + tau2 * Fx2 / rho2_s, u_visc_y + tau2 * Fy2 / rho2_s)
+        feq1 = equilibrium(rho1, u_visc_x + _shift1 * Fx1 / rho1_s, u_visc_y + _shift1 * Fy1 / rho1_s)
+        feq2 = equilibrium(rho2, u_visc_x + _shift2 * Fx2 / rho2_s, u_visc_y + _shift2 * Fy2 / rho2_s)
     else:
         raise ValueError(f"u_eq must be 'self', 'mixture', or 'viscous', got {u_eq!r}")
 
     f1_out = f1 - (f1 - feq1) / tau1
     f2_out = f2 - (f2 - feq2) / tau2
+
+    if force_scheme == "guo":
+        f1_out = f1_out + guo_force_term(rho1, ux1, uy1, Fx1, Fy1, tau1)
+        f2_out = f2_out + guo_force_term(rho2, ux2, uy2, Fx2, Fy2, tau2)
 
     # Solid cells skip collision: their distributions are preserved so that the
     # subsequent bounce-back step can correctly reverse them after streaming.
@@ -1186,6 +1266,7 @@ __all__ = [
     "make_psi_eos",
     # Model 1: Shan-Chen Two-Component
     "sc_two_component_force",
+    "guo_force_term",
     "collide_sc_two_component",
     # Model 2: Shan-Chen Single-Component
     "sc_single_component_force",
