@@ -1,0 +1,9 @@
+{
+ "figures": [
+  "/srv/tensor/agent/work/m13936/TensorLBM/artifacts/ice_hydro_breakup/fig1_ucr_vs_thickness.png",
+  "/srv/tensor/agent/work/m13936/TensorLBM/artifacts/ice_hydro_breakup/fig2_poiseuille_profile.png",
+  "/srv/tensor/agent/work/m13936/TensorLBM/artifacts/ice_hydro_breakup/fig3_pressure_gain.png",
+  "/srv/tensor/agent/work/m13936/TensorLBM/artifacts/ice_hydro_breakup/fig4_crack_sequence.png",
+  "/srv/tensor/agent/work/m13936/TensorLBM/artifacts/ice_hydro_breakup/fig5_detection_sweep.png"
+ ]
+}
