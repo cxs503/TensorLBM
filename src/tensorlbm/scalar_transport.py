@@ -1073,3 +1073,51 @@ def run_lfl_wind_sweep(
             "count": metrics["count"],
         })
     return results
+
+
+# ---------------------------------------------------------------------------
+# Legacy D2Q5 names (compatibility adapters)
+# ---------------------------------------------------------------------------
+# The TRT rewrite renamed the D2Q5 entry points.  ``boussinesq.py``,
+# ``scalar_verification_in65.py`` and their tests still use the pre-rewrite
+# names; these adapters restore them by delegating to the surviving
+# implementations.  No physics is re-implemented here: ``scalar_collision``
+# with a single relaxation time is exactly the BGK degenerate case of
+# ``collide_scalar_trt`` (``tau_sym = None`` -> ``tau_s == tau_o``).
+import torch as _torch  # noqa: E402
+
+C5 = _torch.tensor([CX_D2Q5, CY_D2Q5], dtype=_torch.long).T.contiguous()  # (5, 2)
+W5 = _torch.tensor(W_D2Q5, dtype=_torch.float32)
+
+
+def _get_w5(dtype=_torch.float32, device=None):
+    return _torch.tensor(W_D2Q5, dtype=dtype, device=device)
+
+
+def scalar_equilibrium(c, ux, uy):
+    """Legacy alias of :func:`equilibrium_scalar_d2q5`."""
+    return equilibrium_scalar_d2q5(c, ux, uy)
+
+
+def scalar_collision(g, c, ux, uy, tau):
+    """Legacy BGK collision: single relaxation time."""
+    return collide_scalar_trt(g, c, ux, uy, tau, None)
+
+
+def scalar_macroscopic(g):
+    """Legacy alias of :func:`scalar_field`."""
+    return scalar_field(g)
+
+
+def scalar_stream(g, *args, **kwargs):
+    """Legacy streaming: pre-rewrite callers expect only the streamed field."""
+    out = stream_scalar(g, *args, **kwargs)
+    return out[0] if isinstance(out, tuple) else out
+
+
+def scalar_diffusivity(tau):
+    """Legacy name: D = c_s^2 (tau - 1/2) for the D2Q5 advection-diffusion lattice."""
+    return CS2_D2Q5 * (tau - 0.5)
+
+
+OPPOSITE5 = OPP_D2Q5  # legacy name (pre-TRT-rewrite) for the D2Q5 opposite map
