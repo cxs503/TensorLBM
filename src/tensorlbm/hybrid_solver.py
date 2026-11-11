@@ -68,9 +68,11 @@ class FDMBoundaryStep:
         This maps the LBM-computed wall shear stress (tau_w) to the
         prism layer cells as a source term in the NS momentum equation.
         """
-        # Placeholder: in production, use wallfn's tau_w
-        return torch.zeros(
-            self.prism.n_layers, self.prism.n_surface, 2, device=f_lbm.device, dtype=f_lbm.dtype
+        raise NotImplementedError(
+            "FDMBoundaryStep.body_force_from_lbm is not implemented (G21 orphan module): "
+            "the previous body returned a zero field, which silently made the prism layer a "
+            "pure diffusion scaffold with no LBM coupling. See "
+            "docs/G21_ORPHAN_VERIFICATION.md §3 before using HybridSolver."
         )
 
     def step(self, u_prism: torch.Tensor, u_lbm_wall: torch.Tensor):
@@ -199,9 +201,16 @@ class HybridSolver:
         return f
 
     def drag_coefficient(self, area_ref: float = 1.0) -> tuple[float, float]:
-        """Compute drag from both LBM and prism contributions."""
-        # Placeholder: combine LBM wallfn drag with prism wall shear
-        return 0.0, 0.0
+        """Compute drag from both LBM and prism contributions.
+
+        Not implemented (G21 orphan module): the previous body returned
+        ``(0.0, 0.0)``, i.e. a zero drag that a caller could mistake for a
+        result.  Use ``wall_model.wall_function_3d``'s own drag output instead.
+        """
+        raise NotImplementedError(
+            "HybridSolver.drag_coefficient is not implemented (returned (0.0, 0.0) before "
+            "G21 verification); see docs/G21_ORPHAN_VERIFICATION.md §3."
+        )
 
 
 # ── Test ──

@@ -1,16 +1,24 @@
-"""D3Q27 bare-shell collision operators — recommended for drag prediction.
+"""D3Q27 recommended configuration helper (NOT a collision kernel).
 
-Key finding: D3Q27 CUMULANT/CASCADED achieve 3% error on SUBOFF bare_hull
-WITHOUT any LES model (Smagorinsky).  The D3Q27 lattice's natural isotropy
-suppresses pressure oscillations, making it inherently more accurate than
-D3Q19+Smagorinsky for wall-bounded external flows.
+This module only *builds a parameter dict* for the D3Q27 + cascaded solver path
+implemented elsewhere (``tensorlbm.advanced_collision``, ``solver3d``,
+``wall_model``).  The name is historical; no collision operator lives here.
 
 Usage:
     from tensorlbm.d3q27_collide import suboff_config_d3q27
     cfg = suboff_config_d3q27(nx=200, re=2e6)
     # → D3Q27 CASCADED, no Smagorinsky, wallfn, farfield
 
-Validated: SUBOFF bare_hull 200³ → Ct=0.00393 (2.9% vs ref 0.00405)
+Evidence status (G21 verification, docs/G21_ORPHAN_VERIFICATION.md §4): the
+earlier header claimed "Validated: SUBOFF bare_hull 200³ → Ct=0.00393 (2.9% vs
+ref 0.00405)".  That number cannot be reproduced from any artifact in this
+repository, and 0.00405 is the **ITTC-1957 flat-plate friction coefficient**
+Cf(Re=2e6) = 0.004054, not a measured or CFD hull resistance coefficient — so
+the quoted 2.9 % compares a total hull resistance coefficient with a flat-plate
+friction line (a category error, not a validation).  The helper itself is
+arithmetically self-consistent (Re = u·L/ν, τ = 0.5 + 3ν) and is exercised by
+tests/test_g21_orphan_verification.py; treat it as UNVERIFIED for drag
+prediction until a SUBOFF Ct artifact is registered.
 """
 
 from __future__ import annotations
