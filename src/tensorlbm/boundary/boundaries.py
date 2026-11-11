@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from tensorlbm.d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
+from ..input_contract import check_positive_scalar
 
 
 def cylinder_mask(
@@ -112,6 +113,7 @@ def zou_he_outlet_pressure(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tenso
     Returns:
         Updated distribution tensor (same shape).
     """
+    rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure")
     f1, f2, f4, f5, f8 = f[1, :, -1], f[2, :, -1], f[4, :, -1], f[5, :, -1], f[8, :, -1]
     ux = -1.0 + (f[0, :, -1] + f2 + f4 + 2.0 * (f1 + f5 + f8)) / rho_out
 
