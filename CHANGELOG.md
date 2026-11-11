@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`tensorlbm.ibm_sphere_surface_force`** — three-layer verification surface for the
+  immersed-boundary *surface force* on a sphere (campaign node `p387w2-n04`).  It adds the
+  piece both open force gaps were missing: an **exact spherical measure**
+  (`A_k` from a per-cell Gauss-Legendre `∫sin(theta) dtheta`, so `sum A_k = 4 pi R^2` and
+  `sum A_k n_k = 0` to round-off **independently of the marker count**), traction-based
+  marker forces `F_k = rho_k (u_b - u*) A_k` with Guo half-force correctors and a Breugem
+  normal-projection pass, an exact-momentum Guo source (so `sum_x f = sum_k F_k` holds to
+  `1.4e-16`), and the matching recoil/torque books.  Measured: rigid translation is a null
+  vector (`5e-18`) and the force is Galilean invariant (`1.4e-17`) — the two negative
+  controls — while the shipped unit-weight marker *sum* is biased by exactly the marker
+  density `M/A` (the additive background behind G15) and the pressure-only estimator
+  returns zero torque against a finite analytic one (G12).  The quadrature of the exact
+  Stokes rotating-sphere traction reproduces `8 pi mu Omega a^3` with second-order marker
+  placement, and `C_M = 8/Re_omega` is the analytic anchor of the rotation layer.  Layers
+  1-3 (drag over `Re in [1,1000]` against the mutually adjudicated Schiller-Naumann /
+  Clift-Gauvin band, observed grid order at `Re = 100`, rotating-sphere torque) run through
+  `scripts/p387w2_n04_sphere_force/`; the acceptance record with every criterion number is
+  `artifacts/p387w2_n04/acceptance.json` and the report is
+  `docs/P387W2_N04_IBM_SPHERE_SURFACE_FORCE.md` (drag verified at `Re = 1` (+2.7 %) and
+  resolution-limited above, with the requirement `D >= 2 sqrt(Re)` measured, not assumed).
 - **`tensorlbm.scalar_dispersion_mach`** — lattice-Mach error law of the passive-scalar
   shear-dispersion meter and the real cause of the m8228 "Pe=40, +8.685 %" shortfall
   (campaign node `p405w1-n06-lbm-scalar-dispersion`).  The slit-channel Taylor–Aris
