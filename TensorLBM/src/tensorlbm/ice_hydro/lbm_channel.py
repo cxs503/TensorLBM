@@ -155,10 +155,26 @@ class D2Q9Channel:
 
     # ------------------------------------------------------------------ collision
     def _collide(self, f: np.ndarray) -> np.ndarray:
+        """BGK collision + body forcing.
+
+        ``forcing="guo"`` is the second-order Guo (2002) scheme.  Its source term
+        has two parts, ``S_i = (1 - 1/(2 tau)) w_i [ 3 (c_ix - u_x) + 9 (c_i.u) c_ix ] g``;
+        the second part is what makes the source **zero-sum** (mass conserving):
+        ``sum_i S_i = -3 u_x + 9 cs^2 u_x = 0``.  Dropping it turns the scheme into a
+        spurious mass sink of rate ``-3 (1 - 1/(2 tau)) u_x g`` per step, which makes
+        the *steady* Poiseuille state unreachable (density decays linearly and the
+        profile amplitude drifts with the step count -- see
+        ``benchmarks/verified/poiseuille_2d_bodyforce``).
+
+        ``forcing="simple"`` is the first-order scheme: the equilibrium velocity is
+        *not* shifted (``shift = 0``) and the whole body force is injected as
+        ``3 w_i c_ix g``.
+        """
         rho = f.sum(axis=0)
         ux = (f * CX[:, None, None]).sum(axis=0) / rho
         uy = (f * CY[:, None, None]).sum(axis=0) / rho
-        ux_eq = ux + 0.5 * self.force            # Guo second-order equilibrium velocity
+        shift = 0.5 * self.force if self.forcing == "guo" else 0.0
+        ux_eq = ux + shift                       # Guo second-order equilibrium velocity
         usq = 1.5 * (ux_eq * ux_eq + uy * uy)
         omega = 1.0 / self.cfg.tau
         feq = np.empty_like(f)
@@ -168,8 +184,9 @@ class D2Q9Channel:
         fnew = f - omega * (f - feq)
         if self.forcing == "guo":
             cst = (1.0 - 0.5 * omega) * 3.0 * self.force
-            for i in range(9):
-                fnew[i] += cst * WT[i] * (CX[i] - ux_eq)
+            cu_fluid = CX[:, None, None] * ux[None] + CY[:, None, None] * uy[None]  # c_i . u
+            for i in range(9):                   # zero-sum Guo source (see docstring)
+                fnew[i] += cst * WT[i] * (CX[i] - ux + 3.0 * cu_fluid[i] * CX[i])
         else:                                   # first-order (simple) forcing
             for i in range(9):
                 fnew[i] += 3.0 * WT[i] * CX[i] * self.force

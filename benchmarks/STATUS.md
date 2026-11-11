@@ -23,6 +23,7 @@ Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%)
 | `maneuvering_zigzag` | closed-loop zig-zag (overshoot): two routes agree to 1.2e-12, Euler p=0.998 / RK4 p=4.02, IMO MSC.137(76) gate discriminates |
 | `permeability` | analytic / standard case |
 | `poiseuille_2d` | analytic / standard case |
+| `poiseuille_2d_bodyforce` | analytic body-force channel (`H=8..64`): eps_inf 8.99e-04 / eps_2 1.23e-03 at H=32, order 2.00; also fixes the truncated (non-zero-sum) Guo source term, mass drift 1.1e-02 -> 1.9e-12 |
 | `poiseuille_3d_duct` | analytic / standard case |
 | `poiseuille_3d_pipe` | analytic / standard case |
 | `shear_wave_decay` | analytic / standard case |
