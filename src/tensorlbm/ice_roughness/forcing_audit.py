@@ -282,10 +282,16 @@ def campaign_case_set(
     seeds: Sequence[int] = (20261109, 20261110),
     profile: str = "compact",
 ) -> list[sw.Case]:
-    """Rough cases plus the smooth baselines at their ``Re_tau`` (as in ``sweep``)."""
+    """Rough cases plus the smooth baselines at their ``Re_tau`` (as in ``sweep``).
+
+    The smooth baseline is a *per-seed* control: the pairing in
+    :func:`quantities` is per seed, so a seed without its own baseline would
+    silently borrow another seed's one (fixed in m11525 -- with a single shared
+    ``seen_re`` set the second and later seeds got no baseline at all).
+    """
     cases: list[sw.Case] = []
-    seen_re: dict[float, bool] = {}
     for seed in seeds:
+        seen_re: dict[float, bool] = {}
         for ks in ks_targets:
             cases.append(sw.Case(case_id=sw._case_id(ks, lambda_over_ks),
                                  ks_plus_target=float(ks),
@@ -401,9 +407,17 @@ def quantities(records: Mapping[str, Mapping[str, Any]], *,
             # through the k0 inversion (regime_law.k0_from_delta_u_plus).  This
             # keeps the downstream drag of a partly-diverged engine measurable
             # instead of dropping it; the point count is carried in the record.
-            k0 = float(rl.k0_from_delta_u_plus(ks_used[0], du_used[0]))
-            fit = {"k0": k0, "k0_source": "single-point inversion",
-                   "n_points": 1, "single_point_ks_plus": float(ks_used[0])}
+            try:
+                k0 = float(rl.k0_from_delta_u_plus(ks_used[0], du_used[0]))
+                fit = {"k0": k0, "k0_source": "single-point inversion",
+                       "n_points": 1, "single_point_ks_plus": float(ks_used[0])}
+            except ValueError as exc:
+                # a non-finite / sign-flipped dU^+ is a *result* (the defective
+                # engine can report a negative roughness function); it must be
+                # recorded as an unusable point, not crash the aggregate.
+                k0 = float("nan")
+                fit = {"k0": k0, "k0_source": f"not invertible: {exc}",
+                       "n_points": 0, "single_point_ks_plus": float(ks_used[0])}
         law = rl.ThreeZoneLaw(lambda_over_ks=float(lambda_over_ks), k0=k0,
                               k0_source="audit-refit", n_points=int(fit.get("n_points", 0)))
         for key, row in rows.items():
@@ -457,15 +471,47 @@ def quantities(records: Mapping[str, Mapping[str, Any]], *,
 # Paired comparison / verdict
 # ---------------------------------------------------------------------------
 
+#: Two-sided 95 % Student-t quantiles, ``t_{0.975, dof}``.  A paired delta with
+#: ``n`` replicate seeds has ``dof = n - 1``; with the small ``n`` an audit can
+#: afford the normal quantile 1.96 is *not* a 95 % interval, so the quantile is
+#: taken from the table (mission m11525: the previous pass quoted 1.96 with
+#: n = 2, which is a 1.6-sigma interval in disguise).
+STUDENT_T_975: dict[int, float] = {
+    1: 12.7062, 2: 4.3027, 3: 3.1824, 4: 2.7764, 5: 2.5706, 6: 2.4469,
+    7: 2.3646, 8: 2.3060, 9: 2.2622, 10: 2.2281, 11: 2.2010, 12: 2.1788,
+    13: 2.1604, 14: 2.1448, 15: 2.1314, 16: 2.1199, 17: 2.1098, 18: 2.1009,
+    19: 2.0930, 20: 2.0860, 21: 2.0796, 22: 2.0739, 23: 2.0687, 24: 2.0639,
+    25: 2.0595, 26: 2.0555, 27: 2.0518, 28: 2.0484, 29: 2.0452, 30: 2.0423,
+}
+
+
+def t_critical_975(dof: int) -> float:
+    """Two-sided 95 % Student-t quantile (exact table for ``dof <= 30``)."""
+    dof = int(dof)
+    if dof < 1:
+        raise ValueError("t_critical_975 needs dof >= 1")
+    if dof in STUDENT_T_975:
+        return STUDENT_T_975[dof]
+    # Cornish-Fisher expansion about the normal quantile for large dof
+    z = 1.959963985
+    return z + (z**3 + z) / (4.0 * dof) + (5 * z**5 + 16 * z**3 + 3 * z) / (96.0 * dof**2)
+
+
 def _summarise(values: Sequence[float]) -> dict[str, float]:
+    """Mean, sd and the *t*-based 95 % CI half-width of a sample of deltas."""
     vals = np.asarray([v for v in values if v is not None and np.isfinite(v)], dtype=float)
     if vals.size == 0:
-        return {"mean": float("nan"), "sd": float("nan"), "ci95": float("nan"), "n": 0}
+        return {"mean": float("nan"), "sd": float("nan"), "ci95_half_width": float("nan"),
+                "n": 0, "dof": 0, "t_critical_975": float("nan"),
+                "ci_method": "student-t", "ci95": [float("nan"), float("nan")]}
     mean = float(vals.mean())
     sd = float(vals.std(ddof=1)) if vals.size > 1 else 0.0
-    half = float(1.96 * sd / math.sqrt(vals.size)) if vals.size > 1 else 0.0
-    return {"mean": mean, "sd": sd, "ci95_half_width": half, "n": int(vals.size),
-            "ci95": [mean - half, mean + half]}
+    dof = int(vals.size - 1)
+    tcrit = t_critical_975(dof) if dof >= 1 else float("nan")
+    half = float(tcrit * sd / math.sqrt(vals.size)) if dof >= 1 else float("nan")
+    return {"mean": mean, "sd": sd, "dof": dof, "t_critical_975": float(tcrit),
+            "ci95_half_width": half, "n": int(vals.size), "ci_method": "student-t",
+            "ci95": [mean - half, mean + half] if half == half else [float("nan")] * 2}
 
 
 def contamination(fixed: Mapping[str, Any], defect: Mapping[str, Any], *,
@@ -552,3 +598,122 @@ def contamination(fixed: Mapping[str, Any], defect: Mapping[str, Any], *,
         "contaminated": bool(len(exceed) > 0 or not evaluable),
         "evaluable_quantities": len(evaluable),
     }
+
+# ---------------------------------------------------------------------------
+# Recalibration / state-shift accounting (mission m11525)
+# ---------------------------------------------------------------------------
+
+def recalibration_table(verdict: Mapping[str, Any], *,
+                        accept: float = DELTA_ACCEPT) -> dict[str, Any]:
+    """Map every *contaminated* calibrated quantity onto its corrected value.
+
+    ``verdict`` is the output of :func:`contamination`, whose ``pairs`` carry
+    the raw (defect, fixed) values per seed.  The table answers the audit
+    question directly: for a coefficient reported by the defect-window engine,
+    which multiplicative correction recovers the fixed-engine value, and is
+    that correction larger than the acceptance line?  A quantity without
+    paired evidence is listed as ``NOT_EVALUABLE`` -- never as "no correction
+    needed".
+    """
+    rows: list[dict[str, Any]] = []
+    for name, stats in sorted(verdict.get("quantities", {}).items()):
+        pairs = stats.get("pairs") or []
+        if not stats.get("evaluable") or not pairs:
+            rows.append({"quantity": name, "status": "NOT_EVALUABLE",
+                         "n_pairs": 0, "recalibration_required": None})
+            continue
+        defect = float(np.mean([p["defect"] for p in pairs]))
+        fixed = float(np.mean([p["fixed"] for p in pairs]))
+        factor = (fixed / defect) if defect not in (0.0,) else float("nan")
+        rel = float(stats["mean"])
+        rows.append({
+            "quantity": name,
+            "status": "EVALUATED",
+            "n_pairs": int(stats["n"]),
+            "defect_mean": defect,
+            "fixed_mean": fixed,
+            "rel_delta": rel,
+            "ci95": stats.get("ci95"),
+            "correction_factor_fixed_over_defect": float(factor),
+            "recalibration_required": bool(abs(rel) > accept or
+                                           (abs(rel) - float(stats.get("ci95_half_width") or 0.0)) > accept),
+        })
+    required = [r["quantity"] for r in rows if r.get("recalibration_required")]
+    unknown = [r["quantity"] for r in rows if r["status"] != "EVALUATED"]
+    return {
+        "accept_threshold": float(accept),
+        "rows": rows,
+        "recalibration_required": required,
+        "not_evaluable": unknown,
+        "verdict": ("RECALIBRATE" if required else
+                    ("INCONCLUSIVE" if unknown else "NO_RECALIBRATION")),
+    }
+
+
+def engine_state_shift(records_fixed: Mapping[str, Mapping[str, Any]],
+                       records_defect: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+    """How far the *reported* state of a case moves between the two engines.
+
+    The forcing weight does not only rescale ``C_f``: with the wrong weight the
+    momentum supplied is ``D(tau) F``, so the reported friction velocity
+    ``sqrt(g h_eff)`` is inflated, the reported ``U^+`` deflated and the
+    measured ``k_s^+ = k_s u_tau/nu`` shifted.  This function makes that shift
+    explicit per case (it is the reason a nominal-case pairing is *not* a
+    matched-physics pairing and must be read with the shift at hand).
+    """
+    def _key(rec: Mapping[str, Any]) -> tuple[str, int]:
+        case = rec.get("case", {}) if isinstance(rec, Mapping) else {}
+        return (str(case.get("case_id")), int(case.get("seed", 0)))
+
+    fx = {_key(r): r for r in records_fixed.values()}
+    df = {_key(r): r for r in records_defect.values()}
+    rows: list[dict[str, Any]] = []
+    for key in sorted(set(fx) & set(df)):
+        a, b = df[key], fx[key]
+        if a.get("case", {}).get("kind") == "smooth":
+            continue
+        ks_target = float(a["case"]["ks_plus_target"])
+
+        def _ratio(x: float, y: float) -> float:
+            return float(x) / float(y) if y else float("nan")
+
+        rows.append({
+            "case_id": key[0], "seed": key[1], "ks_plus_target": ks_target,
+            "ks_plus_measured_fixed": float(b.get("ks_plus", float("nan"))),
+            "ks_plus_measured_defect": float(a.get("ks_plus", float("nan"))),
+            "ks_plus_ratio_defect_over_fixed": _ratio(float(a.get("ks_plus", float("nan"))),
+                                                      float(b.get("ks_plus", float("nan")))),
+            "u_plus_ratio_defect_over_fixed": _ratio(float(a["u_plus_bulk"]), float(b["u_plus_bulk"])),
+            "cf_ratio_defect_over_fixed": _ratio(float(a["cf"]), float(b["cf"])),
+            "tau_defect": float(a.get("tau", float("nan"))),
+            "drive_factor_closed_form_defect": drive_factor(float(a["tau"])) if a.get("tau", 0.0) > 0.5 else float("nan"),
+            "wall_resolved_fixed": bool(b.get("wall_resolved", False)),
+            "wall_resolved_defect": bool(a.get("wall_resolved", False)),
+        })
+    by_ks: dict[str, Any] = {}
+    for row in rows:
+        by_ks.setdefault(f"{row['ks_plus_target']:g}", []).append(row)
+    summary = {}
+    for ks, group in by_ks.items():
+        def _m(field: str) -> float:
+            vals = [g[field] for g in group if np.isfinite(g[field])]
+            return float(np.mean(vals)) if vals else float("nan")
+        summary[ks] = {
+            "n": len(group),
+            "ks_plus_ratio_mean": _m("ks_plus_ratio_defect_over_fixed"),
+            "u_plus_ratio_mean": _m("u_plus_ratio_defect_over_fixed"),
+            "cf_ratio_mean": _m("cf_ratio_defect_over_fixed"),
+            "implied_drive_factor_from_cf": (1.0 / _m("cf_ratio_defect_over_fixed")
+                                            if _m("cf_ratio_defect_over_fixed") else float("nan")),
+            # the *true* friction velocity of the defect run is smaller by
+            # sqrt(D); the reported k_s^+ label is unchanged by construction,
+            # so this is the only honest "state shift" scalar
+            "true_u_tau_ratio_defect_over_fixed": (float(np.sqrt(1.0 / _m("cf_ratio_defect_over_fixed")))
+                                                   if _m("cf_ratio_defect_over_fixed") else float("nan")),
+            "closed_form_drive_factor_defect": _m("drive_factor_closed_form_defect"),
+        }
+    return {"rows": rows, "by_ks": summary,
+            "note": ("a nominal-case pairing is not a matched-physics pairing: the "
+                     "defective engine reports a shifted friction velocity, hence a "
+                     "shifted U^+ / k_s^+ for the same input k_s^+; the shift is "
+                     "reported per k_s^+ so the paired delta can be read correctly")}
