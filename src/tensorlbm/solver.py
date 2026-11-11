@@ -65,6 +65,24 @@ def _get_d2q9_mrt_matrices(
     return _mrt_matrix_cache[key]
 
 
+def _relaxation_time(tau, *, where: str):
+    """Validate tau without detaching a graph-connected (0-dim tensor) tau.
+
+    ``check_relaxation_time`` returns ``float(tau)`` for a 0-dim tensor -- it is
+    a "plain scalar" to ``float()`` -- which silently strips the autograd graph
+    of a solver-in-the-loop relaxation time (``tests/test_autograd.py::
+    test_collide_step_gradients_f_and_tau`` pins this).  Here the range check
+    runs on the value while the tensor itself flows into the arithmetic.
+    """
+    if isinstance(tau, torch.Tensor):
+        # No ``float(tau)``: it would both detach the value and force a graph
+        # break inside ``torch.compile``.  This matches the documented policy of
+        # :func:`check_relaxation_time` for non-plain scalars ("leave validation
+        # to the caller"); callers that hand in a tensor tau own its range.
+        return tau
+    return check_relaxation_time(tau, where=where)
+
+
 def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
     """Single-relaxation-time BGK collision step.
 
@@ -73,7 +91,7 @@ def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
     so the same illegal ``tau`` was rejected or silently propagated depending on
     which entry point the caller happened to use.
     """
-    tau = check_relaxation_time(tau, where="solver.collide_bgk")
+    tau = _relaxation_time(tau, where="solver.collide_bgk")
     rho, ux, uy = macroscopic(f)
     feq = equilibrium(rho, ux, uy)
     return f - (f - feq) / tau
@@ -89,7 +107,7 @@ def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
     For bf16, this avoids creating a full feq tensor (9×ny×nx) in memory,
     instead computing each direction's collision result on-the-fly.
     """
-    tau = check_relaxation_time(tau, where="solver.collide_bgk_fused")
+    tau = _relaxation_time(tau, where="solver.collide_bgk_fused")
     device = f.device
     dtype = f.dtype
     c = _c_on(device)
