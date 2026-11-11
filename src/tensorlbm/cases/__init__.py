@@ -52,3 +52,7 @@ __all__ = [
     "run_case",
     "unregister_case",
 ]
+
+# Stratified (two-layer) co-moving Poiseuille flow of the Shan-Chen two-component
+# model — library entry used by the GAP-LBM-MCMP-POISEUILLE benchmark.
+from .two_layer_poiseuille import run_two_layer_poiseuille  # noqa: E402,F401
