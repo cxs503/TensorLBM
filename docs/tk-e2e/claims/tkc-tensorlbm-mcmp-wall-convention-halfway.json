@@ -1,0 +1,83 @@
+{
+ "id": "tkc:tensorlbm:mcmp-wall-convention-halfway",
+ "statement": "TensorLBM 的 D2Q9 后流反弹壁面（post-streaming bounce-back，wall rows 0 与 ny-1）有效无滑移面在半程（wall row 与首个流体行之间），即 H=ny-2；QR 审计 docs/REPORT_qr_pilot_a.md 主张的 H=ny-1（壁格中心）被单相 Poiseuille 控制实验证伪：H=ny-1 使 u_max 低 4.15%–8.35%、Q 低 6.18%–12.25%（ny=25/33/49，tau=1.0/0.75），H=ny-2 的残差仅 0.03%–0.21%（u_max）与 0.06%–0.30%（Q）。",
+ "claim_type": "diagnostic",
+ "scope": {
+  "domain": "lattice Boltzmann boundary conditions",
+  "conditions": [
+   "D2Q9",
+   "post-streaming bounce-back",
+   "solid wall rows at j=0 and j=ny-1",
+   "single-phase Poiseuille forcing",
+   "tau in {0.75, 1.0}",
+   "ny in {25,33,49}"
+  ]
+ },
+ "modality": "measured",
+ "epistemic_status": "established",
+ "evidence_refs": [
+  "tke:tensorlbm:m14431-wall-calibration",
+  "artifacts/mcmp_stratified_poiseuille/records/walls_*.json",
+  "benchmarks/verified/mcmp_stratified_poiseuille/result.json"
+ ],
+ "measurements": [
+  {
+   "ny": 25,
+   "tau": 0.75,
+   "u_max_err_H_ny_minus_1": -0.0834916631380719,
+   "Q_err_H_ny_minus_1": -0.12250519695657261,
+   "u_max_err_H_ny_minus_2": -0.002062756082286054,
+   "Q_err_H_ny_minus_2": -0.0030008911586800412
+  },
+  {
+   "ny": 25,
+   "tau": 1.0,
+   "u_max_err_H_ny_minus_1": -0.08232181850406878,
+   "Q_err_H_ny_minus_1": -0.12166795520870764,
+   "u_max_err_H_ny_minus_2": -0.0007889744014055417,
+   "Q_err_H_ny_minus_2": -0.0020496270900940833
+  },
+  {
+   "ny": 33,
+   "tau": 0.75,
+   "u_max_err_H_ny_minus_1": -0.06269164057448515,
+   "Q_err_H_ny_minus_1": -0.09244979789946232,
+   "u_max_err_H_ny_minus_2": -0.0012447866267147683,
+   "Q_err_H_ny_minus_2": -0.0017587518904898494
+  },
+  {
+   "ny": 33,
+   "tau": 1.0,
+   "u_max_err_H_ny_minus_1": -0.06204863994692771,
+   "Q_err_H_ny_minus_1": -0.0919831179780886,
+   "u_max_err_H_ny_minus_2": -0.0005596329923559597,
+   "Q_err_H_ny_minus_2": -0.0012454368737541167
+  },
+  {
+   "ny": 49,
+   "tau": 0.75,
+   "u_max_err_H_ny_minus_1": -0.04164285571486882,
+   "Q_err_H_ny_minus_1": -0.06183185952681072,
+   "u_max_err_H_ny_minus_2": -0.0004278585636294768,
+   "Q_err_H_ny_minus_2": -0.0006656425723497683
+  },
+  {
+   "ny": 49,
+   "tau": 1.0,
+   "u_max_err_H_ny_minus_1": -0.04154774008525763,
+   "Q_err_H_ny_minus_1": -0.0617913297481006,
+   "u_max_err_H_ny_minus_2": -0.0003286524021880163,
+   "Q_err_H_ny_minus_2": -0.0006224703534087883
+  }
+ ],
+ "supersedes_note": "QR 报告据此把开发方 H=ny-2/h=half-0.5 的参考解判为错误，并把两相流量误差由 9.34%/8.45% 改判为 20.2%/16.8% FAIL；本 claim 表明该改判不成立。",
+ "reproducible_by": "PYTHONPATH=src:. python cases/mcmp_stratified_poiseuille/run_sweep.py --mode walls --ny 25 --tau-lower 1.0 --steps 20000",
+ "created_at": "2026-11-11",
+ "created_by": "agent/m14431",
+ "version": "1.0.0",
+ "status": "draft",
+ "notes": [
+  "映射 feature_ledger: GAP-LBM-MCMP-POISEUILLE",
+  "映射 mission: m14431"
+ ]
+}
