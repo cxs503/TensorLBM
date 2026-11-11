@@ -161,3 +161,13 @@
 - **prism_solver.py**（棱柱求解器）：同左
 - **处理**：不导出（无验证导出会误导），标记待验证；若后续 benchmark 需要先补测试
 - **已补齐导出的高级碰撞**（2026-08-19, eac50cb）：cascaded_collision（collide_cascaded_d3q19/d3q27）+ entropic_kbc（collide_kbc_d3q19/d3q27 等）——有测试有引用，已顶层导出
+
+### G22. 变水深（well-balanced）浅水底压离散——**OPEN（本轮否定性结果）**
+- 现状：`shallow_water2d` / `shallow_water` 均只支持平底 `z_b = 0`；变水深能力缺失
+  （浅水操纵/坐底、岸线爬高、干岛均不可算）。
+- 本轮（mission 14922）试了两个底压离散，**都被双判据否掉**：
+  v1（星态深度平方差，+号）静水 2.15e-09 m 但平底流动压力梯度被整消 ⇒ 流动算例爆掉；
+  v2（本格重构深度平方差）平底恒流机器零但静水 5 s 漂移 0.334 m。
+- 记录：`docs/SWE_BATHYMETRY_FALSIFICATION.md`。
+- 下一步：按 Audusse (2004) 原式实现「面通量单值 + 单元源项分离」，并用**双判据**
+  （静水 C-property ≤1e-8 m 且 平底恒流 max|h−h₀| = 0）同时验收。
