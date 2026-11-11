@@ -91,6 +91,15 @@ class TestReferenceData:
         assert GHIA_RE1000.re == 1000.0
         assert len(GHIA_RE1000.y) == len(GHIA_RE1000.u)
 
+    def test_get_ghia_reference_rejects_untabulated_re(self):
+        """Re=5000 lives in Ghia Table III/IV, not here: it must raise, not fall back."""
+        import pytest
+
+        with pytest.raises(KeyError):
+            get_ghia_reference(5000)
+        with pytest.raises(KeyError):
+            get_ghia_reference(3200)
+
     def test_get_ghia_reference(self):
         ref = get_ghia_reference(100)
         assert ref.re == 100.0

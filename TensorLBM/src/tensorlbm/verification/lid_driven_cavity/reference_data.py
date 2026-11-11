@@ -4,7 +4,10 @@ Reference: Ghia, U., Ghia, K.N., & Shin, C.T. (1982).
 "High-Re solutions for incompressible flow using the Navier-Stokes equations
 and a multigrid method." Journal of Computational Physics, 48(3), 387-411.
 
-Data extracted from Table II (Re=100, 400, 1000) and Table III (Re=3200, 5000, 7500, 10000).
+Data extracted from Table I (u) and Table II (v): Re = 100, 400, 1000 only.
+The high-Re tables of the same paper (Table III: u, Table IV: v, for
+Re = 3200, 5000, 7500, 10000) are **not** transcribed here; asking for those
+Reynolds numbers raises instead of silently returning a neighbouring Re.
 """
 
 from __future__ import annotations
@@ -112,14 +115,28 @@ GHIA_RE100_FINE = GhiaReference(
 )
 
 
+AVAILABLE_RE = (100, 400, 1000)
+
+
 def get_ghia_reference(re: float) -> GhiaReference:
-    """Get Ghia reference data for a given Reynolds number."""
+    """Get Ghia (1982) Table I/II reference data for a supported Reynolds number.
+
+    Only Re = 100, 400 and 1000 are tabulated in this module.  Other Reynolds
+    numbers raise :class:`KeyError`: returning the closest available Re (the
+    previous behaviour) silently scored a Re = 5000 run against the Re = 1000
+    table, i.e. it turned an unsupported case into a fake pass.
+    """
     refs = {100: GHIA_RE100, 400: GHIA_RE400, 1000: GHIA_RE1000}
-    if re in refs:
-        return refs[re]
-    # For other Re values, return closest match with warning
-    closest = min(refs.keys(), key=lambda r: abs(r - re))
-    return refs[closest]
+    key = int(round(float(re)))
+    if abs(key - float(re)) < 1e-9 and key in refs:
+        return refs[key]
+    raise KeyError(
+        f"no Ghia (1982) Table I/II data for Re={re}; available: {AVAILABLE_RE}. "
+        "Re = 3200/5000/7500/10000 live in Table III/IV of the same paper and are "
+        "not transcribed here -- supply a machine-readable copy (see "
+        "benchmarks/verified/cavity/re5000/run.py --ref-json) instead of falling "
+        "back to a neighbouring Reynolds number."
+    )
 
 
 def interpolate_ghia(ref: GhiaReference, y_points: np.ndarray, axis: str = 'u') -> np.ndarray:
