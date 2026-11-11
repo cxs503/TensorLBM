@@ -1,0 +1,1289 @@
+{
+ "node": "p161w2-arb-n05",
+ "set_up": {
+  "U": 0.15,
+  "Re": 500.0,
+  "pitch_axis_a": -0.5,
+  "default_chord": 32,
+  "grid": [
+   288,
+   128
+  ],
+  "steps_per_cycle": 670,
+  "cycles_averaged": 0.8,
+  "cd0_locked": 0.22325992986344476
+ },
+ "cases": {
+  "cpl_phi270_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "coupled",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 270.0,
+   "C_T": -0.22413032356407436,
+   "C_L": -0.06537537966346836,
+   "C_P": 0.03821924993401453,
+   "eta": -5.864330774440497,
+   "C_T_theory": 0.09513669587631998,
+   "C_P_theory": 0.09514309791553617,
+   "eta_theory": 0.9999327114698129,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.0011685164536380723,
+   "C_T_control_volume": -0.22889841031158897,
+   "sha256": "29c1322b82ad316a917b26f59d018332956e138ff9ef7ef96115d81c55346c63"
+  },
+  "cpl_phi90_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "coupled",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.29594026319215305,
+   "C_L": -0.2167271729064033,
+   "C_P": 0.12805840599682436,
+   "eta": -2.3109788138350864,
+   "C_T_theory": 0.1157491670420724,
+   "C_P_theory": 0.30559851995247184,
+   "eta_theory": 0.37876219773601744,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.002280023409532794,
+   "C_T_control_volume": -0.31945425060797833,
+   "sha256": "64ffb760f3dbaa2a24d235a8780ce464e18fa1b35aa221a9cb973e6e91872c2c"
+  },
+  "ebox_c30": {
+   "grid": [
+    90,
+    60
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.1,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.18625238118522752,
+   "C_L": -0.025445961733406366,
+   "C_P": -0.006025107308305215,
+   "eta": NaN,
+   "C_T_theory": 0.03783038457180549,
+   "C_P_theory": 0.06778738512272618,
+   "eta_theory": 0.5580741092655395,
+   "strouhal": 0.06366197723675814,
+   "C_T_cycle_std": 0.018723785893882076,
+   "C_T_control_volume": -0.008477414072182006,
+   "sha256": "3d20f1029e8dbca79c1c1c47b871e84b75379ad15a3cec00b9cb2dfe9dd3fb70"
+  },
+  "ebox_c45": {
+   "grid": [
+    135,
+    90
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.1,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.16901292327563205,
+   "C_L": -0.024057822987608533,
+   "C_P": -0.0034809882428776602,
+   "eta": NaN,
+   "C_T_theory": 0.0378303845718055,
+   "C_P_theory": 0.0677873851227262,
+   "eta_theory": 0.5580741092655395,
+   "strouhal": 0.06366197723675814,
+   "C_T_cycle_std": 0.012280872496520252,
+   "C_T_control_volume": -0.006780667659487451,
+   "sha256": "3a1d8db47404b9870c41ed079e82c7e2ded1d931a8794bae6ea2da01133b96a2"
+  },
+  "cv_gci_c42": {
+   "grid": [
+    378,
+    168
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.19108921504359383,
+   "C_L": -0.02262084324003615,
+   "C_P": 0.0667875729426805,
+   "eta": -2.861149262117871,
+   "C_T_theory": 0.08511836528656237,
+   "C_P_theory": 0.1525216165261339,
+   "eta_theory": 0.5580741092655395,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.005761181408178597,
+   "C_T_control_volume": -0.20150303192425867,
+   "sha256": "d14c2e112acf85a04b6767707a0fb02a130a11fcec14cba6d73b5c5fcbed1216"
+  },
+  "cv_heave_h015_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22170162160841853,
+   "C_L": -0.04317709158978319,
+   "C_P": 0.07263161903785995,
+   "eta": -3.0524119459990886,
+   "C_T_theory": 0.08511836528656236,
+   "C_P_theory": 0.15252161652613397,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.004920675997619451,
+   "C_T_control_volume": -0.23035705593779718,
+   "sha256": "81318a913e43ba35d9dd81f0272746e778371200c9e14ad0c55109765215e967"
+  },
+  "cv_heave_h015_k2": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 2.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2221500647136751,
+   "C_L": -0.17321367913656655,
+   "C_P": 0.4882415555686153,
+   "eta": -0.4550003214186776,
+   "C_T_theory": 0.3013488952848654,
+   "C_P_theory": 0.5801382253263204,
+   "eta_theory": 0.5194432673616024,
+   "strouhal": 0.1909859317102744,
+   "C_T_cycle_std": 0.005236383311988153,
+   "C_T_control_volume": -0.21651979938109675,
+   "sha256": "5ec98e117d413b7ee8ae468b55eb0d2f8ad563ecbacb9fbf0f78717628f0a9a8"
+  },
+  "cv_lock_ref": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "locked",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22300413550836132,
+   "C_L": -0.01973363148224059,
+   "C_P": 0.0,
+   "eta": NaN,
+   "C_T_theory": 0.0,
+   "C_P_theory": 0.0,
+   "eta_theory": NaN,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.00016256792153069362,
+   "C_T_control_volume": -0.22472786620835924,
+   "sha256": "e58e278e2de96f9773d6740e01bf0b2b224bf56c8fd08620f215ab7b9a10d55f"
+  },
+  "gci_c24": {
+   "grid": [
+    216,
+    96
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2682573277069195,
+   "C_L": -0.07499195688532906,
+   "C_P": 0.0743147083943308,
+   "eta": -3.609747430932312,
+   "C_T_theory": 0.08511836528656232,
+   "C_P_theory": 0.15252161652613386,
+   "eta_theory": 0.5580741092655394,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.007835877288401856,
+   "C_T_control_volume": -0.2776375680262667,
+   "sha256": "607d2b40c72b6fc20715458ab93385ae63e753d1ef4b770135b35069c8f1e5c0"
+  },
+  "gci_c42": {
+   "grid": [
+    378,
+    168
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.19134792008946813,
+   "C_L": -0.0213880795882787,
+   "C_P": 0.062273441595746444,
+   "eta": -3.0727050759715526,
+   "C_T_theory": 0.08511836528656237,
+   "C_P_theory": 0.1525216165261339,
+   "eta_theory": 0.5580741092655395,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.005620656738163004,
+   "C_T_control_volume": -0.20285720888159442,
+   "sha256": "9e192fb8f4e7cbb09e7fb4eb6d45a5f4b159d527226c8e5977c270d1b842ac10"
+  },
+  "heave_h005_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.05,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2272985601737305,
+   "C_L": -0.02084274726202909,
+   "C_P": 0.007008514136556749,
+   "eta": -32.43177594350994,
+   "C_T_theory": 0.009457596142951373,
+   "C_P_theory": 0.016946846280681552,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.03183098861837907,
+   "C_T_cycle_std": 0.001492670718460791,
+   "C_T_control_volume": -0.23283745700658665,
+   "sha256": "53a91abbc5c49884940f8ea79eb1c9b9e3059410faeb359f365926f6cf5131d8"
+  },
+  "heave_h010_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.1,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.23141876238911543,
+   "C_L": -0.02368908905607662,
+   "C_P": 0.029040457953855067,
+   "eta": -7.96883998030737,
+   "C_T_theory": 0.03783038457180549,
+   "C_P_theory": 0.06778738512272621,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.06366197723675814,
+   "C_T_cycle_std": 0.002343986855429045,
+   "C_T_control_volume": -0.2349829862305423,
+   "sha256": "3b9e58cbfc91e6d41aff1a892734dcf7a1ed2ae0ab1d9c895c0f16263e83daf4"
+  },
+  "heave_h015_k0.75": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 0.75,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.21475824239029645,
+   "C_L": -0.022766057566079457,
+   "C_P": 0.04453630294725272,
+   "eta": -4.822094071091819,
+   "C_T_theory": 0.05205546314724952,
+   "C_P_theory": 0.08892099353843833,
+   "eta_theory": 0.5854125226878762,
+   "strouhal": 0.07161972439135289,
+   "C_T_cycle_std": 0.0015586498934912257,
+   "C_T_control_volume": -0.2207680385373219,
+   "sha256": "627d860e2965b2592838074bb71b73b0f798467910431d5505886b3a78b81537"
+  },
+  "heave_h015_k1.5": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.5,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2300024887080436,
+   "C_L": -0.06265411461169969,
+   "C_P": 0.18906946181309325,
+   "eta": -1.2164972941818344,
+   "C_T_theory": 0.176134832861615,
+   "C_P_theory": 0.33145429501975177,
+   "eta_theory": 0.5314000618128026,
+   "strouhal": 0.14323944878270578,
+   "C_T_cycle_std": 0.007870911780930984,
+   "C_T_control_volume": -0.24567330176896718,
+   "sha256": "e5f5dd906d23104c6fe44778960878359be0ffbe9f12145432cbec6d84e91915"
+  },
+  "heave_h015_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22232977816229765,
+   "C_L": -0.04185251758830236,
+   "C_P": 0.06791839683685487,
+   "eta": -3.273483894155373,
+   "C_T_theory": 0.08511836528656236,
+   "C_P_theory": 0.15252161652613397,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.003929996630465606,
+   "C_T_control_volume": -0.23210373747306137,
+   "sha256": "140d75794d7a37c234994c44ad6a5c7197163ce1c7dd3a1511ea035b9d1f3926"
+  },
+  "heave_h015_k2": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 2.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22505959212650622,
+   "C_L": -0.1620006391371513,
+   "C_P": 0.4607965114972062,
+   "eta": -0.4884142707488157,
+   "C_T_theory": 0.3013488952848654,
+   "C_P_theory": 0.5801382253263204,
+   "eta_theory": 0.5194432673616024,
+   "strouhal": 0.1909859317102744,
+   "C_T_cycle_std": 0.004338410868042776,
+   "C_T_control_volume": -0.2246444721455723,
+   "sha256": "f80d312b5d6a2a1f9a491e0550f3bd023f0cbd4760ed889aa0567ab58e95cf1f"
+  },
+  "heave_h015_k3": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 3.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": NaN,
+   "C_L": NaN,
+   "C_P": NaN,
+   "eta": NaN,
+   "C_T_theory": 0.6563256284312851,
+   "C_P_theory": 1.288325472658117,
+   "eta_theory": 0.5094408535423364,
+   "strouhal": 0.28647889756541156,
+   "C_T_cycle_std": NaN,
+   "C_T_control_volume": NaN,
+   "sha256": "b08e9bdd7611777f9c88b98a57eb75b9f6d49ea45c866634d7e68d50e681173b"
+  },
+  "heave_h020_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.2,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2158593716829245,
+   "C_L": -0.0694019861727922,
+   "C_P": 0.12809495621427525,
+   "eta": -1.6851512195518323,
+   "C_T_theory": 0.15132153828722197,
+   "C_P_theory": 0.27114954049090484,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.12732395447351627,
+   "C_T_cycle_std": 0.00188050656472585,
+   "C_T_control_volume": -0.22594655158318205,
+   "sha256": "db66975e90d9b0e0377ff3f8f54f1ed12af893866772dfb4d2c1919f12eed085"
+  },
+  "heave_h025_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.20260084749205354,
+   "C_L": -0.0964047464755817,
+   "C_P": 0.21422959750829387,
+   "eta": -0.945718284721185,
+   "C_T_theory": 0.23643990357378433,
+   "C_P_theory": 0.4236711570170388,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.15915494309189535,
+   "C_T_cycle_std": 0.003529608294229624,
+   "C_T_control_volume": -0.21390851393018964,
+   "sha256": "a160b17053eb1e05fb3053ff7b851551a11cdff938c3fa47a1654f8a4f8345f8"
+  },
+  "lin_coupled_02": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "coupled",
+   "k": 1.0,
+   "h0_over_c": 0.02,
+   "alpha0_deg": 2.0,
+   "phi_deg": 90.0,
+   "C_T": -0.23177771494640143,
+   "C_L": -0.03045718307769197,
+   "C_P": 0.002397961301966212,
+   "eta": -96.65615318994303,
+   "C_T_theory": 0.0026010309786542738,
+   "C_P_theory": 0.00743153539504966,
+   "eta_theory": 0.34999913751159534,
+   "strouhal": 0.012732395447351628,
+   "C_T_cycle_std": 0.001384634668765672,
+   "C_T_control_volume": -0.23403885031284694,
+   "sha256": "44dbfb9c0c6489b9b93a6c55ba96afe08b55ba4d3c5c5e8acfb55a540d6aace8"
+  },
+  "lin_heave_02": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.02,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22930924581179077,
+   "C_L": -0.02003620202939456,
+   "C_P": 0.0010677794692065812,
+   "eta": -214.75337597770084,
+   "C_T_theory": 0.0015132153828722199,
+   "C_P_theory": 0.002711495404909048,
+   "eta_theory": 0.5580741092655394,
+   "strouhal": 0.012732395447351628,
+   "C_T_cycle_std": 0.0012172046133328376,
+   "C_T_control_volume": -0.22980828937484737,
+   "sha256": "f4ff074216551afb0f866112b3335bf2ec6be494881485750bca721b80c3c14a"
+  },
+  "lin_heave_04": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.04,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.23147540460299193,
+   "C_L": -0.017711301430458903,
+   "C_P": 0.004589546116095895,
+   "eta": -50.43535869291948,
+   "C_T_theory": 0.0060528615314888795,
+   "C_P_theory": 0.010845981619636192,
+   "eta_theory": 0.5580741092655394,
+   "strouhal": 0.025464790894703257,
+   "C_T_cycle_std": 0.0008462651952297817,
+   "C_T_control_volume": -0.232269059599129,
+   "sha256": "269d2bdea8db13fef010b8692d45a7f8d078e70a7dc7d245be174cfb2077aa3d"
+  },
+  "lin_pitch_2deg": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "pitch",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 2.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22593208280967716,
+   "C_L": -0.02095926531875049,
+   "C_P": 0.0003489399690156385,
+   "eta": -647.4812370936834,
+   "C_T_theory": 0.0008129826469053559,
+   "C_P_theory": 0.0019139676963148033,
+   "eta_theory": 0.4247629928502404,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.000900971563911029,
+   "C_T_control_volume": -0.22909482699075406,
+   "sha256": "cd772b36029567b9957f38f3abd14dbd596a8fb354d42a35f05628e8ca92dbf2"
+  },
+  "lock_ref": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "locked",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22325992986344476,
+   "C_L": -0.019521988886379234,
+   "C_P": 0.0,
+   "eta": NaN,
+   "C_T_theory": 0.0,
+   "C_P_theory": 0.0,
+   "eta_theory": NaN,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.00016380345493829444,
+   "C_T_control_volume": -0.22501384859309564,
+   "sha256": "d82e8179a3ef0711da7ec32166c8cbf02714c016d8be4dd67f78462ad6224366"
+  },
+  "lock_ref_c24": {
+   "grid": [
+    216,
+    96
+   ],
+   "mode": "locked",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.25173810763218146,
+   "C_L": -0.04363379496945349,
+   "C_P": 0.0,
+   "eta": NaN,
+   "C_T_theory": 0.0,
+   "C_P_theory": 0.0,
+   "eta_theory": NaN,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.000314392997630201,
+   "C_T_control_volume": -0.24639353574711034,
+   "sha256": "b13a3c600bccb5b59c3e1b3b60b009ac7ae0242bd8beb20eb9d025640efb0a61"
+  },
+  "lock_ref_c42": {
+   "grid": [
+    378,
+    168
+   ],
+   "mode": "locked",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.20800664775579022,
+   "C_L": -0.0032032515170394454,
+   "C_P": 0.0,
+   "eta": NaN,
+   "C_T_theory": 0.0,
+   "C_P_theory": 0.0,
+   "eta_theory": NaN,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.00011392678973254166,
+   "C_T_control_volume": -0.21335354721633581,
+   "sha256": "c6c55acf345e0f06b1b9d9c808747fe76beeca9c2a038fe3eb87fc815b303da2"
+  },
+  "nc_heave_flip": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2239536188366634,
+   "C_L": -0.041495676527172703,
+   "C_P": 0.06805155133982779,
+   "eta": -3.2909406828701124,
+   "C_T_theory": 0.08511836528656236,
+   "C_P_theory": 0.15252161652613397,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.0023716507480498103,
+   "C_T_control_volume": -0.2320377623138535,
+   "sha256": "512875a65df64ee99e3a161e8e5435cd117e23e43eec412494b8abf0dd1994f4"
+  },
+  "nc_noibm": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": 0.0,
+   "C_L": 0.0,
+   "C_P": 0.0,
+   "eta": NaN,
+   "C_T_theory": 0.08511836528656236,
+   "C_P_theory": 0.15252161652613397,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.0,
+   "C_T_control_volume": -1.5227178280032993e-12,
+   "sha256": "b63fa9623cf1b3b9594504b76651ae83c2848a88aefa4e0673c2eddd8ec866f2"
+  },
+  "pitch_a10_k0.75": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "pitch",
+   "k": 0.75,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.26338473283502284,
+   "C_L": -0.045731418770457784,
+   "C_P": 0.003810532909167633,
+   "eta": -69.12018321672393,
+   "C_T_theory": 0.00018850883378474385,
+   "C_P_theory": 0.02691517072942692,
+   "eta_theory": 0.007003813413624131,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.001502303844413997,
+   "C_T_control_volume": -0.2725970315288931,
+   "sha256": "3a8fbd0aa133df78921db66fcfd40a127f48d35558a7b6d6173d864d0544d39d"
+  },
+  "pitch_a10_k1": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "pitch",
+   "k": 1.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.2641348990344615,
+   "C_L": -0.06956445827225838,
+   "C_P": 0.008381331885170694,
+   "eta": -31.514668868059285,
+   "C_T_theory": 0.02032456617263388,
+   "C_P_theory": 0.04784919240787008,
+   "eta_theory": 0.4247629928502401,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.0023994242036328274,
+   "C_T_control_volume": -0.2749622066007617,
+   "sha256": "84205077dc16490075b30ac8af8d3f7239e5bcb6da59cc27dd560ee1e98041a7"
+  },
+  "pitch_a10_k2": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "pitch",
+   "k": 2.0,
+   "h0_over_c": 0.25,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.29738102041101133,
+   "C_L": -0.18965955910152063,
+   "C_P": 0.06659533231384368,
+   "eta": -4.465493452447154,
+   "C_T_theory": 0.16306212769063363,
+   "C_P_theory": 0.1913967696314803,
+   "eta_theory": 0.8519586198063696,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.002286524720940572,
+   "C_T_control_volume": -0.32116018185354606,
+   "sha256": "fb265bd6aae5028ebe0076e00c92d4c513fd70b4422f17a7e5cd473a99ae3772"
+  },
+  "rep_a": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "heave",
+   "k": 1.0,
+   "h0_over_c": 0.15,
+   "alpha0_deg": 10.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22232977816229765,
+   "C_L": -0.04185251758830236,
+   "C_P": 0.06791839683685487,
+   "eta": -3.273483894155373,
+   "C_T_theory": 0.08511836528656236,
+   "C_P_theory": 0.15252161652613397,
+   "eta_theory": 0.5580741092655392,
+   "strouhal": 0.0954929658551372,
+   "C_T_cycle_std": 0.003929996630465606,
+   "C_T_control_volume": -0.23210373747306137,
+   "sha256": "140d75794d7a37c234994c44ad6a5c7197163ce1c7dd3a1511ea035b9d1f3926"
+  },
+  "zero_motion": {
+   "grid": [
+    288,
+    128
+   ],
+   "mode": "locked",
+   "k": 1.0,
+   "h0_over_c": 0.0,
+   "alpha0_deg": 0.0,
+   "phi_deg": 90.0,
+   "C_T": -0.22334319645313722,
+   "C_L": -0.01950953151437104,
+   "C_P": 0.0,
+   "eta": NaN,
+   "C_T_theory": 0.0,
+   "C_P_theory": 0.0,
+   "eta_theory": NaN,
+   "strouhal": 0.0,
+   "C_T_cycle_std": 0.00021511688918372514,
+   "C_T_control_volume": -0.22521518104132968,
+   "sha256": "7c1042ed3be9dac25d60e4dd9a464654fd8f14bb64ac3a0adcf177fb5d1e70d6"
+  }
+ },
+ "criteria": [
+  {
+   "id": "C1",
+   "name": "small-amplitude linear region (Garrick)",
+   "verdict": "WITHHELD",
+   "threshold": {
+    "rel_error": 0.15,
+    "resolvable": "|C_T_th| > 3 sigma_cycle"
+   },
+   "value": {
+    "cases": [
+     {
+      "label": "lin_heave_02",
+      "C_T_net": -0.22930924581179077,
+      "C_D0": 0.22325992986344476,
+      "dC_T": -0.006049315948346012,
+      "C_T_theory": 0.0015132153828722199,
+      "rel_error": 4.99765692102856,
+      "noise_3sigma": 0.0036516138399985128,
+      "resolvable": false,
+      "verdict": "WITHHELD"
+     },
+     {
+      "label": "lin_pitch_2deg",
+      "C_T_net": -0.22593208280967716,
+      "C_D0": 0.22325992986344476,
+      "dC_T": -0.002672152946232409,
+      "C_T_theory": 0.0008129826469053559,
+      "rel_error": 4.2868511479353755,
+      "noise_3sigma": 0.002702914691733087,
+      "resolvable": false,
+      "verdict": "WITHHELD"
+     },
+     {
+      "label": "lin_coupled_02",
+      "C_T_net": -0.23177771494640143,
+      "C_D0": 0.22325992986344476,
+      "dC_T": -0.00851778508295667,
+      "C_T_theory": 0.0026010309786542738,
+      "rel_error": 4.274772639333814,
+      "noise_3sigma": 0.004153904006297016,
+      "resolvable": false,
+      "verdict": "WITHHELD"
+     }
+    ],
+    "n_pass": 0,
+    "n_fail": 0,
+    "n_withheld": 3,
+    "worst_rel_error_resolvable": 0.0
+   },
+   "note": "dC_T = C_T + C_D0 isolates the unsteady thrust from the IBM numerical drag offset; WITHHELD rows are below the measured force noise floor (3 sigma of the per-cycle mean)."
+  },
+  {
+   "id": "C1b",
+   "name": "amplitude scaling dC_T ~ (h0/c)^2",
+   "verdict": "WITHHELD",
+   "threshold": {
+    "rel_error": 0.15,
+    "expected_ratio": 4.0
+   },
+   "value": {
+    "h0_over_c": [
+     0.02,
+     0.04
+    ],
+    "dC_T": [
+     -0.006049315948346012,
+     -0.008215474739547174
+    ],
+    "observed_ratio": 1.3580832625866446,
+    "expected_ratio": 4.0,
+    "rel_error": 0.6604791843533389,
+    "noise_3sigma": 0.004447444958893184
+   },
+   "note": "offset-robust shape check: cancels the steady IBM drag error"
+  },
+  {
+   "id": "C2",
+   "name": "propulsive efficiency peak eta(k)",
+   "verdict": "FAIL",
+   "threshold": {
+    "rel_error_peak": 0.15,
+    "peak_location": "within one grid step"
+   },
+   "value": {
+    "k": [
+     0.75,
+     1.0,
+     1.5,
+     2.0,
+     3.0
+    ],
+    "eta_lbm": [
+     -4.822094071091819,
+     -3.273483894155373,
+     -1.2164972941818344,
+     -0.4884142707488157,
+     NaN
+    ],
+    "eta_theory": [
+     0.5854125226878762,
+     0.5580741092655392,
+     0.5314000618128026,
+     0.5194432673616024,
+     0.5094408535423364
+    ],
+    "k_peak_lbm": 3.0,
+    "k_peak_theory": 0.75,
+    "peak_rel_error": NaN,
+    "interior_peak_lbm": false,
+    "interior_peak_theory": false,
+    "grid_step": 0.5625,
+    "eta_monotone": false
+   },
+   "note": "eta = C_T / C_P with C_P = P_in/(0.5 rho U^3 c) from the IBM work"
+  },
+  {
+   "id": "C3",
+   "name": "degenerate limits (k->0, C(k) asymptotes, zero motion)",
+   "verdict": "PASS",
+   "threshold": {
+    "quasi_steady_rel": 0.02,
+    "zero_motion": 1e-06
+   },
+   "value": {
+    "quasi_steady": {
+     "rel_error": 0.003183203036249265,
+     "threshold": 0.02,
+     "ok": true
+    },
+    "C_zero": {
+     "abs_error": 2.0898314427049157e-08,
+     "ok": true
+    },
+    "C_inf": {
+     "abs_error": 1.2499999999764124e-06,
+     "ok": true
+    },
+    "pure_heave_closed_form": {
+     "rel_error": 2.8184429991492734e-16,
+     "ok": true
+    }
+   },
+   "note": "analytic limits + LBM zero-motion control"
+  },
+  {
+   "id": "C4",
+   "name": "energy ledger closure",
+   "verdict": "PASS",
+   "threshold": {
+    "rel_residual": 0.05
+   },
+   "value": {
+    "work": -7.955794008500673,
+    "dke": -52.382129738098996,
+    "phi": 43.08652278087702,
+    "flux": 0.0,
+    "residual": 1.3398129487213044,
+    "rel_residual": 0.031095870872085093,
+    "cycles": 5.0,
+    "resolutions": [
+     {
+      "label": "ebox_c30",
+      "rel_residual": 0.05210127318490378,
+      "verdict": "FAIL"
+     },
+     {
+      "label": "ebox_c45",
+      "rel_residual": 0.031095870872085093,
+      "verdict": "PASS"
+     }
+    ],
+    "residual_decreases_with_resolution": true
+   },
+   "note": "closed periodic box: no boundary flux, no sponge absorption",
+   "label": "ebox_c45"
+  },
+  {
+   "id": "C5",
+   "name": "Strouhal monotonicity of C_T",
+   "verdict": "PASS",
+   "threshold": {
+    "spearman": 0.9,
+    "rule": "no drop larger than the combined 3-sigma noise of the pair"
+   },
+   "value": {
+    "strouhal": [
+     0.03183098861837907,
+     0.06366197723675814,
+     0.0954929658551372,
+     0.12732395447351627,
+     0.15915494309189535
+    ],
+    "C_T": [
+     -0.2272985601737305,
+     -0.23141876238911543,
+     -0.22232977816229765,
+     -0.2158593716829245,
+     -0.20260084749205354
+    ],
+    "sigma_3": [
+     0.004478012155382374,
+     0.0070319605662871355,
+     0.011789989891396818,
+     0.00564151969417755,
+     0.010588824882688872
+    ],
+    "differences": [
+     -0.004120202215384922,
+     0.009088984226817781,
+     0.006470406479373164,
+     0.013258524190870952
+    ],
+    "increment_significant": [
+     false,
+     false,
+     false,
+     true
+    ],
+    "no_significant_drop": [
+     true,
+     true,
+     true,
+     true
+    ],
+    "spearman": 0.8999999999999998,
+    "monotone": true
+   },
+   "note": "pure heave at fixed k; St = 2 k (h0/c)/pi"
+  },
+  {
+   "id": "C5b",
+   "name": "thrust reversal of a pitching section (sign change in k)",
+   "verdict": "FAIL",
+   "threshold": {
+    "sign_pattern_matches_theory": true,
+    "sign_change": true
+   },
+   "value": {
+    "k": [
+     0.75,
+     1.0,
+     2.0
+    ],
+    "C_T": [
+     -0.26338473283502284,
+     -0.2641348990344615,
+     -0.29738102041101133
+    ],
+    "C_T_theory": [
+     0.00018850883378474385,
+     0.02032456617263388,
+     0.16306212769063363
+    ],
+    "sign_pattern_ok": false,
+    "sign_change": false,
+    "monotone_in_k": false
+   },
+   "note": "pitch about c/4, alpha0 = 10 deg, inviscid reversal between k=0.5 and 1"
+  },
+  {
+   "id": "C6",
+   "name": "grid convergence (GCI)",
+   "verdict": "FAIL",
+   "threshold": {
+    "gci_fine": 0.1,
+    "p_range": [
+     0.5,
+     3.0
+    ]
+   },
+   "value": {
+    "chords": [
+     24,
+     32,
+     42
+    ],
+    "values": [
+     -0.01651922007473805,
+     0.0009301517011471028,
+     0.016658727666322093
+    ],
+    "r": 1.3229166666666665,
+    "p_observed": 0.37101512825026595,
+    "f_extrapolated": 0.16042250274791342,
+    "gci_fine": 10.787421611752915,
+    "quantity": "thrust increment dC_T = C_T + C_D0 (per-grid locked reference)"
+   },
+   "note": "Roache 1994, safety factor 1.25"
+  },
+  {
+   "id": "C7",
+   "name": "negative-control trio",
+   "verdict": "PASS",
+   "threshold": {
+    "locked_rel": 0.25,
+    "ibm_off": 1e-06,
+    "phase_flip_rel": 0.15
+   },
+   "value": {
+    "locked_drag": {
+     "C_T": -0.22325992986344476,
+     "C_D_independent": 0.22501384859309564,
+     "rel_error": 0.007794714594756307,
+     "ok": true
+    },
+    "ibm_off": {
+     "C_T": 0.0,
+     "C_P": 0.0,
+     "ok": true
+    },
+    "phase_flip_symmetry": {
+     "C_T_ref": -0.22232977816229765,
+     "C_T_flip": -0.2239536188366634,
+     "rel_diff": 0.0073037480079720316,
+     "ok": true
+    }
+   },
+   "note": "controls prove the harness detects broken force integration"
+  },
+  {
+   "id": "C8",
+   "name": "bit-level reproducibility",
+   "verdict": "PASS",
+   "threshold": {
+    "identical_sha256": true
+   },
+   "value": {
+    "sha256_a": "140d75794d7a37c234994c44ad6a5c7197163ce1c7dd3a1511ea035b9d1f3926",
+    "sha256_b": "140d75794d7a37c234994c44ad6a5c7197163ce1c7dd3a1511ea035b9d1f3926",
+    "C_T_a": -0.22232977816229765,
+    "C_T_b": -0.22232977816229765,
+    "abs_dC_T": 0.0
+   },
+   "note": "same config, independent processes; JSON payload hash"
+  },
+  {
+   "id": "C9",
+   "name": "IBM force vs control-volume momentum balance",
+   "verdict": "PASS",
+   "threshold": {
+    "rel_diff": 0.15
+   },
+   "value": {
+    "cases": [
+     {
+      "label": "cpl_phi270_k1",
+      "C_T_ibm": -0.22413032356407436,
+      "C_T_cv": -0.22889841031158897,
+      "rel_diff": 0.020830580435329503
+     },
+     {
+      "label": "cpl_phi90_k1",
+      "C_T_ibm": -0.29594026319215305,
+      "C_T_cv": -0.31945425060797833,
+      "rel_diff": 0.07360674453720359
+     },
+     {
+      "label": "cv_gci_c42",
+      "C_T_ibm": -0.19108921504359383,
+      "C_T_cv": -0.20150303192425867,
+      "rel_diff": 0.05168069572560677
+     },
+     {
+      "label": "cv_heave_h015_k1",
+      "C_T_ibm": -0.22170162160841853,
+      "C_T_cv": -0.23035705593779718,
+      "rel_diff": 0.03757399266170454
+     },
+     {
+      "label": "cv_heave_h015_k2",
+      "C_T_ibm": -0.2221500647136751,
+      "C_T_cv": -0.21651979938109675,
+      "rel_diff": 0.025344423553668952
+     },
+     {
+      "label": "cv_lock_ref",
+      "C_T_ibm": -0.22300413550836132,
+      "C_T_cv": -0.22472786620835924,
+      "rel_diff": 0.007670302437703693
+     },
+     {
+      "label": "gci_c24",
+      "C_T_ibm": -0.2682573277069195,
+      "C_T_cv": -0.2776375680262667,
+      "rel_diff": 0.033785918764638344
+     },
+     {
+      "label": "gci_c42",
+      "C_T_ibm": -0.19134792008946813,
+      "C_T_cv": -0.20285720888159442,
+      "rel_diff": 0.056735912199423665
+     },
+     {
+      "label": "heave_h005_k1",
+      "C_T_ibm": -0.2272985601737305,
+      "C_T_cv": -0.23283745700658665,
+      "rel_diff": 0.023788684621733544
+     },
+     {
+      "label": "heave_h010_k1",
+      "C_T_ibm": -0.23141876238911543,
+      "C_T_cv": -0.2349829862305423,
+      "rel_diff": 0.01516800811242568
+     },
+     {
+      "label": "heave_h015_k0.75",
+      "C_T_ibm": -0.21475824239029645,
+      "C_T_cv": -0.2207680385373219,
+      "rel_diff": 0.027222220149451
+     },
+     {
+      "label": "heave_h015_k1.5",
+      "C_T_ibm": -0.2300024887080436,
+      "C_T_cv": -0.24567330176896718,
+      "rel_diff": 0.0637872041776054
+     },
+     {
+      "label": "heave_h015_k1",
+      "C_T_ibm": -0.22232977816229765,
+      "C_T_cv": -0.23210373747306137,
+      "rel_diff": 0.04211030557790183
+     },
+     {
+      "label": "heave_h015_k2",
+      "C_T_ibm": -0.22505959212650622,
+      "C_T_cv": -0.2246444721455723,
+      "rel_diff": 0.0018444891728969161
+     },
+     {
+      "label": "heave_h020_k1",
+      "C_T_ibm": -0.2158593716829245,
+      "C_T_cv": -0.22594655158318205,
+      "rel_diff": 0.044644097595550054
+     },
+     {
+      "label": "heave_h025_k1",
+      "C_T_ibm": -0.20260084749205354,
+      "C_T_cv": -0.21390851393018964,
+      "rel_diff": 0.05286216163339076
+     },
+     {
+      "label": "lin_coupled_02",
+      "C_T_ibm": -0.23177771494640143,
+      "C_T_cv": -0.23403885031284694,
+      "rel_diff": 0.009661367603810141
+     },
+     {
+      "label": "lin_heave_02",
+      "C_T_ibm": -0.22930924581179077,
+      "C_T_cv": -0.22980828937484737,
+      "rel_diff": 0.0021715646742515916
+     },
+     {
+      "label": "lin_heave_04",
+      "C_T_ibm": -0.23147540460299193,
+      "C_T_cv": -0.232269059599129,
+      "rel_diff": 0.003416963918943092
+     },
+     {
+      "label": "lin_pitch_2deg",
+      "C_T_ibm": -0.22593208280967716,
+      "C_T_cv": -0.22909482699075406,
+      "rel_diff": 0.013805393262784333
+     },
+     {
+      "label": "lock_ref",
+      "C_T_ibm": -0.22325992986344476,
+      "C_T_cv": -0.22501384859309564,
+      "rel_diff": 0.007794714594756307
+     },
+     {
+      "label": "lock_ref_c24",
+      "C_T_ibm": -0.25173810763218146,
+      "C_T_cv": -0.24639353574711034,
+      "rel_diff": 0.021230682693778563
+     },
+     {
+      "label": "lock_ref_c42",
+      "C_T_ibm": -0.20800664775579022,
+      "C_T_cv": -0.21335354721633581,
+      "rel_diff": 0.02506121660646191
+     },
+     {
+      "label": "nc_heave_flip",
+      "C_T_ibm": -0.2239536188366634,
+      "C_T_cv": -0.2320377623138535,
+      "rel_diff": 0.03483977520113956
+     },
+     {
+      "label": "pitch_a10_k0.75",
+      "C_T_ibm": -0.26338473283502284,
+      "C_T_cv": -0.2725970315288931,
+      "rel_diff": 0.033794567175592365
+     },
+     {
+      "label": "pitch_a10_k1",
+      "C_T_ibm": -0.2641348990344615,
+      "C_T_cv": -0.2749622066007617,
+      "rel_diff": 0.03937743917665443
+     },
+     {
+      "label": "pitch_a10_k2",
+      "C_T_ibm": -0.29738102041101133,
+      "C_T_cv": -0.32116018185354606,
+      "rel_diff": 0.07404143722081458
+     },
+     {
+      "label": "rep_a",
+      "C_T_ibm": -0.22232977816229765,
+      "C_T_cv": -0.23210373747306137,
+      "rel_diff": 0.04211030557790183
+     },
+     {
+      "label": "zero_motion",
+      "C_T_ibm": -0.22334319645313722,
+      "C_T_cv": -0.22521518104132968,
+      "rel_diff": 0.008311982254202165
+     }
+    ],
+    "worst_rel_diff": 0.07404143722081458
+   },
+   "note": "independent force estimators must agree on every case"
+  }
+ ],
+ "summary": {
+  "n_criteria": 11,
+  "n_pass": 6,
+  "n_fail": 3,
+  "n_withheld": 2,
+  "all_pass": false,
+  "verdicts": {
+   "C1": "WITHHELD",
+   "C1b": "WITHHELD",
+   "C2": "FAIL",
+   "C3": "PASS",
+   "C4": "PASS",
+   "C5": "PASS",
+   "C5b": "FAIL",
+   "C6": "FAIL",
+   "C7": "PASS",
+   "C8": "PASS",
+   "C9": "PASS"
+  }
+ }
+}
