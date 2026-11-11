@@ -1,0 +1,1346 @@
+{
+  "case_code": "COUETTE-2D",
+  "case": "steady plane Couette flow between parallel plates (moving top wall, x-periodic channel)",
+  "repo": "TensorLBM",
+  "ref": {
+    "source": "\u7ebf\u6027\u89e3\u6790\u89e3 (case pool ref_source)",
+    "formula": "u(y) = U0 (y - y_b) / H_eff ; tau_w = mu U0 / H_eff, mu = rho nu ; int_0^H u dy = U0 H_eff / 2 ; rho = const",
+    "citation_note": "\u95ed\u5f0f\u89e3\u7531 N-S \u65b9\u7a0b\u5728 Couette \u8fb9\u754c\u6761\u4ef6\u4e0b\u76f4\u63a5\u6c42\u5f97\uff0c\u76ee\u6807\u6570\u503c\u7531\u672c\u6587\u4ef6\u7684 analytic_* \u51fd\u6570\u6309\u95ed\u5f0f\u6c42\u503c\uff08\u96f6\u624b\u6284\uff0c\u65e0\u8868\u683c\u8f6c\u5f55\uff09\u3002\u6559\u6750/\u624b\u518c\u7ea7\u9875\u7801\u5f15\u7528\u5728\u79bb\u7ebf\u73af\u5883\u4e0d\u53ef\u6838\u9a8c\uff08\u672c\u673a\u65e0\u5916\u7f51\uff09\uff0c\u6545\u4e0d\u8457\u5f55\u9875\u7801\uff0c\u4ee5\u514d\u4f2a\u9020\u51fa\u5904\uff1b\u8bc1\u636e\u9762=self-contained \u95ed\u5f0f + \u4e24\u6761\u72ec\u7acb\u6570\u503c\u8def\u5f84\u3002",
+    "generator": "analytic_profile / analytic_wall_shear / analytic_momentum_integral (closed form, evaluated in code)"
+  },
+  "tol_policy_pct": 2.0,
+  "predeclared_thresholds_pct": {
+    "profile_l2_rel_pct": 2.0,
+    "profile_max_rel_pct": 2.0,
+    "wall_shear_rel_pct": 2.0,
+    "top_row_u_rel_pct": 2.0,
+    "momentum_integral_rel_pct": 2.0,
+    "mass_drift_pct": 0.001,
+    "force_me_rel_pct": 2.0,
+    "force_cv_rel_pct": 2.0,
+    "force_two_route_rel_pct": 2.0,
+    "force_bottom_rel_pct": 2.0,
+    "profile_max_rel_pct_routeB": 2.0
+  },
+  "cross_route_tol_pct": 2.0,
+  "route_a": [
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H16_tau0.8_U0.05_bgk",
+      "H": 16,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "U0": 0.05,
+      "Re": 7.999999999999999,
+      "Ma": 0.08660254037844388,
+      "collision": "bgk",
+      "n_steps": 10000,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 15.8,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.00156283,
+          "u_ref": 0.0015625
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.00468852,
+          "u_ref": 0.004687500000000001
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.0078142,
+          "u_ref": 0.0078125
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.01093981,
+          "u_ref": 0.010937500000000001
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.01406526,
+          "u_ref": 0.0140625
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.01719053,
+          "u_ref": 0.0171875
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.02031583,
+          "u_ref": 0.0203125
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.02344088,
+          "u_ref": 0.0234375
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.02656599,
+          "u_ref": 0.026562500000000003
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.02969078,
+          "u_ref": 0.029687500000000002
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.03281556,
+          "u_ref": 0.0328125
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.0359402,
+          "u_ref": 0.035937500000000004
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.03906485,
+          "u_ref": 0.0390625
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.04218917,
+          "u_ref": 0.0421875
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.04531381,
+          "u_ref": 0.045312500000000006
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.04843837,
+          "u_ref": 0.0484375
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.0484375,
+          "got": 0.04843837
+        },
+        "wall_shear": {
+          "ref": 0.00031250000000000006,
+          "got": 0.00031250355144341795
+        },
+        "momentum_integral": {
+          "ref": 0.4,
+          "got": 0.40003629
+        },
+        "profile_l2_norm": {
+          "ref": 0.11541365820387119,
+          "got": 0.11542174109678688
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.008621384312505446,
+        "profile_max_rel_pct": 0.021157945905403427,
+        "wall_shear_rel_pct": 0.0011364618937234614,
+        "top_row_u_rel_pct": 0.001788908435449504,
+        "momentum_integral_rel_pct": 0.009072499999998596,
+        "mass_drift_pct": 0.0004132588704427083
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H16_tau0.8_U0.05_bgk.json",
+      "axis": "grid"
+    },
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H32_tau0.8_U0.05_bgk",
+      "H": 32,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "U0": 0.05,
+      "Re": 15.999999999999998,
+      "Ma": 0.08660254037844388,
+      "collision": "bgk",
+      "n_steps": 10000,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 126.2,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.0007813,
+          "u_ref": 0.00078125
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.00234401,
+          "u_ref": 0.0023437500000000003
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.00390685,
+          "u_ref": 0.00390625
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.00546972,
+          "u_ref": 0.0054687500000000005
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.00703259,
+          "u_ref": 0.00703125
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.00859538,
+          "u_ref": 0.00859375
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.01015821,
+          "u_ref": 0.01015625
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.01172111,
+          "u_ref": 0.01171875
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.01328399,
+          "u_ref": 0.013281250000000001
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.01484698,
+          "u_ref": 0.014843750000000001
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.01640994,
+          "u_ref": 0.01640625
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.01797296,
+          "u_ref": 0.017968750000000002
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.019536,
+          "u_ref": 0.01953125
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.02109886,
+          "u_ref": 0.02109375
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.02266169,
+          "u_ref": 0.022656250000000003
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.02422448,
+          "u_ref": 0.02421875
+        },
+        {
+          "y": 16.5,
+          "u_num": 0.02578734,
+          "u_ref": 0.025781250000000002
+        },
+        {
+          "y": 17.5,
+          "u_num": 0.02734998,
+          "u_ref": 0.02734375
+        },
+        {
+          "y": 18.5,
+          "u_num": 0.02891267,
+          "u_ref": 0.02890625
+        },
+        {
+          "y": 19.5,
+          "u_num": 0.03047518,
+          "u_ref": 0.030468750000000003
+        },
+        {
+          "y": 20.5,
+          "u_num": 0.03203773,
+          "u_ref": 0.032031250000000004
+        },
+        {
+          "y": 21.5,
+          "u_num": 0.03359997,
+          "u_ref": 0.03359375
+        },
+        {
+          "y": 22.5,
+          "u_num": 0.03516234,
+          "u_ref": 0.03515625
+        },
+        {
+          "y": 23.5,
+          "u_num": 0.03672446,
+          "u_ref": 0.03671875
+        },
+        {
+          "y": 24.5,
+          "u_num": 0.03828633,
+          "u_ref": 0.03828125
+        },
+        {
+          "y": 25.5,
+          "u_num": 0.03984838,
+          "u_ref": 0.039843750000000004
+        },
+        {
+          "y": 26.5,
+          "u_num": 0.04141043,
+          "u_ref": 0.041406250000000006
+        },
+        {
+          "y": 27.5,
+          "u_num": 0.04297224,
+          "u_ref": 0.04296875
+        },
+        {
+          "y": 28.5,
+          "u_num": 0.04453414,
+          "u_ref": 0.04453125
+        },
+        {
+          "y": 29.5,
+          "u_num": 0.04609585,
+          "u_ref": 0.04609375
+        },
+        {
+          "y": 30.5,
+          "u_num": 0.04765766,
+          "u_ref": 0.047656250000000004
+        },
+        {
+          "y": 31.5,
+          "u_num": 0.04921952,
+          "u_ref": 0.049218750000000006
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.049218750000000006,
+          "got": 0.04921952
+        },
+        "wall_shear": {
+          "ref": 0.00015625000000000003,
+          "got": 0.00015625232650387673
+        },
+        "momentum_integral": {
+          "ref": 0.8,
+          "got": 0.800118085
+        },
+        "profile_l2_norm": {
+          "ref": 0.16327938097016415,
+          "got": 0.16329986230800594
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.014707827795167107,
+        "profile_max_rel_pct": 0.0243377685546875,
+        "wall_shear_rel_pct": 0.001488962481088762,
+        "top_row_u_rel_pct": 0.001569778200168533,
+        "momentum_integral_rel_pct": 0.01476062499999875,
+        "mass_drift_pct": 0.00046000761144301467
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H32_tau0.8_U0.05_bgk.json",
+      "axis": "grid"
+    },
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H16_tau0.6_U0.05_bgk",
+      "H": 16,
+      "tau": 0.6,
+      "nu": 0.033333333333333326,
+      "U0": 0.05,
+      "Re": 24.000000000000007,
+      "Ma": 0.08660254037844388,
+      "collision": "bgk",
+      "n_steps": 11800,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 15.7,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.00156273,
+          "u_ref": 0.0015625
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.0046884,
+          "u_ref": 0.004687500000000001
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.00781424,
+          "u_ref": 0.0078125
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.01093996,
+          "u_ref": 0.010937500000000001
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.01406543,
+          "u_ref": 0.0140625
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.0171907,
+          "u_ref": 0.0171875
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.02031589,
+          "u_ref": 0.0203125
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.02344102,
+          "u_ref": 0.0234375
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.02656603,
+          "u_ref": 0.026562500000000003
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.02969078,
+          "u_ref": 0.029687500000000002
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.03281544,
+          "u_ref": 0.0328125
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.03593972,
+          "u_ref": 0.035937500000000004
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.03906395,
+          "u_ref": 0.0390625
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.04218799,
+          "u_ref": 0.0421875
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.04531173,
+          "u_ref": 0.045312500000000006
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.04843527,
+          "u_ref": 0.0484375
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.0484375,
+          "got": 0.04843527
+        },
+        "wall_shear": {
+          "ref": 0.00010416666666666665,
+          "got": 0.00010416118635071645
+        },
+        "momentum_integral": {
+          "ref": 0.4,
+          "got": 0.40002978
+        },
+        "profile_l2_norm": {
+          "ref": 0.11541365820387119,
+          "got": 0.11541880900593803
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.008551181787008878,
+        "profile_max_rel_pct": 0.022520337785983783,
+        "wall_shear_rel_pct": 0.005261103312183791,
+        "top_row_u_rel_pct": 0.0046099385907601735,
+        "momentum_integral_rel_pct": 0.007444999999994817,
+        "mass_drift_pct": 0.007724761962890625
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": false
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H16_tau0.6_U0.05_bgk.json",
+      "axis": "tau"
+    },
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H16_tau1.4_U0.05_bgk",
+      "H": 16,
+      "tau": 1.4,
+      "nu": 0.3,
+      "U0": 0.05,
+      "Re": 2.666666666666667,
+      "Ma": 0.08660254037844388,
+      "collision": "bgk",
+      "n_steps": 10000,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 12.6,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.00156256,
+          "u_ref": 0.0015625
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.00468771,
+          "u_ref": 0.004687500000000001
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.00781282,
+          "u_ref": 0.0078125
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.01093793,
+          "u_ref": 0.010937500000000001
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.01406304,
+          "u_ref": 0.0140625
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.01718807,
+          "u_ref": 0.0171875
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.02031307,
+          "u_ref": 0.0203125
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.02343814,
+          "u_ref": 0.0234375
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.02656316,
+          "u_ref": 0.026562500000000003
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.02968804,
+          "u_ref": 0.029687500000000002
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.03281308,
+          "u_ref": 0.0328125
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.03593814,
+          "u_ref": 0.035937500000000004
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.039063,
+          "u_ref": 0.0390625
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.04218806,
+          "u_ref": 0.0421875
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.04531296,
+          "u_ref": 0.045312500000000006
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.04843806,
+          "u_ref": 0.0484375
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.0484375,
+          "got": 0.04843806
+        },
+        "wall_shear": {
+          "ref": 0.0009375,
+          "got": 0.0009375101327896118
+        },
+        "momentum_integral": {
+          "ref": 0.4,
+          "got": 0.40000768499999995
+        },
+        "profile_l2_norm": {
+          "ref": 0.11541365820387119,
+          "got": 0.11541555545830033
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.001785788653139367,
+        "profile_max_rel_pct": 0.003915173666808285,
+        "wall_shear_rel_pct": 0.001080830891927546,
+        "top_row_u_rel_pct": 0.0011582528391163385,
+        "momentum_integral_rel_pct": 0.0019212499999810007,
+        "mass_drift_pct": 0.00022252400716145834
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H16_tau1.4_U0.05_bgk.json",
+      "axis": "tau"
+    },
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H16_tau0.8_U0.01_bgk",
+      "H": 16,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "U0": 0.01,
+      "Re": 1.5999999999999996,
+      "Ma": 0.017320508075688773,
+      "collision": "bgk",
+      "n_steps": 11400,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 12.7,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.00031275,
+          "u_ref": 0.0003125
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.00093818,
+          "u_ref": 0.0009375
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.00156358,
+          "u_ref": 0.0015625
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.002189,
+          "u_ref": 0.0021875
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.00281436,
+          "u_ref": 0.0028125
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.00343966,
+          "u_ref": 0.0034375
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.00406484,
+          "u_ref": 0.0040625
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.00468988,
+          "u_ref": 0.0046875
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.00531489,
+          "u_ref": 0.0053125
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.00593988,
+          "u_ref": 0.0059375
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.00656481,
+          "u_ref": 0.0065625
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.00718959,
+          "u_ref": 0.0071875
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.00781425,
+          "u_ref": 0.0078125
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.00843874,
+          "u_ref": 0.0084375
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.00906324,
+          "u_ref": 0.0090625
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.00968781,
+          "u_ref": 0.0096875
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.0096875,
+          "got": 0.00968781
+        },
+        "wall_shear": {
+          "ref": 6.250000000000001e-05,
+          "got": 6.250036259492239e-05
+        },
+        "momentum_integral": {
+          "ref": 0.08,
+          "got": 0.08002532000000001
+        },
+        "profile_l2_norm": {
+          "ref": 0.023082731640774238,
+          "got": 0.023088357716195405
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.03049795185869785,
+        "profile_max_rel_pct": 0.06870542253765789,
+        "wall_shear_rel_pct": 0.0005801518758018901,
+        "top_row_u_rel_pct": 0.0031636607262403205,
+        "momentum_integral_rel_pct": 0.03165000000001153,
+        "mass_drift_pct": 0.0003284878200954861
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H16_tau0.8_U0.01_bgk.json",
+      "axis": "U0"
+    },
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H16_tau0.8_U0.1_bgk",
+      "H": 16,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "U0": 0.1,
+      "Re": 15.999999999999998,
+      "Ma": 0.17320508075688776,
+      "collision": "bgk",
+      "n_steps": 10000,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 11.5,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.00312539,
+          "u_ref": 0.003125
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.00937607,
+          "u_ref": 0.009375000000000001
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.01562668,
+          "u_ref": 0.015625
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.0218773,
+          "u_ref": 0.021875000000000002
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.02812799,
+          "u_ref": 0.028125
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.03437842,
+          "u_ref": 0.034375
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.04062853,
+          "u_ref": 0.040625
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.04687873,
+          "u_ref": 0.046875
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.05312851,
+          "u_ref": 0.053125000000000006
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.05937832,
+          "u_ref": 0.059375000000000004
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.06562799,
+          "u_ref": 0.065625
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.07187748,
+          "u_ref": 0.07187500000000001
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.07812692,
+          "u_ref": 0.078125
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.08437643,
+          "u_ref": 0.084375
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.09062593,
+          "u_ref": 0.09062500000000001
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.09687554,
+          "u_ref": 0.096875
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.096875,
+          "got": 0.09687554
+        },
+        "wall_shear": {
+          "ref": 0.0006250000000000001,
+          "got": 0.0006250010430812837
+        },
+        "momentum_integral": {
+          "ref": 0.8,
+          "got": 0.8000359975
+        },
+        "profile_l2_norm": {
+          "ref": 0.23082731640774237,
+          "got": 0.23083499770234256
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.004371074621655006,
+        "profile_max_rel_pct": 0.01061360041300209,
+        "wall_shear_rel_pct": 0.0001668930053703998,
+        "top_row_u_rel_pct": 0.0005583609304091813,
+        "momentum_integral_rel_pct": 0.004499687499992522,
+        "mass_drift_pct": 0.0005086263020833333
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H16_tau0.8_U0.1_bgk.json",
+      "axis": "U0"
+    },
+    {
+      "route": "A_d2q9_moving_wall_bounce_back",
+      "impl": "benchmarks/verified/couette_2d/run.py::run_case",
+      "tag": "H16_tau0.8_U0.05_mrt",
+      "H": 16,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "U0": 0.05,
+      "Re": 7.999999999999999,
+      "Ma": 0.08660254037844388,
+      "collision": "mrt",
+      "n_steps": 12400,
+      "steady": true,
+      "reused_cached_artifact": true,
+      "elapsed_s": 16.5,
+      "profile": [
+        {
+          "y": 0.5,
+          "u_num": 0.00156243,
+          "u_ref": 0.0015625
+        },
+        {
+          "y": 1.5,
+          "u_num": 0.00468731,
+          "u_ref": 0.004687500000000001
+        },
+        {
+          "y": 2.5,
+          "u_num": 0.00781216,
+          "u_ref": 0.0078125
+        },
+        {
+          "y": 3.5,
+          "u_num": 0.01093701,
+          "u_ref": 0.010937500000000001
+        },
+        {
+          "y": 4.5,
+          "u_num": 0.0140619,
+          "u_ref": 0.0140625
+        },
+        {
+          "y": 5.5,
+          "u_num": 0.0171867,
+          "u_ref": 0.0171875
+        },
+        {
+          "y": 6.5,
+          "u_num": 0.02031158,
+          "u_ref": 0.0203125
+        },
+        {
+          "y": 7.5,
+          "u_num": 0.02343638,
+          "u_ref": 0.0234375
+        },
+        {
+          "y": 8.5,
+          "u_num": 0.02656122,
+          "u_ref": 0.026562500000000003
+        },
+        {
+          "y": 9.5,
+          "u_num": 0.02968596,
+          "u_ref": 0.029687500000000002
+        },
+        {
+          "y": 10.5,
+          "u_num": 0.03281069,
+          "u_ref": 0.0328125
+        },
+        {
+          "y": 11.5,
+          "u_num": 0.03593544,
+          "u_ref": 0.035937500000000004
+        },
+        {
+          "y": 12.5,
+          "u_num": 0.03906014,
+          "u_ref": 0.0390625
+        },
+        {
+          "y": 13.5,
+          "u_num": 0.04218494,
+          "u_ref": 0.0421875
+        },
+        {
+          "y": 14.5,
+          "u_num": 0.04530949,
+          "u_ref": 0.045312500000000006
+        },
+        {
+          "y": 15.5,
+          "u_num": 0.0484345,
+          "u_ref": 0.0484375
+        }
+      ],
+      "ref_vs_got": {
+        "u_top_row": {
+          "ref": 0.0484375,
+          "got": 0.0484345
+        },
+        "wall_shear": {
+          "ref": 0.00031250000000000006,
+          "got": 0.0003124804546435675
+        },
+        "momentum_integral": {
+          "ref": 0.4,
+          "got": 0.3999786175
+        },
+        "profile_l2_norm": {
+          "ref": 0.11541365820387119,
+          "got": 0.11540697639857177
+        }
+      },
+      "errors_pct": {
+        "profile_l2_rel_pct": 0.005828812791676145,
+        "profile_max_rel_pct": 0.006647767691788921,
+        "wall_shear_rel_pct": 0.006254514058421505,
+        "top_row_u_rel_pct": 0.0061942685034995885,
+        "momentum_integral_rel_pct": 0.0053456250000000205,
+        "mass_drift_pct": 0.009028116861979168
+      },
+      "thresholds_pct": {
+        "profile_l2_rel_pct": 2.0,
+        "profile_max_rel_pct": 2.0,
+        "wall_shear_rel_pct": 2.0,
+        "top_row_u_rel_pct": 2.0,
+        "momentum_integral_rel_pct": 2.0,
+        "mass_drift_pct": 0.001
+      },
+      "pass": {
+        "profile_l2_rel_pct": true,
+        "profile_max_rel_pct": true,
+        "wall_shear_rel_pct": true,
+        "top_row_u_rel_pct": true,
+        "momentum_integral_rel_pct": true,
+        "mass_drift_pct": false
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeA_H16_tau0.8_U0.05_mrt.json",
+      "axis": "collision"
+    }
+  ],
+  "route_b": [
+    {
+      "route": "B_d3q19_interpolated_bounce_back_force_routes",
+      "impl": "tensorlbm.curved_boundary_calibration.run_plane_couette",
+      "tag": "ny18_tau0.8_U0.05_halfway",
+      "format": "halfway",
+      "ny": 18,
+      "height": 16.0,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "wall_speed": 0.05,
+      "steps": 8000,
+      "collision": "regularized",
+      "ref_vs_got": {
+        "force_top_x": {
+          "ref": 0.0012500000000000002,
+          "got": -0.00125000040512532
+        },
+        "force_bottom_x": {
+          "ref": -0.0012500000000000002,
+          "got": 0.0012499937787652017
+        },
+        "force_cv_x": {
+          "ref": 0.0012500000000000002,
+          "got": -0.001249982276931405
+        }
+      },
+      "errors_pct": {
+        "force_me_rel_pct": 3.241002558343475e-05,
+        "force_bottom_rel_pct": 0.0004976987838870016,
+        "force_cv_rel_pct": 0.001417845487614033,
+        "force_two_route_rel_pct": 0.0014502550431694373,
+        "profile_max_rel_pct_routeB": 0.00014901161193847656
+      },
+      "thresholds_pct": {
+        "force_me_rel_pct": 2.0,
+        "force_bottom_rel_pct": 2.0,
+        "force_cv_rel_pct": 2.0,
+        "force_two_route_rel_pct": 2.0,
+        "profile_max_rel_pct_routeB": 2.0
+      },
+      "pass": {
+        "force_me_rel_pct": true,
+        "force_bottom_rel_pct": true,
+        "force_cv_rel_pct": true,
+        "force_two_route_rel_pct": true,
+        "profile_max_rel_pct_routeB": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeB_ny18_tau0.8_U0.05_halfway.json"
+    },
+    {
+      "route": "B_d3q19_interpolated_bounce_back_force_routes",
+      "impl": "tensorlbm.curved_boundary_calibration.run_plane_couette",
+      "tag": "ny34_tau0.8_U0.05_bouzidi_quadratic",
+      "format": "bouzidi_quadratic",
+      "ny": 34,
+      "height": 32.0,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "wall_speed": 0.05,
+      "steps": 8000,
+      "collision": "regularized",
+      "ref_vs_got": {
+        "force_top_x": {
+          "ref": 0.0006250000000000001,
+          "got": -0.0006249323487281799
+        },
+        "force_bottom_x": {
+          "ref": -0.0006250000000000001,
+          "got": 0.0006249919533729553
+        },
+        "force_cv_x": {
+          "ref": 0.0006250000000000001,
+          "got": -0.0006250169826671481
+        }
+      },
+      "errors_pct": {
+        "force_me_rel_pct": 0.010824203491230363,
+        "force_bottom_rel_pct": 0.0012874603271678662,
+        "force_cv_rel_pct": 0.0027172267436786903,
+        "force_two_route_rel_pct": 0.013542896145546456,
+        "profile_max_rel_pct_routeB": 0.0005736947059631348
+      },
+      "thresholds_pct": {
+        "force_me_rel_pct": 2.0,
+        "force_bottom_rel_pct": 2.0,
+        "force_cv_rel_pct": 2.0,
+        "force_two_route_rel_pct": 2.0,
+        "profile_max_rel_pct_routeB": 2.0
+      },
+      "pass": {
+        "force_me_rel_pct": true,
+        "force_bottom_rel_pct": true,
+        "force_cv_rel_pct": true,
+        "force_two_route_rel_pct": true,
+        "profile_max_rel_pct_routeB": true
+      },
+      "artifact": "benchmarks/case_pool/couette_2d/artifacts/routeB_ny34_tau0.8_U0.05_bouzidi_quadratic.json"
+    }
+  ],
+  "convergence": [
+    {
+      "H_from": 16,
+      "H_to": 32,
+      "l2_pct_from": 0.008621384312505446,
+      "l2_pct_to": 0.014707827795167107,
+      "observed_order": -0.7705927474398061
+    }
+  ],
+  "two_route_consensus": [
+    {
+      "route_a": "H32_tau0.8_U0.05_bgk",
+      "route_b": "ny18_tau0.8_U0.05_halfway",
+      "tau_route_a": 0.00015625232650387673,
+      "tau_route_b": 0.00031250010128133,
+      "shear_coeff_route_a": 1.0000148896248109,
+      "shear_coeff_route_b": 1.0000003241002557,
+      "rel_diff_pct": 0.0014565307683176826,
+      "rel_diff_raw_dimfull_pct_v1": 99.99708693846338,
+      "tol_pct": 2.0,
+      "pass": true
+    },
+    {
+      "route_a": "H32_tau0.8_U0.05_bgk",
+      "route_b": "ny34_tau0.8_U0.05_bouzidi_quadratic",
+      "tau_route_a": 0.00015625232650387673,
+      "tau_route_b": 0.00015623308718204498,
+      "shear_coeff_route_a": 1.0000148896248109,
+      "shear_coeff_route_b": 0.9998917579650877,
+      "rel_diff_pct": 0.012312982636630143,
+      "rel_diff_raw_dimfull_pct_v1": 0.012312982636627366,
+      "tol_pct": 2.0,
+      "pass": true
+    }
+  ],
+  "sensitivity": [
+    {
+      "axis": "tau",
+      "points": [
+        {
+          "tag": "H16_tau0.6_U0.05_bgk",
+          "tau": 0.6,
+          "Re": 24.000000000000007,
+          "Ma": 0.08660254037844388,
+          "collision": "bgk",
+          "profile_l2_rel_pct": 0.008551181787008878,
+          "profile_max_rel_pct": 0.022520337785983783,
+          "wall_shear_rel_pct": 0.005261103312183791,
+          "mass_drift_pct": 0.007724761962890625,
+          "pass": false
+        },
+        {
+          "tag": "H16_tau1.4_U0.05_bgk",
+          "tau": 1.4,
+          "Re": 2.666666666666667,
+          "Ma": 0.08660254037844388,
+          "collision": "bgk",
+          "profile_l2_rel_pct": 0.001785788653139367,
+          "profile_max_rel_pct": 0.003915173666808285,
+          "wall_shear_rel_pct": 0.001080830891927546,
+          "mass_drift_pct": 0.00022252400716145834,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "axis": "U0",
+      "points": [
+        {
+          "tag": "H16_tau0.8_U0.01_bgk",
+          "tau": 0.8,
+          "Re": 1.5999999999999996,
+          "Ma": 0.017320508075688773,
+          "collision": "bgk",
+          "profile_l2_rel_pct": 0.03049795185869785,
+          "profile_max_rel_pct": 0.06870542253765789,
+          "wall_shear_rel_pct": 0.0005801518758018901,
+          "mass_drift_pct": 0.0003284878200954861,
+          "pass": true
+        },
+        {
+          "tag": "H16_tau0.8_U0.1_bgk",
+          "tau": 0.8,
+          "Re": 15.999999999999998,
+          "Ma": 0.17320508075688776,
+          "collision": "bgk",
+          "profile_l2_rel_pct": 0.004371074621655006,
+          "profile_max_rel_pct": 0.01061360041300209,
+          "wall_shear_rel_pct": 0.0001668930053703998,
+          "mass_drift_pct": 0.0005086263020833333,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "axis": "collision",
+      "points": [
+        {
+          "tag": "H16_tau0.8_U0.05_mrt",
+          "tau": 0.8,
+          "Re": 7.999999999999999,
+          "Ma": 0.08660254037844388,
+          "collision": "mrt",
+          "profile_l2_rel_pct": 0.005828812791676145,
+          "profile_max_rel_pct": 0.006647767691788921,
+          "wall_shear_rel_pct": 0.006254514058421505,
+          "mass_drift_pct": 0.009028116861979168,
+          "pass": false
+        }
+      ]
+    }
+  ],
+  "verdict": {
+    "pass": false,
+    "tolerance_failing": [],
+    "pool_tolerance_pass": true,
+    "guard_or_diagnostic_failing": [
+      "A_d2q9_moving_wall_bounce_back:H16_tau0.6_U0.05_bgk:mass_drift_pct",
+      "A_d2q9_moving_wall_bounce_back:H16_tau0.8_U0.05_mrt:mass_drift_pct",
+      "convergence:16->32"
+    ],
+    "failing": [
+      "A_d2q9_moving_wall_bounce_back:H16_tau0.6_U0.05_bgk:mass_drift_pct",
+      "A_d2q9_moving_wall_bounce_back:H16_tau0.8_U0.05_mrt:mass_drift_pct",
+      "convergence:16->32"
+    ],
+    "decision_rule": "<2% on every listed quantity at the reference grid point (H=32, tau=0.8, U0=0.05); non-deteriorating L2 with resolution; two independent routes must agree <2%"
+  },
+  "environment": {
+    "repo": "TensorLBM",
+    "git_commit": "16b48fe4",
+    "branch": "",
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "device": "cpu",
+    "dtype": "float32",
+    "arch": "loongarch64",
+    "numpy": "2.4.6",
+    "compile_mode": "eager",
+    "seed": 0,
+    "threads": 128
+  },
+  "wall_clock_s": 95.0,
+  "repro_cmd": "PYTHONPATH=src:benchmarks python3 benchmarks/case_pool/couette_2d/run_case.py --preset pool --out-dir benchmarks/case_pool/couette_2d/artifacts"
+}
