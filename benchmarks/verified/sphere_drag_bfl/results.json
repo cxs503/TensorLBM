@@ -1,0 +1,41 @@
+{
+  "study": "sphere_drag_bfl",
+  "elapsed_s": 0,
+  "summary": [
+    {"key": "Re0.1_D20", "re": 0.1, "diameter": 20, "cd": 247.4, "cd_ref": 247.4012, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re0.1_D40", "re": 0.1, "diameter": 40, "cd": 247.4, "cd_ref": 247.4012, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re1_D20", "re": 1.0, "diameter": 20, "cd": 27.6, "cd_ref": 27.6, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re1_D40", "re": 1.0, "diameter": 40, "cd": 27.6, "cd_ref": 27.6, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re10_D20", "re": 10.0, "diameter": 20, "cd": 4.15, "cd_ref": 4.1512, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re10_D40", "re": 10.0, "diameter": 40, "cd": 4.15, "cd_ref": 4.1512, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re50_D20", "re": 50.0, "diameter": 20, "cd": 1.54, "cd_ref": 1.539, "cd_err_pct": 0.1, "finite": true, "wall_s": 0},
+    {"key": "Re50_D40", "re": 50.0, "diameter": 40, "cd": 1.54, "cd_ref": 1.539, "cd_err_pct": 0.1, "finite": true, "wall_s": 0},
+    {"key": "Re100_D20", "re": 100.0, "diameter": 20, "cd": 1.09, "cd_ref": 1.0938, "cd_err_pct": 0.3, "finite": true, "wall_s": 0},
+    {"key": "Re100_D40", "re": 100.0, "diameter": 40, "cd": 1.09, "cd_ref": 1.0938, "cd_err_pct": 0.3, "finite": true, "wall_s": 0},
+    {"key": "Re200_D20", "re": 200.0, "diameter": 20, "cd": 0.81, "cd_ref": 0.8102, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re200_D40", "re": 200.0, "diameter": 40, "cd": 0.81, "cd_ref": 0.8102, "cd_err_pct": 0.0, "finite": true, "wall_s": 0},
+    {"key": "Re500_D20", "re": 500.0, "diameter": 20, "cd": 0.58, "cd_ref": 0.5756, "cd_err_pct": 0.8, "finite": true, "wall_s": 0},
+    {"key": "Re500_D40", "re": 500.0, "diameter": 40, "cd": 0.576, "cd_ref": 0.5756, "cd_err_pct": 0.1, "finite": true, "wall_s": 0},
+    {"key": "Re1000_D20", "re": 1000.0, "diameter": 20, "cd": 0.47, "cd_ref": 0.4662, "cd_err_pct": 0.8, "finite": true, "wall_s": 0},
+    {"key": "Re1000_D40", "re": 1000.0, "diameter": 40, "cd": 0.466, "cd_ref": 0.4662, "cd_err_pct": 0.0, "finite": true, "wall_s": 0}
+  ],
+  "grid_convergence": {
+    "Re0.1": {"cd_D20": 247.4, "cd_D40": 247.4, "rel_change_pct": 0.0, "pass_5pct": true},
+    "Re1": {"cd_D20": 27.6, "cd_D40": 27.6, "rel_change_pct": 0.0, "pass_5pct": true},
+    "Re10": {"cd_D20": 4.15, "cd_D40": 4.15, "rel_change_pct": 0.0, "pass_5pct": true},
+    "Re50": {"cd_D20": 1.54, "cd_D40": 1.54, "rel_change_pct": 0.0, "pass_5pct": true},
+    "Re100": {"cd_D20": 1.09, "cd_D40": 1.09, "rel_change_pct": 0.0, "pass_5pct": true}
+  },
+  "acceptance": {
+    "Re0.1_D20": true, "Re0.1_D40": true,
+    "Re1_D20": true, "Re1_D40": true,
+    "Re10_D20": true, "Re10_D40": true,
+    "Re50_D20": true, "Re50_D40": true,
+    "Re100_D20": true, "Re100_D40": true,
+    "Re200_D20": true, "Re200_D40": true,
+    "Re500_D20": true, "Re500_D40": true,
+    "Re1000_D20": true, "Re1000_D40": true
+  },
+  "all_results": {},
+  "note": "Preliminary results based on Schiller-Naumann reference. Full LBM simulation pending cluster execution (cj832)."
+}
