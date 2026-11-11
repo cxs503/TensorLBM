@@ -68,6 +68,11 @@ class SolverConfig:
     reinit_iters: int = 3
     reinit_dt: float = 0.3
     mass_correct: bool = True
+    #: Binomial pre-filter passes applied to ``phi`` before the CSF curvature is
+    #: evaluated (0 = raw field, the historical behaviour).  One pass removes
+    #: most of the lattice ``cos 4 theta`` anisotropy of ``-div(n_hat)``; see
+    #: :func:`tensorlbm.free_surface_tension.csf.smooth_field`.
+    curvature_smooth: int = 0
     advection: str = "upwind"
     walls_y: bool = False
     extra: dict = field(default_factory=dict)
@@ -147,7 +152,12 @@ class CapillarySolver:
     # ------------------------------------------------------------------ forces
     def force(self, grad_sigma: Sequence[float] | None = None) -> torch.Tensor:
         """Total capillary (+ optional Marangoni) force density."""
-        f = total_force(self.phi, self.cfg.sigma, grad_sigma=grad_sigma)
+        f = total_force(
+            self.phi,
+            self.cfg.sigma,
+            grad_sigma=grad_sigma,
+            smooth=self.cfg.curvature_smooth,
+        )
         if self.solid is not None:
             f = torch.where(self.solid.unsqueeze(0), torch.zeros_like(f), f)
         return f
