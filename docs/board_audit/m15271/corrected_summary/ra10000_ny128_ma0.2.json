@@ -1,0 +1,18 @@
+{
+ "ra": 10000.0,
+ "ny": 128,
+ "nu": 2.13279,
+ "err_pct": 4.91,
+ "pr": 0.71,
+ "ma_max_target": 0.2,
+ "dtype": "fp64",
+ "nu_ref": 2.243,
+ "bias_pct": -4.913508693713773,
+ "source": "prior_artifact:P96W3-N04_thermal_convection_validation.md#C3",
+ "nu_energy": 2.13279,
+ "steps": null,
+ "turnovers": null,
+ "ma": null,
+ "tau_f": null,
+ "ra_effective_by_gap": 9538.536071777344
+}
