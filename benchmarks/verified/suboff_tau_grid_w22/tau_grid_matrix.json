@@ -1,0 +1,482 @@
+{
+ "schema": "w22_tau_grid_matrix_v1",
+ "mission": "m14505",
+ "mission_key": "lbm-suboff-tau",
+ "repo": "TensorLBM",
+ "discipline": "resistance",
+ "generated_at_utc": "2026-11-11T07:56:39.052345+00:00",
+ "prereg_sha256": "a30e03c8f867545ed0e0b4d3402ee1c02dc9e75ed2cb78474a4a8096b299a1b7",
+ "generated_by": "benchmarks/verified/suboff_tau_grid_w22/build_matrix.py",
+ "protocol": {
+  "collision_model": "MRT (D3Q19)",
+  "wall": "half-way bounce-back",
+  "force_method": "PRESSURE_FRICTION / friction_formula=standard / p0=near_wall / extrap=none",
+  "domain_padding_in_L": [
+   0.25,
+   1.75,
+   0.35,
+   0.35,
+   0.35,
+   0.35
+  ],
+  "u_lb": 0.05,
+  "steps": 400,
+  "force_sample_interval": 5,
+  "eval_window_steps": 200,
+  "normalisation": "C_T = F_x / (0.5*rho*u^2*S), S = pi*D*L (bare wetted area, anchor caliber); engine samples frontal dpS = 0.5*u^2*pi*R^2 and every sample is rescaled by dpS_front/dpS_wet",
+  "initial_field": "uniform equilibrium (GeneralSimEngine.setup(), identical construction for every case; no warm start, no field reuse)"
+ },
+ "anchor": {
+  "artifact": "benchmarks/verified/suboff_anchor/anchor.json",
+  "artifact_sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00",
+  "anchor_used": "A_AFF1_bare_DTRC_T14:A1",
+  "Re_anchor": 11647265.0912,
+  "CT_anchor": 0.00314206627053,
+  "all_anchor_rows": [
+   {
+    "anchor": "A_AFF1_bare_DTRC_T14",
+    "row_id": "A1",
+    "Re": 11647265.0912,
+    "CT": 0.00314206627053
+   },
+   {
+    "anchor": "B_AFF8_full_CFDletters_T3",
+    "row_id": "B1",
+    "Re": 11664442.4934,
+    "CT": 0.00366690356967
+   },
+   {
+    "anchor": "A2_AFF8_full_DTRC_T14",
+    "row_id": "F1",
+    "Re": 11666939.5255,
+    "CT": 0.00366533410993
+   },
+   {
+    "anchor": "B_AFF8_full_CFDletters_T3",
+    "row_id": "B2",
+    "Re": 19672751.5364,
+    "CT": 0.00357630051741
+   },
+   {
+    "anchor": "A_AFF1_bare_DTRC_T14",
+    "row_id": "A2",
+    "Re": 19674434.2757,
+    "CT": 0.00305155681549
+   },
+   {
+    "anchor": "A2_AFF8_full_DTRC_T14",
+    "row_id": "F2",
+    "Re": 19674434.2757,
+    "CT": 0.00357568878711
+   },
+   {
+    "anchor": "A_AFF1_bare_DTRC_T14",
+    "row_id": "A3",
+    "Re": 23294530.1824,
+    "CT": 0.00299197328793
+   },
+   {
+    "anchor": "A2_AFF8_full_DTRC_T14",
+    "row_id": "F3",
+    "Re": 23314204.6167,
+    "CT": 0.0034920741141
+   },
+   {
+    "anchor": "B_AFF8_full_CFDletters_T3",
+    "row_id": "B3",
+    "Re": 23328884.9868,
+    "CT": 0.0034876805213
+   },
+   {
+    "anchor": "B_AFF8_full_CFDletters_T3",
+    "row_id": "B4",
+    "Re": 27382756.8042,
+    "CT": 0.00342514013207
+   },
+   {
+    "anchor": "A_AFF1_bare_DTRC_T14",
+    "row_id": "A4",
+    "Re": 27386812.5117,
+    "CT": 0.00293580094261
+   },
+   {
+    "anchor": "A2_AFF8_full_DTRC_T14",
+    "row_id": "F4",
+    "Re": 27386812.5117,
+    "CT": 0.00342412575056
+   },
+   {
+    "anchor": "B_AFF8_full_CFDletters_T3",
+    "row_id": "B5",
+    "Re": 31474872.6953,
+    "CT": 0.00332593306498
+   },
+   {
+    "anchor": "A_AFF1_bare_DTRC_T14",
+    "row_id": "A5",
+    "Re": 31479094.8411,
+    "CT": 0.00283927785478
+   },
+   {
+    "anchor": "A2_AFF8_full_DTRC_T14",
+    "row_id": "F5",
+    "Re": 31479094.8411,
+    "CT": 0.0033250409407
+   },
+   {
+    "anchor": "A2_AFF8_full_DTRC_T14",
+    "row_id": "F6",
+    "Re": 35000818.5764,
+    "CT": 0.00326882354476
+   },
+   {
+    "anchor": "A_AFF1_bare_DTRC_T14",
+    "row_id": "A6",
+    "Re": 35394307.2619,
+    "CT": 0.00271342469297
+   }
+  ],
+  "ittc1957_line": "C_F = 0.075/(log10 Re - 2)^2"
+ },
+ "cases": [
+  {
+   "tag": "tau0.5005_N96",
+   "tau": 0.5005,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5050_N96",
+   "tau": 0.505,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5100_N96",
+   "tau": 0.51,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5150_N96",
+   "tau": 0.515,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5200_N96",
+   "tau": 0.52,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5300_N96",
+   "tau": 0.53,
+   "N": 96,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5005_N144",
+   "tau": 0.5005,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5050_N144",
+   "tau": 0.505,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5100_N144",
+   "tau": 0.51,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5150_N144",
+   "tau": 0.515,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5200_N144",
+   "tau": 0.52,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5300_N144",
+   "tau": 0.53,
+   "N": 144,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5005_N192",
+   "tau": 0.5005,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5050_N192",
+   "tau": 0.505,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5100_N192",
+   "tau": 0.51,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5150_N192",
+   "tau": 0.515,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5200_N192",
+   "tau": 0.52,
+   "N": 192,
+   "status": "MISSING"
+  },
+  {
+   "tag": "tau0.5300_N192",
+   "tau": 0.53,
+   "N": 192,
+   "status": "MISSING"
+  }
+ ],
+ "summary": {
+  "n_cases_completed": 0,
+  "n_cases_expected": 18,
+  "n_negative_drag": 0,
+  "Re_sim_range": [
+   null,
+   null
+  ],
+  "C_T_range": [
+   null,
+   null
+  ]
+ },
+ "criteria": {
+  "C1": {
+   "criterion": ">=18 cases with C_T/C_F/C_P and anchor deviation tabulated",
+   "n_expected": 18,
+   "n_completed": 0,
+   "n_with_all_fields": 0,
+   "verdict": "FAIL",
+   "missing_tags": [
+    "tau0.5005_N96",
+    "tau0.5050_N96",
+    "tau0.5100_N96",
+    "tau0.5150_N96",
+    "tau0.5200_N96",
+    "tau0.5300_N96",
+    "tau0.5005_N144",
+    "tau0.5050_N144",
+    "tau0.5100_N144",
+    "tau0.5150_N144",
+    "tau0.5200_N144",
+    "tau0.5300_N144",
+    "tau0.5005_N192",
+    "tau0.5050_N192",
+    "tau0.5100_N192",
+    "tau0.5150_N192",
+    "tau0.5200_N192",
+    "tau0.5300_N192"
+   ]
+  },
+  "C2": {
+   "criterion": "negative-drag region registered on the (tau,N) matrix; every negative cell has >=1 same-sign 4-neighbour",
+   "n_negative_cells": 0,
+   "negative_cells": [],
+   "n_unsupported_cells": 0,
+   "unsupported_cells": [],
+   "verdict": "FAIL"
+  },
+  "C3a": {
+   "criterion": "same tau across N: relative C_T drift < 3%",
+   "definition": "(max - min) / |C_T at N=192| * 100",
+   "worst_drift_pct": NaN,
+   "rows": [
+    {
+     "tau": 0.5005,
+     "status": "INCOMPLETE",
+     "values": {}
+    },
+    {
+     "tau": 0.505,
+     "status": "INCOMPLETE",
+     "values": {}
+    },
+    {
+     "tau": 0.51,
+     "status": "INCOMPLETE",
+     "values": {}
+    },
+    {
+     "tau": 0.515,
+     "status": "INCOMPLETE",
+     "values": {}
+    },
+    {
+     "tau": 0.52,
+     "status": "INCOMPLETE",
+     "values": {}
+    },
+    {
+     "tau": 0.53,
+     "status": "INCOMPLETE",
+     "values": {}
+    }
+   ],
+   "verdict": "FAIL"
+  },
+  "C3b": {
+   "criterion": "same N across tau: monotonicity decided by machine check (yes/no + evidence rows)",
+   "rows": [
+    {
+     "N": 96,
+     "status": "INCOMPLETE",
+     "n_points": 0
+    },
+    {
+     "N": 144,
+     "status": "INCOMPLETE",
+     "n_points": 0
+    },
+    {
+     "N": 192,
+     "status": "INCOMPLETE",
+     "n_points": 0
+    }
+   ],
+   "directions": [],
+   "monotone_everywhere": false,
+   "consistent_direction": false,
+   "verdict": "FAIL (non-monotone or direction inconsistent between grids)"
+  },
+  "C4": {
+   "criterion": "6 significant digits; every number recomputed by 2 independent scripts, agreement 1e-6",
+   "verdict": "NOT_RUN",
+   "note": "recompute_check.json absent"
+  }
+ },
+ "decoupling": {
+  "identity": "In LBM at fixed lattice speed, Re_lat = u_lb*N/nu_lb = 3*u_lb*N/(tau-0.5): tau and N enter only through the product N/(tau-0.5). Hence (tau,N) is not a two-factor design at all; every row of the matrix is a different-Re slice.",
+  "iso_Re_groups": [],
+  "n_iso_groups_with_multiple_members": 0,
+  "max_spread_within_iso_Re_group_pct": NaN,
+  "n_iso_groups_pass_3pct": 0
+ },
+ "negative_drag_surface": {
+  "tau_values": [
+   0.5005,
+   0.505,
+   0.51,
+   0.515,
+   0.52,
+   0.53
+  ],
+  "N_values": [
+   96,
+   144,
+   192
+  ],
+  "sign_map": [
+   {
+    "tau": 0.5005,
+    "N": 96,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.505,
+    "N": 96,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.51,
+    "N": 96,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.515,
+    "N": 96,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.52,
+    "N": 96,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.53,
+    "N": 96,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.5005,
+    "N": 144,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.505,
+    "N": 144,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.51,
+    "N": 144,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.515,
+    "N": 144,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.52,
+    "N": 144,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.53,
+    "N": 144,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.5005,
+    "N": 192,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.505,
+    "N": 192,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.51,
+    "N": 192,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.515,
+    "N": 192,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.52,
+    "N": 192,
+    "status": "MISSING"
+   },
+   {
+    "tau": 0.53,
+    "N": 192,
+    "status": "MISSING"
+   }
+  ]
+ }
+}

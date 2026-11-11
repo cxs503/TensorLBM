@@ -1,0 +1,73 @@
+{
+ "schema": "w22_prereg_v1",
+ "mission": "m14505",
+ "mission_key": "lbm-suboff-tau",
+ "predecessor": "paper-exp-lbm-suboff-tau-6",
+ "repo": "TensorLBM",
+ "domain_repo": "TensorLBM",
+ "discipline": "resistance",
+ "frozen_before_production_runs": true,
+ "frozen_at_utc": "2026-11-11T07:45:00Z",
+ "research_question": "SUBOFF 裸艇 LBM 的 tau(松弛/粘度) 与网格分辨率能否解耦? 负阻力出现在 (tau, 网格) 平面的哪一面?",
+ "factors": {
+  "tau": [0.5005, 0.505, 0.51, 0.515, 0.52, 0.53],
+  "N_cells_per_hull_length": [96, 144, 192],
+  "n_cases": 18
+ },
+ "fixed_protocol": {
+  "hull": "DARPA SUBOFF bare hull (L=4.356 m, D=0.508 m, L/D=8.57)",
+  "collision_model": "MRT (D3Q19 multiple-relaxation-time, tensorlbm collide_mrt3d as routed by GeneralSimEngine)",
+  "wall": "half-way bounce-back (lbm_step_correct default 'bb')",
+  "force_method": "PRESSURE_FRICTION (drag_pressure_integration + drag_friction_integration)",
+  "friction_formula": "standard",
+  "p0_method": "near_wall",
+  "pressure_extrap": "none",
+  "mass_correction": "every 200 steps",
+  "domain_padding_in_L": [0.25, 1.75, 0.35, 0.35, 0.35, 0.35],
+  "domain_note": "engine pins hull centre at cx = 0.25*nx, so nx=3L gives 0.25L upstream / 1.75L downstream; lateral half-width 0.35L+0.0583L = 0.408L => blockage = pi*R^2/(0.8166L)^2 = 1.60%",
+  "u_lb": 0.05,
+  "u_phys_m_s": 0.001,
+  "steps": 400,
+  "force_sample_interval": 5,
+  "eval_window_samples": 40,
+  "eval_window_steps": 200,
+  "initial_field": "uniform equilibrium (GeneralSimEngine.setup(), identical construction for every case; no warm start, no field reuse)",
+  "normalisation": "C_T = F_x / (0.5*rho*u^2*S), S = pi*D*L (bare wetted area, anchor caliber); engine samples frontal dpS = 0.5*u^2*pi*R^2 and every sample is rescaled by dpS_front/dpS_wet"
+ },
+ "external_anchors": {
+  "AN-SUBOFF": {
+   "artifact": "benchmarks/verified/suboff_anchor/anchor.json",
+   "anchor": "anchors.A_AFF1_bare_DTRC_T14",
+   "what": "DTRC SUBOFF AFF-1 bare-hull tow-tank resistance (Stern et al. 1980 DTRC report; Groves/Huang/Chang 1987; ITTC 7.5-03-02-03), 6 Re ladder",
+   "usage": "relative deviation of every simulated C_T from the anchor C_T at the anchor Re nearest to the simulated Re; numbers are read from the artifact, never transcribed by hand"
+  },
+  "AN-ITTC57": {
+   "artifact": "benchmarks/verified/suboff_anchor/anchor.json",
+   "field": "derived.ittc78_cf.formula_coef / formula_log10_shift",
+   "what": "ITTC-1957 friction line C_F = 0.075/(log10 Re - 2)^2"
+  },
+  "limit_disclosed": "anchor Re = 1.16e7..3.54e7; simulated Re_lat = 3*u_lb*N/(tau-0.5) = 480..57600 => simulated Re is 200x..74000x below the anchor band. The deviation column is therefore a CALIBER statement, not an accuracy claim; no <3% band is claimed."
+ },
+ "decoupling_identity": {
+  "statement": "In LBM at fixed lattice speed, Re_lat = u_lb*N/nu_lb = 3*u_lb*N/(tau-0.5): tau and N enter only through the product N/(tau-0.5). Hence (tau,N) is not a two-factor design at all; every row of the matrix is a different-Re slice.",
+  "test": "C_T of all 18 cases plotted / regressed against Re_lat; a collapse onto a single curve (|C_T - f(Re_lat)| within the run-to-run window spread) is the numerical signature of the identity."
+ },
+ "criteria": {
+  "C1": ">=18 cases with C_T/C_F/C_P tabulated, plus relative deviation (%) vs the AN-SUBOFF anchor C_T",
+  "C2": "negative-drag surface registered on the (tau,N) matrix; every boundary cell must have >=1 same-sign 4-neighbour (no single-point extrapolation)",
+  "C3a": "same tau across N: relative drift of C_T < 3%  (drift = (max-min)/|value at N=192|)",
+  "C3b": "same N across tau: monotonicity decided by machine check (verdict yes/no + evidence row ids)",
+  "C4": "6 significant digits in the numeric band; every number recomputed by 2 independent scripts with different call paths, agreeing to 1e-6",
+  "C5": "honest FAIL not falsified: every unmet criterion is reported with the measured gap"
+ },
+ "stopping_rule": "the matrix is run once to completion; no case is re-run or tuned after seeing results (no threshold shopping). Failed/diverged cases are recorded as failures, not replaced.",
+ "compute_plan": {
+  "hardware": "loong64 cluster nodes n315/n330 (128 cores each), torch CPU float32; measured ~1.5-2.0 MLUPS per process",
+  "budget": "400 steps x 18 cases = 5.3e10 cell-updates; submitted as 6 jobs (one per tau, 3 grid levels each, sequential inside the job)"
+ },
+ "artifacts": [
+  "benchmarks/verified/suboff_tau_grid_w22/tau_grid_matrix.json",
+  "benchmarks/verified/suboff_tau_grid_w22/negative_drag_surface.json",
+  "papers/reports/w22_lbm_suboff_tau9.md"
+ ]
+}
