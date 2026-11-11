@@ -81,7 +81,14 @@ def run_case(
     seed: int = 0,
     compile_mode: str | None = "default",
 ) -> dict:
-    """Run one pressure-driven 2D Poiseuille case and return measurements."""
+    """Run one pressure-driven 2D Poiseuille case and return measurements.
+
+    ``H`` (wall-to-wall height in lattice units) must be a positive integer;
+    the guard replaces an unhelpful ``ZeroDivisionError`` raised at
+    ``delta_rho = 24*nu*u_max/(cs2*H)`` when ``H=0`` (audit finding D9).
+    """
+    if not isinstance(H, int) or H < 1:
+        raise ValueError(f"poiseuille_2d: H={H!r} must be a positive integer (wall-to-wall height)")
     torch.manual_seed(seed)
     ny = H + 2  # wall rows at y=0 and y=ny-1
     nx = 3 * H  # L = 3H
