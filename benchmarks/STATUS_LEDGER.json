@@ -1,0 +1,1105 @@
+{
+ "cases": [
+  {
+   "case": "acoustic_pulse_2d",
+   "dir": "benchmarks/pending/acoustic_pulse_2d",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "aircraft_icing_rg15_ipw2",
+   "dir": "benchmarks/pending/aircraft_icing_rg15_ipw2",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "backward_step",
+   "dir": "benchmarks/pending/backward_step",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "blasius_flat_plate",
+   "dir": "benchmarks/pending/blasius_flat_plate",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "bstep_3d",
+   "dir": "benchmarks/pending/bstep_3d",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/bstep_3d/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "capillary_invasion_washburn",
+   "dir": "benchmarks/pending/capillary_invasion_washburn",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "cavity_3d_full",
+   "dir": "benchmarks/pending/cavity_3d_full",
+   "index_class": "pass_candidate",
+   "index_rows": 2,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "cavity_3d_re100",
+   "dir": "benchmarks/pending/cavity_3d_re100",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "channel_turb_3d",
+   "dir": "benchmarks/pending/channel_turb_3d",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/channel_turb_3d/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "channel_turb_re180",
+   "dir": "benchmarks/pending/channel_turb_re180",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/channel_turb_re180/validation_status.json",
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": true
+  },
+  {
+   "case": "collision_kernels_3d_tg",
+   "dir": "benchmarks/pending/collision_kernels_3d_tg",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "couette_3d",
+   "dir": "benchmarks/pending/couette_3d",
+   "index_class": "pass_candidate",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "cylinder_re100_dfg",
+   "dir": "benchmarks/pending/cylinder_re100_dfg",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": true
+  },
+  {
+   "case": "cylinder_re40_st",
+   "dir": "benchmarks/pending/cylinder_re40_st",
+   "index_class": "pass_candidate",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/cylinder_re40_st/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "dam_break_2d_multimodel",
+   "dir": "benchmarks/pending/dam_break_2d_multimodel",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "dam_break_3d_mm",
+   "dir": "benchmarks/pending/dam_break_3d_mm",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dam_break_3d_mm/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "dam_break_ritter_ci",
+   "dir": "benchmarks/pending/dam_break_ritter_ci",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dam_break_ritter_ci/validation_status.json",
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": true
+  },
+  {
+   "case": "dam_break_sc",
+   "dir": "benchmarks/pending/dam_break_sc",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dam_break_sc/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "dit_turbulence",
+   "dir": "benchmarks/pending/dit_turbulence",
+   "index_class": "fail",
+   "index_rows": 2,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dit_turbulence/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "dtmb5415_resistance",
+   "dir": "benchmarks/pending/dtmb5415_resistance",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "forchheimer",
+   "dir": "benchmarks/pending/forchheimer",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "hadamard_rybczynski_droplet",
+   "dir": "benchmarks/pending/hadamard_rybczynski_droplet",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "kcs_resistance",
+   "dir": "benchmarks/pending/kcs_resistance",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "naca0012_aero_polar",
+   "dir": "benchmarks/pending/naca0012_aero_polar",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "naca_0012",
+   "dir": "benchmarks/pending/naca_0012",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/naca_0012/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "nwt_stokes2_2d",
+   "dir": "benchmarks/pending/nwt_stokes2_2d",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "passive_scalar_verification",
+   "dir": "benchmarks/pending/passive_scalar_verification",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "permeability3d",
+   "dir": "benchmarks/pending/permeability3d",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "permeability_fibrous",
+   "dir": "benchmarks/pending/permeability_fibrous",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "phasefield_water_entry",
+   "dir": "benchmarks/pending/phasefield_water_entry",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "poiseuille_3d_annulus",
+   "dir": "benchmarks/pending/poiseuille_3d_annulus",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verdict",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/poiseuille_3d_annulus/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "poiseuille_3d_ellipse",
+   "dir": "benchmarks/pending/poiseuille_3d_ellipse",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verdict",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/poiseuille_3d_ellipse/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "porous_ladder",
+   "dir": "benchmarks/pending/porous_ladder",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "propeller_openwater",
+   "dir": "benchmarks/pending/propeller_openwater",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/propeller_openwater/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "pseudopotential_edm_upgrade",
+   "dir": "benchmarks/pending/pseudopotential_edm_upgrade",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "rayleigh_benard",
+   "dir": "benchmarks/pending/rayleigh_benard",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "verified",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/rayleigh_benard/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "rayleigh_taylor",
+   "dir": "benchmarks/pending/rayleigh_taylor",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "rayleigh_taylor_rt",
+   "dir": "benchmarks/pending/rayleigh_taylor_rt",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/rayleigh_taylor_rt/validation_status.json",
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": true
+  },
+  {
+   "case": "scalar_dispersion_mach",
+   "dir": "benchmarks/pending/scalar_dispersion_mach",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "series60_resistance",
+   "dir": "benchmarks/pending/series60_resistance",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "ship_resistance_closure",
+   "dir": "benchmarks/pending/ship_resistance_closure",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "ship_wave_michell",
+   "dir": "benchmarks/pending/ship_wave_michell",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": true
+  },
+  {
+   "case": "sphere_drag_closure",
+   "dir": "benchmarks/pending/sphere_drag_closure",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "sphere_re100",
+   "dir": "benchmarks/pending/sphere_re100",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "sphere_re100_mem",
+   "dir": "benchmarks/pending/sphere_re100_mem",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "sphere_re200",
+   "dir": "benchmarks/pending/sphere_re200",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "sphere_settling_gcs",
+   "dir": "benchmarks/pending/sphere_settling_gcs",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "staircase_wall_offset",
+   "dir": "benchmarks/pending/staircase_wall_offset",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "static_droplet_laplace_ci",
+   "dir": "benchmarks/pending/static_droplet_laplace_ci",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/static_droplet_laplace_ci/validation_status.json",
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": true
+  },
+  {
+   "case": "stokes_second_problem",
+   "dir": "benchmarks/pending/stokes_second_problem",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "pass",
+   "machine_key": "status",
+   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/stokes_second_problem/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "suboff_highre_resistance",
+   "dir": "benchmarks/pending/suboff_highre_resistance",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "taylor_aris_dispersion",
+   "dir": "benchmarks/pending/taylor_aris_dispersion",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "taylor_aris_kh_extrapolation",
+   "dir": "benchmarks/pending/taylor_aris_kh_extrapolation",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "trt_wall_accuracy",
+   "dir": "benchmarks/pending/trt_wall_accuracy",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "two_phase_poiseuille",
+   "dir": "benchmarks/pending/two_phase_poiseuille",
+   "index_class": "unknown",
+   "index_rows": 1,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "two_phase_poiseuille_viscous",
+   "dir": "benchmarks/pending/two_phase_poiseuille_viscous",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": false,
+   "result_json": false,
+   "validation_status_json": false
+  }
+ ],
+ "counts": {
+  "advertised_pending": 56,
+  "advertised_verified": 79,
+  "pending_dirs": 56,
+  "pending_index_rows": 32,
+  "pending_machine_fail": 16,
+  "pending_machine_pass": 1,
+  "pending_machine_unknown": 39,
+  "pending_with_readme": 40,
+  "pending_with_result_json": 27,
+  "status_md_verified_rows": 36,
+  "verified_dirs": 79
+ },
+ "index_rows": [
+  {
+   "case": "backward_step",
+   "class": "fail",
+   "lineno": 27,
+   "status_raw": "❌",
+   "target": "backward_step/"
+  },
+  {
+   "case": "blasius_flat_plate",
+   "class": "unknown",
+   "lineno": 28,
+   "status_raw": "⏸️",
+   "target": "blasius_flat_plate/"
+  },
+  {
+   "case": "bstep_3d",
+   "class": "unknown",
+   "lineno": 29,
+   "status_raw": "⚠️",
+   "target": "bstep_3d/"
+  },
+  {
+   "case": "cylinder_re40_st",
+   "class": "pass_candidate",
+   "lineno": 30,
+   "status_raw": "✅→📦",
+   "target": "cylinder_re40_st/"
+  },
+  {
+   "case": "naca_0012",
+   "class": "fail",
+   "lineno": 31,
+   "status_raw": "❌",
+   "target": "naca_0012/"
+  },
+  {
+   "case": "ship_resistance_closure",
+   "class": "fail",
+   "lineno": 32,
+   "status_raw": "⛔",
+   "target": "ship_resistance_closure/"
+  },
+  {
+   "case": "sphere_re100",
+   "class": "unknown",
+   "lineno": 33,
+   "status_raw": "⏸️",
+   "target": "sphere_re100/"
+  },
+  {
+   "case": "sphere_re100_mem",
+   "class": "unknown",
+   "lineno": 34,
+   "status_raw": "⏸️",
+   "target": "sphere_re100_mem/"
+  },
+  {
+   "case": "sphere_re200",
+   "class": "unknown",
+   "lineno": 35,
+   "status_raw": "⚠️",
+   "target": "sphere_re200/"
+  },
+  {
+   "case": "couette_3d",
+   "class": "pass_candidate",
+   "lineno": 36,
+   "status_raw": "✅→📦",
+   "target": "couette_3d/"
+  },
+  {
+   "case": "stokes_second_problem",
+   "class": "unknown",
+   "lineno": 37,
+   "status_raw": "⚠️",
+   "target": "stokes_second_problem/"
+  },
+  {
+   "case": "taylor_aris_dispersion",
+   "class": "fail",
+   "lineno": 38,
+   "status_raw": "❌",
+   "target": "taylor_aris_dispersion/"
+  },
+  {
+   "case": "collision_kernels_3d_tg",
+   "class": "unknown",
+   "lineno": 39,
+   "status_raw": "⏸️",
+   "target": "collision_kernels_3d_tg/"
+  },
+  {
+   "case": "hadamard_rybczynski_droplet",
+   "class": "fail",
+   "lineno": 40,
+   "status_raw": "❌",
+   "target": "hadamard_rybczynski_droplet/"
+  },
+  {
+   "case": "cavity_3d_full",
+   "class": "pass_candidate",
+   "lineno": 41,
+   "status_raw": "🟡",
+   "target": "cavity_3d_full/"
+  },
+  {
+   "case": "cavity_3d_full",
+   "class": "unknown",
+   "lineno": 42,
+   "status_raw": "⏸️ superseded",
+   "target": "cavity_3d_full/"
+  },
+  {
+   "case": "cavity_natural_convection",
+   "class": "fail",
+   "lineno": 43,
+   "status_raw": "❌",
+   "target": "cavity_natural_convection/"
+  },
+  {
+   "case": "channel_turb",
+   "class": "unknown",
+   "lineno": 44,
+   "status_raw": "⏸️",
+   "target": "channel_turb/"
+  },
+  {
+   "case": "dit_turbulence",
+   "class": "fail",
+   "lineno": 45,
+   "status_raw": "❌",
+   "target": "dit_turbulence/"
+  },
+  {
+   "case": "channel_turb",
+   "class": "fail",
+   "lineno": 46,
+   "status_raw": "❌",
+   "target": "channel_turb/"
+  },
+  {
+   "case": "dit_turbulence",
+   "class": "unknown",
+   "lineno": 47,
+   "status_raw": "⏸️",
+   "target": "dit_turbulence/"
+  },
+  {
+   "case": "rayleigh_benard",
+   "class": "fail",
+   "lineno": 48,
+   "status_raw": "❌",
+   "target": "rayleigh_benard/"
+  },
+  {
+   "case": "rayleigh_taylor",
+   "class": "fail",
+   "lineno": 49,
+   "status_raw": "⛔",
+   "target": "rayleigh_taylor/"
+  },
+  {
+   "case": "dam_break_3d_mm",
+   "class": "fail",
+   "lineno": 50,
+   "status_raw": "❌",
+   "target": "dam_break_3d_mm/"
+  },
+  {
+   "case": "dam_break_sc",
+   "class": "unknown",
+   "lineno": 51,
+   "status_raw": "⏸️ TERMINAL",
+   "target": "dam_break_sc/"
+  },
+  {
+   "case": "capillary_invasion_washburn",
+   "class": "fail",
+   "lineno": 52,
+   "status_raw": "❌",
+   "target": "capillary_invasion_washburn/"
+  },
+  {
+   "case": "forchheimer",
+   "class": "fail",
+   "lineno": 53,
+   "status_raw": "❌",
+   "target": "forchheimer/"
+  },
+  {
+   "case": "permeability3d",
+   "class": "unknown",
+   "lineno": 54,
+   "status_raw": "⏸️ superseded",
+   "target": "permeability3d/"
+  },
+  {
+   "case": "permeability_fibrous",
+   "class": "unknown",
+   "lineno": 55,
+   "status_raw": "⏸️",
+   "target": "permeability_fibrous/"
+  },
+  {
+   "case": "poiseuille_3d_annulus",
+   "class": "unknown",
+   "lineno": 56,
+   "status_raw": "⏸️",
+   "target": "poiseuille_3d_annulus/"
+  },
+  {
+   "case": "poiseuille_3d_ellipse",
+   "class": "fail",
+   "lineno": 57,
+   "status_raw": "❌",
+   "target": "poiseuille_3d_ellipse/"
+  },
+  {
+   "case": "two_phase_poiseuille",
+   "class": "unknown",
+   "lineno": 58,
+   "status_raw": "⏸️ 终裁",
+   "target": "two_phase_poiseuille/"
+  }
+ ],
+ "schema": 1,
+ "tool": "benchmarks/status_ledger.py",
+ "verified": [
+  "acoustics",
+  "aircraft_icing_naca0012_rime",
+  "cavity",
+  "cavity_3d_full",
+  "cavity_natural_convection",
+  "cavity_re100",
+  "compressible_shock_family",
+  "couette_2d",
+  "couette_3d",
+  "couette_poiseuille",
+  "cylinder",
+  "cylinder_3d",
+  "cylinder_re100",
+  "droplet_oscillation",
+  "floating_body_free_decay",
+  "forchheimer_weak_inertia",
+  "fwh_acoustics",
+  "fwh_rotating",
+  "kovasznay_2d",
+  "laplace_cac_phasefield",
+  "laplace_droplet",
+  "laplace_pr_eos",
+  "lbm_weakly_compressible",
+  "maneuvering_steady_turn",
+  "maneuvering_zigzag",
+  "mcmp_3d_stability",
+  "mcmp_stratified_poiseuille",
+  "mmg_imo_msc137_uncert",
+  "mms_convergence_2d",
+  "permeability",
+  "permeability3d",
+  "permeability_fibrous",
+  "poiseuille_2d",
+  "poiseuille_2d_bodyforce",
+  "poiseuille_3d_annulus",
+  "poiseuille_3d_duct",
+  "poiseuille_3d_pipe",
+  "poiseuille_convergence_order",
+  "poiseuille_two_phase_cg",
+  "radiation_enclosure_ship",
+  "rheology_yield",
+  "rotating_duct_frame_w2",
+  "rotating_ekman",
+  "rotating_interior_frame",
+  "rotating_source_sink",
+  "rotating_taylor_column",
+  "rotating_w3",
+  "shear_wave_decay",
+  "ship_resistance_suboff",
+  "sod_shock_tube",
+  "sphere_drag_bfl",
+  "sphere_re100",
+  "sphere_re100_d3q27",
+  "sphere_re100_mem",
+  "sphere_re200",
+  "square_cylinder",
+  "square_cylinder_re200",
+  "startup_poiseuille",
+  "static_droplet_laplace_ci",
+  "stefan_phase_change",
+  "stefan_two_phase_sweep",
+  "stokes_first_problem",
+  "stokes_second_problem",
+  "stokes_sphere_dg",
+  "suboff_anchor",
+  "suboff_anchor_w22",
+  "suboff_re1000",
+  "suboff_sail_resistance",
+  "suboff_tau_grid_w22",
+  "taylor_aris_dispersion",
+  "taylor_couette",
+  "taylor_green_2d",
+  "taylor_green_3d",
+  "thermal_cavity",
+  "thermal_cavity_3d",
+  "wave_tank",
+  "wigley_hydrostatics",
+  "womersley",
+  "womersley_pulsatile"
+ ],
+ "violations": {
+  "hard": [],
+  "soft": [
+   {
+    "case": "cavity_3d_full",
+    "detail": "2 index rows (lines [41, 42])",
+    "id": "duplicate_index_row",
+    "severity": "soft"
+   },
+   {
+    "case": "cavity_3d_re100",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "cylinder_re40_st",
+    "detail": "index class pass_candidate implies pass, machine verdict fail (verified=False in /root/tp-agent/work/m16798/benchmarks/pending/cylinder_re40_st/result.json)",
+    "id": "status_claim_conflict",
+    "severity": "soft"
+   },
+   {
+    "case": "dit_turbulence",
+    "detail": "2 index rows (lines [45, 47])",
+    "id": "duplicate_index_row",
+    "severity": "soft"
+   },
+   {
+    "case": "dtmb5415_resistance",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "kcs_resistance",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "nwt_stokes2_2d",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "porous_ladder",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "pseudopotential_edm_upgrade",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "series60_resistance",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "ship_wave_michell",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "staircase_wall_offset",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "trt_wall_accuracy",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "two_phase_poiseuille_viscous",
+    "detail": "no README and no machine verdict on disk",
+    "id": "missing_machine_verdict",
+    "severity": "soft"
+   },
+   {
+    "case": "cavity_natural_convection",
+    "detail": "index row at line 43 points to a non-pending case (moved to verified/)",
+    "id": "stale_index_row",
+    "severity": "soft"
+   },
+   {
+    "case": "channel_turb",
+    "detail": "index row at line 44 points to a non-pending case (no such directory)",
+    "id": "stale_index_row",
+    "severity": "soft"
+   },
+   {
+    "case": "channel_turb",
+    "detail": "index row at line 46 points to a non-pending case (no such directory)",
+    "id": "stale_index_row",
+    "severity": "soft"
+   }
+  ]
+ }
+}
