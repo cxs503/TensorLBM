@@ -146,6 +146,30 @@ def reattachment_from_wall_shear(
     return (idx - (x_step - 0.5)) / float(s)
 
 
+def reversed_flow_extent(
+    ux_mean: np.ndarray, solid: np.ndarray, x_step: int, s: int, n_rows: int = 3
+) -> float:
+    """Near-wall reversed-flow extent in step heights (shear-independent caliber).
+
+    Takes the *last* column downstream of the step face whose first ``n_rows``
+    fluid rows contain ``u_x < 0``.  That column is the trailing edge of the
+    recirculation; the true reattachment point lies within one cell further
+    downstream, so this quantity is a lower bound with ``1/s`` resolution.  It
+    never relies on a sign change of a reconstructed wall shear, so it is a
+    genuine cross-check of :func:`reattachment_from_wall_shear` (a wrong shear
+    stencil or a spurious multiple crossing cannot fool both).
+    """
+    u = np.asarray(ux_mean, dtype=np.float64)
+    mask = np.asarray(solid, dtype=bool)
+    rows = slice(1, 1 + n_rows)
+    reversed_cols = ((u[rows] < 0.0) & ~mask[rows]).any(axis=0)
+    reversed_cols[:x_step] = False
+    idx = np.flatnonzero(reversed_cols)
+    if idx.size == 0:
+        return float("nan")
+    return (float(idx[-1]) - x_step + 1.0) / float(s)
+
+
 def make_armaly_solid_mask(ny: int, nx: int, h_in: int, s: int, x_step: int) -> torch.Tensor:
     """Boolean solid mask ``(ny, nx)`` for the Armaly geometry.
 
@@ -309,10 +333,12 @@ def run_armaly_case(cfg: ArmalyConfig, out_dir: Path | None = None) -> dict:
         f = stream(fc)
         f = torch.where(inlet_mask, zou_he_inlet_velocity(f, inlet_full, 0.0), f)
         f = zou_he_outlet_pressure(f, 1.0)
-        if n_acc > 0 or step > n_avg_start:
-            rho_f, ux_f, uy_f = macroscopic(f)
-            feq = equilibrium(rho_f, ux_f, uy_f)
-            f = f - sigma * (f - feq)
+        # sponge on the non-equilibrium part: applied from step 1 so the
+        # outflow region is governed by the same operator during the transient
+        # and the averaging window (no operator switch at n_avg_start).
+        rho_f, ux_f, uy_f = macroscopic(f)
+        feq = equilibrium(rho_f, ux_f, uy_f)
+        f = f - sigma * (f - feq)
 
         if step >= n_avg_start and step % cfg.avg_stride == 0:
             _, ux_now, _ = macroscopic(f)
@@ -393,6 +419,8 @@ def run_armaly_case(cfg: ArmalyConfig, out_dir: Path | None = None) -> dict:
             "mass_flux_target": cfg.u_bar * hi,
             "mass_flux_rel_error": abs(_flux(0, slice(s + 1, ny - 1)) - _flux(nx - 1, slice(1, ny - 1)))
                                     / max(abs(cfg.u_bar * hi), 1e-30),
+            "x1_over_s_reverse_extent": reversed_flow_extent(ux_mean, solid.numpy(), x_step, s),
+            "u1_min_over_u_bar": float(np.nanmin(u1[x_step:]) / cfg.u_bar),
             "min_tau_w": float(np.nanmin(tau_mean[x_step:])),
             "max_tau_w": float(np.nanmax(tau_mean[x_step:])),
         },
