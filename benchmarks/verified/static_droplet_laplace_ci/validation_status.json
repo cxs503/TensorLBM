@@ -5,7 +5,7 @@
   "reference_basis": "analytic",
   "scope": "2-D Shan-Chen single-component droplet, G_lib=+5 (physical G_eff=-5), tau=1, three radii per level, domain L=4R periodic. Measured levels: R=8/12/16 and R=12/16/20. Not covered: 3-D sphere (standard tier).",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T06:10:38Z",
+  "generated_utc": "2026-11-12T16:10:48Z",
   "artifact": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
   "references": [
@@ -54,7 +54,17 @@
         }
       ],
       "pass": true,
-      "max_abs_err_pct": 0.821534099798054
+      "max_abs_err_pct": 0.821534099798054,
+      "max_abs_err_pct_gated": 0.821534099798054,
+      "worst_gated_err_pct": 0.821534099798054,
+      "worst_gated_level": "R=8/12/16",
+      "worst_gated_tol_pct": 3.0,
+      "gated_levels": [
+        "R=8/12/16",
+        "R=12/16/20"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     },
     {
       "metric": "sigma_pair_dev_pct",
@@ -85,7 +95,17 @@
         }
       ],
       "pass": true,
-      "max_abs_err_pct": 0.2581571389926649
+      "max_abs_err_pct": 0.2581571389926649,
+      "max_abs_err_pct_gated": 0.2581571389926649,
+      "worst_gated_err_pct": 0.2581571389926649,
+      "worst_gated_level": "R=12/16/20",
+      "worst_gated_tol_pct": 3.0,
+      "gated_levels": [
+        "R=8/12/16",
+        "R=12/16/20"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     }
   ],
   "convergence": [

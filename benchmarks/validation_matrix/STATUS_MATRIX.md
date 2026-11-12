@@ -1,22 +1,25 @@
 # Validation matrix — three-level status (generated)
 
-generated: 2026-11-12T06:10:38Z | matrix v1.1 | **passed 6 / failed 4 / pending 1**
+generated: 2026-11-12T16:10:48Z | matrix v1.1 | **passed 6 / failed 4 / pending 1**
 
-Gate: every metric |err| <= its tolerance at every level AND the level series
-converges (span <= 3%, monotone where >= 3 levels exist). `failed` keeps its root
-cause; `pending` means evidence is withheld or not yet produced — never a hidden pass.
+Gate: every metric |err| <= its tolerance at every **gated** level AND the level
+series converges (span <= 3%, monotone where >= 3 levels exist). A level declared
+informational (`tol_pct_by_level: null`) is reported as `info` and never sets the
+headline number; `unresolved` means the declared artifact path does not exist and is
+missing evidence, never a pass. `failed` keeps its root cause; `pending` means evidence
+is withheld or not yet produced — never a hidden pass.
 
 | # | slot | case | status | key metric (worst level) | convergence | evidence |
 |---|------|------|--------|--------------------------|-------------|----------|
-| 1 | cavity | `cavity_re100` | **passed** | max_abs_dev_pct +0.75% (tol 3%) | max_abs_dev_pct span 0.03% | `benchmarks/verified/cavity/re100/result.json` |
-| 2 | cylinder | `cylinder_re100` | **passed** | cd_err_pct +2.55% (tol 3%) | cd_err_pct span 1.02%; st_err_pct span 1.70% | `benchmarks/verified/cylinder/re100/result.json` |
-| 3 | ship | `ship_resistance_suboff` | **passed** | cd_tot_err_pct +3.17% (tol 3%) | cd_tot_err_pct span 2.02% | `benchmarks/verified/suboff_re1000/result.json` |
-| 4 | sphere | `sphere_re100` | **passed** | cd +2.77% (tol 3%) | cd span 0.00% | `benchmarks/verified/sphere_re100/result.json` |
-| 5 | static_droplet | `static_droplet_laplace_ci` | **passed** | laplace_max_dev_pct +0.82% (tol 3%) | laplace_max_dev_pct span 0.23%; sigma_pair_dev_pct span 0.00% | `benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json` |
-| 6 | taylor_green | `taylor_green_2d` | **passed** | gamma_e +0.07% (tol 1%) | gamma_e span 0.00% | `benchmarks/verified/taylor_green_2d/result.json` |
-| 7 | channel | `channel_turb_re180` | **failed** | uplus_rms_err_pct +nan% (tol 3%) | uplus_rms_err_pct span nan% | `benchmarks/pending/channel_turb_3d/result.json` |
-| 8 | cylinder | `cylinder_re100_dfg` | **failed** | cl_amp_err_pct +36.04% (tol 5%) | cd_err_pct span 3.72% | `benchmarks/verified/cylinder/re100_dfg/artifacts/result.json` |
-| 9 | dam_break | `dam_break_ritter_ci` | **failed** | profile_l2_pct +9.82% (tol 5%) | front_err_pct span 1.95%; profile_l2_pct span 3.53% | `benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json` |
+| 1 | cavity | `cavity_re100` | **passed** | max_abs_dev_pct +0.75% (tol 3%) [gated 128x128] | max_abs_dev_pct span 0.03% | `benchmarks/verified/cavity/re100/result.json` |
+| 2 | cylinder | `cylinder_re100` | **passed** | cd_err_pct -2.55% (tol 3%) [gated D64] | cd_err_pct span 1.02%; st_err_pct span 1.70% | `benchmarks/verified/cylinder/re100/result.json` |
+| 3 | ship | `ship_resistance_suboff` | **passed** | cd_tot_err_pct -1.15% (tol 3%) [gated L=80; info L=48 -3.17%] | cd_tot_err_pct span 2.02% | `benchmarks/verified/suboff_re1000/result.json` |
+| 4 | sphere | `sphere_re100` | **passed** | cd +2.77% (tol 3%) [gated D40] | cd span 0.00% | `benchmarks/verified/sphere_re100/result.json` |
+| 5 | static_droplet | `static_droplet_laplace_ci` | **passed** | laplace_max_dev_pct +0.82% (tol 3%) [gated R=8/12/16] | laplace_max_dev_pct span 0.23%; sigma_pair_dev_pct span 0.00% | `benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json` |
+| 6 | taylor_green | `taylor_green_2d` | **passed** | gamma_e -0.07% (tol 1%) [gated first-half] | gamma_e span 0.00% | `benchmarks/verified/taylor_green_2d/result.json` |
+| 7 | channel | `channel_turb_re180` | **failed** | unresolved: uplus_rms_err_pct@coarse, uplus_rms_err_pct@fine | uplus_rms_err_pct span unresolved (missing evidence) | `benchmarks/pending/channel_turb_3d/result.json` |
+| 8 | cylinder | `cylinder_re100_dfg` | **failed** | cl_amp_err_pct +36.04% (tol 5%) [gated D28] | cd_err_pct span 3.72% | `benchmarks/verified/cylinder/re100_dfg/artifacts/result.json` |
+| 9 | dam_break | `dam_break_ritter_ci` | **failed** | profile_l2_pct +9.82% (tol 5%) [gated nx=200] | front_err_pct span 1.95%; profile_l2_pct span 3.53% | `benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json` |
 | 10 | rayleigh_taylor | `rayleigh_taylor_rt` | **failed** | — | — | `python benchmarks/pending/rayleigh_taylor/run.py` |
 | 11 | ship | `ship_wave_michell` | **pending** | — | — | `python benchmarks/wave_wake_michell/run.py` |
 
