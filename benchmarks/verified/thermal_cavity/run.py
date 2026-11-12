@@ -1,4 +1,4 @@
-"""W2-A 基准入口：de Vahl Davis 热腔六案（Ra=1e3/1e4 × N=64/128/256）。
+"""W2-A 基准入口：de Vahl Davis 热腔九案（Ra=1e3/1e4/1e5 × N=64/128/256）。
 
 物理全部在 tensorlbm 共性模块（driver.py 只编排）；本文件零本地物理实现。
 稳态判据（NOTES.md 预注册）：Nu 漂移 <1e-4/1000 步（nu/nu_left/nu_right 三者
@@ -27,8 +27,9 @@ import driver
 MAX_STEPS = {
     1e3: {64: 300_000, 128: 700_000, 256: 1_600_000},
     1e4: {64: 200_000, 128: 450_000, 256: 1_000_000},
+    1e5: {64: 500_000, 128: 1_000_000, 256: 2_000_000},
 }
-CASES = [(ra, n) for ra in (1e3, 1e4) for n in (64, 128, 256)]
+CASES = [(ra, n) for ra in (1e3, 1e4, 1e5) for n in (64, 128, 256)]
 
 
 def tag_of(ra: float, nx: int) -> str:
@@ -200,6 +201,8 @@ def main() -> None:
         "ra1e3_n256": 510_000,
         "ra1e4_n128": 103_000,
         "ra1e4_n256": 415_000,
+        "ra1e5_n128": 280_000,
+        "ra1e5_n256": 1_120_000,
     }
     dtype = torch.float32 if args.dtype == "float32" else torch.float64
     for ra, nx in todo:

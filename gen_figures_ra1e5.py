@@ -2,13 +2,14 @@
 """Generate figures for Ra=1e5 natural convection cavity benchmark.
 
 Produces:
-1. Temperature field contour
-2. Velocity magnitude field
-3. Nusselt number convergence history
-4. Comparison bar chart (Nu, u_max, v_max vs reference)
+1. Temperature field contour plot
+2. Velocity field (quiver + magnitude)
+3. Nu convergence history
+4. Comparison bar chart (ref vs got for Nu, u_max, v_max)
 """
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -16,236 +17,170 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks" / "verified" / "thermal_cavity"))
+
 import torch
+import driver
 
-sys.path.insert(0, "src")
-sys.path.insert(0, "benchmarks/verified/thermal_cavity")
+# de Vahl Davis 1983 reference
+REF_DVD_1E5 = {
+    "nu": 4.519,
+    "u_max": 34.72,
+    "v_max": 68.60,
+}
 
-import driver  # noqa: E402
 
-
-def load_result(path: str) -> dict:
-    """Load result JSON."""
-    with open(path) as f:
+def load_result():
+    result_path = Path(__file__).resolve().parents[1] / "benchmarks" / "verified" / "thermal_cavity" / "result.json"
+    with open(result_path) as f:
         return json.load(f)
 
 
-def plot_temperature_field(result: dict, out_path: str):
-    """Plot temperature field contour for the finest grid."""
-    # Find finest grid
-    grids = result["grids"]
-    nx_max = max(int(k) for k in grids.keys())
-    res = grids[str(nx_max)]
-    
-    # Re-run to get fields (or load from saved)
-    # For now, we'll create a placeholder
-    print(f"[plot] Temperature field for N={nx_max} (placeholder - need field data)")
-    
-    # Create a simple contour plot using the history
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.text(0.5, 0.5, f"Temperature field\nN={nx_max}\n(Requires field data save)", 
-            ha='center', va='center', fontsize=14, transform=ax.transAxes)
-    ax.set_title("Temperature Field (placeholder)")
-    fig.savefig(out_path, dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"[plot] Saved {out_path}")
+def get_ra1e5_cases(data):
+    cases = data.get("cases", [])
+    return [c for c in cases if abs(c.get("ra", 0) - 1e5) < 1e3]
 
 
-def plot_convergence(result: dict, out_path: str):
-    """Plot Nusselt number convergence history."""
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    
-    ref_nu = result.get("ref_values", {}).get("nu", 4.519)
-    
-    for idx, (nx_str, res) in enumerate(result["grids"].items()):
-        nx = int(nx_str)
-        hist = res.get("history", [])
-        if not hist:
-            continue
-        
-        steps = [h["step"] for h in hist]
-        nus = [h["nu"] for h in hist]
-        u_maxs = [h["u_max_nd"] for h in hist]
-        v_maxs = [h["v_max_nd"] for h in hist]
-        
-        # Nu convergence
-        axes[0].plot(steps, nus, label=f"N={nx}", linewidth=2)
-        axes[0].axhline(ref_nu, color='red', linestyle='--', alpha=0.5, label=f"Ref={ref_nu}")
-        
-        # u_max convergence
-        axes[1].plot(steps, u_maxs, label=f"N={nx}", linewidth=2)
-        
-        # v_max convergence
-        axes[2].plot(steps, v_maxs, label=f"N={nx}", linewidth=2)
-    
-    axes[0].set_xlabel("Step")
-    axes[0].set_ylabel("Nu")
-    axes[0].set_title("Nusselt Number Convergence")
-    axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
-    
-    axes[1].set_xlabel("Step")
-    axes[1].set_ylabel("u_max (dimensionless)")
-    axes[1].set_title("Maximum Horizontal Velocity")
-    axes[1].legend()
-    axes[1].grid(True, alpha=0.3)
-    
-    axes[2].set_xlabel("Step")
-    axes[2].set_ylabel("v_max (dimensionless)")
-    axes[2].set_title("Maximum Vertical Velocity")
-    axes[2].legend()
-    axes[2].grid(True, alpha=0.3)
-    
-    fig.suptitle(f"Ra={result['ra']:.0e}, Pr={result['pr']}", fontsize=14, fontweight='bold')
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"[plot] Saved {out_path}")
-
-
-def plot_comparison(result: dict, out_path: str):
-    """Plot comparison with reference values."""
-    ref = result.get("ref_values", {})
-    if not ref:
-        print("[plot] No reference values, skipping comparison plot")
-        return
-    
-    grids = result["grids"]
-    nx_list = sorted([int(k) for k in grids.keys()])
-    
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    
-    quantities = [
-        ("nu", "Nusselt Number", ref.get("nu", 4.519)),
-        ("u_max_nd", "u_max (dimensionless)", ref.get("u_max", 34.72)),
-        ("v_max_nd", "v_max (dimensionless)", ref.get("v_max", 68.60)),
-    ]
-    
-    for ax, (key, label, ref_val) in zip(axes, quantities):
-        sim_vals = [grids[str(nx)]["obs"][key] for nx in nx_list]
-        errors = [100.0 * abs(v - ref_val) / ref_val for v in sim_vals]
-        
-        x = np.arange(len(nx_list))
-        width = 0.35
-        
-        bars1 = ax.bar(x - width/2, [ref_val]*len(nx_list), width, label='Reference', color='red', alpha=0.7)
-        bars2 = ax.bar(x + width/2, sim_vals, width, label='TensorLBM', color='blue', alpha=0.7)
-        
-        ax.set_xlabel("Grid Size N")
-        ax.set_ylabel(label)
-        ax.set_title(f"{label}\n(Error: {', '.join([f'N{n}={e:.1f}%' for n, e in zip(nx_list, errors)])})")
-        ax.set_xticks(x)
-        ax.set_xticklabels([f"N={n}" for n in nx_list])
-        ax.legend()
-        ax.grid(True, alpha=0.3, axis='y')
-    
-    fig.suptitle(f"Comparison with de Vahl Davis 1983 (Ra={result['ra']:.0e})", 
-                 fontsize=14, fontweight='bold')
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"[plot] Saved {out_path}")
-
-
-def plot_field_snapshots(result: dict, out_dir: str):
-    """Generate actual field snapshots by re-running the simulation briefly."""
-    Path(out_dir).mkdir(parents=True, exist_ok=True)
-    
-    # Use the finest grid
-    grids = result["grids"]
-    nx_max = max(int(k) for k in grids.keys())
-    res = grids[str(nx_max)]
-    ra = result["ra"]
-    
-    print(f"[plot] Generating field snapshots for N={nx_max}, Ra={ra:.0e}")
-    
-    # Re-run to get fields
+def run_and_get_fields(nx, ra=1e5, pr=0.71, tau=0.6, max_steps=5000):
+    """Run a short simulation and return final fields for visualization."""
     device = torch.device("cpu")
-    torch.set_num_threads(8)
-    
-    f, g, wall, p = driver.make_fields(nx_max, ra, 0.71, 0.6, device)
-    
-    # Run for a few steps to get a developed flow
-    n_steps = min(50000, res.get("steps_run", 50000))
-    print(f"[plot] Running {n_steps} steps to develop flow...")
-    
-    for step in range(1, n_steps + 1):
-        f, g = driver.advance(f, g, wall, 0.6, p["tau_T"], p["g_beta"])
-        if step % 10000 == 0:
-            print(f"  step={step}", flush=True)
-    
-    # Extract fields
+    torch.set_num_threads(32)
+    f, g, wall, p = driver.make_fields(nx, ra, pr, tau, device)
+    tau_T, g_beta = p["tau_T"], p["g_beta"]
+
+    for step in range(1, max_steps + 1):
+        f, g = driver.advance(f, g, wall, tau, tau_T, g_beta)
+
     rho, ux, uy = driver.macroscopic(f)
     T = g.sum(dim=0)
-    
-    # Convert to numpy
-    T_np = T.detach().cpu().numpy()
-    ux_np = ux.detach().cpu().numpy()
-    uy_np = uy.detach().cpu().numpy()
-    u_mag = np.sqrt(ux_np**2 + uy_np**2)
-    
-    # Plot temperature field
-    fig, ax = plt.subplots(figsize=(8, 7))
-    im = ax.imshow(T_np, cmap='hot', origin='lower', aspect='equal')
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title(f"Temperature Field (N={nx_max}, Ra={ra:.0e})")
+    return T.numpy(), ux.numpy(), uy.numpy(), p
+
+
+def plot_temperature_field(T, nx, out_path):
+    """Temperature contour plot."""
+    fig, ax = plt.subplots(figsize=(6, 5))
+    im = ax.imshow(T, cmap="RdYlBu_r", origin="lower", aspect="equal",
+                   vmin=0, vmax=1, extent=[0, 1, 0, 1])
+    ax.set_xlabel("x/H")
+    ax.set_ylabel("y/H")
+    ax.set_title(f"Temperature Field (Ra=1e5, N={nx})")
     cbar = plt.colorbar(im, ax=ax, label="T")
-    fig.savefig(f"{out_dir}/temperature_field.png", dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"[plot] Saved {out_dir}/temperature_field.png")
-    
-    # Plot velocity magnitude
-    fig, ax = plt.subplots(figsize=(8, 7))
-    im = ax.imshow(u_mag, cmap='viridis', origin='lower', aspect='equal')
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title(f"Velocity Magnitude (N={nx_max}, Ra={ra:.0e})")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150)
+    plt.close()
+    print(f"  Saved {out_path}")
+
+
+def plot_velocity_field(ux, uy, nx, out_path):
+    """Velocity magnitude contour + quiver."""
+    speed = np.sqrt(ux**2 + uy**2)
+    fig, ax = plt.subplots(figsize=(6, 5))
+    im = ax.imshow(speed, cmap="viridis", origin="lower", aspect="equal", extent=[0, 1, 0, 1])
+    # Quiver (subsampled)
+    skip = max(1, nx // 20)
+    X, Y = np.meshgrid(np.linspace(0, 1, nx), np.linspace(0, 1, nx))
+    ax.quiver(X[::skip, ::skip], Y[::skip, ::skip],
+              ux[::skip, ::skip], uy[::skip, ::skip],
+              color="white", alpha=0.6, scale=50, width=0.003)
+    ax.set_xlabel("x/H")
+    ax.set_ylabel("y/H")
+    ax.set_title(f"Velocity Magnitude (Ra=1e5, N={nx})")
     cbar = plt.colorbar(im, ax=ax, label="|u|")
-    fig.savefig(f"{out_dir}/velocity_magnitude.png", dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"[plot] Saved {out_dir}/velocity_magnitude.png")
-    
-    # Plot streamlines
-    fig, ax = plt.subplots(figsize=(8, 7))
-    x = np.arange(nx_max)
-    y = np.arange(nx_max)
-    X, Y = np.meshgrid(x, y)
-    
-    # Subsample for clarity
-    step = max(1, nx_max // 30)
-    ax.streamplot(X[::step, ::step], Y[::step, ::step], 
-                  ux_np[::step, ::step], uy_np[::step, ::step],
-                  color=u_mag[::step, ::step], cmap='viridis', 
-                  density=1.5, arrowsize=1.5)
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title(f"Streamlines (N={nx_max}, Ra={ra:.0e})")
-    ax.set_aspect('equal')
-    fig.savefig(f"{out_dir}/streamlines.png", dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"[plot] Saved {out_dir}/streamlines.png")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150)
+    plt.close()
+    print(f"  Saved {out_path}")
+
+
+def plot_nu_history(cases, out_path):
+    """Nu convergence history for all Ra=1e5 cases."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for case in sorted(cases, key=lambda c: c.get("nx", 0)):
+        tag = case.get("tag", "unknown")
+        nx = case.get("nx", 0)
+        # We don't have full history in result.json, just final values
+        # Plot final Nu as horizontal line
+        nu = case.get("nu")
+        if nu is not None:
+            ax.axhline(nu, label=f"N={nx}: Nu={nu:.3f}", alpha=0.7)
+    ax.axhline(REF_DVD_1E5["nu"], color="red", linestyle="--", linewidth=2,
+               label=f"de Vahl Davis: Nu={REF_DVD_1E5['nu']}")
+    ax.set_xlabel("Grid Resolution")
+    ax.set_ylabel("Nusselt Number")
+    ax.set_title("Ra=1e5: Nusselt Number vs Grid Resolution")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150)
+    plt.close()
+    print(f"  Saved {out_path}")
+
+
+def plot_comparison(cases, out_path):
+    """Bar chart: ref vs got for Nu, u_max, v_max."""
+    fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+
+    quantities = [
+        ("nu", "Nu", REF_DVD_1E5["nu"]),
+        ("u_max_nd", "u_max", REF_DVD_1E5["u_max"]),
+        ("v_max_nd", "v_max", REF_DVD_1E5["v_max"]),
+    ]
+
+    for ax, (key, label, ref_val) in zip(axes, quantities):
+        x = np.arange(len(cases))
+        width = 0.35
+        vals = [c.get(key, 0) for c in cases]
+        labels = [f"N={c.get('nx', '?')}" for c in cases]
+
+        ax.bar(x - width/2, [ref_val] * len(cases), width, label="Reference", alpha=0.7, color="red")
+        ax.bar(x + width/2, vals, width, label="TensorLBM", alpha=0.7, color="blue")
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels)
+        ax.set_ylabel(label)
+        ax.set_title(f"{label} (Ra=1e5)")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150)
+    plt.close()
+    print(f"  Saved {out_path}")
 
 
 def main():
-    import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--result", required=True, help="Path to result JSON")
-    ap.add_argument("--out-dir", default="artifacts/figures_ra1e5")
-    args = ap.parse_args()
-    
-    result = load_result(args.result)
-    out_dir = Path(args.out_dir)
+    out_dir = Path(__file__).resolve().parents[1] / "figures" / "ra1e5"
     out_dir.mkdir(parents=True, exist_ok=True)
-    
-    print(f"[main] Generating figures for {args.result}")
-    
-    # Generate plots
-    plot_convergence(result, str(out_dir / "convergence.png"))
-    plot_comparison(result, str(out_dir / "comparison.png"))
-    plot_field_snapshots(result, str(out_dir))
-    
-    print(f"\n[main] All figures saved to {out_dir}")
+
+    print("Loading results...")
+    data = load_result()
+    cases = get_ra1e5_cases(data)
+
+    if not cases:
+        print("No Ra=1e5 cases found. Running short simulation for figures...")
+        # Run a short simulation for visualization
+        T, ux, uy, p = run_and_get_fields(128, max_steps=5000)
+        plot_temperature_field(T, 128, str(out_dir / "temperature_ra1e5_n128.png"))
+        plot_velocity_field(ux, uy, 128, str(out_dir / "velocity_ra1e5_n128.png"))
+        print("Generated field plots from short run.")
+        return
+
+    print(f"Found {len(cases)} Ra=1e5 cases: {[c.get('tag') for c in cases]}")
+
+    # Plot comparison
+    plot_comparison(cases, str(out_dir / "comparison_ra1e5.png"))
+    plot_nu_history(cases, str(out_dir / "nu_history_ra1e5.png"))
+
+    # Try to get fields from the finest available case
+    best_case = max(cases, key=lambda c: c.get("nx", 0))
+    nx = best_case.get("nx", 128)
+    print(f"Generating field plots for N={nx}...")
+    T, ux, uy, p = run_and_get_fields(nx, max_steps=5000)
+    plot_temperature_field(T, nx, str(out_dir / f"temperature_ra1e5_n{nx}.png"))
+    plot_velocity_field(ux, uy, nx, str(out_dir / f"velocity_ra1e5_n{nx}.png"))
+
+    print("Done.")
 
 
 if __name__ == "__main__":
