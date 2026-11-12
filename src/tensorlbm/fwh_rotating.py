@@ -356,7 +356,10 @@ def compute_rotating_source_fwh(
 
     # Simplified source strength distribution
     # Thickness source strength (volume flow rate per element)
-    q_thickness = config.rho0 * config.omega * config.radius * area_per_segment / config.n_segments
+    # Volume flow per blade element [m^3/s] (velocity x area).  The density
+    # enters once, in the acoustic relation p ~ rho0 * Qdot / (4 pi r ...);
+    # carrying rho0 here as well made p scale like rho0**2.
+    q_thickness = config.omega * config.radius * area_per_segment
 
     # Loading source strength (force per element)
     # Distribute thrust and torque along blade
@@ -504,12 +507,19 @@ def compute_spl_spectrum(
     spl_all = np.zeros((n_obs, n_freq))
     freqs = np.fft.rfftfreq(n_time, dt)
 
+    # Coherent gain of the window: a tone is attenuated by sum(w)/n on average,
+    # so the amplitude scale must be corrected by 1/cg or every windowed tone
+    # reads 20*log10(cg) dB low (hann -> -6.02 dB).
+    coherent_gain = float(np.mean(w))
+    if coherent_gain <= 0.0:
+        coherent_gain = 1.0
+
     for i in range(n_obs):
         # FFT
         p_windowed = pressure[i] * w
         P = np.fft.rfft(p_windowed)
-        # One-sided spectrum amplitude
-        amp = np.abs(P) * 2.0 / n_time
+        # One-sided spectrum amplitude (coherent-gain corrected)
+        amp = np.abs(P) * 2.0 / (n_time * coherent_gain)
         amp[0] /= 2.0  # DC component
         if n_freq > 1:
             amp[-1] /= 2.0  # Nyquist
@@ -566,8 +576,9 @@ def _extract_bpf_harmonics(
             harmonics["amplitudes_db"].append(-200.0)
             continue
 
-        # Find peak in band
-        idx = np.argmax(np.abs(freqs[mask] - f_target) < bandwidth)
+        # Find the bin CLOSEST to the harmonic (argmax of a boolean mask
+        # returned the first bin of the band, i.e. a systematic low bias).
+        idx = int(np.argmin(np.abs(freqs[mask] - f_target)))
         actual_freq = freqs[mask][idx]
 
         # Average amplitude across observers
@@ -575,8 +586,9 @@ def _extract_bpf_harmonics(
         for i in range(n_obs):
             # Re-compute from pressure for accuracy
             n_time = pressure.shape[1]
-            P = np.fft.rfft(pressure[i] * np.hanning(n_time))
-            amp = np.abs(P) * 2.0 / n_time
+            w = np.hanning(n_time)
+            P = np.fft.rfft(pressure[i] * w)
+            amp = np.abs(P) * 2.0 / (n_time * float(np.mean(w)))
             amps.append(amp[mask][idx])
 
         mean_amp = float(np.mean(amps))
@@ -721,16 +733,26 @@ def gardner_monopole_analytical(
     rho0: float,
     t: np.ndarray,
 ) -> np.ndarray:
-    """Gardner rotating monopole analytical solution.
+    """Rotating monopole, leading-order far field (1/r term).
 
-    A point monopole of strength Q rotating on a circle of radius R
-    at angular velocity ω produces pressure:
+    A compact point monopole of volume-injection rate Q(t) = Q0·sin(ωt)
+    rotating on a circle of radius R at angular velocity ω produces
 
-    p'(t) = ρ₀ Q ω² R / (4π c₀ r) · cos(ωτ − φ) / (1 − Mᵣ)²
+        p'(t) = ρ₀ · Q̇(τ) / (4π r (1 − Mᵣ)),   Q̇ = Q0·ω·cos(ωτ),
 
-    where τ is the retarded time and φ is the observer azimuth.
+    with τ the retarded emission time (t − τ = r/c₀) and Mᵣ the radial Mach
+    number.  This is the leading-order (1/r) term of the Green's-function
+    solution of □²p = ρ₀ ∂/∂t[Q(t) δ³(x − y(t))].
 
-    This is the exact solution for a rotating compact monopole source.
+    Verification status: the *amplitude law* is pinned by the stationary limit
+    (R → 0) and is covered by gate G3 of
+    ``benchmarks/verified/fwh_rotating/run.py``.  The Doppler **exponent**
+    ((1 − Mᵣ)⁻¹ vs (1 − Mᵣ)⁻², the difference between prescribing a volume
+    injection rate and prescribing a mass flux) is NOT adjudicated — see gate
+    G4 (WITHHELD) in ``docs/FWH_ROTATING_VERIFICATION.md``.  Do not quote this
+    routine as an "exact solution"; the pre-2026-11 implementation carried a
+    spurious ω²R/c₀ factor (amplitude low by the tip Mach number and identically
+    zero for a source at rest).
 
     Args:
         observer_pos: Observer position (3,).
@@ -781,10 +803,14 @@ def gardner_monopole_analytical(
         Mr = np.dot(r_vec, src_vel) / (c0 * r_mag)
         doppler = 1.0 / (1.0 - Mr)
 
-        # Gardner formula
-        pressure[i] = (rho0 * source_strength * omega**2 * source_radius *
-                       doppler**2 * math.cos(omega * tau - obs_phi) /
-                       (4.0 * math.pi * c0 * r_mag))
+        # Leading-order far field of a moving monopole with volume-injection
+        # rate Q(t) = source_strength * sin(omega*t):
+        #     p = rho0 * Qdot(tau) / (4 pi r (1 - M_r)),  Qdot = Q0*omega*cos(w tau)
+        # This reduces to rho0*Qdot/(4 pi r) when the source is at rest, which
+        # the previous omega**2*R/c0 * cos(omega*tau - phi) form did NOT: it
+        # vanished as R -> 0 (see docs/FWH_ROTATING_VERIFICATION.md, gate G3).
+        pressure[i] = (rho0 * source_strength * omega * math.cos(omega * tau) /
+                       (4.0 * math.pi * r_mag * (1.0 - Mr)))
 
     return pressure
 
