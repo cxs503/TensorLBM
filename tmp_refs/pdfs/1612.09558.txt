@@ -1,0 +1,2144 @@
+Semi-implicit discontinuous Galerkin methods for the incompressible
+Navier-Stokes equations on staggered adaptive Cartesian grids
+Francesco Fambria,∗, Michael Dumbsera
+aLaboratory of Applied Mathematics, Department of Civil, Environmental and Mechanical Engineering, University of Trento, Via Mesiano 77,
+I-38123 Trento, Italy
+Abstract
+In this paper a new high order semi-implicit discontinuous Galerkin method (SI-DG) is presented for the
+solution of the incompressible Navier-Stokes equations on staggered space-time adaptive Cartesian grids
+(AMR) in two and three space-dimensions. The pressure is written in the form of piecewise polynomials
+on the main grid, which is dynamically adapted within a cell-by-cell AMR framework. According to the
+time dependent main grid, diﬀerent face-based spatially staggered dual grids are deﬁned for the piece-wise
+polynomials of the respective velocity components. Although the resulting adaptive staggered grids are
+more complex than classical uniform Cartesian meshes, the numerical scheme can still be written in a rather
+compact form. Thanks to the use of a tensor-product formulation for the deﬁnition of the nodal basis in the
+d-dimensional space (d = 2, 3), all the discrete operators can be eﬃciently written as a combination of linear
+one-dimensional operators acting in the d space directions separately.
+Arbitrary high order of accuracy is achieved in space, while a very simple semi-implicit time discretiza-
+tion is obtained via an explicit discretization of the nonlinear convective terms, and an implicit discretization
+of the pressure gradient in the momentum equation and of the divergence of the velocity ﬁeld in the con-
+tinuity equation. The real advantages of the staggered grid arise in the solution of the Schur complement
+associated with the saddle point problem of the discretized incompressible Navier-Stokes equations, i.e.
+after substituting the discrete momentum equations into the discrete continuity equation. This leads to
+a linear system for only one unknown, the scalar pressure. Indeed, the resulting linear pressure system
+is shown to be symmetric and positive-deﬁnite. In order to avoid a quadratic stability condition for the
+parabolic terms given by the viscous stress tensor, an implicit discretization is also used for the di ﬀusive
+terms in the momentum equation. A particular feature of our staggered DG approach is that the viscous
+stress tensor is discretized on the dual mesh. This corresponds to the use of a lifting operator, but on the
+staggered grid. Both linear systems for pressure and velocity are very eﬃciently solved by means of a clas-
+sical matrix-free conjugate gradient method, for which fast convergence is observed. Moreover, it should be
+noticed that all test cases shown in this paper have been performed without the use of any preconditioner.
+Due to the explicit discretization of the nonlinear convective terms, the ﬁnal algorithm is stable within the
+classical CFL-type time step restriction for explicit DG methods.
+The new space-time adaptive staggered DG scheme has been thoroughly veriﬁed for polynomial degrees
+up to N = 9 for a large set of non-trivial test problems in two and three space dimensions, for which
+analytical, numerical or experimental reference solutions exist. The high order of accuracy of the scheme is
+shown by means of a numerical convergence table obtained by comparing the numerical solution against
+a smooth analytical solution.
+To the knowledge of the authors, this is the ﬁrst staggered semi-implicit DG scheme for the incompress-
+ible Navier-Stokes equations on space-time adaptive meshes in two and three space dimensions.
+Keywords: spectral semi implicit DG schemes, staggered discontinuous Galerkin schemes, space-time
+Adaptive Mesh Reﬁnement (AMR), staggered adaptive Cartesian grids, incompressible Navier Stokes
+equations
+Preprint submitted to Computer Methods in Applied Mechanics and Engineering January 2, 2017
+arXiv:1612.09558v1  [math.NA]  30 Dec 2016
+1. Introduction
+In this paper a novel semi-implicit discontinuous Galerkin method for solving the incompressible
+Navier-Stokes equations is derived within the framework ofstaggered adaptive meshes (staggered AMR), in
+two and three space dimensions. The governing equations for an incompressible ﬂuid read
+∂v
+∂t +∇· F +∇p = 0, (1)
+∇· v = 0, (2)
+where v(x, t) is the velocity vector ﬁeld, p(x, t) is the pressure andF takes into account non-linear convection
+Fc = v⊗ v as well as the viscous stress tensorσ =−ν∇v, i.e.
+F = Fc +σ = v⊗ v−ν∇v, (3)
+ν being the kinematic viscosity of the considered ﬂuid. The governing partial diﬀerential equations (1-2) are
+of great interest in many diﬀerent scientiﬁc areas ranging from geophysical ﬂows like meteorological ﬂows
+and free-surface hydrodynamics in oceans and rivers, over industrial ﬂows in aerospace and mechanical
+engineering to biological ﬂows like those in the human cardiovascular and respiratory system.
+Resolving the smallest spatial scales appearing in the ﬂow within large domains requires a higher-order
+accurate method with very low numerical diﬀusion and dispersion errors. Over the years, ﬁnite-diﬀerence
+(FD) and ﬁnite-volume (FV) methods have been widely used for solving many di ﬀerent families of partial
+diﬀerential equations. Very high order of accuracy at low computational cost can be easily reached for
+FD schemes whenever regular structured grids are used. In contrast to FD methods, FV schemes are
+particularly suitable for general unstructured meshes, but the expensive and rather cumbersome recovery
+or reconstruction step that is needed for obtaining high order of accuracy in the FV framework constitutes a
+clear drawback. In all cases, higher order formulations of FD and FV methods require large stencils, leading
+to a deterioration of the parallel scalability of the algorithms. In this context, the excellent parallel scalability
+properties of discontinuous Galerkin (DG) ﬁnite element methods make this class of ﬁnite element (FE)
+schemes well suited for large-scale simulations.
+In 1973 Reed and Hill derived a new class of methods that allowed the ’ ﬂux to be discontinuous across
+triangle interfaces’ [80] for solving the neutron transport equation. Around the 90’ies, the DG method has
+been extended to general nonlinear hyperbolic systems in a series of well-known papers by Cockburn
+and Shu and collaborators, see e.g. [28, 26, 30]. A review of DG ﬁnite element methods can be found
+in [27, 31]. In the DG formulation, arbitrary high order of accuracy in space can be achieved by adding
+new independent degrees of freedom to the chosen polynomial basis. Typically, a stable higher order time
+discretization was reached by means of the method of lines (MOL) approach in combination with explicit
+TVD Runge Kutta schemes, leading to the well known family of RKDG schemes, although also other explicit
+time-discretizations are possible, see e.g. the family of ADER-DG and Lax-Wendroﬀ DG schemes presented
+in [42, 78]. On the other hand, one of the major drawbacks for any explicit DG scheme is represented by the
+severe CFL stability condition that limits the time-step of the simulations to be proportional to h/(2N + 1)
+for hyperbolic PDE or even proportional to h2/(2N + 1)2 for parabolic PDE, where h is the characteristic
+mesh size and N is the degree of the polynomial basis. Van der Vegt et al. have extended the DG method
+to an elegant space-time formalism [93, 94, 64], providing a fully implicit and unconditionally stable DG
+scheme for the compressible Euler and Navier-Stokes equations, and later also for the incompressible
+Navier-Stokes equations, see [81]. The drawback is that a fully implicit time-discretization leads to a highly
+coupled non-linear system for the complete set of the degrees of freedom of the physical variables to be
+solved at every time-step. In this case large scale simulations in two and three space-dimensions can
+become computationally very demanding. Alternative families of linearly implicit time discretizations for
+DG schemes have been considered recently in [5].
+∗Corresponding author
+Email addresses: francesco.fambri@unitn.it (Francesco Fambri), michael.dumbser@unitn.it (Michael Dumbser)
+2
+In their pioneering work [7] Bassi and Rebay have presented the ﬁrst DG scheme for the solution of
+the compressible Navier-Stokes equations, and shortly after Baumann and Oden [8, 9] have formulated a
+DG scheme based on penalty terms for the treatment of convection-diﬀusion equations. Indeed, whenever
+parabolic (second order) or higher order spatial derivatives appear in the considered PDE, obtaining a DG
+ﬁnite-element formulation is not straightforward, see [29, 95]. High order DG methods are actually a very
+active ﬁeld of the ongoing research and several diﬀerent formulation for the Navier-Stokes equations have
+been provided in the meantime, see [6, 49, 48, 36, 56, 57, 32, 65] to mention a few.
+In this work we adopt a speciﬁc technique for circumventing a direct approach for solving the saddle
+point problem of the incompressible Navier-Stokes equations, which goes back to a family of very eﬃcient
+semi-implicit ﬁnite diﬀerence methods developed by Casulli et al. in the context of simulating hydrostatic
+and non-hydrostatic gravity-driven free-surface ﬂows on staggered grids, see [20, 21, 16, 17]. A theoretical
+analysis of this approach has been provided in [18, 14, 15, 22]. In this family of methods, exact mass
+conservation is ensured via a conservative ﬁnite-volume formulation of the discrete continuity equation
+and the nonlinear convective terms are discretized explicitly, in order to obtain a well-behaved pressure
+system that is at most mildly nonlinear (i.e. with nonlinearities only on the diagonal) and whose linear part
+is at least symmetric and positive semi-deﬁnite. The common point of the numerical methods mentioned
+above consist in the application of the Schur complement for the solution of the discrete saddle point
+problem that results after a semi-implicit discretization of the PDE within a staggered-mesh framework.
+Characterized by a high computational e ﬃciency, these methods have been extended to other problems,
+e.g. blood ﬂow in the human cardiovascular system [19, 47], compressible gas dynamics in compliant tubes
+[41] and the dynamics of compressible ﬂuids with general equation of state [38].
+The ﬁrst direct extension of staggered semi-implicit ﬁnite volume and ﬁnite di ﬀerence schemes to the
+DG framework has been derived in [37, 86] for the shallow water equations on Cartesian and unstructured
+triangular grids. The resulting staggered semi-implicit DG method has furthermore been extended to
+the incompressible Navier-Stokes equations in two and three space dimensions on uniform Cartesian and
+conforming unstructured simplex meshes, see [46, 87, 88, 89]. Concerning the uniform Cartesian grid case
+[46], a rigorous theoretical analysis of the corresponding algebraic systems has been very recently presented
+in [39] by employing the theory of matrix-valued symbols and Generalized Locally Toeplitz (GLT) algebras,
+see [83, 54, 84].
+Actually, there exist several di ﬀerent alternative formulations that combine the stability properties of
+semi-implicit methods and the high order of accuracy of DG schemes withincollocated grids. Some important
+examples are provided by Dolejsi et al. [34, 35, 33] for compressible gas dynamics and convection-diﬀusion
+equations, as well as the work of [53, 91] for shallow water systems. Concerning staggered-meshes, relevant
+research has been carried out by Chung et al. in [25, 24] for edge-based staggered meshes, and by Liu et al.
+for the analysis of a DG ﬁnite element method based on the alternative vertex-based staggering approach,
+see [72, 71].
+In 1984, Berger and collaborators presented the adaptive mesh reﬁnement (AMR) approach for ﬁnite
+diﬀerence and ﬁnite volume schemes for hyperbolic equations, see [11, 10]. Their version of AMR was
+written in the form of nested, logically rectangular and reﬁned meshes, or patches and the employed numerical
+schemes were at most second order accurate. The ﬁrst higher order path-based AMR method was provided
+by Baeza and Mulet in [4], using up to ﬁfth order accurate WENO schemes. The so-called cell-by-cell AMR
+approach, which has been adopted in this paper, has ﬁrst been introduced by Khokhlov in [61] and was
+later also extended to high-order ADER-WENO ﬁnite volume schemes in [43, 40] for general conservative
+and non-conservative hyperbolic systems of PDE. Because of their great ﬂexibility and since they directly
+allow the use of non-conforming meshes, DG methods have already been extensively implemented on
+adaptive meshes, commonly known as hp-adaptive DG methods, see in particular [8, 9, 60, 59, 60]. DG
+methods with AMR have been successfully extended also to the unstructured and the anisotropic mesh
+case, see respectively [74, 96] for the Euler equations and [70] for the compressible Navier-Stokes equations.
+Concerning implicit time discretizations, Kopera and Giraldo [66] presented an interesting implicit-explicit
+(IMEX) DG method on AMR meshes for the compressible Euler equations with application to atmospheric
+ﬂow simulations. For further references see also [50, 73].
+In this paper, the family of spectral semi-implicit DG methods for the solution of the two and three
+3
+dimensional Navier-Stokes equations on edge-based staggered Cartesian grids [46] is extended to staggered
+grids with adaptive mesh reﬁnement (AMR). The main novelty of the paper consists in the development of
+the ﬁrst high order DG scheme onstaggered AMR meshes. Similar to the uniform Cartesian case, even within
+staggered AMR grids, an important achievement in terms of computational eﬃciency has been obtained by
+succeeding in writing all discrete operators as a combination of simple one-dimensional operators thanks to
+the use of tensor-products of one-dimensional operators. The method is tested on a large set of test problems
+in two and three space dimensions, employing polynomial degrees up to N = 9. To the knowledge of the
+authors, this is the ﬁrst time that a high order accurate semi-implicit DG scheme is derived on staggered
+adaptive grids.
+The rest of the paper is structured as follows: Section 2 is devoted to a description of the presented
+numerical method; in particular Section 2.1 outlines the chosen cell-by-cell AMR strategy on the main grid
+used to represent the discrete pressure; Section 2.2 deﬁnes the corresponding staggered AMR mesh; Section
+2.3 deﬁnes the solution space for the adopted discrete formulation of the governing equations within our
+staggered DG framework; Sections 2.4-2.6 outline the details of our SI-DG discretization procedure; Section 3
+is devoted to the validation of the scheme and providing comparisons with available analytical, numerical
+or experimental reference solution for several non-trivial test cases in two and three space-dimensions.
+Finally, Section 4 provides some concluding remarks and an outlook to future work.
+2. Semi-implicit DG schemes on staggered AMR grids
+In the following, wherever not speciﬁed, the equations and illustrations are given for the three-
+dimensional case, i.e. d = 3.
+2.1. A cell-by-cell AMR framework
+There are mainly two strategies for deﬁning an automatically reﬁned grid, namely the so called patched
+AMR and the cell by cell method. In this paper the second strategy is chosen, leading to a tree data structure
+by deﬁning up to𝓁max reﬁnement levels Ω𝓁
+h,𝓁 = 1, 2,...,𝓁 max, the coarser grid Ω0
+h given, covering the entire
+spatial domain Ω, i.e.
+Ω≡
+⋃
+Ti∈Ω𝓁
+h
+Ti, ∀𝓁 = 0, 1,...,𝓁 max. (4)
+An integer number r for the spatial reﬁnement ratio, or reﬁnement factor, between adjacent reﬁnement levels
+drives the reﬁnement scales. Figure 1 gives an illustrative sketch of the resulting adaptive mesh. In order
+to reﬁne the grid only whenever and wherever necessary, a reﬁnement-estimator functionχ can be chosen to
+be a function of the space-derivatives of a given indicator function Φ(x, t), e.g. in the form of
+χ(Φ) =
+vuuu√ ∑
+k,l (∂2Φ/∂xk∂xl )2
+∑
+k,l
+[(
+|∂Φ/∂xk|i+1 +|∂Φ/∂xk|i
+)/
+∆xl +ϵ
+⏐⏐⏐ ∂2
+∂xk∂xl
+⏐⏐⏐|Φ|
+]2, (5)
+which considers up to the second space derivatives. The indicator function Φ can be any physical quantity
+of interest, e.g. the pressure, the vorticity, the kinetic energy or any other function of the ﬂow quantities.
+χ will be evaluated periodically in time, according to the time-scales of the physical problem. Then, the
+space-elements Ti will be reﬁned or recoarsened whenever the prescribed upper and lower threshold values
+χref andχrec, respectively, are exceeded. The resultingactive mesh Ωh is the set of space-elements belonging
+to the reﬁnement levels Ω𝓁
+h,𝓁 = 1, 2,...,𝓁 max, such that Ω is spanned and the non-overlapping property is
+satisﬁed, i.e. 1
+Ωh =
+
+Ti
+⏐⏐⏐⏐ Ti∈
+𝓁max⋃
+𝓁=1
+Ω𝓁
+h, and Ω =
+⋃
+i
+Ti, and ∅ =
+⋃
+Ti,Tj
+(
+T◦
+i∩ T◦
+j
+)
+, with i, j = 1, 2,..., Nelem
+
+. (6)
+1◦ denotes the interior operator, i.e. with T◦ = T\∂T.
+4
+active mesh
+virtual mesh
+ref. level: 𝓁
+ref. level: 𝓁 + 1
+Ωh
+1
+st
+ ref. level
+0
+th
+ ref. level
+3
+rd
+ ref. level
+2
+nd
+ ref. level
+Figure 1: At the left, a simple sketch of the AMR grid Ωh with one single reﬁnement level is shown. At the right, the tree-structure of
+the reﬁnement levels𝓁 = 0,1,... ,𝓁max for a single element at the coarsest level Ti∈ Ω0
+h is shown. (See colored version on-line)
+For practical purposes, it becomes useful to deﬁne the ’statusβ’ of the complete set of spatial elements
+∀Ti∈
+⋃
+𝓁
+Ω𝓁
+h βi =
+
+−1, for the so called virtual parent cells, i.e. ∃Tj∈ Ωh
+⏐⏐⏐Tj⊃ Ti
+0, for active elements, i.e. Ti∈ Ωh
+1, for the so called virtual children, i.e. ∃Tj∈ Ωh
+⏐⏐⏐Tj⊂ Ti
+. (7)
+In order to make things simpler, in this work, two neighbor and active elements Ti and Tj are allowed to
+belong only to the same or to an adjacent reﬁnement level, i.e. ifTi∈ Ω𝓁
+h then Tj∈ Ω𝓁−1≤ ˜𝓁≤𝓁+1
+h , or in a simpler
+notation|𝓁(Tj)−𝓁(Ti)|≤ 1, where𝓁(T) is the reﬁnement level of a general space-element T.
+2.2. The d spatially staggered AMR meshes
+Chosen a main Cartesian mesh Ωh, there are basically two diﬀerent strategies for choosing a staggered
+Cartesian dual mesh Ω∗
+h: the ’node-based’ and the ’edge-based’ staggering, i.e. the B- and the C-grid,
+respectively, according to the nomenclature of Arakawa & Lamb [2]. In this work theedge-based staggering
+has been selected to be the optimal one in terms of numerical e ﬃciency for the resolution of the resulting
+system of discrete equations. Ad-dimensional uniform Cartesian elementTi∈ Ωh is deﬁned as the Cartesian
+product
+Ti =
+∏
+s=x,y,z
+∆s(xi), ∀ i = 1, 2,..., Nelem,
+where ∆s(xi) are the spatial discretization-steps, centered in xi = (xi, yi, zi), i.e. the barycenter of Ti. Then,
+in order to treat hanging-nodes in the chosen AMR-mesh, one can deﬁne N
+(k)
+i−faces being the total number
+of faces (or edges in two space dimensions) of Ti that are oriented in the k-th space direction, i.e. Γ
+(k)
+i,l with
+l = 1, 2,..., N
+(k)
+i−faces, having N
+(k)
+i−faces = 2 (backward and forward) for uniform grids. Then, the complete set
+for the faces of Ti will be Σi = {Γi,1, Γi,2,..., Γi,Ni−faces
+}, where Ni−faces is the total number of faces of Ti with
+Ni−faces =
+d∑
+k=1
+N
+(k)
+i−faces ∂Ti≡ Σi =
+Ni−faces⋃
+j=1
+Γi,j
+The resulting edge-based Cartesian staggered (or ’dual’, or ’starred’) elements are identiﬁed by T∗
+i,j, j = 1, 2,
+... , Ni−faces and i = 1, 2,... , Nelem. It becomes useful to distinguish up tod sets of non-overlapping Cartesian
+staggered-elements T
+∗(k)
+i,j j = 1, 2,... , N
+(k)
+i−faces, and i = 1, 2,... , Nelem, referring to the k-th space-direction of
+5
+the staggering, k = x, y, z. Since every internal face Γ is shared by two distinct neighbor elements Tr(Γ) and
+Tl(Γ), the chosen two-index notation issurjective, i.e. exists j1 and j2 such that T∗
+l(Γ),j1
+≡ T∗
+r(Γ),j2
+, or equivalently
+Γl(Γ),j1 ≡ Γr(Γ),j2 ≡ Γ. Here, r(Γ) and l(Γ) are deﬁned to be the integer indexes for the right and the left
+space element, with respect to the oriented faceΓ, which orientation is well deﬁnite and no sign-function is
+needed, because the mesh is Cartesian.
+Then, in the aim of simplicity, a one-indexinjective notation can be obtained after an adequate surjective
+reordering mapρ
+I N× I N⊃ A
+ρ
+−−−−−−−→B ={1, 2,..., Nfaces}⊂ I N
+∈
+∈
+(i, j) −−−−−−→m =ρ(i, j), ∀ i = 1, 2,..., Nelem; j = 1, 2,..., Ni−faces;
+so that exists m =ρ(l(Γ), j1) =ρ(r(Γ), j2) and holds
+T∗
+l(Γ),j1
+≡ T∗
+r(Γ),j2
+≡ T∗
+m =
+∏
+s=x,y,z
+∆s(x∗
+m), ∀ m = 1, 2,..., Nfaces
+where ∆s(x∗
+m) are the spatial discretization-steps centered in x∗
+m, i.e. the barycenter of face Γm; Nfaces is the
+total number of faces of Ωh. Then, it follows the injectivity property
+T∗
+m1 , T∗
+m2, ∀m1 , m2, m1, m2∈{1, 2,..., Nfaces}
+or alternatively
+T
+∗(k)
+m1 , T
+∗(k)
+m2, ∀m1 , m2, m1, m2∈
+{
+1, 2,..., N
+(k)
+faces
+}
+, k = x, y, z
+N
+(k)
+faces being the total number of faces in the k-th space direction in the computational domain. In the
+following, the two-index notation will be used only whenever strictly necessary. In this notation, one can
+distinguish the d + 1 (the main Ωh and the d dual meshes Ω
+∗(k)
+h , k = x, yor z if d = 3) spatially staggered
+non-overlapping meshes with the property
+Ω =
+⋃
+i
+Ti =
+⋃
+i
+T
+∗(k)
+i , (8)
+∅ =
+⋃
+i,j
+(
+T◦
+i∩ T◦
+j
+)
+=
+⋃
+i,l
+(
+T
+∗(k)◦
+i ∩ T
+∗(k)◦
+j
+)
+, T∈ Ωh, T∗(k)∈ Ω
+∗(k)
+h k = x, y, z, (9)
+Figure 2 depicts the staggered meshes Ω
+∗(k)
+h next to the main grid Ωh in two and three space-dimensions
+in the purely Cartesian case, i.e.𝓁max = 0 and N
+(k)
+i−faces = 2.
+Whenever AMR is considered the starred notation for the reﬁnement meshes is used, i.e. Ω
+∗(k)
+h for the
+dual-staggered active grid andΩ
+𝓁∗(k)
+h for the dual-staggered grid of reﬁnement level𝓁. Furthermore, for Ω
+∗(k)
+h
+a simple trick becomes necessary in order to satisfy condition (8). Indeed, if uniform Cartesian elements are
+used for the dual elements T∗
+m, centered in x∗
+m, then some new kind of elements, characterized by a diﬀerent
+mesh size ratio, need to be deﬁned. An u.s. element T∗
+u appears in the dual computational domain Ω∗
+h
+wherever two neighbor and active elements Ti and Tj belong to adjacent reﬁnement levels, i.e. Ti∈ Ωell
+h ,
+Tj∈ Ωell+1
+h with βi = βj = 0. Figure 3 gives an illustration of the resulting staggered auto-adapted grid
+Ω
+∗(x)
+h next to Ωh. The peculiarity of such unusual staggered (u.s.) elements will arise in the deﬁnition of
+the discrete solution. For the sake of simplicity, Nfaces will take account also of the number of u.s. dual
+elements belonging to Ω∗
+h. An auxiliary value for labeling the reﬁnement level of the u.s. elements T∗
+u is
+given by the fractional intermediate index 𝓁(T∗
+u) = (𝓁(Ti) +𝓁(Tj))/2. Finally, referring to an u.s. element T∗
+u,
+the corresponding face Γu should not exist, but is can be imposed to be equal to the void set ∅. Similarly
+the right and left element of Γu are chosen to be l(u) = r(u)≡ i, where for Ti holds T∗
+u⊂ Ti.
+6
+ˆx
+ˆy
+TiT∗(x)
+i,1 T∗(x)
+i,2
+T∗(y)
+i,2
+T∗(y)
+i,1
+Figure 2: Mesh-staggering for the two dimensional (left) and for the three-dimensional (right) purely-Cartesian case, i.e. in our
+notation𝓁max = 0 and consequently Ωh≡ Ω𝓁=0
+h and N (k)
+i−faces = 2, with k = x, y, z. The staggered elements T∗(k)∈ Ω
+∗(k)
+h corresponding
+to the faces of Ti∈ Ωh in the x-th, y-th (for d =2) and z-th (for d =3) direction are shown and highlighted in red, green and ocher,
+respectively. For the 2 d case, the nearest neighbor elements of Ti are shown and highlighted in blue. In our notation holds the
+following correspondence (T
+∗(x)
+i,1 , T
+∗(x)
+i,2 , T
+∗(y)
+i,1 , T
+∗(y)
+i,2 , T
+∗(z)
+i,1 , T
+∗(z)
+i,2 ) = (T∗
+i,1, T∗
+i,2, T∗
+i,3, T∗
+i,4, T∗
+i,5, T∗
+i,6) for the d = 3 case. (See colored version online)
+Similarly, also the faces of the dual elements, i.e. the dual faces Γ
+∗(k)
+i ∈ ∂T
+∗(k)
+m , can be deﬁned, and the
+respective dual right r∗(i) and dual left l∗(i) elements can be identiﬁed. These set of dual faces are slightly
+sophisticated and are used rarely in the text. Then, in order to simplify the notation, we deﬁne only the
+dual edges whose points lie within a given space element, i.e. the faces Γ
+∗(k)
+i ∈ ∂T
+∗(k)
+m for k = x, y, z such
+that Γ
+∗(k)
+i ⊂∂Ti Once the main and staggered adaptive meshes are fully deﬁned, in the following section the
+space of discrete solutions of our SI-DG-PN method is outlined.
+2.3. The space of piecewise polynomials PN
+In the DG framework, the discrete solution is deﬁned in the space of piecewise polynomials of maximum
+degree N with discontinuities along the faces of the elements of the computational mesh. Then, given a
+reference mesh ˜Ω, the corresponding vector space of piecewise polynomials of maximum degree N∈ I N+
+0
+is called PN( ˜Ω). In particular, in the staggered-DG formulation with adaptive mesh reﬁnement, we look for
+piecewise polynomials P(x), x∈ ˜Ω where ˜Ω is one of the considered meshes, i.e. ˜Ω∈{ Ωh, Ω
+∗(k)
+h }k=x,y,z. Similar
+to [46, 37], the discrete solution in every single space element ˜Ti∈ ˜Ω is written according to the same but
+shifted one-dimensional polynomial basis BN = {ϕl(x)}
+l=0,N along its own control volume x∈ ∆˜sk(˜xi), for each
+spatial dimension k = x, y, z.
+In order to transform the numerical solution from a coarser level 𝓁 to the ﬁner 𝓁 + 1 and vice versa (see
+Figure 4) suitable L2 projectionP and averageA operators are deﬁned in the form
+PN(Ω𝓁+1
+h )∋ P𝓁+1
+c =P
+(
+P𝓁
+i
+)
+,
+⟨
+ω𝓁+1, P𝓁+1
+c
+⟩
+Tc
+=
+⟨
+ω𝓁+1, P𝓁
+i
+⟩
+Tc
+, ∀Tc⊂ Ti, Tc∈ Ω𝓁+1
+h , Ti∈ Ω𝓁
+h (10)
+PN(Ω𝓁
+h)∋ P𝓁
+i =A
+(
+{P𝓁+1
+c }
+)
+,
+⟨
+ω𝓁, P𝓁
+i
+⟩
+Ti
+=
+∑
+Tc⊂Ti
+⟨
+ω𝓁, P𝓁+1
+c
+⟩
+Tc
+, Tc∈ Ω𝓁+1
+h , Ti∈ Ω𝓁
+h (11)
+7
+Figure 3: Schematic two dimensional view of the adopted cell by cell AMR framework (top), and the chosen spatially staggered and
+adaptively reﬁned grid, e.g., in the in x direction Ω
+∗(x)
+h ( highlighted in red at the bottom). In particular, the anomalous dual element,
+over which the pressure is continuous, is highlighted by a checkered texture (See colored version online)
+8
+ref. level𝓁 + 1:ref. level𝓁:
+DG-L2 proj.
+DG-L2 average
+ DG-PN polyns. :DG-PN polyns. :
+P𝓁+1∈ PN(Ω𝓁+1
+h )P𝓁∈ PN(Ω𝓁
+h)
+Figure 4: Simple sketch of the polynomial mapping between two adjacent reﬁnement levels 𝓁 and𝓁 + 1, i.e. the L2 projection and
+average.
+where⟨·,·⟩ is the scalar product
+⟨ f, g⟩
+Ti
+=
+∫
+Ti
+f gdx f, g∈ L2 (12)
+and
+ω|Ti
+(s) =ϕ(ξ1)⊗ϕ(ξ2)⊗ϕ(ξ3), with s = xi +
+∑
+k
+(
+ξk− 1
+2
+)
+∆x𝓁(Ti)
+k (xi) ˆx (k). 0≤ξ1,ξ 2,ξ 3≤ 1,
+deﬁnes the shifted basis polynomials, centered in the barycenter xi of Ti∈ Ω𝓁
+h and written in tensorial form.
+Ifϕ is the vector of the basis elements (ϕ1,ϕ 2,...,ϕ N+1), thenω|Ti
+is the vector of the shifted basis elements
+(ω1,ω 2,...,ω (N+1)d)|Ti
+generating the three dimensional basis Bd
+N,i≡ BN,i⊗ BN,i⊗ BN,i, for any Ti∈ Ω𝓁
+h, for any
+piecewise polynomial P𝓁∈ PN(Ti). Then P can be expanded along the basis in the form
+P(x) =
+∑
+l
+⟨ωl(x), P(x)⟩Ti
+||ωl||2
+Ti
+ωl≡
+∑
+l
+Plωl≡ P·ω(x) (13)
+where P is called to be the vector of the degrees of freedom of P,||·|| is the norm related to the chosen
+scalar product. Moreover, if one chooses Bd
+N to be a nodal basis then the following equivalence holds:
+Pl≡ P(xGL
+l ) with a large gain in computational e ﬀort, specially at higher space-dimensions when three-
+dimensional coeﬃcient matrices can be written in a tensorial combination of one dimensional matrices. In
+our scheme, the basis functions are given by the Lagrange interpolation polynomials passing through the
+Gauss-Legendre quadrature nodes.
+In this work, although each physical variable will be deﬁned referring toa proper and given computational
+mesh (main or dual), it becomes useful deﬁning the transformation rules for projecting from one vector
+space P∈ PN(Ωh) to a corresponding staggered one P∗∈ PN(Ω
+∗(k)
+h ), i.e. satisfying the classical L2 projection
+equations, i.e.
+P∗ =π∗(k)(P) : ⟨ψ, P∗⟩
+T
+∗(k)
+m
+= ⟨ψ, P⟩
+T
+∗(k)
+m
+∀T
+∗(k)
+m ∈ Ω
+∗(k)
+h (14)
+P =π(P∗) : ⟨ω, P⟩Ti = ⟨ω, P∗⟩Ti ; ∀Ti∈ Ωh (15)
+where the vectors of the shifted polynomial basis elementψ are given by
+ψ|
+T
+∗(k)
+i,j
+(s) =ϕ(ξ1)⊗ϕ(ξ2)⊗ϕ(ξ3), with s = x
+∗(k)
+m +
+∑
+k
+(
+ξk− 1
+2
+)
+∆x
+𝓁(T
+∗(k)
+i,j )
+k (x
+∗(k)
+m ) ˆx (k), 0≤ξ1,ξ 2,ξ 3≤ 1, (16)
+i.e. polynomialsψ|
+T
+∗(k)
+i,j
+centered in the barycenter x
+∗(k)
+m of T
+∗(k)
+m ∈ Ω
+∗(k)
+h and written in tensorial form; k labels the
+direction of the staggering for Ω
+∗(k)
+h (k = x, y or z).
+9
+Following [46], because of the tensorial deﬁnition of the polynomial basis, a generic coeﬃcient matrix Z
+operating over a generic vector of degrees of freedom X, appearing in (20), can be written as
+Z≡ Zxyz≡ Zx⊗ Zy⊗ Zz, ˆx≡{ ˆxl}l=1,..,(N+1)d≡{ ˆxll′l′′≡ ˆxl⊗ ˆxl′⊗ ˆxl′′}l,l′,l′′=1,..,N+1, (17)
+where the componentsZk operate along the respectivek-th index of the generic vector of degrees of freedom
+ˆX. Whenever a k-th direction is speciﬁed, an identity operator is assumed in the other directions, i.e.
+“ Zx′′≡ Zx⊗ I⊗ I, “ Zy′′≡ I⊗ Zy⊗ I, “ Zz′′≡ I⊗ I⊗ Zz, (18)
+“ Zx y ′′≡ Zx· Zy≡ Zx⊗ Zy⊗ I, “ Zx z ′′≡ Zx· Zz≡ Zx⊗ I⊗ Zz, “ Zy z ′′≡ Zy· Zz≡ I⊗ Zy⊗ Zz, (19)
+Then, after evaluating the deﬁnite integrals of the known basis functions, one gets
+⟨ωl, P⟩Ti = Mlm|Ti
+ˆPm
+⟨ωl, P∗⟩Ti = ∑
+Γ (k)
+j
+Mσ(i,j,k)
+lm
+ˆP∗
+m|
+T (k)
+i,j
+
+⇒ ˆPl = M−1
+lm|Ti
+∑
+Γ (k)
+i,j
+Mσ(i,j,k)
+mn ˆP∗
+n|
+T (k)
+i,j
+(20)
+where the summation is intended over the j-th faces of Ti in the direction of the staggering, i.e. the k-th,
+backward and forward;σ(i, j, j) labels the mutual position and reﬁnement of Ti and the corresponding dual
+element T
+(k)
+i,j . Some new matrices have been deﬁned to be
+M|Ti
+=
+{
+Mpq|Ti
+}
+p,q=1,..,(N+1)d =
+
+∫
+Ti
+ωp|Ti
+(ξ)ωq|Ti
+(ξ) dξ
+
+p,q=1,..,(N+1)d
+Mσ(i,j,k) =
+{
+Mσ(i,j,k)
+pq
+}
+p,q=1,..,(N+1)d =
+
+∫
+Ti∩T
+∗(k)
+i,j
+ωp|Ti
+(ξ)ψq|
+T
+∗(k)
+i,j
+(ξ) dξ
+
+p,q=1,..,(N+1)d
+(21)
+where M is called mass matrix which is diagonal according to the chosen polynomial basis, it is positive
+deﬁnite and it gives the projection coe ﬃcients between the piecewise polynomials of P N(Ti); M−1 is its
+inverse; ωq is the p-th basis polynomial centered for P N(Ti); ψp is the p-th basis polynomial for P N(T
+∗(k)
+i,j );
+p ranging from p = 1, 2, ... (N + 1)d; Mσ(i,j,k) gives the projection coe ﬃcients between the piecewise
+polynomial basis of P N(Ti) and P N(T
+∗(k)
+i,j ). It is important to stress the fact that, with a little linear algebra,
+the aforementioned three-dimensional tensors can be written in a simpler and versatile composition of
+one-dimensional matrices.
+2.4. Numerical method
+Once the main and the staggered grids have been deﬁned, the space of discrete solutions PN is outlined,
+then the numerical method follows the procedure of [46].
+A weak formulation of the governing equations (1-2) is considered in the form
+∫
+T
+∗(k)
+m
+ψp
+(
+∂vk
+∂t +∇· Fvk +∂xkp
+)
+dx = 0, (xk, vk) = (x, vx), (y, vy), (z, vz), (22)
+∫
+Ti
+ωp (∇· v) dx = 0, T
+∗(k)
+m ∈ Ω
+∗(k)
+h , Ti∈ Ωh (23)
+10
+where it is important to highlight that the momentum equations are integrated along thedual AMR meshes
+Ω
+∗(k)
+h according to the k-th space-direction, and the incompressibility condition along the main AMR mesh
+Ωh;ψp∈ BN(T
+∗(k)
+i,j ), i.e. the p-th element of the basis for the dual vector space P N(T
+∗(k)
+i,j );ωp∈ BN(Ti), i.e. the
+p-th element of the basis for the vector space P N(Ti). In this formalism, it is clear that the chosen weak
+formulation of our staggered DG scheme consists in an L2 projection of the incompressible Navier-Stokes
+equations onto the chosen vector space of staggered piecewise polynomials PN. Then, according to [37, 46],
+the discrete solution of the staggered DG discretization is deﬁned as follows: the velocity components vk
+are approximated in the respective vector spaces of the staggered dual meshes PN(Ω
+∗(k)
+h ), while the pressure
+is deﬁned on the main grid, i.e. in P N(Ωh). Therefore, the respective expansion over the polynomial basis
+reads
+v
+(k)
+h (x, t)|T
+∗(k)
+m
+= v
+∗(k)
+m (x, t) =
+(N+1)d
+∑
+l=1
+ψl(x) ˆvl(t) for x∈ T
+∗(k)
+m , m = 1,..., N
+(k)
+faces (24)
+ψk∈ BN(T
+∗(k)
+m ), ˆvl∈ I R
+ph(x, t)|Ti = pi(x, t) =
+(N+1)d
+∑
+l=1
+ωl(x) ˆpl(t) for x∈ Ti, i = 1,..., Nelem (25)
+ωl∈ BN(Ti), ˆpl∈ I R
+After substituting (24) into the incompressibility condition (23) one obtains
+∫
+∂Ti
+ωl(x) vh·⃗n dS−
+∫
+Ti
+∇ωl(x)· vh dx =
+∑
+k
+
+
+∫
+Γ (k)
+m ∈∂Ti
+ωl(x) vh·⃗n dS−
+∫
+T
+∗(k)
+m ∩Ti
+∇ωl(x)· vh dx
+
+
+= 0. (26)
+Indeed, exactly because of the chosen C-staggering, vh·⃗n is well deﬁned along ∂Ti, i.e. all the velocity
+components are continuous along the respective faces Γ
+(k)
+i,j ; moreover ωk is continuous in Ti. On the other
+hand, due to the staggering, the pressureph is discontinuous within T
+∗(k)
+m . Then, after substituting the ansatz
+(25) into the momentum equation (22), the pressure gradient terms can be written as
+∫
+T
+∗(k)
+m
+ψl∂xkphdx≡
+∫
+T
+∗(k)
+m ∩Tl(m)
+ψl∂xkpl(m)dx +
+∫
+T
+∗(k)
+m \Tl(m)
+ψl∂xkpr(m)dx +
+∫
+Γ
+∗(k)
+m
+ψl
+(
+pr(m)− pl(m)
+)
+dS (27)
+where l(m) is the index of the left element with respect to Γ
+(k)
+m .
+Notice that, whenever T
+∗(k)
+m is an u.s. element, then r(m) = l(m)≡ i and then: (i) the surface integral of
+equation (26) vanishes because Γ
+(k)
+m = ∅; (ii) the second volume integral vanishes because (T
+∗(k)
+m \ Tl(m))≡ ∅;
+(iii) the jump term vanishes because Γ
+∗(k)
+m ≡ ∅ 2. Otherwise, if T
+∗(k)
+m is a standard dual element, the second
+volume integral is evaluated exactly along the right element ofΓ
+(k)
+m , i.e. Tr(m)≡ (T∗
+m\ Tl(m)) independently of
+the reﬁnement level.
+Then, after evaluating the deﬁnite integrals of system (22-23), a semi-implicit higher order DG ﬁnite
+2In principle, for u.s. elements, Γ
+∗(k)
+m is something indeﬁnite, and it can be set to be Γ
+∗(k)
+m ≡ ∅. This deﬁnition is a way of stating the
+pressure of being continuous inside T
+∗(k)
+m . Indeed, for u.s. elements it holds T
+∗(k)
+m ⊂ Tr(m)≡l(m).
+11
+element formulation of the incompressible Navier-Stokes equations on staggered AMR grids reads3
+Mx1 x2 x3·
+(ˆVn+1
+m − ˆFv
+n
+m
+)
++ ∆t
+∆x1
+M x2 x3·
+(
+Rx1σ(m, r(m))
+v ·ˆPn+θ
+r(m)− Lx1σ(m, l(m))
+v ·ˆPn+θ
+l(m)
+)
+= 0, (28)
+∀T
+∗(x1)
+m ∈ Ω
+∗(x1)
+h ,∀(x1, x2, x3)∈
+{
+x1
+⟲ x2
+x3
+}
+∑
+x1=x,y,z
+∑
+Γ
+∗(x1)
+i ⊂Ti
+∆x2∆x3 Mx2x3
+(
+Rx1σ∗(i, r∗(i))
+p · ˆVn+1
+r∗(i)−Lx1σ∗(i, l∗(i))
+p · ˆVn+1
+l∗(i)
+)
+= 0. (29)
+with ( x1, x2, x3)∈
+{
+x1
+⟲ x2
+x3
+}
+The momentum equation (28) has been normalized with respect to the volume of T
+∗(k)
+m divided by the time
+step ∆t which is intended in the classical sense ∆t = tn+1− tn; ˆV is the vector of the degrees of freedom of
+the x1-th velocity component; l∗(i) and l∗(i) are the integer indexes of the right and left dual elements T
+∗(x1)
+m
+and T
+∗(x1)
+n that shares the dual faceΓ
+∗(x1)
+i
+4σ(m, j) andσ∗(j, m) labels the mutual position and reﬁnement of face
+Γ
+(x1)
+m respect to element Tj, the dual face Γ
+∗(x1)
+i respect to the dual element T
+∗(x1)
+m , respectively; the implicitness
+factorθ∈ [0.5, 1] has been introduced for the implicit time-discretization of the pressure gradients in the
+form Xθ = θXn+1 + (1−θ)Xn; note that if θ = 1/2 the well known second order Crank-Nicolson time
+discretization is obtained. ˆFv
+n
+collects the advective-diﬀusive terms that can be approximated by means of
+a fully explicit or a proper semi-implicit discretization within am operator-splitting scheme. Further details
+will appear in the next sections. The following one-dimensional matrices have been introduced
+Rσ(m, r(m))
+v = 1
+min(|T
+∗(x1)
+m |,|Tr(m)|)
+
+∫
+Γ
+∗(x1)
+m
+ψp|
+T
+∗(x1)
+m
+ωq|Tr(m)
+dS +
+∫
+T
+∗(x1)
+m ∩Tr(m)
+ψp|
+T
+∗(x1)
+m
+∂x1ωq|Tr(m)dx
+
+p,q=1,..,(N+1)d
+≡
+{
+Rσ(m,r(m))
+pq
+}
+p,q=1,..,(N+1)d≡ Mx2x3Rx1σ(m, r(m))
+v
+Lσ(m, l(m))
+v = 1
+min(|T
+∗(x1)
+m |,|Tl(m)|)
+
+∫
+Γ
+∗(x1)
+m
+ψp|
+T
+∗(x1)
+m
+ωq|Tl(m)
+dS−
+∫
+T
+∗(x1)
+m ∩Tl(m)
+ψp|
+T
+∗(x1)
+m
+∂x1ωq|Tl(m)dx
+
+p,q=1,..,(N+1)d
+≡
+{
+Lσ(m,l(m))
+pq
+}
+p,q=1,..,(N+1)d≡ Mx2x3Lx1σ(m, l(m))
+v
+Rσ∗(i, r∗(i))
+p ≡
+{[
+Lσ(r∗(i),l(r∗(i)))
+pq
+]T}
+p,q=1,..,(N+1)d
+≡
+[
+Lσ(r∗(i), l(r∗(i)))
+v
+]T
+≡ Mx2x3
+(
+Lx1σ(r∗(i), l(r∗(i)))
+v
+)T
+≡ Mx2x3Rx1σ∗(i, r∗(i))
+p
+Lσ∗(i, l∗(i))
+p ≡
+{[
+Rσ(l∗(i),r(l∗(i)))
+pq
+]T}
+p,q=1,..,(N+1)d
+≡
+[
+Lσ(l∗(i), r(l∗(i)))
+v
+]T
+≡ Mx2x3
+(
+Lx1σ(l∗(i), r(l∗(i)))
+v
+)T
+≡ Mx2x3Rx1σ∗(i, r∗(i))
+p (31)
+where|·| denotes the volume of the corresponding space-element. Because of the symmetry between the
+aforementioned matrices, that is veriﬁed after a little algebra (see [46] for the purely Cartesian case), it
+3 Symbol
+{
+a⟲ b
+c
+}
+denotes the standard cyclic (or circular) permutations of (a, b, c): i.e.{(a, b, c), (b, c, a), (c, a, b)}.
+4In this notation the integrals of eq. (26) break into the summations
+∫
+∂Ti
+−→
+∑
+x1
+∫
+Γ (x1)
+m ∈∂Ti
+−→
+(0)∑
+x1
+(1)∑
+Γ
+∗(x1)
+i ⊂Ti
+(2)∑
+n=l∗(i),r∗(i)
+∫
+Γ (x1)
+n
+, (30)
+where the ﬁrst summation (1) is intended over all the dual faces Γ
+∗(x1)
+i within Ti; the second summation (2) is intended over the right
+and left (or forward and backward) dual elements T
+∗(x1)
+r∗(i) and T
+∗(x1)
+l∗(i) that shares the corresponding dual face Γ
+∗(x1)
+i .
+12
+becomes simpler to introduce the following notation
+R≡ Rv≡ LT
+p, L≡ Lv≡ RT
+p. (32)
+It should be noticed that equations (28-29) constitute a particular coupled equation system with a typical
+saddle point structure which is typical for any discrete formulation of the incompressible Navier-Stokes
+equations. The total number of unknowns of the system is large, since we have Nelem space-elements,
+each element with ( N + 1)d degrees of freedom. In principle, a direct solution can become cumbersome,
+since it involves four unknown quantities per degree of freedom: three velocity components and the scalar
+pressure. The complexity of the problem can be considerably reduced with a very simple manipulation.
+A well known numerical strategy, widely used for solving such a complex linear systems, is the ap-
+plication of the Schur complement to the saddle point system (28-29). In the context of staggered grids,
+this procedure has been successfully adopted in the ﬁeld of ocean modeling and free-surface dynamics
+[21, 16, 17], physiological ﬂuid ﬂows in the arterial system [19, 47], compressible ﬂuids [41, 38] and a novel
+family of higher order DG methods [37, 86, 87, 88, 89, 46] which inspired this work. After multiplying
+equation (22) by the inverse of the element mass matrix M and a direct substitution of equation (22) into
+(23), the following linear algebraic system for the pressure degrees of freedom as the only unknowns is
+obtained:
+H· P n+θ≡ bn (33)
+in which operator H is the block coe ﬃcient matrix representing the discrete Laplace operator for the
+pressure Poisson equation in the space of solutions P N within the chosen staggered-mesh framework;
+P n+θ =θP n+1 + (1−θ)P n is the complete vector of the degrees of freedom for the pressure;bn collects all the
+known terms, i.e. the non-linear advection and di ﬀusion, see Section 2.5. In particular, P n+θ multiplied by
+the i-th row of H reads
+Hi· P n+θ≡
+∑
+{
+x1
+⟲ x2
+x3
+}
+∑
+Γ
+∗(x1)
+i ⊂Ti
+∆x2∆x3Mx2x3
+(
+Rx1·ˆPn+θ
+r(r∗(i)) + Cx1·ˆPn+θ
+r(l∗(i))≡l(r∗(i))≡i + Lx1·ˆPn+θ
+l(l∗(i))
+)
+∆x1
+. (34)
+where
+R =LTMx1R = Rx1σ∗(i, r∗(i))
+p Mx1Rx1σ(r∗(i), r(r∗(i)))
+v ≡ LT (35)
+L =RTMx1L = Lx1σ∗(i, l∗(i))
+p Mx1Lx1σ(l∗(i), l(l∗(i)))
+v ≡ RT (36)
+C =LTMx1L +RTMx1R = Rx1σ∗(i, r∗(i))
+p Mx1Lx1σ(r∗(i), l(r∗(i)))
+v + Lx1σ∗(i, l∗(i))
+p Mx1Rx1σ(l∗(i), r(l∗(i)))
+v ≡ CT (37)
+It can be explicitly shown, see [46], that the Laplace operator can be decomposed into a more familiar
+composite matrix product, i.e.
+H≡D TM−1D, (38)
+whereD is the weak gradient operator obtained after an L2 projection of the gradient∇ in the vector space
+PN(Ω∗
+h), i.e.
+Dm
+x1 P≡
+⟨ψ,∂ x1ph
+⟩
+T
+∗(x1)
+m
+⟨ψ,ψ⟩
+T
+∗(x1)
+m
+=R· ˆPr(m)−L· ˆPl(m)
+∆x1
+; (39)
+The real advantages of the chosen staggered framework arise in the properties of H, which deﬁned the
+discrete pressure Poisson system, which is at the same time the most complex linear system to be solved
+in our algorithm. Equations (35-37) together with the very simple algebraic analysis given by [46] for the
+purely Cartesian case state that the discrete Laplace operator H satisﬁes the following peculiar properties:
+13
+(i) H is symmetric, i.e. H≡ HT;
+(ii) H is always at least positive semi-deﬁnite , independent of the chosen boundary conditions; in
+particular, H is positive deﬁnite up to the solutions of
+D P′ = 0 ⇐⇒ P′∈ Ker(D), (40)
+where Ker(·) is the kernel set;
+(iii) for uniform Cartesian grids, H is block hepta-diagonal for the three-dimensional case and onlyblock
+penta-diagonal for the two dimensional case.
+(iv) whenever anypressure boundary conditionis imposed, thenH is shown to bestrictly positive deﬁnite.
+It should be mentioned the resulting algebraic system (33) would occur also after choosing a diﬀerent mesh
+staggering, but the corresponding non-zero blocks ( stencil) of the local equation (34) would be larger and
+the computational eﬀort needed for solving the discrete Poisson equation (33) would presumably increase.
+When AMR is active, then the mesh is non-conforming and each element can have more than 2d neighbors.
+As a consequence, the stencil size of (34) becomes slightly larger. In particular, whenever a neighbor element
+of Ti is reﬁned, the stencil of Hi adds (rd−1− 1) non-zero blocks, r being the reﬁnement factor, rd−1 being the
+maximum number of nearest neighbors in a given oriented space-direction. Then, given a reﬁnement factor
+r, the largest stencil size forH will be (2drd−1 + 1), 2d+ 1 being the stencil size for the uniform Cartesian case,
+2d being the number of faces of a Cartesian element. Remember that the reﬁnement levels of two neighbor
+elements are allowed to diﬀer at most by one.
+It should be mentioned that in the uniform Cartesian case, a rigorous theoretical analysis of H for the
+design of speciﬁc preconditioners, using the theory of matrix-valued symbols and Generalized Locally
+Toeplitz (GLT) algebras (see [83, 54, 84]) has been very recently provided with promising results in terms
+of numerical eﬃciency [39] and showing beneﬁcial properties of the respective condition number.
+Finally, once the equation system for the degrees of freedom of the pressure (34) has been solved by
+means of a classical matrix-free conjugate gradient method, then the velocity components can be updated
+directly via (28). In all numerical examples shown in this paper no preconditioner has been used.
+2.5. Advection and di ﬀusion
+Any stable explicit DG scheme can be adopted for solving the advective-diﬀusive terms ˆFv in equation
+(28). In order to simplify the computation, in this work we considered a DG formulation on the collocated
+grid, with vh∈ PN(Ωh), having
+ˆFv
+n
+i = ˆVn
+i− ∆t
+|Ti| (Mxyz)−1·
+
+
+∫
+∂Ti
+ωFv·⃗ndS−
+∫
+Ti
+∇ω· Fv dx
+
+
+. (41)
+Because of the discontinuities of the piecewise polynomials along the element faces, a very simple and
+classical Rusanov ﬂux (or local Lax-Friedrichs ﬂux - LLF) [82, 90] has been used for evaluating the surface
+integral of (41) in the form
+Fq·⃗n = 1
+2
+(
+F+
+q + F−
+q
+)
+·⃗n− 1
+2sq
+(q+− q−) with q = u, v, w. (42)
+in which the penalty term sq is the maximum value of the Jacobian of the ﬂux tensor Fq
+sq = 2 max(|q+|,|q−|) + 2ν 2N + 1
+∆xq
+√
+π/2
+with (q, ∆xq) = (u, ∆x), (v, ∆y), (w, ∆z). (43)
+The chosen Rusanov ﬂux has been modiﬁed in order to account for both hyperbolic and parabolic terms
+(see [49, 36, 58]). In this context, it should be emphasized that although the advection-di ﬀusion equation
+contains parabolic terms, an appropriate numerical ﬂux can be deﬁned by the solution of the corresponding
+generalized Riemann problem, see [49] for details.
+14
+Since equation (41) is an explicit DG scheme, then a rather severe CFL time restriction with CFL < 1
+becomes necessary for ensuring stability:
+∆t = CFL
+[
+(2N + 1)
+(
+|umax|
+∆xmin
++|vmax|
+∆ymin
++|wmax|
+∆zmin
+)
++ (2N + 1)2
+(
+2ν
+∆x2
+min
++ 2ν
+∆y2
+min
++ 2ν
+∆z2
+min
+)]−1
+. (44)
+OnceˆFv
+n
+i has been computed on the main gridΩh, the numerical solution is projected back to the dual space
+of solutions pN(Ω
+∗(k)
+h ) according to the L2 projection operators (14-15), with the projection matrices (21).
+Notice that, the parabolic nature of the viscous terms introduces a quadratic dependence of the minimum
+step-size on h/(2N + 1), which can become extremely severe when more than one reﬁnement level is
+considered for a viscous ﬂuid ﬂow at low Reynolds number. In such circumstances, the stability condition
+(44) can become too restrictive. Then, following [46], an implicit discretization of the di ﬀusive ﬂuxes is
+taken for the advection diﬀusion system
+∂v
+∂t +∇· Fc−∇· σ = 0. (45)
+σ =−ν∇v. (46)
+In particular, the velocity components and the stress tensor components are the unknowns of the system.
+The velocity components are discretized within the piecewise polynomials of maximum degree N along
+the main grid Ωh, the component of the stress tensor along the dual grid Ω
+∗(k)
+h . Then the ﬁnal algorithm is
+obtained following exactly the same strategy adopted for the incompressible Navier-Stokes equations:
+1. the governing equations (45) and (46) are projected along the chosen space of solutions, i.e. P N(Ωh)
+and PN(Ω
+∗(k)
+h ) respectively;
+2. the unknown variables are assumed to live in the corresponding space of solutions, i.e. v
+(k)
+h ∈ PN(Ωh)
+and F
+(k)
+h ∈ PN(Ω
+∗(k)
+h ), and then substituted into the discrete DG equations;
+3. the Schur complement of the resulting algebraic coupled system is solved, after substituting the
+equation for the tensor components F
+(k)
+h into the momentum equations; then the decoupled system
+for the only velocity components v
+(k)
+h is obtained, in a very familiar structure, i.e.
+(M +νH)· V
+n+ 1
+2
+(k) = b2, k = x, y, z, (47)
+where Mi≡ M is the mass matrix, H is exactly the afore-deﬁned discrete Laplace operator, V
+n+ 1
+2
+(k) is
+the vector of the complete set of degrees of freedom for the k-th velocity component; b2 collects all
+the known terms, i.e. the explicit advective terms of equation (41) multiplied by a mass matrix; n + 1
+2
+labels a ﬁctitious time step tn+ 1
+2 , labeling the intermediate stage within the global algorithm;
+4. system (47) is very e ﬃciently solved by means of a classical conjugate gradient method. Throughout
+this paper, we do not employ any preconditioner;
+5. the velocity components are projected back to the dual space P N(Ω
+∗(k)
+h ) into ˆFv
+n
+m of equation (28).
+Notice that, although equation system (47) must be solved for each velocity component, the coe ﬃcient
+matrix (M +νH) has even better properties thanH: (i) it is symmetric; (ii) it isstrictly positive deﬁnite; (iii)
+for the purely Cartesian case, (M +νH) is only block hepta-diagonal for the three-dimensional case and only
+block penta-diagonal for the two dimensional case. (iv) the viscosity acts as a perturbation coe ﬃcient of
+the mass matrix, which is purely diagonal (not only block diagonal); then the system is surely much better
+behaved compared to the discrete pressure system. After the aforementioned operator-splitting procedure
+for the semi-implicit time discretization, since the parabolic terms are treated fully implicitly, the ﬁnal CFL
+time-restriction relaxes to
+∆t = CFL
+(2N + 1)
+(
+|umax|
+∆xmin
++|vmax|
+∆ymin
++|wmax|
+∆zmin
+)−1
+. (48)
+15
+2.6. Final algorithm
+Finally, even in the staggered AMR framework, the resulting numerical scheme can be summarized,
+similar to [46], as follows:
+1. the velocity is projected to the main grid Ωh with π deﬁned in equation (15); advection terms are
+discretized explicitly while the viscous terms are treated implicitly for each velocity component
+within PN(Ωh)
+(M +νH)· V
+n+ 1
+2
+# = M· Fv n
+#, (49)
+symbol ’#’ labels the degrees of freedom respect to the main space of solutions PN(Ωh);
+2. the velocity is projected back to the dual space P N(Ω
+∗(k)
+h ) according to the projection operator π∗(k)
+deﬁned in equation (14) and the system for the discrete pressure Poisson equation is solved
+H· P n+θ
+# = B
+n+ 1
+2
+# , (50)
+with B
+n+ 1
+2
+# ≡ Myz (Dx)T· U
+n+ 1
+2
+∗ + Mzx (Dy)T· V
+n+ 1
+2
+∗ + Mxy (Dz)T· W
+n+ 1
+2
+∗ ,
+symbol ’∗’ denotes the degrees of freedom with respect to the dual space of solutions PN(Ω
+∗(k)
+h ));
+3. the velocity components are directly updated according to
+V n+1
+∗ = V
+n+ 1
+2
+∗ − ∆t
+∆x1
+(
+M−1D
+)y
+· P n+θ
+# , (51)
+3. Numerical tests
+In order to verify the accuracy and robustness of the presented method together with the AMR frame-
+work, a series of non-trivial numerical tests is chosen. The test problems have been selected according to the
+following criteria: i) an analytical, numerical or experimental reference solution exists; ii) the test problem
+involves all terms of the incompressible Navier-Stokes equations, i.e. the nonlinear convective terms as well
+as the viscous and pressure forces are equally important; iii) physical instabilities and energy dissipation
+from the largest to the smallest spatial scales are present (see the three-dimensional Taylor-Green vortex
+problem); iv) pressure, velocity and wall boundary conditions are considered; v) the AMR framework
+should provide a remarkable beneﬁt in terms of resolution without introducing spurious mesh-e ﬀects;
+vi) whenever possible, a convergence table should be provided according to a smooth analytical reference
+solution.
+3.1. 2D Taylor-Green vortex problem
+A numerical convergence study should be carried out based on a smooth analytical reference solution of
+the governing PDE system, but there are only very few known analytical solutions for the incompressible
+Navier-Stokes equations available. Here, the two dimensional Taylor-Green vortex problem has been
+selected for testing the order of accuracy of our schemes. An exact solution of the two-dimensional
+incompressible Navier-Stokes equations is given by
+u(x, y, t) = sin(x) cos(y)e−2νt, v(x, y, t) =− cos(x) sin(y)e−2νt,
+p(x, y, t) = 1
+4
+(cos(2x) + cos(2y)) e−4νt,
+within the spatial domain Ω = [0, 2π]2 and periodic boundary conditions everywhere. For the present
+test we use ν = 10−1. The ﬂow dynamics corresponds to an exponential decay in time due to dissipative
+processes. Without dissipation, the ﬂuid ﬂow is an unstable stationary equilibrium of inertial and pressure
+forces. In order to compute properly a convergence table within the AMR framework, the ratio between
+ﬁner and coarser elements should remain approximately constant in time and also for increasing mesh
+16
+Table 1: Numerical convergence table computed for the two dimensional Taylor-Green vortex problem using staggered SI-DG-P N
+schemes with AMR for polynomial degrees N = 1,..., 6;𝓁max = 1; r = 3.
+Nel ϵL1 ϵL2 ϵL∞ OL1 OL2 OL∞ Nel ϵL2 ϵL1 ϵL∞ OL1 OL2 OL∞
+N = 1 N = 2
+122 1.133E+00 2.374E-01 8.664E-02 — — — 6 2 3.938E-01 8.213E-02 3.511E-02 — — —
+242 3.785E-01 7.630E-02 3.250E-02 1.58 1.64 1.41 12 2 4.015E-02 8.997E-03 4.312E-03 3.29 3.19 3.03
+362 2.935E-01 6.074E-02 2.489E-02 0.63 0.56 0.66 18 2 1.744E-02 4.012E-03 2.420E-03 2.06 1.99 1.42
+482 2.085E-01 4.29E-02 1.74E-02 1.19 1.21 1.25 24 2 5.898E-03 1.495E-03 1.057E-03 3.77 3.43 2.88
+N = 3 N = 4
+32 1.91E-01 4.19E-02 1.72E-02 — — — 3 2 4.33E-02 1.04E-02 5.84E-03 — — —
+62 1.27E-02 2.81E-03 1.48E-03 3.92 3.90 3.54 6 2 1.88E-03 4.20E-04 3.10E-04 4.53 4.63 4.23
+92 3.05E-03 6.32E-04 5.10E-04 3.51 3.68 2.63 9 2 3.08E-04 7.05E-05 5.52E-05 4.46 4.40 4.25
+152 5.18E-04 1.13E-04 8.34E-05 3.47 3.37 3.55 12 2 9.18E-05 2.04E-05 1.68E-05 4.20 4.32 4.14
+N = 5 N = 6
+32 6.40E-03 1.45E-03 5.97E-04 — — — 3 2 5.37E-04 1.27E-04 6.91E-05 — — —
+62 1.01E-04 2.24E-05 1.05E-05 5.99 6.02 5.82 4 2 1.61E-04 3.47E-05 1.34E-05 4.20 4.50 5.71
+92 9.98E-06 2.42E-06 1.68E-06 5.71 5.48 4.52 6 2 7.96E-06 1.81E-06 9.86E-07 7.41 7.28 6.43
+122 2.99E-06 7.14E-07 4.04E-07 4.19 4.24 4.96 8 2 1.59E-06 3.23E-07 1.73E-07 5.59 5.99 6.05
+resolution. In this particular test the L1, L2 and L∞ errors have been evaluated at a ﬁnal time tend = 0.1.
+The resulting convergence study is summarized in Table 1 for polynomial degrees N = 1,..., 6, ﬁxing a
+reﬁnement factor r = 3 and using up to 𝓁max = 1 reﬁnement levels. Since the presented method is only
+second-order accurate in time, very small time-steps have been used. Furthermore, Figure 5 shows the
+dependence of the L2 error on the polynomial degreeN for a given mesh. One can notice that anexponential
+decay of the numerical error, called spectral decay, with the polynomial degree is veriﬁed. These results
+indicate that for smooth problems the present algorithm works properly even when using very high order
+approximation polynomials and very coarse meshes. It should be emphasized that with very few higher
+order elements, e.g. N = 6, the resulting numerical error is much smaller than the error obtained with an
+extremely reﬁned grid at lower polynomial degrees (see Table 1 and Figure 5).
+3.2. 2D laminar Blasius boundary layer
+In this section a laminar two dimensional boundary layer over a ﬂat plate is simulated. A rectangular
+domain Ω = [−1, 1]× [0.0, 0.5] is initialized with a 20× 10 grid at the coarsest AMR level𝓁 = 0. The ﬂow is
+driven by a constant velocity proﬁle v = (1, 0) at the left entrance and a constant pressure condition (p = 0)
+at the right and at the top outﬂow. At the bottom, i.e. at y = 0, slip wall boundary conditions are applied
+for x< 0 and the usual no-slip wall-boundary condition for x≥ 0. The resulting ﬂuid ﬂow is the classical
+laminar ﬂow over a ﬂat plate, for which a reference solution is given by the well-known Blasius solution
+[12]. For this test the kinematic viscosity is set to ν = 10−3. Figure 6 shows the numerical results obtained
+with the P4 version of our SI-DG method using an adaptive mesh with 𝓁max = 1 and a reﬁnement factor of
+r = 3. The grid is reﬁned according to the gradient of the velocity magnitude|v|.
+A very good agreement between the reference solution and the numerical solution obtained with the
+semi-implicit staggered DG scheme is observed. As it is shown in Figure 6, the reﬁnement only takes place
+in the region of large velocity gradients, in particular at the leading edge of the boundary layer, as expected.
+3.3. Lid-driven cavity problem: 2D and 3D
+The lid-driven cavity problem is a well-known standard test problem for checking the correct implemen-
+tation of boundary conditions, together with the accurate discretization of all the terms in the governing
+equations, i.e. the non-linear convection, the viscous forces, the pressure gradient and the incompressibility
+constraint. In this test the computational domain is the unit square Ω = [−0.5, 0.5]d, representing a square
+cavity ﬁlled with an incompressible viscous ﬂuid. A the upper boundary (the lid), a constant velocity vector
+v = (1, 0, 0) is imposed which drives the ﬂow; no-slip wall boundary conditions are applied to the remaining
+boundaries. This is a non-trivial test mainly because of three facts: all the physical forces (pressure gradient,
+convection and di ﬀusion) are of the same order of magnitude; there are two singularities in the velocity
+17
+N
+εL2
+0 1 2 3 4 5 6 7 810
+-6
+10
+-5
+10
+-4
+10
+-3
+10
+-2
+10
+-1
+10
+0
+L2 error - SIDG-PN 12
+2
+ el.
+L2 error - SIDG-PN  3
+2
+ el.
+Figure 5: Numerical L2 errorϵL2 of the u velocity component for the two dimensional Taylor-Green vortex problem computed with
+our SI-DG-PN schemes as a function of the polynomial degree N on a ﬁxed grid of 122 elements (squares) and 32 elements (triangles).
+Figure 6: The numerical solution obtained for the two dimensional laminar boundary layer test. The two dimensional view of the
+horizontal velocity ﬁeld is shown on the left. The velocity proﬁle interpolated along the vertical direction at two di ﬀerent axial
+position, i.e. x = 0.75, 0.80, is plotted next to the reference Blasius solution on the right. The results have been obtained with our
+staggered semi-implicit AMR-DG-P5 together with a reﬁnement factor of r = 3 and𝓁max = 1 levels.
+18
+ﬁeld at the upper corners, where the horizontal component of the velocity is a double valued function,
+i.e. u = 1 at the top and u = 0 at the lateral walls; the pressure ﬁeld is only determined up to a constant,
+because boundary conditions are only imposed for the velocity but not for the pressure. At the initial time,
+the pressure is set to be p = 0 everywhere.
+Figures 7 and 8 show the numerical results in two space dimensions obtained at di ﬀerent Reynolds
+numbers in the range Re∈ [100, 3200]. The horizontal and vertical velocity proﬁles, interpolated along
+the vertical and the horizontal axes respectively, are plotted and compared with the reference solution
+given by Ghia et al. [51]. The AMR grid is adapted according to a reﬁnement factor r = 3 and up to one
+single maximum reﬁnement level (𝓁max = 1). As shown in Figures 7 and 8, the computed results match the
+reference solution very well and the automatic adaptation is well-driven along the higher velocity gradients
+close to the walls. In this case the SI-DG-P 4 scheme has been used, corresponding to a total number of
+degrees of freedom of Ndof = 52 = 25 per space-element. On the level zero grid ( 𝓁0), the two-dimensional
+domain has been discretized within 6 3 = 36 elements for Reynolds numbers 100, 400 and 1000, while
+162 = 256 elements have been used for Reynolds number 3200.
+In three space dimensions the ﬂuid ﬂow becomes much more complicated due to the appearance
+of secondary recirculations which make the ﬂow ﬁeld fully three-dimensional. Figures 9-10 show the
+respective numerical results obtained at Reynolds numbers Re = 100 and Re = 1000 with our SI-DG-P 4
+scheme, corresponding to a total number of degrees of freedom of Ndof = 53 = 125 per space-element. The
+velocity proﬁle interpolated along the vertical and horizontal axes, i.e. ( x, y, z)∈ [−0.5, 0.5]×{ 0}×{ 0} and
+(x, y, z)∈{ 0}× [−0.5, 0.5]×{ 0}, is shown and compared with the reference solutions of [1, 67] next to the
+corresponding three-dimensional view of the ﬂuid ﬂow. A very good match between our numerical results
+and the reference data is obtained. The three dimensional recirculation together with the active AMR grid
+are highlighted in Figure 9, where the numerical solution is interpolated along the three orthogonal panes
+x− y, y− z and x− z. In this case, the physical domain has been discretized on the zeroth level using only
+83 = 512 elements. For the AMR framework we set 𝓁max = 1 and r = 2.
+3.4. 2D backward-facing step
+In this test a constant ﬂuid ﬂow is applied at the entrance of a two dimensional rectangular duct with
+a backward-facing step, characterized by an expansion ratio of ER = hout/hin = 2 at x = 0 and a backward
+facing step of height hs = 0.5. A su ﬃciently long axial domain is chosen to be x∈ [−10, 20], in order to
+avoid spurious e ﬀects from the boundaries. Indeed, in our set-up a constant velocity proﬁle is applied
+at the entrance and a constant pressure p = 0 is imposed at the outﬂow. Similar to the previous test,
+the backward-facing step became a typical benchmark problem because it allows to cover a large domain
+of Reynolds numbers and ﬂow regimes by simply varying the kinematic viscosity. The physical domain
+is discretized with elements of size ∆x𝓁=0 = 5/12 and ∆y𝓁=0 = 1/6 on the coarsest main grid. For the
+AMR framework we use a maximum number of reﬁnement levels 𝓁max = 2 and a reﬁne factor of r = 3,
+corresponding to a mesh size on the ﬁnest grid of ∆x𝓁=2 = 5/108 and ∆y𝓁=2 = 1/54. A main recirculation
+zone is generated next to the step at the bottom, even at low Reynolds numbers. Then, at higher Reynolds
+numbers, the ﬂuid ﬂow becomes more complicated and new recirculation zones appear in the duct. Figure
+11 shows the numerical results obtained ad di ﬀerent Reynolds numbers within Re∈ [100, 800], where the
+main recirculations together with the active AMR grid are highlighted. Corresponding reference solutions
+exist for the axial extent of the main circulation zone, available in [69] (experimental study) and [45]
+(numerical study), and are compared with the computed results obtained through our adaptive SI-DG-P 4
+scheme in Figure 12. As it is shown, our numerical results match the two-dimensional numerical reference
+data of [45] very well, as well as the experimental data of [69] in the low Reynolds number regime. Some
+diﬀerences with the experimental results arise for higher Reynolds numbers. The correct interpretation of
+these discrepancies lies in the three-dimensional behaviour of the ﬂuid ﬂow at higher Reynolds numbers
+due to the side-wall boundary eﬀects, see [92, 3, 77, 79].
+3.5. 2D double shear layer
+A classical two dimensional test that is well-suited for demonstrating the resolution of high order
+methods and the usefulness of adaptive grids is the double shear layer. In this work, the so called ’ thin’
+19
+x,y
+u(y) , v(x)
+-0.5 -0.25 0 0.25 0.5-0.4
+-0.2
+0
+0.2
+0.4
+0.6
+0.8
+1
+1.2
+v - AMR SpectralDG P4
+v - Ghia et al. ’82
+u - AMR SpectralDG P4
+u - Ghia et al. ’82
+Re 100
+x,y
+u(y) , v(x)
+-0.5 -0.25 0 0.25 0.5-0.6
+-0.4
+-0.2
+0
+0.2
+0.4
+0.6
+0.8
+1
+1.2
+v - AMR SpectralDG P4
+v - Ghia et al. ’82
+u - AMR SpectralDG P4
+u - Ghia et al. ’82
+Re 400
+x,y
+u(y) , v(x)
+-0.5 -0.25 0 0.25 0.5-0.6
+-0.4
+-0.2
+0
+0.2
+0.4
+0.6
+0.8
+1
+1.2
+v - AMR SpectralDG P4
+v - Ghia et al. ’82
+u - AMR SpectralDG P4
+u - Ghia et al. ’82
+Re 1000
+Figure 7: The numerical solution obtained for the two dimensional lid-driven cavity problem compared with the numerical results of
+[51] at diﬀerent Reynolds numbers, respectively, from the top to the bottom: Re=100, Re=400 and Re=1000 using 6x6 elements on the
+coarsest grid level. These results have been obtained with the P4-version of our staggered semi-implicit spectral DG method.
+20
+x,y
+u(y) , v(x)
+-0.5 -0.25 0 0.25 0.5-0.6
+-0.4
+-0.2
+0
+0.2
+0.4
+0.6
+0.8
+1
+1.2
+v - AMR SpectralDG P4
+v - Ghia et al. ’82
+u - AMR SpectralDG P4
+u - Ghia et al. ’82
+Re 3200
+Figure 8: The numerical solution obtained for the two dimensional lid-driven cavity problem compared with the numerical results
+of [51] at Reynolds number Re =3200 using 16 x16 elements on the coarsest grid level. These results have been obtained with the
+P4-version of our staggered semi-implicit spectral DG method.
+double shear layer is chosen to be the initial and unstable state at t = 0 given by
+u =
+{
+u0 tanh((y− 0.5)/δ) y> 0
+−u0 tanh((y + 0.5)/δ) y≤ 0 (52)
+with a perturbation in the vertical velocity component in the vicinity of the shear layer that reads
+v =
+{
+v0 sin (2πx) e−(y−0.5)2/2σ2
+y> 0
+−v0 sin (2πx) e−(y+0.5)2/2σ2
+y≤ 0 (53)
+The rectangular spatial domain Ω = [−0.5, 0.5]× [−1, 1] has been discretized by a grid composed of 20× 40
+elements at the coarsest level 𝓁 = 0. We use up to 𝓁max = 2 reﬁnement levels and a reﬁne factor of r = 2
+in this test problem. In the present test the chosen parameters are δ = 10−2 for the shear layer thickness,
+u0 = 10, v0 = 0.5 and σ2 = 0.05 for the variance of the Gaussian perturbation. The example has been run
+with a kinematic viscosity ofν = 10−4.
+As mentioned in [68, 75] a not su ﬃciently accurate solution of the ﬂow ﬁeld may cause spurious
+oscillations that arise in diﬀerent locations along the shear layers. Figure 13 shows the time evolution of the
+z-component of vorticity ωx obtained with our SI-DG-P 9 scheme, next to the active main AMR grid. The
+computed results show to be in agreement with previously published results in literature. Moreover, in
+this test the space-time AMR is shown to give major beneﬁts, resulting in a very high resolution obtained
+with a still rather coarse mesh at 𝓁 = 0. Notice that the coarsest level corresponds to a total number of
+N0 = 800 elements, a total number of degrees of freedom of Ndof
+0 = 80′000 and a characteristic mesh size of
+h0 = 1/20 = 0.05, while a uniform grid on the ﬁnest level corresponds to N2 = 64′800, Ndof
+2 = 6′480′000 and
+h2 = h0/9. No spurious oscillations are generated in our simulation, which means that the non-conforming
+elements that appear in the AMR framework are treated properly by our numerical method.
+3.6. 3D Taylor-Green vortex problem
+The three-dimensional Taylor-Green vortex is a well-known three-dimensional benchmark problem
+for testing the capability of the numerical method in reproducing accurately the nonlinear kinetic energy
+dissipation, where energy is transferred from the large to the small spatial scales. A well resolved DNS
+reference solution is provided by Brachet et al. in [13], obtained through a very high-resolution direct
+21
+Figure 9: The numerical solution obtained for the three dimensional lid-driven cavity problem compared with, at the left, the numerical
+results of [1, 67] at Reynolds numbers Re =100 (top) and Re=1000 (bottom) using 8× 8× 8 elements. The results have been obtained
+with our staggered semi-implicit DG-P 4 method with AMR. In the 3d-view on the right, streamlines are colored with the w velocity
+magnitude, w-peak iso-surfaces are shown, the boundary-slices are colored by the velocity magnitude |v| together with the main
+AMR-grid.
+22
+Figure 10: The numerical solution obtained for the three dimensional lid-driven cavity problem interpolated along the three orthogonal
+planes x− y, z− x and z− y from the top the bottom, at Reynolds numbers Re=100 (left) and Re=1000 (right) using 8× 8× 8 elements.
+Tangential streamlines and the velocity magnitude|v| are depicted. The results have been obtained with our staggered semi-implicit
+AMR-DG-P4 method.
+23
+Figure 11: Numerical solution obtained for the 2D backward facing step problem with the staggered semi-implicit AMR-DG-P 4
+method at diﬀerent Reynolds numbers, from top to bottom, respectively: Re=200, Re=300, Re=400, Re=500, Re=600, and Re=700.
+24
+Re
+xr/hs
+0 200 400 600 8000
+2.5
+5
+7.5
+10
+12.5
+15 Erturk (2008)
+Lee & Mateescu (1998)
+SpectralDG-AMR-P4
+Figure 12: Total lengths of the main recirculations obtained with the staggered semi-implicit spectral AMR-DG-P 4 method for the
+2D backward facing step problem next to the 2D numerical results of [45] and the experimental measurements of [69] at di ﬀerent
+Reynolds numbers, up to Re = 800.
+spectral method, employing up to 256 3 Fourier modes and a power series analysis in time up to the 80-th
+order (see [76]). The physical domain is the boxΩ = [0, 2π]3 with periodic boundary conditions everywhere.
+The initial condition consists in
+u(x, y, z, 0) = sin(x) cos(y) cos(z), (54)
+v(x, y, z, 0) =− cos(x) sin(y) cos(z), (55)
+w(x, y, z, 0) = 0, (56)
+p(x, y, z, 0) = 1
+16
+(cos(2x) + cos(2y)) (cos(2z) + 2), (57)
+which provides the initially very smooth vortices in a non-equilibrium state. Then, depending on the
+kinematic viscosityν, the ﬂuid ﬂow goes through a highly non-linear decaying process, in which the kinetic
+energy E = v2/2 is transported from the lower (large scale processes) to higher modes (smallest scales)
+until reaching the dissipative viscous regime. A quantitative comparison with the reference data of [13] is
+presented in Figure (15) for the time evolution of the kinetic energy dissipation rate
+ϵ(t) =−∂K
+∂t =− 1
+|Ω|
+∂
+∂t
+∫
+Ω
+1
+2v2dx. (58)
+When the dissipation rateϵ(t) reaches its peak at a given timet = tp, this means the higher modes reach the
+highest population, entering into the viscous regime and being soon destroyed by dissipative forces. At this
+crucial point, the higher resolution provided by the AMR framework is needed for allowing the smallest
+scales to dissipate properly. Whenever an under-resolved solution is computed, then the kinetic energy
+dissipation rate behaves improperly: if the numerical method is non-dissipative, then at higher Reynolds
+numbersϵ is expected to be under-estimated leading to possible spurious oscillations, i.e. the higher modes
+saturate the computational domain for the wave numbers F [Ωh], far both from the physical and from the
+numerical viscous regimes, F denoting the Fourier operator; if the numerical method is over-dissipative,
+thenϵ is expected to be over-estimated, meaning the numerical viscous regime appears sooner inF [Ωh] with
+respect to the physical one. From Figure 14 we can conclude that the results obtained with our adaptive
+semi-implicit staggered DG scheme are in good agreement with the DNS reference solution.
+25
+Figure 13: The numerical solution obtained for the two dimensional ’thin’double shear layer problem at di ﬀerent time steps. The
+staggered SI-DG-P9 method has been used together with a reﬁnement factorr = 3 and𝓁max = 2 reﬁnement levels. Every ﬁgure depicts
+the vorticity ﬁeld ωz next to the respective AMR grid.
+26
+time
+0 2 4 6 8 100.000
+0.002
+0.004
+0.006
+0.008
+0.010
+0.012
+0.014
+0.016
+0.018
+Brachet et al. ’83
+Re  100, -dK/dt, SI-DG+AMR - P4 - 20
+3
+el,
+Re  200, -dK/dt, SI-DG+AMR - P4 - 20
+3
+el,
+Re  800, -dK/dt, SI-DG+AMR - P4 - 20
+3
+el,
+Figure 14: Time evolution of the kinetic energy dissipation rateϵ(t) obtained with our SI-DG-P4 scheme at Reynolds numbersRe = 100,
+200 and 800. The DNS reference solutions of Brachet et al. [13] are plotted as continuous lines.
+Figure 15 shows the time evolution of pressure, velocity and vorticity magnitude obtained with our
+SI-DG-P4 at Reynolds Re = 800, within a main mesh Ωh made of only 20 3 space-elements at the coarsest
+level Ω0
+h, with a reﬁnement factor r = 2 and𝓁max = 1 reﬁnement levels.
+3.7. Vortex ring dynamics
+For describing the physical state of an incompressible ﬂuid, vorticity and velocity are essentially in-
+terchangeable quantities. On the other hand, higher Reynolds numbers and turbulent ﬂow regimes are
+typically characterized by localized higher vorticity zones. This fact leads to think that a deeper compre-
+hension in the vortex dynamics could allow a deeper comprehension of high Reynolds ﬂuid dynamics. The
+visualization and measurement of vorticity constitutes a non-trivial problem in experimental studies. Then,
+over the years, several experiments, theoretical analysis and numerical investigations provided typical test
+problems that nowadays can be used for testing the ability of a numerical method to give an accurate
+description of vortex dynamics. In the following tests the initial conditions are given in terms of vorticity,
+then the real initial condition for the numerical simulations are computed after recycling exactly the same
+discrete operators depicted in the previous theoretical sections.
+Indeed, for incompressible ﬂuids a vector potential A can be introduced by deﬁning the velocity vector
+as v =∇× A. Then the vorticity can be written in terms of A as
+ω =∇× v =∇× (∇× A)≡∇ (∇· A)−∇ 2A. (59)
+Notice that any divergence-free component of vectorA would not contribute to the corresponding velocity
+ﬁeld. Then, by looking for solutions satisfying the divergence-free condition for A, a very simple Poisson
+equation follows for A, yielding a very familiar system of equations for the potential vector components
+Ak, k = x, y, z, i.e.
+B =∇A (k) (60)
+∇· B =−ω (k) (61)
+27
+Figure 15: Numerical solution for the three dimensional Taylor-Green vortex ﬂow at Re = 800 computed with our SI-DG-P 4 method
+using 203 elements on the coarsest level Ω0
+h, a reﬁnement factor r = 2,𝓁max = 1 maximum reﬁnement levels. The isosurfaces of the
+velocity (left), the isosurfaces of the pressure (center) and the isosurfaces of the vorticity colored by the helicity ﬁeld (right) are plotted
+at times t = 0.5, 2.0, 6.0 and 10.0 from the top to the bottom, respectively.
+28
+where vector B is an auxiliary variable. Indeed, this system shows to be very similar to our governing
+equations (1-2) and a consistent discrete DG-P N formulation on the presented staggered grids, A
+(k)
+h ,ω
+(k)
+h ∈
+PN(Ωh) and B
+(k)
+h ∈ PN(Ω
+∗(k)
+h ), reads
+H ˜A (k) = M ˜ω (k) (62)
+after setting ∆t = 1, ˜ω (k) and ˜A (k) are respectively the vector of the degrees of freedom for the k-th vorticity
+and potential vector components. After the three equivalent discrete Poisson systems are solved for the
+potential vector, then the velocity is updated accordingly to the L2 projection over P N of the deﬁnition
+v =∇× A.
+3.7.1. Vortex ring pair collision
+In this three-dimensional test, two coplanar vortex rings are initialized within a cubic spatial domainΩ =
+[−π,π ]3 with periodic boundary condition everywhere, centered in C1,2 =±(D cos(π/4)/2, D cos(π/4)/2)
+with D = 1.83, a major radiusR = 0.491, centered along thex− y plane, according to a Gaussian distribution
+in the ring core (matches case II of [63])
+|ω|(r) =ω0 exp
+[
+−
+( r
+a
+)2]
+, (63)
+where r is the radial direction, a = 0.196 is the e ﬀective thickness of the core, ω0 = 23.8 the vorticity
+amplitude. For the present test the Reynolds number is Reγ =γ/ν = 577,γ =πω0a2 being the circulation
+of the vortex ring, yielding a kinematic viscosityν∼ 5× 10−3. The two ring vortices proceed in the vertical
+direction because of self-induction and, at the same time, the two rings are attracted towards thex = y plane
+by mutual-induction. At around t = 3 the two vortex rings collide. Notice that vortex lines are anti-parallel
+at the contact point, and consequently dissipated by viscous interactions. Then, the resulting dynamics
+becomes highly non linear, with very complex e ﬀects due to both self- and mutual- induced interaction
+(see a review for vortex reconnection [62] and [63] for an almost complete overview of the vortex collision
+process). Figure 16 shows the dynamics of the vortex interaction by means of the selected iso-surfaces for
+the vorticity magnitude|ω|, showing the main evolution phases before the ring collision, the collision phase
+and the post-collision phase, with a good description of thebridging mechanism. The computed results show
+to be in good agreement with the provided reference solution in literature, e.g. see [63, 52, 55]. For this test,
+the computational domain has been discretized using 303 space-elements on the coarsest gridΩ0
+h within the
+space of solutions of our SI-DG-P4 method, a reﬁnement factor r = 2 and a maximum number of reﬁnement
+levels𝓁max = 1. The mesh is shown to be automatically reﬁned only next to the vorticity cores, saving much
+computational eﬀort compared to a uniform ﬁne grid. Figure 16 shows the time evolution of the vorticity
+ﬁeld interpolated along the two orthogonal vertical planes x = y and x =−y. At t = 4.5, some spurious
+oscillations arise in the vorticity ﬁeld along the collision plane x = y, reﬂecting the fact that, in the vorticity
+formulation, a potentially dangerous steep gradient is generated. Indeed, it is a well known fact that vortex
+reconnection is allowed only for viscous ﬂuids. This means that, in the high Reynolds regime, the vortex
+rings would approach to be conserved in time, leading, probably, to a highly non-linear inviscid interaction
+in the collision phase. In this case, very high resolution methods are needed and a limiting strategy would
+become necessary for a pure DG method for resolving the physics of the ﬂuid ﬂow.
+3.7.2. Vortex ring pair leapfrogging
+In this section the interaction between two coaxial vortex rings is simulated within the spatial domain
+Ω = [−1.5, 1.5]2× [−4.4] with periodic boundary conditions everywhere. Two vortex rings are initialized
+according to the Gaussian distribution (63), following [85], with a Reynolds number ReΓ = 1000, a ratio of
+major and minor radius of R/r = 10, the ring centers being one radius R away from each other. In particular
+the chosen parameters are R0 = 0.5, a = 0.05, vorticity amplitudeω0 = 1, and kinematic viscosityν = 10−3.
+In this case, the self-induction leads the ring pair to move vertically in thez direction, the mutual-induction
+leads the last (backward) vortex to accelerate, being scaled down and going past the second vortex through
+29
+Figure 16: Time evolution of the iso-surfaces for the vorticity magnitude |ω| in the three-dimensional vortex-ring pair interaction
+problem at diﬀerent times, respectively, from left to right, from the top to the bottom: t =0.0, 3.0, 4.5, 6.0, 7.5, 12.0 and 18.0, using 303
+elements on the coarsest grid with periodic boundary conditions; these results are obtained with the P4-version of our SI-DGmethod.
+The iso-vorticity values has been chosen accordingly to the percentage referred to the maximum|ω|max accordingly to [63].
+30
+Figure 17: Time evolution of the iso-surfaces for the vorticity magnitude |ω| in the three-dimensional vortex-ring pair interaction
+problem at diﬀerent times; the numerical solution has been interpolated along the two-dimensional orthogonal planesx1− z (left) and
+x2− z (right), passing through the two bisectors x1 and x2 of x− y, respectively (see image at the top); these results are obtained with
+the P4-version of our SI-DGmethod using 303 elements on the coarsest grid with periodic boundary conditions at times t=0.0, 4.5 and
+18.0.
+31
+the inner oriﬁce, i.e. ’ leapfrogging’. The time evolution for the computed vorticity magnitude interpolated
+along the two arbitrary (central symmetry holds) vertical and orthogonal planes is shown in Figures 18 and
+19. Also in this case, good agreement with the provided reference solution of [85, 23] is veriﬁed. The physical
+domain Ω has been discretized within a mesh of 30× 30× 80 space elements on the coarsest gridΩ0
+h within
+the space of solutions of our SI-DG-P 4 method, reﬁnement factor r = 2, up to one single reﬁnement level
+𝓁max = 1. The chosen AMR grid corresponds to a maximum number ofNmax
+dof = Nmax
+elem× (N + 1)3 = 72 000 000
+of degrees of freedom per physical variable if a uniform ﬁne grid was used. Notice that, thanks to the AMR
+framework the real total number of degrees of freedom per physical variable is reduced approximately by
+a factor of rd = 8. Indeed, the mesh is dynamically reﬁned only close to the vortex rings.
+4. Conclusion
+In this paper the family of staggered spectral semi-implicit DG methods for the incompressible Navier-
+Stokes equations recently proposed in [46] for uniform Cartesian grids has been successfully extended to
+staggered AMR meshes in two and three space dimensions. A similar formulation for staggered DG schemes
+on conforming unstructured simplex meshes has been recently outlined in [86, 87, 88].
+It has been shown that the main advantage of edge /face-based staggered grid methods is to improve
+substantially the sparsity of the main linear system compared to traditional DG schemes on collocated
+grids. In particular the discrete Laplace operator H is shown to be symmetric and positive-deﬁnite and
+has maximum sparsity, since it only involves the element and its direct edge /face neighbors. On uniform
+meshes, it is block penta-diagonal (in 2D) or block hepta-diagonal (in 3D). This has to be compared to
+classical DG methods on collocated grids: those are characterized by discrete operators with either larger
+computational stencils, if a discrete pressure Poisson equation is solved, since in this case the discrete
+pressure will also depend on neighbors of neighbors; or, one solves directly the saddle point problem
+associated with the PDE system and thus keeps the small stencil, but in that case there are much more
+unknowns, namely the scalar pressure and the components of the velocity vector. Moreover, in our scheme
+H is shown to be the Schur complement of the discrete saddle point system of the incompressible Navier-
+Stokes equations. From another point of view, H≡D TM−1D accounts for the jumps of the piecewise
+polynomials in the discrete gradientsD resembling a Bassi-Rebay-type lifting operatorevaluated on the dual
+grid Ω∗
+h, see equation (39). The same well-conditioned coe ﬃcient matrix H appears both in the pressure
+Poisson equation, but also in the linear system arising from the implicit discretization of the viscous terms,
+with only one additional symmetric positive deﬁnite block diagonal term coming from the element mass
+matrix associated with the time derivative of the velocity. As a consequence, the pressure system and the
+viscous systems can be solved very eﬃciently by means of a classical matrix-free conjugate gradient method
+without recurring, in this paper, to any preconditioner. The spectral properties of the system matrix have
+been theoretically analyzed in [39] for the uniform Cartesian grid case.
+The ﬁnal algorithm is veriﬁed to be high order accurate in space with spectral convergence property
+after completing a thorough numerical convergence test that accounts also for the AMR grid reﬁnement.
+The presented SI-DG-PN method has been observed to be stable, robust and very accurate. The performance
+of the method has been shown on a large set of non-trivial test cases in two and three space-dimensions.
+Future research will concern the extension of the present scheme on AMR meshes to a staggered space-
+time DG method in order to achieve also high order of accuracy in time, see [46, 89]. Further work will
+also concern the extension to the compressible Euler and Navier-Stokes equations, following the ideas put
+forward in [38] for pressure-based semi-implicit ﬁnite volume schemes on staggered grids. In this case, a
+proper limiter will be needed, not only for the treatment of shock waves, but also in order to avoid spurious
+oscillations in the presence of steep gradients or under-resolved ﬂow features, for example following the
+novel ideas on a posteriori subcell ﬁnite volume limiters outlined in [44, 98, 97].
+Acknowledgments
+The research presented in this paper was funded by the European Research Council (ERC) under the
+European Union’s Seventh Framework Programme (FP7/2007-2013) within the research project STiMulUs,
+32
+Figure 18: Time evolution of the vorticity ﬁeld for the three-dimensional vortex-ring pair ’leapfrog’ problem, respectively, from the
+top to the bottom: t=0.0, 0.4, 0.9, and 1.5, using 30× 30× 80 elements on the coarsest grid with periodic boundary conditions; at the left
+the numerical solution interpolated along the two-dimensional y− z plane, at the right the three-dimensional view of the isosurfaces
+of the vorticity magnitude|ω|; these results are obtained with the P4-version of our SI-DGmethod.
+33
+Figure 19: Time evolution of the vorticity ﬁeld for the three-dimensional vortex-ring pair ’leapfrog’ problem, respectively, from the
+top to the bottom: t =1.75, 2.05, 2.60, and 3.35, using 30× 30× 80 elements on the coarsest grid with periodic boundary conditions;
+at the left the numerical solution interpolated along the two-dimensional y− z plane, at the right the three-dimensional view of the
+isosurfaces of the vorticity magnitude|ω|; these results are obtained with the P4-version of our SI-DGmethod.
+34
+ERC Grant agreement no. 278267.
+The authors also acknowledge the Leibniz Rechenzentrum (LRZ) in Munich, Germany, for awarding
+access to the SuperMUC supercomputer, as well as the support of the HLRS in Stuttgart, Germany, for
+awarding access to the Hazel Hen supercomputer.
+References
+[1] S. Albensoeder and H.C. Kuhlmann. Accurate three-dimensional lid-driven cavity ﬂow.Journal of Computational Physics, 206(2):536
+– 558, 2005.
+[2] A. Arakawa and V .R. Lamb. Computational design of the basic dynamical processes of the UCLA general circulation model.
+Methods of Computational Physics, 17:173–265, 1977.
+[3] B. F. Armaly, F. Durst, J. C. F. Pereira, and B. Sch¨onung. Experimental and theoretical investigation of backward-facing step ﬂow.
+Journal of Fluid Mechanics, 127:473–496, 1983.
+[4] A. Baeza and P . Mulet. Adaptive mesh reﬁnement techniques for high–order shock capturing schemes for multi–dimensional
+hydrodynamic simulations. International Journal for Numerical Methods in Fluids, 52:455–471, 2006.
+[5] F. Bassi, L. Botti, A. Colombo, A. Ghidoni, and F. Massa. Linearly implicit Rosenbrock-type Runge-Kutta schemes applied to the
+Discontinuous Galerkin solution of compressible and incompressible unsteady ﬂows. Computers and Fluids, 118:305–320, 2015.
+[6] F. Bassi, A. Crivellini, D.A. Di Pietro, and S. Rebay. An implicit high-order discontinuous Galerkin method for steady and
+unsteady incompressible ﬂows. Computers & Fluids, 36(10):1529 – 1546, 2007.
+[7] F. Bassi and S. Rebay. A high-order accurate discontinuous ﬁnite element method for the numerical solution of the compressible
+Navier-Stokes equations. Journal of Computational Physics, 131:267–279, 1997.
+[8] C.E. Baumann and J.T. Oden. A discontinuous hp ﬁnite element method for convection-di ﬀusion problems. Computer Methods
+in Applied Mechanics and Engineering, 175:311–341, 1999.
+[9] C.E. Baumann and J.T. Oden. A discontinuous hp ﬁnite element method for the Euler and Navier-Stokes equations. International
+Journal for Numerical Methods in Fluids, 31:79–95, 1999.
+[10] M. J. Berger and P . Colella. Local adaptive mesh reﬁnement for shock hydrodynamics. Journal of Computational Physics, 82:64–84,
+1989.
+[11] M. J. Berger and J. Oliger. Adaptive Mesh Reﬁnement for Hyperbolic Partial Di ﬀerential Equations. Journal of Computational
+Physics, 53:484, 1984.
+[12] H. Blasius. Grenzschichten in Fl ¨ussigkeiten mit kleiner Reibung. Z. Math. Physik, 56:1–37, 1908.
+[13] M. E. Brachet, D. I. Meiron, S. A. Orszag, B. G. Nickel, R. H. Morf, and U. Frisch. Small-scale structure of the Taylor-Green vortex.
+Journal of Fluid Mechanics, 130:411–452, 1983.
+[14] L. Brugnano and V . Casulli. Iterative solution of piecewise linear systems.SIAM Journal on Scientiﬁc Computing, 30:463–472, 2008.
+[15] L. Brugnano and V . Casulli. Iterative solution of piecewise linear systems and applications to ﬂows in porous media. SIAM
+Journal on Scientiﬁc Computing, 31:1858–1873, 2009.
+[16] V . Casulli. A high-resolution wetting and drying algorithm for free-surface hydrodynamics. International Journal for Numerical
+Methods in Fluids, 60:391–408, 2009.
+[17] V . Casulli. A semi–implicit numerical method for the free–surface Navier–Stokes equations. International Journal for Numerical
+Methods in Fluids, 74:605–622, 2014.
+[18] V . Casulli and E. Cattani. Stability, accuracy and eﬃciency of a semi implicit method for three-dimensional shallow water ﬂow.
+Comp. Math. Appl., 27:99–112, 1994.
+[19] V . Casulli, M. Dumbser, and E.F. Toro. Semi-implicit numerical modeling of axially symmetric ﬂows in compliant arterial systems.
+Int. J. Numeric. Meth. Biomed. Engng., 28:257–272, 2012.
+[20] V . Casulli and D. Greenspan. Pressure method for the numerical solution of transient, compressible ﬂuid ﬂows. International
+Journal for Numerical Methods in Fluids, 4(11):1001–1012, 1984.
+[21] V . Casulli and R. A. Walters. An unstructured grid, three-dimensional model based on the shallow water equations. Int. J.
+Numeric. Meth. Fluids, 32:331–348, 2000.
+[22] V . Casulli and P . Zanolli. Iterative solutions of mildly nonlinear systems.J. Comp. Appl. Math., 236:3937–3947, 2012.
+[23] M. Cheng, J. Lou, and T. T. Lim. Leapfrogging of multiple coaxial viscous vortex rings. Physics of Fluids, 27(3):031702, 2015.
+[24] S.W. Cheung, E. Chung, H.H. Kim, and Y. Qian. Staggered discontinuous Galerkin methods for the incompressible NavierStokes
+equations. Journal of Computational Physics, 302:251–266, 2015.
+[25] E.T. Chung and C.S. Lee. A staggered discontinuous Galerkin method for the convection–diﬀusion equation. Journal of Numerical
+Mathematics, 20(1):1–32, 2012.
+[26] B. Cockburn, S. How, and C.-W. Shu. TVB Runge Kutta Local Projection Discontinuous Galerkin Finite Element Method for
+Conservation Laws IV: The Multidimensional Case. Math. Comp., 54:545, 1990.
+[27] B. Cockburn, G. E. Karniadakis, and C.-W. Shu. Discontinuous Galerkin Methods: Theory, Computation and Applications . Lecture
+Notes on Computational Science and Engineering. Springer, 2000.
+[28] B. Cockburn, S.-Y. Lin, and C.-W. Shu. TVB Runge Kutta Local Projection Discontinuous Galerkin Finite Element Method for
+Conservation Laws III: One-Dimensional Systems. Journal of Computational Physics, 84:90, 1989.
+[29] B. Cockburn and C.W. Shu. The local discontinuous Galerkin method for time-dependent convection-di ﬀusion systems. SIAM
+Journal on Numerical Analysis, 35(6):2440–2463, 1998.
+[30] B. Cockburn and C.W. Shu. The Runge–Kutta discontinuous Galerkin method for conservation laws V: multidimensional
+systems. Journal of Computational Physics, 141(2):199–224, 1998.
+35
+[31] B. Cockburn and C.W. Shu. Runge-Kutta discontinuous Galerkin methods for convection-dominated problems. Journal of
+Scientiﬁc Computing, 16(3):173, 2001.
+[32] A. Crivellini, V . D’Alessandro, and F. Bassi. High-order discontinuous Galerkin solutions of three-dimensional incompressible
+RANS equations. Computers and Fluids, 81:122–133, 2013.
+[33] V . Dolejsi. Semi-implicit interior penalty discontinuous Galerkin method for viscous compressible ﬂows. Communications in
+Computational Physics, 4(2):231–274, 2008.
+[34] V . Dolejsi and M. Feistauer. A semi-implicit discontinuous Galerkin ﬁnite element method for the numerical solution of inviscid
+compressible ﬂow. Journal of Computational Physics, 198(2):727 – 746, 2004.
+[35] V . Dolejsi, M. Feistauer, and J. Hozman. Analysis of semi-implicit DGFEM for nonlinear convection-di ﬀusion problems on
+nonconforming meshes. Computer Methods in Applied Mechanics and Engineering, 196(29-30):2813 – 2827, 2007.
+[36] M. Dumbser. Arbitrary high order PNPM schemes on unstructured meshes for the compressible Navier–Stokes equations.
+Computers & Fluids, 39:60–76, 2010.
+[37] M. Dumbser and V . Casulli. A staggered semi-implicit spectral discontinuous Galerkin scheme for the shallow water equations.
+Applied Mathematics and Computation, 219(15):8057 – 8077, 2013.
+[38] M. Dumbser and V . Casulli. A conservative, weakly nonlinear semi-implicit ﬁnite volume scheme for the compressible Navier–
+Stokes equations with general equation of state. Applied Mathematics and Computation, 272:479–497, 2016.
+[39] M. Dumbser, F. Fambri, I. Furci, M. Mazza, M. Tavelli, and S. Serra-Capizzano. Staggered discontinuous Galerkin methods for
+the incompressible Navier-Stokes equations: spectral analysis and computational results. SIAM Journal on Matrix Analysis and
+Applications. submitted.
+[40] M. Dumbser, A. Hidalgo, and O. Zanotti. High Order Space-Time Adaptive ADER-WENO Finite Volume Schemes for Non-
+Conservative Hyperbolic Systems. Computer Methods in Applied Mechanics and Engineering, 268:359–387, 2014.
+[41] M. Dumbser, U. Iben, and M. Ioriatti. An e ﬃcient semi-implicit ﬁnite volume method for axially symmetric compressible ﬂows
+in compliant tubes. Applied Numerical Mathematics, 89:24 – 44, 2015.
+[42] M. Dumbser and C.D. Munz. Building blocks for arbitrary high order discontinuous Galerkin schemes. Journal of Scientiﬁc
+Computing, 27:215–230, 2006.
+[43] M. Dumbser, O. Zanotti, A. Hidalgo, and D.S. Balsara. ADER-WENO Finite Volume Schemes with Space-Time Adaptive Mesh
+Reﬁnement. Journal of Computational Physics, 248:257–286, 2013.
+[44] M. Dumbser, O. Zanotti, R. Loub `ere, and S. Diot. A posteriori subcell limiting of the discontinuous Galerkin ﬁnite element
+method for hyperbolic conservation laws. Journal of Computational Physics, 278:47–75, 2014.
+[45] E. Erturk. Numerical solutions of 2-d steady incompressible ﬂow over a backward-facing step, part i: High reynolds number
+solutions. Computers and Fluids, 37(6):633 – 655, 2008.
+[46] F. Fambri and M. Dumbser. Spectral semi-implicit and spacetime discontinuous galerkin methods for the incompressible navier-
+stokes equations on staggered cartesian grids. Applied Numerical Mathematics, 110:41–74, 2016.
+[47] F. Fambri, M. Dumbser, and V . Casulli. An e ﬃcient semi-implicit method for three-dimensional non-hydrostatic ﬂows in
+compliant arterial vessels. International Journal for Numerical Methods in Biomedical Engineering, 30(11):1170–1198, 2014.
+[48] G. Gassner, F. L ¨orcher, and C. D. Munz. A discontinuous Galerkin scheme based on a space-time expansion II. viscous ﬂow
+equations in multi dimensions. Journal of Scientiﬁc Computing, 34:260–286, 2008.
+[49] G. Gassner, F. L ¨orcher, and C.D. Munz. A contribution to the construction of diﬀusion ﬂuxes for ﬁnite volume and discontinuous
+Galerkin schemes. Journal of Computational Physics, 224:1049–1063, 2007.
+[50] E. H. Georgoulis, E. Hall, and P . Houston. Discontinuous Galerkin methods on hp-anisotropic meshes ii: a posteriori error
+analysis and adaptivity. Applied Numerical Mathematics, 59(9):2179 – 2194, 2009.
+[51] U. Ghia, K.N. Ghia, and C.T. Shin. High-Re solutions for incompressible ﬂow using the Navier-Stokes equations and a multigrid
+method. Journal of Computational Physics, 48(3):387 – 411, 1982.
+[52] D. Ghosh and J. D. Baeder. High-order accurate incompressible Navier-Stokes algorithm for vortex-ring interactions with solid
+wall. AIAA Journal, 50(2):2408–2433, 2012.
+[53] F. X. Giraldo and M. Restelli. High-order semi-implicit time-integrators for a triangular discontinuous Galerkin oceanic shallow
+water model. International Journal for Numerical Methods in Fluids, 63(9):1077–1102, 2010.
+[54] U. Grenander and G. Szeg ¨o. Toeplitz Forms and Their Applications, volume 321. Second Edition, Chelsea, New York, 1984.
+[55] S. Hahn and G. Iaccarino. Towards adaptive vorticity conﬁnement. 47th AIAA Aerospace Sciences Meeting , Orlando(FL):AIAA
+Paper 2009–1613, Jan. 2009.
+[56] R. Hartmann and P . Houston. Symmetric interior penalty DG methods for the compressible Navier–Stokes equations I: Method
+formulation. Int. J. Num. Anal. Model., 3:1–20, 2006.
+[57] R. Hartmann and P . Houston. An optimal order interior penalty discontinuous Galerkin discretization of the compressible
+Navier–Stokes equations. Journal of Computational Physics, 227:9670–9685, 2008.
+[58] A. Hidalgo and M. Dumbser. ADER schemes for nonlinear systems of sti ﬀ advection-diﬀusion-reaction equations. Journal of
+Scientiﬁc Computing, 48:173–189, 2011.
+[59] P . Houston, C. Schwab, and E. Sli. Stabilized hp-ﬁnite element methods for ﬁrst-order hyperbolic problems. SIAM Journal on
+Numerical Analysis, 37(5):1618–1643, 2000.
+[60] P . Houston and E. Sli. hp-adaptive discontinuous galerkin ﬁnite element methods for ﬁrst-order hyperbolic problems. SIAM
+Journal on Scientiﬁc Computing, 23(4):1226–1252, 2002.
+[61] A.M Khokhlov. Fully threaded tree algorithms for adaptive reﬁnement ﬂuid dynamics simulations. Journal of Computational
+Physics, 143(2):519 – 543, 1998.
+[62] S. Kida and Takaoka. Vortex reconnection. Annu. Rev. Fluid Mech., 26:169–189, 1994.
+[63] S. Kida, M. Takaoka, and F. Hussain. Collision of two vortex rings. Journal of Fluid Mechanics, 230:583–646, 1991.
+[64] C. Klaij, J.J.W. Van der Vegt, and H. Van der Ven. Space-time discontinuous Galerkin method for the compressible Navier-Stokes
+36
+equations. Journal of Computational Physics, 217:589–611, 2006.
+[65] B. Klein, F. Kummer, and M. Oberlack. A SIMPLE based discontinuous Galerkin solver for steady incompressible ﬂows. Journal
+of Computational Physics, 237:235–250, 2013.
+[66] M. A. Kopera and F. X. Giraldo. Analysis of adaptive mesh reﬁnement for {IMEX} discontinuous Galerkin solutions of the
+compressible Euler equations with application to atmospheric simulations. Journal of Computational Physics, 275:92–117, 2014.
+[67] H. C. Ku, R. S. Hirsh, and T. D. Taylor. A pseudospectral method for solution of the three-dimensional incompressible Navier-
+Stokes equations. Journal of Computational Physics, 70(2):439 – 462, 1987.
+[68] Brown D. L. and M. L. Minion. Performance of under-resolved two-dimensional incompressible ﬂow simulations. Journal of
+Computational Physics, 122(1):165–183, 1995.
+[69] T. Lee and D. Mateescu. Experimental and numerical investigation of 2-d backward-facing step ﬂow. Journal of Fluids and
+Structures, 12(6):703 – 716, 1998.
+[70] T. Leicht and R. Hartmann. Anisotropic mesh reﬁnement for discontinuous Galerkin methods in two-dimensional aerodynamic
+ﬂow simulations. International Journal for Numerical Methods in Fluids, 56(11):2111–2138, 2008.
+[71] C. Liu, C.W. Shu, E. Tadmor, and M. Zhang. L2 stability analysis of the central discontinuous galerkin method and a compar-
+ison between the central and regular discontinuous galerkin methods. ESAIM: Mathematical Modelling and Numerical Analysis ,
+42(04):593–607, 2008.
+[72] Y. Liu, C.W. Shu, E. Tadmor, and M. Zhang. Central discontinuous Galerkin methods on overlapping cells with a nonoscillatory
+hierarchical reconstruction. SIAM Journal on Numerical Analysis, 45(6):2442–2467, 2007.
+[73] H. Lu and Q. Sun. A straightforward hp-adaptivity strategy for shock-capturing with high-order discontinuous Galerkin
+methods. Advances in Applied Mathematics and Mechanics, 6(1):135–144, 2014.
+[74] H. Luo, J.D. Baum, and R. L ¨ohner. A discontinuous galerkin method based on a taylor basis for the compressible ﬂows on
+arbitrary grids. Journal of Computational Physics, 227:8875–8893, 2008.
+[75] M. L. Minion and Brown D. L. Performance of under-resolved two-dimensional incompressible ﬂow simulations, II. Journal of
+Computational Physics, 138(2):734–765, 1997.
+[76] R. H. Morf, S. A. Orszag, and U. Frisch. Spontaneous singularity in three-dimensional inviscid, incompressible ﬂow. Phys. Rev.
+Lett., 44:572–575, 1980.
+[77] A.A. Mouza, M.N. Pantzali, S.V . Paras, and J. Tihon. Experimental and numerical study of backward-facing step ﬂow. 5th
+National Chemical Engineering Conference, Thessaloniki, Greece, 2005.
+[78] J. Qiu, M. Dumbser, and C.W. Shu. The discontinuous Galerkin method with Lax-Wendro ﬀ type time discretizations. Computer
+Methods in Applied Mechanics and Engineering, 194:4528–4543, 2005.
+[79] H. P . Rani, Tony W. H. Sheu, and Eric S. F. Tsai. Eddy structures in a transitional backward-facing step ﬂow. Journal of Fluid
+Mechanics, 588:43–58, 2007.
+[80] W.H. Reed and T.R. Hill. Triangular mesh methods for the neutron transport equation. Technical Report LA-UR-73-479, Los
+Alamos Scientiﬁc Laboratory, 1973.
+[81] S. Rhebergen, B. Cockburn, and Jaap J.W. van der Vegt. A space-time discontinuous Galerkin method for the incompressible
+Navier-Stokes equations. Journal of Computational Physics, 233:339–358, 2013.
+[82] V . V . Rusanov. Calculation of Interaction of Non–Steady Shock Waves with Obstacles. J. Comput. Math. Phys. USSR , 1:267–279,
+1961.
+[83] S. Serra-Capizzano. Asymptotic results on the spectra of block Toeplitz preconditioned matrices. SIAM journal on matrix analysis
+and applications, 20(1):31–44, 1998.
+[84] S Serra-Capizzano. Generalized locally Toeplitz sequences: spectral analysis and applications to discretized partial di ﬀerential
+equations. Linear Algebra Appl., 366:371–402, 2003.
+[85] S. K. Stanaway, B. Cantwell, P . R. Spalart, and Ames Research Center. A numerical study of viscous vortex rings using a spectral
+method [microform]. National Aeronautics and Space Administration, Ames Research Center, 1988.
+[86] M. Tavelli and M. Dumbser. A high order semi-implicit discontinuous Galerkin method for the two dimensional shallow water
+equations on staggered unstructured meshes. Applied Mathematics and Computation, 234:623 – 644, 2014.
+[87] M. Tavelli and M. Dumbser. A staggered semi-implicit discontinuous Galerkin method for the two dimensional incompressible
+Navier-Stokes equations. Applied Mathematics and Computation, 248:70 – 92, 2014.
+[88] M. Tavelli and M. Dumbser. A staggered space-time discontinuous Galerkin method for the incompressible Navier-Stokes
+equations on two-dimensional triangular meshes. Computers & Fluids, 119:235 – 249, 2015.
+[89] M. Tavelli and M. Dumbser. A staggered space-time discontinuous Galerkin method for the three-dimensional incompressible
+Navier-Stokes equations on unstructured tetrahedral meshes. Journal of Computational Physics, 319:294 – 323, 2016.
+[90] E. F. Toro. Riemann Solvers and Numerical Methods for Fluid Dynamics, Third Edition. Springer-Verlag, 2009.
+[91] G. Tumolo, L. Bonaventura, and M. Restelli. A semi-implicit, semi-lagrangian, p-adaptive discontinuous galerkin method for
+the shallow water equations. Journal of Computational Physics, 232(1):46 – 67, 2013.
+[92] N. Tylli, L. Kaiktsis, and B. Ineichen. Sidewall eﬀects in ﬂow over a backward-facing step: Experiments and numerical simulations.
+Physics of Fluids, 14(11):3835–3845, 2002.
+[93] J. J. W. van der Vegt and H. van der Ven. Space–time discontinuous Galerkin ﬁnite element method with dynamic grid motion
+for inviscid compressible ﬂows I. general formulation. Journal of Computational Physics, 182:546–585, 2002.
+[94] H. van der Ven and J. J. W. van der Vegt. Space–time discontinuous Galerkin ﬁnite element method with dynamic grid motion
+for inviscid compressible ﬂows II. eﬃcient ﬂux quadrature. Comput. Methods Appl. Mech. Engrg., 191:4747–4780, 2002.
+[95] J. Yan and C.W. Shu. A local discontinuous Galerkin method for KdV type equations. SIAM Journal on Numerical Analysis ,
+40(2):769–791, 2002.
+[96] Y. Yu, D. Wu, and Y. Xu. Three dimensional discontinuous Galerkin methods for Euler equations on adaptive conforming meshes.
+Computer Physics Communications, 182(9):1771 – 1775, 2011.
+37
+[97] O. Zanotti, F. Fambri, and M. Dumbser. Solving the relativistic magnetohydrodynamics equations with ADER discontinuous
+Galerkin methods, a posteriori subcell limiting and adaptive mesh reﬁnement. Mon. Not. R. Astron. Soc., 452:3010–3029, 2015.
+[98] O. Zanotti, F. Fambri, M. Dumbser, and A. Hidalgo. Space-time adaptive ADER discontinuous Galerkin ﬁnite element schemes
+with a posteriori sub-cell ﬁnite volume limiting. Computers and Fluids, 118:204 – 224, 2015.
+38
