@@ -820,13 +820,18 @@ def evaluate_holdout(
         with torch.no_grad():
             pred = model(x)
         fno_one = [_rel_l2(pred[i], y[i]) for i in range(x.shape[0])]
+        # NOTE: baselines must live in the same units as ``y`` (u/u0) — see the
+        # m15932 board audit: feeding raw lattice-unit fields to _rel_l2 made
+        # persistence/viscous sit at ~1/u0 ~ 1.0 by construction and flipped the
+        # "FNO beats its baselines" verdict.
         vis = [
-            torch.stack(viscous_prior_step(run["ux"][i], run["uy"][i], run["nu"], dt_steps))
+            torch.stack(viscous_prior_step(run["ux"][i], run["uy"][i], run["nu"], dt_steps)) / u0
             for i in range(x.shape[0])
         ]
         vis_err = [_rel_l2(vis[i], y[i]) for i in range(x.shape[0])]
         pers = [
-            _rel_l2(torch.stack([run["ux"][i], run["uy"][i]]), y[i]) for i in range(x.shape[0])
+            _rel_l2(torch.stack([run["ux"][i], run["uy"][i]]) / u0, y[i])
+            for i in range(x.shape[0])
         ]
         row = {
             "run_id": run_id,
