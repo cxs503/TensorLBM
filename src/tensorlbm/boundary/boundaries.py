@@ -428,48 +428,98 @@ def nscbc_outlet_2d(
     rho_target: float = 1.0,
     sigma: float = 0.25,
     c_s: float = 1.0 / 3.0**0.5,
+    length: float | None = None,
+    u_ref: float = 0.0,
+    rho_ref: float = 1.0,
 ) -> torch.Tensor:
-    """Non-Reflecting (Characteristic Wave) outlet boundary condition (D2Q9).
+    """Non-reflecting (characteristic) outlet boundary condition, D2Q9.
 
-    Based on the Navier–Stokes Characteristic Boundary Conditions (NSCBC)
-    method (Poinsot & Lele 1992 / Thompson 1987).  Attenuates spurious
-    acoustic reflections by controlling the amplitude of incoming
-    characteristic waves at the outlet plane (x = nx−1).
+    The outlet state is reconstructed from the **outgoing acoustic
+    characteristic only**: the incoming (left-going) acoustic wave is set to
+    zero, which is the 1-D normal-incidence non-reflecting condition of
+    Thompson (1987) / Poinsot & Lele (1992); a weak relaxation of the mean
+    pressure towards ``rho_target`` (rate ``sigma * c_s / L`` per step) keeps
+    the mass budget bounded.
 
-    The target pressure (density) *rho_target* is enforced softly via a
-    relaxation coefficient σ:
+    Linearised decomposition at the outlet plane (``p' = c_s^2 (rho - rho_ref)``,
+    ``u' = ux - u_ref``)::
 
-        L1 = σ · c_s · (ρ − ρ_target)   (incoming acoustic wave amplitude)
+        A+ = 0.5 * (p' + rho_ref c_s u')      # outgoing, kept
+        A- = 0.5 * (p' - rho_ref c_s u')      # incoming, driven to 0
+        p_b = A+ - rate * (rho - rho_target) c_s^2
+        u_b = p_b / (rho_ref c_s)
+        f_out = f_eq(rho_ref + p_b/c_s^2, u_ref + u_b, uy) + f_ne(upstream)
+
+    The upstream non-equilibrium part ``f_ne`` is kept so the boundary still
+    transports vorticity/entropy waves (it is what stops the plane acting as an
+    equilibrium wall); it is first order in Kn and vanishes for the acoustic
+    verification case.
+
+    Defect history (2026-11-12, ``benchmarks/verified/nscbc_outlet_reflection``)
+    -------------------------------------------------------------------------
+    The previous implementation replaced the whole outlet column by
+    ``f_eq(rho - sigma c_s (rho - rho_target), u, v)``.  Measured on a 1-D
+    acoustic pulse (nx=1200, d'Alembert anchor, instrument calibrated against
+    two analytic limits: hard pressure Dirichlet |R|=1 and rigid wall |R|=1)
+    that form was (a) **not monotone** in ``sigma`` — |R| = 0.148 / 0.005 /
+    0.112 at sigma = 1.0 / 0.5 / 0.25 — and (b) 11.2 % reflective at the
+    documented default ``sigma = 0.25``, i.e. it did not meet the "non
+    reflecting" label.  Its ``sigma`` also had no time scale: an O(1) per-step
+    factor is a hard pressure Dirichlet in disguise, so "sigma = 1 -> hard
+    pressure fix" was not a limit but an unrelated operating point.
 
     Args:
-        f:          Distribution tensor (9, ny, nx).
-        rho_target: Target outlet density (default 1.0).
-        sigma:      Relaxation factor in [0, 1].  0 = fully non-reflecting,
-                    1 = hard pressure fix.  Typical: 0.1–0.5.
-        c_s:        Speed of sound in lattice units (default 1/√3).
+        f:          Distribution tensor of shape ``(9, ny, nx)``.
+        rho_target: Target outlet density for the slow pressure relaxation.
+        sigma:      Dimensionless relaxation constant (default 0.25); the
+                    per-step damping rate is ``sigma * c_s / L``.  ``sigma = 0``
+                    removes the pressure relaxation (pure characteristic
+                    outflow); ``sigma -> inf`` approaches a hard pressure
+                    Dirichlet.
+        c_s:        Lattice speed of sound (default 1/sqrt(3)).
+        length:     Relaxation length scale in lattice units (default ``nx``).
+        u_ref:      Reference (mean) streamwise velocity of the decomposition.
+        rho_ref:    Reference density of the decomposition (default 1.0).
 
     Returns:
-        Updated distribution tensor.
+        Updated distribution tensor (outlet column, ``x = nx - 1``).
+
+    References:
+        Thompson, J. Comput. Phys. 68 (1987) 1;
+        Poinsot & Lele, J. Comput. Phys. 101 (1992) 104;
+        Guo, Zheng & Shi, Chin. J. Comput. Phys. 19 (2002) 1 (non-equilibrium
+        extrapolation).
     """
     from tensorlbm.d2q9 import equilibrium, macroscopic
 
+    if f.shape[0] != 9:
+        msg = f"f must have 9 directions, got {f.shape[0]}"
+        raise ValueError(msg)
+
     rho, ux, uy = macroscopic(f)
+    ny = f.shape[1]
+    rho_int = rho[:, -2].reshape(ny, 1)
+    ux_int = ux[:, -2].reshape(ny, 1)
+    uy_int = uy[:, -2].reshape(ny, 1)
 
-    # Characteristic wave amplitude correction at right boundary
-    rho_out = rho[:, -1]
-    ux_out = ux[:, -1]
-    uy_out = uy[:, -1]
+    l_ref = float(f.shape[2] if length is None else length)
+    rate = float(sigma) * float(c_s) / max(l_ref, 1.0)
 
-    # Incoming wave amplitude L1 (pressure-relaxation)
-    L1 = sigma * c_s * (rho_out - rho_target)
+    cs2 = float(c_s) ** 2
+    p_int = cs2 * (rho_int - rho_ref)
+    up_int = ux_int - u_ref
+    a_plus = 0.5 * (p_int + rho_ref * float(c_s) * up_int)  # 外向波（保留）
+    p_b = a_plus - rate * (rho_int - rho_target) * cs2  # 缓慢压力松弛
+    up_b = p_b / (rho_ref * float(c_s))
 
-    # Apply correction: adjust ρ at outlet without changing velocity
-    rho_corrected = (rho_out - L1).clamp(min=1e-6)
+    rho_b = (rho_ref + p_b / cs2).clamp(min=1e-6)
+    ux_b = u_ref + up_b
+
+    f_eq_b = equilibrium(rho_b, ux_b, uy_int)[:, :, 0]
+    f_eq_int = equilibrium(rho_int, ux_int, uy_int)[:, :, 0]
 
     f_new = f.clone()
-    f_eq_out = equilibrium(rho_corrected, ux_out, uy_out)
-    # Update only the outlet column
-    f_new[:, :, -1] = f_eq_out[:, :, 0]
+    f_new[:, :, -1] = f_eq_b + (f[:, :, -2] - f_eq_int)
     return f_new
 
 
