@@ -110,3 +110,47 @@ def bench_run(req: BenchRequest):
             })
 
     return {"configs": results, "params": {"nx": nx, "ny": ny, "u_in": u_in, "re": re, "radius": radius, "tau": round(tau, 4), "warmup": req.warmup, "bench_steps": req.bench_steps}}
+
+
+class ST2D1Request(BaseModel):
+    """Schäfer–Turek 2D-1 (in-channel cylinder, Re=20) validation request."""
+
+    D: int = 12
+    steps: int = 4000
+    tolerance_pct: float = 5.0
+    plate_lo: float = 0.0  # unused placeholder kept out of the hot path
+
+
+@router.post("/st2d1/validate")
+def st2d1_validate(req: ST2D1Request):
+    """Run the Re=20 cylinder validation case and return ref-vs-got per quantity.
+
+    Delegates to the library entry :func:`tensorlbm.cylinder_st2d1.run_cylinder_st2d1`
+    (the same code path the benchmark case pool uses), so the API cannot drift
+    away from the validated case.  A short request is an honest FAIL, not an
+    error: ``verdict.passed`` is false whenever the averaging window is not
+    stationary or |err_Cd| exceeds the tolerance.
+    """
+    from tensorlbm.cylinder_st2d1 import compare_to_reference, run_cylinder_st2d1
+
+    window = max(req.steps // 4, 1)
+    result = run_cylinder_st2d1(
+        D_cells=req.D,
+        steps=req.steps,
+        device="cpu",
+        avg_window=window,
+        resid_interval=window,
+        progress=False,
+        keep_fields=False,
+    )
+    verdict = compare_to_reference(result, req.tolerance_pct)
+    return {
+        "case": result["case"],
+        "geometry": result["geometry"],
+        "lattice_units": result["lattice_units"],
+        "cd": result["cd"],
+        "cl": result["cl"],
+        "stationary": result["stationary"],
+        "stop_reason": result["stop_reason"],
+        "verdict": verdict,
+    }
