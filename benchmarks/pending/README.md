@@ -394,3 +394,92 @@ forchheimer/fibrous 的参考类裁决。
  }
 ]
 -->
+
+<!-- STATUS_LEDGER:BEGIN -->
+### 机器台账（自动生成，勿手改；`python benchmarks/status_ledger.py --write`）
+
+pending 目录 **56** · 已登记行 **32** · 带 result.json **27** · 机器判决 pass/fail/unknown = **1/16/39**
+
+违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
+
+<details><summary>soft 存量债（逐条）</summary>
+
+- `duplicate_index_row` `cavity_3d_full` — 2 index rows (lines [41, 42])
+- `missing_machine_verdict` `cavity_3d_re100` — no README and no machine verdict on disk
+- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in /root/tp-agent/work/m16798/benchmarks/pending/cylinder_re40_st/result.json)
+- `duplicate_index_row` `dit_turbulence` — 2 index rows (lines [45, 47])
+- `missing_machine_verdict` `dtmb5415_resistance` — no README and no machine verdict on disk
+- `missing_machine_verdict` `kcs_resistance` — no README and no machine verdict on disk
+- `missing_machine_verdict` `nwt_stokes2_2d` — no README and no machine verdict on disk
+- `missing_machine_verdict` `porous_ladder` — no README and no machine verdict on disk
+- `missing_machine_verdict` `pseudopotential_edm_upgrade` — no README and no machine verdict on disk
+- `missing_machine_verdict` `series60_resistance` — no README and no machine verdict on disk
+- `missing_machine_verdict` `ship_wave_michell` — no README and no machine verdict on disk
+- `missing_machine_verdict` `staircase_wall_offset` — no README and no machine verdict on disk
+- `missing_machine_verdict` `trt_wall_accuracy` — no README and no machine verdict on disk
+- `missing_machine_verdict` `two_phase_poiseuille_viscous` — no README and no machine verdict on disk
+- `stale_index_row` `cavity_natural_convection` — index row at line 43 points to a non-pending case (moved to verified/)
+- `stale_index_row` `channel_turb` — index row at line 44 points to a non-pending case (no such directory)
+- `stale_index_row` `channel_turb` — index row at line 46 points to a non-pending case (no such directory)
+
+</details>
+
+| case | README | result.json | machine verdict | index rows | index class |
+|---|---|---|---|---|---|
+| `acoustic_pulse_2d` | yes | yes | unknown | 0 | **unregistered** |
+| `aircraft_icing_rg15_ipw2` | yes | yes | unknown | 0 | **unregistered** |
+| `backward_step` | yes | yes | unknown | 1 | fail |
+| `blasius_flat_plate` | yes | yes | unknown | 1 | unknown |
+| `bstep_3d` | yes | yes | fail (`verified`) | 1 | unknown |
+| `capillary_invasion_washburn` | yes | yes | unknown | 1 | fail |
+| `cavity_3d_full` | yes | **no** | unknown | 2 | pass_candidate |
+| `cavity_3d_re100` | **no** | **no** | unknown | 0 | **unregistered** |
+| `channel_turb_3d` | yes | yes | fail (`status`) | 0 | **unregistered** |
+| `channel_turb_re180` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
+| `collision_kernels_3d_tg` | yes | yes | unknown | 1 | unknown |
+| `couette_3d` | yes | **no** | unknown | 1 | pass_candidate |
+| `cylinder_re100_dfg` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
+| `cylinder_re40_st` | yes | yes | fail (`verified`) | 1 | pass_candidate |
+| `dam_break_2d_multimodel` | yes | **no** | unknown | 0 | **unregistered** |
+| `dam_break_3d_mm` | yes | yes | fail (`verified`) | 1 | fail |
+| `dam_break_ritter_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
+| `dam_break_sc` | yes | yes | fail (`verified`) | 1 | unknown |
+| `dit_turbulence` | yes | yes | fail (`verified`) | 2 | fail |
+| `dtmb5415_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
+| `forchheimer` | yes | yes | unknown | 1 | fail |
+| `hadamard_rybczynski_droplet` | yes | yes | unknown | 1 | fail |
+| `kcs_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
+| `naca0012_aero_polar` | yes | **no** | unknown | 0 | **unregistered** |
+| `naca_0012` | yes | yes | fail (`verified`) | 1 | fail |
+| `nwt_stokes2_2d` | **no** | **no** | unknown | 0 | **unregistered** |
+| `passive_scalar_verification` | yes | **no** | unknown | 0 | **unregistered** |
+| `permeability3d` | yes | yes | unknown | 1 | unknown |
+| `permeability_fibrous` | yes | yes | unknown | 1 | unknown |
+| `phasefield_water_entry` | yes | **no** | unknown | 0 | **unregistered** |
+| `poiseuille_3d_annulus` | yes | yes | fail (`verdict`) | 1 | unknown |
+| `poiseuille_3d_ellipse` | yes | yes | fail (`verdict`) | 1 | fail |
+| `porous_ladder` | **no** | yes | unknown | 0 | **unregistered** |
+| `propeller_openwater` | yes | yes | fail (`verified`) | 0 | **unregistered** |
+| `pseudopotential_edm_upgrade` | **no** | **no** | unknown | 0 | **unregistered** |
+| `rayleigh_benard` | yes | yes | fail (`verified`) | 1 | fail |
+| `rayleigh_taylor` | yes | **no** | unknown | 1 | fail |
+| `rayleigh_taylor_rt` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
+| `scalar_dispersion_mach` | yes | **no** | unknown | 0 | **unregistered** |
+| `series60_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
+| `ship_resistance_closure` | yes | **no** | unknown | 1 | fail |
+| `ship_wave_michell` | **no** | **no** | unknown | 0 | **unregistered** |
+| `sphere_drag_closure` | yes | **no** | unknown | 0 | **unregistered** |
+| `sphere_re100` | yes | **no** | unknown | 1 | unknown |
+| `sphere_re100_mem` | yes | **no** | unknown | 1 | unknown |
+| `sphere_re200` | yes | **no** | unknown | 1 | unknown |
+| `sphere_settling_gcs` | yes | yes | unknown | 0 | **unregistered** |
+| `staircase_wall_offset` | **no** | **no** | unknown | 0 | **unregistered** |
+| `static_droplet_laplace_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
+| `stokes_second_problem` | yes | yes | pass (`status`) | 1 | unknown |
+| `suboff_highre_resistance` | yes | **no** | unknown | 0 | **unregistered** |
+| `taylor_aris_dispersion` | yes | yes | unknown | 1 | fail |
+| `taylor_aris_kh_extrapolation` | yes | **no** | unknown | 0 | **unregistered** |
+| `trt_wall_accuracy` | **no** | yes | unknown | 0 | **unregistered** |
+| `two_phase_poiseuille` | yes | yes | unknown | 1 | unknown |
+| `two_phase_poiseuille_viscous` | **no** | **no** | unknown | 0 | **unregistered** |
+<!-- STATUS_LEDGER:END -->
