@@ -80,3 +80,18 @@ Okajima 1982（JFM 116, 379）实验 St-Re 曲线：
 
 两档均 ≪3%，且落在整个文献簇内部 → **达标**。
 （最保守对照：vs 簇最低 Cd=1.44 → +2.9%/+3.1%；vs St=0.145 → +2.2%。）
+## 6. 参考常量单一化（audit m16183 返修项 3，mission m16553）
+
+审计 m16183 发现同一份 Cd/St 在不同脚本下给出两套误差：`run.py`/README 用 1.48/0.147，
+而 `verify.py`/`verify_traces.py` 硬编码 1.4785/0.1456。现全部常量收敛到 `refspec.py`：
+
+| 项 | 值 | 位置 |
+|---|---|---|
+| 锁定参考 | `REF_CD = 1.48`、`REF_ST = 0.147`（本文件 §4–§5 的簇中心） | `refspec.REF_CD/REF_ST` |
+| 锁定参考带 | Cd ∈ [1.44, 1.52]、St ∈ [0.145, 0.149] | `refspec.CD_BAND/ST_BAND` |
+| 容差 | `TOL_PCT = 3.0` | `refspec.TOL_PCT` |
+| 评分测力列 | `pair`（与 `mem` 闭合 0.0%）；`wet` 仅 diagnostic | `refspec.PRIMARY_COLUMN` |
+| 被取代口径 | 1.4785 / 0.1456 | `refspec.SUPERSEDED_REF`（**只用于识别历史误差列出处，不参与评分**） |
+
+历史工件 `case_D64.json` 的 `err_cd_pct=0.57 / err_st_pct=1.58` 由被取代口径算得（原文未改动）；
+锁定口径复算为 Cd +0.47% / St +0.61%。两值均 <3%，但**计分只认锁定口径**。
