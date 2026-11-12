@@ -136,12 +136,19 @@ def compare(pred: float, ref: float) -> Dict[str, float]:
 # ---------------------------------------------------------------------------
 # GCI (Roache) helpers
 # ---------------------------------------------------------------------------
-def gci(f_fine: float, f_mid: float, f_coarse: float, r: float = 1.5) -> Dict[str, float]:
+def gci(f_fine: float, f_mid: float, f_coarse: float, r: float = 1.5,
+        safety: float = 1.25) -> Dict[str, float]:
     """Grid convergence index on a three-grid triplet (Roache 1994).
 
     ``p`` from the standard three-grid expression, ``GCI_fine`` from the
     Richardson-extrapolated value; when the observed order is negative or
     non-physical the function reports ``p_apparent`` but flags ``valid = False``.
+
+    ``GCI_fine = safety * |(f2 - f1)/f1| / (r^p - 1)`` with Roache's
+    three-grid safety factor ``safety = 1.25``.  Before 2026-11-12 the factor
+    was hard-wired to 1.0, i.e. the reported index was 25 % *below* the
+    Roache value and any ``GCI < x %`` verdict certified here was optimistic
+    by that factor (``docs/GCI_CONVENTION_AUDIT.md``).
     """
     f1, f2, f3 = float(f_fine), float(f_mid), float(f_coarse)
     eps12 = f2 - f1
@@ -158,9 +165,10 @@ def gci(f_fine: float, f_mid: float, f_coarse: float, r: float = 1.5) -> Dict[st
         # Richardson extrapolation with the observed order
         denom = r ** p - 1.0
         f_ex = f1 + (f1 - f2) / (r ** p - 1.0) if abs(denom) > 1e-12 else float("nan")
-        gci_fine = abs((f2 - f1) / max(f1, 1e-30)) / max(denom, 1e-30)
+        gci_fine = safety * abs((f2 - f1) / max(f1, 1e-30)) / max(denom, 1e-30)
         out.update({"p_apparent": p, "valid": bool(p > 0.0 and np.isfinite(f_ex)),
-                    "GCI_fine": gci_fine, "f_extrapolated": f_ex,
+                    "GCI_fine": gci_fine, "safety_factor": safety,
+                    "f_extrapolated": f_ex,
                     "eps_mid_fine": eps12, "eps_coarse_mid": eps23})
     else:
         out.update({"p_apparent": None, "valid": False, "GCI_fine": None,
