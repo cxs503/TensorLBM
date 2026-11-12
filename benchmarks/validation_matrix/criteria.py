@@ -17,6 +17,7 @@ code path is used for frozen artifacts and freshly executed runners.
 
 from __future__ import annotations
 
+import math
 from typing import Iterable, Mapping, Sequence
 
 STATUS_PASSED = "passed"
@@ -138,6 +139,10 @@ def _levels_of(metric_name: str, values: Sequence[float], spec: Mapping) -> dict
             judged = judge_metric(v, reference, float(tol_i), kind=kind)
             judged["gated"] = True
         rows.append({"level": str(level), **judged})
+    gated = [r for r in rows if r["gated"]]
+    finite_gated = [r for r in gated if math.isfinite(r["err_pct"])]
+    worst = max(finite_gated, key=lambda r: abs(r["err_pct"]), default=None)
+    unresolved = [r["level"] for r in rows if not math.isfinite(r["err_pct"])]
     return {
         "metric": metric_name,
         "kind": kind,
@@ -145,8 +150,23 @@ def _levels_of(metric_name: str, values: Sequence[float], spec: Mapping) -> dict
         "tol_pct": tol,
         "tol_pct_by_level": tol_by_level,
         "levels": rows,
-        "pass": all(r["pass"] for r in rows if r["gated"]),
-        "max_abs_err_pct": max(abs(r["err_pct"]) for r in rows),
+        "pass": all(r["pass"] for r in gated),
+        # ``max_abs_err_pct`` spans every level (gated and informational) and is
+        # kept for backward compatibility only.  Anything that *publishes* a
+        # verdict must use the gated aggregates below: a value taken over
+        # informational levels can exceed the tolerance it is printed next to
+        # while the case legitimately passes, which reads as a contradiction.
+        "max_abs_err_pct": max(
+            (abs(r["err_pct"]) for r in rows if math.isfinite(r["err_pct"])),
+            default=None,
+        ),
+        "max_abs_err_pct_gated": None if worst is None else abs(worst["err_pct"]),
+        "worst_gated_err_pct": None if worst is None else worst["err_pct"],
+        "worst_gated_level": None if worst is None else worst["level"],
+        "worst_gated_tol_pct": None if worst is None else worst["tol_pct"],
+        "gated_levels": [r["level"] for r in gated],
+        "informational_levels": [r["level"] for r in rows if not r["gated"]],
+        "unresolved_levels": unresolved,
     }
 
 

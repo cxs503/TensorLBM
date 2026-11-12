@@ -5,7 +5,7 @@
   "reference_basis": "analytic (thin-ship)",
   "scope": "Michell closed-form C_W(Fn), Kelvin wave geometry and hump/hollow; the LBM free-surface C_W vs Michell comparison is the primary criterion.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T06:10:38Z",
+  "generated_utc": "2026-11-12T16:10:48Z",
   "artifact": null,
   "repro_cmd": "python benchmarks/wave_wake_michell/run.py",
   "references": [
