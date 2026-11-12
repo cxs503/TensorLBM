@@ -1,0 +1,102 @@
+{
+  "case": "sphere_re100",
+  "slot": "sphere",
+  "title": "Sphere Re=100 drag vs Schiller-Naumann",
+  "reference_basis": "correlation (multi-source audited)",
+  "scope": "D3Q19, BFL interpolated smooth wall, per-link momentum ledger; D=40/60.",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/verified/sphere_re100/result.json",
+  "repro_cmd": "python benchmarks/verified/sphere_re100/run.py",
+  "references": [
+    {
+      "id": "sphere_cd_re100",
+      "quantity": "drag coefficient of a sphere, Re=100",
+      "value": 1.0917311,
+      "formula": null,
+      "origin": "Schiller-Naumann correlation Cd=24/Re*(1+0.15 Re^0.687), cross-checked against Clift-Gauvin",
+      "source": "benchmarks/verified/sphere_re100/REFERENCE_AUDIT.md",
+      "source_sha256": "171b101e7959739b07e3b004ec09ae1e33cb5e500be450bcd29b0abcb93675cc",
+      "token": "1.0917311"
+    }
+  ],
+  "status": "passed",
+  "machine_pass": true,
+  "declared_status": null,
+  "reason": "all metric and convergence criteria passed",
+  "metrics": [
+    {
+      "metric": "cd",
+      "kind": "value",
+      "reference": 1.0917311,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D40",
+          "value": 1.1219804015117896,
+          "reference": 1.0917311,
+          "err_pct": 2.770764844180907,
+          "tol_pct": 3.0,
+          "kind": "value",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "D60",
+          "value": 1.119462001144486,
+          "reference": 1.0917311,
+          "err_pct": 2.54008529613986,
+          "tol_pct": 3.0,
+          "kind": "value",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 2.770764844180907
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "cd",
+      "errors_abs_pct": [
+        1.1219804015117896,
+        1.119462001144486
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": 0.0025184003673035527,
+      "monotone": true,
+      "require_monotone": false,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08",
+  "artifact_bytes": 5697,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/verified/sphere_re100/result.json",
+      "sha256": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/verified/sphere_re100/run.py",
+      "sha256": "73c26156f8a9a91c92384cd76df3cf2ba085d225ab998ededf78a259750ed947"
+    }
+  ],
+  "notes": "Recorded errors +2.771% / +2.540% (span 0.231%), monotone decreasing by the case README; the machine check uses the frozen cd_by_grid values."
+}
