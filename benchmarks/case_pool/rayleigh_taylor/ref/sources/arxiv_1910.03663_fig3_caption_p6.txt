@@ -1,0 +1,31 @@
+1.5
+0 2 4 6 8
+0.0
+1.2
+2.5
+3.8
+0 2 4 6 8
+0.0
+1.2
+2.5
+3.8
+FIG. 3. Eﬀects of Rep on the bubble velocity FrB (top left), the spike velocity FrB (top right), the bubble front location
+hB (bottom left), and the spike front location hS (bottom right) in 2D RTI at A = 0.04. The dashed line shows the
+potential model prediction of FrB =
+√
+1/(3π). hB/S is measured relative to the initial interface position z0 = 0.5Lz.
+The plots show that the bubble and spike growth (both velocities and heights) are similar at low A andRep, however they
+experience asymmetric growth at late times at the highest Rep, even at low A = 0.04 cases shown here. A sustainable
+re-acceleration stage is observed at high Rep. The results are similar to the incompressible RTI results in Ref. [38]. Note
+that, τ here is smaller than the deﬁnition used in Ramaprabhu et al. [35, 37] by a factor
+√
+2π (τ = 6 here corresponds to
+time≈ 15 in [35, 37]).
+pressible RTI. At low A = 0.04, we observe bub-
+ble re-acceleration that is temporally persistent
+when Rep exceeds a threshold value (Rep = 6000
+in 2D and Rep = 400 in 3D). We also observe
+the emergence of asymmetry in the bubble and
+spike development (height and velocity) at late
+times, even at the lowest A = 0.04 when Rep
+is high. At moderate Rep below the threshold,
