@@ -1,0 +1,631 @@
+
+===PAGE 1===
+A F INITE VOLUME AND LEVENBERG –MARQUARDT
+OPTIMIZATION FRAMEWORK FOR BENCHMARKING MHD
+FLOWS OVER BACKWARD -FACING STEPS
+Spyridon C. Katsoudas∗
+Department of Mathematics
+University of Ioannina
+Campus Ioannina University, Ioannina, 45110, Greece
+s.katsoudas@uoi.gr
+Grigorios T. Chrimatopoulos∗
+Department of Mechanical Engineering
+University of the Peloponnese
+1 M. Aleksandrou Str, Koukouli, Patras, 263 34, Greece
+g.chrimatopoulos@go.uop.gr
+Michalis A. Xenos
+Department of Mathematics
+University of Ioannina
+Campus Ioannina University, Ioannina, 45110, Greece
+mxenos@uoi.gr
+Efstratios E. Tzirtzilakis†
+Department of Civil Engineering
+University of the Peloponnese
+1 M. Aleksandrou Str, Koukouli, Patras, 263 34, Greece
+etzirtzilakis@go.uop.gr
+ABSTRACT
+This study examines the hydrodynamic and magnetohydrodynamic numerical solution of an elec-
+trically conducting fluid flow in a backward facing step (BFS) geometry under the influence of an
+external, uniform magnetic field applied at an angle. The numerical results are obtained utilizing
+the Finite V olume Method in a collocated grid configuration whereas the resulting system is solved
+directly using a Newton-like method in contrast to iterative approaches. The computed hydrodynamic
+results are validated with experimental and numerical studies for an expansion ratio of two. The
+magnetohydrodynamic case is also validated for Reynolds number Re = 380 and Stuart number
+N = 0.1 with previous numerical studies. Some applications of BFS flow under the influence of a
+magnetic field include metallurgical processes, cooling of nuclear reactors, plasma confinement, and
+biomedical applications in arteries. One of the most important findings of this study is the reduction
+of the reattachment point in contrast to the increase of pressure as the magnitude of the magnetic field
+is amplified. The magnetic field angle with the greatest influence on fluid flow has been observed to
+be at an angle ofφ =π/2. In several cases, the magnetic field could substantially reduce the main
+flow vortex leading to a shifted reattachment point.
+Keywords Backward Facing Step, Magnetohydrodynamics, Finite V olumes Method, Direct Numerical Solution, Point
+of flow reattachment
+MSC Classification: 35Q30, 65N08, 76W05
+1 Introduction
+The Backward-Facing Step (BFS), also referenced in the literature as “sudden expansion flow” or “backward flow”,
+constitutes a classic benchmark problem in Computational Fluid Dynamics (CFD). Its significance arises from its
+ability to model separated flows. The flow downstream of the step point presents the separation bubble formation and
+reattachment processes in both the lower and upper walls. For a high Reynolds number (Re), multiple bubbles exist in
+both walls. Reattachment and separation points are highly affected by geometry, inlet-outlet boundary conditions, and
+heat transfer. Many numerical studies have been conducted for the investigation of the effects of the outflow boundary
+∗These authors contributed equally to this work.
+†Corresponding author.
+arXiv:2507.16509v1  [physics.flu-dyn]  22 Jul 2025
+===PAGE 2===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+conditions in the BFS flow, such as Papanastasiou et al. and Gartling who highlighted the importance of such boundary
+conditions in the numerical solution [1, 2]. Examining these flows is vital due to the various real-life applications such
+as the flow behind buildings, airfoils at large angles of attack, or spoiler flows [3, 4]. Separation is a phenomenon that
+scientists try to avoid as it leads to flow resistance and consequently to large energy losses.
+The flow over a BFS has been established as a test problem to challenge the accuracy of numerical methods, due to the
+dependence of the reattachment length,xr on the Reynolds number and the expansion ratio (ER) [5]. Numerous studies
+compare their numerical findings with experimental data, such as those of Armaly et al. [6] for ER = 1.942, whereas
+Lee and Mateescu studied for BFS ER = 1.17 and ER = 2.0 [7]. These efforts aim to achieve accurate predictions of the
+reattachment point. The fundamental quantity that validates the accuracy of the method is the reattachment point of the
+bubble on both walls. The three-dimensional nature of the problem affects the comparison of the reattachment point in
+both walls, regarding two-dimensional numerical studies and three-dimensional experimental data, as Armaly et al.
+indicate [6]. The agreement among numerical studies with experimental data is still not satisfactory and it is highlighted
+that the extra third dimension drastically affects the reattachment distance whenRe> 500 [8, 9].
+As the flow separates at the corner of the step, a recirculation region forms downstream and the flow reattaches at
+distancexr from the corner step. For a large Reynolds number, additional separation and recirculation points appear in
+the upper wall. AsRe increases, multiple recirculation regions emerge in both the upper and lower walls [10]. This
+behavior is attributed to the adverse pressure gradient associated with the expanding flow, created by a sudden change
+in the cross section [11].
+The case of a two-dimensional, steady-state incompressible flow over a BFS has been thoroughly examined for a small
+Reynolds number. The main concern of scientists is the investigation of BFS flows overRe> 800 due to the controversy
+on whether it is possible to obtain a stable solution. The Re = 800 is believed to be the upper regime to obtain a stable
+numerical solution [10]. The turbulent BFS flow has been studied meticulously by scientists; in consequence, numerical
+and experimental calculations have established the transitional regime to be forRe> 1150 [7]. Numerous studies have
+been conducted in turbulent case as this of Erturk, Liakos and Malamataris and Choi et al. investigating the transitional
+regions and bifurcations that occur in two- or three-dimensional fluid flows [10, 12, 13]. Recent studies on 3D BFS
+flows have examined thermal performance, focusing on how geometric changes like downstream baffles affect heat
+transfer. Parameters such as baffle height, thickness, and position significantly influence flow and Nusselt number
+distribution across varying Reynolds and Grashof numbers [14].
+The primary distance reattachment point is a function of the expansion rate (E =H/h) and the Reynolds number (Re).
+In this studyRe, is based on the heightH, of the channel,ReH = (ρuaH)µ, whereua defined as the average value of
+the inlet velocity, or else the 2/3 ofumax. In the case of ER=2.0,ReH is identical with,ReD = (ρuaD)µ, whereD is
+the hydraulic diameter defined as twice the height of the inlet region upstream of the geometry (D = 2h). In the scope
+of this study, the expansion rate is selected at 2.0 because it is the most studied case in the literature and facilitates
+comparison. As the expansion rate increases, the reattachment point decreases as Erturk presents in [10]. The geometry
+of BFS has a dimensionless length of L = 15.0, height of H = 1.0, the step height is h = 0.5. Consequently, the
+expansion ratio is equal to 2.0 and the step location on thex-axis is atx = 0.675 or normalized asx = 1.35h, whereh
+is the step height. Demuren demonstrated a study and showed that the numerical solution remained unaffected by the
+channel length when the ratio,L/H >7 which stands in the current study [15].
+Despite its relative geometric simplicity, the BFS problem encapsulates complex dynamics that challenge both ex-
+perimental and CFD approaches, especially when it extends to magnetohydrodynamic (MHD) contexts. A uniform
+magnetic field reduces the fluid momentum [16]. This effect is due to the Lorentz force in the momentum equations
+that opposes fluid flow. Although the application of such magnetic field has been studied in various scenarios, such as
+in the lid driven cavity, aneurysms, and stenosis, the application of a magnetic field in a BFS problem is limited to our
+knowledge [17, 18, 19]. Its implementation in the BFS flow remains scarcely explored, highlighting the novelty of the
+present study [20, 17]. Although the numerical methodology used in the aforementioned studies differs significantly
+compared with the present one, the numerical results are in very good agreement. Magnetohydrodynamics (MHD) has
+been an active area of research among scientists and engineers due to its wide range of applications in industrial and
+bioengineering research areas [21, 22].
+Figure 1, illustrates the geometry of the BFS in the present study. A recirculation zone is observed to the right of the
+BFS accompanied by the formation of vortices. Boundary layers are observed in the upper region of the step and in the
+region after the reattachment point.
+The novelty of this study arises from the extension of MHD flow over a BFS in various angles of magnetic field and
+different Stuart numbers. Additionally, the numerical procedure of FVM with the Levenberg-Marquardt algorithm is
+validated in the MHD and hydrodynamics cases. The results are in excellent agreement with the calculations of the
+normalized reattachment point (xr/h), the length of the upper wall bubble (xrs−xs)/h and the velocity profile in
+2
+===PAGE 3===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 1: The geometry of BFS with the recirculation zone, the secondary recirculation region where a second smaller
+vortex exists and the potential flow where the velocity is equal tou∞.
+distancex/h = 6 andx/h = 14. We have developed an advanced numerical algorithm based on Newton-like methods,
+such as the Levenberg-Marquardt approach for the solution of a strongly nonlinear system of partial differential
+equations (PDEs). This approach provides robust and reliable results and always converges to the solution. A numerical
+code was developed in Matlab (MathWorks, Inc.). So, the literature gap is addressed with this study, presenting robust
+results on MHD effect on the flow field in different angle configurations, highlighting the pressure field in all the cases
+studied.
+2 Mathematical Formulation
+2.1 Magnetic field configuration
+In this study, a uniform magnetic field is applied to the fluid flow at an angle,φ. This type of magnetic field is applied
+to the entire fluid. In mathematical form, the uniform magnetic field is given by the magnetic induction [23],
+¯B′ =
+ 
+B′
+x′,B′
+y′
+
+= (B0cosφ,B 0sinφ) =B0 (cosφ,sinφ ) (1)
+whereB′
+x′ andB′
+y′ are the magnetic induction components (uniform magnetic field) and B0 is the magnetic field
+magnitude measured in Tesla (T ),
+B′ =
+q
+B′2
+x′ +B′2
+y′ =B0
+ 
+cos2φ +sin2φ
+
+=B0. (2)
+The influence of the magnetic field on fluid flow is maximized when the magnetic field is applied vertically,φ =π/2.
+The change in angle belowφ =π/2 results in a minimized effect of the magnetic field, as shown in Figure 2. The
+numerical results for different angles are presented in a later section.
+2.2 Dimensional and Non-dimensional governing equations
+The governing equations that formulate the flow of an electrically conducting fluid under the influence of an externally
+applied, uniform magnetic field are the Navier-Stokes along with the Conservation of Mass equations [23],
+ρ
+
+u′∂u′
+∂x′ +v′∂u′
+∂y′
+
+=−∂p′
+∂x′ +µ
+∂2u′
+∂x′2 + ∂2u′
+∂y′2
+
+−σ
+ 
+B′2
+y′u′−B′
+x′B′
+y′v′
+, (3)
+ρ
+
+u′∂v′
+∂x′ +v′∂v′
+∂y′
+
+=−∂p′
+∂y′ +µ
+∂2v′
+∂x′2 + ∂2v′
+∂y′2
+
+−σ
+ 
+B′2
+x′v′−B′
+x′B′
+y′u′
+, (4)
+∂u′
+∂x′ + ∂v′
+∂y′ = 0, (5)
+3
+===PAGE 4===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 2: Backward-facing step for a uniform magnetic field of an angleφ<π/ 2.
+whereu′ andv′ are the dimensional fluid velocity components,p′ is the dimensional fluid pressure.ρ is the fluid density,
+measured in kilograms per cubic meter (kg/m2)µ is the fluid viscosity, measured in Pascal-seconds (Pa·s).σ is the
+electrical conductivity, measured in Siemens per meter (S/m). The induced magnetic field is considered negligible [24].
+To obtain the non-dimensional forms of equations (3)-(5), the following non-dimensional quantities are introduced,
+x = x′
+H, y = y′
+H, u = u′
+ua
+, v = v′
+ua
+, p = p′
+ρu2a
+, B x = B′
+x′
+B0
+, B y =
+B′
+y′
+B0
+. (6)
+whereH is the channel height measured in meters (m),ua measured in meters per second (m/s). The quantityB0 is
+the magnetic field magnitude measured in Tesla (T ),
+¯B = (Bx,B y) = (cosφ, sinφ). (7)
+The non-dimensional governing equations are written in closed form as,
+∂u2
+∂x + ∂uv
+∂y =−∂p
+∂x + 1
+Re
+∂2u
+∂x2 + ∂2u
+∂y 2
+
+−N
+ 
+B2
+yu−BxByv
+
+, (8)
+∂uv
+∂x + ∂v 2
+∂y =−∂p
+∂y + 1
+Re
+∂2v
+∂x2 + ∂2v
+∂y 2
+
+−N
+ 
+B2
+xv−BxByu
+
+, (9)
+whereReH is the Reynolds number andN is the Stuart number given by [23],
+ReH = ρu aH
+µ , N = σHB 2
+0
+ρua
+. (10)
+2.3 Boundary conditions
+The boundary conditions for the problem under consideration are,
+u (y) =
+ 0, y ∈ [0, 0.5)
+umax(−16y2 + 24y− 8), y ∈ [0.5, 1] , v = 0, at the channel inlet,
+u = 0, v = 0, at the top and bottom walls,
+p = 0, at the channel outlet.
+(11)
+The inflow velocity profile is identical to the studies we compare with. The value of average velocityua is equal to 1.0
+and is used for the calculation ofReH. At the outlet channel region of BFS, Neumann boundary conditions are applied
+for the two components of velocity and zero pressure Dirichlet boundary condition is applied. On the walls of the BFS
+geometry, no-slip boundary condition is enforced for the fluid velocity. The case ofER = 2.0 is fundamental and the
+most studied, therefore the choice for the expansion rate to compare with as many studies as possible.
+4
+===PAGE 5===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+3 Numerical methodology
+The discretization approach used in the current study is the Finite V olume Method (FVM), a second-order accuracy
+method, due to the central scheme used to discretize the governing equations [25]. This method transforms the system
+of nonlinear partial differential equations into a nonlinear system of algebraic equations over each finite volume. The
+computational domain is divided into a finite number of volumes, composed of partitions of the domain. By integrating
+the governing equations (8)-(9) over the control volume, the required system is obtained, where in a residual form is
+provided by,
+f1 = 1
+2∆y
+ 
+u2
+E−u2
+W
+
++ 1
+2∆x (uNvN−uSvS) + ∆y (pE−pP )−
+1
+Re
+ ∆y
+∆x (uE− 2uP +uW ) + ∆x
+∆y (uN− 2uP +uS)
+
++
+N
+ 
+cos2 (φ)uP−sin (φ)cos (φ)vP
+
+,
+(12)
+f2 = 1
+2∆y (uEvE−uWvW ) + 1
+2∆x
+ 
+v2
+N−v2
+S
+
++ ∆x (pE−pP )−
+1
+Re
+ ∆y
+∆x (vE− 2vP +vW ) + ∆x
+∆y (vN− 2vP +vS)
+
++
+N
+ 
+sin2 (φ)vP−sin (φ)cos (φ)uP
+
+,
+(13)
+f3 = 1
+2 (uE−uW ) + 1
+2∆x (vN−vS). (14)
+∆x and ∆y are the dimensions of the control volume andE,W,P,S andN are the East, West, Centroid, South and the
+North of the control volume.
+The numerical solution is obtained by solving the equations (12)-(14) using a Newton-like method [26]. In general,
+Newton-like methods use the Jacobian matrix, calculated by,
+J = ∂ (f1,f 2,f 3)
+∂ (u,v,p ) (15)
+The functionsf1,f 2 andf3 are the residual equations obtained by the discretization scheme equations (12)-(14) and
+the variables ˜u, ˜v and ˜p are the vectors of the unknown parameters of the fluid velocities and pressure. In large-scale
+problems, such as the one presented in this study, the evaluation of the Jacobian matrix, J, can be computationally
+expensive [27]. The sparsity of the Jacobian matrix was utilized, saving substantial amount of memory while deceasing
+the computational time. It has been observed that the number of zero elements increases as the grid becomes finer,
+implying that the number of elements equal to zero is vastly greater than the non-zero ones [27].
+Solving the algebraic system with Newton-like methods provides a different approach compared to other solvers such
+as SIMPLE-PISO and Stream-Function V orticity formulation. The proposed method does not use additional equations
+to simplify the nonlinear system. The coupled system is solved simultaneously at each Newton iteration, while the
+Jacobian matrix is calculated once per iteration, saving computational time and space. Convergence is obtained when
+the equations (12)-(14) are as close to zero as possible. A small tolerance value (ε = 10−10) is defined to stop the solver
+procedure. If this criterion is satisfied, a vector solution is obtained which contains the resolved unknown parameters
+u,v andp [26].
+4 Results and Discussion
+In this work, we study the BFS in the hydrodynamic and magnetohydrodynamic case. The BFS is a valuable test
+problem for testing new developed codes and the accuracy of new numerical methods. The flow over BFS combines the
+phenomenon of separation, recirculation region, and the existence of a primary vortex generated in the recirculation
+zone. In some special cases with certain expansion rates and a specific Reynolds number Re, a secondary vortex
+emerges at the low corner of the step. The application of the MHD principles results in the disturbance of fluid flow.
+The momentum is reduced along the vortex length, and the reattachment point is shifted. The area after the reattachment
+point, defined as the region in which the boundary layer is recovered.
+The numerical results presented are obtained through a mesh grid of the size of199×109 which results in control volumes
+providing a higher spatial resolution and ensuring greater accuracy in capturing gradients and flow characteristics.
+During the study of the BFS flow a grid independence study has been conducted using finer grids. Maximum differences
+of 2.3% have been observed for the reattachment point at the bottom wall for Re numbers of 100 to 800. Thus, the
+coarser grid was used to obtain the numerical results.
+5
+===PAGE 6===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 3:u-velocity contours forRe = 200, 400, 600 and 800, respectively.
+Figure 4: Pressure distribution contours forRe = 200, 400, 600 and 800, respectively.
+4.1 Hydrodynamic Case
+Backward facing step flow in the hydrodynamic case is studied for different Reynolds numbers,Re from 100 to 800
+with step 100. The results include the u-velocity component, pressure distribution, skin friction coefficient,Cf and
+vital values such as these of normalized reattachment point,xr/h and normalized length of the bubble in the upper wall,
+(xrs−xs)/h, to evaluate the results with other studies.
+Theu-velocity can be observed in Figure 3 for four different cases Re = 200, 400, 600 and 800 with maximum
+inlet-velocity ofumax = 1.5. In the upstream region of the BFS, the flow is fully developed and remains symmetrical.
+After the step, separation of flow causes a significant change in the velocity profiles, creating a recirculation zone. The
+profile in this region shows negative velocities near the wall due to flow reversal. Furthermore, the pressure distribution
+for the aforementioned cases is presented in Figure 4. AsRe increases, the fluid flow presents more intense recirculation
+and a longer reattachment length. In consequence, the primary vortex gets wider. This occurs because the inertia of the
+flow dominates the viscous forces asRe increases. A second bubble is emerging in the upper wall atRe = 400. This is
+anticipated and validates the results of the developed methodology [6, 10].
+The streamlines highlight the presence of the primary vortex defining the recirculation region. The reattachment point is
+calculated by the stresses on the wall,τw or the skin friction coefficient,Cf . Mathematically,τw andCf are linked
+by the expression,Cf =τw/
+ 
+ρu2
+o
+
+. Consequently, the reattachment point is defined as the point thatτw andCf are
+6
+===PAGE 7===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 5: BFS for u-velocity zoomed with streamlines in the lower bubble (left) and upper bubble (right). Pressure
+distribution in the second figure. Figures correspond toRe = 800.
+Figure 6: Skin friction coefficient in both upper (solid) and lower (dashed) wall.
+becoming zero. Similarly, the separation point and the second reattachment point on the upper wall are defined. Table 1,
+shows the normalized distances of the reattachment and separation points for variousRe. In the last column, the length
+of the upper-wall bubble is computed to facilitate comparison with other studies.
+Table 1: Normalized reattachment distances of lower wallxr/h, upper wallxrs/h separation point, distance in upper
+wallxs/h, and length of bubble in upper wall, (xrs−xs)/h
+Re x r/h x s/h x rs/h (xrs−xs)/h
+100 3.00 – – –
+200 4.95 – – –
+300 6.75 – – –
+400 8.10 9.00 11.55 2.55
+500 9.30 9.30 14.70 5.40
+600 10.05 9.90 17.25 7.35
+700 10.95 10.35 19.65 9.30
+800 11.55 10.80 21.90 11.10
+The formation and length of the two bubbles have become the most important tests for validation in BFS flows. In
+Figure 5 the two bubbles forRe = 800 are presented with streamlines. In the pressure distribution, the step in geometry
+lead to flow separation. The pressure in the region upstream of the step, shows a typical pressure distribution for a
+channel. After the step, there is a sudden pressure drop due to flow separation, which is recovering progressively as the
+flow approaches the reattachment point. After this point, the pressure gradually reaches the boundary condition value
+applied at the end of the geometry.
+In Figure 6, the skin friction coefficient on both walls is presented, after the step. It can be observed that on lower wall,
+Cf is equal to zero in one location, at the reattachment point,Cf on the upper wall is equal to zero in two locations.
+The first one defines the separation or else detachment point,xs and the second one defines the reattachment point of
+the upper bubble,xrs.
+7
+===PAGE 8===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+4.2 Validation
+Validation of the results is essential for further investigation of the MHD effects in the flow over a BFS. A key indication
+of the robustness of the findings is the agreement between the reattachment point on the lower wall and the length of the
+upper wall bubble. The upper bubble exists forRe greater than 400. Numerous studies have verifiedRe = 400 as the
+critical value for the appearance of the upper bubble.
+In Table 2 the reattachment point is compared to several other studies that compare the normalized reattachment point
+and achieve very good agreement for the numerical results in the case ofRe = 800. Additionally, the normalized length
+of the upper bubble presents very good agreement in comparison with other authors. In these two critical values, the
+small differences can be explained by the difference of numerical schemes and discretization methods. The comparison
+of the results with other works is evaluated as very good, considering that most authors use the stream function-vorticity
+formulation, which differs drastically from this methodology and results in small differences.
+Table 2: Comparison ofxr/h and (xrs−xs)/h values with percentage error.
+Authors xr/h % Error inxr/h (xrs−xs)/h % Error in (xrs−xs)/h
+Rogers & Kwak [28] 11.48 0.61% 11.07 0.27%
+Barton [29] 11.51 0.35% 11.52 3.78%
+Erturk [10] 11.834 2.46% 11.077 0.21%
+Kim & Moin [5] 11.90 3.03% 11.50 3.60%
+Lee & Mateescu [7] 12.00 3.90% 11.00 0.90%
+Guj & Stella [30] 12.05 4.33% 10.60 4.50%
+Grigoriev & Dargush [31] 12.18 5.45% 11.24 1.26%
+Keskar & Lyn [32] 12.19 5.54% 11.25 1.35%
+Gartling [2] 12.20 5.63% 11.26 1.44%
+Gresho et al. [33] 12.20 5.63% 11.26 1.44%
+Present study 11.55 – 11.10 –
+As Armaly et al. have demonstrated, the experimental studies vary enough from the numerical ones, at the range
+ofRe >400 due to the three-dimensionality of BFS flow, causing the two-dimensional numerical results to differ
+moderately from the experimental measurements [6]. As depicted in Figure 7 experimental measurements of Armaly,
+begin to differ noticeably afterRe = 400, as the numerical results of several studies tend to follow an underestimate of
+the experimental results for an expansion ratio of 1.942. Numerical studies of the most influential works in flow over
+BFS, are compared with our results and present very good agreement for all ranges of Reynolds numbers from 100 to
+800.
+Figure 7: Comparison of present study normalized reattachment point ( xr/h) with experimental and numerical
+data [6, 10, 5, 34].
+8
+===PAGE 9===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+(a) x/h = 6
+ (b) x/h = 14
+Figure 8: Validation of horizontal profile inx/h = 6 andx/h = 14 with a comparison of the present study (black solid
+line) with Erturk profile (blue dotted line) [10].
+The negligible differences presented in the implemented comparison can be explained in the different discretization
+scheme, the different solver for the nonlinear system of equations, or in the slightly shorter length section we use
+compared to other studies. Another crucial aspect is theu-velocity profile. In the present study, the velocity profile at
+the downstream location of the step atx/h = 6 andx/h = 14 is compared to the corresponding result of Erturk [10],
+presenting a perfect fit, Figure 8.
+Finally, our results are satisfactory as the validation of both lower- and upper-wall bubbles are in acceptable range. This
+outcome provides a solid foundation for proceeding with the implementation of the fluid flow over BFS adding the
+MHD effects, presented in the next section.
+5 Magnetohydrodynamic flow validation
+In the present study, a uniform magnetic field is applied in various magnitudes and angles. The hydrodynamic case
+revealed the creation of vortices and the numerical results were validated with published studies. The application of
+a uniform magnetic field, due to Lorentz forces, opposes the flow. The application of the uniform magnetic field is
+examined in two cases, (a) the application of different magnetic field magnitudes, while the magnetic field is vertically
+applied to the lower wall, (b) the application of a constant magnetic field applied in various angles. A comparison with
+Abbassi and Nassrallah has a small error ofu-velocity distribution atx/h validating the MHD approach.
+Figure 9a and 9b shows theu-velocity atx/h = 2.1 andx/h = 20.01 inside the channel, respectively. At the first point
+the velocity presents negative values due to the creation of the vortex, whereas at the second point the velocity is closer
+to a parabolic profile, indicating that the flow develops. The results are also in good quantitative agreement with those
+of study [17].
+(a) x/h = 2.1
+ (b) x/h = 20.01
+Figure 9: Validation of horizontal profile inx/h = 2.1 andx/h = 20.1 for various Stuart numbers forRe = 300.
+9
+===PAGE 10===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 10 shows the change in the normalized reattachment pointxr/h for the hydrodynamic and magnetohydrodynamic
+case, respectively. Due to the effect of the magnetic field, the reattachment point decreases. It should be noted that
+the vortices that are present forRe> 400, in the hydrodynamic case at the upper wall are completely vanished, since
+Cf does not change sign. The reattachment point in the case of Re = 800,N = 0.1 andφ =π/2 is close to that of
+Re = 300 in the hydrodynamic case, indicating that there is no vortex in the upper wall.
+Figure 10: Comparison of the normalized reattachment points for the Hydrodynamic (orange) and Magnetohydrody-
+namic (blue) case, respectively, forN = 0.1 andφ =π/2.
+5.1 Vertically applied magnetic field
+The numerical simulations showed that the velocity decreases as the magnetic field magnitude increases. The pressure
+increases as the magnetic field magnitude is amplified, since the magnetic field opposes the fluid. A visual representation
+for the pressure increase is shown in Figure 11. As a result of the velocity drop, the length of the vortex is reduced as
+the magnitude of the magnetic field increases, Figure 12. A visual representation of the reduction of the vortex in each
+case is shown in Figure 12, as the magnetic field increases.
+Figure 11: Pressure contours for Re = 300 , φ = π/2 and Stuart number N = 0.0 (hydrodynamic case), N =
+0.050, 0.075 and 0.1, respectively.
+10
+===PAGE 11===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 12: Creation of vortices for Re = 300,φ = π/2 and Stuart number N = 0.0 (hydrodynamic case), N =
+0.050, 0.075 and 0.1, respectively.
+5.2 Magnetic field magnitude with various angles
+Theu-velocity is depicted forRe = 300 andN = 0.1, for different angles. It can be seen that the case ofφ =π/6, is
+closer to the hydrodynamic case compared to the case ofφ =π/2 where the fluid flow is considerably reduced. The
+vortex length becomes smaller, as the angle increases, Figure 13.
+In this case, the Stuart number wasN = 0.1, whereas the angle was set toφ =π/2,π/ 3,π/ 4 andπ/6, respectively.
+The effect of the magnetic field on the pressure is visible at Figure 14. Lateral pressure is observed in all cases, while
+the pressure values has the maximum effect as the magnetic field angle isφ =π/2.
+11
+===PAGE 12===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 13: Creation of vortices forRe = 300,N = 0.1 and anglesφ =π/6,π/ 4,π/ 3 andπ/2, respectively.
+12
+===PAGE 13===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+Figure 14: Pressure contours forRe = 300,N = 0.1 andφ =π/6,π/ 4,π/ 3 andπ/2, respectively.
+5.3 Limitations and Future Steps
+The study of BFS exhibits great interest in three dimensions due to the asymmetries observed in the reattachment points
+in thez-direction. The numerical procedure used can be extended to the three-dimensional case of BFS to compare
+with three-dimensional experimental studies. A preliminary study was conducted, and the boundary conditions are
+identical to the two-dimensional study, expanded inz-direction. The results depicted in Figure 15 show theu-velocity
+of the fluid. The results were produced by the same numerical algorithmic procedure, described in the present study,
+expanded in the three-dimensional case for a grid size of 79× 29× 19.
+Figure 15: Scatter plot for theu-velocity component, in the case of the 3D Backward Facing step forRe = 100.
+Changing the attribute of the magnetic field from uniform to non-uniform would provide new insights into its effects
+in such a problem, since it is expected to locally disturb the vortex generated by the fluid flow and the geometry.
+Furthermore, an advanced turbulence model, utilizing two-equation models or Large Eddy Simulation, will be pursued
+to examine the robustness of the algorithm in situations that include extended recirculation regions with strongly
+nonlinear dynamics.
+6 Conclusions
+This work studies the accuracy and robustness of a numerical framework for simulating magnetohydrodynamic (MHD)
+flow over a BFS. The governing equations were discretized using a second-order FVM on a collocated grid and solved
+directly utilizing a Newton-like algorithm. The solver provides robustness and efficiency with reliable convergence.
+13
+===PAGE 14===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+This approach is preferable to this problem, as intense source terms may result in a lack of convergence in the case of
+an inappropriate iterative approach. The numerical methodology was validated against a wide range of well-established
+hydrodynamic benchmarks, including reattachment lengths across several Reynolds numbers. The results showed very
+good agreement with previous numerical and experimental studies, confirming the accuracy and applicability of the
+proposed numerical approach.
+The presence of the magnetic field reduced the fluid momentum and the reattachment length, and increased pressure
+due to the Lorentz force. Notably, the field orientation played a critical role, as the strongest effects were observed
+when the magnetic field was applied vertically (φ =π/2), vanishing the secondary vortex that appears in the upper
+wall at higher Reynolds numbers. By systematically analyzing the impact of both magnetic field strength and direction,
+this study addresses a gap in the current literature on BFS/MHD flows. Furthermore, a preliminary extension to
+three-dimensional simulations demonstrates the robustness of the proposed solver and its potential for application in
+complex flow configurations and future studies involving turbulence or non-uniform magnetic fields.
+Acknowledgements: This research was implemented in the framework of the Action “Flagship actions in interdis-
+ciplinary scientific fields with a special focus on the productive fabric”, which is implemented through the National
+Recovery and Resilience Fund Greece 2.0 and funded by the European Union–NextGenerationEU (Project ID: TAEDR-
+0535983).
+References
+[1] Tasos Papanastasiou, Nikolaos Malamataris, and Kevin Ellwood. New outflow boundary condition. International
+Journal for Numerical Methods in Fluids, 14, 03 1992.
+[2] David K. Gartling. A test problem for outflow boundary conditions—flow over a backward-facing step. Interna-
+tional Journal for Numerical Methods in Fluids, 11(7):953–967, 1990.
+[3] Teja Ayyagari and Yuping He. Aerodynamic analysis of an active rear split spoiler for improving lateral stability
+of high-speed vehicles. International Journal of Vehicle Systems Modelling and Testing, 12:217, 01 2017.
+[4] Appupillai Baskaran and Ahmed Kashef. Investigation of air flow around buildings using computational fluid
+dynamics techniques. Engineering Structures, 18(11):861–875, 1996.
+[5] J Kim and P Moin. Application of a fractional-step method to incompressible navier-stokes equations. Journal of
+Computational Physics, 59(2):308–323, 1985.
+[6] B. F. Armaly, F. Durst, J. C. F. Pereira, and B. Schönung. Experimental and theoretical investigation of backward-
+facing step flow. Journal of Fluid Mechanics, 127:473–496, 1983.
+[7] T. LEE and D. MATEESCU. Experimental and numerical investigation of 2-d backward-facing step flow.Journal
+of Fluids and Structures, 12(6):703–716, 1998.
+[8] Lin Chen, Keisuke Asai, Taku Nonomura, Guannan Xi, and Tianshu Liu. A review of backward-facing step (bfs)
+flow mechanisms, heat transfer and control. Thermal Science and Engineering Progress, 6:194–216, 2018.
+[9] Alvaro Valencia. Pulsating flow in a channel with a backward-facing step. Applied Mechanics Reviews ,
+50(11S):S232–S236, 11 1997.
+[10] Ercan Erturk. Numerical solutions of 2-d steady incompressible flow over a backward-facing step, part i: High
+reynolds number solutions. Computers & Fluids, 37(6):633–655, 2008.
+[11] S. Thangam and Doyle D. Knight. Effect of stepheight on the separated flow past a backward facing step. Physics
+of Fluids A: Fluid Dynamics, 1(3):604–606, 03 1989.
+[12] Anastasios Liakos and Nikolaos A. Malamataris. Topological study of steady state, three dimensional flow over a
+backward facing step. Computers & Fluids, 118:1–18, 2015.
+[13] Hoi Hyun Choi, Van Thinh Nguyen, and John Nguyen. Numerical investigation of backward facing step
+flow over various step angles. Procedia Engineering, 154:420–425, 2016. 12th International Conference on
+Hydroinformatics (HIC 2016) - Smart Water for the Future.
+[14] Y .-L. Tsay, T. S. Chang, and J. C. Cheng. Heat transfer enhancement of backward-facing step flow in a channel by
+using baffle installation on the channel wall. Acta Mechanica, 174(1):63–76, 2005.
+[15] Ayodeji O. Demuren and Robert V . Wilson. Estimating uncertainty in computations of two-dimensional separated
+flows. Journal of Fluids Engineering, 116(2):216–220, 06 1994.
+[16] P.A. Davidson. Introduction to Magnetohydrodynamics. Cambridge Texts in Applied Mathematics. Cambridge
+University Press, 2017.
+14
+===PAGE 15===
+A FVM and Levenberg–Marquardt Framework for MHD Flows over BFS
+[17] Merve Gürbüz and M Tezer-Sezgin. Mhd stokes flow in lid-driven cavity and backward-facing step channel.
+European Journal of Computational Mechanics, 24(6):279–301, 2015.
+[18] Ikram Cherkaoui, Soufiene Bettaibi, Abdelwahed Barkaoui, and Frédéric Kuznik. Numerical study of pulsatile
+thermal magnetohydrodynamic blood flow in an artery with aneurysm using lattice boltzmann method (lbm).
+Communications in Nonlinear Science and Numerical Simulation, 123:107281, 2023.
+[19] E.E. Tzirtzilakis. Biomagnetic fluid flow in a channel with stenosis. Physica D: Nonlinear Phenomena, 237(1):66–
+81, 2008.
+[20] H. Abbassi and S. Ben Nassrallah. Mhd flow and heat transfer in a backward-facing step. International
+Communications in Heat and Mass Transfer, 34(2):231–237, 2007.
+[21] Osama Al-Habahbeh, M. Al-Saqqa, Mohamed Safi, and T. Khater. Review of magnetohydrodynamic pump
+applications. Alexandria Engineering Journal, 55, 03 2016.
+[22] Saman Rashidi, Javad Abolfazli Esfahani, and Mahla Maskaniyan. Applications of magnetohydrodynamics in
+biological systems-a review on the numerical studies.Journal of Magnetism and Magnetic Materials, 439:358–372,
+2017.
+[23] Anastasios Raptis, Michalis Xenos, Efstratios Tzirtzilakis, and Miltiadis Matsagkas. Finite element analysis of
+magnetohydrodynamic effects on blood flow in an aneurysmal geometry. Physics of Fluids, 26(10), 2014.
+[24] US Rajput and Surendra Kumar. Rotation and radiation effects on mhd flow past an impulsively started vertical
+plate with variable temperature. International Journal of Mathematical Analysis, 5(24):1155–1163, 2011.
+[25] Henk Kaarle Versteeg. An introduction to computational fluid dynamics the finite volume method, 2/E. Pearson
+Education India, 2007.
+[26] Alfio Quarteroni, Riccardo Sacco, and Fausto Saleri. Numerical Mathematics, volume 37. Springer Science &
+Business Media, 01 2007.
+[27] Timothy A. Davis, Sivasankaran Rajamanickam, and Wissam M. Sid-Lakhdar. A survey of direct methods for
+sparse linear systems. Acta Numerica, 25:383–566, 2016.
+[28] Stuart E. Rogers and Dochan Kwak. An upwind differencing scheme for the incompressible navier–strokes
+equations. Applied Numerical Mathematics, 8(1):43–64, 1991.
+[29] I. E. Barton. The entrance effect of laminar flow over a backward-facing step geometry. International Journal for
+Numerical Methods in Fluids, 25(6):633–644, 1997.
+[30] G. Guj and F. Stella. Numerical solutions of high-re recirculating flows in vorticity-velocity form. International
+Journal for Numerical Methods in Fluids, 8(4):405–416, 1988.
+[31] M. M. Grigoriev and G. F. Dargush. A poly-region boundary element method for incompressible viscous fluid
+flows. International Journal for Numerical Methods in Engineering, 46(7):1127–1158, 1999.
+[32] Jayant Keskar and D.A. Lyn. Computations of a laminar backward-facing step flow at re=800 with a spectral
+domain decomposition method. International Journal for Numerical Methods in Fluids, 29(4):411–427, 1999.
+[33] Philip M. Gresho, David K. Gartling, J. R. Torczynski, K. A. Cliffe, K. H. Winters, T. J. Garratt, A. Spence, and
+John W. Goodrich. Is the steady viscous incompressible two-dimensional flow over a backward-facing step at re =
+800 stable? International Journal for Numerical Methods in Fluids, 17(6):501–541, 1993.
+[34] Y . Rouizi, Y . Favennec, J. Ventura, and D. Petit. Numerical model reduction of 2d steady incompressible laminar
+flows: Application on the flow over a backward-facing step.Journal of Computational Physics, 228(6):2239–2255,
+2009.
+15

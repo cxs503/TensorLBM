@@ -75,6 +75,7 @@ import matplotlib
 import torch
 
 from .boundaries import bounce_back_cells, zou_he_inlet_velocity
+from .bfs_armaly import reattachment_from_wall_shear, wall_shear_from_near_wall
 from .config_io import load_config_json, save_config_json
 from .cylinder_flow import _maybe_compile
 from .d2q9 import equilibrium, macroscopic
@@ -472,6 +473,15 @@ def run_backward_facing_step(config: BackwardFacingStepConfig) -> Path:
 
     metadata["diagnostics"] = diagnostics
     metadata["final_reattachment_xr_star"] = final_xr
+    # Robust wall-shear observable (library module ``bfs_armaly``): the single-row
+    # sign test above is captured by the step-corner singularity at low tau, so the
+    # t=const wall-normal derivative -2u1+3u2-u3 is reported alongside it.
+    _ux_wall = ux_f.detach().cpu().numpy()
+    if _ux_wall.shape[0] >= 5:
+        _tau_w = wall_shear_from_near_wall(_ux_wall[1], _ux_wall[2], _ux_wall[3])
+        metadata["final_reattachment_xr_star_wallshear"] = reattachment_from_wall_shear(
+            _tau_w, config.x_step, config.step_h
+        )
     metadata["reattachment_note"] = (
         "xr_star = (x_reattach - x_step) / step_h.  "
         "Primary reattachment length, measured from the step corner.  "
