@@ -5,9 +5,9 @@
   "reference_basis": "benchmark-bands (DFG workshop, published table)",
   "scope": "Confined DFG geometry (channel 2.2x0.41, D=0.1 at (0.2,0.2), blockage 0.244), parabolic inlet U_mean=1, p=0 outlet, D2Q9 MRT + half-way BB + Ladd momentum exchange, D=28/40 lattice cells per diameter.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T04:36:20Z",
+  "generated_utc": "2026-11-12T06:10:38Z",
   "artifact": "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
-  "repro_cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 28 40 --steps 60000 --threads 4",
+  "repro_cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 20 28 40 --steps 14000 20000 27200 --threads 8",
   "references": [
     {
       "id": "cylinder_dfg2d2_cd_re100",
@@ -50,10 +50,10 @@
       "token": "Δp = 2.4600 - 2.5000 (mid 2.4800)"
     }
   ],
-  "status": "pending",
+  "status": "failed",
   "machine_pass": false,
   "declared_status": null,
-  "reason": "artifact present but metric paths unresolved: cd_err_pct, st_err_pct, cl_amp_err_pct, dp_err_pct",
+  "reason": "one or more machine-checked criteria failed",
   "metrics": [
     {
       "metric": "cd_err_pct",
@@ -64,9 +64,9 @@
       "levels": [
         {
           "level": "D28",
-          "value": NaN,
+          "value": 5.596774297975642,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 5.596774297975642,
           "tol_pct": 5.0,
           "kind": "error_pct",
           "pass": false,
@@ -74,17 +74,17 @@
         },
         {
           "level": "D40",
-          "value": NaN,
+          "value": 1.8728439942088626,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 1.8728439942088626,
           "tol_pct": 5.0,
           "kind": "error_pct",
-          "pass": false,
+          "pass": true,
           "gated": true
         }
       ],
       "pass": false,
-      "max_abs_err_pct": NaN
+      "max_abs_err_pct": 5.596774297975642
     },
     {
       "metric": "st_err_pct",
@@ -95,27 +95,27 @@
       "levels": [
         {
           "level": "D28",
-          "value": NaN,
+          "value": 1.1133163070790042,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 1.1133163070790042,
           "tol_pct": 5.0,
           "kind": "error_pct",
-          "pass": false,
+          "pass": true,
           "gated": true
         },
         {
           "level": "D40",
-          "value": NaN,
+          "value": 0.8432375229569522,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 0.8432375229569522,
           "tol_pct": 5.0,
           "kind": "error_pct",
-          "pass": false,
+          "pass": true,
           "gated": true
         }
       ],
-      "pass": false,
-      "max_abs_err_pct": NaN
+      "pass": true,
+      "max_abs_err_pct": 1.1133163070790042
     },
     {
       "metric": "cl_amp_err_pct",
@@ -126,9 +126,9 @@
       "levels": [
         {
           "level": "D28",
-          "value": NaN,
+          "value": 36.04206121957847,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 36.04206121957847,
           "tol_pct": 5.0,
           "kind": "error_pct",
           "pass": false,
@@ -136,9 +136,9 @@
         },
         {
           "level": "D40",
-          "value": NaN,
+          "value": 35.07215888778159,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 35.07215888778159,
           "tol_pct": 5.0,
           "kind": "error_pct",
           "pass": false,
@@ -146,7 +146,7 @@
         }
       ],
       "pass": false,
-      "max_abs_err_pct": NaN
+      "max_abs_err_pct": 36.04206121957847
     },
     {
       "metric": "dp_err_pct",
@@ -157,9 +157,9 @@
       "levels": [
         {
           "level": "D28",
-          "value": NaN,
+          "value": 10.874527669505744,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 10.874527669505744,
           "tol_pct": 5.0,
           "kind": "error_pct",
           "pass": false,
@@ -167,9 +167,9 @@
         },
         {
           "level": "D40",
-          "value": NaN,
+          "value": 5.148594123352377,
           "reference": null,
-          "err_pct": NaN,
+          "err_pct": 5.148594123352377,
           "tol_pct": 5.0,
           "kind": "error_pct",
           "pass": false,
@@ -177,43 +177,38 @@
         }
       ],
       "pass": false,
-      "max_abs_err_pct": NaN
+      "max_abs_err_pct": 10.874527669505744
     }
   ],
   "convergence": [
     {
       "metric": "cd_err_pct",
       "errors_abs_pct": [
-        NaN,
-        NaN
+        5.596774297975642,
+        1.8728439942088626
       ],
       "max_span_pct": 3.0,
-      "span_pct": NaN,
-      "monotone": false,
+      "span_pct": 3.72393030376678,
+      "monotone": true,
       "require_monotone": false,
       "span_ok": false,
       "trend_ok": true,
       "pass": false
     }
   ],
-  "unresolved_metrics": [
-    "cd_err_pct",
-    "st_err_pct",
-    "cl_amp_err_pct",
-    "dp_err_pct"
-  ],
-  "artifact_sha256": "57c9490242b5129c6480e3f4ed5b25c5b6c071752d7189fbc0c73ee29da13a5a",
-  "artifact_bytes": 4255,
+  "unresolved_metrics": [],
+  "artifact_sha256": "222d25fa32daf5b87a2c5d10f09f8d26c1b93cb49ff1329db4abf38c706fffd4",
+  "artifact_bytes": 9453,
   "evidence_chain": [
     {
       "kind": "artifact",
       "path": "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
-      "sha256": "57c9490242b5129c6480e3f4ed5b25c5b6c071752d7189fbc0c73ee29da13a5a"
+      "sha256": "222d25fa32daf5b87a2c5d10f09f8d26c1b93cb49ff1329db4abf38c706fffd4"
     },
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "43954e5988f442dd5c6977698cfda5a21691ec025d3e663a2e79922078b9f4e1"
+      "sha256": "5ac63ae8ffb65ea25c4e7977ffce61025a45217c25bde3ef81f0a427e23b0b4f"
     },
     {
       "kind": "references",
@@ -223,7 +218,7 @@
     {
       "kind": "runner",
       "path": "benchmarks/verified/cylinder/re100_dfg/run.py",
-      "sha256": "ddb6b2665091ba214df81527a938a06f9bd57c300aa200654297eaa91fbdb046"
+      "sha256": "c2d0135b3ffd4f920499176ebc77215a63e6d06957fe68035f8ec598bc19789d"
     }
   ],
   "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there). Registry schema fix v1.1: metric paths point at the artifact's per_metric.<metric>.err_pct.<D> schema produced by the case's own aggregate() (v1.0 addressed grids.<D>.err_pct.<metric>, which the artifact never contained, so the case judged as 'pending: metric paths unresolved')."
