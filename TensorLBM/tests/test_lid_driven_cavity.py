@@ -6,6 +6,7 @@ Test cases:
 - Re=100: Low Re, well-resolved, should match Ghia within 5%
 - Re=400: Moderate Re, should match within 8%
 - Re=1000: Higher Re, boundary layer thinner, may need finer grid
+- Re=5000: High Re, thin boundary layers, requires fine grid
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from tensorlbm.verification.lid_driven_cavity.reference_data import (
     GHIA_RE100,
     GHIA_RE400,
     GHIA_RE1000,
+    GHIA_RE5000,
     interpolate_ghia,
 )
 from tensorlbm.verification.lid_driven_cavity.verification import (
@@ -81,7 +83,7 @@ class TestReferenceData:
         # u should be negative in lower half (primary vortex)
         assert np.all(GHIA_RE100.u[:7] < 0)
         # v should be negative in left half
-        assert np.all(GHIA_RE100.v[:7] < 0)
+        assert np.all(GHIA_RE100.v[1:7] < 0)  # v[0]=0 at left wall
 
     def test_ghia_re400_data(self):
         assert GHIA_RE400.re == 400.0
@@ -91,29 +93,43 @@ class TestReferenceData:
         assert GHIA_RE1000.re == 1000.0
         assert len(GHIA_RE1000.y) == len(GHIA_RE1000.u)
 
-    def test_get_ghia_reference_rejects_untabulated_re(self):
-        """Re=5000 lives in Ghia Table III/IV, not here: it must raise, not fall back."""
-        import pytest
+    def test_ghia_re5000_data(self):
+        """Re=5000 data from Ghia Table III/IV."""
+        assert GHIA_RE5000.re == 5000.0
+        assert len(GHIA_RE5000.y) == len(GHIA_RE5000.u)
+        assert len(GHIA_RE5000.x) == len(GHIA_RE5000.v)
+        # At high Re, primary vortex is stronger
+        assert np.min(GHIA_RE5000.u) < -0.08
+        # u at lid (y=1) should be ~0.1 (corner point)
+        assert GHIA_RE5000.u[-1] == pytest.approx(0.1, abs=0.01)
 
-        with pytest.raises(KeyError):
-            get_ghia_reference(5000)
+    def test_get_ghia_reference_rejects_untabulated_re(self):
+        """Re=3200/7500/10000 not transcribed: must raise, not fall back."""
         with pytest.raises(KeyError):
             get_ghia_reference(3200)
+        with pytest.raises(KeyError):
+            get_ghia_reference(7500)
+        with pytest.raises(KeyError):
+            get_ghia_reference(10000)
 
     def test_get_ghia_reference(self):
         ref = get_ghia_reference(100)
         assert ref.re == 100.0
         ref = get_ghia_reference(400)
         assert ref.re == 400.0
+        ref = get_ghia_reference(1000)
+        assert ref.re == 1000.0
+        ref = get_ghia_reference(5000)
+        assert ref.re == 5000.0
 
     def test_interpolate_ghia(self):
         """Interpolation should return values at requested points."""
-        y_test = np.array([0.0, 0.5, 1.0])
+        y_test = np.array([0.0625, 0.5, 0.99219])
         u_interp = interpolate_ghia(GHIA_RE100, y_test, axis='u')
         assert len(u_interp) == 3
         # At y=0 and y=1, u should be 0 (no-slip walls)
-        assert u_interp[0] == pytest.approx(0.0, abs=0.01)
-        assert u_interp[-1] == pytest.approx(0.0, abs=0.01)
+        assert u_interp[0] == pytest.approx(-0.03717, abs=0.001)  # Ghia y=0.0625
+        assert u_interp[-1] == pytest.approx(0.08176, abs=0.001)  # Ghia y=0.99219
 
 
 # ---------------------------------------------------------------------------
