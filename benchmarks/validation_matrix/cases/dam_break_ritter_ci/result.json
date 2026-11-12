@@ -1,0 +1,107 @@
+{
+  "case": "dam_break_ritter_ci",
+  "tier": "ci",
+  "generated_utc": "2026-11-12T01:34:13Z",
+  "reference": {
+    "id": "ritter_front_law",
+    "law_front": "x_f(t) = 2 sqrt(g h0) t",
+    "law_depth": "h(x,t) = (2c0 - xi)^2 / 9g,  xi = x/t",
+    "source": "src/tensorlbm/shallow_water.py (docstring + ritter_front/ritter_depth)",
+    "origin": "Ritter 1892"
+  },
+  "config": {
+    "t_end": 5.0,
+    "cfl": 0.4,
+    "h0": 1.0,
+    "g": 1.0
+  },
+  "levels": [
+    {
+      "level": "nx=200",
+      "resolution": {
+        "nx": 200,
+        "dx": 0.08040201005025126
+      },
+      "metrics": {
+        "front_err_pct": 4.512477447890056,
+        "profile_l2_pct": 9.824803799860751,
+        "mass_drift_pct": 2.2093438190040618e-14
+      },
+      "detail": {
+        "t_final": 5.001005025125629,
+        "front_numeric": 10.453348498104543,
+        "front_analytic": 10.002010050251258,
+        "volume_downstream": 1.5486442219414136,
+        "steps": 311,
+        "dt": 0.016080402010050253,
+        "elapsed_s": 0.2828401196748018,
+        "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
+      }
+    },
+    {
+      "level": "nx=400",
+      "resolution": {
+        "nx": 400,
+        "dx": 0.040100250626566414
+      },
+      "metrics": {
+        "front_err_pct": 2.562490221596643,
+        "profile_l2_pct": 6.291582196947942,
+        "mass_drift_pct": 2.2148949341271873e-14
+      },
+      "detail": {
+        "t_final": 4.996491228070175,
+        "front_numeric": 10.249051654424814,
+        "front_analytic": 9.99298245614035,
+        "volume_downstream": 1.5183780228777504,
+        "steps": 623,
+        "dt": 0.008020050125313283,
+        "elapsed_s": 0.5961736794561148,
+        "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
+      }
+    }
+  ],
+  "resolution_ladder": [
+    {
+      "level": "nx=800",
+      "metrics": {
+        "front_err_pct": 1.4332600483665527,
+        "profile_l2_pct": 3.8368007860115245,
+        "mass_drift_pct": 1.9959034425198752e-13
+      },
+      "detail": {
+        "t_final": 4.998247809762203,
+        "front_numeric": 10.139771397475762,
+        "front_analytic": 9.996495619524406,
+        "volume_downstream": 1.5021883551815944,
+        "steps": 1248,
+        "dt": 0.0040050062578222785,
+        "elapsed_s": 1.3089900687336922,
+        "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
+      }
+    },
+    {
+      "level": "nx=1600",
+      "metrics": {
+        "front_err_pct": 0.7925584615279566,
+        "profile_l2_pct": 2.314549040630396,
+        "mass_drift_pct": 1.1095291352347658e-13
+      },
+      "detail": {
+        "t_final": 4.999124452782989,
+        "front_numeric": 10.077490873271667,
+        "front_analytic": 9.998248905565978,
+        "volume_downstream": 1.4929616108550618,
+        "steps": 2498,
+        "dt": 0.0020012507817385866,
+        "elapsed_s": 3.0536347087472677,
+        "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
+      }
+    }
+  ],
+  "tolerances": {
+    "front_err_pct": 5.0,
+    "profile_l2_pct": 5.0,
+    "mass_drift_pct": 1.0
+  }
+}

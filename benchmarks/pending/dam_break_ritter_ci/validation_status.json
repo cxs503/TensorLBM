@@ -1,0 +1,178 @@
+{
+  "case": "dam_break_ritter_ci",
+  "slot": "dam_break",
+  "title": "Ritter 1892 dam-break self-similarity (CI tier)",
+  "reference_basis": "analytic",
+  "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g). Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
+  "repro_cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
+  "references": [
+    {
+      "id": "ritter_front_law",
+      "quantity": "dam-break front position x_f(t)",
+      "value": null,
+      "formula": "x_f(t) = 2 sqrt(g h0) t",
+      "origin": "Ritter 1892 self-similar shallow-water solution; implementation anchor in the library docstring",
+      "source": "src/tensorlbm/shallow_water.py",
+      "source_sha256": "5abb26d72972569d137b0bf163bb89f99ef9415c80468ed03c4b82e8b7eca7bd",
+      "token": "x_{front}(t) = 2 c_0 t"
+    }
+  ],
+  "status": "failed",
+  "machine_pass": false,
+  "declared_status": null,
+  "reason": "one or more machine-checked criteria failed",
+  "metrics": [
+    {
+      "metric": "front_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 5.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "nx=200",
+          "value": 4.512477447890056,
+          "reference": null,
+          "err_pct": 4.512477447890056,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "nx=400",
+          "value": 2.562490221596643,
+          "reference": null,
+          "err_pct": 2.562490221596643,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 4.512477447890056
+    },
+    {
+      "metric": "profile_l2_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 5.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "nx=200",
+          "value": 9.824803799860751,
+          "reference": null,
+          "err_pct": 9.824803799860751,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "nx=400",
+          "value": 6.291582196947942,
+          "reference": null,
+          "err_pct": 6.291582196947942,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": 9.824803799860751
+    },
+    {
+      "metric": "mass_drift_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 1.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "nx=200",
+          "value": 2.2093438190040618e-14,
+          "reference": null,
+          "err_pct": 2.2093438190040618e-14,
+          "tol_pct": 1.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "nx=400",
+          "value": 2.2148949341271873e-14,
+          "reference": null,
+          "err_pct": 2.2148949341271873e-14,
+          "tol_pct": 1.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 2.2148949341271873e-14
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "front_err_pct",
+      "errors_abs_pct": [
+        4.512477447890056,
+        2.562490221596643
+      ],
+      "max_span_pct": 5.0,
+      "span_pct": 1.949987226293413,
+      "monotone": true,
+      "require_monotone": false,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    },
+    {
+      "metric": "profile_l2_pct",
+      "errors_abs_pct": [
+        9.824803799860751,
+        6.291582196947942
+      ],
+      "max_span_pct": 5.0,
+      "span_pct": 3.5332216029128087,
+      "monotone": true,
+      "require_monotone": true,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "a0b0645512e004a80836d5fe7b9fb818366c98162f8e0d96e43711d2013489ee",
+  "artifact_bytes": 3104,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
+      "sha256": "a0b0645512e004a80836d5fe7b9fb818366c98162f8e0d96e43711d2013489ee"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
+      "sha256": "ee6ad021921abd9558794160ecb2f27af5a4c19b3c77bbcb750ff292ca2ff562"
+    }
+  ],
+  "notes": "CI tier judged as declared (profile L2 <= 5%): it FAILS at nx=200/400 (9.83% / 6.29%) while the front law passes and converges monotonically (+4.51% -> +2.56%). The resolution ladder recorded in the artifact (nx=800/1600) shows a first-order decrease (3.84% / 2.32%) crossing the 5% gate near nx~700: the CI tier is under-resolved for the profile metric, which is the honest root cause. The pre-existing standard-tier runner (nx up to 1600) reports front_err_mass up to 6.4%, i.e. it would fail the same 5% front gate, confirming that the gate/tier pairing needs re-calibration rather than the numbers being quietly relaxed."
+}

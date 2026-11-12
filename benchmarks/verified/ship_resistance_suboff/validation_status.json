@@ -1,0 +1,105 @@
+{
+  "case": "ship_resistance_suboff",
+  "slot": "ship",
+  "title": "DARPA SUBOFF bare-hull resistance at Re=1000 vs Blasius flat plate",
+  "reference_basis": "analytic correlation",
+  "scope": "3-D D3Q19 MRT SUBOFF hull, L=48/80 cells, mix50 friction formula; total drag coefficient vs the Blasius wetted-area anchor.",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/verified/suboff_re1000/result.json",
+  "repro_cmd": "python benchmarks/verified/suboff_re1000/run.py",
+  "references": [
+    {
+      "id": "blasius_cf_suboff",
+      "quantity": "Blasius laminar flat-plate friction coefficient at Re=1000 (wetted-area normalization)",
+      "value": 0.04199504732703608,
+      "formula": null,
+      "origin": "Blasius Cf = 1.328/sqrt(Re); frozen in the verified artifact as reference.Cf_ref",
+      "source": "benchmarks/verified/suboff_re1000/README.md",
+      "source_sha256": "946fa051545632771394ea48fc37a22fc1be0aff53d1e3e3215dab5fd5fe09b7",
+      "token": "0.041995"
+    }
+  ],
+  "status": "passed",
+  "machine_pass": true,
+  "declared_status": null,
+  "reason": "all metric and convergence criteria passed",
+  "metrics": [
+    {
+      "metric": "cd_tot_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": [
+        null,
+        3.0
+      ],
+      "levels": [
+        {
+          "level": "L=48",
+          "value": -3.17,
+          "reference": null,
+          "err_pct": -3.17,
+          "tol_pct": 0.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": false
+        },
+        {
+          "level": "L=80",
+          "value": -1.15,
+          "reference": null,
+          "err_pct": -1.15,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 3.17
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "cd_tot_err_pct",
+      "errors_abs_pct": [
+        3.17,
+        1.15
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": 2.02,
+      "monotone": true,
+      "require_monotone": true,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "e8fbd2bef96eb55c49afe72566a3b2998df1fb8e0d6872e5cbaf76ae9da202c6",
+  "artifact_bytes": 7348,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/verified/suboff_re1000/result.json",
+      "sha256": "e8fbd2bef96eb55c49afe72566a3b2998df1fb8e0d6872e5cbaf76ae9da202c6"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/verified/suboff_re1000/run.py",
+      "sha256": "7a64b6485fd35906a996b5cfa933f180962fd77da138882312c4cb48864c7503"
+    }
+  ],
+  "notes": "Pre-registered gate of the case (README): finest tier |err| <= 3% AND the error decreases with resolution. L=48 (-3.17%) is therefore informational and only L=80 (-1.15%) is gated; the monotone requirement is still checked over both levels."
+}

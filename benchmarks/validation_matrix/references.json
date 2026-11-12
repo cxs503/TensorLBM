@@ -1,0 +1,127 @@
+{
+  "registry": "TensorLBM validation-matrix reference anchors",
+  "version": "1.0",
+  "policy": [
+    "Every reference value used by the matrix must carry a repo-relative source file and a literal token that occurs in that file (zero hand-copy: the number is re-read from the frozen source, and the source sha256 is recorded).",
+    "Where the anchor is an analytic law the token is the formula string and 'value' is null; the case runner derives the number from the same law.",
+    "A reference that cannot be re-derived from an in-repo source keeps status pending (WITHHELD), it is never typed in by hand."
+  ],
+  "references": {
+    "ghia_re100_u_center": {
+      "quantity": "u(0.5, 0.5) on the cavity vertical centreline, Re=100",
+      "value": -0.20581,
+      "unit": "U_lid",
+      "origin": "Ghia, Ghia & Shin 1982, JCP 48:387, Table I (Re=100)",
+      "source": "benchmarks/verified/cavity/re100/README.md",
+      "token": "-0.20581",
+      "reference_basis": "experimental/numerical landmark table"
+    },
+    "cylinder_cd_re100": {
+      "quantity": "mean drag coefficient of a circular cylinder, Re=100 (2-D)",
+      "value": 1.35,
+      "unit": "-",
+      "origin": "Braza, Chassaing & Ha Minh 1986, JFM 165 (experiment Cd=1.35+-0.05)",
+      "source": "benchmarks/verified/cylinder/re100/README.md",
+      "token": "Cd=1.35±0.05",
+      "reference_basis": "experimental",
+      "uncertainty_band": 0.05
+    },
+    "cylinder_st_re100": {
+      "quantity": "Strouhal number of a circular cylinder, Re=100",
+      "value": 0.165,
+      "unit": "-",
+      "origin": "Braza et al. 1986 (St=0.164-0.165 band; 2-D literature 0.164-0.168)",
+      "source": "benchmarks/verified/cylinder/re100/README.md",
+      "token": "St≈0.164-0.165",
+      "reference_basis": "experimental",
+      "value_token_check": false,
+      "value_token_note": "token is a range ('0.164-0.165'); the single value 0.165 is the band centre, checked against the band instead of the literal"
+    },
+    "sphere_cd_re100": {
+      "quantity": "drag coefficient of a sphere, Re=100",
+      "value": 1.0917311,
+      "unit": "-",
+      "origin": "Schiller-Naumann correlation Cd=24/Re*(1+0.15 Re^0.687), cross-checked against Clift-Gauvin",
+      "source": "benchmarks/verified/sphere_re100/REFERENCE_AUDIT.md",
+      "token": "1.0917311",
+      "reference_basis": "correlation (multi-source audited)"
+    },
+    "tg2d_gamma_vel_theory": {
+      "quantity": "velocity decay rate of the 2-D Taylor-Green vortex gamma_vel = 2 nu k^2",
+      "value": 0.0003084251,
+      "unit": "1/step",
+      "origin": "analytic Taylor-Green solution; value frozen in the verified artifact as gamma_vel_theory",
+      "source": "benchmarks/verified/taylor_green_2d/README.md",
+      "token": "3.084251e-04",
+      "reference_basis": "analytic",
+      "artifact_value_path": "benchmarks/verified/taylor_green_2d/result.json::gamma_vel_theory"
+    },
+    "ritter_front_law": {
+      "quantity": "dam-break front position x_f(t)",
+      "value": null,
+      "formula": "x_f(t) = 2 sqrt(g h0) t",
+      "origin": "Ritter 1892 self-similar shallow-water solution; implementation anchor in the library docstring",
+      "source": "src/tensorlbm/shallow_water.py",
+      "token": "x_{front}(t) = 2 c_0 t",
+      "reference_basis": "analytic"
+    },
+    "laplace_law_2d": {
+      "quantity": "static-droplet Laplace pressure jump",
+      "value": null,
+      "formula": "Delta p = sigma / R (2-D circular droplet)",
+      "origin": "Young-Laplace law",
+      "source": "benchmarks/verified/laplace_droplet/README.md",
+      "token": "Δp = p_in − p_out = σ / R",
+      "reference_basis": "analytic"
+    },
+    "blasius_cf_suboff": {
+      "quantity": "Blasius laminar flat-plate friction coefficient at Re=1000 (wetted-area normalization)",
+      "value": 0.04199504732703608,
+      "unit": "-",
+      "origin": "Blasius Cf = 1.328/sqrt(Re); frozen in the verified artifact as reference.Cf_ref",
+      "source": "benchmarks/verified/suboff_re1000/README.md",
+      "token": "0.041995",
+      "reference_basis": "analytic correlation",
+      "artifact_value_path": "benchmarks/verified/suboff_re1000/result.json::reference.Cf_ref"
+    },
+    "michell_cw": {
+      "quantity": "thin-ship wave resistance coefficient C_W(Fn)",
+      "value": null,
+      "formula": "Michell (1898) thin-ship integral",
+      "origin": "Michell 1898; in-repo closed-form implementation src/tensorlbm/wave_wake_michell.py",
+      "source": "benchmarks/wave_wake_michell/REPORT.md",
+      "token": "Michell（1898）",
+      "reference_basis": "analytic (thin-ship)"
+    },
+    "moser_channel_uplus": {
+      "quantity": "channel-flow mean velocity profile u+(y+) at Re_tau=180",
+      "value": null,
+      "formula": "DNS profile (tabular, not tabulated in-repo)",
+      "origin": "Moser, Kim & Mansour 1999, Phys. Fluids 11:943 (Re_tau=178.12)",
+      "source": "benchmarks/pending/channel_turb_3d/README.md",
+      "token": "Moser, Kim & Mansour 1999",
+      "reference_basis": "DNS reference data (not in-repo -> tabular anchor WITHHELD)"
+    },
+    "chandrasekhar_rt": {
+      "quantity": "Rayleigh-Taylor linear growth rate sigma(k) for two viscous fluids",
+      "value": null,
+      "formula": "viscous RT dispersion relation (Chandrasekhar 5x5 determinant)",
+      "origin": "Chandrasekhar 1961, Hydrodynamic and Hydromagnetic Stability, ch. X",
+      "source": "benchmarks/pending/rayleigh_taylor/README.md",
+      "token": "Chandrasekhar 5×5",
+      "reference_basis": "analytic"
+    },
+    "tg2d_gamma_e_theory": {
+      "quantity": "energy decay rate of the 2-D Taylor-Green vortex gamma_E = 4 nu k^2",
+      "value": 0.0006168502750680849,
+      "unit": "1/step",
+      "origin": "analytic Taylor-Green solution (energy decays twice as fast as velocity)",
+      "source": "benchmarks/verified/taylor_green_2d/README.md",
+      "token": "γ_E_theory = 4νk²",
+      "reference_basis": "analytic",
+      "value_token_check": false,
+      "value_token_note": "token is the formula; the numeric value is mirrored from the frozen artifact field gamma_e_theory",
+      "artifact_value_path": "benchmarks/verified/taylor_green_2d/result.json::gamma_e_theory"
+    }
+  }
+}

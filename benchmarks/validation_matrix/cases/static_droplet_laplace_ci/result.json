@@ -1,0 +1,245 @@
+{
+  "case": "static_droplet_laplace_ci",
+  "tier": "ci",
+  "generated_utc": "2026-11-12T02:09:08Z",
+  "reference": {
+    "id": "laplace_law_2d",
+    "law": "Delta p = sigma / R (2-D circular droplet)",
+    "source": "benchmarks/verified/laplace_droplet/README.md",
+    "origin": "Young-Laplace",
+    "note": "sigma_eff is fitted from the simulation itself; the law's linearity (sigma independent of R) is the anchor, not a tabulated sigma."
+  },
+  "config": {
+    "max_steps": 20000,
+    "min_steps": 6000,
+    "sample_interval": 1000,
+    "conv_dp": 0.0002,
+    "conv_r": 0.002,
+    "device": "cpu",
+    "compile_mode": "eager"
+  },
+  "levels": [
+    {
+      "level": "R=12/16/20",
+      "resolution": {
+        "R": [
+          12.0,
+          16.0,
+          20.0
+        ],
+        "L": [
+          48,
+          64,
+          80
+        ]
+      },
+      "metrics": {
+        "laplace_max_dev_pct": 0.821534099798054,
+        "sigma_eff": 0.05569011212652009,
+        "R2": 0.9999844396444117,
+        "intercept_frac_pct": 1.7962522364989353,
+        "sigma_pair_dev_pct": 0.2581571389926525
+      },
+      "detail": {
+        "pass_laplace": true,
+        "per_radius": [
+          {
+            "R_init": 12.0,
+            "R_eq": 12.476118560829471,
+            "p_in": 0.039791478465000786,
+            "p_out": 0.03534294540683428,
+            "dp": 0.004448533058166504,
+            "rho_in": 1.9717750549316406,
+            "rho_out": 0.16185844441254935,
+            "max_u": 0.135916605591774,
+            "sigma_i": 0.05550042585545461,
+            "dev_sigma_pct": 0.3406103234889229,
+            "step": 6000,
+            "mass_drift": 5.5664949941444754e-05,
+            "converged": true
+          },
+          {
+            "R_init": 16.0,
+            "R_eq": 16.322541920173855,
+            "p_in": 0.03859724352757136,
+            "p_out": 0.03518352285027504,
+            "dp": 0.0034137206772963205,
+            "rho_in": 1.9627864360809326,
+            "rho_out": 0.16055315236250559,
+            "max_u": 0.1386227955420812,
+            "sigma_i": 0.055720598858933476,
+            "dev_sigma_pct": 0.05474352851745308,
+            "step": 6000,
+            "mass_drift": 5.504063234272925e-05,
+            "converged": true
+          },
+          {
+            "R_init": 20.0,
+            "R_eq": 20.35518005149037,
+            "p_in": 0.03784392153223356,
+            "p_out": 0.035085526605447136,
+            "dp": 0.0027583949267864227,
+            "rho_in": 1.9570632775624592,
+            "rho_out": 0.15975764393806458,
+            "max_u": 0.13907428085803986,
+            "sigma_i": 0.05614762538785523,
+            "dev_sigma_pct": 0.821534099798054,
+            "step": 6000,
+            "mass_drift": 4.9855673284491754e-05,
+            "converged": true
+          }
+        ],
+        "elapsed_s": 429.68393244966865,
+        "solver": "tensorlbm.multiphase.collide_sc_single_component + solver.stream",
+        "model": "SCMP SC94 psi_exp, G_lib=+5 (physical G_eff=-5), tau=1.0"
+      }
+    },
+    {
+      "level": "R=16/20/24",
+      "resolution": {
+        "R": [
+          16.0,
+          20.0,
+          24.0
+        ],
+        "L": [
+          64,
+          80,
+          96
+        ]
+      },
+      "metrics": {
+        "laplace_max_dev_pct": 0.5917086353643589,
+        "sigma_eff": 0.055978392342814015,
+        "R2": 0.9999557277686871,
+        "intercept_frac_pct": 2.3299383449421582,
+        "sigma_pair_dev_pct": 0.2581571389926649
+      },
+      "detail": {
+        "pass_laplace": true,
+        "per_radius": [
+          {
+            "R_init": 16.0,
+            "R_eq": 16.322541920173855,
+            "p_in": 0.03859724352757136,
+            "p_out": 0.03518352285027504,
+            "dp": 0.0034137206772963205,
+            "rho_in": 1.9627864360809326,
+            "rho_out": 0.16055315236250559,
+            "max_u": 0.1386227955420812,
+            "sigma_i": 0.055720598858933476,
+            "dev_sigma_pct": 0.460523200276637,
+            "step": 6000,
+            "mass_drift": 5.504063234272925e-05,
+            "converged": true
+          },
+          {
+            "R_init": 20.0,
+            "R_eq": 20.35518005149037,
+            "p_in": 0.03784392153223356,
+            "p_out": 0.035085526605447136,
+            "dp": 0.0027583949267864227,
+            "rho_in": 1.9570632775624592,
+            "rho_out": 0.15975764393806458,
+            "max_u": 0.13907428085803986,
+            "sigma_i": 0.05614762538785523,
+            "dev_sigma_pct": 0.30231851605316096,
+            "step": 6000,
+            "mass_drift": 4.9855673284491754e-05,
+            "converged": true
+          },
+          {
+            "R_init": 24.0,
+            "R_eq": 24.338748903508463,
+            "p_in": 0.03733261302113533,
+            "p_out": 0.03501903389890989,
+            "dp": 0.0023135791222254434,
+            "rho_in": 1.9531544049580891,
+            "rho_out": 0.1592207650343577,
+            "max_u": 0.13834983110427856,
+            "sigma_i": 0.05630962132424459,
+            "dev_sigma_pct": 0.5917086353643589,
+            "step": 8000,
+            "mass_drift": 6.6662310717203e-05,
+            "converged": true
+          }
+        ],
+        "elapsed_s": 544.3973997402936,
+        "solver": "tensorlbm.multiphase.collide_sc_single_component + solver.stream",
+        "model": "SCMP SC94 psi_exp, G_lib=+5 (physical G_eff=-5), tau=1.0"
+      }
+    }
+  ],
+  "resolution_ladder": [
+    {
+      "level": "R=8/12/16",
+      "metrics": {
+        "laplace_max_dev_pct": 4.689360384159583,
+        "sigma_eff": 0.0532247008239096,
+        "R2": 0.9961433835615068,
+        "intercept_frac_pct": 11.558363767563254
+      },
+      "detail": {
+        "pass_laplace": false,
+        "per_radius": [
+          {
+            "R_init": 8.0,
+            "R_eq": 8.462843753216344,
+            "p_in": 0.04179695869485537,
+            "p_out": 0.03571074828505516,
+            "dp": 0.006086210409800212,
+            "rho_in": 1.9866447448730469,
+            "rho_out": 0.16492967307567596,
+            "max_u": 0.13628590603669485,
+            "sigma_i": 0.05150664774733801,
+            "dev_sigma_pct": 3.227924347110298,
+            "step": 6000,
+            "mass_drift": 4.951196304558562e-05,
+            "converged": true
+          },
+          {
+            "R_init": 12.0,
+            "R_eq": 12.476118560829471,
+            "p_in": 0.039791478465000786,
+            "p_out": 0.03534294540683428,
+            "dp": 0.004448533058166504,
+            "rho_in": 1.9717750549316406,
+            "rho_out": 0.16185844441254935,
+            "max_u": 0.135916605591774,
+            "sigma_i": 0.05550042585545461,
+            "dev_sigma_pct": 4.275693421131844,
+            "step": 6000,
+            "mass_drift": 5.5664949941444754e-05,
+            "converged": true
+          },
+          {
+            "R_init": 16.0,
+            "R_eq": 16.322541920173855,
+            "p_in": 0.03859724352757136,
+            "p_out": 0.03518352285027504,
+            "dp": 0.0034137206772963205,
+            "rho_in": 1.9627864360809326,
+            "rho_out": 0.16055315236250559,
+            "max_u": 0.1386227955420812,
+            "sigma_i": 0.055720598858933476,
+            "dev_sigma_pct": 4.689360384159583,
+            "step": 6000,
+            "mass_drift": 5.504063234272925e-05,
+            "converged": true
+          }
+        ],
+        "elapsed_s": 218.8402064498514,
+        "solver": "tensorlbm.multiphase.collide_sc_single_component + solver.stream",
+        "model": "SCMP SC94 psi_exp, G_lib=+5 (physical G_eff=-5), tau=1.0"
+      },
+      "gated": false,
+      "note": "diagnostic only: R=8 is 2 interface widths (W=4) and is below the resolvable-radius requirement R >= 3W; its violation of the Laplace gate is recorded, not hidden"
+    }
+  ],
+  "tolerances": {
+    "laplace_max_dev_pct": 3.0,
+    "sigma_pair_dev_pct": 3.0,
+    "R2": 0.999,
+    "intercept_frac_pct": 3.0
+  }
+}
