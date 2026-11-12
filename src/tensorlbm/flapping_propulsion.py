@@ -523,7 +523,15 @@ def gci(f_fine: float, f_medium: float, f_coarse: float, r: float = 2.0) -> GCIR
     """Roache GCI on a triplet with refinement ratio ``r``.
 
     ``p = ln|e32/e21| / ln r`` (observed order), Richardson extrapolation,
-    ``GCI_fine = 1.25*|e21|/|f_fine|``.
+    ``GCI_fine = 1.25*|e21|/|f_fine| / (r^p - 1)`` (Roache 1994).
+
+    History (2026-11-12, ``docs/GCI_CONVENTION_AUDIT.md``): the first version
+    of this function omitted the ``1/(r^p - 1)`` factor, so it reported the
+    *relative fine-grid change* times the safety factor - a quantity that is
+    ``r^p - 1`` (3x at ``p = 2, r = 2``) larger than Roache's index and
+    independent of the observed order.  The change is conservative in
+    direction (GCI was overstated) but made this site non-comparable with
+    every other GCI in the repository.
     ``error_ratio = |e32|/|e21|`` -- this is the quantity compared against the
     theoretical ``r^p`` (``= 4`` for ``p = 2``, ``r = 2``).
     """
@@ -545,7 +553,11 @@ def gci(f_fine: float, f_medium: float, f_coarse: float, r: float = 2.0) -> GCIR
         r=r,
         p_observed=p,
         f_extrapolated=f_ex,
-        gci_fine=1.25 * abs(e21) / max(abs(f_fine), 1e-300),
+        gci_fine=(
+            1.25 * abs(e21) / max(abs(f_fine), 1e-300) / (r**p - 1.0)
+            if (math.isfinite(p) and abs(r**p - 1.0) > 1e-14)
+            else float("nan")
+        ),
         error_ratio=float("nan") if abs(e21) == 0.0 else abs(e32) / abs(e21),
     )
 
