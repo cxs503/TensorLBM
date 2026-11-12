@@ -129,6 +129,68 @@ def square_mask(
     return (xx >= x0) & (xx <= x1) & (yy >= y0) & (yy <= y1)
 
 
+def analyze_forces(
+    fx_np: np.ndarray,
+    fy_np: np.ndarray,
+    *,
+    D: int,
+    u_in: float,
+    warmup_frac: float = 0.5,
+    min_samples: int = 256,
+) -> dict:
+    """Cd mean + Strouhal number from per-step force histories (numpy, post-run).
+
+    Extracted from :func:`run_case` so chunked/restarted drivers can reuse the
+    exact same post-processing (``cases/square_cylinder_norberg/run_chunked.py``).
+
+    - ``q_dyn = 0.5 * rho * u_in^2 * D`` (rho = 1 in lattice units, D in cells)
+    - Cd = mean of ``fx/q_dyn`` over the last ``1 - warmup_frac`` of the record
+    - St = spectral peak of the mean-removed Cl with Hann window + parabolic
+      interpolation (robust to per-step noise); lagged zero-crossing period as
+      an independent cross-check.
+    """
+    q_dyn = 0.5 * 1.0 * u_in * u_in * D  # 动压尺度（rho=1，D 为边长格数）
+    n = fx_np.size
+    w0 = int(warmup_frac * n)  # 稳态分析窗起点
+    cd_series = fx_np / q_dyn
+    cl_series = fy_np / q_dyn
+    cd_mean = float(cd_series[w0:].mean())
+
+    cl_w = cl_series[w0:] - cl_series[w0:].mean()
+    st_val = float("nan")
+    st_cross = float("nan")
+    if cl_w.size >= min_samples:
+        spec = np.abs(np.fft.rfft(cl_w * np.hanning(cl_w.size)))
+        k = int(np.argmax(spec[1:])) + 1  # 跳过 DC
+        delta = 0.0
+        if 0 < k < spec.size - 1:
+            a, b, c = spec[k - 1], spec[k], spec[k + 1]
+            den = a - 2 * b + c
+            if abs(den) > 1e-30:
+                delta = float(0.5 * (a - c) / den)
+        st_val = float((k + delta) / cl_w.size * D / u_in)
+        thr = 0.25 * float(np.abs(cl_w).max())
+        sig = np.where(cl_w >= thr, 1, np.where(cl_w <= -thr, -1, 0))
+        idx = np.where(sig != 0, np.arange(sig.size), -1)
+        last = np.maximum.accumulate(idx)
+        state = np.where(last >= 0, sig[np.maximum(last, 0)], 0)
+        crossings = np.where((state[:-1] < 0) & (state[1:] > 0))[0] + 1
+        if len(crossings) >= 3:
+            t_shed = float(np.median(np.diff(crossings)))
+            st_cross = D / (u_in * t_shed)
+
+    return {
+        "cd_series": cd_series,
+        "cl_series": cl_series,
+        "cd_mean": cd_mean,
+        "st": st_val,
+        "st_crossing": st_cross,
+        "cl_amp": float(np.abs(cl_w).max()) if cl_w.size else float("nan"),
+        "analyze_from": w0,
+        "q_dyn": q_dyn,
+    }
+
+
 def run_case(
     D: int,
     re: float,
@@ -139,15 +201,31 @@ def run_case(
     warmup_frac: float = 0.5,
     out_path: str | None = None,
     series_path: str | None = None,
+    # --- geometry / reference overrides (defaults = Re=100 40D case, bit-identical) ---
+    domain_x_d: float = DOMAIN_D,
+    domain_y_d: float = DOMAIN_D,
+    sponge_d: float = SPONGE_D,
+    st_seed: float = ST_SEED,
+    ref_cd: float = REF_CD,
+    ref_st: float = REF_ST,
+    x_center_d: float = SQUARE_X_D,
 ) -> dict:
-    nx = int(DOMAIN_D * D)
-    ny = nx
+    """Run one square-cylinder free-stream case.
+
+    ``domain_y_d`` sets the cross-stream height -> blockage ratio = 1/domain_y_d
+    (e.g. 20.0 -> blockage 1/20 = 5%, the Norberg-1993 wind-tunnel blockage).
+    ``domain_x_d`` is the streamwise length (independent of blockage).
+    Overrides default to the historical Re=100 40D x 40D configuration, so the
+    existing verified case is untouched when they are not passed.
+    """
+    nx = int(domain_x_d * D)
+    ny = int(domain_y_d * D)
     nu = u_in * D / re
     tau = 0.5 + 3.0 * nu
 
-    mask = square_mask(nx, ny, SQUARE_X_D * D, ny / 2.0, D, device)
+    mask = square_mask(nx, ny, x_center_d * D, ny / 2.0, D, device)
     sigma = make_sponge_strength(
-        ny, nx, int(nx - SPONGE_D * D), int(SPONGE_D * D), power=2.0, device=device
+        ny, nx, int(nx - sponge_d * D), int(sponge_d * D), power=2.0, device=device
     )
     tau_field = tau * (1.0 + SPONGE_ALPHA * sigma)  # τ_eff = τ·(1 + α·σ)
 
@@ -177,8 +255,8 @@ def run_case(
     step_plain = route_step(_step_plain, compile_mode, name=f"square_re100[D{D}]plain")
     step_seeded = route_step(_step_seeded, compile_mode, name=f"square_re100[D{D}]seed", quiet=True)
 
-    omega_seed = 2.0 * math.pi * ST_SEED * u_in / D
-    seed_steps = int(round(SEED_PERIODS / (ST_SEED * u_in / D)))
+    omega_seed = 2.0 * math.pi * st_seed * u_in / D
+    seed_steps = int(round(SEED_PERIODS / (st_seed * u_in / D)))
     uy_amp = SEED_AMPL * u_in
 
     fx_hist: list[torch.Tensor] = []
@@ -200,38 +278,13 @@ def run_case(
     fx_np = torch.stack(fx_hist).detach().cpu().numpy().astype(np.float64)
     fy_np = torch.stack(fy_hist).detach().cpu().numpy().astype(np.float64)
 
-    q_dyn = 0.5 * 1.0 * u_in * u_in * D  # 动压尺度（rho=1，D 为边长格数）
-    w0 = int(warmup_frac * steps)  # 稳态分析窗起点
-    cd_series = fx_np / q_dyn
-    cd_mean = float(cd_series[w0:].mean())
-    cl_series = fy_np / q_dyn
+    ana = analyze_forces(fx_np, fy_np, D=D, u_in=u_in, warmup_frac=warmup_frac)
+    cd_series, cl_series = ana["cd_series"], ana["cl_series"]
+    cd_mean, st_val, st_cross, cl_amp = ana["cd_mean"], ana["st"], ana["st_crossing"], ana["cl_amp"]
+    w0 = ana["analyze_from"]
 
-    # St：升力信号谱峰主频（FFT；对逐格噪声鲁棒），滞回过零作交叉验证。
-    cl_w = cl_series[w0:] - cl_series[w0:].mean()
-    st_val = float("nan")
-    st_cross = float("nan")
-    if cl_w.size >= 256:
-        spec = np.abs(np.fft.rfft(cl_w * np.hanning(cl_w.size)))
-        k = int(np.argmax(spec[1:])) + 1  # 跳过 DC
-        delta = 0.0
-        if 0 < k < spec.size - 1:
-            a, b, c = spec[k - 1], spec[k], spec[k + 1]
-            den = a - 2 * b + c
-            if abs(den) > 1e-30:
-                delta = float(0.5 * (a - c) / den)
-        st_val = float((k + delta) / cl_w.size * D / u_in)
-        thr = 0.25 * float(np.abs(cl_w).max())
-        sig = np.where(cl_w >= thr, 1, np.where(cl_w <= -thr, -1, 0))
-        idx = np.where(sig != 0, np.arange(sig.size), -1)
-        last = np.maximum.accumulate(idx)
-        state = np.where(last >= 0, sig[np.maximum(last, 0)], 0)
-        crossings = np.where((state[:-1] < 0) & (state[1:] > 0))[0] + 1
-        if len(crossings) >= 3:
-            t_shed = float(np.median(np.diff(crossings)))
-            st_cross = D / (u_in * t_shed)
-
-    err_cd = (cd_mean - REF_CD) / REF_CD * 100.0
-    err_st = (st_val - REF_ST) / REF_ST * 100.0
+    err_cd = (cd_mean - ref_cd) / ref_cd * 100.0
+    err_st = (st_val - ref_st) / ref_st * 100.0
 
     # Routing outcome (final after the loop): 'compiled', 'eager_fallback' or
     # 'eager'.  A run is effective-eager if ANY routed variant fell back (or
@@ -254,7 +307,15 @@ def run_case(
         np.savez(series_path, cd=cd_series, cl=cl_series, warmup_from=w0)
 
     result = {
-        "case": "square_cylinder_re100_free_stream_vortex_shedding",
+        "case": (
+            "square_cylinder_re100_free_stream_vortex_shedding"
+            if (domain_x_d, domain_y_d) == (DOMAIN_D, DOMAIN_D)
+            else "square_cylinder_free_stream"
+        ),
+        "domain_x_d": domain_x_d,
+        "domain_y_d": domain_y_d,
+        "blockage": round(1.0 / domain_y_d, 5),
+        "x_center_d": x_center_d,
         "D": D,
         "nx": nx,
         "ny": ny,
@@ -263,13 +324,13 @@ def run_case(
         "nu_lb": nu,
         "tau": round(tau, 6),
         "sponge": {
-            "x0": int(nx - SPONGE_D * D),
-            "width": int(SPONGE_D * D),
+            "x0": int(nx - sponge_d * D),
+            "width": int(sponge_d * D),
             "alpha": SPONGE_ALPHA,
             "power": 2.0,
         },
         "seed": {
-            "st_seed": ST_SEED,
+            "st_seed": st_seed,
             "ampl_frac": SEED_AMPL,
             "periods": SEED_PERIODS,
             "steps": seed_steps,
@@ -282,20 +343,20 @@ def run_case(
         "compile_status": compile_status_v,
         "compile_status_reason": compile_status_reason_v,
         "cd": round(cd_mean, 4),
-        "cd_ref": REF_CD,
+        "cd_ref": ref_cd,
         "err_pct": round(err_cd, 2),
         "st": round(st_val, 4) if math.isfinite(st_val) else None,
-        "st_ref": REF_ST,
+        "st_ref": ref_st,
         "st_err_pct": round(err_st, 2) if math.isfinite(err_st) else None,
         "st_crossing": round(st_cross, 4) if math.isfinite(st_cross) else None,
-        "cl_amp": float(np.abs(cl_w).max()),
+        "cl_amp": cl_amp,
         "finite": True,
         "elapsed_s": round(elapsed, 1),
     }
     print(
-        f"[square_re100 D={D}] steps={steps} t={elapsed:.0f}s Cd={cd_mean:.4f} "
+        f"[square D={D} Re={re:g}] steps={steps} t={elapsed:.0f}s Cd={cd_mean:.4f} "
         f"({err_cd:+.2f}%) St={st_val:.4f} ({err_st:+.2f}%) "
-        f"cl_amp={result['cl_amp']:.4f} seed_steps={seed_steps} "
+        f"cl_amp={cl_amp:.4f} seed_steps={seed_steps} "
         f"compile_effective={compile_mode_effective_v!r}",
         flush=True,
     )
@@ -324,6 +385,22 @@ def main() -> None:
         help="torch device, e.g. sdaa:0 / cuda:0 (auto-detect if unset)",
     )
     ap.add_argument("--warmup-frac", type=float, default=0.5)
+    ap.add_argument(
+        "--domain-x",
+        type=float,
+        default=DOMAIN_D,
+        help="streamwise domain length in D (default 40, the Re=100 case)",
+    )
+    ap.add_argument(
+        "--domain-y",
+        type=float,
+        default=DOMAIN_D,
+        help="cross-stream domain height in D -> blockage = 1/domain-y (default 40)",
+    )
+    ap.add_argument("--sponge-d", type=float, default=SPONGE_D, help="sponge width in D")
+    ap.add_argument("--st-seed", type=float, default=ST_SEED, help="inlet seeding Strouhal")
+    ap.add_argument("--ref-cd", type=float, default=REF_CD, help="reference Cd for error")
+    ap.add_argument("--ref-st", type=float, default=REF_ST, help="reference St for error")
     ap.add_argument("--out", default="")
     add_compile_mode_arg(ap)
     args = ap.parse_args()
@@ -347,6 +424,12 @@ def main() -> None:
             compile_mode=compile_mode,
             warmup_frac=args.warmup_frac,
             out_path=str(out / f"case_D{D}.json") if out else None,
+            domain_x_d=args.domain_x,
+            domain_y_d=args.domain_y,
+            sponge_d=args.sponge_d,
+            st_seed=args.st_seed,
+            ref_cd=args.ref_cd,
+            ref_st=args.ref_st,
         )
 
     cds = [g["cd"] for g in grids.values()]
