@@ -51,9 +51,11 @@ def level_path(out_dir: pathlib.Path, D: int, tag: str) -> pathlib.Path:
 
 
 def run_level(D: int, steps: int, u_mean: float, threads: int, device: str, out_dir: pathlib.Path,
-              tag: str, avg_periods: float, field: bool = False) -> dict:
+              tag: str, avg_periods: float, field: bool = False,
+              transient_periods: float = 5.0) -> dict:
     cfg = cdfg.CaseConfig(
-        D_cells=D, u_mean_lb=u_mean, n_steps=steps, avg_periods=avg_periods
+        D_cells=D, u_mean_lb=u_mean, n_steps=steps, avg_periods=avg_periods,
+        transient_periods=transient_periods,
     )
     res = cdfg.run_case(cfg, device=device, threads=threads, keep_series=True,
                         keep_field=field)
@@ -117,7 +119,17 @@ def aggregate(out_dir: pathlib.Path, tag: str, levels: tuple[int, ...], steps: i
             "dp": res["dp"],  # Δp/(0.5ρU²)
             "dp_over_rho_u2": res.get("dp_over_rho_u2", res["dp"] / 2.0),  # paper units
             "dp_nearest_fluid_columns": res.get("dp_nearest_fluid_columns", float("nan")),
-            "bench": res["bench"],
+            # Rebuilt here from values + bands, never copied from the level file:
+            # frozen level artifacts written before the m15918 unit fix carry a
+            # dp block whose band is the paper-units band applied to the
+            # (0.5ρU²)-normalised value -> a self-contradictory 121 % next to a
+            # 10.9 % in the same JSON (mission m16827, defect D5).
+            "bench": {
+                "cd": cdfg.band_error(res["cd"], bands["cd"]),
+                "cl_amp": cdfg.band_error(res["cl_amp"], bands["cl_amp"]),
+                "st": cdfg.band_error(res["st"], bands["st"]),
+                "dp": cdfg.band_error(res["dp"], bands["dp_half_rho_u2"]),
+            },
             # flat paths consumed by the validation matrix
             "err_pct": res["err_pct"],
             "err_pct_cd": res["err_pct"]["cd"],
@@ -192,13 +204,112 @@ def aggregate(out_dir: pathlib.Path, tag: str, levels: tuple[int, ...], steps: i
     return result
 
 
+def rejudge(out_dir: pathlib.Path, tag: str, levels: tuple[int, ...], u_mean: float,
+            transient_periods: float = 5.0, tol_pct: float = 5.0) -> dict:
+    """Re-judge every metric from the froze series (no re-run, no new physics).
+
+    Motivation (mission m16827): the published artefacts of this case were
+    produced when the averaging window silently covered the whole record
+    (transient included) and the lift amplitude was the peak-pick
+    ``(max-min)/2``.  Both defects live in the *estimator*, not in the flow, so
+    the same raw Cd/Cl/Δp histories can be re-scored honestly.  Everything is
+    derived from ``level_D<k>_<tag>.series.npz``; the frozen level JSON and
+    ``result.json`` are never overwritten.
+    """
+    import torch
+
+    bands = cdfg.REFERENCE_BANDS["2D-2"]
+    per_level: dict[str, dict] = {}
+    for D in levels:
+        spath = level_path(out_dir, D, tag).with_suffix(".series.npz")
+        jpath = level_path(out_dir, D, tag)
+        if not (spath.exists() and jpath.exists()):
+            continue
+        old = json.loads(jpath.read_text())
+        z = np.load(spath)
+        T = cdfg.CaseConfig(D_cells=D, u_mean_lb=u_mean, n_steps=10**9,
+                            transient_periods=transient_periods,
+                            avg_periods=transient_periods).period_steps
+        skip = int(round(transient_periods * T))
+        cd = z["cd"].astype("float64")[skip:]
+        cl = z["cl"].astype("float64")[skip:]
+        dp = z["dp"].astype("float64")[skip:]
+        amp = cdfg.limit_cycle_amplitude(
+            torch.tensor(cl), T, d_cells=D, u_mean_lb=u_mean,
+        )
+        st = cdfg.strouhal_from_series(
+            torch.tensor(cl, dtype=torch.float32), T,
+            cdfg.band_mid(bands["st"]), D, u_mean,
+        )
+        cd_new = float(cd.mean())
+        dp_new = float(dp.mean())
+        new_vals = {"cd": cd_new, "cl_amp": amp["amp"], "st": st["st_fft"],
+                    "dp": dp_new}
+        old_vals = {"cd": old["cd"], "cl_amp": old["cl_amp"], "st": old["st"],
+                    "dp": old["dp"]}
+        per_level[f"D{D}"] = {
+            "series": str(spath.relative_to(REPO_ROOT)),
+            "n_samples_total": int(len(z["cd"])),
+            "n_samples_used": int(len(cd)),
+            "transient_steps_dropped": skip,
+            "periods_used": round(len(cd) / T, 2),
+            "cl_amp_old_peakpick_all_window": old["cl_amp"],
+            "cl_amp_peakpick_post_transient": 0.5 * float(cl.max() - cl.min()),
+            "cl_amp_new": amp["amp"],
+            "cl_amp_peakpick_median": amp.get("amp_peakpick_median", float("nan")),
+            "cl_amp_peakpick_excess_pct": amp.get("peakpick_excess_pct", float("nan")),
+            "cl_amp_amplitude_convention": amp.get("amplitude_convention"),
+            "cl_amp_warning": amp.get("warning"),
+            "cl_amp_new_status": amp["status"],
+            "cl_amp_n_periods": amp["n_periods"],
+            "cl_amp_iqr": amp["iqr"],
+            "cl_amp_stderr": amp["stderr"],
+            "cl_amp_fundamental": amp["amp_fundamental"],
+            "cl_amp_estimator_disagreement_pct": amp["estimator_disagreement_pct"],
+            "st_new": st["st_fft"],
+            "cd_new": cd_new,
+            "dp_new": dp_new,
+            "values_old": old_vals,
+            "values_new": new_vals,
+            "err_pct_old": {k: cdfg.band_error(old_vals[k], bands[
+                {"dp": "dp_half_rho_u2"}.get(k, k)])["err_pct_vs_mid"] for k in old_vals},
+            "err_pct_new": {k: cdfg.band_error(new_vals[k], bands[
+                {"dp": "dp_half_rho_u2"}.get(k, k)])["err_pct_vs_mid"] for k in new_vals},
+        }
+    summary = {
+        "case": "CASE-CYLINDER-DRAG-RE100",
+        "why": "estimator defects D1 (peak-pick) + D3 (transient inside window); "
+               "re-scored from frozen series, no re-run",
+        "transient_periods": transient_periods,
+        "tolerance_pct": tol_pct,
+        "levels": per_level,
+        "per_metric": {
+            m: {
+                "err_pct_old": {k: per_level[k]["err_pct_old"][m] for k in per_level},
+                "err_pct_new": {k: per_level[k]["err_pct_new"][m] for k in per_level},
+            }
+            for m in ("cd", "cl_amp", "st", "dp")
+        } if per_level else {},
+        "frozen_files_untouched": True,
+    }
+    (out_dir / "rejudge_cl_amp.json").write_text(json.dumps(summary, indent=2))
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--levels", type=int, nargs="+", default=list(LEVELS))
     ap.add_argument("--steps", type=int, nargs="+", default=[60_000],
                     help="steps per level (one value = same for all levels)")
-    ap.add_argument("--avg-periods", type=float, default=20.0)
+    ap.add_argument("--avg-periods", type=float, default=12.0,
+                    help="shedding periods averaged (default 12; was 20, which "
+                         "silently exceeded the run length -> whole-record window)")
+    ap.add_argument("--transient-periods", type=float, default=5.0,
+                    help="shedding periods discarded before averaging")
+    ap.add_argument("--rejudge", action="store_true",
+                    help="re-score the frozen series with the corrected estimator "
+                         "(no simulation; writes artifacts/rejudge_cl_amp.json)")
     ap.add_argument("--u-mean", type=float, default=0.0833)
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--device", default="cpu")
@@ -214,12 +325,18 @@ def main(argv: list[str] | None = None) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     tag = a.tag or ("u0833" if abs(a.u_mean - 0.0833) < 1e-9 else f"u{a.u_mean:.4f}".replace(".", ""))
 
+    if a.rejudge:
+        levels_r = tuple(sorted({*LEVELS, *a.levels}))
+        out = rejudge(out_dir, tag, levels_r, a.u_mean, a.transient_periods, a.tol)
+        print(json.dumps({"per_metric": out["per_metric"]}, indent=2))
+        return 0
+
     if not a.aggregate_only:
         steps_for = (a.steps if len(a.steps) == len(a.levels)
                      else [a.steps[0]] * len(a.levels))
         for D, n_steps in zip(a.levels, steps_for):
             run_level(D, n_steps, a.u_mean, a.threads, a.device, out_dir, tag, a.avg_periods,
-                      field=a.field)
+                      field=a.field, transient_periods=a.transient_periods)
 
     levels = tuple(sorted({*LEVELS, *a.levels}))
     result = aggregate(out_dir, tag, levels, a.steps, a.u_mean, a.tol)
