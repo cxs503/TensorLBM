@@ -1,0 +1,326 @@
+{
+  "what": "independent re-derivation of the continuum marginal Ra (time-domain FD)",
+  "independent_of": "tensorlbm.rb_continuum_stability (FD state-space eigenproblem + ARPACK)",
+  "method": "one-mode linearised NS-Boussinesq, RK4 march, sigma(Ra) bisection, no eigen-solve",
+  "environment": {
+    "python": "3.11.6",
+    "numpy": "2.4.6",
+    "scipy": "1.16.0",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "machine": "loongarch64"
+  },
+  "grid": {
+    "ny": 40,
+    "steps": 8000,
+    "dt": 0.0002,
+    "pr": 0.71
+  },
+  "limitations": [
+    "uses the same variable choice omega=(D^2-k^2)psi as Route C, so an error in the equations themselves would not be caught; what it independently checks is Route C's discretisation, eigen-solve and marginal criterion",
+    "second-order FD in y at ny=40: O(h^2) error, so agreement is expected at the 0.1-1 % level, not the 1e-4 of Route C",
+    "one Fourier mode at a time at the reference wavenumber a=3.1163: the wavenumber minimum is not re-minimised, so no independent a_c claim is made",
+    "free-slip calibration is run only at a=pi/sqrt(2) (its analytic optimum)"
+  ],
+  "calibration_free_slip": {
+    "valid": true,
+    "Ra_bracket": [
+      656.2271625957671,
+      657.5113644795163
+    ],
+    "Ra_c": 656.8692635376417,
+    "sigma_bracket": [
+      -2.3065899156889187,
+      2.055712380261061
+    ],
+    "history": [
+      {
+        "ra": 493.1335233596372,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -2.3065899156889187,
+        "r2": 1.0,
+        "amp_initial": 4.499867945550325,
+        "amp_final": 0.3234384117779486,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 821.8892055993954,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": 2.055712380261061,
+        "r2": 1.0,
+        "amp_initial": 4.107944237070631,
+        "amp_final": 465.7552944246383,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 657.5113644795163,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": 0.008470892563040365,
+        "r2": 0.999999999999986,
+        "amp_initial": 4.242110748981434,
+        "amp_final": 15.544991983336063,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 575.3224439195767,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -1.108926707497806,
+        "r2": 1.0,
+        "amp_initial": 4.356682156621597,
+        "amp_final": 2.4084240828844314,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 616.4169041995465,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -0.541194027547087,
+        "r2": 1.0,
+        "amp_initial": 4.2956610042733026,
+        "amp_final": 6.21735480956329,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 636.9641343395314,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -0.26421045992684167,
+        "r2": 1.0,
+        "amp_initial": 4.2679332479996175,
+        "amp_final": 9.868408765526112,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 647.2377494095238,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -0.1273445113327958,
+        "r2": 0.9999999999999999,
+        "amp_initial": 4.2547815792666945,
+        "amp_final": 12.39712541689788,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 652.37455694452,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -0.05930700177144829,
+        "r2": 0.9999999999999997,
+        "amp_initial": 4.2483857823410185,
+        "amp_final": 13.885293921389003,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 654.9429607120181,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -0.025385788355044826,
+        "r2": 0.9999999999999983,
+        "amp_initial": 4.245233135971783,
+        "amp_final": 14.69255999145403,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 656.2271625957671,
+        "k": 2.221441469079183,
+        "walls": "free",
+        "sigma": -0.008449404347243736,
+        "r2": 0.9999999999999853,
+        "amp_initial": 4.243668155797976,
+        "amp_final": 15.1129811179605,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      }
+    ],
+    "n_arms": 10,
+    "bracket_width_rel": 0.0019550342130988272,
+    "Ra_analytic": 657.5113644795163,
+    "a_analytic": 2.221441469079183,
+    "err_pct": -0.0976562500000049
+  },
+  "rigid_rigid": {
+    "valid": true,
+    "Ra_bracket": [
+      1699.7545764062502,
+      1701.7558573046877
+    ],
+    "Ra_c": 1700.755216855469,
+    "sigma_bracket": [
+      -2.435831998712764,
+      2.409860903441463
+    ],
+    "history": [
+      {
+        "ra": 1451.595745,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": -2.435831998712764,
+        "r2": 1.0,
+        "amp_initial": 4.842088256660368,
+        "amp_final": 0.4196976420648358,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1963.9236549999998,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": 2.409860903441463,
+        "r2": 1.0,
+        "amp_initial": 6.328290199801005,
+        "amp_final": 1124.4434684562102,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1707.7597,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": 0.07471370381147133,
+        "r2": 1.0,
+        "amp_initial": 5.531085747230316,
+        "amp_final": 25.14390360690392,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1579.6777225,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": -1.156113808615674,
+        "r2": 1.0,
+        "amp_initial": 5.170263764614414,
+        "amp_final": 3.3838833098780183,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1643.71871125,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": -0.5349409843739543,
+        "r2": 1.0,
+        "amp_initial": 5.3469851844795295,
+        "amp_final": 9.31315477461664,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1675.739205625,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": -0.22871426877926399,
+        "r2": 1.0,
+        "amp_initial": 5.438158245670602,
+        "amp_final": 15.338333997964048,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1691.7494528125,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": -0.0766552839708381,
+        "r2": 1.0,
+        "amp_initial": 5.484408106417384,
+        "amp_final": 19.649668880683485,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1699.7545764062502,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": -0.0008851338009322644,
+        "r2": 1.0,
+        "amp_initial": 5.507694116888034,
+        "amp_final": 22.23084549510457,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1703.7571382031251,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": 0.036935625650126314,
+        "r2": 1.0,
+        "amp_initial": 5.519376811509475,
+        "amp_final": 23.64339241090776,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      },
+      {
+        "ra": 1701.7558573046877,
+        "k": 3.11632,
+        "walls": "rigid",
+        "sigma": 0.01803059023105594,
+        "r2": 1.0,
+        "amp_initial": 5.513532173859019,
+        "amp_final": 22.926446923008353,
+        "steps": 8000,
+        "dt": 0.0002,
+        "t_end": 1.6
+      }
+    ],
+    "n_arms": 10,
+    "bracket_width_rel": 0.0011767013139831171,
+    "Ra_ref": 1707.7597,
+    "err_pct": -0.4101562499999941
+  },
+  "grid_sensitivity": [
+    {
+      "ny": 20,
+      "Ra_c": 1679.741767421875,
+      "err_pct": -1.640625000000003
+    },
+    {
+      "ny": 30,
+      "Ra_c": 1695.7520146093752,
+      "err_pct": -0.7031249999999899
+    },
+    {
+      "ny": 40,
+      "Ra_c": 1703.7571382031251,
+      "err_pct": -0.23437499999999664
+    }
+  ],
+  "checks": {
+    "free_slip_calibration_1pct": true,
+    "rigid_rigid_1.5pct": true,
+    "fits_are_real": true,
+    "grid_sensitivity_reported": true
+  },
+  "all_checks_pass": true,
+  "wall_seconds": 114.61
+}
