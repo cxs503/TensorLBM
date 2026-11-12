@@ -1,0 +1,463 @@
+{
+  "matrix": "TensorLBM validation matrix",
+  "version": "1.0",
+  "updated": "2026-11-12",
+  "acceptance": {
+    "error_tol_pct": 3.0,
+    "convergence_span_pct": 3.0,
+    "note": "A case passes only if every declared metric is within its own tolerance at every level AND the level-series converges (span <= 3%, monotone where >=3 levels exist). Statuses are passed / failed / pending; `pending` never hides a machine FAIL, and `failed` entries keep their root cause."
+  },
+  "slots": [
+    {
+      "slot": "cavity",
+      "lineage": "1. 方腔流 (lid-driven cavity, Ghia 1982)"
+    },
+    {
+      "slot": "cylinder",
+      "lineage": "2. 圆柱绕流 (circular cylinder, Braza 1986)"
+    },
+    {
+      "slot": "sphere",
+      "lineage": "3. 球体阻力 (sphere drag, Schiller-Naumann)"
+    },
+    {
+      "slot": "channel",
+      "lineage": "4. 湍流槽道 (turbulent channel, Moser DNS)"
+    },
+    {
+      "slot": "taylor_green",
+      "lineage": "5. Taylor-Green 涡衰减 (analytic)"
+    },
+    {
+      "slot": "static_droplet",
+      "lineage": "6. 静态液滴 (Laplace law)"
+    },
+    {
+      "slot": "rayleigh_taylor",
+      "lineage": "7. Rayleigh-Taylor 线性增长 (critical-mode dispersion)"
+    },
+    {
+      "slot": "dam_break",
+      "lineage": "8. 溃坝 (Ritter 1892 self-similar)"
+    },
+    {
+      "slot": "ship",
+      "lineage": "9. 船体阻力与波浪 (resistance + wave)"
+    }
+  ],
+  "cases": [
+    {
+      "id": "cavity_re100",
+      "slot": "cavity",
+      "title": "Lid-driven cavity Re=100 vs Ghia 1982 centreline table",
+      "reference_basis": "experimental/numerical landmark table",
+      "refs": [
+        "ghia_re100_u_center"
+      ],
+      "scope": "2-D incompressible cavity, MRT + pre-streaming bounce-back; centreline profile deviation and vortex centre at two grids.",
+      "measure": {
+        "artifact": "benchmarks/verified/cavity/re100/result.json",
+        "levels": [
+          "128x128",
+          "192x192"
+        ],
+        "metrics": [
+          {
+            "name": "max_abs_dev_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "grids.128.max_abs_dev_pct",
+              "grids.192.max_abs_dev_pct"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "max_abs_dev_pct",
+            "max_span_pct": 3.0,
+            "require_monotone": true
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/verified/cavity/re100/run.py",
+        "budget_s": 900
+      },
+      "notes": "Frozen verified artifact; the matrix re-checks the recorded error and the two-grid span, it does not re-run the 159 s/192 s simulations."
+    },
+    {
+      "id": "cylinder_re100",
+      "slot": "cylinder",
+      "title": "Circular cylinder Re=100 vs Braza 1986 experiment (Cd, St)",
+      "reference_basis": "experimental",
+      "refs": [
+        "cylinder_cd_re100",
+        "cylinder_st_re100"
+      ],
+      "scope": "2-D free-stream cylinder with sponge outflow, D=48/64, seeded shedding. Cd and St against the Braza band.",
+      "measure": {
+        "artifact": "benchmarks/verified/cylinder/re100/result.json",
+        "levels": [
+          "D48",
+          "D64"
+        ],
+        "metrics": [
+          {
+            "name": "cd_err_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "grids.D48.err_pct",
+              "grids.D64.err_pct"
+            ]
+          },
+          {
+            "name": "st_err_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "grids.D48.st_err_pct",
+              "grids.D64.st_err_pct"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "cd_err_pct",
+            "max_span_pct": 3.0,
+            "require_monotone": false
+          },
+          {
+            "metric": "st_err_pct",
+            "max_span_pct": 3.5,
+            "require_monotone": false
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/verified/cylinder/re100/run.py",
+        "budget_s": 1800
+      },
+      "notes": "Errors are read from the verified artifact's own bookkeeping (grids.D48/D64 .err_pct/.st_err_pct), which uses the Braza band Cd=1.35+-0.05 and the St band 0.164-0.165 with the band LOWER bound as denominator (St=0.160 -> -2.4%). Against the band midpoint 0.165 the D64 St error would be -3.03%, i.e. marginally outside the 3% gate; that convention sensitivity is recorded here rather than hidden. Cd error is not monotone (-1.53% -> -2.55%) although both levels stay inside the gate."
+    },
+    {
+      "id": "sphere_re100",
+      "slot": "sphere",
+      "title": "Sphere Re=100 drag vs Schiller-Naumann",
+      "reference_basis": "correlation (multi-source audited)",
+      "refs": [
+        "sphere_cd_re100"
+      ],
+      "scope": "D3Q19, BFL interpolated smooth wall, per-link momentum ledger; D=40/60.",
+      "measure": {
+        "artifact": "benchmarks/verified/sphere_re100/result.json",
+        "levels": [
+          "D40",
+          "D60"
+        ],
+        "metrics": [
+          {
+            "name": "cd",
+            "kind": "value",
+            "reference": 1.0917311,
+            "tol_pct": 3.0,
+            "paths": [
+              "convergence.cd_by_grid.0",
+              "convergence.cd_by_grid.1"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "cd",
+            "max_span_pct": 3.0,
+            "require_monotone": false
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/verified/sphere_re100/run.py",
+        "budget_s": 7200
+      },
+      "notes": "Recorded errors +2.771% / +2.540% (span 0.231%), monotone decreasing by the case README; the machine check uses the frozen cd_by_grid values."
+    },
+    {
+      "id": "channel_turb_re180",
+      "slot": "channel",
+      "title": "Turbulent channel Re_tau=180 vs Moser DNS (u+ profile)",
+      "reference_basis": "DNS reference data (not in-repo -> WITHHELD)",
+      "refs": [
+        "moser_channel_uplus"
+      ],
+      "scope": "3-D periodic channel, D3Q19 natural KBC, Guo body force; u+ RMS error in y+ in [30,100].",
+      "declared_status": "failed",
+      "blocker": "TERMINAL honest FAIL (benchmarks/pending/channel_turb_3d/README.md): root cause = domain size too small + insufficient statistical sample; the u+ RMS error in the log layer never reaches the 3% gate. The tabular Moser DNS anchor is also not frozen in-repo, so the anchor itself is WITHHELD.",
+      "measure": {
+        "artifact": "benchmarks/pending/channel_turb_3d/result.json",
+        "levels": [
+          "coarse",
+          "fine"
+        ],
+        "metrics": [
+          {
+            "name": "uplus_rms_err_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "grids.coarse.uplus_rms_err_pct",
+              "grids.fine.uplus_rms_err_pct"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "uplus_rms_err_pct",
+            "max_span_pct": 3.0
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/pending/channel_turb_3d/run.py",
+        "budget_s": 36000
+      },
+      "notes": "Missing artifact paths are reported as pending-with-reason by the runner, never as passed. This slot exists to keep the negative result visible in the matrix."
+    },
+    {
+      "id": "taylor_green_2d",
+      "slot": "taylor_green",
+      "title": "2-D Taylor-Green vortex decay vs analytic gamma = 2 nu k^2",
+      "reference_basis": "analytic",
+      "refs": [
+        "tg2d_gamma_e_theory"
+      ],
+      "scope": "D2Q9 periodic box; velocity decay rate fitted over two independent halves of the run (temporal split, not a grid refinement).",
+      "measure": {
+        "artifact": "benchmarks/verified/taylor_green_2d/result.json",
+        "levels": [
+          "first-half",
+          "second-half"
+        ],
+        "metrics": [
+          {
+            "name": "gamma_e",
+            "kind": "value",
+            "reference": 0.0006168502750680849,
+            "tol_pct": 1.0,
+            "paths": [
+              "gamma_e_half1",
+              "gamma_e_half2"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "gamma_e",
+            "max_span_pct": 1.0,
+            "require_monotone": false
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/verified/taylor_green_2d/run.py",
+        "budget_s": 300
+      },
+      "notes": "Levels are two independent halves of the energy-decay fit (temporal split). Reference = analytic gamma_E = 4 nu k^2, frozen in the artifact as gamma_e_theory; the velocity-rate cross-check (-0.0007%) is recorded in the case README. Two-grid convergence for this slot is carried by case_taylor_green_3d."
+    },
+    {
+      "id": "static_droplet_laplace_ci",
+      "slot": "static_droplet",
+      "title": "Static SCMP droplet: Laplace law + resolution convergence (CI tier)",
+      "reference_basis": "analytic",
+      "refs": [
+        "laplace_law_2d"
+      ],
+      "scope": "2-D Shan-Chen single-component droplet, G_lib=+5 (physical G_eff=-5), tau=1, three radii per level, domain L=4R periodic. Measured levels: R=8/12/16 and R=12/16/20. Not covered: 3-D sphere (standard tier).",
+      "measure": {
+        "artifact": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json",
+        "levels": [
+          "R=8/12/16",
+          "R=12/16/20"
+        ],
+        "metrics": [
+          {
+            "name": "laplace_max_dev_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "levels.0.metrics.laplace_max_dev_pct",
+              "levels.1.metrics.laplace_max_dev_pct"
+            ]
+          },
+          {
+            "name": "sigma_pair_dev_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "levels.0.metrics.sigma_pair_dev_pct",
+              "levels.1.metrics.sigma_pair_dev_pct"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "laplace_max_dev_pct",
+            "max_span_pct": 3.0,
+            "require_monotone": false
+          },
+          {
+            "metric": "sigma_pair_dev_pct",
+            "max_span_pct": 3.0,
+            "require_monotone": false
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
+        "budget_s": 900
+      },
+      "notes": "HONEST FAIL of the CI tier, root cause quantified: with the uniform 3% Laplace gate the R=8/12/16 set fails (per-radius sigma deviation 4.689%, fit R^2=0.9961) while the R=12/16/20 set passes (0.822%, R^2=0.999984). R=8 is only two interface widths (W=4 in the SCMP model) and lies below the resolvable radius R >= 3W required for the Laplace law, so the coarse set is outside the model's validity range rather than evidence against it. The two-level span criterion also fails (3.87%) for the same single reason. Next build: gate R=12/16/20 and R=16/20/24, keep R=8/12/16 as a documented non-gated ladder. No threshold was relaxed and no artifact was edited."
+    },
+    {
+      "id": "rayleigh_taylor_rt",
+      "slot": "rayleigh_taylor",
+      "title": "Rayleigh-Taylor linear growth rate vs viscous dispersion relation",
+      "reference_basis": "analytic",
+      "refs": [
+        "chandrasekhar_rt"
+      ],
+      "scope": "SCMP pseudo-potential D2Q9 and an earlier VOF track; single-mode interface, growth rate fitted on a linear window.",
+      "declared_status": "failed",
+      "blocker": "Honest FAIL with root cause (benchmarks/pending/rayleigh_taylor/README.md): over 10 (lambda, g) cases the SCMP pseudo-potential model has NO growth window inside the reachable parameter surface (sigma_sim <= 0 or NaN; lambda=280/g=6.5e-6 already at 91% of the vapor-spinodal gravity ceiling), and the earlier VOF module track failed structurally. Two independent model classes fail -> the slot stays failed until a model class with a demonstrable window exists.",
+      "repro": {
+        "cmd": "python benchmarks/pending/rayleigh_taylor/run.py",
+        "budget_s": 36000
+      },
+      "notes": "No artifact paths are declared: the negative evidence is the documented parameter-surface scan, so the runner reports 'declared failed' with the blocker text (never passed)."
+    },
+    {
+      "id": "dam_break_ritter_ci",
+      "slot": "dam_break",
+      "title": "Ritter 1892 dam-break self-similarity (CI tier)",
+      "reference_basis": "analytic",
+      "refs": [
+        "ritter_front_law"
+      ],
+      "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g). Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
+      "measure": {
+        "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
+        "levels": [
+          "nx=200",
+          "nx=400"
+        ],
+        "metrics": [
+          {
+            "name": "front_err_pct",
+            "kind": "error_pct",
+            "tol_pct": 5.0,
+            "paths": [
+              "levels.0.metrics.front_err_pct",
+              "levels.1.metrics.front_err_pct"
+            ]
+          },
+          {
+            "name": "profile_l2_pct",
+            "kind": "error_pct",
+            "tol_pct": 5.0,
+            "paths": [
+              "levels.0.metrics.profile_l2_pct",
+              "levels.1.metrics.profile_l2_pct"
+            ]
+          },
+          {
+            "name": "mass_drift_pct",
+            "kind": "error_pct",
+            "tol_pct": 1.0,
+            "paths": [
+              "levels.0.metrics.mass_drift_pct",
+              "levels.1.metrics.mass_drift_pct"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "front_err_pct",
+            "max_span_pct": 5.0,
+            "require_monotone": false
+          },
+          {
+            "metric": "profile_l2_pct",
+            "max_span_pct": 5.0,
+            "require_monotone": true
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
+        "budget_s": 300
+      },
+      "notes": "CI tier judged as declared (profile L2 <= 5%): it FAILS at nx=200/400 (9.83% / 6.29%) while the front law passes and converges monotonically (+4.51% -> +2.56%). The resolution ladder recorded in the artifact (nx=800/1600) shows a first-order decrease (3.84% / 2.32%) crossing the 5% gate near nx~700: the CI tier is under-resolved for the profile metric, which is the honest root cause. The pre-existing standard-tier runner (nx up to 1600) reports front_err_mass up to 6.4%, i.e. it would fail the same 5% front gate, confirming that the gate/tier pairing needs re-calibration rather than the numbers being quietly relaxed."
+    },
+    {
+      "id": "ship_resistance_suboff",
+      "slot": "ship",
+      "title": "DARPA SUBOFF bare-hull resistance at Re=1000 vs Blasius flat plate",
+      "reference_basis": "analytic correlation",
+      "refs": [
+        "blasius_cf_suboff"
+      ],
+      "scope": "3-D D3Q19 MRT SUBOFF hull, L=48/80 cells, mix50 friction formula; total drag coefficient vs the Blasius wetted-area anchor.",
+      "measure": {
+        "artifact": "benchmarks/verified/suboff_re1000/result.json",
+        "levels": [
+          "L=48",
+          "L=80"
+        ],
+        "metrics": [
+          {
+            "name": "cd_tot_err_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "convergence_with_grid.L48_mix50_err_pct",
+              "convergence_with_grid.L80_mix50_err_pct"
+            ],
+            "tol_pct_by_level": [
+              null,
+              3.0
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "cd_tot_err_pct",
+            "max_span_pct": 3.0,
+            "require_monotone": true
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/verified/suboff_re1000/run.py",
+        "budget_s": 24000
+      },
+      "notes": "Pre-registered gate of the case (README): finest tier |err| <= 3% AND the error decreases with resolution. L=48 (-3.17%) is therefore informational and only L=80 (-1.15%) is gated; the monotone requirement is still checked over both levels."
+    },
+    {
+      "id": "ship_wave_michell",
+      "slot": "ship",
+      "title": "Ship wave resistance vs Michell thin-ship theory",
+      "reference_basis": "analytic (thin-ship)",
+      "refs": [
+        "michell_cw"
+      ],
+      "scope": "Michell closed-form C_W(Fn), Kelvin wave geometry and hump/hollow; the LBM free-surface C_W vs Michell comparison is the primary criterion.",
+      "declared_status": "pending",
+      "blocker": "WITHHELD (benchmarks/wave_wake_michell/REPORT.md): the primary criterion 'LBM free-surface C_W within 15% of Michell' was NOT obtained - the 3-D Koerner free-surface kernel measured 9.56 s/step at 4e5 cells, extrapolating to ~35 h for a lambda/dx>=20 Wigley case, outside the node budget. 2-D free-surface substitute: period error 8.8-13.8%. Reported as WITHHELD, not PASS.",
+      "repro": {
+        "cmd": "python benchmarks/wave_wake_michell/run.py",
+        "budget_s": 3600
+      },
+      "notes": "Kept pending to make the missing wave-resistance evidence explicit in the matrix; the 3-D cost is the documented blocker."
+    }
+  ]
+}

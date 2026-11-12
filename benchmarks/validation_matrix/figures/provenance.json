@@ -1,0 +1,27 @@
+{
+  "figures": [
+    {
+      "figure": "benchmarks/validation_matrix/figures/dam_break_ritter_ci.png",
+      "ladder": {
+        "200": {
+          "front_err_pct": 4.512477447890056,
+          "profile_l2_pct": 9.824803799860751
+        },
+        "400": {
+          "front_err_pct": 2.562490221596643,
+          "profile_l2_pct": 6.291582196947942
+        },
+        "800": {
+          "front_err_pct": 1.4332600483665527,
+          "profile_l2_pct": 3.8368007860115254
+        }
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
+      "sha256": "a0b0645512e004a80836d5fe7b9fb818366c98162f8e0d96e43711d2013489ee"
+    }
+  ]
+}

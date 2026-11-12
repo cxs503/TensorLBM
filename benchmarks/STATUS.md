@@ -4,6 +4,13 @@ verified: **38** | pending: **35**  (counts refreshed 2026-10-09)
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
+**Validation matrix v1** (nine-case lineage, machine-checked gates, one-command
+reproduction): see [`validation_matrix/`](validation_matrix/README.md) and the
+generated [`validation_matrix/STATUS_MATRIX.md`](validation_matrix/STATUS_MATRIX.md).
+Its per-case status files (`benchmarks/{verified,pending}/<case>/validation_status.json`)
+carry the metric rows, convergence checks and sha256 evidence chain; the anchors
+are re-audited from their cited sources by `validation_matrix/reference_audit.py`.
+
 ## verified/
 
 | case | note |

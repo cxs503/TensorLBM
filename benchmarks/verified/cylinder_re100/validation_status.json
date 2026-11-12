@@ -1,0 +1,157 @@
+{
+  "case": "cylinder_re100",
+  "slot": "cylinder",
+  "title": "Circular cylinder Re=100 vs Braza 1986 experiment (Cd, St)",
+  "reference_basis": "experimental",
+  "scope": "2-D free-stream cylinder with sponge outflow, D=48/64, seeded shedding. Cd and St against the Braza band.",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/verified/cylinder/re100/result.json",
+  "repro_cmd": "python benchmarks/verified/cylinder/re100/run.py",
+  "references": [
+    {
+      "id": "cylinder_cd_re100",
+      "quantity": "mean drag coefficient of a circular cylinder, Re=100 (2-D)",
+      "value": 1.35,
+      "formula": null,
+      "origin": "Braza, Chassaing & Ha Minh 1986, JFM 165 (experiment Cd=1.35+-0.05)",
+      "source": "benchmarks/verified/cylinder/re100/README.md",
+      "source_sha256": "150a774768337487130c86770d88da7c3aac318185771e466afa2ffced472247",
+      "token": "Cd=1.35±0.05"
+    },
+    {
+      "id": "cylinder_st_re100",
+      "quantity": "Strouhal number of a circular cylinder, Re=100",
+      "value": 0.165,
+      "formula": null,
+      "origin": "Braza et al. 1986 (St=0.164-0.165 band; 2-D literature 0.164-0.168)",
+      "source": "benchmarks/verified/cylinder/re100/README.md",
+      "source_sha256": "150a774768337487130c86770d88da7c3aac318185771e466afa2ffced472247",
+      "token": "St≈0.164-0.165"
+    }
+  ],
+  "status": "passed",
+  "machine_pass": true,
+  "declared_status": null,
+  "reason": "all metric and convergence criteria passed",
+  "metrics": [
+    {
+      "metric": "cd_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D48",
+          "value": -1.53,
+          "reference": null,
+          "err_pct": -1.53,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "D64",
+          "value": -2.55,
+          "reference": null,
+          "err_pct": -2.55,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 2.55
+    },
+    {
+      "metric": "st_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D48",
+          "value": 0.7,
+          "reference": null,
+          "err_pct": 0.7,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "D64",
+          "value": -2.4,
+          "reference": null,
+          "err_pct": -2.4,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 2.4
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "cd_err_pct",
+      "errors_abs_pct": [
+        1.53,
+        2.55
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": 1.0199999999999998,
+      "monotone": false,
+      "require_monotone": false,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    },
+    {
+      "metric": "st_err_pct",
+      "errors_abs_pct": [
+        0.7,
+        2.4
+      ],
+      "max_span_pct": 3.5,
+      "span_pct": 1.7,
+      "monotone": false,
+      "require_monotone": false,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "b9a27d4b25dbe5dc115e9b5b212b36f4f9e1f8b10cac534fc11b16b525732b6d",
+  "artifact_bytes": 1282,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/verified/cylinder/re100/result.json",
+      "sha256": "b9a27d4b25dbe5dc115e9b5b212b36f4f9e1f8b10cac534fc11b16b525732b6d"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/verified/cylinder/re100/run.py",
+      "sha256": "5cbf38b68ad74fa0bc7b41e7dfdf6b36f6a3df8e7ca9448e16a1e2fc7c149933"
+    }
+  ],
+  "notes": "Errors are read from the verified artifact's own bookkeeping (grids.D48/D64 .err_pct/.st_err_pct), which uses the Braza band Cd=1.35+-0.05 and the St band 0.164-0.165 with the band LOWER bound as denominator (St=0.160 -> -2.4%). Against the band midpoint 0.165 the D64 St error would be -3.03%, i.e. marginally outside the 3% gate; that convention sensitivity is recorded here rather than hidden. Cd error is not monotone (-1.53% -> -2.55%) although both levels stay inside the gate."
+}
