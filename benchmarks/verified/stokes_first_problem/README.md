@@ -87,3 +87,18 @@ python run.py single 100 /tmp/x.json --tau 0.8              # 诊断：有限域
   及标准流体力学教材（Batchelor, §4.3）。
 - 移动壁反弹：标准半程 BB + 动量注入（与静止 BB 同构，u_w=(U,0)）。
 - 共性模块缺口（移动壁反弹/自由滑移无库实现）：见 /tmp/stokes1_gap.md。
+
+---
+
+## 案例池判据升级：`t* = 1.0` 逐点 erfc（case pool `LBM-STOKES-FIRST-PROBLEM`）
+
+上面的 B24 只在 `u_ana > 5%·U` 区域统计误差（避开 erfc 尾部）。案例池判据要求
+**η∈[0,2]、t*=1.0 逐点相对误差 <2%**，其中 `erfc(2)=4.678e-3`——误差被 0.47% 板速判分。
+
+→ 见 `run_tstar1.py`（求解器+判分器）、`make_assets.py`（表/图）、`scan_tstar1/`（证据）、
+`docs/stokes_first_problem_tstar1_20261112.md`（完整报告）、
+`tests/test_stokes_first_problem_tstar1.py`（回归门）。
+
+实测（δ=25, t*=1.0, float64）：逐点 **0.0781%**（η∈[0.1,2]）、尾部 η=2 **0.0040%**、全窗口含壁面端点 **1.1282%**，
+δ=50 加密 **0.0154%**（阶 2.34）。关键结论：**float64 是硬需求**（float32 在 U=1e-3 时尾部误差 98%），
+且本题 Ma² 压缩性误差结构性为零（ρ≡1，偏差 1e-12）。

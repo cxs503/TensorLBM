@@ -1,0 +1,32 @@
+{
+  "case": "LBM-STOKES-FIRST-PROBLEM",
+  "H": 200,
+  "ny": 202,
+  "nx": 4,
+  "tau": 0.65,
+  "nu_lb": 0.05000000000000001,
+  "U": 0.001,
+  "Ma": 0.0017320508075688774,
+  "top_bc": "specular",
+  "collision": "bgk",
+  "delta_ref": 25.0,
+  "nsteps": 12500,
+  "tstar": 1.0,
+  "wall_plane_lattice": 0.5,
+  "dtype": "float32",
+  "rho_max_dev_from_1": 0.0001252889633178711,
+  "mass_drift_pct": 0.01222213526897309,
+  "finite": true,
+  "elapsed_s": 16.18,
+  "profiles": [
+    {
+      "tstar": 1.0,
+      "step": 12500,
+      "delta_lb": 25.000000000000004,
+      "max_rel_err_pct_eta0_2": 99.19764006848143,
+      "max_rel_err_pct_eta0.1_2": 99.19764006848143,
+      "rel_err_pct_at_eta2": 98.10881397483294,
+      "max_rel_err_pct_native_nodes": 99.24581715507006
+    }
+  ]
+}
