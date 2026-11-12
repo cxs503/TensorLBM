@@ -106,6 +106,17 @@
       "nu_mid": 2.238,
       "u_max_y": 0.823,
       "v_max_x": 0.119
+    },
+    "100000.0": {
+      "nu": 4.519,
+      "u_max": 34.72,
+      "v_max": 68.6,
+      "nu_max": 8.499,
+      "nu_min": 0.989,
+      "nu_mid": 4.499,
+      "u_max_y": 0.813,
+      "v_max_x": 0.066,
+      "source": "de Vahl Davis (1983) Int. J. Numer. Methods Fluids 3:249-264, Table 1 p.257"
     }
   },
   "cases": [
@@ -366,6 +377,31 @@
       "gate_v_le_3pct": true,
       "finite": true,
       "gate_case_pass": true
+    },
+    {
+      "tag": "ra1e5_n64",
+      "ra": 100000.0,
+      "nx": 64,
+      "dtype": "float32",
+      "steps_run": 5000,
+      "max_steps": 500000,
+      "steady_triggered": false,
+      "note": "PRELIMINARY: only 5000 steps, not converged. Full run pending on cluster (cj1193).",
+      "nu": 4.073576927185059,
+      "nu_ref": 4.519,
+      "nu_err_pct": 9.86,
+      "u_max_nd": 37.2954785462469,
+      "u_max_ref": 34.72,
+      "u_max_err_pct": 7.42,
+      "v_max_nd": 63.56576525419952,
+      "v_max_ref": 68.6,
+      "v_max_err_pct": 7.34,
+      "nu_sym": 0.014784812927246094,
+      "T_min": 0.0,
+      "T_max": 1.0,
+      "mach": 0.09051322681181102,
+      "gate_case_pass": false,
+      "convergence_status": "PRELIMINARY - not yet steady state"
     }
   ],
   "conservation_budget_fp64": {
