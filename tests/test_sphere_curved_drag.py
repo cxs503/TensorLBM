@@ -130,3 +130,67 @@ def test_short_run_produces_complete_record():
     assert rec["n_bfl_links"] > 0
     assert rec["phi_solid"] == pytest.approx(rec["n_solid_cells"] / 12**3)
     assert rec["steady"] is False  # 25 steps cannot pass the drift gate
+
+# ---------------------------------------------------------------------------
+# GAP-LBM-SPHERE v2: the m16085 drag deficit was a *kinetic* (large-tau)
+# artifact, not a curved-wall defect.  These tests pin the two facts that
+# decision rests on, so neither can regress silently.
+# ---------------------------------------------------------------------------
+def test_re_measured_uses_dynamic_viscosity_not_nu_over_3():
+    """``Re = rho u D / mu`` with ``rho = 1`` ⇒ ``mu = nu``.
+
+    m16085 divided by ``nu/3`` and reported ``Re_measured`` three times too
+    large (0.2944 instead of 0.0981 on the Re=0.1 case).
+    """
+    rec = driver.run_case(
+        {"tag": "unit_re", "L": 12, "R": 3.0, "Re": 10.0, "steps": 12,
+         "sample_every": 5, "threads": 1, "tail": 2}
+    )
+    re_expected = rec["u_measured"] * rec["D"] / rec["nu"]
+    assert rec["Re_measured"] == pytest.approx(re_expected, rel=1e-12)
+    assert rec["Re_superficial"] < rec["Re_measured"]  # superficial < interstitial
+
+
+def test_mean_free_path_gate_flags_the_large_tau_protocol():
+    """``c_s tau / R`` must be recorded and must flag tau = 18.5 as non-hydrodynamic.
+
+    At tau = 18.5 the kinetic mean free path (``tau/sqrt(3)`` ~ 10.7 cells) is
+    larger than the sphere radius (6 cells): the BGK viscosity the flow sees is
+    far below ``(tau - 1/2)/3``, so a Stokes comparison is not interpretable.
+    """
+    rec = driver.run_case(
+        {"tag": "unit_mfp_bad", "L": 16, "R": 5.0, "Re": 0.1, "u": 0.05,
+         "steps": 6, "sample_every": 1, "threads": 1, "tail": 2}
+    )
+    assert rec["tau"] == pytest.approx(0.5 + 3.0 * rec["nu"])
+    assert rec["tau"] > 10.0                      # the m16085 regime
+    assert rec["mfp_over_R"] == pytest.approx(
+        (rec["tau"] / math.sqrt(3.0)) / rec["R"]
+    )
+    assert rec["mfp_over_R"] > 1.0
+    assert rec["hydrodynamic_regime"] is False
+
+    rec2 = driver.run_case(
+        {"tag": "unit_mfp_ok", "L": 16, "R": 2.0, "Re": 0.1, "u": 0.0025,
+         "steps": 6, "sample_every": 1, "threads": 1, "tail": 2}
+    )
+    assert rec2["mfp_over_R"] < 0.5
+    assert rec2["hydrodynamic_regime"] is True
+
+
+def test_effective_viscosity_is_hydrodynamic_at_small_tau_and_collapses_at_large_tau():
+    """Steady single-mode forcing: ``nu_eff(k)`` vs ``(tau-1/2)/3``.
+
+    This is the instrument behind the root-cause claim.  At ``tau = 1.4`` the
+    relaxation viscosity at ``k = 2*pi/24`` is the hydrodynamic value (within a
+    few %); at ``tau = 18.5`` it collapses by more than a factor of three, which
+    is the origin of the m16085 drag deficit.
+    """
+    sys.path.insert(0, str(ROOT / "benchmarks" / "sphere_curved_drag"))
+    import diag_visc_k  # noqa: PLC0415
+
+    good = diag_visc_k.nu_eff_mode(1.4, 24)
+    assert abs(good["rel_err_pct"]) < 5.0
+
+    bad = diag_visc_k.nu_eff_mode(18.5, 24)
+    assert bad["nu_eff"] < 0.5 * bad["nu_theory"]
