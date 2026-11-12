@@ -1,0 +1,230 @@
+{
+  "case_code": "RAYLEIGH-TAYLOR",
+  "limitation": "Publisher copy of the He/Doolen/Ding spike-bubble table not retrievable in this sandbox (AIP 403); their table/page numbers are therefore not quoted. Targets are the closed-form references above.",
+  "references": {
+    "R1_linear": {
+      "citation": "Rayleigh 1883 PLMS 14:170; Taylor 1950 Proc. R. Soc. A 201:192; Chandrasekhar 1961 Hydrodynamic and Hydromagnetic Stability sec.92",
+      "formula": "sigma = sqrt(A g k); sigma_visc = sqrt(A g k + nu^2 k^4) - nu k^2",
+      "transcription": "none (closed form evaluated in code)"
+    },
+    "R2_nonlinear": {
+      "c_lock": 3.0,
+      "c_lock_check": {
+        "abs_diff": 0.0,
+        "fr_from_formula": 0.32573500793528,
+        "fr_quoted_arXiv_1910.03663_Fig3": 0.32573500793528
+      },
+      "citation": "Goncharov 2002 PRL 88:134502, as quoted in arXiv:2009.14655 Eq.(1) p.3",
+      "formula": "u_s = sqrt(2Ag/((1-A)Ck)); u_b = sqrt(2Ag/((1+A)Ck)); C = 3 (2-D)",
+      "transcription": "formula transcribed from the arXiv text, C locked numerically"
+    }
+  },
+  "sources": [
+    {
+      "bytes": 1302,
+      "origin": "arxiv_1910.03663_fig3_caption_p6",
+      "path": "sources/arxiv_1910.03663_fig3_caption_p6.txt",
+      "sha256": "d82049fcbfccf31394b4acee7488273d4192b2442777d5a4b4b40f49bc60e8f9"
+    },
+    {
+      "bytes": 3009,
+      "origin": "arxiv_2009.14655_eq1_p3",
+      "path": "sources/arxiv_2009.14655_eq1_p3.txt",
+      "sha256": "c34448a6a222dc6c0b2b9d7907b0d899138e8f98f2dd33bc9ce5499ff90bc29b"
+    }
+  ],
+  "suite": [
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0018090031363956693,
+      "sigma_viscous": 0.0017614534990890356,
+      "u_bubble_goncharov": 0.013029400317411198,
+      "u_spike_goncharov": 0.018426354638471226
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0018090031363956693,
+      "sigma_viscous": 0.0017151860784339005,
+      "u_bubble_goncharov": 0.013029400317411198,
+      "u_spike_goncharov": 0.018426354638471226
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0025583167698662213,
+      "sigma_viscous": 0.002510579196737288,
+      "u_bubble_goncharov": 0.018426354638471226,
+      "u_spike_goncharov": 0.026058800634822396
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0025583167698662213,
+      "sigma_viscous": 0.0024637488500797414,
+      "u_bubble_goncharov": 0.018426354638471226,
+      "u_spike_goncharov": 0.026058800634822396
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0012791583849331106,
+      "sigma_viscous": 0.0012671672635985263,
+      "u_bubble_goncharov": 0.018426354638471226,
+      "u_spike_goncharov": 0.026058800634822396
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0012791583849331106,
+      "sigma_viscous": 0.001255289598368644,
+      "u_bubble_goncharov": 0.018426354638471226,
+      "u_spike_goncharov": 0.026058800634822396
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0018090031363956693,
+      "sigma_viscous": 0.0017969953980333188,
+      "u_bubble_goncharov": 0.026058800634822396,
+      "u_spike_goncharov": 0.03685270927694245
+    },
+    {
+      "atwood": 0.3333333333333333,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0018090031363956693,
+      "sigma_viscous": 0.0017850678914782887,
+      "u_bubble_goncharov": 0.026058800634822396,
+      "u_spike_goncharov": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.005,
+      "sigma_inviscid": 0.002215567313631895,
+      "sigma_viscous": 0.0021678999365640525,
+      "u_bubble_goncharov": 0.015045055561273502,
+      "u_spike_goncharov": 0.026058800634822396
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.01,
+      "sigma_inviscid": 0.002215567313631895,
+      "sigma_viscous": 0.0021212799178169516,
+      "u_bubble_goncharov": 0.015045055561273502,
+      "u_spike_goncharov": 0.026058800634822396
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0031332853432887507,
+      "sigma_viscous": 0.003085464497242449,
+      "u_bubble_goncharov": 0.021276921621409744,
+      "u_spike_goncharov": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "lam": 64,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0031332853432887507,
+      "sigma_viscous": 0.003038384551729393,
+      "u_bubble_goncharov": 0.021276921621409744,
+      "u_spike_goncharov": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0015666426716443754,
+      "sigma_viscous": 0.00155464113947558,
+      "u_bubble_goncharov": 0.021276921621409744,
+      "u_spike_goncharov": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0001,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0015666426716443754,
+      "sigma_viscous": 0.0015427322486212245,
+      "u_bubble_goncharov": 0.021276921621409744,
+      "u_spike_goncharov": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.005,
+      "sigma_inviscid": 0.002215567313631895,
+      "sigma_viscous": 0.0022035522134953825,
+      "u_bubble_goncharov": 0.030090111122547003,
+      "u_spike_goncharov": 0.05211760126964479
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_goncharov": 0.32573500793527993,
+      "g": 0.0002,
+      "k": 0.04908738521234052,
+      "lam": 128,
+      "nu": 0.01,
+      "sigma_inviscid": 0.002215567313631895,
+      "sigma_viscous": 0.00219160262405004,
+      "u_bubble_goncharov": 0.030090111122547003,
+      "u_spike_goncharov": 0.05211760126964479
+    }
+  ]
+}

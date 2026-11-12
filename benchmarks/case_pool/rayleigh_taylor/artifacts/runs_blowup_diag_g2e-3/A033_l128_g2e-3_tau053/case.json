@@ -1,0 +1,58 @@
+{
+  "diffusivity": 0.00033333333333333365,
+  "fr_bubble_ref": 0.32573500793528,
+  "fr_bubble_sim": NaN,
+  "fr_spike_ref": 0.4606588659617807,
+  "fr_spike_sim": NaN,
+  "gates": {
+    "all_pass": false,
+    "sigma_within_gate": true,
+    "u_bubble_within_gate": false,
+    "u_spike_within_gate": false
+  },
+  "h_bubble_end": NaN,
+  "h_spike_end": NaN,
+  "k": 0.04908738521234052,
+  "ma_peak": 1.1656338156300323,
+  "mass_drift_pct_max": 0.0018596720110730658,
+  "max_speed_peak": 0.6729789972305298,
+  "n_steps": 3505,
+  "name": "A033_l128_g2e-3_tau053",
+  "nu": 0.010000000000000009,
+  "nx": 128,
+  "ny": 384,
+  "sigma_fit_a_over_lam": [
+    0.010104524902999401,
+    0.04899827390909195
+  ],
+  "sigma_fit_points": 28,
+  "sigma_inviscid": 0.005720570205398556,
+  "sigma_r2": 0.9980791690008155,
+  "sigma_rel_error_vs_inviscid_pct": 3.6134073480776685,
+  "sigma_rel_error_vs_viscous_pct": 4.050758341393368,
+  "sigma_sim": 0.005927277709552369,
+  "sigma_viscous": 0.005696525238292651,
+  "spec": {
+    "atwood": 0.3333333333333333,
+    "g": 0.002,
+    "lam": 128,
+    "layers": 3.0,
+    "name": "A033_l128_g2e-3_tau053",
+    "sample_every": 10,
+    "tau": 0.53,
+    "tau_end": 8.0,
+    "tau_phi": 0.501
+  },
+  "terminal_window_points": 87,
+  "terminal_window_tau": [
+    4.0,
+    6.0
+  ],
+  "u_bubble_ref": 0.08240516309828044,
+  "u_bubble_rel_error_pct": NaN,
+  "u_bubble_sim": NaN,
+  "u_spike_ref": 0.1165384992631551,
+  "u_spike_rel_error_pct": NaN,
+  "u_spike_sim": NaN,
+  "wall_seconds": 49.09886407852173
+}
