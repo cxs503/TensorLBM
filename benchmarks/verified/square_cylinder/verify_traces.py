@@ -27,16 +27,16 @@ from pathlib import Path
 
 import numpy as np
 
-REF_CD = 1.4785
-REF_ST = 0.1456
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from refspec import OLD_ARCHIVE as OLD_ARCH  # noqa: E402
+from refspec import REF_CD, REF_ST  # noqa: E402,F401  (audit m16183 item 3: single source)
 SENS = {
     "okajima_exp": {"cd": 1.59, "st": 0.141},
     "norberg_exp": {"st": 0.143},
     "przulj_interp_b2.5pct": {"cd": 1.43, "st": 0.142},
     "old_archive_okajima": {"cd": 1.6, "st": 0.14},
 }
-OLD_ARCH = {32: (1.4816, 0.1482), 48: (1.4844, 0.1480)}
-DOMAIN_D = 40.0
+DOMAIN_D = 40.0  # == refspec.DOMAIN_D
 SQUARE_X_D = 10.0
 N_BLOCKS = 12
 # D2Q9 速度集（x, y）：静止 + 8 方向（与库 d2q9.C 同构，此处独立硬编码）
