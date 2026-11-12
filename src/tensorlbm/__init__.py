@@ -889,6 +889,10 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
         "run_cylinder_bfl_control_volume",
     ),
     "run_cylinder_flow": ("cylinder_flow", "run_cylinder_flow"),
+    "CYLINDER_ST2D1_GEOMETRY": ("cylinder_st2d1", "GEOMETRY"),
+    "CYLINDER_ST2D1_REFERENCE": ("cylinder_st2d1", "REFERENCE"),
+    "compare_cylinder_st2d1_to_reference": ("cylinder_st2d1", "compare_to_reference"),
+    "run_cylinder_st2d1": ("cylinder_st2d1", "run_cylinder_st2d1"),
     "run_dam_break": ("dam_break", "run_dam_break"),
     "run_dg_lbm_sphere_flow": ("dg_lbm", "run_dg_lbm_sphere_flow"),
     "run_dg_lbm_suboff_flow": ("dg_lbm", "run_dg_lbm_suboff_flow"),
@@ -1581,6 +1585,12 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         run_cylinder_bfl_control_volume,
     )
     from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
+    from .cylinder_st2d1 import (
+        GEOMETRY as CYLINDER_ST2D1_GEOMETRY,
+        REFERENCE as CYLINDER_ST2D1_REFERENCE,
+        compare_to_reference as compare_cylinder_st2d1_to_reference,
+        run_cylinder_st2d1,
+    )
     from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
     from .d3q19 import OPPOSITE as OPPOSITE3D
     from .d3q19 import C as C3D
@@ -2380,6 +2390,10 @@ __all__ = [
     "CylinderBFLControlVolumeConfig",
     "estimate_strouhal_from_lift",
     "run_cylinder_bfl_control_volume",
+    "run_cylinder_st2d1",
+    "compare_cylinder_st2d1_to_reference",
+    "CYLINDER_ST2D1_GEOMETRY",
+    "CYLINDER_ST2D1_REFERENCE",
     "FlatPlateWallModelConfig",
     "ittc_1957_friction_coefficient",
     "run_flat_plate_wall_model",
