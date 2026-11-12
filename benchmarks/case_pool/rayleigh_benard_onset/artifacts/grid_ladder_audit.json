@@ -1,0 +1,248 @@
+{
+  "case_code": "CASE-LBM-RB-ONSET-RA1708",
+  "ra_ref": 1707.7597,
+  "tol_pct": 2.0,
+  "k_sigma": 2.0,
+  "points": [
+    {
+      "ny": 32,
+      "nx": 64,
+      "Ra_c": 1711.73858423433,
+      "sigma": 6.891738108795039,
+      "err_pct": 0.2329885307827457,
+      "fit_r2": null,
+      "steps": null,
+      "source": "benchmarks/case_pool/rayleigh_benard_onset/artifacts/summary.json"
+    },
+    {
+      "ny": 48,
+      "nx": 96,
+      "Ra_c": 1730.353035565442,
+      "sigma": 7.040612007299549,
+      "err_pct": 1.322980953669417,
+      "fit_r2": null,
+      "steps": null,
+      "source": "benchmarks/case_pool/rayleigh_benard_onset/artifacts/summary.json"
+    },
+    {
+      "ny": 64,
+      "nx": 128,
+      "Ra_c": 1731.8585169336582,
+      "sigma": 7.13070620483161,
+      "err_pct": 1.4111362935697627,
+      "fit_r2": null,
+      "steps": null,
+      "source": "benchmarks/case_pool/rayleigh_benard_onset/artifacts/summary.json"
+    }
+  ],
+  "ladder": {
+    "n": 3,
+    "ny": [
+      32,
+      48,
+      64
+    ],
+    "err_pct": [
+      0.2329885307827457,
+      1.322980953669417,
+      1.4111362935697627
+    ],
+    "sigma_rel_pct": [
+      0.40261627401930367,
+      0.4068887598419376,
+      0.41173722536277857
+    ]
+  },
+  "forms": [
+    {
+      "form": "h^1",
+      "q0": 1755.4682644349655,
+      "se_q0": 14.697543517288668,
+      "chi2_red": 0.34930172764448614,
+      "licensed": true,
+      "why": "chi2_red=0.349 vs threshold 3.83 (dof=1)",
+      "aic": 4.3493017276444865,
+      "p_interval": null
+    },
+    {
+      "form": "h^2",
+      "q0": 1740.686625116677,
+      "se_q0": 8.325154998292266,
+      "chi2_red": 0.1707120389184215,
+      "licensed": true,
+      "why": "chi2_red=0.171 vs threshold 3.83 (dof=1)",
+      "aic": 4.170712038918421,
+      "p_interval": null
+    },
+    {
+      "form": "h^p",
+      "q0": 1733.9287978891484,
+      "se_q0": 5.830852591003457,
+      "chi2_red": 0.02208084257294185,
+      "licensed": true,
+      "why": "chi2_red=0.0221 vs threshold 3.83 (dof=1)",
+      "aic": 4.022080842572942,
+      "p_interval": [
+        3.8000000000000003,
+        4.0
+      ]
+    },
+    {
+      "form": "saturated",
+      "q0": 1724.403289171098,
+      "se_q0": 4.052382860783652,
+      "chi2_red": 2.59211612276989,
+      "licensed": true,
+      "why": "chi2_red=2.59 vs threshold 3 (dof=2)",
+      "aic": 7.18423224553978,
+      "p_interval": null
+    }
+  ],
+  "licensed": [
+    "h^1",
+    "h^2",
+    "h^p",
+    "saturated"
+  ],
+  "rejected": [],
+  "best_by_aic": "h^p",
+  "q0_band": [
+    1724.403289171098,
+    1755.4682644349655
+  ],
+  "band_rel_pct": 1.785409305218515,
+  "verdict": {
+    "verdict": "undecided_form",
+    "ref": 1707.7597,
+    "tol_rel": 0.02,
+    "k": 2.0,
+    "band_raw": [
+      1724.403289171098,
+      1755.4682644349655
+    ],
+    "n_licensed": 4,
+    "band_k_sigma": [
+      1716.2985234495309,
+      1784.8633514695427
+    ],
+    "tol_interval": [
+      1673.6045060000001,
+      1741.914894
+    ],
+    "band_vs_tol": 1.0037247632089572,
+    "why": "licensed band straddles the tolerance boundary"
+  },
+  "saturation": {
+    "delta": 1.5054813682161239,
+    "combined_sigma": 10.020837710339121,
+    "z": 0.1502350813108993,
+    "k": 2.0,
+    "still_converging": false,
+    "saturated_within_noise": true
+  },
+  "naive_h1": {
+    "ok": true,
+    "form": "q(h) = q0 + C*h^1",
+    "power": 1.0,
+    "q0": 1755.4682644349655,
+    "C": -1365.3256751050408,
+    "residuals": [
+      -1.0632528536029895,
+      3.329056028498144,
+      -2.276533827791127
+    ],
+    "ssr": 0.34930172764448614,
+    "dof": 1,
+    "weighted": true,
+    "se_q0": 14.697543517288668,
+    "chi2_red": 0.34930172764448614,
+    "chi2": 0.34930172764448614,
+    "aic": 4.3493017276444865,
+    "licensed": true,
+    "why": "chi2_red=0.349 vs threshold 3.83 (dof=1)",
+    "n": 3,
+    "name": "h^1"
+  },
+  "gci_finest_triplet": {
+    "r": 1.3333333333333333,
+    "d1": 18.61445133111215,
+    "d2": 1.5054813682161239,
+    "ok": true,
+    "p_obs": 8.741683198568168,
+    "extrapolated": 1731.9909897917532,
+    "gci_fine": 9.560735222920993e-05,
+    "safety": 1.25,
+    "p_obs_note": "p_obs > 4: the ladder is numerically saturated, the extrapolated value is not distinguishable from the finest point"
+  },
+  "meta": {
+    "sources": [
+      "benchmarks/case_pool/rayleigh_benard_onset/artifacts/summary.json"
+    ],
+    "predeclared": {
+      "case_code": "CASE-LBM-RB-ONSET-RA1708",
+      "ra_ref": 1707.7597,
+      "a_ref": 3.11632,
+      "tol_pct": 2.0,
+      "criterion": "sign of d(log|A|)/dt of the conduction-state perturbation (sigma_star = sigma H^2/alpha); unstable iff sigma_star > +sigma_marginal",
+      "sigma_marginal": 0.05,
+      "fit_r2_min": 0.98,
+      "bracket_ratio": [
+        0.9,
+        1.1
+      ],
+      "bisect_tol_rel": 0.002,
+      "bisect_max_iter": 8,
+      "bracket_expand_steps": 3,
+      "production_grids": [
+        [
+          32,
+          64
+        ],
+        [
+          48,
+          96
+        ],
+        [
+          64,
+          128
+        ]
+      ],
+      "primary_grid": [
+        64,
+        128
+      ],
+      "pr": 0.71,
+      "alpha": 0.16666666666666666,
+      "mode": 1,
+      "ma_alpha": 0.08333333333333333,
+      "wavenumber_boxes": [
+        [
+          56
+        ],
+        [
+          64
+        ],
+        [
+          72
+        ]
+      ],
+      "wavenumber_ra_ratio": 1.05,
+      "control_grids": [
+        50,
+        100,
+        200
+      ],
+      "control_tol_pct": 0.05
+    }
+  },
+  "figures": [
+    {
+      "name": "grid_ladder_audit_forms.png",
+      "caption": "Ra_c vs h=1/ny with 2\u03c3 bars; dashed = licensed extrapolated limits (h^1 / h^2 / saturated), pale band = \u00b12 % of 1707.76."
+    },
+    {
+      "name": "grid_ladder_audit_error_vs_ny.png",
+      "caption": "Ra_c error vs grid size (log2 abscissa) with the \u00b12 % gate: the ladder saturates inside its own noise."
+    }
+  ]
+}
