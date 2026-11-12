@@ -20,6 +20,19 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
 FIG = HERE / "figures"
 
+def _hero_case(npz_path: Path) -> dict:
+    """Identify the droplet stored in ``hero_fields.npz`` (PROTOCOL['hero']).
+
+    The artifact itself is the only source of truth: the first row of
+    ``summary["cases"]`` is a *different* coupling level (G12=-2.5, R_init=12),
+    so quoting it as the hero case mislabels the field artifact.
+    """
+    if npz_path.exists():
+        d = np.load(npz_path)
+        return {"G_12": float(d["G_12"]), "radius_init": float(d["radius_init"]), "n": int(d["n"])}
+    return {"G_12": None, "radius_init": None, "n": None}
+
+
 
 def _fmt(v, nd=4):
     if v is None:
@@ -345,7 +358,9 @@ def render(res: dict, figs: list[Path]) -> str:
     A("")
     A(f"* 执行器：`benchmarks/case_pool/mcmp_laplace/run_case.py`（协议与阈值在 `PROTOCOL` / `THRESHOLDS`）")
     A(f"* 结果：`benchmarks/case_pool/mcmp_laplace/artifacts/summary.json`（{len(res['cases'])} 个液滴算例 + {len(res['routeB'])} 个平板算例 + {len(res['resolution'])} 个分辨率算例）")
-    A("* 场量：`artifacts/hero_fields.npz`（G12=" + _fmt(res["cases"][0]["G_12"], 3) + " 的 hero 液滴 rho1/rho2/u）+ `hero_profile.json`")
+    hero = _hero_case(HERE / "artifacts" / "hero_fields.npz")
+    A("* 场量：`artifacts/hero_fields.npz`（G12=" + _fmt(hero["G_12"], 3)
+      + ", R_init=" + _fmt(hero["radius_init"], 3) + " 的 hero 液滴 rho1/rho2/u）+ `hero_profile.json`")
     A(f"* 环境：git `{env['git_sha']}`, python {env['python']}, torch {env['torch']}, {env['threads_per_job']} thread/job, {env['timestamp']}")
     A(f"* 一键复现：`{res['repro_cmd']}`（全量 {res['elapsed_s']:.0f} s @ jobs=6）")
     A("")
