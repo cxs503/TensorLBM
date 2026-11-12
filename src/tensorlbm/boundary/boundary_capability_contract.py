@@ -330,9 +330,14 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
     ),
     # ---- nscbc -------------------------------------------------------------
     ("nscbc", "D2Q9"): (
-        "IMPLEMENTATION_ONLY",
+        "MECHANICS_TESTED",
         "tensorlbm.boundaries.nscbc_outlet_2d",
-        "No tests; simplified single-characteristic relaxation, not full NSCBC",
+        "tests/test_nscbc_outlet_reflection.py + benchmarks/verified/nscbc_outlet_reflection: "
+        "acoustic-pulse reflection coefficient on a characteristic decomposition, instrument "
+        "calibrated against two analytic limits (pressure-node |R|=1, rigid wall |R|=1); "
+        "measured |R| = 0.40% at sigma=0.25 (was 11.2% before the 2026-11-12 LODI rewrite, "
+        "zero-gradient reference 28%). Remaining limitation: 1-D normal incidence only, "
+        "no validation of transverse/grazing acoustic modes",
     ),
     ("nscbc", "D3Q19"): (
         "IMPLEMENTATION_ONLY",
