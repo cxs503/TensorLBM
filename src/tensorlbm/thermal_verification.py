@@ -158,6 +158,8 @@ class RBResult:
     alpha_lat: float
     g_beta: float
     H: float
+    dT: float
+    ra_effective: float
     steps: int
     elapsed_s: float
     nu: float
@@ -216,12 +218,16 @@ def simulate_rayleigh_benard_2d(
         ny = nx
     H = float(ny - 1)
     dT = t_hot - t_cold
+    if not (dT > 0.0):
+        raise ValueError(f"simulate_rayleigh_benard_2d: dT = t_hot - t_cold must be > 0, got {dT!r}")
 
-    # Lattice parameters
+    # Lattice parameters.  Ra = g_beta * dT * H^3 / (nu * alpha), so the
+    # buoyancy coefficient carries a 1/dT: the same Ra must give the same flow
+    # whatever the imposed temperature difference (dimensionless invariance).
     nu_lat = (tau - 0.5) / 3.0
     alpha_lat = nu_lat / pr
     tau_T = 3.0 * alpha_lat + 0.5
-    g_beta = ra * nu_lat * alpha_lat / (H**3) if enable_buoyancy else 0.0
+    g_beta = ra * nu_lat * alpha_lat / (dT * H**3) if enable_buoyancy else 0.0
 
     # Initialize: conductive base state + perturbation
     rho0 = torch.ones((ny, nx), device=dev)
@@ -309,9 +315,14 @@ def simulate_rayleigh_benard_2d(
     q_avg = 0.5 * (abs(q_bot) + abs(q_top))
     imbalance = abs(q_bot - q_top) / q_avg if q_avg > 1e-10 else 0.0
 
+    ra_effective = (
+        g_beta * dT * H**3 / (nu_lat * alpha_lat) if nu_lat * alpha_lat > 0.0 else 0.0
+    )
+
     return RBResult(
         nx=nx, ny=ny, ra=ra, pr=pr, tau=tau, tau_T=tau_T,
         nu_lat=nu_lat, alpha_lat=alpha_lat, g_beta=g_beta, H=H,
+        dT=dT, ra_effective=ra_effective,
         steps=steps, elapsed_s=round(elapsed, 1),
         nu=nu_final["nu"], nu_bot=nu_final["nu_bot"], nu_top=nu_final["nu_top"],
         u_max=float(torch.sqrt(ux**2 + uy**2).max().item()),
@@ -338,6 +349,8 @@ class DHCResult:
     alpha_lat: float
     g_beta: float
     H: float
+    dT: float
+    ra_effective: float
     steps: int
     elapsed_s: float
     nu_grad2: float
@@ -381,10 +394,18 @@ def simulate_dhc_2d(
         report_every=report_every,
     )
 
+    _dT = t_hot - t_cold
+    _ra_eff = (
+        res["g_beta"] * _dT * res["H"] ** 3 / (res["nu"] * res["alpha"])
+        if res["nu"] * res["alpha"] > 0.0
+        else 0.0
+    )
+
     return DHCResult(
         nx=nx, ra=ra, pr=pr, tau=tau,
         tau_T=res["tau_T"], nu_lat=res["nu"], alpha_lat=res["alpha"],
         g_beta=res["g_beta"], H=res["H"],
+        dT=_dT, ra_effective=_ra_eff,
         steps=res["steps"], elapsed_s=res["elapsed_s"],
         nu_grad2=res["nu_grad2"],
         nu_left_grad2=res["nu_left_grad2"],

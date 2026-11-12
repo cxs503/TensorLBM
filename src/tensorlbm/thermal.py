@@ -304,18 +304,27 @@ def nusselt_number(
     return {"nu_left": nu_left, "nu_right": nu_right, "nu": 0.5 * (nu_left + nu_right)}
 
 
-def thermal_params(nx: int, ra: float, pr: float, tau: float) -> dict[str, float]:
-    """由 Ra、Pr、τ 反解格子参数。
+def thermal_params(
+    nx: int, ra: float, pr: float, tau: float, dT: float = 1.0
+) -> dict[str, float]:
+    """由 Ra、Pr、τ、ΔT 反解格子参数。
 
     方腔物理长度 L = nx（half-way 壁面位于 x=∓0.5，间距 = nx 个格子单位，
     与 verified/cavity_re100 的 H = nx 约定一致），ν = (τ − 1/2)/3，
-    α = ν/Pr，τ_T = 3α + 1/2，g·β = Ra·ν·α/(ΔT·L³)（ΔT = 1）。
+    α = ν/Pr，τ_T = 3α + 1/2。
+
+    浮力系数的定义是 **g·β = Ra·ν·α/(ΔT·L³)**：Ra 的定义里含 ΔT
+    （Ra = g·β·ΔT·L³/(ν·α)），因此 ΔT ≠ 1 时必须除以 ΔT，否则同一条
+    物理工况（同一 Ra）在 ΔT 翻倍时会被算成 Ra 翻倍。
+    *dT* 缺省 1.0 与旧行为兼容；dT ≤ 0 直接 ValueError（静默 NaN 更难查）。
     """
+    if not (dT > 0.0):
+        raise ValueError(f"thermal_params: dT must be > 0, got {dT!r}")
     nu = (tau - 0.5) / 3.0
     alpha = nu / pr
     tau_T = 3.0 * alpha + 0.5
     H = float(nx)
-    g_beta = ra * nu * alpha / (H**3)  # ΔT = 1
+    g_beta = ra * nu * alpha / (dT * H**3)
     return {"nu": nu, "alpha": alpha, "tau_T": tau_T, "H": H, "g_beta": g_beta}
 
 
@@ -339,9 +348,9 @@ def simulate_natural_convection(
     """
     device = torch.device(device)
     ny = nx
-    p = thermal_params(nx, ra, pr, tau)
-    nu_lat, alpha_lat, tau_T, H, g_beta = (p["nu"], p["alpha"], p["tau_T"], p["H"], p["g_beta"])
     dT = t_hot - t_cold
+    p = thermal_params(nx, ra, pr, tau, dT=dT)
+    nu_lat, alpha_lat, tau_T, H, g_beta = (p["nu"], p["alpha"], p["tau_T"], p["H"], p["g_beta"])
 
     # 初始场：静止、均匀密度；温度线性分布（x 方向 T_cold→T_hot）加速收敛
     rho0 = torch.ones((ny, nx), device=device)
