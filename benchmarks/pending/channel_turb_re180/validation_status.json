@@ -1,0 +1,104 @@
+{
+  "case": "channel_turb_re180",
+  "slot": "channel",
+  "title": "Turbulent channel Re_tau=180 vs Moser DNS (u+ profile)",
+  "reference_basis": "DNS reference data (not in-repo -> WITHHELD)",
+  "scope": "3-D periodic channel, D3Q19 natural KBC, Guo body force; u+ RMS error in y+ in [30,100].",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/pending/channel_turb_3d/result.json",
+  "repro_cmd": "python benchmarks/pending/channel_turb_3d/run.py",
+  "references": [
+    {
+      "id": "moser_channel_uplus",
+      "quantity": "channel-flow mean velocity profile u+(y+) at Re_tau=180",
+      "value": null,
+      "formula": "DNS profile (tabular, not tabulated in-repo)",
+      "origin": "Moser, Kim & Mansour 1999, Phys. Fluids 11:943 (Re_tau=178.12)",
+      "source": "benchmarks/pending/channel_turb_3d/README.md",
+      "source_sha256": "b54b9ca16252f066301984c2b9e7c5765945ac8b36de72760b5b38c6546f6dfa",
+      "token": "Moser, Kim & Mansour 1999"
+    }
+  ],
+  "status": "failed",
+  "machine_pass": false,
+  "declared_status": "failed",
+  "reason": "TERMINAL honest FAIL (benchmarks/pending/channel_turb_3d/README.md): root cause = domain size too small + insufficient statistical sample; the u+ RMS error in the log layer never reaches the 3% gate. The tabular Moser DNS anchor is also not frozen in-repo, so the anchor itself is WITHHELD.",
+  "metrics": [
+    {
+      "metric": "uplus_rms_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "coarse",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "fine",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": NaN
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "uplus_rms_err_pct",
+      "errors_abs_pct": [
+        NaN,
+        NaN
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": NaN,
+      "monotone": false,
+      "require_monotone": false,
+      "span_ok": false,
+      "trend_ok": true,
+      "pass": false
+    }
+  ],
+  "unresolved_metrics": [
+    "uplus_rms_err_pct"
+  ],
+  "artifact_sha256": "847aff7053e0805e5f4b349f82ecb1957597c03d23902eb8421b7e4556640149",
+  "artifact_bytes": 2533,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/pending/channel_turb_3d/result.json",
+      "sha256": "847aff7053e0805e5f4b349f82ecb1957597c03d23902eb8421b7e4556640149"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/pending/channel_turb_3d/run.py",
+      "sha256": "b8206b4cefeaa2a0bf8e1472f1b810497b4a52e0f86a908d57c09331b98a2f1a"
+    }
+  ],
+  "notes": "Missing artifact paths are reported as pending-with-reason by the runner, never as passed. This slot exists to keep the negative result visible in the matrix."
+}

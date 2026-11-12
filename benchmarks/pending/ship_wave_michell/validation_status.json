@@ -1,0 +1,48 @@
+{
+  "case": "ship_wave_michell",
+  "slot": "ship",
+  "title": "Ship wave resistance vs Michell thin-ship theory",
+  "reference_basis": "analytic (thin-ship)",
+  "scope": "Michell closed-form C_W(Fn), Kelvin wave geometry and hump/hollow; the LBM free-surface C_W vs Michell comparison is the primary criterion.",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": null,
+  "repro_cmd": "python benchmarks/wave_wake_michell/run.py",
+  "references": [
+    {
+      "id": "michell_cw",
+      "quantity": "thin-ship wave resistance coefficient C_W(Fn)",
+      "value": null,
+      "formula": "Michell (1898) thin-ship integral",
+      "origin": "Michell 1898; in-repo closed-form implementation src/tensorlbm/wave_wake_michell.py",
+      "source": "benchmarks/wave_wake_michell/REPORT.md",
+      "source_sha256": "0f74d6ba1177c67fbef4e066fbd778150021bc8586e207bd9e90e37222f6d81e",
+      "token": "Michell（1898）"
+    }
+  ],
+  "status": "pending",
+  "machine_pass": false,
+  "reason": "WITHHELD (benchmarks/wave_wake_michell/REPORT.md): the primary criterion 'LBM free-surface C_W within 15% of Michell' was NOT obtained - the 3-D Koerner free-surface kernel measured 9.56 s/step at 4e5 cells, extrapolating to ~35 h for a lambda/dx>=20 Wigley case, outside the node budget. 2-D free-surface substitute: period error 8.8-13.8%. Reported as WITHHELD, not PASS.",
+  "blocker": "WITHHELD (benchmarks/wave_wake_michell/REPORT.md): the primary criterion 'LBM free-surface C_W within 15% of Michell' was NOT obtained - the 3-D Koerner free-surface kernel measured 9.56 s/step at 4e5 cells, extrapolating to ~35 h for a lambda/dx>=20 Wigley case, outside the node budget. 2-D free-surface substitute: period error 8.8-13.8%. Reported as WITHHELD, not PASS.",
+  "metrics": [],
+  "convergence": [],
+  "declared_status": "pending",
+  "evidence_chain": [
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/wave_wake_michell/run.py",
+      "sha256": "948c74cec446e63818e4d5500f1fb0a27cb9ff670ef29d048c446626f6897c8b"
+    }
+  ],
+  "notes": "Kept pending to make the missing wave-resistance evidence explicit in the matrix; the 3-D cost is the documented blocker."
+}
