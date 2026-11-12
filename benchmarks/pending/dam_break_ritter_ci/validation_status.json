@@ -5,7 +5,7 @@
   "reference_basis": "analytic",
   "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g). Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T06:10:38Z",
+  "generated_utc": "2026-11-12T16:10:48Z",
   "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
   "references": [
@@ -54,7 +54,17 @@
         }
       ],
       "pass": true,
-      "max_abs_err_pct": 4.512477447890056
+      "max_abs_err_pct": 4.512477447890056,
+      "max_abs_err_pct_gated": 4.512477447890056,
+      "worst_gated_err_pct": 4.512477447890056,
+      "worst_gated_level": "nx=200",
+      "worst_gated_tol_pct": 5.0,
+      "gated_levels": [
+        "nx=200",
+        "nx=400"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     },
     {
       "metric": "profile_l2_pct",
@@ -85,7 +95,17 @@
         }
       ],
       "pass": false,
-      "max_abs_err_pct": 9.824803799860751
+      "max_abs_err_pct": 9.824803799860751,
+      "max_abs_err_pct_gated": 9.824803799860751,
+      "worst_gated_err_pct": 9.824803799860751,
+      "worst_gated_level": "nx=200",
+      "worst_gated_tol_pct": 5.0,
+      "gated_levels": [
+        "nx=200",
+        "nx=400"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     },
     {
       "metric": "mass_drift_pct",
@@ -116,7 +136,17 @@
         }
       ],
       "pass": true,
-      "max_abs_err_pct": 2.2148949341271873e-14
+      "max_abs_err_pct": 2.2148949341271873e-14,
+      "max_abs_err_pct_gated": 2.2148949341271873e-14,
+      "worst_gated_err_pct": 2.2148949341271873e-14,
+      "worst_gated_level": "nx=400",
+      "worst_gated_tol_pct": 1.0,
+      "gated_levels": [
+        "nx=200",
+        "nx=400"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     }
   ],
   "convergence": [
