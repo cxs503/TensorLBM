@@ -643,7 +643,7 @@ async def run_ghia(params: GhiaBenchmarkParams) -> dict:
             f, _step = load_checkpoint(ckpts[-1])
             _rho, ux, uy = macroscopic(f)
             ref = {100: GHIA_RE100, 400: GHIA_RE400, 1000: GHIA_RE1000}[params.re]
-            err = compare_ghia(ux, uy, ref)
+            err = compare_ghia(ux, uy, cfg.u_lid, ref)
             return {"re": params.re, "ghia_error": err}
         return {"re": params.re, "ghia_error": None}
 
