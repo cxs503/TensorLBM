@@ -5,6 +5,7 @@ Provides:
 - D2Q9 single-phase flow
 - Shan-Chen multiphase model (SCMP) with EDM forcing
 - Wetting/diffuse-interface verification (three-anchor: contact angle, Ca scaling, Young-Laplace)
+- Adjoint / differentiable LBM (BPTT reference + out-of-core checkpointed gradient)
 """
 
 from .d3q19 import C, W, OPPOSITE, CS2
@@ -22,6 +23,7 @@ from .d2q9 import (
     collide_bgk,
     CS2 as CS2_2D,
 )
+from . import adjoint
 
 __all__ = [
     # 3D
@@ -30,4 +32,6 @@ __all__ = [
     "collide_mrt", "collide_smagorinsky_mrt3d",
     # 2D
     "equilibrium", "macroscopic", "stream", "collide_bgk", "CS2_2D",
+    # Adjoint / differentiable
+    "adjoint",
 ]
