@@ -1,0 +1,41 @@
+tant not only in its own interests to ﬂuid mechanics, but also that the turbulent growth
+constant in the multimode instability has a direct relationship with the s ingle-mode termi-
+nal velocity [15]. Besides, the understanding of the single-mode phe nomenon can provide
+good knowledge in the validation of the newly proposed numerical sch eme, which thus is the
+focus of the current study. Following the linear growth stage, the single-mode RTI would
+evolve with constant velocity, implying that the ﬂow has been transf ormed into the nonlinear
+stage. The nonlinear stage has been investigated by many analytica l models [16–24]. An
+important early contribution was attributed to Layzer [16], who th eoretically analyzed the
+motion of the ﬂuid-vacuum interface in the gravitational ﬁeld and pr oposed the ﬁrst poten-
+3
+tial ﬂow model for describing the RTI evolution with limiting Atwood num ber of 1. Stating
+from Layzer’s potential ﬂow theory, several analytic formulas we re subsequently presented
+for the nonlinear evolutions of the bubble [17, 18] and spike [19] amplit udes in the single-
+mode RTI. These models were only applicable to the ﬂuid-vacuum inter faces, and to remove
+this limitation, Goncharov [20] have generalized Layzer’s theory to a n improved potential
+ﬂow model for an arbitrary Atwood number, which predicts the sat urated velocities of the
+inviscid spike ( us) and bubble ( ub) as follows,
+us =
+√
+2Ag
+(1 − A)Ck , u b =
+√
+2Ag
+(1 + A)Ck , (1)
+where A is the Atwood number, k is the perturbation wave number, g is the gravitational
+acceleration, C is a constant given by 1 or 3 for the two-dimensional or three-dimen sional
+geometry. An alternative heuristic approach for describing the bu bble and spike saturated
+velocities was proposed by Oron et al. [21], who constructed the buoyancy-drag model, in-
+terestingly yielding the identical results to the potential ﬂow appro ach of Goncharov [20].
+Further, Betti and Sanz [22] have examined the eﬀect of the vort icity accumulation inside
+the bubble on the nonlinear evolution of ablative single-mode RTI, and the resulting bubble
+saturated velocity including the vorticity eﬀect was formulated. It is noticed that the viscosi-
+ties of the ﬂuids are neglected in above potential ﬂow models. Sohn [2 3] and Banerjee [24]
+then analyzed the role of viscosity and anticipated the increased sk in-friction drag between
+viscous bubble and spike. To this end, the modiﬁed potential ﬂow mod els combining the
+viscosity eﬀect and the vorticity [24] or the surface tension force [23] were established for
+saturated velocity stage.
+In addition to these theoretical studies, several researchers a ttempt to describe the non-
+linear evolutional stages of the single-mode RTI using the experimen tal and numerical ap-
+proaches. Waddell et al. [25] experimentally investigated the two-dimensional single-mode
+RTI in low Atwood number ﬂuid systems and reported that the initial g rowth rate agrees well
