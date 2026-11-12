@@ -18,6 +18,15 @@ with rigid-rigid isothermal walls::
 
     psi = D psi = 0,  theta = 0     at z = 0, 1                          (3)
 
+Units trap (m16921): this nondimensionalisation uses the **viscous** velocity
+scale ``nu/H``, so ``sigma`` below is in ``nu/H^2`` and the temperature
+diffusion is ``1/Pr`` in (2).  :mod:`tensorlbm.conjugate_thermal.stability`
+(:func:`~tensorlbm.conjugate_thermal.stability.benard_growth_rate`) uses the
+**thermal** scale ``alpha/H`` and reports ``sigma`` in ``alpha/H^2``; the two
+differ by exactly ``Pr`` (measured: cross-implementation agreement improves from
+40 % off to ``< 1 %`` once ``sigma = Pr * sigma_here`` is applied).  Never
+compare the two modules' ``sigma`` without that conversion.
+
 Lengths are scaled with the gap ``H``, time with ``H^2/nu``, the temperature
 with ``dT`` and the streamfunction with ``nu``, so the growth rate ``sigma`` is
 directly comparable with ``gamma_hat = gamma H^2/nu`` from the lattice module.
