@@ -1,0 +1,9 @@
+U0.01_H200_bgk                   bitwise_identical=True  0.1-2=0.078124%  full=1.128178%  eta2=0.004044%  pass2pct=True
+U0.05_H200_bgk                   bitwise_identical=True  0.1-2=0.078124%  full=1.128178%  eta2=0.004044%  pass2pct=True
+U1e-3_H200_bgk                   bitwise_identical=True  0.1-2=0.078124%  full=1.128178%  eta2=0.004044%  pass2pct=True
+U1e-3_H200_bgk_topnoslip         bitwise_identical=True  0.1-2=0.078124%  full=1.128178%  eta2=0.004044%  pass2pct=True
+U1e-3_H200_bgk_tstar0.64         bitwise_identical=True  0.1-2=0.087352%  full=1.410082%  eta2=0.006417%  pass2pct=True
+U1e-3_H200_trt                   bitwise_identical=True  0.1-2=0.190415%  full=1.128327%  eta2=0.190415%  pass2pct=True
+U1e-3_H400_bgk_fine              bitwise_identical=True  0.1-2=0.015414%  full=0.564165%  eta2=0.009334%  pass2pct=True
+ALL_7_BITWISE_IDENTICAL = True (7 configs re-executed)
+convergence order p = 2.342
