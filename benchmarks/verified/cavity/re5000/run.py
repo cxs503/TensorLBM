@@ -46,6 +46,15 @@ Usage
 
 Every number the report quotes is written to ``result.json`` next to this file
 (profiles included), so the write-up can be re-derived without re-running.
+
+Exit codes
+----------
+``0``  every grid reached a finite solution (the reference comparison is still
+       ``WITHHELD`` unless ``--ref-json`` was supplied -- finite is not validated);
+``2``  at least one grid diverged or produced non-finite fields: ``result.json``
+       is written with ``"run_status": "failed"``, per-grid ``"status"`` and a
+       ``comparison`` of ``{"status": "VOID"}``, so a broken run can never be
+       mistaken for a passing one.
 """
 
 import argparse
@@ -171,9 +180,20 @@ def run_case(n, re=RE, u_lid=U_LID, steps=400_000, resid_tol=2e-7,
         jy, jx = np.unravel_index(np.argmin(sub), sub.shape)
         corners[name] = [round((xs.start + jx) / (n - 1), 4), round((ys.start + jy) / (n - 1), 4)]
 
+    finite = bool(
+        np.isfinite(ux_n).all() and np.isfinite(uy_n).all() and np.isfinite(rho_np).all()
+    )
+    if diverged:
+        status = "diverged"
+    elif not finite:
+        status = "non_finite"
+    else:
+        status = "ok"
+
     return {
         "n": n,
         "re": re,
+        "status": status,
         "u_lid": u_lid,
         "tau": tau,
         "nu_lattice": (tau - 0.5) / 3.0,
@@ -336,7 +356,9 @@ def main():
                                 resid_tol=args.resid_tol, monitor_every=args.monitor_every,
                                 dtype=dtype, device=args.device)
         r = runs[str(n)]
-        print(f"[done] n={n} steps={r['steps']} resid={r['final_resid']:.2e} "
+        resid_txt = "n/a (no monitor interval reached)" if r["final_resid"] is None \
+            else f"{r['final_resid']:.2e}"
+        print(f"[done] n={n} steps={r['steps']} resid={resid_txt} status={r['status']} "
               f"u_min={r['u_min']:+.5f}@{r['u_min_y']:.3f} vortex={r['primary_vortex']} "
               f"t={r['elapsed_s']:.0f}s", flush=True)
 
@@ -344,8 +366,26 @@ def main():
     payload["grid_convergence"] = grid_convergence(runs)
     payload["comparison"] = compare_to_ref(runs, ref)
     payload["wall_clock_s"] = round(time.time() - t0, 1)
+
+    bad = {k: v["status"] for k, v in runs.items() if v["status"] != "ok"}
+    diverged = [k for k, st in bad.items() if st == "diverged"]
+    payload["run_status"] = "ok" if not bad else "failed"
+    payload["failed_grids"] = bad
+    payload["diverged"] = bool(diverged)
+    # A diverged/non-finite solution is NOT a result: keep the raw fields for
+    # debugging, but blank the scored comparison so no NaN can be read as a number.
+    if bad:
+        payload["comparison"] = {
+            "status": "VOID",
+            "reason": "non-finite solution on grid(s) " + ", ".join(sorted(bad))
+                      + " -- no benchmark number is reported",
+            "failed_grids": bad,
+        }
     Path(args.out).write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print("DONE", args.out, flush=True)
+    if bad:
+        print(f"[FAIL] non-finite/diverged grids: {bad} -> exit 2", flush=True)
+        sys.exit(2)
 
 
 if __name__ == "__main__":
