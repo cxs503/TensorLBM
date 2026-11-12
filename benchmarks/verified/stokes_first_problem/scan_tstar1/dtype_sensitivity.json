@@ -1,0 +1,14 @@
+{
+  "float32_U0.05": {
+    "max_rel_err_pct_eta0_2": 1.1387,
+    "max_rel_err_pct_eta0.1_2": 0.9773,
+    "rel_err_pct_at_eta2": 0.9773,
+    "max_rel_err_pct_native_nodes": 0.9921
+  },
+  "float32_U0.01": {
+    "max_rel_err_pct_eta0_2": 24.3946,
+    "max_rel_err_pct_eta0.1_2": 24.3946,
+    "rel_err_pct_at_eta2": 24.3946,
+    "max_rel_err_pct_native_nodes": 23.2192
+  }
+}
