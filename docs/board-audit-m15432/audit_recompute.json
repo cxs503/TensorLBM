@@ -1,0 +1,169 @@
+{
+  "audit_mission": 15712,
+  "audited_mission": 15432,
+  "anchor": "CASE-CYLINDER-DRAG-RE100",
+  "tolerance_pct": 5.0,
+  "reference": {
+    "cd": 1.3796,
+    "cl": 0.0005,
+    "st": 0.164
+  },
+  "main_run": {
+    "artifact": "/root/tp-agent/work/m15432/artifacts/cylinder_re100_D10/cylinder_re100_unconfined.json",
+    "label": "unconfined_D10 (audited, 250x100, B=10%)",
+    "n_samples": 18000,
+    "grid": [
+      250,
+      100
+    ],
+    "diameter": 10,
+    "blockage": 0.1,
+    "mach": 0.17320508075688776,
+    "tau": 0.53,
+    "stop_reason": "stationary",
+    "recomputed": {
+      "cd_mean": 1.7300971896035802,
+      "cl_mean": -8.748044156366002e-05,
+      "cl_amp": 0.4760362207889556,
+      "cd_amp": 0.02984046936035145,
+      "half_window_drift_pct": 0.028395817525741034,
+      "period_steps": 584.1308444451828,
+      "n_crossings": 30,
+      "strouhal": 0.17119452080121134,
+      "window_means_2000": [
+        1.7280674032866952,
+        1.730385892614722,
+        1.7300838533788918,
+        1.7297464631497859,
+        1.7300532460957763,
+        1.7305115137994287,
+        1.7310008116066453,
+        1.7307588472962376,
+        1.7302666752040383
+      ],
+      "first_to_last_window_pct": 0.127118402975215
+    },
+    "reported": {
+      "cd_mean": 1.7300971896035802,
+      "cl_mean": -8.748044156366002e-05,
+      "cd_amp": 0.02984046936035145,
+      "cl_amp": 0.4760362207889556,
+      "strouhal": 0.17119452080121134,
+      "period_steps": 584.1308444451828,
+      "cd_half_drift_pct": 0.028395817525741034,
+      "samples": 18000,
+      "wall_seconds": 342.414612531662,
+      "stop_reason": "stationary"
+    },
+    "consistency_delta_pct": {
+      "cd_mean": 0.0,
+      "cl_mean": 0.0,
+      "cd_amp": 0.0,
+      "cl_amp": 0.0,
+      "strouhal": 0.0,
+      "period_steps": 0.0,
+      "half_window_drift_pct": 0.0
+    },
+    "benchmark": {
+      "cd": {
+        "ref": 1.3796,
+        "got": 1.7300971896035802,
+        "rel_err_pct": 25.405711046939707,
+        "tol_pct": 5.0,
+        "pass": false
+      },
+      "cl": {
+        "ref": 0.0005,
+        "got": -8.748044156366002e-05,
+        "rel_err_pct": -117.496088312732,
+        "tol_pct": 5.0,
+        "pass": true,
+        "grading_note": "mean-lift symmetry check: |Cl_mean - ref| = 5.87e-04 vs Cl_amp = 0.476 -> pass; relative error against a near-zero reference is not physically meaningful"
+      },
+      "st": {
+        "ref": 0.164,
+        "got": 0.17119452080121134,
+        "rel_err_pct": 4.386902927567884,
+        "tol_pct": 5.0,
+        "pass": true
+      }
+    }
+  },
+  "independent_smoke_rerun": {
+    "artifact": "/tmp/m15712_pilot/cylinder_re100_unconfined.json",
+    "label": "audit pilot rerun (110x60, B=16.7%, 4000 steps)",
+    "n_samples": 2500,
+    "grid": [
+      110,
+      60
+    ],
+    "diameter": 10,
+    "blockage": 0.16666666666666666,
+    "mach": 0.17320508075688776,
+    "tau": 0.53,
+    "stop_reason": "max_steps",
+    "recomputed": {
+      "cd_mean": 1.8134248438477512,
+      "cl_mean": -0.015374079942703244,
+      "cl_amp": 0.3403103351593017,
+      "cd_amp": 0.14721781015396118,
+      "half_window_drift_pct": 6.23570276240806,
+      "period_steps": 604.2668021196672,
+      "n_crossings": 4,
+      "strouhal": 0.1654898128595128,
+      "window_means_2000": [
+        1.7867592862248418
+      ],
+      "first_to_last_window_pct": 0.0
+    },
+    "reported": {
+      "cd_mean": 1.8134248438477512,
+      "cl_mean": -0.015374079942703244,
+      "cd_amp": 0.14721781015396118,
+      "cl_amp": 0.3403103351593017,
+      "strouhal": 0.1654898128595128,
+      "period_steps": 604.2668021196672,
+      "cd_half_drift_pct": 6.23570276240806,
+      "samples": 2500,
+      "wall_seconds": 15.8711576461792,
+      "stop_reason": "max_steps"
+    },
+    "consistency_delta_pct": {
+      "cd_mean": 0.0,
+      "cl_mean": 0.0,
+      "cd_amp": 0.0,
+      "cl_amp": 0.0,
+      "strouhal": 0.0,
+      "period_steps": 0.0,
+      "half_window_drift_pct": 0.0
+    },
+    "benchmark": {
+      "cd": {
+        "ref": 1.3796,
+        "got": 1.8134248438477512,
+        "rel_err_pct": 31.44569758246965,
+        "tol_pct": 5.0,
+        "pass": false
+      },
+      "cl": {
+        "ref": 0.0005,
+        "got": -0.015374079942703244,
+        "rel_err_pct": -3174.815988540649,
+        "tol_pct": 5.0,
+        "pass": false,
+        "grading_note": "mean-lift symmetry check: |Cl_mean - ref| = 1.59e-02 vs Cl_amp = 0.340 -> pass; relative error against a near-zero reference is not physically meaningful"
+      },
+      "st": {
+        "ref": 0.164,
+        "got": 0.1654898128595128,
+        "rel_err_pct": 0.9084224753126837,
+        "tol_pct": 5.0,
+        "pass": true
+      }
+    }
+  },
+  "notes": [
+    "REF attribution (Sch\u00e4fer/Rannacher/Turek 1996) carries no page/table excerpt in the delivered worktree; the well-known DFG 2D-2 case in that benchmark family is a 24% blockage channel (Cd~3.22), so the delivered unbounded numbers need the verbatim table.",
+    "Cl amplitude is delivered (0.476) but never compared to a reference in the report."
+  ]
+}
