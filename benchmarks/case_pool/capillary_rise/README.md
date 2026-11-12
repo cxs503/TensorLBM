@@ -107,3 +107,33 @@ the initial state, the sub-grid meniscus measurement and the Jurin scaling.
   separate "Jurin is wrong" from "the angle is wrong"; the Young-vs-arc column
   is what separates them.
 * One gravity, one slit width: this is not a Bond-number sweep.
+
+
+---
+
+## Round 2 (mission m15917): CAC phase-field route + two wall-treatment fixes
+
+Routes A/B above are Shan-Chen pseudopotential runs whose wall wetting is not
+controllable (measured 88.1 deg for a wall declared at 35 deg).  Round 2 runs the
+same case on the CAC phase-field solver with a **prescribed Young angle**:
+
+```
+PYTHONPATH=src python3 benchmarks/case_pool/capillary_rise/jurin_cac.py --theta 60 --steps 1000 \
+    --sample-every 125 --no-calibration --out artifacts/m15917/jurin_theta60_repro.json
+PYTHONPATH=src python3 benchmarks/case_pool/capillary_rise/ab_wall_fix.py --steps 1250 \
+    --out artifacts/m15917/ab_wall_fix_theta90.json
+```
+
+Two defects in ``tensorlbm.cac_lbm2d`` were found and fixed on the way:
+
+1. ``_shift`` honoured ``axes[0]`` only, so ``axes='wp'`` behaved as ``'ww'``: the
+   periodic x seam of every channel/droplet run was a zero-fill mass sink
+   (measured -50.26 % liquid in 1250 steps, neutral-wall artefact h = -19.4);
+2. the wetting ghost averaged the eight isotropic neighbours, i.e. it applied the
+   horizontal-plate derivation to vertical baffles; it is now extrapolated along
+   the local wall normal (velocity floor 0.0042 -> 0.0024).
+
+Verdict: the neutral-wall control now gives h = 0.87 lattice (5.2 % of the
+theta=60 Jurin scale) with 1 % mass drift; the theta=60 gate case still **fails**
+(wetting wall absorbs phase, mass -14.1 %, blow-up at step ~440).  Details and
+numbers: `docs/reports/m15917/CASE_MCMP_CAPILLARY_RISE.md`.

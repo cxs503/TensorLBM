@@ -103,23 +103,37 @@ def _shift(f: torch.Tensor, dy: int, dx: int, axes: str = "pp") -> torch.Tensor:
 
     ``axes`` is a 2-char policy for (y, x): ``'p'`` periodic roll, ``'w'``
     non-wrapping zero fill (the zero-filled halo strands only on wall nodes,
-    which are overwritten by the bounce-back swap).
+    which are overwritten by the bounce-back swap).  The two axes are handled
+    **independently**: ``axes='wp'`` means wall-bounded in ``y`` and periodic in
+    ``x``.  (An earlier version tested ``axes[0]`` only, so ``'wp'`` behaved as
+    ``'ww'``: the periodic ``x`` seam became a mass sink and a channel run
+    drained ~45 % of its liquid -- measured in
+    docs/CASE_MCMP_CAPILLARY_RISE.md section 4.)
     """
     if dy == 0 and dx == 0:
         return f
-    if axes[0] == "p":
-        f = torch.roll(f, shifts=(-dy, -dx), dims=(0, 1))
-        return f
     ny, nx = f.shape
-    out = torch.zeros_like(f)
-    ys = slice(max(dy, 0), ny + min(dy, 0))
-    yd = slice(max(-dy, 0), ny + min(-dy, 0))
-    xs = slice(max(dx, 0), nx + min(dx, 0))
-    xd = slice(max(-dx, 0), nx + min(-dx, 0))
-    if ys.stop - ys.start <= 0 or xs.stop - xs.start <= 0:
-        return out
-    out[yd, xd] = f[ys, xs]
-    return out
+    if dy != 0:
+        if axes[0] == "p":
+            f = torch.roll(f, shifts=-dy, dims=0)
+        else:
+            out = torch.zeros_like(f)
+            ys = slice(max(dy, 0), ny + min(dy, 0))
+            yd = slice(max(-dy, 0), ny + min(-dy, 0))
+            if ys.stop - ys.start > 0:
+                out[yd, :] = f[ys, :]
+            f = out
+    if dx != 0:
+        if len(axes) > 1 and axes[1] == "p":
+            f = torch.roll(f, shifts=-dx, dims=1)
+        else:
+            out = torch.zeros_like(f)
+            xs = slice(max(dx, 0), nx + min(dx, 0))
+            xd = slice(max(-dx, 0), nx + min(-dx, 0))
+            if xs.stop - xs.start > 0:
+                out[:, xd] = f[:, xs]
+            f = out
+    return f
 
 
 def shifted_neighbors(phi: torch.Tensor, axes: str = "pp") -> torch.Tensor:
@@ -363,7 +377,23 @@ class CAC2D:
 
     # -- one step ---------------------------------------------------------
     def refresh_solid_ghosts(self) -> None:
-        """Ghost phase field at solid nodes (``neumann`` / ``contact`` policies)."""
+        """Ghost phase field at solid nodes (``neumann`` / ``contact`` policies).
+
+        The Young condition is applied **along the local wall normal**: for every
+        solid node the ghost value is extrapolated from the fluid node one
+        spacing away in each of the four axis directions that carries fluid, so a
+        vertical baffle and a horizontal plate see the same wall flux
+
+            phi_solid = phi_fluid + cos(theta) 4 phi (1-phi) / W     (:func:`wall_contact_ghost`).
+
+        The earlier form averaged the eight (isotropic) neighbours instead, i.e. it
+        applied the *horizontal-plate* derivation to vertical walls as well: the
+        wall flux then leaked into the streamwise direction and produced a
+        spurious capillary drive measured at ``h = 9.013`` lattice units in a
+        channel with a neutral (``theta = 90 deg``) wall, where the analytic rise
+        is exactly zero (docs/IN32_L01_WETTING_LADDER.md, measured again in
+        docs/CASE_MCMP_CAPILLARY_RISE.md §4).
+        """
         if self.wall_phi_policy == "freeze" or self.wall_mask is None:
             return
         target = self.wall_mask
@@ -372,21 +402,25 @@ class CAC2D:
         phi = self.f.sum(dim=0)
         zero = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
         pf = torch.where(self.fluid_mask, phi, zero)
-        cnt = shifted_neighbors(self.fluid_mask.to(self.dtype), axes=self.axes).sum(dim=0)
+        fm_f = self.fluid_mask.to(self.dtype)
+        acc = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
+        cnt = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            # value and fluid-ness of the node one spacing away in this normal
+            acc = acc + _shift(pf, dy, dx, axes=self.axes)
+            cnt = cnt + _shift(fm_f, dy, dx, axes=self.axes)
         has = target & (cnt > 0)
         if not bool(has.any()):
             return
-        ghost = shifted_neighbors(pf, axes=self.axes).sum(dim=0) / cnt.clamp(min=1.0)
-        if self.wall_contact_cos != 0.0:
-            ghost = wall_contact_ghost(ghost, self.wall_contact_cos, self.width)
-            if self.wall_contact_zero_net:
-                # Global phase conservation: the conservative Allen-Cahn field is
-                # a conserved quantity, so a wall flux may *redistribute* phase
-                # but must not create it.  The mean wetting shift over the active
-                # wall is therefore removed (zero-net-flux constraint), which
-                # keeps int(phi) drift at the round-off level.
-                shift = (ghost - shifted_neighbors(pf, axes=self.axes).sum(dim=0) / cnt.clamp(min=1.0))
-                ghost = ghost - shift[has].mean()
+        base = acc / cnt.clamp(min=1.0)
+        ghost = wall_contact_ghost(base, self.wall_contact_cos, self.width)
+        if self.wall_contact_zero_net:
+            # Global phase conservation: the conservative Allen-Cahn field is a
+            # conserved quantity, so a wall flux may *redistribute* phase but must
+            # not create it.  The mean wetting shift over the active wall is
+            # therefore removed (zero-net-flux constraint), which keeps int(phi)
+            # drift at the round-off level.
+            ghost = ghost - (ghost - base)[has].mean()
         phi_new = torch.where(has, ghost, phi)
         feq = f_equilibrium(phi_new, zero, self.wv, self.cf)
         self.f = torch.where(has.unsqueeze(0), feq, self.f)
