@@ -168,7 +168,7 @@
 
 * 执行器：`benchmarks/case_pool/mcmp_laplace/run_case.py`（协议与阈值在 `PROTOCOL` / `THRESHOLDS`）
 * 结果：`benchmarks/case_pool/mcmp_laplace/artifacts/summary.json`（12 个液滴算例 + 3 个平板算例 + 6 个分辨率算例）
-* 场量：`artifacts/hero_fields.npz`（G12=-2.500 的 hero 液滴 rho1/rho2/u）+ `hero_profile.json`
+* 场量：`artifacts/hero_fields.npz`（G12=-2.750, R_init=20.000 的 hero 液滴 rho1/rho2/u）+ `hero_profile.json`
 * 环境：git `3508357d`, python 3.11.6, torch 2.7.1, 1 thread/job, 2026-11-12T00:38:27Z
 * 一键复现：`python benchmarks/case_pool/mcmp_laplace/run_case.py --jobs 8 && python benchmarks/case_pool/mcmp_laplace/make_report.py`（全量 369 s @ jobs=6）
 
