@@ -473,6 +473,36 @@ def nscbc_outlet_2d(
     return f_new
 
 
+
+def zero_gradient_outlet_2d(f: torch.Tensor) -> torch.Tensor:
+    """Zero-gradient (Neumann) outlet boundary condition (D2Q9).
+
+    Copies the upstream column's 9 distribution functions to the outlet
+    column (x = nx-1): ``f[:, :, -1] = f[:, :, -2]``, i.e. ``\partial f/\partial x = 0``
+    (a first-order Neumann extrapolation of the whole distribution).
+
+    This is the outlet used by the Kovasznay (1948) steady-state verification
+    (``benchmarks/verified/kovasznay_2d``): with a long enough downstream domain
+    (x' >= 3 y-periods) the outlet disturbance ``e^{lambda x'}`` has decayed below
+    the 3 % gate, so the zero-gradient outlet does not pollute the interior field.
+    On a short domain (x' in [0,1]) it kills the outlet ``v`` component to ~0
+    (full-field v max relative error ~96 %), so a long downstream domain is
+    required.  It is collision-agnostic (applied post-streaming).
+
+    Args:
+        f: Distribution tensor (9, ny, nx).
+
+    Returns:
+        Updated distribution tensor (outlet column = upstream column).
+    """
+    if f.shape[0] != 9:
+        msg = f"f must have 9 directions, got {f.shape[0]}"
+        raise ValueError(msg)
+    f = f.clone()
+    f[:, :, -1] = f[:, :, -2]
+    return f
+
+
 # ---------------------------------------------------------------------------
 # Unified moving-wall / free-slip entry points (closes G18, see
 # benchmarks/gaps.md and the 2026-11-08 convention audit, report 7618).
