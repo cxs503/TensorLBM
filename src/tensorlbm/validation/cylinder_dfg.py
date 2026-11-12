@@ -161,7 +161,15 @@ class CaseConfig:
     seed_periods: float = 2.0
     seed_st: float = 0.30
     seed_ampl: float = 0.05
-    avg_periods: float = 20.0
+    #: shedding periods discarded before averaging (start-up transient of the
+    #: vortex street).  Kept separate from ``avg_periods`` on purpose: the old
+    #: config folded both into one number, so a run shorter than
+    #: ``avg_periods`` periods silently averaged over the *whole* record,
+    #: transient included (mission m16827, defect D3).
+    transient_periods: float = 5.0
+    #: shedding periods retained for the statistics (>= 10 recommended: the
+    #: limit-cycle amplitude needs a stable median over complete periods).
+    avg_periods: float = 12.0
     report_every: int = 5_000
     row_sample_every: int = 5
 
@@ -180,12 +188,40 @@ class CaseConfig:
         self.tau = 0.5 + 3.0 * self.nu_lb
         if self.tau <= 0.52:
             raise ValueError(f"tau={self.tau:.3f} too close to 0.5 for stable collision")
+        if self.n_steps < self.min_steps_required:
+            raise ValueError(
+                f"n_steps={self.n_steps} cannot host transient_periods="
+                f"{self.transient_periods} + avg_periods={self.avg_periods} at "
+                f"period_steps={self.period_steps:.0f} "
+                f"(need >= {self.min_steps_required:.0f} steps).  Refusing to "
+                "silently average over the start-up transient."
+            )
 
     @property
     def period_steps(self) -> float:
         """Shedding period in lattice steps at the benchmark Strouhal number."""
         st = band_mid(REFERENCE_BANDS["2D-2"]["st"])
         return self.D_cells / (st * self.u_mean_lb)
+
+    @property
+    def transient_steps(self) -> int:
+        """Steps dropped from the statistics (start-up transient)."""
+        return int(round(self.transient_periods * self.period_steps))
+
+    @property
+    def avg_steps(self) -> int:
+        """Steps retained for the statistics (``avg_periods`` shed cycles)."""
+        return int(round(self.avg_periods * self.period_steps))
+
+    @property
+    def min_steps_required(self) -> float:
+        """Shortest run that still contains transient + averaging window."""
+        return self.transient_steps + self.avg_steps
+
+    @property
+    def window_start_step(self) -> int:
+        """First step (1-based) inside the averaging window."""
+        return self.n_steps - self.avg_steps + 1
 
 
 def inlet_profile(ny: int, dx: float, u_mean_lb: float) -> torch.Tensor:
@@ -278,6 +314,149 @@ def strouhal_from_series(
     return out
 
 
+def limit_cycle_amplitude(
+    cl: torch.Tensor,
+    period_steps: float,
+    min_periods: int = 5,
+    freq_search: float = 0.02,
+    d_cells: int | None = None,
+    u_mean_lb: float | None = None,
+) -> dict:
+    """Limit-cycle amplitude of a (nearly) sinusoidal force history — robust form.
+
+    Why not ``(max - min)/2``
+    ------------------------
+    The DFG quantity is the amplitude of the *established* vortex shedding
+    (S&T Table 3, C_L amplitude).  ``(max - min)/2`` taken over the whole record
+    is not that quantity:
+
+    * the start-up transient is monotone-ish and overshoots (the first shed
+      cycle is stronger than the limit cycle), and
+    * a single noisy sample anywhere in the record sets the value used as the
+      published number.
+
+    On the frozen m16827 evidence the peak-pick estimator overstates the
+    amplitude by +14 % (D=28) even though the per-period amplitude is stable to
+    a few percent — i.e. the old metric measured a transient, not the physics.
+
+    Estimator (fixed before looking at pass/fail)
+    ---------------------------------------------
+    1. the caller supplies the record with the transient already removed
+       (:attr:`CaseConfig.transient_steps`), so no data-driven window choice;
+    2. the shedding period comes from the autocorrelation of the retained
+       record (same helper as the Strouhal number);
+    3. the record is cut into ``N = floor(len/T)`` complete periods; each period
+       contributes ``A_j = (max - min)/2``;
+    4. the **reported** amplitude is the least-squares fundamental amplitude
+       ``hypot(a, b)`` at the ACF period (refined over ``1 ± freq_search``) —
+       unlike a peak statistic it is unbiased under broadband noise;
+    5. the **median** of ``A_j`` is kept as a diagnostic (with its IQR and a
+       standard error ``1.2533 * IQR / sqrt(N)``); an excess over the
+       fundamental larger than ``fundamental_tolerance_pct`` raises a warning
+       that the record is noisy or not sinusoidal (the value is still reported:
+       the DFG quantity is a well-defined amplitude of that waveform).
+
+    Returns a dict with the amplitude, the diagnostics and ``status``
+    (``"ok"`` / ``"insufficient_periods"`` / ``"unresolved"``); ``amp`` is NaN
+    whenever the status is not ``"ok"`` — an unsupported number is never emitted.
+    """
+    x = cl.detach().to(torch.float64).cpu()
+    n = int(x.numel())
+    out: dict = {
+        "amp": float("nan"),
+        "amp_fundamental": float("nan"),
+        "n_samples": n,
+        "period_steps": float("nan"),
+        "n_periods": 0,
+        "per_period": [],
+        "iqr": float("nan"),
+        "stderr": float("nan"),
+        "st_fit": float("nan"),
+        "estimator_disagreement_pct": float("nan"),
+        "status": "insufficient_periods",
+        "amp_peakpick_median": float("nan"),
+        "peakpick_excess_pct": float("nan"),
+        "amplitude_convention": "fundamental (least-squares fit at the shedding frequency)",
+        "fundamental_tolerance_pct": 10.0,
+        "method": "median of per-period half peak-to-peak + fundamental cross-check",
+        "period_acf": float("nan"),
+    }
+    if n < 32 or not (period_steps and period_steps > 0):
+        return out
+
+    # ---- 1. period from the autocorrelation of the retained record ----------
+    st = strouhal_from_series(
+        x.to(torch.float32),
+        float(period_steps),
+        band_mid(REFERENCE_BANDS["2D-2"]["st"]),
+        int(round(period_steps)),
+        float(u_mean_lb) if u_mean_lb else 1.0,
+    )
+    period = st["period_acf"] if st["period_acf"] == st["period_acf"] else float(period_steps)
+    if not (period > 2):
+        return out
+    out["period_acf"] = float(st["period_acf"])
+    out["period_steps"] = float(period)
+
+    # ---- 2. per-complete-period amplitudes ---------------------------------
+    n_periods = int(n // period)
+    out["n_periods"] = n_periods
+    if n_periods < min_periods:
+        return out
+    per = []
+    for j in range(n_periods):
+        lo = int(round(j * period))
+        hi = int(round((j + 1) * period))
+        seg = x[lo:hi]
+        if seg.numel() >= 3:
+            per.append(0.5 * float(seg.max() - seg.min()))
+    per_t = torch.tensor(per, dtype=torch.float64)
+    amp_pk = float(per_t.median())
+    q25, q75 = (float(v) for v in torch.quantile(per_t, torch.tensor([0.25, 0.75], dtype=torch.float64)))
+    out["per_period"] = [round(v, 6) for v in per]
+    out["amp_peakpick_median"] = amp_pk
+    out["iqr"] = q75 - q25
+    out["stderr"] = 1.2533 * out["iqr"] / math.sqrt(len(per))
+
+    # ---- 3. fundamental harmonic: the reported amplitude --------------------
+    # The per-period peak-pick is *biased up by broadband noise*: the max of N
+    # samples of a sinusoid+noise is ~amp + 3 sigma, so with sigma/amp = 3 % the
+    # half peak-to-peak is ~+6 % high even after a perfect transient cut (unit
+    # test test_noisy_record...).  The converged reference value in S&T Table 3
+    # is the amplitude of the shedding mode, so the least-squares fit at the
+    # shedding frequency is the reported number; the median peak-pick is kept as
+    # a diagnostic and a large excess flags a noisy / non-sinusoidal record.
+    m = int(n_periods * period)
+    seg = x[:m]
+    t = torch.arange(m, dtype=torch.float64)
+    f0 = 1.0 / period
+    best = (0.0, f0)
+    for k in range(-20, 21):
+        f = f0 * (1.0 + freq_search * k / 20.0)
+        basis = torch.stack([torch.sin(2 * math.pi * f * t), torch.cos(2 * math.pi * f * t),
+                             torch.ones(m, dtype=torch.float64)], dim=1)
+        coef = torch.linalg.lstsq(basis, seg).solution
+        a = float(torch.hypot(coef[0], coef[1]))
+        if a > best[0]:
+            best = (a, f)
+    out["amp_fundamental"] = best[0]
+    if d_cells and u_mean_lb:
+        out["st_fit"] = best[1] * d_cells / u_mean_lb
+    if best[0] > 0:
+        out["peakpick_excess_pct"] = (amp_pk - best[0]) / best[0] * 100.0
+    out["amplitude_convention"] = "fundamental (least-squares fit at the shedding frequency)"
+    if best[0] > 0 and not math.isnan(best[0]):
+        out["amp"] = best[0]
+        out["status"] = "ok"
+        if out["peakpick_excess_pct"] > out["fundamental_tolerance_pct"]:
+            out["warning"] = (
+                f"peak-pick exceeds the fundamental by "
+                f"{out['peakpick_excess_pct']:.1f}% (>{out['fundamental_tolerance_pct']}%): "
+                "noisy or non-sinusoidal record"
+            )
+    return out
+
+
 def probe_columns(cfg: CaseConfig) -> dict:
     """Fluid columns used for the Δp probes and their x positions (m)."""
     dx = cfg.dx
@@ -341,8 +520,11 @@ def run_case(
 
     period_guess = cfg.period_steps
     n_seed = min(int(round(cfg.seed_periods * period_guess)), cfg.n_steps // 4)
-    n_avg = min(cfg.n_steps, int(round(cfg.avg_periods * period_guess)))
-    window_start = cfg.n_steps - n_avg + 1
+    # transient and averaging window are separate quantities (defect D3): the
+    # config refuses to build when n_steps cannot host both, so this split can
+    # never silently degenerate into "average over everything".
+    n_avg = cfg.avg_steps
+    window_start = cfg.window_start_step
 
     cd_hist: list[float] = []
     cl_hist: list[float] = []
@@ -390,6 +572,13 @@ def run_case(
             )
 
     window = min(n_avg, len(cd_hist))
+    if len(cd_hist) - window > cfg.transient_steps + 1:
+        # hist is shorter than transient+avg only if n_steps < min_steps_required,
+        # which CaseConfig already rejects; keep the check as a hard assertion.
+        raise RuntimeError(
+            f"averaging window ({window}) leaves more than the declared transient "
+            f"({cfg.transient_steps}) behind: n_steps={cfg.n_steps} inconsistent"
+        )
     cd_t = torch.tensor(cd_hist[-window:], dtype=torch.float64)
     cl_t = torch.tensor(cl_hist[-window:], dtype=torch.float64)
     dp_t = torch.tensor(dp_hist[-window:], dtype=torch.float64)
@@ -421,7 +610,15 @@ def run_case(
 
     ref = REFERENCE_BANDS["2D-2"]
     cd_mean = float(cd_t.mean())
-    cl_amp = 0.5 * float(cl_t.max() - cl_t.min())
+    # legacy metric, kept in the artifact for the before/after record only
+    cl_amp_peakpick = 0.5 * float(cl_t.max() - cl_t.min())
+    amp = limit_cycle_amplitude(
+        cl_t,
+        period_guess,
+        d_cells=cfg.D_cells,
+        u_mean_lb=cfg.u_mean_lb,
+    )
+    cl_amp = amp["amp"]
     # FFT period is the primary estimator: it is sub-bin interpolated and was the
     # only one of the two that stayed inside the DFG band on the D=20 pilot.
     st_primary = st["st_fft"] if st["st_fft"] == st["st_fft"] else st["st_acf"]
@@ -471,6 +668,10 @@ def run_case(
         "cd_second_half": float(cd_t[half:].mean()),
         "cl_mean": float(cl_t.mean()),
         "cl_amp": cl_amp,
+        "cl_amp_peakpick_legacy": cl_amp_peakpick,
+        "cl_amp_stats": amp,
+        "transient_steps": cfg.transient_steps,
+        "transient_periods": cfg.transient_periods,
         "st": st_primary,
         "st_acf": st["st_acf"],
         "st_fft": st["st_fft"],

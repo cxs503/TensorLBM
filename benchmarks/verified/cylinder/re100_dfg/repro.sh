@@ -30,8 +30,11 @@ fi
 
 # Full ladder.  Shedding period in lattice steps: T = D / (St * u_lb) = D / (0.3*0.0833) ≈ 40·D.
 # 17 periods per level = ~5 periods of transient + 12 periods of averaging window.
+# steps = period(T=40·D) × (transient 5 + averaging 12 + 2 margin) = 40·D·19.
+# A shorter run is REJECTED by CaseConfig (m16827: the old 17-period run made the
+# averaging window swallow the whole record, transient included).
 for D in 20 28 40; do
-  STEPS=$(( 40 * D * 17 ))
+  STEPS=$(( 40 * D * 19 ))
   echo ">>> D=$D cells, $STEPS steps"
   python benchmarks/verified/cylinder/re100_dfg/run.py --levels "$D" --steps "$STEPS" --threads "$THREADS"
 done

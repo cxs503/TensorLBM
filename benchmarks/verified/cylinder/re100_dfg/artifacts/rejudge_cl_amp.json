@@ -1,0 +1,200 @@
+{
+  "case": "CASE-CYLINDER-DRAG-RE100",
+  "why": "estimator defects D1 (peak-pick) + D3 (transient inside window); re-scored from frozen series, no re-run",
+  "transient_periods": 5.0,
+  "tolerance_pct": 5.0,
+  "levels": {
+    "D20": {
+      "series": "verified/cylinder/re100_dfg/artifacts/level_D20_u0833.series.npz",
+      "n_samples_total": 14000,
+      "n_samples_used": 9998,
+      "transient_steps_dropped": 4002,
+      "periods_used": 12.49,
+      "cl_amp_old_peakpick_all_window": 1.2450825138315542,
+      "cl_amp_peakpick_post_transient": 1.2450824975967407,
+      "cl_amp_new": 1.1785677297802435,
+      "cl_amp_peakpick_median": 1.189249575138092,
+      "cl_amp_peakpick_excess_pct": 0.9063412384318631,
+      "cl_amp_amplitude_convention": "fundamental (least-squares fit at the shedding frequency)",
+      "cl_amp_warning": null,
+      "cl_amp_new_status": "ok",
+      "cl_amp_n_periods": 12,
+      "cl_amp_iqr": 0.02484510838985443,
+      "cl_amp_stderr": 0.00898887440510786,
+      "cl_amp_fundamental": 1.1785677297802435,
+      "cl_amp_estimator_disagreement_pct": NaN,
+      "st_new": 0.3096721873669006,
+      "cd_new": 3.4557966968969813,
+      "dp_new": 5.345315245538503,
+      "values_old": {
+        "cd": 3.4883853594583476,
+        "cl_amp": 1.2450825138315542,
+        "st": 0.3056499219104656,
+        "dp": 5.481586807858696
+      },
+      "values_new": {
+        "cd": 3.4557966968969813,
+        "cl_amp": 1.1785677297802435,
+        "st": 0.3096721873669006,
+        "dp": 5.345315245538503
+      },
+      "err_pct_old": {
+        "cd": 7.999546732456568,
+        "cl_amp": 24.50825138315542,
+        "st": 1.8833073034885315,
+        "dp": 10.51586306166725
+      },
+      "err_pct_new": {
+        "cd": 6.99060981105204,
+        "cl_amp": 17.85677297802435,
+        "st": 3.22406245563354,
+        "dp": 7.7684525310182
+      }
+    },
+    "D28": {
+      "series": "verified/cylinder/re100_dfg/artifacts/level_D28_u0833.series.npz",
+      "n_samples_total": 20000,
+      "n_samples_used": 14398,
+      "transient_steps_dropped": 5602,
+      "periods_used": 12.85,
+      "cl_amp_old_peakpick_all_window": 1.3604206121957847,
+      "cl_amp_peakpick_post_transient": 1.2540231943130493,
+      "cl_amp_new": 1.1774910051965688,
+      "cl_amp_peakpick_median": 1.1979603171348572,
+      "cl_amp_peakpick_excess_pct": 1.7383837199564223,
+      "cl_amp_amplitude_convention": "fundamental (least-squares fit at the shedding frequency)",
+      "cl_amp_warning": null,
+      "cl_amp_new_status": "ok",
+      "cl_amp_n_periods": 13,
+      "cl_amp_iqr": 0.03389596939086914,
+      "cl_amp_stderr": 0.011782336511664066,
+      "cl_amp_fundamental": 1.1774910051965688,
+      "cl_amp_estimator_disagreement_pct": NaN,
+      "st_new": 0.3035047004464104,
+      "cd_new": 3.387240073203643,
+      "dp_new": 5.368248726298601,
+      "values_old": {
+        "cd": 3.4107758098246137,
+        "cl_amp": 1.3604206121957847,
+        "st": 0.303339948921237,
+        "dp": 5.499376572407485
+      },
+      "values_new": {
+        "cd": 3.387240073203643,
+        "cl_amp": 1.1774910051965688,
+        "st": 0.3035047004464104,
+        "dp": 5.368248726298601
+      },
+      "err_pct_old": {
+        "cd": 5.596774297975642,
+        "cl_amp": 36.04206121957847,
+        "st": 1.1133163070790042,
+        "dp": 10.874527669505744
+      },
+      "err_pct_new": {
+        "cd": 4.868113721475,
+        "cl_amp": 17.749100519656878,
+        "st": 1.168233482136812,
+        "dp": 8.230821094729864
+      }
+    },
+    "D40": {
+      "series": "verified/cylinder/re100_dfg/artifacts/level_D40_u0833.series.npz",
+      "n_samples_total": 27200,
+      "n_samples_used": 19197,
+      "transient_steps_dropped": 8003,
+      "periods_used": 11.99,
+      "cl_amp_old_peakpick_all_window": 1.350721588877816,
+      "cl_amp_peakpick_post_transient": 1.10171639919281,
+      "cl_amp_new": 1.0283453523541382,
+      "cl_amp_peakpick_median": 1.0510478019714355,
+      "cl_amp_peakpick_excess_pct": 2.2076678389536983,
+      "cl_amp_amplitude_convention": "fundamental (least-squares fit at the shedding frequency)",
+      "cl_amp_warning": null,
+      "cl_amp_new_status": "ok",
+      "cl_amp_n_periods": 12,
+      "cl_amp_iqr": 0.012585960328578949,
+      "cl_amp_stderr": 0.00455355697733501,
+      "cl_amp_fundamental": 1.0283453523541382,
+      "cl_amp_estimator_disagreement_pct": NaN,
+      "st_new": 0.3011384769509916,
+      "cd_new": 3.260785087779294,
+      "dp_new": 5.165291645641519,
+      "values_old": {
+        "cd": 3.2904928610129467,
+        "cl_amp": 1.350721588877816,
+        "st": 0.30252971256887085,
+        "dp": 5.215370268518278
+      },
+      "values_new": {
+        "cd": 3.260785087779294,
+        "cl_amp": 1.0283453523541382,
+        "st": 0.3011384769509916,
+        "dp": 5.165291645641519
+      },
+      "err_pct_old": {
+        "cd": 1.8728439942088626,
+        "cl_amp": 35.07215888778159,
+        "st": 0.8432375229569522,
+        "dp": 5.148594123352377
+      },
+      "err_pct_new": {
+        "cd": 0.9530986928573824,
+        "cl_amp": 2.8345352354138154,
+        "st": 0.3794923169972061,
+        "dp": 4.138944468579008
+      }
+    }
+  },
+  "per_metric": {
+    "cd": {
+      "err_pct_old": {
+        "D20": 7.999546732456568,
+        "D28": 5.596774297975642,
+        "D40": 1.8728439942088626
+      },
+      "err_pct_new": {
+        "D20": 6.99060981105204,
+        "D28": 4.868113721475,
+        "D40": 0.9530986928573824
+      }
+    },
+    "cl_amp": {
+      "err_pct_old": {
+        "D20": 24.50825138315542,
+        "D28": 36.04206121957847,
+        "D40": 35.07215888778159
+      },
+      "err_pct_new": {
+        "D20": 17.85677297802435,
+        "D28": 17.749100519656878,
+        "D40": 2.8345352354138154
+      }
+    },
+    "st": {
+      "err_pct_old": {
+        "D20": 1.8833073034885315,
+        "D28": 1.1133163070790042,
+        "D40": 0.8432375229569522
+      },
+      "err_pct_new": {
+        "D20": 3.22406245563354,
+        "D28": 1.168233482136812,
+        "D40": 0.3794923169972061
+      }
+    },
+    "dp": {
+      "err_pct_old": {
+        "D20": 10.51586306166725,
+        "D28": 10.874527669505744,
+        "D40": 5.148594123352377
+      },
+      "err_pct_new": {
+        "D20": 7.7684525310182,
+        "D28": 8.230821094729864,
+        "D40": 4.138944468579008
+      }
+    }
+  },
+  "frozen_files_untouched": true
+}
