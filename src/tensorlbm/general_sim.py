@@ -182,6 +182,10 @@ class SolverConfig:
 
     lattice: LatticeModel = LatticeModel.D3Q19
     collision: CollisionModel = CollisionModel.AUTO
+    # T2 unified core path: when True, run() delegates the whole time
+    # loop to tensorlbm.gpu_core_path.GPUCorePathSolver (valid for the
+    # solid-free body-force channel: D3Q19 + BGK + half-way BB walls).
+    core_path: bool = False
     # Resolution: number of lattice cells along reference_length
     resolution: int = 48
     # Domain padding around geometry (in multiples of reference_length)
@@ -552,6 +556,36 @@ class GeneralSimEngine:
 
     # ── Run ────────────────────────────────────────────────────────────
 
+    def _run_core_path(self, n_steps: int) -> dict[str, Any]:
+        """Route the run through the T2 unified core path (``gpu_core_path``).
+
+        The core path owns its own pre-allocated buffers, Guo body force and
+        half-way bounce-back walls, so it is a drop-in for the laminar
+        body-force channel: D3Q19 + BGK + no solid geometry.  The engine's
+        grid (``self.f``) and unit converter (``self.uc``) define the lattice
+        size, relaxation time and centre-line velocity target.
+        """
+        from .gpu_core_path import GPUCorePathConfig, GPUCorePathSolver
+
+        if self.solid is not None and bool(self.solid.any()):
+            raise ValueError(
+                "solver.core_path requires a solid-free channel domain"
+            )
+        nz, ny, nx = (int(s) for s in self.f.shape[1:])
+        gcfg = GPUCorePathConfig(
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            tau=float(self.uc.tau),
+            u_max_target=float(self.uc.u_lb),
+            steps=int(n_steps),
+            label="general_sim_core_path",
+        )
+        solver = GPUCorePathSolver(gcfg)
+        stats = solver.run(n_steps)
+        stats["via"] = "tensorlbm.gpu_core_path.GPUCorePathSolver"
+        return stats
+
     def run(self, steps: int | None = None) -> dict[str, Any]:
         """Phase 2: Run simulation for given steps.
 
@@ -569,6 +603,11 @@ class GeneralSimEngine:
         cfg = self.config
         sol = cfg.solver
         n_steps = steps or sol.max_steps
+
+        # T2 core-path delegation: the main solver routes the whole time
+        # loop through the unified GPU core path when requested.
+        if sol.core_path:
+            return self._run_core_path(n_steps)
         torch.device(sol.device)
         tau = self.uc.tau
         nu_lb = self.uc.nu_lb
