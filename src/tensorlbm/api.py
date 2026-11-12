@@ -58,6 +58,8 @@ from .utils import (
     resolve_device,
     write_legacy_snapshot_alias,
 )
+from .audit.intl_bench import run_audit as intl_bench_audit
+from .audit.intl_bench import scorecard as intl_bench_scorecard
 from .zoo import KNOWN_TASKS, ModelInfo, ModelZoo, ZooValidation, resolve_zoo_root
 from .zoo import info as zoo_info
 from .zoo import list_models as zoo_list_models
@@ -133,4 +135,7 @@ __all__ = [
     "zoo_list_models",
     "zoo_info",
     "zoo_validate",
+    # evidence-driven maturity audit (GAP-LBM-INTL-BENCH)
+    "intl_bench_audit",
+    "intl_bench_scorecard",
 ]

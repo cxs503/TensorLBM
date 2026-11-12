@@ -1,0 +1,50 @@
+{
+  "benchmark": "tensorlbm_intl_bench_grading_calibration",
+  "purpose": "Calibrate the evidence-ladder grader used by GAP-LBM-INTL-BENCH. Each control materialises a repository whose evidence level is known by construction, so the expected grade is a REFERENCE derived from the ladder definition (not from the audit implementation). got = grader output.",
+  "ladder": {
+    "1": "module exists (impl file on disk)",
+    "2": "API/unit test on disk",
+    "3": "pending benchmark case on disk (conservation/gate case, or structural FAIL)",
+    "4": "benchmarks/verified/<case> on disk",
+    "5": "verified case whose result.json carries a truth verdict AND convergence/grid fields",
+    "6": "experimental comparison (no TensorLBM module currently reaches this tier)"
+  },
+  "controls": [
+    {"id": "c01_impl_only", "kind": "positive", "impl": true, "expected_tier": 1, "expected_level": "implemented",
+     "rationale": "only an implementation file; existence is tier 1"},
+    {"id": "c02_impl_plus_test", "kind": "positive", "impl": true, "test": true, "expected_tier": 2, "expected_level": "implemented",
+     "rationale": "API test raises the evidence to tier 2 but an API test is not physics evidence"},
+    {"id": "c03_pending_case", "kind": "positive", "impl": true, "test": true, "pending": "case_pending",
+     "expected_tier": 3, "expected_level": "partial", "rationale": "pending case = conservation/gate evidence or an open FAIL"},
+    {"id": "c04_verified_full", "kind": "positive", "impl": true, "test": true, "verified": "case_ok",
+     "expected_tier": 5, "expected_level": "verified",
+     "rationale": "verified case + truth verdict + convergence fields = the only route to verified"},
+    {"id": "c05_verified_no_verdict", "kind": "negative", "impl": true, "test": true, "verified": "case_noverdict",
+     "expected_tier": 5, "expected_level": "partial",
+     "rationale": "convergence alone is not a truth verdict; the grader must demote"},
+    {"id": "c06_verified_no_convergence", "kind": "negative", "impl": true, "test": true, "verified": "case_noconv",
+     "expected_tier": 4, "expected_level": "partial",
+     "rationale": "one grid point is a standard case, not a convergence study"},
+    {"id": "c07_known_defect_no_case", "kind": "negative", "impl": true, "defect": true,
+     "expected_tier": 1, "expected_level": "failed",
+     "rationale": "a registered structural defect must be graded failed, never implemented/verified"},
+    {"id": "c08_known_defect_but_verified_case", "kind": "negative", "impl": true, "test": true,
+     "verified": "case_ok", "defect": true, "expected_tier": 5, "expected_level": "partial",
+     "rationale": "an open defect blocks a verification claim even if an unrelated case passes"},
+    {"id": "c09_no_impl_pending_case", "kind": "negative", "impl": false, "test": false, "pending": "case_pending",
+     "expected_tier": 3, "expected_level": "partial",
+     "rationale": "case evidence without any implementation on disk must not be promoted"},
+    {"id": "c10_shared_verified_case", "kind": "negative", "impl": true, "test": true,
+     "verified": "case_ok", "share_case": true, "expected_tier": 5, "expected_level": "partial",
+     "rationale": "one verified case quoted by two modules certifies neither specifically"}
+  ],
+  "physical_anchors": [
+    {"case": "sphere_re200", "dir": "benchmarks/verified/sphere_re200",
+     "ref_field": ["reference", "value"], "got_field": ["grids"], "got_selector": "last",
+     "err_field": "err_pct", "accept_pct": 3.0,
+     "note": "Schiller-Naumann Cd(Re=200)=0.805615; finest ladder D=28. The audit may only call this 'verified' while |err|<=3% and the grid span is <=3%."},
+    {"case": "hadamard_rybczynski_droplet", "dir": "benchmarks/pending/hadamard_rybczynski_droplet",
+     "expected_level": "partial",
+     "note": "five multiphase models all FAIL in NOTES.md; the audit must not certify any multiphase module from this case"}
+  ]
+}

@@ -1,0 +1,169 @@
+{
+ "benchmark": "tensorlbm_intl_bench_grading_calibration",
+ "repo": "/root/tp-agent/work/m15912",
+ "grader": "tensorlbm.audit.intl_bench.grade/apply_evidence_isolation",
+ "calibration": {
+  "controls": [
+   {
+    "id": "c01_impl_only",
+    "kind": "positive",
+    "ref_level": "implemented",
+    "got_level": "implemented",
+    "ref_tier": 1,
+    "got_tier": 1,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c02_impl_plus_test",
+    "kind": "positive",
+    "ref_level": "implemented",
+    "got_level": "implemented",
+    "ref_tier": 2,
+    "got_tier": 2,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c03_pending_case",
+    "kind": "positive",
+    "ref_level": "partial",
+    "got_level": "partial",
+    "ref_tier": 3,
+    "got_tier": 3,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c04_verified_full",
+    "kind": "positive",
+    "ref_level": "verified",
+    "got_level": "verified",
+    "ref_tier": 5,
+    "got_tier": 5,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c05_verified_no_verdict",
+    "kind": "negative",
+    "ref_level": "partial",
+    "got_level": "partial",
+    "ref_tier": 5,
+    "got_tier": 5,
+    "pass": true,
+    "downgrade_reason": "verified/ 在盘但 result.json 无真值裁决字段",
+    "shared_with": []
+   },
+   {
+    "id": "c06_verified_no_convergence",
+    "kind": "negative",
+    "ref_level": "partial",
+    "got_level": "partial",
+    "ref_tier": 4,
+    "got_tier": 4,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c07_known_defect_no_case",
+    "kind": "negative",
+    "ref_level": "failed",
+    "got_level": "failed",
+    "ref_tier": 1,
+    "got_tier": 1,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c08_known_defect_but_verified_case",
+    "kind": "negative",
+    "ref_level": "partial",
+    "got_level": "partial",
+    "ref_tier": 5,
+    "got_tier": 5,
+    "pass": true,
+    "downgrade_reason": "已登记结构性缺陷未闭合，verified 不予保留：control: structural defect declared",
+    "shared_with": []
+   },
+   {
+    "id": "c09_no_impl_pending_case",
+    "kind": "negative",
+    "ref_level": "partial",
+    "got_level": "partial",
+    "ref_tier": 3,
+    "got_tier": 3,
+    "pass": true,
+    "downgrade_reason": "",
+    "shared_with": []
+   },
+   {
+    "id": "c10_shared_verified_case",
+    "kind": "negative",
+    "ref_level": "partial",
+    "got_level": "partial",
+    "ref_tier": 5,
+    "got_tier": 5,
+    "pass": true,
+    "downgrade_reason": "证据复用：verified 算例 case_ok 同时支撑 2 个模块（mod_c10_shared_verified_case,mod_c10_shared_verified_case_peer），非模块专属证据",
+    "shared_with": [
+     "mod_c10_shared_verified_case_peer"
+    ]
+   }
+  ],
+  "n_controls": 10,
+  "n_pass": 10,
+  "agreement_pct": 100.0,
+  "confusion": {
+   "implemented->implemented": 2,
+   "partial->partial": 6,
+   "verified->verified": 1,
+   "failed->failed": 1
+  }
+ },
+ "anchors": [
+  {
+   "case": "sphere_re200",
+   "evidence_dir_present": true,
+   "ref_dir": "benchmarks/verified/sphere_re200",
+   "accept_pct": 3.0,
+   "cd_ref": 0.805615,
+   "cd_got": 0.798671,
+   "grid_D": 28,
+   "err_pct": -0.862,
+   "within_accept": true,
+   "reported_err_pct": -0.862,
+   "grid_span_pct": 2.728,
+   "span_within_3pct": true,
+   "got_level": "verified",
+   "got_tier": 5,
+   "grader_note": "",
+   "verdict_field_on_disk": "PASS (4 ladders): every |err| <= 3%, span 2.73% <= 3%, monotone and two-sided about the reference",
+   "expected_level": null,
+   "pass": true
+  },
+  {
+   "case": "hadamard_rybczynski_droplet",
+   "evidence_dir_present": true,
+   "ref_dir": "benchmarks/pending/hadamard_rybczynski_droplet",
+   "accept_pct": null,
+   "got_level": "partial",
+   "got_tier": 3,
+   "grader_note": "",
+   "verdict_field_on_disk": "FAIL — module capability (benchmark unrunnable: no 3D multiphase module represents a buoyant viscous droplet with any viscosity ratio lambda != 1; formal Phase-2 ladder never started, prereg gates never reached)",
+   "expected_level": "partial",
+   "pass": true
+  }
+ ],
+ "verdict": "PASS",
+ "thresholds": {
+  "agreement_pct": 100.0,
+  "sphere_re200_err_pct": 3.0
+ }
+}
