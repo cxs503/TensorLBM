@@ -1,0 +1,82 @@
+{
+ "source_worktree": "/root/tp-agent/work/m16140/benchmarks/case_pool/sc_sphere_array_drag",
+ "source_commit": "c0a3e6c3661da3eda07fbbff2872a2cc098f6f79",
+ "source_commit_subject": "m16140: CASE-LBM-CUBIC-ARRAY-DRAG case-pool entry (TensorLBM)",
+ "tracked_in_delivered_commit": [
+  "run.py",
+  "REPORT.md",
+  "NOTES.md",
+  "out/case_phi0.125_N16.json",
+  "out/case_phi0.125_N32.json",
+  "out/result.json",
+  "figures/k_vs_N.png",
+  "figures/error_vs_N.png",
+  "figures/field_slice.png"
+ ],
+ "untracked_in_delivered_commit": [
+  "out/case_phi0.45_N32.json"
+ ],
+ "files": [
+  {
+   "path": "run.py",
+   "snapshot": "run.py",
+   "bytes": 18010,
+   "sha256": "9f33938d7eb222590f760ae58264ee29c0154eefa24eae66aa0fb8443ff8e7d3"
+  },
+  {
+   "path": "REPORT.md",
+   "snapshot": "REPORT.md",
+   "bytes": 6971,
+   "sha256": "4661865d96a78539a3f3ade8f06f27d8f7727bd0321a50f8870cf583280e8705"
+  },
+  {
+   "path": "NOTES.md",
+   "snapshot": "NOTES.md",
+   "bytes": 7381,
+   "sha256": "5bc2f51e23bc12379edc560a3afc732688bbaa6911ef67b12e774e55dc8ed182"
+  },
+  {
+   "path": "out/case_phi0.125_N16.json",
+   "snapshot": "out__case_phi0.125_N16.json",
+   "bytes": 7344,
+   "sha256": "9ea24e5c44833a5ee20f59d6a7acda06452506302514ddbfc0811f434614a141"
+  },
+  {
+   "path": "out/case_phi0.125_N32.json",
+   "snapshot": "out__case_phi0.125_N32.json",
+   "bytes": 8442,
+   "sha256": "a7d19fbc9347395af947f9712b1de690fc5cb34e84a1400d4ac3c26fec8eac20"
+  },
+  {
+   "path": "out/case_phi0.45_N32.json",
+   "snapshot": "out__case_phi0.45_N32.json",
+   "bytes": 10668,
+   "sha256": "ffaae00ff54640f1a1bcef9c94ae525f1410b3e9de0c4b4d1092c3d444a3b86f"
+  },
+  {
+   "path": "out/result.json",
+   "snapshot": "out__result.json",
+   "bytes": 1837,
+   "sha256": "e2b7005892938baf196a6f23138ddbd30502898012a3e0c82de7c23a7de00417"
+  },
+  {
+   "path": "figures/k_vs_N.png",
+   "snapshot": "figures__k_vs_N.png",
+   "bytes": 61423,
+   "sha256": "bae3f1c665e0681341a7b87831efbb2c2126ca9af930932914e962a06526337b"
+  },
+  {
+   "path": "figures/error_vs_N.png",
+   "snapshot": "figures__error_vs_N.png",
+   "bytes": 40031,
+   "sha256": "e433fcb467c094599848b24a5a7e4198f6f435d9535be6395acf3acfb8e7f563"
+  },
+  {
+   "path": "figures/field_slice.png",
+   "snapshot": "figures__field_slice.png",
+   "bytes": 59999,
+   "sha256": "c916199e29a6f817f085f8b7e5c70ef352af9338a8effaeff904c30d94fdc8e0"
+  }
+ ],
+ "note": "byte copies, hashed at copy time; case_phi0.45_N32.json was git-untracked in m16140 (finding F3)"
+}
