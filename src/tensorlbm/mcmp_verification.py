@@ -455,8 +455,16 @@ def droplet_radius(
     }
 
 
-def measure_laplace(run: dict[str, Any], *, box: int = 4) -> dict[str, Any]:
-    """Measure ``Delta p``, ``R`` and ``sigma = Delta p R / 2`` for one run.
+def measure_laplace(run: dict[str, Any], *, box: int = 4, dims: int = 2) -> dict[str, Any]:
+    """Measure ``Delta p``, ``R`` and ``sigma = Delta p R / (dims - 1)`` for one run.
+
+    ``dims`` is the *geometric* dimension of the interface: a 2D circular
+    droplet (a cylinder of unit depth) obeys ``Delta p = sigma / R``, a 3D
+    sphere ``Delta p = 2 sigma / R``; hence ``sigma = Delta p R / (dims - 1)``.
+    The default is the dimension of the fields this module produces (2).  Until
+    2026-11-12 this function returned ``Delta p R / 2`` - the 3D sphere factor -
+    for these 2D fields, i.e. sigma was reported **half** of its value (and any
+    derived quantity such as ``Ca_sp = mu |u|/sigma`` **twice**); fixed here.
 
     Liquid pressure is averaged in a ``box x box`` window at the centre, gas
     pressure in a window at a corner (inventory entry 21), both with
@@ -466,6 +474,8 @@ def measure_laplace(run: dict[str, Any], *, box: int = 4) -> dict[str, Any]:
     Returns a JSON-serialisable dict; unmeasurable quantities are ``None`` with
     a guardrail, never a stale or uninitialised value.
     """
+    if dims not in (2, 3):
+        raise ValueError(f"dims must be 2 (cylinder) or 3 (sphere), got {dims!r}")
     rho1, rho2 = run["rho1"], run["rho2"]
     n = int(rho1.shape[0])
     if not (bool(torch.isfinite(rho1).all()) and bool(torch.isfinite(rho2).all())):
@@ -473,6 +483,7 @@ def measure_laplace(run: dict[str, Any], *, box: int = 4) -> dict[str, Any]:
             "G_12": run["G_12"],
             "n": n,
             "radius_init": run["radius_init"],
+            "laplace_dims": dims,
             "steps_run": run["steps_run"],
             "converged": False,
             "u_max": run["u_max"],
@@ -517,7 +528,7 @@ def measure_laplace(run: dict[str, Any], *, box: int = 4) -> dict[str, Any]:
         )
     dp = p_liq - p_gas
     radius = measured["radius"]
-    sigma = None if radius is None else 0.5 * dp * radius
+    sigma = None if radius is None else dp * radius / (dims - 1)
     if sigma is not None and sigma <= 0:
         guardrails.append(
             Guardrail(
@@ -530,6 +541,7 @@ def measure_laplace(run: dict[str, Any], *, box: int = 4) -> dict[str, Any]:
         "G_12": run["G_12"],
         "n": n,
         "radius_init": run["radius_init"],
+        "laplace_dims": dims,
         "steps_run": run["steps_run"],
         "converged": run["converged"],
         "u_max": run["u_max"],
@@ -737,10 +749,11 @@ def young_laplace_calibration(
     coexist_steps: int = 8000,
     threshold: float = 0.05,
     geometry: str = "planar",
+    dims: int = 2,
     device: torch.device | str = "cpu",
     **kwargs: Any,
 ) -> dict[str, Any]:
-    """Young-Laplace calibration: ``Delta p`` versus ``2 sigma / R``.
+    """Young-Laplace calibration: ``Delta p`` versus ``(dims - 1) sigma / R``.
 
     Protocol (pre-registered in the accompanying report, not tuned after the
     numbers were seen):
@@ -748,9 +761,9 @@ def young_laplace_calibration(
     1. for each ``G_12`` a large droplet fixes the coexistence densities;
     2. for each radius of ``radii`` a droplet is initialised with those
        densities and relaxed until ``|u|_max`` plateaus;
-    3. ``sigma_i = Delta p_i R_i / 2`` is measured per case, and a least-squares
-       line ``Delta p = a (1/R) + b`` is fitted across the radius series of that
-       ``G_12`` level; ``sigma_fit = a / 2``;
+    3. ``sigma_i = Delta p_i R_i / (dims - 1)`` is measured per case, and a
+       least-squares line ``Delta p = a (1/R) + b`` is fitted across the radius
+       series of that ``G_12`` level; ``sigma_fit = a / (dims - 1)``;
     4. **error metric**: ``err_i = |sigma_i - sigma_fit| / sigma_fit`` - the
        Laplace law is satisfied when the measured surface tension does not
        depend on the droplet radius.  ``PASS`` requires ``max_i err_i <
@@ -767,6 +780,9 @@ def young_laplace_calibration(
         threshold: Relative error threshold for PASS.
         geometry: Coexistence geometry, ``"planar"`` (default, curvature free)
             or ``"droplet"``.
+        dims: Geometric dimension of the interface, ``2`` (default; circular
+            droplet, ``Delta p = sigma / R``) or ``3`` (sphere).  These fields
+            are 2D, so the default is the physically correct one.
         device: Torch device for the runs.
         **kwargs: Forwarded to :func:`simulate_static_droplet`
             (``tau1``, ``tau2``, ``u_eq``, ``interface_width``).
@@ -794,11 +810,11 @@ def young_laplace_calibration(
                 device=device,
                 **kwargs,
             )
-            case = measure_laplace(run)
+            case = measure_laplace(run, dims=dims)
             case["coexistence"] = {k: v for k, v in coex.items()}
             level_cases.append(case)
             cases.append(case)
-        levels.append(_fit_laplace_level(G, level_cases, threshold))
+        levels.append(_fit_laplace_level(G, level_cases, threshold, dims=dims))
     ok = bool(levels) and all(level["pass"] for level in levels)
     return {
         "protocol": {
@@ -809,6 +825,8 @@ def young_laplace_calibration(
             "G_values": list(G_values),
             "threshold": threshold,
             "coexistence_geometry": geometry,
+            "laplace_dims": dims,
+            "law": "dp = (dims - 1) * sigma / R",
             "stress": "dP vs 1/R across radii, per G_12 level; sigma from the slope",
             "kwargs": {k: v for k, v in kwargs.items() if k != "device"},
         },
@@ -819,15 +837,15 @@ def young_laplace_calibration(
 
 
 def _fit_laplace_level(
-    G_12: float, level_cases: list[dict[str, Any]], threshold: float
+    G_12: float, level_cases: list[dict[str, Any]], threshold: float, dims: int = 2
 ) -> dict[str, Any]:
     """One-parameter Young-Laplace test plus a free-line diagnostic.
 
     Acceptance metric (pre-registered, see :func:`young_laplace_calibration`):
-    the law ``Delta p = 2 sigma / R`` has exactly **one** unknown per coupling
-    level, so ``sigma`` is fitted through the origin,
+    the law ``Delta p = (dims - 1) sigma / R`` has exactly **one** unknown per
+    coupling level, so ``sigma`` is fitted through the origin,
 
-        ``sigma_0 = sum_i x_i y_i / sum_i x_i^2``  with ``x_i = 2/R_i``,
+        ``sigma_0 = sum_i x_i y_i / sum_i x_i^2``  with ``x_i = (dims-1)/R_i``,
         ``y_i = Delta p_i``,
 
     and the per-case error is ``|y_i - sigma_0 x_i| / (sigma_0 x_i)``.  A free
@@ -863,7 +881,7 @@ def _fit_laplace_level(
         guardrails.append(
             Guardrail("too_few_radii", f"only {len(usable)} usable radii (law test wants >= 3)")
         )
-    xs = [2.0 / c["radius"] for c in usable]
+    xs = [(dims - 1.0) / c["radius"] for c in usable]
     ys = [c["dp"] for c in usable]
     sxy = sum(x * y for x, y in zip(xs, ys))
     sxx = sum(x * x for x in xs)
@@ -885,7 +903,7 @@ def _fit_laplace_level(
     ss_tot = sum((y - sy / m) ** 2 for y in ys)
     ss_res = sum((y - (slope * x + intercept)) ** 2 for x, y in zip(xs_inv, ys))
     r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-30 else float("nan")
-    sigma_slope = 0.5 * slope
+    sigma_slope = slope / (dims - 1)
     offset = (
         max(abs(intercept) * c["radius"] / abs(slope) for c in usable) if slope else float("inf")
     )
@@ -905,6 +923,7 @@ def _fit_laplace_level(
         "G_12": G_12,
         "sigma_origin": sigma_origin,
         "sigma_slope": sigma_slope,
+        "laplace_dims": dims,
         "sigma_cases": [c["sigma"] for c in usable],
         "radii_measured": [c["radius"] for c in usable],
         "slope": slope,
