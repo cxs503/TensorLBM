@@ -1,0 +1,16 @@
+{
+  "anchor": "CASE-LBM-SQUARE-CYL-NORBERG",
+  "reference": "Norberg, C. (1993) 'Flow around rectangular cylinders: pressure forces and wake frequencies', J. Wind Eng. Ind. Aerodyn. 49(1-3):187-196. DOI 10.1016/0167-6105(93)90014-f",
+  "provenance": "Bibliographic metadata (title/journal/volume/pages/year) verified 2026-11-12 via Crossref API for DOI 10.1016/0167-6105(93)90014-f. Full text is NOT open access (Unpaywall api.unpaywall.org: is_oa=false, oa_status=closed; fatcat/scholar.archive.org lookup timed out; ScienceDirect/DDG retrieval blocked by workspace policy) => the original Table values could NOT be machine-read in this environment. The numeric values below are SECONDARY (carried over from the round-1 attempt m16247, which attributed them to 'Table 2 p.195 / p.194-195'); they are therefore WITHHELD-grade in this round's evidence grading and are used only as the anchor's own scoring constants.",
+  "secondary_attribution": "round-1 mission m16247 (honest-FAIL, budget_exhausted)",
+  "metrics": {
+    "st": {"value": 0.13, "tolerance_pct": 8.0, "definition": "St = f*D/U, D = cylinder side, U = free-stream speed"},
+    "cd": {"value": 1.5, "tolerance_pct": 10.0, "definition": "Cd = <Fx>/(0.5*rho*U^2*D)"}
+  },
+  "case_conditions": {"re": 200.0, "blockage": 0.05, "blockage_note": "1/20 as prescribed by the anchor", "incidence_deg": 0.0},
+  "sensitivity_bracket": {
+    "note": "literature bracket used for the discussion section only (NOT a scored reference): 2D low-blockage numerics at Re=200 cluster around St 0.15-0.16 / Cd 1.4-1.5, i.e. systematically ABOVE the experimental St 0.13-0.14 quoted for low-Re wind-tunnel square-cylinder tests. Values in this bracket are context, not verified anchors.",
+    "st": [0.13, 0.16],
+    "cd": [1.40, 1.55]
+  }
+}
