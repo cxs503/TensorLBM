@@ -5,7 +5,7 @@
   "reference_basis": "analytic",
   "scope": "D2Q9 periodic box; velocity decay rate fitted over two independent halves of the run (temporal split, not a grid refinement).",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T04:36:20Z",
+  "generated_utc": "2026-11-12T06:10:38Z",
   "artifact": "benchmarks/verified/taylor_green_2d/result.json",
   "repro_cmd": "python benchmarks/verified/taylor_green_2d/run.py",
   "references": [
@@ -85,7 +85,7 @@
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "43954e5988f442dd5c6977698cfda5a21691ec025d3e663a2e79922078b9f4e1"
+      "sha256": "5ac63ae8ffb65ea25c4e7977ffce61025a45217c25bde3ef81f0a427e23b0b4f"
     },
     {
       "kind": "references",

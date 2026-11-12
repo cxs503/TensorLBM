@@ -1,12 +1,12 @@
 {
   "kind": "tensorlbm.validation_matrix.benchmark_table/v1",
-  "generated_utc": "2026-11-12T04:36:20Z",
+  "generated_utc": "2026-11-12T06:11:06Z",
   "matrix_version": "1.1",
   "gate": "|err| <= tol at every gated level AND the level series converges (span <= declared max_span_pct; monotone where required)",
   "counts": {
     "passed": 6,
-    "failed": 3,
-    "pending": 2
+    "failed": 4,
+    "pending": 1
   },
   "cases": [
     {
@@ -695,12 +695,12 @@
       "case": "cylinder_re100_dfg",
       "slot": "cylinder",
       "title": "Circular cylinder Re=100 in a channel — Schäfer & Turek 1996 case 2D-2 (Cd, Cl amp, St, dp)",
-      "status": "pending",
+      "status": "failed",
       "machine_pass": false,
-      "reason": "artifact present but metric paths unresolved: cd_err_pct, st_err_pct, cl_amp_err_pct, dp_err_pct",
-      "repro_cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 28 40 --steps 60000 --threads 4",
+      "reason": "one or more machine-checked criteria failed",
+      "repro_cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 20 28 40 --steps 14000 20000 27200 --threads 8",
       "artifact": "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
-      "artifact_sha256": "57c9490242b5129c6480e3f4ed5b25c5b6c071752d7189fbc0c73ee29da13a5a",
+      "artifact_sha256": "222d25fa32daf5b87a2c5d10f09f8d26c1b93cb49ff1329db4abf38c706fffd4",
       "references": [
         {
           "id": "cylinder_dfg2d2_cd_re100",
@@ -748,8 +748,8 @@
           "metric": "cd_err_pct",
           "level": "D28",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 5.596774297975642,
+          "err_pct": 5.596774297975642,
           "tol_pct": 5.0,
           "gated": true,
           "pass": false
@@ -758,48 +758,48 @@
           "metric": "cd_err_pct",
           "level": "D40",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 1.8728439942088626,
+          "err_pct": 1.8728439942088626,
           "tol_pct": 5.0,
           "gated": true,
-          "pass": false
+          "pass": true
         },
         {
           "metric": "st_err_pct",
           "level": "D28",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 1.1133163070790042,
+          "err_pct": 1.1133163070790042,
           "tol_pct": 5.0,
           "gated": true,
-          "pass": false
+          "pass": true
         },
         {
           "metric": "st_err_pct",
           "level": "D40",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 0.8432375229569522,
+          "err_pct": 0.8432375229569522,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "cl_amp_err_pct",
+          "level": "D28",
+          "reference": null,
+          "got": 36.04206121957847,
+          "err_pct": 36.04206121957847,
           "tol_pct": 5.0,
           "gated": true,
           "pass": false
         },
         {
           "metric": "cl_amp_err_pct",
-          "level": "D28",
-          "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
-          "tol_pct": 5.0,
-          "gated": true,
-          "pass": false
-        },
-        {
-          "metric": "cl_amp_err_pct",
           "level": "D40",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 35.07215888778159,
+          "err_pct": 35.07215888778159,
           "tol_pct": 5.0,
           "gated": true,
           "pass": false
@@ -808,8 +808,8 @@
           "metric": "dp_err_pct",
           "level": "D28",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 10.874527669505744,
+          "err_pct": 10.874527669505744,
           "tol_pct": 5.0,
           "gated": true,
           "pass": false
@@ -818,8 +818,8 @@
           "metric": "dp_err_pct",
           "level": "D40",
           "reference": null,
-          "got": NaN,
-          "err_pct": NaN,
+          "got": 5.148594123352377,
+          "err_pct": 5.148594123352377,
           "tol_pct": 5.0,
           "gated": true,
           "pass": false
@@ -829,24 +829,19 @@
         {
           "metric": "cd_err_pct",
           "errors_abs_pct": [
-            NaN,
-            NaN
+            5.596774297975642,
+            1.8728439942088626
           ],
           "max_span_pct": 3.0,
-          "span_pct": NaN,
-          "monotone": false,
+          "span_pct": 3.72393030376678,
+          "monotone": true,
           "require_monotone": false,
           "span_ok": false,
           "trend_ok": true,
           "pass": false
         }
       ],
-      "unresolved_metrics": [
-        "cd_err_pct",
-        "st_err_pct",
-        "cl_amp_err_pct",
-        "dp_err_pct"
-      ]
+      "unresolved_metrics": []
     }
   ]
 }
