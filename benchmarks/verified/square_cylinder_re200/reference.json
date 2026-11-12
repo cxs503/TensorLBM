@@ -1,0 +1,81 @@
+{
+  "case": "CASE-LBM-SQUARE-CYL-NORBERG",
+  "subject": "2D square cylinder, normal incidence (alpha=0), vortex shedding: St = f*D/U and time-mean Cd",
+  "solver_class": "2D D2Q9 incompressible LBM (depth-averaged); must be scored against 2D references, not 3D experiment",
+  "anchor_parameters": {"re": 200, "blockage": 0.05, "incidence_deg": 0},
+  "versions": {
+    "file_version": "1.0",
+    "date": "2026-11-12",
+    "extractor": "ar5iv full-text table extraction (arXiv 2411.03124v4 Table 1) + anchor text",
+    "discipline": "Rows are graded. VERIFIED_TABLE = number read out of a full text obtained in this mission. WITHHELD = the named original source could not be obtained and no number is written (deliberately no fabrication). TREND = an interpolation of verified rungs, explicitly NOT a referee."
+  },
+  "notes": [
+    "Anchor naming/parameter conflict (carried over from audit m16205): the anchor cites Norberg 1993 JWEIA 49:187 (DOI 10.1016/0167-6105(93)90014-f), a wind-tunnel *experiment*; but the pinned regime (Re=200, blockage 1/20) is the regime of Sohankar, Norberg & Davidson 1998 (IJNMF 26:39), the low-Reynolds-number square-cylinder blockage study. Neither original table was obtainable this mission, therefore both Re=200 rows are graded WITHHELD.",
+    "A 2D depth-averaged solver cannot be scored against a 3D wind-tunnel measurement without a documented 3D->2D correction, so the missing experimental number is not simply substituted by an experiment value.",
+    "The referee ladder used for accuracy judgement is the two *verified* rungs (Re=100, Re=150) plus the un-refereed Re=200 measurement reported as got.",
+    "Blockage 1/20 means channel height H = 20 D. Lateral faces in this case are free-stream Dirichlet (far_field_bc_2d), i.e. the walls of a 5%-blockage tunnel are represented without no-slip; the achieved blockage is measured from the mask and recorded in every case JSON."
+  ],
+  "rows": [
+    {
+      "re": 100,
+      "metric": "cd",
+      "ref": 1.47,
+      "band": [1.44, 1.48],
+      "tol_pct": 10.0,
+      "source": "arXiv 2411.03124v4 Table 1 (alpha=0): Present 1.48, Sohankar et al. 1998 1.46, Yoon et al. 1.44",
+      "grade": "VERIFIED_TABLE"
+    },
+    {
+      "re": 100,
+      "metric": "st",
+      "ref": 0.147,
+      "band": [0.145, 0.147],
+      "tol_pct": 8.0,
+      "source": "arXiv 2411.03124v4 Table 1 (alpha=0): Present 0.147, Sohankar et al. 1998 0.147",
+      "grade": "VERIFIED_TABLE"
+    },
+    {
+      "re": 150,
+      "metric": "cd",
+      "ref": 1.41,
+      "band": [1.40, 1.41],
+      "tol_pct": 10.0,
+      "source": "arXiv 2411.03124v4 Table 1 (alpha=0): Present 1.41, Sohankar et al. 1998 1.41, Yoon et al. 1.40",
+      "grade": "VERIFIED_TABLE"
+    },
+    {
+      "re": 150,
+      "metric": "st",
+      "ref": 0.160,
+      "band": [0.159, 0.162],
+      "tol_pct": 8.0,
+      "source": "arXiv 2411.03124v4 Table 1 (alpha=0): Present 0.159, Sohankar et al. 1998 0.162",
+      "grade": "VERIFIED_TABLE"
+    },
+    {
+      "re": 200,
+      "metric": "cd",
+      "ref": null,
+      "tol_pct": 10.0,
+      "source": "Norberg 1993 JWEIA 49:187 / Sohankar, Norberg & Davidson 1998 IJNMF 26:39 (anchor reference)",
+      "grade": "WITHHELD",
+      "withheld_reason": "Original tables not obtainable in this mission (publisher 403; only arXiv reachable). No number is written rather than quoting an unverifiable memory value."
+    },
+    {
+      "re": 200,
+      "metric": "st",
+      "ref": null,
+      "tol_pct": 8.0,
+      "source": "Norberg 1993 JWEIA 49:187 / Sohankar, Norberg & Davidson 1998 IJNMF 26:39 (anchor reference)",
+      "grade": "WITHHELD",
+      "withheld_reason": "Same as cd row: anchor original table unobtainable; measurement reported as got without a referee."
+    }
+  ],
+  "trend_expectation_re200": {
+    "grade": "TREND (non-referee, do not use as a pass/fail gate)",
+    "cd": {"value": 1.37, "band": [1.30, 1.45],
+           "derivation": "linear in 1/Re through verified rungs Re=100 Cd 1.47 and Re=150 Cd 1.41, band widened to +/-0.05 for extrapolation uncertainty"},
+    "st": {"value": 0.169, "band": [0.160, 0.180],
+           "derivation": "linear in Re through verified rungs Re=100 St 0.147 and Re=150 St 0.160 (slope +0.013 per 50 Re), band widened for saturation uncertainty"}
+  }
+}
