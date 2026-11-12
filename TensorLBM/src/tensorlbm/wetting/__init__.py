@@ -168,6 +168,17 @@ def wall_psi_from_contact_angle(theta_deg: float) -> float:
         cos(theta) = (psi_w - psi_v) / (psi_l - psi_v)
 
     Inverted: psi_w = psi_v + cos(theta) * (psi_l - psi_v)
+
+    WARNING -- this is *not* a validated angle setter.  Measured sessile-drop
+    angles at the returned ``psi_w`` deviate from the requested angle by
+    +40..+90 deg (2 grids x 3 target angles, CASE-MCMP-CONTACT-ANGLE).  The
+    measured wall law is ~4.2x steeper in ``f_w = psi_w/psi_l`` with the neutral
+    wall near ``f_w ~ 0.51`` (coarse) / ``0.56`` (fine) instead of
+    ``psi_v/psi_l = 0.172``; prescribing an angle requires a same-resolution
+    calibration curve (``tests/benchmarks/wetting_contact_angle/wetting_bench.py``
+    ``calibration_curve`` / ``invert_calibration``).  See
+    ``docs/CASE-MCMP-CONTACT-ANGLE.md`` and
+    ``docs/WETTING_CONTACT_ANGLE_BENCHMARK.md``.
     """
     theta_rad = math.radians(theta_deg)
     cos_t = math.cos(theta_rad)
