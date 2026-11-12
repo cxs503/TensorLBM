@@ -1,0 +1,52 @@
+{
+  "case": "channel_core_path_ci",
+  "generated": "2026-11-12T04:56:45Z",
+  "reference": "analytic Poiseuille u(y)=a/(2 nu) s (H-s), s=y-0.5, H=ny-2",
+  "reference_basis": "analytic",
+  "implementation": "src/tensorlbm/gpu_core_path.py::run_channel_case",
+  "config": {
+    "tau": 0.8,
+    "nu": 0.10000000000000002,
+    "u_max_target": 0.05,
+    "init": "rest",
+    "steady_tol": 2e-05
+  },
+  "levels": [
+    {
+      "level": "ny=18 (H=16)",
+      "metrics": {
+        "u_max_err_pct": 0.3619805975097306,
+        "profile_l2_pct": 0.4931380067265416,
+        "mass_drift_pct": 4.852096202601075e-06
+      },
+      "u_max_ref": 0.04980468750000001,
+      "u_max_got": 0.04962440419459965,
+      "steps": 3000,
+      "steady_at_step": 3000,
+      "elapsed_s": 16.181837920099497,
+      "mlups": 0.8542910927830503,
+      "backend": "torch_compile",
+      "device": "cpu",
+      "compute_dtype": "torch.float64",
+      "wall_clock_s": 16.192505409941077
+    },
+    {
+      "level": "ny=34 (H=32)",
+      "metrics": {
+        "u_max_err_pct": 0.09902680829032995,
+        "profile_l2_pct": 0.13101766802022097,
+        "mass_drift_pct": 1.5349976911771535e-05
+      },
+      "u_max_ref": 0.049951171875000006,
+      "u_max_got": 0.049901706823788576,
+      "steps": 9800,
+      "steady_at_step": 9800,
+      "elapsed_s": 58.66544065065682,
+      "mlups": 1.4539940219309506,
+      "backend": "torch_compile",
+      "device": "cpu",
+      "compute_dtype": "torch.float64",
+      "wall_clock_s": 58.682939779013395
+    }
+  ]
+}
