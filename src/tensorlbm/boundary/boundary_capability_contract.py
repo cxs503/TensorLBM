@@ -26,6 +26,7 @@ BoundaryKind = Literal[
     "sponge",
     "nscbc",
     "bouzidi_interpolated",
+    "zero_gradient_outlet",
 ]
 LatticeName = Literal["D2Q9", "D3Q19", "D3Q27"]
 CollisionFamily = Literal["bgk", "mrt", "trt", "smagorinsky", "kbc", "cascaded"]
@@ -56,6 +57,7 @@ _AUDITED_BOUNDARIES: tuple[BoundaryKind, ...] = (
     "sponge",
     "nscbc",
     "bouzidi_interpolated",
+    "zero_gradient_outlet",
 )
 _AUDITED_LATTICES: tuple[LatticeName, ...] = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_COLLISIONS: tuple[CollisionFamily, ...] = (
@@ -363,6 +365,28 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "tensorlbm.interpolated_bc_common.bouzidi_bounce_back_3d_common / compute_q_sphere_27",
         "test_interp_bc_regression.py and test_bfl_fractional_distance.py: "
         "halfway/branch mechanics and analytic body-diagonal q; no physical validation",
+    ),
+    # ---- zero_gradient_outlet ----------------------------------------------
+    ("zero_gradient_outlet", "D2Q9"): (
+        "PHYSICS_VALIDATED",
+        "tensorlbm.boundaries.zero_gradient_outlet_2d",
+        "tests/test_zero_gradient_outlet_kovasznay.py: Kovasznay (1948) "
+        "steady-state analytic N-S solution re-verified with the library "
+        "zero-gradient outlet (f[:,:,-1]=f[:,:,-2]) on a long downstream "
+        "domain (x' in [0,3]); u/v L2 and masked max relative error <= 3 % "
+        "at ny=64/128 with monotone 64->128 convergence.  Short-domain "
+        "(x' in [0,1]) outlet-v pollution (~96 %) is the documented "
+        "failure mode, so a long downstream domain is required.",
+    ),
+    ("zero_gradient_outlet", "D3Q19"): (
+        "NO_IMPLEMENTATION",
+        None,
+        "No zero-gradient outlet implementation for D3Q19",
+    ),
+    ("zero_gradient_outlet", "D3Q27"): (
+        "NO_IMPLEMENTATION",
+        None,
+        "No zero-gradient outlet implementation for D3Q27",
     ),
 }
 

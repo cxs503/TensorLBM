@@ -94,10 +94,13 @@ def analytic_field(
 
 
 def outlet_zero_gradient(f: torch.Tensor) -> torch.Tensor:
-    """零梯度（Neumann）出口：出口列拷贝上游列全部 9 个分布函数（∂f/∂x = 0）。"""
-    f = f.clone()
-    f[:, :, -1] = f[:, :, -2]
-    return f
+    """零梯度（Neumann）出口：出口列拷贝上游列全部 9 个分布函数（∂f/∂x = 0）。
+
+    库函数 ``tensorlbm.boundaries.zero_gradient_outlet_2d``（本文件内联实现已
+    收编为库函数，见 src/tensorlbm/boundary/boundaries.py）。
+    """
+    from tensorlbm.boundaries import zero_gradient_outlet_2d
+    return zero_gradient_outlet_2d(f)
 
 
 def outlet_analytic_dirichlet(
