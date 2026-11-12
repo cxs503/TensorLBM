@@ -1,0 +1,51 @@
+{
+  "artifact_dir": "/root/tp-agent/work/m15777/runs/cylinder_drag_re20/D16",
+  "reported": {
+    "cd": 5.872258219122886,
+    "err_cd_pct": 5.246368613419891,
+    "cd_plateau_drift": 0.00017851273036925363,
+    "n_steps": 36000,
+    "stop_reason": "plateau",
+    "stationary": true,
+    "passed": false,
+    "wall_s": 641.6454555988312
+  },
+  "recomputed_from_series_csv": {
+    "n_samples": 3600,
+    "decimation_steps": 10,
+    "window_samples": 800,
+    "mean_cd_tail_window": 5.87226048112625,
+    "err_cd_pct": 5.246409154491313,
+    "drift": 0.00011221050558274982,
+    "stationary": true,
+    "passed": false,
+    "cd_minus_report": 2.2620033641729265e-06,
+    "err_minus_report": 4.054107142170693e-05
+  },
+  "field_snapshot": {
+    "keys": [
+      "dx",
+      "rho",
+      "solid",
+      "ux",
+      "uy",
+      "vorticity"
+    ],
+    "divergence": {
+      "max_abs": 0.012187366373836994,
+      "rms": 0.001073031802661717,
+      "p99_abs": 0.006275044288486242
+    }
+  },
+  "geometry_checks": {
+    "blockage_D_over_H": 0.24390243902439027,
+    "blockage_expected": 0.24390243902439027,
+    "re_from_artifact": 20.0,
+    "re_recomputed": 20.0,
+    "ma_recomputed": 0.08660254037844387,
+    "nx_expected": 352,
+    "ny_expected": 66
+  },
+  "ref_cd": 5.57953523384,
+  "tolerance_pct": 5.0
+}
