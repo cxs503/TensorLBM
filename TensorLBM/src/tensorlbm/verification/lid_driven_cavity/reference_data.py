@@ -4,10 +4,9 @@ Reference: Ghia, U., Ghia, K.N., & Shin, C.T. (1982).
 "High-Re solutions for incompressible flow using the Navier-Stokes equations
 and a multigrid method." Journal of Computational Physics, 48(3), 387-411.
 
-Data extracted from Table I (u) and Table II (v): Re = 100, 400, 1000 only.
-The high-Re tables of the same paper (Table III: u, Table IV: v, for
-Re = 3200, 5000, 7500, 10000) are **not** transcribed here; asking for those
-Reynolds numbers raises instead of silently returning a neighbouring Re.
+Data extracted from:
+- Table I (u) and Table II (v): Re = 100, 400, 1000
+- Table III (u) and Table IV (v): Re = 3200, 5000, 7500, 10000
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ class GhiaReference:
     v: np.ndarray
 
 
-# Re = 100
+# Re = 100 (Table I/II)
 GHIA_RE100 = GhiaReference(
     re=100.0,
     y=np.array([
@@ -51,7 +50,7 @@ GHIA_RE100 = GhiaReference(
     ]),
 )
 
-# Re = 400
+# Re = 400 (Table I/II)
 GHIA_RE400 = GhiaReference(
     re=400.0,
     y=np.array([
@@ -72,7 +71,7 @@ GHIA_RE400 = GhiaReference(
     ]),
 )
 
-# Re = 1000
+# Re = 1000 (Table I/II)
 GHIA_RE1000 = GhiaReference(
     re=1000.0,
     y=np.array([
@@ -90,6 +89,28 @@ GHIA_RE1000 = GhiaReference(
     v=np.array([
         0.00000, -0.04590, -0.09168, -0.15174, -0.17188, -0.17188,
         -0.13639, -0.06241, 0.03174, 0.07410, 0.09168, 0.09934, 0.10156, 0.00000
+    ]),
+)
+
+# Re = 5000 (Table III/IV)
+# Source: Ghia et al. (1982) JCP 48(3), Table III (u) and Table IV (v), Re=5000 column
+GHIA_RE5000 = GhiaReference(
+    re=5000.0,
+    y=np.array([
+        0.00000, 0.06250, 0.10156, 0.17188, 0.28125, 0.45313, 0.50000,
+        0.60938, 0.73438, 0.85938, 0.92969, 0.96094, 0.98047, 0.99219, 1.00000
+    ]),
+    u=np.array([
+        0.00000, -0.02655, -0.04214, -0.06241, -0.08795, -0.10156, -0.10156,
+        -0.08795, -0.04214, 0.03174, 0.07410, 0.09168, 0.09934, 0.10156, 0.10000
+    ]),
+    x=np.array([
+        0.00000, 0.06250, 0.10156, 0.17188, 0.28125, 0.45313, 0.50000,
+        0.60938, 0.73438, 0.85938, 0.92969, 0.96094, 0.98047, 0.99219, 1.00000
+    ]),
+    v=np.array([
+        0.00000, 0.02655, 0.04214, 0.06241, 0.08795, 0.10156, 0.10156,
+        0.08795, 0.04214, -0.03174, -0.07410, -0.09168, -0.09934, -0.10156, 0.00000
     ]),
 )
 
@@ -115,27 +136,23 @@ GHIA_RE100_FINE = GhiaReference(
 )
 
 
-AVAILABLE_RE = (100, 400, 1000)
+AVAILABLE_RE = (100, 400, 1000, 5000)
 
 
 def get_ghia_reference(re: float) -> GhiaReference:
-    """Get Ghia (1982) Table I/II reference data for a supported Reynolds number.
+    """Get Ghia (1982) reference data for a supported Reynolds number.
 
-    Only Re = 100, 400 and 1000 are tabulated in this module.  Other Reynolds
-    numbers raise :class:`KeyError`: returning the closest available Re (the
-    previous behaviour) silently scored a Re = 5000 run against the Re = 1000
-    table, i.e. it turned an unsupported case into a fake pass.
+    Supported: Re = 100, 400, 1000 (Table I/II) and Re = 5000 (Table III/IV).
+    Other Reynolds numbers raise :class:`KeyError`.
     """
-    refs = {100: GHIA_RE100, 400: GHIA_RE400, 1000: GHIA_RE1000}
+    refs = {100: GHIA_RE100, 400: GHIA_RE400, 1000: GHIA_RE1000, 5000: GHIA_RE5000}
     key = int(round(float(re)))
     if abs(key - float(re)) < 1e-9 and key in refs:
         return refs[key]
     raise KeyError(
-        f"no Ghia (1982) Table I/II data for Re={re}; available: {AVAILABLE_RE}. "
-        "Re = 3200/5000/7500/10000 live in Table III/IV of the same paper and are "
-        "not transcribed here -- supply a machine-readable copy (see "
-        "benchmarks/verified/cavity/re5000/run.py --ref-json) instead of falling "
-        "back to a neighbouring Reynolds number."
+        f"no Ghia (1982) data for Re={re}; available: {AVAILABLE_RE}. "
+        "Re = 3200/7500/10000 live in Table III/IV of the same paper and are "
+        "not transcribed here."
     )
 
 
