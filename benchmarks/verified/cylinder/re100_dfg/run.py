@@ -33,6 +33,8 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+
+import numpy as np
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -49,12 +51,16 @@ def level_path(out_dir: pathlib.Path, D: int, tag: str) -> pathlib.Path:
 
 
 def run_level(D: int, steps: int, u_mean: float, threads: int, device: str, out_dir: pathlib.Path,
-              tag: str, avg_periods: float) -> dict:
+              tag: str, avg_periods: float, field: bool = False) -> dict:
     cfg = cdfg.CaseConfig(
         D_cells=D, u_mean_lb=u_mean, n_steps=steps, avg_periods=avg_periods
     )
-    res = cdfg.run_case(cfg, device=device, threads=threads, keep_series=True)
+    res = cdfg.run_case(cfg, device=device, threads=threads, keep_series=True,
+                        keep_field=field)
     series = res.pop("series", None)
+    fld = res.pop("field", None)
+    if fld:
+        np.savez_compressed(level_path(out_dir, D, tag).with_suffix(".field.npz"), **fld)
     path = level_path(out_dir, D, tag)
     path.write_text(json.dumps(res, indent=2, default=cdfg._json_default))
     if series:
@@ -74,11 +80,21 @@ def run_level(D: int, steps: int, u_mean: float, threads: int, device: str, out_
 def aggregate(out_dir: pathlib.Path, tag: str, levels: tuple[int, ...], steps: int,
               u_mean: float, tol_pct: float) -> dict:
     grids: dict[str, dict] = {}
+    bands = cdfg.REFERENCE_BANDS["2D-2"]
     for D in levels:
         path = level_path(out_dir, D, tag)
         if not path.exists():
             continue
         res = json.loads(path.read_text())
+        # Errors are re-derived from values + bands here (never trusted from the
+        # level file): a level artifact written before a band/unit fix must not
+        # be able to carry a stale percentage into the aggregate.
+        res["err_pct"] = {
+            "cd": cdfg.band_error(res["cd"], bands["cd"])["err_pct_vs_mid"],
+            "cl_amp": cdfg.band_error(res["cl_amp"], bands["cl_amp"])["err_pct_vs_mid"],
+            "st": cdfg.band_error(res["st"], bands["st"])["err_pct_vs_mid"],
+            "dp": cdfg.band_error(res["dp"], bands["dp_half_rho_u2"])["err_pct_vs_mid"],
+        }
         grids[f"D{D}"] = {
             "nx": res["nx"],
             "ny": res["ny"],
@@ -98,7 +114,8 @@ def aggregate(out_dir: pathlib.Path, tag: str, levels: tuple[int, ...], steps: i
             "st_acf": res.get("st_acf", float("nan")),
             "st_fft": res.get("st_fft", float("nan")),
             "st_ambiguous": res.get("st_ambiguous", float("nan")),
-            "dp": res["dp"],
+            "dp": res["dp"],  # Δp/(0.5ρU²)
+            "dp_over_rho_u2": res.get("dp_over_rho_u2", res["dp"] / 2.0),  # paper units
             "dp_nearest_fluid_columns": res.get("dp_nearest_fluid_columns", float("nan")),
             "bench": res["bench"],
             # flat paths consumed by the validation matrix
@@ -159,8 +176,8 @@ def aggregate(out_dir: pathlib.Path, tag: str, levels: tuple[int, ...], steps: i
             "cd": list(ref["cd"]),
             "cl_amp": list(ref["cl_amp"]),
             "st": list(ref["st"]),
-            "dp_raw": list(ref["dp"]),
-            "dp_dimensionless": [v / 0.5 for v in ref["dp"]],
+            "dp_raw": list(ref["dp"]),  # Δp/ρU², as printed in the paper
+            "dp_half_rho_u2": list(ref["dp_half_rho_u2"]),  # comparison band (0.5ρU² units)
         },
         "tolerance": {"err_pct": tol_pct, "convergence_span_pct": 3.0,
                       "error_convention": "value vs band midpoint"},
@@ -179,7 +196,8 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--levels", type=int, nargs="+", default=list(LEVELS))
-    ap.add_argument("--steps", type=int, default=60_000)
+    ap.add_argument("--steps", type=int, nargs="+", default=[60_000],
+                    help="steps per level (one value = same for all levels)")
     ap.add_argument("--avg-periods", type=float, default=20.0)
     ap.add_argument("--u-mean", type=float, default=0.0833)
     ap.add_argument("--threads", type=int, default=4)
@@ -188,6 +206,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tol", type=float, default=5.0, help="acceptance error band, percent")
     ap.add_argument("--out-dir", default=str(HERE / "artifacts"))
     ap.add_argument("--aggregate-only", action="store_true")
+    ap.add_argument("--field", action="store_true",
+                    help="also dump the final rho/u/vorticity field (report figures)")
     a = ap.parse_args(argv)
 
     out_dir = pathlib.Path(a.out_dir)
@@ -195,8 +215,11 @@ def main(argv: list[str] | None = None) -> int:
     tag = a.tag or ("u0833" if abs(a.u_mean - 0.0833) < 1e-9 else f"u{a.u_mean:.4f}".replace(".", ""))
 
     if not a.aggregate_only:
-        for D in a.levels:
-            run_level(D, a.steps, a.u_mean, a.threads, a.device, out_dir, tag, a.avg_periods)
+        steps_for = (a.steps if len(a.steps) == len(a.levels)
+                     else [a.steps[0]] * len(a.levels))
+        for D, n_steps in zip(a.levels, steps_for):
+            run_level(D, n_steps, a.u_mean, a.threads, a.device, out_dir, tag, a.avg_periods,
+                      field=a.field)
 
     levels = tuple(sorted({*LEVELS, *a.levels}))
     result = aggregate(out_dir, tag, levels, a.steps, a.u_mean, a.tol)
