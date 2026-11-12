@@ -1,0 +1,30 @@
+{
+  "figures": [
+    {
+      "name": "wake_re200_D8.png",
+      "kind": "field",
+      "caption": "Re=200 D=8 vorticity snapshot",
+      "sha256": "19465933dec4f79275e53714946344efe4562aa57e09c9542d516911ad6116de"
+    },
+    {
+      "name": "signals_re200_D8.png",
+      "kind": "timeseries",
+      "caption": "Re=200 D=8 Cd/Cl history",
+      "sha256": "9052b2ccde5b4c0c59c5727719c648a8c11d8bf1cf9a992674c62422596daf64"
+    },
+    {
+      "name": "convergence_cd_st.png",
+      "kind": "comparison",
+      "caption": "Cd and St vs grid; dashed = verified reference rung",
+      "sha256": "052e4a725a144369408eea71196d54f2943bbe4345d98f0b4a61fbe5ef607ead"
+    },
+    {
+      "name": "reference_ladder.png",
+      "kind": "comparison",
+      "caption": "measured error vs tolerance per reference row",
+      "sha256": "1a9ab4ccfc0b3ac4c4b52b27e5bd1ff4fa0d82a58ca7bf306cc501437d55b301"
+    }
+  ],
+  "runs_dir": "runs/m16410_square_cyl_re200",
+  "reference_file": "/root/tp-agent/work/m16410/benchmarks/verified/square_cylinder_re200/reference.json"
+}

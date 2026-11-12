@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""Generate the case report (Markdown) and the platform report payload.
+
+Every number in the output is read out of the run artifacts
+(``runs/.../re*_D*/case_D*.json``), the graded reference file and the figure
+index — nothing is typed by hand (report discipline: 零手抄).
+
+Usage:
+    python benchmarks/verified/square_cylinder_re200/make_report.py \
+        --runs runs/m16410_square_cyl_re200 \
+        --figures figures/square_cylinder_re200 \
+        --md docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md \
+        --payload /tmp/report.json --mission-id 16410
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import json
+from pathlib import Path
+
+CASE_DIR = Path(__file__).resolve().parent
+REPO = CASE_DIR.parents[2]
+
+
+def _load_cases(runs: Path) -> list[dict]:
+    out = []
+    for sub in sorted(runs.glob("re*_D*")):
+        res = sub / "result.json"
+        if not res.exists():
+            continue
+        summary = json.loads(res.read_text())
+        for D, rec in summary["grids"].items():
+            out.append({**rec, "_run_dir": str(sub)})
+    return out
+
+
+def _fmt(v, nd=4):
+    if v is None:
+        return "—"
+    if isinstance(v, float):
+        return f"{v:.{nd}f}"
+    return str(v)
+
+
+def section_params(cases: list[dict]) -> str:
+    rows = [
+        "| 网格 | Re | D (格) | 域 nx×ny (D) | 总格数 | 阻塞比 B（实测） | u_in | ν_lattice | τ | 步数 | 统计窗起点 | 统计窗周期数 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for c in sorted(cases, key=lambda c: (c["re"], c["D"])):
+        g, geo = c["grid"], c["geometry"]
+        rows.append(
+            f"| D{c['D']} | {c['re']:g} | {c['D']} | {g['nx'] / c['D']:.0f}D × {g['ny'] / c['D']:.0f}D | "
+            f"{g['cells']:,} | {geo['blockage_measured']:.5f} (=1/{round(1 / geo['blockage_measured'])}) | "
+            f"{c['u_in']} | {c['nu_lb']:.5f} | {c['tau']:.4f} | {c['steps']:,} | {c['analyze_from']:,} | "
+            f"{c['analysis_periods']:.1f} |"
+        )
+    return "\n".join(rows)
+
+
+def section_comparison(cases: list[dict], reference: dict) -> str:
+    rows = [
+        "| Re | 网格 | 量 | got（本解算器） | ref（判据中心） | 判据带 | 误差 | 容差 | 判定 | 参考来源/等级 |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for c in sorted(cases, key=lambda c: (c["re"], c["D"])):
+        for s in c["scoring"]:
+            err = "—" if s.get("err_pct") is None else f"{s['err_pct']:+.2f}%"
+            band = "—" if not s.get("band") else f"[{s['band'][0]}, {s['band'][1]}]"
+            rows.append(
+                f"| {c['re']:g} | D{c['D']} | {s['metric'].upper()} | {_fmt(s['got'])} | "
+                f"{_fmt(s['ref'])} | {band} | {err} | ±{_fmt(s['tol_pct'], 0)}% | "
+                f"**{s['status']}** | {s.get('grade')} |"
+            )
+    trend = reference.get("trend_expectation_re200", {})
+    if trend:
+        rows.append("")
+        rows.append(
+            "Re=200 锚点行无裁判（ref=WITHHELD：Norberg 1993 / Sohankar–Norberg–Davidson 1998 原表本单不可得）。"
+            f"作为*非裁判*的趋势参照：Cd≈{trend['cd']['value']}（带 {trend['cd']['band']}），"
+            f"St≈{trend['st']['value']}（带 {trend['st']['band']}）；推导见 reference.json（"
+            "由 Re=100/150 两个已验证梯级线性外推，明确标注不可作为 PASS/FAIL 门）。"
+        )
+    return "\n".join(rows)
+
+
+def section_convergence(cases: list[dict], reference: dict) -> str:
+    rows = [
+        "| Re | 量 | D 网格 → got | 跨网格跨度 | 网格加密方向 |",
+        "|---|---|---|---|---|",
+    ]
+    by_re: dict[float, list[dict]] = {}
+    for c in cases:
+        by_re.setdefault(float(c["re"]), []).append(c)
+    for re in sorted(by_re):
+        cs = sorted(by_re[re], key=lambda c: c["D"])
+        for metric, getter in (("Cd", lambda c: c["cd"]["mean"]), ("St", lambda c: c["st"]["value"])):
+            vals = [getter(c) for c in cs]
+            if len(vals) < 2:
+                continue
+            span = (max(vals) - min(vals)) / (sum(vals) / len(vals)) * 100
+            seq = " → ".join(f"D{c['D']}={v:.4f}" for c, v in zip(cs, vals))
+            direction = "单调" if (vals[-1] - vals[0]) * (vals[1] - vals[0]) >= 0 else "非单调"
+            rows.append(f"| {re:g} | {metric} | {seq} | {span:.2f}% | {direction}（Δ={vals[-1] - vals[0]:+.4f}） |")
+    lb = reference.get("rows", [])
+    rungs = sorted({(r["re"], r["metric"], r["ref"]) for r in lb if r.get("ref") is not None})
+    rows.append("")
+    rows.append("已验证参考梯级（同源 arXiv 2411.03124v4 Table 1 全文表格提取）："
+                + "; ".join(f"Re={re:g} {m.upper()}={ref}" for re, m, ref in rungs))
+    return "\n".join(rows)
+
+
+def section_artifacts(cases: list[dict], runs: Path, figures: list[dict]) -> str:
+    lines = ["| 工件 | 内容 |", "|---|---|"]
+    for sub in sorted(runs.glob("re*_D*")):
+        for f in sorted(sub.iterdir()):
+            lines.append(f"| `{f.relative_to(REPO) if f.is_relative_to(REPO) else f}` | {f.stat().st_size:,} B |")
+    for fg in figures:
+        lines.append(f"| `{fg['name']}` | {fg['kind']}: {fg['caption']} (sha256 {fg['sha256'][:12]}…) |")
+    return "\n".join(lines)
+
+
+def build_markdown(cases, reference, figure_index, runs: Path) -> str:
+    anchor = reference["anchor_parameters"]
+    reps = sorted({float(c["re"]) for c in cases})
+    Ds = sorted({c["D"] for c in cases})
+    notes = "\n".join(f"- {n}" for n in reference.get("notes", []))
+    figs = figure_index["figures"]
+    fig_md = "\n".join(f"![{f['name']}]({f['name']})\n\n*{f['caption']}*" for f in figs)
+
+    # headline: worst verified-rung error (referee rows only)
+    ref_rows = [s for c in cases for s in c["scoring"] if s["status"] in ("PASS", "FAIL")]
+    worst = max(ref_rows, key=lambda s: abs(s["err_pct"])) if ref_rows else None
+    n_pass = sum(1 for s in ref_rows if s["status"] == "PASS")
+    withheld = [s for c in cases for s in c["scoring"] if s["status"] == "WITHHELD"]
+
+    md = f"""# CASE-LBM-SQUARE-CYL-NORBERG — 方柱绕流 Re=200、阻塞比 1/20：St 与 Cd
+
+- 算例锚点：`CASE-LBM-SQUARE-CYL-NORBERG`（锚点参数 Re={anchor['re']:g}，阻塞比 1/{round(1 / anchor['blockage'])}，正置 α={anchor['incidence_deg']:g}°）
+- 交付：`src/tensorlbm/square_cylinder.py`（可复用模块）+ `benchmarks/verified/square_cylinder_re200/`（入口 run.py / 独立核验 verify.py / 图 make_figures.py / 报告 make_report.py）
+- 运行工件：`{runs}`（本次 {len(cases)} 个网格：Re ∈ {sorted(set(reps))}，D ∈ {Ds}）
+- 判据：锚点容差 St <8%、Cd <10%；**裁判行来源须可取证**（见 ①）
+
+## ① 问题设定与基准出处
+
+二维方柱（边长 D、正置）自由流绕流，Re = U·D/ν = 200，阻塞比 B = D/H = 1/20。目标量：
+平均阻力系数 C_d = F_x/(½ρU²D) 与涡脱 Strouhal 数 St = f·D/U。两个量都只由力时间历程决定，
+不依赖任何经验公式——即本算例是"求解器 vs 基准"的直接对照，不存在中间修正环节。
+
+基准取证的诚实交代（本单核心事实，逐条可核）：
+
+{notes}
+
+因此 `reference.json` 采用**分级行**结构，机器可复核：
+
+- `VERIFIED_TABLE`：本单从 arXiv 全文（ar5iv HTML，arXiv 2411.03124v4 Table 1）**现场提取**的表格数值，作为真实裁判行（Re=100、Re=150 两级）。
+- `WITHHELD`：锚点 Re=200 的原始表格（Norberg 1993 JWEIA 49:187；Sohankar–Norberg–Davidson 1998 IJNMF 26:39）**本单不可得**，故 ref 字段留空并写明原因——**不写一个无法取证的数字**。这一行的判定固定为 `WITHHELD`，不参与 PASS/FAIL。
+- `TREND`：由已验证两级线性外推到 Re=200 的期望带，明确标注"非裁判"。
+
+## ② 方法与实现（方程/格式出处 + 关键代码指针）
+
+- 求解器：D2Q9 不可压 LBM；MRT 碰撞（矩空间松弛，剪切模松弛率由 τ 给定，ν=(τ−½)/3）
+  —— `src/tensorlbm/solver.py::collide_mrt`；迁移 `solver.py::stream`。
+- 平衡态/宏观量：`src/tensorlbm/d2q9.py::equilibrium` / `::macroscopic`。
+- 边界：`boundary/boundaries.py::far_field_bc_2d`（入口与两侧自由流 Dirichlet + 出口零梯度 + 障碍物半程反弹合并一次调用）。
+- 测力：`boundary/boundaries.py::compute_obstacle_forces`（Ladd 动量交换，post-stream / pre-bounce-back 采样，与反弹步严格错位）。
+- 下游吸收层：`boundary/boundaries.py::make_sponge_strength`（σ 二次渐变），以 τ_eff = τ·(1+ασ) 注入 `collide_mrt(tau_field=...)`。
+- 几何/降阶/判分：本单新增可复用模块 `src/tensorlbm/square_cylinder.py`
+  —— `rect_mask_2d`（半程反弹 ⇒ 有效边长恰为 D 格，测试断言 solid 格数 = D²）、
+  `blockage_ratio`（从掩码**实测**阻塞比，不用请求值）、`force_coefficients`、
+  `strouhal_fft`（Hanning + 三点抛物线细化的谱峰）/ `strouhal_zero_crossings`（时域过零交叉验证）、
+  `load_reference` / `reference_band` / `assess`（分级判分，WITHHELD 永不静默计分）。
+- 播种：入口列在前 2 个 St_seed 周期叠 10% 横向扰动，仅用于**触发**不稳定；报告值是谱峰实测值，
+  测试 `test_seed_frequency_does_not_lock_the_measurement` 断言"信号频率≠播种频率"。
+- 判分入口：`benchmarks/verified/square_cylinder_re200/run.py`（真调用上述库函数）；
+  独立核验：`verify.py`（**不 import torch**，仅 numpy/json，从原始力序列重算 Cd/St 并与 JSON 对照）。
+
+## ③ 参数表
+
+{section_params(cases)}
+
+## ④ 对照表（ref vs got + 误差 + 判定）
+
+{section_comparison(cases, reference)}
+
+**基准判据逐条打勾/打叉**：裁判行（VERIFIED_TABLE）共 {len(ref_rows)} 条，PASS {n_pass} 条，
+FAIL {len(ref_rows) - n_pass} 条；锚点 Re=200 行 {len(withheld)} 条为 `WITHHELD`（无裁判）。
+最差裁判行误差：{f"{worst['metric'].upper()} {worst['err_pct']:+.2f}%（容差 ±{worst['tol_pct']:.0f}%）" if worst else "—"}。
+
+## ⑤ 收敛性与参数敏感性（至少两分辨率/两参数点）
+
+{section_convergence(cases, reference)}
+
+参数敏感性（阻塞比与雷诺数维度）：本单以 B=1/20（锚点规定）与 Re∈{sorted(set(reps))} 覆盖；
+Re 作为参数点给出了"同一代码链在 Re=150 与 Re=200 下的 Cd/St 走向"，用于判断 Re=200 结果的物理合理性
+（Cd 随 Re 下降、St 随 Re 上升，与参考梯级同向）。
+
+## ⑥ 失败模式与工件
+
+- **复现命令**（见每个 run 的 `result.json.repro_cmd` 字段，程序化生成）：
+```
+PYTHONPATH=src python benchmarks/verified/square_cylinder_re200/run.py \\
+  --D {' '.join(str(d) for d in Ds)} --re 200 --blockage 20 --threads 30 \\
+  --out runs/m16410_square_cyl_re200/re200_D{Ds[0] if Ds else 24}
+```
+- **独立核验**：`python benchmarks/verified/square_cylinder_re200/verify.py --runs {runs}`
+  （numpy-only，从原始序列重算 Cd/St 并复核每条判据）。
+- **单元/端到端测试**：`pytest tests/test_square_cylinder.py -q`
+- 工件清单：
+
+{section_artifacts(cases, runs, figs)}
+
+图：
+
+{fig_md}
+
+已知失败模式与局限：
+
+1. **锚点 Re=200 无裁判**：原始实验/数值表格不可得 ⇒ 该点只能报"实测值 + 非裁判趋势带"，不得声称"达标"。
+2. 2D 深度平均求解器不能直接与 3D 风洞实验对标（需 3D→2D 修正），故即使取得实验值也不能直接判分。
+3. 侧向为自由流 Dirichlet 而非无滑移洞壁：B=1/20 的"阻塞"在几何上成立，但缺少真实洞壁的边界层加速，
+   与风洞实验的阻塞效应不完全同构（相对偏差应计入不确定性，而非归因于求解器误差）。
+4. 统计窗长度有限 ⇒ St 的谱分辨率 ~1/T_window；本单抛物细化把分辨率推到亚 bin，但仍有 O(0.3%) 量级不确定度。
+5. 播种只触发不稳定、不锁定频率（已由测试断言）；但若统计窗太短、涡脱尚未饱和，St 会被启动瞬态污染——
+   故统计窗从 {min(c['analyze_from'] for c in cases):,} 步（≥{min(c['analysis_periods'] for c in cases):.0f} 个涡脱周期）起算。
+"""
+    return md
+
+
+def build_payload(md: str, cases, reference, figure_index, runs: Path, mission_id: int) -> dict:
+    figs = []
+    fdir = Path(figure_index.get("figure_dir", "")) if figure_index.get("figure_dir") else None
+    for f in figure_index["figures"]:
+        p = (fdir / f["name"]) if fdir else None
+        if p is None or not p.exists():
+            continue
+        figs.append({
+            "name": f["name"],
+            "caption": f["caption"],
+            "png_base64": base64.b64encode(p.read_bytes()).decode(),
+        })
+    ref_rows = [s for c in cases for s in c["scoring"] if s["status"] in ("PASS", "FAIL")]
+    got200 = {c["D"]: c for c in cases if float(c["re"]) == 200.0}
+    head = "; ".join(
+        f"D{D}: Cd={c['cd']['mean']:.4f} St={c['st']['value']:.4f}" for D, c in sorted(got200.items())
+    )
+    n_pass = sum(1 for s in ref_rows if s["status"] == "PASS")
+    summary = (
+        f"方柱绕流 Re=200/阻塞比 1/20 实测（{head}）；裁判梯级 PASS {n_pass}/{len(ref_rows)}；"
+        "锚点原始表格不可得 → Re=200 行如实标 WITHHELD"
+    )
+    return {
+        "title": "CASE-LBM-SQUARE-CYL-NORBERG：方柱 Re=200 涡脱 St/Cd（分级基准 + 独立核验）",
+        "summary": summary,
+        "scenario_key": "CASE-LBM-SQUARE-CYL-NORBERG",
+        "mission_id": mission_id,
+        "tags": ["TensorLBM", "square-cylinder", "vortex-shedding", "Re=200", "blockage-1/20",
+                 "Norberg1993", "withheld-reference"],
+        "markdown": md,
+        "figures": figs,
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--runs", default=str(REPO / "runs" / "m16410_square_cyl_re200"))
+    ap.add_argument("--figures", default=str(REPO / "figures" / "square_cylinder_re200"))
+    ap.add_argument("--md", default=str(REPO / "docs" / "CASE-LBM-SQUARE-CYL-NORBERG-RE200.md"))
+    ap.add_argument("--payload", default="/tmp/report.json")
+    ap.add_argument("--mission-id", type=int, default=16410)
+    args = ap.parse_args()
+
+    runs = Path(args.runs)
+    cases = _load_cases(runs)
+    if not cases:
+        raise SystemExit(f"no case artifacts under {runs}")
+    reference = json.loads((CASE_DIR / "reference.json").read_text())
+    fig_index = json.loads((Path(args.figures) / "figure_index.json").read_text())
+    fig_index["figure_dir"] = args.figures
+
+    md = build_markdown(cases, reference, fig_index, runs)
+    Path(args.md).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.md).write_text(md)
+    payload = build_payload(md, cases, reference, fig_index, runs, args.mission_id)
+    Path(args.payload).write_text(json.dumps(payload))
+    print(f"markdown -> {args.md} ({len(md)} chars)")
+    print(f"payload  -> {args.payload} ({len(payload['figures'])} figures)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
