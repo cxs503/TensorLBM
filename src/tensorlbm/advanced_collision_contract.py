@@ -7,8 +7,13 @@ reconstruction (its higher central moments are not implemented) and its KBC
 routine uses a caller-supplied blend rather than an entropy solve.  They are
 therefore *not* advertised here as CM/KBC kernels.
 
-BGK, TRT, and RLBM are registered as AVAILABLE for both D3Q19 and D3Q27
-because validated, contract-tested kernels exist for every combination.
+All seven families (BGK, TRT, RLBM, MRT, CM, CUMULANT, KBC) are registered as
+AVAILABLE for both D3Q19 and D3Q27 --- 14 of 14 matrix cells --- because a
+contract-tested kernel exists for every combination.  The entry points below name
+the module that actually owns each kernel: CM is served by
+:mod:`tensorlbm.cascaded_collision` (full central-moment hierarchy, not the
+second-order reconstruction in :mod:`tensorlbm.advanced_collision`), CUMULANT by
+:mod:`tensorlbm.cumulant`, and KBC by :mod:`tensorlbm.entropic_kbc`.
 """
 
 from __future__ import annotations

@@ -88,7 +88,13 @@ tests/test_suboff_static_amr_production.py::test_static_amr_checkpoint_resumes_c
 tests/test_suboff_static_amr_production.py::test_underresolved_aff8_records_component_and_area_evidence
 tests/test_suboff_static_amr_production.py::test_legacy_none_surface_observer_checkpoint_can_resume
 tests/test_suboff_static_amr_production.py::test_checkpoint_without_wall_source_version_is_rejected
-tests/test_wall_refinement_combination_gate.py::test_unavailable_collision_contract_cannot_be_promoted_by_baseline_shape
+# 2026-11-12 (m16911): the node id below was burned down instead of fixed-in-place.
+# Its expectation had drifted: collision_capability_matrix() now marks CM AVAILABLE for
+# D3Q19/D3Q27, so no enum-expressible family can reach WITHHELD_UNSUPPORTED_COLLISION and
+# the guard was dead *and* never reported by CI. The test now injects a withdrawn matrix
+# (the only route to the branch) and a reachability sweep covers all 9 WITHHELD codes.
+# Evidence: artifacts/wall_refinement_gate/falsifiability_audit.json,
+#           docs/AUDIT_WALL_REFINEMENT_GATE_FALSIFIABILITY.md
 
 # --- batch 3 (partially burned down 2026-11-03): tests/test_lbm_step.py.
 # The four wall-function equivalence entries of this batch are FIXED and removed. The
