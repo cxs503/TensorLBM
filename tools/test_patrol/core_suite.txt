@@ -1,0 +1,47 @@
+# Core test-suite manifest (frozen) - TensorLBM test-baseline patrol
+# Source: m14496 AUDIT-RUNTEST-6 deterministic sample (ls tests/test_*.py | sort | awk 'NR%20==1')
+# + tests/test_poiseuille_wallmodel_arms.py. FROZEN on purpose: re-sampling with NR%20==1
+# re-shuffles as files are added, so a frozen list is what makes patrols comparable.
+tests/test_accuracy_recommendation.py
+tests/test_ai4s_flagship.py
+tests/test_amr_regression_equivalence.py
+tests/test_assess_pressure_gradient_wall_channel.py
+tests/test_bfl_sparse.py
+tests/test_cavitation_chain.py
+tests/test_collision_auto_discovery.py
+tests/test_config_io.py
+tests/test_cumulant_d3q19.py
+tests/test_d3q27.py
+tests/test_dam_break_3d_gpu_cpu.py
+tests/test_dg_verification.py
+tests/test_entropic_kbc_viscosity.py
+tests/test_flat_plate_convergence.py
+tests/test_free_surface_closure_experiment.py
+tests/test_free_surface_surface_tension.py
+tests/test_gas_layer.py
+tests/test_hpc_lsf.py
+tests/test_ice_resistance_3d.py
+tests/test_invariance.py
+tests/test_lbm_verification.py
+tests/test_lubrication_conductance.py
+tests/test_microbubble_dr.py
+tests/test_multi_gpu_d3q19_transport.py
+tests/test_nested_startup_stability.py
+tests/test_octree_shell_cadence.py
+tests/test_passive_scalar_common.py
+tests/test_poiseuille_3d_ellipse_hydraulic.py
+tests/test_propeller_benchmark.py
+tests/test_rayleigh_taylor.py
+tests/test_rotating_interior.py
+tests/test_sediment_transport.py
+tests/test_sliding_mesh_regression.py
+tests/test_sphere_cross_validation.py
+tests/test_suboff_amr_convergence.py
+tests/test_suboff_experimental_resistance.py
+tests/test_suboff_validation_runner.py
+tests/test_thermal_verification_p96w2n04.py
+tests/test_underice_drag_decomposition.py
+tests/test_voxelize.py
+tests/test_wall_refinement_combination_gate.py
+tests/test_wetting_n01.py
+tests/test_poiseuille_wallmodel_arms.py
