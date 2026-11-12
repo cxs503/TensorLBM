@@ -35,14 +35,21 @@ GRID = [
     ("g2_re100", 2, 100.0),
     ("g2_re200", 2, 200.0),
     ("g2_re400", 2, 400.0),
+    # reduced ladder used when the fine grids do not fit the wall-clock budget
+    # (h_in = 26, s = 25 -> ER = 51/26 = 1.9615, +1.0 % vs the measured 1.9423)
+    ("h1_re100", 0.5, 100.0),
+    ("h1_re200", 0.5, 200.0),
+    ("h1_re400", 0.5, 400.0),
 ]
 
 
-def build_config(tag: str, scale: int, re: float, steps: int = 90000) -> ArmalyConfig:
-    hi, s = armaly_geometry(scale)
+def build_config(tag: str, scale: int, re: float, steps: int = 90000, **overrides) -> ArmalyConfig:
+    hi, s = (26, 25) if scale == 0.5 else armaly_geometry(scale)
     #: u_bar is fixed by tau: keep tau >= 0.55 on every grid/Re pair
     u_bar = 0.1
-    return ArmalyConfig(re=re, hi=hi, s=s, u_bar=u_bar, n_steps=steps, tag=tag)
+    kwargs = dict(re=re, hi=hi, s=s, u_bar=u_bar, n_steps=steps, tag=tag)
+    kwargs.update({k: v for k, v in overrides.items() if v is not None})
+    return ArmalyConfig(**kwargs)
 
 
 def main(argv=None) -> int:
@@ -52,6 +59,12 @@ def main(argv=None) -> int:
     ap.add_argument("--smoke", action="store_true", help="tiny grid, 400 steps (CI sanity)")
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--out-dir", default=None)
+    ap.add_argument("--u-bar", type=float, default=None, help="mean inlet velocity (default 0.1)")
+    ap.add_argument("--l-over-h", type=float, default=None, help="downstream length / H (default 14)")
+    ap.add_argument("--up-over-hi", type=float, default=None, help="upstream length / h_in (default 4)")
+    ap.add_argument("--collision", default=None, choices=["trt", "bgk"])
+    ap.add_argument("--avg-from", type=float, default=None, help="averaging window start fraction")
+    ap.add_argument("--steady-tol", type=float, default=None, help="relative X1 drift for early stop")
     args = ap.parse_args(argv)
 
     if args.smoke:
@@ -72,7 +85,10 @@ def main(argv=None) -> int:
             tag, (scale, re) = args.preset, table[args.preset]
         else:
             raise SystemExit("need --preset/--shard/--smoke")
-        cfg = build_config(tag, scale, re, steps=args.steps or 90000)
+        cfg = build_config(tag, scale, re, steps=args.steps or 90000,
+                           u_bar=args.u_bar, l_over_h=args.l_over_h,
+                           up_over_hi=args.up_over_hi, collision=args.collision,
+                           avg_from=args.avg_from, steady_tol=args.steady_tol)
         out_dir = Path(args.out_dir) if args.out_dir else ART / tag
 
     t0 = time.time()
