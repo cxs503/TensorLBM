@@ -14,12 +14,17 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+
+from tensorlbm.array_drag_reference import array_drag_factor_from_lambda  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out"
@@ -28,7 +33,12 @@ FIG.mkdir(exist_ok=True)
 
 
 def K_hasimoto(lam: float) -> float:
-    return 1.0 / (1.0 - 2.837 * lam + 4.19 * lam**3 - 27.4 * lam**5)
+    """Hasimoto (1959) SC array correction (canonical series).
+
+    Was ``- 27.4 * lam**5`` until the 2026-11-12 audit; the term is
+    ``-27.3594 lam**6`` (``docs/ARRAY_DRAG_REFERENCE_AUDIT.md``).
+    """
+    return array_drag_factor_from_lambda(lam)
 
 
 def load(name: str) -> dict:
