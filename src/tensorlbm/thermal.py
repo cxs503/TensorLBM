@@ -330,6 +330,8 @@ def simulate_natural_convection(
     device: torch.device | str = "cpu",
     seed_t: str = "linear",
     report_every: int = 10000,
+    stop_tol_nu: float | None = None,
+    stop_patience: int = 3,
 ) -> dict[str, Any]:
     """自然对流方腔（左热右冷、上下绝热）双分布 LBM 主循环。
 
@@ -372,6 +374,7 @@ def simulate_natural_convection(
     last_resid_u = None
     last_resid_T = None
     nu_history = []
+    stopped_early = False
 
     import time
 
@@ -406,12 +409,21 @@ def simulate_natural_convection(
             ux_prev = ux.detach().clone()
             uy_prev = uy.detach().clone()
             T_prev = T.detach().clone()
+            # 稳态提前终止（可选）：连续 stop_patience 个采样 |ΔNu| < stop_tol_nu
+            if stop_tol_nu is not None and len(nu_history) > stop_patience:
+                recent = [h["nu"] for h in nu_history[-(stop_patience + 1):]]
+                if all(abs(recent[i + 1] - recent[i]) < stop_tol_nu
+                       for i in range(stop_patience)):
+                    stopped_early = True
+                    break
     elapsed = time.time() - t0
 
     rho, ux, uy, T = _macros()
     T_cpu = T.detach().cpu()
     u_mag = (ux.detach().cpu() ** 2 + uy.detach().cpu() ** 2).sqrt()
 
+    ux_cpu = ux.detach().cpu()
+    uy_cpu = uy.detach().cpu()
     nu_grad2 = nusselt_number(T_cpu, H, dT, t_hot, t_cold, mode="grad2")
     nu_grad1 = nusselt_number(T_cpu, H, dT, t_hot, t_cold, mode="grad1")
     nu_halfway = nusselt_number(T_cpu, H, dT, t_hot, t_cold, mode="halfway")
@@ -436,9 +448,17 @@ def simulate_natural_convection(
         "nu_grad1": nu_grad1["nu"],
         "nu_halfway": nu_halfway["nu"],
         "u_max": float(u_mag.max().item()),
+        "u_max_x": float(ux_cpu.max().item()),
+        "u_max_x_neg": float(ux_cpu.min().item()),
+        "v_max_y": float(uy_cpu.max().item()),
+        "v_max_y_neg": float(uy_cpu.min().item()),
+        "y_at_u_max_x": float(int(torch.argmax(ux_cpu)) // nx) / nx,
+        "x_at_v_max_y": float(int(torch.argmax(uy_cpu)) % nx) / nx,
         "T_min": float(T_cpu.min().item()),
         "T_max": float(T_cpu.max().item()),
         "nu_history": nu_history,
+        "stopped_early": stopped_early,
+        "steps_done": len(nu_history) * report_every if nu_history else 0,
     }
 
 
