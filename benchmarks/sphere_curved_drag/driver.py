@@ -61,6 +61,11 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from tensorlbm.array_drag_reference import (  # noqa: E402
+    SERIES_MAX_LAMBDA,
+    SERIES_MAX_PHI,
+    array_drag_factor_from_lambda,
+)
 from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19  # noqa: E402
 from tensorlbm.d3q19 import C, W  # noqa: E402
 from tensorlbm.drag_closure import cd_schiller_naumann  # noqa: E402
@@ -82,16 +87,27 @@ STEADY_TOL = 1.0e-2
 def hasimoto_K(lambda_: float) -> float:
     """Hasimoto (1959) drag enhancement of a sphere in a simple-cubic array.
 
-    ``F / F_Stokes = (1 - 2.837 lam + 4.19 lam^3 - 27.4 lam^5)^-1`` with
-    ``lam = a / L_cell`` (a = sphere radius).  Written in volume fraction
-    ``phi = 4 pi lam^3 / 3`` the leading term is the familiar
-    ``1.7601 phi^(1/3)`` (identity used as a unit test).
+    ``F / F_Stokes = 1 / (1 - 2.83730 lam + 4.18879 lam^3 - 27.3594 lam^6 + ...)``
+    with ``lam = a / L_cell`` (a = sphere radius).  Written in volume fraction
+    ``phi = 4 pi lam^3 / 3`` this is the locked SC series
+    ``1 - 1.7601 phi^(1/3) + phi - 1.5593 phi^2 + 3.9799 phi^(8/3) - 3.0734 phi^(10/3)``
+    (``benchmarks/verified/permeability3d/NOTES.md`` §1.6), evaluated through
+    :mod:`tensorlbm.array_drag_reference` so this instrument cannot drift from
+    the other users of the same reference.
+
+    History (2026-11-12 audit, ``docs/ARRAY_DRAG_REFERENCE_AUDIT.md``): this
+    function used to evaluate ``- 27.4 * lam**5``.  The term is
+    ``- 1.5593 phi^2 = -27.3594 lam**6``: an exponent typo that inflated the
+    confinement factor by +0.56 % at ``lam = 1/6`` (the GAP-LBM-SPHERE case)
+    and +6.8 % at ``lam = 1/4``.
     """
     lam = float(lambda_)
-    den = 1.0 - 2.837 * lam + 4.19 * lam**3 - 27.4 * lam**5
-    if den <= 0.0:
-        raise ValueError(f"Hasimoto series out of range at lambda={lam}")
-    return 1.0 / den
+    if lam < 0.0 or lam > SERIES_MAX_LAMBDA:
+        raise ValueError(
+            f"Hasimoto dilute series out of range at lambda={lam} "
+            f"(valid for 0 <= lambda <= {SERIES_MAX_LAMBDA:.4f}, phi <= {SERIES_MAX_PHI})"
+        )
+    return array_drag_factor_from_lambda(lam)
 
 
 def analytic_drag_force(u: float, R: float, nu: float, lam: float) -> float:
