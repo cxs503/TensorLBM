@@ -478,28 +478,121 @@ def zou_he_moving_lid(f: torch.Tensor, u_lid: float) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 
 
+def centreline_coordinates(n: int, wall_offset: float = 0.0) -> "list[float]":
+    """Normalised node coordinates used to compare against Ghia (1982).
+
+    The Ghia table normalises by the cavity side length ``H``, with
+    ``y = 0`` on the bottom wall and ``y = 1`` on the moving lid.  A raw
+    LBM field only carries node indices, so a *convention* is needed to
+    map index ``j`` to a physical position; :func:`compare_ghia` used to
+    hard-wire the "walls sit on the first/last node" convention
+    (``wall_offset = 0``).  Half-way bounce-back walls and Zou/He
+    boundary nodes do **not** sit on fluid nodes, so that default is only
+    one of several defensible maps, and the choice moves the reported
+    RMSE by an amount comparable to the acceptance gates (see
+    :func:`ghia_coordinate_sensitivity`).
+
+    The mapping implemented here is
+
+    .. math::  y_j = \frac{j + w}{n - 1 + 2 w}, \qquad j = 0 \ldots n-1
+
+    * ``w = 0.0``  – node 0 is ``y = 0`` and node ``n-1`` is ``y = 1``
+      (walls on boundary nodes; the historical default).
+    * ``w = 0.5``  – nodes sit at the centres of ``n`` equal cells
+      (``y_j = (j + 1/2)/n``), i.e. the wall planes lie half a cell
+      outside the node lattice — the convention of half-way bounce-back
+      walls (cf. ``d3q27_mrt_physical_validation`` which uses the same
+      ``wall_offset = 0.5`` idea).
+    * ``w = -0.5`` – wall planes lie half a cell *inside* the lattice
+      (solid wall nodes occupy rows 0 and ``n-1``).
+
+    Args:
+        n: Number of nodes along the axis (``n >= 2``).
+        wall_offset: Wall position in cell units relative to the node
+            lattice; see above.
+
+    Returns:
+        List of ``n`` normalised coordinates, monotonically increasing.
+
+    Raises:
+        ValueError: If ``n < 2`` or the mapping is degenerate
+            (``n - 1 + 2 * wall_offset <= 0``).
+    """
+    import numpy as np
+
+    if int(n) < 2:
+        msg = f"centreline_coordinates needs n >= 2, got {n}"
+        raise ValueError(msg)
+    span = float(n - 1) + 2.0 * float(wall_offset)
+    if span <= 0.0:
+        msg = f"degenerate wall_offset={wall_offset} for n={n}"
+        raise ValueError(msg)
+    return [float(v) for v in (np.arange(int(n)) + float(wall_offset)) / span]
+
+
 def compare_ghia(
     ux: torch.Tensor,
     uy: torch.Tensor,
     u_lid: float,
     reference: dict[str, list[float]],
+    wall_offset: float = 0.0,
 ) -> dict[str, float]:
     """Compare centreline velocity profiles against Ghia tabulated data.
 
     Interpolates the LBM fields at the Ghia y/x positions and returns the
     root-mean-square error (RMSE) normalised by ``u_lid``.
 
+    The Ghia tables store ``y`` (and ``v``) in *descending* y order and
+    ``x`` in ascending order; ``np.interp`` only requires the *abscissa*
+    (the node coordinates) to be increasing, so the descending reference
+    abscissa is evaluated as-is and both sides stay consistently ordered.
+    Do not sort one side only.
+
     Args:
         ux: x-velocity field of shape ``(ny, nx)``.
         uy: y-velocity field of shape ``(ny, nx)``.
-        u_lid: Lid velocity used for normalisation.
+        u_lid: Lid velocity used for normalisation (must be non-zero).
         reference: One of :data:`GHIA_RE100`, :data:`GHIA_RE400`, or
             :data:`GHIA_RE1000`.
+        wall_offset: Node-to-physical-coordinate convention, see
+            :func:`centreline_coordinates`.  ``0.0`` reproduces the
+            historical behaviour; pass the value that matches the
+            boundary treatment actually used by the run (``0.5`` for
+            walls half a cell outside the node lattice) and quote it
+            next to the error.  The reported RMSE is **not** invariant
+            under this choice.
 
+    Caveat (audited in m16339): with ``wall_offset != 0`` the table rows that
+    sit exactly on a wall (``y = 0`` and ``y = 1``, ``x = 0`` and ``x = 1``)
+    fall *outside* the node span, and ``np.interp`` clamps them to the nearest
+    node value instead of flagging them.  Those two rows then carry a
+    boundary-value error of order ``|du/dy| * h/2`` which is *not* solver
+    error; score the interior rows separately (or extrapolate explicitly) when
+    quoting a number, and always state the ``wall_offset`` used.
     Returns:
-        Dict with keys ``"rmse_u"`` and ``"rmse_v"``.
+        Dict with keys ``"rmse_u"`` and ``"rmse_v"``.  A non-finite field
+        (diverged run) yields ``nan`` for both — never a silent pass.
+
+    Raises:
+        ValueError: If the fields are not 2-D, if the reference table is
+            malformed, or if ``u_lid`` is zero/non-finite.
     """
     import numpy as np
+
+    if ux.ndim != 2 or uy.ndim != 2:
+        msg = f"ux/uy must be 2-D (ny, nx); got {tuple(ux.shape)} and {tuple(uy.shape)}"
+        raise ValueError(msg)
+    if tuple(ux.shape) != tuple(uy.shape):
+        msg = f"ux/uy shape mismatch: {tuple(ux.shape)} vs {tuple(uy.shape)}"
+        raise ValueError(msg)
+    u_lid = float(u_lid)
+    if not np.isfinite(u_lid) or u_lid == 0.0:
+        msg = f"u_lid must be finite and non-zero, got {u_lid}"
+        raise ValueError(msg)
+    for key in ("y", "u", "x", "v"):
+        if key not in reference:
+            msg = f"Ghia reference table missing key {key!r}"
+            raise ValueError(msg)
 
     ny, nx = ux.shape
 
@@ -510,18 +603,75 @@ def compare_ghia(
     # Vertical centreline: u at x = nx//2
     x_mid = nx // 2
     u_profile = ux_np[:, x_mid]  # shape (ny,)
-    y_pos = np.linspace(0.0, 1.0, ny)
+    y_pos = np.asarray(centreline_coordinates(ny, wall_offset))
     u_ghia_interp = np.interp(reference["y"], y_pos, u_profile)
     rmse_u = float(np.sqrt(np.mean((u_ghia_interp - np.array(reference["u"])) ** 2)))
 
     # Horizontal centreline: v at y = ny//2
     y_mid = ny // 2
     v_profile = uy_np[y_mid, :]  # shape (nx,)
-    x_pos = np.linspace(0.0, 1.0, nx)
+    x_pos = np.asarray(centreline_coordinates(nx, wall_offset))
     v_ghia_interp = np.interp(reference["x"], x_pos, v_profile)
     rmse_v = float(np.sqrt(np.mean((v_ghia_interp - np.array(reference["v"])) ** 2)))
 
     return {"rmse_u": rmse_u, "rmse_v": rmse_v}
+
+
+def ghia_coordinate_sensitivity(
+    reference: dict[str, list[float]],
+    n: int,
+    wall_offsets: tuple[float, ...] = (0.0, 0.5, -0.5),
+) -> dict[str, dict[str, float]]:
+    """Quantify how much the Ghia RMSE depends on the coordinate convention.
+
+    A solver that reproduces the Ghia profile *exactly* on its own nodes
+    still scores a non-zero RMSE when the metric's index-to-coordinate
+    map differs from the run's boundary convention.  This function
+    measures that floor analytically: the reference table is turned into
+    a monotone master profile, a "perfect" field is sampled at the node
+    positions of convention ``w = 0.5`` (cell-centred nodes — what a
+    half-way bounce-back run actually produces), and the error is scored
+    with each candidate map.
+
+    Args:
+        reference: Ghia table (``GHIA_RE100`` / ``GHIA_RE400`` /
+            ``GHIA_RE1000``) or any dict with the same keys.
+        n: Number of nodes along the axis (grid resolution).
+        wall_offsets: Conventions to score, see
+            :func:`centreline_coordinates`.
+
+    Returns:
+        ``{"+0.5": {"bias_u": ..., "bias_v": ...}, ...}`` keyed by the convention offset with the
+        RMSE (normalised by ``u_lid``, in the same units
+        :func:`compare_ghia` returns) of a perfect solver under that
+        convention.
+    """
+    import numpy as np
+
+    def _master(coords, values):
+        x = np.asarray(coords, dtype=float)
+        y = np.asarray(values, dtype=float)
+        order = np.argsort(x)
+        x, y = x[order], y[order]
+        try:  # monotone cubic when SciPy is available (repo default)
+            from scipy.interpolate import PchipInterpolator
+
+            f = PchipInterpolator(x, y)
+            return lambda q: f(np.clip(q, x[0], x[-1]))
+        except Exception:  # pragma: no cover - SciPy is a hard dependency of the stack
+            return lambda q: np.interp(q, x, y)
+
+    fu = _master(reference["y"], reference["u"])
+    fv = _master(reference["x"], reference["v"])
+    truth_u = np.asarray(centreline_coordinates(n, 0.5))
+    truth_v = truth_u
+    out: dict[str, dict[str, float]] = {}
+    for w in wall_offsets:
+        cand = np.asarray(centreline_coordinates(n, w))
+        bias_u = float(np.sqrt(np.mean((fu(cand) - fu(truth_u)) ** 2)))
+        bias_v = float(np.sqrt(np.mean((fv(cand) - fv(truth_v)) ** 2)))
+        out[f"{w:+.1f}"] = {"bias_u": bias_u, "bias_v": bias_v}
+    return out
 
 
 # ---------------------------------------------------------------------------
