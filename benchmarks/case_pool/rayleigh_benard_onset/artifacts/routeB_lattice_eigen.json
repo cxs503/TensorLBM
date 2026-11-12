@@ -1,0 +1,68 @@
+{
+  "route": "B",
+  "ny": 16,
+  "a": 3.141592653589793,
+  "Ra_c": 2673.4375,
+  "Ra_bracket": [
+    2668.75,
+    2678.125
+  ],
+  "Ra_c_ref": 1707.7597,
+  "gap_convention": "Ra = g_beta dT H^3/(nu alpha) with H = ny",
+  "Ra_c_routeA_convention": 1790.9942626953125,
+  "err_pct": 56.54646845220671,
+  "err_pct_routeA_convention": 4.873903670130665,
+  "n_eigen_evals": 10,
+  "history": [
+    {
+      "Ra": 1000.0,
+      "gamma_step": -0.006693165905432182
+    },
+    {
+      "Ra": 3400.0,
+      "gamma_step": 0.00228402546706609
+    },
+    {
+      "Ra": 2200.0,
+      "gamma_step": -0.0016204811737327719
+    },
+    {
+      "Ra": 2800.0,
+      "gamma_step": 0.0004289100521141896
+    },
+    {
+      "Ra": 2500.0,
+      "gamma_step": -0.0005676119429669346
+    },
+    {
+      "Ra": 2650.0,
+      "gamma_step": -6.287305502317358e-05
+    },
+    {
+      "Ra": 2725.0,
+      "gamma_step": 0.0001845747006579048
+    },
+    {
+      "Ra": 2687.5,
+      "gamma_step": 6.124766413998005e-05
+    },
+    {
+      "Ra": 2668.75,
+      "gamma_step": -7.126266962190893e-07
+    },
+    {
+      "Ra": 2678.125,
+      "gamma_step": 3.0292238592904616e-05
+    }
+  ],
+  "verdict": "ok",
+  "tau": 0.855,
+  "tau_T": 1.0,
+  "crosscheck": {
+    "route_a_ratio": 1.05,
+    "Ra_routeB_equivalent": 2676.651937959183,
+    "gamma_hat": 0.05500075438647874,
+    "expected_sigma_star_routeA": 0.0774658512485616,
+    "note": "same g_beta as Route A ratio=1.05: sigma_star_A = gamma_hat * Pr (time unit H^2/alpha vs H^2/nu); equality would confirm that the time-marched sigma is the eigen-route growth rate of the operator"
+  }
+}

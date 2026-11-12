@@ -495,7 +495,11 @@ def extrapolate_grids(chain: list[dict]) -> dict:
         "n": len(ok),
         "form": "Ra_c(ny) = Ra_inf + C/ny",
     }
-    (n1, r1), (n2, r2) = ok[-2], ok[-1]
+    # NOTE: ok holds per-grid *dicts*; unpack the two fields explicitly (a bare
+    # tuple unpack of a dict raises "too many values to unpack" and killed the
+    # production run before summary.json was ever written -- m16539 fix).
+    n1, r1 = float(ok[-2]["ny"]), float(ok[-2]["Ra_c"])
+    n2, r2 = float(ok[-1]["ny"]), float(ok[-1]["Ra_c"])
     if r2 != r1:
         out["two_point_extrapolation"] = float(r2 + (r2 - r1) / ((n2 / n1) - 1.0))
         out["two_point_err_pct"] = 100.0 * (out["two_point_extrapolation"] - RA_REF) / RA_REF
