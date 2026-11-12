@@ -154,3 +154,17 @@ s^Q 净值是**两项符号相反的抵消结果**（与 Taylor–Aris kH 抵消
 名义 0.5）。故 **s^Q 口径的「2.432% 通过」不得用于晋级**；维持 `not_verified`。
 详见 `docs/POISEUILLE_3D_ELLIPSE_REFERENCE_GEOMETRY_AUDIT.md`，门在
 `tests/test_poiseuille_3d_ellipse_digital_reference.py`（5 门，4.7 s）。
+
+## 追加（2026-11-13, mission 16685）：亚格插值反弹（Bouzidi）对照臂已补，判据未过
+
+`run_ibb.py` 在同一驱动/同一测量算子下对比 `halfway`（产线）与 `ibb`（亚格 SDF 二点 Bouzidi）两臂：
+
+| 案例 | halfway θ_sQ | ibb θ_sQ | halfway δ_a^eff | ibb δ_a^eff |
+|---|---|---|---|---|
+| 椭圆 a=8 b=4 | 2.356 % | 15.358 % | +0.252 格 | +1.175 格 |
+| 椭圆 a=20 b=10 | 10.700 % | 15.354 % | +0.682 格 | +1.531 格 |
+| 圆 R=20（对照） | 10.615 % | 4.496 % | −0.121 格 | +0.280 格 |
+
+结论：插值反弹**未**消除椭圆楼梯壁偏置（反向劣化），本目录状态维持 `❌ 未达标`；
+driver 为体积力 + x 周期，与 m6422 的速度入口驱动不同，故本记录**不覆盖**也不复现 m6422 数值。
+详见 `docs/POISEUILLE_3D_ELLIPSE_IBB_TWO_ARM_20261113.md`，表/图由 `make_ibb_figures.py` 程序化生成。
