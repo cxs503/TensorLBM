@@ -5,7 +5,7 @@ Ghia et al. (1982) JCP 48:387-411 DNS reference data.
 
 Provides:
 - Cavity solver (D2Q9 BGK, bounce-back walls, moving lid)
-- Ghia 1982 reference data (Re=100, 400, 1000, 3200, 5000, 7500, 10000)
+- Ghia 1982 reference data (Re=100, 400, 1000, 5000)
 - Verification gates (velocity profile comparison)
 - Grid convergence study
 """
@@ -21,6 +21,7 @@ from .reference_data import (
     GHIA_RE100,
     GHIA_RE400,
     GHIA_RE1000,
+    GHIA_RE5000,
 )
 from .verification import (
     VerificationResult,
@@ -37,6 +38,7 @@ __all__ = [
     "GHIA_RE100",
     "GHIA_RE400",
     "GHIA_RE1000",
+    "GHIA_RE5000",
     "VerificationResult",
     "run_single_case",
     "run_grid_convergence",
