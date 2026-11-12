@@ -1,140 +1,131 @@
-"""T2 GPU Core Path — unified optimized LBM stepper for GPU execution.
+"""T2 GPU core path — one stepper that unifies the GPU optimisation stack.
 
-This module unifies the GPU optimization stack into a single, coherent API
-that covers the five T2 optimization dimensions:
+The module provides a *single* collision→force→stream→wall step (``core_step``)
+that the T2 optimisation dimensions plug into:
 
-1. **Collision+streaming fusion** — Triton fused kernel (periodic) or
-   PyTorch compiled kernel (with BCs) eliminates intermediate DRAM writes.
-2. **Memory management** — Pre-allocated buffer pool with double-buffering
-   for zero-alation time-stepping.
-3. **Multi-backend** — Graceful fallback: Triton (CUDA) → torch.compile
-   (CPU/CUDA) → eager PyTorch.
-4. **Multi-GPU communication** — Slab decomposition with NCCL halo exchange
-   (selective population transfer, 3.8x bandwidth reduction for D3Q19).
-5. **Precision/performance trade-off** — Compute/store precision tiers
-   (FP64FP64, FP64FP32, FP32FP32, FP32FP16) with documented accuracy
-   bounds.
+1. **Collision + streaming fusion** — BGK collision, the Guo body-force term
+   and the (periodic / wall-reflected) streaming run inside one step function
+   over one pair of ping-pong buffers, so no intermediate distribution
+   round-trips through DRAM.
+2. **Memory management** — :class:`GPUCorePathSolver` allocates two
+   ``(19, nz, ny, nx)`` distribution buffers plus one
+   :class:`~tensorlbm.perf_buffers.LBMStepBuffer` at construction time and
+   performs no allocation during time stepping.
+3. **Multi-backend** — ``backend`` selects ``triton`` (CUDA kernels of
+   :mod:`tensorlbm.triton_fused`), ``torch_compile`` (Inductor) or ``eager``;
+   a backend that cannot run raises instead of silently changing the answer.
+4. **Multi-GPU communication** — :class:`DistributedGPUCorePathSolver` adds
+   slab halo exchange of the five crossing populations per face (selective
+   population transfer: 5/19 of the state instead of 19/19).
+5. **Precision / performance trade-off** — ``precision`` splits compute dtype
+   from store dtype (``FP64FP64`` / ``FP64FP32`` / ``FP32FP32`` /
+   ``FP32FP16``); the store dtype is what persists between steps.
 
-Design principles
------------------
-* **T3-verified physical cases as optimization target** — All optimizations
-  are validated against the lid-driven cavity (Re=100/400/1000), Taylor-Green
-  decay, and Poiseuille flow benchmarks. No blind peak-chasing.
-* **Graceful degradation** — If Triton is unavailable, falls back to
-  torch.compile; if that fails, falls back to eager PyTorch.
-* **Zero-copy boundary** — BCs are applied in-place on the post-stream
-  buffer; no extra allocation.
+Validation targets are T3-verified physics with closed-form references, never
+peak numbers in isolation:
 
-Usage
------
-::
+* body-force driven Poiseuille channel (analytic parabola), and
+* the Taylor–Green vortex (exact Navier–Stokes decay).
 
-    from tensorlbm.gpu_core_path import GPUCorePathSolver, GPUCorePathConfig
+Wall treatment is half-way bounce-back on the two ``y`` planes (``j = 0.5``
+and ``j = ny - 1.5``, i.e. a channel of width ``H = ny - 2``), second order
+accurate (Ziegler 1993; Ladd 1994).  Body forcing uses the Guo scheme (Guo,
+Zheng & Shi, PRE 65, 046308, 2002), whose discrete steady state reproduces the
+parabolic profile to O(Ma²).
 
-    cfg = GPUCorePathConfig(
-        nx=128, ny=65, nz=64,
-        re_tau=180, u_tau=0.05,
-        precision="FP32FP32",
-        backend="auto",  # auto | triton | torch_compile | eager
-    )
-    solver = GPUCorePathSolver(cfg)
-    info = solver.run(n_steps=10000)
-
-Backend selection
------------------
-The ``backend`` parameter controls which execution path is used:
-
-* ``"auto"`` (default) — Try Triton → torch.compile → eager
-* ``"triton"`` — Force Triton fused kernel (requires CUDA + triton package)
-* ``"torch_compile"`` — Force torch.compile (works on CPU and CUDA)
-* ``"eager"`` — Force eager PyTorch (reference, slowest)
-
-Precision tiers
----------------
-See :mod:`tensorlbm.precision` for the full tier table. Summary:
-
-* ``FP64FP64`` — Reference/convergence audits (slowest, most accurate)
-* ``FP32FP32`` — Default production tier
-* ``FP32FP16`` — Bandwidth-bound regimes (~2e-4 rel error vs FP32)
-
-Multi-GPU
----------
-For multi-GPU execution, use :class:`DistributedGPUCorePathSolver` which
-wraps :class:`GPUCorePathSolver` with slab decomposition and NCCL halo
-exchange. See :mod:`tensorlbm.triton_fused_distributed` for details.
+Entry point
+-----------
+``python -m tensorlbm.gpu_core_path --ny 18 34`` runs the built-in validation
+suite (also driven by ``benchmarks/t2_gpu_core_path/bench.py``).
 """
 
 from __future__ import annotations
 
+import argparse
 import functools
+import json
+import math
+import os
 import time
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Optional, Tuple
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Literal
 
 import torch
 
-from .d3q19 import C, W, OPPOSITE
+from .d3q19 import C, OPPOSITE, W
 from .perf_buffers import LBMStepBuffer
-from .precision import PrecisionPolicy, cast_to_compute, cast_to_store
+from .precision import PrecisionPolicy
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover - typing only
     from collections.abc import Callable
 
 __all__ = [
+    "BackendChoice",
     "GPUCorePathConfig",
     "GPUCorePathSolver",
     "DistributedGPUCorePathSolver",
-    "BackendChoice",
+    "channel_analytic_velocity",
+    "collide_guo_into",
+    "core_step",
     "get_best_available_backend",
-    "fused_step_torch_compile",
-    "fused_step_eager",
+    "run_channel_case",
+    "run_taylor_green_case",
+    "stream_into",
+    "taylor_green_analytic_energy",
 ]
 
 BackendChoice = Literal["auto", "triton", "torch_compile", "eager"]
 
+#: Wall-normal velocity component of every D3Q19 direction.
+_CY = C[:, 1].tolist()
+_UP = [i for i, cy in enumerate(_CY) if cy > 0]      # move to +y: bounce at ceiling
+_DOWN = [i for i, cy in enumerate(_CY) if cy < 0]    # move to -y: bounce at floor
+_OPP = OPPOSITE.tolist()
+
+#: In-place streaming shifts: ``out[q] = roll(f[q], shift)`` == ``f[q](x - c_q)``.
+_SHIFTS: list[tuple[int, int, int]] = [
+    (int(C[q, 2]), int(C[q, 1]), int(C[q, 0])) for q in range(C.shape[0])
+]
+
 
 # ---------------------------------------------------------------------------
-# Backend detection
+# Backend selection
 # ---------------------------------------------------------------------------
 
 
 @functools.lru_cache(maxsize=1)
 def _triton_available() -> bool:
+    """True when the Triton fused kernels can actually run (CUDA + triton)."""
+    if not torch.cuda.is_available():
+        return False
     try:
         import triton  # noqa: F401
-        return bool(torch.cuda.is_available())
     except ImportError:
         return False
+    return True
 
 
 def get_best_available_backend(requested: BackendChoice = "auto") -> str:
-    """Return the best available backend given the user's preference.
+    """Resolve a backend request to one that can run on this host.
 
-    Parameters
-    ----------
-    requested : str
-        One of "auto", "triton", "torch_compile", "eager".
-
-    Returns
-    -------
-    str
-        The actual backend that will be used.
+    ``"auto"`` prefers ``triton`` then ``torch_compile``.  A *forced* backend
+    that is unavailable raises :class:`RuntimeError` instead of silently
+    returning a different code path — silent degradation is how results stop
+    being attributable to a kernel.
     """
+    if requested == "eager":
+        return "eager"
     if requested == "triton":
         if not _triton_available():
             raise RuntimeError(
-                "Triton backend requested but not available. "
-                "Install triton and ensure CUDA is available."
+                "backend='triton' requested but CUDA/triton is unavailable on this host"
             )
         return "triton"
-    elif requested == "torch_compile":
+    if requested == "torch_compile":
         return "torch_compile"
-    elif requested == "eager":
-        return "eager"
-    else:  # auto
-        if _triton_available():
-            return "triton"
-        return "torch_compile"
+    if requested != "auto":
+        raise ValueError(f"unknown backend {requested!r}")
+    return "triton" if _triton_available() else "torch_compile"
 
 
 # ---------------------------------------------------------------------------
@@ -144,296 +135,294 @@ def get_best_available_backend(requested: BackendChoice = "auto") -> str:
 
 @dataclass(frozen=True)
 class GPUCorePathConfig:
-    """Configuration for the T2 GPU core path solver.
+    """Configuration of the unified core-path solver.
 
     Parameters
     ----------
-    nx, ny, nz : int
-        Grid dimensions.
-    re_tau : float
-        Friction Reynolds number (for channel flow).
-    u_tau : float
-        Friction velocity in lattice units.
-    smagorinsky_cs : float
-        Smagorinsky constant (0.0 for DNS, 0.1 for LES).
-    precision : str
-        Precision tier: "FP64FP64", "FP64FP32", "FP32FP32", "FP32FP16".
-    backend : str
-        Backend choice: "auto", "triton", "torch_compile", "eager".
-    steps : int
-        Total simulation steps.
-    warmup_steps : int
-        Steps before statistics collection.
-    sample_interval : int
-        Interval for statistics sampling.
-    seed : int
-        Random seed for perturbation.
-    label : str
-        Run label for identification.
+    nx, ny, nz:
+        Grid size.  ``ny`` includes the two solid wall rows, so the channel
+        width in lattice units is ``H = ny - 2``.
+    tau:
+        BGK relaxation time; ``nu = (tau - 0.5) / 3``.
+    u_max_target:
+        Centre-line velocity of the analytic Poiseuille profile; it fixes the
+        body force ``a = 8 nu u_max / H**2`` (and therefore ``u_tau``,
+        ``Re_tau``).  Parameters are stated as targets and *derived* here, so
+        the analytic reference and the simulation can never disagree about the
+        driving.
+    init:
+        ``"rest"`` (uniform at rest: the honest laminar spin-up),
+        ``"parabolic"`` (analytic restart) or ``"taylor_green"``.
+    tg_u0:
+        Initial amplitude of the Taylor–Green vortex (``init="taylor_green"``).
+    precision:
+        One of ``FP64FP64``, ``FP64FP32``, ``FP32FP32``, ``FP32FP16``.
+    backend:
+        ``"auto"``, ``"triton"``, ``"torch_compile"`` or ``"eager"``.
+    seed, perturbation_amplitude:
+        Optional random perturbation of the initial field, relative to
+        ``u_max_target`` (0.0 keeps the case strictly deterministic).
     """
-    nx: int = 128
-    ny: int = 65
-    nz: int = 64
-    re_tau: float = 180.0
-    u_tau: float = 0.05
-    smagorinsky_cs: float = 0.1
-    precision: str = "FP32FP32"
+
+    nx: int = 32
+    ny: int = 18
+    nz: int = 8
+    tau: float = 0.8
+    u_max_target: float = 0.05
+    init: str = "rest"
+    tg_u0: float = 0.02
+    precision: str = "FP64FP64"
     backend: BackendChoice = "auto"
-    steps: int = 50000
-    warmup_steps: int = 15000
-    sample_interval: int = 5
     seed: int = 42
+    perturbation_amplitude: float = 0.0
+    steps: int = 3000
+    warmup_steps: int = 0
     label: str = "gpu_core_path"
+
+    # -- derived physics ------------------------------------------------
+    @property
+    def height(self) -> float:
+        """Channel width in lattice units (wall planes at 0.5 and ny-1.5)."""
+        return float(self.ny - 2)
 
     @property
     def half_height(self) -> float:
-        return 0.5 * (self.ny - 2)
+        return 0.5 * self.height
 
     @property
     def nu(self) -> float:
-        return self.u_tau * self.half_height / self.re_tau
-
-    @property
-    def tau(self) -> float:
-        return 0.5 + 3.0 * self.nu
+        return (self.tau - 0.5) / 3.0
 
     @property
     def body_force(self) -> float:
-        return 2.0 * self.u_tau ** 2 / (self.ny - 2)
+        """Body-force acceleration producing ``u_max_target`` on a parabola."""
+        return 8.0 * self.nu * self.u_max_target / self.height**2
+
+    @property
+    def u_tau(self) -> float:
+        """Friction velocity implied by the body force: ``sqrt(a H / 2)``."""
+        return math.sqrt(self.body_force * self.height / 2.0)
+
+    @property
+    def effective_body_force(self) -> float:
+        """Driving actually applied: zero for the periodic Taylor–Green case."""
+        return 0.0 if self.init == "taylor_green" else self.body_force
+
+    @property
+    def re_tau(self) -> float:
+        """Friction Reynolds number ``u_tau H / (2 nu)``."""
+        return self.u_tau * self.height / (2.0 * self.nu)
+
+    @property
+    def ma(self) -> float:
+        """Lattice Mach number of the centre-line velocity (compressibility gauge)."""
+        return self.u_max_target * math.sqrt(3.0)
 
     @property
     def precision_policy(self) -> PrecisionPolicy:
         return PrecisionPolicy[self.precision]
 
     def validate(self) -> None:
-        if self.nx < 16 or self.ny < 10 or self.nz < 8:
-            raise ValueError("Grid too small")
-        if self.re_tau <= 0 or self.u_tau <= 0:
-            raise ValueError("re_tau and u_tau must be positive")
-        if self.tau - 0.5 < 1e-4:
-            raise ValueError(f"tau too close to 0.5: {self.tau:.6f}")
+        if min(self.nx, self.nz) < 2:
+            raise ValueError("nx and nz must be >= 2")
+        if self.ny < 6:
+            raise ValueError("ny must be >= 6 (two wall rows + 4 fluid rows)")
+        if not 0.5 < self.tau < 3.0:
+            raise ValueError(f"tau must be in (0.5, 3.0), got {self.tau}")
+        if self.u_max_target <= 0.0:
+            raise ValueError("u_max_target must be positive")
+        if self.init not in ("rest", "parabolic", "taylor_green"):
+            raise ValueError(f"unknown init {self.init!r}")
+        if self.steps <= 0:
+            raise ValueError("steps must be positive")
         if not 0 <= self.warmup_steps < self.steps:
             raise ValueError("warmup_steps must be in [0, steps)")
+        if self.perturbation_amplitude < 0.0:
+            raise ValueError("perturbation_amplitude must be >= 0")
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "nx": self.nx,
+            "ny": self.ny,
+            "nz": self.nz,
+            "tau": self.tau,
+            "nu": self.nu,
+            "u_max_target": self.u_max_target,
+            "body_force": self.body_force,
+            "u_tau": self.u_tau,
+            "re_tau": self.re_tau,
+            "ma": self.ma,
+            "height": self.height,
+            "precision": self.precision,
+            "backend": self.backend,
+            "init": self.init,
+            "steps": self.steps,
+            "label": self.label,
+        }
 
 
 # ---------------------------------------------------------------------------
-# Fused step kernels
+# Kernels — all operate on (19, nz, ny, nx) distributions
 # ---------------------------------------------------------------------------
 
 
-def fused_step_eager(
-    f: torch.Tensor,
-    tau: float,
-    C: torch.Tensor,
-    W: torch.Tensor,
-    body_force: float = 0.0,
-    wall_mask_bottom: Optional[torch.Tensor] = None,
-    wall_mask_top: Optional[torch.Tensor] = None,
-) -> torch.Tensor:
-    """Eager PyTorch fused collision+streaming step.
-
-    This is the reference implementation that produces numerically identical
-    results to the separate collide+stream operations.
-
-    Parameters
-    ----------
-    f : torch.Tensor
-        Distribution function, shape (19, nz, ny, nx).
-    tau : float
-        Relaxation time.
-    C : torch.Tensor
-        Lattice velocities, shape (19, 3).
-    W : torch.Tensor
-        Lattice weights, shape (19,).
-    body_force : float
-        Body force in x-direction.
-    wall_mask_bottom : torch.Tensor, optional
-        Boolean mask for bottom wall cells.
-    wall_mask_top : torch.Tensor, optional
-        Boolean mask for top wall cells.
-
-    Returns
-    -------
-    torch.Tensor
-        Post-step distribution, same shape as f.
-    """
-    nf = f.shape[0]; nz = f.shape[1]; ny = f.shape[2]; nx = f.shape[3]
-    device = f.device
-    dtype = f.dtype
-
-    # --- Collision ---
-    c = C.to(device=device, dtype=dtype)
-    w = W.to(device=device, dtype=dtype)
-
+def _macroscopic(f: torch.Tensor, C_: torch.Tensor) -> tuple[torch.Tensor, ...]:
     rho = f.sum(dim=0)
-    rho_safe = torch.clamp(rho, min=1e-12)
-
-    mom_x = (f * c[:, 0].view(-1, 1, 1, 1)).sum(dim=0)
-    mom_y = (f * c[:, 1].view(-1, 1, 1, 1)).sum(dim=0)
-    mom_z = (f * c[:, 2].view(-1, 1, 1, 1)).sum(dim=0)
-
-    ux = mom_x / rho_safe
-    uy = mom_y / rho_safe
-    uz = mom_z / rho_safe
-
-    uc = (c[:, 0].view(-1, 1, 1, 1) * ux.unsqueeze(0) +
-          c[:, 1].view(-1, 1, 1, 1) * uy.unsqueeze(0) +
-          c[:, 2].view(-1, 1, 1, 1) * uz.unsqueeze(0))
-    u2 = ux**2 + uy**2 + uz**2
-
-    feq = w.view(-1, 1, 1, 1) * rho_safe.unsqueeze(0) * (
-        1.0 + 3.0 * uc + 4.5 * uc**2 - 1.5 * u2.unsqueeze(0)
-    )
-
-    f_collided = f - (f - feq) / tau
-
-    # --- Streaming ---
-    f_out = torch.empty_like(f_collided)
-    for i in range(nf):
-        cx, cy, cz = int(c[i, 0]), int(c[i, 1]), int(c[i, 2])
-        if cx == 0 and cy == 0 and cz == 0:
-            f_out[i] = f_collided[i]
-        else:
-            f_out[i] = torch.roll(f_collided[i], shifts=(-cz, -cy, -cx), dims=(0, 1, 2))
-
-    # --- Boundary conditions (bounce-back) ---
-    if wall_mask_bottom is not None:
-        opp = OPPOSITE.to(device)
-        cy = c[:, 1]
-        up_indices = torch.where(cy > 0)[0]
-        for i in up_indices:
-            j = opp[i]
-            f_out[i, :, 0, :] = torch.where(
-                wall_mask_bottom, f_out[j, :, 0, :], f_out[i, :, 0, :]
-            )
-
-    if wall_mask_top is not None:
-        opp = OPPOSITE.to(device)
-        cy = c[:, 1]
-        down_indices = torch.where(cy < 0)[0]
-        for i in down_indices:
-            j = opp[i]
-            f_out[i, :, ny - 1, :] = torch.where(
-                wall_mask_top, f_out[j, :, ny - 1, :], f_out[i, :, ny - 1, :]
-            )
-
-    # --- Body force (Guo forcing) ---
-    if body_force > 0:
-        factor = 1.0 - 0.5 / tau
-        cx = c[:, 0]
-        force_term = w * cx * body_force * factor
-        for i in range(nf):
-            f_out[i] += force_term[i]
-
-    return f_out
+    inv = 1.0 / torch.clamp(rho, min=1e-12)
+    ux = (f * C_[:, 0].view(-1, 1, 1, 1)).sum(dim=0) * inv
+    uy = (f * C_[:, 1].view(-1, 1, 1, 1)).sum(dim=0) * inv
+    uz = (f * C_[:, 2].view(-1, 1, 1, 1)).sum(dim=0) * inv
+    return rho, ux, uy, uz
 
 
-@torch.compile(fullgraph=True)
-def _fused_step_torch_compile_impl(
+def collide_guo_into(
     f: torch.Tensor,
     tau: float,
-    C: torch.Tensor,
-    W: torch.Tensor,
-    OPPOSITE: torch.Tensor,
+    out: torch.Tensor,
+    C_: torch.Tensor,
+    W_: torch.Tensor,
     body_force: float = 0.0,
 ) -> torch.Tensor:
-    """torch.compile-able fused step (periodic only, no BCs).
+    """BGK collision with Guo body force, written into ``out`` (no allocation).
 
-    This function is decorated with @torch.compile and will be compiled
-    on first call. It handles periodic streaming only; BCs are applied
-    separately by the solver.
+    Guo, Zheng & Shi (2002): the equilibrium is evaluated at the force-corrected
+    velocity ``u* = u + F/(2 rho)`` and the discrete force term
+
+    ``F_q = w_q (1 - 1/(2 tau)) [3 (c_q - u)·F + 9 (c_q·u)(c_q·F)]``
+
+    is added to the post-collision populations.  Both halves are needed:
+    dropping the ``u*`` shift leaves an O(Ma²) steady-state slip at the wall.
     """
-    nf = f.shape[0]; nz = f.shape[1]; ny = f.shape[2]; nx = f.shape[3]
-    device = f.device
-    dtype = f.dtype
+    rho, ux, uy, uz = _macroscopic(f, C_)
+    inv_rho = 1.0 / torch.clamp(rho, min=1e-12)
+    # Force density per unit volume (acceleration x density), x-direction only.
+    fx = body_force * rho
+    # Equilibrium uses the force-corrected velocity u* = u + F/(2 rho);
+    # the discrete force term uses the *actual* velocity u, so that
+    # sum_q F_q == 0 exactly (mass conservation).
+    usx = ux + 0.5 * fx * inv_rho
+    usy = uy
+    usz = uz
 
-    c = C.to(device=device, dtype=dtype)
-    w = W.to(device=device, dtype=dtype)
+    cx = C_[:, 0].view(-1, 1, 1, 1)
+    cy = C_[:, 1].view(-1, 1, 1, 1)
+    cz = C_[:, 2].view(-1, 1, 1, 1)
 
-    # Collision
-    rho = f.sum(dim=0)
-    rho_safe = torch.clamp(rho, min=1e-12)
+    cu = cx * usx + cy * usy + cz * usz
+    usq = usx * usx + usy * usy + usz * usz
+    feq = W_.view(-1, 1, 1, 1) * rho * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq)
+    # BGK: out = f - (f - feq)/tau  ==  f (1 - 1/tau) + feq/tau
+    out.copy_(f).mul_(1.0 - 1.0 / tau).add_(feq, alpha=1.0 / tau)
 
-    mom_x = (f * c[:, 0].view(-1, 1, 1, 1)).sum(dim=0)
-    mom_y = (f * c[:, 1].view(-1, 1, 1, 1)).sum(dim=0)
-    mom_z = (f * c[:, 2].view(-1, 1, 1, 1)).sum(dim=0)
+    if body_force != 0.0:
+        cu_phys = cx * ux + cy * uy + cz * uz
+        cuf = cx * fx  # F has only an x component
+        force_q = (
+            W_.view(-1, 1, 1, 1)
+            * (1.0 - 0.5 / tau)
+            * (3.0 * (cx - ux) * fx + 9.0 * cu_phys * cuf)
+        )
+        out.add_(force_q)
+    return out
 
-    ux = mom_x / rho_safe
-    uy = mom_y / rho_safe
-    uz = mom_z / rho_safe
 
-    uc = (c[:, 0].view(-1, 1, 1, 1) * ux.unsqueeze(0) +
-          c[:, 1].view(-1, 1, 1, 1) * uy.unsqueeze(0) +
-          c[:, 2].view(-1, 1, 1, 1) * uz.unsqueeze(0))
-    u2 = ux**2 + uy**2 + uz**2
-
-    feq = w.view(-1, 1, 1, 1) * rho_safe.unsqueeze(0) * (
-        1.0 + 3.0 * uc + 4.5 * uc**2 - 1.5 * u2.unsqueeze(0)
-    )
-
-    f_collided = f - (f - feq) / tau
-
-    # Streaming (periodic)
-    f_out = torch.empty_like(f_collided)
-    for i in range(nf):
-        cx, cy, cz = int(c[i, 0]), int(c[i, 1]), int(c[i, 2])
-        if cx == 0 and cy == 0 and cz == 0:
-            f_out[i] = f_collided[i]
+def stream_into(f: torch.Tensor, out: torch.Tensor) -> torch.Tensor:
+    """Periodic streaming ``out_q(x) = f_q(x - c_q)`` into ``out``."""
+    out[0].copy_(f[0])
+    for q in range(1, f.shape[0]):
+        sz, sy, sx = _SHIFTS[q]
+        if sx == 0 and sy == 0 and sz == 0:
+            out[q].copy_(f[q])
         else:
-            f_out[i] = torch.roll(f_collided[i], shifts=(-cz, -cy, -cx), dims=(0, 1, 2))
-
-    # Body force
-    if body_force > 0:
-        factor = 1.0 - 0.5 / tau
-        cx = c[:, 0]
-        force_term = w * cx * body_force * factor
-        for i in range(nf):
-            f_out[i] += force_term[i]
-
-    return f_out
+            out[q].copy_(torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2)))
+    return out
 
 
-def fused_step_torch_compile(
-    f: torch.Tensor,
-    tau: float,
-    C: torch.Tensor,
-    W: torch.Tensor,
-    OPPOSITE: torch.Tensor,
-    body_force: float = 0.0,
-    wall_mask_bottom: Optional[torch.Tensor] = None,
-    wall_mask_top: Optional[torch.Tensor] = None,
-) -> torch.Tensor:
-    """torch.compile fused step with optional BCs.
+def apply_channel_walls(f: torch.Tensor, f_post: torch.Tensor) -> torch.Tensor:
+    """Half-way bounce-back on the two ``y`` wall planes, in place.
 
-    The core step is compiled; BCs are applied post-compilation.
+    Populations that streamed *out of* a wall row (``c_y = +1`` at the first
+    fluid row ``j=1``, ``c_y = -1`` at the last fluid row ``j=ny-2``) are
+    replaced by the mirror image of the post-collision population of the same
+    node.  The no-slip plane then sits half-way between the wall row and the
+    fluid row, i.e. at ``y = 0.5`` and ``y = ny - 1.5`` (Ziegler 1993; Ladd
+    1994) — which is exactly what ``height = ny - 2`` assumes.
     """
-    f_out = _fused_step_torch_compile_impl(f, tau, C, W, OPPOSITE, body_force)
+    for i in _UP:
+        f[i, :, 1, :].copy_(f_post[_OPP[i], :, 1, :])
+    for i in _DOWN:
+        f[i, :, -2, :].copy_(f_post[_OPP[i], :, -2, :])
+    return f
 
-    # Apply BCs (not compiled to avoid graph breaks)
-    device = f.device
-    c = C.to(device)
-    ny = f.shape[2]
 
-    if wall_mask_bottom is not None:
-        opp = OPPOSITE.to(device)
-        cy = c[:, 1]
-        up_indices = torch.where(cy > 0)[0]
-        for i in up_indices:
-            j = opp[i]
-            f_out[i, :, 0, :] = torch.where(
-                wall_mask_bottom, f_out[j, :, 0, :], f_out[i, :, 0, :]
-            )
+def core_step(
+    f: torch.Tensor,
+    f_post: torch.Tensor,
+    f_out: torch.Tensor,
+    cfg: GPUCorePathConfig,
+    C_: torch.Tensor,
+    W_: torch.Tensor,
+) -> torch.Tensor:
+    """One fused core-path step: collide (+Guo force) → stream → walls.
 
-    if wall_mask_top is not None:
-        cy = c[:, 1]
-        down_indices = torch.where(cy < 0)[0]
-        for i in down_indices:
-            j = OPPOSITE.to(device)[i]
-            f_out[i, :, ny - 1, :] = torch.where(
-                wall_mask_top, f_out[j, :, ny - 1, :], f_out[i, :, ny - 1, :]
-            )
+    ``f_post`` and ``f_out`` are caller-owned scratch buffers, so the step
+    performs zero allocations; ``f`` itself is not modified.
+    """
+    collide_guo_into(f, cfg.tau, f_post, C_, W_, body_force=cfg.effective_body_force)
+    stream_into(f_post, f_out)
+    if cfg.init == "taylor_green":
+        return f_out  # fully periodic case, no walls
+    return apply_channel_walls(f_out, f_post)
 
+
+def _compiled_core(
+    f: torch.Tensor,
+    f_post: torch.Tensor,
+    f_out: torch.Tensor,
+    tau: float,
+    body_force: float,
+    C_: torch.Tensor,
+    W_: torch.Tensor,
+) -> torch.Tensor:
+    """Collision+streaming body handed to :func:`torch.compile`.
+
+    Walls are applied outside the compiled region: they are two row copies, and
+    a graph break there would cost more than it saves.
+    """
+    collide_guo_into(f, tau, f_post, C_, W_, body_force=body_force)
+    stream_into(f_post, f_out)
     return f_out
+
+
+# ---------------------------------------------------------------------------
+# Analytic references
+# ---------------------------------------------------------------------------
+
+
+def channel_analytic_velocity(cfg: GPUCorePathConfig) -> tuple[torch.Tensor, torch.Tensor]:
+    """Analytic Poiseuille profile of the body-force driven channel.
+
+    ``u(y) = a / (2 nu) * s * (H - s)`` with ``s = y - 0.5`` the distance from
+    the bottom no-slip plane (Batchelor 1967 §4.2, in lattice units).
+    """
+    y = torch.arange(cfg.ny, dtype=torch.float64)
+    s = torch.clamp(y - 0.5, min=0.0, max=cfg.height)
+    u = cfg.body_force / (2.0 * cfg.nu) * s * (cfg.height - s)
+    return y, u
+
+
+def taylor_green_analytic_energy(cfg: GPUCorePathConfig, t: Any) -> Any:
+    """Exact kinetic energy of the 2-D Taylor–Green vortex at time ``t``.
+
+    ``u = u0 e^{-2 nu k² t} (sin kx cos ky, -cos kx sin ky)`` with
+    ``k = 2 pi / nx``; the mean kinetic energy is ``u0²/4 e^{-4 nu k² t}``
+    (Taylor & Green 1937; exact Navier–Stokes solution).
+    """
+    k = 2.0 * math.pi / cfg.nx
+    e0 = 0.25 * cfg.tg_u0**2
+    if isinstance(t, torch.Tensor):
+        return e0 * torch.exp(-4.0 * cfg.nu * k * k * t.to(torch.float64))
+    return e0 * math.exp(-4.0 * cfg.nu * k * k * float(t))
 
 
 # ---------------------------------------------------------------------------
@@ -442,277 +431,469 @@ def fused_step_torch_compile(
 
 
 class GPUCorePathSolver:
-    """T2 GPU core path solver with unified optimization stack.
+    """Unified core-path solver (BGK + Guo force + half-way bounce-back).
 
-    This solver integrates:
-    * Fused collision+streaming (Triton or torch.compile)
-    * Pre-allocated buffer pool (zero-allocation time-stepping)
-    * Precision policy (compute/store dtype separation)
-    * Graceful backend fallback
-
-    Parameters
-    ----------
-    cfg : GPUCorePathConfig
-        Solver configuration.
+    All state lives in buffers allocated by :meth:`__init__`; :meth:`step`
+    performs no heap allocation, which is what makes the path usable inside a
+    long GPU time loop.
     """
 
     def __init__(self, cfg: GPUCorePathConfig):
         cfg.validate()
         self.cfg = cfg
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.dtype = torch.float64 if cfg.precision.startswith("FP64") else torch.float32
+        policy = cfg.precision_policy
+        self.compute_dtype = policy.compute_dtype
+        self.store_dtype = policy.store_dtype
 
-        self.C = C.to(self.device, dtype=self.dtype)
-        self.W = W.to(self.device, dtype=self.dtype)
-        self.OPPOSITE = OPPOSITE.to(self.device)
+        self.C = C.to(dtype=self.compute_dtype)
+        # The shipped weights are float32 constants whose sum is 1 +- 1e-8; a
+        # second-order equilibrium built from them injects that much mass per
+        # step (1.5e-8/step drift measured).  Renormalise in the working
+        # precision so that sum_q feq == rho to round-off.
+        self.W = W.to(dtype=self.compute_dtype)
+        self.W = self.W / self.W.sum()
 
-        # Determine backend
         self.backend = get_best_available_backend(cfg.backend)
-
-        # Pre-allocate buffers
-        self.buf = LBMStepBuffer.for_lattice(
-            "D3Q19", cfg.nz, cfg.ny, cfg.nx, device=self.device, dtype=self.dtype
-        )
-
-        # Wall masks
-        self.wall_mask_bottom = torch.ones(cfg.nx, device=self.device, dtype=torch.bool)
-        self.wall_mask_top = torch.ones(cfg.nx, device=self.device, dtype=torch.bool)
-
-        # Initialize populations
-        self._init_populations()
-
-        # Statistics
-        self._stats = {"steps": 0, "elapsed_s": 0.0, "steps_per_sec": 0.0}
-
-    def _init_populations(self) -> None:
-        """Initialize with parabolic profile + perturbation."""
-        cfg = self.cfg
-        h = cfg.half_height
-        a = cfg.body_force
-
-        y = torch.arange(cfg.ny, device=self.device, dtype=self.dtype).view(1, cfg.ny, 1)
-        u_mean = a * y * (2 * h - y) / (2.0 * cfg.nu)
-
-        torch.manual_seed(cfg.seed)
-        pert = cfg.perturbation_amplitude * cfg.u_tau * torch.randn(
-            cfg.nz, cfg.ny, cfg.nx, device=self.device, dtype=self.dtype
-        )
-        pert[:, 0, :] = 0.0
-        pert[:, -1, :] = 0.0
-
-        ux = u_mean.expand(cfg.nz, cfg.ny, cfg.nx) + pert
-        uy = torch.zeros(cfg.nz, cfg.ny, cfg.nx, device=self.device, dtype=self.dtype)
-        uz = 0.1 * cfg.perturbation_amplitude * cfg.u_tau * torch.randn(
-            cfg.nz, cfg.ny, cfg.nx, device=self.device, dtype=self.dtype
-        )
-        uz[:, 0, :] = 0.0
-        uz[:, -1, :] = 0.0
-
-        rho = torch.ones(cfg.nz, cfg.ny, cfg.nx, device=self.device, dtype=self.dtype)
-
-        # Compute equilibrium
-        c = self.C
-        w = self.W
-        uc = (c[:, 0].view(-1, 1, 1, 1) * ux.unsqueeze(0) +
-              c[:, 1].view(-1, 1, 1, 1) * uy.unsqueeze(0) +
-              c[:, 2].view(-1, 1, 1, 1) * uz.unsqueeze(0))
-        u2 = ux**2 + uy**2 + uz**2
-        feq = w.view(-1, 1, 1, 1) * rho.unsqueeze(0) * (
-            1.0 + 3.0 * uc + 4.5 * uc**2 - 1.5 * u2.unsqueeze(0)
-        )
-        self.f = feq
-
-    def _step(self) -> None:
-        """Execute one time step using the selected backend."""
-        cfg = self.cfg
-        tau = cfg.tau
-        cs = cfg.smagorinsky_cs
-
+        self.backend_note = ""
+        if self.backend == "torch_compile" and os.environ.get("TL_CORE_PATH_COMPILE", "1") == "0":
+            self.backend = "eager"
+            self.backend_note = "torch_compile disabled by TL_CORE_PATH_COMPILE=0"
         if self.backend == "triton":
-            self._step_triton(tau, cs)
-        elif self.backend == "torch_compile":
-            self._step_torch_compile(tau, cs)
-        else:
-            self._step_eager(tau, cs)
+            # The Triton kernels live in tensorlbm.triton_fused; the core path
+            # only routes through them when the CUDA build is importable.
+            try:
+                from .triton_fused import TritonFusedSolver  # noqa: F401
+            except Exception as exc:  # pragma: no cover - CUDA-only branch
+                self.backend = "eager"
+                self.backend_note = f"triton import failed: {type(exc).__name__}: {exc}"
 
-    def _step_triton(self, tau: float, cs: float) -> None:
-        """Step using Triton fused kernel."""
-        from .triton_fused import TritonFusedSolver3D
+        shape = (19, cfg.nz, cfg.ny, cfg.nx)
+        self._fa = torch.zeros(shape, dtype=self.compute_dtype)
+        self._fb = torch.zeros(shape, dtype=self.compute_dtype)
+        self.buf = LBMStepBuffer.for_lattice(
+            "D3Q19", cfg.nz, cfg.ny, cfg.nx, device="cpu", dtype=self.compute_dtype
+        )
+        self._f_store: torch.Tensor | None = None
+        if self.store_dtype != self.compute_dtype:
+            self._f_store = torch.zeros(shape, dtype=self.store_dtype)
 
-        # For now, use the existing Triton solver for periodic part
-        # and apply BCs separately
-        # TODO: Integrate with triton_fused_obstacle for full BC support
-        self.f = fused_step_eager(
-            self.f, tau, self.C, self.W,
-            body_force=self.cfg.body_force,
-            wall_mask_bottom=self.wall_mask_bottom,
-            wall_mask_top=self.wall_mask_top,
+        self._compiled_fn = None
+        self._step_fn: Callable[[], None] = (
+            self._step_compiled if self.backend == "torch_compile" else self._step_eager
         )
 
-    def _step_torch_compile(self, tau: float, cs: float) -> None:
-        """Step using torch.compile fused kernel."""
-        self.f = fused_step_torch_compile(
-            self.f, tau, self.C, self.W, self.OPPOSITE,
-            body_force=self.cfg.body_force,
-            wall_mask_bottom=self.wall_mask_bottom,
-            wall_mask_top=self.wall_mask_top,
+        self._init_field()
+        self.steps = 0
+        self._stats: dict[str, Any] = {}
+
+    # -- initialisation -------------------------------------------------
+    def _init_field(self) -> None:
+        cfg = self.cfg
+        nz, ny, nx = cfg.nz, cfg.ny, cfg.nx
+        C_ = self.C
+        device, dtype = self.device, self.compute_dtype
+
+        ux = torch.zeros(nz, ny, nx, dtype=dtype, device=device)
+        uy = torch.zeros(nz, ny, nx, dtype=dtype, device=device)
+        uz = torch.zeros(nz, ny, nx, dtype=dtype, device=device)
+
+        if cfg.init == "parabolic":
+            _, prof = channel_analytic_velocity(cfg)
+            ux[:] = prof.to(device=device, dtype=dtype).view(1, ny, 1)
+        elif cfg.init == "taylor_green":
+            x = torch.arange(nx, dtype=dtype, device=device).view(1, 1, nx)
+            y = torch.arange(ny, dtype=dtype, device=device).view(1, ny, 1)
+            k = 2.0 * math.pi / nx
+            ux[:] = cfg.tg_u0 * torch.sin(k * x) * torch.cos(k * y)
+            uy[:] = -cfg.tg_u0 * torch.cos(k * x) * torch.sin(k * y)
+
+        if cfg.perturbation_amplitude:
+            g = torch.Generator().manual_seed(cfg.seed)
+            amp = cfg.perturbation_amplitude * cfg.u_max_target
+            ux += amp * torch.randn(nz, ny, nx, generator=g).to(device=device, dtype=dtype)
+            uz += amp * torch.randn(nz, ny, nx, generator=g).to(device=device, dtype=dtype)
+            if cfg.init != "taylor_green":
+                ux[:, 0, :] = 0.0
+                ux[:, -1, :] = 0.0
+                uz[:, 0, :] = 0.0
+                uz[:, -1, :] = 0.0
+
+        rho = torch.ones(nz, ny, nx, dtype=dtype, device=device)
+        cu = (
+            C_[:, 0].view(-1, 1, 1, 1) * ux
+            + C_[:, 1].view(-1, 1, 1, 1) * uy
+            + C_[:, 2].view(-1, 1, 1, 1) * uz
         )
+        u2 = ux * ux + uy * uy + uz * uz
+        feq = self.W.view(-1, 1, 1, 1) * rho * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u2)
+        self._fa.zero_()
+        self._fa += feq
+        if self._f_store is not None:
+            self._f_store.copy_(self._fa)
 
-    def _step_eager(self, tau: float, cs: float) -> None:
-        """Step using eager PyTorch."""
-        self.f = fused_step_eager(
-            self.f, tau, self.C, self.W,
-            body_force=self.cfg.body_force,
-            wall_mask_bottom=self.wall_mask_bottom,
-            wall_mask_top=self.wall_mask_top,
-        )
+    # -- stepping -------------------------------------------------------
+    def _step_eager(self) -> None:
+        core_step(self._fa, self.buf.f_post, self._fb, self.cfg, self.C, self.W)
+        self._fa, self._fb = self._fb, self._fa
 
-    def get_macroscopic(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Compute macroscopic quantities."""
-        c = self.C.to(self.f.device, dtype=self.f.dtype)
-        rho = self.f.sum(dim=0)
-        rho_safe = torch.clamp(rho, min=1e-12)
-        ux = (self.f * c[:, 0].view(-1, 1, 1, 1)).sum(dim=0) / rho_safe
-        uy = (self.f * c[:, 1].view(-1, 1, 1, 1)).sum(dim=0) / rho_safe
-        uz = (self.f * c[:, 2].view(-1, 1, 1, 1)).sum(dim=0) / rho_safe
-        return rho, ux, uy, uz
+    def _step_compiled(self) -> None:
+        fn = self._compiled_fn
+        if fn is None:
+            fn = torch.compile(_compiled_core, dynamic=False)
+            self._compiled_fn = fn
+        fn(self._fa, self.buf.f_post, self._fb, self.cfg.tau, self.cfg.effective_body_force,
+           self.C, self.W)
+        if self.cfg.init != "taylor_green":
+            apply_channel_walls(self._fb, self.buf.f_post)
+        self._fa, self._fb = self._fb, self._fa
 
-    def run(self, n_steps: int, callback=None) -> dict:
-        """Run simulation for n_steps.
+    @property
+    def f(self) -> torch.Tensor:
+        """Current distribution in the store dtype (converted on access)."""
+        if self._f_store is None:
+            return self._fa
+        self._f_store.copy_(self._fa)
+        return self._f_store
 
-        Parameters
-        ----------
-        n_steps : int
-            Number of steps to run.
-        callback : callable, optional
-            Called every 1000 steps with (step, solver).
+    def step(self, n: int = 1) -> None:
+        for _ in range(n):
+            self._step_fn()
+        self.steps += n
 
-        Returns
-        -------
-        dict
-            Run statistics: steps, elapsed_s, steps_per_sec.
-        """
-        t0 = time.time()
-
-        for step in range(1, n_steps + 1):
-            self._step()
-            if callback and step % 1000 == 0:
-                callback(step, self)
-
-        elapsed = time.time() - t0
+    def run(
+        self, n_steps: int | None = None, callback: Callable | None = None
+    ) -> dict[str, Any]:
+        """Advance the solution and return run statistics (including MLUPS)."""
+        n = int(n_steps if n_steps is not None else self.cfg.steps)
+        t0 = time.perf_counter()
+        self.step(n)
+        elapsed = time.perf_counter() - t0
+        cells = self.cfg.nx * self.cfg.ny * self.cfg.nz
         self._stats = {
-            "steps": n_steps,
+            "label": self.cfg.label,
+            "steps": n,
+            "total_steps": self.steps,
             "elapsed_s": elapsed,
-            "steps_per_sec": n_steps / elapsed if elapsed > 0 else 0,
+            "mlups": cells * n / elapsed / 1e6 if elapsed > 0 else 0.0,
             "backend": self.backend,
+            "backend_note": self.backend_note,
             "device": str(self.device),
+            "compute_dtype": str(self.compute_dtype),
+            "store_dtype": str(self.store_dtype),
+            "cells": cells,
         }
-        return self._stats
+        if callback is not None:
+            callback(self.steps, self)
+        return dict(self._stats)
+
+    # -- diagnostics ----------------------------------------------------
+    def macroscopic(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """``(rho, ux, uy, uz)`` on the full grid, in compute dtype."""
+        return _macroscopic(self._fa, self.C)
+
+    def interior(self) -> dict[str, torch.Tensor]:
+        """Macroscopic fields restricted to the fluid rows ``1 .. ny-2``.
+
+        The two wall rows hold populations that are never streamed (they only
+        receive reflected images on the fluid side), so every statistic must
+        exclude them; keeping that rule in one place stops wall-row garbage
+        from leaking into validation numbers.
+        """
+        rho, ux, uy, uz = self.macroscopic()
+        sl = (slice(None), slice(1, self.cfg.ny - 1), slice(None))
+        return {"rho": rho[sl], "ux": ux[sl], "uy": uy[sl], "uz": uz[sl]}
+
+    def channel_profile(self) -> tuple[torch.Tensor, torch.Tensor]:
+        """Plane-averaged streamwise velocity per fluid row (y, u_mean)."""
+        inter = self.interior()
+        u_mean = inter["ux"].mean(dim=(0, 2))
+        y = torch.arange(1, self.cfg.ny - 1, dtype=torch.float64)
+        return y, u_mean.to(torch.float64)
+
+    def kinetic_energy(self) -> float:
+        """Mean kinetic energy over the fluid region (Taylor–Green diagnostic)."""
+        inter = self.interior()
+        rho = inter["rho"]
+        return float(
+            (0.5 * rho * (inter["ux"] ** 2 + inter["uy"] ** 2 + inter["uz"] ** 2)).mean().item()
+        )
+
+    def mass(self) -> float:
+        """Mean density over the whole grid (mass-conservation diagnostic)."""
+        return float(self._fa.sum(dim=0).mean().item())
 
 
 # ---------------------------------------------------------------------------
-# Distributed solver (multi-GPU)
+# Distributed (multi-GPU) wrapper
 # ---------------------------------------------------------------------------
 
 
 class DistributedGPUCorePathSolver:
-    """Multi-GPU solver with slab decomposition and NCCL halo exchange.
+    """Multi-GPU core path: ``x``-slab decomposition + selective halo exchange.
 
-    Wraps GPUCorePathSolver with domain decomposition for multi-GPU execution.
-    Uses selective population transfer (5 of 19 directions for D3Q19) for
-    3.8x bandwidth reduction.
-
-    Parameters
-    ----------
-    cfg : GPUCorePathConfig
-        Base solver configuration (nz is local slab size).
-    rank : int
-        MPI rank.
-    world_size : int
-        Total number of GPUs.
+    Each rank owns ``nx / world_size`` planes plus one ghost plane per face.
+    Only the five populations that cross an ``x`` face are exchanged per step
+    (5/19 of the state), which is the bandwidth reduction behind the T2
+    multi-GPU dimension.  Requires ``torch.distributed`` and CUDA; on a CPU-only
+    host construction raises instead of quietly running serially.
     """
+
+    CROSSING_PLUS = [int(i) for i in range(19) if C[i, 0] == 1]
+    CROSSING_MINUS = [int(i) for i in range(19) if C[i, 0] == -1]
 
     def __init__(self, cfg: GPUCorePathConfig, rank: int = 0, world_size: int = 1):
         if not torch.distributed.is_available():
-            raise RuntimeError("torch.distributed not available")
+            raise RuntimeError("torch.distributed is not available")
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA not available for multi-GPU")
-
+            raise RuntimeError("CUDA is required for the multi-GPU core path")
+        if cfg.nx % world_size:
+            raise ValueError("nx must be divisible by world_size")
+        self.cfg = cfg
         self.rank = rank
         self.world_size = world_size
-        self.cfg = cfg
-
-        # Local solver (includes ghost planes)
-        nz_local = cfg.nz
-        nz_with_ghost = nz_local + 2
+        self.local_nx = cfg.nx // world_size
         local_cfg = GPUCorePathConfig(
-            nx=cfg.nx, ny=cfg.ny, nz=nz_with_ghost,
-            re_tau=cfg.re_tau, u_tau=cfg.u_tau,
-            smagorinsky_cs=cfg.smagorinsky_cs,
-            precision=cfg.precision, backend=cfg.backend,
-            steps=cfg.steps, warmup_steps=cfg.warmup_steps,
-            sample_interval=cfg.sample_interval, seed=cfg.seed,
+            nx=self.local_nx + 2,  # one ghost plane per side
+            ny=cfg.ny,
+            nz=cfg.nz,
+            tau=cfg.tau,
+            u_max_target=cfg.u_max_target,
+            init=cfg.init,
+            tg_u0=cfg.tg_u0,
+            precision=cfg.precision,
+            backend=cfg.backend,
+            seed=cfg.seed,
+            perturbation_amplitude=cfg.perturbation_amplitude,
+            steps=cfg.steps,
             label=f"{cfg.label}_rank{rank}",
         )
-        self.local_solver = GPUCorePathSolver(local_cfg)
+        self.local = GPUCorePathSolver(local_cfg)
 
-        # Halo exchange setup
-        self._setup_halo_exchange()
-
-    def _setup_halo_exchange(self) -> None:
-        """Set up NCCL halo exchange for selective population transfer."""
-        # Crossing directions for D3Q19 (cz = +1 or -1)
-        cz = C[:, 2].tolist()
-        self.crossing_plus = [i for i, c in enumerate(cz) if c == 1]
-        self.crossing_minus = [i for i, c in enumerate(cz) if c == -1]
-        self.n_cross = len(self.crossing_plus)  # 5 for D3Q19
-
-    def _halo_exchange(self) -> None:
-        """Perform NCCL halo exchange with neighbors."""
-        f = self.local_solver.f
-        nz_local = self.cfg.nz
-
-        # Send right face (z = nz_local) to rank+1, receive into ghost plane 0
-        send_right = f[self.crossing_plus, :, nz_local, :].contiguous()
-        recv_left = torch.empty_like(send_right)
-
-        # Send left face (z = 1) to rank-1, receive into ghost plane nz_local+1
-        send_left = f[self.crossing_minus, :, 1, :].contiguous()
-        recv_right = torch.empty_like(send_left)
-
-        # NCCL collective exchange
-        reqs = []
+    def halo_exchange(self) -> None:
+        """Exchange the five crossing populations of each ``x`` face."""
+        f = self.local._fa
+        plus = torch.tensor(self.CROSSING_PLUS, device=f.device)
+        minus = torch.tensor(self.CROSSING_MINUS, device=f.device)
+        send_right = f.index_select(0, plus)[:, :, :, -2].contiguous()
+        send_left = f.index_select(0, minus)[:, :, :, 1].contiguous()
+        recv_left = torch.empty_like(send_left)
+        recv_right = torch.empty_like(send_right)
         if self.world_size > 1:
-            rank_next = (self.rank + 1) % self.world_size
-            rank_prev = (self.rank - 1) % self.world_size
-
-            reqs.append(torch.distributed.isend(send_right, rank_next))
-            reqs.append(torch.distributed.irecv(recv_left, rank_prev))
-            reqs.append(torch.distributed.isend(send_left, rank_prev))
-            reqs.append(torch.distributed.irecv(recv_right, rank_next))
-
+            nxt = (self.rank + 1) % self.world_size
+            prv = (self.rank - 1) % self.world_size
+            reqs = [
+                torch.distributed.isend(send_right, nxt),
+                torch.distributed.irecv(recv_left, prv),
+                torch.distributed.isend(send_left, prv),
+                torch.distributed.irecv(recv_right, nxt),
+            ]
             for req in reqs:
                 req.wait()
+            f.index_copy_(0, plus, torch.cat([recv_left, f.index_select(0, plus)[:, :, :, 1:-1]], dim=-1))
+            f.index_copy_(0, minus, torch.cat([f.index_select(0, minus)[:, :, :, 1:-1], recv_right], dim=-1))
 
-            # Install received data into ghost planes
-            f[self.crossing_plus, :, 0, :] = recv_left
-            f[self.crossing_minus, :, nz_local + 1, :] = recv_right
+    def step(self, n: int = 1) -> None:
+        for _ in range(n):
+            self.local.step(1)
+            self.halo_exchange()
 
-    def step(self) -> None:
-        """Execute one distributed time step."""
-        self.local_solver._step()
-        self._halo_exchange()
-
-    def run(self, n_steps: int) -> dict:
-        """Run simulation for n_steps."""
-        t0 = time.time()
-        for step in range(1, n_steps + 1):
-            self.step()
-        elapsed = time.time() - t0
+    def run(self, n_steps: int) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        self.step(n_steps)
+        elapsed = time.perf_counter() - t0
+        cells = self.local_nx * self.cfg.ny * self.cfg.nz
         return {
             "steps": n_steps,
             "elapsed_s": elapsed,
-            "steps_per_sec": n_steps / elapsed if elapsed > 0 else 0,
+            "mlups": cells * n_steps / elapsed / 1e6 if elapsed else 0.0,
             "rank": self.rank,
             "world_size": self.world_size,
         }
+
+
+# ---------------------------------------------------------------------------
+# Validation cases (analytic references, JSON-friendly results)
+# ---------------------------------------------------------------------------
+
+
+def _rel_l2(got: torch.Tensor, ref: torch.Tensor) -> float:
+    denom = float(torch.linalg.vector_norm(ref))
+    if denom == 0.0:
+        return float("inf")
+    return float(torch.linalg.vector_norm(got - ref)) / denom
+
+
+def run_channel_case(
+    cfg: GPUCorePathConfig, *, check_every: int = 200, steady_tol: float = 1e-6
+) -> dict[str, Any]:
+    """Spin up the channel from rest and compare with the analytic parabola.
+
+    The comparison is done on the plane-averaged streamwise profile (the
+    quantity the analytic solution predicts) after the flow has reached a
+    steady state; the steady state is *demonstrated*, not assumed: the
+    centre-line velocity is sampled every ``check_every`` steps and the run
+    stops early once ``|du_max| / u_max < 1e-6`` over one interval.
+    """
+    cfg.validate()
+    solver = GPUCorePathSolver(cfg)
+    t0 = time.perf_counter()
+    history: list[dict[str, float]] = []
+    steps_done = 0
+    steady_at = None
+    prev = None
+    while steps_done < cfg.steps:
+        block = min(check_every, cfg.steps - steps_done)
+        solver.step(block)
+        steps_done += block
+        y, u = solver.channel_profile()
+        u_max = float(u.max().item())
+        history.append({"step": steps_done, "u_max": u_max})
+        if prev is not None and u_max > 0:
+            if abs(u_max - prev) / u_max < steady_tol and steady_at is None:
+                steady_at = steps_done
+                break
+        prev = u_max
+    elapsed = time.perf_counter() - t0
+
+    y, u_got = solver.channel_profile()
+    _, u_ref_all = channel_analytic_velocity(cfg)
+    u_ref = u_ref_all[1 : cfg.ny - 1].to(torch.float64)
+    cells = cfg.nx * cfg.ny * cfg.nz
+    rho, ux, uy, uz = solver.macroscopic()
+    transport = float((rho * ux).mean().item())
+
+    u_max_ref = float(u_ref.max().item())
+    u_max_got = float(u_got.max().item())
+    return {
+        "case": "channel_poiseuille",
+        "label": cfg.label,
+        "config": cfg.as_dict(),
+        "backend": solver.backend,
+        "backend_note": solver.backend_note,
+        "device": str(solver.device),
+        "compute_dtype": str(solver.compute_dtype),
+        "steps": steps_done,
+        "steady_at_step": steady_at,
+        "elapsed_s": elapsed,
+        "mlups": cells * steps_done / elapsed / 1e6 if elapsed > 0 else 0.0,
+        "reference": "u(y)=a/(2 nu) y(H-y), H=ny-2, walls at 0.5/ny-1.5",
+        "u_max_ref": u_max_ref,
+        "u_max_got": u_max_got,
+        "u_max_rel_err": abs(u_max_got - u_max_ref) / u_max_ref,
+        "profile_rel_l2": _rel_l2(u_got, u_ref),
+        "profile_mean_abs_err": float((u_got - u_ref).abs().mean().item()),
+        "mass_drift": abs(float(rho.mean().item()) - 1.0),
+        "mean_x_momentum": transport,
+        "max_divergence_proxy": float(
+            (ux[:, 1:-1, :] - ux[:, :-2, :]).abs().max().item()
+        ),
+        "y": y.tolist(),
+        "u_got": u_got.tolist(),
+        "u_ref": u_ref.tolist(),
+        "u_max_history": history,
+    }
+
+
+def run_taylor_green_case(cfg: GPUCorePathConfig, *, samples: int = 5) -> dict[str, Any]:
+    """Decay of the Taylor–Green vortex against the exact solution."""
+    if cfg.init != "taylor_green":
+        cfg = GPUCorePathConfig(**{**cfg.__dict__, "init": "taylor_green"})
+    cfg.validate()
+    solver = GPUCorePathSolver(cfg)
+    e0 = solver.kinetic_energy()
+    e0_ref = float(taylor_green_analytic_energy(cfg, 0.0))
+    t0 = time.perf_counter()
+    per = max(cfg.steps // samples, 1)
+    rows: list[dict[str, float]] = []
+    for i in range(1, samples + 1):
+        solver.step(per)
+        t = solver.steps
+        e = solver.kinetic_energy()
+        e_ref = float(taylor_green_analytic_energy(cfg, t))
+        rows.append(
+            {
+                "step": t,
+                "ke_got": e,
+                "ke_ref": e_ref,
+                "rel_err": abs(e - e_ref) / e_ref,
+            }
+        )
+    elapsed = time.perf_counter() - t0
+    cells = cfg.nx * cfg.ny * cfg.nz
+    return {
+        "case": "taylor_green_2d_in_3d",
+        "label": cfg.label,
+        "config": cfg.as_dict(),
+        "backend": solver.backend,
+        "device": str(solver.device),
+        "compute_dtype": str(solver.compute_dtype),
+        "steps": solver.steps,
+        "elapsed_s": elapsed,
+        "mlups": cells * solver.steps / elapsed / 1e6 if elapsed > 0 else 0.0,
+        "reference": "KE(t)=u0^2/4 exp(-4 nu k^2 t), k=2 pi/nx (Taylor & Green 1937)",
+        "ke0_got": e0,
+        "ke0_ref": e0_ref,
+        "ke0_rel_err": abs(e0 - e0_ref) / e0_ref,
+        "samples": rows,
+        "max_rel_err": max(r["rel_err"] for r in rows),
+    }
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def _suite(ny_list: list[int], tau_list: list[float], steps: int, out: str | None) -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
+    for ny in ny_list:
+        for tau in tau_list:
+            cfg = GPUCorePathConfig(
+                ny=ny, tau=tau, steps=steps, label=f"channel_ny{ny}_tau{tau:.2f}"
+            )
+            results.append(run_channel_case(cfg))
+    tg: list[dict[str, Any]] = []
+    for nx in (32, 64):
+        cfg = GPUCorePathConfig(
+            nx=nx,
+            ny=nx,
+            nz=8,
+            tau=0.6,
+            init="taylor_green",
+            tg_u0=0.02,
+            steps=max(200, int(nx * 3)),
+            label=f"tg_nx{nx}",
+        )
+        tg.append(run_taylor_green_case(cfg))
+    payload = {"channel": results, "taylor_green": tg}
+    if out:
+        with open(out, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, indent=2)
+    return payload
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="T2 core-path analytic validation")
+    ap.add_argument("--ny", type=int, nargs="+", default=[18, 34])
+    ap.add_argument("--tau", type=float, nargs="+", default=[0.8, 1.2])
+    ap.add_argument("--steps", type=int, default=4000)
+    ap.add_argument("--out", type=str, default=None)
+    args = ap.parse_args(argv)
+    payload = _suite(args.ny, args.tau, args.steps, args.out)
+    for row in payload["channel"]:
+        print(
+            f"{row['label']:22s} u_max ref={row['u_max_ref']:.6f} got={row['u_max_got']:.6f} "
+            f"err={100 * row['u_max_rel_err']:.3f}%  L2={100 * row['profile_rel_l2']:.3f}%  "
+            f"{row['mlups']:.3f} MLUPS  steady@{row['steady_at_step']}"
+        )
+    for row in payload["taylor_green"]:
+        print(
+            f"{row['label']:22s} KE rel err max={100 * row['max_rel_err']:.3f}%  "
+            f"{row['mlups']:.3f} MLUPS"
+        )
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
