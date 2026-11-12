@@ -1,7 +1,16 @@
-"""ASBL simulation driver for TensorLBM.
+"""ASBL simulation driver for TensorLBM -- **WITHDRAWN (audit m16154)**.
 
-Sets up and runs the Asymptotic Suction Boundary Layer simulation
-with configurable parameters for verification studies.
+Sets up and runs the Asymptotic Suction Boundary Layer simulation.
+
+.. warning:: This driver is **not a verification capability**. Audit m16154
+   (2026-11-12) measured it diverging to ``NaN`` from its own defaults
+   (nx=ny=48, U=0.1, V=0.002, nu=0.02: ``rho_min`` 1.00 -> 0.25 by step 1000,
+   all-NaN by step ~1100) because the underlying
+   :class:`~tensorlbm.boundary.suction.SuctionWallBC` was neither no-slip nor
+   conservative (see ``docs/AUDIT_m16154_SUCTION_ASBL.md``). The wall BC is now
+   gated (WITHHELD); this driver therefore opts in explicitly with
+   ``allow_unverified=True`` so that the failure stays reproducible for
+   diagnostics instead of being silently forgotten.
 """
 
 import torch
@@ -52,6 +61,7 @@ class ASBLSimulation:
         nu: float,
         max_steps: int = 50000,
         conv_tol: float = 1e-6,
+        u_wall: float = 0.0,
     ):
         self.nx = nx
         self.ny = ny
@@ -70,7 +80,14 @@ class ASBLSimulation:
         self._initialize_fields()
 
         # Boundary conditions
-        self.wall_bc = SuctionWallBC(U_inf, V_suction, self.tau, wall_y=0)
+        # No-slip at the wall is required by the ASBL exact solution
+        # u(y) = U_inf (1 - exp(-V y / nu)), whose value at y = 0 is 0.
+        # ``u_wall=U_inf`` (the pre-2026-11-12 behaviour) prescribes the free
+        # stream *at the wall* and destroys the boundary layer; it is kept
+        # reachable only as a diagnostic negative control.
+        self.wall_bc = SuctionWallBC(
+            U_inf, V_suction, self.tau, wall_y=0, u_wall=u_wall
+        )
 
         # History
         self.history = []
@@ -126,7 +143,7 @@ class ASBLSimulation:
             self.f = stream2d(self.f)
 
             # Boundary conditions
-            self.f = self.wall_bc.apply(self.f)
+            self.f = self.wall_bc.apply(self.f, allow_unverified=True)
             self.f = apply_top_free_stream(self.f, self.U_inf, self.tau)
             self.f = apply_inlet_blasius(
                 self.f, self.U_inf, self.V_suction, self.nu, 0.0, self.tau
