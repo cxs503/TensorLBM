@@ -122,6 +122,38 @@
       "value_token_check": false,
       "value_token_note": "token is the formula; the numeric value is mirrored from the frozen artifact field gamma_e_theory",
       "artifact_value_path": "benchmarks/verified/taylor_green_2d/result.json::gamma_e_theory"
+    },
+    "cylinder_dfg2d2_cd_re100": {
+      "quantity": "mean drag coefficient of the DFG 2D-2 channel cylinder, Re=100",
+      "value": 3.23,
+      "unit": "-",
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "token": "C_D = 3.2200 - 3.2400 (mid 3.2300)"
+    },
+    "cylinder_dfg2d2_clamp_re100": {
+      "quantity": "lift coefficient amplitude of the DFG 2D-2 channel cylinder, Re=100",
+      "value": 1.0,
+      "unit": "-",
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "token": "C_L amplitude = 0.9900 - 1.0100 (mid 1.0000)"
+    },
+    "cylinder_dfg2d2_st_re100": {
+      "quantity": "Strouhal number of the DFG 2D-2 channel cylinder, Re=100",
+      "value": 0.3,
+      "unit": "-",
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "token": "St = 0.2950 - 0.3050 (mid 0.3000)"
+    },
+    "cylinder_dfg2d2_dp_re100": {
+      "quantity": "pressure difference p(0.15,0.2)-p(0.25,0.2), DFG 2D-2, Re=100 (raw, rho=1,U=1)",
+      "value": 2.48,
+      "unit": "-",
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "token": "Δp = 2.4600 - 2.5000 (mid 2.4800)"
     }
   }
 }
