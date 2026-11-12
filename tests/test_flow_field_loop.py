@@ -206,6 +206,53 @@ def test_train_and_holdout_loop_end_to_end(tiny_dataset: Path):
         assert len(row["rollout"][key]["rel_l2_series"]) == 2
 
 
+def test_holdout_baselines_are_scored_in_the_target_units(tiny_dataset: Path):
+    """Regression for the m15932 board audit (baseline unit mismatch).
+
+    ``evaluate_holdout`` scores the FNO against ``y = u/u0``.  The persistence and
+    viscous-prior baselines used to be handed the *raw lattice-unit* fields, so
+    ``||u(t) - u(t+dt)/u0|| / ||u(t+dt)/u0||`` pinned both baselines at ~1/u0
+    (u0 = 0.05 -> ~1.0) no matter how good or bad they were, and the reported
+    "FNO beats persistence / viscous prior" ordering was an artefact.  This test
+    recomputes both baselines independently in u0 units and requires the
+    reported numbers to match.
+    """
+    cfg = FlowMapConfig(width=8, n_layers=2, modes=4, mlp_hidden=32, epochs=2,
+                        batch_size=4, patience=10)
+    trained = train_flow_map(
+        tiny_dataset, tiny_dataset / "m_units.pt", config=cfg,
+        train_res=[50.0, 100.0], holdout_res=[75.0], grid_n=32, log=False,
+    )
+    ev = evaluate_holdout(
+        trained["model"], tiny_dataset, train_res=[50.0, 100.0], holdout_res=[75.0],
+        grid_n=None,
+    )
+    row = ev["per_run"][0]
+    run = next(r for r in load_dataset(tiny_dataset)["runs"].values()
+               if round(float(r["re"]), 6) == 75.0)
+    u0 = run["u0"]
+    dt = run["steps"][1] - run["steps"][0]
+    n_pairs = run["ux"].shape[0] - 1
+
+    def _manual(pred_fn):
+        errs = []
+        for i in range(n_pairs):
+            ref = torch.stack([run["ux"][i + 1], run["uy"][i + 1]]) / u0
+            errs.append(_rel_l2(pred_fn(i) / u0, ref))
+        return sum(errs) / len(errs)
+
+    pers_ref = _manual(lambda i: torch.stack([run["ux"][i], run["uy"][i]]))
+    vis_ref = _manual(
+        lambda i: torch.stack(viscous_prior_step(run["ux"][i], run["uy"][i], run["nu"], dt))
+    )
+    assert row["one_step_rel_l2"]["persistence"] == pytest.approx(pers_ref, rel=1e-5)
+    assert row["one_step_rel_l2"]["viscous_prior"] == pytest.approx(vis_ref, rel=1e-5)
+    # The pre-fix signature was a baseline pinned at ~1/u0 (20x for u0=0.05);
+    # the u0-consistent number is a genuine field-change ratio.
+    assert all(err["one_step_rel_l2"]["persistence"] < 0.9 / u0
+               for err in ev["per_run"])
+
+
 def test_feedback_hands_state_back_to_the_solver(tiny_dataset: Path):
     cfg = FlowMapConfig(width=8, n_layers=2, modes=4, mlp_hidden=32, epochs=2, batch_size=4,
                         patience=10)
