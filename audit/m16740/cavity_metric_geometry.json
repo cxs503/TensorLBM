@@ -1,0 +1,524 @@
+{
+  "audit": "m16740",
+  "boundary_recipe": "bounce_back_solid_rows(bottom,left,right)@half_cell_outside+zou_he_moving_lid(top_fluid_row)",
+  "geometry": {
+    "n128": {
+      "aspect_ratio_h_y_over_h_x": 1.003968253968254,
+      "h_x": 126.0,
+      "h_y": 126.5,
+      "implied_re_ratio_x": 0.984375,
+      "implied_re_ratio_y": 0.98828125,
+      "re_length_scale_used": 128.0,
+      "x_lower": 0.5,
+      "x_upper": 126.5,
+      "y_lower": 0.5,
+      "y_upper": 127.0
+    },
+    "n192": {
+      "aspect_ratio_h_y_over_h_x": 1.0026315789473683,
+      "h_x": 190.0,
+      "h_y": 190.5,
+      "implied_re_ratio_x": 0.9895833333333334,
+      "implied_re_ratio_y": 0.9921875,
+      "re_length_scale_used": 192.0,
+      "x_lower": 0.5,
+      "x_upper": 190.5,
+      "y_lower": 0.5,
+      "y_upper": 191.0
+    },
+    "n256": {
+      "aspect_ratio_h_y_over_h_x": 1.0019685039370079,
+      "h_x": 254.0,
+      "h_y": 254.5,
+      "implied_re_ratio_x": 0.9921875,
+      "implied_re_ratio_y": 0.994140625,
+      "re_length_scale_used": 256.0,
+      "x_lower": 0.5,
+      "x_upper": 254.5,
+      "y_lower": 0.5,
+      "y_upper": 255.0
+    },
+    "n32": {
+      "aspect_ratio_h_y_over_h_x": 1.0166666666666666,
+      "h_x": 30.0,
+      "h_y": 30.5,
+      "implied_re_ratio_x": 0.9375,
+      "implied_re_ratio_y": 0.953125,
+      "re_length_scale_used": 32.0,
+      "x_lower": 0.5,
+      "x_upper": 30.5,
+      "y_lower": 0.5,
+      "y_upper": 31.0
+    },
+    "n48": {
+      "aspect_ratio_h_y_over_h_x": 1.0108695652173914,
+      "h_x": 46.0,
+      "h_y": 46.5,
+      "implied_re_ratio_x": 0.9583333333333334,
+      "implied_re_ratio_y": 0.96875,
+      "re_length_scale_used": 48.0,
+      "x_lower": 0.5,
+      "x_upper": 46.5,
+      "y_lower": 0.5,
+      "y_upper": 47.0
+    },
+    "n64": {
+      "aspect_ratio_h_y_over_h_x": 1.0080645161290323,
+      "h_x": 62.0,
+      "h_y": 62.5,
+      "implied_re_ratio_x": 0.96875,
+      "implied_re_ratio_y": 0.9765625,
+      "re_length_scale_used": 64.0,
+      "x_lower": 0.5,
+      "x_upper": 62.5,
+      "y_lower": 0.5,
+      "y_upper": 63.0
+    },
+    "n96": {
+      "aspect_ratio_h_y_over_h_x": 1.0053191489361701,
+      "h_x": 94.0,
+      "h_y": 94.5,
+      "implied_re_ratio_x": 0.9791666666666666,
+      "implied_re_ratio_y": 0.984375,
+      "re_length_scale_used": 96.0,
+      "x_lower": 0.5,
+      "x_upper": 94.5,
+      "y_lower": 0.5,
+      "y_upper": 95.0
+    }
+  },
+  "maps": {
+    "legacy_w0": "walls on the first/last node (historical default)",
+    "recipe_planes": "map implied by the BC recipe of run_lid_driven_cavity",
+    "symmetric_w+0.5": "nodes at cell centres (symmetric half-cell)"
+  },
+  "metric_floor_percent_of_u_lid": {
+    "100": {
+      "n128": {
+        "legacy_w0": {
+          "floor_u": 0.001417786566225217,
+          "floor_u_interior": 0.0015093490584855392,
+          "floor_v": 0.003920182402988734,
+          "floor_v_interior": 0.004173352858601366
+        },
+        "recipe_planes": {
+          "floor_u": 0.000380957880232911,
+          "floor_u_interior": 0.0001533954829373863,
+          "floor_v": 0.0012571102602921573,
+          "floor_v_interior": 5.9837927707731277e-05
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.011721841822377729,
+          "floor_u_interior": 0.012478853545232274,
+          "floor_v": 0.007931028510412351,
+          "floor_v_interior": 0.008443224601065441
+        }
+      },
+      "n192": {
+        "legacy_w0": {
+          "floor_u": 0.0009671536359066529,
+          "floor_u_interior": 0.0010296136700273166,
+          "floor_v": 0.0025925281047735416,
+          "floor_v_interior": 0.002759956926701233
+        },
+        "recipe_planes": {
+          "floor_u": 0.00025039971464648646,
+          "floor_u_interior": 9.272181296898309e-05,
+          "floor_v": 0.0008353528453664135,
+          "floor_v_interior": 3.148059347508807e-05
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.007727384023105405,
+          "floor_u_interior": 0.008226428489080216,
+          "floor_v": 0.005211616712646564,
+          "floor_v_interior": 0.00554818966818384
+        }
+      },
+      "n256": {
+        "legacy_w0": {
+          "floor_u": 0.0007081983622620536,
+          "floor_u_interior": 0.0007539347295038713,
+          "floor_v": 0.0019303218290394498,
+          "floor_v_interior": 0.0020549845122259116
+        },
+        "recipe_planes": {
+          "floor_u": 0.00018171932308097712,
+          "floor_u_interior": 4.8374562394836784e-05,
+          "floor_v": 0.0006254111001778067,
+          "floor_v_interior": 1.616476495377264e-05
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.005759895364830259,
+          "floor_u_interior": 0.006131876865661294,
+          "floor_v": 0.0038867439228496598,
+          "floor_v_interior": 0.00413775487811727
+        }
+      },
+      "n32": {
+        "legacy_w0": {
+          "floor_u": 0.005577030401672427,
+          "floor_u_interior": 0.0059372022464009916,
+          "floor_v": 0.017120392720430387,
+          "floor_v_interior": 0.018226049850566486
+        },
+        "recipe_planes": {
+          "floor_u": 0.0028015644204688675,
+          "floor_u_interior": 0.0025645548964281697,
+          "floor_v": 0.00528121443288268,
+          "floor_v_interior": 0.0011937101315199043
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.04909671176303995,
+          "floor_u_interior": 0.05226744098131675,
+          "floor_v": 0.03274906165021361,
+          "floor_v_interior": 0.034864038456535074
+        }
+      },
+      "n48": {
+        "legacy_w0": {
+          "floor_u": 0.0037740457192898097,
+          "floor_u_interior": 0.0040177784786448465,
+          "floor_v": 0.011150532078058592,
+          "floor_v_interior": 0.011870647877867582
+        },
+        "recipe_planes": {
+          "floor_u": 0.0011553530106663385,
+          "floor_u_interior": 0.0007038353655049128,
+          "floor_v": 0.0034262669772438716,
+          "floor_v_interior": 0.000462098554820304
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.03208083935799685,
+          "floor_u_interior": 0.03415266150344284,
+          "floor_v": 0.02229266437964562,
+          "floor_v_interior": 0.023732353510822663
+        }
+      },
+      "n64": {
+        "legacy_w0": {
+          "floor_u": 0.00277638214657055,
+          "floor_u_interior": 0.002955684500579934,
+          "floor_v": 0.008116398063127578,
+          "floor_v_interior": 0.00864056555951981
+        },
+        "recipe_planes": {
+          "floor_u": 0.000794755367007106,
+          "floor_u_interior": 0.0003834363613638291,
+          "floor_v": 0.002544735578185187,
+          "floor_v_interior": 0.00025052407274129304
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.023755167385219256,
+          "floor_u_interior": 0.025289306854210585,
+          "floor_v": 0.016423722777540242,
+          "floor_v_interior": 0.017484388060685075
+        }
+      },
+      "n96": {
+        "legacy_w0": {
+          "floor_u": 0.0018888270112034874,
+          "floor_u_interior": 0.0020108099053247554,
+          "floor_v": 0.0053127304617232515,
+          "floor_v_interior": 0.005655833474102507
+        },
+        "recipe_planes": {
+          "floor_u": 0.0006659332991650335,
+          "floor_u_interior": 0.0005012825155734506,
+          "floor_v": 0.0016841244632374635,
+          "floor_v_interior": 0.00013512975677165958
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.015574659595901453,
+          "floor_u_interior": 0.016580491279371043,
+          "floor_v": 0.010684375421587962,
+          "floor_v_interior": 0.011374386220921578
+        }
+      }
+    },
+    "1000": {
+      "n128": {
+        "legacy_w0": {
+          "floor_u": 0.00467065829865277,
+          "floor_u_interior": 0.004972295459357162,
+          "floor_v": 0.013498868189168303,
+          "floor_v_interior": 0.014370642575763452
+        },
+        "recipe_planes": {
+          "floor_u": 0.0018821647416899544,
+          "floor_u_interior": 0.0004691741507438299,
+          "floor_v": 0.004335547209230726,
+          "floor_v_interior": 0.0008188070283491325
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.019317370489423252,
+          "floor_u_interior": 0.020564911288626045,
+          "floor_v": 0.027519758067599043,
+          "floor_v_interior": 0.02929701967741896
+        }
+      },
+      "n192": {
+        "legacy_w0": {
+          "floor_u": 0.003097579033844954,
+          "floor_u_interior": 0.0032976246987346234,
+          "floor_v": 0.009050666496027268,
+          "floor_v_interior": 0.009635170257548743
+        },
+        "recipe_planes": {
+          "floor_u": 0.0012574657254372191,
+          "floor_u_interior": 0.00032324814578466737,
+          "floor_v": 0.002847697700099286,
+          "floor_v_interior": 0.00032565143303176544
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.012187112467147626,
+          "floor_u_interior": 0.012974171970694667,
+          "floor_v": 0.018092359584336346,
+          "floor_v_interior": 0.019260787593089686
+        }
+      },
+      "n256": {
+        "legacy_w0": {
+          "floor_u": 0.0022958453746197457,
+          "floor_u_interior": 0.002444114041676028,
+          "floor_v": 0.006560036327380783,
+          "floor_v_interior": 0.006983691967631661
+        },
+        "recipe_planes": {
+          "floor_u": 0.0009250085226312829,
+          "floor_u_interior": 0.00014209070677243568,
+          "floor_v": 0.002129128915971904,
+          "floor_v_interior": 0.0002265569948223918
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.009086749314944251,
+          "floor_u_interior": 0.009673583351633035,
+          "floor_v": 0.01346059018143684,
+          "floor_v_interior": 0.014329892524728613
+        }
+      },
+      "n32": {
+        "legacy_w0": {
+          "floor_u": 0.02380743258782102,
+          "floor_u_interior": 0.025344947411271697,
+          "floor_v": 0.05763588519229246,
+          "floor_v_interior": 0.061358085287534295
+        },
+        "recipe_planes": {
+          "floor_u": 0.014557695129495759,
+          "floor_u_interior": 0.013407453907142054,
+          "floor_v": 0.01880309117272298,
+          "floor_v_interior": 0.006395477455719387
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.09683741622212905,
+          "floor_u_interior": 0.10309130195117454,
+          "floor_v": 0.10887897143313639,
+          "floor_v_interior": 0.11591051638965333
+        }
+      },
+      "n48": {
+        "legacy_w0": {
+          "floor_u": 0.014043261147350848,
+          "floor_u_interior": 0.014950193136089794,
+          "floor_v": 0.03866171427606192,
+          "floor_v_interior": 0.04115853784492792
+        },
+        "recipe_planes": {
+          "floor_u": 0.007417267563834362,
+          "floor_u_interior": 0.005953356287794494,
+          "floor_v": 0.011904828273301275,
+          "floor_v_interior": 0.002599845896399055
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.05825961665996881,
+          "floor_u_interior": 0.06202209814102861,
+          "floor_v": 0.07625592683635087,
+          "floor_v_interior": 0.08118063333102923
+        }
+      },
+      "n64": {
+        "legacy_w0": {
+          "floor_u": 0.010156344681070295,
+          "floor_u_interior": 0.010812254571463446,
+          "floor_v": 0.028362673048551428,
+          "floor_v_interior": 0.030194371199285284
+        },
+        "recipe_planes": {
+          "floor_u": 0.005013120043124414,
+          "floor_u_interior": 0.003650943731792208,
+          "floor_v": 0.008899959764134458,
+          "floor_v_interior": 0.0022050529259046
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.04072172615495349,
+          "floor_u_interior": 0.04335158795835387,
+          "floor_v": 0.05639021979293377,
+          "floor_v_interior": 0.06003197320374172
+        }
+      },
+      "n96": {
+        "legacy_w0": {
+          "floor_u": 0.006521232229537375,
+          "floor_u_interior": 0.006942381850904241,
+          "floor_v": 0.01863523139091536,
+          "floor_v_interior": 0.019838718763872283
+        },
+        "recipe_planes": {
+          "floor_u": 0.0030743967057586205,
+          "floor_u_interior": 0.001992455723664347,
+          "floor_v": 0.005908477639672424,
+          "floor_v_interior": 0.0015928180878550945
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.02605961304397335,
+          "floor_u_interior": 0.027742576597506393,
+          "floor_v": 0.03707519634282512,
+          "floor_v_interior": 0.03946956052926826
+        }
+      }
+    },
+    "400": {
+      "n128": {
+        "legacy_w0": {
+          "floor_u": 0.002825050625779536,
+          "floor_u_interior": 0.003007496053194361,
+          "floor_v": 0.008574117983213612,
+          "floor_v_interior": 0.00912784562472124
+        },
+        "recipe_planes": {
+          "floor_u": 0.0008426590261442799,
+          "floor_u_interior": 0.00038740015664048475,
+          "floor_v": 0.002547138092825407,
+          "floor_v_interior": 0.00023222292435198588
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.016290319648872346,
+          "floor_u_interior": 0.01734236958523146,
+          "floor_v": 0.0172487066817519,
+          "floor_v_interior": 0.018362650493656797
+        }
+      },
+      "n192": {
+        "legacy_w0": {
+          "floor_u": 0.0018827706250050117,
+          "floor_u_interior": 0.0020043623898635026,
+          "floor_v": 0.005678895910993401,
+          "floor_v_interior": 0.006045646362213934
+        },
+        "recipe_planes": {
+          "floor_u": 0.0005505009171080246,
+          "floor_u_interior": 0.00023175552139182104,
+          "floor_v": 0.0016874437993531436,
+          "floor_v_interior": 0.00011082178330611862
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.010542113999173736,
+          "floor_u_interior": 0.011222937371641385,
+          "floor_v": 0.011401289952382593,
+          "floor_v_interior": 0.012137600020407946
+        }
+      },
+      "n256": {
+        "legacy_w0": {
+          "floor_u": 0.0013997252983188788,
+          "floor_u_interior": 0.001490121370511272,
+          "floor_v": 0.004221098706001624,
+          "floor_v_interior": 0.004493702726102724
+        },
+        "recipe_planes": {
+          "floor_u": 0.0003970223024802141,
+          "floor_u_interior": 0.00012649129301431955,
+          "floor_v": 0.0012616748393469552,
+          "floor_v_interior": 6.186740160079163e-05
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.007825526773063743,
+          "floor_u_interior": 0.00833090942491049,
+          "floor_v": 0.008501872093005255,
+          "floor_v_interior": 0.009050934001376014
+        }
+      },
+      "n32": {
+        "legacy_w0": {
+          "floor_u": 0.01396695596846983,
+          "floor_u_interior": 0.014868960069953276,
+          "floor_v": 0.035924796435969936,
+          "floor_v_interior": 0.03824486630683908
+        },
+        "recipe_planes": {
+          "floor_u": 0.009213856268881966,
+          "floor_u_interior": 0.009236821655678957,
+          "floor_v": 0.01111494266662168,
+          "floor_v_interior": 0.003618154033706466
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.0716701955298429,
+          "floor_u_interior": 0.07629874955893687,
+          "floor_v": 0.069119290944827,
+          "floor_v_interior": 0.07358310425279521
+        }
+      },
+      "n48": {
+        "legacy_w0": {
+          "floor_u": 0.007885044268952306,
+          "floor_u_interior": 0.008394270637749453,
+          "floor_v": 0.02411924690132335,
+          "floor_v_interior": 0.025676899096891134
+        },
+        "recipe_planes": {
+          "floor_u": 0.003289460739599726,
+          "floor_u_interior": 0.002739829674591084,
+          "floor_v": 0.007051737447457832,
+          "floor_v_interior": 0.001419936888545547
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.04584463602773645,
+          "floor_u_interior": 0.048805341984094135,
+          "floor_v": 0.04753613558756722,
+          "floor_v_interior": 0.050606080775728104
+        }
+      },
+      "n64": {
+        "legacy_w0": {
+          "floor_u": 0.005761021885230996,
+          "floor_u_interior": 0.00613307613820818,
+          "floor_v": 0.017547281163643375,
+          "floor_v_interior": 0.018680507302196427
+        },
+        "recipe_planes": {
+          "floor_u": 0.002197563035536041,
+          "floor_u_interior": 0.0016795204868239966,
+          "floor_v": 0.005206358365098201,
+          "floor_v_interior": 0.0008445460891755514
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.033530764329064724,
+          "floor_u_interior": 0.035696224506570014,
+          "floor_v": 0.03536818564833914,
+          "floor_v_interior": 0.03765230887381854
+        }
+      },
+      "n96": {
+        "legacy_w0": {
+          "floor_u": 0.003993582523109384,
+          "floor_u_interior": 0.004251493253521169,
+          "floor_v": 0.01153962900408206,
+          "floor_v_interior": 0.012284873187193759
+        },
+        "recipe_planes": {
+          "floor_u": 0.001898193831138368,
+          "floor_u_interior": 0.0017072684612288748,
+          "floor_v": 0.003422886591006689,
+          "floor_v_interior": 0.00042874467990021973
+        },
+        "symmetric_w+0.5": {
+          "floor_u": 0.02154555337616605,
+          "floor_u_interior": 0.02293699311134562,
+          "floor_v": 0.02321402544804746,
+          "floor_v_interior": 0.02471321727004144
+        }
+      }
+    }
+  },
+  "units": "RMSE normalised by u_lid, reported in percent"
+}

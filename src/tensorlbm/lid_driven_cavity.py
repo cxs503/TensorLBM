@@ -330,6 +330,14 @@ class LidDrivenCavityConfig:
         device: Torch device string (``"cpu"`` or ``"cuda"``).
         overwrite: If True, remove an existing run directory before writing.
         use_compile: If True, wrap hot-path kernels with ``torch.compile``.
+        ghia_metric_convention: Which index->coordinate map is used for the
+            headline ``ghia_errors`` RMSE written to ``run_metadata.json``:
+            ``"legacy_w0"`` (historical default: walls on the first/last node,
+            keeps previously published numbers comparable),
+            ``"symmetric_w+0.5"`` (nodes at cell centres) or
+            ``"recipe_planes"`` (the map implied by this solver's boundary
+            recipe, see :func:`cavity_wall_planes`).  All three are always
+            reported under ``ghia_metric``; this only selects the headline.
     """
 
     nx: int = 128
@@ -343,10 +351,16 @@ class LidDrivenCavityConfig:
     device: str = "cpu"
     overwrite: bool = False
     use_compile: bool = False
+    ghia_metric_convention: str = "legacy_w0"
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
+
+    @property
+    def wall_planes(self) -> dict[str, float]:
+        """Wall-plane geometry implied by the boundary recipe (see :func:`cavity_wall_planes`)."""
+        return cavity_wall_planes(self.nx, self.ny)
 
     @property
     def ny(self) -> int:
@@ -378,6 +392,12 @@ class LidDrivenCavityConfig:
             raise ValueError(msg)
         if self.tau <= 0.5:
             msg = f"Invalid tau={self.tau:.4f}; increase re or reduce u_lid/nx"
+            raise ValueError(msg)
+        if self.ghia_metric_convention not in GHIA_METRIC_CONVENTIONS:
+            msg = (
+                f"ghia_metric_convention={self.ghia_metric_convention!r} not in "
+                f"{GHIA_METRIC_CONVENTIONS}"
+            )
             raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
@@ -530,12 +550,316 @@ def centreline_coordinates(n: int, wall_offset: float = 0.0) -> "list[float]":
     return [float(v) for v in (np.arange(int(n)) + float(wall_offset)) / span]
 
 
+# ---------------------------------------------------------------------------
+# Metric geometry implied by the boundary recipe
+# ---------------------------------------------------------------------------
+
+#: Boundary recipe used by :func:`run_lid_driven_cavity`.
+#:
+#: * bottom / left / right walls: solid nodes (``make_cavity_wall_mask``) relaxed
+#:   towards the mirror state by :func:`bounce_back_cells`  ->  the no-slip plane
+#:   sits **half a lattice cell outside** the solid node (index ``0.5`` from it);
+#: * top wall: :func:`zou_he_moving_lid` imposes ``ux = u_lid`` on the *fluid*
+#:   node row ``ny - 1``  ->  the moving wall plane coincides with that node.
+#: Coordinate conventions supported by :func:`ghia_metric_report`.
+GHIA_METRIC_CONVENTIONS = ("legacy_w0", "symmetric_w+0.5", "recipe_planes")
+
+CAVITY_BOUNDARY_RECIPE = (
+    "bounce_back_solid_rows(bottom,left,right)@half_cell_outside"
+    "+zou_he_moving_lid(top_fluid_row)"
+)
+
+
+def cavity_wall_planes(nx: int, ny: int | None = None) -> dict[str, float]:
+    """Wall-plane geometry (node-index units) implied by the cavity BC recipe.
+
+    The Ghia (1982) reference normalises by a *square* cavity of side ``H``
+    with walls at ``0`` and ``1``.  The discretisation used by
+    :func:`run_lid_driven_cavity` does **not** place its four wall planes on
+    the four node lines, and it does not place them symmetrically:
+
+    ========  =========================================  ==================
+    wall      physical plane (node index)                extent
+    ========  =========================================  ==================
+    bottom    ``0.5``  (half-way bounce-back off row 0)   --
+    lid       ``ny - 1`` (Zou/He node row)                --
+    left      ``0.5``  (half-way bounce-back off col 0)   --
+    right     ``nx - 1.5`` (half-way bounce-back col nx-1)--
+    ========  =========================================  ==================
+
+    Hence the solver's effective cavity is ``H_x = nx - 2`` wide and
+    ``H_y = ny - 1.5`` tall: *not* square, with an aspect ratio
+    ``H_y / H_x = (ny - 1.5) / (nx - 2)`` that is ``1.19 %`` at ``nx = 128``.
+    The Reynolds number on the other hand is built from ``Re = u_lid * nx / nu``
+    in :attr:`LidDrivenCavityConfig.nu`, i.e. from ``L = nx`` — a length scale
+    that matches **none** of the three geometries.  Both mismatches are
+    recorded here so that every reported error can be paired with them
+    (audited in m16740; see ``docs/CAVITY_METRIC_GEOMETRY_AUDIT.md``).
+
+    Args:
+        nx: Number of node columns.
+        ny: Number of node rows (defaults to ``nx``, the square-cavity case).
+
+    Returns:
+        Dict with the wall planes, the implied extents ``h_x``/``h_y``, the
+        aspect ratio and the ratios between the geometric lengths and the
+        ``L = nx`` length scale actually used by ``Re``.
+
+    Raises:
+        ValueError: If the grid is too small for a fluid interior.
+    """
+    ny = int(nx) if ny is None else int(ny)
+    nx = int(nx)
+    if nx < 4 or ny < 4:
+        msg = f"cavity_wall_planes needs nx, ny >= 4, got nx={nx}, ny={ny}"
+        raise ValueError(msg)
+    h_x = float(nx) - 2.0
+    h_y = float(ny) - 1.5
+    return {
+        "x_lower": 0.5,
+        "x_upper": float(nx) - 1.5,
+        "y_lower": 0.5,
+        "y_upper": float(ny) - 1.0,
+        "h_x": h_x,
+        "h_y": h_y,
+        "aspect_ratio_h_y_over_h_x": h_y / h_x,
+        "re_length_scale_used": float(nx),
+        "implied_re_ratio_x": h_x / float(nx),
+        "implied_re_ratio_y": h_y / float(ny),
+    }
+
+
+def centreline_coordinates_between(
+    n: int, lower: float, upper: float
+) -> "list[float]":
+    """Normalised node coordinates for explicit wall planes at ``lower``/``upper``.
+
+    Generalises :func:`centreline_coordinates`: node ``j`` (``j = 0 .. n-1``)
+    sits at the node-index position ``j``, and the two wall planes sit at
+    ``lower`` and ``upper`` node-index positions, so
+
+    .. math::  q_j = \frac{j - \mathrm{lower}}{\mathrm{upper} - \mathrm{lower}}
+
+    ``centreline_coordinates(n, w)`` is the special case
+    ``lower = -w``, ``upper = n - 1 + w`` (pinned by a test).
+
+    Args:
+        n: Number of nodes along the axis (``n >= 2``).
+        lower: Lower wall plane in node-index units.
+        upper: Upper wall plane in node-index units.
+
+    Returns:
+        List of ``n`` normalised coordinates, monotonically increasing.
+
+    Raises:
+        ValueError: If ``n < 2`` or ``upper <= lower``.
+    """
+    import numpy as np
+
+    if int(n) < 2:
+        msg = f"centreline_coordinates_between needs n >= 2, got {n}"
+        raise ValueError(msg)
+    span = float(upper) - float(lower)
+    if not np.isfinite(span) or span <= 0.0:
+        msg = f"degenerate wall planes lower={lower}, upper={upper}"
+        raise ValueError(msg)
+    return [float(v) for v in (np.arange(int(n)) - float(lower)) / span]
+
+
+def _master_profile(reference: dict[str, list[float]], axis: str):
+    """Monotone interpolant through one Ghia table column (PCHIP if available)."""
+    import numpy as np
+
+    x = np.asarray(reference["y" if axis == "u" else "x"], dtype=float)
+    y = np.asarray(reference["u" if axis == "u" else "v"], dtype=float)
+    order = np.argsort(x)
+    x, y = x[order], y[order]
+    try:
+        from scipy.interpolate import PchipInterpolator
+
+        f = PchipInterpolator(x, y)
+        return lambda q: f(np.clip(q, x[0], x[-1]))
+    except Exception:  # pragma: no cover - SciPy is a hard dependency of the stack
+        return lambda q: np.interp(q, x, y)
+
+
+def _interior_rows(ref_coords: "list[float]") -> "list[bool]":
+    """Mask selecting reference rows strictly inside the cavity (drop y/x = 0, 1)."""
+    return [bool(0.0 < float(c) < 1.0) for c in ref_coords]
+
+
+def ghia_metric_floor(
+    reference: dict[str, list[float]], nx: int, ny: int | None = None
+) -> dict[str, dict[str, float]]:
+    """Predicted metric error of a *perfect* solver under each coordinate map.
+
+    The floor is what :func:`compare_ghia` reports for a field that reproduces
+    the reference profile exactly *on the nodes the BC recipe actually
+    creates*: sampling the truth at the recipe wall planes, then scoring the
+    same samples with a different index->coordinate map, gives a non-zero
+    RMSE that is pure metric artefact (no solver error in it).
+
+    Maps scored (all normalised by ``u_lid``, same units as
+    :func:`compare_ghia`):
+
+    * ``legacy_w0``           – walls on the first/last node (historical default);
+    * ``symmetric_w+0.5``     – nodes at cell centres (symmetric half-cell);
+    * ``recipe_planes``       – the map actually implied by the BC recipe
+      (self-consistent: floor is identically zero, listed as a control).
+
+    Args:
+        reference: Ghia table (e.g. ``GHIA_RE1000``).
+        nx: Number of node columns.
+        ny: Number of node rows (defaults to ``nx``).
+
+    Returns:
+        ``{map_name: {"floor_u": ..., "floor_v": ..., "floor_u_interior": ...,
+        "floor_v_interior": ...}}``.
+    """
+    import numpy as np
+
+    ny = int(nx) if ny is None else int(ny)
+    planes = cavity_wall_planes(nx, ny)
+    truth_u = np.asarray(
+        centreline_coordinates_between(ny, planes["y_lower"], planes["y_upper"])
+    )
+    truth_v = np.asarray(
+        centreline_coordinates_between(nx, planes["x_lower"], planes["x_upper"])
+    )
+    fu = _master_profile(reference, "u")
+    fv = _master_profile(reference, "v")
+    field_u = fu(truth_u)
+    field_v = fv(truth_v)
+
+    ref_y = np.asarray(reference["y"], dtype=float)
+    ref_u = np.asarray(reference["u"], dtype=float)
+    ref_x = np.asarray(reference["x"], dtype=float)
+    ref_v = np.asarray(reference["v"], dtype=float)
+    keep_u = np.asarray(_interior_rows(reference["y"]))
+    keep_v = np.asarray(_interior_rows(reference["x"]))
+
+    candidates = {
+        "legacy_w0": (
+            np.asarray(centreline_coordinates(ny, 0.0)),
+            np.asarray(centreline_coordinates(nx, 0.0)),
+        ),
+        "symmetric_w+0.5": (
+            np.asarray(centreline_coordinates(ny, 0.5)),
+            np.asarray(centreline_coordinates(nx, 0.5)),
+        ),
+        "recipe_planes": (truth_u, truth_v),
+    }
+    out: dict[str, dict[str, float]] = {}
+    for name, (cu, cv) in candidates.items():
+        eu = np.interp(ref_y, cu, field_u) - ref_u
+        ev = np.interp(ref_x, cv, field_v) - ref_v
+        out[name] = {
+            "floor_u": float(np.sqrt(np.mean(eu**2))),
+            "floor_v": float(np.sqrt(np.mean(ev**2))),
+            "floor_u_interior": float(np.sqrt(np.mean(eu[keep_u] ** 2))),
+            "floor_v_interior": float(np.sqrt(np.mean(ev[keep_v] ** 2))),
+        }
+    return out
+
+
+def ghia_metric_report(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    u_lid: float,
+    reference: dict[str, list[float]],
+    *,
+    include_centreline: bool = True,
+) -> dict[str, object]:
+    """Score one flow field against Ghia under every coordinate convention.
+
+    This is the metric block persisted by :func:`run_lid_driven_cavity`
+    (``run_metadata.json`` -> ``ghia_metric``).  It exists because m16339
+    showed the reported RMSE moves by ~0.4-1.1 % of ``u_lid`` with the
+    index->coordinate map, i.e. by an amount comparable to the 3 %/5 %
+    acceptance gates: a bare RMSE is not reproducible without its
+    convention, and the historical runs did not persist one.
+
+    Every variant is reported **full** (all reference rows) and **interior**
+    (wall rows ``y,x = 0, 1`` dropped, because ``np.interp`` silently clamps
+    query points outside the node span — see m16339 finding F3).
+
+    Args:
+        ux: x-velocity field ``(ny, nx)``.
+        uy: y-velocity field ``(ny, nx)``.
+        u_lid: Lid velocity used for normalisation.
+        reference: Ghia table for the run's Reynolds number.
+        include_centreline: Also return the full normalised centreline
+            profiles so the score can be recomputed later without rerunning
+            (the gap flagged by m16339: existing runs only stored the RMSE).
+
+    Returns:
+        Dict with ``boundary_recipe``, ``wall_planes``, ``scores`` (four
+        conventions), ``analytic_floor`` and, optionally, the centreline
+        profiles.
+    """
+    ny, nx = int(ux.shape[0]), int(ux.shape[1])
+    planes = cavity_wall_planes(nx, ny)
+    variants: dict[str, dict[str, tuple[float, float] | float]] = {
+        "legacy_w0": {"wall_offset": 0.0},
+        "symmetric_w+0.5": {"wall_offset": 0.5},
+        "recipe_planes": {
+            "y_planes": (planes["y_lower"], planes["y_upper"]),
+            "x_planes": (planes["x_lower"], planes["x_upper"]),
+        },
+    }
+    scores: dict[str, dict[str, float]] = {}
+    for name, kw in variants.items():
+        full = compare_ghia(ux, uy, u_lid, reference, **kw)  # type: ignore[arg-type]
+        inter = compare_ghia(
+            ux, uy, u_lid, reference, exclude_walls=True, **kw  # type: ignore[arg-type]
+        )
+        scores[name] = {
+            "rmse_u": full["rmse_u"],
+            "rmse_v": full["rmse_v"],
+            "interior_rmse_u": inter["rmse_u"],
+            "interior_rmse_v": inter["rmse_v"],
+            "n_scored_u": full["n_scored_u"],
+            "n_scored_v": full["n_scored_v"],
+        }
+
+    report: dict[str, object] = {
+        "boundary_recipe": CAVITY_BOUNDARY_RECIPE,
+        "wall_planes": planes,
+        "scores": scores,
+        "analytic_floor": ghia_metric_floor(reference, nx, ny),
+        "notes": (
+            "rmse_* = all reference rows; interior_rmse_* = wall rows dropped. "
+            "Quote the convention (wall_planes) with any RMSE: the map alone "
+            "moves the number by O(0.4-1.1 %) of u_lid (m16339)."
+        ),
+    }
+    if include_centreline:
+        import numpy as np
+
+        ux_np = np.asarray(ux.detach().cpu().numpy(), dtype=float) / float(u_lid)
+        uy_np = np.asarray(uy.detach().cpu().numpy(), dtype=float) / float(u_lid)
+        ys = centreline_coordinates_between(ny, planes["y_lower"], planes["y_upper"])
+        xs = centreline_coordinates_between(nx, planes["x_lower"], planes["x_upper"])
+        report["centreline"] = {
+            "y": ys,
+            "u": [float(v) for v in ux_np[:, nx // 2]],
+            "x": xs,
+            "v": [float(v) for v in uy_np[ny // 2, :]],
+            "coordinates": "recipe_planes",
+        }
+    return report
+
+
 def compare_ghia(
     ux: torch.Tensor,
     uy: torch.Tensor,
     u_lid: float,
     reference: dict[str, list[float]],
     wall_offset: float = 0.0,
+    *,
+    y_planes: "tuple[float, float] | None" = None,
+    x_planes: "tuple[float, float] | None" = None,
+    exclude_walls: bool = False,
 ) -> dict[str, float]:
     """Compare centreline velocity profiles against Ghia tabulated data.
 
@@ -603,18 +927,43 @@ def compare_ghia(
     # Vertical centreline: u at x = nx//2
     x_mid = nx // 2
     u_profile = ux_np[:, x_mid]  # shape (ny,)
-    y_pos = np.asarray(centreline_coordinates(ny, wall_offset))
+    y_pos = np.asarray(
+        centreline_coordinates(ny, wall_offset)
+        if y_planes is None
+        else centreline_coordinates_between(ny, y_planes[0], y_planes[1])
+    )
+    ref_u = np.array(reference["u"], dtype=float)
+    keep_u = (
+        np.asarray(_interior_rows(reference["y"]))
+        if exclude_walls
+        else np.ones(ref_u.shape, dtype=bool)
+    )
     u_ghia_interp = np.interp(reference["y"], y_pos, u_profile)
-    rmse_u = float(np.sqrt(np.mean((u_ghia_interp - np.array(reference["u"])) ** 2)))
+    rmse_u = float(np.sqrt(np.mean((u_ghia_interp[keep_u] - ref_u[keep_u]) ** 2)))
 
     # Horizontal centreline: v at y = ny//2
     y_mid = ny // 2
     v_profile = uy_np[y_mid, :]  # shape (nx,)
-    x_pos = np.asarray(centreline_coordinates(nx, wall_offset))
+    x_pos = np.asarray(
+        centreline_coordinates(nx, wall_offset)
+        if x_planes is None
+        else centreline_coordinates_between(nx, x_planes[0], x_planes[1])
+    )
+    ref_v = np.array(reference["v"], dtype=float)
+    keep_v = (
+        np.asarray(_interior_rows(reference["x"]))
+        if exclude_walls
+        else np.ones(ref_v.shape, dtype=bool)
+    )
     v_ghia_interp = np.interp(reference["x"], x_pos, v_profile)
-    rmse_v = float(np.sqrt(np.mean((v_ghia_interp - np.array(reference["v"])) ** 2)))
+    rmse_v = float(np.sqrt(np.mean((v_ghia_interp[keep_v] - ref_v[keep_v]) ** 2)))
 
-    return {"rmse_u": rmse_u, "rmse_v": rmse_v}
+    return {
+        "rmse_u": rmse_u,
+        "rmse_v": rmse_v,
+        "n_scored_u": int(keep_u.sum()),
+        "n_scored_v": int(keep_v.sum()),
+    }
 
 
 def ghia_coordinate_sensitivity(
@@ -822,11 +1171,18 @@ def run_lid_driven_cavity(config: LidDrivenCavityConfig) -> Path:
         reference = None
 
     ghia_errors: dict[str, float] | None = None
+    ghia_metric: dict[str, object] | None = None
     if reference is not None:
-        ghia_errors = compare_ghia(ux, uy, config.u_lid, reference)
+        ghia_metric = ghia_metric_report(ux, uy, config.u_lid, reference)
+        selected = ghia_metric["scores"][config.ghia_metric_convention]
+        ghia_errors = {
+            "rmse_u": selected["rmse_u"],
+            "rmse_v": selected["rmse_v"],
+        }
         logger.info(
-            "Ghia comparison (Re=%d): RMSE_u=%.5f  RMSE_v=%.5f",
+            "Ghia comparison (Re=%d, convention=%s): RMSE_u=%.5f  RMSE_v=%.5f",
             re_int,
+            config.ghia_metric_convention,
             ghia_errors["rmse_u"],
             ghia_errors["rmse_v"],
         )
@@ -839,8 +1195,13 @@ def run_lid_driven_cavity(config: LidDrivenCavityConfig) -> Path:
     uy_np = uy.detach().cpu().numpy() / config.u_lid
     x_mid = nx_final // 2
     y_mid = ny_final // 2
-    y_pos = np.linspace(0.0, 1.0, ny_final)
-    x_pos = np.linspace(0.0, 1.0, nx_final)
+    planes = cavity_wall_planes(nx_final, ny_final)
+    y_pos = np.asarray(
+        centreline_coordinates_between(ny_final, planes["y_lower"], planes["y_upper"])
+    )
+    x_pos = np.asarray(
+        centreline_coordinates_between(nx_final, planes["x_lower"], planes["x_upper"])
+    )
 
     csv_path = run_dir / "ghia_comparison.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
@@ -859,9 +1220,15 @@ def run_lid_driven_cavity(config: LidDrivenCavityConfig) -> Path:
     metadata["diagnostics"] = diagnostics
     if ghia_errors is not None:
         metadata["ghia_errors"] = ghia_errors
+        metadata["ghia_metric"] = ghia_metric
+        metadata["ghia_metric_convention"] = config.ghia_metric_convention
         metadata["ghia_note"] = (
             "rmse_u: RMSE of u/u_lid along vertical centreline vs Ghia (1982). "
-            "rmse_v: RMSE of v/u_lid along horizontal centreline vs Ghia (1982)."
+            "rmse_v: RMSE of v/u_lid along horizontal centreline vs Ghia (1982). "
+            "These headline numbers use ghia_metric_convention; ghia_metric "
+            "carries the same score under every supported coordinate map plus "
+            "the wall-plane geometry and analytic metric floors, so no RMSE is "
+            "quoted without its convention (m16740)."
         )
 
     meta_path = run_dir / "run_metadata.json"
