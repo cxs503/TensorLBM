@@ -51,6 +51,8 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -362,6 +364,14 @@ def run_armaly_case(cfg: ArmalyConfig, out_dir: Path | None = None) -> dict:
                 "wall_time_s": time.time() - t0,
             }
             history.append(rec)
+            if os.environ.get("BFS_PROGRESS", "1") != "0":
+                # throughput / steadiness telemetry (stderr only, no API change):
+                # lets a long ladder be watched and its convergence audited.
+                rate = step / max(rec["wall_time_s"], 1e-9)
+                print(f"[bfs {cfg.tag or 'run'}] step {step}/{cfg.n_steps} "
+                      f"x1/s={x1_inst:.3f} maxu={rec['max_speed']:.4f} "
+                      f"{rate:.1f} steps/s eta={max(cfg.n_steps - step, 0) / max(rate, 1e-9):.0f}s",
+                      file=sys.stderr, flush=True)
             if step > n_avg_start:
                 x1_check.append(x1_inst)
                 if len(x1_check) > cfg.steady_hits:
