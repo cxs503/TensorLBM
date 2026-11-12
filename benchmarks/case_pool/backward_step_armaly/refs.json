@@ -1,0 +1,31 @@
+{
+  "case": "CASE-BACKWARD-STEP-LBM",
+  "primary_reference": {
+    "cite": "Armaly B.F., Durst F., Pereira J.C.F., Schonung B., J. Fluid Mech. 127(4):473-496 (1983)",
+    "geometry": "ER = 1.9423 (inlet 5.2 mm, step 4.9 mm, outlet 10.1 mm), laminar, 70 < Re < 8000",
+    "re_definition": "Re = ubar * D_h / nu, D_h = hydraulic diameter of the inlet channel = 2*inlet height",
+    "acquisition_status": "PRIMARY_PDF_UNREACHABLE",
+    "acquisition_log": [
+      "unpaywall api: is_oa=false for doi 10.1017/S0022112083002839",
+      "cambridge core: paywalled; no OA mirror reachable (duckduckgo/startpage/qwant/ecosia blocked, bing JS-only, scholar.archive.org refused, core.ac.uk 403)",
+      "openalex fulltext search over 100 OA citing works: 11 PDFs retrieved, 22 pages mention Armaly, none tabulates Table 1 values"
+    ]
+  },
+  "xref_machine_verified": [
+    {"file": "arxiv 2507.16509 (open access)", "page": 2,
+     "quote": "experimental data, such as those of Armaly et al. [6] for ER = 1.942 ... additional separation and recirculation points appear",
+     "fact": "Armaly expansion ratio = 1.942"},
+    {"file": "arxiv 2507.16509 (open access)", "page": 2,
+     "quote": "An early study by Armaly et al. [1] ... 2D ... Re numbers 70 < Re_D < 8000, based on the hydraulic diameter of the inlet channel. Up to Re_D = 400, 2D numerical results are matched with experimental data.",
+     "fact": "Armaly Re caliber = hydraulic diameter of inlet channel; 2D numerics valid to Re_D = 400"},
+    {"file": "arxiv 2507.16509 (open access)", "page": 8, "table": "Table 2",
+     "quote": "Gartling 12.20 / Erturk 11.834 / Keskar & Lyn 12.19 / Grigoriev & Dargush 12.18 (xr/h at Re=800)",
+     "fact": "2D benchmark consensus xr/h (step-height units) at Re=800: 11.48-12.20"}
+  ],
+  "adopted_numeric_reference": {
+    "tier": "SECONDARY_IN_REPO (Armaly attribution, hand-entered by earlier campaign, primary table unverified)",
+    "provenance": "benchmarks/pending/bstep_3d/result_H40.json::reference.xr_h_ref and result_re200_H49/result_re400_H49.json",
+    "values_x1_over_s": {"100": 3.0, "200": 5.5, "400": 8.0},
+    "tolerance_pct": 15.0
+  }
+}
