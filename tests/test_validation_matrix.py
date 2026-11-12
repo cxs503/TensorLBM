@@ -204,3 +204,117 @@ def test_dam_break_ci_case_runs_and_is_judged(tmp_path):
     )
     assert verdict["status"] in {"passed", "failed"}
     assert verdict["metrics"] and verdict["convergence"]
+
+# --------------------------------------------------------------------------- #
+# run ledger: executed-run provenance (L2/L4 evidence chain)
+# --------------------------------------------------------------------------- #
+def test_run_ledger_records_provenance_and_verifies(tmp_path):
+    """record_run must bind source, host, command and artifact sha256."""
+    import runledger
+
+    artifact = tmp_path / "result.json"
+    artifact.write_text('{"value": 1.02}')
+    verdict = {
+        "case": "synthetic_case",
+        "slot": "synthetic",
+        "matrix_version": "test",
+        "artifact": str(artifact),
+        "artifact_sha256": runledger.sha256_file(artifact),
+        "artifact_bytes": artifact.stat().st_size,
+        "status": "passed",
+        "machine_pass": True,
+        "reason": "synthetic",
+        "metrics": [{"metric": "x", "reference": 1.0, "tol_pct": 3.0,
+                     "max_abs_err_pct": 2.0, "pass": True,
+                     "levels": [{"level": "L1", "value": 1.02, "err_pct": 2.0,
+                                 "pass": True, "gated": True}]}],
+        "convergence": [],
+        "evidence_chain": [{"kind": "artifact", "path": str(artifact),
+                            "sha256": runledger.sha256_file(artifact)}],
+    }
+    run = {"cmd": "python fake.py", "returncode": 0, "elapsed_s": 1.5,
+           "stdout": "hello\n", "stderr": ""}
+    case = {"id": "synthetic_case", "slot": "synthetic", "title": "synthetic"}
+
+    out = runledger.record_run(case, run, verdict, ledger_root=tmp_path / "runs")
+
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert manifest["schema"] == runledger.SCHEMA
+    assert manifest["case"] == "synthetic_case"
+    assert manifest["repro_cmd"] == "python fake.py"
+    assert manifest["returncode"] == 0
+    assert manifest["artifact"]["sha256"] == verdict["artifact_sha256"]
+    assert manifest["repo"]["matrix_sha256"]
+    assert manifest["host"]["hostname"]
+    assert manifest["verdict"]["status"] == "passed"
+    assert "hello" in (out / "run.log").read_text()
+
+    index = [json.loads(line) for line in
+             (tmp_path / "runs" / "index.jsonl").read_text().splitlines() if line]
+    assert len(index) == 1 and index[0]["run_id"] == out.name
+
+    # tamper detection: editing the manifest must break the re-hash gate
+    (out / "manifest.json").write_text("{}\n")
+    report = runledger.verify_ledger(ledger_root=tmp_path / "runs")
+    assert report["n_runs"] == 1 and not report["pass"]
+
+
+def test_run_ledger_verify_passes_on_untampered_entry(tmp_path):
+    import runledger
+
+    verdict = {"case": "synthetic_case", "status": "pending", "machine_pass": False,
+               "reason": "synthetic", "artifact": None, "metrics": [], "convergence": []}
+    run = {"cmd": "python fake.py", "returncode": 0, "elapsed_s": 0.1,
+           "stdout": "", "stderr": ""}
+    case = {"id": "synthetic_case"}
+    out = runledger.record_run(case, run, verdict, ledger_root=tmp_path / "runs")
+    report = runledger.verify_ledger(ledger_root=tmp_path / "runs")
+    assert report["pass"] and report["n_ok"] == report["n_runs"] == 1
+    assert (out / "manifest.json").exists()
+
+
+# --------------------------------------------------------------------------- #
+# ref-vs-got table + module entry point + integration callers
+# --------------------------------------------------------------------------- #
+def test_benchmark_table_is_consistent_with_the_verdicts():
+    import make_benchmark_table as mbt
+
+    table = mbt.build()
+    matrix = runner.load_matrix()
+    assert len(table["cases"]) == len(matrix["cases"])
+    assert sum(table["counts"].values()) == len(matrix["cases"])
+    assert not mbt.check_consistency(table), mbt.check_consistency(table)
+    for case in table["cases"]:
+        assert case["repro_cmd"], case["case"]
+        assert case["status"] in criteria.STATUSES
+        if case["status"] == "passed":
+            assert case["artifact_sha256"], case["case"]
+            assert case["rows"], case["case"]
+
+
+def test_module_entry_point_lists_the_matrix():
+    proc = subprocess.run(
+        [sys.executable, "-m", "benchmarks.validation_matrix", "list"],
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=120,
+        env={**os.environ, "PYTHONPATH": str(REPO_ROOT / "src")},
+    )
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    assert len(lines) == len(runner.load_matrix()["cases"])
+
+
+def test_cases_delegate_to_library_kernels_not_to_their_own_physics():
+    """Integration callers: every case runner imports real tensorlbm code.
+
+    Guards against a "benchmark" that reimplements physics locally and therefore
+    proves nothing about the library that ships.
+    """
+    matrix = runner.load_matrix()
+    missing = []
+    for case in matrix["cases"]:
+        cmd = case["repro"]["cmd"]
+        script = next(tok for tok in cmd.split() if tok.endswith(".py"))
+        text = (REPO_ROOT / script).read_text(encoding="utf-8")
+        if "tensorlbm" not in text:
+            missing.append((case["id"], script))
+    assert not missing, f"case runners without a tensorlbm import: {missing}"
