@@ -1,0 +1,174 @@
+{
+  "case": "CASE-CYLINDER-DRAG-RE100",
+  "benchmark": "Sch\u00e4fer & Turek 1996, NNFM 48, case 2D-2 (Re=100, confined)",
+  "lattice": "D2Q9",
+  "collision": "MRT (tensorlbm.solver.collide_mrt)",
+  "boundary": "zou_he_inlet_velocity(parabolic) + zou_he_outlet_pressure(rho=1) + half-way bounce-back on walls and cylinder",
+  "force": "ladd_momentum_exchange (post-stream, pre-bounce-back)",
+  "geometry": {
+    "channel": [
+      2.2,
+      0.41
+    ],
+    "cylinder_centre": [
+      0.2,
+      0.2
+    ],
+    "cylinder_diameter": 0.1,
+    "blockage_D_over_H": 0.24390243902439027,
+    "re": 100.0
+  },
+  "reference": {
+    "source": "Sch\u00e4fer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+    "register": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+    "cd": [
+      3.22,
+      3.24
+    ],
+    "cl_amp": [
+      0.99,
+      1.01
+    ],
+    "st": [
+      0.295,
+      0.305
+    ],
+    "dp_raw": [
+      2.46,
+      2.5
+    ],
+    "dp_dimensionless": [
+      4.92,
+      5.0
+    ]
+  },
+  "tolerance": {
+    "err_pct": 5.0,
+    "convergence_span_pct": 3.0,
+    "error_convention": "value vs band midpoint"
+  },
+  "config": {
+    "levels": [
+      "D20"
+    ],
+    "steps": 0,
+    "u_mean_lb": 0.0833,
+    "tag": "u0833"
+  },
+  "grids": {
+    "D20": {
+      "nx": 440,
+      "ny": 82,
+      "cells": 36080,
+      "u_mean_lb": 0.0833,
+      "tau": 0.54998,
+      "n_steps": 12000,
+      "avg_window": 12000,
+      "artifact": "verified/cylinder/re100_dfg/artifacts/level_D20_u0833.json",
+      "cd": 3.495513916015625,
+      "cd_stderr": NaN,
+      "cd_first_half": 3.5340592861175537,
+      "cd_second_half": 3.4569690227508545,
+      "cl_mean": -0.05706112086772919,
+      "cl_amp": 1.248382806777954,
+      "st": 0.3022966193873375,
+      "st_acf": 0.3032419118340494,
+      "st_fft": 0.3022966193873375,
+      "st_ambiguous": false,
+      "dp": 2.0140368938446045,
+      "dp_nearest_fluid_columns": NaN,
+      "bench": {
+        "cd": {
+          "value": 3.495513916015625,
+          "band": [
+            3.22,
+            3.24
+          ],
+          "band_mid": 3.2300000000000004,
+          "err_pct_vs_mid": 8.220245077883112,
+          "inside_band": false,
+          "err_pct_vs_nearest_bound": 7.886231975790888
+        },
+        "cl_amp": {
+          "value": 1.248382806777954,
+          "band": [
+            0.99,
+            1.01
+          ],
+          "band_mid": 1.0,
+          "err_pct_vs_mid": 24.83828067779541,
+          "inside_band": false,
+          "err_pct_vs_nearest_bound": 23.60225809682714
+        },
+        "st": {
+          "value": 0.3022966193873375,
+          "band": [
+            0.295,
+            0.305
+          ],
+          "band_mid": 0.3,
+          "err_pct_vs_mid": 0.7655397957791651,
+          "inside_band": true,
+          "err_pct_vs_nearest_bound": 0.0
+        },
+        "dp": {
+          "value": 2.0140368938446045,
+          "band": [
+            2.46,
+            2.5
+          ],
+          "band_mid": 2.48,
+          "err_pct_vs_mid": -18.788834925620787,
+          "inside_band": false,
+          "err_pct_vs_nearest_bound": -18.128581551032337
+        }
+      },
+      "err_pct": {
+        "cd": 8.220245077883112,
+        "cl_amp": 24.83828067779541,
+        "st": 0.7655397957791651,
+        "dp": -18.788834925620787
+      },
+      "err_pct_cd": 8.220245077883112,
+      "err_pct_st": 0.7655397957791651,
+      "err_pct_cl_amp": 24.83828067779541,
+      "err_pct_dp": -18.788834925620787,
+      "drift_pct": {
+        "cd": -2.1813517297099176
+      }
+    }
+  },
+  "per_metric": {
+    "cd": {
+      "err_pct": {
+        "D20": 8.220245077883112
+      },
+      "all_levels_within_tol": false,
+      "finest_within_tol": false
+    },
+    "st": {
+      "err_pct": {
+        "D20": 0.7655397957791651
+      },
+      "all_levels_within_tol": true,
+      "finest_within_tol": true
+    },
+    "cl_amp": {
+      "err_pct": {
+        "D20": 24.83828067779541
+      },
+      "all_levels_within_tol": false,
+      "finest_within_tol": false
+    },
+    "dp": {
+      "err_pct": {
+        "D20": -18.788834925620787
+      },
+      "all_levels_within_tol": false,
+      "finest_within_tol": false
+    }
+  },
+  "convergence": {},
+  "machine_pass": false,
+  "verdict": "not_verified"
+}
