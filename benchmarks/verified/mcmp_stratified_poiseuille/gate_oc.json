@@ -1,0 +1,1698 @@
+{
+ "figures": [
+  "fig1_gate_utilisation.png",
+  "fig2_switch_point.png",
+  "fig3_mutant_kill.png"
+ ],
+ "gates": [
+  {
+   "detection_curve": [
+    {
+     "factor": 0.0,
+     "value": 0.05,
+     "verdict": "PASS"
+    },
+    {
+     "factor": 0.25,
+     "value": 0.0625,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.5,
+     "value": 0.07500000000000001,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.9,
+     "value": 0.095,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.99,
+     "value": 0.0995,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.0,
+     "value": 0.1,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.01,
+     "value": 0.10049999999999999,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.1,
+     "value": 0.10500000000000001,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.5,
+     "value": 0.125,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 2.0,
+     "value": 0.15000000000000002,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 5.0,
+     "value": 0.30000000000000004,
+     "verdict": "FAIL"
+    }
+   ],
+   "discrimination": {
+    "all_mutants_killed": true,
+    "canonical_all_pass": false,
+    "canonical_verdicts": [
+     "PASS",
+     "PASS",
+     "PASS",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD"
+    ],
+    "gate": "iface_5pct",
+    "mutants": {
+     "op_flipped": {
+      "killed": true,
+      "killed_by": [
+       0,
+       1,
+       3,
+       4,
+       5,
+       6
+      ],
+      "n_differ": 6
+     },
+     "threshold_x0.5": {
+      "killed": true,
+      "killed_by": [
+       1,
+       2
+      ],
+      "n_differ": 2
+     },
+     "threshold_x2": {
+      "killed": true,
+      "killed_by": [
+       3,
+       4,
+       5
+      ],
+      "n_differ": 3
+     }
+    },
+    "n_probes": 42
+   },
+   "gate": "iface_5pct",
+   "key": "err_interface_rel",
+   "minimum_detectable_factor": 0.25,
+   "op": "abs_le",
+   "rationale": "SPEC \u00a76: interface position within 5 % of the analytic halfway-plane interface; 5 % covers the 1-cell interface width at ny=25.",
+   "summaries": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "PASS",
+    "result/cp_ny25_self_shift": "PASS",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "PASS",
+    "result/cp_ny33_self_shift": "PASS",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "FAIL",
+    "result/tp_ny25_g1_shift": "FAIL",
+    "result/tp_ny25_g2.5_guo": "PASS",
+    "result/tp_ny25_g2.5_shift": "PASS",
+    "result/tp_ny33_g1_guo": "FAIL",
+    "result/tp_ny33_g1_shift": "FAIL",
+    "result/tp_ny33_g2.5_guo": "PASS",
+    "result/tp_ny33_g2.5_shift": "PASS",
+    "result/tp_ny49_g2.5_guo": "PASS",
+    "result/tp_ny49_g2.5_shift": "PASS",
+    "result_r3/c1_ny25": "PASS",
+    "result_r3/c1_ny33": "PASS",
+    "result_r3/c1_ny49": "PASS",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   },
+   "switch_probe": {
+    "gate": "iface_5pct",
+    "ok": true,
+    "op": "abs_le",
+    "probe_above": 0.05005,
+    "probe_below": 0.04995,
+    "threshold": 0.05,
+    "verdict_above": "FAIL",
+    "verdict_below": "PASS"
+   },
+   "threshold": 0.05,
+   "verdicts": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "PASS",
+    "result/cp_ny25_self_shift": "PASS",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "PASS",
+    "result/cp_ny33_self_shift": "PASS",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "FAIL",
+    "result/tp_ny25_g1_shift": "FAIL",
+    "result/tp_ny25_g2.5_guo": "PASS",
+    "result/tp_ny25_g2.5_shift": "PASS",
+    "result/tp_ny33_g1_guo": "FAIL",
+    "result/tp_ny33_g1_shift": "FAIL",
+    "result/tp_ny33_g2.5_guo": "PASS",
+    "result/tp_ny33_g2.5_shift": "PASS",
+    "result/tp_ny49_g2.5_guo": "PASS",
+    "result/tp_ny49_g2.5_shift": "PASS",
+    "result_r3/c1_ny25": "PASS",
+    "result_r3/c1_ny33": "PASS",
+    "result_r3/c1_ny49": "PASS",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   }
+  },
+  {
+   "detection_curve": [
+    {
+     "factor": 0.0,
+     "value": 0.1,
+     "verdict": "PASS"
+    },
+    {
+     "factor": 0.25,
+     "value": 0.125,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.5,
+     "value": 0.15000000000000002,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.9,
+     "value": 0.19,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.99,
+     "value": 0.199,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.0,
+     "value": 0.2,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.01,
+     "value": 0.20099999999999998,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.1,
+     "value": 0.21000000000000002,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.5,
+     "value": 0.25,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 2.0,
+     "value": 0.30000000000000004,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 5.0,
+     "value": 0.6000000000000001,
+     "verdict": "FAIL"
+    }
+   ],
+   "discrimination": {
+    "all_mutants_killed": true,
+    "canonical_all_pass": false,
+    "canonical_verdicts": [
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "PASS",
+     "PASS",
+     "PASS",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD"
+    ],
+    "gate": "flow_mix_10pct",
+    "mutants": {
+     "op_flipped": {
+      "killed": true,
+      "killed_by": [
+       7,
+       8,
+       10,
+       11,
+       12,
+       13
+      ],
+      "n_differ": 6
+     },
+     "threshold_x0.5": {
+      "killed": true,
+      "killed_by": [
+       8,
+       9
+      ],
+      "n_differ": 2
+     },
+     "threshold_x2": {
+      "killed": true,
+      "killed_by": [
+       10,
+       11,
+       12
+      ],
+      "n_differ": 3
+     }
+    },
+    "n_probes": 42
+   },
+   "gate": "flow_mix_10pct",
+   "key": "err_Q_mix",
+   "minimum_detectable_factor": 0.25,
+   "op": "abs_le",
+   "rationale": "SPEC \u00a76 + QR independent audit: mixture volumetric flux within 10 % of the closed-form two-layer Poiseuille reference (nominal 0.7/0.3 viscosity rule).",
+   "summaries": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "FAIL",
+    "result/cp_ny25_self_shift": "FAIL",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "FAIL",
+    "result/cp_ny33_self_shift": "FAIL",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "PASS",
+    "result/tp_ny25_g1_shift": "PASS",
+    "result/tp_ny25_g2.5_guo": "FAIL",
+    "result/tp_ny25_g2.5_shift": "FAIL",
+    "result/tp_ny33_g1_guo": "FAIL",
+    "result/tp_ny33_g1_shift": "FAIL",
+    "result/tp_ny33_g2.5_guo": "FAIL",
+    "result/tp_ny33_g2.5_shift": "FAIL",
+    "result/tp_ny49_g2.5_guo": "FAIL",
+    "result/tp_ny49_g2.5_shift": "FAIL",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "PASS",
+    "result_r3/c2_ny33": "PASS",
+    "result_r3/c2_ny49": "PASS",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   },
+   "switch_probe": {
+    "gate": "flow_mix_10pct",
+    "ok": true,
+    "op": "abs_le",
+    "probe_above": 0.1001,
+    "probe_below": 0.0999,
+    "threshold": 0.1,
+    "verdict_above": "FAIL",
+    "verdict_below": "PASS"
+   },
+   "threshold": 0.1,
+   "verdicts": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "FAIL",
+    "result/cp_ny25_self_shift": "FAIL",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "FAIL",
+    "result/cp_ny33_self_shift": "FAIL",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "PASS",
+    "result/tp_ny25_g1_shift": "PASS",
+    "result/tp_ny25_g2.5_guo": "FAIL",
+    "result/tp_ny25_g2.5_shift": "FAIL",
+    "result/tp_ny33_g1_guo": "FAIL",
+    "result/tp_ny33_g1_shift": "FAIL",
+    "result/tp_ny33_g2.5_guo": "FAIL",
+    "result/tp_ny33_g2.5_shift": "FAIL",
+    "result/tp_ny49_g2.5_guo": "FAIL",
+    "result/tp_ny49_g2.5_shift": "FAIL",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "PASS",
+    "result_r3/c2_ny33": "PASS",
+    "result_r3/c2_ny49": "PASS",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   }
+  },
+  {
+   "detection_curve": [
+    {
+     "factor": 0.0,
+     "value": 0.1,
+     "verdict": "PASS"
+    },
+    {
+     "factor": 0.25,
+     "value": 0.125,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.5,
+     "value": 0.15000000000000002,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.9,
+     "value": 0.19,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.99,
+     "value": 0.199,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.0,
+     "value": 0.2,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.01,
+     "value": 0.20099999999999998,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.1,
+     "value": 0.21000000000000002,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.5,
+     "value": 0.25,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 2.0,
+     "value": 0.30000000000000004,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 5.0,
+     "value": 0.6000000000000001,
+     "verdict": "FAIL"
+    }
+   ],
+   "discrimination": {
+    "all_mutants_killed": true,
+    "canonical_all_pass": false,
+    "canonical_verdicts": [
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "PASS",
+     "PASS",
+     "PASS",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD"
+    ],
+    "gate": "flow_component_10pct",
+    "mutants": {
+     "op_flipped": {
+      "killed": true,
+      "killed_by": [
+       14,
+       15,
+       17,
+       18,
+       19,
+       20
+      ],
+      "n_differ": 6
+     },
+     "threshold_x0.5": {
+      "killed": true,
+      "killed_by": [
+       15,
+       16
+      ],
+      "n_differ": 2
+     },
+     "threshold_x2": {
+      "killed": true,
+      "killed_by": [
+       17,
+       18,
+       19
+      ],
+      "n_differ": 3
+     }
+    },
+    "n_probes": 42
+   },
+   "gate": "flow_component_10pct",
+   "key": "err_Q_mix_component",
+   "minimum_detectable_factor": 0.25,
+   "op": "abs_le",
+   "rationale": "same 10 % gate evaluated under the *component* viscosity rule \u2014 the record requires both rules to pass, so the verdict cannot depend on a silently chosen mixing law.",
+   "summaries": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "FAIL",
+    "result/cp_ny25_self_shift": "PASS",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "FAIL",
+    "result/cp_ny33_self_shift": "PASS",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "PASS",
+    "result/tp_ny25_g1_shift": "PASS",
+    "result/tp_ny25_g2.5_guo": "FAIL",
+    "result/tp_ny25_g2.5_shift": "PASS",
+    "result/tp_ny33_g1_guo": "PASS",
+    "result/tp_ny33_g1_shift": "PASS",
+    "result/tp_ny33_g2.5_guo": "FAIL",
+    "result/tp_ny33_g2.5_shift": "PASS",
+    "result/tp_ny49_g2.5_guo": "FAIL",
+    "result/tp_ny49_g2.5_shift": "FAIL",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "PASS",
+    "result_r3/c2_ny33": "PASS",
+    "result_r3/c2_ny49": "PASS",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   },
+   "switch_probe": {
+    "gate": "flow_component_10pct",
+    "ok": true,
+    "op": "abs_le",
+    "probe_above": 0.1001,
+    "probe_below": 0.0999,
+    "threshold": 0.1,
+    "verdict_above": "FAIL",
+    "verdict_below": "PASS"
+   },
+   "threshold": 0.1,
+   "verdicts": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "FAIL",
+    "result/cp_ny25_self_shift": "PASS",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "FAIL",
+    "result/cp_ny33_self_shift": "PASS",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "PASS",
+    "result/tp_ny25_g1_shift": "PASS",
+    "result/tp_ny25_g2.5_guo": "FAIL",
+    "result/tp_ny25_g2.5_shift": "PASS",
+    "result/tp_ny33_g1_guo": "PASS",
+    "result/tp_ny33_g1_shift": "PASS",
+    "result/tp_ny33_g2.5_guo": "FAIL",
+    "result/tp_ny33_g2.5_shift": "PASS",
+    "result/tp_ny49_g2.5_guo": "FAIL",
+    "result/tp_ny49_g2.5_shift": "FAIL",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "PASS",
+    "result_r3/c2_ny33": "PASS",
+    "result_r3/c2_ny49": "PASS",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   }
+  },
+  {
+   "detection_curve": [
+    {
+     "factor": 0.0,
+     "value": 0.005,
+     "verdict": "PASS"
+    },
+    {
+     "factor": 0.25,
+     "value": 0.00625,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.5,
+     "value": 0.0075,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.9,
+     "value": 0.0095,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.99,
+     "value": 0.00995,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.0,
+     "value": 0.01,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.01,
+     "value": 0.01005,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.1,
+     "value": 0.0105,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.5,
+     "value": 0.0125,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 2.0,
+     "value": 0.015,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 5.0,
+     "value": 0.03,
+     "verdict": "FAIL"
+    }
+   ],
+   "discrimination": {
+    "all_mutants_killed": true,
+    "canonical_all_pass": false,
+    "canonical_verdicts": [
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "PASS",
+     "PASS",
+     "PASS",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD"
+    ],
+    "gate": "spurious_static_0p5pct",
+    "mutants": {
+     "op_flipped": {
+      "killed": true,
+      "killed_by": [
+       21,
+       22,
+       24,
+       25,
+       26,
+       27
+      ],
+      "n_differ": 6
+     },
+     "threshold_x0.5": {
+      "killed": true,
+      "killed_by": [
+       22,
+       23
+      ],
+      "n_differ": 2
+     },
+     "threshold_x2": {
+      "killed": true,
+      "killed_by": [
+       24,
+       25,
+       26
+      ],
+      "n_differ": 3
+     }
+    },
+    "n_probes": 42
+   },
+   "gate": "spurious_static_0p5pct",
+   "key": "spurious_ratio_static",
+   "minimum_detectable_factor": 0.25,
+   "op": "abs_le",
+   "rationale": "criterion \u2462: parasitic interface velocity in the static control (G_x=0) normalised by the driven-case analytic u_max must stay below 0.5 % of the characteristic velocity (Kruger et al. 2017 ch. 9).",
+   "summaries": {
+    "result/cp_ny25_mixture_guo": "WITHHELD",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "WITHHELD",
+    "result/cp_ny25_self_shift": "WITHHELD",
+    "result/cp_ny25_viscous_guo": "WITHHELD",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "WITHHELD",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "WITHHELD",
+    "result/cp_ny33_self_shift": "WITHHELD",
+    "result/cp_ny33_viscous_guo": "WITHHELD",
+    "result/cp_ny33_viscous_guo_long": "WITHHELD",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "WITHHELD",
+    "result/tp_ny25_g1_guo": "WITHHELD",
+    "result/tp_ny25_g1_shift": "WITHHELD",
+    "result/tp_ny25_g2.5_guo": "WITHHELD",
+    "result/tp_ny25_g2.5_shift": "WITHHELD",
+    "result/tp_ny33_g1_guo": "WITHHELD",
+    "result/tp_ny33_g1_shift": "WITHHELD",
+    "result/tp_ny33_g2.5_guo": "WITHHELD",
+    "result/tp_ny33_g2.5_shift": "WITHHELD",
+    "result/tp_ny49_g2.5_guo": "WITHHELD",
+    "result/tp_ny49_g2.5_shift": "WITHHELD",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "FAIL",
+    "result_r3/c3_static_ny33": "FAIL",
+    "result_r3/c3_static_ny49": "FAIL"
+   },
+   "switch_probe": {
+    "gate": "spurious_static_0p5pct",
+    "ok": true,
+    "op": "abs_le",
+    "probe_above": 0.005005,
+    "probe_below": 0.004995,
+    "threshold": 0.005,
+    "verdict_above": "FAIL",
+    "verdict_below": "PASS"
+   },
+   "threshold": 0.005,
+   "verdicts": {
+    "result/cp_ny25_mixture_guo": "WITHHELD",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "WITHHELD",
+    "result/cp_ny25_self_shift": "WITHHELD",
+    "result/cp_ny25_viscous_guo": "WITHHELD",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "WITHHELD",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "WITHHELD",
+    "result/cp_ny33_self_shift": "WITHHELD",
+    "result/cp_ny33_viscous_guo": "WITHHELD",
+    "result/cp_ny33_viscous_guo_long": "WITHHELD",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "WITHHELD",
+    "result/tp_ny25_g1_guo": "WITHHELD",
+    "result/tp_ny25_g1_shift": "WITHHELD",
+    "result/tp_ny25_g2.5_guo": "WITHHELD",
+    "result/tp_ny25_g2.5_shift": "WITHHELD",
+    "result/tp_ny33_g1_guo": "WITHHELD",
+    "result/tp_ny33_g1_shift": "WITHHELD",
+    "result/tp_ny33_g2.5_guo": "WITHHELD",
+    "result/tp_ny33_g2.5_shift": "WITHHELD",
+    "result/tp_ny49_g2.5_guo": "WITHHELD",
+    "result/tp_ny49_g2.5_shift": "WITHHELD",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "FAIL",
+    "result_r3/c3_static_ny33": "FAIL",
+    "result_r3/c3_static_ny49": "FAIL"
+   }
+  },
+  {
+   "detection_curve": [
+    {
+     "factor": 0.0,
+     "value": 0.5,
+     "verdict": "PASS"
+    },
+    {
+     "factor": 0.25,
+     "value": 0.375,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.5,
+     "value": 0.25,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.9,
+     "value": 0.04999999999999999,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.99,
+     "value": 0.0050000000000000044,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.0,
+     "value": 0.0,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.01,
+     "value": -0.0050000000000000044,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.1,
+     "value": -0.050000000000000044,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.5,
+     "value": -0.25,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 2.0,
+     "value": -0.5,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 5.0,
+     "value": -2.0,
+     "verdict": "FAIL"
+    }
+   ],
+   "discrimination": {
+    "all_mutants_killed": true,
+    "canonical_all_pass": false,
+    "canonical_verdicts": [
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "FAIL",
+     "FAIL",
+     "PASS",
+     "PASS",
+     "PASS",
+     "PASS",
+     "PASS",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD"
+    ],
+    "gate": "stratified_phi_0p5",
+    "mutants": {
+     "op_flipped": {
+      "killed": true,
+      "killed_by": [
+       28,
+       29,
+       31,
+       32,
+       33,
+       34
+      ],
+      "n_differ": 6
+     },
+     "threshold_x0.5": {
+      "killed": true,
+      "killed_by": [
+       28,
+       29
+      ],
+      "n_differ": 2
+     },
+     "threshold_x2": {
+      "killed": true,
+      "killed_by": [
+       30,
+       31,
+       32
+      ],
+      "n_differ": 3
+     }
+    },
+    "n_probes": 42
+   },
+   "gate": "stratified_phi_0p5",
+   "key": "phi_contrast",
+   "minimum_detectable_factor": 0.25,
+   "op": "ge",
+   "rationale": "stratification gate: below phi_contrast 0.5 the phases have mixed, so a two-layer flux comparison is not a measurement of two-layer flow (declared in result.json thresholds as phi_contrast_min).",
+   "summaries": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "PASS",
+    "result/cp_ny25_self_shift": "PASS",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "PASS",
+    "result/cp_ny33_self_shift": "PASS",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "FAIL",
+    "result/tp_ny25_g1_shift": "FAIL",
+    "result/tp_ny25_g2.5_guo": "PASS",
+    "result/tp_ny25_g2.5_shift": "PASS",
+    "result/tp_ny33_g1_guo": "FAIL",
+    "result/tp_ny33_g1_shift": "FAIL",
+    "result/tp_ny33_g2.5_guo": "PASS",
+    "result/tp_ny33_g2.5_shift": "PASS",
+    "result/tp_ny49_g2.5_guo": "PASS",
+    "result/tp_ny49_g2.5_shift": "PASS",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   },
+   "switch_probe": {
+    "gate": "stratified_phi_0p5",
+    "ok": true,
+    "op": "ge",
+    "probe_above": 0.4995,
+    "probe_below": 0.5005,
+    "threshold": 0.5,
+    "verdict_above": "FAIL",
+    "verdict_below": "PASS"
+   },
+   "threshold": 0.5,
+   "verdicts": {
+    "result/cp_ny25_mixture_guo": "PASS",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "PASS",
+    "result/cp_ny25_self_shift": "PASS",
+    "result/cp_ny25_viscous_guo": "PASS",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "PASS",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "PASS",
+    "result/cp_ny33_self_shift": "PASS",
+    "result/cp_ny33_viscous_guo": "PASS",
+    "result/cp_ny33_viscous_guo_long": "PASS",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "PASS",
+    "result/tp_ny25_g1_guo": "FAIL",
+    "result/tp_ny25_g1_shift": "FAIL",
+    "result/tp_ny25_g2.5_guo": "PASS",
+    "result/tp_ny25_g2.5_shift": "PASS",
+    "result/tp_ny33_g1_guo": "FAIL",
+    "result/tp_ny33_g1_shift": "FAIL",
+    "result/tp_ny33_g2.5_guo": "PASS",
+    "result/tp_ny33_g2.5_shift": "PASS",
+    "result/tp_ny49_g2.5_guo": "PASS",
+    "result/tp_ny49_g2.5_shift": "PASS",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   }
+  },
+  {
+   "detection_curve": [
+    {
+     "factor": 0.0,
+     "value": 0.001,
+     "verdict": "PASS"
+    },
+    {
+     "factor": 0.25,
+     "value": 0.00125,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.5,
+     "value": 0.0015,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.9,
+     "value": 0.0019,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 0.99,
+     "value": 0.00199,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.0,
+     "value": 0.002,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.01,
+     "value": 0.0020099999999999996,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.1,
+     "value": 0.0021000000000000003,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 1.5,
+     "value": 0.0025,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 2.0,
+     "value": 0.003,
+     "verdict": "FAIL"
+    },
+    {
+     "factor": 5.0,
+     "value": 0.006,
+     "verdict": "FAIL"
+    }
+   ],
+   "discrimination": {
+    "all_mutants_killed": true,
+    "canonical_all_pass": false,
+    "canonical_verdicts": [
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "WITHHELD",
+     "PASS",
+     "PASS",
+     "PASS",
+     "FAIL",
+     "FAIL",
+     "FAIL",
+     "FAIL"
+    ],
+    "gate": "steady_1e-3",
+    "mutants": {
+     "op_flipped": {
+      "killed": true,
+      "killed_by": [
+       35,
+       36,
+       38,
+       39,
+       40,
+       41
+      ],
+      "n_differ": 6
+     },
+     "threshold_x0.5": {
+      "killed": true,
+      "killed_by": [
+       36,
+       37
+      ],
+      "n_differ": 2
+     },
+     "threshold_x2": {
+      "killed": true,
+      "killed_by": [
+       38,
+       39,
+       40
+      ],
+      "n_differ": 3
+     }
+    },
+    "n_probes": 42
+   },
+   "gate": "steady_1e-3",
+   "key": "steady_rel_change",
+   "minimum_detectable_factor": 0.25,
+   "op": "abs_le",
+   "rationale": "steadiness gate: relative drift of the total flux over the last three samples must be < 1e-3, otherwise the time-average is not a steady state (declared in result.json thresholds).",
+   "summaries": {
+    "result/cp_ny25_mixture_guo": "WITHHELD",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "WITHHELD",
+    "result/cp_ny25_self_shift": "WITHHELD",
+    "result/cp_ny25_viscous_guo": "WITHHELD",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "WITHHELD",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "WITHHELD",
+    "result/cp_ny33_self_shift": "WITHHELD",
+    "result/cp_ny33_viscous_guo": "WITHHELD",
+    "result/cp_ny33_viscous_guo_long": "WITHHELD",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "WITHHELD",
+    "result/tp_ny25_g1_guo": "WITHHELD",
+    "result/tp_ny25_g1_shift": "WITHHELD",
+    "result/tp_ny25_g2.5_guo": "WITHHELD",
+    "result/tp_ny25_g2.5_shift": "WITHHELD",
+    "result/tp_ny33_g1_guo": "WITHHELD",
+    "result/tp_ny33_g1_shift": "WITHHELD",
+    "result/tp_ny33_g2.5_guo": "WITHHELD",
+    "result/tp_ny33_g2.5_shift": "WITHHELD",
+    "result/tp_ny49_g2.5_guo": "WITHHELD",
+    "result/tp_ny49_g2.5_shift": "WITHHELD",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   },
+   "switch_probe": {
+    "gate": "steady_1e-3",
+    "ok": true,
+    "op": "abs_le",
+    "probe_above": 0.001001,
+    "probe_below": 0.000999,
+    "threshold": 0.001,
+    "verdict_above": "FAIL",
+    "verdict_below": "PASS"
+   },
+   "threshold": 0.001,
+   "verdicts": {
+    "result/cp_ny25_mixture_guo": "WITHHELD",
+    "result/cp_ny25_mixture_shift": "WITHHELD",
+    "result/cp_ny25_self_guo": "WITHHELD",
+    "result/cp_ny25_self_shift": "WITHHELD",
+    "result/cp_ny25_viscous_guo": "WITHHELD",
+    "result/cp_ny25_viscous_shift": "WITHHELD",
+    "result/cp_ny33_mixture_guo": "WITHHELD",
+    "result/cp_ny33_mixture_shift": "WITHHELD",
+    "result/cp_ny33_self_guo": "WITHHELD",
+    "result/cp_ny33_self_shift": "WITHHELD",
+    "result/cp_ny33_viscous_guo": "WITHHELD",
+    "result/cp_ny33_viscous_guo_long": "WITHHELD",
+    "result/cp_ny33_viscous_shift": "WITHHELD",
+    "result/cp_ny49_viscous_guo": "WITHHELD",
+    "result/tp_ny25_g1_guo": "WITHHELD",
+    "result/tp_ny25_g1_shift": "WITHHELD",
+    "result/tp_ny25_g2.5_guo": "WITHHELD",
+    "result/tp_ny25_g2.5_shift": "WITHHELD",
+    "result/tp_ny33_g1_guo": "WITHHELD",
+    "result/tp_ny33_g1_shift": "WITHHELD",
+    "result/tp_ny33_g2.5_guo": "WITHHELD",
+    "result/tp_ny33_g2.5_shift": "WITHHELD",
+    "result/tp_ny49_g2.5_guo": "WITHHELD",
+    "result/tp_ny49_g2.5_shift": "WITHHELD",
+    "result_r3/c1_ny25": "WITHHELD",
+    "result_r3/c1_ny33": "WITHHELD",
+    "result_r3/c1_ny49": "WITHHELD",
+    "result_r3/c2_ny25": "WITHHELD",
+    "result_r3/c2_ny33": "WITHHELD",
+    "result_r3/c2_ny49": "WITHHELD",
+    "result_r3/c3_static_ny25": "WITHHELD",
+    "result_r3/c3_static_ny33": "WITHHELD",
+    "result_r3/c3_static_ny49": "WITHHELD"
+   }
+  }
+ ],
+ "headline": {
+  "gates_ever_fail": [
+   "iface_5pct",
+   "flow_mix_10pct",
+   "flow_component_10pct",
+   "spurious_static_0p5pct",
+   "stratified_phi_0p5"
+  ],
+  "min_detectable_factor": {
+   "flow_component_10pct": 0.25,
+   "flow_mix_10pct": 0.25,
+   "iface_5pct": 0.25,
+   "spurious_static_0p5pct": 0.25,
+   "steady_1e-3": 0.25,
+   "stratified_phi_0p5": 0.25
+  },
+  "mutants_surviving": [],
+  "n_gates": 6,
+  "switch_probe_ok": {
+   "flow_component_10pct": true,
+   "flow_mix_10pct": true,
+   "iface_5pct": true,
+   "spurious_static_0p5pct": true,
+   "steady_1e-3": true,
+   "stratified_phi_0p5": true
+  },
+  "triangulation_agree": true,
+  "triangulation_disagreements": {},
+  "triangulation_missing_evidence": {
+   "vs_r3_source": [
+    "steady_1e-3"
+   ],
+   "vs_r4_source": [
+    "stratified_phi_0p5",
+    "steady_1e-3"
+   ]
+  },
+  "verdict_reproduction": {
+   "n_compared": 92,
+   "n_mismatch": 0,
+   "n_withheld": 16
+  }
+ },
+ "hygiene": [],
+ "n_gates": 6,
+ "provenance": {
+  "note": "every number below is read from the records or parsed from source inside this run; the declared thresholds are the SPEC values and are triangulated against both carriers.",
+  "records_read": [
+   "result.json",
+   "result_r3.json"
+  ],
+  "sources_parsed": [
+   "cases/mcmp_stratified_poiseuille/r3_benchmark.py",
+   "cases/mcmp_stratified_poiseuille/r4_benchmark.py"
+  ],
+  "spec": "docs/MCMP_STRATIFIED_POISEUILLE_SPEC.md \u00a76",
+  "thousands_hand_copied": 0
+ },
+ "records": [
+  "result/cp_ny25_mixture_guo",
+  "result/cp_ny25_mixture_shift",
+  "result/cp_ny25_self_guo",
+  "result/cp_ny25_self_shift",
+  "result/cp_ny25_viscous_guo",
+  "result/cp_ny25_viscous_shift",
+  "result/cp_ny33_mixture_guo",
+  "result/cp_ny33_mixture_shift",
+  "result/cp_ny33_self_guo",
+  "result/cp_ny33_self_shift",
+  "result/cp_ny33_viscous_guo",
+  "result/cp_ny33_viscous_guo_long",
+  "result/cp_ny33_viscous_shift",
+  "result/cp_ny49_viscous_guo",
+  "result/tp_ny25_g1_guo",
+  "result/tp_ny25_g1_shift",
+  "result/tp_ny25_g2.5_guo",
+  "result/tp_ny25_g2.5_shift",
+  "result/tp_ny33_g1_guo",
+  "result/tp_ny33_g1_shift",
+  "result/tp_ny33_g2.5_guo",
+  "result/tp_ny33_g2.5_shift",
+  "result/tp_ny49_g2.5_guo",
+  "result/tp_ny49_g2.5_shift",
+  "result_r3/c1_ny25",
+  "result_r3/c1_ny33",
+  "result_r3/c1_ny49",
+  "result_r3/c2_ny25",
+  "result_r3/c2_ny33",
+  "result_r3/c2_ny49",
+  "result_r3/c3_static_ny25",
+  "result_r3/c3_static_ny33",
+  "result_r3/c3_static_ny49"
+ ],
+ "reproduction": {
+  "mismatches": [],
+  "n_compared": 92,
+  "n_mismatch": 0,
+  "n_withheld": 16
+ },
+ "triangulation": {
+  "vs_r3_source": {
+   "agree": false,
+   "missing": [
+    "steady_1e-3"
+   ],
+   "rows": []
+  },
+  "vs_r4_source": {
+   "agree": false,
+   "missing": [
+    "stratified_phi_0p5",
+    "steady_1e-3"
+   ],
+   "rows": []
+  },
+  "vs_result_json": {
+   "agree": true,
+   "missing": [],
+   "rows": []
+  }
+ },
+ "utilisation": {
+  "flow_component_10pct": {
+   "result/cp_ny25_mixture_guo": 0.6810235281354012,
+   "result/cp_ny25_mixture_shift": null,
+   "result/cp_ny25_self_guo": 1.2498810462715455,
+   "result/cp_ny25_self_shift": 0.8472025640185293,
+   "result/cp_ny25_viscous_guo": 0.2729238587672983,
+   "result/cp_ny25_viscous_shift": null,
+   "result/cp_ny33_mixture_guo": 0.5778458247062211,
+   "result/cp_ny33_mixture_shift": null,
+   "result/cp_ny33_self_guo": 1.3085080682262709,
+   "result/cp_ny33_self_shift": 0.9816743715086935,
+   "result/cp_ny33_viscous_guo": 0.17606583648996027,
+   "result/cp_ny33_viscous_guo_long": 0.1983730750095778,
+   "result/cp_ny33_viscous_shift": null,
+   "result/cp_ny49_viscous_guo": 0.11752725123397369,
+   "result/tp_ny25_g1_guo": 0.6714636106790514,
+   "result/tp_ny25_g1_shift": 0.6643116055431251,
+   "result/tp_ny25_g2.5_guo": 1.2498810462715455,
+   "result/tp_ny25_g2.5_shift": 0.8472025640185293,
+   "result/tp_ny33_g1_guo": 0.7360619320696882,
+   "result/tp_ny33_g1_shift": 0.7312938660582936,
+   "result/tp_ny33_g2.5_guo": 1.3085080682262709,
+   "result/tp_ny33_g2.5_shift": 0.9816743715086935,
+   "result/tp_ny49_g2.5_guo": 1.285550048082267,
+   "result/tp_ny49_g2.5_shift": 1.0638288883166274,
+   "result_r3/c1_ny25": null,
+   "result_r3/c1_ny33": null,
+   "result_r3/c1_ny49": null,
+   "result_r3/c2_ny25": 0.6461285551841767,
+   "result_r3/c2_ny33": 0.5235246781269438,
+   "result_r3/c2_ny49": 0.2304779097653543,
+   "result_r3/c3_static_ny25": null,
+   "result_r3/c3_static_ny33": null,
+   "result_r3/c3_static_ny49": null
+  },
+  "flow_mix_10pct": {
+   "result/cp_ny25_mixture_guo": 0.4330946777437424,
+   "result/cp_ny25_mixture_shift": null,
+   "result/cp_ny25_self_guo": 1.549181090999198,
+   "result/cp_ny25_self_shift": 1.135789456557863,
+   "result/cp_ny25_viscous_guo": 0.014137626969309447,
+   "result/cp_ny25_viscous_shift": null,
+   "result/cp_ny33_mixture_guo": 0.32717195940067784,
+   "result/cp_ny33_mixture_shift": null,
+   "result/cp_ny33_self_guo": 1.609367869027908,
+   "result/cp_ny33_self_shift": 1.2738388501425912,
+   "result/cp_ny33_viscous_guo": 0.08529727681289104,
+   "result/cp_ny33_viscous_guo_long": 0.06239656024144246,
+   "result/cp_ny33_viscous_shift": null,
+   "result/cp_ny49_viscous_guo": 0.3867013292862271,
+   "result/tp_ny25_g1_guo": 0.9553750158618027,
+   "result/tp_ny25_g1_shift": 0.9480327335622097,
+   "result/tp_ny25_g2.5_guo": 1.549181090999198,
+   "result/tp_ny25_g2.5_shift": 1.135789456557863,
+   "result/tp_ny33_g1_guo": 1.0216919581340511,
+   "result/tp_ny33_g1_shift": 1.01679703901509,
+   "result/tp_ny33_g2.5_guo": 1.609367869027908,
+   "result/tp_ny33_g2.5_shift": 1.2738388501425912,
+   "result/tp_ny49_g2.5_guo": 1.5857990569628322,
+   "result/tp_ny49_g2.5_shift": 1.3581790656662656,
+   "result_r3/c1_ny25": null,
+   "result_r3/c1_ny33": null,
+   "result_r3/c1_ny49": null,
+   "result_r3/c2_ny25": 0.3972713334682242,
+   "result_r3/c2_ny33": 0.2714056133980497,
+   "result_r3/c2_ny49": 0.029437585033960944,
+   "result_r3/c3_static_ny25": null,
+   "result_r3/c3_static_ny33": null,
+   "result_r3/c3_static_ny49": null
+  },
+  "iface_5pct": {
+   "result/cp_ny25_mixture_guo": 0.7075203058553268,
+   "result/cp_ny25_mixture_shift": null,
+   "result/cp_ny25_self_guo": 0.7198996334957286,
+   "result/cp_ny25_self_shift": 0.67076969612302,
+   "result/cp_ny25_viscous_guo": 0.7080416819954269,
+   "result/cp_ny25_viscous_shift": null,
+   "result/cp_ny33_mixture_guo": 0.5096880912091178,
+   "result/cp_ny33_mixture_shift": null,
+   "result/cp_ny33_self_guo": 0.5882193210053566,
+   "result/cp_ny33_self_shift": 0.6096825323413576,
+   "result/cp_ny33_viscous_guo": 0.511380013762228,
+   "result/cp_ny33_viscous_guo_long": 0.5866570825863222,
+   "result/cp_ny33_viscous_shift": null,
+   "result/cp_ny49_viscous_guo": 0.3374956498906888,
+   "result/tp_ny25_g1_guo": 17.72090309636983,
+   "result/tp_ny25_g1_shift": 17.73380333337725,
+   "result/tp_ny25_g2.5_guo": 0.7198996334957286,
+   "result/tp_ny25_g2.5_shift": 0.67076969612302,
+   "result/tp_ny33_g1_guo": 18.275086231643762,
+   "result/tp_ny33_g1_shift": 18.28555403402955,
+   "result/tp_ny33_g2.5_guo": 0.5882193210053566,
+   "result/tp_ny33_g2.5_shift": 0.6096825323413576,
+   "result/tp_ny49_g2.5_guo": 0.4273223970141742,
+   "result/tp_ny49_g2.5_shift": 0.5262850009332241,
+   "result_r3/c1_ny25": 0.7681267563980754,
+   "result_r3/c1_ny33": 0.5895157930742534,
+   "result_r3/c1_ny49": 0.27591774437647193,
+   "result_r3/c2_ny25": null,
+   "result_r3/c2_ny33": null,
+   "result_r3/c2_ny49": null,
+   "result_r3/c3_static_ny25": null,
+   "result_r3/c3_static_ny33": null,
+   "result_r3/c3_static_ny49": null
+  },
+  "spurious_static_0p5pct": {
+   "result/cp_ny25_mixture_guo": null,
+   "result/cp_ny25_mixture_shift": null,
+   "result/cp_ny25_self_guo": null,
+   "result/cp_ny25_self_shift": null,
+   "result/cp_ny25_viscous_guo": null,
+   "result/cp_ny25_viscous_shift": null,
+   "result/cp_ny33_mixture_guo": null,
+   "result/cp_ny33_mixture_shift": null,
+   "result/cp_ny33_self_guo": null,
+   "result/cp_ny33_self_shift": null,
+   "result/cp_ny33_viscous_guo": null,
+   "result/cp_ny33_viscous_guo_long": null,
+   "result/cp_ny33_viscous_shift": null,
+   "result/cp_ny49_viscous_guo": null,
+   "result/tp_ny25_g1_guo": null,
+   "result/tp_ny25_g1_shift": null,
+   "result/tp_ny25_g2.5_guo": null,
+   "result/tp_ny25_g2.5_shift": null,
+   "result/tp_ny33_g1_guo": null,
+   "result/tp_ny33_g1_shift": null,
+   "result/tp_ny33_g2.5_guo": null,
+   "result/tp_ny33_g2.5_shift": null,
+   "result/tp_ny49_g2.5_guo": null,
+   "result/tp_ny49_g2.5_shift": null,
+   "result_r3/c1_ny25": null,
+   "result_r3/c1_ny33": null,
+   "result_r3/c1_ny49": null,
+   "result_r3/c2_ny25": null,
+   "result_r3/c2_ny33": null,
+   "result_r3/c2_ny49": null,
+   "result_r3/c3_static_ny25": 69.96658773576165,
+   "result_r3/c3_static_ny33": 35.9057739842683,
+   "result_r3/c3_static_ny49": 13.240935831246045
+  },
+  "steady_1e-3": {
+   "result/cp_ny25_mixture_guo": null,
+   "result/cp_ny25_mixture_shift": null,
+   "result/cp_ny25_self_guo": null,
+   "result/cp_ny25_self_shift": null,
+   "result/cp_ny25_viscous_guo": null,
+   "result/cp_ny25_viscous_shift": null,
+   "result/cp_ny33_mixture_guo": null,
+   "result/cp_ny33_mixture_shift": null,
+   "result/cp_ny33_self_guo": null,
+   "result/cp_ny33_self_shift": null,
+   "result/cp_ny33_viscous_guo": null,
+   "result/cp_ny33_viscous_guo_long": null,
+   "result/cp_ny33_viscous_shift": null,
+   "result/cp_ny49_viscous_guo": null,
+   "result/tp_ny25_g1_guo": null,
+   "result/tp_ny25_g1_shift": null,
+   "result/tp_ny25_g2.5_guo": null,
+   "result/tp_ny25_g2.5_shift": null,
+   "result/tp_ny33_g1_guo": null,
+   "result/tp_ny33_g1_shift": null,
+   "result/tp_ny33_g2.5_guo": null,
+   "result/tp_ny33_g2.5_shift": null,
+   "result/tp_ny49_g2.5_guo": null,
+   "result/tp_ny49_g2.5_shift": null,
+   "result_r3/c1_ny25": null,
+   "result_r3/c1_ny33": null,
+   "result_r3/c1_ny49": null,
+   "result_r3/c2_ny25": null,
+   "result_r3/c2_ny33": null,
+   "result_r3/c2_ny49": null,
+   "result_r3/c3_static_ny25": null,
+   "result_r3/c3_static_ny33": null,
+   "result_r3/c3_static_ny49": null
+  },
+  "stratified_phi_0p5": {
+   "result/cp_ny25_mixture_guo": 0.5,
+   "result/cp_ny25_mixture_shift": null,
+   "result/cp_ny25_self_guo": 0.5,
+   "result/cp_ny25_self_shift": 0.5,
+   "result/cp_ny25_viscous_guo": 0.5,
+   "result/cp_ny25_viscous_shift": null,
+   "result/cp_ny33_mixture_guo": 0.5,
+   "result/cp_ny33_mixture_shift": null,
+   "result/cp_ny33_self_guo": 0.5,
+   "result/cp_ny33_self_shift": 0.5,
+   "result/cp_ny33_viscous_guo": 0.5,
+   "result/cp_ny33_viscous_guo_long": 0.5,
+   "result/cp_ny33_viscous_shift": null,
+   "result/cp_ny49_viscous_guo": 0.5,
+   "result/tp_ny25_g1_guo": 3.311137530926183,
+   "result/tp_ny25_g1_shift": 3.4844464677987252,
+   "result/tp_ny25_g2.5_guo": 0.5,
+   "result/tp_ny25_g2.5_shift": 0.5,
+   "result/tp_ny33_g1_guo": 3.290331488245409,
+   "result/tp_ny33_g1_shift": 3.4640029748293677,
+   "result/tp_ny33_g2.5_guo": 0.5,
+   "result/tp_ny33_g2.5_shift": 0.5,
+   "result/tp_ny49_g2.5_guo": 0.5,
+   "result/tp_ny49_g2.5_shift": 0.5,
+   "result_r3/c1_ny25": null,
+   "result_r3/c1_ny33": null,
+   "result_r3/c1_ny49": null,
+   "result_r3/c2_ny25": null,
+   "result_r3/c2_ny33": null,
+   "result_r3/c2_ny49": null,
+   "result_r3/c3_static_ny25": null,
+   "result_r3/c3_static_ny33": null,
+   "result_r3/c3_static_ny49": null
+  }
+ }
+}
