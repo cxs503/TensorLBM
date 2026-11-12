@@ -1,0 +1,63 @@
+{
+  "source_url": "https://ar5iv.labs.arxiv.org/html/2411.03124",
+  "source_sha256": "f95490265a0630da64308116c990794791eb8f706ddfe917503ffadc8c397d7a",
+  "sha256_matches_pin": true,
+  "checks": [
+    {
+      "name": "Re=100 cd: ref 1.48 appears in source column set [1.48, 1.46, 1.44]",
+      "ok": true,
+      "detail": "columns=[1.48, 1.46, 1.44] band=[1.44, 1.48]"
+    },
+    {
+      "name": "Re=100 cd: band [1.44, 1.48] is covered by source values",
+      "ok": true,
+      "detail": "columns=[1.48, 1.46, 1.44]"
+    },
+    {
+      "name": "Re=100 st: ref 0.147 appears in source column set [0.147, 0.147]",
+      "ok": true,
+      "detail": "columns=[0.147, 0.147] band=[0.147, 0.147]"
+    },
+    {
+      "name": "Re=100 st: band [0.147, 0.147] is covered by source values",
+      "ok": true,
+      "detail": "columns=[0.147, 0.147]"
+    },
+    {
+      "name": "Re=150 cd: ref 1.41 appears in source column set [1.41, 1.41, 1.4]",
+      "ok": true,
+      "detail": "columns=[1.41, 1.41, 1.4] band=[1.4, 1.41]"
+    },
+    {
+      "name": "Re=150 cd: band [1.4, 1.41] is covered by source values",
+      "ok": true,
+      "detail": "columns=[1.41, 1.41, 1.4]"
+    },
+    {
+      "name": "Re=150 st: ref 0.159 appears in source column set [0.159, 0.162]",
+      "ok": true,
+      "detail": "columns=[0.159, 0.162] band=[0.159, 0.162]"
+    },
+    {
+      "name": "Re=150 st: band [0.159, 0.162] is covered by source values",
+      "ok": true,
+      "detail": "columns=[0.159, 0.162]"
+    },
+    {
+      "name": "Re=200 cd: WITHHELD keeps ref=null + written reason",
+      "ok": true,
+      "detail": "ref=None"
+    },
+    {
+      "name": "Re=200 st: WITHHELD keeps ref=null + written reason",
+      "ok": true,
+      "detail": "ref=None"
+    },
+    {
+      "name": "trend_expectation_re200 is labelled non-referee",
+      "ok": true,
+      "detail": "TREND (non-referee, do not use as a pass/fail gate)"
+    }
+  ],
+  "failures": 0
+}
