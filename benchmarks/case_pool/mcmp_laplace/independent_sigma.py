@@ -285,14 +285,28 @@ def _summary(result: dict) -> dict:
         G = level["G12"]
         flat96 = level["flat"]["96"]["pairings"]
         flat128 = level["flat"]["128"]["pairings"]
-        # pick the pairing that satisfies the normal-force gate best at n=128
-        best = min(
-            (p for p in PAIRINGS if p != "isotropic"),
-            key=lambda p: flat128[p]["flatness"],
+        # Pick the pairing that satisfies the *report's own* normal-force gate
+        # (``flat_sigma``: P_NN flatness < 5% and sigma > 0 at both resolutions)
+        # best at n=128.  Without the sigma > 0 filter the flattest pairing can be
+        # one whose sigma is identically zero (bwd at large |G12|), and the
+        # summary then divides by zero -- m15969 audit finding F2.
+        gated = [
+            p
+            for p in PAIRINGS
+            if p != "isotropic"
+            and flat96[p]["sigma"] > 0.0
+            and flat128[p]["sigma"] > 0.0
+            and flat96[p]["flatness"] < 0.05
+            and flat128[p]["flatness"] < 0.05
+        ]
+        best = min(gated, key=lambda p: flat128[p]["flatness"]) if gated else None
+        sig_mech = (
+            {n: level["flat"][n]["pairings"][best]["sigma"] for n in ("96", "128")}
+            if best is not None
+            else None
         )
-        sig_mech = {n: level["flat"][n]["pairings"][best]["sigma"] for n in ("96", "128")}
         for d in level["droplets"]:
-            if d["n"] != 128:
+            if d["n"] != 128 or sig_mech is None:
                 continue
             s = sig_mech["128"]
             ref = s / d["radius"]
@@ -313,6 +327,7 @@ def _summary(result: dict) -> dict:
                 }
             )
         level["_best_pairing"] = best
+        level["_gate_failed"] = best is None
         level["_flat_gate"] = {
             p: {
                 "flatness_96": flat96[p]["flatness"],
@@ -331,6 +346,9 @@ def _clean_levels(result: dict) -> dict:
             f"G{lv['G12']}": lv.get("_flat_gate", {}) for lv in result["levels"]
         },
         "best_pairing": {f"G{lv['G12']}": lv.get("_best_pairing") for lv in result["levels"]},
+        "gate_failed": {
+            f"G{lv['G12']}": bool(lv.get("_gate_failed", False)) for lv in result["levels"]
+        },
     }
 
 
