@@ -21,7 +21,7 @@
   "artifacts": [
     {
       "path": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
-      "sha256": "a0b0645512e004a80836d5fe7b9fb818366c98162f8e0d96e43711d2013489ee"
+      "sha256": "853a155b2ef00893def965b5d9d6b8f60dead636f4fda0b43ff90959465b41dc"
     }
   ]
 }

@@ -5,6 +5,9 @@ Modules
 ``criteria``          pure acceptance rules (error gate, convergence trend, status)
 ``reference_audit``   zero-hand-copy provenance gate for reference anchors
 ``runner``            CLI: list / audit / check / run / status
+``runledger``         executed-run provenance: artifacts/validation_matrix/runs/*
+``make_benchmark_table``  generated reference-vs-got table (JSON + MD)
+``__main__``          package entry: ``python -m benchmarks.validation_matrix``
 ``cases/``            new CI-tier case runners (static droplet, dam break)
 ``matrix.json``       the registry (9 slots, thresholds, artifacts, repro commands)
 ``references.json``   anchors with in-repo source file + literal token + sha256
@@ -12,4 +15,5 @@ Modules
 
 from __future__ import annotations
 
-__all__ = ["criteria", "reference_audit", "runner"]
+__all__ = ["criteria", "reference_audit", "runner", "runledger",
+           "make_benchmark_table"]

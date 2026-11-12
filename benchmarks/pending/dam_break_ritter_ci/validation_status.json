@@ -4,8 +4,8 @@
   "title": "Ritter 1892 dam-break self-similarity (CI tier)",
   "reference_basis": "analytic",
   "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g). Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
-  "matrix_version": "1.0",
-  "generated_utc": "2026-11-12T01:52:03Z",
+  "matrix_version": "1.1",
+  "generated_utc": "2026-11-12T04:36:20Z",
   "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
   "references": [
@@ -150,23 +150,23 @@
     }
   ],
   "unresolved_metrics": [],
-  "artifact_sha256": "a0b0645512e004a80836d5fe7b9fb818366c98162f8e0d96e43711d2013489ee",
+  "artifact_sha256": "853a155b2ef00893def965b5d9d6b8f60dead636f4fda0b43ff90959465b41dc",
   "artifact_bytes": 3104,
   "evidence_chain": [
     {
       "kind": "artifact",
       "path": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
-      "sha256": "a0b0645512e004a80836d5fe7b9fb818366c98162f8e0d96e43711d2013489ee"
+      "sha256": "853a155b2ef00893def965b5d9d6b8f60dead636f4fda0b43ff90959465b41dc"
     },
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+      "sha256": "43954e5988f442dd5c6977698cfda5a21691ec025d3e663a2e79922078b9f4e1"
     },
     {
       "kind": "references",
       "path": "benchmarks/validation_matrix/references.json",
-      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+      "sha256": "c3bee5cdfc206d7dd091c34fc0be5c8815b09de2fb03e60109f59339e4f2ca3d"
     },
     {
       "kind": "runner",

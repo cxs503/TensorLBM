@@ -1,6 +1,6 @@
 {
   "matrix": "TensorLBM validation matrix",
-  "version": "1.0",
+  "version": "1.1",
   "updated": "2026-11-12",
   "acceptance": {
     "error_tol_pct": 3.0,
@@ -483,8 +483,8 @@
             "kind": "error_pct",
             "tol_pct": 5.0,
             "paths": [
-              "grids.D28.err_pct.cd",
-              "grids.D40.err_pct.cd"
+              "per_metric.cd.err_pct.D28",
+              "per_metric.cd.err_pct.D40"
             ]
           },
           {
@@ -492,8 +492,8 @@
             "kind": "error_pct",
             "tol_pct": 5.0,
             "paths": [
-              "grids.D28.err_pct.st",
-              "grids.D40.err_pct.st"
+              "per_metric.st.err_pct.D28",
+              "per_metric.st.err_pct.D40"
             ]
           },
           {
@@ -501,8 +501,8 @@
             "kind": "error_pct",
             "tol_pct": 5.0,
             "paths": [
-              "grids.D28.err_pct.cl_amp",
-              "grids.D40.err_pct.cl_amp"
+              "per_metric.cl_amp.err_pct.D28",
+              "per_metric.cl_amp.err_pct.D40"
             ]
           },
           {
@@ -510,8 +510,8 @@
             "kind": "error_pct",
             "tol_pct": 5.0,
             "paths": [
-              "grids.D28.err_pct.dp",
-              "grids.D40.err_pct.dp"
+              "per_metric.dp.err_pct.D28",
+              "per_metric.dp.err_pct.D40"
             ]
           }
         ],
@@ -527,7 +527,7 @@
         "cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 20 28 40 --steps 14000 20000 27200 --threads 8",
         "budget_s": 5400
       },
-      "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there)."
+      "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there). Registry schema fix v1.1: metric paths point at the artifact's per_metric.<metric>.err_pct.<D> schema produced by the case's own aggregate() (v1.0 addressed grids.<D>.err_pct.<metric>, which the artifact never contained, so the case judged as 'pending: metric paths unresolved')."
     }
   ]
 }
