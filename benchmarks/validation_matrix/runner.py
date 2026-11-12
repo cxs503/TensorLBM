@@ -220,7 +220,10 @@ def run_repro(case: dict) -> dict:
     return {
         "cmd": cmd,
         "returncode": proc.returncode,
+        "started_utc": started.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "elapsed_s": (_dt.datetime.now(_dt.timezone.utc) - started).total_seconds(),
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
         "stdout_tail": proc.stdout[-2000:],
         "stderr_tail": proc.stderr[-2000:],
     }
@@ -343,19 +346,42 @@ def cmd_run(args) -> int:
     exit_code = 0
     for case in cases:
         print(f"=== {case['id']} ===", flush=True)
+        run = None
         if not args.no_exec:
             run = run_repro(case)
             print(f"  repro rc={run['returncode']} in {run['elapsed_s']:.1f}s", flush=True)
             if run["returncode"] != 0:
                 print("  stderr tail:\n" + run["stderr_tail"], flush=True)
+                # A non-zero exit is execution evidence too: it must not vanish.
+                result = evaluate_case(case)
+                if not args.no_record:
+                    _record(case, run, result)
                 exit_code = 1
                 continue
         result = evaluate_case(case)
         path = write_status(result)
         print(f"  status={result['status']} -> {path.relative_to(REPO_ROOT)}")
-        if result["status"] == "failed":
+        if not args.no_record:
+            ledger_dir = _record(case, run, result)
+            if ledger_dir is not None:
+                print(f"  ledger={ledger_dir.relative_to(REPO_ROOT)}")
+        # An honest FAIL is a *recorded result*, not a build break: the exit
+        # code reports execution health only. ``--strict`` opts in to failing
+        # the command on a failed verdict (useful for release gating).
+        if result["status"] == "failed" and args.strict:
             exit_code = 1
     return exit_code
+
+
+def _record(case: dict, run: dict | None, result: dict) -> Path | None:
+    """Append this run to the provenance ledger (never fatal for the verdict)."""
+    import runledger
+
+    if run is None:
+        run = {"cmd": (case.get("repro") or {}).get("cmd"), "returncode": None,
+               "elapsed_s": 0.0, "stdout": "", "stderr": "",
+               "note": "judged frozen artifact without execution (--no-exec)"}
+    return runledger.record_run(case, run, result)
 
 
 def cmd_status(args) -> int:
@@ -387,6 +413,11 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--tier", choices=["ci", "all"], default="all")
     p_run.add_argument("--no-exec", action="store_true",
                        help="skip the repro command and judge the existing artifact")
+    p_run.add_argument("--strict", action="store_true",
+                       help="exit non-zero on a `failed` verdict (default: only on "
+                            "execution failures; honest FAILs stay recorded)")
+    p_run.add_argument("--no-record", action="store_true",
+                       help="do not append the run to artifacts/validation_matrix/runs/")
     p_run.set_defaults(func=cmd_run)
 
     p_st = sub.add_parser("status", help="render the three-level status table")

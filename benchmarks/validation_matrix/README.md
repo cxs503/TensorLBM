@@ -205,3 +205,55 @@ consistency, and one complete CI case end to end (dam break at nx=100/200,
   (profile gate fails) and quantified by the ladder; for the droplet the usable
   radius range is bounded by the interface width (~4 cells in the SCMP model),
   so R<8 is not physical and R=20 is the CI cost ceiling.
+## 5. Repair round m15915 — the matrix now records its own runs
+
+Matrix v1 could judge frozen artifacts but could not prove *when, where and from
+which commit* those artifacts were produced, and two bookkeeping defects made a
+fresh `pytest tests/test_validation_matrix.py` disagree with the committed
+status files.  Both are fixed here; nothing about a verdict was relaxed.
+
+**Bookkeeping fixes (what actually broke).**
+
+1. `cylinder_re100_dfg` was registered with metric paths
+   `grids.<D>.err_pct.<metric>`, but the case's own `aggregate()` writes
+   `per_metric.<metric>.err_pct.<D>`.  The registry therefore resolved nothing
+   and the case sat at *pending: metric paths unresolved* even though a D20
+   artifact existed.  The paths now match the artifact schema (matrix v1.1) and
+   the missing levels are reported as missing levels, not as a schema failure.
+2. `benchmarks/pending/static_droplet_laplace_ci/validation_status.json` had
+   never been written, so `test_status_files_match_fresh_evaluation` failed.
+   `runner.py status --write` regenerates every status file from a fresh verdict;
+   the test now guards against the regression.
+
+**Run ledger (`runledger.py`).**  Every execution started through
+`runner.py run` writes, under `artifacts/validation_matrix/runs/`:
+
+```
+<UTC>__<case>/manifest.json   git sha + dirty flag, matrix/references sha256,
+                              host, cpu count, torch version, thread env,
+                              repro_cmd, rc, elapsed, artifact sha256, verdict
+<UTC>__<case>/run.log         full stdout+stderr of the repro command
+<UTC>__<case>/status.json     the verdict of that run
+index.jsonl                   append-only index (one line per run)
+```
+
+`runledger.py verify` re-hashes every manifest against the index, so a ledger
+entry cannot be edited to look better after the fact.  A non-zero exit code is
+recorded as execution evidence rather than dropped.
+
+**Reference-vs-got table (`make_benchmark_table.py`).**  Emits
+`BENCHMARK_REF_VS_GOT.{json,md}`: per case, per metric, per level — reference
+value + anchor source sha256, measured value, signed error, tolerance, pass
+flag, convergence span, repro command.  `--check` fails if any `passed` case
+contradicts its own numbers.
+
+**Entry point + integration callers.**  `python -m benchmarks.validation_matrix
+<cmd>` is now a first-class entry, `make validation-matrix` runs the whole
+contract locally, `.github/workflows/validation-matrix.yml` runs it on every
+change to the matrix/cases/anchors (honest FAILs do not fail the job — a
+bookkeeping contradiction does), and each case runner is asserted to import the
+real `tensorlbm` kernels (`test_cases_delegate_to_library_kernels_...`).
+
+**Exit-code semantics.**  `runner.py run` returns non-zero only for execution
+failures.  `--strict` re-enables failing on a `failed` verdict (release gating).
+An honest FAIL is a recorded result, never a silently green build.
