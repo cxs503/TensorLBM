@@ -71,11 +71,14 @@ def _laplace_section(res: dict[str, Any]) -> str:
         "pressure; `R` from the linearly interpolated `rho_1 = rho_av` crossing on four rays."
     )
     parts.append("")
+    dims = int(proto.get("laplace_dims", 2))
+    factor = dims - 1
     parts.append(
-        "Acceptance metric: the law `Delta p = 2 sigma / R` has one unknown per level, so "
-        "`sigma_0 = sum x y / sum x^2` with `x = 2/R`, and the error is the per-case relative "
-        "residual `|Delta p_i - sigma_0 x_i| / (sigma_0 x_i)`. A free two-parameter line is "
-        "reported as a diagnostic only (its intercept absorbs a curvature-independent bulk "
+        f"Acceptance metric: the law `Delta p = {factor} sigma / R` (2D circular droplet: "
+        "`Delta p = sigma / R`; 3D sphere: `Delta p = 2 sigma / R`) has one unknown per level, so "
+        f"`sigma_0 = sum x y / sum x^2` with `x = {factor}/R`, and the error is the per-case "
+        "relative residual `|Delta p_i - sigma_0 x_i| / (sigma_0 x_i)`. A free two-parameter line "
+        "is reported as a diagnostic only (its intercept absorbs a curvature-independent bulk "
         "pressure offset; reporting its slope as the error would relax the criterion)."
     )
     parts.append("")
@@ -142,7 +145,7 @@ def _laplace_section(res: dict[str, Any]) -> str:
                 "R_init",
                 "R measured",
                 "dp",
-                "sigma = dp R/2",
+                f"sigma = dp R/{dims - 1}",
                 "law residual",
                 "umax",
                 "density ratio",
@@ -445,6 +448,7 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
     fig_dir = out_dir / "figures"
     fig_dir.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
+    dims = int(res["laplace"]["protocol"].get("laplace_dims", 2))
 
     # fig 1: Laplace law
     fig, ax = plt.subplots(figsize=(6.0, 4.2))
@@ -461,10 +465,10 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
         line_x = np.linspace(0, x.max() * 1.05, 50)
         ax.plot(
             line_x,
-            sigma * 2 * line_x,
+            sigma * (dims - 1) * line_x,
             "-",
             lw=1.0,
-            label=f"G12={level['G_12']:g}: 2σ/R, σ={sigma:.4f}",
+            label=f"G12={level['G_12']:g}: {dims - 1}σ/R, σ={sigma:.4f}",
         )
         ax.plot(x[order], y[order], "o", ms=5)
     ax.set_xlabel("1/R")
