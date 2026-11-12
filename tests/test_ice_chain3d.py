@@ -192,4 +192,6 @@ def test_gci_recovers_known_order():
     assert out["p_apparent"] == pytest.approx(2.0, rel=1e-6)
     assert out["f_extrapolated"] == pytest.approx(f0, rel=1e-6)
     # analytic GCI for this sequence: |(f2-f1)/f1| / (r^p - 1)
-    assert out["GCI_fine"] == pytest.approx((3.75 / 13.0) / (1.5 ** 2 - 1.0), rel=1e-6)
+    # Roache three-grid safety factor Fs = 1.25 is applied since 2026-11-12
+    # (docs/GCI_CONVENTION_AUDIT.md); before that the site reported Fs = 1.
+    assert out["GCI_fine"] == pytest.approx(1.25 * (3.75 / 13.0) / (1.5 ** 2 - 1.0), rel=1e-6)
