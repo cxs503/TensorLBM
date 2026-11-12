@@ -82,7 +82,7 @@ from tensorlbm.boundaries import (
     zou_he_inlet_velocity,
     zou_he_outlet_pressure,
 )
-from tensorlbm.d2q9 import equilibrium
+from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.solver import collide_mrt, stream
 
 # --------------------------------------------------------------------------
@@ -107,7 +107,12 @@ REFERENCE_BANDS: dict[str, dict[str, object]] = {
         "cd": (3.2200, 3.2400),
         "cl_amp": (0.9900, 1.0100),
         "st": (0.2950, 0.3050),
-        "dp": (2.4600, 2.5000),  # raw Δp, ρ=1, U_mean=1
+        # Δp is published in ρU² units (ρ=1, U_mean=1): Table 3, 2D-2.
+        # The runner measures Δp/(0.5ρU²) (the LBM q = 0.5·u_lb² normalisation),
+        # so the *comparison* uses dp_half_rho_u2 below. Comparing the two
+        # without the factor 2 is a silent 100 % error (mission m15918).
+        "dp": (2.4600, 2.5000),  # Δp/ρU² (paper units)
+        "dp_half_rho_u2": (4.9200, 5.0000),  # same band, Δp/(0.5ρU²) units
         "source": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
     },
     "2D-1": {
@@ -301,6 +306,7 @@ def run_case(
     device: str = "cpu",
     threads: int | None = None,
     keep_series: bool = True,
+    keep_field: bool = False,
 ) -> dict:
     """Run the DFG 2D-2 case at one grid level; return observables + provenance."""
     if threads:
@@ -470,7 +476,8 @@ def run_case(
         "st_fft": st["st_fft"],
         "st_acf_vs_fft_pct": st_disagreement_pct,
         "st_ambiguous": bool(st_disagreement_pct == st_disagreement_pct and st_disagreement_pct > 3.0),
-        "dp": dp_extrap,
+        "dp": dp_extrap,  # Δp/(0.5ρU²)
+        "dp_over_rho_u2": dp_extrap / 2.0,  # same number in the paper's ρU² units
         "dp_nearest_fluid_columns": dp_near,
         "dp_stderr": float(dp_t.std() / math.sqrt(window)),
         "wall_s": round(time.time() - wall_t0, 1),
@@ -482,12 +489,30 @@ def run_case(
         "cd": band_error(cd_mean, ref["cd"]),
         "cl_amp": band_error(cl_amp, ref["cl_amp"]),
         "st": band_error(st_primary, ref["st"]),
-        "dp": band_error(dp_extrap, ref["dp"]),
+        # units: dp_extrap is Δp/(0.5ρU²); compare against the same-normalisation band
+        "dp": band_error(dp_extrap, ref["dp_half_rho_u2"]),
     }
     res["err_pct"] = {k: v["err_pct_vs_mid"] for k, v in res["bench"].items()}
     res["drift_pct"] = {
         "cd": (res["cd_second_half"] - res["cd_first_half"]) / res["cd_first_half"] * 100.0
     }
+    if keep_field:
+        # final time-level fields (for the report figures / post-hoc checks); the
+        # vorticity sign convention is omega_z = du_y/dx - du_x/dy
+        fld_rho, fld_ux, fld_uy = macroscopic(f)
+        dvdx = torch.zeros_like(fld_uy)
+        dudy = torch.zeros_like(fld_ux)
+        dvdx[:, 1:-1] = (fld_uy[:, 2:] - fld_uy[:, :-2]) / (2.0 * dx)
+        dudy[1:-1, :] = (fld_ux[2:, :] - fld_ux[:-2, :]) / (2.0 * dx)
+        res["field"] = {
+            "rho": fld_rho.cpu().numpy(),
+            "ux": fld_ux.cpu().numpy(),
+            "uy": fld_uy.cpu().numpy(),
+            "vorticity": (dvdx - dudy).cpu().numpy(),
+            "solid": solid.cpu().numpy(),
+            "dx": float(dx),
+            "step": cfg.n_steps,
+        }
     if keep_series:
         res["series"] = {
             "cd": cd_hist[-window:],

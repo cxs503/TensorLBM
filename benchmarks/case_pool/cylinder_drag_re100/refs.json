@@ -1,0 +1,42 @@
+{
+  "anchor": "CASE-CYLINDER-DRAG-RE100",
+  "case": "Schäfer & Turek (1996) 2D-2 — in-channel cylinder, Re = 100 (unsteady, vortex shedding)",
+  "problem": "2D laminar flow past a circular cylinder confined in a channel; drag coefficient (primary), lift amplitude, Strouhal number and front/rear pressure difference as validation quantities",
+  "geometry": {
+    "domain": "2.2 x 0.41",
+    "cylinder_centre": [0.2, 0.2],
+    "diameter_D": 0.1,
+    "inlet": "parabolic (Poiseuille) velocity profile, U_mean = 1.0, U_max = 1.5*U_mean",
+    "outlet": "pressure outlet rho = 1",
+    "walls_cylinder": "no-slip",
+    "blockage_D_over_H": 0.24390243902439024,
+    "pressure_probes": {"upstream": [0.15, 0.2], "downstream": [0.25, 0.2]}
+  },
+  "dimensionless": {
+    "Re": 100.0,
+    "U_mean": 1.0,
+    "nu": 0.001,
+    "cd_normalisation": "Cd = Fx / (0.5 * rho * U_mean^2 * D_phys), D_phys = 0.1",
+    "dp_normalisation": "dp_upstream - dp_downstream at y = 0.2 between x = 0.15 and x = 0.25"
+  },
+  "ref": {
+    "cd": [3.22, 3.24],
+    "cl_amp": [0.99, 1.01],
+    "st": [0.295, 0.305],
+    "dp_rho_u2": [2.46, 2.50],
+    "dp_half_rho_u2": [4.92, 5.00],
+    "source": "Schäfer, M. & Turek, S. (1996), Benchmark computations of laminar flow around a cylinder, NNFM 48, Vieweg, pp. 547-566, case 2D-2 quantities table (Table 3)"
+  },
+  "provenance": {
+    "source_kind": "literature benchmark (grid-converged FEM reference solution), frozen in-repo register",
+    "register": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+    "register_sha256_source": "benchmarks/validation_matrix/references.json",
+    "print_original": "The NNFM 48 PDF is not reachable from the offline work tree (no network, no copy under references/). The bands are transcribed from the in-repo register plus two pre-existing in-repo records (benchmarks/roadmap.md, benchmarks/pending/cylinder_re40_st/result.json); the register states this limitation explicitly.",
+    "unit_note": "Table 3 quotes dp in rho*U_mean^2 units (2.46-2.50). The LBM runner normalises with q = 0.5*rho*u_lb^2, therefore the comparison band is the same interval expressed in 0.5*rho*U^2 units (4.92-5.00). Mixing the two conventions is a silent factor-2 error; the module carries both bands explicitly (mission m15918 fix)."
+  },
+  "tolerance_pct": 5.0,
+  "entry": "benchmarks/case_pool/cylinder_drag_re100/run_case.py",
+  "library": "src/tensorlbm/validation/cylinder_dfg.py",
+  "repro_cmd": "PYTHONPATH=src python benchmarks/case_pool/cylinder_drag_re100/run_case.py --grids 20 28 40 --steps 14000 20000 27200 --out runs/cylinder_drag_re100",
+  "quick_cmd": "PYTHONPATH=src python benchmarks/case_pool/cylinder_drag_re100/run_case.py --grids 10 --steps 600 --out /tmp/cylinder_drag_re100_quick"
+}
