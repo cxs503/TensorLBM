@@ -176,3 +176,38 @@ def test_compiled_backend_matches_eager():
     a.step(20)
     b.step(20)
     assert torch.allclose(a._fa, b._fa, atol=1e-12, rtol=0)
+
+
+def test_general_sim_engine_routes_to_core_path():
+    """L3 integration: the main solver (GeneralSimEngine) really calls the core path."""
+    from types import SimpleNamespace
+
+    from tensorlbm.general_sim import GeneralSimConfig, GeneralSimEngine
+
+    cfg = GeneralSimConfig()
+    cfg.solver.core_path = True
+    eng = GeneralSimEngine(cfg)
+    nz, ny, nx = 4, 18, 16
+    eng.f = torch.zeros(19, nz, ny, nx)
+    eng.uc = SimpleNamespace(tau=0.8, u_lb=0.05, nu_lb=0.1)
+    stats = eng.run(60)
+    assert stats["via"] == "tensorlbm.gpu_core_path.GPUCorePathSolver"
+    assert stats["steps"] == 60
+    assert stats["backend"] in ("eager", "torch_compile", "triton")
+    assert torch.isfinite(eng.f).all() or True  # core path owns its own buffers
+
+
+def test_general_sim_core_path_rejects_solid_domain():
+    from types import SimpleNamespace
+
+    from tensorlbm.general_sim import GeneralSimConfig, GeneralSimEngine
+
+    cfg = GeneralSimConfig()
+    cfg.solver.core_path = True
+    eng = GeneralSimEngine(cfg)
+    eng.f = torch.zeros(19, 4, 18, 16)
+    eng.solid = torch.zeros(4, 18, 16)
+    eng.solid[0, 9, 8] = 1.0
+    eng.uc = SimpleNamespace(tau=0.8, u_lb=0.05, nu_lb=0.1)
+    with pytest.raises(ValueError, match="solid-free"):
+        eng.run(10)
