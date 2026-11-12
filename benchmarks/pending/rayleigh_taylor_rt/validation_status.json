@@ -5,7 +5,7 @@
   "reference_basis": "analytic",
   "scope": "SCMP pseudo-potential D2Q9 and an earlier VOF track; single-mode interface, growth rate fitted on a linear window.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T04:36:20Z",
+  "generated_utc": "2026-11-12T06:10:38Z",
   "artifact": null,
   "repro_cmd": "python benchmarks/pending/rayleigh_taylor/run.py",
   "references": [
@@ -31,7 +31,7 @@
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "43954e5988f442dd5c6977698cfda5a21691ec025d3e663a2e79922078b9f4e1"
+      "sha256": "5ac63ae8ffb65ea25c4e7977ffce61025a45217c25bde3ef81f0a427e23b0b4f"
     },
     {
       "kind": "references",

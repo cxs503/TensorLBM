@@ -1,6 +1,6 @@
 # Validation matrix — reference vs got (generated, zero hand-copy)
 
-generated: 2026-11-12T04:36:20Z | matrix v1.1 | **passed 6 / failed 3 / pending 2**
+generated: 2026-11-12T06:11:06Z | matrix v1.1 | **passed 6 / failed 4 / pending 1**
 
 Gate: |err| <= tol at every gated level AND the level series converges (span <= declared max_span_pct; monotone where required)
 
@@ -36,14 +36,14 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 | `ship_resistance_suboff` | ship | cd_tot_err_pct | L=48 | — | -3.17 | -3.17 | 0 | NO | **passed** |
 | `ship_resistance_suboff` | ship | cd_tot_err_pct | L=80 | — | -1.15 | -1.15 | 3 | yes | **passed** |
 | `ship_wave_michell` | ship | — | — | — | — | — | — | — | **pending** |
-| `cylinder_re100_dfg` | cylinder | cd_err_pct | D28 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | cd_err_pct | D40 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | st_err_pct | D28 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | st_err_pct | D40 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | cl_amp_err_pct | D28 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | cl_amp_err_pct | D40 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | dp_err_pct | D28 | — | nan | nan | 5 | NO | **pending** |
-| `cylinder_re100_dfg` | cylinder | dp_err_pct | D40 | — | nan | nan | 5 | NO | **pending** |
+| `cylinder_re100_dfg` | cylinder | cd_err_pct | D28 | — | 5.59677 | 5.59677 | 5 | NO | **failed** |
+| `cylinder_re100_dfg` | cylinder | cd_err_pct | D40 | — | 1.87284 | 1.87284 | 5 | yes | **failed** |
+| `cylinder_re100_dfg` | cylinder | st_err_pct | D28 | — | 1.11332 | 1.11332 | 5 | yes | **failed** |
+| `cylinder_re100_dfg` | cylinder | st_err_pct | D40 | — | 0.843238 | 0.843238 | 5 | yes | **failed** |
+| `cylinder_re100_dfg` | cylinder | cl_amp_err_pct | D28 | — | 36.0421 | 36.0421 | 5 | NO | **failed** |
+| `cylinder_re100_dfg` | cylinder | cl_amp_err_pct | D40 | — | 35.0722 | 35.0722 | 5 | NO | **failed** |
+| `cylinder_re100_dfg` | cylinder | dp_err_pct | D28 | — | 10.8745 | 10.8745 | 5 | NO | **failed** |
+| `cylinder_re100_dfg` | cylinder | dp_err_pct | D40 | — | 5.14859 | 5.14859 | 5 | NO | **failed** |
 
 ## Convergence (span across levels)
 
@@ -60,7 +60,7 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 | `dam_break_ritter_ci` | front_err_pct | 4.51248 → 2.56249 | 1.94999 | 5 | yes | yes |
 | `dam_break_ritter_ci` | profile_l2_pct | 9.8248 → 6.29158 | 3.53322 | 5 | yes | yes |
 | `ship_resistance_suboff` | cd_tot_err_pct | 3.17 → 1.15 | 2.02 | 3 | yes | yes |
-| `cylinder_re100_dfg` | cd_err_pct | nan → nan | nan | 3 | no | NO |
+| `cylinder_re100_dfg` | cd_err_pct | 5.59677 → 1.87284 | 3.72393 | 3 | yes | NO |
 
 ## Reference anchors
 
@@ -94,6 +94,6 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 - `dam_break_ritter_ci` (failed): `python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py`
 - `ship_resistance_suboff` (passed): `python benchmarks/verified/suboff_re1000/run.py`
 - `ship_wave_michell` (pending): `python benchmarks/wave_wake_michell/run.py`
-- `cylinder_re100_dfg` (pending): `python benchmarks/verified/cylinder/re100_dfg/run.py --levels 28 40 --steps 60000 --threads 4`
+- `cylinder_re100_dfg` (failed): `python benchmarks/verified/cylinder/re100_dfg/run.py --levels 20 28 40 --steps 14000 20000 27200 --threads 8`
 
 Artifacts and sha256: `benchmarks/validation_matrix/BENCHMARK_REF_VS_GOT.json`; run-level provenance: `artifacts/validation_matrix/runs/index.jsonl`.
