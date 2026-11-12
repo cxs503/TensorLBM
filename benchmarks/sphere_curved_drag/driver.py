@@ -266,7 +266,11 @@ def run_case(spec: dict) -> dict:
 
     f_mb = force_factor * g_meas * v_fluid
     u_sup = u_meas * (1.0 - phi_solid)
-    mu = nu / 3.0
+    # dynamic viscosity: in lattice units rho = 1, so mu = rho * nu = nu.
+    # (m16085 used ``nu / 3.0`` here, which reported Re_measured 3x too high --
+    #  0.2944 instead of 0.0981 for the stokes_Re0.1_L36 case.  See
+    #  docs/GAP-LBM-SPHERE_v2_root_cause_and_fix.md.)
+    mu = nu
 
     def cd(u_ref: float, force: float) -> float:
         if not (u_ref > 0.0) or not math.isfinite(force):
@@ -316,6 +320,11 @@ def run_case(spec: dict) -> dict:
             and not diverged
         ),
         "hasimoto_K": hasimoto_K(R / L),
+        # mean free path of the kinetic model vs the body radius: the BGK
+        # viscosity (tau - 1/2)/3 is only the hydrodynamic (k -> 0) value, and
+        # it is *not* what the flow sees once c_s*tau is comparable to R
+        "mfp_over_R": (tau / math.sqrt(3.0)) / R,
+        "hydrodynamic_regime": bool((tau / math.sqrt(3.0)) / R < 0.5),
         "cd_stokes_confined": (
             24.0 / Re * hasimoto_K(R / L) if not zero_force else float("nan")
         ),
