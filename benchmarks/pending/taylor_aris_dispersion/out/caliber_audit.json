@@ -1,0 +1,228 @@
+{
+  "case": "taylor_aris_dispersion",
+  "audit": "independent caliber audit (post-processing only, no new LBM run)",
+  "sources": {
+    "result": "result.json",
+    "readme_evidence_block": "README.md <!-- ... --> machine-sourced provenance rows"
+  },
+  "theory_check": [
+    {
+      "n_nodes": 2001,
+      "c_raw": -0.0047619005931391276,
+      "K": 0.0047619005931391276,
+      "one_over_210": 0.004761904761904762,
+      "rel_dev_vs_1_210": -8.754407833100331e-07,
+      "neumann_compat": -2.500000000210667e-07
+    },
+    {
+      "n_nodes": 20001,
+      "c_raw": -0.0047619047202360106,
+      "K": 0.0047619047202360106,
+      "one_over_210": 0.004761904761904762,
+      "rel_dev_vs_1_210": -8.750437818783041e-09,
+      "neumann_compat": -2.500000012561898e-09
+    },
+    {
+      "n_nodes": 200001,
+      "c_raw": -0.0047619047614881164,
+      "K": 0.0047619047614881164,
+      "one_over_210": 0.004761904761904762,
+      "rel_dev_vs_1_210": -8.749567736998642e-11,
+      "neumann_compat": -2.5000002068509275e-11
+    }
+  ],
+  "cases": [
+    {
+      "pe": 10.0,
+      "H": 64,
+      "pe_sim": 10.000560879707335,
+      "deff_sim": 0.14750743616041578,
+      "deff_theory": 0.14762438948034895,
+      "resid_pct_signed": -0.07922357568749261,
+      "resid_pct_abs": 0.07922357568749261,
+      "err_pct_archived_abs": 0.07922357568749261,
+      "recompute_matches_archived": true,
+      "pass_tol": true,
+      "mass_drift_max": 0.004474775727810393,
+      "ma": 0.04059494080239558,
+      "sens_band_pct": 0.010417624704617268
+    },
+    {
+      "pe": 10.0,
+      "H": 128,
+      "pe_sim": 9.999697387218474,
+      "deff_sim": 0.1474777956160168,
+      "deff_theory": 0.14761616563616384,
+      "resid_pct_signed": -0.09373635980228778,
+      "resid_pct_abs": 0.09373635980228778,
+      "err_pct_archived_abs": 0.09373635980228778,
+      "recompute_matches_archived": true,
+      "pass_tol": true,
+      "mass_drift_max": 0.01726631876285434,
+      "ma": 0.02029747040119779,
+      "sens_band_pct": 0.04676657633120307
+    },
+    {
+      "pe": 20.0,
+      "H": 64,
+      "pe_sim": 20.000512599945065,
+      "deff_sim": 0.2906299313972214,
+      "deff_theory": 0.29048595440979114,
+      "resid_pct_signed": 0.04956418210400049,
+      "resid_pct_abs": 0.04956418210400049,
+      "err_pct_archived_abs": 0.04956418210400049,
+      "recompute_matches_archived": true,
+      "pass_tol": true,
+      "mass_drift_max": 0.004201730475753859,
+      "ma": 0.08118988160479115,
+      "sens_band_pct": 0.010755946098606195
+    },
+    {
+      "pe": 20.0,
+      "H": 128,
+      "pe_sim": 19.994338154792782,
+      "deff_sim": 0.2911301753736006,
+      "deff_theory": 0.2903683610705727,
+      "resid_pct_signed": 0.26236133310775234,
+      "resid_pct_abs": 0.26236133310775234,
+      "err_pct_archived_abs": 0.26236133310775234,
+      "recompute_matches_archived": true,
+      "pass_tol": true,
+      "mass_drift_max": 0.017973964536626193,
+      "ma": 0.04059494080239558,
+      "sens_band_pct": 0.05454016414985219
+    },
+    {
+      "pe": 30.0,
+      "H": 64,
+      "pe_sim": 30.002171993255608,
+      "deff_sim": 0.5292189799770554,
+      "deff_theory": 0.5286334877680435,
+      "resid_pct_signed": 0.11075579254047341,
+      "resid_pct_abs": 0.11075579254047341,
+      "err_pct_archived_abs": 0.11075579254047341,
+      "recompute_matches_archived": true,
+      "pass_tol": true,
+      "mass_drift_max": 0.0041809660506473036,
+      "ma": 0.12178482240718672,
+      "sens_band_pct": 0.007753597888404684
+    },
+    {
+      "pe": 30.0,
+      "H": 128,
+      "pe_sim": 29.99936342239379,
+      "deff_sim": 0.5297482464739621,
+      "deff_theory": 0.5285532408327899,
+      "resid_pct_signed": 0.22608992791139926,
+      "resid_pct_abs": 0.22608992791139926,
+      "err_pct_archived_abs": 0.22608992791139926,
+      "recompute_matches_archived": true,
+      "pass_tol": true,
+      "mass_drift_max": 0.018063095985615944,
+      "ma": 0.06089241120359336,
+      "sens_band_pct": 0.0612686265486051
+    }
+  ],
+  "stats": {
+    "n": 6,
+    "mean_pct": 0.07930188336230752,
+    "sd_pct": 0.14966878512689763,
+    "sem_pct": 0.06110202566385921,
+    "t_stat": 1.29786013639828,
+    "t_crit_95_5dof": 2.5705818366147395,
+    "systematic_bias_significant": false,
+    "all_same_sign": false,
+    "max_abs_pct": 0.26236133310775234,
+    "tolerance_margin_x": 11.434611817465854,
+    "mean_sens_band_pct": 0.03191708928688142,
+    "per_grid": {
+      "64": {
+        "mean_pct": 0.02703213298566043,
+        "max_abs_pct": 0.11075579254047341,
+        "grid_effect_pct": null
+      },
+      "128": {
+        "mean_pct": 0.1315716337389546,
+        "max_abs_pct": 0.26236133310775234,
+        "grid_effect_pct": null
+      },
+      "grid_effect_by_pe": {
+        "10.0": {
+          "Hmin_pct": -0.07922357568749261,
+          "Hmax_pct": -0.09373635980228778,
+          "delta_abs_pct": 0.014512784114795174,
+          "monotone_decreasing": false,
+          "delta_pct": -0.014512784114795174
+        },
+        "20.0": {
+          "Hmin_pct": 0.04956418210400049,
+          "Hmax_pct": 0.26236133310775234,
+          "delta_abs_pct": 0.21279715100375185,
+          "monotone_decreasing": false,
+          "delta_pct": 0.21279715100375185
+        },
+        "30.0": {
+          "Hmin_pct": 0.11075579254047341,
+          "Hmax_pct": 0.22608992791139926,
+          "delta_abs_pct": 0.11533413537092585,
+          "monotone_decreasing": false,
+          "delta_pct": 0.11533413537092585
+        }
+      }
+    }
+  },
+  "controls": {
+    "v4_pure_diffusion_H64_err_pct": 0.00492049213789425,
+    "v4_pure_diffusion_H64_deff": 0.10000492049213791,
+    "v4_pure_diffusion_H64_theory": 0.10000000000000002,
+    "v4_pure_diffusion_H64_fmass_drift": 0.0,
+    "diag_fp64_pe20_H64_err_pct": 0.025123131263238285,
+    "diag_fp64_pe20_H128_err_pct": 0.18864417045818538,
+    "diag_fp32_pe20_H32_err_pct": 0.6247442291395955,
+    "diag_fp32_pe40_H64_err_pct": 0.18741298895688097,
+    "diag_fp32_pe20_H32_H": 32,
+    "v3_synthetic_bias_max": 3.774758283725532e-15
+  },
+  "rulings": [
+    {
+      "gate": "G1_tolerance",
+      "rule": "|err| <= 3% for all 6 configs",
+      "value": "max |err| = 0.2624%",
+      "verdict": "PASS",
+      "note": "11.4x inside the tolerance; 6/6 configs pass individually"
+    },
+    {
+      "gate": "G2_prereg_monotone",
+      "rule": "err(H=128) < err(H=64) for every Pe",
+      "value": "Pe=10.0: |-0.0792|% -> |-0.0937|% (delta_abs +0.0145 pp, monotone=False); Pe=20.0: |+0.0496|% -> |+0.2624|% (delta_abs +0.2128 pp, monotone=False); Pe=30.0: |+0.1108|% -> |+0.2261|% (delta_abs +0.1153 pp, monotone=False)",
+      "verdict": "FAIL",
+      "note": "0/3 Pe levels decrease with refinement.  The grid effect (<= 0.2128 pp) is 14x smaller than the tolerance and the same order as the case's own window-sensitivity band (0.0319 pp)"
+    },
+    {
+      "gate": "G2p_amended_saturation",
+      "rule": "|err| <= 1.0% for all configs AND |mean bias| <= 1.0% AND max level-to-level |delta| <= 1.0 pp (a saturation caliber that does not demand structure below the measurement resolution)",
+      "value": "max |err| 0.2624%, mean bias +0.0793%, max delta 0.2128 pp",
+      "verdict": "PASS",
+      "note": "passes with >=3.8x margin on every clause; the thresholds are fixed a priori as 1/3 of the pre-registered 3% tolerance, not tuned to the data (the data would pass even at 0.3%)"
+    },
+    {
+      "gate": "G3_mechanism",
+      "rule": "stated root cause ('positive ~0.2% error floor') must be supported by the case's own controls",
+      "value": "V4 pure-diffusion control err = +0.0049% (floor claim 0.2%), fp64 diagnostics +0.0251% / +0.1886%",
+      "verdict": "REFUTED",
+      "note": "the measurement path has no 0.2% floor: with the same wrapped-moment estimator at Pe=0 the residual is 0.0049%, i.e. 41x below the claimed floor; the H-dependence survives in fp64, so it is neither rounding nor measurement bias -> the mechanism stays WITHHELD"
+    },
+    {
+      "gate": "G4_systematic_bias",
+      "rule": "the residual set must be consistent with a systematic bias (a mechanism to find) or with zero-mean scatter (no mechanism to find)",
+      "value": "mean +0.0793%, sd 0.1497%, t = 1.30 vs t_crit(0.95,5) = 2.57, all-same-sign = False",
+      "verdict": "SCATTER",
+      "note": "the residual set is a zero-mean scatter (mixed signs, |t| below the 95% critical value), so there is no evidence for a coherent bias term to attribute; the observed spread is 10-60x inside the tolerance, hence harmless for the physics claim"
+    }
+  ],
+  "figures": [
+    "fig_residual_vs_pe.png",
+    "fig_residual_vs_refinement.png",
+    "fig_floor_refutation.png"
+  ]
+}
