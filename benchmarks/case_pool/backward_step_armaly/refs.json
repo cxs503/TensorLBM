@@ -1,31 +1,60 @@
 {
   "case": "CASE-BACKWARD-STEP-LBM",
+  "observable": "X1/s -- primary lower-wall reattachment length in step-height units",
   "primary_reference": {
-    "cite": "Armaly B.F., Durst F., Pereira J.C.F., Schonung B., J. Fluid Mech. 127(4):473-496 (1983)",
-    "geometry": "ER = 1.9423 (inlet 5.2 mm, step 4.9 mm, outlet 10.1 mm), laminar, 70 < Re < 8000",
-    "re_definition": "Re = ubar * D_h / nu, D_h = hydraulic diameter of the inlet channel = 2*inlet height",
-    "acquisition_status": "PRIMARY_PDF_UNREACHABLE",
+    "cite": "Armaly B.F., Durst F., Pereira J.C.F., Schonung B., J. Fluid Mech. 127(4):473-496 (1983), doi:10.1017/S0022112083002839",
+    "geometry": "expansion ratio 10.1 mm / 5.2 mm = 1.9423077; Re = u_bar * D_h / nu, D_h = 2 * inlet height; laminar 100 <= Re <= 8000",
+    "acquisition_status": "PRIMARY_PDF_CLOSED",
     "acquisition_log": [
-      "unpaywall api: is_oa=false for doi 10.1017/S0022112083002839",
-      "cambridge core: paywalled; no OA mirror reachable (duckduckgo/startpage/qwant/ecosia blocked, bing JS-only, scholar.archive.org refused, core.ac.uk 403)",
-      "openalex fulltext search over 100 OA citing works: 11 PDFs retrieved, 22 pages mention Armaly, none tabulates Table 1 values"
+      "api.semanticscholar.org/graph/v1/paper/DOI:10.1017/S0022112083002839 -> openAccessPdf.status = CLOSED (queried this round)",
+      "api.openalex.org work W2092941459 (Armaly 1983, 1724 citations): no OA location with pdf_url",
+      "api.fatcat.wiki lookup and ntrs.nasa.gov: HTTP 403 from this sandbox",
+      "api.semanticscholar.org snippet search (full-text snippets): HTTP 429 (shared egress rate limit) on 4 attempts"
     ]
   },
-  "xref_machine_verified": [
-    {"file": "arxiv 2507.16509 (open access)", "page": 2,
-     "quote": "experimental data, such as those of Armaly et al. [6] for ER = 1.942 ... additional separation and recirculation points appear",
-     "fact": "Armaly expansion ratio = 1.942"},
-    {"file": "arxiv 2507.16509 (open access)", "page": 2,
-     "quote": "An early study by Armaly et al. [1] ... 2D ... Re numbers 70 < Re_D < 8000, based on the hydraulic diameter of the inlet channel. Up to Re_D = 400, 2D numerical results are matched with experimental data.",
-     "fact": "Armaly Re caliber = hydraulic diameter of inlet channel; 2D numerics valid to Re_D = 400"},
-    {"file": "arxiv 2507.16509 (open access)", "page": 8, "table": "Table 2",
-     "quote": "Gartling 12.20 / Erturk 11.834 / Keskar & Lyn 12.19 / Grigoriev & Dargush 12.18 (xr/h at Re=800)",
-     "fact": "2D benchmark consensus xr/h (step-height units) at Re=800: 11.48-12.20"}
-  ],
   "adopted_numeric_reference": {
-    "tier": "SECONDARY_IN_REPO (Armaly attribution, hand-entered by earlier campaign, primary table unverified)",
-    "provenance": "benchmarks/pending/bstep_3d/result_H40.json::reference.xr_h_ref and result_re200_H49/result_re400_H49.json",
-    "values_x1_over_s": {"100": 3.0, "200": 5.5, "400": 8.0},
+    "tier": "SECONDARY_IN_REPO",
+    "note": "primary table not machine-readable from this sandbox; values below are the in-repo documented anchors, each with its own provenance string. NOT claimed as 'table 1 of the original'.",
+    "points": {
+      "100": {
+        "x1_over_s": 3.05,
+        "source": "Armaly 1983 experimental curve, NAFEMS/Feel++ digitisation Re_h=101.6, recorded in benchmarks/pending/backward_step/result.json::reference.experimental_anchor; own re-read of original Fig.4 = 3.0-3.3 (same file)"
+      },
+      "200": {
+        "x1_over_s": 5.0,
+        "source": "Armaly 1983 experimental curve at Re=200 (literature read, tier LITERATURE_APPROXIMATE, +-0.2)"
+      },
+      "400": {
+        "x1_over_s": 8.0,
+        "source": "Armaly 1983 experimental curve at Re=400 (literature read, tier LITERATURE_APPROXIMATE, +-0.3)"
+      }
+    },
     "tolerance_pct": 15.0
-  }
+  },
+  "cross_checks": [
+    {
+      "quantity": "X1/s at Re=100",
+      "value": 2.878,
+      "band": [
+        2.792,
+        2.965
+      ],
+      "source": "Erturk 2008, Computers & Fluids 37(6):633-655, Table 1 (ER=1.942) -- 2D numerical benchmark",
+      "note": "records the irreducible 2D-vs-experiment spread at this point: 2.878 vs 3.05 = 6.0%"
+    },
+    {
+      "quantity": "X1/s at Re=800 (ER=2, step units)",
+      "value": 12.2,
+      "cluster": [
+        11.48,
+        12.2
+      ],
+      "source": "machine-verified from arXiv:2507.16509 p.8 Table 2: Gartling 12.20 / Keskar&Lyn 12.19 / Grigoriev&Dargush 12.18 / Erturk 11.834 / Kim&Moin 11.90 / Rogers&Kwak 11.48",
+      "note": "used only as an out-of-range sanity anchor; this case is judged at Re=100/200/400"
+    }
+  ],
+  "known_bias_sources": [
+    "expansion ratio of the lattice geometry is exact (101/52) but the step corner is a staircase (first-order)",
+    "3D effects in the experiment become noticeable above Re ~ 400 (arXiv:2507.16509 p.8), so 2D LBM is expected low there"
+  ]
 }
