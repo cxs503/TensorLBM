@@ -1,0 +1,102 @@
+{
+  "case": "cavity_re5000_ghia",
+  "description": "\u9876\u76d6\u65b9\u8154 Re=5000\uff0cD2Q9 BGK\uff0cGhia(1982) Table III/IV \u9a8c\u8bc1",
+  "lattice": "D2Q9",
+  "collision": "BGK",
+  "boundary": "bounce-back (walls) + equilibrium (lid)",
+  "reference": "Ghia et al. (1982) JCP 48(3), Table III/IV, Re=5000",
+  "tolerance_pct": 8.0,
+  "reference_data": {
+    "y": [
+      0.0,
+      0.0625,
+      0.10156,
+      0.17188,
+      0.28125,
+      0.45313,
+      0.5,
+      0.60938,
+      0.73438,
+      0.85938,
+      0.92969,
+      0.96094,
+      0.98047,
+      0.99219,
+      1.0
+    ],
+    "u": [
+      0.0,
+      -0.02655,
+      -0.04214,
+      -0.06241,
+      -0.08795,
+      -0.10156,
+      -0.10156,
+      -0.08795,
+      -0.04214,
+      0.03174,
+      0.0741,
+      0.09168,
+      0.09934,
+      0.10156,
+      0.1
+    ],
+    "x": [
+      0.0,
+      0.0625,
+      0.10156,
+      0.17188,
+      0.28125,
+      0.45313,
+      0.5,
+      0.60938,
+      0.73438,
+      0.85938,
+      0.92969,
+      0.96094,
+      0.98047,
+      0.99219,
+      1.0
+    ],
+    "v": [
+      0.0,
+      0.02655,
+      0.04214,
+      0.06241,
+      0.08795,
+      0.10156,
+      0.10156,
+      0.08795,
+      0.04214,
+      -0.03174,
+      -0.0741,
+      -0.09168,
+      -0.09934,
+      -0.10156,
+      0.0
+    ]
+  },
+  "simulation_status": "cluster_pending",
+  "cluster_job": "cj1162",
+  "cluster_job_params": {
+    "n": [
+      129,
+      257
+    ],
+    "steps": 200000,
+    "cores": 16
+  },
+  "preliminary_check": {
+    "n": 33,
+    "re": 5000.0,
+    "u_lid": 0.1,
+    "tau": 0.50192,
+    "steps_completed": 5000,
+    "u_min": -0.01984,
+    "u_min_y": 0.562,
+    "v_max": 0.01434,
+    "v_max_x": 0.25,
+    "note": "Preliminary check: solver runs, flow develops. Full convergence requires n>=129, steps>=100k."
+  },
+  "repro_cmd": "python TensorLBM/cases/cavity_re5000/run.py --n 129 257 --steps 200000"
+}
