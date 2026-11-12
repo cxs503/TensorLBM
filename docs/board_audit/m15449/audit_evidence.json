@@ -1,0 +1,407 @@
+{
+  "anchor": "GAP-PP-4-opt-loop",
+  "audited_mission": 15399,
+  "audited_tree": "/root/tp-agent/work/m15399",
+  "audited_head": "e4a7ee910d01423f9c6f6490ba5510b05b04f844",
+  "C1_artifacts": {
+    "artifacts/opt_loop_tau_recovery.json": {
+      "exists": true,
+      "bytes": 146898,
+      "sha256": "19c84c40cb941db6f4af4541c6807b82b5c8cf67ab899b6e72076a7ae8959aac",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_fixed_track.json": {
+      "exists": true,
+      "bytes": 18986,
+      "sha256": "da598494529b2843fc7d0407dd3fbc20a47da5dd28a09d88cf5353d0bbc7eb88",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_shard_0.json": {
+      "exists": true,
+      "bytes": 25544,
+      "sha256": "02a3b8fc18805b1f9a18c45ffd611953311dc237dec383c7dba3fe96194d51a1",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_shard_1.json": {
+      "exists": true,
+      "bytes": 27172,
+      "sha256": "bfbb692a9e53af405b842af639c10316739a7b8ab1731bab44a8013965f1bd0a",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_shard_2.json": {
+      "exists": true,
+      "bytes": 24021,
+      "sha256": "84431a45a670fb3db9552abd4cd3e8af3d8f0a73cd7c8ef51cd5fae4432354b3",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_shard_3.json": {
+      "exists": true,
+      "bytes": 22762,
+      "sha256": "1fab0a8e033835ef91d90735a998182b3f7ee6e88d3c022b110c551153a2d744",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_shard_4.json": {
+      "exists": true,
+      "bytes": 22824,
+      "sha256": "9de4f0c16b0a2e78cfcd9940573b0df7ab55b5ab7b9f21821871c4b4b0c9c066",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/opt_loop_shard_5.json": {
+      "exists": true,
+      "bytes": 22298,
+      "sha256": "545effb701bec873a8971e15b34986c4976ea694d9da98ca782c86936ab351fc",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/fixed_track.log": {
+      "exists": true,
+      "bytes": 77,
+      "sha256": "5f9738fd7e45a0591a62f7b317a258cdec84cd3d8c793b43314ed0500b1542ab",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/shard_0.log": {
+      "exists": true,
+      "bytes": 219,
+      "sha256": "92e28c4ddd9ece02a5e53c345937714ab18a1ed23f994b2b39d4fe4470ef40a6",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/shard_1.log": {
+      "exists": true,
+      "bytes": 219,
+      "sha256": "72f5e16c33bf4f99de769a58b7e8438944adf26bac2f5ea9e669e08778a17628",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/shard_2.log": {
+      "exists": true,
+      "bytes": 219,
+      "sha256": "971539685cd365335c09f1258c54795ccef612d390b37ca57a4324765e8ab085",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/shard_3.log": {
+      "exists": true,
+      "bytes": 225,
+      "sha256": "dcc2efa1795f08712ad89275ac5386357d8bc325b856827b876853f266794f43",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/shard_4.log": {
+      "exists": true,
+      "bytes": 225,
+      "sha256": "036f1e262a70d46f10cdb93f5c538b7dd663bc70fae744bf5c2964a2c6212edb",
+      "tracked_on_mission_branch": true
+    },
+    "artifacts/logs/shard_5.log": {
+      "exists": true,
+      "bytes": 225,
+      "sha256": "ed77883b7e4e8715462fbf79b642ef5cd9ad5bb084b967e04ff8939998b57f06",
+      "tracked_on_mission_branch": true
+    },
+    "figures/opt_loop_tau_recovery.png": {
+      "exists": true,
+      "bytes": 223240,
+      "sha256": "7741d60c34469e6c08b7997cd0fc13946b87099606c7badb84fb44ed02ecd123",
+      "tracked_on_mission_branch": true
+    },
+    "src/tensorlbm/opt_loop_tau_recovery.py": {
+      "exists": true,
+      "bytes": 31611,
+      "sha256": "9616e18de3f18bfc10c3f8ffadeb11a84f89c747247f2d3dcd19e5df30a9b14d",
+      "tracked_on_mission_branch": true
+    },
+    "tests/test_opt_loop_tau_recovery.py": {
+      "exists": true,
+      "bytes": 7674,
+      "sha256": "5e88d775f9518d8b279b2185d0f6c876d26639874b0b0869347ed0c084bb8196",
+      "tracked_on_mission_branch": true
+    },
+    "scripts/make_opt_loop_figures.py": {
+      "exists": true,
+      "bytes": 4239,
+      "sha256": "869a7061e23ce820d34ce4bd82a5311fdf4846968ecb0eec3a3c811f77f5eab5",
+      "tracked_on_mission_branch": true
+    },
+    "docs/OPT_LOOP_TAU_RECOVERY.md": {
+      "exists": true,
+      "bytes": 8113,
+      "sha256": "300cd9cd8ea8818a3c4ce26600483ffd014c406f9bbece00eb34d0653aa64d57",
+      "tracked_on_mission_branch": true
+    }
+  },
+  "C2_internal_consistency": {
+    "runs_checked": 18,
+    "derivation_mismatches": [
+      {
+        "track": "analytic16",
+        "seed": 0,
+        "field": "rel_err_pct",
+        "stored": 0.17955833954873948,
+        "recomputed": 0.17923650545569708
+      },
+      {
+        "track": "analytic16",
+        "seed": 1,
+        "field": "rel_err_pct",
+        "stored": 0.1795584601740617,
+        "recomputed": 0.17923662564895984
+      },
+      {
+        "track": "analytic16",
+        "seed": 2,
+        "field": "rel_err_pct",
+        "stored": 0.1795581768950781,
+        "recomputed": 0.1792363433845702
+      },
+      {
+        "track": "analytic32",
+        "seed": 0,
+        "field": "rel_err_pct",
+        "stored": -0.09994091255132584,
+        "recomputed": -0.10004089433398226
+      },
+      {
+        "track": "analytic32",
+        "seed": 1,
+        "field": "rel_err_pct",
+        "stored": -0.09994094670918988,
+        "recomputed": -0.10004092856036695
+      },
+      {
+        "track": "analytic32",
+        "seed": 2,
+        "field": "rel_err_pct",
+        "stored": -0.09994238310931372,
+        "recomputed": -0.10004236783592495
+      },
+      {
+        "track": "analytic16_fixed",
+        "seed": 0,
+        "field": "rel_err_pct",
+        "stored": -3.41626509866307,
+        "recomputed": -3.5371018755413584
+      },
+      {
+        "track": "analytic16_fixed",
+        "seed": 1,
+        "field": "rel_err_pct",
+        "stored": -3.4162651505793744,
+        "recomputed": -3.53710193119524
+      },
+      {
+        "track": "analytic16_fixed",
+        "seed": 2,
+        "field": "rel_err_pct",
+        "stored": -3.416265092739537,
+        "recomputed": -3.5371018691914453
+      },
+      {
+        "track": "twin16_noise0.2",
+        "seed": 0,
+        "field": "rel_err_pct",
+        "stored": -0.10013440224394812,
+        "recomputed": -0.10023477173350955
+      },
+      {
+        "track": "twin16_noise0.2",
+        "seed": 1,
+        "field": "rel_err_pct",
+        "stored": 0.03409288340516095,
+        "recomputed": 0.03408126411941957
+      },
+      {
+        "track": "twin16_noise0.2",
+        "seed": 2,
+        "field": "rel_err_pct",
+        "stored": 0.009859381688862015,
+        "recomputed": 0.009858409710616918
+      },
+      {
+        "track": "twin16_noise1.0",
+        "seed": 0,
+        "field": "rel_err_pct",
+        "stored": -0.49879293774972955,
+        "recomputed": -0.501293353594923
+      },
+      {
+        "track": "twin16_noise1.0",
+        "seed": 1,
+        "field": "rel_err_pct",
+        "stored": 0.17045364143399008,
+        "recomputed": 0.17016359139606282
+      },
+      {
+        "track": "twin16_noise1.0",
+        "seed": 2,
+        "field": "rel_err_pct",
+        "stored": 0.04996487987131422,
+        "recomputed": 0.04993992744656658
+      }
+    ],
+    "summary_mismatches": {},
+    "all_tracks_pass_claim": true,
+    "control_arms": [
+      "analytic16_fixed"
+    ],
+    "gated_tracks_max_abs_err_pct": {
+      "analytic16": 0.1795584601740617,
+      "analytic32": 0.09994238310931372,
+      "twin16": 1.2202452798204522e-06,
+      "twin16_noise0.2": 0.10013440224394812,
+      "twin16_noise1.0": 0.49879293774972955
+    },
+    "gradient_checks": {
+      "analytic16": 2.058446721114054e-06,
+      "analytic32": 8.856157311740379e-06,
+      "twin16": 1.0,
+      "analytic16_fixed": 2.058446721114054e-06,
+      "twin16_noise0.2": 0.00014952250034868108,
+      "twin16_noise1.0": 3.015938984246546e-05
+    },
+    "note": "nu_hat/Re_hat reproduce from tau_hat to 1e-9; rel_err_pct is nu-relative (see C2b)",
+    "metric_basis_mismatches": 0
+  },
+  "C3_report_table_vs_json": {
+    "rows_parsed": 3,
+    "rows": [
+      {
+        "track": "analytic16",
+        "tau_reported": [
+          0.55009,
+          0.55009,
+          0.55009
+        ],
+        "tau_json": [
+          0.5500897791697744,
+          0.5500897792300871,
+          0.5500897790884476
+        ],
+        "tau_max_abs_delta": 2.2091155238435078e-07,
+        "re_max_abs_delta": 3.358031154476748e-05,
+        "err_max_abs_delta_pct": 4.182310492190089e-05,
+        "max_abs_err_cell": 0.1796,
+        "verdict_cell": "PASS"
+      },
+      {
+        "track": "analytic32",
+        "tau_reported": [
+          0.54995,
+          0.54995,
+          0.54995
+        ],
+        "tau_json": [
+          0.5499500295437244,
+          0.5499500295266454,
+          0.5499500288084453
+        ],
+        "tau_max_abs_delta": 2.9543724355818313e-08,
+        "re_max_abs_delta": 4.06731223421275e-05,
+        "err_max_abs_delta_pct": 4.2383109313717804e-05,
+        "max_abs_err_cell": 0.0999,
+        "verdict_cell": "PASS"
+      },
+      {
+        "track": "twin16",
+        "tau_reported": [
+          0.55,
+          0.55,
+          0.55
+        ],
+        "tau_json": [
+          0.5499999999872159,
+          0.5500000001802079,
+          0.5500000006101227
+        ],
+        "tau_max_abs_delta": 6.101226190935449e-10,
+        "re_max_abs_delta": 5.857177640677946e-07,
+        "err_max_abs_delta_pct": 1.2202452798204522e-06,
+        "max_abs_err_cell": 0.0,
+        "verdict_cell": "PASS"
+      }
+    ],
+    "worst_err_table_delta_pct": 4.2383109313717804e-05,
+    "sign_convention": "module stores rel_err_pct=(re_true-re_hat)/re_true (positive = underestimate); auditor recomputed both conventions, magnitudes identical",
+    "verdict": "PASS (table reproduces JSON)"
+  },
+  "C4_shards_vs_canonical": {
+    "shard_runs": 21,
+    "canonical_runs": 18,
+    "key_matches": 18,
+    "value_mismatches": [],
+    "track_label_mismatches": [
+      {
+        "unmatched": [
+          "twin16_fixed",
+          0
+        ]
+      },
+      {
+        "unmatched": [
+          "twin16_fixed",
+          1
+        ]
+      },
+      {
+        "unmatched": [
+          "twin16_fixed",
+          2
+        ]
+      }
+    ],
+    "note": "shards are a stale-label (twin16_fixed) decomposition of the canonical run; values agree to 1e-12"
+  },
+  "C5_repro_cmd": {
+    "exit": 0,
+    "flags": [
+      "-------------",
+      "---------------------------------------------------",
+      "--help",
+      "--iters",
+      "--merge",
+      "--out",
+      "--polish",
+      "--seeds",
+      "--shard",
+      "--threads",
+      "--tracks"
+    ],
+    "has_shard_merge": true,
+    "stderr": null
+  },
+  "C6_arbiter": {
+    "benchmark_case_rows": "0 rows",
+    "case_pool_rows": "0 rows",
+    "anchor_like_opt_rows": "0",
+    "verdict": "NOT_MEASURED (arbiter empty for this anchor)"
+  },
+  "C7_integration": {
+    "importing_files_outside_module": [
+      "scripts/make_opt_loop_figures.py:11:    python scripts/make_opt_loop_figures.py --json artifacts/opt_loop_tau_recovery.j",
+      "scripts/make_opt_loop_figures.py:12:        --out figures/opt_loop_tau_recovery.png",
+      "scripts/make_opt_loop_figures.py:29:from tensorlbm.opt_loop_tau_recovery import TaylorGreenCase, simulate  # noqa: E402",
+      "scripts/make_opt_loop_figures.py:46:    ap.add_argument(\"--json\", type=Path, default=Path(\"artifacts/opt_loop_tau_recove",
+      "scripts/make_opt_loop_figures.py:47:    ap.add_argument(\"--out\", type=Path, default=Path(\"figures/opt_loop_tau_recovery.",
+      "tests/test_opt_loop_tau_recovery.py:1:\"\"\"Tests for the differentiable tau/Re recovery demo (``opt_loop_tau_recovery``).",
+      "tests/test_opt_loop_tau_recovery.py:20:iterations.  The production numbers live in ``artifacts/opt_loop_tau_recovery.jso",
+      "tests/test_opt_loop_tau_recovery.py:32:from tensorlbm.opt_loop_tau_recovery import ("
+    ],
+    "callers_outside_tests_and_scripts": [],
+    "tensorlbm_inverse_pkg": null
+  },
+  "C2b_metric_basis": {
+    "finding": "rel_err_pct is nu-relative ((nu_hat-nu_true)/nu_true), not Re-relative",
+    "nu_basis_mismatches": 0,
+    "gated_worst_under_re_basis": {
+      "track": "twin16_noise1.0",
+      "seed": 0,
+      "stored_nu_pct": -0.49879293774972955,
+      "re_pct": 0.501293353594923,
+      "under_3pct": true
+    },
+    "control_arm": {
+      "track": "analytic16_fixed",
+      "stored_nu_pct": -3.4162651505793744,
+      "re_pct": -3.53710193119524,
+      "delta_pp": 0.12083678061586545
+    },
+    "impact": "gate outcome unchanged (gated max |Re| 0.5013% < 3%; control arm fails under both bases)",
+    "verdict": "metric-basis inconsistency, low severity, not disclosed in report",
+    "note": "control-arm entry in the first pass indexed the wrong run; corrected here from the row where track==analytic16_fixed"
+  }
+}
