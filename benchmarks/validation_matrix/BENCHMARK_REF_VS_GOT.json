@@ -1,6 +1,6 @@
 {
   "kind": "tensorlbm.validation_matrix.benchmark_table/v1",
-  "generated_utc": "2026-11-12T06:11:06Z",
+  "generated_utc": "2026-11-12T16:12:52Z",
   "matrix_version": "1.1",
   "gate": "|err| <= tol at every gated level AND the level series converges (span <= declared max_span_pct; monotone where required)",
   "counts": {
