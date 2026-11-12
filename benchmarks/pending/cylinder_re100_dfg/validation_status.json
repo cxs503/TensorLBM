@@ -1,0 +1,230 @@
+{
+  "case": "cylinder_re100_dfg",
+  "slot": "cylinder",
+  "title": "Circular cylinder Re=100 in a channel — Schäfer & Turek 1996 case 2D-2 (Cd, Cl amp, St, dp)",
+  "reference_basis": "benchmark-bands (DFG workshop, published table)",
+  "scope": "Confined DFG geometry (channel 2.2x0.41, D=0.1 at (0.2,0.2), blockage 0.244), parabolic inlet U_mean=1, p=0 outlet, D2Q9 MRT + half-way BB + Ladd momentum exchange, D=28/40 lattice cells per diameter.",
+  "matrix_version": "1.1",
+  "generated_utc": "2026-11-12T04:36:20Z",
+  "artifact": "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
+  "repro_cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 28 40 --steps 60000 --threads 4",
+  "references": [
+    {
+      "id": "cylinder_dfg2d2_cd_re100",
+      "quantity": "mean drag coefficient of the DFG 2D-2 channel cylinder, Re=100",
+      "value": 3.23,
+      "formula": null,
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+      "token": "C_D = 3.2200 - 3.2400 (mid 3.2300)"
+    },
+    {
+      "id": "cylinder_dfg2d2_clamp_re100",
+      "quantity": "lift coefficient amplitude of the DFG 2D-2 channel cylinder, Re=100",
+      "value": 1.0,
+      "formula": null,
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+      "token": "C_L amplitude = 0.9900 - 1.0100 (mid 1.0000)"
+    },
+    {
+      "id": "cylinder_dfg2d2_st_re100",
+      "quantity": "Strouhal number of the DFG 2D-2 channel cylinder, Re=100",
+      "value": 0.3,
+      "formula": null,
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+      "token": "St = 0.2950 - 0.3050 (mid 0.3000)"
+    },
+    {
+      "id": "cylinder_dfg2d2_dp_re100",
+      "quantity": "pressure difference p(0.15,0.2)-p(0.25,0.2), DFG 2D-2, Re=100 (raw, rho=1,U=1)",
+      "value": 2.48,
+      "formula": null,
+      "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+      "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+      "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+      "token": "Δp = 2.4600 - 2.5000 (mid 2.4800)"
+    }
+  ],
+  "status": "pending",
+  "machine_pass": false,
+  "declared_status": null,
+  "reason": "artifact present but metric paths unresolved: cd_err_pct, st_err_pct, cl_amp_err_pct, dp_err_pct",
+  "metrics": [
+    {
+      "metric": "cd_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 5.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D28",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "D40",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": NaN
+    },
+    {
+      "metric": "st_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 5.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D28",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "D40",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": NaN
+    },
+    {
+      "metric": "cl_amp_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 5.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D28",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "D40",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": NaN
+    },
+    {
+      "metric": "dp_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 5.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "D28",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "D40",
+          "value": NaN,
+          "reference": null,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": NaN
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "cd_err_pct",
+      "errors_abs_pct": [
+        NaN,
+        NaN
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": NaN,
+      "monotone": false,
+      "require_monotone": false,
+      "span_ok": false,
+      "trend_ok": true,
+      "pass": false
+    }
+  ],
+  "unresolved_metrics": [
+    "cd_err_pct",
+    "st_err_pct",
+    "cl_amp_err_pct",
+    "dp_err_pct"
+  ],
+  "artifact_sha256": "57c9490242b5129c6480e3f4ed5b25c5b6c071752d7189fbc0c73ee29da13a5a",
+  "artifact_bytes": 4255,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
+      "sha256": "57c9490242b5129c6480e3f4ed5b25c5b6c071752d7189fbc0c73ee29da13a5a"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "43954e5988f442dd5c6977698cfda5a21691ec025d3e663a2e79922078b9f4e1"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "c3bee5cdfc206d7dd091c34fc0be5c8815b09de2fb03e60109f59339e4f2ca3d"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/verified/cylinder/re100_dfg/run.py",
+      "sha256": "ddb6b2665091ba214df81527a938a06f9bd57c300aa200654297eaa91fbdb046"
+    }
+  ],
+  "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there). Registry schema fix v1.1: metric paths point at the artifact's per_metric.<metric>.err_pct.<D> schema produced by the case's own aggregate() (v1.0 addressed grids.<D>.err_pct.<metric>, which the artifact never contained, so the case judged as 'pending: metric paths unresolved')."
+}
