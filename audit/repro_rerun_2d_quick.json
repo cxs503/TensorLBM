@@ -1,0 +1,14 @@
+{
+  "baseline_bgk_lattice": {
+    "u_spurious": 0.000398142870005413,
+    "u_rms": 0.000247950252838601,
+    "converged": false,
+    "steps": 1500
+  },
+  "bgk_geometric": {
+    "u_spurious": 0.003277983214579357,
+    "u_rms": 0.0005168848434466382,
+    "converged": false,
+    "steps": 1500
+  }
+}
