@@ -259,7 +259,7 @@ class DamBreakVerification:
 
 @dataclass
 class WigleyWaveConfig:
-    """Configuration for Wigley hull wave pattern verification."""
+    """Configuration for the Wigley hull geometry / thin-ship identity case."""
     L: float = 100.0  # Ship length (cells)
     B: float = 10.0   # Beam
     T: float = 6.25   # Draft
@@ -273,25 +273,29 @@ class WigleyWaveConfig:
 
 
 class WigleyWaveVerification:
-    """Wigley hull wave pattern verification vs Michell thin-ship theory.
+    """Wigley hull: analytic geometry check + thin-ship dispersion **identity**.
 
-    The Wigley hull is a mathematically defined ship form:
+    The Wigley hull is a mathematically defined ship form
 
-        y(x, z) = (B/2) * (1 - (2x/L)^2) * (1 - (z/T)^2)
+        y(x, z) = (B/2) (1 - (2x/L)^2) (1 - (z/T)^2),   x in [-L/2, L/2], z in [-T, 0]
 
-    for x in [-L/2, L/2] and z in [-T, 0].
+    **What is verified here.**  Only the geometry: the block coefficient implied
+    by :meth:`wigley_geometry` integrates to the analytic ``Cb = 4/9``
+    (``V = 4 L B T / 9``) with second-order grid convergence.  That check is
+    falsifiable and is reported as ``geometry_check``.
 
-    The wave pattern at the free surface is compared with Michell's thin-ship
-    theory, which gives the wave amplitude as a function of Froude number.
-
-    For Fr = U/sqrt(gL), the transverse wave wavelength is:
-        lambda = 2*pi*U^2/g = 2*pi*L*Fr^2
-
-    The wave height at the midship is approximately:
-        H ~ C * B^2 / L * Fr^2
-
-    where C is a geometry-dependent coefficient.
+    **What is *not* verified here.**  No wave field is simulated.  ``speed_ratio``
+    is an algebraic identity, not a test: ``lambda = 2 pi U^2 / g`` (assumed),
+    ``g = 1``, ``U = Fr sqrt(L)`` give ``k = 1/U^2``, ``omega = sqrt(g k) = 1/U``,
+    ``c = omega/k = U``, hence ``U/c ~ 1`` to machine precision for *any* ``Fr``,
+    ``L``.  The old revision called this ``dispersion_check`` and returned
+    ``verdict="PASS"``; it is now reported as an identity residual and the
+    wave-pattern claim is ``WITHHELD`` (no Michell/thin-ship simulation exists in
+    this module).  See ``docs/AUDIT_m16285_FREE_SURFACE_VERIFICATION.md``.
     """
+
+    #: Analytic block coefficient of the Wigley form, ``V/(L B T) = 4/9``.
+    CB_ANALYTIC = 4.0 / 9.0
 
     def __init__(self, config: WigleyWaveConfig):
         self.config = config
@@ -316,83 +320,106 @@ class WigleyWaveVerification:
         mask = (x_norm.abs() <= 1.0) & (z_norm >= -1.0) & (z_norm <= 0.0)
         return torch.where(mask, y, torch.zeros_like(y))
 
-    def michell_wave_wavelength(self) -> float:
-        """Compute transverse wave wavelength from Michell theory.
+    def block_coefficient(self, nx: int, nz: int) -> float:
+        """Displacement block coefficient of the *discretised* hull.
 
-        lambda = 2*pi*U^2/g = 2*pi*L*Fr^2
-
-        Returns:
-            Wavelength in cells
+        Midpoint quadrature of ``2 y(x, z)`` over ``x in [-L/2, L/2]``,
+        ``z in [-T, 0]`` normalised by ``L B T``.  The integrand is a product of
+        two quadratics, so this converges at second order to ``CB_ANALYTIC``.
         """
         cfg = self.config
-        # In lattice units, g = 1 (normalized)
-        # U = Fr * sqrt(g * L) = Fr * sqrt(L)
+        dx = cfg.L / nx
+        dz = cfg.T / nz
+        x = torch.linspace(-cfg.L / 2 + dx / 2, cfg.L / 2 - dx / 2, nx, dtype=torch.float64)
+        z = torch.linspace(-cfg.T + dz / 2, -dz / 2, nz, dtype=torch.float64)
+        zz, xx = torch.meshgrid(z, x, indexing="ij")
+        y = self.wigley_geometry(xx, zz)
+        volume = float(2.0 * y.sum() * dx * dz)
+        return volume / (cfg.L * cfg.B * cfg.T)
+
+    def michell_wave_wavelength(self) -> float:
+        """Transverse wavelength ``lambda = 2 pi U^2 / g`` with ``g = 1``."""
+        cfg = self.config
         U = cfg.Fr * math.sqrt(cfg.L)
         lambda_wave = 2.0 * math.pi * U**2
         return lambda_wave
 
     def michell_wave_amplitude(self) -> float:
-        """Estimate wave amplitude from Michell theory.
-
-        For a Wigley hull, the wave amplitude at midship is approximately:
-        H ~ (B^2 / L) * Fr^2 * C_w
-
-        where C_w is a coefficient of order 1.
-
-        Returns:
-            Estimated wave amplitude
-        """
+        """Order-of-magnitude wave amplitude ``H ~ 0.5 (B^2/L) Fr^2`` (not a benchmark)."""
         cfg = self.config
-        # Simplified estimate
         H = (cfg.B**2 / cfg.L) * cfg.Fr**2 * 0.5
         return H
 
+    def geometry_check(self, grids=((200, 25), (400, 50), (800, 100))) -> Dict:
+        """Block-coefficient convergence of :meth:`block_coefficient` to ``4/9``."""
+        rows = []
+        for nx, nz in grids:
+            cb = self.block_coefficient(nx, nz)
+            rows.append(
+                {
+                    "nx": nx,
+                    "nz": nz,
+                    "cb": cb,
+                    "rel_error": abs(cb - self.CB_ANALYTIC) / self.CB_ANALYTIC,
+                }
+            )
+        errs = [r["rel_error"] for r in rows]
+        monotone = all(b <= a for a, b in zip(errs, errs[1:]))
+        # observed order between the two finest grids (h halves in both directions)
+        order = float("nan")
+        if len(errs) >= 2 and errs[-1] > 0 and errs[-2] > 0:
+            order = math.log(errs[-2] / errs[-1]) / math.log(2.0)
+        finest = errs[-1]
+        return {
+            "quantity": "Cb(discretised Wigley geometry) vs analytic 4/9",
+            "cb_analytic": self.CB_ANALYTIC,
+            "rows": rows,
+            "monotone_convergence": monotone,
+            "observed_order": order,
+            "finest_rel_error": finest,
+            "tolerance": 5e-3,
+            "pass": bool(monotone and finest < 5e-3),
+        }
+
     def run(self) -> Dict:
-        """Run Wigley hull wave pattern verification.
-
-        Note: Full 3D simulation is computationally expensive. This verification
-        uses a simplified 2D slice approach to demonstrate the methodology.
-
-        Returns:
-            Dictionary with results
-        """
+        """Run the geometry check and report the dispersion **identity** honestly."""
         cfg = self.config
 
-        # Compute theoretical values
         lambda_theory = self.michell_wave_wavelength()
         H_theory = self.michell_wave_amplitude()
-
-        # For demonstration, we compute the theoretical values and compare
-        # with expected scaling laws
-        # Full 3D simulation would be done in a separate benchmark
-
-        # Wave number
         k = 2.0 * math.pi / lambda_theory
-
-        # Dispersion relation: omega^2 = g*k
-        # Phase speed: c = omega/k = sqrt(g/k)
-        # For steady ship waves: c = U (ship speed)
         U = cfg.Fr * math.sqrt(cfg.L)
-
-        # Verify dispersion relation
         g = 1.0  # Normalized gravity
         omega = math.sqrt(g * k)
         c_phase = omega / k
+        speed_ratio = U / c_phase if c_phase > 0 else float("nan")
 
-        # The ship speed should equal phase speed for transverse waves
-        speed_ratio = U / c_phase if c_phase > 0 else float('nan')
+        geometry = self.geometry_check()
 
         self.results = {
             "case": "wigley_wave_pattern",
             "config": asdict(cfg),
+            "evidence_class": "algebraic identity (dispersion) + geometry quadrature",
+            "solver_invoked": False,
+            "simulation_verified": False,
             "theoretical_wavelength": lambda_theory,
             "theoretical_amplitude": H_theory,
             "wave_number": k,
             "ship_speed": U,
             "phase_speed": c_phase,
             "speed_ratio": speed_ratio,
-            "dispersion_check": abs(speed_ratio - 1.0) < 0.1,
-            "verdict": "PASS" if abs(speed_ratio - 1.0) < 0.1 else "FAIL",
+            # kept for API compatibility; NOT a verification (see class docstring)
+            "dispersion_check": abs(speed_ratio - 1.0) < 1e-12,
+            "dispersion_check_kind": "algebraic_identity",
+            "dispersion_identity_residual": abs(speed_ratio - 1.0),
+            "geometry_check": geometry,
+            "geometry_verdict": "PASS" if geometry["pass"] else "FAIL",
+            "verdict": "WITHHELD",
+            "verdict_reason": (
+                "no wave field is simulated: Michell/thin-ship wave-pattern "
+                "comparison is WITHHELD; only the geometry (Cb -> 4/9) and the "
+                "dispersion identity are evaluated"
+            ),
             "note": "Full 3D simulation required for quantitative wave height comparison",
         }
 
@@ -405,7 +432,17 @@ class WigleyWaveVerification:
 
 @dataclass
 class WaterEntryConfig:
-    """Configuration for water entry slamming verification."""
+    """Configuration for the Wagner (1932) wedge-entry closed forms.
+
+    .. warning::
+       ``nx``, ``ny``, ``n_steps``, ``output_interval`` and ``device`` are kept
+       for signature compatibility with the other cases of this module only.
+       :class:`WaterEntrySlamming` runs **no flow solver** (this module has no
+       LBM water-entry simulation), so the grid/device fields are inert;
+       ``n_steps`` and ``output_interval`` are reused as the *sampling grid* of
+       the analytic time series in :meth:`WaterEntrySlamming.run`.
+    """
+
     wedge_angle: float = 4.0  # Deadrise angle (degrees)
     V_entry: float = 0.01     # Entry velocity
     rho_water: float = 1.0
@@ -415,25 +452,43 @@ class WaterEntryConfig:
     n_steps: int = 2000
     output_interval: int = 50
     device: str = "cpu"
+    #: spray-root regularisation of the pointwise pressure (the inviscid Wagner
+    #: pressure is singular at ``xi -> +-1``); the *integral* quantities are
+    #: evaluated without it (see :meth:`WaterEntrySlamming.wagner_force_by_quadrature`).
+    xi_clip: float = 1.0 - 1e-6
 
 
 class WaterEntrySlamming:
-    """Water entry slamming verification vs Wagner (1932) theory.
+    """Wagner (1932) wedge water entry — closed forms plus analytic self-consistency.
 
-    Wagner's theory for wedge water entry gives the force as:
+    Closed-form set (2-D, per unit span, constant entry velocity ``V``, deadrise
+    ``beta``) — the same set implemented independently in
+    :mod:`tensorlbm.lng_membrane_sloshing.impact` (eqs. (1)-(4) of that module):
 
-        F(t) = rho * V^3 * pi^3 * t / (8 * tan^2(beta))
+    ===========================  ==================================================
+    wetted half-width           ``c(t) = (pi/2) V t / tan(beta)``
+    pressure (``xi = x/c``)      ``p = rho V^2 (pi / (2 tan beta)) / sqrt(1-xi^2)``
+                                 ``  = rho V cdot(t) / sqrt(1-xi^2)``
+    slam force                   ``F(t) = int_{-c}^{c} p dx = rho V^2 pi^2 c / (2 tan beta)``
+    force slope                  ``dF/dt = rho V^3 pi^3 / (4 tan^2(beta))``
+    ===========================  ==================================================
 
-    where:
-        rho = water density
-        V = entry velocity
-        t = time since contact
-        beta = deadrise angle
+    **What this class does and does not certify.**  It evaluates the closed forms
+    and cross-checks them against three mutually independent paths (pressure
+    quadrature, the `-rho dphi/dt` finite difference of the plate potential, and
+    the separate :mod:`~tensorlbm.lng_membrane_sloshing.impact` implementation).
+    It does *not* compare an LBM simulation with Wagner theory: no such
+    simulation is run here, so ``simulation_verified`` is ``False`` and the
+    LBM-vs-theory calibration stays ``WITHHELD``.
 
-    The force slope is:
-        dF/dt = rho * V^3 * pi^3 / (8 * tan^2(beta))
-
-    This is compared with the LBM simulation using the color gradient model.
+    History (see ``docs/AUDIT_m16285_FREE_SURFACE_VERIFICATION.md``): the earlier
+    revision of this class (a) reported ``measured_force_slope`` computed *from*
+    ``wagner_force_slope`` (a tautology: ``relative_error`` was 1.4e-16 by
+    construction, so the case could never fail) and (b) carried two mutually
+    inconsistent closed forms — ``p = rho V^2 / sqrt(1-xi^2)`` (missing the
+    ``cdot/V = pi/(2 tan beta)`` factor) and ``dF/dt = rho V^3 pi^3/(8 tan^2 beta)``
+    (a factor 2 too small: the module's own pressure integral came out
+    ``(4 tan beta)/pi`` times its own force, 8.9 % at ``beta = 4 deg``).
     """
 
     def __init__(self, config: WaterEntryConfig):
@@ -441,122 +496,253 @@ class WaterEntrySlamming:
         self.device = torch.device(config.device)
         self.results: Dict = {}
 
+    # -- kinematics ---------------------------------------------------------
+
+    def wagner_wetted_halfwidth(self, t: float) -> float:
+        """Wagner wetted half-width ``c(t) = (pi/2) V t / tan(beta)``."""
+        if t <= 0.0:
+            return 0.0
+        tan_beta = math.tan(math.radians(self.config.wedge_angle))
+        return 0.5 * math.pi * self.config.V_entry * t / tan_beta
+
+    def wagner_force(self, t: float) -> float:
+        """Wagner slam force per unit span ``F(t) = rho V^2 pi^2 c(t)/(2 tan beta)``."""
+        tan_beta = math.tan(math.radians(self.config.wedge_angle))
+        c = self.wagner_wetted_halfwidth(t)
+        return self.config.rho_water * self.config.V_entry**2 * math.pi**2 * c / (
+            2.0 * tan_beta
+        )
+
     def wagner_force_slope(self) -> float:
-        """Compute Wagner theoretical force slope.
+        """Wagner force slope ``dF/dt = rho V^3 pi^3 / (4 tan^2(beta))``.
 
-        dF/dt = rho * V^3 * pi^3 / (8 * tan^2(beta))
-
-        Returns:
-            Force slope (per unit span)
+        Follows from ``F = rho V^2 pi^2 c/(2 tan beta)`` with
+        ``cdot = pi V/(2 tan beta)``.  Independent implementation to compare
+        against: :func:`tensorlbm.lng_membrane_sloshing.impact.wagner_slam_force_per_length`.
         """
-        cfg = self.config
-        beta_rad = math.radians(cfg.wedge_angle)
-        tan_beta = math.tan(beta_rad)
+        tan_beta = math.tan(math.radians(self.config.wedge_angle))
+        rho = self.config.rho_water
+        return rho * self.config.V_entry**3 * math.pi**3 / (4.0 * tan_beta**2)
 
-        dF_dt = cfg.rho_water * cfg.V_entry**3 * math.pi**3 / (8.0 * tan_beta**2)
-        return dF_dt
+    # -- pressure -----------------------------------------------------------
 
     def wagner_pressure_distribution(self, x: np.ndarray, t: float) -> np.ndarray:
-        """Compute Wagner pressure distribution on wedge.
+        """Wagner pressure on the wedge, ``p(x, t) [Pa]``.
 
-        p(x, t) = rho * V^2 * (1 - (x/c(t))^2)^(-1/2)
-
-        where c(t) is the wetted half-width:
-        c(t) = V * t * pi / (2 * tan(beta))
-
-        Args:
-            x: Position along wedge (from apex)
-            t: Time since contact
-
-        Returns:
-            Pressure distribution
+        ``p = rho V^2 (pi / (2 tan beta)) / sqrt(1 - (x/c)^2)`` for ``|x| < c(t)``
+        and ``0`` outside; the spray-root singularity is regularised at
+        ``|x/c| = xi_clip``.
         """
         cfg = self.config
-        beta_rad = math.radians(cfg.wedge_angle)
-        tan_beta = math.tan(beta_rad)
+        x = np.asarray(x, dtype=float)
+        c = self.wagner_wetted_halfwidth(t)
+        if c <= 0.0:
+            return np.zeros_like(x)
+        tan_beta = math.tan(math.radians(cfg.wedge_angle))
+        xi = np.clip(x / c, -cfg.xi_clip, cfg.xi_clip)
+        p = cfg.rho_water * cfg.V_entry**2 * (0.5 * math.pi / tan_beta) / np.sqrt(
+            1.0 - xi * xi
+        )
+        return np.where(np.abs(x) < c, p, 0.0)
 
-        # Wetted half-width
-        c = cfg.V_entry * t * math.pi / (2.0 * tan_beta)
+    def wagner_plate_potential(self, x: np.ndarray, t: float) -> np.ndarray:
+        """Potential on the wetted plate, ``phi = -V sqrt(c(t)^2 - x^2)`` (``|x| < c``).
 
-        # Pressure (Wagner)
-        x_norm = x / c
-        mask = np.abs(x_norm) < 1.0
-        p = np.zeros_like(x)
-        p[mask] = cfg.rho_water * cfg.V_entry**2 / np.sqrt(1.0 - x_norm[mask]**2)
+        This is the boundary value of the mixed-problem solution
+        ``w = -i V (z - sqrt(z^2 - c^2))`` (see
+        :func:`tensorlbm.lng_membrane_sloshing.impact.wagner_complex_potential`).
+        """
+        x = np.asarray(x, dtype=float)
+        c = self.wagner_wetted_halfwidth(t)
+        if c <= 0.0:
+            return np.zeros_like(x)
+        inner = np.clip(c * c - x * x, 0.0, None)
+        phi = -self.config.V_entry * np.sqrt(inner)
+        return np.where(np.abs(x) < c, phi, 0.0)
 
-        return p
+    def pressure_from_potential(self, x: np.ndarray, t: float, dtau_rel: float = 1e-4):
+        """Pressure from linearised unsteady Bernoulli, ``p = -rho d phi/dt``.
+
+        Central difference in ``t`` at fixed ``x``: this path uses *only* the
+        plate potential, never the closed-form pressure, so it is an independent
+        check of the ``cdot`` factor.
+        """
+        dt = dtau_rel * t
+        phi_p = self.wagner_plate_potential(x, t + dt)
+        phi_m = self.wagner_plate_potential(x, t - dt)
+        return -self.config.rho_water * (phi_p - phi_m) / (2.0 * dt)
+
+    # -- integrals ----------------------------------------------------------
+
+    QUADRATURE_N = 1000001
+
+    def wagner_force_by_quadrature(self, t: float, n: int = 0) -> float:
+        """Slam force by midpoint quadrature of the pressure profile.
+
+        Midpoint sampling in ``xi`` never evaluates the spray-root singularity,
+        so the integrable ``1/sqrt(1-xi^2)`` endpoint behaviour is integrated
+        rather than clipped: this is an independent numerical path to ``F(t)``
+        (it would have exposed the old factor-2 defect).
+        """
+        n = int(n or self.QUADRATURE_N)
+        c = self.wagner_wetted_halfwidth(t)
+        if c <= 0.0:
+            return 0.0
+        tan_beta = math.tan(math.radians(self.config.wedge_angle))
+        h = 2.0 / n
+        xi = -1.0 + (np.arange(n) + 0.5) * h
+        p = (
+            self.config.rho_water
+            * self.config.V_entry**2
+            * (0.5 * math.pi / tan_beta)
+            / np.sqrt(1.0 - xi * xi)
+        )
+        return float(p.sum() * h * c)
+
+    # -- driver -------------------------------------------------------------
 
     def run(self) -> Dict:
-        """Run water entry slamming verification.
+        """Evaluate the closed forms and run the three self-consistency checks.
 
         Returns:
-            Dictionary with results and comparison to Wagner theory
+            Dictionary with the analytic series, the quadrature-measured force
+            series, the check residuals and an honest ``verdict`` scope.
         """
         cfg = self.config
+        tan_beta = math.tan(math.radians(cfg.wedge_angle))
 
-        # Theoretical force slope
-        dF_dt_theory = self.wagner_force_slope()
+        # Sample grid of the analytic time series (n_steps/output_interval are
+        # reuse-as-sampling, not solver steps: see WaterEntryConfig).
+        stride = max(int(cfg.output_interval), 1)
+        times = [float(s) for s in range(stride, cfg.n_steps + 1, stride)]
+        forces_theory = [self.wagner_force(t) for t in times]
+        forces_quad = [self.wagner_force_by_quadrature(t) for t in times]
+        penetrations = [cfg.V_entry * t for t in times]
 
-        # Simulate force time series (simplified model)
-        # In full simulation, this would come from momentum exchange
-        times = []
-        forces = []
-        penetrations = []
-
-        # Contact time
-        t_contact = 0.0
-        for step in range(1, cfg.n_steps + 1):
-            t = step
-            penetration = cfg.V_entry * t
-
-            if penetration > 0:
-                # Wagner force: F = dF/dt * t
-                F_wagner = dF_dt_theory * t
-                times.append(t)
-                forces.append(F_wagner)
-                penetrations.append(penetration)
-
-        # Fit force slope from simulated data
+        # (1) measurement: least-squares slope of the *quadrature* series
         if len(times) > 2:
             t_arr = np.array(times)
-            F_arr = np.array(forces)
-
-            # Linear fit
+            F_arr = np.array(forces_quad)
             n = len(t_arr)
-            sum_t = t_arr.sum()
-            sum_F = F_arr.sum()
-            sum_t2 = (t_arr**2).sum()
-            sum_tF = (t_arr * F_arr).sum()
-
-            slope = (n * sum_tF - sum_t * sum_F) / (n * sum_t2 - sum_t**2)
-            intercept = (sum_F - slope * sum_t) / n
-
-            # R-squared
+            slope = float(
+                (n * (t_arr * F_arr).sum() - t_arr.sum() * F_arr.sum())
+                / (n * (t_arr**2).sum() - t_arr.sum() ** 2)
+            )
+            intercept = float((F_arr.sum() - slope * t_arr.sum()) / n)
             F_pred = slope * t_arr + intercept
-            ss_res = ((F_arr - F_pred)**2).sum()
-            ss_tot = ((F_arr - F_arr.mean())**2).sum()
+            ss_res = float(((F_arr - F_pred) ** 2).sum())
+            ss_tot = float(((F_arr - F_arr.mean()) ** 2).sum())
             r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
-
-            error = abs(slope - dF_dt_theory) / dF_dt_theory
+            dF_dt_theory = self.wagner_force_slope()
+            closure_err = abs(slope - dF_dt_theory) / dF_dt_theory
         else:
-            slope = float('nan')
-            r2 = float('nan')
-            error = float('nan')
+            slope = float("nan")
+            r2 = float("nan")
+            dF_dt_theory = self.wagner_force_slope()
+            closure_err = float("nan")
+
+        # (2) cross-implementation check against lng_membrane_sloshing.impact
+        cross = self._cross_check_impact()
+
+        # (3) pressure from -rho dphi/dt at a mid-time window
+        t_probe = times[len(times) // 2] if times else 0.0
+        p_fd = self.pressure_from_potential(self._probe_x(t_probe), t_probe)
+        p_cf = self.wagner_pressure_distribution(self._probe_x(t_probe), t_probe)
+        pot_err = float(np.max(np.abs(p_fd - p_cf) / p_cf))
+
+        checks = {
+            "pressure_integral_closure": {
+                "quantity": "dF/dt from quadrature of p(x,t) vs closed form",
+                "relative_error": closure_err,
+                "quadrature_n": int(self.QUADRATURE_N),
+                "tolerance": 2e-3,
+                "pass": bool(np.isfinite(closure_err) and closure_err < 2e-3),
+            },
+            "cross_implementation": cross,
+            "potential_time_derivative": {
+                "quantity": "max_x |p(-rho dphi/dt) - p_closed| / p_closed, |x| < 0.9 c",
+                "relative_error": pot_err,
+                "tolerance": 1e-5,
+                "pass": bool(np.isfinite(pot_err) and pot_err < 1e-5),
+            },
+        }
+        analytic_ok = all(c["pass"] for c in checks.values())
 
         self.results = {
             "case": "water_entry_slamming_wagner",
             "config": asdict(cfg),
+            "evidence_class": "analytic_closure (no flow solver)",
+            "solver_invoked": False,
+            "simulation_verified": False,
+            "calibration_status": "WITHHELD",
+            "calibration_status_reason": (
+                "no LBM water-entry simulation is run by this class: the "
+                "Wagner-vs-simulation calibration stays WITHHELD"
+            ),
             "wagner_force_slope": dF_dt_theory,
+            "wagner_force_slope_formula": "rho V^3 pi^3 / (4 tan^2 beta)",
+            "tan_beta": tan_beta,
             "measured_force_slope": slope,
-            "relative_error": error,
+            "measured_from": "quadrature of p(x,t) (independent of the closed form)",
+            "relative_error": closure_err,
             "fit_r2": r2,
+            "checks": checks,
             "times": times,
-            "forces": forces,
+            "forces": forces_quad,
+            "forces_closed_form": forces_theory,
             "penetrations": penetrations,
-            "verdict": "PASS" if error < 0.15 else "FAIL",
+            "verdict": "PASS" if analytic_ok else "FAIL",
+            "verdict_scope": "analytic self-consistency only",
         }
-
         return self.results
+
+    # -- internals ----------------------------------------------------------
+
+    def _probe_x(self, t: float) -> np.ndarray:
+        c = self.wagner_wetted_halfwidth(t)
+        return np.linspace(-0.9 * c, 0.9 * c, 51)
+
+    def _cross_check_impact(self) -> Dict:
+        """Compare pressure/force against the independent Wagner implementation."""
+        key = {
+            "quantity": "p(x,t) and F(t) vs lng_membrane_sloshing.impact",
+            "tolerance": 1e-9,
+        }
+        try:
+            from .lng_membrane_sloshing.impact import (
+                WagnerImpact,
+                wagner_pressure_profile,
+                wagner_slam_force_per_length,
+                wagner_wetted_halfwidth,
+            )
+        except Exception as exc:  # pragma: no cover - import guard
+            return {**key, "available": False, "reason": repr(exc), "pass": False}
+
+        cfg = self.config
+        imp = WagnerImpact(
+            v_impact=cfg.V_entry, beta_deg=cfg.wedge_angle, rho=cfg.rho_water
+        )
+        t = max(float(cfg.n_steps), 1.0)
+        c_ours = self.wagner_wetted_halfwidth(t)
+        c_ref = wagner_wetted_halfwidth(t, imp)
+        x = self._probe_x(t)
+        p_ours = self.wagner_pressure_distribution(x, t)
+        p_ref = wagner_pressure_profile(x, t, imp)
+        F_ours = self.wagner_force(t)
+        F_ref = wagner_slam_force_per_length(t, imp)
+        p_err = float(np.max(np.abs(p_ours - p_ref) / p_ref))
+        F_err = abs(F_ours - F_ref) / F_ref
+        c_err = abs(c_ours - c_ref) / c_ref
+        err = max(p_err, F_err, c_err)
+        return {
+            **key,
+            "available": True,
+            "wetted_halfwidth_rel_error": c_err,
+            "pressure_rel_error": p_err,
+            "force_rel_error": F_err,
+            "relative_error": err,
+            "pass": bool(err < key["tolerance"]),
+        }
 
 
 # =============================================================================
@@ -688,6 +874,59 @@ class NegativeControls:
 # Main Verification Runner
 # =============================================================================
 
+def summarise_verifications(results: Dict) -> Dict:
+    """Aggregate case verdicts without inflating certification.
+
+    Rules (see ``docs/AUDIT_m16285_FREE_SURFACE_VERIFICATION.md``):
+
+    * a case is *certified* only when it ran a solver and returned ``PASS``;
+    * ``WITHHELD`` cases stay ``WITHHELD`` (never folded into ``all_pass``);
+    * analytic-only cases are listed separately (they are self-consistency
+      checks of closed forms, not simulation validations);
+    * the negative controls report their own verdicts instead of a hard-coded
+      ``"PASS"``.
+    """
+    def _verdict(name: str) -> str:
+        entry = results.get(name) or {}
+        return str(entry.get("verdict", "MISSING"))
+
+    negative = results.get("negative_controls") or {}
+    negative_verdicts = {
+        key: (val or {}).get("verdict", "MISSING") for key, val in negative.items()
+    }
+    negative_ok = bool(negative_verdicts) and all(
+        v == "PASS" for v in negative_verdicts.values()
+    )
+
+    analytic_only = [
+        name
+        for name, entry in results.items()
+        if isinstance(entry, dict) and entry.get("solver_invoked") is False
+    ]
+    withheld = [
+        name for name in results if _verdict(name) == "WITHHELD"
+    ]
+    solver_cases = {
+        "dam_break": _verdict("dam_break"),
+        "negative_controls": "PASS" if negative_ok else "FAIL",
+    }
+    all_pass = all(v == "PASS" for v in solver_cases.values())
+
+    return {
+        "all_pass": all_pass,
+        "scope": "solver-backed cases only (dam_break, negative_controls)",
+        "solver_cases": solver_cases,
+        "negative_control_cases": negative_verdicts,
+        "analytic_only": analytic_only,
+        "withheld": withheld,
+        "case_verdicts": {
+            "dam_break": _verdict("dam_break"),
+            "wigley_wave": _verdict("wigley_wave"),
+            "water_entry": _verdict("water_entry"),
+        },
+    }
+
+
 def run_all_verifications(output_dir: Path = Path("runs/free_surface_verification")) -> Dict:
     """Run all free surface verification cases.
 
@@ -701,25 +940,25 @@ def run_all_verifications(output_dir: Path = Path("runs/free_surface_verificatio
 
     results = {}
 
-    # 1. Dam break verification
+    # 1. Dam break verification (solver-backed: color-gradient LBM vs Ritter)
     print("Running dam break verification...")
     dam_cfg = DamBreakConfig(nx=200, ny=100, dam_width=50, n_steps=2000, output_interval=50)
     dam = DamBreakVerification(dam_cfg)
     results["dam_break"] = dam.run()
 
-    # 2. Wigley hull wave pattern
+    # 2. Wigley hull geometry + dispersion identity (NO solver -> WITHHELD)
     print("Running Wigley hull wave verification...")
     wig_cfg = WigleyWaveConfig(L=80, B=8, T=5, Fr=0.3)
     wig = WigleyWaveVerification(wig_cfg)
     results["wigley_wave"] = wig.run()
 
-    # 3. Water entry slamming
+    # 3. Water entry slamming (analytic closure only, NO solver)
     print("Running water entry slamming verification...")
     we_cfg = WaterEntryConfig(wedge_angle=4.0, V_entry=0.01, n_steps=1000)
     we = WaterEntrySlamming(we_cfg)
     results["water_entry"] = we.run()
 
-    # 4. Negative controls
+    # 4. Negative controls (solver-backed)
     print("Running negative controls...")
     neg = NegativeControls()
     results["negative_controls"] = {
@@ -727,22 +966,11 @@ def run_all_verifications(output_dir: Path = Path("runs/free_surface_verificatio
         "zero_sigma": neg.zero_surface_tension(),
     }
 
-    # Summary
-    all_pass = all(
-        r.get("verdict") == "PASS"
-        for r in [results["dam_break"], results["wigley_wave"], results["water_entry"]]
-    )
-    results["summary"] = {
-        "all_pass": all_pass,
-        "dam_break": results["dam_break"]["verdict"],
-        "wigley_wave": results["wigley_wave"]["verdict"],
-        "water_entry": results["water_entry"]["verdict"],
-        "negative_controls": "PASS",
-    }
+    results["summary"] = summarise_verifications(results)
 
     # Save results
     with open(output_dir / "verification_results.json", "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=2, default=str)
 
     print(f"\nVerification complete. Results saved to {output_dir}")
     print(f"Summary: {results['summary']}")
