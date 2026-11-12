@@ -1,0 +1,76 @@
+name: Validation matrix
+
+# The validation matrix is the repository's reproducibility contract: nine
+# physics slots, machine-checkable acceptance, one-command reproduction and a
+# three-level (passed/failed/pending) status with an evidence chain.  This
+# workflow keeps that contract honest on every change to the matrix itself, to
+# a case runner or to the reference anchors:
+#
+#   audit        reference anchors are re-derived from the cited in-repo source
+#   check        frozen artifacts are re-judged with the current rules
+#   run --tier ci  at least one complete case is executed end to end
+#   status --write + table --check   status/table cannot contradict the verdicts
+#   ledger verify  run provenance manifests have not drifted
+#
+# A `failed` case does not fail the job: honest FAILs are recorded results.
+# A bookkeeping inconsistency does.
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/validation_matrix/**"
+      - "benchmarks/verified/**"
+      - "benchmarks/pending/**"
+      - "tests/test_validation_matrix.py"
+      - ".github/workflows/validation-matrix.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/validation_matrix/**"
+      - "benchmarks/verified/**"
+      - "benchmarks/pending/**"
+      - "tests/test_validation_matrix.py"
+      - ".github/workflows/validation-matrix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+  OMP_NUM_THREADS: "4"
+
+jobs:
+  matrix-contract:
+    runs-on: ci-loong64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package and test tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Reference anchors re-derived from cited sources (zero hand-copy)
+        run: PYTHONPATH=src python -m benchmarks.validation_matrix audit
+      - name: Re-judge frozen artifacts
+        run: PYTHONPATH=src python -m benchmarks.validation_matrix check
+      - name: Execute the CI-tier cases end to end
+        run: PYTHONPATH=src python -m benchmarks.validation_matrix run --tier ci
+      - name: Regenerate the three-level table and ref-vs-got table
+        run: |
+          PYTHONPATH=src python -m benchmarks.validation_matrix status --write
+          PYTHONPATH=src python benchmarks/validation_matrix/make_benchmark_table.py --check
+      - name: Run ledger manifests re-hashed
+        run: PYTHONPATH=src python benchmarks/validation_matrix/runledger.py verify
+      - name: Matrix tests
+        run: PYTHONPATH=src pytest -q tests/test_validation_matrix.py --timeout=900
+      - name: Upload run ledger + tables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-matrix-evidence
+          path: |
+            artifacts/validation_matrix/runs/
+            benchmarks/validation_matrix/STATUS_MATRIX.md
+            benchmarks/validation_matrix/BENCHMARK_REF_VS_GOT.md
+            benchmarks/validation_matrix/BENCHMARK_REF_VS_GOT.json
+          if-no-files-found: warn

@@ -12,6 +12,7 @@
 #   make coverage       Run tests with coverage report
 #   make layout         Run the repository-layout policy checker
 #   make audit          Generate the import-graph architecture audit
+#   make validation-matrix  Audit + judge + CI-tier run of the validation matrix (writes run ledger)
 #   make ci-local       Run the same gates CI runs, locally
 #   make serve          Launch the FastAPI platform (UVICORN)
 #   make clean          Remove caches and build artifacts
@@ -20,7 +21,7 @@ PYTHON ?= python
 PIP    ?= pip
 PYTEST ?= pytest
 
-.PHONY: install install-app lint format format-check types test test-all coverage layout audit ci-local serve clean
+.PHONY: install install-app lint format format-check types test test-all coverage layout audit validation-matrix ci-local serve clean
 
 install:
 	$(PIP) install -e ".[dev]"
@@ -61,6 +62,15 @@ audit:
 		--root app/tests=app.tests \
 		--json-out artifacts/architecture/import-audit.json \
 		--markdown-out artifacts/architecture/import-audit.md
+
+validation-matrix:
+	mkdir -p artifacts/validation_matrix/runs
+	PYTHONPATH=src $(PYTHON) -m benchmarks.validation_matrix audit
+	PYTHONPATH=src $(PYTHON) -m benchmarks.validation_matrix check
+	PYTHONPATH=src $(PYTHON) -m benchmarks.validation_matrix run --tier ci
+	PYTHONPATH=src $(PYTHON) -m benchmarks.validation_matrix status --write
+	PYTHONPATH=src $(PYTHON) benchmarks/validation_matrix/make_benchmark_table.py --check
+	PYTHONPATH=src $(PYTHON) benchmarks/validation_matrix/runledger.py verify
 
 ci-local: lint format-check types test layout
 

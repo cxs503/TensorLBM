@@ -1,7 +1,7 @@
 {
   "case": "dam_break_ritter_ci",
   "tier": "ci",
-  "generated_utc": "2026-11-12T01:34:13Z",
+  "generated_utc": "2026-11-12T04:32:32Z",
   "reference": {
     "id": "ritter_front_law",
     "law_front": "x_f(t) = 2 sqrt(g h0) t",
@@ -34,7 +34,7 @@
         "volume_downstream": 1.5486442219414136,
         "steps": 311,
         "dt": 0.016080402010050253,
-        "elapsed_s": 0.2828401196748018,
+        "elapsed_s": 0.34874927066266537,
         "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
       }
     },
@@ -56,7 +56,7 @@
         "volume_downstream": 1.5183780228777504,
         "steps": 623,
         "dt": 0.008020050125313283,
-        "elapsed_s": 0.5961736794561148,
+        "elapsed_s": 0.6820656601339579,
         "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
       }
     }
@@ -76,7 +76,7 @@
         "volume_downstream": 1.5021883551815944,
         "steps": 1248,
         "dt": 0.0040050062578222785,
-        "elapsed_s": 1.3089900687336922,
+        "elapsed_s": 1.5640832595527172,
         "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
       }
     },
@@ -94,7 +94,7 @@
         "volume_downstream": 1.4929616108550618,
         "steps": 2498,
         "dt": 0.0020012507817385866,
-        "elapsed_s": 3.0536347087472677,
+        "elapsed_s": 3.637271199375391,
         "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction"
       }
     }

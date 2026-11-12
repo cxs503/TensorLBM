@@ -1,0 +1,852 @@
+{
+  "kind": "tensorlbm.validation_matrix.benchmark_table/v1",
+  "generated_utc": "2026-11-12T04:36:20Z",
+  "matrix_version": "1.1",
+  "gate": "|err| <= tol at every gated level AND the level series converges (span <= declared max_span_pct; monotone where required)",
+  "counts": {
+    "passed": 6,
+    "failed": 3,
+    "pending": 2
+  },
+  "cases": [
+    {
+      "case": "cavity_re100",
+      "slot": "cavity",
+      "title": "Lid-driven cavity Re=100 vs Ghia 1982 centreline table",
+      "status": "passed",
+      "machine_pass": true,
+      "reason": "all metric and convergence criteria passed",
+      "repro_cmd": "python benchmarks/verified/cavity/re100/run.py",
+      "artifact": "benchmarks/verified/cavity/re100/result.json",
+      "artifact_sha256": "96d75943db8ccfd703836374e30790d5c19bb991df7497ca652decb4f99e239b",
+      "references": [
+        {
+          "id": "ghia_re100_u_center",
+          "quantity": "u(0.5, 0.5) on the cavity vertical centreline, Re=100",
+          "value": -0.20581,
+          "formula": null,
+          "origin": "Ghia, Ghia & Shin 1982, JCP 48:387, Table I (Re=100)",
+          "source": "benchmarks/verified/cavity/re100/README.md",
+          "source_sha256": "8753e67dc4638457148ab275764ca67573c0aadfd133ee1dabbc41af349c8314",
+          "token": "-0.20581"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "max_abs_dev_pct",
+          "level": "128x128",
+          "reference": null,
+          "got": 0.7513717701435135,
+          "err_pct": 0.7513717701435135,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "max_abs_dev_pct",
+          "level": "192x192",
+          "reference": null,
+          "got": 0.7263405613303187,
+          "err_pct": 0.7263405613303187,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "max_abs_dev_pct",
+          "errors_abs_pct": [
+            0.7513717701435135,
+            0.7263405613303187
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": 0.025031208813194872,
+          "monotone": true,
+          "require_monotone": true,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "cylinder_re100",
+      "slot": "cylinder",
+      "title": "Circular cylinder Re=100 vs Braza 1986 experiment (Cd, St)",
+      "status": "passed",
+      "machine_pass": true,
+      "reason": "all metric and convergence criteria passed",
+      "repro_cmd": "python benchmarks/verified/cylinder/re100/run.py",
+      "artifact": "benchmarks/verified/cylinder/re100/result.json",
+      "artifact_sha256": "b9a27d4b25dbe5dc115e9b5b212b36f4f9e1f8b10cac534fc11b16b525732b6d",
+      "references": [
+        {
+          "id": "cylinder_cd_re100",
+          "quantity": "mean drag coefficient of a circular cylinder, Re=100 (2-D)",
+          "value": 1.35,
+          "formula": null,
+          "origin": "Braza, Chassaing & Ha Minh 1986, JFM 165 (experiment Cd=1.35+-0.05)",
+          "source": "benchmarks/verified/cylinder/re100/README.md",
+          "source_sha256": "150a774768337487130c86770d88da7c3aac318185771e466afa2ffced472247",
+          "token": "Cd=1.35±0.05"
+        },
+        {
+          "id": "cylinder_st_re100",
+          "quantity": "Strouhal number of a circular cylinder, Re=100",
+          "value": 0.165,
+          "formula": null,
+          "origin": "Braza et al. 1986 (St=0.164-0.165 band; 2-D literature 0.164-0.168)",
+          "source": "benchmarks/verified/cylinder/re100/README.md",
+          "source_sha256": "150a774768337487130c86770d88da7c3aac318185771e466afa2ffced472247",
+          "token": "St≈0.164-0.165"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "cd_err_pct",
+          "level": "D48",
+          "reference": null,
+          "got": -1.53,
+          "err_pct": -1.53,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "cd_err_pct",
+          "level": "D64",
+          "reference": null,
+          "got": -2.55,
+          "err_pct": -2.55,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "st_err_pct",
+          "level": "D48",
+          "reference": null,
+          "got": 0.7,
+          "err_pct": 0.7,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "st_err_pct",
+          "level": "D64",
+          "reference": null,
+          "got": -2.4,
+          "err_pct": -2.4,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "cd_err_pct",
+          "errors_abs_pct": [
+            1.53,
+            2.55
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": 1.0199999999999998,
+          "monotone": false,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        },
+        {
+          "metric": "st_err_pct",
+          "errors_abs_pct": [
+            0.7,
+            2.4
+          ],
+          "max_span_pct": 3.5,
+          "span_pct": 1.7,
+          "monotone": false,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "sphere_re100",
+      "slot": "sphere",
+      "title": "Sphere Re=100 drag vs Schiller-Naumann",
+      "status": "passed",
+      "machine_pass": true,
+      "reason": "all metric and convergence criteria passed",
+      "repro_cmd": "python benchmarks/verified/sphere_re100/run.py",
+      "artifact": "benchmarks/verified/sphere_re100/result.json",
+      "artifact_sha256": "b4c13e0f862f41072a022fae6beb96d581337b72c3b929a2d25db28bdae52b08",
+      "references": [
+        {
+          "id": "sphere_cd_re100",
+          "quantity": "drag coefficient of a sphere, Re=100",
+          "value": 1.0917311,
+          "formula": null,
+          "origin": "Schiller-Naumann correlation Cd=24/Re*(1+0.15 Re^0.687), cross-checked against Clift-Gauvin",
+          "source": "benchmarks/verified/sphere_re100/REFERENCE_AUDIT.md",
+          "source_sha256": "171b101e7959739b07e3b004ec09ae1e33cb5e500be450bcd29b0abcb93675cc",
+          "token": "1.0917311"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "cd",
+          "level": "D40",
+          "reference": 1.0917311,
+          "got": 1.1219804015117896,
+          "err_pct": 2.770764844180907,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "cd",
+          "level": "D60",
+          "reference": 1.0917311,
+          "got": 1.119462001144486,
+          "err_pct": 2.54008529613986,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "cd",
+          "errors_abs_pct": [
+            1.1219804015117896,
+            1.119462001144486
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": 0.0025184003673035527,
+          "monotone": true,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "channel_turb_re180",
+      "slot": "channel",
+      "title": "Turbulent channel Re_tau=180 vs Moser DNS (u+ profile)",
+      "status": "failed",
+      "machine_pass": false,
+      "reason": "TERMINAL honest FAIL (benchmarks/pending/channel_turb_3d/README.md): root cause = domain size too small + insufficient statistical sample; the u+ RMS error in the log layer never reaches the 3% gate. The tabular Moser DNS anchor is also not frozen in-repo, so the anchor itself is WITHHELD.",
+      "repro_cmd": "python benchmarks/pending/channel_turb_3d/run.py",
+      "artifact": "benchmarks/pending/channel_turb_3d/result.json",
+      "artifact_sha256": "847aff7053e0805e5f4b349f82ecb1957597c03d23902eb8421b7e4556640149",
+      "references": [
+        {
+          "id": "moser_channel_uplus",
+          "quantity": "channel-flow mean velocity profile u+(y+) at Re_tau=180",
+          "value": null,
+          "formula": "DNS profile (tabular, not tabulated in-repo)",
+          "origin": "Moser, Kim & Mansour 1999, Phys. Fluids 11:943 (Re_tau=178.12)",
+          "source": "benchmarks/pending/channel_turb_3d/README.md",
+          "source_sha256": "b54b9ca16252f066301984c2b9e7c5765945ac8b36de72760b5b38c6546f6dfa",
+          "token": "Moser, Kim & Mansour 1999"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "uplus_rms_err_pct",
+          "level": "coarse",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "uplus_rms_err_pct",
+          "level": "fine",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": false
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "uplus_rms_err_pct",
+          "errors_abs_pct": [
+            NaN,
+            NaN
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": NaN,
+          "monotone": false,
+          "require_monotone": false,
+          "span_ok": false,
+          "trend_ok": true,
+          "pass": false
+        }
+      ],
+      "unresolved_metrics": [
+        "uplus_rms_err_pct"
+      ]
+    },
+    {
+      "case": "taylor_green_2d",
+      "slot": "taylor_green",
+      "title": "2-D Taylor-Green vortex decay vs analytic gamma = 2 nu k^2",
+      "status": "passed",
+      "machine_pass": true,
+      "reason": "all metric and convergence criteria passed",
+      "repro_cmd": "python benchmarks/verified/taylor_green_2d/run.py",
+      "artifact": "benchmarks/verified/taylor_green_2d/result.json",
+      "artifact_sha256": "f7a48576cb8a8df6d7f54f36517e42384930a2a5263d08fba682b57280ed36c5",
+      "references": [
+        {
+          "id": "tg2d_gamma_e_theory",
+          "quantity": "energy decay rate of the 2-D Taylor-Green vortex gamma_E = 4 nu k^2",
+          "value": 0.0006168502750680849,
+          "formula": null,
+          "origin": "analytic Taylor-Green solution (energy decays twice as fast as velocity)",
+          "source": "benchmarks/verified/taylor_green_2d/README.md",
+          "source_sha256": "4bc2cdd7501418eea6bf14a3e7c4cdb9d3d75b41c83ef826e8b8c22dbec4cb61",
+          "token": "γ_E_theory = 4νk²"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "gamma_e",
+          "level": "first-half",
+          "reference": 0.0006168502750680849,
+          "got": 0.0006163948840831097,
+          "err_pct": -0.07382520578837949,
+          "tol_pct": 1.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "gamma_e",
+          "level": "second-half",
+          "reference": 0.0006168502750680849,
+          "got": 0.0006167298135847768,
+          "err_pct": -0.01952848011534184,
+          "tol_pct": 1.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "gamma_e",
+          "errors_abs_pct": [
+            0.0006163948840831097,
+            0.0006167298135847768
+          ],
+          "max_span_pct": 1.0,
+          "span_pct": 3.349295016670962e-07,
+          "monotone": false,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "static_droplet_laplace_ci",
+      "slot": "static_droplet",
+      "title": "Static SCMP droplet: Laplace law + resolution convergence (CI tier)",
+      "status": "passed",
+      "machine_pass": true,
+      "reason": "all metric and convergence criteria passed",
+      "repro_cmd": "python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
+      "artifact": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json",
+      "artifact_sha256": "c676cddf5336b3577722d59318a3013a12752efe62b3554b7dd661097a69a0c7",
+      "references": [
+        {
+          "id": "laplace_law_2d",
+          "quantity": "static-droplet Laplace pressure jump",
+          "value": null,
+          "formula": "Delta p = sigma / R (2-D circular droplet)",
+          "origin": "Young-Laplace law",
+          "source": "benchmarks/verified/laplace_droplet/README.md",
+          "source_sha256": "813960b42c2bb31d8228fb2e44a3a1e9c03dc6c1b972294ee5819083ae0e5e3d",
+          "token": "Δp = p_in − p_out = σ / R"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "laplace_max_dev_pct",
+          "level": "R=8/12/16",
+          "reference": null,
+          "got": 0.821534099798054,
+          "err_pct": 0.821534099798054,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "laplace_max_dev_pct",
+          "level": "R=12/16/20",
+          "reference": null,
+          "got": 0.5917086353643589,
+          "err_pct": 0.5917086353643589,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "sigma_pair_dev_pct",
+          "level": "R=8/12/16",
+          "reference": null,
+          "got": 0.2581571389926525,
+          "err_pct": 0.2581571389926525,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "sigma_pair_dev_pct",
+          "level": "R=12/16/20",
+          "reference": null,
+          "got": 0.2581571389926649,
+          "err_pct": 0.2581571389926649,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "laplace_max_dev_pct",
+          "errors_abs_pct": [
+            0.821534099798054,
+            0.5917086353643589
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": 0.22982546443369511,
+          "monotone": true,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        },
+        {
+          "metric": "sigma_pair_dev_pct",
+          "errors_abs_pct": [
+            0.2581571389926525,
+            0.2581571389926649
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": 1.2378986724570495e-14,
+          "monotone": true,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "rayleigh_taylor_rt",
+      "slot": "rayleigh_taylor",
+      "title": "Rayleigh-Taylor linear growth rate vs viscous dispersion relation",
+      "status": "failed",
+      "machine_pass": false,
+      "reason": "Honest FAIL with root cause (benchmarks/pending/rayleigh_taylor/README.md): over 10 (lambda, g) cases the SCMP pseudo-potential model has NO growth window inside the reachable parameter surface (sigma_sim <= 0 or NaN; lambda=280/g=6.5e-6 already at 91% of the vapor-spinodal gravity ceiling), and the earlier VOF module track failed structurally. Two independent model classes fail -> the slot stays failed until a model class with a demonstrable window exists.",
+      "repro_cmd": "python benchmarks/pending/rayleigh_taylor/run.py",
+      "artifact": null,
+      "artifact_sha256": null,
+      "references": [
+        {
+          "id": "chandrasekhar_rt",
+          "quantity": "Rayleigh-Taylor linear growth rate sigma(k) for two viscous fluids",
+          "value": null,
+          "formula": "viscous RT dispersion relation (Chandrasekhar 5x5 determinant)",
+          "origin": "Chandrasekhar 1961, Hydrodynamic and Hydromagnetic Stability, ch. X",
+          "source": "benchmarks/pending/rayleigh_taylor/README.md",
+          "source_sha256": "32e4691f3e65d0581cd7cf0cd3e10b899541c7961bb6f6ee7985de6ac9299b16",
+          "token": "Chandrasekhar 5×5"
+        }
+      ],
+      "rows": [],
+      "convergence": [],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "dam_break_ritter_ci",
+      "slot": "dam_break",
+      "title": "Ritter 1892 dam-break self-similarity (CI tier)",
+      "status": "failed",
+      "machine_pass": false,
+      "reason": "one or more machine-checked criteria failed",
+      "repro_cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
+      "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
+      "artifact_sha256": "853a155b2ef00893def965b5d9d6b8f60dead636f4fda0b43ff90959465b41dc",
+      "references": [
+        {
+          "id": "ritter_front_law",
+          "quantity": "dam-break front position x_f(t)",
+          "value": null,
+          "formula": "x_f(t) = 2 sqrt(g h0) t",
+          "origin": "Ritter 1892 self-similar shallow-water solution; implementation anchor in the library docstring",
+          "source": "src/tensorlbm/shallow_water.py",
+          "source_sha256": "5abb26d72972569d137b0bf163bb89f99ef9415c80468ed03c4b82e8b7eca7bd",
+          "token": "x_{front}(t) = 2 c_0 t"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "front_err_pct",
+          "level": "nx=200",
+          "reference": null,
+          "got": 4.512477447890056,
+          "err_pct": 4.512477447890056,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "front_err_pct",
+          "level": "nx=400",
+          "reference": null,
+          "got": 2.562490221596643,
+          "err_pct": 2.562490221596643,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "profile_l2_pct",
+          "level": "nx=200",
+          "reference": null,
+          "got": 9.824803799860751,
+          "err_pct": 9.824803799860751,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "profile_l2_pct",
+          "level": "nx=400",
+          "reference": null,
+          "got": 6.291582196947942,
+          "err_pct": 6.291582196947942,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "mass_drift_pct",
+          "level": "nx=200",
+          "reference": null,
+          "got": 2.2093438190040618e-14,
+          "err_pct": 2.2093438190040618e-14,
+          "tol_pct": 1.0,
+          "gated": true,
+          "pass": true
+        },
+        {
+          "metric": "mass_drift_pct",
+          "level": "nx=400",
+          "reference": null,
+          "got": 2.2148949341271873e-14,
+          "err_pct": 2.2148949341271873e-14,
+          "tol_pct": 1.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "front_err_pct",
+          "errors_abs_pct": [
+            4.512477447890056,
+            2.562490221596643
+          ],
+          "max_span_pct": 5.0,
+          "span_pct": 1.949987226293413,
+          "monotone": true,
+          "require_monotone": false,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        },
+        {
+          "metric": "profile_l2_pct",
+          "errors_abs_pct": [
+            9.824803799860751,
+            6.291582196947942
+          ],
+          "max_span_pct": 5.0,
+          "span_pct": 3.5332216029128087,
+          "monotone": true,
+          "require_monotone": true,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "ship_resistance_suboff",
+      "slot": "ship",
+      "title": "DARPA SUBOFF bare-hull resistance at Re=1000 vs Blasius flat plate",
+      "status": "passed",
+      "machine_pass": true,
+      "reason": "all metric and convergence criteria passed",
+      "repro_cmd": "python benchmarks/verified/suboff_re1000/run.py",
+      "artifact": "benchmarks/verified/suboff_re1000/result.json",
+      "artifact_sha256": "e8fbd2bef96eb55c49afe72566a3b2998df1fb8e0d6872e5cbaf76ae9da202c6",
+      "references": [
+        {
+          "id": "blasius_cf_suboff",
+          "quantity": "Blasius laminar flat-plate friction coefficient at Re=1000 (wetted-area normalization)",
+          "value": 0.04199504732703608,
+          "formula": null,
+          "origin": "Blasius Cf = 1.328/sqrt(Re); frozen in the verified artifact as reference.Cf_ref",
+          "source": "benchmarks/verified/suboff_re1000/README.md",
+          "source_sha256": "946fa051545632771394ea48fc37a22fc1be0aff53d1e3e3215dab5fd5fe09b7",
+          "token": "0.041995"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "cd_tot_err_pct",
+          "level": "L=48",
+          "reference": null,
+          "got": -3.17,
+          "err_pct": -3.17,
+          "tol_pct": 0.0,
+          "gated": false,
+          "pass": false
+        },
+        {
+          "metric": "cd_tot_err_pct",
+          "level": "L=80",
+          "reference": null,
+          "got": -1.15,
+          "err_pct": -1.15,
+          "tol_pct": 3.0,
+          "gated": true,
+          "pass": true
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "cd_tot_err_pct",
+          "errors_abs_pct": [
+            3.17,
+            1.15
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": 2.02,
+          "monotone": true,
+          "require_monotone": true,
+          "span_ok": true,
+          "trend_ok": true,
+          "pass": true
+        }
+      ],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "ship_wave_michell",
+      "slot": "ship",
+      "title": "Ship wave resistance vs Michell thin-ship theory",
+      "status": "pending",
+      "machine_pass": false,
+      "reason": "WITHHELD (benchmarks/wave_wake_michell/REPORT.md): the primary criterion 'LBM free-surface C_W within 15% of Michell' was NOT obtained - the 3-D Koerner free-surface kernel measured 9.56 s/step at 4e5 cells, extrapolating to ~35 h for a lambda/dx>=20 Wigley case, outside the node budget. 2-D free-surface substitute: period error 8.8-13.8%. Reported as WITHHELD, not PASS.",
+      "repro_cmd": "python benchmarks/wave_wake_michell/run.py",
+      "artifact": null,
+      "artifact_sha256": null,
+      "references": [
+        {
+          "id": "michell_cw",
+          "quantity": "thin-ship wave resistance coefficient C_W(Fn)",
+          "value": null,
+          "formula": "Michell (1898) thin-ship integral",
+          "origin": "Michell 1898; in-repo closed-form implementation src/tensorlbm/wave_wake_michell.py",
+          "source": "benchmarks/wave_wake_michell/REPORT.md",
+          "source_sha256": "0f74d6ba1177c67fbef4e066fbd778150021bc8586e207bd9e90e37222f6d81e",
+          "token": "Michell（1898）"
+        }
+      ],
+      "rows": [],
+      "convergence": [],
+      "unresolved_metrics": []
+    },
+    {
+      "case": "cylinder_re100_dfg",
+      "slot": "cylinder",
+      "title": "Circular cylinder Re=100 in a channel — Schäfer & Turek 1996 case 2D-2 (Cd, Cl amp, St, dp)",
+      "status": "pending",
+      "machine_pass": false,
+      "reason": "artifact present but metric paths unresolved: cd_err_pct, st_err_pct, cl_amp_err_pct, dp_err_pct",
+      "repro_cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 28 40 --steps 60000 --threads 4",
+      "artifact": "benchmarks/verified/cylinder/re100_dfg/artifacts/result.json",
+      "artifact_sha256": "57c9490242b5129c6480e3f4ed5b25c5b6c071752d7189fbc0c73ee29da13a5a",
+      "references": [
+        {
+          "id": "cylinder_dfg2d2_cd_re100",
+          "quantity": "mean drag coefficient of the DFG 2D-2 channel cylinder, Re=100",
+          "value": 3.23,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "C_D = 3.2200 - 3.2400 (mid 3.2300)"
+        },
+        {
+          "id": "cylinder_dfg2d2_clamp_re100",
+          "quantity": "lift coefficient amplitude of the DFG 2D-2 channel cylinder, Re=100",
+          "value": 1.0,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "C_L amplitude = 0.9900 - 1.0100 (mid 1.0000)"
+        },
+        {
+          "id": "cylinder_dfg2d2_st_re100",
+          "quantity": "Strouhal number of the DFG 2D-2 channel cylinder, Re=100",
+          "value": 0.3,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "St = 0.2950 - 0.3050 (mid 0.3000)"
+        },
+        {
+          "id": "cylinder_dfg2d2_dp_re100",
+          "quantity": "pressure difference p(0.15,0.2)-p(0.25,0.2), DFG 2D-2, Re=100 (raw, rho=1,U=1)",
+          "value": 2.48,
+          "formula": null,
+          "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
+          "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
+          "source_sha256": "c3bc60d7a89e94dadf9fc496232b62851a7dc9507818a87d6d61b61f2d2208d3",
+          "token": "Δp = 2.4600 - 2.5000 (mid 2.4800)"
+        }
+      ],
+      "rows": [
+        {
+          "metric": "cd_err_pct",
+          "level": "D28",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "cd_err_pct",
+          "level": "D40",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "st_err_pct",
+          "level": "D28",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "st_err_pct",
+          "level": "D40",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "cl_amp_err_pct",
+          "level": "D28",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "cl_amp_err_pct",
+          "level": "D40",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "dp_err_pct",
+          "level": "D28",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        },
+        {
+          "metric": "dp_err_pct",
+          "level": "D40",
+          "reference": null,
+          "got": NaN,
+          "err_pct": NaN,
+          "tol_pct": 5.0,
+          "gated": true,
+          "pass": false
+        }
+      ],
+      "convergence": [
+        {
+          "metric": "cd_err_pct",
+          "errors_abs_pct": [
+            NaN,
+            NaN
+          ],
+          "max_span_pct": 3.0,
+          "span_pct": NaN,
+          "monotone": false,
+          "require_monotone": false,
+          "span_ok": false,
+          "trend_ok": true,
+          "pass": false
+        }
+      ],
+      "unresolved_metrics": [
+        "cd_err_pct",
+        "st_err_pct",
+        "cl_amp_err_pct",
+        "dp_err_pct"
+      ]
+    }
+  ]
+}
