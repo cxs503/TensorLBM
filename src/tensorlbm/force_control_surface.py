@@ -91,6 +91,8 @@ Guo, Z.; Zheng, C.; Shi, B. (2002), *Phys. Rev. E* 65 — forcing scheme.
 
 from __future__ import annotations
 
+from .array_drag_reference import array_drag_factor_from_lambda
+
 import math
 from dataclasses import dataclass, field
 
@@ -625,17 +627,19 @@ def stokes_terminal_velocity(radius: float, mu: float, delta_rho: float, gravity
 def hasimoto_factor(lam: float) -> float:
     """Drag enhancement of a periodic simple-cubic array of spheres (Hasimoto 1959).
 
-    ``F_array / F_isolated = 1 / (1 - 2.10444 λ + 2.08877 λ³ - 0.94813 λ⁵
-    - 1.372 λ⁶ + 3.87 λ⁸ - 4.19 λ¹⁰)`` with ``λ = a / L`` (sphere radius over
-    periodic-cell side).  Used only as an *a-posteriori* comparison against
-    our own ``a/L`` extrapolation, never as a correction baked into a claim.
+    ``F_array / F_isolated = 1 / (1 - 2.83730 λ + 4.18879 λ³ - 27.3594 λ⁶ + …)``
+    with ``λ = a / L`` (sphere radius over periodic-cell side), i.e. the locked
+    SC series ``1 - 1.7601 φ^(1/3) + φ - 1.5593 φ² + 3.9799 φ^(8/3)
+    - 3.0734 φ^(10/3)`` with ``φ = 4πλ³/3`` (Hasimoto 1959 JFM 5:317;
+    ``benchmarks/verified/permeability3d/NOTES.md`` §1.6), served by
+    :mod:`tensorlbm.array_drag_reference`.  Used only as an *a-posteriori*
+    comparison against our own ``a/L`` extrapolation, never as a correction
+    baked into a claim.
+
+    History (2026-11-12 audit, ``docs/ARRAY_DRAG_REFERENCE_AUDIT.md``): the
+    previous series had leading coefficient ``2.10444`` and was -17 % at
+    ``λ = 1/6`` relative to the locked SC reference; it is not the SC
+    Hasimoto series, despite this docstring's reference and its ``λ = a/L``
+    convention.
     """
-    return 1.0 / (
-        1.0
-        - 2.10444 * lam
-        + 2.08877 * lam**3
-        - 0.94813 * lam**5
-        - 1.372 * lam**6
-        + 3.87 * lam**8
-        - 4.19 * lam**10
-    )
+    return array_drag_factor_from_lambda(lam)

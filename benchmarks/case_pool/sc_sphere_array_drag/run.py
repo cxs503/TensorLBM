@@ -31,6 +31,7 @@ import numpy as np
 import torch
 
 import tensorlbm
+from tensorlbm.array_drag_reference import array_drag_factor_from_phi
 from tensorlbm.boundaries3d import bounce_back_cells_3d
 from tensorlbm.d3q19 import C as D3Q19_C
 from tensorlbm.d3q19 import W_EXACT64, equilibrium3d, macroscopic3d
@@ -71,17 +72,12 @@ def utc_now() -> str:
 
 
 def hasimoto_K(phi: float) -> float:
-    """Hasimoto (1959) SC sedimentation series, K = U0/U (NOTES 1.1). In code, not typed."""
-    c = float(phi)
-    u_ratio = (
-        1.0
-        - 1.7601 * c ** (1.0 / 3.0)
-        + c
-        - 1.5593 * c**2
-        + 3.9799 * c ** (8.0 / 3.0)
-        - 3.0734 * c ** (10.0 / 3.0)
-    )
-    return 1.0 / u_ratio
+    """Hasimoto (1959) SC sedimentation series, K = U0/U (NOTES §1.1).
+
+    Single source: :func:`tensorlbm.array_drag_reference.array_drag_factor_from_phi`
+    (the same series, so the benchmark and the library cannot drift apart).
+    """
+    return array_drag_factor_from_phi(phi)
 
 
 def loglog_K(phi: float) -> float:

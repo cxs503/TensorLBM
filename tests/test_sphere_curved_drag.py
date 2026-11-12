@@ -223,8 +223,16 @@ def test_analytic_drag_force_reduces_to_stokes_with_hasimoto_confinement():
     f = driver.analytic_drag_force(u, R, nu, lam)
     stokes = 6.0 * math.pi * nu * R * u
     assert f / stokes == pytest.approx(driver.hasimoto_K(lam), rel=1e-9)
-    # confinement factor is the array correction, not a free parameter
-    assert driver.hasimoto_K(lam) == pytest.approx(1.841, abs=2e-3)
+    # confinement factor is the array correction, not a free parameter.
+    # 1.8314 is the Hasimoto SC series at lam = 1/6 through the canonical module
+    # (phi = 0.019393); the pre-2026-11-12 value 1.841 came from a lambda^5
+    # exponent typo, see docs/ARRAY_DRAG_REFERENCE_AUDIT.md.
+    from tensorlbm.array_drag_reference import array_drag_factor_from_lambda
+
+    assert driver.hasimoto_K(lam) == pytest.approx(1.8314, abs=2e-3)
+    assert driver.hasimoto_K(lam) == pytest.approx(
+        array_drag_factor_from_lambda(lam), rel=1e-12
+    )
 
 
 def test_analytic_drag_force_is_monotone_and_uses_schiller_naumann_above_re1():
