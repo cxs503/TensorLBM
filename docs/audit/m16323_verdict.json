@@ -1,0 +1,95 @@
+{
+ "repo": "TensorLBM",
+ "scope": "m16323 CASE-LBM-WOMERSLEY-PULSATILE",
+ "mission_id": 16338,
+ "level": 2,
+ "verdict_by": "board-audit",
+ "evidence": {
+  "impl_files": [
+   "/root/tp-agent/work/m16323/TensorLBM/src/tensorlbm/verification/womersley_pulsatile/analytical.py",
+   "/root/tp-agent/work/m16323/TensorLBM/src/tensorlbm/verification/womersley_pulsatile/channel2d.py",
+   "/root/tp-agent/work/m16323/TensorLBM/src/tensorlbm/verification/womersley_pulsatile/pipe3d.py",
+   "/root/tp-agent/work/m16323/TensorLBM/src/tensorlbm/verification/womersley_pulsatile/metrics.py",
+   "/root/tp-agent/work/m16323/TensorLBM/src/tensorlbm/verification/womersley_pulsatile/gates.py"
+  ],
+  "entry": "/root/tp-agent/work/m16323/benchmarks/verified/womersley_pulsatile/run.py",
+  "run_artifacts": [
+   "/root/tp-agent/work/m16323/artifacts/womersley_pulsatile_alpha5/result.json",
+   "/root/tp-agent/work/m16323/artifacts/womersley_pulsatile_alpha5/channel_H59_a5_tau0.8.json",
+   "/root/tp-agent/work/m16323/artifacts/womersley_pulsatile_alpha5/pipe_R10.5_a5_tau0.8.json",
+   "/root/tp-agent/work/m16323/artifacts/womersley_pulsatile_alpha5/pipe_R16.5_a5_tau0.8.json",
+   "/root/tp-agent/work/m16323/artifacts/womersley_pulsatile_alpha5/pipe_steady_R10.5_a5_tau0.8.json",
+   "docs/audit/m16323_womersley_audit.json"
+  ],
+  "tests": [
+   "test_womersley_pulsatile.py::test_reference_alpha5_channel_and_pipe",
+   "test_womersley_pulsatile.py::test_quasi_steady_limit_recovers_poiseuille",
+   "test_womersley_pulsatile.py::test_phasor_fit_recovers_synthetic_signal",
+   "test_womersley_pulsatile.py::test_gate_verdict_semantics",
+   "test_womersley_pulsatile.py::test_channel_smoke_alpha5",
+   "test_womersley_pulsatile.py::test_pipe_smoke_alpha5",
+   "RE-RUN 2026-11-12 by m16338: 9 passed, 1 failed (test_pipe_steady_poiseuille_wall_treatment -> KeyError 'finite', dict-contract defect, not a physics failure)"
+  ],
+  "integration_callers": null,
+  "benchmark": {
+   "referee_case_pool_row": "tensor_case_pool id=119 LBM-WOMERSLEY-PULSATILE tol='<5% | centreline amplitude ratio + phase lag vs Womersley 1955, alpha=5, whole-period phase averaged'",
+   "tensor_benchmark_cases_row": "none (0 rows for anchor_slug=CASE-LBM-WOMERSLEY-PULSATILE; table has 32 rows total) - referee table gap, see audit F7",
+   "external_ref": "Womersley 1955 J. Physiol. 127(3):553-563 doi:10.1113/jphysiol.1955.sp005276",
+   "got_vs_ref": {
+    "channel_H59_a5_tau0.8": {
+     "amplitude_rel_pct": 0.038626,
+     "phase_rel_pct": 0.087135,
+     "phase_diff_deg": -0.079479,
+     "ref_U0_abs": 0.02999999913173751,
+     "ref_phase_lag_deg": 91.213709,
+     "num_U0_abs": 0.029988411386986498,
+     "num_phase_lag_deg": 91.13423,
+     "tol_pct": 5.0,
+     "pass": true
+    },
+    "pipe_R10.5_a5_tau0.8": {
+     "amplitude_rel_pct": 0.053563,
+     "phase_rel_pct": 0.769247,
+     "phase_diff_deg": -0.691187,
+     "ref_U0_abs": 0.029999998993802856,
+     "ref_phase_lag_deg": 89.852448,
+     "num_U0_abs": 0.03001606782303912,
+     "num_phase_lag_deg": 89.16126,
+     "tol_pct": 5.0,
+     "pass": true
+    },
+    "pipe_R16.5_a5_tau0.8": {
+     "amplitude_rel_pct": 0.071851,
+     "phase_rel_pct": 0.312138,
+     "phase_diff_deg": -0.280464,
+     "ref_U0_abs": 0.029999998993810614,
+     "ref_phase_lag_deg": 89.852448,
+     "num_U0_abs": 0.029978443689542222,
+     "num_phase_lag_deg": 89.571983,
+     "tol_pct": 5.0,
+     "pass": true
+    }
+   },
+   "independent_recompute": "reference re-derived by complex FD solve of i*omega*U=a0+nu*lap(U) (no Bessel import); max |diff| vs mission analytic 3.4e-6 % amplitude / 4e-6 deg phase; mission metrics re-derived by an independent least-squares refit of the stored waveforms (agreement 0.0000 %)",
+   "self_convergence_check": "driver status=NOT_PASSED: pipe R=10.5->16.5 amplitude err 0.0536->0.0719 % non-monotone (both points <0.1 %); case-pool 5 % criterion unaffected"
+  },
+  "repro_cmd": "cd /root/tp-agent/work/m16323 && PYTHONPATH=TensorLBM/src python3 benchmarks/verified/womersley_pulsatile/run.py scan <out> --alpha 5 --H 59 --R 10.5 --tau 0.8   (re-run by auditor 2026-11-12: channel H=59 reproduced amp=0.039% phase=0.087% profile_l2=0.130% steps=32805)",
+  "external_anchor": "docs/audit/m16323_womersley_audit.py (ODE re-derivation) + Womersley 1955 doi:10.1113/jphysiol.1955.sp005276",
+  "audit_artifacts": [
+   "docs/audit/M16323_AUDIT_REPORT.md",
+   "docs/audit/m16323_womersley_audit.py",
+   "docs/audit/m16323_womersley_audit.json",
+   "docs/audit/figs/m16323_audit_overview.png"
+  ],
+  "audit_findings": [
+   "F1 high: deliverables untracked in m16323 worktree (git status 6x '??'), no commit/branch, ECO/TensorLBM grep 0 hits -> not integrated (L3 absent)",
+   "F2 med: declared repro_cmd points to non-existent docs/benchmarks/build_womersley_pulsatile_report.py; the real driver reproduces",
+   "F3 med: shipped test suite red (1 failed / 9 passed, KeyError 'finite' in steady dict contract, not a tolerance issue)",
+   "F4 med: platform report 15414 headline status=NOT_PASSED contradicts its own body (all cases PASS) and mission status succeeded",
+   "F5 low: analytical.centerline_amplitude_unit uses the channel branch of womersley_lam for the pipe (masked by |J0(conj z)|=|J0(z)|)",
+   "F6 low: self-imposed convergence monotonicity check fails (honestly reported in report section 5)",
+   "F7 med/platform: tensor_benchmark_cases has no row for this anchor; tensor_case_pool id=119 still mission_id=16238/status=dispatched"
+  ],
+  "declared_level_rationale": "L2 = real code (D2Q9 channel + D3Q19 BFL curved-wall pipe) with input->compute->output, artifacts present, numerically re-verified against an independently derived reference. L3 denied: no caller outside the case dir, module absent from ECO main. L4 denied: no integration and the declared repro pointer is broken. L5 denied. Level = functional substance."
+ }
+}

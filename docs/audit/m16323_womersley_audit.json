@@ -1,0 +1,161 @@
+{
+ "artifacts_dir": "/root/tp-agent/work/m16323/artifacts/womersley_pulsatile_alpha5",
+ "cases": [
+  {
+   "case": "channel_H59_a5_tau0.8",
+   "geometry": "channel",
+   "alpha": 5.0,
+   "nu": 0.10000000000000002,
+   "omega": 0.0028727377190462516,
+   "a0": 8.17636607885739e-05,
+   "length": 59.0,
+   "independent_ref": {
+    "abs_U0": 0.02999999913173751,
+    "phase_lag_deg": 91.2137085099402
+   },
+   "stored_ref": {
+    "abs_U0": 0.03,
+    "phase_lag_deg": 91.21371227934286
+   },
+   "ref_vs_independent_pct": {
+    "amplitude": 2.8942083840632904e-06,
+    "phase_deg": 3.7694026531198688e-06
+   },
+   "lbm_refit": {
+    "abs_U0": 0.029988411386986498,
+    "phase_lag_deg": 91.13422960180662,
+    "amp_rel_pct": 0.03862581695461831,
+    "phase_rel_pct": 0.0871348281217174,
+    "phase_diff_deg": -0.07947890813358072,
+    "residual_max": 1.4710397171486048e-05
+   },
+   "claimed_metrics": {
+    "amplitude_rel_pct": 0.038628710045007786,
+    "phase_rel_pct": 0.08713895701648167,
+    "phase_diff_deg": -0.07948267753623384,
+    "profile_l2_pct": 0.1302280258514055,
+    "profile_l2_inner_pct": 0.12348943677794365,
+    "profile_max_pct": 0.2821335140999018,
+    "profile_row_complex_rel_max_pct": 1.0888131506122798
+   },
+   "claimed_centerline": {
+    "amplitude_rel_pct": 0.038628710045007786,
+    "phase_rel_pct": 0.08713895701648167,
+    "phase_lag_num_deg": 91.13422960180662,
+    "phase_lag_ana_deg": 91.21371227934286
+   },
+   "stored_num_phasor_vs_refit": {
+    "amp_rel_pct_diff": 0.0,
+    "phase_deg_diff": 0.0
+   }
+  },
+  {
+   "case": "pipe_R10.5_a5_tau0.8",
+   "geometry": "pipe",
+   "alpha": 5.0,
+   "nu": 0.10000000000000002,
+   "omega": 0.02267573696145125,
+   "a0": 0.0005862091590006978,
+   "length": 10.5,
+   "independent_ref": {
+    "abs_U0": 0.029999998993802856,
+    "phase_lag_deg": 89.85244750379672
+   },
+   "stored_ref": {
+    "abs_U0": 0.03,
+    "phase_lag_deg": 89.85244921580414
+   },
+   "ref_vs_independent_pct": {
+    "amplitude": 3.3539905963664296e-06,
+    "phase_deg": 1.7120074176091293e-06
+   },
+   "lbm_refit": {
+    "abs_U0": 0.03001606782303912,
+    "phase_lag_deg": 89.16126009370866,
+    "amp_rel_pct": 0.05356276591736986,
+    "phase_rel_pct": 0.7692471705446379,
+    "phase_diff_deg": -0.6911874100880624,
+    "residual_max": 0.00012012980452026992
+   },
+   "claimed_metrics": {
+    "amplitude_rel_pct": 0.053559410130410434,
+    "phase_rel_pct": 0.7692490612419576,
+    "phase_diff_deg": -0.69118912209548,
+    "profile_l2_pct": 0.8600668854256007,
+    "profile_l2_inner_pct": 0.8736827448862984,
+    "profile_max_pct": 1.6871402938426219,
+    "profile_row_complex_rel_max_pct": 7.7645506903730315
+   },
+   "claimed_centerline": {
+    "amplitude_rel_pct": 0.053559410130410434,
+    "phase_rel_pct": 0.7692490612419576,
+    "phase_lag_num_deg": 89.16126009370866,
+    "phase_lag_ana_deg": 89.85244921580414
+   },
+   "stored_num_phasor_vs_refit": {
+    "amp_rel_pct_diff": 0.0,
+    "phase_deg_diff": 0.0
+   }
+  },
+  {
+   "case": "pipe_R16.5_a5_tau0.8",
+   "geometry": "pipe",
+   "alpha": 5.0,
+   "nu": 0.10000000000000002,
+   "omega": 0.00918273645546373,
+   "a0": 0.0002373904858763156,
+   "length": 16.5,
+   "independent_ref": {
+    "abs_U0": 0.029999998993810614,
+    "phase_lag_deg": 89.85244750372559
+   },
+   "stored_ref": {
+    "abs_U0": 0.03,
+    "phase_lag_deg": 89.85244921580414
+   },
+   "ref_vs_independent_pct": {
+    "amplitude": 3.353964728169956e-06,
+    "phase_deg": 1.7120785571478336e-06
+   },
+   "lbm_refit": {
+    "abs_U0": 0.029978443689542222,
+    "phase_lag_deg": 89.57198344310365,
+    "amp_rel_pct": 0.071851016637825,
+    "phase_rel_pct": 0.31213847637295467,
+    "phase_diff_deg": -0.28046406062193796,
+    "residual_max": 4.607475539887161e-05
+   },
+   "claimed_metrics": {
+    "amplitude_rel_pct": 0.07185436819259206,
+    "phase_rel_pct": 0.31214037585874066,
+    "phase_diff_deg": -0.2804657727004951,
+    "profile_l2_pct": 0.3604040932758153,
+    "profile_l2_inner_pct": 0.36516700163561766,
+    "profile_max_pct": 0.6362929769709335,
+    "profile_row_complex_rel_max_pct": 5.459759061582347
+   },
+   "claimed_centerline": {
+    "amplitude_rel_pct": 0.07185436819259206,
+    "phase_rel_pct": 0.31214037585874066,
+    "phase_lag_num_deg": 89.57198344310365,
+    "phase_lag_ana_deg": 89.85244921580414
+   },
+   "stored_num_phasor_vs_refit": {
+    "amp_rel_pct_diff": 0.0,
+    "phase_deg_diff": 0.0
+   }
+  }
+ ],
+ "declared_ref": {},
+ "verdict": {
+  "tol_pct": 5.0,
+  "all_cases_within_tol": true
+ },
+ "pipe_steady": {
+  "u_center_rel_pct_claimed": 0.3916152379950688,
+  "profile_l2_pct_claimed": 0.34102136706459546,
+  "R": 10.5,
+  "tau": 0.8,
+  "nu": 0.10000000000000002
+ }
+}
