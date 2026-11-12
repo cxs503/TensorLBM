@@ -1,0 +1,147 @@
+{
+  "case": "static_droplet_laplace_ci",
+  "slot": "static_droplet",
+  "title": "Static SCMP droplet: Laplace law + resolution convergence (CI tier)",
+  "reference_basis": "analytic",
+  "scope": "2-D Shan-Chen single-component droplet, G_lib=+5 (physical G_eff=-5), tau=1, three radii per level, domain L=4R periodic. Measured levels: R=8/12/16 and R=12/16/20. Not covered: 3-D sphere (standard tier).",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json",
+  "repro_cmd": "python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
+  "references": [
+    {
+      "id": "laplace_law_2d",
+      "quantity": "static-droplet Laplace pressure jump",
+      "value": null,
+      "formula": "Delta p = sigma / R (2-D circular droplet)",
+      "origin": "Young-Laplace law",
+      "source": "benchmarks/verified/laplace_droplet/README.md",
+      "source_sha256": "813960b42c2bb31d8228fb2e44a3a1e9c03dc6c1b972294ee5819083ae0e5e3d",
+      "token": "Δp = p_in − p_out = σ / R"
+    }
+  ],
+  "status": "failed",
+  "machine_pass": false,
+  "declared_status": null,
+  "reason": "one or more machine-checked criteria failed",
+  "metrics": [
+    {
+      "metric": "laplace_max_dev_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "R=8/12/16",
+          "value": 4.689360384159583,
+          "reference": null,
+          "err_pct": 4.689360384159583,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": false,
+          "gated": true
+        },
+        {
+          "level": "R=12/16/20",
+          "value": 0.821534099798054,
+          "reference": null,
+          "err_pct": 0.821534099798054,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": false,
+      "max_abs_err_pct": 4.689360384159583
+    },
+    {
+      "metric": "sigma_pair_dev_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "R=8/12/16",
+          "value": 2.263614320058166,
+          "reference": null,
+          "err_pct": 2.263614320058166,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "R=12/16/20",
+          "value": 2.263614320058166,
+          "reference": null,
+          "err_pct": 2.263614320058166,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 2.263614320058166
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "laplace_max_dev_pct",
+      "errors_abs_pct": [
+        4.689360384159583,
+        0.821534099798054
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": 3.867826284361529,
+      "monotone": true,
+      "require_monotone": false,
+      "span_ok": false,
+      "trend_ok": true,
+      "pass": false
+    },
+    {
+      "metric": "sigma_pair_dev_pct",
+      "errors_abs_pct": [
+        2.263614320058166,
+        2.263614320058166
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": 0.0,
+      "monotone": true,
+      "require_monotone": false,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "182b3d2cfa301409d4dddf584edd914dd2d1218f7b8dd9d6fc8af551fcf8d65c",
+  "artifact_bytes": 5549,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json",
+      "sha256": "182b3d2cfa301409d4dddf584edd914dd2d1218f7b8dd9d6fc8af551fcf8d65c"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
+      "sha256": "769ca456a6eb2e783821e8253aee783ffc04ada5b701e1a51b0d0955d028ceed"
+    }
+  ],
+  "notes": "HONEST FAIL of the CI tier, root cause quantified: with the uniform 3% Laplace gate the R=8/12/16 set fails (per-radius sigma deviation 4.689%, fit R^2=0.9961) while the R=12/16/20 set passes (0.822%, R^2=0.999984). R=8 is only two interface widths (W=4 in the SCMP model) and lies below the resolvable radius R >= 3W required for the Laplace law, so the coarse set is outside the model's validity range rather than evidence against it. The two-level span criterion also fails (3.87%) for the same single reason. Next build: gate R=12/16/20 and R=16/20/24, keep R=8/12/16 as a documented non-gated ladder. No threshold was relaxed and no artifact was edited."
+}

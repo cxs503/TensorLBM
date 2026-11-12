@@ -1,0 +1,102 @@
+{
+  "case": "taylor_green_2d",
+  "slot": "taylor_green",
+  "title": "2-D Taylor-Green vortex decay vs analytic gamma = 2 nu k^2",
+  "reference_basis": "analytic",
+  "scope": "D2Q9 periodic box; velocity decay rate fitted over two independent halves of the run (temporal split, not a grid refinement).",
+  "matrix_version": "1.0",
+  "generated_utc": "2026-11-12T01:52:03Z",
+  "artifact": "benchmarks/verified/taylor_green_2d/result.json",
+  "repro_cmd": "python benchmarks/verified/taylor_green_2d/run.py",
+  "references": [
+    {
+      "id": "tg2d_gamma_e_theory",
+      "quantity": "energy decay rate of the 2-D Taylor-Green vortex gamma_E = 4 nu k^2",
+      "value": 0.0006168502750680849,
+      "formula": null,
+      "origin": "analytic Taylor-Green solution (energy decays twice as fast as velocity)",
+      "source": "benchmarks/verified/taylor_green_2d/README.md",
+      "source_sha256": "4bc2cdd7501418eea6bf14a3e7c4cdb9d3d75b41c83ef826e8b8c22dbec4cb61",
+      "token": "γ_E_theory = 4νk²"
+    }
+  ],
+  "status": "passed",
+  "machine_pass": true,
+  "declared_status": null,
+  "reason": "all metric and convergence criteria passed",
+  "metrics": [
+    {
+      "metric": "gamma_e",
+      "kind": "value",
+      "reference": 0.0006168502750680849,
+      "tol_pct": 1.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "first-half",
+          "value": 0.0006163948840831097,
+          "reference": 0.0006168502750680849,
+          "err_pct": -0.07382520578837949,
+          "tol_pct": 1.0,
+          "kind": "value",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "second-half",
+          "value": 0.0006167298135847768,
+          "reference": 0.0006168502750680849,
+          "err_pct": -0.01952848011534184,
+          "tol_pct": 1.0,
+          "kind": "value",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 0.07382520578837949
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "gamma_e",
+      "errors_abs_pct": [
+        0.0006163948840831097,
+        0.0006167298135847768
+      ],
+      "max_span_pct": 1.0,
+      "span_pct": 3.349295016670962e-07,
+      "monotone": false,
+      "require_monotone": false,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "f7a48576cb8a8df6d7f54f36517e42384930a2a5263d08fba682b57280ed36c5",
+  "artifact_bytes": 771,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/verified/taylor_green_2d/result.json",
+      "sha256": "f7a48576cb8a8df6d7f54f36517e42384930a2a5263d08fba682b57280ed36c5"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "6f8787148c91a533e3546048e4d10ae9d3b6d56982dfcc6abd301886e0ee672f"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "2f189d8915dbd47c3a09a4f18b9bb82658f80fed9385126c3a68acac81b9fb6b"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/verified/taylor_green_2d/run.py",
+      "sha256": "5e29f6520c5a6a4476a9de64316647e1d606afcd3e7c52c94780caaba9be49f6"
+    }
+  ],
+  "notes": "Levels are two independent halves of the energy-decay fit (temporal split). Reference = analytic gamma_E = 4 nu k^2, frozen in the artifact as gamma_e_theory; the velocity-rate cross-check (-0.0007%) is recorded in the case README. Two-grid convergence for this slot is carried by case_taylor_green_3d."
+}
