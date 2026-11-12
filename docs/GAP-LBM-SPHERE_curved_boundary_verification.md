@@ -1,5 +1,10 @@
 # Curved-boundary (BFL) sphere drag ladder — instrument does **not** reproduce the absolute Stokes reference (honest FAIL, no C_D certified)
 
+**Follow-up (m16307)**: the 10x deficit reported here is a *kinetic-regime* artifact
+(`c_s tau = 10.7 > R = 6`), not a curved-wall defect — see
+[`GAP-LBM-SPHERE_v2_root_cause_and_fix.md`](GAP-LBM-SPHERE_v2_root_cause_and_fix.md).
+The `Re_measured` column below is 3x too large (viscosity report bug, fixed in m16307).
+
 **Anchor** `GAP-LBM-SPHERE` · mission m16085 · branch `agent/m16085` · repo TensorLBM
 
 Frozen protocol and criteria: [`benchmarks/sphere_curved_drag/prereg.md`](../benchmarks/sphere_curved_drag/prereg.md)
