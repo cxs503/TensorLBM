@@ -1,0 +1,39 @@
+{
+  "anchor": "CASE-CYLINDER-DRAG-RE20",
+  "case": "Schäfer & Turek (1996) 2D-1 — in-channel cylinder, Re = 20 (steady)",
+  "problem": "2D steady laminar flow past a circular cylinder confined in a channel; drag coefficient as the validation quantity",
+  "geometry": {
+    "domain": "2.2 x 0.41",
+    "cylinder_centre": [0.2, 0.2],
+    "diameter_D": 0.1,
+    "inlet": "parabolic (Poiseuille) velocity profile, U_mean = 0.2, U_max = 1.5*U_mean",
+    "outlet": "pressure outlet rho = 1",
+    "walls_cylinder": "no-slip",
+    "blockage_D_over_H": 0.24390243902439024
+  },
+  "dimensionless": {
+    "Re": 20.0,
+    "U_mean": 0.2,
+    "nu": 0.001,
+    "normalisation": "Cd = Fx / (0.5 * rho * U_mean^2 * D_phys), D_phys = 0.1"
+  },
+  "ref": {
+    "cd": 5.57953523384,
+    "cl": 0.010618948146,
+    "cl_gating": false,
+    "cl_note": "lift is a second-order quantity (~1e-2 vs Cd ~5.6) and the staircase momentum-exchange force does not converge in Cl; reported informationally only"
+  },
+  "provenance": {
+    "source_kind": "in-repo verified anchor (secondary record of the official 2D-1 reference dataset)",
+    "source": "official reference dataset for the Schäfer-Turek 2D-1 case (spectral solution, Nabh 1998), as recorded in benchmarks/verified/cylinder/re20_st/result.json (fields ref_cd, ref_cl, ref_source)",
+    "anchor_file": "benchmarks/verified/cylinder/re20_st/result.json",
+    "anchor_file_sha256": "df69f767ec9dec6db64169872e7a4a437de57077972bc76aab26ba9f3ee59eda",
+    "print_original": "Schäfer M., Turek S., 'Benchmark computations of laminar flow around a cylinder', Flow Simulation with High-Performance Computers II, NNFM 48 (1996) 547-566 — print table NOT reachable offline in this sandbox, therefore not quoted here",
+    "honesty_note": "the value above is not typed from memory: it is read from the pinned in-repo anchor file and re-checked by tests/test_cylinder_st2d1.py::test_refs_json_matches_module_reference; consistency with the 1996 grid-converged value (Cd = 5.5795) is stated in-repo (benchmarks/gap_analysis.md, benchmarks/roadmap.md) but the paper itself was not accessible offline"
+  },
+  "tolerance_pct": 5.0,
+  "entry": "benchmarks/case_pool/cylinder_drag_re20/run_case.py",
+  "library": "src/tensorlbm/cylinder_st2d1.py",
+  "repro_cmd": "PYTHONPATH=src python benchmarks/case_pool/cylinder_drag_re20/run_case.py --grids 20 40 --out runs/cylinder_drag_re20",
+  "quick_cmd": "PYTHONPATH=src python benchmarks/case_pool/cylinder_drag_re20/run_case.py --grids 8 --steps 300 --tolerance 5 --out /tmp/cylinder_drag_re20_quick"
+}
