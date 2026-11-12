@@ -361,4 +361,21 @@ def test_stokes_and_hasimoto_references():
     assert hasimoto_factor(0.0) == pytest.approx(1.0)
     assert hasimoto_factor(0.05) < hasimoto_factor(0.15)
     assert hasimoto_factor(0.05) > hasimoto_factor(0.0)
-    assert hasimoto_factor(0.1) == pytest.approx(1.0 / (1 - 0.210444 + 0.00208877 - 0.0000094813 - 0.000001372), rel=1e-6)
+    # Hasimoto (1959) simple-cubic series, phi = 4 pi lam^3 / 3 (canonical form;
+    # the previous locked value came from a 2.10444 lambda series that was 17 %
+    # low at lam = 1/6 -- see docs/ARRAY_DRAG_REFERENCE_AUDIT.md)
+    from tensorlbm.array_drag_reference import array_drag_factor_from_lambda
+
+    assert hasimoto_factor(0.1) == pytest.approx(
+        array_drag_factor_from_lambda(0.1), rel=1e-12
+    )
+    phi = 4.0 * math.pi * 0.1**3 / 3.0
+    u_ratio = (
+        1.0
+        - 1.7601 * phi ** (1.0 / 3.0)
+        + phi
+        - 1.5593 * phi**2
+        + 3.9799 * phi ** (8.0 / 3.0)
+        - 3.0734 * phi ** (10.0 / 3.0)
+    )
+    assert hasimoto_factor(0.1) == pytest.approx(1.0 / u_ratio, rel=1e-9)

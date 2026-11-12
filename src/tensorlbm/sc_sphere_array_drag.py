@@ -37,6 +37,7 @@ import torch
 
 import tensorlbm
 from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.array_drag_reference import array_drag_factor_from_phi
 from tensorlbm.d3q19 import C as D3Q19_C
 from tensorlbm.d3q19 import W_EXACT64, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
@@ -73,10 +74,9 @@ def utc_now() -> str:
 
 
 def hasimoto_K(phi: float) -> float:
-    c = float(phi)
-    u_ratio = (1.0 - 1.7601 * c ** (1.0 / 3.0) + c - 1.5593 * c**2
-               + 3.9799 * c ** (8.0 / 3.0) - 3.0734 * c ** (10.0 / 3.0))
-    return 1.0 / u_ratio
+    """Hasimoto (1959) SC array drag ``K = U0/U`` (single source:
+    :mod:`tensorlbm.array_drag_reference`)."""
+    return array_drag_factor_from_phi(phi)
 
 
 def loglog_K(phi: float) -> float:
