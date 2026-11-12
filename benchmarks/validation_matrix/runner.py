@@ -241,6 +241,49 @@ def write_status(result: dict) -> Path:
     return out
 
 
+def _key_metric_cell(metrics: list[dict]) -> str:
+    """Published "key metric" cell: the worst **gated** level only.
+
+    Informational levels (``tol_pct_by_level[i] is None``) are reported in a
+    trailing bracket, never as the headline number: printing one next to a
+    tolerance it is not held to makes a legitimately passing row read as a
+    tolerance violation. Unresolved paths are labelled instead of leaking a
+    ``nan`` into the table.
+    """
+    unresolved = [m["metric"] for m in metrics if m.get("missing")]
+    unresolved += [
+        f"{m['metric']}@{lvl}"
+        for m in metrics
+        for lvl in (m.get("unresolved_levels") or [])
+    ]
+    gated = [
+        m for m in metrics
+        if m.get("max_abs_err_pct_gated") is not None
+    ]
+    if not gated:
+        if unresolved:
+            return "unresolved: " + ", ".join(unresolved[:3])
+        return "—"
+    worst = max(gated, key=lambda m: m["max_abs_err_pct_gated"])
+    cell = (
+        f"{worst['metric']} {worst['worst_gated_err_pct']:+.2f}% "
+        f"(tol {worst['worst_gated_tol_pct']:.0f}%)"
+    )
+    detail = []
+    if worst.get("worst_gated_level"):
+        detail.append(f"gated {worst['worst_gated_level']}")
+    info = []
+    for m in metrics:
+        for lvl in m.get("levels") or []:
+            if not lvl.get("gated"):
+                info.append(f"{lvl['level']} {lvl['err_pct']:+.2f}%")
+    if info:
+        detail.append("info " + ", ".join(info))
+    if unresolved:
+        detail.append("unresolved " + ", ".join(unresolved[:3]))
+    return cell + (f" [{'; '.join(detail)}]" if detail else "")
+
+
 def render_table(results: list[dict]) -> str:
     order = {name: i for i, name in enumerate(("passed", "failed", "pending"))}
     results = sorted(results, key=lambda r: (order.get(r["status"], 9), r["case"]))
@@ -252,31 +295,28 @@ def render_table(results: list[dict]) -> str:
         f"**passed {counts['passed']} / failed {counts['failed']} / "
         f"pending {counts['pending']}**",
         "",
-        "Gate: every metric |err| <= its tolerance at every level AND the level series",
-        "converges (span <= 3%, monotone where >= 3 levels exist). `failed` keeps its root",
-        "cause; `pending` means evidence is withheld or not yet produced — never a hidden pass.",
+        "Gate: every metric |err| <= its tolerance at every **gated** level AND the level",
+        "series converges (span <= 3%, monotone where >= 3 levels exist). A level declared",
+        "informational (`tol_pct_by_level: null`) is reported as `info` and never sets the",
+        "headline number; `unresolved` means the declared artifact path does not exist and is",
+        "missing evidence, never a pass. `failed` keeps its root cause; `pending` means evidence",
+        "is withheld or not yet produced — never a hidden pass.",
         "",
         "| # | slot | case | status | key metric (worst level) | convergence | evidence |",
         "|---|------|------|--------|--------------------------|-------------|----------|",
     ]
     for i, r in enumerate(results, 1):
-        worst = "—"
+        worst = _key_metric_cell(r.get("metrics") or [])
         conv = "—"
-        if r.get("metrics"):
-            rows = [
-                (m["metric"], m.get("max_abs_err_pct"), m.get("tol_pct"))
-                for m in r["metrics"]
-                if m.get("max_abs_err_pct") is not None
-            ]
-            if rows:
-                name, err, tol = max(rows, key=lambda t: abs(t[1]))
-                worst = f"{name} {err:+.2f}% (tol {tol:.0f}%)"
         if r.get("convergence"):
-            convs = [
-                f"{c['metric']} span {c['span_pct']:.2f}%"
-                for c in r["convergence"]
-                if "span_pct" in c
-            ]
+            convs = []
+            for c in r["convergence"]:
+                if c.get("missing") or "span_pct" not in c:
+                    convs.append(f"{c['metric']} unresolved (missing evidence)")
+                elif c["span_pct"] == c["span_pct"]:  # NaN guard
+                    convs.append(f"{c['metric']} span {c['span_pct']:.2f}%")
+                else:
+                    convs.append(f"{c['metric']} span unresolved (missing evidence)")
             conv = "; ".join(convs) or "—"
         ev = r.get("artifact") or (r.get("repro_cmd") or "—")
         lines.append(

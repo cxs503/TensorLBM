@@ -1,6 +1,6 @@
 # Validation matrix — reference vs got (generated, zero hand-copy)
 
-generated: 2026-11-12T06:11:06Z | matrix v1.1 | **passed 6 / failed 4 / pending 1**
+generated: 2026-11-12T16:12:52Z | matrix v1.1 | **passed 6 / failed 4 / pending 1**
 
 Gate: |err| <= tol at every gated level AND the level series converges (span <= declared max_span_pct; monotone where required)
 

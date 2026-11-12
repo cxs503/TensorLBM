@@ -5,7 +5,7 @@
   "reference_basis": "experimental",
   "scope": "2-D free-stream cylinder with sponge outflow, D=48/64, seeded shedding. Cd and St against the Braza band.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T06:10:38Z",
+  "generated_utc": "2026-11-12T16:10:48Z",
   "artifact": "benchmarks/verified/cylinder/re100/result.json",
   "repro_cmd": "python benchmarks/verified/cylinder/re100/run.py",
   "references": [
@@ -64,7 +64,17 @@
         }
       ],
       "pass": true,
-      "max_abs_err_pct": 2.55
+      "max_abs_err_pct": 2.55,
+      "max_abs_err_pct_gated": 2.55,
+      "worst_gated_err_pct": -2.55,
+      "worst_gated_level": "D64",
+      "worst_gated_tol_pct": 3.0,
+      "gated_levels": [
+        "D48",
+        "D64"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     },
     {
       "metric": "st_err_pct",
@@ -95,7 +105,17 @@
         }
       ],
       "pass": true,
-      "max_abs_err_pct": 2.4
+      "max_abs_err_pct": 2.4,
+      "max_abs_err_pct_gated": 2.4,
+      "worst_gated_err_pct": -2.4,
+      "worst_gated_level": "D64",
+      "worst_gated_tol_pct": 3.0,
+      "gated_levels": [
+        "D48",
+        "D64"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
     }
   ],
   "convergence": [
