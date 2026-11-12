@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **38** | pending: **35**  (counts refreshed 2026-10-09)
+verified: **79** | pending: **56**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -95,3 +95,93 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 * **BFL interpolated smooth wall**: for doubly-curved bodies (sphere) a smooth boundary representation is what removes the staircase geometric bias.
 * **Reference audit first**: several 'failures' were caliber errors (square_cylinder's Okajima 1.6; cylinder_3d's experimental 1.54; M&M's axis factor; backward_step's factor-2).
 * **Structural blocks are documented, not tuned**: free-surface系列 needs a free pressure field + independent gas EOS; ship resistance needs wave-making; propeller needs real section tables + Re matching.
+
+<!-- STATUS_LEDGER:BEGIN -->
+### verified 机器台账（自动生成，勿手改）
+
+verified 目录 **79** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=79 pending=56
+
+人工表未覆盖 **43** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
+
+| verified case | in human table |
+|---|---|
+| `acoustics` | yes |
+| `aircraft_icing_naca0012_rime` | yes |
+| `cavity` | yes |
+| `cavity_3d_full` | yes |
+| `cavity_natural_convection` | **no** |
+| `cavity_re100` | **no** |
+| `compressible_shock_family` | **no** |
+| `couette_2d` | yes |
+| `couette_3d` | **no** |
+| `couette_poiseuille` | **no** |
+| `cylinder` | yes |
+| `cylinder_3d` | yes |
+| `cylinder_re100` | **no** |
+| `droplet_oscillation` | yes |
+| `floating_body_free_decay` | yes |
+| `forchheimer_weak_inertia` | **no** |
+| `fwh_acoustics` | **no** |
+| `fwh_rotating` | **no** |
+| `kovasznay_2d` | yes |
+| `laplace_cac_phasefield` | **no** |
+| `laplace_droplet` | yes |
+| `laplace_pr_eos` | **no** |
+| `lbm_weakly_compressible` | **no** |
+| `maneuvering_steady_turn` | yes |
+| `maneuvering_zigzag` | yes |
+| `mcmp_3d_stability` | **no** |
+| `mcmp_stratified_poiseuille` | **no** |
+| `mmg_imo_msc137_uncert` | **no** |
+| `mms_convergence_2d` | **no** |
+| `permeability` | yes |
+| `permeability3d` | **no** |
+| `permeability_fibrous` | **no** |
+| `poiseuille_2d` | yes |
+| `poiseuille_2d_bodyforce` | yes |
+| `poiseuille_3d_annulus` | **no** |
+| `poiseuille_3d_duct` | yes |
+| `poiseuille_3d_pipe` | yes |
+| `poiseuille_convergence_order` | **no** |
+| `poiseuille_two_phase_cg` | **no** |
+| `radiation_enclosure_ship` | **no** |
+| `rheology_yield` | **no** |
+| `rotating_duct_frame_w2` | **no** |
+| `rotating_ekman` | **no** |
+| `rotating_interior_frame` | **no** |
+| `rotating_source_sink` | **no** |
+| `rotating_taylor_column` | **no** |
+| `rotating_w3` | **no** |
+| `shear_wave_decay` | yes |
+| `ship_resistance_suboff` | **no** |
+| `sod_shock_tube` | yes |
+| `sphere_drag_bfl` | **no** |
+| `sphere_re100` | yes |
+| `sphere_re100_d3q27` | yes |
+| `sphere_re100_mem` | **no** |
+| `sphere_re200` | yes |
+| `square_cylinder` | yes |
+| `square_cylinder_re200` | **no** |
+| `startup_poiseuille` | yes |
+| `static_droplet_laplace_ci` | **no** |
+| `stefan_phase_change` | yes |
+| `stefan_two_phase_sweep` | **no** |
+| `stokes_first_problem` | yes |
+| `stokes_second_problem` | yes |
+| `stokes_sphere_dg` | **no** |
+| `suboff_anchor` | **no** |
+| `suboff_anchor_w22` | **no** |
+| `suboff_re1000` | yes |
+| `suboff_sail_resistance` | yes |
+| `suboff_tau_grid_w22` | **no** |
+| `taylor_aris_dispersion` | **no** |
+| `taylor_couette` | yes |
+| `taylor_green_2d` | yes |
+| `taylor_green_3d` | yes |
+| `thermal_cavity` | yes |
+| `thermal_cavity_3d` | **no** |
+| `wave_tank` | **no** |
+| `wigley_hydrostatics` | yes |
+| `womersley` | yes |
+| `womersley_pulsatile` | **no** |
+<!-- STATUS_LEDGER:END -->
