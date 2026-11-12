@@ -1,0 +1,88 @@
+{
+  "entry": "benchmarks/case_pool/capillary_rise/jurin_cac.py",
+  "entry_cmd": "PYTHONPATH=src python3 benchmarks/case_pool/capillary_rise/jurin_cac.py --theta 60 --steps 1000 --sample-every 125 --no-calibration --out artifacts/m15917/jurin_theta60_repro.json",
+  "impl_files": [
+    "src/tensorlbm/cac_lbm2d.py",
+    "benchmarks/case_pool/capillary_rise/jurin_cac.py",
+    "benchmarks/case_pool/capillary_rise/ab_wall_fix.py",
+    "benchmarks/case_pool/capillary_rise/chunk_run.py",
+    "benchmarks/case_pool/capillary_rise/make_figures.py"
+  ],
+  "tests": [
+    "tests/test_case_pool_capillary_rise_cac.py::test_shift_wp_is_periodic_in_x_and_wall_bounded_in_y",
+    "tests/test_case_pool_capillary_rise_cac.py::test_shift_wp_negative_control_old_policy_is_not_periodic_in_x",
+    "tests/test_case_pool_capillary_rise_cac.py::test_ghost_uses_the_normal_neighbour_not_the_isotropic_average",
+    "tests/test_case_pool_capillary_rise_cac.py::test_ghost_neutral_angle_is_identity_everywhere",
+    "tests/test_case_pool_capillary_rise_cac.py::test_jurin_ref_matches_the_2d_slit_curvature_identity",
+    "tests/test_case_pool_capillary_rise_cac.py::test_neutral_wall_channel_keeps_its_level_and_its_mass"
+  ],
+  "test_cmd": "python3 -m pytest tests/test_case_pool_capillary_rise_cac.py -q  # 6 passed in 12.88 s",
+  "run_artifacts": [
+    "artifacts/m15917/jurin_neutral_theta90.json",
+    "artifacts/m15917/jurin_theta60_wetting.json",
+    "artifacts/m15917/ab_wall_fix_theta90.json",
+    "docs/reports/m15917/figs/fig1_ab_wall_fix.png",
+    "docs/reports/m15917/figs/fig2_neutral_control.png",
+    "docs/reports/m15917/figs/fig3_theta60_fail.png"
+  ],
+  "integration_callers": [
+    "tensorlbm.wetting.ladder: injur() via L.jurin in benchmarks/in32_l01_wetting_ladder/run_case.py:28 and benchmarks/case_pool/capillary_rise/jurin_cac.py",
+    "tensorlbm.cac_lbm2d:CAC2D used by src/tensorlbm/wetting/ladder.py and src/tensorlbm/wetting/metrics.py"
+  ],
+  "benchmark": {
+    "anchor": "CASE-MCMP-CAPILLARY-RISE",
+    "gate_pct": 10.0,
+    "theta60_primary": {
+      "ref": 16.667,
+      "got": 4.18,
+      "err_pct": -74.92,
+      "converged": false,
+      "verdict": "FAIL (blow-up at step ~440, liquid mass -14.09%)"
+    },
+    "theta90_negative_control": {
+      "ref": 0.0,
+      "got": 0.865,
+      "abs_err_lattice": 0.865,
+      "pct_of_jurin_scale": 5.19,
+      "verdict": "PASS"
+    },
+    "sigma_calibration": {
+      "ref_input": 0.03,
+      "meas": 0.02918,
+      "err_pct": -2.73
+    },
+    "defect_ab_theta90_1250steps": {
+      "old_both": {
+        "h": -19.399,
+        "mass_drift_pct": -50.26,
+        "u_max": 0.0569
+      },
+      "axes_fix": {
+        "h": 0.559,
+        "mass_drift_pct": 1.06,
+        "u_max": 0.0042
+      },
+      "ghost_fix": {
+        "h": -21.245,
+        "mass_drift_pct": -49.51,
+        "u_max": 0.0354
+      },
+      "fixed": {
+        "h": 0.549,
+        "mass_drift_pct": 1.06,
+        "u_max": 0.0024
+      }
+    }
+  },
+  "repro_cmd": "PYTHONPATH=src python3 benchmarks/case_pool/capillary_rise/jurin_cac.py --theta 60 --steps 1000 --sample-every 125 --no-calibration --out artifacts/m15917/jurin_theta60_repro.json && PYTHONPATH=src python3 benchmarks/case_pool/capillary_rise/ab_wall_fix.py --steps 1250 --out artifacts/m15917/ab_wall_fix_theta90.json && python3 -m pytest tests/test_case_pool_capillary_rise_cac.py -q",
+  "verdict": "honest FAIL on the Jurin gate (theta=60); two real CAC wall defects fixed with A/B evidence; failure localized to wall-flux conservation (F3)",
+  "fail_stage": "theta=60 deg capillary rise: phase-field instability at step ~440 (liquid mass -14.09%, phi_min -0.0986) -> no equilibrium height to compare with Jurin",
+  "failure_reason": "cac_lbm2d contact wall (cos theta != 0) is not phase-conserving: the zero-net correction budgets the wall flux against the neighbour value instead of the wall's previous value, so the wetting wall absorbs phase every step until the Allen-Cahn field leaves the double well and the run diverges",
+  "not_run": [
+    "theta in {45, 75} sweeps and gap w in {12, 32} sensitivity matrix (blocked by F3)",
+    "sessile-drop angle calibration leg (--with-contact, ~2 min) not executed this round",
+    "cluster jobs cj1203/cj1204 stayed queued 2.5 h (saturated nodes); all runs done locally in chunks",
+    "L5 external experimental anchor (e.g. measured capillary rise in a real tube) not compared"
+  ],
+  "evidence_doc": "docs/reports/m15917/CASE_MCMP_CAPILLARY_RISE.md"
+}
