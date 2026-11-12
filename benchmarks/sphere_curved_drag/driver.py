@@ -94,6 +94,32 @@ def hasimoto_K(lambda_: float) -> float:
     return 1.0 / den
 
 
+def analytic_drag_force(u: float, R: float, nu: float, lam: float) -> float:
+    """Absolute analytic drag on the sphere at the *measured* velocity.
+
+    ``F = 0.5 rho u^2 pi R^2 C_D(u)`` with ``rho = 1`` in lattice units and
+
+    * ``C_D = 24/Re * K(lam)`` (Stokes + Hasimoto confinement) for ``Re < 1``,
+    * ``C_D = 24/Re (1 + 0.15 Re^0.687)`` (Schiller-Naumann) for ``Re >= 1``.
+
+    This is the third, *correlation-based* force instrument.  It is a
+    diagnostic only: it is never fed back into the controller (a controller
+    that pins ``u`` to a value it derives from a correlation cannot test that
+    correlation).  It is what discriminates between the two bookkeeping
+    instruments ``F_mb`` (source momentum) and ``F_bfl`` (link ledger) when
+    they disagree: whichever of the two agrees with the analytic drag is the
+    one that is measuring the wall force.
+    """
+    if not (u > 0.0):
+        return 0.0
+    re = u * 2.0 * R / nu
+    if re < 1.0:
+        cd = (24.0 / re) * hasimoto_K(lam) if re > 0.0 else float("inf")
+    else:
+        cd = cd_schiller_naumann(re)
+    return 0.5 * 1.0 * u * u * math.pi * R * R * cd
+
+
 def _sphere_sdf_cells(L: int, cy: float, R: float) -> torch.Tensor:
     """Boolean solid mask: cell centres strictly inside the sphere."""
     idx = torch.arange(L, dtype=torch.float64) + 0.5
@@ -166,6 +192,15 @@ def run_case(spec: dict) -> dict:
     scheme = spec.get("scheme", "curved")
     zero_force = bool(spec.get("zero_force", False))
     tail = int(spec.get("tail", 50))
+    #: ``bfl``      -- legacy: feed-forward from the BFL link ledger (the
+    #:                 instrument whose absolute accuracy is under test here);
+    #: ``momentum`` -- feed-forward from the analytic drag at ``u_filt``, i.e.
+    #:                 no measured force in the control loop (prereg amendment
+    #:                 A1, docs/GAP-LBM-SPHERE_v3_converged_control_verdict.md);
+    #: ``fixed``    -- prescribed body-force density ``g``, starved of feedback.
+    controller = str(spec.get("controller", "bfl"))
+    if controller not in {"bfl", "momentum", "fixed"}:
+        raise ValueError(f"unknown controller {controller!r}")
 
     dev = torch.device("cpu")
     cvec = C.to(dev).float().view(19, 3, 1, 1, 1)
@@ -193,6 +228,9 @@ def run_case(spec: dict) -> dict:
     cd_guess = cd_schiller_naumann(Re) if not zero_force else 0.0
     f_guess = 0.5 * 1.0 * u_target * u_target * math.pi * R * R * cd_guess
     g = 0.0 if zero_force else f_guess / (force_factor * v_fluid)
+    if controller == "fixed" and not zero_force:
+        g = float(spec["g_fixed"])
+    g_fixed = g
 
     rho0 = torch.ones((L, L, L), dtype=torch.float32)
     uz0 = torch.zeros_like(rho0)
@@ -228,7 +266,12 @@ def run_case(spec: dict) -> dict:
         f_new[:, solid] = f_rest[:, solid]
         u_mean = float(ux[fluid].mean())
         u_filt += 0.02 * (u_mean - u_filt)
-        if not zero_force:
+        if not zero_force and controller == "momentum":
+            # exact momentum-balance feed-forward: the force the analytic
+            # correlation says the sphere exerts, no measured F in the loop
+            g_ff = analytic_drag_force(u_filt, R, nu, R / L) / (force_factor * v_fluid)
+            g = _controller_force(g, g_ff, u_target, u_filt)
+        elif not zero_force and controller == "bfl":
             g = _controller_force(g, g_ff, u_target, u_filt)
         f_pre = f_new
         f_stream = stream3d(f_pre)
@@ -241,7 +284,7 @@ def run_case(spec: dict) -> dict:
             if step_i % mem_every == 0:
                 f_bfl_last = float(force[0])
                 bfl_hist.append(f_bfl_last)
-                if not zero_force:
+                if not zero_force and controller == "bfl":
                     f_bfl_ema = abs(f_bfl_last) if f_bfl_ema is None else (
                         (1.0 - CTRL_RELAX) * f_bfl_ema + CTRL_RELAX * abs(f_bfl_last)
                     )
@@ -307,6 +350,18 @@ def run_case(spec: dict) -> dict:
         "bfl_rel_diff_pct": (
             100.0 * (f_bfl - f_mb) / f_mb if f_mb not in (0.0,) and math.isfinite(f_bfl) else float("nan")
         ),
+        "controller": controller,
+        "F_analytic": analytic_drag_force(u_meas, R, nu, R / L),
+        "analytic_vs_mb_pct": (
+            100.0 * (f_mb - analytic_drag_force(u_meas, R, nu, R / L)) / analytic_drag_force(u_meas, R, nu, R / L)
+            if analytic_drag_force(u_meas, R, nu, R / L) > 0.0
+            else float("nan")
+        ),
+        "analytic_vs_bfl_pct": (
+            100.0 * (f_bfl - analytic_drag_force(u_meas, R, nu, R / L)) / analytic_drag_force(u_meas, R, nu, R / L)
+            if analytic_drag_force(u_meas, R, nu, R / L) > 0.0
+            else float("nan")
+        ),
         "cd_mb_fluid": cd(u_meas, f_mb),
         "cd_mb_sup": cd(u_sup, f_mb),
         "cd_bfl_fluid": cd(u_meas, f_bfl),
@@ -371,6 +426,14 @@ def main(argv=None) -> int:
     ap.add_argument("--steps", type=int, default=8000)
     ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--zero-force", action="store_true")
+    ap.add_argument(
+        "--controller",
+        default="bfl",
+        choices=("bfl", "momentum", "fixed"),
+        help="bfl=legacy ledger feed-forward; momentum=analytic-drag feed-forward; "
+        "fixed=prescribed --g (no feedback)",
+    )
+    ap.add_argument("--g", type=float, default=None, help="body-force density for --controller fixed")
     ap.add_argument("--out", default="out")
     args = ap.parse_args(argv)
 
@@ -383,7 +446,12 @@ def main(argv=None) -> int:
         "steps": args.steps,
         "threads": args.threads,
         "zero_force": args.zero_force,
+        "controller": args.controller,
     }
+    if args.controller == "fixed":
+        if args.g is None:
+            ap.error("--controller fixed requires --g")
+        spec["g_fixed"] = args.g
     rec = run_case(spec)
     Path(args.out).mkdir(parents=True, exist_ok=True)
     p = Path(args.out) / f"{args.tag}.json"
@@ -391,6 +459,8 @@ def main(argv=None) -> int:
     print(
         f"[{args.tag}] cd_mb_sup={rec['cd_mb_sup']:.4f} cd_mb_fluid={rec['cd_mb_fluid']:.4f} "
         f"steady={rec['steady']} bfl_diff={rec['bfl_rel_diff_pct']:.2f}% "
+        f"analytic_vs_mb={rec['analytic_vs_mb_pct']:.2f}% "
+        f"analytic_vs_bfl={rec['analytic_vs_bfl_pct']:.2f}% "
         f"wall={rec['wall_s']:.0f}s -> {p}",
         flush=True,
     )
