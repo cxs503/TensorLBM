@@ -456,8 +456,22 @@ def test_negative_solid_shape_raises():
 
 
 def test_negative_unsupported_collision_raises():
+    """A D3Q19-only collision operator is rejected by the *first* barrier.
+
+    Contract tightened on purpose (docs/INPUT_CONTRACT_GUARDS_LATTICE_20261112.md):
+    the rejection used to be reachable only from ``_get_collide_fn()``, i.e. after
+    ``setup()`` had voxelised the geometry and allocated the 27-direction field.
+    ``setup()`` now runs the same classification first, so the configuration is
+    refused with nothing allocated; the deep guard stays as defence in depth.
+    """
     eng = _engine(collision=CollisionModel.SMAGORINSKY_MRT)
-    eng.setup()
+    with pytest.raises(NotImplementedError, match="smagorinsky_mrt"):
+        eng.setup()
+    assert eng.f is None
+
+    # Defence in depth: the run-time selector still refuses the same combination
+    # even if a caller bypasses setup().
+    eng._lattice_q = 27
     with pytest.raises(NotImplementedError, match="D3Q27"):
         eng._get_collide_fn()
 

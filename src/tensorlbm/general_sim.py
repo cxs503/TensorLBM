@@ -397,6 +397,83 @@ class GeneralSimEngine:
 
         return nx, ny, nz
 
+    # ── Lattice / feature compatibility (fail-fast contract) ───────────
+
+    #: Collision operators that actually have a D3Q27 kernel in this engine.
+    #: Everything else (TRT, Smagorinsky-BGK/MRT) is D3Q19-only.
+    D3Q27_COLLISIONS = frozenset({CollisionModel.BGK, CollisionModel.MRT})
+    #: Wall treatments implemented on the D3Q27 path (log-law wall modelling has
+    #: no D3Q27 kernel; ``AUTO`` is resolved by Reynolds number before checking).
+    D3Q27_WALL_TREATMENTS = frozenset({WallTreatment.AUTO, WallTreatment.BOUNCE_BACK})
+
+    @property
+    def is_d3q27(self) -> bool:
+        """True when this engine's configured lattice is D3Q27."""
+        return self.config.solver.lattice == LatticeModel.D3Q27
+
+    def _d3q27_unsupported_reasons(self) -> list[str]:
+        """List config features that the D3Q27 path cannot honour (empty = OK)."""
+        cfg = self.config
+        sol = cfg.solver
+        reasons: list[str] = []
+
+        # Resolve AUTO the same way setup() does (Re-based), so that neither an
+        # AUTO that lands on a supported kernel is falsely rejected nor one that
+        # lands on a D3Q19-only kernel is falsely accepted.
+        collision = sol.collision
+        if collision == CollisionModel.AUTO:
+            collision = self._auto_collision or self._auto_select_collision(
+                cfg.reynolds_number
+            )
+        if collision not in self.D3Q27_COLLISIONS:
+            reasons.append(
+                f"collision={collision.value!r} has no D3Q27 kernel "
+                f"(supported: {', '.join(sorted(c.value for c in self.D3Q27_COLLISIONS))})"
+            )
+
+        wall = sol.wall_treatment
+        auto_resolved = False
+        if wall == WallTreatment.AUTO:
+            # Mirror the auto-selection used by setup(); the geometry is still
+            # unvoxelised here, so an empty channel (no solid -> nothing to
+            # wall-model) is exempt from the AUTO-derived rejection.
+            wall = self._auto_wall_treatment or self._auto_select_wall_treatment(
+                cfg.reynolds_number
+            )
+            auto_resolved = True
+        if wall not in self.D3Q27_WALL_TREATMENTS and not (
+            auto_resolved and cfg.geometry.source == GeometrySource.NONE
+        ):
+            label = f"{wall.value!r}"
+            if auto_resolved:
+                label += f" (auto-selected at Re={cfg.reynolds_number:.3g})"
+            reasons.append(f"wall_treatment={label} has no D3Q27 kernel")
+
+        return reasons
+
+    def _check_d3q27_supported(self) -> None:
+        """Reject configurations the selected lattice can never run.
+
+        Same defect class as audit D5 (``docs/AUDIT_RUNTEST_6_TENSORLBM.md``):
+        an unsupported value used to be accepted by ``validate()``/``setup()``
+        and only surfaced inside ``run()``, after the geometry had been voxelised
+        and the distribution function allocated (``GeneralSimEngine`` spends that
+        work before the first kernel call).  D3Q19 is fully populated, so only
+        the D3Q27 path is checked; the check is a pure classification of the
+        config (no tensors, no allocation).
+        """
+        if not self.is_d3q27:
+            return
+        reasons = self._d3q27_unsupported_reasons()
+        if not reasons:
+            return
+        raise NotImplementedError(
+            "LatticeModel.D3Q27 is not implemented for: "
+            + "; ".join(reasons)
+            + ". Use LatticeModel.D3Q19 for these features, or pick a supported "
+            "D3Q27 combination (collision=bgk|mrt, wall_treatment=bounce_back)."
+        )
+
     # ── Setup ──────────────────────────────────────────────────────────
 
     def setup(self) -> dict[str, Any]:
@@ -407,7 +484,17 @@ class GeneralSimEngine:
           - parametric mask builders (cylinder/sphere/suboff/naca)
           - drag_pressure.get_near_wall_3d
           - drag_pressure.SurfaceMesh.from_xxx
+
+        Raises
+        ------
+        NotImplementedError
+            If the configuration asks for a feature that has no kernel on the
+            selected lattice (audit class D5: unsupported input must be rejected
+            *before* geometry is voxelised and ``f`` is allocated, not inside the
+            time loop).
         """
+        # Fail fast: no allocation, no voxelisation, no partial state.
+        self._check_d3q27_supported()
         cfg = self.config
         sol = cfg.solver
         phys = cfg.physics
@@ -529,6 +616,7 @@ class GeneralSimEngine:
             "domain_phys_m": tuple(round(d, 3) for d in self.domain_phys),
             "lattice": sol.lattice.value,
             "Q": self._lattice_q,
+            "q": self._lattice_q,  # documented lowercase alias (tests/API consumers)
             "obstacle_cells": int(self.solid.sum()) if self.solid is not None else 0,
             "near_wall_cells": int(self.near.sum()) if self.near is not None else 0,
             "total_cells": nx * ny * nz,
