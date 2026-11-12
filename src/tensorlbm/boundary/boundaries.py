@@ -474,6 +474,82 @@ def nscbc_outlet_2d(
 
 
 
+def nonequilibrium_extrapolation_outlet_2d(f: torch.Tensor) -> torch.Tensor:
+    """Non-equilibrium extrapolation (NEE) outflow boundary, D2Q9.
+
+    Guo, Zheng & Shi (2002), *An extrapolation method for boundary conditions
+    in lattice Boltzmann method*, J. Comput. Phys. **177**, 443-458,
+    Eq. (10)-(13): the unknown outlet distributions are rebuilt from a
+    *locally extrapolated* equilibrium plus the non-equilibrium part carried
+    over from the last interior node::
+
+        f_i(x_b) = f_i^eq(rho*, u*) + [f_i(x_{b-1}) - f_i^eq(rho_{b-1}, u_{b-1})]
+        rho* = 2 rho_{b-1} - rho_{b-2},      u* = 2 u_{b-1} - u_{b-2}
+
+    The macroscopic fields are the post-streaming ones, so ``x_{b-1}`` is the
+    last interior column ``x = nx-2`` and ``x_b = nx-1`` is the outlet plane.
+    Unlike :func:`zero_gradient_outlet_2d` (first-order copy of the whole
+    distribution, which flattens the transverse velocity at the outlet) the
+    NEE closure is second-order accurate and leaves a smooth outflow
+    undisturbed, so the outlet does not set an O(1) error floor.
+
+    Extrapolated density is clamped to ``[0.5, 1.5]`` and the extrapolated
+    velocity magnitude to ``0.3`` (``Ma < 0.52``) as a robustness guard.
+
+    .. warning::
+       **STATUS: EXPERIMENTAL / NOT VALIDATED.** This closure was tried as a
+       drop-in replacement for :func:`zero_gradient_outlet_2d` on the Kovasznay
+       (1948) steady analytic solution (Re=40, Zou–He analytic inlet, x' in
+       [0,3], D2Q9/BGK) and **diverged to NaN** at ny=32 within 12000 steps
+       (see ``docs/CASE-LBM-KOVASZNAY-OUTLET-BC.md``, honest FAIL).  Pure
+       linear extrapolation of (rho, u) into the outlet plane without any
+       relaxation/characteristic damping is not stable for this configuration.
+       Use :func:`zero_gradient_outlet_2d` (or a damped/limiter variant) for
+       production outflow until a stabilised version is verified.
+
+    Args:
+        f: Distribution tensor (9, ny, nx), post-streaming, nx >= 3.
+
+    Returns:
+        Updated distribution tensor (outlet column replaced).
+    """
+    if f.shape[0] != 9:
+        msg = f"f must have 9 directions, got {f.shape[0]}"
+        raise ValueError(msg)
+    if f.shape[2] < 3:
+        msg = f"nx must be >= 3 for NEE outlet, got {f.shape[2]}"
+        raise ValueError(msg)
+
+    rho, ux, uy = macroscopic(f)
+    rho_b1, rho_b2 = rho[:, -2], rho[:, -3]
+    ux_b1, ux_b2 = ux[:, -2], ux[:, -3]
+    uy_b1, uy_b2 = uy[:, -2], uy[:, -3]
+
+    # Linear extrapolation of the macroscopic fields to the outlet plane.
+    rho_b = (2.0 * rho_b1 - rho_b2).clamp(min=0.5, max=1.5)
+    ux_b = 2.0 * ux_b1 - ux_b2
+    uy_b = 2.0 * uy_b1 - uy_b2
+    speed = torch.sqrt(ux_b * ux_b + uy_b * uy_b)
+    scale = torch.where(speed > 0.3, 0.3 / speed.clamp(min=1e-12), torch.ones_like(speed))
+    ux_b = ux_b * scale
+    uy_b = uy_b * scale
+
+    f_eq_out = equilibrium(rho_b, ux_b, uy_b)
+    f_eq_neighbour = equilibrium(rho_b1, ux_b1, uy_b1)
+
+    # Only the populations entering the domain (c_x < 0 at the right plane) are
+    # unknown after streaming; the outgoing ones already carry the correct
+    # characteristics and must be left untouched (prescribing all 9 injects
+    # mass/momentum inconsistent with the outgoing waves and diverges).
+    incoming = C[:, 0] < 0
+    f_new = f.clone()
+    outlet = f_new[:, :, -1]  # view: in-place advanced-index writes propagate
+    outlet[incoming] = f_eq_out[incoming, :, 0] + (
+        f[incoming, :, -2] - f_eq_neighbour[incoming, :, 0]
+    )
+    return f_new
+
+
 def zero_gradient_outlet_2d(f: torch.Tensor) -> torch.Tensor:
     """Zero-gradient (Neumann) outlet boundary condition (D2Q9).
 

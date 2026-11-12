@@ -103,6 +103,17 @@ def outlet_zero_gradient(f: torch.Tensor) -> torch.Tensor:
     return zero_gradient_outlet_2d(f)
 
 
+def outlet_nonequilibrium_extrapolation(f: torch.Tensor) -> torch.Tensor:
+    """非平衡外推（NEE）出口（Guo, Zheng & Shi 2002, JCP 177:443 式(10)-(13)）。
+
+    库函数 ``tensorlbm.boundaries.nonequilibrium_extrapolation_outlet_2d``：
+    f_i(x_b) = f_i^eq(ρ*,u*) + [f_i(x_{b-1}) − f_i^eq(x_{b-1})]，
+    ρ* = 2ρ_{b-1} − ρ_{b-2}、u* = 2u_{b-1} − u_{b-2}。
+    """
+    from tensorlbm.boundaries import nonequilibrium_extrapolation_outlet_2d
+    return nonequilibrium_extrapolation_outlet_2d(f)
+
+
 def outlet_analytic_dirichlet(
     f: torch.Tensor, u_ana_col: torch.Tensor, v_ana_col: torch.Tensor
 ) -> torch.Tensor:
@@ -152,6 +163,8 @@ def run_case(
         f = stream(f)
         if outlet == "zerograd":
             f = outlet_zero_gradient(f)
+        elif outlet == "nxextrap":
+            f = outlet_nonequilibrium_extrapolation(f)
         else:
             f = outlet_analytic_dirichlet(f, u_ana[:, -1], v_ana[:, -1])
         return zou_he_inlet_velocity(f, u_in, v_in)
@@ -226,11 +239,16 @@ def run_case(
         "config": f"xmax={xmax} outlet={outlet}",
         "lattice": "D2Q9",
         "collision": "bgk",
-        "boundary": (
-            "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
-            if outlet == "zerograd"
-            else "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
-        ),
+        "boundary": {
+            "zerograd": "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet",
+            "nxextrap": (
+                "zou_he_velocity_inlet(analytic Dirichlet) + "
+                "non-equilibrium-extrapolation outlet (Guo 2002)"
+            ),
+            "dirichlet": (
+                "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
+            ),
+        }[outlet],
         "driving": "analytic Navier-Stokes solution (Kovasznay 1948), steady-state verification",
         "extrap": "none",
         "ny": ny,
@@ -335,16 +353,47 @@ def scan(
         conv["max_err_pct_64"] = round(errs_64 * 100.0, 4)
         conv["max_err_pct_128"] = round(errs_128 * 100.0, 4)
 
+    # ---- 观测收敛阶（对数斜率 p = log(e_coarse/e_fine)/log(h_coarse/h_fine)）----
+    ordered = sorted(cases, key=lambda r: r["ny"])
+    order = {}
+    for key in ("u_l2_rel", "v_l2_rel", "u_l2_rel_interior", "v_l2_rel_interior"):
+        slopes = []
+        for c0, c1 in zip(ordered[:-1], ordered[1:]):
+            dup = c1["nx"] / c0["nx"]  # 网格比（x 向；与 y 向成比例）
+            e0, e1 = c0[key], c1[key]
+            if e0 > 0 and e1 > 0:
+                slopes.append(-math.log(e1 / e0) / math.log(dup))
+            else:
+                slopes.append(float("nan"))
+        order[key] = {
+            "pairs": [f"ny{c0['ny']}->ny{c1['ny']}" for c0, c1 in zip(ordered[:-1], ordered[1:])],
+            "p_slopes": slopes,
+        }
+    if len(ordered) >= 2:
+        order["finest_pair_p"] = {
+            k: order[k]["p_slopes"][-1]
+            for k in ("u_l2_rel", "v_l2_rel", "u_l2_rel_interior", "v_l2_rel_interior")
+        }
+        order["coarse_pair_p"] = {
+            k: order[k]["p_slopes"][0]
+            for k in ("u_l2_rel", "v_l2_rel", "u_l2_rel_interior", "v_l2_rel_interior")
+        }
+
     summary = {
         "case": "B18_kovasznay_2d_convergence",
         "config": f"xmax={xmax} outlet={outlet}",
         "lattice": "D2Q9",
         "collision": "bgk",
-        "boundary": (
-            "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet"
-            if outlet == "zerograd"
-            else "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
-        ),
+        "boundary": {
+            "zerograd": "zou_he_velocity_inlet(analytic Dirichlet) + zero-gradient outlet",
+            "nxextrap": (
+                "zou_he_velocity_inlet(analytic Dirichlet) + "
+                "non-equilibrium-extrapolation outlet (Guo 2002)"
+            ),
+            "dirichlet": (
+                "zou_he_velocity_inlet(analytic Dirichlet) + analytic Dirichlet outlet"
+            ),
+        }[outlet],
         "extrap": "none",
         "re": re,
         "lambda": kov_lambda(re),
@@ -378,6 +427,7 @@ def scan(
             for r in cases
         ],
         "convergence_64_to_128": conv,
+        "observed_order": order,
         "verdict": verdict,
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2))
@@ -394,7 +444,9 @@ def main() -> None:
     p1.add_argument("--re", type=float, default=40.0)
     p1.add_argument("--u0", type=float, default=0.03)
     p1.add_argument("--xmax", type=float, default=3.0)
-    p1.add_argument("--outlet", choices=["zerograd", "dirichlet"], default="zerograd")
+    p1.add_argument(
+        "--outlet", choices=["zerograd", "nxextrap", "dirichlet"], default="zerograd"
+    )
     p1.add_argument("--min-steps", type=int, default=20000)
     p1.add_argument("--max-steps", type=int, default=60000)
     p1.add_argument("--device", type=str, default="cpu")
@@ -406,7 +458,9 @@ def main() -> None:
     p2.add_argument("--re", type=float, default=40.0)
     p2.add_argument("--u0", type=float, default=0.03)
     p2.add_argument("--xmax", type=float, default=3.0)
-    p2.add_argument("--outlet", choices=["zerograd", "dirichlet"], default="zerograd")
+    p2.add_argument(
+        "--outlet", choices=["zerograd", "nxextrap", "dirichlet"], default="zerograd"
+    )
     p2.add_argument("--min-steps", type=int, default=20000)
     p2.add_argument("--max-steps", type=int, default=60000)
     p2.add_argument("--device", type=str, default="cpu")
