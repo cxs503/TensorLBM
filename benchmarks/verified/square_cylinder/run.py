@@ -95,15 +95,20 @@ from tensorlbm.solver import collide_mrt, stream
 # 参考值 = 2D 自由流无障/低阻塞数值基准簇的中心值（多源核对见 REFERENCE_AUDIT.md）。
 # 参考口径裁定（2026-09-29）：本 solver 为 2D、域 40D（blockage 2.5%），正确对标
 # 2D 自由流数值基准（非实验、非通道/受限口径）。
-REF_CD = 1.48  # 2D 自由流数值簇 [1.44, 1.52] 中心（中位 1.488）
-REF_ST = 0.147  # 2D 自由流数值簇 [0.145, 0.149] 中心
+# 参考常量与测力列口径的唯一来源：refspec.py（audit m16183 返修项 3）。
+# 本文件禁止再定义 REF_CD/REF_ST —— tests/test_square_cylinder_case.py 结构性强校验。
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from refspec import (  # noqa: E402
+    DOMAIN_D,
+    REF_CD,
+    REF_ST,
+    SPONGE_D,
+    ST_SEED,
+)
 
 # 域/播种参数（与 cylinder_re100 完全同口径，仅 St_seed 换方柱值）
-DOMAIN_D = 40.0  # 域边长 = 40D
 SQUARE_X_D = 10.0  # 方块中心距入口 10D
-SPONGE_D = 10.0  # sponge 宽 10D（下游）
 SPONGE_ALPHA = 10.0  # τ_eff = τ·(1 + α·σ)，collide_mrt docstring 公式
-ST_SEED = 0.14  # 播种 Strouhal（方柱文献 St 0.13-0.15 中值）
 SEED_AMPL = 0.10  # 播种 uy 振幅（× u_in）
 SEED_PERIODS = 2.0  # 播种持续 2 个 St_seed 周期
 
