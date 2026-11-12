@@ -15,6 +15,9 @@ C4  resistance decomposition closure < 2 % (control-volume momentum balance
     audit)
 C5  ice resistance against the reference models (experimental anchor WITHHELD)
 C6  three-grid GCI of the resistance < 5 %
+C7  hull-girder response to the DEM hull-contact resistance, computed through the
+    3-D load-exchange interface (``three_way.coupled3d.hull_girder_from_contact_loads``);
+    the gate is the discretisation error against the exact Euler-Bernoulli integral
 
 Usage
 -----
@@ -209,6 +212,43 @@ def criterion_c3(field, dem_summary: Dict[str, object], D: float = 2.4) -> Dict[
                  "versus per-floe quadratic drag); the residual quantifies the "
                  "upscaling error of the porous-layer representation"),
     }
+
+
+def criterion_c7(dem_summary: Dict[str, object], dem, hull=None) -> Dict[str, object]:
+    """Hull-girder load path for the DEM hull-contact resistance (interface consumer).
+
+    The DEM leg of the chain produces a *resultant* hull resistance ``R_hull``; this
+    criterion spreads it over the bow region of the hull girder, pushes it through the
+    3-D load-exchange interface (``HexGrid3D`` Q1 surface -> Hermite beam DOFs) and
+    reports the girder deflection / bending moment / deck stress together with the
+    discretisation error against the exact Euler-Bernoulli tip-deflection integral.
+
+    Declared assumption: the contact resultant is distributed uniformly over the bow
+    length ``L_bow`` (the DEM resolves the resultant, not the per-frame footprint).
+    """
+    import numpy as _np
+    import torch as _torch
+
+    from ..three_way.coupled3d import (Coupled3DConfig,
+                                       hull_girder_from_contact_loads)
+
+    cfg = Coupled3DConfig()
+    r_hull = float(dem_summary.get("R_ice_contact_mean", 0.0) or 0.0)
+    l_bow = 0.25 * cfg.beam_length
+    n_load = 9
+    ys = _torch.linspace(cfg.beam_length - l_bow, cfg.beam_length, n_load,
+                         dtype=_torch.float64)
+    positions = _torch.stack([_torch.zeros(n_load, dtype=_torch.float64), ys,
+                              _torch.zeros(n_load, dtype=_torch.float64)], dim=1)
+    # uniform spread of the measured resultant over the bow patch
+    forces = _torch.zeros((n_load, 3), dtype=_torch.float64)
+    forces[:, 0] = r_hull / n_load
+    out = hull_girder_from_contact_loads(positions, forces, cfg)
+    out["R_hull_mean_N"] = r_hull
+    out["L_bow"] = l_bow
+    out["spread_assumption"] = "uniform over the bow length L_bow"
+    out["pass"] = bool(out["rel_err_pct"] < 1.0)
+    return out
 
 
 def criterion_c6(runs: List[Dict[str, object]]) -> Dict[str, object]:
@@ -499,6 +539,9 @@ def run_chain(quick: bool = False, verbose: bool = True) -> Dict[str, object]:
     c5 = criterion_c5(dem["summary"], hull, dem_cfg)
     c6 = criterion_c6(flow_runs) if len(flow_runs) >= 3 else {"pass": False,
                                                              "reason": "quick mode"}
+    # C7: the DEM hull-contact resistance is handed to the shared 3-D load-exchange
+    # interface and turned into a hull-girder response (three_way.coupled3d consumer)
+    c7 = criterion_c7(dem["summary"], dem.get("dem"), hull)
 
     chain = {
         "node": "AG27W2-N08",
@@ -508,7 +551,7 @@ def run_chain(quick: bool = False, verbose: bool = True) -> Dict[str, object]:
         "geometry": geo,
         "entrance_angle_deg": outline_entrance_angle(hull),
         "ice_level_z_m": ICE_LEVEL_Z,
-        "C1": c1, "C2": c2, "C3": c3, "C4": c4, "C5": c5, "C6": c6,
+        "C1": c1, "C2": c2, "C3": c3, "C4": c4, "C5": c5, "C6": c6, "C7": c7,
         "DEM": {"summary": dem["summary"], "series": dem["series"]},
         "flow_runs": [{k: v for k, v in r.items() if k != "flow"} for r in flow_runs],
         "wall_clock_s": time.time() - t_start,
