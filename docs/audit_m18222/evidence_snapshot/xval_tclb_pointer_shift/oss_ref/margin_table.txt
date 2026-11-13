@@ -1,0 +1,23 @@
+# src/conf.R:771-792  sha256(excerpt)=38f4d8114cd214fcaa8dc8376ea21b4eea7228858c8e07ccf5c0a7b719f0c160
+Margin = data.frame(
+	name = paste("block",1:27,sep=""),
+	side = paste("side",1:27,sep=""),
+	dx   = rep(-1:1,times=9),
+	dy   = rep(rep(-1:1,times=3),each=3),
+	dz   = rep(-1:1,each=9),
+	command=paste("Margin",1:27)
+)
+
+Margin$sides = c(
+	 8, 7, 8,
+	 6, 5, 6,
+	 8, 7, 8,
+	 4, 3, 4,
+	 2, 1, 2,
+	 4, 3, 4,
+	 8, 7, 8,
+	 6, 5, 6,
+	 8, 7, 8
+)
+Margin$size = 0
+Margin=rows(Margin)

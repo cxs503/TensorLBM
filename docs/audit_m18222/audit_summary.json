@@ -1,0 +1,374 @@
+{
+ "anchor": "XVAL-LBM-PER-MARGIN-ARRAYS-POINTER-SHIFT-STREAMIN",
+ "mission_audited": 18129,
+ "auditor_mission": 18222,
+ "started": "2026-11-13T12:35:49Z",
+ "provenance": {
+  "ref_json_meta": {
+   "oss": "CFD-GO/TCLB",
+   "remote": "https://github.com/CFD-GO/TCLB.git",
+   "branch": "master",
+   "commit": "ded67cd768cf7e727bd078af139e3ec7895076e5",
+   "checkout": "/tmp/TCLB",
+   "checkout_git_note": "shallow clone: `.git` object store is incomplete (`git log` fails with 'bad object HEAD'), so provenance is pinned by the ref file content and per-file sha256 instead of a git object id",
+   "tclb_runnable_here": false,
+   "tclb_runnable_reason": "code generation and build need R + Rscript (src/*.Rt are R templates) and an MPI/CUDA toolchain; this container has neither R nor network access",
+   "extracted_by": "benchmarks/xval_tclb_pointer_shift/extract_oss_ref.py"
+  },
+  "files_missing": [],
+  "file_sha_mismatch": [],
+  "file_sha_ok": 8,
+  "snippet_checked": 9,
+  "snippet_sha_mismatch": [],
+  "snippet_text_mismatch": [],
+  "tclb_present": true,
+  "pinned_rev_matches_clone": true,
+  "snippets": [
+   {
+    "key": "ftabs_per_margin_arrays",
+    "loc": "src/Global.h.Rt:58-74",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 58,
+    "line_matches_record": true,
+    "n_lines_in_body": 17
+   },
+   {
+    "key": "margin_table",
+    "loc": "src/conf.R:771-792",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 771,
+    "line_matches_record": true,
+    "n_lines_in_body": 22
+   },
+   {
+    "key": "offsets_block_addressing",
+    "loc": "src/conf.R:897-998",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 897,
+    "line_matches_record": true,
+    "n_lines_in_body": 102
+   },
+   {
+    "key": "stencil_derived_extent",
+    "loc": "src/conf.R:135-150",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 135,
+    "line_matches_record": true,
+    "n_lines_in_body": 16
+   },
+   {
+    "key": "move_pocket_pointer_shift",
+    "loc": "src/LatticeAccess.inc.cpp.Rt:69-79",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 69,
+    "line_matches_record": true,
+    "n_lines_in_body": 11
+   },
+   {
+    "key": "field_access_uses_pocket",
+    "loc": "src/LatticeAccess.inc.cpp.Rt:122-167",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 122,
+    "line_matches_record": true,
+    "n_lines_in_body": 46
+   },
+   {
+    "key": "pop_push_templates",
+    "loc": "src/LatticeAccess.inc.cpp.Rt:321-339",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 321,
+    "line_matches_record": true,
+    "n_lines_in_body": 19
+   },
+   {
+    "key": "iterate_border_interior_split",
+    "loc": "src/Lattice.cu.Rt:488-514",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 488,
+    "line_matches_record": true,
+    "n_lines_in_body": 27
+   },
+   {
+    "key": "mpi_margin_exchange",
+    "loc": "src/Lattice.cu.Rt:327-335",
+    "sha_matches_record": true,
+    "found_in_clone": true,
+    "found_line": 327,
+    "line_matches_record": true,
+    "n_lines_in_body": 9
+   }
+  ],
+  "R_available": false,
+  "nvcc_available": false
+ },
+ "finished": "2026-11-13T12:42:11Z",
+ "tests": {
+  "returncode": 0,
+  "wall_s": 7.89,
+  "tail": [
+   "src/tensorlbm/boundary/boundaries.py:604",
+   "  /tmp/audit_m18222/stage/src/tensorlbm/boundary/boundaries.py:604: DeprecationWarning: invalid escape sequence '\\p'",
+   "    \"\"\"Zero-gradient (Neumann) outlet boundary condition (D2Q9).",
+   "",
+   "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+   "17 passed, 2 warnings in 5.38s"
+  ],
+  "n_tests": null
+ },
+ "mutation": {
+  "mutants": [
+   {
+    "mutant": "M0 control (unmodified plan)",
+    "partition_ok": true,
+    "max_offset_error": 0,
+    "stream_vs_production_max_abs_diff": 0.0,
+    "detected_by_invariant": false,
+    "detected_by_bitwise_test": false
+   },
+   {
+    "mutant": "M1 drop the wrapped x-strip blocks",
+    "partition_ok": false,
+    "holes": 18,
+    "overlaps": 0,
+    "max_offset_error": 0,
+    "max_abs_diff_vs_gather": 0.975969249859544,
+    "stream_vs_production_max_abs_diff": 0.975969249859544,
+    "stream_raised": null,
+    "detected_by_invariant": true,
+    "detected_by_bitwise_test": true
+   },
+   {
+    "mutant": "M2 flat_offset +1 on block #3",
+    "partition_ok": true,
+    "holes": 0,
+    "overlaps": 0,
+    "max_offset_error": 1,
+    "max_abs_diff_vs_gather": 0.0,
+    "stream_vs_production_max_abs_diff": 0.0,
+    "stream_raised": null,
+    "detected_by_invariant": true,
+    "detected_by_bitwise_test": false
+   },
+   {
+    "mutant": "M3 de-periodise the wrap (copy src onto itself)",
+    "partition_ok": true,
+    "holes": 0,
+    "overlaps": 0,
+    "max_offset_error": 0,
+    "max_abs_diff_vs_gather": 0.7864419624573327,
+    "stream_vs_production_max_abs_diff": 0.7864419624573327,
+    "stream_raised": null,
+    "detected_by_invariant": false,
+    "detected_by_bitwise_test": true
+   }
+  ],
+  "detection_power": {
+   "n_mutants_detected": 3,
+   "n_mutants": 3,
+   "control_clean": true
+  },
+  "control_3d": {
+   "partition_ok": true,
+   "max_offset_error": 0,
+   "gather_max_abs_diff": 0.0
+  }
+ },
+ "cost": {
+  "reps": 9,
+  "rows": {
+   "2d/128": {
+    "baseline_s": 0.004531169310212135,
+    "oss_s": 0.0018365997821092606,
+    "oss_flat_s": 0.0020232796669006348,
+    "slowdown": 0.4053257904024947,
+    "slowdown_min_of_reps": 0.5081287603295546,
+    "baseline_spread": [
+     0.0033073294907808304,
+     0.007300080731511116
+    ],
+    "oss_spread": [
+     0.0016805492341518402,
+     0.0021716393530368805
+    ]
+   },
+   "2d/256": {
+    "baseline_s": 0.008057739585638046,
+    "oss_s": 0.05997679941356182,
+    "oss_flat_s": 0.06956454925239086,
+    "slowdown": 7.443377733435723,
+    "slowdown_min_of_reps": 9.355808083703362,
+    "baseline_spread": [
+     0.005686068907380104,
+     0.014062710106372833
+    ],
+    "oss_spread": [
+     0.053197769448161125,
+     0.07299461960792542
+    ]
+   },
+   "3d/32": {
+    "baseline_s": 0.005404220893979073,
+    "oss_s": 0.005768660455942154,
+    "slowdown": 1.0674360965461478,
+    "slowdown_min_of_reps": 1.3813964027029446,
+    "baseline_spread": [
+     0.0037650596350431442,
+     0.010303620249032974
+    ],
+    "oss_spread": [
+     0.005201039835810661,
+     0.014966389164328575
+    ]
+   },
+   "3d/48": {
+    "baseline_s": 0.006232408806681633,
+    "oss_s": 0.11140862107276917,
+    "slowdown": 17.875692132603746,
+    "slowdown_min_of_reps": 26.00539495375895,
+    "baseline_spread": [
+     0.0037646815180778503,
+     0.013790270313620567
+    ],
+    "oss_spread": [
+     0.09790202975273132,
+     0.12115111015737057
+    ]
+   }
+  },
+  "max_slowdown": 17.875692132603746,
+  "max_slowdown_best_case": 26.00539495375895
+ },
+ "fresh": {
+  "returncode": 0,
+  "wall_s": 88.1,
+  "stdout_tail": [
+   "  \"D2_gate_lt_15pct\": true,",
+   "  \"max_error\": 0.006209416378184871,",
+   "  \"max_slowdown\": 11.933091765363669,",
+   "  \"D3_adopt_formulation\": false,",
+   "  \"verdict\": \"PASS\",",
+   "  \"action\": \"keep the production gather transport; bank the block-offset invariant + the bitwise cross-check as a regression test; the OSS formulation's advantage does not survive the port to torch (see \\u00a76)\"",
+   "}",
+   "wrote /tmp/audit_m18222/stage/runs/xval_tclb_pointer_shift/result.json"
+  ],
+  "stderr_tail": [],
+  "fresh_decision": {
+   "D1_equivalence": true,
+   "D2_gate_lt_15pct": true,
+   "max_error": 0.006209416378184871,
+   "max_slowdown": 11.933091765363669,
+   "D3_adopt_formulation": false,
+   "verdict": "PASS",
+   "action": "keep the production gather transport; bank the block-offset invariant + the bitwise cross-check as a regression test; the OSS formulation's advantage does not survive the port to torch (see \u00a76)"
+  },
+  "shipped_decision": {
+   "D1_equivalence": true,
+   "D2_gate_lt_15pct": true,
+   "max_error": 0.006209416378184871,
+   "max_slowdown": 17.09564504118175,
+   "D3_adopt_formulation": false,
+   "verdict": "PASS",
+   "action": "keep the production gather transport; bank the block-offset invariant + the bitwise cross-check as a regression test; the OSS formulation's advantage does not survive the port to torch (see \u00a76)"
+  },
+  "decision_identical": false,
+  "physics_compare": {
+   "pois_A_rel_l2": {
+    "shipped": 0.0005945089548585884,
+    "auditor_rerun": 0.0005945089548585884,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "pois_A_umax_err": {
+    "shipped": 0.0005776988660242895,
+    "auditor_rerun": 0.0005776988660242895,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "pois_B_rel_l2": {
+    "shipped": 0.0005945089548585884,
+    "auditor_rerun": 0.0005945089548585884,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "pois_B_umax_err": {
+    "shipped": 0.0005776988660242895,
+    "auditor_rerun": 0.0005776988660242895,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_A_n32_tau0.6_s150": {
+    "shipped": 0.005982653333749002,
+    "auditor_rerun": 0.005982653333749002,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_A_n32_tau0.8_s150": {
+    "shipped": 0.00502916643798886,
+    "auditor_rerun": 0.00502916643798886,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_A_n32_tau0.8_s300": {
+    "shipped": 0.006209416378184871,
+    "auditor_rerun": 0.006209416378184871,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_A_n32_tau1.0_s150": {
+    "shipped": 0.005680868813392198,
+    "auditor_rerun": 0.005680868813392198,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_A_n64_tau0.8_s400": {
+    "shipped": 0.0009150289471064305,
+    "auditor_rerun": 0.0009150289471064305,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_B_n32_tau0.6_s150": {
+    "shipped": 0.005982653333749002,
+    "auditor_rerun": 0.005982653333749002,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_B_n32_tau0.8_s150": {
+    "shipped": 0.00502916643798886,
+    "auditor_rerun": 0.00502916643798886,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_B_n32_tau0.8_s300": {
+    "shipped": 0.006209416378184871,
+    "auditor_rerun": 0.006209416378184871,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_B_n32_tau1.0_s150": {
+    "shipped": 0.005680868813392198,
+    "auditor_rerun": 0.005680868813392198,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   },
+   "tgv_B_n64_tau0.8_s400": {
+    "shipped": 0.0009150289471064305,
+    "auditor_rerun": 0.0009150289471064305,
+    "abs_delta": 0.0,
+    "rel_delta": 0.0
+   }
+  },
+  "physics_max_rel_delta": 0.0,
+  "key_missing_on_rerun": [],
+  "equiv_identical": false,
+  "all_bitwise_equal": true,
+  "invariants_ok": true
+ }
+}

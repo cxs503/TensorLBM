@@ -1,0 +1,137 @@
+{
+  "oss": "CFD-GO/TCLB",
+  "remote": "https://github.com/CFD-GO/TCLB.git",
+  "branch": "master",
+  "commit": "ded67cd768cf7e727bd078af139e3ec7895076e5",
+  "checkout": "/tmp/TCLB",
+  "checkout_git_note": "shallow clone: `.git` object store is incomplete (`git log` fails with 'bad object HEAD'), so provenance is pinned by the ref file content and per-file sha256 instead of a git object id",
+  "tclb_runnable_here": false,
+  "tclb_runnable_reason": "code generation and build need R + Rscript (src/*.Rt are R templates) and an MPI/CUDA toolchain; this container has neither R nor network access",
+  "extracted_by": "benchmarks/xval_tclb_pointer_shift/extract_oss_ref.py",
+  "files": {
+    ".git/packed-refs": {
+      "sha256": "990084cc9812b0119b26c54c46778e557be256a668d3ef19d14b8fdc1546026f",
+      "bytes": 114
+    },
+    ".git/refs/heads/master": {
+      "sha256": "e17dea26cd8c5b5530b56a1f02fe128ccaa53cf20501597c1cc3fe0392bc8ec9",
+      "bytes": 41
+    },
+    "README.md": {
+      "sha256": "8836dfe13a61feba30dd9c67e39d28762f1b46a93673f4acd8130e2b35ef2bac",
+      "bytes": 8983
+    },
+    "makefile": {
+      "sha256": "247622db3668dbc768f06a7ad33e6526dd08d36215b281a8eff4461326f44c9a",
+      "bytes": 547
+    },
+    "src/Global.h.Rt": {
+      "sha256": "aac89081a61cb1431d88cfdace9bde2446df50a60a169e6be16dd4b9d90d1404",
+      "bytes": 7013
+    },
+    "src/Lattice.cu.Rt": {
+      "sha256": "6bc57392103e35a25a053a6362e01d3c15b8512a188b3351dcfef19e9365c521",
+      "bytes": 39050
+    },
+    "src/LatticeAccess.inc.cpp.Rt": {
+      "sha256": "05dbd6d6d501b35aabf138eb40848b89477f6b4fddf8d5e737148352ef680979",
+      "bytes": 16588
+    },
+    "src/conf.R": {
+      "sha256": "9dcdb96171bbfbd54b08948958abff409d28a166ea9a7d3ee9b61fd60548d7d9",
+      "bytes": 34612
+    }
+  },
+  "snippets": [
+    {
+      "file": "/tmp/TCLB/src/Global.h.Rt",
+      "start_line": 58,
+      "end_line": 74,
+      "n_lines": 17,
+      "excerpt_sha256": "e1406913bfc4f38cb051a59dd572ff697e37afc6206cd1f51983fa0f6ae13703",
+      "key": "ftabs_per_margin_arrays",
+      "rel_path": "src/Global.h.Rt",
+      "claim": "populations are stored as one array per margin block (per-margin arrays)"
+    },
+    {
+      "file": "/tmp/TCLB/src/conf.R",
+      "start_line": 771,
+      "end_line": 792,
+      "n_lines": 22,
+      "excerpt_sha256": "38f4d8114cd214fcaa8dc8376ea21b4eea7228858c8e07ccf5c0a7b719f0c160",
+      "key": "margin_table",
+      "rel_path": "src/conf.R",
+      "claim": "the 27 margin blocks are the 3x3x3 combinations of side/low/mid/high spans"
+    },
+    {
+      "file": "/tmp/TCLB/src/conf.R",
+      "start_line": 897,
+      "end_line": 998,
+      "n_lines": 102,
+      "excerpt_sha256": "b2d7be574b60d8ee0572f25fe7591dfe694729ca2813769264b6533d26136811",
+      "key": "offsets_block_addressing",
+      "rel_path": "src/conf.R",
+      "claim": "block offsets are linear offsets inside a per-margin array (offset.p / get_offsets / put_offsets)"
+    },
+    {
+      "file": "/tmp/TCLB/src/conf.R",
+      "start_line": 135,
+      "end_line": 150,
+      "n_lines": 16,
+      "excerpt_sha256": "0678d959a7690e45bd0bea12695c736a31a66f5770b83a6d117a297edd571cf7",
+      "key": "stencil_derived_extent",
+      "rel_path": "src/conf.R",
+      "claim": "each field's spatial extent is derived from the stencil, not hand-written"
+    },
+    {
+      "file": "/tmp/TCLB/src/LatticeAccess.inc.cpp.Rt",
+      "start_line": 69,
+      "end_line": 79,
+      "n_lines": 11,
+      "excerpt_sha256": "3ba22ba90a829b2b4b3894266b12e26dc2354bfc4bc8ca915fed0a32eb41fac9",
+      "key": "move_pocket_pointer_shift",
+      "rel_path": "src/LatticeAccess.inc.cpp.Rt",
+      "claim": "a block transition is a pointer increment (pocket.blockN += delta), not an index recomputation"
+    },
+    {
+      "file": "/tmp/TCLB/src/LatticeAccess.inc.cpp.Rt",
+      "start_line": 122,
+      "end_line": 167,
+      "n_lines": 46,
+      "excerpt_sha256": "f8c93c81a7eb862c4f3300a09e7beac643eacddecdccc07ced1f237cce3fb1f2",
+      "key": "field_access_uses_pocket",
+      "rel_path": "src/LatticeAccess.inc.cpp.Rt",
+      "claim": "every population read/write indexes a moved pocket with a constant per-block offset"
+    },
+    {
+      "file": "/tmp/TCLB/src/LatticeAccess.inc.cpp.Rt",
+      "start_line": 321,
+      "end_line": 339,
+      "n_lines": 19,
+      "excerpt_sha256": "b46037bb7ed9fb78c8de8775e9f50a3bf371850559644ca39f885f9e57f827b5",
+      "key": "pop_push_templates",
+      "rel_path": "src/LatticeAccess.inc.cpp.Rt",
+      "claim": "streaming reads (pop) and writes (push) are emitted per stage from the block/pocket machinery"
+    },
+    {
+      "file": "/tmp/TCLB/src/Lattice.cu.Rt",
+      "start_line": 488,
+      "end_line": 514,
+      "n_lines": 27,
+      "excerpt_sha256": "769f85297f279b4d7ecad215529477fa652f1171cd0665b107964262d3f8fa1e",
+      "key": "iterate_border_interior_split",
+      "rel_path": "src/Lattice.cu.Rt",
+      "claim": "each stage runs a border kernel, then an MPI margin exchange, then an interior kernel"
+    },
+    {
+      "file": "/tmp/TCLB/src/Lattice.cu.Rt",
+      "start_line": 327,
+      "end_line": 335,
+      "n_lines": 9,
+      "excerpt_sha256": "9b6f237c07a3ca87548a45255037b92a763165b524aaa4310067c36a91633e1d",
+      "key": "mpi_margin_exchange",
+      "rel_path": "src/Lattice.cu.Rt",
+      "claim": "only non-empty margin blocks are exchanged across ranks"
+    }
+  ]
+}

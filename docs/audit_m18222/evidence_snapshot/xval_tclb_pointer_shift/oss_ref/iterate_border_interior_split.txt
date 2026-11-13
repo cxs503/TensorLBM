@@ -1,0 +1,28 @@
+# src/Lattice.cu.Rt:488-514  sha256(excerpt)=769f85297f279b4d7ecad215529477fa652f1171cd0665b107964262d3f8fa1e
+DEBUG_PROF_PUSH("<?%s stage$name ?>");
+<?R if (stage$fixedPoint) { ?> for (int fix=0; fix<100; fix++) { <?R } ?>
+<?R if (stage$first_particle) { ?> CopyInParticles(); <?R } ?>
+<?R if (old_stage_level > 0) { ?>
+	MPIStream_B();
+	CudaDeviceSynchronize();
+	container->in = Snaps[tab1]; <?R
+    }
+    old_stage_level = old_stage_level + 1
+?>
+	container->CopyToConst();
+	DEBUG_PROF_PUSH("Calculation");
+	switch(iter_type & ITER_INTEG){
+	case ITER_NO:
+		container->RunBorder< Primal, NoGlobals, <?%s stage$name ?> > (kernelStream); break;
+	case ITER_GLOBS:
+		container->RunBorder< Primal, IntegrateGlobals, <?%s stage$name ?> >(kernelStream); break;
+#ifdef ADJOINT
+	case ITER_OBJ:
+		container->RunBorder< Primal, OnlyObjective, <?%s stage$name ?> >(kernelStream); break;
+#endif
+	}
+    CudaStreamSynchronize(kernelStream);
+    MPIStream_A();
+	switch(iter_type & ITER_INTEG){
+	case ITER_NO:
+		container->RunInterior< Primal, NoGlobals, <?%s stage$name ?> > (kernelStream); break;
