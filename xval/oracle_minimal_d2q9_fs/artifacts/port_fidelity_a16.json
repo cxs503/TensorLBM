@@ -1,0 +1,49 @@
+{
+ "dam_break_a16": {
+  "summary": {
+   "case": "dam_break_a16",
+   "cfg": {
+    "nx": 80,
+    "ny": 48,
+    "a": 16,
+    "h0": 32,
+    "g": 5e-05
+   },
+   "steps_requested": 400,
+   "steps_compared": 20,
+   "upstream_first_nonfinite_step": 30,
+   "max_ct_mismatch_steps": 0,
+   "max_fin_abs_diff": 1.7881393432617188e-07,
+   "max_mass_abs_diff": 2.384185791015625e-06,
+   "max_u_abs_diff": 2.3637030849288365e-07,
+   "front_mismatch_steps": 0,
+   "wall_seconds": 13.16
+  },
+  "rows": [
+   {
+    "step": 1,
+    "ct_equal": true,
+    "fin_maxdiff": 0.0,
+    "mass_maxdiff": 1.1920928955078125e-07,
+    "rho_maxdiff": 1.1920928955078125e-07,
+    "u_maxdiff": 1.4901161193847656e-08,
+    "inventory_upstream": 442.5,
+    "inventory_port": 442.5,
+    "front_upstream": 15,
+    "front_port": 15
+   },
+   {
+    "step": 20,
+    "ct_equal": true,
+    "fin_maxdiff": 1.7881393432617188e-07,
+    "mass_maxdiff": 2.384185791015625e-06,
+    "rho_maxdiff": 1.6689300537109375e-06,
+    "u_maxdiff": 2.3637030849288365e-07,
+    "inventory_upstream": 442.83416748046875,
+    "inventory_port": 442.83416748046875,
+    "front_upstream": 15,
+    "front_port": 15
+   }
+  ]
+ }
+}
