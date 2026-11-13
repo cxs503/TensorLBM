@@ -1,0 +1,154 @@
+{
+ "thresholds": {
+  "mask_cells_exact": 0,
+  "cd_err_pct_gate": 15.0,
+  "cd_err_pct_case": 5.0,
+  "delta_cd_vs_hardcoded_pct": 1.0,
+  "plateau_tol": 0.001,
+  "perimeter_err_pct_max": 5.0
+ },
+ "rows": [
+  {
+   "grid": "D10",
+   "D_cells": 10,
+   "nx": 220,
+   "ny": 41,
+   "dx_m": 0.01,
+   "mask_cells_ref": 81,
+   "mask_cells_got": 81,
+   "mask_delta_cells": 0,
+   "markers_ref_formula": 31,
+   "markers_got": 31,
+   "marker_count_err_pct": 0.0,
+   "perimeter_chord_m": 0.3136217981610397,
+   "perimeter_exact_m": 0.3141592653589793,
+   "perimeter_err_pct": -0.17108112260368225,
+   "pass_mask": true,
+   "pass_perimeter": true
+  },
+  {
+   "grid": "D20",
+   "D_cells": 20,
+   "nx": 440,
+   "ny": 82,
+   "dx_m": 0.005,
+   "mask_cells_ref": 317,
+   "mask_cells_got": 317,
+   "mask_delta_cells": 0,
+   "markers_ref_formula": 62,
+   "markers_got": 62,
+   "marker_count_err_pct": 0.0,
+   "perimeter_chord_m": 0.31402484680001874,
+   "perimeter_exact_m": 0.3141592653589793,
+   "perimeter_err_pct": -0.042786756203728044,
+   "pass_mask": true,
+   "pass_perimeter": true
+  },
+  {
+   "grid": "D40",
+   "D_cells": 40,
+   "nx": 880,
+   "ny": 164,
+   "dx_m": 0.0025,
+   "mask_cells_ref": 1257,
+   "mask_cells_got": 1257,
+   "mask_delta_cells": 0,
+   "markers_ref_formula": 125,
+   "markers_got": 125,
+   "marker_count_err_pct": 0.0,
+   "perimeter_chord_m": 0.31412619304171846,
+   "perimeter_exact_m": 0.3141592653589793,
+   "perimeter_err_pct": -0.010527245543135883,
+   "pass_mask": true,
+   "pass_perimeter": true
+  }
+ ],
+ "sensitivities": [
+  {
+   "kind": "dx_refinement",
+   "grid": "D10",
+   "dx_m": 0.01,
+   "n_markers": 31,
+   "perimeter_err_pct": -0.17108112260368225
+  },
+  {
+   "kind": "dx_refinement",
+   "grid": "D20",
+   "dx_m": 0.005,
+   "n_markers": 62,
+   "perimeter_err_pct": -0.042786756203728044
+  },
+  {
+   "kind": "dx_refinement",
+   "grid": "D40",
+   "dx_m": 0.0025,
+   "n_markers": 125,
+   "perimeter_err_pct": -0.010527245543135883
+  },
+  {
+   "kind": "angle_convention",
+   "angle_deg": 0.0,
+   "angle_rad": 0.0,
+   "tip": [
+    0.6,
+    0.2
+   ],
+   "marker_span_m": 0.35,
+   "span_err_pct": 0.0,
+   "n_markers": 350
+  },
+  {
+   "kind": "angle_convention",
+   "angle_deg": 30.0,
+   "angle_rad": 0.5235987755982988,
+   "tip": [
+    0.5531088913245535,
+    0.375
+   ],
+   "marker_span_m": 0.35000000000000003,
+   "span_err_pct": 1.5860328923216522e-14,
+   "n_markers": 350
+  },
+  {
+   "kind": "angle_convention",
+   "angle_deg": 45.0,
+   "angle_rad": 0.7853981633974483,
+   "tip": [
+    0.49748737341529164,
+    0.4474873734152916
+   ],
+   "marker_span_m": 0.35,
+   "span_err_pct": 0.0,
+   "n_markers": 350
+  },
+  {
+   "kind": "angle_convention",
+   "angle_deg": 90.0,
+   "angle_rad": 1.5707963267948966,
+   "tip": [
+    0.25,
+    0.55
+   ],
+   "marker_span_m": 0.35000000000000003,
+   "span_err_pct": 1.5860328923216522e-14,
+   "n_markers": 350
+  }
+ ],
+ "life_config_bodies": [
+  {
+   "id": 0,
+   "keyword": "CIRCLE"
+  },
+  {
+   "id": 1,
+   "keyword": "FILAMENT"
+  }
+ ],
+ "mechanism": {
+  "fingerprint_before": "d53748af7d09246b",
+  "fingerprint_after_geometry_edits": "d53748af7d09246b",
+  "fingerprint_unchanged_by_geometry": true,
+  "param_edit_refused_without_rebuild": true,
+  "fingerprint_after_rebuild": "65ed7299f96fd925"
+ }
+}
