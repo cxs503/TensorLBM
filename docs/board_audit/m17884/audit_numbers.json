@@ -1,0 +1,160 @@
+{
+ "anchor": "XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN",
+ "target_mission": 17839,
+ "target_commit": "eee0988a6de3c7122fe4a4cf30b3f185d87277a7",
+ "gate": 0.15,
+ "target": 0.03,
+ "auditor_fresh_run": "python xval/fused_push_pull_aa_pattern/run.py --out /tmp/audit_m17839_result.json (2026-11-13, same worktree/commit; completed in <2 min)",
+ "repro_numeric_diffs": {
+  "/base/oss_numpy/wall_s": {
+   "committed": 0.8005996085703373,
+   "fresh": 0.5694277305155993
+  },
+  "/base/torch_fused/wall_s": {
+   "committed": 5.16625845991075,
+   "fresh": 2.0932874009013176
+  },
+  "/base/torch_single/wall_s": {
+   "committed": 5.369887629523873,
+   "fresh": 2.088698871433735
+  },
+  "/base/torch_ab/wall_s": {
+   "committed": 117.10826851986349,
+   "fresh": 1.4320047795772552
+  }
+ },
+ "repro_diff_count": 4,
+ "repro_non_timing_diff_count": 0,
+ "grade": {
+  "ux_rel_l2_oss": 0.0019194569784560188,
+  "uy_rel_l2_oss": 0.001919456978453505,
+  "rho_rel_l2_oss": 0.028852906674679987,
+  "ux_rel_l2_torch_fused": 0.0019194569784559744,
+  "ux_rel_l2_torch_ab": 0.0019194569784694044,
+  "nu_fit_oss": 0.16679741378595841,
+  "nu_ref": 0.16666666666666666,
+  "nu_rel_err": 0.0007844827157505452,
+  "mass_final_oss": 4095.999999999817,
+  "mass_expected": 4096.0,
+  "cross_arm_oss_vs_torch_fused_rel_l2": 0.0,
+  "cross_arm_ux_rel_l2_oss_vs_torch_fused": 1.3480178972868695e-14,
+  "ab_vs_fused_ux_rel_l2": 8.349619391125897e-14,
+  "mass_rel_err_oss": 4.463096558993129e-14,
+  "ux_gate_pass": true,
+  "ux_target_3pct_pass": true,
+  "rho_gate_pass": true,
+  "rho_target_3pct_pass": true,
+  "nu_gate_pass": true,
+  "resolution_order_rederived": [
+   2.0814771219688715,
+   2.3856190152805503
+  ],
+  "resolution_order_recorded": [
+   2.0814771219688715,
+   2.3856190152805503
+  ],
+  "order_match": true,
+  "rho_envelope_period_predicted": 27.71281292110204,
+  "rho_envelope_period_measured": 28.57142857142857,
+  "rho_envelope_period_rel_err": 0.030982623552903005,
+  "rho_magnitude_check": {
+   "t_eval": 801,
+   "abs_rho_err_max": 9.066656714296073e-08,
+   "abs_rho_err_rms": 4.034222862526362e-08,
+   "analytic_rho_fluct_rms": 1.74532012588043e-06,
+   "rel_l2_rho_t801": 0.023114515226777047,
+   "abs_ux_err_max": 2.933515667992567e-06,
+   "rel_l2_ux_t801": 0.0019221182765600836
+  }
+ },
+ "resolution_ladder": [
+  {
+   "nx": 32,
+   "steps": 200,
+   "k": 0.19634954084936207,
+   "ux_rel_l2": 0.008123916137122657,
+   "rho_rel_l2": 0.11264267670549805,
+   "nu_rel_err": 0.003212552425540638
+  },
+  {
+   "nx": 64,
+   "steps": 800,
+   "k": 0.09817477042468103,
+   "ux_rel_l2": 0.0019194569784560188,
+   "rho_rel_l2": 0.028852906674679987,
+   "nu_rel_err": 0.0007844827157505452
+  },
+  {
+   "nx": 128,
+   "steps": 3200,
+   "k": 0.04908738521234052,
+   "ux_rel_l2": 0.00036731232464287135,
+   "rho_rel_l2": 0.020724164492342753,
+   "nu_rel_err": 0.00018001961179769932
+  }
+ ],
+ "controls": {
+  "nu_bias_25pct": {
+   "analytic_ux_or_uy_err": 0.47561882987367887,
+   "gate": "FAIL",
+   "cross_arm_ux_rel_l2": null
+  },
+  "mirror_x": {
+   "analytic_ux_or_uy_err": 0.7846823607182364,
+   "gate": "FAIL",
+   "cross_arm_ux_rel_l2": 0.7842689374824124
+  },
+  "flip_all": {
+   "analytic_ux_or_uy_err": 0.00191945697846134,
+   "gate": "PASS",
+   "cross_arm_ux_rel_l2": 0.00020219907964101483
+  }
+ },
+ "storage": {
+  "upstream_doubles_per_node": 17,
+  "torch_fused_doubles_per_node": 17,
+  "torch_single_doubles_per_node": 9,
+  "ab_doubles_per_node": 18,
+  "note": "structural (per-node doubles), not a bandwidth measurement"
+ },
+ "benchmark_judge": {
+  "table": "tensor_benchmark_cases",
+  "rows_for_anchor": 0,
+  "rows": [],
+  "total_registered_cases": "65",
+  "query_error": "",
+  "note": "board rule: the registered case row is the sole judge; 0 rows -> L4 not confirmable"
+ },
+ "integration": {
+  "grep_src_benchmarks_examples": "/root/tp-agent/work/m17839/src/tensorlbm/fused_push_pull.py:10:``xval/fused_push_pull_aa_pattern/ref/`` -- no line of the upstream method below",
+  "init_export_hits": "0",
+  "callers_outside_xval_and_tests": null
+ },
+ "external_anchor": {
+  "upstream_repo": "lbm-principles-practice/code (MIT, Krugers et al. 2016)",
+  "snapshot_files": {
+   "chapter13/gpu/LBM.cu": {
+    "sha256": "0c9854fa353b62415bda2ff29fef890ece9254617990d7f94a2313537d0feb0c",
+    "bytes": 13686,
+    "git_sha": "53ca66b7a5a3a7585356197469b9a6be3d55cc9b"
+   },
+   "chapter13/gpu/LBM.h": {
+    "sha256": "0bc95be600f9416e58b70455ef756dea2875a14077e4dcddd4addb24b2ec0920",
+    "bytes": 1747,
+    "git_sha": "185d149c02bd7d71a7fe5b51406bdd0bcc593469"
+   },
+   "chapter13/gpu/main.cu": {
+    "sha256": "ebbb847c12b4d52495bef359c44bf0a1d802a6b1c2047377dc8eed9e3e5af98e",
+    "bytes": 6622,
+    "git_sha": "021ad7bd91864e6ad1c28f8c6d782db35d4dc85f"
+   }
+  },
+  "snapshot_sha256_reverified": true,
+  "upstream_binary_executed": false,
+  "note": "the 'OSS' arm is a NumPy transliteration by the same author; the CUDA source was snapshotted and read, never compiled/executed (no GPU). Analytic TG is exact."
+ },
+ "tests": {
+  "file": "tests/test_fused_push_pull_xval.py",
+  "auditor_run": "12 passed in 6.21s"
+ }
+}
