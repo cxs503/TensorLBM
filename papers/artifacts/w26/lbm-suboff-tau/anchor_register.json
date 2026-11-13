@@ -1,0 +1,1777 @@
+{
+ "schema": "w26_suboff_cf_anchor_register/v1",
+ "mission": "m17569",
+ "mission_key": "paper-exp-lbm-suboff-tau-11",
+ "repo": "TensorLBM",
+ "discipline": "ship-total-performance / resistance",
+ "generated_by": "papers/artifacts/w26/lbm-suboff-tau/build_anchor_register.py",
+ "generated_utc": "2026-11-13T07:03:01+00:00",
+ "environment": {
+  "python": "3.11.6",
+  "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38"
+ },
+ "external_anchor_targets": {
+  "DTRC_SUBOFF_experiment": {
+   "citation_primary_report": "Groves, N.C., Huang, T.T., Chang, M.S. (1989). Geometric Characteristics of DARPA SUBOFF Models. DTRC/SHD-1298-01.",
+   "citation_data_summary_in_repo": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14 p.23.",
+   "offline_status": "原始报告离线不可得；本仓以二手逐字转录入库（grade PRIMARY_TABLE_SECOND_HAND），该限制在 external_transcriptions.json › offline_disclosure 中已声明"
+  },
+  "Ghia_1982_cavity": {
+   "citation": "Ghia, U., Ghia, K.N., Shin, C.T. (1982). J. Comput. Phys. 48:387-411.",
+   "used_for": "not used for the SUBOFF friction anchor; listed because the LBM solver family carries a separate Ghia cavity verification face"
+  }
+ },
+ "sources": {
+  "record": {
+   "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+   "sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c"
+  },
+  "anchor": {
+   "path": "benchmarks/verified/suboff_anchor/anchor.json",
+   "sha256": "61d7841a971926a57fa0ecaddb44b4d2dafe13e33d77f6736768b8b17f222e00"
+  },
+  "trans": {
+   "path": "benchmarks/verified/suboff_anchor/sources/external_transcriptions.json",
+   "sha256": "6ab739533a906364fe9b91d3de6944107fc034a13548eb0bf06f6cd8e616b334"
+  },
+  "refdata": {
+   "path": "src/tensorlbm/suboff_reference_data.py",
+   "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314"
+  },
+  "w22": {
+   "path": "benchmarks/verified/suboff_anchor_w22/ittc57_closure.json",
+   "sha256": "8e617715ca0e623b0420bc0a4ef4079df2bfbd6d48cade4792d6d61ae771925c"
+  }
+ },
+ "ittc1957_formula": {
+  "text": "Cf = 0.075 / (log10(Re) - 2)^2",
+  "coef": 0.075,
+  "shift": 2.0,
+  "source_path": "src/tensorlbm/suboff_reference_data.py",
+  "source_sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+  "source_line": 19,
+  "grade": "CONVENTION (implementation text, independently transcribed twice in-repo)",
+  "independent_transcription": {
+   "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "quote_pointer": "/sources/5/groups/0/quote"
+  }
+ },
+ "conventions": {
+  "rho_kg_m3": 1000.0,
+  "nu_m2_s": 1.139e-06,
+  "kn_to_ms": 0.514444,
+  "re_length": "Lmax",
+  "ct_definition": "C_T = R_T / (0.5 rho V^2 S)",
+  "pointer": "/assumptions",
+  "nu_provenance_note": "nu = 1.139e-6 m^2/s is a declared fresh-water 15 degC assumption in the frozen reference lock; the test water temperature is not recorded in-repo"
+ },
+ "geometry_verbatim": {
+  "pointer": "/S1_Table1_verbatim",
+  "values": {
+   "Lmax_m": 4.356,
+   "LPP_m": 4.261,
+   "Dmax_m": 0.508,
+   "displacement_m3": 0.708,
+   "WSA_m2": 5.998
+  },
+  "locator_in_source": "refs_lock.json › S1_Table1_verbatim (DTRC Table 1 hull geometry)",
+  "grade": "PRIMARY_TABLE_SECOND_HAND",
+  "readback_ok": true
+ },
+ "verbatim_anchor_rows": [
+  {
+   "anchor_id": "S1_AFF8_row1",
+   "config": "AFF-8 (axisymmetric hull + sail + stern cross-form appendages; the configuration is declared by the source itself, refs_lock.md line 9)",
+   "quantity": "R_T [N] at V [m/s]",
+   "pointer": "/locked_table_S1_verbatim/0",
+   "values": {
+    "V_ms": 3.05,
+    "RT_N": 102.3
+   },
+   "locator_in_source": "refs_lock.json › locked_table_S1_verbatim (DTRC Table 14 transcription)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "readback": {
+    "V_ms": true,
+    "RT_N": true
+   }
+  },
+  {
+   "anchor_id": "S1_AFF8_row2",
+   "config": "AFF-8 (axisymmetric hull + sail + stern cross-form appendages; the configuration is declared by the source itself, refs_lock.md line 9)",
+   "quantity": "R_T [N] at V [m/s]",
+   "pointer": "/locked_table_S1_verbatim/1",
+   "values": {
+    "V_ms": 5.144,
+    "RT_N": 283.8
+   },
+   "locator_in_source": "refs_lock.json › locked_table_S1_verbatim (DTRC Table 14 transcription)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "readback": {
+    "V_ms": true,
+    "RT_N": true
+   }
+  },
+  {
+   "anchor_id": "S1_AFF8_row3",
+   "config": "AFF-8 (axisymmetric hull + sail + stern cross-form appendages; the configuration is declared by the source itself, refs_lock.md line 9)",
+   "quantity": "R_T [N] at V [m/s]",
+   "pointer": "/locked_table_S1_verbatim/2",
+   "values": {
+    "V_ms": 6.1,
+    "RT_N": 389.2
+   },
+   "locator_in_source": "refs_lock.json › locked_table_S1_verbatim (DTRC Table 14 transcription)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "readback": {
+    "V_ms": true,
+    "RT_N": true
+   }
+  },
+  {
+   "anchor_id": "S1_AFF8_row4",
+   "config": "AFF-8 (axisymmetric hull + sail + stern cross-form appendages; the configuration is declared by the source itself, refs_lock.md line 9)",
+   "quantity": "R_T [N] at V [m/s]",
+   "pointer": "/locked_table_S1_verbatim/3",
+   "values": {
+    "V_ms": 7.16,
+    "RT_N": 526.6
+   },
+   "locator_in_source": "refs_lock.json › locked_table_S1_verbatim (DTRC Table 14 transcription)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "readback": {
+    "V_ms": true,
+    "RT_N": true
+   }
+  },
+  {
+   "anchor_id": "S1_AFF8_row5",
+   "config": "AFF-8 (axisymmetric hull + sail + stern cross-form appendages; the configuration is declared by the source itself, refs_lock.md line 9)",
+   "quantity": "R_T [N] at V [m/s]",
+   "pointer": "/locked_table_S1_verbatim/4",
+   "values": {
+    "V_ms": 8.23,
+    "RT_N": 675.6
+   },
+   "locator_in_source": "refs_lock.json › locked_table_S1_verbatim (DTRC Table 14 transcription)",
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "readback": {
+    "V_ms": true,
+    "RT_N": true
+   }
+  }
+ ],
+ "verbatim_quote_index": [
+  {
+   "pointer": "/sources/0/groups/0",
+   "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "A1"
+  },
+  {
+   "pointer": "/sources/0/groups/1",
+   "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "A2"
+  },
+  {
+   "pointer": "/sources/0/groups/2",
+   "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "A3"
+  },
+  {
+   "pointer": "/sources/0/groups/3",
+   "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "A4"
+  },
+  {
+   "pointer": "/sources/0/groups/4",
+   "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "A5"
+  },
+  {
+   "pointer": "/sources/0/groups/5",
+   "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "A6"
+  },
+  {
+   "pointer": "/sources/0/groups/6",
+   "quote": "SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "F1"
+  },
+  {
+   "pointer": "/sources/0/groups/7",
+   "quote": "SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "F2"
+  },
+  {
+   "pointer": "/sources/0/groups/8",
+   "quote": "SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "F3"
+  },
+  {
+   "pointer": "/sources/0/groups/9",
+   "quote": "SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "F4"
+  },
+  {
+   "pointer": "/sources/0/groups/10",
+   "quote": "SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "F5"
+  },
+  {
+   "pointer": "/sources/0/groups/11",
+   "quote": "SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1)",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "F6"
+  },
+  {
+   "pointer": "/sources/0/groups/12",
+   "quote": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, p.23",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "PRIMARY_TABLE_SECOND_HAND",
+   "locator": "Table 14, p.23",
+   "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "group_id": "CITE"
+  },
+  {
+   "pointer": "/sources/1/groups/0",
+   "quote": "| Length overall Lmax [m] | 4.356 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "L"
+  },
+  {
+   "pointer": "/sources/1/groups/1",
+   "quote": "| Maximum hull diameter Dmax [m] | 0.508 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "D"
+  },
+  {
+   "pointer": "/sources/1/groups/2",
+   "quote": "| Displacement volume [m3] | 0.708 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "VOL"
+  },
+  {
+   "pointer": "/sources/1/groups/3",
+   "quote": "| Wetted surface area WSA [m2] | 5.998 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "S"
+  },
+  {
+   "pointer": "/sources/1/groups/4",
+   "quote": "| 3.050 | 102.30 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "B1"
+  },
+  {
+   "pointer": "/sources/1/groups/5",
+   "quote": "| 5.144 | 283.80 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "B2"
+  },
+  {
+   "pointer": "/sources/1/groups/6",
+   "quote": "| 6.100 | 389.20 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "B3"
+  },
+  {
+   "pointer": "/sources/1/groups/7",
+   "quote": "| 7.160 | 526.60 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "B4"
+  },
+  {
+   "pointer": "/sources/1/groups/8",
+   "quote": "| 8.230 | 675.60 |",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "SECONDARY",
+   "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+   "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+   "group_id": "B5"
+  },
+  {
+   "pointer": "/sources/2/groups/0",
+   "quote": "| AFF-1 裸艇体 | 1.2×10⁷ | ≈0.0030–0.0032（常用 0.0031） | Roddy (1990) DTRC/SHD-1298-07 水筒实验；SIMMAN 2008 基准 [B] | [B] 精确值需核对原文 |",
+   "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "found": true,
+   "grade": "B_GRADE_UNVERIFIED",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3（含 [B] 级标注）/ 引用栏 #8",
+   "citation": "Roddy, R.F. (1990). Investigation of the Stability and Control Characteristics of Several Configurations of the DARPA SUBOFF Model (DTRC Model 5470). DTRC/SHD-1",
+   "group_id": "R-AFF1"
+  },
+  {
+   "pointer": "/sources/2/groups/1",
+   "quote": "| AFF-8 全附体 | 1.2×10⁷ | ≈0.0038–0.0042（常用 ~0.004） | 同上 [B] | [B] |",
+   "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "found": true,
+   "grade": "B_GRADE_UNVERIFIED",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3（含 [B] 级标注）/ 引用栏 #8",
+   "citation": "Roddy, R.F. (1990). Investigation of the Stability and Control Characteristics of Several Configurations of the DARPA SUBOFF Model (DTRC Model 5470). DTRC/SHD-1",
+   "group_id": "R-AFF8"
+  },
+  {
+   "pointer": "/sources/2/groups/2",
+   "quote": "S(AFF-8) ≈ 6.35 m²（精确值以 Groves et al. 1989 几何报告为准）。",
+   "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "found": true,
+   "grade": "B_GRADE_UNVERIFIED",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3（含 [B] 级标注）/ 引用栏 #8",
+   "citation": "Roddy, R.F. (1990). Investigation of the Stability and Control Characteristics of Several Configurations of the DARPA SUBOFF Model (DTRC Model 5470). DTRC/SHD-1",
+   "group_id": "S-AFF8"
+  },
+  {
+   "pointer": "/sources/2/groups/3",
+   "quote": "自洽性检查 [B]：Cf_ITTC(1.2×10⁷)=0.00291，裸艇体 CT≈0.0031 ⇒ 形状因子 (1+k)≈1.06，",
+   "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "found": true,
+   "grade": "B_GRADE_UNVERIFIED",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3（含 [B] 级标注）/ 引用栏 #8",
+   "citation": "Roddy, R.F. (1990). Investigation of the Stability and Control Characteristics of Several Configurations of the DARPA SUBOFF Model (DTRC Model 5470). DTRC/SHD-1",
+   "group_id": "SELFCHECK"
+  },
+  {
+   "pointer": "/sources/3/groups/0",
+   "quote": "CT = RT / (0.5 · ρ · V² · S)",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md 『派生锁定量表』约定段",
+   "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+   "group_id": "CTDEF"
+  },
+  {
+   "pointer": "/sources/3/groups/1",
+   "quote": "ρ=1000 kg/m³（淡水，密度带 997–1000 →",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md 『派生锁定量表』约定段",
+   "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+   "group_id": "RHO"
+  },
+  {
+   "pointer": "/sources/3/groups/2",
+   "quote": "S = 5.998 m²（S1 Table 1）",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md 『派生锁定量表』约定段",
+   "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+   "group_id": "SWET"
+  },
+  {
+   "pointer": "/sources/3/groups/3",
+   "quote": "- Re = Lmax · V / ν，ν=1.139e-6 m²/s（淡水 15 °C 声明假设）",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md 『派生锁定量表』约定段",
+   "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+   "group_id": "NU"
+  },
+  {
+   "pointer": "/sources/3/groups/4",
+   "quote": "1 kn = 0.514444 m/s",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md 『派生锁定量表』约定段",
+   "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+   "group_id": "KNOT"
+  },
+  {
+   "pointer": "/sources/3/groups/5",
+   "quote": "0.31576·L² ⇒ 物理等效 5.9933 m²，与 5.998 差 **0.08%**",
+   "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "refs_lock.md 『派生锁定量表』约定段",
+   "citation": "仓内 SDK 冻结参考锁 suboff_highre_20261010（refs_lock.md，冻结日期 2026-10-10）所声明的无量纲化口径。",
+   "group_id": "SCAD"
+  },
+  {
+   "pointer": "/sources/4/groups/0",
+   "quote": "``Cf = 0.075 / (log10(Re) - 2)^2``",
+   "archived_at": "src/tensorlbm/suboff_reference_data.py",
+   "found": true,
+   "grade": "CONVENTION",
+   "locator": "src/tensorlbm/suboff_reference_data.py: compute_ittc1957_cf docstring；docs/sphere_suboff_highre_reference_data_zh.md 表 3 ITTC 行",
+   "citation": "ITTC 摩擦线 C_F = 0.075/(log10 Rn − 2)²（ITTC-1957 模型-实船相关线；ITTC-1978 性能预报方法采用同一摩擦线）。公式文本取自仓内两处独立转录。",
+   "group_id": "CF"
+  },
+  {
+   "pointer": "/sources/5/groups/0",
+   "quote": "| ITTC-1957 Cf（仅摩擦，供对照） | 1.2×10⁷ | 0.00291 ±5% | ITTC 1957 模型-实船相关线 [A]（公式 Cf=0.075/(lgRe−2)²） | [A] |",
+   "archived_at": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "found": true,
+   "grade": "A_WITHIN_REPO_DOC",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3, ITTC-1957 行",
+   "citation": "同一 ITTC 摩擦线的第二处独立转录（含已知值 Cf(1.2e7)=0.00291），用于交叉核对公式实现。",
+   "group_id": "KNOWN"
+  }
+ ],
+ "cf_field_scan": [
+  {
+   "pointer": "/sources/2/groups/3",
+   "field": "cf",
+   "quantity": null,
+   "grade": "B_GRADE_UNVERIFIED",
+   "quote": "自洽性检查 [B]：Cf_ITTC(1.2×10⁷)=0.00291，裸艇体 CT≈0.0031 ⇒ 形状因子 (1+k)≈1.06，",
+   "citation": "Roddy, R.F. (1990). Investigation of the Stability and Control Characteristics of Several Configurations of the DARPA SUBOFF Model (DTRC Model 5470). DTRC/SHD-1298-07.  — 数值以其仓内转录件为准（该转录件自带 [B] 级标注与『精",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3（含 [B] 级标注）/ 引用栏 #8",
+   "reading": "ITTC-57 self-consistency line, 2-3 significant digits, grade [B]"
+  },
+  {
+   "pointer": "/sources/5/groups/0",
+   "field": "cf",
+   "quantity": null,
+   "grade": "A_WITHIN_REPO_DOC",
+   "quote": "| ITTC-1957 Cf（仅摩擦，供对照） | 1.2×10⁷ | 0.00291 ±5% | ITTC 1957 模型-实船相关线 [A]（公式 Cf=0.075/(lgRe−2)²） | [A] |",
+   "citation": "同一 ITTC 摩擦线的第二处独立转录（含已知值 Cf(1.2e7)=0.00291），用于交叉核对公式实现。",
+   "locator": "docs/sphere_suboff_highre_reference_data_zh.md 表 3, ITTC-1957 行",
+   "reading": "ITTC-57 correlation value at Re=1.2e7 given as a known-answer check, grade [A], rounded"
+  }
+ ],
+ "anchor_rows_derived": [
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A1",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 5.92,
+    "unit": "kn",
+    "V_ms": 3.04550848,
+    "RT_N": 87.4,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 11647265.09120281,
+   "Re_recorded": 11647265.0912,
+   "Re_rel_dev": 2.4132116064853204e-13,
+   "CT_from_verbatim": 0.0031420662705313055,
+   "CT_recorded": 0.00314206627053,
+   "CT_rel_dev": 4.1545254086966074e-13,
+   "U_mps_recorded": 3.04550848,
+   "U_mps_recomputed": 3.04550848,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.00292208264136114,
+   "one_plus_k_recorded": 1.07528316484,
+   "one_plus_k_identity_abs_residual": 1.503019930737537e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A2",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 10.0,
+    "unit": "kn",
+    "V_ms": 5.14444,
+    "RT_N": 242.2,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 19674434.275680423,
+   "Re_recorded": 19674434.2757,
+   "Re_rel_dev": -9.950172007027555e-13,
+   "CT_from_verbatim": 0.0030515568154928377,
+   "CT_recorded": 0.00305155681549,
+   "CT_rel_dev": 9.298774682566159e-13,
+   "U_mps_recorded": 5.14444,
+   "U_mps_recomputed": 5.14444,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026761436818346076,
+   "one_plus_k_recorded": 1.14028138183,
+   "one_plus_k_identity_abs_residual": 1.0225154056797692e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A3",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 11.84,
+    "unit": "kn",
+    "V_ms": 6.09101696,
+    "RT_N": 332.9,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 23294530.18240562,
+   "Re_recorded": 23294530.1824,
+   "Re_rel_dev": 2.4132116064853204e-13,
+   "CT_from_verbatim": 0.002991973287928694,
+   "CT_recorded": 0.00299197328793,
+   "CT_rel_dev": -4.36438754921161e-13,
+   "U_mps_recorded": 6.09101696,
+   "U_mps_recomputed": 6.09101696,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026034963544291252,
+   "one_plus_k_recorded": 1.14921355002,
+   "one_plus_k_identity_abs_residual": 3.3142377731110173e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A4",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 13.92,
+    "unit": "kn",
+    "V_ms": 7.16106048,
+    "RT_N": 451.5,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 27386812.511747144,
+   "Re_recorded": 27386812.5117,
+   "Re_rel_dev": 1.7213959713966417e-12,
+   "CT_from_verbatim": 0.0029358009426130047,
+   "CT_recorded": 0.00293580094261,
+   "CT_rel_dev": 1.0234144341273757e-12,
+   "U_mps_recorded": 7.16106048,
+   "U_mps_recomputed": 7.16106048,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002536623993604796,
+   "one_plus_k_recorded": 1.15736543927,
+   "one_plus_k_identity_abs_residual": 2.241318242113266e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A5",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 16.0,
+    "unit": "kn",
+    "V_ms": 8.231104,
+    "RT_N": 576.9,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 31479094.841088675,
+   "Re_recorded": 31479094.8411,
+   "Re_rel_dev": -3.5975883564917915e-13,
+   "CT_from_verbatim": 0.002839277854784621,
+   "CT_recorded": 0.00283927785478,
+   "CT_rel_dev": 1.627480611435708e-12,
+   "U_mps_recorded": 8.231104,
+   "U_mps_recomputed": 8.231104,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002481122913231741,
+   "one_plus_k_recorded": 1.14435195437,
+   "one_plus_k_identity_abs_residual": 2.7964297544258443e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A6",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 17.99,
+    "unit": "kn",
+    "V_ms": 9.25484756,
+    "RT_N": 697.0,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 35394307.26194908,
+   "Re_recorded": 35394307.2619,
+   "Re_rel_dev": 1.3865781869607569e-12,
+   "CT_from_verbatim": 0.0027134246929704847,
+   "CT_recorded": 0.00271342469297,
+   "CT_rel_dev": 1.786875503829869e-13,
+   "U_mps_recorded": 9.25484756,
+   "U_mps_recomputed": 9.25484756,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002435803421370228,
+   "one_plus_k_recorded": 1.11397523674,
+   "one_plus_k_identity_abs_residual": 1.127986593019159e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B1",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 3.05,
+    "unit": "m/s",
+    "V_ms": 3.05,
+    "RT_N": 102.3,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 11664442.493415276,
+   "Re_recorded": 11664442.4934,
+   "Re_rel_dev": 1.3095827663847907e-12,
+   "CT_from_verbatim": 0.0036669035696661055,
+   "CT_recorded": 0.00366690356967,
+   "CT_rel_dev": -1.062055254405943e-12,
+   "U_mps_recorded": 3.05,
+   "U_mps_recomputed": 3.05,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002921344476109731,
+   "one_plus_k_recorded": 1.25521094813,
+   "one_plus_k_identity_abs_residual": 8.117950756059145e-13
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B2",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 5.144,
+    "unit": "m/s",
+    "V_ms": 5.144,
+    "RT_N": 283.8,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 19672751.53643547,
+   "Re_recorded": 19672751.5364,
+   "Re_rel_dev": 1.8029246628784705e-12,
+   "CT_from_verbatim": 0.0035763005174137756,
+   "CT_recorded": 0.00357630051741,
+   "CT_rel_dev": 1.0557350052332499e-12,
+   "U_mps_recorded": 5.144,
+   "U_mps_recomputed": 5.144,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026761812383707256,
+   "one_plus_k_recorded": 1.33634466386,
+   "one_plus_k_identity_abs_residual": 2.9880542484761463e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B3",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 6.1,
+    "unit": "m/s",
+    "V_ms": 6.1,
+    "RT_N": 389.2,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 23328884.98683055,
+   "Re_recorded": 23328884.9868,
+   "Re_rel_dev": 1.3095827663847907e-12,
+   "CT_from_verbatim": 0.003487680521295328,
+   "CT_recorded": 0.0034876805213,
+   "CT_rel_dev": -1.3395848539283853e-12,
+   "U_mps_recorded": 6.1,
+   "U_mps_recomputed": 6.1,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026028755498213704,
+   "one_plus_k_recorded": 1.33993364436,
+   "one_plus_k_identity_abs_residual": 5.4356519285647664e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B4",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 7.16,
+    "unit": "m/s",
+    "V_ms": 7.16,
+    "RT_N": 526.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 27382756.80421422,
+   "Re_recorded": 27382756.8042,
+   "Re_rel_dev": 5.192842039574383e-13,
+   "CT_from_verbatim": 0.0034251401320700733,
+   "CT_recorded": 0.00342514013207,
+   "CT_rel_dev": 2.139826810990232e-14,
+   "U_mps_recorded": 7.16,
+   "U_mps_recomputed": 7.16,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002536684004875832,
+   "one_plus_k_recorded": 1.35024312271,
+   "one_plus_k_identity_abs_residual": 3.027578188152802e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B5",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 8.23,
+    "unit": "m/s",
+    "V_ms": 8.23,
+    "RT_N": 675.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 31474872.695346795,
+   "Re_recorded": 31474872.6953,
+   "Re_rel_dev": 1.4866897760627811e-12,
+   "CT_from_verbatim": 0.0033259330649836705,
+   "CT_recorded": 0.00332593306498,
+   "CT_rel_dev": 1.1035222665613086e-12,
+   "U_mps_recorded": 8.23,
+   "U_mps_recomputed": 8.23,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0024811754911162063,
+   "one_plus_k_recorded": 1.34046667674,
+   "one_plus_k_identity_abs_residual": 4.176881063244764e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F1",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 5.93,
+    "unit": "kn",
+    "V_ms": 3.05065292,
+    "RT_N": 102.3,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 11666939.52547849,
+   "Re_recorded": 11666939.5255,
+   "Re_rel_dev": -1.843656267893209e-12,
+   "CT_from_verbatim": 0.0036653341099267284,
+   "CT_recorded": 0.00366533410993,
+   "CT_rel_dev": -8.926030690704866e-13,
+   "U_mps_recorded": 3.05065292,
+   "U_mps_recomputed": 3.05065292,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002921237284811417,
+   "one_plus_k_recorded": 1.25471974803,
+   "one_plus_k_identity_abs_residual": 9.052758542793526e-13
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F2",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 10.0,
+    "unit": "kn",
+    "V_ms": 5.14444,
+    "RT_N": 283.8,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 19674434.275680423,
+   "Re_recorded": 19674434.2757,
+   "Re_rel_dev": -9.950172007027555e-13,
+   "CT_from_verbatim": 0.0035756887871051506,
+   "CT_recorded": 0.00357568878711,
+   "CT_rel_dev": -1.356219672857111e-12,
+   "U_mps_recorded": 5.14444,
+   "U_mps_recomputed": 5.14444,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026761436818346076,
+   "one_plus_k_recorded": 1.33613483139,
+   "one_plus_k_identity_abs_residual": 4.730216218717942e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F3",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 11.85,
+    "unit": "kn",
+    "V_ms": 6.0961614,
+    "RT_N": 389.2,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 23314204.616681296,
+   "Re_recorded": 23314204.6167,
+   "Re_rel_dev": -8.022869703725203e-13,
+   "CT_from_verbatim": 0.0034920741141005783,
+   "CT_recorded": 0.0034920741141,
+   "CT_rel_dev": 1.6566953058135988e-13,
+   "U_mps_recorded": 6.0961614,
+   "U_mps_recomputed": 6.0961614,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026031406906839756,
+   "one_plus_k_recorded": 1.34148497106,
+   "one_plus_k_identity_abs_residual": 7.562839243746566e-13
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F4",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 13.92,
+    "unit": "kn",
+    "V_ms": 7.16106048,
+    "RT_N": 526.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 27386812.511747144,
+   "Re_recorded": 27386812.5117,
+   "Re_rel_dev": 1.7213959713966417e-12,
+   "CT_from_verbatim": 0.0034241257505648022,
+   "CT_recorded": 0.00342412575056,
+   "CT_rel_dev": 1.4024450654557376e-12,
+   "U_mps_recorded": 7.16106048,
+   "U_mps_recomputed": 7.16106048,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002536623993604796,
+   "one_plus_k_recorded": 1.34987517235,
+   "one_plus_k_identity_abs_residual": 4.75219863460552e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F5",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 16.0,
+    "unit": "kn",
+    "V_ms": 8.231104,
+    "RT_N": 675.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 31479094.841088675,
+   "Re_recorded": 31479094.8411,
+   "Re_rel_dev": -3.5975883564917915e-13,
+   "CT_from_verbatim": 0.003325040940704611,
+   "CT_recorded": 0.0033250409407,
+   "CT_rel_dev": 1.3867182634375775e-12,
+   "U_mps_recorded": 8.231104,
+   "U_mps_recomputed": 8.231104,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002481122913231741,
+   "one_plus_k_recorded": 1.34013551806,
+   "one_plus_k_identity_abs_residual": 3.2152058793144533e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F6",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 17.79,
+    "unit": "kn",
+    "V_ms": 9.15195876,
+    "RT_N": 821.1,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 35000818.57643546,
+   "Re_recorded": 35000818.5764,
+   "Re_rel_dev": 1.013255263271764e-12,
+   "CT_from_verbatim": 0.003268823544760332,
+   "CT_recorded": 0.00326882354476,
+   "CT_rel_dev": 1.0162663756570224e-13,
+   "U_mps_recorded": 9.15195876,
+   "U_mps_recomputed": 9.15195876,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0024400715893025055,
+   "one_plus_k_recorded": 1.33964247569,
+   "one_plus_k_identity_abs_residual": 3.817390847871138e-12
+  }
+ ],
+ "anchor_rows_full_precision": [
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A1",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/0",
+   "verbatim_inputs": {
+    "speed_transcribed": 5.92,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 87.4
+   },
+   "recorded": {
+    "Re": 11647265.0912,
+    "CT": 0.00314206627053,
+    "CF_ittc78": 0.00292208264136,
+    "one_plus_k": 1.07528316484,
+    "U_mps": 3.04550848
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A2",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/1",
+   "verbatim_inputs": {
+    "speed_transcribed": 10.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 242.2
+   },
+   "recorded": {
+    "Re": 19674434.2757,
+    "CT": 0.00305155681549,
+    "CF_ittc78": 0.00267614368183,
+    "one_plus_k": 1.14028138183,
+    "U_mps": 5.14444
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A3",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/2",
+   "verbatim_inputs": {
+    "speed_transcribed": 11.84,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 332.9
+   },
+   "recorded": {
+    "Re": 23294530.1824,
+    "CT": 0.00299197328793,
+    "CF_ittc78": 0.00260349635443,
+    "one_plus_k": 1.14921355002,
+    "U_mps": 6.09101696
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A4",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/3",
+   "verbatim_inputs": {
+    "speed_transcribed": 13.92,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 451.5
+   },
+   "recorded": {
+    "Re": 27386812.5117,
+    "CT": 0.00293580094261,
+    "CF_ittc78": 0.0025366239936,
+    "one_plus_k": 1.15736543927,
+    "U_mps": 7.16106048
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A5",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/4",
+   "verbatim_inputs": {
+    "speed_transcribed": 16.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 576.9
+   },
+   "recorded": {
+    "Re": 31479094.8411,
+    "CT": 0.00283927785478,
+    "CF_ittc78": 0.00248112291323,
+    "one_plus_k": 1.14435195437,
+    "U_mps": 8.231104
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A6",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/5",
+   "verbatim_inputs": {
+    "speed_transcribed": 17.99,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 697.0
+   },
+   "recorded": {
+    "Re": 35394307.2619,
+    "CT": 0.00271342469297,
+    "CF_ittc78": 0.00243580342137,
+    "one_plus_k": 1.11397523674,
+    "U_mps": 9.25484756
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B1",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/0",
+   "verbatim_inputs": {
+    "speed_transcribed": 3.05,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 102.3
+   },
+   "recorded": {
+    "Re": 11664442.4934,
+    "CT": 0.00366690356967,
+    "CF_ittc78": 0.00292134447611,
+    "one_plus_k": 1.25521094813,
+    "U_mps": 3.05
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 3.050 | 102.30 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B2",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/1",
+   "verbatim_inputs": {
+    "speed_transcribed": 5.144,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 283.8
+   },
+   "recorded": {
+    "Re": 19672751.5364,
+    "CT": 0.00357630051741,
+    "CF_ittc78": 0.00267618123837,
+    "one_plus_k": 1.33634466386,
+    "U_mps": 5.144
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 5.144 | 283.80 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B3",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/2",
+   "verbatim_inputs": {
+    "speed_transcribed": 6.1,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 389.2
+   },
+   "recorded": {
+    "Re": 23328884.9868,
+    "CT": 0.0034876805213,
+    "CF_ittc78": 0.00260287554982,
+    "one_plus_k": 1.33993364436,
+    "U_mps": 6.1
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 6.100 | 389.20 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B4",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/3",
+   "verbatim_inputs": {
+    "speed_transcribed": 7.16,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 526.6
+   },
+   "recorded": {
+    "Re": 27382756.8042,
+    "CT": 0.00342514013207,
+    "CF_ittc78": 0.00253668400488,
+    "one_plus_k": 1.35024312271,
+    "U_mps": 7.16
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 7.160 | 526.60 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B5",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/4",
+   "verbatim_inputs": {
+    "speed_transcribed": 8.23,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 675.6
+   },
+   "recorded": {
+    "Re": 31474872.6953,
+    "CT": 0.00332593306498,
+    "CF_ittc78": 0.00248117549112,
+    "one_plus_k": 1.34046667674,
+    "U_mps": 8.23
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 8.230 | 675.60 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F1",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/0",
+   "verbatim_inputs": {
+    "speed_transcribed": 5.93,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 102.3
+   },
+   "recorded": {
+    "Re": 11666939.5255,
+    "CT": 0.00366533410993,
+    "CF_ittc78": 0.00292123728481,
+    "one_plus_k": 1.25471974803,
+    "U_mps": 3.05065292
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F2",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/1",
+   "verbatim_inputs": {
+    "speed_transcribed": 10.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 283.8
+   },
+   "recorded": {
+    "Re": 19674434.2757,
+    "CT": 0.00357568878711,
+    "CF_ittc78": 0.00267614368183,
+    "one_plus_k": 1.33613483139,
+    "U_mps": 5.14444
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F3",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/2",
+   "verbatim_inputs": {
+    "speed_transcribed": 11.85,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 389.2
+   },
+   "recorded": {
+    "Re": 23314204.6167,
+    "CT": 0.0034920741141,
+    "CF_ittc78": 0.00260314069068,
+    "one_plus_k": 1.34148497106,
+    "U_mps": 6.0961614
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F4",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/3",
+   "verbatim_inputs": {
+    "speed_transcribed": 13.92,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 526.6
+   },
+   "recorded": {
+    "Re": 27386812.5117,
+    "CT": 0.00342412575056,
+    "CF_ittc78": 0.0025366239936,
+    "one_plus_k": 1.34987517235,
+    "U_mps": 7.16106048
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F5",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/4",
+   "verbatim_inputs": {
+    "speed_transcribed": 16.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 675.6
+   },
+   "recorded": {
+    "Re": 31479094.8411,
+    "CT": 0.0033250409407,
+    "CF_ittc78": 0.00248112291323,
+    "one_plus_k": 1.34013551806,
+    "U_mps": 8.231104
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F6",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/5",
+   "verbatim_inputs": {
+    "speed_transcribed": 17.79,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 821.1
+   },
+   "recorded": {
+    "Re": 35000818.5764,
+    "CT": 0.00326882354476,
+    "CF_ittc78": 0.0024400715893,
+    "one_plus_k": 1.33964247569,
+    "U_mps": 9.15195876
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  }
+ ],
+ "anchor_full_precision_reconstruct": {
+  "anchor_id": "A_AFF1_bare_DTRC_T14:A1",
+  "verbatim": {
+   "V_transcribed_kn": 5.92,
+   "V_ms": 3.04550848,
+   "RT_N": 87.4,
+   "Re_recorded": 11647265.0912,
+   "CT_recorded": 0.00314206627053,
+   "CF_ittc78_recorded": 0.00292208264136,
+   "one_plus_k_recorded": 1.07528316484
+  },
+  "recomputed": {
+   "Re": 11647265.09120281,
+   "CT": 0.0031420662705313055,
+   "CF_ittc57": 0.00292208264136114
+  },
+  "rel_dev": {
+   "Re": 2.4132116064853204e-13,
+   "CT": 4.1545254086966074e-13,
+   "CF_ittc57": 3.900345964159026e-13
+  },
+  "one_plus_k_status": "the recorded (1+k) is identically CT/CF_ITTC57 at the same Re (0.00314206627053 / 0.00292208264136 = 1.075283164841503) -> definitional, therefore NOT independent evidence for an experimental C_F",
+  "source_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+  "source_locator": "Table 14, p.23",
+  "source_citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+  "source_grade": "PRIMARY_TABLE_SECOND_HAND",
+  "one_plus_k_identity_abs_residual": 1.503019930737537e-12
+ },
+ "configuration_ratio_audit": {
+  "question": "do the verbatim AFF-1 and AFF-8 forces imply the same configuration ratio as the recorded C_T columns?",
+  "n_pairs": 3,
+  "rows": [
+   {
+    "speed_transcribed": 10.0,
+    "unit": "kn",
+    "RT_aff1": 242.2,
+    "RT_aff8": 283.8,
+    "measured_ratio_RT": 1.1717588769611893,
+    "recorded_ratio_CT": 1.171758876963868,
+    "rel_dev": 2.286089882896874e-12,
+    "aff1_row": "A_AFF1_bare_DTRC_T14:A2",
+    "aff8_row": "A2_AFF8_full_DTRC_T14:F2"
+   },
+   {
+    "speed_transcribed": 13.92,
+    "unit": "kn",
+    "RT_aff1": 451.5,
+    "RT_aff8": 526.6,
+    "measured_ratio_RT": 1.1663344407530454,
+    "recorded_ratio_CT": 1.1663344407526033,
+    "rel_dev": -3.7904291681578126e-13,
+    "aff1_row": "A_AFF1_bare_DTRC_T14:A4",
+    "aff8_row": "A2_AFF8_full_DTRC_T14:F4"
+   },
+   {
+    "speed_transcribed": 16.0,
+    "unit": "kn",
+    "RT_aff1": 576.9,
+    "RT_aff8": 675.6,
+    "measured_ratio_RT": 1.171086843473739,
+    "recorded_ratio_CT": 1.171086843474021,
+    "rel_dev": 2.407990917379932e-13,
+    "aff1_row": "A_AFF1_bare_DTRC_T14:A5",
+    "aff8_row": "A2_AFF8_full_DTRC_T14:F5"
+   }
+  ],
+  "max_abs_rel_dev": 2.286089882896874e-12,
+  "note": "DEFINITIONAL IDENTITY, not physics: both configurations are normalised with the same rho, V and bare-hull S = 5.998 m2, so C_T(AFF-8)/C_T(AFF-1) = R_T(AFF-8)/R_T(AFF-1) exactly. Passing this audit certifies transcription fidelity (the R_T and C_T columns agree), not an independent measurement",
+  "evidential": false
+ },
+ "ittc57_recompute_check": {
+  "tolerance_abs": 1e-09,
+  "rows": [
+   {
+    "anchor_id": "A_AFF1_bare_DTRC_T14:A1",
+    "Re": 11647265.0912,
+    "CF_recorded": 0.00292208264136,
+    "CF_recomputed": 0.002922082641361261,
+    "abs_residual": 1.2607102861661446e-15,
+    "rel_residual": 4.314423789121114e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A_AFF1_bare_DTRC_T14/rows/0/CF_ittc78"
+   },
+   {
+    "anchor_id": "A_AFF1_bare_DTRC_T14:A2",
+    "Re": 19674434.2757,
+    "CF_recorded": 0.00267614368183,
+    "CF_recomputed": 0.00267614368183417,
+    "abs_residual": 4.16984155537925e-15,
+    "rel_residual": 1.5581530930834885e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A_AFF1_bare_DTRC_T14/rows/1/CF_ittc78"
+   },
+   {
+    "anchor_id": "A_AFF1_bare_DTRC_T14:A3",
+    "Re": 23294530.1824,
+    "CF_recorded": 0.00260349635443,
+    "CF_recomputed": 0.002603496354429227,
+    "abs_residual": 7.728193085476676e-16,
+    "rel_residual": 2.968390208162461e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A_AFF1_bare_DTRC_T14/rows/2/CF_ittc78"
+   },
+   {
+    "anchor_id": "A_AFF1_bare_DTRC_T14:A4",
+    "Re": 27386812.5117,
+    "CF_recorded": 0.0025366239936,
+    "CF_recomputed": 0.002536623993605493,
+    "abs_residual": 5.49300188668056e-15,
+    "rel_residual": 2.1654773827495186e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A_AFF1_bare_DTRC_T14/rows/3/CF_ittc78"
+   },
+   {
+    "anchor_id": "A_AFF1_bare_DTRC_T14:A5",
+    "Re": 31479094.8411,
+    "CF_recorded": 0.00248112291323,
+    "CF_recomputed": 0.0024811229132316,
+    "abs_residual": 1.5998487257196103e-15,
+    "rel_residual": 6.44808331416713e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A_AFF1_bare_DTRC_T14/rows/4/CF_ittc78"
+   },
+   {
+    "anchor_id": "A_AFF1_bare_DTRC_T14:A6",
+    "Re": 35394307.2619,
+    "CF_recorded": 0.00243580342137,
+    "CF_recomputed": 0.0024358034213707567,
+    "abs_residual": 7.567731163948821e-16,
+    "rel_residual": 3.1068727047326364e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A_AFF1_bare_DTRC_T14/rows/5/CF_ittc78"
+   },
+   {
+    "anchor_id": "B_AFF8_full_CFDletters_T3:B1",
+    "Re": 11664442.4934,
+    "CF_recorded": 0.00292134447611,
+    "CF_recomputed": 0.002921344476110386,
+    "abs_residual": 3.859759734048396e-16,
+    "rel_residual": 1.3212271834467017e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/B_AFF8_full_CFDletters_T3/rows/0/CF_ittc78"
+   },
+   {
+    "anchor_id": "B_AFF8_full_CFDletters_T3:B2",
+    "Re": 19672751.5364,
+    "CF_recorded": 0.00267618123837,
+    "CF_recomputed": 0.0026761812383715167,
+    "abs_residual": 1.5165819988727236e-15,
+    "rel_residual": 5.666962973690222e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/B_AFF8_full_CFDletters_T3/rows/1/CF_ittc78"
+   },
+   {
+    "anchor_id": "B_AFF8_full_CFDletters_T3:B3",
+    "Re": 23328884.9868,
+    "CF_recorded": 0.00260287554982,
+    "CF_recomputed": 0.0026028755498219217,
+    "abs_residual": 1.921639930513308e-15,
+    "rel_residual": 7.382757622223612e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/B_AFF8_full_CFDletters_T3/rows/2/CF_ittc78"
+   },
+   {
+    "anchor_id": "B_AFF8_full_CFDletters_T3:B4",
+    "Re": 27382756.8042,
+    "CF_recorded": 0.00253668400488,
+    "CF_recomputed": 0.0025366840048760427,
+    "abs_residual": 3.957337929572091e-15,
+    "rel_residual": 1.5600437113803208e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/B_AFF8_full_CFDletters_T3/rows/3/CF_ittc78"
+   },
+   {
+    "anchor_id": "B_AFF8_full_CFDletters_T3:B5",
+    "Re": 31474872.6953,
+    "CF_recorded": 0.00248117549112,
+    "CF_recomputed": 0.00248117549111679,
+    "abs_residual": 3.2101057922950815e-15,
+    "rel_residual": 1.2937842582211076e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/B_AFF8_full_CFDletters_T3/rows/4/CF_ittc78"
+   },
+   {
+    "anchor_id": "A2_AFF8_full_DTRC_T14:F1",
+    "Re": 11666939.5255,
+    "CF_recorded": 0.00292123728481,
+    "CF_recomputed": 0.0029212372848104943,
+    "abs_residual": 4.9439619065339e-16,
+    "rel_residual": 1.6924205138150768e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A2_AFF8_full_DTRC_T14/rows/0/CF_ittc78"
+   },
+   {
+    "anchor_id": "A2_AFF8_full_DTRC_T14:F2",
+    "Re": 19674434.2757,
+    "CF_recorded": 0.00267614368183,
+    "CF_recomputed": 0.00267614368183417,
+    "abs_residual": 4.16984155537925e-15,
+    "rel_residual": 1.5581530930834885e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A2_AFF8_full_DTRC_T14/rows/1/CF_ittc78"
+   },
+   {
+    "anchor_id": "A2_AFF8_full_DTRC_T14:F3",
+    "Re": 23314204.6167,
+    "CF_recorded": 0.00260314069068,
+    "CF_recomputed": 0.0026031406906836378,
+    "abs_residual": 3.6377151291233645e-15,
+    "rel_residual": 1.3974331630047664e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A2_AFF8_full_DTRC_T14/rows/2/CF_ittc78"
+   },
+   {
+    "anchor_id": "A2_AFF8_full_DTRC_T14:F4",
+    "Re": 27386812.5117,
+    "CF_recorded": 0.0025366239936,
+    "CF_recomputed": 0.002536623993605493,
+    "abs_residual": 5.49300188668056e-15,
+    "rel_residual": 2.1654773827495186e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A2_AFF8_full_DTRC_T14/rows/3/CF_ittc78"
+   },
+   {
+    "anchor_id": "A2_AFF8_full_DTRC_T14:F5",
+    "Re": 31479094.8411,
+    "CF_recorded": 0.00248112291323,
+    "CF_recomputed": 0.0024811229132316,
+    "abs_residual": 1.5998487257196103e-15,
+    "rel_residual": 6.44808331416713e-13,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A2_AFF8_full_DTRC_T14/rows/4/CF_ittc78"
+   },
+   {
+    "anchor_id": "A2_AFF8_full_DTRC_T14:F6",
+    "Re": 35000818.5764,
+    "CF_recorded": 0.0024400715893,
+    "CF_recomputed": 0.0024400715893028936,
+    "abs_residual": 2.8935187579293142e-15,
+    "rel_residual": 1.1858335512030603e-12,
+    "pass_abs_1e9": true,
+    "recorded_pointer": "benchmarks/verified/suboff_anchor/anchor.json › /anchors/A2_AFF8_full_DTRC_T14/rows/5/CF_ittc78"
+   }
+  ],
+  "max_abs_residual": 5.49300188668056e-15,
+  "pass": true,
+  "n_rows": 17,
+  "n_pass": 17,
+  "doc_rounded_crosscheck": {
+   "Re": 12000000.0,
+   "CF_doc_verbatim": 0.00291,
+   "CF_recomputed": 0.002907192853386463,
+   "rel_dev": -0.0009646551936552987,
+   "reading": "2-significant-digit transcription; deviation must be read as rounding, not as a 1e-9-class residual",
+   "doc_pointer": "external_transcriptions.json › sources/5/groups/0/quote"
+  }
+ },
+ "case_vs_anchor_caliber": {
+  "case_Re_lattice": 1000.0,
+  "case_Re_note": "the frozen TensorLBM SUBOFF case fixes the lattice Reynolds number u_lb*N/nu_lb = 1000 (u_lb = 0.05, tau = 0.5072 at N = 48); this is the only Reynolds number the case can substantiate",
+  "anchor_Re": 11647265.0912,
+  "re_ratio": 11647.265091199999,
+  "CF_ittc57_at_case_Re": 0.075,
+  "CF_ittc57_at_anchor_Re": 0.002922082641361261,
+  "caliber_reading": "ITTC-57 evaluated at Re=1e3 returns 0.075, i.e. the correlation is carried far outside its fitted range (the line has a pole at Re=100 and is a turbulent flat-plate correlation); it cannot be used as the friction anchor of a Re=1e3 laminar LBM case. This is the structural root cause of the five predecessor honest FAILs.",
+  "documented_predecessor_measurement": {
+   "path": "benchmarks/verified/suboff_anchor_w22/ittc57_closure.json",
+   "sha256": "8e617715ca0e623b0420bc0a4ef4079df2bfbd6d48cade4792d6d61ae771925c",
+   "max_abs_residual_pct_caliber_A": 144.07554508067165
+  }
+ },
+ "criteria": [
+  {
+   "id": "A1_verbatim_anchor_rows",
+   "statement": "anchor register carries >=1 verbatim anchor slot (value + table/page locator + grade)",
+   "n_verbatim_rows": 5,
+   "n_full_precision_rows": 17,
+   "n_quotes_found": 34,
+   "n_quotes": 34,
+   "pass": true
+  },
+  {
+   "id": "A2_experimental_CF_verbatim",
+   "statement": "verbatim experimental C_F anchor present, else honest WITHHELD",
+   "status": "WITHHELD",
+   "evidence": "0 measured-friction entries among the transcribed external quantities; the only C_F entries are ITTC-57 correlation values (grades [A]/[B], rounded) plus the definitional CT/CF double entry",
+   "honest_withheld": true
+  },
+  {
+   "id": "A3_ittc57_recompute_residual",
+   "statement": "|ITTC-57 recomputed - recorded| <= 1e-9",
+   "max_abs_residual": 5.49300188668056e-15,
+   "tolerance": 1e-09,
+   "pass": true
+  },
+  {
+   "id": "A4b_configuration_ratio_audit",
+   "statement": "verbatim AFF-8 / AFF-1 force ratio reproduces the recorded C_T ratio (definitional identity -> transcription fidelity, not independent evidence)",
+   "n_pairs": 3,
+   "max_abs_rel_dev": 2.286089882896874e-12,
+   "pass": true
+  },
+  {
+   "id": "A4_anchor_reconstruct_from_verbatim",
+   "statement": "Re and C_T of the full-precision anchor row are reproduced from its own verbatim V, R_T, L, S, rho, nu",
+   "rel_dev": {
+    "Re": 2.4132116064853204e-13,
+    "CT": 4.1545254086966074e-13,
+    "CF_ittc57": 3.900345964159026e-13
+   },
+   "pass": true
+  }
+ ],
+ "anchor_verdict": {
+  "verbatim_anchor_slots": 5,
+  "experimental_CF": "WITHHELD",
+  "derived_CF_available": true,
+  "what_is_certified_here": [
+   "the R_T / V / geometry / rho / nu transcription chain and its locators",
+   "the ITTC-1957 implementation (residual vs recorded values)",
+   "the definitional nature of the recorded (1+k)",
+   "the Re gap between the case (1e3) and the anchor (1.16e7)"
+  ],
+  "what_is_NOT_certified": [
+   "any measured friction coefficient for SUBOFF",
+   "the anchor at the case Reynolds number (no such experiment exists)"
+  ]
+ }
+}
