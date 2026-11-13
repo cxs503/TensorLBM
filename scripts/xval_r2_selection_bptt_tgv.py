@@ -12,6 +12,7 @@ The driver is stage-wise because a single shell call here is capped at ~100 s:
     python3 scripts/xval_r2_selection_bptt_tgv.py arm <closure> <objective> <start>
     python3 scripts/xval_r2_selection_bptt_tgv.py window       # secondary train-window study
     python3 scripts/xval_r2_selection_bptt_tgv.py judge        # verdict table (+P1..P5)
+    python3 scripts/xval_r2_selection_bptt_tgv.py anchor       # exact-TGV anchor + benchmark.json
     python3 scripts/xval_r2_selection_bptt_tgv.py figures
     python3 scripts/xval_r2_selection_bptt_tgv.py all          # everything (slow)
 
@@ -49,6 +50,10 @@ from tensorlbm.les_graph_unroll.selection import (  # noqa: E402
     sweep_select,
 )
 from tensorlbm.les_graph_unroll.solver2d import equilibrium  # noqa: E402
+from tensorlbm.les_graph_unroll.tgv_anchor import (  # noqa: E402
+    AnchorConfig,
+    run_tgv_anchor,
+)
 
 ART = _ROOT / "artifacts" / "xval_r2_selection_bptt_tgv"
 RESULTS = ART / "results.json"
@@ -66,6 +71,8 @@ HOLDOUT = 200
 SWEEP_GRID = tuple(round(0.025 * i, 4) for i in range(25))  # 0.000 .. 0.600
 CLOSURES = ("smagorinsky", "oss_proxy")
 STARTS = (0.02, 0.17)
+MISSION = 18462            # rework round 1 of the m18237 delivery
+BENCHMARK = ART / "benchmark.json"
 
 
 # ---- io helpers -----------------------------------------------------------
@@ -113,7 +120,9 @@ def stage_ref(force: bool = False) -> dict:
     res = load_results()
     res["meta"] = {
         "anchor": "XVAL-LBM-R2-SELECTION-BPTT-TGV-ANCHOR",
-        "mission": 18237,
+        "mission": MISSION,
+        "source_mission": 18237,
+        "rework_round": 1,
         "u0": U0, "re": RE, "nx_ref": NX_REF, "nx_conv": NX_CONV, "nx_les": NX_LES,
         "n_steps": T_STEPS, "train_steps": list(TRAIN_STEPS), "holdout_step": HOLDOUT,
         "tau_ref": tau_ref, "tau_conv": tau_conv,
@@ -219,6 +228,75 @@ def stage_window(closure: str, objective: str, start: float = 0.02) -> dict:
     save_results(res)
     print(json.dumps({"theta": bptt["theta"], "loss": bptt["loss"],
                       "holdout_in_sample": hold}, indent=2))
+    return res
+
+
+# ---- stage: exact-TGV anchor + machine-readable benchmark -------------------
+def stage_anchor() -> dict:
+    """External anchor: is the reference itself right?  Emits benchmark.json."""
+    cfg = AnchorConfig(
+        u0=U0, re=RE, nx_les=NX_LES, nx_ref=NX_REF, n_steps=T_STEPS,
+        train_steps=TRAIN_STEPS, holdout_step=HOLDOUT,
+        closure="smagorinsky", objective="energy",
+        theta_init=0.02, iters=20, lr=0.1, sweep=SWEEP_GRID,
+    )
+    rep = run_tgv_anchor(cfg, convergence=True)
+    res = load_results()
+    res["anchor"] = rep
+    save_results(res)
+    write_benchmark(res)
+    print(json.dumps(rep["analytic_anchor"], indent=2)[:2000])
+    return res
+
+
+def benchmark_rows(res: dict) -> list:
+    """ref/got rows from the anchor plus the BPTT gradient / regret checks."""
+    rows = list(res.get("anchor", {}).get("benchmark", {}).get("rows", []))
+    combos = res.get("verdict", {}).get("combos", {})
+    if combos:
+        worst = max(combos.items(), key=lambda kv: kv[1]["grad_rel_err"])
+        rows.append({
+            "id": "bptt-gradient-vs-fd",
+            "ref": 0.0, "got": worst[1]["grad_rel_err"], "abs_err": worst[1]["grad_rel_err"],
+            "rel_err": worst[1]["grad_rel_err"], "threshold": 0.15,
+            "pass": worst[1]["grad_rel_err"] < 0.15,
+            "note": f"worst arm {worst[0]}: autograd gradient vs central difference "
+                    "(ref is the FD value; the row reports the relative gap)",
+        })
+        v = res["verdict"]
+        rows.append({
+            "id": "holdout-ke-selected-vs-filtered-ref",
+            "ref": v["selected_ke_err"], "got": 0.0,
+            "abs_err": v["selected_ke_err"], "rel_err": v["selected_ke_err"],
+            "threshold": 0.15, "pass": v["P3"]["pass"],
+            "note": f"selected {v['selected_by_training_loss']} theta={v['selected_theta']:.6g}",
+        })
+    return rows
+
+
+def write_benchmark(res: dict) -> dict:
+    rows = benchmark_rows(res)
+    out = {
+        "anchor": "XVAL-LBM-R2-SELECTION-BPTT-TGV-ANCHOR",
+        "mission": MISSION,
+        "source_mission": 18237,
+        "threshold": 0.15,
+        "rows": rows,
+        "all_pass": bool(rows) and all(r["pass"] for r in rows),
+        "repro_cmd": ("python scripts/xval_r2_selection_bptt_tgv.py all --force && "
+                      "python scripts/xval_r2_selection_bptt_tgv.py figures && "
+                      "python -m tensorlbm.verification.tgv_r2_selection "
+                      "--convergence --out artifacts/xval_r2_selection_bptt_tgv/acceptance.json"),
+        "environment": res.get("verdict", {}).get("environment", {}),
+    }
+    BENCHMARK.write_text(json.dumps(out, indent=2, sort_keys=True))
+    return out
+
+
+def stage_benchmark() -> dict:
+    res = load_results()
+    out = write_benchmark(res)
+    print(json.dumps(out, indent=2)[:3000])
     return res
 
 
@@ -343,6 +421,7 @@ def stage_judge() -> dict:
         for a in verdict["P2"]["agreement"].values())
     res["verdict"] = verdict
     save_results(res)
+    write_benchmark(res)
     print(json.dumps({k: verdict[k] for k in
                       ("selected_by_training_loss", "selected_theta", "selected_ke_err",
                        "ke_err_min_over_space", "ke_err_min_at", "no_model",
@@ -356,7 +435,8 @@ def stage_judge() -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["ref", "arm", "controls", "window", "judge", "all"])
+    ap.add_argument("stage", choices=["ref", "arm", "controls", "window", "judge",
+                                      "anchor", "benchmark", "all"])
     ap.add_argument("args", nargs="*")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
@@ -371,6 +451,10 @@ def main() -> None:
         stage_window(*a.args[:3])
     elif a.stage == "judge":
         stage_judge()
+    elif a.stage == "anchor":
+        stage_anchor()
+    elif a.stage == "benchmark":
+        stage_benchmark()
     elif a.stage == "all":
         stage_ref(force=a.force)
         for c in CLOSURES:
@@ -378,6 +462,9 @@ def main() -> None:
                 for s in STARTS:
                     stage_arm(c, o, s)
                 stage_controls(c, o)
+        stage_judge()
+        stage_anchor()
+        stage_benchmark()
 
 
 if __name__ == "__main__":
