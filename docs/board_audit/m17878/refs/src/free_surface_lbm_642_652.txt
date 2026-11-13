@@ -1,0 +1,20 @@
+
+# ===========================================================================
+# Interface normal computation (for mass redistribution)
+# ===========================================================================
+
+
+def _compute_interface_normal(flags, mass, rho):
+    """Compute interface normal n = -∇fill / |∇fill| (points from liquid to gas)."""
+    fill = mass / rho.clamp(min=1e-6)
+    # Gradient via central difference
+    grad_x = 0.5 * (fill.roll(-1, dims=2) - fill.roll(1, dims=2))
+    grad_y = 0.5 * (fill.roll(-1, dims=1) - fill.roll(1, dims=1))
+    grad_z = 0.5 * (fill.roll(-1, dims=0) - fill.roll(1, dims=0))
+    mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
+    return -grad_x / mag, -grad_y / mag, -grad_z / mag
+
+
+# ===========================================================================
+# MRT collision with per-cell effective relaxation time (SGS support)
+# ===========================================================================
