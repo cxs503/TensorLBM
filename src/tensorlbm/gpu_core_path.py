@@ -67,6 +67,7 @@ __all__ = [
     "channel_analytic_velocity",
     "collide_guo_into",
     "core_step",
+    "discrete_divergence",
     "get_best_available_backend",
     "run_channel_case",
     "run_taylor_green_case",
@@ -162,14 +163,6 @@ class GPUCorePathConfig:
     seed, perturbation_amplitude:
         Optional random perturbation of the initial field, relative to
         ``u_max_target`` (0.0 keeps the case strictly deterministic).
-    wall_bc:
-        Wall closure on the two ``y`` planes:
-        ``"halfway"`` (default, classic half-way bounce-back, unchanged
-        behaviour) or ``"nebb"`` (force-corrected non-equilibrium bounce-back
-        from :mod:`tensorlbm.boundary.nebb`: wall density recovered from the
-        field, wall velocity shifted by ``-a/(2 rho_w)`` so that it is
-        consistent with the Guo body force).  ``"nebb"`` runs on the eager
-        backend (the compiled kernel only implements ``"halfway"``).
     """
 
     nx: int = 32
@@ -186,7 +179,6 @@ class GPUCorePathConfig:
     steps: int = 3000
     warmup_steps: int = 0
     label: str = "gpu_core_path"
-    wall_bc: str = "halfway"
 
     # -- derived physics ------------------------------------------------
     @property
@@ -248,8 +240,6 @@ class GPUCorePathConfig:
             raise ValueError("warmup_steps must be in [0, steps)")
         if self.perturbation_amplitude < 0.0:
             raise ValueError("perturbation_amplitude must be >= 0")
-        if self.wall_bc not in ("halfway", "nebb"):
-            raise ValueError(f"unknown wall_bc {self.wall_bc!r}")
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -269,7 +259,6 @@ class GPUCorePathConfig:
             "init": self.init,
             "steps": self.steps,
             "label": self.label,
-            "wall_bc": self.wall_bc,
         }
 
 
@@ -367,38 +356,6 @@ def apply_channel_walls(f: torch.Tensor, f_post: torch.Tensor) -> torch.Tensor:
     return f
 
 
-def apply_channel_walls_nebb(
-    f: torch.Tensor,
-    cfg: GPUCorePathConfig,
-    C_: torch.Tensor,
-    W_: torch.Tensor,
-) -> torch.Tensor:
-    """Force-corrected NEBB walls on the two wall rows (``j = 0``, ``j = ny-1``).
-
-    Wall-node closure: the no-slip planes *are* the wall rows, so the channel
-    width becomes ``H = ny - 1`` (instead of ``ny - 2`` for the half-way
-    bounce-back) and the wall value of ``ux`` is part of the solution.  The
-    wall velocity fed to the equilibrium is ``-a/(2 rho_w)`` (``a`` =
-    body-force acceleration, ``rho_w`` = wall density recovered from the
-    field) — the force correction the Guo collision expects of a no-slip
-    wall.  Use :func:`channel_analytic_velocity_nebb` for the matching
-    reference profile.
-    """
-    from .boundary.nebb import nebb_wall_plane, wall_density, wall_directions
-
-    a = cfg.effective_body_force
-    for row, sign in ((0, -1), (cfg.ny - 1, +1)):
-        dirs = wall_directions(C_, sign)
-        rho_w = wall_density(f, row, dirs)
-        zeros = torch.zeros_like(rho_w)
-        ux_w = zeros - (a / (2.0 * rho_w) if a else 0.0)
-        nebb_wall_plane(
-            f, row, sign, rho_w, ux_w, zeros.to(f.dtype),
-            C=C_, W=W_, OPP=OPPOSITE,
-        )
-    return f
-
-
 def core_step(
     f: torch.Tensor,
     f_post: torch.Tensor,
@@ -416,8 +373,6 @@ def core_step(
     stream_into(f_post, f_out)
     if cfg.init == "taylor_green":
         return f_out  # fully periodic case, no walls
-    if cfg.wall_bc == "nebb":
-        return apply_channel_walls_nebb(f_out, cfg, C_, W_)
     return apply_channel_walls(f_out, f_post)
 
 
@@ -455,20 +410,6 @@ def channel_analytic_velocity(cfg: GPUCorePathConfig) -> tuple[torch.Tensor, tor
     s = torch.clamp(y - 0.5, min=0.0, max=cfg.height)
     u = cfg.body_force / (2.0 * cfg.nu) * s * (cfg.height - s)
     return y, u
-
-
-def channel_analytic_velocity_nebb(cfg: GPUCorePathConfig) -> tuple[torch.Tensor, torch.Tensor]:
-    """Analytic Poiseuille profile on the ``wall_bc="nebb"`` node grid.
-
-    With wall-node closure the no-slip planes coincide with the wall rows, so
-    the profile ``ux(y) = a/(2 nu) y (H - y)`` uses ``H = ny - 1`` and every
-    row ``y = 0 .. ny-1`` (including the two wall rows, where it vanishes).
-    Returns ``(y, ux_profile)`` with ``ux_profile`` shaped ``(ny,)``.
-    """
-    H = float(cfg.ny - 1)
-    y = torch.arange(cfg.ny, dtype=torch.float64)
-    prof = cfg.body_force / (2.0 * cfg.nu) * y * (H - y)
-    return y, prof
 
 
 def taylor_green_analytic_energy(cfg: GPUCorePathConfig, t: Any) -> Any:
@@ -537,10 +478,6 @@ class GPUCorePathSolver:
         self._f_store: torch.Tensor | None = None
         if self.store_dtype != self.compute_dtype:
             self._f_store = torch.zeros(shape, dtype=self.store_dtype)
-
-        if cfg.wall_bc != "halfway" and self.backend != "eager":
-            self.backend = "eager"
-            self.backend_note = f"wall_bc={cfg.wall_bc} runs on the eager backend"
 
         self._compiled_fn = None
         self._step_fn: Callable[[], None] = (
@@ -788,6 +725,44 @@ def _rel_l2(got: torch.Tensor, ref: torch.Tensor) -> float:
     return float(torch.linalg.vector_norm(got - ref)) / denom
 
 
+def discrete_divergence(
+    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor
+) -> torch.Tensor:
+    """Discrete divergence ``d u_x/dx + d u_y/dy + d u_z/dz`` of an interior field.
+
+    The inputs are the *fluid-row* fields returned by
+    :meth:`GPUCorePathSolver.interior` (shape ``(nz, ny-2, nx)``), so ``x``
+    (axis 2) and ``z`` (axis 0) are periodic and handled with central
+    differences; ``y`` (axis 1) is bounded by the two no-slip fluid rows and
+    uses central differences inside and one-sided differences on those rows.
+    The arithmetic is done in float64 so the diagnostic is limited by the
+    solution, not by its own precision.
+
+    Why this exists: the metric reported before m18379
+    (``max_divergence_proxy = max |u_x[:, j+1] - u_x[:, j]|``) was the *shear*
+    ``|d u_x/dy|``, not a divergence.  For the analytic Poiseuille profile it
+    grows to ``~u_max/H`` — i.e. it reports a large "divergence" for a field
+    that is divergence-free by construction, so it could not be used as an
+    incompressibility gauge.  Divergence and shear are reported separately now
+    (``max_abs_divergence`` / ``max_abs_shear_dudy`` in
+    :func:`run_channel_case`).
+    """
+    ux = ux.to(torch.float64)
+    uy = uy.to(torch.float64)
+    uz = uz.to(torch.float64)
+    dudx = 0.5 * (torch.roll(ux, -1, dims=2) - torch.roll(ux, 1, dims=2))
+    dudz = 0.5 * (torch.roll(uz, -1, dims=0) - torch.roll(uz, 1, dims=0))
+    dudy = torch.empty_like(uy)
+    ny = uy.shape[1]
+    if ny >= 3:
+        dudy[:, 1:-1, :] = 0.5 * (uy[:, 2:, :] - uy[:, :-2, :])
+    else:  # pragma: no cover - ny >= 6 is enforced by cfg.validate()
+        dudy[:, :, :] = 0.0
+    dudy[:, 0, :] = uy[:, 1, :] - uy[:, 0, :] if ny >= 2 else 0.0
+    dudy[:, -1, :] = uy[:, -1, :] - uy[:, -2, :] if ny >= 2 else 0.0
+    return dudx + dudy + dudz
+
+
 def run_channel_case(
     cfg: GPUCorePathConfig, *, check_every: int = 200, steady_tol: float = 1e-6
 ) -> dict[str, Any]:
@@ -801,6 +776,12 @@ def run_channel_case(
     """
     cfg.validate()
     solver = GPUCorePathSolver(cfg)
+    # ``warmup_steps`` used to be validated and then ignored: the field was
+    # documented but had no effect (silent no-op).  It is now stepped before
+    # the timed/steady-state loop, so a restart from a rough initial field can
+    # shake off transients without those steps entering the statistics.
+    if cfg.warmup_steps:
+        solver.step(cfg.warmup_steps)
     t0 = time.perf_counter()
     history: list[dict[str, float]] = []
     steps_done = 0
@@ -848,10 +829,19 @@ def run_channel_case(
         "profile_rel_l2": _rel_l2(u_got, u_ref),
         "profile_mean_abs_err": float((u_got - u_ref).abs().mean().item()),
         "mass_drift": abs(float(rho.mean().item()) - 1.0),
-        "mean_x_momentum": transport,
-        "max_divergence_proxy": float(
-            (ux[:, 1:-1, :] - ux[:, :-2, :]).abs().max().item()
+        "mass_drift_interior": abs(
+            float(rho[:, 1 : cfg.ny - 1, :].mean().item()) - 1.0
         ),
+        "mean_x_momentum": transport,
+        "max_abs_divergence": float(
+            discrete_divergence(ux[:, 1 : cfg.ny - 1, :],
+                               uy[:, 1 : cfg.ny - 1, :],
+                               uz[:, 1 : cfg.ny - 1, :]).abs().max().item()
+        ),
+        "max_abs_shear_dudy": float(
+            (ux[:, 2 : cfg.ny - 1, :] - ux[:, 1 : cfg.ny - 2, :]).abs().max().item()
+        ),
+        "warmup_steps": cfg.warmup_steps,
         "y": y.tolist(),
         "u_got": u_got.tolist(),
         "u_ref": u_ref.tolist(),
@@ -865,6 +855,8 @@ def run_taylor_green_case(cfg: GPUCorePathConfig, *, samples: int = 5) -> dict[s
         cfg = GPUCorePathConfig(**{**cfg.__dict__, "init": "taylor_green"})
     cfg.validate()
     solver = GPUCorePathSolver(cfg)
+    if cfg.warmup_steps:
+        solver.step(cfg.warmup_steps)
     e0 = solver.kinetic_energy()
     e0_ref = float(taylor_green_analytic_energy(cfg, 0.0))
     t0 = time.perf_counter()
@@ -893,6 +885,7 @@ def run_taylor_green_case(cfg: GPUCorePathConfig, *, samples: int = 5) -> dict[s
         "device": str(solver.device),
         "compute_dtype": str(solver.compute_dtype),
         "steps": solver.steps,
+        "warmup_steps": cfg.warmup_steps,
         "elapsed_s": elapsed,
         "mlups": cells * solver.steps / elapsed / 1e6 if elapsed > 0 else 0.0,
         "reference": "KE(t)=u0^2/4 exp(-4 nu k^2 t), k=2 pi/nx (Taylor & Green 1937)",
