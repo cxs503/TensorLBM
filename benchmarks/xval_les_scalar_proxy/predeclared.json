@@ -1,0 +1,117 @@
+{
+  "xval_id": "XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY",
+  "oss_reference": {
+    "repo": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow",
+    "inventory_row": "tensorplatform.oss_solutions#row-39",
+    "inventory_tag": "les-scalar-q-abs-cc-proxy",
+    "practice": "Smagorinsky-type single-coefficient (scalar) SGS viscosity driven by a |c_n c_m| absolute-value proxy Q of the non-equilibrium stress magnitude, with the local relaxation time tau = 0.5*(tau0 + sqrt(tau0^2 + 6*Q*Sc/rho)) and Sc = 0.17",
+    "source_of_truth": [
+      "LatFlow/Domain.py:90-96 (EEk = sum_{n,m} |c_n c_m|)",
+      "LatFlow/Domain.py:118-128 (CollideSC les branch: Q, tau, collision)",
+      "LatFlow/Domain.py:57 (self.Sc = 0.17)",
+      "LatFlow/D2Q9.py:6-9 (WEIGHTS, LVELOC) - machine-extracted, never transcribed"
+    ],
+    "note": "les_train.py (the only upstream driver that switches les=True) is not runnable as shipped: TensorFlow 1.x + cv2.cv API, and it references undefined names (lr, total_loss) at lines ~186-189. The cross-validated artefact is therefore the closure in LatFlow/Domain.py, not an upstream trajectory."
+  },
+
+  "decision": "Decide whether TensorLBM should (a) transplant the upstream |c_n c_m| proxy Q as its non-equilibrium-stress SGS closure, (b) keep its own signed-stress Frobenius-norm closure and publish a coefficient conversion so upstream settings (Sc=0.17) can be reproduced, or (c) accept the proxy as an equal alternative behind a switch. The decision is taken by the predeclared KPI table below and committed in docs/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY.md.",
+
+  "alternatives": {
+    "A": "in-house tensorlbm.turbulence.collide_smagorinsky_bgk: nu_t = C_s^2 * |S|_F with |S|_F reconstructed from the Frobenius norm of the SIGNED non-equilibrium stress Pi_ij = sum_q c_qi c_qj (f_q - f_q^eq); tau_eff = 0.5*(tau0 + sqrt(tau0^2 + 18 C_s^2 |Pi|_F/rho)); nominal C_s = 0.1",
+    "B": "faithful torch port of upstream CollideSC(les=True): Q = sqrt(2 sum_q (f_q-f_q^eq)^2 EEk_q), EEk_q = sum_{n,m}|c_qn c_qm| = (sum_n |c_qn|)^2; tau_eff = 0.5*(tau0 + sqrt(tau0^2 + 6 Q Sc/rho)); Sc = 0.17",
+    "A_map": "arm A evaluated at the coefficient-mapped value C_s^map = sqrt(Sc * kbar / 3), kbar = mean(Q/|Pi|_F) measured on the same configuration, i.e. the single-scalar conversion that option (b) would publish"
+  },
+
+  "hypothesis": {
+    "H1": "Q/|Pi|_F is a topology-independent constant to within 15%, therefore a single scalar conversion C_s = sqrt(Sc*kbar/3) reproduces the upstream closure to within the owner 15% band on identical fields and on the resulting Taylor-Green trajectory (option b is sufficient; no code change to the closure itself).",
+    "H0_falsifier": "the ratio Q/|Pi|_F spreads by more than 15% over strain topologies (pure shear / pure strain / solid-body rotation / axisymmetric strain) or over real LBM states, OR the mapped arm deviates from arm B by more than 15% in nu_t or in the Taylor-Green decay rate; then the |c_n c_m| proxy is not a single-constant estimator of the strain-rate magnitude and must NOT be transplanted (decision: keep the Frobenius closure, report the bias band, offer the conversion only as guidance).",
+    "H2_side": "both closures are asymptotically safe: they reduce to BGK exactly as the non-equilibrium stress vanishes (solid-body rotation gives Pi^neq = 0 -> nu_t = 0 for both), and neither degrades a well-resolved laminar run by more than 3% in the decay rate."
+  },
+
+  "reference_values": {
+    "R1_chapman_enskog_identity": "for the exactly constructed first-order non-equilibrium field f = f^eq + f^(1), f^(1)_q = -3 tau0 w_q rho c_qi c_qj S_ij (trace-free S), the non-equilibrium stress is EXACTLY Pi_ij = -2 rho c_s^2 tau0 S_ij with c_s^2 = 1/3, hence |Pi|_F = (2/3) rho tau0 |S|_F and nu_t = c_s^2 (tau_eff - tau0) = C_s^2 |S|_F (closed form)",
+    "R2_smagorinsky_law": "nu_t = (C_s Delta)^2 sqrt(2 S_ij S_ij) with Delta = 1 (standard Lily/Smagorinsky definition)",
+    "R3_taylor_green_decay": "2D Taylor-Green (exact Navier-Stokes): K(t) = (U0^2/4) exp(-4 nu k^2 t), k = 2 pi/L, so a measured decay rate gamma implies an effective viscosity nu_eff = gamma/(4 k^2)",
+    "R4_closure_consistency": "if the closure adds a viscosity nu_t, then the decay rate measured over a window must equal 4 k^2 (nu0 + mean nu_t) over that same window (a-posteriori identity, no tuning)"
+  },
+
+  "metrics": {
+    "pi_identity_rel_pct": "| |Pi|_F(numeric from arm A) - (2/3) rho tau0 |S|_F (closed form R1) | / closed form, per strain topology (percent)",
+    "q_proxy_rel_pct": "same comparison for the upstream proxy Q against the same closed form R1 (percent)",
+    "k_ratio": "Q / |Pi|_F per strain topology and per sampled LBM state (dimensionless)",
+    "k_spread_pct": "100 * (max_t k_ratio - min_t k_ratio) / mean_t k_ratio over the predeclared topology set",
+    "nu_t_nominal_rel_pct": "|nu_t(A, C_s=0.1) - nu_t(B, Sc=0.17)| / nu_t(B) on identical fields (nominal coefficients; expected to be large, reported for orientation only)",
+    "nu_t_mapped_rel_pct": "|nu_t(A_map) - nu_t(B)| / nu_t(B) on identical fields -- PRIMARY adoption KPI",
+    "gamma_K_cross_rel_pct": "|gamma_K(A_map) - gamma_K(B)| / gamma_K(B) from the Taylor-Green decay fit -- PRIMARY solver-level KPI",
+    "gamma_K_les_gain_pct": "100 * (gamma_K(LES arm) - gamma_K(BGK)) / gamma_K(BGK); the closure must only ADD dissipation, so this must be > 0",
+    "nu_eff_consistency_pct": "|gamma_fit/(4 k^2) - (nu0 + mean nu_t applied in the fit window)| / (nu0 + mean nu_t) (R4)",
+    "apriori_rel_pct": "|mean applied nu_t - C_s,eff^2 * <|S|_F from the analytic Taylor-Green field>| / mean applied nu_t: a-priori vs a-posteriori",
+    "multimode_K_rel_pct": "|K_final(A_map) - K_final(B)| / K_final(B) on the multi-mode (nonlinear, under-resolved) initial condition"
+  },
+
+  "baseline_control": {
+    "baseline": "arm A at nominal C_s = 0.1 (the shipped in-house default) and arm B at the upstream default Sc = 0.17; both are pre-existing defaults, neither is tuned here",
+    "control": "BGK (collide_bgk, zero eddy viscosity) at the identical configuration: it isolates the SGS contribution from the discretisation and gives the gamma_K_les_gain reference",
+    "reference": "closed forms R1/R2/R3/R4 (Chapman-Enskog identity, Smagorinsky law, exact Taylor-Green decay) -- not another solver, so every accuracy statement is independent of any implementation",
+    "unit_of_analysis": "one solver arm at one (case, n, Re, C_s/Sc) configuration; each KPI is a scalar per arm-configuration"
+  },
+
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "internal_target_pct": 3.0,
+    "identity_tolerance_rel": 1e-4,
+    "identity_note": "the exact-CE synthetic field is analytic; 1e-4 absorbs the float32 lattice-velocity cast inside the in-house norm helper, not a modelling error",
+    "port_fidelity_rel": 1e-14,
+    "port_note": "arm B with Sc = 0 must reproduce the shipped collide_bgk to round-off; failure means the port is not the upstream operator and no conclusion may be drawn from it",
+    "proxy_consistency_pct": 15.0,
+    "proxy_consistency_note": "H1 is accepted only if k_spread_pct <= 15% AND nu_t_mapped_rel_pct <= 15% AND gamma_K_cross_rel_pct <= 15% on every predeclared configuration",
+    "les_gain_rule": "an LES arm is considered active iff gamma_K_les_gain_pct > 0 and the applied nu_t is non-zero; a closure that never changes the trajectory is reported as a no-op, not as agreement",
+    "stability_rule": "a run containing a non-finite population, or |u| > 10 U0, or rho outside [0.5, 1.5], is declared FAILED and reported; no re-tuning of tau, C_s, Sc, u0 or step count afterwards",
+    "convergence_rule": "a KPI is grid-converged when |KPI(n=64) - KPI(n=32)| / |KPI(n=64)| < 15%"
+  },
+
+  "cases": [
+    {"name": "tg2d_n32_re100", "kind": "analytic single-mode Taylor-Green", "n": 32, "Re": 100.0, "U0": 0.05, "steps": 3000, "sample_every": 50},
+    {"name": "tg2d_n32_re1000", "kind": "analytic single-mode Taylor-Green", "n": 32, "Re": 1000.0, "U0": 0.05, "steps": 3000, "sample_every": 50},
+    {"name": "tg2d_n64_re1000", "kind": "analytic single-mode Taylor-Green", "n": 64, "Re": 1000.0, "U0": 0.05, "steps": 3000, "sample_every": 50},
+    {"name": "tg4_n64_re1000", "kind": "multi-mode (4 modes, nonlinear, under-resolved) periodic box", "n": 64, "Re": 1000.0, "U0": 0.05, "steps": 2000, "sample_every": 50}
+  ],
+
+  "sensitivity_points": [
+    "grid resolution n in {32, 64} at Re = 1000, U0 = 0.05 (discretisation of the non-equilibrium stress)",
+    "molecular relaxation time tau0 in {0.548 (Re=100), 0.5048 (Re=1000, n=32)} i.e. a resolved laminar regime and a near-stability-limit regime (omega -> 2)",
+    "strain topology of the exact-CE synthetic field in {pure shear, pure strain, solid-body rotation, axisymmetric strain}, each at |S|_F = 0.005 / 0.02 / 0.05 (amplitude sweep of the SGS law)"
+  ],
+
+  "variables_changed": ["SGS closure (signed Frobenius norm vs |c_n c_m| proxy vs BGK off)", "Smagorinsky coefficient (C_s = 0.1, C_s^map, Sc = 0.17)", "resolution n", "Reynolds number", "initial condition (single-mode vs 4-mode)"],
+  "variables_controlled": ["D2Q9 BGK collision kernel and streaming (tensorlbm.solver.collide_bgk / stream)", "f = f^eq(rho, u) initialisation on cell centres x_i = i + 0.5", "sampling schedule and K/umax estimators", "torch float64, fixed thread count, CPU", "periodic boundaries, dx = dt = 1, rho0 = 1"],
+
+  "confounders": [
+    "upstream is TensorFlow 1.x float32 on GPU and ships no runnable LES driver; the comparison is formulation-level (same closure algebra evaluated on identical float64 torch states), not bit-level against upstream binaries",
+    "upstream stores rho and u from the previous stream step and re-uses them in the collision; the port recomputes both from f at the collision instant -- the two are equivalent inside upstream's own Solve loop (stream then collide), but the port cannot inherit any upstream statefulness bug",
+    "single-mode Taylor-Green carries no sub-grid content: LES activity there is driven by the discretisation defect (non-equilibrium stress), so the decay tests measure the closure LAW and its transport, not turbulence-model quality; the 4-mode case is the only nonlinear one and is reported as cross-solver agreement, not against an analytic solution",
+    "the in-house relaxation cap (nu_t <= 1/6 via tau_eff <= tau + 0.5) has no upstream counterpart: at the operating points here it never activates, but a strongly under-resolved case would diverge between the arms for reasons unrelated to the closure algebra"
+  ],
+
+  "repetition_rationale": "both arms are deterministic (zero run-to-run variance), so repetition is replaced by (a) 4 predeclared cases, (b) 3 sensitivity axes (n, tau0, strain topology x amplitude), (c) three independent checks per closure: exact-CE identity, field-level nu_t agreement, trajectory-level decay agreement. No stochastic seeds are involved except a fixed-sign multi-mode phase choice.",
+  "environment": {
+    "solver": "TensorLBM src/tensorlbm (torch CPU, torch.cuda.is_available() expected False)",
+    "dtype": "float64 for the solver, float32 inside the in-house Pi norm helper (as shipped)",
+    "threads": 4,
+    "oss_tree": "/tmp/oss_lbm/Lattice-Boltzmann-fluid-flow-in-Tensorflow-master (master tarball sha256 7e4e3459730aecd57daef1cc5695e10368424b497a23849b3c10d095c4e23f10 as recorded by XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL; per-file sha256 re-verified by extract_oss_tables.py)",
+    "command": "python benchmarks/xval_les_scalar_proxy/run_xval.py",
+    "raw_data": "runs/xval_les_scalar_proxy/{result.json,table.csv,figures/*.png}"
+  },
+
+  "analysis_plan": "Table arm x configuration with every KPI and its percent deviation from the closed form; verdict by the predeclared 15% rule with the 3% internal target reported separately; uncertainty = resolution delta + tau0 delta + topology spread; no post-hoc threshold change, no re-tuning of C_s or Sc after inspecting results.",
+
+  "sections_delivered": [
+    "problem + reference provenance (upstream file/line, zero hand transcription)",
+    "method + implementation (exact-CE field construction, closure algebra, arms)",
+    "non-dimensional parameter table (Re, Ma, tau0, nu, k, C_s/Sc, |S|_F)",
+    "reference vs got table with per-KPI pass/fail marks",
+    "convergence / sensitivity (3 predeclared points)",
+    "failure modes + artefacts",
+    "difference list TensorLBM vs upstream (method / coefficients / boundary conditions) + porting trade-offs"
+  ]
+}

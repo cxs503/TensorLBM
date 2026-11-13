@@ -1,0 +1,16 @@
+{
+ "repo": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow",
+ "tarball_url": "https://codeload.github.com/loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow/tar.gz/refs/heads/master",
+ "tarball_sha256": "7e4e3459730aecd57daef1cc5695e10368424b497a23849b3c10d095c4e23f10",
+ "tarball_sha256_note": "inherited from XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL after re-matching the per-file sha256 of LatFlow/D2Q9.py",
+ "source_root": "/tmp/oss_lbm/Lattice-Boltzmann-fluid-flow-in-Tensorflow-master",
+ "files": {
+  "LatFlow/D2Q9.py": "8acdfd9974d8fccf31912318f2e03c76fd60304182749052f8ba7335c558c0b7",
+  "LatFlow/Domain.py": "d0c21f76df0e79ef511fc40581586b6a0a1bfff4dba1452fdbecd68525475522",
+  "les_train.py": "435c6ebc192943e8093a9206ef0a176b13466a56bbb9574bf401fca5c40c9ab8"
+ },
+ "extractor": "benchmarks/xval_les_scalar_proxy/extract_oss_tables.py",
+ "inventory_row": "tensorplatform.oss_solutions#row-39",
+ "inventory_tag": "les-scalar-q-abs-cc-proxy",
+ "les_driver_status": "shipped but not runnable (TF1 API, cv2.cv.CV_FOURCC, undefined lr/total_loss); cross-validated artefact is the closure in LatFlow/Domain.py"
+}
