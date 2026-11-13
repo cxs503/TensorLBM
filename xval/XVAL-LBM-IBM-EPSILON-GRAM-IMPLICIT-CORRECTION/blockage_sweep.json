@@ -1,0 +1,61 @@
+{
+  "provenance": {
+    "git_sha": "0a1cf0e20c45f242e3a23d6c5a5118ea1b7a4830",
+    "git_dirty": true,
+    "script": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py",
+    "torch": "2.7.1",
+    "python": "3.11.6",
+    "machine": "loongarch64",
+    "host": "36cb7828dbd5",
+    "cpu_count": 128,
+    "torch_threads": 128,
+    "dtype": "float64",
+    "started_utc": "2026-11-13T12:24:06Z"
+  },
+  "arm": "A1",
+  "points": [
+    {
+      "arm": "A1",
+      "nx": 128,
+      "ny": 64,
+      "blockage": 0.125,
+      "cd_mean": 1.615563469999994,
+      "cd_tail_half_mean": 1.6430577194662517,
+      "cd_std": 1.392998456954956,
+      "n_avg": 200,
+      "n_steps": 700,
+      "n_transient": 500,
+      "re": 99.99999999999991
+    },
+    {
+      "arm": "A1",
+      "nx": 192,
+      "ny": 96,
+      "blockage": 0.08333333333333333,
+      "cd_mean": 1.621828698136388,
+      "cd_tail_half_mean": 1.574701839402467,
+      "cd_std": 1.009982943534851,
+      "n_avg": 400,
+      "n_steps": 700,
+      "n_transient": 300,
+      "re": 99.99999999999991,
+      "wall_s": 52.7
+    }
+  ],
+  "extrapolation": {
+    "model": "C_D(B) = C_D0 * (1 + k B), two-point fit on the extreme blockages",
+    "k": -0.09200271241960753,
+    "cd_zero_blockage": 1.6343591544091765,
+    "points_used": [
+      {
+        "blockage": 0.08333333333333333,
+        "cd": 1.621828698136388
+      },
+      {
+        "blockage": 0.125,
+        "cd": 1.615563469999994
+      }
+    ]
+  },
+  "interpretation": "C_D is insensitive to the blockage ratio between 0.083 and 0.125 (1.6218 vs 1.6156, +0.4%), so confinement does NOT explain the +20% offset from the unbounded literature band; the two-point blockage extrapolation (k=-0.09) is therefore not physically meaningful and is reported only as evidence against the blockage hypothesis. Remaining, unverified candidates: D=8 resolution, 200-step averaging window (~0.4 shedding periods), O(Ma^2) compressibility at u=0.1."
+}

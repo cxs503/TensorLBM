@@ -35,6 +35,7 @@ XVAL and is recorded as a limitation.
 from __future__ import annotations
 
 import math
+import sys
 
 import torch
 
@@ -45,6 +46,11 @@ __all__ = [
     "compute_epsilon_gram",
     "spread_force_2d",
     "interpolate_force_2d",
+    "make_life_ibm_stencil",
+    "life_correction",
+    "spread_with_correction",
+    "life_epsilon_gram_diagnostics",
+    "selftest",
 ]
 
 
@@ -303,3 +309,198 @@ def interpolate_force_2d(
             fx_m[k] += w * float(fx_grid[j, i].item())
             fy_m[k] += w * float(fy_grid[j, i].item())
     return fx_m, fy_m
+
+
+# ---------------------------------------------------------------------------
+# TensorLBM integration surface: correction on top of the main IBMStencil
+# ---------------------------------------------------------------------------
+
+
+def make_life_ibm_stencil(points: torch.Tensor, shape: tuple[int, int]) -> "IBMStencil":
+    """Return a ``tensorlbm.ibm_force_transfer.IBMStencil`` with LIFE supports.
+
+    The stencil carries the *plain* LIFE 3-point dirac weights (no ``eps*ds``),
+    exactly like LIFE keeps ``diracVal`` separate from ``epsilon*ds``: the
+    spreading multiplier is applied to the marker force by
+    :func:`spread_with_correction`, while :meth:`IBMStencil.interpolate` stays
+    the OSS-identical unweighted interpolation.  Supports of unequal length
+    (markers close to the non-periodic boundary) are zero-padded to a
+    rectangular ``(M, max_support)`` block, which ``IBMStencil`` requires.
+
+    Args:
+        points: ``(M, 2)`` marker coordinates ``(x, y)`` in lattice units.
+        shape: grid shape ``(ny, nx)`` in the solver's field layout.
+
+    Returns:
+        ``IBMStencil`` with ``kernel="life3"`` and ``points == points``.
+    """
+    from .ibm_force_transfer import IBMStencil
+
+    pts = points if torch.is_tensor(points) else torch.as_tensor(points, dtype=torch.float64)
+    ny, nx = int(shape[-2]), int(shape[-1])
+    supports = build_support_2d(pts[:, 0], pts[:, 1], ny, nx)
+    n_markers = len(supports)
+    per = max(len(sk["w"]) for sk in supports)
+    idx = torch.zeros((n_markers, per), dtype=torch.long)
+    w = torch.zeros((n_markers, per), dtype=pts.dtype, device=pts.device)
+    for k, sk in enumerate(supports):
+        n_k = int(sk["w"].shape[0])
+        idx[k, :n_k] = sk["iy"] * nx + sk["ix"]
+        w[k, :n_k] = sk["w"]
+    return IBMStencil(
+        idx=idx.reshape(-1),
+        w=w.reshape(-1),
+        shape=(ny, nx),
+        kernel="life3",
+        points=pts,
+        _per_marker=per,
+    )
+
+
+def life_correction(points: torch.Tensor, shape: tuple[int, int]) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return ``(epsilon, ds)`` for a marker layout on a grid (LIFE physics)."""
+    pts = points if torch.is_tensor(points) else torch.as_tensor(points, dtype=torch.float64)
+    ny, nx = int(shape[-2]), int(shape[-1])
+    supports = build_support_2d(pts[:, 0], pts[:, 1], ny, nx)
+    ds = compute_ds_2d(pts[:, 0], pts[:, 1])
+    eps = compute_epsilon_gram(pts[:, 0], pts[:, 1], supports, ds)
+    return eps, ds
+
+
+def spread_with_correction(
+    stencil: "IBMStencil",
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    epsilon: torch.Tensor,
+    ds: torch.Tensor,
+) -> torch.Tensor:
+    """LIFE spread onto the lattice: ``F += f * epsilon * ds * diracVal``.
+
+    Uses the repo's own :meth:`IBMStencil.spread`, so the correction rides on
+    the main-solver force-transfer machinery (same linear indexing, same
+    zero-padded support block, same dtype) instead of a parallel code path.
+
+    Returns:
+        ``(2, ny, nx)`` Eulerian force increment.
+    """
+    scale = (epsilon * ds).unsqueeze(1)
+    return stencil.spread(torch.stack([fx, fy], dim=1) * scale)
+
+
+def life_epsilon_gram_diagnostics(points: torch.Tensor, shape: tuple[int, int]) -> dict:
+    """Diagnostics of the LIFE correction for a marker layout on a grid.
+
+    ``dirac_sum`` is the per-marker support weight sum; the LIFE 3-point delta
+    is an exact 1-D partition of unity, so this should be 1.0 to machine
+    precision whenever every support lies inside the grid.
+    """
+    pts = points if torch.is_tensor(points) else torch.as_tensor(points, dtype=torch.float64)
+    ny, nx = int(shape[-2]), int(shape[-1])
+    supports = build_support_2d(pts[:, 0], pts[:, 1], ny, nx)
+    ds = compute_ds_2d(pts[:, 0], pts[:, 1])
+    eps = compute_epsilon_gram(pts[:, 0], pts[:, 1], supports, ds)
+    sum_w = torch.tensor([float(sk["w"].sum()) for sk in supports], dtype=pts.dtype)
+    return {
+        "n_markers": int(pts.shape[0]),
+        "support_size": sorted({int(sk["w"].shape[0]) for sk in supports}),
+        "dirac_sum_min": float(sum_w.min()),
+        "dirac_sum_max": float(sum_w.max()),
+        "epsilon_min": float(eps.min()),
+        "epsilon_max": float(eps.max()),
+        "epsilon_mean": float(eps.mean()),
+        "ds_min": float(ds.min()),
+        "ds_max": float(ds.max()),
+        "ds_ratio": float(ds.max() / ds.min()),
+        "deposited_weight_mean": float((eps * ds).mean()),
+        "target_spacing_mean": float(ds.mean()),
+    }
+
+
+def selftest(verbose: bool = True) -> dict:
+    """Fast self-test with exact analytic references (``python -m`` entry).
+
+    Checks:
+      1. 1-D partition of unity of the LIFE 3-point delta (reference 1.0);
+      2. 2-D support weight sum at lattice-aligned markers (reference 1.0);
+      3. spread->interpolate round trip, corrected (A1) vs uncorrected (A2);
+      4. corrected spread / plain interpolate through ``IBMStencil`` == the
+         vectorised reference path (integration surface check).
+    """
+    dtype = torch.float64
+    out: dict = {}
+    err = 0.0
+    for frac in (0.0, 0.1, 0.25, 0.3, 0.5, 0.75, 0.9):
+        total = sum(
+            float(life_delta_3pt(torch.tensor(abs(frac - i), dtype=dtype)))
+            for i in range(-3, 4)
+        )
+        err = max(err, abs(total - 1.0))
+    out["partition_unity_1d_maxerr"] = err
+
+    n = 16
+    th = torch.arange(n, dtype=dtype) * (2.0 * math.pi / n)
+    mx = torch.round(32.0 + 10.0 * torch.cos(th))
+    my = torch.round(32.0 + 10.0 * torch.sin(th))
+    pts = torch.stack([mx, my], dim=1)
+    diag = life_epsilon_gram_diagnostics(pts, (64, 64))
+    out["dirac_sum_2d_maxerr"] = max(abs(diag["dirac_sum_min"] - 1.0), abs(diag["dirac_sum_max"] - 1.0))
+    out["epsilon_lattice_aligned"] = [diag["epsilon_min"], diag["epsilon_max"]]
+
+    def _roundtrip(n_m: int, arm: str) -> tuple[float, float]:
+        thm = torch.arange(n_m, dtype=dtype) * (2.0 * math.pi / n_m)
+        x = 32.0 + 10.0 * torch.cos(thm)
+        y = 32.0 + 10.0 * torch.sin(thm)
+        sp = build_support_2d(x, y, 64, 64)
+        d = compute_ds_2d(x, y)
+        e = compute_epsilon_gram(x, y, sp, d) if arm == "A1" else torch.ones_like(d)
+        fxt = torch.ones(n_m, dtype=dtype)
+        fyt = torch.zeros(n_m, dtype=dtype)
+        S, _ = build_spread_matrix_2d(x, y, 64, 64)
+        gx, gy = spread_force_2d_vec(fxt, fyt, S, e, d, 64, 64)
+        bx, by = interpolate_force_2d_vec(gx, gy, S)
+        l2 = float((torch.cat([bx - fxt, by - fyt]).norm() / torch.cat([fxt, fyt]).norm()).item())
+        dep = float((gx.sum() - (fxt * d).sum()).abs() / (fxt * d).sum().abs().item())
+        return l2, dep
+
+    out["roundtrip_l2_A1"], out["deposit_dev_A1"] = _roundtrip(16, "A1")
+    out["roundtrip_l2_A2"], out["deposit_dev_A2"] = _roundtrip(16, "A2")
+
+    S, sp = build_spread_matrix_2d(mx, my, 64, 64)
+    d = compute_ds_2d(mx, my)
+    e = compute_epsilon_gram(mx, my, sp, d)
+    st = make_life_ibm_stencil(pts, (64, 64))
+    fxt = torch.linspace(-1.0, 1.0, n, dtype=dtype)
+    fyt = torch.linspace(0.5, -0.5, n, dtype=dtype)
+    gx, gy = spread_force_2d_vec(fxt, fyt, S, e, d, 64, 64)
+    sx = spread_with_correction(st, fxt, fyt, e, d)
+    out["stencil_spread_maxdiff"] = float(max((gx - sx[0]).abs().max().item(), (gy - sx[1]).abs().max().item()))
+    bx, by = interpolate_force_2d_vec(gx, gy, S)
+    ix = st.interpolate(torch.stack([gx, gy]))
+    out["stencil_interp_maxdiff"] = float(max((bx - ix[0]).abs().max().item(), (by - ix[1]).abs().max().item()))
+
+    out["pass"] = {
+        "partition_unity_1d": out["partition_unity_1d_maxerr"] < 1e-12,
+        "dirac_sum_2d": out["dirac_sum_2d_maxerr"] < 1e-12,
+        "roundtrip_A1_identity": out["roundtrip_l2_A1"] < 1e-12,
+        "correction_beats_control": out["roundtrip_l2_A2"] > 1e-3,
+        "stencil_spread_integration": out["stencil_spread_maxdiff"] < 1e-14,
+        "stencil_interp_integration": out["stencil_interp_maxdiff"] < 1e-14,
+    }
+    if verbose:
+        import json as _json
+
+        print(_json.dumps(out, indent=2))
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if args and args[0] in ("-h", "--help"):
+        print("usage: python -m tensorlbm.ibm_epsilon_gram [--selftest]")
+        return 0
+    res = selftest()
+    return 0 if all(res["pass"].values()) else 1
+
+
+if __name__ == "__main__":  # pragma: no cover - CLI
+    raise SystemExit(main())
