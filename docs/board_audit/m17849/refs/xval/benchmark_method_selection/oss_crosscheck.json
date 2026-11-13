@@ -1,0 +1,63 @@
+{
+  "oss_repo": "Maarten-vd-Sande/lbm",
+  "oss_commit": "573a01c4d2e6321f3634ff271adca4ce91872e6f",
+  "oss_path": "/root/oss-cache/Maarten-vd-Sande_lbm",
+  "oss_source_sha256_unmodified": {
+    "init.py": "aff2ffa1403d70731eceeaa707b97faa36c32f19d51ef394ebcb0f618cb35b65",
+    "streamcollide.py": "6d9d5315da97a10fa3d77408ad70d55845be8f87a8c4f7fc558ac2fcac1cb926",
+    "time_evolve.py": "5f1a9dcd764f47cf03d9cefb5a095f027a7bdc8e7d9a8e64661de32fca328ae3",
+    "update_types.py": "58be1e813fed9b7a2b27e9acbaee4fa808058a390080d287acdd1d349b08c780",
+    "util.py": "867f8370c9e18bce33b30709f340093bc42bf69f5a69a28c31ae3b3ee7253afb"
+  },
+  "env_shim": "numba.jit -> identity (numerics identical, speed only); lbm/__init__.py added in a temp dir",
+  "dir_permutation_tensorlbm_to_oss": [
+    0,
+    6,
+    2,
+    3,
+    1,
+    8,
+    5,
+    4,
+    7
+  ],
+  "k0_direction_map": {
+    "directions_agree": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "all_agree": true,
+    "n": 8
+  },
+  "k1_collision": {
+    "n": 48,
+    "tau": 0.5075,
+    "rel_l2_collision": 1.1757884876259976e-07,
+    "max_abs_diff": 1.6753388859536145e-07,
+    "oss_dtype": "float32",
+    "tensorlbm_dtype": "float64"
+  },
+  "k2_streaming": {
+    "n": 48,
+    "rel_l2_streaming_interior": 2.709855973692391e-08,
+    "max_abs_diff_interior": 1.4900481404289678e-08,
+    "border_excluded": "1-cell frame (OSS asymmetric out-of-range handling)"
+  },
+  "throughput": {
+    "grid": "100x100",
+    "s_per_step_oss_100x100": 5.126,
+    "s_per_step_oss_200x200_extrapolated": 20.505,
+    "extrapolation": "linear in cell count (pure-Python per-cell loop)",
+    "s_per_step_tensorlbm_measured": 0.0212,
+    "steps_needed_for_case": 21259,
+    "oss_wall_hours_full_case": 121.1
+  },
+  "elapsed_s": 6.4
+}
