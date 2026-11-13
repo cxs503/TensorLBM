@@ -1,0 +1,49 @@
+{
+  "experiment": "aa_pattern_fused_stream_collide_xval",
+  "anchor": "XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN",
+  "case": {
+    "n": 33,
+    "re": 100.0,
+    "u_lid": 0.1,
+    "max_steps": 5000
+  },
+  "numerical_comparison": {
+    "mass_aa": 3.9390521023757143,
+    "mass_sep": 0.24032269080238616,
+    "mass_rel_diff": 0.9389897151506467
+  },
+  "aa_pattern": {
+    "elapsed_s": 18.57505444996059,
+    "mlups": 0.2931350761134136,
+    "tau": 0.596,
+    "errors_vs_ghia": {
+      "l2_u": 0.2472316910842814,
+      "l2_v": 0.2393061783473809,
+      "max_u": 0.4262527611250538,
+      "max_v": 0.4219698562169473
+    },
+    "pass_vs_ghia_15pct": false
+  },
+  "separate": {
+    "elapsed_s": 17.956970239058137,
+    "mlups": 0.3032248718749114,
+    "tau": 0.596,
+    "errors_vs_ghia": {
+      "l2_u": 0.0956721636190775,
+      "l2_v": 0.280198287606753,
+      "max_u": 0.1565457297506992,
+      "max_v": 0.4060999830319807
+    },
+    "pass_vs_ghia_15pct": false
+  },
+  "performance": {
+    "speedup_sep_over_aa": 0.9667250390803692
+  },
+  "verdict": {
+    "aa_pattern_accuracy": "FAIL",
+    "separate_accuracy": "FAIL"
+  },
+  "artifacts": {
+    "profiles_figure": "/root/tp-agent/work/m17976/TensorLBM/artifacts/xval_aa_pattern/profiles_comparison.png"
+  }
+}
