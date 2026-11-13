@@ -1,0 +1,572 @@
+{
+  "aggregate": [
+    {
+      "arm": "A1_srt",
+      "eps_rel_rms_max": 1.5198156359166656e-15,
+      "eps_scaled_inf_max": 1.3340920703492186e-15,
+      "eps_scaled_inf_median": 9.785997449818475e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.51
+    },
+    {
+      "arm": "A1_srt",
+      "eps_rel_rms_max": 5.216154568337656e-16,
+      "eps_scaled_inf_max": 1.3530989032640118e-15,
+      "eps_scaled_inf_median": 7.281257724030123e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.55
+    },
+    {
+      "arm": "A1_srt",
+      "eps_rel_rms_max": 1.0444182640884575e-15,
+      "eps_scaled_inf_max": 8.453473220904199e-16,
+      "eps_scaled_inf_median": 7.144102675735783e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.7
+    },
+    {
+      "arm": "A1_srt",
+      "eps_rel_rms_max": 4.634512784429223e-16,
+      "eps_scaled_inf_max": 8.652605058068369e-16,
+      "eps_scaled_inf_median": 4.864578723405496e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 1.0
+    },
+    {
+      "arm": "A1_srt",
+      "eps_rel_rms_max": 2.0988189136984986e-16,
+      "eps_scaled_inf_max": 3.725647421793141e-16,
+      "eps_scaled_inf_median": 3.656663231876305e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 3.0
+    },
+    {
+      "arm": "A2_srt_matmul",
+      "eps_rel_rms_max": 1.5346414586286536e-15,
+      "eps_scaled_inf_max": 1.2377417224425762e-15,
+      "eps_scaled_inf_median": 1.0801390510459907e-15,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.51
+    },
+    {
+      "arm": "A2_srt_matmul",
+      "eps_rel_rms_max": 5.032520526200693e-16,
+      "eps_scaled_inf_max": 1.3588500182106633e-15,
+      "eps_scaled_inf_median": 7.36727581900312e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.55
+    },
+    {
+      "arm": "A2_srt_matmul",
+      "eps_rel_rms_max": 1.0563301284851192e-15,
+      "eps_scaled_inf_max": 7.992374681582152e-16,
+      "eps_scaled_inf_median": 7.281070066335152e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.7
+    },
+    {
+      "arm": "A2_srt_matmul",
+      "eps_rel_rms_max": 4.628256780297287e-16,
+      "eps_scaled_inf_max": 8.652605058068369e-16,
+      "eps_scaled_inf_median": 3.681300446070287e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 1.0
+    },
+    {
+      "arm": "A2_srt_matmul",
+      "eps_rel_rms_max": 2.272034986178821e-16,
+      "eps_scaled_inf_max": 3.725647421793141e-16,
+      "eps_scaled_inf_median": 3.6607899855547633e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 3.0
+    },
+    {
+      "arm": "A3_trt",
+      "eps_rel_rms_max": 9.204613882350025e-16,
+      "eps_scaled_inf_max": 1.3340920703492186e-15,
+      "eps_scaled_inf_median": 9.687396674814485e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.51
+    },
+    {
+      "arm": "A3_trt",
+      "eps_rel_rms_max": 5.0441263105773425e-16,
+      "eps_scaled_inf_max": 1.3530989032640118e-15,
+      "eps_scaled_inf_median": 7.281257724030123e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.55
+    },
+    {
+      "arm": "A3_trt",
+      "eps_rel_rms_max": 8.279364900585204e-16,
+      "eps_scaled_inf_max": 7.400525456257763e-16,
+      "eps_scaled_inf_median": 6.108337905197871e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.7
+    },
+    {
+      "arm": "A3_trt",
+      "eps_rel_rms_max": 2.465813359126134e-16,
+      "eps_scaled_inf_max": 6.180432184334549e-16,
+      "eps_scaled_inf_median": 4.864578723405496e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 1.0
+    },
+    {
+      "arm": "A3_trt",
+      "eps_rel_rms_max": 5.936766364898733e-16,
+      "eps_scaled_inf_max": 6.200853128863182e-16,
+      "eps_scaled_inf_median": 3.6636592739420795e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 3.0
+    },
+    {
+      "arm": "A4_mrt_degenerate",
+      "eps_rel_rms_max": 1.431703667702238e-15,
+      "eps_scaled_inf_max": 1.4625411305742778e-15,
+      "eps_scaled_inf_median": 1.275212444995234e-15,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.51
+    },
+    {
+      "arm": "A4_mrt_degenerate",
+      "eps_rel_rms_max": 5.609428599262977e-16,
+      "eps_scaled_inf_max": 1.2353181983733302e-15,
+      "eps_scaled_inf_median": 7.936704942668042e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.55
+    },
+    {
+      "arm": "A4_mrt_degenerate",
+      "eps_rel_rms_max": 7.261143685078757e-16,
+      "eps_scaled_inf_max": 9.821709776894536e-16,
+      "eps_scaled_inf_median": 7.281061011989145e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.7
+    },
+    {
+      "arm": "A4_mrt_degenerate",
+      "eps_rel_rms_max": 1.3553338696880167e-15,
+      "eps_scaled_inf_max": 1.7305210116136714e-15,
+      "eps_scaled_inf_median": 1.5936399278778135e-15,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 1.0
+    },
+    {
+      "arm": "A4_mrt_degenerate",
+      "eps_rel_rms_max": 3.722557854795186e-16,
+      "eps_scaled_inf_max": 4.967529895724187e-16,
+      "eps_scaled_inf_median": 3.9644852309208974e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 3.0
+    },
+    {
+      "arm": "A5_mrt",
+      "eps_rel_rms_max": 8.930529305859093e-16,
+      "eps_scaled_inf_max": 1.1065724757883064e-15,
+      "eps_scaled_inf_median": 8.52981924405615e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.51
+    },
+    {
+      "arm": "A5_mrt",
+      "eps_rel_rms_max": 9.014439906956199e-16,
+      "eps_scaled_inf_max": 1.1065724757883064e-15,
+      "eps_scaled_inf_median": 8.52981924405615e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.55
+    },
+    {
+      "arm": "A5_mrt",
+      "eps_rel_rms_max": 9.249979847251851e-16,
+      "eps_scaled_inf_max": 1.1065724757883064e-15,
+      "eps_scaled_inf_median": 8.52981924405615e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 0.7
+    },
+    {
+      "arm": "A5_mrt",
+      "eps_rel_rms_max": 1.2332125596915837e-15,
+      "eps_scaled_inf_max": 1.1065724757883064e-15,
+      "eps_scaled_inf_median": 8.603086914359989e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 1.0
+    },
+    {
+      "arm": "A5_mrt",
+      "eps_rel_rms_max": 9.088841720032495e-16,
+      "eps_scaled_inf_max": 1.1065724757883064e-15,
+      "eps_scaled_inf_median": 8.52981924405615e-16,
+      "gate": 1e-10,
+      "pass": true,
+      "tau": 3.0
+    },
+    {
+      "arm": "A6_d3q19_srt",
+      "eps_rel_rms_max": 0.08714487801595446,
+      "eps_scaled_inf_max": 0.21681236968621612,
+      "eps_scaled_inf_median": 0.007990851314704447,
+      "gate": 1e-06,
+      "pass": false,
+      "tau": 0.7
+    },
+    {
+      "arm": "A6_d3q19_srt",
+      "eps_rel_rms_max": 0.06158971633574804,
+      "eps_scaled_inf_max": 0.1521761698226589,
+      "eps_scaled_inf_median": 0.005597895464280208,
+      "gate": 1e-06,
+      "pass": false,
+      "tau": 1.0
+    },
+    {
+      "arm": "A6b_d3q19_srt_discrete_eq",
+      "eps_rel_rms_max": 1.0678351186046077e-15,
+      "eps_scaled_inf_max": 1.3257470874200653e-15,
+      "eps_scaled_inf_median": 1.1516840103333496e-15,
+      "gate": 1e-06,
+      "pass": true,
+      "tau": 0.7
+    },
+    {
+      "arm": "A6b_d3q19_srt_discrete_eq",
+      "eps_rel_rms_max": 4.2713936864800984e-16,
+      "eps_scaled_inf_max": 8.298308824719513e-16,
+      "eps_scaled_inf_median": 6.502178986683231e-16,
+      "gate": 1e-06,
+      "pass": true,
+      "tau": 1.0
+    }
+  ],
+  "all_arms_pass": false,
+  "all_controls_detected": false,
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "arms_failing": [
+    "A6_d3q19_srt@tau=0.7",
+    "A6_d3q19_srt@tau=1.0"
+  ],
+  "controls": [
+    {
+      "control": "C1_no_permutation",
+      "detected": true,
+      "eps_scaled_inf": 0.09015535360782141
+    },
+    {
+      "control": "C2_tau_rel_1e-06",
+      "detected": false,
+      "eps_scaled_inf": 1.575137618837901e-08
+    },
+    {
+      "control": "C3_trt_tau_plus_rel_1e-06",
+      "detected": false,
+      "eps_scaled_inf": 1.575137618837901e-08
+    },
+    {
+      "control": "C2_tau_rel_0.001",
+      "detected": true,
+      "eps_scaled_inf": 1.5735903793931267e-05
+    },
+    {
+      "control": "C3_trt_tau_plus_rel_0.001",
+      "detected": true,
+      "eps_scaled_inf": 1.5735903793931267e-05
+    }
+  ],
+  "fp32_sensitivity": [
+    {
+      "eps_scaled_inf_fp32_rounding": 0.0,
+      "eps_scaled_inf_fp64": 6.728511032213823e-16,
+      "tau": 0.7
+    },
+    {
+      "eps_scaled_inf_fp32_rounding": 0.0,
+      "eps_scaled_inf_fp64": 4.916696010501547e-16,
+      "tau": 1.0
+    }
+  ],
+  "generated_utc": "2026-11-13T12:40:56Z",
+  "mrt_basis_identical": true,
+  "mrt_basis_maxdiff": 0.0,
+  "n_points": 580,
+  "physics_shear_wave": [
+    {
+      "E0": 0.012800000000000002,
+      "E1": 0.011983690898030462,
+      "err_pct": 2.5574575118625287,
+      "nu_measured": 0.017092909585310435,
+      "nu_theory": 0.01666666666666668,
+      "side": "tensorlbm_kernel",
+      "steps": 200,
+      "tau": 0.55,
+      "u0": 0.01
+    },
+    {
+      "E0": 0.012800000000000002,
+      "E1": 0.009883832514151276,
+      "err_pct": 0.592901146199726,
+      "nu_measured": 0.06706193409746647,
+      "nu_theory": 0.06666666666666665,
+      "side": "tensorlbm_kernel",
+      "steps": 200,
+      "tau": 0.7,
+      "u0": 0.01
+    },
+    {
+      "E0": 0.012800000000000002,
+      "E1": 0.006732138918732528,
+      "err_pct": 1.7217872727570693e-05,
+      "nu_measured": 0.1666666379702121,
+      "nu_theory": 0.16666666666666666,
+      "side": "tensorlbm_kernel",
+      "steps": 200,
+      "tau": 1.0,
+      "u0": 0.01
+    },
+    {
+      "E0": 0.012800000000000002,
+      "E1": 0.00988383251414809,
+      "err_pct": 0.5929011463250841,
+      "nu_measured": 0.06706193409755004,
+      "nu_theory": 0.06666666666666665,
+      "side": "lbmpy_reference_operator",
+      "steps": 200,
+      "tau": 0.7,
+      "u0": 0.01
+    }
+  ],
+  "provenance": {
+    "numpy": "2.4.6",
+    "oss": {
+      "lbmpy_root": "/usr/lib/python3.11/site-packages/lbmpy",
+      "lbmpy_version": "2.0",
+      "pystencils_version": "2.0",
+      "source_sha256": {
+        "methods/abstractlbmethod.py": "5fb547e2d523c627c0f86cf9f73bcf951468e0bcb4a587885dbd5c48f6a0e14e",
+        "methods/conservedquantitycomputation.py": "d8243291d11f31a11063900ce00e5ffb874e6947de6886dfdf56ecd8c591a96c",
+        "methods/creationfunctions.py": "9eb9786eb8e60306bce7a88eff8fc5169cefe51d5a9485a01a2537fe048f1ba2",
+        "methods/momentbased/momentbasedmethod.py": "e87a974f8053942dc9327f90e7f064a0dc56760e4c8178dff1fb8cb6748a4e0c",
+        "moments.py": "6f2fa4e359cf21fb825d224b60d46baa16d3b831e3dc8998f79be9310026c896",
+        "stencils.py": "68bede6b983844aa6bab93f6803aacd874e81f0ac686660a687673ac5a032c3b"
+      }
+    },
+    "predeclared": {
+      "alternatives": {
+        "A0_oss_pointwise": "lbmpy 2.0 collision rule (create_srt / create_trt / MomentBasedLbMethod on the reconstructed Lallemand-Luo basis) lambdified and applied pointwise to the identical post-equilibrium PDF field, permuted into TensorLBM's direction order by matching velocity tuples",
+        "A1_from_definition": "independent numpy re-implementation of the same operator written from the textbook definition (moment transform + relaxation + reconstruction, or the BGK/TRT two-rate decomposition). Shorter independence distance than A0 (it is a re-derivation, not a second project), used only for the regularised-BGK arm where lbmpy has no counterpart",
+        "A2_controls": "positive controls that must FAIL: (C1) same comparison with the direction permutation removed, (C2) reference evaluated at tau*(1+1e-6) against the kernel at tau, (C3) reference at omega*(1+1e-6). A harness that passes these is vacuous and the whole run is rejected",
+        "A3_rejection": "declare the OSS cross-validation NOT_SUPPORTED and record the friction instead of substituting a weaker self-consistency check"
+      },
+      "analysis_plan": "per-arm metrics computed on the raw arrays, aggregated by (kernel, tau) over seeds with max and median; gates applied to the max over seeds and amplitudes; figures: (1) pointwise error map vs |f| for the worst arm, (2) eps_scaled_inf vs tau for all kernels with the gate line, (3) eps vs flow amplitude / Mach, (4) shear-wave decay vs analytic. No outlier removal, no dropping of arms.",
+      "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+      "baseline_control": {
+        "comparison_limit": "both implementations are evaluated on the SAME input PDF field, so discretisation error cancels and only the operator algebra is under test; the arm therefore says nothing about which discretisation is more accurate, only whether the two implementations compute the same operator",
+        "numerical_control": "positive controls C1/C2/C3 above; a run whose controls are not detected is discarded",
+        "physical_baseline": "the lbmpy 2.0 pointwise reference operator (A0) and, for the regularised kernel, the from-definition reference (A1)",
+        "physics_baseline": "analytic shear-wave decay nu_theory = (tau - 1/2)/3 and the induced decay factor exp(-nu k^2 t)"
+      },
+      "confounders": [
+        "direction ordering differs (lbmpy D2Q9: rest,N,S,W,E,...; TensorLBM: rest,E,N,W,S,...) -- handled by deriving the permutation from the velocity tuples, and C1 proves the permutation matters",
+        "weight precision: TensorLBM D3Q19 deliberately uses float32 lattice constants, which floors that arm at ~1e-8 -- predeclared as gate_d3q19_float32_lattice instead of pretending it is round-off",
+        "equilibrium convention: compressible vs incompressible and continuous vs discrete Maxwellian -- fixed by construction (a mismatch here would show up as an O(1) failure, which is the point of the test)",
+        "moment-basis representation: the MRT reference re-derives the in-repo M matrix in lbmpy moment polynomials, so both sides share that basis by construction (declared, not a confounder)",
+        "floating-point summation order differs between a vectorised torch reduction and a generated scalar expression: irreducible round-off, bounded by the fp64 gates"
+      ],
+      "decision": "Does the pointwise reference-regression discipline used by the OSS LBM generator lbmpy (lssfau/lbmpy: every generated collision kernel is compared point-by-point against an independently constructed reference operator, per lattice node and per discrete direction, with a declared tolerance) hold for TensorLBM's in-repo D2Q9/D3Q19 collision kernels -- SRT/BGK, TRT, MRT (Lallemand-Luo basis), regularised BGK -- and can it be parked as a machine-checked regression gate in this repository?",
+      "declared_before_running": true,
+      "environment": {
+        "lbmpy": "2.0 (installed wheel, sha256 records in summary.json)",
+        "note": "runs on the controller node; ~2 s per arm point, well below the 10 min cluster threshold (no cluster_queue submission needed)",
+        "numpy": "2.4.6",
+        "pystencils": "2.0",
+        "python": "3.11",
+        "repo_commit": "branch agent/m18192",
+        "torch": "2.7.1"
+      },
+      "hypothesis": "H1: every TensorLBM D2Q9 collision kernel reproduces the lbmpy pointwise reference operator to fp64 round-off (scaled max-abs deviation < 1e-10) for all tested relaxation times and flow amplitudes, and the D3Q19 BGK kernel agrees within its documented float32-lattice-constant floor (< 1e-6). H0 (falsifier): any active arm exceeds its predeclared threshold, or any positive control fails to be detected, or the reconstructed MRT moment basis does not reproduce the in-repo M matrix.",
+      "metrics": {
+        "eps_rel_pointwise_max": "max_i |f_kernel,i - f_ref,i| / |f_ref,i| (reported only -- at zero crossings of a near-equilibrium field this metric is unbounded and is NOT a gate)",
+        "eps_rel_rms": "||f_kernel - f_ref||_2 / ||f_ref||_2 (secondary)",
+        "eps_scaled_inf": "max_i |f_kernel,i - f_ref,i| / max_i |f_ref,i| over all Q directions and all nodes (primary gate; scale-free because the fields have a non-zero mean)",
+        "m_conservation_residual": "max |sum_i f_i^post - sum_i f_i^pre| / mean(f) -- a property of the reference AND the kernel, so a non-zero value flags both",
+        "moment_err_j": "|j_kernel - j_ref| / |j_ref| max over the two (three) momentum components",
+        "moment_err_rho": "|rho_kernel - rho_ref| / rho_ref (conserved moment, per node max)",
+        "mrt_basis_maxdiff": "max |M_lbmpy - M_repo| for the reconstructed Lallemand-Luo basis (must be 0 to round-off)",
+        "physical_decay_err_pct": "|nu_measured - nu_theory| / nu_theory * 100 for a periodic shear wave evolved 200 steps with (a) the TensorLBM kernel and (b) the lbmpy pointwise reference (physics-level counterpart of the code-level gate, the quantity the owner 15% standard applies to)"
+      },
+      "owner_standard_pct": 15.0,
+      "predeclared_thresholds": {
+        "control_detection_min": 1e-06,
+        "gate_d3q19_float32_lattice": 1e-06,
+        "gate_fp64": 1e-10,
+        "gate_from_definition_rlbm": 1e-10,
+        "interpretation": "PASS iff every active arm is below its gate AND every positive control produces an error above control_detection_min AND the MRT basis identity holds AND the physics-level decay error is < 15%. The owner 15% band is the acceptance caliber for the physics arm; for the code-equivalence arms the appropriate caliber is round-off (a 15% band there would be vacuous, so the tighter predeclared gate is used and reported as such).",
+        "mrt_basis_identity": 1e-12,
+        "physical_decay_pct": 15.0,
+        "physical_decay_target_pct": 3.0
+      },
+      "reference_source": {
+        "oss": "lssfau/lbmpy (lbmpy 2.0, pystencils 2.0), installed wheel",
+        "practice_read_from_source": [
+          "lbmpy/methods/creationfunctions.py :: create_srt / create_trt / create_mrt_raw -> symbolic collapse of the relaxation operator into per-direction update equations (the reference operator, independent of any kernel code path)",
+          "lbmpy/methods/abstractlbmethod.py :: LbmCollisionRule.lambdify(symbols, fixed_symbols) -> pointwise evaluation of exactly those equations on a numpy PDF field",
+          "lbmpy/tests/test_zero_centering.py -> assert_allclose(reference, kernel_output, rtol=1e-5): the repository's own regression style, i.e. reference arrays compared elementwise against kernel output",
+          "lbmpy/moments.py :: moment_matrix(moments, stencil) -> the moment basis of a method is a first-class object, so a MRT basis can be reconstructed and re-instantiated independently"
+        ],
+        "provenance_captured_at_runtime": "sha256 of the installed lbmpy modules used + version + the first symbolic update equation, written into summary.json (no hand transcription)"
+      },
+      "repetitions": "5 RNG seeds x every (kernel, tau) configuration; the gate is applied to the worst seed (max), the table reports the median too. Rationale: the deviation is round-off dominated (expected ~1e-15), so 5 draws already separate round-off from a systematic O(1e-6) defect by 10 orders of magnitude; more draws buy nothing.",
+      "round": 1,
+      "stopping_rule": "all arms are single-pass pointwise evaluations (no time marching except the physics arm, which is fixed at 200 steps); no threshold, no sweep range and no seed is changed after the first results are seen. Any arm failing its gate is reported as FAIL and is not re-tuned.",
+      "target_pct": 3.0,
+      "unit_of_analysis": "one arm point = one (kernel, lattice, tau, flow amplitude, dtype, seed) combination; each point yields the scalar metrics above",
+      "variables_changed": [
+        "collision model: SRT/BGK, TRT (Lambda=3/16), MRT (Lallemand-Luo basis, s_e/s_eps/s_q free), regularised BGK",
+        "kernel code path: solver.collide_bgk vs solver.collide_bgk_matmul (matmul reformulation of the same operator) vs solver.collide_mrt vs solver.collide_trt vs solver.collide_rlbm",
+        "lattice: D2Q9 (fp64) and D3Q19 (fp64 populations, float32 lattice constants by contract)",
+        "relaxation time: tau in {0.51, 0.55, 0.7, 1.0, 3.0}",
+        "flow amplitude: max|u| in {1e-5, 1e-3, 0.05, 0.15} (Mach 3e-5 .. 0.45)",
+        "dtype: float64 and float32",
+        "RNG seed: 5 seeds per configuration"
+      ],
+      "variables_held_fixed": [
+        "equilibrium: discrete 2nd-order Maxwellian, compressible (u = j/rho) on both sides -- lbmpy create_*(compressible=True), TensorLBM d2q9.equilibrium",
+        "the input PDF field is bit-identical for reference and kernel (single array, no copy drift)",
+        "domain 8x8 (D2Q9) / 4x4x4 (D3Q19) periodic, single-step collision only (no streaming in the code-equivalence arms)",
+        "one pointwise call per configuration; no time accumulation"
+      ]
+    },
+    "python": "3.11.6",
+    "torch": "2.7.1"
+  },
+  "rlbm_from_definition": [
+    {
+      "abs_diff_max": 3.9377112681648896e-11,
+      "amplitude": 0.001,
+      "eps_rel_pointwise_max": 4.111536361122939e-10,
+      "eps_rel_rms": 3.54441156948253e-11,
+      "eps_scaled_inf": 8.594902061800845e-11,
+      "gate": 1e-10,
+      "neq_third_order_max": 0.0,
+      "neq_third_order_rel": 0.0,
+      "pass": true,
+      "scale_abs_max": 0.4581449840674323,
+      "tau": 0.51
+    },
+    {
+      "abs_diff_max": 3.909761403519951e-11,
+      "amplitude": 0.05,
+      "eps_rel_pointwise_max": 5.480778390901762e-10,
+      "eps_rel_rms": 3.5667628133252895e-11,
+      "eps_scaled_inf": 8.557878678749415e-11,
+      "gate": 1e-10,
+      "neq_third_order_max": 1.734723475976807e-17,
+      "neq_third_order_rel": 3.797048340073157e-17,
+      "pass": true,
+      "scale_abs_max": 0.45686104586040877,
+      "tau": 0.51
+    },
+    {
+      "abs_diff_max": 1.756472745029214e-11,
+      "amplitude": 0.001,
+      "eps_rel_pointwise_max": 1.8563679861791797e-10,
+      "eps_rel_rms": 1.5809704945366988e-11,
+      "eps_scaled_inf": 3.8585362601595164e-11,
+      "gate": 1e-10,
+      "neq_third_order_max": 3.469446951953614e-18,
+      "neq_third_order_rel": 7.621516988624686e-18,
+      "pass": true,
+      "scale_abs_max": 0.45521737430986314,
+      "tau": 0.7
+    },
+    {
+      "abs_diff_max": 1.7440049404626734e-11,
+      "amplitude": 0.05,
+      "eps_rel_pointwise_max": 2.5486294810760845e-10,
+      "eps_rel_rms": 1.5909322166890192e-11,
+      "eps_scaled_inf": 3.8418080167789954e-11,
+      "gate": 1e-10,
+      "neq_third_order_max": 2.0816681711721685e-17,
+      "neq_third_order_rel": 4.5856346403778036e-17,
+      "pass": true,
+      "scale_abs_max": 0.45395421448593415,
+      "tau": 0.7
+    },
+    {
+      "abs_diff_max": 0.0,
+      "amplitude": 0.001,
+      "eps_rel_pointwise_max": 0.0,
+      "eps_rel_rms": 0.0,
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-10,
+      "neq_third_order_max": 0.0,
+      "neq_third_order_rel": 0.0,
+      "pass": true,
+      "scale_abs_max": 0.4532525339859523,
+      "tau": 1.0
+    },
+    {
+      "abs_diff_max": 3.469446951953614e-18,
+      "amplitude": 0.05,
+      "eps_rel_pointwise_max": 1.8713021093987916e-16,
+      "eps_rel_rms": 8.690509694697808e-19,
+      "eps_scaled_inf": 7.68233751640867e-18,
+      "gate": 1e-10,
+      "neq_third_order_max": 3.469446951953614e-18,
+      "neq_third_order_rel": 7.68233751640867e-18,
+      "pass": true,
+      "scale_abs_max": 0.4516134502738572,
+      "tau": 1.0
+    },
+    {
+      "abs_diff_max": 2.732286619178126e-11,
+      "amplitude": 0.001,
+      "eps_rel_pointwise_max": 3.0840570707713574e-10,
+      "eps_rel_rms": 2.4590298683070108e-11,
+      "eps_scaled_inf": 6.025833752182325e-11,
+      "gate": 1e-10,
+      "neq_third_order_max": 0.0,
+      "neq_third_order_rel": 0.0,
+      "pass": true,
+      "scale_abs_max": 0.45342880861732976,
+      "tau": 3.0
+    },
+    {
+      "abs_diff_max": 2.7128965740530475e-11,
+      "amplitude": 0.05,
+      "eps_rel_pointwise_max": 4.344308411039341e-10,
+      "eps_rel_rms": 2.474498874883671e-11,
+      "eps_scaled_inf": 6.026970923505985e-11,
+      "gate": 1e-10,
+      "neq_third_order_max": 1.734723475976807e-17,
+      "neq_third_order_rel": 3.853861606757475e-17,
+      "pass": true,
+      "scale_abs_max": 0.4501260431624768,
+      "tau": 3.0
+    }
+  ],
+  "wall_seconds": 28.31
+}
