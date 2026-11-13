@@ -1,0 +1,49 @@
+{
+  "anchor": "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-RECON",
+  "mission": 18240,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "decision": "Can TensorLBM reproduce joconnor22/LIFE's regularised D2Q9 boundary condition (Latt et al. 2008) -- unknown in-flowing populations closed by non-equilibrium bounce-back, the node stress Pi_neq^{ab}=sum_q c_a c_b (f_q - f_q^eq) accumulated over the RECONSTRUCTED set and all populations then replaced by f^eq + (w_q/2c_s^4) Q_qab Pi_neq^{ab} -- within the owner 15% criterion, and does replacing the status-quo Zou-He open boundaries by it change (improve/degrade) the physical accuracy of a plane-Poiseuille channel?",
+  "reference": {
+    "repo": "joconnor22/LIFE",
+    "frozen_method_digest": "src/Grid.cpp::regularisedBC L386-470 + getNormalVector L504-540 + Utils.h zeroGradient/extrapolate; transcribed to xval/XVAL-LBM-REG-BC-NEQ-STRESS/reference.py (independent code path: numpy, per-node loops, in-place update in BC-vector order)"
+  },
+  "alternatives": {
+    "life_ref": "numpy per-node transcription of LIFE regularisedBC (reference arm)",
+    "tlbm_port": "tensorlbm.regularised_bc_2d (new vectorised torch port, this mission)",
+    "status_quo_zouhe": "Zou-He velocity inlet + Zou-He pressure outlet + solid-node bounce-back walls (TensorLBM's current 2D practice)",
+    "arm_reg_reg": "regularised velocity inlet + regularised pressure outlet, regularised wet-node walls",
+    "arm_zouhe": "Zou-He inlet + Zou-He outlet, half-way bounce-back walls"
+  },
+  "hypothesis": {
+    "H1": "port and reference agree on the post-BC populations of every non-corner boundary node to <15% (expected machine precision): same formula, same accumulated stress.",
+    "H2": "the two implementations differ measurably only at corner nodes, where LIFE updates rho in place in BC-vector order while the port gathers rho from the pre-BC field (order dependence).",
+    "H3": "at equal collision kernel and equal effective channel height, the regularised open boundaries give a mid-channel profile error vs the analytic parabola comparable to (<15% gate) or better than Zou-He, and a smaller mass-flux drift and smaller spurious transverse velocity at the outlet.",
+    "falsifier": "H1 falsified if any non-corner node exceeds 15% relative population deviation; H3 falsified if either arm exceeds the 15% owner gate on the profile error, or if the regularised arm is >15% worse than Zou-He on every metric."
+  },
+  "metrics": {
+    "K1_pop_rel_dev_pct": "max over boundary nodes and 9 populations of |f_port - f_ref| / sqrt(mean_q f_ref^2) *100 at a converged snapshot, split corner vs non-corner",
+    "K2_invariants": "|rho_after - rho_prescribed|, |u_after - u_prescribed| and |Pi_neq(f_after) - Pi_neq(f_before)| (must be ~machine eps: regularisation preserves rho, u and the six second moments)",
+    "K3_profile_err_pct": "max_j |u_num(j) - u_exact(j)| / u_max * 100 at the mid-channel column",
+    "K4_field_l2_pct": "sqrt(sum (u_num-u_exact)^2 / sum u_exact^2) * 100 over the whole domain",
+    "K5_mass_drift_pct": "|Q(x2)-Q(x3)|/Q(x2) *100 with Q(x)=sum_j rho ux",
+    "K6_outlet_uy_pct": "max|uy| at the outlet column / u_max * 100 (spurious transverse velocity)",
+    "K7_wall_slip_pct": "max|ux| on the wet wall node row / u_max * 100 (regularised-wall slip)"
+  },
+  "predeclared_thresholds": {
+    "owner_accuracy_pct": 15.0,
+    "strict_pct": 3.0,
+    "pass_rule": "K1 < 15% for non-corner nodes (H1) and K3 < 15% for both channel arms (H3); K1 is reported per node class even if a corner disagreement is attributed",
+    "iteration_rule": "runs are marched until max|u(t)-u(t-500)| < 1e-13 or the predeclared step cap; a run that does not reach the cap-free stationarity criterion is reported as NOT CONVERGED, never tuned",
+    "no_tuning_rule": "u_max, Re, H, L, tau and the analytic reference are fixed before the first production run; no threshold or arm is changed after inspecting KPI values"
+  },
+  "reference_values": {
+    "analytic_poiseuille": "u(y) = 4 u_max y (H-y) / H^2, exact steady solution of the incompressible limit of the BGK lattice equation for a straight channel (parabolic inlet = exact solution, no body force)",
+    "geometry_convention": "reg arm: wet nodes at j=0 and j=Ny-1, H=Ny-1, y=j; zouhe arm: half-way bounce-back planes at j=0.5 and j=Ny-0.5, H=Ny-1, y=j-0.5 -> identical physical channel height in both arms"
+  },
+  "variables_changed": ["boundary treatment (regularised vs Zou-He/BB)", "resolution H in {16,32} (same L/H=4)", "Re in {50,100} at H=32"],
+  "variables_controlled": ["BGK collision with identical code path", "lattice D2Q9, float64", "initial condition = analytic parabola", "inlet profile = analytic parabola", "grid aspect L/H = 4", "stationarity tolerance"],
+  "unit_of_analysis": "one arm x one (H, Re) case; KPIs are scalars over a converged field",
+  "environment": "CPU, python 3, torch 2.7.1 float64, numpy 2.4.6; commands recorded in run_xval.py --help and out/results.json",
+  "stopping_rule": "stop at stationarity tolerance or 20000 (H=32) / 8000 (H=16) steps; a diverging arm (non-finite) is reported as measured"
+}
