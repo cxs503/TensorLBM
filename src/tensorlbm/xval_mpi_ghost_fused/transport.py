@@ -108,7 +108,11 @@ class SlabExchange:
 
         itemsize = post.element_size()
         nz, ny = post.shape[1], post.shape[2]
-        self.bytes_last_step = 2 * (
+        # one packed plane per side: this rank sends its right plane to the right
+        # neighbour and its left plane to the left neighbour.  (An earlier version
+        # multiplied by 2 again and reported twice the traffic; the 5/19 ratio is
+        # unaffected by that factor, the absolute KiB number was not.)
+        self.bytes_last_step = (
             self.right_info.packed_bytes(nz, ny, itemsize)
             + self.left_info.packed_bytes(nz, ny, itemsize)
         )
