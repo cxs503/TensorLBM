@@ -1,0 +1,55 @@
+{
+  "anchor": "XVAL-LBM-FILL-GRADIENT-NORMAL",
+  "mission": 17757,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "decision": "Does TensorLBM's fill-gradient interface normal (src/tensorlbm/free_surface_lbm.py:642 _compute_interface_normal: fill=mass/rho, central difference, normalized, sign liquid->gas) reproduce the mature OSS practice (Maarten-vd-Sande/lbm, oss_solutions id=85 'fill-gradient-normal': n=0.5*(eps_{i-1}-eps_{i+1}, eps_{j-1}-eps_{j+1}), NOT normalized, sign liquid->gas) within the owner 15% criterion, and which knobs (normalization, eps gas value, dimensionality) carry the difference?",
+  "alternatives": {
+    "A1_tensorlbm": "TensorLBM as-is: fill=mass/rho, central difference via roll, normalized to unit, n=-grad/|grad| (liquid->gas)",
+    "A2_oss_clean": "OSS as documented (oss id=85): n=0.5*(eps_{i-1}-eps_{i+1}, eps_{j-1}-eps_{j+1}), unnormalized, eps in {0,1} (GAS=0, FLUID=1)",
+    "A3_oss_bug": "OSS with the documented streamcollide.py:166 priority bug: GAS returns eps=0.5 -> magnitude underest 2x, sign unchanged",
+    "A4_analytic": "Analytic normal of the constructed interface (circle: radial; plane: constant; sphere: radial) = ground truth"
+  },
+  "hypothesis": "H1: direction agreement between A1 and A2 (and vs A4) stays below the 15% criterion at all resolutions, i.e. the central-difference fill-gradient stencil is the shared core and only normalization/eps-convention differ; H0 (falsifier): 1-mean|cos(theta)| >= 0.15 on any geometry at the finest resolution.",
+  "metrics": {
+    "dir_err_vs_analytic": "1 - mean(|n_computed . n_analytic|) over interface cells (0=perfect, 1=orthogonal); reported per arm per geometry",
+    "angle_deg_vs_analytic": "mean angle (deg) between computed and analytic normal over interface cells",
+    "dir_err_a1_vs_a2": "1 - mean(|n_A1 . n_A2|) over cells where both are nonzero (cross-implementation)",
+    "mag_ratio": "mean(|n_A2|)/mean(|n_A1|) over interface cells (expected ~0.5 for sharp axis-aligned, geometry-dependent otherwise)",
+    "mag_ratio_bug": "mean(|n_A3|)/mean(|n_A2|) (expected ~0.5, the documented 2x underestimation)"
+  },
+  "unit_of_analysis": "one (geometry, resolution) cell-set; KPIs are scalars per arm",
+  "baseline_control": {
+    "baseline": "A1 (TensorLBM as-is) at each resolution",
+    "control": "A2/A3 share the identical stencil and fill field with A1; only normalization (A1 vs A2) and eps gas value (A2 vs A3) differ, isolating each knob",
+    "cross_implementation_note": "OSS arms are formula transplants evaluated on the identical fill field (zero hand-copy: formula taken verbatim from oss_solutions id=85 method field); a full OSS code run was not possible in this environment (no network checkout) - see friction log"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "interpretation": "dir_err (1-mean|cos|) must be < 0.15 for A1 vs A4 and A1 vs A2 on every geometry at the finest resolution for H1 to hold",
+    "convergence_rule": "report dir_err at N in {64,128,256} for the circle; a KPI is resolution-converged when |KPI(256)-KPI(128)|/KPI(256) < 10%; otherwise the N=128 value is reported as resolution-limited",
+    "interface_cell_rule": "cells with 0 < eps < 1 in the constructed fill field, or (for sharp 0/1 fields) cells with a nonzero computed normal and |n|_A1 > 1e-6",
+    "stability_rule": "a cell-set with fewer than 20 interface cells is excluded and reported, not tuned"
+  },
+  "stopping_rule": "fixed geometry set {circle 2D, tilted plane 2D, sphere 3D} and fixed resolution ladder {64,128,256} (3D sphere at {32,64,128}); no arm extended after inspecting KPIs. Wall-clock budget: 600 s total (pure numpy/torch CPU, no cluster needed).",
+  "variables_changed": [
+    "normalization (A1 vs A2)",
+    "eps gas value 0 vs 0.5 (A2 vs A3)",
+    "resolution N",
+    "geometry (circle/plane/sphere)"
+  ],
+  "variables_controlled": [
+    "central-difference stencil (identical in A1/A2/A3)",
+    "fill field construction (same eps for all arms)",
+    "sign convention (liquid->gas)",
+    "periodic roll boundary (as in both source implementations)",
+    "float64 CPU torch, single process"
+  ],
+  "confounders": [
+    "staircase discretization of curved interfaces (mitigated by resolution ladder)",
+    "periodic wrap-around at domain edges (mitigated: interface kept >= 2 cells from domain boundary)",
+    "sharp vs smeared fill: TensorLBM production fill is mass/rho (can be smeared); here both arms receive the same sharp field so the stencil comparison is isolated; smearing sensitivity reported as a separate sensitivity point"
+  ],
+  "analysis": "aggregation = mean over interface cells; uncertainty = std/sqrt(n_cells); no outlier removal (all interface cells kept); comparison = direct vector dot, no fitting",
+  "safety_resource_limits": "CPU only, < 2 GB RAM, < 600 s wall clock; no cluster submission needed"
+}
