@@ -1,0 +1,70 @@
+{
+  "anchor": "XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER",
+  "mission": 18115,
+  "round": 1,
+  "repair_of": 17843,
+  "source_of_record": {
+    "repo": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow",
+    "files": [
+      "LatFlow/Domain.py:57 (Sc = 0.17)",
+      "LatFlow/Domain.py:90-96 (EEk = sum_{n,m} |c_n c_m|)",
+      "LatFlow/Domain.py:115-121 (NonEq, Q = sqrt(2 sum NonEq^2 EEk), tau = 1/2 (tau0 + sqrt(tau0^2 + 6 Q Sc / rho)))",
+      "LatFlow/Domain.py:134-140 (CollideSC graph_unroll branch)",
+      "LatFlow/Domain.py:178-196 (StreamSC, mobius pad + conv with STREAM)",
+      "LatFlow/Domain.py:244-253 (Unroll: python-side chain of N steps)",
+      "les_train.py:1-165 (training loop is INCOMPLETE upstream: lr/total_loss undefined)"
+    ],
+    "oss_solutions_id": 37,
+    "vendored_sha256": {
+      "D2Q9.py": "8acdfd9974d8fccf31912318f2e03c76fd60304182749052f8ba7335c558c0b7",
+      "Domain.py": "d0c21f76df0e79ef511fc40581586b6a0a1bfff4dba1452fdbecd68525475522",
+      "utils.py": "bfeb6f59ff91c022907ebdf4db43f87db03cf6e82cadfa609c071d54973ecdaf",
+      "les_train.py": "435c6ebc192943e8093a9206ef0a176b13466a56bbb9574bf401fca5c40c9ab8"
+    }
+  },
+  "owner_precision_standard": "relative error > 15% unacceptable",
+  "cases": {
+    "tg_k2_u02": {
+      "n": 48,
+      "u0": 0.2,
+      "k_mode": 2,
+      "tau0": 0.56,
+      "nu0": 0.02,
+      "sc_true": 0.17,
+      "steps_parity": 40,
+      "steps_calibration": 40,
+      "loss": "mean over steps of mean((u_pred - u_ref)^2)",
+      "note": "Taylor-Green vortex, periodic, no solids; Ma = 0.2/sqrt(3) ~ 0.115"
+    },
+    "disc_k2_u02": {
+      "n": 64,
+      "u0": 0.2,
+      "k_mode": 2,
+      "radius": 8,
+      "tau0": 0.56,
+      "sc_true": 0.17,
+      "steps_parity": 40,
+      "note": "same flow + solid disc mask, exercises the bounce-back blend path"
+    }
+  },
+  "predeclared_thresholds": {
+    "A1_forward_parity_rel_L2": 1e-4,
+    "A2_twin_recovery_rel_error": 0.15,
+    "A3_oss_data_recovery_rel_error": 0.15,
+    "A4_gradient_rel_error": 0.15,
+    "A5_analytic_tg_decay_rel_error": 0.03,
+    "A6_sensitivity_max_rel_error": 0.15
+  },
+  "acceptance_rule": "every declared arm must be < its threshold; a failed arm is reported as FAIL, never dropped",
+  "arms": {
+    "A1": "TensorLBM les_bptt.unroll vs OSS arm (vendored tables executed, op-for-op numpy float32) - field & velocity relative L2 after N steps",
+    "A2": "BPTT recovery of sc_true from TensorLBM-generated reference history (twin experiment, exact model)",
+    "A3": "BPTT recovery of sc_true from OSS-arm-generated reference history (cross-implementation, float32 data)",
+    "A4": "autograd d(loss)/dSc vs central finite difference of the unrolled loss",
+    "A5": "linear-regime Taylor-Green decay vs analytic exp(-2 nu k^2 t); the <3% gate applies to the les=False arm, the les=True arm is reported with its implied eddy viscosity (the analytic reference is laminar by construction)",
+    "A6": "parameter/convergence sensitivity: unroll length, sc_init, tau0"
+  },
+  "not_run": {
+    "upstream_tensorflow_execution": "no TensorFlow wheel for loongarch64 (pip download tensorflow-cpu -> no matching distribution); the OSS arm therefore executes the vendored tables with a TF shim and transcribes the ops 1:1 (line refs in oss_arm.py)"
+  }
+}
