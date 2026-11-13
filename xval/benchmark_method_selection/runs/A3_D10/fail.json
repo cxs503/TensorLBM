@@ -1,0 +1,20 @@
+{
+  "arm": "A3",
+  "D": 10,
+  "collision": "trt",
+  "sponge": false,
+  "status": "blowup",
+  "fail_stage": "non_finite_population",
+  "step": 600,
+  "total_steps_planned": 21259,
+  "wall_s": 26.8,
+  "tau": 0.5075,
+  "nu": 0.0025,
+  "u_in": 0.05,
+  "lambda_trt": 0.1875,
+  "tau_minus": 25.500000000000163,
+  "cl_max_abs": 0.04915745945211824,
+  "nx": 200,
+  "ny": 200,
+  "seed_steps": 3077
+}
