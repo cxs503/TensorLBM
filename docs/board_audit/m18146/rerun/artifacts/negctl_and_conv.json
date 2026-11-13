@@ -1,0 +1,18 @@
+{
+ "negctl_nu0.25": {
+  "nu": 0.25,
+  "n_steps": 20000,
+  "max_rel_err": 0.012498509879578089,
+  "mass": 100.01192238463848
+ },
+ "static_slice_40k": {
+  "nu": 0.2,
+  "n_steps": 40000,
+  "max_rel_err": 0.009997290990471195,
+  "mass": 100.02709743600936
+ },
+ "negctl_no_wall_velocity_correction_20k": {
+  "max_rel_err": 0.00013517182666733518,
+  "note": "same module, -g/(2rho) wall-velocity correction removed"
+ }
+}

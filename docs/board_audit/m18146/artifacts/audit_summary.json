@@ -1,0 +1,51 @@
+{
+  "subject_mission": 17866,
+  "anchor": "XVAL-LBM-JAX-PURE-FUNCTION-AA-PATTERN-STATIC-SLIC",
+  "audit_mission": 18146,
+  "equivalence": {
+    "randn_seed0_static_vs_roll_std": 0.0,
+    "randn_seed0_static_vs_tl_roll": 5.024701788894861
+  },
+  "arms_20k": {
+    "static_slice": {
+      "max_rel_err": 0.009998645366241215,
+      "mass": 100.01354817286919
+    },
+    "roll_std": {
+      "max_rel_err": 0.009998645366241215,
+      "mass": 100.01354817286919
+    },
+    "roll_tensorlbm": {
+      "max_rel_err": 0.056025294633731196,
+      "mass": 100.01354817287071
+    }
+  },
+  "negctl_and_convergence": {
+    "negctl_nu0.25": {
+      "nu": 0.25,
+      "n_steps": 20000,
+      "max_rel_err": 0.012498509879578089,
+      "mass": 100.01192238463848
+    },
+    "static_slice_40k": {
+      "nu": 0.2,
+      "n_steps": 40000,
+      "max_rel_err": 0.009997290990471195,
+      "mass": 100.02709743600936
+    },
+    "negctl_no_wall_velocity_correction_20k": {
+      "max_rel_err": 0.00013517182666733518,
+      "note": "same module, -g/(2rho) wall-velocity correction removed"
+    }
+  },
+  "key_numbers": {
+    "static_slice_20k_max_rel_err": 0.009998645366241215,
+    "static_slice_40k_max_rel_err": 0.009997290990471195,
+    "roll_std_20k_max_rel_err": 0.009998645366241215,
+    "tl_roll_20k_max_rel_err": 0.056025294633731196,
+    "mass_20k": 100.01354817286919,
+    "mass_drift_pct": 0.013548172869192854,
+    "negctl_no_wall_correction_max_rel_err": 0.00013517182666733518,
+    "equivalence_static_vs_roll_std": 0.0
+  }
+}
