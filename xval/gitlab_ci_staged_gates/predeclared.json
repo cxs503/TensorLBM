@@ -1,0 +1,81 @@
+{
+  "declaration": "written before the run; every number in the report is produced by run_xval.py from the artefacts listed under environment",
+  "decision": "Which elements of the lbmpy staged-gate CI practice (tag gitlab-ci-staged-gates in oss_solutions row 117) should TensorLBM adopt, and does TensorLBM's existing gate policy already deliver the same functional coverage (gated-corpus fraction) as the OSS policy?",
+  "alternatives": {
+    "ALT-0": "keep TensorLBM's flat GitHub Actions job set (baseline)",
+    "ALT-1": "transplant the GitLab ladder and its marker vocabulary verbatim",
+    "ALT-2": "transplant only what survives the KPI test: gate-tier taxonomy + declared-disabled-gate hygiene + coverage-report aggregation + an explicit marker-vocabulary adapter",
+    "ALT-3": "do nothing / declare the OSS practice irrelevant (rejected if any KPI shows a functional gap)"
+  },
+  "hypotheses": {
+    "H1_functional_parity": "On the default event (merge/pull request and non-default-branch push), the gated-corpus fraction of ALT-0 is within 15% of ALT-2 (the OSS policy evaluated on the same corpus with the vocabulary adapter).",
+    "H0_falsifier": "|delta| >= 15% on guard_fraction or escape_fraction on any event/arm pair, or a simulator-fidelity error >= 15% on any validated selection expression.",
+    "H2_vocabulary_portability": "The OSS marker expression (-m \"not longrun\") transplanted verbatim leaks >= 15% of this repository's long-tier tests into the fast gate, i.e. the vocabulary is repository-local and must be adapted, not copied.",
+    "H2_falsifier": "verbatim leakage < 15% (the expression would be portable as-is).",
+    "H3_structural_only": "The differences that remain after H1/H2 are structural (stage ladder, packaging of gates), not functional (what the gates inspect)."
+  },
+  "metrics": {
+    "guard_fraction": "|union of blocking+canditional gate selections over the corpus| / |corpus| on a given event (exact set arithmetic, host-independent)",
+    "escape_fraction": "1 - guard_fraction",
+    "long_tier_leakage": "|{items marked 'slow'} INTERSECT fast-gate selection| / |{items marked 'slow'}| for a transplanted policy",
+    "n_blocking_gates": "count of jobs with tier in {blocking, conditional} that are active on the event",
+    "ladder_declared_vs_active": "declared stages vs stages that own at least one active job; declared-but-disabled job blocks",
+    "needs_edges": "count of declared dependency edges between gates (the only mechanism that can serialise a ladder)",
+    "test_gate_configs": "number of distinct (interpreter x backend) configurations the test gate runs on",
+    "artifact_contracts": "number of declared artifact/report contracts (junit, coverage xml/html, html doc, pages)",
+    "simulator_fidelity": "relative error between the simulator's selection size and the count pytest itself prints for the same -m expression",
+    "unit_of_analysis": "one (policy, event) pair; the corpus snapshot is the fixed workload"
+  },
+  "baseline_control": {
+    "baseline": "ALT-0 = TensorLBM .github/workflows/ci.yml at the commit this branch was cut from",
+    "control": "ALT-2 = the OSS policy with only the declarative vocabulary adapted, evaluated on the same corpus; the difference between ALT-1 and ALT-2 isolates the vocabulary port alone",
+    "workload": "one pytest collection snapshot of TensorLBM (tests/ + app/tests), markers recorded per test id"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "parity_rule": "H1 holds iff |guard_fraction(ALT-0) - guard_fraction(ALT-2)| < 15% for every event (relative to the OSS value)",
+    "leakage_rule": "H2 holds iff verbatim leak >= 15% and adapted leak < 15%",
+    "fidelity_rule": "simulator_fidelity rel. error < 15% for all validated expressions, else the simulator's KPIs are declared unvalidated and H1/H2 are withheld"
+  },
+  "stopping_rule": "One deterministic evaluation per (arm, event); no arm is re-run or extended after inspecting the KPIs. The four validated expressions are fixed in advance: 'not slow', 'slow', 'unit', 'not longrun'. If the shared measurement host cannot finish the collection measurements within 30 min, the fidelity check is reported as incomplete (WITHHELD), not relaxed.",
+  "variables_changed": ["gate policy (ALT-0 / ALT-1 / ALT-2)", "event (mr / branch_push / main_push / schedule)"],
+  "variables_controlled": [
+    "test corpus snapshot (single collection, per-test marker sets)",
+    "marker expression semantics (pytest boolean rules, validated against pytest itself)",
+    "path scope of each gate (pytest path arguments / testpaths)",
+    "interpretation of tiers (blocking / advisory / conditional / manual, declared in ci_spec.py)"
+  ],
+  "confounders": [
+    "shared measurement host: load average 173 on 128 cores while collecting (co-tenant agent pytest runs) -> wall clock is NOT a criterion; only exact counts/set arithmetic are, and CPU time is reported for context",
+    "6 test modules fail to import in the control environment (stale editable install pointing at another worktree) -> they are absent from the corpus; declared corpus-completeness limitation",
+    "the OSS side is evaluated on TensorLBM's corpus, not on lbmpy's own tests: this is a single-workload policy comparison, not a comparison of the two code bases",
+    "the GitLab job `pages` is restricted by a branch-name condition (CI_COMMIT_BRANCH == master); the branch-name -> event mapping is a convention, not declared by GitLab",
+    "the nox session ids in CI are parametrized strings (testsuite-3.13(cpu)); they are resolved to session bodies by ast parsing, so a session rename upstream would silently degrade the OSS spec (guarded by tests)"
+  ],
+  "repetition_rationale": "All KPIs are deterministic functions of (spec, corpus, event): zero variance, so repetition adds nothing. Variation is supplied by 4 events x 4 arms + 4 independently measured selection expressions (simulator validation) + two marker-vocabulary arms (verbatim vs adapted).",
+  "environment": {
+    "python": "3.11 (control container)",
+    "pytest": "9.2.0 with pytest-xdist 3.8.0",
+    "note": "PYTHONPATH=src is required: the container's editable install points at another worktree, so the default import is the wrong tree",
+    "oss_refs": {
+      "gitlab_ci": "https://i10git.cs.fau.de/pycodegen/lbmpy/-/raw/master/.gitlab-ci.yml",
+      "noxfile": "https://i10git.cs.fau.de/pycodegen/lbmpy/-/raw/master/noxfile.py",
+      "pyproject": "https://i10git.cs.fau.de/pycodegen/lbmpy/-/raw/master/pyproject.toml"
+    },
+    "commands": [
+      "PYTHONPATH=src python xval/gitlab_ci_staged_gates/measure_selections.py --exprs 'not slow' slow unit 'not longrun'",
+      "PYTHONPATH=src python xval/gitlab_ci_staged_gates/run_xval.py"
+    ],
+    "raw_data": [
+      "xval/gitlab_ci_staged_gates/data/corpus_markers.json",
+      "xval/gitlab_ci_staged_gates/data/selection_measurements.json",
+      "xval/gitlab_ci_staged_gates/oss_refs/ (upstream bytes + manifest.json with sha256)"
+    ]
+  },
+  "analysis_plan": "For each (arm, event): guard_fraction, escape_fraction, gate inventory, ladder structure. Then (a) parity test H1 on the default events, (b) vocabulary leakage test H2 for ALT-1 vs ALT-2, (c) simulator fidelity against pytest's own counts for the four fixed expressions. Verdict -> chosen alternative. No threshold is changed after the run; every failure is reported as measured.",
+  "interpretation_limits": [
+    "a policy KPI is not a defect-detection quality measure: guard_fraction says what a gate *inspects*, not what it would catch",
+    "wall-clock/cost differences between CI providers are not measured here (no CI runner access); the ladder's runtime effect is only reasoned about, never claimed as measured",
+    "H1 parity on coverage does not imply parity of gate *strictness* (timeouts, coverage thresholds, lint scope) - those are reported descriptively"
+  ]
+}
