@@ -94,9 +94,20 @@ def run_case(
     out_path: str,
     seed: int = 0,
     compile_mode: str | None = "default",
+    dtype: str = "float32",
 ) -> dict:
-    """Run one Couette case and return measurements."""
+    """Run one Couette case and return measurements.
+
+    ``dtype`` selects the arithmetic used for the populations.  ``float64`` is
+    required whenever the *conservation* diagnostic is interpreted: the moving
+    wall injects momentum population-by-population, and in float32 each of the
+    nine roundings leaves a sub-epsilon residue that is systematically one-signed,
+    so the total mass walks away from its initial value (see
+    ``artifacts/summary.json::precision_comparison``).  In float64 the same
+    scheme conserves mass to round-off (~1e-11 % over 1e4 steps).
+    """
     torch.manual_seed(seed)
+    pdt = torch.float64 if str(dtype).endswith("64") else torch.float32
     ny = H + 2  # wall rows at y=0 and y=ny-1
     nx = H  # periodic in x -> any nx works
     nu = (tau - 0.5) / 3.0
@@ -109,19 +120,22 @@ def run_case(
     wall = torch.zeros((ny, nx), dtype=torch.bool, device=DEVICE)
     wall[0, :] = True  # bottom wall: stationary (u_wall = 0)
     wall[-1, :] = True  # top wall: moving at U0
-    u_wall = torch.zeros((ny, nx), device=DEVICE)
+    u_wall = torch.zeros((ny, nx), device=DEVICE, dtype=pdt)
     u_wall[-1, :] = U0  # per-wall velocity field (+x)
 
     # Initial condition: equilibrium at the analytic linear ramp (fluid rows),
     # walls at rest.  The steady state is unique and independent of the IC;
     # the ramp only shortens the diffusive transient (the k=1 vorticity mode
     # decays on the scale H^2/(pi^2*nu) ~ 6.5e3 steps at H=80).
-    yy = torch.arange(ny, device=DEVICE, dtype=torch.float32)
+    yy = torch.arange(ny, device=DEVICE, dtype=pdt)
     u0 = torch.clamp(U0 * (yy - 0.5) / H_eff, min=0.0, max=U0).view(ny, 1).expand(ny, nx).clone()
     u0[0, :] = 0.0
     u0[-1, :] = 0.0
-    f = equilibrium(torch.ones((ny, nx), device=DEVICE), u0, torch.zeros((ny, nx), device=DEVICE))
-    initial_mass = float(f.sum().item())
+    f = equilibrium(
+        torch.ones((ny, nx), device=DEVICE, dtype=pdt), u0, torch.zeros((ny, nx), device=DEVICE, dtype=pdt)
+    )
+    # mass bookkeeping always in float64 so the diagnostic itself does not round
+    initial_mass = float(f.double().sum().item())
 
     # ---- 整步步进函数（共性 compile 路径；步序号与监测留在编译域外）----
     def _step(f):
@@ -153,11 +167,11 @@ def run_case(
     elapsed = time.time() - t0
 
     # Time-average the profile over the last 200 steps (steady, noise-free)
-    prof_acc = torch.zeros(ny, device=DEVICE)
+    prof_acc = torch.zeros(ny, device=DEVICE, dtype=torch.float64)
     for _ in range(200):
         f = step_fn(f)
         _, ux, _ = macroscopic(f)
-        prof_acc += ux[:, col]
+        prof_acc += ux[:, col].double()
     prof_acc /= 200.0
 
     rho, ux, _ = macroscopic(f)
@@ -204,6 +218,7 @@ def run_case(
         "min_steps": min_steps,
         "n_steps": step,
         "compile_mode": compile_mode,
+        "dtype": "float64" if pdt is torch.float64 else "float32",
         "steady": steady,
         "l2_rel_err": l2_rel,
         "max_abs_err": max_abs_err,
@@ -215,11 +230,14 @@ def run_case(
         "tau_num": tau_num,
         "tau_err_pct": tau_err_pct,
         "total_x_momentum": mom_x,
-        "mass_drift_pct": (float(f.sum().item()) - initial_mass) / initial_mass * 100.0,
+        "mass_drift_pct": (float(f.double().sum().item()) - initial_mass) / initial_mass * 100.0,
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": round(elapsed, 1),
-        "u_profile": [round(float(v), 8) for v in u_num],
-        "u_analytic": [round(float(v), 8) for v in u_ana],
+        # full float64 repr: rounding to 8 decimals quantised the profile by
+        # 1.3e-3 % relative already at H=64 (u ~ U0/H ~ 4e-4), which is above the
+        # case-pool accuracy floor, so the profile is stored losslessly.
+        "u_profile": [float(v) for v in u_num],
+        "u_analytic": [float(v) for v in u_ana],
     }
     Path(out_path).write_text(json.dumps(result, indent=2))
     return result
@@ -295,6 +313,7 @@ def main() -> None:
     p1.add_argument("--max-steps", type=int, default=60000)
     p1.add_argument("--seed", type=int, default=0)
     p1.add_argument("--device", default="cpu")
+    p1.add_argument("--dtype", choices=["float32", "float64"], default="float32")
     add_compile_mode_arg(p1)
 
     p2 = sub.add_parser("scan")
@@ -323,6 +342,7 @@ def main() -> None:
             args.out_json,
             args.seed,
             compile_mode=compile_mode,
+            dtype=args.dtype,
         )
         print(
             json.dumps(

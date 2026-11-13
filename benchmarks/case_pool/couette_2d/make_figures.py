@@ -108,9 +108,51 @@ def fig_errors(summary: dict) -> Path:
     return out
 
 
+def fig_precision(summary: dict) -> Path:
+    """(a) L2 vs arithmetic precision, (b) mass drift vs the conservation guard."""
+    rows = summary.get("precision_comparison") or []
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
+    if not rows:
+        for a in (ax, ax2):
+            a.text(0.5, 0.5, "no precision_comparison in summary.json", ha="center")
+            a.axis("off")
+    else:
+        lab = [f"{r['tag']}\nH={r['H']}" for r in rows]
+        x = np.arange(len(rows))
+        f32 = np.array([r["profile_l2_rel_pct_float32"] for r in rows])
+        f64 = np.array([r["profile_l2_rel_pct_float64"] for r in rows])
+        ax.bar(x - 0.19, f32, 0.38, label="float32", color="tab:orange")
+        ax.bar(x + 0.19, f64, 0.38, label="float64", color="tab:blue")
+        ax.set_yscale("log")
+        ax.set_xticks(x, lab, fontsize=7)
+        ax.set_ylabel("profile $L_2$ rel. err. [%]")
+        ax.set_title("(a) same scheme/point/steps, only dtype changes")
+        ax.axhline(summary["tol_policy_pct"], color="r", ls="--", lw=1.0, label="tol 2%")
+        ax.grid(alpha=0.3, axis="y", which="both")
+        ax.legend(fontsize=8)
+
+        m32 = np.array([r["mass_drift_pct_float32"] for r in rows])
+        m64 = np.array([r["mass_drift_pct_float64"] for r in rows])
+        guard = rows[0]["guard_pct"]
+        ax2.bar(x - 0.19, m32, 0.38, label="float32", color="tab:orange")
+        ax2.bar(x + 0.19, np.maximum(m64, 1e-16), 0.38, label="float64", color="tab:blue")
+        ax2.set_yscale("log")
+        ax2.set_xticks(x, lab, fontsize=7)
+        ax2.set_ylabel("|mass drift| [%] over the whole run")
+        ax2.set_title("(b) conservation guard: cumulative bound is float32-infeasible")
+        ax2.axhline(guard, color="r", ls="--", lw=1.2, label=f"guard {guard:g}%")
+        ax2.grid(alpha=0.3, axis="y", which="both")
+        ax2.legend(fontsize=8)
+    fig.tight_layout()
+    out = ART / "fig3_couette_precision.png"
+    fig.savefig(out, dpi=140)
+    plt.close(fig)
+    return out
+
+
 def main() -> None:
     summary = json.loads((ART / "summary.json").read_text())
-    for p in (fig_profile(summary), fig_errors(summary)):
+    for p in (fig_profile(summary), fig_errors(summary), fig_precision(summary)):
         print(p.relative_to(HERE.parents[2]))
 
 
