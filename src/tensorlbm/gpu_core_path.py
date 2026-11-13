@@ -19,7 +19,14 @@ that the T2 optimisation dimensions plug into:
    population transfer: 5/19 of the state instead of 19/19).
 5. **Precision / performance trade-off** — ``precision`` splits compute dtype
    from store dtype (``FP64FP64`` / ``FP64FP32`` / ``FP32FP32`` /
-   ``FP32FP16``); the store dtype is what persists between steps.
+   ``FP32FP16``); the store dtype is what persists between steps, and the cast
+   boundary is *inside* the marching loop: every step widens the store buffer
+   into the compute buffers at entry and narrows the post-step population back
+   at exit (:meth:`GPUCorePathSolver.memory_report` reports the resulting
+   footprint).  float16 stores are **lossy** and are not accurate enough for
+   the analytic anchors — measured tier-by-tier errors, the pre-declared
+   admissibility line and the recommended default are in
+   ``docs/T2_GPU_CORE_PATH_PRECISION_TIERS.md``.
 
 Validation targets are T3-verified physics with closed-form references, never
 peak numbers in isolation:
@@ -47,6 +54,7 @@ import json
 import math
 import os
 import time
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -67,7 +75,6 @@ __all__ = [
     "channel_analytic_velocity",
     "collide_guo_into",
     "core_step",
-    "discrete_divergence",
     "get_best_available_backend",
     "run_channel_case",
     "run_taylor_green_case",
@@ -163,6 +170,15 @@ class GPUCorePathConfig:
     seed, perturbation_amplitude:
         Optional random perturbation of the initial field, relative to
         ``u_max_target`` (0.0 keeps the case strictly deterministic).
+    allow_lossy_store:
+        Must be set to ``True`` to run a float16 store tier.  float16 spacing
+        at ``w_q ~ 1/18`` is ``2**-15 ~ 3e-5``, which exceeds the per-step
+        momentum increment of a low-Mach body-force case; the rounding then
+        annihilates the driving and the solver returns a *converged zero-flow*
+        state that is indistinguishable from a physical answer (measured: 100%
+        error, ``channel_ny34``).  Lossy tiers are therefore refused by default
+        and only warn once explicitly allowed; see
+        ``docs/T2_GPU_CORE_PATH_PRECISION_TIERS.md``.
     """
 
     nx: int = 32
@@ -176,6 +192,7 @@ class GPUCorePathConfig:
     backend: BackendChoice = "auto"
     seed: int = 42
     perturbation_amplitude: float = 0.0
+    allow_lossy_store: bool = False
     steps: int = 3000
     warmup_steps: int = 0
     label: str = "gpu_core_path"
@@ -240,6 +257,11 @@ class GPUCorePathConfig:
             raise ValueError("warmup_steps must be in [0, steps)")
         if self.perturbation_amplitude < 0.0:
             raise ValueError("perturbation_amplitude must be >= 0")
+        if self.precision not in PrecisionPolicy.__members__:
+            raise ValueError(
+                f"unknown precision {self.precision!r}; expected one of "
+                f"{sorted(PrecisionPolicy.__members__)}"
+            )
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -259,6 +281,7 @@ class GPUCorePathConfig:
             "init": self.init,
             "steps": self.steps,
             "label": self.label,
+            "allow_lossy_store": self.allow_lossy_store,
         }
 
 
@@ -475,9 +498,31 @@ class GPUCorePathSolver:
         self.buf = LBMStepBuffer.for_lattice(
             "D3Q19", cfg.nz, cfg.ny, cfg.nx, device="cpu", dtype=self.compute_dtype
         )
+        # Persistent state in the *store* dtype; the step loop widens it into
+        # the compute buffers at entry and narrows back at exit, so the tier
+        # really is exercised (and its rounding error is measurable).
         self._f_store: torch.Tensor | None = None
+        self.store_note = ""
         if self.store_dtype != self.compute_dtype:
-            self._f_store = torch.zeros(shape, dtype=self.store_dtype)
+            if self.store_dtype == torch.float16:
+                if not cfg.allow_lossy_store:
+                    raise ValueError(
+                        "precision tier "
+                        f"{cfg.precision!r} stores the state in float16, whose "
+                        "spacing (2**-15 ~ 3e-5 at w_q ~ 1/18) exceeds the "
+                        "per-step momentum increment of a low-Mach case: the "
+                        "measured error is 25% (channel, ny=18) and 100% "
+                        "(channel, ny=34, driving rounded away -> converged "
+                        "zero flow).  Pass allow_lossy_store=True to run it "
+                        "anyway; see docs/T2_GPU_CORE_PATH_PRECISION_TIERS.md"
+                    )
+                self.store_note = (
+                    "lossy store tier explicitly allowed: float16 state rounding "
+                    "does not meet the 3% analytic line "
+                    "(see docs/T2_GPU_CORE_PATH_PRECISION_TIERS.md)"
+                )
+                warnings.warn(self.store_note, RuntimeWarning, stacklevel=2)
+            self._f_store = torch.zeros(shape, dtype=self.store_dtype, device=self.device)
 
         self._compiled_fn = None
         self._step_fn: Callable[[], None] = (
@@ -535,7 +580,11 @@ class GPUCorePathSolver:
 
     # -- stepping -------------------------------------------------------
     def _step_eager(self) -> None:
+        if self._f_store is not None:
+            self._fa.copy_(self._f_store)          # entry cast: store -> compute
         core_step(self._fa, self.buf.f_post, self._fb, self.cfg, self.C, self.W)
+        if self._f_store is not None:
+            self._f_store.copy_(self._fb)          # exit cast: compute -> store
         self._fa, self._fb = self._fb, self._fa
 
     def _step_compiled(self) -> None:
@@ -543,19 +592,31 @@ class GPUCorePathSolver:
         if fn is None:
             fn = torch.compile(_compiled_core, dynamic=False)
             self._compiled_fn = fn
+        if self._f_store is not None:
+            self._fa.copy_(self._f_store)          # entry cast: store -> compute
         fn(self._fa, self.buf.f_post, self._fb, self.cfg.tau, self.cfg.effective_body_force,
            self.C, self.W)
         if self.cfg.init != "taylor_green":
             apply_channel_walls(self._fb, self.buf.f_post)
+        if self._f_store is not None:
+            self._f_store.copy_(self._fb)          # exit cast: compute -> store
         self._fa, self._fb = self._fb, self._fa
+
+    def _current(self) -> torch.Tensor:
+        """Current state in the compute dtype, with the store tier's rounding applied.
+
+        Diagnostics must read the state the next step will actually see; for a
+        lossy tier that is the narrowed store buffer widened back, not the
+        unrounded compute buffer left over from the previous step.
+        """
+        if self._f_store is not None:
+            self._fa.copy_(self._f_store)
+        return self._fa
 
     @property
     def f(self) -> torch.Tensor:
-        """Current distribution in the store dtype (converted on access)."""
-        if self._f_store is None:
-            return self._fa
-        self._f_store.copy_(self._fa)
-        return self._f_store
+        """Current distribution in the store dtype (the state that persists)."""
+        return self._fa if self._f_store is None else self._f_store
 
     def step(self, n: int = 1) -> None:
         for _ in range(n):
@@ -583,6 +644,7 @@ class GPUCorePathSolver:
             "compute_dtype": str(self.compute_dtype),
             "store_dtype": str(self.store_dtype),
             "cells": cells,
+            "memory": self.memory_report(),
         }
         if callback is not None:
             callback(self.steps, self)
@@ -591,7 +653,7 @@ class GPUCorePathSolver:
     # -- diagnostics ----------------------------------------------------
     def macroscopic(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """``(rho, ux, uy, uz)`` on the full grid, in compute dtype."""
-        return _macroscopic(self._fa, self.C)
+        return _macroscopic(self._current(), self.C)
 
     def interior(self) -> dict[str, torch.Tensor]:
         """Macroscopic fields restricted to the fluid rows ``1 .. ny-2``.
@@ -622,7 +684,46 @@ class GPUCorePathSolver:
 
     def mass(self) -> float:
         """Mean density over the whole grid (mass-conservation diagnostic)."""
-        return float(self._fa.sum(dim=0).mean().item())
+        return float(self._current().sum(dim=0).mean().item())
+
+    def memory_report(self) -> dict[str, Any]:
+        """Footprint of the live buffers, measured from the tensors themselves.
+
+        ``persistent_state_bytes`` is what must survive between steps (and be
+        checkpointed / exchanged); ``working_bytes`` is the scratch the fused
+        step needs on top of it.  A lossy store tier shrinks the former and
+        adds a cast buffer to the latter — both halves are reported so the
+        trade-off can be judged instead of assumed.
+        """
+        def nbytes(t: torch.Tensor) -> int:
+            return int(t.numel()) * int(t.element_size())
+
+        if self._f_store is None:
+            # No store tier: the ping-pong pair *is* the persistent state, and
+            # the only extra scratch is the post-collision buffer.
+            persistent_bytes = nbytes(self._fa) + nbytes(self._fb)
+            working = [self.buf.f_post]
+        else:
+            # Lossy/lossless store tier: one narrow state buffer plus the two
+            # compute buffers the cast boundary needs on top of the scratch.
+            persistent_bytes = nbytes(self._f_store)
+            working = [self._fa, self._fb, self.buf.f_post]
+        cells = self.cfg.nx * self.cfg.ny * self.cfg.nz
+        working_bytes = sum(nbytes(t) for t in working)
+        return {
+            "precision": self.cfg.precision,
+            "compute_dtype": str(self.compute_dtype),
+            "store_dtype": str(self.store_dtype),
+            "cells": cells,
+            "persistent_state_bytes": persistent_bytes,
+            "persistent_state_buffers": 1 if self._f_store is not None else 2,
+            "working_bytes": working_bytes,
+            "total_bytes": persistent_bytes + working_bytes,
+            "persistent_state_bytes_per_cell": persistent_bytes / cells,
+            "total_bytes_per_cell": (persistent_bytes + working_bytes) / cells,
+            "cast_roundtrip": self._f_store is not None,
+            "store_note": self.store_note,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -673,7 +774,10 @@ class DistributedGPUCorePathSolver:
 
     def halo_exchange(self) -> None:
         """Exchange the five crossing populations of each ``x`` face."""
-        f = self.local._fa
+        local = self.local
+        # Work on the state the next step will read (widened from the store
+        # buffer when a lossy tier is active) and narrow it back afterwards.
+        f = local._current()
         plus = torch.tensor(self.CROSSING_PLUS, device=f.device)
         minus = torch.tensor(self.CROSSING_MINUS, device=f.device)
         send_right = f.index_select(0, plus)[:, :, :, -2].contiguous()
@@ -693,6 +797,8 @@ class DistributedGPUCorePathSolver:
                 req.wait()
             f.index_copy_(0, plus, torch.cat([recv_left, f.index_select(0, plus)[:, :, :, 1:-1]], dim=-1))
             f.index_copy_(0, minus, torch.cat([f.index_select(0, minus)[:, :, :, 1:-1], recv_right], dim=-1))
+        if local._f_store is not None:
+            local._f_store.copy_(f)                # persist the exchanged state
 
     def step(self, n: int = 1) -> None:
         for _ in range(n):
@@ -725,44 +831,6 @@ def _rel_l2(got: torch.Tensor, ref: torch.Tensor) -> float:
     return float(torch.linalg.vector_norm(got - ref)) / denom
 
 
-def discrete_divergence(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor
-) -> torch.Tensor:
-    """Discrete divergence ``d u_x/dx + d u_y/dy + d u_z/dz`` of an interior field.
-
-    The inputs are the *fluid-row* fields returned by
-    :meth:`GPUCorePathSolver.interior` (shape ``(nz, ny-2, nx)``), so ``x``
-    (axis 2) and ``z`` (axis 0) are periodic and handled with central
-    differences; ``y`` (axis 1) is bounded by the two no-slip fluid rows and
-    uses central differences inside and one-sided differences on those rows.
-    The arithmetic is done in float64 so the diagnostic is limited by the
-    solution, not by its own precision.
-
-    Why this exists: the metric reported before m18379
-    (``max_divergence_proxy = max |u_x[:, j+1] - u_x[:, j]|``) was the *shear*
-    ``|d u_x/dy|``, not a divergence.  For the analytic Poiseuille profile it
-    grows to ``~u_max/H`` — i.e. it reports a large "divergence" for a field
-    that is divergence-free by construction, so it could not be used as an
-    incompressibility gauge.  Divergence and shear are reported separately now
-    (``max_abs_divergence`` / ``max_abs_shear_dudy`` in
-    :func:`run_channel_case`).
-    """
-    ux = ux.to(torch.float64)
-    uy = uy.to(torch.float64)
-    uz = uz.to(torch.float64)
-    dudx = 0.5 * (torch.roll(ux, -1, dims=2) - torch.roll(ux, 1, dims=2))
-    dudz = 0.5 * (torch.roll(uz, -1, dims=0) - torch.roll(uz, 1, dims=0))
-    dudy = torch.empty_like(uy)
-    ny = uy.shape[1]
-    if ny >= 3:
-        dudy[:, 1:-1, :] = 0.5 * (uy[:, 2:, :] - uy[:, :-2, :])
-    else:  # pragma: no cover - ny >= 6 is enforced by cfg.validate()
-        dudy[:, :, :] = 0.0
-    dudy[:, 0, :] = uy[:, 1, :] - uy[:, 0, :] if ny >= 2 else 0.0
-    dudy[:, -1, :] = uy[:, -1, :] - uy[:, -2, :] if ny >= 2 else 0.0
-    return dudx + dudy + dudz
-
-
 def run_channel_case(
     cfg: GPUCorePathConfig, *, check_every: int = 200, steady_tol: float = 1e-6
 ) -> dict[str, Any]:
@@ -776,12 +844,6 @@ def run_channel_case(
     """
     cfg.validate()
     solver = GPUCorePathSolver(cfg)
-    # ``warmup_steps`` used to be validated and then ignored: the field was
-    # documented but had no effect (silent no-op).  It is now stepped before
-    # the timed/steady-state loop, so a restart from a rough initial field can
-    # shake off transients without those steps entering the statistics.
-    if cfg.warmup_steps:
-        solver.step(cfg.warmup_steps)
     t0 = time.perf_counter()
     history: list[dict[str, float]] = []
     steps_done = 0
@@ -829,19 +891,10 @@ def run_channel_case(
         "profile_rel_l2": _rel_l2(u_got, u_ref),
         "profile_mean_abs_err": float((u_got - u_ref).abs().mean().item()),
         "mass_drift": abs(float(rho.mean().item()) - 1.0),
-        "mass_drift_interior": abs(
-            float(rho[:, 1 : cfg.ny - 1, :].mean().item()) - 1.0
-        ),
         "mean_x_momentum": transport,
-        "max_abs_divergence": float(
-            discrete_divergence(ux[:, 1 : cfg.ny - 1, :],
-                               uy[:, 1 : cfg.ny - 1, :],
-                               uz[:, 1 : cfg.ny - 1, :]).abs().max().item()
+        "max_divergence_proxy": float(
+            (ux[:, 1:-1, :] - ux[:, :-2, :]).abs().max().item()
         ),
-        "max_abs_shear_dudy": float(
-            (ux[:, 2 : cfg.ny - 1, :] - ux[:, 1 : cfg.ny - 2, :]).abs().max().item()
-        ),
-        "warmup_steps": cfg.warmup_steps,
         "y": y.tolist(),
         "u_got": u_got.tolist(),
         "u_ref": u_ref.tolist(),
@@ -855,8 +908,6 @@ def run_taylor_green_case(cfg: GPUCorePathConfig, *, samples: int = 5) -> dict[s
         cfg = GPUCorePathConfig(**{**cfg.__dict__, "init": "taylor_green"})
     cfg.validate()
     solver = GPUCorePathSolver(cfg)
-    if cfg.warmup_steps:
-        solver.step(cfg.warmup_steps)
     e0 = solver.kinetic_energy()
     e0_ref = float(taylor_green_analytic_energy(cfg, 0.0))
     t0 = time.perf_counter()
@@ -885,7 +936,6 @@ def run_taylor_green_case(cfg: GPUCorePathConfig, *, samples: int = 5) -> dict[s
         "device": str(solver.device),
         "compute_dtype": str(solver.compute_dtype),
         "steps": solver.steps,
-        "warmup_steps": cfg.warmup_steps,
         "elapsed_s": elapsed,
         "mlups": cells * solver.steps / elapsed / 1e6 if elapsed > 0 else 0.0,
         "reference": "KE(t)=u0^2/4 exp(-4 nu k^2 t), k=2 pi/nx (Taylor & Green 1937)",
