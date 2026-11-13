@@ -1,0 +1,56 @@
+{
+  "anchor": "XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY",
+  "mission": 18327,
+  "declared_at": "2026-11-13",
+  "decision": "Whether TensorLBM's two-component MCMP collision u_eq='viscous' (tau-mixed / viscosity-weighted common velocity) implements the REF-OSS tau-mixed velocity scheme (oss_solutions id=35) and inherits its continuum-limit mixture viscosity, so the mode can be certified from the OSS reference; and what the *differences* to the OSS draft are (non-local Shan-Chen force, per-component forcing, placeholders) and how they change the physics.",
+  "alternatives": [
+    "A0 (null): library u_eq='viscous' is the REF-OSS vel_mix and its continuum limit is nu_eff = sum(rho_k nu_k)/sum(rho_k) -> parity at round-off, channel profile within 15%.",
+    "A1: library imposes a different mixing weight (e.g. rho*tau, or barycentric) -> parity test shows large residual and/or channel viscosity departs from nu_eff by > 15%.",
+    "A2: mixing formula matches but the mixture viscosity follows the tau-arithmetic or harmonic reading -> profile error > 15% for the tau=(1.0,0.7) pair while parity still passes."
+  ],
+  "hypotheses": {
+    "H1_parity": "Black-box recovery of the mixed velocity imposed by collide_sc_two_component(u_eq='viscous') equals oss_vel_mix to round-off.",
+    "H2_viscosity": "In the ideal (G_12=0) co-moving limit the mixture viscosity measured from the body-force driven channel equals the density-weighted arithmetic mean of the component viscosities, so the analytic profile is recovered within 15%.",
+    "H3_momentum": "The tau-mixed coupling conserves total momentum exactly for unequal tau (in contrast to u_eq='mixture', which carries the documented (1/tau2-1/tau1) source).",
+    "H4_oss_limitation": "With the non-local Shan-Chen force switched off the library reproduces the OSS draft behaviour recorded in the inventory (no phase separation); switching the force on is the only material difference and must produce separation."
+  },
+  "metrics": {
+    "parity": "max relative deviation between recovered imposed velocity and REF-OSS vel_mix over 2 velocity components x pre-collision states",
+    "channel": "max relative error and L2 relative error of the streamwise velocity profile against the analytic plane-Poiseuille solution with nu_eff; also nu measured from the profile basis fit",
+    "momentum": "relative drift of total x-momentum over 200 steps, equal-tau-free, G_12=0, periodic box",
+    "separation": "density contrast max(rho1)-min(rho1) after the declared step count, and its ratio to the initial 1% perturbation"
+  },
+  "baseline_and_control": {
+    "baseline": "analytic plane-Poiseuille profile with nu_eff = sum(rho_k nu_k)/rho (continuum limit of the REF-OSS formula)",
+    "control_equal_tau": "tau=(1.0,1.0): the viscosity-weighted mixing degenerates to a single-tau BGK result; profile must still match (removes the mixing itself as an error source)",
+    "control_no_sc_force": "G_12=0: the OSS draft's conditions (component distributions evolve independently, no non-local force); densities must stay at the initial contrast",
+    "control_mixing_modes": "u_eq='mixture' and 'self' on the identical momentum arm, to show that a non-conserving reading of the same velocity is detectable by the metric"
+  },
+  "predeclared_thresholds": {
+    "parity": {"max_rel_dev_float64": 1e-10, "max_rel_dev_float32": 1e-4},
+    "channel": {"rel_err_max": 0.15, "steady_resid_max": 1e-4, "nu_rel_err_max": 0.15},
+    "momentum": {"max_rel_drift": 1e-12},
+    "separation": {"steps": 4000, "control_max_contrast": 1e-3, "min_contrast": 0.5}
+  },
+  "stopping_rule": "All declared cases are executed exactly once (deterministic, fixed seeds); no case is added or removed after looking at results. If any arm FAILs, the failure is reported as-is (honest FAIL) and the report states the physical reason; thresholds are never re-tuned.",
+  "variables": {
+    "changed": ["tau2 in {1.00, 0.90, 0.70, 0.60}", "grid ny in {17, 33, 65}", "driving force gx in {5e-7, 1e-6, 2e-6}", "G_12 in {0, -0.4, -0.8, -1.2, -1.6, -2.0}", "u_eq in {viscous, mixture, self}"],
+    "controlled": ["rho1 = rho2 = 1 (channel)", "D2Q9 BGK, Guo forcing (channel/separation) or shift forcing (momentum)", "no-slip bounce-back at y=0 and y=ny-1", "lattice units dx=dt=1, cs^2=1/3", "initial perturbation amplitude 1% (separation)"],
+    "confounders": [
+      "wall position convention: half-cell bounce-back puts no-slip planes at y=1/2 and ny-1/2, so H = ny-1 is used a priori; a wrong convention would show up as a grid-dependent error, hence the refinement series",
+      "transient not fully decayed: steady residual is reported per case and gated at 1e-4",
+      "BGK compressibility (finite Mach) error: kept small by gx*H^2/nu giving u_max ~ 1e-3",
+      "single-precision round-off: parity arm is run in float64 and float32 with separate thresholds"
+    ]
+  },
+  "repetition_rationale": "All arms are deterministic given the seeds written in the script (torch.manual_seed(1000+seed) for the parity arm, default generator seed 7 for the separation arm); the only stochastic element is the 1% initial density perturbation, and the reported contrast ratio normalises by the realised initial contrast. Repetition is therefore by parameter (tau/grid/force/G_12) rather than by sample; the parity arm covers 5 pre-collision states x 2 dtypes so a coincidental cancellation cannot pass it.",
+  "environment": "CPU, torch (version recorded in results JSON), float64 unless stated; 2D D2Q9; total declared work < 10 min single-core -> no cluster submission needed (recorded in the report).",
+  "analysis": "No fitting of the reported error: the profile is compared pointwise with the analytic solution; the parabola amplitude fit is used only to report the measured mixture viscosity. Errors reported as max relative error over the fluid rows and as L2 relative error. No outlier removal, no missing data.",
+  "safety_resource_limits": {"max_steps_per_case": 25000, "max_grid": "65x4", "wall_clock_budget_seconds": 1800},
+  "interpretation_limits": [
+    "The OSS artefact is an inventory record of a draft (method string + cited source lines), not a runnable, executable host in this work tree: GitHub is unreachable from the sandbox, so parity is against the inventoried *formula*, not against numbers produced by their code.",
+    "Results are 2D D2Q9; the OSS implementation is 3D (latflow/D3Q15-19). The mixing formula is dimension independent, the viscosity numbers are not.",
+    "The ideal G_12=0 channel validates the mixing/viscosity continuum limit, not the two-phase interface behaviour; interface behaviour is covered only qualitatively by the separation arm.",
+    "Correlation vs causation: the channel profile agreeing with nu_eff shows the mixing weight is the density/1-tau one; it does not by itself prove that no other combination would fit the single tau pair - that is why four tau pairs and the equal-tau control are predeclared."
+  ]
+}
