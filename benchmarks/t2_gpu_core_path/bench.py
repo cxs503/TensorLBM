@@ -117,7 +117,14 @@ def _figures(payload: dict) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="CI scale (shorter runs)")
-    ap.add_argument("--backend-check", action="store_true", default=True)
+    # ``--backend-check`` used to be a store_true flag with default=True, i.e.
+    # it could never switch anything off and was never read (dead CLI, found in
+    # m18379).  The parity arm costs Inductor compile time, so the opt-out is
+    # what CI actually needs.
+    ap.add_argument(
+        "--no-backend-check", dest="backend_check", action="store_false", default=True,
+        help="skip the eager-vs-torch.compile parity arm (Inductor costs minutes on CPU)",
+    )
     args = ap.parse_args(argv)
     torch.set_num_threads(int(os.environ.get("TL_THREADS", "1")))
     OUT.mkdir(parents=True, exist_ok=True)
@@ -216,8 +223,13 @@ def main(argv: list[str] | None = None) -> int:
     payload["taylor_green"] = tg_rows
 
     # ---- 3. backend parity + throughput (eager vs torch.compile) ----
-    parity = []
-    for ny in resolutions:
+    parity: list = []
+    if not args.backend_check:
+        payload["backend_parity"] = {
+            "status": "SKIPPED",
+            "reason": "--no-backend-check (Inductor compile time)",
+        }
+    for ny in (resolutions if args.backend_check else ()):
         base = dict(ny=ny, tau=0.8, steps=100, init="parabolic", precision="FP64FP64")
         a = GPUCorePathSolver(GPUCorePathConfig(backend="eager", label="parity_eager", **base))
         a.step(50)
@@ -257,7 +269,8 @@ def main(argv: list[str] | None = None) -> int:
             f"speedup {t_eager / t_compiled:.2f}x  rel diff {max_diff / scale:.2e}",
             flush=True,
         )
-    payload["backend_parity"] = parity
+    if args.backend_check:
+        payload["backend_parity"] = parity
 
     # ---- 4. precision tiers ----
     tiers = []
