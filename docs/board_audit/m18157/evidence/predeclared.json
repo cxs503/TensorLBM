@@ -1,0 +1,127 @@
+{
+  "anchor": "XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE",
+  "mission_id": 17996,
+  "repo": "TensorLBM",
+  "written_before_runs": "2026-11-13 (predeclared before any XVAL number of this mission was produced)",
+  "adopted_practice": {
+    "source": "TensorKnowledge OSS practice `negative-no-oss-reference` (anchor-feeder ledger_id 366-403 feed; practice entry retrieved from the anchor board entry of the same slug)",
+    "statement": "A cross-validation claim may only exist in two honest states: (a) judged against a reference implementation that is *resolvable in this environment* (probe: import + version + source sha256, or executable path), or (b) explicitly recorded as a NEGATIVE result 'no OSS reference available', with the probe evidence attached, so the capability is marked WITHHELD instead of being silently compared against a fabricated / remembered / copied reference column.",
+    "why_here": "TensorLBM owns lattice-Boltzmann numerical methods and solver-local verification; the discipline of what may count as a reference for a solver claim belongs to this repository. No domain physics is added to TensorPlatform."
+  },
+  "decision": "Decide whether TensorLBM's D2Q9/SRT core is cross-validated (<15%) against an OSS reference that is actually resolvable here (lbmpy 2.0, FAU/pycodegen family), and whether every TensorLBM capability family that has NO such locally resolvable OSS reference is recorded as a negative-knowledge entry with probe evidence.",
+  "alternatives": [
+    "A1 (chosen): run the OSS arm by executing the installed OSS code (lbmpy 2.0 create_fully_periodic_flow + pystencils-compiled kernel) on the same TG2DSpec as the in-house arm.",
+    "A2 (rejected, recorded as limit): transplant the OSS algorithm line-by-line into our own code and compare against ourselves -- reuses our own bug surface, cannot falsify anything.",
+    "A3 (rejected): cite literature tables from memory when the original table cannot be fetched offline (negative_knowledge entry 168 already falsifies this route: '参考表不得凭记忆或复制补造：离线取不到原表即 WITHHELD')."
+  ],
+  "hypothesis": {
+    "H1": "in-house D2Q9/SRT vs lbmpy 2.0 on 2D Taylor-Green decay agree to <15% on every predeclared KPI (owner band), and <5% on the decay-rate KPI.",
+    "H2": "The OSS-probe mechanism is falsifiable: for at least one TensorLBM capability family the probe finds NO locally resolvable OSS reference, so the gate must return WITHHELD and a negative-knowledge payload must be emitted (rather than a comparison table)."
+  },
+  "metrics": {
+    "gamma_K_rel_pct": "relative difference of the measured kinetic-energy decay rate gamma_K (log-linear fit of K(t)=0.5<|u|^2> over the fitted window) between two arms, |g_a-g_b|/|g_b|*100",
+    "gamma_K_vs_theory_pct": "|gamma_K_meas - 4*nu*k^2| / (4*nu*k^2) * 100 -- each arm separately against the closed-form exact solution",
+    "umax_rel_pct": "relative difference of max|u| at the final sampled step between two arms",
+    "field_l2_rel_pct": "||u_a - u_b||_2 / ||u_b||_2 * 100 over the whole 2D velocity field at the final sampled step (both tools share cell centres x_i=i+0.5 and the same initial condition)",
+    "mass_drift": "|mean(rho)-1| at the final step (compressibility sanity of both arms)"
+  },
+  "unit_of_analysis": "one completed simulation arm = (tool, n, u0, tau, steps); the KPI for a hypothesis test is the pairwise difference between the in-house arm and the OSS arm of the same cell of the design",
+  "baseline_control": {
+    "control": "lbmpy 2.0 arm (OSS, independent code path: pystencils-generated kernel, its own equilibrium/collision/streaming implementation)",
+    "physical_baseline": "closed-form 2D Taylor-Green solution: K(t)=K0*exp(-4*nu*k^2*t), u_max(t)=U0*exp(-2*nu*k^2*t)",
+    "shared_by_design": "one TG2DSpec object (grid, k, nu, tau, initial condition, sampling steps, cell centres) is consumed by both arms and by the analytic reference (src/tensorlbm/xval/case_spec.py)"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "tight_target_pct": 5.0,
+    "gate_rule": "an XVAL claim is PASS iff its reference id resolves in the probe record AND every KPI of that claim is < 15%; FAIL iff it resolves and any KPI >= 15%; WITHHELD iff the reference id does not resolve (then a negative-knowledge payload MUST be emitted for the capability)",
+    "analytic_fallback": "analytic/literature references are only admissible when their id is in the gate's declared analytic registry (formula traceable in-repo); otherwise WITHHELD",
+    "stopping_rule": "each arm runs a step count fixed here (t_final = steps for tau=0.8, n=64: 400 steps => K/K0 = exp(-4*0.1*(2pi/64)^2*400) ~ 0.21); no arm is extended after looking at KPI values; wall-clock budget 600 s per arm, anything larger moves to the cluster queue",
+    "fit_window_rule": "gamma_K is fitted on samples with K/K0 in [0.2, 0.9] of every arm -- fixed before inspecting any arm's numbers"
+  },
+  "design_cells": {
+    "main": {
+      "n": 64,
+      "u0": 0.05,
+      "tau": 0.8,
+      "steps": 400,
+      "sample_every": 20,
+      "note": "nu=0.1, Re=u0*n/nu=32, Ma=0.0866"
+    },
+    "convergence": {
+      "n": [
+        32,
+        64,
+        128
+      ],
+      "u0": 0.05,
+      "tau": 0.8,
+      "note": "fixed viscosity resolution study; Re = u0*n/nu = 16/32/64 is reported, not held fixed, because nu is the physical control"
+    },
+    "sensitivity_u0": {
+      "n": 64,
+      "u0": [
+        0.02,
+        0.05,
+        0.1
+      ],
+      "tau": 0.8,
+      "note": "Ma = 0.035/0.087/0.173 -- compressibility (O(Ma^2)) sensitivity of the tool-to-tool difference"
+    },
+    "sensitivity_tau": {
+      "n": 64,
+      "u0": 0.05,
+      "tau": [
+        0.7,
+        0.8,
+        1.0
+      ],
+      "note": "nu = 0.0667/0.1/0.1667 -- discrete-lattice (tau-dependent) defect sensitivity"
+    }
+  },
+  "variables_changed": [
+    "solver implementation (in-house torch D2Q9/SRT vs lbmpy 2.0 generated kernel)",
+    "resolution n",
+    "reference velocity u0 (=> Ma)",
+    "relaxation time tau (=> nu)"
+  ],
+  "variables_held_fixed": [
+    "2D periodic box, dx=dt=1, D2Q9, single-relaxation-time BGK, rho0=1",
+    "initial condition u=(-U0 cos(kx) sin(ky), U0 sin(kx) cos(ky)) at cell centres x_i=i+0.5",
+    "sample steps and field dump step identical in both arms",
+    "float64 throughout; lbmpy compressible=False (incompressible equilibrium) to match the in-house equilibrium"
+  ],
+  "confounders": [
+    "lbmpy's F/push-pull scheme and torch's pull scheme differ in the O(dx^2) lattice defect, so a residual difference is expected to be resolution-dependent, not zero",
+    "the two codes may differ in the equilibrium compressibility (ours is the standard compressible second-order equilibrium with rho*u^2 terms; lbmpy compressible=False drops some of them) -- measurable through the u0/Ma sensitivity arm, not removable",
+    "torch float64 reductions vs numpy masked-array reductions change the last digits only; any KPI at the 1e-12 level is not a physics statement",
+    "lbmpy compiles its kernel with pystencils; the first call includes compilation wall time and must be excluded from any timing claim",
+    "offline environment: github.com is unreachable (verified), so OSS codes that are NOT installed cannot be fetched -- absence in the probe is an environment fact and is recorded as WITHHELD, not as 'the OSS code does not implement it'"
+  ],
+  "repetitions": "each design cell is deterministic (no RNG, fixed step count, no threads race: torch single-threaded for the in-house arm), so one run per cell; the tool-to-tool difference is reported against the two sensitivity axes instead of a repeated-run error bar; reproducibility is asserted by re-running the main cell twice and requiring bitwise equality of the binary-exact KPIs",
+  "analysis": "KPIs compared pairwise per design cell; no outlier removal; no post-hoc threshold change; gamma_K fitted on a predeclared window; convergence reported as the resolution sequence; the decision is the gate verdict on H1 plus the emitted WITHHELD/negative-knowledge set for H2",
+  "environment": {
+    "work_tree": "/root/tp-agent/work/m17996 (branch agent/m17996)",
+    "python": "3.11",
+    "torch": "2.7.1 (CPU, float64)",
+    "numpy": "2.4.6",
+    "scipy": "1.16.0",
+    "matplotlib": "3.10.8",
+    "lbmpy": "2.0 (OSS arm)",
+    "pystencils": "2.0",
+    "raw_data": "artifacts/xval_negative_no_oss_reference/*.json,*.csv,*.png"
+  },
+  "fail_stage_plan": "fail_stage names the stage (probe / oss_arm / inhouse_arm / comparison / gate / report) and failure_reason carries the measured deviation or the exception text; a WITHHELD capability is not a failure of the mission but a recorded negative result",
+  "amendments": [
+    {
+      "when": "2026-11-13T11:0x",
+      "what": "added informational cell matched_n128 (n=128, 1600 steps): after the fixed-step runs it became evident that equal step counts across resolutions correspond to different nu*k^2*t (0.385 at n=64 vs 0.096 at n=128), i.e. different physical times.",
+      "why": "the convergence arm as predeclared compares states at different physical times; a matched-viscous-time arm makes the difference interpretable. It is informational only: no KPI definition, threshold or acceptance cell was changed, and both the fixed-step and matched-time numbers are reported."
+    },
+    {
+      "when": "2026-11-13T11:0x",
+      "what": "metric 'mass_drift' reclassified from KPI to informational: only the lbmpy arm exposes the density field through the adapter, the in-house runner does not dump rho.",
+      "why": "keeping it as a gate KPI would silently compare two different quantities; it stays as a reported diagnostic (lbmpy mass_drift_final in run_info_lbmpy.json) and the in-house compressibility is bounded by Ma."
+    }
+  ]
+}
