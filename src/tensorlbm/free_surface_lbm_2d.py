@@ -210,6 +210,10 @@ def _specular_wall_mirror_index_2d(slip_mask, device):
 
 REFILL_POLICIES = ("repo_average", "walberla_equilibrium", "fixed_rho")
 
+#: Selectors for the INTERFACE/INTERFACE link of the Körner eq. 9 mass
+#: exchange (see :data:`INTERFACE_EXCHANGE_RULES`).
+INTERFACE_EXCHANGE_RULES = ("repo", "pair_symmetric", "koerner", "oss")
+
 
 def _init_new_2d(
     f,
@@ -387,6 +391,7 @@ def koerner_step_2d(
     free_slip_mask=None,
     free_slip_all=False,
     refill_policy="repo_average",
+    interface_exchange_rule="repo",
 ):
     """One faithful Körner free-surface timestep (D2Q9).
 
@@ -402,6 +407,30 @@ def koerner_step_2d(
 
     ``clamp_mass`` and ``paired_liquid_debit`` are deprecated no-ops retained
     for call compatibility (the reference model has neither).
+
+    ``interface_exchange_rule``
+        Selector applied to the INTERFACE/INTERFACE links of the Körner eq. 9
+        mass exchange (see :data:`INTERFACE_EXCHANGE_RULES`):
+
+        ``"repo"`` (default, bit-compatible with the pre-2026 behaviour)
+            I/I link dead when the *pull source* has no LIQUID neighbour while
+            the *receiver* has no GAS neighbour.  This predicate is not
+            symmetric under ``i <-> j``, so in configurations where it fires
+            the pair exchange is no longer ``+dm/-dm``.
+        ``"pair_symmetric"``
+            Same intent, evaluated symmetrically (dead only when *both* ends
+            have no LIQUID neighbour and neither end touches GAS).  Guarantees
+            ``sum(mass_delta_if) == 0`` to round-off, i.e. the I/I stage
+            conserves the liquid inventory.
+        ``"koerner"``
+            No selector at all (Körner et al. 2005 eq. 9).  Exactly
+            antisymmetric.
+        ``"oss"``
+            Port of ``Maarten-vd-Sande/lbm``
+            ``lbm/streamcollide.py::interface_mass_exchange`` (Thürey table
+            4.1 four-branch selector), used as a cross-validation arm; it is
+            not antisymmetric for the (no GAS here, GAS at source)
+            configuration.
 
     ``interface_force_alpha``
         Blend of the interface-cell body-force weight between the Körner reference
@@ -582,14 +611,74 @@ def koerner_step_2d(
     md_liq = torch.where(from_liq, diff, torch.zeros_like(diff))
     fill_nb = torch.stack([fill_pre] + [_roll_from_pull(fill_pre, q) for q in _MOVING_Q])
     ii_weight = 0.5 * (fill_pre.unsqueeze(0) + fill_nb)
+    if interface_exchange_rule not in INTERFACE_EXCHANGE_RULES:
+        raise ValueError(
+            f"interface_exchange_rule must be one of {INTERFACE_EXCHANGE_RULES}, "
+            f"got {interface_exchange_rule!r}"
+        )
     liq_nbr_count = (nb_flags == LIQUID).sum(dim=0)
+    gas_nbr_count = (nb_flags == GAS).sum(dim=0)
     liq_nbr_at_source = torch.stack(
         [liq_nbr_count] + [_roll_from_pull(liq_nbr_count, q) for q in _MOVING_Q]
     )
+    gas_nbr_at_source = torch.stack(
+        [gas_nbr_count] + [_roll_from_pull(gas_nbr_count, q) for q in _MOVING_Q]
+    )
     gas_nbr_here = (nb_flags == GAS).any(dim=0).unsqueeze(0)
-    ii_dead = from_if & (liq_nbr_at_source == 0) & ~gas_nbr_here
-    md_if = torch.where(from_if & ~ii_dead, ii_weight * diff, torch.zeros_like(diff))
-    mass_delta = (md_liq + md_if).sum(dim=0)
+    no_liq_here = (liq_nbr_count == 0).unsqueeze(0)
+    no_gas_here = (gas_nbr_count == 0).unsqueeze(0)
+    no_liq_src = liq_nbr_at_source == 0
+    no_gas_src = gas_nbr_at_source == 0
+    if interface_exchange_rule == "repo":
+        # Historical repo gate (asymmetric in the pair: it reads the *source*
+        # liquid-neighbour count and the *receiver* gas-neighbour state).
+        ii_dead = from_if & no_liq_src & ~gas_nbr_here
+        ii_increment = ii_weight * diff
+    elif interface_exchange_rule == "pair_symmetric":
+        # Same intent, evaluated symmetrically: an I/I link is dead only when
+        # *both* ends have no LIQUID neighbour *and* neither end touches GAS
+        # (an I/I link buried inside an interface-only blob).  Because the
+        # predicate is symmetric under i<->j the pair exchange stays exactly
+        # +dm/-dm, i.e. the I/I stage conserves the liquid inventory.
+        ii_dead = from_if & no_liq_src & no_liq_here & ~gas_nbr_here & no_gas_src
+        ii_increment = ii_weight * diff
+    elif interface_exchange_rule == "koerner":
+        # Körner et al. (2005) eq. 9 without any selector: every I/I link is
+        # live (exactly antisymmetric, no degenerate-cell guard).
+        ii_dead = torch.zeros_like(from_if)
+        ii_increment = ii_weight * diff
+    else:  # "oss"
+        # Port of the four-branch selector of Maarten-vd-Sande/lbm
+        # ``lbm/streamcollide.py::interface_mass_exchange`` (Thürey table 4.1):
+        # the exchanged population difference degenerates to -f_out / +f_in at
+        # cells that are walled in by liquid or by empty cells.  Kept as a
+        # cross-validation arm: it is *not* antisymmetric for the
+        # (no-GAS here, GAS at source) configuration.
+        f_in, f_out = f_exchange, f_post[opp]
+        ii_increment = torch.where(
+            no_liq_here,
+            torch.where(no_liq_src, diff, -f_out),
+            torch.where(
+                no_gas_here,
+                torch.where(no_gas_src, diff, f_in),
+                torch.where(no_liq_src, f_in, torch.where(no_gas_src, f_out, diff)),
+            ),
+        )
+        ii_increment = ii_weight * ii_increment
+        ii_dead = torch.zeros_like(from_if)
+    md_if = torch.where(from_if, ii_increment, torch.zeros_like(diff))
+    mass_delta_liq = md_liq.sum(dim=0)
+    mass_delta_if = md_if.sum(dim=0)
+    mass_delta = mass_delta_liq + mass_delta_if
+    if ledger is not None:
+        # Observer-only channels (never fed back).  ``exchange_interface_delta``
+        # isolates the I/I pair exchange, which must sum to zero over a closed
+        # domain: every live I/I link debits one cell by exactly +dm and the
+        # opposing cell by -dm.
+        ledger["exchange_interface_delta"] = float(mass_delta_if.sum())
+        ledger["exchange_liquid_delta"] = float(mass_delta_liq.sum())
+        ledger["exchange_ii_dead_links"] = int(ii_dead.sum())
+        ledger["exchange_ii_live_links"] = int((from_if & ~ii_dead).sum())
     if enable_mass_exchange:
         mass_delta = torch.nan_to_num(mass_delta, nan=0.0, posinf=0.0, neginf=0.0)
         mass = torch.where(iface, mass + mass_delta, mass)
@@ -690,6 +779,7 @@ def free_surface_step_2d(
     free_slip_mask=None,
     free_slip_all=False,
     refill_policy="repo_average",
+    interface_exchange_rule="repo",
 ):
     """One 2D free-surface timestep (D2Q9) — faithful Körner model.
 
@@ -721,6 +811,7 @@ def free_surface_step_2d(
         free_slip_mask=free_slip_mask,
         free_slip_all=free_slip_all,
         refill_policy=refill_policy,
+        interface_exchange_rule=interface_exchange_rule,
     )
     if return_mass:
         return f, mass, flags

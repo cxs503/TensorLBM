@@ -1,0 +1,49 @@
+{
+  "anchor": "XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE",
+  "round": 2,
+  "mission_id": 18750,
+  "supersedes": "m18451 (honest-FAIL: llm_error, no artifact)",
+  "frozen_at": "written before any measured value in this round was read",
+  "decision": "Which INTERFACE/INTERFACE (I/I) selector should TensorLBM's Thürey/Körner free-surface mass exchange use, and does the choice matter for the integrated accuracy benchmark (Martin & Moyce 1952 column collapse)?",
+  "alternatives": {
+    "repo": "current repo gate: I/I link dead iff pull source has no LIQUID neighbour while receiver has no GAS neighbour (asymmetric in the pair)",
+    "pair_symmetric": "same intent evaluated symmetrically (dead iff both ends lack a LIQUID neighbour and neither end touches GAS); exactly +dm/-dm per pair",
+    "koerner": "Koerner et al. 2005 eq. 9 with no selector (all I/I links live)",
+    "oss": "port of Maarten-vd-Sande/lbm lbm/streamcollide.py::interface_mass_exchange (Thuerey table 4.1 four-branch selector)"
+  },
+  "hypotheses": {
+    "H1": "The repo and oss selectors are pair-asymmetric in at least one physically reachable flag configuration, so the I/I stage creates/destroys liquid there; koerner and pair_symmetric do not.",
+    "H2": "Switching the I/I selector does not move the Martin & Moyce front-position error by more than 2 absolute percentage points at a>=24 (the integrated benchmark is insensitive to the selector, so the choice must be defended on the conservation invariant, not on Z(T))."
+  },
+  "metrics": {
+    "operator_net_relative": "|sum(dm_II)| / sum(|dm_II|) per configuration and rule (conservation residual of the I/I stage)",
+    "operator_pair_asym_pairs": "fraction of I/I pairs whose two ends do not commit opposite increments",
+    "dambreak_Z_error_max_pct": "max over sampled T of |Z(T) - Z_MM(T)| / Z_MM(T) * 100, Z = x_front/a, T = t sqrt(g/h0), piecewise-linear interpolation of the 14 digitised Martin & Moyce points, no extrapolation",
+    "inventory_drift_pct": "100 (I(t) - I(0)) / I(0), I = sum(rho over LIQUID) + sum(m over INTERFACE)"
+  },
+  "thresholds": {
+    "owner_accuracy": "dambreak_Z_error_max_pct < 15 (owner precision standard)",
+    "conservation_pass": "operator_net_relative < 1e-6 for a rule declared conservative (pair_symmetric, koerner)",
+    "conservation_fail_demo": "operator_net_relative > 1e-3 in the configuration where an asymmetric selector fires (repo, oss)",
+    "no_regression": "|Z_err(pair_symmetric) - Z_err(repo)| <= 2 percentage points at every resolution",
+    "inventory": "inventory_drift_pct < 1"
+  },
+  "variables": {
+    "varied": ["I/I selector rule (4 arms)", "lattice resolution across the dam width a in {24, 32} (h0 = 2a fixed)"],
+    "fixed": ["tau = 1.0 (nu = 1/6)", "g = 5e-5 lattice units", "nx = 5a, ny = 3a, four solid walls", "BGK, no surface tension, rho_liquid = rho_gas = 1", "sample every 0.25 T, t_end = 2.96 T (digitised M&M window)"],
+    "not_varied": ["3D (free_surface_lbm.py) — out of scope this round, reported as a limitation", "surface tension, multi-phase coupling, slope-limited VOF reconstruction"]
+  },
+  "controls": {
+    "C0": "hydrostatic column, g on, no initial perturbation: I/I net exchange and fill drift must stay at round-off",
+    "C1": "mass exchange disabled (enable_mass_exchange=False) as the null arm of the integrated benchmark"
+  },
+  "stopping_rule": "fixed step counts n = ceil(2.96 / sqrt(g/h0)); no early stopping; thresholds are constants in this file and are not tuned after seeing results",
+  "environment": "CPU (torch, set_num_threads(1)), float32, lattice units, one process per arm; python3 -m pytest for the invariant tests",
+  "external_anchor": [
+    "Koerner, Thies, Hofmann, Thuerrey, Ulrich (2005) Lattice Boltzmann model for free surface flow for modeling foaming, J. Comput. Phys. 202:616-628 (eq. 9, paired I/I exchange)",
+    "Thuerey (2007) A lattice Boltzmann method for free surface flows, PhD thesis, Univ. Erlangen (table 4.1 selector, eq. 4.5 ABB)",
+    "Anderl et al. (2014) Free surface lattice Boltzmann with minimal memory requirements ... waLBerla free_surface module (useSimpleMassExchange)",
+    "Martin & Moyce (1952) An experimental study of the collapse of liquid columns on a rigid horizontal plane, Phil. Trans. R. Soc. A 244:312-324 (14 digitised points in src/artifacts/martin_moyce_1952_dam_break.json)",
+    "OSS oracle: Maarten-vd-Sande/lbm (Thuerey minimal D2Q9 free surface), lbm/streamcollide.py::interface_mass_exchange, commit as cached in /root/oss-cache (inventoried snapshot)"
+  ]
+}
