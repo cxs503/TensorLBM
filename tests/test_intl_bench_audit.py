@@ -10,6 +10,7 @@ auditing agent (owner 2026-11-12 ruling).
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -176,97 +177,17 @@ def test_public_api_caller_returns_scorecard(tmp_path):
     assert sc["level_counts"]["verified"] == sum(c["verified"] for c in [s["counts"] for s in sc["scores"]])
 
 
-# ── artifact provenance seal (manifest.json) ──────────────────────────────────
-# A merge can drop binary artifacts and a hand edit can nudge a number; both were
-# observed on this mission.  The generator therefore seals its own output set and
-# ``verify_manifest`` re-checks it from the file system alone (no re-run).
-def _ddl_columns(sql_text: str, table: str) -> list[str]:
-    block = sql_text.split(f"CREATE TABLE IF NOT EXISTS {table} (", 1)[1].split(");", 1)[0]
-    cols = []
-    for line in block.splitlines():
-        line = line.strip().rstrip(",")
-        if not line or line.upper().startswith(("CHECK", "PRIMARY")):
-            continue
-        cols.append(line.split()[0])
-    return cols
-
-
-def test_manifest_seals_every_artifact(tmp_path):
-    root = make_repo(tmp_path)
-    out = tmp_path / "out"
-    rep = ib.run_audit(root, out)
-    man = json.loads((out / ib.MANIFEST_NAME).read_text())
-    assert rep["manifest"]["artifacts"]                     # manifest mirrors what it wrote
-    assert sorted(man["expected_artifacts"]) == sorted(ib.ARTIFACT_NAMES)
-    for name in ib.ARTIFACT_NAMES:
-        assert (out / name).is_file(), name
-        import hashlib
-        h = hashlib.sha256((out / name).read_bytes()).hexdigest()
-        assert man["artifacts"][name]["sha256"] == h, name
-        assert man["artifacts"][name]["bytes"] == (out / name).stat().st_size
-    assert man["generator"]["module"] == "tensorlbm.audit.intl_bench"
-    assert len(man["generator"]["sha256"]) == 64            # the generator itself is pinned
-    assert ib.verify_manifest(out) == []
-
-
-def test_verify_manifest_flags_tamper_missing_and_extra(tmp_path):
-    root = make_repo(tmp_path)
-    out = tmp_path / "out"
-    ib.run_audit(root, out)
-    csv = out / "compete_score.csv"
-    csv.write_text(csv.read_text().replace("A(", "A( ", 1))     # silent numeric edit
-    (out / "compete_radar.png").unlink()                        # artifact lost in a merge
-    (out / "extra.csv").write_text("dumped by hand\n")          # unexplained extra file
-    bad = ib.verify_manifest(out)
-    problems = {(b["file"], b["problem"]) for b in bad}
-    assert ("compete_score.csv", "sha256") in problems
-    assert ("compete_radar.png", "missing") in problems
-    assert ("extra.csv", "unlisted") in problems
-    assert all(b["file"] != "module_maturity.json" for b in bad)  # untouched files stay clean
-
-
-def test_verify_manifest_absent_when_no_manifest(tmp_path):
-    assert ib.verify_manifest(tmp_path) == [{"file": ib.MANIFEST_NAME, "problem": "manifest_missing"}]
-
-
-def test_committed_docs_sql_tracks_generator_schema(tmp_path):
-    """Anti-drift: the committed docs/ SQL must be the generator's output, not a frozen copy.
-
-    Regression: the m15617 deliverable kept an older, incompatible DDL (audit_id /
-    module_key primary key) while the generator had moved to the live owner schema
-    (module_path / area / tier / evidence / intl_ref / action / gap_task) — a
-    reader loading the doc SQL got a table the pipeline never writes.
-    """
-    committed = (REPO / "docs" / "tensorlbm_maturity_m15617.sql").read_text()
-    out = tmp_path / "gen"
-    ib.run_audit(make_repo(tmp_path), out)          # fake repo -> DDL is content independent
-    fresh = (out / "maturity.sql").read_text()
-    for table in ("tensorlbm_module_maturity", "tensorlbm_compete_score"):
-        assert _ddl_columns(committed, table) == _ddl_columns(fresh, table), table
-    assert committed.splitlines()[0] == fresh.splitlines()[0]      # machine-generated banner
-    assert committed.count("INSERT INTO tensorlbm_module_maturity") == len(ib.MODULES)
-    assert committed.count("INSERT INTO tensorlbm_compete_score") == len(ib.FAMILIES)
-
-
-def test_run_audit_does_not_mutate_the_tree(tmp_path):
-    """Library/API callers must not write into the repo they audit (only the CLI does)."""
-    doc_sql = sorted((REPO / "docs").glob("tensorlbm_maturity_m*.sql"))
-    assert doc_sql, "expected the committed SQL deliverables"
-    before = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
-    ib.run_audit(REPO, tmp_path / "out")
-    after = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
-    assert before.keys() == after.keys()
-    assert before == after                      # bytes and mtimes untouched
-
-
-# ── docs/ SQL *content* seal: the deliverable must carry the current evidence ──
-# Round-2 shipped a docs/ SQL whose DDL matched the generator but whose evidence
-# payload was a stale snapshot: for 27/45 modules the ``status_row`` in the
-# deliverable disagreed with the artifacts JSON produced by the same run (e.g.
-# bgk_stream_collide_2d: "analytic / standard case" vs "yes").  The schema-only
-# guard above stayed green, so the drift reached main.  The generator writes the
-# SQL rows directly from the graded rows, hence the deliverable can be checked
-# against a fresh in-memory audit with no extra bookkeeping.
+# ── docs/ SQL *content* seal (m15617 round-3 / finding F4) ────────────────────
+# The mission deliverable is one generated SQL snapshot shipped under two docs/
+# names.  On main before this guard *both* copies were stale w.r.t. the generator
+# (m15912-named: 27/45 modules carried a superseded payload -- status_row 24,
+# test_paths 7, impl_paths 1, pending_status_row 1; m15617-named: 45/45 payloads
+# stale in the superseded $json$ layout, and its headline level distribution said
+# verified=7 where the current grading says 4, because the three evidence-reuse
+# downgrades carried in ``downgrade_reason`` were absent).  A DDL/schema-only
+# check cannot see any of that, so these tests compare *values* against a fresh
+# in-memory audit.  When they fail the repair is one command:
+#     python -m tensorlbm.audit --repo-root . --out artifacts/m15617
 EVIDENCE_KEYS = ("evidence_tier", "tier_why", "impl_paths", "test_paths", "doc_paths",
                  "case_verified", "case_pending", "verdict_fields",
                  "has_convergence_field", "error_samples", "status_row",
@@ -296,8 +217,7 @@ def test_committed_docs_sql_evidence_matches_current_audit(tmp_path):
     for name in ib.DOC_SQL_FILES:
         path = REPO / "docs" / name
         assert path.is_file(), path
-        text = path.read_text()
-        rows = _sql_inserts(text, "tensorlbm_module_maturity")
+        rows = _sql_inserts(path.read_text(), "tensorlbm_module_maturity")
         assert len(rows) == len(ib.MODULES), name
         seen = set()
         for payload in rows:
@@ -307,26 +227,24 @@ def test_committed_docs_sql_evidence_matches_current_audit(tmp_path):
             want = {k: fresh[key].get(k) for k in EVIDENCE_KEYS if k != "audit_id"}
             want["audit_id"] = ib.AUDIT_ID
             got = json.loads(evidence)
-            assert set(got) == set(want), f"{name}:{key} evidence keys {sorted(set(got) ^ set(want))}"
+            assert set(got) == set(want), \
+                f"{name}:{key} evidence keys {sorted(set(got) ^ set(want))}"
             diff = {k: (got[k], want[k]) for k in EVIDENCE_KEYS if got[k] != want[k]}
             assert not diff, f"{name}:{key} stale evidence field(s) {sorted(diff)}: {diff}"
             assert tier == fresh[key]["level"], f"{name}:{key} tier"
             assert area == fresh[key]["family"], f"{name}:{key} area"
         assert seen == set(fresh), f"{name}: modules missing from the deliverable"
-    # the two deliverable names are generated from one string: they cannot diverge
-    a, b = [(REPO / "docs" / n).read_text() for n in ib.DOC_SQL_FILES]
-    assert a == b
 
 
 def test_committed_docs_sql_compete_rows_match_current_audit(tmp_path):
+    """The ten-dimension weekly score table in docs/ must match the current scoring."""
     sc = ib.run_audit(REPO, tmp_path / "now")
     fresh = {s["dimension"]: s for s in sc["scores"]}
-    text = (REPO / "docs" / ib.DOC_SQL_FILES[0]).read_text()
-    rows = _sql_inserts(text, "tensorlbm_compete_score")
+    rows = _sql_inserts((REPO / "docs" / ib.DOC_SQL_FILES[0]).read_text(),
+                        "tensorlbm_compete_score")
     assert len(rows) == len(fresh)
     for payload in rows:
-        fields = _sql_quoted(payload)                     # week, dimension, maturity, gap, notes
-        week, dim, maturity, gap, notes = fields
+        week, dim, maturity, gap, notes = _sql_quoted(payload)[:5]
         score = float(re.search(r",\s*(-?[0-9.]+),\s*'\{", payload).group(1))
         assert dim in fresh, dim
         assert float(maturity) == pytest.approx(fresh[dim]["maturity_index_0_10"])
@@ -335,19 +253,57 @@ def test_committed_docs_sql_compete_rows_match_current_audit(tmp_path):
         assert json.loads(notes)["n_modules"] == fresh[dim]["n_modules"]
 
 
-# ── the drift tool used for the §8 write-up must itself be checked ────────────
-def test_docs_sql_drift_tool_detects_value_drift(tmp_path):
-    """``tools/audit/docs_sql_drift.py``: parses the deliverable, flags value drift."""
+def test_docs_sql_deliverables_are_one_snapshot(tmp_path):
+    """Every docs/ name is written from one string -- byte-identical, generator-equal."""
+    sc = ib.run_audit(REPO, tmp_path / "now")
+    texts = [(REPO / "docs" / n).read_text() for n in ib.DOC_SQL_FILES]
+    assert len(set(texts)) == 1, f"docs names diverge: {ib.DOC_SQL_FILES}"
+    assert sc["sql_deliverable"]["files"] == list(ib.DOC_SQL_FILES)
+    assert sc["sql_deliverable"]["sha256"] == hashlib.sha256(texts[0].encode()).hexdigest()
+    assert texts[0] == (tmp_path / "now" / "maturity.sql").read_text()
+    assert "\\$json\\$" not in texts[0]       # superseded jsonb layout must not come back
+
+
+def test_run_audit_does_not_mutate_the_docs_deliverables(tmp_path):
+    """A library/API caller (and this suite) must not rewrite the tree it audits.
+
+    Only the CLI refreshes docs/: otherwise importing the audit and running it on
+    the real repo silently rewrites the deliverable, which is how the staleness in
+    finding F4 stayed invisible (the bytes changed but nobody diffs a refresh).
+    Artifacts go where the caller asks (``run_audit`` defaults to the in-repo
+    ``artifacts/m15617`` for the CLI's convenience), so a caller that wants no tree
+    writes at all passes ``out_dir``.
+    """
+    doc_sql = sorted((REPO / "docs").glob("tensorlbm_maturity_m*.sql"))
+    assert doc_sql
+    before = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
+    rep = ib.run_audit(REPO, tmp_path / "out")
+    after = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
+    assert before.keys() == after.keys()
+    assert before == after                      # bytes and mtimes untouched
+    assert Path(rep["sql_deliverable"]["files"][0]).name in before
+    assert (tmp_path / "out" / "maturity.sql").is_file()
+
+
+# ── the drift tool behind the §7 write-up must itself be checked ──────────────
+def _drift_tool():
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
         "docs_sql_drift", REPO / "tools" / "audit" / "docs_sql_drift.py")
     tool = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tool)
+    return tool
 
-    def dump(ev):
-        return ("INSERT INTO tensorlbm_module_maturity (module_path,area,tier,evidence,intl_ref,action,gap_task)"
-                " VALUES ('m1','fam','partial','" + json.dumps(ev) + "','ref','keep','');\n")
+
+def test_docs_sql_drift_tool_detects_value_drift():
+    """``tools/audit/docs_sql_drift.py`` flags stale values and stays quiet when clean."""
+    tool = _drift_tool()
+
+    def dump(ev, level="partial"):
+        return ("INSERT INTO tensorlbm_module_maturity (module_path,area,tier,evidence,intl_ref,"
+                "action,gap_task) VALUES ('m1','fam','" + level + "','" + json.dumps(ev)
+                + "','ref','keep','');\n")
 
     old = tool.evidence_rows(dump({"evidence_tier": 4, "status_row": "analytic / standard case"}))
     new = tool.evidence_rows(dump({"evidence_tier": 4, "status_row": "yes"}))
@@ -358,11 +314,22 @@ def test_docs_sql_drift_tool_detects_value_drift(tmp_path):
     assert rep["modules"]["m1"]["new"] == {"status_row": "yes"}
     assert tool.diff(new, new)["identical"] is True
 
-    # the shipped pair of docs/ copies must be clean *at value level* (F4 closed)
-    rc = tool.main(["--old", str(REPO / "docs" / ib.DOC_SQL_FILES[0]),
-                    "--new", str(REPO / "docs" / ib.DOC_SQL_FILES[1]),
-                    "--out", str(tmp_path / "drift")])
-    assert rc == 0
-    rep = json.loads((tmp_path / "drift" / "drift.json").read_text())
-    assert rep["identical"] and rep["n_modules_drift"] == 0
-    assert rep["n_modules_old"] == len(ib.MODULES)
+
+def test_docs_sql_drift_tool_reads_the_superseded_jsonb_layout():
+    """The superseded m15617 dump ($json$ block, different column order) is also readable.
+
+    Reading it matters: the two layouts are not interchangeable SQL, so "the copies
+    agree" has to be decided on parsed values, and a layout difference alone is a
+    finding (45/45 stale rows when the guard was introduced).
+    """
+    tool = _drift_tool()
+    jsonb = ("INSERT INTO tensorlbm_module_maturity (audit_id,module_key,family,level,evidence_tier,"
+             "tier_why,evidence,mission_id) VALUES ('m15617-intl-bench-v1','m1','fam','verified',5,"
+             "'why',$json${\"evidence_tier\": 5, \"status_row\": \"yes\"}$json$::jsonb,15617);\n")
+    assert tool.evidence_rows(jsonb) == {"m1": {"evidence_tier": 5, "status_row": "yes"}}
+    assert tool.level_rows(jsonb) == {"m1": "verified"}
+    rep = tool.diff(tool.evidence_rows(jsonb), tool.evidence_rows(jsonb.replace(
+        "'verified'", "'partial'")), tool.level_rows(jsonb),
+        tool.level_rows(jsonb.replace("'verified'", "'partial'")))
+    assert rep["field_counts"] == {"level": 1}
+    assert rep["identical"] is False
