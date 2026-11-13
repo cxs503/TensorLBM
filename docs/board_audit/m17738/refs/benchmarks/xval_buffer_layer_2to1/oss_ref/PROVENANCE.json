@@ -1,0 +1,21 @@
+{
+  "repo": "haimingz/vivsim",
+  "upstream_file": "vivsim/multigrid.py",
+  "upstream_commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+  "license": "MIT",
+  "feature": "NEW:LBM-BLOCK-REFINEMENT-2TO1 (oss_solutions id=7, tag buffer-layer-2to1-refinement)",
+  "oss_inventory_id": 11,
+  "retrieved": "2026-11-13",
+  "retrieval_note": "working tree at /tmp/vivsim_src; its .git object store is damaged (git rev-parse HEAD fails), so the sha256<->commit binding rests on oss_inventory.cache_commit=fb84b12 and cannot be re-verified locally",
+  "sha256_upstream": "d104683cfad3c3114f74e42aebf2678cec1de4d63917cb1d5c13c97a72af6515",
+  "sha256_shimmed": "7985f6c5c498039e12c79a7bd9ead348f1a094729758f0a57405dc89bbd372d5",
+  "shim": "import block only: 'import jax.numpy as jnp' -> '. import np_jax_shim as jnp'; '.lbm.basic' -> '.lattice_dirs' (same four int32 direction tuples). Function bodies byte-identical.",
+  "oss_conventions": {
+    "ddf": "shifted distribution f_i = f_i^full - w_i (vivsim/lbm/basic.py docstring)",
+    "layout": "(q, NX, NY)",
+    "refinement": "block-structured 2:1, buffer layer added to the coarser side",
+    "restriction": "fine_to_coarse: 4-point average of the populations crossing the face, no non-equilibrium rescaling",
+    "prolongation": "coarse_to_fine: copy of the coarse face populations onto both fine rows, no rescaling",
+    "relaxation": "get_omega(nu, level) = 2*w0 / (2**(level+1) + (1-2**level)*w0), w0 = 1/(3nu+0.5)"
+  }
+}
