@@ -1,0 +1,69 @@
+{
+  "anchor": "XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD",
+  "mission_id": 18194,
+  "repo": "TensorLBM",
+  "oss_reference": {
+    "project": "CFD-GO/TCLB",
+    "model": "models/multiphase/d2q9_pf_pressureEvolution",
+    "lineage": "Dynamics.c.Rt header: '19/7/2016 - Model Developed: A. Fakhari, M. Geier, T. Lee'",
+    "license": "GPL-3.0 (reference-only: no source text is copied into TensorLBM)",
+    "provenance": "every OSS-side number used below is parsed out of the source text at run time (sha256 + line number recorded in artifacts/xval_m18194/oss_extract.json)",
+    "runnable_here": false,
+    "not_runnable_reason": "model generator is Python 2 ('from cStringIO import StringIO', Dynamics.c.Rt L51) and the toolchain requires nvcc; neither python2 nor nvcc exists in this environment",
+    "decision": "Adopt the pressure-evolution + Allen-Cahn h-population formulation as TensorLBM's density-independent two-phase velocity solver IF it passes the two analytic gates below; otherwise reject and record why.",
+    "alternatives": [
+      "A1: keep Shan-Chen pseudo-potential multiphase (src/tensorlbm/multiphase.py) as the only two-phase velocity solver -- it carries a density-based equation of state and cannot give a density-independent pressure field at ratio 1e3",
+      "A2: keep the existing conservative Allen-Cahn h-population kernels (tensorlbm.cac_lbm2d, tensorlbm.phasefield.cac_h_population) with PRESCRIBED velocity -- no pressure evolution, no momentum coupling",
+      "A3: port the extracted TCLB pressure-evolution scheme (f-population carries p, gbar-equilibrium + MRT with shear-only relaxation; AC h-population with the anti-diffusion term INSIDE the equilibrium) and gate it on analytic references (adopted)"
+    ],
+    "hypothesis": "H1: the extracted pressure-evolution f-population reproduces the 2D Young-Laplace law dp = sigma/R for a static diffuse drop within 15% at density ratios 1 and 100. H2: the same f-population recovers the input kinematic viscosity from the analytic Taylor-Green decay rate within 15%. H3: the AC h-population with the anti-diffusion term folded into the equilibrium conserves total phase mass to machine precision (sum_i theta*w_i*(c_i.n) = 0 by lattice symmetry). H4: the Laplace pressure jump is insensitive to the density ratio (the formulation's advertised property) to within 15% between rho_h/rho_l = 1 and 100.",
+    "metrics": {
+      "primary": "Laplace pressure jump dp_meas = <p>_in - <p>_out of a static diffuse drop vs the analytic 2D Laplace law sigma/R_eff, with R_eff = sqrt(A/pi) measured from the conserved excess phase area A = sum(phi - phi_l) over the whole box (no free parameter)",
+      "secondary": [
+        "Taylor-Green decay rate of the f-population: fitted nu vs input nu",
+        "mass conservation: |sum(phi)(t) - sum(phi)(0)| / sum(phi)(0)",
+        "spurious current: max|u| at steady state, in units of sigma/(rho_l*nu)",
+        "structural: pointwise residual between the extracted TCLB formulas and the TensorLBM port on random smooth fields"
+      ],
+      "diagnostics": ["phi range", "min/max rho", "steady-state residual |dp/dt|", "velocity divergence max|div u|"]
+    },
+    "baseline_control": "Analytic references only, because the OSS model is not runnable here: (i) 2D Young-Laplace dp = sigma/R; (ii) exact Taylor-Green viscous decay u = U exp(-nu k^2 t); (iii) exact discrete phase-mass conservation. Control arm: phi_h = phi_l (single phase) where the interface force mu*grad(phi) vanishes identically and dp must be 0.",
+    "accept_pct": 15.0,
+    "predeclared_thresholds": {
+      "laplace_err_pct": 15.0,
+      "viscosity_err_pct": 15.0,
+      "mass_error_max": 1e-10,
+      "structural_residual_max": 1e-12,
+      "steady_state_residual": 1e-9,
+      "density_ratio_consistency_pct": 15.0
+    },
+    "stopping_rule": "a drop run stops when max|p(t) - p(t-500)| / dp_analytic < 1e-3 (steady_state_residual on the pressure field) or at max_iter = 60000 steps; runs that hit max_iter are reported converged = false and their dp is kept but flagged",
+    "variables": {
+      "controlled": ["grid 128x128 (periodic)", "W = 4", "M = 0.05 (omega_phi = 1/(3M+1/2))", "nu_l = nu_h = 0.1 (omega = 1/(3nu))", "sigma = 0.05", "phi_h = 1, phi_l = 0", "float64", "drop initialized with the model's own tanh profile phi = 1/2[1 - tanh(2(r-R)/W)]"],
+      "changed": ["rho_h/rho_l in {1, 10, 100, 1000}", "R in {12, 16, 20, 24} (resolution study at rho ratio 1 and 100)", "M in {0.02, 0.05, 0.1} (interface-width / spurious-current sensitivity)"],
+      "confounders": [
+        "discrete curvature of the phi = 1/2 level set differs from sqrt(A/pi) by O((dx/R)^2) -- separated by the R sweep",
+        "spurious (parasitic) currents advect the interface and bias dp -- measured and reported alongside dp",
+        "the pressure-recovery correction (rho_h - rho_l)(grad(phi).u)/6 is itself velocity dependent, so it vanishes only in the exact steady state",
+        "tau interpolation is linear in phi while rho is linear in phi, so the viscosity field is not harmonic at ratio 1e3 -- an OSS-inherited discretization choice, not a port defect"
+      ]
+    },
+    "repetition_rationale": "The scheme is deterministic in float64 with no random seeds; the sweeps (rho ratio, R, M) provide the repetitions, each row one independent equilibration. Determinism is asserted by a bitwise repeat of one case.",
+    "environment": {
+      "python": "3.11",
+      "torch": "float64 CPU",
+      "module": "src/tensorlbm/phasefield/pf_pressure_evolution.py (port)",
+      "driver": "scripts/xval_m18194_pf_pressure_evolution.py",
+      "oss_root": "/tmp/TCLB (read-only, sha256 recorded at run time)",
+      "raw_data": "artifacts/xval_m18194/*.json",
+      "figures": "artifacts/xval_m18194/fig*.png"
+    },
+    "analysis": "Per row: err = (got - ref)/ref * 100 with ref analytic; pass iff |err| <= 15. Aggregate: max |err| over the primary sweep. Uncertainty: dp is a volume mean over >= 2e3 nodes; the reported error bar is the standard error of that mean plus the steady-state residual. Sensitivity points: R (convergence) and M (interface width).",
+    "safety_resource_limits": "each drop run < 300 s on one thread; the whole XVAL is designed to finish inside 10 min wall clock on the local 128-core box via a process pool; nothing is submitted to the cluster unless a single command exceeds 10 min",
+    "interpretation_limits": [
+      "the OSS binary is not executable here, so 'cross-validation' means: structural equivalence against source text + independent physical validation against analytic references; a byte-level run-to-run comparison against TCLB output was NOT performed and is not claimed",
+      "static and single-phase diagnostics only; no dynamic test (rising bubble, capillary wave) is gated in round 1",
+      "the 2D model is compared; TCLB's 3D counterpart (d3q27_pf_velocity) uses a different pressure treatment and is out of scope",
+      "the 15% gate is applied to dp and to nu; spurious currents are reported but not gated (no analytic reference value exists)"
+    ]
+}
