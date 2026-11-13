@@ -316,8 +316,15 @@ class AitkenRelaxation:
     the interface residual and ``omega_0`` the initial relaxation.  For a
     linear interface operator the recursive secant estimate returns
     ``omega_k = 1/(1+beta_eff)`` exactly after the first update, i.e. the
-    relaxation that annihilates the interface error.  The factor is clipped to
-    ``[omega_min, omega_max]`` for robustness (default ``[0.05, 1.0]``).
+    relaxation that annihilates the interface error.
+
+    Robustness: with ``clip=True`` (default) the factor is kept positive and
+    bounded by ``[omega_min, omega_max]``.  The floor must stay well below the
+    smallest expected optimum ``1/(1+beta_eff)``; a floor of ``0.05`` makes the
+    iteration *diverge* for ``beta_eff > 39`` because the clipped factor then
+    gives ``|1 - omega_min (1+beta_eff)| > 1`` (measured in
+    ``xval/aitken_underrelaxation_life``).  ``clip=False`` reproduces the raw
+    joconnor22/LIFE convention (no clipping, negative factors allowed).
     """
 
     name = "aitken"
@@ -326,14 +333,18 @@ class AitkenRelaxation:
         self,
         omega0: float = 0.5,
         *,
-        omega_min: float = 0.05,
+        omega_min: float = 1e-4,
         omega_max: float = 1.0,
+        clip: bool = True,
     ) -> None:
         if not (0.0 < omega0 <= 1.0):
             raise ValueError("omega0 must lie in (0, 1]")
+        if not (0.0 <= omega_min < omega_max):
+            raise ValueError("require 0 <= omega_min < omega_max")
         self.omega0 = float(omega0)
         self.omega_min = float(omega_min)
         self.omega_max = float(omega_max)
+        self.clip = bool(clip)
         self.reset()
 
     def reset(self) -> None:
@@ -348,8 +359,14 @@ class AitkenRelaxation:
             denom = float(dr @ dr)
             if denom > 1e-300:
                 omega = -self.omega * float(self._r_prev @ dr) / denom
-                if math.isfinite(omega) and omega > 0.0:
-                    self.omega = min(max(omega, self.omega_min), self.omega_max)
+                if math.isfinite(omega):
+                    if self.clip:
+                        # robustness guard (repo default): keep omega positive
+                        if omega > 0.0:
+                            self.omega = min(max(omega, self.omega_min), self.omega_max)
+                    else:
+                        # raw Aitken (joconnor22/LIFE convention, no clipping)
+                        self.omega = omega
         self._r_prev = r.copy()
         return x + self.omega * r, self.omega
 
@@ -553,6 +570,8 @@ def solve_partitioned_1d(
     gamma: float = 0.5,
     beta_n: float = 0.25,
     a_init: float | None = None,
+    predictor: Literal["none", "linear", "quadratic"] = "none",
+    ref_scale: float | None = None,
 ) -> PartitionedStepResult:
     """Time-accurate partitioned solve of the 1-DOF added-mass model.
 
@@ -577,6 +596,18 @@ def solve_partitioned_1d(
     accelerator:
         One of the objects from :func:`make_accelerator`; ``None`` keeps the
         plain fixed point.
+    predictor:
+        Extrapolated initial interface iterate for each time step, as used by
+        the strong-coupling loop of joconnor22/LIFE: ``"none"`` (start from the
+        previous converged acceleration), ``"linear"``
+        (``2 a_n - a_{n-1}``) or ``"quadratic"``
+        (``2.5 a_n - 2 a_{n-1} + 0.5 a_{n-2}``, LIFE's ordering-2 extrapolation).
+        Falls back to the lower order while the history is short.
+    ref_scale:
+        If given, the convergence test is the *relative* one
+        ``|r| / ref_scale < tol`` (LIFE normalises the interface residual by
+        ``ref_L sqrt(DOF)`` and uses ``tol = 1e-8``).  ``None`` keeps the
+        absolute test ``|r| < tol`` used by the earlier studies here.
     """
     if n_steps < 1:
         raise ValueError("n_steps must be >= 1")
@@ -605,6 +636,10 @@ def solve_partitioned_1d(
     res_hist: list[list[float]] = []
     om_hist: list[list[float]] = []
     converged = True
+    tol_scale = 1.0 if ref_scale is None else float(ref_scale)
+    if tol_scale <= 0.0:
+        raise ValueError("ref_scale must be positive")
+    a_hist: list[float] = [float(a_prev)]
 
     for n in range(n_steps):
         t_next = (n + 1) * dt
@@ -616,7 +651,16 @@ def solve_partitioned_1d(
             + model.stiffness * (d + dt * v + dt * dt * (0.5 - beta_n) * a_prev)
         )
 
-        x = np.array([a_prev], dtype=float)
+        # extrapolated initial interface iterate (LIFE-style predictor)
+        if predictor == "none" or len(a_hist) < 2:
+            a0 = a_prev
+        elif predictor == "linear" or len(a_hist) < 3:
+            a0 = 2.0 * a_prev - a_hist[-2]
+        elif predictor == "quadratic":
+            a0 = 2.5 * a_prev - 2.0 * a_hist[-2] + 0.5 * a_hist[-3]
+        else:  # pragma: no cover - guarded by the type hints
+            raise ValueError(f"unknown predictor {predictor!r}")
+        x = np.array([a0], dtype=float)
         if hasattr(acc, "reset"):
             acc.reset()
 
@@ -630,7 +674,7 @@ def solve_partitioned_1d(
             a_s = (f_fluid + c_known) / m_eff          # structure operator (Newmark)
             r = np.array([a_s - a_k], dtype=float)
             resid_series.append(float(abs(r[0])))
-            if abs(float(r[0])) < tol:
+            if abs(float(r[0])) < tol * tol_scale:
                 step_conv = True
                 a_new = a_s
                 break
@@ -662,6 +706,7 @@ def solve_partitioned_1d(
         converged = converged and step_conv
 
         d, v, a_prev = d_next, v_next, a_next
+        a_hist.append(a_next)
 
     return PartitionedStepResult(
         t=np.asarray(ts),
