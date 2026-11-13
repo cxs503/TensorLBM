@@ -1,0 +1,59 @@
+{
+ "verdict_level": 2,
+ "disposition": "request changes (返修 recommended)",
+ "severity": [
+  {
+   "id": "F1",
+   "sev": "high",
+   "claim": "deliverable produces a REPORT/figures and a machine-checkable summary",
+   "evidence": "refs/xval_all.py:51 -> color=['tab:green' if r['psi_mode']=='exp' else 'tab:orange'] has no 'for r in rows'; delivered xval_all.log traceback NameError line 51. summary.json is written before the crash; fig_xval.png and the markdown REPORT are never produced (absent from the delivered tree). Auditor reproduced the same NameError class in a 3-line extract.",
+   "impact": "the deliverable has no report artifact of its own; the six-segment report required by the mission was never emitted, and tensor_reports has 0 rows for mission 18126"
+  },
+  {
+   "id": "F2",
+   "sev": "critical",
+   "claim": "mission result: 'tensorLBM arm N=64 g=5 psi=exp profile rel-L2 = 2.00% (<15% gate)'",
+   "evidence": "summary.json err_rel_l2 = 2.0033988272098067 = 200.34 %, recomputed identically from the delivered arm_N64_g5_exp.npz against prof_ref. The relative-L2 definition (run_xval.py:176) returns a fraction, so the quoted '2.00 %' is the fraction read as a percentage: a 100x understatement.",
+   "impact": "the only evaluable arm fails the owner criterion by 13x, not passes it. Any downstream ledger entry reading 'within 15%' would be false."
+  },
+  {
+   "id": "F3",
+   "sev": "critical",
+   "claim": "cross-validation establishes operator agreement",
+   "evidence": "3 of 4 arms are all-NaN (arm_N64_g6_exp, arm_N128_g6_exp, arm_N64_g6_linear: prof_a is NaN everywhere, so err_rel_l2 = NaN). Only g=5/exp is finite: rho_a range [0.1178, 1.8481] vs OSS [0.1083, 0.9321]; umax 0.13273 vs 0.01681 (7.9x).",
+   "impact": "no convergence study (N=64->128) and no g-sensitivity curve exist; the report's segments 5 (convergence/sensitivity) cannot be filled. The comparison configuration is not demonstrably equivalent to the OSS case."
+  },
+  {
+   "id": "F4",
+   "sev": "high",
+   "claim": "the TensorLBM physics arm exercises the shipped library operator",
+   "evidence": "refs/run_xval.py:152 tl_run(..., use_library_collision=False) by default: the 1000-step arms use the script-local collide_replica (run_xval.py:120), not tensorlbm.multiphase.collide_sc_two_component. The library collision is called only in the one-step faithfulness check.",
+   "impact": "even a passing arm would not certify the shipped operator end-to-end (collision + force + streaming inside the library)."
+  },
+  {
+   "id": "F5",
+   "sev": "high",
+   "claim": "delivered capability lands in the repo",
+   "evidence": "mission result head_commit = null, git_status '?? xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR/'; the directory is absent from /root/tensor-ecosystem/TensorLBM/xval; grep -rl 'XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR' in the eco repo -> 0 hits. No test file, no caller.",
+   "impact": "nothing to reuse; the bytes survive only in the mission worktree (copied into this audit's refs/ with sha256)."
+  },
+  {
+   "id": "F6",
+   "sev": "medium",
+   "claim": "report published",
+   "evidence": "SELECT count(*) FROM tensor_reports WHERE mission_id=18126 -> 0. The mission's own checks field lists '平台发布' as 未跑."
+  },
+  {
+   "id": "F7",
+   "sev": "medium",
+   "claim": "reproducible from the tree alone",
+   "evidence": "the lbmpy sdist PYTHONPATH pin (needed: site lbmpy raises AttributeError 'LBStencil' has no 'weights') is recorded only in oss_arm.py's docstring, not as a shipped path/env; xval_all.py aborts; no README/REPORT."
+  }
+ ],
+ "what_holds_up": [
+  "operator-identity check (collide_replica == tensorlbm.multiphase.collide_sc_two_component) reproduced at max abs diff 0.0",
+  "uniform field -> exactly zero cross force (summary uniform_zero_force = 0.0), reproduced by the auditor",
+  "OSS reference-faithfulness: the lbmpy arm reproduces the upstream paper profile to rel 2.66e-6 and the auditor re-ran the OSS arm live (umax 0.0242 at N=32)",
+  "auditor-designed invariants on the shipped operator all pass (see audit_independent_check)"
+ ]
+}
