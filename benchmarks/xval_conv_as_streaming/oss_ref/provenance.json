@@ -1,0 +1,14 @@
+{
+ "repo": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow",
+ "tarball_url": "https://codeload.github.com/loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow/tar.gz/refs/heads/master",
+ "fetched_utc": null,
+ "tarball_sha256": "7e4e3459730aecd57daef1cc5695e10368424b497a23849b3c10d095c4e23f10",
+ "extractor": "benchmarks/xval_conv_as_streaming/extract_oss_tables.py",
+ "files": {
+  "LatFlow/D2Q9.py": "8acdfd9974d8fccf31912318f2e03c76fd60304182749052f8ba7335c558c0b7",
+  "LatFlow/D3Q15.py": "e3a5bd48470373703dd3e75e83e0ad37f2c682646cb3c63210c2d66cd682e78a",
+  "LatFlow/D3Q19.py": "123998fc417971679e6eccb772adfb7a4d3cf6854fd58949615cda7c0046fdbc",
+  "LatFlow/Domain.py": "d0c21f76df0e79ef511fc40581586b6a0a1bfff4dba1452fdbecd68525475522",
+  "LatFlow/utils.py": "bfeb6f59ff91c022907ebdf4db43f87db03cf6e82cadfa609c071d54973ecdaf"
+ }
+}
