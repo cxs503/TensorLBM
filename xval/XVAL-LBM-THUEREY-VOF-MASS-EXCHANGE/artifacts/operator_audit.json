@@ -1,0 +1,204 @@
+{
+  "anchor": "XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE",
+  "configs": {
+    "droplet_shell": {
+      "cells": {
+        "GAS": 624,
+        "INTERFACE": 36,
+        "LIQUID": 0
+      },
+      "setup": {
+        "gy": 0.0,
+        "rules": {
+          "koerner": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 4442,
+            "inventory_drift_pct": -1.1559859728038115e-05,
+            "net_dm_II": 6.984919309616089e-10,
+            "net_relative": 0.017142857142857144,
+            "sum_abs_dm_II": 4.0745362639427185e-08
+          },
+          "oss": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 4423,
+            "inventory_drift_pct": 0.0007693728863438702,
+            "net_dm_II": 3.9814040064811707e-08,
+            "net_relative": 0.3630573248407643,
+            "sum_abs_dm_II": 1.096632331609726e-07
+          },
+          "pair_symmetric": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 4442,
+            "inventory_drift_pct": -1.1559859728038115e-05,
+            "net_dm_II": 6.984919309616089e-10,
+            "net_relative": 0.017142857142857144,
+            "sum_abs_dm_II": 4.0745362639427185e-08
+          },
+          "repo": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 4442,
+            "inventory_drift_pct": -1.1559859728038115e-05,
+            "net_dm_II": 6.984919309616089e-10,
+            "net_relative": 0.017142857142857144,
+            "sum_abs_dm_II": 4.0745362639427185e-08
+          }
+        },
+        "steps": 20
+      }
+    },
+    "hydrostatic_column": {
+      "cells": {
+        "GAS": 470,
+        "INTERFACE": 19,
+        "LIQUID": 171
+      },
+      "setup": {
+        "gy": 5e-05,
+        "rules": {
+          "koerner": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1346,
+            "inventory_drift_pct": -18.0165446696189,
+            "net_dm_II": -9.912838550008019e-09,
+            "net_relative": 0.12543376944342646,
+            "sum_abs_dm_II": 7.902846732577018e-08
+          },
+          "oss": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1346,
+            "inventory_drift_pct": -18.01654519797032,
+            "net_dm_II": 4.988322643839638e-09,
+            "net_relative": 0.08659072486448538,
+            "sum_abs_dm_II": 5.7608048109614174e-08
+          },
+          "pair_symmetric": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1346,
+            "inventory_drift_pct": -18.0165446696189,
+            "net_dm_II": -9.912838550008019e-09,
+            "net_relative": 0.12543376944342646,
+            "sum_abs_dm_II": 7.902846732577018e-08
+          },
+          "repo": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1346,
+            "inventory_drift_pct": -18.0165446696189,
+            "net_dm_II": -9.912838550008019e-09,
+            "net_relative": 0.12543376944342646,
+            "sum_abs_dm_II": 7.902846732577018e-08
+          }
+        },
+        "steps": 20
+      }
+    },
+    "surface_band": {
+      "cells": {
+        "GAS": 489,
+        "INTERFACE": 18,
+        "LIQUID": 153
+      },
+      "setup": {
+        "gy": 0.0,
+        "rules": {
+          "koerner": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1290,
+            "inventory_drift_pct": -20.957445536696785,
+            "net_dm_II": -3.4924596548080444e-09,
+            "net_relative": 0.05555555555555555,
+            "sum_abs_dm_II": 6.28642737865448e-08
+          },
+          "oss": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1303,
+            "inventory_drift_pct": -20.537593120408374,
+            "net_dm_II": 0.8501115597318858,
+            "net_relative": 0.999999944949629,
+            "sum_abs_dm_II": 0.8501116065308452
+          },
+          "pair_symmetric": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 1290,
+            "inventory_drift_pct": -20.957445536696785,
+            "net_dm_II": -3.4924596548080444e-09,
+            "net_relative": 0.05555555555555555,
+            "sum_abs_dm_II": 6.28642737865448e-08
+          },
+          "repo": {
+            "finite": true,
+            "ii_dead_links_summed": 1,
+            "ii_live_links_summed": 1289,
+            "inventory_drift_pct": -20.957445536696785,
+            "net_dm_II": -3.4924596548080444e-09,
+            "net_relative": 0.05555555555555555,
+            "sum_abs_dm_II": 6.28642737865448e-08
+          }
+        },
+        "steps": 20
+      }
+    },
+    "thick_interface_slab": {
+      "cells": {
+        "GAS": 615,
+        "INTERFACE": 45,
+        "LIQUID": 0
+      },
+      "setup": {
+        "gy": 0.0,
+        "rules": {
+          "koerner": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 6020,
+            "inventory_drift_pct": 0.0,
+            "net_dm_II": 1.955777406692505e-08,
+            "net_relative": 0.4883720930232558,
+            "sum_abs_dm_II": 4.0046870708465576e-08
+          },
+          "oss": {
+            "finite": true,
+            "ii_dead_links_summed": 0,
+            "ii_live_links_summed": 6020,
+            "inventory_drift_pct": 0.0,
+            "net_dm_II": 1.955777406692505e-08,
+            "net_relative": 0.4883720930232558,
+            "sum_abs_dm_II": 4.0046870708465576e-08
+          },
+          "pair_symmetric": {
+            "finite": true,
+            "ii_dead_links_summed": 740,
+            "ii_live_links_summed": 5280,
+            "inventory_drift_pct": 0.0,
+            "net_dm_II": 1.955777406692505e-08,
+            "net_relative": 0.4883720930232558,
+            "sum_abs_dm_II": 4.0046870708465576e-08
+          },
+          "repo": {
+            "finite": true,
+            "ii_dead_links_summed": 2340,
+            "ii_live_links_summed": 3680,
+            "inventory_drift_pct": 0.0,
+            "net_dm_II": 1.955777406692505e-08,
+            "net_relative": 0.4883720930232558,
+            "sum_abs_dm_II": 4.0046870708465576e-08
+          }
+        },
+        "steps": 20
+      }
+    }
+  },
+  "kind": "operator_audit",
+  "metric": "net_relative = |sum dm_II| / sum |dm_II| over the run",
+  "solver": "tensorlbm.free_surface_lbm_2d.free_surface_step_2d (float32, CPU)"
+}
