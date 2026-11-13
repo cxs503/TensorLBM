@@ -1,0 +1,23 @@
+{
+  "anchor": "XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT",
+  "mission_id": 18371,
+  "decision": "Cross-validate TensorLBM pluggable SCMP forcing schemes against clean reference",
+  "hypothesis": "TensorLBM's velocity_shift, EDM, and Guo forcing implementations produce surface tension σ within 15% of reference (OSS-style) implementation; EDM and Guo should agree within 3%.",
+  "metrics": ["sigma (from Laplace fit)", "spurious velocity u_max", "mass drift rate"],
+  "baseline": "Clean numpy reference implementation using published formulas (Shan-Chen 1993, Kupershtokh 2004, Guo 2002)",
+  "predeclared_thresholds": {
+    "pass_15": "cross-arm σ error < 15%",
+    "pass_3": "cross-arm σ error < 3%",
+    "mass_drift": "< 5e-8 per step",
+    "stability": "no NaN/negative density"
+  },
+  "variables": {
+    "controlled": ["G=5.0", "tau=1.0", "L=128", "psi_exp", "D2Q9", "periodic BC"],
+    "changed": ["forcing scheme: velocity_shift vs edm vs guo"]
+  },
+  "confounders": ["grid resolution (R/L ratio)", "initial condition (tanh interface width)", "convergence tolerance"],
+  "repetition_rationale": "4 radii (12, 16, 20, 24) for Laplace law fit; each run converges to steady state independently",
+  "environment": "CPU, float64, numpy reference vs torch TensorLBM",
+  "stopping_rule": "convergence when ρ_l and ρ_v drift < 1e-5 for 3 consecutive samples, or max 8000 steps",
+  "safety_limits": "max 8000 steps per run, 4 radii × 3 schemes × 2 arms = 24 runs total"
+}
