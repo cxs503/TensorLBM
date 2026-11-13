@@ -6,8 +6,11 @@ This module provides a minimal, self-contained D2Q9 BGK solver with
   gradient inflow/outflow bookkeeping),
 * periodic streamwise direction,
 * wall rows implemented *either* with the anti-bounceback (Inamuro) wet-node
-  rule of :mod:`tensorlbm.boundary.antibb_wetnode` *or* with halfway
-  bounce-back, both with prescribed (possibly moving) wall velocity,
+  rule of :mod:`tensorlbm.boundary.antibb_wetnode`, *or* with halfway
+  bounce-back, *or* with the force-corrected NEBB kernel of
+  :mod:`tensorlbm.nebb_bodyforce` (which imposes the prescribed wall velocity
+  and density on the boundary row exactly and shifts the wall velocity by the
+  half force step), all with prescribed (possibly moving) wall velocity,
 
 plus the exact analytic references (plane Poiseuille, plane Couette) and the
 error metrics used by the verification study
@@ -69,7 +72,7 @@ class ChannelSetup:
     u_wall_top: float = 0.0     # x-velocity prescribed on row ny-1
     rho0: float = 1.0
     steps: int = 20000
-    wall_mode: str = "antibb"   # "antibb" | "halfway"
+    wall_mode: str = "antibb"   # "antibb" | "halfway" | "force_corrected_nebb" | "none"
     rho_mode: str = "one"       # "one" | "extrapolate" (antibb only)
     dtype: torch.dtype = torch.float64
     sample_rows: Optional[tuple[int, ...]] = None
@@ -91,7 +94,7 @@ class ChannelSetup:
     @property
     def wall_offset(self) -> float:
         """Distance of the no-slip surface beyond the boundary-node plane."""
-        return 0.0 if self.wall_mode == "antibb" else 0.5
+        return 0.0 if self.wall_mode in ("antibb", "force_corrected_nebb", "none") else 0.5
 
     @property
     def hydraulic_width(self) -> float:
@@ -117,7 +120,12 @@ class ChannelResult:
 
 def wall_offsets(wall_mode: str) -> tuple[float, float]:
     """Analytic wall positions ``(bottom, top)`` measured from row centres."""
-    if wall_mode in ("antibb", "none"):
+    if wall_mode in ("antibb", "force_corrected_nebb"):
+        # the NEBB kernel pins (rho, u) on the boundary *node*: the no-slip
+        # surface lies on the node plane (measured offset < 0.01 cell,
+        # runs/XVAL-NEBB-BODYFORCE/results.json)
+        return 0.0, 0.0
+    if wall_mode == "none":
         return 0.0, 1.0
     if wall_mode == "halfway":
         return -0.5, 0.5
@@ -188,7 +196,7 @@ def run_channel(setup: ChannelSetup) -> ChannelResult:
         raise ValueError("need at least 4 rows (2 wall rows + 2 fluid rows)")
     if setup.tau <= 0.5:
         raise ValueError("tau must exceed 0.5 for a positive viscosity")
-    if setup.wall_mode not in ("antibb", "halfway", "none"):
+    if setup.wall_mode not in ("antibb", "halfway", "none", "force_corrected_nebb"):
         raise ValueError(f"unknown wall_mode {setup.wall_mode!r}")
 
     ny, nx = setup.ny, setup.nx
@@ -269,6 +277,26 @@ def run_channel(setup: ChannelSetup) -> ChannelResult:
             f = apply_antibb_wetnode(
                 f_post, f_str, wet, normals, u_wall, rho_w, velocities=c
             )
+        elif setup.wall_mode == "force_corrected_nebb":
+            # force-corrected NEBB (tensorlbm.nebb_bodyforce): the shear-
+            # reconstruction kernel imposes (rho_wall, u_wall - g/(2 rho_wall))
+            # on the boundary rows, i.e. no-slip in the *physical* velocity.
+            from tensorlbm.nebb_bodyforce import (
+                corrected_wall_velocity,
+                nebb_row,
+                wall_spec,
+            )
+
+            f = f_str.clone()
+            for loc, row, u_prescribed in (
+                ("bottom", 0, setup.u_wall_bottom),
+                ("top", -1, setup.u_wall_top),
+            ):
+                spec = wall_spec(loc)
+                wall = f[:, row, :]
+                rho_w = wall.sum(dim=0)
+                uxw, uyw = corrected_wall_velocity(u_prescribed, 0.0, g, 0.0, rho_w)
+                f[:, row, :] = nebb_row(wall, spec, rho_w, uxw, uyw)
         else:  # halfway bounce-back with moving-wall momentum correction
             reflected = f_post[opp] + 6.0 * wb * (cx * uwx.unsqueeze(0) + cy * uwy.unsqueeze(0))
             f = torch.where(unknown, reflected, f_str)
