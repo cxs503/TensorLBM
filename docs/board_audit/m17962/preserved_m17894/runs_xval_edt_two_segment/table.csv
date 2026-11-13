@@ -1,0 +1,28 @@
+case,quantity,kind,ref,got,error_pct,threshold_pct,error_abs,threshold_abs,pass
+two_segment_L,"tag agreement vs OSS pipeline (fraction, higher better)",rel,1,1,0.000000e+00,15.0,,,True
+two_segment_L,"EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",rel,0,0,0.000000e+00,15.0,,,True
+two_segment_L,two-class agreement vs analytic geometry (fraction),rel,1,0.9952604167,4.739583e-01,15.0,,,True
+two_segment_L,"EDT depth rel. error, cells deeper than split (mean)",rel,0,0.01962043365,1.962043e+00,15.0,,,True
+two_segment_L,"EDT depth rel. error, cells deeper than 4 cells (mean)",rel,0,0.003674927201,3.674927e-01,15.0,,,True
+two_segment_L,"EDT depth absolute bias, cells deeper than split (max, cells)",abs,0,1.123105626,,,1.123106e+00,1.5,True
+two_segment_V,"tag agreement vs OSS pipeline (fraction, higher better)",rel,1,1,0.000000e+00,15.0,,,True
+two_segment_V,"EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",rel,0,0,0.000000e+00,15.0,,,True
+two_segment_V,two-class agreement vs analytic geometry (fraction),rel,1,0.9929036458,7.096354e-01,15.0,,,True
+two_segment_V,"EDT depth rel. error, cells deeper than split (mean)",rel,0,0.09522208646,9.522209e+00,15.0,,,True
+two_segment_V,"EDT depth rel. error, cells deeper than 4 cells (mean)",rel,0,0.02640069653,2.640070e+00,15.0,,,True
+two_segment_V,"EDT depth absolute bias, cells deeper than split (max, cells)",abs,0,1.262007617,,,1.262008e+00,1.5,True
+capsule_r12_L20,"tag agreement vs OSS pipeline (fraction, higher better)",rel,1,1,0.000000e+00,15.0,,,True
+capsule_r12_L20,"EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",rel,0,0,0.000000e+00,15.0,,,True
+capsule_r12_L20,two-class agreement vs analytic geometry (fraction),rel,1,0.9724444444,2.755556e+00,15.0,,,True
+capsule_r12_L20,"EDT depth rel. error, cells deeper than split (mean)",rel,0,0.03596734072,3.596734e+00,15.0,,,True
+capsule_r12_L20,"EDT depth rel. error, cells deeper than 4 cells (mean)",rel,0,0.01713297309,1.713297e+00,15.0,,,True
+capsule_r12_L20,"EDT depth absolute bias, cells deeper than split (max, cells)",abs,0,0.4339811321,,,4.339811e-01,1.5,True
+capsule_r12_L20,displaced volume (voxel count) vs exact,rel,16286.01632,15863,2.597420e+00,15.0,,,True
+slab_t4_gap24,"tag agreement vs OSS pipeline (fraction, higher better)",rel,1,1,0.000000e+00,15.0,,,True
+slab_t4_gap24,"EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",rel,0,0,0.000000e+00,15.0,,,True
+slab_t4_gap24,solid fraction vs exact,rel,0.25,0.25,0.000000e+00,15.0,,,True
+sphere_pack_r8,"tag agreement vs OSS pipeline (fraction, higher better)",rel,1,1,0.000000e+00,15.0,,,True
+sphere_pack_r8,"EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",rel,0,0,0.000000e+00,15.0,,,True
+sphere_pack_r8,displaced volume (voxel count) vs exact,rel,6433.981755,6309,1.942526e+00,15.0,,,True
+two_segment_L_nw_padded,"tag agreement vs OSS pipeline (fraction, higher better)",rel,1,1,0.000000e+00,15.0,,,True
+two_segment_L_nw_padded,"EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",rel,0,0,0.000000e+00,15.0,,,True
