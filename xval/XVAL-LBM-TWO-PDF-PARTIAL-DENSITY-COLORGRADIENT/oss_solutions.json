@@ -1,0 +1,10 @@
+{
+ "repo": "lanl/MF-LBM",
+ "feature_slug": "XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT",
+ "tag": "two-pdf-partial-density-colorgradient",
+ "method": "Two complete PDFs f (species-A partial density) and g (species-B partial density): rho_A=sum f, rho_B=sum g, rho=rho_A+rho_B, phi=(rho_A-rho_B)/rho in [-1,1] (algebraic colour, NOT a phase-field PDE), u from the total PDF first moment plus 0.5*F. Collision BGK per species toward w_i*rho_sigma*(1+3c.u+4.5(c.u)^2-1.5u^2) with a single tau(phi) from harmonic viscosity interpolation 1/nu=(1+phi)/(2 nu_a)+(1-phi)/(2 nu_b), tau=3nu+0.5, i.e. omega=1/(6/((1+phi)/nu_1+(1-phi)/nu_2)+0.5). Guo (2002) three-term body-force source per species with F_sigma = rho_sigma*g. Surface tension: Latva-Kokko/Rothman anisotropic perturbation (A/2)|grad phi| w_i((c_i.n)^2-1/3) on the total PDF (mass- and momentum-free on the D2Q9 stencil). Recolouring: split the post-collision total PDF as f=(rho_A/rho)f_tot+beta(rho_A rho_B/rho)w_i(c_i.n), g=(rho_B/rho)f_tot-beta(...), which leaves rho_A and rho_B bit-exactly unchanged because sum_i w_i c_i = 0.",
+ "conventions": "phi in [-1,1]; pure phase rho=1 with rho_A=1, rho_B=0 (phi=+1); beta 0.9-0.95; density ratio 1 (partial-density models carry no density contrast); viscosity contrast carried by tau(phi).",
+ "files": "src/tensorlbm/color_gradient_two_pdf.py; xval/XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT/{run_xval.py,cg_reference.py,REPORT.md}; tests/test_color_gradient_two_pdf.py",
+ "transfer": "Reusable for any two-phase colour-gradient case needing exact species mass: layered/stratified Poiseuille, static droplet Laplace calibration, capillary-driven flows. Recolouring weight selection is the load-bearing decision: the literal MF-LBM 4/9 main-axis stencil is over-scaled at the standard perturbation amplitude and breaks positivity (min rho_sigma = -0.11 measured); the isotropic R-K weights are the production default.",
+ "evidence": "xval artifacts results.json (two-layer Poiseuille relL2 at ny=64/128, Laplace sigma radius independence, per-species mass drift), tests/test_color_gradient_two_pdf.py (7 tests)"
+}

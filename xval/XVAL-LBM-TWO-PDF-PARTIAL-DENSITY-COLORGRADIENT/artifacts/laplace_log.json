@@ -1,0 +1,38 @@
+{
+ "note": "Values verbatim from the Laplace suite stdout (/tmp/xval_lapl.log). The suite was still running the beta=0.95 and cross-model arms when the mission budget expired, so results.json for this suite was not written; these three beta=0.9 arms are complete.",
+ "engine": "tensorlbm.color_gradient_two_pdf (recolor='iso')",
+ "A": 0.04,
+ "beta": 0.9,
+ "n": 96,
+ "steps": 8000,
+ "interface_width": 2.0,
+ "runs": [
+  {
+   "radius": 12.0,
+   "dp": 0.0007389745728959932,
+   "sigma_dpR": 0.008867694874751919,
+   "stable": true
+  },
+  {
+   "radius": 18.0,
+   "dp": 0.0004923173790115642,
+   "sigma_dpR": 0.008861712822208156,
+   "stable": true
+  },
+  {
+   "radius": 24.0,
+   "dp": 0.00036905262068972117,
+   "sigma_dpR": 0.008857262896553308,
+   "stable": true
+  }
+ ],
+ "sigma_mean": 0.008862223531171129,
+ "sigma_spread_rel": 0.0011771287602843918,
+ "pass_law_15pct": true,
+ "not_run": [
+  "beta=0.95 laplace arms (still running at budget end)",
+  "cross-model single-PDF two-component comparison (queued behind them)"
+ ],
+ "fail_stage": "partial: laplace beta=0.95 / cross-model / ny=128 poiseuille arms not completed within mission budget",
+ "worst_rel_dev_from_mean": 0.0006173781965153696
+}
