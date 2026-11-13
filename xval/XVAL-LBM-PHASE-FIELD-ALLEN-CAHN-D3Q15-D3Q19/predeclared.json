@@ -1,0 +1,32 @@
+{
+  "anchor": "XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19",
+  "mission_id": 18133,
+  "repo": "TensorLBM",
+  "oss_reference": "lssfau/walberla apps/benchmarks/PhaseFieldAllenCahn (oss_solutions.id=363, tag phase-field-allen-cahn-d3q15-d3q19); formulation read from the installed lbmpy (the library waLBerla calls)",
+  "decision": "Adopt, or reject, the waLBerla two-lattice Allen-Cahn scheme (D3Q15 phase field in phi in [0,1] + D3Q19 hydro with the split pressure/viscous/surface-tension force) as TensorLBM's coupled Allen-Cahn formulation, and fix the parameter mapping between the two conventions.",
+  "alternatives": [
+    "A1: keep the shipped TensorLBM stepper as is (psi in [-1,1], seven-point laplacian, D3Q19 AC+hydro populations, Korteweg force mu grad psi, Guo forcing)",
+    "A2: port the OSS formulation verbatim (D3Q15 AC lattice, lbmpy isotropic FD operators, split force, interface-tracking force, omega_phi = 1/(0.5+3M))",
+    "A3: port the OSS free-energy normalisation (beta = 12 sigma/W, kappa = 3/2 sigma W, phi in [0,1], tanh(2s/W) profile) but keep TensorLBM's data layout and explicit FD kernel"
+  ],
+  "hypothesis": "H1: the two formulations are the same continuum Allen-Cahn/mean-curvature model, so on one configuration the curvature-driven shrinkage of a sphere obeys dR^2/dt = -4 M sigma for both, and the two arms agree within 15%. H2: the OSS and TensorLBM interface-force normal integrals both reproduce the Laplace value sigma K = 2 sigma/R within 15%. H3 (found during work): the two conventions do NOT share the label W - the OSS profile is tanh(2s/W), TensorLBM's is tanh(s/W), so W_OSS = 2 W_TensorLBM for the same physical thickness.",
+  "metrics": {
+    "primary": "M2 curvature-driven shrinkage: D_eff := -(1/4) d(R^2)/dt from a linear fit of R^2(t), R from the enclosed volume of a sphere; gate |D_eff - M sigma|/(M sigma) <= 15% per arm and |D_A - D_B|/|D_B| <= 15%",
+    "secondary": ["M1 equilibrium interface thickness on a planar interface after 300 steps vs the arm's own analytic profile width (5%)", "M3 normal line integral of the interface force through a static sphere vs sigma K = 2 sigma/R (Laplace, 15%)"],
+    "diagnostics": ["phi range must stay in [-1.05, 1.05] (psi) / [-0.05, 1.05] (phi)", "R^2(t) fit r^2 > 0.99", "selftest: lbmpy operator reconstruction residual must be exactly 0"]
+  },
+  "baseline_control": "analytic sharp-interface Allen-Cahn law v_n = -M sigma K, i.e. dR^2/dt = -4 M sigma (no free parameters: M = 0.2, sigma = 0.02 => D_analytic = 4.0e-3); static sphere is the exact control for M3",
+  "accept_pct": 15.0,
+  "predeclared_thresholds": {"accept_pct": 15.0, "m1_pct": 5.0, "fit_r2_min": 0.99, "range_tol": 0.05},
+  "stopping_rule": "each arm runs a fixed 1200 steps (900 for the coarse row); no convergence-based stopping, because the metric is a linear fit and the run length is part of the design",
+  "variables": {
+    "controlled": ["sigma = 0.02", "mobility M = 0.2", "periodic box", "sphere initial condition with the arm's own equilibrium profile", "float64", "same analytic target for every row"],
+    "changed": ["W in {4, 3}", "resolution (n=64,R0=12) vs (n=48,R0=9)"],
+    "confounders": ["periodic images of the sphere in a 64^3 box (R0/halfbox = 0.375) slow the shrinkage slightly", "the two arms use different interface thickness for the same W label (factor 2) - hence the label-W rows are not thickness matched", "the OSS AC step's Guo source carries (1 - omega_phi/2); the exact force model used by the walberla app could not be read offline"]
+  },
+  "repetition_rationale": "deterministic problem (no seeds); repeats are the two sweeps (W, resolution) and the two arms",
+  "environment": {"python": "3.11", "torch": "float64 CPU", "lbmpy": "2.0 (installed)", "entry": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/run_xval.py", "raw": "xval/.../artifacts/probe.json, summary.json, table.csv"},
+  "analysis": "per row err = 100*(D_eff - M sigma)/(M sigma); aggregate = per-arm max |err| over the sweep, plus A-vs-B difference; sensitivity points = W and resolution",
+  "safety_resource_limits": "each config < 200 s on one core, whole driver < 30 min single process (below the 10 min cluster threshold it is kept local; no node pinning)",
+  "interpretation_limits": ["static/quasi-static regime only; dynamic (Cox-Voinov) wetting and the D3Q19 hydrodynamics at 1000:1 density ratio are out of scope this round", "the 15% gate applies to D_eff, not to local field errors", "the OSS C++ runtime was not available (no network); the OSS arm is the lbmpy formulation executed in numpy/torch, not the walberla binary"]
+}
