@@ -1,0 +1,84 @@
+{
+ "tag": "stokes2_abl_ladd_precollision",
+ "case": "stokes2",
+ "variant": "ladd_precollision",
+ "ny": 50,
+ "nx": 4,
+ "tau": 0.8,
+ "nu": 0.10000000000000002,
+ "U0": 0.02,
+ "Ma": 0.034641016151377546,
+ "omega": 0.0031250000000000006,
+ "period_steps": 2010.6192982974671,
+ "delta_bl": 8.0,
+ "gap_over_delta": 6.0,
+ "n_steps": 8042,
+ "l2_rel_pct": 100.0,
+ "max_err_pct_U0_full": 93.94068100398754,
+ "max_err_pct_U0_resolved": 93.94068100398754,
+ "argmax_row_resolved": 1,
+ "far_field_floor_pct": 0.24787521766663584,
+ "mass_drift_pct": 0.0,
+ "probes": [
+  {
+   "row": 2,
+   "eta_over_delta": 0.1875,
+   "amp_num_over_U0": 0.0,
+   "amp_ana_over_U0": 0.8290291181804004,
+   "amp_err_pct": -100.0,
+   "phase_num_deg": 0.0,
+   "phase_ana_deg": 10.742958658702936,
+   "phase_err_deg": -10.742958658702946
+  },
+  {
+   "row": 4,
+   "eta_over_delta": 0.4375,
+   "amp_num_over_U0": 0.0,
+   "amp_ana_over_U0": 0.645648526427892,
+   "amp_err_pct": -100.0,
+   "phase_num_deg": 0.0,
+   "phase_ana_deg": 25.066903536973516,
+   "phase_err_deg": -25.066903536973513
+  },
+  {
+   "row": 8,
+   "eta_over_delta": 0.9375,
+   "amp_num_over_U0": 0.0,
+   "amp_ana_over_U0": 0.391605626676799,
+   "amp_err_pct": -100.0,
+   "phase_num_deg": 0.0,
+   "phase_ana_deg": 53.714793293514674,
+   "phase_err_deg": -53.714793293514674
+  },
+  {
+   "row": 12,
+   "eta_over_delta": 1.4375,
+   "amp_num_over_U0": 0.0,
+   "amp_ana_over_U0": 0.23752081909545814,
+   "amp_err_pct": -100.0,
+   "phase_num_deg": 0.0,
+   "phase_ana_deg": 82.36268305005584,
+   "phase_err_deg": -82.36268305005584
+  },
+  {
+   "row": 16,
+   "eta_over_delta": 1.9375,
+   "amp_num_over_U0": 0.0,
+   "amp_ana_over_U0": 0.14406365910145327,
+   "amp_err_pct": -100.0,
+   "phase_num_deg": 0.0,
+   "phase_ana_deg": 111.010572806597,
+   "phase_err_deg": -111.010572806597
+  },
+  {
+   "row": 24,
+   "eta_over_delta": 2.9375,
+   "amp_num_over_U0": 0.0,
+   "amp_ana_over_U0": 0.0529980584033558,
+   "amp_err_pct": -100.0,
+   "phase_num_deg": 0.0,
+   "phase_ana_deg": 168.30635231967932,
+   "phase_err_deg": -168.30635231967932
+  }
+ ]
+}

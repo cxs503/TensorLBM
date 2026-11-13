@@ -1,0 +1,20 @@
+{
+ "tag": "couette_H32_tau0.8_U0.05_static_bb",
+ "case": "couette",
+ "variant": "static_bb",
+ "ny": 34,
+ "nx": 4,
+ "tau": 0.8,
+ "nu": 0.10000000000000002,
+ "H_eff": 32.0,
+ "U0": 0.05,
+ "Ma": 0.08660254037844388,
+ "Re": 15.999999999999998,
+ "n_steps": 60000,
+ "steady": false,
+ "l2_rel": 0.9999999999997584,
+ "max_rel_pct_cf_umax": 99.9999999999985,
+ "mass_drift_pct": -3.3314005149269877e-10,
+ "slope_err_pct": -100.0,
+ "y_wall_fit": 3301130.5206656833
+}
