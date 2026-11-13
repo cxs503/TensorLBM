@@ -1,0 +1,117 @@
+{
+  "reference": {
+    "repo": "lanl/MF-LBM",
+    "feature_slug": "NEW:wall-clock-checkpoint-state-machine",
+    "locations": [
+      "IO_multiphase.F90:579-641",
+      "Main_multiphase.F90:91-95",
+      "Main_multiphase.F90:139-141",
+      "Main_multiphase.F90:222-303",
+      "Init_multiphase.F90:154-184"
+    ],
+    "ledger": "oss_solutions(repo='lanl/MF-LBM', feature_slug='NEW:wall-clock-checkpoint-state-machine')"
+  },
+  "tolerance": "XVAL criterion: relative error <= 15% (owner precision standard); bit-exact rows use exact tolerance",
+  "rows": [
+    {
+      "quantity": "restart field discontinuity max|df| (worst segment count)",
+      "ref": 0.0,
+      "got": 0.0,
+      "unit": "lattice population units",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "IO_multiphase.F90:579-641 + Main_multiphase.F90:139-141",
+      "note": "full-PDF restore is identity; MF-LBM stores complete PDFs and takes the continue path"
+    },
+    {
+      "quantity": "steps recomputed after resume (worst segment count)",
+      "ref": 0,
+      "got": 0,
+      "unit": "steps",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "Main_multiphase.F90:91-95",
+      "note": "continue path must not redo work"
+    },
+    {
+      "quantity": "recovery rate after corrupted primary checkpoint",
+      "ref": 1.0,
+      "got": 1.0,
+      "unit": "fraction",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "IO_multiphase.F90:579-641",
+      "note": "second backup (double_bak_checkpoint_pdf_cmd) rescues the case"
+    },
+    {
+      "quantity": "recovery rate after corrupted primary, second backup disabled (control)",
+      "ref": 0.0,
+      "got": 0.0,
+      "unit": "fraction",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "IO_multiphase.F90:579-641",
+      "note": "negative control: without the second backup the corruption is fatal"
+    },
+    {
+      "quantity": "status states implemented",
+      "ref": 5.0,
+      "got": 5.0,
+      "unit": "states",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "IO_multiphase.F90:579-641",
+      "note": "new/continue/done/failed/reached_max_step"
+    },
+    {
+      "quantity": "terminal state blocks silent restart (reached_max_step)",
+      "ref": 1.0,
+      "got": 1.0,
+      "unit": "fraction",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "Main_multiphase.F90:91-95",
+      "note": "a finished case must not resume compute"
+    },
+    {
+      "quantity": "wall-clock timer accuracy: median measured interval vs configured",
+      "ref": 0.0,
+      "got": 1.7939040437340799,
+      "unit": "% relative error",
+      "rel_err_pct": 1.7939040437340799,
+      "tolerance_pct": 15.0,
+      "pass": true,
+      "ref_source": "Main_multiphase.F90:222-303",
+      "note": "worst arm interval=1.0 s (step time 27.3 ms); multiples of the step time are surfaced separately as timer_excess_steps"
+    },
+    {
+      "quantity": "auto (wall-clock) checkpoint -> restart field discontinuity max|df|",
+      "ref": 0.0,
+      "got": 0.0,
+      "unit": "lattice population units",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "IO_multiphase.F90:579-641 + Main_multiphase.F90:222-303",
+      "note": "resumed from autosave at step 240 via primary"
+    },
+    {
+      "quantity": "volume trigger count vs floor(volume/interval)",
+      "ref": 2.0,
+      "got": 2.0,
+      "unit": "triggers",
+      "rel_err_pct": 0.0,
+      "tolerance_pct": 0.0,
+      "pass": true,
+      "ref_source": "Main_multiphase.F90:222-303",
+      "note": "d_vol_* analogue fires once per crossed multiple"
+    }
+  ],
+  "all_pass": true
+}
