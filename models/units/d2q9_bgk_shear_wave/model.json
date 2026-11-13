@@ -1,0 +1,48 @@
+{
+  "schema": "tensorlbm.model_unit/v1",
+  "unit_id": "d2q9_bgk_shear_wave",
+  "description": "D2Q9 BGK in a periodic box: transverse shear-wave decay rate vs the analytic nu=(tau-1/2)/3",
+  "composition": {
+    "lattice": "D2Q9",
+    "collision": "bgk",
+    "turbulence": null,
+    "forcing": [],
+    "boundaries": [
+      "periodic"
+    ],
+    "physics_modules": {
+      "single_phase": "incompressible"
+    }
+  },
+  "build": {
+    "dtype": "float64",
+    "fingerprint_steps": 32
+  },
+  "ci": {
+    "kernel": "shear_wave_decay",
+    "params": {
+      "nx": 2,
+      "ny": 64,
+      "tau": 0.65,
+      "u0": 0.005,
+      "periods": 1,
+      "steps": 4000,
+      "t_start": 0,
+      "t_end": 4000
+    },
+    "gates": [
+      {
+        "metric": "nu_rel_err",
+        "max": 0.01
+      },
+      {
+        "metric": "amp0_rel_err",
+        "max": 1e-10
+      },
+      {
+        "metric": "mass_rel_drift",
+        "max": 1e-10
+      }
+    ]
+  }
+}
