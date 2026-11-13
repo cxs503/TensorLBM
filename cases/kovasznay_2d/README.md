@@ -141,3 +141,10 @@ Proc. Cambridge Philos. Soc. 44:58–62, DOI 10.1017/S0305004100023999**
   `docs/CASE-LBM-KOVASZNAY-EXACT_independent_audit.md`（m16861 独立复核 + 误差归因）、
   `docs/CASE-LBM-KOVASZNAY-OUTLET-BC-LADDER.md`（m16974 出口口径阶梯，负面结果）。
 - 本条目新增：解析残差证书、xmax 标度律、网格无关性、Mach 阶梯与 τ 失稳墙。
+## 后续臂（m18406，裁决第 4/5 条的正面回答）
+
+裁决第 5 条「换碰撞模型（TRT / regularized）」已落地：`trt_convergence.py` 用库函数
+`collide_trt`（Λ=3/16）把稳定性墙从 τ₊=0.572 推到 0.5045，并在 U0=0.0075（Ma=0.026）下
+让**内部 v 误差第一次随网格收敛**（0.00755→0.00157→0.00043 /U0，p=2.26→1.87）；
+u 分量在 ny=128 触 Ma² 地板（0.00801 %，与算例自身 Mach 阶梯外推 0.00785 % 差 2.0 %）。
+详见 `docs/CASE-LBM-KOVASZNAY-TRT-CONVERGENCE.md`。
