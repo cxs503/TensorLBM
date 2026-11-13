@@ -59,6 +59,21 @@ import torch
 import triton
 import triton.language as tl
 
+# Codegen pinning (maxnreg / num_warps / num_stages) lives in one declared
+# table: ``tensorlbm.codegen_pin.DECLARED_PINS``.  Launch kwargs are composed
+# through it so that pinning a register cap is a one-line, reviewable change
+# instead of a per-kernel edit.  See docs/codegen_pin_policy.md.
+try:
+    from tensorlbm.codegen_pin import launch_kwargs as _codegen_launch_kwargs
+except ImportError:  # pragma: no cover - pre-deployment root-level layout
+    def _codegen_launch_kwargs(
+        *, kernel=None, num_warps, num_stages, maxnreg=None, allow_tuning=True
+    ):
+        kwargs = {"num_warps": num_warps, "num_stages": num_stages}
+        if maxnreg is not None:
+            kwargs["maxnreg"] = maxnreg
+        return kwargs
+
 try:
     # Local / pre-deployment path: files live at the repo root with
     # underscore-separated names.
@@ -1633,6 +1648,7 @@ def triton_fused_obstacle_les(
     block_y: int = DEFAULT_BLOCK_Y,
     num_warps: int = DEFAULT_NUM_WARPS,
     num_stages: int = DEFAULT_NUM_STAGES,
+    maxnreg: int | None = None,
 ) -> torch.Tensor:
     """One LBM step with bounce-back walls + LES Smagorinsky + BGK collide.
 
@@ -1687,8 +1703,12 @@ def triton_fused_obstacle_les(
         Q_PAD=_Q_PAD,
         BLOCK_X=block_x,
         BLOCK_Y=block_y,
-        num_warps=num_warps,
-        num_stages=num_stages,
+        **_codegen_launch_kwargs(
+            kernel="triton_fused_obstacle_les",
+            num_warps=num_warps,
+            num_stages=num_stages,
+            maxnreg=maxnreg,
+        ),
     )
     return out
 
@@ -1707,6 +1727,7 @@ def triton_fused_obstacle_xfar_les(
     block_z: int | None = None,
     num_warps: int = 1,
     num_stages: int = DEFAULT_NUM_STAGES,
+    maxnreg: int | None = None,
     tau_eff: torch.Tensor | None = None,
     fx_buf: torch.Tensor | None = None,
     fy_buf: torch.Tensor | None = None,
@@ -1900,8 +1921,12 @@ def triton_fused_obstacle_xfar_les(
         SHIFT_Z=shift_z_flat,
         USE_EXTERNAL_TAU=use_external_tau,
         USE_SMAG=use_smag,
-        num_warps=num_warps,
-        num_stages=num_stages,
+        **_codegen_launch_kwargs(
+            kernel="triton_fused_obstacle_xfar_les",
+            num_warps=num_warps,
+            num_stages=num_stages,
+            maxnreg=maxnreg,
+        ),
     )
 
     if wall not in ("fused", "split"):
@@ -2064,6 +2089,7 @@ def triton_obstacle_force_reduction(
     block: int = 4096,
     num_warps: int = 4,
     num_stages: int = 2,
+    maxnreg: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Ladd (1994) wet-node momentum-exchange force reduction.
 
@@ -2146,8 +2172,12 @@ def triton_obstacle_force_reduction(
         f.stride(3),
         BLOCK=block,
         Q_PAD=_Q_PAD,
-        num_warps=num_warps,
-        num_stages=num_stages,
+        **_codegen_launch_kwargs(
+            kernel="triton_obstacle_force_reduction",
+            num_warps=num_warps,
+            num_stages=num_stages,
+            maxnreg=maxnreg,
+        ),
     )
     return fx_buf, fy_buf, fz_buf
 
