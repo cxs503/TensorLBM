@@ -1,0 +1,227 @@
+{
+  "audit_mission": 18779,
+  "subject_mission": 18749,
+  "anchor": "XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES",
+  "repo": "TensorLBM",
+  "verdict_by": "board-audit",
+  "A_delivered_files": {
+    "ibm.py": {
+      "path": "/root/tp-agent/work/m18749/TensorLBM/src/tensorlbm/ibm.py",
+      "exists": true,
+      "lines": 191,
+      "sha256": "a9ca66443c71fb5f2a3d4f5a1503b7d190e3e1602c5d3f394af0cd366716a064"
+    },
+    "cylinder_flow": {
+      "path": "/root/tp-agent/work/m18749/TensorLBM/src/tensorlbm/verification/cylinder_flow/__init__.py",
+      "exists": true,
+      "lines": 329,
+      "sha256": "165e84f608622721b44e8d132fcdc8a2f1dfe78416023827a65fcbed457eadf4"
+    },
+    "test_ibm.py": {
+      "path": "/root/tp-agent/work/m18749/TensorLBM/tests/test_ibm.py",
+      "exists": true,
+      "lines": 97,
+      "sha256": "3c494046f7b0e68510a0efa09b5ef8b00a0d51747bbedfe24600dd989c722cb7"
+    },
+    "report_md": {
+      "path": "/root/tp-agent/work/m18749/xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/REPORT.md",
+      "exists": true,
+      "lines": 174,
+      "sha256": "28b2afc90d07fe6f40213935e7c05240912484df765b6cc799d7b69607c7ca6f"
+    },
+    "predeclared": {
+      "path": "/root/tp-agent/work/m18749/xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/predeclared.json",
+      "exists": true,
+      "lines": 24,
+      "sha256": "888b8669e33cb731b27ca24b73d7153e562608bcb0738622ca457a2518eb8f92"
+    },
+    "oss_solution": {
+      "path": "/root/tp-agent/work/m18749/TensorLBM/docs/oss_solutions/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES.md",
+      "exists": true,
+      "lines": 38,
+      "sha256": "b7fef15b9cd002f1ad32fb2c4d52f2e04e95001a1d76204c70aa9a455882e72d"
+    }
+  },
+  "A_run_artifacts": {
+    "dir": "/root/tp-agent/work/m18749/xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/artifacts",
+    "exists": true,
+    "files": [],
+    "claimed_but_absent": [
+      "xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/artifacts/cylinder_flow_re20.json"
+    ],
+    "claimed_but_absent_present": [
+      "/root/tp-agent/work/m18749/xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/artifacts/cylinder_flow_re20.json -> False"
+    ]
+  },
+  "A_git": {
+    "head": "9ebe3e65",
+    "untracked_deliverables": [
+      "?? TensorLBM/src/tensorlbm/ibm.py",
+      "?? TensorLBM/src/tensorlbm/verification/cylinder_flow/",
+      "?? TensorLBM/tests/test_ibm.py",
+      "?? xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/"
+    ],
+    "in_branch_history": false
+  },
+  "B_benchmark_cases": {
+    "query": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES'",
+    "rows": "",
+    "n_rows": 0,
+    "n_rows_table": 110
+  },
+  "B_claim_vs_measured": {
+    "report_claim_cd_ref": 2.05,
+    "report_claim_tolerance_pct": 15.0,
+    "report_claim_source": "Dennis & Chang (1970) JFM 42:471, stated in REPORT.md §1 / predeclared.json",
+    "got_value_in_delivery": null,
+    "report_status_quoted": "REPORT.md §4.2 'Cylinder Flow (Re=20) — Cluster Job Pending ... Results will be populated here upon completion'"
+  },
+  "C_repro_rerun": {
+    "cmd": "PYTHONPATH=TensorLBM/src python3 -c 'from tensorlbm.verification.cylinder_flow import run_re20_validation; run_re20_validation()'  ->  driven by /tmp/run_re20.py, output /root/tp-agent/work/m18779/artifacts/m18779/xval_audit_re20.json",
+    "executed": true,
+    "exit_ok": true,
+    "wall_sec": 391.5,
+    "params": {
+      "nx": 320,
+      "ny": 160,
+      "re": 20.0,
+      "u_inlet": 0.1,
+      "cylinder_radius": 20.0,
+      "n_markers": 251
+    },
+    "Cd_computed": 0.24318395435015594,
+    "Cd_reference": 2.05,
+    "rel_error_pct": 88.1373680804802,
+    "within_15pct": false,
+    "n_samples": 80,
+    "Cd_first5": [
+      331.814,
+      -0.339,
+      -2.714,
+      8.465,
+      7.678
+    ],
+    "Cd_last10": [
+      2.488,
+      2.101,
+      1.213,
+      2.333,
+      -6.252,
+      0.63,
+      2.299,
+      0.529,
+      1.999,
+      -5.638
+    ],
+    "second_half_Cd_mean": 0.2432,
+    "second_half_Cd_pstd": 4.072,
+    "second_half_Cd_min": -12.426,
+    "second_half_Cd_max": 4.602,
+    "last2000_steps_Cd_range": [
+      -7.653,
+      2.856
+    ],
+    "predeclared_stopping_rule": "Cd variation < 0.01 over last 2000 steps",
+    "stopping_rule_met": false,
+    "stdout_log": "/root/tp-agent/work/m18779/artifacts/m18779/repro_stdout.log",
+    "sha256": "dc14c4baf53b5f32a92a96d1a42232d976c3f018d3ab749d15df161632dbf87e"
+  },
+  "D_tests": {
+    "cmd": "cd /root/tp-agent/work/m18779 && python3 -m pytest TensorLBM/tests/test_ibm.py -q",
+    "tail": "8 passed, 1 warning in 5.27s",
+    "returncode": 0,
+    "test_file": "/root/tp-agent/work/m18779/TensorLBM/tests/test_ibm.py (copy of m18749 file, sha256 3c494046f7b0e68510a0efa09b5ef8b00a0d51747bbedfe24600dd989c722cb7)",
+    "asserted_invariants": [
+      "test_ibm.py:22 peskin support delta(|r|>2)=0",
+      "test_ibm.py:34 partition of unity sum_k w=1 (atol 1e-10)",
+      "test_ibm.py:55 interpolate uniform field exact",
+      "test_ibm.py:81 spread force conservation sum F_grid = sum F_marker",
+      "test_ibm.py:88 zero grid velocity -> zero forcing"
+    ],
+    "coverage_gap": "no test on the coupled LBM+IBM solver (CylinderFlowSolver); no test asserting Cd, no convergence test"
+  },
+  "D_level_gates": {
+    "L0_docs": {
+      "met": true,
+      "why": "REPORT.md (174 lines) + oss_solutions doc"
+    },
+    "L1_math_unit": {
+      "met": true,
+      "why": "8/8 pytest pass: partition of unity, conservation, uniform interpolation"
+    },
+    "L2_real_impl": {
+      "met": true,
+      "why": "ibm.py 191 lines real operators (peskin_delta_4pt:22, build_stencil_2d:35, spread_force_2d:72, interpolate_velocity_2d:102, direct_forcing_static:129, build_cylinder_markers_2d:179); input->compute->output path executes end-to-end (391 s, 8000 steps)"
+    },
+    "L3_integration": {
+      "met": false,
+      "why": "no caller outside verification/cylinder_flow: grep -rn 'ibm' over TensorLBM/src (excluding ibm.py, verification/cylinder_flow) and TensorLBM/app -> 0 hits; the production solver (solver.py / boundary/) has no IBM obstacle hook"
+    },
+    "L4_benchmark": {
+      "met": false,
+      "why": "0 run artifacts delivered; 0 rows in tensor_benchmark_cases for the anchor; auditor re-run of the delivered repro gives Cd=0.2432 (88.1% vs 2.05) and a non-converged, sign-changing Cd history"
+    },
+    "L5_research": {
+      "met": false,
+      "why": "no validated physics result, no publication-grade evidence"
+    },
+    "assigned_level": 2
+  },
+  "D_report_six_sections": {
+    "sections": {
+      "1_case_intro": {
+        "where": "REPORT.md §1 + §3 (physics, geometry R=20 lu, parameter table, Re=20)",
+        "present": true
+      },
+      "2_how": {
+        "where": "REPORT.md §2 method + §2.2 code pointers",
+        "present": true
+      },
+      "3_numbers": {
+        "where": "REPORT.md §4.1 unit-test table only; §4.2 simulation results absent ('pending')",
+        "present": false
+      },
+      "4_figures": {
+        "where": "no figure anywhere in the delivered tree (find -name '*.png' -> 0)",
+        "present": false
+      },
+      "5_caveats": {
+        "where": "REPORT.md §6.1 known limitations + §5 convergence discussion (qualitative, no data)",
+        "present": true
+      },
+      "6_error_verdict": {
+        "where": "REPORT.md §4.2 gives an *expectation* ('Cd should converge to ~2.0-2.3'), no measured got, no explicit <3%/<15% verdict on a number",
+        "present": false
+      }
+    },
+    "n_present": 3,
+    "n_required": 6
+  },
+  "E_cross_checks": {
+    "platform_l4_verdict_mission_18749": {
+      "status": "CLAIMED_NOT_PROVEN",
+      "l4_benchmark_pass": false,
+      "rows": 0,
+      "claimed_level": null,
+      "failed_checks": [
+        "execution_success",
+        "source_cluster_job",
+        "cluster_job_bound",
+        "ref_got_error_present",
+        "within_tolerance"
+      ],
+      "reason": "no tensorbench_results row for this mission: the L4 benchmark claim is self-declared, not measured",
+      "rule": "L4 requires >=1 platform-recomputed benchmark row (ref/got/error)"
+    },
+    "cluster_job": {
+      "job_id": "cj2024",
+      "state_observed": "queued (submitted 11-13 16:37, age 12.1 min at first observation; never reached a terminal state)",
+      "source": "run_cluster(action=ps, job_id=cj2024) at 2026-11-13T16:49 local; docs/oss_solutions/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES.md §Cluster Job declares cj2024 = 'full Re=20 simulation'"
+    },
+    "suspected_root_cause": {
+      "claim": "IBM body force is added *after* stream+BC instead of inside the collision step",
+      "pointer": "TensorLBM/src/tensorlbm/verification/cylinder_flow/__init__.py:265 step(): collide -> _stream -> BCs -> _apply_ibm_force; __init__.py:211 _apply_ibm_force adds the Guo force term (1-0.5*omega) to the already-streamed f",
+      "status": "hypothesis, not proven; consistent with the violent Cd oscillation but not isolated by an ablation"
+    }
+  }
+}
