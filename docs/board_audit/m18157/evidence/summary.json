@@ -1,0 +1,624 @@
+{
+  "mission_id": 17996,
+  "anchor": "XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE",
+  "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+  "available_oss_ids": [
+    "lbmpy",
+    "palabos"
+  ],
+  "acceptance_pct": 15.0,
+  "cells": [
+    {
+      "cell": "main",
+      "n": 64,
+      "u0": 0.05,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "Re": 31.999999999999996,
+      "Ma": 0.08660254037844387,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 0.00030842180369146567,
+        "umax_rel_pct": 0.00044371166092248174,
+        "field_l2_rel_pct": 0.021741996293488407
+      },
+      "theory": {
+        "gamma_K_theory": 0.003855314219175531,
+        "gamma_K_inhouse_vs_theory_pct": 0.046700987492219154,
+        "gamma_K_oss_vs_theory_pct": 0.04700926430908974
+      },
+      "orientation_check": {
+        "init_direct_pct": 7.126397344059668e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    },
+    {
+      "cell": "conv_n32",
+      "n": 32,
+      "u0": 0.05,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "Re": 15.999999999999998,
+      "Ma": 0.08660254037844387,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 0.00029617456831285567,
+        "umax_rel_pct": 6.126405228952991e-05,
+        "field_l2_rel_pct": 0.0009661633088663176
+      },
+      "theory": {
+        "gamma_K_theory": 0.015421256876702124,
+        "gamma_K_inhouse_vs_theory_pct": 0.03417635574228903,
+        "gamma_K_oss_vs_theory_pct": 0.03388008082979303
+      },
+      "orientation_check": {
+        "init_direct_pct": 6.439402006027299e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    },
+    {
+      "cell": "conv_n128",
+      "n": 128,
+      "u0": 0.05,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "Re": 63.99999999999999,
+      "Ma": 0.08660254037844387,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 0.004571455948276788,
+        "umax_rel_pct": 0.010438274364373569,
+        "field_l2_rel_pct": 0.1559744837051892
+      },
+      "theory": {
+        "gamma_K_theory": 0.0009638285547938827,
+        "gamma_K_inhouse_vs_theory_pct": 0.12846253519503492,
+        "gamma_K_oss_vs_theory_pct": 0.133040073011643
+      },
+      "orientation_check": {
+        "init_direct_pct": 7.210218662192528e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    },
+    {
+      "cell": "sens_u0_0.020",
+      "n": 64,
+      "u0": 0.02,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "Re": 12.799999999999997,
+      "Ma": 0.034641016151377546,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 8.81368653562121e-06,
+        "umax_rel_pct": 6.104778902576903e-06,
+        "field_l2_rel_pct": 0.0034952756079633467
+      },
+      "theory": {
+        "gamma_K_theory": 0.003855314219175531,
+        "gamma_K_inhouse_vs_theory_pct": 0.016733750413746206,
+        "gamma_K_oss_vs_theory_pct": 0.016724935253127217
+      },
+      "orientation_check": {
+        "init_direct_pct": 1.8702979211450794e-13,
+        "init_transposed_pct": 141.42135623730954
+      }
+    },
+    {
+      "cell": "sens_u0_0.100",
+      "n": 64,
+      "u0": 0.1,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "Re": 63.99999999999999,
+      "Ma": 0.17320508075688773,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 0.005472784012622284,
+        "umax_rel_pct": 0.00945319292072283,
+        "field_l2_rel_pct": 0.0888525103603213
+      },
+      "theory": {
+        "gamma_K_theory": 0.003855314219175531,
+        "gamma_K_inhouse_vs_theory_pct": 0.2656610895920452,
+        "gamma_K_oss_vs_theory_pct": 0.27111903584541863
+      },
+      "orientation_check": {
+        "init_direct_pct": 4.014737814629779e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    },
+    {
+      "cell": "sens_tau_0.70",
+      "n": 64,
+      "u0": 0.05,
+      "tau": 0.7,
+      "nu": 0.06666666666666665,
+      "Re": 48.000000000000014,
+      "Ma": 0.08660254037844387,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 0.00033955633510348584,
+        "umax_rel_pct": 0.0023220979474034465,
+        "field_l2_rel_pct": 0.03510919786466841
+      },
+      "theory": {
+        "gamma_K_theory": 0.002570209479450353,
+        "gamma_K_inhouse_vs_theory_pct": 0.05582533782560012,
+        "gamma_K_oss_vs_theory_pct": 0.056164703449894944
+      },
+      "orientation_check": {
+        "init_direct_pct": 7.126397344059668e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    },
+    {
+      "cell": "sens_tau_1.00",
+      "n": 64,
+      "u0": 0.05,
+      "tau": 1.0,
+      "nu": 0.16666666666666666,
+      "Re": 19.200000000000003,
+      "Ma": 0.08660254037844387,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 0.0005045520625355421,
+        "umax_rel_pct": 3.859825593369318e-06,
+        "field_l2_rel_pct": 0.008377308465572811
+      },
+      "theory": {
+        "gamma_K_theory": 0.0064255236986258835,
+        "gamma_K_inhouse_vs_theory_pct": 0.004403907754906644,
+        "gamma_K_oss_vs_theory_pct": 0.004908435051831893
+      },
+      "orientation_check": {
+        "init_direct_pct": 7.126397344059668e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    },
+    {
+      "cell": "matched_n128",
+      "n": 128,
+      "u0": 0.05,
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "Re": 63.99999999999999,
+      "Ma": 0.08660254037844387,
+      "kpis_tool_vs_tool": {
+        "gamma_K_rel_pct": 7.136999186784106e-05,
+        "umax_rel_pct": 0.001313659038780433,
+        "field_l2_rel_pct": 0.05984319528947218
+      },
+      "theory": {
+        "gamma_K_theory": 0.0009638285547938827,
+        "gamma_K_inhouse_vs_theory_pct": 0.05520567772694165,
+        "gamma_K_oss_vs_theory_pct": 0.055277008267613184
+      },
+      "orientation_check": {
+        "init_direct_pct": 7.210218662192528e-14,
+        "init_transposed_pct": 141.42135623730948
+      }
+    }
+  ],
+  "worst_tool_vs_tool_pct": 0.1559744837051892,
+  "verdicts": [
+    {
+      "claim_id": "main::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 0.00030842180369146567,
+        "umax_rel_pct": 0.00044371166092248174,
+        "field_l2_rel_pct": 0.021741996293488407
+      },
+      "max_error_pct": 0.021741996293488407,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/main/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0217% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "main::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.046700987492219154,
+        "field_l2_pct": 7.126397344059668e-14
+      },
+      "max_error_pct": 0.046700987492219154,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/main/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0467% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "conv_n32::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 0.00029617456831285567,
+        "umax_rel_pct": 6.126405228952991e-05,
+        "field_l2_rel_pct": 0.0009661633088663176
+      },
+      "max_error_pct": 0.0009661633088663176,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/conv_n32/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.000966% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "conv_n32::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.03417635574228903,
+        "field_l2_pct": 6.439402006027299e-14
+      },
+      "max_error_pct": 0.03417635574228903,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/conv_n32/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0342% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "conv_n128::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 0.004571455948276788,
+        "umax_rel_pct": 0.010438274364373569,
+        "field_l2_rel_pct": 0.1559744837051892
+      },
+      "max_error_pct": 0.1559744837051892,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/conv_n128/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.156% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "conv_n128::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.12846253519503492,
+        "field_l2_pct": 7.210218662192528e-14
+      },
+      "max_error_pct": 0.12846253519503492,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/conv_n128/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.128% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_u0_0.020::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 8.81368653562121e-06,
+        "umax_rel_pct": 6.104778902576903e-06,
+        "field_l2_rel_pct": 0.0034952756079633467
+      },
+      "max_error_pct": 0.0034952756079633467,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_u0_0.020/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0035% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_u0_0.020::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.016733750413746206,
+        "field_l2_pct": 1.8702979211450794e-13
+      },
+      "max_error_pct": 0.016733750413746206,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_u0_0.020/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0167% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_u0_0.100::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 0.005472784012622284,
+        "umax_rel_pct": 0.00945319292072283,
+        "field_l2_rel_pct": 0.0888525103603213
+      },
+      "max_error_pct": 0.0888525103603213,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_u0_0.100/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0889% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_u0_0.100::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.2656610895920452,
+        "field_l2_pct": 4.014737814629779e-14
+      },
+      "max_error_pct": 0.2656610895920452,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_u0_0.100/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.266% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_tau_0.70::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 0.00033955633510348584,
+        "umax_rel_pct": 0.0023220979474034465,
+        "field_l2_rel_pct": 0.03510919786466841
+      },
+      "max_error_pct": 0.03510919786466841,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_tau_0.70/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0351% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_tau_0.70::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.05582533782560012,
+        "field_l2_pct": 7.126397344059668e-14
+      },
+      "max_error_pct": 0.05582533782560012,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_tau_0.70/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0558% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_tau_1.00::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 0.0005045520625355421,
+        "umax_rel_pct": 3.859825593369318e-06,
+        "field_l2_rel_pct": 0.008377308465572811
+      },
+      "max_error_pct": 0.008377308465572811,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_tau_1.00/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.00838% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "sens_tau_1.00::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.004403907754906644,
+        "field_l2_pct": 7.126397344059668e-14
+      },
+      "max_error_pct": 0.004403907754906644,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/sens_tau_1.00/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0044% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "matched_n128::oss",
+      "capability": "core_d2q9_srt_bgk",
+      "reference": {
+        "kind": "oss",
+        "id": "lbmpy",
+        "resolved": true,
+        "detail": "lbmpy 2.0 @ /usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+        "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+        "version": "2.0"
+      },
+      "errors_pct": {
+        "gamma_K_rel_pct": 7.136999186784106e-05,
+        "umax_rel_pct": 0.001313659038780433,
+        "field_l2_rel_pct": 0.05984319528947218
+      },
+      "max_error_pct": 0.05984319528947218,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/matched_n128/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0598% < 15% against oss:lbmpy",
+      "negative_knowledge_required": false
+    },
+    {
+      "claim_id": "matched_n128::analytic",
+      "capability": "taylor_green_2d_closed_form",
+      "reference": {
+        "kind": "analytic",
+        "id": "taylor_green_2d_exact",
+        "resolved": true,
+        "detail": "exact solution of incompressible Navier-Stokes (convection is a pure gradient); identical to the TG2DSpec docstring in src/tensorlbm/xval/case_spec.py",
+        "formula": "u=-U0 cos(kx) sin(ky) e^{-2 nu k^2 t}, v=+U0 sin(kx) cos(ky) e^{-2 nu k^2 t}; K=0.5<u^2+v^2>=K0 e^{-4 nu k^2 t}"
+      },
+      "errors_pct": {
+        "gamma_K_pct": 0.05520567772694165,
+        "field_l2_pct": 7.210218662192528e-14
+      },
+      "max_error_pct": 0.05520567772694165,
+      "tolerance_pct": 15.0,
+      "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+      "artifacts": [
+        "cells/matched_n128/cell_result.json"
+      ],
+      "status": "PASS",
+      "reason": "max KPI deviation 0.0552% < 15% against analytic:taylor_green_2d_exact",
+      "negative_knowledge_required": false
+    }
+  ],
+  "gate_counts": {
+    "PASS": 16,
+    "FAIL": 0,
+    "WITHHELD": 0
+  },
+  "withheld_capabilities": [
+    "shan_chen_pseudopotential_multiphase",
+    "free_surface_volume_tracking",
+    "immersed_boundary_ibm",
+    "adaptive_mesh_refinement",
+    "thermal_energy_transport_lbm",
+    "acoustic_pulse_absorbing_boundary"
+  ],
+  "capability_coverage_counts": {
+    "total": 13,
+    "with_oss_reference": 7,
+    "without_oss_reference": 6
+  },
+  "figures": [
+    "fig1_decay.png",
+    "fig2_convergence.png",
+    "fig3_sensitivity.png",
+    "fig4_fields.png"
+  ],
+  "wall_sec_total": 46.28523373603821
+}
