@@ -1,0 +1,93 @@
+{
+  "anchor": "XVAL-LBM-BENCHMARK-METHOD-SELECTION",
+  "round": 2,
+  "written_before_matrix_kpis": "2026-11-13T08:10Z (round-1 values from the previous mission are known and are NOT used as targets; the round-1 matrix never produced a complete arm set and its single A1 run used u_in=0.1, a deviation from the predeclared u_in=0.05 that this round corrects)",
+  "decision": "Does transplanting the OSS (Maarten-vd-Sande/lbm @573a01c) method selection -- single-relaxation BGK collision, no absorbing layer at the outlet -- reproduce the KPIs of the method selection recorded in TensorLBM (MRT + downstream absorbing sponge) within the owner 15 % band, and if not, which of the two knobs (collision operator vs sponge) is responsible?",
+  "alternatives": [
+    "use the recorded TensorLBM selection unchanged (status quo, no evidence that it matters)",
+    "adopt the OSS selection verbatim (BGK, plain zero-gradient outlet)",
+    "hybrid: keep MRT, drop the sponge (isolates the sponge knob)",
+    "hybrid: keep the sponge, switch to BGK (not run: A2/A4 already separate the knobs, and the 2x2 would need A1/A2/A4 + a BGK+sponge arm; the latter is A6, deliberately not run in this round -- stated as an open cell, not a claim)"
+  ],
+  "hypothesis": {
+    "H1": "every KPI of every OSS-style arm differs from the recorded-selection arm A1 at the same resolution by < 15 % (transplant is faithful)",
+    "H0": "at least one KPI of at least one OSS-style arm differs by >= 15 % (the selection is not portable, and the responsible knob must be named)",
+    "H2_directional": "the two knobs are separable: A1 vs A4 measures the sponge only, A4 vs A2 measures the collision operator only"
+  },
+  "outcome_metrics": {
+    "cd_mean": "mean drag coefficient over the post-warm-up window",
+    "cd_mean_last50": "mean Cd over the last 50 % of the post-warm-up window (pre-registered sub-window)",
+    "cl_amp": "half peak-to-peak lift amplitude",
+    "st_fft": "Strouhal from the Hann-windowed lift spectrum with parabolic peak refinement",
+    "st_zc": "Strouhal from upward mean-crossings of Cl (independent estimator, cross-check only)"
+  },
+  "unit_of_analysis": "one completed simulation arm at fixed (Re, blockage, D, U); KPIs are scalars per arm",
+  "baseline_control": {
+    "baseline": "A1 at each resolution (the recorded TensorLBM selection: MRT + sponge)",
+    "control": "A4 (MRT, sponge off) shares everything with A1 except the absorbing layer",
+    "oss_reference_arms": "A2 (BGK, sponge off) and A5 (TRT with tau_minus in the stable window, sponge off) are the OSS-faithful collision selections; A3 (OSS magic Lambda=3/16) is the literal transplant",
+    "cross_implementation_note": "the OSS arms are method transplants into the same TensorLBM kernels (identical BC, force estimator, post-processing) so the comparison isolates the selection; running the OSS code itself on the full matrix is impossible here -- its collision loop is pure Python, measured at 5.1 s/step on 100x100 (oss_crosscheck.json: 121 h for this case) -- so the OSS code is executed instead at kernel level (one collision + one streaming step, K1/K2 in oss_crosscheck.json) and the physical comparison uses transplants. Declared limitation, not a silent substitution."
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "interpretation": "|KPI(arm) - KPI(A1)| / |KPI(A1)| * 100 < 15 % for every KPI and every OSS-style arm => H1",
+    "convergence_rule": "a KPI is resolution-converged when |KPI(D=14) - KPI(D=10)| / |KPI(D=14)| < 10 %; otherwise the D=10 value is reported as resolution-limited and the D-delta itself is reported as a sensitivity result",
+    "st_crosscheck_tolerance_pct": 5.0,
+    "stability_rule": "a run whose population becomes non-finite, or whose |Cl| exceeds 10 (50x the O(1) amplitude), is declared failed at that step, recorded in fail.json, and excluded from the KPI table -- never tuned",
+    "stability_fallback": "if an arm violates the stability rule, the collision comparison is repeated with the anti-symmetric relaxation clamped into tau_minus <= 2 (A5). The failing arm is reported as a measured selection-relevant failure, not silently dropped",
+    "external_caliber": "non-adjudicating: docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md records that the Re=200 primary table (Norberg 1993; Sohankar-Norberg-Davidson 1998) is WITHHELD in this environment, and offers a trend band Cd in [1.30,1.45], St in [0.160,0.180] extrapolated from the repo's verified Re=100/150 rungs. The XVAL gate is the OSS comparison; the band is reported for context and never used to pass or fail H1",
+    "external_caliber_band": {
+      "cd_mean": [
+        1.3,
+        1.45
+      ],
+      "st_fft": [
+        0.16,
+        0.18
+      ],
+      "source": "docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md (trend reference extrapolated from the repo's verified Re=100/150 rungs; primary Re=200 table WITHHELD)",
+      "adjudicating": false
+    }
+  },
+  "stopping_rule": "each arm runs a fixed step count computed before the run from St_seed/st_estimate and the predeclared period count (seed 2 periods + 15 shedding periods). No arm is extended or truncated after inspecting KPIs. No wall-clock truncation (a truncated run writes no result.json)",
+  "variables_changed": [
+    "collision operator (MRT / BGK / TRT-magic / TRT-clamped)",
+    "absorbing sponge on/off",
+    "resolution D (10, 14)"
+  ],
+  "variables_controlled": [
+    "Re = 200 (nu = U D / Re, tau = 0.5 + 3 nu)",
+    "blockage D/H = 1/20, domain 20D x 20D, square centre at 6D",
+    "U = 0.05 (Ma = 0.087)",
+    "inlet seeding: St_seed = 0.13, amplitude 0.10 U, 2 periods, then released",
+    "force sampler: Ladd momentum exchange, post-stream / pre-bounce-back",
+    "statistics window: warm-up = first 30 % of post-seed samples, then the full remainder; sub-window = last 50 % of it",
+    "St estimators (FFT + zero-crossing), float64, torch CPU, thread count per arm"
+  ],
+  "confounders": [
+    "float32 (OSS praxis) vs float64 (this harness): measured at kernel level, rel-L2 1.2e-7 on one collision step -> negligible, but not re-measured for full runs",
+    "the OSS arms reuse TensorLBM kernels, so code-level differences beyond the collision/outlet choice are not covered",
+    "the OSS examples put no-slip OBSTACLE rows on the lateral boundaries while this case uses free-field lateral BCs (blockage-free), so the OSS lateral treatment is not transplanted; declared as a boundary-condition difference in the report",
+    "2D numerical Cd sits above 3D wind-tunnel experiments for a square cylinder; only 2D numerical calibers are used",
+    "single forcing amplitude for the inlet seeding (0.10 U); the shedding lock-in sensitivity to it is not mapped"
+  ],
+  "repetition_rationale": "deterministic solver (no RNG anywhere in the arm runner) => zero-variance per arm, so repetitions are replaced by (a) two resolutions, (b) five method arms, (c) two independent St estimators, (d) one executed OSS code-level check of each kernel. Arms: 5 at D=10, 3 at D=14 (A1, A2, A4).",
+  "environment": {
+    "solver": "TensorLBM src/tensorlbm (torch 2.7.1 CPU, float64)",
+    "host": "control container, 128 cores; 4 threads per D=10 arm, 8 threads per D=14 arm; arms run concurrently",
+    "command": "python xval/benchmark_method_selection/run_arm.py --arm <id> --D <D>   (matrix: xval/benchmark_method_selection/run_matrix.sh)",
+    "raw_data": "xval/benchmark_method_selection/runs/<arm>_D<D>/{result.json|fail.json,trace.npz}",
+    "logs": "xval/benchmark_method_selection/logs/<arm>_D<D>.log",
+    "oss_sources": {
+      "Maarten-vd-Sande/lbm": "~/oss-cache/Maarten-vd-Sande_lbm @ 573a01c4d2e6321f3634ff271adca4ce91872e6f (BGK, Zou-He inlet, zero-gradient outlet, half-way bounce-back, float32, velocity clamp)",
+      "pylbm": "~/oss-cache/pylbm (source only: needs mpi4py/cython -> not runnable here; cited for the relaxation-parameter and boundary-family differences)",
+      "lbmpy/lettuce": "cited via oss_solutions census rows 415/416/417 for the TRT magic Lambda=3/16 default"
+    }
+  },
+  "analysis_plan": "for each KPI: table arm x resolution with % difference vs A1 (same D) and vs the D=14 value; H1/H0 verdict by the predeclared 15 % rule; uncertainty = resolution delta + St cross-estimator spread; the OSS-code kernel checks are reported as a separate table (ref = executed OSS source, got = TensorLBM kernel). No post-hoc threshold changes. Every number in the report is injected by make_report.py from summary.json / oss_crosscheck.json.",
+  "honesty_notes": [
+    "a 5000-step smoke screen of all five arms was run at 08:0x UTC, before the matrix launch, purely to verify that the predeclared stability rule can fire (it did: A3). No KPI from the screen is used anywhere; the screen's only role was to confirm A3's blow-up is reproducible, which the matrix then re-measured from step 0",
+    "the round-1 deviation (u_in=0.1 instead of the predeclared 0.05) is corrected here; the round-1 A1 KPI is superseded, not reconciled",
+    "no arm is 'tuned into' the 15 % band: A5 exists only because the literal OSS magic parameter is unconditionally unstable at nu=0.0025, which is itself the selection-relevant finding"
+  ]
+}

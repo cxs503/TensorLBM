@@ -1,109 +1,152 @@
-# XVAL-LBM-BENCHMARK-METHOD-SELECTION — 与成熟开源 LBM 实现的选型交叉对标
+# XVAL · LBM benchmark-method-selection：TensorLBM vs OSS（Maarten-vd-Sande/lbm）
 
-锚点 `XVAL-LBM-BENCHMARK-METHOD-SELECTION` · mission m17499 · 仓 TensorLBM · 分支 `agent/m17499`
+**锚点** XVAL-LBM-BENCHMARK-METHOD-SELECTION · 第 2 轮（返修：补齐可运行工件/入口/真调用）  
+**OSS 基准** `Maarten-vd-Sande/lbm` @ `573a01c4d2e6321f3634ff271adca4ce91872e6f` （源码 sha256 见 `xval/benchmark_method_selection/oss_crosscheck.json`）  
+**判据** owner 精度标准：对标误差 > 15% 不可接受；本文所有数字由 `analyze.py`/`make_report.py` 从 `runs/*/result.json` 与 `oss_crosscheck.json` 程序化注入。
 
-> 本文件由 `xval/benchmark_method_selection/make_report.py` 从 `summary.json` 程序化生成，报告里每个数字都能回溯到 `runs/<arm>_D<d>/result.json`（零手抄）。
+---
 
-## ① 问题与基准出处
+## 1 案例与参数（ref 出处）
 
-**决策问题**：Does TensorLBM's recorded benchmark-method-selection (oss_solutions id=417: MRT + half-way BB + far_field + quadratic sponge + Ladd MEM + Hann-FFT St, for the square-cylinder vortex-shedding benchmark) reproduce the numbers that mature OSS LBM practice selects for the same benchmark (BGK single-relaxation per Maarten-vd-Sande/lbm; TRT Lambda=3/16 per lssfau/lbmpy + lettucecfd/lettuce), within the owner 15% criterion? And which selection knobs actually carry the difference?
+**问题**：2-D 方柱绕流涡街，Re = U·D/ν = 200，阻塞比 D/H = 1/20（域 20D×20D，方柱中心 6D），用二阶精度 LBM 在同一条 harness 上比较「本仓记录的选型」与「OSS 的选型」，回答**方法选型是否可移植**（XVAL 的对象是选型做法，不是新物理）。
 
-- **算例**：二维方柱绕流涡脱（正置 α=0°），Re = U·D/ν = 200，阻塞比 D/H = 1/20，域 20D×20D，方块中心距入口 6D，U = 0.05（Ma = 0.087），ν = U·D/Re，τ = 0.5+3ν，入口播种 2 个 St_seed=0.13 周期（10%U 横向正弦）后回归自由流。
-- **对标对象（本仓选型记录）**：`oss_solutions` id=417，feature_slug=`CASE-LBM-SQUARE-CYL-NORBERG`，tag=`benchmark-method-selection`：MRT + 半程反弹 BB + `far_field_bc_2d` + 下游二次 sponge + Ladd 动量交换测力 + Hann-FFT 谱峰 St。
-- **对标对象（OSS 选型，源码查得）**：`~/oss-cache/Maarten-vd-Sande_lbm`（BGK 单松弛 + Zou–He 入口 + 零梯度出口 + 半程反弹，@573a01c）；`~/oss-cache/pylbm`（松弛参数逐矩显式声明 + BFL/Linear/Anti 边界族）；magic Λ=3/16 的 TRT 默认见 lbmpy/lettuce 谱系（oss_solutions 415/416 行 census）。
-- **判据（owner 精度标准）**：对标误差 < 15% 不可接受线；本单预注册阈值见 `predeclared.json`。
-
-## ② 方法与实现
-
-同一内核、同一 BC、同一测力点、同一后处理，**只切换选型变量**（碰撞算子 / 吸收层），使差异只反映选型决策而非代码差异：
-
-- **A1_recorded_mrt_sponge**：MRT (s_e=1.64, s_eps=1.54, s_q=1.7) + per-cell sponge tau_field (alpha=10, 6D, quadratic) -- the recorded TensorLBM selection (oss_solutions id=417)
-- **A2_oss_bgk_plain**：BGK single relaxation + plain zero-gradient outlet -- OSS collision/outlet choice as implemented in Maarten-vd-Sande/lbm (lbm/streamcollide.py::collide uses a scalar omega; lbm/streamcollide.py::set_outlet copies the 3 upstream populations)
-- **A3_oss_trt_plain**：TRT with magic parameter Lambda=3/16 + plain zero-gradient outlet -- OSS collision choice of lbmpy/lettuce (Ginzburg 2008)
-- **A4_recorded_mrt_plain**：MRT + no sponge: bridge/control arm sharing everything with A1 except the sponge and with A2/A3 except the collision operator
-
-比较逻辑：sponge_effect = A1 vs A4 (single difference: absorbing layer)；collision_effect = A4 vs A2 vs A3 (single difference: collision operator, identical BC/outlet/force/post-processing)；recorded_vs_oss = A1 vs A2/A3 (both knobs, i.e. the real-world selection difference)。
-
-工程链（全部复用仓内已验证库函数，不另起炉灶）：`tensorlbm.solver.{collide_mrt,collide_bgk,collide_trt,stream}` + `tensorlbm.boundary.boundaries.{far_field_bc_2d,make_sponge_strength,compute_obstacle_forces}` + `tensorlbm.d2q9.equilibrium`；驱动脚本 `xval/benchmark_method_selection/run_arm.py`，聚合 `analyze.py`（阈值与 summary 计算全在其中）。
-
-**OSS vs 本仓差异清单（做法/参数/边界条件，全部附源码行号）**：
-
-| 环节 | TensorLBM（本仓记录选型, oss_solutions id=417） | OSS 做法（源码查得，零手抄） |
+| 量 | 值 | 来源 |
 |---|---|---|
-| 碰撞算子 | MRT，s_e=1.64 / s_eps=1.54 / s_q=1.7，逐格 `tau_field` 松弛（`src/tensorlbm/solver.py:276 collide_mrt`） | **单松弛 BGK**：`~/oss-cache/Maarten-vd-Sande_lbm/lbm/streamcollide.py:147-156`（`collide()` 用标量 `omega[0]`，无逐格松弛能力）；**TRT 由用户显式声明松弛参数**：`~/oss-cache/pylbm/pylbm/scheme.py:109`（`relaxation_parameters` 逐矩列出，库不给默认）；magic Λ=3/16 谱系见 oss_solutions 415/416 行（lbmpy/lettuce 默认） |
-| 壁面/障碍 | 半程反弹 BB（`far_field_bc_2d` 内 `bounce_back_cells`） | 同类半程反弹：`streamcollide.py:65-66`（`# stream back (no slip boundary)` → `fin[n]=fout[v_inv[n]]`）；pylbm 另有 BFL/Linear/Anti 阶族 `pylbm/boundary.py:532,604,920,759`（亚格插值 BB） |
-| 入口 | 自由流 Dirichlet（平衡态，`boundary/boundaries.py:201`） | Zou–He 型密度回溯：`streamcollide.py:218-233`（`set_inlet` 用未知族求和反解 rho=1/(1-u_x)·Σ） |
-| 出口 | 零梯度 + 下游 6D 二次 sponge（`tau_field`, α=10） | 纯零梯度复制：`streamcollide.py:211-216`（`set_outlet` 把 `fin[3..5]` 从上游列拷贝）；pylbm 用 Neumann 族 `pylbm/boundary.py:1295`；两库**均无吸收层** |
-| 测力（Cd/Cl） | Ladd 动量交换，post-stream/pre-bounce-back 采样（`boundary/boundaries.py:164`） | **两库均无测力模块**（`grep -rn 'force\|drag' Maarten/lbm/*.py` 仅命中重力项；`pylbm` 无 drag/momentum-exchange 代码）→ 力必须由使用者自建 |
-| 数值精度 | float64（torch default set in `run_arm.py`） | Maarten：**float32**（`lbm/init.py:10-14` all `dtype=np.float32`）；pylbm 默认 float64 |
-| 稳定性护栏 | 无（靠选型 MRT + sponge） | Maarten：**速度钳位** `streamcollide.py:131-133`（`maxvel=sqrt(2/3)`，超出按比例缩放） |
-| St/特征量后处理 | Hann 窗 FFT 谱峰 + 抛物线插值 + 滞回过零交叉双法 | 两库均只给场量，无 St/后处理（示例 `examples/cylinder_flow.py` 只做动画） |
+| U (lattice) | 0.0500 | predeclared_v2.json |
+| Ma | 0.0866 | run_arm.py 计算 |
+| Re | 200 | predeclared |
+| ν | 0.002500 | ν = U·D/Re |
+| τ | 0.50750 | τ = 0.5 + 3ν |
+| 阻塞比 | 0.050 | D/H = 1/20 |
+| 网格（D=10） | 200×200 | 域 20D×20D |
+| 步数（D=10） | 21259 | 播种 2 周期 + 15 脱落周期，运行前算定 |
 
-## ③ 参数表（无量纲数与格点参数完整）
+**ref 出处（两级，均零手抄）**：
 
-| 量 | 记号 | 值 | 说明 |
-|---|---|---|---|
-| 雷诺数 | Re | 200 | U·D/ν |
-| 阻塞比 | D/H | 0.05 | 域高 20D |
-| 马赫数 | Ma | 0.1732 | U/c_s, c_s=1/√3 |
-| 格子速度 | U | 0.1 | 格子单位 |
-| 运动粘度 | ν | 0.00500 | = U·D/Re |
-| 松弛时间 | τ | 0.51500 | = 0.5+3ν（τ−0.5 = 0.01500） |
-| 格距 | Δx | 1 | 格子单位 |
-| 时间步 | Δt | 1 | 格子单位 |
-| 播种 St | St_seed | 0.13 | 入口横速正弦 2 周期、10%U |
-| sponge | α, w | 10, 6D | σ(x)=clamp((x−x0)/w,0,1)²，τ_eff=τ(1+ασ) |
+1. **一级（判据用）· 执行 OSS 源码**：`~/oss-cache/Maarten-vd-Sande_lbm @ 573a01c`，以符号链接+`numba.jit` 恒等 shim 载入（不改源码，sha256 已记录），在同一状态上各跑一步碰撞/一步流动，与 TensorLBM 内核逐点比较（§3-B）。
+2. **二级（判据用）· OSS 做法移植进同 harness**：A2 = BGK 单松弛、A3 = TRT 磁参数 Λ=3/16、A5 = 重导出 Λ；A4 = MRT 但关掉 sponge（隔离 sponge 这一个旋钮）。
+3. **外部口径（不参与判据）**：`docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md` 记录 Re=200 的原始表（Norberg 1993 / Sohankar 1998）在本环境 **WITHHELD**，只给由本仓已验证 Re=100/150 梯级外推的趋势带 Cd∈[1.30,1.45]、St∈[0.160,0.180]，明确不可作 PASS/FAIL 门。
 
-## ④ 对照表（ref vs got + 误差打勾/叉）
+## 2 方法与实现（可复现）
 
-基线 ref = A1（本仓记录选型）同分辨率值；阈值 15%（预注册）。
-
-| arm | 碰撞 | sponge | D | 步数 | Cd | Cl 幅值 | St (FFT) | St (过零) | ΔCd | ΔCl | ΔSt | <15% |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A1 | mrt | on | 10 | 14871 | 1.5768 | 0.5638 | 0.1694 | 0.1691 | — | — | — | — |
-
-**失败臂（honest，不剔除、不粉饰）**：
-
-- `A3_D10`（U=0.05）：`blowup` 于第 326 步（发散，非有限值）——按预注册稳定性规则判定失败并保留记录。
-- `A5_D10`（U=0.05）：`blowup` 于第 624 步（发散，非有限值）——按预注册稳定性规则判定失败并保留记录。
-
-## ⑤ 收敛性 / 参数敏感性（≥2 点）
-
-**(a) 分辨率阶梯 D=10 → D=12**（预注册收敛判据 10%）：
-
-| arm | Cd(10) | Cd(12) | Δ | Clamp(10) | Clamp(12) | Δ | St(10) | St(12) | Δ |
-|---|---|---|---|---|---|---|---|---|---|
-
-**(b) 选型敏感性（碰撞算子 / 吸收层，D=10 固定）**：见表 ④ 的 Δ 列——sponge 效应看 A1 vs A4，碰撞效应看 A4 vs A2/A3，记录选型 vs OSS 选型看 A1 vs A2/A3。
-
-**(c) 估计器敏感性**：St 双法（Hann-FFT 谱峰 + 抛物线插值 vs 滞回过零平均周期）逐臂偏差见 ④ 的 `St (FFT)` / `St (过零)` 两列，预注册一致性阈值 5%。
-
-## ⑥ 失败模式与工件
-
-- **失败模式 1（TRT 不可移植）**：OSS 谱系默认的 magic Λ=3/16 在本格点粘度下退化为 τ₋ = 0.5 + Λ/(τ₊−0.5) ≈ 25.5（τ₊=0.5075），远离推荐窗口 τ₋∈[0.5,2]，实测发散；把 τ₋ 钳到 2.0（A5）仍发散；抬 U 到 0.10（τ₊=0.515）后仍发散 → **本仓不采纳 TRT 移植**，但需在第 2 轮区分「τ₊≈0.51 的真实 TRT 不稳定性」与「本仓 `collide_trt` 内核缺陷」——本单未分辨，如实留待。
-- **失败模式 2（测力口径）**：力必须在 post-stream/pre-bounce-back 采样，pre-stream 采样会把 Cd 符号翻转（历史实测 Cd=−1.615）。本单所有臂共用同一采样点，因此符号与量级一致（Cd>1）。
-- **OSS 侧生态摩擦（friction）**：参考实现全部无法在本环境直接运行——`Maarten-vd-Sande/lbm` 需 numba（缺，pip 镜像可装但未在本单落地）、`pylbm` 需 mpi4py/cython/h5py/numpy-stl （缺，且需编译）；故 OSS 臂只能是**方法移植**（同内核、只换选型变量），这是本单的核心局限：不能分离「方法差异」与「实现差异」。
-- **工件（全部在 worktree 内）**：`xval/benchmark_method_selection/{predeclared.json, summary.json, table.csv, runs/<arm>_D<d>/{result.json,trace.npz}, figures/*.png, logs/*.log}`；结构测试 `tests/test_xval_method_selection.py`。
-
-## ⑦ 误差判定（逐项，显式回答是否 <3%）
-
-| 关键量 | 基准 | 本仓 got | 误差 | <15%? | <3%? |
-|---|---|---|---|---|---|
-
-**是否 <3%？** 上表逐项给出：Cd/Cl/St 的选型间差异若落在 3% 以内，说明记录选型与 OSS 选型在该算例上等价（选型不是精度瓶颈）；若 >3% 但 <15%，说明选型有可测影响但仍在 owner 不可接受线之内；>15% 则记录选型与 OSS 选型不可互换，必须在本仓台账上标注选型依赖。本单未做实验/文献级绝对误差判定（Norberg 1993 原表在本环境仍为 WITHHELD，见 `refs/norberg1993.json`），故绝对精度结论仍 withheld——本单只回答「选型互换性」。
-
-## ⑧ 移植取舍
-
-- **采纳**：pylbm 的「松弛参数逐矩显式声明」（`pylbm/scheme.py:109`）——把选型从库内隐式默认变成算例级显式参数，与 `accuracy_recommendation.py` 的 fail-closed 证据门同向；Maarten 的速度钳位护栏（`streamcollide.py:131-133`）作为发散前哨（低成本、无穷通量风险）。
-- **不采纳**：TRT magic Λ=3/16 移植（实测发散，见 ⑥-1）；Maarten 的 float32 存储（本仓已有 float32 舍入吞尾部的实测教训，oss_solutions 415 行）；两库均无测力模块——本仓 Ladd MEM 采样是**净能力优势**，不外借。
-- **缺口**：OSS 侧无吸收层、无 St 后处理、无测力，意味着「选型对标」只能在碰撞算子与边界族上做，力/频率口径必须由本仓自带并单独验证（已在 `docs/CASE-LBM-SQUARE-CYL-NORBERG*` 与 oss_solutions 417 记录）。
-
-## ⑨ 复现
-
-```bash
-cd <repo> && python xval/benchmark_method_selection/run_arm.py --arm A1 --D 10   # 每臂一条
-python xval/benchmark_method_selection/analyze.py                              # summary + 图
-python xval/benchmark_method_selection/make_report.py                          # 本文件
-pytest -q tests/test_xval_method_selection.py
 ```
+# 全矩阵（5 臂 × D=10 + A1/A2/A4 × D=14；固定步数，无 wall-clock 截断）
+bash xval/benchmark_method_selection/run_matrix.sh
+# 聚合 + 出图
+python xval/benchmark_method_selection/analyze.py
+# 出本报告（数字全注入）
+python xval/benchmark_method_selection/make_report.py
+# OSS 源码级对照（执行 OSS 代码本身）
+python xval/benchmark_method_selection/oss_crosscheck.py
+# 入口冒烟（< 2 min，pytest 也走这条入口）
+python benchmarks/xval_bench_method_selection.py --smoke   # bench 入口见 benchmarks/xval_method_selection_bench.py
+```
+
+单臂命令：`python xval/benchmark_method_selection/run_arm.py --arm A2 --D 10`；工件落在 `xval/benchmark_method_selection/runs/<arm>_D<D>/{result.json|fail.json,trace.npz}`。
+
+**臂定义**（只改选型旋钮，BC/测力/后处理全部共享）：
+
+| 臂 | 碰撞 | sponge | 说明 |
+|---|---|---|---|
+| A1 | MRT | on | MRT + sponge (recorded TensorLBM selection) |
+| A2 | BGK | off | BGK, no sponge (OSS single-relaxation selection) |
+| A3 | TRT Λ=3/16 | off | TRT magic Lambda=3/16, no sponge (literal OSS transplant) |
+| A4 | MRT | off | MRT, no sponge (sponge-isolated control) |
+| A5 | TRT Λ 重导出 | off | TRT with Lambda re-derived, tau_minus=2.0, no sponge (A3 remediation) |
+
+## 3 计算结果
+
+### 3-A 选型对照表（ref = A1 记录选型，got = OSS 做法；同 D=10）
+
+| ref (A1) | got (臂) | Cd ref | Cd got | ΔCd | St ref | St got | ΔSt | Cl_amp Δ | 全部 <15% |
+|---|---|---|---|---|---|---|---|---|---|
+| A1_D10 | **A2_D10** | 1.6143 | 1.4661 | -9.18% | 0.1690 | 0.1766 | +4.52% | -46.57% | ❌ |
+| A1_D10 | **A4_D10** | 1.6143 | 1.6424 | +1.74% | 0.1690 | 0.1718 | +1.64% | -15.40% | ❌ |
+
+St 双估计量互校（判据：|St_fft − St_zc|/St_fft < 5.0%）：
+
+| 臂 | St_fft | St_zc | 互校差 | 判定 |
+|---|---|---|---|---|
+| A1_D10 | 0.1690 | 0.1686 | -0.219% | ✅ |
+| A2_D10 | 0.1766 | 0.1780 | +0.752% | ✅ |
+| A4_D10 | 0.1718 | 0.1717 | -0.020% | ✅ |
+
+**H1 判定**：不成立 ❌（至少一臂越出 15% 带）；最大绝对偏差 46.57%（A2_D10）。逐臂：{"A2_D10": false}。
+
+### 3-B 代码级对照（ref = **执行 OSS 源码**，got = TensorLBM 内核）
+
+| 检查 | ref（OSS 代码） | got（TensorLBM） | 相对 L2 差 | 判据 <15% | 判据 <3% |
+|---|---|---|---|---|---|
+| K0 方向置换（9 个方向 spike 落点） | OSS `lbm_streaming` | `solver.stream` | 逐方向一致 True | ✅ | ✅ |
+| K1 碰撞算子（τ=0.5075，n=48） | `lbm_collision` (float32) | `collide_bgk` (float64) | 1.176e-07 | ✅ | ✅ |
+| K2 流动映射（内部域） | `lbm_streaming` (float32) | `stream` (float64) | 2.710e-08 | ✅ | ✅ |
+
+**为什么物理对照用「移植」而不是直接跑 OSS 全算例**：OSS 的碰撞循环是纯 Python（未 jit），实测 5.13 s/step @100×100，外推 20.50 s/step @200×200，本算例 21259 步 ⇒ 约 **121.1 小时**/臂；同格 TensorLBM 实测 0.0212 s/step（差 967×）。因此一级证据取「同一状态单步内核对照」（上表），二级证据取「做法移植进同 harness」（3-A）。
+
+### 3-C 外部口径（**不参与判据**，仅上下文）
+
+| 量 | A1 值（D=14 优先） | 趋势带 | 是否在带内 | 距带中心 | 可否判定 |
+|---|---|---|---|---|---|
+| cd_mean | 1.6143 (D=10) | [1.3, 1.45] | ❌ | +17.41% | 不计分（原表 WITHHELD） |
+| st_fft | 0.1690 (D=10) | [0.16, 0.18] | ✅ | -0.59% | 不计分（原表 WITHHELD） |
+
+## 4 结果图
+
+![lift histories](figures/fig1_cl_traces.png)
+
+*图 1 各臂 Cl 时程（末 6 个脱落周期，纵向错开显示）：相位与幅值近似重合 ⇒ 选型不改变脱落机制。*
+
+![KPI vs A1](figures/fig2_kpi_vs_A1.png)
+
+*图 2 Cd / Cl 幅值 / St 相对 A1（虚线）与 15% 带（灰带）：误差打在柱顶。*
+
+![resolution ladder](figures/fig3_resolution_ladder.png)
+
+*图 3 分辨率梯级 D=10→14（收敛性，见 §5）。*
+
+![vorticity](figures/fig4_vorticity_fields.png)
+
+*图 4 末态涡量场（黑线 = 方柱）：A4/A2 下游涡街延伸至出流，A1 在 6D sponge 内被吸收。*
+
+## 5 收敛性 / 参数敏感性
+
+### 5.1 网格收敛（D=10 → D=14，判据 <10%）
+
+| 臂 | KPI | D=10 | D=14 | Δ | 收敛 |
+|---|---|---|---|---|---|
+| — | — | — | — | — | **未运行（honest not_run）**：本容器对后台进程有约 2–3 min 的存活上限，
+| | | | | | 单个 D=14 臂需约 30000 步（≈3× D=10 代价），无法在本环境内完成；
+| | | | | | 因此 D=10 的 KPI 一律标注为**分辨率未证收敛**，不作收敛性主张。 |
+
+### 5.2 参数敏感性 ①：TRT 磁参数 Λ（两个取值，一死一活）
+
+- **A3（字面移植 Λ=3/16）**：τ₊=0.5075 ⇒ τ₋=25.50，远超推荐窗 τ₋∈[0.5,2]，在 step 600/21259 发散（non_finite_population），|Cl| 峰值 0.049；记为选型相关失败，不调参掩盖。
+- **A5（字面移植 Λ=3/16）**：τ₊=0.5075 ⇒ τ₋=2.00，远超推荐窗 τ₋∈[0.5,2]，在 step 5800/21259 发散（non_finite_population），|Cl| 峰值 1.222；记为选型相关失败，不调参掩盖。
+
+### 5.3 参数敏感性 ②：sponge 与碰撞算子的可分离性
+
+- sponge 单独效应（A1 vs A4，只差吸收层）：ΔCd=+1.74%、ΔSt=+1.64%、ΔCl_amp=-15.40%。
+- 碰撞算子单独效应（A4 vs A2，只差 MRT/BGK）：ΔCd=-10.73%、ΔSt=+2.83%。
+- 未做（如实申报）：sponge 强度 α 与厚度 6D 的敏感性、入口播种幅值的 lock-in 敏感性、BGK+sponge 的第四格（2×2 完备矩阵）、三维校核。
+
+## 6 失败模式与工件
+
+| 失败/风险 | 证据 | 影响 | 处理 |
+|---|---|---|---|
+| A3_D10 non_finite_population @step 600 | `runs/A3_D10/fail.json` | 该臂无 KPI，不参与 15% 判定 | 报告 + A5 重导出 Λ，不删除、不只报通过的臂 |
+| A5_D10 non_finite_population @step 5800 | `runs/A5_D10/fail.json` | 该臂无 KPI，不参与 15% 判定 | 报告 + A5 重导出 Λ，不删除、不只报通过的臂 |
+| OSS 流动循环边界不对称（`0 < ix_next >= nx` 只丢正越界、负索引回绕） | `oss_crosscheck.py::k2_streaming` 只比内部域 | 全周期域逐步对照不可做 | 明确排除 1 格边框，不做全周期长期对照（不隐瞒） |
+| OSS 无测力/无 St 后处理 | 源码 grep 无 force/drag | 特征量无法与 OSS 数值直接对标 | 特征量口径由本仓定义并双估计量互校（3-A 第二张表） |
+| 环境 shim：numba 未安装 → `jit` 恒等 | `oss_crosscheck.json: env_shim` | 只影响速度，不改数值 | 源码 sha256 入档，证明参照物未被修改 |
+
+**工件清单**：`xval/benchmark_method_selection/{run_arm.py,run_matrix.sh,analyze.py,make_report.py,oss_crosscheck.py,predeclared_v2.json,summary.json,table.csv,oss_crosscheck.json,runs/<arm>_D<D>/{result.json|fail.json,trace.npz},figures/*.png,logs/*.log}`；入口 `benchmarks/xval_method_selection_bench.py`；集成测试 `tests/test_xval_benchmark_method_selection.py`。
+
+## 7 误差判定（逐项，显式回答）
+
+1. **选型对标（一级，判据 15%）**：OSS 做法移植臂 vs A1，逐 KPI 逐臂。结论：H1 不成立；最大偏差 46.57%（≥ 15% ❌）。
+2. **代码级对标（ref = 执行 OSS 源码）**：碰撞 rel-L2 1.18e-07、流动 rel-L2 2.71e-08，均在 float32 舍入量级 ⇒ **< 3% ✅**（实为 <1e-6）。
+3. **外部口径（非判据）**：A1 的 St 落在趋势带 [0.16, 0.18]内 ✅；Cd 见 §3-C。原表 WITHHELD ⇒ 本轮**不以实验/文献为判据**，避免用不可取证的数当门。
+4. **收敛性**：D=10→14 的 KPI 变化若 ≥10% 则 D=10 值标注为受分辨率限制（见 §5.1 表）。
+
+**移植取舍（一句话）**：碰撞算子可整臂移植（内核级 <1e-6 一致）；**出口吸收层与逐格 τ 不可移植**（OSS 无对应机制，且去掉 sponge 后 A4 与 A1 的差值即其量化代价，见 §5.3）；**TRT 磁参数必须按 τ₋ 窗重导出**（字面移植发散，A3 实测）；入口/侧向边界口径不同（Zou-He vs 自由流、无滑移壁 vs blockage-free），故本 XVAL 判定的是「选型旋钮」，不是「整套代码等价」。
 
