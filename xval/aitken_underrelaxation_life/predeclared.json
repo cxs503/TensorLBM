@@ -1,0 +1,77 @@
+{
+  "anchor": "XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE",
+  "mission": 17727,
+  "repo": "TensorLBM",
+  "written_before_runs": false,
+  "predeclaration_note": "This file records the protocol that is executed verbatim by run_xval.py. It was frozen after the first exploratory pass whose only purpose was to check that the harness ran; that pass is what exposed the clip-floor failure and therefore added the ours_old_default arm and the clip=False/publication of the omega_min defect. The acceptance threshold (15%) is the owner criterion and the beta ladder {0.2,0.5,2,10,25,50}, the tolerance (1e-8 relative), the arms and the KPIs were NOT adjusted after inspecting the KPI values of the reported runs.",
+
+  "decision": "Does TensorLBM's dynamic Aitken under-relaxation, run as the interface fixed point of a displacement-based strong-coupling sub-iteration, reproduce joconnor22/LIFE's displacement-Aitken under-relaxation fixed point within the owner 15% criterion -- on the converged interface solution, on the recovered relaxation factor, and on the sub-iteration cost -- and which convention knobs carry any difference?",
+
+  "reference": {
+    "repo": "joconnor22/LIFE",
+    "provenance": "oss_solutions row 258, feature_slug NEW:LBM-FSI-BLOCK-GS-AITKEN, tag displacement-aitken-underrelaxation-fixed-point (frozen method digest, zero manual copying)",
+    "frozen_method": "do { U0 = 2.5 U_n - 2 U_{n-1} + 0.5 U_{n-2}; interpolate; FEM full re-solve (Newton-Raphson TOL=1e-10 MAXIT=20); residual } while (res > 1e-8 and it < 20). Aitken for k >= 2: relax = -relax * (r_{k-1}.(r_k - r_{k-1})) / |r_k - r_{k-1}|^2; U = U_{k-1} + relax*(U - U_{k-1}). Residual normalised by ref_L*sqrt(DOF). IBM force spread once after convergence.",
+    "implementation": "xval/aitken_underrelaxation_life/reference.py::life_fixed_point_step (independent code path, displacement interface variable, no clipping, order-2 predictor)"
+  },
+
+  "alternatives": {
+    "ours_old_default": "AitkenRelaxation(omega0=0.5) as shipped before this mission: clip floor omega_min = 0.05, ceiling 1.0, acceleration interface, no predictor, absolute residual tolerance",
+    "ours_new_default": "identical but with the corrected clip floor omega_min = 1e-4 (this mission's fix)",
+    "ours_noclip": "AitkenRelaxation(omega0=0.5, clip=False): raw Aitken, isolates the clipping effect from the predictor effect",
+    "ours_life_conv": "AitkenRelaxation(omega0=1.0, clip=False) + predictor='quadratic' + relative residual tolerance 1e-8: TensorLBM driver driven with LIFE's conventions",
+    "none_control": "plain fixed point omega = 1 (negative control: expected to diverge for beta_eff > 1)",
+    "oracle_constant": "constant omega = 1/(1+beta_eff) (oracle upper bound on achievable iteration count)",
+    "life_ref": "joconnor22/LIFE algorithm transcription (reference arm)"
+  },
+
+  "hypothesis": {
+    "H1": "Under aligned conventions (omega0 = 1, no clipping, order-2 predictor, relative 1e-8 residual) TensorLBM's Aitken fixed point is numerically identical to the LIFE transcription: max relative deviation of the applied relaxation factor on steps where both perform an Aitken update < 15%, and identical converged interface displacement.",
+    "H2": "The pre-fix TensorLBM default (clip floor 0.05) deviates from the reference: the clipped floor omega_min = 0.05 gives |1 - omega_min (1+beta_eff)| > 1 for beta_eff > 39, hence non-convergence, and costs >15% more sub-iterations for beta_eff in (19, 39).",
+    "falsifier": "H1 is falsified if any aligned arm shows >15% deviation in the recovered factor, >15% deviation in the converged interface displacement, or a different converged/no-converged verdict; H2 is falsified if the pre-fix default matches the reference within 15% at beta_eff = 50."
+  },
+
+  "metrics": {
+    "K1_err_vs_monolithic_pct": "max_t |d_arm(t) - d_REF-D(t)| / max_t |d_REF-D(t)| * 100",
+    "K2_err_vs_analytic_pct": "max_t |d_arm(t) - d_REF-C(t)| / max_t |d_REF-C(t)| * 100",
+    "K3_iters_mean": "mean sub-iterations per time step to the declared tolerance",
+    "K4_omega_rel_dev_pct": "|omega_final - omega*| / omega* * 100 with omega* = 1/(1+beta_eff)",
+    "K5_converged": "every time step reached the tolerance inside max_iter",
+    "K6_recurrence_identity_pct": "max relative deviation of the applied factor when TensorLBM's AitkenRelaxation and the LIFE secant formula are fed the same residual sequence (3 magnitudes, 12 residuals)"
+  },
+
+  "references_used": {
+    "REF-D": "monolithic Newmark, one solve per step with the total mass m_s + m_a (exact solution of the discrete coupled system)",
+    "REF-C": "closed form of (m_s+m_a) d'' + c d' + k d = F0 sin(Omega t), rest initial conditions, under-damped",
+    "REF-W": "analytic Aitken optimum omega* = 1/(1+beta_eff) (Irwin & Kesavan 2005; Kuettler & Wall 2008)"
+  },
+
+  "unit_of_analysis": "one arm x one added-mass ratio; KPIs are scalars over a 3-period time-accurate run",
+
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "pass_rule": "K1, K2, K4 and K6 must be < 15% for the aligned arms (ours_life_conv vs life_ref); K5 must be true",
+    "iteration_cost_rule": "a K3 difference between ours_life_conv and life_ref larger than 15% must be attributed to a listed convention difference (predictor, start factor, tolerance normalisation, clipping) or reported as an implementation defect; K3 is diagnostic, not an accuracy gate",
+    "physical_accuracy_rule": "K2 < 3% is reported explicitly against the owner's stricter 3% question",
+    "stability_rule": "non-finite interface state or |d| > 1e6 * (F0/k) is a failure, reported as measured, never tuned away"
+  },
+
+  "variables_changed": ["added-mass ratio beta_eff = {0.2, 0.5, 2, 10, 25, 50}",
+                        "relaxation convention (clip floor, clip on/off, omega0, predictor, residual normalisation)",
+                        "time resolution (100, 200, 400 steps per coupled period)",
+                        "initial relaxation omega0 = {0.05, 0.3, 0.5, 1.0}"],
+  "variables_controlled": ["m_struct = 1 kg", "k = 100 N/m", "c = 0.3 N s/m", "F0 = 1 N sine at the coupled natural frequency",
+                           "Newmark gamma = 0.5, beta = 0.25", "3 coupled periods", "residual tolerance 1e-8 relative to ref_L = 1 m",
+                           "max_iter = 200 for every arm (LIFE's own MAXIT = 20 is reported as satisfied, 3 iterations used)",
+                           "float64 CPU numpy, single thread, deterministic (no random input; the only RNG use is the fixed-seed recurrence probe, seed 20261113)"],
+
+  "confounders": ["interface variable (displacement in LIFE vs acceleration in tensorlbm.fsi_partitioned) -- the scalar Aitken secant is invariant under a constant scaling of the residual, verified in the recurrence probe",
+                  "residual normalisation (LIFE: |delta d|/(ref_L sqrt(DOF)); TensorLBM: unnormalised |r_a|) -- converted by the Newmark identity delta d = beta_N dt^2 delta a so both arms stop at the same physical increment",
+                  "very light damping (zeta = 0.003) and resonant drive make per-step tolerance errors accumulate secularly; this inflates K1 for arms that ride the tolerance instead of converging to machine precision and is reported, not hidden"],
+  "repetition_rationale": "the computation is fully deterministic (no stochastic input, single thread), so one run per cell is sufficient; the discriminating evidence comes from the beta ladder (6 levels) and two sensitivity sweeps rather than from repetitions",
+  "stopping_rule": "each arm runs exactly 3 coupled periods (600 steps at 200 steps/period); no arm is extended or truncated after inspecting its KPI",
+  "analysis": "per-cell scalars are written to out/summary.csv and out/results.json by run_xval.py; deviations are relative (percent) against the reference of the same cell; no outlier removal, no smoothing; failed cells are kept and flagged",
+  "environment": {"python": "3.11", "numpy": ">=1.26", "matplotlib": "3.10", "command": "PYTHONPATH=src python3 xval/aitken_underrelaxation_life/run_xval.py && python3 xval/aitken_underrelaxation_life/figures.py", "resource_limits": "single CPU, < 60 s wall, < 1 GB"},
+  "interpretation_limits": ["1-DOF interface: the scalar Aitken secant is exact for a linear scalar map, so iteration counts here are a lower bound compared with multi-DOF FEM structures where the scalar factor cannot annihilate a multi-mode error",
+                            "no LBM fluid: the fluid operator is the exact added-mass law F = F_ext - m_a a (linear, incompressible column); IBM spreading/interpolation error is out of scope",
+                            "the OSS code could not be executed (no network in the mission sandbox); the reference is the frozen method digest plus an independent transcription, so 'agreement' verifies the algorithm, not the OSS binary"]
+}
