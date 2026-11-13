@@ -1,0 +1,105 @@
+{
+ "anchor": "XVAL-LBM-LINEAR-INTERPOLATED-BB",
+ "source": "parsed from run_sweep.log (program stdout, zero manual transcription)",
+ "setup": {
+  "tau": 0.8,
+  "nu": 0.1,
+  "u_max_target": 0.02,
+  "nx": 2,
+  "n_wall": 3,
+  "stream": "periodic x, wrap-floor purge in y"
+ },
+ "cases": [
+  {
+   "n_fluid": 8,
+   "delta": 0.25,
+   "wall": "halfway",
+   "H": 7.5,
+   "delta_eff": 1.2142,
+   "w_eff": 0.8571,
+   "l2_rel": 0.5007,
+   "max_rel": 0.3601,
+   "q_rel_err": 0.5644,
+   "steps": 1800,
+   "converged": true
+  },
+  {
+   "n_fluid": 8,
+   "delta": 0.25,
+   "wall": "interp",
+   "H": 7.5,
+   "delta_eff": 1.0278,
+   "w_eff": 0.7639,
+   "l2_rel": 0.41350000000000003,
+   "max_rel": 0.2974,
+   "q_rel_err": 0.4661,
+   "steps": 1700,
+   "converged": true
+  },
+  {
+   "n_fluid": 8,
+   "delta": 0.5,
+   "wall": "halfway",
+   "H": 8.0,
+   "delta_eff": 0.7142,
+   "w_eff": 0.8571,
+   "l2_rel": 0.25980000000000003,
+   "max_rel": 0.1928,
+   "q_rel_err": 0.2824,
+   "steps": 1800,
+   "converged": true
+  },
+  {
+   "n_fluid": 8,
+   "delta": 0.5,
+   "wall": "interp",
+   "H": 8.0,
+   "delta_eff": 0.8662,
+   "w_eff": 0.9331,
+   "l2_rel": 0.3226,
+   "max_rel": 0.2394,
+   "q_rel_err": 0.3507,
+   "steps": 1800,
+   "converged": true
+  },
+  {
+   "n_fluid": 8,
+   "delta": 0.9,
+   "wall": "halfway",
+   "H": 8.8,
+   "delta_eff": -0.0858,
+   "w_eff": 0.8571,
+   "l2_rel": 0.0218,
+   "max_rel": 0.017,
+   "q_rel_err": -0.023,
+   "steps": 1700,
+   "converged": true
+  },
+  {
+   "n_fluid": 8,
+   "delta": 0.9,
+   "wall": "interp",
+   "H": 8.8,
+   "delta_eff": 1.1883,
+   "w_eff": 1.4941499999999999,
+   "l2_rel": 0.4482,
+   "max_rel": 0.348,
+   "q_rel_err": 0.47130000000000005,
+   "steps": 2500,
+   "converged": true
+  },
+  {
+   "n_fluid": 16,
+   "delta": 0.25,
+   "wall": "halfway",
+   "H": 15.5,
+   "delta_eff": 1.2613,
+   "w_eff": 0.88065,
+   "l2_rel": 0.2372,
+   "max_rel": 0.17120000000000002,
+   "q_rel_err": 0.2638,
+   "steps": 5800,
+   "converged": true
+  }
+ ]
+}
