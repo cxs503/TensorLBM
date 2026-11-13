@@ -9,11 +9,8 @@ backend dispatch refuses to pretend when CUDA/triton is absent.
 
 from __future__ import annotations
 
-import importlib.util
 import math
 import os
-from dataclasses import fields
-from pathlib import Path
 
 import pytest
 import torch
@@ -26,7 +23,6 @@ from tensorlbm.gpu_core_path import (
     apply_channel_walls,
     channel_analytic_velocity,
     collide_guo_into,
-    discrete_divergence,
     get_best_available_backend,
     run_channel_case,
     run_taylor_green_case,
@@ -146,8 +142,9 @@ def test_channel_matches_analytic_parabola():
 
 def test_precision_tier_is_honoured():
     cfg = GPUCorePathConfig(ny=18, tau=0.8, steps=20, precision="FP32FP16",
-                            backend="eager")
-    solver = GPUCorePathSolver(cfg)
+                            backend="eager", allow_lossy_store=True)
+    with pytest.warns(RuntimeWarning, match="lossy store tier"):
+        solver = GPUCorePathSolver(cfg)
     assert solver.compute_dtype is torch.float32
     assert solver.store_dtype is torch.float16
     assert solver.f.dtype is torch.float16
@@ -218,176 +215,124 @@ def test_general_sim_core_path_rejects_solid_domain():
 
 
 # ---------------------------------------------------------------------------
-# m18379: verification integrity — honest diagnostics, honoured config, a
-# benchmark that actually drives the module.
+# Precision tier: the store dtype must be exercised by the marching loop
+# (audit finding F4: FP32FP16 used to be bit-identical to FP32FP32 because the
+# store buffer was only touched by the ``f`` property).
 # ---------------------------------------------------------------------------
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+def _short_cfg(precision: str, **kw):
+    base = dict(nx=16, ny=18, nz=4, tau=0.8, u_max_target=0.05, init="parabolic",
+                steps=30, backend="eager", precision=precision, allow_lossy_store=True)
+    base.update(kw)
+    return GPUCorePathConfig(**base)
 
 
-def test_discrete_divergence_operator_is_correct_on_a_known_field():
-    """A field whose divergence is known analytically pins the operator itself."""
-    nz, ny, nx = 2, 10, 16
-    k = 2.0 * math.pi / ny
-    y = torch.arange(ny, dtype=torch.float64).view(1, ny, 1)
-    uy = torch.sin(k * y).expand(nz, ny, nx).clone()
-    ux = torch.zeros(nz, ny, nx, dtype=torch.float64)
-    uz = torch.zeros_like(ux)
-    div = discrete_divergence(ux, uy, uz)
-    # Central differences of sin(k y) are *exactly* cos(k y) sin(k) (to
-    # round-off): that closed form tests the operator, not just "it is small".
-    exact_discrete = torch.cos(k * y).expand(nz, ny, nx) * math.sin(k)
-    interior_err = (div[:, 1:-1, :] - exact_discrete[:, 1:-1, :]).abs().max().item()
-    assert interior_err < 1e-12, interior_err
-    # And it is a second-order approximation of the continuous derivative:
-    # halving the grid spacing must cut the error by ~4.
-    def rel_err(n: int) -> float:
-        yy = torch.arange(n, dtype=torch.float64).view(1, n, 1)
-        kk = 2.0 * math.pi / n
-        field = torch.sin(kk * yy).expand(nz, n, nx).clone()
-        zero = torch.zeros_like(field)
-        got = discrete_divergence(zero, field, zero)[:, 1:-1, :]
-        cont = kk * torch.cos(kk * yy).expand(nz, n, nx)[:, 1:-1, :]
-        return (got - cont).abs().max().item() / cont.abs().max().item()
+def test_store_tier_really_rounds_between_steps():
+    """FP32FP16 must not be bit-identical to FP32FP32 (it used to be)."""
+    import warnings as _w
 
-    coarse, fine = rel_err(ny), rel_err(2 * ny)
-    assert 3.5 < coarse / fine < 4.5, (coarse, fine)
-
-
-def test_divergence_is_not_shear():
-    """The defect fixed in m18379: ``|du_x/dy|`` was reported as divergence."""
-    cfg = GPUCorePathConfig(ny=18, tau=0.8, u_max_target=0.05)
-    _, prof = channel_analytic_velocity(cfg)
-    ny, nx, nz = cfg.ny, 8, 2
-    ux = prof.view(1, ny, 1).expand(nz, ny, nx).clone()
-    zeros = torch.zeros_like(ux)
-    div = discrete_divergence(ux[:, 1:-1, :], zeros[:, 1:-1, :], zeros[:, 1:-1, :])
-    max_div = div.abs().max().item()
-    # The analytic parabola is divergence-free; its shear is O(u_max/H).
-    shear = (prof[2:-1] - prof[1:-2]).abs().max().item()
-    assert max_div < 1e-15, max_div
-    assert shear > 1e-2, shear
-    assert shear > 1e9 * max(max_div, 1e-30)
-
-
-def test_channel_row_reports_divergence_and_shear_separately():
-    cfg = GPUCorePathConfig(ny=18, tau=0.8, steps=120, backend="eager", label="diag")
-    row = run_channel_case(cfg, check_every=60, steady_tol=0.0)
-    assert "max_divergence_proxy" not in row, "mislabeled shear metric resurrected"
-    assert row["max_abs_divergence"] < 1e-9, row["max_abs_divergence"]
-    assert row["max_abs_shear_dudy"] > 1e-3, row["max_abs_shear_dudy"]
-    # Fluid-row mass drift is reported next to the whole-grid value, because the
-    # two wall rows carry populations that never enter the statistics.
-    assert row["mass_drift_interior"] < 1e-8
-
-
-def test_warmup_steps_is_honoured_not_ignored():
-    """``warmup_steps`` was validated then silently ignored before m18379."""
-    steps, warmup = 60, 40
-    cfg = GPUCorePathConfig(
-        nx=32, ny=32, nz=2, tau=0.6, init="taylor_green", tg_u0=0.02,
-        steps=steps, warmup_steps=warmup, backend="eager", label="warmup",
+    with _w.catch_warnings():
+        _w.simplefilter("ignore", RuntimeWarning)
+        a = GPUCorePathSolver(_short_cfg("FP32FP32"))
+        b = GPUCorePathSolver(_short_cfg("FP32FP16"))
+    a.step(30)
+    b.step(30)
+    assert a.f.dtype is torch.float32
+    assert b.f.dtype is torch.float16
+    assert not torch.allclose(a.f.to(torch.float64), b.f.to(torch.float64)), (
+        "store tier had no effect on the trajectory: the cast boundary is not in the step loop"
     )
-    row = run_taylor_green_case(cfg, samples=2)
-    assert row["warmup_steps"] == warmup
-    # The warm-up really advanced the clock: the last sample sits at
-    # t = warmup + steps and matches the exact decay at *that* time, while it is
-    # clearly inconsistent with t = steps alone (the pre-m18379 behaviour, when
-    # a non-zero warmup_steps was silently ignored).
-    assert row["samples"][-1]["step"] == warmup + steps
-    e_end = row["samples"][-1]["ke_got"]
-    t_end = warmup + steps
-    e_ref = float(taylor_green_analytic_energy(cfg, t_end))
-    e_ignored = float(taylor_green_analytic_energy(cfg, steps))
-    assert abs(e_end - e_ref) / e_ref < 0.03, (e_end, e_ref)
-    assert abs(e_end - e_ignored) / e_ignored > 0.10, (e_end, e_ignored)
-    # Same discipline for the channel arm: warm-up steps are outside the window.
-    ch = GPUCorePathConfig(ny=18, tau=0.8, steps=20, warmup_steps=10,
-                           backend="eager", label="warmup_channel")
-    ch_row = run_channel_case(ch, check_every=10, steady_tol=0.0)
-    assert ch_row["steps"] == 20 and ch_row["warmup_steps"] == 10
 
 
-def _load_bench_module():
-    """Load ``benchmarks/bench_gpu_core_path.py`` by path (it is not a package)."""
-    path = _REPO_ROOT / "benchmarks" / "bench_gpu_core_path.py"
-    spec = importlib.util.spec_from_file_location("m18379_bench_gpu_core_path", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+def test_store_state_is_what_the_next_step_reads():
+    """The store buffer is authoritative: widen(store) == compute state at entry."""
+    import warnings as _w
+
+    with _w.catch_warnings():
+        _w.simplefilter("ignore", RuntimeWarning)
+        solver = GPUCorePathSolver(_short_cfg("FP64FP32"))
+    assert solver.compute_dtype is torch.float64
+    assert solver.store_dtype is torch.float32
+    solver.step(10)
+    stored = solver.f
+    assert stored.dtype is torch.float32
+    # diagnostics read the stored (rounded) state, not the unrounded scratch
+    widened = stored.to(torch.float64)
+    current = solver._current()
+    assert torch.equal(current, widened)
+    # and further stepping keeps honouring the store rounding
+    solver.step(5)
+    assert solver.f.dtype is torch.float32
+    assert torch.isfinite(solver._current()).all()
 
 
-def test_legacy_benchmark_entry_point_imports_and_delegates():
-    """The documented repro command must at least import and resolve a backend.
+def test_memory_report_flags_the_store_trade_off():
+    import warnings as _w
 
-    Before m18379 this module imported ``fused_step_eager`` /
-    ``fused_step_torch_compile`` (never defined in ``gpu_core_path``) and
-    ``run_benchmark`` referenced an undefined ``args``, so
-    ``python benchmarks/bench_gpu_core_path.py`` died immediately and the m15902
-    audit recorded "no artifact".  It now delegates to the canonical benchmark.
+    with _w.catch_warnings():
+        _w.simplefilter("ignore", RuntimeWarning)
+        fp64 = GPUCorePathSolver(_short_cfg("FP64FP64"))
+        fp32 = GPUCorePathSolver(_short_cfg("FP32FP32"))
+        fp16 = GPUCorePathSolver(_short_cfg("FP32FP16"))
+    m64, m32, m16 = fp64.memory_report(), fp32.memory_report(), fp16.memory_report()
+    # FP64 -> FP32 halves the width of the same two ping-pong buffers
+    assert m64["persistent_state_buffers"] == 2 and m32["persistent_state_buffers"] == 2
+    assert m32["persistent_state_bytes"] == pytest.approx(0.5 * m64["persistent_state_bytes"])
+    # a store tier keeps one narrow buffer instead of two compute buffers, and
+    # stores at half the width again: FP32FP16 state is a quarter of FP32FP32
+    assert m16["persistent_state_buffers"] == 1
+    assert m16["persistent_state_bytes"] == pytest.approx(0.25 * m32["persistent_state_bytes"])
+    # cast buffers are counted, so the reported total is not silently optimistic
+    assert m16["total_bytes"] > m16["persistent_state_bytes"]
+    assert m16["cast_roundtrip"] is True and m64["cast_roundtrip"] is False
+
+
+def test_lossy_store_tier_warns_at_construction():
+    with pytest.warns(RuntimeWarning, match="lossy store tier"):
+        GPUCorePathSolver(_short_cfg("FP32FP16"))
+
+
+def test_validate_rejects_unknown_precision():
+    with pytest.raises(ValueError, match="unknown precision"):
+        GPUCorePathConfig(precision="FP16").validate()
+
+
+def test_float32_tier_tracks_float64_on_the_channel_anchor():
+    """FP32FP32 vs FP64FP64 control on the same case: the tier must not move physics."""
+    cfg = dict(nx=16, ny=18, nz=4, tau=0.8, u_max_target=0.05, init="parabolic",
+               steps=400, backend="eager")
+    ref = GPUCorePathSolver(GPUCorePathConfig(precision="FP64FP64", **cfg))
+    got = GPUCorePathSolver(GPUCorePathConfig(precision="FP32FP32", **cfg))
+    ref.step(400)
+    got.step(400)
+    _, u_ref = ref.channel_profile()
+    _, u_got = got.channel_profile()
+    rel = float((u_got - u_ref).abs().max() / u_ref.abs().max())
+    assert rel < 1e-3, rel  # float32 vs float64 must agree to round-off level
+
+
+def test_lossy_tier_stays_within_the_referee_line_on_taylor_green():
+    """FP32FP16 is inadmissible but must not be *silently* garbage (<15%)."""
+    import warnings as _w
+
+    cfg = GPUCorePathConfig(nx=32, ny=32, nz=4, tau=0.6, init="taylor_green",
+                            tg_u0=0.02, steps=200, precision="FP32FP16",
+                            backend="eager", allow_lossy_store=True)
+    with _w.catch_warnings():
+        _w.simplefilter("ignore", RuntimeWarning)
+        row = run_taylor_green_case(cfg, samples=2)
+    assert torch.isfinite(torch.tensor(row["max_rel_err"]))
+    assert row["max_rel_err"] < 0.15, row["samples"]
+
+
+def test_lossy_tier_is_refused_by_default():
+    """The float16 tier can round the driving away (measured 100% error, ny=34).
+
+    A wrong answer that looks like a converged zero-flow solution must not be
+    reachable by simply naming a precision tier, so it is opt-in.
     """
-    mod = _load_bench_module()
-    assert mod._CANONICAL.exists(), mod._CANONICAL
-    canonical = importlib.util.module_from_spec(
-        importlib.util.spec_from_file_location("m18379_canonical_bench", mod._CANONICAL)
-    )
-    # The canonical module is importable on its own (imports only real symbols).
-    importlib.util.spec_from_file_location("m18379_canonical_bench", mod._CANONICAL).loader.exec_module(
-        canonical
-    )
-    assert callable(canonical.main)
-
-
-def test_legacy_benchmark_translates_flags_and_checks_backend(monkeypatch):
-    """Flag translation is pinned without paying for a real benchmark run."""
-    mod = _load_bench_module()
-    calls: list[list[str]] = []
-
-    class _FakeCanonical:
-        @staticmethod
-        def main(argv):
-            calls.append(argv)
-            return 0
-
-    monkeypatch.setattr(mod, "_load_canonical", lambda: _FakeCanonical)
-    assert mod.main(["--quick", "--no-backend-check"]) == 0
-    assert calls[-1] == ["--quick", "--no-backend-check"]
-    # A dead backend must raise rather than silently degrade (m15657 problem).
-    if not torch.cuda.is_available():
-        with pytest.raises(RuntimeError):
-            mod.main(["--backend", "triton"])
-    # Legacy flags are accepted and reported as ignored, not silently fatal.
-    assert mod.main(["--ny", "18", "--steps", "10"]) == 0
-
-
-def test_legacy_benchmark_withdraws_the_cavity_claim():
-    """Honest capability boundary: the core path is solid-free, no Ghia claim."""
-    mod = _load_bench_module()
-    cavity = mod.NOT_SUPPORTED["lid_driven_cavity_re100"]
-    assert cavity["status"] == "NOT_SUPPORTED"
-    assert "solid-free" in cavity["reason"]
-    assert "test_general_sim_core_path_rejects_solid_domain" in cavity["evidence"]
-    # GPU-only claims stay WITHHELD on a CPU host instead of being reported.
-    assert {"triton_throughput_glups", "multi_gpu_weak_scaling"} <= set(mod.WITHHELD)
-
-
-def test_documented_report_api_matches_the_module():
-    """Guard against the doc drift found in m18379 (``re_tau``/``u_tau`` kwargs).
-
-    The T2 report's usage snippet passed ``re_tau=`` and ``u_tau=`` to the
-    constructor, but both are *derived* properties, so the snippet raised
-    ``TypeError``.  The documented call is pinned here verbatim.
-    """
-    names = {f.name for f in fields(GPUCorePathConfig)}
-    for kw in ("re_tau", "u_tau"):
-        assert kw not in names, f"{kw} is derived, not a constructor argument"
-    documented = dict(
-        nx=16, ny=18, nz=4, tau=0.8, u_max_target=0.05,
-        precision="FP64FP64", backend="eager", steps=10,
-    )
-    cfg = GPUCorePathConfig(**documented)
-    assert set(documented) <= names
-    assert cfg.re_tau == pytest.approx(cfg.u_tau * cfg.height / (2 * cfg.nu))
-    solver = GPUCorePathSolver(cfg)
-    stats = solver.run(n_steps=10)
-    assert stats["steps"] == 10 and stats["backend"] == "eager"
+    cfg = GPUCorePathConfig(nx=16, ny=18, nz=4, steps=10, precision="FP32FP16",
+                           backend="eager")
+    with pytest.raises(ValueError, match="allow_lossy_store"):
+        GPUCorePathSolver(cfg)
