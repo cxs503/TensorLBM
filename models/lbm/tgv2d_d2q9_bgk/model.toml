@@ -1,0 +1,30 @@
+# Model unit manifest -- the analogue of TCLB models/<group>/<model>/conf.mk.
+
+[unit]
+name = "tgv2d_d2q9_bgk"
+group = "flow"
+dimension = 2
+lattice = "D2Q9"
+kernel = "tensorlbm.solver"
+collision = "BGK"
+forcing = "none"
+boundary = "periodic"
+description = "Taylor-Green vortex decay, fully periodic, BGK single relaxation"
+reference = "analytic: U0(t) = U0 exp(-2 nu k^2 t), nu = (tau-1/2)/3"
+ci = true
+tier = "fast"
+features = ["periodic", "no_forcing", "viscosity_probe"]
+
+[case]
+script = "case.py"
+entry = "run"
+
+[params]
+n = 32
+u0 = 0.04
+tau = 0.8
+steps = 400
+
+[acceptance]
+kpi = "decay_rate_rel_err"
+threshold = 0.15
