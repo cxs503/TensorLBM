@@ -1,0 +1,104 @@
+{
+  "anchor": "XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION",
+  "oss_reference": {
+    "repo": "joconnor22/LIFE",
+    "commit": "2af2428",
+    "files": [
+      "src/Objects.cpp:235-320",
+      "src/IBMNode.cpp:73-74",
+      "src/IBMNode.cpp:140-205",
+      "inc/Utils.h:220-231"
+    ]
+  },
+  "evidence": {
+    "impl_files": [
+      "src/tensorlbm/ibm_epsilon_gram.py"
+    ],
+    "entry": [
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py"
+    ],
+    "run_artifacts": [
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/results.json",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/benchmark.json",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/blockage_sweep.json",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run.log",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/sweep.log",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/fig1_roundtrip.png",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/fig2_epsilon_cost.png",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/fig3_cd.png",
+      "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/fig4_convergence.png"
+    ],
+    "tests": [
+      "tests/test_ibm_epsilon_gram.py",
+      "tests/test_ibm_epsilon_gram_solver_smoke.py"
+    ],
+    "integration_callers": [
+      "tensorlbm.ibm_epsilon_gram:make_life_ibm_stencil <- xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py:cylinder_drag (d2q9+solver+IBMStencil main solver loop)",
+      "tensorlbm.ibm_epsilon_gram:spread_with_correction <- tests/test_ibm_epsilon_gram_solver_smoke.py"
+    ],
+    "benchmark": "xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/benchmark.json (ref vs got, 20/25 rows pass; roundtrip A1 1.5e-16..2.2e-3 vs control 2.5e-2..4.6e-1)",
+    "repro_cmd": "cd <repo> && PYTHONPATH=src python xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/run_xval.py && PYTHONPATH=src python xval/XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION/make_figures.py && PYTHONPATH=src python -m pytest tests/test_ibm_epsilon_gram.py tests/test_ibm_epsilon_gram_solver_smoke.py -q"
+  },
+  "files": {
+    "REPORT.md": {
+      "bytes": 12279,
+      "sha256_16": "950db51b8d8512b4"
+    },
+    "run_xval.py": {
+      "bytes": 17681,
+      "sha256_16": "0940c2e0709a967b"
+    },
+    "make_figures.py": {
+      "bytes": 7347,
+      "sha256_16": "11d11aca6aef7641"
+    },
+    "sweep_blockage.py": {
+      "bytes": 3363,
+      "sha256_16": "b29cad7df1812816"
+    },
+    "results.json": {
+      "bytes": 34160,
+      "sha256_16": "7024fccf9f57bf3a"
+    },
+    "benchmark.json": {
+      "bytes": 9752,
+      "sha256_16": "e2b721c43bff8247"
+    },
+    "blockage_sweep.json": {
+      "bytes": 1946,
+      "sha256_16": "6c2d2c07f62e7365"
+    },
+    "figure_captions.json": {
+      "bytes": 1217,
+      "sha256_16": "faec96498b52d3ec"
+    },
+    "predeclared.json": {
+      "bytes": 5753,
+      "sha256_16": "5386176c65f572fb"
+    },
+    "fig1_roundtrip.png": {
+      "bytes": 35822,
+      "sha256_16": "bd850bd73cce3dbf"
+    },
+    "fig2_epsilon_cost.png": {
+      "bytes": 66660,
+      "sha256_16": "6efd2b0e4b56a58d"
+    },
+    "fig3_cd.png": {
+      "bytes": 36950,
+      "sha256_16": "ea456bd5f1f1c32a"
+    },
+    "fig4_convergence.png": {
+      "bytes": 94417,
+      "sha256_16": "af9121cbd4f69065"
+    },
+    "run.log": {
+      "bytes": 1239,
+      "sha256_16": "c9835916b8f38c4b"
+    },
+    "sweep.log": {
+      "bytes": 197,
+      "sha256_16": "afb6b66578fbcdbd"
+    }
+  }
+}
