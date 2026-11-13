@@ -1,0 +1,56 @@
+{
+  "anchor": "XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM",
+  "round": 1,
+  "mission": 18376,
+  "repo": "TensorLBM",
+  "oss_reference": {
+    "repo": "lssfau/lbmpy",
+    "feature": "sparse-list-based-aos-lbm",
+    "oss_solutions_id": 114,
+    "installed_version": "lbmpy 2.0 (/usr/lib/python3.11/site-packages/lbmpy/sparse/)",
+    "source_files_read": [
+      "lbmpy/sparse/mapping.py:84-104 (_assemble: cell list from flag bitmask)",
+      "lbmpy/sparse/mapping.py:106-154 (create_index_array: pull offsets, no-slip aliasing, periodic wrap)",
+      "lbmpy/sparse/update_rule_sparse.py:86-95 (_list_substitutions: direction d reads index column d-1; rest reads src(0))",
+      "lbmpy/sparse/update_rule_sparse.py:15-36 (create_symbolic_list strides / kernel_type variants)"
+    ]
+  },
+  "decision": "Accept or reject the port of the OSS cell-list + neighbour-index storage scheme into TensorLBM as an alternative traversal for wall-bounded D2Q9 flows.",
+  "alternatives": {
+    "A_dense_baseline": "TensorLBM dense traversal (Q,L,H) arrays, pull gather + collide, halfway bounce-back by explicit wall masking (independent implementation).",
+    "B_tl_sparse": "TensorLBM list-based port: flag grid -> (cell list, (N,Q-1) uint32 index array), streaming by 1-D indirection, no-slip by index aliasing. Index array built by src/tensorlbm/sparse_list_aos.build_index_array.",
+    "C_oss_index": "Same traversal as B, but the index array is produced by the OSS function lbmpy.sparse.SparseLbMapper.create_index_array (executed in-process) and injected verbatim; populations reordered to the lbmpy LBStencil(D2Q9) ordering."
+  },
+  "hypotheses": {
+    "H1": "The ported index array is bit-identical to the OSS index array on the same flag grid (integer equality, no tolerance).",
+    "H2": "Sparse (B) and dense (A) arms produce the same populations to round-off for the same discrete scheme (they differ only in storage/traversal).",
+    "H3": "Both arms reproduce the analytic references within the owner tolerance (15%); the expected level is <=1% for plane Poiseuille and <=2% for the Taylor-Green decay rate.",
+    "H4": "Mixing the AoS stride convention (offset = cell*Q + d) with the OSS index array (offset = cell + d*N) silently corrupts the solution -- i.e. the OSS 'AoS' label refers to the (N,Q) list, while its addressing is SoA."
+  },
+  "outcome_metrics": {
+    "index_array_integer_equality": "np.array_equal(B.index_array, C.index_array)",
+    "sparse_vs_dense": "max|u_B - u_A| / u_max over fluid cells (steady state)",
+    "sparse_vs_oss_index": "max|u_B - u_C| / u_max (steady state)",
+    "poiseuille_profile_error": "Linf and L2 relative error of u_x(y) vs u = G/(2 nu) (y+1/2)(H - (y+1/2))",
+    "taylor_green_decay_error": "|omega_measured - omega_analytic| / omega_analytic with omega = 2 nu k^2",
+    "mass_error": "max_t |sum(rho) - N| / N"
+  },
+  "predeclared_thresholds": {
+    "T1_index_equality": {"test": "np.array_equal", "pass": "exact"},
+    "T2_sparse_vs_dense": {"metric": "max|du|/u_max", "pass": "<= 1e-12"},
+    "T3_poiseuille_vs_analytic": {"metric": "Linf_rel", "pass": "<= 0.15", "grids": "H in {16,32,64}"},
+    "T4_taylor_green_decay": {"metric": "rel error of decay exponent", "pass": "<= 0.15"},
+    "T5_mass_conservation": {"metric": "max |sum rho - N| / N over the run", "pass": "<= 1e-12"},
+    "T6_aos_stride_mismatch": {"metric": "max|du|/u_max when offsets use cell*Q+d", "pass": "> 0.01 (i.e. the mismatch must be detectable)"}
+  },
+  "stopping_rule": "Steady state: max|u(t+200)-u(t)|/u_max < 1e-12, capped at 120000 steps. If the cap is hit the case is reported as not converged and the metric is marked WITHHELD.",
+  "variables": {
+    "controlled": ["BGK collision + Guo forcing implementation", "halfway bounce-back closure", "initial condition feq(rho=1,u=0)", "relaxation time per case", "body force per case", "iteration/stopping rule"],
+    "changed": ["storage/traversal (dense vs list-based) and the code path that builds the index array (TensorLBM vs OSS)"],
+    "nuisance": ["summation order (float round-off) - expected at the 1e-15 level, hence threshold 1e-12"]
+  },
+  "repetitions": "Deterministic: no random seeds in the reported runs (the only stochastic input is a fixed-seed perturbation used in the one-step equivalence unit test). One run per configuration; the grid sweep (H=8,16,32,64) and the tau sweep provide the replication axis.",
+  "environment": "local compute node (x86_64, 128 cores), python 3.11, numpy 2.4.6, lbmpy 2.0, pystencils 2.0; float64 throughout; BLAS not used.",
+  "analysis": "Report per-case tables with ref/got/error/pass; convergence as the observed order p = log2(e_H/e_2H); sensitivity to tau and to the number of active cells; no post-hoc threshold tuning.",
+  "safety_and_resources": "Runtime < 5 min single core, memory < 100 MB, no cluster submission needed (well under the 10 min cluster rule)."
+}
