@@ -1,0 +1,151 @@
+{
+ "method": "D2Q9",
+ "weights": [
+  0.4444444444444444,
+  0.1111111111111111,
+  0.1111111111111111,
+  0.1111111111111111,
+  0.1111111111111111,
+  0.027777777777777776,
+  0.027777777777777776,
+  0.027777777777777776,
+  0.027777777777777776
+ ],
+ "velocities_3d": [
+  [
+   0,
+   0,
+   0
+  ],
+  [
+   1,
+   0,
+   0
+  ],
+  [
+   0,
+   1,
+   0
+  ],
+  [
+   -1,
+   0,
+   0
+  ],
+  [
+   0,
+   -1,
+   0
+  ],
+  [
+   1,
+   1,
+   0
+  ],
+  [
+   -1,
+   1,
+   0
+  ],
+  [
+   -1,
+   -1,
+   0
+  ],
+  [
+   1,
+   -1,
+   0
+  ]
+ ],
+ "velocities_2d": [
+  [
+   0,
+   0
+  ],
+  [
+   1,
+   0
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   -1,
+   0
+  ],
+  [
+   0,
+   -1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   -1,
+   1
+  ],
+  [
+   -1,
+   -1
+  ],
+  [
+   1,
+   -1
+  ]
+ ],
+ "eek_abs_dyadic": [
+  0.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  4.0,
+  4.0,
+  4.0,
+  4.0
+ ],
+ "eek_from_abs_sum_squared": [
+  0.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  4.0,
+  4.0,
+  4.0,
+  4.0
+ ],
+ "eek_identity_max_abs_diff": 0.0,
+ "Sc": 0.17,
+ "tau_formula": "tau_eff = 0.5*(tau0 + sqrt(tau0^2 + 6*Q*Sc/rho))",
+ "q_formula": "Q = sqrt(2 * sum_q (f_q - f_q^eq)^2 * EEk_q)",
+ "locators": {
+  "weights": "LatFlow/D2Q9.py:6",
+  "lveloc": "LatFlow/D2Q9.py:9",
+  "eek": "LatFlow/Domain.py:90-96",
+  "sc": "LatFlow/Domain.py:57",
+  "les_branch": "LatFlow/Domain.py:122-126"
+ },
+ "extracted_source": {
+  "eek_block": [
+   "    self.EEk = tf.zeros(self.Dim*[1] + [self.Nneigh])",
+   "    for n in xrange(3):",
+   "      for m in xrange(3):",
+   "        if self.Dim == 2:",
+   "          self.EEk = self.EEk + tf.abs(self.C[:,:,:,n] * self.C[:,:,:,m])",
+   "        elif self.Dim == 3:",
+   "          self.EEk = self.EEk + tf.abs(self.C[:,:,:,:,n] * self.C[:,:,:,:,m])"
+  ],
+  "les_branch": [
+   "    if self.les:",
+   "      Q = tf.expand_dims(tf.reduce_sum(NonEq*NonEq*self.EEk, axis=self.Dim+1), axis=self.Dim+1)",
+   "      Q = tf.sqrt(2.0*Q)",
+   "      tau = 0.5*(self.tau[0]+tf.sqrt(self.tau[0]*self.tau[0] + 6.0*Q*self.Sc/rho))",
+   "    else:"
+  ],
+  "sc_line": "self.Sc     = 0.17"
+ }
+}
