@@ -115,6 +115,23 @@ class RTConfig:
     a_hi_frac: float = 0.05       # fit window upper bound on a/lam
     stop_a_frac: float = 0.16     # stop when a lam exceeds this (nonlinear onset)
     seed_eigenmode: bool = True   # seed the linear normal-mode velocity field
+    # --- interface transport -------------------------------------------------
+    #: ``"bgk"`` = legacy advected passive-scalar populations (unbounded: |phi|
+    #: drifts to ~1.9 and the column-moment front over-runs, see
+    #: ``docs/CASE-RAYLEIGH-TAYLOR.md``); ``"allen_cahn"`` = bounded
+    #: Allen-Cahn phase field (double well + gradient energy), i.e. the
+    #: interface-capturing model of Chiu & Lin (2011) J. Comput. Phys. 230:185,
+    #: reusing the verified kernel parameters of
+    #: :mod:`tensorlbm.allen_cahn_lbm`.
+    phase_scheme: str = "bgk"
+    #: surface tension of the AC interface (kept small so that it does not
+    #: modify the RT dynamics: ``sigma k^2 << A g``).
+    ac_sigma: float = 3.0e-4
+    #: equilibrium interface thickness ``xi = sqrt(2 kappa / beta)`` in cells.
+    ac_width: float = 2.0
+    #: Allen-Cahn mobility; explicit stability limit is
+    #: ``M (6 kappa + beta) < 1``.
+    ac_mobility: float = 20.0
     device: str = "cpu"
 
     @property
@@ -146,6 +163,13 @@ class RTConfig:
             raise ValueError("relaxation times must exceed 0.5")
         if not 0.0 < self.a_lo_frac < self.a_hi_frac < 0.5:
             raise ValueError("invalid amplitude fit window")
+        if self.phase_scheme not in ("bgk", "allen_cahn"):
+            raise ValueError("phase_scheme must be 'bgk' or 'allen_cahn'")
+        if self.phase_scheme == "allen_cahn":
+            if not (self.ac_sigma > 0.0 and self.ac_width > 0.0):
+                raise ValueError("ac_sigma and ac_width must be positive")
+            if self.ac_mobility <= 0.0:
+                raise ValueError("ac_mobility must be positive")
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +233,98 @@ def init_rt_state(cfg: RTConfig) -> tuple[torch.Tensor, torch.Tensor, torch.Tens
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Bounded interface transport: Allen-Cahn phase field (2-D)
+# ---------------------------------------------------------------------------
+#
+# The legacy advected scalar population is *not* bounded: its equilibrium
+# ``w phi (1 + 3 c.u)`` has no saturation term, so the interface overshoots
+# (measured |phi|max 1.9 at A = 0.5, g = 2e-4, tau ~ 6) and the O(u^2)
+# truncation inflates the whole field uniformly (|phi|bulk -> 2.07).  Both
+# defects feed the Boussinesq force and make the front run away.
+#
+# The fix is the standard interface-capturing model: transport ``phi`` with the
+# Allen-Cahn equation
+#
+#     d_t phi + div(phi u) = -M mu,   mu = beta phi (phi^2 - 1) - kappa lap(phi)
+#
+# whose double well bounds ``phi`` to [-1, 1] and whose gradient energy pins the
+# interface thickness to ``xi = sqrt(2 kappa / beta)`` (and the surface tension
+# to ``sigma = (2 sqrt2 / 3) sqrt(beta kappa)``, see
+# :func:`tensorlbm.allen_cahn_lbm.free_energy_parameters`).  The three anchors of
+# that kernel (stationary ``tanh`` profile, thickness, driven travelling wave
+# speed ``v = 3/2 M h xi``) are already covered by
+# ``tests/test_allen_cahn_phasefield.py``; what is added here is a 2-D
+# discretisation with mixed boundaries (periodic in x, no-flux walls in y) and a
+# bit-for-bit equivalence test against the 3-D kernel at ``nz = 1``
+# (``tests/test_rayleigh_taylor.py::test_ac2d_matches_ac3d_kernel``).
+
+
+def _pad_noflux_y(field: torch.Tensor) -> torch.Tensor:
+    """Mirror-pad one ghost row on each side in y (half-way no-flux wall)."""
+    return torch.cat([field[:1], field, field[-1:]], dim=0)
+
+
+def _central_2d(field: torch.Tensor, axis: int, boundary: str) -> torch.Tensor:
+    """Central difference along ``axis`` (0 = y walls, 1 = periodic x)."""
+    if axis == 1 or boundary == "periodic":
+        return 0.5 * (torch.roll(field, -1, dims=axis) - torch.roll(field, 1, dims=axis))
+    padded = _pad_noflux_y(field)
+    return 0.5 * (padded[2:] - padded[:-2])
+
+
+def _laplacian_2d(field: torch.Tensor, boundary: str) -> torch.Tensor:
+    lap_x = torch.roll(field, -1, dims=1) + torch.roll(field, 1, dims=1) - 2.0 * field
+    if boundary == "periodic":
+        lap_y = torch.roll(field, -1, dims=0) + torch.roll(field, 1, dims=0) - 2.0 * field
+    else:
+        padded = _pad_noflux_y(field)
+        lap_y = padded[2:] + padded[:-2] - 2.0 * field
+    return lap_x + lap_y
+
+
+def step_allen_cahn_2d(
+    phi: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    *,
+    beta: float,
+    kappa: float,
+    mobility: float,
+    dt: float = 1.0,
+    boundary: str = "no_flux",
+) -> torch.Tensor:
+    """One explicit Allen-Cahn step of a 2-D phase field (``(ny, nx)`` grid).
+
+    Same update as :func:`tensorlbm.allen_cahn_lbm.step_allen_cahn_field`
+    (central-difference advective flux, seven-point Laplacian, clamp to
+    ``[-1, 1]``), restricted to two dimensions.  ``boundary`` selects the y
+    policy (``"no_flux"`` = mirror ghost row, ``"periodic"`` = wrap); x is
+    always periodic, which is the topology of the RT box (one wavelength).
+
+    Velocity order: ``ux`` differentiates along ``x`` (axis 1) and ``uy`` along
+    ``y`` (axis 0).  Note that the 3-D kernel takes its velocity triple in the
+    same (x, y, z) order -- with ``nz = 1`` and ``u = (ux, uy, 0)`` the two
+    implementations are bit-identical, which is asserted by
+    ``tests/test_rayleigh_taylor.py::test_ac2d_matches_ac3d_kernel``.
+    """
+    mu = beta * phi * (phi * phi - 1.0) - kappa * _laplacian_2d(phi, boundary)
+    rhs = -mobility * mu
+    flux_x, flux_y = phi * ux, phi * uy
+    rhs = rhs - (
+        _central_2d(flux_x, 1, boundary) + _central_2d(flux_y, 0, boundary)
+    )
+    return (phi + dt * rhs).clamp(-1.0, 1.0)
+
+
+def ac_parameters(cfg: "RTConfig") -> tuple[float, float]:
+    """``(beta, kappa)`` of the configured Allen-Cahn interface."""
+    from .allen_cahn_lbm import free_energy_parameters
+
+    params = free_energy_parameters(cfg.ac_sigma, cfg.ac_width)
+    return params.beta, params.kappa
+
+
 def rt_step(
     f: torch.Tensor,
     g: torch.Tensor,
@@ -242,6 +358,16 @@ def rt_step(
     # no-slip on the flow, zero phase flux on the phase field: bounce back rows
     f_out = _bounce_back_rows(f_out)
     g_out = _bounce_back_rows(g_out)
+
+    if cfg.phase_scheme == "allen_cahn":
+        # bounded interface transport; ``g`` is only a container whose sum is
+        # ``phi`` (no population dynamics is used in this scheme), so the bulk
+        # O(u^2) inflation of the legacy scheme cannot occur.
+        beta, kappa = ac_parameters(cfg)
+        phi_new = step_allen_cahn_2d(
+            phi, ux, uy, beta=beta, kappa=kappa, mobility=cfg.ac_mobility
+        )
+        g_out = W.to(device).view(9, 1, 1) * phi_new.unsqueeze(0)
     return f_out, g_out
 
 
@@ -291,22 +417,19 @@ def interface_zero_crossing(phi: torch.Tensor) -> torch.Tensor:
     """Per-column interface height ``y`` where ``phi`` changes sign (linear interp).
 
     Returns a float64 tensor of length ``nx``; ``NaN`` where no crossing exists.
+    Vectorised (one pass over the columns) -- the previous Python double loop
+    cost O(nx * ny) interpreted iterations *per sample*, which dominated the
+    wall time of the nonlinear runs.
     """
-    ny, nx = phi.shape
-    out = torch.full((nx,), float("nan"), dtype=torch.float64, device=phi.device)
-    for j in range(nx):
-        col = phi[:, j]
-        idx = None
-        for y in range(ny - 1):
-            if float(col[y]) < 0.0 <= float(col[y + 1]):
-                idx = y
-                break
-        if idx is None:
-            continue
-        c0 = float(col[idx])
-        c1 = float(col[idx + 1])
-        out[j] = idx + (-c0) / (c1 - c0)
-    return out
+    neg = phi < 0.0
+    cross = neg[:-1] & ~neg[1:]                    # phi[y] < 0 <= phi[y+1]
+    has = cross.any(dim=0)
+    idx = cross.to(torch.int64).argmax(dim=0)
+    cols = torch.arange(phi.shape[1], device=phi.device)
+    c0 = phi[idx, cols].to(torch.float64)
+    c1 = phi[idx + 1, cols].to(torch.float64)
+    out = idx.to(torch.float64) + (-c0) / (c1 - c0)
+    return torch.where(has, out, torch.full_like(out, float("nan")))
 
 
 def mode_amplitude_zc(phi: torch.Tensor, lam: int) -> float:
