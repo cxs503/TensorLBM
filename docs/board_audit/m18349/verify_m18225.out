@@ -1,0 +1,60 @@
+{
+ "branch_commits_vs_main": 0,
+ "branch_head": "3e2bf36d Merge #2125 (m17881) via push-merge",
+ "worktree_dirty_files": [
+  ".tmp_kb1.py",
+  ".tmp_kb2.py",
+  ".tmp_kb3.py",
+  ".tmp_kb4.py",
+  ".tmp_kb5.py"
+ ],
+ "worktree_dirty_are_scratch_only": true,
+ "run_artifacts_out_results_json_exists": false,
+ "run_artifacts_bytes": 0,
+ "run_artifacts_git_tracked": [],
+ "merged_tables_present": {
+  "CRITERION.md": true,
+  "RESULTS.md": true,
+  "probe_lib.py": true,
+  "run.py": true
+ },
+ "impl_introduced_by": {
+  "benchmarks/eos_maxwell/probe_lib.py": "b245924c Merge #1598 (m8675) via merge-master",
+  "benchmarks/eos_maxwell/run.py": "b245924c Merge #1598 (m8675) via merge-master",
+  "tests/test_eos_maxwell_stability.py": "b245924c Merge #1598 (m8675) via merge-master"
+ },
+ "repro_cli_rc": 0,
+ "repro_cli_has_modes": true,
+ "benchmark_cases_XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO": [],
+ "benchmark_cases_like_eos_maxwell": [
+  [
+   "0"
+  ]
+ ],
+ "reports_for_mission_18225": [],
+ "mission_18225": [
+  [
+   "succeeded",
+   "",
+   "f",
+   "",
+   "",
+   "80"
+  ]
+ ],
+ "cluster_cj1834": [
+  [
+   "1834",
+   "queued",
+   "",
+   "ls ~/oss-cache/ 2>/dev/null ",
+   " head -40; echo \"=== "
+  ]
+ ],
+ "pytest_provenance_rc": 0,
+ "pytest_provenance_tail": "3 passed, 2 skipped, 14 deselected, 1 warning in 7.04s",
+ "pytest_provenance_skips": [
+  "SKIPPED [1] tests/test_eos_maxwell_stability.py:331: campaign artefact not present in this tree",
+  "SKIPPED [1] tests/test_eos_maxwell_stability.py:371: criterion artefact not present in this tree"
+ ]
+}

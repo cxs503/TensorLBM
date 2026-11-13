@@ -1,0 +1,66 @@
+{
+ "figure": "/root/tp-agent/work/m18349/docs/board_audit/m18349/fig_m18225_anchor_status.png",
+ "rows": [
+  {
+   "target": 10.0,
+   "forcing": "edm",
+   "stable": true,
+   "measured": 10.45,
+   "maxwell": 10.01,
+   "ratio_err": 0.0437,
+   "ma": 0.115,
+   "verdict": "FAIL"
+  },
+  {
+   "target": 10.0,
+   "forcing": "guo",
+   "stable": true,
+   "measured": 13.81,
+   "maxwell": 10.01,
+   "ratio_err": 0.379,
+   "ma": 0.127,
+   "verdict": "FAIL"
+  },
+  {
+   "target": 100.0,
+   "forcing": "edm",
+   "stable": true,
+   "measured": 293.3,
+   "maxwell": 99.97,
+   "ratio_err": 1.93,
+   "ma": 0.333,
+   "verdict": "FAIL"
+  },
+  {
+   "target": 100.0,
+   "forcing": "guo",
+   "stable": false,
+   "measured": null,
+   "maxwell": 99.97,
+   "ratio_err": null,
+   "ma": null,
+   "verdict": "FAIL"
+  },
+  {
+   "target": 1000.0,
+   "forcing": "edm",
+   "stable": false,
+   "measured": null,
+   "maxwell": 995.2,
+   "ratio_err": null,
+   "ma": null,
+   "verdict": "FAIL"
+  },
+  {
+   "target": 1000.0,
+   "forcing": "guo",
+   "stable": false,
+   "measured": null,
+   "maxwell": 995.2,
+   "ratio_err": null,
+   "ma": null,
+   "verdict": "FAIL"
+  }
+ ],
+ "provenance": "RESULTS.md \u00a72 parsed programmatically"
+}
