@@ -1,0 +1,330 @@
+# RAW OCR TEXT LAYER of Ghia, Ghia & Shin (1982), J. Comput. Phys. 48, 387-411.
+# journal pages 398-399 = Tables I (u, vertical centreline) and II (v, horizontal centreline).
+# extracted with pypdf 6.19.0 from the copy at
+#   https://github.com/nilot-pal/Lid-driven-cavity/blob/main/ghia1982.pdf
+#   (git blob sha1 d6628523c8e18c63ce7123bf7912006396a54675)
+# PDF sha256 = 1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93
+# This file is machine output only -- never edited by hand. build_reference.py
+# consumes it as the primary-source witness for every tabulated value.
+# (The PDF itself is copyrighted and is NOT redistributed in this repo.)
+
+######## pypdf page index 11 (journal p. 398) ########
+398 GHIA, GHIA, AND SHIN 
+horizontal lines passing through the geometric center of the cavity and through the 
+center of the primary vortex in the flow. The origins for these graphs for various 
+values of Re have been displaced for clarity of the profiles. The thinning of the wall 
+boundary layers with increase in Re is evident from these profiles, although the rate 
+of this thinning is very slow for Re > 5000. The near-linearity of these velocity 
+profiles in the central core of the cavity is indicative of the uniform vorticity region 
+that develops here for large Re. The high-Re profiles of u exhibit a kink near y = 1, 
+while a similar behavior is observed for the u profiles near x = 1. Such behavior has 
+been reported by some previous investigators, and is seen to persist in the present 
+line-grid solutions. This would imply that the velocity distributions near these walls 
+are not extremely sensitive to mesh size. The values of I// and w at the vortex center 
+are observed to be considerably more sensitive to mesh size than these velocity 
+profiles. 
+Included in Fig. 2 are the available results of [ 1, 16, 171. For Re = 100, all results 
+agree well with one another as well as with the present solutions, indicating that for 
+this value of Re, the coarser grids employed by the previous investigators were quite 
+adequate. As Re increases, however, the inadequacy of coarse meshes gradually 
+becomes apparent. This is particularly evident in the solutions reported by Nallasamy 
+TABLE I 
+Results for u-velocity along Vertical Line through Geometric Center of Cavity 
+129. 
+grid 
+pt. no. y 100 400 1000 
+Re 
+3200 5000 7500 10,000 
+129 1 .ooooo 
+126 0.9766 
+125 0.9688 
+124 0.9609 
+123 0.953 1 
+110 0.8516 
+95 0.7344 
+80 0.6172 
+65 0.5000 
+59 0.453 1 
+31 0.2813 
+23 0.1719 
+14 0.1016 
+10 0.0703 
+9 0.0625 
+8 0.0547 
+1 0.0000 
+1 .ooooo 
+0.84123 
+0.7887 1 
+0.73722 
+0.68717 
+0.23151 
+0.00332 
+AI13641 
+-0.2058 1 
+-0.21090 
+AI.15662 
+Al.10150 -0.24299 
+a.06434 -0.14612 
+-0.04775 -0.10338 
+a.04192 AI.09266 
+-0.03717 -0.08 186 
+0.00000 0.00000 
+1 .ooooo 
+0.75837 
+0.68439 
+0.61756 
+0.55892 
+0.29093 
+0.16256 
+0.02135 
+-0.11477 
+-0.17119 
+-0.32726 
+1 .ooooo 
+0.65928 
+0.57492 
+0.51117 
+0.46604 
+0.33304 
+0.18719 
+0.05702 
+-0.06080 
+-0.10648 
+-0.27805 
+4.38289 
+-0.29730 
+a.22220 
+-0.20196 
+AI.18109 
+0.00000 
+1 .ooooo 
+0.53236 
+0.48296 
+0.46547 
+0.46101 
+0.34682 
+0.19791 
+0.07156 
+-0.04272 
+-0.86636 
+a.24427 
+a.34323 
+a.41933 
+-0.37827 
+-0.35344 
+-0.32407 
+1 .ooooo 
+0.48223 
+0.46120 
+0.45992 
+0.46036 
+0.33556 
+0.20087 
+0.08 183 
+a.03039 
+-0.07404 
+-0.22855 
+-0.33050 
+-0.40435 
+-0.43643 
+a.42901 
+-0.41165 
+0.00000 
+1 .ooooo 
+0.47244 
+0.47048 
+0.47323 
+0.47167 
+0.34228 
+0.2059 I 
+0.08342 
+XJ.03800 
+AI.07503 
+AI.23 176 
+-0.32393 
+AI.38324 
+-0.43025 
+a.43590 
+AI.43154 
+0.00000 
+I .ooooo 
+0.47221 
+0.47783 
+0.48070 
+0.47804 
+0.34635 
+0.20673 
+0.08344 
+0.03 111 
+-0.07540 
+-0.23 186 
+-0.32709 
+-0.38000 
+-0.41657 
+-0.42537 
+-0.42735 
+0.00000 
+
+######## pypdf page index 12 (journal p. 399) ########
+HIGH RE INCOMPRESSIBLE FLOW 399 
+and Prasad [ 161. Nevertheless, the fourth-order accurate spline method of Rubin and 
+Khosla [ 171 remains satisfactory with a 17 x 17 mesh at Re = 1000. Also, the third- 
+order accurate scheme of Agarwal [ 1 ] performs well with a 121 X 121 grid at 
+Re = 7500, but the corresponding computer time is quite large. Unfortunately, 
+Benjamin and Denny (41 did not present any velocity data, although their solutions 
+are considered to be very accurate for high Re. 
+In view of the above remarks, the present line-mesh results should be very useful. 
+Consequently, Tables I and II list the numerical values corresponding to the velocity 
+profiles shown in Fig. 2 for lines passing through the geometric center of the cavity. 
+Only typical points, rather than the entire large set of computational points, along 
+these profiles have been listed. Care has been taken to include the points of local 
+maxima and minima for all values of Re; these points are underscored. 
+The streamline contours for the cavity flow configurations with Re increasing from 
+100 to 10,000 are shown in Fig. 3. A magnified view of the various secondary 
+vortices is also included. The values of I,V along the contours shown are listed in 
+Table III. For Re = 400, the results from a 129 X 129 grid as well as a 257 x 257 
+grid are presented in order to demonstrate that the 129 x 129 grid is adequate for 
+moderate values of Re. Although a comparison is not shown in this figure, the extent 
+TABLE II 
+Results for u-Velocity along Horizontal Line through Geometric Center of Cavity 
+129m 
+grid 
+pt. no. x 100 400 1000 
+Re 
+3200 5000 7500 10,000 
+129 1 .oooo 
+125 0.9688 
+124 0.9609 
+123 0.953 1 
+122 0.9453 
+117 0.9063 
+111 0.8594 
+104 0.8047 
+65 0.5000 
+31 0.2344 
+30 0.2266 
+21 0.1563 
+13 0.0938 
+11 0.078 1 
+10 0.0703 
+9 0.0625 
+1 0.0000 
+0.00000 
+-0.05906 
+-0.0739 1 
+-0.08864 
+-0.10313 
+-0.16914 
+-0.22445 
+-0.24533 
+0.05454 
+0.17527 
+0.17507 
+0.16077 
+0.12317 
+0.10890 
+0.10091 
+0.09233 
+0.00000 
+0.00000 
+a.12146 
+-0.15663 
+-0.19254 
+-0.22847 
+-0.23827 
+a.44993 
+-0.38598 
+0.05 188 
+0.30174 
+0.30203 
+0.28124 
+0.22965 
+0.20920 
+0.19713 
+0.18360 
+0.00000 
+0.00000 
+a.21388 
+-0.27669 
+a.33714 
+-0.39188 
+a.5 1550 
+a.42665 
+-0.3 1966 
+0.02526 
+0.32235 
+0.33075 
+0.37095 
+0.32627 
+0.30353 
+0.29012 
+0.27485 
+0.00000 
+0.00000 
+xJ.39017 
+a.47425 
+a.52357 
+-0.54053 
+a.44307 
+-0.37401 
+-0.31184 
+0.00999 
+0.28 188 
+0.29030 
+0.37119 
+0.42768 
+0.4 1906 
+0.409 17 
+0.39560 
+0.00000 
+0.00000 
+-0.49774 
+a.55069 
+-0.55408 
+XI.52876 
+a.41442 
+-0.36214 
+X).30018 
+0.00945 
+0.27280 
+0.28066 
+0.35368 
+0.4295 1 
+0.43648 
+0.43329 
+0.42447 
+0.00000 
+0.00000 
+a.53858 
+-0.55216 
+-0.52347 
+a.48590 
+Jx41050 
+a.36213 
+a.30448 
+0.00824 
+0.27348 
+0.28 117 
+0.35060 
+0.41824 
+0.43564 
+0.44030 
+0.43979 
+0.00000 
+0.00000 
+-0.54302 
+-0.52987 
+-0.49099 
+-0.45863 
+-0.4 1496 
+-0.36737 
+-0.307 19 
+0.0083 1 
+0.27224 
+0.28003 
+0.35070 
+0.41487 
+0.43 124 
+0.43733 
+0.43983 
+0.00000 
