@@ -1,0 +1,1448 @@
+{
+  "anchor": "XVAL-LBM-EDT-TWO-SEGMENT-GEOMETRY-TAG-COMPRESSION",
+  "mission": 17728,
+  "env": {
+    "created_utc": "2026-11-13T08:47:16Z",
+    "git_head": "9bcc6db6b0519502a375661cf0a76e75e57728cb",
+    "tensorlbm": "/root/tp-agent/work/m17728/src/tensorlbm/__init__.py",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "device": "cpu",
+    "threads": 4
+  },
+  "oss_reference": {
+    "repo": "je-santos/MPLBM-UT",
+    "file": "src/python/mplbm_utils/pore_utils.py::create_geom_edist (lines 11-68)",
+    "call_sites": "create_geom_for_palabos.py:47, create_geom_for_rel_perm.py:48,112,140",
+    "dispatch": "src/2-phase_LBM/ShanChen.cpp:292-313",
+    "palette": {
+      "2608": "pore",
+      "2609": "boundary",
+      "2610": "grain",
+      "2611": "nw phase"
+    }
+  },
+  "L1_parity": {
+    "arms": 19,
+    "max_mismatch_pct": 0.0,
+    "all_names_match": true,
+    "passed": true
+  },
+  "L1b_sensitivity": [
+    {
+      "knob": "shell_threshold",
+      "value": 1.0,
+      "mismatch_pct": 8.9141845703125,
+      "wall_cells": 0,
+      "grain_cells": 3321
+    },
+    {
+      "knob": "shell_threshold",
+      "value": 1.5,
+      "mismatch_pct": 0.518798828125,
+      "wall_cells": 2751,
+      "grain_cells": 570
+    },
+    {
+      "knob": "shell_threshold",
+      "value": 1.4142135623730951,
+      "mismatch_pct": 0.909423828125,
+      "wall_cells": 2623,
+      "grain_cells": 698
+    },
+    {
+      "knob": "shell_threshold",
+      "value": 2.0,
+      "mismatch_pct": 0.0,
+      "wall_cells": 2921,
+      "grain_cells": 400
+    },
+    {
+      "knob": "shell_threshold",
+      "value": 3.0,
+      "mismatch_pct": 1.1474609375,
+      "wall_cells": 3297,
+      "grain_cells": 24
+    },
+    {
+      "knob": "bc_faces",
+      "value": true,
+      "mismatch_pct": 0.0,
+      "wall_cells": 2921,
+      "grain_cells": 400
+    },
+    {
+      "knob": "bc_faces",
+      "value": false,
+      "mismatch_pct": 0.4669189453125,
+      "wall_cells": 2768,
+      "grain_cells": 553
+    }
+  ],
+  "L2_compression": {
+    "examples": [
+      {
+        "geometry": "sc_spheres_phi0.125_N32",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 4276,
+        "palette_runs": 1069,
+        "entropy_bits_per_voxel": 0.661051382787525,
+        "entropy_only_bytes": 2708,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 61.305893358278766,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 28701,
+          "2609": 1598,
+          "2610": 2469,
+          "2611": 0,
+          "total": 32768,
+          "solid": 4067,
+          "wall_fraction_of_solid": 0.3929186132284239
+        },
+        "npz_on_disk_bytes": 927,
+        "bytes_per_voxel_npz": 0.028289794921875
+      },
+      {
+        "geometry": "sc_spheres_phi0.45_N32",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 10644,
+        "palette_runs": 2661,
+        "entropy_bits_per_voxel": 1.37221339599621,
+        "entropy_only_bytes": 5621,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 24.628335212326192,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 17997,
+          "2609": 3986,
+          "2610": 10785,
+          "2611": 0,
+          "total": 32768,
+          "solid": 14771,
+          "wall_fraction_of_solid": 0.2698530905151987
+        },
+        "npz_on_disk_bytes": 1607,
+        "bytes_per_voxel_npz": 0.049041748046875
+      },
+      {
+        "geometry": "random_spheres_phi0.10_N32",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 7972,
+        "palette_runs": 1993,
+        "entropy_bits_per_voxel": 0.5270367274299196,
+        "entropy_only_bytes": 2159,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 32.88309081786252,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 29447,
+          "2609": 2921,
+          "2610": 400,
+          "2611": 0,
+          "total": 32768,
+          "solid": 3321,
+          "wall_fraction_of_solid": 0.8795543510990665
+        },
+        "npz_on_disk_bytes": 1652,
+        "bytes_per_voxel_npz": 0.0504150390625
+      },
+      {
+        "geometry": "cylinder_D16_in_64x32x32",
+        "voxels": 65536,
+        "raw_edt_bytes_float64": 524288,
+        "raw_edt_bytes_float32": 262144,
+        "palette_bytes_int16": 131072,
+        "palette_bytes_int16_rle": 15156,
+        "palette_runs": 3789,
+        "entropy_bits_per_voxel": 0.8817099846978509,
+        "entropy_only_bytes": 7223,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 34.59276854051201,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 52928,
+          "2609": 4114,
+          "2610": 8494,
+          "2611": 0,
+          "total": 65536,
+          "solid": 12608,
+          "wall_fraction_of_solid": 0.3263007614213198
+        },
+        "npz_on_disk_bytes": 888,
+        "bytes_per_voxel_npz": 0.0135498046875
+      },
+      {
+        "geometry": "cylinder_wall_touching",
+        "voxels": 65536,
+        "raw_edt_bytes_float64": 524288,
+        "raw_edt_bytes_float32": 262144,
+        "palette_bytes_int16": 131072,
+        "palette_bytes_int16_rle": 9604,
+        "palette_runs": 2401,
+        "entropy_bits_per_voxel": 0.6956985136279838,
+        "entropy_only_bytes": 5700,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 54.59058725531029,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 56768,
+          "2609": 3312,
+          "2610": 5456,
+          "2611": 0,
+          "total": 65536,
+          "solid": 8768,
+          "wall_fraction_of_solid": 0.3777372262773723
+        },
+        "npz_on_disk_bytes": 768,
+        "bytes_per_voxel_npz": 0.01171875
+      },
+      {
+        "geometry": "slab_touching_face",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 3368,
+        "palette_runs": 842,
+        "entropy_bits_per_voxel": 1.3898379484870378,
+        "entropy_only_bytes": 5693,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 77.83372921615202,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 16384,
+          "2609": 3784,
+          "2610": 12600,
+          "2611": 0,
+          "total": 32768,
+          "solid": 16384,
+          "wall_fraction_of_solid": 0.23095703125
+        },
+        "npz_on_disk_bytes": 431,
+        "bytes_per_voxel_npz": 0.013153076171875
+      }
+    ],
+    "delta_K_dispatch_pct": 0.10626324109947646,
+    "threshold1_mass_drift_pct": 6.466763904366957e-05,
+    "speedup_plain_over_tagged": 0.8867058191293348,
+    "passed": false
+  },
+  "L3_flow": {
+    "convergence": [
+      {
+        "N": 24,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.12608506944444442,
+        "dispatch": "oss_tag",
+        "shell_threshold": 2.0,
+        "wall_cells": 890,
+        "grain_cells": 853,
+        "fluid_cells": 12081,
+        "wall_plus_grain_fraction": 0.12608506944444442,
+        "steps": 2000,
+        "wall_seconds": 18.52263518050313,
+        "ms_per_step": 9.261317590251565,
+        "um_fluid": 0.0007868543529184535,
+        "U_s": 0.0006876437671880669,
+        "Re_p": 0.061427541389620345,
+        "K": 3.4935469521536437,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 18.55457144441198,
+        "K_table": 4.292,
+        "err_vs_table_pct": 18.60328629651342,
+        "mass_drift_rel_pct": 0.0018187773483502312
+      },
+      {
+        "N": 16,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.118408203125,
+        "dispatch": "oss_tag",
+        "shell_threshold": 2.0,
+        "wall_cells": 314,
+        "grain_cells": 171,
+        "fluid_cells": 3611,
+        "wall_plus_grain_fraction": 0.118408203125,
+        "steps": 2000,
+        "wall_seconds": 9.756519658491015,
+        "ms_per_step": 4.878259829245508,
+        "um_fluid": 0.0013258183200377971,
+        "U_s": 0.0011688305550919154,
+        "Re_p": 0.06960812242843085,
+        "K": 3.082973545517561,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 28.126312575982965,
+        "K_table": 4.292,
+        "err_vs_table_pct": 28.169302294558225,
+        "mass_drift_rel_pct": 0.0014198148412747358
+      },
+      {
+        "N": 32,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.124114990234375,
+        "dispatch": "oss_tag",
+        "shell_threshold": 2.0,
+        "wall_cells": 1598,
+        "grain_cells": 2469,
+        "fluid_cells": 28701,
+        "wall_plus_grain_fraction": 0.124114990234375,
+        "steps": 3000,
+        "wall_seconds": 44.46824217028916,
+        "ms_per_step": 14.822747390096387,
+        "um_fluid": 0.0005901098396861926,
+        "U_s": 0.0005168683626963321,
+        "Re_p": 0.06156279216557545,
+        "K": 3.4858717814946587,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 18.733503507475554,
+        "K_table": 4.292,
+        "err_vs_table_pct": 18.78211133516638,
+        "mass_drift_rel_pct": 0.0027968858615334824
+      },
+      {
+        "N": 48,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.12482819733796291,
+        "dispatch": "oss_tag",
+        "shell_threshold": 2.0,
+        "wall_cells": 3794,
+        "grain_cells": 10011,
+        "fluid_cells": 96787,
+        "wall_plus_grain_fraction": 0.12482819733796291,
+        "steps": 3000,
+        "wall_seconds": 167.6306769400835,
+        "ms_per_step": 55.87689231336117,
+        "um_fluid": 0.00036561251181410626,
+        "U_s": 0.0003199737610401467,
+        "Re_p": 0.05716681336402051,
+        "K": 3.753926226978821,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 12.484321948535982,
+        "K_table": 4.292,
+        "err_vs_table_pct": 12.536667591360178,
+        "mass_drift_rel_pct": 0.0035435409159623177
+      }
+    ],
+    "finest_N": 48,
+    "finest_K": 3.753926226978821,
+    "finest_err_vs_hasimoto_pct": 12.484321948535982,
+    "passed_15pct": false
+  },
+  "wall_seconds": 273.3283136598766,
+  "rows": {
+    "parity": [
+      {
+        "geometry": "sc_spheres_phi0.125_N32",
+        "kind": "sphere_array",
+        "variant": "plain",
+        "phi_input": 0.124114990234375,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 28701,
+            "ref": 28701,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 1598,
+            "ref": 1598,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 2469,
+            "ref": 2469,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "sc_spheres_phi0.125_N32",
+        "kind": "sphere_array",
+        "variant": "pad2",
+        "phi_input": 0.124114990234375,
+        "shape": [
+          36,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 36864,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 32797,
+            "ref": 32797,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 1598,
+            "ref": 1598,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 2469,
+            "ref": 2469,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom_36_32_32",
+        "name_ref": "geom_36_32_32",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "sc_spheres_phi0.125_N32",
+        "kind": "sphere_array",
+        "variant": "swap_xz",
+        "phi_input": 0.124114990234375,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 28701,
+            "ref": 28701,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 1598,
+            "ref": 1598,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 2469,
+            "ref": 2469,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "sc_spheres_phi0.45_N32",
+        "kind": "sphere_array",
+        "variant": "plain",
+        "phi_input": 0.450775146484375,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 17997,
+            "ref": 17997,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3986,
+            "ref": 3986,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 10785,
+            "ref": 10785,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "sc_spheres_phi0.45_N32",
+        "kind": "sphere_array",
+        "variant": "pad2",
+        "phi_input": 0.450775146484375,
+        "shape": [
+          36,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 36864,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 22093,
+            "ref": 22093,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3986,
+            "ref": 3986,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 10785,
+            "ref": 10785,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom_36_32_32",
+        "name_ref": "geom_36_32_32",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "sc_spheres_phi0.45_N32",
+        "kind": "sphere_array",
+        "variant": "swap_xz",
+        "phi_input": 0.450775146484375,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 17997,
+            "ref": 17997,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3986,
+            "ref": 3986,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 10785,
+            "ref": 10785,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "random_spheres_phi0.10_N32",
+        "kind": "random",
+        "variant": "plain",
+        "phi_input": 0.101348876953125,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 29447,
+            "ref": 29447,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 2921,
+            "ref": 2921,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 400,
+            "ref": 400,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "random_spheres_phi0.10_N32",
+        "kind": "random",
+        "variant": "pad2",
+        "phi_input": 0.101348876953125,
+        "shape": [
+          36,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 36864,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 33543,
+            "ref": 33543,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 2921,
+            "ref": 2921,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 400,
+            "ref": 400,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom_36_32_32",
+        "name_ref": "geom_36_32_32",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "random_spheres_phi0.10_N32",
+        "kind": "random",
+        "variant": "swap_xz",
+        "phi_input": 0.101348876953125,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 29447,
+            "ref": 29447,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 2921,
+            "ref": 2921,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 400,
+            "ref": 400,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "cylinder_D16_in_64x32x32",
+        "kind": "cylinder",
+        "variant": "plain",
+        "phi_input": 0.1923828125,
+        "shape": [
+          64,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 65536,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 52928,
+            "ref": 52928,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 4114,
+            "ref": 4114,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 8494,
+            "ref": 8494,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "cylinder_D16_in_64x32x32",
+        "kind": "cylinder",
+        "variant": "pad2",
+        "phi_input": 0.1923828125,
+        "shape": [
+          68,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 69632,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 57024,
+            "ref": 57024,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 4114,
+            "ref": 4114,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 8494,
+            "ref": 8494,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom_68_32_32",
+        "name_ref": "geom_68_32_32",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "cylinder_D16_in_64x32x32",
+        "kind": "cylinder",
+        "variant": "swap_xz",
+        "phi_input": 0.1923828125,
+        "shape": [
+          32,
+          32,
+          64
+        ],
+        "shape_match": true,
+        "voxels": 65536,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 52928,
+            "ref": 52928,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 4114,
+            "ref": 4114,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 8494,
+            "ref": 8494,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "cylinder_wall_touching",
+        "kind": "cylinder",
+        "variant": "plain",
+        "phi_input": 0.1337890625,
+        "shape": [
+          64,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 65536,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 56768,
+            "ref": 56768,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3312,
+            "ref": 3312,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 5456,
+            "ref": 5456,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "cylinder_wall_touching",
+        "kind": "cylinder",
+        "variant": "pad2",
+        "phi_input": 0.1337890625,
+        "shape": [
+          68,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 69632,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 60864,
+            "ref": 60864,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3312,
+            "ref": 3312,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 5456,
+            "ref": 5456,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom_68_32_32",
+        "name_ref": "geom_68_32_32",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "cylinder_wall_touching",
+        "kind": "cylinder",
+        "variant": "swap_xz",
+        "phi_input": 0.1337890625,
+        "shape": [
+          32,
+          32,
+          64
+        ],
+        "shape_match": true,
+        "voxels": 65536,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 56768,
+            "ref": 56768,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3312,
+            "ref": 3312,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 5456,
+            "ref": 5456,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "slab_touching_face",
+        "kind": "slab",
+        "variant": "plain",
+        "phi_input": 0.5,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 16384,
+            "ref": 16384,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3784,
+            "ref": 3784,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 12600,
+            "ref": 12600,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "slab_touching_face",
+        "kind": "slab",
+        "variant": "pad2",
+        "phi_input": 0.5,
+        "shape": [
+          36,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 36864,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 20480,
+            "ref": 20480,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3784,
+            "ref": 3784,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 12600,
+            "ref": 12600,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom_36_32_32",
+        "name_ref": "geom_36_32_32",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "slab_touching_face",
+        "kind": "slab",
+        "variant": "swap_xz",
+        "phi_input": 0.5,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 16384,
+            "ref": 16384,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 3784,
+            "ref": 3784,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 12600,
+            "ref": 12600,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 0,
+            "ref": 0,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      },
+      {
+        "geometry": "sc_spheres_phi0.125_N32+nw_band",
+        "kind": "two_phase",
+        "variant": "nw_backfill",
+        "phi_input": 0.124114990234375,
+        "shape": [
+          32,
+          32,
+          32
+        ],
+        "shape_match": true,
+        "voxels": 32768,
+        "mismatch_cells": 0,
+        "mismatch_pct": 0.0,
+        "per_tag": {
+          "2608": {
+            "ours": 20566,
+            "ref": 20566,
+            "rel_err_pct": 0.0
+          },
+          "2609": {
+            "ours": 1541,
+            "ref": 1541,
+            "rel_err_pct": 0.0
+          },
+          "2610": {
+            "ours": 2469,
+            "ref": 2469,
+            "rel_err_pct": 0.0
+          },
+          "2611": {
+            "ours": 8192,
+            "ref": 8192,
+            "rel_err_pct": 0.0
+          }
+        },
+        "name_ours": "geom",
+        "name_ref": "geom",
+        "name_match": true,
+        "shell_threshold": 2.0,
+        "rle_roundtrip_exact": true,
+        "decompress_roundtrip_exact": true
+      }
+    ],
+    "flow": [
+      {
+        "N": 24,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.12608506944444442,
+        "dispatch": "oss_tag",
+        "shell_threshold": 2.0,
+        "wall_cells": 890,
+        "grain_cells": 853,
+        "fluid_cells": 12081,
+        "wall_plus_grain_fraction": 0.12608506944444442,
+        "steps": 2000,
+        "wall_seconds": 18.52263518050313,
+        "ms_per_step": 9.261317590251565,
+        "um_fluid": 0.0007868543529184535,
+        "U_s": 0.0006876437671880669,
+        "Re_p": 0.061427541389620345,
+        "K": 3.4935469521536437,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 18.55457144441198,
+        "K_table": 4.292,
+        "err_vs_table_pct": 18.60328629651342,
+        "mass_drift_rel_pct": 0.0018187773483502312
+      },
+      {
+        "N": 24,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.12608506944444442,
+        "dispatch": "plain_all_solid",
+        "shell_threshold": 2.0,
+        "wall_cells": 890,
+        "grain_cells": 853,
+        "fluid_cells": 12081,
+        "wall_plus_grain_fraction": 0.12608506944444442,
+        "steps": 2000,
+        "wall_seconds": 16.424128400161862,
+        "ms_per_step": 8.212064200080931,
+        "um_fluid": 0.0007860191035433672,
+        "U_s": 0.0006869138302884419,
+        "Re_p": 0.06136233578280319,
+        "K": 3.497259308374334,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 18.468024892301454,
+        "K_table": 4.292,
+        "err_vs_table_pct": 18.516791510383637,
+        "mass_drift_rel_pct": 0.0021340320887297537
+      },
+      {
+        "N": 24,
+        "phi_nominal": 0.125,
+        "phi_actual": 0.12608506944444442,
+        "dispatch": "oss_tag",
+        "shell_threshold": 1.0,
+        "wall_cells": 0,
+        "grain_cells": 1743,
+        "fluid_cells": 12081,
+        "wall_plus_grain_fraction": 0.12608506944444442,
+        "steps": 2000,
+        "wall_seconds": 15.774914430454373,
+        "ms_per_step": 7.887457215227187,
+        "um_fluid": 0.0008761580771533773,
+        "U_s": 0.0007656876251511828,
+        "Re_p": 0.06839923595589102,
+        "K": 3.1374619467736475,
+        "K_hasimoto": 4.2894328314194246,
+        "err_vs_hasimoto_pct": 26.856018730676247,
+        "K_table": 4.292,
+        "err_vs_table_pct": 26.899768248517063,
+        "mass_drift_rel_pct": 6.466763904366957e-05
+      }
+    ],
+    "compression": [
+      {
+        "geometry": "sc_spheres_phi0.125_N32",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 4276,
+        "palette_runs": 1069,
+        "entropy_bits_per_voxel": 0.661051382787525,
+        "entropy_only_bytes": 2708,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 61.305893358278766,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 28701,
+          "2609": 1598,
+          "2610": 2469,
+          "2611": 0,
+          "total": 32768,
+          "solid": 4067,
+          "wall_fraction_of_solid": 0.3929186132284239
+        },
+        "npz_on_disk_bytes": 927,
+        "bytes_per_voxel_npz": 0.028289794921875
+      },
+      {
+        "geometry": "sc_spheres_phi0.45_N32",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 10644,
+        "palette_runs": 2661,
+        "entropy_bits_per_voxel": 1.37221339599621,
+        "entropy_only_bytes": 5621,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 24.628335212326192,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 17997,
+          "2609": 3986,
+          "2610": 10785,
+          "2611": 0,
+          "total": 32768,
+          "solid": 14771,
+          "wall_fraction_of_solid": 0.2698530905151987
+        },
+        "npz_on_disk_bytes": 1607,
+        "bytes_per_voxel_npz": 0.049041748046875
+      },
+      {
+        "geometry": "random_spheres_phi0.10_N32",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 7972,
+        "palette_runs": 1993,
+        "entropy_bits_per_voxel": 0.5270367274299196,
+        "entropy_only_bytes": 2159,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 32.88309081786252,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 29447,
+          "2609": 2921,
+          "2610": 400,
+          "2611": 0,
+          "total": 32768,
+          "solid": 3321,
+          "wall_fraction_of_solid": 0.8795543510990665
+        },
+        "npz_on_disk_bytes": 1652,
+        "bytes_per_voxel_npz": 0.0504150390625
+      },
+      {
+        "geometry": "cylinder_D16_in_64x32x32",
+        "voxels": 65536,
+        "raw_edt_bytes_float64": 524288,
+        "raw_edt_bytes_float32": 262144,
+        "palette_bytes_int16": 131072,
+        "palette_bytes_int16_rle": 15156,
+        "palette_runs": 3789,
+        "entropy_bits_per_voxel": 0.8817099846978509,
+        "entropy_only_bytes": 7223,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 34.59276854051201,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 52928,
+          "2609": 4114,
+          "2610": 8494,
+          "2611": 0,
+          "total": 65536,
+          "solid": 12608,
+          "wall_fraction_of_solid": 0.3263007614213198
+        },
+        "npz_on_disk_bytes": 888,
+        "bytes_per_voxel_npz": 0.0135498046875
+      },
+      {
+        "geometry": "cylinder_wall_touching",
+        "voxels": 65536,
+        "raw_edt_bytes_float64": 524288,
+        "raw_edt_bytes_float32": 262144,
+        "palette_bytes_int16": 131072,
+        "palette_bytes_int16_rle": 9604,
+        "palette_runs": 2401,
+        "entropy_bits_per_voxel": 0.6956985136279838,
+        "entropy_only_bytes": 5700,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 54.59058725531029,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 56768,
+          "2609": 3312,
+          "2610": 5456,
+          "2611": 0,
+          "total": 65536,
+          "solid": 8768,
+          "wall_fraction_of_solid": 0.3777372262773723
+        },
+        "npz_on_disk_bytes": 768,
+        "bytes_per_voxel_npz": 0.01171875
+      },
+      {
+        "geometry": "slab_touching_face",
+        "voxels": 32768,
+        "raw_edt_bytes_float64": 262144,
+        "raw_edt_bytes_float32": 131072,
+        "palette_bytes_int16": 65536,
+        "palette_bytes_int16_rle": 3368,
+        "palette_runs": 842,
+        "entropy_bits_per_voxel": 1.3898379484870378,
+        "entropy_only_bytes": 5693,
+        "ratio_float64_to_int16": 4.0,
+        "ratio_float64_to_rle": 77.83372921615202,
+        "rle_roundtrip_exact": true,
+        "distinct_tags": 3,
+        "counts": {
+          "2608": 16384,
+          "2609": 3784,
+          "2610": 12600,
+          "2611": 0,
+          "total": 32768,
+          "solid": 16384,
+          "wall_fraction_of_solid": 0.23095703125
+        },
+        "npz_on_disk_bytes": 431,
+        "bytes_per_voxel_npz": 0.013153076171875
+      }
+    ],
+    "sensitivity": [
+      {
+        "knob": "shell_threshold",
+        "value": 1.0,
+        "mismatch_pct": 8.9141845703125,
+        "wall_cells": 0,
+        "grain_cells": 3321
+      },
+      {
+        "knob": "shell_threshold",
+        "value": 1.5,
+        "mismatch_pct": 0.518798828125,
+        "wall_cells": 2751,
+        "grain_cells": 570
+      },
+      {
+        "knob": "shell_threshold",
+        "value": 1.4142135623730951,
+        "mismatch_pct": 0.909423828125,
+        "wall_cells": 2623,
+        "grain_cells": 698
+      },
+      {
+        "knob": "shell_threshold",
+        "value": 2.0,
+        "mismatch_pct": 0.0,
+        "wall_cells": 2921,
+        "grain_cells": 400
+      },
+      {
+        "knob": "shell_threshold",
+        "value": 3.0,
+        "mismatch_pct": 1.1474609375,
+        "wall_cells": 3297,
+        "grain_cells": 24
+      },
+      {
+        "knob": "bc_faces",
+        "value": true,
+        "mismatch_pct": 0.0,
+        "wall_cells": 2921,
+        "grain_cells": 400
+      },
+      {
+        "knob": "bc_faces",
+        "value": false,
+        "mismatch_pct": 0.4669189453125,
+        "wall_cells": 2768,
+        "grain_cells": 553
+      }
+    ]
+  }
+}
