@@ -5,7 +5,7 @@
   "reference_basis": "analytic",
   "scope": "2-D Shan-Chen single-component droplet, G_lib=+5 (physical G_eff=-5), tau=1, three radii per level, domain L=4R periodic. Measured levels: R=8/12/16 and R=12/16/20. Not covered: 3-D sphere (standard tier).",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T16:10:48Z",
+  "generated_utc": "2026-11-13T01:15:32Z",
   "artifact": "benchmarks/validation_matrix/cases/static_droplet_laplace_ci/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
   "references": [

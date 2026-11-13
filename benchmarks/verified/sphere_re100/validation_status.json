@@ -5,7 +5,7 @@
   "reference_basis": "correlation (multi-source audited)",
   "scope": "D3Q19, BFL interpolated smooth wall, per-link momentum ledger; D=40/60.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T16:10:48Z",
+  "generated_utc": "2026-11-13T01:15:32Z",
   "artifact": "benchmarks/verified/sphere_re100/result.json",
   "repro_cmd": "python benchmarks/verified/sphere_re100/run.py",
   "references": [
