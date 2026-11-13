@@ -788,6 +788,7 @@ def free_energy_step_3d(
     rho_light: float | None = None,
     C_s: float = 0.0,
     sgs_model: str = "smagorinsky",
+    geq_convention: str = "swift",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D3Q19.
 
@@ -821,6 +822,29 @@ def free_energy_step_3d(
         sgs_model:  Sub-grid model selector: ``'smagorinsky'`` (default),
                     ``'wale'``, or ``'vreman'``.  Only affects the *f*
                     collision when ``C_s > 0``.
+        geq_convention: Structure of the order-parameter equilibrium.
+
+                    ``'swift'`` (default, historical behaviour) spreads the
+                    order parameter over all populations
+                    (``g_i^eq = w_i phi (1 + adv_i) + w_i Gamma (3|c_i|^2-3) mu``).
+                    Because ``Sigma_i w_i c_ia c_ib phi = cs^2 phi delta_ab``, this
+                    carries an *unwanted* diffusive flux of phi with
+                    ``D = cs^2 (tau_g - 1/2)`` that is independent of ``Gamma``:
+                    the Cahn-Hilliard mobility is not the only transport term.
+                    Measured in ``docs/XVAL_M17762_LBM_FREE_ENERGY_CAHN_HILLIARD_CORE.md``
+                    (pure-diffusion block, ``Gamma = 0``: decay rate
+                    ``-cs^2 (tau_g-1/2) k^2`` to 1%, versus zero for the
+                    reference free-energy implementation).
+
+                    ``'lee_lin'``  carries the order parameter in the rest
+                    population only (``g_i^eq = w_i phi adv_i`` for ``i != 0``,
+                    ``g_0^eq += phi``) and rescales the mobility term to
+                    ``lambda_i = (3/2)(3|c_i|^2-3)`` so that
+                    ``Sigma_i w_i lambda_i c_ia c_ib = delta_ab`` and the mobility
+                    is ``M = Gamma (tau_g - 1/2)`` with no spurious phi
+                    diffusion.  This is the structure of the reference
+                    free-energy Cahn-Hilliard core (Lee & Lin 2005;
+                    ``ebinan92/Fingering_dynamics``, ``getB0``/``getB1_8``).
 
     Returns:
         Updated ``(f, g)`` after one collision step.
@@ -828,6 +852,11 @@ def free_energy_step_3d(
     _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
     if sgs_model not in _VALID_SGS_MODELS:
         raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
+    _VALID_GEQ_CONVENTIONS = ("swift", "lee_lin")
+    if geq_convention not in _VALID_GEQ_CONVENTIONS:
+        raise ValueError(
+            f"geq_convention must be one of {_VALID_GEQ_CONVENTIONS}, got {geq_convention!r}"
+        )
     device = f.device
     c = _c_on_3d(device)
     w = _w_on_3d(device)
@@ -882,10 +911,20 @@ def free_energy_step_3d(
     # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
     u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
-    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
+    adv = 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq  # Σ_i wᵢ adv = 0
     c_sq = cx**2 + cy**2 + cz**2
     diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
-    geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
+    if geq_convention == "swift":
+        geq_adv = w_v * phi.unsqueeze(0) * (1.0 + adv)
+        geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
+    else:  # 'lee_lin': order parameter carried by the rest population only
+        geq_adv = w_v * phi.unsqueeze(0) * adv
+        geq_adv = geq_adv.clone()
+        geq_adv[0] = geq_adv[0] + phi  # Σ_i g_i^eq = phi exactly, no ∇²phi flux
+        # λ_i = (3/2)(3|c|²−3) ⇒ Σ_i wᵢλᵢ c_ia c_ib = δ_ab and M = Γ(τ_g−½)
+        geq_diff = w_v * Gamma * 1.5 * diff_factor * mu.unsqueeze(0)
+        geq_diff = geq_diff.clone()
+        geq_diff[0] = -geq_diff[1:].sum(dim=0)  # exact zero sum against round-off
     geq = geq_adv + geq_diff
     g_out = g - (g - geq) / tau_g
 
