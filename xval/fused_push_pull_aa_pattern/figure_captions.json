@@ -1,0 +1,6 @@
+{
+ "fig1_decay_and_errors.png": "Kinetic-energy decay against the closed form and the upstream relative-L2 diagnostics on the 15 % / 3 % lines.",
+ "fig2_resolution.png": "Resolution study: u_x and rho error vs NX with the slope -2 reference.",
+ "fig3_rho_acoustic.png": "Density diagnostic: forced acoustic standing wave, envelope period matches pi/(c_s 2k).",
+ "fig4_cross_arm.png": "Arm-to-arm agreement (log10 rel. L2 of the 9 populations) including the two controls."
+}
