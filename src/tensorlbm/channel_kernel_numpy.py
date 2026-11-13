@@ -292,15 +292,28 @@ def poiseuille_exact(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Analytic plane-Poiseuille profile of the discrete channel.
 
-    Returns ``(y_centre, u(y))`` on the fluid cell centres, with the effective
-    wall at ``y_w = wall_origin`` and the free surface condition
-    ``u = 0`` at both walls.
+    Returns ``(y_centre, u(y))`` on the fluid cell centres for a constant
+    streamwise body force between two no-slip walls whose planes sit at
+    ``y_w = wall_origin`` and at the mirror position
+    ``y_far = (ny - 1) - wall_origin`` (halfway bounce-back: both planes are
+    half a cell outside the first fluid row).  The channel width is therefore
+    ``y_far - y_w = ny - 1 - 2*wall_origin`` (``= ny - 2`` at the standard
+    ``wall_origin = 0.5``), consistent with
+    :data:`tensorlbm.boundary.wall_resolved_channel3d`'s ``top_wall``.
+
+    The earlier form used ``upper = (height + 1) - wall_origin`` with
+    ``s = y - wall_origin``, which places the second zero at the solid *node*
+    ``y = ny - 1`` instead of the bounce-back plane ``(ny - 1) - wall_origin``;
+    that inflated ``u_max`` by ``((ny - 1 - wall_origin)/(ny - 1 - 2*wall_origin))**2``
+    (+3.3 % at ``ny = 32``, ``wall_origin = 0.5``) and made the reference
+    asymmetric, so a 3 % acceptance band could be consumed by the reference
+    itself.  Fixed in mission m18372 (see
+    ``xval/XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR/REPORT.md``).
     """
-    height = ny - 2
     y = np.arange(1, ny - 1, dtype=float)
-    s = y - wall_origin
-    upper = (height + 1.0) - wall_origin
-    u = body_force / (2.0 * nu) * s * (upper - s)
+    lower = float(wall_origin)
+    upper = float((ny - 1) - wall_origin)
+    u = body_force / (2.0 * nu) * (y - lower) * (upper - y)
     return y, u
 
 

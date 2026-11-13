@@ -1,0 +1,128 @@
+{
+  "anchor": "XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR",
+  "mission": 18372,
+  "round": 1,
+  "date": "2026-11-13",
+  "written_before_any_result": true,
+
+  "decision": "Does TensorLBM need to adopt ProjectPhysX/FluidX3D's body-force convention (Guo forcing with half-force velocity shift u*=u+F/(2*rho) in f_eq AND the (1-1/(2*tau)) prefactor on the forcing terms) in order for its force-driven single-component Poiseuille anchor to sit inside the owner's 15% band, or is the repo's existing convention (full-impulse Guo-shaped source, no half-step factor, unshifted f_eq) already equivalent inside that band?",
+
+  "alternatives": [
+    "Keep the repo convention (tensorlbm.channel_kernel_numpy.step -> collide + apply_body_force: full impulse, no (1-1/(2*tau)) factor, f_eq at unshifted u) and document the OSS difference only.",
+    "Port the OSS convention (f_eq at u* = u + F/(2*rho), forcing terms multiplied by (1-1/(2*tau))) into the repo force path.",
+    "Hybrid: keep the full-impulse source but add the half-force velocity shift in f_eq only."
+  ],
+
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "The OSS-semantics transplant reproduces the analytic plane-Poiseuille maximum velocity to < 3 % at the base case and to < 1 % at the finest grid, with second-order grid convergence.",
+      "oss_arm": "AO_OS"
+    },
+    {
+      "id": "H2",
+      "statement": "The repo convention (AR_RS) also lands inside the owner 15 % band for u_max at every tested tau, i.e. the half-step factor is not first-order material for a steady, uniform body force.",
+      "oss_arm": "AR_RS"
+    },
+    {
+      "id": "H3",
+      "statement": "The forcing-convention effect (|AR_OS - AR_RS| and |AO_OS - AO_RS|) is a second-order (Ma^2) effect: the ratio of that difference between the u_target=0.05 and u_target=0.01 runs is between 10 and 60 (the naive Ma^2 prediction is 25).",
+      "falsifier": "If instead the difference scales like 1/(1-1/(2*tau)) - 1 (first-order in the force/viscosity coupling: 100 % at tau=1, 500 % at tau=0.6), H3 is falsified and the port becomes mandatory."
+    },
+    {
+      "id": "H4",
+      "statement": "The velocity that FluidX3D stores/reports is the half-force-shifted velocity u_stored = u_phys + F/(2*rho); the induced bias on u_max is F/(2*rho)/u_max = 2*nu/H^2, i.e. < 0.1 % for all tested cases and therefore not a material anchor difference, but it must be listed in the OSS/repo difference list because it changes what the exported field means.",
+      "oss_arm": "AO_OS"
+    }
+  ],
+
+  "case_definition": {
+    "physics": "Single-component (single-phase, isothermal) force-driven plane Poiseuille flow between two static parallel walls; body force F along x, periodic in x (and z for the D3Q19 path); walls normal to y.",
+    "reference_solution": "u_x(y) = F/(2*nu*rho0) * (y-y_w) * (H - (y-y_w)), u_max = F*H^2/(8*nu*rho0), u_mean = (2/3)*u_max, with rho0 = 1, halfway-bounce-back wall plane y_w = 0.5, channel width H = ny-2 lattice units. This closed form is the exact solution of the incompressible Navier-Stokes equations for the stated forcing and is used as the reference (no hand-copied number is involved: it is evaluated programmatically at the lattice cell centres).",
+    "dimensionless_parameters": {
+      "H_lattice_units": "ny-2",
+      "tau": "relaxation time; nu = (tau-0.5)/3",
+      "omega": "1/tau (BGK relaxation rate)",
+      "Ma": "u_max/c_s, c_s = 1/sqrt(3)",
+      "Re_H": "u_max*H/nu",
+      "Re_tau": "u_tau*H/nu with u_tau = sqrt(F*H/2)",
+      "F_lattice": "body force per unit mass, lattice units, chosen from a target u_max: F = 8*nu*u_target/H^2"
+    },
+    "arms": {
+      "AO_OS": "OSS anchor: semantics-exact D2Q9 transplant of FluidX3D stream_collide with #define VOLUME_FORCE and #define SRT: rho2=0.5/rho, u*=u+F*rho2 clamped to +/-c, Fin = calculate_forcing_terms(u*), post = (1-w)f + w*f_eq(rho,u*) + (1-w/2)*Fin",
+      "AO_RS": "same D2Q9 kernel, repo forcing convention: f_eq at unshifted u, post = (1-w)f + w*f_eq(u) + Fin(u) (full impulse, no half-step factor)",
+      "AR_RS": "repo path: tensorlbm.channel_kernel_numpy (D3Q19, numpy, node-based halfway bounce-back, BGK or TRT) with its own step() operator order -- collide, then apply_body_force on the post-collision state, then stream, then bounce_back_walls",
+      "AR_OS": "repo path (identical D3Q19 operators, same collision, same bounce-back) with the OSS forcing convention inserted: f_eq at u*=u+F/(2*rho) and forcing terms scaled by (1-1/(2*tau))"
+    }
+  },
+
+  "metrics": {
+    "primary": {
+      "name": "rel_err_u_max_pct",
+      "definition": "100*|max_y u_num(y) - max_y u_exact(y)| / max_y u_exact(y), u_num sampled at fluid cell centres after the steady criterion is met, using the PHYSICAL velocity (for AO_OS: u_stored - F/(2*rho), see H4)"
+    },
+    "secondary": [
+      "profile_rel_l2_pct: 100*||u_num-u_exact||_2/||u_exact||_2 over the fluid rows",
+      "umax_over_umean: shape invariant, exact value 1.5 for a parabola (insensitive to force/viscosity errors)",
+      "rho_deviation_max: max|rho-1| over fluid rows (compressibility error of the forcing scheme)",
+      "steps_to_steady: steps until max_y|u(y)-u_prev(y)|/u_max < 1e-9 (checked every 200 steps)",
+      "stored_velocity_bias_pct: 100*|u_max_stored - u_max_physical|/u_max_physical (H4)"
+    ]
+  },
+
+  "baseline_control": {
+    "baseline": "AR_RS = the repository's own forcing convention as implemented in tensorlbm.channel_kernel_numpy.step (asserted bit-identical to the repo operator sequence by tests/test_xval_poiseuille_force_anchor.py).",
+    "control": "AO_OS = the OSS convention transplanted; AO_RS/AR_OS are the crossed cells of the 2x2 factorial (OSS vs repo code path) x (OSS vs repo forcing convention) so the interaction (lattice/BB confounding) can be estimated separately from the forcing effect.",
+    "reference": "closed-form parabolic profile evaluated at the same lattice nodes (exact in the continuum limit)."
+  },
+
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "H1_u_max_base_pct": 3.0,
+    "H1_u_max_finest_pct": 1.0,
+    "H1_convergence_ratio_band": [2.0, 8.0],
+    "H2_repo_u_max_pct": 15.0,
+    "H3_ma2_ratio_band": [10.0, 60.0],
+    "H4_bias_pct": 0.1,
+    "decision_rule": "If AR_RS stays inside 15 % at every tau AND |AR_OS-AR_RS|/u_max < 1 % at every tau AND H3 holds, the repo convention is certified equivalent inside the owner band -> no port required, document only. Otherwise port the OSS convention and report the measured gain."
+  },
+
+  "stopping_rule": "Fixed predeclared step cap per run (120000 lattice steps) with the predeclared steady criterion as the only early stop; no case is extended or repeated after its KPI is inspected. Grid sweep 16/32/64 at tau=0.8; tau sweep 0.55/0.60/0.80/1.00/1.50 at ny=32; force sweep u_target in {0.01,0.05} at ny=32, tau=0.8. Wall-clock: a case that exceeds 900 s is moved to the cluster queue; nothing is trimmed from the predeclared matrix to fit the clock.",
+
+  "variables_changed": [
+    "forcing convention (OSS Guo half-factor + velocity shift vs repo full impulse) -- the variable under test",
+    "code path / lattice (D2Q9 FluidX3D transplant vs D3Q19 repo primitives) -- factorial factor 2",
+    "grid resolution ny in {16,32,64} -- convergence",
+    "tau in {0.55,0.60,0.80,1.00,1.50} -- relaxation-rate sensitivity (omega = 1.818 ... 0.667)",
+    "target u_max in {0.01,0.02,0.05} -- Mach/force-magnitude sensitivity (Ma = 0.017 ... 0.087)"
+  ],
+  "variables_held_fixed": [
+    "channel geometry: solid rows at j=0 and j=ny-1, halfway bounce-back wall planes, H = ny-2",
+    "body force direction (+x) and uniformity (constant in space and time)",
+    "periodic boundary conditions in x (and z), no-slip walls in y, rho0 = 1",
+    "float64, single CPU process, numpy only, no turbulence model, no LES, no wall function",
+    "initial condition: fluid at rest (rho=1, u=0) -- identical in all arms",
+    "steady criterion threshold 1e-9 checked every 200 steps"
+  ],
+
+  "confounders_and_controls": [
+    "lattice model (D2Q9 vs D3Q19) and bounce-back implementation co-vary with the code path: controlled by the 2x2 factorial (AO_RS and AR_OS isolate forcing from path) plus by reporting the shape-invariant metric u_max/u_mean = 1.5.",
+    "wall-origin convention: the nominal analytic uses y_w=0.5; the repo's node-based bounce-back has a reported effective y_w ~ 0.64 cell. A wall-origin error is quadratic in u_max (peak of a parabola) but linear in the pointwise L2 error, so u_max (primary) and profile L2 (secondary) are reported separately and the discrepancy is not allowed to justify re-tuning the reference.",
+    "compressibility: the LBM solution is weakly compressible, rho deviates from 1 at O(Ma^2); rho_deviation_max is reported so a compressibility error cannot be mistaken for a forcing error.",
+    "finite-precision: float64 everywhere; steady criterion 1e-9 relative, far above round-off for these state sizes."
+  ],
+
+  "repetitions": "Deterministic: all runs start from the same rest state with a uniform deterministic force, no random numbers anywhere, so a case is its own exact repetition (re-running gives bit-identical output; verified by the pytest that reruns the base case). No statistical replication is needed or claimed; the uncertainty reported is the discretisation/sensitivity spread across the predeclared sweeps, not a sampling error.",
+
+  "environment": {
+    "code_base": "TensorLBM worktree /root/tp-agent/work/m18372, branch agent/m18372",
+    "repo_modules_used": "tensorlbm.channel_kernel_numpy (D3Q19, equilibrium/macroscopic/collide/stream/bounce_back_walls/apply_body_force/step), tensorlbm.boundary.wall_model.guo_body_force_d3q19 (cited, cross-checked)",
+    "oss_source": "ProjectPhysX/FluidX3D, master branch, files fetched through the GitHub contents API on 2026-11-13: src/kernel.cpp (203478 B), src/lbm.cpp (83381 B), src/defines.hpp (7226 B); default configuration #define SRT, D2Q9 disabled in defines.hpp, #define VOLUME_FORCE required for the volume-force block",
+    "runtime": "python3 + numpy + matplotlib, float64, CPU, single process",
+    "artifacts": "xval/XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR/{oss_src_cache/,results.json,figures/*.png,REPORT.md}"
+  },
+
+  "analysis": "For every arm x (ny, tau, u_target) report the predeclared metrics against the closed-form reference; report the 2x2 factorial main effects (forcing effect at fixed path, path effect at fixed forcing) and their interaction; report convergence order from the ny sweep and the Ma^2 scaling from the force sweep; every pass/fail is decided by the predeclared thresholds above, and no threshold is changed after the results are seen. Errors > 15 % are reported as unacceptable per the owner standard.",
+
+  "safety_resource_limits": "Pure CPU numpy, no GPU, no writes outside the anchor directory, wall-clock budget 900 s per case (larger -> cluster queue), peak memory < 100 MB per case."
+}
