@@ -1,0 +1,42 @@
+{
+  "anchor": "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO",
+  "mission_id": 18366,
+  "date": "2026-11-13",
+  "maxwell_construction": {
+    "eos": "pr",
+    "target_ratios": [
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "all_found": true,
+    "area_residual_rel": "< 1e-11"
+  },
+  "pilot_run": {
+    "tag": "pilot_ratio10",
+    "stable": true,
+    "steps_run": 2000,
+    "ratio_sim": null,
+    "ratio_maxwell": 10.01,
+    "ratio_error": null,
+    "ma_max": null,
+    "verdict": "FAIL (spurious Ma > 0.10)"
+  },
+  "full_campaign": "submitted to cluster (cj1906)",
+  "impl_files": [
+    "src/tensorlbm/sc_eos_coexistence.py",
+    "src/tensorlbm/sc_phasechange/highdensity.py",
+    "src/tensorlbm/multiphase.py",
+    "benchmarks/eos_maxwell/probe_lib.py",
+    "benchmarks/eos_maxwell/run.py"
+  ],
+  "tests": [
+    "tests/test_sc_eos_coexistence.py (13 passed, 1 xfailed)",
+    "tests/test_eos_maxwell_stability.py (17 passed, 2 skipped)"
+  ],
+  "integration_callers": [
+    "src/tensorlbm/cavitation.py (COEXISTENCE_G, COEXISTENCE_RHO_L, COEXISTENCE_RHO_V)",
+    "src/tensorlbm/microbubble_dr/eos.py (maxwell_coexistence)",
+    "src/tensorlbm/sc_phasechange/highdensity.py (maxwell_construction, run_laplace_ladder)"
+  ]
+}
