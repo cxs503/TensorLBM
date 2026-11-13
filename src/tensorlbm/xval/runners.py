@@ -532,3 +532,121 @@ def run_openfoam(spec: TG2DSpec, out_dir: str | Path, *, timeout: int = 3600) ->
         "field_l2_pct": field_err,
         "wall_sec": wall,
     }
+
+# ------------------------------------------------------- lbmpy (OSS) tool
+def lbmpy_available() -> tuple[bool, str]:
+    """Return ``(available, version_or_reason)`` for the lbmpy OSS arm."""
+    try:  # pragma: no cover - trivial
+        import lbmpy  # noqa: F401
+
+        return True, str(getattr(lbmpy, "__version__", "unknown"))
+    except Exception as exc:  # pragma: no cover - environment dependent
+        return False, repr(exc)
+
+
+def run_lbmpy(
+    spec: TG2DSpec,
+    out_dir: str | Path,
+    *,
+    dtype: str = "float64",
+) -> dict[str, Any]:
+    """Run the same :class:`TG2DSpec` with lbmpy (independent OSS implementation).
+
+    lbmpy generates the collide+stream kernel with pystencils from the method
+    description, i.e. the collision/equilibrium/streaming code path shares
+    nothing with ``tensorlbm.d2q9``/``tensorlbm.solver``.  Arrays handed to
+    lbmpy are indexed ``[ix, iy, component]`` (pystencils convention), while the
+    in-house solver stores ``[iy, ix]``; the adapter transposes on the way in and
+    out so that ``field_lbmpy_*.csv`` uses the identical ``i,j,ux,uy`` layout.
+    """
+    import numpy as np
+    from lbmpy.enums import Method, Stencil
+    from lbmpy.scenarios import create_fully_periodic_flow
+    from pystencils import Target
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    n = spec.n
+
+    idx = np.arange(n, dtype=np.float64) + 0.5
+    xx, yy = np.meshgrid(idx, idx, indexing="ij")  # [ix, iy]
+    ux = spec.boost - spec.u0 * np.cos(spec.k * xx) * np.sin(spec.k * yy)
+    uy = spec.u0 * np.sin(spec.k * xx) * np.cos(spec.k * yy)
+    u_init = np.stack([ux, uy], axis=-1)
+
+    wall0 = time.time()
+    step = create_fully_periodic_flow(
+        u_init,
+        stencil=Stencil.D2Q9,
+        method=Method.SRT,
+        relaxation_rate=1.0 / spec.tau,
+        compressible=False,
+        optimization={"target": Target.CPU},
+    )
+    compile_sec = time.time() - wall0
+
+    rows: list[tuple[float, float, float, float, float, float]] = []
+    field_err: dict[int, float] = {}
+
+    def sample(step_index: int) -> None:
+        vel = np.ma.filled(np.asarray(step.velocity_slice(), dtype=np.float64), 0.0)  # [ix, iy, 2]
+        rho = np.ma.filled(np.asarray(step.density_slice(), dtype=np.float64), 1.0)
+        ux_np = vel[..., 0].T  # back to in-house [iy, ix]
+        uy_np = vel[..., 1].T
+        k_energy = float(0.5 * (ux_np**2 + uy_np**2).mean())
+        umax = float(np.sqrt((ux_np**2 + uy_np**2).max()))
+        phase = M.mode_phase_deg(spec, ux_np)
+        px, py = M.peak_position_fraction(spec, ux_np, uy_np)
+        rows.append((float(step_index), k_energy, umax, phase, px, py))
+        if step_index in spec.field_steps:
+            np.savetxt(
+                out / f"field_lbmpy_{step_index}.csv",
+                np.column_stack(
+                    [
+                        np.tile(np.arange(n), n),
+                        np.repeat(np.arange(n), n),
+                        ux_np.ravel(),
+                        uy_np.ravel(),
+                    ]
+                ),
+                delimiter=",",
+                header="i,j,ux,uy",
+                comments="",
+                fmt=["%d", "%d", "%.17g", "%.17g"],
+            )
+            ex, ey = M.exact_velocity(spec, step_index)
+            field_err[step_index] = M.field_l2_error_pct(ux_np, uy_np, ex, ey)
+
+
+    run0 = time.time()
+    sample(0)
+    done = 0
+    while done < spec.steps:
+        chunk = min(spec.sample_every, spec.steps - done)
+        step.run(chunk)
+        done += chunk
+        sample(done)
+    wall = time.time() - run0
+
+    _write_history(out / "k_history_lbmpy.csv", rows)
+    info = {
+        "tool": "lbmpy",
+        "available": True,
+        "engine": f"lbmpy {getattr(__import__('lbmpy'), '__version__', 'unknown')} + pystencils (SRT, compressible=False)",
+        "dtype": dtype,
+        "device": "cpu",
+        "steps": spec.steps,
+        "wall_sec": wall,
+        "compile_sec": compile_sec,
+        "method": str(step.method),
+        "mass_drift_final": float(abs(np.ma.filled(np.asarray(step.density_slice()), 1.0) - 1.0).max()),
+    }
+    (out / "run_info_lbmpy.json").write_text(json.dumps(info, indent=2))
+    return {
+        "tool": "lbmpy",
+        "available": True,
+        "run_info": info,
+        "history": load_history(out / "k_history_lbmpy.csv"),
+        "field_l2_pct": {int(k): v for k, v in field_err.items()},
+        "wall_sec": wall,
+    }
