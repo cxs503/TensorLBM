@@ -1,0 +1,53 @@
+{
+  "feature_slug": "XVAL-LBM-VON-NEUMANN-AUTO",
+  "title": "冯·诺依曼线性稳定性分析自动化交叉验证（D2Q9 LBM BGK/MRT）",
+  "status": "pass",
+  "round": 2,
+  "external_anchor": "Sterling & Chen (1996) JCP 123:196-206; Lallemand & Luo (2000) PRE 61:6546",
+  "quantitative_targets": {
+    "growth_rel_err": {
+      "tolerance": 0.05,
+      "unit": "1",
+      "note": "shear/acoustic branch growth rate relative error vs von Neumann eigenvalue prediction"
+    },
+    "stability_boundary_tpr": {
+      "tolerance": 0.90,
+      "unit": "1",
+      "note": "true positive rate for instability detection"
+    },
+    "viscosity_fit_rel_dev": {
+      "tolerance": 0.10,
+      "unit": "1",
+      "note": "max relative deviation of nu_num(theta) quadratic fit"
+    }
+  },
+  "method_survey": {
+    "survey_date": "2026-11-13",
+    "oss_survey": "pylbm (~/oss-cache/pylbm/pylbm/analysis/stability.py): symbolic amplification matrix via sympy, eigenvalue computation, Cohn-Schur stability test; Maarten-vd-Sande/lbm: no explicit stability analysis module",
+    "key_findings": [
+      "Von Neumann stability analysis for LBM is a well-established technique (Sterling & Chen 1996, Lallemand & Luo 2000)",
+      "The amplification matrix A(theta) = diag(exp(-i theta.c_i)) P where P is the linearized collision operator",
+      "Eigenvalues mu give per-timestep amplification; stable iff max|mu| <= 1",
+      "Mode identification requires overlap with k->0 eigendirections (shear: transverse velocity; sound: density)",
+      "TensorLBM already has a complete implementation in src/tensorlbm/stability/von_neumann.py with 27 tests",
+      "The missing piece was an automated cross-validation benchmark packaging the analysis"
+    ],
+    "selected_approach": "Build on existing tensorlbm.stability.von_neumann module; create automated benchmark (run_xval.py) that runs both analytic and measured arms, compares point-by-point, and generates result.json with all numbers programmatically",
+    "rationale": "Leverage existing, tested implementation; add automated cross-validation pipeline following the Chapman-Enskog AUTO pattern"
+  },
+  "previous_rounds": {
+    "round1_m18581": {
+      "status": "honest_fail",
+      "fail_stage": "未标",
+      "failure_reason": "未留记录",
+      "postmortem": "前轮失败未留任何工件或失败原因——本轮先调研成熟方法，再结合推进"
+    }
+  },
+  "current_round_m18789": {
+    "status": "pass",
+    "note": "All criteria C1-C4 pass. C1: 10/10 points pass 5% growth rate error. C2: stability boundary TPR=1.0, FPR=0.0. C3: equivalent equation quadratic fit passes. C4: 1% viscosity band exists. Analytic limits: 16/16 pass.",
+    "artifacts": "benchmarks/xval_von_neumann_auto/run_xval.py; benchmarks/xval_von_neumann_auto/result.json; benchmarks/xval_von_neumann_auto/REPORT.md; xval/XVAL-LBM-VON-NEUMANN-AUTO/predeclared.json",
+    "quick_result": "benchmarks/xval_von_neumann_auto/result.json (quick run, 18.6s, 26/26 checks passed)",
+    "full_result": "pending cluster job cj2033"
+  }
+}
