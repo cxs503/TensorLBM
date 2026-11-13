@@ -1,0 +1,16 @@
+{
+  "upstream": "https://github.com/haimingz/vivsim",
+  "commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+  "commit_date": "2026-06-28",
+  "license": "MIT (c) 2024 Haiming Zhu \u2014 vendor/vivsim/LICENSE",
+  "vendored_files": {
+    "vendor/vivsim/LICENSE": "2d5689fbcffc357d43e00a638bb0e2efa6668796f7ead9451fe4e5ea80f1af73",
+    "vendor/vivsim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "vendor/vivsim/dyn.py": "34e6202420af8378b9645f27ead7aaf6a9ef1976a249188d0c03f1f6f5d054eb"
+  },
+  "method": "files copied byte-identical from a local clone of the upstream repo; sha256 above. The clone's .git is unreadable (bad object HEAD), so the commit id is taken from the earlier vendoring of the *same* clone in benchmarks/xval_ib3d_diffuse_interface_mdf/vendor/PROVENANCE.json and cross-checked by content hash: vivsim/ib/stencil.py in that clone hashes to 752165731aa7d44196f73c0ff65ce7fdd08820aff08b0a689e2487f6d093d749, identical to the file vendored there as commit fb84b12. Execution goes through the NumPy compatibility shim of benchmarks/xval_ib3d_diffuse_interface_mdf/jaxshim (jaxlib has no loongarch64 wheel).",
+  "executed_but_not_vendored": [
+    "examples/2d/vortex_induced_vibration.py (the FSI loop of lines 112-137 is reproduced call-for-call in run_xval.py; the example itself is a script and is not importable)",
+    "vivsim/lbm*, vivsim/ib* (replaced by the documented linear interface operator of run_xval.py)"
+  ]
+}

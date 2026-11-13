@@ -50,6 +50,13 @@ important configurations are
   by the fluid.  This is the regime in which interface accelerators
   (Aitken / IQN-ILS) are essential.
 
+* ``variant="theta_split"`` (with ``theta``): ``M_iter = m_s + theta*m_a`` and
+  ``G(a) = F_ext - (1-theta) m_a a`` -> ``rho = (1-theta) beta_eff /
+  (1 + theta beta_eff)`` **and the exact fixed point for every theta**;
+  ``theta = 1`` is the fully implicit (Robin) coupling, exact after one
+  sub-iteration.  (``wet_mass`` above does not preserve the fixed point: it
+  double-counts the added mass, see ``docs/fsi_partitioned_added_mass.md``.)
+
 A third, *consistency preserving* family is provided by the partial-implicit
 ("theta-split") coupling, see :func:`theta_split_rho`.  There the added-mass
 term is split between the structure operator and the fluid force so that the
@@ -120,7 +127,7 @@ __all__ = [
     "detect_beta_critical",
 ]
 
-Variant = Literal["explicit", "wet_mass"]
+Variant = Literal["explicit", "wet_mass", "theta_split"]
 
 
 # ---------------------------------------------------------------------------
@@ -546,12 +553,17 @@ def _structure_mass(
     variant: Variant,
     gamma: float,
     beta_n: float,
+    theta: float | None = None,
 ) -> float:
     """Fixed-point mass ``M_iter`` of the structure sub-solve (Newmark)."""
     if variant == "explicit":
         m_iter = model.m_struct
     elif variant == "wet_mass":
         m_iter = model.m_struct + model.m_added
+    elif variant == "theta_split":
+        if theta is None:
+            raise ValueError("variant 'theta_split' needs theta")
+        m_iter = model.m_struct + float(theta) * model.m_added
     else:  # pragma: no cover - guarded by type hints
         raise ValueError(f"unknown variant {variant!r}")
     return m_iter + model.damping * gamma * dt + model.stiffness * beta_n * dt * dt
@@ -570,6 +582,7 @@ def solve_partitioned_1d(
     gamma: float = 0.5,
     beta_n: float = 0.25,
     a_init: float | None = None,
+    theta: float = 0.0,
     predictor: Literal["none", "linear", "quadratic"] = "none",
     ref_scale: float | None = None,
 ) -> PartitionedStepResult:
@@ -596,6 +609,14 @@ def solve_partitioned_1d(
     accelerator:
         One of the objects from :func:`make_accelerator`; ``None`` keeps the
         plain fixed point.
+    theta:
+        Only for ``variant="theta_split"``: fraction of the added mass treated
+        implicitly on the structure side (see :func:`theta_split_rho`).  The
+        remaining ``(1 - theta) * m_a`` stays in the fluid force, so the fixed
+        point is the exact one for any ``theta`` while the interface gain
+        becomes ``(1-theta) * beta_eff / (1 + theta * beta_eff)``.  ``theta = 1``
+        is the fully implicit (Robin) coupling: ``rho = 0``, one sub-iteration
+        is exact.  ``theta = 0`` reproduces ``variant="explicit"``.
     predictor:
         Extrapolated initial interface iterate for each time step, as used by
         the strong-coupling loop of joconnor22/LIFE: ``"none"`` (start from the
@@ -619,7 +640,14 @@ def solve_partitioned_1d(
     # Newmark effective mass: M_iter + c*gamma*dt + k*beta_N*dt^2 (already
     # contained in _structure_mass), so rho = m_a / m_eff is the exact
     # single-DOF interface gain.
-    m_eff = _structure_mass(model, dt, variant, gamma, beta_n)
+    if variant == "theta_split" and not (0.0 <= theta <= 1.0):
+        raise ValueError("theta must lie in [0, 1]")
+    # fraction of the added mass that remains in the fluid operator; the rest
+    # is already contained in the fixed-point mass ``m_eff``
+    explicit_mass_fraction = 1.0 - theta if variant == "theta_split" else 1.0
+
+    m_eff = _structure_mass(model, dt, variant, gamma, beta_n,
+                            None if variant != "theta_split" else theta)
     beta_eff = model.m_added / m_eff if m_eff > 0.0 else float("inf")
 
     acc = accelerator
@@ -670,7 +698,8 @@ def solve_partitioned_1d(
         a_new = a_prev
         for k in range(max_iter):
             a_k = float(x[0])
-            f_fluid = f_ext - model.m_added * a_k      # fluid operator (added mass)
+            # fluid operator (added mass), minus the part moved to the solid
+            f_fluid = f_ext - explicit_mass_fraction * model.m_added * a_k
             a_s = (f_fluid + c_known) / m_eff          # structure operator (Newmark)
             r = np.array([a_s - a_k], dtype=float)
             resid_series.append(float(abs(r[0])))
