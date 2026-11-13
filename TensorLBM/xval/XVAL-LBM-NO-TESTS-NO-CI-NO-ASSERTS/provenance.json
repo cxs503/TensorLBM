@@ -1,0 +1,14 @@
+{
+  "executed_cases": [
+    "poiseuille_2d_H16"
+  ],
+  "failed_cases": [],
+  "git_sha": "0a1cf0e20c45f242e3a23d6c5a5118ea1b7a4830",
+  "machine": "loongarch64",
+  "numpy": "2.4.6",
+  "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+  "python": "3.11.6",
+  "results_sha256": "78f5a4d43c0b320cb6c0689625185ee4a8e20d2aafe4e308d010ed9f78896480",
+  "torch": "2.7.1",
+  "torch_threads": 1
+}
