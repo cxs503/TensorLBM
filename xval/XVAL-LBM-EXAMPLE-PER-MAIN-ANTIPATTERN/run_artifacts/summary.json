@@ -1,0 +1,386 @@
+{
+  "all_pass": true,
+  "arms": {
+    "A1_channel": {
+      "16": {
+        "converged_at": 4400,
+        "mass_drift": -2.8621549574836536e-13,
+        "profile": [
+          0.0003309999999367561,
+          0.0009309999998133976,
+          0.0014309999996994485,
+          0.0018309999996006367,
+          0.0021309999995218812,
+          0.002330999999467029,
+          0.0024309999994389314,
+          0.0024309999994389492,
+          0.0023309999994670758,
+          0.00213099999952191,
+          0.0018309999996007314,
+          0.001430999999699537,
+          0.0009309999998134202,
+          0.00033099999993675325
+        ],
+        "profile_interior_rel_l2": 0.00337191128696256,
+        "profile_rel_l2": 0.003632812527092278,
+        "record_digest": "a4b29310058f9f09ad3907d3a46a57cac18a5014176afb9c0ed3477113cd84fa",
+        "rho_max": 0.9999999999997147,
+        "rho_min": 0.9999999999997127,
+        "spec_digest": "d5d97ed123f84934ffccf91e51a95da31b16da75764a6229bb22c6eb713b5678",
+        "steps_run": 4400,
+        "u_max": 0.0024309999994389492,
+        "u_max_analytic": 0.00245,
+        "u_max_rel_err": 0.007755102269816609
+      },
+      "32": {
+        "converged_at": null,
+        "mass_drift": -7.507328092515309e-13,
+        "profile": [
+          0.0007309988394256421,
+          0.0021309965309922884,
+          0.003430994260566104,
+          0.004630992053022279,
+          0.005730989932547181,
+          0.006730987922373199,
+          0.007630986044524241,
+          0.0084309843195743,
+          0.009130982766422312,
+          0.009730981402085118,
+          0.010230980241510585,
+          0.010630979297414153,
+          0.010930978580139592,
+          0.011130978097545582,
+          0.011230977854919383,
+          0.011230977854919407,
+          0.011130978097545556,
+          0.010930978580139592,
+          0.010630979297414148,
+          0.010230980241510552,
+          0.009730981402085104,
+          0.009130982766422269,
+          0.008430984319574166,
+          0.007630986044524099,
+          0.006730987922373058,
+          0.00573098993254709,
+          0.004630992053022249,
+          0.00343099426056607,
+          0.0021309965309922792,
+          0.0007309988394256333
+        ],
+        "profile_interior_rel_l2": 0.0007663036116498148,
+        "profile_rel_l2": 0.0007928739041623035,
+        "record_digest": "288a7c6c5910ce5e92474b5a6038ce51a7d4290c550837f2fc08bd4aa3bb8ab8",
+        "rho_max": 0.9999999999992502,
+        "rho_min": 0.9999999999992475,
+        "spec_digest": "3dbd5ad34c12ab1eb5fd3888bdeb6b0c0c10e3ecaf459f93c8cf2d5427c72f6a",
+        "steps_run": 12000,
+        "u_max": 0.011230977854919407,
+        "u_max_analytic": 0.01125,
+        "u_max_rel_err": 0.0016908573404970774
+      },
+      "48": {
+        "converged_at": null,
+        "mass_drift": -9.550138457825597e-13,
+        "profile": [
+          0.0011301490351279123,
+          0.0033284510729747556,
+          0.00542676499509594,
+          0.007425098662764935,
+          0.009323459845192084,
+          0.011121856183301642,
+          0.012820295154105618,
+          0.014418784035842642,
+          0.01591732987404364,
+          0.017315939448682174,
+          0.01861461924256321,
+          0.019813375411097064,
+          0.02091221375360021,
+          0.021911139686256197,
+          0.022810158216862754,
+          0.023609273921483216,
+          0.02430849092311095,
+          0.02490781287244574,
+          0.025407242930872827,
+          0.02580678375572285,
+          0.02610643748788238,
+          0.026306205741812,
+          0.02640608959801879,
+          0.026406089598018836,
+          0.026306205741812035,
+          0.026106437487882387,
+          0.025806783755722835,
+          0.025407242930872757,
+          0.02490781287244573,
+          0.024308490923110947,
+          0.02360927392148323,
+          0.022810158216862775,
+          0.02191113968625619,
+          0.020912213753600188,
+          0.019813375411097026,
+          0.018614619242563107,
+          0.01731593944868212,
+          0.0159173298740436,
+          0.014418784035842609,
+          0.012820295154105604,
+          0.011121856183301656,
+          0.009323459845192117,
+          0.0074250986627649364,
+          0.005426764995095986,
+          0.003328451072974804,
+          0.0011301490351279134
+        ],
+        "profile_interior_rel_l2": 0.001221730992444023,
+        "profile_rel_l2": 0.0012242133131070254,
+        "record_digest": "831cc36d0f5fad49de4692b361cc1efae1ddd602751d470e2b08b0bed27dbef7",
+        "rho_max": 0.9999999999990463,
+        "rho_min": 0.9999999999990441,
+        "spec_digest": "e76f74d458f4a0c9d64ae5be86050a1dc0474137b8f84fa31b0373b7b3e21562",
+        "steps_run": 15000,
+        "u_max": 0.026406089598018836,
+        "u_max_analytic": 0.026449999999999998,
+        "u_max_rel_err": 0.0016601286193255705
+      }
+    },
+    "A2_control": {
+      "control_mass_drift": 0.0,
+      "control_streaming": "torch.roll pull + masked half-way bounce-back",
+      "control_u_max": 0.01123097785491253,
+      "control_u_max_rel_err_vs_analytic": 0.0016908573411084712,
+      "harness_u_max": 0.011230977854919407,
+      "harness_vs_control_profile_rel_l2": 6.203609921178299e-13,
+      "harness_vs_control_rel": 6.124291821339015e-13,
+      "ny": 32
+    },
+    "A3_taylor_green": {
+      "decay_rate_analytic": 0.015421256876702124,
+      "decay_rate_measured": 0.015438651702972886,
+      "energy_final": 2.6803420940494543e-09,
+      "energy_initial": 0.0002863719402818782,
+      "history": [
+        {
+          "kinetic_energy": 0.0002863719402818782,
+          "step": 50.0
+        },
+        {
+          "kinetic_energy": 0.0001322809466022776,
+          "step": 100.0
+        },
+        {
+          "kinetic_energy": 6.114780261392948e-05,
+          "step": 150.0
+        },
+        {
+          "kinetic_energy": 2.8265032343857588e-05,
+          "step": 200.0
+        },
+        {
+          "kinetic_energy": 1.3061787117620037e-05,
+          "step": 250.0
+        },
+        {
+          "kinetic_energy": 6.035939763924271e-06,
+          "step": 300.0
+        },
+        {
+          "kinetic_energy": 2.7892380697152785e-06,
+          "step": 350.0
+        },
+        {
+          "kinetic_energy": 1.2889401901182781e-06,
+          "step": 400.0
+        },
+        {
+          "kinetic_energy": 5.956343146978533e-07,
+          "step": 450.0
+        },
+        {
+          "kinetic_energy": 2.7524804515571344e-07,
+          "step": 500.0
+        },
+        {
+          "kinetic_energy": 1.271945589890818e-07,
+          "step": 550.0
+        },
+        {
+          "kinetic_energy": 5.877772732516327e-08,
+          "step": 600.0
+        },
+        {
+          "kinetic_energy": 2.716171436979735e-08,
+          "step": 650.0
+        },
+        {
+          "kinetic_energy": 1.2551671454514035e-08,
+          "step": 700.0
+        },
+        {
+          "kinetic_energy": 5.800239113177541e-09,
+          "step": 750.0
+        },
+        {
+          "kinetic_energy": 2.6803420940494543e-09,
+          "step": 800.0
+        }
+      ],
+      "record_digest": "7bb41e8c500b3752a0689bfe6572316cf987fc37a88ac706d3d96020d45ee1c5",
+      "rel_err": 0.001127977207684141,
+      "velocity_decay_rate_analytic": 0.007710628438351062
+    },
+    "A4_determinism": {
+      "digest_perturbed_spec": "55bbdf4fe49c5c5c5cd1388c7a7f7d02bd83f368f8e5acb2ac4ad095f162b940",
+      "digest_run1": "0f5812cfbe35cecbbf6b311690c847e85b1e4498b63b05448d65cce3673aa365",
+      "digest_run2": "0f5812cfbe35cecbbf6b311690c847e85b1e4498b63b05448d65cce3673aa365",
+      "field_digest_run1": "12502d538226d454101ae41a0f2c322142c1c5f267a289467a46ee56226d8b1b",
+      "field_digest_run2": "12502d538226d454101ae41a0f2c322142c1c5f267a289467a46ee56226d8b1b",
+      "field_identical": true,
+      "identical_rerun": true,
+      "perturbation_changes_digest": true,
+      "perturbed_u_max_rel_change": 0.9999999999999365,
+      "spec_digest_perturbed": "69eb1520aa8c6e52f3254ffd9e1d5fd2d262d508bb7aaad60f9b167ddcfcbd59",
+      "spec_digest_run1": "d31f13b3d31f6031dc6fddccfba0d249a04a47cdfd4e5c80ab651eae49c72ff8",
+      "u_max_perturbed": 0.01148055625504031,
+      "u_max_run1": 0.005740278127520337
+    },
+    "A5_examples_audit": {
+      "M1": {
+        "n_files_own_step_loop": 91,
+        "n_files_parsing_argv": 126,
+        "n_files_with_main": 157,
+        "share_with_main": 0.9752
+      },
+      "M2": {
+        "dup_driver_loc": 2848,
+        "dup_driver_loc_ratio": 0.0563,
+        "dup_loc": 15886,
+        "dup_loc_ratio": 0.3138,
+        "min_block_lines": 3,
+        "n_distinct_blocks": 2969,
+        "n_dup_block_instances": 2292,
+        "n_dup_driver_blocks": 232,
+        "n_duplicated_blocks": 545
+      },
+      "M3": {
+        "n_files_delegating_to_harness": 0,
+        "share": 0.0
+      },
+      "python_files": 161,
+      "root": "/root/tp-agent/work/m17895/examples",
+      "total_loc": 50627
+    },
+    "A6_detector_control": {
+      "antipattern_driver_loc_ratio": 0.6212,
+      "antipattern_dup_driver_blocks": 15,
+      "antipattern_dup_loc_ratio": 0.7424,
+      "antipattern_files": 3,
+      "antipattern_main_share": 1.0,
+      "antipattern_thin_share": 0.0,
+      "consolidated_driver_loc_ratio": 0.0,
+      "consolidated_dup_driver_blocks": 0,
+      "consolidated_dup_loc_ratio": 0.4737,
+      "consolidated_files": 3,
+      "consolidated_main_share": 1.0,
+      "consolidated_thin_share": 1.0,
+      "driver_loc_ratio_gap": 0.6212,
+      "dup_ratio_gap": 0.26869999999999994
+    }
+  },
+  "arms_complete": true,
+  "checks": {
+    "C10_antipattern_present_in_repo": {
+      "dup_driver_loc_ratio": 0.0563,
+      "dup_loc_ratio": 0.3138,
+      "main_share": 0.9752,
+      "n_dup_driver_blocks": 232,
+      "own_step_loop_share": 0.5652173913043478,
+      "pass": true,
+      "threshold": 0.2
+    },
+    "C11_stability_rule": {
+      "pass": true,
+      "rho_range": [
+        0.9999999999990441,
+        0.9999999999997147
+      ]
+    },
+    "C1_channel_umax_within_owner_band": {
+      "note": "worst of ny=16/32/48; owner band is 15%",
+      "pass": true,
+      "threshold": 0.15,
+      "value": 0.007755102269816609
+    },
+    "C2_channel_umax_within_3pct_target": {
+      "pass": true,
+      "threshold": 0.03,
+      "value": 0.007755102269816609
+    },
+    "C3_profile_l2_target_at_finest": {
+      "interior_l2_ny48": 0.001221730992444023,
+      "pass": true,
+      "threshold": 0.03,
+      "value": 0.0012242133131070254,
+      "worst_over_resolutions": 0.003632812527092278
+    },
+    "C4_resolution_monotone_umax_err": {
+      "pass": true,
+      "peaks": [
+        0.007755102269816609,
+        0.0016908573404970774,
+        0.0016601286193255705
+      ]
+    },
+    "C5_mass_drift": {
+      "pass": true,
+      "threshold": 1e-10,
+      "value": 9.550138457825597e-13
+    },
+    "C6_tg_decay_target": {
+      "pass": true,
+      "threshold": 0.03,
+      "value": 0.001127977207684141
+    },
+    "C7_harness_matches_independent_control": {
+      "pass": true,
+      "profile_l2": 6.203609921178299e-13,
+      "threshold": 1e-08,
+      "value": 6.124291821339015e-13
+    },
+    "C8_determinism": {
+      "field_identical": true,
+      "pass": true,
+      "perturbation_changes_digest": true,
+      "perturbed_u_max_rel_change": 0.9999999999999365,
+      "rerun_identical": true
+    },
+    "C9_detector_discriminates": {
+      "antipattern_driver_ratio": 0.6212,
+      "antipattern_dup_ratio": 0.7424,
+      "consolidated_driver_ratio": 0.0,
+      "consolidated_dup_ratio": 0.4737,
+      "pass": true,
+      "thin_share": [
+        0.0,
+        1.0
+      ],
+      "threshold": 0.2,
+      "value": 0.6212
+    }
+  },
+  "finished_utc": "2026-11-13T10:27:02Z",
+  "started_utc": "2026-11-13T10:24:22Z",
+  "tables_md": "# XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN -- machine referee\n\narms_complete=True all_pass=True\n\n| check | value | threshold | pass |\n|---|---|---|---|\n| C1_channel_umax_within_owner_band | 0.007755102269816609 | 0.15 | True |\n| C2_channel_umax_within_3pct_target | 0.007755102269816609 | 0.03 | True |\n| C3_profile_l2_target_at_finest | 0.0012242133131070254 | 0.03 | True |\n| C4_resolution_monotone_umax_err | [0.007755102269816609, 0.0016908573404970774, 0.0016601286193255705] | - | True |\n| C5_mass_drift | 9.550138457825597e-13 | 1e-10 | True |\n| C11_stability_rule | - | - | True |\n| C6_tg_decay_target | 0.001127977207684141 | 0.03 | True |\n| C7_harness_matches_independent_control | 6.124291821339015e-13 | 1e-08 | True |\n| C8_determinism | - | - | True |\n| C9_detector_discriminates | 0.6212 | 0.2 | True |\n| C10_antipattern_present_in_repo | - | 0.2 | True |\n\n## channel u_max vs closed form g H^2 / (8 nu)\n| ny | u_max got | u_max ref | rel err | profile L2 | interior L2 | mass drift | steps |\n|---|---|---|---|---|---|---|---|\n| 16 | 0.00243100 | 0.00245000 | 0.7755% | 0.3633% | 0.3372% | -2.86e-13 | 4400 |\n| 32 | 0.01123098 | 0.01125000 | 0.1691% | 0.0793% | 0.0766% | -7.51e-13 | 12000 |\n| 48 | 0.02640609 | 0.02645000 | 0.1660% | 0.1224% | 0.1222% | -9.55e-13 | 15000 |\n\n## Taylor-Green energy decay\n| got | ref (4 nu k^2) | rel err |\n|---|---|---|\n| 1.543865e-02 | 1.542126e-02 | 0.1128% |\n\n## independent example-main control (ny=32, torch.roll streaming)\n| harness u_max | control u_max | rel diff | profile L2 diff |\n|---|---|---|---|\n| 0.0112309779 | 0.0112309779 | 6.124e-13 | 6.204e-13 |",
+  "thresholds": {
+    "detector_gap_min": 0.2,
+    "dup_loc_ratio_present_min": 0.2,
+    "harness_vs_control_rel_max": 1e-08,
+    "mass_drift_max": 1e-10,
+    "owner_acceptance_pct": 15.0,
+    "profile_rel_l2_target": 0.03,
+    "resolve_rule": "u_max_rel_err must not increase with resolution over ny = 16, 32, 48 (noise band 1e-3 absolute)",
+    "stability_rule": "a run with a non-finite population or rho outside [0.95, 1.05] is declared failed and reported, never tuned away",
+    "target_pct": 3.0,
+    "tg_decay_rel_err_target": 0.03,
+    "u_max_rel_err_max": 0.15,
+    "u_max_rel_err_target": 0.03
+  },
+  "xval": "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN"
+}

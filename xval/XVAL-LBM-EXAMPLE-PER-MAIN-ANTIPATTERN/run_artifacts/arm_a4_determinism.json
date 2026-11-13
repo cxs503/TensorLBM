@@ -1,0 +1,15 @@
+{
+  "digest_perturbed_spec": "55bbdf4fe49c5c5c5cd1388c7a7f7d02bd83f368f8e5acb2ac4ad095f162b940",
+  "digest_run1": "0f5812cfbe35cecbbf6b311690c847e85b1e4498b63b05448d65cce3673aa365",
+  "digest_run2": "0f5812cfbe35cecbbf6b311690c847e85b1e4498b63b05448d65cce3673aa365",
+  "field_digest_run1": "12502d538226d454101ae41a0f2c322142c1c5f267a289467a46ee56226d8b1b",
+  "field_digest_run2": "12502d538226d454101ae41a0f2c322142c1c5f267a289467a46ee56226d8b1b",
+  "field_identical": true,
+  "identical_rerun": true,
+  "perturbation_changes_digest": true,
+  "perturbed_u_max_rel_change": 0.9999999999999365,
+  "spec_digest_perturbed": "69eb1520aa8c6e52f3254ffd9e1d5fd2d262d508bb7aaad60f9b167ddcfcbd59",
+  "spec_digest_run1": "d31f13b3d31f6031dc6fddccfba0d249a04a47cdfd4e5c80ab651eae49c72ff8",
+  "u_max_perturbed": 0.01148055625504031,
+  "u_max_run1": 0.005740278127520337
+}

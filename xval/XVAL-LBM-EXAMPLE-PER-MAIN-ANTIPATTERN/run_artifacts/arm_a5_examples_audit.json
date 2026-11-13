@@ -1,0 +1,1641 @@
+{
+  "M1_standalone_mains": {
+    "n_files_own_step_loop": 91,
+    "n_files_parsing_argv": 126,
+    "n_files_with_main": 157,
+    "share_with_main": 0.9752
+  },
+  "M2_duplication": {
+    "dup_driver_loc": 2848,
+    "dup_driver_loc_ratio": 0.0563,
+    "dup_loc": 15886,
+    "dup_loc_ratio": 0.3138,
+    "min_block_lines": 3,
+    "n_distinct_blocks": 2969,
+    "n_dup_block_instances": 2292,
+    "n_dup_driver_blocks": 232,
+    "n_duplicated_blocks": 545
+  },
+  "M3_thin_mains": {
+    "n_files_delegating_to_harness": 0,
+    "share": 0.0
+  },
+  "files": [
+    {
+      "has_main": true,
+      "loc": 376,
+      "n_blocks": 46,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "ai4s_export.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 132,
+      "n_blocks": 13,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "ai4s_flagship_demo.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 31,
+      "n_blocks": 2,
+      "n_dup_blocks": 0,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "ai_dns_case.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 414,
+      "n_blocks": 35,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "ai_fno2d_demo.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 84,
+      "n_blocks": 4,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "ai_turbulence_pipeline.py",
+      "thin_main": false
+    },
+    {
+      "has_main": false,
+      "loc": 159,
+      "n_blocks": 15,
+      "n_dup_blocks": 5,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "amr_checkpoint.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 41,
+      "n_blocks": 4,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "amr_interface_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 344,
+      "n_blocks": 38,
+      "n_dup_blocks": 15,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "amr_sphere_adaptive_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 574,
+      "n_blocks": 61,
+      "n_dup_blocks": 51,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "amr_sphere_cascade_test.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 684,
+      "n_blocks": 74,
+      "n_dup_blocks": 22,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "amr_sphere_cellwise_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 346,
+      "n_blocks": 32,
+      "n_dup_blocks": 17,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "amr_sphere_drag_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 413,
+      "n_blocks": 35,
+      "n_dup_blocks": 33,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "amr_sphere_nested_shell_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 414,
+      "n_blocks": 36,
+      "n_dup_blocks": 34,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "amr_sphere_shell_l2_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 606,
+      "n_blocks": 57,
+      "n_dup_blocks": 57,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "amr_sphere_shell_l3_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 606,
+      "n_blocks": 57,
+      "n_dup_blocks": 57,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "amr_sphere_shell_l4_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 349,
+      "n_blocks": 32,
+      "n_dup_blocks": 19,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "amr_sphere_shell_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 83,
+      "n_blocks": 12,
+      "n_dup_blocks": 9,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "backward_facing_step.py",
+      "thin_main": false
+    },
+    {
+      "has_main": false,
+      "loc": 183,
+      "n_blocks": 10,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "bench_3d_accuracy.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 186,
+      "n_blocks": 16,
+      "n_dup_blocks": 8,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bench_ahmed_body.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 156,
+      "n_blocks": 14,
+      "n_dup_blocks": 12,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bench_caarc_building.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 153,
+      "n_blocks": 14,
+      "n_dup_blocks": 12,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bench_silsoe_cube.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 146,
+      "n_blocks": 13,
+      "n_dup_blocks": 11,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bench_soccer_ball.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 149,
+      "n_blocks": 15,
+      "n_dup_blocks": 11,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bench_tube_bundle.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 550,
+      "n_blocks": 42,
+      "n_dup_blocks": 15,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_acoustic_diffraction.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 663,
+      "n_blocks": 47,
+      "n_dup_blocks": 31,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_acoustic_reflection.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 416,
+      "n_blocks": 30,
+      "n_dup_blocks": 16,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_acoustic_scattering.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 398,
+      "n_blocks": 25,
+      "n_dup_blocks": 9,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_acoustic_superposition.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 136,
+      "n_blocks": 8,
+      "n_dup_blocks": 1,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_acoustic_wave.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 542,
+      "n_blocks": 38,
+      "n_dup_blocks": 22,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_acoustic_wave_1d.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 257,
+      "n_blocks": 34,
+      "n_dup_blocks": 19,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "benchmark_aircraft_icing.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 647,
+      "n_blocks": 54,
+      "n_dup_blocks": 24,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_cavity_resonance.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 315,
+      "n_blocks": 23,
+      "n_dup_blocks": 9,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_cavity_tone.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 532,
+      "n_blocks": 34,
+      "n_dup_blocks": 7,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_cylinder_aeroacoustics.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 398,
+      "n_blocks": 30,
+      "n_dup_blocks": 15,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_dipole_source.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 1109,
+      "n_blocks": 81,
+      "n_dup_blocks": 58,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_flag_flapping.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 623,
+      "n_blocks": 38,
+      "n_dup_blocks": 10,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_fwh_farfield.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 640,
+      "n_blocks": 59,
+      "n_dup_blocks": 15,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_gallium_pf.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 808,
+      "n_blocks": 76,
+      "n_dup_blocks": 25,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_magnus_cylinder.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 295,
+      "n_blocks": 24,
+      "n_dup_blocks": 11,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_pulsating_sphere.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 389,
+      "n_blocks": 24,
+      "n_dup_blocks": 15,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_quadrupole_source.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 271,
+      "n_blocks": 17,
+      "n_dup_blocks": 8,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_spherical_wave_3d.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 878,
+      "n_blocks": 76,
+      "n_dup_blocks": 38,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_stefan_freezing.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 524,
+      "n_blocks": 41,
+      "n_dup_blocks": 15,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_stefan_two_phase.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 325,
+      "n_blocks": 24,
+      "n_dup_blocks": 8,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_trailing_edge_noise.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 1076,
+      "n_blocks": 81,
+      "n_dup_blocks": 57,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_turek_hron.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 550,
+      "n_blocks": 50,
+      "n_dup_blocks": 12,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "benchmark_validation.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 191,
+      "n_blocks": 23,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "benchmark_voxel_accel.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 133,
+      "n_blocks": 13,
+      "n_dup_blocks": 3,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bfl_fast_piston.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 322,
+      "n_blocks": 20,
+      "n_dup_blocks": 14,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bhaga_weber_benchmark.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 234,
+      "n_blocks": 19,
+      "n_dup_blocks": 8,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_expansion.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 418,
+      "n_blocks": 30,
+      "n_dup_blocks": 16,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_fakhari_vs_rp.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 185,
+      "n_blocks": 11,
+      "n_dup_blocks": 4,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_ibm.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 441,
+      "n_blocks": 34,
+      "n_dup_blocks": 28,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_pf_csf_vs_rp.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 461,
+      "n_blocks": 36,
+      "n_dup_blocks": 28,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_rise_pf3.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 486,
+      "n_blocks": 42,
+      "n_dup_blocks": 14,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_rp_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 297,
+      "n_blocks": 27,
+      "n_dup_blocks": 7,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "bubble_static_3d.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 131,
+      "n_blocks": 16,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "closure_calibration.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 305,
+      "n_blocks": 37,
+      "n_dup_blocks": 5,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "closure_calibration_real.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 75,
+      "n_blocks": 5,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "collision_viscosity_audit.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 96,
+      "n_blocks": 6,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "cylinder_bfl_cv_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 83,
+      "n_blocks": 11,
+      "n_dup_blocks": 5,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "cylinder_bfl_farfield.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 40,
+      "n_blocks": 3,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "cylinder_domain_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 95,
+      "n_blocks": 11,
+      "n_dup_blocks": 3,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "cylinder_farfield_bench.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 94,
+      "n_blocks": 12,
+      "n_dup_blocks": 9,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "cylinder_flow.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 35,
+      "n_blocks": 2,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "cylinder_grid_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 219,
+      "n_blocks": 26,
+      "n_dup_blocks": 7,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "cylinder_multimodal_infer.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 407,
+      "n_blocks": 51,
+      "n_dup_blocks": 21,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "cylinder_multimodal_train.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 68,
+      "n_blocks": 6,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "dam_break.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 67,
+      "n_blocks": 5,
+      "n_dup_blocks": 1,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_flatplate_wallfn.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 137,
+      "n_blocks": 18,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "dg_lbm_cylinder_hybrid.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 118,
+      "n_blocks": 11,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "dg_lbm_sphere_force_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 108,
+      "n_blocks": 9,
+      "n_dup_blocks": 5,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "dg_lbm_sphere_hybrid.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 133,
+      "n_blocks": 13,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "dg_lbm_sphere_ibm.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 159,
+      "n_blocks": 13,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "dg_lbm_sphere_prism_hybrid.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 107,
+      "n_blocks": 10,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "dg_lbm_suboff_bench_compare.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 84,
+      "n_blocks": 7,
+      "n_dup_blocks": 2,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_ship_wallfn.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 225,
+      "n_blocks": 25,
+      "n_dup_blocks": 9,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_sphere_force_diagnostic.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 136,
+      "n_blocks": 18,
+      "n_dup_blocks": 11,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_sphere_refinement.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 542,
+      "n_blocks": 52,
+      "n_dup_blocks": 29,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "dg_suboff_cumulant_d3q27_multicard.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 410,
+      "n_blocks": 38,
+      "n_dup_blocks": 22,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "dg_suboff_cumulant_d3q27_multicard_cuda.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 113,
+      "n_blocks": 11,
+      "n_dup_blocks": 3,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_suboff_highre_mrt.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 71,
+      "n_blocks": 9,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "dg_suboff_highre_scan.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 362,
+      "n_blocks": 34,
+      "n_dup_blocks": 26,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "dg_suboff_mrt_d3q19.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 368,
+      "n_blocks": 33,
+      "n_dup_blocks": 24,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "dg_suboff_mrt_d3q19_cuda.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 377,
+      "n_blocks": 37,
+      "n_dup_blocks": 16,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "dg_suboff_mrt_d3q19_multicard.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 120,
+      "n_blocks": 9,
+      "n_dup_blocks": 3,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_suboff_taueff_test.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 140,
+      "n_blocks": 13,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_suboff_wallfn.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 230,
+      "n_blocks": 13,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "dg_suboff_wallfn_fullgrid.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 139,
+      "n_blocks": 18,
+      "n_dup_blocks": 10,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "dg_vs_standard_sphere.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 352,
+      "n_blocks": 42,
+      "n_dup_blocks": 4,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "differentiable_lbm.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 278,
+      "n_blocks": 23,
+      "n_dup_blocks": 4,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "droplet_impact.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 89,
+      "n_blocks": 10,
+      "n_dup_blocks": 5,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "extract_ice_shape.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 40,
+      "n_blocks": 3,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "flat_plate_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 88,
+      "n_blocks": 4,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "flat_plate_wall_model_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 279,
+      "n_blocks": 20,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "helicopter_deck_wind.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 122,
+      "n_blocks": 11,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "highre_cylinder2d_accurate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 177,
+      "n_blocks": 16,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "highre_cylinder3d_amr.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 133,
+      "n_blocks": 13,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "highre_cylinder_bench.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 155,
+      "n_blocks": 13,
+      "n_dup_blocks": 5,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "highre_sphere3d_accurate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 133,
+      "n_blocks": 14,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "highre_sphere_bench.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 393,
+      "n_blocks": 34,
+      "n_dup_blocks": 17,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "hull_fs_d3q27_pf.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 300,
+      "n_blocks": 25,
+      "n_dup_blocks": 16,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "hull_fs_wallfn.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 290,
+      "n_blocks": 27,
+      "n_dup_blocks": 4,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "ice_edge_2d.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 307,
+      "n_blocks": 22,
+      "n_dup_blocks": 6,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "ice_edge_campaign.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 319,
+      "n_blocks": 23,
+      "n_dup_blocks": 5,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "ice_edge_demo.py",
+      "thin_main": false
+    },
+    {
+      "has_main": false,
+      "loc": 110,
+      "n_blocks": 7,
+      "n_dup_blocks": 1,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "ice_edge_quick.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 498,
+      "n_blocks": 31,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "ice_edge_zone_campaign.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 237,
+      "n_blocks": 25,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "inverse_design.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 64,
+      "n_blocks": 10,
+      "n_dup_blocks": 7,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "lid_driven_cavity.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 16,
+      "n_blocks": 1,
+      "n_dup_blocks": 0,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "minimal_d2q9.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 86,
+      "n_blocks": 9,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "multiphase_water_entry.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 181,
+      "n_blocks": 21,
+      "n_dup_blocks": 5,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "nested_amr_multidevice_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 329,
+      "n_blocks": 33,
+      "n_dup_blocks": 12,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "octree_distributed_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 1241,
+      "n_blocks": 124,
+      "n_dup_blocks": 37,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "octree_integrated_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 880,
+      "n_blocks": 97,
+      "n_dup_blocks": 55,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "octree_multigpu_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 711,
+      "n_blocks": 73,
+      "n_dup_blocks": 48,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "octree_sphere_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 227,
+      "n_blocks": 22,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "param_scan.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 79,
+      "n_blocks": 9,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "pipeline_flow.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 310,
+      "n_blocks": 25,
+      "n_dup_blocks": 16,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "piston_compression_pf.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 164,
+      "n_blocks": 11,
+      "n_dup_blocks": 4,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "piston_k_adiabatic.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 156,
+      "n_blocks": 13,
+      "n_dup_blocks": 4,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "piston_virtual.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 157,
+      "n_blocks": 13,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "porous_drainage.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 109,
+      "n_blocks": 6,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "porous_drainage_3d.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 333,
+      "n_blocks": 36,
+      "n_dup_blocks": 11,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "propeller_improved.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 282,
+      "n_blocks": 25,
+      "n_dup_blocks": 7,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "propeller_openwater_d3q27.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 57,
+      "n_blocks": 5,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "rotating_cylinder.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 270,
+      "n_blocks": 32,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "scan_fno_consumer.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 183,
+      "n_blocks": 21,
+      "n_dup_blocks": 17,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "ship_hull_flow.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 280,
+      "n_blocks": 26,
+      "n_dup_blocks": 5,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "sloshing_coupled.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 92,
+      "n_blocks": 10,
+      "n_dup_blocks": 7,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sloshing_tank.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 270,
+      "n_blocks": 26,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "solver_in_the_loop.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 62,
+      "n_blocks": 4,
+      "n_dup_blocks": 0,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "spatial_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": false,
+      "loc": 515,
+      "n_blocks": 59,
+      "n_dup_blocks": 32,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "sphere_amr_common.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 100,
+      "n_blocks": 7,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_bfl_cv_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 40,
+      "n_blocks": 4,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_boundary_factorial_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 44,
+      "n_blocks": 4,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_domain_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 45,
+      "n_blocks": 5,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_domain_sensitivity_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 188,
+      "n_blocks": 22,
+      "n_dup_blocks": 5,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "sphere_drag_reference.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 73,
+      "n_blocks": 8,
+      "n_dup_blocks": 5,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_flow_3d.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 294,
+      "n_blocks": 29,
+      "n_dup_blocks": 7,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_flow_d3q27.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 35,
+      "n_blocks": 2,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_grid_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 43,
+      "n_blocks": 4,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_inlet_sponge_sensitivity_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 254,
+      "n_blocks": 24,
+      "n_dup_blocks": 7,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "sphere_moving.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 159,
+      "n_blocks": 17,
+      "n_dup_blocks": 13,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "sphere_water_entry.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 398,
+      "n_blocks": 33,
+      "n_dup_blocks": 18,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "sphere_water_entry_pf.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 40,
+      "n_blocks": 3,
+      "n_dup_blocks": 3,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "suboff_amr_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 242,
+      "n_blocks": 17,
+      "n_dup_blocks": 2,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "suboff_convergence_study.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 128,
+      "n_blocks": 13,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "suboff_engineering_resistance.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 1214,
+      "n_blocks": 116,
+      "n_dup_blocks": 36,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "suboff_experimental_resistance.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 28,
+      "n_blocks": 2,
+      "n_dup_blocks": 1,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "suboff_nested_convergence_assess.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 2794,
+      "n_blocks": 340,
+      "n_dup_blocks": 143,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "suboff_nested_static_amr_smoke.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 800,
+      "n_blocks": 84,
+      "n_dup_blocks": 61,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "suboff_shell_amr_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 987,
+      "n_blocks": 110,
+      "n_dup_blocks": 83,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "suboff_shell_l3_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 1309,
+      "n_blocks": 146,
+      "n_dup_blocks": 125,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "suboff_static_amr_resistance.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 1245,
+      "n_blocks": 142,
+      "n_dup_blocks": 122,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "suboff_static_amr_resistance_v5.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 76,
+      "n_blocks": 10,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "suboff_v03_demo.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 80,
+      "n_blocks": 9,
+      "n_dup_blocks": 6,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "turbulent_channel.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 158,
+      "n_blocks": 15,
+      "n_dup_blocks": 2,
+      "own_step_loop": true,
+      "parses_argv": true,
+      "path": "validate_sphere_drag.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 90,
+      "n_blocks": 7,
+      "n_dup_blocks": 4,
+      "own_step_loop": false,
+      "parses_argv": true,
+      "path": "wall_resolved_channel3d_validate.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 267,
+      "n_blocks": 23,
+      "n_dup_blocks": 14,
+      "own_step_loop": true,
+      "parses_argv": false,
+      "path": "wigley_benchmark.py",
+      "thin_main": false
+    },
+    {
+      "has_main": true,
+      "loc": 209,
+      "n_blocks": 18,
+      "n_dup_blocks": 8,
+      "own_step_loop": false,
+      "parses_argv": false,
+      "path": "wigley_fs_single.py",
+      "thin_main": false
+    }
+  ],
+  "parse_errors": [],
+  "parsed_files": 161,
+  "python_files": 161,
+  "recursive": false,
+  "root": "/root/tp-agent/work/m17895/examples",
+  "total_loc": 50627
+}
