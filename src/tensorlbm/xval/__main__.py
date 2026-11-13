@@ -1,8 +1,6 @@
-"""``python -m tensorlbm.xval`` -> :func:`tensorlbm.xval.cli.main`."""
+"""CLI entry point: ``python -m tensorlbm.xval`` runs the cross-validation benchmark."""
 
-import sys
+from tensorlbm.xval.xval_benchmark import main
 
-from .cli import main
-
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

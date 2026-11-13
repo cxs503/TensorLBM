@@ -1,51 +1,32 @@
-"""Cross-validation harness for the XVAL-LBM-TAYLORGREEN anchor.
+"""Cross-validation of TensorLBM unit conversion against 2b-t/LB-t approach.
 
-Public entry point
-------------------
-``run_and_report(spec, out_dir)``
-    run the case on every declared tool, compute the metrics against the exact
-    Taylor-Green solution, and write ``result.json`` (``xval_table``,
-    ``criteria``, ``bug_suspects``, ``frictions``) plus raw per-tool artefacts.
+This module provides:
+- ``LbtStyleConverter``: A converter mirroring the 2b-t/LB-t ``Converter`` API
+  (physical_length/equivalent_lbm_length triple) for direct comparison.
+- ``CaseSchema``: JSON-based case definition schema inspired by LB-t's
+  ``settings.json`` pattern.
+- ``bootstrap_from_schema``: Build a ``LatticeBridge`` from a case schema.
+- ``run_xval``: Full cross-validation benchmark producing a JSON report.
 
-Support API
------------
-``TG2DSpec`` / ``DEFAULT_SPEC`` / ``boosted_spec``
-    the single case specification shared by all tools (``result.case_spec``).
-``exact_velocity`` / ``exact_K`` / ``fit_exp_rate`` / ``mode_phase_deg``
-    analytic reference and metric primitives (used by the tests as well).
-``run_tensorlbm`` / ``run_palabos`` / ``run_openfoam``
-    individual tool adapters (each returns the same artefact schema).
+Reference
+---------
+2b-t/LB-t (Tobit Flatscher), ``include/lbt/converter.hpp``:
+  Converter(physical_length, equivalent_lbm_length,
+            physical_velocity, equivalent_lbm_velocity,
+            physical_density, equivalent_lbm_density)
+  Derives: time, kinematic_viscosity, pressure conversion factors.
+
+J. Latt, "Choice of units in lattice Boltzmann simulations",
+  Palabos Documentation (2008).
 """
 
-from .case_spec import DEFAULT_SPEC, TG2DSpec, boosted_spec
-from .metrics import (
-    exact_K,
-    exact_phase_rate,
-    exact_velocity,
-    field_l2_error_pct,
-    fit_exp_rate,
-    mode_phase_deg,
-    peak_position_fraction,
-)
-from .campaign import find_bug_suspects, make_figure, run_and_report, run_campaign
-from .runners import run_openfoam, run_palabos, run_tensorlbm
+from .converter import LbtStyleConverter
+from .case_schema import CaseSchema, bootstrap_from_schema
+from .xval_benchmark import run_xval
 
 __all__ = [
-    "DEFAULT_SPEC",
-    "TG2DSpec",
-    "boosted_spec",
-    "exact_K",
-    "exact_phase_rate",
-    "exact_velocity",
-    "field_l2_error_pct",
-    "find_bug_suspects",
-    "fit_exp_rate",
-    "make_figure",
-    "mode_phase_deg",
-    "peak_position_fraction",
-    "run_and_report",
-    "run_campaign",
-    "run_openfoam",
-    "run_palabos",
-    "run_tensorlbm",
+    "LbtStyleConverter",
+    "CaseSchema",
+    "bootstrap_from_schema",
+    "run_xval",
 ]
