@@ -1,0 +1,139 @@
+{
+  "summary": {
+    "n_points_shipped": 10,
+    "n_points_rerun": 6,
+    "missing_reruns": [
+      "port_psi0.00_xi2.0",
+      "port_psi0.00_xi4.0",
+      "port_psi0.35_xi2.0",
+      "port_psi0.35_xi4.0"
+    ],
+    "max_abs_delta_deg": 0.0,
+    "bitwise_identical_points": 6,
+    "n_in_15pct_rerun": 5,
+    "median_abs_err_pct_rerun": 1.321781081114867,
+    "max_abs_err_pct_rerun": 29.51579147524093,
+    "all_converged_rerun": false,
+    "tol_pct": 15.0
+  },
+  "rows": [
+    {
+      "tag": "port_psi+0.00_xi3.0",
+      "psi_wall": 0.0,
+      "xi": 3.0,
+      "theta_shipped_deg": 88.10930011164535,
+      "theta_rerun_deg": 88.10930011164535,
+      "delta_deg": 0.0,
+      "rel_delta_pct": 0.0,
+      "theta_analytic_deg": 90.0,
+      "err_vs_analytic_shipped_pct": -2.100777653727385,
+      "err_vs_analytic_rerun_pct": -2.100777653727385,
+      "within_15pct_shipped": true,
+      "within_15pct_rerun": true,
+      "converged": false,
+      "iterations": 30000,
+      "drift": 1.2264349965986424e-05
+    },
+    {
+      "tag": "port_psi+0.35_xi3.0",
+      "psi_wall": 0.35,
+      "xi": 3.0,
+      "theta_shipped_deg": 59.85617493741043,
+      "theta_rerun_deg": 59.85617493741043,
+      "delta_deg": 0.0,
+      "rel_delta_pct": 0.0,
+      "theta_analytic_deg": 59.76402567663701,
+      "err_vs_analytic_shipped_pct": 0.1541885101114282,
+      "err_vs_analytic_rerun_pct": 0.1541885101114282,
+      "within_15pct_shipped": true,
+      "within_15pct_rerun": true,
+      "converged": false,
+      "iterations": 30000,
+      "drift": 2.069978337418399e-05
+    },
+    {
+      "tag": "port_psi+0.50_xi3.0",
+      "psi_wall": 0.5,
+      "xi": 3.0,
+      "theta_shipped_deg": 47.16675620192989,
+      "theta_rerun_deg": 47.16675620192989,
+      "delta_deg": 0.0,
+      "rel_delta_pct": 0.0,
+      "theta_analytic_deg": 46.56746344221023,
+      "err_vs_analytic_shipped_pct": 1.2869345148321771,
+      "err_vs_analytic_rerun_pct": 1.2869345148321771,
+      "within_15pct_shipped": true,
+      "within_15pct_rerun": true,
+      "converged": false,
+      "iterations": 30000,
+      "drift": 0.00012978659080922772
+    },
+    {
+      "tag": "port_psi+0.70_xi3.0",
+      "psi_wall": 0.7,
+      "xi": 3.0,
+      "theta_shipped_deg": 20.114821952526363,
+      "theta_rerun_deg": 20.114821952526363,
+      "delta_deg": 0.0,
+      "rel_delta_pct": 0.0,
+      "theta_analytic_deg": 28.53805465583203,
+      "err_vs_analytic_shipped_pct": -29.51579147524093,
+      "err_vs_analytic_rerun_pct": -29.51579147524093,
+      "within_15pct_shipped": false,
+      "within_15pct_rerun": false,
+      "converged": false,
+      "iterations": 30000,
+      "drift": 0.0003994041368356807
+    },
+    {
+      "tag": "port_psi-0.35_xi3.0",
+      "psi_wall": -0.35,
+      "xi": 3.0,
+      "theta_shipped_deg": 118.60481985357441,
+      "theta_rerun_deg": 118.60481985357441,
+      "delta_deg": 0.0,
+      "rel_delta_pct": 0.0,
+      "theta_analytic_deg": 120.23597432336298,
+      "err_vs_analytic_shipped_pct": -1.3566276473975565,
+      "err_vs_analytic_rerun_pct": -1.3566276473975565,
+      "within_15pct_shipped": true,
+      "within_15pct_rerun": true,
+      "converged": false,
+      "iterations": 30000,
+      "drift": 2.172327140123609e-05
+    },
+    {
+      "tag": "port_psi-0.50_xi3.0",
+      "psi_wall": -0.5,
+      "xi": 3.0,
+      "theta_shipped_deg": 133.18186208624732,
+      "theta_rerun_deg": 133.18186208624732,
+      "delta_deg": 0.0,
+      "rel_delta_pct": 0.0,
+      "theta_analytic_deg": 133.43253655778977,
+      "err_vs_analytic_shipped_pct": -0.18786607675249115,
+      "err_vs_analytic_rerun_pct": -0.18786607675249115,
+      "within_15pct_shipped": true,
+      "within_15pct_rerun": true,
+      "converged": false,
+      "iterations": 30000,
+      "drift": 2.728826080277552e-05
+    },
+    {
+      "tag": "port_psi0.00_xi2.0",
+      "status": "not_rerun"
+    },
+    {
+      "tag": "port_psi0.00_xi4.0",
+      "status": "not_rerun"
+    },
+    {
+      "tag": "port_psi0.35_xi2.0",
+      "status": "not_rerun"
+    },
+    {
+      "tag": "port_psi0.35_xi4.0",
+      "status": "not_rerun"
+    }
+  ]
+}

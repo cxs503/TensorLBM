@@ -1,0 +1,163 @@
+{
+  "audit_mission": 17853,
+  "subject_mission": 17726,
+  "subject_branch_head": "9bcc6db6b0519502a375661cf0a76e75e57728cb",
+  "subject_branch_uncommitted": [
+    "M src/tensorlbm/wetting/__init__.py",
+    "?? docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md",
+    "?? src/tensorlbm/wetting/wall_order_parameter_2d.py",
+    "?? tests/test_wall_order_parameter_wetting.py",
+    "?? xval/LBM_WALL_ORDER_PARAMETER_WETTING/"
+  ],
+  "deliverables": [
+    {
+      "path": "src/tensorlbm/wetting/wall_order_parameter_2d.py",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "tests/test_wall_order_parameter_wetting.py",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/run_xval.py",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/predeclared.json",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/summary.json",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/make_figures.py",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/oss_runner.py",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    },
+    {
+      "path": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/oss_src/validation_ebinan92.py",
+      "exists_in_main_clone": false,
+      "in_any_git_ref_history": false,
+      "in_agent_m17726_tree": false,
+      "untracked_in_m17726_worktree": true
+    }
+  ],
+  "snapshot_files": {
+    "src/tensorlbm/wetting/wall_order_parameter_2d.py": {
+      "sha256_original": "91094a22078976954f518176e83e29786c13bfa979c4da8752985d99d126eb3b",
+      "sha256_snapshot": "91094a22078976954f518176e83e29786c13bfa979c4da8752985d99d126eb3b"
+    },
+    "tests/test_wall_order_parameter_wetting.py": {
+      "sha256_original": "fb1ad076f226fd6390c2e2f3023363cb265903a66ca8e7e03169f313f089a20f",
+      "sha256_snapshot": "fb1ad076f226fd6390c2e2f3023363cb265903a66ca8e7e03169f313f089a20f"
+    },
+    "docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md": {
+      "sha256_original": "d3daba04dafdeaa62b3e629bee95475a1052cfd6cf2dce129c49073c2433426b",
+      "sha256_snapshot": null
+    },
+    "xval/LBM_WALL_ORDER_PARAMETER_WETTING/run_xval.py": {
+      "sha256_original": "de86583ea0e7e65f749dced1ceef90cf161b9d63c58284c5b4ad3d670bc23ff1",
+      "sha256_snapshot": null
+    },
+    "xval/LBM_WALL_ORDER_PARAMETER_WETTING/predeclared.json": {
+      "sha256_original": "1c7e79484de69c3371e8d99d05330fd4ddff7ac873c1c1765adcee8219c3e01c",
+      "sha256_snapshot": null
+    },
+    "xval/LBM_WALL_ORDER_PARAMETER_WETTING/summary.json": {
+      "sha256_original": "fbee910a6a0c56ad74786de115aeb2722b0f50d21ef4b68a0dfce26032d9394e",
+      "sha256_snapshot": null
+    },
+    "xval/LBM_WALL_ORDER_PARAMETER_WETTING/make_figures.py": {
+      "sha256_original": "3a16435f04683d285910a73a1c7d929e4359fb27de68f21cd1d2885b011ae574",
+      "sha256_snapshot": null
+    },
+    "xval/LBM_WALL_ORDER_PARAMETER_WETTING/oss_runner.py": {
+      "sha256_original": "328d270667c283f070d602638bc54de65e5a7e530ad4ef40ff819d931c37ce5c",
+      "sha256_snapshot": null
+    },
+    "xval/LBM_WALL_ORDER_PARAMETER_WETTING/oss_src/validation_ebinan92.py": {
+      "sha256_original": "c42e7c237fa92af8999e39b16947fa4ac1bde8c16b14168a6bd10406055d61e1",
+      "sha256_snapshot": null
+    }
+  },
+  "figures": [
+    {
+      "name": "fig1_contact_angle_law.png",
+      "sha256": "f60b662d4adb25dbe7d2c2d2b11661ea1e22904625765153a8a654713ada4113",
+      "bytes": 105534
+    },
+    {
+      "name": "fig2_cap_fields.png",
+      "sha256": "cb0b21ee69bfb6f709ac6ee6793612b4716366e0cdd29ccb8ed8c93a6452bd1d",
+      "bytes": 67374
+    },
+    {
+      "name": "fig3_lbm_dissociation.png",
+      "sha256": "bd8d3fe983fc024709020be4c05cba464bbcdbd080b285db168f012d8ef777b1",
+      "bytes": 46770
+    }
+  ],
+  "n_shipped_run_results": 12,
+  "shipped_gates": {
+    "n_points": 10,
+    "n_in_15pct": 9,
+    "median_abs_err_pct": 1.6016885838579455,
+    "max_abs_err_pct": 29.51579147524093,
+    "all_converged": false
+  },
+  "lbm_arm": {
+    "steps_completed": 1200,
+    "finite": true,
+    "psi_max_final": 0.054076031460537154,
+    "dissociation_ratio": 0.054112324610773296
+  },
+  "oss_arm": {
+    "finite": false,
+    "steps": 200,
+    "psi_min": "nan",
+    "psi_max": "nan"
+  },
+  "cluster_job_cj1656": {
+    "state": "queued",
+    "rc": null,
+    "cmd": "cd xval/LBM_WALL_ORDER_PARAMETER_WETTING && for pw in 0.00 0.35 -0.50; do python3 oss_runn"
+  },
+  "mission_17726": {
+    "status": "succeeded",
+    "finished_at": "2026-11-13 09:10:46.259767+00",
+    "result_head": "{\"model\": \"deepseek-v4-flash\", \"checks\": \"PYTHONPATH=src python3 -m pytest tests/test_wall_order_parameter_wetting.py -q -> 15 passed, 1 xfailed (slow 90-deg exact control included, passes within the 15% gate); xval harness: 10 port rows in runs/*/result.json, summarize.py gates in summary.json (median |err| 1.60%, max 29.5%); 3 figures generated by make_figures.py from the run files only; platfor"
+  },
+  "benchmark_rows_for_anchor_before_audit": 0
+}
