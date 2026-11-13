@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -256,3 +257,112 @@ def test_run_audit_does_not_mutate_the_tree(tmp_path):
     after = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
     assert before.keys() == after.keys()
     assert before == after                      # bytes and mtimes untouched
+
+
+# ── docs/ SQL *content* seal: the deliverable must carry the current evidence ──
+# Round-2 shipped a docs/ SQL whose DDL matched the generator but whose evidence
+# payload was a stale snapshot: for 27/45 modules the ``status_row`` in the
+# deliverable disagreed with the artifacts JSON produced by the same run (e.g.
+# bgk_stream_collide_2d: "analytic / standard case" vs "yes").  The schema-only
+# guard above stayed green, so the drift reached main.  The generator writes the
+# SQL rows directly from the graded rows, hence the deliverable can be checked
+# against a fresh in-memory audit with no extra bookkeeping.
+EVIDENCE_KEYS = ("evidence_tier", "tier_why", "impl_paths", "test_paths", "doc_paths",
+                 "case_verified", "case_pending", "verdict_fields",
+                 "has_convergence_field", "error_samples", "status_row",
+                 "pending_status_row", "defect", "note", "downgrade_reason",
+                 "evidence_shared_with", "audit_id")
+
+
+def _sql_inserts(sql_text: str, table: str) -> list[str]:
+    """Every ``INSERT INTO <table> ... VALUES (...)`` payload, in file order."""
+    rows = []
+    for line in sql_text.splitlines():
+        if not line.startswith(f"INSERT INTO {table} "):
+            continue
+        rows.append(line.split("VALUES (", 1)[1].rstrip(";").rstrip(")"))
+    return rows
+
+
+def _sql_quoted(payload: str) -> list[str]:
+    """The single-quoted literals of a VALUES payload, with '' unescaped."""
+    return [f.replace("''", "'") for f in re.findall(r"'((?:[^']|'')*)'", payload)]
+
+
+def test_committed_docs_sql_evidence_matches_current_audit(tmp_path):
+    """Anti-drift on *values*, not just DDL: a reader of docs/ must see today's grades."""
+    sc = ib.run_audit(REPO, tmp_path / "now")
+    fresh = {r["key"]: r for r in sc["modules"]}
+    for name in ib.DOC_SQL_FILES:
+        path = REPO / "docs" / name
+        assert path.is_file(), path
+        text = path.read_text()
+        rows = _sql_inserts(text, "tensorlbm_module_maturity")
+        assert len(rows) == len(ib.MODULES), name
+        seen = set()
+        for payload in rows:
+            key, area, tier, evidence = _sql_quoted(payload)[:4]
+            seen.add(key)
+            assert key in fresh, f"{name}: unknown module {key}"
+            want = {k: fresh[key].get(k) for k in EVIDENCE_KEYS if k != "audit_id"}
+            want["audit_id"] = ib.AUDIT_ID
+            got = json.loads(evidence)
+            assert set(got) == set(want), f"{name}:{key} evidence keys {sorted(set(got) ^ set(want))}"
+            diff = {k: (got[k], want[k]) for k in EVIDENCE_KEYS if got[k] != want[k]}
+            assert not diff, f"{name}:{key} stale evidence field(s) {sorted(diff)}: {diff}"
+            assert tier == fresh[key]["level"], f"{name}:{key} tier"
+            assert area == fresh[key]["family"], f"{name}:{key} area"
+        assert seen == set(fresh), f"{name}: modules missing from the deliverable"
+    # the two deliverable names are generated from one string: they cannot diverge
+    a, b = [(REPO / "docs" / n).read_text() for n in ib.DOC_SQL_FILES]
+    assert a == b
+
+
+def test_committed_docs_sql_compete_rows_match_current_audit(tmp_path):
+    sc = ib.run_audit(REPO, tmp_path / "now")
+    fresh = {s["dimension"]: s for s in sc["scores"]}
+    text = (REPO / "docs" / ib.DOC_SQL_FILES[0]).read_text()
+    rows = _sql_inserts(text, "tensorlbm_compete_score")
+    assert len(rows) == len(fresh)
+    for payload in rows:
+        fields = _sql_quoted(payload)                     # week, dimension, maturity, gap, notes
+        week, dim, maturity, gap, notes = fields
+        score = float(re.search(r",\s*(-?[0-9.]+),\s*'\{", payload).group(1))
+        assert dim in fresh, dim
+        assert float(maturity) == pytest.approx(fresh[dim]["maturity_index_0_10"])
+        assert score == pytest.approx(fresh[dim]["maturity_index_0_10"])
+        assert gap == fresh[dim]["gap_grade"].split("(")[0]
+        assert json.loads(notes)["n_modules"] == fresh[dim]["n_modules"]
+
+
+# ── the drift tool used for the §8 write-up must itself be checked ────────────
+def test_docs_sql_drift_tool_detects_value_drift(tmp_path):
+    """``tools/audit/docs_sql_drift.py``: parses the deliverable, flags value drift."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "docs_sql_drift", REPO / "tools" / "audit" / "docs_sql_drift.py")
+    tool = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tool)
+
+    def dump(ev):
+        return ("INSERT INTO tensorlbm_module_maturity (module_path,area,tier,evidence,intl_ref,action,gap_task)"
+                " VALUES ('m1','fam','partial','" + json.dumps(ev) + "','ref','keep','');\n")
+
+    old = tool.evidence_rows(dump({"evidence_tier": 4, "status_row": "analytic / standard case"}))
+    new = tool.evidence_rows(dump({"evidence_tier": 4, "status_row": "yes"}))
+    rep = tool.diff(old, new)
+    assert rep["identical"] is False
+    assert rep["n_modules_drift"] == 1
+    assert rep["field_counts"] == {"status_row": 1}
+    assert rep["modules"]["m1"]["new"] == {"status_row": "yes"}
+    assert tool.diff(new, new)["identical"] is True
+
+    # the shipped pair of docs/ copies must be clean *at value level* (F4 closed)
+    rc = tool.main(["--old", str(REPO / "docs" / ib.DOC_SQL_FILES[0]),
+                    "--new", str(REPO / "docs" / ib.DOC_SQL_FILES[1]),
+                    "--out", str(tmp_path / "drift")])
+    assert rc == 0
+    rep = json.loads((tmp_path / "drift" / "drift.json").read_text())
+    assert rep["identical"] and rep["n_modules_drift"] == 0
+    assert rep["n_modules_old"] == len(ib.MODULES)
