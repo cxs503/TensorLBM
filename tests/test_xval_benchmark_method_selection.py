@@ -32,7 +32,8 @@ from run_arm import ARMS  # noqa: E402
 
 
 def test_arm_table_defined():
-    assert set(ARMS) == {"A1", "A2", "A3", "A4", "A5"}
+    # round 2 completes the 2x2 factorial with A6 (BGK + sponge)
+    assert set(ARMS) == {"A1", "A2", "A3", "A4", "A5", "A6"}
     # A1 and A4 differ only in the sponge, A4 and A2 only in the collision model
     assert ARMS["A1"]["collision"] == ARMS["A4"]["collision"] == "mrt"
     assert ARMS["A1"]["sponge"] is True and ARMS["A4"]["sponge"] is False

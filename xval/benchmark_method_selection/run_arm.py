@@ -19,6 +19,9 @@ decision):
       of A3): Lambda = 1.5*(tau-0.5) gives tau_minus = 2.0, the upper end of the
       recommended window, because the OSS magic Lambda transplanted at
       tau_plus = 0.5075 would need tau_minus = 25.5 and diverges.
+  A6  BGK with the absorbing sponge kept on (round 2): completes the
+      2x2 factorial {MRT, BGK} x {sponge on, off} = A1, A4, A6, A2 so the two
+      method-selection knobs and their interaction are separately estimable.
 
 Force sampling must happen post-stream / pre-bounce-back (Ladd momentum exchange).
 Sampling the pre-stream state flips the sign of Cd (recorded defect, oss_solutions 417).
@@ -70,6 +73,10 @@ ARMS = {
     # this lattice viscosity (tau_plus = 0.5075), far outside the recommended
     # tau_minus in [0.5, 2] window and diverges (measured blow-up).
     "A5": dict(collision="trt_clamped", sponge=False),
+    # Round-2 cell that completes the 2x2 factorial {MRT, BGK} x {sponge on, off}:
+    # A1 = MRT+on, A4 = MRT+off, A6 = BGK+on, A2 = BGK+off.  Without A6 the two
+    # main effects could not be separated from their interaction.
+    "A6": dict(collision="bgk", sponge=True),
 }
 
 CL_FAIL_ABS = 10.0  # predeclared stability rule: |Cl| > 10 == 50x the O(1) amplitude
@@ -130,6 +137,9 @@ def analyze(fx: np.ndarray, fy: np.ndarray, *, D: int, u_in: float, warmup_frac:
         "cd_mean_last50": float(cd_all[half].mean()),
         "cd_std_frac": float(cd.std() / abs(cd.mean())) if cd.mean() != 0 else float("nan"),
         "cl_amp": float(0.5 * (cl.max() - cl.min())),
+        # Secondary, period-count-robust companion to cl_amp: the extreme-value
+        # estimator is sensitive to the sampled record length, the std is not.
+        "cl_rms": float(cl.std()),
         "cl_mean": float(cl.mean()),
         "st_fft": strouhal_fft(cl) * D / u_in,
         "st_zc": strouhal_zero_crossing(cl) * D / u_in,
@@ -212,7 +222,9 @@ def run_arm(
         if collision == "mrt":
             return collide_mrt(f, tau, tau_field=tau_field)
         if collision == "bgk":
-            return collide_bgk(f, tau)
+            # tau_field is None unless this arm turns the sponge on, so A2 stays
+            # the literal OSS single-relaxation arm.
+            return collide_bgk(f, tau, tau_field=tau_field)
         if collision == "trt":
             return collide_trt(f, tau, lambda_trt=3.0 / 16.0)
         if collision == "trt_clamped":
