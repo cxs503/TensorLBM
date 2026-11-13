@@ -1,0 +1,97 @@
+{
+  "anchor": "XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETO",
+  "mission_id": 18375,
+  "round": 1,
+  "created": "2026-11-13",
+  "decision": "Does the TensorLBM D2Q9 BGK + Guo-forcing + half-way bounce-back channel reproduce the OSS reference implementation (lettuce single-phase Poiseuille baseline skeleton) and the exact plane-Poiseuille solution within the owner 15 % band, when both codes are run at IDENTICAL lattice numbers, and which of the two forcing formulations / wall conventions is responsible for the residual difference?",
+  "oss_reference": {
+    "project": "lettucecfd/lettuce",
+    "inventory_label": "single-phase-poiseuille-baseline-skeleton",
+    "artifacts_read": [
+      "lettuce/ext/_flows/poiseuille.py (PoiseuilleFlow2D: make_units, analytic_solution, post_boundaries, acceleration=[0.001,0])",
+      "lettuce/_unit.py (UnitConversion: characteristic_velocity_lu=cs*Ma, viscosity_lu=L_lu*u_lu/Re, tau=nu/cs^2+0.5, convert_acceleration_to_lu)",
+      "lettuce/ext/_force/shan_chen.py (source_term=0, u_eq=u+tau*a/rho) and guo.py (source (1-1/2tau)w(...)F, u_eq=u+a/2rho)",
+      "lettuce/_simulation.py (stream/collide/boundary order, no_streaming_mask)",
+      "examples/simple_flows/Poiseuille.ipynb (baseline parameters: resolution=16, Re=1, Ma=0.02, BGK + ShanChen, zeros init, energy-based convergence)"
+    ],
+    "executed": "yes -- the OSS code is executed (CPU, double precision) from the checkout recorded per-arm in results; not a semantics-only port",
+    "checkout": "/tmp/up/lettuce (path override via LETTUCE_PATH)",
+    "dependencies_added_to_run_it": ["mmh3 (lettuce.cuda_native import chain)", "pyevtk (lettuce.ext._reporter import chain)"]
+  },
+  "alternatives": {
+    "A1_oss_binary": "the OSS implementation itself, run as shipped (PoiseuilleFlow2D + ShanChen force + BGKCollision), double precision, zeros initial condition, periodic streamwise, bounce-back walls",
+    "A2_tensorlbm": "TensorLBM in-repo D2Q9 BGK + Guo(2002) forcing + half-way bounce-back, single-layer reduction of verification/layered_poiseuille.solver, same nx=ny=resolution, same nu_lu / a_lu / init",
+    "A3_exact": "exact steady solution nu u'' = -g, u(0)=u(H)=0 with H = resolution-2 (half-way walls), evaluated at the fluid node centres; independently coded twice (closed-form parabola in tensorlbm.verification.xval.poiseuille_skeleton.analytic_profile and the general N-layer linear solve in verification/layered_poiseuille/analytic.solve_layered) and required to agree to 1e-12 relative",
+    "rejected_alternative": "a semantics-only port of the OSS lines (what the previous NEBB XVAL had to do when no GPU was available) -- rejected because here the OSS code is importable on CPU, so a real run-vs-run comparison is available"
+  },
+  "hypothesis": "H1: at every active arm both codes stay within 15 % of the exact profile on all KPIs, both codes agree with each other within 15 %, and the error decreases with resolution. H1b (mechanism): the residual OSS-vs-TensorLBM difference at the OSS skeleton's own force level (Ma_peak ~2.5e-6) is dominated by the forcing formulation (ShanChen without a source term vs Guo with the (1-omega/2) source term) and grows linearly in the lattice force. H0 (falsifier): any KPI error >= 15 %, or the two codes disagreeing by >= 15 %, or the error not decreasing with resolution, or the geometry check (H_eff = resolution-2 +- 0.01) failing.",
+  "metrics": {
+    "eps_inf": "max|u_num - u_exact| / max|u_exact| over the fluid node rows of the x-averaged profile at the final steady snapshot",
+    "eps_l2_rel": "||u_num - u_exact||_2 / ||u_exact||_2 over the same samples",
+    "u_peak_err": "|max u_num - max u_exact| / max u_exact",
+    "q_err": "|Q_num - Q_exact| / Q_exact with Q = trapezoid(u dy) over the fluid samples (identical discrete functional both sides); the continuum flux g H^3/(12 nu) is reported separately as q_continuum and must be approached from the same side by both codes",
+    "y_peak_abs": "|y(argmax u_num) - y(argmax u_exact)| in lattice units",
+    "shape_err": "max|u_num/max(u_num) - u_exact/max(u_exact)|, separates shape from amplitude error",
+    "tv_rel_l2_rel_peak_ratio": "symmetric OSS-vs-TensorLBM differences normalised by the mean of the two peaks (tv_rel = max-norm, l2_rel = L2 norm, peak_ratio = peak_TL/peak_OSS)",
+    "h_eff_max_dev": "geometry check: max_i |H_i - H| with H_i = y_i + 2 nu u_i/(g y_i) over the fluid rows",
+    "steps_wall": "march length and wall time per arm (evidence that the steady criterion was met, not truncated)"
+  },
+  "unit_of_analysis": "one arm = one (resolution, viscosity mode, lattice force, initial condition, dtype) combination; KPIs are scalars plus one cross-section profile in lattice units",
+  "baseline_control": {
+    "physical_reference": "A3 exact parabola (two independent codings, cross-checked in the analysis step to <=1e-12 relative)",
+    "numerical_control_1": "the OSS binary itself (A1) -- the reference implementation's own numbers, so the comparison is code-vs-code and not model-vs-model",
+    "numerical_control_2": "N32/N48 (viscosity frozen at the res=16 value) vs V32/V48 (viscosity following the OSS rule): separates grid discretisation from the viscosity change that the OSS Re/Ma rule implies",
+    "numerical_control_3": "D1/D4 (float32 vs float64 at the same parameters) and I16 (analytic init vs zeros init)",
+    "exclusion": "the OSS analytic_solution evaluates the parabola at the solid rows too, where it returns a small NEGATIVE velocity (-13.8 % of the peak at res=16); KPI samples are restricted to fluid rows for BOTH codes, which is declared, not silently applied"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "target_pct": 3.0,
+    "geometry_check_abs": 0.01,
+    "cross_code_acceptance_pct": 15.0,
+    "convergence_rule": "eps_inf must not increase from res 16 -> 32 -> 48 by more than a factor 1.2 (half-way bounce-back + Guo forcing is at best second order; a non-decreasing trend falsifies H1)",
+    "pass_rule": "PASS iff every active arm with a converged march has eps_inf, eps_l2_rel, q_err, u_peak_err < 15 % AND |H_eff - H| < 0.01 AND the convergence rule holds; 3 % is reported as the target, not used to gate",
+    "no_post_hoc_tuning": "the thresholds above are the owner standard (15 %) plus the predeclared 3 % target; they were not modified after inspecting any production result"
+  },
+  "stopping_rule": "every arm marches in windows of 200 steps and stops when max|u(n)-u(n-200)|/max|u(n)| < 1e-6 (identical criterion for both codes) or at the per-arm max_steps; wall-clock cap 900 s per arm, an arm exceeding it is reported incomplete rather than re-tuned. No arm is extended or shortened after looking at its KPIs.",
+  "variables_changed": [
+    "arm family verbatim: resolution 16 / 32 / 48 with the OSS Re=1, Ma=0.02 rule (nu_lu = (res-1) cs Ma / Re)",
+    "arm family refine: resolution 32 / 48 with nu_lu frozen at the res=16 value",
+    "arm family forcing: lattice force x1 / x1e2 / x1e3 / x1e4 at res=16 (Ma_peak 2.5e-6 -> 2.5e-2)",
+    "arm family dtype: float32 vs float64 (OSS arm) at force x1 and x1e4",
+    "arm family init: zeros vs analytic initial condition (TensorLBM arm)"
+  ],
+  "variables_held_fixed": [
+    "D2Q9 stencil, BGK/SRT collision (one relaxation time)",
+    "channels walls = half-way bounce-back at both y walls; streamwise periodic",
+    "nx = ny = resolution for both codes (the OSS skeleton is a square domain)",
+    "KPI sampling on fluid node rows only, x-averaged profile",
+    "double precision unless the arm says float32",
+    "TensorLBM forcing: Guo (2002) with velocity shift u = (sum f c + F/2)/rho"
+  ],
+  "confounders": [
+    "forcing formulation differs by construction (OSS ShanChen without source term, TensorLBM Guo) -- the F-family arms are the designed probe, so the baseline comparison is NOT a pure differencing of the two codes' force schemes",
+    "OSS streamwise axis is axis 0 (walls on axis 1) while TensorLBM stores (q, ny, nx): an axis mix-up reads as a ~14 % wall-row artefact, not as a physics difference",
+    "OSS analytic_solution is evaluated on the wall rows as well (negative velocity there); including them adds ~13.8 % to eps_inf at res=16",
+    "round-off floor: at the OSS skeleton's own force the lattice velocity is ~1.3e-6, i.e. ~1e-5 of the populations, so float32 populations cannot represent it (predeclared as a confounder, measured by arms D1/D4)",
+    "machine/thread nondeterminism: both codes are deterministic per step, but no bitwise claim is made (different summation orders)"
+  ],
+  "repetition_rationale": "both codes are deterministic: the march is a fixed-point iteration, not a sample, so repetition would only measure floating-point summation-order noise. Instead of repeats, three designed replications are used: (i) three resolutions with the same rule, (ii) two viscosity modes at the same resolution, (iii) four force levels; each pair isolates one factor. Uncertainty is therefore reported as the spread across the designed replications and as the round-off floor measured by the float32 arms, not as a standard error over repeats.",
+  "environment": {
+    "python": "3.11 (host interpreter of the work tree)",
+    "torch": "CPU, float64 unless stated; device=cpu",
+    "oss_checkout": "/tmp/up/lettuce (lettuce __version__ recorded per arm)",
+    "tensorlbm": "in-tree src/ (editable path insertion, no install)",
+    "gpu": "not used",
+    "hardware": "single node, single process, no cluster queue (total budget < 10 min wall)"
+  },
+  "analysis_plan": "results/arms.json -> analyze.py builds (a) parameter table with all dimensionless numbers per arm, (b) per-arm error table vs the exact reference for both codes with PASS/FAIL against 15 % and the 3 % target, (c) OSS-vs-TensorLBM difference table, (d) resolution-trend fit log(eps_inf) vs log(H) for both codes and both viscosity modes, (e) force-level trend of both codes' eps_inf and of the cross-code difference, (f) dtype and init tables. Figures: profile comparison with error, log-log convergence, force sensitivity, field/difference maps. No outlier removal; arms that hit max_steps or the wall cap are reported as incomplete and excluded from the PASS claim but shown in the tables.",
+  "interpretation_limits": [
+    "the comparison is a single-phase, steady, low-Reynolds (Re_H <= ~2) plane channel: it cannot certify unsteady, 3-D or multi-phase behaviour",
+    "the two codes differ in forcing scheme by construction, so 'the codes agree' does not mean 'the schemes are equivalent'",
+    "at the OSS skeleton's own force the problem is in the Stokes limit, where many scheme errors are invisible; the F-family arms are required before drawing conclusions about the forcing scheme",
+    "the OSS skeleton's Re=1/Ma=0.02 with Res=16 is an under-resolved demo configuration, not an accuracy benchmark of the OSS project",
+    "quantity claimed: profile, flux and peak of the developed single-phase channel; NOT wall shear stress evaluation order or transient behaviour"
+  ],
+  "honest_disclosure": "Before this file was written, two single-arm scratch runs (one per code, res=16, OSS parameters) were executed to verify that the OSS import chain works on CPU and that the in-repo kernel accepts the OSS lattice numbers; they revealed the wall-row artefact of the OSS analytic (see confounders) and the correct wall-normal axis. No threshold, arm or metric was changed as a result; the 15 % acceptance band and 3 % target are the owner standards and were fixed from the start."
+}
