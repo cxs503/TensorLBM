@@ -10,7 +10,7 @@ from .boundaries import (
     cylinder_mask,
     make_channel_wall_mask,
 )
-from .d2q9 import C, _c_on, _w_on, equilibrium, macroscopic
+from .d2q9 import C, _c_on, _w_for, _w_on, equilibrium, macroscopic
 from .input_contract import check_relaxation_time
 
 OPPOSITE_2D = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
@@ -111,7 +111,7 @@ def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
     device = f.device
     dtype = f.dtype
     c = _c_on(device)
-    w = _w_on(device).to(dtype)
+    w = _w_for(dtype, device)
 
     # Macroscopic quantities (rho, ux, uy) — same as macroscopic()
     rho = f.sum(dim=0)
@@ -420,6 +420,82 @@ def collide_rlbm(f: torch.Tensor, tau: float) -> torch.Tensor:
     return feq + (1.0 - 1.0 / tau) * fneq_reg
 
 
+def collide_bgk_les(
+    f: torch.Tensor,
+    tau0: float,
+    smagorinsky_sc: float | torch.Tensor = 0.17,
+    boundary: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """BGK collision with a Smagorinsky-type LES relaxation time (differentiable).
+
+    The effective relaxation time is the non-equilibrium-stress closure
+
+        ``tau = 1/2 (tau0 + sqrt(tau0^2 + 6 Q Sc / rho))``,
+        ``Q = sqrt(2 sum_i (f_i - f_i^eq)^2 E_i)``
+
+    with ``E_i = (|c_ix| + |c_iy|)^2``.  ``Sc`` may be a tensor carrying
+    ``requires_grad``: the whole collision then stays inside an autograd graph,
+    which is what makes :func:`calibrate_les_sc` (BPTT) possible.  ``Sc = 0``
+    reproduces :func:`collide_bgk` exactly.
+
+    This is the main-solver entry point for the graph-unroll/BPTT LES path; the
+    implementation lives in :mod:`tensorlbm.les_bptt` (see the module docstring
+    for the mapping onto the reference implementation and its deviations).
+
+    Parameters
+    ----------
+    f : ``[9, ny, nx]`` or ``[B, 9, ny, nx]`` distribution.
+    tau0 : bare relaxation time, ``tau0 = 3 nu0 + 1/2``.
+    smagorinsky_sc : LES parameter (scalar).
+    boundary : optional ``[1, ny, nx]`` mask, ``1`` = solid.
+
+    Returns
+    -------
+    ``(f_post_collision, rho, vel)`` with ``vel`` shaped ``[B, 2, ny, nx]``.
+    """
+    from .les_bptt import collide_les
+
+    squeeze = f.dim() == 3
+    f4 = f.unsqueeze(0) if squeeze else f
+    b4 = boundary
+    if b4 is not None and b4.dim() == 3:
+        b4 = b4.unsqueeze(0)
+    out, rho, vel = collide_les(f4, tau0=tau0, sc=smagorinsky_sc, boundary=b4)
+    if squeeze:
+        return out.squeeze(0), rho.squeeze(0), vel.squeeze(0)
+    return out, rho, vel
+
+
+def calibrate_les_sc(
+    target_vel: "torch.Tensor | list[torch.Tensor]",
+    f0: torch.Tensor,
+    *,
+    tau0: float,
+    sc_init: float = 0.05,
+    boundary: torch.Tensor | None = None,
+    iters: int = 120,
+    lr: float = 0.05,
+) -> dict:
+    """Identify the LES parameter ``Sc`` by back-propagation through time.
+
+    ``target_vel`` is the reference velocity history (one tensor per unrolled
+    step, ``[2, ny, nx]`` or ``[B, 2, ny, nx]``); the unrolled window length is
+    inferred from it.  Returns the calibration history (see
+    :func:`tensorlbm.les_bptt.calibrate_les_parameter`).
+    """
+    from .les_bptt import calibrate_les_parameter
+
+    seq = [target_vel] if isinstance(target_vel, torch.Tensor) else list(target_vel)
+    seq = [t.unsqueeze(0) if t.dim() == 3 else t for t in seq]
+    f4 = f0.unsqueeze(0) if f0.dim() == 3 else f0
+    b4 = boundary
+    if b4 is not None and b4.dim() == 3:
+        b4 = b4.unsqueeze(0)
+    return calibrate_les_parameter(
+        seq, f4, tau0=tau0, sc_init=sc_init, boundary=b4, iters=iters, lr=lr
+    )
+
+
 def stream(f: torch.Tensor) -> torch.Tensor:
     """Vectorised streaming by gathering from shifted source indices (periodic).
 
@@ -512,72 +588,6 @@ def collide_trt(
     return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
 
 
-# --------------------------------------------------------------------------- #
-# Timestep kernel dispatch: AB (collide -> stream) vs fused push-pull (one pass)
-# --------------------------------------------------------------------------- #
-#
-# Anchor ``XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN``.  The upstream chapter-13 GPU
-# kernel of ``lbm-principles-practice/code`` (``gpu_stream_collide_save``) never
-# materialises a "streamed but not yet collided" field: it pulls the eight
-# shifted neighbours of the *post-collision* field, recomputes the moments from
-# those nine numbers, relaxes and writes straight into the next buffer.  The
-# step-level implementation lives in :mod:`tensorlbm.fused_push_pull`; this
-# dispatcher is what makes it reachable from the library's canonical stepping
-# path instead of being a stand-alone module nobody calls (the defect an
-# independent audit of the first delivery recorded).
-
-STEP_KERNELS: tuple[str, ...] = ("ab", "fused_push_pull")
-
-
-def step_stream_collide(f: torch.Tensor, tau: float, *, kernel: str = "ab") -> torch.Tensor:
-    """Advance periodic D2Q9 populations by one BGK timestep with a chosen kernel.
-
-    Parameters
-    ----------
-    f:
-        Populations, shape ``(9, ny, nx)``; direction order of
-        :data:`tensorlbm.d2q9.C`.
-    tau:
-        BGK relaxation time, ``> 0.5`` (validated the same way as
-        :func:`collide_bgk`, including graph-connected tensor ``tau``).
-    kernel:
-        ``"ab"`` (default) -- textbook AB pattern, ``stream(collide_bgk(f))``:
-        a post-collision field is materialised, then permuted.  ``"fused_push_pull"``
-        -- upstream fused kernel: pull the shifted neighbours, moments from the
-        pulled set, relax, write the next buffer; no intermediate field.
-
-    Returns
-    -------
-    torch.Tensor
-        Populations at ``t+1``, shape ``(9, ny, nx)``, same dtype/device.
-
-    Notes
-    -----
-    Both kernels assume **periodic** boundaries: the fused kernel wraps by index
-    arithmetic exactly like the upstream ``%NX`` / ``%NY``.  Neither applies
-    bounce-back or inlets; use :func:`bounce_back_cells` /
-    ``tensorlbm.boundary`` for that, on top of this step.
-
-    The two kernels are algebraically the same update written in a different
-    order (collide-then-permute vs permute-then-collide), hence they agree to
-    round-off, not bit-for-bit: the measured separation on a 2-D Taylor-Green
-    run is O(1e-16) per step, pinned by
-    ``tests/test_fused_push_pull_integration.py`` and by the referee row of
-    ``benchmarks/verified/fused_push_pull_aa_pattern``.
-    """
-    tau = _relaxation_time(tau, where="step_stream_collide")
-    if kernel == "ab":
-        # Same call pair every other D2Q9 driver in the library uses.
-        return stream(collide_bgk(f, tau))
-    if kernel == "fused_push_pull":
-        from .fused_push_pull import FusedPushPullStepper
-
-        stepper = FusedPushPullStepper(f, float(tau) if not isinstance(tau, torch.Tensor) else tau)
-        stepper.step()
-        return stepper.fields()
-    raise ValueError(f"unknown kernel {kernel!r}; expected one of {STEP_KERNELS}")
-
-
 __all__ = [
     "cylinder_mask",
     "make_channel_wall_mask",
@@ -591,6 +601,4 @@ __all__ = [
     "collide_trt",
     "stream",
     "correct_mass",
-    "step_stream_collide",
-    "STEP_KERNELS",
 ]
