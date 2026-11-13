@@ -1,0 +1,54 @@
+{
+  "anchor": "XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY",
+  "round": 2,
+  "declared_utc": "2026-11-13T00:00:00Z",
+  "declared_before_any_production_run": true,
+  "decision": "Does TensorLBM's double-distribution thermal LBM (D2Q9 velocity + D2Q5 temperature, Guo Boussinesq forcing) reproduce the de Vahl Davis (1983) Ra=1e5 benchmark within the owner accuracy standard (<15%), and does it reach the platform's 3% caliber?",
+  "alternatives": [
+    "A: literature-lineage anchor (de Vahl Davis 1983 Table 1) + converged multi-grid run of the repo library",
+    "B: OSS-source anchor (pylbm / hschwane / Maarten-vd-Sande_lbm in ~/oss-cache) — REJECTED a priori: survey found no thermal double-distribution natural-convection implementation (see oss_survey.json)"
+  ],
+  "benchmark": {
+    "name": "differentially heated square cavity (DHC), side-heated",
+    "geometry": "unit square, left wall T=1, right wall T=0, top/bottom adiabatic, no-slip walls",
+    "pr": 0.71,
+    "ra": 100000.0,
+    "reference_source": "de Vahl Davis G. (1983) Natural convection of air in a square cavity: a bench mark numerical solution. Int. J. Numer. Methods Fluids 3(3):249-264, Table 1 (p.257)",
+    "reference_values": {
+      "nu_mean": 4.519,
+      "u_max_nd": 34.72,
+      "v_max_nd": 68.60
+    },
+    "secondary_reference_note": "u_max/v_max are transcription-marked WITHHELD: the repo carries 34.72/68.60 in two independent tables (src/tensorlbm/heat_convection_benchmarks.py, src/tensorlbm/thermal_verification.py) and the audit trail docs/audit_m15466_ra1e5.md records literature 34.73/68.59 (0.03%/0.015% apart, i.e. rounding). No offline PDF was available to re-transcribe, so the primary gate is Nu_mean only.",
+    "control_case": {
+      "name": "same cavity at Ra=1e4 (already promoted as benchmarks/verified/cavity_natural_convection)",
+      "nu_mean_ref": 2.243,
+      "role": "must reproduce the verified anchor; guards against a broken setup"
+    }
+  },
+  "metrics": {
+    "primary": "nu_grad2 = -dT/dx * H / dT averaged along both isothermal walls (library nusselt_number mode=grad2)",
+    "secondary": ["u_max_nd = max|u_x| * H / alpha", "v_max_nd = max(u_y) * H / alpha", "nu_left vs nu_right symmetry"]
+  },
+  "predeclared_thresholds": {
+    "acceptance_owner_standard_pct": 15.0,
+    "platform_caliber_pct": 3.0,
+    "grid_sets": [64, 96, 128],
+    "steady_criteria": {
+      "stop_tol_nu": 0.001,
+      "patience": 5,
+      "report_every": 2000,
+      "resid_u_check": "last_resid_u <= 1e-5 (lattice units per 2000-step window)"
+    },
+    "convergence_gate": "|Nu(N=128) - Nu(N=96)| / Nu(N=96) <= 2.0% (two-resolution span) AND |Nu(N=96) - Nu(N=64)| <= |Nu(N=64) - Nu_ref| (monotone approach)",
+    "stopping_rule": "run each grid until the library steady detector fires (5 consecutive |dNu| < 1e-3 per 2000-step window) or 400000 steps, whichever first; no threshold may be relaxed after seeing results",
+    "exclusions": "none; every completed grid is reported, including non-converged ones"
+  },
+  "confounders": [
+    "D2Q5 temperature stencil has a first-order (diffusive) error that grows with Ra; expected bias is NEGATIVE Nu at coarse N",
+    "half-way bounce-back walls make the effective cavity length H=nx (library convention), 1 lattice unit larger than the nominal nx; this is declared, not tuned",
+    "float32 accumulation in long runs"
+  ],
+  "analysis_plan": "analyze.py recomputes every error and every gate flag from the raw run JSONs; no number is typed by hand. Figures from figures.py read the same JSONs.",
+  "repro_cmd": "python xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/run_xval.py --nx 128 --ra 1e5 --out xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/runs/n128.json"
+}
