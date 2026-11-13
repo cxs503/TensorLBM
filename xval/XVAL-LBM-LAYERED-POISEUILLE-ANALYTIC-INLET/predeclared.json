@@ -1,0 +1,80 @@
+{
+  "anchor": "XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET",
+  "mission": 17869,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "written_at": "2026-11-13",
+  "reference_implementation": {
+    "project": "CFD-GO/TCLB (inventoried: oss_solutions id=53, repo CFD-GO/TCLB, feature_slug GAP-LBM-MCMP-POISEUILLE, tag layered-poiseuille-analytic-inlet, evidence report 9565)",
+    "checkout": "/tmp/TCLB (local checkout of the OSS repository; line numbers below refer to it)",
+    "mechanism_citations": [
+      "models/multiphase/d3q27_pf_velocity/Dynamics.c.Rt:265-271 Init(): if (developedFlow > 0.1) { U = 6.0*Uavg*Y*(HEIGHT-Y)/(HEIGHT*HEIGHT); V=0; W=0; } else if (developedPipeFlow_X > 0.1) { U = 2.0*Uavg*(1 - (sqrt((Y-pipeCentre_Y)^2+(Z-pipeCentre_Z)^2)/pipeRadius)^2); }  -- the analytic profile is a FULL-FIELD INITIAL CONDITION, not an inlet boundary condition",
+      "models/multiphase/d3q27_pf_velocity/Dynamics.R:219-221 AddSetting(\"HEIGHT\", default=0, comment=\"Height of channel for 2D Poiseuille flow\"); AddSetting(\"Uavg\", default=0, zonal=T, ...); AddSetting(\"developedFlow\", default=0, comment=\"set greater than 0 for fully developed flow in the domain (x-direction)\")",
+      "models/multiphase/d3q27_pf_velocity/Dynamics.c.Rt:730-750 updateMyGlobals(pf): rho = Density_l + (pf-PhaseField_l)*(Density_h-Density_l)/(PhaseField_h-PhaseField_l); AddToTotalDensity(rho); AddToKineticEnergy(rho*u2mag) (no 1/2 factor); gas branch pf<0.5: (1-pf)*|u|, (1-pf)*U, (1-pf)*V, (1-pf)*W, AddToGasTotalPhase(1-pf), AddToXLocation((1-pf)*X); liquid branch pf>=0.5: pf*|u|, pf*U, pf*V, pf*W, AddToLiqTotalPhase(pf); NODE_flux_nodes -> AddToFluxNodeCount/AddToFluxX/AddToFluxY",
+      "models/multiphase/d3q27_pf_velocity/Dynamics.c.Rt:756-761 updateTrackers(C): if (C < 0.5 && PhaseF(0,-1,0) > 0.5) location = Y - (C-0.5)/(C-PhaseF(0,-1,0)) -- interface position by linear interpolation of the 0.5 phase crossing",
+      "models/multiphase/d3q27_pf_velocity/Dynamics.c.Rt:295-300 InitFromFieldsStage(): external-field initialisation (Init_PhaseField_External/Init_UX_External/...)"
+    ],
+    "not_transplanted": "TCLB's Yang/Shan-Chen-type phase field (PhaseF) and the d3q27 velocity/pressure coupling; the profile/globals mechanism itself is dimension- and lattice-independent, so it is transplanted to the in-repo D2Q9 BGK kernel"
+  },
+  "decision": "Does the TCLB layered-Poiseuille analytic-profile mechanism (analytic fully-developed profile as the initial condition + phase-weighted integral error metrics) transplanted into TensorLBM's D2Q9 kernel reproduce the exact piecewise-parabolic layered solution within the owner 15% band, and how does the error scale with resolution, viscosity ratio and interface position?",
+  "alternatives": {
+    "A1_oss_transplant_periodic": "TensorLBM D2Q9 BGK + Guo forcing + half-way bounce-back, whole field initialised with the exact profile scaled to the arm body force (TCLB developedFlow literal), streamwise periodic (the problem is 1-D in y so nx=8 columns suffice)",
+    "A2_analytic_reference": "Exact steady solution of nu_j u_j'' = -g with u(0)=u(H)=0 and velocity + shear-stress continuity at every interface, obtained by an exact 2N x 2N linear solve (independent of the solver; cross-checked against an independent finite-difference solution of the same ODE and against the global momentum balance g*H = tau_bottom - tau_top)",
+    "A3_zero_init_control": "same kernel and BCs but u(x,y,0)=0 (no analytic initial condition) -- isolates what the analytic initialisation buys (steps to reach eps_inf < 1e-3)",
+    "A4_analytic_inlet_bc": "analytic profile as a real INLET boundary condition (Zou-He velocity inlet + Zou-He pressure outlet) on a 3H-long open channel -- an extension beyond TCLB; implemented and measured, EXCLUDED from the acceptance claim because it is unstable (see fail_stage)"
+  },
+  "hypothesis": "H1: the transplant reproduces the exact layered profile within 15% on every KPI at H>=32 (single phase and layered, viscosity ratio 1/3/5, interface at 0.5H and 0.25H), and the error decreases with resolution. H0 (falsifier): any KPI error >= 15%, or the error growing with resolution, or a geometry-check failure (fitted effective channel height diverging from H=ny-2 by more than 1e-2 lattice units).",
+  "metrics": {
+    "eps_inf": "max|u_x,num(y) - u_x,exact(y)| / max|u_x,exact| over the interior rows, cross-section and time averaged at the final steady snapshot",
+    "eps_l2_rel": "||u_num - u_exact||_2 / ||u_exact||_2 over the same samples",
+    "q_layer_err": "|Q_num,layer - Q_exact,layer| / Q_exact,layer with Q_layer = integral of u_x dy over the layer; BOTH sides reduced with the identical discrete functional (trapezoid on the fluid-row samples, linear interpolation at interior layer edges, u=0 at the walls) so the O(dy^2) reduction bias cancels; the continuum value is reported separately as q_total_err_continuum",
+    "q_total_err": "same as q_layer_err summed over layers",
+    "u_peak_err": "|max u_num - max u_exact| / max u_exact",
+    "y_peak_err_abs": "|y(argmax u_num) - y(argmax u_exact)| in lattice units -- interface-position sensitive because the peak of a layered profile moves into the less viscous layer",
+    "t_conv_1e3": "number of steps until eps_inf < 1e-3 first holds (A1 vs A3, the value of the analytic initial condition)",
+    "h_eff_fit": "effective wall-to-wall height recovered from the single-phase profile, H_eff = y + 2 nu u/(g y) (geometry check, must equal ny-2)",
+    "globals_tclb_port": "the TCLB updateMyGlobals integrals (total_density, kinetic_energy, gas/liq total velocity and its x component, gas/liq total phase, flux-node sums) recorded per arm"
+  },
+  "unit_of_analysis": "one completed arm = one (resolution, viscosity stack, interface position, x-closure) combination; KPIs are scalars plus one cross-section profile",
+  "baseline_control": {
+    "physical_baseline": "A2 exact piecewise solution (linear solve, no fitting); for a single layer it reduces analytically to u = g/(2 nu) y (H-y) with peak g H^2/(8 nu), and the TCLB parabola 6 Uavg y (H-y)/H^2 has mean exactly Uavg (both checked in tests)",
+    "numerical_control": "A3 zero initial condition (same kernel/BCs/resolution)",
+    "comparison_limit": "TCLB itself is not executed (CUDA + its own phase-field stack, no GPU here); the transplant is a semantics-level port of the cited lines into the in-repo kernel, not a run of the OSS binary. Diffusivity of the two implementations therefore cannot be separated from the porting choices and this is declared, not upgraded to a pass."
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "target_pct": 3.0,
+    "geometry_check_abs": 0.01,
+    "convergence": "error must not increase between H=32 -> 64 -> 96 by more than a factor 1.2 (allowing for the mixed order of half-way bounce-back plus Guo forcing)",
+    "interpretation": "PASS iff every active arm has eps_inf, eps_l2_rel, q_total_err, u_peak_err < 15% AND the geometry check holds AND the convergence rule holds; the 3% target is reported, not used to gate"
+  },
+  "stopping_rule": "every arm marches a predeclared maximum number of steps and stops earlier only when the predeclared steady criterion max|u(n)-u(n-window)|/max|u(n)| < 1e-6 (single phase) is met; no arm is extended or truncated after looking at its KPI. Wall-clock cap: an arm exceeding 1800 s is reported as incomplete rather than re-tuned.",
+  "variables_changed": [
+    "resolution H = 32, 64, 96 fluid rows",
+    "viscosity layering: M = 1 (single), mu_low = 0.15 / mu_high = 0.05 (M=3), 0.20/0.04 (M=5)",
+    "interface position y_i/H = 0.5 and 0.25",
+    "initial condition: analytic (TCLB developedFlow) vs zero",
+    "streamwise closure: periodic (faithful transplant) vs analytic inlet + pressure outlet (extension, excluded from acceptance)"
+  ],
+  "variables_held_fixed": [
+    "D2Q9, BGK/SRT collision, Guo (2002) forcing, half-way bounce-back on both walls",
+    "peak velocity u_peak = 0.05 (Ma = 0.0866 < 0.1), body force derived from the analytic profile so the amplitude is set identically in every arm",
+    "float64 numpy, single process, uniform density (no phase-field density contrast)"
+  ],
+  "confounders": [
+    "half-way bounce-back puts the wall half a lattice unit inside the solid row; the exact reference uses H = ny-2 for that reason and the geometry check verifies it, but the residual O(dy^2) wall placement error is not separated from the physics error",
+    "the layered interface is a per-node viscosity jump (sharp, node-centred) while TCLB's interface is a diffuse phase-field interface of finite width; interface-width effects are not reproduced and the comparison is therefore of the profile/global mechanism, not of the interfacial model",
+    "compressibility: at u_peak = 0.05 the LBM solution carries O(Ma^2) density variations (~1e-2), which shows up in the kinetic-energy global (rho-weighted) -- the profile KPIs are insensitive to it, the KE global is not",
+    "TCLB's AddToKineticEnergy omits the 1/2 factor; the port keeps TCLB's convention so that the numbers are comparable, which means the kinetic-energy value is 2x the physical one in both",
+    "no sub-grid/turbulence model, no density contrast: the layered case here is a variable-viscosity kinematic layering, not a two-fluid interface with surface tension"
+  ],
+  "repetition_rationale": "the solver is deterministic (BGK, no RNG, no perturbation) so a repeated run is bit-identical: repetitions are replaced by (a) three resolutions, (b) three viscosity stacks, (c) two interface positions, (d) two initial conditions. 9 active arms x 1 run each, plus 4 implemented-but-excluded inlet arms.",
+  "environment": {
+    "python": "3.11.6", "numpy": "2.4.6", "matplotlib": "3.10.8",
+    "work_tree": "/root/tp-agent/work/m17869 (branch agent/m17869)",
+    "raw_data": "artifacts/xval_layered_poiseuille_analytic_inlet/arm_*.json"
+  },
+  "analysis": "no outlier removal; every error is relative to the exact solution reduced with the identical functional; uncertainty = spread across resolutions and across the two interface positions; the viscosity-ratio trend is reported as a separate sensitivity table",
+  "fail_stage_plan": "fail_stage names kernel/initial-condition/metrics/geometry/inlet_bc and failure_reason carries the measured number",
+  "declared_deviation": "TCLB uses developedFlow as an initial condition on a (2D/3D) multiphase model with a phase field; this case transplants the mechanism into a 2D single-component variable-viscosity channel and additionally *tries* to promote it to an inlet boundary condition (A4). A4 failed and is reported as such instead of being dropped silently."
+}
