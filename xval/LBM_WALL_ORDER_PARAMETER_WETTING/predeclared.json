@@ -1,0 +1,60 @@
+{
+  "anchor": "XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER",
+  "mission_id": 17726,
+  "repo": "TensorLBM",
+  "decision": "Adopt (or reject) the wall-order-parameter wetting formulation of the OSS reference ebinan92/Fingering_dynamics as the diffuse-interface wetting mechanism of TensorLBM, and fix its quantitative contact-angle law theta(psi_w) for reuse.",
+  "alternatives": [
+    "A1: keep the existing colour-gradient geometrical wetting BC (AKAI2018, src/tensorlbm/cg_wetting2d.py) as the only diffuse wetting mechanism",
+    "A2: port the OSS scheme verbatim (ghost wall order parameter + its order-parameter closure) and use it as is",
+    "A3: port the wall-order-parameter wall condition but equilibrate with a mass-conserving Allen-Cahn descent that shares the same free energy, stencils and ghost rows (A3 = adopted, because A2 fails the steadiness test)"
+  ],
+  "hypothesis": "H1: the wall order parameter psi_w sets the static contact angle through cos(theta) = (3 psi_w - psi_w^3)/2 (Young's law with the wall free energy implied by the Dirichlet ghost). H2: an implementation of the same wall condition with an independent numerical method reproduces that law within 15%.",
+  "metrics": {
+    "primary": "static contact angle theta [deg] of a sessile cap, measured by inverting the Laplace-cap relation from the conserved excess area A = sum((psi+1)/2) and the apex height h above the wall plane (wall plane = y = -1/2, halfway bounce-back)",
+    "secondary": "circle fit of the psi = 0 level set at least 1.5 interface widths above the wall (cross-check, must agree within 5 deg on the non-wetting branch)",
+    "diagnostics": ["mass error", "residual drift max|dpsi| per 200 iterations", "psi range (must stay within [-1.15, 1.15])"]
+  },
+  "baseline_control": "analytic Young law cos(theta) = (3 psi_w - psi_w^3)/2 evaluated at the same psi_w (reference), plus the psi_w = 0 case where the law gives exactly 90 deg by symmetry (exact control)",
+  "accept_pct": 15.0,
+  "predeclared_thresholds": {
+    "accept_pct": 15.0,
+    "circle_crosscheck_deg": 5.0,
+    "port_tolerance": 1e-08,
+    "mass_error_max": 1e-10,
+    "psi_range_max": 1.15
+  },
+  "stopping_rule": "a port run stops when max|psi(t) - psi(t-200)| < 1e-8 (port_tolerance) or at max_iter = 30000 iterations; a run that hits max_iter without the tolerance is reported as converged = false and its theta is kept but flagged",
+  "variables": {
+    "controlled": ["grid (ny=56, nx=80)", "initial cap radius (16 lattice units)", "surface tension (0.05)", "interface width xi (3 unless swept)", "wall plane (halfway bounce-back at y=-1/2)", "upper wall value psi_wall_top = -1 (far field of the wetting phase)", "descent step omega = 0.4"],
+    "changed": ["psi_wall in {-0.5,-0.35,0.0,+0.35,+0.5,+0.70}", "xi in {2,3,4} at psi_wall = 0.0 and +0.35"],
+    "confounders": [
+      "spurious psi diffusion of the reference order-parameter closure (measured separately in the lbm arm)",
+      "finite resolution xi/dx = 2 is only 2 lattice units wide -> discretisation of the double well",
+      "top-wall truncation: the upper wall is 40 lattice units above the wall plane, so its influence on the cap is O((xi/h)^2)",
+      "cap relation assumes the drop is a circular arc; gravity is absent in the model so this is exact up to lattice anisotropy"
+    ]
+  },
+  "repetition_rationale": "The problem is deterministic (no random seeds, no turbulence); repeats are used only for the two systematic sweeps (psi_w and xi), each row being one independent equilibration. Determinism was verified by re-running one case twice (identical theta to 1e-10).",
+  "environment": {
+    "python": "3.11",
+    "torch": "float64 CPU",
+    "script": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/run_xval.py",
+    "oss_runner": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/oss_runner.py (vendored reference, commit 150a5739)",
+    "raw_data": "xval/LBM_WALL_ORDER_PARAMETER_WETTING/runs/<arm>/result.json + psi.npz"
+  },
+  "analysis": "Per row: err = (theta_port - theta_ref)/theta_ref * 100 with theta_ref = analytic law value; pass iff |err| <= 15. Aggregate: median and max |err| over the psi_w sweep at the baseline xi = 3; convergence: |theta(xi=3) - theta(xi=4)|/theta(xi=4) <= 10 to declare the angle resolution independent; sensitivity points: xi and psi_w (both swept).",
+  "safety_resource_limits": "each port run < 90 s on one core, lbm arm < 120 s, oss arm submitted to the cluster queue when it exceeds 10 min; no node pinning",
+  "interpretation_limits": [
+    "the law is a static-equilibrium statement; dynamic (Cox-Voinov) wetting is out of scope",
+    "the 15% gate is applied to the angle in degrees; near psi_w = +-1 the angle tends to 0/180 deg where a relative error is ill conditioned, so the sweep is limited to |psi_w| <= 0.7",
+    "the OSS code as published cannot be run to equilibrium at this resolution (documented in the report); it therefore informs the structural diff list, not the numeric gate"
+  ],
+  "declared_before_results": [
+    "accept_pct 15", "circle cross-check 5 deg", "sweep psi_w and xi", "wall plane y = -1/2", "primary estimator = Laplace cap inversion"
+  ],
+  "discovered_during_work": [
+    "the OSS file as committed raises AttributeError (stencils defined at module level, called as methods) -> documented patch P1",
+    "the OSS published main() puts the drop at the box centre (no contact line) -> documented patch P2",
+    "the reference order-parameter closure carries spurious psi-diffusion proportional to cs^2 (tau_g - 1/2) lap(psi), which homogenises a cap for mobility Gamma <~ 1 -> this drove alternative A3 and is quantified in the lbm arm"
+  ]
+}
