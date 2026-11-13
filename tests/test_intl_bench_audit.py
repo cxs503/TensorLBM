@@ -173,3 +173,86 @@ def test_public_api_caller_returns_scorecard(tmp_path):
         assert 0.0 <= s["maturity_index_0_10"] <= 10.0
         assert s["gap_grade"][0] in "ABCD"
     assert sc["level_counts"]["verified"] == sum(c["verified"] for c in [s["counts"] for s in sc["scores"]])
+
+
+# ── artifact provenance seal (manifest.json) ──────────────────────────────────
+# A merge can drop binary artifacts and a hand edit can nudge a number; both were
+# observed on this mission.  The generator therefore seals its own output set and
+# ``verify_manifest`` re-checks it from the file system alone (no re-run).
+def _ddl_columns(sql_text: str, table: str) -> list[str]:
+    block = sql_text.split(f"CREATE TABLE IF NOT EXISTS {table} (", 1)[1].split(");", 1)[0]
+    cols = []
+    for line in block.splitlines():
+        line = line.strip().rstrip(",")
+        if not line or line.upper().startswith(("CHECK", "PRIMARY")):
+            continue
+        cols.append(line.split()[0])
+    return cols
+
+
+def test_manifest_seals_every_artifact(tmp_path):
+    root = make_repo(tmp_path)
+    out = tmp_path / "out"
+    rep = ib.run_audit(root, out)
+    man = json.loads((out / ib.MANIFEST_NAME).read_text())
+    assert rep["manifest"]["artifacts"]                     # manifest mirrors what it wrote
+    assert sorted(man["expected_artifacts"]) == sorted(ib.ARTIFACT_NAMES)
+    for name in ib.ARTIFACT_NAMES:
+        assert (out / name).is_file(), name
+        import hashlib
+        h = hashlib.sha256((out / name).read_bytes()).hexdigest()
+        assert man["artifacts"][name]["sha256"] == h, name
+        assert man["artifacts"][name]["bytes"] == (out / name).stat().st_size
+    assert man["generator"]["module"] == "tensorlbm.audit.intl_bench"
+    assert len(man["generator"]["sha256"]) == 64            # the generator itself is pinned
+    assert ib.verify_manifest(out) == []
+
+
+def test_verify_manifest_flags_tamper_missing_and_extra(tmp_path):
+    root = make_repo(tmp_path)
+    out = tmp_path / "out"
+    ib.run_audit(root, out)
+    csv = out / "compete_score.csv"
+    csv.write_text(csv.read_text().replace("A(", "A( ", 1))     # silent numeric edit
+    (out / "compete_radar.png").unlink()                        # artifact lost in a merge
+    (out / "extra.csv").write_text("dumped by hand\n")          # unexplained extra file
+    bad = ib.verify_manifest(out)
+    problems = {(b["file"], b["problem"]) for b in bad}
+    assert ("compete_score.csv", "sha256") in problems
+    assert ("compete_radar.png", "missing") in problems
+    assert ("extra.csv", "unlisted") in problems
+    assert all(b["file"] != "module_maturity.json" for b in bad)  # untouched files stay clean
+
+
+def test_verify_manifest_absent_when_no_manifest(tmp_path):
+    assert ib.verify_manifest(tmp_path) == [{"file": ib.MANIFEST_NAME, "problem": "manifest_missing"}]
+
+
+def test_committed_docs_sql_tracks_generator_schema(tmp_path):
+    """Anti-drift: the committed docs/ SQL must be the generator's output, not a frozen copy.
+
+    Regression: the m15617 deliverable kept an older, incompatible DDL (audit_id /
+    module_key primary key) while the generator had moved to the live owner schema
+    (module_path / area / tier / evidence / intl_ref / action / gap_task) — a
+    reader loading the doc SQL got a table the pipeline never writes.
+    """
+    committed = (REPO / "docs" / "tensorlbm_maturity_m15617.sql").read_text()
+    out = tmp_path / "gen"
+    ib.run_audit(make_repo(tmp_path), out)          # fake repo -> DDL is content independent
+    fresh = (out / "maturity.sql").read_text()
+    for table in ("tensorlbm_module_maturity", "tensorlbm_compete_score"):
+        assert _ddl_columns(committed, table) == _ddl_columns(fresh, table), table
+    assert committed.splitlines()[0] == fresh.splitlines()[0]      # machine-generated banner
+    assert committed.count("INSERT INTO tensorlbm_module_maturity") == len(ib.MODULES)
+    assert committed.count("INSERT INTO tensorlbm_compete_score") == len(ib.FAMILIES)
+
+
+def test_run_audit_does_not_mutate_the_tree(tmp_path):
+    """Library/API callers must not write into the repo they audit (only the CLI does)."""
+    doc_sql = sorted((REPO / "docs").glob("tensorlbm_maturity_m*.sql"))
+    assert doc_sql, "expected the committed SQL deliverables"
+    before = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
+    ib.run_audit(REPO, tmp_path / "out")
+    after = {p.name: (p.stat().st_mtime_ns, p.read_bytes()) for p in doc_sql}
+    assert before.keys() == after.keys()
+    assert before == after                      # bytes and mtimes untouched

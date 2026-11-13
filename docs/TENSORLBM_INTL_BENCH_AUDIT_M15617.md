@@ -5,6 +5,8 @@
 **机器产物**: `artifacts/m15617/module_maturity.{json,csv}` · `compete_score.csv` · `level_distribution.png` · `compete_radar.png`  
 **生成器**: `tools/audit/m15617_intl_bench_audit.py`（本文档所有数字由该脚本从 `result.json`/`STATUS.md` 抽取后注入，无手抄）
 
+> **第2轮重生（m18316, 2026-11-13T13:12:14+00:00）**：工件集已入库并由 `artifacts/m15617/manifest.json` 逐文件 sha256 封印；`docs/tensorlbm_maturity_m15617.sql` 由生成器重新落盘（旧副本停在上代 DDL，已修）；修正与复核见 §⑦。
+
 > 铁则遵守：本审计**不自宣布任何模块 verified**。verified 只授予「磁盘上有 benchmarks/verified/<case>/ + 其 result.json 含真值裁决字段 + 含网格/收敛类字段」三条同时成立者；缺一条自动降档（脚本 `grade()` 规则，见 ②）。
 
 ## ① 案例介绍：审计对象与参照系统
@@ -48,7 +50,9 @@
 
 ## ③ 计算结果
 
-**分档汇总（n=45）**：verified 7 · partial 21 · implemented 15 · failed 2
+**分档汇总（n=45，第1轮口径）**：verified 7 · partial 21 · implemented 15 · failed 2
+
+> ⚠️ **已被第2轮取代**：加严后的判据（证据隔离 + 结构性缺陷不予 verified）给出 verified 4 · partial 24 · implemented 15 · failed 2，见 §⑦。
 
 | 家族 | 模块数 | 平均证据层级 | 成熟度(0-10) | 上游最高 tier | Δtier | 差距等级 | v/p/i/f |
 |---|---|---|---|---|---|---|---|
@@ -63,7 +67,7 @@
 | 工程验证 | 10 | 4.0 | 6.0 | 4 | +0.0 | A(并跑/领先) | 2/6/2/0 |
 | AI融合 | 3 | 2.0 | 2.0 | 1 | +1.0 | A(并跑/领先) | 0/1/2/0 |
 
-**verified 名单（7 个，全部证据回链）**
+**verified 名单（7 个，第1轮口径；现行判据下 4 个，见 §⑦）**
 
 | 模块 | 算例 | 裁决字段 | 收敛字段 |
 |---|---|---|---|
@@ -167,3 +171,82 @@ T1 碰撞与内核 / T2 边界与复杂几何 / T3 多相与自由表面 / T4 GP
 
 **结论**：7 个 verified 模块中，标准算例级误差均在各自预注册容差内；但**上游同口径对照缺失**（无任何上游代码被复跑），因此「是否 <3%」只对**解析/文献基准**成立，对**上游实现**不可回答——这是本轮对标最大的证据空洞，已列入 T4/T5 任务。多相/自由表面/IBM 面按 owner 锚定证据判**不可接受（>15%）**：五模型液滴审计全败、RT 无增长窗口、FE 缺 Laplace/伪流速/界面剖面/长期稳定。
 
+
+## ⑦ 第2轮重生（m18316）：交付物补齐 + 来源封印 + honest 更正
+
+本单（PR#1995 关闭后重开）不重写第一轮结论，而是封掉三条**交付层**缺口并更正一条**过度声明**。所有数字由生成器从
+`result.json`/`STATUS.md` 重跑后注入（零手抄），复核命令见本节末。
+
+### 7.1 工件集已入库并来源封印
+
+第一轮的真问题不是算法，而是**证据在合并中丢失**：md 引用的两张图与机读表从未进入 main（history: 原 commit 9 件，
+merge 只保留 3 件文本）。本轮把 6 件文件（5 件工件 + `manifest.json`）写入 `artifacts/m15617/`，并由生成器为每件工件写 sha256 封印；
+`verify_manifest(dir)` 是纯文件系统校验（不重跑、不联网），任一文件被改/丢/多都会返回非空失配表。
+
+| 工件 | 字节 | sha256（前16） |
+|---|---|---|
+| `artifacts/m15617/module_maturity.json` | 57496 | `cc246acee35756b2…` |
+| `artifacts/m15617/module_maturity.csv` | 8133 | `389aa4e90b52aedd…` |
+| `artifacts/m15617/compete_score.csv` | 635 | `0ee21037d65654db…` |
+| `artifacts/m15617/level_distribution.png` | 25087 | `db5b7dd56f5f00c1…` |
+| `artifacts/m15617/compete_radar.png` | 171566 | `2ecaec7dd356435a…` |
+
+封印本身也入账：生成器 `intl_bench.py` sha256=`94b8bf281e3dcd8f…`，repo head=`e7eabac0abb5`（生成时 HEAD；工件本体由 sha256 绑定，head 只作时间锚），
+输入摘要含 `benchmarks/STATUS.md` 等 23 件，例如 `benchmarks/STATUS.md`, `benchmarks/verified/poiseuille_2d/result.json`, `benchmarks/verified/taylor_green_3d/result.json`。
+SQL 交付物只留 `docs/` 一份规范副本（避免双副本互相漂移），其摘要记在 `manifest.json:sql_deliverable`。
+
+### 7.2 更正：第一轮的 verified 计数偏高 3 个
+
+现行判据（证据隔离 + 结构性缺陷不予 verified）在 n=45 行上给出：
+
+| 分档 | 本轮 | 第一轮 §③ |
+|---|---|---|
+| verified | 4 | 7 |
+| partial | 24 | 21 |
+| implemented | 15 | 15 |
+| failed | 2 | 2 |
+
+降档的 3 个模块与机读理由（取自 `module_maturity.json:downgrade_reason`）：
+
+- `wall_function_les` / `rans_ke` → partial：算例 `suboff_re1000` 同时支撑 3 个模块，属**证据复用**，非模块专属证据（第一轮 §⑤.3 已自述该弱点，但没有落到分档上——本轮落到分档）。
+- `ship_resistance_hull` → partial：已登记结构性缺陷未闭合（DTMB5415 阶梯湿面积 16× 光滑表面；KCS 收敛跑未完成）。
+
+**这是往下改而不是往上改**：审计对自身第一轮的过度声明做了显式更正，`verified` 仍在磁盘证据可回链的 4 个模块上
+（`d3q27_kernel`/`stl_cad_voxelization`/`laplace_law_surface_tension`/`compressible_shock`）。
+
+### 7.3 十维竞争度（现行判据重算）
+
+| 维度 | 模块数 | 平均证据层级 | 成熟度(0-10) | 上游最高 | 级差 | 差距档 |
+|---|---|---|---|---|---|---|
+| 基础LBM内核 | 4 | 4.5 | 7.0 | 4 | 0.5 | A(并跑/领先) |
+| 高阶碰撞 | 5 | 2.2 | 2.4 | 4 | -1.8 | C(差2级) |
+| 边界复杂几何 | 5 | 4.2 | 6.4 | 4 | 0.2 | A(并跑/领先) |
+| 多相流 | 5 | 3.6 | 5.2 | 4 | -0.4 | B(差1级) |
+| 自由表面 | 3 | 3.33 | 4.7 | 4 | -0.67 | B(差1级) |
+| 湍流 | 4 | 3.0 | 4.0 | 4 | -1.0 | B(差1级) |
+| GPU单卡 | 4 | 2.25 | 2.5 | 4 | -1.75 | C(差2级) |
+| 多GPU-HPC | 2 | 2.0 | 2.0 | 4 | -2.0 | C(差2级) |
+| 工程验证 | 10 | 4.0 | 6.0 | 4 | 0.0 | A(并跑/领先) |
+| AI融合 | 3 | 2.0 | 2.0 | 1 | 1.0 | A(并跑/领先) |
+
+### 7.4 已闭合 / 未闭合（honest）
+
+| 缺口 | 状态 |
+|---|---|
+| F1 工件未入库（图/机读表在 merge 中丢失） | ✅ 闭合：6 件工件入 main + sha256 封印 + `verify_manifest` 校验 |
+| F1b `docs/tensorlbm_maturity_m15617.sql` 停在上代 DDL（`audit_id`/`module_key` 主键），与生成器现行的 owner schema（`module_path`/`area`/`tier`/`evidence`/`intl_ref`/`action`/`gap_task`）不一致 | ✅ 闭合：重新落盘，并加 pytest 守护（DDL 列集/横幅/行数三方对齐） |
+| F1c 无 pytest 守护 | ✅ 闭合：`tests/test_intl_bench_audit.py` 新增 4 例（封印完整、篡改/丢失/多余三态、无 manifest 态、docs SQL 与生成器 schema 同步） |
+| F2 `tensor_benchmark_cases` 无 `GAP-LBM-INTL-BENCH` 案号（平台侧基准裁判缺席） | ❌ 未闭合：属平台库写入，非本仓可改；诚实保留 |
+| F3 四参照未复跑（上游 tier 上限 4 为声明性假设） | ❌ 未闭合：本轮范围外，仍在 T4/T5 任务里 |
+| F4 `docs/tensorlbm_maturity_m15912.sql`（同一快照的后继 mission 别名副本）在 main 上仍是旧行集 | ⚠️ 本 PR 不混改它单交付物：生成器已改为同跑双写（`DOC_SQL_FILES`），下一次生成即同步；本单只对 m15617 交付物做守护测试 |
+
+### 7.5 复核命令（任何人可重跑）
+
+```bash
+python tools/audit/m15617_intl_bench_audit.py --repo-root . --out artifacts/m15617 --no-sql-copy
+python -c "from tensorlbm.audit.intl_bench import verify_manifest; print(verify_manifest('artifacts/m15617'))"  # 必须输出 []
+python -m pytest tests/test_intl_bench_audit.py -q
+```
+
+`--no-sql-copy` 的语义：SQL 不在 `artifacts/` 再留一份重复副本（规范副本在 `docs/`），其 sha256 仍由
+`manifest.json:sql_deliverable` 绑定；不带该开关时行为与第一轮一致（`artifacts/<out>/maturity.sql`）。
