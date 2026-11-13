@@ -1,0 +1,55 @@
+"""Pre-registered design of XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE.
+
+Written before the TensorLBM arms of the matrix were run (the OSS parameter
+pre-scan was run first and is recorded here as it happened; the selection rule
+was fixed before the TL arm existed, and no arm is re-tuned after seeing a KPI).
+"""
+{
+  "anchor": "XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE",
+  "decision": "Does TensorLBM's Shan-Chen two-component kernel reproduce the OSS reference (lbm-principles-practice/code chapter9/shanchen.cpp, nfluids=2 planar-interface branch) planar-interface solution to better than the owner's 15% acceptance bar, and what must be transplanted to make it so?",
+  "alternatives": [
+    "A1 cross-run against the compiled OSS binary itself (chosen): the reference arm is g++-compiled upstream C++ with parameter-only patches; the reference numbers are read from the binary's own data/ files (zero hand-writing)",
+    "A2 analytic reference (tangent-hyperbolic interface profile, SC bulk coexistence from the equal-pressure condition): not available in closed form for psi_exp at finite g_AB, would need an independent solve",
+    "A3 self-consistency only (TensorLBM against its previous run / regression baseline): proves reproducibility, not correctness"
+  ],
+  "hypothesis": "With the same pseudopotential (psi = 1-exp(-rho)), the same coupling mapping (G = -g), and the same forcing (Guo with the mixture velocity), TensorLBM reproduces the OSS bulk coexistence densities and the transverse density profile within a few percent; the residual is attributable (a) to float32 vs float64, (b) to the OSS pressure/velocity conventions listed in the difference list.",
+  "unit_of_analysis": "one arm = one (code, N, g_AB, steps, scheme) run; the KPIs are computed on the arm's own final fields",
+  "metrics": {
+    "eps_bulk": "relative error of the four bulk densities: rho_A and rho_B averaged over the middle half of each half-domain (A-rich region = rows [n/2+n/8, n-n/8), A-poor = [n/8, n/2-n/8)), TensorLBM vs OSS; error = |TL-OSS|/|OSS|",
+    "eps_profile": "normalised L-infinity deviation of the transverse profile rho_A(y) = <rho_A>(x) over the full periodic period: max_y |TL-OSS| / (rho_A_max - rho_A_min) of the OSS profile",
+    "eps_width": "relative difference of the 10%-90% interface width (both interfaces pooled) measured on the same profile",
+    "u_max": "max |u| of the force-corrected mixture velocity (OSS computeVelocity convention on both sides); reported as an order-of-magnitude comparison, not as an acceptance KPI",
+    "p_flat": "peak-to-peak spread of a pressure profile divided by its bulk mean: computed for (i) the OSS computePressure() formula p = sum_s rho_s/3 + sum_{s,ss} g_ss psi_s psi_ss/6 and (ii) the momentum-balance form p = cs2 sum_s rho_s + G_12 cs2 psi_1 psi_2 (TensorLBM sc_mcmp_pressure) on both codes' fields; the flat one is the mechanical pressure"
+  },
+  "baseline_control": {
+    "reference": "compiled OSS binary, ref/shanchen.cpp sha256 216029bb79d532d15587dca34f20eb33bc3b95690f971e3c31adb4e798537bfd, parameter-only patch (nfluids 1->2 and the arm's nx/ny/nsteps/noutput/g values), unified diff stored per arm",
+    "control": "the same arm run through TensorLBM in the 'faithful' variant isolates implementation differences; the 'native' variant additionally isolates the library's own Guo idiom (source term on the per-component corrected velocity instead of the mixture velocity)"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "target_pct": 3.0,
+    "pass_rule": "PASS iff max(eps_bulk) < 15% AND eps_profile < 15% on the primary arm (N=64, g_AB=6, 20000 steps) AND the same holds at N=32 (convergence arm); the 3% target is reported, never used to gate",
+    "convergence_rule": "KPI must not grow by more than a factor 1.5 between N=32 -> 64 and between 8000 -> 20000 steps",
+    "stopping_rule": "every arm runs its predeclared step budget; no arm is extended or truncated after looking at a KPI. Wall-clock cap 1800 s per arm -> reported as incomplete",
+    "instability_arm": "an arm that produces non-finite fields is reported as a failure mode (honest FAIL), never replaced silently"
+  },
+  "operating_point_selection": {
+    "rule": "the OSS file's own nfluids=2 defaults (g_A=-4.7, g_B=0, g_AB=6, psi_exp, sharp 0.1/0.9 step, tau=1) were run first; they diverge within ~50 steps (rho_max>2, then NaN). The self interaction was therefore disabled (g_A=g_B=0, the OSS constants are the nfluids=1 droplet calibration) and g_AB was scanned over {1,2,3,4,6}; g_AB=6 was chosen because it is the only scanned value whose segregated bulk states are stationary and strongly demixed (rho_A bulk 0.045/0.996 at 2000 steps); g_AB=4 and 2 are kept as the sensitivity direction. This selection happened before any TensorLBM arm was written and is not revisited.",
+    "primary": {"n": 64, "g_ab": 6.0, "steps": 20000},
+    "sensitivity_g": [4.0],
+    "sensitivity_psi": "linear pseudopotential at the same g_AB=6 (TensorLBM only; the OSS file has no linear-psi switch)"
+  },
+  "variables_changed": ["resolution N = 32, 64", "step budget 8000, 20000", "g_AB = 4, 6", "pseudopotential exp / linear", "assembly variant faithful / native"],
+  "variables_held_fixed": ["D2Q9 BGK, tau_A = tau_B = 1", "Guo (2002) forcing with the 1-1/(2tau) factor", "psi = 1-exp(-rho), rho0 = 1", "sharp 0.1/0.9 planar initial condition, f = feq(rho,0)", "periodic domain in x and y", "no gravity, no walls"],
+  "confounders": [
+    "TensorLBM runs float32 (the OSS binary is double); round-off is expected at the 1e-6 level and is negligible against the 3% target, but it is not zero",
+    "the OSS binary prints one field set per noutput steps; the compared step is the last printed step of each arm (declared per arm as step_last)",
+    "OSS's computeVelocity adds F/2 to the barycentric velocity; TensorLBM's macroscopic() does not, so the u_max KPI is computed from a re-derived force-corrected velocity on both sides",
+    "the OSS file has no switch for the pseudopotential or for the self-interaction scaling; disabling g_A is a parameter change, not a code change, but it does put the run outside the configuration the authors shipped",
+    "only two resolutions and two step budgets were affordable in this round (128^2 x 20000 steps is ~17 min of TensorLBM alone); the convergence claim is therefore a 2-point statement"
+  ],
+  "repetition_rationale": "both codes are deterministic (no RNG): a repeated run of an arm is bit-identical, so repetitions are replaced by the resolution / step-budget / coupling / pseudopotential sweep (see variables_changed). One run per arm.",
+  "environment": {"python": "3.11", "torch": "build-time reported", "compiler": "g++ -O2", "work_tree": "branch agent/m18322"},
+  "analysis": "no outlier removal; every KPI is a deterministic functional of the arm's final fields; uncertainty is the spread over the sweep (resolution, step budget, coupling); errors are reported with their denominators so that a small bulk density cannot hide a large relative error",
+  "fail_stage_plan": "fail_stage in {divergence, profile, bulk, width, pressure, harness}; failure_reason carries the measured number"
+}
