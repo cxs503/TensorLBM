@@ -1,0 +1,134 @@
+{
+  "metric_defs": {
+    "sigma_rel_err": "|sum_window kappa|grad phi|^2 - sigma_analytic| / sigma_analytic (flat interface window)",
+    "force_diff_rel": "max|F_stress - F_gradmu| / max|F_gradmu| over the interface window",
+    "residual_stress_over_Fscale": "max|F_stress| / (sigma/xi^2) over the window (0 at equilibrium)",
+    "window": "+-8 xi around the interface centre; periodic-boundary artefacts excluded"
+  },
+  "cases": {
+    "planar": {
+      "xi2.0_5pt": {
+        "kappa": 2.0,
+        "xi": 2.0,
+        "scheme": "5pt",
+        "sigma_analytic": 1.3333333333333333,
+        "sigma_discrete": 1.2521402970680446,
+        "sigma_rel_err": 0.060894777198966465,
+        "residual_stress_over_Fscale": 0.05298945828925154,
+        "residual_gradmu_over_Fscale": 0.05018972215103662,
+        "force_diff_rel": 1.1663299683374788
+      },
+      "xi2.0_iso9": {
+        "kappa": 2.0,
+        "xi": 2.0,
+        "scheme": "iso9",
+        "sigma_analytic": 1.3333333333333333,
+        "sigma_discrete": 1.2521402970680446,
+        "sigma_rel_err": 0.060894777198966465,
+        "residual_stress_over_Fscale": 0.05298945828925146,
+        "residual_gradmu_over_Fscale": 0.050189722151036606,
+        "force_diff_rel": 1.1663299683374775
+      },
+      "xi4.0_5pt": {
+        "kappa": 8.0,
+        "xi": 4.0,
+        "scheme": "5pt",
+        "sigma_analytic": 2.6666666666666665,
+        "sigma_discrete": 2.623254619818171,
+        "sigma_rel_err": 0.016279517568185742,
+        "residual_stress_over_Fscale": 0.020907561240295497,
+        "residual_gradmu_over_Fscale": 0.015892347781163777,
+        "force_diff_rel": 1.0421858656713558
+      },
+      "xi4.0_iso9": {
+        "kappa": 8.0,
+        "xi": 4.0,
+        "scheme": "iso9",
+        "sigma_analytic": 2.6666666666666665,
+        "sigma_discrete": 2.623254619818171,
+        "sigma_rel_err": 0.016279517568185742,
+        "residual_stress_over_Fscale": 0.020907561240295497,
+        "residual_gradmu_over_Fscale": 0.015892347781163774,
+        "force_diff_rel": 1.0421858656713716
+      },
+      "xi8.0_5pt": {
+        "kappa": 32.0,
+        "xi": 8.0,
+        "scheme": "5pt",
+        "sigma_analytic": 5.333333333333333,
+        "sigma_discrete": 5.311242564709758,
+        "sigma_rel_err": 0.0041420191169203036,
+        "residual_stress_over_Fscale": 0.005788471690914343,
+        "residual_gradmu_over_Fscale": 0.004733387978392634,
+        "force_diff_rel": 0.9919783531132064
+      },
+      "xi8.0_iso9": {
+        "kappa": 32.0,
+        "xi": 8.0,
+        "scheme": "iso9",
+        "sigma_analytic": 5.333333333333333,
+        "sigma_discrete": 5.311242564709756,
+        "sigma_rel_err": 0.004142019116920637,
+        "residual_stress_over_Fscale": 0.005788471690914843,
+        "residual_gradmu_over_Fscale": 0.004733387978392634,
+        "force_diff_rel": 0.9919783531131007
+      }
+    },
+    "curved_interface": {
+      "L128_R32_xi4.0": {
+        "L": 128,
+        "R": 32,
+        "xi": 4.0,
+        "R_over_xi": 8.0,
+        "sigma_analytic": 2.6666666666666665,
+        "sigma_from_curved_tensor": 2.6228277460423226,
+        "sigma_curved_rel_err": 0.016439595234128968,
+        "sigma_flat_discrete": 2.6232546191085766,
+        "radial_balance_lhs": 0.08241434502658446,
+        "sigma_flat_over_R": 0.08197670684714302,
+        "radial_balance_abs_rel_err": 0.005338567457430015,
+        "Pnn_centre": 0.2500042221106489,
+        "Pnn_far": 0.2499996405605932,
+        "note": "symmetric free energy: both bulk phases share p0, so the classical dP=sigma/R jump lives in the total (density-coupled) LBM pressure, not in the tensor"
+      },
+      "L256_R64_xi8.0": {
+        "L": 256,
+        "R": 64,
+        "xi": 8.0,
+        "R_over_xi": 8.0,
+        "sigma_analytic": 5.333333333333333,
+        "sigma_from_curved_tensor": 5.311023945147824,
+        "sigma_curved_rel_err": 0.0041830102847830175,
+        "sigma_flat_discrete": 5.31124256345119,
+        "radial_balance_lhs": 0.08341836938733119,
+        "sigma_flat_over_R": 0.08298816505392484,
+        "radial_balance_abs_rel_err": 0.005183923914052147,
+        "Pnn_centre": 0.2500077323451755,
+        "Pnn_far": 0.2499999065489721,
+        "note": "symmetric free energy: both bulk phases share p0, so the classical dP=sigma/R jump lives in the total (density-coupled) LBM pressure, not in the tensor"
+      }
+    }
+  },
+  "summary": {
+    "sigma_rel_err": {
+      "xi2.0_5pt": 0.060894777198966465,
+      "xi2.0_iso9": 0.060894777198966465,
+      "xi4.0_5pt": 0.016279517568185742,
+      "xi4.0_iso9": 0.016279517568185742,
+      "xi8.0_5pt": 0.0041420191169203036,
+      "xi8.0_iso9": 0.004142019116920637
+    },
+    "force_diff_rel": {
+      "xi2.0_5pt": 1.1663299683374788,
+      "xi2.0_iso9": 1.1663299683374775,
+      "xi4.0_5pt": 1.0421858656713558,
+      "xi4.0_iso9": 1.0421858656713716,
+      "xi8.0_5pt": 0.9919783531132064,
+      "xi8.0_iso9": 0.9919783531131007
+    },
+    "worst_sigma_rel_err": 0.060894777198966465,
+    "worst_force_diff_rel": 1.1663299683374788,
+    "worst_curved_sigma_rel_err": 0.016439595234128968,
+    "pass_15pct": true
+  }
+}
