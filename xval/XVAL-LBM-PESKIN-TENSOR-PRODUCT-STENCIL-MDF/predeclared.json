@@ -1,0 +1,49 @@
+{
+  "anchor": "XVAL-LBM-PESKIN-TENSOR-PRODUCT-STENCIL-MDF",
+  "question": "Does TensorLBM's Peskin tensor-product immersed-boundary stencil + multi-pass direct forcing reproduce haimingz/vivsim's tensor-product stencil + multi-direct forcing (MDF) within the owner 15% bar, and if not, which sub-operator is responsible?",
+  "decision": "Ship the diff list + porting recommendation; if the operator differs by >15%, add a round-trip-consistent MDF forcing to TensorLBM and verify it against the OSS reference to <1e-2.",
+  "alternatives": {
+    "A1_tensorlbm_pointwise": "tensorlbm.ibm_force_transfer.direct_forcing -- Guo-corrected pointwise multi-pass (n_correctors)",
+    "A2_oss_mdf": "haimingz/vivsim vivsim/ib/mdf.py multi_direct_forcing on vivsim/ib/stencil.py get_ib_stencil (vendored, numpy-shimmed, bodies byte-identical)",
+    "A3_tensorlbm_mdf_port": "direct_forcing_mdf added in this mission -- same Richardson scheme on IBMStencil (round-trip consistent)"
+  },
+  "hypothesis": {
+    "H0": "the two implementations agree to <15% on marker force and on the achieved interface condition at typical marker spacings (0.5-1.2 cells)",
+    "H1": "the TensorLBM pointwise arm deviates by >15% because its fixed point f = 2 rho (U_t - u_int) omits the round-trip operator A = interp.spread whose row sum is ~0.4 at 1-cell spacing"
+  },
+  "metrics": {
+    "stencil_max_abs_weight_diff": "max |w_TL - w_OSS| after decoding both stencils to physical node coordinates (dimensionless)",
+    "stencil_node_keys_identical": "boolean: the set of non-zero-support nodes per marker is the same",
+    "force_rel_vs_oss_converged": "|sum_x F_grid(arm) - sum_x F_grid(OSS, n_iter=40)| / |sum_x F_grid(OSS, n_iter=40)|",
+    "iface_slip_rel": "max_k |U_target - (u_int + 0.5 * interp(spread(F)))| / U_inf  (the no-slip the operator actually achieves)",
+    "A_row_sum_mean": "mean over markers of sum_n w_k(n) * sum_k' w_k'(n), the row sum of the round-trip operator",
+    "measured_amplification": "sum_x F_grid(OSS converged) / sum_x F_grid(pointwise converged)",
+    "cd_mean_last_half": "mean C_D over the second half of the run, C_D = -sum_k F_kx / (0.5 rho U^2 D) (end-to-end, relative comparison only)"
+  },
+  "unit_of_analysis": "one operator evaluation at fixed (marker set, grid, velocity field); end-to-end: one completed LBM run per (Re, arm)",
+  "baseline_control": {
+    "primary_control": "A2 (OSS MDF) -- the mature implementation named by the anchor; identical marker coordinates, identical Eulerian field, identical kernel",
+    "exactness_control": "TensorLBM loop-form ibm_velocity_interpolate / ibm_force_spread (an independent brute-force implementation) is used to validate that the numpy shim reproduces the OSS bodies: agreement must be < 1e-14",
+    "physical_reference": "CYLINDER_CD_2D table already in the repo (src/tensorlbm/ibm_openwater.py:130, Dennis & Chang 1970) -- used only for the end-to-end informational column"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "stencil_identity": "1e-12 absolute on weights, identical non-zero node keys, 2-D and 3-D",
+    "kernel_identity": "1e-12 absolute on the Peskin 4-pt delta",
+    "oss_vs_tl_force": "15% relative on sum_x F_grid at matched convergence (n_iter = 10) and h = 0.9 cells",
+    "iface_slip": "15% relative interface slip; a PASS requires the slip below the bar, not merely a small arm-to-arm difference",
+    "end_to_end": "15% on Cd between arms (literature is an informational column, the setup is not claimed to be unbounded-flow accurate)"
+  },
+  "stopping_rule": "all iteration counts and marker spacings are fixed in this file before the run; the operator levels stop after the predeclared sweep (n=1..40, h=0.5..3.0). No arm is extended or re-tuned after seeing a favourable number. End-to-end runs are fixed at 400 steps for the timing probe / 800 steps for the arm comparison, and are reported as relative-only because 800 steps is not a converged steady state.",
+  "variables_changed": ["operator (A1 / A2 / A3)", "marker spacing h (0.5, 0.7, 0.9, 1.2, 2.0, 3.0)", "iteration count (1..400)", "marker ds preconditioner (true ds vs 1.0)"],
+  "variables_held_fixed": ["grid 64x64 periodic, radius 8 circle", "Peskin 4-point kernel, tensor-product stencil offsets", "uniform u=(0.05,0), target u=0", "float64", "single marker set per h, one deterministic construction"],
+  "confounders": [
+    "the numpy shim runs float64 while upstream JAX defaults to float32 -- dtype is not reproduced (both arms float64, so the operator comparison is unaffected)",
+    "OSS marker_ds preconditions the MDF iteration; it changes the convergence path, not the converged force (measured: <2e-3, entry ds_preconditioner_only)",
+    "marker positions are identical across arms, so stencil overlap (cross-talk) is not a confounder but is the mechanism under test",
+    "the end-to-end run uses TensorLBM's own LBM for every arm (including the OSS arm), so only the IBM operator differs; the shared interior penalty is a known limitation of that driver"
+  ],
+  "environment": {"python": "3.11", "torch": "2.7.1 (CPU, float64)", "numpy": "2.4.6", "jax": "absent -> numpy shim", "work_tree": "/root/tp-agent/work/m18131 (branch agent/m18131)"},
+  "analysis": "no outlier removal; relative errors against the OSS arm; convergence is reported as a separate table; the end-to-end column is reported arm-to-arm and flagged if the absolute Cd is not physically plausible",
+  "fail_stage_plan": "fail_stage = L1_stencil / L2_mdf / L3_port / L4_end_to_end, failure_reason carries the measured deviation; partial results are kept, never overwritten"
+}

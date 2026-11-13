@@ -57,6 +57,7 @@ __all__ = [
     "sphere_markers",
     "direct_forcing",
     "direct_forcing_3d",
+    "direct_forcing_mdf",
     "guo_force_2d",
     "guo_force_3d",
     "interior_mask_force",
@@ -375,6 +376,85 @@ def direct_forcing(
 
 
 # Historic alias used by the 3-D coupling module.
+
+def direct_forcing_mdf(
+    stencil: IBMStencil,
+    u_grid: torch.Tensor,
+    u_target: torch.Tensor,
+    rho_grid: torch.Tensor | None = None,
+    n_mdf: int = 10,
+    tol: float = 0.0,
+):
+    """Multi-direct forcing whose fixed point is the *round-trip* interface condition.
+
+    Why this exists
+    ---------------
+    :func:`direct_forcing` iterates ``u_phys = u_int + 0.5 f/rho`` with ``u_int``
+    held fixed, so it converges to ``f = 2 rho (u_target - u_int)``.  That is the
+    right answer only if the spreading/interpolation round trip were the identity.
+    The force actually felt by a marker is ``interp(spread(f)) = A f`` with
+    ``A = I.apply . S.apply``, whose row sum is ``sum_n w_k(n)^2 + cross terms`` --
+    for the 4-point Peskin kernel on a 1-cell marker spacing this is ~0.4, so the
+    marker only sees ~40 % of the force that :func:`direct_forcing` books.  The
+    correct fixed point of the Guo half-force interface condition
+
+        ``u_target = u_int + (1 / (2 rho)) * A f``
+
+    is ``f = 2 rho A^{-1} (u_target - u_int)``, which is what the OSS
+    implementation (haimingz/vivsim ``vivsim/ib/mdf.py``) reaches by
+    re-interpolating the just-spread force inside the iteration.
+
+    The iteration here is the same Richardson scheme with the 2/0.5 Guo pair:
+
+        ``step = 2 rho (u_target - u_m)``;  ``u_m += 0.5 interp(spread(step))/rho``
+
+    With ``rho = 1`` and a uniform marker spacing this is algebraically the OSS
+    scheme with ``ds = 1``; the OSS ``ds`` only preconditions the iteration and
+    leaves the converged force unchanged (verified in the XVAL
+    ``ds_preconditioner_only`` entry).
+
+    Args:
+        stencil: marker stencil (dims match ``u_grid``).
+        u_grid: ``(d, *shape)`` Eulerian velocity in *array-axis* component order
+            (the same order ``stencil.interpolate`` uses).
+        u_target: ``(M, d)`` desired marker velocity, same component order.
+        rho_grid: optional ``(*shape,)`` density (defaults to 1).
+        n_mdf: number of sweeps (``>=1``).
+        tol: optional early exit on ``max|u_target - u_m|`` below ``tol``.
+
+    Returns:
+        ``(f_marker, f_grid, body_force, body_torque)`` -- same contract as
+        :func:`direct_forcing`, so this is a drop-in replacement.
+    """
+    if rho_grid is None:
+        rho_m = torch.ones(stencil.n_markers, dtype=torch.float64)
+    else:
+        rho_m = stencil.interpolate(rho_grid)
+    rho_row = rho_m.unsqueeze(0)
+
+    u_int = stencil.interpolate(u_grid)  # (d, M)
+    u_m = u_int.clone()
+    f_m = torch.zeros_like(u_int)
+    for _ in range(max(1, int(n_mdf))):
+        residual = u_target.T - u_m
+        if tol > 0.0 and float(residual.abs().max()) < tol:
+            break
+        step = 2.0 * rho_row * residual  # (d, M) with dt = 1
+        f_m = f_m + step
+        u_m = u_m + 0.5 * stencil.interpolate(stencil.spread(step.T)) / rho_row
+
+    f_m = f_m.T.contiguous()  # (M, d)
+    f_grid = stencil.spread(f_m)
+    body_force = -f_m.sum(dim=0)
+    centroid = stencil.points.mean(dim=0)
+    rel = stencil.points - centroid
+    if stencil.points.shape[1] == 2:
+        torque = -(rel[:, 0] * f_m[:, 1] - rel[:, 1] * f_m[:, 0]).sum()
+    else:
+        torque = -torch.cross(rel, f_m, dim=1).sum(dim=0)
+    return f_m, f_grid, body_force, torque
+
+
 direct_forcing_3d = direct_forcing
 
 
