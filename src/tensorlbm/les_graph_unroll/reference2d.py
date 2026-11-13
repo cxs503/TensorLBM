@@ -33,6 +33,8 @@ __all__ = [
     "box_filter",
     "kinetic_energy",
     "tau_for_re",
+    "tgv_analytic_ke",
+    "tgv_analytic_enstrophy",
 ]
 
 C = np.array([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]], float)
@@ -148,3 +150,32 @@ def box_filter(field: np.ndarray, ratio: int) -> np.ndarray:
 
 def kinetic_energy(ux: np.ndarray, uy: np.ndarray) -> float:
     return 0.5 * float(np.mean(ux * ux + uy * uy))
+
+# ---------------------------------------------------------------------------
+# External anchor: the exact 2-D Taylor-Green solution.
+#
+# The declared initial condition (``tgv_ic``) is the *single-mode* Taylor-Green
+# field ``u = u0 sin x cos y``, ``v = -u0 cos x sin y`` on the 2*pi torus.
+# Writing ``sin x cos y = (sin(x+y) + sin(x-y)) / 2`` shows k^2 = 1 + 1 = 2,
+# so the velocity amplitude decays as ``exp(-2 nu t)`` and every quadratic
+# diagnostic decays as ``exp(-4 nu t)``.  These closed forms are what turns a
+# fine-grid run into a *falsifiable* reference: the fine grid must converge to
+# them as dx -> 0.
+# ---------------------------------------------------------------------------
+def tgv_analytic_ke(u0: float, nu: float, t: float) -> float:
+    """Exact kinetic energy ``u0^2/4 exp(-4 nu t)`` of the single-mode TGV."""
+    return 0.25 * u0 * u0 * math.exp(-4.0 * nu * t)
+
+
+def tgv_analytic_enstrophy(u0: float, nu: float, t: float, dx: float) -> float:
+    """Exact enstrophy in the *lattice* convention used by ``selection.enstrophy``.
+
+    ``selection.enstrophy`` evaluates ``0.5 <(D ux - D uy)^2>`` with central
+    differences that are **not** divided by ``dx``; on a grid of spacing ``dx``
+    the discrete operator reproduces ``omega`` up to ``sin(k dx)/(k dx)``.
+    Hence the comparable analytic value is
+    ``0.5 dx^2 u0^2 exp(-4 nu t) (sin(2*pi/nx)/(2*pi/nx))^2``.
+    """
+    nx = int(round(2.0 * math.pi / dx))
+    dsinc = 1.0 if nx <= 0 else math.sin(dx) / dx
+    return 0.5 * dx * dx * u0 * u0 * math.exp(-4.0 * nu * t) * dsinc * dsinc
