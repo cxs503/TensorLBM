@@ -1,0 +1,75 @@
+{
+  "anchor": "XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE",
+  "mission_id": 18101,
+  "repo": "TensorLBM",
+  "declared_before_results": true,
+  "decision": "Decide whether tensorlbm.multiphase.sc_two_component_force (the cross force that drives every two-component Shan-Chen run in this library, called from collide_sc_two_component at src/tensorlbm/multiphase.py:788) reproduces the published two-component Shan-Chen cross interaction to better than the 15% accuracy standard, and fix the resolution floor below which it does not.",
+  "alternatives": [
+    "A1: judge the cross force end-to-end through a physical observable (static droplet Young-Laplace: dp = sigma/R) - rejected as the primary metric: CASE-MCMP-LAPLACE (benchmarks/case_pool/mcmp_laplace) already measured that route and the absolute sigma anchor FAILS 0/12 there, so it cannot discriminate a force-operator defect from a model-level (linear-psi) limitation",
+    "A2: judge the operator against a transplant of an upstream MCMP solver (Palabos / listLBM / sailfish executed as-is) - adopted only as the implementation cross-check arm, because the three upstream codes differ from this library in psi law, forcing scheme, sign convention and storage, so a numeric agreement would be a test of the convention map, not of the force",
+    "A3: judge the operator against (i) a closed-form symbol of the D2Q9 stencil and (ii) the exact spectral gradient of the sampled density field, on analytic modes and on real relaxed solver state - ADOPTED as the primary metric: both references are derivable in closed form, are independent of the library code path, and give a resolution-dependent error, not a single number"
+  ],
+  "hypothesis": "H1: the discrete cross force equals G_12 cs^2 psi_1 grad psi_2 to O(h^2), so on a smooth two-component interface resolved with >= 8 cells per wavelength the relative L2 error against the exact spectral gradient is below 15%. H2: the error follows the closed-form D2Q9 symbol |1 - S(k)| = |1 - sin(k)/k| (axis) rather than being an empirical constant. H3: the 'edm' pair split removes the action-reaction defect exactly (net total force over a periodic domain = 0 to machine precision) while the 'standard' split leaves an O(h^2) defect.",
+  "metrics": {
+    "primary": "worst relative L2 error ||F_kernel - F_spectral|| / ||F_spectral|| over the relaxed planar-interface cases (real solver state, n = 64/96, G_12 = -2.5/-3.0, both sc_form), F_spectral = G_12 cs^2 rho_1 * (exact Fourier-symbol gradient of rho_2)",
+    "secondary": "worst relative L2 error over single-mode sweeps that are resolved with >= 8 cells per wavelength (axis and (1,1) diagonal directions, n = 64, k = 2*pi*m/n)",
+    "invariants": [
+      "uniform field -> cross force exactly nil",
+      "kernel == OSS forward-gather stencil with the convention map g_oss = -G_12 (rel L2 <= 1e-12)",
+      "measured error == closed-form |1 - S(k)| (<= 1e-10)",
+      "kernel commutes with the D2Q9 symmetry group (90 deg rotation, transpose) to 1e-12",
+      "edm net total force over a periodic domain <= 1e-13 relative"
+    ],
+    "diagnostics": [
+      "relaxation steadiness u_max and steps_run per slab case",
+      "density ranges of the relaxed fields (must stay physical, no blow-up)",
+      "observed convergence order from the refinement study n = 32..256 at fixed physical wavelength",
+      "surface tension / Laplace pressure are NOT re-measured here (out of scope, see A1)"
+    ]
+  },
+  "baseline_control": "Analytic control cases with an exact answer: (i) a single Fourier mode with a constant companion density, where the discrete/continuum ratio is known in closed form sin(k)/k (axis) and S(k) (diagonal), so 'correct implementation' and 'wrong implementation' are separated by a computable number; (ii) a uniform two-component field, where the exact cross force is identically zero; (iii) six planted defects in an independent NumPy reference implementation of the same stencil, each of which must exceed the 15% gate (a metric that cannot fail is not a metric).",
+  "accept_pct": 15.0,
+  "predeclared_thresholds": {
+    "accept_pct": 15.0,
+    "oss_identity_max": 1e-12,
+    "symbol_identity_max": 1e-10,
+    "uniform_nil_max": 1e-14,
+    "symmetry_equivariance_max": 1e-12,
+    "momentum_edm_max": 1e-13,
+    "mutation_min": 15.0,
+    "resolved_min_cells_per_wavelength": 8.0
+  },
+  "stopping_rule": "Fixed work: one k-sweep on a 64x64 grid (all torus-periodic modes m = 1..32 in the axis and (1,1) directions), one refinement study (n = 32/64/128/256 at a fixed physical wavelength), three slab relaxations (steps capped at 6000/6000/8000 with the library's own u_max steadiness rule stop_tol = 1e-4), six mutation controls. No result-dependent extension; a slab that hits the step cap is reported with converged = false and its error is kept but flagged.",
+  "variables": {
+    "controlled": [
+      "D2Q9 lattice, cs^2 = 1/3, linear pseudopotential psi = rho (the library MCMP choice)",
+      "float64 CPU, periodic boundaries, no body force, no solid mask",
+      "G_12 = -2.5 for the analytic arms; tau1 = tau2 = 1.0 and the library default velocity-shift forcing for the slab arm"
+    ],
+    "changed": ["mode wavenumber k (m = 1..32)", "direction (axis vs (1,1) diagonal)", "grid n (32..256)", "G_12 (-2.5, -3.0)", "force discretisation (standard, edm)"],
+    "confounders": [
+      "float32 is the library default elsewhere; the analytic arms run in float64 so that 'machine precision' claims are meaningful - the float32 floor is reported separately",
+      "the spectral reference assumes periodicity, which is exact here but would not hold with walls or a solid mask",
+      "the slab relaxation may stop before the interface is fully steady at G_12 = -3.0; the residual u_max is reported with every case",
+      "the label 'cross force error' names the local operator error only; the model-level (linear-psi) limitation of surface tension is not measured by it"
+    ]
+  },
+  "repetition_rationale": "Every arm is deterministic (no seeds, no turbulence, no stochastic term): a repeat run reproduces the numbers bit-for-bit, verified by running the driver twice and diffing summary.json. Repetition is therefore replaced by adversarial controls (six planted defects) which is the stronger test for a deterministic operator check.",
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1 (float64, CPU)",
+    "numpy": "2.4.6",
+    "script": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/run_xval.py",
+    "reference_lib": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/xval_lib.py (pure NumPy, no library import)",
+    "tests": "tests/test_xval_mcmp_cross_force.py",
+    "raw_data": "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE/artifacts/{summary.json,fields.npz,fig_xval.png}"
+  },
+  "analysis": "Primary metric = max over slab cases of rel L2 error vs the spectral reference; pass iff <= 15%. Secondary = max over resolved modes (>= 8 cells/wavelength); pass iff <= 15%. The 15% boundary is reported as the coarsest wavelength that fails, converted to cells per wavelength (a usable resolution floor). Convergence = observed order from the n = 32..256 refinement (expected 2.0). Invariants are pass/fail at the thresholds above and are reported separately from the accuracy gate (an invariant failure invalidates the accuracy number, an accuracy failure does not invalidate the invariants). Outliers are not removed; every case is reported.",
+  "safety_resource_limits": "whole driver < 4 min on one CPU core (measured), no cluster submission needed; no node pinning; no file outside the worktree is touched",
+  "interpretation_limits": [
+    "the verdict is a statement about the discrete cross-force operator and its continuum limit, not about the physical accuracy of the two-component Shan-Chen model at a given G_12",
+    "linear psi = rho only: the exponential/classic pseudopotential paths (sc_single_component_force) are out of scope",
+    "D2Q9 / 2D only; the D3Q19/D3Q27 kernels (multiphase3d.py, multiphase3d_d3q27.py) are a separate XVAL and are not covered",
+    "wall/solid-mask branches (wall_mode='dry'/'mirror') are not exercised: the arms are wall-free by construction"
+  ]
+}
