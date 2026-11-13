@@ -31,6 +31,7 @@ import torch
 
 from .. import cac_lbm2d as cac
 from . import metrics as M
+from .wall_order_parameter_2d import analytic_contact_angle, young_cos_theta
 
 # ---------------------------------------------------------------------------
 # Frozen base parameters (one place; the report reads them back from the JSON)
@@ -175,6 +176,65 @@ def contact(
         "inputs": {"shape": list(shape), "steps": steps, "R_init": radius, "sigma_input": sigma,
                    "wall_thickness": wall_thickness, "wall_flux": flux, "h_wall": h_wall, **BASE},
         "meas": {"circle_fit": fit, "cap_inversion": cap},
+        "u_max": diags[-1]["u_max_fluid"],
+        "wall_time_s": time.time() - t0,
+    }
+
+
+def contact_wall_order(
+    psi_wall: float,
+    psi_wall_top: float = -1.0,
+    sigma: float = 0.02,
+    shape=(112, 112),
+    radius: float = 22.0,
+    steps: int = 3500,
+    wall_thickness: int = 2,
+    gravity: float = 2.0e-6,
+    sample_every: int | None = None,
+) -> dict:
+    """Drop on a flat plate whose wetting is set by a *wall order parameter*.
+
+    Integration arm of ``XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER``:
+    same geometry as :func:`contact`, but the caller prescribes ``psi_w`` instead
+    of a contact angle and the *production* solver
+    (:class:`tensorlbm.cac_lbm2d.CAC2D`, ``wall_phi_policy="wall_order"``) derives
+    the wall flux from the emergent Young angle
+    ``cos(theta) = (3 psi_w - psi_w^3)/2``.
+
+    Two independent estimators are reported per run (circle fit of the level set
+    and spherical-cap area inversion, both from :mod:`tensorlbm.wetting.metrics`,
+    which never see the solver's internal angle), plus the analytic angle.
+    """
+    t0 = time.time()
+    ny, nx = shape
+    mask = cac.solid_plate(shape, wall_thickness, "bottom")
+    mask |= cac.solid_plate(shape, wall_thickness, "top")
+    y_wall = wall_thickness - 0.5
+    sim = _sim(shape, sigma=sigma, wall_mask=mask, policy="wall_order", angle=None, axes="wp",
+               gravity=(0.0, -gravity), gravity_mode="rho", wall_order_parameter=float(psi_wall),
+               wall_order_parameter_top=float(psi_wall_top))
+    theta_young = math.degrees(analytic_contact_angle(psi_wall))
+    y0 = y_wall - radius * math.cos(math.radians(theta_young))
+    sim.initialize(cac.init_phi_droplet(shape, radius, BASE["width"], center=(y0, nx / 2.0)))
+    diags = cac.run(sim, steps, sample_every=sample_every or max(1, steps // 4))
+    phi = _numpy(sim)["phi"].numpy()
+    fit = M.contact_angle_circle_fit(phi, y_wall)
+    cap = M.spherical_cap_inversion(phi, y_wall)
+    measured = [fit.get("theta_deg") if isinstance(fit, dict) else None,
+                cap.get("theta_deg") if isinstance(cap, dict) else None]
+    measured = [float(m) for m in measured if m is not None and math.isfinite(float(m))]
+    theta_meas = float(np.median(measured)) if measured else float("nan")
+    return {
+        "case": "contact_wall_order",
+        "psi_wall": float(psi_wall),
+        "psi_wall_top": float(psi_wall_top),
+        "cos_young": float(young_cos_theta(psi_wall)),
+        "theta_young_deg": float(theta_young),
+        "theta_measured_deg": theta_meas,
+        "err_pct": (theta_meas - theta_young) / theta_young * 100.0 if theta_young > 0 else float("nan"),
+        "inputs": {"shape": list(shape), "steps": steps, "R_init": radius, "sigma_input": sigma,
+                   "wall_thickness": wall_thickness, "wall_phi_policy": "wall_order", **BASE},
+        "meas": {"circle_fit": fit, "cap_inversion": cap, "n_estimators": len(measured)},
         "u_max": diags[-1]["u_max_fluid"],
         "wall_time_s": time.time() - t0,
     }
