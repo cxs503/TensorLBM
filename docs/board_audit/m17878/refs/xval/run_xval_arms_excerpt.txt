@@ -1,0 +1,75 @@
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parents[2] / "src"))
+
+# ---------------------------------------------------------------------------
+# Arm implementations (formulas verbatim from source / oss_solutions id=85)
+# ---------------------------------------------------------------------------
+
+
+def a1_tensorlbm_2d(fill: torch.Tensor):
+    """TensorLBM _compute_interface_normal, 2D slice (y=dim0, x=dim1).
+
+    Mirrors free_surface_lbm.py:642 exactly (roll-based central difference,
+    normalized, sign flipped so n points liquid->gas).
+    """
+    gx = 0.5 * (fill.roll(-1, dims=1) - fill.roll(1, dims=1))
+    gy = 0.5 * (fill.roll(-1, dims=0) - fill.roll(1, dims=0))
+    mag = (gx**2 + gy**2).sqrt().clamp(min=1e-10)
+    return -gx / mag, -gy / mag
+
+
+def a1_tensorlbm_3d(fill: torch.Tensor):
+    """TensorLBM _compute_interface_normal, 3D (z=dim0, y=dim1, x=dim2).
+
+    Verbatim port of free_surface_lbm.py:642-651.
+    """
+    gx = 0.5 * (fill.roll(-1, dims=2) - fill.roll(1, dims=2))
+    gy = 0.5 * (fill.roll(-1, dims=1) - fill.roll(1, dims=1))
+    gz = 0.5 * (fill.roll(-1, dims=0) - fill.roll(1, dims=0))
+    mag = (gx**2 + gy**2 + gz**2).sqrt().clamp(min=1e-10)
+    return -gx / mag, -gy / mag, -gz / mag
+
+
+def a2_oss_2d(eps: torch.Tensor, gas_value: float = 0.0):
+    """OSS Maarten-vd-Sande/lbm fill-gradient normal (oss id=85).
+
+    n = 0.5*(eps_{i-1}-eps_{i+1}, eps_{j-1}-eps_{j+1}); NOT normalized.
+    gas_value=0.0 -> clean; gas_value=0.5 -> documented streamcollide.py:166
+    priority bug (arm A3).
+    """
+    e = eps.clone()
+    e[e == 0] = gas_value
+    nx = 0.5 * (e.roll(1, dims=1) - e.roll(-1, dims=1))
+    ny = 0.5 * (e.roll(1, dims=0) - e.roll(-1, dims=0))
+    return nx, ny
+
+
+def a2_oss_3d(eps: torch.Tensor, gas_value: float = 0.0):
+    """OSS formula extended to 3D (same stencil, z added)."""
+    e = eps.clone()
+    e[e == 0] = gas_value
+    nx = 0.5 * (e.roll(1, dims=2) - e.roll(-1, dims=2))
+    ny = 0.5 * (e.roll(1, dims=1) - e.roll(-1, dims=1))
+    nz = 0.5 * (e.roll(1, dims=0) - e.roll(-1, dims=0))
+    return nx, ny, nz
+
+
+# ---------------------------------------------------------------------------
+# Fill-field construction (sharp 0/1 and smeared, periodic-safe)
+# ---------------------------------------------------------------------------
+
+
+def _grid2(N):
+    xs = np.arange(0.5 - N / 2, N / 2, 1.0)
+    ang = float(np.degrees(np.arccos(cos)).mean())
+    return float(err), ang, int(ok.sum())
+
+
+def main():
+    out = {"cases": []}
+    dev = "cpu"
+
+    # ---- Case 1: 2D circle, resolution ladder (sharp) ----------------------
+    for N in (64, 128, 256):
+        R = N / 4.0

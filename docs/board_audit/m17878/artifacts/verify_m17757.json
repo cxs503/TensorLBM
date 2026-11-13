@@ -1,0 +1,171 @@
+{
+  "mission_audited": 17757,
+  "audit_mission": 17878,
+  "anchor": "XVAL-LBM-FILL-GRADIENT-NORMAL",
+  "repo": "TensorLBM",
+  "source_commit": "8f8e48ff219526111c0c3041c9b815de87065985",
+  "refs_sha256": {
+    "refs/SOURCE_COMMIT.txt": "ac111e1f0b6437586b02b4f4b7fe6659938d9465056b878425adee9b10d0ac00",
+    "refs/src/free_surface_lbm_642_652.txt": "6911b38ddf9c6479f02dad48cdc6337dbad1de0773364b929171f239c2c2144c",
+    "refs/xval/REPORT.md": "4bacdeda2ee87d778caf4d0d5efc386cf39d3b121a1455e6a840004164935ffc",
+    "refs/xval/__pycache__/run_xval.cpython-311.pyc": "c7a4a9d1115be4192a148a26f80e678e949bae05eae2e8ae56089abcda98a438",
+    "refs/xval/figures/fig1_circle_normals.png": "2b24044d5bb9fd7c43e9f0ff0bc4f3cbc35ecc0d87036c6886f5201cfdabc463",
+    "refs/xval/figures/fig2_convergence.png": "4d894f3de6037f2ebb9490cafed06c8b16eca769adb963ffc68def47ab001daa",
+    "refs/xval/figures/fig3_sphere_normals.png": "e9868c3ca917216a93d0e477d968fabadd89b38e78f5593cb70ed0e0d074a11f",
+    "refs/xval/make_figures.py": "ae2ca0ddec9a1106fe277b07679a0eb8a41a499cb1abfc0d7e2f73eb778c38cc",
+    "refs/xval/make_report.py": "602c2a643a9fa9f3494a458547f11a966792d733e12dd8003fc456d0e52d82ad",
+    "refs/xval/predeclared.json": "384dfa87367642d0e01c8b61138a15fe42a70fa6ef976179c2057333b9af395d",
+    "refs/xval/results.json": "dca8149fe1862258795f44d747c20a00d42efccfc2c5accc9c270e38516b4434",
+    "refs/xval/run_xval.py": "8e4e8389503ac96c0a14ee869477a73f4ecb85663f7dc65241d1746957d8906f",
+    "refs/xval/run_xval_arms_excerpt.txt": "a8fb79e32af042bc2a4f16922b4b14bd61b8b6c2f4f92131f1548836b5aaf9a2"
+  },
+  "C1_repro": {
+    "n_cases_shipped": 10,
+    "n_cases_rerun": 10,
+    "n_kpi_mismatch": 0,
+    "missing_cases": [],
+    "mismatches": [],
+    "bit_identical": true,
+    "delivered_all_pass_flag": true,
+    "delivered_n_checks": 7
+  },
+  "C2_equivalence": {
+    "module_file": "/root/tp-agent/work/m17878/src/tensorlbm/free_surface_lbm.py",
+    "tube3d_max_abs_diff": 0.0,
+    "slice2d_max_abs_diff": 0.0,
+    "sign_step_nx_row": [
+      -1.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      1.0,
+      1.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -1.0
+    ],
+    "sign_liquid_to_gas_ok": true,
+    "batched_input_returns_all_zero": true
+  },
+  "C3_degeneracy": {
+    "random_field_rows": [
+      {
+        "field": "random_uniform",
+        "n_cells": 4096,
+        "dir_err_A1_vs_A2": -1.5937771935536915e-17,
+        "max_abs_pointwise_angle_dev": 4.440892098500626e-16
+      },
+      {
+        "field": "random_noise_0_1_int",
+        "n_cells": 3072,
+        "dir_err_A1_vs_A2": 3.7657955457663185e-17,
+        "max_abs_pointwise_angle_dev": 1.1102230246251565e-16
+      },
+      {
+        "field": "smooth_sine",
+        "n_cells": 4096,
+        "dir_err_A1_vs_A2": -1.6506978076091805e-17,
+        "max_abs_pointwise_angle_dev": 4.440892098500626e-16
+      }
+    ],
+    "identity_residual_max_abs": 5.551115123125783e-17,
+    "identity": "A2 == -0.5*central_diff(fill) == A1 * |grad(fill)| pointwise, same stencil, same field => direction agreement is 0 by construction",
+    "degenerate": true,
+    "shipped_kpis": [
+      {
+        "case": "circle-sharp N=64",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.0448223762703468
+      },
+      {
+        "case": "circle-sharp N=128",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.053362054262796166
+      },
+      {
+        "case": "circle-sharp N=256",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.05102612200824663
+      },
+      {
+        "case": "plane-sharp theta=30.0 N=256",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.07825733277433122
+      },
+      {
+        "case": "sphere-sharp N=32",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.10237029283476584
+      },
+      {
+        "case": "sphere-sharp N=64",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.0855446979003075
+      },
+      {
+        "case": "sphere-sharp N=128",
+        "A1_vs_A2": 0.0,
+        "A1_vs_analytic": 0.08399991190428568
+      },
+      {
+        "case": "circle-smeared w=2.0 N=256",
+        "A1_vs_A2": null,
+        "A1_vs_analytic": 0.01752173881672836
+      },
+      {
+        "case": "circle-smeared w=4.0 N=256",
+        "A1_vs_A2": null,
+        "A1_vs_analytic": 0.01177894009082403
+      },
+      {
+        "case": "circle-smeared w=8.0 N=256",
+        "A1_vs_A2": null,
+        "A1_vs_analytic": 0.007138579551784097
+      }
+    ],
+    "informative_kpi_A1_vs_analytic_max": 0.10237029283476584,
+    "informative_kpi_A1_vs_analytic_min": 0.007138579551784097,
+    "n_shipped_informative_cases_over_15pct": 0
+  },
+  "C4_integration": {
+    "audited_function_callers_src_tests": [],
+    "audited_function_n_callers": 0,
+    "live_free_surface_normal_callers": [
+      "src/tensorlbm/free_surface_common.py:182:    nx_n, ny_n, nz_n, mag = interface_normal_3d(phi)",
+      "src/tensorlbm/free_surface_common.py:255:    nx_n, ny_n, nz_n, _ = interface_normal_3d(phi)"
+    ],
+    "live_n_callers": 2,
+    "audited_function_definition": "src/tensorlbm/free_surface_lbm.py:642",
+    "note": "xval/ scripts are the validation harness, not solver integration"
+  },
+  "C5_benchmark": {
+    "anchor": "XVAL-LBM-FILL-GRADIENT-NORMAL",
+    "n_rows_for_anchor": 0,
+    "rows": [],
+    "table_total_rows": 65,
+    "tensorlbm_rows": 10
+  },
+  "C6_live_path": {
+    "audited_minus_live_ratio_at_x7": [
+      -1.0
+    ],
+    "live_nx_at_x7": -1.0,
+    "audited_nx_at_x7": 1.0,
+    "sign_conventions_opposite": true,
+    "kpi_abs_dot_dir_err": 0.0,
+    "kpi_signed_dot_dir_err": 2.0,
+    "kpi_is_sign_blind": true,
+    "live_mag_returned": true,
+    "live_path_consumers": [
+      "free_surface_common.interface_compression_3d:182",
+      "free_surface_common.mean_curvature_3d:255"
+    ]
+  }
+}
