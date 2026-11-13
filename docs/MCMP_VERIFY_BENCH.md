@@ -18,21 +18,21 @@ _Data: `artifacts/mcmp_verify_bench/results.json`, generated 2026-11-09T15:21:16
 
 ## 0. Figures
 
-![fig1](figures/fig1_laplace.png)
+![fig1](../artifacts/mcmp_verify_bench/figures/fig1_laplace.png)
 
-![fig2](figures/fig2_spurious.png)
+![fig2](../artifacts/mcmp_verify_bench/figures/fig2_spurious.png)
 
-![fig3](figures/fig3_fields.png)
+![fig3](../artifacts/mcmp_verify_bench/figures/fig3_fields.png)
 
-![fig4](figures/fig4_profiles.png)
+![fig4](../artifacts/mcmp_verify_bench/figures/fig4_profiles.png)
 
-![fig5](figures/fig5_contact.png)
+![fig5](../artifacts/mcmp_verify_bench/figures/fig5_contact.png)
 
 ## 1. Young-Laplace calibration
 
 Protocol (fixed before the runs): coexistence densities from a **planar slab** (curvature-free) per coupling level; droplets initialised with those densities at radii [14.0, 19.0, 24.0] on an `n = 96` periodic box, relaxed until `|u|max` plateaus; `Delta p` = (centre 4x4 box) - (corner 4x4 box) of the equilibrium pressure; `R` from the linearly interpolated `rho_1 = rho_av` crossing on four rays.
 
-Acceptance metric: the law `Delta p = 2 sigma / R` has one unknown per level, so `sigma_0 = sum x y / sum x^2` with `x = 2/R`, and the error is the per-case relative residual `|Delta p_i - sigma_0 x_i| / (sigma_0 x_i)`. A free two-parameter line is reported as a diagnostic only (its intercept absorbs a curvature-independent bulk pressure offset; reporting its slope as the error would relax the criterion).
+Acceptance metric: the law `Delta p = sigma / R` (2D circular droplet: `Delta p = sigma / R`; 3D sphere: `Delta p = 2 sigma / R`) has one unknown per level, so `sigma_0 = sum x y / sum x^2` with `x = 1/R`, and the error is the per-case relative residual `|Delta p_i - sigma_0 x_i| / (sigma_0 x_i)`. A free two-parameter line is reported as a diagnostic only (its intercept absorbs a curvature-independent bulk pressure offset; reporting its slope as the error would relax the criterion).
 
 ### Coexistence (planar slab, checks the pressure convention)
 
@@ -46,25 +46,25 @@ A flat interface must have **no** pressure jump: the `flat interface dp` column 
 
 ### Per-case measurements
 
-| G_12 | R_init | R measured | dp | sigma = dp R/2 | law residual | umax | density ratio | steps | guardrails |
+| G_12 | R_init | R measured | dp | sigma = dp R | law residual | umax | density ratio | steps | guardrails |
 |---|---|---|---|---|---|---|---|---|---|
-| -2.500 | 14.0 | 13.60 | 0.0138 | 0.0938 | 0.952% | 0.0104 | 6.81 | 2750 | - |
-| -2.500 | 19.0 | 18.67 | 0.0102 | 0.0954 | 0.752% | 0.0103 | 6.85 | 3250 | - |
-| -2.500 | 24.0 | 23.61 | 0.0082 | 0.0963 | 1.665% | 0.0103 | 6.91 | 3250 | - |
-| -2.750 | 14.0 | 13.66 | 0.0149 | 0.1020 | 0.851% | 0.0175 | 10.45 | 2750 | - |
-| -2.750 | 19.0 | 18.68 | 0.0111 | 0.1038 | 0.916% | 0.0173 | 10.53 | 1750 | - |
-| -2.750 | 24.0 | 23.61 | 0.0088 | 0.1040 | 1.079% | 0.0173 | 10.63 | 3000 | - |
-| -3.000 | 14.0 | 13.69 | 0.0154 | 0.1057 | 0.666% | 0.0251 | 15.21 | 2750 | - |
-| -3.000 | 19.0 | 18.68 | 0.0114 | 0.1069 | 0.421% | 0.0249 | 15.34 | 2500 | - |
-| -3.000 | 24.0 | 23.60 | 0.0091 | 0.1078 | 1.308% | 0.0248 | 15.50 | 3000 | - |
+| -2.500 | 14.0 | 13.60 | 0.0138 | 0.1876 | 0.952% | 0.0104 | 6.81 | 2750 | - |
+| -2.500 | 19.0 | 18.67 | 0.0102 | 0.1908 | 0.752% | 0.0103 | 6.85 | 3250 | - |
+| -2.500 | 24.0 | 23.61 | 0.0082 | 0.1925 | 1.665% | 0.0103 | 6.91 | 3250 | - |
+| -2.750 | 14.0 | 13.66 | 0.0149 | 0.2040 | 0.851% | 0.0175 | 10.45 | 2750 | - |
+| -2.750 | 19.0 | 18.68 | 0.0111 | 0.2076 | 0.916% | 0.0173 | 10.53 | 1750 | - |
+| -2.750 | 24.0 | 23.61 | 0.0088 | 0.2079 | 1.079% | 0.0173 | 10.63 | 3000 | - |
+| -3.000 | 14.0 | 13.69 | 0.0154 | 0.2114 | 0.666% | 0.0251 | 15.21 | 2750 | - |
+| -3.000 | 19.0 | 18.68 | 0.0114 | 0.2137 | 0.421% | 0.0249 | 15.34 | 2500 | - |
+| -3.000 | 24.0 | 23.60 | 0.0091 | 0.2156 | 1.308% | 0.0248 | 15.50 | 3000 | - |
 
 ### Acceptance per coupling level
 
 | G_12 | sigma (through origin) | sigma (free-line slope) | r^2 of free line | max |b|R/|a| | max law residual | verdict | guardrails |
 |---|---|---|---|---|---|---|---|
-| -2.500 | 0.0947 | 0.0903 | 0.99994 | 0.068 | 1.665% | <5%: **PASS** | - |
-| -2.750 | 0.1029 | 0.0990 | 0.99974 | 0.054 | 1.079% | <5%: **PASS** | - |
-| -3.000 | 0.1064 | 0.1028 | 1.00000 | 0.049 | 1.308% | <5%: **PASS** | - |
+| -2.500 | 0.1894 | 0.1806 | 0.99994 | 0.068 | 1.665% | <5%: **PASS** | - |
+| -2.750 | 0.2057 | 0.1980 | 0.99974 | 0.054 | 1.079% | <5%: **PASS** | - |
+| -3.000 | 0.2128 | 0.2055 | 1.00000 | 0.049 | 1.308% | <5%: **PASS** | - |
 
 **Levels passing the <5% criterion: 3/3.**
 
@@ -74,15 +74,15 @@ Fixed physical droplet radius `R = 10.0` in periodic boxes of `n in [48, 64, 96]
 
 | n | G_12 | umax | umax/cs | Ca_sp | sigma | density ratio | 10-90 width | converged | guardrails |
 |---|---|---|---|---|---|---|---|---|---|
-| 48 | -3.000 | 0.0257 | 0.0446 | 0.0407 | 0.1053 | 15.21 | 4.03 | yes | - |
-| 64 | -3.000 | 0.0239 | 0.0414 | 0.0383 | 0.1042 | 14.48 | 4.06 | yes | - |
-| 96 | -3.000 | 0.0228 | 0.0395 | 0.0367 | 0.1036 | 13.92 | 4.20 | yes | - |
-| 48 | -2.750 | 0.0177 | 0.0307 | 0.0294 | 0.1007 | 10.41 | 4.68 | yes | - |
-| 64 | -2.750 | 0.0164 | 0.0284 | 0.0274 | 0.0996 | 9.93 | 4.74 | yes | - |
-| 96 | -2.750 | 0.0157 | 0.0272 | 0.0264 | 0.0989 | 9.56 | 4.83 | yes | - |
-| 48 | -2.500 | 0.0103 | 0.0178 | 0.0194 | 0.0885 | 6.72 | 5.71 | yes | - |
-| 64 | -2.500 | 0.0097 | 0.0169 | 0.0191 | 0.0852 | 6.41 | 5.85 | yes | - |
-| 96 | -2.500 | 0.0093 | 0.0161 | 0.0200 | 0.0779 | 6.19 | 5.94 | yes | - |
+| 48 | -3.000 | 0.0257 | 0.0446 | 0.0204 | 0.2106 | 15.21 | 4.03 | yes | - |
+| 64 | -3.000 | 0.0239 | 0.0414 | 0.0191 | 0.2084 | 14.48 | 4.06 | yes | - |
+| 96 | -3.000 | 0.0228 | 0.0395 | 0.0183 | 0.2072 | 13.92 | 4.20 | yes | - |
+| 48 | -2.750 | 0.0177 | 0.0307 | 0.0147 | 0.2015 | 10.41 | 4.68 | yes | - |
+| 64 | -2.750 | 0.0164 | 0.0284 | 0.0137 | 0.1991 | 9.93 | 4.74 | yes | - |
+| 96 | -2.750 | 0.0157 | 0.0272 | 0.0132 | 0.1979 | 9.56 | 4.83 | yes | - |
+| 48 | -2.500 | 0.0103 | 0.0178 | 0.0097 | 0.1770 | 6.72 | 5.71 | yes | - |
+| 64 | -2.500 | 0.0097 | 0.0169 | 0.0095 | 0.1704 | 6.41 | 5.85 | yes | - |
+| 96 | -2.500 | 0.0093 | 0.0161 | 0.0100 | 0.1557 | 6.19 | 5.94 | yes | - |
 
 Range over the table: `|u|max = 9.3231e-03 .. 2.5725e-02` lattice units (`0.0161 .. 0.0446` cs). The spurious level **increases with |G_12|** (stronger cohesion -> larger density ratio and larger interfacial force imbalance) and **decreases with resolution** at fixed physical radius, which is the expected pseudopotential behaviour; the platform criterion `spurious < 0.005 U_max` must therefore be evaluated at the resolution and coupling of the target case, not from a single entry of this table.
 

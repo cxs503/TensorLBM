@@ -74,7 +74,8 @@ def _laplace_section(res: dict[str, Any]) -> str:
     dims = int(proto.get("laplace_dims", 2))
     factor = dims - 1
     parts.append(
-        f"Acceptance metric: the law `Delta p = {factor} sigma / R` (2D circular droplet: "
+        f"Acceptance metric: the law `Delta p = {'' if factor == 1 else f'{factor} '}sigma / R` "
+        "(2D circular droplet: "
         "`Delta p = sigma / R`; 3D sphere: `Delta p = 2 sigma / R`) has one unknown per level, so "
         f"`sigma_0 = sum x y / sum x^2` with `x = {factor}/R`, and the error is the per-case "
         "relative residual `|Delta p_i - sigma_0 x_i| / (sigma_0 x_i)`. A free two-parameter line "
@@ -145,7 +146,7 @@ def _laplace_section(res: dict[str, Any]) -> str:
                 "R_init",
                 "R measured",
                 "dp",
-                f"sigma = dp R/{dims - 1}",
+                "sigma = dp R" if dims == 2 else f"sigma = dp R/{dims - 1}",
                 "law residual",
                 "umax",
                 "density ratio",
@@ -434,6 +435,12 @@ def _chain_section(out_dir: Path) -> str:
     return "\n".join(parts)
 
 
+#: Markdown link for a figure, relative to the committed report (``docs/``).
+#: Kept as a constant so that rendering from a scratch directory produces byte
+#: identical text (``test_report_is_rendered_from_json`` compares verbatim).
+_FIG_LINK = "../artifacts/mcmp_verify_bench/figures/{name}"
+
+
 def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
     """Render the figures; returns the markdown embedding block."""
     try:
@@ -480,7 +487,7 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
     p = fig_dir / "fig1_laplace.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    lines.append(f"![fig1]({p.relative_to(out_dir).as_posix()})")
+    lines.append(f"![fig1]({_FIG_LINK.format(name=p.name)})")
 
     # fig 2: spurious currents
     fig, axes = plt.subplots(1, 2, figsize=(9.0, 3.8))
@@ -507,7 +514,7 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
     p = fig_dir / "fig2_spurious.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    lines.append(f"![fig2]({p.relative_to(out_dir).as_posix()})")
+    lines.append(f"![fig2]({_FIG_LINK.format(name=p.name)})")
 
     # fig 3: hero fields
     hero = out_dir / "hero_fields.npz"
@@ -533,7 +540,7 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
         pth = fig_dir / "fig3_fields.png"
         fig.savefig(pth, dpi=140)
         plt.close(fig)
-        lines.append(f"![fig3]({pth.relative_to(out_dir).as_posix()})")
+        lines.append(f"![fig3]({_FIG_LINK.format(name=pth.name)})")
 
         # fig 4: profiles through the droplet centre
         c = n // 2
@@ -555,7 +562,7 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
         pth = fig_dir / "fig4_profiles.png"
         fig.savefig(pth, dpi=140)
         plt.close(fig)
-        lines.append(f"![fig4]({pth.relative_to(out_dir).as_posix()})")
+        lines.append(f"![fig4]({_FIG_LINK.format(name=pth.name)})")
 
     # fig 5: contact angle calibration
     rows = res["contact_angle"]
@@ -575,7 +582,7 @@ def _figures(out_dir: Path, res: dict[str, Any]) -> list[str]:
     p = fig_dir / "fig5_contact.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    lines.append(f"![fig5]({p.relative_to(out_dir).as_posix()})")
+    lines.append(f"![fig5]({_FIG_LINK.format(name=p.name)})")
 
     return "\n".join(line + "\n" for line in lines)
 
