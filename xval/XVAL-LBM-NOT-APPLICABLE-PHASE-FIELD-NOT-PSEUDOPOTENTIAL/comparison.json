@@ -1,0 +1,90 @@
+{
+  "anchor": "XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL",
+  "oss_reference": "AminZar69/CudaPhaseField (Fakhari family phase-field LBM)",
+  "tensorlbm_model": "Shan-Chen single-component multiphase (pseudopotential)",
+  "verdict": "NOT_APPLICABLE",
+  "reason": "Phase-field and pseudopotential are fundamentally different models solving different equations. Direct number comparison is not meaningful.",
+  "scmp": {
+    "model": "Shan-Chen pseudopotential (SCMP)",
+    "reference": "Shan & Chen (1993, 1994) Phys. Rev. E",
+    "distributions": 1,
+    "interaction": "pseudopotential psi(rho) = rho0*(1-exp(-rho/rho0))",
+    "force": "F = G*cs2*psi*sum(w_i*psi(x+c_i)*c_i)",
+    "collision": "BGK with Guo forcing",
+    "density_ratio": "emergent from EOS (rho_l/rho_v ~ 12 for G=5)",
+    "surface_tension": "implicit (emergent from G and psi)",
+    "gradient": "nearest-neighbor (1st order)",
+    "verified_sigma": 0.0561,
+    "verified_laplace_err_pct": 0.44
+  },
+  "phasefield": {
+    "model": "Fakhari phase-field (CudaPhaseField family)",
+    "reference": "Fakhari et al. (2017) Phys. Rev. E 96, 053301",
+    "distributions": 2,
+    "interaction": "chemical potential mu = delta F / delta C",
+    "force": "F = mu * grad(C) + CSF pressure jump",
+    "collision": "BGK for both h (phase) and g (hydro)",
+    "density_ratio": "prescribed (rho = rho_l + C*(rho_h - rho_l))",
+    "surface_tension": "explicit input parameter sigma",
+    "gradient": "isotropic 4th-order",
+    "anti_diffusion": "required: eF = (1-4*(C-0.5)^2)/W * (c.n)"
+  },
+  "structural_differences": {
+    "distributions": "SCMP: 1 (f) | PF: 2 (h for phase, g for hydro)",
+    "interface_physics": "SCMP: psi(rho) nearest-neighbor force | PF: chemical potential mu = deltaF/deltaC",
+    "equation": "SCMP: single LBE with body force | PF: Allen-Cahn + NS (two LBEs)",
+    "density_contrast": "SCMP: emergent from psi(rho) EOS | PF: prescribed rho = rho_l + C*(rho_h - rho_l)",
+    "surface_tension": "SCMP: implicit from G and psi | PF: explicit via sigma parameter in mu",
+    "anti_diffusion": "SCMP: none | PF: required (eF term) to maintain interface",
+    "gradient_order": "SCMP: nearest-neighbor (1st order) | PF: isotropic 4th-order",
+    "stability": "SCMP: tau > 0.5 | PF: tau_g, tau_h independent",
+    "force_discretization": "SCMP: backward gather | PF: central difference + isotropic"
+  },
+  "why_not_applicable": [
+    "Different governing equations (single LBE vs. coupled AC+NS)",
+    "Different number of distribution functions (1 vs. 2)",
+    "Different interface physics (emergent vs. prescribed)",
+    "Different stability constraints (SCMP: tau>0.5 | PF: tau_g, tau_h independent)",
+    "Different density ratio mechanisms (EOS vs. linear interpolation)",
+    "Different gradient discretizations (nearest-neighbor vs. isotropic 4th-order)",
+    "Different force formulations (pseudopotential gather vs. chemical potential gradient)",
+    "Different surface tension control (implicit G vs. explicit sigma)"
+  ],
+  "parameter_mapping": {
+    "note": "No direct 1:1 mapping exists. SCMP G controls phase separation strength and emergent sigma; PF sigma is explicit input. Matching sigma requires calibration, not formula.",
+    "scmp_sigma_for_G5": "~0.0561 (lattice units, emergent)",
+    "pf_sigma": "explicit input parameter"
+  },
+  "scmp_verified_laplace": {
+    "b1_R20": {
+      "sigma_target": 0.01,
+      "sigma_recovered": 0.009994,
+      "err_pct": 0.06
+    },
+    "b1_R32": {
+      "sigma_target": 0.01,
+      "sigma_recovered": 0.01,
+      "err_pct": 0.004
+    },
+    "b1_R48": {
+      "sigma_target": 0.01,
+      "sigma_recovered": 0.010044,
+      "err_pct": 0.44
+    },
+    "b3_rho10": {
+      "sigma_target": 0.01,
+      "sigma_recovered": 0.009996,
+      "err_pct": 0.04
+    },
+    "b3_rho100": {
+      "sigma_target": 0.01,
+      "sigma_recovered": 0.009994,
+      "err_pct": 0.06
+    }
+  },
+  "porting_recommendation": {
+    "verdict": "DO_NOT_PORT",
+    "reason": "SCMP and phase-field serve different use cases. SCMP is faster and sufficient for low density ratio (~12). Phase-field is needed for high density ratio (100-1000+) but requires different module.",
+    "if_high_density_needed": "Add as new module (tensorlbm.phasefield), do not replace SCMP"
+  }
+}
