@@ -25,6 +25,12 @@ class CavityConfig:
     max_steps: int = 50000
     tau: float = None
     use_rlbm: bool = True
+    use_trt: bool = False
+    magic: float = 3.0 / 16.0
+    #: Lid velocity is ramped linearly over this many steps (0 = impulsive
+    #: start).  An impulsive start at Re = 5000 launches an acoustic wave that
+    #: drives rho outside [0.6, 1.4] within ~1e3 steps; the ramp removes it.
+    ramp_steps: int = 0
     dtype: torch.dtype = torch.float64
     device: str = "cpu"
 
@@ -43,6 +49,18 @@ class CavityConfig:
     @property
     def omega(self) -> float:
         return 1.0 / self.tau
+
+    @property
+    def tau_minus(self) -> float:
+        """Second (ghost-mode) relaxation time of the TRT model.
+
+        Fixed by the "magic" parameter ``Lambda = (tau-1/2)(tau_minus-1/2)``,
+        ``Lambda = 3/16`` being the standard choice (Ginzburg 2005; Kruger et
+        al., The Lattice Boltzmann Method, 2017, sec. 10.2): it makes the
+        half-way bounce-back wall independent of the relaxation rates while
+        damping the non-hydrodynamic modes much harder than BGK does.
+        """
+        return 0.5 + self.magic / (self.tau - 0.5)
 
 
 class CavitySolver:
@@ -65,12 +83,39 @@ class CavitySolver:
         self.device = torch.device(config.device)
         self.dtype = config.dtype
 
-        # Fluid mask (interior nodes only)
-        self.fluid = torch.ones((n, n), dtype=torch.bool, device=self.device)
-        self.fluid[0, :] = False   # bottom
-        self.fluid[-1, :] = False  # top (lid)
-        self.fluid[:, 0] = False   # left
-        self.fluid[:, -1] = False  # right
+        # Wall / fluid masks: the boundary ring is wall (bottom/left/right
+        # no-slip, top moving lid); all interior nodes are fluid.
+        solid = torch.ones((n, n), dtype=torch.bool, device=self.device)
+        solid[1:-1, 1:-1] = False
+        self.solid = solid            # kept for backwards compatibility
+        self.fluid = ~solid
+
+        # Wall velocity (only the lid moves, tangential, u=(u_lid, 0))
+        self._uw_x = torch.zeros((n, n), dtype=config.dtype, device=self.device)
+        self._uw_y = torch.zeros((n, n), dtype=config.dtype, device=self.device)
+        self._uw_x[-1, :] = config.u_lid
+        self._t = 0
+
+        # Pre-compute half-way link bounce-back data: for every lattice
+        # direction i, the set of fluid nodes whose neighbour in direction i is
+        # a wall node, plus the wall velocity seen through that link.
+        c = self.C.to(device=self.device, dtype=config.dtype)
+        self._bb_links = []
+        for i in range(1, 9):
+            cy, cx = int(self.C[i, 1]), int(self.C[i, 0])
+            nb_solid = torch.roll(solid, shifts=(cy, cx), dims=(0, 1))
+            # unit lid velocity (1 on the lid row, 0 elsewhere) so that the
+            # acceleration ramp only scales a pre-computed geometric factor
+            nb_dir_x = torch.roll(self._uw_x / max(config.u_lid, 1e-30),
+                                  shifts=(cy, cx), dims=(0, 1))
+            nb_uw_y = torch.roll(self._uw_y, shifts=(cy, cx), dims=(0, 1))
+            mask = self.fluid & nb_solid
+            o = int(self.OPPOSITE[i])
+            # momentum-transfer factor: 6 * w_o * (c_o . u_wall_unit)
+            coef = 6.0 * self.W[o].to(config.dtype) * (
+                c[o, 0] * nb_dir_x + c[o, 1] * nb_uw_y
+            )
+            self._bb_links.append((i, o, mask, coef))
 
         # Initialize at equilibrium (fluid at rest)
         rho = torch.ones((n, n), dtype=config.dtype, device=self.device)
@@ -139,16 +184,48 @@ class CavitySolver:
         Pi_xy = (fneq * cix * ciy).sum(dim=0)
         Pi_trace = Pi_xx + Pi_yy
 
-        # Regularized fneq
+        # Regularized fneq: project the non-equilibrium part onto the
+        # second-order Hermite subspace, Q_i = c_i c_i - cs^2 I (Latt & Chopard
+        # 2006, eq. 15).  Everything outside that subspace (the ghost modes that
+        # make BGK marginal as tau -> 1/2) is discarded.
         fneq_reg = w.view(-1, 1, 1) / (2.0 * cs2 * cs2) * (
             cix * cix * Pi_xx + ciy * ciy * Pi_yy +
             2.0 * cix * ciy * Pi_xy - cs2 * Pi_trace
         )
 
-        # Collision on fluid nodes only
+        # Regularized collision on fluid nodes only:
+        #     f* = f^eq + (1 - omega) f^neq,reg
+        # Note: f - omega * f^neq,reg would be equivalent only if f^neq were
+        # already fully regularized; using it keeps the non-hydrodynamic modes
+        # with unit gain and defeats the purpose of the regularization.
         omega = 1.0 / self.cfg.tau
+        f_out = feq + (1.0 - omega) * fneq_reg
+        return f_out
+
+    def _collide_trt(self, f):
+        """Two-relaxation-time collision on fluid nodes.
+
+        Symmetric (``f^+``, carries rho and the momentum flux) and
+        antisymmetric (``f^-``, carries momentum and the ghost modes) parts are
+        relaxed with ``omega = 1/tau`` and ``omega_minus = 1/tau_minus``.
+        """
+        rho, ux, uy = self._macroscopic(f)
+        feq = self._equilibrium(rho, ux, uy)
+        opp = self.OPPOSITE.to(device=f.device)
+
+        f_plus = 0.5 * (f + f[opp])
+        f_minus = 0.5 * (f - f[opp])
+        feq_plus = 0.5 * (feq + feq[opp])
+        feq_minus = 0.5 * (feq - feq[opp])
+
+        omega_p = 1.0 / self.cfg.tau
+        omega_m = 1.0 / self.cfg.tau_minus
         f_out = f.clone()
-        f_out[:, self.fluid] = f[:, self.fluid] - omega * fneq_reg[:, self.fluid]
+        f_out[:, self.fluid] = (
+            f[:, self.fluid]
+            - omega_p * (f_plus[:, self.fluid] - feq_plus[:, self.fluid])
+            - omega_m * (f_minus[:, self.fluid] - feq_minus[:, self.fluid])
+        )
         return f_out
 
     def _collide_bgk(self, f):
@@ -158,58 +235,64 @@ class CavitySolver:
         f_out[:, self.fluid] = f[:, self.fluid] + self.cfg.omega * (feq[:, self.fluid] - f[:, self.fluid])
         return f_out
 
-    def _apply_bounce_back(self, f, f_pre_stream):
-        """Half-way bounce-back on stationary walls (bottom, left, right)."""
-        f_out = f.clone()
-        # Bottom wall (y=0)
-        for i in [3, 5, 6]:  # directions pointing into bottom wall
-            opp = self.OPPOSITE[i]
-            f_out[i, 0, :] = f_pre_stream[opp, 0, :]
-        # Left wall (x=0)
-        for i in [1, 5, 7]:
-            opp = self.OPPOSITE[i]
-            f_out[i, :, 0] = f_pre_stream[opp, :, 0]
-        # Right wall (x=n-1)
-        for i in [2, 6, 8]:
-            opp = self.OPPOSITE[i]
-            f_out[i, :, -1] = f_pre_stream[opp, :, -1]
+    def _apply_boundaries(self, f_post, f_streamed):
+        """Apply wall boundary conditions after streaming.
+
+        Two ingredients, both half-way (wall located half a lattice unit
+        between the outermost fluid node and the wall node):
+
+        1. **Link bounce-back**: for every fluid node whose neighbour in
+           direction ``i`` is a wall node, the post-collision population
+           ``f_i`` is reflected and re-enters the same fluid node as
+           ``f_opp(i)``.  For a wall moving with velocity ``u_w`` the
+           momentum-transfer correction ``6 w_opp rho (c_opp . u_w)`` is added
+           (Ladd 1994), which is what drives the flow for the moving lid.
+        2. **Wall nodes carry the wall equilibrium** (rho=1, u=u_w) so that
+           the reported macroscopic fields at solid nodes are the physical
+           wall values instead of streaming leftovers.
+
+        Parameters
+        ----------
+        f_post : torch.Tensor
+            Post-collision populations ``f`` (used by the reflection, because
+            the reflected population travels half a lattice unit out and back
+            within the same time step).
+        f_streamed : torch.Tensor
+            Streamed populations (interior values are correct, wall nodes are
+            overwritten here).
+        """
+        f_out = f_streamed.clone()
+        rho_post = f_post.sum(dim=0)
+        lid_speed = float(self._uw_x[-1, 0])
+        for i, o, mask, coef in self._bb_links:
+            f_out[o][mask] = f_post[i][mask] + lid_speed * coef[mask] * rho_post[mask]
+
+        feq_wall = self._equilibrium(
+            torch.ones_like(rho_post), self._uw_x, self._uw_y
+        )
+        wall = self.solid
+        f_out[:, wall] = feq_wall[:, wall]
         return f_out
-
-    def _apply_zou_he_lid(self, f):
-        """Zou-He velocity BC on moving lid (top wall, y=n-1)."""
-        j = self.n - 1
-        u_lid = self.cfg.u_lid
-
-        f0 = f[0, j, :]
-        f1 = f[1, j, :]
-        f2 = f[2, j, :]
-        f4 = f[4, j, :]
-        f5 = f[5, j, :]
-        f6 = f[6, j, :]
-
-        rho = f0 + f1 + f2 + 2.0 * (f4 + f5 + f6)
-
-        f[3, j, :] = f4
-        f[7, j, :] = f6 - 0.5 * (f1 - f2) + (1.0 / 6.0) * rho * u_lid
-        f[8, j, :] = f5 + 0.5 * (f1 - f2) + (1.0 / 6.0) * rho * u_lid
-        return f
 
     def step(self):
         """One LBM step: collide -> stream -> boundary conditions."""
+        self._t += 1
+        if self.cfg.ramp_steps > 0:
+            frac = min(1.0, self._t / float(self.cfg.ramp_steps))
+            self._uw_x[-1, :] = self.cfg.u_lid * frac
         # Collision (fluid nodes only)
-        if self.cfg.use_rlbm:
+        if self.cfg.use_trt:
+            f_collided = self._collide_trt(self.f)
+        elif self.cfg.use_rlbm:
             f_collided = self._collide_rlbm(self.f)
         else:
             f_collided = self._collide_bgk(self.f)
 
-        # Streaming
+        # Streaming (periodic roll; wall-node values are overwritten below)
         f_streamed = self._stream(f_collided)
 
-        # Bounce-back on stationary walls
-        f_bb = self._apply_bounce_back(f_streamed, f_collided)
-
-        # Zou-He on lid
-        self.f = self._apply_zou_he_lid(f_bb)
+        # Walls: link bounce-back (moving lid included) + wall equilibrium
+        self.f = self._apply_boundaries(f_collided, f_streamed)
 
     def get_profiles(self):
         """Extract centerline velocity profiles."""
