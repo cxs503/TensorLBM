@@ -55,6 +55,7 @@ Analytic anchors (``f = A(-phi^2/2 + phi^4/4) + kappa |grad phi|^2/2``):
 from __future__ import annotations
 
 import functools
+import math
 from dataclasses import dataclass
 
 import torch
@@ -353,4 +354,80 @@ def spurious_velocity(ux: torch.Tensor, uy: torch.Tensor) -> dict[str, float]:
     return {
         "max": float(speed.max().item()),
         "rms": float(torch.sqrt((speed * speed).mean()).item()),
+    }
+
+def fit_interface_width(
+    x: torch.Tensor,
+    stress: torch.Tensor,
+    xi0: float,
+    *,
+    x0: float | None = None,
+    span: float = 3.0,
+) -> dict[str, float]:
+    """Recover the interface width from the measured normal-tangential stress difference.
+
+    Mechanical equilibrium of a flat interface gives the *local* identity
+
+        ``P_NN - P_TT = kappa phi'(x)^2 = kappa sech^4((x - x0) / xi) / xi^2``
+
+    (the ``1/2 kappa |grad phi|^2`` term of the tensor drops out of the
+    difference, so no pressure offset has to be guessed).  Fitting that closed
+    form to the measured difference is an *independent* route to ``xi`` -- it
+    never uses the analytic ``tanh`` profile or ``sqrt(2 kappa / A)``, which is
+    why it can falsify a wrong ``wxx``/``wyy`` transplant.
+
+    ``x0`` defaults to the stress-weighted centroid ``sum(x s) / sum(s)``.
+    The amplitude is eliminated analytically (linear least squares for each
+    candidate ``xi``), so the search is one-dimensional: a coarse scan followed
+    by one golden-section refinement.
+
+    Returns ``xi``, ``amplitude``, ``x0``, ``rms_rel`` (relative fit residual on
+    the used cells) and ``n_pts``.
+    """
+    if x.shape != stress.shape:
+        raise ValueError("x and stress must have the same shape")
+    w = torch.clamp(stress, min=0.0)
+    total = float(w.sum())
+    if total <= 0.0:
+        raise ValueError("stress is non-positive everywhere: no interface to fit")
+    x0 = float((x * w).sum() / total) if x0 is None else float(x0)
+    mask = (x >= x0 - span * xi0) & (x <= x0 + span * xi0)
+    xm = x[mask]
+    ym = stress[mask]
+    if xm.numel() < 4:
+        raise ValueError("not enough cells inside the fit window")
+
+    def residual(xi: float) -> float:
+        s = torch.cosh((xm - x0) / xi) ** (-4) / (xi * xi)
+        denom = float((s * s).sum())
+        if denom <= 0.0:
+            return float("inf")
+        amp = float((ym * s).sum()) / denom
+        return float(((ym - amp * s) ** 2).sum())
+
+    lo, hi = 0.25 * xi0, 4.0 * xi0
+    grid = [lo + (hi - lo) * k / 40.0 for k in range(41)]
+    best = min(grid, key=residual)
+    step = (hi - lo) / 40.0
+    a, b = max(lo, best - step), min(hi, best + step)
+    phi_g = (math.sqrt(5.0) - 1.0) / 2.0
+    c, d = b - phi_g * (b - a), a + phi_g * (b - a)
+    for _ in range(60):
+        if residual(c) < residual(d):
+            b, d = d, c
+            c = b - phi_g * (b - a)
+        else:
+            a, c = c, d
+            d = a + phi_g * (b - a)
+    xi_fit = 0.5 * (a + b)
+    s = torch.cosh((xm - x0) / xi_fit) ** (-4) / (xi_fit * xi_fit)
+    amp = float((ym * s).sum() / (s * s).sum())
+    model = amp * s
+    rms_rel = float(torch.sqrt(((ym - model) ** 2).mean()) / ym.abs().max())
+    return {
+        "xi": xi_fit,
+        "amplitude": amp,
+        "x0": x0,
+        "rms_rel": rms_rel,
+        "n_pts": int(xm.numel()),
     }
