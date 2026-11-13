@@ -528,6 +528,64 @@
         "budget_s": 5400
       },
       "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there). Registry schema fix v1.1: metric paths point at the artifact's per_metric.<metric>.err_pct.<D> schema produced by the case's own aggregate() (v1.0 addressed grids.<D>.err_pct.<metric>, which the artifact never contained, so the case judged as 'pending: metric paths unresolved')."
+    },
+    {
+      "id": "channel_core_path_ci",
+      "slot": "channel",
+      "title": "Body-force driven laminar channel (Poiseuille) through the T2 GPU core path — analytic profile + resolution convergence (CI tier)",
+      "reference_basis": "analytic",
+      "refs": [
+        "poiseuille_channel_analytic"
+      ],
+      "scope": "2-D body-force driven laminar channel solved through the fused T2 GPU core path (collision + Guo force + streaming + half-way bounce-back in one step); centre-line velocity and full-profile L2 deviation vs the closed-form Poiseuille parabola at two resolutions (H=16 and H=32). Complements the turbulent Re_tau=180 DNS slot (honest FAIL, domain/statistics) with a verified laminar channel anchor that is CI-runnable.",
+      "measure": {
+        "artifact": "benchmarks/validation_matrix/cases/channel_core_path/result.json",
+        "levels": [
+          "ny=18 (H=16)",
+          "ny=34 (H=32)"
+        ],
+        "metrics": [
+          {
+            "name": "u_max_err_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "levels.0.metrics.u_max_err_pct",
+              "levels.1.metrics.u_max_err_pct"
+            ]
+          },
+          {
+            "name": "profile_l2_pct",
+            "kind": "error_pct",
+            "tol_pct": 3.0,
+            "paths": [
+              "levels.0.metrics.profile_l2_pct",
+              "levels.1.metrics.profile_l2_pct"
+            ]
+          },
+          {
+            "name": "mass_drift_pct",
+            "kind": "error_pct",
+            "tol_pct": 0.001,
+            "paths": [
+              "levels.0.metrics.mass_drift_pct",
+              "levels.1.metrics.mass_drift_pct"
+            ]
+          }
+        ],
+        "convergence": [
+          {
+            "metric": "u_max_err_pct",
+            "max_span_pct": 3.0,
+            "require_monotone": true
+          }
+        ]
+      },
+      "repro": {
+        "cmd": "python benchmarks/validation_matrix/cases/channel_core_path/run.py",
+        "budget_s": 600
+      },
+      "notes": "Verified laminar channel anchor for the T3 channel slot: the merged T2 GPU core-path feature (src/tensorlbm/gpu_core_path.py) is re-judged against the analytic Poiseuille parabola at two resolutions. u_max_err 0.36%->0.099% (monotone, span<3%), profile L2 0.49%->0.13%, mass drift <2e-5%. The turbulent Re_tau=180 DNS entry stays a documented honest FAIL (domain too small + insufficient statistics); this laminar case is the CI-runnable verified half of the slot."
     }
   ]
 }
