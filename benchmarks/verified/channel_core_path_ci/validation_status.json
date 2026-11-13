@@ -1,0 +1,194 @@
+{
+  "case": "channel_core_path_ci",
+  "slot": "channel",
+  "title": "Body-force driven laminar channel (Poiseuille) through the T2 GPU core path — analytic profile + resolution convergence (CI tier)",
+  "reference_basis": "analytic",
+  "scope": "2-D body-force driven laminar channel solved through the fused T2 GPU core path (collision + Guo force + streaming + half-way bounce-back in one step); centre-line velocity and full-profile L2 deviation vs the closed-form Poiseuille parabola at two resolutions (H=16 and H=32). Complements the turbulent Re_tau=180 DNS slot (honest FAIL, domain/statistics) with a verified laminar channel anchor that is CI-runnable.",
+  "matrix_version": "1.1",
+  "generated_utc": "2026-11-13T13:13:00Z",
+  "artifact": "benchmarks/validation_matrix/cases/channel_core_path/result.json",
+  "repro_cmd": "python benchmarks/validation_matrix/cases/channel_core_path/run.py",
+  "references": [
+    {
+      "id": "poiseuille_channel_analytic",
+      "quantity": "body-force driven laminar channel centre-line velocity u_max = a/(2 nu) * (H/2)^2 (Poiseuille parabola)",
+      "value": null,
+      "formula": "u(y) = a / (2 nu) * s * (H - s),  s = y - 0.5,  H = ny - 2",
+      "origin": "Batchelor 1967 §4.2 (laminar plane Poiseuille flow, lattice units); analytic anchor implemented in the T2 GPU core-path channel runner",
+      "source": "src/tensorlbm/gpu_core_path.py",
+      "source_sha256": "d2c9dee35b7b5df9de66aeed7e986a501470694bcd3c9d7666c06b0dc1310209",
+      "token": "u(y) = a / (2 nu) * s * (H - s)"
+    }
+  ],
+  "status": "passed",
+  "machine_pass": true,
+  "declared_status": null,
+  "reason": "all metric and convergence criteria passed",
+  "metrics": [
+    {
+      "metric": "u_max_err_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "ny=18 (H=16)",
+          "value": 0.3619805975097306,
+          "reference": null,
+          "err_pct": 0.3619805975097306,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "ny=34 (H=32)",
+          "value": 0.09902680829032995,
+          "reference": null,
+          "err_pct": 0.09902680829032995,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 0.3619805975097306,
+      "max_abs_err_pct_gated": 0.3619805975097306,
+      "worst_gated_err_pct": 0.3619805975097306,
+      "worst_gated_level": "ny=18 (H=16)",
+      "worst_gated_tol_pct": 3.0,
+      "gated_levels": [
+        "ny=18 (H=16)",
+        "ny=34 (H=32)"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
+    },
+    {
+      "metric": "profile_l2_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 3.0,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "ny=18 (H=16)",
+          "value": 0.4931380067265416,
+          "reference": null,
+          "err_pct": 0.4931380067265416,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "ny=34 (H=32)",
+          "value": 0.13101766802022097,
+          "reference": null,
+          "err_pct": 0.13101766802022097,
+          "tol_pct": 3.0,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 0.4931380067265416,
+      "max_abs_err_pct_gated": 0.4931380067265416,
+      "worst_gated_err_pct": 0.4931380067265416,
+      "worst_gated_level": "ny=18 (H=16)",
+      "worst_gated_tol_pct": 3.0,
+      "gated_levels": [
+        "ny=18 (H=16)",
+        "ny=34 (H=32)"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
+    },
+    {
+      "metric": "mass_drift_pct",
+      "kind": "error_pct",
+      "reference": null,
+      "tol_pct": 0.001,
+      "tol_pct_by_level": null,
+      "levels": [
+        {
+          "level": "ny=18 (H=16)",
+          "value": 4.852096202601075e-06,
+          "reference": null,
+          "err_pct": 4.852096202601075e-06,
+          "tol_pct": 0.001,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        },
+        {
+          "level": "ny=34 (H=32)",
+          "value": 1.5349976911771535e-05,
+          "reference": null,
+          "err_pct": 1.5349976911771535e-05,
+          "tol_pct": 0.001,
+          "kind": "error_pct",
+          "pass": true,
+          "gated": true
+        }
+      ],
+      "pass": true,
+      "max_abs_err_pct": 1.5349976911771535e-05,
+      "max_abs_err_pct_gated": 1.5349976911771535e-05,
+      "worst_gated_err_pct": 1.5349976911771535e-05,
+      "worst_gated_level": "ny=34 (H=32)",
+      "worst_gated_tol_pct": 0.001,
+      "gated_levels": [
+        "ny=18 (H=16)",
+        "ny=34 (H=32)"
+      ],
+      "informational_levels": [],
+      "unresolved_levels": []
+    }
+  ],
+  "convergence": [
+    {
+      "metric": "u_max_err_pct",
+      "errors_abs_pct": [
+        0.3619805975097306,
+        0.09902680829032995
+      ],
+      "max_span_pct": 3.0,
+      "span_pct": 0.26295378921940066,
+      "monotone": true,
+      "require_monotone": true,
+      "span_ok": true,
+      "trend_ok": true,
+      "pass": true
+    }
+  ],
+  "unresolved_metrics": [],
+  "artifact_sha256": "5c28b2ee8398a000c098126dc38e6c44c463996a5d9d6d6c18572c5419715291",
+  "artifact_bytes": 1523,
+  "evidence_chain": [
+    {
+      "kind": "artifact",
+      "path": "benchmarks/validation_matrix/cases/channel_core_path/result.json",
+      "sha256": "5c28b2ee8398a000c098126dc38e6c44c463996a5d9d6d6c18572c5419715291"
+    },
+    {
+      "kind": "matrix",
+      "path": "benchmarks/validation_matrix/matrix.json",
+      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+    },
+    {
+      "kind": "references",
+      "path": "benchmarks/validation_matrix/references.json",
+      "sha256": "ad5711de603bed5537d47bf790e4372432db5595ab5c02fa2046956a85083680"
+    },
+    {
+      "kind": "runner",
+      "path": "benchmarks/validation_matrix/cases/channel_core_path/run.py",
+      "sha256": "2319a04f4cc874a30e32a5d57fcf7e1f28a7230e491837c465db021c66a6fdae"
+    }
+  ],
+  "notes": "Verified laminar channel anchor for the T3 channel slot: the merged T2 GPU core-path feature (src/tensorlbm/gpu_core_path.py) is re-judged against the analytic Poiseuille parabola at two resolutions. u_max_err 0.36%->0.099% (monotone, span<3%), profile L2 0.49%->0.13%, mass drift <2e-5%. The turbulent Re_tau=180 DNS entry stays a documented honest FAIL (domain too small + insufficient statistics); this laminar case is the CI-runnable verified half of the slot."
+}
