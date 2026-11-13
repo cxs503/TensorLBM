@@ -1,20 +1,5 @@
 """Common, tensorised three-dimensional phase-field building blocks."""
 
-from .ternary_ac_oss import (
-    OSS_PHASE_MASS_DENSITIES,
-    OSS_SHIPPED_SIGMA,
-    TernaryAC2D,
-    analytic_interface_width,
-    flat_interface_state,
-    interface_width_10_90,
-    lambda_from_sigma_matrix,
-    oss_relaxation_factor,
-    rho_of_phases,
-    tension_from_lambda,
-    tension_from_profile,
-    ternary_chemical_potential,
-    ternary_compression_source,
-)
 from .ch_validation import (
     FreeEnergyCHDiagnosticResult,
     FreeEnergyCHStepDiagnostic,
@@ -62,6 +47,14 @@ from .static_droplet import (
     initialize_static_droplet,
     periodic_chemical_potential_and_korteweg_force,
 )
+from .ternary_free_energy import (
+    TernaryDoubleWellFreeEnergy,
+    harmonic_lambda,
+    isotropic_gradient_2d,
+    isotropic_laplacian_2d,
+    lambda_from_sigma,
+    planar_profile_ternary,
+)
 
 __all__ = [
     "ADAPTER_STREAM_LOOP_STAGE",
@@ -87,6 +80,7 @@ __all__ = [
     "PhaseInventoryFluxDiagnostic",
     "PhaseInventoryFluxStep",
     "StaticDropletDiagnosticResult",
+    "TernaryDoubleWellFreeEnergy",
     "adapter_stream_boundary_crossing",
     "central_gradient_3d",
     "collision_then_adapter_stream",
@@ -95,12 +89,17 @@ __all__ = [
     "estimate_droplet_radius",
     "force_minus_phi_grad_mu",
     "force_mu_grad_phi",
+    "harmonic_lambda",
     "initialize_free_energy_collision_only_state",
     "initialize_static_droplet",
+    "isotropic_gradient_2d",
+    "isotropic_laplacian_2d",
+    "lambda_from_sigma",
     "laplacian_3d",
     "phase_volume_smoothed",
     "phase_volume_threshold",
     "periodic_chemical_potential_and_korteweg_force",
+    "planar_profile_ternary",
     "run_closed_periodic_free_energy_diagnostic",
     "run_free_energy_adapter_stream_loop",
     "run_free_energy_collision_only",
