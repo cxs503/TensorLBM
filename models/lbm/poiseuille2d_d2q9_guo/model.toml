@@ -1,0 +1,34 @@
+# Model unit manifest -- the analogue of TCLB models/<group>/<model>/conf.mk.
+# One file per model directory; nothing outside this directory needs editing to
+# add, build, or put this model on the CI matrix.
+
+[unit]
+name = "poiseuille2d_d2q9_guo"
+group = "flow"
+dimension = 2
+lattice = "D2Q9"
+kernel = "tensorlbm.d2q9"
+collision = "BGK"
+forcing = "guo"
+boundary = "half_way_bounce_back"
+description = "Wall-bounded plane Poiseuille flow driven by a Guo body force"
+reference = "analytic: u_x(y) = G/(2 nu) (y+1/2)(H-y-1/2), u_max = G H^2/(8 nu)"
+ci = true
+tier = "fast"
+features = ["body_force", "wall_bounce_back", "periodic_streamwise"]
+
+[case]
+script = "case.py"
+entry = "run"
+
+[params]
+init = "parabolic"
+ny = 32
+nx = 4
+tau = 0.8
+force = 1.0e-5
+steps = 3000
+
+[acceptance]
+kpi = "u_profile_rel_sup_err"
+threshold = 0.15

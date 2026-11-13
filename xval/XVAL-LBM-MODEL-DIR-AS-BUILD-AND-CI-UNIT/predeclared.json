@@ -1,0 +1,53 @@
+{
+  "anchor": "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT",
+  "mission": 17991,
+  "written_before_runs": true,
+  "decision": "Does TensorLBM acquire TCLB's model-dir-as-build-and-CI-unit property — (a) model units discovered by enumeration, (b) build targets and CI matrix generated from those directories, (c) each unit carrying its own analytic reference and tolerance, (d) adding a model touching only its own directory — with the property measured at the owner 15% criterion?",
+  "alternatives": {
+    "A1_status_quo": "monolithic CI job + hand-written matrices (current ci.yml / validation-matrix slot list); no per-model build unit",
+    "A2_central_registry": "one central registry file (models.py dict) that maps names to kernels; units not self-describing; adding a model edits 2+ files",
+    "A3_dir_as_unit": "TCLB practice: directory = unit; manifest per directory; enumeration discovery (git ls-files + find union); generated Makefile targets and generated CI matrix (fromJSON); per-unit case + tolerance in the manifest"
+  },
+  "hypothesis": "H1: A3 reproduces TCLB's organisational invariants with (i) 0% of units missing from the CI matrix, (ii) 0 hand-written unit names in the CI configuration, (iii) 0 files outside a new unit's directory needing edits, (iv) every unit passing its own <15% analytic check. H0 (falsifier): any of (i)-(iv) violated.",
+  "metrics": {
+    "C1_ci_uncovered_frac": "fraction of discovered model units absent from the CI matrix",
+    "C1b_hand_written_names": "count of unit names literally present in the CI workflow file",
+    "C2_add_model_outside_edits": "files outside the new unit directory that must change for discovery+build+matrix",
+    "C3_isolation_ratio": "modules imported by one unit's build / modules shipped by the library",
+    "C4_verified_frac": "fraction of units built and verified against an analytic reference below 15%",
+    "C4b_unit_kpi": "each unit's declared KPI: Poiseuille profile sup-norm error vs analytic parabola; Taylor-Green decay-rate error vs 2*nu*k^2"
+  },
+  "unit_of_analysis": "one model unit directory; aggregate metrics are fractions/counts over the discovered set",
+  "baseline_control": {
+    "baseline": "the TCLB checkout at /tmp/TCLB measured at run time (61 model dirs, 16 on the GH CPU matrix, 1 model-local check.py)",
+    "control": "the same TensorLBM units run twice (deterministic build probe checksum equality) and the same KPI computed for two lattices / two case types"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "C1_ci_uncovered_frac_max": 0.15,
+    "C1b_hand_written_names_max": 0,
+    "C2_add_model_outside_edits_max": 0,
+    "C3_isolation_ratio_max": 0.05,
+    "C4_verified_frac_min": 0.85,
+    "C4b_unit_kpi_max": 0.15,
+    "interpretation": "every got-column value must satisfy its own bound; the TCLB (ref) value is reported alongside but judged separately, because TCLB drifts from its own generation rule",
+    "no_post_hoc_relaxation": "a failing unit is reported failed and its threshold is not changed after seeing results"
+  },
+  "stopping_rule": "each physics case runs the fixed step count declared in its model.toml; sensitivity sweeps use fixed ladders (ny 16/32/64, steps 500/1500/3000, tau 0.6/0.8/1.2, n 16/32/64) fixed before the run",
+  "variables_changed": ["unit architecture (A1 vs A3)", "grid resolution", "step count", "relaxation time tau"],
+  "variables_controlled": ["float64", "single thread (torch.set_num_threads(1))", "same analytic reference formulas", "same manifest schema", "same threshold 0.15"],
+  "confounders": [
+    "TCLB cannot be compiled/run here (gcc/OpenCL/R toolchain absent), so the comparison is on organisational invariants extracted from its source, not on its runtime numbers",
+    "TensorLBM units are Python, so 'build' is an import closure + probe rather than a compiled binary; the isolation metric is therefore a proxy, reported as an absolute bound (C3)",
+    "CI matrix coverage of TCLB is measured from its GitHub workflow, which may lag its model.R enumeration by design (models built only locally)"
+  ],
+  "repetition_rationale": "deterministic solvers: repetition is replaced by (a) two lattices D2Q9/D3Q19, (b) two case families (forced channel, decaying vortex), (c) repeated build probe for determinism, (d) three sensitivity ladders",
+  "environment": {
+    "python": "3.11",
+    "torch": "CPU float64",
+    "tclb_checkout": "/tmp/TCLB (git head recorded by the script)",
+    "artifact_root": "artifacts/xval_m17991",
+    "run_root": "runs/model_units"
+  },
+  "analysis": "aggregate = the comparison rows written to artifacts/xval_m17991/xval.json; outliers = none expected (deterministic); the decision is A3 adopted iff all got-column rows pass"
+}
