@@ -1,0 +1,47 @@
+{
+ "lbmpy_version": "0+unknown",
+ "cases": [
+  {
+   "N": 64,
+   "g_ab": 6.0,
+   "psi_mode": "exp",
+   "steps": 1000,
+   "omega": 1.0,
+   "umax": 0.0405196534376346,
+   "wall_s_build": 12.73503065109253,
+   "wall_s_solve": 0.729870080947876,
+   "ref_profile_absdiff": 2.5777816516914243e-06,
+   "ref_profile_rel": 2.6627717336075365e-06
+  },
+  {
+   "N": 128,
+   "g_ab": 6.0,
+   "psi_mode": "exp",
+   "steps": 1000,
+   "omega": 1.0,
+   "umax": 0.04440355407835298,
+   "wall_s_build": 12.960761308670044,
+   "wall_s_solve": 3.0099735260009766
+  },
+  {
+   "N": 64,
+   "g_ab": 5.0,
+   "psi_mode": "exp",
+   "steps": 1000,
+   "omega": 1.0,
+   "umax": 0.0168077020004845,
+   "wall_s_build": 5.10701584815979,
+   "wall_s_solve": 0.8421969413757324
+  },
+  {
+   "N": 64,
+   "g_ab": 6.0,
+   "psi_mode": "linear",
+   "steps": 1000,
+   "omega": 1.0,
+   "umax": 0.3395202045830992,
+   "wall_s_build": 1.9765591621398926,
+   "wall_s_solve": 0.3416438102722168
+  }
+ ]
+}
