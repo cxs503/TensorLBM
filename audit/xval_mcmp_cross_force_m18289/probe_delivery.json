@@ -1,0 +1,89 @@
+{
+ "delivery_files": [
+  "__init__.py",
+  "operators.py"
+ ],
+ "P1_import": {
+  "ok": true,
+  "module": "operators.py",
+  "package_version": "1.0.0",
+  "anchor": "XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP",
+  "criterion_pct": "15.0  # owner precision standard: >15 % vs reference is unacceptable"
+ },
+ "P2_wrapper_identity": {
+  "components": 4,
+  "max_abs_diff": 0.0,
+  "bitwise_equal": true
+ },
+ "P3_operator_identity_linear": {
+  "Fx1": {
+   "max_abs_diff": 1.1102230246251565e-16,
+   "rel": 2.1168167080548237e-16
+  },
+  "Fy1": {
+   "max_abs_diff": 1.3877787807814457e-16,
+   "rel": 3.412919315882214e-16
+  },
+  "Fx2": {
+   "max_abs_diff": 5.551115123125783e-17,
+   "rel": 2.9069506633145716e-16
+  },
+  "Fy2": {
+   "max_abs_diff": 1.1102230246251565e-16,
+   "rel": 2.6491147322125896e-16
+  },
+  "worst_rel": 3.412919315882214e-16
+ },
+ "P4_stencil": {
+  "forward_over_kx": 0.33333333581686025,
+  "backward_over_kx": -0.33333333581686025,
+  "cs2_theory": 0.3333333333333333,
+  "forward_plus_backward_max_abs": 2.220446049250313e-16
+ },
+ "P5_uniform_zero": {
+  "repo_max_abs": 0.0,
+  "oss_max_abs": 0.0
+ },
+ "P6_exp_psi_identity": {
+  "worst_rel": 2.7169525116716416e-16,
+  "psi_exp_at_rho1": 0.6321205588285577,
+  "analytic_1_minus_exp": 0.6321205588285577
+ },
+ "P7_stream": {
+  "handwritten_max_abs": 0.0,
+  "mass_before": 543.3166351105804,
+  "mass_after": 543.3166351105804,
+  "mass_rel_drift": 0.0
+ },
+ "P8_declared_surface": {
+  "docstring_mentions_run_py": true,
+  "docstring_mentions_arms": true,
+  "docstring_mentions_tests_dir": true,
+  "on_disk": {
+   "run.py": false,
+   "tests": false,
+   "tl_arm.py": false,
+   "oss_arm.py": false,
+   "compare.py": false
+  },
+  "files_present_in_refs": [
+   "__init__.py",
+   "operators.py"
+  ],
+  "files_present_in_delivery_root": [
+   "AUDIT_M18289.md",
+   "MANIFEST.sha256",
+   "REPORT_M18289.md",
+   "fig1_operator_identity.png",
+   "fig2_physics_arm.png",
+   "fig3_evidence_matrix.png",
+   "gate_dryrun.json",
+   "make_figs.py",
+   "probe_chain_physics.json",
+   "probe_chain_physics.py",
+   "probe_delivery.json",
+   "refs",
+   "verdict_evidence.json"
+  ]
+ }
+}

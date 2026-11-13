@@ -1,0 +1,30 @@
+{
+ "source_commit": "6ad01d71",
+ "arms": {
+  "arm_N64_g5_exp.npz": {
+   "present": true,
+   "nan_entries": 0,
+   "err_rel_l2": 2.0033988272098067,
+   "err_pct": 200.33988272098065,
+   "err_pct_plain_norm": 120.34507573285171
+  },
+  "arm_N64_g6_exp.npz": {
+   "present": true,
+   "nan_entries": 64,
+   "err_rel_l2": null
+  },
+  "arm_N64_g6_linear.npz": {
+   "present": true,
+   "nan_entries": 64,
+   "err_rel_l2": null
+  },
+  "arm_N128_g6_exp.npz": {
+   "present": true,
+   "nan_entries": 128,
+   "err_rel_l2": null
+  }
+ },
+ "evaluable_arms": 1,
+ "worst_err_pct": 200.33988272098065,
+ "all_arms": 4
+}

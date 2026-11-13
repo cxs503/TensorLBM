@@ -1,0 +1,95 @@
+{
+  "verdict_level": 1,
+  "verdict_scope": "m18289 XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP",
+  "impl_files": [
+    "audit/xval_mcmp_cross_force_m18289/refs/operators.py",
+    "audit/xval_mcmp_cross_force_m18289/refs/__init__.py"
+  ],
+  "entry": null,
+  "run_artifacts": null,
+  "tests": [
+    "audit/xval_mcmp_cross_force_m18289/probe_delivery.py",
+    "audit/xval_mcmp_cross_force_m18289/probe_chain_physics.py"
+  ],
+  "integration_callers": null,
+  "benchmark": null,
+  "repro_cmd": null,
+  "external_anchor": {
+    "oss": "lbmpy 2.0 (lssfau/lbmpy)",
+    "sdist_sha256": "c29aec635e2b29ef33ed716852d30e19fb027d2b704717e62ac0998b4120dca9 (/tmp/lbmpy_sdist/lbmpy-2.0.tar.gz, re-verified by this audit)",
+    "vendored_upstream_test": "/tmp/lbmpy_src/tests/shan_chen/test_shan_chen_two_component.py sha256=7e88e89825a34a56e79723fa670a1114926d6282766bf98b918849577fa63415 (matches the pin quoted in refs/__init__.py:22-24)",
+    "cited_lines_verified": "test_shan_chen_two_component.py:55-59 force_a and :68-72 force_b = -factor * psi(rho.center) * sum_d w_d d psi(rho[d])  => the delivered forward-gather transcription (refs/operators.py:118-140) is faithful; psi = rho0*(1-exp(-rho/rho0)) at :49-50 matches psi_exp at refs/operators.py:60-62",
+    "scope_caveat": "upstream evaluates g_aa+g_ab+g_bb; the delivered comparison sets g_aa=g_bb=0 (pure cross force), stated in refs/operators.py:132-133"
+  },
+  "impl_pointers": {
+    "repo_operator_wrapper": "audit/xval_mcmp_cross_force_m18289/refs/operators.py:78-84 -> tensorlbm.multiphase.sc_two_component_force (src/tensorlbm/multiphase.py:534)",
+    "oss_operator": "audit/xval_mcmp_cross_force_m18289/refs/operators.py:118-140 (forward gather via torch.roll)",
+    "psi_exp_operator_path": "audit/xval_mcmp_cross_force_m18289/refs/operators.py:87-108 composition on _sc_neighbor_weighted_sum (src/tensorlbm/multiphase.py:405)",
+    "streaming": "audit/xval_mcmp_cross_force_m18289/refs/operators.py:145-153 stream_periodic"
+  },
+  "auditor_probe_numbers": {
+    "P2_wrapper_bitwise_equal_to_library_kernel": true,
+    "P3_operator_identity_worst_rel": 3.412919315882214e-16,
+    "P4_forward_coefficient_over_k": 0.33333333581686025,
+    "P4_backward_coefficient_over_k": -0.33333333581686025,
+    "P4_cs2_theory": 0.3333333333333333,
+    "P5_uniform_field_force": 0.0,
+    "P6_exp_psi_identity_worst_rel": 2.7169525116716416e-16,
+    "P7_stream_mass_rel_drift": 0.0,
+    "P7_stream_vs_handwritten_max_abs": 0.0
+  },
+  "benchmark_referee": {
+    "sql": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP'",
+    "rows": 0,
+    "consequence": "no referee exists for this anchor, so ref-vs-got adjudication in tensor_benchmark_cases is impossible by construction: L4 cannot be granted to any delivery on this anchor until a case row is registered (the sibling anchor XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE is in the same state: verdict #700 noted 0 rows)"
+  },
+  "inherited_chain": {
+    "delivery_own_runs": "none - mission result.checks = '未跑任何测试/运行（预算在写文件阶段耗尽）', changed_files = 2 files, git status '?? xval/mcmp_cross_force/' (never committed, so nothing of m18289 is in any branch)",
+    "physics_arm_recomputed_by_me": "docs/board_audit/m18219/refs/artifacts/arm_N64_g5_exp.npz @ 6ad01d71 -> rel-L2 = 200.3399% (definition of the delivering code: ||got-ref||/||ref-mean(ref)||) and 120.3451% under plain normalisation; 3/4 arms (N64g6exp, N64g6linear, N128g6exp) carry 64/64/128 NaNs => 1 of 4 arms evaluable",
+    "note": "these artifacts belong to m18126/m18219, NOT to m18289; they are cited as context only and are deliberately not entered under run_artifacts"
+  },
+  "report_provenance": {
+    "tensor_reports_rows_for_mission": 0,
+    "paper_report_six_segments": "absent: POST /api/v1/tensor/reports?mission_id=18289 -> {\"items\": [], \"total\": 0}; the 6 rows visible under /api/v1/reports?mission_id=18289 are platform equipment_status placeholders (status=generating, size=0, file_url=null), not a mission report",
+    "worktree_report": "none in /root/tp-agent/work/m18289 (only the 2 package files)"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "sev": "blocking",
+      "claim": "m18289 is a repair round whose goal was to reach L2 (impl + entry + run artifacts + tests)",
+      "finding": "L2 not reached: no entry, no run artifact, no test, nothing committed. The delivery's own headline says honest-FAIL at fail_stage=package_scaffold with 3/9 (actually 2/9 code files) written.",
+      "evidence": "result.changed_files = xval/mcmp_cross_force/__init__.py, xval/mcmp_cross_force/operators.py; git status '?? xval/mcmp_cross_force/'; result.checks = '未跑任何测试/运行'"
+    },
+    {
+      "id": "F2",
+      "sev": "blocking",
+      "claim": "refs/__init__.py:9-18 declares a 7-file layout (operators.py, tl_arm.py, oss_arm.py, compare.py, run.py, tests/) and a runnable entry",
+      "finding": "5 of the 7 declared files do not exist; the docstring advertises 'run.py entry point: python -m xval.mcmp_cross_force.run' and 'tests/ pytest suite' that are absent. Documentation overclaim on top of an incomplete scaffold.",
+      "evidence": "probe_delivery.json P8_declared_surface.on_disk = {run.py:false, tests:false, tl_arm.py:false, oss_arm.py:false, compare.py:false}"
+    },
+    {
+      "id": "F3",
+      "sev": "none",
+      "claim": "delivered operator module is placeholder/derivative work with no substance",
+      "finding": "FALSE - the delivered operators.py is real, correct and library-faithful: wrapper is bitwise the library kernel (P2), OSS forward-gather transcription agrees with the repo kernel to 3.4e-16 on a symmetric stencil (P3), exp-psi composition 2.7e-16 (P6), uniform field gives exactly zero (P5), streaming is mass-exact and equals a hand-written pull shift (P7). It is a genuine L1 artifact, denied L2+ by the missing run chain, not by wrong math.",
+      "evidence": "audit/xval_mcmp_cross_force_m18289/probe_delivery.json"
+    },
+    {
+      "id": "F4",
+      "sev": "high",
+      "claim": "the anchor is benchmark-adjudicable",
+      "finding": "0 referee rows for the anchor in tensor_benchmark_cases. Also, the inherited physics arm fails the 15% owner bar by 13x (200.34%) and 3 of 4 arms are NaN, so the current physics route could not pass a referee even if one were registered. Registering the anchor's referees is a precondition, and it is a platform-side gap, not something m18289 could fix by writing more code.",
+      "evidence": "psql SELECT ... -> 0 rows; probe_chain_physics.json worst_err_pct=200.33988272098065, evaluable_arms=1, all_arms=4"
+    },
+    {
+      "id": "F5",
+      "sev": "medium",
+      "claim": "the delivery produced a paper-level report",
+      "finding": "no report: tensor_reports has 0 rows for mission 18289 and the worktree contains no REPORT/markdown artifact.",
+      "evidence": "GET /api/v1/tensor/reports?mission_id=18289 -> total 0"
+    }
+  ],
+  "level_justification": "L1 = mathematical/unit validation with executed numbers: the delivered operator module is importable, non-placeholder, and the auditor probes reproduce the operator identity (3.4e-16), the cs^2 stencil coefficient (1/3), the exact-zero uniform case, the exp-psi composition (2.7e-16) and mass-exact streaming. L2 denied: entry absent, run_artifacts absent, nothing committed. L3 denied: no solver-side caller. L4 denied: 0 referee rows for the anchor and no repro_cmd. L5 denied: no external-anchor benchmark, though the lbmpy 2.0 pin and the upstream test lines were independently re-verified.",
+  "disposition": "request changes / reopen: grade L1, keep the delivery out of the confirmed set, and re-open m18289 as a rework round whose minimum viable scope is (1) run.py entry that emits .npz/.json artifacts, (2) a pytest suite, (3) register the anchor's referee row, (4) fix the docstring surface so it describes only files that exist."
+}
