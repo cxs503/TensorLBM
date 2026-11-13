@@ -1,0 +1,29 @@
+[
+ {
+  "anchor_slug": "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+  "case_name": "B1 single-component body-forced channel vs analytic Poiseuille (D2Q9, halfway bounce-back, NY in {18,34,66}, from rest, Porter fitting arms)",
+  "ref_source": "analytic Poiseuille solution of u''=-g/nu with no-slip walls, solved in-run by a 2x2 linear system (got_driver.layered_stokes); independent of the lattice scheme. Refs: Porter et al. PRE 86 036701 (2012) force bookkeeping; measurement = xval/.../artifacts/result.json bench=B1_single_channel",
+  "metric": "max_y |u_lbm(y) - u_exact(y)| / max_y |u_exact(y)| over fluid nodes, finest grid NY=66 and NY=34; auto-check: python xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py (re-run reproduces every recorded err bit-for-bit)",
+  "tolerance": "<15% (owner standard); measured 3.249e-04 (NY=34), 5.066e-03 (NY=66)",
+  "repo": "TensorLBM",
+  "status": "passed"
+ },
+ {
+  "anchor_slug": "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+  "case_name": "B2 two-component layered Stokes channel, viscosity ratio M in {1,5,10,100} vs analytic two-layer solution (interface velocity/shear-stress continuity)",
+  "ref_source": "analytic two-layer Stokes solution, 2x2 linear system per layer (got_driver.layered_stokes). No SC interaction force (G=0) in this round, so the interface is set by the tanh initial field only \u2014 see xval/.../REPORT.md section 5.4 for the measured nu_eff/nu_nominal = 4.45/3.04/1.23",
+  "metric": "max_y |u_lbm(y) - u_exact(y)| / max_y |u_exact(y)|, fixed-point start, finest grid; scored separately per M. auto-check as above",
+  "tolerance": "<15% (owner standard): PASS at M=1 (3.43e-04); FAIL at M=5 21.9%, M=10 40.9%, M=100 80.2% (best M=10 at NY=66 = 18.1%) -> honest FAIL, registered as such",
+  "repo": "TensorLBM",
+  "status": "failed"
+ },
+ {
+  "anchor_slug": "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+  "case_name": "PORT-FIDELITY: TensorLBM porter_forcing API vs independent literal transcription of the Porter 2012 four-piece set",
+  "ref_source": "xval/.../ref/porter_ref.py \u2014 independent per-direction transcription, imports no repository module; algorithm source = platform OSS reading record docs/oss-inventory-openLBMPM.md file:line pointers + Porter 2012. No source copied.",
+  "metric": "max over paired configurations of rel |err_got - err_ref| on the analytic-solution error; 3 of 4 configurations are paired (doc_seq@M=10 has no GOT row \u2014 see audit finding F2)",
+  "tolerance": "<1e-6 (predeclared); measured 8.38e-11 (worst paired), 1.43e-13 (M=10)",
+  "repo": "TensorLBM",
+  "status": "passed"
+ }
+]
