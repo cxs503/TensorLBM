@@ -1,0 +1,15 @@
+{
+ "nc": "single-resolution world (D=14/20 arm artifacts removed, analyze.py unmodified)",
+ "published_rungs": [
+  10
+ ],
+ "gap_ladder_rungs": {
+  "A2": [
+   10
+  ]
+ },
+ "shipped_flag_H_gap_survives_refinement": true,
+ "corrected_flag": false,
+ "defect": "analyze.py:289-290 uses `bool(gap_ladder) and all(out_of_band_at_any_rung)`; out_of_band_at_any_rung is a single-rung property, so ONE rung already yields true => the flag reports 'gap survives refinement' without any refinement.",
+ "contrast": "H_fail_persists_at_higher_D (analyze.py:291-293) DOES require len(resolutions)>=2 => the same file shows the correct pattern; the gap flag simply missed it."
+}

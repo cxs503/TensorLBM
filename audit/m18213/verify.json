@@ -1,0 +1,198 @@
+{
+ "artifacts": {
+  "docs/XVAL_LBM_BENCHMARK_METHOD_SELECTION.md": {
+   "exists": true,
+   "bytes": 16402,
+   "sha256": "16b9bc5271742e35"
+  },
+  "tests/test_xval_benchmark_method_selection.py": {
+   "exists": true,
+   "bytes": 6213,
+   "sha256": "aed841b42ef17cdf"
+  },
+  "xval/benchmark_method_selection/analyze.py": {
+   "exists": true,
+   "bytes": 21631,
+   "sha256": "4eab8cdd919b9a11"
+  },
+  "xval/benchmark_method_selection/make_report.py": {
+   "exists": true,
+   "bytes": 27641,
+   "sha256": "02db850d60b34dee"
+  },
+  "xval/benchmark_method_selection/predeclared_v3.json": {
+   "exists": true,
+   "bytes": 7068,
+   "sha256": "df5fbceeee9527a3"
+  },
+  "xval/benchmark_method_selection/publish_report.py": {
+   "exists": true,
+   "bytes": 9763,
+   "sha256": "7cd6efde6dc6427c"
+  },
+  "xval/benchmark_method_selection/run_ladder.sh": {
+   "exists": true,
+   "bytes": 1385,
+   "sha256": "7ad776ea69006daa"
+  },
+  "xval/benchmark_method_selection/run_ladder_cluster.sh": {
+   "exists": true,
+   "bytes": 1526,
+   "sha256": "1476e273d94cc9ea"
+  },
+  "xval/benchmark_method_selection/summary.json": {
+   "exists": true,
+   "bytes": 15084,
+   "sha256": "b9d375d36e7219aa"
+  },
+  "xval/benchmark_method_selection/table.csv": {
+   "exists": true,
+   "bytes": 769,
+   "sha256": "74b1a83c2a21dc3e"
+  },
+  "xval/benchmark_method_selection/oss_crosscheck.json": {
+   "exists": true,
+   "bytes": 1833,
+   "sha256": "38b749297216b58a"
+  },
+  "xval/benchmark_method_selection/runs/A3_D14/fail.json": {
+   "exists": true,
+   "bytes": 407,
+   "sha256": "cc4843330fbbdcbe"
+  },
+  "xval/benchmark_method_selection/figures/fig1_cl_traces.png": {
+   "exists": true,
+   "bytes": 115484,
+   "sha256": "33e317e31e5d9787"
+  },
+  "xval/benchmark_method_selection/figures/fig2_kpi_vs_A1.png": {
+   "exists": true,
+   "bytes": 53296,
+   "sha256": "206d26b38cf5b0c2"
+  },
+  "xval/benchmark_method_selection/figures/fig3_resolution_ladder.png": {
+   "exists": true,
+   "bytes": 59131,
+   "sha256": "fe3e6a301321b528"
+  },
+  "xval/benchmark_method_selection/figures/fig4_vorticity_fields.png": {
+   "exists": true,
+   "bytes": 239518,
+   "sha256": "85ee606e3d89f0ff"
+  },
+  "xval/benchmark_method_selection/figures/fig5_gap_ladder.png": {
+   "exists": true,
+   "bytes": 35253,
+   "sha256": "7b0ce3e41f938631"
+  }
+ },
+ "recalc_delta_vs_A1": {
+  "A2": {
+   "cd_mean_last50": {
+    "A1": 1.6132947378116644,
+    "A2": 1.4660336012540012,
+    "delta_pct": -9.127974765318703
+   },
+   "cl_amp": {
+    "A1": 0.6579248352005606,
+    "A2": 0.3515523646082385,
+    "delta_pct": -46.56648513639526
+   },
+   "st_fft": {
+    "A1": 0.16899580031695963,
+    "A2": 0.17662926112262423,
+    "delta_pct": 4.516952960575163
+   }
+  },
+  "A4": {
+   "cd_mean_last50": {
+    "A1": 1.6132947378116644,
+    "A4": 1.642771191938185,
+    "delta_pct": 1.8270966510746618
+   },
+   "cl_amp": {
+    "A1": 0.6579248352005606,
+    "A4": 0.556625096634633,
+    "delta_pct": -15.396855863488955
+   },
+   "st_fft": {
+    "A1": 0.16899580031695963,
+    "A4": 0.1717673074998151,
+    "delta_pct": 1.6399858325812633
+   }
+  }
+ },
+ "A1_got": {
+  "cd_mean_last50": 1.6132947378116644,
+  "cl_amp": 0.6579248352005606,
+  "st_fft": 0.16899580031695963,
+  "n_samples": 21259,
+  "tau": 0.5075
+ },
+ "trt_tau_minus": {
+  "D10": {
+   "tau_plus": 0.5075,
+   "lambda": 0.1875,
+   "tau_minus_artifact": 25.500000000000163,
+   "tau_minus_recalc": 25.500000000000163,
+   "match": true,
+   "fail_step": 600,
+   "planned": 21259,
+   "status": "blowup",
+   "tau_from_nu": 0.5075
+  },
+  "D14": {
+   "tau_plus": 0.5105,
+   "lambda": 0.1875,
+   "tau_minus_artifact": 18.357142857142936,
+   "tau_minus_recalc": 18.357142857142936,
+   "match": true,
+   "fail_step": 1000,
+   "planned": 29763,
+   "status": "blowup",
+   "tau_from_nu": 0.5105
+  }
+ },
+ "ladder_present": {
+  "A1_D14": [],
+  "A1_D20": null,
+  "A2_D14": [
+   "state.npz"
+  ],
+  "A2_D20": null,
+  "A3_D14": [
+   "fail.json"
+  ],
+  "A3_D20": null,
+  "A4_D14": [],
+  "A4_D20": null,
+  "A5_D14": [
+   "state.npz"
+  ],
+  "A5_D20": null
+ },
+ "kernel": {
+  "k1_rel_l2": 1.1757884876259976e-07,
+  "k2_rel_l2": 2.709855973692391e-08,
+  "src_sha_pinned": 5,
+  "oss_repo": "Maarten-vd-Sande/lbm",
+  "oss_commit": "573a01c4d2e6321f3634ff271adca4ce91872e6f"
+ },
+ "main_has": {
+  "xval/benchmark_method_selection/predeclared_v3.json": false,
+  "xval/benchmark_method_selection/run_ladder.sh": false,
+  "xval/benchmark_method_selection/summary.json": true,
+  "tests/test_xval_benchmark_method_selection.py": false,
+  "docs/XVAL_LBM_BENCHMARK_METHOD_SELECTION.md": false
+ },
+ "main_summary_schema": "xval-method-selection/v2",
+ "m17990_summary_schema": "xval-method-selection/v3",
+ "callers_grep": [
+  "/root/tp-agent/work/m17990/tests/test_xval_benchmark_method_selection.py",
+  "/root/tp-agent/work/m17990/xval/benchmark_method_selection/_daemonize.py",
+  "/root/tp-agent/work/m17990/xval/benchmark_method_selection/analyze.py",
+  "/root/tp-agent/work/m17990/xval/benchmark_method_selection/make_report.py",
+  "/root/tp-agent/work/m17990/xval/benchmark_method_selection/run_arm.py",
+  "/root/tp-agent/work/m17990/xval/benchmark_method_selection/publish_report.py"
+ ]
+}
