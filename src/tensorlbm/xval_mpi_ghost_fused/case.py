@@ -4,14 +4,30 @@ The physical reference is the leading-order (linear-decay) Taylor-Green mode of
 the incompressible Navier-Stokes equations on a 2*pi periodic box discretised by
 ``n`` lattice cells::
 
-    u =  U0 sin(kx) cos(ky) cos(kz) e^{-2 nu k^2 t}
-    v = -U0 cos(kx) sin(ky) cos(kz) e^{-2 nu k^2 t}
+    u =  U0 sin(kx) cos(ky) cos(kz) e^{-3 nu k^2 t}
+    v = -U0 cos(kx) sin(ky) cos(kz) e^{-3 nu k^2 t}
     w =  0,                               k = 2 pi / n
 
 with the classic Taylor-Green pressure field ``p = p0 + (rho0 U0^2/16)
 (cos 2kx + cos 2ky)(cos 2kz + 2)``.  The O(U0^2) harmonics of the true TGV
 solution are *not* in the reference: they are part of the reported error, which
 is stated in the report rather than absorbed into a fudge factor.
+
+Decay exponent (this is the *three*-dimensional TGV, and the exponent is 3, not
+2): the mode is an eigenfunction of the Laplacian with
+``d^2/dx^2 = d^2/dy^2 = d^2/dz^2 = -k^2``, i.e. ``lap(u) = -3 k^2 u``, so the
+Stokes balance ``du/dt = nu lap(u)`` gives ``du/dt = -3 nu k^2 u``.  The
+z-invariant (2D, "2D-in-3D") Taylor-Green mode ``w = 0, no kz dependence`` only
+has ``lap = -2 k^2`` and decays with ``2 nu k^2`` -- that exponent (Taylor 1937;
+``tensorlbm.verification.analytic_l2.tgv2d_analytic``; also
+``benchmarks/d3q27_activation/run_tgv_convergence.py``, whose reference is
+explicitly z-invariant) is *not* the one for the cos(kz)-modulated mode used
+here.  Using it in a round-1 revision of this cross-validation inflated the
+reported rel-L2 error to ~25% at n=64; see
+``xval/XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED/REFERENCE_AUDIT.md`` and
+``scripts/xval_tgv_reference_audit.py``, which measures the effective decay rate
+of the solver alone (no reference involved) and finds it at 1.5% from
+``3 nu k^2`` and 52% from ``2 nu k^2``.
 
 The field layout matches the transport: ``(19, nz, ny, nx)`` with ``x`` on the
 last axis (the slab axis), ``y`` and ``z`` fully periodic inside every rank.
@@ -89,6 +105,21 @@ class TGV:
     def mach(self) -> float:
         return self.u0 * math.sqrt(3.0)
 
+    @property
+    def laplacian_eigenvalue(self) -> float:
+        """``lap(u) / u`` of the mode: ``-3 k^2`` (``-2 k^2`` for the z-invariant TGV)."""
+        return -3.0 * self.k**2
+
+    @property
+    def decay_rate(self) -> float:
+        """Viscous decay rate ``-lap_eigenvalue * nu = 3 nu k^2`` of the mode."""
+        return -self.laplacian_eigenvalue * self.nu
+
+    @property
+    def decay_rate_2d(self) -> float:
+        """The z-invariant/2D TGV rate ``2 nu k^2`` -- kept for the audit only."""
+        return 2.0 * self.nu * self.k**2
+
     def _axes(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         base = torch.arange(self.n, dtype=self.dtype) * (2.0 * math.pi / self.n)
         z = base.view(-1, 1, 1)
@@ -115,7 +146,7 @@ class TGV:
         return equilibrium3d(rho, ux, uy, uz, self.dtype)
 
     def decay(self, t: float) -> float:
-        return math.exp(-2.0 * self.nu * self.k**2 * t)
+        return math.exp(-self.decay_rate * t)
 
     def analytic_velocity(self, t: float) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         ux, uy, uz = self.initial_velocity()
