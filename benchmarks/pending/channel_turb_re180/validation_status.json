@@ -5,7 +5,7 @@
   "reference_basis": "DNS reference data (not in-repo -> WITHHELD)",
   "scope": "3-D periodic channel, D3Q19 natural KBC, Guo body force; u+ RMS error in y+ in [30,100].",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T16:10:48Z",
+  "generated_utc": "2026-11-13T01:15:32Z",
   "artifact": "benchmarks/pending/channel_turb_3d/result.json",
   "repro_cmd": "python benchmarks/pending/channel_turb_3d/run.py",
   "references": [
