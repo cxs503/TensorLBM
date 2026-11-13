@@ -1,0 +1,203 @@
+{
+  "artifacts": {
+    "ephemeral_run_log": "/tmp/xval_run2.log -> preserved as evidence/mission_tmp_xval_run2.log",
+    "png": false,
+    "result_json": false,
+    "table_csv": false,
+    "xval_artifacts_dir_entries": 0,
+    "xval_figures_dir_entries": 0
+  },
+  "audit_mission": 17971,
+  "auditor_rerun": {
+    "2d_asym_16_rows": [
+      {
+        "arm": "REF-A",
+        "axis": "y",
+        "bitwise": false,
+        "n": 2,
+        "rel_l2": 0.02774259
+      },
+      {
+        "arm": "REF-B",
+        "axis": "y",
+        "bitwise": false,
+        "n": 2,
+        "rel_l2": 0.003161604
+      },
+      {
+        "arm": "REF-C",
+        "axis": "y",
+        "bitwise": false,
+        "n": 2,
+        "rel_l2": 0.003161604
+      },
+      {
+        "arm": "REF-CS",
+        "axis": "y",
+        "bitwise": true,
+        "n": 2,
+        "rel_l2": 0.0
+      },
+      {
+        "arm": "REF-A",
+        "axis": "y",
+        "bitwise": false,
+        "n": 4,
+        "rel_l2": 0.0415704
+      },
+      {
+        "arm": "REF-B",
+        "axis": "y",
+        "bitwise": false,
+        "n": 4,
+        "rel_l2": 0.004457062
+      },
+      {
+        "arm": "REF-C",
+        "axis": "y",
+        "bitwise": false,
+        "n": 4,
+        "rel_l2": 0.004457062
+      },
+      {
+        "arm": "REF-CS",
+        "axis": "y",
+        "bitwise": true,
+        "n": 4,
+        "rel_l2": 0.0
+      },
+      {
+        "arm": "REF-A",
+        "axis": "x",
+        "bitwise": false,
+        "n": 2,
+        "rel_l2": 0.02929243
+      },
+      {
+        "arm": "REF-B",
+        "axis": "x",
+        "bitwise": false,
+        "n": 2,
+        "rel_l2": 0.00355626
+      },
+      {
+        "arm": "REF-C",
+        "axis": "x",
+        "bitwise": false,
+        "n": 2,
+        "rel_l2": 0.00355626
+      },
+      {
+        "arm": "REF-CS",
+        "axis": "x",
+        "bitwise": true,
+        "n": 2,
+        "rel_l2": 0.0
+      },
+      {
+        "arm": "REF-A",
+        "axis": "x",
+        "bitwise": false,
+        "n": 4,
+        "rel_l2": 0.03894616
+      },
+      {
+        "arm": "REF-B",
+        "axis": "x",
+        "bitwise": false,
+        "n": 4,
+        "rel_l2": 0.03654484
+      },
+      {
+        "arm": "REF-C",
+        "axis": "x",
+        "bitwise": false,
+        "n": 4,
+        "rel_l2": 0.005557942
+      },
+      {
+        "arm": "REF-CS",
+        "axis": "x",
+        "bitwise": true,
+        "n": 4,
+        "rel_l2": 0.0
+      }
+    ],
+    "got_world1_w1fill0": {
+      "arm": "GOT",
+      "bitwise_equal": false,
+      "ke_got": 6.831800217123125e-05,
+      "ke_gt": 6.260963192553247e-05,
+      "max_abs": 0.008378901420848184,
+      "ranks": 1,
+      "rel_l2": 0.01023241320922833
+    },
+    "got_world1_w1fill1": {
+      "arm": "GOT-W1FILL",
+      "bitwise_equal": true,
+      "max_abs": 0.0,
+      "ranks": 1,
+      "rel_l2": 0.0
+    },
+    "got_world2_direct_launch": {
+      "arm": "GOT",
+      "bitwise_equal": false,
+      "ke_got": -1221119657789.752,
+      "ke_gt": 6.260963192553247e-05,
+      "max_abs": 1960224836390651.2,
+      "ranks": 2,
+      "rel_l2": 320991471300942.1
+    },
+    "halo_probe_after_one_exchange": {
+      "note": "left/right ghost crossing lanes equal the expected periodic planes exactly at world=2",
+      "rank0_ghost_err": 0.0,
+      "rank1_ghost_err": 0.0
+    },
+    "pytest": "3 passed, 7 skipped in 16.46s (tests/test_selective_halo_exchange.py)",
+    "torchrun_world2": "did not complete within 60s (hang before worker output); direct 2-process launch used instead"
+  },
+  "db": {
+    "tensor_benchmark_cases_rows_for_anchor": 0,
+    "tensor_reports_rows_for_mission": 0
+  },
+  "evidence_sha256": {
+    "auditor_rerun_2d_asym.log": "8845d0eee84f1e57ac393290214d45dba0c3e85ba9eab9addaaeb67a58e85403",
+    "auditor_rerun_got_w1fill0.log": "3a36378d7a6b4f0a7575d2ac5f038a6f7a6422fc7b22cd3bb8910a16beb9e284",
+    "auditor_rerun_got_w1fill1.log": "944ad58322d8a02f400438d6728a11e9e2b7457fe8395489e1a14cee78c1d066",
+    "got_diag_1step.py": "71e24feac56bc25a8f91bdc0aebe2c0fc132e5beb9388fc7f183d305cb126b0f",
+    "got_world2_rank0.log": "6402ffb4e98bb812331c416b9d683a0c52b5f6342b7c8a5a33b0167aa617a1cd",
+    "halo_diag.py": "78588ae96ba3ef5c56a870df86b5d234083105becfbf170794206792bcb8f9de",
+    "halo_probe_rank0.log": "a99b7fd838542f3c91489aebc8f827c08db38a6b6701551c8020a221adb34321",
+    "halo_probe_rank1.log": "28d157f06eab6b7944e362504a4ef8a9a449ed01e19d6a9ac85712fc5702e062",
+    "mission_tmp_xval_run2.log": "595f6a68685915ee018b8bb970e84bab8d226d3aa5664808f026e9c9f1d10e90",
+    "pytest_selective_halo.log": "ba184148e579366576910e7470ec44e96d255bc192ba8f9d56ec9deb4b230d06",
+    "torchrun_world2_hang.log": "8db94c9b641d7a8c801cb53d9f3e35696fc6cb31b0209d439af27b87fe01f3f5"
+  },
+  "figure": {
+    "path": "docs/board_audit/m17971/figures/repro_rel_l2.png",
+    "sha256": "b0860086fccdab0759871950644460d7bad95231cff7391514fd55c0ad8208d3"
+  },
+  "git": {
+    "branch": "agent/m17868",
+    "head": "804636b0",
+    "main_clone": "/root/tensor-ecosystem/TensorLBM HEAD be78a87b, no PPERMUTE xval",
+    "status": "?? xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO/ (all deliverable files untracked)",
+    "unique_commits_vs_origin_main": 0
+  },
+  "mission": 17868,
+  "platform_reports": {
+    "initial": 16883,
+    "six_section_final": 16886,
+    "supersede_note": "16886 \u4e3a\u516d\u8981\u7d20\u5b9a\u7a3f\uff0c\u53d6\u4ee3 16883\uff1b\u7ed3\u8bba\u4e00\u81f4"
+  },
+  "verdict_row": {
+    "gate_note": "maturity_gate 30min \u5468\u671f\u81ea\u52a8\u88c1\u5b9a\uff1blevel=1<=1 \u4e14\u539f\u5355 succeeded \u2192 \u9884\u671f reopened",
+    "gate_state": "pending",
+    "id": 674,
+    "level": 1,
+    "mission_id": 17971,
+    "repo": "TensorLBM",
+    "scope": "m17868 XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO"
+  },
+  "worktree": "/root/tp-agent/work/m17868"
+}
