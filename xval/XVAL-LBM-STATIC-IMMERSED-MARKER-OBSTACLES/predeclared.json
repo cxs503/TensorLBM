@@ -1,0 +1,24 @@
+{
+    "decision": "Validate IBM static obstacle implementation against Dennis & Chang (1970) cylinder drag at Re=20",
+    "hypothesis": "TensorLBM's Peskin IBM with direct forcing reproduces Cd=2.05 within 15%",
+    "alternatives": [
+        "A1: Peskin IBM with iterative direct forcing (this implementation)",
+        "A2: Staircase bounce-back (baseline, known to be 1st order)"
+    ],
+    "thresholds": {
+        "Cd_rel_error_pct": 15.0,
+        "partition_of_unity_error": 1e-10,
+        "interpolate_uniform_error": 1e-10
+    },
+    "stopping_rule": "Run 8000 steps (200 D/U) or until Cd variation < 0.01 over last 2000 steps",
+    "parameters": {
+        "nx": 320,
+        "ny": 160,
+        "cylinder_radius": 20.0,
+        "u_inlet": 0.1,
+        "re": 20.0,
+        "marker_spacing": 0.5,
+        "n_iter_ibm": 10,
+        "max_steps": 8000
+    }
+}
