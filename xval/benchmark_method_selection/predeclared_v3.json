@@ -1,0 +1,57 @@
+{
+  "schema": "xval-method-selection/v3-ladder",
+  "anchor": "XVAL-LBM-METHOD-SELECTION-FIRST-EVIDENCE",
+  "round": 3,
+  "written_before_any_ladder_kpi": "2026-11-13T11:0xZ — the D=10 KPIs of A1/A2/A4 and the two measured blow-ups (A3, A5) already exist in runs/ and are KNOWN; they are used only as the baseline rung, never as a target to tune towards. No D=14 / D=20 KPI existed when this file was written (verified: runs/ contained A1_D10, A2_D10, A3_D10, A4_D10, A5_D10 only).",
+  "decision": "Is the round-2 method-selection verdict (H1 rejected: the OSS selection is not portable within 15 %) itself resolution-limited? Concretely: (a) are the D=10 KPIs of A1/A2/A4 converged, (b) does the A1-vs-A2 gap survive refinement, (c) is A1's >=15 % offset from the external trend band a discretisation artifact, and (d) is the literal-OSS TRT blow-up (A3/A5) a resolution artifact?",
+  "alternatives": [
+    "L_conv: the D=10 KPIs are converged (successive-rung delta < conv_pct) => the round-2 verdict stands as resolution-independent, and the A1 offset is a modelling/physics offset, not a grid offset",
+    "L_limited: at least one KPI moves >= conv_pct between rungs => the D=10 KPIs are resolution-limited; the round-2 verdict must be restated as 'resolution-limited, delta at D=10' and the resolution-free value must be extrapolated",
+    "L_flip: the A1-vs-A2 delta shrinks below 15 % under refinement => the round-2 rejection of H1 is falsified by refinement (a real, publishable negative result)"
+  ],
+  "hypothesis": {
+    "H_conv (primary)": "for every arm in {A1, A2, A4} and every KPI in {cd_mean_last50, st_fft, cl_amp}, |KPI(D=20) - KPI(D=14)| / |KPI(D=14)| < 10 % (the pre-existing conv_pct threshold in summary.json, NOT set here after seeing data)",
+    "H_gap": "the A1-vs-A2 |Delta| on cd_mean_last50 stays >= 15 % at D=14 and D=20 if and only if the collision-operator knob is a genuine selection variable (if it collapses below 15 %, the round-2 rejection is a grid artifact)",
+    "H_fail_persists": "the A3/A5 TRT blow-up recurs at D=14 (the literal OSS magic Lambda stays outside the tau_minus window because tau_minus = 0.5 + Lambda/(tau_plus-0.5) grows as tau_plus shrinks; at D=14 tau_plus = 0.5105 gives tau_minus(A3) = 18.36, still >> 2)"
+  },
+  "outcome_metrics": {
+    "cd_mean_last50": "mean Cd over the last 50 % of the post-warm-up window (primary drag metric)",
+    "st_fft": "Strouhal from the Hann-windowed lift spectrum, parabolic peak",
+    "cl_amp": "half peak-to-peak lift amplitude",
+    "cl_max_abs": "max |Cl| (stability monitor)"
+  },
+  "unit_of_analysis": "one completed arm x resolution; KPIs are scalars per run",
+  "baseline_control": {
+    "baseline_rung": "D=10 (round-2 artifacts, already known and frozen; their sha256 goes into the ladder summary)",
+    "ladder_rungs": "D=14 and D=20 for A1 (MRT+sponge, recorded TensorLBM selection), A2 (BGK, OSS selection), A4 (MRT, sponge off = sponge-isolated control)",
+    "failure_probe": "A3 (TRT magic Lambda) and A5 (TRT Lambda re-derived, tau_minus=2.0) at D=14, run only to test H_fail_persists; they are not part of the KPI ladder because they have no D=10 KPI",
+    "external_caliber": "unchanged from round 2: trend band Cd [1.30,1.45], St [0.16,0.18], NON-adjudicating (primary Norberg/Sohankar Re=200 table is WITHHELD in this environment)"
+  },
+  "thresholds_predeclared": {
+    "conv_pct": 10.0,
+    "accept_pct": 15.0,
+    "st_crosscheck_pct": 5.0,
+    "provenance": "conv_pct / accept_pct / st_xcheck_pct are copied verbatim from summary.json thresholds written in round 2 (2026-11-13T08:10Z), i.e. before any ladder data existed; they are not re-tuned here",
+    "extrapolation_rule": "report a 1/D Richardson-style linear fit (KPI = KPI_inf + c/D) over the three rungs as CONTEXT only; the fitted KPI_inf is never used as a PASS/FAIL number, only to say whether the trend band becomes reachable"
+  },
+  "variables_changed": {
+    "controlled": "Re = 200, blockage D/H = 1/20, domain 20D x 20D, square centre 6D, U = 0.05 (Ma = 0.0866), collision operator and sponge flag per arm, force sampler, post-processing, seeding amplitude 10 % at St_seed = 0.13, 2 seed periods + 15 shedding periods",
+    "changed": "D in {10, 14, 20} => nx = ny in {200, 280, 400}",
+    "confounder_declared": "at fixed U and Re, the lattice viscosity nu = U D / Re grows with D => tau = 0.5 + 3 nu moves 0.5075 -> 0.5105 -> 0.5150 across the ladder. So the ladder changes grid resolution and tau together (standard fixed-U refinement, NOT diffusive scaling). The trend is therefore 'refinement + less compressibility error'; it can establish convergence but cannot separate the two error sources. Declared, not corrected.",
+    "second_confounder": "the shedding period in lattice steps grows like D/U, so total step counts differ per rung (21259 / 29763 / 42518); the post-warm-up window is the same fraction (last 50 %) of a run whose length is 15 shedding periods, so the spectral resolution of St is unchanged"
+  },
+  "repetition_rationale": "the round-2 determinism audit proved the harness is bit-reproducible (max|dFx| = 1.78e-14 on a 4000-step re-run; artifacts/m17627_audit), so each rung is run ONCE and reproducibility is asserted by the existing determinism evidence rather than by duplicated runs. The St cross-estimator spread (St_fft vs St_zc, < 5 % predeclared) serves as the within-run uncertainty measure.",
+  "environment": {
+    "platform": "loongarch64 (loong64), Python 3.11.6, torch 2.7.1, numpy 2.4.6, float64",
+    "oss_reference": "Maarten-vd-Sande/lbm @ 573a01c4d2e6321f3634ff271adca4ce91872e6f, source sha256 pinned in oss_crosscheck.json",
+    "oss_acceleration": "numba/llvmlite has no loongarch64 wheel and the llvmlite source build fails on this host (measured, see ladder summary friction) => the OSS reference cannot be jit-compiled here; kernel-level cross-checks keep the numba.jit -> identity shim",
+    "threads": "same as round 2 where comparable (D=10: 4 threads); ladder rungs use t threads chosen per arm and recorded in each result.json"
+  },
+  "analysis_plan": "for each arm: rung table (D=10/14/20) of the four KPIs, successive ladders deltas in %, H_conv verdict by the 10 % rule; the A1-vs-A2 delta recomputed at each rung for the H_gap verdict; the failure probes reported as fail.json with step and tau_minus; Richardson-style 1/D fit reported as context. Every number is injected by analyze.py/make_report.py from runs/*/result.json - no hand copy.",
+  "stopping_rules": [
+    "an arm that reaches non-finite populations (predeclared |Cl| > 10 stability rule) is recorded as blowup with its step and is NOT re-tuned to pass",
+    "an arm exceeding 3600 s wall clock is recorded as honest not_run; the ladder is then reported with the rungs that exist and the missing rung named",
+    "no threshold is changed after seeing a KPI; any post-hoc arm is labelled post-hoc"
+  ],
+  "exclusions": "A3/A5 excluded from the KPI ladder (no D=10 KPI, they blow up); the external band stays non-adjudicating; no claim about 3-D behaviour"
+}
