@@ -1,0 +1,8 @@
+{
+ "steps": 400,
+ "max_abs_diff_fr": 3.4588242964321715e-09,
+ "max_abs_diff_fb": 3.4547440463938983e-09,
+ "sha256_closed": "652d681cc99941dfb7139ba39bb2b9fdf951c062bde2b9515574b34ff47d802f",
+ "sha256_candidates": "1dda69023d2a87819e90ba0124297c7eabf00d4a4a4b803383e39ce7c208656a",
+ "bitwise_identical": false
+}
