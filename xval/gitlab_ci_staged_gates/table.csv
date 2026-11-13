@@ -1,0 +1,13 @@
+arm,event,n_active_jobs,n_blocking_gates,n_guarded,guard_fraction,n_escaped,escape_fraction,n_tests_executed
+ALT-0_ours,mr,6,6,16397,0.9940,99,0.0060,17178
+ALT-0_ours,branch_push,6,6,16397,0.9940,99,0.0060,17178
+ALT-0_ours,main_push,6,6,16496,1.0000,0,0.0000,17277
+ALT-0_ours,schedule,6,6,16496,1.0000,0,0.0000,17277
+ALT-1_verbatim,mr,6,5,16496,1.0000,0,0.0000,32992
+ALT-1_verbatim,branch_push,7,6,16496,1.0000,0,0.0000,32992
+ALT-1_verbatim,main_push,7,6,16496,1.0000,0,0.0000,32992
+ALT-1_verbatim,schedule,6,5,16496,1.0000,0,0.0000,49488
+ALT-2_adapted,mr,6,5,16397,0.9940,99,0.0060,32794
+ALT-2_adapted,branch_push,7,6,16397,0.9940,99,0.0060,32794
+ALT-2_adapted,main_push,7,6,16397,0.9940,99,0.0060,32794
+ALT-2_adapted,schedule,6,5,16397,0.9940,99,0.0060,49191
