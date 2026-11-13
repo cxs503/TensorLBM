@@ -1,0 +1,650 @@
+{
+ "schema": "w26_gci_sign_surface/v1",
+ "mission": "m17569",
+ "generated_by": "papers/artifacts/w26/lbm-suboff-tau/build_gci.py",
+ "generated_utc": "2026-11-13T07:28:39+00:00",
+ "tolerances": {
+  "gci_pct": 5.0,
+  "observed_order": 1.8,
+  "steady_drift_pct": 2.0
+ },
+ "ladder": {
+  "procedure": "ASME V&V 20 / Celik et al. (2008) three-grid GCI, fine-grid value with Fs=1.25",
+  "refinement_ratios": [
+   1.5,
+   1.5
+  ],
+  "r_is_uniform": true,
+  "quantities": {
+   "C_T": {
+    "f1_fine": 0.04218147875488005,
+    "f2_medium": 0.030552492694257347,
+    "f3_coarse": 0.04340699080501529,
+    "r": 1.5,
+    "convergence_ratio_R": -1.105384256524736,
+    "status": "OSCILLATORY_DIVERGENT",
+    "observed_order": null
+   },
+   "C_F": {
+    "f1_fine": 0.03023579524628562,
+    "f2_medium": 0.02358318379070896,
+    "f3_coarse": 0.030902655477184102,
+    "r": 1.5,
+    "convergence_ratio_R": -1.1002403695678749,
+    "status": "OSCILLATORY_DIVERGENT",
+    "observed_order": null
+   },
+   "C_P": {
+    "f1_fine": 0.01194568350859443,
+    "f2_medium": 0.006969308903548382,
+    "f3_coarse": 0.012504335327831182,
+    "r": 1.5,
+    "convergence_ratio_R": -1.1122608050186331,
+    "status": "OSCILLATORY_DIVERGENT",
+    "observed_order": null
+   }
+  },
+  "steady_state_check": {
+   "declared_tolerance_pct": 2.0,
+   "per_case_drift_pct": {
+    "ladder4_N16": 0.000272792588523032,
+    "ladder4_N24": 0.004423898644106619,
+    "ladder4_N36": 0.012345244221602068
+   },
+   "all_cases_below_tolerance": true,
+   "note": "GCI is only meaningful on a statistically steady solution; the drift column is reported so the reader can discount the number if it is not"
+  },
+  "cases": [
+   {
+    "tag": "ladder4_N16",
+    "N": 16,
+    "cells": 8112,
+    "steps": 2880,
+    "passes": 3.0,
+    "Re_lattice": 1000.0000000000175,
+    "tau": 0.5024,
+    "nu_lb": 0.000799999999999986,
+    "C_T": 0.04340699080501529,
+    "C_F": 0.030902655477184102,
+    "C_P": 0.012504335327831182,
+    "C_T_sum_check_rel_dev": 1.5985659856212611e-16,
+    "wind_mean_recomputed_vs_case_json_rel_dev": 0.0,
+    "C_T_window_drift": 2.72792588523032e-06,
+    "C_F_window_drift": 1.2113781555444683e-06,
+    "C_T_block_means": [
+     0.05221689596282879,
+     0.044478658831937,
+     0.04372005372149111,
+     0.04352918388179238,
+     0.04345653524136547,
+     0.043426006359621586,
+     0.04341446217642081,
+     0.04340926037508472,
+     0.04340773697336056,
+     0.04340712053299634
+    ],
+    "field_finite": true,
+    "solver_route": "standard_compiled_step",
+    "wall_treatment_effective": "BOUNCE_BACK",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/runs/ladder4_N16/case_ladder4_N16.json",
+    "case_json_sha256": "1350eb25f990f42c6362f89a6b53b70b75a0be5f205f1b987321e8f687c74e82",
+    "timeseries_sha256": "b6e58af590592cdb2be20f323c1022aa42d48ac6052badfcf4fb7112eea89b3a",
+    "wall_clock": {
+     "setup_s": 0.027990102767944336,
+     "run_s": 94.27117109298706,
+     "cells_per_s": 247822.95296783437
+    }
+   },
+   {
+    "tag": "ladder4_N24",
+    "N": 24,
+    "cells": 28800,
+    "steps": 2880,
+    "passes": 2.0,
+    "Re_lattice": 999.9999999999868,
+    "tau": 0.5036,
+    "nu_lb": 0.001200000000000016,
+    "C_T": 0.030552492694257347,
+    "C_F": 0.02358318379070896,
+    "C_P": 0.006969308903548382,
+    "C_T_sum_check_rel_dev": 1.135569194524587e-16,
+    "wind_mean_recomputed_vs_case_json_rel_dev": 0.0,
+    "C_T_window_drift": 4.4238986441066186e-05,
+    "C_F_window_drift": 1.3975161684060684e-05,
+    "C_T_block_means": [
+     0.0449280338501044,
+     0.032284273659590995,
+     0.03099918422782791,
+     0.03072767972600252,
+     0.03063321463164243,
+     0.03059080297704894,
+     0.03056780633770746,
+     0.030559328930678177,
+     0.030554847978259872,
+     0.030552561484940316
+    ],
+    "field_finite": true,
+    "solver_route": "standard_compiled_step",
+    "wall_treatment_effective": "BOUNCE_BACK",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/runs/ladder4_N24/case_ladder4_N24.json",
+    "case_json_sha256": "8228e76d6ac3e2a0e34eb507aae9a8870a1b05234cb35cdf248f7c13a2423442",
+    "timeseries_sha256": "2efb8a904c657748fc5a91ff6f9160f68322e429ccf39b7abbfb9d05cf9e8cee",
+    "wall_clock": {
+     "setup_s": 0.04808306694030762,
+     "run_s": 178.69574809074402,
+     "cells_per_s": 464163.25450496987
+    }
+   },
+   {
+    "tag": "ladder4_N36",
+    "N": 36,
+    "cells": 90828,
+    "steps": 2880,
+    "passes": 1.3333333333333333,
+    "Re_lattice": 1000.0000000000074,
+    "tau": 0.5054,
+    "nu_lb": 0.0017999999999999867,
+    "C_T": 0.04218147875488005,
+    "C_F": 0.03023579524628562,
+    "C_P": 0.01194568350859443,
+    "C_T_sum_check_rel_dev": 0.0,
+    "wind_mean_recomputed_vs_case_json_rel_dev": 0.0,
+    "C_T_window_drift": 0.0001234524422160207,
+    "C_F_window_drift": 5.5644967338587295e-05,
+    "C_T_block_means": [
+     0.06397396845831929,
+     0.046534162890483406,
+     0.0434478234402352,
+     0.04262787422829623,
+     0.04237154854039129,
+     0.04227380938168153,
+     0.04222944794291251,
+     0.0422120026530333,
+     0.04219321835698903,
+     0.04218218697559953
+    ],
+    "field_finite": true,
+    "solver_route": "standard_compiled_step",
+    "wall_treatment_effective": "BOUNCE_BACK",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/runs/ladder4_N36/case_ladder4_N36.json",
+    "case_json_sha256": "429300023eb524b7f5843a4abe1a6c4dbf8e8aea1424eed5e236393a8860e475",
+    "timeseries_sha256": "9d87c0701eb94fa8777aa2f26399234d839db866fe770b5695f35f0281c8345b",
+    "wall_clock": {
+     "setup_s": 0.10518789291381836,
+     "run_s": 273.31395387649536,
+     "cells_per_s": 957084.8333568963
+    }
+   }
+  ],
+  "two_grid_only": false,
+  "criteria": {
+   "GCI_below_5pct": false,
+   "observed_order_ge_1p8": false,
+   "observed_order": null,
+   "gci_fine_pct": null,
+   "gci_basis": "C_T (total resistance coefficient of the bare hull)",
+   "verdict_basis": "both sub-criteria must hold on C_T",
+   "pass": false
+  }
+ },
+ "sign_surface": {
+  "definition": "cell = sign of the window-mean C_T at the given (tau, N); UNSTEADY suffix = last-window drift above the declared 2% steady-state tolerance",
+  "tau_values": [
+   0.50002,
+   0.50005,
+   0.5001,
+   0.50015,
+   0.5002,
+   0.5005,
+   0.501,
+   0.502,
+   0.505,
+   0.5072
+  ],
+  "N_values": [
+   32
+  ],
+  "sign_grid": {
+   "32": {
+    "0.50002": "DIVERGED",
+    "0.50005": "DIVERGED",
+    "0.5001": "DIVERGED",
+    "0.50015": "DIVERGED",
+    "0.5002": "POSITIVE_UNSTEADY",
+    "0.5005": "POSITIVE_UNSTEADY",
+    "0.501": "POSITIVE_UNSTEADY",
+    "0.502": "POSITIVE",
+    "0.505": "POSITIVE",
+    "0.5072": "POSITIVE"
+   }
+  },
+  "cells": [
+   {
+    "tag": "scan2_tau0.50002_N32",
+    "tau": 0.50002,
+    "N": 32,
+    "Re_lattice": 239999.99999976,
+    "nu_lb": 6.666666666673334e-06,
+    "steps": 1659,
+    "passes": 0.8640625,
+    "C_T": 0.006330128732650737,
+    "C_F": 0.0001807423418722465,
+    "C_P": 0.006149386390778491,
+    "C_T_min_window": -0.0026236687316918664,
+    "C_T_max_window": 0.01831010887047025,
+    "C_T_window_drift": 0.7387767907401213,
+    "C_T_series_min": -0.0026236687316918664,
+    "C_T_series_min_step": 1485,
+    "n_samples": 331,
+    "n_samples_negative": 16,
+    "frac_samples_negative": 0.04833836858006042,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50002_N32/case_scan2_tau0.50002_N32.json",
+    "timeseries_sha256": "e130b05f047c3595241db329fd3be2ec05a9020d456259efd7c1684fe4229fe3",
+    "wall_clock": {
+     "setup_s": 0.04166078567504883,
+     "run_s": 267.39863896369934,
+     "cells_per_s": 402629.0650440285
+    }
+   },
+   {
+    "tag": "scan2_tau0.50005_N32",
+    "tau": 0.50005,
+    "N": 32,
+    "Re_lattice": 96000.0000000106,
+    "nu_lb": 1.6666666666664828e-05,
+    "steps": 1741,
+    "passes": 0.9067708333333333,
+    "C_T": 0.012153365521220413,
+    "C_F": 0.000450445977899741,
+    "C_P": 0.011702919543320674,
+    "C_T_min_window": -0.0006333873313954404,
+    "C_T_max_window": 0.021318927674148055,
+    "C_T_window_drift": 0.5184453734080601,
+    "C_T_series_min": -0.0036636160060982063,
+    "C_T_series_min_step": 1480,
+    "n_samples": 348,
+    "n_samples_negative": 19,
+    "frac_samples_negative": 0.05459770114942529,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50005_N32/case_scan2_tau0.50005_N32.json",
+    "timeseries_sha256": "139fca26d32a8ea988a69a985a39cef4b79a754706cc7c8d11b09d6d8afbcf1e",
+    "wall_clock": {
+     "setup_s": 0.059050559997558594,
+     "run_s": 189.03961825370789,
+     "cells_per_s": 597673.3186604597
+    }
+   },
+   {
+    "tag": "scan2_tau0.50010_N32",
+    "tau": 0.5001,
+    "N": 32,
+    "Re_lattice": 48000.0000000053,
+    "nu_lb": 3.3333333333329655e-05,
+    "steps": 1721,
+    "passes": 0.8963541666666667,
+    "C_T": 0.00785863726703125,
+    "C_F": 0.0008359040765237661,
+    "C_P": 0.007022733190507483,
+    "C_T_min_window": -0.002484318683660244,
+    "C_T_max_window": 0.014433677811133886,
+    "C_T_window_drift": 0.625903478434798,
+    "C_T_series_min": -0.0032722577544895735,
+    "C_T_series_min_step": 1480,
+    "n_samples": 344,
+    "n_samples_negative": 16,
+    "frac_samples_negative": 0.046511627906976744,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50010_N32/case_scan2_tau0.50010_N32.json",
+    "timeseries_sha256": "9e23fed90b94f22f4f88760a34b03536b007a85164a86a5bd1553d0032a06983",
+    "wall_clock": {
+     "setup_s": 0.055773019790649414,
+     "run_s": 170.98561668395996,
+     "cells_per_s": 653189.5381962686
+    }
+   },
+   {
+    "tag": "scan2_tau0.50015_N32",
+    "tau": 0.50015,
+    "N": 32,
+    "Re_lattice": 32000.00000000352,
+    "nu_lb": 4.99999999999945e-05,
+    "steps": 1984,
+    "passes": 1.0333333333333334,
+    "C_T": 0.019995780609229435,
+    "C_F": 0.0014641257202018666,
+    "C_P": 0.01853165488902757,
+    "C_T_min_window": 0.00688471825375288,
+    "C_T_max_window": 0.024316857424665005,
+    "C_T_window_drift": 0.30896998927238206,
+    "C_T_series_min": -0.0030800807582934265,
+    "C_T_series_min_step": 1485,
+    "n_samples": 396,
+    "n_samples_negative": 20,
+    "frac_samples_negative": 0.050505050505050504,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50015_N32/case_scan2_tau0.50015_N32.json",
+    "timeseries_sha256": "42926bc25156ead6ea5c1139c94a69bc1851aacdc2a927f48e76c503129cdac0",
+    "wall_clock": {
+     "setup_s": 0.060735225677490234,
+     "run_s": 229.90726327896118,
+     "cells_per_s": 560024.3427010609
+    }
+   },
+   {
+    "tag": "scan_tau0.5002_N32",
+    "tau": 0.5002,
+    "N": 32,
+    "Re_lattice": 24000.00000000265,
+    "nu_lb": 6.666666666665931e-05,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.011913244873532692,
+    "C_F": 0.002392823206418758,
+    "C_P": 0.009520421667113933,
+    "C_T_min_window": 0.007146323133995103,
+    "C_T_max_window": 0.016007087252721958,
+    "C_T_window_drift": 0.6220478064229822,
+    "C_T_series_min": -0.0024324573020018734,
+    "C_T_series_min_step": 1495,
+    "n_samples": 576,
+    "n_samples_negative": 29,
+    "frac_samples_negative": 0.050347222222222224,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "POSITIVE_UNSTEADY",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5002_N32/case_scan_tau0.5002_N32.json",
+    "timeseries_sha256": "9980e72a21ccfe705be81d47bdd60d5082939ff70839263e686410f5c7381dca",
+    "wall_clock": {
+     "setup_s": 0.05581259727478027,
+     "run_s": 400.0904450416565,
+     "cells_per_s": 467145.5724980894
+    }
+   },
+   {
+    "tag": "scan_tau0.5005_N32",
+    "tau": 0.5005,
+    "N": 32,
+    "Re_lattice": 9600.000000001057,
+    "nu_lb": 0.00016666666666664834,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.016679616857352305,
+    "C_F": 0.0053271290470162215,
+    "C_P": 0.011352487810336081,
+    "C_T_min_window": 0.012483464891882104,
+    "C_T_max_window": 0.02069644394907384,
+    "C_T_window_drift": 0.03876869310422954,
+    "C_T_series_min": -0.000844657484429792,
+    "C_T_series_min_step": 1700,
+    "n_samples": 576,
+    "n_samples_negative": 16,
+    "frac_samples_negative": 0.027777777777777776,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "POSITIVE_UNSTEADY",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5005_N32/case_scan_tau0.5005_N32.json",
+    "timeseries_sha256": "a8b631329c1ad30f7257f47933ca89a6cc423f0b492c5382fb96187e9983f1a8",
+    "wall_clock": {
+     "setup_s": 0.20292401313781738,
+     "run_s": 232.48167943954468,
+     "cells_per_s": 803936.3809250278
+    }
+   },
+   {
+    "tag": "scan_tau0.5010_N32",
+    "tau": 0.501,
+    "N": 32,
+    "Re_lattice": 4799.999999999995,
+    "nu_lb": 0.00033333333333333365,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.01253331937100364,
+    "C_F": 0.008394219710213362,
+    "C_P": 0.0041390996607902795,
+    "C_T_min_window": 0.009779532750065713,
+    "C_T_max_window": 0.015551955252599345,
+    "C_T_window_drift": 0.2438086402399066,
+    "C_T_series_min": 0.009479066152972835,
+    "C_T_series_min_step": 2585,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "POSITIVE_UNSTEADY",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5010_N32/case_scan_tau0.5010_N32.json",
+    "timeseries_sha256": "f6f41323236e9b285771f722472d6907db65c6b50962e1e17e2553f794338afb",
+    "wall_clock": {
+     "setup_s": 0.09412097930908203,
+     "run_s": 275.235125541687,
+     "cells_per_s": 679057.5135792111
+    }
+   },
+   {
+    "tag": "scan_tau0.5020_N32",
+    "tau": 0.502,
+    "N": 32,
+    "Re_lattice": 2399.9999999999977,
+    "nu_lb": 0.0006666666666666673,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.021513615199114544,
+    "C_F": 0.016248202375419105,
+    "C_P": 0.005265412823695439,
+    "C_T_min_window": 0.021112833388285755,
+    "C_T_max_window": 0.02175195506826141,
+    "C_T_window_drift": 0.0013401547077385983,
+    "C_T_series_min": 0.021112833388285755,
+    "C_T_series_min_step": 2820,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": true,
+    "status": "POSITIVE",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5020_N32/case_scan_tau0.5020_N32.json",
+    "timeseries_sha256": "481fb3fe2e71f7f9ed563f5232833788657b9b65489146d4ba39abb34b3612f1",
+    "wall_clock": {
+     "setup_s": 0.04414844512939453,
+     "run_s": 220.89396142959595,
+     "cells_per_s": 846109.5033581058
+    }
+   },
+   {
+    "tag": "scan_tau0.5050_N32",
+    "tau": 0.505,
+    "N": 32,
+    "Re_lattice": 959.9999999999992,
+    "nu_lb": 0.001666666666666668,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.04221312892791567,
+    "C_F": 0.03552071983415567,
+    "C_P": 0.00669240909376,
+    "C_T_min_window": 0.04219112247661195,
+    "C_T_max_window": 0.04221800902149697,
+    "C_T_window_drift": 9.244313506298649e-05,
+    "C_T_series_min": 0.04219112247661195,
+    "C_T_series_min_step": 2820,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": true,
+    "status": "POSITIVE",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5050_N32/case_scan_tau0.5050_N32.json",
+    "timeseries_sha256": "9a982d91d6debba094d40fe766a7e03d8670993055047002725547f600130ff6",
+    "wall_clock": {
+     "setup_s": 0.10942792892456055,
+     "run_s": 291.1862244606018,
+     "cells_per_s": 641858.9352783345
+    }
+   },
+   {
+    "tag": "scan_tau0.5072_N32",
+    "tau": 0.5072,
+    "N": 32,
+    "Re_lattice": 666.6666666666682,
+    "nu_lb": 0.0023999999999999946,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.055976987497630526,
+    "C_F": 0.048140202323760935,
+    "C_P": 0.007836785173869593,
+    "C_T_min_window": 0.055967722242041426,
+    "C_T_max_window": 0.05600353505627844,
+    "C_T_window_drift": 4.938034117659969e-06,
+    "C_T_series_min": 0.055967722242041426,
+    "C_T_series_min_step": 2865,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": true,
+    "status": "POSITIVE",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5072_N32/case_scan_tau0.5072_N32.json",
+    "timeseries_sha256": "2f227f9a21efd7e3586b1aff6e56ceabc2a8f80c9d2c6dc2a1bd9658b09e22a9",
+    "wall_clock": {
+     "setup_s": 0.04917597770690918,
+     "run_s": 230.5916883945465,
+     "cells_per_s": 810525.6581503924
+    }
+   }
+  ],
+  "boundary": {
+   "per_N": [
+    {
+     "N": 32,
+     "n_negative": 0,
+     "n_positive": 6,
+     "tau_max_negative": null,
+     "tau_min_positive": 0.5002
+    }
+   ],
+   "note": "bracketed by the scan resolution in tau; the true boundary lies inside the bracket, no interpolation is claimed"
+  },
+  "route_audit": {
+   "note": "the frozen engine selects the wall treatment itself (WallTreatment.AUTO); at the high-Reynolds end of the scan it switches to the wall-function route, so the surface is NOT a single numerical setup. Route per cell is recorded and the route boundary is reported next to the sign boundary.",
+   "by_route": {
+    "standard_compiled_step": [
+     "tau=0.5005/N=32",
+     "tau=0.501/N=32",
+     "tau=0.502/N=32",
+     "tau=0.505/N=32",
+     "tau=0.5072/N=32"
+    ],
+    "wall_function": [
+     "tau=0.50002/N=32",
+     "tau=0.50005/N=32",
+     "tau=0.5001/N=32",
+     "tau=0.50015/N=32",
+     "tau=0.5002/N=32"
+    ]
+   }
+  },
+  "secondary_definition": {
+   "rule": "a cell is NEG_EXCURSION if any instantaneous force sample of the run is negative; this is registered separately because the window-mean sign is unstable at the high-Reynolds end of the scan",
+   "cells": [
+    {
+     "tau": 0.50002,
+     "N": 32,
+     "frac_samples_negative": 0.04833836858006042,
+     "C_T_series_min": -0.0026236687316918664,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.50005,
+     "N": 32,
+     "frac_samples_negative": 0.05459770114942529,
+     "C_T_series_min": -0.0036636160060982063,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.5001,
+     "N": 32,
+     "frac_samples_negative": 0.046511627906976744,
+     "C_T_series_min": -0.0032722577544895735,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.50015,
+     "N": 32,
+     "frac_samples_negative": 0.050505050505050504,
+     "C_T_series_min": -0.0030800807582934265,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.5002,
+     "N": 32,
+     "frac_samples_negative": 0.050347222222222224,
+     "C_T_series_min": -0.0024324573020018734,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.5005,
+     "N": 32,
+     "frac_samples_negative": 0.027777777777777776,
+     "C_T_series_min": -0.000844657484429792,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.501,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.009479066152972835,
+     "status": "NO_EXCURSION"
+    },
+    {
+     "tau": 0.502,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.021112833388285755,
+     "status": "NO_EXCURSION"
+    },
+    {
+     "tau": 0.505,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.04219112247661195,
+     "status": "NO_EXCURSION"
+    },
+    {
+     "tau": 0.5072,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.055967722242041426,
+     "status": "NO_EXCURSION"
+    }
+   ]
+  }
+ }
+}

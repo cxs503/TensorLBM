@@ -1,0 +1,28 @@
+{
+ "schema": "w26_plan/v1",
+ "mission": "m17569",
+ "purpose": "complete uniform-ratio (r=1.5) three-grid ladder at fixed lattice Re=1000 on {16,24,36} with 2880 steps (1.5 convective passes at N=32-equivalent); justified by the measured drift: at Re=1000 the flow is steady (N=32, 2880 steps -> window drift 9.2e-05 in the tau-scan)",
+ "cases": [
+  {
+   "tag": "ladder4_N16",
+   "N": 16,
+   "re_lattice": 1000,
+   "steps": 2880,
+   "snapshot": true
+  },
+  {
+   "tag": "ladder4_N24",
+   "N": 24,
+   "re_lattice": 1000,
+   "steps": 2880,
+   "snapshot": true
+  },
+  {
+   "tag": "ladder4_N36",
+   "N": 36,
+   "re_lattice": 1000,
+   "steps": 2880,
+   "snapshot": true
+  }
+ ]
+}

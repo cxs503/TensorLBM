@@ -1,0 +1,35 @@
+{
+ "schema": "w26_plan/v1",
+ "mission": "m17569",
+ "purpose": "stage-2 refinement of the negative-drag scan towards tau->0.5 (highest lattice Re reachable), N=32 only, same 1.5-pass protocol",
+ "cases": [
+  {
+   "tag": "scan2_tau0.50002_N32",
+   "N": 32,
+   "tau": 0.50002,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan2_tau0.50005_N32",
+   "N": 32,
+   "tau": 0.50005,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan2_tau0.50010_N32",
+   "N": 32,
+   "tau": 0.5001,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan2_tau0.50015_N32",
+   "N": 32,
+   "tau": 0.50015,
+   "steps": 2880,
+   "snapshot": false
+  }
+ ]
+}
