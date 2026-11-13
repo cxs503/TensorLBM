@@ -10,7 +10,7 @@ from .boundaries import (
     cylinder_mask,
     make_channel_wall_mask,
 )
-from .d2q9 import C, _c_on, _w_on, equilibrium, macroscopic
+from .d2q9 import C, _c_on, _w_for, equilibrium, macroscopic
 from .input_contract import check_relaxation_time
 
 OPPOSITE_2D = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
@@ -111,7 +111,13 @@ def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
     device = f.device
     dtype = f.dtype
     c = _c_on(device)
-    w = _w_on(device).to(dtype)
+    # dtype-exact weights: ``_w_on`` is a float32 table, so casting it to
+    # float64 re-introduces the float32 rounding of 4/9, 1/9, 1/36
+    # (sum = 1 + 7.45e-9).  In a fused equilibrium that biases rho by
+    # +7.45e-9/tau every step (measured 9.313e-9 at tau=0.8, a linear mass
+    # ramp of 1.86e-6 over 200 steps) — the exact defect ``_w_for`` was added
+    # for.  float32 is bit-identical either way.
+    w = _w_for(dtype, device)
 
     # Macroscopic quantities (rho, ux, uy) — same as macroscopic()
     rho = f.sum(dim=0)

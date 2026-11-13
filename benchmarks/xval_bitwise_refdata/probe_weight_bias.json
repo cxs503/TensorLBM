@@ -1,0 +1,15 @@
+{
+ "tau": 0.8,
+ "steps": 200,
+ "weight_table_bias_f32_in_f64": 7.450580596923828e-09,
+ "predicted_step_drift": 9.313225746154785e-09,
+ "predicted_steps_drift": 1.862645149230957e-06,
+ "measured_legacy_step_drift": 9.313225746154785e-09,
+ "measured_legacy_steps_drift": 1.8626468753003647e-06,
+ "measured_shipped_step_drift": 0.0,
+ "measured_shipped_steps_drift": -1.3765925299950333e-14,
+ "measured_bgk_steps_drift": -1.4209987406400343e-14,
+ "step_prediction_rel_err": 0.0,
+ "steps_prediction_rel_err": 9.266764570838859e-07,
+ "hypothesis_confirmed": true
+}
