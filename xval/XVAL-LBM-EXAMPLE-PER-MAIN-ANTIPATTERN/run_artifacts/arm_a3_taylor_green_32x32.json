@@ -1,0 +1,114 @@
+{
+  "analytic": {
+    "decay_rate": 0.015421256876702124,
+    "k": 0.19634954084936207,
+    "lap_factor": 2.0,
+    "ma": 0.08660254037844385,
+    "nu": 0.10000000000000002,
+    "re_lambda": 2.546479089470325,
+    "velocity_decay_rate": 0.007710628438351062
+  },
+  "case": "taylor_green_2d",
+  "history": [
+    {
+      "kinetic_energy": 0.0002863719402818782,
+      "step": 50.0
+    },
+    {
+      "kinetic_energy": 0.0001322809466022776,
+      "step": 100.0
+    },
+    {
+      "kinetic_energy": 6.114780261392948e-05,
+      "step": 150.0
+    },
+    {
+      "kinetic_energy": 2.8265032343857588e-05,
+      "step": 200.0
+    },
+    {
+      "kinetic_energy": 1.3061787117620037e-05,
+      "step": 250.0
+    },
+    {
+      "kinetic_energy": 6.035939763924271e-06,
+      "step": 300.0
+    },
+    {
+      "kinetic_energy": 2.7892380697152785e-06,
+      "step": 350.0
+    },
+    {
+      "kinetic_energy": 1.2889401901182781e-06,
+      "step": 400.0
+    },
+    {
+      "kinetic_energy": 5.956343146978533e-07,
+      "step": 450.0
+    },
+    {
+      "kinetic_energy": 2.7524804515571344e-07,
+      "step": 500.0
+    },
+    {
+      "kinetic_energy": 1.271945589890818e-07,
+      "step": 550.0
+    },
+    {
+      "kinetic_energy": 5.877772732516327e-08,
+      "step": 600.0
+    },
+    {
+      "kinetic_energy": 2.716171436979735e-08,
+      "step": 650.0
+    },
+    {
+      "kinetic_energy": 1.2551671454514035e-08,
+      "step": 700.0
+    },
+    {
+      "kinetic_energy": 5.800239113177541e-09,
+      "step": 750.0
+    },
+    {
+      "kinetic_energy": 2.6803420940494543e-09,
+      "step": 800.0
+    }
+  ],
+  "kpis": {
+    "decay_rate_measured": 0.015438651702972886,
+    "elapsed_s": 1.4056119918823242,
+    "energy_density": 2.6803420940494543e-09,
+    "field_digest": "349e3dd3bf008a35dfe1820649baf102c1780c2277715c56b3cd9132888783e9",
+    "finite": true,
+    "mlups": 0.5828066384827644,
+    "relative_error_vs_analytic": 0.001127977207684141,
+    "rho_max": 1.0000000106187465,
+    "rho_min": 0.9999999894013266,
+    "steps_run": 800
+  },
+  "profile": null,
+  "provenance": {
+    "machine": "loongarch64",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "python": "3.11.6",
+    "spec_digest": "730a82de8436928d0cbc4815bc48996b297a528a615b4606f1daac9bf2cacab4",
+    "tensorlbm_version": "0.3.0",
+    "torch": "2.7.1",
+    "torch_threads": 2
+  },
+  "record_digest": "7bb41e8c500b3752a0689bfe6572316cf987fc37a88ac706d3d96020d45ee1c5",
+  "spec": {
+    "body_force": 0.0,
+    "dtype": "float64",
+    "kind": "taylor_green_2d",
+    "nx": 32,
+    "ny": 32,
+    "sample_every": 50,
+    "steady_tol": 1e-09,
+    "steady_window": 200,
+    "steps": 800,
+    "tau": 0.8,
+    "u0": 0.05
+  }
+}
