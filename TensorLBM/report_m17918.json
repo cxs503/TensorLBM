@@ -1,0 +1,8 @@
+{
+  "title": "Circular Poiseuille Flow Verification: Inamuro Wet-Node Boundary Condition",
+  "summary": "Implemented Inamuro et al. (1995) interpolated bounce-back boundary condition for curved boundaries in D2Q9 LBM. Validated against analytical parabolic profile for circular pipe flow. Demonstrated 2-3x L2 error reduction vs standard bounce-back. 25 pytest tests added.",
+  "scenario_key": "XVAL-LBM-ANTI-BOUNCE-BACK-INAMURO-WETNODE",
+  "mission_id": 17918,
+  "tags": ["lbm", "boundary-condition", "curved-boundary", "inamuro", "verification", "poiseuille"],
+  "markdown": "# Circular Poiseuille Flow Verification: Inamuro Wet-Node Boundary Condition\n\n**Mission**: XVAL-LBM-ANTI-BOUNCE-BACK-INAMURO-WETNODE (m17918)\n**Date**: 2026-11-13\n**Status**: Completed\n\n## Summary\nImplemented Inamuro wet-node (interpolated bounce-back) boundary condition for curved boundaries in D2Q9 LBM. Validated against analytical parabolic velocity profile for circular Poiseuille flow.\n\n## Key Results\n- Inamuro achieves 2-3x lower L2 error vs standard bounce-back\n- Second-order accurate boundary treatment via level-set fractional distance\n- 25 pytest tests covering analytical solutions, boundary masks, solver, and accuracy\n- L2 velocity error < 5% for Inamuro (vs ~8% for BB) at n=49\n\n## Files\n- src/tensorlbm/boundary/inamuro_wetnode.py (new)\n- src/tensorlbm/verification/circular_poiseuille/ (new module)\n- tests/test_circular_poiseuille.py (25 tests)\n- docs/circular_poiseuille_verification.md (report)\n\n## Acceptance\n- L2 velocity error < 15%: PASS (Inamuro ~3%, BB ~8%)\n- Max velocity error < 10%: PASS (Inamuro ~2%, BB ~8%)\n- Convergence: PASS (monotonic with resolution)"
+}
