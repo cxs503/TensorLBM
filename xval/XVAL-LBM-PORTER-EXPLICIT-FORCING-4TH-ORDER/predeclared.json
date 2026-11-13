@@ -1,0 +1,62 @@
+{
+  "anchor": "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+  "round": 1,
+  "reference": {
+    "oss": "PorousMediaSimulation/openLBMPM",
+    "tag": "porter-explicit-forcing-4th-order",
+    "algorithm_source": "public paper M. L. Porter et al., Phys. Rev. E 86, 036701 (2012) + platform inventory record docs/oss-inventory-openLBMPM.md §II.2/§4.3 with file:line pointers (ExplicitD2Q9GPU.py:255/271-276/278-287/294-304/311-332/340-363, ShanChenD2Q9.py:1675-1695, ExplicitD2Q9GPU.py:392-624)",
+    "code_copy": "none (reference tree carries no licence -> algorithms only, transfer = reference)"
+  },
+  "decision": "Whether to adopt the reference explicit-forcing four-piece set (pre-collision half force, post-collision full force, half force in the recovered velocity, rho/tau-weighted equilibrium velocity, isotropic force stencil) as TensorLBM's two-component forcing, on the evidence of an analytic layered-Stokes cross-check.",
+  "alternatives": {
+    "A1_porter_doc_literal": "f<-f-0.5F ; f<-f+(f_eq-f-0.5F)/tau+F   (literal reading of the inventory record)",
+    "A2_porter_doc_seq": "f<-f-0.5F ; f<-f+(f_eq-f)/tau+F          (the '-' inside the relaxation is the already applied pre-collision subtraction)",
+    "A3_guo": "f<-f+(f_eq-f)/tau+(1-0.5/tau)F            (single-component equivalent of A2)",
+    "A4_legacy_sc": "control: the pre-Porter 'original Shan-Chen' recipe - force folded into a per-component equilibrium velocity u_eq_i = u + tau_i F_i/rho_i, no force PDF, no half force anywhere"
+  },
+  "hypothesis": {
+    "H1": "A1/A2 (Porter) reproduce the analytic two-layer Stokes profile within 15% at viscosity ratio M=10 and 100, while A4 (legacy) exceeds 15% at M=10 by at least a factor of 3 -> the four-piece set is the deciding factor.",
+    "H0_falsification": "If A4 is also within 15% at every M, then at this scale (Re~O(0.1), flat interface, no interaction force) the four-piece set buys nothing measurable and the OSS claim is NOT corroborated by this cross-benchmark (honest negative)."
+  },
+  "metrics": {
+    "err_u": "max_y |u_lbm(y) - u_exact(y)| / max_y |u_exact(y)| over fluid nodes (primary)",
+    "err_u_excl_interface": "same, excluding 2 cells either side of the interface plane",
+    "got_vs_ref": "max_y |u_got - u_ref| / max_y |u_ref| (port fidelity, same parameters)",
+    "mass_drift": "|rho_tot(t) - rho_tot(0)| / rho_tot(0)",
+    "isotropy": "measured A4/A6/A8 of the force stencils (theory 1.0); spurious tangential force on a flat analytic interface"
+  },
+  "unit_of_analysis": "one (arm, viscosity ratio M, channel height NY) run",
+  "predeclared_thresholds": {
+    "PASS": "err_u <= 0.15 (owner criterion) for A1/A2 at M=1 and M=10 on the finest grid",
+    "STRETCH": "err_u <= 0.03",
+    "port_fidelity": "got_vs_ref <= 1e-6",
+    "discrimination": "legacy A4 err_u(M=10) >= 3 x A2 err_u(M=10)",
+    "convergence": "observed order >= 1.5 between NY=34 and NY=66 (second order expected, first order accepted as a defect note)"
+  },
+  "stopping_rule": "a run stops when max|u(t)-u(t-500)|/max|u(t)| < 1e-8 (tol on the profile) or at 200000 steps; a NaN/Inf run is reported as UNSTABLE and is never replaced by another scheme silently",
+  "variables": {
+    "controlled": ["D2Q9 lattice + weights", "half-way bounce-back walls", "body force g applied to both components as rho_i*g", "float64", "initial density: tanh interface of width 1.5 cells, residual 1e-3 of the absent component", "initial f = feq(rho, u=0)"],
+    "changed": ["forcing arm (A1/A2/A3/A4)", "viscosity ratio M = nu_bulk/nu_light in {1, 10, 100}", "channel height NY in {18, 34, 66}"],
+    "confounders_controlled": ["mass drift monitored every step (the D2Q9 truncated equilibrium with the wrong (cu^2-u^2) form was measured to leak 33% of the mass in 4000 steps; fixed to (cu^2-cs^2 u^2) and re-verified)", "interface band reported separately so a diffuse-interface artefact cannot hide inside the primary metric", "all arms share the same lattice, walls and initial field"]
+  },
+  "analysis": {
+    "aggregation": "per-configuration errors, no averaging across arms; convergence order from least-squares fit of log(err) vs log(NY)",
+    "outliers": "none discarded; unstable configurations are reported as UNSTABLE",
+    "missing_data": "a configuration that cannot be run is reported as SKIPPED with the reason, never as zero error",
+    "no_post_hoc_tuning": "thresholds above are fixed before looking at any number; both readings A1/A2 are reported whatever they give"
+  },
+  "environment": {
+    "host": "loong64 control-plane container, CPU only",
+    "dtype": "float64 (numpy)",
+    "note": "no network access to the reference repository in this sandbox (curl to github.com is blocked by the execution policy) -> the reference algorithm is taken from the platform's own source-reading record, which carries file:line pointers; no source line was copied"
+  },
+  "deliverables": [
+    "src/tensorlbm/porter_forcing.py (adopted primitive set, if the decision is accept)",
+    "xval/.../ref/porter_ref.py (independent literal transcription, reference arm)",
+    "xval/.../got_driver.py (TensorLBM arm + legacy control arm)",
+    "xval/.../artifacts/result.json + table.csv",
+    "xval/.../figures/*.png",
+    "xval/.../REPORT.md (six sections + OSS-vs-TensorLBM difference list + porting trade-offs)",
+    "tests/test_porter_forcing.py"
+  ]
+}
