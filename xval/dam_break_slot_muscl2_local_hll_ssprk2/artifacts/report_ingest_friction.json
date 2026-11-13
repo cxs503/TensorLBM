@@ -1,0 +1,34 @@
+{
+ "friction": "tensor_reports POST ignores payload metadata (title/summary/scenario_key/mission_id)",
+ "observed": "2026-11-13T08:38-08:42Z, mission m17725 (TensorLBM)",
+ "evidence": {
+  "post_endpoint": "$TENSOR_API_BASE/tensor/reports",
+  "rows_created": [
+   {
+    "id": 16698,
+    "mission_id_stored": 15467,
+    "title_stored": "CASE-MCMP-LAPLACE ... (stale)",
+    "markdown_len": 10967,
+    "md5": "9eefccb0836f2c36da342db21f8dd617"
+   },
+   {
+    "id": 16700,
+    "mission_id_stored": 15467,
+    "title_stored": "CASE-MCMP-LAPLACE ... (stale)",
+    "markdown_len": 11030,
+    "md5": "3056e105..."
+   }
+  ],
+  "payload_sent": {
+   "mission_id": 17725,
+   "markdown_len": 10967,
+   "md5_of_markdown": "9eefccb0836f2c36da342db21f8dd617",
+   "title": "XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2 ..."
+  },
+  "conclusion": "markdown body was stored verbatim (length + md5 identical) but stamped with a stale title/summary/scenario_key and mission_id=15467 (a 2026-11-12 MCMP-Laplace mission); a reply body also echoed that stale record (id 16698/16700) instead of the created one, and GET /tensor/reports?mission_id=17725 returns 0 items"
+ },
+ "impact": "report content is preserved in DB but not discoverable under m17725; the absence-of-report watchdog will keep filing补报单 for this mission",
+ "suspected_cause": "handler caches/normalises the payload from a previous mission context (mission binding not taken from the request body)",
+ "remedy_suggested": "回填 16698/16700 的 mission_id/title 为 m17725 与本次标题；修 handler 取 body 的 mission_id/title/summary/scenario_key，不得复用上一任务的缓存",
+ "honest_note": "本单无法从 TensorLBM 仓内修复平台；报告正文同时留档于 docs/XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2.md（零手抄生成）"
+}
