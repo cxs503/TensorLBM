@@ -1,0 +1,110 @@
+{
+  "anchor": "XVAL-LBM-PRESSURE-TENSOR-EQUILIBRIUM-TRANSPLANT",
+  "repo": "TensorLBM",
+  "mission_id": 18648,
+  "round": 2,
+  "declared_at": "2026-11-13T16:05:00+00:00",
+  "declared_before_runs": true,
+  "owner_band": 0.15,
+  "owner_band_statement": "对标误差 >15% 不可接受（owner 精度标准）",
+  "subject": "sailfish-team/sailfish free-energy pressure-tensor equilibrium, transplanted into src/tensorlbm/phasefield/free_energy_pressure.py (merged, TensorLBM#2136); this round completes the curvature/resolution matrix and adds two equilibrium invariants that were never measured before.",
+  "reuse": {
+    "module": "src/tensorlbm/phasefield/free_energy_pressure.py",
+    "runner_helpers": "benchmarks/xval_free_energy_binary_equilibrium/run_xval.py (params_of, flat_band_phi, droplet_phi, closure_residual, ring_mean, radial_profile, radial_pressure_tensor)",
+    "note": "no new physics code is introduced; the transplant under test is the already merged one, this round only widens and deepens the acceptance matrix"
+  },
+  "external_anchor": [
+    "sailfish-team/sailfish sym_equilibrium.py:26-48 (fluid equilibrium, pb = rho/3 + A(-phi^2/2 + 3 phi^4/4), f_0 = rho - sum)",
+    "sailfish-team/sailfish sym_equilibrium.py:50-70 (order-parameter equilibrium, mu = A(-phi+phi^3) - kappa lap phi, g_0 = phi - sum)",
+    "sailfish-team/sailfish lb_binary.py:185-268 (D2Q9 anisotropic wxx/wyy/wxy = 1/3, -1/6, -1/24; e_x e_y/4)",
+    "sailfish-team/sailfish templates/finite_difference_optimized.mako:46-48 (nine-point isotropic grad/lap)",
+    "Pooley, Furtado & Carr, Phys. Rev. E 78, 056709 (2008) -- pressure-tensor form of the free-energy binary LBM, mechanical equilibrium dP_NN/dx = 0",
+    "Wagner, Int. J. Mod. Phys. B 17, 193 (2003) -- stress/pressure tensor = second moment of the populations",
+    "Rowlinson & Widom, J. Chem. Phys. 76, 1140 (1982) -- sigma = integral (P_NN - P_TT) dn, the route used for K1"
+  ],
+  "analytic_anchors_rederived_from_f": [
+    "f = A(-phi^2/2 + phi^4/4) + kappa |grad phi|^2 / 2",
+    "xi = sqrt(2 kappa / A)",
+    "sigma = (2/3) sqrt(2 kappa A) = (2/3) A xi",
+    "flat interface at equilibrium: P_NN = const, P_TT = P_NN - kappa phi'^2, so integral (P_NN - P_TT) dx = sigma",
+    "circular drop: p_in - p_out = sigma / R"
+  ],
+  "kpis": [
+    {
+      "id": "closure",
+      "what": "max_ab |sum_i f_i^eq c_ia c_ib - (P_ab + rho u_a u_b)| / max|P_ab|",
+      "reference": 0.0,
+      "gate": 1e-12,
+      "arms": ["flat_xi2", "flat_xi3", "flat_xi4", "dropR16", "dropR24", "dropR32"]
+    },
+    {
+      "id": "sigma_tension",
+      "what": "surface tension from the transverse tensor difference, sigma = (1/2) sum_x (P_NN - P_TT) on a periodic two-interface band",
+      "reference": "sigma_analytic = (2/3) sqrt(2 kappa A)",
+      "gate": 0.15,
+      "tight_target": 0.05,
+      "arms": ["flat_xi2", "flat_xi3", "flat_xi4"]
+    },
+    {
+      "id": "Pnn_uniformity",
+      "what": "max_x |P_NN - <P_NN>| / <P_NN>  (mechanical equilibrium dP_NN/dx = 0)",
+      "reference": 0.0,
+      "gate": 0.01,
+      "arms": ["flat_xi2", "flat_xi3", "flat_xi4"]
+    },
+    {
+      "id": "shear_free",
+      "what": "max |P_xy| / <P_NN> on a flat interface at rest (isotropy of the transplanted anisotropic coefficients wxy; never measured in round 1)",
+      "reference": 0.0,
+      "gate": 0.05,
+      "arms": ["flat_xi2", "flat_xi3", "flat_xi4"]
+    },
+    {
+      "id": "xi_fit",
+      "what": "interface width recovered from the measured normal-tangential stress difference, P_NN - P_TT = kappa sech^4((x-x0)/xi)/xi^2, fitted by 1-D golden-section on the interface cells",
+      "reference": "xi_analytic = sqrt(2 kappa / A)",
+      "gate": 0.15,
+      "arms": ["flat_xi2", "flat_xi3", "flat_xi4"]
+    },
+    {
+      "id": "laplace",
+      "what": "p_in - p_out from the measured pressure field vs sigma_analytic / R",
+      "reference": "sigma_analytic / R",
+      "gate": 0.15,
+      "arms": ["dropR16", "dropR24", "dropR32"]
+    },
+    {
+      "id": "spurious_velocity",
+      "what": "max |u| on a static interface / drop",
+      "reference": 0.0,
+      "gate": 0.01,
+      "arms": ["flat_xi2", "flat_xi3", "flat_xi4", "dropR16", "dropR24", "dropR32"]
+    },
+    {
+      "id": "mass_drift",
+      "what": "|sum rho - N| / N",
+      "reference": 0.0,
+      "gate": 1e-3,
+      "arms": ["*"]
+    }
+  ],
+  "arms": {
+    "flat_xi2": {"kind": "flat", "A": 0.1, "xi": 2.0, "Gamma": 0.2, "tau_f": 1.0, "tau_phi": 1.5, "Lx": 64, "Ly": 8, "band": 16, "steps": 4000},
+    "flat_xi3": {"kind": "flat", "A": 0.1, "xi": 3.0, "Gamma": 0.2, "tau_f": 1.0, "tau_phi": 1.5, "Lx": 64, "Ly": 8, "band": 16, "steps": 4000},
+    "flat_xi4": {"kind": "flat", "A": 0.1, "xi": 4.0, "Gamma": 0.2, "tau_f": 1.0, "tau_phi": 1.5, "Lx": 96, "Ly": 8, "band": 24, "steps": 4000},
+    "dropR16": {"kind": "drop", "A": 0.1, "xi": 2.0, "Gamma": 0.2, "tau_f": 1.0, "tau_phi": 1.5, "L": 96, "R": 16, "steps": 8000, "R_over_xi": 8},
+    "dropR24": {"kind": "drop", "A": 0.1, "xi": 2.0, "Gamma": 0.2, "tau_f": 1.0, "tau_phi": 1.5, "L": 128, "R": 24, "steps": 10000, "R_over_xi": 12},
+    "dropR32": {"kind": "drop", "A": 0.1, "xi": 2.0, "Gamma": 0.2, "tau_f": 1.0, "tau_phi": 1.5, "L": 160, "R": 32, "steps": 12000, "R_over_xi": 16}
+  },
+  "convergence_design": {
+    "resolution_series": "flat_xi2 / flat_xi3 / flat_xi4 -- same physics (A, Gamma, tau), three interface resolutions xi/h = 2, 3, 4; report sigma_tension error, xi_fit error and Pnn_uniformity vs xi/h",
+    "curvature_series": "dropR16 / dropR24 / dropR32 at fixed xi = 2 -- R/xi = 8, 12, 16; report dp/(sigma/R) vs R/xi",
+    "monotonicity_is_diagnostic": "the trend of the errors across a series is reported but is NOT part of the pass gate (three points cannot establish a rate; declaring a rate would be an over-claim)"
+  },
+  "stopping_rule": "each drop arm stops when the Laplace jump relative drift between successive 500-step checks is < 1e-3, or at its declared step budget (reported as stop_reason); flat arms always run the full declared budget",
+  "declared_exclusions": [
+    "no GPU / SDAA arm: the sailfish original is CUDA+pyopencl and cannot be built here, so the comparison arm is the semantics transplant in TensorLBM (declared limitation, unchanged from round 1)",
+    "single flat interface in a periodic domain is excluded (wrap creates a divergent second interface); the flat arm is a two-interface band and sigma is halved exactly once",
+    "Gamma > 0.5 on a static drop with tau_phi = 1.5 is excluded as unstable (round-1 screening, recorded as a parameter boundary, not a transplant error)"
+  ]
+}

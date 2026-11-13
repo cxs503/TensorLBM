@@ -46,6 +46,7 @@ from tensorlbm.phasefield.free_energy_pressure import (  # noqa: E402
     chemical_potential,
     collide_and_stream,
     equilibrium_f,
+    fit_interface_width,
     grad_lap,
     initial_condition,
     macroscopic,
@@ -71,7 +72,23 @@ ARMS: dict[str, dict] = {
                     L=128, R=24, steps=10000),
     "dropR36": dict(kind="drop", A=0.1, xi=3.0, Gamma=0.2, tau_f=1.0, tau_phi=1.5,
                     L=176, R=36, steps=12000),
+    # resolution series (same physics, xi/h = 2, 3, 4) and a third curvature point
+    # at fixed xi = 2 (R/xi = 8, 12, 16) -- declared in
+    # xval/XVAL-LBM-PRESSURE-TENSOR-EQUILIBRIUM-TRANSPLANT/predeclared.json
+    "flat_xi2": dict(kind="flat", A=0.1, xi=2.0, Gamma=0.2, tau_f=1.0, tau_phi=1.5,
+                     Lx=64, Ly=8, band=16, steps=4000),
+    "flat_xi4": dict(kind="flat", A=0.1, xi=4.0, Gamma=0.2, tau_f=1.0, tau_phi=1.5,
+                     Lx=96, Ly=8, band=24, steps=4000),
+    # xi/h = 4 point of the resolution series: at Gamma = 0.2 with kappa = 0.8 the
+    # explicit Cahn-Hilliard + pressure-tensor scheme goes NaN by step ~1000, so the
+    # point is declared at Gamma = 0.05 (M = Gamma(tau_phi-1/2)cs^2 scales with
+    # kappa*Gamma for explicit CH; recorded as a deviation with reason in the report)
+    "flat_xi4_g05": dict(kind="flat", A=0.1, xi=4.0, Gamma=0.05, tau_f=1.0, tau_phi=1.5,
+                         Lx=96, Ly=8, band=24, steps=4000),
+    "dropR32": dict(kind="drop", A=0.1, xi=2.0, Gamma=0.2, tau_f=1.0, tau_phi=1.5,
+                    L=160, R=32, steps=12000),
 }
+ARMS["flat_xi3"] = dict(ARMS["flat"])
 
 
 def params_of(cfg: dict) -> FreeEnergyBinaryParams:
@@ -237,6 +254,24 @@ def run_flat(cfg: dict, log=print) -> dict:
     gx, gy, lap = grad_lap(phi)
     Pa = pressure_tensor_analytic(rho, phi, gx, gy, lap, p.A, p.kappa)
 
+    # --- two equilibrium invariants that round 1 did not measure -------------
+    # (a) isotropy of the *off-diagonal* coefficient pair: a flat interface at
+    #     rest carries no shear, so whatever the transplanted wxy is, P_xy->0.
+    Pxy_prof = Pxy.mean(dim=0)
+    shear_rel = float(Pxy_prof.abs().max() / prof.abs().max())
+    # (b) interface width from the *local* stress identity P_NN - P_TT = kappa sech^4 / xi^2
+    # interface centre = stress-weighted centroid of the left half; the first
+    # positive-phi cell is biased by half a cell and skews the sech^4 fit
+    # (xi/h = 2: 62 % error with the integer crossing, 19 % with the centroid)
+    _w = (Pxx - Pyy).mean(dim=0).clamp(min=0.0) * (x < nx // 2)
+    left_iface = float((x * _w).sum() / _w.sum())
+    stress_prof = (Pxx - Pyy).mean(dim=0)
+    try:
+        xi_fit = fit_interface_width(x, stress_prof, cfg["xi"], x0=left_iface)
+    except ValueError as exc:  # e.g. a diverged (NaN) field has no interface to fit
+        xi_fit = {"xi": float("nan"), "amplitude": float("nan"), "x0": float("nan"),
+                  "rms_rel": float("nan"), "n_pts": 0, "error": str(exc)}
+
     return {
         "arm": "flat",
         "config": {**cfg, "kappa": p.kappa, "sigma_analytic": p.sigma,
@@ -251,6 +286,10 @@ def run_flat(cfg: dict, log=print) -> dict:
         "sigma_rel_error": abs(sigma_meas - p.sigma) / p.sigma,
         "Pnn_uniformity_rel": float((prof - prof.mean()).abs().max() / prof.mean()),
         "Pnn_mean": float(prof.mean()),
+        "shear_rel": shear_rel,
+        "xi_fit": xi_fit,
+        "xi_fit_rel_error": abs(xi_fit["xi"] - p.xi) / p.xi,
+        "left_interface_x": left_iface,
         "spurious_velocity": sp,
         "rho_range": [float(rho.min()), float(rho.max())],
         "phi_err_inf_initial": float((phi - phi0).abs().max()),
@@ -263,6 +302,8 @@ def run_flat(cfg: dict, log=print) -> dict:
             "Pxx_measured": prof.tolist(),
             "Pyy_measured": Pyy.mean(dim=0).tolist(),
             "Pxx_analytic": Pa[0].mean(dim=0).tolist(),
+            "Pxy_measured": Pxy_prof.tolist(),
+            "stress_measured": stress_prof.tolist(),
             "rho": rho.mean(dim=0).tolist(),
             "ux": ux.mean(dim=0).tolist(),
         },
