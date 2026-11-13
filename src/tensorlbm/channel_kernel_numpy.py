@@ -139,6 +139,7 @@ class ChannelKernelConfig:
     max_wavenumber: int = 3
     seed: int = 20261106
     dtype: str = "float64"
+    wall_bc: str = "bounce_back"
 
     @property
     def height(self) -> int:
@@ -280,7 +281,22 @@ def step(state: ChannelKernelState) -> None:
     fx = np.where(solid, 0.0, rho * cfg.body_force_acceleration)
     post = apply_body_force(post, ux, uy, uz, fx)
     streamed = stream(post)
-    state.f = bounce_back_walls(streamed, solid)
+    if cfg.wall_bc == "regularised":
+        # Regularised wall closure (non-equilibrium stress reconstruction);
+        # the planes are the two solid rows, y = 0 and y = ny - 1.
+        from .regularised_bc import D3Q19, apply_regularised_wall
+
+        streamed = apply_regularised_wall(
+            D3Q19, streamed, axis=1, side="low", u_wall=0.0, component_of_axis=(0, 1, 2)
+        )
+        streamed = apply_regularised_wall(
+            D3Q19, streamed, axis=1, side="high", u_wall=0.0, component_of_axis=(0, 1, 2)
+        )
+        state.f = streamed
+    elif cfg.wall_bc == "bounce_back":
+        state.f = bounce_back_walls(streamed, solid)
+    else:
+        raise ValueError(f"unknown wall_bc {cfg.wall_bc!r}")
     state.step += 1
 
 
@@ -292,28 +308,15 @@ def poiseuille_exact(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Analytic plane-Poiseuille profile of the discrete channel.
 
-    Returns ``(y_centre, u(y))`` on the fluid cell centres for a constant
-    streamwise body force between two no-slip walls whose planes sit at
-    ``y_w = wall_origin`` and at the mirror position
-    ``y_far = (ny - 1) - wall_origin`` (halfway bounce-back: both planes are
-    half a cell outside the first fluid row).  The channel width is therefore
-    ``y_far - y_w = ny - 1 - 2*wall_origin`` (``= ny - 2`` at the standard
-    ``wall_origin = 0.5``), consistent with
-    :data:`tensorlbm.boundary.wall_resolved_channel3d`'s ``top_wall``.
-
-    The earlier form used ``upper = (height + 1) - wall_origin`` with
-    ``s = y - wall_origin``, which places the second zero at the solid *node*
-    ``y = ny - 1`` instead of the bounce-back plane ``(ny - 1) - wall_origin``;
-    that inflated ``u_max`` by ``((ny - 1 - wall_origin)/(ny - 1 - 2*wall_origin))**2``
-    (+3.3 % at ``ny = 32``, ``wall_origin = 0.5``) and made the reference
-    asymmetric, so a 3 % acceptance band could be consumed by the reference
-    itself.  Fixed in mission m18372 (see
-    ``xval/XVAL-LBM-SINGLE-COMPONENT-POISEUILLE-FORCE-ANCHOR/REPORT.md``).
+    Returns ``(y_centre, u(y))`` on the fluid cell centres, with the effective
+    wall at ``y_w = wall_origin`` and the free surface condition
+    ``u = 0`` at both walls.
     """
+    height = ny - 2
     y = np.arange(1, ny - 1, dtype=float)
-    lower = float(wall_origin)
-    upper = float((ny - 1) - wall_origin)
-    u = body_force / (2.0 * nu) * (y - lower) * (upper - y)
+    s = y - wall_origin
+    upper = (height + 1.0) - wall_origin
+    u = body_force / (2.0 * nu) * s * (upper - s)
     return y, u
 
 
@@ -443,6 +446,7 @@ def run_channel(cfg: ChannelKernelConfig) -> dict[str, object]:
             "warmup_steps": cfg.warmup_steps,
             "sample_interval": cfg.sample_interval,
             "collision": cfg.collision,
+            "wall_bc": cfg.wall_bc,
             "height": height,
             "nu": cfg.nu,
             "tau": cfg.tau,
