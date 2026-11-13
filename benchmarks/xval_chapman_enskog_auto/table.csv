@@ -1,0 +1,36 @@
+id,quantity,ref,got,err_pct,abs_err_pct,tol_pct,pass,ref_source
+A-shear2d-tau0.6-n32,nu (D2Q9 BGK),0.0333333333333,0.0334362963044,0.308889,0.308889,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, BGK)
+A-shear2d-tau0.6-n64,nu (D2Q9 BGK),0.0333333333333,0.0333590451034,0.077135,0.077135,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, BGK)
+A-shear2d-tau0.8-n32,nu (D2Q9 BGK),0.1,0.100206259932,0.206260,0.206260,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, BGK)
+A-shear2d-tau0.8-n64,nu (D2Q9 BGK),0.1,0.100051444276,0.051444,0.051444,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, BGK)
+A-shear2d-tau1.2-n32,nu (D2Q9 BGK),0.233333333333,0.232602426399,-0.313246,0.313246,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, BGK)
+A-shear2d-tau1.2-n64,nu (D2Q9 BGK),0.233333333333,0.233152715697,-0.077408,0.077408,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, BGK)
+B-shear2d-mrt-tau0.6-se1.2,nu (D2Q9 MRT),0.0333333333333,0.0334373076043,0.311923,0.311923,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau0.6-se1.64,nu (D2Q9 MRT),0.0333333333333,0.0334373076049,0.311923,0.311923,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau0.6-se2,nu (D2Q9 MRT),0.0333333333333,0.0334373076052,0.311923,0.311923,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau0.8-se1.2,nu (D2Q9 MRT),0.1,0.100370394624,0.370395,0.370395,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau0.8-se1.64,nu (D2Q9 MRT),0.1,0.100370394624,0.370395,0.370395,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau0.8-se2,nu (D2Q9 MRT),0.1,0.100370394624,0.370395,0.370395,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau1.2-se1.2,nu (D2Q9 MRT),0.233333333333,0.23520967056,0.804145,0.804145,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau1.2-se1.64,nu (D2Q9 MRT),0.233333333333,0.235209670578,0.804145,0.804145,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+B-shear2d-mrt-tau1.2-se2,nu (D2Q9 MRT),0.233333333333,0.23520967068,0.804145,0.804145,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, d2q9_mrt)
+C-shear3d-tau0.6-n32,nu (D3Q19 BGK),0.0333333333333,0.0334362935366,0.308881,0.308881,15.0,True,chapman_enskog.derive_equivalent_equation(D3Q19, BGK)
+C-shear3d-tau0.6-n64,nu (D3Q19 BGK),0.0333333333333,0.033359045065,0.077135,0.077135,15.0,True,chapman_enskog.derive_equivalent_equation(D3Q19, BGK)
+C-shear3d-tau0.8-n32,nu (D3Q19 BGK),0.1,0.100206259934,0.206260,0.206260,15.0,True,chapman_enskog.derive_equivalent_equation(D3Q19, BGK)
+C-shear3d-tau0.8-n64,nu (D3Q19 BGK),0.1,0.100051444276,0.051444,0.051444,15.0,True,chapman_enskog.derive_equivalent_equation(D3Q19, BGK)
+C-shear3d-tau1.2-n32,nu (D3Q19 BGK),0.233333333333,0.232602426549,-0.313246,0.313246,15.0,True,chapman_enskog.derive_equivalent_equation(D3Q19, BGK)
+C-shear3d-tau1.2-n64,nu (D3Q19 BGK),0.233333333333,0.233152715696,-0.077408,0.077408,15.0,True,chapman_enskog.derive_equivalent_equation(D3Q19, BGK)
+D1-sound-speed-bgk-n32,c_s (D2Q9 BGK),0.57735026919,0.577011147133,-0.058738,0.058738,15.0,True,chapman_enskog: cs = sqrt(sum w c_x^2)
+D2-sound-atten-bgk-n32,nu_L = nu + zeta (D2Q9 BGK),0.2,0.200177808529,0.088904,0.088904,15.0,True,chapman_enskog: nu_L = 2(D-1)/D nu + zeta
+D1-sound-speed-bgk-n64,c_s (D2Q9 BGK),0.57735026919,0.577283335409,-0.011593,0.011593,15.0,True,chapman_enskog: cs = sqrt(sum w c_x^2)
+D2-sound-atten-bgk-n64,nu_L = nu + zeta (D2Q9 BGK),0.2,0.20015635946,0.078180,0.078180,15.0,True,chapman_enskog: nu_L = 2(D-1)/D nu + zeta
+D3-sound-atten-mrt-se1.2,nu_L = nu + zeta (D2Q9 MRT),0.211111111111,0.211322525578,0.100144,0.100144,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, MRT)
+D4-zeta-mrt-se1.2,zeta (D2Q9 MRT),0.111111111111,0.111322525578,0.190273,0.190273,15.0,True,chapman_enskog zeta, isolated via nu_L - nu_measured
+D3-sound-atten-mrt-se1.64,nu_L = nu + zeta (D2Q9 MRT),0.136585365854,0.136611166142,0.018889,0.018889,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, MRT)
+D4-zeta-mrt-se1.64,zeta (D2Q9 MRT),0.0365853658537,0.0366111661422,0.070521,0.070521,15.0,True,chapman_enskog zeta, isolated via nu_L - nu_measured
+D3-sound-atten-mrt-se2,nu_L = nu + zeta (D2Q9 MRT),0.1,0.0999641573676,-0.035843,0.035843,15.0,True,chapman_enskog.derive_equivalent_equation(D2Q9, MRT)
+D4-zeta-mrt-se2,zeta (D2Q9 MRT),0,-3.58426324474e-05,-0.035843,0.035843,15.0,True,chapman_enskog zeta, isolated via nu_L - nu_measured (zero reference: error scaled by nu=0.1)
+E1-sound-atten-3d-n32,nu_L = (4/3)nu + zeta (D3Q19 BGK),0.2,0.200020396431,0.010198,0.010198,15.0,True,chapman_enskog: nu_L = 2(D-1)/D nu + zeta, D=3
+E2-sound-speed-3d-n32,c_s (D3Q19 BGK),0.57735026919,0.577104309054,-0.042602,0.042602,15.0,True,chapman_enskog: cs = sqrt(sum w c_x^2)
+E1-sound-atten-3d-n64,nu_L = (4/3)nu + zeta (D3Q19 BGK),0.2,0.197689589298,-1.155205,1.155205,15.0,True,chapman_enskog: nu_L = 2(D-1)/D nu + zeta, D=3
+E2-sound-speed-3d-n64,c_s (D3Q19 BGK),0.57735026919,0.577348479666,-0.000310,0.000310,15.0,True,chapman_enskog: cs = sqrt(sum w c_x^2)
