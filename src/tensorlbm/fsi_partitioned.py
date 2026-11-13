@@ -50,13 +50,6 @@ important configurations are
   by the fluid.  This is the regime in which interface accelerators
   (Aitken / IQN-ILS) are essential.
 
-* ``variant="theta_split"`` (with ``theta``): ``M_iter = m_s + theta*m_a`` and
-  ``G(a) = F_ext - (1-theta) m_a a`` -> ``rho = (1-theta) beta_eff /
-  (1 + theta beta_eff)`` **and the exact fixed point for every theta**;
-  ``theta = 1`` is the fully implicit (Robin) coupling, exact after one
-  sub-iteration.  (``wet_mass`` above does not preserve the fixed point: it
-  double-counts the added mass, see ``docs/fsi_partitioned_added_mass.md``.)
-
 A third, *consistency preserving* family is provided by the partial-implicit
 ("theta-split") coupling, see :func:`theta_split_rho`.  There the added-mass
 term is split between the structure operator and the fluid force so that the
@@ -108,7 +101,39 @@ from typing import Callable, Literal, Sequence
 
 import numpy as np
 
+# Positivity floor used when ``omega_min <= 0`` (the scale-free setting): the
+# Aitken secant must stay strictly positive because a negative factor gives
+# ``|1 - omega (1+beta_eff)| > 1`` for a linear added-mass interface.  The
+# machine-level value keeps every ``beta_eff < 1e12`` inside the contraction
+# range without pinning the factor to an arbitrary constant.
+AITKEN_POSITIVITY_EPS = 1e-12
+
+
+def clamp_aitken_factor(
+    omega: float,
+    *,
+    omega_min: float = 0.0,
+    omega_max: float = 1.0,
+) -> float:
+    """Clamp a raw Aitken factor to the guard interval.
+
+    ``omega_min <= 0`` means *scale free*: only positivity is enforced
+    (``AITKEN_POSITIVITY_EPS``).  Any **absolute** floor ``omega_min > 0``
+    re-introduces divergence for ``beta_eff > 1/omega_min - 1`` on a linear
+    added-mass interface, because the clipped factor then violates
+    ``omega < 2/(1+beta_eff)``.  Measured thresholds (see
+    ``xval/aitken_underrelaxation_life/out/scale_guard.json``):
+    ``omega_min=5e-2`` -> diverges at ``beta_eff > 39``,
+    ``omega_min=1e-4`` -> ``beta_eff > 9999``,
+    ``omega_min=1e-3`` (sibling module) -> ``beta_eff > 999``.
+    """
+    lo = AITKEN_POSITIVITY_EPS if omega_min <= 0.0 else max(float(omega_min), AITKEN_POSITIVITY_EPS)
+    return min(max(float(omega), lo), float(omega_max))
+
+
 __all__ = [
+    "AITKEN_POSITIVITY_EPS",
+    "clamp_aitken_factor",
     "AddedMassModel1D",
     "added_mass_from_channel",
     "analytic_convergence_factor",
@@ -127,7 +152,7 @@ __all__ = [
     "detect_beta_critical",
 ]
 
-Variant = Literal["explicit", "wet_mass", "theta_split"]
+Variant = Literal["explicit", "wet_mass"]
 
 
 # ---------------------------------------------------------------------------
@@ -326,12 +351,18 @@ class AitkenRelaxation:
     relaxation that annihilates the interface error.
 
     Robustness: with ``clip=True`` (default) the factor is kept positive and
-    bounded by ``[omega_min, omega_max]``.  The floor must stay well below the
-    smallest expected optimum ``1/(1+beta_eff)``; a floor of ``0.05`` makes the
-    iteration *diverge* for ``beta_eff > 39`` because the clipped factor then
-    gives ``|1 - omega_min (1+beta_eff)| > 1`` (measured in
-    ``xval/aitken_underrelaxation_life``).  ``clip=False`` reproduces the raw
-    joconnor22/LIFE convention (no clipping, negative factors allowed).
+    bounded by ``[omega_min, omega_max]`` through
+    :func:`clamp_aitken_factor`.  The default ``omega_min = 0`` is
+    **scale free** (positivity only, floor ``AITKEN_POSITIVITY_EPS``): an
+    *absolute* floor always re-introduces divergence above
+    ``beta_eff > 1/omega_min - 1`` on a linear added-mass interface, because
+    the clipped factor then violates ``omega < 2/(1+beta_eff)``.  Measured:
+    ``omega_min=0.05`` diverges for ``beta_eff > 39``; ``omega_min=1e-4`` (the
+    first fix in mission m17727) only moves the threshold to
+    ``beta_eff > 9999`` and still diverges at ``beta_eff = 2e4``
+    (``xval/aitken_underrelaxation_life/out/scale_guard.json``).
+    ``clip=False`` reproduces the raw joconnor22/LIFE convention (no clipping,
+    negative factors allowed).
     """
 
     name = "aitken"
@@ -340,7 +371,7 @@ class AitkenRelaxation:
         self,
         omega0: float = 0.5,
         *,
-        omega_min: float = 1e-4,
+        omega_min: float = 0.0,
         omega_max: float = 1.0,
         clip: bool = True,
     ) -> None:
@@ -370,7 +401,11 @@ class AitkenRelaxation:
                     if self.clip:
                         # robustness guard (repo default): keep omega positive
                         if omega > 0.0:
-                            self.omega = min(max(omega, self.omega_min), self.omega_max)
+                            self.omega = clamp_aitken_factor(
+                                omega,
+                                omega_min=self.omega_min,
+                                omega_max=self.omega_max,
+                            )
                     else:
                         # raw Aitken (joconnor22/LIFE convention, no clipping)
                         self.omega = omega
@@ -553,17 +588,12 @@ def _structure_mass(
     variant: Variant,
     gamma: float,
     beta_n: float,
-    theta: float | None = None,
 ) -> float:
     """Fixed-point mass ``M_iter`` of the structure sub-solve (Newmark)."""
     if variant == "explicit":
         m_iter = model.m_struct
     elif variant == "wet_mass":
         m_iter = model.m_struct + model.m_added
-    elif variant == "theta_split":
-        if theta is None:
-            raise ValueError("variant 'theta_split' needs theta")
-        m_iter = model.m_struct + float(theta) * model.m_added
     else:  # pragma: no cover - guarded by type hints
         raise ValueError(f"unknown variant {variant!r}")
     return m_iter + model.damping * gamma * dt + model.stiffness * beta_n * dt * dt
@@ -582,7 +612,6 @@ def solve_partitioned_1d(
     gamma: float = 0.5,
     beta_n: float = 0.25,
     a_init: float | None = None,
-    theta: float = 0.0,
     predictor: Literal["none", "linear", "quadratic"] = "none",
     ref_scale: float | None = None,
 ) -> PartitionedStepResult:
@@ -609,14 +638,6 @@ def solve_partitioned_1d(
     accelerator:
         One of the objects from :func:`make_accelerator`; ``None`` keeps the
         plain fixed point.
-    theta:
-        Only for ``variant="theta_split"``: fraction of the added mass treated
-        implicitly on the structure side (see :func:`theta_split_rho`).  The
-        remaining ``(1 - theta) * m_a`` stays in the fluid force, so the fixed
-        point is the exact one for any ``theta`` while the interface gain
-        becomes ``(1-theta) * beta_eff / (1 + theta * beta_eff)``.  ``theta = 1``
-        is the fully implicit (Robin) coupling: ``rho = 0``, one sub-iteration
-        is exact.  ``theta = 0`` reproduces ``variant="explicit"``.
     predictor:
         Extrapolated initial interface iterate for each time step, as used by
         the strong-coupling loop of joconnor22/LIFE: ``"none"`` (start from the
@@ -640,14 +661,7 @@ def solve_partitioned_1d(
     # Newmark effective mass: M_iter + c*gamma*dt + k*beta_N*dt^2 (already
     # contained in _structure_mass), so rho = m_a / m_eff is the exact
     # single-DOF interface gain.
-    if variant == "theta_split" and not (0.0 <= theta <= 1.0):
-        raise ValueError("theta must lie in [0, 1]")
-    # fraction of the added mass that remains in the fluid operator; the rest
-    # is already contained in the fixed-point mass ``m_eff``
-    explicit_mass_fraction = 1.0 - theta if variant == "theta_split" else 1.0
-
-    m_eff = _structure_mass(model, dt, variant, gamma, beta_n,
-                            None if variant != "theta_split" else theta)
+    m_eff = _structure_mass(model, dt, variant, gamma, beta_n)
     beta_eff = model.m_added / m_eff if m_eff > 0.0 else float("inf")
 
     acc = accelerator
@@ -698,8 +712,7 @@ def solve_partitioned_1d(
         a_new = a_prev
         for k in range(max_iter):
             a_k = float(x[0])
-            # fluid operator (added mass), minus the part moved to the solid
-            f_fluid = f_ext - explicit_mass_fraction * model.m_added * a_k
+            f_fluid = f_ext - model.m_added * a_k      # fluid operator (added mass)
             a_s = (f_fluid + c_known) / m_eff          # structure operator (Newmark)
             r = np.array([a_s - a_k], dtype=float)
             resid_series.append(float(abs(r[0])))

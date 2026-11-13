@@ -38,6 +38,8 @@ from typing import Any, Literal, Sequence
 
 import numpy as np
 
+from .fsi_partitioned import clamp_aitken_factor
+
 __all__ = [
     "InterfaceModel1D",
     "PistonPartitioned1D",
@@ -155,13 +157,23 @@ class FixedRelaxation:
 
 
 class AitkenRelaxation:
-    """Aitken dynamic relaxation: ``omega_k = -omega_{k-1} r^{k-1}.dr / |dr|^2``."""
+    """Aitken dynamic relaxation: ``omega_k = -omega_{k-1} r^{k-1}.dr / |dr|^2``.
+
+    ``omega_min = 0`` (default) is scale free: only positivity is enforced,
+    via :func:`tensorlbm.fsi_partitioned.clamp_aitken_factor`.  A positive
+    absolute floor diverges for ``beta_eff > 1/omega_min - 1`` -- the former
+    default ``1e-4`` therefore failed at ``beta_eff = 2e4``
+    (``xval/aitken_underrelaxation_life/out/scale_guard.json``).
+
+    ``step`` returns the *increment* ``omega * r`` (not ``state + omega r``),
+    unlike its sibling in :mod:`tensorlbm.fsi_partitioned`.
+    """
 
     def __init__(
-        self, omega0: float = 1.0, omega_min: float = 1e-4, omega_max: float = 2.0
+        self, omega0: float = 1.0, omega_min: float = 0.0, omega_max: float = 2.0
     ) -> None:
-        if not (0.0 < omega_min <= omega0 <= omega_max):
-            raise ValueError("require 0 < omega_min <= omega0 <= omega_max")
+        if not (0.0 <= omega_min <= omega0 <= omega_max) or omega0 <= 0.0:
+            raise ValueError("require 0 <= omega_min <= omega0 <= omega_max")
         self.omega0 = float(omega0)
         self.omega_min = float(omega_min)
         self.omega_max = float(omega_max)
@@ -180,7 +192,9 @@ class AitkenRelaxation:
             if denom > 1e-300:
                 omega = -self.omega * float(self._prev @ dr) / denom
                 if math.isfinite(omega):
-                    self.omega = float(min(max(omega, self.omega_min), self.omega_max))
+                    self.omega = clamp_aitken_factor(
+                        omega, omega_min=self.omega_min, omega_max=self.omega_max
+                    )
         self._prev = r.copy()
         return self.omega * r, self.omega
 
