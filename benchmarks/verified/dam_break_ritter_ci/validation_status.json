@@ -3,9 +3,9 @@
   "slot": "dam_break",
   "title": "Ritter 1892 dam-break self-similarity (CI tier)",
   "reference_basis": "analytic",
-  "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g). Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
+  "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g); second-order MUSCL(minmod)+local-HLL+SSP-RK2 scheme. Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T01:15:32Z",
+  "generated_utc": "2026-11-13T09:27:19Z",
   "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
   "references": [
@@ -180,18 +180,18 @@
     }
   ],
   "unresolved_metrics": [],
-  "artifact_sha256": "ab5233c24fae791cdb06633c4184b0dd146d3beca3409c2ee7b67417538f6a60",
-  "artifact_bytes": 3372,
+  "artifact_sha256": "90246308b58eea2485bde9b5928b4b503187bf12bb53a2f52f34da1851a25d6e",
+  "artifact_bytes": 3371,
   "evidence_chain": [
     {
       "kind": "artifact",
       "path": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
-      "sha256": "ab5233c24fae791cdb06633c4184b0dd146d3beca3409c2ee7b67417538f6a60"
+      "sha256": "90246308b58eea2485bde9b5928b4b503187bf12bb53a2f52f34da1851a25d6e"
     },
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "5ac63ae8ffb65ea25c4e7977ffce61025a45217c25bde3ef81f0a427e23b0b4f"
+      "sha256": "cd89c21a0825ba8fb7657e6b6f517c3f46aade89f37e82dd904577b449065d66"
     },
     {
       "kind": "references",
@@ -204,5 +204,5 @@
       "sha256": "d8630ab06d32bfc52f5b4fc89bb4592fa6a2a742455ef9ee808df39e1648f51f"
     }
   ],
-  "notes": "CI tier judged as declared (profile L2 <= 5%): it FAILS at nx=200/400 (9.83% / 6.29%) while the front law passes and converges monotonically (+4.51% -> +2.56%). The resolution ladder recorded in the artifact (nx=800/1600) shows a first-order decrease (3.84% / 2.32%) crossing the 5% gate near nx~700: the CI tier is under-resolved for the profile metric, which is the honest root cause. The pre-existing standard-tier runner (nx up to 1600) reports front_err_mass up to 6.4%, i.e. it would fail the same 5% front gate, confirming that the gate/tier pairing needs re-calibration rather than the numbers being quietly relaxed."
+  "notes": "History: with the original first-order global-wave-speed Rusanov flux the CI tier FAILED the profile metric (9.82% / 6.29% at nx=200/400 vs the 5% gate); the gate was NOT relaxed. Root cause was diagnosed as the first-order flux's grid-independent numerical viscosity, and src/tensorlbm/shallow_water.py gained a second-order scheme (minmod MUSCL + local-speed HLL + SSP-RK2), after which the same gated levels give 1.17% / 0.83% (front 0.12% / 0.06%, mass drift <= 2.3e-14%), i.e. ~8x and ~7.6x less profile error than the frozen baseline. The legacy flux stays selectable (--scheme rusanov) and its 9.8248% value is pinned by tests/test_shallow_water_muscl2.py as the improvement baseline."
 }

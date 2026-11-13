@@ -1,7 +1,7 @@
 {
   "case": "dam_break_ritter_ci",
   "tier": "ci",
-  "generated_utc": "2026-11-13T01:14:46Z",
+  "generated_utc": "2026-11-13T09:27:18Z",
   "reference": {
     "id": "ritter_front_law",
     "law_front": "x_f(t) = 2 sqrt(g h0) t",
@@ -35,7 +35,7 @@
         "volume_downstream": 1.4835376333286445,
         "steps": 311,
         "dt": 0.016080402010050253,
-        "elapsed_s": 1.0545377098023891,
+        "elapsed_s": 1.2795094195753336,
         "lattice": "SWE finite volume (1-D): MUSCL-Hancock/minmod reconstruction + local-speed HLL flux + SSP-RK2",
         "scheme": "muscl2"
       }
@@ -58,7 +58,7 @@
         "volume_downstream": 1.4812839851652975,
         "steps": 623,
         "dt": 0.008020050125313283,
-        "elapsed_s": 2.2264768090099096,
+        "elapsed_s": 2.6636214200407267,
         "lattice": "SWE finite volume (1-D): MUSCL-Hancock/minmod reconstruction + local-speed HLL flux + SSP-RK2",
         "scheme": "muscl2"
       }
@@ -79,7 +79,7 @@
         "volume_downstream": 1.4813740037076149,
         "steps": 1248,
         "dt": 0.0040050062578222785,
-        "elapsed_s": 4.966712608933449,
+        "elapsed_s": 5.832881320267916,
         "lattice": "SWE finite volume (1-D): MUSCL-Hancock/minmod reconstruction + local-speed HLL flux + SSP-RK2",
         "scheme": "muscl2"
       }
@@ -98,7 +98,7 @@
         "volume_downstream": 1.481425532226885,
         "steps": 2498,
         "dt": 0.0020012507817385866,
-        "elapsed_s": 10.938105979934335,
+        "elapsed_s": 11.72450570948422,
         "lattice": "SWE finite volume (1-D): MUSCL-Hancock/minmod reconstruction + local-speed HLL flux + SSP-RK2",
         "scheme": "muscl2"
       }
