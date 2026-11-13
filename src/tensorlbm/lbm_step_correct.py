@@ -163,7 +163,9 @@ def lbm_step_correct(
 
     Args:
         f: Distribution tensor (19, nz, ny, nx).
-        collide_fn: Collision function (e.g., collide_smagorinsky_mrt3d).
+        collide_fn: Collision function (e.g., collide_smagorinsky_mrt3d) or a
+            model matrix key such as ``"d3q19/mrt"`` / ``"d3q27/kbc"`` that is
+            resolved through :mod:`tensorlbm.model_matrix.registry`.
         tau: Relaxation time.
         solid: Boolean solid mask (nz, ny, nx).
         u_in: Free-stream velocity for far-field BC.
@@ -229,6 +231,19 @@ def lbm_step_correct(
             if step % mass_interval == 0:
                 f = correct_mass_fn(f, target_mass)
         return f, phi
+
+    # ----------------------------------------------------------------
+    # Model-registry resolution: a model matrix key is a valid collide_fn
+    # ----------------------------------------------------------------
+    # ``collide_fn`` may be given either as a raw collision function (legacy)
+    # or as a model key of :mod:`tensorlbm.model_matrix` (e.g. "d3q19/mrt").
+    # Resolution happens here, at the single point where the stepper invokes
+    # the operator, so a registry key can never drift from what the CI matrix
+    # verified.
+    if isinstance(collide_fn, str):
+        from .model_matrix.registry import resolve_collide_fn
+
+        collide_fn = resolve_collide_fn(collide_fn, tau, **collide_kwargs)
 
     # ----------------------------------------------------------------
     # Standard LBM step (BB / WF / BFL modes)
