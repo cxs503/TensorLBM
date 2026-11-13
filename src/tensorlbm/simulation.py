@@ -1,39 +1,26 @@
-"""Simple LBM simulation entry point.
+"""Simple LBM simulation entry point."""
 
-Two storages are supported for the populations:
+from __future__ import annotations
 
-``layout="dense"``   (default) TensorLBM's native ``(ny, nx, 9)`` array.
-``layout="lbt_aa"``  the 2b-t/LB-t A-A layout pattern (single merged
-                     ``NZ*NY*NX*NP*ND`` array with the component index ``p``
-                     and the padded population slot), see
-                     :mod:`tensorlbm.aa_layout`.  Both storages run the same
-                     discrete scheme, so results agree to round-off; the option
-                     exists to cross-validate against the OSS convention.
-"""
+from pathlib import Path
+from typing import Any
 
 import torch
 
 from .constants import D2Q9
 from .lattice import equilibrium, stream
 
-#: D2Q9 discrete velocities in TensorLBM direction order for the NumPy path used
-#: by the LB-t layout storage (``layout="lbt_aa"``).
-AA_DIRS = D2Q9.c.numpy().astype("float64")
-
 
 class LBMSimulation:
-    """Minimal D2Q9 BGK simulation on a 2D periodic domain."""
+    """Minimal D2Q9 BGK simulation on a 2D periodic domain.
 
-    def __init__(
-        self,
-        nx: int = 64,
-        ny: int = 32,
-        tau: float = 0.6,
-        device: str = "cpu",
-        layout: str = "dense",
-    ) -> None:
-        if layout not in ("dense", "lbt_aa"):
-            raise ValueError(f"layout must be 'dense' or 'lbt_aa' (got {layout!r})")
+    Long runs can be made restartable with :meth:`enable_checkpointing`, which
+    attaches the MF-LBM-style job-status + wall-clock checkpoint state machine
+    from :mod:`tensorlbm.job_checkpoint`.  The state machine is entirely optional
+    and off by default, so plain ``LBMSimulation`` usage is unchanged.
+    """
+
+    def __init__(self, nx: int = 64, ny: int = 32, tau: float = 0.6, device: str = "cpu") -> None:
         if nx <= 0 or ny <= 0:
             raise ValueError(f"nx and ny must be positive integers (got nx={nx}, ny={ny})")
         if tau <= 0:
@@ -42,38 +29,66 @@ class LBMSimulation:
         self.ny = ny
         self.tau = tau
         self.device = torch.device(device)
-        self.layout = layout
-        self._aa = None
-        self._parity = 0
-
-        if layout == "lbt_aa":
-            import numpy as np
-
-            from .aa_layout import AaPopulation, equilibrium_d2q9
-
-            self._aa = AaPopulation(nx=nx, ny=ny, nz=1, npop=1, dtype=np.float64)
-            ones = np.ones((1, ny, nx, 1))
-            zeros = np.zeros((1, ny, nx, 1))
-            self._aa.from_dense(equilibrium_d2q9(ones, zeros, zeros))
-            self.f = self._aa.to_dense()[0, :, :, 0, :]
-            return
 
         rho0 = torch.ones((ny, nx), dtype=torch.float32, device=self.device)
         u0 = torch.zeros((ny, nx, 2), dtype=torch.float32, device=self.device)
         self.f = equilibrium(rho0, u0)
+        self.step_count = 0
+        self.checkpoints: Any | None = None
+        self.finished = False
 
+    # -- restart support ------------------------------------------------------
+    def enable_checkpointing(
+        self,
+        directory: str | Path,
+        *,
+        interval_hours: float = 1.0,
+        max_steps: int | None = None,
+        volume_interval: float | None = None,
+        dual_backup: bool = True,
+        force_restart: bool = False,
+        clock=None,
+    ):
+        """Attach the job-status/checkpoint state machine and resume if asked to.
+
+        Returns the :class:`tensorlbm.job_checkpoint.ResumeState`; when it is a
+        resume, the populations and step counter are restored *before* the first
+        new step, so no step is recomputed (MF-LBM ``continue`` path).
+        """
+        from .job_checkpoint import JobCheckpointManager
+
+        manager = JobCheckpointManager(
+            directory,
+            interval_hours=interval_hours,
+            max_steps=max_steps,
+            volume_interval=volume_interval,
+            dual_backup=dual_backup,
+            config_signature={"nx": self.nx, "ny": self.ny, "tau": self.tau, "lattice": "D2Q9"},
+            **({} if clock is None else {"clock": clock}),
+        )
+        state = manager.begin(force_restart=force_restart)
+        if state.resumed:
+            self.f = state.fields["f"].to(device=self.f.device, dtype=self.f.dtype)
+            self.step_count = state.step
+        else:
+            self.step_count = state.step
+        self.checkpoints = manager
+        self.finished = state.finished
+        return state
+
+    def run_with_checkpointing(self, steps: int) -> tuple[int, int]:
+        """Advance up to ``steps`` new steps under the attached state machine.
+
+        Returns ``(steps_executed, checkpoints_written)``.
+        """
+        if self.checkpoints is None:
+            raise RuntimeError("enable_checkpointing() must be called first")
+        from .job_checkpoint import run_with_checkpointing
+
+        return run_with_checkpointing(self, steps, self.checkpoints)
+
+    # -- physics --------------------------------------------------------------
     def macroscopic(self) -> tuple[torch.Tensor, torch.Tensor]:
-        if self._aa is not None:
-            rho_np, ux_np, uy_np = self._aa.macroscopic()
-            rho = torch.as_tensor(rho_np[0, :, :, 0], dtype=torch.float32, device=self.device)
-            u = torch.stack(
-                [
-                    torch.as_tensor(ux_np[0, :, :, 0], dtype=torch.float32, device=self.device),
-                    torch.as_tensor(uy_np[0, :, :, 0], dtype=torch.float32, device=self.device),
-                ],
-                dim=-1,
-            )
-            return rho, u
         rho = self.f.sum(dim=-1)
         c = D2Q9.c.to(dtype=self.f.dtype, device=self.device)
         momentum = torch.einsum("...q,qa->...a", self.f, c)
@@ -81,22 +96,23 @@ class LBMSimulation:
         return rho, u
 
     def step(self) -> None:
-        if self._aa is not None:
-            from .aa_layout import equilibrium_d2q9
-
-            f = self._aa.to_dense()
-            rho_np = f.sum(axis=-1)
-            ux_np = (f * AA_DIRS[:, 0]).sum(axis=-1) / rho_np
-            uy_np = (f * AA_DIRS[:, 1]).sum(axis=-1) / rho_np
-            feq = equilibrium_d2q9(rho_np, ux_np, uy_np)
-            self._aa.push(f - (f - feq) / self.tau)
-            self._parity ^= 1
-            self.f = self._aa.to_dense()[0, :, :, 0, :]
-            return
+        if self.finished:
+            raise RuntimeError("simulation already reached a terminal checkpoint state")
         rho, u = self.macroscopic()
         feq = equilibrium(rho, u)
         f_post_collision = self.f - (self.f - feq) / self.tau
         self.f = stream(f_post_collision)
+        self.step_count += 1
+        if self.checkpoints is not None:
+            self.checkpoints.maybe_checkpoint(self.step_count, {"f": self.f})
+            if self.checkpoints.should_stop(self.step_count):
+                self.checkpoints.finish(
+                    self.step_count,
+                    status="reached_max_step",
+                    reason=f"max_steps={self.checkpoints.policy.max_steps}",
+                    fields={"f": self.f},
+                )
+                self.finished = True
 
     def run(self, steps: int = 10) -> tuple[torch.Tensor, torch.Tensor]:
         for _ in range(steps):
