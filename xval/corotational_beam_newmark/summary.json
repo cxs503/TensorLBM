@@ -1,0 +1,38 @@
+{
+ "n_kpi_rows": 65,
+ "n_fail15": 2,
+ "max_abs_err_pct": 64.27901627666759,
+ "by_case": {
+  "D1_MODAL": {
+   "n": 6,
+   "n_fail": 2,
+   "max_abs_err_pct": 64.27901627666759
+  },
+  "D2_NEWMARK_TIME": {
+   "n": 16,
+   "n_fail": 0,
+   "max_abs_err_pct": 1.1207826064389546
+  },
+  "D3_NONLINEAR_ENERGY": {
+   "n": 3,
+   "n_fail": 0,
+   "max_abs_err_pct": 0.004497400219686626
+  },
+  "S1_LINEAR_STATIC": {
+   "n": 4,
+   "n_fail": 0,
+   "max_abs_err_pct": 0.0001820135597579639
+  },
+  "S2_ELASTICA": {
+   "n": 24,
+   "n_fail": 0,
+   "max_abs_err_pct": 0.02194980191751716
+  },
+  "S3_PURE_MOMENT": {
+   "n": 12,
+   "n_fail": 0,
+   "max_abs_err_pct": 0.040170815496532494
+  }
+ },
+ "wall_clock_s": 0.013791084289550781
+}
