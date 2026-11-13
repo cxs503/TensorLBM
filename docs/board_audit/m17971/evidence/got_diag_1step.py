@@ -1,0 +1,23 @@
+import os, sys, json
+sys.path.insert(0, '/root/tp-agent/work/m17868/xval/XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO')
+import numpy as np, torch, torch.distributed as dist, arms
+rank=int(os.environ["RANK"]); world=int(os.environ["WORLD_SIZE"])
+dist.init_process_group("gloo", rank=rank, world_size=world, init_method=os.environ["M"])
+nz,ny,nx=16,8,8; steps=int(os.environ.get("STEPS","1"))
+C_t,W_t=arms._tables_t()
+s=arms.make_cpu_solver(nz,ny,nx,tau=0.6,halo_dtype=torch.float64)
+f0=arms.make_field_3d(nz,ny,nx,0,kind="rand")
+f=arms.run_got_steps(s,f0,steps,stream_fn=lambda b: arms.stream_local3d(b,C_t,s.nz_local))
+owned=f[:,1:s.nz_local+1].contiguous()
+parts=[torch.empty_like(owned) for _ in range(world)]; dist.all_gather(parts,owned)
+fg=torch.cat(parts,dim=1)
+gt=torch.as_tensor(f0,dtype=torch.float64)
+for _ in range(steps): gt=arms.stream_global3d(arms._collide_t(gt,0.6,C_t,W_t),C_t)
+d=(fg-gt).abs()
+per_lane=d.amax(dim=(1,2,3)); per_plane=d.amax(dim=(0,2,3))
+print("rank",rank,"rel_l2",float(torch.linalg.vector_norm(fg-gt)/torch.linalg.vector_norm(gt)),flush=True)
+if rank==0:
+    print("per_lane", [round(float(x),3) for x in per_lane], flush=True)
+    print("per_plane", [f"{float(x):.2e}" for x in per_plane], flush=True)
+    print("f_first_owned_abs", float(fg[:,1].abs().max()), "f_abs", float(fg.abs().max()), flush=True)
+dist.destroy_process_group()
