@@ -55,7 +55,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/bstep_3d/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/bstep_3d/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -103,7 +103,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/channel_turb_3d/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/channel_turb_3d/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -115,7 +115,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/channel_turb_re180/validation_status.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/channel_turb_re180/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -151,7 +151,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/cylinder_re100_dfg/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -163,7 +163,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/cylinder_re40_st/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/cylinder_re40_st/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -187,7 +187,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dam_break_3d_mm/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/dam_break_3d_mm/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -199,7 +199,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dam_break_ritter_ci/validation_status.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/dam_break_ritter_ci/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -211,7 +211,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dam_break_sc/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/dam_break_sc/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -223,7 +223,7 @@
    "index_rows": 2,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/dit_turbulence/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/dit_turbulence/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -295,7 +295,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/naca_0012/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/naca_0012/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -367,7 +367,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verdict",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/poiseuille_3d_annulus/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/poiseuille_3d_annulus/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -379,7 +379,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verdict",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/poiseuille_3d_ellipse/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/poiseuille_3d_ellipse/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -403,7 +403,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/propeller_openwater/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/propeller_openwater/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -427,7 +427,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/rayleigh_benard/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/rayleigh_benard/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -451,7 +451,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/rayleigh_taylor_rt/validation_status.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/rayleigh_taylor_rt/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -583,7 +583,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/static_droplet_laplace_ci/validation_status.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/static_droplet_laplace_ci/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -595,7 +595,7 @@
    "index_rows": 1,
    "machine": "pass",
    "machine_key": "status",
-   "machine_source": "/root/tp-agent/work/m16798/benchmarks/pending/stokes_second_problem/result.json",
+   "machine_source": "/root/tp-agent/work/m17013/benchmarks/pending/stokes_second_problem/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -675,7 +675,7 @@
  ],
  "counts": {
   "advertised_pending": 56,
-  "advertised_verified": 79,
+  "advertised_verified": 81,
   "pending_dirs": 56,
   "pending_index_rows": 32,
   "pending_machine_fail": 16,
@@ -684,7 +684,7 @@
   "pending_with_readme": 40,
   "pending_with_result_json": 27,
   "status_md_verified_rows": 36,
-  "verified_dirs": 79
+  "verified_dirs": 81
  },
  "index_rows": [
   {
@@ -944,6 +944,8 @@
   "mcmp_stratified_poiseuille",
   "mmg_imo_msc137_uncert",
   "mms_convergence_2d",
+  "nscbc_outlet_reflection",
+  "nwt_stokes2",
   "permeability",
   "permeability3d",
   "permeability_fibrous",
@@ -1012,7 +1014,7 @@
    },
    {
     "case": "cylinder_re40_st",
-    "detail": "index class pass_candidate implies pass, machine verdict fail (verified=False in /root/tp-agent/work/m16798/benchmarks/pending/cylinder_re40_st/result.json)",
+    "detail": "index class pass_candidate implies pass, machine verdict fail (verified=False in /root/tp-agent/work/m17013/benchmarks/pending/cylinder_re40_st/result.json)",
     "id": "status_claim_conflict",
     "severity": "soft"
    },
