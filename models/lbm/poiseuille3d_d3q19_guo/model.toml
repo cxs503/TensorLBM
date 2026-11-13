@@ -1,0 +1,33 @@
+# Model unit manifest -- the analogue of TCLB models/<group>/<model>/conf.mk.
+
+[unit]
+name = "poiseuille3d_d3q19_guo"
+group = "flow"
+dimension = 3
+lattice = "D3Q19"
+kernel = "tensorlbm.d3q19"
+collision = "BGK"
+forcing = "guo"
+boundary = "half_way_bounce_back"
+description = "Plane Poiseuille flow in 3D (two periodic directions, walls in y)"
+reference = "analytic: u_x(y) = G/(2 nu) (y+1/2)(H-y-1/2), H = ny"
+ci = true
+tier = "fast"
+features = ["body_force", "wall_bounce_back", "3d"]
+
+[case]
+script = "case.py"
+entry = "run"
+
+[params]
+ny = 16
+nz = 2
+nx = 2
+tau = 0.8
+force = 1.0e-5
+steps = 2000
+init = "parabolic"
+
+[acceptance]
+kpi = "u_profile_rel_sup_err"
+threshold = 0.15
