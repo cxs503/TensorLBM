@@ -406,7 +406,7 @@ pending 目录 **56** · 已登记行 **32** · 带 result.json **27** · 机器
 
 - `duplicate_index_row` `cavity_3d_full` — 2 index rows (lines [41, 42])
 - `missing_machine_verdict` `cavity_3d_re100` — no README and no machine verdict on disk
-- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in /root/tp-agent/work/m16798/benchmarks/pending/cylinder_re40_st/result.json)
+- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in /root/tp-agent/work/m17013/benchmarks/pending/cylinder_re40_st/result.json)
 - `duplicate_index_row` `dit_turbulence` — 2 index rows (lines [45, 47])
 - `missing_machine_verdict` `dtmb5415_resistance` — no README and no machine verdict on disk
 - `missing_machine_verdict` `kcs_resistance` — no README and no machine verdict on disk
