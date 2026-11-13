@@ -1,20 +1,40 @@
 #!/usr/bin/env python3
-"""CASE-BACKWARD-STEP-LBM - laminar backward-facing-step reattachment length (Armaly et al. 1983).
+"""CASE-BACKWARD-STEP-LBM -- Armaly-caliber backward-facing step, compatibility CLI.
 
-Solver = TensorLBM library kernels only (d2q9.equilibrium/macroscopic, solver.collide_*/stream,
-boundaries.zou_he_inlet_velocity / zou_he_outlet_pressure / make_sponge_strength).
-Scalar loop = half-way bounce-back (pre-stream), Zou/He parabolic velocity inlet,
-Zou/He pressure outlet, non-equilibrium sponge at the outflow (acoustic damping).
+Role of this file (round 3)
+---------------------------
+Round 1 of this case shipped its own scalar LBM loop here.  That driver and the
+library module :mod:`tensorlbm.bfs_armaly` (used by ``run_case.py``, by the
+committed-artefact grading test and by ``verdict.py``) were two independent
+implementations of the same benchmark: a second collision default, a second
+near-wall derivative and a second reattachment caliper.  Worse, the artefact it
+wrote could not be judged at all -- ``verdict.py`` reads ``derived.mach_inlet``,
+``result.mass_flux_rel_error``, ``result.x1_over_s_reverse_extent`` and
+``convergence_history``, none of which the round-1 payload had, so every point it
+produced came back as FAIL(missing fields).
 
-Caliber
-    geometry  step height S = m cells, inlet height = m, outlet height H = 2m  (ER = 2)
-              (Armaly et al. 1983 measured ER = 1.9423 -> documented deviation)
-    inlet     fully developed parabola, row mean = u_in
-    Re        Re = u_in * H / nu,  H = 2m = 2*S = D_h of the inlet channel  -> Armaly caliber
-    observable X1/S : lower-wall reattachment, - -> + zero crossing of the near-wall
-              least-squares shear slope, measured on a time-averaged window.
+This file is therefore now a *thin* command-line shim over the single source of
+truth (:func:`tensorlbm.bfs_armaly.run_armaly_case`).  The historical flags are
+still accepted, so the reproduction commands quoted in
+``docs/CASE_BACKWARD_STEP_LBM.md`` and ``docs/audit_m15924.md`` keep working, and
+the artefact written is the canonical one -- machine-judgeable by ``verdict.py``
+without any adapter.
 
-Usage: run.py --re 100 --m 16 --steps 60000
+Caliber (see ``src/tensorlbm/bfs_armaly.py`` for the full table)
+    geometry   inlet channel h_in, step s, downstream H = h_in + s; by default the
+               measured Armaly ratio 10.1/5.2 is kept (``--m`` is the step height
+               in cells, ``h_in = round(m * 52/49)``).  ``--er2`` restores the
+               round-1 lattice with h_in = s = m (ER = 2, +3.0 % vs the experiment).
+    inlet      fully developed plane-Poiseuille profile, row mean exactly u_bar
+    Re         Re = u_bar * D_h / nu, D_h = 2 h_in (Armaly caliber)
+    observable X1/s, lower-wall reattachment = zero crossing of the time-averaged
+               wall shear tau_w ~ -2u_1 + 3u_2 - u_3 (exact for a quadratic)
+
+Usage
+-----
+    PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/run.py \\
+        --re 100 --m 16 --steps 12000 --u 0.1
+    PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/run.py --er2 --re 400 --m 26
 """
 from __future__ import annotations
 
@@ -24,168 +44,84 @@ import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
-from tensorlbm.boundaries import (  # noqa: E402
-    make_sponge_strength,
-    zou_he_inlet_velocity,
-    zou_he_outlet_pressure,
+from tensorlbm.bfs_armaly import (  # noqa: E402
+    ARMALY_EXPANSION_RATIO,
+    ArmalyConfig,
+    run_armaly_case,
 )
-from tensorlbm.d2q9 import OPPOSITE, equilibrium, macroscopic  # noqa: E402
-from tensorlbm.solver import collide_bgk, collide_rlbm, stream  # noqa: E402
 
-X_STEP_UPSTREAM = 8  # cells upstream of the step face
-
-
-def build_solid(ny: int, nx: int, m: int, x_step: int) -> torch.Tensor:
-    solid = torch.zeros((ny, nx), dtype=torch.bool)
-    solid[-1, :] = True                  # top wall
-    solid[0, x_step:] = True             # bottom wall downstream of the step
-    solid[0 : m + 1, :x_step] = True     # step block / upstream lower wall
-    return solid
+ART = REPO / "artifacts" / "case_backward_step_armaly"
+#: Armaly et al. (1983) measured expansion ratio, kept as lattice integers 52:49
+_RATIO_NUM, _RATIO_DEN = 52, 49
 
 
-def inlet_profile(ny: int, m: int, u_in: float) -> torch.Tensor:
-    a = float(m)
-    y = np.arange(ny, dtype=np.float64)
-    s = y - (m + 0.5)
-    rows = np.arange(m + 1, ny - 1)
-    raw = 6.0 * s[rows] * (a - s[rows]) / (a * a)
-    prof = np.zeros(ny, dtype=np.float64)
-    prof[rows] = raw / raw.mean() * u_in
-    return torch.tensor(prof, dtype=torch.float32)
-
-
-def shear_weights(k: int) -> torch.Tensor:
-    y = np.arange(k, dtype=np.float64)
-    w = y - y.mean()
-    return torch.tensor(w / (w * w).sum(), dtype=torch.float32)
-
-
-def first_upcrossing(prof: np.ndarray, start: int) -> float:
-    for c in range(start, len(prof) - 1):
-        a, b = prof[c], prof[c + 1]
-        if a <= 0.0 < b:
-            return c + (0.0 - a) / (b - a)
-    return float("nan")
+def config_from_args(args: argparse.Namespace) -> ArmalyConfig:
+    """Map the historical CLI onto :class:`ArmalyConfig` (geometry is the only choice)."""
+    m = int(args.m)
+    if args.er2:
+        hi, s = m, m
+    else:
+        hi, s = int(round(m * _RATIO_NUM / _RATIO_DEN)), m
+    tag = args.tag or f"cli_re{int(round(args.re))}_m{m}" + ("_er2" if args.er2 else "")
+    return ArmalyConfig(
+        re=float(args.re),
+        hi=hi,
+        s=s,
+        u_bar=float(args.u),
+        l_over_h=float(args.l_over_h),
+        n_steps=int(args.steps),
+        avg_from=1.0 - float(args.avg_frac),
+        avg_stride=int(args.avg_stride),
+        collision="bgk" if args.collision == "bgk" else "trt",
+        tag=tag,
+    )
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--re", type=float, default=100.0)
-    ap.add_argument("--m", type=int, default=16, help="step height in cells (inlet height = m -> ER=2)")
+    ap.add_argument("--m", type=int, default=16, help="step height in cells (round-1 meaning; "
+                                                     "the inlet height follows the Armaly ratio)")
     ap.add_argument("--u", type=float, default=0.05)
     ap.add_argument("--steps", type=int, default=60000)
-    ap.add_argument("--avg-frac", type=float, default=0.25, help="last fraction of steps used for time average")
+    ap.add_argument("--avg-frac", type=float, default=0.25, help="last fraction of steps used for the time average")
     ap.add_argument("--avg-stride", type=int, default=200)
     ap.add_argument("--l-over-h", type=float, default=12.0)
-    ap.add_argument("--collision", default="bgk", choices=["bgk", "rlbm"])
+    ap.add_argument("--collision", default="trt", choices=["trt", "rlbm", "bgk"],
+                    help="'rlbm' is the round-1 name of the TRT collision (now the default)")
+    ap.add_argument("--er2", action="store_true", help="round-1 lattice: h_in = s = m (ER = 2)")
     ap.add_argument("--threads", type=int, default=32)
-    ap.add_argument("--out", default=None)
+    ap.add_argument("--tag", default=None, help="artefact tag (default cli_re<Re>_m<m>)")
+    ap.add_argument("--artifacts-dir", default=str(ART),
+                    help="where <tag>/{result.json,wall_shear.csv,field.npz} is written")
+    ap.add_argument("--out", default=None, help="also write the JSON payload at this path (round-1 habit)")
     args = ap.parse_args(argv)
 
-    torch.set_num_threads(args.threads)
-    torch.manual_seed(0)
-    m = args.m
-    ny = 2 * m + 1
-    H = ny - 1                      # = 2m
-    nx = X_STEP_UPSTREAM + int(round(args.l_over_h * H))
-    nu = args.u * H / args.re
-    tau = 0.5 + 3.0 * nu
-    if tau <= 0.5:
-        raise SystemExit(f"tau={tau} <= 0.5")
-
-    solid = build_solid(ny, nx, m, X_STEP_UPSTREAM)
-    opp = OPPOSITE
-    solid3 = solid.unsqueeze(0)
-    u_prof = inlet_profile(ny, m, args.u)
-    collide = collide_bgk if args.collision == "bgk" else collide_rlbm
-
-    sw = int(round(3.0 * H))
-    sigma = 0.3 * make_sponge_strength(ny, nx, nx - sw, sw, power=2.0,
-                                       device=torch.device("cpu")).unsqueeze(0)
-
-    rho = torch.ones((ny, nx))
-    ux = torch.zeros((ny, nx))
-    ux[:, :X_STEP_UPSTREAM] = u_prof.view(ny, 1)
-    ux[:, X_STEP_UPSTREAM:] = args.u / 2.0
-    ux[solid] = 0.0
-    f = equilibrium(rho, ux, torch.zeros_like(ux))
-
-    k = max(2, min(6, m // 2))
-    rows = torch.arange(1, k + 1)
-    wshear = shear_weights(k)
-
-    n_avg_start = int(args.steps * (1.0 - args.avg_frac))
-    acc = np.zeros(nx)
-    n_acc = 0
-    out_interval = max(2000, args.steps // 12)
+    torch.set_num_threads(max(1, int(args.threads)))
+    cfg = config_from_args(args)
+    out_dir = Path(args.artifacts_dir) / cfg.tag
     t0 = time.time()
-    x1_series = []
+    payload = run_armaly_case(cfg, out_dir=out_dir)
 
-    for step in range(1, args.steps + 1):
-        fp = f
-        fc = collide(f, tau=tau)
-        fc = torch.where(solid3, fp[opp], fc)
-        f = stream(fc)
-        f = zou_he_inlet_velocity(f, u_prof, 0.0)
-        f = zou_he_outlet_pressure(f, 1.0)
-        feq = equilibrium(*macroscopic(f))
-        f = f - sigma * (f - feq)
+    if args.out:
+        p = Path(args.out)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(payload, indent=2, default=str))
 
-        if step >= n_avg_start and step % args.avg_stride == 0:
-            ux_now = macroscopic(f)[1].masked_fill(solid, 0.0)
-            acc += (wshear[:, None] * ux_now[rows]).sum(0).numpy()
-            n_acc += 1
-
-        if step % out_interval == 0 or step == args.steps:
-            ux_now = macroscopic(f)[1].masked_fill(solid, 0.0)
-            inst = (wshear[:, None] * ux_now[rows]).sum(0).numpy()
-            xc_inst = first_upcrossing(inst, X_STEP_UPSTREAM)
-            x1_inst = (xc_inst - (X_STEP_UPSTREAM - 0.5)) / m if xc_inst == xc_inst else float("nan")
-            x1_series.append({"step": step, "x1_over_s_inst": x1_inst})
-            print(f"[Re={args.re:.0f} m={m} H={H} nx={nx} tau={tau:.4f}] step={step} "
-                  f"X1/S(inst)={x1_inst:.3f} t={time.time()-t0:.0f}s", flush=True)
-
-    x1_final = float("nan")
-    x1_row1 = float("nan")
-    if n_acc > 0:
-        shear_avg = acc / n_acc
-        xc = first_upcrossing(shear_avg, X_STEP_UPSTREAM)
-        if xc == xc:
-            x1_final = (xc - (X_STEP_UPSTREAM - 0.5)) / m
-    ux_now = macroscopic(f)[1].masked_fill(solid, 0.0).numpy()
-    xc1 = first_upcrossing(ux_now[1], X_STEP_UPSTREAM)
-    if xc1 == xc1:
-        x1_row1 = (xc1 - (X_STEP_UPSTREAM - 0.5)) / m
-
-    rho_now = macroscopic(f)[0]
-    payload = {
-        "case": "CASE-BACKWARD-STEP-LBM",
-        "solver": "TensorLBM library kernels (d2q9/solver/boundaries) + scalar BFS loop",
-        "config": vars(args),
-        "derived": {"ny": ny, "nx": nx, "H": H, "step_h_cells": m, "expansion_ratio": H / float(m),
-                     "nu": nu, "tau": tau, "D_h": float(2 * m), "l_over_h": nx / H},
-        "result": {
-            "x1_over_s": x1_final,
-            "x1_over_s_row1": x1_row1,
-            "x1_over_H": x1_final / 2.0 if x1_final == x1_final else float("nan"),
-            "n_averaged_samples": n_acc,
-            "time_average_window_steps": args.steps - n_avg_start,
-            "rho_min": float(rho_now.min()), "rho_max": float(rho_now.max()),
-            "max_speed": float(torch.sqrt(sum(v * v for v in macroscopic(f)[1:])).max()),
-            "series": x1_series,
-        },
-        "wall_time_s": time.time() - t0,
-    }
-    out = Path(args.out) if args.out else (REPO / "runs" / "case_backward_step_armaly" / f"re{int(args.re)}_m{m}.json")
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2, default=str))
-    print(f"RESULT Re={args.re:.0f} m={m}: X1/S={x1_final:.4f} (row1 {x1_row1:.4f}) -> {out}", flush=True)
+    res, der = payload["result"], payload["derived"]
+    er = der["expansion_ratio"]
+    print(f"[Re={cfg.re:.0f} h_in={cfg.hi} s={cfg.s} ER={er:.4f} "
+          f"({der['expansion_ratio_deviation_pct']:+.1f}% vs {ARMALY_EXPANSION_RATIO:.4f}) "
+          f"tau={der['tau']:.4f}] steps={res['steps_run']} "
+          f"X1/S={res['x1_over_s']:.4f} (shear) / {res['x1_over_s_row1']:.4f} (row1) "
+          f"t={time.time() - t0:.0f}s", flush=True)
+    print(f"RESULT Re={cfg.re:.0f} m={args.m}: X1/S={res['x1_over_s']:.4f} -> {out_dir / 'result.json'}",
+          flush=True)
     return 0
 
 
