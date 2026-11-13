@@ -1,0 +1,2 @@
+-- m17515 XVAL-LBM-ALLEN-CAHN-CSF-FORCE-CHAIN: level 3 by board-audit
+INSERT INTO tensor_maturity_verdicts (repo, scope, mission_id, level, evidence, verdict_by) VALUES (%(repo)s, %(scope)s, %(mid)s, %(lvl)s, %(ev)s, %(by)s) ON CONFLICT (repo, scope, verdict_by) DO UPDATE SET mission_id = EXCLUDED.mission_id, level = EXCLUDED.level, evidence = EXCLUDED.evidence, gate_state = 'pending', gate_level = NULL, gate_note = NULL;

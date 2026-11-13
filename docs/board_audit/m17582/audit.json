@@ -1,0 +1,646 @@
+{
+  "anchor": "XVAL-LBM-ALLEN-CAHN-CSF-FORCE-CHAIN",
+  "scope": "m17515 XVAL-LBM-ALLEN-CAHN-CSF-FORCE-CHAIN",
+  "subject_mission": 17515,
+  "auditor_mission": 17582,
+  "verdict_by": "board-audit",
+  "subject_worktree": "/root/tp-agent/work/m17515",
+  "subject_head_commit": "48ae879cc0714aa76d38ade3b1de8e39100b6a35",
+  "subject_log_head": "48ae879c XVAL-LBM-ALLEN-CAHN-CSF-FORCE-CHAIN round-2: register entry, wire operator into production Allen-Cahn kernel, machine-readable ref-vs-got benchmark",
+  "P1_ref_vs_got": {
+    "rows": [
+      {
+        "case": "C1-planar",
+        "operator": "central7",
+        "rel_l2_force": 5.019786988332667e-16,
+        "pass_15pct": true,
+        "sigma_err": null,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": null,
+        "spurious_frac_ref": null
+      },
+      {
+        "case": "C1-planar",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 2.9180863266704633e-16,
+        "pass_15pct": true,
+        "sigma_err": null,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": null,
+        "spurious_frac_ref": null
+      },
+      {
+        "case": "C2-droplet-R16",
+        "operator": "central7",
+        "rel_l2_force": 0.1121475310319359,
+        "pass_15pct": true,
+        "sigma_err": -0.04001722654441552,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011546518416577984,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C2-droplet-R16",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 1.1696360685105806e-14,
+        "pass_15pct": true,
+        "sigma_err": -0.0647029242852537,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005029872099073951,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C3-droplet-W3",
+        "operator": "central7",
+        "rel_l2_force": 0.205830984119509,
+        "pass_15pct": false,
+        "sigma_err": -0.07582320100492246,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.019202876397555035,
+        "spurious_frac_ref": 0.0013172501309321892
+      },
+      {
+        "case": "C3-droplet-W3",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 6.371555802822232e-15,
+        "pass_15pct": true,
+        "sigma_err": -0.11752058040288926,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.001317250130932188,
+        "spurious_frac_ref": 0.0013172501309321892
+      },
+      {
+        "case": "C3-droplet-W4",
+        "operator": "central7",
+        "rel_l2_force": 0.1121475310319359,
+        "pass_15pct": true,
+        "sigma_err": -0.04001722654441552,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011546518416577984,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C3-droplet-W4",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 1.1696360685105806e-14,
+        "pass_15pct": true,
+        "sigma_err": -0.0647029242852537,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005029872099073951,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C3-droplet-W6",
+        "operator": "central7",
+        "rel_l2_force": 0.039902876583509696,
+        "pass_15pct": true,
+        "sigma_err": -0.008616737422135867,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.005291369732383721,
+        "spurious_frac_ref": 0.00011263274140628261
+      },
+      {
+        "case": "C3-droplet-W6",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 1.3378098211467869e-14,
+        "pass_15pct": true,
+        "sigma_err": -0.019762742763319463,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.00011263274140628617,
+        "spurious_frac_ref": 0.00011263274140628261
+      },
+      {
+        "case": "C4-droplet-R8",
+        "operator": "central7",
+        "rel_l2_force": 0.0688148317540733,
+        "pass_15pct": true,
+        "sigma_err": -0.022476100388560183,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011133409087625248,
+        "spurious_frac_ref": 0.0005291980594794248
+      },
+      {
+        "case": "C4-droplet-R8",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 5.4881124214050854e-15,
+        "pass_15pct": true,
+        "sigma_err": -0.044405516052988696,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005291980594794277,
+        "spurious_frac_ref": 0.0005291980594794248
+      },
+      {
+        "case": "C4-droplet-R12",
+        "operator": "central7",
+        "rel_l2_force": 0.08976523482284504,
+        "pass_15pct": true,
+        "sigma_err": -0.0289371175610712,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011451646288354654,
+        "spurious_frac_ref": 0.0005119262378203358
+      },
+      {
+        "case": "C4-droplet-R12",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 7.912263168800478e-15,
+        "pass_15pct": true,
+        "sigma_err": -0.05122615690218102,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005119262378203308,
+        "spurious_frac_ref": 0.0005119262378203358
+      },
+      {
+        "case": "C4-droplet-R16",
+        "operator": "central7",
+        "rel_l2_force": 0.1121475310319359,
+        "pass_15pct": true,
+        "sigma_err": -0.04001722654441552,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011546518416577984,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C4-droplet-R16",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 1.1696360685105806e-14,
+        "pass_15pct": true,
+        "sigma_err": -0.0647029242852537,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005029872099073951,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C5-droplet-sigma2e-02",
+        "operator": "central7",
+        "rel_l2_force": 0.1121475310319359,
+        "pass_15pct": true,
+        "sigma_err": -0.04001722654441552,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011546518416577984,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C5-droplet-sigma2e-02",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 1.1696360685105806e-14,
+        "pass_15pct": true,
+        "sigma_err": -0.0647029242852537,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005029872099073951,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C5-droplet-sigma5e-03",
+        "operator": "central7",
+        "rel_l2_force": 0.1121475310319359,
+        "pass_15pct": true,
+        "sigma_err": -0.04001722654441552,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.011546518416577984,
+        "spurious_frac_ref": 0.0005029872099073986
+      },
+      {
+        "case": "C5-droplet-sigma5e-03",
+        "operator": "isotropic_d3q19",
+        "rel_l2_force": 1.1696360685105806e-14,
+        "pass_15pct": true,
+        "sigma_err": -0.0647029242852537,
+        "sigma_pass_15pct": true,
+        "spurious_frac_got": 0.0005029872099073951,
+        "spurious_frac_ref": 0.0005029872099073986
+      }
+    ],
+    "n_rows": 20,
+    "n_distinct_metric_groups": 6,
+    "duplicate_groups": [
+      [
+        "C2-droplet-R16",
+        "C3-droplet-W4",
+        "C4-droplet-R16",
+        "C5-droplet-sigma2e-02",
+        "C5-droplet-sigma5e-03"
+      ],
+      [
+        "C2-droplet-R16",
+        "C3-droplet-W4",
+        "C4-droplet-R16",
+        "C5-droplet-sigma2e-02",
+        "C5-droplet-sigma5e-03"
+      ]
+    ],
+    "failing_15pct": [
+      "C3-droplet-W3"
+    ],
+    "worst_rel_l2_by_operator": {
+      "isotropic_d3q19": 1.3378098211467869e-14,
+      "central7": 0.205830984119509
+    },
+    "headline_claim": {
+      "C2_droplet_R16_rel_l2_force_ref_vs_got_central7": 0.1121475310319359,
+      "C2_droplet_R16_rel_l2_force_ref_vs_got_isotropic": 1.1696360685105806e-14,
+      "worst_case_rel_l2_force_central7": 0.205830984119509,
+      "worst_case_rel_l2_force_isotropic": 1.3378098211467869e-14,
+      "cases_central7_failing_15pct": [
+        "C3-droplet-W3"
+      ],
+      "cases_isotropic_failing_15pct": [],
+      "sigma_recovery_all_within_15pct": true
+    },
+    "declared_thresholds": {
+      "rel_l2_force": 0.15,
+      "sigma_error": 0.15
+    },
+    "artifacts_decision_flags": {
+      "isotropic_within_15pct": true,
+      "central7_within_15pct": true
+    },
+    "flags_inconsistent_with_case_table": [
+      "central7_within_15pct"
+    ],
+    "flag_note": "decision[central7_within_15pct] is computed from C1-planar + C2 only (allen_cahn_csf.py:580-583) and reads True while C3-droplet-W3 central7 = 20.6% > 15%; the result.json headline does list the failing case"
+  },
+  "P2_reproduction": {
+    "repro_cmd": "python benchmarks/xval_allen_cahn_csf_force_chain/run.py --out artifacts/xval_allen_cahn_csf_force_chain",
+    "auditor_rerun_artefacts": "/root/tp-agent/work/m17582/docs/board_audit/m17582/repro/xval_allen_cahn_force_chain.json",
+    "auditor_rerun_present": true,
+    "decision_identical": true,
+    "kernel_integration_identical": true,
+    "max_abs_decision_delta": 0.0,
+    "csv_identical": true,
+    "numeric_blocks_identical": true,
+    "json_sha_diff_explained_by": [
+      "artifacts",
+      "repro_cmd"
+    ],
+    "sha256_shipped_json": "0cd904073e5c320cbd30b0ea72eb8f29355e10030a73f64c83c069bb76b5f498",
+    "sha256_rerun_json": "4bb1eb2ea58ce1aeab4d5954abebfc3253f10f041a40a3f6b753ea2bd9ef62c3",
+    "figures_present": [
+      "fig_force_chain_droplet.png",
+      "fig_force_chain_refinement.png",
+      "fig_force_error_slice.png"
+    ]
+  },
+  "P3_referee": {
+    "sql": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-ALLEN-CAHN-CSF-FORCE-CHAIN'",
+    "rows": [],
+    "n_rows": 0,
+    "table_total_rows": 55
+  },
+  "P4_sigma_anchor": {
+    "rows": [
+      {
+        "case": "C1-planar",
+        "operator": "central7",
+        "radius": null,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": null,
+        "sigma_err_ref_self": null
+      },
+      {
+        "case": "C1-planar",
+        "operator": "isotropic_d3q19",
+        "radius": null,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": null,
+        "sigma_err_ref_self": null
+      },
+      {
+        "case": "C2-droplet-R16",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.04001722654441553,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C2-droplet-R16",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.0647029242852537,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C3-droplet-W3",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 3.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.07582320100492246,
+        "sigma_err_ref_self": -0.11752058040288937
+      },
+      {
+        "case": "C3-droplet-W3",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 3.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.11752058040288926,
+        "sigma_err_ref_self": -0.11752058040288937
+      },
+      {
+        "case": "C3-droplet-W4",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.04001722654441553,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C3-droplet-W4",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.0647029242852537,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C3-droplet-W6",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 6.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.008616737422135867,
+        "sigma_err_ref_self": -0.019762742763318242
+      },
+      {
+        "case": "C3-droplet-W6",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 6.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.019762742763319463,
+        "sigma_err_ref_self": -0.019762742763318242
+      },
+      {
+        "case": "C4-droplet-R8",
+        "operator": "central7",
+        "radius": 8.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.022476100388560183,
+        "sigma_err_ref_self": -0.044405516052992144
+      },
+      {
+        "case": "C4-droplet-R8",
+        "operator": "isotropic_d3q19",
+        "radius": 8.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.0444055160529887,
+        "sigma_err_ref_self": -0.044405516052992144
+      },
+      {
+        "case": "C4-droplet-R12",
+        "operator": "central7",
+        "radius": 12.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.0289371175610712,
+        "sigma_err_ref_self": -0.051226156902186126
+      },
+      {
+        "case": "C4-droplet-R12",
+        "operator": "isotropic_d3q19",
+        "radius": 12.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.05122615690218102,
+        "sigma_err_ref_self": -0.051226156902186126
+      },
+      {
+        "case": "C4-droplet-R16",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.04001722654441553,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C4-droplet-R16",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.01,
+        "sigma_err_got": -0.0647029242852537,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C5-droplet-sigma2e-02",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.02,
+        "sigma_err_got": -0.04001722654441553,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C5-droplet-sigma2e-02",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.02,
+        "sigma_err_got": -0.0647029242852537,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C5-droplet-sigma5e-03",
+        "operator": "central7",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.005,
+        "sigma_err_got": -0.04001722654441553,
+        "sigma_err_ref_self": -0.0647029242852617
+      },
+      {
+        "case": "C5-droplet-sigma5e-03",
+        "operator": "isotropic_d3q19",
+        "radius": 16.0,
+        "W_lb": 4.0,
+        "sigma_in": 0.005,
+        "sigma_err_got": -0.0647029242852537,
+        "sigma_err_ref_self": -0.0647029242852617
+      }
+    ],
+    "sigma_err_vs_radius_W4": [
+      [
+        8.0,
+        -0.044405516053
+      ],
+      [
+        12.0,
+        -0.051226156902
+      ],
+      [
+        16.0,
+        -0.064702924285
+      ]
+    ],
+    "sigma_err_vs_W_R16": [
+      [
+        3.0,
+        -0.117520580403
+      ],
+      [
+        4.0,
+        -0.064702924285
+      ],
+      [
+        6.0,
+        -0.019762742763
+      ]
+    ],
+    "worst_sigma_err": -0.11752058040288926,
+    "worst_within_15pct": true,
+    "within_3pct": false,
+    "note": "sigma is the only *physical* reference in the run (prescribed input, not another code); Laplace law dp=2*sigma/R is never computed"
+  },
+  "P5_integration": {
+    "call_sites": [
+      {
+        "file": "src/tensorlbm/allen_cahn_lbm.py",
+        "line": 385,
+        "call": "force_mu_grad_phi",
+        "passes_operator": true
+      },
+      {
+        "file": "src/tensorlbm/allen_cahn_lbm.py",
+        "line": 454,
+        "call": "step_allen_cahn_field",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/multiphase3d.py",
+        "line": 852,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/multiphase3d_d3q27.py",
+        "line": 756,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/ch_validation.py",
+        "line": 98,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/laplace_face.py",
+        "line": 293,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/laplace_face.py",
+        "line": 294,
+        "call": "force_mu_grad_phi",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/static_droplet.py",
+        "line": 178,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/xval/allen_cahn_csf.py",
+        "line": 221,
+        "call": "force_mu_grad_phi",
+        "passes_operator": true
+      },
+      {
+        "file": "src/tensorlbm/xval/allen_cahn_csf.py",
+        "line": 448,
+        "call": "step_allen_cahn_field",
+        "passes_operator": false
+      }
+    ],
+    "n_sites": 10,
+    "production_call_sites": [
+      {
+        "file": "src/tensorlbm/allen_cahn_lbm.py",
+        "line": 385,
+        "call": "force_mu_grad_phi",
+        "passes_operator": true
+      },
+      {
+        "file": "src/tensorlbm/allen_cahn_lbm.py",
+        "line": 454,
+        "call": "step_allen_cahn_field",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/multiphase3d.py",
+        "line": 852,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/multiphase3d_d3q27.py",
+        "line": 756,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/ch_validation.py",
+        "line": 98,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/laplace_face.py",
+        "line": 293,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/laplace_face.py",
+        "line": 294,
+        "call": "force_mu_grad_phi",
+        "passes_operator": false
+      },
+      {
+        "file": "src/tensorlbm/phasefield/static_droplet.py",
+        "line": 178,
+        "call": "force_minus_phi_grad_mu",
+        "passes_operator": false
+      }
+    ],
+    "n_production_sites": 8,
+    "n_production_sites_selecting_isotropic": 1,
+    "default_operator": "central7 (allen_cahn_lbm.py:227/319, free_energy.py:99/113)",
+    "laplace_anchor_modules_present_but_unused_by_xval": [
+      "src/tensorlbm/gas_layer/laplace.py",
+      "src/tensorlbm/phasefield/laplace_face.py"
+    ],
+    "coupled_solver_gate": "allen_cahn_lbm.py:360 raises unless allow_unverified_hydro=True (documented UNVERIFIED coupling); its AC call at :454 does not thread operator="
+  },
+  "P6_detection_power": {
+    "note": "in-process mutation of the operators the force chain dispatches through",
+    "baseline_rel_l2": 4.5628059699499645e-15,
+    "laplacian_plus5pct_rel_l2": 0.08336861139758042,
+    "grad_x_plus5pct_rel_l2": 0.02886751345948182,
+    "detects_5pct_error": true,
+    "gate_resolution": "a 5% operator error surfaces as 2.9e-2/8.3e-2 -> would still pass the 15% gate; i.e. the gate tolerates ~9% operator error"
+  },
+  "figures": [
+    {
+      "name": "audit_force_rel_l2_vs_criterion.png",
+      "caption": "\u9010\u7b97\u4f8b CSF \u529b\u573a\u76f8\u5bf9 L2 \u8bef\u5dee\uff08\u5bf9\u6570\u8f74\uff09\u4e0e 15% \u5224\u636e\u7ebf\uff1a\u751f\u4ea7\u9ed8\u8ba4 central7 \u5728 C3-droplet-W3 \u8fbe 20.6% \u8d8a\u7ebf\uff0copt-in isotropic_d3q19 \u5728\u820d\u5165\u8bef\u5dee\u6c34\u5e73\u3002"
+    },
+    {
+      "name": "audit_sigma_recovery_anchor.png",
+      "caption": "\u7269\u7406\u951a\uff08\u03c3 \u53cd\u6f14 vs \u7ed9\u5b9a \u03c3\uff09\uff1a\u968f R \u589e\u5927\u8bef\u5dee\u5355\u8c03\u53d8\u5927\uff08-4.4%\u2192-5.1%\u2192-6.5%\uff09\uff0c\u968f\u754c\u9762\u539a\u5ea6 W \u589e\u539a\u8bef\u5dee\u53d8\u5c0f\uff08-11.8%\u2192-6.5%\u2192-2.0%\uff09\uff0c\u672a\u6536\u655b\u5230 0\uff0c\u4ec5 15% \u5224\u636e\u5185\u901a\u8fc7\u30013% \u76ee\u6807\u672a\u8fbe\u3002"
+    }
+  ]
+}
