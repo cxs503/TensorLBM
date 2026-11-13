@@ -646,10 +646,11 @@ PYTHONPATH=src python examples/ship_hull_flow.py \
   --nx 320 --ny 120 --nz 80 --n-steps 10000 \
   --device cuda --overwrite
 
-# 使用 Apple Silicon MPS
-PYTHONPATH=src python examples/cylinder_flow.py \
-  --nx 800 --ny 240 --radius 24 --n-steps 80000 \
-  --device mps --overwrite
+# 使用 Apple Silicon MPS / Apple Silicon (MPS)
+# 示例脚本的 --device 仅接受 cpu/sdaa/cuda（见 `--help`），不暴露 mps。
+# 需要 MPS 或其它 torch 插件后端（npu/mlu/musa）时，请在 Python 中经库层解析设备：
+#   from tensorlbm.api import resolve_device
+#   device = resolve_device("mps")   # 不可用后端会给出显式报错，不会静默降级
 ```
 
 ### 6.5 MLUPS 性能测试 / MLUPS Performance Benchmark

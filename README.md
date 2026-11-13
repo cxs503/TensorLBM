@@ -69,7 +69,11 @@ AI turbulence closures and flow-model pipelines are useful foundations for AI-as
 ## What TensorLBM provides
 
 - A curated stable API in `tensorlbm.api`, with legacy lazy root exports in `tensorlbm`
-- **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
+- **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (lattice constants + `equilibrium`/`macroscopic`):
+  D2Q9 `C`/`W`/`OPPOSITE` → `equilibrium`/`macroscopic`, D3Q19 `C3D`/`W3D`/`OPPOSITE3D` →
+  `equilibrium3d`/`macroscopic3d` (both in the curated `tensorlbm.api`);
+  D3Q27 `C`/`W`/`OPPOSITE`/`W_EXACT64` → `equilibrium27`/`macroscopic27` in
+  `tensorlbm.d3q27` (the 27-velocity primitives are not re-exported by `tensorlbm.api`)
 - **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D
 - **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer).  Conservative **reflux correction** for structured 2:1 AMR is production (`stable`) for the audited scope — 1-D scalar ladder with machine-precision mass conservation and a D2Q9 cavity interface-flux ledger; see `docs/amr-reflux-maturation.md`
 - **DG-LBM hybrid solver**: nodal Discontinuous-Galerkin LBM with P1-Lobatto DG advection, SSP-RK3 time stepping, DG↔LBM P0 interface coupling, and support for 2D cylinder / 3D sphere / SUBOFF hull flows
@@ -163,7 +167,9 @@ Useful options:
 - `--output-root`, `--run-name`, `--overwrite`: output organization
 - `--backend`: `torch` (default), `paddle`, or `mindspore`
 - `--resume-checkpoint`: resume from an existing checkpoint directory
-- `--device`: `cpu` (default), `cuda`, or `mps` (Apple Silicon)
+- `--device`: `cpu` (default), `sdaa`, or `cuda` — these are the choices the example
+  CLI accepts; the library-level `tensorlbm.api.resolve_device` additionally supports
+  `mps` and other torch-plugin accelerators, but the example scripts do not expose them
 - `--num-threads`: PyTorch CPU thread count for multicore runs on `cpu`
 
 ## Run the sphere-flow example (3D)
@@ -294,7 +300,9 @@ Run tests:
 PYTHONPATH=src pytest -q
 ```
 
-GitHub Actions runs the same test command on every push and pull request.
+GitHub Actions runs the same test suite (`PYTHONPATH=src pytest` scope plus `app/tests`) on
+every push and pull request, adding coverage, coverage-report upload, per-test timeout and
+JUnit reporting on top of the command above.
 
 ## API layering
 
@@ -308,7 +316,7 @@ GitHub Actions runs the same test command on every push and pull request.
 
 | Benchmark | Parameter | TensorLBM | Reference | Error |
 |-----------|-----------|-----------|-----------|-------|
-| 2D cylinder flow | Strouhal St (Re=100) | ≈ 0.183 | 0.166 (Williamson 1989) | ~10% |
+| 2D cylinder flow (D=16, 20D×14D, 9000 steps, Re=100) | St and Cd | St 0.1705, Cd 1.5445 | St 0.16300, Cd 1.3300 (`docs/CASE-KARMAN-RE100.md`, literature table of arXiv:1504.03949v2) | St +4.60% (pass), Cd +16.13% (honest FAIL against the 8% gate) |
 | Sloshing tank | Natural frequency ω₁ | Faltinsen formula | Faltinsen (1978) | < 2% |
 | Near-bed pipeline | Strouhal St (Re=200, e/D=0.5) | measured | Bearman & Zdravkovich (1978) | — |
 | Turbulent channel | Log-law slope κ (Re_τ=100) | ≈ 0.41 | 0.41 (von Kármán) | < 5% |
