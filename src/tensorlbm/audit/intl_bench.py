@@ -16,6 +16,22 @@ import argparse, glob, hashlib, json, os, platform, re, subprocess, sys
 from datetime import datetime, timezone
 
 AUDIT_ID, MISSION = "m15617-intl-bench-v1", 15617
+
+# ── artifact set + provenance manifest ───────────────────────────────────────
+# The audit is only as trustworthy as the files it leaves behind: a merge that
+# drops them, or a hand edit that nudges a number, must be *detectable* rather
+# than discoverable weeks later.  So every run hashes its own outputs into
+# ``manifest.json`` and ``verify_manifest()`` is a pure file-system check (no
+# re-run, no network) that the artifact set on disk is bit-identical to what the
+# generator wrote.  ``expected_artifacts`` is recorded too, so a *missing* file
+# is a mismatch and not a silent no-op.
+MANIFEST_NAME = "manifest.json"
+ARTIFACT_NAMES = ("module_maturity.json", "module_maturity.csv", "compete_score.csv",
+                  "maturity.sql", "level_distribution.png", "compete_radar.png")
+# SQL deliverable is kept in docs/ under the mission's own name; m15912 is the
+# later alias of the same snapshot and is regenerated in lock-step (they must
+# never diverge — a stale copy is exactly the drift this guard exists for).
+DOC_SQL_FILES = ("tensorlbm_maturity_m15617.sql", "tensorlbm_maturity_m15912.sql")
 FAMILIES = ["基础LBM内核", "高阶碰撞", "边界复杂几何", "多相流", "自由表面",
             "湍流", "GPU单卡", "多GPU-HPC", "工程验证", "AI融合"]
 
@@ -424,8 +440,110 @@ def provenance(repo, rows):
     }
 
 
-def run_audit(repo_root=".", out_dir=None):
+def artifact_digests(out_dir, names=ARTIFACT_NAMES):
+    """sha256 + byte size of every artifact that exists in ``out_dir``."""
+    digests = {}
+    for name in names:
+        path = os.path.join(out_dir, name)
+        if os.path.isfile(path):
+            digests[name] = {"sha256": _sha256(path), "bytes": os.path.getsize(path)}
+    return digests
+
+
+def sql_copy_digest(repo, sql_text):
+    """sha256 of the docs/ SQL delivery copy, so a one-copy artifact dir stays bound."""
+    h = hashlib.sha256(sql_text.encode()).hexdigest()
+    for name in DOC_SQL_FILES:
+        path = os.path.join(repo, "docs", name)
+        if os.path.isfile(path):
+            return {"path": os.path.relpath(path, repo), "sha256": h}
+    return None
+
+
+def artifact_names(sql_copy=True):
+    """Artifacts written this run: the SQL copy is skipped when docs/ already carries it."""
+    return tuple(ARTIFACT_NAMES) if sql_copy else tuple(n for n in ARTIFACT_NAMES if n != "maturity.sql")
+
+
+def write_manifest(out_dir, rep, names=None):
+    """Write ``manifest.json``: bind every emitted artifact to its sha256.
+
+    Returns the manifest dict (also on disk).  The manifest deliberately does not
+    hash itself, so re-verification needs no re-run: a downstream reader (gate,
+    reviewer, platform ingest) only has to recompute the listed digests.
+    ``expected_artifacts`` is the set that *this run actually wrote* (plus any
+    excluded-and-relocated deliverable recorded under ``sql_deliverable``), so an
+    absent file is a mismatch rather than a silent no-op.
+    """
+    names = tuple(names or ARTIFACT_NAMES)
+    man = {
+        "audit_id": AUDIT_ID,
+        "mission": MISSION,
+        "generated_utc": rep.get("generated_utc"),
+        "generator": {"module": "tensorlbm.audit.intl_bench",
+                      "file": os.path.basename(__file__),
+                      "sha256": _sha256(os.path.abspath(__file__))},
+        "repo_head": (rep.get("provenance") or {}).get("repo_head"),
+        "input_sha256": (rep.get("provenance") or {}).get("input_sha256") or {},
+        "module_manifest_sha256": (rep.get("provenance") or {}).get("module_manifest_sha256"),
+        "schema": {"module_maturity_rows": len(rep.get("modules") or []),
+                   "compete_score_rows": len(rep.get("scores") or [])},
+        "expected_artifacts": list(names),
+        "artifacts": artifact_digests(out_dir, names),
+        "sql_deliverable": rep.get("sql_deliverable"),
+        "figure_error": rep.get("figure_error"),
+        "note": "机器生成，勿手改：artifacts 内每个文件的 sha256 由生成器写入本清单；"
+                "verify_manifest(out_dir) 返回 [] 才算工件集完整未改。",
+    }
+    with open(os.path.join(out_dir, MANIFEST_NAME), "w") as f:
+        json.dump(man, f, ensure_ascii=False, indent=1)
+    return man
+
+
+def verify_manifest(out_dir):
+    """Check an artifact directory against its manifest — pure file-system probe.
+
+    Returns a list of ``{"file", "problem", ...}`` mismatches; ``[]`` means the
+    artifact set is complete and bit-identical to what the generator wrote.
+    ``problem`` ∈ {manifest_missing, manifest_unreadable, missing, sha256, bytes,
+    unlisted} — a missing artifact, a tampered artifact and an unexplained extra
+    file are all failures, never warnings.
+    """
+    mpath = os.path.join(out_dir, MANIFEST_NAME)
+    if not os.path.isfile(mpath):
+        return [{"file": MANIFEST_NAME, "problem": "manifest_missing"}]
+    try:
+        man = json.load(open(mpath))
+    except Exception as e:  # pragma: no cover - defensive
+        return [{"file": MANIFEST_NAME, "problem": "manifest_unreadable", "detail": repr(e)}]
+    listed = man.get("artifacts") or {}
+    expected = man.get("expected_artifacts") or list(ARTIFACT_NAMES)
+    bad = []
+    for name in expected:
+        rec = listed.get(name)
+        path = os.path.join(out_dir, name)
+        if rec is None or not os.path.isfile(path):
+            bad.append({"file": name, "problem": "missing"})
+            continue
+        got = _sha256(path)
+        if got != rec.get("sha256"):
+            bad.append({"file": name, "problem": "sha256", "expected": rec.get("sha256"), "got": got})
+        elif os.path.getsize(path) != rec.get("bytes"):
+            bad.append({"file": name, "problem": "bytes",
+                        "expected": rec.get("bytes"), "got": os.path.getsize(path)})
+    for name in sorted(os.listdir(out_dir)):
+        if name == MANIFEST_NAME or name in listed:
+            continue
+        if os.path.isfile(os.path.join(out_dir, name)):
+            bad.append({"file": name, "problem": "unlisted"})
+    return bad
+
+
+def run_audit(repo_root=".", out_dir=None, sql_copy=True, doc_sql=False):
     """Run the whole audit against ``repo_root``.
+
+    ``sql_copy``/``doc_sql`` control where the SQL deliverable lands: the artifact
+    dir, the in-tree ``docs/`` copy (CLI only), or both.
 
     Returns the report dict (same object that is written to disk).  Every number in
     the report is extracted from files on disk (``benchmarks/STATUS.md``,
@@ -524,10 +642,18 @@ def run_audit(repo_root=".", out_dir=None):
                                            q(s_["gap_grade"].split("(")[0]),
                                            str(s_["maturity_index_0_10"]), q(notes)]) + ");")
     sql_text = "\n".join(sql) + "\n"
-    open(os.path.join(outd, "maturity.sql"), "w").write(sql_text)
-    if os.path.isdir(os.path.join(repo, "docs")):
-        open(os.path.join(repo, "docs", "tensorlbm_maturity_m15912.sql"), "w").write(sql_text)
-    rep["sql_path"] = os.path.relpath(os.path.join(outd, "maturity.sql"), repo)
+    if sql_copy:
+        open(os.path.join(outd, "maturity.sql"), "w").write(sql_text)
+        rep["sql_path"] = os.path.relpath(os.path.join(outd, "maturity.sql"), repo)
+    if doc_sql and os.path.isdir(os.path.join(repo, "docs")):
+        # Only the CLI refreshes the in-tree deliverables: a library/API caller (and
+        # every test) must not mutate the tree it is auditing.
+        for name in DOC_SQL_FILES:
+            open(os.path.join(repo, "docs", name), "w").write(sql_text)
+        # one canonical copy of the SQL lives in docs/; the manifest still binds it
+        rep["sql_deliverable"] = sql_copy_digest(repo, sql_text)
+    else:
+        rep["sql_path"] = rep.get("sql_path") or "<not written: no docs/ dir>"
     # figures
     try:
         import matplotlib
@@ -560,10 +686,20 @@ def run_audit(repo_root=".", out_dir=None):
     except Exception as e:
         rep["figure_error"] = repr(e)
     json.dump(rep, open(os.path.join(outd, "module_maturity.json"), "w"), ensure_ascii=False, indent=1)
+    # provenance seal: two passes so the manifest digests the *final* bytes of
+    # module_maturity.json (which itself records where the manifest lives).
+    names = artifact_names(sql_copy)
+    write_manifest(outd, rep, names)
+    rep["artifact_manifest"] = {"path": os.path.join(outd, MANIFEST_NAME),
+                                "verify_with": "tensorlbm.audit.intl_bench.verify_manifest"}
+    json.dump(rep, open(os.path.join(outd, "module_maturity.json"), "w"), ensure_ascii=False, indent=1)
+    rep["manifest"] = write_manifest(outd, rep, names)
     print(json.dumps({"levels": rep["level_counts"], "scores": [(s["dimension"], s["mean_evidence_tier"], s["maturity_index_0_10"], s["gap_grade"]) for s in rep["scores"]],
                       "disposition": {k: len(v) for k, v in rep["disposition"].items()}, "tasks": len(tasks),
                       "citation_stats": rep.get("citation_stats"), "citation_failures": bad,
-                      "figures": rep.get("figures"), "figure_error": rep.get("figure_error")}, ensure_ascii=False, indent=1))
+                      "figures": rep.get("figures"), "figure_error": rep.get("figure_error"),
+                      "manifest": os.path.join(outd, MANIFEST_NAME),
+                      "manifest_mismatches": verify_manifest(outd)}, ensure_ascii=False, indent=1))
     return rep
 
 
@@ -613,8 +749,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="TensorLBM international benchmark audit (GAP-LBM-INTL-BENCH)")
     ap.add_argument("--repo-root", default=".")
     ap.add_argument("--out", default=None, help="artifact directory (default artifacts/m15617)")
+    ap.add_argument("--no-sql-copy", action="store_true",
+                    help="do not duplicate the SQL into the artifact dir: the single canonical copy "
+                         "stays in docs/ (bound by manifest.sql_deliverable)")
     a = ap.parse_args(argv)
-    rep = run_audit(a.repo_root, a.out)
+    rep = run_audit(a.repo_root, a.out, sql_copy=not a.no_sql_copy, doc_sql=True)
     LAST_REPORT = rep
     bad = rep.get("citation_failures") or []
     return 0 if not bad else 3
