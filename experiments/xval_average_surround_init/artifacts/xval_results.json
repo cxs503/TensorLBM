@@ -1,0 +1,45 @@
+{
+  "experiment": "xval_average_surround_init",
+  "oss_reference": "Maarten-vd-Sande/lbm, lbm/update_types.py::average_surround",
+  "tensorlbm_reference": "src/tensorlbm/free_surface_lbm.py::_init_new",
+  "direct_comparison_homogeneous": {
+    "f_diff": 0.0,
+    "rho_tensorlbm": 1.000000238418579,
+    "rho_oss": 1.000000238418579,
+    "rho_diff": 0.0,
+    "rho_diff_rel": 0.0,
+    "u_tensorlbm": [
+      0.009999996982514858,
+      0.0,
+      0.0
+    ],
+    "u_oss": [
+      0.009999996982514858,
+      0.0,
+      0.0
+    ],
+    "u_diff": 0.0,
+    "passes_15pct": true
+  },
+  "direct_comparison_gradient": {
+    "f_diff": 0.20000006258487701,
+    "rho_tensorlbm": 1.000000238418579,
+    "rho_oss": 1.2000000476837158,
+    "rho_diff": 0.19999980926513672,
+    "rho_diff_rel": 0.19999976158147775,
+    "u_tensorlbm": [
+      0.009999996982514858,
+      0.0,
+      0.0
+    ],
+    "u_oss": [
+      0.010000001639127731,
+      0.0,
+      0.0
+    ],
+    "passes_15pct": false
+  },
+  "threshold": 0.15,
+  "overall_pass": false,
+  "conclusion": "In homogeneous liquid (rho=constant everywhere), both methods produce identical results because averaging rho over uniform neighbors yields the same value as the fixed rho_init. The difference only manifests when there is density variation near the interface (e.g., multiphase with density ratio). For standard free-surface LBM with pressure-matched gas (rho_gas=rho_liquid=1.0), the difference is negligible (<1e-15). For multiphase CG/SC models with density ratio, the OSS approach may provide better initialization at the interface, but TensorLBM's fixed-rho approach is consistent with the waLBerla reference which also uses equilibrium refill from averaged rho+u (where rho is the local liquid density, not a field average)."
+}
