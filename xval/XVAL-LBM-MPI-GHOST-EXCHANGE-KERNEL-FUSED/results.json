@@ -1,0 +1,260 @@
+[
+  {
+    "tag": "n64_r2",
+    "cfg": {
+      "tag": "n64_r2",
+      "n": 64,
+      "ranks": 2,
+      "steps": 400,
+      "dtype": "float32",
+      "u0": 0.04,
+      "tau": 0.65,
+      "checkpoints": [
+        100,
+        200,
+        300,
+        400
+      ]
+    },
+    "serial": {
+      "step_ms": null,
+      "mlups": null,
+      "series": {},
+      "tgv_rel_l2": 0.24886548519134521,
+      "tgv_amplitude_ratio": 0.8086500763893127,
+      "rho_min": 0.9995319843292236,
+      "rho_max": 1.0005947351455688,
+      "u_max": 0.02154110185801983
+    },
+    "arms": {
+      "full_alloc": {
+        "step_ms": 128.48511982243508,
+        "exchange_ms": 17.22941692918539,
+        "pack_ms": 6.648793676868081,
+        "unpack_ms": 2.6112046325579286,
+        "mlups": 2.0402673894243932,
+        "bytes_per_step": 1245184,
+        "bytes_per_step_per_rank": 1245184,
+        "series": {
+          "100": 0.01725595071911812,
+          "200": 0.01488542091101408,
+          "300": 0.012807238847017288,
+          "400": 0.010999346151947975
+        },
+        "byte_accounting": {
+          "selective": false,
+          "persistent": false,
+          "left_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "right_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "n_cross_per_face": 19,
+          "bytes_per_step": 1245184,
+          "bytes_per_face_step": 622592
+        },
+        "tgv_rel_l2": 0.24886548519134521,
+        "tgv_amplitude_ratio": 0.8086500763893127,
+        "rho_min": 0.9995319843292236,
+        "rho_max": 1.0005947351455688,
+        "u_max": 0.02154110185801983,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      },
+      "full_persistent": {
+        "step_ms": 141.22440717648715,
+        "exchange_ms": 17.740078754723072,
+        "pack_ms": 7.002896522171795,
+        "unpack_ms": 2.711777938529849,
+        "mlups": 1.8562230512492115,
+        "bytes_per_step": 1245184,
+        "bytes_per_step_per_rank": 1245184,
+        "series": {
+          "100": 0.01725595071911812,
+          "200": 0.01488542091101408,
+          "300": 0.012807238847017288,
+          "400": 0.010999346151947975
+        },
+        "byte_accounting": {
+          "selective": false,
+          "persistent": true,
+          "left_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "right_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "n_cross_per_face": 19,
+          "bytes_per_step": 1245184,
+          "bytes_per_face_step": 622592
+        },
+        "tgv_rel_l2": 0.24886548519134521,
+        "tgv_amplitude_ratio": 0.8086500763893127,
+        "rho_min": 0.9995319843292236,
+        "rho_max": 1.0005947351455688,
+        "u_max": 0.02154110185801983,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      },
+      "selective_alloc": {
+        "step_ms": 150.90926337521523,
+        "exchange_ms": 13.068234170787036,
+        "pack_ms": 2.3241425585001707,
+        "unpack_ms": 1.0520062316209078,
+        "mlups": 1.7370968099434347,
+        "bytes_per_step": 327680,
+        "bytes_per_step_per_rank": 327680,
+        "series": {
+          "100": 0.01725595071911812,
+          "200": 0.01488542091101408,
+          "300": 0.012807238847017288,
+          "400": 0.010999346151947975
+        },
+        "byte_accounting": {
+          "selective": true,
+          "persistent": false,
+          "left_populations": [
+            2,
+            8,
+            10,
+            12,
+            14
+          ],
+          "right_populations": [
+            1,
+            7,
+            9,
+            11,
+            13
+          ],
+          "n_cross_per_face": 5,
+          "bytes_per_step": 327680,
+          "bytes_per_face_step": 163840
+        },
+        "tgv_rel_l2": 0.24886548519134521,
+        "tgv_amplitude_ratio": 0.8086500763893127,
+        "rho_min": 0.9995319843292236,
+        "rho_max": 1.0005947351455688,
+        "u_max": 0.02154110185801983,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      },
+      "selective_persistent": {
+        "step_ms": 140.65280582290143,
+        "exchange_ms": 12.351262704469264,
+        "pack_ms": 1.9358939584344625,
+        "unpack_ms": 1.0471819108352065,
+        "mlups": 1.8637665879916423,
+        "bytes_per_step": 327680,
+        "bytes_per_step_per_rank": 327680,
+        "series": {
+          "100": 0.01725595071911812,
+          "200": 0.01488542091101408,
+          "300": 0.012807238847017288,
+          "400": 0.010999346151947975
+        },
+        "byte_accounting": {
+          "selective": true,
+          "persistent": true,
+          "left_populations": [
+            2,
+            8,
+            10,
+            12,
+            14
+          ],
+          "right_populations": [
+            1,
+            7,
+            9,
+            11,
+            13
+          ],
+          "n_cross_per_face": 5,
+          "bytes_per_step": 327680,
+          "bytes_per_face_step": 163840
+        },
+        "tgv_rel_l2": 0.24886548519134521,
+        "tgv_amplitude_ratio": 0.8086500763893127,
+        "rho_min": 0.9995319843292236,
+        "rho_max": 1.0005947351455688,
+        "u_max": 0.02154110185801983,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      }
+    }
+  }
+]
