@@ -406,6 +406,20 @@ def droplet_radius(
         if len(inside) == len(ray):
             continue  # ray never leaves the droplet -> no crossing on this ray
         i_in = inside[-1]
+        if i_in + 1 >= len(ray):
+            # The half-domain ray is still on the liquid side of rho_av at its
+            # truncated end, so the neighbour needed for the linear
+            # interpolation does not exist.  Happens when the run never phase
+            # separated (noise around rho_av, upstream quick-check G_12 = -1.2)
+            # or when the droplet has merged with its periodic images.
+            guardrails.append(
+                Guardrail(
+                    "truncated_crossing",
+                    f"ray is still liquid at the end of the half-domain window "
+                    f"(index {i_in}/{len(ray) - 1}): interface outside the window",
+                )
+            )
+            continue
         r_in, r_out = ray[i_in], ray[i_in + 1]
         denom = r_in - r_out
         frac = 0.0 if abs(denom) < 1e-12 else (r_in - rho_av) / denom
