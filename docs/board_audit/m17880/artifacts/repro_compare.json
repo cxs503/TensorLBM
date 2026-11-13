@@ -1,0 +1,37 @@
+{
+ "repro_cmd": "cd /root/tp-agent/work/m17762 && PYTHONPATH=src python3 scripts/xval_m17762_free_energy_ch_core.py --parts ABCDEF --oss-root /tmp/Fingering_dynamics --out /tmp/m17880_repro",
+ "oss_checkout": {
+  "cmd": "git -C /tmp/Fingering_dynamics rev-parse HEAD",
+  "rc": 0,
+  "out": "150a5739e320498c6ecf22ba31ab9ebc57130462"
+ },
+ "oss_file_sha256": {
+  "cmd": "sha256sum /tmp/Fingering_dynamics/lattice_boltzmann/fingering_periodic.py /tmp/Fingering_dynamics/lattice_boltzmann/create_block.py /tmp/Fingering_dynamics/lattice_boltzmann/fingering.py",
+  "rc": 0,
+  "out": "d3789463b1b63ee154d5a653ea5f0f605a89bec30feb443810461d5c0ac11f72  /tmp/Fingering_dynamics/lattice_boltzmann/fingering_periodic.py\nad306a892853f55a842770cbcbcb46ad17130d418f95e278d7fe49e82c2d246c  /tmp/Fingering_dynamics/lattice_boltzmann/create_block.py\n69c8c6ba039bb19c806336202010016549606069c21d640a3fdf399aa72d0066  /tmp/Fingering_dynamics/lattice_boltzmann/fingering.py"
+ },
+ "json_payload_identical": true,
+ "volatile_keys_ignored": [
+  "timestamp",
+  "tensorlbm_git_head"
+ ],
+ "timestamp_delivered": "2026-11-13T09:45:35Z",
+ "timestamp_rerun": "2026-11-13T10:02:57Z",
+ "png": {
+  "fig1_ch_dispersion.png": {
+   "delivered_sha256": "a494ff2d427f6b242fd7e7c98e7e0aee0082e6be52c0ffb2c83e498f4b9175d7",
+   "rerun_sha256": "a494ff2d427f6b242fd7e7c98e7e0aee0082e6be52c0ffb2c83e498f4b9175d7",
+   "identical": true
+  },
+  "fig2_mode_history.png": {
+   "delivered_sha256": "ae733aeeac51b6122212fb0346518b88c055852ba62f3e9199c8ed754d42800d",
+   "rerun_sha256": "ae733aeeac51b6122212fb0346518b88c055852ba62f3e9199c8ed754d42800d",
+   "identical": true
+  },
+  "fig3_operator_convergence.png": {
+   "delivered_sha256": "9a2c9396cff3bb38fba3ff3d6b2ef8d26aa439a17e0a0722a93c8559c345c7dc",
+   "rerun_sha256": "9a2c9396cff3bb38fba3ff3d6b2ef8d26aa439a17e0a0722a93c8559c345c7dc",
+   "identical": true
+  }
+ }
+}

@@ -1,0 +1,29 @@
+{
+ "scripts/xval_m17762_free_energy_ch_core.py": {
+  "in_mission_branch_HEAD": false
+ },
+ "scripts/render_xval_m17762_report.py": {
+  "in_mission_branch_HEAD": false
+ },
+ "tests/test_xval_m17762_free_energy_ch.py": {
+  "in_mission_branch_HEAD": false
+ },
+ "docs/XVAL_M17762_LBM_FREE_ENERGY_CAHN_HILLIARD_CORE.md": {
+  "in_mission_branch_HEAD": false
+ },
+ "src/tensorlbm/multiphase3d.py": {
+  "geq_convention_occurrences_in_HEAD": 0,
+  "in_mission_branch_HEAD": false
+ },
+ "_main_checkout": {
+  "scripts/xval_m17762_free_energy_ch_core.py": false,
+  "tests/test_xval_m17762_free_energy_ch.py": false
+ },
+ "_git_status_mission_worktree": [
+  "M src/tensorlbm/multiphase3d.py",
+  "?? artifacts/xval_m17762/",
+  "?? scripts/render_xval_m17762_report.py",
+  "?? scripts/xval_m17762_free_energy_ch_core.py",
+  "?? tests/test_xval_m17762_free_energy_ch.py"
+ ]
+}

@@ -1,0 +1,8 @@
+{
+ "cmd": "cd /root/tp-agent/work/m17762 && python3 -m pytest tests/test_multiphase3d_d3q27_free_energy.py tests/test_multiphase_extensions.py -q",
+ "tail": [
+  "none (every test file under tests/ is collectable here)",
+  "35 passed, 1 xfailed, 1 warning in 22.25s",
+  "exit=0"
+ ]
+}

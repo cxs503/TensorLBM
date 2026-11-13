@@ -1,0 +1,8 @@
+{
+ "cmd": "cd /root/tp-agent/work/m17762 && python3 -m pytest tests/test_xval_m17762_free_energy_ch.py -q",
+ "tail": [
+  "none (every test file under tests/ is collectable here)",
+  "6 passed, 1 warning in 9.37s",
+  "exit=0"
+ ]
+}
