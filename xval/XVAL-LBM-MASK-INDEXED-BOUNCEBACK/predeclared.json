@@ -1,0 +1,97 @@
+{
+  "anchor": "XVAL-LBM-MASK-INDEXED-BOUNCEBACK",
+  "written_before_running": "2026-11-13T10:2x:Z (predeclaration committed before the first arm was executed)",
+  "decision": "Adopt the OSS mask-indexed post-stream bounce-back (vivsim obstacle_bounce_back) as an *equivalent* solid closure for TensorLBM and replace the dense torch.where swap by a precomputed index-pair form (O(Q*N_solid)) where a geometry is static; keep the interpolated bounce-back for non grid-aligned (curved) walls. The decision is supported if and only if the semantic-identity gate and the physics gate below both pass.",
+  "oss_reference": {
+    "repo": "haimingz/vivsim",
+    "commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+    "checkout": "/tmp/vivsim_src (read-only inventory copy)",
+    "cited_lines": [
+      "vivsim/lbm/boundary/bb.py:98-110  def obstacle_bounce_back(f, mask): return f.at[:, mask].set(f[:, mask][OPP_DIRS])",
+      "vivsim/lbm3d/boundary/bb.py:56-59  D3Q19 twin of the same one-liner",
+      "vivsim/lbm/basic.py:46-79  streaming() = periodic pull shift (shift_x_pos/shift_y_pos family)",
+      "vivsim/lbm/basic.py:20  f is the shifted distribution f_i = f_i^full - w_i",
+      "vivsim/lbm/lattice.py  D2Q9.opp_dirs / c / w tables",
+      "vivsim/examples/benchmark.py:43,147  the mask is built once (jnp.zeros((NX,NY),bool)) and reused every step"
+    ],
+    "execution_limit": "vivsim is JAX; this environment has no jax (ModuleNotFoundError) and no GPU, so the OSS arm is a *literal transplant* of the cited one-liner into torch (boolean-mask select + scatter, same simultaneity), not an execution of the OSS binary. Recorded as a comparison limit, never upgraded silently."
+  },
+  "alternatives": {
+    "A1_oss_boolean": "literal OSS rule: clone + f[:, mask] = f[opp][:, mask]  (cost O(Q*N_total))",
+    "A2_mask_indexed": "TensorLBM new operator: precomputed flat (dst,src) index pair over the solid cells; in-place variant costs O(Q*N_solid)",
+    "A3_production": "existing tensorlbm.boundaries.bounce_back_cells (dense torch.where)",
+    "A4_fluid_side": "independently written fluid-side half-way bounce-back (out[i](x)=f_pre[i](x-c_i) if x-c_i fluid else f_pre[opp i](x))",
+    "C1_interpolated": "tensorlbm.boundary.interpolated_bounce_back (2-point Bouzidi, sub-grid q from an analytic SDF) - the curved-wall alternative"
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "A2 is bit-identical to A1 and to A3 on arbitrary fields and masks (2-D and 3-D, incl. masks touching the domain border and degenerate masks).",
+      "metric": "max |A2 - A1|_inf over the (Q, *spatial) array",
+      "threshold": "== 0.0 (bitwise; a representation change must be exact)"
+    },
+    {
+      "id": "H2",
+      "statement": "The solid-node post-stream swap is exactly the fluid-side half-way bounce-back for the unforced BGK step; with a Guo body force the two agree only to the size of the forcing term.",
+      "metric": "max |A2 - A4|_inf on a body-force channel after 1500 steps, run twice (g=0 and g=1e-5)",
+      "threshold": "g=0: == 0.0 (bitwise); g>0: <= 1e-4 absolute on populations of order 0.1 (deviation is reported, not tuned)"
+    },
+    {
+      "id": "H3",
+      "statement": "The closure is the half-way wall: plane-channel permeability equals the analytic k = H^2/12 with H = number of fluid rows (wall mid-planes), and it is second-order consistent in H.",
+      "metric": "err_pct = (k_measured - H^2/12)/(H^2/12) * 100 for H in {8,16,32,64}, tau=0.8",
+      "threshold": "|err| < 15% (owner band) at every H, and |err| < 1% for H >= 16; monotone decrease of |err| with H is reported but NOT required to pass (the previous verified case showed non-monotone behaviour and it is kept visible)"
+    },
+    {
+      "id": "H4",
+      "statement": "Ignoring the half-way offset (using H = ny, i.e. counting the two solid wall rows as fluid) is a geometric bias that grows as 1/H and exceeds the owner band at coarse resolution.",
+      "metric": "err_pct_if_H_eq_ny at the same H sweep",
+      "threshold": "reported as a trap; predicted |err| ~ (ny/H)^2 - 1 -> 12% at H=8, 3% at H=32 (checked, not tuned)"
+    },
+    {
+      "id": "H5",
+      "statement": "The index-pair form removes the per-step whole-domain gather: its per-application cost scales with the solid count, not with N_total, so the in-place index form beats the dense where swap whenever the solid fraction is small.",
+      "metric": "wall time per application on a 512x512 float64 field, solid fraction in {0.005,0.02,0.05,0.10,0.25,0.50}",
+      "threshold": "speedup >= 1.5x vs dense where at solid fraction <= 0.10; speedup is reported for all fractions (both crossings reported)"
+    },
+    {
+      "id": "H6",
+      "statement": "For a non grid-aligned (curved) wall the mask-indexed closure keeps the staircase surface, so on Schaefer-Turek 2D-1 (Re=20) its Cd error exceeds the interpolated (Bouzidi) closure's at the same resolution.",
+      "metric": "|err Cd| (%) for D in {16, 24} against the in-repo anchor ref_cd = 5.57953523384 (benchmarks/verified/cylinder/re20_st/result.json)",
+      "threshold": "owner band 15% applies to each arm; the *comparison* is reported as the adoption trade-off (no threshold invented to force a winner)"
+    }
+  ],
+  "baselines": {
+    "physics_baseline": "analytic plane Poiseuille k = H^2/12 (wall mid-planes, H = fluid rows) and the analytic parabolic profile through the same wall positions",
+    "case_baseline": "Schaefer-Turek 2D-1 Re=20 in-repo verified anchor Cd = 5.57953523384 (FeatFlow/Nabh spectral, result.json:ref_source)",
+    "representation_control": "A1 / A2 / A3 / A4 integrate the same collision (BGK), the same Guo forcing, the same streaming and the same steady-state criterion - the closure is the only changed variable"
+  },
+  "stability_and_exclusions": {
+    "stability_rule": "a run producing a non-finite population, rho outside [0.95,1.05] or Ma > 0.1 is declared failed and reported, never tuned away",
+    "exclusions": "none; no outlier removal, no post-hoc threshold change"
+  },
+  "stopping_rule": "step counts are fixed before the run (channel 20000, ST2D1 12000 for D=16/24); a block may be stopped early only if wall clock exceeds 900 s, and any stopped block is reported as incomplete rather than silently dropped",
+  "variables": {
+    "changed": [
+      "solid closure (A1/A2/A3/A4 for the identity+channel blocks; A2 vs C1 for the curved-wall block)",
+      "resolution H in {8,16,32,64} (channel) and D in {16,24} (ST2D1)",
+      "tau in {0.8,1.0,1.5} at H=32",
+      "body force g x1 and x2 at H=32 (linearity of k)",
+      "solid fraction in {0.005,0.02,0.05,0.10,0.25,0.50} for the cost block"
+    ],
+    "held_fixed": [
+      "D2Q9, BGK/SRT, float64, single CPU thread",
+      "Guo (2002) forcing, same formula in every arm",
+      "streaming = tensorlbm.solver.stream (periodic pull, one gather)",
+      "channel: nx=6, periodic in x, body force in x; ST2D1: Zou-He inlet profile + Zou-He outlet, geometry identical to the in-repo verified case"
+    ],
+    "confounders": [
+      "the OSS arm is a transplant (no jax), so runtime numbers are torch-vs-torch and cannot be compared with vivsim's JAX timings",
+      "torch where/index_copy kernel launch overhead dominates at small grids; the cost block uses one large grid to make the slope visible",
+      "the ST2D1 Cd also carries the Ladd momentum-exchange surface-force error on the staircase (in-repo note: MEM Cl is not convergent), so the curved-wall comparison is about Cd only"
+    ]
+  },
+  "analysis": "grouped by arm; per-KPI relative error to the analytic/anchor value; resolution and parameter sensitivities reported as separate tables; convergence claimed only from the measured sequences, never extrapolated",
+  "report": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/REPORT.md (six sections) + docs/XVAL-LBM-MASK-INDEXED-BOUNCEBACK.md mirror in the repo docs tree",
+  "fail_stage_plan": "if a block fails, fail_stage names it (identity / channel / cost / st2d1) and failure_reason carries the measured deviation; honest FAIL is not overwritten"
+}
