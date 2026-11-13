@@ -1,0 +1,101 @@
+{
+  "subject": "m18288 / XVAL-LBM-METHOD-SELECTION-FIRST-EVIDENCE",
+  "reference_arm": "A1",
+  "rows": [
+    {
+      "metric": "cd_mean_last50 A1-vs-A2 @D=10",
+      "kpi": "cd_mean_last50",
+      "arm": "A2",
+      "ref": 1.6132947378116644,
+      "got": 1.4660336012540012,
+      "rel_error_pct": -9.127974765318703,
+      "within_15pct": true
+    },
+    {
+      "metric": "cl_amp A1-vs-A2 @D=10",
+      "kpi": "cl_amp",
+      "arm": "A2",
+      "ref": 0.6579248352005606,
+      "got": 0.3515523646082385,
+      "rel_error_pct": -46.56648513639526,
+      "within_15pct": false
+    },
+    {
+      "metric": "st_fft A1-vs-A2 @D=10",
+      "kpi": "st_fft",
+      "arm": "A2",
+      "ref": 0.16899580031695963,
+      "got": 0.17662926112262423,
+      "rel_error_pct": 4.516952960575163,
+      "within_15pct": true
+    },
+    {
+      "metric": "cd_mean_last50 A1-vs-A4 @D=10",
+      "kpi": "cd_mean_last50",
+      "arm": "A4",
+      "ref": 1.6132947378116644,
+      "got": 1.642771191938185,
+      "rel_error_pct": 1.8270966510746618,
+      "within_15pct": true
+    },
+    {
+      "metric": "cl_amp A1-vs-A4 @D=10",
+      "kpi": "cl_amp",
+      "arm": "A4",
+      "ref": 0.6579248352005606,
+      "got": 0.556625096634633,
+      "rel_error_pct": -15.396855863488955,
+      "within_15pct": false
+    },
+    {
+      "metric": "st_fft A1-vs-A4 @D=10",
+      "kpi": "st_fft",
+      "arm": "A4",
+      "ref": 0.16899580031695963,
+      "got": 0.1717673074998151,
+      "rel_error_pct": 1.6399858325812633,
+      "within_15pct": true
+    }
+  ],
+  "failures": [
+    {
+      "arm": "A3",
+      "status": "blowup",
+      "fail_stage": "non_finite_population",
+      "step": 600,
+      "total_steps_planned": 21259
+    },
+    {
+      "arm": "A5",
+      "status": "blowup",
+      "fail_stage": "non_finite_population",
+      "step": 5800,
+      "total_steps_planned": 21259
+    }
+  ],
+  "kernel_parity_external": [
+    {
+      "metric": "k1_collision rel-L2",
+      "value": 1.1757884876259976e-07
+    },
+    {
+      "metric": "k2_streaming rel-L2",
+      "value": 2.709855973692391e-08
+    }
+  ],
+  "n_rows": 6,
+  "n_within_15pct": 4,
+  "n_outside_15pct": 2,
+  "recompute_mismatch_vs_published": [],
+  "resolution_rungs_present": [
+    "A1_D10",
+    "A2_D10",
+    "A3_D10",
+    "A4_D10",
+    "A5_D10"
+  ],
+  "resolutions": [
+    10
+  ],
+  "note_ref_is_internal": "every KPI 'ref' row is another arm of the same experiment (A1), not an external/analytic/literature value"
+}
