@@ -1,0 +1,107 @@
+{
+  "anchor": "XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED",
+  "reference_oss": "lssfau/lbmpy 2.0 (create_lb_function, SerialDataHandling)",
+  "reference_version": "lbmpy 2.0 @ PyPI",
+  "subject": "src/tensorlbm/domain_decomposition.py (HaloExchange + SimulatedMultiDevice)",
+  "case": {
+    "name": "Taylor-Green vortex decay (3D periodic)",
+    "n": 16,
+    "steps": 100,
+    "u0": 0.05,
+    "nu": 0.1,
+    "tau": 0.8,
+    "k": 0.39269908169872414,
+    "Ma": 0.08660254037844387,
+    "Re": 1.2732395447351628,
+    "gamma_K_exact": 0.030842513753404244
+  },
+  "equivalence": [
+    {
+      "impl": "serial_ref",
+      "grid": "16^3",
+      "steps": 100,
+      "K0": 0.0006249999999999998,
+      "K_end": 1.0781468062533836e-06,
+      "gamma_K_meas": 0.03181254001306632,
+      "gamma_K_exact": 0.030842513753404244,
+      "gamma_rel_err_pct": 3.1450946813795575,
+      "field_rel_l2_pct_vs_serial": 0.0,
+      "wall_time_s": 0.42289060913026333
+    },
+    {
+      "impl": "tensorlbm_1rank",
+      "grid": "16^3",
+      "steps": 100,
+      "K0": 0.0006249999999999998,
+      "K_end": 1.0781468062533663e-06,
+      "gamma_K_meas": 0.031812540013066395,
+      "gamma_K_exact": 0.030842513753404244,
+      "gamma_rel_err_pct": 3.145094681379805,
+      "field_rel_l2_pct_vs_serial": 3.12012650924153e-14,
+      "wall_time_s": 6.135314170271158
+    },
+    {
+      "impl": "tensorlbm_4ranks",
+      "grid": "16^3",
+      "steps": 100,
+      "K0": 0.0006249999999999998,
+      "K_end": 1.0781468062533663e-06,
+      "gamma_K_meas": 0.031812540013066395,
+      "gamma_K_exact": 0.030842513753404244,
+      "gamma_rel_err_pct": 3.145094681379805,
+      "field_rel_l2_pct_vs_serial": 3.12012650924153e-14,
+      "wall_time_s": 2.2903111800551414
+    },
+    {
+      "impl": "lbmpy_fused",
+      "grid": "16^3",
+      "steps": 100,
+      "K0": 0.0006249999999999998,
+      "K_end": 1.0781468062533836e-06,
+      "gamma_K_meas": 0.03181254001306632,
+      "gamma_K_exact": 0.030842513753404244,
+      "gamma_rel_err_pct": 3.1450946813795575,
+      "field_rel_l2_pct_vs_serial": 0.0,
+      "wall_time_s": 0.45166308991611004
+    }
+  ],
+  "kernel_comparison": [
+    {
+      "aspect": "kernel_type",
+      "lbmpy": "fused (collide+stream in single C kernel via pystencils)",
+      "tensorlbm": "separate (PyTorch collide_fn + stream_fn)"
+    },
+    {
+      "aspect": "code_generation",
+      "lbmpy": "sympy \u2192 pystencils AST \u2192 C compile (JIT)",
+      "tensorlbm": "pure PyTorch ops (no codegen)"
+    },
+    {
+      "aspect": "ghost_exchange",
+      "lbmpy": "SerialDataHandling.synchronization_function (stencil-restricted pop copy)",
+      "tensorlbm": "HaloExchange.selective (5-of-19 populations for D3Q19 z-slab)"
+    },
+    {
+      "aspect": "memory_layout",
+      "lbmpy": "(nz, ny, nx, Q) SoA for CPU; (Q, nz, ny, nx) AoS option",
+      "tensorlbm": "(Q, nz, ny, nx) AoS (PyTorch tensor)"
+    },
+    {
+      "aspect": "streaming_pattern",
+      "lbmpy": "pull (default), push, AA, EsoTwist available",
+      "tensorlbm": "pull via torch.roll"
+    },
+    {
+      "aspect": "multi_device",
+      "lbmpy": "MPI via pystencils data handling (requires mpi4py)",
+      "tensorlbm": "simulated (single-process) or NCCL (multi-GPU)"
+    },
+    {
+      "aspect": "boundary_conditions",
+      "lbmpy": "LatticeBoltzmannBoundaryHandling (flag-based)",
+      "tensorlbm": "user-provided boundary_fn"
+    }
+  ],
+  "lbmpy_fusable": true,
+  "generated_at": "2026-11-13T12:45:39"
+}
