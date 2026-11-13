@@ -1,0 +1,96 @@
+{
+  "audited_mission": 17763,
+  "audited_anchor": "XVAL-LBM-FREE-ENERGY-PRESSURE-TENSOR-BODY-FORCE",
+  "audited_commit": "a53d734cca25a2cc116eb7f9635ee8992ef8218e",
+  "audit_mission": 17881,
+  "audit_worktree": "/root/tp-agent/work/m17881",
+  "audited_worktree": "/root/tp-agent/work/m17763",
+  "verdict": {"level": 2, "verdict_by": "board-audit", "gate_expectation": "confirmed"},
+
+  "checks_run": {
+    "benchmark_table_lookup": {
+      "sql": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-FREE-ENERGY-PRESSURE-TENSOR-BODY-FORCE'",
+      "rows": 0,
+      "rows_ilike_FREE-ENERGY": 0,
+      "table_total_rows": 65,
+      "conclusion": "declared sole machine judge absent -> L4 cannot be confirmed on table basis"
+    },
+    "repro_cmd_rerun": {
+      "cmd": "cd /root/tp-agent/work/m17763 && python experiments/xval_ludwig_fe_stress/run_xval.py",
+      "result": "exit 0; printed summary reproduces experiments/xval_ludwig_fe_stress/results.json to all printed digits; git status clean afterwards (results.json byte-identical) -> deterministic"
+    },
+    "tests_rerun": {
+      "cmd": "cd /root/tp-agent/work/m17763 && python -m pytest tests/test_free_energy_stress.py -q",
+      "result": "3 passed, 1 warning in 5.28s",
+      "note": "assertions are invariant-bearing (analytic sigma, vanishing equilibrium force, curved sigma), thresholds <15% (owner band)"
+    },
+    "independent_sigma_recompute": {
+      "method": "auditor-side numpy, central difference on the SAME analytic tanh profile, window +-8 xi on L=256 (does not import tensorlbm)",
+      "values": [
+        {"kappa": 2.0, "xi": 2.0, "sigma_ref": 1.3333333, "sigma_discrete": 1.2521403, "rel_err": 0.06089},
+        {"kappa": 8.0, "xi": 4.0, "sigma_ref": 2.6666667, "sigma_discrete": 2.6232546, "rel_err": 0.01628},
+        {"kappa": 32.0, "xi": 8.0, "sigma_ref": 5.3333333, "sigma_discrete": 5.3112430, "rel_err": 0.00414}
+      ],
+      "agreement_with_deliverable": "max |delta| = 0.00000 (deliverable results.json: 6.0895e-2 / 1.62795e-2 / 4.14202e-3) -> numbers not hand-carried",
+      "observed_order": "6.089/1.628 = 3.74, 1.628/0.414 = 3.93 -> ~2nd order (h^2/xi^2)"
+    },
+    "periodic_seam_control": {
+      "method": "full-domain trapezoid of kappa(dphi/dx)^2 including the seam",
+      "values": {"xi=2.0": 3.2521, "xi=4.0": 10.6233, "xi=8.0": 37.3113},
+      "conclusion": "seam pseudo-interface inflates sigma by 144%-600%; the +-8xi window is a NECESSARY control, corroborating the deliverable's stated failure mode 1"
+    },
+    "analytic_identity_check": {
+      "method": "auditor symbolic derivation: p0=phi f'(phi)-f = a/2 phi^2 + 3b/4 phi^4; P_ab = d delta_ab + kappa d_a phi d_b phi, d = p0 - kappa phi lap(phi) - kappa/2 |grad phi|^2",
+      "result": "d_b P_ab = phi d_a mu exactly (the a*phi+3b*phi^3 term from p0' cancels against phi*(a+3b phi^2)); hence -div P == -phi grad mu identically in the continuum",
+      "conclusion": "the transplanted formula is analytically correct, and the two force forms are provably identical in the continuum -> the 104% pointwise difference is a discrete residual artifact, not a physics discrepancy"
+    },
+    "external_anchor_corroboration": {
+      "snapshot": "/tmp/ludwig_tar/ludwig-master (ludwig-cf/ludwig, loongarch64 build artifacts)",
+      "source_text_present": false,
+      "source_text_check": "ls /tmp/ludwig_tar/ludwig-master/src/*.c -> 0 files -> deliverable claim 'source text not in snapshot' confirmed",
+      "symbol_checks": {
+        "/tmp/ludwig_tar/ludwig-master/src/symmetric.o": "nm -> fe_symm_str, fe_symm_str_v, fe_symm_interfacial_tension, fe_symm_interfacial_width present",
+        "/tmp/ludwig_tar/ludwig-master/src/symmetric.o decodedline": "debug lines 400,401,402,404,405,406,408,409,410 present in the claimed fe_symm_str_v range",
+        "/tmp/ludwig_tar/ludwig-master/src/symmetric.o .rodata.cst8": "IEEE-754 doubles 0.25, 0.5, 0.75, -8.0, 9.0, -2.0, pi, 180.0, 6.0, 12.0, 8.0, 10.0, 2.0, 1.0, 4.0 -> the claimed .LC constants 0.5/0.75 and -8/9 exist",
+        "/tmp/ludwig_tar/ludwig-master/src/phi_force_stress.o": "nm -> pth_kernel, pth_stress_set, pth_stress, pth_stress_compute present (two-stage set-then-difference scheme as claimed)",
+        "/tmp/ludwig_tar/ludwig-master/src/fe_force_method.o": "strings -> FE_FORCE_METHOD_NO_FORCE / RELAXATION_SYMM / RELAXATION_ANTI, 'stress_divergence' present"
+      },
+      "limitation": "which immediate constant binds to which source line was NOT re-derived by disassembly in this audit; corroboration is symbol/line/constant-presence level, not instruction-level"
+    },
+    "integration_probe": {
+      "grep_src_callers": "grep -rn 'free_energy_stress|stress_divergence_force|grad_mu_force' src/ (excluding the module itself) -> 0 hits",
+      "init_export": "grep -n free_energy_stress src/tensorlbm/__init__.py -> no hit (module not exported)",
+      "in_situ_alternative": "src/tensorlbm/multiphase.py:1223 free_energy_step still builds Fx=-phi*grad_mu_x (+rho_eff*gx) at lines 66-69 of the function body",
+      "conclusion": "no product-code path uses the new force -> L3 (system integration) not met"
+    },
+    "merge_state": {
+      "eco_repo_main": "/root/tensor-ecosystem/TensorLBM @ be78a87b",
+      "module_in_main": false,
+      "branch_contains_commit": "agent/m17763"
+    }
+  },
+
+  "checks_not_run": [
+    "LBM droplet/Laplace-pressure simulation driven by stress_divergence_force (no solver entry exists for it) -> solver-level benchmark unobserved",
+    "instruction-level disassembly re-derivation of ludwig .LC->source-line binding",
+    "3D (D3Q27) variant of the pressure tensor (deliverable declares 2D only)"
+  ],
+
+  "severity_ranked_findings": [
+    {"id": "F1", "severity": "blocking-for-L3", "finding": "force not wired into any solver path; free_energy_step unchanged", "evidence": "grep src/ -> 0 callers; multiphase.py:1223 body lines 66-69", "author_aware": true},
+    {"id": "F2", "severity": "blocking-for-L4", "finding": "anchor has no tensor_benchmark_cases row; sole declared judge absent (0/65 rows)", "evidence": "SQL lookup", "author_aware": false, "note": "same gap was found for m17713 -> systemic, not mission-specific"},
+    {"id": "F3", "severity": "minor-metric", "finding": "force_diff_rel divides by max|F_gradmu| which itself is a O(h^2) residual -> metric reaches 104% at equilibrium and is not a physical error measure", "evidence": "results.json summary.force_diff_rel 1.166/1.042/0.992", "author_aware": true, "remediation": "report absolute residual normalized by sigma/xi^2 (already tabulated) and mark force_diff_rel as ill-conditioned/withdrawn"},
+    {"id": "F4", "severity": "minor-scope", "finding": "5pt vs iso9 comparison is vacuous on a 1D planar profile (algebraically identical: 4/12+1/12+1/12=1/2); curved case uses iso9 only -> stencil sensitivity in 2D curvature untested", "evidence": "results.json planar.*_5pt == *_iso9 to 1e-15", "author_aware": true},
+    {"id": "F5", "severity": "minor-scope", "finding": "sigma is measured on a prescribed analytic tanh field, not on a simulated field -> discretization check, not a solver benchmark", "evidence": "run_xval.py:24-45 (no time stepping, no solver import)", "author_aware": true},
+    {"id": "F6", "severity": "none-verified-good", "finding": "analytic sigma formula and the div-P <-> -phi grad mu identity are correct; OSS constants/symbols corroborated", "evidence": "audit_numbers.checks_run.analytic_identity_check + external_anchor_corroboration", "author_aware": true},
+    {"id": "F7", "severity": "note", "finding": "deliverable quotes 15% band as the criterion; against a <3% line only xi>=4 passes (1.63%/0.41%), xi=2 (6.09%) fails", "evidence": "docs/XVAL_LUDWIG_FE_STRESS.md 判据结论", "author_aware": false}
+  ],
+
+  "overstated_claims": [
+    {"claim": "headline 'worst sigma error 6.09% / curved 1.64% / equilibrium residual 0.58-5.3% of sigma/xi^2'", "assessment": "accurate - reproduced independently"},
+    {"claim": "'XVAL 通过'", "assessment": "accurate against the predeclared 15% band; must not be read as a <3% pass (see F7)"},
+    {"claim": "force field agreement between the two forms", "assessment": "NOT claimed by the author; the 104% row is explicitly labelled honest FAIL -> no overstatement found"}
+  ],
+
+  "disposition": "approve with notes (L2); no rework required at L2 - L3/L4 gaps are explicit in the deliverable, and the missing benchmark row is a platform-side registration gap"
+}
