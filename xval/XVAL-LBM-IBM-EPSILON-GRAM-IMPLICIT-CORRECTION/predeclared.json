@@ -1,0 +1,64 @@
+{
+  "anchor": "XVAL-LBM-IBM-EPSILON-GRAM-IMPLICIT-CORRECTION",
+  "mission_id": 17862,
+  "date": "2026-11-13",
+  "oss_source": {
+    "repo": "joconnor22/LIFE",
+    "commit": "2af2428 (depth-1 clone, /tmp/life_latest)",
+    "feature": "ibm-epsilon-gram-implicit-correction",
+    "evidence_lines": [
+      "inc/Utils.h:220-231 diracDelta(): 3-point regularised delta, support |r|<=1.5; |r|<=0.5: (1+sqrt(1-3r^2))/3 ; 0.5<|r|<=1.5: (5-3r-sqrt(-3(1-r)^2+1))/6 ; else 0",
+      "src/IBMNode.cpp:175 support build: diracVal = diracDelta(distX)*diracDelta(distY) over lattice nodes in support",
+      "src/IBMNode.cpp:73-74 spread(): F_lattice += force * epsilon * ds * diracVal (per support node)",
+      "src/Objects.cpp:235-320 computeEpsilon(): A[i,j] = sum_s diracVal_i(s) * diracDelta(|x_j - x_i(s)|) * diracDelta(|y_j - y_i(s)|) * ds_j ; solve A*epsilon = b (b=1) via LAPACK",
+      "src/Objects.cpp:271-272 recompute only at t==0 for rigid bodies, every step for flexible bodies",
+      "src/Objects.cpp:238-250 UNI_EPSILON option: single global epsilon for all nodes (one body holder)"
+    ]
+  },
+  "decision": "Does transplanting LIFE's epsilon-Gram implicit correction (3-point delta + Gram system A*eps=1 + eps*ds*delta spreading) into TensorLBM's IBM force transfer reproduce the reference force-transfer fidelity, and what does the correction buy vs the uncorrected in-repo baseline?",
+  "alternatives": {
+    "A1_life_transplant": "TensorLBM IBM force spread WITH LIFE epsilon-Gram correction: LIFE 3-point delta, A*eps=1 solved per body, spread weight = eps*ds*diracVal (OSS semantics, line-cited)",
+    "A2_uncorrected_control": "Same LIFE 3-point delta, epsilon=1 (no correction) -- isolates the correction as the single changed variable",
+    "A3_inrepo_baseline": "TensorLBM existing ibm_force_spread (hat / 4pt kernel, no correction) -- the current in-repo baseline for the difference list"
+  },
+  "hypothesis": "H1: the epsilon-Gram correction drives the force-transfer round-trip (spread then interpolate) error to ~machine precision and conserves total deposited force, whereas the uncorrected arm (A2) shows a kernel-normalisation error O(delta discretisation). H0 (falsifier): A1 round-trip error >= 1e-6 OR A1 total-force conservation error >= 15%.",
+  "metrics": {
+    "roundtrip_l2_rel": "||F_recovered - F_target||_2 / ||F_target||_2 over markers, after spread->interpolate",
+    "roundtrip_maxabs_rel": "max_k |F_recovered_k - F_target_k| / max_k |F_target_k|",
+    "total_force_conservation_rel": "|sum_j F_grid_j - sum_m f_m ds_m| / |sum_m f_m ds_m| (x and y separately)",
+    "epsilon_stats": "min/max/mean of epsilon across markers (diagnostic: how far from 1 the correction is)"
+  },
+  "unit_of_analysis": "one (marker_layout, force_field, arm) configuration; KPIs are scalars",
+  "baseline_control": {
+    "physical_baseline": "the target marker force field itself (exact, zero hand-copy): round-trip reference is the input force",
+    "representation_control": "A1 vs A2 share the identical LIFE 3-point delta kernel, identical marker layout, identical ds; the ONLY changed variable is epsilon (solved vs 1)",
+    "oss_note": "LIFE is a C++ LBM-IBM-FEM FSI solver requiring LAPACK/Boost and a full FSI case; this environment runs the semantics-exact transplant of its delta kernel, support build, Gram system and spreading rule (cited line by line) into TensorLBM, not an execution of the OSS binary. Recorded as a comparison limit, not silently upgraded."
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "roundtrip_identity_rel": 1e-06,
+    "total_force_conservation_rel": 1e-06,
+    "interpretation": "H1 holds iff A1 round-trip L2 rel < 1e-6 AND A1 total-force conservation rel < 1e-6; the 15% owner band is the acceptance floor for any physics KPI, but the correction is a representation/normalisation fix so it is held to a 1e-6 identity threshold (6 orders stricter) because a normalisation fix must be exact",
+    "convergence_rule": "a KPI is spacing-converged when |KPI(N=32)-KPI(N=16)|/|KPI(N=32)| < 5%; otherwise the finer value is reported and the spacing delta is reported as a sensitivity result"
+  },
+  "stopping_rule": "round-trip arms are single-shot (no time integration); the physics arm (cylinder drag) runs a fixed predeclared step count and stops early only on the predeclared steady criterion; no arm is extended after looking at KPIs. Wall-clock budget 900 s per arm on CPU; anything above moves to the cluster queue.",
+  "variables_changed": [
+    "epsilon (solved Gram system vs 1) -- the correction under test",
+    "marker count N (16, 32) -- spacing sensitivity",
+    "force field (constant (1,0) vs radial (cos,sin)) -- field sensitivity"
+  ],
+  "variables_held_fixed": [
+    "LIFE 3-point delta kernel (identical in A1 and A2)",
+    "marker layout (circle of radius R=10 in a 64x64 periodic grid, center (32,32))",
+    "ds = 2*pi*R/N per marker",
+    "float64, single CPU process"
+  ],
+  "physics_arm": {
+    "case": "2D fixed cylinder in uniform flow, force-based IBM, Re=100 (u=0.1, D=8, nu=0.08 -> tau=0.53)",
+    "reference": "time-averaged drag coefficient Cd vs literature band for 2D cylinder at Re=100 (Cd ~ 1.5-2.0)",
+    "arms": "A1 (epsilon-Gram corrected force spread) vs A2 (uncorrected)",
+    "note": "secondary physics arm; the round-trip/conservation arm is the primary XVAL of the correction"
+  },
+  "analysis": "report A1 vs A2 vs A3 per KPI with explicit pass/fail vs the predeclared thresholds; distinguish the correction effect (A1 vs A2) from the kernel effect (A2 vs A3); no threshold tuning after seeing results",
+  "safety_resource_limits": "CPU float64, single process, 900 s wall-clock budget per arm; cluster queue for anything heavier"
+}
