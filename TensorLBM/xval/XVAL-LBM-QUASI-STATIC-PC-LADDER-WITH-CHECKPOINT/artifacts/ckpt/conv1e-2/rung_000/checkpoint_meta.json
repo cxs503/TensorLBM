@@ -1,0 +1,25 @@
+{
+  "format_version": 1,
+  "step": 100,
+  "tensor_shape": [
+    20,
+    44,
+    128
+  ],
+  "tensor_dtype": "torch.float32",
+  "lattice_directions": 20,
+  "rung": 0,
+  "g": 0.0,
+  "pressure": 0.0,
+  "shape": [
+    44,
+    128
+  ],
+  "state_sha256": "0a8353b28e4ab5a91c64a958557ddf86f9ee251a7cfd4d67fc9a260d8b715165",
+  "gravity": [
+    0.0,
+    0.0
+  ],
+  "policy": "contact",
+  "contact_angle_deg": 60.0
+}

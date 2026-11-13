@@ -1,0 +1,993 @@
+{
+  "anchor": "XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT",
+  "oss": "je-santos/MPLBM-UT",
+  "tag": "quasi-static-pc-ladder-with-checkpoint",
+  "config": {
+    "rho_l": 1.0,
+    "rho_g": 0.1,
+    "mu_l": 0.2,
+    "mu_g": 0.02,
+    "sigma": 0.05,
+    "width": 3.0,
+    "mobility": 0.05,
+    "mu_law": "harmonic",
+    "p0": 0.01,
+    "gravity": [
+      0.0,
+      0.0
+    ],
+    "gravity_mode": "rho",
+    "axes": "pp",
+    "theta_deg": 60.0,
+    "grid": [
+      44,
+      128
+    ],
+    "r_wide": 20.0,
+    "r_min": 8.0,
+    "throat": [
+      78.0,
+      16.0
+    ],
+    "plug": [
+      26.0,
+      56.0
+    ]
+  },
+  "cases": {
+    "E0_measurement": {
+      "sigma_input": 0.05,
+      "radius_init": 20.0,
+      "radius_equiv": 20.0585068271871,
+      "kappa_band": 0.04988029479982244,
+      "kappa_from_Req": 0.04985415956508837,
+      "kappa_rel_err_vs_Req": 0.0005242337843436003,
+      "dp_field": 0.0015373658259620806,
+      "sigma_kappa": 0.0024940147399911223,
+      "sigma_effective_from_dp": 0.030821105451196193,
+      "laplace_relerr_field": 0.3835778909760762,
+      "steps": 400,
+      "wall_time_s": 3.879464864730835
+    },
+    "E1_ladder": {
+      "num_pc_steps": 6,
+      "pressures": [
+        0.0005208333333333335,
+        0.001041666666666667,
+        0.0015625000000000005,
+        0.002083333333333334,
+        0.002604166666666668,
+        0.003125000000000001
+      ],
+      "conv": 0.0001,
+      "it_conv": 50,
+      "it_max": 200,
+      "rows": [
+        {
+          "rung": 0,
+          "pressure": 0.0,
+          "g": 0.0,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": 0.0021882507762669475,
+          "u_prev": 0.002186696701382381,
+          "u_rate": 0.002186696701382381,
+          "u_max": 0.010935109125278886,
+          "meas": {
+            "row": 22,
+            "x_lead": 54.0,
+            "x_trail": 28.0,
+            "x_mid": 41.0,
+            "plug_length": 26.0,
+            "kappa_lead": 0.014542268589138985,
+            "kappa_trail": 0.0160054974257946,
+            "ok": true
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_000",
+            "rung": 0,
+            "g": 0.0,
+            "pressure": 0.0,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "89928ece9504d0f7873d669880ad564c605f8e084404b504a9908a9ae40af997",
+            "gravity": [
+              0.0,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": -7.316144183278084e-05,
+            "drho_g_L": 0.0,
+            "relerr": 7.316144183278083e+25,
+            "ratio": NaN
+          }
+        },
+        {
+          "rung": 1,
+          "pressure": 0.0005208333333333335,
+          "g": 1.929012345679013e-05,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": NaN,
+          "u_prev": NaN,
+          "u_rate": NaN,
+          "u_max": NaN,
+          "meas": {
+            "x_lead": NaN,
+            "x_trail": NaN,
+            "x_mid": NaN,
+            "plug_length": NaN,
+            "kappa_lead": NaN,
+            "kappa_trail": NaN,
+            "ok": false
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_001",
+            "rung": 1,
+            "g": 1.929012345679013e-05,
+            "pressure": 0.0005208333333333335,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "1e5b1e039a1ade393dc1a63474a6c6f8ed28354b3a29b6a72ee87e3f674d4cbc",
+            "gravity": [
+              1.929012345679013e-05,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": NaN,
+            "drho_g_L": 0.0005208333333333335,
+            "relerr": NaN,
+            "ratio": NaN
+          }
+        },
+        {
+          "rung": 2,
+          "pressure": 0.001041666666666667,
+          "g": 3.858024691358026e-05,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": NaN,
+          "u_prev": NaN,
+          "u_rate": NaN,
+          "u_max": NaN,
+          "meas": {
+            "x_lead": NaN,
+            "x_trail": NaN,
+            "x_mid": NaN,
+            "plug_length": NaN,
+            "kappa_lead": NaN,
+            "kappa_trail": NaN,
+            "ok": false
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_002",
+            "rung": 2,
+            "g": 3.858024691358026e-05,
+            "pressure": 0.001041666666666667,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+            "gravity": [
+              3.858024691358026e-05,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": NaN,
+            "drho_g_L": 0.001041666666666667,
+            "relerr": NaN,
+            "ratio": NaN
+          }
+        },
+        {
+          "rung": 3,
+          "pressure": 0.0015625000000000005,
+          "g": 5.787037037037039e-05,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": NaN,
+          "u_prev": NaN,
+          "u_rate": NaN,
+          "u_max": NaN,
+          "meas": {
+            "x_lead": NaN,
+            "x_trail": NaN,
+            "x_mid": NaN,
+            "plug_length": NaN,
+            "kappa_lead": NaN,
+            "kappa_trail": NaN,
+            "ok": false
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_003",
+            "rung": 3,
+            "g": 5.787037037037039e-05,
+            "pressure": 0.0015625000000000005,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+            "gravity": [
+              5.787037037037039e-05,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": NaN,
+            "drho_g_L": 0.0015625000000000007,
+            "relerr": NaN,
+            "ratio": NaN
+          }
+        },
+        {
+          "rung": 4,
+          "pressure": 0.002083333333333334,
+          "g": 7.716049382716052e-05,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": NaN,
+          "u_prev": NaN,
+          "u_rate": NaN,
+          "u_max": NaN,
+          "meas": {
+            "x_lead": NaN,
+            "x_trail": NaN,
+            "x_mid": NaN,
+            "plug_length": NaN,
+            "kappa_lead": NaN,
+            "kappa_trail": NaN,
+            "ok": false
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_004",
+            "rung": 4,
+            "g": 7.716049382716052e-05,
+            "pressure": 0.002083333333333334,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+            "gravity": [
+              7.716049382716052e-05,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": NaN,
+            "drho_g_L": 0.002083333333333334,
+            "relerr": NaN,
+            "ratio": NaN
+          }
+        },
+        {
+          "rung": 5,
+          "pressure": 0.002604166666666668,
+          "g": 9.645061728395067e-05,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": NaN,
+          "u_prev": NaN,
+          "u_rate": NaN,
+          "u_max": NaN,
+          "meas": {
+            "x_lead": NaN,
+            "x_trail": NaN,
+            "x_mid": NaN,
+            "plug_length": NaN,
+            "kappa_lead": NaN,
+            "kappa_trail": NaN,
+            "ok": false
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_005",
+            "rung": 5,
+            "g": 9.645061728395067e-05,
+            "pressure": 0.002604166666666668,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+            "gravity": [
+              9.645061728395067e-05,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": NaN,
+            "drho_g_L": 0.002604166666666668,
+            "relerr": NaN,
+            "ratio": NaN
+          }
+        },
+        {
+          "rung": 6,
+          "pressure": 0.003125000000000001,
+          "g": 0.00011574074074074079,
+          "steps": 200,
+          "converged": false,
+          "rel_rate": NaN,
+          "u_prev": NaN,
+          "u_rate": NaN,
+          "u_max": NaN,
+          "meas": {
+            "x_lead": NaN,
+            "x_trail": NaN,
+            "x_mid": NaN,
+            "plug_length": NaN,
+            "kappa_lead": NaN,
+            "kappa_trail": NaN,
+            "ok": false
+          },
+          "checkpoint": {
+            "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main/rung_006",
+            "rung": 6,
+            "g": 0.00011574074074074079,
+            "pressure": 0.003125000000000001,
+            "shape": [
+              44,
+              128
+            ],
+            "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+            "gravity": [
+              0.00011574074074074079,
+              0.0
+            ],
+            "policy": "contact",
+            "contact_angle_deg": 60.0
+          },
+          "laplace": {
+            "sigma_dkappa": NaN,
+            "drho_g_L": 0.0031250000000000015,
+            "relerr": NaN,
+            "ratio": NaN
+          }
+        }
+      ],
+      "log": [
+        "rung 0 p=0.0000e+00 steps=200 conv=False",
+        "rung 1 p=5.2083e-04 g=1.929e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+        "rung 2 p=1.0417e-03 g=3.858e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+        "rung 3 p=1.5625e-03 g=5.787e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+        "rung 4 p=2.0833e-03 g=7.716e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+        "rung 5 p=2.6042e-03 g=9.645e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+        "rung 6 p=3.1250e-03 g=1.157e-04 steps=200 conv=False x_lead=nan kap=(nan, nan)"
+      ],
+      "wall_time_s": 20.787446975708008,
+      "checkpoint_dir": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/main"
+    },
+    "E2_resume": {
+      "error": "TypeError: 'RungRecord' object is not subscriptable"
+    },
+    "E3_single_shot": {
+      "total_pressure": 0.003125000000000001,
+      "steps_budget": 300,
+      "rung": {
+        "rung": 1,
+        "pressure": 0.003125000000000001,
+        "g": 0.00011574074074074079,
+        "steps": 300,
+        "converged": false,
+        "rel_rate": NaN,
+        "u_prev": NaN,
+        "u_rate": NaN,
+        "u_max": NaN,
+        "meas": {
+          "x_lead": NaN,
+          "x_trail": NaN,
+          "x_mid": NaN,
+          "plug_length": NaN,
+          "kappa_lead": NaN,
+          "kappa_trail": NaN,
+          "ok": false
+        },
+        "checkpoint": null
+      },
+      "laplace": {
+        "sigma_dkappa": NaN,
+        "drho_g_L": 0.0031250000000000015,
+        "relerr": NaN,
+        "ratio": NaN
+      }
+    },
+    "E4_sensitivity": {
+      "rungs4": {
+        "num_pc_steps": 4,
+        "pressures": [
+          0.0007812500000000003,
+          0.0015625000000000005,
+          0.0023437500000000008,
+          0.003125000000000001
+        ],
+        "conv": 0.0001,
+        "it_conv": 50,
+        "it_max": 200,
+        "rows": [
+          {
+            "rung": 0,
+            "pressure": 0.0,
+            "g": 0.0,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": 0.0021882507762669475,
+            "u_prev": 0.002186696701382381,
+            "u_rate": 0.002186696701382381,
+            "u_max": 0.010935109125278886,
+            "meas": {
+              "row": 22,
+              "x_lead": 54.0,
+              "x_trail": 28.0,
+              "x_mid": 41.0,
+              "plug_length": 26.0,
+              "kappa_lead": 0.014542268589138985,
+              "kappa_trail": 0.0160054974257946,
+              "ok": true
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/rungs4/rung_000",
+              "rung": 0,
+              "g": 0.0,
+              "pressure": 0.0,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "89928ece9504d0f7873d669880ad564c605f8e084404b504a9908a9ae40af997",
+              "gravity": [
+                0.0,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": -7.316144183278084e-05,
+              "drho_g_L": 0.0,
+              "relerr": 7.316144183278083e+25,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 1,
+            "pressure": 0.0007812500000000003,
+            "g": 2.8935185185185196e-05,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/rungs4/rung_001",
+              "rung": 1,
+              "g": 2.8935185185185196e-05,
+              "pressure": 0.0007812500000000003,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                2.8935185185185196e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.0007812500000000004,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 2,
+            "pressure": 0.0015625000000000005,
+            "g": 5.787037037037039e-05,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/rungs4/rung_002",
+              "rung": 2,
+              "g": 5.787037037037039e-05,
+              "pressure": 0.0015625000000000005,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                5.787037037037039e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.0015625000000000007,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 3,
+            "pressure": 0.0023437500000000008,
+            "g": 8.680555555555559e-05,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/rungs4/rung_003",
+              "rung": 3,
+              "g": 8.680555555555559e-05,
+              "pressure": 0.0023437500000000008,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                8.680555555555559e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.0023437500000000008,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 4,
+            "pressure": 0.003125000000000001,
+            "g": 0.00011574074074074079,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/rungs4/rung_004",
+              "rung": 4,
+              "g": 0.00011574074074074079,
+              "pressure": 0.003125000000000001,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                0.00011574074074074079,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.0031250000000000015,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          }
+        ],
+        "log": [
+          "rung 0 p=0.0000e+00 steps=200 conv=False",
+          "rung 1 p=7.8125e-04 g=2.894e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+          "rung 2 p=1.5625e-03 g=5.787e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+          "rung 3 p=2.3438e-03 g=8.681e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+          "rung 4 p=3.1250e-03 g=1.157e-04 steps=200 conv=False x_lead=nan kap=(nan, nan)"
+        ],
+        "wall_time_s": 16.1209876537323,
+        "checkpoint_dir": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/rungs4"
+      },
+      "conv1e-2": {
+        "num_pc_steps": 6,
+        "pressures": [
+          0.0005208333333333335,
+          0.001041666666666667,
+          0.0015625000000000005,
+          0.002083333333333334,
+          0.002604166666666668,
+          0.003125000000000001
+        ],
+        "conv": 0.01,
+        "it_conv": 50,
+        "it_max": 200,
+        "rows": [
+          {
+            "rung": 0,
+            "pressure": 0.0,
+            "g": 0.0,
+            "steps": 100,
+            "converged": true,
+            "rel_rate": 0.00898393715509323,
+            "u_prev": 0.002211214710356031,
+            "u_rate": 0.002211214710356031,
+            "u_max": 0.014108545465433412,
+            "meas": {
+              "row": 22,
+              "x_lead": 55.0,
+              "x_trail": 27.0,
+              "x_mid": 41.0,
+              "plug_length": 28.0,
+              "kappa_lead": 0.015158929862082005,
+              "kappa_trail": 0.015675293281674385,
+              "ok": true
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_000",
+              "rung": 0,
+              "g": 0.0,
+              "pressure": 0.0,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "0a8353b28e4ab5a91c64a958557ddf86f9ee251a7cfd4d67fc9a260d8b715165",
+              "gravity": [
+                0.0,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": -2.581817097961903e-05,
+              "drho_g_L": 0.0,
+              "relerr": 2.5818170979619028e+25,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 1,
+            "pressure": 0.0005208333333333335,
+            "g": 1.929012345679013e-05,
+            "steps": 100,
+            "converged": true,
+            "rel_rate": 0.0001451305709616071,
+            "u_prev": 0.002546427551721729,
+            "u_rate": 0.002546427551721729,
+            "u_max": 0.011541322925051388,
+            "meas": {
+              "row": 22,
+              "x_lead": 54.0,
+              "x_trail": 28.0,
+              "x_mid": 41.0,
+              "plug_length": 26.0,
+              "kappa_lead": 0.021026795729994774,
+              "kappa_trail": 0.01560291089117527,
+              "ok": true
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_001",
+              "rung": 1,
+              "g": 1.929012345679013e-05,
+              "pressure": 0.0005208333333333335,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "be4cc1495f807e18ba7a0f4f5a771ce21d1be63eaac448fbd4c20fd9dc5e5e2c",
+              "gravity": [
+                1.929012345679013e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": 0.0002711942419409752,
+              "drho_g_L": 0.0005208333333333335,
+              "relerr": 0.4793070554733278,
+              "ratio": 0.5206929445266723
+            }
+          },
+          {
+            "rung": 2,
+            "pressure": 0.001041666666666667,
+            "g": 3.858024691358026e-05,
+            "steps": 100,
+            "converged": true,
+            "rel_rate": 0.0059840354719821204,
+            "u_prev": 0.0036970613861925703,
+            "u_rate": 0.0036970613861925703,
+            "u_max": 0.009777347938195928,
+            "meas": {
+              "row": 22,
+              "x_lead": 54.0,
+              "x_trail": 29.0,
+              "x_mid": 41.5,
+              "plug_length": 25.0,
+              "kappa_lead": 0.027587173506617546,
+              "kappa_trail": 0.01742086000740528,
+              "ok": true
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_002",
+              "rung": 2,
+              "g": 3.858024691358026e-05,
+              "pressure": 0.001041666666666667,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "6ff36c52b1b5ffd7c7783930936fec395b287735914bad95c9860bcc34cd2011",
+              "gravity": [
+                3.858024691358026e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": 0.0005083156749606133,
+              "drho_g_L": 0.001041666666666667,
+              "relerr": 0.5120169520378114,
+              "ratio": 0.48798304796218855
+            }
+          },
+          {
+            "rung": 3,
+            "pressure": 0.0015625000000000005,
+            "g": 5.787037037037039e-05,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_003",
+              "rung": 3,
+              "g": 5.787037037037039e-05,
+              "pressure": 0.0015625000000000005,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                5.787037037037039e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.0015625000000000007,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 4,
+            "pressure": 0.002083333333333334,
+            "g": 7.716049382716052e-05,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_004",
+              "rung": 4,
+              "g": 7.716049382716052e-05,
+              "pressure": 0.002083333333333334,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                7.716049382716052e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.002083333333333334,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 5,
+            "pressure": 0.002604166666666668,
+            "g": 9.645061728395067e-05,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_005",
+              "rung": 5,
+              "g": 9.645061728395067e-05,
+              "pressure": 0.002604166666666668,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                9.645061728395067e-05,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.002604166666666668,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          },
+          {
+            "rung": 6,
+            "pressure": 0.003125000000000001,
+            "g": 0.00011574074074074079,
+            "steps": 200,
+            "converged": false,
+            "rel_rate": NaN,
+            "u_prev": NaN,
+            "u_rate": NaN,
+            "u_max": NaN,
+            "meas": {
+              "x_lead": NaN,
+              "x_trail": NaN,
+              "x_mid": NaN,
+              "plug_length": NaN,
+              "kappa_lead": NaN,
+              "kappa_trail": NaN,
+              "ok": false
+            },
+            "checkpoint": {
+              "path": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2/rung_006",
+              "rung": 6,
+              "g": 0.00011574074074074079,
+              "pressure": 0.003125000000000001,
+              "shape": [
+                44,
+                128
+              ],
+              "state_sha256": "8298ced58f373a27fd348acdf00e7334d8f88b177436f2d1ea4d897df523f7ae",
+              "gravity": [
+                0.00011574074074074079,
+                0.0
+              ],
+              "policy": "contact",
+              "contact_angle_deg": 60.0
+            },
+            "laplace": {
+              "sigma_dkappa": NaN,
+              "drho_g_L": 0.0031250000000000015,
+              "relerr": NaN,
+              "ratio": NaN
+            }
+          }
+        ],
+        "log": [
+          "rung 0 p=0.0000e+00 steps=100 conv=True",
+          "rung 1 p=5.2083e-04 g=1.929e-05 steps=100 conv=True x_lead=54.0 kap=(0.01560291089117527, 0.021026795729994774)",
+          "rung 2 p=1.0417e-03 g=3.858e-05 steps=100 conv=True x_lead=54.0 kap=(0.01742086000740528, 0.027587173506617546)",
+          "rung 3 p=1.5625e-03 g=5.787e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+          "rung 4 p=2.0833e-03 g=7.716e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+          "rung 5 p=2.6042e-03 g=9.645e-05 steps=200 conv=False x_lead=nan kap=(nan, nan)",
+          "rung 6 p=3.1250e-03 g=1.157e-04 steps=200 conv=False x_lead=nan kap=(nan, nan)"
+        ],
+        "wall_time_s": 16.893243551254272,
+        "checkpoint_dir": "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/ckpt/conv1e-2"
+      }
+    }
+  },
+  "figures": [
+    "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/fig_ladder.png",
+    "/root/tp-agent/work/m18236/TensorLBM/xval/XVAL-LBM-QUASI-STATIC-PC-LADDER-WITH-CHECKPOINT/artifacts/fig_e0.png"
+  ],
+  "wall_time_s": 92.16654348373413
+}
