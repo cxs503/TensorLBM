@@ -1,0 +1,594 @@
+{
+  "anchor": "XVAL-LBM-ALLEN-CAHN-CSF-FORCE-CHAIN",
+  "mission": 17515,
+  "round": "repair-1 (L2 entry / L3 integration / L4 benchmark)",
+  "reference": {
+    "package": "lbmpy (lssfau/lbmpy) 2.0 / pystencils 2.0",
+    "module": "lbmpy.phasefield_allen_cahn (Fakhari & van der Graaf, Phys. Rev. E 96, 053301)",
+    "provenance": {
+      "package": "lbmpy",
+      "version": "2.0",
+      "origin": "lssfau/lbmpy (OSS inventory entry: allen-cahn-csf-force-chain)",
+      "pystencils_version": "2.0",
+      "source_files": {
+        "phasefield_allen_cahn/kernel_equations.py": {
+          "path": "/usr/lib/python3.11/site-packages/lbmpy/phasefield_allen_cahn/kernel_equations.py",
+          "sha256": "6cc3ed5fbb45fd0f97dd99bde46a4bd2f7940a3be51c6848edcb5833d9fa2b75"
+        },
+        "phasefield_allen_cahn/derivatives.py": {
+          "path": "/usr/lib/python3.11/site-packages/lbmpy/phasefield_allen_cahn/derivatives.py",
+          "sha256": "df89b675bf726726d2232c55fa4341d0d8017803da7a93ee815bc79ba35b2818"
+        },
+        "phasefield_allen_cahn/parameter_calculation.py": {
+          "path": "/usr/lib/python3.11/site-packages/lbmpy/phasefield_allen_cahn/parameter_calculation.py",
+          "sha256": "c6ad9183ec0e781a85c2ef2906358ea856d2eff433499327b6bc7f38a9667c8c"
+        }
+      },
+      "python": "3.11.6"
+    }
+  },
+  "thresholds": {
+    "rel_l2_force": 0.15,
+    "sigma_error": 0.15
+  },
+  "headline": {
+    "C2_droplet_R16_rel_l2_force_ref_vs_got_central7": 0.1121475310319359,
+    "C2_droplet_R16_rel_l2_force_ref_vs_got_isotropic": 1.1696360685105806e-14,
+    "worst_case_rel_l2_force_central7": 0.205830984119509,
+    "worst_case_rel_l2_force_isotropic": 1.3378098211467869e-14,
+    "cases_central7_failing_15pct": [
+      "C3-droplet-W3"
+    ],
+    "cases_isotropic_failing_15pct": [],
+    "sigma_recovery_all_within_15pct": true
+  },
+  "kernel_integration": {
+    "case": "I1-production-kernel",
+    "grid_zyx": [
+      32,
+      32,
+      32
+    ],
+    "variants": {
+      "central7": {
+        "rel_l2_kernel_vs_lbmpy": 0.06084215984962552,
+        "rel_l2_kernel_vs_free_energy": 6.516002113369458e-11
+      },
+      "isotropic_d3q19": {
+        "rel_l2_kernel_vs_lbmpy": 6.549748843549204e-11,
+        "rel_l2_kernel_vs_free_energy": 6.549776590812596e-11
+      }
+    },
+    "operator_changes_kernel": true
+  },
+  "cases": [
+    {
+      "case": "C1-planar",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 5.019786988332667e-16,
+          "error_pct": 5.019786988332667e-14,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": null,
+          "got_sigma_recovered": null,
+          "got_error_pct": null,
+          "ref_self_error_pct": null,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": null,
+          "got": null,
+          "ratio_got_over_ref": null
+        }
+      }
+    },
+    {
+      "case": "C1-planar",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 2.9180863266704633e-16,
+          "error_pct": 2.918086326670463e-14,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": null,
+          "got_sigma_recovered": null,
+          "got_error_pct": null,
+          "ref_self_error_pct": null,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": null,
+          "got": null,
+          "ratio_got_over_ref": null
+        }
+      }
+    },
+    {
+      "case": "C2-droplet-R16",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.1121475310319359,
+          "error_pct": 11.214753103193589,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009352970757147383,
+          "got_sigma_recovered": 0.009599827734555845,
+          "got_error_pct": -4.0017226544415525,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.011546518416577984,
+          "ratio_got_over_ref": 23.32291353816751
+        }
+      }
+    },
+    {
+      "case": "C2-droplet-R16",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 1.1696360685105806e-14,
+          "error_pct": 1.1696360685105807e-12,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009352970757147383,
+          "got_sigma_recovered": 0.009352970757147463,
+          "got_error_pct": -6.4702924285253705,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.0005029872099073951,
+          "ratio_got_over_ref": 0.9999999999999972
+        }
+      }
+    },
+    {
+      "case": "C3-droplet-W3",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.205830984119509,
+          "error_pct": 20.5830984119509,
+          "pass_lt_15pct": false
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.008824794195971106,
+          "got_sigma_recovered": 0.009241767989950776,
+          "got_error_pct": -7.582320100492246,
+          "ref_self_error_pct": -11.752058040288937,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0013172501309321892,
+          "got": 0.019202876397555035,
+          "ratio_got_over_ref": 14.176985129763144
+        }
+      }
+    },
+    {
+      "case": "C3-droplet-W3",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 6.371555802822232e-15,
+          "error_pct": 6.371555802822232e-13,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.008824794195971106,
+          "got_sigma_recovered": 0.008824794195971108,
+          "got_error_pct": -11.752058040288926,
+          "ref_self_error_pct": -11.752058040288937,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0013172501309321892,
+          "got": 0.001317250130932188,
+          "ratio_got_over_ref": 0.9999999999999979
+        }
+      }
+    },
+    {
+      "case": "C3-droplet-W4",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.1121475310319359,
+          "error_pct": 11.214753103193589,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009352970757147383,
+          "got_sigma_recovered": 0.009599827734555845,
+          "got_error_pct": -4.0017226544415525,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.011546518416577984,
+          "ratio_got_over_ref": 23.32291353816751
+        }
+      }
+    },
+    {
+      "case": "C3-droplet-W4",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 1.1696360685105806e-14,
+          "error_pct": 1.1696360685105807e-12,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009352970757147383,
+          "got_sigma_recovered": 0.009352970757147463,
+          "got_error_pct": -6.4702924285253705,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.0005029872099073951,
+          "ratio_got_over_ref": 0.9999999999999972
+        }
+      }
+    },
+    {
+      "case": "C3-droplet-W6",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.039902876583509696,
+          "error_pct": 3.9902876583509697,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009802372572366817,
+          "got_sigma_recovered": 0.009913832625778642,
+          "got_error_pct": -0.8616737422135867,
+          "ref_self_error_pct": -1.9762742763318242,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.00011263274140628261,
+          "got": 0.005291369732383721,
+          "ratio_got_over_ref": 47.702106023488376
+        }
+      }
+    },
+    {
+      "case": "C3-droplet-W6",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 1.3378098211467869e-14,
+          "error_pct": 1.337809821146787e-12,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009802372572366817,
+          "got_sigma_recovered": 0.009802372572366805,
+          "got_error_pct": -1.9762742763319463,
+          "ref_self_error_pct": -1.9762742763318242,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.00011263274140628261,
+          "got": 0.00011263274140628617,
+          "ratio_got_over_ref": 1.0000000000000273
+        }
+      }
+    },
+    {
+      "case": "C4-droplet-R8",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.0688148317540733,
+          "error_pct": 6.88148317540733,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009555944839470079,
+          "got_sigma_recovered": 0.009775238996114398,
+          "got_error_pct": -2.2476100388560183,
+          "ref_self_error_pct": -4.440551605299214,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005291980594794248,
+          "got": 0.011133409087625248,
+          "ratio_got_over_ref": 21.73245828877507
+        }
+      }
+    },
+    {
+      "case": "C4-droplet-R8",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 5.4881124214050854e-15,
+          "error_pct": 5.488112421405085e-13,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009555944839470079,
+          "got_sigma_recovered": 0.009555944839470113,
+          "got_error_pct": -4.44055160529887,
+          "ref_self_error_pct": -4.440551605299214,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005291980594794248,
+          "got": 0.0005291980594794277,
+          "ratio_got_over_ref": 1.0000000000000087
+        }
+      }
+    },
+    {
+      "case": "C4-droplet-R12",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.08976523482284504,
+          "error_pct": 8.976523482284504,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.00948773843097814,
+          "got_sigma_recovered": 0.009710628824389288,
+          "got_error_pct": -2.89371175610712,
+          "ref_self_error_pct": -5.122615690218613,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005119262378203358,
+          "got": 0.011451646288354654,
+          "ratio_got_over_ref": 22.9369406953259
+        }
+      }
+    },
+    {
+      "case": "C4-droplet-R12",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 7.912263168800478e-15,
+          "error_pct": 7.912263168800478e-13,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.00948773843097814,
+          "got_sigma_recovered": 0.00948773843097819,
+          "got_error_pct": -5.122615690218102,
+          "ref_self_error_pct": -5.122615690218613,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005119262378203358,
+          "got": 0.0005119262378203308,
+          "ratio_got_over_ref": 0.999999999999995
+        }
+      }
+    },
+    {
+      "case": "C4-droplet-R16",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.1121475310319359,
+          "error_pct": 11.214753103193589,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009352970757147383,
+          "got_sigma_recovered": 0.009599827734555845,
+          "got_error_pct": -4.0017226544415525,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.011546518416577984,
+          "ratio_got_over_ref": 23.32291353816751
+        }
+      }
+    },
+    {
+      "case": "C4-droplet-R16",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 1.1696360685105806e-14,
+          "error_pct": 1.1696360685105807e-12,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.01,
+          "ref_sigma_recovered_lbmpy": 0.009352970757147383,
+          "got_sigma_recovered": 0.009352970757147463,
+          "got_error_pct": -6.4702924285253705,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.0005029872099073951,
+          "ratio_got_over_ref": 0.9999999999999972
+        }
+      }
+    },
+    {
+      "case": "C5-droplet-sigma2e-02",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.1121475310319359,
+          "error_pct": 11.214753103193589,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.02,
+          "ref_sigma_recovered_lbmpy": 0.018705941514294767,
+          "got_sigma_recovered": 0.01919965546911169,
+          "got_error_pct": -4.0017226544415525,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.011546518416577984,
+          "ratio_got_over_ref": 23.32291353816751
+        }
+      }
+    },
+    {
+      "case": "C5-droplet-sigma2e-02",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 1.1696360685105806e-14,
+          "error_pct": 1.1696360685105807e-12,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.02,
+          "ref_sigma_recovered_lbmpy": 0.018705941514294767,
+          "got_sigma_recovered": 0.018705941514294926,
+          "got_error_pct": -6.4702924285253705,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.0005029872099073951,
+          "ratio_got_over_ref": 0.9999999999999972
+        }
+      }
+    },
+    {
+      "case": "C5-droplet-sigma5e-03",
+      "operator": "central7",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 0.1121475310319359,
+          "error_pct": 11.214753103193589,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.005,
+          "ref_sigma_recovered_lbmpy": 0.004676485378573692,
+          "got_sigma_recovered": 0.0047999138672779225,
+          "got_error_pct": -4.0017226544415525,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.011546518416577984,
+          "ratio_got_over_ref": 23.32291353816751
+        }
+      }
+    },
+    {
+      "case": "C5-droplet-sigma5e-03",
+      "operator": "isotropic_d3q19",
+      "ref": "lbmpy 2.0 phasefield_allen_cahn (symbolic kernels, evaluated numerically)",
+      "metric_ref_vs_got": {
+        "rel_l2_capillary_force": {
+          "ref_zero_by_definition": true,
+          "got": 1.1696360685105806e-14,
+          "error_pct": 1.1696360685105807e-12,
+          "pass_lt_15pct": true
+        },
+        "sigma_from_force_integral": {
+          "ref_sigma_input": 0.005,
+          "ref_sigma_recovered_lbmpy": 0.004676485378573692,
+          "got_sigma_recovered": 0.004676485378573732,
+          "got_error_pct": -6.4702924285253705,
+          "ref_self_error_pct": -6.47029242852617,
+          "pass_lt_15pct": true
+        },
+        "spurious_tangential_fraction": {
+          "ref": 0.0005029872099073986,
+          "got": 0.0005029872099073951,
+          "ratio_got_over_ref": 0.9999999999999972
+        }
+      }
+    }
+  ],
+  "repro_cmd": "python benchmarks/xval_allen_cahn_csf_force_chain/run.py --out artifacts/xval_allen_cahn_csf_force_chain",
+  "artifacts": [
+    "fig_force_chain_droplet.png",
+    "fig_force_chain_refinement.png",
+    "fig_force_error_slice.png",
+    "xval_allen_cahn_force_chain.csv",
+    "xval_allen_cahn_force_chain.json"
+  ]
+}
