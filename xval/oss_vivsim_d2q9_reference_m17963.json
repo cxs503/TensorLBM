@@ -1,0 +1,93 @@
+{
+  "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "oss": "haimingz/vivsim (inventoried, /tmp/vivsim_src)",
+  "problem": "2D D2Q9 Poiseuille channel, periodic x, no-slip top/bottom, body force x",
+  "params": {
+    "primary": {
+      "NX": 10,
+      "NY": 10,
+      "nu": 0.2,
+      "Gx": 0.001,
+      "steps": 100000
+    }
+  },
+  "runs": {
+    "vivsim_bgk_edm": {
+      "ux_profile": [
+        0.0,
+        0.022499999999999687,
+        0.03749999999999941,
+        0.04749999999999912,
+        0.05249999999999901,
+        0.05249999999999901,
+        0.04749999999999912,
+        0.037499999999999416,
+        0.022499999999999687,
+        0.0
+      ],
+      "err_global_vs_analytic": 0.04999999999999373,
+      "max_rel_err_vs_analytic_interior": 0.12499999999998432,
+      "umax": 0.05249999999999901,
+      "umax_analytic": 0.05,
+      "umax_rel_err": 0.0499999999999802
+    },
+    "vivsim_bgk_guo": {
+      "ux_profile": [
+        0.0,
+        0.022499999999999392,
+        0.0374999999999989,
+        0.04749999999999854,
+        0.052499999999998305,
+        0.05249999999999831,
+        0.04749999999999855,
+        0.037499999999998916,
+        0.022499999999999454,
+        0.0
+      ],
+      "err_global_vs_analytic": 0.04999999999998908,
+      "max_rel_err_vs_analytic_interior": 0.1249999999999727,
+      "umax": 0.05249999999999831,
+      "umax_analytic": 0.05,
+      "umax_rel_err": 0.04999999999996618
+    },
+    "tensorlbm_bgk_guo": {
+      "ux_profile": [
+        0.002199999999999919,
+        0.024699999999999438,
+        0.039699999999999125,
+        0.0496999999999989,
+        0.054699999999998784,
+        0.054699999999998784,
+        0.049699999999998905,
+        0.039699999999999125,
+        0.024699999999999438,
+        0.002199999999999919
+      ],
+      "err_global_vs_analytic": 0.09399999999998875,
+      "max_rel_err_vs_analytic_interior": 0.23499999999997187,
+      "umax": 0.054699999999998784,
+      "umax_analytic": 0.05,
+      "umax_rel_err": 0.09399999999997563
+    },
+    "cross_arm": {
+      "max_abs_diff_vs_vivsim_bgk_edm": 0.002199999999999919,
+      "err_global_vs_vivsim_bgk_edm": 0.04399999999999838
+    },
+    "grid_NY20_vivsim": {
+      "err_global_vs_analytic": 0.02222222222221552,
+      "umax_rel_err": 0.022222222222186592
+    },
+    "grid_NY20_tensorlbm": {
+      "err_global_vs_analytic": 0.03199999999999262,
+      "umax_rel_err": 0.03199999999996699
+    }
+  },
+  "verdict": {
+    "tensorlbm_err_global_vs_analytic": 0.09399999999998875,
+    "cross_arm_err_global": 0.04399999999999838,
+    "owner_threshold": 0.15,
+    "ecosystem_threshold": 0.03,
+    "pass_owner_15pct": true,
+    "pass_ecosystem_3pct": false
+  }
+}
