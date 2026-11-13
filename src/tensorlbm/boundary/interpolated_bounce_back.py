@@ -64,6 +64,7 @@ number of such links is returned for disclosure.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 import torch
 
@@ -74,6 +75,9 @@ from tensorlbm.d3q19 import OPPOSITE as _OPP3
 
 __all__ = [
     "InterpolatedBounceBackReport",
+    "alpha_bfl",
+    "alpha_cli",
+    "alpha_yli",
     "interpolated_bounce_back",
     "interpolated_bounce_back_2d",
     "interpolated_bounce_back_3d",
@@ -90,6 +94,47 @@ class InterpolatedBounceBackReport:
     q_min: float
     q_max: float
     q_mean: float
+
+
+def alpha_bfl(q: torch.Tensor) -> torch.Tensor:
+    """Bouzidi-Firdaouss-Lallemand rule: ``alpha = 2`` for ``q <= 1/2``, ``1/q`` above.
+
+    This is the rule pylbm encodes as ``BFLBounceBack`` / ``_alpha_bfl``
+    (``~/oss-cache/pylbm/pylbm/boundary.py``, ``alpha = 2`` for ``delta <= 0.5``
+    and ``1/delta`` otherwise); with it the general ``alpha`` closure below
+    collapses onto the two hard-coded branches of the historical operator.
+    """
+    return torch.where(q <= 0.5, torch.full_like(q, 2.0), 1.0 / q.clamp_min(0.5))
+
+
+def alpha_cli(q: torch.Tensor) -> torch.Tensor:
+    """Central linear interpolation ``alpha = 4/(1 + 2q)`` (pylbm ``CLIBounceBack``).
+
+    Substituting into ``alpha_hat = -1 + alpha (1/2 + q)`` gives ``alpha_hat = 1``
+    for every ``q``, i.e. this member of the family needs no post-collision
+    correction term (pylbm: "the scheme is parametrized without correction").
+    """
+    return 4.0 / (1.0 + 2.0 * q)
+
+
+def alpha_yli(q: torch.Tensor) -> torch.Tensor:
+    """Yu-Mei-Luo-Shyy rule ``alpha = 2/(1 + q)`` (pylbm ``YLIBounceBack``)."""
+    return 2.0 / (1.0 + q)
+
+
+def _resolve_alpha(
+    alpha: float | Callable[[torch.Tensor], torch.Tensor] | None,
+    q: torch.Tensor,
+) -> torch.Tensor:
+    """Materialise the per-link ``alpha`` coefficient of the interpolated closure."""
+    if alpha is None:
+        return alpha_bfl(q)
+    if callable(alpha):
+        out = alpha(q)
+        if not isinstance(out, torch.Tensor):
+            raise TypeError("alpha callable must return a torch.Tensor")
+        return out.to(device=q.device, dtype=q.dtype)
+    return torch.full_like(q, float(alpha))
 
 
 def _spatial_dims(field: torch.Tensor) -> tuple[int, ...]:
@@ -111,6 +156,9 @@ def interpolated_bounce_back(
     *,
     q_min: float = 0.05,
     q_max: float = 0.95,
+    alpha: float | Callable[[torch.Tensor], torch.Tensor] | None = None,
+    post_collision_correction: bool = False,
+    f_old: torch.Tensor | None = None,
     return_report: bool = False,
 ) -> torch.Tensor | tuple[torch.Tensor, InterpolatedBounceBackReport]:
     """Apply 2-point interpolated bounce-back on every cut link of an SDF geometry.
@@ -126,6 +174,29 @@ def interpolated_bounce_back(
         q_min, q_max: clipping of the interpolated wall distance.  The clip keeps
             the linear stencil bounded (weights in ``[0, 1]``); links whose
             geometric ``q`` falls outside are reported as clipped.
+        alpha: family parameter of the interpolated closure (pylbm
+            ``LinearBounceBack``): ``None`` keeps the Bouzidi-Firdaouss-Lallemand
+            rule (:func:`alpha_bfl`, the historical two-branch operator),
+            :func:`alpha_cli` / :func:`alpha_yli` select the central / YLI
+            members, and a float or callable ``alpha(q)`` gives a custom member.
+            The reflected value is
+
+                ``alpha_hat f_pre(i) + beta_hat f_pre(opp i) + beta f_new(i)``
+
+            with ``alpha_hat = -1 + alpha (1/2 + q)``, ``beta = 1 - alpha q``,
+            ``beta_hat = 1 - alpha/2`` (zero-velocity wall, so the antisymmetric
+            equilibrium term ``-alpha e^-_q(x_w)`` of the pylbm form vanishes).
+        post_collision_correction: add the ``K_hat (g^-_q + S^-_q)`` term with
+            ``K_hat = 1 - alpha_hat``, i.e. the antisymmetric part of the change
+            the collision and the source produced at the fluid node last step.
+            This is what makes the family *parametrized* (pylbm: steady state
+            then depends on the relaxation rates only through ``Lambda+ Lambda-``).
+            Requires ``f_old``.
+        f_old: pre-collision populations at the same time level as ``f_pre``
+            (``f_pre = collision(f_old) + source``); only used when
+            ``post_collision_correction`` is set.  Difference ``f_pre - f_old``
+            is the collision+source change, so a body-force source must be
+            included in ``f_pre`` for its antisymmetric part to enter the term.
         return_report: also return an :class:`InterpolatedBounceBackReport`.
 
     Returns:
@@ -145,6 +216,13 @@ def interpolated_bounce_back(
         raise ValueError("sdf must be positive on fluid cells")
     if bool((sdf[solid] >= 0).any()):
         raise ValueError("sdf must be negative on solid cells")
+    if post_collision_correction:
+        if f_old is None:
+            raise ValueError("post_collision_correction=True requires f_old")
+        if f_old.shape != f_pre.shape:
+            raise ValueError(
+                f"f_old/f_pre shape mismatch: {tuple(f_old.shape)} vs {tuple(f_pre.shape)}"
+            )
 
     dim = len(spatial)
     device = f_new.device
@@ -194,10 +272,17 @@ def interpolated_bounce_back(
         f_d_pre = f_pre[d]
         f_i_new = f_new[i]
 
-        low = 2.0 * clipped * f_i_pre + (1.0 - 2.0 * clipped) * f_i_new
-        w = 1.0 / (2.0 * clipped)
-        high = w * f_i_pre + (1.0 - w) * f_d_pre
-        val = torch.where(clipped < 0.5, low, high)
+        alpha_q = _resolve_alpha(alpha, clipped)
+        alpha_hat = -1.0 + alpha_q * (0.5 + clipped)
+        beta = 1.0 - alpha_q * clipped
+        beta_hat = 1.0 - 0.5 * alpha_q
+        val = alpha_hat * f_i_pre + beta_hat * f_d_pre + beta * f_i_new
+        if post_collision_correction:
+            # antisymmetric part of the collision+source change at the fluid node
+            assert f_old is not None  # guaranteed by validation above
+            g_i = f_i_pre - f_old[i]
+            g_d = f_d_pre - f_old[d]
+            val = val + (1.0 - alpha_hat) * 0.5 * (g_i - g_d)
 
         target = _roll(link, shift, dims)  # solid cell x_s = x_f + c_i
         out[d] = torch.where(target, _roll(val, shift, dims), out[d])
