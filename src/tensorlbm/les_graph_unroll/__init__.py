@@ -18,6 +18,13 @@ Entry points:
   ``sweep_loss`` as independent controls.
 * :func:`~tensorlbm.les_graph_unroll.reference2d.run_reference` — the
   fine-grid reference solver and the analytic initial conditions.
+* :class:`~tensorlbm.les_graph_unroll.selection.SelectionCase` /
+  :func:`~tensorlbm.les_graph_unroll.selection.select_and_judge` — the round-2
+  objective/closure *selection* layer (train/hold-out split, BPTT + controls).
+* :func:`~tensorlbm.les_graph_unroll.tgv_anchor.run_tgv_anchor` — the
+  Taylor-Green anchor harness: exact-solution anchor + BPTT selection +
+  held-out ``ref``/``got`` benchmark rows in one call.  Re-exported from the
+  top-level package as ``tensorlbm.run_tgv_anchor``.
 
 The cross-validation run and its artefacts live in
 ``scripts/xval_graph_unroll_bptt_les.py`` and
@@ -37,9 +44,32 @@ from .calibrate import (
     snapshot_errors,
     sweep_loss,
 )
+from .selection import (
+    OBJECTIVES,
+    SelectionCase,
+    bptt_select,
+    enstrophy,
+    holdout_metrics,
+    kinetic_energy,
+    objective_loss,
+    select_and_judge,
+    sweep_select,
+)
 from .solver2d import collide_stream, equilibrium, macroscopic, tau_from_cs, unroll
+from .tgv_anchor import AnchorConfig, run_tgv_anchor
 
 __all__ = [
+    "OBJECTIVES",
+    "AnchorConfig",
+    "SelectionCase",
+    "bptt_select",
+    "enstrophy",
+    "holdout_metrics",
+    "kinetic_energy",
+    "objective_loss",
+    "run_tgv_anchor",
+    "select_and_judge",
+    "sweep_select",
     "CalibProblem",
     "autograd_gradient",
     "bptt_calibrate",
