@@ -788,7 +788,6 @@ def free_energy_step_3d(
     rho_light: float | None = None,
     C_s: float = 0.0,
     sgs_model: str = "smagorinsky",
-    geq_convention: str = "swift",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D3Q19.
 
@@ -822,29 +821,6 @@ def free_energy_step_3d(
         sgs_model:  Sub-grid model selector: ``'smagorinsky'`` (default),
                     ``'wale'``, or ``'vreman'``.  Only affects the *f*
                     collision when ``C_s > 0``.
-        geq_convention: Structure of the order-parameter equilibrium.
-
-                    ``'swift'`` (default, historical behaviour) spreads the
-                    order parameter over all populations
-                    (``g_i^eq = w_i phi (1 + adv_i) + w_i Gamma (3|c_i|^2-3) mu``).
-                    Because ``Sigma_i w_i c_ia c_ib phi = cs^2 phi delta_ab``, this
-                    carries an *unwanted* diffusive flux of phi with
-                    ``D = cs^2 (tau_g - 1/2)`` that is independent of ``Gamma``:
-                    the Cahn-Hilliard mobility is not the only transport term.
-                    Measured in ``docs/XVAL_M17762_LBM_FREE_ENERGY_CAHN_HILLIARD_CORE.md``
-                    (pure-diffusion block, ``Gamma = 0``: decay rate
-                    ``-cs^2 (tau_g-1/2) k^2`` to 1%, versus zero for the
-                    reference free-energy implementation).
-
-                    ``'lee_lin'``  carries the order parameter in the rest
-                    population only (``g_i^eq = w_i phi adv_i`` for ``i != 0``,
-                    ``g_0^eq += phi``) and rescales the mobility term to
-                    ``lambda_i = (3/2)(3|c_i|^2-3)`` so that
-                    ``Sigma_i w_i lambda_i c_ia c_ib = delta_ab`` and the mobility
-                    is ``M = Gamma (tau_g - 1/2)`` with no spurious phi
-                    diffusion.  This is the structure of the reference
-                    free-energy Cahn-Hilliard core (Lee & Lin 2005;
-                    ``ebinan92/Fingering_dynamics``, ``getB0``/``getB1_8``).
 
     Returns:
         Updated ``(f, g)`` after one collision step.
@@ -852,11 +828,6 @@ def free_energy_step_3d(
     _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
     if sgs_model not in _VALID_SGS_MODELS:
         raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
-    _VALID_GEQ_CONVENTIONS = ("swift", "lee_lin")
-    if geq_convention not in _VALID_GEQ_CONVENTIONS:
-        raise ValueError(
-            f"geq_convention must be one of {_VALID_GEQ_CONVENTIONS}, got {geq_convention!r}"
-        )
     device = f.device
     c = _c_on_3d(device)
     w = _w_on_3d(device)
@@ -911,20 +882,10 @@ def free_energy_step_3d(
     # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
     u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
-    adv = 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq  # Σ_i wᵢ adv = 0
+    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
     c_sq = cx**2 + cy**2 + cz**2
     diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
-    if geq_convention == "swift":
-        geq_adv = w_v * phi.unsqueeze(0) * (1.0 + adv)
-        geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
-    else:  # 'lee_lin': order parameter carried by the rest population only
-        geq_adv = w_v * phi.unsqueeze(0) * adv
-        geq_adv = geq_adv.clone()
-        geq_adv[0] = geq_adv[0] + phi  # Σ_i g_i^eq = phi exactly, no ∇²phi flux
-        # λ_i = (3/2)(3|c|²−3) ⇒ Σ_i wᵢλᵢ c_ia c_ib = δ_ab and M = Γ(τ_g−½)
-        geq_diff = w_v * Gamma * 1.5 * diff_factor * mu.unsqueeze(0)
-        geq_diff = geq_diff.clone()
-        geq_diff[0] = -geq_diff[1:].sum(dim=0)  # exact zero sum against round-off
+    geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff
     g_out = g - (g - geq) / tau_g
 
@@ -1335,3 +1296,103 @@ def init_hydrostatic_pressure_3d(f, solid_mask, gy, water_height, rho0=None):
     rho_hydro = torch.where(fluid, hydro.expand(nz, ny, nx), macroscopic3d(f)[0])
     zero = torch.zeros((nz, ny, nx), device=device)
     return torch.where(solid_mask.unsqueeze(0), f, equilibrium3d(rho_hydro, zero, zero, zero))
+
+
+# ---------------------------------------------------------------------------
+# Shan-Chen wall adhesion force with per-grain wettability
+# ---------------------------------------------------------------------------
+def _shift_field(field: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+    """Return ``field(x + c)`` with zero fill outside the domain.
+
+    ``c`` is an integer lattice vector ``(cz, cy, cx)``.  Zero fill is the
+    correct boundary convention for the wall-adhesion sum: outside the domain
+    there is no solid neighbour to contribute a wall force.
+    """
+    cz, cy, cx = (int(v) for v in c)
+    nz, ny, nx = field.shape
+    out = torch.zeros_like(field)
+    src_z = slice(max(0, -cz), nz - max(0, cz))
+    dst_z = slice(max(0, cz), nz - max(0, -cz))
+    src_y = slice(max(0, -cy), ny - max(0, cy))
+    dst_y = slice(max(0, cy), ny - max(0, -cy))
+    src_x = slice(max(0, -cx), nx - max(0, cx))
+    dst_x = slice(max(0, cx), nx - max(0, -cx))
+    out[dst_z, dst_y, dst_x] = field[src_z, src_y, src_x]
+    return out
+
+
+def wall_adhesion_force_3d(
+    psi: torch.Tensor,
+    solid_mask: torch.Tensor,
+    *,
+    g_wall: float = -5.0,
+    grain_ids: torch.Tensor | None = None,
+    g_wall_by_grain: dict[int, float] | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Shan-Chen wall-adhesion force, optionally per-grain (mixed wettability).
+
+    The Shan-Chen wall force on a fluid node is
+
+    .. math::
+
+        F_\\mathrm{wall}(x) = -\\psi(x) \\sum_i w_i\\, G_\\mathrm{wall}(x+c_i)\\,
+                              s(x+c_i)\\, c_i,
+
+    with ``s`` the solid indicator.  ``G_wall`` may differ per grain — the
+    standard way to obtain mixed wettability in MPLBM-UT, where the per-grain
+    tag map selects the wall interaction strength of every grain.
+
+    Args:
+        psi: pseudopotential field ``(nz, ny, nx)``.
+        solid_mask: boolean ``(nz, ny, nx)`` solid mask.
+        g_wall: uniform wall interaction strength (used when *grain_ids* is
+            ``None``).
+        grain_ids: optional integer ``(nz, ny, nx)`` per-grain label field on
+            solid nodes (0 elsewhere) — the side channel produced by
+            :func:`tensorlbm.edt_geometry_tags.build_geometry_tags`.
+        g_wall_by_grain: mapping ``grain_id -> G_wall``.  Grains absent from
+            the mapping fall back to *g_wall*.
+
+    Returns:
+        ``(F_z, F_y, F_x)`` — one ``(nz, ny, nx)`` tensor per **array axis**
+        (``d3q19.C`` is ordered ``(x, y, z)``, so its columns are permuted to
+        ``(z, y, x)`` to match the ``(nz, ny, nx)`` lattice layout).
+
+    Notes:
+        The operator is linear in ``psi`` and in ``G_wall``, is masked to zero on
+        solid nodes (the wall force acts on fluid cells) and returns exactly
+        zero in the bulk (no solid neighbour within one lattice link), so it
+        conserves momentum away from walls.  Contact-angle *physics* (the
+        ``cos(theta)`` calibration of ``g_wall``) is not validated here.
+    """
+    if psi.shape != solid_mask.shape:
+        raise ValueError(
+            f"psi shape {tuple(psi.shape)} != solid_mask shape {tuple(solid_mask.shape)}"
+        )
+    device = psi.device
+    g_field = torch.full(psi.shape, float(g_wall), dtype=psi.dtype, device=device)
+    if grain_ids is not None:
+        if grain_ids.shape != psi.shape:
+            raise ValueError("grain_ids shape must match psi shape")
+        if g_wall_by_grain:
+            for gid, gw in g_wall_by_grain.items():
+                g_field = torch.where(grain_ids == int(gid), torch.as_tensor(
+                    float(gw), dtype=psi.dtype, device=device), g_field)
+    g_field = torch.where(solid_mask, g_field, torch.zeros_like(g_field))
+
+    fx = torch.zeros_like(psi)
+    fy = torch.zeros_like(psi)
+    fz = torch.zeros_like(psi)
+    C_dev = C.to(device)[:, [2, 1, 0]]   # (x, y, z) -> (z, y, x) array axes
+    W_dev = W.to(device)
+    for i in range(C_dev.shape[0]):
+        s_shift = _shift_field(solid_mask.to(psi.dtype), -C_dev[i])
+        if not bool(s_shift.any()):
+            continue
+        g_shift = _shift_field(g_field, -C_dev[i])
+        wgt = W_dev[i] * s_shift * g_shift
+        fx = fx + wgt * C_dev[i, 0]
+        fy = fy + wgt * C_dev[i, 1]
+        fz = fz + wgt * C_dev[i, 2]
+    fluid = ~solid_mask
+    return -psi * fx * fluid, -psi * fy * fluid, -psi * fz * fluid
