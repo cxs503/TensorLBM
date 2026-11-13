@@ -1,0 +1,67 @@
+{
+  "arm": "identity",
+  "pass": true,
+  "rows": [
+    {
+      "ghost_after": 1.0408340855860843e-17,
+      "ghost_before": 0.05969942540608156,
+      "normal": [
+        0,
+        1
+      ],
+      "oss_transcription_abs": 1.3877787807814457e-17,
+      "rho_rel": 2.1324803272532838e-16,
+      "stress_rel": 2.0268262536329583e-16,
+      "u_abs": 2.2551405187698492e-17
+    },
+    {
+      "ghost_after": 1.734723475976807e-17,
+      "ghost_before": 0.039763045178001666,
+      "normal": [
+        0,
+        -1
+      ],
+      "oss_transcription_abs": 6.938893903907228e-18,
+      "rho_rel": 2.0012390364369345e-16,
+      "stress_rel": 5.873225685679384e-16,
+      "u_abs": 2.0816681711721685e-17
+    },
+    {
+      "ghost_after": 1.734723475976807e-17,
+      "ghost_before": 0.03192461278610916,
+      "normal": [
+        1,
+        0
+      ],
+      "oss_transcription_abs": 6.938893903907228e-18,
+      "rho_rel": 2.0710541999640123e-16,
+      "stress_rel": 2.3380429441113746e-16,
+      "u_abs": 2.42861286636753e-17
+    },
+    {
+      "ghost_after": 1.3877787807814457e-17,
+      "ghost_before": 0.038764104646720504,
+      "normal": [
+        -1,
+        0
+      ],
+      "oss_transcription_abs": 6.938893903907228e-18,
+      "rho_rel": 2.140495235500659e-16,
+      "stress_rel": 2.1600411261637876e-16,
+      "u_abs": 2.42861286636753e-17
+    }
+  ],
+  "thresholds": {
+    "ghost_moment_rel": 1e-13,
+    "identity_rel": 1e-13,
+    "oscillating_l2_rel": 0.15,
+    "oss_transcription_rel": 1e-12,
+    "owner_acceptance_pct": 15.0,
+    "stability": "any non-finite population or |rho-1| > 0.05 is a declared failure",
+    "steady_l2_rel": 0.03,
+    "target_pct": 3.0
+  },
+  "worst_ghost_after": 1.734723475976807e-17,
+  "worst_oss_transcription_abs": 1.3877787807814457e-17,
+  "worst_stress_rel": 5.873225685679384e-16
+}
