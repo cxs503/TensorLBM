@@ -1,0 +1,14 @@
+{
+ "anchor_slug": "XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP",
+ "query": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP'",
+ "rows": 0,
+ "table_total_rows": 94,
+ "nearest_rows": [
+  {
+   "id": 7,
+   "anchor_slug": "GAP-LBM-MCMP-POISEUILLE",
+   "status": "pending"
+  }
+ ],
+ "note": "no registered referee row exists for this anchor at audit time; the only MCMP-family row is a different anchor and is pending. The 15% criterion therefore comes from the mission goal text only, and no machine referee can adjudicate the deliverable."
+}
