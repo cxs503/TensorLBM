@@ -1,0 +1,25 @@
+{
+  "rows": [
+    {
+      "dims": 2,
+      "nodes": 1961,
+      "solid_cells": 477,
+      "solid_fraction": 0.243243,
+      "max_abs_a1_minus_a2": 0.0,
+      "max_abs_a1_minus_a2_inplace": 0.0,
+      "bitwise_a1_eq_a2": true,
+      "index_nbytes": 68688
+    },
+    {
+      "dims": 3,
+      "nodes": 4199,
+      "solid_cells": 1221,
+      "solid_fraction": 0.290784,
+      "max_abs_a1_minus_a2": 0.0,
+      "max_abs_a1_minus_a2_inplace": 0.0,
+      "bitwise_a1_eq_a2": true,
+      "index_nbytes": 371184
+    }
+  ],
+  "threshold": "bitwise identity (max abs diff == 0)"
+}
