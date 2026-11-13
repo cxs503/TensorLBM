@@ -1,0 +1,4 @@
+arm,D,collision,sponge,tau,ma,blockage,steps,cd_mean,cd_mean_last50,cl_amp,st_fft,st_zc,st_crosscheck_pct,wall_s,status
+A1,10,mrt,True,0.515,0.17320508075688776,0.05,14871,1.5768457867068646,1.5754577465096815,0.5638428503062086,0.16942053951937752,0.1691301098394482,,774.6,ok
+A3,10,,,,,,,,,,,,,,blowup
+A5,10,,,,,,,,,,,,,,blowup
