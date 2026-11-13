@@ -1,197 +1,224 @@
-# XVAL: TensorLBM `_init_new` vs OSS Maarten-vd-Sande/lbm `average_surround`
+# XVAL — TensorLBM birth init vs OSS `Maarten-vd-Sande/lbm::average_surround`
 
-**Mission**: m17457 · **Anchor**: XVAL-LBM-AVERAGE-SURROUND-INIT  
-**Date**: 2026-11-13  
-**OSS Reference**: [Maarten-vd-Sande/lbm](https://github.com/Maarten-vd-Sande/lbm), `lbm/update_types.py::average_surround`  
-**TensorLBM Reference**: `src/tensorlbm/free_surface_lbm.py::_init_new`
+**Anchor**: `XVAL-LBM-AVERAGE-SURROUND-INIT` · **Mission**: m17605 (repair round 1 of m17457)
+**Repo**: TensorLBM · **Branch**: `agent/m17605` · **Threshold**: 15 % (owner precision standard)
 
 ---
 
-## 1. Problem Statement & Reference Sources
+## 1. Problem and reference source
 
-### Decision
-Does TensorLBM's fixed-density initialization for newly converted free-surface cells produce materially different results from the OSS `average_surround` approach that averages both density and velocity from neighbors?
+**Question.** When a free-surface cell is *born* (GAS → INTERFACE) or re-seeded as an
+envelope shell, which equilibrium state should its population carry? TensorLBM used two
+different answers inside the same 2D timestep (envelope shells: neighbour-averaged density
+with a zero fallback; conversion births: fixed `rho_liquid`), and had no API to select one.
 
-### OSS Reference (zero hand-copy)
-From `/root/oss-cache/Maarten-vd-Sande_lbm/lbm/update_types.py`:
-
-```python
-@jit()
-def average_surround(ix, iy, rho, rho_prev, mass, mass_prev, u, u_prev, v, cell_type, equi, t):
-    """Initialize cell ix, iy with the average of its surroundings"""
-    mass[ix, iy] = 0
-    rho[ix, iy] = 0
-    u[:, ix, iy] *= 0
-    c = 0
-    for n in range(1, 9):
-        ix_next = ix + v[n, 0]
-        iy_next = iy + v[n, 1]
-        if cell_type[ix_next, iy_next] & (CT.FLUID | CT.INTERFACE):
-            c += 1
-            rho[ix, iy] += rho_prev[ix_next, iy_next]
-            u[0, ix, iy] += u_prev[0, ix_next, iy_next]
-            u[1, ix, iy] += u_prev[1, ix_next, iy_next]
-    if c > 0:
-        rho[ix, iy] /= c
-        u[:, ix, iy] /= c
-    set_equi(ix, iy, equi, rho[ix, iy], u[:, ix, iy], v, t)
-```
-
-### TensorLBM Reference
-From `src/tensorlbm/free_surface_lbm.py::_init_new`:
+**OSS reference (source-derived, zero hand-copy).**
+`Maarten-vd-Sande/lbm` @ `573a01c`, `lbm/update_types.py`, function `average_surround`
+(defined at line 135, called at line 42 when an `INTERFACE`→`FLUID` conversion promotes a
+`GAS` neighbour to `INTERFACE`):
 
 ```python
-def _init_new(f, flags, mask, rho_init, device, ux=None, uy=None, uz=None):
-    """Init newly converted cells with neighbor-averaged velocity."""
-    if ux is None or uy is None or uz is None:
-        _, ux, uy, uz = macroscopic3d(f)
-    active = (flags == LIQUID) | (flags == INTERFACE)
-    sl_stack = torch.stack(all_moving_neighbor_masks(active))
-    ux_stack = torch.stack([roll_from_pull_source(ux, q) for q in D3Q19_MOVING_Q])
-    uy_stack = torch.stack([roll_from_pull_source(uy, q) for q in D3Q19_MOVING_Q])
-    uz_stack = torch.stack([roll_from_pull_source(uz, q) for q in D3Q19_MOVING_Q])
-    sl_f = sl_stack.float()
-    uxa = (ux_stack * sl_f).sum(dim=0)
-    uya = (uy_stack * sl_f).sum(dim=0)
-    uza = (uz_stack * sl_f).sum(dim=0)
-    cnt = sl_f.sum(dim=0).clamp(min=1)
-    rho_f = torch.full_like(ux, float(rho_init))
-    feq = equilibrium3d(rho_f, uxa / cnt, uya / cnt, uza / cnt)
-    return torch.where(mask.unsqueeze(0), feq, f)
+mass[ix, iy] = 0
+rho[ix, iy] = 0
+u[:, ix, iy] *= 0
+c = 0
+for n in range(1, 9):
+    if cell_type[ix_next, iy_next] & (CT.FLUID | CT.INTERFACE):
+        c += 1
+        rho[ix, iy] += rho_prev[ix_next, iy_next]
+        u[:, ix, iy] += u_prev[:, ix_next, iy_next]
+if c > 0:
+    rho[ix, iy] /= c
+    u[:, ix, iy] /= c
+set_equi(ix, iy, equi, rho[ix, iy], u[:, ix, iy], v, t)
 ```
 
----
+Three facts drive this work: the average covers **density as well as velocity**; it reads the
+**previous step** fields; and `mass` is set to **0** while `rho` is set from the neighbours
+(the mass/rho asymmetry recorded in the OSS knowledge base as
+`tkc:oss-lbm-freesurf:avg-surround-mass-zero`).
 
-## 2. Method & Implementation
+## 2. Method and implementation
 
-### Experimental Design
+**New reusable module** `src/tensorlbm/free_surface_init_modes.py`
 
-| Aspect | Detail |
+| element | purpose |
 |---|---|
-| **Hypothesis H0** | Both methods produce <15% difference in density and velocity at newly initialized cells |
-| **Unit of analysis** | Single newly converted INTERFACE cell in a controlled neighborhood |
-| **Baseline** | TensorLBM `_init_new` (fixed `rho_init`, averaged velocity) |
-| **Comparison** | OSS `average_surround` (averaged rho AND velocity) |
-| **Threshold** | 15% relative difference (owner precision standard) |
-| **Test cases** | (1) Homogeneous density; (2) Density gradient |
-| **Lattice** | D3Q19 (TensorLBM 3D) vs D2Q9 (OSS 2D) — adapted OSS to 3D for fair comparison |
+| `neighbour_average(rho, (u…), active, shifts)` | vectorised `torch.roll` gather; returns `(rho_avg, (u_avg…), count)`; only `active = LIQUID\|INTERFACE` neighbours enter numerator **and** divisor |
+| `birth_population(f, mask, rho_ref, ux, uy[, uz], mode=…, equilibrium_fn=…)` | the birth operator; `mode ∈ {"fixed_rho", "average_surround"}` |
+| `average_surround_reference(...)` | **independent** `float64` NumPy oracle (explicit index arithmetic, no `roll`) — the `ref` side of every comparison and the unit-test invariant oracle |
+| `D2Q9_SHIFTS` / `D3Q19_SHIFTS`, `normalize_init_mode`, `resolve_birth_mode` | stencil + registry; a typo raises `ValueError` instead of silently changing the birth state |
 
-### Implementation
+**Wiring (integration, L3)** — `src/tensorlbm/free_surface_lbm_2d.py`:
 
-The OSS `average_surround` was adapted to 3D D3Q19 in `experiments/xval_average_surround_init/run_xval.py`:
+* `koerner_step_2d(..., init_mode="legacy")` — the main 2D Körner step;
+* `free_surface_step_2d(..., init_mode="legacy")` — the public 3-tuple wrapper;
+* `_address_interface_layer(..., init_mode=…)` and `_init_new_2d(..., init_mode=…)` — the two
+  birth sites the step reaches.
 
-```python
-def oss_average_surround_init(f, flags, mask, rho, ux, uy, uz, ...):
-    active = (flags == LIQUID) | (flags == INTERFACE)
-    sl_stack = torch.stack(all_moving_neighbor_masks(active))
-    cnt = sl_stack.float().sum(dim=0).clamp(min=1)
-    # Average density from neighbors (KEY DIFFERENCE)
-    rho_stack = torch.stack([roll_from_pull_source(rho, q) for q in D3Q19_MOVING_Q])
-    rho_mean = (rho_stack * sl_stack.float()).sum(dim=0) / cnt
-    # Average velocity from neighbors (same as TensorLBM)
-    ux_mean = ... / cnt
-    feq = equilibrium3d(rho_mean, ux_mean, uy_mean, uz_mean)
-    return torch.where(mask.unsqueeze(0), feq, f)
+`legacy` is the default and is **bit-identical** to `HEAD` (verified below), so every existing
+caller and every stored result is untouched. `average_surround` also replaces the zero
+isolated-cell fallback with `rho_liquid`: a shell with no active neighbour still carries kept
+conversion mass, and a zero population makes `fill = mass / rho` explode through the density
+clamp (the same rationale already documented for the 3D `TL_FS_BIRTH_MODE=nbr` path).
+
+**What the solver actually did** (integration evidence): the dam-break runs below reach
+`_init_new_2d` **6 times** (32×64, 160 steps) — counted by wrapping the module attribute during
+the run, so the birth path is exercised by the real solver, not only by unit tests.
+
+## 3. Parameter table (dimensionless lattice units)
+
+| quantity | value |
+|---|---|
+| lattice / stencil | D2Q9 (`c_s² = 1/3`) |
+| relaxation time τ | 0.8 → ν = (τ−½)/3 = 0.1 |
+| gravity | g_y = −1e−4 (hydrostatic Froude-scale forcing) |
+| rho_liquid / rho_gas | 1.0 / 1.0 (pressure-matched free surface) |
+| operator patch | 13×13, liquid `x<6`, interface `x=6`, gas `x>6` |
+| birth cell | (iy, ix) = (8, 7) — 3 active neighbours, densities 1−δ, 1, 1+δ (asymmetric ⇒ the average ≠ fixed value) |
+| density ramp | ρ = ρ₀ + s·[(y−6) + ½(x−6)], s ∈ {0, 0.02, 0.05, 0.15}, ρ₀ ∈ {1.0, 0.3} |
+| velocity ramp | u_x = A cos(2πx/N), u_y = −A sin(2πx/N), A ∈ {0.005, 0.02, 0.08} (Ma ≤ 0.14) |
+| dam break | 32×64 (160 steps) and 64×128 (80 steps), column nx/4 × 2ny/3, walls = SOLID |
+| cells / steps in solver runs | 2048 / 8192 cells, 160 / 80 steps, 3+2 mode runs |
+| threshold | 15 % relative (owner standard) |
+
+## 4. Reference vs got
+
+`ref` = literal per-cell `float64` transcription of the OSS body above (+ independent float64
+`set_equi`). `got` = TensorLBM torch kernel. Numbers are generated by
+`experiments/xval_average_surround_init/make_tables.py` from
+`artifacts/xval_results.json` (programmatic, no hand-copy); the file is regenerated by the
+repro command in §6.
+
+### Operator table (ref = OSS literal `average_surround`, float64)
+
+| case | active nbrs | ref rho | ref ux | got rho (avg) | rel_f (avg) | got rho (fixed) | rel_f (fixed) |
+|---|---|---|---|---|---|---|---|
+| C1_homogeneous | 3 | 1.000 | -0.019 | 1.000 | 2.40e-08 ✓ | 1.000 | 2.40e-08 ✓ |
+| C2_pressure_gradient | 3 | 1.002 | -0.019 | 1.002 | 2.40e-07 ✓ | 1.000 | 2.00e-03 ✓ |
+| C3_density_contrast | 3 | 1.300 | -0.019 | 1.300 | 4.66e-08 ✓ | 1.000 | 0.23 ✗ |
+| C4_multiphase_like | 3 | 0.500 | -0.049 | 0.500 | 2.43e-08 ✓ | 1.000 | 1.00 ✗ |
+
+**Isolated-cell case (documented deviation):** 0 active neighbours; OSS ref ρ = 0.000
+(`set_equi` → empty population); TensorLBM `average_surround` ρ = 1.000 (population 1.000);
+TensorLBM `fixed_rho` ρ = 1.000; the historical zero fallback (`rho_init=None`) ρ = 0.000
+(population 0.000) — i.e. the OSS state is reproduced exactly when asked for, and rescued when
+`average_surround` is selected.
+
+### System table (2D dam break)
+
+| grid | steps | mode | births (cells) | inventory | rel drift | front [cells] | iface | finite |
+|---|---|---|---|---|---|---|---|---|
+| 32x64 | 160 | legacy | 6 | 300.102677 | 3.42e-04 | 16 | 37 | True |
+| 32x64 | 160 | fixed_rho | 6 | 300.102692 | 3.42e-04 | 16 | 37 | True |
+| 32x64 | 160 | average_surround | 6 | 300.102677 | 3.42e-04 | 16 | 37 | True |
+| 64x128 | 80 | legacy | 0 | 1271.284538 | 2.24e-04 | 31 | 72 | True |
+| 64x128 | 80 | fixed_rho | 0 | 1271.284538 | 2.24e-04 | 31 | 72 | True |
+
+### Mode divergence (legacy baseline vs selected mode)
+
+| grid | mode | rel L-inf Δf | front legacy | front mode | front rel diff | inv rel diff | <15 % |
+|---|---|---|---|---|---|---|---|
+| 32x64 | fixed_rho | 1.04e-03 | 16 | 16 | 0.00 % | 0.000 % | ✓ |
+| 32x64 | average_surround | 0.00 | 16 | 16 | 0.00 % | 0.000 % | ✓ |
+| 64x128 | fixed_rho | 0.00 | 31 | 31 | 0.00 % | 0.000 % | ✓ |
+
+**Verdict rows**: operator max `rel_f` — `average_surround` **2.40e-07** ✓ (<15 %),
+`fixed_rho` **1.00** ✗ (>15 %) at multiphase-like density contrast; system-level front
+difference across modes **0.00 %**; inventory drift **3.42e-04** relative, identical for all
+modes; all runs finite.
+
+## 5. Convergence / sensitivity (≥2 points)
+
+1. **Velocity amplitude** A = 0.005 / 0.02 / 0.08 → `rel_f`(`average_surround`) =
+   2.0e-08 / 2.4e-07 / 1.2e-07, `rel_f`(`fixed_rho`) = 2.00e-03 at every A. The agreement with
+   the OSS reference is float32 round-off and does not degrade with Mach number; the fixed-rho
+   deviation is set by the *density* field, not by the velocity.
+2. **Density contrast** s = 0 / 0.02 / 0.05 / 0.15 per cell → `rel_rho`(`average_surround`) =
+   6.0e-08 / 1.9e-07 / 1.3e-07 / 1.5e-07 (flat), `rel_rho`(`fixed_rho`) = 6.0e-08 / 0.038 /
+   0.091 / 0.23 — monotone growth, crossing the 15 % gate between s = 0.05 and s = 0.15.
+   Interpretation: for pressure-matched liquid (s ≲ 1e-3, as in a real free surface) the two
+   modes are equivalent to 0.2 %; the choice becomes material only for a density-contrast
+   (multiphase-like) interface.
+3. **Grid refinement** 32×64 → 64×128: the mode divergence stays 0 (front 16 → 31 cells,
+   inventory drift 3.4e-04 → 2.2e-04). At 64×128 **no birth occurred within the 80-step window**,
+   so that grid carries no birth-path evidence — reported as a limitation, not as a pass.
+
+## 6. Differences to OSS, transplant trade-offs, failure modes, artifacts
+
+**Difference list (TensorLBM vs OSS `average_surround`)**
+
+| aspect | OSS | TensorLBM (this work) | trade-off |
+|---|---|---|---|
+| state averaged | ρ **and** u over `FLUID\|INTERFACE` | same in `average_surround` mode; u-only in `fixed_rho` | `fixed_rho` kept as default for bit-compatibility; contrast quantified in §4 |
+| temporal staggering | `rho_prev/u_prev` (pre-stream) | caller-supplied macroscopic fields (post-collision) | avoids a second state buffer; second-order in the step, but not bit-comparable to OSS runs |
+| isolated cell (`c = 0`) | ρ = 0 → `set_equi` writes all-zero population | fall back to `rho_liquid`, u = 0 | deliberate deviation; prevents `fill = m/rho` blow-up (documented, test-pinned) |
+| mass ledger | `mass = 0`, refilled later | keeps credited conversion mass, fill renormalised by refilled ρ | mass/ρ consistency; the OSS zero-mass transient is not reproduced |
+| stencil | D2Q9 8 neighbours | D2Q9 8 (solver) / D3Q19 18 (kernel + oracle) | 3D wiring is out of scope; the 3D topology transaction already defaults to `TL_FS_BIRTH_MODE=nbr` |
+| boundary | index probe, no wrap | `torch.roll`, i.e. periodic neighbour gather | identical in the solver (domain borders are SOLID); differs only for a synthetic patch at the array edge |
+| execution | per-cell numba loop | vectorised rolls, no host sync | throughput; float32 vs float64 accounts for the 1e-7 residual |
+
+**Failure modes observed / handled**
+
+* zero-population birth (legacy) → `fill = mass / 1e-6` amplification; fixed by the
+  `average_surround` fallback (test `test_isolated_birth_falls_back_to_reference_density`);
+* mode typos silently changing physics → `normalize_init_mode` raises `ValueError`;
+* the conversion birth site at `free_surface_lbm_2d.py` line ~565 is currently **dead code**
+  (`to_iface` is never set away from all-False before the call). It is left untouched (no
+  behaviour change) but it is why `average_surround` and `legacy` are bit-identical at the
+  system level: the only live birth path is the envelope shell, which was already
+  neighbour-averaged. This is an honest scope limit of the system-level contrast, not a
+  numerical result;
+* system-level birth density therefore cannot be pushed above the 15 % gate with a
+  pressure-matched (ρ_l = ρ_g = 1) dam break — the operator table is the discriminating
+  evidence.
+
+**Regression evidence**
+
+* `legacy` default reproduces `HEAD` **bit-identically**: SHA-256 of `(f, mass, flags)` at steps
+  1/10/30/60 of a 32×64 dam break matches a run of the pristine `HEAD` tree
+  (`/root/tp-agent/work/m17457/src`, same commit `c05d7af3`) — `diff` clean; additionally
+  test-pinned against an inline replica of the pre-patch `_init_new_2d` for
+  `rho_init ∈ {None, 1.0, 0.7}` (`torch.equal`);
+* `tests/test_free_surface_init_modes_xval.py`: **14 passed**;
+* `tests/test_free_surface_dispersion.py` + `tests/test_wave_tank2d_tank.py`: 37 passed;
+  `tests/test_lng_sloshing.py`: 32 passed (no regression in the free-surface consumers).
+
+**Artifacts**
+
+| path | content |
+|---|---|
+| `src/tensorlbm/free_surface_init_modes.py` | the reusable operator + NumPy oracle |
+| `src/tensorlbm/free_surface_lbm_2d.py` | `init_mode` API (legacy default) |
+| `tests/test_free_surface_init_modes_xval.py` | 14 tests: oracle parity, literal OSS port, semantics, threshold contrast, bit-identical regression, solver integration |
+| `experiments/xval_average_surround_init/run_xval.py` | the whole experiment |
+| `experiments/xval_average_surround_init/artifacts/xval_results.json` | every number in this report |
+| `experiments/xval_average_surround_init/artifacts/xval_tables.md` | generated tables (this §4) |
+| `experiments/xval_average_surround_init/artifacts/xval_ref_vs_got.png` | (a) born-cell density ref vs got, (b) density-contrast sensitivity, (c) dam-break front per mode |
+| `experiments/xval_average_surround_init/artifacts/xval_run.log` | run log |
+
+**Repro**
+
+```bash
+cd <worktree>
+PYTHONPATH=src python -m pytest tests/test_free_surface_init_modes_xval.py -q
+PYTHONPATH=src python experiments/xval_average_surround_init/run_xval.py      # ~18 s
+PYTHONPATH=src python experiments/xval_average_surround_init/make_tables.py
 ```
 
----
+**Ecosystem friction (honest)**
 
-## 3. Parameter Table
+* `psql -d tensorplatform` on `knowledge_base` / `negative_knowledge_ledger` returns
+  `permission denied for table …` for this worker, so the mandated pre-work TK / negative-ledger
+  queries could not be executed from the worktree; the OSS claims were instead read from the OSS
+  inventory worktree (`knowledge/oss-lbm/freesurf/claims/claims.json`, claim
+  `tkc:oss-lbm-freesurf:avg-surround-mass-zero`) and cited as `cited_kb`.
+* `git archive HEAD | tar -x` is blocked by the sandbox policy; the pristine `HEAD` tree was
+  obtained from the sibling worktree of the same commit instead.
+* Runtime is CPU-torch bound (~0.02 s/step at 32×64, ~0.04 s/step at 64×128); well below the
+  10-minute cluster threshold, so no `cluster_queue` submission was needed.
 
-| Parameter | Homogeneous Case | Gradient Case |
-|---|---|---|
-| Domain | 8×8×8 | 8×8×8 |
-| Liquid block | 4×4×4 center | 4×4×4 center |
-| `rho_liquid` | 1.0 | 1.0 (TensorLBM fixed) |
-| Neighbor rho | Uniform 1.0 | Gradient 0.8→1.2 (z-direction) |
-| Velocity in liquid | u_x=0.01 | u_x=0.01 |
-| New cell position | (6,3,3) GAS→INTERFACE | (6,3,3) GAS→INTERFACE |
-| Lattice | D3Q19 | D3Q19 |
-
-**Dimensionless numbers**: Not applicable (unit test, not physical simulation).
-
----
-
-## 4. Comparison Table (ref vs got + error)
-
-### Case 1: Homogeneous Density
-
-| Quantity | TensorLBM | OSS | Difference | <15%? |
-|---|---|---|---|---|
-| ρ at new cell | 1.000000 | 1.000000 | 0.000000e+00 | ✅ PASS |
-| u_x at new cell | 0.010000 | 0.010000 | 0.000000e+00 | ✅ PASS |
-| u_y at new cell | 0.000000 | 0.000000 | 0.000000e+00 | ✅ PASS |
-| u_z at new cell | 0.000000 | 0.000000 | 0.000000e+00 | ✅ PASS |
-| ‖f‖₁ difference | — | — | 0.000000e+00 | ✅ PASS |
-
-### Case 2: Density Gradient
-
-| Quantity | TensorLBM | OSS | Difference | Rel. Diff | <15%? |
-|---|---|---|---|---|---|
-| ρ at new cell | 1.000000 | 1.200000 | 2.000000e-01 | 20.0% | ❌ FAIL |
-| u_x at new cell | 0.010000 | 0.010000 | ~0 | ~0% | ✅ PASS |
-| ‖f‖₁ difference | — | — | 2.000001e-01 | — | ❌ FAIL |
-
----
-
-## 5. Convergence & Sensitivity
-
-### 5.1 Density Uniformity Sensitivity
-- **Finding**: When all neighbors have identical density, both methods are mathematically equivalent (averaging a constant yields the constant).
-- **Implication**: For standard free-surface LBM with pressure-matched gas (`rho_gas = rho_liquid = 1.0`), the difference is exactly zero (within float precision).
-
-### 5.2 Density Gradient Magnitude Sensitivity
-- **Finding**: With a linear density gradient from 0.8 to 1.2, the OSS method produces ρ=1.2 (average of 6 liquid neighbors at the top of the gradient), while TensorLBM uses fixed ρ=1.0.
-- **Relative error**: 20% — exceeds the 15% threshold.
-- **Implication**: For multiphase models with density ratios (e.g., CG model with ρ_heavy/ρ_light = 10:1), the initialization difference could be significant at the interface.
-
-### 5.3 Dimensionality Note
-- OSS is 2D D2Q9; TensorLBM is 3D D3Q19.
-- The neighbor-counting logic is identical (only FLUID/INTERFACE neighbors counted).
-- The adaptation to 3D preserves the semantic equivalence.
-
----
-
-## 6. Failure Modes & Artifacts
-
-### Difference清单 (TensorLBM vs OSS)
-
-| Aspect | TensorLBM | OSS Maarten-vd-Sande/lbm |
-|---|---|---|
-| **Density treatment** | Fixed `rho_init` (typically `rho_liquid`) | Averaged from FLUID/INTERFACE neighbors |
-| **Velocity treatment** | Averaged from neighbors | Averaged from neighbors (same) |
-| **Time level** | Current timestep | Previous timestep (`rho_prev`, `u_prev`) |
-| **Dimensionality** | 3D D3Q19 | 2D D2Q9 |
-| **Mass initialization** | Handled separately by mass ledger | Explicitly set to 0 |
-| **Implementation** | Vectorized torch operations | Numba JIT loops |
-
-### 移植取舍 (Porting Trade-offs)
-
-1. **Keep TensorLBM's fixed-rho approach for free-surface**: The waLBerla reference (`EquilibriumRefilling`) also uses the local liquid density, not a field average. For pressure-matched free-surface (ρ_gas = ρ_liquid), this is correct.
-
-2. **Consider OSS approach for multiphase**: When there's a density ratio (CG/SC models), averaging density from neighbors could provide better initialization at the interface, reducing spurious currents.
-
-3. **Time level difference**: OSS uses `rho_prev`/`u_prev` (pre-streaming), while TensorLBM uses current values. This is a minor difference in the context of the full step order.
-
-### Artifacts
-- `experiments/xval_average_surround_init/run_xval.py` — experiment script
-- `experiments/xval_average_surround_init/artifacts/xval_results.json` — numerical results
-- `experiments/xval_average_surround_init/artifacts/xval_init_comparison.png` — comparison figures
-
-### Verdict
-- **Homogeneous density**: ✅ PASS (identical results)
-- **Density gradient**: ❌ FAIL (20% difference exceeds 15% threshold)
-- **Overall**: The methods are equivalent for standard free-surface LBM but diverge for multiphase with density variation.
-
----
-
-## 7. Ecological Friction
-
-| Friction | Description |
-|---|---|
-| Module path mismatch | `src/tensorlbm/` vs `TensorLBM/src/tensorlbm/` — required `PYTHONPATH` override |
-| Import structure | `equilibrium3d`/`macroscopic3d` in `solver3d.py` not `d3q19.py` |
-
----
-
-*Report generated programmatically; all numbers from `xval_results.json`.*
+**Error gate.** Operator agreement with the OSS reference is 2.4e-07 (< 0.001 %, therefore
+**< 3 %** and **< 15 %**). The system-level claim is an equivalence claim, 0.00 % between modes.
+No experimental benchmark exists for a 2D lattice dam break at this resolution, so no
+experiment-vs-simulation error is claimed here (stated explicitly rather than implied).
