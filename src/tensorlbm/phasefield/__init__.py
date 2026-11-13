@@ -1,17 +1,19 @@
 """Common, tensorised three-dimensional phase-field building blocks."""
 
-from .binary_equilibrium_pressure import (
-    EquilibriumPressureConfig,
-    LbmRunDiagnostics,
-    MaxwellConstruction,
-    PlanarEquilibriumField,
-    PressureDiagnostics,
-    diagnose_ch_phase_flux_gap,
-    equilibrium_pressure_report,
-    maxwell_coexistence,
-    periodic_planar_profile,
-    planar_pressure_diagnostics,
-    run_planar_equilibrium_lbm,
+from .ternary_ac_oss import (
+    OSS_PHASE_MASS_DENSITIES,
+    OSS_SHIPPED_SIGMA,
+    TernaryAC2D,
+    analytic_interface_width,
+    flat_interface_state,
+    interface_width_10_90,
+    lambda_from_sigma_matrix,
+    oss_relaxation_factor,
+    rho_of_phases,
+    tension_from_lambda,
+    tension_from_profile,
+    ternary_chemical_potential,
+    ternary_compression_source,
 )
 from .ch_validation import (
     FreeEnergyCHDiagnosticResult,
@@ -63,17 +65,6 @@ from .static_droplet import (
 
 __all__ = [
     "ADAPTER_STREAM_LOOP_STAGE",
-    "EquilibriumPressureConfig",
-    "LbmRunDiagnostics",
-    "MaxwellConstruction",
-    "PlanarEquilibriumField",
-    "PressureDiagnostics",
-    "diagnose_ch_phase_flux_gap",
-    "equilibrium_pressure_report",
-    "maxwell_coexistence",
-    "periodic_planar_profile",
-    "planar_pressure_diagnostics",
-    "run_planar_equilibrium_lbm",
     "ADAPTER_STREAM_DIAGNOSTIC_ONLY",
     "AdapterStreamBoundaryCrossing",
     "COLLISION_ONLY_STAGE",

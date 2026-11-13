@@ -1,0 +1,5 @@
+source: AminZar69/CudaPhaseField
+commit: 
+license: GPL-3.0 (vendored verbatim for line-provenance; see oss_src/LICENSE)
+files: device_var.f90 (constants/lambda), global_subroutines.f90 (mu, laplacian, gradient, compression source, relaxation), precision_m.f90
+anchor: XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT
