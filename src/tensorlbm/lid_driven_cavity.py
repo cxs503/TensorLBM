@@ -41,6 +41,7 @@ from pathlib import Path
 import matplotlib
 import torch
 
+from .baseline_io import to_numpy, write_block
 from .boundaries import bounce_back_cells
 from .config_io import load_config_json, save_config_json
 from .cylinder_flow import _maybe_compile
@@ -836,8 +837,8 @@ def ghia_metric_report(
     if include_centreline:
         import numpy as np
 
-        ux_np = np.asarray(ux.detach().cpu().numpy(), dtype=float) / float(u_lid)
-        uy_np = np.asarray(uy.detach().cpu().numpy(), dtype=float) / float(u_lid)
+        ux_np = np.asarray(to_numpy(ux), dtype=float) / float(u_lid)
+        uy_np = np.asarray(to_numpy(uy), dtype=float) / float(u_lid)
         ys = centreline_coordinates_between(ny, planes["y_lower"], planes["y_upper"])
         xs = centreline_coordinates_between(nx, planes["x_lower"], planes["x_upper"])
         report["centreline"] = {
@@ -921,8 +922,8 @@ def compare_ghia(
     ny, nx = ux.shape
 
     # Normalise by u_lid
-    ux_np = ux.detach().cpu().numpy() / u_lid
-    uy_np = uy.detach().cpu().numpy() / u_lid
+    ux_np = to_numpy(ux) / u_lid
+    uy_np = to_numpy(uy) / u_lid
 
     # Vertical centreline: u at x = nx//2
     x_mid = nx // 2
@@ -1035,8 +1036,8 @@ def _save_cavity_snapshot(
     vort: torch.Tensor,
     wall_mask: torch.Tensor,
 ) -> None:
-    speed_np = speed.detach().cpu().numpy()
-    vort_np = vort.detach().cpu().numpy()
+    speed_np = to_numpy(speed)
+    vort_np = to_numpy(vort)
     obs_np = wall_mask.detach().cpu().float().numpy()
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
@@ -1191,8 +1192,8 @@ def run_lid_driven_cavity(config: LidDrivenCavityConfig) -> Path:
     import numpy as np
 
     ny_final, nx_final = ux.shape
-    ux_np = ux.detach().cpu().numpy() / config.u_lid
-    uy_np = uy.detach().cpu().numpy() / config.u_lid
+    ux_np = to_numpy(ux) / config.u_lid
+    uy_np = to_numpy(uy) / config.u_lid
     x_mid = nx_final // 2
     y_mid = ny_final // 2
     planes = cavity_wall_planes(nx_final, ny_final)
@@ -1237,6 +1238,37 @@ def run_lid_driven_cavity(config: LidDrivenCavityConfig) -> Path:
         encoding="utf-8",
     )
     logger.info("Saved metadata: %s", meta_path)
+    # --- numerical reference block (XVAL-LBM-PYTEST-BASELINE-REFERENCE) -----
+    # Same fields, same file format in every run, so two runs (or a run and a
+    # checked-in baseline) can be compared field-for-field.  Writing the block
+    # is IO only; the acceptance rule lives in
+    # ``tensorlbm.verification.baseline_reference`` (the verification package
+    # must not be imported by a solver module).
+    mid = nx // 2
+    final_mass = float(rho.sum().item())
+    initial_mass = float(rho0.sum().item())
+    block_fields = {
+        "ux_centerline_normalised": to_numpy(ux[:, mid] / config.u_lid),
+        "uy_centerline_normalised": to_numpy(uy[mid, :] / config.u_lid),
+        "rho_field": to_numpy(rho),
+        "mass": final_mass,
+        "mass_drift_relative": (final_mass - initial_mass) / initial_mass,
+        "max_speed": float((ux * ux + uy * uy).sqrt().max().item()),
+        "ghia_rmse_u": float(ghia_errors["rmse_u"]) if ghia_errors else float("nan"),
+        "ghia_rmse_v": float(ghia_errors["rmse_v"]) if ghia_errors else float("nan"),
+    }
+    write_block(
+        run_dir / "reference_block.npz",
+        block_fields,
+        meta={
+            "solver": "tensorlbm.lid_driven_cavity",
+            "config": {**asdict(config), "output_root": str(config.output_root)},
+            "derived": {"nu": config.nu, "tau": config.tau, "n_steps": config.n_steps},
+            "wall_offset_convention": "half_way_bounce_back (+0.5 cell outside node row)",
+            "ghia_metric_convention": config.ghia_metric_convention,
+        },
+    )
+
     return run_dir
 
 
