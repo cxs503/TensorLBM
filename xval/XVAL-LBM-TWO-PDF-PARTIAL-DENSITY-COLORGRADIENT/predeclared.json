@@ -1,0 +1,37 @@
+{
+ "anchor": "XVAL-LBM-TWO-PDF-PARTIAL-DENSITY-COLORGRADIENT",
+ "mission_id": 18787,
+ "round": 2,
+ "decision": "Adopt a two-PDF partial-density colour-gradient (f = species-A partial density, g = species-B partial density, rho = rho_A + rho_B, phi = (rho_A-rho_B)/rho) as the library's mass-exact two-phase colour-gradient engine and validate it against the closed-form two-layer Poiseuille solution and the Laplace law.",
+ "alternatives": [
+  "A1 (chosen): two-PDF partial density, BGK tau(phi) from harmonic viscosity interpolation, Guo(2002) forcing, Latva-Kokko/Rothman isotropic recolouring (beta), anisotropic colour-gradient perturbation for surface tension. New additive module src/tensorlbm/color_gradient_two_pdf.py, stock modules untouched.",
+  "A2: literal MF-LBM recolouring stencil (main axes 4/9, diagonals 1/(36 sqrt 2)) at the same amplitude scaling -> REJECTED on measured evidence: drives the minority partial density negative (min rho_sigma = -0.11, ny=32, 1000 steps, artifacts/recolour_stencil_probe.json).",
+  "A3: keep the existing single-PDF two-component two-tau engine (tensorlbm.color_gradient2d) only -> rejected as the target of this anchor (it is used here as an independent cross-model check instead).",
+  "A4: CSF (continuum surface force) surface tension as in MF-LBM (0.5*gamma*kappa*|C|*n in moment space) -> deferred: perturbation form keeps the change minimal and is validated by the Laplace law; recorded as a design deviation."
+ ],
+ "external_anchor": {
+  "analytic_1": "two-layer stratified Poiseuille, u'' = -g/nu per layer, no slip at the half-way planes Y=0.5 and ny-1.5, velocity and shear-stress continuity at Y_i = j_first_blue - 0.5 (frozen evaluator cg_reference.py, md5 e78c6d1eb22d628182636c0df74fb26a)",
+  "analytic_2": "Laplace law dp = sigma / R for a static droplet (radius independence of sigma = dp*R)",
+  "references": [
+   "Rothman & Keller (1988) J. Stat. Phys. 52, 1119",
+   "Latva-Kokko & Rothman (2005) PRE 71, 056702",
+   "Guo, Zheng & Shi (2002) PRE 65, 046308",
+   "Leclaire, Reggio & Trepanier (2012) J. Comput. Phys. 231, 6294",
+   "Leclaire et al. (2013) J. Comput. Phys. 246, 318 (partial densities)",
+   "Zhang et al. (2019) Comput. Fluids, LANL MF-LBM (OSS reference)"
+  ],
+  "oss_evidence": "oss_inventory id=47 lanl/MF-LBM: 'color-gradient (Rothman-Keller) two-PDF two-species formulation with R-K recoloring (beta) and partial densities; force = CSF 0.5*gamma*kappa*|C|*n + body force ... phi=(rho1-rho2)/(rho1+rho2) algebraic'; oss_solutions id=203 feature_slug two-species-partial-density-colorgradient, files Module.F90:203-205, Kernel_multiphase.F90:108-110,124,159-163,272-315, conventions 'phi in [-1,1], beta 0.9-0.95, omega = 1/(6/((1+phi)/nu1+(1-phi)/nu2)+0.5)'"
+ },
+ "predeclared_thresholds": {
+  "relL2_two_layer_poiseuille": "< 0.15 (owner 15% band) on every g10 arm",
+  "mass_drift_per_step_per_species": "<= 1e-10",
+  "laplace_sigma_rel_dev_from_mean": "< 0.15 and fit R^2 >= 0.99",
+  "all_runs_nan_free": true
+ },
+ "stopping_rule": "Frozen step counts (sp_ny64 60000, g10_ny64 60000, g10_ny128 120000, g10_ny64_beta095 80000; droplet 8000 steps, radii 12/18/24, beta 0.9 and 0.95). No threshold or step count is changed after inspecting results; steady state is reported as the u_max relative change over the last 20% of samples.",
+ "frozen_parameters": {
+  "dtype": "float64", "nx_streamwise": 8, "A_surface_tension_amplitude": 0.04,
+  "nu_a_tau_a": [0.6666666666666666, 2.5], "nu_b_tau_b": [0.06666666666666667, 0.7],
+  "viscosity_ratio": 10, "beta": [0.9, 0.95], "gx": {"g10_ny64": 1.5e-07, "g10_ny128": 3.75e-08}
+ }
+}
