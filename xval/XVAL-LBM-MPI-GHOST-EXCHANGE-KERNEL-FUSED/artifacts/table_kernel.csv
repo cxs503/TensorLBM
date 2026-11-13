@@ -1,0 +1,8 @@
+aspect,lbmpy,tensorlbm
+kernel_type,fused (collide+stream in single C kernel via pystencils),separate (PyTorch collide_fn + stream_fn)
+code_generation,sympy → pystencils AST → C compile (JIT),pure PyTorch ops (no codegen)
+ghost_exchange,SerialDataHandling.synchronization_function (stencil-restricted pop copy),HaloExchange.selective (5-of-19 populations for D3Q19 z-slab)
+memory_layout,"(nz, ny, nx, Q) SoA for CPU; (Q, nz, ny, nx) AoS option","(Q, nz, ny, nx) AoS (PyTorch tensor)"
+streaming_pattern,"pull (default), push, AA, EsoTwist available",pull via torch.roll
+multi_device,MPI via pystencils data handling (requires mpi4py),simulated (single-process) or NCCL (multi-GPU)
+boundary_conditions,LatticeBoltzmannBoundaryHandling (flag-based),user-provided boundary_fn
