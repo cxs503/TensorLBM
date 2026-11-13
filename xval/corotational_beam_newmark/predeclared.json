@@ -1,0 +1,73 @@
+{
+  "case_id": "XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON",
+  "written_before_runs": true,
+  "written_at_utc": "2026-11-13",
+  "decision": "Can a TensorLBM corotational 2-node beam element (energy-consistent, exact tangent, Newmark-beta + Newton) reproduce, within the owner 15% criterion, (a) the external analytic/numerical references (Euler-Bernoulli modal frequency, exact elastica, exact circular-arc pure-bending solution) and (b) the same KPIs produced by a faithful transplant of the mature OSS implementation joconnor22/LIFE (src/FEMElement.cpp forceVector/stiffMatrix/setLocalMatrices + src/FEMBody.cpp Newmark/Newton)? And is the transplant's (M1+M2)/L0 transverse-force denominator measurable in the KPIs?",
+  "alternatives": {
+    "A_TL": "TensorLBM arm: formulation='consistent'. Element derived from strain energy U = EA/(2L0)(L-L0)^2 + EI/L0*(2th1^2+2th1th2+2th2^2); internal force g = dU/dq (transverse nodal force uses the CURRENT length L); tangent = exact Hessian dg/dq. Newmark-beta (beta=0.25, gamma=0.5) with consistent mass, identical integrator.",
+    "A_LIFE": "OSS transplant arm: formulation='life'. Line-faithful port of joconnor22/LIFE: u=(L^2-L0^2)/(L+L0); F0=EA/L0*u; M1=2EI/L0*(2th1+th2); M2=2EI/L0*(th1+2th2); local f=[-F0,(M1+M2)/L0,M1,F0,-(M1+M2)/L0,M2]; K=T^T(K_L+K_NL)T with K_NL from F0 and V0=f[4]; same Newmark (alpha=0.25, delta=0.5) and same Newton outer loop.",
+    "A_REF_ANALYTIC": "External references, computed independently of both FEM arms: (i) clamped-free Euler-Bernoulli eigenvalues from cos(kL)cosh(kL)=-1 by bisection; (ii) exact planar elastica under a tip transverse load by elliptic-type 1-D quadrature (ds = dtheta/sqrt(2P(sin th0 - sin theta)/EI)) cross-checked by an ODE boundary-value shooting solve of EI*theta'' + P*cos(theta)=0; (iii) exact circular-arc solution for a pure end moment (R=EI/M, tip = (R sin phi, R(1-cos phi)))."
+  },
+  "hypothesis": "H1 (transplant fidelity): every KPI differs by < 15% between A_TL and A_LIFE at the predeclared configurations, i.e. the LIFE transplant reproduces the corotated beam response inside the owner criterion. H2 (external accuracy): every KPI of BOTH arms is within 15% of the external reference at the finest predeclared discretisation. H3 (measured mechanism, diagnostic): A_LIFE's transverse denominator L0 instead of L makes its internal force vector differ from grad(U) by a relative amount that scales with (L-L0)/L0, while A_TL matches grad(U) to machine precision. H0/falsifier for H1: |Delta| >= 15% on at least one KPI; falsifier for H2: any KPI off the external reference by >= 15% at the finest discretisation.",
+  "cases": {
+    "S1_LINEAR_STATIC": "Straight cantilever, L=1, EI=1, rho*A=0, EA=1e8, clamped at node 0, tip transverse point load P with P*L^2/EI = 0.004 (small-deflection regime), 1 load step.",
+    "S2_ELASTICA": "Straight cantilever, L=1, EI=1, EA=1e6, clamped at node 0, tip transverse point load with lambda = P*L^2/EI in {1,2,5,10} (large deflection), incremental load stepping with substepping on Newton failure.",
+    "S3_PURE_MOMENT": "Straight cantilever, L=1, EI=1, EA=1e6, clamped at node 0, pure end moment M with phi = M*L/EI in {pi/2, pi} (exact circular arc).",
+    "D1_MODAL": "Linearised clamped-free cantilever, L=1, EI=1, rho*A=1, EA=1e6: first 3 frequencies from the generalised eigenproblem vs analytic (kL)^2.",
+    "D2_NEWMARK_TIME": "Free vibration of the linearised (small amplitude) cantilever, n_elem=16, 20 measured periods, dt = T1/50, T1/100, T1/200, T1/400: Newmark period error relative to the discrete model's own omega1 and observed order in dt.",
+    "D3_NONLINEAR_ENERGY": "Large-amplitude free vibration: static preload lambda=5, then release with zero velocity; 10 fundamental periods at dt=T1/200; relative drift of total mechanical energy (exact reference: 0, since gamma=0.5/beta=0.25 is non-dissipative)."
+  },
+  "metrics": {
+    "S1": ["tip_deflection_y_over_L", "tip_rotation_rad"],
+    "S2": ["tip_defl_y_over_L", "tip_defl_x_over_L (shortening, negative = toward the root)", "tip_rotation_rad"],
+    "S3": ["tip_x_over_L", "tip_y_over_L"],
+    "D1": ["omega_nondim_i = omega_i*sqrt(rho*A*L^4/(E*I))", "rel_error_omega1"],
+    "D2": ["period_error_rel", "amplitude_rel_change_per_period", "observed_order_p"],
+    "D3": ["energy_drift_rel", "amplitude_rel_change"],
+    "element_consistency": ["max_over_configs |g - grad(U)| / max|g|"],
+    "newton_quality": ["iterations_per_step_max", "observed_convergence_rate"]
+  },
+  "unit_of_analysis": "one solver arm (formulation) at one fixed discretisation/timestep of one predeclared case; each KPI is a scalar per arm",
+  "baseline_control": {
+    "baseline": "the external analytic/numerical reference of each case (A_REF_ANALYTIC)",
+    "control": "A_LIFE is the control arm that shares geometry, mesh, boundary conditions, mass matrix, Newmark parameters, Newton loop and post-processing with A_TL; the only changed variable is the element formulation (force vector + tangent). This isolates the formulation choice without confounders.",
+    "confounder_controls": [
+      "identical initial node sets and identical element-length vectors for both arms",
+      "identical Newmark update, identical BC elimination, identical convergence test norm",
+      "identical post-processing functions (node_position/tip_rotation) for both arms",
+      "no tuning of either formulation after inspecting KPIs; the element ladder and dt ladder are fixed below"
+    ]
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "interpretation": "an error is |KPI - reference|/|reference|*100 and must be < 15% for H1 (arm vs arm) and H2 (arm vs external reference at the finest ladder point)",
+    "convergence_rule": {
+      "S2_S3": "a KPI is mesh-converged when |KPI(n=32) - KPI(n=16)| / |KPI(n=32)| < 1%",
+      "D1": "a frequency is mesh-converged when |w1(n=32)-w1(n=16)|/w1(n=32) < 0.5%",
+      "D2": "time-converged when halving dt changes the period error by a factor in [3.0, 5.0] (2nd order band)"
+    },
+    "stability_rule": "non-finite values, or |displacement| > 1e3 * L, or a Newton solve that fails to reach the residual tolerance after maxit=30 with load substepping -> the run is declared FAILED and reported, never tuned or silently replaced",
+    "energy_thresholds": {"D3_drift_pct_max": 2.0, "D2_amplitude_change_pct_max": 1.0},
+    "element_consistency_threshold": {"A_TL_max_rel_dev_from_gradU": 1e-6, "A_LIFE_reported_not_thresholded": true},
+    "newton_rate_threshold": {"A_TL_min_rate": 1.8}
+  },
+  "stopping_rule": "Fixed ladders inspected once: n_elem in {2,4,8,16,32} for S2/S3/D1, dt in {T1/50,T1/100,T1/200,T1/400} for D2, 10 periods for D3, lambda in {1,2,5,10}, phi in {pi/2,pi}. No run is extended or truncated after looking at the KPIs. Total wall-clock budget 900 s; per-run budget 120 s.",
+  "variables_changed": ["element formulation (consistent vs LIFE transplant)", "n_elem (2..32)", "dt (T1/50..T1/400)", "load level lambda (1..10)", "end-moment level phi (pi/2, pi)"],
+  "variables_held_fixed": ["Newmark beta=0.25, gamma=0.5", "consistent mass matrix coefficients", "Newton tolerance 1e-10 (relative residual, free DOFs)", "maxit", "initial geometry", "boundary conditions", "post-processing"],
+  "repetition_rationale": "The model is deterministic (no stochastic input): repetitions are replaced by (i) two independent reference routes for the elastica (1-D quadrature and ODE BVP shooting, required to agree to <1e-6 before use) and (ii) a five-point element ladder plus a four-point dt ladder, which quantify discretisation variability instead of sampling noise. Confirmation of any KPI claim therefore rests on ladder convergence, not single runs.",
+  "environment": {
+    "repo": "TensorLBM (branch agent/m17723)",
+    "python": "python3, numpy, scipy 1.16.0, matplotlib 3.10.8",
+    "command": "python xval/corotational_beam_newmark/run_xval.py",
+    "hardware": "local control node (all runs are seconds-scale; no cluster submission needed)",
+    "oss_source": "git clone --depth 1 https://github.com/joconnor22/LIFE (HEAD 2af242866d1014483e9daa68443aa28b2e6df6a2)"
+  },
+  "analysis": "KPIs are extracted programmatically (never typed by hand) into xval/corotational_beam_newmark/table.csv + summary.json; percentages are computed from the stored floats; pass/fail uses the single 15% owner threshold; no outlier removal, no post-hoc filtering. Any run flagged by the stability rule is reported as FAILED with its stage name.",
+  "safety_resource_limits": {"wall_clock_total_s": 900, "per_run_s": 120, "max_memory_mb": 512, "no_gpu": true},
+  "interpretation_limits": [
+    "Structure only: the fluid (LBM/IBM) coupling of LIFE -- implicit IBM force mapping, block Gauss-Seidel coupling, Aitken under-relaxation -- is explicitly out of scope; nothing here validates FSI behaviour.",
+    "Euler-Bernoulli kinematics: no shear deformation, no axial-moment coupling; conclusions do not transfer to stocky members.",
+    "The external references are planar elastica / linear modal / circular-arc solutions, i.e. they validate geometric nonlinearity and time integration, not material nonlinearity, buckling or contact.",
+    "The LIFE transplant is a method transplant into the TensorLBM integrator, not a binary-level run of LIFE (its Newton/Newmark code path is the same, but LAPACK/OpenMP/IBM coupling are not exercised)."
+  ]
+}
