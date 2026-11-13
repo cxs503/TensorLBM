@@ -1,0 +1,8 @@
+# maturity_gate.judge 干跑（只读，不写 DB/不开返修单）
+judge(declared=0) -> (0, [])
+link_original -> 18225
+counterfactual judge(declared=1) -> (0, ['L1 缺: tests'])
+counterfactual judge(declared=2) -> (0, ['L2 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失)', 'L1 缺: tests'])
+counterfactual judge(declared=3) -> (0, ['L3 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失),integration_callers(grep 无引用)', 'L2 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失)', 'L1 缺: tests'])
+counterfactual judge(declared=4) -> (0, ['L4 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失),integration_callers(grep 无引用)', 'L3 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失),integration_callers(grep 无引用)', 'L2 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失)', 'L1 缺: tests'])
+counterfactual judge(declared=5) -> (0, ['L5 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失),integration_callers(grep 无引用),external_anchor(工件缺失)', 'L4 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失),integration_callers(grep 无引用)', 'L3 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失),integration_callers(grep 无引用)', 'L2 缺: impl_files(占位/缺失),entry(工件缺失),run_artifacts(工件缺失)', 'L1 缺: tests'])
