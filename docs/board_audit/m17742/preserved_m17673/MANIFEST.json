@@ -1,0 +1,15 @@
+{
+ "copied_from": "/root/tp-agent/work/m17673",
+ "note": "uncommitted in m17673 at audit time; byte-verbatim copy",
+ "sha256": {
+  "src/tensorlbm/runtime_geometry.py": "da8f43ae57ce8aaaf7fa60f73528484bf2e1ba17aa30d34e47be2e90d3eb92dc",
+  "tests/test_runtime_geometry.py": "a85e7126164576a156d49dc7e91219870140fd8a769a3650e39b4b429fadeaa7",
+  "xval/life_geometry_config/xval_life_geometry_config.py": "0e072d72315b31a9f91c1ec20d94c845ce9cb3daea25067008d4176a65de3f53",
+  "runs/m17673/xval_parity.json": "aba847c543508e7cfcbf56435ddcf1e3fab28fc66ee1cf83bd19f57f2ccb8f2e",
+  "runs/m17673/baseline_D20.log": "3acd8a81863d43cea90a24b291c3fcd6f4ab9a886c9890479cbd3e96103908c7",
+  "artifacts/xval_life_geometry_config/fig1_geometry_parity.png": "133980e65ec285ca76fb5effed785a65ed0b2091f254e108c55cb4936f8f6549",
+  "artifacts/xval_life_geometry_config/fig2_dx_sensitivity.png": "5343cbf5db3b44ffab43cb826ca0457fe32b01d4b487662e5648f1c52ef7cba2",
+  "docs/reports/XVAL_LIFE_GEOMETRY_CONFIG.md": "c6f9782705ed052ca602cf6d5c4f340b4a8065295fa65b8ec0c064df6487896b",
+  "docs/reports/XVAL_LIFE_GEOMETRY_CONFIG_diffs.md": "f35fc5b465fd5a5fccfab08bc0b7a6c6c68f397852644fb6ec363449a51677b6"
+ }
+}
