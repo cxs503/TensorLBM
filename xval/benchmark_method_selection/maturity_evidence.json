@@ -1,0 +1,313 @@
+{
+  "case": "XVAL-LBM-METHOD-SELECTION-FIRST-EVIDENCE",
+  "anchor": "TensorLBM / xval/benchmark_method_selection",
+  "mission_id": 18288,
+  "levels": {
+    "L1": {
+      "tests": [
+        {
+          "path": "tests/test_xval_benchmark_method_selection.py",
+          "exists": true,
+          "sha256": "b29ba3cb071bc314fc096e459a853ed1f6000e47d096a6de043b6fddeecf7925",
+          "bytes": 4052,
+          "lines": 98,
+          "n_functions": 5,
+          "placeholders": [],
+          "non_placeholder": true
+        }
+      ]
+    },
+    "L2": {
+      "impl_files": [
+        {
+          "path": "xval/benchmark_method_selection/run_arm.py",
+          "exists": true,
+          "sha256": "9705b236c272bbf3038d8ef76660f97c8745b2c46fddce693aa161ef9658565a",
+          "bytes": 16593,
+          "lines": 396,
+          "n_functions": 8,
+          "placeholders": [],
+          "non_placeholder": true
+        },
+        {
+          "path": "xval/benchmark_method_selection/analyze.py",
+          "exists": true,
+          "sha256": "0bfe9a7610dea0aafafab34172d596647dc9d1d021f4458514a510bc4cc6600f",
+          "bytes": 13574,
+          "lines": 323,
+          "n_functions": 8,
+          "placeholders": [],
+          "non_placeholder": true
+        },
+        {
+          "path": "xval/benchmark_method_selection/make_report.py",
+          "exists": true,
+          "sha256": "fe63aaeb3eee677997c078ce19db6e7a44d9b065e90415b3bfc1ec296fcc6bf0",
+          "bytes": 19443,
+          "lines": 292,
+          "n_functions": 3,
+          "placeholders": [],
+          "non_placeholder": true
+        },
+        {
+          "path": "xval/benchmark_method_selection/oss_crosscheck.py",
+          "exists": true,
+          "sha256": "e2f1089579aeee8ba2633454904de74fc155fd213be18cc76475057fe0726167",
+          "bytes": 11006,
+          "lines": 271,
+          "n_functions": 11,
+          "placeholders": [],
+          "non_placeholder": true
+        }
+      ],
+      "entry": "python3 benchmarks/xval_method_selection_bench.py --smoke",
+      "entry_file": {
+        "path": "benchmarks/xval_method_selection_bench.py",
+        "exists": true,
+        "sha256": "f0ba46acbc42b7b4168c6d147ecdd5e667198a741194fd9dc7ff2a304ac93d35",
+        "bytes": 3755,
+        "lines": 99,
+        "n_functions": 4,
+        "placeholders": [],
+        "non_placeholder": true
+      },
+      "run_artifacts": [
+        {
+          "path": "xval/benchmark_method_selection/runs/A1_D10/result.json",
+          "exists": true,
+          "sha256": "cc39ae3eb428eac8655d616a46bcad84006348a547e6df093968b61aad0eb9b3",
+          "bytes": 736,
+          "arm": "A1",
+          "D": 10,
+          "status": "ok"
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A1_D10/trace.npz",
+          "exists": true,
+          "sha256": "25e2b1a5aec1891beac69b43b2f4bdb9e89729f92d4124d12ec4c4d58c8c5b47",
+          "bytes": 855270
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A2_D10/result.json",
+          "exists": true,
+          "sha256": "df57b7a3943692d54e79024e932ac66c302f8bdebb84a9e63e13186d9daf6577",
+          "bytes": 739,
+          "arm": "A2",
+          "D": 10,
+          "status": "ok"
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A2_D10/trace.npz",
+          "exists": true,
+          "sha256": "f7d925ca0bc370947e908e4ea5cd06bb28c898f3d2bf06b8cecebb87ee656aa1",
+          "bytes": 859073
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A3_D10/fail.json",
+          "exists": true,
+          "sha256": "2ce0e6cfd4c1a5c7b53cedb8952d5863d3715615b1d66683494cea4ab4683de8",
+          "bytes": 391,
+          "arm": "A3",
+          "D": 10,
+          "status": "blowup"
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A4_D10/result.json",
+          "exists": true,
+          "sha256": "11c2bb3c0e86a29c0f5df5e29c3ca1ee629b4c718cd5755b98ac759594c92d70",
+          "bytes": 734,
+          "arm": "A4",
+          "D": 10,
+          "status": "ok"
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A4_D10/trace.npz",
+          "exists": true,
+          "sha256": "ae19e906884eeec66528ef3d9d22601d44cfa28407c0258bd45a7d42e1427a6c",
+          "bytes": 860823
+        },
+        {
+          "path": "xval/benchmark_method_selection/runs/A5_D10/fail.json",
+          "exists": true,
+          "sha256": "7cb2ba4754729c9c32e70ad207720e104ac526fa49a9dff182d923c9ddaa6552",
+          "bytes": 398,
+          "arm": "A5",
+          "D": 10,
+          "status": "blowup"
+        }
+      ]
+    },
+    "L3": {
+      "integration_callers": [
+        {
+          "path": "benchmarks/case_pool/run_pool.py",
+          "claimed_role": "case-pool driver discovers/executes the xval_method_selection case",
+          "exists": true,
+          "call_lines": [
+            {
+              "line": 12,
+              "text": "PYTHONPATH=src python3 benchmarks/case_pool/run_pool.py --case xval_method_selection --smoke"
+            }
+          ],
+          "is_real_caller": true
+        },
+        {
+          "path": "benchmarks/case_pool/xval_method_selection/run_case.py",
+          "claimed_role": "case-pool case entry: runs the method-selection arms through the library",
+          "exists": true,
+          "call_lines": [
+            {
+              "line": 6,
+              "text": "(``xval/benchmark_method_selection/run_arm.py::run_arm``) and routes the"
+            },
+            {
+              "line": 8,
+              "text": "(``tensorlbm.method_selection.select_collision``), so the selection decision and"
+            },
+            {
+              "line": 11,
+              "text": "It writes real artefacts under ``artifacts/case_xval_method_selection/<tag>/``:"
+            },
+            {
+              "line": 18,
+              "text": "PYTHONPATH=src python3 benchmarks/case_pool/xval_method_selection/run_case.py --smoke"
+            },
+            {
+              "line": 19,
+              "text": "PYTHONPATH=src python3 benchmarks/case_pool/xval_method_selection/run_case.py --arm A1 --D 6"
+            },
+            {
+              "line": 30,
+              "text": "sys.path.insert(0, str(REPO / \"xval\" / \"benchmark_method_selection\"))"
+            },
+            {
+              "line": 32,
+              "text": "from tensorlbm.method_selection import select_collision  # noqa: E402"
+            },
+            {
+              "line": 33,
+              "text": "from run_arm import ARMS, run_arm  # noqa: E402"
+            },
+            {
+              "line": 35,
+              "text": "ART = REPO / \"artifacts\" / \"case_xval_method_selection\""
+            },
+            {
+              "line": 38,
+              "text": "#: resolution.  The full matrix lives in xval/benchmark_method_selection."
+            },
+            {
+              "line": 55,
+              "text": "sel = select_collision(nu=nu, wall_bounded=True,"
+            },
+            {
+              "line": 60,
+              "text": "res = run_arm(arm, D=D, steps=entry[\"steps\"], threads=threads,"
+            }
+          ],
+          "is_real_caller": true
+        },
+        {
+          "path": "src/tensorlbm/method_selection.py",
+          "claimed_role": "library entry: select_collision() exposes the selection decision to the solver",
+          "exists": true,
+          "call_lines": [
+            {
+              "line": 4,
+              "text": "the ``xval/benchmark_method_selection`` harness cross-validates.  It is the"
+            },
+            {
+              "line": 9,
+              "text": "``xval/benchmark_method_selection`` and ``docs/XVAL_LBM_BENCHMARK_METHOD_SELECTION.md``):"
+            },
+            {
+              "line": 83,
+              "text": "def select_collision("
+            }
+          ],
+          "is_real_caller": true
+        }
+      ]
+    },
+    "L4": {
+      "benchmark": {
+        "tolerance_pct": 15.0,
+        "rows": [
+          {
+            "metric": "cd_mean_last50 A1-vs-A2 @D=10",
+            "ref": 1.6132947378116644,
+            "got": 1.4660336012540012,
+            "rel_error_pct": -9.127974765318703,
+            "within_15pct": true,
+            "ref_source": "runs/A1_D10/result.json (recorded TensorLBM selection)",
+            "got_source": "runs/A2_D10/result.json"
+          },
+          {
+            "metric": "cl_amp A1-vs-A2 @D=10",
+            "ref": 0.6579248352005606,
+            "got": 0.3515523646082385,
+            "rel_error_pct": -46.56648513639526,
+            "within_15pct": false,
+            "ref_source": "runs/A1_D10/result.json (recorded TensorLBM selection)",
+            "got_source": "runs/A2_D10/result.json"
+          },
+          {
+            "metric": "st_fft A1-vs-A2 @D=10",
+            "ref": 0.16899580031695963,
+            "got": 0.17662926112262423,
+            "rel_error_pct": 4.516952960575163,
+            "within_15pct": true,
+            "ref_source": "runs/A1_D10/result.json (recorded TensorLBM selection)",
+            "got_source": "runs/A2_D10/result.json"
+          },
+          {
+            "metric": "cd_mean_last50 A1-vs-A4 @D=10",
+            "ref": 1.6132947378116644,
+            "got": 1.642771191938185,
+            "rel_error_pct": 1.8270966510746618,
+            "within_15pct": true,
+            "ref_source": "runs/A1_D10/result.json (recorded TensorLBM selection)",
+            "got_source": "runs/A4_D10/result.json"
+          },
+          {
+            "metric": "cl_amp A1-vs-A4 @D=10",
+            "ref": 0.6579248352005606,
+            "got": 0.556625096634633,
+            "rel_error_pct": -15.396855863488955,
+            "within_15pct": false,
+            "ref_source": "runs/A1_D10/result.json (recorded TensorLBM selection)",
+            "got_source": "runs/A4_D10/result.json"
+          },
+          {
+            "metric": "st_fft A1-vs-A4 @D=10",
+            "ref": 0.16899580031695963,
+            "got": 0.1717673074998151,
+            "rel_error_pct": 1.6399858325812633,
+            "within_15pct": true,
+            "ref_source": "runs/A1_D10/result.json (recorded TensorLBM selection)",
+            "got_source": "runs/A4_D10/result.json"
+          },
+          {
+            "metric": "kernel k1_collision rel-L2 (OSS source vs TensorLBM)",
+            "ref": 1.0,
+            "got": 1.1757884876259976e-07,
+            "rel_error_pct": 1.1757884876259976e-05,
+            "within_15pct": true,
+            "ref_source": "executed OSS source (Maarten-vd-Sande/lbm@573a01c)",
+            "got_source": "oss_crosscheck.json"
+          },
+          {
+            "metric": "kernel k2_streaming rel-L2 (OSS source vs TensorLBM)",
+            "ref": 1.0,
+            "got": 2.709855973692391e-08,
+            "rel_error_pct": 2.709855973692391e-06,
+            "within_15pct": true,
+            "ref_source": "executed OSS source (Maarten-vd-Sande/lbm@573a01c)",
+            "got_source": "oss_crosscheck.json"
+          }
+        ]
+      },
+      "repro_cmd": "python3 benchmarks/xval_method_selection_bench.py --smoke && python3 xval/benchmark_method_selection/analyze.py && python3 xval/benchmark_method_selection/maturity_evidence.py"
+    }
+  }
+}
