@@ -68,10 +68,6 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "erf_diffusion_profile": ("passive_scalar_verification", "erf_diffusion_profile"),
     "run_verification": ("passive_scalar_verification", "run_verification"),
     "VerificationSpec": ("passive_scalar_verification", "VerificationSpec"),
-    "AnchorConfig": ("les_graph_unroll.tgv_anchor", "AnchorConfig"),
-    "SelectionCase": ("les_graph_unroll.selection", "SelectionCase"),
-    "run_tgv_anchor": ("les_graph_unroll.tgv_anchor", "run_tgv_anchor"),
-    "select_and_judge": ("les_graph_unroll.selection", "select_and_judge"),
     "AIPipelineResult": ("ai", "AIPipelineResult"),
     "AMRAdvanceResult": ("static_block_amr", "AMRAdvanceResult"),
     "AMRInterfaceValidationConfig": ("amr_interface_validation", "AMRInterfaceValidationConfig"),
@@ -293,6 +289,15 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "TwoPhaseChannelCompareConfig": ("multiphase_benchmarks", "TwoPhaseChannelCompareConfig"),
     "TwoPhasePoiseuilleConfig": ("porous_media", "TwoPhasePoiseuilleConfig"),
     "ValidationLevel": ("boundary.wall_function_contract", "ValidationLevel"),
+    "BodyForceChannel": ("nebb_bodyforce", "BodyForceChannel"),
+    "ChannelConfig": ("nebb_bodyforce", "ChannelConfig"),
+    "ChannelResult": ("nebb_bodyforce", "ChannelResult"),
+    "WALL_MODES": ("nebb_bodyforce", "WALL_MODES"),
+    "analytic_poiseuille": ("nebb_bodyforce", "analytic_poiseuille"),
+    "apply_force_corrected_nebb": ("nebb_bodyforce", "apply_force_corrected_nebb"),
+    "effective_wall_offset": ("nebb_bodyforce", "effective_wall_offset"),
+    "profile_errors": ("nebb_bodyforce", "profile_errors"),
+    "velocity_correction": ("nebb_bodyforce", "velocity_correction"),
     "W": ("d2q9", "W"),
     "W27": ("d3q27", "W"),
     "W3D": ("d3q19", "W"),
@@ -483,6 +488,8 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "collide_advanced_3d": ("advanced_collision_contract", "collide_advanced_3d"),
     "collide_ai_les_bgk": ("ai", "collide_ai_les_bgk"),
     "collide_bgk": ("solver", "collide_bgk"),
+    "collide_bgk_les": ("solver", "collide_bgk_les"),
+    "calibrate_les_sc": ("solver", "calibrate_les_sc"),
     "collide_bgk27": ("d3q27", "collide_bgk27"),
     "collide_bgk3d": ("solver3d", "collide_bgk3d"),
     "collide_bgk_dg": ("dg_advection", "collide_bgk_dg"),
@@ -1832,6 +1839,17 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         run_two_phase_channel_compare,
     )
     from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
+    from .nebb_bodyforce import (
+        BodyForceChannel,
+        ChannelConfig,
+        ChannelResult,
+        WALL_MODES,
+        analytic_poiseuille,
+        apply_force_corrected_nebb,
+        effective_wall_offset,
+        profile_errors,
+        velocity_correction,
+    )
     from .non_newtonian import (
         apparent_viscosity_power_law,
         collide_power_law_bgk,
@@ -2174,12 +2192,6 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         run_verification,
         taylor_aris_ratio,
     )
-    from .les_graph_unroll import (
-        AnchorConfig,
-        SelectionCase,
-        run_tgv_anchor,
-        select_and_judge,
-    )
     from .thermal import (
         C_D2Q5,
         W_D2Q5,
@@ -2311,6 +2323,15 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
     from .zoo import validate as zoo_validate
 
 __all__ = [
+    "BodyForceChannel",
+    "ChannelConfig",
+    "ChannelResult",
+    "WALL_MODES",
+    "analytic_poiseuille",
+    "apply_force_corrected_nebb",
+    "effective_wall_offset",
+    "profile_errors",
+    "velocity_correction",
     "__version__",
     "DispersionConfig",
     "aris_dispersion_coefficient",
@@ -2329,10 +2350,6 @@ __all__ = [
     "erf_diffusion_profile",
     "run_verification",
     "VerificationSpec",
-    "AnchorConfig",
-    "SelectionCase",
-    "run_tgv_anchor",
-    "select_and_judge",
     "AdaptationSchedule",
     "AMRPatch2D",
     "AMRPatch3D",
@@ -2445,6 +2462,8 @@ __all__ = [
     "apply_simple_channel_boundaries",
     "apply_zou_he_channel_boundaries",
     "collide_bgk",
+    "collide_bgk_les",
+    "calibrate_les_sc",
     "collide_mrt",
     "collide_rlbm",
     "collide_trt",
