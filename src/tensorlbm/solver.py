@@ -83,18 +83,32 @@ def _relaxation_time(tau, *, where: str):
     return check_relaxation_time(tau, where=where)
 
 
-def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
+def collide_bgk(f: torch.Tensor, tau: float, tau_field: torch.Tensor | None = None) -> torch.Tensor:
     """Single-relaxation-time BGK collision step.
 
     ``tau`` must be finite and > 0.5 (see :mod:`tensorlbm.input_contract`); the
     check used to be missing here while sibling modules already enforced it,
     so the same illegal ``tau`` was rejected or silently propagated depending on
     which entry point the caller happened to use.
+
+    ``tau_field`` mirrors the MRT argument of the same name: an optional
+    ``(ny, nx)`` per-cell relaxation time (e.g. ``tau*(1+alpha*sigma)`` from
+    :func:`~tensorlbm.boundary.boundaries.make_sponge_strength`).  When given,
+    the collision relaxes cell-wise and the scalar ``tau`` is only validated, not
+    used, so the BGK and MRT arms of a sponge study are the same knob.  ``None``
+    keeps the original uniform behaviour.
     """
     tau = _relaxation_time(tau, where="solver.collide_bgk")
     rho, ux, uy = macroscopic(f)
     feq = equilibrium(rho, ux, uy)
-    return f - (f - feq) / tau
+    if tau_field is None:
+        return f - (f - feq) / tau
+    if tau_field.shape != rho.shape:
+        raise ValueError(
+            f"collide_bgk: tau_field must have shape {tuple(rho.shape)} (ny, nx), "
+            f"got {tuple(tau_field.shape)}"
+        )
+    return f - (f - feq) / tau_field.to(device=f.device, dtype=f.dtype).unsqueeze(0)
 
 
 def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -418,82 +432,6 @@ def collide_rlbm(f: torch.Tensor, tau: float) -> torch.Tensor:
     fneq_reg = (9.0 / 2.0) * w_view * (h_xx * pi_xx + h_yy * pi_yy + 2.0 * h_xy * pi_xy)
 
     return feq + (1.0 - 1.0 / tau) * fneq_reg
-
-
-def collide_bgk_les(
-    f: torch.Tensor,
-    tau0: float,
-    smagorinsky_sc: float | torch.Tensor = 0.17,
-    boundary: torch.Tensor | None = None,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """BGK collision with a Smagorinsky-type LES relaxation time (differentiable).
-
-    The effective relaxation time is the non-equilibrium-stress closure
-
-        ``tau = 1/2 (tau0 + sqrt(tau0^2 + 6 Q Sc / rho))``,
-        ``Q = sqrt(2 sum_i (f_i - f_i^eq)^2 E_i)``
-
-    with ``E_i = (|c_ix| + |c_iy|)^2``.  ``Sc`` may be a tensor carrying
-    ``requires_grad``: the whole collision then stays inside an autograd graph,
-    which is what makes :func:`calibrate_les_sc` (BPTT) possible.  ``Sc = 0``
-    reproduces :func:`collide_bgk` exactly.
-
-    This is the main-solver entry point for the graph-unroll/BPTT LES path; the
-    implementation lives in :mod:`tensorlbm.les_bptt` (see the module docstring
-    for the mapping onto the reference implementation and its deviations).
-
-    Parameters
-    ----------
-    f : ``[9, ny, nx]`` or ``[B, 9, ny, nx]`` distribution.
-    tau0 : bare relaxation time, ``tau0 = 3 nu0 + 1/2``.
-    smagorinsky_sc : LES parameter (scalar).
-    boundary : optional ``[1, ny, nx]`` mask, ``1`` = solid.
-
-    Returns
-    -------
-    ``(f_post_collision, rho, vel)`` with ``vel`` shaped ``[B, 2, ny, nx]``.
-    """
-    from .les_bptt import collide_les
-
-    squeeze = f.dim() == 3
-    f4 = f.unsqueeze(0) if squeeze else f
-    b4 = boundary
-    if b4 is not None and b4.dim() == 3:
-        b4 = b4.unsqueeze(0)
-    out, rho, vel = collide_les(f4, tau0=tau0, sc=smagorinsky_sc, boundary=b4)
-    if squeeze:
-        return out.squeeze(0), rho.squeeze(0), vel.squeeze(0)
-    return out, rho, vel
-
-
-def calibrate_les_sc(
-    target_vel: "torch.Tensor | list[torch.Tensor]",
-    f0: torch.Tensor,
-    *,
-    tau0: float,
-    sc_init: float = 0.05,
-    boundary: torch.Tensor | None = None,
-    iters: int = 120,
-    lr: float = 0.05,
-) -> dict:
-    """Identify the LES parameter ``Sc`` by back-propagation through time.
-
-    ``target_vel`` is the reference velocity history (one tensor per unrolled
-    step, ``[2, ny, nx]`` or ``[B, 2, ny, nx]``); the unrolled window length is
-    inferred from it.  Returns the calibration history (see
-    :func:`tensorlbm.les_bptt.calibrate_les_parameter`).
-    """
-    from .les_bptt import calibrate_les_parameter
-
-    seq = [target_vel] if isinstance(target_vel, torch.Tensor) else list(target_vel)
-    seq = [t.unsqueeze(0) if t.dim() == 3 else t for t in seq]
-    f4 = f0.unsqueeze(0) if f0.dim() == 3 else f0
-    b4 = boundary
-    if b4 is not None and b4.dim() == 3:
-        b4 = b4.unsqueeze(0)
-    return calibrate_les_parameter(
-        seq, f4, tau0=tau0, sc_init=sc_init, boundary=b4, iters=iters, lr=lr
-    )
 
 
 def stream(f: torch.Tensor) -> torch.Tensor:
