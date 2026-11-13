@@ -1,0 +1,117 @@
+{
+  "anchor": "XVAL-LBM-VON-NEUMANN-AUTO",
+  "mission": 18789,
+  "round": 2,
+  "repair_of": 18581,
+  "written_before_runs": true,
+  "decision": "Automated cross-validation of von Neumann linear stability analysis for D2Q9 LBM (BGK/MRT): the analytic amplification-matrix eigenvalues must match measured modal growth rates from full nonlinear periodic-box integration within predeclared thresholds.",
+  "alternatives": {
+    "A_analytic_only": "von Neumann eigenvalue analysis only (no measurement) -- rejected: no cross-validation against actual solver behavior",
+    "B_measurement_only": "periodic-box integration only (no analytic prediction) -- rejected: no reference to validate against",
+    "C_selected": "both arms: analytic von Neumann prediction + measured modal growth from nonlinear LBM, compared point-by-point with predeclared thresholds"
+  },
+  "hypothesis": "H1: The measured modal growth rate from full nonlinear LBM integration matches the von Neumann eigenvalue prediction to within 5% relative error for all stable points, and the stability boundary (tau=0.5) is correctly identified. H0 (falsifier): any point has >5% relative error in growth rate, or the stability boundary is misidentified.",
+  "metrics": {
+    "growth_rel_err": "relative error |sigma_measured - sigma_predicted| / |sigma_predicted| for the shear branch",
+    "phase_speed_rel_err": "relative error |c_measured - c_predicted| / |c_predicted| for acoustic branches",
+    "lambda_max": "spectral radius max|mu| across all wave vectors",
+    "stability_verdict": "boolean: stable iff lambda_max <= 1 + tol",
+    "viscosity_rel_err": "relative error |nu_num - nu_CE| / nu_CE from equivalent equation fit",
+    "fit_r2": "R-squared of the exponential fit to modal amplitude",
+    "purity": "fraction of modal energy in the target branch"
+  },
+  "unit_of_analysis": "one (tau, Ma, theta, collision_model) point; each point has an analytic prediction and a measured growth rate",
+  "baseline_control": {
+    "baseline": "Chapman-Enskog viscosity nu = (tau - 0.5)/3 for BGK at Ma=0, theta->0",
+    "control": "von Neumann eigenvalue at theta->0 must recover nu_CE to within 1%"
+  },
+  "predeclared_thresholds": {
+    "C1_growth_rel_err_max": 0.05,
+    "C1_phase_speed_rel_err_max": 0.05,
+    "C1_min_points": 24,
+    "C1_purity_min": 0.99,
+    "C1_r2_min": 0.99,
+    "C2_stability_boundary_tpr": 0.90,
+    "C2_stability_boundary_fpr": 0.10,
+    "C3_viscosity_fit_rel_dev_max": 0.10,
+    "C3_intercept_rel_err_max": 0.02,
+    "C4_viscosity_band_1pct_exists": true,
+    "owner_acceptance_pct": 15.0,
+    "gate_rule": "all C1-C4 criteria must pass; individual point errors >15% are FAIL"
+  },
+  "acceptance_rule": "every declared criterion (C1-C4) must pass; a failed criterion is reported as FAIL, never dropped",
+  "design_cells": {
+    "C1_physical_shear": {
+      "taus": [0.55, 0.60, 0.70, 0.80, 1.00],
+      "mas": [0.0, 0.2, 0.4],
+      "theta_modes": [2, 4],
+      "n_box": 32,
+      "n_steps": 1200,
+      "seed": "shear",
+      "observable": "vorticity",
+      "note": "physical shear seed, vorticity observable, error < 5%"
+    },
+    "C1_acoustic": {
+      "taus": [0.60, 0.80],
+      "mas": [0.0, 0.2],
+      "theta_modes": [2, 4],
+      "n_box": 32,
+      "n_steps": 800,
+      "seed": "eigen",
+      "target": "sound+",
+      "note": "branch-selective acoustic seed"
+    },
+    "C2_stability_boundary": {
+      "taus": [0.40, 0.45, 0.50, 0.55, 0.60, 0.70, 0.80, 1.00],
+      "mas": [0.0, 0.2, 0.4, 0.6],
+      "n_box": 32,
+      "n_steps": 5000,
+      "note": "stability boundary: tau<0.5 should be unstable, tau>0.5 stable"
+    },
+    "C3_equivalent_equation": {
+      "taus": [0.60, 0.80, 1.00],
+      "mas": [0.0, 0.2],
+      "theta_range": [0.02, 1.20, 27],
+      "note": "nu_num(theta) = a + b*theta^2 fit, max rel dev < 10%"
+    },
+    "C4_viscosity_band": {
+      "taus": [0.52, 0.60, 0.70, 0.80, 1.00, 1.20],
+      "mas": [0.0, 0.1, 0.2, 0.3, 0.4],
+      "theta_range": [0.002, 1.20, 40],
+      "note": "1% contamination band at Ma=0"
+    }
+  },
+  "variables_changed": [
+    "collision model (BGK vs MRT)",
+    "relaxation time tau",
+    "Mach number Ma",
+    "wave number theta",
+    "resolution n"
+  ],
+  "variables_held_fixed": [
+    "D2Q9 lattice, dx=dt=1, cs^2=1/3",
+    "periodic box, float64 throughout",
+    "base density rho0=1",
+    "MRT rates: s_e=1.64, s_eps=1.54, s_q=1.7 (when applicable)"
+  ],
+  "confounders": [
+    "the nonlinear LBM has O(Ma^2) compressibility effects not present in the linear analysis -- measurable through the Ma sensitivity arm",
+    "finite box size discretizes the wave vector spectrum; the analytic prediction uses the exact box-grid wave vectors, not a continuum",
+    "at tau=1 the BGK kinetic eigenvalues vanish and the kinetic subspace becomes degenerate -- eigenvector continuation is required for mode identification",
+    "float64 round-off sets a noise floor of ~1e-16 for modal amplitude; the fit window must stay above 1e-12"
+  ],
+  "repetitions": "each design cell is deterministic (no RNG, fixed step count), so one run per cell; reproducibility is asserted by re-running the main cell twice and requiring bitwise equality",
+  "analysis": "KPIs compared pairwise per design cell; no outlier removal; no post-hoc threshold change; the decision is the gate verdict on H1 plus the emitted negative-knowledge set for any failed criterion",
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1 CPU float64",
+    "numpy": "2.4.6",
+    "matplotlib": "3.10.8",
+    "work_tree": "/root/tp-agent/work/m18789 (branch agent/m18789)",
+    "raw_data": "benchmarks/xval_von_neumann_auto/result.json",
+    "compute": "local for quick validation; cluster for full campaign if >10min"
+  },
+  "stopping_rule": "each arm stops at the predeclared step budget or when the modal amplitude exits the linear band; no arm is extended after looking at KPI values",
+  "fail_stage_plan": "fail_stage names the stage (analytic / measurement / comparison / gate / report) and failure_reason carries the measured deviation or the exception text",
+  "external_anchor": "Sterling & Chen (1996) JCP 123:196-206; Lallemand & Luo (2000) PRE 61:6546"
+}

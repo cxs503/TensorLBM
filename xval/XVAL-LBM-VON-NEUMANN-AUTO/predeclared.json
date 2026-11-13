@@ -1,0 +1,54 @@
+{
+  "feature_slug": "XVAL-LBM-VON-NEUMANN-AUTO",
+  "declared_before_runs": "2026-11-13",
+  "decision": "Automated cross-validation of von Neumann linear stability analysis for D2Q9 LBM: the analytic amplification-matrix eigenvalues must match measured modal growth rates from full nonlinear periodic-box integration within predeclared thresholds.",
+  "alternatives": [
+    "A: analytic-only von Neumann analysis (no measurement) -- rejected: no cross-validation against actual solver behavior",
+    "B: measurement-only periodic box integration (no analytic prediction) -- rejected: no reference to validate against",
+    "C (selected): both arms -- analytic von Neumann prediction + measured modal growth from nonlinear LBM, compared point-by-point with predeclared thresholds"
+  ],
+  "owner_precision_standard": 0.15,
+  "metrics": {
+    "growth_rel_err": "relative error |sigma_measured - sigma_predicted| / |sigma_predicted| for the shear branch",
+    "phase_speed_rel_err": "relative error |c_measured - c_predicted| / |c_predicted| for acoustic branches",
+    "lambda_max": "spectral radius max|mu| across all wave vectors",
+    "stability_verdict": "boolean: stable iff lambda_max <= 1 + tol",
+    "viscosity_rel_err": "relative error |nu_num - nu_CE| / nu_CE from equivalent equation fit",
+    "fit_r2": "R-squared of the exponential fit to modal amplitude",
+    "purity": "fraction of modal energy in the target branch"
+  },
+  "acceptance": {
+    "C1_growth_rel_err_max": 0.05,
+    "C1_phase_speed_rel_err_max": 0.05,
+    "C1_min_points": 24,
+    "C1_purity_min": 0.99,
+    "C1_r2_min": 0.99,
+    "C2_stability_boundary_tpr": 0.90,
+    "C2_stability_boundary_fpr": 0.10,
+    "C3_viscosity_fit_rel_dev_max": 0.10,
+    "C3_intercept_rel_err_max": 0.02,
+    "C4_viscosity_band_1pct_exists": true,
+    "global": "all C1-C4 criteria must pass; individual point errors >15% are FAIL"
+  },
+  "stopping_rule": "each arm stops at the predeclared step budget or when the modal amplitude exits the linear band; no arm is extended after looking at KPI values",
+  "tiers": {
+    "quick (local, ~30s)": ["reduced tau/Ma set, n=16 box, 600 steps"],
+    "full (cluster, ~8min)": ["full tau/Ma grid, n=32 box, 1200-5000 steps"]
+  },
+  "confounders": [
+    "the nonlinear LBM has O(Ma^2) compressibility effects not present in the linear analysis -- measurable through the Ma sensitivity arm",
+    "finite box size discretizes the wave vector spectrum; the analytic prediction uses the exact box-grid wave vectors, not a continuum",
+    "at tau=1 the BGK kinetic eigenvalues vanish and the kinetic subspace becomes degenerate -- eigenvector continuation is required for mode identification",
+    "float64 round-off sets a noise floor of ~1e-16 for modal amplitude; the fit window must stay above 1e-12"
+  ],
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1 CPU float64",
+    "numpy": "2.4.6",
+    "matplotlib": "3.10.8",
+    "work_tree": "/root/tp-agent/work/m18789 (branch agent/m18789)",
+    "raw_data": "benchmarks/xval_von_neumann_auto/result.json"
+  },
+  "external_anchor": "Sterling & Chen (1996) JCP 123:196-206; Lallemand & Luo (2000) PRE 61:6546",
+  "repro_cmd": "cd /root/tp-agent/work/m18789 && PYTHONPATH=src python3 benchmarks/xval_von_neumann_auto/run_xval.py [--quick]"
+}
