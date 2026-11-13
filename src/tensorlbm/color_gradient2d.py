@@ -125,6 +125,9 @@ def color_gradient_two_tau_step(
     solid_mask: torch.Tensor | None = None,
     visc_mode: str = "mixture",
     phi_solid: torch.Tensor | None = None,
+    wall_contact_angle: float | None = None,
+    wall_contact_angle_by_direction: dict[tuple[int, int], float] | None = None,
+    wetting_periodic: tuple[bool, bool] = (True, False),
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """One Color-Gradient iteration (collision only; streaming is external).
 
@@ -180,6 +183,21 @@ def color_gradient_two_tau_step(
                      color gradient and the surface-tension perturbation see
                      a wall phase instead of a zero-density hole.  ``None``
                      reproduces the stock masked-wall (neutral 90 deg) state.
+        wall_contact_angle: optional prescribed static contact angle (degrees)
+                     for the *geometrical wetting* condition of
+                     :mod:`tensorlbm.cg_wetting_geometric` (gradient-rotation
+                     form; ``theta`` measured inside the ``phi > 0`` phase).
+                     When given, the phase gradient seen by the
+                     surface-tension perturbation is rebuilt with the
+                     isotropic D2Q9 stencil on the wall-extended phase field
+                     and rotated at the wall-adjacent fluid nodes so the
+                     interface normal meets the wall under ``theta``.
+                     ``None`` (default) is byte-identical to the previous
+                     behaviour.
+        wall_contact_angle_by_direction: per-wall-face override, e.g.
+                     ``{(0, 1): 90.0}`` keeps the top wall neutral.
+        wetting_periodic: ``(x, y)`` periodicity handed to the wall-normal
+                     table (``(True, False)`` for a channel with walls).
 
     Returns:
         Post-collision ``(f_r_out, f_b_out)``.
@@ -253,7 +271,34 @@ def color_gradient_two_tau_step(
         half = solid_mask.to(rho_r.dtype) * 0.5
         rho_r_safe = torch.where(solid_mask, half * (1.0 + phi_solid.to(rho_r.dtype)), rho_r)
         rho_b_safe = torch.where(solid_mask, half * (1.0 - phi_solid.to(rho_r.dtype)), rho_b)
-    _phi, nhat_x, nhat_y, mag = cg_phase_gradient(rho_r_safe, rho_b_safe)
+    if wall_contact_angle is None:
+        _phi, nhat_x, nhat_y, mag = cg_phase_gradient(rho_r_safe, rho_b_safe)
+    else:
+        if solid_mask is None:
+            raise ValueError("wall_contact_angle requires solid_mask")
+        # geometrical wetting: isotropic gradient on the wall-extended phase
+        # field, then rotate at the wall-adjacent fluid nodes (port of
+        # openLBMPM RKCG2D ``updateColorGradientOnWettingNew``).
+        from .cg_wetting_geometric import (  # local import: avoids a cycle
+            isotropic_color_gradient,
+            rotate_wall_color_gradient,
+        )
+
+        _phi = (rho_r_safe - rho_b_safe) / (rho_r_safe + rho_b_safe).clamp(min=1e-12)
+        g_x, g_y = isotropic_color_gradient(_phi, solid_mask, periodic=wetting_periodic)
+        g_x, g_y = rotate_wall_color_gradient(
+            g_x,
+            g_y,
+            solid_mask,
+            wall_contact_angle,
+            periodic=wetting_periodic,
+            theta_by_direction=wall_contact_angle_by_direction,
+        )
+        mag64 = torch.sqrt(g_x * g_x + g_y * g_y)
+        mag_safe = torch.clamp(mag64, min=1e-12)
+        nhat_x = (g_x / mag_safe).to(rho_r.dtype)
+        nhat_y = (g_y / mag_safe).to(rho_r.dtype)
+        mag = mag64.to(rho_r.dtype)
 
     ci_dot_n = cx * nhat_x.unsqueeze(0) + cy * nhat_y.unsqueeze(0)
     perturbation = (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n**2 - _CS2)
