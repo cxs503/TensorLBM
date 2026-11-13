@@ -1,0 +1,6 @@
+{
+  "fig1_roundtrip.png": "Round-trip error of the IBM force transfer (spread then interpolate) for the LIFE epsilon-Gram correction (A1) and the identical-kernel control (A2). Non-overlapping layouts (N=16) reach machine zero; the partially overlapping N=32 radial layout leaves 2.2e-3, still 3 orders below the 1e-2 tolerance.",
+  "fig2_epsilon_cost.png": "Solved epsilon and the intrinsic cost of the correction: the Gram system enforces reproduction of a constant Lagrangian field, which for partially overlapping supports requires eps > 1 and therefore inflates the deposited Eulerian force by O(eps-1). The cost is reported, not tuned away.",
+  "fig3_cd.png": "Drag coefficient at Re=100 for the three arms compared with the unbounded 2-D literature band. The 12.5% confinement of the periodic box raises C_D above the unbounded band; the three force-transfer paths agree with each other to ~1%, which is the physically relevant statement for the correction.",
+  "fig4_convergence.png": "Instantaneous and running-mean drag coefficient over the averaging window; the running mean is flat to a few percent over the second half of the window, so the reported time average is converged within the stated spread."
+}
