@@ -1,0 +1,83 @@
+{
+  "schema": "xval-method-selection/round2-predeclared",
+  "anchor": "XVAL-LBM-ROUND2-METHOD-SELECTION",
+  "mission_id": 18241,
+  "written_before_runs": true,
+  "round1_reference": {
+    "report": "docs/XVAL_LBM_BENCHMARK_METHOD_SELECTION.md",
+    "summary": "xval/benchmark_method_selection/summary.json",
+    "oss_repo": "Maarten-vd-Sande/lbm @ 573a01c4d2e6321f3634ff271adca4ce91872e6f",
+    "oss_source_sha256": {
+      "lbm/init.py": "aff2ffa1403d70731eceeaa707b97faa36c32f19d51ef394ebcb0f618cb35b65",
+      "lbm/streamcollide.py": "6d9d5315da97a10fa3d77408ad70d55845be8f87a8c4f7fc558ac2fcac1cb926",
+      "lbm/time_evolve.py": "5f1a9dcd764f47cf03d9cefb5a095f027a7bdc8e7d9a8e64661de32fca328ae3",
+      "lbm/update_types.py": "58be1e813fed9b7a2b27e9acbaee4fa808058a390080d287acdd1d349b08c780",
+      "lbm/util.py": "867f8370c9e18bce33b30709f340093bc42bf69f5a69a28c31ae3b3ee7253afb"
+    },
+    "round1_open_items": [
+      "D=14 rung never ran (container background-process lifetime ~2-3 min) => every round-1 KPI is flagged resolution-unconverged",
+      "the collision x sponge 2x2 factorial is incomplete (BGK+sponge cell missing), so collision and sponge effects are not separable from their interaction",
+      "round-1 gate failed on Cl_amp (-46.57 %, A2 vs A1 at D=10); unresolved whether that is a scheme effect or a grid artifact"
+    ]
+  },
+  "decision": "D1: should TensorLBM's recorded method selection (MRT collision + downstream absorbing sponge) be kept as the default for bluff-body shedding cases, or replaced by the OSS-practice selection (single-relaxation BGK + plain zero-gradient outlet), given the owner 15 % accuracy band?",
+  "alternatives": [
+    "ALT-A (resolution artifact): the round-1 gap between the two selections shrinks below the 15 % band once the grid is resolved (D >= 14).",
+    "ALT-B (scheme effect): the gap persists (or grows) at resolved grids, i.e. the collision operator and/or the sponge change the shedding statistics at fixed physical parameters.",
+    "ALT-C (interaction): neither knob alone explains the gap; the collision effect depends on whether the sponge is on (non-additive 2x2 factorial)."
+  ],
+  "hypothesis": "H1 (ALT-A): at the top predeclared rung D=20 every OSS-style arm (A2 BGK+no-sponge, A6 BGK+sponge, A4 MRT+no-sponge as sponge-isolated control) lies inside the owner 15 % band of A1 on all three round-1 KPIs (cd_mean, st_fft, cl_amp) AND each |delta| at D=20 is smaller than at D=10. H0 (falsifier): any KPI of any OSS-style arm stays >= 15 % off A1 at D=20, or any |delta| grows from D=10 to D=20 => ALT-B/ALT-C; the selection decision is then driven by the measured deltas, not by grid refinement.",
+  "metrics": {
+    "cd_mean": "mean drag coefficient over the last 70 % of the sampled history, Cd = 2 Fx / (u_in^2 D)",
+    "cd_mean_last50": "same over the last 50 % (pre-registered second window, round-1 comparable)",
+    "cl_amp": "(max Cl - min Cl)/2 over the sampled window (round-1 primary KPI; extreme-value estimator)",
+    "cl_rms": "std of Cl over the sampled window (secondary: robustness check on whether cl_amp's spread is a period-count / extreme-value artifact; NOT adjudicating for H1)",
+    "st_fft": "Strouhal from the lift spectrum (mean removal + Hann window + parabolic peak) times D/u_in",
+    "st_zc": "Strouhal from the mean up-crossing period (second estimator, cross-check tol 5 %)",
+    "delta_vs_A1_pct": "100 * (KPI_arm - KPI_A1) / |KPI_A1| at matched D",
+    "factorial_effect_collision": "0.5*((A6-A1)+(A2-A4)): BGK minus MRT averaged over the two sponge states",
+    "factorial_effect_sponge": "0.5*((A4-A1)+(A2-A6)): sponge-off minus sponge-on averaged over the two collisions",
+    "factorial_interaction": "(A2-A6)-(A4-A1): change of the collision effect when the sponge is switched off; |I| > max(|effect_C|,|effect_S|) means the knobs are not separable",
+    "resolution_converged": "|KPI(D=20)-KPI(D=14)|/|KPI(D=20)| < 0.10 AND |KPI(D=14)-KPI(D=10)|/|KPI(D=14)| < 0.10"
+  },
+  "unit_of_analysis": "one arm x one resolution (fixed step schedule, fixed physical parameters); KPIs are scalars per run",
+  "baseline_control": {
+    "ref": "A1 = MRT + sponge at the same D (the recorded TensorLBM selection; identical harness, BC, force sampler, post-processing)",
+    "implementation_control": "A4 = MRT without sponge isolates the sponge knob; A6 = BGK with sponge isolates the collision knob from the other side, completing the 2x2 so both main effects and the interaction are estimable",
+    "code_level_ref": "execution of the OSS source itself (Maarten-vd-Sande/lbm, sha256 above) at kernel level, unchanged, produced in round 1 (collision rel-L2 1.18e-07, streaming rel-L2 2.71e-08) and re-verified in round 2",
+    "external_caliber": "non-adjudicating: the Re=200 primary table (Norberg 1993; Sohankar-Norberg-Davidson 1998) is WITHHELD in this environment (docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md). The trend band Cd in [1.30,1.45], St in [0.160,0.180] extrapolated from the repo's verified Re=100/150 rungs is reported for context and never used to pass or fail H1"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "target_pct": 3.0,
+    "gate_kpis": ["cd_mean", "st_fft", "cl_amp"],
+    "gate_rule": "an arm passes at a given D iff |delta_vs_A1_pct| < 15.0 for EVERY gate KPI at that D; the round-2 gate is evaluated at D=20 and is reported at every D without any KPI being dropped or re-weighted after the fact",
+    "closure_rule": "H1 requires, per gate KPI, |delta(D=20)| < 15 % AND |delta(D=20)| < |delta(D=10)|",
+    "convergence_rule": "resolution_converged as defined in metrics (two consecutive rungs < 10 %)",
+    "st_crosscheck_tolerance_pct": 5.0,
+    "determinism_rule": "one arm is run twice at D=10 with the same thread count; all KPIs must agree to < 1e-9 relative (same binary, same schedule); a mismatch is reported as a harness defect, not averaged away",
+    "stability_rule": "a run whose population becomes non-finite, or whose |Cl| exceeds 10 (50x the O(1) amplitude), stops at that step, writes fail.json, is reported and excluded from the KPI table -- never tuned"
+  },
+  "stopping_rule": "each arm runs the step count fixed a priori by the round-1 schedule: seed 2 periods of St_seed=0.13 plus 15 shedding periods at St_estimate=0.165 => 21259 steps (D=10), 29763 (D=14), 42518 (D=20). No arm is extended or truncated after inspecting KPIs; no wall-clock truncation (a truncated run writes no result.json). Total compute is submitted to the cluster queue (no node pinning).",
+  "variables_changed": [
+    "collision operator: MRT vs BGK (vs TRT in the selection diagnostics A3/A5)",
+    "downstream absorbing sponge: on vs off",
+    "resolution: D = 10, 14, 20 lattice cells per body width"
+  ],
+  "variables_held_fixed": [
+    "Re = 200 (nu = u_in*D/Re, tau = 0.5+3nu), u_in = 0.05 (Ma = 0.0866), blockage D/H = 1/20, domain 20D x 20D, body centre at 6D",
+    "half-way bounce-back on the body, far-field inlet/side BC, post-stream momentum-exchange force sampler",
+    "sponge strength alpha = 10, sponge length 6D (when on)",
+    "inlet seeding 2 periods of St_seed = 0.13 at 10 % of u_in, warmup fraction 0.30",
+    "float64, torch CPU"
+  ],
+  "confounders_and_controls": {
+    "grid": "resolution is the variable under test, so it is crossed with every arm (same schedule formula per D) rather than varied for one arm",
+    "threads": "torch CPU thread count differs between local dry runs and cluster runs; the force histories are sums over cells, so last-digit differences are possible. Controlled by the determinism_rule re-run at a fixed thread count; KPI tolerance for the thread-count nuisance is declared at 1e-6 relative (far below the 15 % decision band)",
+    "period_count": "cl_amp is an extreme-value estimator, so the sampled period count must be identical across arms at a fixed D (it is: same schedule formula); cl_rms is reported as the period-count-robust companion",
+    "round1_vs_round2_code": "round-1 artifacts were produced before A6 existed; round-2 re-runs A1/A2/A4 at D=10 with the same harness so the D=10 row of the ladder is from one code version"
+  },
+  "analysis": "for every (arm, D) report the KPI row and delta_vs_A1_pct; evaluate the gate at each D; build the resolution ladder D=10->14->20 per arm per KPI with the convergence flag; compute the 2x2 factorial main effects and interaction at D=10 and D=20; a threshold is met only if the number satisfies it, otherwise the arm is reported FAIL (no replacement rows, no post-hoc KPI selection); failed arms stay in the table with fail.json cited",
+  "safety_limits": "CPU only, float64, largest lattice 400x400 (1.4 M doubles ~ 11.5 MB); cluster queue with no node pinning; per-arm wall budget < 30 min at 8 threads; artifacts JSON/NPZ/PNG under xval/benchmark_method_selection/{runs,figures,logs}",
+  "deviations": []
+}

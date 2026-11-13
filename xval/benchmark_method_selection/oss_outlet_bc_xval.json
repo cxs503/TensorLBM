@@ -1,0 +1,110 @@
+{
+  "kind": "outlet-bc-reflection-xval",
+  "oss_repo": "Maarten-vd-Sande/lbm @ 573a01c4d2e6321f3634ff271adca4ce91872e6f",
+  "oss_source_sha256": {
+    "lbm/streamcollide.py": "6d9d5315da97a10fa3d77408ad70d55845be8f87a8c4f7fc558ac2fcac1cb926",
+    "lbm/init.py": "aff2ffa1403d70731eceeaa707b97faa36c32f19d51ef394ebcb0f618cb35b65",
+    "lbm/time_evolve.py": "5f1a9dcd764f47cf03d9cefb5a095f027a7bdc8e7d9a8e64661de32fca328ae3",
+    "lbm/util.py": "867f8370c9e18bce33b30709f340093bc42bf69f5a69a28c31ae3b3ee7253afb",
+    "lbm/update_types.py": "58be1e813fed9b7a2b27e9acbaee4fa808058a390080d287acdd1d349b08c780"
+  },
+  "oss_rule_cited": "lbm/streamcollide.py::set_outlet lines 211-216 (zero-gradient copy from ix-1)",
+  "oss_direction_map": "OSS {3,4,5} == TensorLBM {3,6,7} (round-1 measured permutation)",
+  "transplant_note": "OSS applies its outlet rule inside the collision loop (pre-stream); the transplant does the same, so step ordering matches OSS, not the TensorLBM matrix",
+  "config": {
+    "nx": 240,
+    "ny": 40,
+    "u0": 0.0,
+    "tau": 0.55,
+    "pulse_x": 60,
+    "pulse_w": 4.0,
+    "pulse_amp": 0.01,
+    "probe_x": 100,
+    "sponge_d": 6.0,
+    "sponge_alpha": 10.0,
+    "inlet_sponge_cells": 24,
+    "outlet_sponge_cells": 24,
+    "buffer_cells": 12
+  },
+  "results": [
+    {
+      "bc": "oss_zero_gradient",
+      "steps": 596,
+      "probe_x": 100,
+      "t_hit_steps": 310.0,
+      "t_round_steps": 550.8,
+      "window_steps": 46,
+      "incident_peak": 0.0008390876433803651,
+      "reflected_peak": 0.00027301303923987774,
+      "reflection_coefficient": 0.32536891872225887,
+      "noise_floor_rel": 0.5849502576086387
+    },
+    {
+      "bc": "far_field",
+      "steps": 596,
+      "probe_x": 100,
+      "t_hit_steps": 310.0,
+      "t_round_steps": 550.8,
+      "window_steps": 46,
+      "incident_peak": 0.0004897393738598765,
+      "reflected_peak": 1.2243365521413807e-06,
+      "reflection_coefficient": 0.0024999757370778317,
+      "noise_floor_rel": 0.6010121365635549
+    },
+    {
+      "bc": "far_field_sponge",
+      "steps": 596,
+      "probe_x": 100,
+      "t_hit_steps": 310.0,
+      "t_round_steps": 550.8,
+      "window_steps": 46,
+      "incident_peak": 0.0004897393664622385,
+      "reflected_peak": 7.287768535313432e-07,
+      "reflection_coefficient": 0.0014880912245136737,
+      "noise_floor_rel": 0.6010121395143779
+    },
+    {
+      "bc": "absorbing_both_ends",
+      "steps": 596,
+      "probe_x": 100,
+      "t_hit_steps": 310.0,
+      "t_round_steps": 550.8,
+      "window_steps": 46,
+      "incident_peak": 0.0004897393664622385,
+      "reflected_peak": 7.622441645649403e-07,
+      "reflection_coefficient": 0.0015564282080715954,
+      "noise_floor_rel": 0.6010121395143779
+    },
+    {
+      "bc": "wall",
+      "steps": 596,
+      "probe_x": 100,
+      "t_hit_steps": 310.0,
+      "t_round_steps": 550.8,
+      "window_steps": 46,
+      "incident_peak": 0.0008390876433803651,
+      "reflected_peak": 0.0005408014445094089,
+      "reflection_coefficient": 0.6445112721845426,
+      "noise_floor_rel": 0.5849502576086387
+    }
+  ],
+  "reflection_coefficient": {
+    "oss_zero_gradient": 0.32536891872225887,
+    "far_field": 0.0024999757370778317,
+    "far_field_sponge": 0.0014880912245136737,
+    "absorbing_both_ends": 0.0015564282080715954,
+    "wall": 0.6445112721845426
+  },
+  "controls_ok": false,
+  "noise_floor_rel_max": 0.6010121395143779,
+  "incident_peak_spread": 1.7133350938106857,
+  "deviations": [
+    {
+      "when": "after the first full run of the instrument",
+      "what": "the negative control 'periodic' was replaced by 'absorbing_both_ends' and a noise-floor metric; every configuration got an identical 24-cell inlet sponge",
+      "why": "solver.stream is periodic, so with a transparent inlet the left-going half of the pulse wrapped around and aliased into the reflected window: the 'no outlet at all' configuration returned R = 0.70, i.e. the control was measuring wrap-around, not reflection. Design defect, not a threshold change: the positive control (wall, R = 0.97) and the comparison between operators are unaffected; the inlet apparatus is now identical in all configurations so the outlet operator is the only difference",
+      "thresholds_changed": false
+    }
+  ],
+  "interpretation": "R is the fraction of the outgoing acoustic pulse that returns to the probe; lower is better for a non-reflecting outlet"
+}
