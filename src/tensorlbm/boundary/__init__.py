@@ -15,9 +15,12 @@ from .solver2d import (
     collide_bgk2d,
     compute_wall_shear_stress,
 )
+from .wall_normal_preprocess import WallNormalTable, build_wall_normal_table
 from .d2q9 import C2Q9, W2Q9, OPPOSITE_2Q9, CS2_2Q9
 
 __all__ = [
+    "WallNormalTable",
+    "build_wall_normal_table",
     "EquilibriumExtrapolationSpec",
     "apply_cavity_extrapolation",
     "apply_channel_extrapolation",
