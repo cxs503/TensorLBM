@@ -1,0 +1,447 @@
+{
+  "anchor": "XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE",
+  "checks": [
+    {
+      "criterion": "C1_coexistence_pressure",
+      "measured": [
+        0.25,
+        0.25
+      ],
+      "metric": 0.0,
+      "passed": true,
+      "reference": 0.25,
+      "resolution_interface_cells": 1.5,
+      "tolerance": 1e-06
+    },
+    {
+      "criterion": "C2_normal_pressure_uniformity",
+      "measured": 0.23090448902262384,
+      "passed": true,
+      "reference": 0.0,
+      "resolution_interface_cells": 1.5,
+      "tolerance": 0.25
+    },
+    {
+      "criterion": "C3_surface_tension_from_pressure_tensor",
+      "measured": 0.8984864380581464,
+      "metric": 0.10151356194185357,
+      "passed": true,
+      "reference": 1.0,
+      "resolution_interface_cells": 1.5,
+      "scheme": "iso9",
+      "tolerance": 0.15
+    },
+    {
+      "criterion": "C3_surface_tension_from_pressure_tensor",
+      "measured": 0.8984864380581464,
+      "metric": 0.10151356194185357,
+      "passed": true,
+      "reference": 1.0,
+      "resolution_interface_cells": 1.5,
+      "scheme": "5pt",
+      "tolerance": 0.15
+    },
+    {
+      "criterion": "C4_lbm_mechanical_equilibrium_pressure",
+      "measured": 0.1498940400673252,
+      "passed": true,
+      "resolution_interface_cells": 1.5,
+      "tolerance": 0.25
+    },
+    {
+      "criterion": "C4_lbm_residual_velocity",
+      "measured": 0.012920161353952141,
+      "passed": true,
+      "resolution_interface_cells": 1.5,
+      "tolerance": 0.08660254037844385
+    },
+    {
+      "criterion": "C1_coexistence_pressure",
+      "measured": [
+        0.24999999999989875,
+        0.24999999999994937
+      ],
+      "metric": 4.050093593832571e-13,
+      "passed": true,
+      "reference": 0.25,
+      "resolution_interface_cells": 2.0,
+      "tolerance": 1e-06
+    },
+    {
+      "criterion": "C2_normal_pressure_uniformity",
+      "measured": 0.14189782776962157,
+      "passed": true,
+      "reference": 0.0,
+      "resolution_interface_cells": 2.0,
+      "tolerance": 0.25
+    },
+    {
+      "criterion": "C3_surface_tension_from_pressure_tensor",
+      "measured": 1.252140297068228,
+      "metric": 0.060894777198828964,
+      "passed": true,
+      "reference": 1.3333333333333333,
+      "resolution_interface_cells": 2.0,
+      "scheme": "iso9",
+      "tolerance": 0.15
+    },
+    {
+      "criterion": "C3_surface_tension_from_pressure_tensor",
+      "measured": 1.2521402970682285,
+      "metric": 0.06089477719882863,
+      "passed": true,
+      "reference": 1.3333333333333333,
+      "resolution_interface_cells": 2.0,
+      "scheme": "5pt",
+      "tolerance": 0.15
+    },
+    {
+      "criterion": "C4_lbm_mechanical_equilibrium_pressure",
+      "measured": 0.08298665375751524,
+      "passed": true,
+      "resolution_interface_cells": 2.0,
+      "tolerance": 0.25
+    },
+    {
+      "criterion": "C4_lbm_residual_velocity",
+      "measured": 0.00816019944628625,
+      "passed": true,
+      "resolution_interface_cells": 2.0,
+      "tolerance": 0.08660254037844385
+    },
+    {
+      "criterion": "C1_coexistence_pressure",
+      "measured": [
+        0.24999999565348663,
+        0.24999999782674331
+      ],
+      "metric": 1.7386053485779485e-08,
+      "passed": true,
+      "reference": 0.25,
+      "resolution_interface_cells": 3.0,
+      "tolerance": 1e-06
+    },
+    {
+      "criterion": "C2_normal_pressure_uniformity",
+      "measured": 0.06697300072185863,
+      "passed": true,
+      "reference": 0.0,
+      "resolution_interface_cells": 3.0,
+      "tolerance": 0.25
+    },
+    {
+      "criterion": "C3_surface_tension_from_pressure_tensor",
+      "measured": 1.9431423769586074,
+      "metric": 0.028428811520696318,
+      "passed": true,
+      "reference": 2.0,
+      "resolution_interface_cells": 3.0,
+      "scheme": "iso9",
+      "tolerance": 0.15
+    },
+    {
+      "criterion": "C3_surface_tension_from_pressure_tensor",
+      "measured": 1.9431423769586074,
+      "metric": 0.028428811520696318,
+      "passed": true,
+      "reference": 2.0,
+      "resolution_interface_cells": 3.0,
+      "scheme": "5pt",
+      "tolerance": 0.15
+    },
+    {
+      "criterion": "C4_lbm_mechanical_equilibrium_pressure",
+      "measured": 0.03666952600497808,
+      "passed": true,
+      "resolution_interface_cells": 3.0,
+      "tolerance": 0.25
+    },
+    {
+      "criterion": "C4_lbm_residual_velocity",
+      "measured": 0.002968533863016212,
+      "passed": true,
+      "resolution_interface_cells": 3.0,
+      "tolerance": 0.08660254037844385
+    }
+  ],
+  "criteria_source": "/root/tp-agent/work/m18114/xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/predeclared.json",
+  "report": {
+    "anchor": "XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE",
+    "ch_phase_flux_gap": {
+      "diffusion_length_estimate": 10.327955589886443,
+      "numerical_diffusivity_cs2_tau_minus_half": 0.06666666666666665,
+      "peak_decay_ratio": -0.04901487789510806,
+      "peak_final": -0.0490148778940977,
+      "peak_initial": 0.9999999999793865,
+      "steps": 400.0,
+      "tau_g": 0.7
+    },
+    "maxwell": {
+      "mu_coex": 0.0,
+      "p_coex": 0.25,
+      "phi_heavy": 1.0,
+      "phi_light": -1.0,
+      "residual": 0.0
+    },
+    "model": {
+      "closed_forms": {
+        "p_coex": "A^2 / (4 B)",
+        "sigma": "(2 sqrt(2) / 3) sqrt(kappa A^3) / B",
+        "xi": "sqrt(2 kappa / A)"
+      },
+      "free_energy": "f = a/2 phi^2 + b/4 phi^4 + kappa/2 |grad phi|^2, a=-A",
+      "pressure_tensor": "P_ab = d delta_ab + kappa d_a phi d_b phi, d = p0 - kappa phi lap(phi) - kappa/2 |grad phi|^2"
+    },
+    "rows": [
+      {
+        "interface_cells": 1.5,
+        "lbm_run": {
+          "final_max_velocity": 0.012920161353952141,
+          "final_p_nn_total_deviation_relative": 0.1498940400673252,
+          "max_velocity_history": [
+            0.012606536443704927,
+            0.012909473849816727,
+            0.013084663050952341,
+            0.012921649492225346,
+            0.012851455755139036,
+            0.012928041152368076,
+            0.012955313614321371,
+            0.012920161353952141
+          ],
+          "p_nn_total_deviation_history": [
+            0.14826818042684087,
+            0.14700853290646076,
+            0.1497311180116374,
+            0.15094112097389845,
+            0.14951963009311697,
+            0.1490782015001959,
+            0.14972538976733096,
+            0.1498940400673252
+          ],
+          "p_nn_total_mean_history": [
+            0.5821046838699514,
+            0.5821046838699468,
+            0.5821046838699422,
+            0.5821046838699375,
+            0.5821046838699331,
+            0.5821046838699283,
+            0.5821046838699238,
+            0.5821046838699192
+          ],
+          "rho_max": 1.0607578367163637,
+          "rho_min": 0.9790862351618224,
+          "steps": 2000
+        },
+        "schemes": {
+          "5pt": {
+            "coexistence_relative_error": 0.0,
+            "p0_bulk": [
+              0.25,
+              0.25
+            ],
+            "p_coex_closed_form": 0.25,
+            "p_coex_numeric": 0.25,
+            "p_nn_max": 0.2609491854496335,
+            "p_nn_max_deviation": 0.05772612225565596,
+            "p_nn_max_deviation_relative": 0.23090448902262384,
+            "p_nn_mean": 0.24877135053662264,
+            "p_nn_min": 0.19104522828096668,
+            "sigma_analytic": 1.0,
+            "sigma_integral": 0.8984864380581464,
+            "sigma_relative_error": -0.10151356194185357
+          },
+          "iso9": {
+            "coexistence_relative_error": 0.0,
+            "p0_bulk": [
+              0.25,
+              0.25
+            ],
+            "p_coex_closed_form": 0.25,
+            "p_coex_numeric": 0.25,
+            "p_nn_max": 0.2609491854496335,
+            "p_nn_max_deviation": 0.05772612225565596,
+            "p_nn_max_deviation_relative": 0.23090448902262384,
+            "p_nn_mean": 0.24877135053662264,
+            "p_nn_min": 0.19104522828096668,
+            "sigma_analytic": 1.0,
+            "sigma_integral": 0.8984864380581464,
+            "sigma_relative_error": -0.10151356194185357
+          }
+        },
+        "wrap_residual": 0.0,
+        "xi": 1.5
+      },
+      {
+        "interface_cells": 2.0,
+        "lbm_run": {
+          "final_max_velocity": 0.00816019944628625,
+          "final_p_nn_total_deviation_relative": 0.08298665375751524,
+          "max_velocity_history": [
+            0.007891712843354689,
+            0.008160353321801804,
+            0.00830812549552242,
+            0.008157789594888217,
+            0.008100137011092676,
+            0.008170103515153732,
+            0.00819224224008826,
+            0.00816019944628625
+          ],
+          "p_nn_total_deviation_history": [
+            0.08147802382083169,
+            0.08039495663523866,
+            0.08284631720992763,
+            0.0839299043564572,
+            0.0826459690576975,
+            0.08225201707946361,
+            0.08283653192533214,
+            0.08298665375751524
+          ],
+          "p_nn_total_mean_history": [
+            0.5823600573098068,
+            0.5823600573098021,
+            0.5823600573097976,
+            0.5823600573097928,
+            0.5823600573097882,
+            0.5823600573097836,
+            0.5823600573097791,
+            0.5823600573097744
+          ],
+          "rho_max": 1.046955908786412,
+          "rho_min": 0.9853025764827785,
+          "steps": 2000
+        },
+        "schemes": {
+          "5pt": {
+            "coexistence_relative_error": 4.050093593832571e-13,
+            "p0_bulk": [
+              0.24999999999989875,
+              0.24999999999994937
+            ],
+            "p_coex_closed_form": 0.25,
+            "p_coex_numeric": 0.25,
+            "p_nn_max": 0.2573157935540925,
+            "p_nn_max_deviation": 0.03547445694240539,
+            "p_nn_max_deviation_relative": 0.14189782776962157,
+            "p_nn_mean": 0.24902672397647796,
+            "p_nn_min": 0.21355226703407257,
+            "sigma_analytic": 1.3333333333333333,
+            "sigma_integral": 1.2521402970682285,
+            "sigma_relative_error": -0.06089477719882863
+          },
+          "iso9": {
+            "coexistence_relative_error": 4.050093593832571e-13,
+            "p0_bulk": [
+              0.24999999999989875,
+              0.24999999999994937
+            ],
+            "p_coex_closed_form": 0.25,
+            "p_coex_numeric": 0.25,
+            "p_nn_max": 0.2573157935540925,
+            "p_nn_max_deviation": 0.03547445694240539,
+            "p_nn_max_deviation_relative": 0.14189782776962157,
+            "p_nn_mean": 0.24902672397647796,
+            "p_nn_min": 0.21355226703407257,
+            "sigma_analytic": 1.3333333333333333,
+            "sigma_integral": 1.252140297068228,
+            "sigma_relative_error": -0.060894777198828964
+          }
+        },
+        "wrap_residual": 4.3520742565306136e-14,
+        "xi": 2.0
+      },
+      {
+        "interface_cells": 3.0,
+        "lbm_run": {
+          "final_max_velocity": 0.002968533863016212,
+          "final_p_nn_total_deviation_relative": 0.03666952600497808,
+          "max_velocity_history": [
+            0.002670936932713731,
+            0.0029831926140800906,
+            0.0031428779704260035,
+            0.0029597928083429917,
+            0.002900499372514662,
+            0.002984549535375908,
+            0.0030069565758445316,
+            0.002968533863016212
+          ],
+          "p_nn_total_deviation_history": [
+            0.03542752215141354,
+            0.03468096110580632,
+            0.03657014038778783,
+            0.037398140624413045,
+            0.03640142071149022,
+            0.036102339077728196,
+            0.03655601897601635,
+            0.03666952600497808
+          ],
+          "p_nn_total_mean_history": [
+            0.5826600744027358,
+            0.5826600744027313,
+            0.5826600744027266,
+            0.5826600744027219,
+            0.5826600744027173,
+            0.5826600744027126,
+            0.582660074402708,
+            0.5826600744027033
+          ],
+          "rho_max": 1.0260483096976494,
+          "rho_min": 0.9913900089971325,
+          "steps": 2000
+        },
+        "schemes": {
+          "5pt": {
+            "coexistence_relative_error": 1.7386053485779485e-08,
+            "p0_bulk": [
+              0.24999999565348663,
+              0.24999999782674331
+            ],
+            "p_coex_closed_form": 0.25,
+            "p_coex_numeric": 0.25,
+            "p_nn_max": 0.2531158293812875,
+            "p_nn_max_deviation": 0.01674325018046466,
+            "p_nn_max_deviation_relative": 0.06697300072185863,
+            "p_nn_mean": 0.2493267410694072,
+            "p_nn_min": 0.23258349088894253,
+            "sigma_analytic": 2.0,
+            "sigma_integral": 1.9431423769586074,
+            "sigma_relative_error": -0.028428811520696318
+          },
+          "iso9": {
+            "coexistence_relative_error": 1.7386053485779485e-08,
+            "p0_bulk": [
+              0.24999999565348663,
+              0.24999999782674331
+            ],
+            "p_coex_closed_form": 0.25,
+            "p_coex_numeric": 0.25,
+            "p_nn_max": 0.2531158293812875,
+            "p_nn_max_deviation": 0.01674325018046466,
+            "p_nn_max_deviation_relative": 0.06697300072185863,
+            "p_nn_mean": 0.2493267410694072,
+            "p_nn_min": 0.23258349088894253,
+            "sigma_analytic": 2.0,
+            "sigma_integral": 1.9431423769586074,
+            "sigma_relative_error": -0.028428811520696318
+          }
+        },
+        "wrap_residual": 1.0298347730142154e-09,
+        "xi": 3.0
+      }
+    ],
+    "settings": {
+      "A": 1.0,
+      "B": 1.0,
+      "nx": 128,
+      "ny": 16,
+      "steps": 2000
+    }
+  },
+  "settings": {
+    "A": 1.0,
+    "B": 1.0,
+    "nx": 128,
+    "ny": 16,
+    "steps": 2000
+  },
+  "verdict": "PASS"
+}
