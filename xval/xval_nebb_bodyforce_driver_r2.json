@@ -1,0 +1,108 @@
+{
+  "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "round": 2,
+  "oss": "haimingz/vivsim (D2Q9 Poiseuille; numbers from board-audit rerun, jax NOT_RUN)",
+  "problem": "2D Poiseuille channel, periodic x, no-slip top/bottom (half-way), body force x",
+  "params": {
+    "primary": {
+      "nx": 8,
+      "ny": 10,
+      "nz": 8,
+      "tau": 1.1,
+      "nu": 0.20000000000000004,
+      "u_max_target": 0.05,
+      "steps": 8000,
+      "backend": "eager",
+      "precision": "FP64FP64"
+    }
+  },
+  "runs": {
+    "tensorlbm_real_d3q19_ny10": {
+      "u_max_ref": 0.049218750000000006,
+      "u_max_got": 0.04931248860433897,
+      "u_max_rel_err": 0.0019045303738710092,
+      "pointwise_max_rel_err": 0.0019047147506762966,
+      "profile_rel_l2": 0.0019046096820697959,
+      "wall_slip_first_row": 0.011812497679134849,
+      "wall_slip_first_row_analytic": 0.01171875,
+      "wall_slip_pct_of_umax": 0.23999995284591435,
+      "y": [
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0
+      ],
+      "u_got": [
+        0.011812497679134849,
+        0.030562493456182276,
+        0.04306249029124654,
+        0.04931248860433897,
+        0.04931248860433897,
+        0.043062490291246494,
+        0.030562493456182224,
+        0.011812497679134844
+      ],
+      "u_ref": [
+        0.01171875,
+        0.030468750000000003,
+        0.04296875,
+        0.049218750000000006,
+        0.04921875,
+        0.04296875,
+        0.030468750000000003,
+        0.01171875
+      ]
+    },
+    "oss_vivsim_d2q9_ny10": {
+      "source": "board-audit rerun (m17963), bit-identical to Round-1 delivery",
+      "u_max": 0.05249999999999901,
+      "u_max_analytic": 0.05,
+      "u_max_rel_err": 0.0499999999999802,
+      "err_global_vs_analytic": 0.04999999999999373,
+      "max_rel_err_vs_analytic_interior": 0.12499999999998432,
+      "ux_profile": [
+        0.0,
+        0.022499999999999687,
+        0.03749999999999941,
+        0.04749999999999912,
+        0.05249999999999901,
+        0.05249999999999901,
+        0.04749999999999912,
+        0.037499999999999416,
+        0.022499999999999687,
+        0.0
+      ]
+    },
+    "cross_arm_real_vs_oss": {
+      "note": "different wall conventions (H=ny-1 vs H=ny-2); each arm judged vs its own analytic reference; same-grid ux(y) comparison not apples-to-apples",
+      "oss_d2q9_pointwise_err": 0.12499999999998432,
+      "oss_d2q9_global_err": 0.04999999999999373,
+      "repo_d3q19_pointwise_err": 0.0019047147506762966,
+      "repo_d3q19_global_err": 0.0019045303738710092
+    },
+    "tensorlbm_real_d3q19_ny20": {
+      "u_max_ref": 0.04984567901234568,
+      "u_max_got": 0.04986414039301833,
+      "u_max_rel_err": 0.0003703707329993045,
+      "pointwise_max_rel_err": 0.00037141470253260797,
+      "profile_rel_l2": 0.0003707795541862377,
+      "wall_slip_pct_of_umax": 0.10873054782946759
+    }
+  },
+  "verdict": {
+    "predeclared_metric": "max pointwise relative error (interior fluid rows)",
+    "tensorlbm_pointwise_err_ny10": 0.0019047147506762966,
+    "tensorlbm_pointwise_err_ny20": 0.00037141470253260797,
+    "owner_threshold": 0.15,
+    "ecosystem_threshold": 0.03,
+    "pass_owner_15pct": true,
+    "pass_ecosystem_3pct": true,
+    "no_slip_enforced": true,
+    "round1_handwritten_pointwise_err": 0.235,
+    "round1_handwritten_global_err": 0.094
+  }
+}
