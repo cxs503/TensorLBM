@@ -553,7 +553,8 @@ def contact_angle_from_field(
 
     Secondary estimator ``theta_circle``: algebraic circle fit of the level-set
     points more than 1.5 interface widths above the wall, then
-    ``cos(theta) = (y_c - y_wall)/R``.  Reported as an independent geometric
+    ``cos(theta) = (y_wall - y_c)/R`` (wall plane *minus* centre: the cap is
+    centred below the wall for wetting walls).  Reported as an independent geometric
     cross-check for the non-wetting branch (where the cap is nearly spherical).
 
     ``R_curv`` is the fitted radius of curvature at the apex, used for the
@@ -604,7 +605,13 @@ def contact_angle_from_field(
         try:
             yc, xcc, R = _circle_fit(pts_used)
             radius, centre_y = R, yc
-            theta_circle = float(math.acos(max(-1.0, min(1.0, (yc - wall_y) / R))))
+            # Angle between the cap tangent and the wall plane *inside* the liquid:
+            # the chord sits at signed distance (wall_y - yc) from the centre, so a
+            # cap centred below the wall (y_c < wall) is a wetting cap (theta < 90)
+            # and one centred above the wall is non-wetting.  The opposite sign
+            # (used until mission m18786) returns the supplementary angle for every
+            # theta != 90, which is why it disagreed with theta_cap in both branches.
+            theta_circle = float(math.acos(max(-1.0, min(1.0, (wall_y - yc) / R))))
         except Exception:  # pragma: no cover - degenerate fits
             pass
 
