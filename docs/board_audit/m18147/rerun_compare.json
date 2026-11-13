@@ -1,0 +1,256 @@
+{
+  "delivered_summary_sha256": "be5e46294c479a999c755d2be42986ea94c73b0b2e50dfbdd8eb04022e3b3f50",
+  "rerun_summary_sha256": "dfad50e3bcf7af0eb82eae5bf143dacfe260569baa4d6a43f934c5d59799c170",
+  "delivered_baseline_digest": "b3283b3a236e5cbc9a3c4c16c850e557a63da538528bf37b005c4bc868de6ade",
+  "rerun_baseline_digest": "b3283b3a236e5cbc9a3c4c16c850e557a63da538528bf37b005c4bc868de6ade",
+  "baseline_digest_same": true,
+  "ke_ratio": [
+    0.8529281708268839,
+    0.8529281708268839
+  ],
+  "ref_vs_got_rows": [
+    {
+      "metric": "restart field discontinuity max|df| (worst segment count)",
+      "delivered_got": 0.0,
+      "rerun_got": 0.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 0.0,
+      "same": true
+    },
+    {
+      "metric": "steps recomputed after resume (worst segment count)",
+      "delivered_got": 0,
+      "rerun_got": 0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 0,
+      "same": true
+    },
+    {
+      "metric": "recovery rate after corrupted primary checkpoint",
+      "delivered_got": 1.0,
+      "rerun_got": 1.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 1.0,
+      "same": true
+    },
+    {
+      "metric": "recovery rate after corrupted primary, second backup disabled (control)",
+      "delivered_got": 0.0,
+      "rerun_got": 0.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 0.0,
+      "same": true
+    },
+    {
+      "metric": "status states implemented",
+      "delivered_got": 5.0,
+      "rerun_got": 5.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 5.0,
+      "same": true
+    },
+    {
+      "metric": "terminal state blocks silent restart (reached_max_step)",
+      "delivered_got": 1.0,
+      "rerun_got": 1.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 1.0,
+      "same": true
+    },
+    {
+      "metric": "wall-clock timer accuracy: median measured interval vs configured",
+      "delivered_got": 1.545911096036425,
+      "rerun_got": 1.7939040437340799,
+      "delivered_rel_err_pct": 1.545911096036425,
+      "rerun_rel_err_pct": 1.7939040437340799,
+      "ref": 0.0,
+      "same": false
+    },
+    {
+      "metric": "auto (wall-clock) checkpoint -> restart field discontinuity max|df|",
+      "delivered_got": 0.0,
+      "rerun_got": 0.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 0.0,
+      "same": true
+    },
+    {
+      "metric": "volume trigger count vs floor(volume/interval)",
+      "delivered_got": 2.0,
+      "rerun_got": 2.0,
+      "delivered_rel_err_pct": 0.0,
+      "rerun_rel_err_pct": 0.0,
+      "ref": 2.0,
+      "same": true
+    }
+  ],
+  "ref_vs_got_all_pass": [
+    true,
+    true
+  ],
+  "restart_rows": [
+    {
+      "segments": 1,
+      "steps_executed": [
+        240,
+        240
+      ],
+      "steps_recomputed": [
+        0,
+        0
+      ],
+      "max_abs_df": [
+        0.0,
+        0.0
+      ],
+      "final_digest_same": true,
+      "status": [
+        "done",
+        "done"
+      ]
+    },
+    {
+      "segments": 2,
+      "steps_executed": [
+        240,
+        240
+      ],
+      "steps_recomputed": [
+        0,
+        0
+      ],
+      "max_abs_df": [
+        0.0,
+        0.0
+      ],
+      "final_digest_same": true,
+      "status": [
+        "done",
+        "done"
+      ]
+    },
+    {
+      "segments": 4,
+      "steps_executed": [
+        240,
+        240
+      ],
+      "steps_recomputed": [
+        0,
+        0
+      ],
+      "max_abs_df": [
+        0.0,
+        0.0
+      ],
+      "final_digest_same": true,
+      "status": [
+        "done",
+        "done"
+      ]
+    },
+    {
+      "segments": 8,
+      "steps_executed": [
+        240,
+        240
+      ],
+      "steps_recomputed": [
+        0,
+        0
+      ],
+      "max_abs_df": [
+        0.0,
+        0.0
+      ],
+      "final_digest_same": true,
+      "status": [
+        "done",
+        "done"
+      ]
+    }
+  ],
+  "recovery_rerun": {
+    "dual_source": "backup",
+    "dual_max_abs_df": 0.0,
+    "dual_bit_exact": true,
+    "single_recovered": false,
+    "delivered": {
+      "dual_backup": {
+        "resume_source": "backup",
+        "resumed_from_step": 120,
+        "recovered": true,
+        "max_abs_df_vs_continuous": 0.0,
+        "bit_exact": true,
+        "case_dir": "artifacts/xval_job_checkpoint/cases/recovery_dual"
+      },
+      "single_backup": {
+        "recovered": false,
+        "error": "no usable checkpoint generation:",
+        "case_dir": "artifacts/xval_job_checkpoint/cases/recovery_single"
+      }
+    }
+  },
+  "timer_delivered": [
+    {
+      "interval_s": 1.0,
+      "interval_rel_err_pct": 1.545911096036425,
+      "timer_excess_steps": 0.9322170066227932,
+      "overhead_pct": -1.8361753636127576,
+      "base_wall_cv_pct": 2.7924192623756126
+    },
+    {
+      "interval_s": 2.0,
+      "interval_rel_err_pct": 1.4168859459459824,
+      "timer_excess_steps": 1.7088242378778224,
+      "overhead_pct": 3.038493968037992,
+      "base_wall_cv_pct": 7.35365261487171
+    }
+  ],
+  "timer_rerun": [
+    {
+      "interval_s": 1.0,
+      "median_measured_interval_s": 1.0179390404373407,
+      "interval_rel_err_pct": 1.7939040437340799,
+      "timer_excess_steps": 0.6567913606555384,
+      "overhead_pct": 13.460613488348194,
+      "base_wall_cv_pct": 8.76972906436109
+    },
+    {
+      "interval_s": 2.0,
+      "median_measured_interval_s": 2.0078851990401745,
+      "interval_rel_err_pct": 0.3942599520087293,
+      "timer_excess_steps": 0.3297884317630628,
+      "overhead_pct": 4.1686918921945315,
+      "base_wall_cv_pct": 12.014649346896938
+    }
+  ],
+  "terminal": {
+    "delivered": {
+      "status": "reached_max_step",
+      "steps_executed": 25,
+      "volume_triggers_fired": 2,
+      "terminal_blocks_restart": true
+    },
+    "rerun": {
+      "status": "reached_max_step",
+      "steps_executed": 25,
+      "volume_triggers_fired": 2,
+      "terminal_blocks_restart": true
+    }
+  },
+  "run_env": {
+    "torch": "2.7.1",
+    "python": "3.11.6",
+    "host": "99 control plane, CPU float32",
+    "runner_argv": "PYTHONPATH=src python3 benchmarks/xval_job_checkpoint/run_xval.py --out artifacts/rerun_fresh",
+    "commit": "56c30f13 (git archive, clean extraction)"
+  }
+}
