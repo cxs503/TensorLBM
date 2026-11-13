@@ -1,0 +1,124 @@
+{
+  "antipattern": {
+    "M1_standalone_mains": {
+      "n_files_own_step_loop": 3,
+      "n_files_parsing_argv": 3,
+      "n_files_with_main": 3,
+      "share_with_main": 1.0
+    },
+    "M2_duplication": {
+      "dup_driver_loc": 123,
+      "dup_driver_loc_ratio": 0.6212,
+      "dup_loc": 147,
+      "dup_loc_ratio": 0.7424,
+      "min_block_lines": 3,
+      "n_distinct_blocks": 7,
+      "n_dup_block_instances": 21,
+      "n_dup_driver_blocks": 15,
+      "n_duplicated_blocks": 7
+    },
+    "M3_thin_mains": {
+      "n_files_delegating_to_harness": 0,
+      "share": 0.0
+    },
+    "files": [
+      {
+        "has_main": true,
+        "loc": 66,
+        "n_blocks": 7,
+        "n_dup_blocks": 7,
+        "own_step_loop": true,
+        "parses_argv": true,
+        "path": "case_a.py",
+        "thin_main": false
+      },
+      {
+        "has_main": true,
+        "loc": 66,
+        "n_blocks": 7,
+        "n_dup_blocks": 7,
+        "own_step_loop": true,
+        "parses_argv": true,
+        "path": "case_b.py",
+        "thin_main": false
+      },
+      {
+        "has_main": true,
+        "loc": 66,
+        "n_blocks": 7,
+        "n_dup_blocks": 7,
+        "own_step_loop": true,
+        "parses_argv": true,
+        "path": "case_c.py",
+        "thin_main": false
+      }
+    ],
+    "parse_errors": [],
+    "parsed_files": 3,
+    "python_files": 3,
+    "recursive": false,
+    "root": "/root/tp-agent/work/m17895/xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/antipattern",
+    "total_loc": 198
+  },
+  "consolidated": {
+    "M1_standalone_mains": {
+      "n_files_own_step_loop": 0,
+      "n_files_parsing_argv": 3,
+      "n_files_with_main": 3,
+      "share_with_main": 1.0
+    },
+    "M2_duplication": {
+      "dup_driver_loc": 0,
+      "dup_driver_loc_ratio": 0.0,
+      "dup_loc": 27,
+      "dup_loc_ratio": 0.4737,
+      "min_block_lines": 3,
+      "n_distinct_blocks": 2,
+      "n_dup_block_instances": 6,
+      "n_dup_driver_blocks": 0,
+      "n_duplicated_blocks": 2
+    },
+    "M3_thin_mains": {
+      "n_files_delegating_to_harness": 3,
+      "share": 1.0
+    },
+    "files": [
+      {
+        "has_main": true,
+        "loc": 19,
+        "n_blocks": 2,
+        "n_dup_blocks": 2,
+        "own_step_loop": false,
+        "parses_argv": true,
+        "path": "case_channel.py",
+        "thin_main": true
+      },
+      {
+        "has_main": true,
+        "loc": 19,
+        "n_blocks": 2,
+        "n_dup_blocks": 2,
+        "own_step_loop": false,
+        "parses_argv": true,
+        "path": "case_poise48.py",
+        "thin_main": true
+      },
+      {
+        "has_main": true,
+        "loc": 19,
+        "n_blocks": 2,
+        "n_dup_blocks": 2,
+        "own_step_loop": false,
+        "parses_argv": true,
+        "path": "case_taylor.py",
+        "thin_main": true
+      }
+    ],
+    "parse_errors": [],
+    "parsed_files": 3,
+    "python_files": 3,
+    "recursive": false,
+    "root": "/root/tp-agent/work/m17895/xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/consolidated",
+    "total_loc": 57
+  }
+}

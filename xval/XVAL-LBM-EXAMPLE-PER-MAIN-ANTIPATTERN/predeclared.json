@@ -1,0 +1,71 @@
+{
+  "xval": "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN",
+  "mission": 17895,
+  "anchor": "sorush-khajepor/listLBM example-per-main anti-pattern",
+  "decision": "Does replacing the example-per-main anti-pattern with one library-level case runtime (tensorlbm.example_harness) keep the example physics inside the owner 15% band, and is the anti-pattern actually present and measurable in TensorLBM's examples/ tree?",
+  "alternatives": {
+    "A0_status_quo": "161 stand-alone scripts under examples/, each with its own CLI, lattice build, time loop and post-processing (the anti-pattern as practised upstream)",
+    "A1_consolidated_runtime": "one declarative CaseSpec + run_case() in src/tensorlbm/example_harness.py, composed from library primitives (equilibrium / collide_bgk / stream); examples shrink to thin mains",
+    "A2_independent_control": "a self-contained example-per-main style script (xval/.../reference_main_channel.py) with its own BGK+Guo loop and torch.roll streaming -- not importing the runtime at all",
+    "A3_analytic": "closed-form references: Poiseuille u_max = g H^2/(8 nu) with H = ny-2 (half-way walls at y=1/2 and y=ny-3/2); Taylor-Green energy decay exp(-4 nu k^2 t) (Laplacian of the TG field is -2k^2 u), k = 2 pi/nx"
+  },
+  "hypothesis": "H1: the consolidated runtime reproduces both closed-form references within the owner 15% band (<3% target) and is numerically identical to the independent A2 control (<1e-8 relative), while the anti-pattern is present in examples/ at scale (>=50% of files carry their own main, >=20% of lines sit in structurally duplicated blocks). H0 (falsifier): any physics KPI >=15% off its reference, or A1 vs A2 >=1e-8 relative, or the duplication index <20% (i.e. the anti-pattern is not actually there and this anchor is void).",
+  "metrics": {
+    "M1_standalone_mains": "count/share of example files with their own __main__, own argv parsing and own time loop (AST, src/tensorlbm/audit/example_antipattern.py)",
+    "M2_dup_loc_ratio": "share of source lines that sit inside a top-level statement or function body whose name- and literal-insensitive AST hash occurs in >=2 files (distinct lines, not block instances)",
+    "M3_thin_mains": "share of example files that import the shared runtime instead of driving the lattice themselves",
+    "u_max_rel_err": "|u_max(got) - u_max(analytic)| / u_max(analytic) for the force-driven channel",
+    "profile_rel_l2": "||u_x(got) - u_x(analytic)||_2 / ||u_x(analytic)||_2 over the fluid rows",
+    "profile_interior_rel_l2": "same, rows 2..ny-3 (excludes the two first-order bounce-back rows)",
+    "mass_drift": "mean(rho) - 1 over the fluid rows",
+    "tg_decay_rel_err": "|lambda_fit - 4 nu k^2| / (4 nu k^2), lambda_fit = -d ln E/dt by least squares over the sampled history",
+    "harness_vs_control_rel": "|u_max(harness) - u_max(reference_main)| / u_max(reference_main)",
+    "record_digest": "sha256 over the numeric payload of a run record (spec+analytic+kpis+history)",
+    "detector_gap": "dup_loc_ratio(antipattern fixture) - dup_loc_ratio(consolidated fixture); thin-main share control",
+    "M2b_dup_driver_loc_ratio": "same, restricted to duplicated blocks that contain a time loop or a streaming/collision kernel call -- the copy that actually drifts from the library"
+  },
+  "unit_of_analysis": "one completed case run at a fixed (kind, ny, nx, tau, body_force/u0, steps); KPIs are scalars or per-run field norms",
+  "baseline_control": {
+    "physics_baseline": "A3 closed-form (no external table needed, no WITHHELD)",
+    "implementation_control": "A2 independent main-style script, different streaming implementation (roll vs gather) and its own collision/source term; agreement proves consolidation is faithful, not a redefinition",
+    "detector_control": "planted fixtures: fixtures/antipattern (3 near-identical mains) must score high, fixtures/consolidated (3 thin mains + shared module) must score low; a detector that cannot separate them is a null instrument",
+    "upstream_note": "the upstream repository (sorush-khajepor/listLBM) is not vendored here -- its practice is characterised structurally (stand-alone mains), not by executing its binary; recorded as a comparison limit"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "target_pct": 3.0,
+    "u_max_rel_err_max": 0.15,
+    "u_max_rel_err_target": 0.03,
+    "profile_rel_l2_target": 0.03,
+    "tg_decay_rel_err_target": 0.03,
+    "harness_vs_control_rel_max": 1e-08,
+    "mass_drift_max": 1e-10,
+    "dup_loc_ratio_present_min": 0.2,
+    "detector_gap_min": 0.2,
+    "resolve_rule": "u_max_rel_err must not increase with resolution over ny = 16, 32, 48 (noise band 1e-3 absolute)",
+    "stability_rule": "a run with a non-finite population or rho outside [0.95, 1.05] is declared failed and reported, never tuned away"
+  },
+  "stopping_rule": "each arm runs a step count fixed before the run (channel: 8000/12000/20000 for ny=16/32/48; TG: 800 steps at 32x32) and may stop earlier only on the predeclared steady-state criterion max|u(n)-u(n-200)|/max|u(n)| < 1e-9. No arm is extended after looking at the KPIs. Local wall-clock budget 600 s total (no cluster needed); anything above that would move to the cluster queue.",
+  "variables_changed": [
+    "channel resolution ny (16, 32, 48)",
+    "case kind (channel_poiseuille, taylor_green_2d)",
+    "runtime implementation (consolidated vs example-main control)",
+    "detector input tree (repo examples/, planted fixtures)"
+  ],
+  "variables_held_fixed": [
+    "D2Q9 BGK, tau = 0.8 (nu = 0.1)",
+    "full Guo (2002) source term with u_eq = sum(f c)/rho + F/(2 rho)",
+    "half-way bounce-back on the two wall rows, periodic in x",
+    "float64, CPU, torch single process"
+  ],
+  "analysis": "for every arm report got vs reference and the relative error; a threshold is met only if the measured value satisfies it, otherwise the arm is reported FAIL; the resolution arm is reported as a table, not as a single best number; determinism is checked by re-running one spec and comparing record digests (exact) plus perturbing the spec (negative control, digest must change)",
+  "safety_limits": "all runs are CPU float64 at <=48x8 / 64x64 lattices; no cluster job needed; artifacts are JSON + PNG under run_artifacts/",
+  "deviations": [
+    {
+      "when": "after the first dry run of the detector control",
+      "what": "M2 was refined from counting block *instances* (which double counts nested statements and produced ratios >100%) to counting *distinct source lines*, and a second metric M2b (duplicated driver lines) was added because thin mains are legitimately structurally identical while carrying no driver logic",
+      "thresholds_changed": false,
+      "note": "the predeclared thresholds (gap > 0.20, thin-main shares 0 vs 1, physics bands) were not relaxed; C9 now uses the driver-line gap, which is the sharper instrument"
+    }
+  ]
+}
