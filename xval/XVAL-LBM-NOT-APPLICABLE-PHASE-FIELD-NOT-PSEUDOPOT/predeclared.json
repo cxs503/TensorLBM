@@ -1,0 +1,49 @@
+{
+  "anchor": "XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT",
+  "round": 1,
+  "repo": "TensorLBM",
+  "oss": {
+    "repo": "AminZar69/CudaPhaseField",
+    "license": "GPL-3.0",
+    "vendored": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/",
+    "files": ["device_var.f90", "global_subroutines.f90", "precision_m.f90"],
+    "oss_solutions_entry": 155,
+    "classification": "GAP / not-applicable (ternary Allen-Cahn phase field, no pseudo-potential)"
+  },
+  "decision": "Decide whether CudaPhaseField may serve as a cross-validation reference for TensorLBM's MCMP (Shan-Chen) pseudo-potential Poiseuille line, or whether the transplant must be the ternary conservative Allen-Cahn phase field with a measured tension convention.",
+  "alternatives": [
+    "D1 use the OSS ternary AC phase field as a phase-field reference (transplant, measured against analytic interface/tension references)",
+    "D2 use the OSS code as a pseudo-potential reference (claim: category error, no interaction strength G / no coexistence loop)"
+  ],
+  "hypothesis": "H1: the OSS model is a ternary conservative Allen-Cahn phase field whose coefficients satisfy sigma = lambda/2, so a literal sigma(3,3)=0.1 transplant halves the tension. H2: the phase equation is independent of the (1000,500,100) mass-density triple, hence that triple is not a thermodynamic density ratio and cannot stand in for a pseudo-potential coexistence curve.",
+  "metrics": {
+    "K1_semantics": "absolute error of lambda_k, harmonic coupling, w_c and the 10-90 interface width against the source-documented/analytic value",
+    "K2_profile": "10-90 interface width from three initial widths vs the same estimator applied to the analytic sampled profile",
+    "K3_mass": "relative phase-mass drift over the run (machine precision expected)",
+    "K4_tension": "sigma measured from the gradient energy vs lambda/2 and vs the shipped sigma-matrix value",
+    "K5_density": "max |phi_a - phi_b| between density arms (bit identity expected)",
+    "K6_pseudopotential": "Shan-Chen Maxwell coexistence density ratio as a function of G only"
+  },
+  "unit_of_analysis": "one arm per (initial width, w, m, density triple); KPI per arm",
+  "baseline_control": {
+    "analytic": "tanh profile 0.5(1+tanh(2s/w)), sigma=lambda/2, width=w*atanh(0.8)",
+    "estimator_control": "the same node-linear width estimator is applied to the analytic sampled profile so discretisation bias cancels",
+    "source_control": "constants re-derived from the vendored Fortran, not from the inventory text"
+  },
+  "predeclared_thresholds": {
+    "K1_abs": 1e-15,
+    "K2_rel": 0.15,
+    "K3_rel": 1e-12,
+    "K4_rel": 0.15,
+    "K5_abs": 1e-12,
+    "owner_band": 0.15,
+    "interpretation": "owner 15% band for any physical comparison; 1e-15/1e-12 are identity/closure checks"
+  },
+  "stopping_rule": "fixed arm list (3 initial widths x w=4, 3 w values, 2 m values, 2 density triples, 4 G values) run to completion; no arm added or dropped after seeing KPIs; wall clock ~110 s CPU",
+  "variables_changed": ["initial interface width (2W, 4, 8)", "interface thickness w (3,4,6)", "mobility m (0.01, 0.05)", "density triple ((1000,500,100) vs (1,1,1))", "G for the Shan-Chen coexistence curve"],
+  "variables_held_fixed": ["grid 4x256 periodic", "float64", "lambda from the shipped sigma matrix", "source normalisation = literal OSS (2 a_k, /3 weighting)"],
+  "confounders": ["node-linear crossing estimator reads +3.2% high on a sampled tanh (controlled by the analytic-sampled reference)", "no fluid step: the OSS g-LBE/Korteweg coupling is out of scope, so no hydrodynamics claim is made"],
+  "environment": {"python": "3.11", "torch": "cpu float64", "grid": [4, 256], "steps": 900},
+  "analysis": "error vs analytic per arm, no trimming; sensitivity = w sweep + m sweep; falsification = density-arm field difference > 0 or tension matching the shipped sigma matrix",
+  "fail_stage_plan": "fail_stage in {semantics, interface, tension, sensitivity, density, pseudopotential}"
+}
