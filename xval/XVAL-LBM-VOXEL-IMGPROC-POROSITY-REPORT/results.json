@@ -1,0 +1,541 @@
+{
+  "meta": {
+    "anchor": "XVAL-LBM-VOXEL-IMGPROC-POROSITY-REPORT",
+    "timestamp": "2026-11-13T17:28:20"
+  },
+  "A1_random_2d": {
+    "cases": [
+      {
+        "phi_target": 0.2,
+        "seed": 0,
+        "phi_actual": 0.200012,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.2,
+        "seed": 1,
+        "phi_actual": 0.200012,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.2,
+        "seed": 2,
+        "phi_actual": 0.200012,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 0,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 1,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 2,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 0,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 1,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 2,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.8,
+        "seed": 0,
+        "phi_actual": 0.799988,
+        "rel_error": 1.5e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.8,
+        "seed": 1,
+        "phi_actual": 0.799988,
+        "rel_error": 1.5e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.8,
+        "seed": 2,
+        "phi_actual": 0.799988,
+        "rel_error": 1.5e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 0,
+        "sigma": 1.0,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 1,
+        "sigma": 1.0,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 0,
+        "sigma": 3.0,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 1,
+        "sigma": 3.0,
+        "phi_actual": 0.400024,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 0,
+        "sigma": 1.0,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 1,
+        "sigma": 1.0,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 0,
+        "sigma": 3.0,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 1,
+        "sigma": 3.0,
+        "phi_actual": 0.599976,
+        "rel_error": 4.1e-05,
+        "pass_15pct": true
+      }
+    ],
+    "all_pass_15pct": true,
+    "max_rel_error": 6.1e-05,
+    "mean_rel_error": 4.7100000000000006e-05
+  },
+  "A2_random_3d": {
+    "cases": [
+      {
+        "phi_target": 0.2,
+        "seed": 0,
+        "phi_actual": 0.200001,
+        "rel_error": 4e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.2,
+        "seed": 1,
+        "phi_actual": 0.200001,
+        "rel_error": 4e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 0,
+        "phi_actual": 0.400002,
+        "rel_error": 4e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "seed": 1,
+        "phi_actual": 0.400002,
+        "rel_error": 4e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 0,
+        "phi_actual": 0.599998,
+        "rel_error": 3e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "seed": 1,
+        "phi_actual": 0.599998,
+        "rel_error": 3e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.8,
+        "seed": 0,
+        "phi_actual": 0.799999,
+        "rel_error": 1e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.8,
+        "seed": 1,
+        "phi_actual": 0.799999,
+        "rel_error": 1e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "sigma": 1.0,
+        "phi_actual": 0.400002,
+        "rel_error": 4e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.4,
+        "sigma": 2.0,
+        "phi_actual": 0.400002,
+        "rel_error": 4e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "sigma": 1.0,
+        "phi_actual": 0.599998,
+        "rel_error": 3e-06,
+        "pass_15pct": true
+      },
+      {
+        "phi_target": 0.6,
+        "sigma": 2.0,
+        "phi_actual": 0.599998,
+        "rel_error": 3e-06,
+        "pass_15pct": true
+      }
+    ],
+    "all_pass_15pct": true,
+    "max_rel_error": 4e-06,
+    "mean_rel_error": 3.1666666666666663e-06
+  },
+  "A3_analytical": {
+    "cases": [
+      {
+        "geometry": "sphere",
+        "n": 80,
+        "phi_analytical": 0.96649,
+        "phi_computed": 0.966297,
+        "rel_error": 0.000199,
+        "pass_15pct": true
+      },
+      {
+        "geometry": "cylinder",
+        "n": 80,
+        "phi_analytical": 0.957588,
+        "phi_computed": 0.958,
+        "rel_error": 0.00043,
+        "pass_15pct": true
+      },
+      {
+        "geometry": "ellipsoid",
+        "n": 80,
+        "phi_analytical": 0.992146,
+        "phi_computed": 0.992109,
+        "rel_error": 3.7e-05,
+        "pass_15pct": true
+      },
+      {
+        "geometry": "sphere_r0.2",
+        "n": 80,
+        "phi_analytical": 0.995811,
+        "phi_computed": 0.99575,
+        "rel_error": 6.1e-05,
+        "pass_15pct": true
+      },
+      {
+        "geometry": "sphere_r0.3",
+        "n": 80,
+        "phi_analytical": 0.985863,
+        "phi_computed": 0.985922,
+        "rel_error": 6e-05,
+        "pass_15pct": true
+      },
+      {
+        "geometry": "sphere_r0.45",
+        "n": 80,
+        "phi_analytical": 0.952287,
+        "phi_computed": 0.952219,
+        "rel_error": 7.2e-05,
+        "pass_15pct": true
+      }
+    ],
+    "all_pass_15pct": true,
+    "max_rel_error": 0.00043
+  },
+  "A4_convergence": {
+    "cases": [
+      {
+        "n": 20,
+        "h": 0.05,
+        "phi_analytical": 0.96649,
+        "phi_computed": 0.965,
+        "rel_error": 0.001541
+      },
+      {
+        "n": 40,
+        "h": 0.025,
+        "phi_analytical": 0.96649,
+        "phi_computed": 0.966,
+        "rel_error": 0.000507
+      },
+      {
+        "n": 80,
+        "h": 0.0125,
+        "phi_analytical": 0.96649,
+        "phi_computed": 0.966297,
+        "rel_error": 0.000199
+      },
+      {
+        "n": 160,
+        "h": 0.00625,
+        "phi_analytical": 0.96649,
+        "phi_computed": 0.966461,
+        "rel_error": 3e-05
+      }
+    ],
+    "convergence": {
+      "order_p": 1.8397,
+      "r_squared": 0.9741,
+      "pass_p_ge_1": true
+    },
+    "convergence_cylinder": {
+      "order_p": 1.627,
+      "r_squared": 0.8371,
+      "pass_p_ge_1": true
+    },
+    "cylinder_cases": [
+      {
+        "n": 20,
+        "h": 0.05,
+        "phi_analytical": 0.957588,
+        "phi_computed": 0.952,
+        "rel_error": 0.005836
+      },
+      {
+        "n": 40,
+        "h": 0.025,
+        "phi_analytical": 0.957588,
+        "phi_computed": 0.958,
+        "rel_error": 0.00043
+      },
+      {
+        "n": 80,
+        "h": 0.0125,
+        "phi_analytical": 0.957588,
+        "phi_computed": 0.958,
+        "rel_error": 0.00043
+      },
+      {
+        "n": 160,
+        "h": 0.00625,
+        "phi_analytical": 0.957588,
+        "phi_computed": 0.957719,
+        "rel_error": 0.000136
+      }
+    ]
+  },
+  "A5_sigma_sensitivity": {
+    "cases": [
+      {
+        "sigma": 0.0,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 0.0,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 0.0,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 0.5,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 0.5,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 0.5,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 1.0,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 1.0,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 1.0,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 2.0,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 2.0,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 2.0,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 3.0,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 3.0,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 3.0,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 5.0,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 5.0,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 5.0,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 8.0,
+        "seed": 0,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 8.0,
+        "seed": 1,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      },
+      {
+        "sigma": 8.0,
+        "seed": 2,
+        "phi_actual": 0.5,
+        "rel_error": 0.0,
+        "pass_15pct": true
+      }
+    ],
+    "all_pass_15pct": true,
+    "max_rel_error": 0.0
+  },
+  "verdict": {
+    "all_arms_pass": true,
+    "threshold": 0.15,
+    "A1_pass": true,
+    "A2_pass": true,
+    "A3_pass": true,
+    "A4_pass": true,
+    "A5_pass": true,
+    "wall_seconds": 1.18
+  }
+}
