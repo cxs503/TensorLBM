@@ -38,3 +38,31 @@ __all__ = [
     "radial_extents",
     "spherical_cap_inversion",
 ]
+
+from .wall_order_parameter_2d import (
+    WallOrderWettingConfig,
+    analytic_contact_angle,
+    contact_angle_from_field,
+    free_energy_parameters,
+    initialise_drop_on_wall,
+    interface_points,
+    macroscopics,
+    relax_to_equilibrium,
+    model_surface_tension,
+    run_to_equilibrium,
+    step as wall_order_step,
+)
+
+__all__ = list(__all__) + [
+    "WallOrderWettingConfig",
+    "analytic_contact_angle",
+    "contact_angle_from_field",
+    "free_energy_parameters",
+    "initialise_drop_on_wall",
+    "interface_points",
+    "macroscopics",
+    "relax_to_equilibrium",
+    "model_surface_tension",
+    "run_to_equilibrium",
+    "wall_order_step",
+]
