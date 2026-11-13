@@ -1,0 +1,28 @@
+{
+  "delivered_json": "/root/tp-agent/work/m17759/xval/xval_nebb_bodyforce_driver.json",
+  "rerun_json": "/root/tp-agent/work/m17963/docs/board_audit/m17963/rerun/xval_nebb_bodyforce_driver.json",
+  "rerun_payload_identical": true,
+  "params": {
+    "NX": 10,
+    "NY": 10,
+    "nu": 0.2,
+    "Gx": 0.001,
+    "steps": 100000
+  },
+  "tlb_global_err": 0.09399999999998875,
+  "tlb_pointwise_interior_err": 0.23499999999997187,
+  "tlb_wall_ux": 0.002199999999999919,
+  "tlb_wall_slip_pct_of_umax": 4.399999999999838,
+  "tlb_umax": 0.054699999999998784,
+  "oss_global_err": 0.04999999999999373,
+  "oss_pointwise_interior_err": 0.12499999999998432,
+  "cross_arm_global_err": 0.04399999999999838,
+  "cross_arm_max_abs_diff": 0.002199999999999919,
+  "tlb_ny20_global_err": 0.03199999999999262,
+  "oss_ny20_global_err": 0.02222222222221552,
+  "owner_gate_pct": 15.0,
+  "ecosystem_gate_pct": 3.0,
+  "predeclared_metric_pass": false,
+  "substituted_metric_pass": true,
+  "ecosystem_3pct_met": false
+}
