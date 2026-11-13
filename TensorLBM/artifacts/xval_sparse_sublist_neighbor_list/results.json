@@ -1,0 +1,67 @@
+{
+  "anchor": "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST",
+  "mission": 18377,
+  "oss": {
+    "repo": "sorush-khajepor/listLBM",
+    "commit": "master (local clone /tmp/listlbm)",
+    "license": "GPLv3",
+    "feature": "sparse-sublist neighbour-list (mainlist + neilist + sublist; swap streaming)"
+  },
+  "tau": 0.8,
+  "nu": 0.1,
+  "steps_cap": 2500,
+  "torch": "2.7.1",
+  "numpy": "2.4.6",
+  "threads": 1,
+  "dtype": "float64",
+  "records": [
+    {
+      "case": "C1_channel_H16",
+      "case_cfg": {"g": 1e-5, "ny": 32, "nx": 16, "H": 16},
+      "k_reference": 10.666666666666666,
+      "reference_kind": "analytic_slab: k_super=(H/ny)*H^2/12",
+      "A1": {
+        "arm": "A1_sparse_sublist",
+        "steps": 2500,
+        "n_fluid": 256,
+        "n_total": 512,
+        "porosity": 0.5,
+        "k_darcy": 10.654330145418363,
+        "k_intrinsic": 21.308660290836727,
+        "ma": 0.005454695657754553
+      },
+      "A2": {
+        "arm": "A2_fluid_node_table_push",
+        "steps": 2500,
+        "n_fluid": 256,
+        "n_total": 512,
+        "porosity": 0.5,
+        "k_darcy": 10.654330145418363,
+        "k_intrinsic": 21.308660290836727
+      },
+      "compare": {
+        "ux_maxabs_rel": 0.0,
+        "k_rel_diff": 0.0
+      },
+      "k_err_vs_ref_pct": 0.1156548867028373,
+      "k_err_vs_ref_pct_A2": 0.1156548867028373
+    }
+  ],
+  "operator_equivalence": {
+    "seeds": [1, 5, 13],
+    "max_abs_diff": "<1e-14 (all seeds)",
+    "verdict": "PASS"
+  },
+  "table_equivalence": {
+    "nodes": "bit-identical",
+    "neighbour": "bit-identical",
+    "index": "bit-identical",
+    "verdict": "PASS"
+  },
+  "mass_conservation": {
+    "steps": 200,
+    "drift": "<1e-12",
+    "verdict": "PASS"
+  },
+  "verdict": "H1 SUPPORTED (operator equivalence) + H2 SUPPORTED (physics within 15%)"
+}

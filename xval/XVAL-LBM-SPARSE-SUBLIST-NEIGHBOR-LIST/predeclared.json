@@ -1,0 +1,59 @@
+{
+  "anchor": "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST",
+  "mission": 18377,
+  "round": 1,
+  "kind": "cross_validation_against_oss",
+  "oss": {
+    "repo": "sorush-khajepor/listLBM",
+    "commit": "master (local clone at /tmp/listlbm)",
+    "license": "GPLv3",
+    "feature": "sparse-sublist neighbour-list (mainlist + neilist + sublist; swap streaming stream1+stream2)",
+    "source": [
+      "lists/base/mainlist_mod.f90:14-20 (pdf + neilist on fluid nodes only)",
+      "lists/base/sublist_mod.f90 (contiguous sub-range of the main list)",
+      "stream/stream_mod.f90:44-73 (opposite_streamfluid + reversepdfdirs_streamfluid)",
+      "lattice/lattice_mod.f90:87 (D2Q9 halfqs = (1,2,5,6))"
+    ]
+  },
+  "written_before_runs": true,
+  "hypothesis": {
+    "H1": "The listLBM swap streaming (stream1+stream2) is equivalent to the FluidNodeTable push streaming on the same geometry (representation neutrality).",
+    "H2": "The listLBM sparse-sublist neighbour-list reproduces the analytic plane-Poiseuille permeability k = H^2/12 within the owner 15% band."
+  },
+  "metrics": {
+    "table_equivalence": "max|nodes_A - nodes_B| == 0 and max|neighbour_A - neighbour_B| == 0 (bit identical)",
+    "operator_equivalence": "max|f_swap - f_push| < 1e-14 (float64 round-off)",
+    "physics": "|k - k_ref| / k_ref < 15% (owner precision standard)"
+  },
+  "thresholds": {
+    "table_equivalence": "bit-identical (0.0)",
+    "operator_equivalence": "1e-14",
+    "physics": "15%"
+  },
+  "stopping_rules": [
+    "Run 3 random porous geometries (seeds 1, 5, 13) for operator equivalence.",
+    "Run 1 plane-channel (H=16, ny=32) for physics, 2500 steps.",
+    "Stop early if any test fails the predeclared threshold."
+  ],
+  "variables": {
+    "controlled": ["tau=0.8", "nu=(tau-0.5)/3", "g=1e-5", "D2Q9", "float64", "periodic wrap"],
+    "changed": ["streaming convention (swap vs push)", "table layout (SparseSublistNeighborList vs FluidNodeTable)"],
+    "confounders": ["collision and Guo forcing are shared verbatim between both arms"]
+  },
+  "repetition_rationale": "3 seeds for operator equivalence (random porous geometry); 1 channel for physics (deterministic geometry). The operator equivalence is the strong claim (bit-identical), so 3 seeds suffice; the physics is a single deterministic anchor.",
+  "environment": {
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "threads": 1,
+    "dtype": "float64"
+  },
+  "analysis": {
+    "aggregation": "max absolute relative deviation over all fluid nodes",
+    "comparison": "bit-identical (table), 1e-14 (operator), 15% (physics)",
+    "outliers": "none expected (deterministic geometry)"
+  },
+  "safety": {
+    "resource_limits": "single CPU thread, < 30 s per test",
+    "no_tuning_after_results": true
+  }
+}
