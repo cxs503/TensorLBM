@@ -101,7 +101,7 @@ def job_laplace(args: tuple) -> dict:
         rho2_out=coex["rho2_gas"],
         steps=steps,
     )
-    case = mv.measure_laplace(run)
+    case = mv.measure_laplace(run, dims=2)
     case["history"] = run["history"]
     case["coexistence"] = {k: v for k, v in coex.items()}
     return case
@@ -111,7 +111,7 @@ def job_spurious(args: tuple) -> dict:
     n, G, radius, steps, hero = args
     _quiet_threads()
     run = mv.simulate_static_droplet(G_12=G, n=n, radius_init=radius, steps=steps)
-    case = mv.measure_laplace(run)
+    case = mv.measure_laplace(run, dims=2)
     rho_bar = float((run["rho1"] + run["rho2"]).mean())
     mu = rho_bar * (run["tau1"] - 0.5) / 3.0
     sigma = case["sigma"]
@@ -225,7 +225,11 @@ def build(out_dir: Path, workers: int, quick: bool) -> dict:
     levels = []
     for G in G_LEVELS:
         cases = [c for c in lap_rows if c["G_12"] == G]
-        levels.append(mv._fit_laplace_level(G, cases, 0.05))
+        # These fields are 2D (circular droplet, unit depth): Delta p = sigma / R.
+        # dims is passed explicitly so that the factor can never fall back to the
+        # 3D sphere convention (Delta p = 2 sigma / R) that produced sigma/2 here
+        # until 2026-11-12.
+        levels.append(mv._fit_laplace_level(G, cases, 0.05, dims=2))
     laplace = {
         "protocol": {
             "n": n_lap,
@@ -235,8 +239,10 @@ def build(out_dir: Path, workers: int, quick: bool) -> dict:
             "G_values": G_LEVELS,
             "threshold": 0.05,
             "coexistence_geometry": "planar",
-            "metric": "one-parameter Young-Laplace Delta p = 2 sigma / R, sigma "
-            "fitted through the origin; per-case relative error",
+            "laplace_dims": 2,
+            "law": "dp = sigma / R  (2D circular droplet, unit depth)",
+            "metric": "one-parameter Young-Laplace Delta p = sigma / R (dims=2), "
+            "sigma fitted through the origin; per-case relative error",
         },
         "levels": levels,
         "cases": lap_rows,
