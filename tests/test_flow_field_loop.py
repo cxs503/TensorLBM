@@ -33,6 +33,8 @@ from tensorlbm.ai.flow_field_loop import (
     analytic_single_mode,
     evaluate_holdout,
     feedback_acceleration,
+    flow_map_step,
+    load_flow_map,
     initial_velocity,
     load_dataset,
     produce_dataset,
@@ -288,3 +290,126 @@ def test_analytic_reference_is_the_closed_form():
     assert vals[1] / vals[0] == pytest.approx(
         math.exp(-2 * 0.01 * (2 * math.pi / 64) ** 2 * 100)
     )
+# ---------------------------------------------------------------------------
+# Flow-map parameterisation: residual over the exact viscous prior (m18630)
+# ---------------------------------------------------------------------------
+
+
+def _untrained_flow_map(seed: int = 0):
+    """Deterministic, untrained FNO with the tiny architecture used in tests."""
+    from tensorlbm.ai.fno import FNO2d, FNO2dArch
+
+    torch.manual_seed(seed)
+    return FNO2d(FNO2dArch(in_channels=3, out_channels=2, width=8, n_layers=2,
+                           modes_x=4, modes_y=4, mlp_hidden=32))
+
+
+def _holdout_run(dataset_dir: Path, re_value: float = 75.0) -> dict:
+    runs = load_dataset(dataset_dir)["runs"]
+    return next(r for r in runs.values() if round(float(r["re"]), 6) == re_value)
+
+
+def _one_step_errors(model, run: dict, residual: bool) -> tuple[float, int]:
+    u0, nu = run["u0"], run["nu"]
+    dt = int(run["steps"][1] - run["steps"][0])
+    n_pairs = run["ux"].shape[0] - 1
+    errs = []
+    for i in range(n_pairs):
+        ref = torch.stack([run["ux"][i + 1], run["uy"][i + 1]]) / u0
+        px, py = flow_map_step(
+            model, run["ux"][i] / u0, run["uy"][i] / u0, nu, dt, residual=residual
+        )
+        errs.append(_rel_l2(torch.stack([px, py]), ref))
+    return sum(errs) / len(errs), n_pairs
+
+
+def test_residual_flow_map_has_the_viscous_prior_as_a_floor(tiny_dataset: Path):
+    """A residual flow map cannot be worse than the physics prior it rides on.
+
+    With ``residual=True`` the network output is *added* to the exact discrete
+    viscous prior, so at initialisation (network ~ 0) the surrogate reduces to
+    the prior.  Before the m18630 fix the n=64/Re=75 holdout scored the trained
+    direct model at one-step rel-L2 0.930 against 0.375 (prior) / 0.397
+    (persistence) — the "AI step" lost to doing nothing.
+    """
+    run = _holdout_run(tiny_dataset)
+    model = _untrained_flow_map()
+    u0, nu = run["u0"], run["nu"]
+    dt = int(run["steps"][1] - run["steps"][0])
+    prior_errs = []
+    for i in range(run["ux"].shape[0] - 1):
+        ref = torch.stack([run["ux"][i + 1], run["uy"][i + 1]]) / u0
+        bx, by = viscous_prior_step(run["ux"][i], run["uy"][i], nu, dt)
+        prior_errs.append(_rel_l2(torch.stack([bx, by]) / u0, ref))
+    prior = sum(prior_errs) / len(prior_errs)
+    res_err, _ = _one_step_errors(model, run, residual=True)
+    direct_err, _ = _one_step_errors(model, run, residual=False)
+    assert res_err <= prior * 1.02  # the untrained residual model IS the prior
+    assert direct_err > 2.0 * res_err  # no floor: the same net is far worse
+
+
+def test_flow_map_step_reduces_to_the_prior_when_the_residual_is_zero(tiny_dataset: Path):
+    """Zeroing the network must reproduce ``viscous_prior_step`` exactly."""
+    run = _holdout_run(tiny_dataset)
+    model = _untrained_flow_map()
+    for param in model.parameters():
+        torch.nn.init.zeros_(param)
+    u0, nu = run["u0"], run["nu"]
+    dt = int(run["steps"][1] - run["steps"][0])
+    px, py = flow_map_step(model, run["ux"][0] / u0, run["uy"][0] / u0, nu, dt, residual=True)
+    bx, by = viscous_prior_step(run["ux"][0], run["uy"][0], nu, dt)
+    assert _rel_l2(px, bx / u0) < 1e-6
+    assert _rel_l2(py, by / u0) < 1e-6
+
+
+def test_train_flow_map_persists_the_parameterisation(tiny_dataset: Path):
+    """The residual flag travels with the weights and drives the scoring path."""
+    cfg = FlowMapConfig(width=8, n_layers=2, modes=4, mlp_hidden=32, epochs=2,
+                        batch_size=4, patience=10)
+    trained = train_flow_map(
+        tiny_dataset, tiny_dataset / "m_res.pt", config=cfg,
+        train_res=[50.0, 100.0], holdout_res=[75.0], grid_n=32, log=False,
+    )
+    assert trained["residual"] is True
+    loaded = load_flow_map(tiny_dataset / "m_res.pt")
+    assert loaded["residual"] is True and loaded["arch"]["out_channels"] == 2
+    run = _holdout_run(tiny_dataset)
+    u0, nu = run["u0"], run["nu"]
+    dt = int(run["steps"][1] - run["steps"][0])
+    a = flow_map_step(trained["model"], run["ux"][0] / u0, run["uy"][0] / u0, nu, dt,
+                      residual=True)
+    b = flow_map_step(loaded["model"], run["ux"][0] / u0, run["uy"][0] / u0, nu, dt,
+                      residual=True)
+    assert _rel_l2(a[0], b[0]) < 1e-6 and _rel_l2(a[1], b[1]) < 1e-6
+    direct_cfg = FlowMapConfig(width=8, n_layers=2, modes=4, mlp_hidden=32, epochs=2,
+                               batch_size=4, patience=10, residual=False)
+    direct = train_flow_map(
+        tiny_dataset, tiny_dataset / "m_direct.pt", config=direct_cfg,
+        train_res=[50.0, 100.0], holdout_res=[75.0], grid_n=32, log=False,
+    )
+    assert direct["residual"] is False
+    assert load_flow_map(tiny_dataset / "m_direct.pt")["residual"] is False
+
+
+def test_evaluate_holdout_scores_through_the_single_inference_path(tiny_dataset: Path):
+    """``evaluate_holdout`` must agree row by row with ``flow_map_step``.
+
+    The one-step snippet used to be duplicated in ``evaluate_holdout``,
+    ``_predict_rollout`` and ``feedback_acceleration``; this test pins the
+    reported FNO number to the shared helper so one call site cannot drift.
+    """
+    cfg = FlowMapConfig(width=8, n_layers=2, modes=4, mlp_hidden=32, epochs=2,
+                        batch_size=4, patience=10)
+    trained = train_flow_map(
+        tiny_dataset, tiny_dataset / "m_path.pt", config=cfg,
+        train_res=[50.0, 100.0], holdout_res=[75.0], grid_n=32, log=False,
+    )
+    ev = evaluate_holdout(
+        trained["model"], tiny_dataset, train_res=[50.0, 100.0], holdout_res=[75.0],
+        grid_n=None, residual=trained["residual"],
+    )
+    assert ev["residual"] is True
+    row = ev["per_run"][0]
+    manual, n_pairs = _one_step_errors(trained["model"], _holdout_run(tiny_dataset), True)
+    assert row["one_step_rel_l2"]["fno"] == pytest.approx(manual, rel=1e-5)
+    assert n_pairs == 3  # 4 snapshots -> 3 one-step pairs
