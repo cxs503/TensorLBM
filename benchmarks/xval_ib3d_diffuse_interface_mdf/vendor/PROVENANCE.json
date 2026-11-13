@@ -1,0 +1,23 @@
+{
+  "upstream": "https://github.com/haimingz/vivsim",
+  "commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+  "commit_date": "2026-06-28",
+  "license": "MIT (c) 2024 Haiming Zhu \u2014 vendor/vivsim/LICENSE",
+  "vendored_files": {
+    "vendor/vivsim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "vendor/vivsim/ib/__init__.py": "70bf7de6e0f94b1452981206f2abeedd960cef8bd1773446179a20f8608664d3",
+    "vendor/vivsim/ib/geometry.py": "65e6627e763b601bcf90118e4b65179bc0c978c4052ea344588587dec0c12576",
+    "vendor/vivsim/ib/kernels.py": "20779fdc2cd0c6cd6c9ffbfbdbb83ec849c07355aa441272bb3e8805118b5e9f",
+    "vendor/vivsim/ib/mdf.py": "a67ff4204acfa6294f6c880934eb9c0cfe50dc620ae58333839e5653206d837c",
+    "vendor/vivsim/ib/stencil.py": "752165731aa7d44196f73c0ff65ce7fdd08820aff08b0a689e2487f6d093d749",
+    "vendor/vivsim/ib3d/__init__.py": "c711d053b7f53aa4c9187ac0f0d2c36062e9a7379d4a00ccc83e3bdd6c248817",
+    "vendor/vivsim/ib3d/geometry.py": "6bbb8b2a84d51123d1bf56faa6e0c2cb6dd86a3744956fb6e3cbd593d8c2cf88",
+    "vendor/vivsim/ib3d/stencil.py": "3f6344a723d25810c28c4b64593b1bd828ced2dbb153bb027990a9be22859c37"
+  },
+  "method": "files copied byte-identical from a local clone of the upstream repo; sha256 above; execution goes through jaxshim/ (NumPy backend, jaxlib has no loongarch64 wheel)",
+  "not_vendored": [
+    "vivsim/lbm* (solver)",
+    "examples/",
+    "post/"
+  ]
+}
