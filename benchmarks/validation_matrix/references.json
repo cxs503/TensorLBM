@@ -154,6 +154,15 @@
       "origin": "Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2)",
       "source": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md",
       "token": "Δp = 2.4600 - 2.5000 (mid 2.4800)"
+    },
+    "poiseuille_channel_analytic": {
+      "quantity": "body-force driven laminar channel centre-line velocity u_max = a/(2 nu) * (H/2)^2 (Poiseuille parabola)",
+      "value": null,
+      "formula": "u(y) = a / (2 nu) * s * (H - s),  s = y - 0.5,  H = ny - 2",
+      "origin": "Batchelor 1967 §4.2 (laminar plane Poiseuille flow, lattice units); analytic anchor implemented in the T2 GPU core-path channel runner",
+      "source": "src/tensorlbm/gpu_core_path.py",
+      "token": "u(y) = a / (2 nu) * s * (H - s)",
+      "reference_basis": "analytic"
     }
   }
 }
