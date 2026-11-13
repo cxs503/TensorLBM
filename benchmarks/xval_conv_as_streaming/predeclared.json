@@ -1,0 +1,67 @@
+{
+  "anchor": "XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL",
+  "mission": 17680,
+  "round": 1,
+  "kind": "open-source cross-validation (XVAL)",
+  "decision": "Adopt the conv-as-streaming fixed-kernel transport of loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow as a TensorLBM transport option (`tensorlbm.streaming_conv`)? Decide by (a) implementation equivalence against the in-house gather transport and (b) physical accuracy of the transported solution against the closed-form Taylor-Green solution and the closed-form Poiseuille profile.",
+  "alternatives": {
+    "A_native_gather": "tensorlbm.solver.stream -- advanced-index gather over shifted source cells, per-direction indices cached; the current production transport.",
+    "B_conv_fixed_kernel": "conv-as-streaming: one fixed 3x3 depthwise cross-correlation kernel (tap index = 1 - c_axis) over circular-padded fields; wall bounce as a 1x1 cross-channel convolution blended through the solid mask (upstream LatFlow/Domain.py::StreamSC + CollideSC).",
+    "REF_analytic": "closed-form 2D Taylor-Green (exact Navier-Stokes) for the periodic arm and closed-form plane Poiseuille (Hagen-Poiseuille) parabola for the wall arm -- no interpolation, no series truncation."
+  },
+  "hypothesis": "H1: replacing only the transport operator (A -> B) leaves the solution unchanged to round-off (< 1e-12 relative max velocity) and keeps the Taylor-Green decay rate and the Poiseuille profile within 3% of the closed forms (owner gate: 15%). H0 (falsifier): any predeclared KPI deviates by >= 15%, or the transport reformulation is not equivalent to round-off.",
+  "metrics": {
+    "gamma_K_rel_err_pct": "kinetic-energy decay rate from a least-squares fit of ln K(t) over the second half of the run, compared with 4*nu*k^2 (percent)",
+    "gamma_vel_rel_err_pct": "same for ln(max|u|) against 2*nu*k^2 (percent)",
+    "field_l2_pct": "||u_num - u_exact||_2 / ||u_exact||_2 over all nodes at the final step (percent)",
+    "pair_max_rel": "max|u_A - u_B| / max|u_A| over all nodes at the final step (dimensionless)",
+    "u_center_rel_err_pct": "steady channel centreline velocity vs g*H^2/(8*nu) with the nominal half-way wall spacing H = Ny-2 (percent)",
+    "profile_l2_pct": "||u_num(y) - u_exact(y)||_2 / ||u_exact(y)||_2 over fluid rows (percent)"
+  },
+  "unit_of_analysis": "one transport arm at one (resolution, Reynolds) configuration; every KPI is a scalar per arm-configuration",
+  "baseline_control": {
+    "baseline": "arm A at the reference configuration (n=128, Re=100, U0=0.05)",
+    "control": "arm B at the identical configuration: the single changed variable is the transport operator; collision (BGK), initial condition, sampling, dtype and thread count are shared code paths",
+    "reference": "closed-form Taylor-Green and Hagen-Poiseuille (not another solver), so the accuracy statement is independent of any implementation choice"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "internal_target_pct": 3.0,
+    "implementation_equivalence_rel": 1e-12,
+    "exactness_note": "the fixed kernel has exactly one unit tap per output channel, so a faithful port is expected to be bit-wise identical to the gather transport; the 1e-12 band is a tolerance, not a target",
+    "convergence_rule": "a KPI is resolution-converged when |KPI(n=128) - KPI(n=64)| / |KPI(n=128)| < 10%",
+    "stability_rule": "a run whose population contains a non-finite value, or whose |u| exceeds 10*U0, is declared failed and reported, not re-tuned"
+  },
+  "sensitivity_points": [
+    "resolution n in {64, 128} at Re=100, U0=0.05 (discretisation)",
+    "Reynolds number Re in {50, 100} at n=128, U0=0.05 (tau = 0.885 vs 0.692, i.e. the less-damped regime)",
+    "channel height Ny in {16, 32} for the wall arm (bounce formulation)"
+  ],
+  "stopping_rule": "fixed step counts chosen before the run from the analytic decay/viscous time scale (TG: 4900 steps = 2.9 e-folding times of K at Re=100; channel: 30000 steps = 3.3 viscous times H^2/nu). No arm is extended or truncated after inspecting a KPI.",
+  "variables_changed": ["transport operator (gather vs fixed-kernel convolution)", "resolution n", "Reynolds number", "channel height Ny"],
+  "variables_controlled": ["D2Q9 BGK collision (same function)", "initial condition f = f_eq(rho, u0) on cell centres x_i = i + 0.5", "sampling schedule and estimators", "float64 CPU torch, fixed thread count", "Mobius (periodic) padding in both arms"],
+  "confounders": [
+    "upstream is TensorFlow 1.x float32 on GPU; the transplant is torch float64 on CPU -- the comparison is formulation-level, not bit-level against upstream's binaries",
+    "upstream's D3Q19 STREAM table contains one wrong tap (q=3); the port therefore derives kernels from the velocity table and only re-uses upstream's D2Q9 table (verified consistent), so the D3Q19 path is NOT cross-validated against upstream's shipped numbers",
+    "the Poiseuille arm needs a body force; both arms share one Guo forcing implementation, so forcing error is common-mode and not attributed to the transport operator"
+  ],
+  "repetition_rationale": "both arms are deterministic (zero variance), so repetition is replaced by (a) two independent physical cases (periodic + wall), (b) three predeclared sensitivity configurations, (c) three independent equivalence checks (2D bitwise, 3D vs canonical roll traversal, upstream-table audit).",
+  "environment": {
+    "solver": "TensorLBM src/tensorlbm (torch 2.7.1, CPU only -- torch.cuda.is_available() == False)",
+    "dtype": "float64",
+    "threads": 4,
+    "oss_source": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow master tarball, sha256 recorded in benchmarks/xval_conv_as_streaming/oss_ref/provenance.json",
+    "command": "python benchmarks/xval_conv_as_streaming/run_xval.py",
+    "raw_data": "runs/xval_conv_as_streaming/{result.json,table.csv,figures/*.png}"
+  },
+  "analysis_plan": "table arm x configuration with every KPI and its percent deviation from the closed form; verdict by the predeclared 15% rule with the 3% internal target reported separately; uncertainty = resolution delta + Re delta; no post-hoc threshold change.",
+  "sections_delivered": [
+    "problem + reference provenance",
+    "method + implementation",
+    "non-dimensional parameter table",
+    "reference vs got table with pass/fail marks",
+    "convergence / sensitivity (3 predeclared points)",
+    "failure modes + artefacts",
+    "difference list: TensorLBM vs upstream (method / parameters / boundary conditions) + porting trade-offs"
+  ]
+}
