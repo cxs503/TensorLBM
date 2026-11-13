@@ -1,0 +1,72 @@
+{
+  "anchor": "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+  "round": 1,
+  "repo": "TensorLBM",
+  "oss": {
+    "repo": "lssfau/walberla",
+    "oss_solutions_row": 274,
+    "feature_slug": "GAP-LBM-MCMP-POISEUILLE",
+    "tag": "no-mcmp-two-phase-only",
+    "method_verbatim": "no MCMP in the OSS repository (no component index, no component transport equation); the two-component layered Poiseuille benchmark cannot be mapped directly. Only the phase-field layered-initialisation geometry and the variable-density equilibrium assembly can be borrowed, i.e. 'two-component' is downgraded to 'two-phase layered'.",
+    "files": [
+      "apps/showcases/PhaseFieldAllenCahn/CPU/multiphase_RTI_3D.py:43-56",
+      "apps/showcases/PhaseFieldAllenCahn/CPU/multiphase_codegen.py:39-50"
+    ],
+    "conventions_verbatim": "no component index / no per-component PDF; the layering is given only by the initial value of C",
+    "upstream_source_available_locally": false,
+    "upstream_note": "lssfau/walberla is not reachable from this sandbox (no network, no vendored copy in this worktree); the OSS arm is therefore specified from the inventory row above and implemented as the single-distribution model M2P, not by compiling the OSS binary. This is a limitation of the study and is stated as such in the report."
+  },
+  "decision": "Decide whether the no-MCMP two-phase-only downgrade (one distribution function, frozen phase indicator C, local viscosity from C, variable-density equilibrium assembly) may stand in for the two-component layered Poiseuille analytic benchmark inside the owner 15% band -- or whether a component-resolved (MCMP) model is required for viscosity-stratified internal flows.",
+  "alternatives": [
+    "A1 two-layer analytic reference (4x4 linear system for the piecewise-parabolic Stokes solution; machine-checked wall/continuity/stress invariants)",
+    "A2 two-phase-only model M2P with node-local viscosity mixing rule harmonic",
+    "A3 two-phase-only model M2P with mixing rule geometric",
+    "A4 two-phase-only model M2P with mixing rule linear",
+    "A5 MCMP two-component Shan-Chen (library collide_sc_two_component, u_eq=mixture, Guo forcing) at the same viscosity ratio",
+    "A6 density-contrast variant of M2P (rho_hi = 0.25 rho_lo) -- structural diagnostic of the downgrade"
+  ],
+  "hypothesis": {
+    "H1": "M2P reproduces the two-layer analytic profile within the owner 15% band (L2 relative error on the velocity profile, peak-normalised max error, per-layer flux) for viscosity ratios nu_lo/nu_hi <= 4 with an interface width of >= 2 cells.",
+    "H2": "The profile error grows monotonically with the viscosity ratio at fixed interface width.",
+    "H3": "The node-local viscosity mixing rule is load-bearing: at fixed nu_ratio >= 4 the linear rule is the worst and the harmonic rule the best.",
+    "H4": "At nu_ratio = 10 at least one mixing rule leaves the 15% band, i.e. the downgrade is not universally acceptable.",
+    "H5": "A density contrast across the frozen interface degrades the two-phase-only arm, because the model has no interface-sharpening mechanism and the density profile diffuses."
+  },
+  "metrics": {
+    "K1_analytic_selfcheck": "max over cases of the four analytic residuals (wall_low, wall_high, |u jump| at the interface, |mu du/dy jump|) -- must be at machine precision, since the reference is solved, not transcribed. Cross-check: the generic 4x4 solver vs tensorlbm.porous_media._two_phase_poiseuille_analytical at the legacy convention (walls at j=0 and j=ny-1, interface at ny//2).",
+    "K2_l2_rel": "||u_sim - u_ana||_2 / ||u_ana||_2 over the fluid nodes j=1..ny-2 (steady profile averaged over the periodic x direction)",
+    "K3_max_rel_peak": "max_j |u_sim - u_ana| / max_j |u_ana| over the same nodes",
+    "K4_flux_rel": "|Q_sigma,sim - Q_sigma,ana| / |Q_sigma,ana| per layer, Q_sigma = sum over the layer of rho u_x",
+    "K5_uy_spurious_rel": "max|u_y| / max|u_x| -- validity check of the frozen-interface assumption (a parallel flow must have a vanishing normal velocity)",
+    "K6_mass_drift_rel": "|sum rho(final) - sum rho(initial)| / sum rho(initial) over the fluid nodes",
+    "K7_resolution": "l2_rel at ny=96 vs ny=48 at nu_ratio=2 (grid trend)",
+    "K8_density_contrast": "same K2/K3 on the rho_hi=0.25 arm, plus the measured interface 10-90 width and centre drift of the density profile"
+  },
+  "predeclared_thresholds": {
+    "K1_analytic_selfcheck": 1e-10,
+    "K2_l2_rel": 0.15,
+    "K3_max_rel_peak": 0.15,
+    "K4_flux_rel": 0.15,
+    "K5_uy_spurious_rel": 0.01,
+    "K6_mass_drift_rel": 1e-6,
+    "K8_density_contrast": 0.15,
+    "interpretation": "0.15 is the owner band (relative error above 15% is not acceptable). K1 is a semantics/exactness check and is therefore at machine precision. Diagnostics that no threshold can decide a priori (interface width growth, convergence history) are reported as numbers only."
+  },
+  "matrix": {
+    "M1_viscosity_ratio": {"ny": 96, "nx": 4, "width": 2.0, "rho": 1.0, "nu_lo": 0.5, "nu_ratio": [1, 2, 4, 10], "rules": ["harmonic", "geometric", "linear"]},
+    "M2_width": {"ny": 96, "nx": 4, "nu_lo": 0.5, "nu_ratio": 4, "rule": "harmonic", "width": [1.0, 2.0, 4.0]},
+    "M3_resolution": {"nx": 4, "width": 2.0, "nu_lo": 0.5, "nu_ratio": 2, "rule": "harmonic", "ny": [48, 64, 96]},
+    "M4_density_contrast": {"ny": 96, "nx": 4, "width": 2.0, "nu_lo": 0.5, "nu_ratio": 2, "rule": "harmonic", "rho_hi": 0.25},
+    "M5_mcmp_comparison": {"ny": 96, "nx": 4, "nu_ratio": [2, 4], "G_12": -1.0}
+  },
+  "solver_settings": {
+    "G": 4e-06,
+    "stop_tol": 1e-06,
+    "check_every": 500,
+    "max_steps": 200000,
+    "geometry": "wall rows j=0 and j=ny-1 (full-way bounce-back, no-slip planes at y=0 and y=ny-1 in lattice units); interface at y_int=(ny-1)/2; frozen phase indicator C = 0.5(1 - tanh((y-y_int)/width))",
+    "forcing": "force density rho*G with G the per-unit-mass body acceleration, Guo second-order source term with the local (tensor) tau"
+  },
+  "stopping_rule": "Every arm of the four predeclared matrices is run to completion or to its step cap; no case is added or dropped after the errors are seen. Arms that hit the step cap are flagged converged=false and reported as such (no silent trimming of unconverged cases). Wall-clock per arm is recorded.",
+  "provenance": "all numbers in the report are rendered from xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/results.json by run_xval.render_report(); the test suite re-renders and compares, so the tables cannot be hand-edited."
+}
