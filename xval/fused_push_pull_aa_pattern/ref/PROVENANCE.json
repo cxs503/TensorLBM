@@ -1,0 +1,17 @@
+{
+ "chapter13/gpu/LBM.cu": {
+  "sha256": "0c9854fa353b62415bda2ff29fef890ece9254617990d7f94a2313537d0feb0c",
+  "bytes": 13686,
+  "git_sha": "53ca66b7a5a3a7585356197469b9a6be3d55cc9b"
+ },
+ "chapter13/gpu/LBM.h": {
+  "sha256": "0bc95be600f9416e58b70455ef756dea2875a14077e4dcddd4addb24b2ec0920",
+  "bytes": 1747,
+  "git_sha": "185d149c02bd7d71a7fe5b51406bdd0bcc593469"
+ },
+ "chapter13/gpu/main.cu": {
+  "sha256": "ebbb847c12b4d52495bef359c44bf0a1d802a6b1c2047377dc8eed9e3e5af98e",
+  "bytes": 6622,
+  "git_sha": "021ad7bd91864e6ad1c28f8c6d782db35d4dc85f"
+ }
+}
