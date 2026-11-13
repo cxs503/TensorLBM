@@ -1,0 +1,4 @@
+-- m18433 交差核验 verdict：对象 m18324 XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION (TensorLBM)
+-- 判级 L4：完整基准算例 + 误差分析 + 可复现（repro_cmd 可执行、6 项单测、产物齐）；
+-- 不到 L5：仅限 2D、无生产求解器级集成、Korteweg σ_K 诚实 FAIL（18-60% 高估）。
+-- 已落表：tensor_maturity_verdicts (mission_id=18433, level=4, verdict_by=board-audit)
