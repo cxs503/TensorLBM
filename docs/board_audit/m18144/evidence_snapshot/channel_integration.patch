@@ -1,0 +1,52 @@
+diff --git a/src/tensorlbm/sediment/channel.py b/src/tensorlbm/sediment/channel.py
+index 0136e86e..5a47096f 100644
+--- a/src/tensorlbm/sediment/channel.py
++++ b/src/tensorlbm/sediment/channel.py
+@@ -27,6 +27,7 @@ import torch
+ 
+ from tensorlbm.boundaries import bounce_back_cells
+ from tensorlbm.d2q9 import C, W, equilibrium, macroscopic
++from tensorlbm.fused_kernel_selector import collide_stream_bgk
+ from tensorlbm.solver import collide_bgk_fused, stream
+ 
+ __all__ = ["ChannelConfig", "run_channel", "poiseuille_profile"]
+@@ -42,6 +43,13 @@ class ChannelConfig:
+     body_force: float = 3.75e-6  # x-directed body force (per unit mass)
+     n_steps: int = 1500
+     seed: int = 7
++    #: Kernel granularity, same vocabulary as ``lbmpy``'s ``LBMConfig.kernel_type``
++    #: (see :mod:`tensorlbm.fused_kernel_selector`).  ``"collide_only"`` keeps the
++    #: historical collide-then-stream pair; ``"default_stream_collide"`` uses the
++    #: single-pass fused kernel added for the XVAL anchor
++    #: XVAL-LBM-FUSED-KERNEL-TYPE-SELECTOR.  Both are algebraically identical, so
++    #: the extracted wall shear must agree to round-off.
++    kernel_type: str = "collide_only"
+ 
+     @property
+     def tau(self) -> float:
+@@ -91,8 +99,15 @@ def run_channel(cfg: ChannelConfig, device: str = "cpu") -> dict:
+ 
+     src_coeff = (W.to(dev) * C.to(dev)[:, 0] * cfg.body_force).view(9, 1, 1)
+     for _ in range(cfg.n_steps):
+-        f = collide_bgk_fused(f, cfg.tau)
+-        f = stream(f)
++        if cfg.kernel_type == "default_stream_collide":
++            f = collide_stream_bgk(f, cfg.tau)
++        elif cfg.kernel_type == "collide_only":
++            f = stream(collide_bgk_fused(f, cfg.tau))
++        else:
++            raise ValueError(
++                f"invalid kernel_type {cfg.kernel_type!r}; use 'collide_only' or "
++                "'default_stream_collide'"
++            )
+         f = f + src_coeff * f.sum(dim=0, keepdim=True)
+         f = bounce_back_cells(f, wall)
+ 
+@@ -120,6 +135,7 @@ def run_channel(cfg: ChannelConfig, device: str = "cpu") -> dict:
+         "u_star": u_star,
+         "u_mean": u_mean,
+         "profile_rel_err": float(rel.max().item()),
++        "kernel_type": cfg.kernel_type,
+         "steps": cfg.n_steps,
+         "nu": cfg.nu,
+         "depth": h,

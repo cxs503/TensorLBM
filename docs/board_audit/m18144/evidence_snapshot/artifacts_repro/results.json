@@ -1,0 +1,345 @@
+{
+  "anchor": "XVAL-LBM-FUSED-KERNEL-TYPE-SELECTOR",
+  "kernel_types": [
+    "default_stream_collide",
+    "collide_only",
+    "stream_pull_only"
+  ],
+  "lbmpy_available": true,
+  "oss": {
+    "package": "lssfau/lbmpy",
+    "selector": "lbmpy.creationfunctions.LBMConfig(kernel_type=...)",
+    "kernel_builder": "lbmpy.creationfunctions.create_lb_ast -> Kernel.compile()",
+    "zero_centered_storage_detected": true,
+    "direction_permutation": [
+      0,
+      2,
+      4,
+      3,
+      1,
+      6,
+      5,
+      7,
+      8
+    ]
+  },
+  "equivalence": [
+    {
+      "n": 32,
+      "tau": 0.8,
+      "field_scale": 0.444444335956812,
+      "rows": [
+        {
+          "quantity": "tensorlbm fused(pre_stream) vs collide+stream, 1 step(s)",
+          "max_abs_diff": 1.1102230246251565e-16,
+          "rel": 2.49800241516193e-16,
+          "reference": "stream(collide_bgk(f))",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "tensorlbm collide_bgk_matmul vs collide_bgk, 1 step(s)",
+          "max_abs_diff": 1.6653345369377348e-16,
+          "rel": 3.747003622742895e-16,
+          "reference": "collide_bgk(f)",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "tensorlbm fused(post_stream) vs collide(stream(f)), 1 step(s)",
+          "max_abs_diff": 1.1102230246251565e-16,
+          "rel": 2.49800241516193e-16,
+          "reference": "collide_bgk(stream(f))",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "tensorlbm fused(pre_stream) vs collide+stream, 50 step(s)",
+          "max_abs_diff": 3.885780586188048e-16,
+          "rel": 8.743008453066755e-16,
+          "reference": "stream(collide_bgk(f))",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "tensorlbm collide_bgk_matmul vs collide_bgk, 50 step(s)",
+          "max_abs_diff": 3.885780586188048e-16,
+          "rel": 8.743008453066755e-16,
+          "reference": "collide_bgk(f)",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "tensorlbm fused(post_stream) vs collide(stream(f)), 50 step(s)",
+          "max_abs_diff": 3.885780586188048e-16,
+          "rel": 8.743008453066755e-16,
+          "reference": "collide_bgk(stream(f))",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "tensorlbm fused pre_stream vs post_stream, 50 steps",
+          "max_abs_diff": 0.0016349967007721067,
+          "rel": 0.0036787434747081226,
+          "reference": "operator-order difference (not a bug, see report)",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "lbmpy default_stream_collide vs tensorlbm fused(post_stream), 1 step(s)",
+          "max_abs_diff": 2.7755575615628914e-16,
+          "rel": 6.245006037904824e-16,
+          "reference": "OSS lbmpy 2.0 compiled kernel",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "lbmpy default_stream_collide vs tensorlbm fused(post_stream), 50 step(s)",
+          "max_abs_diff": 1.8318679906315083e-15,
+          "rel": 4.1217039850171845e-15,
+          "reference": "OSS lbmpy 2.0 compiled kernel",
+          "pass_lt_15pct": true
+        },
+        {
+          "quantity": "lbmpy collide_only vs tensorlbm collide_bgk, 1 step",
+          "max_abs_diff": 2.220446049250313e-16,
+          "rel": 4.99600483032386e-16,
+          "reference": "OSS lbmpy 2.0 compiled kernel",
+          "pass_lt_15pct": true
+        }
+      ]
+    }
+  ],
+  "physics": [
+    {
+      "n": 32,
+      "tau": 0.8,
+      "k": 0.19634954084936207,
+      "nu": 0.10000000000000002,
+      "u0": 0.0001,
+      "steps": 400,
+      "a0": 5.000000000000398e-05,
+      "rows": [
+        {
+          "variant": "tensorlbm fused(pre_stream)",
+          "got": 1.0640407306306841e-05,
+          "ref_continuum_ns": 1.0696293908280721e-05,
+          "err_continuum_pct": 0.5224856614178723,
+          "ref_discrete_shear_mode": 2.9896622126979136e-09,
+          "err_discrete_pct": 355806.6727041644
+        },
+        {
+          "variant": "tensorlbm fused(post_stream)",
+          "got": 1.064040730624297e-05,
+          "ref_continuum_ns": 1.0696293908280721e-05,
+          "err_continuum_pct": 0.5224856620150078,
+          "ref_discrete_shear_mode": 2.9896622126979136e-09,
+          "err_discrete_pct": 355806.67270202795
+        },
+        {
+          "variant": "tensorlbm collide_bgk+stream",
+          "got": 1.064040730623168e-05,
+          "ref_continuum_ns": 1.0696293908280721e-05,
+          "err_continuum_pct": 0.5224856621205515,
+          "ref_discrete_shear_mode": 2.9896622126979136e-09,
+          "err_discrete_pct": 355806.67270165036
+        },
+        {
+          "variant": "tensorlbm collide_bgk_matmul+stream",
+          "got": 1.064040730585955e-05,
+          "ref_continuum_ns": 1.0696293908280721e-05,
+          "err_continuum_pct": 0.5224856655996104,
+          "ref_discrete_shear_mode": 2.9896622126979136e-09,
+          "err_discrete_pct": 355806.6726892031
+        },
+        {
+          "variant": "tensorlbm stream_pull_only",
+          "got": 1.6666666666667996e-05,
+          "ref_continuum_ns": 1.0696293908280721e-05,
+          "err_continuum_pct": 55.81720930242209,
+          "ref_discrete_shear_mode": 2.9896622126979136e-09,
+          "err_discrete_pct": 557376.5803267038
+        },
+        {
+          "variant": "OSS lbmpy default_stream_collide",
+          "got": 1.064040730617975e-05,
+          "ref_continuum_ns": 1.0696293908280721e-05,
+          "err_continuum_pct": 0.5224856626060457,
+          "ref_discrete_shear_mode": 2.9896622126979136e-09,
+          "err_discrete_pct": 355806.6726999133
+        }
+      ]
+    },
+    {
+      "n": 64,
+      "tau": 0.8,
+      "k": 0.09817477042468103,
+      "nu": 0.10000000000000002,
+      "u0": 0.0001,
+      "steps": 400,
+      "a0": 5.000000000000406e-05,
+      "rows": [
+        {
+          "variant": "tensorlbm fused(pre_stream)",
+          "got": 3.3980237596745037e-05,
+          "ref_continuum_ns": 3.400445629442557e-05,
+          "err_continuum_pct": 0.07122212886110864,
+          "ref_discrete_shear_mode": 4.468761232201983e-06,
+          "err_discrete_pct": 660.3950139891737
+        },
+        {
+          "variant": "tensorlbm fused(post_stream)",
+          "got": 3.398023759679173e-05,
+          "ref_continuum_ns": 3.400445629442557e-05,
+          "err_continuum_pct": 0.07122212872378772,
+          "ref_discrete_shear_mode": 4.468761232201983e-06,
+          "err_discrete_pct": 660.3950139902186
+        },
+        {
+          "variant": "tensorlbm collide_bgk+stream",
+          "got": 3.398023759672803e-05,
+          "ref_continuum_ns": 3.400445629442557e-05,
+          "err_continuum_pct": 0.07122212891112685,
+          "ref_discrete_shear_mode": 4.468761232201983e-06,
+          "err_discrete_pct": 660.395013988793
+        },
+        {
+          "variant": "tensorlbm collide_bgk_matmul+stream",
+          "got": 3.3980237596150264e-05,
+          "ref_continuum_ns": 3.400445629442557e-05,
+          "err_continuum_pct": 0.0712221306102117,
+          "ref_discrete_shear_mode": 4.468761232201983e-06,
+          "err_discrete_pct": 660.395013975864
+        },
+        {
+          "variant": "tensorlbm stream_pull_only",
+          "got": 3.3333333333336045e-05,
+          "ref_continuum_ns": 3.400445629442557e-05,
+          "err_continuum_pct": 1.9736323829990041,
+          "ref_discrete_shear_mode": 4.468761232201983e-06,
+          "err_discrete_pct": 645.9188710539148
+        },
+        {
+          "variant": "OSS lbmpy default_stream_collide",
+          "got": 3.3980237596627834e-05,
+          "ref_continuum_ns": 3.400445629442557e-05,
+          "err_continuum_pct": 0.07122212920577597,
+          "ref_discrete_shear_mode": 4.468761232201983e-06,
+          "err_discrete_pct": 660.3950139865509
+        }
+      ]
+    },
+    {
+      "n": 64,
+      "tau": 0.6,
+      "k": 0.09817477042468103,
+      "nu": 0.033333333333333326,
+      "u0": 0.0001,
+      "steps": 400,
+      "a0": 5.000000000000406e-05,
+      "rows": [
+        {
+          "variant": "tensorlbm fused(pre_stream)",
+          "got": 4.393193474475252e-05,
+          "ref_continuum_ns": 4.3970217575662024e-05,
+          "err_continuum_pct": 0.08706536610520593,
+          "ref_discrete_shear_mode": 1.9915034611982134e-06,
+          "err_discrete_pct": 2105.968284801288
+        },
+        {
+          "variant": "tensorlbm fused(post_stream)",
+          "got": 4.393193474483241e-05,
+          "ref_continuum_ns": 4.3970217575662024e-05,
+          "err_continuum_pct": 0.08706536592350989,
+          "ref_discrete_shear_mode": 1.9915034611982134e-06,
+          "err_discrete_pct": 2105.9682848053
+        },
+        {
+          "variant": "tensorlbm collide_bgk+stream",
+          "got": 4.393193474492044e-05,
+          "ref_continuum_ns": 4.3970217575662024e-05,
+          "err_continuum_pct": 0.0870653657233052,
+          "ref_discrete_shear_mode": 1.9915034611982134e-06,
+          "err_discrete_pct": 2105.96828480972
+        },
+        {
+          "variant": "tensorlbm collide_bgk_matmul+stream",
+          "got": 4.39319347439375e-05,
+          "ref_continuum_ns": 4.3970217575662024e-05,
+          "err_continuum_pct": 0.08706536795876761,
+          "ref_discrete_shear_mode": 1.9915034611982134e-06,
+          "err_discrete_pct": 2105.9682847603635
+        },
+        {
+          "variant": "tensorlbm stream_pull_only",
+          "got": 3.3333333333336045e-05,
+          "ref_continuum_ns": 4.3970217575662024e-05,
+          "err_continuum_pct": 24.19111123119301,
+          "ref_discrete_shear_mode": 1.9915034611982134e-06,
+          "err_discrete_pct": 1573.777323654794
+        },
+        {
+          "variant": "OSS lbmpy default_stream_collide",
+          "got": 4.3931934744629644e-05,
+          "ref_continuum_ns": 4.3970217575662024e-05,
+          "err_continuum_pct": 0.08706536638465415,
+          "ref_discrete_shear_mode": 1.9915034611982134e-06,
+          "err_discrete_pct": 2105.9682847951185
+        }
+      ]
+    },
+    {
+      "n": 64,
+      "tau": 0.9,
+      "k": 0.09817477042468103,
+      "nu": 0.13333333333333333,
+      "u0": 0.0001,
+      "steps": 400,
+      "a0": 5.000000000000406e-05,
+      "rows": [
+        {
+          "variant": "tensorlbm fused(pre_stream)",
+          "got": 2.9890579220214167e-05,
+          "ref_continuum_ns": 2.9903666836157214e-05,
+          "err_continuum_pct": 0.0437659234727084,
+          "ref_discrete_shear_mode": 5.848328379505422e-06,
+          "err_discrete_pct": 411.0961163699555
+        },
+        {
+          "variant": "tensorlbm fused(post_stream)",
+          "got": 2.9890579220192182e-05,
+          "ref_continuum_ns": 2.9903666836157214e-05,
+          "err_continuum_pct": 0.043765923546229775,
+          "ref_discrete_shear_mode": 5.848328379505422e-06,
+          "err_discrete_pct": 411.0961163695796
+        },
+        {
+          "variant": "tensorlbm collide_bgk+stream",
+          "got": 2.9890579220180794e-05,
+          "ref_continuum_ns": 2.9903666836157214e-05,
+          "err_continuum_pct": 0.043765923584310425,
+          "ref_discrete_shear_mode": 5.848328379505422e-06,
+          "err_discrete_pct": 411.09611636938484
+        },
+        {
+          "variant": "tensorlbm collide_bgk_matmul+stream",
+          "got": 2.9890579219701435e-05,
+          "ref_continuum_ns": 2.9903666836157214e-05,
+          "err_continuum_pct": 0.04376592518732341,
+          "ref_discrete_shear_mode": 5.848328379505422e-06,
+          "err_discrete_pct": 411.0961163611883
+        },
+        {
+          "variant": "tensorlbm stream_pull_only",
+          "got": 3.3333333333336045e-05,
+          "ref_continuum_ns": 2.9903666836157214e-05,
+          "err_continuum_pct": 11.469049986311186,
+          "ref_discrete_shear_mode": 5.848328379505422e-06,
+          "err_discrete_pct": 469.96343519539096
+        },
+        {
+          "variant": "OSS lbmpy default_stream_collide",
+          "got": 2.989057922007655e-05,
+          "ref_continuum_ns": 2.9903666836157214e-05,
+          "err_continuum_pct": 0.0437659239329053,
+          "ref_discrete_shear_mode": 5.848328379505422e-06,
+          "err_discrete_pct": 411.09611636760246
+        }
+      ]
+    }
+  ],
+  "wall_time_s": 29.344358444213867,
+  "figure_error": "KeyError('variant')"
+}
