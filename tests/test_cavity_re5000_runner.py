@@ -41,20 +41,23 @@ def _run(tmp_path: Path, *args: str) -> tuple[int, dict]:
 
 def test_short_run_without_monitor_writes_artifact(tmp_path: Path) -> None:
     """steps < monitor_every used to raise TypeError and leave no result.json."""
-    grid = ("16",)
+    # n = 32 (not 16): CavityConfig rejects n < 17, and the guard is a library
+    # invariant this runner must not bypass -- the contract under test is the
+    # artefact/exit-code one, which is grid-size independent.
+    grid = ("32",)
     rc, payload = _run(tmp_path, "--n", *grid, "--re", "100", "--steps", "40",
                        "--monitor-every", "1000", "--u-lid", "0.06")
     assert rc == 0, payload
     assert payload["run_status"] == "ok"
-    rec = payload["grids"]["16"]
+    rec = payload["grids"]["32"]
     assert rec["final_resid"] is None          # no monitor interval was reached
     assert rec["status"] == "ok"
-    assert len(rec["u_centerline"]) == 16
+    assert len(rec["u_centerline"]) == 32
 
 
 def test_missing_reference_is_withheld_not_passed(tmp_path: Path) -> None:
     """Without --ref-json the comparison must be WITHHELD (never a fake pass)."""
-    rc, payload = _run(tmp_path, "--n", "16", "--re", "100", "--steps", "40",
+    rc, payload = _run(tmp_path, "--n", "32", "--re", "100", "--steps", "40",
                        "--monitor-every", "1000", "--u-lid", "0.06")
     assert rc == 0
     assert payload["comparison"]["status"] == "WITHHELD"
@@ -83,11 +86,11 @@ def test_synthetic_reference_is_scored_and_can_fail(tmp_path: Path) -> None:
         "u_re5000": [[0.25, 0.5], [0.75, 0.5]],     # deliberately far from any cavity solution
         "v_re5000": [[0.25, 0.5], [0.75, 0.5]],
     }))
-    rc, payload = _run(tmp_path, "--n", "16", "--re", "100", "--steps", "40",
+    rc, payload = _run(tmp_path, "--n", "32", "--re", "100", "--steps", "40",
                        "--monitor-every", "1000", "--u-lid", "0.06",
                        "--ref-json", str(ref))
     assert rc == 0
-    cmp16 = payload["comparison"]["16"]
+    cmp16 = payload["comparison"]["32"]
     assert cmp16["pass"] is False
     assert cmp16["max_abs_err_pct"] > 8.0
     assert payload["comparison"]["ref_provenance"]["source"].startswith("SYNTHETIC")
