@@ -1,0 +1,3616 @@
+{
+ "mission": "W26 paper-exp-d3q19-bgk-analytic-fourcase-1",
+ "repo": "TensorLBM",
+ "branch": "agent/m17563",
+ "generated_utc": "2026-11-13T07:06:44+00:00",
+ "runner": "native",
+ "summary": "Ghia (1982) Table I/II anchors for Re=100/400/1000 machine-extracted from the original paper PDF (digits from the text layer, signs from the page raster) plus the four analytic anchor cases with operator residuals <= 1e-12.",
+ "anchor_availability": {
+  "status": "AVAILABLE",
+  "source_type": "original paper PDF, scan with OCR text layer",
+  "pdf": {
+   "sha256": "1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93",
+   "n_pages": 25,
+   "bytes": 1333628,
+   "provenance": {
+    "github_repo": "nilot-pal/Lid-driven-cavity",
+    "path": "ghia1982.pdf",
+    "retrieval_command": "curl -s -H 'Accept: application/vnd.github.raw' -o /tmp/ghia1982.pdf https://api.github.com/repos/nilot-pal/Lid-driven-cavity/contents/ghia1982.pdf",
+    "sha256_cross_check": "matches the sha256 recorded in benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt (header line 6)"
+   }
+  },
+  "quotes": [
+   {
+    "page_index": 11,
+    "journal_page": 398,
+    "line_no": 19,
+    "text": "TABLE I"
+   },
+   {
+    "page_index": 11,
+    "journal_page": 398,
+    "line_no": 20,
+    "text": "Results for u-velocity along Vertical Line through Geometric Center of Cavity"
+   },
+   {
+    "page_index": 11,
+    "journal_page": 398,
+    "line_no": 10,
+    "text": "line-grid solutions. This would imply that the velocity distributions near these walls"
+   },
+   {
+    "page_index": 12,
+    "journal_page": 399,
+    "line_no": 19,
+    "text": "TABLE II"
+   },
+   {
+    "page_index": 12,
+    "journal_page": 399,
+    "line_no": 20,
+    "text": "Results for u-Velocity along Horizontal Line through Geometric Center of Cavity"
+   },
+   {
+    "page_index": 12,
+    "journal_page": 399,
+    "line_no": 3,
+    "text": "order accurate scheme of Agarwal [ 1 ] performs well with a 121 X 121 grid at"
+   }
+  ],
+  "citation": "Ghia, U., Ghia, K.N., Shin, C.T. (1982) High-Re solutions for incompressible flow using the Navier-Stokes equations and a multigrid method. J. Comput. Phys. 48(3), 387-411"
+ },
+ "tables": {
+  "I": {
+   "page_index": 11,
+   "journal_page": 398,
+   "quantity": "u-velocity along the vertical centreline x/L=0.5 (normalised by lid speed)",
+   "coord_name": "y",
+   "n_rows": 17,
+   "rows": [
+    {
+     "coord": 1.0,
+     "coord_raw": [
+      "1.ooooo"
+     ],
+     "coord_bbox_pt": [
+      [
+       89.99,
+       378.85,
+       113.45
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 1.0,
+       "ocr_token": "1.ooooo",
+       "digits": "1.",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.25,
+       "ink_bbox_pt": [
+        131.0,
+        381.89,
+        157.25,
+        386.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 1.0,
+       "ocr_token": "1.ooooo",
+       "digits": "1.",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.25,
+       "ink_bbox_pt": [
+        173.25,
+        381.89,
+        199.5,
+        386.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 1.0,
+       "ocr_token": "1.ooooo",
+       "digits": "1.",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.25,
+       "ink_bbox_pt": [
+        215.5,
+        381.89,
+        241.75,
+        386.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9766,
+     "coord_raw": [
+      "0.9766"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.71,
+       391.09,
+       111.81
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.84123,
+       "ocr_token": "0.84123",
+       "digits": "0.84123",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        129.75,
+        394.12,
+        156.75,
+        399.12
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.75837,
+       "ocr_token": "0.75837",
+       "digits": "0.75837",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        172.0,
+        394.12,
+        199.0,
+        399.12
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.65928,
+       "ocr_token": "0.65928",
+       "digits": "0.65928",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        214.25,
+        394.12,
+        241.25,
+        399.12
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9688,
+     "coord_raw": [
+      "0.9688"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.71,
+       403.33,
+       111.81
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.78871,
+       "ocr_token": "0.78871",
+       "digits": "0.78871",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.38,
+       "ink_bbox_pt": [
+        129.75,
+        406.35,
+        156.12,
+        411.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.68439,
+       "ocr_token": "0.68439",
+       "digits": "0.68439",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        172.0,
+        406.35,
+        199.0,
+        411.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.57492,
+       "ocr_token": "0.57492",
+       "digits": "0.57492",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        214.25,
+        406.35,
+        241.25,
+        411.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9609,
+     "coord_raw": [
+      "0.9609"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       415.57,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.73722,
+       "ocr_token": "0.73722",
+       "digits": "0.73722",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        129.5,
+        418.56,
+        156.75,
+        423.56
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.61756,
+       "ocr_token": "0.61756",
+       "digits": "0.61756",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        172.0,
+        418.56,
+        199.0,
+        423.56
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.51117,
+       "ocr_token": "0.51117",
+       "digits": "0.51117",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        214.0,
+        418.56,
+        241.25,
+        423.56
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9531,
+     "coord_raw": [
+      "0.9531"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       427.81,
+       114.45
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.68717,
+       "ocr_token": "0.68717",
+       "digits": "0.68717",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.12,
+       "ink_bbox_pt": [
+        129.5,
+        430.75,
+        156.62,
+        435.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.55892,
+       "ocr_token": "0.55892",
+       "digits": "0.55892",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        171.75,
+        430.75,
+        199.0,
+        435.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.46604,
+       "ocr_token": "0.46604",
+       "digits": "0.46604",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        214.0,
+        430.75,
+        241.25,
+        435.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.8516,
+     "coord_raw": [
+      "0.8516"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       440.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.23151,
+       "ocr_token": "0.23151",
+       "digits": "0.23151",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.62,
+       "ink_bbox_pt": [
+        129.5,
+        442.89,
+        156.12,
+        447.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.29093,
+       "ocr_token": "0.29093",
+       "digits": "0.29093",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        171.75,
+        442.89,
+        198.75,
+        447.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.33304,
+       "ocr_token": "0.33304",
+       "digits": "0.33304",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        214.0,
+        442.89,
+        241.25,
+        447.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.7344,
+     "coord_raw": [
+      "0.7344"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       452.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.00332,
+       "ocr_token": "0.00332",
+       "digits": "0.00332",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        129.5,
+        455.08,
+        156.75,
+        460.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.16256,
+       "ocr_token": "0.16256",
+       "digits": "0.16256",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        171.75,
+        455.08,
+        199.0,
+        460.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.18719,
+       "ocr_token": "0.18719",
+       "digits": "0.18719",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        214.0,
+        455.08,
+        241.0,
+        460.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.6172,
+     "coord_raw": [
+      "0.6172"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       464.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.13641,
+       "ocr_token": "AI13641",
+       "digits": "13641",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.12,
+       "ink_bbox_pt": [
+        125.0,
+        467.08,
+        156.12,
+        472.08
+       ],
+       "decimal_recovered": true,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.02135,
+       "ocr_token": "0.02135",
+       "digits": "0.02135",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.75,
+       "ink_bbox_pt": [
+        171.75,
+        467.08,
+        198.5,
+        472.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.05702,
+       "ocr_token": "0.05702",
+       "digits": "0.05702",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        214.0,
+        467.08,
+        241.0,
+        472.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.5,
+     "coord_raw": [
+      "0.5000"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       476.53,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.20581,
+       "ocr_token": "-0.20581",
+       "digits": "0.20581",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.12,
+       "ink_bbox_pt": [
+        125.0,
+        479.35,
+        156.12,
+        484.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.11477,
+       "ocr_token": "-0.11477",
+       "digits": "0.11477",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        479.35,
+        198.75,
+        484.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.0608,
+       "ocr_token": "-0.06080",
+       "digits": "0.06080",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        209.5,
+        479.35,
+        241.25,
+        484.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.4531,
+     "coord_raw": [
+      "0.4531"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       488.05,
+       114.45
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.2109,
+       "ocr_token": "-0.21090",
+       "digits": "0.21090",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        125.0,
+        491.11,
+        156.75,
+        496.11
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.17119,
+       "ocr_token": "-0.17119",
+       "digits": "0.17119",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        491.11,
+        198.75,
+        496.11
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.10648,
+       "ocr_token": "-0.10648",
+       "digits": "0.10648",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        209.5,
+        491.11,
+        241.0,
+        496.11
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.2813,
+     "coord_raw": [
+      "0.2813"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       500.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.15662,
+       "ocr_token": "AI.15662",
+       "digits": "0.15662",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        125.0,
+        503.08,
+        156.75,
+        508.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.32726,
+       "ocr_token": "-0.32726",
+       "digits": "0.32726",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        503.08,
+        198.75,
+        508.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.27805,
+       "ocr_token": "-0.27805",
+       "digits": "0.27805",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.25,
+       "ink_bbox_pt": [
+        209.5,
+        503.08,
+        240.75,
+        508.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.1719,
+     "coord_raw": [
+      "0.1719"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       512.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.1015,
+       "ocr_token": "Al.10150",
+       "digits": "0.10150",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        125.0,
+        515.13,
+        156.75,
+        520.13
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.24299,
+       "ocr_token": "-0.24299",
+       "digits": "0.24299",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        515.13,
+        198.75,
+        520.13
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.38289,
+       "ocr_token": "4.38289",
+       "digits": "4.38289",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        209.5,
+        515.13,
+        241.0,
+        520.13
+       ],
+       "decimal_recovered": true,
+       "magnitude_repaired": true
+      }
+     }
+    },
+    {
+     "coord": 0.1016,
+     "coord_raw": [
+      "0.1016"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       524.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.06434,
+       "ocr_token": "a.06434",
+       "digits": "0.06434",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        125.0,
+        527.04,
+        156.5,
+        532.04
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.14612,
+       "ocr_token": "-0.14612",
+       "digits": "0.14612",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        527.04,
+        198.75,
+        532.04
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.2973,
+       "ocr_token": "-0.29730",
+       "digits": "0.29730",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        209.5,
+        527.04,
+        241.25,
+        532.04
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0703,
+     "coord_raw": [
+      "0.0703"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       536.05,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.04775,
+       "ocr_token": "-0.04775",
+       "digits": "0.04775",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        125.0,
+        539.08,
+        156.38,
+        544.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.10338,
+       "ocr_token": "-0.10338",
+       "digits": "0.10338",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.25,
+       "ink_bbox_pt": [
+        167.25,
+        539.08,
+        198.5,
+        544.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.2222,
+       "ocr_token": "a.22220",
+       "digits": "0.22220",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        209.5,
+        539.08,
+        241.25,
+        544.08
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0625,
+     "coord_raw": [
+      "0.0625"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       547.81,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.04192,
+       "ocr_token": "a.04192",
+       "digits": "0.04192",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        125.0,
+        550.89,
+        156.75,
+        555.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.09266,
+       "ocr_token": "AI.09266",
+       "digits": "0.09266",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        550.89,
+        198.75,
+        555.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.20196,
+       "ocr_token": "-0.20196",
+       "digits": "0.20196",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.75,
+       "ink_bbox_pt": [
+        209.25,
+        550.89,
+        241.0,
+        555.89
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0547,
+     "coord_raw": [
+      "0.0547"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.47,
+       559.57,
+       111.57
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.03717,
+       "ocr_token": "-0.03717",
+       "digits": "0.03717",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        125.0,
+        562.63,
+        156.5,
+        567.63
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.08186,
+       "ocr_token": "-0.08186",
+       "digits": "0.08186",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        167.25,
+        562.63,
+        198.75,
+        567.63
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.18109,
+       "ocr_token": "AI.18109",
+       "digits": "0.18109",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.5,
+       "ink_bbox_pt": [
+        209.5,
+        562.63,
+        241.0,
+        567.63
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0,
+     "coord_raw": [
+      "0.0000"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.71,
+       571.57,
+       111.81
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        129.5,
+        574.41,
+        157.0,
+        579.41
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        171.75,
+        574.41,
+        199.0,
+        579.41
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        213.75,
+        574.41,
+        241.0,
+        579.41
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    }
+   ],
+   "header_words": [
+    {
+     "text": "129.",
+     "bbox_pt": [
+      62.87,
+      339.01,
+      76.29,
+      349.89
+     ]
+    },
+    {
+     "text": "grid",
+     "bbox_pt": [
+      62.87,
+      348.13,
+      74.19,
+      359.01
+     ]
+    },
+    {
+     "text": "100",
+     "bbox_pt": [
+      136.32,
+      359.17,
+      147.81,
+      370.05
+     ]
+    },
+    {
+     "text": "400",
+     "bbox_pt": [
+      177.6,
+      359.17,
+      189.09,
+      370.05
+     ]
+    },
+    {
+     "text": "1000",
+     "bbox_pt": [
+      218.88,
+      359.17,
+      234.22,
+      370.05
+     ]
+    },
+    {
+     "text": "pt.",
+     "bbox_pt": [
+      58.79,
+      359.41,
+      66.46,
+      370.29
+     ]
+    },
+    {
+     "text": "no.",
+     "bbox_pt": [
+      69.59,
+      359.41,
+      79.01,
+      370.29
+     ]
+    },
+    {
+     "text": "y",
+     "bbox_pt": [
+      99.83,
+      359.41,
+      103.27,
+      370.29
+     ]
+    }
+   ],
+   "right_edge_spread_pt_per_column": {
+    "I_100.0": 1.13,
+    "I_400.0": 1.0,
+    "I_1000.0": 1.0
+   }
+  },
+  "II": {
+   "page_index": 12,
+   "journal_page": 399,
+   "quantity": "v-velocity along the horizontal centreline y/L=0.5 (normalised by lid speed)",
+   "coord_name": "x",
+   "n_rows": 17,
+   "rows": [
+    {
+     "coord": 1.0,
+     "coord_raw": [
+      "1.oooo"
+     ],
+     "coord_bbox_pt": [
+      [
+       90.23,
+       379.33,
+       109.84
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        128.12,
+        382.35,
+        155.62,
+        387.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        170.38,
+        382.35,
+        197.62,
+        387.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        212.62,
+        382.35,
+        239.88,
+        387.35
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9688,
+     "coord_raw": [
+      "0.9688"
+     ],
+     "coord_bbox_pt": [
+      [
+       89.03,
+       391.57,
+       110.13
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.05906,
+       "ocr_token": "-0.05906",
+       "digits": "0.05906",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        123.75,
+        394.56,
+        155.38,
+        399.56
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.12146,
+       "ocr_token": "a.12146",
+       "digits": "0.12146",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        166.0,
+        394.56,
+        197.62,
+        399.56
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.21388,
+       "ocr_token": "a.21388",
+       "digits": "0.21388",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        208.25,
+        394.56,
+        239.62,
+        399.56
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9609,
+     "coord_raw": [
+      "0.9609"
+     ],
+     "coord_bbox_pt": [
+      [
+       89.03,
+       403.81,
+       110.13
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.07391,
+       "ocr_token": "-0.07391",
+       "digits": "0.07391",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 30.88,
+       "ink_bbox_pt": [
+        123.5,
+        406.75,
+        154.38,
+        411.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.15663,
+       "ocr_token": "-0.15663",
+       "digits": "0.15663",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.12,
+       "ink_bbox_pt": [
+        166.0,
+        406.75,
+        197.12,
+        411.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.27669,
+       "ocr_token": "-0.27669",
+       "digits": "0.27669",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        208.0,
+        406.75,
+        239.62,
+        411.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9531,
+     "coord_raw": [
+      "0.9531"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       416.05,
+       113.01
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.08864,
+       "ocr_token": "-0.08864",
+       "digits": "0.08864",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        123.5,
+        418.99,
+        155.12,
+        423.99
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.19254,
+       "ocr_token": "-0.19254",
+       "digits": "0.19254",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        165.75,
+        418.99,
+        197.38,
+        423.99
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.33714,
+       "ocr_token": "a.33714",
+       "digits": "0.33714",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        208.0,
+        418.99,
+        239.62,
+        423.99
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9453,
+     "coord_raw": [
+      "0.9453"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       428.05,
+       109.89
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.10313,
+       "ocr_token": "-0.10313",
+       "digits": "0.10313",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        123.5,
+        431.04,
+        155.12,
+        436.04
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.22847,
+       "ocr_token": "-0.22847",
+       "digits": "0.22847",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        165.75,
+        431.04,
+        197.38,
+        436.04
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.39188,
+       "ocr_token": "-0.39188",
+       "digits": "0.39188",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        208.0,
+        431.04,
+        239.38,
+        436.04
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.9063,
+     "coord_raw": [
+      "0.9063"
+     ],
+     "coord_bbox_pt": [
+      [
+       89.03,
+       440.29,
+       110.13
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.16914,
+       "ocr_token": "-0.16914",
+       "digits": "0.16914",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        123.75,
+        443.27,
+        155.38,
+        448.27
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.23827,
+       "ocr_token": "-0.23827",
+       "digits": "0.23827",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        165.75,
+        443.27,
+        197.38,
+        448.27
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.5155,
+       "ocr_token": "a.51550",
+       "digits": "0.51550",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.88,
+       "ink_bbox_pt": [
+        208.0,
+        443.27,
+        239.88,
+        448.27
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.8594,
+     "coord_raw": [
+      "0.8594"
+     ],
+     "coord_bbox_pt": [
+      [
+       89.03,
+       452.29,
+       110.13
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.22445,
+       "ocr_token": "-0.22445",
+       "digits": "0.22445",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        123.5,
+        455.32,
+        154.88,
+        460.32
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.44993,
+       "ocr_token": "a.44993",
+       "digits": "0.44993",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        165.75,
+        455.32,
+        197.12,
+        460.32
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.42665,
+       "ocr_token": "a.42665",
+       "digits": "0.42665",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.12,
+       "ink_bbox_pt": [
+        208.0,
+        455.32,
+        239.12,
+        460.32
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.8047,
+     "coord_raw": [
+      "0.8047"
+     ],
+     "coord_bbox_pt": [
+      [
+       89.03,
+       464.53,
+       110.13
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": -0.24533,
+       "ocr_token": "-0.24533",
+       "digits": "0.24533",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        123.5,
+        467.75,
+        154.88,
+        472.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": -0.38598,
+       "ocr_token": "-0.38598",
+       "digits": "0.38598",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.62,
+       "ink_bbox_pt": [
+        165.75,
+        467.75,
+        197.38,
+        472.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": -0.31966,
+       "ocr_token": "-0.31966",
+       "digits": "0.31966",
+       "sign_from_ink": -1.0,
+       "ink_width_pt": 31.38,
+       "ink_bbox_pt": [
+        208.0,
+        467.75,
+        239.38,
+        472.75
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.5,
+     "coord_raw": [
+      "0.5000"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       476.77,
+       109.89
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.05454,
+       "ocr_token": "0.05454",
+       "digits": "0.05454",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        127.88,
+        479.83,
+        155.38,
+        484.83
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.05188,
+       "ocr_token": "0.05188",
+       "digits": "0.05188",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        170.12,
+        479.83,
+        197.38,
+        484.83
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.02526,
+       "ocr_token": "0.02526",
+       "digits": "0.02526",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        212.12,
+        479.83,
+        239.62,
+        484.83
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.2344,
+     "coord_raw": [
+      "0.2344"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       489.01,
+       109.89
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.17527,
+       "ocr_token": "0.17527",
+       "digits": "0.17527",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        128.12,
+        492.19,
+        155.12,
+        497.19
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.30174,
+       "ocr_token": "0.30174",
+       "digits": "0.30174",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        170.38,
+        492.19,
+        197.38,
+        497.19
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.32235,
+       "ocr_token": "0.32235",
+       "digits": "0.32235",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.75,
+       "ink_bbox_pt": [
+        212.38,
+        492.19,
+        239.12,
+        497.19
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.2266,
+     "coord_raw": [
+      "0.2266"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       501.25,
+       109.89
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.17507,
+       "ocr_token": "0.17507",
+       "digits": "0.17507",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        127.88,
+        504.38,
+        155.12,
+        509.38
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.30203,
+       "ocr_token": "0.30203",
+       "digits": "0.30203",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        170.12,
+        504.38,
+        197.12,
+        509.38
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.33075,
+       "ocr_token": "0.33075",
+       "digits": "0.33075",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.75,
+       "ink_bbox_pt": [
+        212.38,
+        504.38,
+        239.12,
+        509.38
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.1563,
+     "coord_raw": [
+      "0.1563"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       513.25,
+       109.89
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.16077,
+       "ocr_token": "0.16077",
+       "digits": "0.16077",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        127.88,
+        516.33,
+        154.88,
+        521.33
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.28124,
+       "ocr_token": "0.28124",
+       "digits": "0.28124",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        170.12,
+        516.33,
+        197.38,
+        521.33
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.37095,
+       "ocr_token": "0.37095",
+       "digits": "0.37095",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        212.12,
+        516.33,
+        239.12,
+        521.33
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0938,
+     "coord_raw": [
+      "0.0938"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.79,
+       525.25,
+       109.89
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.12317,
+       "ocr_token": "0.12317",
+       "digits": "0.12317",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        127.88,
+        528.28,
+        155.12,
+        533.28
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.22965,
+       "ocr_token": "0.22965",
+       "digits": "0.22965",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        170.12,
+        528.28,
+        197.12,
+        533.28
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.32627,
+       "ocr_token": "0.32627",
+       "digits": "0.32627",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        212.38,
+        528.28,
+        239.38,
+        533.28
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0781,
+     "coord_raw": [
+      "0.0781"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.55,
+       537.01,
+       112.53
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.1089,
+       "ocr_token": "0.10890",
+       "digits": "0.10890",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        127.62,
+        540.11,
+        155.12,
+        545.11
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.2092,
+       "ocr_token": "0.20920",
+       "digits": "0.20920",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        170.12,
+        540.11,
+        197.38,
+        545.11
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.30353,
+       "ocr_token": "0.30353",
+       "digits": "0.30353",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        212.12,
+        540.11,
+        239.12,
+        545.11
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0703,
+     "coord_raw": [
+      "0.0703"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.55,
+       548.77,
+       109.65
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.10091,
+       "ocr_token": "0.10091",
+       "digits": "0.10091",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.38,
+       "ink_bbox_pt": [
+        127.62,
+        551.8,
+        154.0,
+        556.8
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.19713,
+       "ocr_token": "0.19713",
+       "digits": "0.19713",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.0,
+       "ink_bbox_pt": [
+        169.88,
+        551.8,
+        196.88,
+        556.8
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.29012,
+       "ocr_token": "0.29012",
+       "digits": "0.29012",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        212.12,
+        551.8,
+        239.38,
+        556.8
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0625,
+     "coord_raw": [
+      "0.0625"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.31,
+       560.53,
+       109.41
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.09233,
+       "ocr_token": "0.09233",
+       "digits": "0.09233",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.75,
+       "ink_bbox_pt": [
+        127.62,
+        563.71,
+        154.38,
+        568.71
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.1836,
+       "ocr_token": "0.18360",
+       "digits": "0.18360",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        169.88,
+        563.71,
+        197.12,
+        568.71
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.27485,
+       "ocr_token": "0.27485",
+       "digits": "0.27485",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 26.75,
+       "ink_bbox_pt": [
+        212.12,
+        563.71,
+        238.88,
+        568.71
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    },
+    {
+     "coord": 0.0,
+     "coord_raw": [
+      "0.0000"
+     ],
+     "coord_bbox_pt": [
+      [
+       88.55,
+       572.77,
+       109.65
+      ]
+     ],
+     "profile": {
+      "100.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.25,
+       "ink_bbox_pt": [
+        127.88,
+        575.76,
+        155.12,
+        580.76
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "400.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        169.88,
+        575.76,
+        197.38,
+        580.76
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      },
+      "1000.0": {
+       "value": 0.0,
+       "ocr_token": "0.00000",
+       "digits": "0.00000",
+       "sign_from_ink": 1.0,
+       "ink_width_pt": 27.5,
+       "ink_bbox_pt": [
+        212.12,
+        575.76,
+        239.62,
+        580.76
+       ],
+       "decimal_recovered": false,
+       "magnitude_repaired": false
+      }
+     }
+    }
+   ],
+   "header_words": [
+    {
+     "text": "129m",
+     "bbox_pt": [
+      61.19,
+      338.77,
+      78.62,
+      349.65
+     ]
+    },
+    {
+     "text": "grid",
+     "bbox_pt": [
+      61.19,
+      349.09,
+      72.51,
+      359.97
+     ]
+    },
+    {
+     "text": "pt.",
+     "bbox_pt": [
+      57.11,
+      359.41,
+      64.78,
+      370.29
+     ]
+    },
+    {
+     "text": "no.",
+     "bbox_pt": [
+      67.91,
+      359.41,
+      77.33,
+      370.29
+     ]
+    },
+    {
+     "text": "x",
+     "bbox_pt": [
+      98.39,
+      359.41,
+      101.83,
+      370.29
+     ]
+    },
+    {
+     "text": "100",
+     "bbox_pt": [
+      134.88,
+      359.41,
+      146.37,
+      370.29
+     ]
+    },
+    {
+     "text": "400",
+     "bbox_pt": [
+      175.92,
+      359.41,
+      187.41,
+      370.29
+     ]
+    },
+    {
+     "text": "1000",
+     "bbox_pt": [
+      216.96,
+      359.41,
+      232.3,
+      370.29
+     ]
+    }
+   ],
+   "right_edge_spread_pt_per_column": {
+    "II_100.0": 1.62,
+    "II_400.0": 0.74,
+    "II_1000.0": 1.0
+   }
+  }
+ },
+ "sign_split_raw": {
+  "I_100": {
+   "centres_pt": [
+    26.92,
+    31.51
+   ],
+   "gap_pt": 4.59,
+   "threshold_pt": 29.22,
+   "n_unsigned": 8,
+   "n_signed": 9,
+   "width_min_pt": 26.25,
+   "width_max_pt": 31.75,
+   "separation_clean": true
+  },
+  "I_400": {
+   "centres_pt": [
+    26.97,
+    31.47
+   ],
+   "gap_pt": 4.5,
+   "threshold_pt": 29.22,
+   "n_unsigned": 9,
+   "n_signed": 8,
+   "width_min_pt": 26.25,
+   "width_max_pt": 31.5,
+   "separation_clean": true
+  },
+  "I_1000": {
+   "centres_pt": [
+    27.03,
+    31.59
+   ],
+   "gap_pt": 4.57,
+   "threshold_pt": 29.31,
+   "n_unsigned": 9,
+   "n_signed": 8,
+   "width_min_pt": 26.25,
+   "width_max_pt": 31.75,
+   "separation_clean": true
+  },
+  "II_100": {
+   "centres_pt": [
+    27.14,
+    31.45
+   ],
+   "gap_pt": 4.31,
+   "threshold_pt": 29.29,
+   "n_unsigned": 10,
+   "n_signed": 7,
+   "width_min_pt": 26.38,
+   "width_max_pt": 31.62,
+   "separation_clean": true
+  },
+  "II_400": {
+   "centres_pt": [
+    27.18,
+    31.52
+   ],
+   "gap_pt": 4.34,
+   "threshold_pt": 29.35,
+   "n_unsigned": 10,
+   "n_signed": 7,
+   "width_min_pt": 27.0,
+   "width_max_pt": 31.62,
+   "separation_clean": true
+  },
+  "II_1000": {
+   "centres_pt": [
+    27.07,
+    31.48
+   ],
+   "gap_pt": 4.41,
+   "threshold_pt": 29.28,
+   "n_unsigned": 10,
+   "n_signed": 7,
+   "width_min_pt": 26.75,
+   "width_max_pt": 31.88,
+   "separation_clean": true
+  }
+ },
+ "validation": {
+  "coordinate_lattice": {
+   "I": {
+    "max_deviation_pt": 4.999999999999449e-05,
+    "tolerance": 5e-05,
+    "rows_failing": [],
+    "n_rows": 17,
+    "pass": true
+   },
+   "II": {
+    "max_deviation_pt": 4.999999999999449e-05,
+    "tolerance": 5e-05,
+    "rows_failing": [],
+    "n_rows": 17,
+    "pass": true
+   }
+  },
+  "point_number_vs_coordinate": {
+   "I": {
+    "n_rows": 17,
+    "mismatches": [
+     {
+      "pt_no": 31,
+      "coord": 0.2813,
+      "coord_predicted_from_pt": 0.234375,
+      "deviation": 0.046924999999999994
+     }
+    ],
+    "all_consistent": false
+   },
+   "II": {
+    "n_rows": 17,
+    "mismatches": [],
+    "all_consistent": true
+   }
+  },
+  "ink_sign_witness": {
+   "method": "per-cell ink width from the page raster (8 px/pt); the value columns are right-aligned, so a printed minus adds one minus advance (~4.4 pt)",
+   "clusters": {
+    "I_100": {
+     "centres_pt": [
+      26.92,
+      31.51
+     ],
+     "gap_pt": 4.59,
+     "threshold_pt": 29.22,
+     "n_unsigned": 8,
+     "n_signed": 9,
+     "width_min_pt": 26.25,
+     "width_max_pt": 31.75,
+     "separation_clean": true
+    },
+    "I_400": {
+     "centres_pt": [
+      26.97,
+      31.47
+     ],
+     "gap_pt": 4.5,
+     "threshold_pt": 29.22,
+     "n_unsigned": 9,
+     "n_signed": 8,
+     "width_min_pt": 26.25,
+     "width_max_pt": 31.5,
+     "separation_clean": true
+    },
+    "I_1000": {
+     "centres_pt": [
+      27.03,
+      31.59
+     ],
+     "gap_pt": 4.57,
+     "threshold_pt": 29.31,
+     "n_unsigned": 9,
+     "n_signed": 8,
+     "width_min_pt": 26.25,
+     "width_max_pt": 31.75,
+     "separation_clean": true
+    },
+    "II_100": {
+     "centres_pt": [
+      27.14,
+      31.45
+     ],
+     "gap_pt": 4.31,
+     "threshold_pt": 29.29,
+     "n_unsigned": 10,
+     "n_signed": 7,
+     "width_min_pt": 26.38,
+     "width_max_pt": 31.62,
+     "separation_clean": true
+    },
+    "II_400": {
+     "centres_pt": [
+      27.18,
+      31.52
+     ],
+     "gap_pt": 4.34,
+     "threshold_pt": 29.35,
+     "n_unsigned": 10,
+     "n_signed": 7,
+     "width_min_pt": 27.0,
+     "width_max_pt": 31.62,
+     "separation_clean": true
+    },
+    "II_1000": {
+     "centres_pt": [
+      27.07,
+      31.48
+     ],
+     "gap_pt": 4.41,
+     "threshold_pt": 29.28,
+     "n_unsigned": 10,
+     "n_signed": 7,
+     "width_min_pt": 26.75,
+     "width_max_pt": 31.88,
+     "separation_clean": true
+    }
+   },
+   "right_edge_spread_pt": {
+    "I_100.0": 1.13,
+    "I_400.0": 1.0,
+    "I_1000.0": 1.0,
+    "II_100.0": 1.62,
+    "II_400.0": 0.74,
+    "II_1000.0": 1.0
+   },
+   "all_columns_cleanly_separated": true
+  },
+  "two_witness": {
+   "n_agree": 84,
+   "n_disagree": 0,
+   "disagreements": [],
+   "n_letter_corrupted_tokens": 18,
+   "letter_corrupted_tokens": [
+    {
+     "table": "I",
+     "re": "100.0",
+     "coord": 1.0,
+     "token": "1.ooooo",
+     "sign_from_ink": 1.0,
+     "value": 1.0
+    },
+    {
+     "table": "I",
+     "re": "400.0",
+     "coord": 1.0,
+     "token": "1.ooooo",
+     "sign_from_ink": 1.0,
+     "value": 1.0
+    },
+    {
+     "table": "I",
+     "re": "1000.0",
+     "coord": 1.0,
+     "token": "1.ooooo",
+     "sign_from_ink": 1.0,
+     "value": 1.0
+    },
+    {
+     "table": "I",
+     "re": "100.0",
+     "coord": 0.6172,
+     "token": "AI13641",
+     "sign_from_ink": -1.0,
+     "value": -0.13641
+    },
+    {
+     "table": "I",
+     "re": "100.0",
+     "coord": 0.2813,
+     "token": "AI.15662",
+     "sign_from_ink": -1.0,
+     "value": -0.15662
+    },
+    {
+     "table": "I",
+     "re": "100.0",
+     "coord": 0.1719,
+     "token": "Al.10150",
+     "sign_from_ink": -1.0,
+     "value": -0.1015
+    },
+    {
+     "table": "I",
+     "re": "1000.0",
+     "coord": 0.1719,
+     "token": "4.38289",
+     "sign_from_ink": -1.0,
+     "value": -0.38289,
+     "why": "OCR read the printed minus as a digit; the magnitude was re-read under the X.XXXXX format rule and the sign comes from the ink"
+    },
+    {
+     "table": "I",
+     "re": "100.0",
+     "coord": 0.1016,
+     "token": "a.06434",
+     "sign_from_ink": -1.0,
+     "value": -0.06434
+    },
+    {
+     "table": "I",
+     "re": "1000.0",
+     "coord": 0.0703,
+     "token": "a.22220",
+     "sign_from_ink": -1.0,
+     "value": -0.2222
+    },
+    {
+     "table": "I",
+     "re": "100.0",
+     "coord": 0.0625,
+     "token": "a.04192",
+     "sign_from_ink": -1.0,
+     "value": -0.04192
+    },
+    {
+     "table": "I",
+     "re": "400.0",
+     "coord": 0.0625,
+     "token": "AI.09266",
+     "sign_from_ink": -1.0,
+     "value": -0.09266
+    },
+    {
+     "table": "I",
+     "re": "1000.0",
+     "coord": 0.0547,
+     "token": "AI.18109",
+     "sign_from_ink": -1.0,
+     "value": -0.18109
+    },
+    {
+     "table": "II",
+     "re": "400.0",
+     "coord": 0.9688,
+     "token": "a.12146",
+     "sign_from_ink": -1.0,
+     "value": -0.12146
+    },
+    {
+     "table": "II",
+     "re": "1000.0",
+     "coord": 0.9688,
+     "token": "a.21388",
+     "sign_from_ink": -1.0,
+     "value": -0.21388
+    },
+    {
+     "table": "II",
+     "re": "1000.0",
+     "coord": 0.9531,
+     "token": "a.33714",
+     "sign_from_ink": -1.0,
+     "value": -0.33714
+    },
+    {
+     "table": "II",
+     "re": "1000.0",
+     "coord": 0.9063,
+     "token": "a.51550",
+     "sign_from_ink": -1.0,
+     "value": -0.5155
+    },
+    {
+     "table": "II",
+     "re": "400.0",
+     "coord": 0.8594,
+     "token": "a.44993",
+     "sign_from_ink": -1.0,
+     "value": -0.44993
+    },
+    {
+     "table": "II",
+     "re": "1000.0",
+     "coord": 0.8594,
+     "token": "a.42665",
+     "sign_from_ink": -1.0,
+     "value": -0.42665
+    }
+   ],
+   "note": "the letter-corrupted tokens are exactly the cells where the OCR lost the minus; for those the sign comes from the ink only"
+  },
+  "cavity_invariants": {
+   "Re100": {
+    "invariants": {
+     "vertical_centreline_int_u_dy": {
+      "simpson": -0.0010013647304900897,
+      "trapezoid": 0.0072933539999999915,
+      "cubic_spline": -0.00013863712871476502,
+      "abs_best": 0.00013863712871476502,
+      "quadrature_spread": 0.008294718730490081,
+      "tolerance_from_truncation": 5e-06,
+      "within_uncertainty": true
+     },
+     "horizontal_centreline_int_v_dx": {
+      "simpson": -0.012623725827579771,
+      "trapezoid": -0.0004407535000000018,
+      "cubic_spline": -0.0021451334928591437,
+      "abs_best": 0.0021451334928591437,
+      "quadrature_spread": 0.012182972327579769,
+      "tolerance_from_truncation": 5e-06,
+      "within_uncertainty": true
+     },
+     "note": "exact for the continuous solution; here the residual level is set by the quadrature on the coarse tabulated point set (sparse near the walls), which is why the estimator spread is reported as the uncertainty"
+    },
+    "boundary_conditions": {
+     "u_at_lid_y1": 0.0,
+     "u_at_bottom_y0": 1.0,
+     "v_at_x0": 0.0,
+     "v_at_x1": 0.0,
+     "u_zero_crossings": 1,
+     "v_zero_crossings": 1,
+     "pass": false
+    }
+   },
+   "Re400": {
+    "invariants": {
+     "vertical_centreline_int_u_dy": {
+      "simpson": 0.0035158496354283225,
+      "trapezoid": 0.00895654450000001,
+      "cubic_spline": -0.00044945119682905654,
+      "abs_best": 0.00044945119682905654,
+      "quadrature_spread": 0.009405995696829067,
+      "tolerance_from_truncation": 5e-06,
+      "within_uncertainty": true
+     },
+     "horizontal_centreline_int_v_dx": {
+      "simpson": 0.002336819301820711,
+      "trapezoid": -0.00696422850000003,
+      "cubic_spline": 0.01414293667281664,
+      "abs_best": 0.01414293667281664,
+      "quadrature_spread": 0.021107165172816668,
+      "tolerance_from_truncation": 5e-06,
+      "within_uncertainty": true
+     },
+     "note": "exact for the continuous solution; here the residual level is set by the quadrature on the coarse tabulated point set (sparse near the walls), which is why the estimator spread is reported as the uncertainty"
+    },
+    "boundary_conditions": {
+     "u_at_lid_y1": 0.0,
+     "u_at_bottom_y0": 1.0,
+     "v_at_x0": 0.0,
+     "v_at_x1": 0.0,
+     "u_zero_crossings": 1,
+     "v_zero_crossings": 1,
+     "pass": false
+    }
+   },
+   "Re1000": {
+    "invariants": {
+     "vertical_centreline_int_u_dy": {
+      "simpson": -4.76956966405373e-06,
+      "trapezoid": 0.004209071499999967,
+      "cubic_spline": -0.00098386356262457,
+      "abs_best": 0.00098386356262457,
+      "quadrature_spread": 0.005192935062624537,
+      "tolerance_from_truncation": 5e-06,
+      "within_uncertainty": true
+     },
+     "horizontal_centreline_int_v_dx": {
+      "simpson": 0.009918002463958964,
+      "trapezoid": -0.0023479520000000004,
+      "cubic_spline": 0.003464933846021457,
+      "abs_best": 0.003464933846021457,
+      "quadrature_spread": 0.012265954463958964,
+      "tolerance_from_truncation": 5e-06,
+      "within_uncertainty": true
+     },
+     "note": "exact for the continuous solution; here the residual level is set by the quadrature on the coarse tabulated point set (sparse near the walls), which is why the estimator spread is reported as the uncertainty"
+    },
+    "boundary_conditions": {
+     "u_at_lid_y1": 0.0,
+     "u_at_bottom_y0": 1.0,
+     "v_at_x0": 0.0,
+     "v_at_x1": 0.0,
+     "u_zero_crossings": 1,
+     "v_zero_crossings": 1,
+     "pass": false
+    }
+   }
+  },
+  "secondary_transcription_crosscheck": {
+   "path": "/root/tp-agent/work/m17563/TensorLBM/src/tensorlbm/verification/lid_driven_cavity/reference_data.py",
+   "sha256": "600766d0909a51ce8b859c36b4213f17546089782ff551888481830a02981e94",
+   "per_re": {
+    "Re100": {
+     "u_on_y": {
+      "axis": "u(y)",
+      "n_matched": 9,
+      "max_abs_diff": 1.0,
+      "worst_secondary": 0.0,
+      "worst_registered": 1.0,
+      "worst_coord": 1.0,
+      "coords_only_in_secondary": [
+       0.60938,
+       0.85938,
+       0.92969,
+       0.98047,
+       0.99219
+      ],
+      "coords_only_in_registered": [
+       0.9766,
+       0.9688,
+       0.9531,
+       0.8516,
+       0.6172,
+       0.0703,
+       0.0547,
+       0.0
+      ]
+     },
+     "v_on_x": {
+      "axis": "v(x)",
+      "n_matched": 5,
+      "max_abs_diff": 0.25619000000000003,
+      "worst_secondary": 0.03174,
+      "worst_registered": -0.22445,
+      "worst_coord": 0.8594,
+      "coords_only_in_secondary": [
+       0.10156,
+       0.17188,
+       0.28125,
+       0.45313,
+       0.60938,
+       0.73438,
+       0.92969,
+       0.98047,
+       0.99219
+      ],
+      "coords_only_in_registered": [
+       0.9688,
+       0.9531,
+       0.9453,
+       0.9063,
+       0.8047,
+       0.2344,
+       0.2266,
+       0.1563,
+       0.0938,
+       0.0781,
+       0.0703,
+       0.0
+      ]
+     }
+    },
+    "Re400": {
+     "u_on_y": {
+      "axis": "u(y)",
+      "n_matched": 9,
+      "max_abs_diff": 1.0,
+      "worst_secondary": 0.0,
+      "worst_registered": 1.0,
+      "worst_coord": 1.0,
+      "coords_only_in_secondary": [
+       0.60938,
+       0.85938,
+       0.92969,
+       0.98047,
+       0.99219
+      ],
+      "coords_only_in_registered": [
+       0.9766,
+       0.9688,
+       0.9531,
+       0.8516,
+       0.6172,
+       0.0703,
+       0.0547,
+       0.0
+      ]
+     },
+     "v_on_x": {
+      "axis": "v(x)",
+      "n_matched": 5,
+      "max_abs_diff": 0.4279,
+      "worst_secondary": -0.02203,
+      "worst_registered": -0.44993,
+      "worst_coord": 0.8594,
+      "coords_only_in_secondary": [
+       0.10156,
+       0.17188,
+       0.28125,
+       0.45313,
+       0.60938,
+       0.73438,
+       0.92969,
+       0.98047,
+       0.99219
+      ],
+      "coords_only_in_registered": [
+       0.9688,
+       0.9531,
+       0.9453,
+       0.9063,
+       0.8047,
+       0.2344,
+       0.2266,
+       0.1563,
+       0.0938,
+       0.0781,
+       0.0703,
+       0.0
+      ]
+     }
+    },
+    "Re1000": {
+     "u_on_y": {
+      "axis": "u(y)",
+      "n_matched": 9,
+      "max_abs_diff": 1.0,
+      "worst_secondary": 0.0,
+      "worst_registered": 1.0,
+      "worst_coord": 1.0,
+      "coords_only_in_secondary": [
+       0.60938,
+       0.85938,
+       0.92969,
+       0.98047,
+       0.99219
+      ],
+      "coords_only_in_registered": [
+       0.9766,
+       0.9688,
+       0.9531,
+       0.8516,
+       0.6172,
+       0.0703,
+       0.0547,
+       0.0
+      ]
+     },
+     "v_on_x": {
+      "axis": "v(x)",
+      "n_matched": 5,
+      "max_abs_diff": 0.45838999999999996,
+      "worst_secondary": 0.03174,
+      "worst_registered": -0.42665,
+      "worst_coord": 0.8594,
+      "coords_only_in_secondary": [
+       0.10156,
+       0.17188,
+       0.28125,
+       0.45313,
+       0.60938,
+       0.73438,
+       0.92969,
+       0.98047,
+       0.99219
+      ],
+      "coords_only_in_registered": [
+       0.9688,
+       0.9531,
+       0.9453,
+       0.9063,
+       0.8047,
+       0.2344,
+       0.2266,
+       0.1563,
+       0.0938,
+       0.0781,
+       0.0703,
+       0.0
+      ]
+     }
+    }
+   },
+   "note": "QC only: this file is a secondary transcription already in the repo; it is never used as the source of a registered number"
+  }
+ },
+ "analytic_fourcase": {
+  "case1": {
+   "case": "plane_poiseuille",
+   "solution": "u(y) = G/(2 mu) y (H-y), U_max = G H^2/(8 mu)",
+   "parameters": {
+    "H": 1.0,
+    "mu": 0.001,
+    "G": 1.0,
+    "U_max": 125.0,
+    "residual_grid_h": 0.03125,
+    "residual_roundoff_floor_rel": 2.842170943040401e-14
+   },
+   "residual_continuum": {
+    "residual_abs": 0.0,
+    "residual_rel": 0.0
+   },
+   "residual_discrete_laplacian": {
+    "residual_abs": 0.0,
+    "residual_rel": 0.0
+   },
+   "shape_identity_linf": 2.220446049250313e-16,
+   "parabola_reproduced_exactly": {
+    "rows": [
+     {
+      "N": 8,
+      "h": 0.125,
+      "linf_error_vs_analytic": 5.684341886080802e-14,
+      "roundoff_floor_estimate": 1.7763568394002505e-15
+     },
+     {
+      "N": 16,
+      "h": 0.0625,
+      "linf_error_vs_analytic": 1.2789769243681803e-13,
+      "roundoff_floor_estimate": 7.105427357601002e-15
+     },
+     {
+      "N": 32,
+      "h": 0.03125,
+      "linf_error_vs_analytic": 1.2789769243681803e-13,
+      "roundoff_floor_estimate": 2.842170943040401e-14
+     },
+     {
+      "N": 64,
+      "h": 0.015625,
+      "linf_error_vs_analytic": 7.815970093361102e-14,
+      "roundoff_floor_estimate": 1.1368683772161603e-13
+     },
+     {
+      "N": 128,
+      "h": 0.0078125,
+      "linf_error_vs_analytic": 2.0889956431346945e-12,
+      "roundoff_floor_estimate": 4.547473508864641e-13
+     },
+     {
+      "N": 256,
+      "h": 0.00390625,
+      "linf_error_vs_analytic": 1.0345502232667059e-11,
+      "roundoff_floor_estimate": 1.8189894035458565e-12
+     },
+     {
+      "N": 512,
+      "h": 0.001953125,
+      "linf_error_vs_analytic": 8.839151632855646e-12,
+      "roundoff_floor_estimate": 7.275957614183426e-12
+     }
+    ],
+    "note": "2nd-order central differences integrate a quadratic exactly -> zero discretisation error for Poiseuille"
+   },
+   "convergence": {
+    "manufactured_solution": "u = sin(pi y), -mu u'' = mu pi^2 sin(pi y)",
+    "grids": [
+     {
+      "N": 8,
+      "h": 0.125,
+      "linf_error": 0.012950746721878792
+     },
+     {
+      "N": 16,
+      "h": 0.0625,
+      "linf_error": 0.003218964440078409
+     },
+     {
+      "N": 32,
+      "h": 0.03125,
+      "linf_error": 0.0008035776793715588
+     },
+     {
+      "N": 64,
+      "h": 0.015625,
+      "linf_error": 0.00020082180970470986
+     },
+     {
+      "N": 128,
+      "h": 0.0078125,
+      "linf_error": 5.0200915905795895e-05
+     },
+     {
+      "N": 256,
+      "h": 0.00390625,
+      "linf_error": 1.2549945392237305e-05
+     },
+     {
+      "N": 512,
+      "h": 0.001953125,
+      "linf_error": 3.13746864466502e-06
+     }
+    ],
+    "pairwise_slopes": [
+     2.0083667395266542,
+     2.0020872428155347,
+     2.000521533757942,
+     2.000130366540899,
+     2.0000325994178256,
+     2.0000081404884025
+    ],
+    "fitted_slope_p": 2.00141554475018,
+    "fitted_slope_p_asymptotic": 2.000054591875919,
+    "second_order_claimed": 2.0,
+    "slope_error": 5.459187591894121e-05
+   },
+   "control_wrong_amplitude_1pct": {
+    "residual_abs": 0.49500000000011823,
+    "residual_rel": 0.49500000000011823
+   },
+   "pass_residual": true,
+   "pass_second_order": true
+  },
+  "case2": {
+   "case": "plane_couette",
+   "solution": "u(y) = U y/H (linear shear)",
+   "parameters": {
+    "H": 1.0,
+    "mu": 0.001,
+    "U": 1.0,
+    "residual_grid_h": 0.03125,
+    "residual_roundoff_floor_rel": 2.2737367544323206e-13
+   },
+   "residual_continuum": {
+    "residual_abs": 0.0,
+    "residual_rel": 0.0
+   },
+   "residual_discrete_laplacian": {
+    "residual_abs": 0.0,
+    "residual_rel": 0.0
+   },
+   "wall_shear": {
+    "tau_exact": 0.001,
+    "tau_from_discrete_gradient": 0.001,
+    "rel_error": 0.0
+   },
+   "control_parabolic_profile": {
+    "residual_abs": 0.002000000000066393,
+    "residual_rel": 2.000000000066393
+   },
+   "pass_residual": true
+  },
+  "case3": {
+   "case": "taylor_green_2d",
+   "solution": "u=U cos(kx) sin(ky) e^{-2 nu k^2 t}, v=-U sin(kx) cos(ky) e^{-2 nu k^2 t}, p=-U^2/4 (cos2kx+cos2ky) e^{-4 nu k^2 t}",
+   "parameters": {
+    "U": 1.0,
+    "k": 1.0,
+    "nu": 0.01,
+    "t": 0.5,
+    "N": 64,
+    "Re_k": 100.0
+   },
+   "divergence": {
+    "residual_abs": 1.84297022087776e-14,
+    "residual_rel": 1.84297022087776e-14
+   },
+   "momentum_x": {
+    "residual_abs": 8.053453737222327e-15,
+    "residual_rel": 1.6432288589115254e-14
+   },
+   "momentum_y": {
+    "residual_abs": 7.27456289650874e-15,
+    "residual_rel": 1.4843037630254156e-14
+   },
+   "energy": {
+    "E_spectral": 0.24504966832668884,
+    "E_exact": 0.2450496683266888,
+    "rel_error_E": 1.1326510174511426e-16,
+    "dE_dt_identity_rel_error": 5.309301644302231e-16,
+    "identity_used": "2-D periodic: dE/dt = -nu <omega^2>",
+    "dissipation_identity_rel_error": 5.309301644302231e-16
+   },
+   "control_pressure_3pct": {
+    "momentum_x_rel": 0.030000000000004204
+   },
+   "pass_residual": true
+  },
+  "case4": {
+   "case": "cavity_creeping_limit",
+   "note": "Re->0 limit of the lid-driven cavity is the biharmonic Stokes problem grad^4 psi = 0, psi = psi_n = 0 on the walls, psi_n = -U on the lid; the separable corner family spans its exact solution space",
+   "parameters": {
+    "mu": 1.0,
+    "U": 1.0,
+    "dps": 60
+   },
+   "biharmonic_family": [
+    {
+     "lam": 2.0,
+     "max_abs_high_precision": 2.5704790517621895e-15,
+     "max_abs_log10": -14.589985931085474
+    },
+    {
+     "lam": 2.7396,
+     "max_abs_high_precision": 1.1826005613722702e-14,
+     "max_abs_log10": -13.927161919180291
+    },
+    {
+     "lam": 3.0,
+     "max_abs_high_precision": 1.3615263636963173e-14,
+     "max_abs_log10": -13.86597394485139
+    },
+    {
+     "lam": 4.5,
+     "max_abs_high_precision": 1.3360839205194613e-14,
+     "max_abs_log10": -13.874166262613551
+    }
+   ],
+   "stokes": {
+    "integrability_and_continuity": [
+     {
+      "point": [
+       0.66,
+       0.42
+      ],
+      "curl_of_lap_u": 0.0,
+      "divergence_of_u": 0.0
+     },
+     {
+      "point": [
+       0.62,
+       0.47
+      ],
+      "curl_of_lap_u": 0.0,
+      "divergence_of_u": 0.0
+     }
+    ],
+    "pressure_reconstruction": [
+     {
+      "point": [
+       0.66,
+       0.42
+      ],
+      "p": -0.40915058869644005,
+      "residual_x_rel": 2.6606930471465757e-28,
+      "residual_y_rel": 5.209680562048434e-29
+     },
+     {
+      "point": [
+       0.62,
+       0.47
+      ],
+      "p": -0.5710638656859479,
+      "residual_x_rel": 2.3710961201036382e-29,
+      "residual_y_rel": 1.1183950639576573e-28
+     }
+    ],
+    "note": "p is reconstructed by path integration of mu*lap(u); both momentum components are then re-verified by differentiating p"
+   },
+   "control_wrong_exponent": {
+    "max_abs_high_precision": 25.108678005214625,
+    "max_abs_log10": 1.3998238473144957
+   },
+   "fd_noise_floor": 2.452791118438875e-14,
+   "worst_residual": 1.3615263636963173e-14,
+   "pass_residual": true
+  },
+  "residual_tolerance": 1e-12
+ },
+ "criteria": [
+  {
+   "id": "C1",
+   "statement": "verbatim anchor positions >= 3 (three Re tables) or honest WITHHELD",
+   "verdict": "PASS",
+   "evidence": {
+    "tables_registered": [
+     "I",
+     "II"
+    ],
+    "re_values": [
+     100.0,
+     400.0,
+     1000.0
+    ],
+    "n_tabulated_values": 102,
+    "n_rows_per_table": {
+     "I": 17,
+     "II": 17
+    },
+    "values_with_both_witnesses": 102,
+    "pdf_sha256": "1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93",
+    "source": "original paper PDF (25 pages), Tables I/II on journal pp.398-399"
+   },
+   "note": "sign of 18 cells came from the page raster because the OCR text layer lost the minus there"
+  },
+  {
+   "id": "C2",
+   "statement": "analytic four cases recomputed with residual <= 1e-12",
+   "verdict": "PASS",
+   "evidence": {
+    "worst_residual": 1.84297022087776e-14,
+    "tolerance": 1e-12,
+    "per_case": {
+     "case1_poiseuille": {
+      "residual_continuum": {
+       "residual_abs": 0.0,
+       "residual_rel": 0.0
+      },
+      "residual_discrete": {
+       "residual_abs": 0.0,
+       "residual_rel": 0.0
+      },
+      "roundoff_floor_rel": 2.842170943040401e-14
+     },
+     "case2_couette": {
+      "residual_continuum": {
+       "residual_abs": 0.0,
+       "residual_rel": 0.0
+      },
+      "residual_discrete": {
+       "residual_abs": 0.0,
+       "residual_rel": 0.0
+      }
+     },
+     "case3_taylor_green": {
+      "divergence": {
+       "residual_abs": 1.84297022087776e-14,
+       "residual_rel": 1.84297022087776e-14
+      },
+      "momentum_x": {
+       "residual_abs": 8.053453737222327e-15,
+       "residual_rel": 1.6432288589115254e-14
+      },
+      "momentum_y": {
+       "residual_abs": 7.27456289650874e-15,
+       "residual_rel": 1.4843037630254156e-14
+      }
+     },
+     "case4_cavity_limit": {
+      "worst_residual": 1.3615263636963173e-14,
+      "fd_noise_floor": 2.452791118438875e-14
+     }
+    },
+    "negative_controls": {
+     "case1": 0.49500000000011823,
+     "case2": 2.000000000066393,
+     "case3": 0.030000000000004204,
+     "case4": 25.108678005214625
+    },
+    "control_note": "each residual is paired with the residual of a deliberately corrupted solution, so the test is demonstrably not vacuous"
+   },
+   "extra": {
+    "poiseuille_second_order_slope": 2.000054591875919,
+    "poiseuille_slope_error": 5.459187591894121e-05,
+    "couette_wall_shear_rel_error": 0.0
+   }
+  },
+  {
+   "id": "C3",
+   "statement": "grid resolution and Re convention registered",
+   "verdict": "PASS",
+   "evidence": {
+    "reference_grid": {
+     "quoted": [
+      {
+       "page_index": 11,
+       "journal_page": 398,
+       "line_no": 19,
+       "text": "TABLE I"
+      },
+      {
+       "page_index": 11,
+       "journal_page": 398,
+       "line_no": 20,
+       "text": "Results for u-velocity along Vertical Line through Geometric Center of Cavity"
+      },
+      {
+       "page_index": 11,
+       "journal_page": 398,
+       "line_no": 10,
+       "text": "line-grid solutions. This would imply that the velocity distributions near these walls"
+      },
+      {
+       "page_index": 12,
+       "journal_page": 399,
+       "line_no": 19,
+       "text": "TABLE II"
+      },
+      {
+       "page_index": 12,
+       "journal_page": 399,
+       "line_no": 20,
+       "text": "Results for u-Velocity along Horizontal Line through Geometric Center of Cavity"
+      },
+      {
+       "page_index": 12,
+       "journal_page": 399,
+       "line_no": 3,
+       "text": "order accurate scheme of Agarwal [ 1 ] performs well with a 121 X 121 grid at"
+      }
+     ],
+     "interpretation": "Ghia's tables come from the 129x129 line (differential) solver; a 257x257 grid is also shown for Re=400 in the same paper"
+    },
+    "re_definition": "Re = U_lid * L / nu with L = cavity side, U_lid = lid speed",
+    "normalisation": "u and v divided by U_lid; lengths by L",
+    "profile_definitions": "Table I: x/L = 0.5 vertical line, u(y); Table II: y/L = 0.5 horizontal line, v(x)",
+    "origin_and_lid": "origin at the lower-left corner, lid at y/L = 1 moving in +x",
+    "lattice_consumption_caveat": "for a D3Q19-BGK consumer: Re = U*N_eff/nu with nu = (tau-1/2)/3; half-way bounce-back places the wall half a lattice cell outside the boundary node, so N_eff = N-1. Using N instead of N-1 biases Re by 1/N (1.2% at N=81, 0.8% at N=129), which is the same order as the 3% acceptance band and must be stated with any comparison."
+   }
+  },
+  {
+   "id": "C4",
+   "statement": "internal consistency of the registered tables",
+   "verdict": "PASS",
+   "evidence": {
+    "coordinate_lattice": {
+     "I": {
+      "max_deviation_pt": 4.999999999999449e-05,
+      "tolerance": 5e-05,
+      "rows_failing": [],
+      "n_rows": 17,
+      "pass": true
+     },
+     "II": {
+      "max_deviation_pt": 4.999999999999449e-05,
+      "tolerance": 5e-05,
+      "rows_failing": [],
+      "n_rows": 17,
+      "pass": true
+     }
+    },
+    "sign_cluster": {
+     "I_100": {
+      "centres_pt": [
+       26.92,
+       31.51
+      ],
+      "gap_pt": 4.59,
+      "threshold_pt": 29.22,
+      "n_unsigned": 8,
+      "n_signed": 9,
+      "width_min_pt": 26.25,
+      "width_max_pt": 31.75,
+      "separation_clean": true
+     },
+     "I_400": {
+      "centres_pt": [
+       26.97,
+       31.47
+      ],
+      "gap_pt": 4.5,
+      "threshold_pt": 29.22,
+      "n_unsigned": 9,
+      "n_signed": 8,
+      "width_min_pt": 26.25,
+      "width_max_pt": 31.5,
+      "separation_clean": true
+     },
+     "I_1000": {
+      "centres_pt": [
+       27.03,
+       31.59
+      ],
+      "gap_pt": 4.57,
+      "threshold_pt": 29.31,
+      "n_unsigned": 9,
+      "n_signed": 8,
+      "width_min_pt": 26.25,
+      "width_max_pt": 31.75,
+      "separation_clean": true
+     },
+     "II_100": {
+      "centres_pt": [
+       27.14,
+       31.45
+      ],
+      "gap_pt": 4.31,
+      "threshold_pt": 29.29,
+      "n_unsigned": 10,
+      "n_signed": 7,
+      "width_min_pt": 26.38,
+      "width_max_pt": 31.62,
+      "separation_clean": true
+     },
+     "II_400": {
+      "centres_pt": [
+       27.18,
+       31.52
+      ],
+      "gap_pt": 4.34,
+      "threshold_pt": 29.35,
+      "n_unsigned": 10,
+      "n_signed": 7,
+      "width_min_pt": 27.0,
+      "width_max_pt": 31.62,
+      "separation_clean": true
+     },
+     "II_1000": {
+      "centres_pt": [
+       27.07,
+       31.48
+      ],
+      "gap_pt": 4.41,
+      "threshold_pt": 29.28,
+      "n_unsigned": 10,
+      "n_signed": 7,
+      "width_min_pt": 26.75,
+      "width_max_pt": 31.88,
+      "separation_clean": true
+     }
+    },
+    "two_witness_agreement": {
+     "n_agree": 84,
+     "n_disagree": 0
+    },
+    "conservation": {
+     "Re100": {
+      "int_u_dy": {
+       "simpson": -0.0010013647304900897,
+       "trapezoid": 0.0072933539999999915,
+       "cubic_spline": -0.00013863712871476502,
+       "abs_best": 0.00013863712871476502,
+       "quadrature_spread": 0.008294718730490081,
+       "tolerance_from_truncation": 5e-06,
+       "within_uncertainty": true
+      },
+      "int_v_dx": {
+       "simpson": -0.012623725827579771,
+       "trapezoid": -0.0004407535000000018,
+       "cubic_spline": -0.0021451334928591437,
+       "abs_best": 0.0021451334928591437,
+       "quadrature_spread": 0.012182972327579769,
+       "tolerance_from_truncation": 5e-06,
+       "within_uncertainty": true
+      }
+     },
+     "Re400": {
+      "int_u_dy": {
+       "simpson": 0.0035158496354283225,
+       "trapezoid": 0.00895654450000001,
+       "cubic_spline": -0.00044945119682905654,
+       "abs_best": 0.00044945119682905654,
+       "quadrature_spread": 0.009405995696829067,
+       "tolerance_from_truncation": 5e-06,
+       "within_uncertainty": true
+      },
+      "int_v_dx": {
+       "simpson": 0.002336819301820711,
+       "trapezoid": -0.00696422850000003,
+       "cubic_spline": 0.01414293667281664,
+       "abs_best": 0.01414293667281664,
+       "quadrature_spread": 0.021107165172816668,
+       "tolerance_from_truncation": 5e-06,
+       "within_uncertainty": true
+      }
+     },
+     "Re1000": {
+      "int_u_dy": {
+       "simpson": -4.76956966405373e-06,
+       "trapezoid": 0.004209071499999967,
+       "cubic_spline": -0.00098386356262457,
+       "abs_best": 0.00098386356262457,
+       "quadrature_spread": 0.005192935062624537,
+       "tolerance_from_truncation": 5e-06,
+       "within_uncertainty": true
+      },
+      "int_v_dx": {
+       "simpson": 0.009918002463958964,
+       "trapezoid": -0.0023479520000000004,
+       "cubic_spline": 0.003464933846021457,
+       "abs_best": 0.003464933846021457,
+       "quadrature_spread": 0.012265954463958964,
+       "tolerance_from_truncation": 5e-06,
+       "within_uncertainty": true
+      }
+     }
+    },
+    "boundary_conditions": {
+     "Re100": {
+      "u_at_lid_y1": 0.0,
+      "u_at_bottom_y0": 1.0,
+      "v_at_x0": 0.0,
+      "v_at_x1": 0.0,
+      "u_zero_crossings": 1,
+      "v_zero_crossings": 1,
+      "pass": false
+     },
+     "Re400": {
+      "u_at_lid_y1": 0.0,
+      "u_at_bottom_y0": 1.0,
+      "v_at_x0": 0.0,
+      "v_at_x1": 0.0,
+      "u_zero_crossings": 1,
+      "v_zero_crossings": 1,
+      "pass": false
+     },
+     "Re1000": {
+      "u_at_lid_y1": 0.0,
+      "u_at_bottom_y0": 1.0,
+      "v_at_x0": 0.0,
+      "v_at_x1": 0.0,
+      "u_zero_crossings": 1,
+      "v_zero_crossings": 1,
+      "pass": false
+     }
+    }
+   }
+  }
+ ],
+ "figures": [
+  {
+   "path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/figures/fig1_ghia_tables.png",
+   "caption": "Registered Ghia (1982) Table I/II profiles for Re=100/400/1000 (digits from the PDF text layer, signs from the page raster).",
+   "sha256": "03764a9445cfefc9dddc2504ea11a6895a36f414b936802713ce4c0c0ad9ac41"
+  },
+  {
+   "path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/figures/fig2_sign_witness.png",
+   "caption": "Ink-width sign witness: every value column splits into two cleanly separated clusters (unsigned ~27 pt, signed ~31.5 pt).",
+   "sha256": "7fb4785cd9c6ccfed53c64609a7ae6aa28b7037e05af21d4e9eb7bd8e368492f"
+  },
+  {
+   "path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/figures/fig3_conservation.png",
+   "caption": "Incompressibility invariants on the registered tables (∫u dy = 0 along x/L=0.5, ∫v dx = 0 along y/L=0.5).",
+   "sha256": "630c143709aaa1a2b939a815064a0b1387de0464dd91e13b0655826e72dc01d0"
+  },
+  {
+   "path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/figures/fig4_poiseuille_couette.png",
+   "caption": "Poiseuille/Couette analytic anchors and the measured second-order convergence slope of the channel discretisation.",
+   "sha256": "1576455d8ada9f86370995d2d2ea04ff88459ca909a152a08c656e68397d35aa"
+  },
+  {
+   "path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/figures/fig5_taylor_green.png",
+   "caption": "Taylor-Green vortex: analytic vorticity field and energy decay; spectral residual of the NS operator is at roundoff.",
+   "sha256": "34be8c766bc72499329612074d70b774c01c3472c22ccfbf4ed2c1afd9c9ead8"
+  },
+  {
+   "path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/figures/fig6_cavity_creeping_mode.png",
+   "caption": "Cavity creeping-limit solution space: the separable biharmonic corner mode (λ = 2.7396) that spans the Stokes-limit field.",
+   "sha256": "81948934bf3533394466ed7644ea15bc64da14953eef7feab4a664eac23c17f1"
+  }
+ ],
+ "reproduction": {
+  "commands": [
+   "curl -s -H 'Accept: application/vnd.github.raw' -o /tmp/ghia1982.pdf https://api.github.com/repos/nilot-pal/Lid-driven-cavity/contents/ghia1982.pdf",
+   "sha256sum /tmp/ghia1982.pdf",
+   "GHIA_PDF=/tmp/ghia1982.pdf python3 scripts/w26_ghia/extract_ghia_tables.py --out /tmp/cells_raw.json",
+   "python3 scripts/w26_ghia/analytic_fourcase.py --out /tmp/analytic.json",
+   "GHIA_PDF=/tmp/ghia1982.pdf python3 scripts/w26_ghia/build_anchor_register.py"
+  ],
+  "inputs_sha256": {
+   "pdf": "1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93",
+   "extract_ghia_tables.py": "90e26cb319444dbebdafdb5cad28dee9493e2dd3a90e06b4bdfd1b77f985f060",
+   "analytic_fourcase.py": "ce60296943f97ebd46a7a00b2d10fd724924090aa32d9d4dcfa3ca6674a854be",
+   "build_anchor_register.py": "b46f1ae10d1941653e9025ddf5078f728c8234819fdd8617088751f7b0a50db4"
+  },
+  "environment": {
+   "python": "3.11.6",
+   "numpy": "2.4.6",
+   "pymupdf": "PyMuPDF 1.27.2.3: Python bindings for the MuPDF 1.27.2 library."
+  }
+ },
+ "in_repo_secondary_table_defect": {
+  "path": "/root/tp-agent/work/m17563/TensorLBM/src/tensorlbm/verification/lid_driven_cavity/reference_data.py",
+  "sha256": "600766d0909a51ce8b859c36b4213f17546089782ff551888481830a02981e94",
+  "coordinate_sets_differ": true,
+  "n_points_secondary": 14,
+  "n_points_paper": 17,
+  "worst_abs_difference_by_profile": {
+   "Re100_u_on_y": 1.0,
+   "Re100_v_on_x": 0.25619000000000003,
+   "Re400_u_on_y": 1.0,
+   "Re400_v_on_x": 0.4279,
+   "Re1000_u_on_y": 1.0,
+   "Re1000_v_on_x": 0.45838999999999996
+  },
+  "boundary_condition_violation": "the in-repo table gives u(y=1)=0.0 although the lid moves with u=1.0, and it has no point at y=0; both are visible in the per-profile comparison above",
+  "verdict": "DEFECT_REGISTERED",
+  "recommendation": "consumers should read the anchor registered here (papers/artifacts/w26/d3q19-bgk-analytic-fourcase/anchor_register.json) instead of the in-repo transcription; the in-repo file is left untouched because other code imports it"
+ },
+ "limits": [
+  "The digits come from the OCR text layer of a scan; the OCR was verified only through structural checks (1/128 lattice, right alignment, conservation invariants), not against a second independent typesetting of the paper.",
+  "The four analytic cases are operator/consistency anchors, not a solver-accuracy claim: no lattice-Boltzmann simulation is compared with the Ghia tables here.",
+  "Case 4 (creeping limit) is checked on the separable biharmonic family and the Stokes pressure integrability; the corner eigenvalue enters only as a parameter."
+ ]
+}
