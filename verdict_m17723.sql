@@ -1,0 +1,9 @@
+INSERT INTO tensor_maturity_verdicts (repo, scope, mission_id, level, evidence, verdict_by)
+VALUES (
+  'TensorLBM',
+  'm17723 XVAL-LBM-COROTATIONAL-2NODE-BEAM-NEWMARK-NEWTON',
+  17826,
+  4,
+  '{"impl_files": ["src/tensorlbm/corotational_beam.py"], "entry": "CorotationalBeam2D.solve_static / solve_newmark", "run_artifacts": "xval/corotational_beam_newmark/runs/raw/stage_*.json + table.csv + summary.json", "tests": ["tests/test_corotational_beam.py (11/15 pass, 4 fail)"], "integration_callers": ["xval/corotational_beam_newmark/run_xval.py"], "benchmark": {"n_anchors": 6, "n_pass": 63, "n_fail": 2, "all_pass": false, "max_error_pct": 64.279, "fail_detail": "D1_MODAL mode=2: ref omega_2 wrong due to euler_bernoulli_frequency search interval bug (root at 4.6941 falls outside (3pi/2,5pi/2) bracket); got=0.0636 vs ref=0.1781, err=-64.28%"}, "repro_cmd": "cd /root/tp-agent/work/m17723 && python3 xval/corotational_beam_newmark/run_xval.py --stage all && python3 xval/corotational_beam_newmark/run_xval.py --stage assemble", "external_anchor": "joconnor22/LIFE HEAD 2af242866d1014483e9daa68443aa28b2e6df6a2 (FEMElement.cpp/FEMBody.cpp transplant)", "level_delta": "claimed=L5 -> verdict=L4", "notes": ["D1_MODAL mode 2 reference bug: euler_bernoulli_frequency() search interval ((2n-1)pi/2,(2n+1)pi/2) misses 2nd root at kL=4.6941 (just below 3pi/2=4.7124); finds 3rd root instead", "4 pytest failures: test_tangent_is_exact_derivative_and_symmetric (K vs Kfd mismatch), test_life_and_tl_agree_for_inextensible_small_strain (g1-g2 norm=4.07), test_first_natural_frequency (wrong ref), test_newmark_undamped_amplitude_preserved (7.3% amplitude decay vs <1% target)", "XVAL 63/65 KPIs pass (<15%); S1/S2/S3/D2/D3 all pass; only D1 mode 2 fails", "Core static/dynamic functionality verified against exact elastica and circular arc references to <0.022%"]}',
+  'board-audit'
+);
