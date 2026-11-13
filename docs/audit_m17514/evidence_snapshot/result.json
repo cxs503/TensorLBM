@@ -1,0 +1,429 @@
+{
+  "anchor": "XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER",
+  "artifacts": [
+    "runs/xval_aa_pattern_even_odd/result.json",
+    "artifacts/xval_aa_pattern_even_odd/result.json",
+    "runs/xval_aa_pattern_even_odd/k_history_aa_<case>.csv",
+    "runs/xval_aa_pattern_even_odd/k_history_ab_<case>.csv",
+    "runs/xval_aa_pattern_even_odd/k_history_aa_parity_blind_<case>.csv",
+    "artifacts/xval_aa_pattern_even_odd/k_history_<arm>_<case>.csv",
+    "figures/xval_aa_pattern_even_odd/tg_decay_aa_vs_ab_vs_exact.png",
+    "figures/xval_aa_pattern_even_odd/tg_field_aa_vs_exact.png",
+    "figures/xval_aa_pattern_even_odd/parity_hazard.png",
+    "src/tensorlbm/aa_pattern.py",
+    "tests/test_aa_pattern_parity.py"
+  ],
+  "cases": [
+    {
+      "bitwise_max_abs": 0.0,
+      "bitwise_rel": 0.0,
+      "gamma_K_exact": 0.0024674011002723396,
+      "gamma_vel_exact": 0.0012337005501361698,
+      "k0": 0.0006250000000000001,
+      "metrics": {
+        "aa": {
+          "arm": "aa",
+          "field_l2_pct": 1.4484804007956145,
+          "gamma_K": 0.0024647955926359647,
+          "gamma_K_err_pct": -0.10559724708266716,
+          "gamma_K_exact": 0.0024674011002723396,
+          "gamma_K_r2": 0.9999904945791163,
+          "half_probe": {
+            "field_l2_pct_vs_t": 6.551407674125479,
+            "field_l2_pct_vs_t_plus_1": 6.544815851921616,
+            "first_kernel": "odd",
+            "gate_exception": "AAPatternParityError",
+            "kernels_since_complete": 1,
+            "mass": 1023.99999999999,
+            "partial_vel_rms": 0.031171022591242152,
+            "phase": "half",
+            "step_after_probe": 97
+          },
+          "mass_drift_rel": 4.0523140398818214e-14,
+          "mom_drift_rel": 4.46419406349739e-16,
+          "s_per_step": 0.0017894042748957872,
+          "tracker": {
+            "even_kernel_calls": 400,
+            "kernel_log_tail": [
+              "even",
+              "odd",
+              "odd",
+              "even"
+            ],
+            "kernel_order": [
+              "even",
+              "odd"
+            ],
+            "kernels_since_complete": 0,
+            "n_persistent_fields": 1,
+            "nbytes_permutation_index": 131072,
+            "nbytes_persistent": 73728,
+            "odd_kernel_calls": 400,
+            "parity_checks": 811,
+            "parity_violations": 0,
+            "phase": "complete",
+            "strict_parity": true,
+            "time": 400,
+            "timestep_parity": "even"
+          },
+          "wall_s": 0.7157617099583149
+        },
+        "aa_parity_blind": {
+          "arm": "aa_parity_blind",
+          "field_l2_pct": 166.04843198318568,
+          "gamma_K": 0.003376033172483019,
+          "gamma_K_err_pct": 36.82547082071046,
+          "gamma_K_exact": 0.0024674011002723396,
+          "gamma_K_r2": 0.9875454512748125,
+          "half_probe": null,
+          "mass_drift_rel": 4.063416270128073e-14,
+          "mom_drift_rel": 5.339856049712644e-16,
+          "s_per_step": 0.0018366637779399753,
+          "tracker": {
+            "even_kernel_calls": 800,
+            "kernel_log_tail": [
+              "even",
+              "even",
+              "even",
+              "even"
+            ],
+            "kernel_order": [
+              "even",
+              "odd"
+            ],
+            "kernels_since_complete": 0,
+            "n_persistent_fields": 1,
+            "nbytes_permutation_index": 131072,
+            "nbytes_persistent": 73728,
+            "odd_kernel_calls": 0,
+            "parity_checks": 411,
+            "parity_violations": 0,
+            "phase": "complete",
+            "strict_parity": true,
+            "time": 400,
+            "timestep_parity": "even"
+          },
+          "wall_s": 0.7346655111759901
+        },
+        "ab": {
+          "arm": "ab",
+          "field_l2_pct": 1.4484804007956145,
+          "gamma_K": 0.0024647955926359647,
+          "gamma_K_err_pct": -0.10559724708266716,
+          "gamma_K_exact": 0.0024674011002723396,
+          "gamma_K_r2": 0.9999904945791163,
+          "half_probe": null,
+          "mass_drift_rel": 4.0523140398818214e-14,
+          "mom_drift_rel": 4.46419406349739e-16,
+          "s_per_step": 0.006901519177481532,
+          "tracker": {
+            "n_persistent_fields": 2,
+            "phase": "complete"
+          },
+          "wall_s": 2.760607670992613
+        }
+      },
+      "n": 32,
+      "name": "tg_n32_re100",
+      "re": 100.0,
+      "steps": 400,
+      "tracker": {
+        "even_kernel_calls": 400,
+        "kernel_log_tail": [
+          "even",
+          "odd",
+          "odd",
+          "even"
+        ],
+        "kernel_order": [
+          "even",
+          "odd"
+        ],
+        "kernels_since_complete": 0,
+        "n_persistent_fields": 1,
+        "nbytes_permutation_index": 131072,
+        "nbytes_persistent": 73728,
+        "odd_kernel_calls": 400,
+        "parity_checks": 811,
+        "parity_violations": 0,
+        "phase": "complete",
+        "strict_parity": true,
+        "time": 400,
+        "timestep_parity": "even"
+      },
+      "wall_s": {
+        "aa": 0.7157617099583149,
+        "aa_parity_blind": 0.7346655111759901,
+        "ab": 2.760607670992613
+      }
+    },
+    {
+      "bitwise_max_abs": 0.0,
+      "bitwise_rel": 0.0,
+      "gamma_K_exact": 0.0016449340668482262,
+      "gamma_vel_exact": 0.0008224670334241131,
+      "k0": 0.0006250000000000001,
+      "metrics": {
+        "aa": {
+          "arm": "aa",
+          "field_l2_pct": 1.4226039246715139,
+          "gamma_K": 0.0016495549139929162,
+          "gamma_K_err_pct": 0.28091382127819475,
+          "gamma_K_exact": 0.0016449340668482262,
+          "gamma_K_r2": 0.9999994979551414,
+          "half_probe": {
+            "field_l2_pct_vs_t": 4.935321613339208,
+            "field_l2_pct_vs_t_plus_1": 4.932708145589827,
+            "first_kernel": "odd",
+            "gate_exception": "AAPatternParityError",
+            "kernels_since_complete": 1,
+            "mass": 2303.999999999978,
+            "partial_vel_rms": 0.032539867769180324,
+            "phase": "half",
+            "step_after_probe": 97
+          },
+          "mass_drift_rel": 3.907985046680551e-14,
+          "mom_drift_rel": 4.0517780534993373e-16,
+          "s_per_step": 0.0025672761257737875,
+          "tracker": {
+            "even_kernel_calls": 400,
+            "kernel_log_tail": [
+              "even",
+              "odd",
+              "odd",
+              "even"
+            ],
+            "kernel_order": [
+              "even",
+              "odd"
+            ],
+            "kernels_since_complete": 0,
+            "n_persistent_fields": 1,
+            "nbytes_permutation_index": 294912,
+            "nbytes_persistent": 165888,
+            "odd_kernel_calls": 400,
+            "parity_checks": 811,
+            "parity_violations": 0,
+            "phase": "complete",
+            "strict_parity": true,
+            "time": 400,
+            "timestep_parity": "even"
+          },
+          "wall_s": 1.026910450309515
+        },
+        "aa_parity_blind": {
+          "arm": "aa_parity_blind",
+          "field_l2_pct": 168.26630422936864,
+          "gamma_K": 0.0019641647286809394,
+          "gamma_K_err_pct": 19.406897107090426,
+          "gamma_K_exact": 0.0016449340668482262,
+          "gamma_K_r2": 0.7772743112446159,
+          "half_probe": null,
+          "mass_drift_rel": 3.8685104502494345e-14,
+          "mom_drift_rel": 7.844547070423169e-16,
+          "s_per_step": 0.00292557290289551,
+          "tracker": {
+            "even_kernel_calls": 800,
+            "kernel_log_tail": [
+              "even",
+              "even",
+              "even",
+              "even"
+            ],
+            "kernel_order": [
+              "even",
+              "odd"
+            ],
+            "kernels_since_complete": 0,
+            "n_persistent_fields": 1,
+            "nbytes_permutation_index": 294912,
+            "nbytes_persistent": 165888,
+            "odd_kernel_calls": 0,
+            "parity_checks": 411,
+            "parity_violations": 0,
+            "phase": "complete",
+            "strict_parity": true,
+            "time": 400,
+            "timestep_parity": "even"
+          },
+          "wall_s": 1.170229161158204
+        },
+        "ab": {
+          "arm": "ab",
+          "field_l2_pct": 1.4226039246715139,
+          "gamma_K": 0.0016495549139929162,
+          "gamma_K_err_pct": 0.28091382127819475,
+          "gamma_K_exact": 0.0016449340668482262,
+          "gamma_K_r2": 0.9999994979551414,
+          "half_probe": null,
+          "mass_drift_rel": 3.907985046680551e-14,
+          "mom_drift_rel": 4.0517780534993373e-16,
+          "s_per_step": 0.007078262474387884,
+          "tracker": {
+            "n_persistent_fields": 2,
+            "phase": "complete"
+          },
+          "wall_s": 2.8313049897551537
+        }
+      },
+      "n": 48,
+      "name": "tg_n48_re100",
+      "re": 100.0,
+      "steps": 400,
+      "tracker": {
+        "even_kernel_calls": 400,
+        "kernel_log_tail": [
+          "even",
+          "odd",
+          "odd",
+          "even"
+        ],
+        "kernel_order": [
+          "even",
+          "odd"
+        ],
+        "kernels_since_complete": 0,
+        "n_persistent_fields": 1,
+        "nbytes_permutation_index": 294912,
+        "nbytes_persistent": 165888,
+        "odd_kernel_calls": 400,
+        "parity_checks": 811,
+        "parity_violations": 0,
+        "phase": "complete",
+        "strict_parity": true,
+        "time": 400,
+        "timestep_parity": "even"
+      },
+      "wall_s": {
+        "aa": 1.026910450309515,
+        "aa_parity_blind": 1.170229161158204,
+        "ab": 2.8313049897551537
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "name": "aa_vs_ab_bitwise_max_abs",
+      "pass": true,
+      "threshold": "< 1e-12",
+      "value": 0.0
+    },
+    {
+      "name": "gamma_K_vs_exact_worst_pct",
+      "pass": true,
+      "threshold": "< 15 %",
+      "value": 0.28091382127819475
+    },
+    {
+      "name": "field_l2_vs_exact_worst_pct",
+      "pass": true,
+      "threshold": "< 15 %",
+      "value": 1.4484804007956145
+    },
+    {
+      "name": "mass_drift_rel_worst",
+      "pass": true,
+      "threshold": "< 1e-12",
+      "value": 4.0523140398818214e-14
+    },
+    {
+      "name": "mom_drift_rel_worst",
+      "pass": true,
+      "threshold": "< 1e-12",
+      "value": 4.46419406349739e-16
+    },
+    {
+      "name": "kernel_order_immaterial",
+      "pass": true,
+      "threshold": "< 1e-12",
+      "value": 0.0
+    },
+    {
+      "name": "parity_gate_refuses_half_state",
+      "pass": true,
+      "threshold": "== 1",
+      "value": 1.0
+    },
+    {
+      "name": "half_window_hazard_rough_field_pct",
+      "pass": true,
+      "threshold": ">= 15 % (hazard is fatal on a rough field)",
+      "value": 115.5502535505146
+    },
+    {
+      "name": "half_window_mass_conserved",
+      "pass": true,
+      "threshold": "< 1e-12 (conservation cannot catch the hazard)",
+      "value": 1.1102230246251568e-16
+    },
+    {
+      "name": "parity_blind_arm_error_pct",
+      "pass": true,
+      "threshold": ">= 15 % (bug detectable)",
+      "value": 168.26630422936864
+    }
+  ],
+  "env": {
+    "dtype": "float64",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "python": "3.11.6",
+    "torch": "2.7.1"
+  },
+  "figures": [
+    "figures/xval_aa_pattern_even_odd/tg_decay_aa_vs_ab_vs_exact.png",
+    "figures/xval_aa_pattern_even_odd/tg_field_aa_vs_exact.png",
+    "figures/xval_aa_pattern_even_odd/parity_hazard.png"
+  ],
+  "gate_pct": 15.0,
+  "hazard_probe": {
+    "smooth_tg": {
+      "half_vs_complete_vel_l2_pct": 6.62158290311121,
+      "mass_rel_delta": 1.1102230246251568e-16,
+      "mom_abs_delta": 5.280516497093958e-16,
+      "n": 32,
+      "umax_complete": 0.04893505195684571
+    },
+    "white_noise": {
+      "half_vs_complete_vel_l2_pct": 115.5502535505146,
+      "mass_rel_delta": 0.0,
+      "mom_abs_delta": 4.163336342344337e-17,
+      "n": 32,
+      "umax_complete": 0.0020491911436963414
+    }
+  },
+  "overall": "PASS",
+  "repro_cmd": "python benchmarks/xval_aa_pattern_even_odd.py && pytest tests/test_aa_pattern_parity.py -q",
+  "specs": [
+    {
+      "half_probe_step": 97,
+      "k": 0.19634954084936207,
+      "ma": 0.08660254037844388,
+      "n": 32,
+      "name": "tg_n32_re100",
+      "nu": 0.016,
+      "re": 100.0,
+      "steps": 400,
+      "tau": 0.548,
+      "u0": 0.05
+    },
+    {
+      "half_probe_step": 97,
+      "k": 0.1308996938995747,
+      "ma": 0.08660254037844388,
+      "n": 48,
+      "name": "tg_n48_re100",
+      "nu": 0.024000000000000004,
+      "re": 100.0,
+      "steps": 400,
+      "tau": 0.5720000000000001,
+      "u0": 0.05
+    }
+  ],
+  "tracker_budget": {
+    "n": 48,
+    "n_persistent_fields_aa": 1,
+    "n_persistent_fields_ab": 2,
+    "nbytes_permutation_index": 294912,
+    "nbytes_persistent": 165888
+  }
+}
