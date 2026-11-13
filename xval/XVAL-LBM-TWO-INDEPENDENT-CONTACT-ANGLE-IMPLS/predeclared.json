@@ -1,0 +1,41 @@
+{
+  "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+  "round": 2,
+  "question": "Do two independent implementations of a static contact-angle wall condition on the SAME diffuse-interface free energy reproduce the prescribed (Young's law) angle on the same static-drop benchmark, and do they agree with each other?",
+  "reference": "Young's law sigma_lg cos(theta) = sigma_sg - sigma_sl, evaluated with the wall free energy of the model under test: cos(theta) = (3 psi_w - psi_w^3)/2 with kappa = (3/4) sigma xi. Independent anchor -> the analytic law, not a simulation.",
+  "arms": {
+    "dirichlet": "wall VALUE psi_w (phase-field / Neumann-from-interface-thickness family, walberla PhaseFieldAllenCahn codegen ContactAngle, sailfish bc_wall_grad_phase)",
+    "neumann_flux": "wall FLUX kappa d_n psi = (3/4) sigma cos(theta) (1-psi^2) from the same wall free energy",
+    "geometric_ghost": "geometric ghost psi_ghost = psi_0 + cot(theta) |d_t psi|, no wall free energy (walberla free-surface ContactAngle.h / openLBMPM geometric family)"
+  },
+  "independent_pair": ["neumann_flux", "geometric_ghost"],
+  "predeclared_thresholds": {
+    "accept_pct": 15.0,
+    "cross_arm_pct": 15.0,
+    "estimator_agreement_deg": 10.0,
+    "measurable_apex_over_xi": 2.0,
+    "measurable_circle_rms_over_xi": 0.15,
+    "gas_supersaturation_abs": 0.10
+  },
+  "predeclared_rules": [
+    "A row PASSES the anchor gate iff it is MEASURABLE and |theta_measured - theta_prescribed| / theta_prescribed <= accept_pct for BOTH independent estimators (theta_cap and theta_circle).",
+    "A row is MEASURABLE iff apex_height >= 2 xi AND circle_rms <= 0.15 xi AND both estimators are finite. Rows failing this are reported as NOT_MEASURABLE (a resolution limit of the measurement, not of the boundary condition) and are excluded from both the pass count and the median.",
+    "The XVAL of the two independent implementations PASSES iff (a) every measurable row of both arms passes the anchor gate, and (b) for every measurable angle |theta(neumann_flux) - theta(geometric_ghost)| / theta_prescribed <= cross_arm_pct.",
+    "No threshold may be relaxed after inspection; deviations are reported as honest FAIL with the failing rows enumerated."
+  ],
+  "matrix": {
+    "baseline_grid": {"ny": 56, "nx": 80, "radius": 16.0, "xi": 3.0, "surface_tension": 0.05},
+    "refined_grid": {"ny": 112, "nx": 160, "radius": 32.0, "xi": 6.0, "surface_tension": 0.05},
+    "fine_interface_grid": {"ny": 112, "nx": 160, "radius": 32.0, "xi": 3.0, "surface_tension": 0.05},
+    "angles_deg": [45.0, 70.0, 90.0, 110.0, 135.0],
+    "angles_refined_deg": [70.0, 90.0, 110.0],
+    "xi_sensitivity": [2.0, 4.0]
+  },
+  "numerics": {
+    "omega": 1.0,
+    "max_iter": 30000,
+    "tol": 1e-9,
+    "check_every": 200,
+    "descent": "psi <- psi - omega (mu - <mu>), mu = a psi(psi^2-1) - kappa lap psi (mass-conserving Allen-Cahn descent, same fixed point as the Cahn-Hilliard no-flux steady state)"
+  }
+}
