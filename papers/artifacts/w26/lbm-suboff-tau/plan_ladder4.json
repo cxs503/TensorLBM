@@ -1,0 +1,28 @@
+{
+ "schema": "w26_plan/v1",
+ "mission": "m17569",
+ "purpose": "guaranteed-complete uniform-ratio (r=1.5) three-grid ladder at fixed lattice Re=1000 on the coarse end {16,24,36}; the finer ladders {24,36,54} and {32,48,72} run in parallel and supersede it if they complete",
+ "cases": [
+  {
+   "tag": "ladder3_N16",
+   "N": 16,
+   "re_lattice": 1000,
+   "steps": 8640,
+   "snapshot": true
+  },
+  {
+   "tag": "ladder3_N24",
+   "N": 24,
+   "re_lattice": 1000,
+   "steps": 8640,
+   "snapshot": true
+  },
+  {
+   "tag": "ladder3_N36",
+   "N": 36,
+   "re_lattice": 1000,
+   "steps": 8640,
+   "snapshot": true
+  }
+ ]
+}
