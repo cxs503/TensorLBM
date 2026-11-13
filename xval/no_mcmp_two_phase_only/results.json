@@ -1,0 +1,183 @@
+{
+  "anchor": "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+  "mission_id": 18067,
+  "reference": {
+    "file": "src/artifacts/martin_moyce_1952_dam_break.json",
+    "sha256": "6f766bfa461dc0d723eb5478f48444908ae740d5eddf6aefd4630dedcb22a66a",
+    "doi": "10.1098/rsta.1952.0006",
+    "points": [
+      {
+        "X_star": 1.0,
+        "t_star": 0.0
+      },
+      {
+        "X_star": 1.45,
+        "t_star": 0.5
+      },
+      {
+        "X_star": 1.85,
+        "t_star": 1.0
+      },
+      {
+        "X_star": 2.2,
+        "t_star": 1.5
+      },
+      {
+        "X_star": 2.52,
+        "t_star": 2.0
+      },
+      {
+        "X_star": 2.8,
+        "t_star": 2.5
+      },
+      {
+        "X_star": 3.05,
+        "t_star": 3.0
+      },
+      {
+        "X_star": 3.28,
+        "t_star": 3.5
+      },
+      {
+        "X_star": 3.48,
+        "t_star": 4.0
+      },
+      {
+        "X_star": 3.66,
+        "t_star": 4.5
+      },
+      {
+        "X_star": 3.82,
+        "t_star": 5.0
+      },
+      {
+        "X_star": 3.97,
+        "t_star": 5.5
+      },
+      {
+        "X_star": 4.1,
+        "t_star": 6.0
+      },
+      {
+        "X_star": 4.22,
+        "t_star": 6.5
+      },
+      {
+        "X_star": 4.33,
+        "t_star": 7.0
+      },
+      {
+        "X_star": 4.43,
+        "t_star": 7.5
+      },
+      {
+        "X_star": 4.52,
+        "t_star": 8.0
+      }
+    ]
+  },
+  "arms": {
+    "B_color_gradient": {
+      "nx48": {
+        "nx": 48,
+        "ny": 24,
+        "dam_width": 12,
+        "metrics": {
+          "max_front_error_pct_early": 62.2557,
+          "mean_front_error_pct_early": 20.6135,
+          "max_mass_drift_pct": 0.75435,
+          "final_X_star": 1.5,
+          "final_t_star_mm": 0.7217
+        },
+        "criteria": {
+          "E1_front_error_le_10pct": false,
+          "E2_mass_drift_le_0_5pct": false
+        },
+        "samples": [
+          {
+            "step": 50,
+            "t_star_lbm": 0.144338,
+            "t_star_mm": 0.0722,
+            "X_star_sim": 1.6667,
+            "X_star_mm": 1.065,
+            "front_error_pct": 56.5016
+          },
+          {
+            "step": 100,
+            "t_star_lbm": 0.288675,
+            "t_star_mm": 0.1443,
+            "X_star_sim": 1.8333,
+            "X_star_mm": 1.1299,
+            "front_error_pct": 62.2557
+          },
+          {
+            "step": 150,
+            "t_star_lbm": 0.433013,
+            "t_star_mm": 0.2165,
+            "X_star_sim": 1.4167,
+            "X_star_mm": 1.1949,
+            "front_error_pct": 18.5638
+          },
+          {
+            "step": 200,
+            "t_star_lbm": 0.57735,
+            "t_star_mm": 0.2887,
+            "X_star_sim": 1.5,
+            "X_star_mm": 1.2598,
+            "front_error_pct": 19.0658
+          },
+          {
+            "step": 250,
+            "t_star_lbm": 0.721688,
+            "t_star_mm": 0.3608,
+            "X_star_sim": 1.6667,
+            "X_star_mm": 1.3248,
+            "front_error_pct": 25.809
+          },
+          {
+            "step": 300,
+            "t_star_lbm": 0.866025,
+            "t_star_mm": 0.433,
+            "X_star_sim": 1.5,
+            "X_star_mm": 1.3897,
+            "front_error_pct": 7.9361
+          },
+          {
+            "step": 350,
+            "t_star_lbm": 1.010363,
+            "t_star_mm": 0.5052,
+            "X_star_sim": 1.4167,
+            "X_star_mm": 1.4541,
+            "front_error_pct": 2.5774
+          },
+          {
+            "step": 400,
+            "t_star_lbm": 1.154701,
+            "t_star_mm": 0.5774,
+            "X_star_sim": 1.5833,
+            "X_star_mm": 1.5119,
+            "front_error_pct": 4.7261
+          },
+          {
+            "step": 450,
+            "t_star_lbm": 1.299038,
+            "t_star_mm": 0.6495,
+            "X_star_sim": 1.5833,
+            "X_star_mm": 1.5696,
+            "front_error_pct": 0.874
+          },
+          {
+            "step": 500,
+            "t_star_lbm": 1.443376,
+            "t_star_mm": 0.7217,
+            "X_star_sim": 1.5,
+            "X_star_mm": 1.6274,
+            "front_error_pct": 7.8256
+          }
+        ],
+        "wall_s": 10.6
+      }
+    }
+  },
+  "arms_note": "arm A (fill-level, walberla approach counterpart) running in background; see run.log"
+}
