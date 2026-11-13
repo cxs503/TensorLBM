@@ -1,0 +1,15 @@
+{
+ "schema": "w26_plan/v1",
+ "mission": "m17569",
+ "purpose": "three-grid GCI ladder at fixed lattice Re=1000 (tau follows N), third grid N=32 (N=48/N=72 already running)",
+ "protocol_note": "3000 convective passes-equivalent: 8640 steps for every ladder grid",
+ "cases": [
+  {
+   "tag": "ladder_N32",
+   "N": 32,
+   "re_lattice": 1000,
+   "steps": 8640,
+   "snapshot": true
+  }
+ ]
+}
