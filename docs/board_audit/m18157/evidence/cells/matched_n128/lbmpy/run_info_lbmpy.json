@@ -1,0 +1,12 @@
+{
+  "tool": "lbmpy",
+  "available": true,
+  "engine": "lbmpy 2.0 + pystencils (SRT, compressible=False)",
+  "dtype": "float64",
+  "device": "cpu",
+  "steps": 1600,
+  "wall_sec": 0.5347990989685059,
+  "compile_sec": 0.16386628150939941,
+  "method": "<lbmpy.methods.momentbased.momentbasedmethod.MomentBasedLbMethod object at 0x7ffeb43ebd10>",
+  "mass_drift_final": 0.0015355778985521873
+}

@@ -1,0 +1,11 @@
+{
+  "out_dir": "artifacts/xval_negative_no_oss_reference",
+  "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+  "files": {
+    "oss_reference_probe.json": "0287bd08e53202cfd0c335c34534259ce99b69f48428505f8de67a24d359ce7b",
+    "capability_coverage.json": "9e43e54843317bc840f4d1f7be38d67f4f7beba8f89b9c50cdadd17d74bf07a8",
+    "negative_knowledge_payloads.json": "2c7d20c286c97b8ac45acde8eeb02352c5cec69a0fa48d6009352c4b2fc09e4c"
+  },
+  "generated_at": "2026-11-13T11:09:51.313727+00:00",
+  "mission_id": 17996
+}

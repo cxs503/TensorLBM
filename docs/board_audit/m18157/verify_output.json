@@ -1,0 +1,820 @@
+{
+ "mission_audited": 17996,
+ "audit_mission": 18157,
+ "checks": {
+  "A1_three_piece": {
+   "impl": [
+    {
+     "path": "/root/tp-agent/work/m17996/src/tensorlbm/xval/oss_reference.py",
+     "rel": "src/tensorlbm/xval/oss_reference.py",
+     "exists": true,
+     "sha256": "45575673f9a3f6d3b222fe21c38a7c84a120ee9118729d971e9dc7f6423a7b08",
+     "lines": 693
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/src/tensorlbm/xval/runners.py",
+     "rel": "src/tensorlbm/xval/runners.py",
+     "exists": true,
+     "sha256": "580716da6434cdce13e08321195b8dd0c6adeedaece6ace9aaff4bbc5d8561c4",
+     "lines": 652
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/scripts/xval_negative_no_oss_reference.py",
+     "rel": "scripts/xval_negative_no_oss_reference.py",
+     "exists": true,
+     "sha256": "7d6631a4f99c5c7e8b59f8360ef06553b3055d9c83e6fea9995023fd1ea0104e",
+     "lines": 631
+    }
+   ],
+   "artifacts": [
+    {
+     "path": "/root/tp-agent/work/m17996/artifacts/xval_negative_no_oss_reference/summary.json",
+     "rel": "artifacts/xval_negative_no_oss_reference/summary.json",
+     "exists": true,
+     "sha256": "9829ef8f15f8bd93a7afaf9d27377363c26913f03d69aca91930cef0da8e70d9"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+     "rel": "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+     "exists": true,
+     "sha256": "0287bd08e53202cfd0c335c34534259ce99b69f48428505f8de67a24d359ce7b"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/artifacts/xval_negative_no_oss_reference/negative_knowledge_payloads.json",
+     "rel": "artifacts/xval_negative_no_oss_reference/negative_knowledge_payloads.json",
+     "exists": true,
+     "sha256": "2c7d20c286c97b8ac45acde8eeb02352c5cec69a0fa48d6009352c4b2fc09e4c"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/artifacts/xval_negative_no_oss_reference/capability_coverage.json",
+     "rel": "artifacts/xval_negative_no_oss_reference/capability_coverage.json",
+     "exists": true,
+     "sha256": "9e43e54843317bc840f4d1f7be38d67f4f7beba8f89b9c50cdadd17d74bf07a8"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/artifacts/xval_negative_no_oss_reference/manifest.json",
+     "rel": "artifacts/xval_negative_no_oss_reference/manifest.json",
+     "exists": true,
+     "sha256": "06dd39693ed11da942dbe3050639a9e4b3b8935efca5e38cceaf71ba50c67edc"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/artifacts/xval_negative_no_oss_reference/REPORT.md",
+     "rel": "artifacts/xval_negative_no_oss_reference/REPORT.md",
+     "exists": true,
+     "sha256": "274cd1fa8b461a644e8919a51a25f3c715a64a733351698741e4e00002db3f0b"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json",
+     "rel": "xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json",
+     "exists": true,
+     "sha256": "f62e8f25d280255651ef9437a9c1acd41066648e8be68eb9d2da09fe33a1376e"
+    },
+    {
+     "path": "/root/tp-agent/work/m17996/docs/xval_negative_no_oss_reference_report.md",
+     "rel": "docs/xval_negative_no_oss_reference_report.md",
+     "exists": true,
+     "sha256": "d5a657f8c444d4746c5ac946505614b31174e5456b4fc0509411f66a99ed3d8b"
+    }
+   ],
+   "cells": [
+    {
+     "cell": "main",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "conv_n32",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "conv_n128",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "sens_u0_0.020",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "sens_u0_0.100",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "sens_tau_0.70",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "sens_tau_1.00",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    },
+    {
+     "cell": "matched_n128",
+     "cell_result": true,
+     "arms": [
+      {
+       "arm": "lbmpy",
+       "k_history": [
+        "k_history_lbmpy.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_lbmpy.json"
+       ]
+      },
+      {
+       "arm": "tensorlbm",
+       "k_history": [
+        "k_history_tensorlbm.csv"
+       ],
+       "n_field_csv": 2,
+       "run_info": [
+        "run_info_tensorlbm.json"
+       ]
+      }
+     ]
+    }
+   ],
+   "manifest_sha_check": {
+    "oss_reference_probe.json": {
+     "match": true,
+     "recomputed": "0287bd08e53202cf"
+    },
+    "capability_coverage.json": {
+     "match": true,
+     "recomputed": "9e43e54843317bc8"
+    },
+    "negative_knowledge_payloads.json": {
+     "match": true,
+     "recomputed": "2c7d20c286c97b8a"
+    }
+   },
+   "git_committed_artifact_files": 90,
+   "manifest_probe_sha256_match": false,
+   "branch_merged_into_ecosystem_main": "NOT_MERGED",
+   "mission_commit": "af7b184c4ea923c5f731275d11dad8d1feaad865 xval: negative-no-oss-reference discipline + lbmpy OSS cross-validation of the D2Q9 core"
+  },
+  "A2_kpi_recompute": [
+   {
+    "cell": "main",
+    "n": 64,
+    "gamma_theory": 0.0038553142191755313,
+    "recomputed_inhouse_gamma": 0.0038535137493642593,
+    "recomputed_oss_gamma": 0.0038535018643242945,
+    "reported_inhouse_vs_theory_pct": 0.046700987492219154,
+    "recomputed_inhouse_vs_theory_pct": -0.04670098749193793,
+    "reported_oss_vs_theory_pct": 0.04700926430908974,
+    "recomputed_oss_vs_theory_pct": -0.04700926430905599,
+    "reported_tool_vs_tool_gamma_pct": 0.00030842180369146567,
+    "recomputed_tool_vs_tool_gamma_pct": 0.000308421803939058,
+    "reported_tool_vs_tool_umax_pct": 0.00044371166092248174,
+    "recomputed_tool_vs_tool_umax_pct": 0.00044371166092248174,
+    "reported_field_l2_pct": 0.021741996293488407,
+    "K_end_over_K0": 0.21336425993520153
+   },
+   {
+    "cell": "conv_n32",
+    "n": 32,
+    "gamma_theory": 0.015421256876702125,
+    "recomputed_inhouse_gamma": 0.015426527300312236,
+    "recomputed_oss_gamma": 0.015426481610996927,
+    "reported_inhouse_vs_theory_pct": 0.03417635574228903,
+    "recomputed_inhouse_vs_theory_pct": 0.03417635574226653,
+    "reported_oss_vs_theory_pct": 0.03388008082979303,
+    "recomputed_oss_vs_theory_pct": 0.03388008082982677,
+    "reported_tool_vs_tool_gamma_pct": 0.00029617456831285567,
+    "recomputed_tool_vs_tool_gamma_pct": 0.00029617456825663,
+    "reported_tool_vs_tool_umax_pct": 6.126405228952991e-05,
+    "recomputed_tool_vs_tool_umax_pct": 6.126405228952991e-05,
+    "reported_field_l2_pct": 0.0009661633088663176,
+    "K_end_over_K0": 0.0020623043041893127
+   },
+   {
+    "cell": "conv_n128",
+    "n": 128,
+    "gamma_theory": 0.0009638285547938828,
+    "recomputed_inhouse_gamma": 0.0009650667133902971,
+    "recomputed_oss_gamma": 0.0009651108330068712,
+    "reported_inhouse_vs_theory_pct": 0.12846253519503492,
+    "recomputed_inhouse_vs_theory_pct": 0.1284625351942475,
+    "reported_oss_vs_theory_pct": 0.133040073011643,
+    "recomputed_oss_vs_theory_pct": 0.13304007300993315,
+    "reported_tool_vs_tool_gamma_pct": 0.004571455948276788,
+    "recomputed_tool_vs_tool_gamma_pct": 0.00457145594735568,
+    "reported_tool_vs_tool_umax_pct": 0.010438274364373569,
+    "recomputed_tool_vs_tool_umax_pct": 0.010438274364373569,
+    "reported_field_l2_pct": 0.1559744837051892,
+    "K_end_over_K0": 0.6783696432918542
+   },
+   {
+    "cell": "sens_u0_0.020",
+    "n": 64,
+    "gamma_theory": 0.0038553142191755313,
+    "recomputed_inhouse_gamma": 0.0038559593578346442,
+    "recomputed_oss_gamma": 0.0038559590179825087,
+    "reported_inhouse_vs_theory_pct": 0.016733750413746206,
+    "recomputed_inhouse_vs_theory_pct": 0.016733750414016178,
+    "reported_oss_vs_theory_pct": 0.016724935253127217,
+    "recomputed_oss_vs_theory_pct": 0.016724935253532178,
+    "reported_tool_vs_tool_gamma_pct": 8.81368653562121e-06,
+    "recomputed_tool_vs_tool_gamma_pct": 8.813686400656813e-06,
+    "reported_tool_vs_tool_umax_pct": 6.104778902576903e-06,
+    "recomputed_tool_vs_tool_umax_pct": 6.104778902576903e-06,
+    "reported_field_l2_pct": 0.0034952756079633467,
+    "K_end_over_K0": 0.21338659084321915
+   },
+   {
+    "cell": "sens_u0_0.100",
+    "n": 64,
+    "gamma_theory": 0.0038553142191755313,
+    "recomputed_inhouse_gamma": 0.003845072149413674,
+    "recomputed_oss_gamma": 0.0038448617284356926,
+    "reported_inhouse_vs_theory_pct": 0.2656610895920452,
+    "recomputed_inhouse_vs_theory_pct": -0.26566108959201146,
+    "reported_oss_vs_theory_pct": 0.27111903584541863,
+    "recomputed_oss_vs_theory_pct": -0.2711190358453848,
+    "reported_tool_vs_tool_gamma_pct": 0.005472784012622284,
+    "recomputed_tool_vs_tool_gamma_pct": 0.005472784012622281,
+    "reported_tool_vs_tool_umax_pct": 0.00945319292072283,
+    "recomputed_tool_vs_tool_umax_pct": 0.00945319292072283,
+    "reported_field_l2_pct": 0.0888525103603213,
+    "K_end_over_K0": 0.21327227380089184
+   },
+   {
+    "cell": "sens_tau_0.70",
+    "n": 64,
+    "gamma_theory": 0.002570209479450353,
+    "recomputed_inhouse_gamma": 0.0025687746513256187,
+    "recomputed_oss_gamma": 0.0025687659289181882,
+    "reported_inhouse_vs_theory_pct": 0.05582533782560012,
+    "recomputed_inhouse_vs_theory_pct": -0.05582533782581946,
+    "reported_oss_vs_theory_pct": 0.056164703449894944,
+    "recomputed_oss_vs_theory_pct": -0.05616470344952373,
+    "reported_tool_vs_tool_gamma_pct": 0.00033955633510348584,
+    "recomputed_tool_vs_tool_gamma_pct": 0.0003395563345125849,
+    "reported_tool_vs_tool_umax_pct": 0.0023220979474034465,
+    "recomputed_tool_vs_tool_umax_pct": 0.0023220979474034465,
+    "reported_field_l2_pct": 0.03510919786466841,
+    "K_end_over_K0": 0.3566104642502075
+   },
+   {
+    "cell": "sens_tau_1.00",
+    "n": 64,
+    "gamma_theory": 0.0064255236986258835,
+    "recomputed_inhouse_gamma": 0.006425240724489412,
+    "recomputed_oss_gamma": 0.00642520830596837,
+    "reported_inhouse_vs_theory_pct": 0.004403907754906644,
+    "recomputed_inhouse_vs_theory_pct": -0.0044039077551361215,
+    "reported_oss_vs_theory_pct": 0.004908435051831893,
+    "recomputed_oss_vs_theory_pct": -0.004908435052236855,
+    "reported_tool_vs_tool_gamma_pct": 0.0005045520625355421,
+    "recomputed_tool_vs_tool_gamma_pct": 0.0005045520627110357,
+    "reported_tool_vs_tool_umax_pct": 3.859825593369318e-06,
+    "recomputed_tool_vs_tool_umax_pct": 3.859825593369318e-06,
+    "reported_field_l2_pct": 0.008377308465572811,
+    "K_end_over_K0": 0.07635730253361755
+   },
+   {
+    "cell": "matched_n128",
+    "n": 128,
+    "gamma_theory": 0.0009638285547938828,
+    "recomputed_inhouse_gamma": 0.0009632964667080855,
+    "recomputed_oss_gamma": 0.0009632957792039673,
+    "reported_inhouse_vs_theory_pct": 0.05520567772694165,
+    "recomputed_inhouse_vs_theory_pct": -0.055205677726694165,
+    "reported_oss_vs_theory_pct": 0.055277008267613184,
+    "recomputed_oss_vs_theory_pct": -0.05527700826725322,
+    "reported_tool_vs_tool_gamma_pct": 7.136999186784106e-05,
+    "recomputed_tool_vs_tool_gamma_pct": 7.136999175528948e-05,
+    "reported_tool_vs_tool_umax_pct": 0.001313659038780433,
+    "recomputed_tool_vs_tool_umax_pct": 0.001313659038780433,
+    "reported_field_l2_pct": 0.05984319528947218,
+    "K_end_over_K0": 0.21363468811789418
+   }
+  ],
+  "A3_field_and_orientation": [
+   {
+    "cell": "main",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 7.126397344059688e-14,
+    "recomputed_init_transposed_pct": 141.42135623731042,
+    "reported_init_direct_pct": 7.126397344059668e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.021741996293488424,
+    "recomputed_final_field_l2_transposed_pct": 141.4215002841699,
+    "reported_final_field_l2_pct": 0.021741996293488407
+   },
+   {
+    "cell": "conv_n32",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 6.439402006027301e-14,
+    "recomputed_init_transposed_pct": 141.42135623730957,
+    "reported_init_direct_pct": 6.439402006027299e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.0009661633088663188,
+    "recomputed_final_field_l2_transposed_pct": 141.4213199853263,
+    "reported_final_field_l2_pct": 0.0009661633088663176
+   },
+   {
+    "cell": "conv_n128",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 7.210218662192529e-14,
+    "recomputed_init_transposed_pct": 141.42135623731028,
+    "reported_init_direct_pct": 7.210218662192528e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.1559744837051895,
+    "recomputed_final_field_l2_transposed_pct": 141.421732220284,
+    "reported_final_field_l2_pct": 0.1559744837051892
+   },
+   {
+    "cell": "sens_u0_0.020",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 1.870297921145084e-13,
+    "recomputed_init_transposed_pct": 141.4213562373072,
+    "reported_init_direct_pct": 1.8702979211450794e-13,
+    "reported_init_transposed_pct": 141.42135623730954,
+    "recomputed_final_field_l2_pct": 0.0034952756079633445,
+    "recomputed_final_field_l2_transposed_pct": 141.42136000694367,
+    "reported_final_field_l2_pct": 0.0034952756079633467
+   },
+   {
+    "cell": "sens_u0_0.100",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 4.0147378146297906e-14,
+    "recomputed_init_transposed_pct": 141.42135623731042,
+    "reported_init_direct_pct": 4.014737814629779e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.08885251036032132,
+    "recomputed_final_field_l2_transposed_pct": 141.42369178693198,
+    "reported_final_field_l2_pct": 0.0888525103603213
+   },
+   {
+    "cell": "sens_tau_0.70",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 7.126397344059688e-14,
+    "recomputed_init_transposed_pct": 141.42135623731042,
+    "reported_init_direct_pct": 7.126397344059668e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.03510919786466848,
+    "recomputed_final_field_l2_transposed_pct": 141.4217166697684,
+    "reported_final_field_l2_pct": 0.03510919786466841
+   },
+   {
+    "cell": "sens_tau_1.00",
+    "field_step": 400,
+    "recomputed_init_direct_pct": 7.126397344059688e-14,
+    "recomputed_init_transposed_pct": 141.42135623731042,
+    "reported_init_direct_pct": 7.126397344059668e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.008377308465572835,
+    "recomputed_final_field_l2_transposed_pct": 141.42137516564534,
+    "reported_final_field_l2_pct": 0.008377308465572811
+   },
+   {
+    "cell": "matched_n128",
+    "field_step": 1600,
+    "recomputed_init_direct_pct": 7.210218662192529e-14,
+    "recomputed_init_transposed_pct": 141.42135623731028,
+    "reported_init_direct_pct": 7.210218662192528e-14,
+    "reported_init_transposed_pct": 141.42135623730948,
+    "recomputed_final_field_l2_pct": 0.059843195289472205,
+    "recomputed_final_field_l2_transposed_pct": 141.4215909399627,
+    "reported_final_field_l2_pct": 0.05984319528947218
+   }
+  ],
+  "A4_repro_and_determinism": {
+   "repro_cmd": "cd /tmp/rep17996 && PYTHONPATH=/tmp/rep17996/src python3 scripts/xval_negative_no_oss_reference.py --out /tmp/rep17996/out --mission-id 18157",
+   "note": "被审工作树只读复跑：把 scripts/xval_*.py + src/ + tests/ + xval/<anchor>/ 拷到 /tmp/rep17996 后实跑",
+   "rerun_done": true,
+   "gate_counts_orig": {
+    "PASS": 16,
+    "FAIL": 0,
+    "WITHHELD": 0
+   },
+   "gate_counts_rerun": {
+    "PASS": 16,
+    "FAIL": 0,
+    "WITHHELD": 0
+   },
+   "worst_orig": 0.1559744837051892,
+   "worst_rerun": 0.1559744837051892,
+   "worst_identical": true,
+   "khistory_compare": [
+    {
+     "cell": "main",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "main",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "conv_n32",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "conv_n32",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "conv_n128",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "conv_n128",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_u0_0.020",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_u0_0.020",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_u0_0.100",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_u0_0.100",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_tau_0.70",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_tau_0.70",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_tau_1.00",
+     "arm": "inhouse",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "sens_tau_1.00",
+     "arm": "oss",
+     "samples": 41,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "matched_n128",
+     "arm": "inhouse",
+     "samples": 161,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    },
+    {
+     "cell": "matched_n128",
+     "arm": "oss",
+     "samples": 161,
+     "max_abs_diff_k": 0.0,
+     "max_rel_diff_k": 0.0,
+     "bitwise_same": true
+    }
+   ],
+   "n_bitwise_identical_arms": 16,
+   "n_arms": 16
+  },
+  "A5_tests": {
+   "rc": 0,
+   "summary_line": "18 passed, 1 warning in 15.43s",
+   "cmd": "python3 -m pytest tests/test_xval_oss_reference.py -q -p no:cacheprovider"
+  },
+  "A6_integration_callers": {
+   "grep_pattern": "run_lbmpy",
+   "hits_outside_mission_files": [
+    "[run_lbmpy] ./src/tensorlbm/xval/runners.py:547:def run_lbmpy("
+   ],
+   "n_hits": 1,
+   "campaign_import_line": "31:from .runners import run_openfoam, run_palabos, run_tensorlbm",
+   "verdict": "CHECK_HITS"
+  },
+  "A7_negative_controls": {
+   "no_ref_zero_error": {
+    "status": "WITHHELD",
+    "negative_knowledge_required": true
+   },
+   "fake_analytic": {
+    "status": "WITHHELD"
+   },
+   "resolved_ref_zero_error": "PASS",
+   "over_tolerance": "FAIL",
+   "under_tolerance": "PASS",
+   "empty_ref_id": "UnreferencedClaimError",
+   "static_pass_requires_resolved_ref": true,
+   "static_mentions_withheld": 8
+  },
+  "A8_platform_judge": {
+   "registered_benchmark_cases_for_anchor": 0,
+   "rows": [],
+   "negative_like_anchor_cases_in_table": "0",
+   "negative_knowledge_entries": [
+    [
+     "516",
+     "d0258558-3ce4-43f7-a0c4-290d0f83ba0d",
+     "TensorLBM shan_chen_pseudopotential_multiphase 无本地可解析 OSS 参考",
+     "hypothesis_falsified",
+     "tensorlbm.xval.oss_reference"
+    ],
+    [
+     "517",
+     "a10fd184-2e54-4fbe-9c61-4eadbdf95905",
+     "TensorLBM free_surface_volume_tracking 无本地可解析 OSS 参考（negativ",
+     "hypothesis_falsified",
+     "tensorlbm.xval.oss_reference"
+    ],
+    [
+     "518",
+     "bc3ba213-4d27-43bd-ba17-2dcb6b25ab22",
+     "TensorLBM immersed_boundary_ibm 无本地可解析 OSS 参考（negative-no-os",
+     "hypothesis_falsified",
+     "tensorlbm.xval.oss_reference"
+    ],
+    [
+     "519",
+     "31f78b1a-5d65-4fc8-a13f-65aaaf68ec02",
+     "TensorLBM adaptive_mesh_refinement 无本地可解析 OSS 参考（negative-no",
+     "hypothesis_falsified",
+     "tensorlbm.xval.oss_reference"
+    ],
+    [
+     "520",
+     "b8f70e98-e47b-4009-986e-ecac1fe75656",
+     "TensorLBM thermal_energy_transport_lbm 无本地可解析 OSS 参考（negativ",
+     "hypothesis_falsified",
+     "tensorlbm.xval.oss_reference"
+    ],
+    [
+     "521",
+     "c0a82c1a-edb5-437a-a242-3ad1d3f6e7df",
+     "TensorLBM acoustic_pulse_absorbing_boundary 无本地可解析 OSS 参考（ne",
+     "hypothesis_falsified",
+     "tensorlbm.xval.oss_reference"
+    ]
+   ],
+   "n_negative_entries": 6,
+   "tensor_reports": [
+    [
+     "16912",
+     "3762",
+     "4"
+    ]
+   ]
+  },
+  "A9_report_sections": {
+   "platform_report_id": 16912,
+   "repo_report_len": 13681,
+   "repo_report_sections": {
+    "## ①": true,
+    "## ②": true,
+    "## ③": true,
+    "## ④": true,
+    "## ⑤": true,
+    "## ⑥": true
+   },
+   "tables": 20,
+   "claims_lt_15pct_stated": true
+  },
+  "A10_negative_payload_vs_ledger": {
+   "n_payloads": 6,
+   "payload_titles": [
+    "TensorLBM shan_chen_pseudopotential_multiphase 无本地可解析 OSS 参考（negative-no-oss-reference）",
+    "TensorLBM free_surface_volume_tracking 无本地可解析 OSS 参考（negative-no-oss-reference）",
+    "TensorLBM immersed_boundary_ibm 无本地可解析 OSS 参考（negative-no-oss-reference）",
+    "TensorLBM adaptive_mesh_refinement 无本地可解析 OSS 参考（negative-no-oss-reference）",
+    "TensorLBM thermal_energy_transport_lbm 无本地可解析 OSS 参考（negative-no-oss-reference）",
+    "TensorLBM acoustic_pulse_absorbing_boundary 无本地可解析 OSS 参考（negative-no-oss-reference）"
+   ],
+   "n_ledger_rows": 6,
+   "ledger_titles": [
+    "TensorLBM shan_chen_pseudopotential_multiphase 无本地可解析 OSS 参考",
+    "TensorLBM free_surface_volume_tracking 无本地可解析 OSS 参考（negativ",
+    "TensorLBM immersed_boundary_ibm 无本地可解析 OSS 参考（negative-no-os",
+    "TensorLBM adaptive_mesh_refinement 无本地可解析 OSS 参考（negative-no",
+    "TensorLBM thermal_energy_transport_lbm 无本地可解析 OSS 参考（negativ",
+    "TensorLBM acoustic_pulse_absorbing_boundary 无本地可解析 OSS 参考（ne"
+   ],
+   "capabilities_without_oss_reference": [
+    "shan_chen_pseudopotential_multiphase",
+    "free_surface_volume_tracking",
+    "immersed_boundary_ibm",
+    "adaptive_mesh_refinement",
+    "thermal_energy_transport_lbm",
+    "acoustic_pulse_absorbing_boundary"
+   ],
+   "coverage_counts": {
+    "total": 13,
+    "with": 7,
+    "without": 6
+   }
+  }
+ }
+}

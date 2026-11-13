@@ -1,0 +1,11 @@
+{
+  "tool": "tensorlbm",
+  "available": true,
+  "engine": "in-house D2Q9 BGK (torch)",
+  "dtype": "float64",
+  "device": "cpu",
+  "threads": 1,
+  "steps": 400,
+  "wall_sec": 1.2298431396484375,
+  "torch_version": "2.7.1"
+}

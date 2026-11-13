@@ -1,0 +1,105 @@
+{
+  "schema": "xval_oss_probe/v1",
+  "generated_at": "2026-11-13T11:09:51.313727+00:00",
+  "environment": {
+    "python": "3.11.6",
+    "executable": "/usr/bin/python3",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "machine": "loongarch64",
+    "env_flags": {
+      "XVAL_PALABOS_BIN": false,
+      "XVAL_ICOFoam_BIN": false
+    }
+  },
+  "references": [
+    {
+      "oss_id": "lbmpy",
+      "kind": "python_module",
+      "target": "lbmpy",
+      "upstream": "lbmpy 2.x (FAU Erlangen / pycodegen), Apache-2.0",
+      "note": "generated (pystencils) LBM kernels, independent code path from the in-house torch solver",
+      "available": true,
+      "version": "2.0",
+      "path": "/usr/lib/python3.11/site-packages/lbmpy/__init__.py",
+      "sha256": "080a6d37a69806f528c6b458590e68f61b3d90e60115b5d293c4cd5652152415",
+      "error": null
+    },
+    {
+      "oss_id": "pylbm",
+      "kind": "python_module",
+      "target": "pylbm",
+      "upstream": "pylbm (LBM scheme builder on sympy), BSD-3",
+      "note": "reference for scheme specification; no compiled kernel",
+      "available": false,
+      "version": null,
+      "path": null,
+      "sha256": null,
+      "error": "module not importable in this interpreter"
+    },
+    {
+      "oss_id": "lettuce",
+      "kind": "python_module",
+      "target": "lettuce",
+      "upstream": "lettuce (GPU LBM on torch), MIT",
+      "note": "torch-based GPU LBM, would allow a same-backend comparison",
+      "available": false,
+      "version": null,
+      "path": null,
+      "sha256": null,
+      "error": "module not importable in this interpreter"
+    },
+    {
+      "oss_id": "xlb",
+      "kind": "python_module",
+      "target": "xlb",
+      "upstream": "XLB (jax-based multi-GPU LBM), MIT",
+      "note": "needs jax; used as a free-surface / thermal reference when present",
+      "available": false,
+      "version": null,
+      "path": null,
+      "sha256": null,
+      "error": "module not importable in this interpreter"
+    },
+    {
+      "oss_id": "walberla",
+      "kind": "python_module",
+      "target": "waLBerla",
+      "upstream": "waLBerla (FAU Erlangen), free-surface lattice gas",
+      "note": "Python bindings are rarely packaged; presence is checked, not assumed",
+      "available": false,
+      "version": null,
+      "path": null,
+      "sha256": null,
+      "error": "module not importable in this interpreter"
+    },
+    {
+      "oss_id": "palabos",
+      "kind": "binary",
+      "target": "tg2d_palabos",
+      "upstream": "Palabos 2.x (gitlab/unigespc), AGPL-3.0",
+      "note": "in-tree XVAL harness binary; must be built by hand from the Palabos release",
+      "available": true,
+      "version": null,
+      "path": "/root/tp-agent/work/m17996/benchmarks/xval_taylor_green/palabos/bin/tg2d_palabos",
+      "sha256": "0089e62022fa6524d1d55a7b9ba2ec7271c7b9e4e37b6e0a98389eac3ae77dbd",
+      "error": null
+    },
+    {
+      "oss_id": "openfoam_icofoam",
+      "kind": "binary",
+      "target": "icoFoam",
+      "upstream": "OpenFOAM (ESI/Foundation), GPL-3.0",
+      "note": "finite-volume (not LBM) reference for the same incompressible case",
+      "available": false,
+      "version": null,
+      "path": null,
+      "sha256": null,
+      "error": "not found; tried (no candidate paths)"
+    }
+  ],
+  "available_ids": [
+    "lbmpy",
+    "palabos"
+  ],
+  "record_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97"
+}
