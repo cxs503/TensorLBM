@@ -1,0 +1,112 @@
+{
+ "anchor": "XVAL-LBM-FUSED-KERNEL-TYPE-SELECTOR",
+ "mission": 18111,
+ "checks": {
+  "C1_artifacts": {
+   "impl": {
+    "snapshot": "evidence_snapshot/src/fused_kernel_selector.py",
+    "exists": true,
+    "bytes": 8186,
+    "sha256": "670bc7b6712cbfd360c33cbcc9a9b4ee0939e3f9e85591bec23a5704022363c9",
+    "live_worktree_sha256_matches": true
+   },
+   "tests": {
+    "snapshot": "evidence_snapshot/tests/test_fused_kernel_selector.py",
+    "exists": true,
+    "bytes": 6109,
+    "sha256": "1ed0d97b345f10250dda79931f28f2b5dfa27183444bbb2388f56d1c523fe928",
+    "live_worktree_sha256_matches": true
+   },
+   "bench_entry": {
+    "snapshot": "evidence_snapshot/xval/bench_fused_kernel_selector.py",
+    "exists": true,
+    "bytes": 13532,
+    "sha256": "93db67c5baa5039bea2bf105db894e91e539a1787f2115cdfdac09cdb1f181eb",
+    "live_worktree_sha256_matches": true
+   },
+   "oss_reference": {
+    "snapshot": "evidence_snapshot/xval/lbmpy_reference.py",
+    "exists": true,
+    "bytes": 10847,
+    "sha256": "355cce518828c07f492c45a4204d3b158e76607ebd02454211cad7cd8e04edfb",
+    "live_worktree_sha256_matches": true
+   },
+   "report_src": {
+    "snapshot": "evidence_snapshot/xval/REPORT.md",
+    "exists": true,
+    "bytes": 12448,
+    "sha256": "e338f07775039c0b0660e210983afdc17176a6c4cf6c6b0e68eb61bbf9dacde9",
+    "live_worktree_sha256_matches": true
+   },
+   "run_artifact_json": {
+    "snapshot": "evidence_snapshot/artifacts_orig/results.json",
+    "exists": true,
+    "bytes": 12310,
+    "sha256": "5dd2279304e1f38945615abbe4ac215b4d5e41a5eb1c040d4db0da3f4cdbbe5d",
+    "live_worktree_sha256_matches": true
+   },
+   "run_artifact_png": {
+    "snapshot": "evidence_snapshot/artifacts_orig/fused_kernel_selector.png",
+    "exists": true,
+    "bytes": 98280,
+    "sha256": "d81b3750071971bc13acfc5a830ac1a868acf4b259116a2146f22b6aa2d758aa",
+    "live_worktree_sha256_matches": true
+   },
+   "repro_json": {
+    "snapshot": "evidence_snapshot/artifacts_repro/results.json",
+    "exists": true,
+    "bytes": 12311,
+    "sha256": "5c2ae7f017ba0d77720d88456194f1246078de35cd808573e4b97cc701a64947"
+   },
+   "integration_patch": {
+    "snapshot": "evidence_snapshot/channel_integration.patch",
+    "exists": true,
+    "bytes": 2292,
+    "sha256": "f2f4b8face8a03d1d3cb8cf9e76a471f09709704031368f10d3710d7ebfbe28f"
+   }
+  },
+  "C2_tests": {
+   "cmd": "PYTHONPATH=src python3 -m pytest tests/test_fused_kernel_selector.py -q",
+   "exit": 0,
+   "tail": "9 passed, 1 warning in 11.38s"
+  },
+  "C3_reproducibility": {
+   "json_identical_ex_walltime": true,
+   "numeric_fields_compared": 140,
+   "max_rel_diff": 0.0,
+   "worst_field": null,
+   "note": "审计重跑命令 = 报告 §⑦ 的等价命令（--out 指向审计临时目录，不覆盖原工件）"
+  },
+  "C4_benchmark_referee": {
+   "rows_for_anchor": 0,
+   "table_rows_total": 91,
+   "sibling_anchors": [
+    [
+     "80",
+     "XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN"
+    ]
+   ],
+   "conclusion": "无本锚点登记行 → 无 ref/tolerance 判据可裁，L4 不可由基准裁判机器认证"
+  },
+  "C5_integration": {
+   "eco_grep_hits": [],
+   "worktree_patch_lines": 52,
+   "note": "主求解器调用点只存在于 m18111 工作树未提交 diff（channel_integration.patch）；main 上 0 引用"
+  },
+  "C6_report": {
+   "report_id": 16986,
+   "markdown_chars": 8443,
+   "figures": 1,
+   "sections_present": {
+    "①": true,
+    "②": true,
+    "③": true,
+    "④": true,
+    "⑤": true,
+    "⑥": true
+   },
+   "note": "六段齐全；图为 1 张（剪切波衰减曲线 + 等价性误差条形图），无场量云图 —— 本锚点为内核粒度等价性+1D 剪切模，云图无物理意义，报告中以表格/曲线替代（④ 段未显式写「无云图理由」= 报告纪律小缺口）"
+  }
+ },
+ "verdict_hint": "L2：impl/entry/run_artifacts 均真且审计独立重跑逐位复现；L3 未主张（main 0 调用方，集成仅存在于未提交工作树）；L4 不可判（tensor_benchmark_cases 无本锚点行，基准裁判缺席）"
+}
