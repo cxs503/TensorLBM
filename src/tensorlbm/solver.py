@@ -10,7 +10,7 @@ from .boundaries import (
     cylinder_mask,
     make_channel_wall_mask,
 )
-from .d2q9 import C, _c_on, _w_for, _w_on, equilibrium, macroscopic
+from .d2q9 import C, _c_on, _w_on, equilibrium, macroscopic
 from .input_contract import check_relaxation_time
 
 OPPOSITE_2D = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
@@ -111,7 +111,7 @@ def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
     device = f.device
     dtype = f.dtype
     c = _c_on(device)
-    w = _w_for(dtype, device)
+    w = _w_on(device).to(dtype)
 
     # Macroscopic quantities (rho, ux, uy) — same as macroscopic()
     rho = f.sum(dim=0)
@@ -512,6 +512,72 @@ def collide_trt(
     return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
 
 
+# --------------------------------------------------------------------------- #
+# Timestep kernel dispatch: AB (collide -> stream) vs fused push-pull (one pass)
+# --------------------------------------------------------------------------- #
+#
+# Anchor ``XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN``.  The upstream chapter-13 GPU
+# kernel of ``lbm-principles-practice/code`` (``gpu_stream_collide_save``) never
+# materialises a "streamed but not yet collided" field: it pulls the eight
+# shifted neighbours of the *post-collision* field, recomputes the moments from
+# those nine numbers, relaxes and writes straight into the next buffer.  The
+# step-level implementation lives in :mod:`tensorlbm.fused_push_pull`; this
+# dispatcher is what makes it reachable from the library's canonical stepping
+# path instead of being a stand-alone module nobody calls (the defect an
+# independent audit of the first delivery recorded).
+
+STEP_KERNELS: tuple[str, ...] = ("ab", "fused_push_pull")
+
+
+def step_stream_collide(f: torch.Tensor, tau: float, *, kernel: str = "ab") -> torch.Tensor:
+    """Advance periodic D2Q9 populations by one BGK timestep with a chosen kernel.
+
+    Parameters
+    ----------
+    f:
+        Populations, shape ``(9, ny, nx)``; direction order of
+        :data:`tensorlbm.d2q9.C`.
+    tau:
+        BGK relaxation time, ``> 0.5`` (validated the same way as
+        :func:`collide_bgk`, including graph-connected tensor ``tau``).
+    kernel:
+        ``"ab"`` (default) -- textbook AB pattern, ``stream(collide_bgk(f))``:
+        a post-collision field is materialised, then permuted.  ``"fused_push_pull"``
+        -- upstream fused kernel: pull the shifted neighbours, moments from the
+        pulled set, relax, write the next buffer; no intermediate field.
+
+    Returns
+    -------
+    torch.Tensor
+        Populations at ``t+1``, shape ``(9, ny, nx)``, same dtype/device.
+
+    Notes
+    -----
+    Both kernels assume **periodic** boundaries: the fused kernel wraps by index
+    arithmetic exactly like the upstream ``%NX`` / ``%NY``.  Neither applies
+    bounce-back or inlets; use :func:`bounce_back_cells` /
+    ``tensorlbm.boundary`` for that, on top of this step.
+
+    The two kernels are algebraically the same update written in a different
+    order (collide-then-permute vs permute-then-collide), hence they agree to
+    round-off, not bit-for-bit: the measured separation on a 2-D Taylor-Green
+    run is O(1e-16) per step, pinned by
+    ``tests/test_fused_push_pull_integration.py`` and by the referee row of
+    ``benchmarks/verified/fused_push_pull_aa_pattern``.
+    """
+    tau = _relaxation_time(tau, where="step_stream_collide")
+    if kernel == "ab":
+        # Same call pair every other D2Q9 driver in the library uses.
+        return stream(collide_bgk(f, tau))
+    if kernel == "fused_push_pull":
+        from .fused_push_pull import FusedPushPullStepper
+
+        stepper = FusedPushPullStepper(f, float(tau) if not isinstance(tau, torch.Tensor) else tau)
+        stepper.step()
+        return stepper.fields()
+    raise ValueError(f"unknown kernel {kernel!r}; expected one of {STEP_KERNELS}")
+
+
 __all__ = [
     "cylinder_mask",
     "make_channel_wall_mask",
@@ -525,4 +591,6 @@ __all__ = [
     "collide_trt",
     "stream",
     "correct_mass",
+    "step_stream_collide",
+    "STEP_KERNELS",
 ]
