@@ -199,13 +199,6 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "KPIDefinition": ("accuracy_recommendation", "KPIDefinition"),
     "LBMDatabase": ("ai", "LBMDatabase"),
     "LBMSimulation": ("simulation", "LBMSimulation"),
-    "JobCheckpointManager": ("job_checkpoint", "JobCheckpointManager"),
-    "JobStatusFile": ("job_checkpoint", "JobStatusFile"),
-    "CheckpointStore": ("job_checkpoint", "CheckpointStore"),
-    "CheckpointPolicy": ("job_checkpoint", "CheckpointPolicy"),
-    "CheckpointError": ("job_checkpoint", "CheckpointError"),
-    "VolumeTrigger": ("job_checkpoint", "VolumeTrigger"),
-    "ResumeState": ("job_checkpoint", "ResumeState"),
     "LBMStepExecutor": ("lbm_step", "LBMStepExecutor"),
     "LBMUnitConverter": ("unit_converter", "LBMUnitConverter"),
     "LaplaceTestConfig": ("porous_media", "LaplaceTestConfig"),
@@ -351,6 +344,10 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "apply_inlet_profile_3d": ("turbulence.inlet_profiles", "apply_inlet_profile_3d"),
     "apply_jonswap_inlet_3d": ("wave_bc", "apply_jonswap_inlet_3d"),
     "apply_rough_wall_bounce_back": ("roughness", "apply_rough_wall_bounce_back"),
+    "regularised_face": ("regularised_bc", "regularised_face"),
+    "apply_regularised_wall": ("regularised_bc", "apply_regularised_wall"),
+    "run_regularised_channel": ("regularised_bc", "run_channel"),
+    "RegularisedBCLattice": ("regularised_bc", "LatticeSpec"),
     "apply_simple_channel_boundaries": ("boundary.boundaries", "apply_simple_channel_boundaries"),
     "apply_simple_channel_boundaries_3d": (
         "boundary.boundaries3d",
@@ -2032,15 +2029,6 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         import_mesh_stl,
     )
     from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
-    from .job_checkpoint import (
-        CheckpointError,
-        CheckpointPolicy,
-        CheckpointStore,
-        JobCheckpointManager,
-        JobStatusFile,
-        ResumeState,
-        VolumeTrigger,
-    )
     from .simulation import LBMSimulation
     from .sloshing_tank import (
         SloshingTankConfig,
@@ -2734,13 +2722,6 @@ __all__ = [
     "configure_logging",
     "D2Q9",
     "LBMSimulation",
-    "JobCheckpointManager",
-    "JobStatusFile",
-    "CheckpointStore",
-    "CheckpointPolicy",
-    "CheckpointError",
-    "VolumeTrigger",
-    "ResumeState",
     "LBMStepExecutor",
     "Reporter",
     "ReporterBase",
