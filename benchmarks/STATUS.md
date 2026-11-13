@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **79** | pending: **56**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
+verified: **81** | pending: **56**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
 
 Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
 
@@ -99,9 +99,9 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 <!-- STATUS_LEDGER:BEGIN -->
 ### verified 机器台账（自动生成，勿手改）
 
-verified 目录 **79** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=79 pending=56
+verified 目录 **81** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=81 pending=56
 
-人工表未覆盖 **43** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
+人工表未覆盖 **45** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
 
 | verified case | in human table |
 |---|---|
@@ -134,6 +134,8 @@ verified 目录 **79** · STATUS.md 人工表已写 note 的 **36** · advertise
 | `mcmp_stratified_poiseuille` | **no** |
 | `mmg_imo_msc137_uncert` | **no** |
 | `mms_convergence_2d` | **no** |
+| `nscbc_outlet_reflection` | **no** |
+| `nwt_stokes2` | **no** |
 | `permeability` | yes |
 | `permeability3d` | **no** |
 | `permeability_fibrous` | **no** |
@@ -185,3 +187,4 @@ verified 目录 **79** · STATUS.md 人工表已写 note 的 **36** · advertise
 | `womersley` | yes |
 | `womersley_pulsatile` | **no** |
 <!-- STATUS_LEDGER:END -->
+| `nwt_stokes2` | nonlinear wave-tank Stokes 2nd-order: 12/12 analytic closed-form gates PASS (dispersion, deep/shallow limits, 2nd-harmonic coeff, wavenumber & period round-trip); reference = Dean & Dalrymple 1991 sec 4.3 |
