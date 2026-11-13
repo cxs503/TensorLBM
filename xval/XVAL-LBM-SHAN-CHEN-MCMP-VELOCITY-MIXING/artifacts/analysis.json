@@ -1,0 +1,148 @@
+{
+ "verdicts": [
+  {
+   "workload": "W2",
+   "block": "W2_poiseuille_primary",
+   "arm": "GOT-SELF",
+   "dev_Q": 0.06354538704430351,
+   "verdict": "PASS"
+  },
+  {
+   "workload": "W2",
+   "block": "W2_poiseuille_primary",
+   "arm": "LBM4",
+   "dev_Q": 1.359124275718067,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W2",
+   "block": "W2_poiseuille_primary",
+   "arm": "LBM3",
+   "dev_Q": NaN,
+   "verdict": "NO-DATA"
+  },
+  {
+   "workload": "W2",
+   "block": "W2_poiseuille_primary",
+   "arm": "CTRL-NORM",
+   "dev_Q": 0.3954104209192399,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W2",
+   "block": "W2_poiseuille_shift_factor",
+   "arm": "LBM4",
+   "dev_Q": NaN,
+   "verdict": "NO-DATA"
+  },
+  {
+   "workload": "W2",
+   "block": "W2_poiseuille_shift_factor",
+   "arm": "LBM4-TAU",
+   "dev_Q": NaN,
+   "verdict": "NO-DATA"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "GOT-SELF",
+   "dev_u_max": 0.9849395860060883,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "LBM4",
+   "dev_u_max": 0.4701676293836456,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "LBM3",
+   "dev_u_max": 2.8555764824547993,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "CTRL-NORM",
+   "dev_u_max": 0.9816055731804036,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "GOT-SELF",
+   "dev_u_max": 0.8865425297549259,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "LBM4",
+   "dev_u_max": 1.123113295985285,
+   "verdict": "FAIL"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "LBM3",
+   "dev_u_max": NaN,
+   "verdict": "NO-DATA"
+  },
+  {
+   "workload": "W1",
+   "block": "coupling",
+   "arm": "CTRL-NORM",
+   "dev_u_max": 0.9248480091631018,
+   "verdict": "FAIL"
+  }
+ ],
+ "control_teeth": true,
+ "library_control": {
+  "Q_LIB-ENTRY": 0.3087097406387329,
+  "Q_GOT-MIX": 0.3087097406387329,
+  "rel_diff_Q": 0.0,
+  "umax_LIB-ENTRY": 0.027128620073199272,
+  "umax_GOT-MIX": 0.027128620073199272,
+  "rel_diff_umax": 0.0,
+  "profile_max_abs_diff": 0.0,
+  "verdict": "HARNESS-OK"
+ },
+ "laplace_consistency": {
+  "GOT-MIX": {
+   "sigma_values": [
+    0.3837579526591034,
+    0.5877564069705196,
+    0.5445832126930021
+   ],
+   "mean": 0.505365857440875,
+   "residual": 0.24063340051815646
+  },
+  "LBM4": {
+   "sigma_values": [
+    1.5550151895930566,
+    0.26692776994096534,
+    2.717260118668346
+   ],
+   "mean": 1.5130676927341227,
+   "residual": 0.8235850443289651
+  },
+  "GOT-SELF": {
+   "sigma_values": [
+    -0.06322141346558408,
+    -0.12203623329851128
+   ],
+   "mean": -0.09262882338204767,
+   "residual": 0.3174758011895792
+  }
+ },
+ "figures": [
+  "figures/fig1_deviation_bars.png",
+  "figures/fig4_profile_primary.png",
+  "figures/fig5_profile_shift_factor.png",
+  "figures/fig2_droplet_spurious.png",
+  "figures/fig3_momentum_ledger.png"
+ ]
+}

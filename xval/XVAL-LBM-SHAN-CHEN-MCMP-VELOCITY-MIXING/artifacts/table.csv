@@ -1,0 +1,53 @@
+workload,block,arm,config,u_max_or_Q_sim,reference,err_or_dev,verdict
+W2,W2_poiseuille_primary,GOT-MIX,ny=25 tau_upper=1.0 G12=-2.5,0.30926,0.3036,1.864,PASS
+W2,W2_poiseuille_primary,GOT-SELF,ny=25 tau_upper=1.0 G12=-2.5,0.289608,0.3036,4.609,PASS
+W2,W2_poiseuille_primary,LBM4,ny=25 tau_upper=1.0 G12=-2.5,0.729583,0.3036,140.311,FAIL
+W2,W2_poiseuille_primary,LBM3,ny=25 tau_upper=1.0 G12=-2.5,nan,0.3036,nan,NO-DATA
+W2,W2_poiseuille_primary,CTRL-NORM,ny=25 tau_upper=1.0 G12=-2.5,0.186975,0.3036,38.414,FAIL
+W2,W2_poiseuille_primary,LIB-ENTRY,ny=25 tau_upper=1.0 G12=-2.5,0.30926,0.3036,1.864,PASS
+W2,W2_poiseuille_shift_factor,GOT-MIX,ny=25 tau_upper=0.75 G12=-2.5,nan,0.40661,nan,NO-DATA
+W2,W2_poiseuille_shift_factor,LBM4,ny=25 tau_upper=0.75 G12=-2.5,nan,0.40661,nan,NO-DATA
+W2,W2_poiseuille_shift_factor,LBM4-TAU,ny=25 tau_upper=0.75 G12=-2.5,nan,0.40661,nan,NO-DATA
+W2,W2_poiseuille_resolution,GOT-MIX,ny=41 tau_upper=1.0 G12=-2.5,1.64033,1.482,10.684,PASS
+W2,W2_poiseuille_resolution,LBM4,ny=41 tau_upper=1.0 G12=-2.5,3.45896,1.482,133.398,FAIL
+W2,W2_poiseuille_coupling,GOT-MIX,ny=25 tau_upper=1.0 G12=-2.0,0.303595,0.3036,0.002,PASS
+W2,W2_poiseuille_coupling,LBM4,ny=25 tau_upper=1.0 G12=-2.0,0.649184,0.3036,113.829,FAIL
+W2,W2_poiseuille_primary,GOT-SELF,ny=25 tau_upper=1.0,-,GOT-MIX,6.355,PASS
+W2,W2_poiseuille_primary,LBM4,ny=25 tau_upper=1.0,-,GOT-MIX,135.912,FAIL
+W2,W2_poiseuille_primary,LBM3,ny=25 tau_upper=1.0,-,GOT-MIX,nan,NO-DATA
+W2,W2_poiseuille_primary,CTRL-NORM,ny=25 tau_upper=1.0,-,GOT-MIX,39.541,FAIL
+W2,W2_poiseuille_shift_factor,LBM4,ny=25 tau_upper=0.75,-,GOT-MIX,nan,NO-DATA
+W2,W2_poiseuille_shift_factor,LBM4-TAU,ny=25 tau_upper=0.75,-,GOT-MIX,nan,NO-DATA
+W1,W1_droplet_coupling,GOT-MIX,G12=-1.5 R=12.0,0.0215763,-,-,INFO
+W1,W1_droplet_coupling,GOT-SELF,G12=-1.5 R=12.0,0.000324949,-,-,INFO
+W1,W1_droplet_coupling,LBM4,G12=-1.5 R=12.0,0.0317208,-,-,INFO
+W1,W1_droplet_coupling,LBM3,G12=-1.5 R=12.0,0.0831892,-,-,INFO
+W1,W1_droplet_coupling,CTRL-NORM,G12=-1.5 R=12.0,0.000396884,-,-,INFO
+W1,W1_droplet_coupling,GOT-MIX,G12=-2.5 R=12.0,0.0855974,-,-,INFO
+W1,W1_droplet_coupling,GOT-SELF,G12=-2.5 R=12.0,0.00971166,-,-,INFO
+W1,W1_droplet_coupling,LBM4,G12=-2.5 R=12.0,0.181733,-,-,INFO
+W1,W1_droplet_coupling,LBM3,G12=-2.5 R=12.0,nan,-,-,INFO
+W1,W1_droplet_coupling,CTRL-NORM,G12=-2.5 R=12.0,0.00643281,-,-,INFO
+W1,W1_droplet_radius,GOT-MIX,G12=-2.0 R=8.0,0.0528782,-,-,INFO
+W1,W1_droplet_radius,GOT-MIX,G12=-2.0 R=12.0,0.051767,-,-,INFO
+W1,W1_droplet_radius,GOT-MIX,G12=-2.0 R=16.0,0.050454,-,-,INFO
+W1,W1_droplet_radius,LBM4,G12=-2.0 R=8.0,0.0819965,-,-,INFO
+W1,W1_droplet_radius,LBM4,G12=-2.0 R=12.0,0.0759786,-,-,INFO
+W1,W1_droplet_radius,LBM4,G12=-2.0 R=16.0,0.0741504,-,-,INFO
+W1,W1_droplet_radius,GOT-SELF,G12=-2.0 R=8.0,8.89498e-05,-,-,INFO
+W1,W1_droplet_radius,GOT-SELF,G12=-2.0 R=12.0,0.000304581,-,-,INFO
+W1,W1_droplet_radius,GOT-SELF,G12=-2.0 R=16.0,0.00037001,-,-,INFO
+W1,coupling,GOT-SELF,G12=-1.5,98.49,GOT-MIX,98.494,FAIL
+W1,coupling,LBM4,G12=-1.5,47.02,GOT-MIX,47.017,FAIL
+W1,coupling,LBM3,G12=-1.5,285.6,GOT-MIX,285.558,FAIL
+W1,coupling,CTRL-NORM,G12=-1.5,98.16,GOT-MIX,98.161,FAIL
+W1,coupling,GOT-SELF,G12=-2.5,88.65,GOT-MIX,88.654,FAIL
+W1,coupling,LBM4,G12=-2.5,112.3,GOT-MIX,112.311,FAIL
+W1,coupling,LBM3,G12=-2.5,nan,GOT-MIX,nan,NO-DATA
+W1,coupling,CTRL-NORM,G12=-2.5,92.48,GOT-MIX,92.485,FAIL
+W3,momentum,GOT-MIX,n=48,5.341e-05,0,-,INFO
+W3,momentum,GOT-SELF,n=48,-4.959e-05,0,-,INFO
+W3,momentum,LBM4,n=48,-0.000145,0,-,INFO
+W3,momentum,LBM3,n=48,nan,0,-,INFO
+W3,momentum,CTRL-NORM,n=48,-1.311,0,-,INFO
+W3,momentum,LBM4-TAU,n=48,-0.000145,0,-,INFO
