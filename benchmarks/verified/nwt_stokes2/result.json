@@ -1,0 +1,73 @@
+{
+  "case": "nwt_stokes2",
+  "capability": "nonlinear_wave_tank_stokes2",
+  "domain": "wave_making / nonlinear_wave_kinematics",
+  "reference": "closed-form second-order Stokes theory (Airy 1845; Stokes 1847; Dean & Dalrymple 1991, Water Wave Mechanics, sec 4.3)",
+  "independent": "no LBM code path; every gate is an analytic closed-form anchor",
+  "verdict": "PASS",
+  "gates_passed": 12,
+  "gates_total": 12,
+  "acceptance": "all analytic anchors within 1e-6 .. 1e-14 (machine precision)",
+  "checks": [
+    {
+      "gate": "dispersion_closed_form",
+      "pass": true,
+      "detail": "k=0.1 h=5.0: |omega^2 - g k tanh(kh)|/ref = 0.00e+00"
+    },
+    {
+      "gate": "dispersion_closed_form",
+      "pass": true,
+      "detail": "k=0.5 h=2.0: |omega^2 - g k tanh(kh)|/ref = 0.00e+00"
+    },
+    {
+      "gate": "dispersion_closed_form",
+      "pass": true,
+      "detail": "k=1.0 h=1.0: |omega^2 - g k tanh(kh)|/ref = 1.19e-16"
+    },
+    {
+      "gate": "dispersion_closed_form",
+      "pass": true,
+      "detail": "k=0.05 h=20.0: |omega^2 - g k tanh(kh)|/ref = 1.49e-16"
+    },
+    {
+      "gate": "deep_water_phase_speed",
+      "pass": true,
+      "detail": "deep: c = 3.132092 vs sqrt(g/k) = 3.132092"
+    },
+    {
+      "gate": "shallow_water_phase_speed",
+      "pass": true,
+      "detail": "shallow: c = 7.003570 vs sqrt(g h) = 7.003571"
+    },
+    {
+      "gate": "deep_group_speed",
+      "pass": true,
+      "detail": "deep: cg/c = 0.500000 (theory 0.5)"
+    },
+    {
+      "gate": "shallow_group_speed",
+      "pass": true,
+      "detail": "shallow: cg/c = 1.000000 (theory 1.0)"
+    },
+    {
+      "gate": "second_harmonic_coefficient",
+      "pass": true,
+      "detail": "a2 = 1.268766e-03 vs theory 1.268766e-03"
+    },
+    {
+      "gate": "second_harmonic_deep_water_limit",
+      "pass": true,
+      "detail": "deep a2 = 3.750000e-04 vs k a^2/2 = 3.750000e-04"
+    },
+    {
+      "gate": "wavenumber_inversion_roundtrip",
+      "pass": true,
+      "detail": "k_inv = 0.4000000000 vs k = 0.4000000000"
+    },
+    {
+      "gate": "period_phase_speed_roundtrip",
+      "pass": true,
+      "detail": "period & phase-speed consistent with dispersion"
+    }
+  ]
+}
