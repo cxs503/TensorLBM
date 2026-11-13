@@ -17,7 +17,7 @@ the array rank change:
 
 Wetting (gas-liquid-solid) walls
 --------------------------------
-Solid nodes carry a ghost phase-field value.  Three policies are provided:
+Solid nodes carry a ghost phase-field value.  Four policies are provided:
 
 ``"freeze"``    keep whatever bounce-back leaves there (default, no wetting).
 ``"neumann"``   zero normal gradient, i.e. the neutral 90 deg contact angle.
@@ -27,6 +27,14 @@ Solid nodes carry a ghost phase-field value.  Three policies are provided:
                 fluid), i.e. ``dphi/dn = 2 cos(theta) / (3 W)``.  The ghost
                 value is set to ``phi_fluid - dphi/dn`` (unit node spacing,
                 bounce-back wall half way between the nodes).
+
+``"wall_order"`` the diffuse-interface route: the caller prescribes a *wall order
+                parameter* ``psi_w`` instead of an angle and the Young angle is
+                emergent, ``cos(theta) = (3 psi_w - psi_w^3)/2``
+                (:func:`tensorlbm.wetting.wall_order_parameter_2d.young_cos_theta`,
+                cross-validated against the OSS wall-order-parameter route in
+                ``docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md``).
+                The ghost/flux machinery is identical to ``"contact"``.
 
 The ``"contact"`` policy is verified in ``tensorlbm.wetting`` (IN32-L01
 ladder); it is opt-in and bit-identical to the D3Q19 scheme at
@@ -46,7 +54,7 @@ from .d2q9 import C, OPPOSITE, W
 
 CS2 = 1.0 / 3.0
 
-WALL_POLICIES = ("freeze", "neumann", "contact")
+WALL_POLICIES = ("freeze", "neumann", "contact", "wall_order")
 
 
 def _w(dtype, device) -> torch.Tensor:
@@ -300,6 +308,8 @@ class CAC2D:
         wall_mask: torch.Tensor | None = None,
         wall_phi_policy: str = "freeze",
         contact_angle_deg: float | None = None,
+        wall_order_parameter: float | None = None,
+        wall_order_parameter_top: float | None = None,
         wall_contact_zero_net: bool = True,
         device=torch.device("cpu"),
         dtype=torch.float32,
@@ -310,6 +320,22 @@ class CAC2D:
             raise ValueError("wall_phi_policy='contact' needs contact_angle_deg")
         if contact_angle_deg is not None and wall_phi_policy != "contact":
             raise ValueError("contact_angle_deg is only used by wall_phi_policy='contact'")
+        if wall_phi_policy == "wall_order" and wall_order_parameter is None:
+            raise ValueError("wall_phi_policy='wall_order' needs wall_order_parameter")
+        if wall_order_parameter is not None and wall_phi_policy != "wall_order":
+            raise ValueError("wall_order_parameter is only used by wall_phi_policy='wall_order'")
+        cos_top = None
+        if wall_phi_policy == "wall_order":
+            # the contact angle is *emergent* from the wall order parameter -- the
+            # caller does not prescribe it (diffuse-interface wall-energy route,
+            # docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md).
+            from .wetting.wall_order_parameter_2d import young_cos_theta  # lazy: avoids an import cycle
+
+            contact_angle_deg = math.degrees(math.acos(max(-1.0, min(1.0, young_cos_theta(wall_order_parameter)))))
+            if wall_order_parameter_top is not None:
+                cos_top = float(young_cos_theta(wall_order_parameter_top))
+        elif wall_order_parameter_top is not None:
+            raise ValueError("wall_order_parameter_top is only used by wall_phi_policy='wall_order'")
         if gravity_mode not in ("uniform", "rho"):
             raise ValueError(f"unknown gravity_mode {gravity_mode!r}")
         self.shape = shape
@@ -325,6 +351,11 @@ class CAC2D:
         self.gravity_mode = gravity_mode
         self.axes = axes
         self.wall_phi_policy = wall_phi_policy
+        self.wall_order_parameter = None if wall_order_parameter is None else float(wall_order_parameter)
+        self.wall_order_parameter_top = (
+            None if wall_order_parameter_top is None else float(wall_order_parameter_top)
+        )
+        self.wall_contact_cos_top = cos_top
         self.wall_contact_zero_net = bool(wall_contact_zero_net)
         self.contact_angle_deg = None if contact_angle_deg is None else float(contact_angle_deg)
         self.wall_contact_flux = (
@@ -405,15 +436,29 @@ class CAC2D:
         fm_f = self.fluid_mask.to(self.dtype)
         acc = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
         cnt = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
+        c_pos = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
+        c_neg = torch.zeros(self.shape, dtype=self.dtype, device=self.device)
         for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             # value and fluid-ness of the node one spacing away in this normal
+            w = _shift(fm_f, dy, dx, axes=self.axes)
             acc = acc + _shift(pf, dy, dx, axes=self.axes)
-            cnt = cnt + _shift(fm_f, dy, dx, axes=self.axes)
+            cnt = cnt + w
+            if dy > 0:
+                c_pos = c_pos + w
+            elif dy < 0:
+                c_neg = c_neg + w
         has = target & (cnt > 0)
         if not bool(has.any()):
             return
         base = acc / cnt.clamp(min=1.0)
-        ghost = wall_contact_ghost(base, self.wall_contact_cos, self.width)
+        cos_n: object = self.wall_contact_cos
+        if self.wall_contact_cos_top is not None:
+            # the wall above the fluid (fluid neighbour in the -y direction) is the
+            # *top* plate: it may carry its own wall order parameter, e.g. a
+            # non-wetting lid above a wetting plate.
+            cos_n = torch.where(c_neg > c_pos, torch.full_like(base, float(self.wall_contact_cos_top)),
+                                torch.full_like(base, float(self.wall_contact_cos)))
+        ghost = wall_contact_ghost(base, cos_n, self.width)
         if self.wall_contact_zero_net:
             # Global phase conservation: the conservative Allen-Cahn field is a
             # conserved quantity, so a wall flux may *redistribute* phase but must
