@@ -1,0 +1,361 @@
+{
+  "xval": {
+    "tag": "local-n32-r2-lin",
+    "cfg": {
+      "tag": "local-n32-r2-lin",
+      "n": 32,
+      "ranks": 2,
+      "u0": 0.01,
+      "tau": 0.65,
+      "steps": 200,
+      "dtype": "float64",
+      "checkpoints": [
+        50,
+        100,
+        150,
+        200
+      ]
+    },
+    "serial": {
+      "step_ms": 86.75524375401437,
+      "mlups": 0.3777062755181729,
+      "series": {
+        "50": 0.0037017624849906496,
+        "100": 0.0027646241711161467,
+        "150": 0.002064602421656179,
+        "200": 0.0015418586167856379
+      },
+      "tgv_rel_l2": 0.031224627922259864,
+      "tgv_amplitude_ratio": 0.9767093594013568,
+      "u_norm": 0.27910622299136895,
+      "u_norm_initial": 0.9050966799187695,
+      "fitted_decay_rate": 0.0058822466485151555,
+      "analytic_decay_rate": 0.005764415879030872,
+      "decay_rate_rel_error": 0.02044105976338643,
+      "rho_min": 0.9999882975768404,
+      "rho_max": 1.0000116950141549,
+      "u_max": 0.0030822138563020157
+    },
+    "arms": {
+      "full_alloc": {
+        "step_ms": 60.30122649855912,
+        "exchange_ms": 8.519672844558954,
+        "pack_ms": 1.94695302285254,
+        "unpack_ms": 1.1636180616915226,
+        "mlups": 0.5434051992422241,
+        "bytes_per_step": 622592,
+        "bytes_per_step_per_rank": 622592,
+        "series": {
+          "50": 0.0037017624849906504,
+          "100": 0.0027646241711161766,
+          "150": 0.002064602421656174,
+          "200": 0.001541858616785638
+        },
+        "byte_accounting": {
+          "selective": false,
+          "persistent": false,
+          "left_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "right_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "n_cross_per_face": 19,
+          "bytes_per_step": 622592,
+          "bytes_per_face_step": 311296
+        },
+        "tgv_rel_l2": 0.031224627922259864,
+        "tgv_amplitude_ratio": 0.9767093594013568,
+        "u_norm": 0.27910622299136895,
+        "u_norm_initial": 0.9050966799187695,
+        "fitted_decay_rate": 0.0058822466485151555,
+        "analytic_decay_rate": 0.005764415879030872,
+        "decay_rate_rel_error": 0.02044105976338643,
+        "rho_min": 0.9999882975768404,
+        "rho_max": 1.0000116950141549,
+        "u_max": 0.0030822138563020157,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      },
+      "full_persistent": {
+        "step_ms": 46.78352610208094,
+        "exchange_ms": 4.550617216154933,
+        "pack_ms": 1.7116658389568329,
+        "unpack_ms": 0.6924114283174276,
+        "mlups": 0.7004174915866906,
+        "bytes_per_step": 622592,
+        "bytes_per_step_per_rank": 622592,
+        "series": {
+          "50": 0.0037017624849906504,
+          "100": 0.0027646241711161766,
+          "150": 0.002064602421656174,
+          "200": 0.001541858616785638
+        },
+        "byte_accounting": {
+          "selective": false,
+          "persistent": true,
+          "left_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "right_populations": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+          ],
+          "n_cross_per_face": 19,
+          "bytes_per_step": 622592,
+          "bytes_per_face_step": 311296
+        },
+        "tgv_rel_l2": 0.031224627922259864,
+        "tgv_amplitude_ratio": 0.9767093594013568,
+        "u_norm": 0.27910622299136895,
+        "u_norm_initial": 0.9050966799187695,
+        "fitted_decay_rate": 0.0058822466485151555,
+        "analytic_decay_rate": 0.005764415879030872,
+        "decay_rate_rel_error": 0.02044105976338643,
+        "rho_min": 0.9999882975768404,
+        "rho_max": 1.0000116950141549,
+        "u_max": 0.0030822138563020157,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      },
+      "selective_alloc": {
+        "step_ms": 41.92255234345794,
+        "exchange_ms": 3.2864773739129305,
+        "pack_ms": 0.5363589525222778,
+        "unpack_ms": 0.3686937503516674,
+        "mlups": 0.7816317988356805,
+        "bytes_per_step": 163840,
+        "bytes_per_step_per_rank": 163840,
+        "series": {
+          "50": 0.0037017624849906504,
+          "100": 0.0027646241711161766,
+          "150": 0.002064602421656174,
+          "200": 0.001541858616785638
+        },
+        "byte_accounting": {
+          "selective": true,
+          "persistent": false,
+          "left_populations": [
+            2,
+            8,
+            10,
+            12,
+            14
+          ],
+          "right_populations": [
+            1,
+            7,
+            9,
+            11,
+            13
+          ],
+          "n_cross_per_face": 5,
+          "bytes_per_step": 163840,
+          "bytes_per_face_step": 81920
+        },
+        "tgv_rel_l2": 0.031224627922259864,
+        "tgv_amplitude_ratio": 0.9767093594013568,
+        "u_norm": 0.27910622299136895,
+        "u_norm_initial": 0.9050966799187695,
+        "fitted_decay_rate": 0.0058822466485151555,
+        "analytic_decay_rate": 0.005764415879030872,
+        "decay_rate_rel_error": 0.02044105976338643,
+        "rho_min": 0.9999882975768404,
+        "rho_max": 1.0000116950141549,
+        "u_max": 0.0030822138563020157,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      },
+      "selective_persistent": {
+        "step_ms": 57.14395800605416,
+        "exchange_ms": 4.849918745458126,
+        "pack_ms": 0.6298213638365269,
+        "unpack_ms": 0.5360294133424759,
+        "mlups": 0.5734289528304701,
+        "bytes_per_step": 163840,
+        "bytes_per_step_per_rank": 163840,
+        "series": {
+          "50": 0.0037017624849906504,
+          "100": 0.0027646241711161766,
+          "150": 0.002064602421656174,
+          "200": 0.001541858616785638
+        },
+        "byte_accounting": {
+          "selective": true,
+          "persistent": true,
+          "left_populations": [
+            2,
+            8,
+            10,
+            12,
+            14
+          ],
+          "right_populations": [
+            1,
+            7,
+            9,
+            11,
+            13
+          ],
+          "n_cross_per_face": 5,
+          "bytes_per_step": 163840,
+          "bytes_per_face_step": 81920
+        },
+        "tgv_rel_l2": 0.031224627922259864,
+        "tgv_amplitude_ratio": 0.9767093594013568,
+        "u_norm": 0.27910622299136895,
+        "u_norm_initial": 0.9050966799187695,
+        "fitted_decay_rate": 0.0058822466485151555,
+        "analytic_decay_rate": 0.005764415879030872,
+        "decay_rate_rel_error": 0.02044105976338643,
+        "rho_min": 0.9999882975768404,
+        "rho_max": 1.0000116950141549,
+        "u_max": 0.0030822138563020157,
+        "identity_max_abs_vs_serial": 0.0,
+        "identity_max_abs_vs_selective": 0.0
+      }
+    },
+    "captured_at": "2026-11-13T17:16:23Z"
+  },
+  "product": {
+    "tag": "local-product-n32-r4-lin",
+    "kind": "shipped",
+    "cfg": {
+      "tag": "local-product-n32-r4-lin",
+      "n": 32,
+      "ranks": 4,
+      "u0": 0.01,
+      "tau": 0.65,
+      "steps": 100,
+      "dtype": "float64"
+    },
+    "product": {
+      "cfg": {
+        "tag": "local-product-n32-r4-lin",
+        "n": 32,
+        "ranks": 4,
+        "u0": 0.01,
+        "tau": 0.65,
+        "steps": 100,
+        "dtype": "float64"
+      },
+      "step_ms": 32.37400580197573,
+      "mlups": 1.0121700786870258,
+      "bytes_per_step": 81920,
+      "selective": true,
+      "crossing": [
+        [
+          1,
+          7,
+          9,
+          11,
+          13
+        ],
+        [
+          2,
+          8,
+          10,
+          12,
+          14
+        ]
+      ],
+      "tgv_rel_l2": 0.02734681058539495,
+      "tgv_amplitude_ratio": 0.9840371560374347,
+      "u_norm": 0.5004504317000872,
+      "u_norm_initial": 0.9050966799187695,
+      "fitted_decay_rate": 0.00592533210345209,
+      "analytic_decay_rate": 0.005764415879030872,
+      "decay_rate_rel_error": 0.027915443264005423,
+      "rho_min": 0.9999667481515866,
+      "rho_max": 1.0000333004134558,
+      "u_max": 0.005526047117162214,
+      "identity_max_abs_vs_serial": 0.0
+    },
+    "serial": {
+      "step_ms": 82.50467039644718,
+      "mlups": 0.3971653949109171,
+      "tgv_rel_l2": 0.02734681058539495,
+      "tgv_amplitude_ratio": 0.9840371560374347,
+      "u_norm": 0.5004504317000872,
+      "u_norm_initial": 0.9050966799187695,
+      "fitted_decay_rate": 0.00592533210345209,
+      "analytic_decay_rate": 0.005764415879030872,
+      "decay_rate_rel_error": 0.027915443264005423,
+      "rho_min": 0.9999667481515866,
+      "rho_max": 1.0000333004134558,
+      "u_max": 0.005526047117162214
+    },
+    "captured_at": "2026-11-13T17:16:43Z"
+  }
+}
