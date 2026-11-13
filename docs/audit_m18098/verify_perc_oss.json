@@ -1,0 +1,14 @@
+{
+ "percolation": {
+  "phi": 0.5920138888888888,
+  "u_fluid_sparse": 8.394824374464364e-08,
+  "u_fluid_dense": 8.394824375145824e-08,
+  "k_int_sparse": 0.00041974121872321825,
+  "k_int_dense": 0.0004197412187572912,
+  "k_super_sparse": 0.0002484926312232941,
+  "k_super_dense": 0.00024849263124346576,
+  "rel_diff_intrinsic": 8.117610940228021e-11,
+  "max_abs_pdf_diff": 6.724050776035773e-06
+ },
+ "oss_import": "ok"
+}
