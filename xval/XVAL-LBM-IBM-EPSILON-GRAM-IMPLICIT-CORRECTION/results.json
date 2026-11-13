@@ -1,0 +1,145 @@
+{
+  "selftest": {
+    "spread_maxdiff": 4.440892098500626e-16,
+    "interp_maxdiff": 2.220446049250313e-16,
+    "pass": true
+  },
+  "arms": {
+    "N16_constant_A1": {
+      "n_markers": 16,
+      "force_field": "constant",
+      "arm": "A1",
+      "roundtrip_l2_rel": 1.5202354861220294e-16,
+      "roundtrip_maxabs_rel": 2.220446049250313e-16,
+      "total_force_cons_rel_x": 0.0251661790966031,
+      "total_force_cons_rel_y": 0.0,
+      "total_force_abs_x": 64.0,
+      "total_force_abs_y": 0.0,
+      "epsilon_min": 1.025166179096602,
+      "epsilon_max": 1.025166179096605,
+      "epsilon_mean": 1.0251661790966033
+    },
+    "N16_constant_A2": {
+      "n_markers": 16,
+      "force_field": "constant",
+      "arm": "A2",
+      "roundtrip_l2_rel": 0.024548389919359474,
+      "roundtrip_maxabs_rel": 0.024548389919360925,
+      "total_force_cons_rel_x": 0.0,
+      "total_force_cons_rel_y": 0.0,
+      "total_force_abs_x": 62.42890304516101,
+      "total_force_abs_y": 0.0,
+      "epsilon_min": 1.0,
+      "epsilon_max": 1.0,
+      "epsilon_mean": 1.0
+    },
+    "N16_radial_A1": {
+      "n_markers": 16,
+      "force_field": "radial",
+      "arm": "A1",
+      "roundtrip_l2_rel": 1.594436429147036e-16,
+      "roundtrip_maxabs_rel": 2.220446049250313e-16,
+      "total_force_cons_rel_x": 0.4804240917573972,
+      "total_force_cons_rel_y": 0.8521634615384616,
+      "total_force_abs_x": 2.275957200481571e-15,
+      "total_force_abs_y": 1.7069679003611782e-15,
+      "epsilon_min": 1.025166179096602,
+      "epsilon_max": 1.025166179096605,
+      "epsilon_mean": 1.0251661790966033
+    },
+    "N16_radial_A2": {
+      "n_markers": 16,
+      "force_field": "radial",
+      "arm": "A2",
+      "roundtrip_l2_rel": 0.02454838991935947,
+      "roundtrip_maxabs_rel": 0.02454838991935926,
+      "total_force_cons_rel_x": 0.11518731525241577,
+      "total_force_cons_rel_y": 0.038461538461538464,
+      "total_force_abs_x": 4.884981308350689e-15,
+      "total_force_abs_y": 1.199040866595169e-14,
+      "epsilon_min": 1.0,
+      "epsilon_max": 1.0,
+      "epsilon_mean": 1.0
+    },
+    "N32_constant_A1": {
+      "n_markers": 32,
+      "force_field": "constant",
+      "arm": "A1",
+      "roundtrip_l2_rel": 1.5577778178957092e-16,
+      "roundtrip_maxabs_rel": 4.440892098500626e-16,
+      "total_force_cons_rel_x": 0.8521660021352171,
+      "total_force_cons_rel_y": 0.0,
+      "total_force_abs_x": 116.18816956475426,
+      "total_force_abs_y": 0.0,
+      "epsilon_min": 1.8115610228976464,
+      "epsilon_max": 1.8795871866268932,
+      "epsilon_mean": 1.8521660021352164
+    },
+    "N32_constant_A2": {
+      "n_markers": 32,
+      "force_field": "constant",
+      "arm": "A2",
+      "roundtrip_l2_rel": 0.46004824756945034,
+      "roundtrip_maxabs_rel": 0.4676951939770333,
+      "total_force_cons_rel_x": 2.2653650594014127e-16,
+      "total_force_cons_rel_y": 0.0,
+      "total_force_abs_x": 62.7309698109187,
+      "total_force_abs_y": 0.0,
+      "epsilon_min": 1.0,
+      "epsilon_max": 1.0,
+      "epsilon_mean": 1.0
+    },
+    "N32_radial_A1": {
+      "n_markers": 32,
+      "force_field": "radial",
+      "arm": "A1",
+      "roundtrip_l2_rel": 0.002188068938745472,
+      "roundtrip_maxabs_rel": 0.0026360344778292855,
+      "total_force_cons_rel_x": 0.6956521739130435,
+      "total_force_cons_rel_y": 0.4864864864864865,
+      "total_force_abs_x": 6.217248937900877e-15,
+      "total_force_abs_y": 6.106226635438361e-15,
+      "epsilon_min": 1.8115610228976464,
+      "epsilon_max": 1.8795871866268932,
+      "epsilon_mean": 1.8521660021352164
+    },
+    "N32_radial_A2": {
+      "n_markers": 32,
+      "force_field": "radial",
+      "arm": "A2",
+      "roundtrip_l2_rel": 0.46100586281212125,
+      "roundtrip_maxabs_rel": 0.44961475860460387,
+      "total_force_cons_rel_x": 0.043478260869565216,
+      "total_force_cons_rel_y": 0.25675675675675674,
+      "total_force_abs_x": 2.1316282072803006e-14,
+      "total_force_abs_y": 5.162537064506978e-15,
+      "epsilon_min": 1.0,
+      "epsilon_max": 1.0,
+      "epsilon_mean": 1.0
+    }
+  },
+  "physics": {
+    "A1": {
+      "re": 99.99999999999991,
+      "cd_mean": 1.615562523817434,
+      "n_avg": 200,
+      "arm": "A1"
+    },
+    "A2": {
+      "re": 99.99999999999991,
+      "cd_mean": 1.6303029635945918,
+      "n_avg": 200,
+      "arm": "A2"
+    },
+    "reference": {
+      "case": "2D fixed cylinder, force-based IBM (LIFE 3pt delta + 2 corrector passes), periodic box 128x64, D=8, u=0.1, nu=0.008",
+      "re": 100.0,
+      "cd_ref_band": [
+        1.5,
+        1.9
+      ],
+      "cd_ref_citation": "time-averaged Cd for 2D cylinder at Re=100: ~1.5-1.9 (Norberg 1993; Williamson 1996; blockage D/ny=12.5% raises Cd vs unbounded)",
+      "n_avg": 200
+    }
+  }
+}
