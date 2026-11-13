@@ -1,0 +1,52 @@
+{
+  "anchor": "XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS",
+  "oss": "haimingz/vivsim@fb84b12 examples/2d/flow_pass_cylinder.py:78-85",
+  "refs": {
+    "cd": 1.389,
+    "cl": 0.718,
+    "st_diagnostic": 0.197
+  },
+  "tolerance_pct": 15.0,
+  "runs_frozen": [
+    {
+      "grid": "D48",
+      "cd": 1.3386,
+      "err_cd_pct": -3.63,
+      "cl_std": 0.485,
+      "cl_peak_implied": 0.6859,
+      "err_cl_pct": -4.47,
+      "st": 0.1962,
+      "err_st_pct": -0.41,
+      "pass": true
+    },
+    {
+      "grid": "D64",
+      "cd": 1.3177,
+      "err_cd_pct": -5.13,
+      "cl_std": 0.47,
+      "cl_peak_implied": 0.6647,
+      "err_cl_pct": -7.43,
+      "st": 0.1936,
+      "err_st_pct": -1.73,
+      "pass": true
+    }
+  ],
+  "runs_fresh": [
+    {
+      "json": "runs/xval_D10_u010.json",
+      "nan_at": 2000
+    },
+    {
+      "json": "runs/xval_D12_u010.json",
+      "nan_at": 2500
+    },
+    {
+      "json": "runs/xval_D12_u030.json",
+      "nan_at": 500,
+      "note": "tau=0.554 still NaN @500 -> falsifies pure-tau explanation (see docs section 7)"
+    }
+  ],
+  "fresh_caliber_matched_verdict": "WITHHELD (NaN at tau<0.53; cluster cj1637-cj1639 queued 40+ min)",
+  "figure": "docs/figures/xval_vivsim_re200_frozen_ladder.png",
+  "falsified_hypothesis": "low tau (<0.53) is the stability floor; tau>=0.55 would run -> falsified: D12/u0.3/tau0.554 NaN@500"
+}
