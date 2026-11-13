@@ -1,0 +1,100 @@
+{
+ "audit_of": "m18366 XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO",
+ "claimed_level": 4,
+ "judged_level": 2,
+ "level_delta": "声明 L0->L4；核验判 L2。L2 依据：真实实现+入口+可执行 run 工件在库内存在并复跑通过（impl_files/entry/run_artifacts 全真）。L3 不计入本单：integration_callers 为 m8675 及其前序单既有（git log --all --grep=m18366 = 0 提交），本单未接线。L4 明确不成立：tensor_benchmark_cases 该 anchor 0 行（%MAXWELL%/%EOS% 亦 0 行）→ 无注册裁判；预注册复合门在 ratio10 即 FAIL（伪流 Ma=0.115>0.10），ratio100 误差 193%，ratio1000 塌缩。",
+ "impl_files": [
+  "src/tensorlbm/sc_eos_coexistence.py",
+  "src/tensorlbm/sc_phasechange/highdensity.py",
+  "src/tensorlbm/multiphase.py",
+  "benchmarks/eos_maxwell/probe_lib.py"
+ ],
+ "impl_note": "上述实现为 PRE-EXISTING（git log --diff-filter=A ⇒ 6db3e1ca/5f5a1169），driver/probe sha256 与 campaign 工件记录一致 ae393b70…/31fbdd7c…；m18366 未写一行 src/（git status 见 worktree_dirty：仅 xval/ 三件 + out/results.json）。",
+ "entry": [
+  "benchmarks/eos_maxwell/run.py",
+  "audit/m18429/m18366_xval/predeclared.json"
+ ],
+ "entry_note": "run.py:65-101 argparse（--mode pilot/tiers/controls/... --out --device）；审计侧实测可执行。",
+ "run_artifacts": [
+  "audit/m18429/m18366_out_results_copy.json",
+  "audit/m18429/repro_m18429_pilot200/results.json"
+ ],
+ "run_artifacts_note": "m18366 唯一新 run 工件 = planar control 40000 步（sha256 755f39ce…，generated 13:57:01），ratio_got=11.0156 vs ref 10.0127（err=10.02%），Ma=0.11414，工件自身判决 FAIL；tiers=[] 空、无 pilot 臂（xval 声称 pilot_ratio10 无对应工件）；其所引 out/results.json 覆盖了 RESULTS.md/CRITERION.md 的数据源（RESULTS.md 生成于 11-10，现行 out 已无 tiers，provenance 断链）。",
+ "tests": [
+  "tests/test_sc_eos_coexistence.py::test_correct_maxwell_pair_at_ledger_valid_coupling",
+  "tests/test_sc_eos_coexistence.py::test_simulation_matches_correct_maxwell_at_low_density_ratio",
+  "tests/test_eos_maxwell_stability.py"
+ ],
+ "tests_note": "审计侧复跑：test_sc_eos_coexistence.py 13 passed,1 xfailed；test_eos_maxwell_stability.py 17 passed,2 skipped（skip=工件不在本树）。测试同样 PRE-EXISTING。",
+ "integration_callers": [
+  "maxwell_coexistence:src/tensorlbm/microbubble_dr/channel.py:81,190,192",
+  "maxwell_construction:src/tensorlbm/multiphase_phase_change_verification.py:268,316",
+  "COEXISTENCE_G:src/tensorlbm/cavitation.py:68"
+ ],
+ "integration_note": "调用方真实存在且被 grep 命中，但均早于 m18366（本单 0 提交），不计入本单 L3。",
+ "benchmark": {
+  "registered_cases": 0,
+  "fuzzy_maxwell_or_eos": 0,
+  "ref": {
+   "ratio10": 10.0127,
+   "ratio100": 99.9708,
+   "ratio1000": 995.15,
+   "source": "sc_eos_coexistence.maxwell_coexistence（面积残差 1e-13~1e-11）"
+  },
+  "got": {
+   "tier10_edm": {
+    "ratio": 10.45,
+    "err": 0.0437,
+    "ma": 0.115,
+    "verdict": "FAIL"
+   },
+   "tier10_guo": {
+    "ratio": 13.81,
+    "err": 0.379,
+    "ma": 0.127,
+    "verdict": "FAIL"
+   },
+   "tier100_edm": {
+    "ratio": 293.3,
+    "err": 1.93,
+    "ma": 0.333,
+    "verdict": "FAIL"
+   },
+   "tier1000_edm": {
+    "ratio": null,
+    "collapse_step": 100,
+    "verdict": "FAIL"
+   },
+   "planar_r10": {
+    "ratio": 11.0156,
+    "err": 0.1002,
+    "ma": 0.1141,
+    "verdict": "FAIL"
+   }
+  },
+  "tolerance": "<15%（owner）；预注册复合门 ratio_error<=0.15 AND Ma<=0.05 AND >=20000 steps",
+  "verdict": "anchor 判据未达标：0 注册基准行；ratio10 误差项过 15% 门但伪流门 FAIL；ratio100/1000 失败。"
+ },
+ "repro_cmd": "cd /root/tp-agent/work/m18429 && python3 benchmarks/eos_maxwell/run.py --mode pilot --steps 200 --out /tmp/m18429_repro --device cpu",
+ "repro_note": "审计侧执行 rc=0，产出 tiers=1（ratio 10.349 vs 10.0127, err 3.36%, Ma 0.1336 -> FAIL）；工件留 audit/m18429/repro_m18429_pilot200/results.json。",
+ "external_anchor": "audit/m18429/external_anchor.md",
+ "machine_facts": {
+  "tensor_reports_for_m18366": 0,
+  "oss_solutions_for_feature": 0,
+  "commits_mentioning_m18366": 0,
+  "worktree_dirty_entries": [
+   "AM benchmarks/eos_maxwell/out/results.json",
+   "A  xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO/REPORT.md",
+   "A  xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO/predeclared.json",
+   "A  xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO/results.json"
+  ],
+  "cluster_campaign": "cj1906 submitted 13:51 仍 queued（无工件返回）",
+  "mission_result_flags": "server_quality_audit: gate_valid=false, key_present=false"
+ },
+ "gate_expectation": "judge(declared 2, L2 三键 impl_files/entry/run_artifacts 全真) ⇒ gate_level 2 ⇒ confirmed；L4 声明被降级记为不符。",
+ "artifacts": [
+  "audit/m18429/tables.md",
+  "audit/m18429/evidence.json",
+  "audit/m18429/fig1_ref_vs_got.png"
+ ]
+}
