@@ -1,0 +1,76 @@
+{
+  "anchor": "XVAL-LBM-BENCHMARK-METHOD-SELECTION",
+  "mission": 17499,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "decision": "Does TensorLBM's recorded benchmark-method-selection (oss_solutions id=417: MRT + half-way BB + far_field + quadratic sponge + Ladd MEM + Hann-FFT St, for the square-cylinder vortex-shedding benchmark) reproduce the numbers that mature OSS LBM practice selects for the same benchmark (BGK single-relaxation per Maarten-vd-Sande/lbm; TRT Lambda=3/16 per lssfau/lbmpy + lettucecfd/lettuce), within the owner 15% criterion? And which selection knobs actually carry the difference?",
+  "alternatives": {
+    "A1_recorded_mrt_sponge": "MRT (s_e=1.64, s_eps=1.54, s_q=1.7) + per-cell sponge tau_field (alpha=10, 6D, quadratic) -- the recorded TensorLBM selection (oss_solutions id=417)",
+    "A2_oss_bgk_plain": "BGK single relaxation + plain zero-gradient outlet -- OSS collision/outlet choice as implemented in Maarten-vd-Sande/lbm (lbm/streamcollide.py::collide uses a scalar omega; lbm/streamcollide.py::set_outlet copies the 3 upstream populations)",
+    "A3_oss_trt_plain": "TRT with magic parameter Lambda=3/16 + plain zero-gradient outlet -- OSS collision choice of lbmpy/lettuce (Ginzburg 2008)",
+    "A4_recorded_mrt_plain": "MRT + no sponge: bridge/control arm sharing everything with A1 except the sponge and with A2/A3 except the collision operator"
+  },
+  "hypothesis": "H1: Cd_mean/St/Cl_amp differences between A1 (recorded) and the OSS collision choices A2/A3 stay below 15% at the same resolution, i.e. the collision-operator part of the recorded selection is not the accuracy driver; H0 (falsifier): |Delta| >= 15% on at least one KPI.",
+  "metrics": {
+    "cd_mean": "Fx averaged over the analysis window normalized by 0.5*rho*U^2*D (lattice units, rho=1)",
+    "cl_amp": "(max(Cl)-min(Cl))/2 over the analysis window",
+    "st": "Strouhal number from the Cl spectrum: Hann window + FFT + parabolic peak interpolation, St=f*D/U",
+    "st_zc": "cross-check Strouhal from mean zero-crossing period of the windowed Cl signal",
+    "cd_std_window_frac": "std(Cd)/mean(Cd) over the analysis window (periodicity check)"
+  },
+  "unit_of_analysis": "one completed simulation arm at fixed (Re, blockage, D, U); KPIs are scalars per arm",
+  "baseline_control": {
+    "baseline": "A1 at each resolution (the recorded TensorLBM selection)",
+    "control": "A4 (sponge off) shares everything with A1 except the absorbing layer",
+    "cross_implementation_note": "the OSS arms are method transplants into the same kernels (identical BC / force estimator / post-processing) so the comparison isolates the collision-operator choice; a code-independent OSS run was not possible in this environment (see friction log)"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "interpretation": "|KPI(arm) - KPI(A1)| / |KPI(A1)| * 100 must be < 15% for every KPI and every arm for H1 to hold",
+    "convergence_rule": "a KPI is treated as resolution-converged when |KPI(D=14) - KPI(D=10)| / |KPI(D=14)| < 10%; otherwise the D=10 value is reported as resolution-limited and the resolution delta itself is reported as a sensitivity result",
+    "st_crosscheck_tolerance_pct": 5.0,
+    "stability_rule": "a run that produces a non-finite population or |Cl| > 10 (50x the expected O(1) amplitude) is declared failed and excluded, not tuned",
+    "stability_fallback": "if an arm violates the stability rule at a resolution, the collision comparison is repeated at the next resolution of the predeclared ladder {10, 14, 20} (tau = 0.5+3*U*D/Re rises with D); the failing arm is reported as a measured selection-relevant failure, not silently dropped"
+  },
+  "stopping_rule": "each arm runs a fixed number of steps computed before the run from St_seed and the predeclared period count (seed 2 periods + 20 shedding periods); no arm is extended or truncated after inspecting the KPIs. Wall-clock budget per arm: 900 s.",
+  "variables_changed": [
+    "collision operator (MRT / BGK / TRT)",
+    "absorbing sponge on/off",
+    "resolution D (10, 14)"
+  ],
+  "variables_controlled": [
+    "Re=200",
+    "blockage D/H=1/20",
+    "domain 20D x 20D, square centre at 6D",
+    "U=0.05 (Ma=0.087)",
+    "tau=0.5+3*nu",
+    "inlet seeding St_seed=0.13, amplitude 0.10*U, 2 periods",
+    "force sampling point (post-stream / pre-bounce-back)",
+    "statistics window (last 50% of the post-seed samples), St estimator",
+    "float64 CPU torch, fixed thread count"
+  ],
+  "confounders": [
+    "wall-clock truncation would bias statistics -> disabled by the predeclared fixed step count",
+    "the OSS arms re-use TensorLBM kernels, so code-level (not only method-level) differences are not covered -> declared limitation",
+    "float64 vs OSS float32 (Maarten-vd-Sande lbm/init.py uses float32) is a known confounder of the transplant, not measured separately here",
+    "2D free-stream numerical values are known to sit above 3D wind-tunnel experiments for square cylinders; the reference caliber is 2D numerical"
+  ],
+  "repetition_rationale": "deterministic solver: zero-variance per arm, so repetitions are replaced by (a) two resolutions, (b) four method arms, (c) two independent St estimators. Total 8 arms (4 methods x {D=10, D=14} for A1/A2, D=10 for A3/A4 plus D=14 for A1/A2).",
+  "environment": {
+    "solver": "TensorLBM src/tensorlbm (torch 2.7.1 CPU, float64)",
+    "host": "control container, 128 cores shared with the control plane; each arm pinned to 8 torch threads",
+    "command": "python xval/benchmark_method_selection/run_arm.py --arm <id> --D <D>",
+    "raw_data": "xval/benchmark_method_selection/runs/<arm>_D<D>/{result.json,trace.npz}",
+    "oss_sources": {
+      "Maarten-vd-Sande/lbm": "~/oss-cache/Maarten-vd-Sande_lbm @ 573a01c (BGK, Zou-He inlet, zero-gradient outlet, half-way bounce-back)",
+      "pylbm": "~/oss-cache/pylbm (source only, needs mpi4py/cython/h5py -> not runnable here)",
+      "lbmpy/lettuce": "cited via oss_solutions census rows 415/416/417 (TRT magic Lambda=3/16 default)"
+    }
+  },
+  "analysis_plan": "for each KPI: table arm x resolution with % difference vs A1 (same D) and vs converged value; H1 verdict by the predeclared 15% rule; uncertainty = resolution delta + St cross-estimator spread; no post-hoc threshold changes.",
+  "comparison_logic": {
+    "sponge_effect": "A1 vs A4 (single difference: absorbing layer)",
+    "collision_effect": "A4 vs A2 vs A3 (single difference: collision operator, identical BC/outlet/force/post-processing)",
+    "recorded_vs_oss": "A1 vs A2/A3 (both knobs, i.e. the real-world selection difference)"
+  }
+}
