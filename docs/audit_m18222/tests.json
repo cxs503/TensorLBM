@@ -1,0 +1,13 @@
+{
+ "returncode": 0,
+ "wall_s": 7.89,
+ "tail": [
+  "src/tensorlbm/boundary/boundaries.py:604",
+  "  /tmp/audit_m18222/stage/src/tensorlbm/boundary/boundaries.py:604: DeprecationWarning: invalid escape sequence '\\p'",
+  "    \"\"\"Zero-gradient (Neumann) outlet boundary condition (D2Q9).",
+  "",
+  "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+  "17 passed, 2 warnings in 5.38s"
+ ],
+ "n_tests": null
+}

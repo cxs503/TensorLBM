@@ -1,0 +1,12 @@
+# src/LatticeAccess.inc.cpp.Rt:69-79  sha256(excerpt)=3ba22ba90a829b2b4b3894266b12e26dc2354bfc4bc8ca915fed0a32eb41fac9
+  move.pocket = function(i,offset, MContext) {
+      off = MContext$Offset[[i]]
+      v = offset - off;
+      if (!is.zero(v)) { ?>
+        <?%s MContext$Pocket?>.<?%s Margin[[i]]$name ?> += <?R C(v,float=FALSE) ?>; <?R
+      }
+      MContext$Offset[[i]] = offset;
+      MContext
+  }
+
+  range_int=function(x)

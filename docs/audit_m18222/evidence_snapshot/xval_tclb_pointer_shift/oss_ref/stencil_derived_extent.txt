@@ -1,0 +1,17 @@
+# src/conf.R:135-150  sha256(excerpt)=0678d959a7690e45bd0bea12695c736a31a66f5770b83a6d117a297edd571cf7
+AddField = function(name, stencil2d=NA, stencil3d=NA, dx=0, dy=0, dz=0, comment="", adjoint=F, group="", parameter=F,average=F, sym=c("","",""), shift=NULL,
+                    optimise_for_static_access=TRUE, non.mandatory=FALSE) {
+        shift = convert_to_shift_list(length(name), shift)
+	if (missing(name)) stop("Have to supply name in AddField!")
+	if (missing(group)) group = name
+	comment = ifelse(comment == "", name, comment);
+		d = data.frame(
+			name=name,
+			minx=min(dx,-stencil2d,-stencil3d,na.rm=T),
+			maxx=max(dx, stencil2d, stencil3d,na.rm=T),
+			miny=min(dy,-stencil2d,-stencil3d,na.rm=T),
+			maxy=max(dy, stencil2d, stencil3d,na.rm=T),
+			minz=min(dz,           -stencil3d,na.rm=T),
+			maxz=max(dz,            stencil3d,na.rm=T),
+			comment=comment,
+			adjoint=adjoint,
