@@ -67,3 +67,42 @@
 | 400 | 8 | 16000 | nan | 8.0 | nan | ✗ | 无零穿越（未收敛/未形成可测再附） |
 
 **判据缺陷结论（负面知识）**：row1 单行零穿越与 K 行剪切拟合在 BFS 上都不稳健 —— 前者在低 τ 档会被台阶角伪信号俘获（Re=400 S=16），后者系统性偏短 50–70%。正确判据应取「再附点附近速度剖面积分/流函数等值线 + 多点稳健拟合 + 稳态判据（滑窗变化 <0.2%）」，并强制 τ ≥ 0.55 或改用 MRT/RLBM。
+
+
+## 轮次 3（m17998）· 兼容 CLI 收归单一实现 + 工件可机器判读
+
+**问题（实测，非推断）**：第 1 轮 `run.py` 自带一套标量循环与判据，与后来承载本案例证据链的
+`src/tensorlbm/bfs_armaly.py`（`run_case.py` / `verdict.py` / 存档工件评分测试都用它）并存，
+即同一基准有两套碰撞默认、两套近壁导数、两套再附判据。更硬的缺陷是**工件不可判读**：
+`verdict.py::judge_run` 读 `derived.mach_inlet`、`result.mass_flux_rel_error`、
+`result.x1_over_s_reverse_extent`、`convergence_history`，第 1 轮 payload 一个都没有。
+把同一算例（Re=100, m=9, 1200 步）分别用第 1 轮 `run.py` 与改后 CLI 跑出工件，再喂给
+`verdict.py`：
+
+| 工件来源 | verdict 五项判据 | note_missing | X1/S | 相对 refs 3.05 |
+|---|---|---|---|---|
+| 第 1 轮 `run.py`（旧循环） | error✗ steady✗ caliper✗ mass✗ lattice✗ | 五项全缺 | 1.427（旧多行剪切拟合口径） | -53.2 % |
+| 本轮 CLI（薄壳 → 库函数） | error✓ steady✗ caliper✓ mass✗ lattice✓ | 无缺字段（仅未收敛） | 2.630（墙面剪切零点口径） | -13.8 % |
+
+两行都是 1200 步瞬态，**不得当结果引用**；它们证明的是：旧工件根本无法判读，且两套口径在
+同一瞬态上相差 1.8 倍 —— 正是"单一实现"要消除的漂移。
+
+**改法（最小面）**：`run.py` 改为薄 CLI 壳，只做参数映射 + 调
+`tensorlbm.bfs_armaly.run_armaly_case`，不再持有一行求解/判据代码（回归测试断言
+`first_upcrossing` / `collide_bgk` / `for step in range` 回不来）。历史参数全部保留
+（`--re --m --u --steps --avg-frac --avg-stride --l-over-h --collision --threads --out`），
+`--collision rlbm` 映射为 TRT；`--m` 保持"台阶格数"语义，入口高度按实测 52:49 取整
+（ER=1.9423），`--er2` 可复现第 1 轮 ER=2 点阵。输出工件与 `run_case.py` 同构
+（`result.json` + `wall_shear.csv` + `field.npz`），`--out` 仍额外落一份扁平 JSON。
+
+**用法**
+```
+PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/run.py --re 100 --m 16 --steps 12000 --u 0.1
+PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/verdict.py   # 判读 artifacts/case_backward_step_armaly/*
+```
+
+**口径未变处**：参考锚点（`refs.json`，Armaly 1983 二级锚，15 % 容差）、五项判据阈值
+（误差/稳态/卡尺/质量/点阵）与收敛阶梯的权威入口（`run_case.py --preset g1_*/g2_*/h1_*`）均未改动。
+**已知局限**：`--m` 的取整使小 `m` 档 ER 偏离实测值（如 `m=9 → ER=1.900`，-2.2 %），
+判读时须看工件 `derived.expansion_ratio_deviation_pct`；正式证据仍应用 52:49（`m=49`）
+或 `g2` 双分辨率阶梯。

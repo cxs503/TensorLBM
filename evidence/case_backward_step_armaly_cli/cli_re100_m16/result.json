@@ -1,0 +1,84 @@
+{
+  "case": "CASE-BACKWARD-STEP-LBM",
+  "caliber": "Armaly et al. 1983: parabolic inlet, Re = u_bar*D_h/nu (D_h = 2*h_in), ER = H/h_in",
+  "config": {
+    "re": 100.0,
+    "hi": 17,
+    "s": 16,
+    "u_bar": 0.1,
+    "l_over_h": 12.0,
+    "up_over_hi": 4.0,
+    "n_steps": 12000,
+    "avg_from": 0.75,
+    "avg_stride": 200,
+    "check_interval": 4000,
+    "steady_tol": 0.005,
+    "steady_hits": 3,
+    "collision": "trt",
+    "sponge_width_h": 3.0,
+    "seed": 0,
+    "tag": "cli_re100_m16"
+  },
+  "derived": {
+    "H": 33,
+    "nx": 464,
+    "ny": 35,
+    "n_cells": 16240,
+    "x_step": 68,
+    "expansion_ratio": 1.9411764705882353,
+    "expansion_ratio_deviation_pct": -0.058241118229462874,
+    "nu": 0.034,
+    "tau": 0.602,
+    "d_h_inlet": 34,
+    "u_max_inlet": 0.15000000000000002,
+    "mach_inlet": 0.2598076211353316,
+    "reynolds": 100.0
+  },
+  "result": {
+    "x1_over_s": 2.871865070812839,
+    "x1_over_s_row1": 2.833671847045313,
+    "x1_over_H": 0.08702621426705572,
+    "n_averaged_samples": 16,
+    "average_window_steps": [
+      9000,
+      12000
+    ],
+    "steps_run": 12000,
+    "steady_at_step": null,
+    "max_speed_final": 7.849344253540039,
+    "rho_min": 0.9997355937957764,
+    "rho_max": 1.0835212469100952,
+    "mass_flux_inlet": 1.7876627445220947,
+    "mass_flux_outlet": 1.778875708580017,
+    "mass_flux_target": 1.7000000000000002,
+    "mass_flux_rel_error": 0.005168844671810374,
+    "x1_over_s_reverse_extent": 2.8125,
+    "u1_min_over_u_bar": -0.03242437509470619,
+    "min_tau_w": -0.006924657354829833,
+    "max_tau_w": 0.00986288720741868
+  },
+  "convergence_history": [
+    {
+      "step": 4000,
+      "max_speed": 7.513299465179443,
+      "mean_rho": 1.0077155828475952,
+      "x1_over_s_instant": 3.001161197597834,
+      "wall_time_s": 33.103944301605225
+    },
+    {
+      "step": 8000,
+      "max_speed": 7.688528060913086,
+      "mean_rho": 1.0162990093231201,
+      "x1_over_s_instant": 2.8976629240825362,
+      "wall_time_s": 60.10844039916992
+    },
+    {
+      "step": 12000,
+      "max_speed": 7.849344253540039,
+      "mean_rho": 1.0171728134155273,
+      "x1_over_s_instant": 2.867011981668525,
+      "wall_time_s": 91.64539623260498
+    }
+  ],
+  "wall_time_s": 91.65962433815002
+}
