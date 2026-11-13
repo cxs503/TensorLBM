@@ -80,9 +80,11 @@ __all__ = [
     "RunResult",
     "analytic_single_mode",
     "evaluate_holdout",
+    "flow_map_step",
     "feedback_acceleration",
     "initial_velocity",
     "load_dataset",
+    "load_flow_map",
     "produce_dataset",
     "run_case",
     "train_flow_map",
@@ -92,6 +94,9 @@ __all__ = [
 
 #: Manifest schema identifier written by :func:`produce_dataset`.
 DATASET_SCHEMA = "tensorlbm.t4.flow-field-dataset/v1"
+
+#: Reference viscosity used for the ``nu / NU_REF`` conditioning channel.
+NU_REF = 1e-2
 
 #: Modes of the multi-mode initial condition (integer wavenumbers, 2*pi units).
 DEFAULT_MODES: tuple[tuple[int, int], ...] = (
@@ -572,7 +577,27 @@ def load_dataset(dataset_dir: str | Path) -> dict[str, Any]:
 
 @dataclass(frozen=True)
 class FlowMapConfig:
-    """Training configuration for the FNO flow map."""
+    """Training configuration for the FNO flow map.
+
+    ``residual`` selects the parameterisation of the learned map.  With
+    ``residual=True`` (default) the network predicts only the deviation of the
+    next state from the **exact discrete viscous prior**
+    (:func:`viscous_prior_step`), so the model output is
+
+        u(t+dt) = P_nu[dt] u(t) + FNO(u(t), nu)
+
+    instead of the full state.  This is a structural guarantee, not a tuning
+    knob: at initialisation (``FNO ~ 0``) the surrogate *is* the prior, so it
+    cannot be worse than the physics baseline it is built on.  The earlier
+    full-state parameterisation had no such floor — the m18630 measurement on
+    the n=64/Re=75 holdout gave one-step rel-L2 0.930 for the FNO against
+    0.375 (prior) and 0.397 (persistence), i.e. the "AI step" was 2.4x worse
+    than doing nothing.  The residual target is also much smaller
+    (RMS(y - P y) / RMS(y) = 0.35 at n=64/Re=75, i.e. 5x less target energy),
+    which is what makes the small training budgets used here sufficient: with
+    the direct parameterisation the same budget left the network near a
+    zero-output collapse (val MSE 0.24 vs 0.34 for predicting zeros).
+    """
 
     width: int = 32
     n_layers: int = 4
@@ -584,6 +609,7 @@ class FlowMapConfig:
     batch_size: int = 16
     patience: int = 30
     seed: int = 0
+    residual: bool = True
 
 
 def _pairs(run: dict[str, Any], u0: float) -> tuple[torch.Tensor, torch.Tensor, float]:
@@ -599,7 +625,7 @@ def _pairs(run: dict[str, Any], u0: float) -> tuple[torch.Tensor, torch.Tensor, 
     nu = run["nu"]
     n_snap = ux.shape[0]
     xs, ys = [], []
-    nu_ref = 1e-2
+    nu_ref = NU_REF
     for i in range(n_snap - 1):
         a = torch.stack([ux[i] / u0, uy[i] / u0, torch.full_like(ux[i], nu / nu_ref)])
         b = torch.stack([ux[i + 1] / u0, uy[i + 1] / u0])
@@ -638,6 +664,80 @@ def viscous_prior_step(
     return out[0], out[1]
 
 
+def _prior_base(run: dict[str, Any], dt_steps: int) -> torch.Tensor:
+    """Normalised viscous-prior images of every input snapshot of one run.
+
+    Returns ``(n_pairs, 2, ny, nx)`` of ``P_nu[dt] u(t) / u0``, aligned with the
+    target of :func:`_pairs` (pair ``i`` maps snapshot ``i`` to ``i + 1``).
+    """
+    ux, uy, u0, nu = run["ux"], run["uy"], run["u0"], run["nu"]
+    base = []
+    for i in range(int(ux.shape[0]) - 1):
+        bx, by = viscous_prior_step(ux[i], uy[i], nu, dt_steps)
+        base.append(torch.stack([bx, by]) / u0)
+    return torch.stack(base)
+
+
+def flow_map_step(
+    model: FNO2d,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    nu: float,
+    dt_steps: int,
+    *,
+    residual: bool = True,
+    nu_ref: float = NU_REF,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """One surrogate step on ``u0``-normalised fields (single sample, no batch dim).
+
+    This is the **single** inference path: :func:`evaluate_holdout` (one-step and
+    autoregressive rollout) and :func:`feedback_acceleration` all call it, so the
+    conditioning channel, the residual base and the units cannot drift apart
+    between call sites (before m18630 the same snippet was copied three times,
+    which is how the m15970 unit-mismatch survived in two of them).
+
+    Args:
+        model: Trained :class:`~tensorlbm.ai.fno.FNO2d`.
+        ux: x-velocity in ``u0`` units, shape ``(ny, nx)``.
+        uy: y-velocity in ``u0`` units, shape ``(ny, nx)``.
+        nu: Lattice viscosity of the run.
+        dt_steps: Number of LBM steps the map advances.
+        residual: Whether ``model`` predicts the residual over the viscous prior
+            (i.e. was trained with ``FlowMapConfig.residual=True``).
+        nu_ref: Scale of the ``nu / nu_ref`` conditioning channel.
+
+    Returns:
+        ``(ux_next, uy_next)`` in ``u0`` units.
+    """
+    x = torch.stack([ux, uy, torch.full_like(ux, nu / nu_ref)])[None]
+    with torch.no_grad():
+        out = model(x)[0]
+    if residual:
+        bx, by = viscous_prior_step(ux, uy, nu, dt_steps)
+        out = torch.stack([out[0] + bx, out[1] + by])
+    return out[0], out[1]
+
+
+def load_flow_map(path: str | Path) -> dict[str, Any]:
+    """Load a flow map written by :func:`train_flow_map`.
+
+    Returns ``{"model", "arch", "residual"}``.  The ``residual`` flag has to be
+    handed back to :func:`evaluate_holdout` / :func:`feedback_acceleration`:
+    scoring a residual model as if it predicted the full state would silently
+    throw away the physics prior.
+    """
+    blob = torch.load(Path(path), map_location="cpu", weights_only=True)
+    arch = FNO2dArch(**blob["arch"])
+    model = FNO2d(arch)
+    model.load_state_dict(blob["state_dict"])
+    model.eval()
+    return {
+        "model": model,
+        "arch": blob["arch"],
+        "residual": bool(blob.get("residual", False)),
+    }
+
+
 def train_flow_map(
     dataset_dir: str | Path,
     out_path: str | Path,
@@ -670,6 +770,10 @@ def train_flow_map(
             continue
         u0 = run["u0"]
         x, y, _ = _pairs(run, u0)
+        if cfg.residual:
+            steps = run["steps"]
+            dt_steps = int(steps[1] - steps[0]) if len(steps) > 1 else 1
+            y = y - _prior_base(run, dt_steps)
         # last 20 % of the snapshots of seed 0 runs form the validation split
         if run["provenance"].get("seed", 0) == 0:
             k = max(1, int(0.2 * x.shape[0]))
@@ -731,7 +835,15 @@ def train_flow_map(
         if bad >= cfg.patience:
             break
     model.load_state_dict(best_state)
-    torch.save({"state_dict": model.state_dict(), "arch": asdict(arch)}, str(out_path))
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "arch": asdict(arch),
+            "residual": bool(cfg.residual),
+            "nu_ref": NU_REF,
+        },
+        str(out_path),
+    )
 
     return {
         "model": model,
@@ -745,6 +857,7 @@ def train_flow_map(
         "epochs_run": len(history),
         "train_wall_s": round(time.perf_counter() - t0, 2),
         "history": history,
+        "residual": bool(cfg.residual),
         "config": asdict(cfg),
     }
 
@@ -756,30 +869,32 @@ def _predict_rollout(
     n_steps: int,
     mode: str,
     dt_steps: int,
+    *,
+    residual: bool = True,
 ) -> list[torch.Tensor]:
-    """Autoregressive rollout of ``n_steps`` samples from snapshot 0."""
+    """Autoregressive rollout of ``n_steps`` samples from snapshot 0.
+
+    All three modes advance in ``u0`` units and return ``u / u0`` fields, so
+    the series are directly comparable row by row.
+    """
     ux, uy = run["ux"], run["uy"]
     nu = run["nu"]
-    nu_ref = 1e-2
-    cur = (ux[0], uy[0])
-    preds = [torch.stack(cur) / u0]
-    with torch.no_grad():
-        for _ in range(n_steps):
-            if mode == "persistence":
-                cur = (ux[0].clone(), uy[0].clone()) if False else cur
-                nxt = cur
-            elif mode == "viscous":
-                nxt = viscous_prior_step(cur[0], cur[1], nu, dt_steps)
-            elif mode == "fno":
-                x = torch.stack(
-                    [cur[0] / u0, cur[1] / u0, torch.full_like(cur[0], nu / nu_ref)]
-                )[None]
-                out = model(x)[0]
-                nxt = (out[0] * u0, out[1] * u0)
-            else:  # pragma: no cover - guarded by the caller
-                raise ValueError(f"unknown mode {mode!r}")
-            cur = nxt
-            preds.append(torch.stack(cur) / u0)
+    cur = (ux[0] / u0, uy[0] / u0)
+    preds = [torch.stack(cur)]
+    for _ in range(n_steps):
+        if mode == "persistence":
+            nxt = cur
+        elif mode == "viscous":
+            bx, by = viscous_prior_step(cur[0], cur[1], nu, dt_steps)
+            nxt = (bx, by)
+        elif mode == "fno":
+            nxt = flow_map_step(
+                model, cur[0], cur[1], nu, dt_steps, residual=residual
+            )
+        else:  # pragma: no cover - guarded by the caller
+            raise ValueError(f"unknown mode {mode!r}")
+        cur = nxt
+        preds.append(torch.stack(cur))
     return preds
 
 
@@ -791,6 +906,7 @@ def evaluate_holdout(
     holdout_res: Sequence[float],
     n_rollout: int = 0,
     grid_n: int | None = None,
+    residual: bool = True,
 ) -> dict[str, Any]:
     """Score FNO vs baselines on Reynolds numbers excluded from training.
 
@@ -814,12 +930,20 @@ def evaluate_holdout(
         if grid_n is not None and run["n"] != grid_n:
             continue
         u0 = run["u0"]
-        dt_steps = run["steps"][1] - run["steps"][0]
+        dt_steps = int(run["steps"][1] - run["steps"][0])
         x, y, _ = _pairs(run, u0)
         model.eval()
-        with torch.no_grad():
-            pred = model(x)
-        fno_one = [_rel_l2(pred[i], y[i]) for i in range(x.shape[0])]
+        fno_one = [
+            _rel_l2(
+                torch.stack(
+                    flow_map_step(
+                        model, x[i, 0], x[i, 1], run["nu"], dt_steps, residual=residual
+                    )
+                ),
+                y[i],
+            )
+            for i in range(x.shape[0])
+        ]
         # NOTE: baselines must live in the same units as ``y`` (u/u0) — see the
         # m15932 board audit: feeding raw lattice-unit fields to _rel_l2 made
         # persistence/viscous sit at ~1/u0 ~ 1.0 by construction and flipped the
@@ -850,7 +974,9 @@ def evaluate_holdout(
             n_roll = min(n_rollout, x.shape[0])
             roll = {}
             for mode in ("fno", "viscous", "persistence"):
-                preds = _predict_rollout(model, run, u0, n_roll, mode, dt_steps)
+                preds = _predict_rollout(
+                    model, run, u0, n_roll, mode, dt_steps, residual=residual
+                )
                 ref = [
                     torch.stack([run["ux"][i + 1], run["uy"][i + 1]]) / u0 for i in range(n_roll)
                 ]
@@ -878,6 +1004,7 @@ def evaluate_holdout(
     return {
         "holdout_res": [float(r) for r in holdout_res],
         "train_res": [float(r) for r in train_res],
+        "residual": bool(residual),
         "per_run": per_run,
         "summary": summary,
         "n_holdout_runs": len(per_run),
@@ -897,6 +1024,7 @@ def feedback_acceleration(
     k_values: Sequence[int] = (2, 4, 6),
     heal_steps: int | None = None,
     device: torch.device | str = "cpu",
+    residual: bool = True,
 ) -> dict[str, Any]:
     """Use the surrogate as a temporal coarse-stepper, then hand back to LBM.
 
@@ -923,23 +1051,20 @@ def feedback_acceleration(
             continue
         u0 = run["u0"]
         nu = run["nu"]
-        nu_ref = 1e-2
-        dt = run["steps"][1] - run["steps"][0]
+        dt = int(run["steps"][1] - run["steps"][0])
         n_snap = run["ux"].shape[0]
         for k in k_values:
             if k >= n_snap - 1:
                 continue
-            # --- surrogate rollout of k samples
-            cur = (run["ux"][0], run["uy"][0])
+            # --- surrogate rollout of k samples (single inference path)
+            cur = (run["ux"][0] / u0, run["uy"][0] / u0)
             t0 = time.perf_counter()
-            with torch.no_grad():
-                for _ in range(k):
-                    x = torch.stack(
-                        [cur[0] / u0, cur[1] / u0, torch.full_like(cur[0], nu / nu_ref)]
-                    )[None]
-                    out = model(x)[0]
-                    cur = (out[0] * u0, out[1] * u0)
+            for _ in range(k):
+                cur = flow_map_step(
+                    model, cur[0], cur[1], nu, dt, residual=residual
+                )
             sur_time = time.perf_counter() - t0
+            cur = (cur[0] * u0, cur[1] * u0)
             sur_err = _rel_l2(
                 torch.stack(cur), torch.stack([run["ux"][k], run["uy"][k]])
             )
