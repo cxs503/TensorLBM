@@ -1,0 +1,54 @@
+{
+  "anchor": "XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64",
+  "round": 1,
+  "date_utc": "2026-11-13",
+  "repo": "TensorLBM",
+  "decision": "Accept or reject the TensorLBM half-way (delta=0.5) moving-wall bounce-back implemented in float64, in src/tensorlbm/boundary/boundaries.py::bounce_back_moving_wall, as an externally cross-validated boundary operator.",
+  "alternatives": [
+    "A (tested): TensorLBM solid-side half-way BB with the Ladd (1994) correction 6*w_q*rho_local*(c_q.u_w) applied on the wall cells after streaming, float64.",
+    "B (external reference): pylbm BounceBack (delta=0.5 halfway) driven by a wall-moment value function, which builds the wall term from the equilibrium difference feq_k(x_w) - feq_ksym(x_w) with the user-supplied wall moments; float64 NumPy backend.",
+    "C (analytic control): Couette flow between a moving and a resting wall, u(y) = U_w*(1 - y/H) with the halfway no-slip surface at H = number of fluid rows.",
+    "Rejected before running: comparing against a hand-written reference of our own (self-comparison, no external evidence)."
+  ],
+  "hypothesis": "The two implementations differ only in (i) the density multiplying the wall term (local wall-cell density vs the imposed wall density) and (ii) the cell the operator writes; both effects vanish for a uniform Galilean wall state, so TensorLBM must reproduce the OSS steady Couette profile to float64 round-off / discretisation level and the analytic profile to << 3%.",
+  "metrics": {
+    "M1_operator_vs_oss": "max |correction_TensorLBM - correction_pylbm| / (6*w*rho*U_w) over all wall links of a uniform wall state (rho=1, u_w=(Uw,0)); the pylbm correction is read from the live pylbm boundary-condition object (bc.rhs), not retyped.",
+    "M2_vs_analytic": "max_y |u_TL(y) - u_ana(y)| / U_w over the fluid rows of the steady Couette profile.",
+    "M3_vs_oss_profile": "max_y |u_TL(y) - u_OSS(y)| / U_w over the same rows.",
+    "M4_float64_vs_float32": "max_y |u(y) - u_ana(y)| / U_w of the identical TensorLBM driver run in float64 and in float32; ratio float32/float64 as the precision claim of the anchor.",
+    "M5_grid_convergence": "M3 and M2 at N = 16, 32, 64 fluid rows (H = N).",
+    "M6_parameter_sensitivity": "M2, M3 at tau in {0.6, 0.8, 1.2} and U_w in {0.01, 0.05} (Re_H = U_w*H/nu spans 2.7 .. 80)."
+  },
+  "baseline_control": {
+    "external_reference": "pylbm (OSS) commit f9f5d16, run through its own Simulation/one_time_step API; the analytic Couette profile is the physical control.",
+    "internal_baseline": "zero-correction bounce-back (u_w = 0) as a negative control: it must NOT reproduce the moving-wall profile (guards against a silently inactive wall term)."
+  },
+  "thresholds_predeclared": {
+    "M1_operator_rel": 1e-12,
+    "M2_vs_analytic_rel": 0.03,
+    "M3_vs_oss_rel": 0.01,
+    "M4_float64_rel": 1e-09,
+    "M4_min_speedup_float32_over_float64": 1000.0,
+    "owner_precision_standard": 0.15,
+    "note": "M2/M3 are tighter than the owner 15% standard on purpose: a Couette profile with halfway bounce-back is exactly representable on the lattice, so anything above 3% is a defect, not discretisation."
+  },
+  "stopping_rule": "Steady state = max |u(y,t) - u(y,t-block)| / U_w < 1e-12 between consecutive blocks of 500 steps; hard cap 200000 steps (N=16,32) / 400000 (N=64). If the cap is hit without meeting the rule, report the run as NOT_CONVERGED (honest FAIL, fail_stage=steady_state) and do not relax the rule afterwards.",
+  "confounders": [
+    "Effective no-slip surface: TensorLBM writes the wall cells (surface halfway between wall cell and first fluid row), pylbm writes the first fluid node with the wall placed delta=0.5 outside it. The two discretisations are aligned only if pylbm carries N fluid rows between walls 0 and N and TensorLBM carries rows j=1..N between wall cells j=0 and j=N+1; the y-coordinate mapping is asserted in the driver (not assumed).",
+    "Compressibility: the wall term carries rho; at U_w = 0.05 the O(Ma^2) density variation is ~1e-3, the same order as the largest allowed M3 threshold, so density is recorded and reported.",
+    "Start-up transient: both codes start from rest and must reach the same steady state; the transient is not compared (different collision kernels: BGK both, but pylbm relaxes all 9 moments at 1/tau including the ghost modes).",
+    "pylbm serial MPI shim: the OSS NumPy backend exchanges periodic halos through MPI even at one rank; the shim emulates the 1-rank self-copy (validated by the analytic Couette result and by a periodic-in-x invariance check)."
+  ],
+  "repetitions": {
+    "rationale": "Deterministic solvers, no randomness: each configuration is run once. The precision claim (M4) is a deterministic round-off statement, not a statistical one, so no repetitions are needed; the two grid levels and three tau values provide the trend evidence instead."
+  },
+  "environment": {
+    "host": "control node (CPU), python 3.11.6, torch 2.7.1, numpy 2.4.6",
+    "dtype": "float64 for every reported run; float32 only in the M4 precision arm",
+    "device": "cpu",
+    "oss_root": "/root/oss-cache/pylbm (commit f9f5d16)",
+    "seeds": "none (deterministic)",
+    "cost_estimate": "seconds per configuration; no cluster submission needed (well under the 10 min rule)"
+  },
+  "analysis_plan": "Write per-configuration rows to table.csv and the full steady profiles to profiles.json; compute the metrics in run_xval.py (no post-hoc selection of the grid/tau used for the headline number). Report every configuration, including failures. Deviations from this file are listed in the report's deviations section."
+}
