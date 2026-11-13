@@ -1,0 +1,90 @@
+{
+  "anchor": "XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2",
+  "mission": "m17725",
+  "written_before_running_oss_arm": true,
+  "written_utc": "2026-11-13T08:32:00Z",
+
+  "decision": {
+    "question": "TensorLBM 的二阶浅水溃坝实现（minmod-MUSCL + 局部波速 HLL + SSP-RK2）与成熟开源实现同规格横跑时，是否在 <15% 内一致（owner 精度标准）？若不一致，是我方实现缺陷还是方案自由度差异？",
+    "decision_rule": "C1-C5 全 PASS => 判『与 OSS 一致，本仓实现可作为矩阵 slot-8 的裁决求解器』；任一 FAIL => 判『跨实现偏差超阈』，必须给出偏差归因（网格错位/干床处理/波速估计/时间推进）与是否需修本仓代码。",
+    "alternatives_considered": [
+      "A1（采用）：以 Clawpack 5.14（GeoClaw 家族，成熟 OSS，含 HLL/HLLE、Roe 浅水 Riemann 求解器 + MUSCL/WENO 限制器）为对标实现，同 ndim/同 IC/同 t_end/同 CFL 横跑。",
+      "A2（弃）：与本仓另一域（TensorDG swe_1d.py）横跑 —— 生态内独立实现，非 OSS，不能替代开源对标；且无外部第三方独立性。",
+      "A3（弃）：只与 Ritter 解析解比 —— 解析解已经存在（矩阵 CI 档 1.17%/0.83%），本轮锚点要求的正是『跨实现』这一独立证据轴。",
+      "A4（弃）：自写第二套 FV 求解器当『参考』 —— 自证循环，不构成独立证据。"
+    ]
+  },
+
+  "hypothesis": "H1: 在同为二阶（MUSCL+Hancock/SSP-RK2）+ 两波 HLL 族的同规格横跑下，本仓与 Clawpack 的湿区水深剖面相对 L2 差 <15%，且与水头/前沿量差 <15%。H0（将被否证）：差异 >15%，指向本仓实现的边界/干床/波速处理缺陷。",
+
+  "oss_reference": {
+    "name": "Clawpack",
+    "version": "5.14.0",
+    "source": "pip 内部镜像 lpypi.loongnix.cn 源码构建（pypi 包 clawpack-5.14.0.tar.gz）",
+    "riemann_module_oss": "clawpack.riemann.shallow_hlle_1D（HLLE 浅水通量，num_eqn=2/num_waves=2）",
+    "riemann_module_roe": "clawpack.riemann.shallow_roe_with_efix_1D（Roe + entropy fix）",
+    "solvers": ["pyclaw.ClawSolver1D（Godunov+MUSCL 限制器，Hancock 二阶）", "pyclaw.SharpClawSolver1D（WENO5 + SSP104）"],
+    "physics_source": "浅水方程 h,(hu)：Clawpack riemann/shallow_hlle_1D 源码 + Toro (2009) §10.4 HLL 通量构造"
+  },
+
+  "arms": {
+    "A": "tensorlbm_muscl2_local_hll_ssprk2 —— 本仓 src/tensorlbm/shallow_water.py scheme='muscl2'（minmod-MUSCL 面状态 + Davis 局部波速 HLL + SSP-RK2/Heun，干床正性保护 α:1→.5→0）",
+    "B": "clawpack_classic_hlle —— OSS 同阶对照（HLLE 通量 + minmod 限制器 MUSCL + Hancock 两步时间推进）",
+    "C": "clawpack_sharpclaw_weno5 —— OSS 高阶级参照（WENO5 + SSP104，用来界定『与真解的距离』应为多少）",
+    "D": "clawpack_classic_roe —— OSS 换通量族对照（Roe+entropy fix），检验『通量族』是不是差异来源"
+  },
+
+  "case": {
+    "physics": "1-D 浅水方程溃坝（Ritter 1892 干床问题）",
+    "domain": "x ∈ [-4, 12] h0 单位，dam at x=0",
+    "h0": 1.0, "g": 1.0, "t_end": 5.0,
+    "judged_grids": [200, 400],
+    "ladder_grids": [100, 800],
+    "cfl_judged": 0.4,
+    "cfl_sensitivity": [0.2, 0.8],
+    "dry_floor_oss": 1.0e-4,
+    "dry_floor_oss_sensitivity": 1.0e-6,
+    "bc": "left wall (reflecting), right extrapolation (both arms)",
+    "analytic": "h=(2c0-xi)^2/9g, u=2/3(c0+xi), x_f=2c0 t（取 library ritter_depth/ritter_front，零手抄）"
+  },
+
+  "metrics": {
+    "M1_front_err_pct": "质量反演前沿（V_down→x_f=27V/(4h0)）vs 2c0t 的相对误差 %",
+    "M2_profile_l2_pct": "湿区 [0, x_f] 上水深剖面相对 L2 误差 %（各臂在自己的网格上、对各自坐标取解析解）",
+    "M3_cross_tool_l2_pct": "同格 (nx) 两臂水深剖面相对 L2 差 %：线性插值到公共节点网格，湿区 [0, x_f]",
+    "M3b_cross_tool_bulk_l2_pct": "同上但只取 [0, 0.8 x_f]（剔除前沿薄水舌尖端，抑制半格错位放大）",
+    "M4_mass_drift_pct": "总质量漂移 %",
+    "M5_ladder": "nx=100/200/400/800 的 M2/M3 收敛趋势",
+    "M6_cfl": "CFL=0.2/0.4/0.8 下 M1/M2/M3 敏感度"
+  },
+
+  "thresholds_predeclared": {
+    "C1_cross_tool_l2_pct": 15.0,
+    "C2_front_diff_pct": 15.0,
+    "C3_profile_l2_pct_vs_analytic": 5.0,
+    "C4_mass_drift_pct": 1.0,
+    "C5_cross_tool_vs_highorder_l2_pct": 15.0,
+    "owner_precision_standard_pct": 15.0
+  },
+
+  "stopping_rule": "OSS 臂在 ≤2 次安装/运行尝试内不可用 → 本单降级为 DEGRADED（仅解析解轴），如实记 tool_unavailable friction，不得用解析解冒充跨实现证据。任一判据 FAIL 且归因指向本仓缺陷 → 记 honest-FAIL，留 fail_stage；归因指向合理方案自由度（如干床阈值）→ 记 PASS* 并在报告第⑥段逐项披露。",
+
+  "confounders_identified": [
+    "网格错位：本仓网格为含端点节点 linspace(-4,12,nx)，Clawpack 为单元中心（半格偏移 ~dx/2）→ M3 用线性插值 + M3b 剔除前端缓解",
+    "干床处理：Clawpack 初值需正水层（eps=1e-4），本仓干区 h=0；eps 引入附加质量 ~eps*4/(h0*... )，用 eps=1e-6 敏感度检验",
+    "波速估计：本仓 Davis min/max(u∓c)，Clawpack HLLE Einfeldt/Roe 平均 —— 同族不同估计，属方案自由度（用 D 臂 Roe 检验通量族影响）",
+    "时间推进：本仓固定 dt=CFL dx/(2c0)（一阶稳定界），Clawpack 每步按当前最大波速自适应 dt",
+    "限制器：两臂均 minmod，但施加对象不同（本仓守恒量分量式，Clawpack 波强式）",
+    "阶数：A/B/D 为二阶，C 为五阶 → C 只用于界定『真解距离』，不作同阶判据"
+  ],
+
+  "analysis_plan": "所有数字由 analyze.py 从各臂 npz/json 程序化算出并写入 result.json / table.csv；报告由 make_report.py 从 result.json 注入，零手抄。图：剖面曲线（A/B/C/解析）+ 收敛曲线 + 误差棒表。",
+
+  "environment": {
+    "python": "3.11.6", "arch": "loongarch64", "device": "CPU",
+    "torch": "float64", "numpy": "见 requirements", "clawpack": "5.14.0 (pip, 源码构建, gfortran 13)",
+    "commands": ["python xval/dam_break_slot_muscl2_local_hll_ssprk2/run_arms.py", "python xval/.../analyze.py"]
+  },
+
+  "safety_and_resources": "单节点 CPU，全部算例 nx≤800 → 秒级；不递交 cluster（<10min）。无外部写入。"
+}
