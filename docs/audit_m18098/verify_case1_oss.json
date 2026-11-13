@@ -1,0 +1,22 @@
+{
+ "steps": 100,
+ "scale_max_pdf": 0.4460460628797887,
+ "wall_seconds": 0.6126723289489746,
+ "max_sparse_vs_oss_postcollision": 3.352207202100832e-06,
+ "max_sparse_vs_oss_precollision": NaN,
+ "max_sparse_vs_dense": 0.00033287181141915256,
+ "last5_postcollision": [
+  1.7635493916312583e-06,
+  1.7303752999353605e-06,
+  1.686450230298231e-06,
+  1.635616408368623e-06,
+  1.6103609299933375e-06
+ ],
+ "first5_precollision": [
+  NaN,
+  NaN,
+  NaN,
+  NaN,
+  NaN
+ ]
+}
