@@ -1,0 +1,372 @@
+{
+  "stage": "operator",
+  "environment": {
+    "python": "3.11.6",
+    "machine": "loongarch64",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "cpu": "Loongson-3C6000/D",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "torch_threads": 128,
+    "jax": "absent (loongarch64 wheel unavailable) -> jaxshim numpy backend",
+    "oss_repo": "https://github.com/haimingz/vivsim",
+    "oss_commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+    "oss_license": "MIT (c) 2024 Haiming Zhu"
+  },
+  "setup": {
+    "grid_shape_zyx": [
+      24,
+      28,
+      32
+    ],
+    "sphere_center_xyz": [
+      16.0,
+      14.0,
+      12.0
+    ],
+    "sphere_radius": 4.0,
+    "icosphere_subdivisions": 3,
+    "dtype": "float64"
+  },
+  "area_check": {
+    "sum_ds_tl": 200.10388374351885,
+    "sum_ds_oss": 200.10388374351885,
+    "ds_rel_diff": 3.0592684413879843e-16,
+    "analytic_sphere_area": 201.06192982974676,
+    "polyhedral_area": 200.10388374351885,
+    "polyhedral_vs_analytic_rel": -0.0047649303229067505
+  },
+  "cases": [
+    {
+      "kernel": "peskin4pt",
+      "n_markers": 642,
+      "stencil_points": 64,
+      "stencil_weight_rel_diff": 0.0,
+      "stencil_index_match_fraction": 1.0,
+      "partition_of_unity_min": 0.9999999999999997,
+      "partition_of_unity_max": 1.0000000000000002,
+      "force_parity": {
+        "n_iter=1": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -144.9296713633862,
+          "grid_force_sum_x_oss": -144.9296713633862,
+          "reaction_sum_x_tl": 144.9296713633862,
+          "reaction_sum_x_oss": 144.9296713633862,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=2": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -234.86629949325106,
+          "grid_force_sum_x_oss": -234.866299493251,
+          "reaction_sum_x_tl": 234.866299493251,
+          "reaction_sum_x_oss": 234.86629949325103,
+          "momentum_closure_rel": 2.420245858322532e-16
+        },
+        "n_iter=3": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -290.6769558579746,
+          "grid_force_sum_x_oss": -290.6769558579746,
+          "reaction_sum_x_tl": 290.6769558579746,
+          "reaction_sum_x_oss": 290.6769558579746,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=5": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -346.8030907119479,
+          "grid_force_sum_x_oss": -346.8030907119479,
+          "reaction_sum_x_tl": 346.8030907119479,
+          "reaction_sum_x_oss": 346.8030907119479,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=8": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -373.5541103399365,
+          "grid_force_sum_x_oss": -373.5541103399365,
+          "reaction_sum_x_tl": 373.55411033993647,
+          "reaction_sum_x_oss": 373.55411033993647,
+          "momentum_closure_rel": 1.5216916984016095e-16
+        }
+      },
+      "residual_series_tl": [
+        0.635409781830529,
+        0.4051936744746098,
+        0.25951090378762837,
+        0.1676485829895722,
+        0.10970563386832376,
+        0.07259817813291167,
+        0.048715462596405947,
+        0.033254654862835596,
+        0.023178014878074794,
+        0.016635637713554446
+      ],
+      "residual_series_oss_recipe_via_tl": [
+        0.635409781830529,
+        0.4051936744746098,
+        0.25951090378762837,
+        0.1676485829895722,
+        0.10970563386832376,
+        0.07259817813291167,
+        0.048715462596405947,
+        0.033254654862835596,
+        0.023178014878074794,
+        0.016635637713554446
+      ],
+      "residual_series_accumulated_recipe": [
+        0.6354097818305288,
+        0.044228954636156934,
+        0.5870051263750988,
+        0.9747568342344229,
+        1.0100337218926851,
+        0.6752024013440047,
+        0.11257444266665402,
+        0.6191601082697199,
+        0.9707560879259721,
+        1.000646145549653
+      ]
+    },
+    {
+      "kernel": "cosine4pt",
+      "n_markers": 642,
+      "stencil_points": 64,
+      "stencil_weight_rel_diff": 0.0,
+      "stencil_index_match_fraction": 1.0,
+      "partition_of_unity_min": 0.9999999999999999,
+      "partition_of_unity_max": 1.0000000000000004,
+      "force_parity": {
+        "n_iter=1": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -144.93385334250792,
+          "grid_force_sum_x_oss": -144.93385334250792,
+          "reaction_sum_x_tl": 144.93385334250792,
+          "reaction_sum_x_oss": 144.93385334250792,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=2": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -234.90819585248227,
+          "grid_force_sum_x_oss": -234.90819585248227,
+          "reaction_sum_x_tl": 234.90819585248224,
+          "reaction_sum_x_oss": 234.90819585248224,
+          "momentum_closure_rel": 1.2099071012512603e-16
+        },
+        "n_iter=3": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -290.76427302996433,
+          "grid_force_sum_x_oss": -290.76427302996433,
+          "reaction_sum_x_tl": 290.7642730299643,
+          "reaction_sum_x_oss": 290.7642730299643,
+          "momentum_closure_rel": 1.9549657276824414e-16
+        },
+        "n_iter=5": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -346.9675145494915,
+          "grid_force_sum_x_oss": -346.9675145494915,
+          "reaction_sum_x_tl": 346.9675145494915,
+          "reaction_sum_x_oss": 346.9675145494915,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=8": {
+          "grid_force_rel_max": 0.0,
+          "marker_reaction_rel_max": 0.0,
+          "grid_force_sum_x_tl": -373.7827410780872,
+          "grid_force_sum_x_oss": -373.78274107808727,
+          "reaction_sum_x_tl": 373.78274107808716,
+          "reaction_sum_x_oss": 373.78274107808716,
+          "momentum_closure_rel": 1.5207609291123697e-16
+        }
+      },
+      "residual_series_tl": [
+        0.633481920491254,
+        0.40453861733979996,
+        0.2600613221138494,
+        0.16873865675631616,
+        0.11090970407252715,
+        0.07421669855773318,
+        0.05088342277937836,
+        0.03601033884995895,
+        0.026505904121042416,
+        0.020416167827166362
+      ],
+      "residual_series_oss_recipe_via_tl": [
+        0.633481920491254,
+        0.40453861733979996,
+        0.2600613221138494,
+        0.16873865675631616,
+        0.11090970407252715,
+        0.07421669855773318,
+        0.05088342277937836,
+        0.03601033884995895,
+        0.026505904121042416,
+        0.020416167827166362
+      ],
+      "residual_series_accumulated_recipe": [
+        0.633481920491254,
+        0.04509280056478824,
+        0.5912345031396214,
+        0.9720960415894554,
+        1.0121813835283127,
+        0.6850453942286855,
+        0.11862450946383435,
+        0.6107166987721975,
+        0.9645330579915526,
+        1.0039189250698441
+      ]
+    },
+    {
+      "kernel": "peskin3pt",
+      "n_markers": 642,
+      "stencil_points": 64,
+      "stencil_weight_rel_diff": 1.8991156303799217e-16,
+      "stencil_index_match_fraction": 1.0,
+      "partition_of_unity_min": 0.9999999999999997,
+      "partition_of_unity_max": 1.0000000000000004,
+      "force_parity": {
+        "n_iter=1": {
+          "grid_force_rel_max": 3.4483832534992855e-16,
+          "marker_reaction_rel_max": 4.860962775081387e-16,
+          "grid_force_sum_x_tl": -144.69816773854603,
+          "grid_force_sum_x_oss": -144.69816773854606,
+          "reaction_sum_x_tl": 144.6981677385461,
+          "reaction_sum_x_oss": 144.6981677385461,
+          "momentum_closure_rel": 3.9284131754534663e-16
+        },
+        "n_iter=2": {
+          "grid_force_rel_max": 2.288668608510639e-16,
+          "marker_reaction_rel_max": 5.369417520593813e-16,
+          "grid_force_sum_x_tl": -216.54848476626057,
+          "grid_force_sum_x_oss": -216.54848476626057,
+          "reaction_sum_x_tl": 216.54848476626057,
+          "reaction_sum_x_oss": 216.54848476626057,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=3": {
+          "grid_force_rel_max": 2.932021677350746e-16,
+          "marker_reaction_rel_max": 6.405884285612115e-16,
+          "grid_force_sum_x_tl": -252.22829920917428,
+          "grid_force_sum_x_oss": -252.22829920917428,
+          "reaction_sum_x_tl": 252.22829920917428,
+          "reaction_sum_x_oss": 252.22829920917428,
+          "momentum_closure_rel": 0.0
+        },
+        "n_iter=5": {
+          "grid_force_rel_max": 2.6359137430603744e-16,
+          "marker_reaction_rel_max": 8.991176511762604e-16,
+          "grid_force_sum_x_tl": -278.75124243902343,
+          "grid_force_sum_x_oss": -278.75124243902343,
+          "reaction_sum_x_tl": 278.7512424390234,
+          "reaction_sum_x_oss": 278.7512424390234,
+          "momentum_closure_rel": 2.03921669957193e-16
+        },
+        "n_iter=8": {
+          "grid_force_rel_max": 5.113336213380291e-16,
+          "marker_reaction_rel_max": 1.2526203597245118e-15,
+          "grid_force_sum_x_tl": -286.3863001127935,
+          "grid_force_sum_x_oss": -286.3863001127935,
+          "reaction_sum_x_tl": 286.38630011279355,
+          "reaction_sum_x_oss": 286.3863001127935,
+          "momentum_closure_rel": 1.9848511901030242e-16
+        }
+      },
+      "residual_series_tl": [
+        0.5086713613099882,
+        0.2650235927796629,
+        0.14078663612528297,
+        0.07708653650991569,
+        0.04418141963662067,
+        0.027605240239129768,
+        0.019551838113222423,
+        0.01772187223080899,
+        0.01915376769938933,
+        0.01971734919615981
+      ],
+      "residual_series_oss_recipe_via_tl": [
+        0.5086713613099882,
+        0.2650235927796629,
+        0.14078663612528297,
+        0.07708653650991569,
+        0.04418141963662067,
+        0.027605240239129768,
+        0.019551838113222423,
+        0.01772187223080899,
+        0.01915376769938933,
+        0.01971734919615981
+      ],
+      "residual_series_accumulated_recipe": [
+        0.508671361309988,
+        0.26981932395278246,
+        0.8734488309112568,
+        1.0624640775328638,
+        0.7357650895864053,
+        0.07408249755687235,
+        0.6891059156414121,
+        1.0519836076522635,
+        0.9053826015496751,
+        0.33175921128057306
+      ]
+    }
+  ],
+  "marker_density": [
+    {
+      "subdivisions": 2,
+      "n_markers": 162,
+      "mean_ds": 1.2177628242207081,
+      "mean_markers_per_cell_face": 0.809579489259898,
+      "slip_residual_n_iter_5": 0.11658152179880518,
+      "slip_residual_n_iter_1": 0.6414801581585725
+    },
+    {
+      "subdivisions": 3,
+      "n_markers": 642,
+      "mean_ds": 0.3116882924353876,
+      "mean_markers_per_cell_face": 3.208333531511448,
+      "slip_residual_n_iter_5": 0.10970563386832376,
+      "slip_residual_n_iter_1": 0.635409781830529
+    },
+    {
+      "subdivisions": 4,
+      "n_markers": 2562,
+      "mean_ds": 0.0783847236852216,
+      "mean_markers_per_cell_face": 12.803349700517646,
+      "slip_residual_n_iter_5": 0.1086011811732527,
+      "slip_residual_n_iter_1": 0.6336039831667472
+    }
+  ],
+  "legacy_operator": {
+    "hat": {
+      "grid_force_sum_x": -231.8740735064293,
+      "physical_force_estimate_x": -144.54486806251302,
+      "mdf_grid_force_sum_x": -346.8030907119479,
+      "legacy_vs_mdf_magnitude_ratio": 1.136834861437468,
+      "note": "legacy = single pass, no ds weighting, no factor 2 (F=2 rho A du)"
+    },
+    "4pt": {
+      "grid_force_sum_x": -232.48880687438447,
+      "physical_force_estimate_x": -144.928078450035,
+      "mdf_grid_force_sum_x": -346.8030907119479,
+      "legacy_vs_mdf_magnitude_ratio": 0.6671646806600371,
+      "note": "legacy = single pass, no ds weighting, no factor 2 (F=2 rho A du)"
+    }
+  },
+  "artifacts": {
+    "vendored_oss_files": {
+      "vivsim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "vivsim/ib/__init__.py": "70bf7de6e0f94b1452981206f2abeedd960cef8bd1773446179a20f8608664d3",
+      "vivsim/ib/geometry.py": "65e6627e763b601bcf90118e4b65179bc0c978c4052ea344588587dec0c12576",
+      "vivsim/ib/kernels.py": "20779fdc2cd0c6cd6c9ffbfbdbb83ec849c07355aa441272bb3e8805118b5e9f",
+      "vivsim/ib/mdf.py": "a67ff4204acfa6294f6c880934eb9c0cfe50dc620ae58333839e5653206d837c",
+      "vivsim/ib/stencil.py": "752165731aa7d44196f73c0ff65ce7fdd08820aff08b0a689e2487f6d093d749",
+      "vivsim/ib3d/__init__.py": "c711d053b7f53aa4c9187ac0f0d2c36062e9a7379d4a00ccc83e3bdd6c248817",
+      "vivsim/ib3d/geometry.py": "6bbb8b2a84d51123d1bf56faa6e0c2cb6dd86a3744956fb6e3cbd593d8c2cf88",
+      "vivsim/ib3d/stencil.py": "3f6344a723d25810c28c4b64593b1bd828ced2dbb153bb027990a9be22859c37"
+    }
+  }
+}
