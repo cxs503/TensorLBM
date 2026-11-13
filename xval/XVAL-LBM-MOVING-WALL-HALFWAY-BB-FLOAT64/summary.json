@@ -1,0 +1,246 @@
+{
+  "anchor": "XVAL-LBM-MOVING-WALL-HALFWAY-BB-FLOAT64",
+  "date_utc": "2026-11-13",
+  "oss": {
+    "name": "pylbm",
+    "version": "0.12.0",
+    "commit": "f9f5d16",
+    "root": "/root/oss-cache/pylbm",
+    "method": "BounceBack (delta=0.5) with wall-moment value function, numpy generator"
+  },
+  "env": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "device": "cpu"
+  },
+  "thresholds": {
+    "M1_operator_rel": 1e-12,
+    "M2_vs_analytic_rel": 0.03,
+    "M3_vs_oss_rel": 0.01,
+    "M4_float64_rel": 1e-09,
+    "M4_min_speedup_float32_over_float64": 1000.0,
+    "owner_precision_standard": 0.15,
+    "note": "M2/M3 are tighter than the owner 15% standard on purpose: a Couette profile with halfway bounce-back is exactly representable on the lattice, so anything above 3% is a defect, not discretisation."
+  },
+  "verdicts": {
+    "M1_operator": false,
+    "M2_vs_analytic_all": false,
+    "M3_vs_oss_all": false,
+    "M4_float64": false,
+    "M4_precision_gain": true,
+    "converged_all": false,
+    "M6_sensitivity_all": false,
+    "owner_15pct_standard": false
+  },
+  "operator_check": {
+    "dirs": [
+      2,
+      5,
+      6
+    ],
+    "oss_rhs": [
+      0.0,
+      0.008333333333333331,
+      -0.008333333333333331
+    ],
+    "tensorlbm_correction": [
+      0.0,
+      0.008333333395421506,
+      -0.008333333395421506
+    ],
+    "ladd_closed_form": [
+      0.0,
+      0.00833333358168602,
+      -0.00833333358168602
+    ],
+    "abs_residual": 6.208817487918239e-11,
+    "rel_residual": 7.450580985501888e-09,
+    "scale": 0.008333333333333331,
+    "oss_n_links_bottom_wall": 6,
+    "oss_distance": [
+      0.5
+    ],
+    "note": "OSS rhs is read from the live pylbm BC object (BounceBack.set_rhs); TensorLBM correction is f_after - f_opposite of the library kernel."
+  },
+  "grid": [
+    {
+      "N": 16,
+      "steps_tl": 6000,
+      "steps_pylbm": 6000,
+      "converged_tl": false,
+      "converged_pylbm": false,
+      "err_ana": NaN,
+      "err_oss": NaN,
+      "err_ana_pylbm": 5.43057959712101e-11,
+      "max_drho_tl": NaN,
+      "max_drho_pylbm": 3.086420008457935e-13
+    },
+    {
+      "N": 32,
+      "steps_tl": 6000,
+      "steps_pylbm": 6000,
+      "converged_tl": false,
+      "converged_pylbm": false,
+      "err_ana": NaN,
+      "err_oss": NaN,
+      "err_ana_pylbm": 0.0019521053465475918,
+      "max_drho_tl": NaN,
+      "max_drho_pylbm": 3.241851231905457e-13
+    }
+  ],
+  "sensitivity": [
+    {
+      "tau": 0.6,
+      "Uw": 0.05,
+      "Re_H": 24.000000000000007,
+      "err_ana": NaN,
+      "err_oss": NaN
+    }
+  ],
+  "headline": {
+    "err_ana_float64_N16": NaN,
+    "err_ana_float32_N16": NaN,
+    "float32_over_float64": Infinity,
+    "err_oss_N16": NaN,
+    "err_oss_N32": NaN,
+    "max_drho_float64_N16": NaN
+  },
+  "verdict": "FAIL",
+  "rows": [
+    {
+      "case": "M1_operator",
+      "ref": [
+        0.0,
+        0.008333333333333331,
+        -0.008333333333333331
+      ],
+      "got": [
+        0.0,
+        0.008333333395421506,
+        -0.008333333395421506
+      ],
+      "metric": "max|delta|/max|oss_rhs|",
+      "value": 7.450580985501888e-09,
+      "threshold": 1e-12,
+      "pass": false
+    },
+    {
+      "case": "N16_tau0.8_Uw0.05_float64",
+      "ref": "analytic Couette",
+      "got": "TensorLBM N=16",
+      "metric": "max|u-u_ana|/U_w",
+      "value": NaN,
+      "threshold": 0.03,
+      "pass": false
+    },
+    {
+      "case": "N16_tau0.8_Uw0.05_float64",
+      "ref": "pylbm steady profile",
+      "got": "TensorLBM N=16",
+      "metric": "max|u_tl-u_oss|/U_w",
+      "value": NaN,
+      "threshold": 0.01,
+      "pass": false
+    },
+    {
+      "case": "N16_tau0.8_Uw0.05_float64",
+      "ref": "analytic Couette",
+      "got": "pylbm N=16",
+      "metric": "max|u-u_ana|/U_w",
+      "value": 5.43057959712101e-11,
+      "threshold": 0.03,
+      "pass": true
+    },
+    {
+      "case": "N32_tau0.8_Uw0.05_float64",
+      "ref": "analytic Couette",
+      "got": "TensorLBM N=32",
+      "metric": "max|u-u_ana|/U_w",
+      "value": NaN,
+      "threshold": 0.03,
+      "pass": false
+    },
+    {
+      "case": "N32_tau0.8_Uw0.05_float64",
+      "ref": "pylbm steady profile",
+      "got": "TensorLBM N=32",
+      "metric": "max|u_tl-u_oss|/U_w",
+      "value": NaN,
+      "threshold": 0.01,
+      "pass": false
+    },
+    {
+      "case": "N32_tau0.8_Uw0.05_float64",
+      "ref": "analytic Couette",
+      "got": "pylbm N=32",
+      "metric": "max|u-u_ana|/U_w",
+      "value": 0.0019521053465475918,
+      "threshold": 0.03,
+      "pass": true
+    },
+    {
+      "case": "M4_precision",
+      "ref": "analytic Couette",
+      "got": "TensorLBM float64",
+      "metric": "max|u-u_ana|/U_w",
+      "value": NaN,
+      "threshold": 1e-09,
+      "pass": false
+    },
+    {
+      "case": "M4_precision",
+      "ref": "analytic Couette",
+      "got": "TensorLBM float32",
+      "metric": "max|u-u_ana|/U_w",
+      "value": NaN,
+      "threshold": null,
+      "pass": null
+    },
+    {
+      "case": "M4_precision",
+      "ref": "float32 arm",
+      "got": "float64 arm",
+      "metric": "err(float32)/err(float64)",
+      "value": Infinity,
+      "threshold": 1000.0,
+      "pass": true
+    },
+    {
+      "case": "N16_tau0.6_Uw0.05_float64",
+      "ref": "analytic Couette",
+      "got": "TensorLBM",
+      "metric": "max|u-u_ana|/U_w",
+      "value": NaN,
+      "threshold": 0.03,
+      "pass": false
+    },
+    {
+      "case": "N16_tau0.6_Uw0.05_float64",
+      "ref": "pylbm steady profile",
+      "got": "TensorLBM",
+      "metric": "max|u_tl-u_oss|/U_w",
+      "value": NaN,
+      "threshold": 0.01,
+      "pass": false
+    },
+    {
+      "case": "negative_control_u_wall_0",
+      "ref": "moving-wall profile",
+      "got": "resting-wall run",
+      "metric": "max|u|/U_w",
+      "value": NaN,
+      "threshold": 0.03,
+      "pass": false
+    },
+    {
+      "case": "x_extent_invariance",
+      "ref": "nx=2",
+      "got": "nx=3",
+      "metric": "max|u(nx=4)-u(nx=7)|/U_w",
+      "value": NaN,
+      "threshold": 0.01,
+      "pass": false
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+case,ref,got,metric,value,threshold,pass
+M1_operator,"[0.0, 0.008333333333333331, -0.008333333333333331]","[0.0, 0.008333333395421506, -0.008333333395421506]",max|delta|/max|oss_rhs|,7.450581e-09,1e-12,False
+N16_tau0.8_Uw0.05_float64,analytic Couette,TensorLBM N=16,max|u-u_ana|/U_w,nan,0.03,False
+N16_tau0.8_Uw0.05_float64,pylbm steady profile,TensorLBM N=16,max|u_tl-u_oss|/U_w,nan,0.01,False
+N16_tau0.8_Uw0.05_float64,analytic Couette,pylbm N=16,max|u-u_ana|/U_w,5.430580e-11,0.03,True
+N32_tau0.8_Uw0.05_float64,analytic Couette,TensorLBM N=32,max|u-u_ana|/U_w,nan,0.03,False
+N32_tau0.8_Uw0.05_float64,pylbm steady profile,TensorLBM N=32,max|u_tl-u_oss|/U_w,nan,0.01,False
+N32_tau0.8_Uw0.05_float64,analytic Couette,pylbm N=32,max|u-u_ana|/U_w,1.952105e-03,0.03,True
+M4_precision,analytic Couette,TensorLBM float64,max|u-u_ana|/U_w,nan,1e-09,False
+M4_precision,analytic Couette,TensorLBM float32,max|u-u_ana|/U_w,nan,,
+M4_precision,float32 arm,float64 arm,err(float32)/err(float64),inf,1000.0,True
+N16_tau0.6_Uw0.05_float64,analytic Couette,TensorLBM,max|u-u_ana|/U_w,nan,0.03,False
+N16_tau0.6_Uw0.05_float64,pylbm steady profile,TensorLBM,max|u_tl-u_oss|/U_w,nan,0.01,False
+negative_control_u_wall_0,moving-wall profile,resting-wall run,max|u|/U_w,nan,0.03,False
+x_extent_invariance,nx=2,nx=3,max|u(nx=4)-u(nx=7)|/U_w,nan,0.01,False
