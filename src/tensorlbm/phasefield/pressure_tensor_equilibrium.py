@@ -575,6 +575,182 @@ def run_quiescent_steps(
     }
 
 
+
+# ---------------------------------------------------------------------------
+# coupled free-energy binary solver: the Laplace-law arm
+# ---------------------------------------------------------------------------
+def sigma_from_measured_pressure(
+    pxx: torch.Tensor,
+    pyy: torch.Tensor,
+    pxy: torch.Tensor | None = None,
+    *,
+    center: tuple[float, float] | None = None,
+) -> float:
+    """``sigma = int (P_rr - P_tt) dr`` from the pressure tensor **read off the populations**.
+
+    ``P_rr - P_tt`` is the shell-projected anisotropy of the measured tensor
+    (``P_ab r_a r_b`` vs ``P_ab t_a t_b``), so this is a *measurement* on the
+    simulated state -- unlike :func:`sigma_from_radial_dip`, which differentiates
+    the prescribed ``phi`` and closes the dip with ``kappa``.
+    """
+    ny, nx = pxx.shape
+    cy, cx = center if center is not None else ((ny - 1) / 2.0, (nx - 1) / 2.0)
+    yy = torch.arange(ny, dtype=torch.float64).view(-1, 1) - cy
+    xx = torch.arange(nx, dtype=torch.float64).view(1, -1) - cx
+    r = torch.sqrt(yy * yy + xx * xx)
+    safe = r.clamp(min=1e-30)
+    rx, ry = xx / safe, yy / safe
+    prr = pxx * rx * rx + pyy * ry * ry
+    if pxy is not None:
+        prr = prr + 2.0 * pxy * rx * ry
+    ptt = pxx + pyy - prr
+    dip = prr - ptt
+    dip = torch.where(r > 0.5, dip, torch.zeros_like(dip))
+    _, prof = radial_profile(dip, center)
+    return float(prof.sum())
+
+
+@dataclass(frozen=True)
+class CoupledDropletResult:
+    """Diagnostics of one *coupled* (both distributions advanced) droplet arm."""
+
+    radius: float
+    xi: float
+    steps: int
+    sigma_analytic: float
+    sigma_measured: float
+    sigma_rel_error: float
+    dp_bulk: float
+    dp_tail_mean: float
+    dp_laplace_ref: float
+    laplace_rel_error: float
+    laplace_tail_rel_error: float
+    max_speed: float
+    rho_min: float
+    rho_max: float
+    mass_err_rho: float
+    mass_err_phi: float
+    series: list
+
+
+def coupled_step(
+    f: torch.Tensor,
+    g: torch.Tensor,
+    *,
+    A: float,
+    kappa: float,
+    Gamma: float,
+    tau_f: float,
+    tau_phi: float,
+    B: float | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """One BGK step of the coupled free-energy system (``f`` and ``g`` both advance).
+
+    The OSS equilibrium is a functional of ``(rho, u, phi)`` for the fluid and of
+    ``(phi, u, mu)`` for the order parameter, so the two distributions must be
+    stepped together for the interface to relax to its *own* mechanical
+    equilibrium -- freezing ``phi`` (as :func:`run_quiescent_steps` does) only
+    proves that one equilibrium is a fixed point of the collision operator.
+    """
+    rho, ux, uy = moments(f)
+    phi = g.sum(dim=0)
+    mu = chemical_potential(phi, A=A, kappa=kappa, B=B)
+    feq = fluid_equilibrium(rho, ux, uy, phi, A=A, kappa=kappa, B=B)
+    geq = order_param_equilibrium(phi, ux, uy, mu, Gamma=Gamma)
+    return stream(collide(f, feq, tau_f)), stream(collide(g, geq, tau_phi))
+
+
+def run_coupled_droplet(
+    *,
+    A: float,
+    kappa: float,
+    radius: float,
+    steps: int,
+    tau_f: float = 1.0,
+    tau_phi: float = 1.0,
+    Gamma: float = 0.2,
+    B: float | None = None,
+    rho0: float = 1.0,
+    pad: float = 5.0,
+    record_every: int | None = None,
+) -> CoupledDropletResult:
+    """Advance the coupled free-energy droplet and measure ``sigma`` and the Laplace jump.
+
+    ``dp_bulk = p_in - p_out`` with ``p = (P_xx + P_yy)/2`` from the populations;
+    reference ``sigma_analytic / R``.  A non-finite state raises
+    ``RuntimeError`` instead of being silently reported as a small error.
+    """
+    xi = interface_width(A, kappa)
+    n = int(math.ceil(2 * (radius + pad * xi)))
+    phi0 = droplet_profile(n, n, A=A, kappa=kappa, radius=radius)
+    rho = torch.full_like(phi0, rho0)
+    zero = torch.zeros_like(phi0)
+    grads = grad_lap(phi0)
+    f = fluid_equilibrium(rho, zero, zero, phi0, A=A, kappa=kappa, B=B, grads=grads)
+    mu = chemical_potential(phi0, A=A, kappa=kappa, B=B)
+    g = order_param_equilibrium(phi0, zero, zero, mu, Gamma=Gamma)
+    yy = torch.arange(n, dtype=torch.float64).view(-1, 1)
+    xx = torch.arange(n, dtype=torch.float64).view(1, -1)
+    r = torch.sqrt((yy - (n - 1) / 2.0) ** 2 + (xx - (n - 1) / 2.0) ** 2)
+    inside = r < (radius - 3.0 * xi)
+    outside = r > (radius + 3.0 * xi)
+    sig_a = analytic_sigma(A, kappa)
+    every = record_every or max(1, steps // 10)
+    series: list[dict] = []
+
+    def _sample(step: int) -> dict:
+        pxx, pyy, pxy = pressure_from_populations(f)
+        p = 0.5 * (pxx + pyy)
+        rho_m, ux_m, uy_m = moments(f)
+        return {
+            "step": int(step),
+            "dp_bulk": float(p[inside].mean() - p[outside].mean()),
+            "dp_over_sigma_R": float(p[inside].mean() - p[outside].mean()) / (sig_a / radius),
+            "max_speed": float(torch.sqrt(ux_m**2 + uy_m**2).max()),
+            "rho_min": float(rho_m.min()),
+            "rho_max": float(rho_m.max()),
+        }
+
+    series.append(_sample(0))
+    for s in range(1, steps + 1):
+        f, g = coupled_step(f, g, A=A, kappa=kappa, Gamma=Gamma, tau_f=tau_f, tau_phi=tau_phi, B=B)
+        if not torch.isfinite(f).all():
+            raise RuntimeError(f"coupled droplet went non-finite at step {s}")
+        if s % every == 0:
+            series.append(_sample(s))
+
+    pxx, pyy, pxy = pressure_from_populations(f)
+    p = 0.5 * (pxx + pyy)
+    dp = float(p[inside].mean() - p[outside].mean())
+    # acoustic ringing makes the instantaneous jump oscillate by a few per cent;
+    # the judged quantity is the mean over the last 40 % of the samples (declared
+    # in predeclared.json *before* the sweep, not chosen after looking at it).
+    tail = [r["dp_bulk"] for r in series if r["step"] >= 0.6 * steps and r["step"] > 0]
+    dp_tail = sum(tail) / len(tail) if tail else dp
+    sigma_m = sigma_from_measured_pressure(pxx, pyy, pxy)
+    rho_m, ux_m, uy_m = moments(f)
+    phi_m = g.sum(dim=0)
+    return CoupledDropletResult(
+        radius=radius,
+        xi=xi,
+        steps=steps,
+        sigma_analytic=sig_a,
+        sigma_measured=sigma_m,
+        sigma_rel_error=(sigma_m - sig_a) / sig_a,
+        dp_bulk=dp,
+        dp_tail_mean=float(dp_tail),
+        dp_laplace_ref=sig_a / radius,
+        laplace_rel_error=(dp - sig_a / radius) / (sig_a / radius),
+        laplace_tail_rel_error=(dp_tail - sig_a / radius) / (sig_a / radius),
+        max_speed=float(torch.sqrt(ux_m**2 + uy_m**2).max()),
+        rho_min=float(rho_m.min()),
+        rho_max=float(rho_m.max()),
+        mass_err_rho=float(abs(rho_m.sum() - rho0 * n * n) / (rho0 * n * n)),
+        mass_err_phi=float(abs(phi_m.sum() - phi0.sum()) / max(1e-30, float(phi0.abs().sum()))),
+        series=series,
+    )
+
+
 __all__ = [
     "C",
     "CS2",
@@ -592,6 +768,8 @@ __all__ = [
     "bgk_equilibrium",
     "bulk_pressure",
     "chemical_potential",
+    "coupled_step",
+    "CoupledDropletResult",
     "collide",
     "droplet_profile",
     "flat_interface_profile",
@@ -606,9 +784,11 @@ __all__ = [
     "quiescent_droplet",
     "quiescent_flat_interface",
     "radial_profile",
+    "run_coupled_droplet",
     "run_quiescent_steps",
     "shift",
     "sigma_from_flat_dip",
+    "sigma_from_measured_pressure",
     "sigma_from_radial_dip",
     "stream",
 ]

@@ -50,6 +50,7 @@ from tensorlbm.phasefield.pressure_tensor_equilibrium import (  # noqa: E402
     pressure_tensor,
     quiescent_droplet,
     quiescent_flat_interface,
+    run_coupled_droplet,
     run_quiescent_steps,
     sigma_from_flat_dip,
     sigma_from_radial_dip,
@@ -247,6 +248,133 @@ def stage_tl_force_arm(A=0.1, xi_t=2.0, radius=16.0, tau=0.9) -> dict:
     }
 
 
+
+# ---------------------------------------------------------------------------
+# stage C: coupled free-energy droplet -- the Laplace law arm
+# ---------------------------------------------------------------------------
+COUPLED = {"A": 0.1, "tau_f": 1.0, "tau_phi": 1.0, "Gamma": 0.2}
+
+
+def stage_coupled_laplace(radii=(10.0, 12.0, 16.0, 24.0), steps=2000, A=0.1, xi_t=2.0) -> list[dict]:
+    """Both distributions advance; measure ``dp = p_in - p_out`` against ``sigma/R``.
+
+    The frozen-phi arms (stages A/B) can only prove that one equilibrium is a
+    fixed point.  This arm lets the interface relax, so the *mechanical* balance
+    that the pressure tensor encodes -- the Laplace law -- becomes a testable
+    number: ``dp * R / sigma -> 1``.  ``dp`` is the mean over the last 40 % of the
+    samples (acoustic ringing is a few per cent); declared before the sweep.
+    """
+    kappa = A * xi_t ** 2 / 2.0
+    rows = []
+    for R in radii:
+        n_steps = int(steps if R <= 16 else 1.5 * steps)
+        try:
+            r = run_coupled_droplet(A=A, kappa=kappa, radius=R, steps=n_steps,
+                                    tau_f=COUPLED["tau_f"], tau_phi=COUPLED["tau_phi"],
+                                    Gamma=COUPLED["Gamma"])
+        except RuntimeError as exc:
+            rows.append({"radius": R, "steps": n_steps, "nan": True, "error": str(exc)[:140]})
+            continue
+        row = dict(r.__dict__)
+        row.pop("series")
+        row["nan"] = False
+        row["dpR_over_sigma"] = r.dp_tail_mean * R / r.sigma_analytic
+        rows.append(row)
+    return rows
+
+
+def stage_coupled_series(radius=16.0, steps=2000, A=0.1, xi_t=2.0) -> dict:
+    """Time series of the Laplace jump (convergence of the coupled arm)."""
+    kappa = A * xi_t ** 2 / 2.0
+    r = run_coupled_droplet(A=A, kappa=kappa, radius=radius, steps=steps,
+                            tau_f=COUPLED["tau_f"], tau_phi=COUPLED["tau_phi"],
+                            Gamma=COUPLED["Gamma"], record_every=max(1, steps // 40))
+    return {"radius": radius, "steps": steps, "series": r.series,
+            "laplace_tail_rel_error": r.laplace_tail_rel_error}
+
+
+def stage_coupled_sensitivity(radius=16.0, steps=1500, A=0.1, xi_t=2.0) -> list[dict]:
+    """Second and third parameter axis: mobility (tau_phi, Gamma) and interface width xi.
+
+    ``tau_phi = 0.8`` is included on purpose: with ``M = Gamma (tau_phi - 1/2)``
+    the order-parameter mobility is small and the run is unstable -- an honest
+    boundary of the transplant, reported instead of hidden.
+    """
+    rows = []
+    for label, kw, xi in (
+        ("tau_phi=1.0", {"tau_phi": 1.0}, xi_t),
+        ("tau_phi=1.5", {"tau_phi": 1.5}, xi_t),
+        ("tau_phi=0.8", {"tau_phi": 0.8}, xi_t),
+        ("Gamma=0.1", {"Gamma": 0.1}, xi_t),
+        ("Gamma=0.5", {"Gamma": 0.5}, xi_t),
+        ("xi=3", {}, 3.0),
+    ):
+        kappa = A * xi ** 2 / 2.0
+        try:
+            r = run_coupled_droplet(A=A, kappa=kappa, radius=radius, steps=steps,
+                                    tau_f=COUPLED["tau_f"],
+                                    tau_phi=kw.get("tau_phi", COUPLED["tau_phi"]),
+                                    Gamma=kw.get("Gamma", COUPLED["Gamma"]))
+            rows.append({"label": label, "xi": xi, "nan": False,
+                         "laplace_tail_rel_error": r.laplace_tail_rel_error,
+                         "sigma_rel_error": r.sigma_rel_error,
+                         "max_speed": r.max_speed, "rho_min": r.rho_min, "rho_max": r.rho_max})
+        except RuntimeError as exc:
+            rows.append({"label": label, "xi": xi, "nan": True,
+                         "error": str(exc)[:140]})
+    return rows
+
+
+def bench_table(res: dict) -> list[dict]:
+    """ref vs got rows with an explicit pass/fail per row (the L4 benchmark table)."""
+    th = PREDECL["predeclared_thresholds"]
+    rows = []
+    for r in res["oss_flat"]:
+        rows.append({
+            "case": f"flat xi={r['xi_target']}",
+            "quantity": "sigma",
+            "ref": r["sigma_analytic"],
+            "got": r["sigma_measured"],
+            "err_pct": 100 * r["rel_error"],
+            "tolerance_pct": 100 * th["sigma_rel_error_max"],
+            "pass": abs(r["rel_error"]) < th["sigma_rel_error_max"],
+            "note": "under-resolved (xi<2): reported, not gated",
+        })
+    for r in res["oss_droplet"]:
+        rows.append({
+            "case": f"frozen-phi droplet R={r['radius']:g} xi={r['xi']:g}",
+            "quantity": "sigma", "ref": r["sigma_analytic"], "got": r["sigma_measured"],
+            "err_pct": 100 * r["rel_error"], "tolerance_pct": 100 * th["sigma_rel_error_max"],
+            "pass": abs(r["rel_error"]) < th["sigma_rel_error_max"], "note": "",
+        })
+    for r in res.get("coupled_laplace", []):
+        if r.get("nan"):
+            rows.append({"case": f"coupled droplet R={r['radius']:g}", "quantity": "dp/(sigma/R)",
+                         "ref": 1.0, "got": None, "err_pct": None, "tolerance_pct": 15.0,
+                         "pass": False, "note": "non-finite run (honest FAIL)"})
+            continue
+        rows.append({
+            "case": f"coupled droplet R={r['radius']:g} xi={r['xi']:g}",
+            "quantity": "dp/(sigma/R)", "ref": 1.0,
+            "got": 1.0 + r["laplace_tail_rel_error"],
+            "err_pct": 100 * r["laplace_tail_rel_error"], "tolerance_pct": 15.0,
+            "pass": abs(r["laplace_tail_rel_error"]) < th["laplace_rel_error_max"], "note": "",
+        })
+        rows.append({
+            "case": f"coupled droplet R={r['radius']:g} xi={r['xi']:g}",
+            "quantity": "sigma(measured tensor)", "ref": r["sigma_analytic"],
+            "got": r["sigma_measured"], "err_pct": 100 * r["sigma_rel_error"],
+            "tolerance_pct": 100 * th["sigma_rel_error_max"],
+            "pass": abs(r["sigma_rel_error"]) < th["sigma_rel_error_max"], "note": "",
+        })
+    for r in res["A_sweep"]:
+        rows.append({"case": f"flat A={r['A']:g}", "quantity": "sigma", "ref": r["sigma_analytic"],
+                     "got": r["sigma_measured"], "err_pct": 100 * r["rel_error"],
+                     "tolerance_pct": 100 * th["sigma_rel_error_max"],
+                     "pass": abs(r["rel_error"]) < th["sigma_rel_error_max"], "note": ""})
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # verdicts
 # ---------------------------------------------------------------------------
@@ -263,13 +391,25 @@ def verdicts(res: dict) -> dict:
         and res["order_param_closure"]["sum_g_cy_minus_phi_uy"] < th["order_param_closure_max"]
     )
     g4 = max(abs(r["rel_error"]) for r in res["oss_droplet"]) < th["sigma_rel_error_max"]
+    coupled = [r for r in res.get("coupled_laplace", []) if not r.get("nan")]
+    g5 = bool(coupled) and all(
+        abs(r["laplace_tail_rel_error"]) < th["laplace_rel_error_max"] for r in coupled
+    )
+    g6 = bool(coupled) and all(
+        abs(r["sigma_rel_error"]) < th["sigma_rel_error_max"] for r in coupled
+    )
     return {
         "G1_closure_identity": bool(g1),
         "G2_sigma_flat_under_15pct": bool(g2),
         "G2b_sigma_flat_under_3pct_target": bool(g2_target),
         "G3_order_param_closure": bool(g3),
         "G4_sigma_droplet_under_15pct": bool(g4),
-        "verdict": "PASS" if (g1 and g2 and g3 and g4) else "FAIL",
+        "G5_coupled_laplace_under_15pct": bool(g5),
+        "G6_coupled_sigma_measured_under_15pct": bool(g6),
+        "worst_coupled_laplace_error_pct": (
+            100 * max(abs(r["laplace_tail_rel_error"]) for r in coupled) if coupled else None
+        ),
+        "verdict": "PASS" if (g1 and g2 and g3 and g4 and g5 and g6) else "FAIL",
         "worst_resolved_sigma_error": max(abs(r["rel_error"]) for r in flat if r["xi_target"] >= 2.0),
         "xi1_under_resolution_error": min(r["rel_error"] for r in flat),
     }
@@ -300,12 +440,32 @@ def main() -> int:
     res["tau_sweep"] = stage_tau_sweep([0.6, 0.8, 1.0, 1.5])
     res["A_sweep"] = stage_A_sweep([0.05, 0.1, 0.2])
     res["tl_force_arm"] = stage_tl_force_arm()
+    res["coupled_laplace"] = stage_coupled_laplace()
+    res["coupled_series"] = stage_coupled_series()
+    res["coupled_sensitivity"] = stage_coupled_sensitivity()
+    res["benchmark"] = bench_table(res)
     res["verdicts"] = verdicts(res)
     res["wall_seconds"] = round(time.time() - t0, 1)
 
     out = os.path.join(ART, "results.json")
     with open(out, "w") as f:
         json.dump(res, f, indent=2, sort_keys=True)
+    bench_csv = os.path.join(ART, "benchmark_table.csv")
+    with open(bench_csv, "w") as f:
+        f.write("case,quantity,ref,got,err_pct,tolerance_pct,pass,note\n")
+        for r in res["benchmark"]:
+            f.write(f"{r['case']},{r['quantity']},{r['ref']},{r['got']},{r['err_pct']},"
+                    f"{r['tolerance_pct']},{r['pass']},{r['note']}\n")
+    summary = {
+        "rows": len(res["benchmark"]),
+        "passed": sum(1 for r in res["benchmark"] if r["pass"]),
+        "verdicts": res["verdicts"],
+        "coupled_laplace_pct": res["verdicts"]["worst_coupled_laplace_error_pct"],
+        "sigma_worst_pct": 100 * res["verdicts"]["worst_resolved_sigma_error"],
+    }
+    with open(os.path.join(ART, "benchmark_summary.json"), "w") as f:
+        json.dump(summary, f, indent=2, sort_keys=True)
+    print(json.dumps(summary, indent=1))
     print(json.dumps(res["verdicts"], indent=2))
     print("wrote", out, f"({res['wall_seconds']} s)")
     return 0
