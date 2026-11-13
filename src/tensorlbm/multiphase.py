@@ -36,7 +36,7 @@ import torch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from .d2q9 import C, W, _w_for, equilibrium, macroscopic
+from .d2q9 import C, W, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -540,6 +540,8 @@ def sc_two_component_force(
     solid_mask: torch.Tensor | None = None,
     wall_mode: str = "dry",
     sc_form: str = "standard",
+    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    g_self: tuple[float, float] = (0.0, 0.0),
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute Shan-Chen interaction + gravity forces for two immiscible components.
 
@@ -574,6 +576,41 @@ def sc_two_component_force(
                      rho_other(x-c_i)``, or ``"edm"`` the exact-difference
                      (well-balanced) pair split of Kupershtokh et al. (2009).
                      Same continuum limit; ``"standard"`` is bit-identical.
+        psi_fn:      Pseudopotential of the Shan-Chen force, applied to *both*
+                     densities before the interaction sum:
+                     ``psi_s = psi_fn(rho_s)``.  ``None`` (default, historical)
+                     is the identity ``psi(rho) = rho`` (the linear
+                     pseudopotential, i.e. the force is quadratic in density).
+                     Passing :func:`psi_exp` or ``make_psi_eos(...)`` makes the
+                     kernel the standard multicomponent Shan-Chen model with a
+                     non-ideal pseudopotential, which is what
+                     ``lbm-principles-practice/code`` chapter 9 uses
+                     (``psi = rho0 (1 - exp(-rho/rho0))``).  Both the prefactor
+                     ``psi_s(x)`` and the neighbour gather use the *same*
+                     potential, as required for a force that is a discrete
+                     gradient.
+        g_self:      Self-interaction strengths ``(g_11, g_22)`` added to the
+                     cross force, in the same sign convention as ``G_12``
+                     (``g < 0`` = repulsion between like particles... see the
+                     note below; the discrete form is
+                     ``F_1 += -g_11 psi_1(x) sum_i w_i c_i psi_1(x-c_i)``).
+                     Default ``(0, 0)`` is bit-identical to the historical
+                     two-component-only force.  A non-zero self term is what
+                     turns a component non-ideal on its own (coexistence of a
+                     single species), so ``g_self`` plus ``psi_fn`` reproduces
+                     the full ``nfluids = 2`` branch of the OSS reference.
+
+    Note
+    ----
+    Sign convention.  The discrete sums sample the *backward* neighbours, so
+    ``sum_i w_i c_i psi(x-c_i) = -cs^2 grad psi + O(h^2)``; the force written
+    here is therefore ``F_s = -G psi_s sum_i w_i c_i psi'(x-c_i)``, whose
+    continuum limit is ``+G cs^2 psi_s grad psi'`` — ``G < 0`` separates the
+    two components.  The OSS reference gathers the *forward* neighbours
+    (``sum_i w_i c_i psi(x+c_i)``), which is the exact negative of the same
+    sum on a symmetric stencil, and writes ``F = -g psi_s sum_i w_i c_i
+    psi'(x+c_i)``.  Hence the exact (not merely asymptotic) mapping between
+    the two parameterisations is ``G = -g``.
 
     Returns:
         ``(Fx1, Fy1, Fx2, Fy2)`` – force fields for each component,
@@ -586,6 +623,17 @@ def sc_two_component_force(
     if sc_form not in ("standard", "edm"):
         raise ValueError(f"sc_form must be 'standard' or 'edm', got {sc_form!r}")
 
+    if sc_form == "edm" and (psi_fn is not None or g_self != (0.0, 0.0)):
+        raise ValueError(
+            "sc_form='edm' is defined for the linear pseudopotential and a pure "
+            "cross force only; use sc_form='standard' with psi_fn/g_self"
+        )
+    g11, g22 = float(g_self[0]), float(g_self[1])
+    psi1 = rho1 if psi_fn is None else psi_fn(rho1)
+    psi2 = rho2 if psi_fn is None else psi_fn(rho2)
+    if psi1.shape != rho1.shape or psi2.shape != rho2.shape:
+        raise ValueError("psi_fn must preserve the field shape")
+
     def _neighbour_sums(field: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if solid_mask is not None and wall_mode == "mirror":
             return _sc_neighbor_weighted_sum(
@@ -593,8 +641,8 @@ def sc_two_component_force(
             )
         return _sc_neighbor_weighted_sum(field, solid_mask)
 
-    sum_x2, sum_y2 = _neighbour_sums(rho2)
-    sum_x1, sum_y1 = _neighbour_sums(rho1)
+    sum_x2, sum_y2 = _neighbour_sums(psi2)
+    sum_x1, sum_y1 = _neighbour_sums(psi1)
 
     if sc_form == "edm":
         # Exact-difference (well-balanced) split of the pair force, Kupershtokh
@@ -613,11 +661,18 @@ def sc_two_component_force(
         Fy2 = -G_12 * (0.5 * sum_yS - 0.5 * exch_y) + rho2 * gy
         return Fx1, Fy1, Fx2, Fy2
 
-    Fx1 = -G_12 * rho1 * sum_x2 + rho1 * gx
-    Fy1 = -G_12 * rho1 * sum_y2 + rho1 * gy
+    Fx1 = -G_12 * psi1 * sum_x2 + rho1 * gx
+    Fy1 = -G_12 * psi1 * sum_y2 + rho1 * gy
 
-    Fx2 = -G_12 * rho2 * sum_x1 + rho2 * gx
-    Fy2 = -G_12 * rho2 * sum_y1 + rho2 * gy
+    Fx2 = -G_12 * psi2 * sum_x1 + rho2 * gx
+    Fy2 = -G_12 * psi2 * sum_y1 + rho2 * gy
+
+    if g11 != 0.0:
+        Fx1 = Fx1 - g11 * psi1 * sum_x1
+        Fy1 = Fy1 - g11 * psi1 * sum_y1
+    if g22 != 0.0:
+        Fx2 = Fx2 - g22 * psi2 * sum_x2
+        Fy2 = Fy2 - g22 * psi2 * sum_y2
 
     return Fx1, Fy1, Fx2, Fy2
 
@@ -658,12 +713,8 @@ def guo_force_term(
     if not (rho.shape == ux.shape == uy.shape == fx.shape == fy.shape):
         raise ValueError("guo_force_term: rho/ux/uy/fx/fy must share one shape")
     device = fx.device
-    # Weights/velocities must follow the *field* dtype: with the historical
-    # ``.float()`` cast a float64 workload silently used float32-rounded
-    # weights (4/9 is not representable), which broke the momentum-injection
-    # identity sum_i c_i S_i = (1 - 1/(2 tau)) F at the 1e-9 level.
-    c = C.to(device).to(fx.dtype)
-    w = _w_for(fx.dtype, device)
+    c = C.to(device).float()
+    w = W.to(device)
     cx = c[:, 0].view(9, 1, 1)
     cy = c[:, 1].view(9, 1, 1)
     cu = cx * ux + cy * uy
@@ -1044,8 +1095,8 @@ def collide_sc_single_component(
         uyp = uy + 0.5 * Fy / rho_s
         feq = equilibrium(rho, uxp, uyp)
         device = f.device
-        c = _c_on(device).to(f.dtype)
-        w = _w_for(f.dtype, device)
+        c = _c_on(device).float()
+        w = _w_on(device).float()
         cx = c[:, 0].view(9, 1, 1)
         cy = c[:, 1].view(9, 1, 1)
         w3 = w.view(9, 1, 1)
