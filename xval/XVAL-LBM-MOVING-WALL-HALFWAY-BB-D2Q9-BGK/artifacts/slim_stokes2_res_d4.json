@@ -1,0 +1,84 @@
+{
+ "tag": "stokes2_res_d4",
+ "case": "stokes2",
+ "variant": "ladd_pre_local",
+ "ny": 26,
+ "nx": 4,
+ "tau": 0.8,
+ "nu": 0.10000000000000002,
+ "U0": 0.02,
+ "Ma": 0.034641016151377546,
+ "omega": 0.012500000000000002,
+ "period_steps": 502.6548245743668,
+ "delta_bl": 4.0,
+ "gap_over_delta": 6.0,
+ "n_steps": 3016,
+ "l2_rel_pct": 1.8902038437822863,
+ "max_err_pct_U0_full": 1.7452987958123138,
+ "max_err_pct_U0_resolved": 1.7452987958123138,
+ "argmax_row_resolved": 1,
+ "far_field_floor_pct": 0.24787521766663584,
+ "mass_drift_pct": -1.8774725364122644e-11,
+ "probes": [
+  {
+   "row": 1,
+   "eta_over_delta": 0.125,
+   "amp_num_over_U0": 0.8856342692745356,
+   "amp_ana_over_U0": 0.8824969025845953,
+   "amp_err_pct": 0.35551022114090697,
+   "phase_num_deg": 6.0043641022372825,
+   "phase_ana_deg": 7.16197243913529,
+   "phase_err_deg": -1.1576083368980221
+  },
+  {
+   "row": 2,
+   "eta_over_delta": 0.375,
+   "amp_num_over_U0": 0.6899309652146273,
+   "amp_ana_over_U0": 0.6872892787909722,
+   "amp_err_pct": 0.38436310665316076,
+   "phase_num_deg": 20.307073113808986,
+   "phase_ana_deg": 21.48591731740587,
+   "phase_err_deg": -1.1788442035968956
+  },
+  {
+   "row": 4,
+   "eta_over_delta": 0.875,
+   "amp_num_over_U0": 0.41817372120282964,
+   "amp_ana_over_U0": 0.41686201967850844,
+   "amp_err_pct": 0.3146608379753124,
+   "phase_num_deg": 48.99415583553046,
+   "phase_ana_deg": 50.13380707394703,
+   "phase_err_deg": -1.139651238416576
+  },
+  {
+   "row": 6,
+   "eta_over_delta": 1.375,
+   "amp_num_over_U0": 0.253529745276255,
+   "amp_ana_over_U0": 0.25283959580474646,
+   "amp_err_pct": 0.2729594110099206,
+   "phase_num_deg": 77.81998594981452,
+   "phase_ana_deg": 78.78169683048819,
+   "phase_err_deg": -0.9617108806736496
+  },
+  {
+   "row": 8,
+   "eta_over_delta": 1.875,
+   "amp_num_over_U0": 0.15403906822802957,
+   "amp_ana_over_U0": 0.15335496684492847,
+   "amp_err_pct": 0.4460901379169955,
+   "phase_num_deg": 106.70146974174595,
+   "phase_ana_deg": 107.42958658702935,
+   "phase_err_deg": -0.7281168452834095
+  },
+  {
+   "row": 12,
+   "eta_over_delta": 2.875,
+   "amp_num_over_U0": 0.05699925278835695,
+   "amp_ana_over_U0": 0.05641613950377735,
+   "amp_err_pct": 1.0335930280031922,
+   "phase_num_deg": 164.2345281941916,
+   "phase_ana_deg": 164.72536610011167,
+   "phase_err_deg": -0.49083790592007404
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+ "tag": "couette_H16_tau0.8_U0.05_ladd_pre_local",
+ "case": "couette",
+ "variant": "ladd_pre_local",
+ "ny": 18,
+ "nx": 4,
+ "tau": 0.8,
+ "nu": 0.10000000000000002,
+ "H_eff": 16.0,
+ "U0": 0.05,
+ "Ma": 0.08660254037844388,
+ "Re": 7.999999999999999,
+ "n_steps": 2600,
+ "steady": true,
+ "l2_rel": 8.27077490196782e-14,
+ "max_rel_pct_cf_umax": 1.160362128963067e-11,
+ "mass_drift_pct": -1.4230592013417562e-11,
+ "slope_err_pct": 1.0436096431476471e-11,
+ "y_wall_fit": 2.709637314838364e-13
+}

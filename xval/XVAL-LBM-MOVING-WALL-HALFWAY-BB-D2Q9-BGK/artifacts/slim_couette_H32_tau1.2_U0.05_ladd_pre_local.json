@@ -1,0 +1,20 @@
+{
+ "tag": "couette_H32_tau1.2_U0.05_ladd_pre_local",
+ "case": "couette",
+ "variant": "ladd_pre_local",
+ "ny": 34,
+ "nx": 4,
+ "tau": 1.2,
+ "nu": 0.2333333333333333,
+ "H_eff": 32.0,
+ "U0": 0.05,
+ "Ma": 0.08660254037844388,
+ "Re": 6.8571428571428585,
+ "n_steps": 2800,
+ "steady": true,
+ "l2_rel": 7.45386061597269e-14,
+ "max_rel_pct_cf_umax": 8.571626653613905e-12,
+ "mass_drift_pct": -1.0010293247914355e-11,
+ "slope_err_pct": 5.384581669432009e-12,
+ "y_wall_fit": -3.8465240500849e-13
+}
