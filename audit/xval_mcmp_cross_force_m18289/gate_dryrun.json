@@ -1,0 +1,20 @@
+{
+ "judge_dryrun": {
+  "input_level": 1,
+  "gate_level": 1,
+  "reasons": [],
+  "files_exist_tests": true,
+  "files_exist_impl": true,
+  "impl_real": true,
+  "note": "m18348 was still running when gate_once ran, so verdict#740 stayed pending (gate skips running audit missions); it will be adjudicated on the next cycle after m18348 succeeds"
+ },
+ "verdict_row": {
+  "table": "tensor_maturity_verdicts",
+  "id": 740,
+  "repo": "TensorLBM",
+  "scope": "m18289 XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP",
+  "mission_id": 18348,
+  "level": 1,
+  "verdict_by": "board-audit"
+ }
+}
