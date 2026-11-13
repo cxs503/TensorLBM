@@ -1,0 +1,50 @@
+{
+  "repro_cmd": "cd /root/tp-agent/work/m17865 && python3 scripts/xval_iso8_wall_normal_table.py run --force-build",
+  "wall_clock_s": 38.7,
+  "gfortran": "GNU Fortran 12.3.0",
+  "n_numeric_fields_compared": null,
+  "non_timing_diffs": [],
+  "timing_only_diffs": [
+    "/cases[0]/t_ours_s",
+    "/cases[0]/t_oss_s",
+    "/cases[1]/t_ours_s",
+    "/cases[1]/t_oss_s",
+    "/cases[2]/t_ours_s",
+    "/cases[2]/t_oss_s",
+    "/cases[3]/t_ours_s",
+    "/cases[3]/t_oss_s"
+  ],
+  "file_hashes": {
+    "accuracy_table.csv": {
+      "delivered": "a57389e1a6f3f2dd",
+      "rerun": "a57389e1a6f3f2dd",
+      "identical": true
+    },
+    "exactness_table.csv": {
+      "delivered": "e4a8ed86701974b2",
+      "rerun": "13e677211bff91c0",
+      "identical": false
+    },
+    "sensitivity_table.csv": {
+      "delivered": "46f300404813a08f",
+      "rerun": "46f300404813a08f",
+      "identical": true
+    },
+    "oss_fixture_normal_table.csv": {
+      "delivered": "768c2e293bc364a9",
+      "rerun": "768c2e293bc364a9",
+      "identical": true
+    },
+    "oss_iso8_stencil.json": {
+      "delivered": "20fdebceb1ffe86e",
+      "rerun": "20fdebceb1ffe86e",
+      "identical": true
+    },
+    "results.json": {
+      "delivered": "3f68c7afab07f218",
+      "rerun": "a0208b59c47f46c8",
+      "identical": false
+    }
+  },
+  "note": "results.json re-run reproduces every non-timing number bit-identically; exactness_table.csv differs only in its two timing columns (t_oss_s/t_ours_s), hence its file hash differs."
+}
