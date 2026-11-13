@@ -1,0 +1,6 @@
+rc=0
+stdout=INSERT 0 0
+635|4|pending
+INSERT 0 1
+
+stderr=
