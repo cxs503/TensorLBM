@@ -1,0 +1,70 @@
+{
+  "schema": "xval-predeclared/v1",
+  "anchor": "XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION",
+  "written_before_runs": "2026-11-13",
+  "decision": "Does the OSS 'cupy drop-in, no kernel fusion' practice (array-API swap only) transfer to TensorLBM's PyTorch stack, i.e. does a single SOY free-energy D2Q9 implementation driven through two array backends reproduce (a) the executed OSS reference numbers and (b) the analytic Young-Laplace law within the owner precision standard?",
+  "alternatives": [
+    "A: array-API drop-in (NumPy <-> PyTorch eager), one implementation, no custom/fused kernels (the OSS practice).",
+    "B: hand-written fused kernels per backend (out of scope for this mission; noted as the alternative the OSS project also declined)."
+  ],
+  "hypothesis": "H1: the TensorLBM port reproduces the analytic Laplace jump dp = sigma/R within 15 % (owner standard); H2: the two TensorLBM backends agree to < 1e-6 relative on dp (true drop-in equivalence, not just 'similar results'); H3: the executed OSS reference code agrees with the TensorLBM port to within a few percent on dp, the residual being boundary-ghost and initialisation choices.",
+  "unit_of_analysis": "one simulation (one radius, one parameter set, one arm), outcome = measured Laplace pressure jump dp between droplet interior and exterior.",
+  "metric": "dp = mean(p | r < R - xi) - mean(p | r > R + xi), p = rho/3 + psi*mu; error = 100*(dp - sigma/R)/(sigma/R) [%].",
+  "secondary_metrics": [
+    "u_max residual velocity at the sampling step (steadiness indicator)",
+    "sigma from capillary energy: sigma_cap = sum(kappa*|grad psi|^2) / (2*pi*R), reported as an independent surface-tension route",
+    "psi_abs_sum drift (order-parameter conservation)",
+    "array ops per step and wall time per step (cost of the no-fusion practice)"
+  ],
+  "thresholds": {
+    "laplace_error_pct": 15.0,
+    "laplace_error_dir": "abs",
+    "backend_agreement_rel": 1e-06,
+    "oss_vs_tensorlbm_rel_pct": 15.0,
+    "notes": "15 % is the owner precision standard for cross-validation; the backend-agreement criterion is the drop-in-equivalence definition (same algorithm, different array namespace)."
+  },
+  "stopping_rule": "Fixed step budget (2000 lattice steps, dp sampled every 100 steps); no step count is extended after seeing the result. A case whose sampled dp band crosses the +-15 % band is reported as a band, not as the best sample.",
+  "repetitions": {
+    "n": 1,
+    "rationale": "Fully deterministic: no random seeds, no stochastic collision, no wall-clock-dependent logic. Repeat runs of the same configuration differ only by floating-point summation order; the auditor's independent re-run of the previous round reproduced dp bit-for-bit (6.671389e-04). Variation is therefore explored through the parameter sweeps below, not through repetitions."
+  },
+  "variables": {
+    "controlled": ["nx=ny=60", "steps=2000", "sigma=0.01", "rho0=1.0", "dx=dt=1", "periodic domain", "equilibrium tanh(r/xi) initial droplet (unless swept)", "same D2Q9 constants and update order"],
+    "changed": ["array backend (numpy / torch / oss_exec)", "droplet radius R", "xi", "pressure_form", "viscosity_ratio M", "gamma", "init_profile"],
+    "confounders": [
+      "initial interface width (a 2x-too-sharp initial tanh relaxes slowly and biases dp by tens of percent; swept explicitly)",
+      "initial transient vs sampling step (dp oscillates before settling; the full dp(t) band is reported)",
+      "OSS reference ghosts: the OSS source hard-codes +1/-1 ghost columns for its Zou-He inlet/outlet, which is inconsistent with a periodic droplet box; the adapter sets them to the far-field value -1 and the resulting agreement is reported rather than hidden",
+      "float64 vs float32: only float64 used, so no dtype confound"
+    ]
+  },
+  "convergence": {
+    "radii": [10, 12, 15, 20],
+    "expectation": "error should shrink as R/xi grows (diffuse-interface curvature correction ~ O(xi/R))"
+  },
+  "sensitivity": [
+    {"param": "xi", "values": [2.5, 3.0, 3.5]},
+    {"param": "gamma", "values": [0.05, 0.1, 0.2]},
+    {"param": "viscosity_ratio", "values": [1.0, 20.0]},
+    {"param": "pressure_form", "values": ["oss", "psi_mu_over_3"]},
+    {"param": "init_profile", "values": ["equilibrium", "sharp"]}
+  ],
+  "environment": {
+    "python": "3.11",
+    "dtype": "float64",
+    "device": "CPU (torch CUDA not used; the drop-in claim is tested through the eager CPU path, GPU is a device swap)",
+    "oss_reference": "ebinan92/Fingering_dynamics @ 150a573, lattice_boltzmann/fingering_periodic.py, read-only checkout (OSS_FINGERING_ROOT), executed not vendored",
+    "command": "python xval/cupy_dropin_no_kernel_fusion/run_xval.py"
+  },
+  "analysis_plan": {
+    "aggregation": "per-arm final dp at the fixed step budget, plus the full sampled history",
+    "uncertainty": "reported as the min/max of the sampled dp band over the last third of the run",
+    "outliers": "none removed; non-finite results are reported as failures with the failing step",
+    "acceptance": "H1 and H2 are pass/fail machine checks; H3 is reported as a number with the boundary/initialisation caveat"
+  },
+  "limitations": [
+    "Periodic domain only: the OSS Zou-He inlet/outlet and half-way bounce-back walls are not exercised.",
+    "GPU/CuPy path is not executed on this host (no GPU); the practice is validated through the array-API-swap equivalence rather than through CuPy itself.",
+    "The Laplace law is an analytic reference, not an experimental measurement; sigma is the model surface tension implied by kappa = 0.75*sigma*xi (self-consistent, cross-checked with the capillary-energy route)."
+  ]
+}
