@@ -1,0 +1,10 @@
+== arm gk60: theta_target=60.0 wetting=True
+  [gk60] step      1  theta= 60.06 cap=   nan  |u|max=8.289e-04  dphi=nan
+  [gk60] step   1000  theta=180.00 cap=   nan  |u|max=5.870e-02  dphi=2.94e-01
+  [gk60] step   2000  theta= 83.85 cap=   nan  |u|max=3.080e-02  dphi=3.54e-01
+  [gk60] step   3000  theta=106.86 cap=   nan  |u|max=1.763e-02  dphi=1.32e-01
+  [gk60] step   4000  theta=115.11 cap=   nan  |u|max=1.039e-02  dphi=6.39e-02
+  [gk60] step   5000  theta=120.50 cap=   nan  |u|max=6.394e-03  dphi=3.41e-02
+  [gk60] step   6000  theta=124.60 cap=   nan  |u|max=4.967e-03  dphi=1.96e-02
+   -> theta_circle=124.60 (target 60.0) err=+107.66%  |u|max=4.97e-03  pass15=False
+wrote out_gk60/results.json

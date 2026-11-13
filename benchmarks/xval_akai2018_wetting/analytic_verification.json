@@ -1,0 +1,236 @@
+{
+  "anchor": "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING",
+  "what": "analytic verification of the geometric wetting normal rotation (local BC statement)",
+  "estimator": "theta_local = median over bottom-wall faces of atan2(|dphi/dt|, phi(face)-phi(ghost))",
+  "criteria": {
+    "gate": "each (theta, xi) case: relative error <= 15 %"
+  },
+  "summary": {
+    "n_cases": 22,
+    "n_pass_15pct": 22,
+    "max_rel_err_pct": 1.578983857244667e-14,
+    "median_abs_err_deg": 8.881784197001252e-16
+  },
+  "cases": [
+    {
+      "theta_deg": 15.0,
+      "xi": 2.0,
+      "n_nodes": 17,
+      "theta_readback_median": 14.999999999999998,
+      "abs_err_deg": 1.7763568394002505e-15,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 3.552713678800501e-15
+    },
+    {
+      "theta_deg": 30.0,
+      "xi": 2.0,
+      "n_nodes": 11,
+      "theta_readback_median": 29.999999999999996,
+      "abs_err_deg": 3.552713678800501e-15,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 3.552713678800501e-15,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 45.0,
+      "xi": 2.0,
+      "n_nodes": 8,
+      "theta_readback_median": 45.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 7.105427357601002e-15,
+      "max_abs_err_deg": 7.105427357601002e-15
+    },
+    {
+      "theta_deg": 60.0,
+      "xi": 2.0,
+      "n_nodes": 7,
+      "theta_readback_median": 59.99999999999999,
+      "abs_err_deg": 7.105427357601002e-15,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 75.0,
+      "xi": 2.0,
+      "n_nodes": 6,
+      "theta_readback_median": 75.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 1.4210854715202004e-14,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 90.0,
+      "xi": 2.0,
+      "n_nodes": 5,
+      "theta_readback_median": 90.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    },
+    {
+      "theta_deg": 105.0,
+      "xi": 2.0,
+      "n_nodes": 6,
+      "theta_readback_median": 105.00000000000001,
+      "abs_err_deg": 1.4210854715202004e-14,
+      "rel_err_pct": 1.3534147347811431e-14,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 120.0,
+      "xi": 2.0,
+      "n_nodes": 7,
+      "theta_readback_median": 119.99999999999999,
+      "abs_err_deg": 1.4210854715202004e-14,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 1.4210854715202004e-14,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 135.0,
+      "xi": 2.0,
+      "n_nodes": 8,
+      "theta_readback_median": 135.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    },
+    {
+      "theta_deg": 150.0,
+      "xi": 2.0,
+      "n_nodes": 11,
+      "theta_readback_median": 150.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 2.842170943040401e-14
+    },
+    {
+      "theta_deg": 165.0,
+      "xi": 2.0,
+      "n_nodes": 17,
+      "theta_readback_median": 165.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    },
+    {
+      "theta_deg": 15.0,
+      "xi": 3.0,
+      "n_nodes": 18,
+      "theta_readback_median": 14.999999999999998,
+      "abs_err_deg": 1.7763568394002505e-15,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 3.552713678800501e-15
+    },
+    {
+      "theta_deg": 30.0,
+      "xi": 3.0,
+      "n_nodes": 15,
+      "theta_readback_median": 29.999999999999996,
+      "abs_err_deg": 3.552713678800501e-15,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 3.552713678800501e-15,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 45.0,
+      "xi": 3.0,
+      "n_nodes": 12,
+      "theta_readback_median": 44.99999999999999,
+      "abs_err_deg": 7.105427357601002e-15,
+      "rel_err_pct": 1.578983857244667e-14,
+      "iqr_deg": 7.105427357601002e-15,
+      "max_abs_err_deg": 1.4210854715202004e-14
+    },
+    {
+      "theta_deg": 60.0,
+      "xi": 3.0,
+      "n_nodes": 10,
+      "theta_readback_median": 59.99999999999999,
+      "abs_err_deg": 7.105427357601002e-15,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 2.842170943040401e-14
+    },
+    {
+      "theta_deg": 75.0,
+      "xi": 3.0,
+      "n_nodes": 9,
+      "theta_readback_median": 75.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 1.4210854715202004e-14,
+      "max_abs_err_deg": 2.842170943040401e-14
+    },
+    {
+      "theta_deg": 90.0,
+      "xi": 3.0,
+      "n_nodes": 9,
+      "theta_readback_median": 90.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    },
+    {
+      "theta_deg": 105.0,
+      "xi": 3.0,
+      "n_nodes": 9,
+      "theta_readback_median": 105.00000000000001,
+      "abs_err_deg": 1.4210854715202004e-14,
+      "rel_err_pct": 1.3534147347811431e-14,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 2.842170943040401e-14
+    },
+    {
+      "theta_deg": 120.0,
+      "xi": 3.0,
+      "n_nodes": 10,
+      "theta_readback_median": 119.99999999999999,
+      "abs_err_deg": 1.4210854715202004e-14,
+      "rel_err_pct": 1.1842378929335004e-14,
+      "iqr_deg": 1.4210854715202004e-14,
+      "max_abs_err_deg": 2.842170943040401e-14
+    },
+    {
+      "theta_deg": 135.0,
+      "xi": 3.0,
+      "n_nodes": 12,
+      "theta_readback_median": 135.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    },
+    {
+      "theta_deg": 150.0,
+      "xi": 3.0,
+      "n_nodes": 15,
+      "theta_readback_median": 150.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    },
+    {
+      "theta_deg": 165.0,
+      "xi": 3.0,
+      "n_nodes": 18,
+      "theta_readback_median": 165.0,
+      "abs_err_deg": 0.0,
+      "rel_err_pct": 0.0,
+      "iqr_deg": 0.0,
+      "max_abs_err_deg": 0.0
+    }
+  ]
+}

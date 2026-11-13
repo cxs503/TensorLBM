@@ -1,0 +1,10 @@
+== arm ctl60: theta_target=90.0 wetting=False
+  [ctl60] step      1  theta= 60.06 cap=   nan  |u|max=8.879e-04  dphi=nan
+  [ctl60] step   1000  theta=180.00 cap=   nan  |u|max=3.912e-02  dphi=2.72e-01
+  [ctl60] step   2000  theta=180.00 cap=   nan  |u|max=2.126e-02  dphi=3.54e-01
+  [ctl60] step   3000  theta=180.00 cap=   nan  |u|max=1.397e-02  dphi=9.94e-02
+  [ctl60] step   4000  theta=180.00 cap=   nan  |u|max=9.028e-03  dphi=6.40e-02
+  [ctl60] step   5000  theta=150.13 cap=   nan  |u|max=5.640e-03  dphi=4.17e-02
+  [ctl60] step   6000  theta=142.42 cap=   nan  |u|max=3.466e-03  dphi=2.50e-02
+   -> theta_circle=142.42 (target 90.0) err=+58.25%  |u|max=3.47e-03  pass15=False
+wrote out_ctl60/results.json
