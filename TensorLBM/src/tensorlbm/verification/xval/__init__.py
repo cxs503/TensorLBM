@@ -1,4 +1,5 @@
-"""Cross-validation framework: bitwise reproducibility, reference-data regression, benchmarking.
+"""Cross-validation framework: bitwise reproducibility, reference-data regression,
+continuous-error-vs-DOI-refs, and benchmarking.
 
 This module provides infrastructure for:
 
@@ -6,7 +7,9 @@ This module provides infrastructure for:
    and hash-based verification that identical inputs produce identical outputs.
 2. **Reference-data regression**: store golden reference snapshots (numpy arrays
    + scalar metrics) and detect regressions by comparing new runs against them.
-3. **Benchmarking**: wall-clock timing with warm-up, repetition, and
+3. **Continuous-error-vs-DOI-refs**: compare LBM results against analytical
+   solutions cited by DOI, computing L2/L∞ error norms.
+4. **Benchmarking**: wall-clock timing with warm-up, repetition, and
    statistical reporting (mean, std, min, max).
 
 Design principles
@@ -24,6 +27,9 @@ Method selection rationale (external_anchor)
   for seed control.
 * Reference-data regression: standard practice in CFD codes (OpenFOAM functionObjects,
   SU2 regression tests); we use numpy .npz for portability.
+* Continuous-error-vs-DOI-refs: follows the pattern from haimingz/vivsim
+  continuous-error-print-vs-doi-refs — compute analytical reference at DOI-cited
+  conditions, compare LBM output, report error norms with citation.
 * Benchmarking: ASME V&V 20-2009 "Standard for Verification and Validation in
   Computational Fluid Dynamics and Heat Transfer" for convergence metrics.
 """
@@ -36,6 +42,13 @@ from .bitwise_refdata import (
 )
 from .benchmark import BenchmarkConfig, BenchmarkResult, run_benchmark
 from .registry import XValCase, XValRegistry, XValResult
+from .continuous_error import (
+    DOIReference,
+    ContinuousErrorResult,
+    compute_continuous_errors,
+    print_error_report,
+    save_artifacts,
+)
 
 __all__ = [
     "BitwiseReproConfig",
@@ -48,4 +61,9 @@ __all__ = [
     "XValCase",
     "XValRegistry",
     "XValResult",
+    "DOIReference",
+    "ContinuousErrorResult",
+    "compute_continuous_errors",
+    "print_error_report",
+    "save_artifacts",
 ]
