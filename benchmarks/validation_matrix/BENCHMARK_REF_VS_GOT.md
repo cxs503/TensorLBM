@@ -1,6 +1,6 @@
 # Validation matrix — reference vs got (generated, zero hand-copy)
 
-generated: 2026-11-12T16:12:52Z | matrix v1.1 | **passed 6 / failed 4 / pending 1**
+generated: 2026-11-13T01:15:37Z | matrix v1.1 | **passed 7 / failed 3 / pending 1**
 
 Gate: |err| <= tol at every gated level AND the level series converges (span <= declared max_span_pct; monotone where required)
 
@@ -27,12 +27,12 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 | `static_droplet_laplace_ci` | static_droplet | sigma_pair_dev_pct | R=8/12/16 | — | 0.258157 | 0.258157 | 3 | yes | **passed** |
 | `static_droplet_laplace_ci` | static_droplet | sigma_pair_dev_pct | R=12/16/20 | — | 0.258157 | 0.258157 | 3 | yes | **passed** |
 | `rayleigh_taylor_rt` | rayleigh_taylor | — | — | — | — | — | — | — | **failed** |
-| `dam_break_ritter_ci` | dam_break | front_err_pct | nx=200 | — | 4.51248 | 4.51248 | 5 | yes | **failed** |
-| `dam_break_ritter_ci` | dam_break | front_err_pct | nx=400 | — | 2.56249 | 2.56249 | 5 | yes | **failed** |
-| `dam_break_ritter_ci` | dam_break | profile_l2_pct | nx=200 | — | 9.8248 | 9.8248 | 5 | NO | **failed** |
-| `dam_break_ritter_ci` | dam_break | profile_l2_pct | nx=400 | — | 6.29158 | 6.29158 | 5 | NO | **failed** |
-| `dam_break_ritter_ci` | dam_break | mass_drift_pct | nx=200 | — | 2.20934e-14 | 2.20934e-14 | 1 | yes | **failed** |
-| `dam_break_ritter_ci` | dam_break | mass_drift_pct | nx=400 | — | 2.21489e-14 | 2.21489e-14 | 1 | yes | **failed** |
+| `dam_break_ritter_ci` | dam_break | front_err_pct | nx=200 | — | 0.118666 | 0.118666 | 5 | yes | **passed** |
+| `dam_break_ritter_ci` | dam_break | front_err_pct | nx=400 | — | 0.0568844 | 0.0568844 | 5 | yes | **passed** |
+| `dam_break_ritter_ci` | dam_break | profile_l2_pct | nx=200 | — | 1.16773 | 1.16773 | 5 | yes | **passed** |
+| `dam_break_ritter_ci` | dam_break | profile_l2_pct | nx=400 | — | 0.830402 | 0.830402 | 5 | yes | **passed** |
+| `dam_break_ritter_ci` | dam_break | mass_drift_pct | nx=200 | — | 2.20934e-14 | 2.20934e-14 | 1 | yes | **passed** |
+| `dam_break_ritter_ci` | dam_break | mass_drift_pct | nx=400 | — | 0 | 0 | 1 | yes | **passed** |
 | `ship_resistance_suboff` | ship | cd_tot_err_pct | L=48 | — | -3.17 | -3.17 | 0 | NO | **passed** |
 | `ship_resistance_suboff` | ship | cd_tot_err_pct | L=80 | — | -1.15 | -1.15 | 3 | yes | **passed** |
 | `ship_wave_michell` | ship | — | — | — | — | — | — | — | **pending** |
@@ -57,8 +57,8 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 | `taylor_green_2d` | gamma_e | 0.000616395 → 0.00061673 | 3.3493e-07 | 1 | no | yes |
 | `static_droplet_laplace_ci` | laplace_max_dev_pct | 0.821534 → 0.591709 | 0.229825 | 3 | yes | yes |
 | `static_droplet_laplace_ci` | sigma_pair_dev_pct | 0.258157 → 0.258157 | 1.2379e-14 | 3 | yes | yes |
-| `dam_break_ritter_ci` | front_err_pct | 4.51248 → 2.56249 | 1.94999 | 5 | yes | yes |
-| `dam_break_ritter_ci` | profile_l2_pct | 9.8248 → 6.29158 | 3.53322 | 5 | yes | yes |
+| `dam_break_ritter_ci` | front_err_pct | 0.118666 → 0.0568844 | 0.0617815 | 5 | yes | yes |
+| `dam_break_ritter_ci` | profile_l2_pct | 1.16773 → 0.830402 | 0.337331 | 5 | yes | yes |
 | `ship_resistance_suboff` | cd_tot_err_pct | 3.17 → 1.15 | 2.02 | 3 | yes | yes |
 | `cylinder_re100_dfg` | cd_err_pct | 5.59677 → 1.87284 | 3.72393 | 3 | yes | NO |
 
@@ -74,7 +74,7 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 | `taylor_green_2d` | `tg2d_gamma_e_theory` | energy decay rate of the 2-D Taylor-Green vortex gamma_E = 4 nu k^2 | 0.00061685 | analytic Taylor-Green solution (energy decays twice as fast as velocity) | `benchmarks/verified/taylor_green_2d/README.md` (4bc2cdd7501418ee) |
 | `static_droplet_laplace_ci` | `laplace_law_2d` | static-droplet Laplace pressure jump | Delta p = sigma / R (2-D circular droplet) | Young-Laplace law | `benchmarks/verified/laplace_droplet/README.md` (813960b42c2bb31d) |
 | `rayleigh_taylor_rt` | `chandrasekhar_rt` | Rayleigh-Taylor linear growth rate sigma(k) for two viscous fluids | viscous RT dispersion relation (Chandrasekhar 5x5 determinant) | Chandrasekhar 1961, Hydrodynamic and Hydromagnetic Stability, ch. X | `benchmarks/pending/rayleigh_taylor/README.md` (32e4691f3e65d058) |
-| `dam_break_ritter_ci` | `ritter_front_law` | dam-break front position x_f(t) | x_f(t) = 2 sqrt(g h0) t | Ritter 1892 self-similar shallow-water solution; implementation anchor in the library docs | `src/tensorlbm/shallow_water.py` (5abb26d72972569d) |
+| `dam_break_ritter_ci` | `ritter_front_law` | dam-break front position x_f(t) | x_f(t) = 2 sqrt(g h0) t | Ritter 1892 self-similar shallow-water solution; implementation anchor in the library docs | `src/tensorlbm/shallow_water.py` (b8987f2a937e6488) |
 | `ship_resistance_suboff` | `blasius_cf_suboff` | Blasius laminar flat-plate friction coefficient at Re=1000 (wetted-area normalization) | 0.041995 | Blasius Cf = 1.328/sqrt(Re); frozen in the verified artifact as reference.Cf_ref | `benchmarks/verified/suboff_re1000/README.md` (946fa05154563277) |
 | `ship_wave_michell` | `michell_cw` | thin-ship wave resistance coefficient C_W(Fn) | Michell (1898) thin-ship integral | Michell 1898; in-repo closed-form implementation src/tensorlbm/wave_wake_michell.py | `benchmarks/wave_wake_michell/REPORT.md` (0f74d6ba1177c67f) |
 | `cylinder_re100_dfg` | `cylinder_dfg2d2_cd_re100` | mean drag coefficient of the DFG 2D-2 channel cylinder, Re=100 | 3.23 | Schäfer & Turek 1996, NNFM 48, pp. 547-566, Table 3 (2D-2) | `benchmarks/verified/cylinder/re100_dfg/REFERENCE.md` (c3bc60d7a89e94da) |
@@ -91,7 +91,7 @@ Every number below is read from the case artifact and judged by `criteria.py`; t
 - `taylor_green_2d` (passed): `python benchmarks/verified/taylor_green_2d/run.py`
 - `static_droplet_laplace_ci` (passed): `python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py`
 - `rayleigh_taylor_rt` (failed): `python benchmarks/pending/rayleigh_taylor/run.py`
-- `dam_break_ritter_ci` (failed): `python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py`
+- `dam_break_ritter_ci` (passed): `python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py`
 - `ship_resistance_suboff` (passed): `python benchmarks/verified/suboff_re1000/run.py`
 - `ship_wave_michell` (pending): `python benchmarks/wave_wake_michell/run.py`
 - `cylinder_re100_dfg` (failed): `python benchmarks/verified/cylinder/re100_dfg/run.py --levels 20 28 40 --steps 14000 20000 27200 --threads 8`

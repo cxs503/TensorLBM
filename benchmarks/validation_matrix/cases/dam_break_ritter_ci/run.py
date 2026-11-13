@@ -18,6 +18,15 @@ Metrics per grid
 ``profile_l2_pct``  relative L2 error of the depth profile inside the wet fan.
 ``mass_drift_pct``  total fluid volume drift (the FV scheme is flux-form).
 
+Scheme (2026-11-13, m17112): the judged levels run the second-order MUSCL
+(minmod) + local-speed HLL + SSP-RK2 scheme of ``tensorlbm.shallow_water``
+(``scheme="muscl2"``).  The legacy first-order global-wave-speed Rusanov flux is
+still selectable with ``--scheme rusanov`` and is kept as a regression anchor
+(``tests/test_shallow_water_muscl2.py``).  Rationale: the first-order scheme's
+numerical viscosity is ``~ (|u|+c) dx`` irrespective of the local gradient, which
+put ``profile_l2_pct`` at 9.82% / 6.29% (nx=200/400) -- an under-resolution of the
+profile *metric*, not a mis-calibrated gate.
+
 Usage::
 
     python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py
@@ -54,8 +63,9 @@ CASE_ID = "dam_break_ritter_ci"
 TIER = "ci"
 
 
-def measure_level(nx: int, t_end: float, cfl: float) -> dict:
+def measure_level(nx: int, t_end: float, cfl: float, scheme: str = "muscl2") -> dict:
     cfg = ShallowWaterConfig(
+        scheme=scheme,
         nx=nx,
         x_min=-4.0,
         x_max=12.0,
@@ -107,7 +117,11 @@ def measure_level(nx: int, t_end: float, cfl: float) -> dict:
             "steps": run.steps,
             "dt": run.dt,
             "elapsed_s": elapsed,
-            "lattice": "SWE HLL finite volume (1-D), hydrostatic reconstruction",
+            "lattice": "SWE finite volume (1-D): " + (
+            "MUSCL-Hancock/minmod reconstruction + local-speed HLL flux + SSP-RK2"
+            if scheme == "muscl2" else
+            "1st-order global-wave-speed Rusanov/HLL flux"),
+        "scheme": scheme,
         },
     }
 
@@ -120,12 +134,15 @@ def main() -> int:
     ap.add_argument("--ladder", default="800,1600",
                     help="extra grids reported as a resolution ladder (diagnostic, "
                          "not part of the judged CI levels)")
+    ap.add_argument("--scheme", default="muscl2", choices=["muscl2", "rusanov"],
+                    help="SWE flux scheme; muscl2 = 2nd-order (default), "
+                         "rusanov = legacy 1st-order global-speed flux")
     ap.add_argument("--out", default=str(CASE_DIR))
     args = ap.parse_args()
 
     grids = [int(s) for s in args.nx.split(",")]
-    levels = [measure_level(nx, args.t_end, args.cfl) for nx in grids]
-    ladder = [measure_level(int(s), args.t_end, args.cfl)
+    levels = [measure_level(nx, args.t_end, args.cfl, args.scheme) for nx in grids]
+    ladder = [measure_level(int(s), args.t_end, args.cfl, args.scheme)
               for s in args.ladder.split(",") if s]
 
     result = {
@@ -139,7 +156,8 @@ def main() -> int:
             "source": "src/tensorlbm/shallow_water.py (docstring + ritter_front/ritter_depth)",
             "origin": "Ritter 1892",
         },
-        "config": {"t_end": args.t_end, "cfl": args.cfl, "h0": 1.0, "g": 1.0},
+        "config": {"t_end": args.t_end, "cfl": args.cfl, "h0": 1.0, "g": 1.0,
+                   "scheme": args.scheme},
         "levels": levels,
         "resolution_ladder": [
             {"level": lv["level"], "metrics": lv["metrics"],
