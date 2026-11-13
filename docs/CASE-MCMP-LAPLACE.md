@@ -174,19 +174,19 @@
 
 ## 图
 
-![laplace_law.png](figures/laplace_law.png)
+![laplace_law.png](../benchmarks/case_pool/mcmp_laplace/figures/laplace_law.png)
 
 *图 1｜Δp vs 1/R：点为实测，线为 ref（σ_fit/R）；三耦合点线性关系成立。*
 
-![sigma_vs_radius.png](figures/sigma_vs_radius.png)
+![sigma_vs_radius.png](../benchmarks/case_pool/mcmp_laplace/figures/sigma_vs_radius.png)
 
 *图 2｜逐半径 σ_i = Δp·R 相对 σ_fit 的偏差与 ±5% 验收带。*
 
-![droplet_field.png](figures/droplet_field.png)
+![droplet_field.png](../benchmarks/case_pool/mcmp_laplace/figures/droplet_field.png)
 
 *图 3｜hero 算例组分 1 密度场与方位平均剖面（界面宽度 tanh 拟合）。*
 
-![routeB_flatness.png](figures/routeB_flatness.png)
+![routeB_flatness.png](../benchmarks/case_pool/mcmp_laplace/figures/routeB_flatness.png)
 
 *图 4｜Route B 证据：平板界面 P_NN 应守恒却下凹 ~50%，σ_mech 因此作废。*
 
