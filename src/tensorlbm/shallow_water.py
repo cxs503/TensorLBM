@@ -55,6 +55,8 @@ from dataclasses import dataclass
 
 import torch
 
+_SCHEMES = {"rusanov", "muscl2"}
+
 __all__ = [
     "ShallowWaterConfig",
     "ritter_depth",
@@ -62,6 +64,7 @@ __all__ = [
     "ritter_front",
     "init_dam_break",
     "swe_step",
+    "swe_step_muscl2",
     "front_position",
     "run_ritter_dam_break",
     "front_from_mass",
@@ -90,6 +93,7 @@ class ShallowWaterConfig:
     h_dry: float = 1.0e-4      # dry threshold (fraction of h0)
     front_thresh_frac: float = 1.0e-3   # front = outermost cell with h > frac*h0
     dtype: str = "float64"
+    scheme: str = "rusanov"    # "rusanov" (1st order, global wave speed) | "muscl2"
 
     @property
     def c0(self) -> float:
@@ -112,6 +116,8 @@ class ShallowWaterConfig:
             raise ValueError("g and h0 must be positive")
         if not 0.0 < self.cfl <= 1.0:
             raise ValueError("cfl must be in (0, 1]")
+        if self.scheme not in _SCHEMES:
+            raise ValueError(f"unknown scheme {self.scheme!r}; expected one of {sorted(_SCHEMES)}")
 
 
 # ---------------------------------------------------------------------------
@@ -168,6 +174,18 @@ def _phys_flux(h: torch.Tensor, hu: torch.Tensor, g: float) -> tuple[torch.Tenso
 
 
 def swe_step(U: torch.Tensor, cfg: ShallowWaterConfig, dt: float) -> torch.Tensor:
+    """One explicit finite-volume step with the scheme selected by ``cfg.scheme``.
+
+    ``"rusanov"`` (default, historical behaviour) is the first-order global-wave-
+    speed Rusanov/HLL step in :func:`_rusanov_step`; ``"muscl2"`` is the second-
+    order MUSCL + SSP-RK2 step in :func:`swe_step_muscl2`.
+    """
+    if cfg.scheme == "muscl2":
+        return swe_step_muscl2(U, cfg, dt)
+    return _rusanov_step(U, cfg, dt)
+
+
+def _rusanov_step(U: torch.Tensor, cfg: ShallowWaterConfig, dt: float) -> torch.Tensor:
     """One explicit finite-volume step with HLL fluxes and ghost cells.
 
     Ghost-cell boundaries: the left end is a mirrored, impermeable wall
@@ -223,6 +241,114 @@ def swe_step(U: torch.Tensor, cfg: ShallowWaterConfig, dt: float) -> torch.Tenso
     hu_new = U[1] + dt * dU[1]
     hu_new = torch.where(h_new < cfg.h_dry, torch.zeros_like(hu_new), hu_new)
     return torch.stack([h_new, hu_new])
+
+
+def _minmod(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Minmod slope limiter (Toro 2009, eq. 13.30) applied componentwise."""
+    same_sign = a * b > 0.0
+    return torch.where(same_sign, torch.where(a.abs() < b.abs(), a, b), torch.zeros_like(a))
+
+
+def _primitive(cons: torch.Tensor, cfg: ShallowWaterConfig):
+    """Conservative ``(h, hu)`` -> ``(h, u)`` with dry cells desingularised."""
+    h = torch.clamp(cons[0], min=0.0)
+    u = cons[1] / torch.clamp(h, min=max(cfg.h_dry, 1.0e-12))
+    u = torch.where(h < cfg.h_dry, torch.zeros_like(u), u)
+    return h, u
+
+
+def _hll_flux(hl: torch.Tensor, ul: torch.Tensor, hr: torch.Tensor, ur: torch.Tensor,
+              g: float, h_dry: float):
+    """HLL flux (Toro 2009, eq. 10.18) with local Einfeldt/Davis wave speeds.
+
+    Local (per-face) speeds are what distinguishes this flux from the legacy
+    global-speed Rusanov flux in :func:`swe_step`: the numerical viscosity of a
+    global-speed Rusanov flux is ``~ max|u|+c * dx`` regardless of the local
+    gradient, which is what limited the first-order scheme's profile accuracy.
+    """
+    cl = torch.sqrt(g * hl)
+    cr = torch.sqrt(g * hr)
+    fl_h = hl * ul
+    fl_hu = hl * ul * ul + 0.5 * g * hl * hl
+    fr_h = hr * ur
+    fr_hu = hr * ur * ur + 0.5 * g * hr * hr
+
+    s_l = torch.minimum(ul - cl, ur - cr)
+    s_r = torch.maximum(ul + cl, ur + cr)
+    # keep a finite fan width on both-dry / near-dry faces
+    floor = torch.full_like(s_l, 1.0e-8)
+    s_l = torch.minimum(s_l, -floor)
+    s_r = torch.maximum(s_r, floor)
+    denom = torch.clamp(s_r - s_l, min=1.0e-12)
+
+    def _pick(fh_l, fh_r, dq):
+        return torch.where(
+            s_l >= 0.0,
+            fh_l,
+            torch.where(s_r <= 0.0, fh_r,
+                        (s_r * fh_l - s_l * fh_r + s_l * s_r * dq) / denom),
+        )
+
+    f_h = _pick(fl_h, fr_h, hr - hl)
+    f_hu = _pick(fl_hu, fr_hu, hr * ur - hl * ul)
+    both_dry = (hl <= h_dry) & (hr <= h_dry)
+    zero = torch.zeros_like(f_h)
+    return torch.where(both_dry, zero, f_h), torch.where(both_dry, zero, f_hu)
+
+
+def _muscl_face_states(U: torch.Tensor, cfg: ShallowWaterConfig, alpha: float = 1.0):
+    """Second-order MUSCL reconstruction of the face states (slope-limited).
+
+    ``alpha`` scales the limited slopes; ``alpha = 0`` degenerates to first-order
+    piecewise-constant states (used as a positivity fallback).  The two cells
+    adjacent to the boundaries keep a zero slope, so the boundary faces stay
+    first order (the ghost states themselves are set below).
+    """
+    h, _u = _primitive(U, cfg)
+    d = (U[:, 1:] - U[:, :-1]) / cfg.dx                # d[k] = slope estimate k -> k+1
+    slope = torch.zeros_like(U)
+    slope[:, 1:-1] = alpha * _minmod(d[:, :-1], d[:, 1:])   # interior cells 1 .. nx-2
+    u_l = U - 0.5 * slope * cfg.dx                      # left  face state of each cell
+    u_r = U + 0.5 * slope * cfg.dx                      # right face state of each cell
+
+    # ghost states: mirrored impermeable wall (left), zero-gradient outflow (right)
+    ghost_l = torch.stack([h[:1], -U[1, :1]])
+    ghost_r = torch.stack([h[-1:], U[1, -1:]])
+    left = torch.cat([ghost_l, u_r], dim=1)     # face j left  state, j = 0..nx
+    right = torch.cat([u_l, ghost_r], dim=1)            # face j right state, j = 0..nx
+    return _primitive(left, cfg), _primitive(right, cfg)
+
+
+def _muscl_rhs(U: torch.Tensor, cfg: ShallowWaterConfig, alpha: float = 1.0) -> torch.Tensor:
+    (hl, ul), (hr, ur) = _muscl_face_states(U, cfg, alpha)
+    f_h, f_hu = _hll_flux(hl, ul, hr, ur, cfg.g, cfg.h_dry)
+    dU = torch.zeros_like(U)
+    dU[0] = -(f_h[1:] - f_h[:-1]) / cfg.dx
+    dU[1] = -(f_hu[1:] - f_hu[:-1]) / cfg.dx
+    return dU
+
+
+def _sanitise(U: torch.Tensor, cfg: ShallowWaterConfig) -> torch.Tensor:
+    h = torch.clamp(U[0], min=0.0)
+    hu = torch.where(h < cfg.h_dry, torch.zeros_like(U[1]), U[1])
+    return torch.stack([h, hu])
+
+
+def swe_step_muscl2(U: torch.Tensor, cfg: ShallowWaterConfig, dt: float) -> torch.Tensor:
+    """One second-order (MUSCL + SSP-RK2) step; drops to lower order if needed.
+
+    The MUSCL reconstruction (minmod-limited slopes) is evolved with the
+    two-stage Heun/RK2 scheme in method-of-lines form, using the local-speed HLL
+    flux of :func:`_hll_flux`.  Dry-bed positivity is protected by retrying with
+    reduced reconstruction amplitudes (1 -> 1/2 -> 0) whenever a stage produces
+    a negative depth; ``alpha = 0`` is the first-order piecewise-constant state.
+    """
+    for alpha in (1.0, 0.5, 0.0):
+        U1 = _sanitise(U + dt * _muscl_rhs(U, cfg, alpha), cfg)
+        Un = _sanitise(0.5 * (U + _sanitise(U1 + dt * _muscl_rhs(U1, cfg, alpha), cfg)), cfg)
+        if float(Un[0].min()) >= 0.0 and float(U1[0].min()) >= 0.0:
+            return Un
+    return Un
 
 
 def front_position(h: torch.Tensor, cfg: ShallowWaterConfig) -> float:

@@ -5,7 +5,7 @@
   "reference_basis": "experimental",
   "scope": "2-D free-stream cylinder with sponge outflow, D=48/64, seeded shedding. Cd and St against the Braza band.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T16:10:48Z",
+  "generated_utc": "2026-11-13T01:15:32Z",
   "artifact": "benchmarks/verified/cylinder/re100/result.json",
   "repro_cmd": "python benchmarks/verified/cylinder/re100/run.py",
   "references": [

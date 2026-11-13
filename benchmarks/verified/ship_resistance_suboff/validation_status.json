@@ -5,7 +5,7 @@
   "reference_basis": "analytic correlation",
   "scope": "3-D D3Q19 MRT SUBOFF hull, L=48/80 cells, mix50 friction formula; total drag coefficient vs the Blasius wetted-area anchor.",
   "matrix_version": "1.1",
-  "generated_utc": "2026-11-12T16:10:48Z",
+  "generated_utc": "2026-11-13T01:15:32Z",
   "artifact": "benchmarks/verified/suboff_re1000/result.json",
   "repro_cmd": "python benchmarks/verified/suboff_re1000/run.py",
   "references": [
