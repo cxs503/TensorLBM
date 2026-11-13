@@ -1,0 +1,86 @@
+{
+  "anchor": "XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+  "round": 1,
+  "repo": "TensorLBM",
+  "oss": {
+    "repo": "lbm-principles-practice/code",
+    "license": "MIT",
+    "file": "chapter9/shanchen.cpp",
+    "tag": "shan-chen-laplace-pressure-calibration",
+    "source_of_port": "TensorPlatform/docs/oss-inventory/REPORT_lbm-principles-practice-code.md (inventoried; \u00a74.1 \u00a74.3 \u00a7\u4e5d) \u2014 the upstream file itself is NOT vendored in this work tree",
+    "line_cites": {
+      "psi": "chapter9/shanchen.cpp:74-76, :37",
+      "sc_force": "chapter9/shanchen.cpp:79-109 (rest direction excluded :90; periodic :91-92; g matrix :99-100)",
+      "velocity_half_force": "chapter9/shanchen.cpp:142-161 (:151-152)",
+      "pressure_closure": "chapter9/shanchen.cpp:126-139 (interaction term :134)",
+      "guo_forcing": "chapter9/shanchen.cpp:261-263",
+      "bgk": "chapter9/shanchen.cpp:252-254",
+      "init_droplet": "chapter9/shanchen.cpp:201-211, :232-246",
+      "calibrator": "chapter9/shanchen.cpp:326-377 (:333-353 box means, :357-367 radius, :369 gamma)",
+      "known_upstream_defect": "chapter9/shanchen.cpp:358 `double rad;` uninitialised -> undefined gamma when the crossing scan does not break"
+    }
+  },
+  "decision": "Decide whether TensorLBM's Shan-Chen surface-tension module (src/tensorlbm/sc_surface_tension.py, Guo-forced SCMP kernel + closure/flux/Korteweg pressure readouts) reproduces the OSS Young-Laplace calibration to within the owner 15% band, and whether the OSS closure pressure readout may be adopted as the primary Laplace readout (D1) or must stay a cross-check behind the model-free momentum-flux readout (D2).",
+  "alternatives": [
+    "D1 adopt the OSS closure p = rho/3 + G psi^2/6 as the primary Laplace readout (cheap, single field, but circular: it IS the model assumption)",
+    "D2 keep the momentum-flux readout p_flux (kinetic trace from the simulated f + interaction term) as primary and use the closure only as a cross-check",
+    "D3 withhold: if the two readouts disagree by more than the 15% band, neither can be declared the calibrated readout at this resolution"
+  ],
+  "hypothesis": "H1 (implementation equivalence): at identical parameters and identical initialization the TensorLBM SC kernel is algebraically identical to the OSS port, so the closure-readout gamma must agree to machine precision per step and to <5% after 4000 steps vs the inventoried OSS numbers. H2 (Laplace self-consistency): gamma = dp*r is radius independent over the resolved range r in [12,23] with a through-origin r^2 >= 0.97 and a slope within 15% of the inventoried OSS slope 0.020268. H3 (readout bias): the model-free flux readout differs from the closure readout by less than the 15% band in the bulk bands, i.e. the closure is admissible; if not, D3.",
+  "metrics": {
+    "K1_kernel_equivalence": "max |rho_OSS - rho_TL| after 5 identical steps from the same initial field (float64, algebra-identical check)",
+    "K1_gamma_vs_inventory": "relative error of gamma = dp*r at R_init = 12/16/20 vs the inventoried OSS numbers 0.020392 / 0.020776 / 0.019018",
+    "K2_laplace_self_consistency": "through-origin least-squares slope gamma, r^2 and per-radius scatter over R_init = 12/16/20 (and 8/24 reported as the resolution / breakdown limits)",
+    "K3_readout_bias": "relative difference gamma_flux vs gamma_closure per radius, and LSQR gamma_flux vs LSQR gamma_closure",
+    "K4_korteweg_anchor": "sigma_K = |G_eff kappa3| * integral (dpsi/dr)^2 dr (no radius enters) vs dp_flux * r",
+    "K5_sensitivity": "box-average window (4x4 vs 8x8), radius convention (one-sided vs two-sided midline scan, area-equivalent), time convergence at steps = 1000/2000/4000/8000",
+    "secondary": "rho_l/rho_g vs inventoried 9.05; max |u| (spurious current, not reported by OSS at all)"
+  },
+  "unit_of_analysis": "one (arm x R_init) run of 4000 steps on a 64x64 periodic D2Q9 lattice; KPIs are per-run scalars aggregated by through-origin LSQ over three radii",
+  "baseline_control": {
+    "physical_reference": "Young-Laplace relation dp*r = sigma with sigma independent of r (self-consistency, no external sigma available); the Korteweg integral sigma_K supplies the one independent sigma anchor",
+    "oss_reference": "the inventoried OSS run of chapter9/shanchen.cpp (same machine class, g++ -O3): table 1 of REPORT_lbm-principles-practice-code.md \u00a7\u4e5d (rho_g, rho_l, dp, r, gamma per radius) and \u00a74.3 (R=16: gamma=0.020728, ratio 9.05)",
+    "representation_control": "both arms run with byte-identical physics parameters AND identical sharp initialization (rho=2.1 inside R, 0.15 outside, f=feq(rho,0)), so the only changed variables are (i) the implementation and (ii) the pressure readout",
+    "readout_control": "closure and flux readouts are evaluated on the SAME converged field, so K3 isolates the readout, not the dynamics"
+  },
+  "predeclared_thresholds": {
+    "K1_max_abs_drho": 1e-12,
+    "K1_gamma_relerr_vs_inventory": 0.15,
+    "K2_lsqr_relerr_vs_oss_slope": 0.15,
+    "K2_r2_min": 0.97,
+    "K3_readout_bias_max": 0.15,
+    "K4_sigmaK_relerr": 0.15,
+    "interpretation": "K1 is an equivalence check, hence machine precision; K1_gamma/K2/K3/K4 use the owner 15% band (report >15% as NOT ACCEPTABLE, do not trim outliers). K2 r^2 = 0.97 is set below the inventoried OSS 0.988 to allow for the different pressure readout, and is a scatter criterion, not an accuracy criterion."
+  },
+  "stopping_rule": "Fixed grid of five initial radii (8/12/16/20/24) x 4000 steps x two arms, plus one 8000-step convergence run at R=16; no case is added or dropped after the KPIs are seen; R_init=8 (unresolved) and R_init=24 (upstream estimator breakdown region) are reported as limits, not removed. Wall-clock budget 1800 s for the whole driver (measured ~5 min on 4 CPU threads); no cluster submission needed.",
+  "variables_changed": [
+    "implementation: OSS numpy port of chapter9 vs TensorLBM sc_surface_tension kernel",
+    "pressure readout: closure (p_eos) vs momentum flux (p_flux) vs Korteweg integral (sigma_K)"
+  ],
+  "variables_controlled": [
+    "lattice D2Q9 periodic, n=64x64, tau=1.0, G_eff=-4.7, rho0=1, rho_l_init=2.1, rho_g_init=0.15, u_init=0",
+    "initialization shape (sharp droplet of radius R_init), step count 4000, float64 arithmetic in both arms",
+    "box-average windows and radius scan line (y=ny/2) for the primary metric"
+  ],
+  "confounders": [
+    "initial condition is not the coexistence state (rho_l_init=2.1 > equilibrium rho_l ~ 1.67), so the droplet absorbs mass and grows during the run: the measured r differs from R_init by design in both arms (upstream has no mass-conservation check)",
+    "float64 vs the upstream C++ double (same, but the TensorLBM kernel internally casts lattice constants to float32 -> ~1e-7 relative, i.e. ~3e-5 of dp given dp/mean(p) ~ 3e-3)",
+    "closure pressure difference dp ~ 1e-3 is a cancellation of two O(0.05) pressures: box averaging over 16 nodes and the interface position dominate the error budget",
+    "radius definition (midline linear interpolation) is resolution dependent; the R=8 point is under-resolved (interface width comparable to r)"
+  ],
+  "repetitions": "deterministic: no randomness anywhere (u=0 initial field, no noise). Each (arm, R) is run once; reproducibility guaranteed by determinism plus the 5-step machine-precision equivalence check. Sensitivity to the analysis choices (box window, radius convention, step count) is measured instead of stochastic replication.",
+  "environment": {
+    "hardware": "local control node, 4 torch CPU threads (torch.set_num_threads(4))",
+    "software": "python 3.11, numpy, torch (float64), matplotlib; TensorLBM worktree src/tensorlbm",
+    "raw_data": "artifacts/xval_shan_chen_laplace/{radius_sweep.csv,time_convergence.csv,sensitivity.csv,summary.json}",
+    "command": "python xval/XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION/run_xval.py"
+  },
+  "analysis_plan": "report per-radius gamma for both arms and both readouts; through-origin LSQ over R=12/16/20 for each readout (matching the OSS inventory analysis); relative errors vs the inventoried numbers; r^2 as the self-consistency scatter; sensitivity table for box/radius/time conventions; no data trimming; an honest FAIL is reported as such",
+  "safety_resource_limits": "no external network, no writes outside the work tree except /tmp logs; wall clock < 30 min; memory < 1 GB",
+  "interpretation_limits": [
+    "agreement with the OSS inventory is a cross-implementation check (same physical model), NOT an accuracy claim against experiment: the SC pseudo-potential model has no experimental reference for sigma at these parameters",
+    "the inventoried OSS numbers were produced by a different agent's run of the upstream C++ binary; they are treated as the reference arm here and are reproducible in this work tree only through the documented port",
+    "the 15% band applies to gamma; the pressure jump dp itself is a small difference of large numbers and is reported per radius with its own error rather than pooled"
+  ],
+  "frozen_at": "written before inspecting the 4000-step sweep results; only a 5-step kernel-equivalence check and a 300-step wiring smoke test had been executed"
+}
