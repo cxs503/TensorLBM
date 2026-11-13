@@ -1,0 +1,7 @@
+{
+ "anchor": "XVAL-LBM-PER-MARGIN-ARRAYS-POINTER-SHIFT-STREAMIN",
+ "rows": [],
+ "n_rows": 0,
+ "total_cases": 94,
+ "query": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-PER-MARGIN-ARRAYS-POINTER-SHIFT-STREAMIN'"
+}

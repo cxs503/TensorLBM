@@ -1,0 +1,18 @@
+# src/Global.h.Rt:58-74  sha256(excerpt)=e1406913bfc4f38cb051a59dd572ff697e37afc6206cd1f51983fa0f6ae13703
+/// Main data structure for the lattice
+/**
+    Main data structure for storing solution (Snapshots)
+    in the lattice. It stores the internal part of the fields
+    and margins.
+*/
+    struct FTabs { <?R
+    for (m in NonEmptyMargin) { ?>
+        storage_t* <?%s m$name ?>; ///< Data on [<?%2d m$dx ?>,<?%2d m$dy?>,<?%2d m$dz?>] margin<?R
+    } ?>
+        void Alloc(int,int,int);
+        void Clear(int,int,int);
+        void PreAlloc(int,int,int);
+        void Free();
+    };
+
+#define INFO_H 1
