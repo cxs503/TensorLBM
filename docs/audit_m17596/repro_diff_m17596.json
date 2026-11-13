@@ -1,0 +1,67 @@
+{
+  "audited_worktree": "/root/tp-agent/work/m17596",
+  "shipped_verdict": "PARTIAL",
+  "n_number_diffs": 6,
+  "all_diffs_are_wall_clock": true,
+  "diffs": [
+    [
+      "E1.rows[0].exact_enumeration_s",
+      0.027139781042933464,
+      0.03198236972093582,
+      0.17843138344932408
+    ],
+    [
+      "E1.rows[1].exact_enumeration_s",
+      0.025376319885253906,
+      0.02711270935833454,
+      0.06842558262711865
+    ],
+    [
+      "E1.rows[2].exact_enumeration_s",
+      0.005680190399289131,
+      0.007385630160570145,
+      0.3002434146387852
+    ],
+    [
+      "E1.rows[3].exact_enumeration_s",
+      0.026250960305333138,
+      0.03430602885782719,
+      0.3068485289224861
+    ],
+    [
+      "E1.rows[4].exact_enumeration_s",
+      0.02471604011952877,
+      0.031221069395542145,
+      0.2631905938230609
+    ],
+    [
+      "E1.rows[5].exact_enumeration_s",
+      0.09771351888775826,
+      0.13149482943117619,
+      0.3457178794494333
+    ]
+  ],
+  "recomputed": {
+    "E1_pass_D1_exact": true,
+    "E2_pass": {
+      "pass_D1_kl": true,
+      "pass_D2_kl": true
+    },
+    "E3_pass": {
+      "pass_D1_best_known": true,
+      "pass_D2_ours": false,
+      "pass_D2_slab_baseline": false,
+      "pass_D2_weighted_slab": false
+    },
+    "E4": {
+      "steps": 400,
+      "rate_ref": 0.0009638285547938827,
+      "rate_decomposed_overlapped": 0.0009643243894124775,
+      "rel_error_decomposed": 0.0005144427565759724,
+      "max_field_diff": 0.0,
+      "pass_D3": true,
+      "pass_D4": true
+    }
+  },
+  "note": "E5 (wall-clock latency injection) not re-run: not reproducible by construction (shared CPU, +-10 % declared spread in report sec.5)."
+}
