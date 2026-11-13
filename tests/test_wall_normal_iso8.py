@@ -125,3 +125,38 @@ def test_smoothing_improves_staircase_normals():
         e.append(180.0 - np.degrees(np.arccos(
             np.clip((t["normals"] * r).sum(1), -1, 1))).mean())
     assert e[1] < e[0], f"smoothing must reduce the normal error ({e})"
+
+
+# --------------------------------------------------------------------------- #
+# L3: platform-side caller (main-solver / platform convention)
+# --------------------------------------------------------------------------- #
+
+def test_platform_caller_conventions_and_parity():
+    from tensorlbm.boundary import build_wall_normal_table
+    walls = H.sphere_walls(24, 8.0, (12.3, 11.7, 12.1))
+    t = build_wall_normal_table(walls)
+    assert t.n_nodes > 100
+    # 0-based indices inside the physical box
+    assert t.indices.min() >= 0
+    assert (t.indices < np.array(walls.shape)).all()
+    # unit normals pointing OUT of the solid
+    assert np.allclose(np.linalg.norm(t.normals, axis=1), 1.0, atol=1e-12)
+    c = np.array([12.3, 11.7, 12.1])
+    r = t.indices.astype(float) + 1.0 - c
+    assert np.all((t.normals * r).sum(1) > 0), "platform normals must point out of the solid"
+    # exact parity with the raw OSS-convention table (sign flip + reindex + filter)
+    raw = W.wall_normal_table(walls)
+    keep = W.in_physical_domain(raw["indices"], walls.shape)
+    assert np.array_equal(t.indices, raw["indices"][keep] - 1)
+    assert np.allclose(t.normals, -raw["normals"][keep], atol=1e-14)
+    assert np.array_equal(t.grad_mag, raw["grad_mag"][keep])
+
+
+def test_platform_caller_rejects_bad_input():
+    from tensorlbm.boundary import build_wall_normal_table
+    with pytest.raises(ValueError):
+        build_wall_normal_table(np.zeros((8, 8), np.int8))
+    with pytest.raises(TypeError):
+        build_wall_normal_table(np.zeros((8, 8, 8), float))
+    with pytest.raises(ValueError):
+        build_wall_normal_table(np.zeros((8, 8, 8), np.int8) + 2)
