@@ -1,0 +1,238 @@
+{
+  "title": "XVAL-LBM-MODEL-MATRIX-CI-PLUS-COVERAGE",
+  "timestamp": "2026-11-13T12:08:53Z",
+  "elapsed_seconds": 28.796133518218994,
+  "quick_mode": true,
+  "results": [
+    {
+      "test_id": "TC01",
+      "name": "poiseuille_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "re": 100,
+      "tau": 5.1875,
+      "steps": 500,
+      "u_max_sim": 0.0,
+      "u_max_ref": 0.05,
+      "l2_error": 0.036808132575180764,
+      "relative_error_pct": 73.61626515036153,
+      "pass": false
+    },
+    {
+      "test_id": "TC02",
+      "name": "couette_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "re": 100,
+      "tau": 5.1875,
+      "steps": 500,
+      "u_wall_sim": 0.0,
+      "u_wall_ref": 0.05,
+      "l2_error": 0.02875273163926476,
+      "relative_error_pct": 57.50546327852951,
+      "pass": false
+    },
+    {
+      "test_id": "TC03",
+      "name": "lid_driven_cavity_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "re": 1000,
+      "tau": 47.375,
+      "steps": 1000,
+      "u_min_sim": 0.0,
+      "u_min_ref": -0.2058,
+      "u_error_pct": 100.0,
+      "v_max_sim": 0.0,
+      "v_max_ref": 0.1715,
+      "v_error_pct": 100.0,
+      "pass": false
+    },
+    {
+      "test_id": "TC04",
+      "name": "poiseuille_3d",
+      "physics": "single_phase",
+      "lattice": "D3Q19",
+      "collision": "MRT",
+      "re": 100,
+      "tau": 19.25,
+      "steps": 500,
+      "u_center_sim": -1.728967445919174e-08,
+      "u_center_ref": 0.05,
+      "relative_error_pct": 100.00003457934892,
+      "pass": false
+    },
+    {
+      "test_id": "TC06",
+      "name": "laplace_law_2d",
+      "physics": "multiphase_sc",
+      "lattice": "D2Q9",
+      "collision": "BGK+Guo",
+      "r0": 20,
+      "steps": 1000,
+      "rho_inside": 1.27820012630695,
+      "rho_outside": 1.2968261649965542,
+      "delta_p_sim": -0.006208679563201406,
+      "has_pressure_jump": false,
+      "pass": false
+    },
+    {
+      "test_id": "TC09",
+      "name": "acoustic_pulse_2d",
+      "physics": "acoustic",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "steps": 50,
+      "initial_energy": 0.007853981107473373,
+      "final_energy": 0.005054186365298695,
+      "energy_ratio": 0.6435190378150308,
+      "speed_of_sound": 0.5773502691896257,
+      "pass": true
+    }
+  ],
+  "coverage": {
+    "lattices_tested": [
+      "D2Q9",
+      "D3Q19"
+    ],
+    "collisions_tested": [
+      "BGK",
+      "BGK+Guo",
+      "MRT"
+    ],
+    "physics_tested": [
+      "acoustic",
+      "multiphase_sc",
+      "single_phase"
+    ],
+    "lattice_coverage": 1.0,
+    "collision_coverage": 0.75,
+    "physics_coverage": 0.5,
+    "overall_coverage": 0.75
+  },
+  "tclb_comparison": {
+    "tclb": {
+      "lattices": [
+        "D2Q9",
+        "D3Q19",
+        "D3Q27"
+      ],
+      "collisions": [
+        "BGK",
+        "MRT",
+        "Cascaded",
+        "Entropic"
+      ],
+      "physics": [
+        "single_phase",
+        "multiphase_pf",
+        "multiphase_sc",
+        "thermal",
+        "turbulence_les"
+      ],
+      "boundaries": [
+        "bounce_back",
+        "equilibrium",
+        "regularized",
+        "pressure",
+        "velocity",
+        "wetting"
+      ],
+      "ci_practice": {
+        "runs_full_matrix": true,
+        "coverage_tracking": true,
+        "model_documentation": true,
+        "regression_tests": true
+      }
+    },
+    "tensorlbm": {
+      "lattices": [
+        "D2Q9",
+        "D3Q19"
+      ],
+      "collisions": [
+        "BGK",
+        "MRT",
+        "RLBM",
+        "Smagorinsky-MRT"
+      ],
+      "physics": [
+        "single_phase",
+        "multiphase_sc",
+        "multiphase_pf",
+        "turbulence_les",
+        "acoustic",
+        "adjoint"
+      ],
+      "boundaries": [
+        "bounce_back",
+        "equilibrium",
+        "regularized",
+        "pressure",
+        "velocity",
+        "wetting"
+      ],
+      "ci_practice": {
+        "runs_full_matrix": false,
+        "coverage_tracking": false,
+        "model_documentation": true,
+        "regression_tests": true
+      }
+    },
+    "comparison": {
+      "lattice_overlap": [
+        "D2Q9",
+        "D3Q19"
+      ],
+      "lattice_missing_in_tensorlbm": [
+        "D3Q27"
+      ],
+      "collision_overlap": [
+        "BGK",
+        "MRT"
+      ],
+      "collision_missing_in_tensorlbm": [
+        "Cascaded",
+        "Entropic"
+      ],
+      "physics_overlap": [
+        "multiphase_pf",
+        "multiphase_sc",
+        "single_phase",
+        "turbulence_les"
+      ],
+      "physics_unique_to_tensorlbm": [
+        "acoustic",
+        "adjoint"
+      ],
+      "physics_missing_in_tensorlbm": [
+        "thermal"
+      ],
+      "ci_practice_comparison": {
+        "tclb": {
+          "runs_full_matrix": true,
+          "coverage_tracking": true,
+          "model_documentation": true,
+          "regression_tests": true
+        },
+        "tensorlbm": {
+          "runs_full_matrix": false,
+          "coverage_tracking": false,
+          "model_documentation": true,
+          "regression_tests": true
+        }
+      }
+    }
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed": 1,
+    "failed": 5,
+    "pass_rate": 0.16666666666666666,
+    "criterion": "<15% relative error",
+    "all_pass": false
+  }
+}

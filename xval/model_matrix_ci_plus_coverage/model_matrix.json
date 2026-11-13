@@ -1,0 +1,174 @@
+{
+  "title": "XVAL-LBM-MODEL-MATRIX-CI-PLUS-COVERAGE",
+  "description": "Cross-validation of TensorLBM model matrix coverage against CFD-GO/TCLB's model-matrix-ci-plus-coverage practice",
+  "oss_reference": {
+    "project": "CFD-GO/TCLB",
+    "url": "https://github.com/CFD-GO/TCLB",
+    "license": "GPL-3.0",
+    "approach": "model-matrix-ci-plus-coverage",
+    "description": "TCLB tests a matrix of models (multiphase, turbulence, thermal, etc.) across lattice types (D2Q9, D3Q19, D3Q27) with collision operators (BGK, MRT, cascaded) in CI, tracking coverage to ensure all model combinations are exercised."
+  },
+  "model_matrix": {
+    "lattices": ["D2Q9", "D3Q19", "D3Q27"],
+    "collision_operators": ["BGK", "MRT", "RLBM", "Smagorinsky-MRT", "Cascaded"],
+    "physics_models": {
+      "single_phase": {
+        "description": "Single-phase incompressible flow",
+        "tclb_models": ["d2q9", "d3q19", "d3q27"],
+        "tensorlbm_modules": ["d2q9", "d3q19", "solver"]
+      },
+      "multiphase_sc": {
+        "description": "Shan-Chen pseudopotential multiphase",
+        "tclb_models": ["d2q9_sc", "d3q19_sc"],
+        "tensorlbm_modules": ["multiphase"]
+      },
+      "multiphase_pf": {
+        "description": "Phase-field (conservative Allen-Cahn)",
+        "tclb_models": ["d2q9_pf_velocity", "d3q27_pf_velocity"],
+        "tensorlbm_modules": ["cac_lbm", "cac_lbm2d", "phasefield.cac_h_population"]
+      },
+      "turbulence_les": {
+        "description": "Large Eddy Simulation with Smagorinsky SGS",
+        "tclb_models": ["d3q19_les", "d3q27_les"],
+        "tensorlbm_modules": ["turbulence", "solver.collide_smagorinsky_mrt3d"]
+      },
+      "thermal": {
+        "description": "Thermal LBM (double-distribution)",
+        "tclb_models": ["d2q9_thermal", "d3q19_thermal"],
+        "tensorlbm_modules": []
+      },
+      "acoustic": {
+        "description": "Acoustic wave propagation",
+        "tclb_models": [],
+        "tensorlbm_modules": ["acoustics"]
+      },
+      "free_surface": {
+        "description": "Free surface (Körner model)",
+        "tclb_models": [],
+        "tensorlbm_modules": ["free_surface"]
+      },
+      "adjoint": {
+        "description": "Adjoint/differentiable LBM",
+        "tclb_models": [],
+        "tensorlbm_modules": ["adjoint"]
+      }
+    },
+    "boundary_conditions": {
+      "bounce_back": "Halfway bounce-back",
+      "ziegler_brown": "Ziegler-Brown bounce-back",
+      "equilibrium": "Equilibrium boundary",
+      "regularized": "Regularized boundary",
+      "pressure": "Pressure boundary (Zou/He)",
+      "velocity": "Velocity boundary (Zou/He)",
+      "wetting": "Wetting boundary (contact angle)"
+    }
+  },
+  "test_cases": [
+    {
+      "id": "TC01",
+      "name": "poiseuille_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "description": "2D Poiseuille flow, analytical solution available",
+      "reynolds": 100,
+      "analytical": true
+    },
+    {
+      "id": "TC02",
+      "name": "couette_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "description": "2D Couette flow, analytical solution available",
+      "reynolds": 100,
+      "analytical": true
+    },
+    {
+      "id": "TC03",
+      "name": "lid_driven_cavity_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "description": "2D lid-driven cavity, Ghia et al. reference",
+      "reynolds": 1000,
+      "analytical": false,
+      "reference": "Ghia1982"
+    },
+    {
+      "id": "TC04",
+      "name": "poiseuille_3d",
+      "physics": "single_phase",
+      "lattice": "D3Q19",
+      "collision": "MRT",
+      "description": "3D Poiseuille flow in square duct, analytical solution",
+      "reynolds": 100,
+      "analytical": true
+    },
+    {
+      "id": "TC05",
+      "name": "taylor_green_3d",
+      "physics": "single_phase",
+      "lattice": "D3Q19",
+      "collision": "MRT",
+      "description": "3D Taylor-Green vortex decay",
+      "reynolds": 1600,
+      "analytical": false
+    },
+    {
+      "id": "TC06",
+      "name": "laplace_law_2d",
+      "physics": "multiphase_sc",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "description": "Laplace law verification for SC multiphase",
+      "analytical": true
+    },
+    {
+      "id": "TC07",
+      "name": "dam_break_2d",
+      "physics": "multiphase_pf",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "description": "2D dam break with phase-field",
+      "analytical": false
+    },
+    {
+      "id": "TC08",
+      "name": "channel_les_3d",
+      "physics": "turbulence_les",
+      "lattice": "D3Q19",
+      "collision": "Smagorinsky-MRT",
+      "description": "3D turbulent channel flow, Re_tau=180",
+      "reynolds": 5600,
+      "analytical": false,
+      "reference": "Moser1999"
+    },
+    {
+      "id": "TC09",
+      "name": "acoustic_pulse_2d",
+      "physics": "acoustic",
+      "lattice": "D2Q9",
+      "collision": "BGK",
+      "description": "2D acoustic pulse propagation",
+      "analytical": true
+    },
+    {
+      "id": "TC10",
+      "name": "cylinder_drag_2d",
+      "physics": "single_phase",
+      "lattice": "D2Q9",
+      "collision": "RLBM",
+      "description": "2D flow past cylinder, Re=100",
+      "reynolds": 100,
+      "analytical": false,
+      "reference": "Schaefer1996"
+    }
+  ],
+  "coverage_targets": {
+    "lattice_coverage": 1.0,
+    "collision_coverage": 0.8,
+    "physics_coverage": 0.75,
+    "boundary_coverage": 0.6
+  }
+}
