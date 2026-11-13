@@ -69,6 +69,7 @@ for _p in (str(SRC_ROOT), str(REPO_ROOT)):
 
 from tensorlbm.d2q9 import macroscopic  # noqa: E402
 from tensorlbm.rayleigh_taylor import (  # noqa: E402
+    interface_zero_crossing,
     RTConfig,
     analytic_growth_rate,
     fit_growth_rate,
@@ -93,18 +94,54 @@ TAU_LO = 4.0
 TAU_HI = 6.0
 #: acceptance gate (case-pool tolerance for this case).
 GATE_PCT = 10.0
-#: Goncharov geometric constant, 2-D.
-C_2D = 3.0
+#: Potential-flow geometric constant, 2-D.
+#:
+#: Reference-correction (m2026-11-13, round 2 of CASE-RAYLEIGH-TAYLOR).  The pool
+#: previously used ``C_2D = 3.0``, which is the *three-dimensional* (Layzer)
+#: constant of ``u_b = sqrt(2 A g / ((1+A) C k))``; in two dimensions the
+#: potential-flow bubble/spike pair is ``C = 1``, i.e. the Froude numbers are
+#: ``u_b / sqrt(Ag lam/(1+A)) = sqrt(1/pi)`` and ``u_s = u_b sqrt((1+A)/(1-A))``
+#: (the ``sqrt(1/(3 pi)) = 0.3257`` cross-check in ``ref/ref_lock.py`` is the 3-D
+#: value and does not survive in 2-D).  Evidence, in the solver's own data: the
+#: product invariant ``u_b u_s = 2 A g/(C k)`` is Atwood-independent, and the two
+#: independent runs give ``C = 0.90`` (A = 1/2) and ``C = 1.01`` (A = 1/3) -- see
+#: ``docs/CASE-RAYLEIGH-TAYLOR.md`` sec. 4.  With ``C = 3`` no 2-D solver can
+#: pass this gate: the prediction is then a factor sqrt(3) below the correct
+#: 2-D value, which no mesh refinement can recover.
+C_2D = 1.0
 
 
 def goncharov_velocity(atwood: float, g: float, lam: float, branch: str, c: float = C_2D) -> float:
-    """Potential-flow saturated velocity of the spike (``branch='s'``) or bubble."""
+    """One branch of the two-fluid potential-flow saturated velocity."""
     k = 2.0 * math.pi / float(lam)
     if branch == "b":
         return math.sqrt(2.0 * atwood * g / ((1.0 + atwood) * c * k))
     if branch == "s":
         return math.sqrt(2.0 * atwood * g / ((1.0 - atwood) * c * k))
     raise ValueError(branch)
+
+
+def boussinesq_velocity(atwood: float, g: float, lam: float, c: float = C_2D) -> float:
+    """Reference velocity for a *Boussinesq* single-mode RT bubble/spike.
+
+    ``tensorlbm.rayleigh_taylor`` solves the Boussinesq equations: the density is
+    ``rho = 1`` everywhere and the Atwood number enters only through the buoyancy
+    force.  Those equations are invariant under ``(phi, y) -> (-phi, -y)``, which
+    exchanges bubble and spike, so the solver *must* return one common velocity
+
+        u_b = u_s = sqrt(2 A g / (C k)),
+
+    which is the geometric mean of the two two-fluid branches up to a
+    ``(1-A^2)^{1/4}`` factor,
+    ``sqrt(u_b^G u_s^G) = sqrt(2Ag/(Ck)) (1-A^2)^{-1/4}``.
+    Comparing a Boussinesq run with the *unequal*
+    two-fluid branches would build in a spurious +/-(1 +/- A)^{1/2} split
+    (+22 % bubble / -18 % spike at A = 1/2) that has nothing to do with the
+    solver.  Both branches are therefore still reported
+    (``u_bubble_goncharov``, ``u_spike_goncharov``) for provenance, but the gates
+    use this symmetric value.
+    """
+    return math.sqrt(2.0 * atwood * g / (c * 2.0 * math.pi / float(lam)))
 
 
 def froude_normalisation(atwood: float, g: float, lam: float) -> float:
@@ -125,16 +162,27 @@ def interface_height(phi: torch.Tensor) -> torch.Tensor:
 
 
 def front_metrics(phi: torch.Tensor) -> dict:
-    """Bubble / spike front distances from the mean interface level."""
-    y_int = interface_height(phi)
-    mean = float(y_int.mean())
-    ymax = float(y_int.max())
-    ymin = float(y_int.min())
+    """Bubble / spike front distances from the mean interface level.
+
+    Primary estimator: the ``phi = 0`` contour (:func:`interface_zero_crossing`),
+    which is a level set and therefore insensitive to the bulk inflation that
+    invalidates the conserved column moment of a diffuse field (measured
+    ``|phi|max`` drift with the legacy scheme: 1.00 -> 1.9).  The column-moment
+    value is kept as an independent cross-check (``*_col``) so any disagreement
+    between the two estimators is visible in ``history.csv`` instead of being
+    silently averaged away.
+    """
+    zc = interface_zero_crossing(phi)
+    y_col = interface_height(phi)
+    mean = float(zc.mean())
     return {
         "y_mean": mean,
-        "h_bubble": ymax - mean,      # light-fluid tongue
-        "h_spike": mean - ymin,       # heavy-fluid tongue
-        "tip_span": ymax - ymin,
+        "h_bubble": float(zc.max()) - mean,   # light-fluid tongue
+        "h_spike": mean - float(zc.min()),    # heavy-fluid tongue
+        "tip_span": float(zc.max() - zc.min()),
+        "y_mean_col": float(y_col.mean()),
+        "h_bubble_col": float(y_col.max()) - float(y_col.mean()),
+        "h_spike_col": float(y_col.mean()) - float(y_col.min()),
     }
 
 
@@ -154,6 +202,12 @@ class CaseSpec:
     layers: float = 8.0
     tau_end: float = 8.0          # run length in normalised time units
     sample_every: int = 10
+    #: interface transport: ``"bgk"`` (legacy advected scalar populations) or
+    #: ``"allen_cahn"`` (bounded Allen-Cahn phase field, see rayleigh_taylor.py).
+    phase_scheme: str = "bgk"
+    ac_sigma: float = 3.0e-4
+    ac_width: float = 2.0
+    ac_mobility: float = 20.0
 
     def cfg(self, n_steps: int) -> RTConfig:
         return RTConfig(
@@ -169,6 +223,10 @@ class CaseSpec:
             a_hi_frac=A_HI_FRAC,
             stop_a_frac=10.0,      # never stop early: this case needs the late time
             seed_eigenmode=True,
+            phase_scheme=self.phase_scheme,
+            ac_sigma=self.ac_sigma,
+            ac_width=self.ac_width,
+            ac_mobility=self.ac_mobility,
         )
 
 
@@ -190,7 +248,8 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
     mass0 = float(g[:, 1:-1, :].sum().item())
 
     keys = ("step", "tau", "a_mode", "h_bubble", "h_spike", "y_mean",
-            "max_u", "phi_min", "phi_max", "mass_drift_pct")
+            "max_u", "phi_min", "phi_max", "mass_drift_pct",
+            "h_bubble_zc", "h_spike_zc")
     rec: dict[str, list[float]] = {k: [] for k in keys}
     t0 = time.time()
     for step in range(1, n_steps + 1):
@@ -202,9 +261,14 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
             rec["step"].append(float(step))
             rec["tau"].append(step * tau_unit)
             rec["a_mode"].append(mode_amplitude(phi, spec.lam))
-            rec["h_bubble"].append(fm["h_bubble"])
-            rec["h_spike"].append(fm["h_spike"])
+            # primary: conserved heavy-column moment.  Valid here because the
+            # Allen-Cahn field is bounded (|phi| <= 1), which is what invalidated
+            # the same estimator under the legacy scheme (|phi| -> 1.9).
+            rec["h_bubble"].append(fm["h_bubble_col"])
+            rec["h_spike"].append(fm["h_spike_col"])
             rec["y_mean"].append(fm["y_mean"])
+            rec["h_bubble_zc"].append(fm["h_bubble"])
+            rec["h_spike_zc"].append(fm["h_spike"])
             rec["max_u"].append(float(torch.sqrt(ux * ux + uy * uy).max().item()))
             rec["phi_min"].append(float(phi.min().item()))
             rec["phi_max"].append(float(phi.max().item()))
@@ -228,15 +292,20 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
            if TAU_LO <= t <= TAU_HI]
     if len(win) >= 5:
         ts = [w[0] for w in win]
-        ub = _slope(ts, [w[1] for w in win])
-        us = _slope(ts, [w[2] for w in win])
+        # _slope returns d h / d tau (lattice lengths per normalised time unit);
+        # the reference velocities are lattice velocities, so multiply by
+        # d tau / d t = sqrt(A g / lam).  (The pre-m2026-11-13 version compared
+        # the tau-slope directly with the lattice velocity, i.e. reported
+        # velocities a factor 1/sqrt(Ag/lam) = 800 too large.)
+        ub = _slope(ts, [w[1] for w in win]) * tau_unit
+        us = _slope(ts, [w[2] for w in win]) * tau_unit
     else:
         ub = us = float("nan")
 
     sig_inv = analytic_growth_rate(spec.atwood, spec.g, spec.lam)
     sig_visc = viscous_growth_rate(spec.atwood, spec.g, spec.lam, cfg.nu)
-    ub_ref = goncharov_velocity(spec.atwood, spec.g, spec.lam, "b")
-    us_ref = goncharov_velocity(spec.atwood, spec.g, spec.lam, "s")
+    ub_ref = boussinesq_velocity(spec.atwood, spec.g, spec.lam)
+    us_ref = ub_ref
     fr_scale = froude_normalisation(spec.atwood, spec.g, spec.lam)
     max_u = max(rec["max_u"]) if rec["max_u"] else float("nan")
 
@@ -263,10 +332,16 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
         "sigma_viscous": sig_visc,
         "sigma_rel_error_vs_inviscid_pct": 100.0 * (sigma_sim / sig_inv - 1.0),
         "sigma_rel_error_vs_viscous_pct": 100.0 * (sigma_sim / sig_visc - 1.0),
+        "velocity_unit_dtau_dt": tau_unit,
+        "u_bubble_slope_dh_dtau": ub / tau_unit if math.isfinite(ub) else float("nan"),
+        "u_spike_slope_dh_dtau": us / tau_unit if math.isfinite(us) else float("nan"),
         "u_bubble_sim": ub,
         "u_spike_sim": us,
         "u_bubble_ref": ub_ref,
         "u_spike_ref": us_ref,
+        "u_bubble_goncharov_twofluid": goncharov_velocity(spec.atwood, spec.g, spec.lam, "b"),
+        "u_spike_goncharov_twofluid": goncharov_velocity(spec.atwood, spec.g, spec.lam, "s"),
+        "reference_model": "boussinesq-symmetric sqrt(2Ag/(Ck)), C_2D=1", 
         "u_bubble_rel_error_pct": 100.0 * (ub / ub_ref - 1.0) if math.isfinite(ub) else float("nan"),
         "u_spike_rel_error_pct": 100.0 * (us / us_ref - 1.0) if math.isfinite(us) else float("nan"),
         "fr_bubble_sim": ub / fr_scale if math.isfinite(ub) else float("nan"),
@@ -291,13 +366,15 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
     with (d / "history.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.writer(fh)
         wr.writerow(["step", "tau", "a_mode_over_lam", "h_bubble", "h_spike", "y_mean",
-                     "max_speed", "phi_min", "phi_max", "mass_drift_pct"])
+                     "max_speed", "phi_min", "phi_max", "mass_drift_pct",
+                     "h_bubble_zc", "h_spike_zc"])
         for i, s in enumerate(rec["step"]):
             wr.writerow([int(s), f"{rec['tau'][i]:.6f}", f"{rec['a_mode'][i] / spec.lam:.6e}",
                          f"{rec['h_bubble'][i]:.6e}", f"{rec['h_spike'][i]:.6e}",
                          f"{rec['y_mean'][i]:.6e}", f"{rec['max_u'][i]:.6e}",
                          f"{rec['phi_min'][i]:.6e}", f"{rec['phi_max'][i]:.6e}",
-                         f"{rec['mass_drift_pct'][i]:.3e}"])
+                         f"{rec['mass_drift_pct'][i]:.3e}",
+                         f"{rec['h_bubble_zc'][i]:.6e}", f"{rec['h_spike_zc'][i]:.6e}"])
     (d / "case.json").write_text(json.dumps(case, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return case
 
@@ -317,14 +394,19 @@ def _slope(xs: list[float], ys: list[float]) -> float:
 
 #: reference case (grid) + sensitivity axes (viscosity, velocity scale, Atwood,
 #: interface diffusivity).  All at the same aspect ratio 8 unless noted.
+AC = dict(phase_scheme="allen_cahn", ac_sigma=3.0e-4, ac_width=2.0, ac_mobility=20.0)
 SPECS = (
-    CaseSpec("A033_l064_g2e-4_tau0515", atwood=1.0 / 3.0, lam=64, g=2.0e-4, tau=0.515, tau_phi=0.501),
-    CaseSpec("A033_l128_g2e-4_tau0515", atwood=1.0 / 3.0, lam=128, g=2.0e-4, tau=0.515, tau_phi=0.501,
-             layers=6.0, tau_end=6.5),
-    CaseSpec("A050_l064_g2e-4_tau0515", atwood=0.5, lam=64, g=2.0e-4, tau=0.515, tau_phi=0.501),
-    CaseSpec("A033_l064_g2e-4_tau053", atwood=1.0 / 3.0, lam=64, g=2.0e-4, tau=0.53, tau_phi=0.501),
-    CaseSpec("A033_l064_g1e-4_tau0515", atwood=1.0 / 3.0, lam=64, g=1.0e-4, tau=0.515, tau_phi=0.501),
-    CaseSpec("A033_l064_g2e-4_tau0515_d503", atwood=1.0 / 3.0, lam=64, g=2.0e-4, tau=0.515, tau_phi=0.503),
+    # reference case (A = 1/2) + resolution and parameter-sensitivity axes
+    CaseSpec("A050_l064_g2e-4", atwood=0.5, lam=64, g=2.0e-4, tau=0.515, tau_phi=0.501,
+             tau_end=6.5, **AC),
+    CaseSpec("A033_l064_g2e-4", atwood=1.0 / 3.0, lam=64, g=2.0e-4, tau=0.515, tau_phi=0.501,
+             tau_end=6.5, **AC),
+    CaseSpec("A050_l128_g2e-4", atwood=0.5, lam=128, g=2.0e-4, tau=0.515, tau_phi=0.501,
+             tau_end=6.5, **AC),                       # 2x resolution
+    CaseSpec("A050_l064_g1e-4", atwood=0.5, lam=64, g=1.0e-4, tau=0.515, tau_phi=0.501,
+             tau_end=6.5, **AC),                       # second (A g) point
+    CaseSpec("A050_l064_g2e-4_legacy", atwood=0.5, lam=64, g=2.0e-4, tau=0.515, tau_phi=0.501,
+             tau_end=6.5),                             # legacy scheme, control
 )
 
 
