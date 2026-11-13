@@ -1,0 +1,22 @@
+[
+  {
+    "name": "fig1_two_segment_tags.png",
+    "caption": "EDT two-segment tagging of an SC sphere array (phi=0.125, N=32): tag slice, EDT histogram of the solid with the 2.0 shell threshold, and the resulting three-way population.",
+    "path": "/root/tp-agent/work/m17728/xval/edt_two_segment_geometry_tag_compression/figures/fig1_two_segment_tags.png"
+  },
+  {
+    "name": "fig2_parity_sensitivity.png",
+    "caption": "Left: per-geometry tag mismatch against the verbatim MPLBM-UT reference (all zero). Right: mismatch as the shell threshold moves away from the reference 2.0 — the segmentation convention is load-bearing and must be reproduced, not re-invented.",
+    "path": "/root/tp-agent/work/m17728/xval/edt_two_segment_geometry_tag_compression/figures/fig2_parity_sensitivity.png"
+  },
+  {
+    "name": "fig3_drag_and_dispatch.png",
+    "caption": "Left: lattice-resolved SC-array drag from the tag-dispatch solver against the Hasimoto (1959) series and the owner 15% band. Right: the same geometry solved with the OSS tag dispatch (boundary segment bounce-back + NoDynamics grain) and with plain all-solid bounce-back — the tag compression is hydraulically neutral.",
+    "path": "/root/tp-agent/work/m17728/xval/edt_two_segment_geometry_tag_compression/figures/fig3_drag_and_dispatch.png"
+  },
+  {
+    "name": "fig4_compression.png",
+    "caption": "Storage side of the tag compression: raw float64 EDT vs int16 palette vs run-length-coded palette, and the palette entropy.",
+    "path": "/root/tp-agent/work/m17728/xval/edt_two_segment_geometry_tag_compression/figures/fig4_compression.png"
+  }
+]
