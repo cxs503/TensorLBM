@@ -1,0 +1,104 @@
+{
+ "schema": "board-audit-m17965/m17772-rerun/v1",
+ "checked_utc": "2026-11-13T10:38:55+00:00",
+ "audited_mission": 17772,
+ "audited_anchor": "XVAL-LBM-FUSED-KERNEL-TYPE-SELECTOR",
+ "auditor_mission": 17965,
+ "git_sha": "8cb29b5939209dbea7d87f390f8045b29805037f",
+ "git_branch": "agent/m17965",
+ "env": {
+  "python": "3.11.6",
+  "torch": "2.7.1",
+  "numpy": "2.4.6",
+  "machine": "loongarch64",
+  "solver_sha256": "06e05245f2c66b47f8bbd6e7341d97fc63bc7a29a996b5152da639ac02d2df03"
+ },
+ "repro_cmd": "PYTHONPATH=src python3 docs/board-audit-m17965/verify_m17772.py",
+ "internal_equivalence": {
+  "grid": [
+   9,
+   32,
+   32
+  ],
+  "tau": 0.8,
+  "seed": 42,
+  "float64": {
+   "ref_vs_matmul_1step_maxabs": 2.6645352591003757e-15,
+   "ref_vs_matmul_50step_maxabs": 5.329070518200751e-15,
+   "ref_vs_matmul_50step_rel": 1.2988497398969237e-15,
+   "ref_vs_fused_1step_maxabs": 1.7763568394002505e-15,
+   "ref_vs_fused_50step_maxabs": 4.440892098500626e-15,
+   "ref_vs_fused_50step_rel": 1.082374783247436e-15,
+   "fused_vs_matmul_50step_maxabs": 4.440892098500626e-15
+  },
+  "float32": {
+   "ref_vs_matmul_1step_maxabs": 9.5367431640625e-07,
+   "ref_vs_matmul_50step_maxabs": 2.384185791015625e-06,
+   "ref_vs_matmul_50step_rel": 5.810950038032668e-07,
+   "ref_vs_fused_1step_maxabs": 7.152557373046875e-07,
+   "ref_vs_fused_50step_maxabs": 2.384185791015625e-06,
+   "ref_vs_fused_50step_rel": 5.810952064061795e-07,
+   "fused_vs_matmul_50step_maxabs": 2.86102294921875e-06
+  }
+ },
+ "mass_drift": {
+  "collide_bgk": {
+   "rel_mass_change_1step": 0.0,
+   "rel_mass_change_200step": -1.5754690328842947e-15
+  },
+  "collide_bgk_fused": {
+   "rel_mass_change_1step": 0.0,
+   "rel_mass_change_200step": -1.5754690328842947e-15
+  },
+  "collide_bgk_matmul": {
+   "rel_mass_change_1step": 0.0,
+   "rel_mass_change_200step": -1.5754690328842947e-15
+  },
+  "weight_table": {
+   "_w_on(float32 table).to(float64) sum - 1": 7.450580596923828e-09,
+   "_w_for(float64) sum - 1": 0.0,
+   "solver uses exact weights in collide_bgk_fused": true
+  }
+ },
+ "external_anchor": {
+  "attempted": true,
+  "lbmpy_version": "2.0",
+  "pystencils_version": "2.0",
+  "omega_used": 1.25,
+  "velocity_set_match": true,
+  "tl_channel_to_lbmpy_slot": [
+   0,
+   4,
+   1,
+   3,
+   2,
+   6,
+   5,
+   7,
+   8
+  ],
+  "test_field": {
+   "kind": "d2q9.equilibrium(rho=1, u0=0.05 Taylor-Green velocity) + 1e-3 noise",
+   "max_abs_u": 0.04993582535855264,
+   "ma": 0.08649138663889953
+  },
+  "field_roundtrip_check": {
+   "rho_err": 4.440892098500626e-16,
+   "ux_err": 2.0816681711721685e-17,
+   "uy_err": 3.469446951953614e-17
+  },
+  "ok": true,
+  "kernel": "kernel",
+  "lbmpy_vs_tl_collide_bgk_maxabs": 0.0011640223478755485,
+  "lbmpy_vs_tl_collide_bgk_rel": 0.0026058540093949257,
+  "lbmpy_vs_tl_collide_bgk_fused_maxabs": 0.001164022347875604,
+  "lbmpy_vs_tl_collide_bgk_fused_rel": 0.00260585400939505,
+  "lbmpy_vs_tl_collide_bgk_matmul_maxabs": 0.001164022347875604,
+  "tolerance": {
+   "pct": 15.0,
+   "verdict": "PASS",
+   "rel_pct_reference_path": 0.26058540093949256,
+   "rel_pct_fused_path": 0.260585400939505
+  }
+ }
+}
