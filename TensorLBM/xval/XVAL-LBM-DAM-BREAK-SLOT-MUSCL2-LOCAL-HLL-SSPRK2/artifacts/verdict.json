@@ -1,0 +1,92 @@
+{
+  "verdict": "PASS",
+  "all_pass": true,
+  "criteria": {
+    "C1_front_mass_err_pct": {
+      "threshold": 15.0,
+      "unit": "%"
+    },
+    "C2_profile_L2_pct": {
+      "threshold": 15.0,
+      "unit": "%"
+    },
+    "C3_mass_drift_pct": {
+      "threshold": 1.0,
+      "unit": "%"
+    }
+  },
+  "results": {
+    "nx100": {
+      "scheme": "muscl2",
+      "nx": 100,
+      "cfl": 0.4,
+      "t_final": 5.010101,
+      "n_steps": 155,
+      "dt": 0.03232323,
+      "elapsed_s": 0.4525,
+      "x_f_sim": 8.350803,
+      "x_f_ref": 10.020202,
+      "x_f_mass": 10.045881,
+      "front_err_pct": 16.6603,
+      "front_mass_err_pct": 0.2563,
+      "profile_l2_pct": 1.9289,
+      "mass_initial": 4.04040404,
+      "mass_final": 4.04040404,
+      "mass_drift_pct": 0.0
+    },
+    "nx200": {
+      "scheme": "muscl2",
+      "nx": 200,
+      "cfl": 0.4,
+      "t_final": 5.001005,
+      "n_steps": 311,
+      "dt": 0.0160804,
+      "elapsed_s": 0.9569,
+      "x_f_sim": 8.456854,
+      "x_f_ref": 10.00201,
+      "x_f_mass": 10.013879,
+      "front_err_pct": 15.4485,
+      "front_mass_err_pct": 0.1187,
+      "profile_l2_pct": 1.1677,
+      "mass_initial": 4.0201005,
+      "mass_final": 4.0201005,
+      "mass_drift_pct": 0.0
+    },
+    "nx400": {
+      "scheme": "muscl2",
+      "nx": 400,
+      "cfl": 0.4,
+      "t_final": 4.996491,
+      "n_steps": 623,
+      "dt": 0.00802005,
+      "elapsed_s": 2.0086,
+      "x_f_sim": 8.566876,
+      "x_f_ref": 9.992982,
+      "x_f_mass": 9.998667,
+      "front_err_pct": 14.2711,
+      "front_mass_err_pct": 0.0569,
+      "profile_l2_pct": 0.8304,
+      "mass_initial": 4.01002506,
+      "mass_final": 4.01002506,
+      "mass_drift_pct": 0.0
+    },
+    "nx800": {
+      "scheme": "muscl2",
+      "nx": 800,
+      "cfl": 0.4,
+      "t_final": 4.998248,
+      "n_steps": 1248,
+      "dt": 0.00400501,
+      "elapsed_s": 4.3695,
+      "x_f_sim": 8.64757,
+      "x_f_ref": 9.996496,
+      "x_f_mass": 9.999275,
+      "front_err_pct": 13.494,
+      "front_mass_err_pct": 0.0278,
+      "profile_l2_pct": 0.7951,
+      "mass_initial": 4.00500626,
+      "mass_final": 4.00500626,
+      "mass_drift_pct": 0.0
+    }
+  }
+}
