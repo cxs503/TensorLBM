@@ -9,7 +9,9 @@ solver-in-the-loop ``tau`` inversion):
   sweep     -- tau sensitivity of the Ghia residual (identifiability scan)
   fdcheck   -- autograd gradient vs central finite difference (d/dtau, d/du_lid)
   invert    -- tau inversion through the full time stepping (truth = same chain
-               or the Ghia Re=100 tables) and its recovery error
+               or the Ghia Re=100 tables) and its recovery error, Adam/Newton
+  invert-rf -- same inverse problem solved as the scalar root-finding problem
+               dL/dtau = 0 (secant / Illinois regula falsi, round-2 method)
 
 All stages write JSON (numbers, zero hand-copying) and checkpoints into
 ``artifacts/gap_pp2_lid_wall_diff/``; ``figures`` turns them into the report
@@ -39,6 +41,7 @@ from tensorlbm.diff_lid_cavity import (
     centreline_probes,
     initial_field,
     invert_relaxation_time,
+    invert_relaxation_time_rootfind,
     moving_lid_bc,
     rollout,
     step,
@@ -360,6 +363,96 @@ def stage_invert(args: argparse.Namespace) -> None:
     )
     _log(f"wrote {out}")
 
+def stage_invert_rf(args: argparse.Namespace) -> None:
+    """Round-2 inversion: root-find dL/ds = 0 instead of descending L."""
+    n, steps = args.n, args.steps
+    tau_true = args.tau_true if args.tau_true is not None else tau_target(n)
+    geom = CavityGeometry(n, n, dtype=DTYPE)
+    mask = geom.wall_mask
+    f0 = initial_field(geom)
+    u_t = torch.as_tensor(U_LID, dtype=DTYPE)
+
+    if args.truth == "ghia":
+        target = _ghia_profile_at_stations()
+        truth_source = "Ghia et al. (1982) Re=100 centreline tables (JCP 48:387)"
+    else:
+        with torch.no_grad():
+            f_truth = rollout(
+                f0, tau_true, u_t, steps, wall_mask=mask, compile_step=True
+            )
+            target = centreline_probes(f_truth, u_t).detach()
+        truth_source = f"same differentiable chain, n={n}, steps={steps}, tau={tau_true}"
+
+    bracket_tau = tuple(args.bracket) if args.bracket else None
+    _log(
+        f"[invert-rf] truth={args.truth} n={n} steps={steps} tau_true={tau_true:.6f} "
+        f"tau_init={args.tau_init:.6f} method={args.method} bracket={bracket_tau}"
+    )
+    t0 = time.time()
+    res = invert_relaxation_time_rootfind(
+        target,
+        geom,
+        U_LID,
+        args.tau_init,
+        steps,
+        method=args.method,
+        bracket_tau=bracket_tau,
+        bracket_frac=args.bracket_frac,
+        max_iter=args.max_iter,
+        step_tol=args.step_tol,
+        checkpoint_every=args.checkpoint_every,
+        compile_step=args.compile_step,
+        log=_log,
+    )
+    tau_rec = res["tau_recovered"]
+    payload = {
+        "truth": args.truth,
+        "truth_source": truth_source,
+        "n": n,
+        "steps": steps,
+        "u_lid": U_LID,
+        "tau_true": tau_true,
+        "tau_init": args.tau_init,
+        "tau_recovered": tau_rec,
+        "tau_best": res["tau_best"],
+        "loss_best": res["loss_best"],
+        "loss_root": res["loss_root"],
+        "grad_root": res["grad_root"],
+        "rel_err_best": abs(res["tau_best"] - tau_true) / tau_true,
+        "rel_err": abs(tau_rec - tau_true) / tau_true,
+        "rel_err_percent": 100.0 * abs(tau_rec - tau_true) / tau_true,
+        "abs_err": abs(tau_rec - tau_true),
+        "nu_true": (tau_true - 0.5) / 3.0,
+        "nu_recovered": (tau_rec - 0.5) / 3.0,
+        "re_true": U_LID * (n - 1) / ((tau_true - 0.5) / 3.0),
+        "re_recovered": U_LID * (n - 1) / ((tau_rec - 0.5) / 3.0),
+        "method": res["method"],
+        "root_status": res["status"],
+        "n_evals": res["n_evals"],
+        "iterations": res["iters"],
+        "bracket_s": res["bracket"],
+        "tau_history": res["tau_history"],
+        "loss_history": res["loss_history"],
+        "grad_history": res["grad_history"],
+        "residual_rms": res["residual_rms"],
+        "tolerance_rel": 0.02,
+        "pass": bool(abs(tau_rec - tau_true) / tau_true < 0.02),
+        "wall_time_s": time.time() - t0,
+        "target": target.tolist(),
+        "obs_final": res["obs_final"].tolist(),
+        "step_tol": args.step_tol,
+        "max_iter": args.max_iter,
+    }
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload, indent=2) + "\n")
+    _log(
+        f"[invert-rf] tau_rec={tau_rec:.6f} rel_err={payload['rel_err_percent']:.4f}% "
+        f"status={res['status']} evals={res['n_evals']} "
+        f"pass={payload['pass']} ({payload['wall_time_s']:.1f}s)"
+    )
+    _log(f"wrote {out}")
+
 
 def stage_equiv(args: argparse.Namespace) -> None:
     """Production (in-place, non-differentiable) chain vs the new chain.
@@ -408,6 +501,139 @@ def stage_equiv(args: argparse.Namespace) -> None:
     out.write_text(json.dumps(payload, indent=2) + "\n")
     _log(f"[equiv] n={n} steps={steps} max|df|={diff:.3e} bit_identical={payload['bit_identical']}")
     _log(f"wrote {out}")
+
+def stage_field(args: argparse.Namespace) -> None:
+    """Save the Re=100 cavity field (u, |u|) as npz + metadata for figures."""
+    import numpy as np
+
+    n, steps = args.n, args.steps
+    tau = args.tau if args.tau is not None else tau_target(n)
+    geom = CavityGeometry(n, n, dtype=DTYPE)
+    f0 = initial_field(geom)
+    u_t = torch.as_tensor(U_LID, dtype=DTYPE)
+    t0 = time.time()
+    with torch.no_grad():
+        f = rollout(f0, tau, u_t, steps, wall_mask=geom.wall_mask, compile_step=True)
+        rho, ux, uy = macroscopic(f)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(
+        out.with_suffix(".npz"),
+        ux=ux.numpy(),
+        uy=uy.numpy(),
+        rho=rho.numpy(),
+        n=n,
+        tau=tau,
+        u_lid=U_LID,
+    )
+    payload = {
+        "n": n,
+        "steps": steps,
+        "tau": tau,
+        "u_lid": U_LID,
+        "re": U_LID * (n - 1) / ((tau - 0.5) / 3.0),
+        "max_abs_u": float(torch.sqrt(ux**2 + uy**2).max()),
+        "wall_time_s": time.time() - t0,
+        "npz": str(out.with_suffix(".npz")),
+    }
+    out.write_text(json.dumps(payload, indent=2) + "\n")
+    _log(f"[field] n={n} tau={tau:.5f} max|u|={payload['max_abs_u']:.4f} -> {out}")
+
+
+def stage_figures_rf(args: argparse.Namespace) -> None:
+    """Round-2 figures: root-finder convergence and the recovered field."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    base = Path(args.artifacts)
+    figs = base / "figures"
+    figs.mkdir(parents=True, exist_ok=True)
+    made: list[str] = []
+
+    runs = sorted(base.glob("invert_rf_*.json"))
+    if runs:
+        fig, axes = plt.subplots(1, 3, figsize=(14.5, 4.2))
+        for rp in runs:
+            meta = json.loads(rp.read_text())
+            tau_true = meta["tau_true"]
+            losses = np.asarray(meta["loss_history"], dtype=float)
+            taus = np.asarray(meta["tau_history"], dtype=float)
+            grads = np.asarray(meta["grad_history"], dtype=float)
+            ok = np.isfinite(losses)
+            label = (
+                f"n={meta['n']} T={meta['steps']} init={meta['tau_init']:.4f} "
+                f"({meta['rel_err_percent']:.3f}%)"
+            )
+            axes[0].semilogy(np.arange(len(losses))[ok], losses[ok], "o-", ms=3, label=label)
+            axes[1].semilogy(
+                np.arange(len(grads))[np.isfinite(grads)],
+                np.abs(grads)[np.isfinite(grads)],
+                "o-",
+                ms=3,
+                label=label,
+            )
+            axes[2].plot(
+                np.arange(len(taus))[np.isfinite(taus)],
+                100.0 * np.abs(taus - tau_true)[np.isfinite(taus)] / tau_true,
+                "o-",
+                ms=3,
+                label=label,
+            )
+            axes[2].axhline(2.0, color="r", ls="--", lw=1, label="acceptance 2%")
+        axes[0].set(xlabel="oracle evaluation", ylabel="loss $L$", title="stationary loss")
+        axes[1].set(
+            xlabel="oracle evaluation", ylabel="$|dL/ds|$", title="stationary residual"
+        )
+        axes[2].set(
+            xlabel="oracle evaluation",
+            ylabel=r"$|\tau-\tau_{true}|/\tau_{true}$ [%]",
+            title="tau recovery error",
+        )
+        for ax in axes:
+            ax.grid(alpha=0.3, which="both")
+            ax.legend(fontsize=7)
+        fig.suptitle("GAP-PP-2 round 2: root-finding inversion of tau (dL/ds = 0)")
+        fig.tight_layout()
+        p = figs / "rootfind_convergence.png"
+        fig.savefig(p, dpi=150)
+        made.append(str(p))
+        plt.close(fig)
+
+    fields = sorted(base.glob("field_n*.npz"))
+    if fields:
+        npz = np.load(fields[-1])
+        meta = json.loads(fields[-1].with_suffix(".json").read_text())
+        ux, uy = npz["ux"], npz["uy"]
+        n = int(npz["n"])
+        x = np.linspace(0.0, 1.0, n)
+        speed = np.sqrt(ux**2 + uy**2) / U_LID
+        fig, axes = plt.subplots(1, 2, figsize=(11.4, 4.8))
+        cf = axes[0].contourf(x, x, speed, levels=24, cmap="viridis")
+        fig.colorbar(cf, ax=axes[0], label="$|u|/u_{lid}$")
+        axes[0].streamplot(x, x, ux, uy, color="w", density=1.1, linewidth=0.6)
+        axes[0].set(
+            xlabel="$x/H$",
+            ylabel="$y/H$",
+            title=f"Re=100 lid cavity, n={n}, $\\tau$={meta['tau']:.4f}",
+            aspect="equal",
+        )
+        axes[1].plot(ux[:, n // 2] / U_LID, x, "-", lw=1.3, label="LBM (root-find chain)")
+        axes[1].plot(GHIA_RE100["u"], GHIA_RE100["y"], "ko", ms=4, label="Ghia 1982")
+        axes[1].set(
+            xlabel="$u_x/u_{lid}$", ylabel="$y/H$", title="vertical centreline"
+        )
+        axes[1].grid(alpha=0.3)
+        axes[1].legend(fontsize=8)
+        fig.tight_layout()
+        p = figs / f"cavity_field_n{n}_re100.png"
+        fig.savefig(p, dpi=150)
+        made.append(str(p))
+        plt.close(fig)
+
+    _log(f"[figures-rf] wrote {len(made)} figures: {made}")
 
 
 def stage_figures(args: argparse.Namespace) -> None:
@@ -580,11 +806,38 @@ def main() -> None:
     p.add_argument("--out", required=True)
     p.set_defaults(func=stage_invert)
 
+    p = sub.add_parser("invert-rf")
+    p.add_argument("--n", type=int, default=65)
+    p.add_argument("--steps", type=int, default=4000)
+    p.add_argument("--tau-true", type=float, default=None)
+    p.add_argument("--tau-init", type=float, required=True)
+    p.add_argument("--truth", choices=["same", "ghia"], default="same")
+    p.add_argument("--method", choices=["illinois", "secant"], default="illinois")
+    p.add_argument("--bracket", type=float, nargs=2, default=None)
+    p.add_argument("--bracket-frac", type=float, default=0.05)
+    p.add_argument("--max-iter", type=int, default=14)
+    p.add_argument("--step-tol", type=float, default=1e-5)
+    p.add_argument("--checkpoint-every", type=int, default=200)
+    p.add_argument("--compile-step", action="store_true")
+    p.add_argument("--out", required=True)
+    p.set_defaults(func=stage_invert_rf)
+
     p = sub.add_parser("equiv")
     p.add_argument("--n", type=int, default=65)
     p.add_argument("--steps", type=int, default=4000)
     p.add_argument("--out", required=True)
     p.set_defaults(func=stage_equiv)
+
+    p = sub.add_parser("field")
+    p.add_argument("--n", type=int, default=65)
+    p.add_argument("--steps", type=int, default=40000)
+    p.add_argument("--tau", type=float, default=None)
+    p.add_argument("--out", required=True)
+    p.set_defaults(func=stage_field)
+
+    p = sub.add_parser("figures-rf")
+    p.add_argument("--artifacts", required=True)
+    p.set_defaults(func=stage_figures_rf)
 
     p = sub.add_parser("figures")
     p.add_argument("--artifacts", required=True)
