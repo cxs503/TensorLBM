@@ -124,3 +124,80 @@ def test_config_validation() -> None:
         RTConfig(tau=0.4).validate()
     with pytest.raises(ValueError):
         RTConfig(atwood=1.5).validate()
+
+# ---------------------------------------------------------------------------
+# Bounded Allen-Cahn interface transport (round 2, m18081)
+# ---------------------------------------------------------------------------
+
+
+def test_ac2d_matches_ac3d_kernel() -> None:
+    """The 2-D AD stepper is the 3-D kernel restricted to ``nz = 1`` (bit-exact)."""
+    from tensorlbm.allen_cahn_lbm import step_allen_cahn_field
+    from tensorlbm.rayleigh_taylor import step_allen_cahn_2d
+
+    torch.manual_seed(0)
+    phi = 0.5 * torch.randn(8, 12, dtype=torch.float64)
+    ux = 0.05 * torch.randn(8, 12, dtype=torch.float64)
+    uy = 0.05 * torch.randn(8, 12, dtype=torch.float64)
+    kw = dict(beta=1.0e-3, kappa=2.0e-3, mobility=5.0, boundary="periodic")
+    got = step_allen_cahn_2d(phi, ux, uy, **kw)
+    ref = step_allen_cahn_field(
+        phi.unsqueeze(0),
+        beta=kw["beta"], kappa=kw["kappa"], mobility=kw["mobility"],
+        u=(ux.unsqueeze(0), uy.unsqueeze(0), torch.zeros(1, 8, 12, dtype=torch.float64)),
+        boundary="periodic",
+    )[0]
+    assert torch.allclose(got, ref, atol=1e-15)
+
+
+def test_ac_parameters_recover_requested_interface() -> None:
+    """``(sigma, W)`` -> ``(beta, kappa)`` round-trips through the AC relations."""
+    from tensorlbm.rayleigh_taylor import ac_parameters
+
+    cfg = RTConfig(phase_scheme="allen_cahn", ac_sigma=3.0e-4, ac_width=2.0)
+    beta, kappa = ac_parameters(cfg)
+    assert math.sqrt(2.0 * kappa / beta) == pytest.approx(cfg.ac_width, rel=1e-12)
+    assert (2.0 * math.sqrt(2.0) / 3.0) * math.sqrt(beta * kappa) == pytest.approx(
+        cfg.ac_sigma, rel=1e-12)
+
+
+def test_ac_scheme_keeps_phase_bounded() -> None:
+    """The legacy population scheme inflates ``|phi|``; the AC scheme does not."""
+    from tensorlbm.rayleigh_taylor import interface_zero_crossing
+
+    cfg = RTConfig(lam=32, layers=6.0, g=2.0e-3, atwood=0.5, tau=0.515, tau_phi=0.501,
+                   n_steps=1, phase_scheme="allen_cahn", ac_sigma=3.0e-4,
+                   ac_width=2.0, ac_mobility=20.0)
+    f, g, phi = init_rt_state(cfg)
+    for _ in range(400):
+        f, g = rt_step(f, g, cfg, phi=phi)
+        phi = g.sum(dim=0)
+    assert float(phi.abs().max()) <= 1.0 + 1e-12
+    assert bool(torch.isfinite(phi).all())
+    # interface still a level set: one crossing per column, amplitude growing
+    zc = interface_zero_crossing(phi)
+    assert bool(torch.isfinite(zc).all())
+    assert float(zc.max() - zc.min()) > 1.0
+
+
+def test_reference_velocity_is_boussinesq_symmetric() -> None:
+    """Reference velocities: C_2D = 1, bubble == spike, geometric-mean relation."""
+    import sys as _sys
+
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[1]
+                           / "benchmarks" / "case_pool" / "rayleigh_taylor"))
+    import run_case as rc
+
+    assert rc.C_2D == 1.0
+    a, g, lam = 0.5, 2.0e-4, 64.0
+    ub = rc.boussinesq_velocity(a, g, lam)
+    assert ub == pytest.approx(math.sqrt(2.0 * a * g / (2.0 * math.pi / lam)), rel=1e-12)
+    gb = rc.goncharov_velocity(a, g, lam, "b")
+    gs = rc.goncharov_velocity(a, g, lam, "s")
+    # sqrt(u_b^G u_s^G) = sqrt(2 A g/(C k)) (1-A^2)^(-1/4): the Boussinesq value
+    # is the geometric mean of the two two-fluid branches up to that factor.
+    assert ub == pytest.approx(math.sqrt(gb * gs) * (1.0 - a * a) ** 0.25, rel=1e-12)
+    # the product invariant u_b u_s = 2 A g /(C k) is Atwood-independent
+    for a2 in (0.1, 0.25, 1.0 / 3.0):
+        assert rc.boussinesq_velocity(a2, g, lam) ** 2 * (2.0 * math.pi / lam) / (2.0 * a2 * g) == (
+            pytest.approx(1.0 / rc.C_2D, rel=1e-12))
