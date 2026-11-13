@@ -1,0 +1,83 @@
+{
+  "anchor": "XVAL-LBM-R2-SELECTIVE-FUSED-GHOST-EXCHANGE-PLUS-3D-TGV-ANCHOR-CORRECTION",
+  "mission": 18798,
+  "round": 2,
+  "supersedes": "xval/XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED (m17995, audited m18155)",
+  "decision": "Does TensorLBM's per-face selective (lbmpy/waLBerla PackInfo-derived) ghost exchange reproduce the monolithic D3Q19 solution exactly and reproduce the OSS implementation's communication-volume reduction, and does the physical anchor of that claim (3D Taylor-Green vortex against the Stokes solution) pass the owner 15 % band once the reference exponent is corrected?",
+  "alternatives": {
+    "A_serial": "monolithic single-buffer D3Q19 pull stream over the whole (19,n,n,n) lattice, fully periodic (torch.roll) -- physical reference and identity reference",
+    "A_ship": "shipped tensorlbm.multi_gpu.D3Q19GlooTransport: 19-population boundary planes per face, fresh padded buffer per step",
+    "A_ship_persistent": "A_ship with a preallocated padded buffer",
+    "A_fused": "lbmpy/waLBerla PackInfo transplant: only the x-crossing populations (5 of 19 per face for D3Q19) are packed, exchanged and unpacked into the ghost plane",
+    "A_fused_persistent": "A_fused with the persistent padded buffer",
+    "A_product": "the shipped class itself with selective_ghosts=True -- the L3 integration arm (R1 had no product path at all)",
+    "A_no_arm": "do nothing: keep the R1 report (formula 2*nu*k^2, 1 of 4 configs delivered, no product integration) -- rejected by the m18155 audit findings 1-4"
+  },
+  "hypothesis": {
+    "H1_identity": "every decomposed arm, including the product path, reproduces the monolithic field bit-exactly (max|df| == 0.0) in float32 and float64",
+    "H2_bytes": "the selective exchange moves exactly n_cross/Q = 5/19 of the shipped wire bytes per step",
+    "H3_anchor": "with the corrected 3D Stokes exponent (3 nu k^2 for the velocity amplitude, not the 2D 2 nu k^2) the TGV relative L2 error falls inside the owner 15 % band",
+    "H4_regime": "the residual error of the corrected anchor is dominated by the O(U0^2) nonlinearity of the real TGV, not by the transport: it must shrink monotonically along the predeclared U0 ladder 0.04 -> 0.01 -> 0.0025 (dissipation-scale Reynolds number U0/(nu k) = 8.2 -> 2.0 -> 0.51)",
+    "H5_rate": "the measured kinetic-energy decay rate equals nu * |3 k^2| within 5 % in the linear regime, which pins the viscosity through the whole transport chain",
+    "falsifiers": [
+      "H1 fails on any nonzero bit difference",
+      "H2 fails if the byte ratio differs from 5/19",
+      "H3 fails if tgv_rel_l2 >= 15 %",
+      "H4 fails if the error does not decrease monotonically along the U0 ladder",
+      "H5 fails if |fitted_rate/analytic_rate - 1| > 5 % at u0 <= 0.01"
+    ]
+  },
+  "metrics": {
+    "tgv_rel_l2": "||u_num - u_analytic||_2 / ||u_analytic||_2 over the three velocity components at t_end, against the corrected 3D Stokes mode",
+    "tgv_amplitude_ratio": "||u_num||_2 / ||u_analytic||_2 at t_end",
+    "fitted_decay_rate": "-ln(||u(t)||/||u(0)||)/t; compare with analytic rate nu * 6 (1 - cos k) (lattice) resp. 3 nu k^2 (continuum)",
+    "identity_max_abs": "max|f_arm - f_serial| over the assembled field; exact zero expected",
+    "wire_bytes_per_step": "sum of numel*element_size over the two send and two receive buffers of one step (both directions)",
+    "step_ms / exchange_ms / mlups": "wall time per step, of the exchange alone, and mega lattice-site updates per second",
+    "rho_min_rho_max": "density bounds (compressibility check)"
+  },
+  "unit_of_analysis": "one completed run (arm x grid x rank count x dtype x tau x U0 x step count)",
+  "baseline_control": {
+    "physical_baseline": "corrected Stokes solution of the 3D single-mode TGV: u = U0 sin(kx) cos(ky) cos(kz) e^{-nu*3k^2*t}, v = -U0 cos(kx) sin(ky) cos(kz) e^{-nu*3k^2*t}, w = 0, k = 2 pi/n (lattice eigenvalue 6(1-cos k) used for the fitted-rate comparison)",
+    "identity_baseline": "A_serial field after the same number of steps with the same collision",
+    "representation_control": "A_ship vs A_fused: collision, streaming, geometry, dtype, tau, U0 and step count identical; the only changed variable is the packed population set (plus the buffer-allocation factor)",
+    "oss_control": "the crossing-population set is machine-compared against lbmpy's own _extend_dir (tests/test_xval_mpi_ghost_fused.py::test_crossing_populations_match_oss_extend_dir), never against a hand-written table",
+    "r1_control": "the R1 delivered numbers (24.887 % at n64_r2 with the 2 nu k^2 reference) are reproduced and attributed as a reference defect, not re-tuned away"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "engineering_target_pct": 5.0,
+    "identity_rel": 0.0,
+    "byte_ratio_expected": 0.2631578947368421,
+    "byte_ratio_rel_tol": 1e-12,
+    "decay_rate_rel_tol_pct": 5.0,
+    "interpretation": "the 15 % band is the owner physics band and applies to tgv_rel_l2; identity is exact-zero because a data-movement change has no legitimate numerical freedom; the byte ratio has no tolerance because it is an integer count; the 5 % band on the fitted decay rate is the audit's remediation-3 regression tolerance",
+    "regime_declaration": "the linear Stokes anchor is declared valid for U0/(nu k) <= 2.1 (the 0.01 rung); the 0.04 rung is retained only as the R1 continuity point and is explicitly labelled nonlinear-regime",
+    "stopping_rule": "every configuration runs its predeclared step count and stops early only on non-finite state, rho outside [0.9,1.1] or Ma = U0 sqrt(3) > 0.2; no arm is extended or re-tuned after KPIs are seen. Wall budget 1200 s per configuration; anything above that is moved to the cluster queue (all R2 runs are submitted there).",
+    "convergence_rule": "n=32 vs n=64 at fixed rank count and U0, plus the discrete-vs-continuum eigenvalue gap k^2/12 (0.08 % at n=64, 0.32 % at n=32) reported as a reference-discretisation term",
+    "sensitivity_rule": "two predeclared sensitivity axes: rank count 2 -> 4 at fixed n=64 (comm surface grows, global work fixed) and tau 0.65 -> 0.60 at fixed n=32, U0=0.01 (viscosity/dissipation path); the U0 ladder is the third axis and the anchor-regime argument"
+  },
+  "predeclared_run_matrix": {
+    "R2-n64-r2": {"kind": "xval", "n": 64, "ranks": 2, "u0": 0.04, "tau": 0.65, "steps": 400, "dtype": "float32"},
+    "R2-n64-r4": {"kind": "xval", "n": 64, "ranks": 4, "u0": 0.04, "tau": 0.65, "steps": 400, "dtype": "float32"},
+    "R2-n32-r2": {"kind": "xval", "n": 32, "ranks": 2, "u0": 0.04, "tau": 0.65, "steps": 200, "dtype": "float32"},
+    "R2-n32-r2-f64": {"kind": "xval", "n": 32, "ranks": 2, "u0": 0.04, "tau": 0.65, "steps": 100, "dtype": "float64"},
+    "R2-lin-u001": {"kind": "xval", "n": 32, "ranks": 2, "u0": 0.01, "tau": 0.65, "steps": 200, "dtype": "float64"},
+    "R2-lin-u00025": {"kind": "xval", "n": 32, "ranks": 2, "u0": 0.0025, "tau": 0.65, "steps": 200, "dtype": "float64"},
+    "R2-tau060": {"kind": "xval", "n": 32, "ranks": 2, "u0": 0.01, "tau": 0.60, "steps": 200, "dtype": "float64"},
+    "R2-product-n32-r4": {"kind": "shipped", "n": 32, "ranks": 4, "u0": 0.01, "tau": 0.65, "steps": 100, "dtype": "float64"}
+  },
+  "deviations_from_r1": [
+    "reference exponent 2 nu k^2 -> nu * |lap eigenvalue| (= 3 nu k^2 continuum, 6(1-cos k) lattice): audit finding 3",
+    "4 of 4 previously declared configs delivered, not 1 of 4: audit finding 4",
+    "a product-path arm (D3Q19GlooTransport(selective_ghosts=True)) exists and is measured: audit finding 2",
+    "U0 ladder added so the anchor's linear-regime validity is demonstrated instead of asserted",
+    "fitted decay rate reported as an independent (anchor-free) viscosity check: audit remediation 3"
+  ],
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1 CPU, gloo backend",
+    "oss_reference": "lbmpy 2.0 (github.com/lssfau/lbmpy, /tmp/lbmpy_src) + lbmpy_walberla packinfo.py semantics",
+    "compute": "cluster queue job, node assigned by the scheduler (no node pinning), one gloo process per rank on the node"
+  }
+}
