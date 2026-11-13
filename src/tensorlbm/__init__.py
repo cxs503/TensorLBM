@@ -68,6 +68,10 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "erf_diffusion_profile": ("passive_scalar_verification", "erf_diffusion_profile"),
     "run_verification": ("passive_scalar_verification", "run_verification"),
     "VerificationSpec": ("passive_scalar_verification", "VerificationSpec"),
+    "AnchorConfig": ("les_graph_unroll.tgv_anchor", "AnchorConfig"),
+    "SelectionCase": ("les_graph_unroll.selection", "SelectionCase"),
+    "run_tgv_anchor": ("les_graph_unroll.tgv_anchor", "run_tgv_anchor"),
+    "select_and_judge": ("les_graph_unroll.selection", "select_and_judge"),
     "AIPipelineResult": ("ai", "AIPipelineResult"),
     "AMRAdvanceResult": ("static_block_amr", "AMRAdvanceResult"),
     "AMRInterfaceValidationConfig": ("amr_interface_validation", "AMRInterfaceValidationConfig"),
@@ -344,10 +348,6 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "apply_inlet_profile_3d": ("turbulence.inlet_profiles", "apply_inlet_profile_3d"),
     "apply_jonswap_inlet_3d": ("wave_bc", "apply_jonswap_inlet_3d"),
     "apply_rough_wall_bounce_back": ("roughness", "apply_rough_wall_bounce_back"),
-    "regularised_face": ("regularised_bc", "regularised_face"),
-    "apply_regularised_wall": ("regularised_bc", "apply_regularised_wall"),
-    "run_regularised_channel": ("regularised_bc", "run_channel"),
-    "RegularisedBCLattice": ("regularised_bc", "LatticeSpec"),
     "apply_simple_channel_boundaries": ("boundary.boundaries", "apply_simple_channel_boundaries"),
     "apply_simple_channel_boundaries_3d": (
         "boundary.boundaries3d",
@@ -2174,6 +2174,12 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         run_verification,
         taylor_aris_ratio,
     )
+    from .les_graph_unroll import (
+        AnchorConfig,
+        SelectionCase,
+        run_tgv_anchor,
+        select_and_judge,
+    )
     from .thermal import (
         C_D2Q5,
         W_D2Q5,
@@ -2323,6 +2329,10 @@ __all__ = [
     "erf_diffusion_profile",
     "run_verification",
     "VerificationSpec",
+    "AnchorConfig",
+    "SelectionCase",
+    "run_tgv_anchor",
+    "select_and_judge",
     "AdaptationSchedule",
     "AMRPatch2D",
     "AMRPatch3D",
