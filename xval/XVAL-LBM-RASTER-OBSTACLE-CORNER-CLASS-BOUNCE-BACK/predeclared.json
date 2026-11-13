@@ -1,0 +1,66 @@
+{
+  "anchor": "XVAL-LBM-RASTER-OBSTACLE-CORNER-CLASS-BOUNCE-BACK",
+  "round": 1,
+  "owner_precision_standard_pct": 15.0,
+  "written_before_runs": true,
+  "decision": "Should TensorLBM adopt the OSS raster-obstacle operator of ebinan92/Fingering_dynamics (hand-written 8-class corner-class bounce-back tables, bounce_back.py:25-86) as its raster-obstacle wall treatment, or keep its per-direction closed-link mask (bitflag_neighbour_mask) as the production path? Decision criterion = physical observable disagreement between the two operators on identical raster geometry.",
+  "alternatives": [
+    "A (OSS / reference arm): corner-class half-way bounce-back table painted from each rectangle's bounding box (N/S/E/W bands + 4 diagonal corner cells), periodic np.roll streaming, wall rows by bottom_top_wall.",
+    "B (TensorLBM / got arm): exact per-direction closed-link bitmask (bit i-1 set iff x-c_i is solid) driving stream+bounce-back; corner classes emerge from the bit pattern instead of being painted."
+  ],
+  "hypothesis": "H1: the OSS corner-class table and the exact closed-link mask differ only on the diagonal links at the ends of each N/S/E/W band (8 links per isolated rectangle), so any physical observable (permeability, obstacle drag) differs by less than the owner 15% bar. H0: the difference is material (>=15%) somewhere on the ladder.",
+  "metrics": {
+    "K_oss": "lattice permeability of this arm: K = nu * u_bar / g, u_bar = pore mean of u_x",
+    "err_k_pct": "|K_mask - K_oss| / K_oss * 100 (primary acceptance metric)",
+    "fx": "momentum-exchange force on the obstacles, F_x = sum over the arm's bounced obstacle links of 2 c_ix f_opp (pre-stream populations)",
+    "err_fx_pct": "|fx_mask - fx_oss| / |fx_oss| * 100 (secondary)",
+    "field_rel_l2": "||u_x(mask) - u_x(oss)||_2 / ||u_x(oss)||_2 over fluid nodes, per cent",
+    "spurious_links": "count of links bounced by the OSS table whose upstream cell is fluid",
+    "missed_links": "count of exact solid links not bounced by the OSS table",
+    "anchor_err_pct": "C0 (no obstacles) |K_sim - K_analytic| / K_analytic, K_analytic = ny^2/12 + 1/24"
+  },
+  "predeclared_thresholds": {
+    "accept_pct": 15.0,
+    "analytic_anchor_accept_pct": 3.0,
+    "operator_equivalence_rule": "every exact solid link must be in the OSS table set (missed_links = 0); the table may add links, each of which must be classified and counted",
+    "convergence_rule": "stop when max|u(t) - u(t-check_every)| / |u_bar| < u_rel_tol, capped at the predeclared step budget; no run extended or truncated after inspecting K",
+    "u_rel_tol": 1e-7,
+    "u_rel_tol_C0": 1e-8,
+    "failure_rule": "non-finite fields or non-convergence inside the budget are reported as FAILED / NOT_CONVERGED, never re-tuned"
+  },
+  "unit_of_analysis": "one steady-state 2-D LBM run (one config x one arm); the metric unit is one geometry/parameter point",
+  "baseline_control": {
+    "baseline": "OSS arm (C1) = the reference implementation of the anchor tag",
+    "control_no_obstacle": "C0: no obstacles; both arms must reproduce the discrete Poiseuille permeability ny^2/12 + 1/24 within 3 % -- proves the collision/forcing/measurement chain is sound before any obstacle difference is interpreted",
+    "control_same_collision": "both arms share the identical BGK collision, Guo forcing, seed field and measurement code; the only changed variable is the bounce-back link set",
+    "geometry_control": "both arms read the same raster mask built from the same rectangle corner list; solid fraction, block count and mask equality are recorded"
+  },
+  "variables_changed": [
+    "bounce-back operator (corner-class table vs exact closed-link mask)",
+    "tau in {2.0, 1.5} -> nu in {0.5, 0.3333}",
+    "body force g in {5e-4, 1e-3, 2e-3}",
+    "lattice resolution: block edge b = 12 (132x144) vs b = 24 (264x288), identical porosity and block count"
+  ],
+  "variables_controlled": [
+    "raster geometry (same rect corner list, same solid mask, 12 blocks, 9.09 % solid)",
+    "seed field, time-step budget, convergence tolerance, measurement code",
+    "single-phase D2Q9 BGK, Guo second-order body force, double precision numpy"
+  ],
+  "confounders": [
+    "the OSS arm in the reference repo is coupled to a non-Newtonian free-energy solver; here only its bounce-back operator (with its own streaming and wall routine) is transplanted onto a single-phase BGK stepper, so the measured difference isolates the operator, not the phase field",
+    "the OSS main run uses the two end x-columns as Zou-He inlet/outlet and applies bottom_top_wall only to the interior columns; here the domain is periodic in x and the wall routine is applied to every column (documented porting deviation)",
+    "K is a volume-averaged scalar; two operators can give the same K with different local fields, so the field L2 difference is reported alongside",
+    "the spurious links are a geometric artefact of the band painting, so their effect scales with block perimeter / porosity rather than with Re; the ladder varies resolution and forcing to show this"
+  ],
+  "repetition_rationale": "the integrations are deterministic (no randomness, no seeds beyond the deterministic initial field), so repetition is not used for uncertainty; instead the ladder varies tau, g and resolution (5 points) to show that the arm difference is not an accident of one parameter point",
+  "environment": {
+    "repo": "TensorLBM (worktree branch agent/m18239)",
+    "python": "3.11+, numpy, matplotlib",
+    "layout": "float64, CPU numpy, (9, nx, ny) with D2Q9_C ordering 1=E,2=N,3=W,4=S,5=NE,6=NW,7=SW,8=SE",
+    "cluster": "702 two-node loong64 (128 cores each), jobs submitted through the platform cluster queue, nodes assigned by the scheduler",
+    "resource_limit": "each shard <= 1800 s wall; total ladder 6 configs x 2 arms"
+  },
+  "analysis_plan": "for every config: K per arm, err_k_pct, fx per arm, err_fx_pct, field L2; accept when err_k_pct < 15 %. Additionally classify the operator difference link by link (spurious / missed) and report the analytic anchor error. Aggregation is a straight table, no outlier removal, no post-hoc threshold changes.",
+  "stopping_rule": "the ladder is fixed in advance (C0..C5); no config is added after seeing results, and a config is reported as NOT_CONVERGED rather than re-run with a longer budget",
+  "interpretation_limits": "the comparison is operator-level: it says whether transplanting the OSS corner-class table would change TensorLBM's raster-obstacle physics by more than 15 % on this geometry family. It does not measure the OSS free-energy/wetting physics, which was XVAL'd separately (XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER) and which produced no usable OSS number."
+}
