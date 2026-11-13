@@ -1,0 +1,186 @@
+commit 56c30f1399282fb78d15c6ce5299c1aa82960fac
+Author: agent <agent@local>
+Date:   Fri Nov 13 10:58:46 2026 +0000
+
+    m17986: MF-LBM-style job-status/wall-clock checkpoint machine (XVAL + LBMSimulation integration)
+    
+    - src/tensorlbm/job_checkpoint.py: job_status.txt state machine
+      (new/continue/done/failed/reached_max_step), hour-based checkpoint policy,
+      primary+second backup via atomic_torch_save, sha256 payload digest,
+      config-signature guard, VolumeTrigger (d_vol analogue), resume state.
+    - src/tensorlbm/simulation.py: LBMSimulation.enable_checkpointing /
+      run_with_checkpointing; step() drives the machine and writes the terminal state.
+    - tests: 20 invariant tests (bit-exact restart, backup rescue, terminal states,
+      zero recompute, trigger semantics) + artifact re-check of the delivered bundle.
+    - benchmarks/xval_job_checkpoint: XVAL against lanl/MF-LBM
+      (oss_solutions NEW:wall-clock-checkpoint-state-machine), ref-vs-got table,
+      sensitivity study, figures, repro.sh; docs/xval report (six sections).
+
+diff --git a/src/tensorlbm/__init__.py b/src/tensorlbm/__init__.py
+index ad32500a..8f99b536 100644
+--- a/src/tensorlbm/__init__.py
++++ b/src/tensorlbm/__init__.py
+@@ -199,6 +199,13 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
+     "KPIDefinition": ("accuracy_recommendation", "KPIDefinition"),
+     "LBMDatabase": ("ai", "LBMDatabase"),
+     "LBMSimulation": ("simulation", "LBMSimulation"),
++    "JobCheckpointManager": ("job_checkpoint", "JobCheckpointManager"),
++    "JobStatusFile": ("job_checkpoint", "JobStatusFile"),
++    "CheckpointStore": ("job_checkpoint", "CheckpointStore"),
++    "CheckpointPolicy": ("job_checkpoint", "CheckpointPolicy"),
++    "CheckpointError": ("job_checkpoint", "CheckpointError"),
++    "VolumeTrigger": ("job_checkpoint", "VolumeTrigger"),
++    "ResumeState": ("job_checkpoint", "ResumeState"),
+     "LBMStepExecutor": ("lbm_step", "LBMStepExecutor"),
+     "LBMUnitConverter": ("unit_converter", "LBMUnitConverter"),
+     "LaplaceTestConfig": ("porous_media", "LaplaceTestConfig"),
+@@ -2025,6 +2032,15 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
+         import_mesh_stl,
+     )
+     from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
++    from .job_checkpoint import (
++        CheckpointError,
++        CheckpointPolicy,
++        CheckpointStore,
++        JobCheckpointManager,
++        JobStatusFile,
++        ResumeState,
++        VolumeTrigger,
++    )
+     from .simulation import LBMSimulation
+     from .sloshing_tank import (
+         SloshingTankConfig,
+@@ -2718,6 +2734,13 @@ __all__ = [
+     "configure_logging",
+     "D2Q9",
+     "LBMSimulation",
++    "JobCheckpointManager",
++    "JobStatusFile",
++    "CheckpointStore",
++    "CheckpointPolicy",
++    "CheckpointError",
++    "VolumeTrigger",
++    "ResumeState",
+     "LBMStepExecutor",
+     "Reporter",
+     "ReporterBase",
+diff --git a/src/tensorlbm/simulation.py b/src/tensorlbm/simulation.py
+index 37bcd15e..ac591096 100644
+--- a/src/tensorlbm/simulation.py
++++ b/src/tensorlbm/simulation.py
+@@ -1,5 +1,10 @@
+ """Simple LBM simulation entry point."""
+ 
++from __future__ import annotations
++
++from pathlib import Path
++from typing import Any
++
+ import torch
+ 
+ from .constants import D2Q9
+@@ -7,7 +12,13 @@ from .lattice import equilibrium, stream
+ 
+ 
+ class LBMSimulation:
+-    """Minimal D2Q9 BGK simulation on a 2D periodic domain."""
++    """Minimal D2Q9 BGK simulation on a 2D periodic domain.
++
++    Long runs can be made restartable with :meth:`enable_checkpointing`, which
++    attaches the MF-LBM-style job-status + wall-clock checkpoint state machine
++    from :mod:`tensorlbm.job_checkpoint`.  The state machine is entirely optional
++    and off by default, so plain ``LBMSimulation`` usage is unchanged.
++    """
+ 
+     def __init__(self, nx: int = 64, ny: int = 32, tau: float = 0.6, device: str = "cpu") -> None:
+         if nx <= 0 or ny <= 0:
+@@ -22,7 +33,61 @@ class LBMSimulation:
+         rho0 = torch.ones((ny, nx), dtype=torch.float32, device=self.device)
+         u0 = torch.zeros((ny, nx, 2), dtype=torch.float32, device=self.device)
+         self.f = equilibrium(rho0, u0)
++        self.step_count = 0
++        self.checkpoints: Any | None = None
++        self.finished = False
++
++    # -- restart support ------------------------------------------------------
++    def enable_checkpointing(
++        self,
++        directory: str | Path,
++        *,
++        interval_hours: float = 1.0,
++        max_steps: int | None = None,
++        volume_interval: float | None = None,
++        dual_backup: bool = True,
++        force_restart: bool = False,
++        clock=None,
++    ):
++        """Attach the job-status/checkpoint state machine and resume if asked to.
++
++        Returns the :class:`tensorlbm.job_checkpoint.ResumeState`; when it is a
++        resume, the populations and step counter are restored *before* the first
++        new step, so no step is recomputed (MF-LBM ``continue`` path).
++        """
++        from .job_checkpoint import JobCheckpointManager
++
++        manager = JobCheckpointManager(
++            directory,
++            interval_hours=interval_hours,
++            max_steps=max_steps,
++            volume_interval=volume_interval,
++            dual_backup=dual_backup,
++            config_signature={"nx": self.nx, "ny": self.ny, "tau": self.tau, "lattice": "D2Q9"},
++            **({} if clock is None else {"clock": clock}),
++        )
++        state = manager.begin(force_restart=force_restart)
++        if state.resumed:
++            self.f = state.fields["f"].to(device=self.f.device, dtype=self.f.dtype)
++            self.step_count = state.step
++        else:
++            self.step_count = state.step
++        self.checkpoints = manager
++        self.finished = state.finished
++        return state
++
++    def run_with_checkpointing(self, steps: int) -> tuple[int, int]:
++        """Advance up to ``steps`` new steps under the attached state machine.
++
++        Returns ``(steps_executed, checkpoints_written)``.
++        """
++        if self.checkpoints is None:
++            raise RuntimeError("enable_checkpointing() must be called first")
++        from .job_checkpoint import run_with_checkpointing
++
++        return run_with_checkpointing(self, steps, self.checkpoints)
+ 
++    # -- physics --------------------------------------------------------------
+     def macroscopic(self) -> tuple[torch.Tensor, torch.Tensor]:
+         rho = self.f.sum(dim=-1)
+         c = D2Q9.c.to(dtype=self.f.dtype, device=self.device)
+@@ -31,12 +96,25 @@ class LBMSimulation:
+         return rho, u
+ 
+     def step(self) -> None:
++        if self.finished:
++            raise RuntimeError("simulation already reached a terminal checkpoint state")
+         rho, u = self.macroscopic()
+         feq = equilibrium(rho, u)
+         f_post_collision = self.f - (self.f - feq) / self.tau
+         self.f = stream(f_post_collision)
++        self.step_count += 1
++        if self.checkpoints is not None:
++            self.checkpoints.maybe_checkpoint(self.step_count, {"f": self.f})
++            if self.checkpoints.should_stop(self.step_count):
++                self.checkpoints.finish(
++                    self.step_count,
++                    status="reached_max_step",
++                    reason=f"max_steps={self.checkpoints.policy.max_steps}",
++                    fields={"f": self.f},
++                )
++                self.finished = True
+ 
+     def run(self, steps: int = 10) -> tuple[torch.Tensor, torch.Tensor]:
+         for _ in range(steps):
+             self.step()
+-        return self.macroscopic()
++        return self.macroscopic()
+\ No newline at end of file
