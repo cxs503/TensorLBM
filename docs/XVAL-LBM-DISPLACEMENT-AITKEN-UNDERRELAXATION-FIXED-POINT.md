@@ -208,3 +208,12 @@ PYTHONPATH=src python3 -m pytest tests/test_fsi_aitken_life_xval.py -q`
 **生态摩擦**：①`tensor/knowledge/search` 引擎 8021 offline（`engine_offline`），`oss_solutions`/`oss_inventory` 表对任务账号无读权限，
 只能用 kb10k 冻结证据回读方法摘要——建议平台给 XVAL 单开只读视图；②沙箱无外网，无法执行 OSS 源码，只能转写；
 ③容器内 `import tensorlbm` 默认解析到**另一个工位**（`/root/tp-agent/work/m17719/src`），必须显式 `PYTHONPATH=src`，否则测试静默打到别人的代码。
+
+## ⑦ 后续勘误（m18271 独立对抗复核，2026-11-13）
+
+本报告「失败模式 1」称默认下限缺陷"已修复"——该结论**只在被测 β_eff ≤ 9000 区间成立**：`omega_min=1e-4` 是
+**绝对**下限，收敛要求 `0<ω<2/(1+β_eff)`，故 `β_eff > 1/1e-4 − 1 = 9999` 重新发散（实测 β=2e4/1e5 发散，
+β=1e4 迭代 +42%、解偏差 1.42%）；同缺陷亦在 `fsi_added_mass`（1e-4）与 `fsi_partitioned_stability`（1e-3，实测
+β≥4e3 发散）两份拷贝中——本报告"两处实现不一致"应为**三处**。修复见
+`docs/AUDIT-XVAL-LBM-DISPLACEMENT-AITKEN-UNDERRELAXATION-FIXE.md`（共享守卫 `clamp_aitken_factor`，
+默认 `omega_min=0` 尺度无关，测试 `tests/test_fsi_aitken_guard_scale.py`）。

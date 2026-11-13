@@ -88,6 +88,8 @@ from typing import Iterable, Literal, Sequence
 
 import numpy as np
 
+from .fsi_partitioned import clamp_aitken_factor
+
 __all__ = [
     "AddedMassPistonModel",
     "AitkenRelaxation",
@@ -519,12 +521,17 @@ class AitkenRelaxation:
     ``omega_k = -omega_{k-1} (r^{k-1} . (r^k - r^{k-1})) / |r^k - r^{k-1}|^2``
     with the standard safeguards (bounded, slow start) that keep the first
     iterations from amplifying an added-mass-dominated residual.
+
+    ``omega_min = 0`` (default) is scale free (positivity only, shared guard
+    :func:`tensorlbm.fsi_partitioned.clamp_aitken_factor`); the former
+    absolute floor ``1e-3`` diverged for ``beta_eff >= 4e3``
+    (``xval/aitken_underrelaxation_life/out/scale_guard.json``).
     """
 
     def __init__(
         self,
         omega0: float = 1.0,
-        omega_min: float = 1e-3,
+        omega_min: float = 0.0,
         omega_max: float = 1.0,
         drop: int = 1,
     ) -> None:
@@ -550,7 +557,9 @@ class AitkenRelaxation:
             if denom > 1e-30:
                 omega = -self.omega * float(np.dot(self._prev_residual, dr)) / denom
                 if math.isfinite(omega):
-                    self.omega = min(max(abs(omega), self.omega_min), self.omega_max)
+                    self.omega = clamp_aitken_factor(
+                        abs(omega), omega_min=self.omega_min, omega_max=self.omega_max
+                    )
         self._prev_residual = r.copy()
         return self.omega
 
