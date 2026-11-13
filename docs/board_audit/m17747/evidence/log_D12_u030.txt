@@ -1,0 +1,75 @@
+[xval] D=12 u=0.3 Re=200.0 nu=0.01800 tau=0.55400 grid=360x240 steps=6000 (conv_lengths=150.0) sponge=5.0D (60/360 cols) threads=40
+[xval] refs from vivsim/examples/2d/flow_pass_cylinder.py:78-85 @ fb84b12: CD_REF=1.389 CL_REF=0.718
+[xval] *** NaN at step 500 ***
+{
+  "setup": {
+    "D": 12,
+    "u_in": 0.3,
+    "re": 200.0,
+    "nu": 0.018,
+    "tau": 0.554,
+    "nx": 360,
+    "ny": 240,
+    "nx_D": 30.0,
+    "ny_D": 20.0,
+    "cyl_x_D": 10.0,
+    "blockage": 0.05,
+    "n_steps": 6000,
+    "conv_lengths": 150.0,
+    "sponge": {
+      "x0": 300,
+      "width": 60,
+      "alpha": 10.0,
+      "power": 2.0,
+      "tau_max": 5.910872936248779
+    },
+    "seed": {
+      "st_seed": 0.197,
+      "amp": 0.1,
+      "cols": 4,
+      "n_seed_steps": 406
+    },
+    "collision": "MRT (s_e=1.64,s_eps=1.54,s_q=1.7)",
+    "bc": "far_field_bc_2d (inlet u_in / outlet zero-grad / top-bottom far field)",
+    "wall": "solid freeze + half-way bounce-back + Ladd MEM",
+    "sample_every": 10,
+    "dtype": "float32",
+    "torch_threads": 40
+  },
+  "runtime": {
+    "wall_s": 177.07944297790527,
+    "steps_done": 499,
+    "nan_at": 500,
+    "mlups": 0.24347038411104224
+  },
+  "vivsim": {
+    "cd_mean_last_half": NaN,
+    "cl_peak_last_half": NaN,
+    "window": [
+      24,
+      49
+    ]
+  },
+  "ours": {
+    "cd_mean": NaN,
+    "cl_amp_harmonic": NaN,
+    "cl_amp_period_median": NaN,
+    "cl_amp_period_iqr": NaN,
+    "st": 0.16,
+    "nfreq_hz_lattice": 0.004,
+    "cd_half1": NaN,
+    "cd_half2": NaN,
+    "cl_std_last_half": NaN
+  },
+  "verdict": {
+    "err_pct_cd_mean": NaN,
+    "err_pct_cl_peak": NaN,
+    "err_pct_cl_amp_harmonic_vs_CL_REF": NaN,
+    "st_vs_lit_err_pct": -18.781725888324875,
+    "tol_pct": 15.0,
+    "pass_cd": false,
+    "pass_cl": false,
+    "pass": false
+  }
+}
+[xval] GATE: Cd nan vs 1.389 (+nan%) | Cl_peak nan vs 0.718 (+nan%) | tol 15.0% -> FAIL

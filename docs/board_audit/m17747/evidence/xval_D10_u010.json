@@ -1,0 +1,86 @@
+{
+  "case": "xval_vivsim_cylinder_re200",
+  "anchor": "XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS",
+  "oss": "haimingz/vivsim @ fb84b12 examples/2d/flow_pass_cylinder.py",
+  "refs": {
+    "CD_REF": 1.389,
+    "CL_REF": 0.718,
+    "source": "vivsim/examples/2d/flow_pass_cylinder.py:78-85 @ fb84b12",
+    "dois": [
+      "10.1016/j.ijmecsci.2024.108961",
+      "10.1016/j.camwa.2014.05.013",
+      "10.1017/S0022112086003014"
+    ]
+  },
+  "setup": {
+    "D": 10,
+    "u_in": 0.1,
+    "re": 200.0,
+    "nu": 0.005,
+    "tau": 0.515,
+    "nx": 300,
+    "ny": 200,
+    "nx_D": 30.0,
+    "ny_D": 20.0,
+    "cyl_x_D": 10.0,
+    "blockage": 0.05,
+    "n_steps": 15000,
+    "conv_lengths": 150.0,
+    "sponge": {
+      "x0": 250,
+      "width": 50,
+      "alpha": 10.0,
+      "power": 2.0,
+      "tau_max": 5.461060047149658
+    },
+    "seed": {
+      "st_seed": 0.197,
+      "amp": 0.1,
+      "cols": 4,
+      "n_seed_steps": 1015
+    },
+    "collision": "MRT (s_e=1.64,s_eps=1.54,s_q=1.7)",
+    "bc": "far_field_bc_2d (inlet u_in / outlet zero-grad / top-bottom far field)",
+    "wall": "solid freeze + half-way bounce-back + Ladd MEM",
+    "sample_every": 10,
+    "dtype": "float32",
+    "torch_threads": 20
+  },
+  "runtime": {
+    "wall_s": 244.43145656585693,
+    "steps_done": 1999,
+    "nan_at": 2000,
+    "mlups": 0.4906897078023371
+  },
+  "vivsim": {
+    "cd_mean_last_half": NaN,
+    "cl_peak_last_half": NaN,
+    "window": [
+      99,
+      199
+    ]
+  },
+  "ours": {
+    "cd_mean": NaN,
+    "cl_amp_harmonic": NaN,
+    "cl_amp_period_median": NaN,
+    "cl_amp_period_iqr": NaN,
+    "st": 0.09999999999999999,
+    "nfreq_hz_lattice": 0.001,
+    "cd_half1": 1.2805860692804507,
+    "cd_half2": NaN,
+    "cl_std_last_half": NaN
+  },
+  "units": "lattice; Cd=2Fx/(rho*u^2*D), Cl=2Fy/(rho*u^2*D)",
+  "dt_lattice": 1.0,
+  "verdict": {
+    "err_pct_cd_mean": NaN,
+    "err_pct_cl_peak": NaN,
+    "err_pct_cl_amp_harmonic_vs_CL_REF": NaN,
+    "st_vs_lit_err_pct": -49.238578680203055,
+    "tol_pct": 15.0,
+    "pass_cd": false,
+    "pass_cl": false,
+    "pass": false
+  }
+}
