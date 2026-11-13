@@ -77,6 +77,7 @@ __all__ = [
     "W",
     "CS2",
     "WallOrderWettingConfig",
+    "young_cos_theta",
     "analytic_contact_angle",
     "contact_angle_from_field",
     "free_energy_parameters",
@@ -118,6 +119,27 @@ def model_surface_tension(kappa: float, interface_width: float) -> float:
     return 4.0 * kappa / (3.0 * interface_width)
 
 
+def young_cos_theta(psi_wall: float) -> float:
+    """``cos(theta) = (3 psi_w - psi_w^3)/2`` for a wall order parameter ``psi_w``.
+
+    Derived independently (docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md
+    section 2) by truncating the equilibrium ``tanh`` profile at the wall value and
+    differencing the wall excess energy of the two bulk phases:
+
+        ``G(psi) = (kappa/xi) [2/3 -+ psi -+ psi^3/3]``,
+        ``gamma_sg - gamma_sl = G_gas - G_liq = (2 kappa/xi)(psi_w - psi_w^3/3)``,
+        ``sigma = 4 kappa/(3 xi)``  ->  Young's law above.
+
+    This is the single source of truth shared by the diffuse-interface relaxation
+    (:func:`analytic_contact_angle`), the wall-flux condition of the CAC solver
+    (``tensorlbm.cac_lbm2d``, ``wall_phi_policy="wall_order"``) and the xval harness.
+    """
+    p = float(psi_wall)
+    if p < -1.0 or p > 1.0:
+        raise ValueError("psi_wall must lie in [-1, 1]")
+    return 0.5 * (3.0 * p - p**3)
+
+
 def analytic_contact_angle(psi_wall: float) -> float:
     """Contact angle (rad) of the wall-order-parameter model in the sharp limit.
 
@@ -130,11 +152,7 @@ def analytic_contact_angle(psi_wall: float) -> float:
     ``psi_w = -1 -> 180 deg``).  The relation is *tested* in the xval harness;
     see ``xval/.../runs/**/result.json`` for the measured mapping.
     """
-    p = float(psi_wall)
-    if p < -1.0 or p > 1.0:
-        raise ValueError("psi_wall must lie in [-1, 1]")
-    c = 0.5 * (3.0 * p - p**3)
-    return float(math.acos(max(-1.0, min(1.0, c))))
+    return float(math.acos(max(-1.0, min(1.0, young_cos_theta(psi_wall)))))
 
 
 # ---------------------------------------------------------------------------
@@ -540,6 +558,18 @@ def contact_angle_from_field(
 
     ``R_curv`` is the fitted radius of curvature at the apex, used for the
     Young-Laplace cross-check of the numerical surface tension.
+
+    Validity diagnostics (both estimators above assume a *sharp* cap):
+
+    ``layer_area_per_column``  liquid area the equilibrium wall adsorption layer
+                               consumes per column (from the 1-D profile far from
+                               the drop);
+    ``layer_fraction``         ``layer_area_per_column * nx / area``.  When this
+                               approaches 1 the drop has been absorbed by the
+                               layer and the cap measure is meaningless, which is
+                               what happens for shallow caps on strongly wetting
+                               walls (``psi_w >= 0.7`` here).  ``cap_measurable``
+                               is the resulting gate flag.
     """
     ny, nx = psi.shape
     xc = (nx - 1) / 2.0 if centre_x is None else float(centre_x)
@@ -549,6 +579,20 @@ def contact_angle_from_field(
     height = apex - wall_y
     area = float(((psi.detach() + 1.0) * 0.5).sum())
     theta_cap = theta_from_cap_area(area, height)
+
+    # Adsorption-layer (precursor film) capacity of the wall: the equilibrium
+    # 1-D profile far from the drop, integrated over y, is the liquid area the
+    # wall layer consumes *per column*.  For a shallow cap the footprint
+    # (>= 2 R sin(theta)) is entirely covered by that layer, so the layer area
+    # can reach or exceed the drop area and the area/height inversion becomes
+    # ill-posed.  The ratio is reported so such a run is *flagged* rather than
+    # silently trusted (mechanism documented in the xval report, section 5).
+    edge = max(2, min(6, nx // 10))
+    film_cols = torch.cat((psi[:, :edge], psi[:, -edge:]), dim=1)
+    film_profile = film_cols.mean(dim=1)
+    layer_area_per_column = float(((film_profile.detach() + 1.0) * 0.5).sum())
+    cap_excess = float(area - layer_area_per_column * nx)
+    layer_fraction = float(layer_area_per_column * nx / area) if area > 0 else float("nan")
 
     pts = interface_points(psi)
     theta_circle = float("nan")
@@ -574,6 +618,10 @@ def contact_angle_from_field(
         "R_curv": float(radius),
         "centre_y": float(centre_y),
         "n_points": float(pts.shape[0]),
+        "layer_area_per_column": layer_area_per_column,
+        "cap_excess_area": cap_excess,
+        "layer_fraction": layer_fraction,
+        "cap_measurable": bool(layer_fraction < 0.5 and cap_excess > 0.0),
     }
 
 
