@@ -7,6 +7,11 @@ do not change any tolerance).
 
 Anchor: `CASE-TAYLOR-GREEN-3D` · mission 15374 · repo TensorLBM · branch `agent/m15374`.
 
+> **Round 2 (mission 17543):** the grid-independent M2 and the low consecutive convergence
+> orders reported below were traced to the equilibrium initial condition (zero viscous stress)
+> and to the whole-history/cadence-dependent fit — see
+> `docs/CASE_TAYLOR_GREEN_3D_round2_IC_attribution.md`. Round-1 numbers below are unchanged.
+
 ---
 
 ## ① Problem and reference provenance
