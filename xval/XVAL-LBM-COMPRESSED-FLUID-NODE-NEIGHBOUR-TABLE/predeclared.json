@@ -1,0 +1,86 @@
+{
+  "anchor": "XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE",
+  "mission": 17677,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "reference_implementation": {
+    "project": "PorousMediaSimulation/openLBMPM",
+    "commit": "3d84189 (shallow clone of master, 2025-xx)",
+    "retrieved": "git clone --depth 1 https://github.com/PorousMediaSimulation/openLBMPM.git (network OK from work tree)",
+    "mechanism_citations": [
+      "ShanChen2D/ShanChenD2Q9.py:589 optimizeFluidArray(): dense isDomain mask -> row-major compaction; fluidNodes[k]=i*nx+j (i=y, j=x); tmpIndicesDomain[i,j]=k for fluid else -1; voidSpace=count_nonzero(isDomain); porosity printed",
+      "ShanChen2D/ShanChenD2Q9.py:605 self.neighboringNodes = np.zeros(self.fluidNodes.size * 8, dtype=int64) (8-entry stencil per FLUID node)",
+      "ShanChen2D/OptimizedD2Q9GPU.py:22 fillNeighboringNodes(): stencil order E,N,W,S,NE,NW,SW,SE; neighbour index = domainNewIndex[i',j']; both i and j wrap periodically (tmpF=j+1 if j<nx-1 else 0; tmpU=i+1 if i<ny-1 else 0)",
+      "ShanChen2D/OptimizedD2Q9GPU.py:452 calStreaming1GPU(): push/scatter streaming, target slot = opposite direction of the pushed population; if neighbouringNodes == -1 the population is bounced back IN PLACE as the opposite direction (half-way bounce-back), e.g. f_new[E-target,3]=f[k,1]; wall case f_new[k,3]=f[k,1]",
+      "ShanChen2D/OptimizedD2Q9GPU.py:539 calStreaming2GPU(): second kernel copies new->old (push scheme needs a full swap/copy)",
+      "ShanChen2D/OptimizedD2Q9GPU.py:186 calInteractionForce(): the same neighbour table drives the Shan-Chen force; a -1 (solid) neighbour contributes -1/9 * G_s * psi (wall wetting term)",
+      "ShanChen2D/ShanChenD2Q9.py:592 fluidPDF shape [numFluids, voidSpace(=K), 9] -> memory scales with porosity, not with the lattice"
+    ]
+  },
+  "decision": "Does transplanting openLBMPM's compressed fluid-node neighbour table (CSR-like fluid-node compaction + flat 8-entry neighbour array with a -1 solid sentinel and in-place half-way bounce-back, periodic wrap at table build time) into TensorLBM reproduce the reference physics (Darcy permeability k, mean velocity, field-shape) within the owner 15% criterion, and what does the representation buy in memory footprint and iteration speed at fixed porosity?",
+  "alternatives": {
+    "A1_compressed_oss_transplant": "TensorLBM porous.FluidNodeTable: K=#fluid compaction, flat neighbour array (K,8) with -1 sentinel, push streaming with in-place half-way bounce-back, periodic wrap baked in at build time (OSS semantics)",
+    "A2_dense_inrepo_control": "TensorLBM full-lattice pull streaming (tensorlbm.d2q9.stream, torch.roll) + solid-mask half-way bounce-back at fluid nodes whose destination neighbour is solid; identical collision, identical Guo forcing, identical geometry",
+    "A3_analytic": "Poiseuille permeability k = H^2/12 for a plane channel of lattice width H driven by constant body force g (half-way bounce-back places the wall at 0.5 dx)"
+  },
+  "hypothesis": "H1: the compressed representation is physics-neutral: every KPI of A1 equals A2 to representation round-off (relative deviation < 1e-8), and A1/A2 reproduce A3 within the owner 15% band. H0 (falsifier): any KPI deviates >= 1e-8 relative between A1 and A2 (representation bug: wrap, sentinel, stencil order or bounce-back mismatch), or >= 15% between A1 and A3.",
+  "metrics": {
+    "k_darcy": "Darcy permeability k = nu * <u_x>_superficial / g, lattice units; <u_x>_superficial = sum(u_x over fluid nodes)/N_total",
+    "ux_field_maxabs_rel": "max|u_x(A1)-u_x(A2)| / max|u_x(A2)| on fluid nodes, per steady-state snapshot",
+    "ux_field_l2_rel": "||u_x(A1)-u_x(A2)||_2 / ||u_x(A2)||_2 on fluid nodes",
+    "mass_drift": "|sum(rho) - sum(rho_0)| / sum(rho_0) over the run (mass conservation of the push scheme)",
+    "table_bytes": "bytes held by the compressed state (9*K float64 PDF + (K,8) int64 table + K int64 map) vs the dense state (9*N float64 PDF + N bool mask)",
+    "mlups": "N_total * steps / elapsed_seconds / 1e6, wall clock, single CPU process, float64",
+    "k_porosity_curve": "k(porosity) at porosity = 0.60, 0.75, 0.90 (square grains, body force along x) -- sensitivity arm, compared against the Carman-Kozeny band as an informational reference, NOT an acceptance metric"
+  },
+  "unit_of_analysis": "one completed simulation arm at fixed (geometry, resolution, tau, g, steps); KPIs are scalars (or fields for the difference metrics)",
+  "baseline_control": {
+    "physical_baseline": "A3 analytic Poiseuille k = H^2/12 (plane channel, H = number of fluid rows)",
+    "representation_control": "A2 dense full-lattice implementation sharing collision, forcing, geometry and steady-state criterion with A1 -- the only changed variable is the data layout / streaming scheme",
+    "oss_note": "the OSS code is CUDA (numba.cuda) and needs a GPU + its own Shan-Chen multiphase setup; this environment has no GPU, so the OSS arm is a semantics-exact transplant of its neighbour-table build and streaming rules into TensorLBM (cited line by line), not an execution of the OSS binary. This is recorded as a comparison limit, not silently upgraded."
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "representation_identity_rel": 1e-08,
+    "interpretation": "H1 holds iff every KPI of A1 vs A2 is < 1e-8 relative AND every physical KPI of A1 vs A3 is < 15%; the representation-identity threshold is deliberately 9 orders stricter than the owner band because a representation change must be exact, and only the physics-vs-analytic comparison uses the 15% band",
+    "convergence_rule": "a KPI is resolution-converged when |KPI(N=256)-KPI(N=128)|/|KPI(N=256)| < 5%; otherwise the finer value is reported and the resolution delta is reported as a sensitivity result",
+    "linearity_rule": "k must be independent of the body force: |k(g=2e-4)-k(g=1e-4)|/|k(g=1e-4)| < 5% (Darcy regime check, Ma = g*H^2/(8*nu*cs) must stay < 0.1)",
+    "stability_rule": "a run producing a non-finite population, rho outside [0.95, 1.05], or Ma > 0.1 is declared failed and reported, never tuned away"
+  },
+  "stopping_rule": "every arm runs a step count fixed before the run (see run_config.steps in the runner) and stops early only when the predeclared steady-state criterion max|u(n)-u(n-200)|/max|u(n)| < 1e-9 is met; no arm is extended after looking at KPIs. Wall-clock budget 900 s per arm; anything above that is moved to the cluster queue.",
+  "variables_changed": [
+    "data representation (compressed fluid-node table / dense full lattice)",
+    "resolution N (128, 256)",
+    "porosity (1.00 plane channel, 0.90, 0.75, 0.60 square-grain porous medium)",
+    "body force g (1e-4, 2e-4) at fixed porosity 0.75"
+  ],
+  "variables_held_fixed": [
+    "D2Q9, BGK/SRT collision, tau = 0.8 (nu = 0.1)",
+    "Guo body-force forcing (velocity shift + force term), identical formula in both arms",
+    "half-way bounce-back on solid, periodic wrap in both directions",
+    "float64 throughout, single CPU thread, torch 2.7.1"
+  ],
+  "confounders": [
+    "memory access order differs between push(compressed) and pull(dense) -- affects wall time, not the converged field",
+    "the dense arm integrates the same physics on wasted solid nodes, so its cost is an upper bound for the representation benefit, not a hardware-independent constant",
+    "half-way bounce-back wall location (0.5 dx outside the last fluid node) must be accounted for in the analytic channel width H, otherwise a ~3% geometric bias appears at H=32",
+    "int64 neighbour table in the transplant (OSS also uses int64) overstates the table memory; an int32 variant is reported as the practical footprint"
+  ],
+  "environment": {
+    "python": "3.x (system)",
+    "torch": "2.7.1 (CPU, float64)",
+    "numpy": "2.4.6",
+    "matplotlib": "3.10.8",
+    "work_tree": "/root/tp-agent/work/m17677 (branch agent/m17677)",
+    "raw_data": "TensorLBM/artifacts/xval_compressed_fluid_node_neighbour_table/*.json,*.csv"
+  },
+  "analysis": "grouped by arm; no outlier removal; errors are relative to the analytic value or to the A2 control; uncertainty is the spread between the two resolutions; convergence and forcing-linearity are reported as separate sensitivity tables",
+  "fail_stage_plan": "if the transplant fails, fail_stage names the stage (table_build / streaming / bounce_back / forcing / analysis) and the failure_reason carries the measured deviation",
+  "amendments": [
+    {
+      "when": "2026-11-13T08:08:26",
+      "what": "metric definition clarified: 'k_darcy' in 'metrics' is the SUPERFICIAL (Darcy) permeability nu*<u>_all_sites/g; the analytic anchor 'k = H^2/12' is an INTRINSIC (fluid-average) permeability, so the channel reference is k_ref = porosity * H^2/12 = (H/ny)*H^2/12.",
+      "why": "first channel run gave k_super = 8.524 versus the raw H^2/12 = 21.33 (ratio 0.402 = the slab porosity H/ny = 16/40); the converged velocity profile was already parabolic to 0.2% (u_max 3.181e-3 vs 3.1875e-3 analytic), so this is a definition mismatch, not a solver deviation. Both the intrinsic and the superficial numbers are reported from now on; no KPI was redefined after inspecting a favourable result, and the raw numbers are kept."
+    }
+  ]
+}
