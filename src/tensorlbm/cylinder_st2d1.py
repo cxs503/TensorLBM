@@ -166,6 +166,7 @@ def run_cylinder_st2d1(
     sample_every: int = 10,
     keep_fields: bool = True,
     progress: bool = True,
+    solid_mask: Any = None,
 ) -> dict[str, Any]:
     """Run the 2D-1 cylinder case and return measurements + provenance.
 
@@ -189,6 +190,12 @@ def run_cylinder_st2d1(
         stop_on_plateau: stop as soon as the trailing window is stationary.
         sample_every: decimation for the returned time series / CSV.
         keep_fields: return final rho/ux/uy/vorticity fields.
+        solid_mask: optional boolean obstacle mask of shape ``(ny, nx)``
+            (lattice-index space) that replaces the built-in
+            :func:`~tensorlbm.boundaries.cylinder_mask`.  This is the
+            runtime-geometry injection point (see
+            :mod:`tensorlbm.runtime_geometry`): with ``None`` the verified
+            hard-coded mask is used and the run is unchanged.
 
     Returns:
         JSON-safe dict with geometry, lattice parameters, ``cd``/``cl`` means,
@@ -219,7 +226,19 @@ def run_cylinder_st2d1(
 
     u_in = _inlet_profile(ny, float(geo["dx"]), u_mean_lb, dev)
 
-    solid = cylinder_mask(nx, ny, float(geo["cx"]), float(geo["cy"]), radius, dev)
+    geometry_source = "hard_coded"
+    if solid_mask is None:
+        solid = cylinder_mask(nx, ny, float(geo["cx"]), float(geo["cy"]), radius, dev)
+    else:
+        import numpy as _np
+
+        arr = _np.asarray(solid_mask)
+        if arr.shape != (ny, nx):
+            raise ValueError(
+                f"solid_mask shape {arr.shape} != (ny, nx) = ({ny}, {nx})"
+            )
+        solid = torch.as_tensor(arr, dtype=torch.bool, device=dev)
+        geometry_source = "runtime_config"
     wall = make_channel_wall_mask(ny, nx, solid, dev)
     fluid = ~solid
     surface = solid & (
@@ -302,6 +321,7 @@ def run_cylinder_st2d1(
         ),
         "force": "ladd momentum exchange (post-stream, pre-obstacle bounce-back)",
         "geometry": geo,
+        "geometry_source": geometry_source,
         "lattice_units": {
             "u_mean": u_mean_lb,
             "u_max": 1.5 * u_mean_lb,
