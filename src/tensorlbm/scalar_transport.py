@@ -232,15 +232,36 @@ def calibrate_magic(
 
 
 def equilibrium_scalar_d2q5(
-    c: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor
+    c: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    second_order: bool = False,
 ) -> torch.Tensor:
-    """``g_i^eq = w_i C (1 + 3 (c_i . u))`` -> shape ``(5, ny, nx)``."""
+    """``g_i^eq = w_i C (1 + 3 (c_i . u))`` -> shape ``(5, ny, nx)``.
+
+    ``second_order=True`` adds the scalar-lattice second-order velocity term
+
+        ``+ 4.5 [(c_ix^2 - 1/3) u_x^2 + 2 c_ix c_iy u_x u_y + (c_iy^2 - 1/3) u_y^2]``
+
+    i.e. the textbook form used by ``lbm-principles-practice/code``
+    (``chapter8/gaussian_1d_magic6.cpp:96``, ``chapter8/gaussian_2d_trt.cpp:118``);
+    cross-validated in ``xval/XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN``, where it
+    reproduces the reference binary bit-for-bit at u = 0.5 and lowers the
+    analytic-solution error by a factor 1.23 there.  The default (``False``)
+    keeps the historical linear-in-u equilibrium, so existing callers are
+    bit-unchanged; the term is O(u^2) and negligible for the |u| <= 0.1 regime
+    of the in-house configs.
+    """
     device, dtype = c.device, c.dtype
     cx = _vec(CX_D2Q5, dtype, device).view(5, 1, 1)
     cy = _vec(CY_D2Q5, dtype, device).view(5, 1, 1)
     w = _vec(W_D2Q5, dtype, device).view(5, 1, 1)
     cu = cx * ux + cy * uy
-    return w * c * (1.0 + cu / CS2_D2Q5)
+    eq = w * c * (1.0 + cu / CS2_D2Q5)
+    if second_order:
+        q2 = (cx * cx - 1.0 / 3.0) * ux * ux + 2.0 * cx * cy * ux * uy + (cy * cy - 1.0 / 3.0) * uy * uy
+        eq = eq + w * c * (q2 / (2.0 * CS2_D2Q5 * CS2_D2Q5))
+    return eq
 
 
 def collide_scalar_trt(
@@ -250,13 +271,16 @@ def collide_scalar_trt(
     uy: torch.Tensor,
     tau_odd: float,
     tau_sym: float | None = None,
+    second_order: bool = False,
 ) -> torch.Tensor:
     """TRT collision for the D2Q5 scalar lattice (mass conserving to round-off).
 
     ``tau_odd`` relaxes the antisymmetric part (it sets ``D``); ``tau_sym``
     relaxes the even part and is free — ``tau_sym=None`` degenerates to BGK.
+    ``second_order=True`` selects the OSS (``lbm-principles-practice/code``)
+    equilibrium with the u^2 term, see :func:`equilibrium_scalar_d2q5`.
     """
-    geq = equilibrium_scalar_d2q5(c, ux, uy)
+    geq = equilibrium_scalar_d2q5(c, ux, uy, second_order=second_order)
     opp = _vec(OPP_D2Q5, torch.long, g.device)
     g_p = 0.5 * (g + g[opp])
     g_m = 0.5 * (g - g[opp])
