@@ -1,0 +1,48 @@
+{
+  "schema": "tensorlbm.model_unit/v1",
+  "unit_id": "d2q9_bgk_channel_poiseuille",
+  "description": "D2Q9 BGK plane Poiseuille flow (EDM forcing + half-way bounce-back) vs the analytic parabola",
+  "composition": {
+    "lattice": "D2Q9",
+    "collision": "bgk",
+    "turbulence": null,
+    "forcing": [
+      "edm"
+    ],
+    "boundaries": [
+      "halfway_bounce_back"
+    ],
+    "physics_modules": {
+      "single_phase": "incompressible"
+    }
+  },
+  "build": {
+    "dtype": "float64",
+    "fingerprint_steps": 32
+  },
+  "ci": {
+    "kernel": "poiseuille_channel",
+    "params": {
+      "nx": 2,
+      "ny": 32,
+      "tau": 0.65,
+      "g": 4e-06,
+      "steps": 24000,
+      "avg_start": 18000
+    },
+    "gates": [
+      {
+        "metric": "profile_l2_rel_err",
+        "max": 0.01
+      },
+      {
+        "metric": "umax_rel_err",
+        "max": 0.01
+      },
+      {
+        "metric": "mass_rel_drift",
+        "max": 1e-10
+      }
+    ]
+  }
+}
