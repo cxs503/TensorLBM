@@ -119,6 +119,45 @@ def kinetic_energy(ux, uy, uz) -> float:
     return 0.5 * float((ux * ux + uy * uy + uz * uz).mean())
 
 
+def init_distribution(case: str, n: int, amp: float, tau: float, ic: str = "eq"):
+    """Initial distribution: ``f^eq(u0)`` or ``f^eq + first-order Chapman-Enskog``.
+
+    ``ic="eq"`` is the round-1 protocol: the equilibrium distribution of the exact
+    velocity field, i.e. with **zero viscous stress**, although the exact incompressible
+    solution carries ``sigma = 2 rho nu S`` at t = 0.  That state error is O(k^2) and it
+    dominated the round-1 L2 field error and the whole-history decay-exponent fit (see
+    ``docs/CASE_TAYLOR_GREEN_3D_round2_IC_attribution.md``).
+
+    ``ic in ("tau", "half")`` adds the first-order non-equilibrium part
+    ``f^(1)_i = K w_i Q_iab S_ab`` with ``Q_iab = e_ia e_ib - c_s^2 delta_ab``,
+    ``S_ab = (d_a u_b + d_b u_a)/2`` (spectral derivatives) and
+    ``K = -rho (tau - theta)/c_s^2``, ``theta = 0`` for ``"tau"`` and ``1/2`` for ``"half"``.
+    Because ``sum_i w_i Q_iab Q_icd = c_s^4 (delta_ac delta_bd + delta_ad delta_bc)``, the
+    ansatz contributes ``2 K c_s^4 S_ab`` to the momentum flux, i.e. it imposes the viscous
+    stress directly.  ``"tau"`` is the variant that reproduces the exact stress of the
+    discrete slow manifold; that is *measured* in round 2, not assumed.
+    """
+    import numpy as np
+
+    from tensorlbm.d3q27 import C, W_EXACT64, equilibrium27
+
+    u = init_fields(case, n, amp)
+    rho = torch.ones_like(u[0])
+    f = equilibrium27(rho, *u)
+    if ic == "eq":
+        return f
+    theta = {"tau": 0.0, "half": 0.5}[ic]
+    un = [t.numpy().astype(np.float64) for t in u]
+    grad = [_grad(un[i], n) for i in range(3)]  # grad[i][b] = d_b u_i
+    S = [[0.5 * (grad[a][b] + grad[b][a]) for b in range(3)] for a in range(3)]
+    S_t = torch.from_numpy(np.stack([[np.asarray(S[a][b]) for b in range(3)] for a in range(3)]))
+    e = C.to(torch.float64)
+    Q = torch.einsum("ia,ib->iab", e, e) - (1.0 / 3.0) * torch.eye(3, dtype=torch.float64)
+    QS = torch.einsum("iab,ab...->i...", Q, S_t)
+    K = -rho * (tau - theta) / (1.0 / 3.0)
+    return f + K * W_EXACT64[:, None, None, None] * QS
+
+
 def l2_rel(a, b) -> float:
     """||a||_2 / ||b||_2 for tensor triples (relative L2 field error)."""
     num = sum(float((ai - bi).pow(2).sum()) for ai, bi in zip(a, b))
@@ -228,15 +267,16 @@ def run_decay(
     steps: int,
     sample: int = 25,
     collision: str = "bgk",
+    ic: str = "eq",
 ) -> dict:
     """One decay run on the D3Q27 lattice; returns the full sampled history."""
-    from tensorlbm.d3q27 import collide_bgk27, equilibrium27, macroscopic27
+    from tensorlbm.d3q27 import C, W_EXACT64, collide_bgk27, equilibrium27, macroscopic27
     from tensorlbm.lbm_step_d3q27 import lbm_step_correct_27
 
     nu = (tau - 0.5) / 3.0
     k2 = k2_of(case, n)
     u0 = init_fields(case, n, amp)
-    f = equilibrium27(torch.ones_like(u0[0]), *u0)
+    f = init_distribution(case, n, amp, tau, ic)
     solid = torch.zeros(u0[0].shape, dtype=torch.bool)
     e0 = kinetic_energy(*u0)
     m0 = float(f.sum())
@@ -287,6 +327,7 @@ def run_decay(
         "steps": steps,
         "sample_every": sample,
         "collision": collision,
+        "ic": ic,
         "k2": k2,
         "ma": amp * math.sqrt(3.0),
         "re_lattice": amp / (nu * math.sqrt(k2)) if nu > 0 else None,
@@ -349,6 +390,8 @@ def main() -> int:
     ap.add_argument("--tau", type=float, default=0.6)
     ap.add_argument("--amp", type=float, default=2e-3)
     ap.add_argument("--case", default="tg", choices=["tg", "abc", "tg3d"])
+    ap.add_argument("--ic", default="eq", choices=["eq", "tau", "half"],
+                    help="initial distribution: eq (round-1 protocol) or f^eq + first-order Chapman-Enskog")
     ap.add_argument("--out", default=OUT_DEFAULT)
     args = ap.parse_args()
 
@@ -364,7 +407,7 @@ def main() -> int:
 
     if "convergence" in todo:
         p = PROTOCOL["grids_convergence"]
-        runs = [run_decay(p["case"], g, p["tau"], p["amp"], p["steps"], sample=100) for g in p["grids"]]
+        runs = [run_decay(p["case"], g, p["tau"], p["amp"], p["steps"], sample=100, ic=args.ic) for g in p["grids"]]
         e = {str(r["n"]): r["M3_l2_field_rel_err_pct"] / 100.0 for r in runs}
         order = (
             math.log2(e["24"] / e["48"]) if e["24"] > 0 and e["48"] > 0 else float("nan")
@@ -382,7 +425,7 @@ def main() -> int:
 
     if "decay" in todo:
         p = PROTOCOL["primary_decay"]
-        r = run_decay(p["case"], p["grids"][0], p["tau"], p["amp"], p["steps"], sample=p["sample"])
+        r = run_decay(p["case"], p["grids"][0], p["tau"], p["amp"], p["steps"], sample=p["sample"], ic=args.ic)
         written.append(_save(args.out, "primary_decay.json", r))
         print(
             f"primary: M1={r['M1_energy_decay_rel_err_pct']:.3e}%  "
@@ -392,35 +435,35 @@ def main() -> int:
 
     if "tau" in todo:
         p = PROTOCOL["tau_sensitivity"]
-        runs = [run_decay(p["case"], p["grids"][0], tau, p["amp"], p["steps"], sample=100) for tau in p["taus"]]
+        runs = [run_decay(p["case"], p["grids"][0], tau, p["amp"], p["steps"], sample=100, ic=args.ic) for tau in p["taus"]]
         written.append(_save(args.out, "tau_sensitivity.json", {"protocol": p, "runs": runs}))
         for r in runs:
             print(f"tau={r['tau']}: M2={r['M2_decay_exponent_rel_err_pct']:+.3e}%  lam_fit={r['lambda_fit']:.6e}")
 
     if "amp" in todo:
         p = PROTOCOL["amp_sensitivity"]
-        runs = [run_decay(p["case"], p["grids"][0], p["tau"], amp, p["steps"], sample=100) for amp in p["amps"]]
+        runs = [run_decay(p["case"], p["grids"][0], p["tau"], amp, p["steps"], sample=100, ic=args.ic) for amp in p["amps"]]
         written.append(_save(args.out, "amp_sensitivity.json", {"protocol": p, "runs": runs}))
         for r in runs:
             print(f"amp={r['amp']:.1e} Ma={r['ma']:.4f}: M3={r['M3_l2_field_rel_err_pct']:.3e}%  M1={r['M1_energy_decay_rel_err_pct']:+.3e}%")
 
     if "tau_fast" in todo:
         p = PROTOCOL["tau_sensitivity_fast"]
-        runs = [run_decay(p["case"], p["grids"][0], tau, p["amp"], p["steps"], sample=50) for tau in p["taus"]]
+        runs = [run_decay(p["case"], p["grids"][0], tau, p["amp"], p["steps"], sample=50, ic=args.ic) for tau in p["taus"]]
         written.append(_save(args.out, "tau_sensitivity.json", {"protocol": p, "runs": runs}))
         for r in runs:
             print(f"tau={r['tau']}: M2={r['M2_decay_exponent_rel_err_pct']:+.3e}%")
 
     if "amp_fast" in todo:
         p = PROTOCOL["amp_sensitivity_fast"]
-        runs = [run_decay(p["case"], p["grids"][0], p["tau"], amp, p["steps"], sample=50) for amp in p["amps"]]
+        runs = [run_decay(p["case"], p["grids"][0], p["tau"], amp, p["steps"], sample=50, ic=args.ic) for amp in p["amps"]]
         written.append(_save(args.out, "amp_sensitivity.json", {"protocol": p, "runs": runs}))
         for r in runs:
             print(f"amp={r['amp']:.1e}: M3={r['M3_l2_field_rel_err_pct']:.3e}%")
 
     if "abc" in todo:
         p = PROTOCOL["abc_zdependent"]
-        runs = [run_decay(p["case"], g, p["tau"], p["amp"], p["steps"], sample=50) for g in p["grids"]]
+        runs = [run_decay(p["case"], g, p["tau"], p["amp"], p["steps"], sample=50, ic=args.ic) for g in p["grids"]]
         written.append(_save(args.out, "abc_zdependent.json", {"protocol": p, "runs": runs}))
         for r in runs:
             print(f"abc N={r['n']}: M1={r['M1_energy_decay_rel_err_pct']:+.3e}%  M2={r['M2_decay_exponent_rel_err_pct']:+.3e}%  M3={r['M3_l2_field_rel_err_pct']:.3e}%")
