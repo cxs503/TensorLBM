@@ -1,0 +1,30 @@
+{
+  "anchor": "XVAL-LBM-DAM-BREAK-SLOT-MUSCL2-LOCAL-HLL-SSPRK2",
+  "mission_id": 17961,
+  "repo": "TensorLBM",
+  "decision": "Adopt MUSCL2+local-HLL+SSPRK2 for 1-D SWE dam-break validation",
+  "hypothesis": "Second-order MUSCL reconstruction with minmod limiter, Davis local-speed HLL flux, and SSP-RK2 (Heun) time integration achieves <15% error vs Ritter (1892) analytical solution for dry-bed dam break",
+  "metrics": [
+    "C1: Front position error (mass-based) < 15%",
+    "C2: Profile L2 error vs Ritter < 15%",
+    "C3: Mass conservation drift < 1%"
+  ],
+  "baseline": "Ritter (1892) self-similar solution: x_f = 2*sqrt(g*h0)*t, h(x,t) = (2*c0 - x/t)^2/(9*g)",
+  "predeclared_thresholds": {
+    "C1_front_mass_err_pct": 15.0,
+    "C2_profile_L2_pct": 15.0,
+    "C3_mass_drift_pct": 1.0
+  },
+  "stopping_rule": "All three criteria must pass at nx >= 400; report all resolutions",
+  "variables": {
+    "controlled": ["g=1.0", "h0=1.0", "dam_x=0.0", "x_min=-4.0", "x_max=12.0", "t_end=5.0", "CFL=0.4"],
+    "varied": ["nx in {100, 200, 400, 800}"]
+  },
+  "confounders": [
+    "Threshold-based front detection is sensitive to numerical diffusion; mass-based front estimator is physically robust",
+    "Dry-bed treatment: h=0 in dry cells, positivity fallback (alpha 1->0.5->0) prevents negative depth"
+  ],
+  "repetition_rationale": "Four resolutions to demonstrate monotonic convergence",
+  "environment": "CPU, torch float64, single thread",
+  "external_anchor": "Ritter (1892) Z. Ver. Deutsch. Ing. 36 947; Martin & Moyce (1952) Phil. Trans. R. Soc. A 244 312"
+}
