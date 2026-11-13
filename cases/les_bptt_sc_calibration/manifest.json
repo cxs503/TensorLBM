@@ -1,0 +1,113 @@
+{
+  "mission": 18115,
+  "repair_of": 17843,
+  "anchor": "XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER",
+  "impl_files": [
+    "src/tensorlbm/les_bptt.py",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/oss_arm.py"
+  ],
+  "entry": [
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/run_xval.py",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/make_figures.py"
+  ],
+  "run_artifacts": [
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/artifacts/results.json",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/artifacts/table.csv",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/figures/fig1_bptt_convergence.png",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/figures/fig2_tg_decay_analytic.png",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/figures/fig3_forward_parity.png",
+    "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/figures/fig4_sensitivity.png"
+  ],
+  "integration_callers": [
+    "src/tensorlbm/solver.py::collide_bgk_les",
+    "src/tensorlbm/solver.py::calibrate_les_sc",
+    "src/tensorlbm/__init__.py (lazy export collide_bgk_les / calibrate_les_sc)",
+    "tests/test_les_bptt.py"
+  ],
+  "benchmark": {
+    "path": "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/artifacts/results.json",
+    "ref_vs_got": [
+      [
+        "A1 前向一致性 (Taylor-Green, 40 步, 无固壁)",
+        "OSS 参考臂速度场",
+        "8.442e-07",
+        "rel-L2",
+        true
+      ],
+      [
+        "A1 前向一致性 (含圆盘 bounce-back, 40 步)",
+        "OSS 参考臂速度场",
+        "8.188e-07",
+        "rel-L2",
+        true
+      ],
+      [
+        "A2 双胞胎参数反演 (TensorLBM 数据)",
+        "Sc_true = 0.17",
+        "0.170000",
+        "1.288e-06",
+        true
+      ],
+      [
+        "A2b Adam/SGD 轨迹 (40 iter)",
+        "Sc_true = 0.17",
+        "0.166147",
+        "2.27e-02",
+        true
+      ],
+      [
+        "A3 跨实现参数反演 (OSS 参考臂数据)",
+        "Sc_true = 0.17",
+        "0.170000",
+        "2.025e-06",
+        true
+      ],
+      [
+        "A4 BPTT 梯度 vs 中心差分 (eps=1e-2)",
+        "FD = -1.709194e-05",
+        "AD = -1.709106e-05",
+        "5.09e-05",
+        true
+      ],
+      [
+        "A4 BPTT 梯度 vs 中心差分 (eps=1e-3)",
+        "FD = -1.709107e-05",
+        "AD = -1.709106e-05",
+        "5.09e-07",
+        true
+      ],
+      [
+        "A5 线性 TG 衰减 (LES off) vs 解析",
+        "0.115585",
+        "0.113149",
+        "2.11%",
+        true
+      ],
+      [
+        "A6 敏感性最差项 (N / sc_init / tau0 共 10 例)",
+        "Sc_true = 0.17",
+        "见 §5",
+        "1.288e-06",
+        true
+      ]
+    ],
+    "criterion": "owner 15% (A1 parity gate 1e-4; A5 analytic gate 3%)"
+  },
+  "repro_cmd": "cd <repo> && python3 xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/run_xval.py && python3 xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/make_figures.py && python3 -m pytest tests/test_les_bptt.py -q",
+  "verdict_all_pass": true,
+  "checks": {
+    "A1_tg": true,
+    "A1_disc": true,
+    "A2": true,
+    "A2b_adam": true,
+    "A3": true,
+    "A4": true,
+    "A5": true,
+    "A6": true
+  },
+  "not_run": [
+    "upstream TensorFlow execution (no TF wheel on loongarch64; see results.json env)",
+    "real DNS/experimental data calibration (needs external data)",
+    "Zou-He in/outflow callback port"
+  ]
+}
