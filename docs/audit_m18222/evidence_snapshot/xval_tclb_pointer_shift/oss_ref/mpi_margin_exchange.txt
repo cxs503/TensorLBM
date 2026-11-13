@@ -1,0 +1,10 @@
+# src/Lattice.cu.Rt:327-335  sha256(excerpt)=9b6f237c07a3ca87548a45255037b92a763165b524aaa4310067c36a91633e1d
+inline void Lattice::MPIStream_A()
+{
+	for (int i = 0; i < bufnumber; i++) if (nodeout[i] >= 0) {
+		CudaMemcpyAsync( mpiout[i], gpuout[i], bufsize[i], CudaMemcpyDeviceToHost, outStream);
+	}
+}
+
+/// Copy Buffers between processors
+inline void Lattice::MPIStream_B(int tag)

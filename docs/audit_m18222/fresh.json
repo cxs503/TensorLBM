@@ -1,0 +1,125 @@
+{
+ "returncode": 0,
+ "wall_s": 88.1,
+ "stdout_tail": [
+  "  \"D2_gate_lt_15pct\": true,",
+  "  \"max_error\": 0.006209416378184871,",
+  "  \"max_slowdown\": 11.933091765363669,",
+  "  \"D3_adopt_formulation\": false,",
+  "  \"verdict\": \"PASS\",",
+  "  \"action\": \"keep the production gather transport; bank the block-offset invariant + the bitwise cross-check as a regression test; the OSS formulation's advantage does not survive the port to torch (see \\u00a76)\"",
+  "}",
+  "wrote /tmp/audit_m18222/stage/runs/xval_tclb_pointer_shift/result.json"
+ ],
+ "stderr_tail": [],
+ "fresh_decision": {
+  "D1_equivalence": true,
+  "D2_gate_lt_15pct": true,
+  "max_error": 0.006209416378184871,
+  "max_slowdown": 11.933091765363669,
+  "D3_adopt_formulation": false,
+  "verdict": "PASS",
+  "action": "keep the production gather transport; bank the block-offset invariant + the bitwise cross-check as a regression test; the OSS formulation's advantage does not survive the port to torch (see \u00a76)"
+ },
+ "shipped_decision": {
+  "D1_equivalence": true,
+  "D2_gate_lt_15pct": true,
+  "max_error": 0.006209416378184871,
+  "max_slowdown": 17.09564504118175,
+  "D3_adopt_formulation": false,
+  "verdict": "PASS",
+  "action": "keep the production gather transport; bank the block-offset invariant + the bitwise cross-check as a regression test; the OSS formulation's advantage does not survive the port to torch (see \u00a76)"
+ },
+ "decision_identical": false,
+ "physics_compare": {
+  "pois_A_rel_l2": {
+   "shipped": 0.0005945089548585884,
+   "auditor_rerun": 0.0005945089548585884,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "pois_A_umax_err": {
+   "shipped": 0.0005776988660242895,
+   "auditor_rerun": 0.0005776988660242895,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "pois_B_rel_l2": {
+   "shipped": 0.0005945089548585884,
+   "auditor_rerun": 0.0005945089548585884,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "pois_B_umax_err": {
+   "shipped": 0.0005776988660242895,
+   "auditor_rerun": 0.0005776988660242895,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_A_n32_tau0.6_s150": {
+   "shipped": 0.005982653333749002,
+   "auditor_rerun": 0.005982653333749002,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_A_n32_tau0.8_s150": {
+   "shipped": 0.00502916643798886,
+   "auditor_rerun": 0.00502916643798886,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_A_n32_tau0.8_s300": {
+   "shipped": 0.006209416378184871,
+   "auditor_rerun": 0.006209416378184871,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_A_n32_tau1.0_s150": {
+   "shipped": 0.005680868813392198,
+   "auditor_rerun": 0.005680868813392198,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_A_n64_tau0.8_s400": {
+   "shipped": 0.0009150289471064305,
+   "auditor_rerun": 0.0009150289471064305,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_B_n32_tau0.6_s150": {
+   "shipped": 0.005982653333749002,
+   "auditor_rerun": 0.005982653333749002,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_B_n32_tau0.8_s150": {
+   "shipped": 0.00502916643798886,
+   "auditor_rerun": 0.00502916643798886,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_B_n32_tau0.8_s300": {
+   "shipped": 0.006209416378184871,
+   "auditor_rerun": 0.006209416378184871,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_B_n32_tau1.0_s150": {
+   "shipped": 0.005680868813392198,
+   "auditor_rerun": 0.005680868813392198,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  },
+  "tgv_B_n64_tau0.8_s400": {
+   "shipped": 0.0009150289471064305,
+   "auditor_rerun": 0.0009150289471064305,
+   "abs_delta": 0.0,
+   "rel_delta": 0.0
+  }
+ },
+ "physics_max_rel_delta": 0.0,
+ "key_missing_on_rerun": [],
+ "equiv_identical": false,
+ "all_bitwise_equal": true,
+ "invariants_ok": true
+}
