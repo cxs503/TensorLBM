@@ -1,0 +1,60 @@
+{
+  "anchor": "XVAL-LBM-COMPONENT-PROTOCOL-TEMPLATE-CODEGEN",
+  "mission": 17744,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "decision": "Does a protocol-checked, template-emitted (code-generated) LBM kernel reproduce (a) an independently written NumPy reference kernel to machine precision and (b) the analytic 2D Taylor-Green viscous decay within the owner 15% criterion, for two collision families (BGK, TRT) on the same D2Q9 stencil?",
+  "alternatives": {
+    "reference_kernel": "hand-written NumPy kernel in src/tensorlbm/codegen/reference.py: broadcasting moments, equilibrium averaged against its opposite direction for the TRT split, per-direction np.roll streaming",
+    "generated_kernel": "unrolled statements emitted from templates.py by generate.py, constants (w, s_plus, s_minus) baked as literals, no run-time loop over directions",
+    "family_bgk": "BGKComponent(tau) -- single relaxation time, s_plus = s_minus = 1/tau",
+    "family_trt": "TRTComponent(tau, magic=3/16) -- Ginzburg two-relaxation-time, s_minus from magic = (1/s_minus - 1/2)(1/s_plus - 1/2)"
+  },
+  "hypothesis": "H1: the generated kernel is numerically equivalent to the independent reference kernel (<=1e-12 absolute on a fixed random population field), and its measured shear viscosity matches the viscosity its own ComponentSpec declares within 15% on the analytic Taylor-Green decay for every arm. H0 (falsifier): any arm exceeds 15%, or the generated/reference difference exceeds 1e-12.",
+  "analytic_anchor": {
+    "case": "2D Taylor-Green vortex, periodic domain [0, 2*pi)^2, single wavenumber k=1",
+    "field": "u = u0 cos(kx) sin(ky) exp(-2 nu k^2 t), v = -u0 sin(kx) cos(ky) exp(-2 nu k^2 t)",
+    "energy": "<u^2+v^2>/2 = u0^2/4 * exp(-4 nu k^2 t)  (kinetic energy per unit mass)",
+    "literature": "Taylor, G. I. (1923) 'On the decay of vortices in a viscous fluid', Phil. Mag. 46:671-674 (vortex decay rate exp(-2 nu k^2 t)); equilibrium/Chapman-Enskog form of the LBM viscosity nu=(tau-1/2)cs^2: Succi, 'The Lattice Boltzmann Equation' (2001) ch.5; Kruger et al., 'The Lattice Boltzmann Method: Principles and Practice' (2017) sec. 5.2 & 9.1; TRT/magic parameter: Ginzburg, Verhaeghe & d'Humieres (2008) Commun. Comput. Phys. 3:427-478",
+    "viscosity_estimator": "least-squares slope of ln(E) vs lattice time t over the declared fit window; nu_measured = -slope / (4 k^2)"
+  },
+  "metrics": {
+    "nu_measured": "shear viscosity recovered from the Taylor-Green energy decay (lattice units)",
+    "nu_declared": "component.transport_coefficients()['nu'], i.e. the viscosity the ComponentSpec claims",
+    "nu_error_pct": "|nu_measured - nu_declared| / nu_declared * 100",
+    "field_l2_rel": "||u_num(t_final) - u_analytic(t_final)||_2 / ||u_analytic(t_final)||_2 over all lattice nodes",
+    "codegen_ref_max_abs": "max |generated_kernel(f) - reference_kernel(f)| on the fixed seeded random field (collide and step)",
+    "div_max": "max |div u| u_lb over the lattice at the final sample (second-order lattice consistency check)",
+    "mass_drift": "|mean(rho(t_final)) - 1| (conservation check of the generated collide+stream pair)"
+  },
+  "unit_of_analysis": "one completed arm = (family, N, u0, tau); metrics are scalars per arm, computed from one deterministic run (no randomness in the simulation)",
+  "baseline_control": {
+    "baseline": "the analytic Taylor-Green decay (closed form, no numerical input)",
+    "control_cross_implementation": "the independent reference kernel at identical parameters - isolates 'generated algebra is correct' from 'the physics case is set up correctly'",
+    "control_family": "BGK vs TRT at identical (tau, N, u0) share the same viscosity by construction, so their measured difference isolates the collision-component generality"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "nu_error_pct_max": 15.0,
+    "codegen_ref_max_abs_max": 1e-12,
+    "field_l2_rel_max": 0.15,
+    "div_max_max": 1e-10,
+    "mass_drift_max": 1e-12,
+    "convergence_rule": "a family is treated as grid-converged when |nu(N=32) - nu(N=64)| / |nu(N=64)| < 10%; otherwise both values and the delta are reported as a resolution-sensitivity result",
+    "mag_parameter": 0.1875
+  },
+  "variables_changed": [
+    "collision family (BGK / TRT)",
+    "grid resolution N in {32, 64}",
+    "reference lattice velocity u0 in {0.02, 0.04} (Ma = sqrt(3) u0 in {0.035, 0.069})"
+  ],
+  "variables_held": [
+    "stencil D2Q9, tau = 0.56 (nu = 0.02 lattice units) for every arm",
+    "wavenumber k = 1, steps = 120, sample interval = 2, fit window t in [20, 120]",
+    "periodic boundaries both directions, rho0 = 1, dx = dt = 1"
+  ],
+  "repetition_rationale": "the simulation is deterministic (no RNG, no threads), so a single run per arm is exact repetition; the cross-implementation control uses one fixed seed (numpy default_rng(0)) so the equivalence check is also exactly repeatable",
+  "stopping_rule": "every arm runs the predeclared 120 steps; no arm is extended, shortened or retuned after inspecting nu. An arm that produces a non-finite value, |u| > 0.5 or a negative slope is reported as a measured failure, not silently dropped",
+  "statistics": "least-squares fit over 51 samples of ln E(t); residual RMS of the fit is reported as fit_quality, no threshold applied to it",
+  "environment": "numpy 2.4.6, CPython 3.11.6, single node, double precision; runtime per arm < 5 s so no cluster job is required (declared before running)"
+}
