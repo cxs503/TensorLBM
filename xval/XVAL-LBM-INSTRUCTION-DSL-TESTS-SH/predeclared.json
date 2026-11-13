@@ -1,0 +1,42 @@
+{
+  "decision": "Determine whether the D1Q2 LBM scheme for shallow water equations in TensorLBM achieves <15% error vs analytical/FV reference solutions.",
+  "hypothesis": "The D1Q2 BGK LBM scheme will match the FV Rusanov solver within 15% for smooth wave propagation, but may struggle with shock/dry-bed problems.",
+  "metrics": [
+    "l1_depth_error: mean|h_num - h_ref| / max(h_ref)",
+    "l2_depth_error: rms(h_num - h_ref) / max(h_ref)",
+    "mass_conservation_error: |mass_final - mass_initial| / mass_initial"
+  ],
+  "thresholds": {
+    "l1_depth_error": 0.15,
+    "l2_depth_error": 0.15,
+    "mass_conservation_error": 0.15
+  },
+  "stopping_rule": "Run all resolutions (200, 400, 800) for both test cases. If LBM becomes unstable (NaN/Inf), record as known limitation.",
+  "test_cases": {
+    "smooth_wave": {
+      "description": "Small-amplitude Gaussian perturbation on constant depth",
+      "h0": 1.0,
+      "g": 1.0,
+      "t_end": 1.0,
+      "perturbation_amplitude": 0.01
+    },
+    "dam_break": {
+      "description": "Ritter dam-break with dry bed downstream",
+      "h0": 1.0,
+      "g": 1.0,
+      "t_end": 3.0,
+      "dam_x": 0.0
+    }
+  },
+  "resolutions": [200, 400, 800],
+  "lbm_parameters": {
+    "lam": 4.0,
+    "sigma_h": 0.001,
+    "sigma_q": 0.1,
+    "cfl": 0.4
+  },
+  "fv_parameters": {
+    "scheme": "rusanov",
+    "cfl": 0.4
+  }
+}
