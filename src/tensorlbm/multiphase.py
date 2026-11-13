@@ -540,8 +540,7 @@ def sc_two_component_force(
     solid_mask: torch.Tensor | None = None,
     wall_mode: str = "dry",
     sc_form: str = "standard",
-    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
-    g_self: tuple[float, float] = (0.0, 0.0),
+    psi: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute Shan-Chen interaction + gravity forces for two immiscible components.
 
@@ -576,41 +575,13 @@ def sc_two_component_force(
                      rho_other(x-c_i)``, or ``"edm"`` the exact-difference
                      (well-balanced) pair split of Kupershtokh et al. (2009).
                      Same continuum limit; ``"standard"`` is bit-identical.
-        psi_fn:      Pseudopotential of the Shan-Chen force, applied to *both*
-                     densities before the interaction sum:
-                     ``psi_s = psi_fn(rho_s)``.  ``None`` (default, historical)
-                     is the identity ``psi(rho) = rho`` (the linear
-                     pseudopotential, i.e. the force is quadratic in density).
-                     Passing :func:`psi_exp` or ``make_psi_eos(...)`` makes the
-                     kernel the standard multicomponent Shan-Chen model with a
-                     non-ideal pseudopotential, which is what
-                     ``lbm-principles-practice/code`` chapter 9 uses
-                     (``psi = rho0 (1 - exp(-rho/rho0))``).  Both the prefactor
-                     ``psi_s(x)`` and the neighbour gather use the *same*
-                     potential, as required for a force that is a discrete
-                     gradient.
-        g_self:      Self-interaction strengths ``(g_11, g_22)`` added to the
-                     cross force, in the same sign convention as ``G_12``
-                     (``g < 0`` = repulsion between like particles... see the
-                     note below; the discrete form is
-                     ``F_1 += -g_11 psi_1(x) sum_i w_i c_i psi_1(x-c_i)``).
-                     Default ``(0, 0)`` is bit-identical to the historical
-                     two-component-only force.  A non-zero self term is what
-                     turns a component non-ideal on its own (coexistence of a
-                     single species), so ``g_self`` plus ``psi_fn`` reproduces
-                     the full ``nfluids = 2`` branch of the OSS reference.
-
-    Note
-    ----
-    Sign convention.  The discrete sums sample the *backward* neighbours, so
-    ``sum_i w_i c_i psi(x-c_i) = -cs^2 grad psi + O(h^2)``; the force written
-    here is therefore ``F_s = -G psi_s sum_i w_i c_i psi'(x-c_i)``, whose
-    continuum limit is ``+G cs^2 psi_s grad psi'`` — ``G < 0`` separates the
-    two components.  The OSS reference gathers the *forward* neighbours
-    (``sum_i w_i c_i psi(x+c_i)``), which is the exact negative of the same
-    sum on a symmetric stencil, and writes ``F = -g psi_s sum_i w_i c_i
-    psi'(x+c_i)``.  Hence the exact (not merely asymptotic) mapping between
-    the two parameterisations is ``G = -g``.
+        psi:         Optional pseudopotential callable applied to *both* density
+                     fields before the interaction sum (e.g. :func:`psi_exp`).
+                     ``None`` (default) is the historical linear ``psi(rho)=rho``
+                     and is bit-identical to previous behaviour.  The body force
+                     keeps multiplying the *density*, not ``psi(rho)``.  The
+                     inter-component force becomes
+                     ``F1 = -G_12 psi(rho1) sum_i w_i c_i psi(rho2)(x-c_i)``.
 
     Returns:
         ``(Fx1, Fy1, Fx2, Fy2)`` – force fields for each component,
@@ -623,23 +594,18 @@ def sc_two_component_force(
     if sc_form not in ("standard", "edm"):
         raise ValueError(f"sc_form must be 'standard' or 'edm', got {sc_form!r}")
 
-    if sc_form == "edm" and (psi_fn is not None or g_self != (0.0, 0.0)):
-        raise ValueError(
-            "sc_form='edm' is defined for the linear pseudopotential and a pure "
-            "cross force only; use sc_form='standard' with psi_fn/g_self"
-        )
-    g11, g22 = float(g_self[0]), float(g_self[1])
-    psi1 = rho1 if psi_fn is None else psi_fn(rho1)
-    psi2 = rho2 if psi_fn is None else psi_fn(rho2)
-    if psi1.shape != rho1.shape or psi2.shape != rho2.shape:
-        raise ValueError("psi_fn must preserve the field shape")
-
     def _neighbour_sums(field: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if solid_mask is not None and wall_mode == "mirror":
             return _sc_neighbor_weighted_sum(
                 field, solid_mask, wall_psi=_mirror_wall_fill(field, solid_mask)
             )
         return _sc_neighbor_weighted_sum(field, solid_mask)
+
+    # Pseudopotential: linear (psi(rho) = rho) by default, bit-identical to the
+    # historical behaviour; an explicit callable generalises the interaction to
+    # a non-linear psi(rho) (exponential, power-law, EOS-derived, ...).
+    psi1 = rho1 if psi is None else psi(rho1)
+    psi2 = rho2 if psi is None else psi(rho2)
 
     sum_x2, sum_y2 = _neighbour_sums(psi2)
     sum_x1, sum_y1 = _neighbour_sums(psi1)
@@ -652,9 +618,9 @@ def sc_two_component_force(
         # hence it cannot generate vorticity); the second is antisymmetric
         # between the components and conserves their total momentum.  Same
         # continuum limit as "standard" but no O(h^2) discrete curl.
-        sum_xS, sum_yS = _neighbour_sums(rho1 * rho2)
-        exch_x = rho1 * sum_x2 - rho2 * sum_x1
-        exch_y = rho1 * sum_y2 - rho2 * sum_y1
+        sum_xS, sum_yS = _neighbour_sums(psi1 * psi2)
+        exch_x = psi1 * sum_x2 - psi2 * sum_x1
+        exch_y = psi1 * sum_y2 - psi2 * sum_y1
         Fx1 = -G_12 * (0.5 * sum_xS + 0.5 * exch_x) + rho1 * gx
         Fy1 = -G_12 * (0.5 * sum_yS + 0.5 * exch_y) + rho1 * gy
         Fx2 = -G_12 * (0.5 * sum_xS - 0.5 * exch_x) + rho2 * gx
@@ -666,13 +632,6 @@ def sc_two_component_force(
 
     Fx2 = -G_12 * psi2 * sum_x1 + rho2 * gx
     Fy2 = -G_12 * psi2 * sum_y1 + rho2 * gy
-
-    if g11 != 0.0:
-        Fx1 = Fx1 - g11 * psi1 * sum_x1
-        Fy1 = Fy1 - g11 * psi1 * sum_y1
-    if g22 != 0.0:
-        Fx2 = Fx2 - g22 * psi2 * sum_x2
-        Fy2 = Fy2 - g22 * psi2 * sum_y2
 
     return Fx1, Fy1, Fx2, Fy2
 
@@ -738,6 +697,7 @@ def collide_sc_two_component(
     force_scheme: str = "shift",
     wall_mode: str = "dry",
     sc_form: str = "standard",
+    psi: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D2Q9.
 
@@ -800,6 +760,9 @@ def collide_sc_two_component(
         sc_form:     ``"standard"`` (default, historical) or ``"edm"``
                      (exact-difference, well-balanced pair force) — forwarded
                      to :func:`sc_two_component_force`.
+        psi:         Optional pseudopotential callable forwarded to
+                     :func:`sc_two_component_force` (``None`` = linear
+                     ``psi(rho)=rho``, the historical behaviour).
 
     Returns:
         Updated ``(f1, f2)`` after collision.
@@ -841,7 +804,15 @@ def collide_sc_two_component(
     rho2, ux2, uy2 = macroscopic(f2)
 
     Fx1, Fy1, Fx2, Fy2 = sc_two_component_force(
-        rho1, rho2, G_12, gx, gy, solid_mask, wall_mode=wall_mode, sc_form=sc_form
+        rho1,
+        rho2,
+        G_12,
+        gx,
+        gy,
+        solid_mask,
+        wall_mode=wall_mode,
+        sc_form=sc_form,
+        psi=psi,
     )
 
     rho1_s = torch.clamp(rho1, min=1e-12)
