@@ -1,0 +1,91 @@
+{
+  "anchor": "XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND",
+  "decision": "Adopt upstream's per-step setup hook and mask-blend boundary composition into TensorLBM, and decide whether the mask blend must carry a wall-momentum term (moving walls) or can be transplanted as-is (stationary walls only).",
+  "alternatives": {
+    "D0_keep_inline_loops": "keep the in-house style: BC applied by explicit index assignment inside each case's hand-written Python loop, no hook API",
+    "B_transplant_as_is": "port upstream verbatim: per-step hook driver + mask blend with stationary bounce only (upstream CollideSC)",
+    "B_plus_momentum": "hook driver + mask blend extended with the moving-wall momentum term 6 w_i (c_i . u_wall) on the masked cells (chosen)",
+    "D_upstream_faithful_lid": "upstream's own way of driving a moving wall: hook overwrites the solver's velocity variable (lid_cavity.py lid_setup_step) while the BC stays a stationary bounce"
+  },
+  "hypothesis": "H1: the hook-driven, mask-blended formulation reproduces the analytic plane-Couette linear profile and the plane-Poiseuille parabola to <3% (owner gate 15%) while being bit-wise identical to an explicit per-cell BC implementation; H2: upstream's stationary-bounce mask blend cannot carry a moving wall, so the velocity-overwrite hook of lid_cavity.py leaves the population state unchanged (0 bits) and the measured flow ~0. H0 falsifier: any predeclared KPI deviates by >=15%, or the mask-blend operator is not equivalent to the explicit one.",
+  "metrics": {
+    "couette_profile_l2_pct": "||u_num(y) - U_wall*(y-0.5)/H||_2 / ||exact||_2 over fluid rows at the final step, H = Ny-2 (percent)",
+    "couette_max_err_pct": "max_y |u_num - exact| / U_wall (percent)",
+    "poiseuille_profile_l2_pct": "same norm for the forced channel against g*y*(H-y)/(2*nu), H = Ny-2 (percent)",
+    "poiseuille_peak_err_pct": "|max u_num - max exact| / max exact (percent)",
+    "explicit_blend_max_rel": "max|f_maskblend - f_explicit| / max|f_explicit| after one step from an identical state (dimensionaless; equivalence KPI)",
+    "hook_neutrality_sha256_equal": "bit-wise equality of the final population state between an identity setup hook and a hook-free loop with the same save cadence",
+    "upstream_lid_flow_pct": "measured peak |u_x| / U_wall in the upstream-faithful moving-lid arm (percent; expected ~0 = the hook cannot drive the wall)",
+    "upstream_hook_bits_changed": "number of population entries changed by upstream's velocity-overwrite hook (expected 0)",
+    "mass_drift_rel": "|sum(f_final) - sum(f_0)| / sum(f_0) for a closed box with an arbitrary blob mask (dimensionless)",
+    "hook_overhead_pct": "wall-clock per step of the hook-driven arm relative to the hand-written loop (percent)",
+    "couette_slip_lower_pct": "|slip at the lower wall| / U_wall, slip = least-squares line through the fluid rows extrapolated to y=0.5 (percent)",
+    "couette_slip_lid_pct": "|u(Ny-1.5) - U_wall| / U_wall, same extrapolation at the moving lid (percent)",
+    "adjacent_normal_velocity_pct": "max |u_y| in the fluid cell adjacent to the wall / peak |u_x| (percent; no-penetration, composite channel)",
+    "wall_cell_speed_rel": "max |u| carried by the *masked* cells / peak |u| -- a diagnostic only: bounce-back encodes no-slip through the population exchange, so a wall cell keeps a non-zero macroscopic velocity",
+    "composite_mass_imbalance_pct": "|Q_out - Q_in| / Q_in for the composite inlet/outlet/wall channel (percent)"
+  },
+  "unit_of_analysis": "one arm at one (resolution, BC family) configuration; every KPI is a scalar per arm-configuration",
+  "baseline_control": {
+    "baseline": "arm A (explicit index BC, hand-written loop, no hooks) at the same grid/parameters",
+    "control": "arm B (solve_with_hooks + compose_masked_boundaries) differs from A in exactly one variable: how the boundary condition is applied and how the loop is driven; transport (solver.stream), collision (collide_bgk), initial condition, dtype, thread count and step count are shared code paths",
+    "reference": "closed-form plane Couette u = U_wall*(y - y_wall)/H and closed-form plane Poiseuille u = g*y*(H-y)/(2*nu) with the half-way wall spacing H = Ny-2 -- analytic, not another solver"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "internal_target_pct": 3.0,
+    "implementation_equivalence_rel": 0.0,
+    "exactness_note": "the mask blend is a linear recombination of the same populations the explicit path writes, with the same reversal table, so equivalence is expected bit-wise; the 0.0 threshold is intentional",
+    "convergence_rule": "a KPI is resolution-converged when |KPI(Ny=32) - KPI(Ny=24)| < 0.2 * |KPI(Ny=32)| for Couette and |KPI(Ny=24) - KPI(Ny=16)| < 0.3 * |KPI(Ny=24)| for Poiseuille",
+    "stability_rule": "a run with a non-finite population, or |u| > 10 * U_ref, is declared failed and reported, never re-tuned",
+    "upstream_lid_rule": "the upstream-faithful lid arm is expected to FAIL the 15% gate; that is a declared outcome (it is the evidence for the porting decision), not a benchmark failure"
+  },
+  "sensitivity_points": [
+    "channel height Ny in {16, 24, 32} for Couette (discretisation; the analytic profile is linear so the half-way-wall convention is tested exactly)",
+    "wall-position convention: half-way walls H = Ny-2 (adopted) vs node walls H = Ny-1 (upstream's implicit reading of 'boundary row = solid'), reported as the geometry trap",
+    "save_interval in {50, 500} with an identity setup hook (hook cadence must not change physics)",
+    "lid ramp length in {1, 200} steps (instant onset vs ramped onset -- the hook makes time-dependent BC trivial)",
+    "channel height Ny in {16, 24} for the forced Poiseuille arm (curvature-sensitive)"
+  ],
+  "stopping_rule": "step counts are fixed before the run from the analytic viscous time scale: Couette steps = 12*H^2/(pi^2*nu) + 200 (12 start-up e-folding times of the exp(-pi^2 nu t/H^2) transient, residual <1e-5), Poiseuille steps = 3.5*H^2/nu (viscous relaxation), closed-box invariance 500 steps. No arm is extended or truncated after looking at a KPI.",
+  "variables_changed": [
+    "how the BC is applied (explicit index assignment vs mask-blend composition)",
+    "how the loop is driven (hand-written vs solve_with_hooks)",
+    "whether the mask blend carries a wall-momentum term",
+    "channel height Ny",
+    "save cadence and lid ramp length"
+  ],
+  "variables_controlled": [
+    "transport operator (tensorlbm.solver.stream, gather over shifted cells) -- unchanged in every arm",
+    "collision (tensorlbm.solver.collide_bgk, BGK, same tau)",
+    "initial condition rho = 1, u = 0",
+    "float64 CPU torch, 4 threads",
+    "same forcing implementation (plain momentum source) in both forced arms",
+    "closed-form references, no interpolation"
+  ],
+  "confounders": [
+    "upstream is TensorFlow 1.x / Python 2 / GPU float32 and cannot execute here, so the comparison is formulation-level against the analytic solution, not against upstream binaries",
+    "upstream's own examples are lid-driven cavity / car drag; neither has a closed-form reference, which is why plane Couette and plane Poiseuille are used as the discriminating cases",
+    "the moving-wall momentum term changes the BC itself, so arm B_plus_momentum is not a pure reformulation of A: the equivalence KPI is therefore measured on the stationary-wall configuration (where both arms apply a stationary bounce) and on a disjoint two-layer mask benchmark",
+    "the composite inlet/outlet channel has no independent reference; only invariants (mass imbalance, no-penetration) are claimed there"
+  ],
+  "repetition_rationale": "all arms are deterministic (zero variance), so repetition is replaced by (a) three independent physical configurations (Couette, forced Poiseuille, composite channel), (b) five predeclared sensitivity axes, (c) three independent equivalence checks (stationary mask, disjoint two-layer mask, hook-driven loop vs hand-written loop).",
+  "environment": {
+    "solver": "TensorLBM src/tensorlbm (torch, CPU only)",
+    "dtype": "float64",
+    "threads": 4,
+    "oss_source": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow master tarball, sha256 recorded and re-verified from the checkout in oss_ref/provenance.json",
+    "command": "python benchmarks/xval_per_step_hook_mask_blend/run_xval.py",
+    "raw_data": "artifacts/xval_per_step_hook_mask_blend/{result.json,table.csv,figures/*.png,oss_ref/*}"
+  },
+  "analysis_plan": "table arm x configuration with every KPI and its deviation from the closed form; verdict by the predeclared 15% rule with the 3% internal target reported separately; uncertainty = resolution delta; the upstream-faithful arm is reported as a declared expected failure and is not used to tune any threshold.",
+  "sections_delivered": [
+    "problem + reference provenance (machine-extracted upstream evidence)",
+    "method + implementation",
+    "non-dimensional parameter table",
+    "reference vs got table with pass/fail marks",
+    "convergence / sensitivity (five predeclared axes)",
+    "failure modes + artefacts",
+    "difference list: TensorLBM vs OSS upstream (method / parameters / boundary conditions) + porting trade-offs"
+  ]
+}
