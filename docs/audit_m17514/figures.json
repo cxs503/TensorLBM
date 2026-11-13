@@ -1,0 +1,19 @@
+{
+ "fig1_gammaK_aa_vs_ab_vs_exact.png": {
+  "tg_n32_re100_aa_K_end": 0.00022975103086617451,
+  "tg_n32_re100_ab_K_end": 0.00022975103086617451,
+  "tg_n48_re100_aa_K_end": 0.00032137657217793183,
+  "tg_n48_re100_ab_K_end": 0.00032137657217793183
+ },
+ "fig2_field_aa_vs_exact_independent.png": {
+  "field_l2_pct_recomputed": 1.4226039246715139,
+  "shipped": 1.4484804007956145,
+  "decay": 0.7196525064760932
+ },
+ "fig3_parity_hazard.png": {
+  "hazard_smooth_pct": 6.62158290311121,
+  "hazard_noise_pct": 115.5502535505146,
+  "parity_blind_field_pct": 168.26630422936864,
+  "parity_blind_gammaK_pct": 19.406897107090426
+ }
+}

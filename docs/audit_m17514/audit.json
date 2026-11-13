@@ -1,0 +1,144 @@
+{
+ "A_fresh_run": {
+  "exit_ok": true,
+  "overall": "PASS",
+  "criteria_values_reproduced": true,
+  "full_payload_identical_excluding_walltime": false,
+  "tmp_dir": "/tmp/av17514_od6nsjmv",
+  "stdout_tail": [
+   "  PASS  half_window_mass_conserved         value=1.11022e-16  (< 1e-12 (conservation cannot catch the hazard))",
+   "  PASS  parity_blind_arm_error_pct         value=168.266  (>= 15 % (bug detectable))",
+   "overall: PASS"
+  ]
+ },
+ "B_independent_reference": {
+  "n16": {
+   "steps": 50,
+   "max_abs_f_diff_vs_own_reference": 0.0,
+   "max_abs_f_diff_at_step11": 0.0,
+   "max_abs_ux_diff": 0.0,
+   "mass_audited": 255.99999999999864,
+   "mass_own_reference": 255.99999999999866,
+   "pass": true
+  },
+  "n32": {
+   "steps": 50,
+   "max_abs_f_diff_vs_own_reference": 0.0,
+   "max_abs_f_diff_at_step11": 0.0,
+   "max_abs_ux_diff": 0.0,
+   "mass_audited": 1023.9999999999948,
+   "mass_own_reference": 1023.9999999999948,
+   "pass": true
+  },
+  "pass": true
+ },
+ "C_mutations": {
+  "control_clean": {
+   "tag": "control",
+   "crashed": false,
+   "overall": "PASS",
+   "failed_criteria": [],
+   "criteria_values": {
+    "aa_vs_ab_bitwise_max_abs": 0.0,
+    "gamma_K_vs_exact_worst_pct": 0.28091382127819475,
+    "field_l2_vs_exact_worst_pct": 1.4484804007956145,
+    "mass_drift_rel_worst": 4.0523140398818214e-14,
+    "mom_drift_rel_worst": 4.46419406349739e-16,
+    "kernel_order_immaterial": 0.0,
+    "parity_gate_refuses_half_state": 1.0,
+    "half_window_hazard_rough_field_pct": 115.5502535505146,
+    "half_window_mass_conserved": 1.1102230246251568e-16,
+    "parity_blind_arm_error_pct": 168.26630422936864
+   }
+  },
+  "M1_parity_flip_removed": {
+   "tag": "m1",
+   "crashed": false,
+   "overall": "PASS",
+   "failed_criteria": [],
+   "criteria_values": {
+    "aa_vs_ab_bitwise_max_abs": 0.0,
+    "gamma_K_vs_exact_worst_pct": 0.28091382127819475,
+    "field_l2_vs_exact_worst_pct": 1.4484804007956145,
+    "mass_drift_rel_worst": 4.0523140398818214e-14,
+    "mom_drift_rel_worst": 4.46419406349739e-16,
+    "kernel_order_immaterial": 0.0,
+    "parity_gate_refuses_half_state": 1.0,
+    "half_window_hazard_rough_field_pct": 115.5502535505146,
+    "half_window_mass_conserved": 1.1102230246251568e-16,
+    "parity_blind_arm_error_pct": 168.26630422936864
+   }
+  },
+  "M2_permutation_off_by_one": {
+   "tag": "m2",
+   "crashed": true,
+   "returncode": 1,
+   "stderr_tail": [
+    "  File \"/tmp/mut_m2_hgruinxe/src/tensorlbm/aa_pattern.py\", line 206, in _stream_half",
+    "    self.f[i] = self.f[i][self._permutation(i).src]",
+    "                ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "IndexError: index 32 is out of bounds for dimension 0 with size 32"
+   ],
+   "stdout_tail": [
+    "[bench] tg_n32_re100: N=32 nu=0.016 tau=0.548 steps=400"
+   ]
+  },
+  "M3_halves_overlap": {
+   "tag": "m3",
+   "crashed": true,
+   "returncode": 1,
+   "stderr_tail": [],
+   "stdout_tail": [
+    "  PASS  half_window_hazard_rough_field_pct value=105.24  (>= 15 % (hazard is fatal on a rough field))",
+    "  PASS  half_window_mass_conserved         value=1.11022e-16  (< 1e-12 (conservation cannot catch the hazard))",
+    "  PASS  parity_blind_arm_error_pct         value=168.266  (>= 15 % (bug detectable))",
+    "overall: FAIL"
+   ]
+  }
+ },
+ "D_storage": {
+  "n": 48,
+  "field_bytes_aa": 165888,
+  "permutation_index_bytes": 294912,
+  "aa_total_bytes_with_index": 460800,
+  "ab_reference_two_fields_bytes": 331776,
+  "aa_minus_ab_bytes": 129024,
+  "shipped_doc_claim_per_step_temp": "one row per direction, O(N) row buffer (doc §7)",
+  "measured_per_direction_temp_elements": 2304,
+  "row_elements": 48,
+  "temp_is_plane_not_row": true,
+  "index_elements_per_direction": 4608,
+  "index_dtype": "int64 -> 16 * N values = 128 * N bytes",
+  "doc_claim_index_cache": "8*N indices (doc §7)",
+  "memory_win_vs_ab_in_this_implementation": false
+ },
+ "E_doc_claims": {
+  "per_case": {
+   "tg_n32_re100": {
+    "gamma_K_err_pct_parity_blind": 36.82547082071046,
+    "field_l2_pct_parity_blind": 166.04843198318568,
+    "gamma_K_gate_15pct": false
+   },
+   "tg_n48_re100": {
+    "gamma_K_err_pct_parity_blind": 19.406897107090426,
+    "field_l2_pct_parity_blind": 168.26630422936864,
+    "gamma_K_gate_15pct": false
+   }
+  },
+  "doc_mentions_placeholder_artifact": true,
+  "doc_claim": "γ_K 偏差仍 < 15% 闸门",
+  "doc_claim_true_for_all_cases": false,
+  "doc_says_worst_gammaK_ge_15pct_contradicted": true
+ },
+ "delivery_git_state": [
+  " M src/tensorlbm/__init__.py",
+  "?? artifacts/xval_aa_pattern_even_odd/",
+  "?? benchmarks/xval_aa_pattern_even_odd.py",
+  "?? docs/XVAL-LBM-AA-PATTERN-EVEN-ODD-TIMESTEP-TRACKER.md",
+  "?? figures/xval_aa_pattern_even_odd/",
+  "?? src/tensorlbm/aa_pattern.py",
+  "?? tests/test_aa_pattern_parity.py"
+ ],
+ "delivery_branch": "agent/m17514",
+ "delivery_head_touches_aa_pattern": false
+}
