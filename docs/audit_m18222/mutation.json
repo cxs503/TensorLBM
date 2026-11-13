@@ -1,0 +1,58 @@
+{
+ "mutants": [
+  {
+   "mutant": "M0 control (unmodified plan)",
+   "partition_ok": true,
+   "max_offset_error": 0,
+   "stream_vs_production_max_abs_diff": 0.0,
+   "detected_by_invariant": false,
+   "detected_by_bitwise_test": false
+  },
+  {
+   "mutant": "M1 drop the wrapped x-strip blocks",
+   "partition_ok": false,
+   "holes": 18,
+   "overlaps": 0,
+   "max_offset_error": 0,
+   "max_abs_diff_vs_gather": 0.975969249859544,
+   "stream_vs_production_max_abs_diff": 0.975969249859544,
+   "stream_raised": null,
+   "detected_by_invariant": true,
+   "detected_by_bitwise_test": true
+  },
+  {
+   "mutant": "M2 flat_offset +1 on block #3",
+   "partition_ok": true,
+   "holes": 0,
+   "overlaps": 0,
+   "max_offset_error": 1,
+   "max_abs_diff_vs_gather": 0.0,
+   "stream_vs_production_max_abs_diff": 0.0,
+   "stream_raised": null,
+   "detected_by_invariant": true,
+   "detected_by_bitwise_test": false
+  },
+  {
+   "mutant": "M3 de-periodise the wrap (copy src onto itself)",
+   "partition_ok": true,
+   "holes": 0,
+   "overlaps": 0,
+   "max_offset_error": 0,
+   "max_abs_diff_vs_gather": 0.7864419624573327,
+   "stream_vs_production_max_abs_diff": 0.7864419624573327,
+   "stream_raised": null,
+   "detected_by_invariant": false,
+   "detected_by_bitwise_test": true
+  }
+ ],
+ "detection_power": {
+  "n_mutants_detected": 3,
+  "n_mutants": 3,
+  "control_clean": true
+ },
+ "control_3d": {
+  "partition_ok": true,
+  "max_offset_error": 0,
+  "gather_max_abs_diff": 0.0
+ }
+}

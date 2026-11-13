@@ -1,0 +1,106 @@
+{
+ "ref_json_meta": {
+  "oss": "CFD-GO/TCLB",
+  "remote": "https://github.com/CFD-GO/TCLB.git",
+  "branch": "master",
+  "commit": "ded67cd768cf7e727bd078af139e3ec7895076e5",
+  "checkout": "/tmp/TCLB",
+  "checkout_git_note": "shallow clone: `.git` object store is incomplete (`git log` fails with 'bad object HEAD'), so provenance is pinned by the ref file content and per-file sha256 instead of a git object id",
+  "tclb_runnable_here": false,
+  "tclb_runnable_reason": "code generation and build need R + Rscript (src/*.Rt are R templates) and an MPI/CUDA toolchain; this container has neither R nor network access",
+  "extracted_by": "benchmarks/xval_tclb_pointer_shift/extract_oss_ref.py"
+ },
+ "files_missing": [],
+ "file_sha_mismatch": [],
+ "file_sha_ok": 8,
+ "snippet_checked": 9,
+ "snippet_sha_mismatch": [],
+ "snippet_text_mismatch": [],
+ "tclb_present": true,
+ "pinned_rev_matches_clone": true,
+ "snippets": [
+  {
+   "key": "ftabs_per_margin_arrays",
+   "loc": "src/Global.h.Rt:58-74",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 58,
+   "line_matches_record": true,
+   "n_lines_in_body": 17
+  },
+  {
+   "key": "margin_table",
+   "loc": "src/conf.R:771-792",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 771,
+   "line_matches_record": true,
+   "n_lines_in_body": 22
+  },
+  {
+   "key": "offsets_block_addressing",
+   "loc": "src/conf.R:897-998",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 897,
+   "line_matches_record": true,
+   "n_lines_in_body": 102
+  },
+  {
+   "key": "stencil_derived_extent",
+   "loc": "src/conf.R:135-150",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 135,
+   "line_matches_record": true,
+   "n_lines_in_body": 16
+  },
+  {
+   "key": "move_pocket_pointer_shift",
+   "loc": "src/LatticeAccess.inc.cpp.Rt:69-79",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 69,
+   "line_matches_record": true,
+   "n_lines_in_body": 11
+  },
+  {
+   "key": "field_access_uses_pocket",
+   "loc": "src/LatticeAccess.inc.cpp.Rt:122-167",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 122,
+   "line_matches_record": true,
+   "n_lines_in_body": 46
+  },
+  {
+   "key": "pop_push_templates",
+   "loc": "src/LatticeAccess.inc.cpp.Rt:321-339",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 321,
+   "line_matches_record": true,
+   "n_lines_in_body": 19
+  },
+  {
+   "key": "iterate_border_interior_split",
+   "loc": "src/Lattice.cu.Rt:488-514",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 488,
+   "line_matches_record": true,
+   "n_lines_in_body": 27
+  },
+  {
+   "key": "mpi_margin_exchange",
+   "loc": "src/Lattice.cu.Rt:327-335",
+   "sha_matches_record": true,
+   "found_in_clone": true,
+   "found_line": 327,
+   "line_matches_record": true,
+   "n_lines_in_body": 9
+  }
+ ],
+ "R_available": false,
+ "nvcc_available": false
+}

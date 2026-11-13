@@ -1,0 +1,47 @@
+# src/LatticeAccess.inc.cpp.Rt:122-167  sha256(excerpt)=f8c93c81a7eb862c4f3300a09e7beac643eacddecdccc07ced1f237cce3fb1f2
+  field.access.one = function(d,m,off,access) {
+          if (access == "get") {  ?>
+        <?%s d ?> = <?%s m ?>[<?R C(off,float=FALSE) ?>]; <?R
+   } else if (access == "getsum") {  ?>
+        <?%s d ?> += <?%s m ?>[<?R C(off,float=FALSE) ?>]; <?R
+   } else if (access == "set") { ?>
+        <?%s m ?>[<?R C(off,float=FALSE) ?>] = <?%s d ?>; <?R
+   } else if (access == "add") { ?>
+        <?%s m ?>[<?R C(off,float=FALSE) ?>] += <?%s d ?>; <?R
+   } else if (access == "atomicadd") { ?>
+        CudaAtomicAdd(&( <?%s m ?>[<?R C(off,float=FALSE) ?>] ),<?%s d ?>); <?R
+   } else stop("Unknown access type in field.access.one");
+  }
+
+
+  field.access = function(d,f,p,dp,access,pattern,MContext) {
+    if (pattern == "get") {
+     ret = f$get_offsets(p,dp)
+    } else if (pattern == "put") {
+     ret = f$put_offsets(p)
+    } else {
+     stop("Unknown access in field.access")
+    }
+    if (f$simple_access) {
+     if (access == "add" || access == "atomicadd") access = "set"
+     if (access == "getsum" ) access = "get"
+    }
+    if (MContext$PocketMove) for (m in 1:27) if (ret$Selection[m]) {
+      if (no.x.move) {
+        MContext=move.pocket(m, subst(ret$Offset[m],p[1]==-dp[1]),MContext)
+      } else {
+        MContext=move.pocket(m, ret$Offset[m],MContext)
+      }
+    }
+    if (access == "getsum" ) { ?>
+      <?%s d ?> = 0.0f; <?R
+    }
+
+#print(ret)
+    if.apply(ret$Table,ret$Conditions,ret$Selection,function(m) {
+      field.access.one(d, paste(MContext$Pocket, Margin[[m]]$name, sep="."), ret$Offset[m] - MContext$Offset[[m]], access);
+    })
+    MContext
+  }
+
+  load.field = function
