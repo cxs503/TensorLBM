@@ -1,0 +1,77 @@
+{
+  "anchor": "XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED",
+  "mission_id": 17995,
+  "repo": "TensorLBM",
+  "written_before_any_arm_was_run": true,
+  "oss_reference": {
+    "repo": "lssfau/lbmpy (+ its waLBerla python binding lbmpy_walberla, local checkout /tmp/lbmpy_src and /tmp/walberla)",
+    "approach": "MPI ghost-layer exchange driven by a generated PackInfo: per communication direction only the populations that actually cross that face are packed/unpacked (packDirection / unpackDirection, sized by getSizeOfPackedCellInterval), the pack and unpack are generated kernels fused into one pass per direction, and in-place streaming patterns get separate Even/Odd PackInfos",
+    "sources_of_record": [
+      "lbmpy_walberla/packinfo.py :: generate_lb_pack_info (class_name+'Even'/'Odd' per Timestep; spec[(comm_dir,)] = write accesses of set(_extend_dir(comm_dir)) & set(stencil))",
+      "lbmpy_walberla/packing_kernels.py :: generate_packing_kernels -> jinja 'PackingKernels' class",
+      "lbmpy_walberla/templates/PackingKernels.tmpl.h :: packAll/unpackAll, packDirection/unpackDirection, getSizeOfPackedCellInterval (docstring: 'if dir == N, the pdfs streaming in directions NW, N, NE are packed')",
+      "lbmpy/advanced_streaming/communication.py :: _extend_dir (line 233), get_communication_slices (line 121), _get_neighbour_transform (line 245)"
+    ],
+    "execution_limit": "no mpi4py / no MPI implementation in this image (mpi4py MISSING) and no GPU; the OSS semantics are therefore transplanted onto TensorLBM's real torch.distributed/gloo point-to-point transport and executed, not the OSS binaries. Recorded as a comparison limit, not upgraded."
+  },
+  "decision": "Does transplanting lbmpy/waLBerla's direction-selective, kernel-fused MPI PackInfo ghost exchange into TensorLBM's x-slab D3Q19 transport (a) reproduce the monolithic solution bit-exactly, (b) keep the Taylor-Green vortex accuracy inside the owner 15% band, and (c) cut per-step exchange bytes by the predeclared stencil-derived factor Q/n_cross = 19/5 = 3.8x versus the shipped full-19-plane exchange?",
+  "alternatives": {
+    "A_serial": "TensorLBM monolithic single-buffer D3Q19 pull stream over the whole (19,n,n,n) lattice, periodic in x,y,z by torch.roll -- physical reference for the analytic comparison and for arm identity",
+    "A_ship": "shipped tensorlbm.multi_gpu.D3Q19GlooTransport.step semantics: collide, isend/irecv the FULL 19-population boundary planes, waitall, unpack all 19 channels, then pull stream (exchange replicated in-module so the ablation shares one code path; the replica is cross-checked against the shipped class in tests)",
+    "A_fused": "OSS PackInfo transplant: per face only the crossing populations (cx=+1 to the right neighbour, cx=-1 to the left neighbour; 5 of 19 for D3Q19) are packed into contiguous direction-sized buffers, exchanged, and unpacked in one fused index-write into the ghost plane",
+    "A_fused_persistent": "A_fused with a preallocated persistent padded buffer reused across steps (ablation of the buffer-allocation factor, isolating bytes from allocation)",
+    "A_ship_persistent": "A_ship with the persistent padded buffer (2x2 ablation: {selective,full-19} x {alloc,persistent})"
+  },
+  "hypothesis": {
+    "H1_semantics": "the crossing-population derivation transcribed from lbmpy's _extend_dir is identical to the OSS function's output intersected with the D3Q19 stencil for all 26 communication directions, and pack/unpack are a lossless permutation of exactly those entries",
+    "H2_identity": "every decomposed arm reproduces the monolithic field bit-exactly (max|df| == 0.0) in float64 and float32, because decomposition may only change data movement, never arithmetic",
+    "H3_physics": "TGV at 64^3 reaches the analytic solution inside the owner 15% band and inside the 5% engineering target",
+    "H4_bytes": "selective exchange moves exactly n_cross/Q = 5/19 = 0.2632 of the shipped wire bytes per face per step",
+    "falsifiers": [
+      "H1 fails if any communication direction's crossing set differs from lbmpy's, or if unpacked ghost entries differ from the packed source anywhere (>= 1 bit)",
+      "H2 fails if any arm's max|df| is nonzero",
+      "H3 fails if rel L2 >= 15%",
+      "H4 fails if the measured byte ratio deviates from 5/19"
+    ]
+  },
+  "metrics": {
+    "identity_max_abs": "max|f_arm - f_serial| over the assembled owned field after the predeclared step count (float64 and float32 runs)",
+    "tgv_rel_l2": "||u_num - u_analytic||_2 / ||u_analytic||_2 over the three velocity components on the full domain at t_end",
+    "tgv_amplitude_ratio": "||u_num||_2 / ||u_analytic||_2 at t_end (decay-rate fidelity)",
+    "wire_bytes_per_face_step": "sum of numel*element_size over the two send and two receive buffers of one step, averaged per face",
+    "exchange_ms": "wall time of the exchange call accumulated over the timed steps / timed steps",
+    "step_ms": "wall time of collide+exchange+stream per step, median over the timed steps",
+    "mlups": "global cells * steps / wall_seconds / 1e6"
+  },
+  "unit_of_analysis": "one completed simulation arm at a fixed (n, rank count, dtype, tau, U0, step count)",
+  "baseline_control": {
+    "physical_baseline": "the same code's monolithic run (A_serial) and the TGV analytic solution u = U0 sin(kx) cos(ky) cos(kz) e^{-2 nu k^2 t}, v = -U0 cos(kx) sin(ky) cos(kz) e^{-2 nu k^2 t}, w = 0, k = 2 pi / n",
+    "representation_control": "A_ship vs A_fused -- collision, streaming, geometry, dtype and step count identical; the only changed variable is the packed population set (plus the buffer-allocation ablation)",
+    "oss_control": "the crossing-population set is machine-compared against lbmpy._extend_dir (the OSS function itself), not against a hand-written table"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "engineering_target_pct": 5.0,
+    "identity_rel": 0.0,
+    "byte_ratio_expected": 0.2631578947368421,
+    "byte_ratio_rel_tol": 1e-12,
+    "interpretation": "the 15% band is the owner physics band and applies to tgv_rel_l2; the identity comparison uses an exact-zero threshold because a data-movement change has no legitimate numerical freedom; the byte ratio has no tolerance because it is an integer count",
+    "convergence_rule": "the TGV error is reported at n=32 and n=64; a metric is declared resolution-converged when the error does not grow and the amplitude ratio moves toward 1; no arm is re-tuned after the KPIs are seen",
+    "sensitivity_rule": "rank count 2 vs 4 at fixed n=64 (fixed global work, growing comm surface) and n=32 vs n=64 at fixed 2 ranks; both are predeclared sensitivity points",
+    "stability_rule": "a run with a non-finite population, rho outside [0.9,1.1] or Ma = U0*sqrt(3) > 0.2 is declared failed and reported, never tuned away"
+  },
+  "stopping_rule": "every arm runs the step count fixed here (400 steps n=64, 200 steps n=32) and stops early only on non-finite state; no arm is extended after looking at KPIs. Wall-clock budget 600 s per arm; anything above that moves to the cluster queue.",
+  "predeclared_run_matrix": {
+    "n64_r2": {"n": 64, "ranks": 2, "steps": 400, "dtype": "float32", "u0": 0.04, "tau": 0.65},
+    "n64_r4": {"n": 64, "ranks": 4, "steps": 400, "dtype": "float32", "u0": 0.04, "tau": 0.65},
+    "n32_r2": {"n": 32, "ranks": 2, "steps": 200, "dtype": "float32", "u0": 0.04, "tau": 0.65},
+    "n32_r2_f64": {"n": 32, "ranks": 2, "steps": 100, "dtype": "float64", "u0": 0.04, "tau": 0.65}
+  },
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1 (gloo backend, CPU only)",
+    "transport": "torch.distributed gloo, point-to-point isend/irecv over localhost, one process per rank, torch.set_num_threads(1) per rank",
+    "oss_checkout": "/tmp/lbmpy_src (origin https://github.com/lssfau/lbmpy.git), lbmpy 2.0 installed at /usr/lib/python3.11/site-packages/lbmpy",
+    "cpu": "128 cores, loong64 container"
+  }
+}
