@@ -53,6 +53,15 @@ import os
 import torch
 
 from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
+from .free_surface_init_modes import (
+    D2Q9_SHIFTS,
+    INIT_MODE_AVERAGE_SURROUND,
+    INIT_MODE_FIXED_RHO,
+    INIT_MODE_LEGACY,
+    birth_population,
+    normalize_init_mode,
+    resolve_birth_mode,
+)
 from .solver import stream as _stream2d
 
 GAS = 0
@@ -208,29 +217,50 @@ def _specular_wall_mirror_index_2d(slip_mask, device):
     return idx
 
 
-def _init_new_2d(f, flags, mask, rho_init, ux=None, uy=None):
+def _init_new_2d(
+    f, flags, mask, rho_init, ux=None, uy=None, init_mode=INIT_MODE_FIXED_RHO
+):
     """Reinitialize newly converted cells with a neighbour-averaged-velocity
-    equilibrium at ``rho_init`` (vectorized, no boolean sync)."""
+    equilibrium.
+
+    ``init_mode`` selects the density used for that equilibrium
+    (:mod:`.free_surface_init_modes`):
+
+    ``"fixed_rho"``         equilibrium at ``rho_init`` (historical default).
+    ``"average_surround"``  equilibrium at the *neighbour-averaged* active
+                            density and velocity (OSS
+                            ``Maarten-vd-Sande/lbm::average_surround``).
+
+    ``rho_init=None`` keeps the historical waLBerla ``EquilibriumRefilling``
+    semantics (neighbour-averaged density, zero fallback for an isolated cell)
+    and therefore forces ``"average_surround"``.
+    """
+    mode = normalize_init_mode(init_mode)
     if ux is None or uy is None:
         _, ux, uy = macroscopic(f)
-    active = (flags == LIQUID) | (flags == INTERFACE)
-    nb = torch.stack(_neighbor_masks(active)).to(f.dtype)
-    cnt = nb.sum(dim=0).clamp(min=1.0)
-    ux_nb = torch.stack([_roll_from_pull(ux, q) for q in _MOVING_Q]) * nb
-    uy_nb = torch.stack([_roll_from_pull(uy, q) for q in _MOVING_Q]) * nb
-    ux_m = ux_nb.sum(dim=0) / cnt
-    uy_m = uy_nb.sum(dim=0) / cnt
     if rho_init is None:
-        # Neighbour-averaged *active* density (waLBerla EquilibriumRefilling).
-        rho = f.sum(0)
-        rho_nb = (torch.stack([_roll_from_pull(rho, q) for q in _MOVING_Q]) * nb).sum(dim=0) / cnt
-        rho_field = torch.where(nb.sum(dim=0) > 0, rho_nb, torch.zeros_like(rho_nb))
+        # historical path: averaged density with a zero isolated-cell fallback
+        rho_ref = torch.zeros_like(ux)
+        mode = INIT_MODE_AVERAGE_SURROUND
     elif isinstance(rho_init, torch.Tensor):
-        rho_field = rho_init.to(f.dtype)
+        rho_ref = rho_init.to(f.dtype)
     else:
-        rho_field = torch.full_like(ux, float(rho_init))
-    feq = equilibrium(rho_field, ux_m, uy_m)
-    return torch.where(mask.unsqueeze(0), feq, f)
+        rho_ref = float(rho_init)
+    active = (flags == LIQUID) | (flags == INTERFACE)
+    return birth_population(
+        f,
+        mask,
+        rho_ref,
+        ux,
+        uy,
+        None,
+        mode=mode,
+        equilibrium_fn=equilibrium,
+        active=active,
+        liquid_flag=LIQUID,
+        interface_flag=INTERFACE,
+        shifts=D2Q9_SHIFTS,
+    )
 
 
 def _conservative_clamp(field, upper, weight=None):
@@ -266,7 +296,17 @@ def _conservative_clamp(field, upper, weight=None):
 
 
 def _address_interface_layer(
-    flags, mass, f, solid_mask, rho_liquid, ux, uy, recv_new=None, to_gas=None, rho=None
+    flags,
+    mass,
+    f,
+    solid_mask,
+    rho_liquid,
+    ux,
+    uy,
+    recv_new=None,
+    to_gas=None,
+    rho=None,
+    init_mode=INIT_MODE_LEGACY,
 ):
     """Conversion-driven envelope + LIQUID demotion (no halo sweep, no isolation).
 
@@ -287,7 +327,16 @@ def _address_interface_layer(
         rho = torch.full_like(mass, float(rho_liquid))
     rho_reset = rho.to(mass.dtype)
     to_i = recv_new & (flags == GAS) & ~solid_mask
-    f = _init_new_2d(f, flags, to_i, None, ux=ux, uy=uy)
+    # Site default is the historical waLBerla EquilibriumRefilling (averaged
+    # density, zero fallback).  An explicit solver-level mode re-selects the
+    # density and, for ``average_surround``, the liquid-scale fallback.
+    site_mode = resolve_birth_mode(init_mode, site="envelope")
+    # A shell with no active neighbour still carries kept conversion mass and
+    # must be refilled at liquid scale (zero fallback -> zero PDFs and
+    # ``fill = mass / rho`` blowing up through the density clamp), hence the
+    # ``rho_liquid`` fallback for an explicit mode.
+    rho_ref = None if init_mode == INIT_MODE_LEGACY else rho_liquid
+    f = _init_new_2d(f, flags, to_i, rho_ref, ux=ux, uy=uy, init_mode=site_mode)
     flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
     rho_fill = torch.where(to_i, f.sum(dim=0).clamp(min=1e-6), rho_reset)
     _liq_adj_new_gas = torch.stack(_neighbor_masks(to_gas)).any(dim=0)
@@ -321,6 +370,7 @@ def koerner_step_2d(
     y_wall_mask=None,
     free_slip_mask=None,
     free_slip_all=False,
+    init_mode=INIT_MODE_LEGACY,
 ):
     """One faithful Körner free-surface timestep (D2Q9).
 
@@ -341,6 +391,15 @@ def koerner_step_2d(
         Blend of the interface-cell body-force weight between the Körner reference
         (``fill``, alpha = 0, default) and the inertia-consistent value (``1``,
         alpha = 1).  Opt-in phase-calibration lever, default-off.
+    ``init_mode``
+        Birth-state density for newly created INTERFACE cells
+        (:mod:`.free_surface_init_modes`): ``"legacy"`` (default) keeps the
+        historical asymmetry — envelope shells at the neighbour-averaged
+        density, conversion births at ``rho_liquid``; ``"fixed_rho"`` uses
+        ``rho_liquid`` at both sites; ``"average_surround"`` uses the
+        neighbour-averaged density at both sites (OSS
+        ``average_surround`` semantics, liquid-scale isolated-cell fallback).
+
     ``interface_pressure_policy``
         ``"const"`` (default, legacy Körner/waLBerla behaviour) applies the
         atmospheric pressure at the *centre* of an interface cell; ``"subcell"``
@@ -561,7 +620,15 @@ def koerner_step_2d(
     ).sum(dim=0)
 
     # A newly born GAS->INTERFACE cell needs a valid population set.
-    f = _init_new_2d(f, flags, to_iface, rho_liquid, ux=ux, uy=uy)
+    f = _init_new_2d(
+        f,
+        flags,
+        to_iface,
+        rho_liquid,
+        ux=ux,
+        uy=uy,
+        init_mode=resolve_birth_mode(init_mode, site="conversion"),
+    )
     flags = torch.where(to_iface, torch.full_like(flags, INTERFACE), flags)
 
     mass = mass + redistribution_increment
@@ -587,6 +654,7 @@ def koerner_step_2d(
         recv_new=recv_new,
         to_gas=to_gas,
         rho=rho_new,
+        init_mode=init_mode,
     )
     fill_t = torch.where(flags == INTERFACE, mass / rho_fill.clamp(min=1e-6), fill_t)
     fill_t = torch.where(flags == LIQUID, torch.ones_like(fill_t), fill_t)
@@ -622,8 +690,13 @@ def free_surface_step_2d(
     cell_conversion_force_threshold=0.1,
     free_slip_mask=None,
     free_slip_all=False,
+    init_mode=INIT_MODE_LEGACY,
 ):
     """One 2D free-surface timestep (D2Q9) — faithful Körner model.
+
+    ``init_mode`` is forwarded to :func:`koerner_step_2d` (birth-state density
+    of newly created INTERFACE cells, see
+    :mod:`tensorlbm.free_surface_init_modes`).
 
     ``fill`` indexes the independent mass ledger via ``mass = fill * rho_local``
     when ``mass`` is not supplied.  The returned ``fill`` is ``mass / rho_local``
@@ -652,6 +725,7 @@ def free_surface_step_2d(
         y_wall_mask=y_wall_mask,
         free_slip_mask=free_slip_mask,
         free_slip_all=free_slip_all,
+        init_mode=init_mode,
     )
     if return_mass:
         return f, mass, flags
