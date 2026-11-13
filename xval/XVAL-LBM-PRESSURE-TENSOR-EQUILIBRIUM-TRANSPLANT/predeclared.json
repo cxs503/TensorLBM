@@ -1,0 +1,66 @@
+{
+  "anchor": "XVAL-LBM-PRESSURE-TENSOR-EQUILIBRIUM-TRANSPLANT",
+  "mission": 18195,
+  "repo": "TensorLBM",
+  "oss_reference": {
+    "repo": "sailfish-team/sailfish",
+    "commit": "b7140c580e1f4cb406dde947c8d8d5a8a6b2d79e",
+    "files": [
+      "sailfish/sym_equilibrium.py:16-49 (free_energy_equilibrium_fluid)",
+      "sailfish/sym_equilibrium.py:51-83 (free_energy_equilibrium_order_param)",
+      "sailfish/lb_binary.py:224-259 (D2Q9 wi/wxx/wyy/wxy)",
+      "sailfish/templates/finite_difference_optimized.mako:46-48 (9-point grad/lap)"
+    ],
+    "retrieval": "ref/sailfish_src (sha256 pinned in ref/provenance.json); formulas re-derived symbolically by derive_oss_pressure_tensor.py, never transcribed by hand"
+  },
+  "decision": "Adopt the OSS pressure-tensor-equilibrium recipe as the TensorLBM route for measuring mechanical pressure / surface tension directly from the populations, or keep the existing explicit-Korteweg-force route and measure pressure post hoc.",
+  "alternatives": [
+    "A_oss_transplant: equilibrium carries the free-energy pressure tensor (sailfish recipe); pressure read as sum_i f_i c_ia c_ib - rho u_a u_b",
+    "B_tl_force: standard BGK equilibrium + explicit Korteweg force mu grad(phi) (TensorLBM phasefield route); pressure read as cs^2 rho"
+  ],
+  "hypothesis": "The OSS equilibrium reproduces the continuum free-energy pressure tensor exactly (machine-precision second-moment closure), and the pressure read off the populations then reproduces surface tension and the normal-stress flatness condition while the force-based route cannot expose a mechanical pressure at all.",
+  "metrics": {
+    "closure_residual": "max_ab |sum_i f_i^eq c_ia c_ib - (P_ab + rho u_a u_b)| (absolute, lattice units)",
+    "sigma_rel_error": "(sigma_measured - (2/3) sqrt(2 kappa A)) / (2/3) sqrt(2 kappa A)",
+    "dpnn_residual": "max |d P_NN / dn| over the bulk region (mechanical equilibrium => 0)",
+    "spurious_speed": "max |u| after N BGK steps with frozen phi",
+    "order_param_closure": "|sum_i g_i - phi| and |sum_i g_i c_ix - phi u_x|"
+  },
+  "baseline_control": {
+    "A_oss_transplant": "analytic closed forms of the same free-energy functional: sigma = (2/3) sqrt(2 kappa A), xi = sqrt(2 kappa / A), P_NN = const, and the symbolic identity from derive_oss_pressure_tensor.py (independent of the torch implementation)",
+    "B_tl_force": "same fields, same operators, same measurement functions -- the only changed variable is where the Korteweg stress lives (equilibrium vs force term)"
+  },
+  "predeclared_thresholds": {
+    "closure_residual_max": 1e-12,
+    "sigma_rel_error_max": 0.15,
+    "sigma_rel_error_target": 0.03,
+    "dpnn_residual_bulk_max_ratio_to_A": 0.05,
+    "order_param_closure_max": 1e-12,
+    "verdict_rule": "G1 closure + G2 sigma(<15%) + G3 order-parameter closure must pass for the transplant to be accepted as OSS-consistent; G2 is evaluated on the resolved-interface subset xi >= 2 (xi = 1 is recorded as an under-resolution failure mode, not as a pass)",
+    "note": "Thresholds follow the owner precision standard (15% unacceptable above) and machine-precision algebra (1e-12); they were fixed before the sweep. No threshold was relaxed after seeing results."
+  },
+  "variables": {
+    "controlled": ["A (double-well amplitude)", "kappa (gradient penalty)", "rho0 (uniform density, quench)", "tau (fluid relaxation)", "grid / periodic wrap", "dtype float64", "torch CPU"],
+    "changed": ["xi = sqrt(2 kappa/A) interface width", "R droplet radius", "tau", "equilibrium recipe (A vs B arm)"],
+    "confounders": [
+      "interface under-resolution (xi < 2) biases sigma low -- separated by the xi sweep instead of being averaged away",
+      "radial binning of the droplet profile adds O(1/R) noise to sigma -- separated by the R sweep",
+      "frozen phi (quench) removes Cahn-Hilliard transport, so none of the above measures the phi-transport accuracy"
+    ]
+  },
+  "sensitivity_plan": [
+    "xi sweep at fixed A: xi in {1, 1.5, 2, 3, 4} -> sigma error vs resolution (convergence)",
+    "R sweep at fixed xi: R in {10, 12, 16, 24} -> curvature effect on sigma error",
+    "tau sweep at fixed xi, R: tau in {0.6, 0.8, 1.0, 1.5} -> spurious current / stability of the transplanted equilibrium",
+    "A sweep at fixed xi: A in {0.05, 0.1, 0.2} -> sigma scaling vs sqrt(A)"
+  ],
+  "repetition_rationale": "The experiment is deterministic (fixed fields, no randomness, float64 CPU): repetition is unnecessary, and instead the parameter axes above are swept so that the reported error is a function of resolution/curvature rather than a single number.",
+  "analysis_plan": "Report every point (no outlier removal). sigma error sign convention negative = measured below analytic. Aggregation: per-run values; the sweep summary quotes the resolved-interface subset. Uncertainty: the xi -sweep gives the discretisation trend; no statistical error bars are claimed for a deterministic scheme.",
+  "environment": "python 3, torch CPU float64, numpy, sympy, matplotlib; reproducible with `python xval/XVAL-LBM-PRESSURE-TENSOR-EQUILIBRIUM-TRANSPLANT/run_xval.py`",
+  "safety_resource_limits": "no cluster job needed: the whole sweep is <10 s of CPU; no file outside the worktree is written except /tmp report payloads",
+  "interpretation_limits": [
+    "only the D2Q9 branch of the OSS model is transplanted (D3Q19 branch differs only in the wxx/wyy/wzz/wxy/wxz/wyz tables; not exercised here)",
+    "quench (frozen phi) tests the *equilibrium* semantics only; phi transport (g-population collision rate Gamma) is out of scope and recorded as such",
+    "dp_bulk is identically zero for the symmetric double well: the Laplace law is *not* testable as a bulk pressure jump in this model variant, so no Laplace percentage is claimed"
+  ]
+}
