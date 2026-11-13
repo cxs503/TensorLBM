@@ -1,0 +1,204 @@
+stages:
+  - "Code Quality"
+  - "Unit Tests"
+  - "Reporting"
+  - "Prerelease-Tests"
+  - integration
+  - nightly
+  - docs
+  - deploy
+
+# -------------------- Code Quality ---------------------------------------------------------------------
+
+.qa-base:
+  stage: "Code Quality"
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/nox:alpine
+  needs: []
+  except:
+    variables:
+      - $ENABLE_NIGHTLY_BUILDS
+  tags:
+    - docker
+
+lint:
+  extends: .qa-base
+  script:
+    - nox -s lint
+
+
+# --------------------------  Tests --------------------------------------------------------------------------------
+
+.testsuite-base:
+  stage: "Unit Tests"
+  needs: []
+  before_script:
+    - mkdir -p ~/.config/matplotlib
+    - echo "backend:template" > ~/.config/matplotlib/matplotlibrc
+  after_script:
+    - mv .coverage .coverage.${CI_JOB_ID}
+  artifacts:
+    when: always
+    paths:
+      - .coverage.*
+      - test-report
+    reports:
+      junit: report.xml
+
+testsuite-cuda-py3.10:
+  extends: .testsuite-base
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/nox:ubuntu24.04-cuda12.6
+  script:
+    - nox -s "testsuite-3.10(cupy)"
+  tags:
+    - docker
+    - cuda
+    - cudaComputeCapability6.1
+    - AVX
+
+
+testsuite-cpu-py3.13:
+  extends: .testsuite-base
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/nox:alpine
+  script:
+    - nox -s "testsuite-3.13(cpu)"
+  tags:
+    - docker
+    - AVX
+
+
+# -------------------- Reporting -------------------------------------------------------------------------
+
+coverage-report:
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/nox:alpine
+  stage: "Reporting"
+  script:
+    - nox -s "coverage_report"
+  coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
+  tags:
+    - docker
+  artifacts:
+    when: always
+    paths:
+      - coverage_report
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+
+# --------------------------  Nightly and Pre-Release Tests --------------------------------------------------------------------------------
+
+minimal-sympy-master:
+  stage: "Prerelease-Tests"
+  needs: []
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/nox:alpine
+  script:
+    - nox -s quicktest -P 3.13 -- --sympy-master
+  allow_failure: true
+  tags:
+    - docker
+
+# pycodegen-integration:
+#   image: i10git.cs.fau.de:5005/pycodegen/pycodegen/full
+#   stage: integration
+#   when: manual
+#   allow_failure: true
+#   script:
+#     - env
+#     - pip list
+#     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pycodegen.git
+#     - cd pycodegen
+#     - git submodule sync --recursive
+#     - git submodule update --init --recursive
+#     - git submodule foreach git fetch origin   # compare the latest master version!
+#     - git submodule foreach git reset --hard origin/master
+#     - cd lbmpy
+#     - git remote add test $CI_REPOSITORY_URL
+#     - git fetch test
+#     - git reset --hard $CI_COMMIT_SHA
+#     - cd ..
+#     - pip install -e pystencils/
+#     - pip install -e lbmpy/
+#     - ./install_walberla.sh
+#     # build all integration tests
+#     - cd walberla/build/
+#     - make -j $NUM_CORES MicroBenchmarkGpuLbm LbCodeGenerationExample
+#     - cd apps/benchmarks/UniformGridGPU
+#     - make -j $NUM_CORES
+#     - cd ../UniformGridCPU
+#     - make -j $NUM_CORES
+
+#   tags:
+#     - docker
+#     - cuda
+#     - cudaComputeCapability6.1
+#     - AVX
+
+
+# -------------------- Scheduled Tasks --------------------------------------------------------------------------
+
+
+nightly-sympy:
+  stage: nightly
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/latest_python
+  before_script:
+    - pip install -e .
+    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pystencils.git@master#egg=pystencils
+    - pip install --upgrade --pre sympy
+  script:
+    - env
+    - pip list
+    - export NUM_CORES=$(nproc --all)
+    - mkdir -p ~/.config/matplotlib
+    - echo "backend:template" > ~/.config/matplotlib/matplotlibrc
+    - mkdir public
+    - pytest -v -n $NUM_CORES -m "not longrun" --junitxml=report.xml
+  tags:
+    - docker
+    - AVX
+    - cuda
+    - cudaComputeCapability6.1
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+
+
+# -------------------- Documentation and deploy ------------------------------------------------------------------------
+
+build-documentation:
+  stage: docs
+  needs: []
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/documentation
+  before_script:
+    - pip install -e .
+  script:
+    - export PYTHONPATH=`pwd`
+    - pip install git+https://gitlab-ci-token:${CI_JOB_TOKEN}@i10git.cs.fau.de/pycodegen/pystencils.git@master#egg=pystencils
+    - mkdir html_doc
+    - sphinx-build -W -b html doc html_doc
+  tags:
+    - docker
+    - cuda
+    - cudaComputeCapability6.1
+  artifacts:
+    paths:
+      - html_doc
+
+
+pages:
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/full
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_PROJECT_PATH == "pycodegen/lbmpy" && $CI_COMMIT_BRANCH == "master"'
+  stage: deploy
+  needs: ["coverage-report", "build-documentation"]
+  script:
+    - mv html_doc public
+    - mv coverage_report public/coverage_report
+  artifacts:
+    paths:
+      - public
+  tags:
+    - docker

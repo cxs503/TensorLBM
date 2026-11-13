@@ -1,0 +1,20 @@
+{
+  "gitlab_ci": {
+    "url": "https://i10git.cs.fau.de/pycodegen/lbmpy/-/raw/master/.gitlab-ci.yml",
+    "path": "xval/gitlab_ci_staged_gates/oss_refs/lbmpy.gitlab-ci.yml",
+    "sha256": "f58d67782f15b5d910f30036ddd86fad37bacf92b65f5a0d3d9fa3aa5520152d",
+    "source": "cache"
+  },
+  "noxfile": {
+    "url": "https://i10git.cs.fau.de/pycodegen/lbmpy/-/raw/master/noxfile.py",
+    "path": "xval/gitlab_ci_staged_gates/oss_refs/lbmpy.noxfile.py",
+    "sha256": "b310529c71d8deba9d4a5015ad019f2a77c06a872e5da2a7bb11cc6de4aba21d",
+    "source": "cache"
+  },
+  "pyproject": {
+    "url": "https://i10git.cs.fau.de/pycodegen/lbmpy/-/raw/master/pyproject.toml",
+    "path": "xval/gitlab_ci_staged_gates/oss_refs/lbmpy.pyproject.toml",
+    "sha256": "3ca6d8edb413993dd73e0b046c6c777761e93d1ba025d200bc5b5379575d748c",
+    "source": "cache"
+  }
+}
