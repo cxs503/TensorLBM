@@ -162,6 +162,14 @@ class GPUCorePathConfig:
     seed, perturbation_amplitude:
         Optional random perturbation of the initial field, relative to
         ``u_max_target`` (0.0 keeps the case strictly deterministic).
+    wall_bc:
+        Wall closure on the two ``y`` planes:
+        ``"halfway"`` (default, classic half-way bounce-back, unchanged
+        behaviour) or ``"nebb"`` (force-corrected non-equilibrium bounce-back
+        from :mod:`tensorlbm.boundary.nebb`: wall density recovered from the
+        field, wall velocity shifted by ``-a/(2 rho_w)`` so that it is
+        consistent with the Guo body force).  ``"nebb"`` runs on the eager
+        backend (the compiled kernel only implements ``"halfway"``).
     """
 
     nx: int = 32
@@ -178,6 +186,7 @@ class GPUCorePathConfig:
     steps: int = 3000
     warmup_steps: int = 0
     label: str = "gpu_core_path"
+    wall_bc: str = "halfway"
 
     # -- derived physics ------------------------------------------------
     @property
@@ -239,6 +248,8 @@ class GPUCorePathConfig:
             raise ValueError("warmup_steps must be in [0, steps)")
         if self.perturbation_amplitude < 0.0:
             raise ValueError("perturbation_amplitude must be >= 0")
+        if self.wall_bc not in ("halfway", "nebb"):
+            raise ValueError(f"unknown wall_bc {self.wall_bc!r}")
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -258,6 +269,7 @@ class GPUCorePathConfig:
             "init": self.init,
             "steps": self.steps,
             "label": self.label,
+            "wall_bc": self.wall_bc,
         }
 
 
@@ -355,6 +367,38 @@ def apply_channel_walls(f: torch.Tensor, f_post: torch.Tensor) -> torch.Tensor:
     return f
 
 
+def apply_channel_walls_nebb(
+    f: torch.Tensor,
+    cfg: GPUCorePathConfig,
+    C_: torch.Tensor,
+    W_: torch.Tensor,
+) -> torch.Tensor:
+    """Force-corrected NEBB walls on the two wall rows (``j = 0``, ``j = ny-1``).
+
+    Wall-node closure: the no-slip planes *are* the wall rows, so the channel
+    width becomes ``H = ny - 1`` (instead of ``ny - 2`` for the half-way
+    bounce-back) and the wall value of ``ux`` is part of the solution.  The
+    wall velocity fed to the equilibrium is ``-a/(2 rho_w)`` (``a`` =
+    body-force acceleration, ``rho_w`` = wall density recovered from the
+    field) — the force correction the Guo collision expects of a no-slip
+    wall.  Use :func:`channel_analytic_velocity_nebb` for the matching
+    reference profile.
+    """
+    from .boundary.nebb import nebb_wall_plane, wall_density, wall_directions
+
+    a = cfg.effective_body_force
+    for row, sign in ((0, -1), (cfg.ny - 1, +1)):
+        dirs = wall_directions(C_, sign)
+        rho_w = wall_density(f, row, dirs)
+        zeros = torch.zeros_like(rho_w)
+        ux_w = zeros - (a / (2.0 * rho_w) if a else 0.0)
+        nebb_wall_plane(
+            f, row, sign, rho_w, ux_w, zeros.to(f.dtype),
+            C=C_, W=W_, OPP=OPPOSITE,
+        )
+    return f
+
+
 def core_step(
     f: torch.Tensor,
     f_post: torch.Tensor,
@@ -372,6 +416,8 @@ def core_step(
     stream_into(f_post, f_out)
     if cfg.init == "taylor_green":
         return f_out  # fully periodic case, no walls
+    if cfg.wall_bc == "nebb":
+        return apply_channel_walls_nebb(f_out, cfg, C_, W_)
     return apply_channel_walls(f_out, f_post)
 
 
@@ -409,6 +455,20 @@ def channel_analytic_velocity(cfg: GPUCorePathConfig) -> tuple[torch.Tensor, tor
     s = torch.clamp(y - 0.5, min=0.0, max=cfg.height)
     u = cfg.body_force / (2.0 * cfg.nu) * s * (cfg.height - s)
     return y, u
+
+
+def channel_analytic_velocity_nebb(cfg: GPUCorePathConfig) -> tuple[torch.Tensor, torch.Tensor]:
+    """Analytic Poiseuille profile on the ``wall_bc="nebb"`` node grid.
+
+    With wall-node closure the no-slip planes coincide with the wall rows, so
+    the profile ``ux(y) = a/(2 nu) y (H - y)`` uses ``H = ny - 1`` and every
+    row ``y = 0 .. ny-1`` (including the two wall rows, where it vanishes).
+    Returns ``(y, ux_profile)`` with ``ux_profile`` shaped ``(ny,)``.
+    """
+    H = float(cfg.ny - 1)
+    y = torch.arange(cfg.ny, dtype=torch.float64)
+    prof = cfg.body_force / (2.0 * cfg.nu) * y * (H - y)
+    return y, prof
 
 
 def taylor_green_analytic_energy(cfg: GPUCorePathConfig, t: Any) -> Any:
@@ -477,6 +537,10 @@ class GPUCorePathSolver:
         self._f_store: torch.Tensor | None = None
         if self.store_dtype != self.compute_dtype:
             self._f_store = torch.zeros(shape, dtype=self.store_dtype)
+
+        if cfg.wall_bc != "halfway" and self.backend != "eager":
+            self.backend = "eager"
+            self.backend_note = f"wall_bc={cfg.wall_bc} runs on the eager backend"
 
         self._compiled_fn = None
         self._step_fn: Callable[[], None] = (
