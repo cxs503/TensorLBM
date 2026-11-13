@@ -12,6 +12,9 @@ Functions
 - :func:`random_porosity_mask_3d` – Gaussian-correlated 3-D random porous mask.
 - :func:`compute_q_generic_3d`   – Bouzidi *q*-field for any voxelised 3-D
   solid on the D3Q19 lattice (q = 0.5 halfway convention).
+- :func:`palabos_geometry_tags`  – MPLBM-UT-style compressed geometry tags
+  (EDT two-class segmentation, Palabos codes 2608..2611) for a voxelised mask;
+  the solver-facing bridge to :mod:`tensorlbm.edt_geometry_tags`.
 """
 
 from __future__ import annotations
@@ -32,6 +35,7 @@ __all__ = [
     "random_porosity_mask_2d",
     "random_porosity_mask_3d",
     "compute_q_generic_3d",
+    "palabos_geometry_tags",
     "poly_to_mask_and_q_2d",
     "repair_stl",
     "build_near_wall_refinement_mask",
@@ -899,3 +903,81 @@ def build_near_wall_refinement_mask(
         thickness *= growth_ratio
 
     return refinement
+
+
+def palabos_geometry_tags(
+    obstacle_mask,
+    *,
+    num_slices: int = 0,
+    swap_xz: bool = False,
+    nw_mask=None,
+    grain_ids=None,
+    depth_split: float = 2.0,
+    geom_name: str = "geom",
+    device=None,
+):
+    """MPLBM-UT-style compressed geometry tags for a voxelised solid mask.
+
+    Solver-facing adapter around
+    :func:`tensorlbm.edt_geometry_tags.build_geometry_tags`: the boolean mask
+    produced by :func:`voxelize_stl_3d` / :func:`poly_to_mask_2d` (or any
+    NumPy/PyTorch solid mask) is turned into
+
+    * a ``torch.int16`` Palabos geometry (2608 pore / 2609 boundary /
+      2610 grain / 2611 non-wetting seeds) ready to be dumped for Palabos or
+      consumed by :func:`~tensorlbm.multiphase3d.wall_adhesion_force_3d`, and
+    * a ``torch.float32`` depth field (EDT distance to the nearest fluid
+      voxel, 1 for the boundary layer, 2 for the interior) used for
+      near-wall refinement and mixed-wettability bookkeeping.
+
+    Args:
+        obstacle_mask: solid mask ``(nz, ny, nx)``, NumPy or Torch, True = grain.
+        num_slices: empty (pore) slices prepended/appended along the
+            streamwise axis for pressure boundary conditions.
+        swap_xz: transpose ``[2, 1, 0]`` before processing.
+        nw_mask: optional mask whose ``==3`` entries seed the non-wetting phase.
+        grain_ids: optional integer per-grain label field on solid nodes; the
+            compressed side channel is returned in ``meta["grain_ids"]``.
+        depth_split: boundary/interior threshold in cells (MPLBM-UT: 2).
+        geom_name: geometry base name (size suffix appended).
+        device: torch device of the returned tensors (default: input's device).
+
+    Returns:
+        ``(tags, depth, meta)`` — ``tags`` is ``torch.int16``, ``depth`` is
+        ``torch.float32`` with the same shape as ``tags``, ``meta`` is the JSON
+        summary from :func:`build_geometry_tags` (compression stats included).
+    """
+    from .edt_geometry_tags import build_geometry_tags
+
+    if isinstance(obstacle_mask, torch.Tensor):
+        dev = obstacle_mask.device if device is None else torch.device(device)
+        solid_np = obstacle_mask.detach().cpu().numpy().astype(bool)
+    else:
+        dev = torch.device(device or "cpu")
+        solid_np = np.asarray(obstacle_mask, dtype=bool)
+
+    def _np(x):
+        if x is None:
+            return None
+        if isinstance(x, torch.Tensor):
+            return x.detach().cpu().numpy()
+        return np.asarray(x)
+
+    geo = build_geometry_tags(
+        solid_np,
+        num_slices=num_slices,
+        swap_xz=swap_xz,
+        depth_split=depth_split,
+        nw_mask=_np(nw_mask),
+        grain_ids=_np(grain_ids),
+        geom_name=geom_name,
+    )
+    depth = geo.distance
+    if num_slices:
+        depth = np.pad(depth, [(num_slices, num_slices), (0, 0), (0, 0)], mode="constant")
+    tags_t = torch.as_tensor(geo.tags, dtype=torch.int16, device=dev)
+    depth_t = torch.as_tensor(depth, dtype=torch.float32, device=dev)
+    meta = dict(geo.meta)
+    meta["counts"] = geo.counts()
+    meta["fractions"] = geo.fractions()
+    return tags_t, depth_t, meta
