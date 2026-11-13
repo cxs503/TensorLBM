@@ -1,0 +1,113 @@
+{
+  "anchor": "XVAL-LBM-SHAN-CHEN-MCMP-VELOCITY-MIXING",
+  "round": 1,
+  "frozen_at": "before any arm was executed (this file is committed with the design only; results land in artifacts/result.json)",
+  "decision": {
+    "question": "TensorLBM ships three equilibrium-velocity conventions for the two-component Shan-Chen path (u_eq = 'self' | 'mixture' | 'viscous'). sorush-khajepor/listLBM ships a fourth one, documented as 'velocity mixing, no source term'. Which of our conventions is semantically the same object as the OSS one, and may we adopt the OSS one (or any part of it) as-is?",
+    "supported_decision": "Either (a) keep u_eq='mixture' as the documented default for MCMP and record the OSS path as an equivalent-but-worse-normalised variant, or (b) replace it with the OSS path. The porting trade-off list in the report is what the default must be defended with.",
+    "alternatives_considered": [
+      "A1 adopt listLBM literal velocity mixing as the library default",
+      "A2 keep TensorLBM 'mixture' (mass-averaged / Shan-Doolen) and merely document the OSS variant",
+      "A3 keep TensorLBM 'self' (per-component) as default",
+      "A4 keep 'viscous' (Martys) as default"
+    ]
+  },
+  "hypothesis": {
+    "H1_equivalence": "At tau=1 the OSS mixing rule reading 'the force enters the mixture momentum as the TOTAL force' (LBM4) and TensorLBM u_eq='mixture' (GOT-MIX) build the same equilibrium velocity up to one term, (F1+F2)/(rho1+rho2): a pure discrete gradient of rho1*rho2. Prediction: physical observables (surface tension, coexistence densities, stratified-channel flow rate) agree within 15% (owner criterion), and are expected within a few percent.",
+    "H2_normalisation": "The OSS mixing rule reading 'the force enters the mixture momentum per component' (LBM3, the literal per-component reading of mcmp_mod.f90) inserts F_sigma/(rho1+rho2) into BOTH components' equilibrium with only one component's force, i.e. the documented inconsistency of the inventory entry. Prediction: it does NOT conserve global momentum (a per-cell source rho1*F1/rho_tot + rho2*F2/rho_tot with non-zero box sum) and its spurious-current level differs from GOT-MIX.",
+    "H3_shift_coefficient": "The OSS scheme is 'no source term': the equilibrium velocity is shifted by F_sigma/rho_sigma with coefficient 1, not by tau*F_sigma/rho_sigma. For the velocity-shift family the momentum delivered per step is s*F/tau, so at tau=1 the two coincide exactly and at tau!=1 the OSS form delivers F/tau (33% excess at tau=0.75). Prediction: at tau=1 LBM4 and GOT-MIX agree; at tau_upper=0.75 the OSS arm overshoots the analytic two-layer Poiseuille by ~1/tau-1 unless the coefficient is tau.",
+    "H4_guard": "The OSS 'u=0 if rho_1+rho_2 too small' guard and our clamp(rho_tot, min=1e-12) are both protective but not equivalent; the guard is the safer of the two and is the one piece worth porting regardless of the mixing verdict."
+  },
+  "arms": {
+    "GOT-MIX": "tensorlbm.multiphase.collide_sc_two_component(u_eq='mixture', force_scheme='shift'): u_eq_sigma = (sum_s rho_s u_s)/rho_tot + tau_sigma F_sigma/rho_sigma.",
+    "GOT-SELF": "same call with u_eq='self' (the legacy / current default of the library): u_eq_sigma = u_sigma + tau_sigma F_sigma/rho_sigma. Contrast arm, not an OSS port.",
+    "LBM4": "OSS reading A (faithful): u = [sum_s rho_s u_s + (F_1+F_2)]/rho_tot + F_sigma/rho_sigma, shift coefficient 1, guard u=0 where rho_tot < 1e-6.",
+    "LBM3": "OSS reading B (literal per-component force inside the mixture momentum): u = [sum_s rho_s u_s + F_sigma]/rho_tot + F_sigma/rho_sigma, shift coefficient 1, same guard.",
+    "LBM4-TAU": "factor-isolation arm: OSS reading A with the shift coefficient set to tau_sigma instead of 1 (separates H1 from H3).",
+    "CTRL-NORM": "deliberate defect injection, must fail: TensorLBM barycentric mixing but with the force shift normalised by the TOTAL density (tau*F_sigma/rho_tot) instead of the component density - the documented OSS-style mis-normalisation transplanted into our path. Proves the metric has teeth.",
+    "LIB-ENTRY": "control on the harness itself: the shipped library entry point tensorlbm.cases.two_layer_poiseuille.run_two_layer_poiseuille at the same configuration as GOT-MIX; agreement with GOT-MIX proves the shared run loop in this harness is not a re-typed substitute for the library solver."
+  },
+  "workloads": {
+    "W1_static_droplet": "circular droplet of component 1 in a component-2 bath, periodic n=64, tanh interface w=2, relaxed until |u_mix|_max plateaus. Measures the parasitic-current level (velocity-mixing sensitive) and Young-Laplace consistency sigma = dp*R over R in {8,12,16} at G_12=-2.5.",
+    "W2_stratified_poiseuille": "two immiscible components in a plane channel (X-periodic, no-slip walls on rows 0 and ny-1), driven by a uniform body force per unit mixture volume, G_x=5e-5, G_12=-2.5, mirror wall. Compared with the closed-form two-layer co-moving Poiseuille solution in cases/mcmp_stratified_poiseuille/analytic.py (velocity and shear stress continuous at the interface, H=ny-2 halfway wall convention).",
+    "W3_momentum_ledger": "closed periodic box with a diffuse interface, no body force, 400 steps: global momentum sum_s sum_i sum_x c_i f_s and its per-step drift, plus the box sum of (F1+F2) and of (F1 rho1 + F2 rho2). Direct discriminator of H2.",
+    "W4_near_vacuum_guard": "a single collision on a field in which both components are ~1e-8 in one cell (a depleted/vapour pocket): finite-output check of the OSS guard vs the library clamp."
+  },
+  "metrics": {
+    "primary": "relative deviation between GOT-MIX and the OSS arm, per observable: sigma (surface tension from dp*R), u_max_spurious, Poiseuille u_max / volume flux Q / profile L2. |dev| <= 15% = acceptable (owner precision standard).",
+    "ground_truth_checks": [
+      "Young-Laplace: sigma = dp*R must be radius independent; residual = max_i |dp_i R_i - mean| / mean (percent).",
+      "Stratified Poiseuille: relative error of u_max and Q against analytic.py, in-house strict bound 3%.",
+      "Global momentum: |P(t)-P(0)| / |P(0)| and absolute per-step drift."
+    ],
+    "unit_of_analysis": "one (arm, workload, configuration) triple; no averaging across arms.",
+    "thresholds": {
+      "owner_accept": "observed relative deviation <= 15%",
+      "in_house_strict_poiseuille": "relative error vs analytic <= 3%",
+      "in_house_strict_laplace": "radius-consistency residual <= 5%",
+      "control_must_fail": "CTRL-NORM deviation >= 15% on at least one primary observable, otherwise the harness is falsified (see falsification)"
+    }
+  },
+  "repetitions": {
+    "note": "all workloads are deterministic (no RNG anywhere in the solver; initial fields are analytic tanh profiles), so repetition is replaced by configuration replication.",
+    "replication": {
+      "W1": "G_12 in {-2.0, -2.5, -3.0} at R=12, plus R in {8,12,16} at G_12=-2.5 (3+2 distinct, the R=12 point shared)",
+      "W2": "ny in {25,41} x G_12 in {-2.0,-2.5}, plus the tau_upper=0.75 sensitivity in the factor-separation block",
+      "W3": "one configuration, 400 steps",
+      "W4": "one configuration"
+    },
+    "rationale": "the quantity of interest is a deterministic solver output; the risk is not statistical noise but a lucky symmetric configuration, hence replication over coupling strength and grid resolution rather than seeds."
+  },
+  "variables": {
+    "changed": ["equilibrium-velocity convention (7 arms)", "G_12", "droplet radius / grid resolution ny", "tau_upper (1.0 vs 0.75) in the factor-separation block"],
+    "controlled": ["the inter-component force: every arm calls the SAME function tensorlbm.multiphase.sc_two_component_force with the same arguments, so only the mixing step differs", "streaming, bounce-back, initial fields, step count, dtype float32", "force form sc_form='standard' (the OSS backward-gather form) and wall_mode='mirror' in the primary matrix"],
+    "confounders_identified": [
+      "tau-shift coefficient (separated by the LBM4-TAU arm and the tau_upper sensitivity block)",
+      "wall model: listLBM uses fixed-density wet nodes, this harness uses the mirror wall; declared, not varied",
+      "pseudopotential: listLBM's interaction weights are 3x the lattice weights, i.e. their G is this G/3 up to a constant (a linear rescaling of G; no physics change). Value used here is ours, so their absolute G values are not comparable - only the mixing rule is being compared.",
+      "the OSS 'u = 0 when rho_tot small' guard is only active in depleted cells; measured separately in W4 instead of being allowed to mask W1/W2 differences"
+    ]
+  },
+  "analysis": {
+    "aggregation": "per-configuration, no averaging; deviations are computed as |a-b|/|b| with the ground truth or the GOT arm in the denominator (stated per table).",
+    "outliers": "none discarded; a diverged arm is reported as DIVERGED with its last finite state, never as a small error.",
+    "missing_data": "an arm that cannot run is reported SKIPPED with a reason; no re-implementation may be substituted for the library entry point (LIB-ENTRY arm must be the real shipped function).",
+    "stopping_rule": "stop when the predeclared matrix is complete; if a single workload exceeds 600 s wall clock, cut the resolution axis (documented) rather than the arm list, because the arm list carries the comparison."
+  },
+  "environment": {
+    "host": "loong64 control-plane container, CPU only (torch.cuda.is_available() == False)",
+    "torch": "2.7.1",
+    "python": "3.11.6",
+    "numpy/matplotlib": "available (figures generated with matplotlib)",
+    "upstream": {
+      "repo": "https://github.com/sorush-khajepor/listLBM",
+      "inventory_entry": 44,
+      "inventory_row": "oss_solutions (repo=sorush-khajepor/listLBM, feature_slug='shan-chen-mcmp-velocity-mixing'), dumped in-repo at xval/horizontal_survey_empty/data/oss_solutions_dump.csv line 40",
+      "cited_source_files": [
+        "collision/pseudopotential/mcmp_mod.f90:114-155 (velocity mixing + force accumulation)",
+        "collision/pseudopotential/mcmp_mod.f90:161-180 (canonical Guo path, NOT bound by the MCMP example)",
+        "collision/pseudopotential/mcmp_mod.f90:182-236",
+        "collision/pseudopotential/mcmp_mod.f90:239-246 (othercomp / othercomppotid index tables)",
+        "collision/pseudopotential/mcmp_mod.f90:248-278",
+        "collision/pseudopotential/mcmp_mod.f90:263 (per-pair G table)",
+        "examples/2d/drop_rise_mcmp_8boxes/main.f90:96-125"
+      ],
+      "access_note": "the upstream Fortran sources could not be fetched in this container (no outbound network; git clone of the upstream repo failed), so the port is a documented re-implementation from the inventoried method description + its file:line citations, NOT a vendored run. This is reported as ecosystem friction and as a limitation of the comparison.",
+      "licence": "listLBM is distributed as open source; nothing is copied verbatim here - the mixing algebra is re-derived from the inventoried description."
+    }
+  },
+  "safety_and_resources": {
+    "wall_clock_budget_per_workload_s": 600,
+    "cores": 1,
+    "dtype": "float32 (library default) - deviations below 1e-5 are reported as round-off, not as agreement",
+    "no_state_mutated": "the package code is read-only for this experiment; the arms live under xval/ and call the public library functions"
+  },
+  "deliverables": [
+    "artifacts/result.json (all arms, all configurations, programmatic, no hand-typed numbers)",
+    "artifacts/table.csv (deviation table generated by analyze.py)",
+    "figures/*.png (spurious-current profiles, Poiseuille profiles vs analytic, momentum ledger, deviation bars)",
+    "REPORT.md (six sections + OSS-vs-TensorLBM difference list + porting trade-offs)",
+    "tests/xval/test_mcmp_velocity_mixing_xval.py (re-runs the three load-bearing claims at reduced size so the verdict cannot rot)"
+  ],
+  "falsification": "the harness is falsified if CTRL-NORM (a one-line mis-normalisation) does not exceed the 15% deviation threshold, or if the LIB-ENTRY control disagrees with GOT-MIX (which would mean the harness does not actually run the library solver)."
+}
