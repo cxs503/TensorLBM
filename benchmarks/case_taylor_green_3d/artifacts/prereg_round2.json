@@ -1,0 +1,38 @@
+{
+ "node": "CASE-TAYLOR-GREEN-3D",
+ "round": 2,
+ "mission_id": 17543,
+ "repo": "TensorLBM",
+ "title": "Taylor-Green 3D decay round 2: attribution of the metric floor and a consistent (Chapman-Enskog) initial condition",
+ "declared": "written before any round-2 run was executed (round-1 artefacts were already public; they are the baseline being explained)",
+ "question": "Round 1 reported M2 (decay-exponent error) = 0.346-0.366 % at every grid and consecutive convergence orders of only 0.84-1.19 with a 'grid-independent error floor'. Is that floor a property of the D3Q27 solver, or of the case protocol (equilibrium initial condition + whole-history exponential fit)?",
+ "hypotheses": {
+  "H1_protocol_fit": "M2's whole-history least-squares fit of ln E(t) is inflated by the startup transient of the equilibrium initial condition; the asymptotic decay-rate error (slope of ln(E_num/E_exact)) is much smaller than M2.",
+  "H2_ic_floor": "The 'grid-independent floor' in M3 is the missing first-order Chapman-Enskog part of the initial condition: f = f^eq(u0) starts with zero viscous stress, an O(k^2) state error, so the L2 error scales like O(k^2) (order ~1) instead of O(k^3).",
+  "H3_repair": "Adding the first-order non-equilibrium part f^(1) = K w_i Q_iab S_ab removes that state error and restores second-order convergence of the L2 field error.",
+  "H4_ma_independence": "The residual decay-rate error is not compressibility-driven at these amplitudes (it should not scale as Ma^2)."
+ },
+ "metrics": {
+  "R1_M2_inflation": "ratio |M2_whole_history| / |delta_asym| at N=32, tau=0.6, A=2e-3, T=400; PASS iff >= 5.",
+  "R2_ic_repair": "reduction factor of the L2 field error at T=500 for N in {24,32,48}: eq-IC / CE-IC; PASS iff >= 5 at every grid.",
+  "R3_order_recovery": "observed order log2(E_L2(24)/E_L2(48)) with the CE-IC at T=500; PASS iff >= 1.8, and the minimum consecutive-pair order >= 1.7 (round-1 eq-IC consecutive orders were 0.84-1.19).",
+  "R4_rate_accuracy": "|delta_asym| at every tested (N, tau, A) point; PASS iff < 0.1 % everywhere (i.e. >= 3x better than the 8 % band and >= 3x better than round-1 M2).",
+  "R5_ma_scaling": "fitted log-log slope of |delta_asym| against the initial amplitude A over A in {2.5e-4, 2e-3, 2e-2} at N=32; H4 is supported iff slope < 1 (no Ma^2 domination). Reported as a number, no pass/fail band beyond this statement."
+ },
+ "protocol": {
+  "ic_variants": {
+   "eq": "f = f^eq(rho=1, u0)  (round-1 protocol)",
+   "half": "f = f^eq + K w_i Q_iab S_ab with K = -rho (tau - 1/2)/c_s^2",
+   "tau": "f = f^eq + K w_i Q_iab S_ab with K = -rho tau / c_s^2  (the standard Chapman-Enskog form; expected discrete slow manifold)"
+  },
+  "derivation": "Q_iab = e_ia e_ib - c_s^2 delta_ab; S_ab = (d_a u_b + d_b u_a)/2 (spectral derivatives). Since sum_i w_i Q_iab Q_icd = c_s^4 (delta_ac delta_bd + delta_ad delta_bc), the ansatz K w_i Q_iab S_ab contributes 2 K c_s^4 S_ab to the momentum flux, i.e. the viscous stress sigma_ab = -Pi^(1)_ab = -2 K c_s^4 S_ab = 2 rho nu S_ab requires K = -rho nu/c_s^4 / ... (both literature conventions, tau and tau-1/2, are measured instead of assumed).",
+  "traces": {"case": "tg", "grids": [24, 32], "tau": 0.6, "amp": 2e-3, "steps": 400, "sample": 5, "ic": ["eq", "half", "tau"]},
+  "grid_arm": {"case": "tg", "grids": [24, 32, 48, 64], "tau": 0.6, "amp": 2e-3, "steps": 500, "sample": 50, "ic": ["tau"]},
+  "rate_arm": {"case": "tg", "grid": 32, "tau": 0.6, "amps": [2.5e-4, 2e-3, 2e-2], "taus": [0.55, 0.6, 1.0], "steps": 400, "sample": 10, "ic": ["tau"]},
+  "fit_windows": "t_start in {0, 5, 10, 20, 50, 100} lattice steps for the ln E(t) fit; t_start=0 reproduces round-1 M2 exactly.",
+  "asymptotic_rate": "least-squares slope of ln(E_num(t)/E_exact(t)) over the second half of each trace, expressed relative to lambda_exact = 2 nu |k|^2.",
+  "wall_clock": "CPU torch float64, 4 threads; round-1 eq-IC grid numbers come from benchmarks/case_taylor_green_3d/artifacts/convergence.json (T=500, sample=100)"
+ },
+ "stopping_rule": "fixed step budgets per arm as listed; no adaptive extension, so no optional stopping.",
+ "decision_rule": "Every R# is reported with its number; PASS/FAIL as defined above. A failed criterion is published as honest FAIL; nothing is re-tuned after the numbers are read."
+}
