@@ -352,3 +352,88 @@ def test_consumption_chain_manifest_is_actionable():
     doc = DOC.read_text()
     for entry in entries:
         assert f"`{entry['id']}`" in doc
+
+
+# ---------------------------------------------------------------------------
+# Laplace factor: the fields are 2D, so Delta p = sigma / R (not 2 sigma / R)
+# ---------------------------------------------------------------------------
+
+
+def _laplace_case(*, radius, dp, G=-2.5):
+    return {
+        "G_12": G,
+        "radius": radius,
+        "radius_init": radius,
+        "dp": dp,
+        "sigma": dp * radius,  # 2D measurement: sigma = dp R / (dims - 1), dims = 2
+        "sigma_origin": None,
+        "converged": True,
+        "u_max": 1e-3,
+        "guardrails": [],
+    }
+
+
+def test_level_fit_uses_the_2d_laplace_factor():
+    """``sigma_origin`` must equal the through-origin fit with ``x = 1/R``.
+
+    Regression for the defect fixed on 2026-11-12: these fields are a 2D circular
+    droplet (unit depth), whose law is ``Delta p = sigma / R``; until then the
+    calibrator used the 3D sphere factor ``x = 2/R``, so every reported sigma was
+    **half** of its value and every ``Ca_sp = mu |u|/sigma`` twice its value.  The
+    law residual is invariant under a rescaling of ``x`` (see the next test), so
+    the <5% acceptance verdict never exposed the bug - only the absolute sigma did.
+    """
+    cases = [
+        _laplace_case(radius=14.0, dp=0.0138),
+        _laplace_case(radius=19.0, dp=0.0102),
+        _laplace_case(radius=24.0, dp=0.0082),
+    ]
+    level = mv._fit_laplace_level(-2.5, cases, 0.05, dims=2)
+    xs = [1.0 / c["radius"] for c in cases]
+    ys = [c["dp"] for c in cases]
+    independent = sum(x * y for x, y in zip(xs, ys)) / sum(x * x for x in xs)
+    assert level["sigma_origin"] == pytest.approx(independent, rel=1e-12)
+    # and the physical magnitude: sigma ~ 0.19, not the halved 0.095
+    assert level["sigma_origin"] == pytest.approx(0.19, abs=0.02)
+    assert level["laplace_dims"] == 2
+
+
+def test_factor_scaling_leaves_the_acceptance_metric_invariant():
+    """The <5% residual cannot detect the factor; the absolute sigma must.
+
+    ``sigma_0`` scales linearly with the factor and ``x`` scales with it too, so
+    ``sigma_0 x`` is unchanged and the per-case residual is identical.  This is
+    why the factor defect survived a passing acceptance test, and why the
+    regression has to assert the *value* of sigma, not just the verdict.
+    """
+    cases = [
+        _laplace_case(radius=14.0, dp=0.0138),
+        _laplace_case(radius=19.0, dp=0.0102),
+        _laplace_case(radius=24.0, dp=0.0082),
+    ]
+    two_d = mv._fit_laplace_level(-2.5, cases, 0.05, dims=2)
+    three_d = mv._fit_laplace_level(-2.5, cases, 0.05, dims=3)
+    assert three_d["sigma_origin"] == pytest.approx(0.5 * two_d["sigma_origin"], rel=1e-12)
+    assert three_d["max_rel_err"] == pytest.approx(two_d["max_rel_err"], rel=1e-12)
+
+
+def test_committed_sigmas_carry_the_2d_factor():
+    """Every committed case sigma must equal ``dp * R`` (2D), never ``dp R/2``."""
+    res = json.loads((ARTIFACTS / "results.json").read_text())
+    lap = res["laplace"]
+    assert lap["protocol"]["laplace_dims"] == 2, "the protocol must pin the dimension"
+    for case in lap["cases"]:
+        if case["sigma"] is None:
+            continue
+        assert case["laplace_dims"] == 2
+        assert case["sigma"] == pytest.approx(case["dp"] * case["radius"], rel=1e-6)
+    for level in lap["levels"]:
+        assert level["laplace_dims"] == 2
+    # the spurious-current comparison level is derived from sigma, so it must use
+    # the same factor: Ca_sp = mu |u|/sigma with sigma = dp R
+    for row in res["spurious"]["rows"]:
+        if row["ca_spurious"] is None:
+            continue
+        assert row["ca_spurious"] == pytest.approx(
+            row["mu_lattice"] * row["u_max"] / (row["dp"] * row["radius"]), rel=1e-9
+        )
