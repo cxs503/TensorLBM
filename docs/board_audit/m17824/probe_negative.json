@@ -1,0 +1,25 @@
+{
+ "P1_lying_nu": "REJECTED:LyingBGK: declared nu=0.05 != nu implied by s_plus=1.7857142857142856 (0.020000000000000018)",
+ "P2_lying_magic": "ACCEPTED(bad)",
+ "P2_note": "only spec.param('magic') is authoritative; a component may report an inconsistent 'magic' inside transport_coefficients() and still validate",
+ "P2b_lying_s_minus": "REJECTED:LieSM: magic=0.1875 != (1/s_minus-1/2)(1/s_plus-1/2)=0.030000000000000027",
+ "P3_bad_stencil": "REJECTED:d2q9_bad: sum(w)=1.0099999999999998 != 1; second moment != cs2=0.3333333333333333; fourth moment sum(w e_x^4) != 3 cs2^2; fourth moment sum(w e_x^2 e_y^2) != cs",
+ "P4_standalone_import": {
+  "module_imports_src": false,
+  "constants_baked": [
+   1.7857142857142856,
+   1.7857142857142856
+  ],
+  "Q": 9
+ },
+ "P4_max_abs_collide": 8.881784197001252e-16,
+ "P4_max_abs_20_steps": 5.773159728050814e-15,
+ "P4_mass_drift_collide": 1.7763568394002505e-15,
+ "P4b_harness_field_max_abs": 8.326672684688674e-17,
+ "P5_nu_bgk_vs_trt": {
+  "bgk": 0.020000000000000018,
+  "trt": 0.020000000000000018,
+  "analytic": 0.020000000000000018
+ },
+ "P6_sha_repeatable": true
+}
