@@ -1,0 +1,49 @@
+{
+  "anchor": "XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE",
+  "declared_before_runs": true,
+  "repo": "TensorLBM",
+  "reference_provenance": {
+    "pressure_tensor_and_sigma": "src/tensorlbm/free_energy_stress.py (ludwig ludwig-cf/ludwig parity port: fe_symm_str / fe_symm_interfacial_tension)",
+    "closed_forms": "Swift, Orlandini, Osborn & Yeomans, Phys. Rev. Lett. 78, 19 (1996); Briant & Yeomans, PRE 69, 031602 (2004): sigma = (2 sqrt2 / 3) sqrt(kappa A^3)/B, xi = sqrt(2 kappa/A), p_coex = A^2/(4B)",
+    "mechanical_equilibrium": "div P = 0 => P_nn = p_coex uniform across a flat interface (Rowlinson & Widom, J. Chem. Phys. 76, 1878 (1982) pressure-tensor form)"
+  },
+  "cases": {
+    "planar_periodic_two_interface": {
+      "A": 1.0,
+      "B": 1.0,
+      "nx": 128,
+      "ny": 16,
+      "steps": 2000,
+      "resolutions_interface_cells": [1.5, 2.0, 3.0],
+      "gradient_schemes": ["iso9", "5pt"]
+    }
+  },
+  "criteria": {
+    "C1_coexistence_pressure": {
+      "metric": "relative error of the numerically constructed Maxwell coexistence pressure (Newton on equal mu and equal p0, no closed form) and of p0(phi_bulk) measured on the equilibrium field, vs p_coex = A^2/(4B)",
+      "tolerance_relative": 1e-06,
+      "owner_accuracy_standard_relative": 0.15
+    },
+    "C2_normal_pressure_uniformity": {
+      "metric": "max|P_nn - mean(P_nn)| / p_coex over the periodic domain (continuum limit is 0; measures spurious pressure oscillation at the interface)",
+      "tolerance_relative_to_p_coex": 0.25,
+      "note": "acceptance band for the discrete interface; the continuum value is exactly 0, so any finite value is discretisation error. Same band at every resolution (not tuned per case)."
+    },
+    "C3_surface_tension_from_pressure_tensor": {
+      "metric": "sigma_measured = 0.5 * sum_x (P_nn - P_tt) over one period (== 2 sigma for two interfaces) vs sigma_analytic",
+      "tolerance_relative": 0.15,
+      "source": "owner accuracy standard (error > 15% unacceptable)"
+    },
+    "C4_lbm_mechanical_equilibrium": {
+      "metric": "time-stepped production free-energy LBM (Korteweg force), total normal pressure deviation max|P_nn^tot - mean|/p_coex and residual (spurious) velocity max|u|",
+      "tolerance_relative_to_p_coex": 0.25,
+      "tolerance_max_velocity_in_cs": 0.15,
+      "note": "|u|/c_s <= 0.15 keeps the spurious flow in the low-Mach regime the model assumes"
+    }
+  },
+  "verdict_rule": "PASS iff C1, C2, C3 hold at every declared resolution and C4 holds at the production scheme (iso9); otherwise report per-criterion pass/fail (no aggregate cherry-picking)",
+  "known_limitations_declared_up_front": [
+    "The curved interface (Laplace law delta p = sigma/R) needs the O(1/R) coexistence-composition shift and is NOT graded here; it is reported as a documented diagnostic only.",
+    "The production free_energy_step Cahn-Hilliard population is measured (not patched) for its missing -M grad(mu) flux; the phase field is held at the equilibrium profile during the LBM run, which is the standard static two-phase spurious-current test."
+  ]
+}
