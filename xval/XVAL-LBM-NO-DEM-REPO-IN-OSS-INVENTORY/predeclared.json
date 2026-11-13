@@ -1,0 +1,59 @@
+{
+  "anchor": "XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY",
+  "mission_id": 18215,
+  "previous_round": {
+    "mission_id": 18066,
+    "outcome": "honest-FAIL",
+    "fail_stage": null,
+    "failure_reason": null,
+    "lesson": "round 1 left neither stage nor reason; round 2 must (a) prove the OSS gap by evidence instead of assuming it blocks the work, (b) anchor on literature/analytic references when no OSS twin exists, (c) emit machine-checkable numbers before any narrative."
+  },
+  "repo": "TensorLBM",
+  "round": 2,
+  "kind": "cross-validation (XVAL) of the LBM/DEM coupling stack when the OSS inventory holds NO DEM/granular twin",
+  "registered_before_any_run": true,
+  "decision": {
+    "question": "The OSS cache holds three LBM/SPH repositories and zero DEM/granular-contact repositories, so the DEM leg of TensorLBM cannot be cross-validated against an OSS twin. Can it instead be validated to <15% against closed-form / literature references, and what is the state of the fluid-side (LBM) leg that such a coupling would consume?",
+    "alternatives": [
+      "H1: every DEM-side arm (contact restitution, contact duration, peak overlap, terminal settling under the Stokes and Schiller-Naumann closures, momentum-exchange ledger) reproduces its closed-form / literature reference to <15% => the DEM leg is VALIDATED against method-lineage anchors and the missing OSS twin is not a blocker.",
+      "H2: some DEM-side arm exceeds 15% => record which one, why (model clipping / integrator order / closure mismatch), and mark that sub-capability WITHHELD in this round.",
+      "H3: the closed-form reference itself is reproduced only because the arm is a tautology (the solver and the reference share the same formula) => declare the arm non-evidential and remove it from the acceptance set. This applies to the drag-closure settling arm: it checks the force->acceleration->velocity plumbing, NOT the closure physics, so the acceptance verdict is carried by the literature-anchored arm(s).",
+      "H4-falsification: if the fluid-side drag measured by this repo's LBM differs from the literature Cd(Re) curve by >15% at the same Re, then the LBM leg is NOT admissible as a reference for the DEM force model, and this must be reported as a finding rather than hidden by choosing a favourable band."
+    ],
+    "rule": "An arm passes iff |sim - reference| / |reference| < 0.15 (owner precision standard) at the finest resolved time step. The overall anchor passes iff at least one non-tautological DEM arm passes AND no passing arm was obtained at a resolution flagged as unconverged. The LBM leg is reported with the same 15% rule but does not gate the DEM verdict."
+  },
+  "hypotheses": {
+    "contact": "Kelvin-Voigt normal contact in this repo (f_n = k*delta - eta*v_n, no tension) integrated by explicit Euler reproduces e = exp(-pi*zeta/sqrt(1-zeta^2)) and t_c = pi/(omega_n sqrt(1-zeta^2)) for zeta = eta/(2 sqrt(k m)), within a few percent, and monotonically improves as dt/t_c shrinks. Prediction: e_sim >= e_th (the no-tension clip removes damping in the restitution phase).",
+    "settling": "With buoyancy folded into g_eff = g(1-rho_f/rho_p), the DEM ODE with the repo drag closures must converge to the same terminal velocity that drag_closure.terminal_velocity() solves for the same closure (this is a plumbing check, H3 tautology), and the Schiller-Naumann arm must land on the literature (Clift-Gauvin) terminal velocity curve because SN and CG agree to <1% for Re < 40.",
+    "ledger": "MomentumExchange.residual() must close to round-off (< 1e-10 relative) for a callback-driven drag run, i.e. the particle impulse and the independently recomputed water reaction are the same number.",
+    "lbm_leg": "The repo's confined periodic-box LBM over-predicts Cd relative to Clift-Gauvin at low Re because lambda = D/L = 1/8..1/6 confinement is only partially removed; prediction: +10..+25% at Re <= 10."
+  },
+  "arms": {
+    "A1": "particle-wall restitution vs closed form, dt = t_c/40",
+    "A2": "particle-wall restitution vs closed form, dt = t_c/80 (resolution-refined)",
+    "B1/B2": "the same two runs: contact duration t_c and peak overlap delta_max vs closed form",
+    "C1/C2": "Stokes-closure settling of an ice sphere in water, three diameters, two time steps (tau_p/25, tau_p/100) vs u_t = (rho_p-rho_f) g D^2/(18 mu)  [tautology check H3]",
+    "D1/D2": "Schiller-Naumann settling vs the literature (Clift-Gauvin) terminal velocity, same three diameters and two time steps",
+    "E": "repo LBM confined-box Cd(Re) from benchmarks/pending/sphere_drag_closure/results.json vs Clift-Gauvin — the fluid-side leg (not gating)",
+    "F": "momentum-exchange ledger residual for a cw_callback drag run"
+  },
+  "metrics": {
+    "primary": "relative error |sim-reference|/|reference| per arm",
+    "secondary": ["dt-refinement ratio between the two time steps", "measured Re for every settling point", "max overlap in units of particle radius", "ledger residual"],
+    "threshold": "0.15 (owner standard); in-house stricter reporting for the closed-form contact arms: 0.02",
+    "unit_of_analysis": "one (arm, case, time step) configuration; deterministic, no seeds needed"
+  },
+  "repetitions": {
+    "time_steps_per_arm": 2,
+    "rationale": "the quantities are deterministic ODE solutions; the only free numerical parameter is dt/t_c, so two resolutions bound the discretisation error and demonstrate the convergence direction. No stochastic seeds are involved."
+  },
+  "external_anchors": {
+    "contact_law": "Cundall & Strack 1979, Geotechnique 29(4) 47-65 (linear spring-dashpot DEM)",
+    "restitution": "Di Renzo & Di Maio 2004, Chem. Eng. Sci. 59, 525-541 (e vs damping for the linear model); Tsuji et al. 1993, Powder Technol. 71, 239-250",
+    "calibration_hierarchy": "Coetzee 2017, Powder Technol. 310, 104-113 (analytic -> unit tests -> bulk calibration)",
+    "drag_closure": "Schiller & Naumann 1935, VDI Z. 77, 318-320; Clift, Grace & Weber 1978, Bubbles, Drops and Particles",
+    "settling_benchmark": "ten Cate et al. 2002, Phys. Fluids 14, 4012-4024 (single sphere settling, the standard LBM/DEM validation case)",
+    "lb_coupling": "Tsuji et al. 1993; Ladd 1994, J. Fluid Mech. 271, 285-309 (momentum exchange)",
+    "confinement": "Hasimoto 1959, J. Fluid Mech. 5, 317-328 (periodic-array drag correction)"
+  }
+}
