@@ -1,33 +1,42 @@
 """D3Q19 Taylor-Green vortex case used to cross-validate the ghost exchange.
 
-The physical reference is the leading-order (linear-decay) Taylor-Green mode of
-the incompressible Navier-Stokes equations on a 2*pi periodic box discretised by
-``n`` lattice cells::
+Physical reference (R2 anchor correction)
+-----------------------------------------
+The reference is the leading-order (Stokes / linear-decay) Taylor-Green mode of
+the incompressible Navier-Stokes equations on a ``2*pi`` periodic box::
 
     u =  U0 sin(kx) cos(ky) cos(kz) e^{-3 nu k^2 t}
     v = -U0 cos(kx) sin(ky) cos(kz) e^{-3 nu k^2 t}
     w =  0,                               k = 2 pi / n
+    p =  p0 + (rho0 U0^2/16) (cos 2kx + cos 2ky)(cos 2kz + 2)
 
-with the classic Taylor-Green pressure field ``p = p0 + (rho0 U0^2/16)
-(cos 2kx + cos 2ky)(cos 2kz + 2)``.  The O(U0^2) harmonics of the true TGV
-solution are *not* in the reference: they are part of the reported error, which
-is stated in the report rather than absorbed into a fudge factor.
+**Correction (m18155 audit finding 3).** Round 1 shipped ``e^{-2 nu k^2 t}``,
+i.e. the *two-dimensional* TGV exponent.  Every velocity component of the mode
+above is a product of one normal mode in each of the three axes, so its
+Laplacian eigenvalue is
 
-Decay exponent (this is the *three*-dimensional TGV, and the exponent is 3, not
-2): the mode is an eigenfunction of the Laplacian with
-``d^2/dx^2 = d^2/dy^2 = d^2/dz^2 = -k^2``, i.e. ``lap(u) = -3 k^2 u``, so the
-Stokes balance ``du/dt = nu lap(u)`` gives ``du/dt = -3 nu k^2 u``.  The
-z-invariant (2D, "2D-in-3D") Taylor-Green mode ``w = 0, no kz dependence`` only
-has ``lap = -2 k^2`` and decays with ``2 nu k^2`` -- that exponent (Taylor 1937;
-``tensorlbm.verification.analytic_l2.tgv2d_analytic``; also
-``benchmarks/d3q27_activation/run_tgv_convergence.py``, whose reference is
-explicitly z-invariant) is *not* the one for the cos(kz)-modulated mode used
-here.  Using it in a round-1 revision of this cross-validation inflated the
-reported rel-L2 error to ~25% at n=64; see
-``xval/XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED/REFERENCE_AUDIT.md`` and
-``scripts/xval_tgv_reference_audit.py``, which measures the effective decay rate
-of the solver alone (no reference involved) and finds it at 1.5% from
-``3 nu k^2`` and 52% from ``2 nu k^2``.
+    lambda = -(k_x^2 + k_y^2 + k_z^2) = -3 k^2      (continuum, k_d = k)
+
+and the Stokes solution of ``du/dt = nu lap(u)`` decays as ``e^{-nu 3 k^2 t}``
+for the *velocity amplitude* (``e^{-6 nu k^2 t}`` for the kinetic energy).  The
+``2 nu k^2`` exponent under-predicted the decay by ``e^{+nu k^2 t}`` and that
+mis-attributed the residual: at n=64, tau=0.65, 400 steps it inflated the
+reported relative L2 error from ~17 % to 24.9 %.  On the lattice the same
+derivation is kept, only with the *discrete* eigenvalue
+``sum_d 2 (1 - cos k_d)`` (``= 6 (1 - cos k)`` here), which differs from
+``3 k^2`` by ``k^2/12`` (0.08 % at n=64, 0.32 % at n=32) -- see
+:meth:`TGV.laplacian_eigenvalue`.
+
+Regime of validity
+------------------
+The reference is linear, so it is only a fair physical anchor while the
+nonlinear terms stay small, i.e. for a small "dissipation-scale" Reynolds
+number ``re_k = U0 / (nu k)``.  ``TGV.re_k`` reports it; the R2 campaign carries
+a predeclared ``U0`` ladder (0.04 -> 0.01 -> 0.0025, ``re_k`` 8.1 -> 2.0 -> 0.51)
+so that the transport fidelity claim is made in the linear regime instead of
+being absorbed by O(U0^2) vortex stretching.  The O(U0^2) harmonics and the
+acoustic transient of the true TGV are *not* in the reference: whatever they
+contribute stays inside the reported error, it is never tuned away.
 
 The field layout matches the transport: ``(19, nz, ny, nx)`` with ``x`` on the
 last axis (the slab axis), ``y`` and ``z`` fully periodic inside every rank.
@@ -106,19 +115,33 @@ class TGV:
         return self.u0 * math.sqrt(3.0)
 
     @property
-    def laplacian_eigenvalue(self) -> float:
-        """``lap(u) / u`` of the mode: ``-3 k^2`` (``-2 k^2`` for the z-invariant TGV)."""
-        return -3.0 * self.k**2
+    def re_k(self) -> float:
+        """U0 / (nu k): how far the run is into the nonlinear (reference-invalid) regime."""
+        return self.u0 / (self.nu * self.k)
+
+    def laplacian_eigenvalue(self, discrete: bool = True) -> float:
+        """|lap| eigenvalue of the single mode, in lattice units (positive).
+
+        ``discrete`` gives ``sum_d 2 (1 - cos k_d) = 6 (1 - cos k)``, the exact
+        eigenvalue of the second-order lattice Laplacian on a mode with wave
+        number ``k`` in each of the three axes; its continuum limit is ``3 k^2``.
+        """
+        if discrete:
+            return 6.0 * (1.0 - math.cos(self.k))
+        return 3.0 * self.k**2
 
     @property
-    def decay_rate(self) -> float:
-        """Viscous decay rate ``-lap_eigenvalue * nu = 3 nu k^2`` of the mode."""
-        return -self.laplacian_eigenvalue * self.nu
+    def viscous_rate(self) -> float:
+        """Exponent of the velocity-amplitude decay, ``nu * |lap eigenvalue|``."""
+        return self.nu * self.laplacian_eigenvalue()
 
-    @property
-    def decay_rate_2d(self) -> float:
-        """The z-invariant/2D TGV rate ``2 nu k^2`` -- kept for the audit only."""
-        return 2.0 * self.nu * self.k**2
+    def decay(self, t: float) -> float:
+        """Velocity-amplitude factor of the Stokes solution (``e^{-3 nu k^2 t}``)."""
+        return math.exp(-self.viscous_rate * t)
+
+    def energy_decay(self, t: float) -> float:
+        """Kinetic-energy factor of the Stokes solution (square of :meth:`decay`)."""
+        return math.exp(-2.0 * self.viscous_rate * t)
 
     def _axes(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         base = torch.arange(self.n, dtype=self.dtype) * (2.0 * math.pi / self.n)
@@ -145,9 +168,6 @@ class TGV:
         ux, uy, uz = self.initial_velocity()
         return equilibrium3d(rho, ux, uy, uz, self.dtype)
 
-    def decay(self, t: float) -> float:
-        return math.exp(-self.decay_rate * t)
-
     def analytic_velocity(self, t: float) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         ux, uy, uz = self.initial_velocity()
         amplitude = self.decay(t)
@@ -168,9 +188,21 @@ def tgv_error(
     diff = num - ref
     rel_l2 = float(torch.linalg.vector_norm(diff) / torch.linalg.vector_norm(ref))
     amplitude_ratio = float(torch.linalg.vector_norm(num) / torch.linalg.vector_norm(ref))
+    u_norm = float(torch.linalg.vector_norm(num))
+    u0_norm = float(torch.linalg.vector_norm(torch.stack(case.initial_velocity())))
+    fitted_rate = -math.log(u_norm / u0_norm) / t if t > 0 and u_norm > 0 else float("nan")
     return {
         "tgv_rel_l2": rel_l2,
         "tgv_amplitude_ratio": amplitude_ratio,
+        "u_norm": u_norm,
+        "u_norm_initial": u0_norm,
+        "fitted_decay_rate": fitted_rate,
+        "analytic_decay_rate": case.viscous_rate,
+        "decay_rate_rel_error": (
+            (fitted_rate - case.viscous_rate) / case.viscous_rate
+            if case.viscous_rate > 0
+            else float("nan")
+        ),
         "rho_min": float(rho.min()),
         "rho_max": float(rho.max()),
         "u_max": float(torch.linalg.vector_norm(torch.stack([ux, uy, uz]), dim=0).max()),

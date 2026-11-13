@@ -935,7 +935,22 @@ class D3Q19GlooTransport:
     Each rank stores only its owned slab and two ghost planes.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        selective_ghosts: bool = False,
+        persistent_ghost_buffer: bool = False,
+    ) -> None:
+        """``selective_ghosts`` moves only the x-crossing populations.
+
+        A pull stream reads the left ghost plane exclusively for populations
+        with ``cx = +1`` and the right ghost plane exclusively for ``cx = -1``;
+        for ``cx = 0`` it reads owned cells only.  With ``selective_ghosts=True``
+        those are the only populations packed, sent and unpacked (5 of 19 per
+        face for D3Q19), so a ghost plane outside the crossing set is left
+        unwritten and must never be read.  The default ``False`` keeps the
+        shipped all-population exchange byte for byte.
+        """
         if not dist.is_available() or not dist.is_initialized():
             raise RuntimeError("D3Q19GlooTransport requires an initialized torch.distributed group")
         if dist.get_backend() != "gloo":
@@ -946,6 +961,55 @@ class D3Q19GlooTransport:
         self.world_size = dist.get_world_size()
         self.left_rank = (self.rank - 1) % self.world_size
         self.right_rank = (self.rank + 1) % self.world_size
+        self.selective_ghosts = bool(selective_ghosts)
+        self.persistent_ghost_buffer = bool(persistent_ghost_buffer)
+        directions = C.tolist()
+        self.crossing_right = tuple(i for i, d in enumerate(directions) if d[0] == 1)
+        self.crossing_left = tuple(i for i, d in enumerate(directions) if d[0] == -1)
+        self.last_exchange_bytes = 0
+        self._ghost_buffers: tuple[torch.Tensor, torch.Tensor] | None = None
+
+    # -- selective-exchange helpers ---------------------------------------
+    def crossing_bytes_per_step(self, f_owned: torch.Tensor) -> int:
+        """Wire bytes of one exchange: both directions, send and receive."""
+        populations = len(self.crossing_right) + len(self.crossing_left)
+        if not self.selective_ghosts:
+            populations = 2 * f_owned.shape[0]
+        plane = f_owned.shape[1] * f_owned.shape[2] * f_owned.element_size()
+        return populations * plane
+
+    def _crossing_buffers(self, f_owned: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        shape = (len(self.crossing_right), f_owned.shape[1], f_owned.shape[2])
+        if self.persistent_ghost_buffer and self._ghost_buffers is not None:
+            left, right = self._ghost_buffers
+            if left.shape == shape and left.dtype == f_owned.dtype:
+                return left, right
+        buffers = (
+            torch.empty(shape, dtype=f_owned.dtype),
+            torch.empty(shape, dtype=f_owned.dtype),
+        )
+        if self.persistent_ghost_buffer:
+            self._ghost_buffers = buffers
+        return buffers
+
+    def _selective_exchange(self, f_owned: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Exchange only the x-crossing populations; return (left, right) buffers."""
+        if len(self.crossing_right) != len(self.crossing_left):
+            raise RuntimeError("D3Q19 crossing sets must be symmetric")
+        right_send = f_owned[list(self.crossing_right), :, :, -1].contiguous()
+        left_send = f_owned[list(self.crossing_left), :, :, 0].contiguous()
+        left_recv, right_recv = self._crossing_buffers(f_owned)
+        requests = [
+            dist.isend(left_send, dst=self.left_rank, tag=101),
+            dist.isend(right_send, dst=self.right_rank, tag=102),
+            dist.irecv(left_recv, src=self.left_rank, tag=102),
+            dist.irecv(right_recv, src=self.right_rank, tag=101),
+        ]
+        for request in requests:
+            assert request is not None
+            request.wait()
+        self.last_exchange_bytes = self.crossing_bytes_per_step(f_owned)
+        return left_recv, right_recv
 
     @staticmethod
     def _check_owned(f_owned: torch.Tensor) -> None:
@@ -1145,8 +1209,15 @@ class D3Q19GlooTransport:
         return full_owned[..., x0:x1].contiguous(), step  # type: ignore[return-value]
 
     def exchange_ghosts(self, f_owned: torch.Tensor) -> torch.Tensor:
-        """Transport all populations' owned boundary planes and pad ghosts."""
+        """Transport the owned boundary planes and pad ghosts.
+
+        All 19 populations by default; only the ``cx = +/-1`` crossing set when
+        ``selective_ghosts=True`` (the non-crossing ghost entries are then
+        undefined and are validated only inside the crossing set).
+        """
         self._check_owned(f_owned)
+        if self.selective_ghosts:
+            return self._exchange_ghosts_selective(f_owned)
         # Send the left/right owned planes to their actual neighbours.  This
         # point-to-point ring is independent of slab width and deliberately
         # does not route through all ranks or a process-local list copy.
@@ -1167,7 +1238,26 @@ class D3Q19GlooTransport:
         padded[..., 0] = left_ghost
         padded[..., 1:-1] = f_owned
         padded[..., -1] = right_ghost
+        self.last_exchange_bytes = self.crossing_bytes_per_step(f_owned)
         self.validate_ghosts(padded, (left_ghost, right_ghost))
+        return padded
+
+    def _exchange_ghosts_selective(self, f_owned: torch.Tensor) -> torch.Tensor:
+        left_recv, right_recv = self._selective_exchange(f_owned)
+        width = f_owned.shape[-1]
+        shape = (*f_owned.shape[:-1], width + 2)
+        if self.persistent_ghost_buffer and getattr(self, "_padded", None) is not None:
+            padded = self._padded
+            if padded.shape != shape or padded.dtype != f_owned.dtype:
+                padded = torch.empty(shape, dtype=f_owned.dtype)
+        else:
+            padded = torch.empty(shape, dtype=f_owned.dtype)
+        if self.persistent_ghost_buffer:
+            self._padded = padded
+        padded[..., 1:-1] = f_owned
+        padded[list(self.crossing_right), :, :, 0] = left_recv
+        padded[list(self.crossing_left), :, :, -1] = right_recv
+        self.validate_ghosts(padded, (left_recv, right_recv))
         return padded
 
     def validate_ghosts(
@@ -1178,6 +1268,9 @@ class D3Q19GlooTransport:
         """Fail closed when either ghost differs from peer-owned data."""
         if padded.ndim != 4 or padded.shape[0] != 19 or padded.shape[-1] < 3:
             raise ValueError("padded distributions must have shape (19, nz, ny, nx_local + 2)")
+        if self.selective_ghosts:
+            self._validate_ghosts_selective(padded, peer)
+            return
         if peer is None:
             owned = padded[..., 1:-1]
             left_owned = owned[..., 0].contiguous()
@@ -1196,6 +1289,26 @@ class D3Q19GlooTransport:
             peer = (left_ghost, right_ghost)
         if not torch.equal(padded[..., 0], peer[0]) or not torch.equal(padded[..., -1], peer[1]):
             raise RuntimeError("D3Q19 Gloo ghost validation failed")
+
+    def _validate_ghosts_selective(
+        self,
+        padded: torch.Tensor,
+        peer: tuple[torch.Tensor, torch.Tensor] | None,
+    ) -> None:
+        """Crossing-set-only validation for the selective exchange.
+
+        The ``cx = 0`` and ``cx = -/+1`` entries that no pull-stream lane reads
+        are undefined by construction, so they are excluded here rather than
+        compared against garbage.
+        """
+        if peer is None:
+            left_recv, right_recv = self._selective_exchange(padded[..., 1:-1])
+        else:
+            left_recv, right_recv = peer
+        left_ghost = padded[list(self.crossing_right), :, :, 0]
+        right_ghost = padded[list(self.crossing_left), :, :, -1]
+        if not torch.equal(left_ghost, left_recv) or not torch.equal(right_ghost, right_recv):
+            raise RuntimeError("D3Q19 Gloo selective ghost validation failed")
 
     def gather_owned(self, f_owned: torch.Tensor) -> torch.Tensor:
         """Collect variable-width owned slabs in rank order on every rank.
