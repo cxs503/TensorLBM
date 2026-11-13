@@ -1,0 +1,143 @@
+{
+  "mission": 17603,
+  "anchor": "XVAL-LBM-ANTI-BOUNCE-BACK-INAMURO-WETNODE",
+  "audited_repo": "TensorLBM",
+  "lbm_worktree": "/root/tp-agent/work/m17603",
+  "A1_ref_authenticity": {
+    "probe": "A1 ref authenticity (fresh g++ -O2 build of the archived upstream source)",
+    "all_match": true,
+    "rows": {
+      "film_inamuro0000100.dat": {
+        "fresh_sha256": "cae64452caaf12dfa5417d42cd4c7618661bbf09bdeb71695f46d51d02967f9f",
+        "shipped_sha256": "cae64452caaf12dfa5417d42cd4c7618661bbf09bdeb71695f46d51d02967f9f",
+        "match": true
+      },
+      "film_inamuro0001000.dat": {
+        "fresh_sha256": "566a7aa687ce362e90c13bcd14d32db38ee5f9f400f81fe89a91488b2b531d0e",
+        "shipped_sha256": "566a7aa687ce362e90c13bcd14d32db38ee5f9f400f81fe89a91488b2b531d0e",
+        "match": true
+      },
+      "film_inamuro0010000.dat": {
+        "fresh_sha256": "b77c14469cc8015388d73909b67014c835d287eeecc4457fd9860e37790da8ac",
+        "shipped_sha256": "b77c14469cc8015388d73909b67014c835d287eeecc4457fd9860e37790da8ac",
+        "match": true
+      },
+      "film_inamuro0050000.dat": {
+        "fresh_sha256": "4f28e08d90606e6c4446b6e239299ddf5f4fac7a1a5fcb1d1f075da0451d5aab",
+        "shipped_sha256": "4f28e08d90606e6c4446b6e239299ddf5f4fac7a1a5fcb1d1f075da0451d5aab",
+        "match": true
+      }
+    }
+  },
+  "A2_documented_repro": {
+    "probe": "A2 documented repro on a FRESH outdir (README \u00a7Reproduce step 2), executed verbatim by the auditor on 2026-11-13",
+    "cmd": "cd /root/tp-agent/work/m17603 && PYTHONPATH=src python3 benchmarks/verified/inamuro_wetnode_xval/run.py --part film --steps 12000 --devsteps 2000 --oss-ref artifacts/m17603_oss_src --out /tmp/audit17664/film",
+    "returncode": 1,
+    "tail": [
+      "  policy=all_known: 47.2s",
+      "  policy=all_but_rest: 8.9s",
+      "[film] compiling upstream chapter8/film_inamuro.cpp",
+      "[film] running upstream binary (~2 min for N=50000)",
+      "Traceback (most recent call last):",
+      "  File \".../benchmarks/verified/inamuro_wetnode_xval/run.py\", line 380, in part_film",
+      "    run_oss_reference(bin_path, workdir, steps)",
+      "  File \".../benchmarks/verified/inamuro_wetnode_xval/run.py\", line 205, in run_oss_reference",
+      "    outdir.mkdir(parents=True, exist_ok=True)",
+      "FileExistsError: [Errno 17] File exists: '/tmp/audit17664/film/oss_ref/film_inamuro'"
+    ],
+    "succeeded": false,
+    "note": "Defect reproduced: part_film() compiles the reference binary to <out>/oss_ref/film_inamuro (a FILE, run.py:376) and then run_oss_reference() tries to mkdir the same path as the field DIRECTORY (run.py:204-205) -> FileExistsError on any outdir that does not already carry a hand-built oss_ref/film_inamuro/ tree. The shipped artifacts/m17603/oss_ref/ has the binary renamed to film_inamuro_bin, which the driver never produces; the documented one-shot repro therefore cannot succeed on a clean checkout. Wall time to the crash: 64 s (105 TFLOP-free scalar run, dominated by the 12000-step TensorLBM leg, 47.2 s)."
+  },
+  "A3_A4_fresh_run": {
+    "probe": "A3 fresh full-horizon run through tensorlbm.boundary.inamuro_wetnode",
+    "steps": 50000,
+    "rows": [
+      {
+        "step": 100,
+        "got_mean": 0.09536901896812995,
+        "ref_mean": 0.0953690189676046,
+        "rel_l2_vs_fresh_oss": 3.174711034176936e-11,
+        "rel_linf_vs_fresh_oss": 4.99745245186034e-11,
+        "pass_15pct": true
+      },
+      {
+        "step": 1000,
+        "got_mean": 0.27623894781231934,
+        "ref_mean": 0.27623894781020153,
+        "rel_l2_vs_fresh_oss": 5.1185883463411415e-11,
+        "rel_linf_vs_fresh_oss": 3.516677640587728e-10,
+        "pass_15pct": true
+      },
+      {
+        "step": 10000,
+        "got_mean": 0.7312817237171253,
+        "ref_mean": 0.7312817237171937,
+        "rel_l2_vs_fresh_oss": 4.356183890868777e-11,
+        "rel_linf_vs_fresh_oss": 3.8146957978921796e-10,
+        "pass_15pct": true
+      },
+      {
+        "step": 50000,
+        "got_mean": 0.7979521521706288,
+        "ref_mean": 0.7979521521702,
+        "rel_l2_vs_fresh_oss": 5.364401613237558e-11,
+        "rel_linf_vs_fresh_oss": 3.626231315078658e-10,
+        "pass_15pct": true
+      }
+    ],
+    "control_probe_A5": {
+      "mutation": "inamuro_wetnode_scalar -> identity (scalar Dirichlet closure removed)",
+      "rel_l2_at_step_1000": 0.9966630485573339,
+      "detected": true
+    },
+    "fields_npz": "docs/board_audit/m17664/audit_fields.npz"
+  },
+  "A6_coupling": {
+    "probe": "A6 solver coupling (static grep over src/)",
+    "hits_inside_module": 14,
+    "hits_outside_module": [],
+    "registered_in_boundary_registry": false
+  },
+  "A7_ledger": {
+    "probe": "A7 ledger probes",
+    "benchmark_referee_rows": 0,
+    "tensor_reports_rows_mission_17603": 0,
+    "mission_row": "succeeded | finished=2026-11-13 07:33:00.790145+00",
+    "git_status_of_deliverables": [
+      "?? artifacts/m17603/",
+      "?? benchmarks/verified/inamuro_wetnode_xval/",
+      "?? src/tensorlbm/boundary/inamuro_wetnode.py",
+      "?? tests/test_inamuro_wetnode.py"
+    ],
+    "deliverables_tracked": false
+  },
+  "A4_shipped_vs_audit": [
+    {
+      "step": 100,
+      "shipped_rel_l2": 3.174711034176936e-11,
+      "audit_rel_l2": 3.174711034176936e-11,
+      "abs_delta": 0.0,
+      "shipped_got_mean": 0.09536901896812995,
+      "audit_got_mean": 0.09536901896812995,
+      "got_mean_abs_delta": 0.0
+    },
+    {
+      "step": 1000,
+      "shipped_rel_l2": 5.1185883463411415e-11,
+      "audit_rel_l2": 5.1185883463411415e-11,
+      "abs_delta": 0.0,
+      "shipped_got_mean": 0.27623894781231934,
+      "audit_got_mean": 0.27623894781231934,
+      "got_mean_abs_delta": 0.0
+    },
+    {
+      "step": 10000,
+      "shipped_rel_l2": 4.356183890868777e-11,
+      "audit_rel_l2": 4.356183890868777e-11,
+      "abs_delta": 0.0,
+      "shipped_got_mean": 0.7312817237171253,
+      "audit_got_mean": 0.7312817237171253,
+      "got_mean_abs_delta": 0.0
+    }
+  ]
+}

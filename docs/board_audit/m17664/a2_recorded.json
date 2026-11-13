@@ -1,0 +1,19 @@
+{
+  "probe": "A2 documented repro on a FRESH outdir (README §Reproduce step 2), executed verbatim by the auditor on 2026-11-13",
+  "cmd": "cd /root/tp-agent/work/m17603 && PYTHONPATH=src python3 benchmarks/verified/inamuro_wetnode_xval/run.py --part film --steps 12000 --devsteps 2000 --oss-ref artifacts/m17603_oss_src --out /tmp/audit17664/film",
+  "returncode": 1,
+  "tail": [
+    "  policy=all_known: 47.2s",
+    "  policy=all_but_rest: 8.9s",
+    "[film] compiling upstream chapter8/film_inamuro.cpp",
+    "[film] running upstream binary (~2 min for N=50000)",
+    "Traceback (most recent call last):",
+    "  File \".../benchmarks/verified/inamuro_wetnode_xval/run.py\", line 380, in part_film",
+    "    run_oss_reference(bin_path, workdir, steps)",
+    "  File \".../benchmarks/verified/inamuro_wetnode_xval/run.py\", line 205, in run_oss_reference",
+    "    outdir.mkdir(parents=True, exist_ok=True)",
+    "FileExistsError: [Errno 17] File exists: '/tmp/audit17664/film/oss_ref/film_inamuro'"
+  ],
+  "succeeded": false,
+  "note": "Defect reproduced: part_film() compiles the reference binary to <out>/oss_ref/film_inamuro (a FILE, run.py:372-375) and then run_oss_reference() tries to mkdir the same path as the field DIRECTORY (run.py:204-205) -> FileExistsError on any outdir that does not already carry a hand-built oss_ref/film_inamuro/ tree. The shipped artifacts/m17603/oss_ref/ has the binary renamed to film_inamuro_bin, a layout the driver never produces; the documented one-shot repro therefore cannot succeed on a clean checkout. Wall time to the crash: 64 s (12000-step TensorLBM leg 47.2 s + 2000-step deviation leg 8.9 s + compile)."
+}
