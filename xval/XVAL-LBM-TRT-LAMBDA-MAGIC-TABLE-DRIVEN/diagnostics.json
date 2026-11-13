@@ -1,0 +1,76 @@
+{
+  "note": "post-hoc exploratory diagnostics, non-gating",
+  "D1_u_regime": {
+    "0.0": {
+      "rel_l2_linear": 0.014641593643702183,
+      "rel_l2_second_order": 0.014641593643702183,
+      "max_abs_field_diff": 0.0,
+      "rel_l2_diff": 0.0,
+      "ratio_over_u2": null
+    },
+    "0.05": {
+      "rel_l2_linear": 0.020326336621112107,
+      "rel_l2_second_order": 0.020189335705382172,
+      "max_abs_field_diff": 0.0014874242608329258,
+      "rel_l2_diff": 0.002340235126847549,
+      "ratio_over_u2": 0.9360940507390194
+    },
+    "0.1": {
+      "rel_l2_linear": 0.03316673307654353,
+      "rel_l2_second_order": 0.03144901296429232,
+      "max_abs_field_diff": 0.0060493178341337606,
+      "rel_l2_diff": 0.009492015755708785,
+      "ratio_over_u2": 0.9492015755708784
+    },
+    "0.2": {
+      "rel_l2_linear": 0.07312205055153334,
+      "rel_l2_second_order": 0.057775240618147164,
+      "max_abs_field_diff": 0.026004046366648437,
+      "rel_l2_diff": 0.040153753650405015,
+      "ratio_over_u2": 1.0038438412601252
+    },
+    "0.25": {
+      "rel_l2_linear": 0.10173386340390053,
+      "rel_l2_second_order": 0.07155372178447604,
+      "max_abs_field_diff": 0.04304451389642294,
+      "rel_l2_diff": 0.06543860232336773,
+      "ratio_over_u2": 1.0470176371738837
+    },
+    "0.3": {
+      "rel_l2_linear": 0.13786413183926524,
+      "rel_l2_second_order": 0.08553088807855962,
+      "max_abs_field_diff": 0.06675472303107155,
+      "rel_l2_diff": 0.09919029280022447,
+      "ratio_over_u2": 1.1021143644469387
+    },
+    "0.5": {
+      "rel_l2_linear": 0.39773725624693035,
+      "rel_l2_second_order": 0.14214301071564012,
+      "max_abs_field_diff": 0.2833606922959164,
+      "rel_l2_diff": 0.3651234085669539,
+      "ratio_over_u2": 1.4604936342678156
+    }
+  },
+  "D2_seamless_vs_truncated": {
+    "TRT_lambda_1_12": {
+      "rel_l2_final": 0.014765429274787112,
+      "rel_l2_max_over_t": 0.040068101418821646
+    },
+    "TRT_lambda_3_16": {
+      "rel_l2_final": 0.01348463200548538,
+      "rel_l2_max_over_t": 0.04068854914315401
+    },
+    "BGK": {
+      "rel_l2_final": 0.04057430777507487,
+      "rel_l2_max_over_t": 0.04960331384816302
+    },
+    "TRT_lambda_1_12__truncated_ic": {
+      "rel_l2_final": 0.014641593643702183,
+      "rel_l2_max_over_t": 0.040313986283280916
+    },
+    "BGK__truncated_ic": {
+      "rel_l2_final": 0.04094748859103437,
+      "rel_l2_max_over_t": 0.0499069529860202
+    }
+  }
+}
