@@ -1,0 +1,61 @@
+{
+  "anchor": "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO",
+  "mission_id": 18366,
+  "date": "2026-11-13",
+  "decision": "At which target density ratios (10/100/1000) is a PR-EOS Shan-Chen single-component pseudopotential static droplet a usable construct, and what is the spurious-current floor and density-ratio maintenance error at each ratio?",
+  "alternatives": {
+    "A1_edm": "Exact-Difference Method (EDM) forcing with standard pressure discretisation",
+    "A2_guo": "Guo forcing with standard pressure discretisation",
+    "A3_pressure_tensor": "EDM forcing with pressure-tensor discretisation (scheme='pressure_tensor')"
+  },
+  "hypothesis": "H1: the Maxwell equal-area construction correctly predicts the coexistence pair for the PR-EOS at any subcritical T_r, and the discrete SCMP scheme can hold the predicted density ratio within 15% at ratio=10 with spurious Ma < 0.05. H0 (falsifier): ratio_error > 15% OR spurious Ma > 0.10 at ratio=10.",
+  "metrics": {
+    "ratio_error": "|ratio_sim - ratio_maxwell| / ratio_maxwell",
+    "spurious_ma": "max|u| / c_s over the final 5 samples",
+    "mass_drift_rate": "|dm/m|/step",
+    "collapse_step": "step at which non-finite rho, negative rho, or |u|/cs > 0.5 occurs (if any)"
+  },
+  "unit_of_analysis": "one (target_ratio, forcing_scheme, geometry) run",
+  "baseline_control": {
+    "physical_baseline": "the Maxwell equal-area coexistence pair (analytic, recomputed at run time by sc_eos_coexistence.maxwell_coexistence)",
+    "representation_control": "planar-interface control runs measure the coexistence pair the lattice scheme actually selects in the absence of curvature, separating EOS-vs-scheme discretisation error from droplet geometry effects"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "ratio_error_max": 0.15,
+    "spurious_pass_ma": 0.05,
+    "spurious_warn_ma": 0.10,
+    "stability_steps_min": 20000,
+    "mass_drift_rate_max": 5e-08,
+    "interpretation": "A run is PASS iff stable >= 20000 steps AND ratio_error <= 15% AND spurious Ma <= 0.05 AND no clamp exposure AND mass drift rate <= 5e-8/step"
+  },
+  "stopping_rule": "Each run stops at the predeclared step count (20000 for tiers, 40000 for longhold) or at collapse onset (non-finite rho, negative rho beyond roundoff, |u|/cs > 0.5, or psi clamp engagement). No arm is extended after looking at KPIs.",
+  "variables_changed": [
+    "target density ratio (10, 100, 1000)",
+    "forcing scheme (edm, guo)",
+    "pressure discretisation (standard, pressure_tensor)",
+    "initial interface width (4, 6, 8)",
+    "relaxation time tau (0.6, 0.8, 1.0, 1.2)"
+  ],
+  "variables_held_fixed": [
+    "EOS = Peng-Robinson (Yuan & Schaefer 2006 parameters)",
+    "G = 1.0 (library convention, attractive)",
+    "box size L = 96 (tiers), L = 64 (pilot)",
+    "droplet radius R = 20",
+    "float32, periodic boundary",
+    "torch.set_num_threads(1) for reproducibility"
+  ],
+  "physics_arm": {
+    "case": "Static droplet in periodic box, evolved to mechanical equilibrium with EDM forcing",
+    "reference": "Maxwell equal-area coexistence pair from sc_eos_coexistence.maxwell_coexistence",
+    "note": "The planar-interface control arm separates curvature effects from scheme discretisation error"
+  },
+  "analysis": "Report A1 vs A2 vs A3 per KPI with explicit pass/fail vs the predeclared thresholds; distinguish the forcing scheme effect from the pressure discretisation effect; no threshold tuning after seeing results",
+  "safety_resource_limits": "CPU float32, single process, 900 s wall-clock budget per arm on local; cluster queue for full campaign",
+  "external_anchor": {
+    "eos_params": "Yuan & Schaefer (2006) Phys. Fluids 18 042101 — PR-EOS parameters for pseudopotential LBM",
+    "maxwell_method": "Maxwell equal-area construction in specific-volume space: ∫_{v_l}^{v_v} [p(v) − p_sat] dv = 0",
+    "edm_forcing": "Li, Luo & Li (2012) Phys. Rev. E 86 016709 — exact-difference method for large density ratio",
+    "implementation": "src/tensorlbm/sc_eos_coexistence.py (Maxwell solver), src/tensorlbm/multiphase.py (psi_eos factories), benchmarks/eos_maxwell/probe_lib.py (probe driver)"
+  }
+}
