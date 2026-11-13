@@ -1,0 +1,114 @@
+{
+  "anchor": "XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING",
+  "mission": 17957,
+  "repo": "TensorLBM",
+  "oss_ref": {
+    "repo": "AminZar69/CudaPhaseField",
+    "commit": "d6181e677c413bbec443570010bca60d896022b5",
+    "file_lines": [
+      "Makefile:61",
+      "Makefile:64",
+      "kernel collision_h (286 lines), CUDA Fortran sources"
+    ],
+    "practice": "compile-time register cap maxregcount:64 applied to EVERY build mode and documented as a permanent constraint (not a diagnostic switch), pinned BEFORE any launch/tiling tuning, because the 18-population collision_h kernel overflowed the register budget and silently failed the launch",
+    "license": "GPL-3.0 -> transfer class = reference/adapt only (no code copied); the practice is a protocol, our implementation is original",
+    "inventory_source": "TensorPlatform/docs/oss_inventory/CudaPhaseField.md:115,147,202,271-272 and docs/oss_inventory/CudaPhaseField_evidence.py:438-439 (zero hand-copied numbers: all quoted lines above are re-read from those files by the runner and written into artifacts/oss_citation.json)"
+  },
+  "decision": "Should TensorLBM's kernel-tuning protocol pin the compute-resource budget (the register budget on the GPU path; the thread budget on the CPU path) BEFORE tuning the kernel configuration, and must every tuned result carry that pin, instead of the current status quo where each entry script sets its own thread count (1 / 16 / OMP env / torch default) and no tuned result records the budget it was obtained at?",
+  "alternatives": {
+    "U_status_quo": "unpinned tuning: 5 independent process launches, the thread budget is whatever the launch inherits (drift set below, exactly the values found in this repo by grep), each launch tunes the kernel grid and the winner is recorded as 'the tuned choice' with no budget in its provenance",
+    "P_pinned": "pinned tuning (OSS practice transplanted): one predeclared thread budget, applied by bench_pinning.pinned_resources() to every arm, the pin (threads, dtype, compile mode allowance, warmup, timed steps, repeats, maxnreg) is hashed into the provenance of every measurement, and assert_pinned() aborts a measurement whose live state differs from the pin",
+    "P_value_ref": "the OSS pin VALUE (maxregcount:64) is cross-checked arithmetically against a fused double-precision D3Q19 collision kernel: 19 populations + 19 equilibria live = 38 fp64 values = 76 32-bit register words > 64, so the value does not transfer even though the practice does"
+  },
+  "hypothesis": "H1: pinning the resource budget before tuning makes the selected kernel configuration reproducible (rank-1 choice identical in 5/5 independent launches, per-step-time relative spread of the modal config < 10%), while the unpinned status quo selects a different configuration depending on the inherited thread budget (rank-1 unstable in at least 1 of 5 launches, and the thread budget alone moves per-step time by more than 15% for at least one configuration). H0 (falsifier): the unpinned arm is also 5/5 stable with spread < 10% and the thread-budget sensitivity of every configuration is < 15% -- then the practice buys nothing here and the transplant is rejected.",
+  "metrics": {
+    "step_time_s": "median wall clock per LBM step over `timed_steps` steps after `warmup_steps` warm-up steps, one configuration per measurement, single process",
+    "rank1_config": "the (collision_impl, compile_mode) pair with the smallest step_time_s inside one launch",
+    "selection_stability": "number of the 5 launches whose rank1_config equals the modal rank1_config across the 5 launches (5/5 = perfectly reproducible)",
+    "spread_pct": "(max-min)/min of step_time_s of the modal rank1_config across the 5 launches, in percent",
+    "thread_sensitivity_pct": "for one fixed configuration: (max-min)/min of step_time_s across the predeclared thread ladder, in percent -- the direct measure of how much the unpinned budget can bias a tuning decision",
+    "u_max_rel_err": "|max_y u_x - analytic max_y u_x| / analytic max_y u_x in the Poiseuille anchor (analytic u(y)=g/(2 nu) y (H-y) in lattice units, wall at the half-way bounce-back location)",
+    "profile_l2_rel": "||u_x(y) - u_analytic(y)||_2 / ||u_analytic(y)||_2 over the channel cross-section",
+    "pin_effect_on_physics_rel": "|KPI(pinned arm) - KPI(unpinned arm)| / |KPI(pinned arm)| for u_max_rel_err and profile_l2_rel -- must be ~0 because a resource pin is a performance knob, not a physics knob",
+    "reg_words_required": "32-bit register words per thread needed by a fused collision kernel: live_arrays * words_per_value(precision) (fp32=1, fp64=2), compared with the OSS pinned cap of 64"
+  },
+  "unit_of_analysis": "one process launch = one unit; inside a launch each (collision_impl, compile_mode, threads) measurement is one sample; KPIs are scalars per launch/config",
+  "baseline_control": {
+    "baseline": "U_status_quo (this repo's current practice, measured, not assumed)",
+    "treated_arm": "P_pinned differs from U only in the resource budget being pinned and recorded -- identical kernel code, identical grid, identical timing protocol",
+    "physics_anchor": "analytic plane-Poiseuille solution of the same D2Q9/BGK kernel (independent of the tuning question), used to prove the pin is physics-neutral",
+    "oss_control": "the OSS practice cannot be executed (no GPU, GPL-3.0 code not copyable); its pin VALUE is instead checked arithmetically against our kernel's register footprint -- recorded as a comparison limit, not upgraded to a run"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "h1_selection_stability": "5 of 5 launches agree on rank-1 in the pinned arm",
+    "h1_spread_pct_max": 10.0,
+    "h1_unpinned_failure_evidence": "unpinned arm has at least one launch whose rank-1 differs from the modal rank-1, or a thread_sensitivity_pct >= 15",
+    "physics_acceptance_pct": "u_max_rel_err and profile_l2_rel < 15% (owner band) with a < 3% target reported separately",
+    "physics_pin_neutrality": "pin_effect_on_physics_rel < 1e-10 (a resource pin must not change the converged field)",
+    "stability_rule": "a measurement with a non-finite field, rho outside [0.95, 1.05], or Ma > 0.1 is declared failed and reported, never tuned away",
+    "interpretation": "H1 holds iff the pinned arm satisfies both h1_* conditions AND the unpinned arm shows the predeclared failure evidence AND the physics pair satisfies its two thresholds. Any partial outcome is reported as a partial result with the failing clause named."
+  },
+  "thread_drift_set": {
+    "values": [
+      128,
+      16,
+      1,
+      4,
+      8
+    ],
+    "order_fixed_before_runs": [
+      128,
+      16,
+      1,
+      4,
+      8
+    ],
+    "justification": "these are the thread budgets actually present in this repo (grep src/tensorlbm: 16 = TL_THREADS default in actuator_line.py:957, 1 = curved_wall_force_scaling.py:579 default, 128 = torch default on this 128-core host, 4/8 = mid-range values used by scripts that pass --threads); assigning one per launch emulates the real situation in which a tuned result obtained by one entry script is compared with one obtained by another",
+    "no_randomisation": "the order is fixed and declared here before the runs; no shuffle, no re-draw after inspecting timings"
+  },
+  "variables_changed": [
+    "resource budget pinned (U: inherited/drifting , P: pinned to 8 threads)",
+    "collision implementation under tuning: bgk / bgk_fused / bgk_matmul (tensorlbm.solver)",
+    "compile mode under tuning: eager vs torch.compile('default') (both in ALLOWED_COMPILE_MODES)",
+    "thread ladder for the sensitivity arm: 1, 2, 4, 8, 16, 32, 64, 128"
+  ],
+  "variables_held_fixed": [
+    "D2Q9, BGK/SRT, tau = 0.8 (nu = 0.1), float64, N = 128x128 periodic for the tuning grid",
+    "timing protocol: warm-up 10 steps, timed 40 steps, median of 5 repeats, median taken over repeats (no outlier removal)",
+    "Python 3 / torch 2.7.1 CPU / numpy 2.4.6 / matplotlib 3.10.8, single process, no other load imposed by the experiment",
+    "for the Poiseuille anchor: N = 32 x 64, H = 32 fluid rows, g = 1e-5, tau = 0.8, steps = 4000, half-way bounce-back walls, Guo-equivalent forcing (velocity shift + force term), mass correction off"
+  ],
+  "confounders": [
+    "cold torch.compile cost is excluded from step_time_s by the predeclared warm-up, but the compile cache state still differs between launches (warm cache after the first launch) -- reported, and the first launch is identified in the artifacts",
+    "host load from other agents on the same 128-core box: mitigated by taking the median of 5 repeats and by running launches sequentially, not in parallel; residual noise is reported as the repeat-level spread",
+    "thread count is not the perfect analogue of a register cap: a register cap changes occupancy at fixed launch geometry, a thread budget changes both parallel efficiency and cache locality -- this limits transfer of the *magnitude*, not of the *practice*",
+    "the CPU path cannot exhibit register-spill launch failures, so the OSS failure mode is only reproduced arithmetically (reg_words_required vs the 64-word cap), never as a crash"
+  ],
+  "repetition_rationale": "5 launches per arm: the decision is about reproducibility, and 5 launches already detect a 4/5 vs 5/5 difference while keeping the wall-clock budget (10 launches x ~40 s) inside the 10-minute single-host limit; per-configuration timing repeats (5) are chosen to make the median robust to the ~5% single-sample noise observed in the pilot",
+  "stopping_rule": "every launch runs its predeclared number of steps and repeats and then stops; no launch is extended or re-run to change a verdict; a launch that raises is reported as failed with its traceback rather than retried with different settings",
+  "environment": {
+    "python": "3.x (system)",
+    "torch": "2.7.1 (CPU, float64)",
+    "numpy": "2.4.6",
+    "matplotlib": "3.10.8",
+    "host_cores": 128,
+    "gpu": "absent (nvidia-smi not installed) -- GPU register-pin path is analysed arithmetically only",
+    "work_tree": "/root/tp-agent/work/m17957 (branch agent/m17957)",
+    "raw_data": "TensorLBM/artifacts/xval_maxregcount_pinned/*.json,*.csv; figures in figures/xval_maxregcount_pinned/"
+  },
+  "analysis": "grouped by arm; per launch the rank-1 configuration and the modal-config spread are computed; no outlier removal, no threshold tuning; medians rather than means for timings because the timing distribution is right-skewed; the physics pair is compared with relative differences only",
+  "fail_stage_plan": "fail_stage names the stage (pin_api / launch_protocol / physics_anchor / analysis) and failure_reason carries the measured deviation; a falsified hypothesis is reported as such rather than re-designed after seeing results",
+  "amendments": [
+    {
+      "when": "2026-11-13T10:40:00Z",
+      "what": "added a secondary clock: `step_cpu_s` = median process CPU time per step (time.process_time) next to the primary wall-clock `step_time_s`, and the ladder arm now interleaves every (threads, config) cell and medians over 2 sweeps.",
+      "why": "pilot launch 0 (arm P, run before the main runs) showed 2.6x within-configuration scatter between the 5 timing repeats, caused by other agents sharing the 128-core host. The pilot was inspected for timing noise only (its rank-1 was not used and all main runs were re-run from scratch). The secondary clock and the interleaved ladder are added to test whether a conclusion survives under a noise-robust clock, NOT to relax a threshold: every predeclared verdict is still taken on the primary wall clock, and a verdict that only holds under the CPU clock is reported as such."
+    },
+    {
+      "when": "2026-11-13T10:52:00Z",
+      "what": "ladder arm scope reduced: thread ladder {1,2,4,8,16,32,64,128} x 2 interleaved sweeps -> {1,8,16,64,128} x 1 sweep. Per-cell timing protocol unchanged (warm-up 10, 40 timed steps, 5 repeats, median).",
+      "why": "the first ladder launch had consumed 13.5 min wall / 34 min CPU without finishing because the shared 128-core host was at load average 171 (other agents' jobs). The cut is a SCOPE cut of the sensitivity sub-study, not a threshold change: no threshold in predeclared_thresholds was touched, and the 5 remaining budgets still span 1..128 (two orders of magnitude). The scope cut and the host load average are reported in the report's friction/limitation section."
+    }
+  ]
+}
