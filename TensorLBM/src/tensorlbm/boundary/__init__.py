@@ -16,6 +16,12 @@ from .inamuro_wetnode import (
     apply_inamuro_all_directions,
     create_curved_boundary_masks,
 )
+from .force_corrected_nebb import (
+    ForceCorrectedNEBB,
+    apply_force_corrected_nebb,
+    apply_force_corrected_nebb_1d,
+    compute_force_correction,
+)
 
 __all__ = [
     "SuctionWallBC",
@@ -34,4 +40,8 @@ __all__ = [
     "apply_inamuro_wetnode",
     "apply_inamuro_all_directions",
     "create_curved_boundary_masks",
+    "ForceCorrectedNEBB",
+    "apply_force_corrected_nebb",
+    "apply_force_corrected_nebb_1d",
+    "compute_force_correction",
 ]
