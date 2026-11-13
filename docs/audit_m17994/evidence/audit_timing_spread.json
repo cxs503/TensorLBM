@@ -1,0 +1,45 @@
+{
+ "mlups_max_ratio_rerun_vs_delivered": 2.763,
+ "mlups_delivered": {
+  "unpacked_np1": 0.619213001837487,
+  "unpacked_np2": 0.3906003339665035,
+  "unpacked_np4": 0.2974394837500501,
+  "unpacked-selective_np1": 0.4978808313996004,
+  "unpacked-selective_np2": 0.4141303545154238,
+  "unpacked-selective_np4": 0.305291008818074,
+  "packed-selective_np1": 0.4351081858132216,
+  "packed-selective_np2": 0.3711895281624163,
+  "packed-selective_np4": 0.3588782145998836
+ },
+ "mlups_rerun": {
+  "unpacked_np1": 1.035017838178821,
+  "unpacked_np2": 0.4871389060380125,
+  "unpacked_np4": 0.4045496896235942,
+  "unpacked-selective_np1": 1.1863413506160754,
+  "unpacked-selective_np2": 0.4727321839919633,
+  "unpacked-selective_np4": 0.42064019982869805,
+  "packed-selective_np1": 1.2021385154104227,
+  "packed-selective_np2": 0.5290987099764886,
+  "packed-selective_np4": 0.3718836022742967
+ },
+ "overlap_speedup_delivered": {
+  "np1": 1.1609719396653748,
+  "np2": 0.47508001319037907,
+  "np4": 0.4559125714841407
+ },
+ "overlap_speedup_rerun": {
+  "np1": 1.1018550008868322,
+  "np2": 0.20532807613505022,
+  "np4": 0.41997593903265207
+ },
+ "poll_wall_delivered": {
+  "poll_every_1": 17.534066259860992,
+  "poll_every_8": 13.452549720183015,
+  "poll_every_64": 16.25047178938985
+ },
+ "poll_wall_rerun": {
+  "poll_every_1": 11.365660659968853,
+  "poll_every_8": 6.1050335597246885,
+  "poll_every_64": 6.321696639060974
+ }
+}
