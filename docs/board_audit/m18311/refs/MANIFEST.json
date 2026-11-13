@@ -1,0 +1,22 @@
+{
+ "case": "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+ "commit": "bcf10687",
+ "branch": "agent/m18193",
+ "note": "audit-side snapshot of commit bcf10687 obtained with `git archive bcf10687`; live worktree /root/tp-agent/work/m18193 was written by other processes during the audit",
+ "files": {
+  "docs/board_audit/m18311/refs/rerun_result.json": "50a9e3ee6dac90a50a714111289736be984f08c76b6e9ace99ddf796229b1353",
+  "docs/board_audit/m18311/refs/src/tensorlbm/porter_forcing.py": "074ac184cd5fdce69691be929935e837b73f222ba90834b818d7f66eeb8fd595",
+  "docs/board_audit/m18311/refs/tests/test_porter_forcing.py": "b969b3b02063cdeb5f122e85d3be03fcbca44d50ce1b8707b802310e4a0f2162",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/REPORT.md": "fe6aac967c69cd7f494ab69fbd623889126c104bd4c29edcff2d48e04f2afe92",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/result.json": "22610482d6ad492cb3155cc68ac1ea3a8cbdf94b549cf339b785486fdf620fc0",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/table.md": "8a3d53dc801cb9501f20427ea5b2ec7e3e41c1c1d67b368a2aed53eada87cdfd",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/figures/fig1_layered_profiles.png": "bac2dbcfd48be6f411ae38f2703e8a782c8ae0b1087694d61580941c2f7e9e01",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/figures/fig2_convergence.png": "bf187000e50dc3595ffcb973e7c74fdfa8c4a09997287a60f05ce2c1aa655a1d",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/figures/fig3_stencils.png": "fa311f7d9c120a611e6dca301ae2b32105a7abe5edc39f0518a4f39fc211691a",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/got_driver.py": "b589f5ea4000f26dac1bbd977532d5b0e28c972e8c7ee724cd319d71ed5a50ca",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/make_figures.py": "755165ecfa921fe24c49b025f275773cf4de2b2fbe97aa8c68da687b913a1995",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/predeclared.json": "23f81742af9aadbaf3f55f98840cc188683eaf03e285ad7a6f52272f174a58bd",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/ref/porter_ref.py": "86e3164c2fcf113fef889d637345611769ebe46acf70dca7daf3a6a705b68b23",
+  "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py": "77a64f98b50c797650a1e98ed211501e5935ebb66168caa8523316773c9e5bd6"
+ }
+}

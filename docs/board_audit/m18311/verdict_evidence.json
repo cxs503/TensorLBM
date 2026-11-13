@@ -1,0 +1,160 @@
+{
+ "scope": "m18193 XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+ "repo": "TensorLBM",
+ "mission_id": 18311,
+ "level": 2,
+ "verdict_by": "board-audit",
+ "evidence": {
+  "impl_files": [
+   "docs/board_audit/m18311/refs/src/tensorlbm/porter_forcing.py"
+  ],
+  "impl_files_origin": [
+   "/root/tp-agent/work/m18193/src/tensorlbm/porter_forcing.py:59-294 (commit bcf10687, branch agent/m18193)"
+  ],
+  "entry": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py",
+  "run_artifacts": [
+   "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/result.json",
+   "docs/board_audit/m18311/audit_repro.json"
+  ],
+  "tests": [
+   "tests/test_porter_forcing.py::test_force_pdf_moments",
+   "tests/test_porter_forcing.py::test_collision_momentum_injection[doc_literal-0.5]",
+   "tests/test_porter_forcing.py::test_isotropic_stencil_invariants",
+   "tests/test_porter_forcing.py::test_gradient_exact_on_linear_field[4]",
+   "tests/test_porter_forcing.py::test_forced_channel_reproduces_analytic_poiseuille",
+   "(13/13 pass: python3 -m pytest tests/test_porter_forcing.py -q -> 13 passed in 4.04s)"
+  ],
+  "integration_callers": "",
+  "integration_query": "grep -rn 'porter_forcing' --include=*.py src/ (branch bcf10687) -> 0 hits; grep -rl 'porter_forcing' /root/tensor-ecosystem/TensorLBM --include=*.py -> 0 hits; no export in src/tensorlbm/__init__.py -> L3 refused (not wired into any solver)",
+  "benchmark": {
+   "external_ref": "analytic Poiseuille (single component) / analytic two-layer Stokes (two component); lattice-scheme independent",
+   "port_fidelity_ref_vs_got": {
+    "pairs_paired": 3,
+    "worst_rel_diff": 8.382514993966714e-11,
+    "detail": [
+     {
+      "variant": "doc_literal",
+      "M": 1.0,
+      "got": 0.0003425490702923232,
+      "ref": 0.000342549070263609
+     },
+     {
+      "variant": "doc_literal",
+      "M": 10.0,
+      "got": 0.40927382267253526,
+      "ref": 0.4092738226725938
+     },
+     {
+      "variant": "doc_seq",
+      "M": 1.0,
+      "got": 0.4793917583823317,
+      "ref": 0.4793917583822867
+     }
+    ],
+    "note": "doc_seq@M=10 has no GOT row -> reported '4 configurations' is really 3 pairs (finding F2)"
+   },
+   "B1_single_component_err": {
+    "NY34_doc_literal": 0.00032492391957601263,
+    "NY66_doc_literal": 0.0050659841841416585,
+    "NY34_legacy": 0.00034446664844361627,
+    "tol": "<15% owner / <3% stretch -> PASS"
+   },
+   "B2_layered_err_vs_M": {
+    "M=1.0": {
+     "porter": 0.0003425490702923232,
+     "legacy": 0.0003250181241483931,
+     "ratio": 0.9488220880910008
+    },
+    "M=5.0": {
+     "porter": 0.218844927455517,
+     "legacy": 0.4085981592486583,
+     "ratio": 1.8670670780418752
+    },
+    "M=10.0": {
+     "porter": 0.40927382267253526,
+     "legacy": 0.6060529902221903,
+     "ratio": 1.4808007662564344
+    },
+    "M=100.0": {
+     "porter": 0.8018976333373806,
+     "legacy": 3399.3176470509234,
+     "ratio": 4239.091756516927
+    }
+   },
+   "criterion_result": "PASS: B1 3.249e-4 (NY=34) / port-fidelity 8.4e-11 << 1e-6; FAIL(<15% owner criterion): M=5 21.9%, M=10 40.9%, M=100 80.2% -> L4 refused; best M=10 at NY=66 = 18.1%; legacy/A2 discrimination 3.105x only at NY=66 (1.48x at NY=34)",
+   "mechanism": {
+    "nu_eff_over_nominal_light_M10": [
+     4.4518885110015445,
+     3.0439655095250324,
+     1.233903954835102
+    ],
+    "note": "diffuse interface smears the viscosity contrast; G=0 (no SC interaction) in this round"
+   },
+   "machine_referee_before_audit": "tensor_benchmark_cases had NO row for this anchor_slug (SELECT ... WHERE anchor_slug=... -> 0 rows) -> finding F1, this audit registers 3 rows (2 passed / 1 failed)"
+  },
+  "repro_cmd": "cd <TensorLBM branch bcf10687> && python3 xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py  # audit re-run: 35/35 runs reproduced, max rel diff of err = 0.0 (bit-for-bit), b3 stencils identical",
+  "reproduction": {
+   "runs_recorded": 35,
+   "runs_rerun": 35,
+   "same_run_keys": true,
+   "max_rel_diff_err": 0.0,
+   "b3_identical": true,
+   "recorded_sha256": "22610482d6ad492cb3155cc68ac1ea3a8cbdf94b549cf339b785486fdf620fc0"
+  },
+  "level_rationale": {
+   "L1": "13 unit tests on invariants (sum F_i=0, sum F_i c_i=F, zero 2nd moment of force PDF, isotropy A4/A6/A8, exact gradient on linear field) -> all pass",
+   "L2": "real numpy implementation 294 lines, driver input->compute->output, run artifacts present, deterministic re-run -> GRANTED",
+   "L3": "REFUSED: 0 callers, module not exported, branch bcf10687 not merged into main (git merge-base --is-ancestor -> NOT MERGED)",
+   "L4": "REFUSED: owner <15% criterion fails for the two-component claim (M=10 40.9%); no external experimental/literature value, only self-derived analytic solution",
+   "L5": "REFUSED: no new physics, no handbook source page"
+  },
+  "honest_negative": "the OSS claim 'the four-piece set enables large viscosity ratios' is NOT corroborated at M>=5 on the grids tested (best 18.1%); it is corroborated only vs the legacy control arm at the finest grid (3.1x)",
+  "findings": [
+   {
+    "id": "F1",
+    "sev": "high",
+    "what": "no tensor_benchmark_cases row for this anchor -> no machine referee; <15% was self-declared only",
+    "action": "fixed by this audit: 3 rows registered (2 passed, 1 failed)"
+   },
+   {
+    "id": "F2",
+    "sev": "medium",
+    "what": "REPORT.md claims REF vs GOT identical in '4 configurations (3.425e-04/4.093e-01/4.794e-01/4.703e-01)'; doc_seq@M=10 has no GOT row, so 4.703e-01 is unpaired; worst paired rel diff = 8.38e-11, not <1e-15",
+    "action": "recorded; conclusion (<1e-6 threshold) unaffected"
+   },
+   {
+    "id": "F3",
+    "sev": "medium",
+    "what": "REPORT.md headline says the 3x discrimination is reached '3.1x at NY=34'; measured ratio at NY=34 is 1.481, 3.105 only at NY=66; predeclared criterion never names the grid",
+    "action": "recorded; refines the claim to the finest grid"
+   },
+   {
+    "id": "F4",
+    "sev": "high",
+    "what": "deliverable not merged: main (/root/tensor-ecosystem/TensorLBM, worktree m18311) has no src/tensorlbm/porter_forcing.py; branch agent/m18193 (bcf10687) is unmerged -> capability not yet available to any solver",
+    "action": "recorded as L3 blocker"
+   },
+   {
+    "id": "F5",
+    "sev": "low",
+    "what": "m18193 worktree is being concurrently written (a sc_closed_box.py appeared and vanished mid-audit) -> evidence snapshotted from commit bcf10687 via git archive, sha256 in refs/MANIFEST.json",
+    "action": "mitigated"
+   }
+  ],
+  "checks_run": [
+   "git archive bcf10687 snapshot + sha256 manifest",
+   "full re-run of run_xval.py (35 runs, ~4 min) vs recorded artifact: max rel diff = 0.0",
+   "pytest tests/test_porter_forcing.py -> 13 passed",
+   "grep integration callers (branch tree + eco repo) -> 0",
+   "git merge-base --is-ancestor bcf10687 HEAD -> NOT MERGED",
+   "SELECT from tensor_benchmark_cases for anchor -> 0 rows (before) / 3 rows (after)",
+   "report six-section audit + claim-vs-artifact recomputation (F2/F3)"
+  ],
+  "checks_not_run": [
+   "no experimental/handbook reference value available for the layered-Stokes case -> external anchoring WITHHELD",
+   "no 3D and no G=0-free multi-phase case with a real SC interaction force (declared next-round item)",
+   "no comparison against the actual openLBMPM source (no licence, network blocked)"
+  ],
+  "external_anchor": ""
+ }
+}
