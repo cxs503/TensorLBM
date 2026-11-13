@@ -1,0 +1,48 @@
+{
+  "audited_mission": 17724,
+  "anchor": "XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION",
+  "claim": {
+    "dp_got": 0.0006671389172852038,
+    "dp_analytic": 0.0006666666666666666,
+    "err_pct": 0.07083759278057379,
+    "pass_15pct": true
+  },
+  "auditor_rerun": {
+    "primary_R15": {
+      "dp_got": 0.0006671389172852038,
+      "dp_analytic": 0.0006666666666666666,
+      "err_pct": 0.07083759278057379,
+      "u_max": 9.640969031056316e-06,
+      "psi_min": -1.0014725686870507,
+      "psi_max": 0.9995979962453221,
+      "sigma_eff_from_dp": 0.010007083759278057,
+      "sigma_from_capillary_energy": 0.004855037189981178
+    },
+    "R10_800": {
+      "dp_got": 0.0010064342678267058,
+      "dp_analytic": 0.001,
+      "err_pct": 0.6434267826705732,
+      "u_max": 8.315034008367665e-05
+    },
+    "bit_identical_to_artifact": true
+  },
+  "sigma_cross_route": {
+    "sigma_input": 0.01,
+    "sigma_from_dp_times_R": 0.010007083759278057,
+    "sigma_from_capillary_energy_x2": 0.009710074379962356,
+    "note": "sigma = integral kappa|grad psi|^2 dA / (2 pi R); the 0.5 factor in the energy density is dropped because the planar-interface identity is sigma = int kappa|grad psi|^2 dx"
+  },
+  "probes": {
+    "oss_pressure_definition": 0.9108112919931999,
+    "convergence_band_err_pct": [
+      0.23544745923189336,
+      6.835207950434038,
+      2.667041018114703
+    ],
+    "convergence_band_umax": [
+      1.089425535999392e-06,
+      3.759170803261695e-05
+    ]
+  },
+  "figure": "/root/tp-agent/work/m17877/docs/audit_m17877/fig_m17877_evidence.png"
+}
