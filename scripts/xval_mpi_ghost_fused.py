@@ -51,7 +51,10 @@ def make_figures(results, out_dir: str) -> list[str]:
     result = by_tag["n64_r2"]
     case = TGV(n=result["cfg"]["n"], u0=result["cfg"]["u0"], tau=result["cfg"]["tau"])
     steps = sorted(int(k) for k in result["serial"]["series"])
-    analytic = [case.decay(t) * case.u0 * math.sqrt(3.0 / 8.0) for t in steps]
+    # ||u||_2 / n^1.5 of the analytic mode is exactly U0 f(t) / 2 (the six
+    # sin^2 cos^2 cos^2 sums each contribute n^3/8 for the (ux, uy) pair), NOT
+    # U0 sqrt(3/8): that constant belongs to a different normalisation.
+    analytic = [case.decay(t) * case.u0 * 0.5 for t in steps]
     fig, ax = plt.subplots(figsize=(6.0, 4.2))
     ax.plot(steps, [result["serial"]["series"][str(t)] for t in steps], "o-", label="monolithic")
     ax.plot(steps, [result["arms"]["selective_persistent"]["series"][str(t)] for t in steps],
