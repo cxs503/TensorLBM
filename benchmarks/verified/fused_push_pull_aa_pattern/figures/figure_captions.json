@@ -1,0 +1,5 @@
+{
+  "fig1_error_vs_grid.png": "Discretisation error of both kernels against the closed-form Taylor-Green solution, grids with steps \u221d n\u00b2 (fixed physical time). Both curves sit orders of magnitude below the 15% owner gate.",
+  "fig2_fields.png": "Contours at the finest grid: analytic, AB reference, fused push-pull, and the difference amplified by 1e13 \u2014 the two kernels are the same field to round-off.",
+  "fig3_conservation.png": "Left: relative mass drift per run (gate 1e-12). Right: viscosity inverted from the Taylor-Green energy decay versus the prescribed 1/6."
+}

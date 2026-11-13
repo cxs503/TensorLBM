@@ -1,0 +1,229 @@
+{
+  "anchor": "XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN",
+  "arms": [
+    {
+      "energy": 0.009282202472798167,
+      "grid": 32,
+      "kernel": "ab",
+      "mach": 0.034641016151377546,
+      "mass_drift_rel": 6.661338147750939e-15,
+      "nu": 0.16666666666666666,
+      "nu_inversion_err_rel": 0.0031397128758714477,
+      "nu_inverted": 0.16718995214597857,
+      "rho_lu2": 0.12238391499613274,
+      "steps": 120,
+      "tau": 1.0,
+      "u_max": 0.02,
+      "ux_lu2": 0.004848890891072169,
+      "uy_lu2": 0.004848890891079982,
+      "wall_s": 1.1716734003275633
+    },
+    {
+      "energy": 0.009282202472798222,
+      "grid": 32,
+      "kernel": "fused_push_pull",
+      "mach": 0.034641016151377546,
+      "mass_drift_rel": 6.772360450213455e-15,
+      "nu": 0.16666666666666666,
+      "nu_inversion_err_rel": 0.0031397128758694492,
+      "nu_inverted": 0.16718995214597823,
+      "rho_lu2": 0.1223839149964019,
+      "steps": 120,
+      "tau": 1.0,
+      "u_max": 0.02,
+      "ux_lu2": 0.004848890891071972,
+      "uy_lu2": 0.004848890891074116,
+      "wall_s": 0.9654583092778921
+    },
+    {
+      "energy": 0.021001254830315234,
+      "grid": 48,
+      "kernel": "ab",
+      "mach": 0.034641016151377546,
+      "mass_drift_rel": 1.5000346643824338e-14,
+      "nu": 0.16666666666666666,
+      "nu_inversion_err_rel": 0.0013392372332272084,
+      "nu_inverted": 0.16688987287220453,
+      "rho_lu2": 0.019081179366916633,
+      "steps": 270,
+      "tau": 1.0,
+      "u_max": 0.02,
+      "ux_lu2": 0.0021006959874302496,
+      "uy_lu2": 0.0021006959874232314,
+      "wall_s": 2.4888518787920475
+    },
+    {
+      "energy": 0.021001254830315206,
+      "grid": 48,
+      "kernel": "fused_push_pull",
+      "mach": 0.034641016151377546,
+      "mass_drift_rel": 1.5000346643824338e-14,
+      "nu": 0.16666666666666666,
+      "nu_inversion_err_rel": 0.001339237233227708,
+      "nu_inverted": 0.1668898728722046,
+      "rho_lu2": 0.019081179365362466,
+      "steps": 270,
+      "tau": 1.0,
+      "u_max": 0.02,
+      "ux_lu2": 0.002100695987430264,
+      "uy_lu2": 0.002100695987426734,
+      "wall_s": 4.232760010287166
+    },
+    {
+      "energy": 0.03740790561277786,
+      "grid": 64,
+      "kernel": "ab",
+      "mach": 0.034641016151377546,
+      "mass_drift_rel": 2.6534330288541244e-14,
+      "nu": 0.16666666666666666,
+      "nu_inversion_err_rel": 0.0007116206087128818,
+      "nu_inverted": 0.16678527010145214,
+      "rho_lu2": 0.0406942880307029,
+      "steps": 480,
+      "tau": 1.0,
+      "u_max": 0.02,
+      "ux_lu2": 0.0011212279241848769,
+      "uy_lu2": 0.0011212279241859112,
+      "wall_s": 107.18882831931114
+    },
+    {
+      "energy": 0.03740790561277767,
+      "grid": 64,
+      "kernel": "fused_push_pull",
+      "mach": 0.034641016151377546,
+      "mass_drift_rel": 2.6534330288541244e-14,
+      "nu": 0.16666666666666666,
+      "nu_inversion_err_rel": 0.0007116206087145471,
+      "nu_inverted": 0.16678527010145242,
+      "rho_lu2": 0.04069428803101056,
+      "steps": 480,
+      "tau": 1.0,
+      "u_max": 0.02,
+      "ux_lu2": 0.0011212279241876186,
+      "uy_lu2": 0.0011212279241885413,
+      "wall_s": 6.523592758923769
+    }
+  ],
+  "case": "2d_taylor_green_decay_d2q9_bgk",
+  "controls": [
+    {
+      "exceeds_gate": true,
+      "grid": 32,
+      "name": "nu_bias_25pct",
+      "note": "relaxation from nu*1.25 (+25% viscosity)",
+      "steps": 120,
+      "ux_lu2": 0.323943769222613
+    },
+    {
+      "exceeds_gate": true,
+      "grid": 32,
+      "name": "mirror_we_initial",
+      "note": "+x/-x directions of the IC swapped",
+      "steps": 120,
+      "ux_lu2": 1.9364617698235993
+    }
+  ],
+  "equivalence": {
+    "grid": 64,
+    "max_abs_fused_vs_collided_ab": 3.3306690738754696e-16,
+    "max_abs_fused_vs_raw_ab_state_label_offset": 0.00013987266991739855,
+    "rel_l2_velocity_ab_vs_analytic": 0.001121227924185394,
+    "rel_l2_velocity_cross_arm": 3.0664479713403836e-14,
+    "rel_l2_velocity_fused_vs_analytic": 0.0011212279241880798,
+    "steps": 480
+  },
+  "figures": [
+    {
+      "caption": "Discretisation error of both kernels against the closed-form Taylor-Green solution, grids with steps \u221d n\u00b2 (fixed physical time). Both curves sit orders of magnitude below the 15% owner gate.",
+      "name": "fig1_error_vs_grid.png",
+      "path": "figures/fig1_error_vs_grid.png"
+    },
+    {
+      "caption": "Contours at the finest grid: analytic, AB reference, fused push-pull, and the difference amplified by 1e13 \u2014 the two kernels are the same field to round-off.",
+      "name": "fig2_fields.png",
+      "path": "figures/fig2_fields.png"
+    },
+    {
+      "caption": "Left: relative mass drift per run (gate 1e-12). Right: viscosity inverted from the Taylor-Green energy decay versus the prescribed 1/6.",
+      "name": "fig3_conservation.png",
+      "path": "figures/fig3_conservation.png"
+    }
+  ],
+  "ladder": [
+    {
+      "kernel": "ab",
+      "orders": [
+        2.0630166872815985,
+        2.1824240260589263
+      ],
+      "rows": [
+        {
+          "grid": 32,
+          "steps": 120,
+          "ux_lu2": 0.004848890891072169
+        },
+        {
+          "grid": 48,
+          "steps": 270,
+          "ux_lu2": 0.0021006959874302496
+        },
+        {
+          "grid": 64,
+          "steps": 480,
+          "ux_lu2": 0.0011212279241848769
+        }
+      ]
+    },
+    {
+      "kernel": "fused_push_pull",
+      "orders": [
+        2.0630166872814812,
+        2.18242402605045
+      ],
+      "rows": [
+        {
+          "grid": 32,
+          "steps": 120,
+          "ux_lu2": 0.004848890891071972
+        },
+        {
+          "grid": 48,
+          "steps": 270,
+          "ux_lu2": 0.002100695987430264
+        },
+        {
+          "grid": 64,
+          "steps": 480,
+          "ux_lu2": 0.0011212279241876186
+        }
+      ]
+    }
+  ],
+  "parameters": {
+    "boundary": "periodic",
+    "dtype": "float64",
+    "gate_pct": 0.15,
+    "ladder": [
+      {
+        "grid": 32,
+        "steps": 120
+      },
+      {
+        "grid": 48,
+        "steps": 270
+      },
+      {
+        "grid": 64,
+        "steps": 480
+      }
+    ],
+    "mach": 0.034641016151377546,
+    "nu": 0.16666666666666666,
+    "quick": false,
+    "rho0": 1.0,
+    "target_pct": 0.03,
+    "tau": 1.0,
+    "u_max": 0.02
+  },
+  "reference": "closed-form Taylor-Green (Krueger et al. 2016, ch.13 upstream taylor_green_eval); cell-centred X=x+1/2, Y=y+1/2, pressure term O(u^2)/3"
+}
