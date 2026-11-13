@@ -119,7 +119,7 @@ def figures(rows: list[dict], runs: dict) -> list[str]:
     xs = [float(k) for k in re_ref]
     ys = [float(refs[str(k)]["x1_over_s"]) for k in re_ref]
     ax.plot(xs, ys, "k--o", label="Armaly 1983 (in-repo anchor)")
-    for hi, style in ((52, "s"), (104, "^")):
+    for hi, style in ((26, "o"), (52, "s"), (104, "^")):
         pts = [(r["re"], r["x1_over_s"]) for r in rows if r["hi"] == hi and r["x1_over_s"] == r["x1_over_s"]]
         if pts:
             ax.plot(*zip(*pts), style, label=f"LBM h_in={hi} cells")
