@@ -1,0 +1,652 @@
+{
+  "sources": {
+    "oss_inventory": {
+      "path": "data/oss_inventory_dump.csv",
+      "n_rows": 33,
+      "sha256": "37359bac38a3700d5c84ba0a73f3ca8b544117ff2c747bef8a1d6d68fe6725df"
+    },
+    "oss_solutions": {
+      "path": "data/oss_solutions_dump.csv",
+      "n_rows": 261,
+      "sha256": "9ab9e3cfce0d9a1cae329634f9d84e2a16a160c8f55e611d7158cb3814196a15"
+    }
+  },
+  "families": {
+    "added_mass_pmm": {
+      "label": "oscillatory-flow inertia coefficient / added mass / PMM derivatives",
+      "patterns": [
+        "added[ -]?mass",
+        "\\bpmm\\b",
+        "planar motion mechanism",
+        "oscillat\\w* (?:flow|cylinder|free[ -]?stream)",
+        "morison",
+        "inertia coefficient",
+        "keulegan",
+        "\\bkc\\b.*\\btheta\\b",
+        "force oscillation test",
+        "captive (?:model )?test"
+      ],
+      "verdict": "empty",
+      "census_hits": [],
+      "ledger_hits": [],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 229,
+        "files": [
+          "__init__.py",
+          "acoustic_pulse_2d.py",
+          "acoustic_streaming.py",
+          "acoustics_rotating.py",
+          "acoustics_validation.py",
+          "adaptive_refinement.py",
+          "ai/active_learning.py",
+          "ai/active_learning_grad.py",
+          "ai/anchor_selection.py",
+          "ai/ckpt_bundle.py",
+          "ai/cylinder_multimodal_model.py",
+          "ai/drag_cond.py",
+          "ai/nn/attention_module.py",
+          "air_lubrication_turbulent.py",
+          "airfoil_polar.py",
+          "allen_cahn_lbm.py",
+          "amr_free_surface.py",
+          "amr_reflux.py",
+          "amr_shell_planning.py",
+          "apps/ai4s_flagship.py",
+          "apps/generative_flow.py",
+          "apps/hpc.py",
+          "audit/intl_bench.py",
+          "autograd_calib.py",
+          "b_series_open_water.py"
+        ]
+      }
+    },
+    "taylor_couette": {
+      "label": "Taylor-Couette / circular Couette concentric rotating cylinders",
+      "patterns": [
+        "taylor[ -]?couette",
+        "circular couette",
+        "concentric cylinder"
+      ],
+      "verdict": "empty",
+      "census_hits": [],
+      "ledger_hits": [],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 8,
+        "files": [
+          "curved_boundary_calibration.py",
+          "d3q27.py",
+          "ibm_validation_cases.py",
+          "rotating_certification.py",
+          "rotating_duct.py",
+          "rotating_interior.py",
+          "sliding_mesh_capability_contract.py",
+          "sliding_mesh_propulsion.py"
+        ]
+      }
+    },
+    "stagnation_hiemenz": {
+      "label": "Hiemenz stagnation-point flow",
+      "patterns": [
+        "hiemenz",
+        "stagnation[ -]point"
+      ],
+      "verdict": "empty",
+      "census_hits": [],
+      "ledger_hits": [],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 31,
+        "files": [
+          "adjoint.py",
+          "aero_reference.py",
+          "aircraft_icing.py",
+          "cavitation_chain/section.py",
+          "compressible/convergence.py",
+          "compressible/transonic_aero.py",
+          "compressible_shock/rankine_hugoniot.py",
+          "conjugate_thermal/cases.py",
+          "d3q27_validation.py",
+          "diff_lid_cavity.py",
+          "force_control_surface.py",
+          "free_surface_lbm.py",
+          "ibm_sphere_surface_force.py",
+          "lng_membrane_sloshing/__init__.py",
+          "lng_membrane_sloshing/campaign.py",
+          "lng_membrane_sloshing/impact.py",
+          "lng_sloshing/__init__.py",
+          "lng_sloshing/abramson.py",
+          "lng_sloshing/campaign.py",
+          "sloshing_forced/__init__.py",
+          "sloshing_forced/campaign.py",
+          "sloshing_forced/sweep.py",
+          "sloshing_forced/theory.py",
+          "sloshing_impact_calibration.py",
+          "sloshing_resonance/__init__.py"
+        ]
+      }
+    },
+    "electrokinetic": {
+      "label": "electro-osmotic / Poisson-Boltzmann electrokinetic LBM",
+      "patterns": [
+        "electro[ -]?osmo",
+        "poisson[ -]?boltzmann",
+        "electrokinet",
+        "debye"
+      ],
+      "verdict": "empty",
+      "census_hits": [],
+      "ledger_hits": [],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 3,
+        "files": [
+          "verification/cdr_pnp/__init__.py",
+          "verification/cdr_pnp/gates.py",
+          "verification/cdr_pnp/pnp_solver.py"
+        ]
+      }
+    },
+    "non_newtonian_powerlaw": {
+      "label": "non-Newtonian power-law / Herschel-Bulkley rheology",
+      "patterns": [
+        "power[ -]?law",
+        "herschel",
+        "bingham",
+        "non[ -]?newton",
+        "viscoplastic"
+      ],
+      "verdict": "covered",
+      "census_hits": [],
+      "ledger_hits": [
+        {
+          "id": "408",
+          "repo": "TensorSPH",
+          "field": "method",
+          "matched": "power-law",
+          "snippet": "VE-FLUME method-selection-2026-11-12 Piston wavemaker + power-law sponge + topmost-particle gauge array; graded by (G1) first"
+        }
+      ],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 101,
+        "files": [
+          "__init__.py",
+          "ai/__init__.py",
+          "ai/drag_surrogate.py",
+          "audit/intl_bench.py",
+          "autograd_calib.py",
+          "boundary/boundaries.py",
+          "boundary/partial_slip_wall.py",
+          "boussinesq.py",
+          "cavitation_chain/__init__.py",
+          "cavitation_chain/sigma.py",
+          "cavitation_chain/validation.py",
+          "compressible_shock/resolvability.py",
+          "contact_line/microtexture_impact.py",
+          "contact_line/scaling.py",
+          "convective_mass_transfer.py",
+          "convergence_mms.py",
+          "cumulant_verification.py",
+          "frazil_bingham_hb.py",
+          "frazil_hb_lbm.py",
+          "frazil_hb_rheology.py",
+          "frazil_lbm.py",
+          "frazil_powerlaw_mature.py",
+          "frazil_powerlaw_shear.py",
+          "frazil_rheology.py",
+          "frazil_settling_lbm.py"
+        ]
+      }
+    },
+    "mhd_lorentz": {
+      "label": "low-Rm MHD (Hartmann/Shercliff) Lorentz force",
+      "patterns": [
+        "hartmann",
+        "magnetohydro|\\bmhd\\b",
+        "lorentz"
+      ],
+      "verdict": "covered",
+      "census_hits": [],
+      "ledger_hits": [],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 1,
+        "repos": [
+          "pylbm"
+        ],
+        "files": [
+          "pylbm/demo/2D/Orszag_Tang_vortex.py"
+        ]
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 6,
+        "files": [
+          "mhd/__init__.py",
+          "mhd/damping.py",
+          "mhd/hartmann.py",
+          "mhd/ladder.py",
+          "mhd/shercliff.py",
+          "mhd/thruster.py"
+        ]
+      }
+    },
+    "immersed_boundary": {
+      "label": "immersed-boundary method coupling",
+      "patterns": [
+        "immersed[ -]boundary",
+        "\\bibm\\b"
+      ],
+      "verdict": "covered",
+      "census_hits": [
+        {
+          "id": "22",
+          "repo": "2b-t/LB-t",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "Guo \u63d2\u503c\u901f\u5ea6/\u538b\u529b(boundary_guo.hpp:43,165-176,219); \u65e0 Zou-He/\u66f2\u7387\u4fee\u6b63/IBM/\u58c1\u51fd\u6570 \u65e0 GPU/\u65e0 MPI\uff1b\u4ec5 OpenMP \u5171\u4eab\u5185\u5b58(collision_bgk.hpp:90 schedu"
+        },
+        {
+          "id": "16",
+          "repo": "CFD-GO/TCLB",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "els/multiphase/d3q27_pf_velocity/Boundary.c.Rt:704-717); no IBM per-margin segmented arrays with pocket pointer-shift str"
+        },
+        {
+          "id": "6",
+          "repo": "Maarten-vd-Sande/lbm",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "e.py:210-216); no Zou-He, no curvature/contact-angle BB, no IBM \u65e0 (numba CPU jit only, no CUDA/torch/MPI; outermost time-"
+        },
+        {
+          "id": "1",
+          "repo": "PorousMediaSimulation/openLBMPM",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "ied periodic (AcceleratedRKGPU2D.py:1382); no curved BB, no IBM numba.cuda single-GPU; legacy SoA + shared-memory streami"
+        },
+        {
+          "id": "15",
+          "repo": "ProjectPhysX/FluidX3D",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "1146\uff1b\u5e73\u8861\u6001\u8fb9\u754c :1641/:1669\uff1b\u6e29\u5ea6\u8fb9\u754c :1330-1358\uff1b\u65e0 Zou-He / \u65e0\u66f2\u7387\u58c1\u9762 / \u65e0 IBM(Peskin) SoA i*N+n src/kernel.cpp:861-863\uff1bEsoteric-Pull \u539f\u5730"
+        },
+        {
+          "id": "20",
+          "repo": "UvaCsl/HemoCell",
+          "field": "focus",
+          "matched": "IBM",
+          "snippet": "LBM+\u7ec6\u80de IBM \u60ac\u6d6e\u6d41\u8026\u5408 HPC"
+        },
+        {
+          "id": "21",
+          "repo": "cfdemons/LUMA",
+          "field": "summary",
+          "matched": "IBM",
+          "snippet": "\u5668\uff08Apache-2.0\uff0c66 commits\uff0c\u672b\u6b21 2023-08\uff0c\u65e0 CI\uff09\uff0c\u6210\u719f\u5904\u96c6\u4e2d\u5728\u591a\u7ea7\u91cd\u53e0\u7f51\u683c\u52a0\u5bc6\u754c\u9762\u7b97\u5b50\u3001IBM \u76f4\u63a5\u529b+RKPM \u03b5 \u5b88\u6052\u6821\u6b63+\u5f3a\u8026\u5408\u5b50\u8fed\u4ee3\u3001\u6b63\u5219\u5316\u8fdb\u51fa\u53e3\u8fb9\u754c\u4e09\u5757\uff1b\u591a\u76f8/GPU/\u53ef\u5fae\u4e3a\u96f6\u5b9e\u73b0\uff0c\u4e14\u4f18\u5316\u5185\u6838 3D \u529b\u9879"
+        },
+        {
+          "id": "11",
+          "repo": "haimingz/vivsim",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "stic(cbc.py:14-53)/periodic(streaming wrap, basic.py:60-85)/IBM \u6269\u6563\u754c\u9762(ib/mdf.py:10-64);\u65e0\u66f2\u7387\u8d34\u4f53\u66f2\u9762BC JAX\u7eaf\u51fd\u6570+XLA\uff1bAA-pattern (q,"
+        },
+        {
+          "id": "13",
+          "repo": "hietwll/LBM_Taichi",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "quilibrium-extrapolation(lbm_solver.py:130); velocity-reset-IBM-style(lbm_solver.py:106-118) Taichi-JIT(arch=ti.gpu, lbm_"
+        },
+        {
+          "id": "2",
+          "repo": "je-santos/MPLBM-UT",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "ary0N/0P (:273-287) + \u5468\u671f toggle (:603-608)\uff1b\u65e0 Zou-He/\u63d2\u503cBB/\u66f2\u7387/IBM \u65e0 (README.rst:307 \u4e3a\u672a\u52fe\u9009 TODO)\uff1b\u5e76\u884c\u4ec5\u9760 Palabos MPI \u5206\u5757 + \u672c\u4ed3 mpi"
+        },
+        {
+          "id": "24",
+          "repo": "joconnor22/LIFE",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "nt-forcing \u65e0 regularised(Latt2008)+convective(Yang2013)+IBM(Peskin3pt-dirac); \u65e0bounce-back \u65e0(\u4ec5OpenMP\u5171\u4eab\u5185\u5b58) 2D LBM-IB"
+        },
+        {
+          "id": "47",
+          "repo": "lanl/MF-LBM",
+          "field": "methods",
+          "matched": "IBM",
+          "snippet": "kipped solid cells; walls: no-slip only (no moving wall, no IBM, no slip len color-gradient + CSF + geometrical wetting,"
+        },
+        {
+          "id": "4",
+          "repo": "lbm-principles-practice/code",
+          "field": "boundary",
+          "matched": "immersed boundary",
+          "snippet": "let + specular free wall; staircase solid-node relabelling; immersed boundary (Peskin 2-/4-point kernels). No curvature/interpolated boun"
+        },
+        {
+          "id": "7",
+          "repo": "lettucecfd/lettuce",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "rpolated_bounce_back_boundary.py:9-18,64-77); no Zou-He; no IBM SoA per-direction planes f[q,x,y,z] (lettuce/_flow.py:92)"
+        },
+        {
+          "id": "14",
+          "repo": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": ".py:44-56); PNG->mask geometry (car.py:21-31); no curvature/IBM/Zou-He abstraction NHWC tensor [1,*Ndim,q] with q as chan"
+        },
+        {
+          "id": "9",
+          "repo": "lssfau/lbmpy",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "7,:1270,:1294); \u8fb9\u754c\u529b=\u52a8\u91cf\u4ea4\u6362 boundaryhandling.py:100,:108,:128; IBM=\u65e0, \u66ff\u4ee3 PSM \u90e8\u5206\u9971\u548c\u56fa\u4f53 partially_saturated_cells.py:11,:48,:115;"
+        },
+        {
+          "id": "17",
+          "repo": "lssfau/walberla",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "\u5ea6\u8fb9\u754c VelocityBoundary.h:220-232 (\u975eZou-He); \u65e0Zou-He\u5b9e\u73b0(\u5168\u68110\u547d\u4e2d); IBM: MEM SimpleBB.h:144-247(\u4f3d\u5229\u7565\u4fee\u6b63:241-246) + CurvedLinear.h + P"
+        },
+        {
+          "id": "18",
+          "repo": "omalaspinas/palabos",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "ceModel3D.h:63; generalizedOffLatticeModel3D.h:43,126,229); IBM Favier/Inamuro (immersedWalls3D.h:51,110,297,210,241) no"
+        },
+        {
+          "id": "12",
+          "repo": "sailfish-team/sailfish",
+          "field": "boundary",
+          "matched": "immersed boundary",
+          "snippet": "ving wall (:171); slip/Neumann/Yu-outflow (:402,:353,:336); immersed boundary (templates/ibm.mako:1-98); NO curved/interpolated BB SoA"
+        },
+        {
+          "id": "3",
+          "repo": "sorush-khajepor/listLBM",
+          "field": "boundary",
+          "matched": "IBM",
+          "snippet": "ost\u94fe\u8868(ghostlist_mod.f90:38-50, stream_mod.f90:104-129); \u65e0\u66f2\u7387/IBM \u65e0(\u5168\u4ed30\u547d\u4e2domp/mpi/cuda; README.md:3\u81ea\u8ff0\u672a\u5e76\u884c\u5316); \u6570\u636e\u5e03\u5c40pdf(0:nq,cel"
+        }
+      ],
+      "ledger_hits": [
+        {
+          "id": "47",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "e equilibrium in CM mode reference xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9563"
+        },
+        {
+          "id": "48",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "fficient on velocity BCs reference xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9563"
+        },
+        {
+          "id": "49",
+          "repo": "joconnor22/LIFE",
+          "field": "feature_slug",
+          "matched": "ibm",
+          "snippet": "NEW:ibm-fsi-strong-coupling implicit-IBM-Aitken-relaxation Dire"
+        },
+        {
+          "id": "50",
+          "repo": "joconnor22/LIFE",
+          "field": "feature_slug",
+          "matched": "ibm",
+          "snippet": "NEW:ibm-porous-media ibm-immersed-objects IBM bodies (rigid cir"
+        },
+        {
+          "id": "51",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "build; diff --exclude=Log.out fits xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9563"
+        },
+        {
+          "id": "126",
+          "repo": "haimingz/vivsim",
+          "field": "method",
+          "matched": "IBM",
+          "snippet": "GAP-LBM-SPHERE ib3d-diffuse-interface-mdf 3D \u6269\u6563\u754c\u9762 IBM \u66f2\u9762\u529b\u6cd5\u2014\u2014\u4e09\u89d2\u9762\u7247\u51e0\u4f55\u6c42\u9762\u79ef/\u4f53\u79ef/ds\uff0c\u6807\u8bb0\u70b9\u7528\u5f20\u91cf\u79ef 4\u00d74\u00d74 Peskin-4pt \u6a21\u677f\u63d2\u503c/\u6563\u5e03\uff0c\u591a\u91cd\u76f4\u63a5"
+        },
+        {
+          "id": "127",
+          "repo": "haimingz/vivsim",
+          "field": "feature_slug",
+          "matched": "IBM",
+          "snippet": "NEW:LBM-IBM-MDF-STENCIL peskin-tensor-product-stencil-mdf \u628a IBM ste"
+        },
+        {
+          "id": "136",
+          "repo": "cfdemons/LUMA",
+          "field": "feature_slug",
+          "matched": "IBM",
+          "snippet": "NEW:IBM \u76f4\u63a5\u529b + RKPM \u03b5 \u5b88\u6052\u6821\u6b63 + \u5f3a\u8026\u5408\u5b50\u8fed\u4ee3 ibm-direct-forcing-rkpm-epsilo"
+        },
+        {
+          "id": "148",
+          "repo": "omalaspinas/palabos",
+          "field": "conventions",
+          "matched": "IBM",
+          "snippet": "m/parallelBlockCommunicator3D.h:101 envelopeWidth \u6309\u9700\u7ed9\u5b9a\uff08\u591a\u76f8/IBM \u9700\u66f4\u5bbd\uff0c\u89c1 twoPhaseModel3D.h:2427 envelopeWidth\uff09\uff1bsendRecvPool \u5728\u4e24"
+        },
+        {
+          "id": "149",
+          "repo": "omalaspinas/palabos",
+          "field": "method",
+          "matched": "IBM",
+          "snippet": "\u52a8\u529b\u5b66\u5bf9\u8c61\u4ee5\u300c\u90e8\u5206\u53cd\u5c04\u300d\u8868\u793a\u591a\u5b54\u9aa8\u67b6/\u534a\u6e17\u900f\u58c1\uff0c\u914d\u5408\u7a00\u758f\u5757\u7ed3\u6784\u4e0e\u5b54\u9699\u51e0\u4f55\u793a\u4f8b\uff1b\u52a8\u91cf\u4ea4\u6362 bounce-back \u53e6\u7528\u4e8e IBM \u53d7\u529b\u7edf\u8ba1\u3002 src/boundaryCondition/partialBBdynamics.h:12, src/b"
+        },
+        {
+          "id": "255",
+          "repo": "joconnor22/LIFE",
+          "field": "feature_slug",
+          "matched": "IBM",
+          "snippet": "NEW:LBM-IBM-MDF-STENCIL ibm-epsilon-gram-implicit-correction 3 \u70b9 Ro"
+        },
+        {
+          "id": "256",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "\u53e3\u4ec5\u53f3\u8fb9\u754c\uff1bD2Q9 \u4e13\u7528\uff08\u91cd\u6784\u5f20\u91cf\u786c\u7f16\u7801 2D \u5206\u91cf\uff09 adapt xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9919"
+        },
+        {
+          "id": "257",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "enCavity/params.h:31\uff09\uff0c\u65e0\u72ec\u7acb\u9a8c\u8bc1\u9762 adapt xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9919"
+        },
+        {
+          "id": "258",
+          "repo": "joconnor22/LIFE",
+          "field": "method",
+          "matched": "IBM",
+          "snippet": "\u00b2\uff0c\u4f4d\u79fb U=U_km1+relax\u00b7(U\u2212U_km1)\uff0c\u6b8b\u5dee\u8303\u6570\u6309 ref_L\u00b7\u221a(DOF) \u5f52\u4e00\u3002\u6536\u655b\u540e\u4e00\u6b21\u6027\u94fa\u5c55 IBM \u529b\u3002 src/Objects.cpp:26, src/Objects.cpp:30, src/Objects.cp"
+        },
+        {
+          "id": "259",
+          "repo": "joconnor22/LIFE",
+          "field": "method",
+          "matched": "IBM",
+          "snippet": "\uff0cK_L \u4e3a\u6807\u51c6\u6881\u521a\u5ea6\uff1bNewmark-\u03b2(\u03b1=0.25,\u03b4=0.5) \u505a\u65f6\u95f4\u79ef\u5206\uff0c\u725b\u987f-\u62c9\u592b\u900a\u7ebf\u6027\u5316\u89e3 LAPACK\u3002IBM \u6807\u8bb0\u70b9\u6309 \u03b6 \u6620\u5c04\u5230\u5355\u5143\u5e76\u7528\u5f62\u51fd\u6570\u63d2\u503c\u4f4d\u79fb/\u901f\u5ea6\u3002 src/FEMElement.cpp:72, src/FEME"
+        },
+        {
+          "id": "260",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "\u4e00\u81f4\u6027\u6821\u9a8c\uff08src/Grid.cpp:1084-1104\uff09 fits xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9919"
+        },
+        {
+          "id": "261",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "nput/geometry.config \u8fd9\u4e00\u4e2a\u7ea6\u5b9a\u8def\u5f84 adapt xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9919"
+        },
+        {
+          "id": "269",
+          "repo": "joconnor22/LIFE",
+          "field": "transfer",
+          "matched": "IBM",
+          "snippet": "\u529b\uff1b\u03c1 \u53d8\u5316\u65f6\u4f53\u79ef\u529b\u4e0d\u91cd\u7b97\uff08\u82e5 g\u22600 \u9700\u6ce8\u610f\uff09 reference xval:XVAL-FEM-IMPLICIT-IBM-AITKEN-RELAXATION report 9920"
+        },
+        {
+          "id": "270",
+          "repo": "joconnor22/LIFE",
+          "field": "feature_slug",
+          "matched": "IBM",
+          "snippet": "NEW:LBM-IBM-STATIC-OBSTACLE-SET static-immersed-marker-obstacles \u300c\u7a00"
+        },
+        {
+          "id": "375",
+          "repo": "joconnor22/LIFE",
+          "field": "method",
+          "matched": "IBM",
+          "snippet": "up, rebuild required) + input/geometry.config (runtime-read IBM body list). 7 reference cases shipped (ChannelFlow, Cylinde"
+        }
+      ],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 67,
+        "files": [
+          "__init__.py",
+          "amr_capability_contract.py",
+          "audit/intl_bench.py",
+          "bfl_common.py",
+          "boundary/boundary_capability_contract.py",
+          "boundary/wall_model.py",
+          "boundary/wall_refinement_combination_gate.py",
+          "capability_contract_drift.py",
+          "cavitation_numerics.py",
+          "control_volume_force.py",
+          "cross_module_composition_matrix.py",
+          "dem/__init__.py",
+          "external_survey/data/lit_anchor_records.json",
+          "fcm.py",
+          "flapping_lbm_2d.py",
+          "flapping_propulsion.py",
+          "fluctuating_lbm.py",
+          "force_methods.py",
+          "fsi_capability_contract.py",
+          "fsi_common.py",
+          "fsi_partitioned_stability.py",
+          "fsi_viv_bb.py",
+          "fsi_viv_ibm.py",
+          "fused_step.py",
+          "general_capability_matrix.py"
+        ]
+      }
+    },
+    "aeroacoustics": {
+      "label": "aeroacoustics (FWH / acoustic analogy)",
+      "patterns": [
+        "aeroacoust",
+        "fowcs",
+        "acoustic analog"
+      ],
+      "verdict": "empty",
+      "census_hits": [],
+      "ledger_hits": [],
+      "source_scan": {
+        "available": true,
+        "root": "/root/oss-cache",
+        "n_files": 0,
+        "repos": [],
+        "files": []
+      },
+      "tensorlbm_src": {
+        "available": true,
+        "n_files": 66,
+        "files": [
+          "__init__.py",
+          "acoustic_beamforming.py",
+          "acoustic_pulse_2d.py",
+          "acoustic_streaming.py",
+          "acoustic_wave.py",
+          "acoustics.py",
+          "acoustics_capability_contract.py",
+          "acoustics_porous_absorber.py",
+          "acoustics_rotating.py",
+          "acoustics_validation.py",
+          "ai/cylinder_multimodal_data.py",
+          "ai/cylinder_multimodal_model.py",
+          "amr_composite2d.py",
+          "amr_free_surface.py",
+          "audit/intl_bench.py",
+          "autograd_path.py",
+          "boundary/boundaries.py",
+          "boundary/boundaries3d.py",
+          "boundary/boundary_capability_contract.py",
+          "boundary/sponge_bc.py",
+          "boundary/wall_resolved_channel3d.py",
+          "capability_contract_drift.py",
+          "capillary_wave.py",
+          "channel_kernel_numpy.py",
+          "convergence_mms.py"
+        ]
+      }
+    }
+  }
+}
