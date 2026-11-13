@@ -36,7 +36,7 @@ import torch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from .d2q9 import C, W, equilibrium, macroscopic
+from .d2q9 import C, W, _w_for, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -658,8 +658,12 @@ def guo_force_term(
     if not (rho.shape == ux.shape == uy.shape == fx.shape == fy.shape):
         raise ValueError("guo_force_term: rho/ux/uy/fx/fy must share one shape")
     device = fx.device
-    c = C.to(device).float()
-    w = W.to(device)
+    # Weights/velocities must follow the *field* dtype: with the historical
+    # ``.float()`` cast a float64 workload silently used float32-rounded
+    # weights (4/9 is not representable), which broke the momentum-injection
+    # identity sum_i c_i S_i = (1 - 1/(2 tau)) F at the 1e-9 level.
+    c = C.to(device).to(fx.dtype)
+    w = _w_for(fx.dtype, device)
     cx = c[:, 0].view(9, 1, 1)
     cy = c[:, 1].view(9, 1, 1)
     cu = cx * ux + cy * uy
@@ -1040,8 +1044,8 @@ def collide_sc_single_component(
         uyp = uy + 0.5 * Fy / rho_s
         feq = equilibrium(rho, uxp, uyp)
         device = f.device
-        c = _c_on(device).float()
-        w = _w_on(device).float()
+        c = _c_on(device).to(f.dtype)
+        w = _w_for(f.dtype, device)
         cx = c[:, 0].view(9, 1, 1)
         cy = c[:, 1].view(9, 1, 1)
         w3 = w.view(9, 1, 1)
