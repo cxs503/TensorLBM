@@ -1,0 +1,32 @@
+{
+  "note": "zero hand-copy: both dumps are produced by the SQL below and hashed; the survey script reads only these files",
+  "produced_at": "2026-11-13T09:33Z",
+  "database": "tensorplatform (postgres)",
+  "queries": {
+    "oss_inventory": "select id,repo,tier,focus,status,lang,license,methods,multiphase,boundary,gpu,summary,cache_nodes,cache_commit from oss_inventory order by repo",
+    "oss_solutions": "select id,repo,feature_slug,tag,method,files,conventions,transfer,evidence from oss_solutions order by id"
+  },
+  "permissions_note": "SELECT on oss_inventory/oss_solutions is not granted to the shell role; dumps were taken with runuser -u postgres (platform DB read-only role for the dump step)",
+  "rows": {
+    "oss_inventory_dump.csv": 33,
+    "oss_solutions_dump.csv": 261
+  },
+  "sha256": {
+    "oss_inventory_dump.csv": "37359bac38a3700d5c84ba0a73f3ca8b544117ff2c747bef8a1d6d68fe6725df",
+    "oss_solutions_dump.csv": "9ab9e3cfce0d9a1cae329634f9d84e2a16a160c8f55e611d7158cb3814196a15"
+  },
+  "reference_row_being_cross_validated": {
+    "oss_solutions_id": 386,
+    "repo": "oss-inventory/tensorplatform",
+    "feature_slug": "GAP-DEM-CLUMP",
+    "tag": "horizontal-survey-empty"
+  },
+  "oss_cache": {
+    "path": "/root/oss-cache",
+    "packages": [
+      "Maarten-vd-Sande_lbm",
+      "pylbm",
+      "hschwane"
+    ]
+  }
+}
