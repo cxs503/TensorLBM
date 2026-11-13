@@ -1,0 +1,84 @@
+{
+  "anchor": "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+  "mission_id": 18067,
+  "oss_source": {
+    "repo": "lssfau/walberla",
+    "oss_solutions_id": 274,
+    "feature_slug": "GAP-LBM-MCMP-POISEUILLE",
+    "tag": "no-mcmp-two-phase-only",
+    "method_note": "本仓无 MCMP（无组分概念、无组分输运方程）；两组分分层 Poiseuille 无法直接映射。可借用的只是相场的分层初始化几何写法与变密度平衡态装配，把\"两组分\"降级为\"两相分层\"来近似。",
+    "showcase": "apps/showcases/FreeSurface/DamBreakRectangular.{cpp,prm}",
+    "showcase_params": {
+      "lattice": "D2Q9 + SRTField + GuoField (DamBreakRectangular.cpp:49-51)",
+      "columnWidth": 50,
+      "columnRatio": 2,
+      "relaxationRate_omega": 1.9995,
+      "galileiNumber": 1831123817,
+      "bondNumber": 445,
+      "timesteps": 9910,
+      "pdfReconstructionModel": "OnlyMissing",
+      "pdfRefillingModel": "EquilibriumRefilling",
+      "excessMassDistributionModel": "EvenlyAllInterface",
+      "curvatureModel": "FiniteDifferenceMethod",
+      "cellConversionThreshold": 1e-2,
+      "cellConversionForceThreshold": 1e-1,
+      "smagorinskyConstant": 0.1,
+      "walls": "FreeSlip x4",
+      "derived": {
+        "nu": "(1/1.9995 - 0.5)/3 = 4.1667e-5",
+        "g": "Ga*nu^2/L^3 = 3.179e-3 lu/t^2",
+        "sigma": "|g|*L^2/Bo = 1.787e-2",
+        "Re": "c0*h0/nu ~ 1.35e6 (LES, Smagorinsky on)"
+      }
+    }
+  },
+  "decision": "Cross-validate TensorLBM's no-MCMP two-phase (fill-level free-surface) capability against walberla's no-MCMP two-phase approach on the Martin & Moyce (1952) planar dam break, the same showcase walberla ships for exactly this model family.",
+  "alternatives": [
+    "A1 (primary): TensorLBM fill-level Korner free surface (tensorlbm.free_surface_lbm, D3Q19 slab nz=4 free-slip span) via benchmarks/dam_break/fslbm_driver.py — direct approach counterpart of walberla's fill-level model",
+    "A2 (secondary): TensorLBM color-gradient pseudo-potential dam break (tensorlbm.verification.dam_break_2d_validation) — different two-phase family, same 'no-MCMP two-phase' class",
+    "A3 (rejected): build & run walberla C++ itself — CMake+codegen build cost disproportionate; OSS approach extracted from source instead (zero hand-copy), both arms compared to the same experimental reference"
+  ],
+  "hypothesis": "TensorLBM fill-level two-phase reproduces the Martin & Moyce experimental front position within 15% (owner criterion) at t* <= 3, with a consistent two-resolution convergence trend; the color-gradient arm agrees at the same level, showing the no-MCMP two-phase class is sound in this repo.",
+  "case": {
+    "name": "planar dam break, Martin & Moyce (1952) geometry",
+    "geometry": "water column width L, height h0 = 2L (columnRatio=2, same as walberla prm); domain 4L x 2h0; free-slip walls",
+    "reference": "src/artifacts/martin_moyce_1952_dam_break.json (digitized, sha256 in file, doi:10.1098/rsta.1952.0006)"
+  },
+  "metrics": {
+    "M1_front": "X* = x_front/L vs MM data at t* in {1.0, 2.0, 3.0}; front = last x with depth >= 0.5 cells",
+    "M2_mass": "max |mass drift| over full run",
+    "M3_inventory": "max |liquid inventory drift| (fill-level arm only)"
+  },
+  "thresholds": {
+    "M1_pass_pct": 15.0,
+    "M1_repo_gate_pct": 10.0,
+    "M2_pass_pct": 0.5,
+    "convergence": "two resolutions per arm; trend must not diverge (coarse error not >2x fine error at matched t*)"
+  },
+  "arms": {
+    "A_fill_level": {
+      "resolutions": [
+        {"h0": 50, "L": 50, "grid": "4x100x200 (nz x ny x nx)"},
+        {"h0": 100, "L": 100, "grid": "4x200x400"}
+      ],
+      "c0": 0.08,
+      "reynolds_target": 2000,
+      "checkpoints_t_star": [1.0, 2.0, 3.0]
+    },
+    "B_color_gradient": {
+      "resolutions": [
+        {"nx": 48, "ny": 24},
+        {"nx": 64, "ny": 32}
+      ],
+      "note": "existing repo driver, its own t* conversion"
+    }
+  },
+  "stopping_rule": "If arm A is NaN/crash at both resolutions -> honest FAIL at fail_stage=armA_run, report arm B as repo-side evidence, record friction. No threshold tuning after seeing results.",
+  "confounders": [
+    "Re choice: fixed reynolds_target=2000 across resolutions (grid-independent Re); walberla runs Re~1.35e6 with Smagorinsky — early-time front (t*<=3) is gravity-inertia dominated, Re sensitivity secondary",
+    "D3Q19 slab vs D2Q9: span is a symmetry direction with free-slip walls; documented in driver docstring",
+    "front threshold 0.5 cells: O(1/L) = 1-2% at L=50-100, below the 15% gate"
+  ],
+  "environment": "CPU torch, TL_THREADS=8, float32, worktree /root/tp-agent/work/m18067 branch agent/m18067",
+  "analysis": "errors computed programmatically from results.json; figures from the same JSON (zero hand-copy)"
+}
