@@ -1,0 +1,149 @@
+{
+  "anchor": "XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION",
+  "scope": "m17979 XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION",
+  "repo": "TensorLBM",
+  "claimed_level": 5,
+  "tests": [
+    "tests/test_free_energy_soy_cupy_dropin.py::test_static_droplet_obeys_young_laplace_law_within_15_percent",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_backends_agree_to_machine_precision_after_200_steps",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_backends_report_identical_array_op_counts",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_isotropic_gradient_is_exact_for_quadratic_field",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_isotropic_laplacian_is_exact_for_quadratic_field",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_equilibrium_populations_carry_the_expected_moments",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_momentum_definition_matches_half_force_correction",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_order_parameter_is_conserved_by_the_periodic_update",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_sharp_initial_profile_is_a_slow_transient_not_an_equilibrium",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_pressure_form_switch_changes_the_result_but_stays_acceptable",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_implementation_contains_no_fused_or_custom_kernels",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_solver_layer_caller_returns_laplace_diagnostics",
+    "tests/test_free_energy_soy_cupy_dropin.py::test_oss_reference_provenance_and_agreement"
+  ],
+  "tests_note": "14 tests in one module; run `python -m pytest tests/test_free_energy_soy_cupy_dropin.py -q`",
+  "impl_files": [
+    "src/tensorlbm/multiphase_soy_dropin.py",
+    "src/tensorlbm/multiphase_static_droplet.py",
+    "xval/cupy_dropin_no_kernel_fusion/oss_adapter.py"
+  ],
+  "entry": "xval/cupy_dropin_no_kernel_fusion/run_xval.py",
+  "entry_cli": "python xval/cupy_dropin_no_kernel_fusion/run_xval.py --steps 2000",
+  "run_artifacts": [
+    "xval/cupy_dropin_no_kernel_fusion/artifacts/run_main.json",
+    "xval/cupy_dropin_no_kernel_fusion/artifacts/dp_history.csv",
+    "xval/cupy_dropin_no_kernel_fusion/artifacts/report_payload.json",
+    "xval/cupy_dropin_no_kernel_fusion/figures/fig1_laplace_convergence.png",
+    "xval/cupy_dropin_no_kernel_fusion/figures/fig2_fields.png",
+    "xval/cupy_dropin_no_kernel_fusion/figures/fig3_error_vs_radius.png",
+    "xval/cupy_dropin_no_kernel_fusion/figures/fig4_sensitivity.png",
+    "xval/cupy_dropin_no_kernel_fusion/figures/fig5_cost.png",
+    "docs/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md"
+  ],
+  "integration_callers": [
+    "tensorlbm.multiphase_soy_dropin",
+    "tensorlbm.multiphase_static_droplet:soy_free_energy_droplet",
+    "tests/test_free_energy_soy_cupy_dropin.py:test_solver_layer_caller_returns_laplace_diagnostics"
+  ],
+  "integration_note": "solver-layer caller: src/tensorlbm/multiphase_static_droplet.py `soy_free_energy_droplet()` imports tensorlbm.multiphase_soy_dropin absolutely and is exercised by tests::test_solver_layer_caller_returns_laplace_diagnostics; the XVAL entry also drives the same core.",
+  "benchmark": {
+    "reference": "Young-Laplace dp = sigma/R (sigma = 0.01, R = 15 -> 6.666667e-04), plus the executed OSS implementation (ebinan92/Fingering_dynamics@150a573)",
+    "got_vs_ref": {
+      "laplace_dp_tensorlbm_numpy": {
+        "got": 0.0006640176207602932,
+        "ref": 0.0006666666666666666,
+        "err_pct": -0.3973568859560095,
+        "tol_pct": 15.0,
+        "pass": true
+      },
+      "laplace_dp_tensorlbm_torch": {
+        "got": 0.0006640176207603488,
+        "ref": 0.0006666666666666666,
+        "err_pct": -0.3973568859476828,
+        "tol_pct": 15.0,
+        "pass": true
+      },
+      "laplace_dp_oss_exec": {
+        "got": 0.000663902058213095,
+        "ref": 0.0006666666666666666,
+        "err_pct": -0.4146912680357462,
+        "tol_pct": 15.0,
+        "pass": true
+      },
+      "tensorlbm_vs_executed_oss": {
+        "got": 0.0006640176207602932,
+        "ref": 0.000663902058213095,
+        "err_pct": 0.017406565587292117,
+        "tol_pct": 15.0,
+        "pass": true
+      },
+      "backend_dropin_equivalence": {
+        "got": 0.0006640176207603488,
+        "ref": 0.0006640176207602932,
+        "rel_diff": 8.359891288381494e-14,
+        "tol_rel": 1e-06,
+        "pass": true
+      },
+      "sigma_capillary_energy_route": {
+        "got": 0.00971107748112561,
+        "ref": 0.01,
+        "err_pct": -2.889225188743901,
+        "tol_pct": 15.0,
+        "pass": true
+      }
+    },
+    "known_failure_mode": {
+      "case": "init_profile=sharp (tanh(2(r-R)/xi), non-equilibrium initial width)",
+      "err_pct": 54.60501402881078,
+      "tol_pct": 15.0,
+      "pass": false,
+      "note": "deliberate negative control; documented in report section 5.2"
+    },
+    "convergence_vs_radius": [
+      {
+        "R": 10.0,
+        "err_pct": 0.25373658303360147,
+        "err_pct_oss": 0.2612410155312418
+      },
+      {
+        "R": 12.0,
+        "err_pct": -0.3319377007703636,
+        "err_pct_oss": -0.3267037944353632
+      },
+      {
+        "R": 15.0,
+        "err_pct": -0.3973568859560095,
+        "err_pct_oss": -0.4146912680357462
+      },
+      {
+        "R": 20.0,
+        "err_pct": -0.5949122998115918,
+        "err_pct_oss": -0.6842293877261895
+      }
+    ],
+    "transient_band_last_third": {
+      "err_pct_min": -0.3973568859560095,
+      "err_pct_max": 0.8520070454377338
+    },
+    "host": {
+      "python": "3.11.6",
+      "numpy": "2.4.6",
+      "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+      "machine": "loongarch64",
+      "torch": "2.7.1",
+      "torch_cuda": false
+    }
+  },
+  "repro_cmd": "python xval/cupy_dropin_no_kernel_fusion/run_xval.py --steps 2000 && python xval/cupy_dropin_no_kernel_fusion/make_report.py && python -m pytest tests/test_free_energy_soy_cupy_dropin.py -q",
+  "external_anchor": [
+    "docs/XVAL_LBM_CUPY_DROPIN_NO_KERNEL_FUSION.md"
+  ],
+  "external_anchor_note": "OSS ebinan92/Fingering_dynamics @150a573 lattice_boltzmann/fingering_periodic.py (class Compute + stream executed read-only at run time, sha256 in run_main.json) + Swift, Osborn & Yeomans, 'Lattice Boltzmann simulation of nonideal fluids', Phys. Rev. Lett. 75 (1995) 830 (SOY free-energy model) + Young-Laplace law dp = sigma/R",
+  "not_run": [
+    "GPU / CuPy execution (host has no CUDA device; the practice is validated via array-namespace equivalence)",
+    "OSS Zou-He inlet/outlet and half-way bounce-back walls (periodic domain only)",
+    "fingering / viscous-fingering dynamics at the OSS operating point (380x380, MAX_T=1000): not needed for the Laplace cross-validation"
+  ],
+  "friction": [
+    "host `import tensorlbm` resolves to an editable install of another worktree; tests purge and re-import this worktree's src",
+    "OSS checkout lives in /tmp (ephemeral): the adapter degrades to NOT_RUN with a reason when it is missing",
+    "round-0 artefacts were tracked but the numbers were not reproducible from a single canonical entry (fixed: run_main.json is the one artefact)"
+  ]
+}
