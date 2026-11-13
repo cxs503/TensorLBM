@@ -1,0 +1,297 @@
+{
+ "mission": 17679,
+ "anchor": "XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS",
+ "audited_repo": "TensorLBM",
+ "audited_branch": "agent/m17679",
+ "audited_commit": "3161a1fc xval(vivsim): port continuous error-print vs DOI refs with 15% gate",
+ "audit_branch": "agent/m17747",
+ "generated_at": "2026-11-13T08:29:01.314317+00:00",
+ "verdict_by": "board-audit",
+ "A1_provenance": {
+  "check": "A1 reference-value provenance (parsed from upstream source, not taken on trust)",
+  "upstream_file": "evidence/oss_flow_pass_cylinder.py (= vivsim examples/2d/flow_pass_cylinder.py @ fb84b12f02e18f3b9dfdf738d6a1a318d81539f9)",
+  "upstream_CD_REF": 1.389,
+  "upstream_CL_REF": 0.718,
+  "upstream_DOIs": [
+   "10.1016/j.ijmecsci.2024.108961",
+   "10.1016/j.camwa.2014.05.013",
+   "10.1017/S0022112086003014"
+  ],
+  "port_CD_REF": 1.389,
+  "port_CL_REF": 0.718,
+  "port_DOIs": [
+   "10.1016/j.camwa.2014.05.013",
+   "10.1016/j.ijmecsci.2024.108961",
+   "10.1017/S0022112086003014"
+  ],
+  "cd_match": true,
+  "cl_match": true,
+  "doi_match": true,
+  "upstream_geometry": {
+   "D": "60",
+   "NX": "30 * D",
+   "NY": "20 * D",
+   "CYL_X": "10 * D",
+   "CYL_Y": "10 * D",
+   "U0": "0.05",
+   "RE": "200",
+   "TM": "int(30 * 5 / U0 * D)"
+  },
+  "upstream_caliber_line": "float(jnp.mean(cd[TM // 2:])) / float(jnp.max(jnp.abs(cl[TM // 2:])))",
+  "upstream_has_assert_or_test": false
+ },
+ "A2_frozen_arm": {
+  "check": "A2 frozen arm recomputed from raw result.json (NOT from the mission summary)",
+  "provenance": "benchmarks/verified/cylinder/re200/result.json, verified_date=2026-08-19",
+  "produced_by_this_mission": false,
+  "setup_mismatch_with_oss": "40D x 40D domain, cylinder at 12D, u=0.08, sponge 10D, Braza-1986 anchor; OSS = 30D x 20D, cylinder at 10D, u=0.05, no sponge",
+  "rows": {
+   "D48": {
+    "cd": 1.3386,
+    "err_cd_pct": -3.6285097192224622,
+    "cl_std": 0.485,
+    "cl_peak_from_std": 0.6858935777509512,
+    "err_cl_pct": -4.471646552792312,
+    "st": 0.1962,
+    "within_15pc_cd": true,
+    "within_15pc_cl": true,
+    "within_3pc_cd": false,
+    "within_3pc_cl": false
+   },
+   "D64": {
+    "cd": 1.3177,
+    "err_cd_pct": -5.133189344852406,
+    "cl_std": 0.47,
+    "cl_peak_from_std": 0.6646803743153546,
+    "err_cl_pct": -7.4261317109533875,
+    "st": 0.1936,
+    "within_15pc_cd": true,
+    "within_15pc_cl": true,
+    "within_3pc_cd": false,
+    "within_3pc_cl": false
+   }
+  },
+  "grid_refinement": {
+   "cd_drop_pct": -1.5613327356940025,
+   "st_drop_pct": -1.3251783893985825,
+   "cl_peak_drop_pct": -3.092783505154652,
+   "n_levels": 2,
+   "convergence_order_available": false
+  }
+ },
+ "A3_fresh_arm": {
+  "check": "A3 fresh caliber-matched arm (30D x 20D, vivsim calibers) — the arm that decides the anchor",
+  "runs": {
+   "xval_D10_u010.json": {
+    "setup": {
+     "D": 10,
+     "u_in": 0.1,
+     "tau": 0.515,
+     "nx": 300,
+     "ny": 200,
+     "n_steps": 15000
+    },
+    "nan_at": 2000,
+    "steps_done": 1999,
+    "wall_s": 244.4,
+    "mlups": 0.491,
+    "err_pct_cd_mean": "NaN",
+    "err_pct_cl_peak": "NaN",
+    "st_reported": 0.09999999999999999,
+    "st_vs_lit_err_pct": -49.238578680203055,
+    "any_valid_cd_or_cl": false
+   },
+   "xval_D12_u010.json": {
+    "setup": {
+     "D": 12,
+     "u_in": 0.1,
+     "tau": 0.518,
+     "nx": 360,
+     "ny": 240,
+     "n_steps": 18000
+    },
+    "nan_at": 2500,
+    "steps_done": 2499,
+    "wall_s": 316.7,
+    "mlups": 0.682,
+    "err_pct_cd_mean": "NaN",
+    "err_pct_cl_peak": "NaN",
+    "st_reported": 0.096,
+    "st_vs_lit_err_pct": -51.26903553299492,
+    "any_valid_cd_or_cl": false
+   },
+   "xval_D12_u030.json": {
+    "setup": {
+     "D": 12,
+     "u_in": 0.3,
+     "tau": 0.554,
+     "nx": 360,
+     "ny": 240,
+     "n_steps": 6000
+    },
+    "nan_at": 500,
+    "steps_done": 499,
+    "wall_s": 177.1,
+    "mlups": 0.243,
+    "err_pct_cd_mean": "NaN",
+    "err_pct_cl_peak": "NaN",
+    "st_reported": 0.16,
+    "st_vs_lit_err_pct": -18.781725888324875,
+    "any_valid_cd_or_cl": false
+   }
+  },
+  "n_runs": 3,
+  "n_runs_with_valid_number": 0,
+  "replay": {
+   "probe": "A3b auditor replay of the D=10 / u=0.1 config (--steps 2000, 16 threads)",
+   "nan_at_archived": 2000,
+   "nan_at_replay": 2000,
+   "verdict_identical": true,
+   "pre_divergence_cd_half1_archived": 1.2805860692804507,
+   "pre_divergence_cd_half1_replay": 1.2805930532590304,
+   "rel_diff_cd_half1": 5.453736181592174e-06,
+   "replay_wall_s": 32.5,
+   "not_identical_reason": "setup.n_steps/torch_threads differ (20 vs 16 threads); reduction order changes float32 sum in the 7th digit"
+  },
+  "honest_fail_confirmed": true
+ },
+ "A4_claim_checks": {
+  "check": "A4 claim-vs-artifact cross-checks",
+  "summary_vs_recomputed_drift": {
+   "D48": {
+    "err_cl_pct_summary": -4.47,
+    "err_cl_pct_recomputed": -4.47
+   },
+   "D64": {
+    "err_cl_pct_summary": -7.43,
+    "err_cl_pct_recomputed": -7.43
+   }
+  },
+  "doc_table_cl_d64_pct": -7.42,
+  "doc_claims_programmatic_injection": "docs ②: '全部程序化注入'",
+  "broken_pointer": "docs 结语点名的 `benchmarks/xval/README` 不存在（目录内仅 2 个 .py）",
+  "st_floor": {
+   "check": "A4a St is reported as a finite number on a series that is NaN",
+   "observed": {
+    "xval_D10_u010.json": {
+     "st": 0.09999999999999999,
+     "st_vs_lit_err_pct": -49.238578680203055
+    },
+    "xval_D12_u010.json": {
+     "st": 0.096,
+     "st_vs_lit_err_pct": -51.26903553299492
+    },
+    "xval_D12_u030.json": {
+     "st": 0.16,
+     "st_vs_lit_err_pct": -18.781725888324875
+    }
+   },
+   "mechanism": "harmonic_amplitude() falls back to the frequency floor 1/T (0.001 lattice Hz) when the fit is degenerate -> St = f*D/u = 0.1 -> a finite -49.2% 'error' printed for a run whose Cd/Cl are NaN",
+   "severity": "minor-to-medium (reporting surface; a reader can take -49.2% as a measured error)"
+  },
+  "note_on_drift": "summary.json -7.43% vs docs ④ -7.42% for the same quantity: the doc table was hand-typed, contradicting the 'programmatic injection' claim by 0.01 pp"
+ },
+ "A5_referee_registry": {
+  "check": "A5 referee registration (tensor_benchmark_cases is the only judge)",
+  "rows_for_anchor": "0",
+  "near_miss_rows": "<none>",
+  "consequence": "no registered case => no machine-judgeable ref/got pair for this anchor; the mission's own script gate is the only gate, and it was never fed a caliber-matched number"
+ },
+ "A6_durability": {
+  "check": "A6 deliverable durability (does the pushed branch carry the evidence?)",
+  "paths": {
+   "benchmarks/xval/xval_vivsim_cylinder_re200.py": {
+    "tracked_in_agent/m17679": true,
+    "gitignore_rule": "-"
+   },
+   "benchmarks/xval/xval_vivsim_re200_report.py": {
+    "tracked_in_agent/m17679": true,
+    "gitignore_rule": "-"
+   },
+   "tests/test_xval_vivsim_cylinder_re200.py": {
+    "tracked_in_agent/m17679": true,
+    "gitignore_rule": "-"
+   },
+   "docs/XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS.md": {
+    "tracked_in_agent/m17679": true,
+    "gitignore_rule": "-"
+   },
+   "artifacts/xval_vivsim_re200/summary.json": {
+    "tracked_in_agent/m17679": true,
+    "gitignore_rule": "-"
+   },
+   "docs/figures/xval_vivsim_re200_frozen_ladder.png": {
+    "tracked_in_agent/m17679": true,
+    "gitignore_rule": "-"
+   },
+   "runs/xval_D10_u010.json": {
+    "tracked_in_agent/m17679": false,
+    "gitignore_rule": ".gitignore:108:runs/\truns/xval_D10_u010.json"
+   },
+   "runs/xval_D12_u010.json": {
+    "tracked_in_agent/m17679": false,
+    "gitignore_rule": ".gitignore:108:runs/\truns/xval_D12_u010.json"
+   },
+   "runs/xval_D12_u030.json": {
+    "tracked_in_agent/m17679": false,
+    "gitignore_rule": ".gitignore:108:runs/\truns/xval_D12_u030.json"
+   }
+  },
+  "consequence": "code/tests/docs/summary are tracked; the three honest-FAIL run records live under runs/ which .gitignore:108 excludes -> only summary.json's runs_fresh block survives in the branch (this audit snapshots them under evidence/)"
+ },
+ "A7_tests_report": {
+  "check": "A7 auditor re-run of the mission's own test suite + report completeness",
+  "pytest_cmd": "python3 -m pytest tests/test_xval_vivsim_cylinder_re200.py -q (in /root/tp-agent/work/m17679)",
+  "pytest_tail": "11 passed, 1 warning in 5.25s",
+  "pytest_exit": 0,
+  "report_id": 16662,
+  "report_sections_present": {
+   "①": true,
+   "②": true,
+   "③": true,
+   "④": true,
+   "⑤": true,
+   "⑥": true
+  },
+  "report_figures_nonnull": "1",
+  "report_answers_3pct_question": true
+ },
+ "A8_integration": {
+  "check": "A8 solver/platform integration",
+  "callers_outside_benchmark_and_tests": [],
+  "n_callers": 0,
+  "consequence": "no call site in TensorLBM/src or the solver package -> L3 not met"
+ },
+ "level_decision": {
+  "L1_math_unit_validation": {
+   "met": true,
+   "why": "11 tests green on re-run; they assert invariants (last-half window selection, sine amplitude recovery, single-sample spike pinning, strict |err|<15% boundary) not just execution"
+  },
+  "L2_independent_implementation": {
+   "met": true,
+   "why": "benchmarks/xval/xval_vivsim_cylinder_re200.py is real code that runs end-to-end (auditor replay: 32.5 s, 1999 steps, 3.69 MLUPS) and emits JSON/CSV/NPZ + a gate verdict"
+  },
+  "L3_system_integration": {
+   "met": false,
+   "why": "0 call sites outside benchmarks/xval + tests"
+  },
+  "L4_benchmark_validation": {
+   "met": false,
+   "why": "0 referee rows for the anchor AND the caliber-matched arm produced 0/3 valid numbers (NaN at 2000/2500/500); the FROZEN rows come from a pre-existing verified case with a different domain/u/caliber"
+  },
+  "L5_research_engineering": {
+   "met": false,
+   "why": "no experimental or literature-independent anchor met"
+  },
+  "level": 2,
+  "level_note": "L2 for the XVAL harness (continuous error print + 15% gate + 11 tests + honest-FAIL records). The anchor's own deliverable — a caliber-matched TensorLBM-vs-vivsim number — is WITHHELD, so L4 is unreachable and no <15% claim may be attached to this anchor."
+ },
+ "disposition": "request_changes (reopened): keep L2 credit for the harness; the anchor needs the caliber-matched number (root-cause the NaN, then re-run D=16/24 on the cluster) before any L4 claim",
+ "audit_limits": [
+  "One of the three honest-FAIL runs (D=10/u=0.1) was replayed; D=12/u=0.1 and D=12/u=0.3 were not re-run (250 s each) — their nan_at values are read from the records only.",
+  "The auditor did NOT root-cause the divergence: the falsified tau hypothesis is taken as reported, and the resolution/seeding hypothesis is untested here.",
+  "vivsim itself was never executed (JAX absent, 3.9e11 cell-updates upstream); all OSS-side claims are source-level only.",
+  "The upstream clone is network-fetched and its checkout has no resolvable HEAD object; the fb84b12 identity rests on the working-tree content matching the cited lines.",
+  "No convergence order is available (2 grid levels, different setup from the graded arm)."
+ ]
+}
