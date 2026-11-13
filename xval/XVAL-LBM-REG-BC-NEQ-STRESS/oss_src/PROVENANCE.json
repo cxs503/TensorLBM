@@ -1,0 +1,14 @@
+{
+  "repo": "joconnor22/LIFE",
+  "snapshot": "/tmp/LIFE-master (read-only working copy of upstream master, collected by the OSS inventory; no network access from the worker)",
+  "files": {
+    "src/Grid.cpp": {"md5": "e6e4a647faa9606f9982a98303f6e54d", "lines": 1289,
+      "relevant": "lbmKernel L25-105 (ordering), streamCollide L107-247, equilibrium L249-266, macroscopic L282-291, applyBCs L268-384, regularisedBC L386-470, convectiveBC L472-486, getNormalVector L504-540"},
+    "inc/Utils.h": {"md5": "0185f79e96eaf3ea17b5d1dfc1335994", "lines": 504,
+      "relevant": "extrapolate L137-161, zeroGradient L186-210"},
+    "README.upstream.md": {"note": "line 8 declares 'velocity and pressure boundary conditions set via the regularised method (Latt et al. 2008)'"}
+  },
+  "upstream_license": "GPL-3.0 (LICENSE.upstream); TensorLBM is itself GPL-3.0, so the verbatim audit snapshot is license-compatible",
+  "extraction": "files copied byte-for-byte with cp; method facts are read from these files programmatically / by line reference, never retyped from memory",
+  "citation": "Latt, Chopard, ... , regularised boundary condition (Latt et al. 2008, J. Comput. Phys.); implementer: Joseph O'Connor, LIFE (2019)"
+}
