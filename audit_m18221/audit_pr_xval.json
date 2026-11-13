@@ -1,0 +1,221 @@
+{
+ "oss": {
+  "file": "ShanChen2D/OptimizedD2Q9GPU.py",
+  "sha256": "cccd2b38603b052330bd3defba2f34cdb4f5611dbe4ef6dbd3c71a5552b24e55",
+  "p_expr": "(fluidRho[i, indices] * constR *  temperatureT) / (1. -  coeffB * fluidRho[i, indices]) - (coeffA * coeffAlpha *  fluidRho[i, indices] * fluidRho[i, indices]) / (1. + 2. *  coeffB * fluidRho[i, indices] - coeffB * coeffB *  fluidRho[i, indices] * fluidRho[i, indices])",
+  "psi_expr": "sqrt(2. / (constC0 * constG) * (tmpP -  1./3. * fluidRho[i, indices]))",
+  "callsites_whole_repo": {},
+  "git_head": "3d841891daafe7b6e9f65e51dd9bf20f2b0e1792",
+  "p_eval_src": "(rho * R *  T) / (1. -  B * rho) - (A * alpha *  rho * rho) / (1. + 2. *  B * rho - B * B *  rho * rho)",
+  "psi_eval_src": "sqrt(2. / (c0 * G) * (tmpP -  1./3. * rho))"
+ },
+ "e1": {
+  "rows": [
+   {
+    "T_r": 0.55,
+    "T": 0.04010546833801077,
+    "n": 800,
+    "max_rel_dev": 2.2198792994400856e-16,
+    "median": 0.0,
+    "c0_3_ratio_mean": 3.0,
+    "c0_3_ratio_std": 2.6599053072808717e-16,
+    "lbm_zero_above": 0
+   },
+   {
+    "T_r": 0.75,
+    "T": 0.054689275006378324,
+    "n": 795,
+    "max_rel_dev": 2.202900672342439e-16,
+    "median": 0.0,
+    "c0_3_ratio_mean": 3.0,
+    "c0_3_ratio_std": 2.7416244913616763e-16,
+    "lbm_zero_above": 5
+   },
+   {
+    "T_r": 0.8266,
+    "T": 0.060274872960363095,
+    "n": 790,
+    "max_rel_dev": 2.2155747302231065e-16,
+    "median": 0.0,
+    "c0_3_ratio_mean": 3.0,
+    "c0_3_ratio_std": 2.8263872457604936e-16,
+    "lbm_zero_above": 10
+   },
+   {
+    "T_r": 0.95,
+    "T": 0.06927308167474587,
+    "n": 781,
+    "max_rel_dev": 2.2146644379554612e-16,
+    "median": 0.0,
+    "c0_3_ratio_mean": 3.0,
+    "c0_3_ratio_std": 2.775202153716942e-16,
+    "lbm_zero_above": 19
+   }
+  ],
+  "worst": 2.2198792994400856e-16,
+  "threshold": 1e-06,
+  "pass_": true,
+  "eps": 2.220446049250313e-16
+ },
+ "maxwell_independent": {
+  "ratio10": {
+   "T_r": 0.8266,
+   "T": 0.060274872960363095,
+   "rho_l": 5.886704588473293,
+   "rho_v": 0.5881048733816358,
+   "ratio": 10.009617085171245,
+   "p_sat": 0.02482032635632305,
+   "area_residual": 6.205799575609294e-09,
+   "n_brackets": 1,
+   "p_mech_balance": -1.1102230246251565e-16,
+   "rho_cross": 9.292762729788048
+  },
+  "mid": {
+   "T_r": 0.75,
+   "T": 0.054689275006378324,
+   "rho_l": 6.587869181696578,
+   "rho_v": 0.35328568967765817,
+   "ratio": 18.647427207446256,
+   "p_sat": 0.015215459388550782,
+   "area_residual": 2.1966245086768588e-08,
+   "n_brackets": 1,
+   "p_mech_balance": -5.551115123125783e-17,
+   "rho_cross": 9.409119644604305
+  },
+  "highT": {
+   "T_r": 0.95,
+   "T": 0.06927308167474587,
+   "rho_l": 4.3028973266391555,
+   "rho_v": 1.363560322309889,
+   "ratio": 3.1556340091723927,
+   "p_sat": 0.047494895607107505,
+   "area_residual": 3.575127693888902e-10,
+   "n_brackets": 1,
+   "p_mech_balance": 0.0,
+   "rho_cross": 9.103293227593387
+  }
+ },
+ "maxwell_delivery": {
+  "ratio10": {
+   "T_r": 0.8266,
+   "T": 0.06027487612721024,
+   "rho_liquid": 5.8867051601409885,
+   "rho_vapour": 0.58810630440712,
+   "ratio": 10.009593701049468,
+   "p_sat": 0.024820347918540632
+  },
+  "mid": {
+   "T_r": 0.75,
+   "T": 0.05468927787975766,
+   "rho_liquid": 6.587869405746458,
+   "rho_vapour": 0.3532860130071636,
+   "ratio": 18.647410775395954,
+   "p_sat": 0.015215478192331738
+  },
+  "highT": {
+   "T_r": 0.95,
+   "T": 0.06927308531435969,
+   "rho_liquid": 4.30289626121521,
+   "rho_vapour": 1.3635607361793518,
+   "ratio": 3.155632270016641,
+   "p_sat": 0.04749492616613963
+  }
+ },
+ "maxwell_compare": {
+  "ratio10": {
+   "rho_l": {
+    "audit": 5.886704588473293,
+    "delivery": 5.8867051601409885,
+    "rel": 9.711165751505735e-08
+   },
+   "rho_v": {
+    "audit": 0.5881048733816358,
+    "delivery": 0.58810630440712,
+    "rel": 2.4332768982380954e-06
+   },
+   "ratio": {
+    "audit": 10.009617085171245,
+    "delivery": 10.009593701049468,
+    "rel": 2.336170925125889e-06
+   },
+   "p_sat": {
+    "audit": 0.02482032635632305,
+    "delivery": 0.024820347918540632,
+    "rel": 8.68731479979211e-07
+   }
+  },
+  "mid": {
+   "rho_l": {
+    "audit": 6.587869181696578,
+    "delivery": 6.587869405746458,
+    "rel": 3.400945983943044e-08
+   },
+   "rho_v": {
+    "audit": 0.35328568967765817,
+    "delivery": 0.3532860130071636,
+    "rel": 9.15206075369496e-07
+   },
+   "ratio": {
+    "audit": 18.647427207446256,
+    "delivery": 18.647410775395954,
+    "rel": 8.811974219742312e-07
+   },
+   "p_sat": {
+    "audit": 0.015215459388550782,
+    "delivery": 0.015215478192331738,
+    "rel": 1.2358324016000633e-06
+   }
+  },
+  "highT": {
+   "rho_l": {
+    "audit": 4.3028973266391555,
+    "delivery": 4.30289626121521,
+    "rel": 2.476062356221503e-07
+   },
+   "rho_v": {
+    "audit": 1.363560322309889,
+    "delivery": 1.3635607361793518,
+    "rel": 3.0352110596891463e-07
+   },
+   "ratio": {
+    "audit": 3.1556340091723927,
+    "delivery": 3.155632270016641,
+    "rel": 5.511275088612549e-07
+   },
+   "p_sat": {
+    "audit": 0.047494895607107505,
+    "delivery": 0.04749492616613963,
+    "rel": 6.434167729272018e-07
+   }
+  }
+ },
+ "reproduction": {
+  "audit_repro_planar_L48_ratio10": {
+   "rho_l": {
+    "audit": 5.8643927574157715,
+    "committed": 5.8643927574157715,
+    "abs_diff": 0.0
+   },
+   "rho_v": {
+    "audit": 0.5371126532554626,
+    "committed": 0.5371126532554626,
+    "abs_diff": 0.0
+   },
+   "ratio": {
+    "audit": 10.918366420659497,
+    "committed": 10.918366420659497,
+    "abs_diff": 0.0
+   },
+   "ma_max": {
+    "audit": 0.11543023569630247,
+    "committed": 0.11543023569630247,
+    "abs_diff": 0.0
+   },
+   "error_vs_maxwell": {
+    "audit": 0.09079017058552016,
+    "committed": 0.09079017058552016
+   },
+   "bit_identical": true
+  }
+ }
+}
