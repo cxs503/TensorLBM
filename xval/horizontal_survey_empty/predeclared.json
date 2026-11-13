@@ -1,0 +1,56 @@
+{
+  "anchor": "XVAL-LBM-HORIZONTAL-SURVEY-EMPTY",
+  "mission_id": 17844,
+  "decision": "Supply the oscillatory-flow inertia-coefficient (added-mass) verification capability of TensorLBM from the literature, because the horizontal OSS survey over the 33-repo census, the 261-row solution ledger and the ~/oss-cache source mirror is empty for this family (no third-party implementation to transplant).",
+  "alternatives": [
+    "A1 (chosen): literature anchor. Reference = Morison et al. (1950) / Sarpkaya (1986) ideal-fluid value C_M = 1 + C_a = 2 for a circular cylinder; verify by a doubly periodic box driven by a harmonic body force, two independent force estimators.",
+    "A2: transplant an OSS implementation -- rejected: survey returns 0 census rows, 0 ledger rows, 0 source hits (survey_summary.json), so there is nothing to transplant.",
+    "A3: no supply (declare WITHHELD) -- rejected: the literature reference is exact and machine-checkable, so a verification case can be built."
+  ],
+  "hypothesis": "H1: the momentum-exchange force on a fixed circular cylinder in a harmonic body-force-driven periodic box, decomposed by Morison least squares, reproduces C_M = 2.00 within 15% at converged resolution. H0: it does not (then the capability stays WITHHELD).",
+  "primary_metric": "C_M from estimator E1 (Ladd momentum exchange) with the halfway-bounce-back wetted diameter D_halfway, Morison least squares over the last 3 periods.",
+  "secondary_metrics": [
+    "C_M from E2 (fluid momentum budget F = sum_fluid a(t) - dP/dt) -- independent estimator",
+    "estimator spread |E1-E2|/2",
+    "C_D and fit R^2 (drag basis is <1% of force energy at KC<=2, reported not gated)",
+    "achieved KC, beta, Ma, U-fit residual (diagnostics; not tuning knobs)"
+  ],
+  "reference": {"value": 2.0, "source": "Morison, O'Brien, Johnson & Schaaf (1950); Sarpkaya (1986) -- ideal-fluid circular cylinder C_a = 1, m_a = rho*pi*D^2/4"},
+  "predeclared_thresholds": {
+    "accept_pct": 15.0,
+    "pass_rule": "|C_M(E1, D_halfway) - 2.00| / 2.00 <= 15% at the finest resolution run AND at least two of the three resolutions pass",
+    "stability_rule": "a run that produces a non-finite force/momentum or |C_M| > 10 is declared failed and excluded, not tuned",
+    "no_post_hoc_tuning": "geometry convention (D_halfway headline, D_area and D_input reported), fit window and thresholds are fixed before any run"
+  },
+  "stopping_rule": "each case runs the predeclared step count = (transient 1.5 + measure 3.0) periods computed from KC, D and U0 before the run; no case is extended or truncated after inspecting C_M.",
+  "variables_changed": [
+    "resolution D in {16, 24, 32} lattice cells (convergence)",
+    "Keulegan-Carpenter number KC in {0.5, 1.0, 2.0} at D=24",
+    "Stokes number beta = D^2/(nu T) in {50, 100, 200} at D=24, KC=1",
+    "box period L/D in {12, 16} at D=24 (periodic-image sensitivity)"
+  ],
+  "variables_controlled": [
+    "lattice D2Q9, BGK + second-order Guo force (tensorlbm.boussinesq.apply_guo_forcing)",
+    "uniform harmonic body force a(t) = a0 cos(omega t) on fluid nodes only",
+    "u0 = 0.04 (Ma = 0.069) fixed for every case",
+    "Morison least squares over the last 3 periods, 2-harmonic fit of the measured box-mean U(t)",
+    "geometry convention: circle mask on the box centre, headline diameter D_halfway (area + P/2)",
+    "interior solid nodes held at zero populations (the fix that makes the mask bounce-back composition conservative)",
+    "float64 CPU torch, 8 threads per run, 8 runs concurrently"
+  ],
+  "confounders": [
+    "geometric ambiguity of the staircase circle at fixed D: C_M scales as 1/D^2, so the D ladder doubles as the geometry-error resolvent (D_input / D_area / D_halfway convention spread is reported per run)",
+    "under-resolved Stokes layer: delta = D/sqrt(pi*beta) cells; at beta=100, D=24 delta = 1.35 cells, so the *viscous* correction to C_M is not resolved -- the test is a verification of the inertia operator against the ideal-fluid limit, not of oscillatory viscous drag",
+    "periodic images: the doubling of the body every L is an O((D/L)^2) perturbation; the box ladder measures it",
+    "the body force is applied to the fluid only, so the box-mean velocity is slightly reduced relative to a0/omega; the estimator uses the *measured* U(t), which removes this confounder",
+    "no OSS arm exists (survey empty), so the comparison is against the literature value only -- code-level cross-validation is impossible by construction and is declared a limitation"
+  ],
+  "repetition_rationale": "the solver is deterministic (zero-variance per case), so repetitions are replaced by (a) 3 resolutions, (b) 2 independent force estimators, (c) 3 KC values, (d) 3 beta values, (e) 2 box periods -- 8 predeclared cases.",
+  "environment": {
+    "solver": "TensorLBM src/tensorlbm (torch CPU float64)",
+    "command": "python xval/horizontal_survey_empty/run_arm.py --index i --shards 8 --threads 8",
+    "raw_data": "xval/horizontal_survey_empty/runs/<case>/{result.json,trace.npz}",
+    "survey_data": "data/oss_inventory_dump.csv, data/oss_solutions_dump.csv (SQL provenance in data/PROVENANCE.json)"
+  },
+  "analysis_plan": "per case: C_M for E1/E2 x {D_halfway, D_area}, % error vs 2.00, estimator spread; ladders reported as tables and as convergence/sensitivity figures; verdict by the predeclared 15% rule; no post-hoc threshold change."
+}
