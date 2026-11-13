@@ -1,0 +1,101 @@
+{
+  "case": "CASE-MCMP-LAPLACE",
+  "round": 3,
+  "tol_pct": 0.05,
+  "slabs": {
+    "-2.5": {
+      "G_12": -2.5,
+      "ny": 96,
+      "nx": 8,
+      "slab_half": 24.0,
+      "w0": 2.0,
+      "steps": 4000,
+      "coex": {
+        "rho1_liq": 0.8818027377128601,
+        "rho1_gas": 0.1370897889137268,
+        "rho2_liq": 0.13673055171966553,
+        "rho2_gas": 0.8823979496955872,
+        "flat_interface_dp": 1.3813376426696777e-05
+      },
+      "u_max": 0.009455138817429543,
+      "flatness_sym": 0.4527952000494506,
+      "sigma_mech_sym": -0.010059744119644165,
+      "flatness_closed": 0.0038735408287784902,
+      "sigma_mech_closed": 0.020119905471801758,
+      "sigma_eos": 0.21876129508018494,
+      "p_bulk": 0.2019854187965393,
+      "p_eos_min": 0.13270820677280426,
+      "p_eos_dip": 0.06927721202373505,
+      "closed_gate_pass": true,
+      "elapsed_s": 46.0
+    },
+    "-2.75": {
+      "G_12": -2.75,
+      "ny": 96,
+      "nx": 8,
+      "slab_half": 24.0,
+      "w0": 2.0,
+      "steps": 4000,
+      "coex": {
+        "rho1_liq": 0.9277136325836182,
+        "rho1_gas": 0.09357867389917374,
+        "rho2_liq": 0.0936320349574089,
+        "rho2_gas": 0.9276546239852905,
+        "flat_interface_dp": -1.2964010238647461e-05
+      },
+      "u_max": 0.015620085410773754,
+      "flatness_sym": 0.5609206492488421,
+      "sigma_mech_sym": -0.015902206301689148,
+      "flatness_closed": 0.007796773775843735,
+      "sigma_mech_closed": 0.031804755330085754,
+      "sigma_eos": 0.25819385051727295,
+      "p_bulk": 0.21505486965179443,
+      "p_eos_min": 0.120099276304245,
+      "p_eos_dip": 0.09495559334754944,
+      "closed_gate_pass": true,
+      "elapsed_s": 53.8
+    },
+    "-3.0": {
+      "G_12": -3.0,
+      "ny": 96,
+      "nx": 8,
+      "slab_half": 24.0,
+      "w0": 2.0,
+      "steps": 4000,
+      "coex": {
+        "rho1_liq": 0.956601083278656,
+        "rho1_gas": 0.06618057191371918,
+        "rho2_liq": 0.06619832664728165,
+        "rho2_gas": 0.9565255641937256,
+        "flat_interface_dp": 9.08970832824707e-06
+      },
+      "u_max": 0.02353290282189846,
+      "flatness_sym": 0.6409469991226431,
+      "sigma_mech_sym": -0.02163171023130417,
+      "flatness_closed": 0.011799656840785397,
+      "sigma_mech_closed": 0.04326324164867401,
+      "sigma_eos": 0.28020620346069336,
+      "p_bulk": 0.22632411122322083,
+      "p_eos_min": 0.10949219763278961,
+      "p_eos_dip": 0.11683191359043121,
+      "closed_gate_pass": true,
+      "elapsed_s": 46.9
+    }
+  },
+  "droplet": {
+    "G_12": -2.75,
+    "n": 96,
+    "radius_init": 16.0,
+    "radius": 19.60529633399659,
+    "dp_eos": 0.010184884071350098,
+    "sigma_laplace": 0.19967767034622036,
+    "sigma_fit_origin": null,
+    "max_rel_err_radius": null,
+    "u_max": 0.015513002872467041,
+    "steps_run": 3500,
+    "converged": true,
+    "elapsed_s": 39.5,
+    "ratio_mech_closed_to_laplace": 0.15928048076151735,
+    "ratio_eos_to_laplace": 1.2930531995369918
+  }
+}
