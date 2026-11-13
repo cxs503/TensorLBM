@@ -1,0 +1,24 @@
+{
+  "case": "CASE-XVAL-METHOD-SELECTION",
+  "anchor": "XVAL-LBM-METHOD-SELECTION-FIRST-EVIDENCE",
+  "adopted_numeric_reference": {
+    "description": "Reference = the recorded TensorLBM selection (A1, MRT+sponge) at the same resolution; obtained = the OSS-selection arms (A2 BGK, A4 MRT-no-sponge). Kernel-level cross-check (executed OSS source vs TensorLBM kernel) is the tighter row. Tolerance is the owner 15% standard for selection-level contrast; the kernel row uses 1e-6.",
+    "tolerance_pct": 15.0,
+    "points": {
+      "A2_vs_A1_d10": {
+        "metric": "cl_amp",
+        "ref": 0.5638,
+        "got": 0.3009,
+        "error_pct": -46.63,
+        "source": "runs/A1_D10/result.json vs runs/A2_D10/result.json (this tree)"
+      },
+      "kernel_collision": {
+        "metric": "rel_l2_collision",
+        "ref": 0.0,
+        "got": 1.1757884876259976e-07,
+        "tolerance_rel": 1e-6,
+        "source": "oss_crosscheck.json (OSS Maarten-vd-Sande/lbm @ 573a01c, sha256 pinned)"
+      }
+    }
+  }
+}
