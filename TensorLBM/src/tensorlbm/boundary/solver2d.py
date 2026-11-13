@@ -2,11 +2,13 @@
 
 Provides equilibrium, collision, streaming, and macroscopic variable extraction
 for the D2Q9 lattice. Designed for boundary layer verification cases.
+
+Also provides Zou-He velocity boundary conditions for moving walls.
 """
 
 import torch
 from typing import Tuple
-from .d2q9 import C2Q9, W2Q9, CS2_2Q9
+from .d2q9 import C2Q9, W2Q9, CS2_2Q9, OPPOSITE_2Q9
 
 
 def equilibrium2d(
@@ -169,3 +171,73 @@ def compute_drag_force(
     tau_w = compute_wall_shear_stress(f, tau, wall_y)
     # dx = 1 in lattice units
     return tau_w.sum().item()
+
+
+# --------------------------------------------------------------------------- #
+# Zou-He velocity boundary conditions
+# --------------------------------------------------------------------------- #
+
+def zou_he_moving_lid(
+    f: torch.Tensor,
+    u_lid: float,
+    v_lid: float = 0.0,
+    lid_y: int = -1,
+) -> torch.Tensor:
+    """Zou-He velocity boundary condition for a moving lid.
+
+    Implements the Zou-He (1997) velocity BC for the top wall (lid) moving
+    with velocity (u_lid, v_lid). This is more accurate than simple equilibrium
+    bounce-back, especially at high Re.
+
+    For the top wall (y = lid_y), the unknown populations are those pointing
+    into the wall: directions 3 (north), 7 (NW), 8 (SW).
+
+    Parameters
+    ----------
+    f : torch.Tensor, shape (9, ny, nx)
+    u_lid : float, x-velocity of the lid
+    v_lid : float, y-velocity of the lid (usually 0)
+    lid_y : int, y-index of the lid row
+
+    Returns
+    -------
+    f : torch.Tensor, modified in place
+    """
+    j = lid_y if lid_y >= 0 else f.shape[1] + lid_y
+
+    # Known populations at the lid (after streaming, before BC)
+    f0 = f[0, j, :]
+    f1 = f[1, j, :]
+    f2 = f[2, j, :]
+    f4 = f[4, j, :]
+    f5 = f[5, j, :]
+    f6 = f[6, j, :]
+
+    # Compute density from mass conservation (v_lid = 0 for standard lid)
+    rho = (f0 + f1 + f2 + 2.0 * (f4 + f5 + f6)) / (1.0 - v_lid)
+
+    # Unknown populations: f3 (north), f7 (NW), f8 (SW)
+    f[3, j, :] = f4 + (2.0 / 3.0) * rho * v_lid
+    f[7, j, :] = f6 - 0.5 * (f1 - f2) + (1.0 / 6.0) * rho * (u_lid + v_lid)
+    f[8, j, :] = f5 + 0.5 * (f1 - f2) + (1.0 / 6.0) * rho * (u_lid - v_lid)
+
+    return f
+
+
+def bounce_back(f: torch.Tensor, wall: torch.Tensor) -> torch.Tensor:
+    """Half-way bounce-back on solid nodes.
+
+    Parameters
+    ----------
+    f : torch.Tensor, shape (9, ny, nx)
+    wall : torch.Tensor, shape (ny, nx), bool mask
+
+    Returns
+    -------
+    f_out : torch.Tensor, shape (9, ny, nx)
+    """
+    opp = OPPOSITE_2Q9.to(f.device)
+    f_out = f.clone()
+    for i in range(1, 9):
+        f_out[i, wall] = f[opp[i], wall]
+    return f_out

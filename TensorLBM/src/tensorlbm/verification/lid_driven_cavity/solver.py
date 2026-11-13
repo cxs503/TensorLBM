@@ -1,16 +1,17 @@
 """Lid-driven cavity solver using D2Q9 LBM.
 
 Implements:
-- D2Q9 BGK collision
-- Half-way bounce-back on all walls
-- Moving lid with specified velocity
-- Zou-He velocity BC on lid (more accurate than simple bounce-back)
+- D2Q9 BGK or regularized BGK (RLBM) collision
+- Half-way bounce-back on stationary walls
+- Zou-He velocity BC on moving lid
+
+RLBM (Latt & Chopard 2006) is recommended for Re >= 1000 where tau approaches 0.5.
 """
 
 from __future__ import annotations
 
 import dataclasses
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 
@@ -18,23 +19,22 @@ import torch
 @dataclasses.dataclass
 class CavityConfig:
     """Configuration for lid-driven cavity simulation."""
-    n: int = 129          # Grid points per side (odd for centerline)
-    re: float = 100.0     # Reynolds number Re = U*L/nu
-    u_lid: float = 0.1    # Lid velocity in lattice units
+    n: int = 129
+    re: float = 100.0
+    u_lid: float = 0.1
     max_steps: int = 50000
-    warmup_steps: int = 5000
-    sample_interval: int = 500
-    tau: float = None     # Will be computed from Re if None
+    tau: float = None
+    use_rlbm: bool = True
+    dtype: torch.dtype = torch.float64
+    device: str = "cpu"
 
     def __post_init__(self):
         if self.n < 17:
             raise ValueError(f"Grid too small: n={self.n}, need >= 17")
         if self.u_lid >= 0.3:
             raise ValueError(f"u_lid={self.u_lid} too high for incompressible LBM")
-        # nu = U*L / Re, L = n-1 in lattice units
         L = self.n - 1
         self.nu = self.u_lid * L / self.re
-        # tau = nu/cs2 + 0.5, cs2 = 1/3
         if self.tau is None:
             self.tau = self.nu / (1.0/3.0) + 0.5
         if self.tau <= 0.5:
@@ -42,14 +42,12 @@ class CavityConfig:
 
     @property
     def omega(self) -> float:
-        """BGK relaxation frequency."""
         return 1.0 / self.tau
 
 
 class CavitySolver:
-    """D2Q9 lid-driven cavity solver."""
+    """D2Q9 lid-driven cavity solver with RLBM support."""
 
-    # D2Q9 velocities and weights
     C = torch.tensor([
         [ 0,  0], [ 1,  0], [-1,  0], [ 0,  1], [ 0, -1],
         [ 1,  1], [-1,  1], [ 1, -1], [-1, -1],
@@ -64,42 +62,38 @@ class CavitySolver:
         self.cfg = config
         n = config.n
         self.n = n
+        self.device = torch.device(config.device)
+        self.dtype = config.dtype
 
-        # Initialize distributions at equilibrium (fluid at rest)
-        rho = torch.ones((n, n), dtype=torch.float64)
-        ux = torch.zeros((n, n), dtype=torch.float64)
-        uy = torch.zeros((n, n), dtype=torch.float64)
+        # Fluid mask (interior nodes only)
+        self.fluid = torch.ones((n, n), dtype=torch.bool, device=self.device)
+        self.fluid[0, :] = False   # bottom
+        self.fluid[-1, :] = False  # top (lid)
+        self.fluid[:, 0] = False   # left
+        self.fluid[:, -1] = False  # right
+
+        # Initialize at equilibrium (fluid at rest)
+        rho = torch.ones((n, n), dtype=config.dtype, device=self.device)
+        ux = torch.zeros((n, n), dtype=config.dtype, device=self.device)
+        uy = torch.zeros((n, n), dtype=config.dtype, device=self.device)
         self.f = self._equilibrium(rho, ux, uy)
 
-        # Solid mask: all boundaries are solid
-        self.solid = torch.zeros((n, n), dtype=torch.bool)
-        self.solid[0, :] = True   # bottom wall
-        self.solid[-1, :] = True  # top wall (lid)
-        self.solid[:, 0] = True   # left wall
-        self.solid[:, -1] = True  # right wall
-
-        # Pre-compute streaming shifts
+        # Streaming shifts
         self._shifts = []
         for i in range(9):
             cx, cy = int(self.C[i, 0]), int(self.C[i, 1])
             self._shifts.append((-cy, -cx))
 
     def _equilibrium(self, rho, ux, uy):
-        """Compute D2Q9 equilibrium."""
-        device = rho.device
-        c = self.C.to(device=device, dtype=rho.dtype)
-        w = self.W.to(device=device, dtype=rho.dtype)
-
+        c = self.C.to(device=self.device, dtype=rho.dtype)
+        w = self.W.to(device=self.device, dtype=rho.dtype)
         uc = c[:, 0].view(-1, 1, 1) * ux.unsqueeze(0) + c[:, 1].view(-1, 1, 1) * uy.unsqueeze(0)
         u2 = ux**2 + uy**2
-
-        feq = w.view(-1, 1, 1) * rho.unsqueeze(0) * (
+        return w.view(-1, 1, 1) * rho.unsqueeze(0) * (
             1.0 + 3.0 * uc + 4.5 * uc**2 - 1.5 * u2.unsqueeze(0)
         )
-        return feq
 
     def _stream(self, f):
-        """Stream with periodic BC (interior only, boundaries handled separately)."""
         f_out = torch.empty_like(f)
         for i in range(9):
             sy, sx = self._shifts[i]
@@ -109,151 +103,147 @@ class CavitySolver:
                 f_out[i] = torch.roll(f[i], shifts=(sy, sx), dims=(0, 1))
         return f_out
 
-    def _bounce_back(self, f):
-        """Half-way bounce-back on solid nodes."""
-        f_bb = f.clone()
-        for i in range(1, 9):
-            opp = self.OPPOSITE[i]
-            f_bb[i, self.solid] = f[opp, self.solid]
-        return f_bb
+    def _macroscopic(self, f):
+        rho = f.sum(dim=0)
+        rho_safe = torch.clamp(rho, min=1e-12)
+        ux = (f * self.C[:, 0].view(-1, 1, 1).to(f.dtype)).sum(dim=0) / rho_safe
+        uy = (f * self.C[:, 1].view(-1, 1, 1).to(f.dtype)).sum(dim=0) / rho_safe
+        return rho, ux, uy
 
-    def _lid_bc(self, f, rho):
-        """Zou-He velocity BC on moving lid (top wall, y=-1)."""
-        # Lid: y = n-1, moving with u_lid in x direction
+    def _collide_rlbm(self, f):
+        """RLBM collision on fluid nodes only."""
+        c = self.C.to(device=self.device, dtype=f.dtype)
+        w = self.W.to(device=self.device, dtype=f.dtype)
+        cs2 = 1.0 / 3.0
+
+        # Macroscopic (fluid only for stress computation)
+        rho = f.sum(dim=0)
+        rho_safe = torch.clamp(rho, min=1e-12)
+        ux = (f * c[:, 0].view(-1, 1, 1)).sum(dim=0) / rho_safe
+        uy = (f * c[:, 1].view(-1, 1, 1)).sum(dim=0) / rho_safe
+
+        # Equilibrium
+        u2 = ux**2 + uy**2
+        cu = c[:, 0].view(-1, 1, 1) * ux + c[:, 1].view(-1, 1, 1) * uy
+        feq = w.view(-1, 1, 1) * rho.unsqueeze(0) * (
+            1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u2.unsqueeze(0)
+        )
+
+        fneq = f - feq
+
+        # Stress tensor
+        cix = c[:, 0].view(-1, 1, 1)
+        ciy = c[:, 1].view(-1, 1, 1)
+        Pi_xx = (fneq * cix * cix).sum(dim=0)
+        Pi_yy = (fneq * ciy * ciy).sum(dim=0)
+        Pi_xy = (fneq * cix * ciy).sum(dim=0)
+        Pi_trace = Pi_xx + Pi_yy
+
+        # Regularized fneq
+        fneq_reg = w.view(-1, 1, 1) / (2.0 * cs2 * cs2) * (
+            cix * cix * Pi_xx + ciy * ciy * Pi_yy +
+            2.0 * cix * ciy * Pi_xy - cs2 * Pi_trace
+        )
+
+        # Collision on fluid nodes only
+        omega = 1.0 / self.cfg.tau
+        f_out = f.clone()
+        f_out[:, self.fluid] = f[:, self.fluid] - omega * fneq_reg[:, self.fluid]
+        return f_out
+
+    def _collide_bgk(self, f):
+        rho, ux, uy = self._macroscopic(f)
+        feq = self._equilibrium(rho, ux, uy)
+        f_out = f.clone()
+        f_out[:, self.fluid] = f[:, self.fluid] + self.cfg.omega * (feq[:, self.fluid] - f[:, self.fluid])
+        return f_out
+
+    def _apply_bounce_back(self, f, f_pre_stream):
+        """Half-way bounce-back on stationary walls (bottom, left, right)."""
+        f_out = f.clone()
+        # Bottom wall (y=0)
+        for i in [3, 5, 6]:  # directions pointing into bottom wall
+            opp = self.OPPOSITE[i]
+            f_out[i, 0, :] = f_pre_stream[opp, 0, :]
+        # Left wall (x=0)
+        for i in [1, 5, 7]:
+            opp = self.OPPOSITE[i]
+            f_out[i, :, 0] = f_pre_stream[opp, :, 0]
+        # Right wall (x=n-1)
+        for i in [2, 6, 8]:
+            opp = self.OPPOSITE[i]
+            f_out[i, :, -1] = f_pre_stream[opp, :, -1]
+        return f_out
+
+    def _apply_zou_he_lid(self, f):
+        """Zou-He velocity BC on moving lid (top wall, y=n-1)."""
         j = self.n - 1
         u_lid = self.cfg.u_lid
 
-        # Known: f[0], f[1], f[2], f[5], f[6] (incoming to lid)
-        # Unknown: f[3], f[4], f[7], f[8] (outgoing from lid)
+        f0 = f[0, j, :]
+        f1 = f[1, j, :]
+        f2 = f[2, j, :]
+        f4 = f[4, j, :]
+        f5 = f[5, j, :]
+        f6 = f[6, j, :]
 
-        # Density from mass conservation
-        # rho = f[0] + f[1] + f[2] + 2*(f[3]+f[4]+f[5]+f[6]+f[7]+f[8])
-        # But we use the Zou-He formulation:
+        rho = f0 + f1 + f2 + 2.0 * (f4 + f5 + f6)
 
-        # f[3] - f[4] = rho * uy = 0 (no normal velocity)
-        # f[3] + f[4] = rho - f[0] - f[1] - f[2] - 2*(f[5]+f[6]+f[7]+f[8])
-        # f[7] - f[8] = - (f[1] - f[2]) + rho * ux
-        # f[7] + f[8] = f[5] + f[6] - (f[1] - f[2]) / 2 + rho * ux / 2
-
-        # Simplified Zou-He for lid (uy=0, ux=u_lid):
-        rho_lid = f[0, j] + f[1, j] + f[2, j] + 2.0 * (f[5, j] + f[6, j] + f[3, j])
-        # Actually, let's use the standard formulation:
-
-        # Incoming populations at lid (from fluid below):
-        f_in_0 = f[0, j]
-        f_in_1 = f[1, j]
-        f_in_2 = f[2, j]
-        f_in_5 = f[5, j]
-        f_in_6 = f[6, j]
-
-        # Compute density
-        rho_val = (f_in_0 + f_in_1 + f_in_2 + 2.0 * (f_in_5 + f_in_6)) / (1.0 - 0.0)  # uy=0
-
-        # Non-equilibrium bounce-back for tangential directions
-        f[3, j] = f[4, j]  # Will be overwritten
-        f[7, j] = f[8, j]  # Will be overwritten
-
-        # Zou-He: f[3] = f[4] + (2/3)*rho*uy = f[4] (since uy=0)
-        # f[7] = f[8] - (f[1]-f[2])/2 + (1/6)*rho*(ux+uy)
-        # f[8] = f[7] + (f[1]-f[2])/2 + (1/6)*rho*(ux-uy)
-
-        # Use non-equilibrium bounce-back (simpler, nearly as accurate):
-        feq = self._equilibrium(
-            rho_val.unsqueeze(0).expand(9, -1),
-            torch.full_like(rho_val, u_lid).unsqueeze(0).expand(9, -1),
-            torch.zeros_like(rho_val).unsqueeze(0).expand(9, -1)
-        )
-        # Actually, let's use the simpler approach: equilibrium at lid velocity
-        for i in [3, 7, 8]:
-            self.f[i, j] = feq[i, 0]
-
-        return rho_val
-
-    def _collide(self, f):
-        """BGK collision."""
-        rho, ux, uy = self._macroscopic(f)
-        feq = self._equilibrium(rho, ux, uy)
-        f = f + self.cfg.omega * (feq - f)
+        f[3, j, :] = f4
+        f[7, j, :] = f6 - 0.5 * (f1 - f2) + (1.0 / 6.0) * rho * u_lid
+        f[8, j, :] = f5 + 0.5 * (f1 - f2) + (1.0 / 6.0) * rho * u_lid
         return f
 
-    def _macroscopic(self, f):
-        """Compute macroscopic variables."""
-        rho = f.sum(dim=0)
-        ux = (f * self.C[:, 0].view(-1, 1, 1).to(f.dtype)).sum(dim=0) / rho
-        uy = (f * self.C[:, 1].view(-1, 1, 1).to(f.dtype)).sum(dim=0) / rho
-        return rho, ux, uy
-
     def step(self):
-        """One LBM step: collide + stream + boundary conditions."""
-        # Collision (only in fluid nodes)
-        fluid = ~self.solid
-        f_fluid = self.f[:, fluid]
-        rho, ux, uy = self._macroscopic(self.f)
-
-        feq = self._equilibrium(rho, ux, uy)
-        f_new = self.f + self.cfg.omega * (feq - self.f)
+        """One LBM step: collide -> stream -> boundary conditions."""
+        # Collision (fluid nodes only)
+        if self.cfg.use_rlbm:
+            f_collided = self._collide_rlbm(self.f)
+        else:
+            f_collided = self._collide_bgk(self.f)
 
         # Streaming
-        f_streamed = self._stream(f_new)
+        f_streamed = self._stream(f_collided)
 
-        # Bounce-back on solid walls (except lid)
-        f_bb = self._bounce_back(f_streamed)
+        # Bounce-back on stationary walls
+        f_bb = self._apply_bounce_back(f_streamed, f_collided)
 
-        # Lid BC: overwrite top wall with moving lid condition
-        j = self.n - 1
-        # Non-equilibrium bounce-back for lid
-        rho_lid, _, _ = self._macroscopic(f_bb)
-        feq_lid = self._equilibrium(
-            rho_lid,
-            torch.full_like(rho_lid, self.cfg.u_lid),
-            torch.zeros_like(rho_lid)
-        )
-        # Apply equilibrium for outgoing populations at lid
-        for i in [3, 7, 8]:  # populations pointing into the fluid from lid
-            f_bb[i, j] = feq_lid[i, j]
-
-        self.f = f_bb
-
-    def _macroscopic(self, f):
-        """Compute macroscopic variables."""
-        rho = f.sum(dim=0)
-        ux = (f * self.C[:, 0].view(-1, 1, 1).to(f.dtype)).sum(dim=0) / rho
-        uy = (f * self.C[:, 1].view(-1, 1, 1).to(f.dtype)).sum(dim=0) / rho
-        return rho, ux, uy
+        # Zou-He on lid
+        self.f = self._apply_zou_he_lid(f_bb)
 
     def get_profiles(self):
-        """Extract centerline velocity profiles for comparison with Ghia."""
+        """Extract centerline velocity profiles."""
         rho, ux, uy = self._macroscopic(self.f)
         mid = self.n // 2
-
-        # u_y along vertical centerline (x = L/2)
-        u_center = ux[:, mid].numpy()
-        # v_x along horizontal centerline (y = L/2)
-        v_center = uy[mid, :].numpy()
-
-        # Normalize: y from 0 to 1 (bottom to top)
+        u_center = ux[:, mid].cpu().numpy()
+        v_center = uy[mid, :].cpu().numpy()
         y_norm = torch.linspace(0, 1, self.n).numpy()
         x_norm = torch.linspace(0, 1, self.n).numpy()
+        return y_norm, u_center / self.cfg.u_lid, x_norm, v_center / self.cfg.u_lid
 
-        # Normalize velocities by lid velocity
-        u_norm = u_center / self.cfg.u_lid
-        v_norm = v_center / self.cfg.u_lid
+    def get_residual(self, ux_prev, uy_prev):
+        rho, ux, uy = self._macroscopic(self.f)
+        du = float(torch.max(
+            torch.abs(ux[self.fluid] - ux_prev[self.fluid]).max(),
+            torch.abs(uy[self.fluid] - uy_prev[self.fluid]).max(),
+        ))
+        return du
 
-        return y_norm, u_norm, x_norm, v_norm
-
-    def run(self, callback=None):
-        """Run simulation."""
+    def run(self, callback=None, resid_tol=1e-6, monitor_interval=5000):
+        rho, ux_prev, uy_prev = self._macroscopic(self.f)
         for step in range(self.cfg.max_steps):
             self.step()
-
-            if callback and step % self.cfg.sample_interval == 0:
-                callback(step, self)
-
+            if step % monitor_interval == 0 and step > 0:
+                resid = self.get_residual(ux_prev, uy_prev)
+                rho, ux_prev, uy_prev = self._macroscopic(self.f)
+                if callback:
+                    callback(step, self, resid)
+                if resid < resid_tol:
+                    break
         return self
 
 
 def run_cavity(config: CavityConfig) -> CavitySolver:
-    """Run lid-driven cavity simulation."""
     solver = CavitySolver(config)
     solver.run()
     return solver
