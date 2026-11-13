@@ -199,8 +199,13 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "KPIDefinition": ("accuracy_recommendation", "KPIDefinition"),
     "LBMDatabase": ("ai", "LBMDatabase"),
     "LBMSimulation": ("simulation", "LBMSimulation"),
-    "AaPopulation": ("aa_layout", "AaPopulation"),
-    "AaLayout": ("aa_layout", "AaLayout"),
+    "JobCheckpointManager": ("job_checkpoint", "JobCheckpointManager"),
+    "JobStatusFile": ("job_checkpoint", "JobStatusFile"),
+    "CheckpointStore": ("job_checkpoint", "CheckpointStore"),
+    "CheckpointPolicy": ("job_checkpoint", "CheckpointPolicy"),
+    "CheckpointError": ("job_checkpoint", "CheckpointError"),
+    "VolumeTrigger": ("job_checkpoint", "VolumeTrigger"),
+    "ResumeState": ("job_checkpoint", "ResumeState"),
     "LBMStepExecutor": ("lbm_step", "LBMStepExecutor"),
     "LBMUnitConverter": ("unit_converter", "LBMUnitConverter"),
     "LaplaceTestConfig": ("porous_media", "LaplaceTestConfig"),
@@ -2027,6 +2032,15 @@ if TYPE_CHECKING:  # pragma: no cover - static-analysis only
         import_mesh_stl,
     )
     from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
+    from .job_checkpoint import (
+        CheckpointError,
+        CheckpointPolicy,
+        CheckpointStore,
+        JobCheckpointManager,
+        JobStatusFile,
+        ResumeState,
+        VolumeTrigger,
+    )
     from .simulation import LBMSimulation
     from .sloshing_tank import (
         SloshingTankConfig,
@@ -2720,6 +2734,13 @@ __all__ = [
     "configure_logging",
     "D2Q9",
     "LBMSimulation",
+    "JobCheckpointManager",
+    "JobStatusFile",
+    "CheckpointStore",
+    "CheckpointPolicy",
+    "CheckpointError",
+    "VolumeTrigger",
+    "ResumeState",
     "LBMStepExecutor",
     "Reporter",
     "ReporterBase",
