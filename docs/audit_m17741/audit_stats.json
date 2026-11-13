@@ -1,0 +1,22 @@
+{
+ "n_checks": 35,
+ "n_passed_shipped": 35,
+ "n_passed_fresh": 35,
+ "gate_pct": 15.0,
+ "worst_id": "E1-sound-atten-3d-n64",
+ "worst_err_pct": 1.1552053511244276,
+ "n_below_3pct": 35,
+ "n_below_0p4pct": 31,
+ "median_err_pct": 0.10014369475550011,
+ "n_zero_ref_rows": 1,
+ "n_distinct_measurement_runs": 32,
+ "checks_in_arm": {
+  "A shear 2D BGK": 6,
+  "B shear 2D MRT": 9,
+  "C shear 3D BGK": 6,
+  "D sound 2D BGK/MRT": 10,
+  "E sound 3D BGK": 4
+ },
+ "distinct_got_values": 31,
+ "figure": "/root/tp-agent/work/m17741/docs/audit_m17741/audit_m17741.png"
+}
