@@ -53,6 +53,7 @@ import numpy as np
 
 __all__ = [
     "CavityAMR2DConfig",
+    "EqualLevelBorderStreamCorrection",
     "CavityAMR2D",
     "ghia_comparison",
 ]
@@ -171,6 +172,18 @@ class CavityAMR2DConfig:
     u_lid: float = 0.06
     reflux: bool = True
     collision: str = "rlbm"
+    # Coupling of the coarse rows covered by a fine strip:
+    #   "restricted" -- waLBerla-alternative / TensorLBM practice: refresh them
+    #                   from the fine strip every step (a same-level source
+    #                   always exists, no stream correction needed);
+    #   "frozen"     -- waLBerla practice: the covered coarse rows are not
+    #                   maintained, so the equal-level border stream correction
+    #                   has to supply the missing populations
+    #                   (``EqualLevelBorderStreamCorrection``).
+    # Only the audited "restricted" default is exercised by the case files; the
+    # "frozen" mode is the cross-validation branch of the OSS practice.
+    coarse_shadow: str = "restricted"
+    stream_correction: bool = True
 
     def __post_init__(self) -> None:
         if self.coarse < 32:
@@ -183,6 +196,8 @@ class CavityAMR2DConfig:
             raise ValueError("u_lid must lie in (0, 0.2)")
         if self.collision != "rlbm":
             raise ValueError("only the regularised BGK collision is audited")
+        if self.coarse_shadow not in ("restricted", "frozen"):
+            raise ValueError("coarse_shadow must be 'restricted' or 'frozen'")
 
     @property
     def tau_coarse(self) -> float:
@@ -242,6 +257,19 @@ class CavityAMR2D:
         self.wall_bottom = self.wall_top.copy()
         self.wall_bottom[0, :] = True
 
+        if config.coarse_shadow == "frozen" and config.stream_correction:
+            # lazy import: amr_equal_level_stream reuses this module's D2Q9 helpers
+            from .amr_equal_level_stream import EqualLevelBorderStreamCorrection
+        else:
+            EqualLevelBorderStreamCorrection = None  # type: ignore[assignment]
+        self._shadow = np.zeros((n, n), dtype=bool)
+        self._shadow[self.top[0] : self.top[1], :] = True
+        self._shadow[self.bottom[0] : self.bottom[1], :] = True
+        self.correction = (
+            EqualLevelBorderStreamCorrection(self._shadow)
+            if EqualLevelBorderStreamCorrection is not None
+            else None
+        )
         self.mass_history: list[dict[str, float]] = []
         self.last_balance: dict[str, InterfaceRecord] = {}
         self.step_count = 0
@@ -265,7 +293,19 @@ class CavityAMR2D:
         f_old = self.f
         f_new = _collide_rlbm(f_old, tau_c)
         f_new = _pre_bounce(f_old, f_new, self.wall)
-        f_new = _stream(f_new)
+        if self.correction is not None:
+            # equal-level border stream correction (waLBerla practice): the
+            # covered coarse rows are frozen, their slots are substituted from
+            # the equally-sized neighbour for the duration of the streaming
+            saved = self.correction.prepare(f_new)
+            try:
+                f_new = _stream(f_new)
+            finally:
+                self.correction.restore(f_new, saved)
+        else:
+            f_new = _stream(f_new)
+        if cfg.coarse_shadow == "frozen":
+            f_new[:, self._shadow] = f_old[:, self._shadow]
         f_new = _zou_he_lid(f_new, cfg.u_lid)
 
         # coarse-side interface mass flux: the populations that stream across
@@ -308,10 +348,11 @@ class CavityAMR2D:
         fine_top_mass = fine_top_mass.reshape(n, 2).sum(axis=1)
         fine_bottom_mass = fine_bottom_mass.reshape(n, 2).sum(axis=1)
         # restrict the fine strips onto the coarse shadow rows
-        coarse_top_new = _fh_restrict(self.f_top, tau_f, tau_c)
-        coarse_bot_new = _fh_restrict(self.f_bottom, tau_f, tau_c)
-        f_new[:, self.top[0] :, :] = coarse_top_new
-        f_new[:, : self.bottom[1], :] = coarse_bot_new
+        if cfg.coarse_shadow == "restricted":
+            coarse_top_new = _fh_restrict(self.f_top, tau_f, tau_c)
+            coarse_bot_new = _fh_restrict(self.f_bottom, tau_f, tau_c)
+            f_new[:, self.top[0] :, :] = coarse_top_new
+            f_new[:, : self.bottom[1], :] = coarse_bot_new
 
         # The flux ledger is the *measured* interface imbalance.  A local
         # flux-based reflux (population-proportional correction of the coarse
