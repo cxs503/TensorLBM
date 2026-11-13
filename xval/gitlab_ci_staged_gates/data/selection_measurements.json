@@ -1,0 +1,54 @@
+{
+  "rows": [
+    {
+      "expr": "<all>",
+      "n_collected": 16496,
+      "n_collection_errors": 6,
+      "wall_s": 38.538,
+      "cpu_s": 54.941,
+      "tail": "16496 tests collected, 6 errors in 31.26s",
+      "returncode": 1,
+      "n_deselected": 0
+    },
+    {
+      "expr": "not slow",
+      "n_collected": 16397,
+      "n_collection_errors": 6,
+      "wall_s": 35.857,
+      "cpu_s": 53.088,
+      "tail": "16397/16496 tests collected (99 deselected), 6 errors in 29.58s",
+      "returncode": 1,
+      "n_deselected": 99
+    },
+    {
+      "expr": "slow",
+      "n_collected": 99,
+      "n_collection_errors": 6,
+      "wall_s": 35.827,
+      "cpu_s": 51.682,
+      "tail": "99/16496 tests collected (16397 deselected), 6 errors in 28.70s",
+      "returncode": 1,
+      "n_deselected": 16397
+    },
+    {
+      "expr": "unit",
+      "n_collected": 859,
+      "n_collection_errors": 6,
+      "wall_s": 35.099,
+      "cpu_s": 48.753,
+      "tail": "859/16496 tests collected (15637 deselected), 6 errors in 28.17s",
+      "returncode": 1,
+      "n_deselected": 15637
+    },
+    {
+      "expr": "not longrun",
+      "n_collected": 16496,
+      "n_collection_errors": 6,
+      "wall_s": 36.195,
+      "cpu_s": 52.333,
+      "tail": "16496 tests collected, 6 errors in 30.21s",
+      "returncode": 1,
+      "n_deselected": 0
+    }
+  ]
+}

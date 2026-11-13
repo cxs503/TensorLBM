@@ -1,0 +1,165 @@
+[project]
+name = "lbmpy"
+description = "Code Generation for Lattice Boltzmann Methods"
+dynamic = ["version"]
+readme = "README.md"
+authors = [
+    { name = "Martin Bauer" },
+    { name = "Markus Holzer" },
+    { name = "Frederik Hennig" },
+    { email = "cs10-codegen@fau.de" },
+]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    "pystencils~=2.0",
+    "sympy>=1.12",
+    "numpy>=1.8.0",
+    "appdirs",
+    "joblib",
+    "packaging",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Jupyter",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+]
+
+[project.urls]
+"Bug Tracker" = "https://i10git.cs.fau.de/pycodegen/lbmpy/-/issues"
+"Documentation" = "https://pycodegen.pages.i10git.cs.fau.de/lbmpy/"
+"Source Code" = "https://i10git.cs.fau.de/pycodegen/lbmpy"
+
+[project.optional-dependencies]
+gpu = ['cupy']
+alltrafos = ['islpy', 'py-cpuinfo']
+bench_db = ['blitzdb', 'pymongo', 'pandas']
+interactive = [
+    'matplotlib',
+    'ipy_table',
+    'imageio',
+    'jupyter',
+    'pyevtk',
+    'rich',
+    'graphviz',
+    'scipy',
+    'scikit-image',
+]
+use_cython = ["Cython", "setuptools; python_version >= '3.12'"]
+dev = ["flake8", "mypy", "black"]
+doc = [
+    'sphinx',
+    'sphinx_rtd_theme',
+    'nbsphinx',
+    'sphinxcontrib-bibtex',
+    'sphinx_autodoc_typehints',
+    'pandoc',
+]
+tests = [
+    'pytest',
+    'pytest-cov',
+    'pytest-html',
+    'ansi2html',
+    'pytest-xdist',
+    'flake8',
+    'nbformat',
+    'nbconvert',
+    'ipython',
+    'randomgen>=1.18',
+]
+
+[build-system]
+requires = ["setuptools>=69", "versioneer[toml]>=0.29"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["lbmpy", "lbmpy.*"]
+namespaces = false
+
+[tool.versioneer]
+# See the docstring in versioneer.py for instructions. Note that you must
+# re-run 'versioneer.py setup' after changing this section, and commit the
+# resulting files.
+VCS = "git"
+style = "pep440"
+versionfile_source = "src/lbmpy/_version.py"
+versionfile_build = "lbmpy/_version.py"
+tag_prefix = "release/"
+parentdir_prefix = "lbmpy-"
+
+[tool.pytest]
+testpaths = ["src", "tests", "doc/notebooks"]
+python_files = ["test_*.py", "*_test.py", "scenario_*.py"]
+norecursedirs = [
+    "*.egg-info",
+    ".git",
+    ".cache",
+    ".ipynb_checkpoints",
+    "coverage_report",
+]
+addopts = [
+    "--doctest-modules",
+    "--durations=20 ",
+    "--cov-config=pyproject.toml",
+    "--ignore=src/lbmpy/custom_code_nodes.py",
+    "--ignore=src/lbmpy/lookup_tables.py",
+    "--ignore=src/lbmpy/phasefield_allen_cahn/contact_angle.py",
+]
+markers = [
+    "longrun: tests only run at night since they have large execution time",
+    "notebook: mark for notebooks",
+]
+filterwarnings = [
+    "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
+    "ignore:'contextfilter' is renamed to 'pass_context':DeprecationWarning",
+    "ignore:Persisting input arguments took:UserWarning",
+]
+
+[tool.coverage.run]
+branch = true
+include = ["src/lbmpy/**/*.py", "tests/**/*.py"]
+relative_files = true
+omit = [
+    "doc/*",
+    "tests/*",
+    "setup.py",
+    "conftest.py",
+    "versioneer.py",
+    "quicktest.py",
+    "noxfile.py",
+    "src/lbmpy/_version.py",
+    "venv/",
+]
+
+[tool.coverage.report]
+include = ["src/lbmpy/**/*.py", "tests/**/*.py"]
+exclude_also = [
+    "def __repr__",
+    "def _repr_html_",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "NotImplementedError()",
+    #raise ValueError
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if False:",
+    "if __name__ == .__main__.:",
+    "assert False",
+
+    # Don't cover type checking imports
+    "if TYPE_CHECKING:",
+]
+skip_covered = true
+
+[tool.coverage.html]
+directory = "coverage_report"
