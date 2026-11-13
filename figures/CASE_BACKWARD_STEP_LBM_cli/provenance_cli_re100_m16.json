@@ -1,0 +1,11 @@
+{
+  "tag": "cli_re100_m16",
+  "sources": {
+    "field.npz": "9d6bddd8ddd064da06b4b62cce9d46983f8b5669b6522b4956a5e2a1c98600bc",
+    "result.json": "a3a6dbbb3698707db3c756dd5e374b625a4b4d78db3c636f2946ed3fc65d4ec8"
+  },
+  "figures": [
+    "figures/CASE_BACKWARD_STEP_LBM_cli/field_cli_re100_m16.png",
+    "figures/CASE_BACKWARD_STEP_LBM_cli/convergence_cli_re100_m16.png"
+  ]
+}
