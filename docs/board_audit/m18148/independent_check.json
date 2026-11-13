@@ -1,0 +1,62 @@
+{
+  "audited_mission": 18112,
+  "auditor_mission": 18148,
+  "independent_shear_wave": [
+    {
+      "grid": 12,
+      "steps": 100,
+      "tau": 0.6,
+      "nu": 0.033333333333333326,
+      "k": 0.5235987755982988,
+      "nu_k2": 0.009138522593601253,
+      "amplitude_final": 0.0038414280039406686,
+      "analytic_final": 0.0040097657920247646,
+      "rel_err_pct": -4.198195027223583
+    },
+    {
+      "grid": 16,
+      "steps": 100,
+      "tau": 0.6,
+      "nu": 0.033333333333333326,
+      "k": 0.39269908169872414,
+      "nu_k2": 0.005140418958900706,
+      "amplitude_final": 0.005868548899270415,
+      "analytic_final": 0.005980733367230957,
+      "rel_err_pct": -1.8757644100171968
+    },
+    {
+      "grid": 24,
+      "steps": 60,
+      "tau": 0.6,
+      "nu": 0.033333333333333326,
+      "k": 0.2617993877991494,
+      "nu_k2": 0.002284630648400313,
+      "amplitude_final": 0.008664442864644533,
+      "analytic_final": 0.008719023555668897,
+      "rel_err_pct": -0.62599545322799
+    }
+  ],
+  "mutation_control": {
+    "n_ranks": 4,
+    "grid": 8,
+    "steps": 5,
+    "max_abs_df_correct_perm": 0.0,
+    "max_abs_df_swapped_perm": 0.0009469501674175262,
+    "criterion_sensitive": true
+  },
+  "comm_counting": {
+    "axis": "z (tensor axis 0 -> dim nz)",
+    "dirs_pos": 5,
+    "dirs_neg": 5,
+    "planes_per_exchange_per_rank": 10,
+    "naive_full_q_planes": 38,
+    "bytes_per_exchange_per_rank_f32_L16": 10240,
+    "wire_ratio_naive_over_selective": 3.8,
+    "crossing_dirs": 10
+  },
+  "notes": {
+    "arm1": "审计者自写 numpy float64 D3Q19-BGK，与被审仓代码无共享数值路径",
+    "arm2": "变异对照复用被审代码：证明 A1 逐位判据对换错邻居敏感（非空洞）",
+    "arm3": "解析计数，不读被审代码计数器"
+  }
+}
