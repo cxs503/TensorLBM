@@ -39,6 +39,15 @@ from .d3q19 import OPPOSITE as OPPOSITE3D
 from .d3q19 import C as C3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
+from .example_harness import (
+    CASE_REGISTRY,
+    CaseSpec,
+    analytic_reference,
+    available_cases,
+    get_case,
+    record_digest,
+    run_case,
+)
 from .soft_geometry import SoftGeometry
 from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
 from .solver3d import (
@@ -135,6 +144,14 @@ __all__ = [
     "zoo_list_models",
     "zoo_info",
     "zoo_validate",
+    # declarative example runtime (XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN)
+    "CaseSpec",
+    "CASE_REGISTRY",
+    "get_case",
+    "available_cases",
+    "run_case",
+    "analytic_reference",
+    "record_digest",
     # evidence-driven maturity audit (GAP-LBM-INTL-BENCH)
     "intl_bench_audit",
     "intl_bench_scorecard",
