@@ -76,9 +76,11 @@ __all__ = [
     "centreline_probes",
     "initial_field",
     "invert_relaxation_time",
+    "invert_relaxation_time_rootfind",
     "moving_lid_bc",
     "moving_lid_values",
     "rollout",
+    "solve_stationary_1d",
     "step",
     "tau_from_reynolds",
 ]
@@ -486,4 +488,416 @@ def invert_relaxation_time(
         "iters": int(iters),
         "method": method,
         "final_step": step_size,
+    }
+
+# ---------------------------------------------------------------------------
+# inverse problem, round 2: root-find the stationary condition g(s) = dL/ds = 0
+# ---------------------------------------------------------------------------
+#
+# ``invert_relaxation_time`` above descends the loss with Adam/Newton.  For a
+# *single* parameter the loss is a 1-D valley whose Hessian can be ~1e-12
+# (see ``docs/GAP_PP_2_LID_WALL_DIFF.md`` section 6), and a first-order method
+# then limit-cycles instead of converging.  The stationary condition is,
+# however, a scalar equation in ``s = log(tau - 0.5)``:
+#
+#     g(s) := dL/ds = 0 ,
+#
+# so one backward pass per iteration is enough to drive a *root finder*
+# (secant / Illinois regula falsi with a bisection safeguard) that converges
+# super-linearly and -- with a bracket -- monotonically.  That method is
+# derivative information only, no Hessian and no double backward, so it also
+# works under ``torch.compile``/aot_autograd.
+
+
+def solve_stationary_1d(
+    evaluate: Any,
+    x0: float,
+    *,
+    method: str = "illinois",
+    bracket: tuple[float, float] | None = None,
+    max_iter: int = 20,
+    step_tol: float = 1e-10,
+    grad_tol: float = 0.0,
+    expand: float | None = None,
+    max_expand: int = 8,
+    invalid_policy: str = "shrink",
+    max_shrink: int = 6,
+    log: Any = None,
+) -> dict[str, Any]:
+    """Root-find ``g(x) = dF/dx = 0`` from a value-and-gradient oracle.
+
+    Args:
+        evaluate: ``evaluate(x) -> (value, grad)`` for a scalar ``x``; ``grad``
+            must be ``d(value)/dx`` of the *same* map (that is what makes the
+            stationary point of ``value`` the root of ``grad``).
+        x0: Initial guess.
+        method: ``"illinois"`` (regula falsi + bisection safeguard; needs a
+            sign change of ``grad``) or ``"secant"`` (no bracket needed).
+        bracket: Optional ``(lo, hi)`` with ``grad(lo) * grad(hi) < 0``.  When
+            omitted the bracket is grown geometrically around ``x0``.
+        max_iter: Maximum root-finding iterations (each costs one ``evaluate``
+            beyond the bracketing probes; probes are cached).
+        step_tol: Convergence when ``|dx| <= step_tol * max(1, |x|)``.
+        grad_tol: Optional additional criterion ``|grad| <= grad_tol``.
+        expand: Initial half-width used for auto-bracketing (default
+            ``0.05 * max(1, |x0|)``); doubled until a sign change is found.
+        max_expand: Maximum number of doublings when auto-bracketing.
+        invalid_policy: What to do when the oracle returns a non-finite
+            value/gradient (in solver-in-the-loop inversions this is the
+            physical *stability* boundary, e.g. ``tau -> 0.5``).  ``"shrink"``
+            moves an invalid bracket end back towards ``x0`` (geometrically,
+            ``max_shrink`` times) and retries; ``"raise"`` propagates a
+            :class:`FloatingPointError`.
+        max_shrink: Maximum number of halvings per invalid bracket end.
+        log: Optional callable receiving progress strings.
+
+    Returns:
+        Dict with ``x``, ``value``, ``grad``, ``n_evals``, ``status``
+        (``"converged"``/``"grad_tol"``/``"max_iter"``/``"not_bracketed"``/
+        ``"stalled_invalid"``), ``bracket`` (final bracket or ``None``),
+        ``n_invalid`` and ``history`` -- one entry per ``evaluate`` call with
+        ``x``, ``value``, ``grad``, ``role``, ``invalid``.
+    """
+    if method not in ("illinois", "secant"):
+        msg = f"unknown root-finding method {method!r} (use 'illinois' or 'secant')"
+        raise ValueError(msg)
+    if max_iter < 1:
+        msg = f"max_iter must be >= 1, got {max_iter}"
+        raise ValueError(msg)
+    if invalid_policy not in ("shrink", "raise"):
+        msg = f"unknown invalid_policy {invalid_policy!r} (use 'shrink' or 'raise')"
+        raise ValueError(msg)
+
+    cache: dict[float, tuple[float, float] | None] = {}
+    history: list[dict[str, Any]] = []
+    valid: list[dict[str, Any]] = []
+
+    def sample(x: float, role: str) -> tuple[float, float] | None:
+        """Oracle with caching; ``None`` marks a non-finite (invalid) point."""
+        key = float(x)
+        if key not in cache:
+            try:
+                val, grad = evaluate(key)
+                val, grad = float(val), float(grad)
+                if not (math.isfinite(val) and math.isfinite(grad)):
+                    msg = f"non-finite value/grad at x={key!r}: value={val!r} grad={grad!r}"
+                    raise FloatingPointError(msg)
+                cache[key] = (val, grad)
+            except FloatingPointError as exc:
+                if invalid_policy == "raise":
+                    raise
+                cache[key] = None
+                if log is not None:
+                    log(f"[rootfind] invalid point x={key:.8f}: {exc}")
+        hit = cache[key]
+        if hit is None:
+            history.append(
+                {"x": key, "value": math.nan, "grad": math.nan, "role": role, "invalid": True}
+            )
+            return None
+        val, grad = hit
+        entry = {"x": key, "value": val, "grad": grad, "role": role, "invalid": False}
+        history.append(entry)
+        valid.append(entry)
+        return val, grad
+
+    def converged(x_new: float, x_old: float, grad: float) -> bool:
+        if abs(x_new - x_old) <= step_tol * max(1.0, abs(x_old)):
+            return True
+        return grad_tol > 0.0 and abs(grad) <= grad_tol
+
+    def shrink_toward(target: float, anchor: float, role: str) -> tuple[float, float, float] | None:
+        """Probe ``target``; on invalidity step back towards ``anchor``."""
+        step = target - anchor
+        cur = target
+        for attempt in range(max_shrink + 1):
+            hit = sample(cur, role if attempt == 0 else f"{role}-shrink{attempt}")
+            if hit is not None:
+                return cur, hit[0], hit[1]
+            step *= 0.5
+            cur = anchor + step
+        return None
+
+    def best_entry() -> dict[str, Any]:
+        if not valid:
+            msg = f"every oracle evaluation was non-finite (x0={x0!r})"
+            raise FloatingPointError(msg)
+        return min(valid, key=lambda h: h["value"])
+
+    def wrap_up(x_root: float, val: float, grad: float, status: str,
+                n: int, bracket_ends: tuple[float, float] | None) -> dict[str, Any]:
+        return {
+            "x": float(x_root),
+            "value": float(val),
+            "grad": float(grad),
+            "n_evals": len(cache),
+            "n_invalid": sum(1 for v in cache.values() if v is None),
+            "status": status,
+            "iterations": n,
+            "bracket": None if bracket_ends is None else (float(bracket_ends[0]), float(bracket_ends[1])),
+            "best": dict(best_entry()),
+            "history": history,
+        }
+
+    x = float(x0)
+    first = sample(x, "initial")
+    if first is None:
+        msg = f"initial point x0={x!r} evaluated non-finite"
+        raise FloatingPointError(msg)
+    val, grad = first
+
+    if method == "secant":
+        # Two-point secant on g(x); no bracket, so no safeguard against a flat
+        # or sign-changing g' -- this is the cheap option.
+        dx = expand if expand is not None else 0.05 * max(1.0, abs(x))
+        if dx == 0.0:
+            msg = "expand must be non-zero"
+            raise ValueError(msg)
+        x_prev, grad_prev = x, grad
+        x_cur = x + dx
+        status = "max_iter"
+        v_cur, g_cur = val, grad
+        n = 0
+        while n < max_iter:
+            n += 1
+            hit = sample(x_cur, f"iter{n}")
+            if hit is None:
+                dx *= 0.5
+                if dx == 0.0:
+                    status = "stalled_invalid"
+                    break
+                x_cur = x_prev + dx
+                continue
+            v_cur, g_cur = hit
+            denom = g_cur - grad_prev
+            if abs(denom) < 1e-300:
+                status = "stalled"
+                break
+            x_next = x_cur - g_cur * (x_cur - x_prev) / denom
+            if log is not None:
+                log(
+                    f"[rootfind:secant] it={n:02d} x={x_cur:.10f} "
+                    f"value={v_cur:.6e} grad={g_cur:.6e} dx={x_next - x_cur:+.3e}"
+                )
+            if converged(x_next, x_cur, g_cur):
+                x_prev, grad_prev = x_cur, g_cur
+                x_cur, status = x_next, "converged"
+                break
+            x_prev, grad_prev = x_cur, g_cur
+            x_cur = x_next
+        hit = sample(x_cur, "final")
+        if hit is not None:
+            v_cur, g_cur = hit
+        return wrap_up(x_cur, v_cur, g_cur, status, n, None)
+
+    # ---- bracketing regula falsi ("illinois") -------------------------------
+    if bracket is not None:
+        lo_arg, hi_arg = (float(bracket[0]), float(bracket[1]))
+        if not lo_arg < hi_arg:
+            msg = f"bracket must satisfy lo < hi, got {bracket!r}"
+            raise ValueError(msg)
+        anchor = min(max(x, lo_arg), hi_arg)
+        lo_res = shrink_toward(lo_arg, anchor, "bracket_lo")
+        hi_res = shrink_toward(hi_arg, anchor, "bracket_hi")
+    else:
+        half = expand if expand is not None else 0.05 * max(1.0, abs(x))
+        if half <= 0.0:
+            msg = "expand must be > 0"
+            raise ValueError(msg)
+        lo_res = shrink_toward(x - half, x, "bracket_lo")
+        hi_res = shrink_toward(x + half, x, "bracket_hi")
+        n_exp = 0
+        while (
+            (lo_res is None or hi_res is None or lo_res[2] * hi_res[2] > 0.0)
+            and n_exp < max_expand
+        ):
+            n_exp += 1
+            half *= 2.0
+            lo_res = shrink_toward(x - half, x, f"bracket_lo+{n_exp}")
+            hi_res = shrink_toward(x + half, x, f"bracket_hi+{n_exp}")
+            if log is not None:
+                log(f"[rootfind:illinois] widening attempt {n_exp}: half={half:.6f}")
+
+    if lo_res is None or hi_res is None or lo_res[2] * hi_res[2] > 0.0:
+        if log is not None:
+            log("[rootfind:illinois] no finite sign change found")
+        best = best_entry()
+        return wrap_up(best["x"], best["value"], best["grad"], "not_bracketed", 0, None)
+
+    lo, v_lo, g_lo = lo_res
+    hi, v_hi, g_hi = hi_res
+
+    status = "max_iter"
+    n = 0
+    x_cur, g_cur, v_cur = lo, g_lo, v_lo
+    if abs(g_hi) < abs(g_lo):
+        x_cur, g_cur, v_cur = hi, g_hi, v_hi
+    x_prev: float | None = None  # first step has no predecessor to compare to
+    while n < max_iter:
+        n += 1
+        width = hi - lo
+        if width <= step_tol * max(1.0, abs(lo), abs(hi)):
+            status = "converged"
+            break
+        denom = g_hi - g_lo
+        x_new = 0.5 * (lo + hi) if abs(denom) < 1e-300 else hi - g_hi * width / denom
+        # bisection safeguard: a regula-falsi step may land outside the bracket
+        if not (lo < x_new < hi):
+            x_new = 0.5 * (lo + hi)
+        hit = sample(x_new, f"iter{n}")
+        if hit is None:
+            # invalid (e.g. unstable tau): fall back to interior points
+            for frac in (0.5, 0.25, 0.75):
+                x_try = lo + frac * width
+                hit = sample(x_try, f"iter{n}-bis{frac:g}")
+                if hit is not None:
+                    x_new = x_try
+                    break
+            if hit is None:
+                status = "stalled_invalid"
+                break
+        v_new, g_new = hit
+        if log is not None:
+            log(
+                f"[rootfind:illinois] it={n:02d} x={x_new:.10f} value={v_new:.6e} "
+                f"grad={g_new:.6e} bracket=[{lo:.8f},{hi:.8f}] w={width:.3e}"
+            )
+        if g_new == 0.0:
+            lo = hi = x_new
+            x_cur, v_cur, g_cur, status = x_new, v_new, g_new, "converged"
+            break
+        if g_new * g_lo > 0.0:
+            lo, g_lo = x_new, g_new
+            g_hi *= 0.5  # Illinois: damp the retained end to avoid stagnation
+        else:
+            hi, g_hi = x_new, g_new
+            g_lo *= 0.5
+        x_prev, x_cur, v_cur, g_cur = x_cur, x_new, v_new, g_new
+        if x_prev is not None and converged(x_cur, x_prev, g_cur):
+            status = "converged"
+            break
+    if grad_tol > 0.0 and abs(g_cur) <= grad_tol:
+        status = "grad_tol"
+    return wrap_up(x_cur, v_cur, g_cur, status, n, (lo, hi))
+
+
+def invert_relaxation_time_rootfind(
+    target_obs: torch.Tensor,
+    geom: CavityGeometry,
+    u_lid: float | torch.Tensor,
+    tau_init: float,
+    n_steps: int,
+    *,
+    method: str = "illinois",
+    bracket_tau: tuple[float, float] | None = None,
+    bracket_frac: float = 0.05,
+    max_iter: int = 16,
+    step_tol: float = 1e-9,
+    grad_tol: float = 0.0,
+    checkpoint_every: int = 200,
+    stations: Sequence[float] = GHIA_STATIONS,
+    invalid_policy: str = "shrink",
+    log: Any = None,
+    compile_step: bool = False,
+) -> dict[str, Any]:
+    """Recover ``tau`` by root-finding ``dL/dtau = 0`` (solver-in-the-loop).
+
+    Same loss and parameterisation as :func:`invert_relaxation_time`
+    (``s = log(tau - 0.5)``, MSE of :func:`centreline_probes`), but instead of
+    descending the loss this solves the stationary condition with
+    :func:`solve_stationary_1d`.  One backward pass per iteration, no Hessian
+    and no double backward, so ``compile_step=True`` is allowed.
+
+    ``bracket_frac`` is the initial half-width in ``s`` (default 5%, i.e.
+    ``tau`` within ~[0.985, 1.015] x ``tau_init``); it is doubled up to eight
+    times until ``dL/ds`` changes sign.  A non-finite roll-out (BGK going
+    unstable as ``tau -> 0.5``) is a *stability* boundary, not a bug: with
+    ``invalid_policy="shrink"`` such a bracket end is retracted towards
+    ``tau_init`` instead of aborting the inversion.
+
+    Returns:
+        Dict with ``tau_recovered`` (root), ``tau_best`` (lowest-loss point
+        seen), ``tau_history``, ``loss_history``, ``grad_history``,
+        ``residual_rms``, ``obs_final``, ``n_evals``, ``status`` and
+        ``iterations`` -- the same keys as :func:`invert_relaxation_time` plus
+        the root-finder bookkeeping.
+    """
+    dtype, device = geom.dtype, geom.device
+    u = _as_lid_velocity(u_lid, torch.zeros((), dtype=dtype, device=device))
+    f0 = initial_field(geom)
+    mask = geom.wall_mask
+    target = target_obs.detach()
+
+    def evaluate(s_val: float) -> tuple[float, float]:
+        s = torch.tensor(float(s_val), dtype=dtype, device=device, requires_grad=True)
+        tau = 0.5 + torch.exp(s)
+        f = rollout(
+            f0,
+            tau,
+            u,
+            n_steps,
+            wall_mask=mask,
+            checkpoint_every=checkpoint_every,
+            compile_step=compile_step,
+        )
+        obs = centreline_probes(f, u, stations=stations)
+        loss = ((obs - target) ** 2).mean()
+        (g,) = torch.autograd.grad(loss, s)
+        return float(loss.detach()), float(g.detach())
+
+    s0 = math.log(tau_init - 0.5)
+    bracket = None
+    if bracket_tau is not None:
+        bracket = (math.log(bracket_tau[0] - 0.5), math.log(bracket_tau[1] - 0.5))
+    res = solve_stationary_1d(
+        evaluate,
+        s0,
+        method=method,
+        bracket=bracket,
+        max_iter=max_iter,
+        step_tol=step_tol,
+        grad_tol=grad_tol,
+        expand=bracket_frac,
+        invalid_policy=invalid_policy,
+        log=log,
+    )
+    tau_of = lambda s: 0.5 + math.exp(float(s))  # noqa: E731
+    tau_hist = [tau_of(h["x"]) for h in res["history"]]
+    loss_hist = [h["value"] for h in res["history"]]
+    grad_hist = [h["grad"] for h in res["history"]]
+    tau_root = tau_of(res["x"])
+    tau_best = tau_of(res["best"]["x"])
+    # residual at the reported root: probes of the last evaluation are not
+    # retained, so recompute cheaply (forward only) at the root.
+    with torch.no_grad():
+        f_root = rollout(
+            f0,
+            torch.tensor(tau_root, dtype=dtype, device=device),
+            u,
+            n_steps,
+            wall_mask=mask,
+            checkpoint_every=checkpoint_every,
+            compile_step=compile_step,
+        )
+        obs_root = centreline_probes(f_root, u, stations=stations)
+    resid = float(torch.sqrt(((obs_root - target) ** 2).mean()))
+    return {
+        "tau_init": float(tau_init),
+        "tau_recovered": float(tau_root),
+        "tau_best": float(tau_best),
+        "loss_best": float(res["best"]["value"]),
+        "loss_root": float(res["value"]),
+        "grad_root": float(res["grad"]),
+        "tau_history": tau_hist,
+        "loss_history": loss_hist,
+        "grad_history": grad_hist,
+        "obs_final": obs_root.detach(),
+        "residual_rms": resid,
+        "n_steps": int(n_steps),
+        "iters": int(res["iterations"]),
+        "n_evals": int(res["n_evals"]),
+        "status": res["status"],
+        "method": f"rootfind:{method}",
+        "bracket": res["bracket"],
+        "final_step": float("nan"),
     }
