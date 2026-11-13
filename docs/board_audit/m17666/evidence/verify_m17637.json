@@ -1,0 +1,99 @@
+{
+  "C1_artifacts": {
+    "tools/xval_cartesian_mpi/run_xval_cartesian_mpi.py": {
+      "exists": true,
+      "bytes": 17832,
+      "sha256_16": "c9fe49cd520c8472"
+    },
+    "tools/xval_cartesian_mpi/pylbm_tgv_run.py": {
+      "exists": true,
+      "bytes": 7358,
+      "sha256_16": "b81cac76d892d1af"
+    },
+    "tools/xval_cartesian_mpi/shims/mpi4py/MPI.py": {
+      "exists": true,
+      "bytes": 13582,
+      "sha256_16": "221db62acf7ddb32"
+    },
+    "docs/XVAL-LBM-CARTESIAN-MPI.md": {
+      "exists": true,
+      "bytes": 12353,
+      "sha256_16": "3f5021b45b62d8b2"
+    },
+    "artifacts/xval_cartesian_mpi/summary.json": {
+      "exists": true,
+      "bytes": 15632,
+      "sha256_16": "20e956fcea3e3882"
+    },
+    "artifacts/xval_cartesian_mpi/table_decomposition.csv": {
+      "exists": true,
+      "bytes": 2848,
+      "sha256_16": "1a34ef5a9b9686db"
+    },
+    "artifacts/xval_cartesian_mpi/table_equivalence.csv": {
+      "exists": true,
+      "bytes": 1026,
+      "sha256_16": "fbf981423b533bdc"
+    }
+  },
+  "C2_equivalence_reproduced": {
+    "identical_payload": true,
+    "rows": 6,
+    "rel_l2_pct_by_rank": {
+      "float64_P1": "0.0",
+      "float64_P2": "0.0",
+      "float64_P4": "0.0",
+      "float32_P1": "0.0008740599975345202",
+      "float32_P2": "0.0008740599975345202",
+      "float32_P4": "0.0008740599975345202"
+    },
+    "gamma_err_pct": [
+      "4.209851912249326",
+      "4.212389052244512"
+    ]
+  },
+  "C3_pylbm_decomposition_rows": {
+    "total": 24,
+    "with_any_local_size": 0,
+    "with_any_bytes": 0,
+    "with_accepted_true": 0,
+    "reason_field_blank_because": "error strings are only in summary.json; CSV drops 'error' (not in fieldnames)",
+    "summary_error_examples": [
+      "index 2 is out of bounds for axis 0 with size 1",
+      "index 2 is out of bounds for axis 0 with size 2"
+    ]
+  },
+  "C4_pylbm_arm_root_cause": {
+    "region_indices": [
+      [
+        0,
+        8,
+        16
+      ],
+      [
+        0,
+        16
+      ],
+      [
+        0,
+        16
+      ]
+    ],
+    "tool_bug": "measure_pylbm does np.diff(a) then indexes s[0..2]; np.diff of a region-boundary array has length nregions, not 3 -> IndexError",
+    "rank0_local_sizes": [
+      8,
+      16,
+      16
+    ],
+    "tool_path_raises": "IndexError: index 2 is out of bounds for axis 0 with size 2"
+  },
+  "C5_discrimination": {
+    "intact_halo_rel_l2_pct": 0.0008740599975345202,
+    "noop_halo_rel_l2_pct": 11.414782234591852,
+    "verdict": "equivalence arm discriminates: breaking the halo exchange moves the field error by orders of magnitude, so rel_l2=0.0 with the intact halo is a measured value, not a bypass"
+  },
+  "C6_integration": {
+    "src_importers_of_domain_decomposition": [],
+    "note": "grep -rn domain_decomposition src/tensorlbm/*.py -> only the module itself; callers are tests/test_domain_decomposition.py, scripts/m4_dd_validation.py, tools/xval_cartesian_mpi/run_xval_cartesian_mpi.py"
+  }
+}
