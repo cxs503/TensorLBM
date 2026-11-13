@@ -1,0 +1,6 @@
+run,n,ranks,dtype,steps,arm,selective,persistent,step_ms,exchange_ms,mlups,bytes_per_step,tgv_rel_l2,tgv_amplitude_ratio,identity_max_abs_vs_serial
+n64_r2,64,2,float32,400,serial,0,0,nan,,nan,0,2.488655e-01,0.808650,
+n64_r2,64,2,float32,400,full_alloc,0,0,128.4851,17.2294,2.04,1245184,2.488655e-01,0.808650,0.000e+00
+n64_r2,64,2,float32,400,full_persistent,0,1,141.2244,17.7401,1.86,1245184,2.488655e-01,0.808650,0.000e+00
+n64_r2,64,2,float32,400,selective_alloc,1,0,150.9093,13.0682,1.74,327680,2.488655e-01,0.808650,0.000e+00
+n64_r2,64,2,float32,400,selective_persistent,1,1,140.6528,12.3513,1.86,327680,2.488655e-01,0.808650,0.000e+00
