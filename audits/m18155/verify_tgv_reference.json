@@ -1,0 +1,61 @@
+{
+ "anchor": "XVAL-LBM-MPI-GHOST-EXCHANGE-KERNEL-FUSED",
+ "audit_mission": 18155,
+ "question": "Is TGV.decay()=exp(-2 nu k^2 t) the right reference for a 3-D ABC field?",
+ "answer": "No. |k|^2 = 3k^2 for the delivered 3-D ABC initial condition, so the leading-order Navier-Stokes rate is 3*nu*k^2, not 2*nu*k^2 (the 2-D TGV rate). Re-scoring the identical numeric field against exp(-3 nu k^2 t) lowers n=64 rel-L2 from 0.248865 to 0.176323 (7.25 pp of the reported 24.887% was a reference-formula defect). The remaining 17.632% is genuine finite-amplitude harmonic content (U0*k*t = 1.57 at t=400), so the honest FAIL at the 15% gate stands; the report's attribution 'analytic basis only carries the linear decay mode' names the wrong root cause.",
+ "rows": [
+  {
+   "tag": "n32",
+   "n": 32,
+   "steps": 200,
+   "nu": 0.05000000000000001,
+   "k": 0.19634954084936207,
+   "rms_initial": 0.02,
+   "rms_final": 0.006101108621805906,
+   "numeric_amplitude": 0.3050554310902953,
+   "nu_eff_3k2": 0.051325767936234674,
+   "nu_eff_rel_err_pct": 2.6515358724693288,
+   "scores": [
+    {
+     "model": "2d_2nu_k2",
+     "analytic_amplitude": 0.4625212191517243,
+     "numeric_over_analytic": 0.6595485210418701,
+     "rel_l2": 0.3470560908317566
+    },
+    {
+     "model": "3d_abc_3nu_k2",
+     "analytic_amplitude": 0.3145556516377592,
+     "numeric_over_analytic": 0.9697964191436768,
+     "rel_l2": 0.0871327593922615
+    }
+   ]
+  },
+  {
+   "tag": "n64",
+   "n": 64,
+   "steps": 400,
+   "nu": 0.05000000000000001,
+   "k": 0.09817477042468103,
+   "rms_initial": 0.02,
+   "rms_final": 0.010999036952853203,
+   "numeric_amplitude": 0.5499518476426601,
+   "nu_eff_3k2": 0.051697001449323154,
+   "nu_eff_rel_err_pct": 3.394002898646289,
+   "scores": [
+    {
+     "model": "2d_2nu_k2",
+     "analytic_amplitude": 0.680089125888456,
+     "numeric_over_analytic": 0.8086500763893127,
+     "rel_l2": 0.24886548519134521
+    },
+    {
+     "model": "3d_abc_3nu_k2",
+     "analytic_amplitude": 0.5608526113318536,
+     "numeric_over_analytic": 0.9805682897567749,
+     "rel_l2": 0.17632299661636353
+    }
+   ]
+  }
+ ],
+ "note": "This file was produced by the first run of verify_tgv_reference.py (final-score version); the checkpoint variant exists in the script for re-running. nu_eff fitted under 3k^2 corroborates the exponent independently of field shape."
+}
