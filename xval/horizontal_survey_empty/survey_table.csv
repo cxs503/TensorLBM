@@ -1,0 +1,9 @@
+family,label,verdict,census_hits,census_repos,ledger_hits,ledger_slugs,oss_cache_hits,tensorlbm_src_files
+added_mass_pmm,oscillatory-flow inertia coefficient / added mass / PMM derivatives,empty,0,,0,,0,229
+taylor_couette,Taylor-Couette / circular Couette concentric rotating cylinders,empty,0,,0,,0,8
+stagnation_hiemenz,Hiemenz stagnation-point flow,empty,0,,0,,0,31
+electrokinetic,electro-osmotic / Poisson-Boltzmann electrokinetic LBM,empty,0,,0,,0,3
+non_newtonian_powerlaw,non-Newtonian power-law / Herschel-Bulkley rheology,covered,0,,1,TensorSPH/408,0,101
+mhd_lorentz,low-Rm MHD (Hartmann/Shercliff) Lorentz force,covered,0,,0,,1,6
+immersed_boundary,immersed-boundary method coupling,covered,20,2b-t/LB-t;CFD-GO/TCLB;Maarten-vd-Sande/lbm;PorousMediaSimulation/openLBMPM;ProjectPhysX/FluidX3D;UvaCsl/HemoCell;cfdemons/LUMA;haimingz/vivsim;hietwll/LBM_Taichi;je-santos/MPLBM-UT;joconnor22/LIFE;lanl/MF-LBM;lbm-principles-practice/code;lettucecfd/lettuce;loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow;lssfau/lbmpy;lssfau/walberla;omalaspinas/palabos;sailfish-team/sailfish;sorush-khajepor/listLBM,20,cfdemons/LUMA/136;haimingz/vivsim/126;haimingz/vivsim/127;joconnor22/LIFE/255;joconnor22/LIFE/256;joconnor22/LIFE/257;joconnor22/LIFE/258;joconnor22/LIFE/259;joconnor22/LIFE/260;joconnor22/LIFE/261;joconnor22/LIFE/269;joconnor22/LIFE/270;joconnor22/LIFE/375;joconnor22/LIFE/47;joconnor22/LIFE/48;joconnor22/LIFE/49;joconnor22/LIFE/50;joconnor22/LIFE/51;omalaspinas/palabos/148;omalaspinas/palabos/149,0,67
+aeroacoustics,aeroacoustics (FWH / acoustic analogy),empty,0,,0,,0,66
