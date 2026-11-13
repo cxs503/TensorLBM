@@ -509,3 +509,34 @@ def record_digest(record: Mapping[str, Any]) -> str:
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=float)
     return hashlib.sha256(blob.encode()).hexdigest()
+
+# ---------------------------------------------------------------------------
+# bridge: declarative instruction-DSL programs (XVAL-LBM-INSTRUCTION-DSL-TESTS-SH)
+# ---------------------------------------------------------------------------
+def run_instruction_dsl_program(program, *, out=None, sample_every=0):
+    """Execute a declarative instruction-DSL program and return its run record.
+
+    ``program`` is either instruction text (contains a newline or starts with
+    ``stencil``) or a path to a ``*.lbm`` file.  The heavy lifting stays in
+    :mod:`tensorlbm.instruction_dsl`; this wrapper exists so the example
+    runtime (and therefore every tool built on it) can drive a DSL program
+    without importing the internals.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    from .instruction_dsl import parse, run
+
+    is_path = ("\n" not in str(program)
+               and not str(program).lstrip().startswith("stencil"))
+    text = _Path(program).read_text(encoding="utf-8") if is_path else str(program)
+    prog = parse(text)
+    res = run(prog, sample_every=sample_every)
+    record = dict(res.summary())
+    record["program_digest"] = prog.digest
+    record["program_path"] = str(program) if is_path else None
+    record["domain"] = {"nx": prog.nx, "ny": prog.ny}
+    if out:
+        _Path(out).parent.mkdir(parents=True, exist_ok=True)
+        _Path(out).write_text(_json.dumps(record, indent=2, sort_keys=True) + "\n")
+    return record

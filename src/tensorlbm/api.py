@@ -8,8 +8,15 @@ For experimental features and rapid-evolution interfaces, use
 from __future__ import annotations
 
 from ._version import __version__
-from .audit.intl_bench import run_audit as intl_bench_audit
-from .audit.intl_bench import scorecard as intl_bench_scorecard
+from .instruction_dsl import (
+    DSLSemanticError,
+    DSLSyntaxError,
+    Program as InstructionProgram,
+    Scheme as InstructionScheme,
+    build_scheme as build_instruction_scheme,
+    parse as parse_instruction_program,
+    run as run_instruction_program,
+)
 from .autograd_calib import (
     BoxCase,
     CalibResult,
@@ -41,17 +48,14 @@ from .d3q19 import OPPOSITE as OPPOSITE3D
 from .d3q19 import C as C3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
-from .models.ci_unit import (
-    build_unit as model_unit_build,
-)
-from .models.ci_unit import (
-    discover_units as list_model_units,
-)
-from .models.ci_unit import (
-    run_all as run_model_unit_ci,
-)
-from .models.ci_unit import (
-    write_artifacts as write_model_unit_artifacts,
+from .example_harness import (
+    CASE_REGISTRY,
+    CaseSpec,
+    analytic_reference,
+    available_cases,
+    get_case,
+    record_digest,
+    run_case,
 )
 from .soft_geometry import SoftGeometry
 from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
@@ -72,6 +76,8 @@ from .utils import (
     resolve_device,
     write_legacy_snapshot_alias,
 )
+from .audit.intl_bench import run_audit as intl_bench_audit
+from .audit.intl_bench import scorecard as intl_bench_scorecard
 from .zoo import KNOWN_TASKS, ModelInfo, ModelZoo, ZooValidation, resolve_zoo_root
 from .zoo import info as zoo_info
 from .zoo import list_models as zoo_list_models
@@ -147,12 +153,26 @@ __all__ = [
     "zoo_list_models",
     "zoo_info",
     "zoo_validate",
-    # model-directory build + CI units (model dir = build/CI unit)
-    "list_model_units",
-    "model_unit_build",
-    "run_model_unit_ci",
-    "write_model_unit_artifacts",
+    # declarative example runtime (XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN)
+    "CaseSpec",
+    "CASE_REGISTRY",
+    "get_case",
+    "available_cases",
+    "run_case",
+    "analytic_reference",
+    "record_digest",
     # evidence-driven maturity audit (GAP-LBM-INTL-BENCH)
     "intl_bench_audit",
     "intl_bench_scorecard",
+]
+
+# declarative instruction DSL (XVAL-LBM-INSTRUCTION-DSL-TESTS-SH) -----------
+__all__ += [
+    "InstructionProgram",
+    "InstructionScheme",
+    "DSLSemanticError",
+    "DSLSyntaxError",
+    "build_instruction_scheme",
+    "parse_instruction_program",
+    "run_instruction_program",
 ]
