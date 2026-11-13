@@ -1,0 +1,78 @@
+{
+  "anchor": "XVAL-LBM-SHARED-MEMORY-STREAMING-WARP-SHIFT",
+  "mission": 18329,
+  "round": 1,
+  "repo": "TensorLBM",
+  "written_before_runs": true,
+  "oss": {
+    "project": "PorousMediaSimulation/openLBMPM",
+    "commit": "3d841891daafe7b6e9f65e51dd9bf20f2b0e1792",
+    "commit_date": "2018-10-15T13:38:11+03:00",
+    "license": "NO LICENSE FILE in the clone (checked `ls LICENSE*` -> empty); upstream README states no license either. => source is NOT vendored, only file:line citations are used.",
+    "mechanism_citations": [
+      "ShanChen2D/AccelerateGPU2D.py:1260 @cuda.jit('void(int64,int64,int64,float64[:,:],float64[:,:])') def calStreamingGPU(nx, ny, numberThreads, fluidDistrOld, fluidDistrNew)",
+      "ShanChen2D/AccelerateGPU2D.py:1262-1266 one block == one lattice row: by=blockIdx.y, xStart=tx+bx*numberThreads, indicesK=nx*yStart+xStart",
+      "ShanChen2D/AccelerateGPU2D.py:1268-1276 nine cuda.shared.array(shape=(32,), dtype=float64) staging arrays distrFOut0..distrFOut8 (tile width = CUDA warp size)",
+      "ShanChen2D/AccelerateGPU2D.py:1279-1281 rest/vertical populations staged at the same lane: distrFOut0[tx], distrFOut2[tx], distrFOut4[tx]",
+      "ShanChen2D/AccelerateGPU2D.py:1282-1305 push shift by one lane with modular in-tile wrap: [1],[5],[8] -> tx+1; [3],[6],[7] -> tx-1; tx==0 puts the departing west population at lane numberThreads-1 and tx==numberThreads-1 puts the departing east population at lane 0 (stash)",
+      "ShanChen2D/AccelerateGPU2D.py:1306 cuda.syncthreads() then write-out :1308-1330 fluidDistrNew[0|1|3, indicesK] (same row) and fluidDistrNew[2|5|6, nx*(yStart+1)+xStart] / fluidDistrNew[4|7|8, nx*(yStart-1)+xStart] guarded by (by<ny-1)/(by>0)",
+      "ShanChen2D/AccelerateGPU2D.py:1318-1321 and :1332-1336 the periodic y-wrap alternatives are present but COMMENTED OUT => the kernel itself is not periodic in y",
+      "ShanChen2D/AccelerateGPU2D.py:2733 exchangeDistrGlobalGPU(nx, ny, numberThreads, fluidDistr): cross-tile repair, west-going ascending tile order (:2739-2746), east-going descending tile order (:2747-2760), each guarded by xStart<nx and xTarget<nx => the domain edge columns are never repaired"
+    ]
+  },
+  "decision": "Does TensorLBM adopt openLBMPM's shared-memory warp-shift streaming (row-tile staging in shared memory + one-lane modular shift + in-place cross-tile repair + direct neighbour-row delivery for the vertical half of the stencil) as a backend streaming kernel? D1 adopt as-is / D2 adopt the rule with the two domain wraps closed and keep the periodic whole-array pull as the CPU reference / D3 reject.",
+  "alternatives": [
+    "A1_oss_transplant: warp_shift_stream, upstream rule (tile = 32 = warp), vectorised form, upstream edge behaviour preserved (x_periodic=y_periodic=False)",
+    "A2_transplant_fixed: same rule with both domain wraps closed (x_periodic=y_periodic=True) -- the only mode comparable to a periodic reference flow",
+    "A3_repo_reference: in-repo periodic pull streaming (torch.roll over the whole (9,ny,nx) field) -- identical BGK collision, identical equilibrium"
+  ],
+  "hypothesis": "H1 (semantic identity): the vectorised warpshift equals the line-by-line upstream transcription bit for bit (max |df| = 0, threshold 1e-12). H2 (physics neutrality): with both wraps closed the operator equals the pull reference bit for bit and the Taylor-Green decay rate it produces is inside the owner 15 % band. H3 (defect of the verbatim kernel): without the two wraps the domain edge columns/rows are inconsistent, which shows up as mass drift and a large decay-rate error -- i.e. the as-is transplant (D1) must be rejected. H0 falsifiers: any KPI outside its predeclared threshold.",
+  "metrics": {
+    "K1_max_abs_diff": "max |warp_shift_stream - oss_literal_stream| over the whole (9,ny,nx) field, random field + TG field, tiles 8/16/32",
+    "K1_bitwise": "torch.equal(...) (exact equality of the two double tensors)",
+    "K2_max_abs_diff": "max |warp_shift_stream(periodic) - pull_stream| , single step and after 200 coupled BGK steps",
+    "K3_decay_rel_err": "|lambda_measured - lambda_analytic| / lambda_analytic where E(t) = E0 exp(-2 lambda t), lambda = nu k^2, k = 2 pi / L, measured from kinetic energy over 800 steps",
+    "K4_verbatim_defect": "for the as-is kernel: relative mass drift |sum f - sum f0| / sum f0 over 100 steps, and K3 decay relative error on the same run",
+    "K5_mlups": "nx*ny*steps / elapsed / 1e6 (million lattice-site updates per second), single CPU process, float64, per streaming backend and tile width"
+  },
+  "unit_of_analysis": "one streaming invocation (K1/K2) or one completed Taylor-Green run at fixed (L, u0, tau, steps) (K3/K4) or one timing repetition (K5)",
+  "baseline_control": {
+    "semantic_baseline": "oss_literal_stream: line-by-line transcription of calStreamingGPU + exchangeDistrGlobalGPU including the upstream guards; this is the OSS arm (the CUDA kernel cannot be executed here, no GPU: torch.cuda.is_available() == False)",
+    "physical_baseline": "analytic Taylor-Green decay E(t) = E0 exp(-2 nu k^2 t) of the D2Q9 BGK model in the incompressible limit",
+    "representation_control": "A3 pull_stream shares collision, equilibrium, domain, dtype and step count with A1/A2; the only changed variable is the streaming operator",
+    "note": "the upstream OSS binary is not executed (needs CUDA + its own Shan-Chen multiphase driver); the OSS arm is a semantics-exact transcription, recorded as a comparison limit and not silently upgraded"
+  },
+  "predeclared_thresholds": {
+    "K1_max_abs_diff": 1e-12,
+    "K2_max_abs_diff": 1e-12,
+    "K3_decay_rel_err": 0.15,
+    "K4_verbatim_mass_drift_rel": 1e-6,
+    "K5_verdict_rule": "adopt the tile kernel for the CPU backend only if it is at least as fast as the pull reference (>= 1.0x MLUPS) at some tile width; otherwise record the recipe as a GPU-backend candidate",
+    "interpretation": "K1/K2 are identity checks (machine precision). K3 uses the owner 15 % band; no case is dropped or trimmed after seeing results."
+  },
+  "stopping_rule": "fixed design: K1/K2 on tiles {8,16,32} and fields {random(nx=96,ny=40), TG(L=64)}; K3 on the full grid L in {64,128,256} x u0 in {0.02,0.04,0.08} with tau=0.8 and 800 steps each; K4 one run (L=64, u0=0.04, 100 steps); K5 three timing repetitions per arm on 128^2 and 256^2, median reported. No arm added or removed after inspecting KPIs; wall-clock budget 1200 s (actual run below).",
+  "variables_changed": [
+    "streaming backend: A1 as-is warp shift / A2 wraparound warp shift / A3 pull",
+    "tile width: 8, 16, 32, 64, 128",
+    "grid resolution L: 64, 128, 256",
+    "Taylor-Green amplitude u0: 0.02, 0.04, 0.08"
+  ],
+  "variables_held_fixed": [
+    "BGK collision and equilibrium (tensorlbm.d2q9.equilibrium, float64 exact weights)",
+    "tau = 0.8 (nu = 0.1) unless stated",
+    "float64 throughout",
+    "step count 800 for K3, 100 for K4, single CPU process"
+  ],
+  "confounders": [
+    "no GPU in this environment: the warp-shift concept exists for shared-memory speed, the CPU emulation may be slower than the pull reference for reasons unrelated to the algorithm (extra staged copy) -- K5 must therefore be read as 'does the recipe survive on CPU', not as a GPU speed claim",
+    "the upstream kernel's edge behaviour is over-written by its own boundary-condition stage upstream; the comparison with a periodic reference is only meaningful after closing the wraps, which is exactly what A2 does",
+    "Taylor-Green compressibility error (O(Ma^2)) is a property of the D2Q9 BGK model, not of the streaming operator: the K3 error is expected to grow with u0 and shrink with L, and both trends are measured rather than assumed"
+  ],
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "GPU": "none (torch.cuda.is_available() == False)",
+    "host": "control node (single CPU process, float64)"
+  }
+}
