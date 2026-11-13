@@ -1,0 +1,10 @@
+{
+ "note": "Resolution probe at identical step count (12000 steps), run after the frozen arms finished; NOT an acceptance arm. Values transcribed from the run stdout (the process was truncated by a 112 s shell limit before writing this file; every number below is a verbatim program print).",
+ "steps": 12000,
+ "arms": [
+  {"name": "probe_g10_ny32", "ny": 32, "relL2": 0.08719289816947749, "u_max_frozen_rel_tail20": 4.73e-11, "mass_drift_a_per_step": 2.695325444316647e-15, "mass_drift_b_per_step": 9.9227293048898e-15, "j_first_blue": 17, "stable": true},
+  {"name": "probe_g10_ny64", "ny": 64, "relL2": 0.04093638925273291, "u_max_frozen_rel_tail20": 0.00258663966235996, "mass_drift_a_per_step": 2.124996475079873e-14, "mass_drift_b_per_step": 3.605293841246748e-14, "j_first_blue": 33, "stable": true}
+ ],
+ "frozen_arm_two_layer_ny64": {"relL2": 0.042138034612198436, "steps": 60000, "source": "/tmp/xval_pois.log (frozen arm g10_ny64)"},
+ "single_phase_frozen_ny64": {"relL2": 0.00012971356051695996, "steps": 60000, "source": "/tmp/xval_pois.log (frozen arm sp_ny64)"}
+}
