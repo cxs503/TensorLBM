@@ -1,0 +1,41 @@
+{
+  "rows": {
+    "dirac_partition_unity_1d_maxerr": 8.940696716308594e-08,
+    "indep_roundtrip_A1_N16_const_l2": 1.3311106448512297e-16,
+    "indep_deposit_dev_A1_N16_const": 0.0251661790966031,
+    "indep_dirac_sum_N16_maxdev": 2.220446049250313e-16,
+    "indep_roundtrip_A2_N16_const_l2": 0.024548389919359457,
+    "indep_deposit_dev_A2_N16_const": 0.0,
+    "epsilon_N16_min": 1.025166179096602,
+    "epsilon_N16_max": 1.025166179096605,
+    "indep_roundtrip_A1_N16_radial_l2": 1.5011122659325205e-16,
+    "indep_roundtrip_A2_N16_radial_l2": 0.024548389919359464,
+    "indep_roundtrip_A1_N32_const_l2": 1.3018518929051672e-16,
+    "indep_deposit_dev_A1_N32_const": 0.8521660021352169,
+    "indep_dirac_sum_N32_maxdev": 2.220446049250313e-16,
+    "indep_roundtrip_A2_N32_const_l2": 0.46004824756945034,
+    "indep_deposit_dev_A2_N32_const": 1.132682529700706e-16,
+    "epsilon_N32_min": 1.8115610228976464,
+    "epsilon_N32_max": 1.8795871866268932,
+    "indep_roundtrip_A1_N32_radial_l2": 0.0021880689387454495,
+    "indep_roundtrip_A2_N32_radial_l2": 0.46100586281212125,
+    "gram_residual_Aeps_minus_1": 3.3306690738754696e-16,
+    "Aeps_on_nonconst_field_err": 2.220446049250313e-16
+  },
+  "bench_crosscheck": {
+    "checked": 3,
+    "agree": 2
+  },
+  "bench_meta": {
+    "n_rows": 25,
+    "n_pass": 20,
+    "git_sha": "0a1cf0e20c45f242e3a23d6c5a5118ea1b7a4830"
+  },
+  "bench_fail_rows": [
+    "gram_roundtrip_A2_N16_l2",
+    "deposit_dev[N32_constant_A1]",
+    "cd_re100[A1]",
+    "cd_re100[A2]",
+    "cd_re100[A3]"
+  ]
+}
