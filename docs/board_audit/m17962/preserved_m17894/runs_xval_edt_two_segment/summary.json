@@ -1,0 +1,730 @@
+{
+  "anchor": "XVAL-LBM-EDT-TWO-SEGMENT-GEOMETRY-TAG-COMPRESSION",
+  "mission": 17894,
+  "generated_utc": "2026-11-13T10:11:50Z",
+  "oss": {
+    "repo": "je-santos/MPLBM-UT",
+    "commit": "a9fc496688486c8bbc882ec7d780619f6712fa54",
+    "commit_date": "2023-12-01T16:44:09Z",
+    "files": {
+      "src/python/mplbm_utils/pore_utils.py": "8d713e7849e9084f945eeb145d45844a55214e17",
+      "src/python/mplbm_utils/create_geom_for_palabos.py": "0cca792603261f2d6d619fc82894087d4ba0a489"
+    },
+    "functions": [
+      "create_geom_edist",
+      "create_nw_fluid_mask",
+      "erase_regions"
+    ]
+  },
+  "env": {
+    "python": "3.11.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "numpy": "2.4.6"
+  },
+  "repro_cmd": "python tools/xval_edt_two_segment.py --out runs/xval_edt_two_segment",
+  "threshold_pct": 15.0,
+  "cases": [
+    {
+      "case": "two_segment_L",
+      "shape": [
+        20,
+        48,
+        80
+      ],
+      "voxels": 76800,
+      "ref_impl": "MPLBM-UT@a9fc4966 create_geom_edist (transcription)",
+      "ref_geom_name": "two_segment_L_20_48_80",
+      "got_geom_name": "two_segment_L_20_48_80",
+      "tag_agreement": 1.0,
+      "tag_disagreement_count": 0,
+      "tag_error_pct": 0.0,
+      "dist_max_absdiff_edt_algorithms": 0.0,
+      "dist_rms_edt_algorithms": 0.0,
+      "counts": {
+        "pore": 73572,
+        "boundary": 1588,
+        "grain": 1640,
+        "nw": 0
+      },
+      "fractions": {
+        "pore": 0.95796875,
+        "boundary": 0.020677083333333332,
+        "grain": 0.021354166666666667,
+        "nw": 0.0
+      },
+      "solid_fraction_voxel": 0.04203125,
+      "class_fraction_padded": 0.04203125,
+      "compression": {
+        "basis": "same (padded) voxel count for both sides",
+        "float64_edt_bytes": 614400,
+        "int16_codes_bytes": 153600,
+        "packed_bytes": 19200,
+        "bits_per_voxel": 2,
+        "ratio_vs_float64": 32.0,
+        "ratio_int16_vs_float64": 4.0
+      },
+      "packed_bytes": 19200,
+      "analytic": {
+        "class_agreement_vs_analytic": 0.9952604166666666,
+        "n_deep_cells": 1276,
+        "dist_rel_err_mean_deep": 0.019620433650709822,
+        "dist_rel_err_max_deep": 0.41421356237309515,
+        "dist_abs_err_mean_deep": 0.05076068932708493,
+        "dist_abs_err_max_deep": 1.1231056256176606,
+        "n_deep4_cells": 206,
+        "dist_rel_err_mean_deep4": 0.0036749272012071657,
+        "dist_rel_err_max_deep4": 0.22474487139158894,
+        "mask_agreement_vs_analytic": 1.0
+      },
+      "volume": {},
+      "timing_s": {
+        "got": 0.6639983095228672,
+        "ref": 0.03428034856915474
+      },
+      "checks": [
+        {
+          "quantity": "tag agreement vs OSS pipeline (fraction, higher better)",
+          "ref": 1.0,
+          "got": 1.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",
+          "ref": 0.0,
+          "got": 0.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "two-class agreement vs analytic geometry (fraction)",
+          "ref": 1.0,
+          "got": 0.9952604166666666,
+          "error_pct": 0.47395833333333526,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth rel. error, cells deeper than split (mean)",
+          "ref": 0.0,
+          "got": 0.019620433650709822,
+          "error_pct": 1.9620433650709823,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth rel. error, cells deeper than 4 cells (mean)",
+          "ref": 0.0,
+          "got": 0.0036749272012071657,
+          "error_pct": 0.36749272012071654,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth absolute bias, cells deeper than split (max, cells)",
+          "ref": 0.0,
+          "got": 1.1231056256176606,
+          "error_abs": 1.1231056256176606,
+          "threshold_abs": 1.5,
+          "kind": "abs",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "case": "two_segment_V",
+      "shape": [
+        20,
+        48,
+        80
+      ],
+      "voxels": 76800,
+      "ref_impl": "MPLBM-UT@a9fc4966 create_geom_edist (transcription)",
+      "ref_geom_name": "two_segment_V_20_48_80",
+      "got_geom_name": "two_segment_V_20_48_80",
+      "tag_agreement": 1.0,
+      "tag_disagreement_count": 0,
+      "tag_error_pct": 0.0,
+      "dist_max_absdiff_edt_algorithms": 0.0,
+      "dist_rms_edt_algorithms": 0.0,
+      "counts": {
+        "pore": 71861,
+        "boundary": 2910,
+        "grain": 2029,
+        "nw": 0
+      },
+      "fractions": {
+        "pore": 0.9356901041666666,
+        "boundary": 0.037890625,
+        "grain": 0.026419270833333335,
+        "nw": 0.0
+      },
+      "solid_fraction_voxel": 0.06430989583333334,
+      "class_fraction_padded": 0.06430989583333334,
+      "compression": {
+        "basis": "same (padded) voxel count for both sides",
+        "float64_edt_bytes": 614400,
+        "int16_codes_bytes": 153600,
+        "packed_bytes": 19200,
+        "bits_per_voxel": 2,
+        "ratio_vs_float64": 32.0,
+        "ratio_int16_vs_float64": 4.0
+      },
+      "packed_bytes": 19200,
+      "analytic": {
+        "class_agreement_vs_analytic": 0.9929036458333333,
+        "n_deep_cells": 1484,
+        "dist_rel_err_mean_deep": 0.0952220864615183,
+        "dist_rel_err_max_deep": 0.5385039927662285,
+        "dist_abs_err_mean_deep": 0.2523349240287107,
+        "dist_abs_err_max_deep": 1.2620076171981358,
+        "n_deep4_cells": 73,
+        "dist_rel_err_mean_deep4": 0.026400696525655905,
+        "dist_rel_err_max_deep4": 0.15974845414753916,
+        "mask_agreement_vs_analytic": 1.0
+      },
+      "volume": {},
+      "timing_s": {
+        "got": 0.04540367051959038,
+        "ref": 0.01471245102584362
+      },
+      "checks": [
+        {
+          "quantity": "tag agreement vs OSS pipeline (fraction, higher better)",
+          "ref": 1.0,
+          "got": 1.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",
+          "ref": 0.0,
+          "got": 0.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "two-class agreement vs analytic geometry (fraction)",
+          "ref": 1.0,
+          "got": 0.9929036458333333,
+          "error_pct": 0.7096354166666652,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth rel. error, cells deeper than split (mean)",
+          "ref": 0.0,
+          "got": 0.0952220864615183,
+          "error_pct": 9.52220864615183,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth rel. error, cells deeper than 4 cells (mean)",
+          "ref": 0.0,
+          "got": 0.026400696525655905,
+          "error_pct": 2.6400696525655905,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth absolute bias, cells deeper than split (max, cells)",
+          "ref": 0.0,
+          "got": 1.2620076171981358,
+          "error_abs": 1.2620076171981358,
+          "threshold_abs": 1.5,
+          "kind": "abs",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "case": "capsule_r12_L20",
+      "shape": [
+        30,
+        30,
+        50
+      ],
+      "voxels": 45000,
+      "ref_impl": "MPLBM-UT@a9fc4966 create_geom_edist (transcription)",
+      "ref_geom_name": "capsule_r12_L20_30_30_50",
+      "got_geom_name": "capsule_r12_L20_30_30_50",
+      "tag_agreement": 1.0,
+      "tag_disagreement_count": 0,
+      "tag_error_pct": 0.0,
+      "dist_max_absdiff_edt_algorithms": 0.0,
+      "dist_rms_edt_algorithms": 0.0,
+      "counts": {
+        "pore": 29137,
+        "boundary": 4114,
+        "grain": 11749,
+        "nw": 0
+      },
+      "fractions": {
+        "pore": 0.6474888888888889,
+        "boundary": 0.09142222222222222,
+        "grain": 0.26108888888888887,
+        "nw": 0.0
+      },
+      "solid_fraction_voxel": 0.3525111111111111,
+      "class_fraction_padded": 0.3525111111111111,
+      "compression": {
+        "basis": "same (padded) voxel count for both sides",
+        "float64_edt_bytes": 360000,
+        "int16_codes_bytes": 90000,
+        "packed_bytes": 11250,
+        "bits_per_voxel": 2,
+        "ratio_vs_float64": 32.0,
+        "ratio_int16_vs_float64": 4.0
+      },
+      "packed_bytes": 11250,
+      "analytic": {
+        "class_agreement_vs_analytic": 0.9724444444444444,
+        "n_deep_cells": 10509,
+        "dist_rel_err_mean_deep": 0.03596734072281051,
+        "dist_rel_err_max_deep": 0.19479982505124468,
+        "dist_abs_err_mean_deep": 0.1298384012746777,
+        "dist_abs_err_max_deep": 0.43398113205660316,
+        "n_deep4_cells": 6049,
+        "dist_rel_err_mean_deep4": 0.01713297308881994,
+        "dist_rel_err_max_deep4": 0.05934669721321524,
+        "mask_agreement_vs_analytic": 1.0
+      },
+      "volume": {
+        "volume_ref": 16286.016316209487,
+        "volume_got": 15863.0,
+        "volume_rel_err": 0.025974204372401267
+      },
+      "timing_s": {
+        "got": 0.11985247023403645,
+        "ref": 0.00841166079044342
+      },
+      "checks": [
+        {
+          "quantity": "tag agreement vs OSS pipeline (fraction, higher better)",
+          "ref": 1.0,
+          "got": 1.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",
+          "ref": 0.0,
+          "got": 0.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "two-class agreement vs analytic geometry (fraction)",
+          "ref": 1.0,
+          "got": 0.9724444444444444,
+          "error_pct": 2.7555555555555555,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth rel. error, cells deeper than split (mean)",
+          "ref": 0.0,
+          "got": 0.03596734072281051,
+          "error_pct": 3.5967340722810515,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth rel. error, cells deeper than 4 cells (mean)",
+          "ref": 0.0,
+          "got": 0.01713297308881994,
+          "error_pct": 1.713297308881994,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT depth absolute bias, cells deeper than split (max, cells)",
+          "ref": 0.0,
+          "got": 0.43398113205660316,
+          "error_abs": 0.43398113205660316,
+          "threshold_abs": 1.5,
+          "kind": "abs",
+          "pass": true
+        },
+        {
+          "quantity": "displaced volume (voxel count) vs exact",
+          "ref": 16286.016316209487,
+          "got": 15863.0,
+          "error_pct": 2.597420437240127,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "case": "slab_t4_gap24",
+      "shape": [
+        20,
+        32,
+        40
+      ],
+      "voxels": 25600,
+      "ref_impl": "MPLBM-UT@a9fc4966 create_geom_edist (transcription)",
+      "ref_geom_name": "slab_t4_gap24_20_32_40",
+      "got_geom_name": "slab_t4_gap24_20_32_40",
+      "tag_agreement": 1.0,
+      "tag_disagreement_count": 0,
+      "tag_error_pct": 0.0,
+      "dist_max_absdiff_edt_algorithms": 0.0,
+      "dist_rms_edt_algorithms": 0.0,
+      "counts": {
+        "pore": 19200,
+        "boundary": 3664,
+        "grain": 2736,
+        "nw": 0
+      },
+      "fractions": {
+        "pore": 0.75,
+        "boundary": 0.143125,
+        "grain": 0.106875,
+        "nw": 0.0
+      },
+      "solid_fraction_voxel": 0.25,
+      "class_fraction_padded": 0.25,
+      "compression": {
+        "basis": "same (padded) voxel count for both sides",
+        "float64_edt_bytes": 204800,
+        "int16_codes_bytes": 51200,
+        "packed_bytes": 6400,
+        "bits_per_voxel": 2,
+        "ratio_vs_float64": 32.0,
+        "ratio_int16_vs_float64": 4.0
+      },
+      "packed_bytes": 6400,
+      "analytic": {},
+      "volume": {
+        "fraction_ref": 0.25,
+        "fraction_got": 0.25,
+        "fraction_rel_err": 0.0
+      },
+      "timing_s": {
+        "got": 0.012935981154441833,
+        "ref": 0.004349159076809883
+      },
+      "checks": [
+        {
+          "quantity": "tag agreement vs OSS pipeline (fraction, higher better)",
+          "ref": 1.0,
+          "got": 1.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",
+          "ref": 0.0,
+          "got": 0.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "solid fraction vs exact",
+          "ref": 0.25,
+          "got": 0.25,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "case": "sphere_pack_r8",
+      "shape": [
+        24,
+        56,
+        24
+      ],
+      "voxels": 32256,
+      "ref_impl": "MPLBM-UT@a9fc4966 create_geom_edist (transcription)",
+      "ref_geom_name": "sphere_pack_r8_24_56_24",
+      "got_geom_name": "sphere_pack_r8_24_56_24",
+      "tag_agreement": 1.0,
+      "tag_disagreement_count": 0,
+      "tag_error_pct": 0.0,
+      "dist_max_absdiff_edt_algorithms": 0.0,
+      "dist_rms_edt_algorithms": 0.0,
+      "counts": {
+        "pore": 25947,
+        "boundary": 2958,
+        "grain": 3351,
+        "nw": 0
+      },
+      "fractions": {
+        "pore": 0.8044084821428571,
+        "boundary": 0.09170386904761904,
+        "grain": 0.10388764880952381,
+        "nw": 0.0
+      },
+      "solid_fraction_voxel": 0.19559151785714285,
+      "class_fraction_padded": 0.19559151785714285,
+      "compression": {
+        "basis": "same (padded) voxel count for both sides",
+        "float64_edt_bytes": 258048,
+        "int16_codes_bytes": 64512,
+        "packed_bytes": 8064,
+        "bits_per_voxel": 2,
+        "ratio_vs_float64": 32.0,
+        "ratio_int16_vs_float64": 4.0
+      },
+      "packed_bytes": 8064,
+      "analytic": {},
+      "volume": {
+        "volume_ref": 6433.981754551896,
+        "volume_got": 6309.0,
+        "volume_rel_err": 0.019425257844953407
+      },
+      "timing_s": {
+        "got": 0.030094658955931664,
+        "ref": 0.00584535114467144
+      },
+      "checks": [
+        {
+          "quantity": "tag agreement vs OSS pipeline (fraction, higher better)",
+          "ref": 1.0,
+          "got": 1.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",
+          "ref": 0.0,
+          "got": 0.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "displaced volume (voxel count) vs exact",
+          "ref": 6433.981754551896,
+          "got": 6309.0,
+          "error_pct": 1.9425257844953407,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "case": "two_segment_L_nw_padded",
+      "shape": [
+        24,
+        48,
+        80
+      ],
+      "voxels": 92160,
+      "ref_impl": "MPLBM-UT@a9fc4966 create_geom_edist (transcription)",
+      "ref_geom_name": "two_segment_L_nw_padded_24_48_80",
+      "got_geom_name": "two_segment_L_nw_padded_24_48_80",
+      "tag_agreement": 1.0,
+      "tag_disagreement_count": 0,
+      "tag_error_pct": 0.0,
+      "dist_max_absdiff_edt_algorithms": 0.0,
+      "dist_rms_edt_algorithms": 0.0,
+      "counts": {
+        "pore": 85092,
+        "boundary": 1588,
+        "grain": 1640,
+        "nw": 3840
+      },
+      "fractions": {
+        "pore": 0.9233072916666667,
+        "boundary": 0.01723090277777778,
+        "grain": 0.017795138888888888,
+        "nw": 0.041666666666666664
+      },
+      "solid_fraction_voxel": 0.04203125,
+      "class_fraction_padded": 0.07669270833333333,
+      "compression": {
+        "basis": "same (padded) voxel count for both sides",
+        "float64_edt_bytes": 737280,
+        "int16_codes_bytes": 184320,
+        "packed_bytes": 23040,
+        "bits_per_voxel": 2,
+        "ratio_vs_float64": 32.0,
+        "ratio_int16_vs_float64": 4.0
+      },
+      "packed_bytes": 23040,
+      "analytic": {},
+      "volume": {},
+      "timing_s": {
+        "got": 0.042241569608449936,
+        "ref": 0.017089759930968285
+      },
+      "checks": [
+        {
+          "quantity": "tag agreement vs OSS pipeline (fraction, higher better)",
+          "ref": 1.0,
+          "got": 1.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        },
+        {
+          "quantity": "EDT algorithm: max |k-d tree - scipy| (cells, vs 1-cell band)",
+          "ref": 0.0,
+          "got": 0.0,
+          "error_pct": 0.0,
+          "threshold_pct": 15.0,
+          "kind": "rel",
+          "pass": true
+        }
+      ]
+    }
+  ],
+  "convergence": {
+    "rows": [
+      {
+        "radius_cells": 6.0,
+        "length_cells": 12.0,
+        "h": 0.16666666666666666,
+        "voxels": 9720,
+        "volume_ref": 2261.9467105846506,
+        "volume_got_mean": 2201.375,
+        "volume_got_std": 28.106620978999644,
+        "rel_err": 0.026778575419663418,
+        "n_phases": 8
+      },
+      {
+        "radius_cells": 9.0,
+        "length_cells": 18.0,
+        "h": 0.1111111111111111,
+        "voxels": 24192,
+        "volume_ref": 7634.070148223196,
+        "volume_got_mean": 7560.375,
+        "volume_got_std": 86.18905714432994,
+        "rel_err": 0.009653454421079488,
+        "n_phases": 8
+      },
+      {
+        "radius_cells": 12.0,
+        "length_cells": 24.0,
+        "h": 0.08333333333333333,
+        "voxels": 48600,
+        "volume_ref": 18095.573684677205,
+        "volume_got_mean": 17952.375,
+        "volume_got_std": 187.66226312181146,
+        "rel_err": 0.007913464760637104,
+        "n_phases": 8
+      }
+    ],
+    "loglog_slope": 1.8084252122891373
+  },
+  "sensitivity": {
+    "depth_split": [
+      {
+        "depth_split": 1.5,
+        "boundary_frac": 0.020494791666666668,
+        "grain_frac": 0.021536458333333335,
+        "tag_agreement": 0.9998177083333334
+      },
+      {
+        "depth_split": 2.0,
+        "boundary_frac": 0.020677083333333332,
+        "grain_frac": 0.021354166666666667,
+        "tag_agreement": 1.0
+      },
+      {
+        "depth_split": 2.5,
+        "boundary_frac": 0.030065104166666665,
+        "grain_frac": 0.011966145833333334,
+        "tag_agreement": 0.9906119791666667
+      },
+      {
+        "depth_split": 3.0,
+        "boundary_frac": 0.03471354166666667,
+        "grain_frac": 0.007317708333333333,
+        "tag_agreement": 0.9859635416666667
+      }
+    ],
+    "resolution": [
+      {
+        "scale": 0.75,
+        "voxels": 32400,
+        "boundary_frac": 0.02962962962962963,
+        "grain_frac": 0.017407407407407406,
+        "boundary_over_solid": 0.6299212598425197
+      },
+      {
+        "scale": 1.0,
+        "voxels": 76800,
+        "boundary_frac": 0.020677083333333332,
+        "grain_frac": 0.021354166666666667,
+        "boundary_over_solid": 0.4919454770755886
+      },
+      {
+        "scale": 1.5,
+        "voxels": 259200,
+        "boundary_frac": 0.016304012345679013,
+        "grain_frac": 0.031130401234567902,
+        "boundary_over_solid": 0.3437169581130541
+      }
+    ]
+  },
+  "all_checks_pass": true,
+  "figures": [
+    {
+      "name": "fig1_class_map",
+      "path": "runs/xval_edt_two_segment/figures/fig1_class_map.png",
+      "caption": "Palabos geometry tags and two-class segmentation of the two-segment (L-bend) micro-model."
+    },
+    {
+      "name": "fig2_distance_field",
+      "path": "runs/xval_edt_two_segment/figures/fig2_distance_field.png",
+      "caption": "Mid-plane depth: analytic capsule distance vs lattice EDT vs difference."
+    },
+    {
+      "name": "fig3_convergence",
+      "path": "runs/xval_edt_two_segment/figures/fig3_convergence.png",
+      "caption": "Displaced-volume error of the voxelised capsule vs 1/h (log-log)."
+    },
+    {
+      "name": "fig4_sensitivity",
+      "path": "runs/xval_edt_two_segment/figures/fig4_sensitivity.png",
+      "caption": "Boundary/interior split vs threshold and vs grid resolution."
+    }
+  ],
+  "artifacts": [
+    "runs/xval_edt_two_segment/summary.json",
+    "runs/xval_edt_two_segment/table.csv",
+    "runs/xval_edt_two_segment/report.md",
+    "runs/xval_edt_two_segment/geometry",
+    "runs/xval_edt_two_segment/table.csv",
+    "runs/xval_edt_two_segment/report.md"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "impl_files": [
+    "docs/board_audit/m17962/preserved_m17894/edt_geometry_tags.py",
+    "docs/board_audit/m17962/preserved_m17894/preprocess_geo.py",
+    "docs/board_audit/m17962/preserved_m17894/multiphase3d.py"
+  ],
+  "impl_canonical": "被审单 commit dd38f652（分支 agent/m17894，生态克隆 /root/tensor-ecosystem/TensorLBM 内可见）: src/tensorlbm/edt_geometry_tags.py (711 行, sha256 6c8af9cc...), src/tensorlbm/preprocess_geo.py:908 palabos_geometry_tags, src/tensorlbm/multiphase3d.py:1324 wall_adhesion_force_3d；本单为防 worktree 回收已按字节保全到 docs/board_audit/m17962/preserved_m17894/（MANIFEST.sha256, 32/32 OK, 与被审 worktree 同 sha256）",
+  "entry": "docs/board_audit/m17962/preserved_m17894/tools/xval_edt_two_segment.py",
+  "run_artifacts": [
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/summary.json",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/table.csv",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/report.md",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/figures/fig1_class_map.png",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/figures/fig2_distance_field.png",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/figures/fig3_convergence.png",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/figures/fig4_sensitivity.png",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/geometry/two_segment_L_20_48_80.dat",
+    "docs/board_audit/m17962/preserved_m17894/runs_xval_edt_two_segment/geometry/two_segment_L_20_48_80.json"
+  ],
+  "run_artifacts_note": "25 文件 / 1.8 MB 实存并已入 commit dd38f652；summary.json 21663 B、table.csv 3101 B（27 数据行）、report.md 138 行、4 PNG 32-75 KB；本单另生成审计图 docs/board_audit/m17962/fig_audit_m17894_overview.png",
+  "tests": [
+    "docs/board_audit/m17962/preserved_m17894/tests/test_edt_geometry_tags.py",
+    "docs/board_audit/m17962/preserved_m17894/tests/test_xval_edt_two_segment_runner.py"
+  ],
+  "tests_run": "本单复跑 PYTHONPATH=src python -m pytest tests/test_edt_geometry_tags.py tests/test_xval_edt_two_segment_runner.py -q → 35 passed / 5.69 s（rc=0）；单跑 test_edt_geometry_tags.py → 32 passed / 7.43 s。含 k-d tree EDT vs scipy、解析胶囊距离场闭式、二段分割与 Palabos 码、2-bit 压缩往返/损坏输入抛错、.dat+sidecar IO、壁面力解析闭式与逐颗粒线性性、mask→tags→grain_ids→力算子全链",
+  "integration_callers": "NOT ESTABLISHED（L3 不予）：grep -rn 'palabos_geometry_tags|wall_adhesion_force_3d' --include=*.py 仅命中 tests/test_edt_geometry_tags.py 与 docstring 引用，无求解器/算例调用方；生态克隆 main HEAD be78a87b 不含 src/tensorlbm/edt_geometry_tags.py（ls 不存在）→ 生态内零可达消费者",
+  "benchmark": {
+    "registered_case": "ABSENT: SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-EDT-TWO-SEGMENT-GEOMETRY-TAG-COMPRESSION' → 0 rows; SELECT id,case_code FROM tensor_case_pool WHERE linked_anchor=同名 → 0 rows ⇒ 唯一裁判缺位，L4 不予",
+    "delivered_ref_vs_got": {
+      "two_segment_L": {
+        "tag_agreement": 1.0,
+        "tag_disagreement_voxels": 0,
+        "two_class_vs_analytic": 0.9952604167,
+        "dist_rel_err_mean_deep_pct": 1.962043,
+        "dist_rel_err_mean_deep4_pct": 0.3674927,
+        "dist_abs_bias_max_cells": 1.1231
+      },
+      "two_segment_V": {
+        "tag_agreement": 1.0,
+        "tag_disagreement_voxels": 0,
+        "two_class_vs_analytic": 0.9929036458,
+        "dist_rel_err_mean_deep_pct": 9.522209,
+        "dist_rel_err_mean_deep4_pct": 2.64007,
+        "dist_abs_bias_max_cells": 1.262
+      },
+      "capsule_r12_L20": {
+        "tag_agreement": 1.0,
+        "tag_disagreement_voxels": 0,
+        "volume_vs_exact_pct": 2.59742,
+        "dist_abs_bias_max_cells": 0.434
+      },
+      "slab_t4_gap24": {
+        "tag_agreement": 1.0,
+        "solid_fraction_vs_exact_pct": 0.0
+      },
+      "sphere_pack_r8": {
+        "tag_agreement": 1.0,
+        "volume_vs_exact_pct": 1.942526
+      },
+      "two_segment_L_nw_padded": {
+        "tag_agreement": 1.0
+      },
+      "edt_crosscheck_max_absdiff_cells": 0.0,
+      "conv_slope_error_vs_h": 1.81,
+      "all_checks_pass": true
+    },
+    "threshold_basis": "runner 自设 15%（= 平台不可接受线）+ 绝对偏差 1.5 cells；非裁判表登记容差",
+    "error_distribution_27_checks": {
+      "rel_rows": 24,
+      "le_3pct": 22,
+      "between_3_and_15pct": 2,
+      "gt_15pct": 0,
+      "abs_rows": 3,
+      "abs_rows_all_pass": true,
+      "worst": "two_segment_V 近界面 d≈2 相对深度 9.522%（已显式声明未 <3%，<15% PASS）"
+    }
+  },
+  "repro_cmd": "PYTHONPATH=src python tools/xval_edt_two_segment.py --out runs/xval_edt_two_segment  → 本单实跑到 /tmp/m17962_repro: 6/6 算例 27 判据 all_checks_pass=True，tag_agreement/不符体素/EDT 互检/packed_bytes 逐字段与交付 summary.json 相等（零 DIFF），conv slope 1.81 复现",
+  "external_anchor": {
+    "anchor": "je-santos/MPLBM-UT @ a9fc496688486c8bbc882ec7d780619f6712fa54 (2023-12-01)",
+    "blobs": {
+      "src/python/mplbm_utils/pore_utils.py": "8d713e7849e9084f945eeb145d45844a55214e17",
+      "src/python/mplbm_utils/create_geom_for_palabos.py": "0cca792603261f2d6d619fc82894087d4ba0a489"
+    },
+    "durable": false,
+    "why": "仓内无 vendor 快照，ref 是 runner 内自撰转写（tools/xval_edt_two_segment.py:96-200 oss_create_geom_edist / :104 oss_erase_regions），非执行上游代码；复核需联网取回 → L5 不予；『vs OSS 位级一致』只能证明转写保真度，独立证据是 k-d tree vs scipy 互检（0.0 cells）+ 解析几何/体积（0.47-2.60%）+ 收敛率 1.81"
+  },
+  "report_sections": {
+    "案例介绍": true,
+    "方法": true,
+    "参数/计算": true,
+    "对照表+图": true,
+    "敏感性/失败模式": true,
+    "误差判定(显式是否<3%)": true,
+    "extra": "6c OSS 差异清单 / 6d 移植取舍 / 6f 生态摩擦"
+  },
+  "git_delivery_state": {
+    "worktree_head": "dd38f652",
+    "git_status": "clean",
+    "branch": "agent/m17894",
+    "ecosystem_main_head": "be78a87b",
+    "in_main": false,
+    "note": "分支含交付；main 不含模块 → 未合入（F1，耐久风险，不改变功能级别）"
+  },
+  "level_rationale": "L2：真代码 input→compute→output（几何 mask/解析胶囊 → k-d tree 精确 EDT → 二段分割 → Palabos int16 码 + 2-bit 压缩类图 + JSON sidecar；壁面力算子逐颗粒 G_wall），入口实跑、工件落盘、35 用例过、复现逐字段相等。L3 不予（适配层与力算子无任何非测试调用方，main 无模块）。L4 不予（tensor_benchmark_cases/tensor_case_pool 对该 anchor 0 行，唯一裁判缺位；agreement=1.0 系同规则转写保真度）。L5 不予（ref 为自撰转写、无 vendor 快照，外部锚不可执行复核）。",
+  "findings": [
+    "F1 阻塞(耐久)：交付只在分支 agent/m17894 (dd38f652)，生态 main be78a87b 无 edt_geometry_tags.py → 生态内零消费者；worktree 回收前须推送/合并",
+    "F2 阻塞(L4)：裁判缺位——tensor_benchmark_cases 与 tensor_case_pool 对该 anchor 均 0 行，15% 门槛为 runner 自设+平台底线",
+    "F3 中：『vs OSS 位级一致=1.0』独立性有限（ref 为 runner 内自撰转写，分割规则/码值同取 OSS）；独立证据为 k-d tree vs scipy 0.0 cells、解析几何一致率 0.9953/0.9929/0.9724、解析体积 2.60%/1.94%、conv slope 1.81",
+    "F4 低(措辞)：32× 为编解码器级属性；落盘 .dat 仍 int16(4×)，2-bit 类图以 hex 存 JSON sidecar。报告 4b 同时列 int16/2-bit（诚实），headline 易误读为端到端 32×",
+    "F5 低(流程)：同锚点重复派单 m17728→m17829(L2, gate reopened 因 evidence 指针占位)→m17894；三单同一能力，应走 reopen 返修而非新单",
+    "F6 低(记录)：skimage 与 numpy 2.4 ABI 不兼容 → OSS erase_regions 用 scipy 等价实现（差异已登记 6c，测试固化二值图 no-op）；raw.githubusercontent 被 reset，无 vendor 快照"
+  ],
+  "audit_checks": {
+    "repro_rerun": "PASS 6/6 算例逐字段相等",
+    "pytest": "35 passed / 5.69 s",
+    "referee_sql": "tensor_benchmark_cases 0 rows / tensor_case_pool 0 rows",
+    "preservation": "MANIFEST.sha256 32/32 OK，与被审 worktree sha256 相等",
+    "report_six_sections": "全备 (行 7/34/56/69/114/143/195)"
+  },
+  "audit_report": "docs/board_audit/m17962/AUDIT_m17894_XVAL_EDT_TWO_SEGMENT.md",
+  "entry_note": "CLI: --out/--quick/--no-figures；库入口 build_geometry_tags / palabos_geometry_tags（适配层 preprocess_geo.py:908）"
+}
