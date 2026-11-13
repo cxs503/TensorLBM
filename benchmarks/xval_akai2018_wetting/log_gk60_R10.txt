@@ -1,0 +1,14 @@
+== arm gk60_R10: theta_target=60.0 wetting=True
+  [gk60_R10] step      1  theta= 60.17 cap=   nan  |u|max=9.449e-04  dphi=nan
+  [gk60_R10] step   1000  theta=180.00 cap=   nan  |u|max=2.112e-02  dphi=4.39e-01
+  [gk60_R10] step   2000  theta=126.30 cap=   nan  |u|max=7.885e-03  dphi=6.44e-02
+  [gk60_R10] step   3000  theta=131.85 cap=   nan  |u|max=5.305e-03  dphi=1.50e-02
+  [gk60_R10] step   4000  theta=133.54 cap=   nan  |u|max=5.070e-03  dphi=3.61e-03
+  [gk60_R10] step   5000  theta=133.98 cap=   nan  |u|max=4.999e-03  dphi=8.70e-04
+  [gk60_R10] step   6000  theta=134.09 cap=   nan  |u|max=4.977e-03  dphi=2.09e-04
+   -> theta_circle=134.09 (target 60.0) err=+123.48%  |u|max=4.98e-03  pass15=False
+/root/tp-agent/work/m17366/benchmarks/xval_akai2018_wetting/run.py:404: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+  ax.legend(fontsize=8, loc="best")
+/root/tp-agent/work/m17366/benchmarks/xval_akai2018_wetting/run.py:442: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+  ax.legend(fontsize=8)
+wrote out_gk60_R10/results.json
