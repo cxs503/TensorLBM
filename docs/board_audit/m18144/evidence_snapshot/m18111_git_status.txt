@@ -1,0 +1,7 @@
+ M src/tensorlbm/sediment/channel.py
+ M xval/fused_kernel_type_selector/REPORT.md
+?? artifacts/xval_fused_kernel_type_selector/
+?? src/tensorlbm/fused_kernel_selector.py
+?? tests/test_fused_kernel_selector.py
+?? xval/fused_kernel_type_selector/bench_fused_kernel_selector.py
+?? xval/fused_kernel_type_selector/lbmpy_reference.py
