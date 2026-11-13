@@ -1,0 +1,204 @@
+{
+  "cases": [
+    {
+      "case": "circle-sharp N=64",
+      "R": 16.0,
+      "n_cells": 180,
+      "A1_vs_analytic": {
+        "dir_err": 0.0448223762703468,
+        "angle_deg": 14.284135526009596
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.04482237627034702,
+        "angle_deg": 14.28413552600961
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.5874450853898756,
+      "mag_A3": 0.2937225426949378,
+      "mag_ratio_A3_A2": 0.5
+    },
+    {
+      "case": "circle-sharp N=128",
+      "R": 32.0,
+      "n_cells": 364,
+      "A1_vs_analytic": {
+        "dir_err": 0.053362054262796166,
+        "angle_deg": 15.505736840590004
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.053362054262796166,
+        "angle_deg": 15.50573684059002
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.5842082516912337,
+      "mag_A3": 0.29210412584561685,
+      "mag_ratio_A3_A2": 0.5
+    },
+    {
+      "case": "circle-sharp N=256",
+      "R": 64.0,
+      "n_cells": 724,
+      "A1_vs_analytic": {
+        "dir_err": 0.05102612200824663,
+        "angle_deg": 15.182828462051043
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.05102612200824663,
+        "angle_deg": 15.182828462051063
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.5858177270110003,
+      "mag_A3": 0.29290886350550016,
+      "mag_ratio_A3_A2": 0.5
+    },
+    {
+      "case": "plane-sharp theta=30.0 N=256",
+      "n_cells": 514,
+      "A1_vs_analytic": {
+        "dir_err": 0.07825733277433122,
+        "angle_deg": 21.53696498054475
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.07825733277433133,
+        "angle_deg": 21.536964980544756
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.6184618553868579
+    },
+    {
+      "case": "sphere-sharp N=32",
+      "R": 8.0,
+      "n_cells": 1376,
+      "A1_vs_analytic": {
+        "dir_err": 0.10237029283476584,
+        "angle_deg": 23.781644633694395
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.10237029283476584,
+        "angle_deg": 23.781644633694402
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.6540067739506192
+    },
+    {
+      "case": "sphere-sharp N=64",
+      "R": 16.0,
+      "n_cells": 5360,
+      "A1_vs_analytic": {
+        "dir_err": 0.0855446979003075,
+        "angle_deg": 21.6873203867226
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.0855446979003075,
+        "angle_deg": 21.68732038672261
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.6570241086760883
+    },
+    {
+      "case": "sphere-sharp N=128",
+      "R": 32.0,
+      "n_cells": 21368,
+      "A1_vs_analytic": {
+        "dir_err": 0.08399991190428568,
+        "angle_deg": 21.422651379286226
+      },
+      "A2_vs_analytic": {
+        "dir_err": 0.08399991190428568,
+        "angle_deg": 21.42265137928624
+      },
+      "A1_vs_A2": {
+        "dir_err": 0.0,
+        "angle_deg": 0.0
+      },
+      "mag_A2": 0.6558707616515287
+    },
+    {
+      "case": "circle-smeared w=2.0 N=256",
+      "n_cells": 1496,
+      "A1_vs_analytic": {
+        "dir_err": 0.01752173881672836,
+        "angle_deg": 6.7657900398703195
+      }
+    },
+    {
+      "case": "circle-smeared w=4.0 N=256",
+      "n_cells": 2320,
+      "A1_vs_analytic": {
+        "dir_err": 0.01177894009082403,
+        "angle_deg": 4.450230976032682
+      }
+    },
+    {
+      "case": "circle-smeared w=8.0 N=256",
+      "n_cells": 3956,
+      "A1_vs_analytic": {
+        "dir_err": 0.007138579551784097,
+        "angle_deg": 2.753082457115883
+      }
+    }
+  ],
+  "checks": [
+    {
+      "case": "circle-sharp N=64",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    },
+    {
+      "case": "circle-sharp N=128",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    },
+    {
+      "case": "circle-sharp N=256",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    },
+    {
+      "case": "plane-sharp theta=30.0 N=256",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    },
+    {
+      "case": "sphere-sharp N=32",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    },
+    {
+      "case": "sphere-sharp N=64",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    },
+    {
+      "case": "sphere-sharp N=128",
+      "kpi": "A1_vs_A2_dir_err",
+      "value": 0.0,
+      "pass_lt_15pct": true
+    }
+  ],
+  "all_pass": true
+}
