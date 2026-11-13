@@ -1,0 +1,86 @@
+{
+  "cases": {
+    "smooth_wave": {
+      "nx200": {
+        "nx": 200,
+        "t_end": 1.0,
+        "fv": {
+          "l1_depth_error": 0.00015902793160645152,
+          "l2_depth_error": 0.0003176839517533124
+        },
+        "lbm": {
+          "l1_depth_error": 0.7743811210849966,
+          "l2_depth_error": 0.8323107040138652,
+          "stable": true
+        }
+      },
+      "nx400": {
+        "nx": 400,
+        "t_end": 1.0,
+        "fv": {
+          "l1_depth_error": 9.136873420848094e-05,
+          "l2_depth_error": 0.00018499353558782457
+        },
+        "lbm": {
+          "l1_depth_error": "NaN",
+          "l2_depth_error": "NaN",
+          "stable": false
+        }
+      },
+      "nx800": {
+        "nx": 800,
+        "t_end": 1.0,
+        "fv": {
+          "l1_depth_error": 4.955043373361991e-05,
+          "l2_depth_error": 0.00010112704695127483
+        },
+        "lbm": {
+          "l1_depth_error": "NaN",
+          "l2_depth_error": "NaN",
+          "stable": false
+        }
+      }
+    },
+    "dam_break": {
+      "nx200": {
+        "nx": 200,
+        "t_end": 3.0,
+        "fv": {
+          "l1_depth_error": 0.016557646156524344,
+          "l2_depth_error": 0.025040337331020773
+        },
+        "lbm": {
+          "l1_depth_error": "NaN",
+          "l2_depth_error": "NaN",
+          "stable": false
+        }
+      },
+      "nx400": {
+        "nx": 400,
+        "t_end": 3.0,
+        "fv": {
+          "l1_depth_error": 0.010824862850216839,
+          "l2_depth_error": 0.016758239082450718
+        },
+        "lbm": {
+          "l1_depth_error": "NaN",
+          "l2_depth_error": "NaN",
+          "stable": false
+        }
+      },
+      "nx800": {
+        "nx": 800,
+        "t_end": 3.0,
+        "fv": {
+          "l1_depth_error": 0.006649134888398099,
+          "l2_depth_error": 0.01081459063800888
+        },
+        "lbm": {
+          "l1_depth_error": "NaN",
+          "l2_depth_error": "NaN",
+          "stable": false
+        }
+      }
+    }
+  }
+}
