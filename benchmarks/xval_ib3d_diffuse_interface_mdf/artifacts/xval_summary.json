@@ -1,0 +1,192 @@
+{
+  "stage": "summarize",
+  "environment": {
+    "python": "3.11.6",
+    "machine": "loongarch64",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "cpu": "Loongson-3C6000/D",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "torch_threads": 128,
+    "jax": "absent (loongarch64 wheel unavailable) -> jaxshim numpy backend",
+    "oss_repo": "https://github.com/haimingz/vivsim",
+    "oss_commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+    "oss_license": "MIT (c) 2024 Haiming Zhu"
+  },
+  "physics": {
+    "mdf_iter1_peskin4pt": {
+      "parameters": {
+        "impl": "mdf",
+        "n_iter": 1,
+        "accumulate": false,
+        "kernel": "peskin4pt",
+        "collision": "bgk",
+        "diameter": 8.0,
+        "grid_zyx": [
+          48,
+          48,
+          64
+        ],
+        "domain_streamwise_D": 8.0,
+        "domain_lateral_D": 6.0,
+        "blockage": 1.3333333333333333,
+        "reynolds_target": 100.0,
+        "speed": 0.1,
+        "nu": 0.008,
+        "tau": 0.524,
+        "mach": 0.17320508075688776,
+        "n_markers": 642,
+        "icosphere_subdivisions": 3,
+        "dtype": "float32",
+        "max_steps": 3000,
+        "report_interval": 50
+      },
+      "results": {
+        "cd_drive_mean": 1.4246348015547066,
+        "cd_marker_mean": 0.9139809184017176,
+        "re_measured": 100.22860864798228,
+        "cd_reference_schiller_naumann": 1.0905751428491444,
+        "error_drive_vs_ref": 0.306315122709313,
+        "error_marker_vs_ref": -0.1619276082032015,
+        "marker_vs_drive_rel": -0.3584454644767287,
+        "mass_drift_rel": 7.979059049593402e-05,
+        "wall_time_s": 337.38335156440735,
+        "s_per_step": 0.11246111718813578
+      }
+    },
+    "mdf_iter5_cosine4pt": {
+      "parameters": {
+        "impl": "mdf",
+        "n_iter": 5,
+        "accumulate": false,
+        "kernel": "cosine4pt",
+        "collision": "bgk",
+        "diameter": 8.0,
+        "grid_zyx": [
+          48,
+          48,
+          64
+        ],
+        "domain_streamwise_D": 8.0,
+        "domain_lateral_D": 6.0,
+        "blockage": 1.3333333333333333,
+        "reynolds_target": 100.0,
+        "speed": 0.1,
+        "nu": 0.008,
+        "tau": 0.524,
+        "mach": 0.17320508075688776,
+        "n_markers": 642,
+        "icosphere_subdivisions": 3,
+        "dtype": "float32",
+        "max_steps": 3000,
+        "report_interval": 50
+      },
+      "results": {
+        "cd_drive_mean": 1.4266438663781382,
+        "cd_marker_mean": 0.9122874739822409,
+        "re_measured": 100.22268369793892,
+        "cd_reference_schiller_naumann": 1.0906050475295788,
+        "error_drive_vs_ref": 0.3081214593768379,
+        "error_marker_vs_ref": -0.1635033451855555,
+        "marker_vs_drive_rel": -0.36053594349493034,
+        "mass_drift_rel": 8.138005311320029e-05,
+        "wall_time_s": 433.2478563785553,
+        "s_per_step": 0.1444159521261851
+      }
+    },
+    "mdf_iter5_peskin4pt": {
+      "parameters": {
+        "impl": "mdf",
+        "n_iter": 5,
+        "accumulate": false,
+        "kernel": "peskin4pt",
+        "collision": "bgk",
+        "diameter": 8.0,
+        "grid_zyx": [
+          48,
+          48,
+          64
+        ],
+        "domain_streamwise_D": 8.0,
+        "domain_lateral_D": 6.0,
+        "blockage": 1.3333333333333333,
+        "reynolds_target": 100.0,
+        "speed": 0.1,
+        "nu": 0.008,
+        "tau": 0.524,
+        "mach": 0.17320508075688776,
+        "n_markers": 642,
+        "icosphere_subdivisions": 3,
+        "dtype": "float32",
+        "max_steps": 3000,
+        "report_interval": 50
+      },
+      "results": {
+        "cd_drive_mean": 1.4098021406601322,
+        "cd_marker_mean": 0.90516944448701,
+        "re_measured": 100.23558909694354,
+        "cd_reference_schiller_naumann": 1.090539914521618,
+        "error_drive_vs_ref": 0.29275611271739976,
+        "error_marker_vs_ref": -0.1699804542375907,
+        "marker_vs_drive_rel": -0.35794575821599384,
+        "mass_drift_rel": 7.576397371127865e-05,
+        "wall_time_s": 353.15401339530945,
+        "s_per_step": 0.11771800446510315
+      }
+    },
+    "mdf_iter8_peskin4pt": {
+      "parameters": {
+        "impl": "mdf",
+        "n_iter": 8,
+        "accumulate": false,
+        "kernel": "peskin4pt",
+        "collision": "bgk",
+        "diameter": 8.0,
+        "grid_zyx": [
+          48,
+          48,
+          64
+        ],
+        "domain_streamwise_D": 8.0,
+        "domain_lateral_D": 6.0,
+        "blockage": 1.3333333333333333,
+        "reynolds_target": 100.0,
+        "speed": 0.1,
+        "nu": 0.008,
+        "tau": 0.524,
+        "mach": 0.17320508075688776,
+        "n_markers": 642,
+        "icosphere_subdivisions": 3,
+        "dtype": "float32",
+        "max_steps": 3000,
+        "report_interval": 50
+      },
+      "results": {
+        "cd_drive_mean": 1.4091829618949825,
+        "cd_marker_mean": 0.9047853360988274,
+        "re_measured": 100.23459518949191,
+        "cd_reference_schiller_naumann": 1.0905449302426018,
+        "error_drive_vs_ref": 0.29218239690637665,
+        "error_marker_vs_ref": -0.17033648866026133,
+        "marker_vs_drive_rel": -0.35793622221905963,
+        "mass_drift_rel": 7.586993731087485e-05,
+        "wall_time_s": 434.5606291294098,
+        "s_per_step": 0.1448535430431366
+      }
+    }
+  },
+  "operator": {
+    "area_check": {
+      "sum_ds_tl": 200.10388374351885,
+      "sum_ds_oss": 200.10388374351885,
+      "ds_rel_diff": 3.0592684413879843e-16,
+      "analytic_sphere_area": 201.06192982974676,
+      "polyhedral_area": 200.10388374351885,
+      "polyhedral_vs_analytic_rel": -0.0047649303229067505
+    },
+    "stencil_weight_rel_diff_max": 1.8991156303799217e-16,
+    "stencil_index_match_min": 1.0,
+    "force_parity_rel_max": 5.113336213380291e-16,
+    "reaction_parity_rel_max": 1.2526203597245118e-15
+  }
+}
