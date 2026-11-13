@@ -1,0 +1,4 @@
+case_name,l2_relative,linf_relative,n_points,passed,threshold,doi
+poiseuille_2d_H16,0.00492091,0.00360784,16,True,0.15,book:Schlichting-Gersten-2017
+couette_2d_H20,0.00983623,0.00963304,20,True,0.15,book:Schlichting-Gersten-2017
+womersley_alpha5_H31,0.00015631,0.00321003,4,True,0.15,10.1113/jphysiol.1955.sp005276

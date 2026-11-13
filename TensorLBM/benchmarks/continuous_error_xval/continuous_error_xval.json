@@ -1,0 +1,73 @@
+{
+  "schema": "tensorlbm/continuous_error_xval/1",
+  "label": "continuous_error_xval",
+  "timestamp": "2026-11-13T09:43:09Z",
+  "n_cases": 3,
+  "n_pass": 3,
+  "n_fail": 0,
+  "results": [
+    {
+      "case_name": "poiseuille_2d_H16",
+      "doi": "book:Schlichting-Gersten-2017",
+      "citation": "Schlichting, H. & Gersten, K. (2017). Boundary-Layer Theory, 8th ed. Springer. \u00a7III.2.1 (Poiseuille), \u00a7III.2.2 (Couette).",
+      "solution_type": "analytical",
+      "l2_relative": 0.004920911776990591,
+      "linf_relative": 0.003607843111901292,
+      "l2_absolute": 1.1499999474012686e-05,
+      "linf_absolute": 1.1499999919185367e-05,
+      "n_points": 16,
+      "passed": true,
+      "threshold": 0.15,
+      "wall_time_s": 4.164,
+      "params": {
+        "H": 16,
+        "tau": 0.8,
+        "force": 1e-05,
+        "steps": 5000,
+        "nu": 0.10000000000000002
+      }
+    },
+    {
+      "case_name": "couette_2d_H20",
+      "doi": "book:Schlichting-Gersten-2017",
+      "citation": "Schlichting, H. & Gersten, K. (2017). Boundary-Layer Theory, 8th ed. Springer. \u00a7III.2.1 (Poiseuille), \u00a7III.2.2 (Couette).",
+      "solution_type": "analytical",
+      "l2_relative": 0.009836229322218932,
+      "linf_relative": 0.009633042982040636,
+      "l2_absolute": 0.0002838587348925077,
+      "linf_absolute": 0.000469610845374481,
+      "n_points": 20,
+      "passed": true,
+      "threshold": 0.15,
+      "wall_time_s": 3.87,
+      "params": {
+        "H": 20,
+        "tau": 0.7,
+        "u_wall": 0.05,
+        "steps": 5000,
+        "H_eff": 20.0
+      }
+    },
+    {
+      "case_name": "womersley_alpha5_H31",
+      "doi": "10.1113/jphysiol.1955.sp005276",
+      "citation": "Womersley, J.R. (1955). Method for the calculation of velocity, rate of flow and viscous drag in arteries when the pressure gradient is known. J. Physiol. 127:553\u2013563.",
+      "solution_type": "analytical",
+      "l2_relative": 0.00015631096401280686,
+      "linf_relative": 0.0032100294124171856,
+      "l2_absolute": 0.015631096401280686,
+      "linf_absolute": 0.3210029412417186,
+      "n_points": 4,
+      "passed": true,
+      "threshold": 0.15,
+      "wall_time_s": 29.655,
+      "params": {
+        "alpha": 5.0,
+        "H": 31,
+        "tau": 0.8,
+        "u_peak": 0.03,
+        "measure_periods": 4
+      }
+    }
+  ]
+}
