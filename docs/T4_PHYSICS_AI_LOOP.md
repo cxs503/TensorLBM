@@ -1,5 +1,14 @@
 # T4 Physics-AI Loop — Real LBM Field Production → Asset → FNO → Feedback
 
+> **Erratum (m18630, 2026-11-13).** The holdout figures below were produced before the
+> m15970 baseline-unit fix and by a flow map trained with 12 epochs / width 12.  Re-measured on
+> `main` the same recipe gives one-step rel-L2 **0.930 (FNO) vs 0.375 (viscous prior) vs 0.397
+> (persistence)** — the FNO lost to both baselines, and the "within ~0.3 %" sentence below
+> contradicts the handback error 0.997 in its own table.  The residual-over-prior parameterisation
+> (`FlowMapConfig.residual=True`, now the default) gives **0.142 / 0.145** on the two Re=75
+> holdout runs; see `docs/T4_FLOW_MAP_RESIDUAL_m18630.md` for the corrected tables.
+
+
 **Mission**: m15932 (rework of m15658) · **Anchor**: GAP-LBM-T4-PHYSICS-AI-LOOP
 **Repo**: TensorLBM · **Branch**: agent/m15932
 

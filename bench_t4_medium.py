@@ -47,10 +47,14 @@ GRID = 64
 SEEDS = (0, 1)
 DT = 200  # LBM steps between samples
 N_STEPS = 2000
-EPOCHS = 12
-WIDTH = 12
+# Training budget: the m18630 measurement showed that 12 epochs x width 12 left
+# the FNO collapsed towards zero output (one-step rel-L2 0.930 vs 0.375 for the
+# viscous prior).  60 epochs on the residual target converge (val MSE 1.1e-2 vs
+# 6.9e-2 for the prior) in ~3 min on 16 CPU threads.
+EPOCHS = 60
+WIDTH = 16
 LAYERS = 2
-MODES = 6
+MODES = 8
 HEAL_STEPS = 500
 
 
@@ -154,7 +158,7 @@ def main() -> int:
     _log("held-out evaluation (unseen Re, one-step + full rollout)")
     eval_main = evaluate_holdout(
         model, ds_dir, train_res=TRAIN_RE, holdout_res=HOLDOUT_RE,
-        n_rollout=N_STEPS // DT, grid_n=GRID,
+        n_rollout=N_STEPS // DT, grid_n=GRID, residual=trained["residual"],
     )
     _log(f"holdout summary: {json.dumps(eval_main['summary'])}")
 
@@ -162,6 +166,7 @@ def main() -> int:
     _log("LBM feedback: surrogate coarse-stepping + handback + healing")
     feedback = feedback_acceleration(
         model, ds_dir, holdout_res=HOLDOUT_RE, k_values=(2, 4), heal_steps=HEAL_STEPS,
+        residual=trained["residual"],
     )
     _log(f"feedback rows: {len(feedback['rows'])}")
 
@@ -183,6 +188,11 @@ def main() -> int:
             "mach": 0.05 * math.sqrt(3.0),
             "solver": "D2Q9 BGK, tau = 3 nu + 0.5, periodic",
             "data_source": "real LBM runs only (analytic used as ruler in producer check)",
+            "model_parameterisation": (
+                "residual over the exact discrete viscous prior "
+                "u(t+dt) = P_nu[dt] u(t) + FNO(u(t), nu)"
+                if trained["residual"] else "direct field map u(t+dt) = FNO(u(t), nu)"
+            ),
         },
         "producer_verification": verification,
         "dataset_manifest": {

@@ -105,7 +105,7 @@ def main() -> int:
         grid, grid_coarse, n_steps, dt = GRID, GRID_COARSE, 5000, DT
         seeds, coarse_seeds = SEEDS, (0,)
         train_re, holdout_re = TRAIN_RE, HOLDOUT_RE
-        epochs, width, layers, modes = 12, 12, 2, 6
+        epochs, width, layers, modes = 60, 20, 3, 10
         heal_steps = 500
     del grid, grid_coarse
 
@@ -186,7 +186,7 @@ def main() -> int:
     _log("held-out evaluation (unseen Re, one-step + full rollout)")
     eval_main = evaluate_holdout(
         model, ds_dir, train_res=train_re, holdout_res=holdout_re,
-        n_rollout=n_steps // dt, grid_n=grid_n,
+        n_rollout=n_steps // dt, grid_n=grid_n, residual=trained["residual"],
     )
     _log(f"holdout summary: {json.dumps(eval_main['summary'])}")
 
@@ -196,7 +196,7 @@ def main() -> int:
         _log(f"cross-resolution check: same model on {n_coarse}^2 fields")
         eval_coarse = evaluate_holdout(
             model, ds_dir, train_res=train_re, holdout_res=holdout_re,
-            n_rollout=n_steps // dt, grid_n=n_coarse,
+            n_rollout=n_steps // dt, grid_n=n_coarse, residual=trained["residual"],
         )
         _log(f"64^2 summary: {json.dumps(eval_coarse['summary'])}")
 
@@ -204,6 +204,7 @@ def main() -> int:
     _log("LBM feedback: surrogate coarse-stepping + handback + healing")
     feedback = feedback_acceleration(
         model, ds_dir, holdout_res=holdout_re, k_values=(2, 4), heal_steps=heal_steps,
+        residual=trained["residual"],
     )
     _log(f"feedback rows: {len(feedback['rows'])}")
 
