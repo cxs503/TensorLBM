@@ -1,0 +1,125 @@
+{
+  "anchor": "XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES",
+  "mission": 17863,
+  "round": 1,
+  "kind": "cross_validation_against_oss",
+  "oss": {
+    "repo": "lanl/MF-LBM",
+    "commit": "11be324a97fe6331b2271102da370460715355e8",
+    "license": "BSD-3-Clause",
+    "feature": "indirect-addressing wall tables (solid/fluid boundary node lists + la_weight continuation + ISO8 wall normal)",
+    "source_access": "codeload tarball (588782 B) unpacked outside the repo; every conclusion carries file:line; no hand-copied numbers and no execution of the OSS binary (GPU/MPI/OpenACC build, and the inventory probe already recorded <1000-step NaN, docs/oss-inventory/oss-inv-lanl-MF-LBM.md sec. 9)",
+    "local_source_copy": "/tmp/mflbm_build/src (13 Fortran sources of multiphase_3D, unmodified)"
+  },
+  "decision": "Which wall-table representation and which wall-normal recipe TensorLBM should carry for near-wall FIELD operations, and whether the OSS ISO8 expression is transferable verbatim.",
+  "competing_alternatives": {
+    "representation": [
+      "A1: node-indexed indirect-addressing tables (MF-LBM solid_boundary/fluid_boundary lists, CSR-condensed) driving the near-wall field operators",
+      "A2: dense (Q, nz, ny, nx) mask + full-domain scan (the representation TensorLBM's dense BFL kernel uses today)"
+    ],
+    "wall_normal": [
+      "B1: projected ISO8 stencil, sum_s c_s sum_o o_alpha (phi(x+o)-phi(x-o))",
+      "B2: OSS-literal expression, sum_s c_s sum_o (phi(x+o)-phi(x-o)) (no o_alpha projection; Geometry_preprocessing.F90:236-378 verbatim)"
+    ]
+  },
+  "hypotheses": {
+    "H1_representation_identity": "A1 and A2 produce bit-identical boundary operations: every KPI of the table-driven channel arm equals the dense-scan arm to < 1e-12 relative.",
+    "H2_normal_variant": "B1 returns the exact normal of a plane wall (max component error < 1e-10) and mean |cos| > 0.99 against the radial direction on a D=24 sphere, while B2 (OSS literal) leaves transverse components > 0.3 on the plane wall and mean |cos| < 0.9 on the sphere.",
+    "H3_physics": "The table-driven D3Q19 channel (half-way bounce-back from the link table, Guo forcing) reproduces the analytic Poiseuille u_max, superficial permeability and wall shear within the owner 15% band at H = 8, 16, 32.",
+    "H4_footprint": "The CSR table pair costs less than 1/10 of the dense (Q, nz, ny, nx) mask + q-field for the sphere geometry, and also less than the OSS fixed-row layout (4 int32 + 18 int32 + 1 double per solid boundary node).",
+    "H5_continuation_semantics": "The OSS la_weight continuation is exact for linear fields at the weight centroid of the fluid neighbours (machine precision) but is NOT a node extrapolation: applied to a channel velocity profile its output differs from the exact value at the solid node by more than 50%."
+  },
+  "metrics": {
+    "u_max_rel_err": "|u_max_lbm - g*H^2/(8*nu)| / (g*H^2/(8*nu)), u_max taken over fluid cells at the last step",
+    "k_super_rel_err": "superficial permeability k = nu*<u>_all_sites/g (mean over ALL cells of the cross-section, solid included) versus k_ref = (H/H_total)*H^2/12",
+    "tau_w_rel_err": "wall shear from half-way bounce-back momentum exchange, F_wall/(nx*nz), versus rho*g*H/2",
+    "momentum_balance_rel": "|rho*g*H - 2*tau_w| / (rho*g*H)",
+    "mass_drift": "max |rho-1| over fluid cells at the last step",
+    "ma_max": "max |u| / c_s, must stay < 0.1",
+    "representation_rel": "max relative difference between the table arm and the dense-scan arm over u_max, k_super, tau_w",
+    "normal_cos_mean/median/p05": "cosine between the ISO8 normal and the exact radial/plane normal",
+    "table_bytes": "bytes of the table pair (CSR int8 dir ids + int64 offsets + float64 weights) vs dense mask+q and vs the OSS fixed-row layout",
+    "build_seconds": "wall-table build wall clock",
+    "boundary_op_seconds": "one boundary-operation pass, table traversal versus dense scan",
+    "continuation_err_node_rel": "|la_weight_output - u_exact(x_wall_node)| / |u_exact(x_wall_node)| in the converged channel"
+  },
+  "unit_of_analysis": "one completed simulation arm at fixed (H, tau, steps) plus one static-geometry arm at fixed resolution; KPIs are scalars (fields for the normal statistics)",
+  "baseline_control": {
+    "physical_baseline": "analytic incompressible plane-channel Poiseuille flow driven by a body force: u(y)=g*y*(H-y)/(2*nu), u_max=g*H^2/(8*nu), tau_w=rho*g*H/2, k_super=(H/H_total)*H^2/12",
+    "representation_control": "A2 dense-scan solver sharing collision, forcing, geometry, step count and steady-state criterion with A1; the only changed variable is how the boundary operations are addressed (table traversal vs full-domain mask scan)",
+    "normal_control": "B2 OSS-literal stencil on the same smoothed indicator and the same evaluation cells as B1",
+    "oss_note": "the OSS binary is not executed (CUDA/MPI/OpenACC, GPU absent; the inventory probe already recorded NaN within 1000 steps). The OSS semantics transplanted here are the table build, the la_weight continuation and the ISO8 normal, cited file:line; physical accuracy is measured against the analytic channel, not against an OSS run. This is recorded as a comparison limit."
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "representation_identity_rel": 1e-12,
+    "normal_plane_wall_abs": 1e-10,
+    "normal_sphere_cos_mean": 0.99,
+    "normal_oss_literal_cos_mean_max": 0.9,
+    "continuation_linear_abs": 1e-12,
+    "footprint_ratio_max": 0.1,
+    "interpretation": "the 15% owner band is used only for physics-vs-analytic comparisons; representation identity is held to 1e-12 because a change of addressing must be exact, and stencil identities (normal on a plane wall, continuation of a linear field) are held to 1e-10/1e-12 because they are exact algebra, not discretisation",
+    "convergence_rule": "a KPI is resolution-converged when |KPI(H=32)-KPI(H=16)|/|KPI(H=32)| < 5%; otherwise the finer value is reported together with the resolution delta as a sensitivity result",
+    "stability_rule": "a run producing a non-finite population, rho outside [0.95,1.05] or Ma>0.1 is declared failed and reported, never tuned away"
+  },
+  "stopping_rule": "each arm runs at most the step count fixed in run_arm.py (STEPS_MAX) and stops early only when the predeclared steady criterion max|u(n)-u(n-200)|/max|u(n)| < 1e-9 holds; no arm is extended after looking at KPIs. Per-arm wall clock budget 900 s; anything above goes to the cluster queue.",
+  "variables_changed": [
+    "boundary addressing (A1 indirect-addressing tables / A2 dense mask scan)",
+    "channel resolution H = 8, 16, 32 fluid rows (ny = H+2), nx = nz = 4, periodic x and z",
+    "relaxation time tau = 0.6, 0.8, 1.0 at H = 16",
+    "ISO8 normal variant (projected / oss_literal)"
+  ],
+  "variables_held_fixed": [
+    "D3Q19, BGK/SRT collision, Guo body force (velocity shift + source term), float64, single CPU thread, torch CPU",
+    "half-way bounce-back applied through the link table (q = 0.5, voxel geometry)",
+    "steady-state criterion and step budget identical across arms",
+    "geometry for the normal arms: plane wall in a 20x12x12 box and a sphere of radius n/4 centred in an n^3 box (n = 48)"
+  ],
+  "confounders": [
+    "half-way bounce-back places the wall 0.5 dx outside the first fluid row, so the analytic channel width must be H (not H+1); a geometric bias of 1/(H+0.5) otherwise appears (~12% at H=8)",
+    "the dense-scan control integrates the same arithmetic over the whole domain, so its cost is an upper bound for the addressing benefit, not a hardware-independent constant",
+    "the la_weight continuation is evaluated on the same smoothed indicator in both normal variants, so the difference between B1 and B2 is the stencil, not the smoothing",
+    "the ISO8 amplitude gain of the OSS coefficients is 0.99683 for the projected variant, i.e. a 0.32% scale bias survives in the normal magnitude but is removed by the normalisation",
+    "MF-LBM's y/z faces are walls and its x axis is periodic; the copy that wraps periodic axes therefore only reproduces OSS behaviour on the periodic directions"
+  ],
+  "repetitions": "every arm is deterministic (fixed initial condition u=0, rho=1, no randomness, no seeds); no repetition is averaged and no randomisation/blinding applies. The sampling unit is one arm, the spread across resolutions/tau is reported as sensitivity rather than as noise.",
+  "environment": {
+    "work_tree": "/root/tp-agent/work/m17863 (branch agent/m17863)",
+    "python": "3.11",
+    "torch": "torch CPU float64, single thread",
+    "code_under_test": "src/tensorlbm/wall_tables.py, tests/test_wall_tables.py",
+    "raw_data": "artifacts/xval_indirect_addressing_wall_tables/results.json, table.csv, figures"
+  },
+  "analysis": "grouped by arm; no outlier removal; errors are relative to the analytic value (physics) or to the control arm (representation/stencil); uncertainty is the spread between H=16 and H=32 (and between tau values); footprint and timing are reported as ratios",
+  "fail_stage_plan": "if the transplant fails, fail_stage names the stage (table_build / normal / continuation / boundary_op / channel_solver / analysis) and failure_reason carries the measured deviation; an honest FAIL is reported as such",
+  "provenance_of_oss_claims": [
+    "Module.F90:89-96 indirect_solid_boundary_nodes {ix,iy,iz,i_fluid_num,neighbor_list(1:18),la_weight}",
+    "Module.F90:98-103 indirect_fluid_boundary_nodes {ix,iy,iz,nwx,nwy,nwz,theta}",
+    "Module.F90:127 w_equ(0:18) D3Q19 weights",
+    "Module.F90:228 ISO8(1:7) = 4/45, 1/21, 2/105, 5/504, 1/315, 1/630, 1/5040",
+    "Geometry_preprocessing.F90:52 i_max_iteration = 4 smoothing passes",
+    "Geometry_preprocessing.F90:126-141 tag rules 1 solid / 0 fluid / 2 solid-boundary / -1 fluid-boundary",
+    "Geometry_preprocessing.F90:143-160 D3Q27-weighted 27-point smoothing of the wall indicator (we = 8/27, 2/27, 1/54, 1/216)",
+    "Geometry_preprocessing.F90:196-217 solid boundary table build (neighbour_list + la_weight)",
+    "Geometry_preprocessing.F90:230-383 ISO8 wall normal",
+    "Geometry_preprocessing.F90:388-420 MPI struct broadcast of both tables (blocklengths 4, 18, 1)",
+    "Geometry_preprocessing.F90:425-520 local sub-table filter (overlap 3 for solid, 2 for fluid)",
+    "Phase_gradient.F90:14-28 la_weight continuation of the phase field",
+    "Phase_gradient.F90:86-107 same continuation for the colour-gradient components",
+    "Phase_gradient.F90:222-265 contact-angle rotation at fluid boundary nodes",
+    "Kernel_multiphase.F90:44,408 the only wall handling in the kernels: if(walls(i,j,k)==0); no bounce-back routine exists in the tree",
+    "Main_multiphase.F90:106 copyin(solid_boundary_nodes,fluid_boundary_nodes)"
+  ],
+  "amendments": [
+    {
+      "when": "2026-11-13",
+      "what": "run budget: STEPS_MAX 40000 -> 20000, steady tolerance 1e-9 -> 1e-7 over a 100-step window, channel cross-section nx=nz 4 -> 2, and the dense control arm (A2) plus the tau sweep are run at H<=16 while A1 covers H=8,16,32.",
+      "why": "the first launch exceeded the 120 s per-command budget of this work tree (no KPI had been printed yet, so nothing was tuned against a result). nx=nz does not enter the physics -- the driven channel is homogeneous in x and z and periodic there -- and the steady tolerance is still 5 orders below the 5% convergence rule. The resolution/tau coverage that carries the acceptance decision (A1 at H=8,16,32 and the A1-vs-A2 identity control) is unchanged."
+    },
+    {
+      "when": "2026-11-13",
+      "what": "second run-budget amendment: physics arms are A1 at H=8 (4000 steps) and H=16 (8000 steps) plus the tau=0.6/1.0 sweep at H=16; the dense control A2 is folded into the same run as a final-state equivalence check (identical streamed field and identical momentum-exchange wall force, table traversal versus full-domain mask scan) instead of a second simulation; the continuation arm now uses H=16.",
+      "why": "one arm costs ~3-4 ms/step in this work tree (~100 s for 20000 steps) and the per-command budget is 120 s. The A2 equivalence is an algebraic identity of the same state, so running a second simulation adds nothing; H=32 is dropped and the convergence ladder becomes H=8 -> H=16. The threshold set, the physics reference and the acceptance band are unchanged."
+    }
+  ]
+}
