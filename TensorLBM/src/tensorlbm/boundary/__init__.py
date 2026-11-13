@@ -9,6 +9,13 @@ from .solver2d import (
     compute_wall_shear_stress,
 )
 from .d2q9 import C2Q9, W2Q9, OPPOSITE_2Q9, CS2_2Q9
+from .inamuro_wetnode import (
+    compute_boundary_distance,
+    compute_boundary_distance_from_levelset,
+    apply_inamuro_wetnode,
+    apply_inamuro_all_directions,
+    create_curved_boundary_masks,
+)
 
 __all__ = [
     "SuctionWallBC",
@@ -22,4 +29,9 @@ __all__ = [
     "W2Q9",
     "OPPOSITE_2Q9",
     "CS2_2Q9",
+    "compute_boundary_distance",
+    "compute_boundary_distance_from_levelset",
+    "apply_inamuro_wetnode",
+    "apply_inamuro_all_directions",
+    "create_curved_boundary_masks",
 ]
