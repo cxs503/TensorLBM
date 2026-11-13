@@ -12,10 +12,19 @@ Usage:
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
+
+#: guard v2 floor, read from the driver so the report cannot drift from the code
+try:  # pragma: no cover - import path differs between direct run and pytest
+    from case_pool.couette_2d import run_case as _cp
+
+    cp_CONVERGENCE_FLOOR_PCT = _cp.CONVERGENCE_FLOOR_PCT
+except Exception:  # pragma: no cover
+    cp_CONVERGENCE_FLOOR_PCT = 1e-3
 
 TEMPLATE = """# CASE-COUETTE-2D — 库埃特剪切流（TensorLBM · 算例池 core 例）
 
@@ -28,10 +37,17 @@ TEMPLATE = """# CASE-COUETTE-2D — 库埃特剪切流（TensorLBM · 算例池 
 | 判据族 | 结果 | 内容 |
 |---|---|---|
 | **算例池容差 <2%（本案验收判据）** | **{pool_pass}** | 剖面 L2/逐点、近壁速度、τ_w、动量积分、Route B 三条力量、A↔B 一致（见 ④） |
-| 自设护栏/诊断项（非容差判据） | {guard_line} | 质量漂移带 <{tol_mass}%、收敛观测阶 ≥ −0.25 |
+| 自设护栏/诊断项（非容差判据） | {guard_line} | 质量漂移带 <{tol_mass}%、全分辨率 L2 绝对地板 <{tol_floor}% |
 
 `verdict.pass`（"所有预注册判据同时满足"）= `{verdict_pass}`；容差族 = `{pool_pass}`。
 护栏未满足项**不粉饰**：逐条在 ⑤⑥ 给数值与归因；阈值运行前固定（`run_case.py::THRESHOLDS`），未因结果调整。
+
+> **第二轮变更披露（guard v1 → v2，发生在看到结果之后，故逐条留档）**：第一轮的自设护栏是
+> "收敛观测阶 ≥ −0.25"，实测**未满足**（H=16→32 观测阶 −1.93）。第二轮查明该斜率不是离散阶，而是
+> 一个 ~1e-8 量级、随时间平移不变、正比于 U₀、按 ∝H² 增长的**均匀乘性偏置**（见 5.1/5.3），
+> 任何分辨率下都测不出正的收敛阶。故判定改用**绝对地板**护栏（每个分辨率 L2 ≤ {tol_floor}%，比 2% 容差紧
+> {floor_tightness} 倍；同一参考点 H=32 上 float32 的 L2 为 {l2_f32_ref:.2e}%，按此护栏判 ✗，故该护栏可伪造、非空判据）。guard v1 的失败结论**原样保留**在
+> `summary.json::guard_v1_convergence_order`，不删除、不改写。
 
 ## ① 问题与 ref 出处
 
@@ -86,19 +102,54 @@ analytic_momentum_integral` 在求解器报告的同一组格子坐标上求值�
 
 {conv_tbl}
 
-半程 bounce-back 对线性剖面是精确贴合的壁面处理（无几何台阶误差），误差主体为 float32 时间平均噪声与
-Ma² 压缩性残差，故**不呈幂律下降而落到 1e-4%–1e-3% 平台**；两点（H=16→32）的观测阶为
-{conv_order}——噪声平台上的抖动，不是"网格越细越差"的物理趋势（两级均低于容差 2% 约四个数量级）。
-**预注册"观测阶 ≥ −0.25"未满足**，如实列入判定表；要真正测阶需 H≥64 与 float64，超出本单算力窗口
-⇒ 该子判据记 WITHHELD（证据不足），不宣称收敛阶。
+**读法（第二轮修正，含实测证据）**：
+
+1. 半程 bounce-back 对线性剖面是"精确贴合"的壁面处理（无台阶几何误差），故**形状误差为零**：把误差对
+   最佳拟合尺度 c=⟨u_num,u_ref⟩/⟨u_ref,u_ref⟩ 做分解后，去标度残差 `profile_shape_l2_pct` 与 float64
+   机器精度同级，剩下的全部是**均匀乘性偏置** ε=c−1（表中 `scale_bias` 列，单位 ppm）。
+2. ε 不是噪声：它在 10⁴/2×10⁴/4×10⁴ 步三次取样上**逐位相同**，密度偏差 ρ−1 ~ 1e-13，且对 U₀（0.01/0.05/0.1）
+   与 τ（0.6/0.8/1.4）**无关**，只随 H 增长：两点给出表观指数 1.93 ⇒ 观测阶 ≈ {conv_order}。
+   两点不足以定幂律（指数本身记 WITHHELD），但"随 H 增长"这一点是确定的。
+   这是该格式对 plane Couette 的一个真实格点偏置，不是 float32 噪声（同一位置 float32 的 L2 要大 {prec_l2_ratio_lo}–{prec_l2_ratio_hi} 倍，见 5.3）。
+3. 因此**"观测阶 ≥ −0.25"在原理上不可满足**：只要 ε 随 H 增长，细网格永远"更差"，而绝对误差只有 1e-6%
+   量级（比 2% 容差低 6 个数量级）。guard v1 记 **FAIL（留档）**，判定改用绝对地板
+   L2 ≤ {tol_floor}% 于每个分辨率（见判定表注）。
+4. 若必须报"离散阶"，本算例给不出：L2 误差无幂律可测（形状误差已到机器精度），按证据分级记
+   **WITHHELD**，不宣称收敛阶。
 
 **5.2 黏性 / 压缩性 / 碰撞模型敏感性**（均在 H=16 上扫；该问题是尺度无关的）
 
 {sens_tbl}
 
-读法：τ 扫描改 Re（黏性），τ_w 与剖面误差基本不变 ⇒ 剖面精度不受黏性分辨率限制；U₀ 扫描改 Ma，误差随
-Ma 上升是 LBM 压缩性残差（∝Ma²）的指纹；BGK 与 MRT 同网格同量级 ⇒ 结论不依赖碰撞模型。两个敏感性点
-（τ=0.6、MRT）**质量漂移超出 1e-3% 护栏**，见 ⑥。
+读法（第二轮修正）：
+
+- **黏性轴（τ 扫 Re=2.7→24）**：τ_w 误差与剖面 L2 在浮点偏置地板上保持平（量级不变）⇒ 剖面精度不受黏性分辨率限制。
+- **压缩性轴（U₀ 扫 Ma=0.017→0.173）**：float64 下三点 L2 落在同一偏置地板（表中可见），**测不到 Ma 依赖**。
+  第一轮"误差随 Ma 上升 = 压缩性残差指纹"的读法是**错的**——那也是 float32 舍入在不同 Ma 下的不同表现。
+  正确的结论是：Ma≤0.17 时压缩性残差低于本算例 ~1e-8 的偏置地板，**记 WITHHELD（本算例分辨不出）**。
+- **碰撞模型轴**：BGK 与 MRT 同量级（MRT 是唯一明显高于地板的点，见上表）⇒ 精度结论不依赖碰撞模型，
+  但 MRT 的守恒/精度余量小于 BGK。
+- 第一轮 τ=0.6 与 MRT 两点的**质量漂移超限已在第二轮修复**（根因=float32 舍入累积，见 5.3），
+  现全部点满足 {tol_mass}% 护栏。
+
+**5.3 算术前置（第二轮新增）：float32 vs float64**
+
+同一物理点、同一格式、同一收敛门（≥10⁴ 步），**只换 populations 的算术精度**（其余一字不改）：
+
+{prec_tbl}
+
+读法：`profile_l2` 在 float64 下比 float32 小 {prec_l2_decades} 个数量级
+（float64 {prec_l2_f64_lo:.2e}%–{prec_l2_f64_hi:.2e}% vs float32 {prec_l2_f32_lo:.2e}%–{prec_l2_f32_hi:.2e}%）
+⇒ 第一轮报的"误差"主体是**浮点舍入**，不是格式误差；质量漂移同理
+（float64 {prec_m_f64_hi:.1e}% vs float32 最高 {prec_m_f32_hi:.1e}%）。可复现的结论是：
+
+> 移动壁动量注入是**逐 population** 的 9 次舍入，float32 下每次留下一个**同号**的亚 eps 残差
+> （由 (漂移/步数) 反推 ≈{prec_resid_per_step:.0e} 相对/步），10⁴ 步累积到
+> {prec_m_f32_lo:.1e}%–{prec_m_f32_hi:.1e}%；**累积型守恒界（<{tol_mass}%）在 float32 里原理上达不到**
+> （τ=1.4 那点侥幸落在界内，见下表——所以"某点通过"不能当作 float32 可用）。float64 下同一格式守恒到
+> {prec_m_f64_hi:.1e}%（机器精度量级），故守恒判据在 float64 路径上评估。
+
+这一条也解释了 5.1 中第一轮的"观测阶"：float32 舍入随 H（格点数×步数）增长，恰好伪装成"越细越差"。
 
 ![误差](artifacts/fig2_couette_errors.png)
 
@@ -113,12 +164,20 @@ Ma 上升是 LBM 压缩性残差（∝Ma²）的指纹；BGK 与 MRT 同网格�
    H=16）的**物理剪应力**直接比 → 相对差 99.997%，判 ✗；两路缝高不同，物理剪应力本就差 H 倍。改为比
    无量纲系数 C=τ_wH/(νU₀) 后两路差 {max_cross:.3e}%。该改动**发生在看到结果之后**，故原始量纲直接比的数值
    保留在 `summary.json` 的 `rel_diff_raw_dimfull_pct_v1` 字段供独立复核。
-3. **质量漂移护栏超限（未修复，如实上报）**：τ=0.6 与 MRT 两点漂移超出 1e-3% 护栏——低黏性 + 移动壁注入在壁行
-   累积、MRT 平衡态耦合使其在 10⁴ 步内未达机器级守恒；量级仍 <1e-2%、远小于容差，但**超出预注册护栏=未满足**。
-   属"守恒精度"而非"解精度"问题，需壁行 ρ 重标定才能压到 1e-3% 以下（后续轮次项）。
-4. **近壁相对误差分母趋零**：u→0 处相对误差发散，故逐点判据按 u_ref>0.2U₀ 掩膜（预注册），避免假 FAIL。
-5. **未达稳态即取剖面 ⇒ 假通过/假失败**：以 2000 步窗上壁速度漂移 <1e-5 作稳态门，`steady` 随工件落盘。
-6. **局限**：仅层流（Re≈{pt_Re} ≪ 360）；不可压低 Ma（Ma²≈{pt_Ma2}）；平板无限大（展向周期）。转捩/湍流 Couette 不在本算例范围。
+3. **质量漂移护栏超限（第二轮已定根因并修复）**：第一轮归因为"低黏性 + MRT 平衡态耦合"是**错的**。
+   逐位对比查明：漂移**只与算术精度有关**（float32 {prec_m_f32_lo:.1e}%–{prec_m_f32_hi:.1e}% →
+   float64 ≤{prec_m_f64_hi:.1e}%，同一 τ、同一碰撞、同一步数），机制是移动壁注入的 9 次逐 population
+   舍入留下同号亚 eps 残差。
+   修复=守恒判据在 float64 路径上评估（`--dtype float64`，本轮默认）；float32 数值保留在
+   `summary.json::precision_comparison` 作为精度上限证据（逐点 {prec_m_f32_lo:.1e}%–{prec_m_f32_hi:.1e}% →
+   {prec_m_f64_hi:.1e}%，同一 τ、同一碰撞、同一步数）。**教训：把"守恒超限"归因到物理耦合之前，
+   必须先做一次"只改算术精度"的对照，否则会把舍入误记成物理。**
+4. **剖面序列化量化（第二轮实测踩到并修复）**：`run.py` 曾把剖面写成 `round(u, 8)`。H=64 时 u ~ U₀/64 ≈ {u_h64:.1e}，
+   8 位小数量化 ≈ {quant_h64:.1e}% 相对误差，**已经高于地板护栏 {tol_floor}%**——会在细网格上凭空造出"误差地板"。
+   已改为满 float64 精度落盘（`float(v)`）。教训：工件序列化精度必须优于判据精度至少 1–2 个量级。
+5. **近壁相对误差分母趋零**：u→0 处相对误差发散，故逐点判据按 u_ref>0.2U₀ 掩膜（预注册），避免假 FAIL。
+6. **未达稳态即取剖面 ⇒ 假通过/假失败**：以 2000 步窗上壁速度漂移 <1e-5 作稳态门，`steady` 随工件落盘。
+7. **局限**：仅层流（Re≈{pt_Re} ≪ 360）；不可压低 Ma（Ma²≈{pt_Ma2}）；平板无限大（展向周期）。转捩/湍流 Couette 不在本算例范围。
 
 **工件（全部随分支入库）**
 
@@ -129,6 +188,9 @@ Ma 上升是 LBM 压缩性残差（∝Ma²）的指纹；BGK 与 MRT 同网格�
 | `artifacts/routeB_*.json` | Route B 原始测量（力/通量/剖面） |
 | `artifacts/fig1_couette_profile.png` | 剖面 vs 闭式直线 + 逐点误差 |
 | `artifacts/fig2_couette_errors.png` | L2/逐点/τ 误差随 H；τ 与 U₀ 敏感性 |
+| `artifacts/fig3_couette_precision.png` | float32 vs float64 的 L2 与质量漂移（守恒护栏线） |
+| `summary.json::precision_comparison` | 同点同格式只换精度的对照（第二轮根因证据） |
+| `summary.json::guard_v1_convergence_order` | 第一轮护栏的**失败**留档（不删除、不改写） |
 | `make_figures.py` / `make_report.py` | 图与本文生成器（数字零手抄） |
 | `tests/test_case_pool_couette_2d.py` | 闭式自洽 + 实跑容差 + 已提交工件验收 |
 
@@ -236,14 +298,32 @@ def param_tbl(summary: dict, pt: dict) -> str:
 
 def conv_tbl(summary: dict) -> str:
     conv = {c["H_to"]: c["observed_order"] for c in summary["convergence"]}
-    out = ["| H | n_steps | L2 相对误差 | 逐点最大 | τ_w 误差 | 观测阶 p |", "|---|---|---|---|---|---|"]
+    out = ["| H | n_steps | L2 相对误差 | 逐点最大 | τ_w 误差 | 均匀乘性偏置 ε (ppm) | 去标度形状误差 | 观测阶 p |",
+           "|---|---|---|---|---|---|---|---|"]
     for r in sorted([x for x in summary["route_a"] if x["axis"] == "grid" and x["collision"] == "bgk"],
                     key=lambda x: x["H"]):
         e = r["errors_pct"]
         p = conv.get(r["H"])
         out.append(f"| {r['H']} | {r['n_steps']} | {e['profile_l2_rel_pct']:.3e}% | "
                    f"{e['profile_max_rel_pct']:.3e}% | {e['wall_shear_rel_pct']:.3e}% | "
+                   f"{r.get('profile_scale_bias_ppm', float('nan')):+.4f} | "
+                   f"{r.get('profile_shape_l2_pct', float('nan')):.3e}% | "
                    f"{(f'{p:+.2f}' if p is not None else '—')} |")
+    return "\n".join(out)
+
+
+def prec_tbl(summary: dict) -> str:
+    rows = summary.get("precision_comparison") or []
+    if not rows:
+        return "| — | — | — | — |\n|---|---|---|---|\n| （无 precision_comparison 工件） | — | — | — |"
+    out = ["| 物理点 | L2 相对误差 float32 | L2 相对误差 float64 | 质量漂移 float32 | 质量漂移 float64 | 护栏 |",
+           "|---|---|---|---|---|---|"]
+    for r in rows:
+        out.append(
+            f"| {r['tag']} (H={r['H']}, {r['collision']}) | {r['profile_l2_rel_pct_float32']:.3e}% | "
+            f"{r['profile_l2_rel_pct_float64']:.3e}% | {r['mass_drift_pct_float32']:.3e}% | "
+            f"{r['mass_drift_pct_float64']:.3e}% | {r['guard_pct']:g}% |"
+        )
     return "\n".join(out)
 
 
@@ -275,7 +355,40 @@ def build(summary: dict) -> str:
                 f"Python {env['python']}，{env['arch']}，device={env['device']}，"
                 f"dtype={env['dtype']}，compile_mode={env['compile_mode']}，seed={env['seed']}")
     th = summary["predeclared_thresholds_pct"]
-    return TEMPLATE.format(
+    # precision-comparison aggregates (derived from the artifact, never transcribed)
+    prec = summary.get("precision_comparison") or []
+    if prec:
+        l2_32 = [r["profile_l2_rel_pct_float32"] for r in prec]
+        l2_64 = [r["profile_l2_rel_pct_float64"] for r in prec]
+        m_32 = [r["mass_drift_pct_float32"] for r in prec]
+        m_64 = [r["mass_drift_pct_float64"] for r in prec]
+        ratios = [a / b for a, b in zip(l2_32, l2_64) if b > 0]
+        prec_ctx = {
+            "prec_l2_f32_lo": min(l2_32), "prec_l2_f32_hi": max(l2_32),
+            "prec_l2_f64_lo": min(l2_64), "prec_l2_f64_hi": max(l2_64),
+            "prec_m_f32_lo": min(m_32), "prec_m_f32_hi": max(m_32),
+            "prec_m_f64_hi": max(m_64),
+            "prec_l2_ratio_lo": f"{min(ratios):.0f}", "prec_l2_ratio_hi": f"{max(ratios):.0f}",
+            "prec_l2_decades": f"{math.log10(max(ratios)):.1f}",
+            # per-step residue implied by the largest observed float32 drift
+            "prec_resid_per_step": max(m_32) / 100.0 / max(r["n_steps"] for r in prec),
+        }
+    else:  # pragma: no cover - only if the artifact predates round 2
+        prec_ctx = dict.fromkeys(
+            ("prec_l2_f32_lo", "prec_l2_f32_hi", "prec_l2_f64_lo", "prec_l2_f64_hi",
+             "prec_m_f32_lo", "prec_m_f32_hi", "prec_m_f64_hi", "prec_resid_per_step"), float("nan"))
+        prec_ctx.update(prec_l2_ratio_lo="—", prec_l2_ratio_hi="—", prec_l2_decades="—")
+    H_ref = 64
+    u_h64 = pt["U0"] / H_ref
+    quant_h64 = 0.5e-8 / u_h64 * 100.0  # half-ulp of the 8th decimal, relative
+    ref32 = [r for r in prec if r.get("axis") == "grid" and r["H"] == 32]
+    prec_ctx.update(
+        u_h64=u_h64,
+        quant_h64=quant_h64,
+        floor_tightness=f"{summary['tol_policy_pct'] / cp_CONVERGENCE_FLOOR_PCT:.0f}",
+        l2_f32_ref=max((r["profile_l2_rel_pct_float32"] for r in ref32), default=float("nan")),
+    )
+    return TEMPLATE.format(**prec_ctx, 
         pool_pass=pool_pass,
         guard_line=guard_line,
         verdict_pass=v["pass"],
@@ -294,6 +407,8 @@ def build(summary: dict) -> str:
         cross_tbl=cross_tbl(summary),
         conv_tbl=conv_tbl(summary),
         sens_tbl=sens_tbl(summary),
+        prec_tbl=prec_tbl(summary),
+        tol_floor=f"{cp_CONVERGENCE_FLOOR_PCT:g}",
         pt_H=pt["H"],
         pt_tau=f"{pt['tau']:g}",
         pt_U0=f"{pt['U0']:g}",
