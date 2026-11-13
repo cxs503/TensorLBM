@@ -1,0 +1,80 @@
+{
+  "audit_of_mission": 18096,
+  "anchor": "XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY",
+  "repo": "TensorLBM",
+  "auditor_mission": 18149,
+  "auditor": "board-audit",
+  "audited_worktree": "/root/tp-agent/work/m18096",
+  "verdict_level": 2,
+  "impl_files": [
+    "src/tensorlbm/turbulence/turbulence.py:2015 _abs_cc_weights (EEk = (sum_n |c_n|)^2)",
+    "src/tensorlbm/turbulence/turbulence.py:2020 les_scalar_q_abs_cc_proxy_2d (D2Q9)",
+    "src/tensorlbm/turbulence/turbulence.py:2039 les_scalar_q_abs_cc_proxy_3d (D3Q19)",
+    "src/tensorlbm/turbulence/turbulence.py:2058 tau_eff_q_abs_cc_proxy (tau_eff = 0.5(tau0+sqrt(tau0^2+6 Q Sc/rho)), clip=False = reference-exact)",
+    "src/tensorlbm/turbulence/turbulence.py:2087 collide_smagorinsky_q_abs_cc_proxy_bgk",
+    "src/tensorlbm/turbulence/turbulence.py:2118 collide_smagorinsky_q_abs_cc_proxy_bgk3d",
+    "src/tensorlbm/__init__.py:530-541 lazy-attr export + __all__ (5 new symbols)"
+  ],
+  "impl_landed_in_repo": false,
+  "impl_landing_note": "All six symbols exist only as UNCOMMITTED worktree changes of m18096 (git status: ' M src/tensorlbm/turbulence/turbulence.py', ' M src/tensorlbm/__init__.py', '?? xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/'). `git log --all -S les_scalar_q_abs_cc_proxy -- src/tensorlbm/turbulence/turbulence.py` in the fresh TensorLBM checkout /root/tp-agent/work/m18149 returns NOTHING, and grep over src/ finds no symbol -> the capability is not in the repository, only in the mission worktree. Mission result JSON has head_commit=null.",
+  "entry": "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/run_xval.py (422 lines; subcommands prim/flow/cavity/tgv via a dispatch table, OUT = HERE/'out')",
+  "run_artifacts": [
+    "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/out/kpi_prim.json (9535 B, 2026-11-13 11:43, sha256 40e104f620ed25b179e209c4f6fa288c39fab6d165adc5973989ca7c3ddcaafc) - reproduced by auditor bit-identical, 241/241 leaf keys equal",
+    "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/out/kpi_final.json (2659 B, sha256 6fea02c477e74b67d35b45b22631dce740304c066f2d878d06991925d47149a4) - PROVENANCE UNRESOLVED: its 'field_identity_max_rel_dev' key is produced by no script in the repo/worktree (`grep -rn field_identity --include=*.py` over m18096 = 0 hits); kpi_final.json is not written by run_xval.py (only kpi_prim/flow/cavity/kpi).",
+    "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/out/fig1_proxy_isotropy.png (56944 B)",
+    "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/out/fig2_port_fidelity.png (43660 B)",
+    "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/out/fig3_field_identity.png (74652 B) - no generating script in the tree",
+    "xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/predeclared.json (protocol, 24-orientation E3 rows)"
+  ],
+  "run_artifacts_missing": [
+    "out/kpi_flow.json (E2 TGV arm-equivalence) - absent",
+    "out/kpi_cavity.json (E4 Ghia comparison) - absent",
+    "/tmp/xval_flow.log cited by the report as failure evidence - outside the worktree and not preserved"
+  ],
+  "tests": [
+    "tests/test_xval_les_qabs_cc_proxy.py (155 lines, 9 tests) - auditor re-ran from an isolated copy /tmp/m18149_audit with PYTHONPATH=<m18096>/src: 9 passed, 1 warning in 6.31s (2026-11-13). Tests bind EEk against the OSS double-loop transcription, Q and post-collision f against reference.py via torch.equal, closed-form a=sqrt(2)/9 on 8 orientations to 1e-12, tau_eff degeneracy and one-sided limiter, D3Q19 finiteness/shape, package export."
+  ],
+  "integration_callers": "NONE. Only callers of the new symbols are the __init__ lazy-export table, tests/test_xval_les_qabs_cc_proxy.py and the xval runner itself. No solver loop, no ai/pipeline.py wiring, no apps/ dispatch: contrast the pre-existing collide_smagorinsky_bgk which IS called from src/tensorlbm/ai/pipeline.py:82 and src/tensorlbm/apps/ai4s_flagship.py:52.",
+  "benchmark": {
+    "machine_referee": "0 ROWS. SELECT case_name,metric,tolerance,ref_source,repo,status FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY' -> 0 rows (verified via psql -h 127.0.0.1 -U foundation -d tensorplatform; loose ILIKE '%LES%' AND ('%PROXY%' OR '%Q%AB%' OR '%SCALAR%') -> 0 rows). No registered machine referee exists, so the ref-vs-got leg can only be judged from the mission's own artifacts + the external OSS anchor. Registration gap, not a numeric failure.",
+    "ref_vs_got": {
+      "K1_Q_field_7_states": {"ref": "reference.py (OSS transcription)", "got": 0.0, "metric": "max relative error", "tol": "15%", "pass": true, "caveat": "SELF-REFERENTIAL: 0.0 is exact by construction (same formula transcribed twice, torch.equal), not a physical validation"},
+      "K2_post_collision_f": {"ref": "reference.py", "got": 0.0, "tol": "15%", "pass": true, "caveat": "same as K1"},
+      "K2b_default_clip_arm_vs_ref": {"got": 0.0, "pass": true, "note": "limiter did not trigger on any of the 7 states; tau_eff range [0.5050, 0.6619]"},
+      "E3_a_of_S_isotropy": {"ref": "closed form sqrt(2)/9 = 0.1571348402636772", "got_min": 0.15713484026367674, "got_max": 0.15713484026367788, "rel_err": 3.5e-15, "spread_pct": 7.24e-13, "tol": "15%", "pass": true, "independent_check": "auditor re-derived in plain numpy without importing tensorlbm (docs/audit_m18096/independent_check.py): over 2000 random incompressible strains max|S2/(|S|^2/81)-1| = 8.88e-16 and max rel dev of a vs sqrt(2)/9 = 5.30e-16 -> CONFIRMED"},
+      "E3_Cs_implied": {"got": "0.23804761428476165 .. 0.2380476142847617", "ratio": 1.0000000000000002, "pass": true},
+      "field_identity_64sq_TGV": {"got": 58295512079842.125, "tol": "15%", "pass": false, "note": "report table 4 marks this ✅; a relative deviation of 5.8e13 cannot pass any tolerance - it is a pointwise ratio blow-up where |S|->0 (no script for it is in the tree)"},
+      "E4_Ghia_Re1000_physics_anchor": {"ref": "Ghia, Ghia & Shin 1982", "got": "not_run", "pass": false, "note": "honestly declared in report section 6; the only physical-accuracy leg of the whole mission"}
+    }
+  },
+  "repro_cmd": "PYTHONPATH=<repo>/src python -m pytest tests/test_xval_les_qabs_cc_proxy.py -q ; PYTHONPATH=<repo>/src python xval/XVAL-LBM-LES-SCALAR-Q-ABS-CC-PROXY/run_xval.py prim  -- BOTH EXECUTED BY THE AUDITOR 2026-11-13 from an isolated copy /tmp/m18149_audit (9 passed in 6.31 s; prim printed K1 max Q rel err = 0.000e+00, K2 max f rel err = 0.000e+00, a ratio max/min = 1.0000) and reproduced out/kpi_prim.json with 0/241 leaf-value diffs. Third command in the report, `run_xval.py flow`, was never completed by the mission and was not re-attempted here.",
+  "external_anchor": [
+    "/tmp/lbtf/LatFlow/Domain.py:57 self.Sc = 0.17 (verified verbatim)",
+    "/tmp/lbtf/LatFlow/Domain.py:90-93 self.EEk = sum_{n,m} |C[...,n]*C[...,m]| (verified verbatim; collapses to (|cx|+|cy|+|cz|)^2)",
+    "/tmp/lbtf/LatFlow/Domain.py:121-126 NonEq=f-Feq; Q=sqrt(2*sum(NonEq^2*EEk)); tau=0.5*(tau0+sqrt(tau0^2+6 Q Sc/rho)); f=f-NonEq/tau (verified verbatim)",
+    "/tmp/lbtf/LatFlow/D2Q9.py:3-6 WEIGHTS/LVELOC order identical to tensorlbm.d2q9 and to reference.py (verified verbatim)",
+    "Ghia, Ghia & Shin, J. Comput. Phys. 48:387 (1982) - carried in-repo as tensorlbm.lid_driven_cavity.GHIA_RE1000, NOT exercised (E4 not_run)"
+  ],
+  "report_six_elements": "present but compressed (64 lines): (1) problem+anchor sec.1, (2) method/port+reference arm sec.2, (3) parameter table sec.3, (4) ref-vs-got numeric table sec.4, (5) convergence/sensitivity sec.5, (6) failure modes + error verdict sec.6. Figures fig1/fig2/fig3 exist as PNGs but are never embedded or captioned in the markdown (only named in the artifact list at sec.6), and there is no measured-vs-analytic comparison curve: the analytic comparison appears only as the sqrt(2)/9 column in table 4.",
+  "report_discipline_gap": "No tensor_reports row for mission 18096 (SELECT id,title FROM tensor_reports WHERE mission_id=18096 -> 0 rows; tensor_dev_missions.report_id IS NULL). The six-element report exists only as xval/.../REPORT_XVAL_LES_QABS_CC_PROXY.md inside the worktree.",
+  "level_rationale": "L1 MET: unit + algebra validation, 9/9 tests independently re-run; the closed form Q=(sqrt(2)/3) rho tau |S| (a=sqrt(2)/9) is re-derived by the auditor from scratch (5e-16). L2 MET: real implementation (not a stub) - five functions + a package-level export, input distributions -> Q -> tau_eff -> collided f, exercised on real TGV/cavity snapshots. L3 NOT MET: zero integration callers (only the lazy-export table / runner / tests reach it; no solver pipeline uses it), and the code is uncommitted so it is not even in the repo. L4 NOT MET: no registered benchmark case (0 rows), the only physical anchor (Ghia Re=1000) is not_run, and the =0 errors are port-fidelity self-comparison rather than accuracy against an external reference. L5 NOT MET: the deliverable is a faithful port of a known heuristic closure plus its (non-obvious, genuinely useful) algebra. Overall L2.",
+  "overstated_claims": [
+    "Report table 4 row 'field-identity (fig3, 64^2 TGV full field) max relative deviation 5.8e+13 -> PASS': 5.82955120798421e13 relative deviation is marked ✅ against a <15% criterion. It is a ratio blow-up at |S|->0, and the script producing it is in no file of the tree (kpi_final.json is not written by run_xval.py).",
+    "Report table 4 presents K1/K2 as '✅ <15%, and <1e-10' accuracy verdicts; they are 0.0 by construction (port vs its own literal transcription, torch.equal). They prove fidelity, not accuracy. The mission states this in section 6(iii), but the table's framing reads as a benchmark pass.",
+    "Section 5 states 'the mission's acceptance criterion <15% is met' implicitly through those rows; the only leg that could test physical accuracy (E4, Ghia) is not_run."
+  ],
+  "checks_not_run": [
+    "E4 / Ghia et al. Re=1000 cavity - not run by the mission, not attempted by the auditor (out of audit scope, and the mission's own logs point to session wall-clock truncation)",
+    "E2 / TGV arm equivalence - not run by either side, no artifact exists",
+    "D3Q19 3-D isotropy algebra - only finiteness/shape tested (mission discloses this)",
+    "Execution of the un-ported OSS TF1 code as a black box (OSS is TF1 / xrange / old tf.Variable); fidelity is judged against source code + an independent transcription, not against OSS binaries"
+  ],
+  "artifacts_of_this_audit": [
+    "docs/audit_m18096/audit.json (this file)",
+    "docs/audit_m18096/AUDIT_m18096_XVAL_LES_SCALAR_Q_ABS_CC_PROXY.md",
+    "docs/audit_m18096/independent_check.py (numpy re-derivation, 2000 random strains)",
+    "docs/audit_m18096/make_figure.py",
+    "docs/audit_m18096/fig_audit_m18096.png",
+    "docs/audit_m18096/verdict_m18096.sql"
+  ]
+}
