@@ -1,0 +1,188 @@
+{
+ "pytest": {
+  "returncode": 0,
+  "tail": [
+   "============================== collection-ignore ===============================",
+   "none (every test file under tests/ is collectable here)",
+   "18 passed, 1 warning in 0.72s"
+  ]
+ },
+ "arms": {
+  "A1": {
+   "nu_measured": {
+    "committed": 0.019997217791586534,
+    "reproduced": 0.019997217791586534,
+    "abs_diff": 0.0
+   },
+   "nu_error_pct": {
+    "committed": 0.013911042067420845,
+    "reproduced": 0.013911042067420845,
+    "abs_diff": 0.0
+   },
+   "field_l2_rel": {
+    "committed": 0.011080419272634335,
+    "reproduced": 0.011080419272634335,
+    "abs_diff": 0.0
+   },
+   "div_max": {
+    "committed": 7.94343118983512e-05,
+    "reproduced": 7.94343118983512e-05,
+    "abs_diff": 0.0
+   },
+   "mass_drift": {
+    "committed": 1.199040866595169e-14,
+    "reproduced": 1.199040866595169e-14,
+    "abs_diff": 0.0
+   },
+   "kernel_sha256_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "A2": {
+   "nu_measured": {
+    "committed": 0.019923748750807182,
+    "reproduced": 0.019923748750807182,
+    "abs_diff": 0.0
+   },
+   "nu_error_pct": {
+    "committed": 0.3812562459641792,
+    "reproduced": 0.3812562459641792,
+    "abs_diff": 0.0
+   },
+   "field_l2_rel": {
+    "committed": 0.010017794637196433,
+    "reproduced": 0.010017794637196433,
+    "abs_diff": 0.0
+   },
+   "div_max": {
+    "committed": 5.1871901021742885e-05,
+    "reproduced": 5.1871901021742885e-05,
+    "abs_diff": 0.0
+   },
+   "mass_drift": {
+    "committed": 1.199040866595169e-14,
+    "reproduced": 1.199040866595169e-14,
+    "abs_diff": 0.0
+   },
+   "kernel_sha256_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "A3": {
+   "nu_measured": {
+    "committed": 0.019955211912902764,
+    "reproduced": 0.019955211912902764,
+    "abs_diff": 0.0
+   },
+   "nu_error_pct": {
+    "committed": 0.22394043548626721,
+    "reproduced": 0.22394043548626721,
+    "abs_diff": 0.0
+   },
+   "field_l2_rel": {
+    "committed": 0.010831578379389752,
+    "reproduced": 0.010831578379389752,
+    "abs_diff": 0.0
+   },
+   "div_max": {
+    "committed": 8.011068312369866e-05,
+    "reproduced": 8.011068312369866e-05,
+    "abs_diff": 0.0
+   },
+   "mass_drift": {
+    "committed": 1.2101430968414206e-14,
+    "reproduced": 1.2101430968414206e-14,
+    "abs_diff": 0.0
+   },
+   "kernel_sha256_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "A4": {
+   "nu_measured": {
+    "committed": 0.0199138697640588,
+    "reproduced": 0.0199138697640588,
+    "abs_diff": 0.0
+   },
+   "nu_error_pct": {
+    "committed": 0.43065117970609057,
+    "reproduced": 0.43065117970609057,
+    "abs_diff": 0.0
+   },
+   "field_l2_rel": {
+    "committed": 0.010013475298829877,
+    "reproduced": 0.010013475298829877,
+    "abs_diff": 0.0
+   },
+   "div_max": {
+    "committed": 5.2006957478068026e-05,
+    "reproduced": 5.2006957478068026e-05,
+    "abs_diff": 0.0
+   },
+   "mass_drift": {
+    "committed": 1.199040866595169e-14,
+    "reproduced": 1.199040866595169e-14,
+    "abs_diff": 0.0
+   },
+   "kernel_sha256_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "A5": {
+   "nu_measured": {
+    "committed": 0.019694040162793976,
+    "reproduced": 0.019694040162793976,
+    "abs_diff": 0.0
+   },
+   "nu_error_pct": {
+    "committed": 1.5297991860302091,
+    "reproduced": 1.5297991860302091,
+    "abs_diff": 0.0
+   },
+   "field_l2_rel": {
+    "committed": 0.019839495230593803,
+    "reproduced": 0.019839495230593803,
+    "abs_diff": 0.0
+   },
+   "div_max": {
+    "committed": 0.00020868987516619707,
+    "reproduced": 0.00020868987516619707,
+    "abs_diff": 0.0
+   },
+   "mass_drift": {
+    "committed": 1.2101430968414206e-14,
+    "reproduced": 1.2101430968414206e-14,
+    "abs_diff": 0.0
+   },
+   "kernel_sha256_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "A6": {
+   "nu_measured": {
+    "committed": 0.019685817281333607,
+    "reproduced": 0.019685817281333607,
+    "abs_diff": 0.0
+   },
+   "nu_error_pct": {
+    "committed": 1.5709135933320524,
+    "reproduced": 1.5709135933320524,
+    "abs_diff": 0.0
+   },
+   "field_l2_rel": {
+    "committed": 0.019838146651167805,
+    "reproduced": 0.019838146651167805,
+    "abs_diff": 0.0
+   },
+   "div_max": {
+    "committed": 0.00020912570894086446,
+    "reproduced": 0.00020912570894086446,
+    "abs_diff": 0.0
+   },
+   "mass_drift": {
+    "committed": 1.2212453270876722e-14,
+    "reproduced": 1.2212453270876722e-14,
+    "abs_diff": 0.0
+   },
+   "kernel_sha256_equal": true,
+   "max_abs_diff": 0.0
+  }
+ },
+ "all_zero_diff": true,
+ "extraction": "/tmp/audit_m17744_ext"
+}
