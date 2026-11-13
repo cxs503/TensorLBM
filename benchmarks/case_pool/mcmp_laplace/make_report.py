@@ -420,6 +420,17 @@ def build_report_json(res: dict, figs: list[Path], md: str) -> dict:
     }
 
 
+#: Image links are written relative to the case directory (``figures/...``);
+#: the canonical doc lives in ``docs/`` so the same text needs a different
+#: relative prefix there, otherwise every figure link in the doc is dead.
+DOC_FIG_PREFIX = "../benchmarks/case_pool/mcmp_laplace/figures/"
+
+
+def render_doc(md: str) -> str:
+    """Re-target ``figures/`` image links for the ``docs/`` copy of the report."""
+    return md.replace("](figures/", f"]({DOC_FIG_PREFIX}")
+
+
 def main() -> int:
     summary_path = HERE / "artifacts" / "summary.json"
     if not summary_path.exists():
@@ -430,7 +441,7 @@ def main() -> int:
     md = render(res, figs)
     (HERE / "README.md").write_text(md)
     doc = REPO_ROOT / "docs" / "CASE-MCMP-LAPLACE.md"
-    doc.write_text(md)
+    doc.write_text(render_doc(md))
     payload = build_report_json(res, figs, md)
     Path("/tmp/report.json").write_text(json.dumps(payload))
     print(f"wrote {HERE / 'README.md'}, {doc}, /tmp/report.json, {len(figs)} figures")
