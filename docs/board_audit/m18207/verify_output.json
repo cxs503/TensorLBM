@@ -1,0 +1,209 @@
+{
+  "A1_deliverables": {
+    "artifact_json": {
+      "bytes": 13868,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/artifacts/xval_binary_equilibrium_pressure.json",
+      "sha256": "bb130d7504caebc674f2cb4808a47eed82ff8c5682cb0938136cb6e6323cd459"
+    },
+    "artifact_png": {
+      "bytes": 105928,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/artifacts/fig_convergence_and_lbm.png",
+      "sha256": "f8d143deae9d58fec4ef8fec7fa75087f6e451d2c33fe0bcc186f80fbef156f8"
+    },
+    "doc": {
+      "bytes": 9789,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+      "sha256": "f7e9b35492499761bde71475dccad46f8b9c3d1ef2435b97e388cc8997ea1ea2"
+    },
+    "entry": {
+      "bytes": 8208,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py",
+      "sha256": "4ae95da9a918abfade7e5e4ebfcd5344369507683a3ef645bd96649bf4f70d75"
+    },
+    "impl": {
+      "bytes": 21262,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/src/tensorlbm/phasefield/binary_equilibrium_pressure.py",
+      "sha256": "9cc550088c4d544f811b730828c00a984dcfac9e8373dea5b6d840c33e1afa0a"
+    },
+    "impl_pkg_init": {
+      "bytes": 3856,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/src/tensorlbm/phasefield/__init__.py",
+      "sha256": "f467ff4dedb2150b68571f8810aa309529bda30a23c5be031c5dea0ba238f162"
+    },
+    "impl_wrapper": {
+      "bytes": 76613,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/src/tensorlbm/multiphase_benchmarks.py",
+      "sha256": "86526e69f7d3e5843d918a508eeeb9a6a596d3a828e3eb16c2ab2085e2c92e1b"
+    },
+    "predeclared": {
+      "bytes": 3098,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/predeclared.json",
+      "sha256": "cdc69af146390e9bee871fdd51cab638c9ae5acb089a70b4b160d6abad42c471"
+    },
+    "tests": {
+      "bytes": 5564,
+      "exists": true,
+      "path_in_subject_worktree": "/root/tp-agent/work/m18114/tests/test_binary_equilibrium_pressure_xval.py",
+      "sha256": "65e24871730b340d1086026d40683e5dc7020a455c01a24967a2a98ed3faade6"
+    }
+  },
+  "A2_in_ecosystem_main": {
+    "eco_head": "0c7a9b15",
+    "eco_repo": "/root/tensor-ecosystem/TensorLBM",
+    "git_cat_file_impl": "ABSENT\nfatal: path 'src/tensorlbm/phasefield/binary_equilibrium_pressure.py' does not exist in 'HEAD'",
+    "note": "交付物只在被审工作树 /root/tp-agent/work/m18114 head=c6ed86d2 上；生态 main 无该模块，亦无 agent/m18114 远端分支 → 下游仓/平台当前无法消费",
+    "remote_branch_agent_m18114": "0"
+  },
+  "A3_tests": {
+    "cmd": "python -m pytest tests/test_binary_equilibrium_pressure_xval.py -q",
+    "passed": 7,
+    "rc": 0,
+    "tail": "    from _pytest.python import CallSpec2\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n============================== collection-ignore ===============================\nnone (every test file under tests/ is collectable here)\n7 passed, 1 warning in 6.24s",
+    "wall_s": 8.82
+  },
+  "A4_repro": {
+    "cmd": "python xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py --out /tmp/m18207_repro_wkm7ikry",
+    "rc": 0,
+    "repro": {
+      "artifacts_written": [
+        "fig_convergence_and_lbm.png",
+        "xval_binary_equilibrium_pressure.json"
+      ],
+      "checks_bitwise_equal": true,
+      "rerun_sha256": "bb130d7504caebc674f2cb4808a47eed82ff8c5682cb0938136cb6e6323cd459",
+      "rows_bitwise_equal": true
+    },
+    "tail": "C3_surface_tension_from_pressure_tensor        3    2.843e-02     0.15  True\nC4_lbm_mechanical_equilibrium_pressure         3    3.667e-02     0.25  True\nC4_lbm_residual_velocity                       3    2.969e-03   0.0866  True\n\nVERDICT: PASS  (artifacts: /tmp/m18207_repro_wkm7ikry)\nCH phase-flux gap diagnostic: {\"diffusion_length_estimate\": 10.327955589886443, \"numerical_diffusivity_cs2_tau_minus_half\": 0.06666666666666665, \"peak_decay_ratio\": -0.04901487789510806, \"peak_final\": -0.0490148778940977, \"peak_initial\": 0.9999999999793865, \"steps\": 400.0, \"tau_g\": 0.7}",
+    "wall_s": 46.26
+  },
+  "A5_A6_benchmark": {
+    "A6_replica": {
+      "kappa": 0.45,
+      "lbm_max_velocity": 0.0002997289190344166,
+      "lbm_rho_range": [
+        0.9989926621559655,
+        1.0024602914330298
+      ],
+      "lbm_total_p_nn_deviation_relative": 0.03592527160640512,
+      "note": "登记 case 85 的 ref sigma=(2/3)A xi 仅在 A=B 时等于 (2 sqrt2/3)sqrt(kappa A^3)/B；本复算 A=B=0.1, kappa=0.45 -> sigma_analytic=0.2 与登记 ref 一致",
+      "p_nn_max_deviation_relative_static": 0.06429810130152479,
+      "registered_case_85_got": "sigma rel err 2.0097e-02, Pnn uniformity 1.4799e-05 （m17964 从 population 二阶矩测；本单复算口径不同，见 A6 注）",
+      "replica_config": {
+        "A": 0.1,
+        "B": 0.1,
+        "interface_cells": 3.0,
+        "kappa": 0.45,
+        "nx": 64,
+        "ny": 8,
+        "steps": 4000,
+        "tau_f": 1.0
+      },
+      "scheme_iso9_vs_5pt_grad_x_max_delta": 5.551115123125783e-17,
+      "scheme_iso9_vs_5pt_sigma_delta": 0.0,
+      "sigma_analytic": 0.2,
+      "sigma_measured_static_tensor": 0.19431422306586354,
+      "sigma_relative_error": -0.028428884670682275,
+      "xi_from_model": 3.0
+    },
+    "checks_passed": 18,
+    "checks_total": 18,
+    "delivered_criteria_summary": [
+      {
+        "coexistence_relative_error": 0.0,
+        "interface_cells": 1.5,
+        "lbm_final_max_velocity": 0.012920161353952141,
+        "lbm_final_p_nn_total_deviation_relative": 0.1498940400673252,
+        "p_nn_max_deviation_relative": 0.23090448902262384,
+        "sigma_analytic": 1.0,
+        "sigma_integral": 0.8984864380581464,
+        "sigma_relative_error": -0.10151356194185357,
+        "xi": 1.5
+      },
+      {
+        "coexistence_relative_error": 4.050093593832571e-13,
+        "interface_cells": 2.0,
+        "lbm_final_max_velocity": 0.00816019944628625,
+        "lbm_final_p_nn_total_deviation_relative": 0.08298665375751524,
+        "p_nn_max_deviation_relative": 0.14189782776962157,
+        "sigma_analytic": 1.3333333333333333,
+        "sigma_integral": 1.252140297068228,
+        "sigma_relative_error": -0.060894777198828964,
+        "xi": 2.0
+      },
+      {
+        "coexistence_relative_error": 1.7386053485779485e-08,
+        "interface_cells": 3.0,
+        "lbm_final_max_velocity": 0.002968533863016212,
+        "lbm_final_p_nn_total_deviation_relative": 0.03666952600497808,
+        "p_nn_max_deviation_relative": 0.06697300072185863,
+        "sigma_analytic": 2.0,
+        "sigma_integral": 1.9431423769586074,
+        "sigma_relative_error": -0.028428811520696318,
+        "xi": 3.0
+      }
+    ],
+    "registered_cases": [
+      {
+        "case_name": "FE-FLAT-BAND-SURFACE-TENSION (periodic two-interface band, Nx=64 Ny=8, xi=3, A=0.1, kappa=0.45; 4000 steps)",
+        "id": 85,
+        "metric": "sigma = (1/2) sum_x (P_xx - P_yy) from the second moment of the populations (half for two interfaces); P_NN uniformity max_x|P_NN-mean|/mean as the mechanical-equilibrium check",
+        "status": "passed",
+        "tolerance": "<15% owner band; measured sigma rel err 2.0097e-02, Pnn uniformity 1.4799e-05 (auditor bitwise re-run)"
+      },
+      {
+        "case_name": "FE-STATIC-DROPLET-LAPLACE (R=16, xi=2, 96x96, 8000 steps; R=24, xi=2, 128x128, 10000 steps)",
+        "id": 86,
+        "metric": "dp = p_in - p_out from p=(P_xx+P_yy)/2 of the populations; REPORTED ERROR IS A SINGLE SNAPSHOT: the dp series is not converged (both arms hit the predeclared step budget, stopping rule drift<1e-3 never met), snapshot scatter 5.75% (R16) / 7.82% (R24), time-mean of the 2nd half -1.35% (R16) / -9.78% (R24)",
+        "status": "passed",
+        "tolerance": "<15% owner band; snapshot 0.18% (R16) and 13.48% (R24), time-mean 1.35% / 9.78% => inside the band, the 0.18% precision claim is ~30x smaller than the run's own scatter"
+      },
+      {
+        "case_name": "FE-DECLARED-CURVATURE-ARM-STABILITY (dropR36: R=36, xi=3, kappa=0.45, L=176, 12000 steps)",
+        "id": 87,
+        "metric": "all fields finite through the declared step budget",
+        "status": "failed",
+        "tolerance": "measured: p_in/p_out/dp/u_max/rho_min/rho_max are NaN from the first logged step (step 500) in the delivered dropR36.json, and the auditor's 600-step probe reproduces NaN; the arm is absent from results.json and the report calls it 'submitted but not completed' => stability gate FAILED"
+      }
+    ]
+  },
+  "A7_integration": {
+    "callers_found_outside_impl_tests_entry": [
+      "./src/tensorlbm/multiphase_benchmarks.py:713:def run_binary_equilibrium_pressure_benchmark(",
+      "./src/tensorlbm/multiphase_benchmarks.py:725:    Wraps :func:`tensorlbm.phasefield.binary_equilibrium_pressure.equilibrium_pressure_report`",
+      "./src/tensorlbm/multiphase_benchmarks.py:729:    ``<output_root>/binary_equilibrium_pressure/<run_name>/report.json``.",
+      "./src/tensorlbm/multiphase_benchmarks.py:731:    from .phasefield.binary_equilibrium_pressure import equilibrium_pressure_report",
+      "./src/tensorlbm/multiphase_benchmarks.py:734:    run_dir = prepare_run_dir(Path(output_root), \"binary_equilibrium_pressure\", name, overwrite)",
+      "./src/tensorlbm/phasefield/__init__.py:3:from .binary_equilibrium_pressure import ("
+    ],
+    "callers_grep": {
+      "cmd": "grep -rn 'binary_equilibrium_pressure\\|run_binary_equilibrium_pressure_benchmark' --include='*.py' . | grep -v '^./src/tensorlbm/phasefield/binary_equilibrium_pressure.py\\|^./tests/\\|^./xval/'",
+      "rc": 0,
+      "tail": "./src/tensorlbm/multiphase_benchmarks.py:713:def run_binary_equilibrium_pressure_benchmark(\n./src/tensorlbm/multiphase_benchmarks.py:725:    Wraps :func:`tensorlbm.phasefield.binary_equilibrium_pressure.equilibrium_pressure_report`\n./src/tensorlbm/multiphase_benchmarks.py:729:    ``<output_root>/binary_equilibrium_pressure/<run_name>/report.json``.\n./src/tensorlbm/multiphase_benchmarks.py:731:    from .phasefield.binary_equilibrium_pressure import equilibrium_pressure_report\n./src/tensorlbm/multiphase_benchmarks.py:734:    run_dir = prepare_run_dir(Path(output_root), \"binary_equilibrium_pressure\", name, overwrite)\n./src/tensorlbm/phasefield/__init__.py:3:from .binary_equilibrium_pressure import (",
+      "wall_s": 0.26
+    },
+    "suite_registration": "713:def run_binary_equilibrium_pressure_benchmark(\n725:    Wraps :func:`tensorlbm.phasefield.binary_equilibrium_pressure.equilibrium_pressure_report`\n729:    ``<output_root>/binary_equilibrium_pressure/<run_name>/report.json``.\n731:    from .phasefield.binary_equilibrium_pressure import equilibrium_pressure_report\n734:    run_dir = prepare_run_dir(Path(output_root), \"binary_equilibrium_pressure\", name, overwrite)",
+    "verdict": "无真正的下游调用方：run_multiphase_benchmark_suite 未注册该 benchmark，benchmarks/bench_multiphase.py 未导入，平台侧无 API 引用；phasefield/__init__.py 属包级导出（公共 API），不等于调用方",
+    "wrapper_definition": "src/tensorlbm/multiphase_benchmarks.py:713 run_binary_equilibrium_pressure_benchmark（定义，但套件/脚本内无调用点）"
+  },
+  "A8_claim_vs_artifact": {
+    "artifact_json_bytes": 13868,
+    "artifact_png_bytes": 105928,
+    "docstring_claims_two_png": true,
+    "mission_checks_text_claim": "m18114 result.checks 写 'xval_binary_equilibrium_pressure.json（105 KB 前 105928 B...）' —— 105928 B 实为 PNG 字节数，JSON 实为 13868 B（小瑕疵，不影响判据）",
+    "png_actually_saved": [
+      "fig_convergence_and_lbm.png"
+    ]
+  },
+  "audit_mission": 18207,
+  "audited_at": "2026-11-13T12:39:20",
+  "subject_mission": 18114,
+  "subject_repo": "TensorLBM"
+}
