@@ -1,0 +1,451 @@
+{
+  "reference": {
+    "repo": "ludwig-cf/ludwig",
+    "commit": "78d83c5151ff1d4c4201a96b266a08e97047cae6",
+    "archive_sha256": "6e216ef8f4c2f5654dc11b9c6b4f3570f97cc5e277193922b48cfaf0cd72e198",
+    "artifact": "/tmp/ludwig_tar/ludwig-master/src/collision.o",
+    "artifact_sha256": "ffc0b1a2426833b528f01603cca17730c9f3167b1235f300592867796fed252d",
+    "note": "source files were stripped from the cached build; facts below are recovered from the compiled object (symbol table + DWARF -g + disassembly) and from executing the object's own functions, never from retyped source."
+  },
+  "symbols_fluctuations": [
+    "lb_collision_ghost_modes_off",
+    "lb_collision_ghost_modes_on",
+    "lb_fluctuations_ghosts",
+    "lb_fluctuations_stress",
+    "lb_fluctuations_var_bulk",
+    "lb_fluctuations_var_eta",
+    "lb_fluctuations_var_ghost",
+    "lb_relaxation_time_ghosts",
+    "lb_relaxation_time_ghosts_v"
+  ],
+  "rodata_constants_used": {
+    ".LC4": 0.0,
+    ".LC5": 2.1303495957e-314,
+    ".LC9": 0.0,
+    ".LC29": 3.1071959646272173e-294
+  },
+  "dwarf_declarations": {
+    "lb_fluctuations_var_eta": {
+      "decl_file_index": "1",
+      "decl_line": 1809,
+      "parameters": [
+        "tau",
+        "kt"
+      ],
+      "locals": [
+        "rcs2",
+        "__PRETTY_FUNCTION__"
+      ]
+    },
+    "lb_fluctuations_var_bulk": {
+      "decl_file_index": "1",
+      "decl_line": 1829,
+      "parameters": [
+        "tau",
+        "kt"
+      ],
+      "locals": [
+        "rcs2",
+        "__PRETTY_FUNCTION__"
+      ]
+    },
+    "lb_fluctuations_var_ghost": {
+      "decl_file_index": "1",
+      "decl_line": 1852,
+      "parameters": [
+        "rna",
+        "rtau",
+        "kt",
+        "var"
+      ],
+      "locals": [
+        "p",
+        "rcs2",
+        "__PRETTY_FUNCTION__",
+        "tau_g"
+      ]
+    },
+    "lb_fluctuations_stress": {
+      "decl_file_index": "1",
+      "decl_line": 1881,
+      "parameters": [
+        "noise",
+        "index",
+        "var_eta",
+        "var_eta_bulk",
+        "shat"
+      ],
+      "locals": [
+        "tr",
+        "random",
+        "__PRETTY_FUNCTION__"
+      ]
+    },
+    "lb_fluctuations_ghosts": {
+      "decl_file_index": "1",
+      "decl_line": 1955,
+      "parameters": [
+        "noise",
+        "index",
+        "var_ghost",
+        "ghat"
+      ],
+      "locals": [
+        "ia",
+        "random",
+        "__PRETTY_FUNCTION__"
+      ]
+    },
+    "lb_collision_noise_var_set": {
+      "decl_file_index": "1",
+      "decl_line": 1631,
+      "parameters": [
+        "lb"
+      ],
+      "locals": [
+        "p",
+        "kt",
+        "tau_s",
+        "tau_b",
+        "rcs2",
+        "phys",
+        "__PRETTY_FUNCTION__"
+      ]
+    },
+    "lb_collision_ghost_modes_on": {
+      "decl_file_index": "1",
+      "decl_line": 1180,
+      "parameters": [
+        "lb"
+      ],
+      "locals": [
+        "__PRETTY_FUNCTION__"
+      ]
+    },
+    "lb_collision_ghost_modes_off": {
+      "decl_file_index": "1",
+      "decl_line": 1196,
+      "parameters": [
+        "lb"
+      ],
+      "locals": [
+        "__PRETTY_FUNCTION__"
+      ]
+    }
+  },
+  "disassembly_var_eta": [
+    "/tmp/ludwig_tar/ludwig-master/src/collision.o:     file format elf64-loongarch",
+    "Disassembly of section .text:",
+    "00000000000020b0 <lb_fluctuations_var_eta>:",
+    "    20b0:\tmovgr2fr.d  \t$fa2, $zero",
+    "00000000000020b4 <L0^A>:",
+    "    20b4:\taddi.d      \t$sp, $sp, -48",
+    "00000000000020b8 <L0^A>:",
+    "    20b8:\tfcmp.sle.d  \t$fcc0, $fa2, $fa1",
+    "00000000000020bc <L0^A>:",
+    "    20bc:\tst.d        \t$ra, $sp, 40",
+    "    20c0:\tfst.d       \t$fs0, $sp, 24",
+    "00000000000020c4 <L0^A>:",
+    "    20c4:\tbceqz       \t$fcc0, 140\t# 2150 <L0^A>",
+    "\t\t\t20c4: R_LARCH_B21\t.L273",
+    "00000000000020c8 <L0^A>:",
+    "    20c8:\tpcalau12i   \t$t0, 0",
+    "\t\t\t20c8: R_LARCH_PCALA_HI20\t.LC9",
+    "    20cc:\tfmov.d      \t$fs0, $fa0",
+    "00000000000020d0 <L0^A>:",
+    "    20d0:\tfld.d       \t$fa0, $t0, 0",
+    "\t\t\t20d0: R_LARCH_PCALA_LO12\t.LC9",
+    "00000000000020d4 <L0^A>:",
+    "    20d4:\tfmul.d      \t$fa1, $fa1, $fa0",
+    "00000000000020d8 <L0^A>:",
+    "    20d8:\tfcmp.cule.d \t$fcc0, $fa2, $fa1",
+    "    20dc:\tbceqz       \t$fcc0, 84\t# 2130 <L0^A>",
+    "\t\t\t20dc: R_LARCH_B21\t.L270",
+    "00000000000020e0 <L0^A>:",
+    "    20e0:\tfsqrt.d     \t$fa1, $fa1",
+    "00000000000020e4 <L0^A>:",
+    "    20e4:\tpcalau12i   \t$t0, 0",
+    "\t\t\t20e4: R_LARCH_PCALA_HI20\t.LC29",
+    "    20e8:\tpcalau12i   \t$t1, 0",
+    "\t\t\t20e8: R_LARCH_PCALA_HI20\t.LC5",
+    "    20ec:\tfld.d       \t$fa0, $t0, 0",
+    "\t\t\t20ec: R_LARCH_PCALA_LO12\t.LC29",
+    "    20f0:\tfld.d       \t$fa5, $t1, 0",
+    "\t\t\t20f0: R_LARCH_PCALA_LO12\t.LC5",
+    "00000000000020f4 <L0^A>:",
+    "    20f4:\tfmul.d      \t$fa3, $fs0, $fs0",
+    "    20f8:\tmovgr2fr.d  \t$fa2, $zero",
+    "00000000000020fc <L0^A>:",
+    "    20fc:\tfmadd.d     \t$fa0, $fs0, $fa5, $fa0",
+    "0000000000002100 <L0^A>:",
+    "    2100:\tpcalau12i   \t$t0, 0",
+    "\t\t\t2100: R_LARCH_PCALA_HI20\t.LC4",
+    "    2104:\tfld.d       \t$fa4, $t0, 0",
+    "\t\t\t2104: R_LARCH_PCALA_LO12\t.LC4",
+    "    2108:\tfmul.d      \t$fa1, $fa1, $fa4",
+    "000000000000210c <L0^A>:",
+    "    210c:\tfdiv.d      \t$fa0, $fa0, $fa3",
+    "    2110:\tfcmp.cule.d \t$fcc0, $fa2, $fa0",
+    "    2114:\tbceqz       \t$fcc0, 44\t# 2140 <L0^A>",
+    "\t\t\t2114: R_LARCH_B21\t.L271",
+    "    2118:\tfsqrt.d     \t$fa0, $fa0",
+    "000000000000211c <L0^A>:",
+    "    211c:\tld.d        \t$ra, $sp, 40",
+    "0000000000002120 <L0^A>:",
+    "    2120:\tfld.d       \t$fs0, $sp, 24",
+    "0000000000002124 <L0^A>:",
+    "    2124:\tfmul.d      \t$fa0, $fa1, $fa0",
+    "    2128:\taddi.d      \t$sp, $sp, 48",
+    "    212c:\tret",
+    "0000000000002130 <L0^A>:",
+    "    2130:\tfmov.d      \t$fa0, $fa1",
+    "    2134:\tbl          \t0\t# 2134 <L0^A+0x4>",
+    "\t\t\t2134: R_LARCH_B26\tsqrt",
+    "0000000000002138 <L0^A>:",
+    "    2138:\tfmov.d      \t$fa1, $fa0",
+    "    213c:\tb           \t-88\t# 20e4 <L0^A>",
+    "\t\t\t213c: R_LARCH_B26\t.L264",
+    "0000000000002140 <L0^A>:",
+    "    2140:\tfst.d       \t$fa1, $sp, 8",
+    "0000000000002144 <L0^A>:",
+    "    2144:\tbl          \t0\t# 2144 <L0^A>",
+    "\t\t\t2144: R_LARCH_B26\tsqrt",
+    "0000000000002148 <.LVL492>:",
+    "    2148:\tfld.d       \t$fa1, $sp, 8",
+    "    214c:\tb           \t-48\t# 211c <L0^A>",
+    "\t\t\t214c: R_LARCH_B26\t.L267",
+    "0000000000002150 <L0^A>:",
+    "    2150:\tpcalau12i   \t$a3, 0",
+    "\t\t\t2150: R_LARCH_PCALA_HI20\t.LANCHOR0+0x220",
+    "\t\t\t2150: R_LARCH_RELAX\t*ABS*",
+    "    2154:\taddi.d      \t$a3, $a3, 0",
+    "\t\t\t2154: R_LARCH_PCALA_LO12\t.LANCHOR0+0x220",
+    "\t\t\t2154: R_LARCH_RELAX\t*ABS*",
+    "    2158:\tli.w        \t$a2, 1813",
+    "    215c:\tpcalau12i   \t$a1, 0",
+    "\t\t\t215c: R_LARCH_PCALA_HI20\t.LC0",
+    "\t\t\t215c: R_LARCH_RELAX\t*ABS*",
+    "    2160:\taddi.d      \t$a1, $a1, 0",
+    "\t\t\t2160: R_LARCH_PCALA_LO12\t.LC0",
+    "\t\t\t2160: R_LARCH_RELAX\t*ABS*",
+    "    2164:\tpcalau12i   \t$a0, 0",
+    "\t\t\t2164: R_LARCH_PCALA_HI20\t.LC31",
+    "\t\t\t2164: R_LARCH_RELAX\t*ABS*",
+    "    2168:\taddi.d      \t$a0, $a0, 0",
+    "\t\t\t2168: R_LARCH_PCALA_LO12\t.LC31",
+    "\t\t\t2168: R_LARCH_RELAX\t*ABS*",
+    "    216c:\tbl          \t0\t# 216c <L0^A+0x1c>",
+    "\t\t\t216c: R_LARCH_B26\t__assert_fail"
+  ],
+  "disassembly_var_ghost_head": [
+    "/tmp/ludwig_tar/ludwig-master/src/collision.o:     file format elf64-loongarch",
+    "Disassembly of section .text:",
+    "0000000000002238 <lb_fluctuations_var_ghost>:",
+    "    2238:\taddi.d      \t$sp, $sp, -112",
+    "    223c:\tst.d        \t$ra, $sp, 104",
+    "    2240:\tst.d        \t$s0, $sp, 96",
+    "    2244:\tst.d        \t$s1, $sp, 88",
+    "    2248:\tfst.d       \t$fs0, $sp, 72",
+    "    224c:\tfst.d       \t$fs1, $sp, 64",
+    "    2250:\tfst.d       \t$fs2, $sp, 56",
+    "    2254:\tfst.d       \t$fs4, $sp, 48",
+    "    2258:\tfst.d       \t$fs5, $sp, 40",
+    "000000000000225c <L0^A>:",
+    "    225c:\tbeqz        \t$a1, 256\t# 235c <L0^A>",
+    "\t\t\t225c: R_LARCH_B21\t.L305",
+    "0000000000002260 <L0^A>:",
+    "    2260:\tmovgr2fr.d  \t$fs2, $zero",
+    "    2264:\tfcmp.sle.d  \t$fcc0, $fs2, $fa0",
+    "    2268:\tbceqz       \t$fcc0, 308\t# 239c <L0^A>",
+    "\t\t\t2268: R_LARCH_B21\t.L306",
+    "000000000000226c <L0^A>:",
+    "    226c:\tbeqz        \t$a2, 272\t# 237c <L0^A>",
+    "\t\t\t226c: R_LARCH_B21\t.L307",
+    "0000000000002270 <L0^A>:",
+    "    2270:\tpcalau12i   \t$t2, 0",
+    "\t\t\t2270: R_LARCH_PCALA_HI20\t.LC9",
+    "    2274:\tfld.d       \t$fa1, $t2, 0",
+    "\t\t\t2274: R_LARCH_PCALA_LO12\t.LC9",
+    "    2278:\tpcalau12i   \t$t1, 0",
+    "\t\t\t2278: R_LARCH_PCALA_HI20\t.LC5",
+    "    227c:\tpcalau12i   \t$t0, 0",
+    "\t\t\t227c: R_LARCH_PCALA_HI20\t.LC29",
+    "    2280:\tfmul.d      \t$fa1, $fa0, $fa1",
+    "0000000000002284 <L0^A>:",
+    "    2284:\tfld.d       \t$fs5, $t1, 0",
+    "\t\t\t2284: R_LARCH_PCALA_LO12\t.LC5",
+    "    2288:\tfld.d       \t$fs4, $t0, 0",
+    "\t\t\t2288: R_LARCH_PCALA_LO12\t.LC29",
+    "000000000000228c <L0^A>:",
+    "    228c:\tli.w        \t$s0, 80"
+  ],
+  "probe_build": {
+    "rc": 0,
+    "stderr_tail": [
+      "    1 | #include <stdlib.h>",
+      "  +++ |+#include <math.h>",
+      "    2 | void MPI_Reduce(void) { abort(); }"
+    ]
+  },
+  "executed_var_eta": [
+    {
+      "tau": 0.6,
+      "kt": 0.0025,
+      "executed": 0.021516574145596757,
+      "closed_form": 0.021516574145596757,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 0.6,
+      "kt": 0.01,
+      "executed": 0.043033148291193514,
+      "closed_form": 0.043033148291193514,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 0.6,
+      "kt": 0.04,
+      "executed": 0.08606629658238703,
+      "closed_form": 0.08606629658238703,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 0.8,
+      "kt": 0.0025,
+      "executed": 0.02795084971874737,
+      "closed_form": 0.02795084971874737,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 0.8,
+      "kt": 0.01,
+      "executed": 0.05590169943749474,
+      "closed_form": 0.05590169943749474,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 0.8,
+      "kt": 0.04,
+      "executed": 0.11180339887498948,
+      "closed_form": 0.11180339887498948,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 1.0,
+      "kt": 0.0025,
+      "executed": 0.028867513459481287,
+      "closed_form": 0.028867513459481287,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 1.0,
+      "kt": 0.01,
+      "executed": 0.057735026918962574,
+      "closed_form": 0.057735026918962574,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 1.0,
+      "kt": 0.04,
+      "executed": 0.11547005383792515,
+      "closed_form": 0.11547005383792515,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 1.5,
+      "kt": 0.0025,
+      "executed": 0.027216552697590865,
+      "closed_form": 0.027216552697590865,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 1.5,
+      "kt": 0.01,
+      "executed": 0.05443310539518173,
+      "closed_form": 0.05443310539518173,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 1.5,
+      "kt": 0.04,
+      "executed": 0.10886621079036346,
+      "closed_form": 0.10886621079036346,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 2.0,
+      "kt": 0.0025,
+      "executed": 0.024999999999999998,
+      "closed_form": 0.024999999999999998,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 2.0,
+      "kt": 0.01,
+      "executed": 0.049999999999999996,
+      "closed_form": 0.049999999999999996,
+      "rel_err": 0.0
+    },
+    {
+      "tau": 2.0,
+      "kt": 0.04,
+      "executed": 0.09999999999999999,
+      "closed_form": 0.09999999999999999,
+      "rel_err": 0.0
+    }
+  ],
+  "executed_var_eta_max_rel_err": 0.0,
+  "decoded_var_eta_formula": "sqrt(3*kt)/3 * sqrt((2*tau-1)/tau^2)   [= sqrt(3 kt (2tau-1)) / (3 tau)]",
+  "executed_var_ghost": [
+    {
+      "a": 0.2,
+      "b": 0.6,
+      "c": 0.01,
+      "value": null
+    },
+    {
+      "a": 0.2,
+      "b": 0.6,
+      "c": 0.05,
+      "value": null
+    },
+    {
+      "a": 0.2,
+      "b": 1.0,
+      "c": 0.01,
+      "value": null
+    },
+    {
+      "a": 0.2,
+      "b": 1.0,
+      "c": 0.05,
+      "value": null
+    },
+    {
+      "a": 0.4,
+      "b": 0.6,
+      "c": 0.01,
+      "value": null
+    },
+    {
+      "a": 0.4,
+      "b": 0.6,
+      "c": 0.05,
+      "value": null
+    },
+    {
+      "a": 0.4,
+      "b": 1.0,
+      "c": 0.01,
+      "value": null
+    },
+    {
+      "a": 0.4,
+      "b": 1.0,
+      "c": 0.05,
+      "value": null
+    }
+  ],
+  "var_ghost_execution_note": "out-of-line copy aborts the internal assert at collision.c:1859 for every probed argument tuple -> reported as honest limitation; the ghost *practice* is nevertheless established by the exported symbols (var_ghost / ghost_modes_on|off / relaxation_time_ghosts / fluctuations_ghosts).",
+  "status": "ok"
+}
