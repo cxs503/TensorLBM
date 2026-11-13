@@ -1,0 +1,10 @@
+{
+ "level_claimed": 2,
+ "gate_expected": {
+  "L1": "FAIL (tests empty)",
+  "L2": "PASS (impl_files+entry+run_artifacts present and non-placeholder)",
+  "L3": "FAIL (integration_callers empty)",
+  "L4": "FAIL (benchmark status failed + no registered referee row + repro_cmd does not complete)",
+  "L5": "FAIL (no validated external anchor)"
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "delivered_commands": [
+  "PYTHONPATH=<lbmpy sdist>/src python oss_arm.py --out artifacts/oss_cases.npz --cases '[{N:64,g_ab:6.0,psi_mode:exp},{N:128,...},{N:64,g_ab:5.0,psi_mode:exp},{N:64,g_ab:6.0,psi_mode:linear}]' --steps 1000",
+  "PYTHONPATH=<TensorLBM>/src python xval_all.py   # writes artifacts/summary.json, then fig_xval.png + REPORT.md"
+ ],
+ "oss_arm_rerun_by_auditor": {
+  "cmd": "PYTHONPATH=/tmp/lbmpy_src/src python3 oss_arm.py --out /tmp/oss_smoke.npz --cases '[{N:32,g_ab:5.0,psi_mode:exp}]' --steps 200",
+  "result": "OK, umax=0.0242237, kernel build 17.29 s -> the OSS arm really executes lbmpy 2.0 sdist kernels",
+  "without_sdist": "AttributeError: 'LBStencil' object has no attribute 'weights' (site lbmpy != the sdist the case was built with) -> the PYTHONPATH pin is mandatory and is NOT recorded in the delivered tree"
+ },
+ "xval_all_rerun_by_auditor": {
+  "cmd": "python3 xval_all.py (copy in runs/m18126_repro/)",
+  "result": "killed at the harness 120 s tool limit before reaching the abort; the abort itself is reproduced statically (see finding F1) and is already in the delivered xval_all.log"
+ },
+ "operator_identity_rerun_by_auditor": {
+  "cmd": "import run_xval; collide_replica vs tensorlbm.multiphase.collide_sc_two_component (seeded field)",
+  "result": "max abs diff = 0.0 -> delivered claim 0.0 reproduced exactly"
+ },
+ "delivered_summary_recompute": "every err_rel_l2 in summary.json recomputed from the delivered .npz: identical (2.0033988 vs 2.0033988272098067 for g=5)",
+ "not_rerun": [
+  "full 1000-step TensorLBM arms (harness 120 s limit)",
+  "N=128 arm",
+  "g=6 arms (NaN in delivery)"
+ ]
+}

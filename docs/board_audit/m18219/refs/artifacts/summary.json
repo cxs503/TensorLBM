@@ -1,0 +1,122 @@
+{
+ "anchor": "XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR",
+ "mission": 18126,
+ "oss_ok": true,
+ "criterion_pct": 15.0,
+ "driver_faithfulness_maxdiff": 0.0,
+ "operator_identity": {
+  "max_rel": 8.060285343258174e-16,
+  "threshold": 1e-06
+ },
+ "uniform_zero_force": 0.0,
+ "physics_arms": [
+  {
+   "N": 64,
+   "g": 6.0,
+   "psi_mode": "exp",
+   "arm": "B_matched",
+   "err_rel_l2": NaN,
+   "err_full_rel_l2": NaN,
+   "err_max": NaN,
+   "tl_umax": NaN,
+   "oss_umax": 0.0405196534376346,
+   "tl_rho_tot_drift": NaN,
+   "tl_rho_range": [
+    NaN,
+    NaN
+   ],
+   "oss_rho_range": [
+    0.04701792071961475,
+    1.0151000938748924
+   ]
+  },
+  {
+   "N": 64,
+   "g": 6.0,
+   "psi_mode": "linear",
+   "arm": "C_as_shipped",
+   "err_rel_l2": NaN,
+   "err_full_rel_l2": NaN,
+   "err_max": NaN,
+   "tl_umax": NaN,
+   "oss_umax": 0.3395202045830992,
+   "tl_rho_tot_drift": NaN,
+   "tl_rho_range": [
+    NaN,
+    NaN
+   ],
+   "oss_rho_range": [
+    -0.1120150169005032,
+    1.7873263445421004
+   ]
+  },
+  {
+   "N": 64,
+   "g": 5.0,
+   "psi_mode": "exp",
+   "arm": "B_matched",
+   "err_rel_l2": 2.0033988272098067,
+   "err_full_rel_l2": 1.9362199213979188,
+   "err_max": 1.8906225247425792,
+   "tl_umax": 0.13273458569913235,
+   "oss_umax": 0.0168077020004845,
+   "tl_rho_tot_drift": 5.784261958297066e-14,
+   "tl_rho_range": [
+    0.11778137247905549,
+    1.8480722217319625
+   ],
+   "oss_rho_range": [
+    0.10833921325676721,
+    0.9321442777175191
+   ]
+  },
+  {
+   "N": 128,
+   "g": 6.0,
+   "psi_mode": "exp",
+   "arm": "B_matched",
+   "err_rel_l2": NaN,
+   "err_full_rel_l2": NaN,
+   "err_max": NaN,
+   "tl_umax": NaN,
+   "oss_umax": 0.04440355407835298,
+   "tl_rho_tot_drift": NaN,
+   "tl_rho_range": [
+    NaN,
+    NaN
+   ],
+   "oss_rho_range": [
+    0.045323129476345314,
+    1.062888886761287
+   ]
+  }
+ ],
+ "matched_model_max_err_pct": NaN,
+ "as_shipped_max_err_pct": NaN,
+ "convergence": {
+  "N": [
+   64,
+   128
+  ],
+  "err": [
+   NaN,
+   NaN
+  ],
+  "ratio": NaN
+ },
+ "g_sensitivity": {
+  "6.0": NaN,
+  "5.0": 2.0033988272098067
+ },
+ "oss_reference_faithfulness": [
+  2.6627717336075365e-06,
+  null,
+  null,
+  null
+ ],
+ "oss_umax": {
+  "64": 0.0405196534376346,
+  "128": 0.04440355407835298
+ },
+ "gate_pass_matched": false
+}

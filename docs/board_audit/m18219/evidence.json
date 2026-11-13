@@ -1,0 +1,136 @@
+{
+ "impl_files": [
+  "docs/board_audit/m18219/refs/oss_arm.py",
+  "docs/board_audit/m18219/refs/run_xval.py",
+  "docs/board_audit/m18219/refs/xval_all.py"
+ ],
+ "impl_files_note": "delivered bytes copied verbatim from /root/tp-agent/work/m18126/xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR (sha256 in docs/board_audit/m18219/MANIFEST.sha256); the subject never committed them (head_commit null, git '??')",
+ "entry": "docs/board_audit/m18219/refs/xval_all.py (aggregate driver: aborts at line 51) and docs/board_audit/m18219/refs/run_xval.py:189 main() / docs/board_audit/m18219/refs/oss_arm.py:221 main() (per-arm entries, both run)",
+ "run_artifacts": [
+  "docs/board_audit/m18219/refs/artifacts/summary.json",
+  "docs/board_audit/m18219/refs/artifacts/arm_N64_g5_exp.npz",
+  "docs/board_audit/m18219/refs/artifacts/arm_N64_g6_exp.npz",
+  "docs/board_audit/m18219/refs/artifacts/arm_N64_g6_linear.npz",
+  "docs/board_audit/m18219/refs/artifacts/arm_N128_g6_exp.npz",
+  "docs/board_audit/m18219/refs/artifacts/oss_cases.npz",
+  "docs/board_audit/m18219/refs/artifacts/oss_cases_meta.json",
+  "docs/board_audit/m18219/refs/xval_all.log",
+  "docs/board_audit/m18219/refs/run.log",
+  "docs/board_audit/m18219/refs/oss.log",
+  "artifacts/audit_m18219/probe_operator.json"
+ ],
+ "tests": [],
+ "tests_note": "zero tests delivered or run for this capability (the mission's own checks field lists 测试 as 未跑; the only pytest mentioned is lbmpy's upstream suite). No grep hit for this module in TensorLBM/tests. The L1 substance exists (inline operator-identity + uniform-force checks, auditor-reproduced) but is not packaged as a test.",
+ "integration_callers": [],
+ "integration_callers_note": "grep -rl 'XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR' /root/tensor-ecosystem/TensorLBM -> 0 hits; the tree only exists untracked in /root/tp-agent/work/m18126 and was not merged. No main-solver or platform caller.",
+ "benchmark": {
+  "registered_referee": "NONE - tensor_benchmark_cases has 0 rows for anchor_slug='XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR-XVAL-SYMBOL-SP' (94 rows in the table; nearest MCMP row id 7 = GAP-LBM-MCMP-POISEUILLE, pending)",
+  "criterion": "<15% (owner precision standard, quoted in the mission goal text)",
+  "ref": "OSS lbmpy 2.0 two-component Shan-Chen (tests/shan_chen/test_shan_chen_two_component.py), profile rho_a across the interface; the OSS arm reproduces the upstream profile to rel 2.66e-6",
+  "got_vs_ref": [
+   {
+    "arm": "N64 g=5 psi=exp",
+    "got_umax": 0.132735,
+    "ref_umax": 0.016808,
+    "rel_l2": 2.0033988,
+    "rel_l2_pct": 200.34,
+    "verdict": "FAIL (13x over the 15% bar)"
+   },
+   {
+    "arm": "N64 g=6 psi=exp",
+    "rel_l2": "NaN",
+    "verdict": "FAIL (all-NaN field)"
+   },
+   {
+    "arm": "N128 g=6 psi=exp",
+    "rel_l2": "NaN",
+    "verdict": "FAIL (all-NaN field)"
+   },
+   {
+    "arm": "N64 g=6 psi=linear (as shipped)",
+    "rel_l2": "NaN",
+    "verdict": "FAIL (all-NaN field)"
+   }
+  ],
+  "status": "failed",
+  "claim_correction": "mission result states 'profile rel-L2 = 2.00% (<15% gate)'; the recomputed value is 200.34% (summary.json err_rel_l2 = 2.0033988272098067, a fraction) => 100x overstatement"
+ },
+ "repro_cmd": "PYTHONPATH=/tmp/lbmpy_src/src python3 docs/board_audit/m18219/refs/oss_arm.py --out /tmp/oss_smoke.npz --cases '[{\"N\":32,\"g_ab\":5.0,\"psi_mode\":\"exp\"}]' --steps 200  (auditor: OK, umax=0.0242237); delivered aggregate driver PYTHONPATH=<TensorLBM>/src python3 docs/board_audit/m18219/refs/xval_all.py does NOT complete (NameError at line 51, before figure/markdown)",
+ "external_anchor": "lbmpy 2.0 (lssfau/lbmpy) sdist source, pinned at /tmp/lbmpy_src/src; the transcribed upstream force/barycentric-velocity blocks are cited at docs/board_audit/m18219/refs/run_xval.py:62-107 and docs/board_audit/m18219/refs/oss_arm.py:105-140; upstream fidelity was checked live by the auditor (oss_arm smoke run) - see docs/board_audit/m18219/repro.json",
+ "audit_report": "docs/board_audit/m18219/AUDIT_M18126.md",
+ "audit_independent_check": {
+  "I1_gather_vs_cs2_grad_rel_err_interior": 0.0016055995257754556,
+  "I1_gather_vs_cs2_grad_rel_err_max_all": 0.0016055995257754556,
+  "I1_expected_order": "O((k*h)^2)/6 = 1.61e-03",
+  "I1_transverse_x_over_y": 0.0,
+  "I2_transverse_Fy_over_Fx_p1": 3.1669179126817024e-17,
+  "I2_transverse_Fy_over_Fx_halfcell_shift": 3.095671097323274e-17,
+  "I2_axial_Fx_max": 0.18000000134110444,
+  "I3_uniform_force_maxabs": 0.0,
+  "I4_sign_reversal_maxdiff": 0.0
+ },
+ "audit_independent_check_note": "auditor-designed invariants of the shipped operator (artifacts/audit_m18219/probe_operator.py): I1 the D2Q9 weighted gather reproduces -cs^2 grad(psi) with 1.6056e-3 relative error at kh=0.098, matching the O((kh)^2)/6 = 1.61e-3 prediction -> second-order, isotropic; I2 planar interface transverse force ratio 3.2e-17; I3 uniform field force exactly 0.0; I4 sign reversal under G->-G exactly 0.0. Conclusion: the 200%/NaN arm failures are a comparison-configuration defect, NOT a defect of the shipped cross-force operator.",
+ "findings": [
+  {
+   "id": "F1",
+   "sev": "high",
+   "claim": "deliverable produces a REPORT/figures and a machine-checkable summary",
+   "evidence": "refs/xval_all.py:51 -> color=['tab:green' if r['psi_mode']=='exp' else 'tab:orange'] has no 'for r in rows'; delivered xval_all.log traceback NameError line 51. summary.json is written before the crash; fig_xval.png and the markdown REPORT are never produced (absent from the delivered tree). Auditor reproduced the same NameError class in a 3-line extract.",
+   "impact": "the deliverable has no report artifact of its own; the six-segment report required by the mission was never emitted, and tensor_reports has 0 rows for mission 18126"
+  },
+  {
+   "id": "F2",
+   "sev": "critical",
+   "claim": "mission result: 'tensorLBM arm N=64 g=5 psi=exp profile rel-L2 = 2.00% (<15% gate)'",
+   "evidence": "summary.json err_rel_l2 = 2.0033988272098067 = 200.34 %, recomputed identically from the delivered arm_N64_g5_exp.npz against prof_ref. The relative-L2 definition (run_xval.py:176) returns a fraction, so the quoted '2.00 %' is the fraction read as a percentage: a 100x understatement.",
+   "impact": "the only evaluable arm fails the owner criterion by 13x, not passes it. Any downstream ledger entry reading 'within 15%' would be false."
+  },
+  {
+   "id": "F3",
+   "sev": "critical",
+   "claim": "cross-validation establishes operator agreement",
+   "evidence": "3 of 4 arms are all-NaN (arm_N64_g6_exp, arm_N128_g6_exp, arm_N64_g6_linear: prof_a is NaN everywhere, so err_rel_l2 = NaN). Only g=5/exp is finite: rho_a range [0.1178, 1.8481] vs OSS [0.1083, 0.9321]; umax 0.13273 vs 0.01681 (7.9x).",
+   "impact": "no convergence study (N=64->128) and no g-sensitivity curve exist; the report's segments 5 (convergence/sensitivity) cannot be filled. The comparison configuration is not demonstrably equivalent to the OSS case."
+  },
+  {
+   "id": "F4",
+   "sev": "high",
+   "claim": "the TensorLBM physics arm exercises the shipped library operator",
+   "evidence": "refs/run_xval.py:152 tl_run(..., use_library_collision=False) by default: the 1000-step arms use the script-local collide_replica (run_xval.py:120), not tensorlbm.multiphase.collide_sc_two_component. The library collision is called only in the one-step faithfulness check.",
+   "impact": "even a passing arm would not certify the shipped operator end-to-end (collision + force + streaming inside the library)."
+  },
+  {
+   "id": "F5",
+   "sev": "high",
+   "claim": "delivered capability lands in the repo",
+   "evidence": "mission result head_commit = null, git_status '?? xval/XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR/'; the directory is absent from /root/tensor-ecosystem/TensorLBM/xval; grep -rl 'XVAL-LBM-MCMP-CROSS-FORCE-OPERATOR' in the eco repo -> 0 hits. No test file, no caller.",
+   "impact": "nothing to reuse; the bytes survive only in the mission worktree (copied into this audit's refs/ with sha256)."
+  },
+  {
+   "id": "F6",
+   "sev": "medium",
+   "claim": "report published",
+   "evidence": "SELECT count(*) FROM tensor_reports WHERE mission_id=18126 -> 0. The mission's own checks field lists '平台发布' as 未跑."
+  },
+  {
+   "id": "F7",
+   "sev": "medium",
+   "claim": "reproducible from the tree alone",
+   "evidence": "the lbmpy sdist PYTHONPATH pin (needed: site lbmpy raises AttributeError 'LBStencil' has no 'weights') is recorded only in oss_arm.py's docstring, not as a shipped path/env; xval_all.py aborts; no README/REPORT."
+  }
+ ],
+ "claims_overstated": [
+  "rel-L2 2.00% <15% (actual 200.34%)",
+  "'4 cases executed and persisted' (only 1 of 4 is finite)",
+  "the mission headline '部分完成' understates that the aggregate driver never produced any report/figure"
+ ],
+ "level_reason": "L2 awarded for the two-arm harness as functional code: oss_arm.py builds and runs real lbmpy kernels (auditor-re-executed), run_xval.py advances a real 1000-step two-component LBM and emits fields, xval_all.py emits summary.json with numbers. L3 blocked: no caller in the ecosystem repo, nothing committed. L4 blocked: the criterion is NOT met (200.34% on the single evaluable arm, NaN on the other three) so no benchmark validation exists. L5 blocked: no literature/experimental anchor validated. The subject capability ('operator cross-validated against OSS within 15%') is therefore NOT established even though the code is real.",
+ "reopened_recommended": true,
+ "reopened_reason": "own deliverable fails its own predeclared <15% criterion, its top-level entry aborts, and it never landed in the repo; a rework round should (a) fix xval_all.py:51, (b) make the TensorLBM arm use tensorlbm.multiphase.collide_sc_two_component (drop the script-local collide_replica), (c) reproduce the NaN g=6 arms / locate the divergence, (d) ship as tests under TensorLBM/tests + a registered tensor_benchmark_cases row.",
+ "subject_mission": 18126,
+ "audit_mission": 18219,
+ "referee_file": "docs/board_audit/m18219/referee.json",
+ "repro_file": "docs/board_audit/m18219/repro.json",
+ "finding_file": "docs/board_audit/m18219/finding.json",
+ "sha256_manifest": "docs/board_audit/m18219/MANIFEST.sha256"
+}
