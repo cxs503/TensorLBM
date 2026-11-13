@@ -1,0 +1,46 @@
+{
+  "anchor": "XVAL-LBM-PYTEST-BASELINE-REFERENCE",
+  "oss": {
+    "repo": "pylbm/pylbm",
+    "checkout": "/root/oss-cache/pylbm",
+    "files": [
+      "tests/conftest.py:318-335 (generate_test_name)",
+      "tests/conftest.py:337-410 (H5Comparison.pytest_runtest_call)",
+      "tests/conftest.py:191-198,412-418 (--h5diff-generate-path / --h5diff-reference-path)",
+      "tests/conftest.py:345-346 (atol=1e-7, rtol=1e-14)",
+      "tests/test_demo_2d.py:5-6,42-44 (h5diff marker, slow, parametrised by generator)",
+      "tests/reference/test2D_lid_driven_cavity.h5",
+      "demo/2D/lid_driven_cavity.py:80-232"
+    ]
+  },
+  "arms": {
+    "A_ghia": {
+      "metric": "centre-line RMSE / u_lid at the 17 Ghia (1982) Re=100 tabulation rows",
+      "accept": "RMSE_u <= 0.15 (owner band) and max |du| <= 0.15; target RMSE_u <= 0.03",
+      "grids": [
+        [
+          33,
+          4000
+        ],
+        [
+          65,
+          8000
+        ]
+      ]
+    },
+    "B_pylbm_same_params": {
+      "metric": "relative L2 of qx,qy,rho vs OSS h5; max_abs",
+      "accept": "rel_l2 <= 0.15 (same-physics check)",
+      "note": "params taken from the OSS demo run that produced the h5"
+    },
+    "C_baseline_regression": {
+      "metric": "field-wise max_abs under atol=1e-7, rtol=1e-14",
+      "accept": "all fields within tolerance"
+    }
+  },
+  "sensitivity_points": [
+    "grid 33 -> 65 (same Re, converged step count)",
+    "transient 32 -> 64 steps at pylbm parameters (stability boundary)"
+  ],
+  "threshold_source": "owner precision standard 15% (task) + 3% publication target; upstream tolerance 1e-7/1e-14"
+}

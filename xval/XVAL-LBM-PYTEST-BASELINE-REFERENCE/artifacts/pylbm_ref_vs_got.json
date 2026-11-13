@@ -1,0 +1,186 @@
+{
+  "main": {
+    "status": "ok",
+    "oss_reference": "/root/oss-cache/pylbm/tests/reference/test2D_lid_driven_cavity.h5",
+    "oss_reference_grid_points": 64,
+    "oss_ranges": {
+      "rho": [
+        0.9956760012519891,
+        1.0063911127009848
+      ],
+      "qx": [
+        -0.014222826374403322,
+        0.025726747250299574
+      ],
+      "qy": [
+        -0.013639716373815423,
+        0.01426676855151051
+      ]
+    },
+    "params": {
+      "nx": 64,
+      "tau": 0.50096,
+      "nu": 0.00032,
+      "n_steps": 32,
+      "u_lid": 0.05,
+      "re": 10000.0,
+      "sigma_2": 0.0009600000000000001
+    },
+    "per_field": {
+      "rho": {
+        "name": "rho",
+        "shape": [
+          64,
+          64
+        ],
+        "max_abs": 1.181439555407382,
+        "max_rel": 1.1837732465777562,
+        "worst_index": [
+          63,
+          3
+        ],
+        "n_exceeded": 3557,
+        "size": 4096,
+        "ok": false
+      },
+      "qx": {
+        "name": "qx",
+        "shape": [
+          64,
+          64
+        ],
+        "max_abs": 0.46182070949230175,
+        "max_rel": 31260.10942892607,
+        "worst_index": [
+          62,
+          2
+        ],
+        "n_exceeded": 3735,
+        "size": 4096,
+        "ok": false
+      },
+      "qy": {
+        "name": "qy",
+        "shape": [
+          64,
+          64
+        ],
+        "max_abs": 0.48952574783502,
+        "max_rel": 28832.49644216427,
+        "worst_index": [
+          62,
+          3
+        ],
+        "n_exceeded": 3542,
+        "size": 4096,
+        "ok": false
+      }
+    },
+    "rel_l2": {
+      "rho": 0.03420337890634724,
+      "qx": 6.708740087566189,
+      "qy": 32.78368100148403
+    },
+    "upstream_tolerance_verdict": {
+      "rho": false,
+      "qx": false,
+      "qy": false
+    },
+    "upstream_tolerance": {
+      "atol": 1e-07,
+      "rtol": 1e-14
+    }
+  },
+  "step_sensitivity": {
+    "status": "ok",
+    "oss_reference": "/root/oss-cache/pylbm/tests/reference/test2D_lid_driven_cavity.h5",
+    "oss_reference_grid_points": 64,
+    "oss_ranges": {
+      "rho": [
+        0.9956760012519891,
+        1.0063911127009848
+      ],
+      "qx": [
+        -0.014222826374403322,
+        0.025726747250299574
+      ],
+      "qy": [
+        -0.013639716373815423,
+        0.01426676855151051
+      ]
+    },
+    "params": {
+      "nx": 64,
+      "tau": 0.50096,
+      "nu": 0.00032,
+      "n_steps": 64,
+      "u_lid": 0.05,
+      "re": 10000.0,
+      "sigma_2": 0.0009600000000000001
+    },
+    "per_field": {
+      "rho": {
+        "name": "rho",
+        "shape": [
+          64,
+          64
+        ],
+        "max_abs": NaN,
+        "max_rel": 24974991359.00002,
+        "worst_index": [
+          0,
+          0
+        ],
+        "n_exceeded": 4096,
+        "size": 4096,
+        "ok": false
+      },
+      "qx": {
+        "name": "qx",
+        "shape": [
+          64,
+          64
+        ],
+        "max_abs": NaN,
+        "max_rel": Infinity,
+        "worst_index": [
+          0,
+          0
+        ],
+        "n_exceeded": 4096,
+        "size": 4096,
+        "ok": false
+      },
+      "qy": {
+        "name": "qy",
+        "shape": [
+          64,
+          64
+        ],
+        "max_abs": NaN,
+        "max_rel": Infinity,
+        "worst_index": [
+          0,
+          0
+        ],
+        "n_exceeded": 4096,
+        "size": 4096,
+        "ok": false
+      }
+    },
+    "rel_l2": {
+      "rho": NaN,
+      "qx": NaN,
+      "qy": NaN
+    },
+    "upstream_tolerance_verdict": {
+      "rho": false,
+      "qx": false,
+      "qy": false
+    },
+    "upstream_tolerance": {
+      "atol": 1e-07,
+      "rtol": 1e-14
+    }
+  }
+}

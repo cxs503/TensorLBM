@@ -1,0 +1,68 @@
+{
+  "config": {
+    "device": "cpu",
+    "ghia_metric_convention": "legacy_w0",
+    "n_steps": 8000,
+    "nx": 65,
+    "output_interval": 8000,
+    "output_root": "/root/tp-agent/work/m18463/xval/XVAL-LBM-PYTEST-BASELINE-REFERENCE/runs",
+    "overwrite": true,
+    "re": 100.0,
+    "run_name": "ghia_nx65_re100_s8000",
+    "seed": 0,
+    "u_lid": 0.1,
+    "use_compile": false
+  },
+  "derived": {
+    "nu": 0.065,
+    "ny": 65,
+    "tau": 0.6950000000000001
+  },
+  "diagnostics": [
+    {
+      "mass": 4192.1748046875,
+      "mass_drift": -32.8251953125,
+      "max_speed": 0.10000001639127731,
+      "mean_rho": 0.9922307133674622,
+      "step": 8000
+    }
+  ],
+  "ghia_errors": {
+    "rmse_u": NaN,
+    "rmse_v": NaN
+  },
+  "ghia_metric": {
+    "analytic_floor": null,
+    "boundary_recipe": null,
+    "scores": {
+      "legacy_w0": {
+        "rmse_u": NaN,
+        "rmse_v": NaN
+      },
+      "recipe_planes": {
+        "rmse_u": NaN,
+        "rmse_v": NaN
+      },
+      "symmetric_w+0.5": {
+        "rmse_u": NaN,
+        "rmse_v": NaN
+      }
+    },
+    "wall_planes": null
+  },
+  "ghia_metric_convention": "legacy_w0",
+  "ghia_note": "rmse_u: RMSE of u/u_lid along vertical centreline vs Ghia (1982). rmse_v: RMSE of v/u_lid along horizontal centreline vs Ghia (1982). These headline numbers use ghia_metric_convention; ghia_metric carries the same score under every supported coordinate map plus the wall-plane geometry and analytic metric floors, so no RMSE is quoted without its convention (m16740).",
+  "reproducibility": {
+    "git_commit": "a95531dcd230a20d5acfe6e3d3104c9640e9d851",
+    "package_versions": {
+      "matplotlib": "3.10.8",
+      "numpy": "1.26.4",
+      "torch": "2.7.1"
+    },
+    "python_version": "3.11.6 (main, May  9 2024, 00:00:00) [GCC 12.3.0 20230508 (Anolis OS 12.3.0-2)]"
+  },
+  "runtime": {
+    "device": "cpu",
+    "torch_version": "2.7.1"
+  }
+}

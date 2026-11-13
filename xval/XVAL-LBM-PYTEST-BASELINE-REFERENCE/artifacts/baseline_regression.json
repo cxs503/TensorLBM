@@ -1,0 +1,175 @@
+{
+  "name": "cavity_re100_nx33_u0.1_s300.npz",
+  "ok": true,
+  "atol": 1e-07,
+  "rtol": 1e-14,
+  "reference_path": "/root/tp-agent/work/m18463/tests/reference/cavity_re100_nx33_u0.1_s300.npz",
+  "message": "cavity_re100_nx33_u0.1_s300.npz: 8 field(s) within atol=1e-07, rtol=1e-14",
+  "fields": {
+    "ux_centerline_normalised": {
+      "name": "ux_centerline_normalised",
+      "shape": [
+        33
+      ],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [
+        0
+      ],
+      "n_exceeded": 0,
+      "size": 33,
+      "ok": true
+    },
+    "uy_centerline_normalised": {
+      "name": "uy_centerline_normalised",
+      "shape": [
+        33
+      ],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [
+        0
+      ],
+      "n_exceeded": 0,
+      "size": 33,
+      "ok": true
+    },
+    "rho_field": {
+      "name": "rho_field",
+      "shape": [
+        33,
+        33
+      ],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [
+        0,
+        0
+      ],
+      "n_exceeded": 0,
+      "size": 1089,
+      "ok": true
+    },
+    "mass": {
+      "name": "mass",
+      "shape": [],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [],
+      "n_exceeded": 0,
+      "size": 1,
+      "ok": true
+    },
+    "mass_drift_relative": {
+      "name": "mass_drift_relative",
+      "shape": [],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [],
+      "n_exceeded": 0,
+      "size": 1,
+      "ok": true
+    },
+    "max_speed": {
+      "name": "max_speed",
+      "shape": [],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [],
+      "n_exceeded": 0,
+      "size": 1,
+      "ok": true
+    },
+    "ghia_rmse_u": {
+      "name": "ghia_rmse_u",
+      "shape": [],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [],
+      "n_exceeded": 0,
+      "size": 1,
+      "ok": true
+    },
+    "ghia_rmse_v": {
+      "name": "ghia_rmse_v",
+      "shape": [],
+      "max_abs": 0.0,
+      "max_rel": 0.0,
+      "worst_index": [],
+      "n_exceeded": 0,
+      "size": 1,
+      "ok": true
+    }
+  },
+  "meta": {
+    "config": {
+      "device": "cpu",
+      "ghia_metric_convention": "legacy_w0",
+      "n_steps": 300,
+      "nx": 33,
+      "output_interval": 2000,
+      "output_root": "/tmp/tmp6iic0jhs/runs",
+      "overwrite": true,
+      "re": 100.0,
+      "run_name": "baseline_case",
+      "seed": 0,
+      "u_lid": 0.1,
+      "use_compile": false
+    },
+    "derived": {
+      "n_steps": 300,
+      "nu": 0.033,
+      "tau": 0.599
+    },
+    "environment": {
+      "numpy": "2.4.6",
+      "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+      "python": "3.11.6",
+      "torch": "2.7.1",
+      "torch_num_threads": 128
+    },
+    "field_dtypes": {
+      "ghia_rmse_u": "float64",
+      "ghia_rmse_v": "float64",
+      "mass": "float64",
+      "mass_drift_relative": "float64",
+      "max_speed": "float64",
+      "rho_field": "float32",
+      "ux_centerline_normalised": "float32",
+      "uy_centerline_normalised": "float32"
+    },
+    "field_shapes": {
+      "ghia_rmse_u": [],
+      "ghia_rmse_v": [],
+      "mass": [],
+      "mass_drift_relative": [],
+      "max_speed": [],
+      "rho_field": [
+        33,
+        33
+      ],
+      "ux_centerline_normalised": [
+        33
+      ],
+      "uy_centerline_normalised": [
+        33
+      ]
+    },
+    "fields": [
+      "ghia_rmse_u",
+      "ghia_rmse_v",
+      "mass",
+      "mass_drift_relative",
+      "max_speed",
+      "rho_field",
+      "ux_centerline_normalised",
+      "uy_centerline_normalised"
+    ],
+    "format": "tensorlbm-baseline-block/1",
+    "ghia_metric_convention": "legacy_w0",
+    "registered_from": "/tmp/tmp6iic0jhs/runs/lid_driven_cavity/baseline_case/reference_block.npz",
+    "sha256": "64b1cd071269af5b8c3ef8367724896f0c6f4cd72d09ab345f76cedac407a3a1",
+    "solver": "tensorlbm.lid_driven_cavity",
+    "wall_offset_convention": "half_way_bounce_back (+0.5 cell outside node row)"
+  }
+}

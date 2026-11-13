@@ -1,0 +1,84 @@
+{
+  "anchor": "XVAL-LBM-PYTEST-BASELINE-REFERENCE",
+  "started": "2026-11-13T14:45:07Z",
+  "arm_a_ghia": [
+    {
+      "nx": 33,
+      "n_steps": 4000,
+      "tau": 0.599,
+      "walltime_s": 6.46,
+      "u_rmse": 0.06719601378174843,
+      "v_rmse": 0.02227763099126296,
+      "u_max_abs": 0.10263117477416994,
+      "v_max_abs": 0.04632009401444345,
+      "mass_drift_relative": -0.0320473242725551,
+      "max_speed": 0.10000001639127731
+    },
+    {
+      "nx": 65,
+      "n_steps": 8000,
+      "tau": 0.6950000000000001,
+      "walltime_s": 23.63,
+      "u_rmse": 0.05219502948728006,
+      "v_rmse": 0.012493944597073878,
+      "u_max_abs": 0.09686959853202104,
+      "v_max_abs": 0.02302509387612342,
+      "mass_drift_relative": -0.00776927699704142,
+      "max_speed": 0.10000001639127731
+    }
+  ],
+  "arm_b_pylbm": {
+    "params": {
+      "nx": 64,
+      "tau": 0.50096,
+      "nu": 0.00032,
+      "n_steps": 32,
+      "u_lid": 0.05,
+      "re": 10000.0,
+      "sigma_2": 0.0009600000000000001
+    },
+    "rel_l2_main": {
+      "rho": 0.03420337890634724,
+      "qx": 6.708740087566189,
+      "qy": 32.78368100148403
+    },
+    "rel_l2_2x_steps": {
+      "rho": NaN,
+      "qx": NaN,
+      "qy": NaN
+    },
+    "max_abs_main": {
+      "rho": 1.181439555407382,
+      "qx": 0.46182070949230175,
+      "qy": 0.48952574783502
+    },
+    "upstream_tolerance_verdict": {
+      "rho": false,
+      "qx": false,
+      "qy": false
+    }
+  },
+  "arm_c_baseline": {
+    "name": "cavity_re100_nx33_u0.1_s300.npz",
+    "reference_dir": "/root/tp-agent/work/m18463/tests/reference",
+    "ok": true,
+    "atol": 1e-07,
+    "rtol": 1e-14,
+    "max_abs": {
+      "ux_centerline_normalised": 0.0,
+      "uy_centerline_normalised": 0.0,
+      "rho_field": 0.0,
+      "mass": 0.0,
+      "mass_drift_relative": 0.0,
+      "max_speed": 0.0,
+      "ghia_rmse_u": NaN,
+      "ghia_rmse_v": NaN
+    }
+  },
+  "figures": [
+    "artifacts/figures/fig1_ghia_centerlines.png",
+    "artifacts/figures/fig2_pylbm_field_diff.png",
+    "artifacts/figures/fig3_error_and_mass.png"
+  ],
+  "finished": "2026-11-13T14:45:40Z"
+}
