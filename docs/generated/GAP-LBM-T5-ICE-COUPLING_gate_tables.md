@@ -79,3 +79,4 @@ first natural frequency: got 8.355166 Hz vs ref 8.355165 Hz (err 1.262e-07)
 | 0.005 | 1.145533013 | 1.145504374 | 1.432e-05 | nan |
 
 runtime 5.7 s; repro: `OMP_NUM_THREADS=1 PYTHONPATH=src python scripts/three_way_interface3d_gates.py`
+runtime 3.9 s; repro: `OMP_NUM_THREADS=1 PYTHONPATH=src python scripts/three_way_interface3d_gates.py`
