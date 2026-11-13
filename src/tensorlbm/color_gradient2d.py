@@ -124,6 +124,7 @@ def color_gradient_two_tau_step(
     gy: float = 0.0,
     solid_mask: torch.Tensor | None = None,
     visc_mode: str = "mixture",
+    phi_solid: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """One Color-Gradient iteration (collision only; streaming is external).
 
@@ -171,6 +172,14 @@ def color_gradient_two_tau_step(
         visc_mode:   ``"mixture"`` (arithmetic tau blend on the total
                      distribution) or ``"per_color"`` (separate per-color
                      relaxation).
+        phi_solid:   Optional ``(ny, nx)`` ghost phase value for the solid
+                     cells (see :mod:`tensorlbm.cg_wetting2d`).  Only used
+                     when ``solid_mask`` is given: the masked densities are
+                     replaced by ``rho_r = (1+phi_solid)/2``,
+                     ``rho_b = (1-phi_solid)/2`` (unit total density) so the
+                     color gradient and the surface-tension perturbation see
+                     a wall phase instead of a zero-density hole.  ``None``
+                     reproduces the stock masked-wall (neutral 90 deg) state.
 
     Returns:
         Post-collision ``(f_r_out, f_b_out)``.
@@ -231,8 +240,19 @@ def color_gradient_two_tau_step(
     # --- (c) surface-tension perturbation ---------------------------------
     # Masked densities avoid spurious color gradients at solid boundaries
     # (stock convention).
-    rho_r_safe = rho_r if solid_mask is None else rho_r.masked_fill(solid_mask, 0.0)
-    rho_b_safe = rho_b if solid_mask is None else rho_b.masked_fill(solid_mask, 0.0)
+    if solid_mask is None:
+        rho_r_safe, rho_b_safe = rho_r, rho_b
+    elif phi_solid is None:
+        rho_r_safe = rho_r.masked_fill(solid_mask, 0.0)
+        rho_b_safe = rho_b.masked_fill(solid_mask, 0.0)
+    else:
+        if phi_solid.shape != solid_mask.shape:
+            raise ValueError(
+                f"phi_solid shape {tuple(phi_solid.shape)} != solid_mask {tuple(solid_mask.shape)}"
+            )
+        half = solid_mask.to(rho_r.dtype) * 0.5
+        rho_r_safe = torch.where(solid_mask, half * (1.0 + phi_solid.to(rho_r.dtype)), rho_r)
+        rho_b_safe = torch.where(solid_mask, half * (1.0 - phi_solid.to(rho_r.dtype)), rho_b)
     _phi, nhat_x, nhat_y, mag = cg_phase_gradient(rho_r_safe, rho_b_safe)
 
     ci_dot_n = cx * nhat_x.unsqueeze(0) + cy * nhat_y.unsqueeze(0)

@@ -1,0 +1,362 @@
+{
+  "anchor": "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING",
+  "reference": {
+    "repo": "lanl/MF-LBM",
+    "commit": "11be324a97fe6331b2271102da370460715355e8",
+    "files": [
+      "multiphase_3D/0.src/Phase_gradient.F90:209-265"
+    ],
+    "license": "BSD-3-Clause"
+  },
+  "engine": {
+    "module": "tensorlbm.cg_wetting2d",
+    "sha256": "1a9bab40705224b57a81c6ea80337ea66bf6a71cf1262e0f2eb9128ab344e256",
+    "cg_step_sha256": "50b66d1efa5b35c72ef421b8e720ff2ca6a7a6b71c21060819efed153364cfbc"
+  },
+  "environment": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "machine": "loongarch64",
+    "threads": 8
+  },
+  "criteria": {
+    "gate": "|theta_circle - theta_target| / theta_target <= 15 %",
+    "secondary": "|theta_cap - theta_circle| <= 5 deg; mass drift <= 1e-8"
+  },
+  "results": {
+    "gk90": {
+      "arm": "gk90",
+      "spec": {
+        "name": "gk90",
+        "theta_target": 90.0,
+        "init_theta": null,
+        "wetting": true,
+        "beta": 0.7,
+        "A": 0.04,
+        "tau": 1.0,
+        "radius": 14.0,
+        "nx": 96,
+        "ny": 64,
+        "xi": 2.0,
+        "steps": 6000,
+        "note": ""
+      },
+      "theta_target": 90.0,
+      "theta_bottom_applied": 90.0,
+      "steps_run": 6000,
+      "wall_time_s": 114.92948722839355,
+      "theta_circle": 52.539973779510454,
+      "theta_cap": NaN,
+      "theta_circle_trim15": 15.155247883514102,
+      "theta_local_median": 90.0,
+      "theta_local_n": 8,
+      "theta_tail_mean": 52.01987694898741,
+      "theta_tail_std": 1.6088995327044253,
+      "circle": {
+        "theta_deg": 52.539973779510454,
+        "x_center": 47.96949016603036,
+        "y_center": -96.123271941151,
+        "R_fit": 158.86556420671755,
+        "rms": 0.03984355524259592,
+        "n_points": 17,
+        "contact_width": 20.0,
+        "y_wall": 0.5
+      },
+      "cap": null,
+      "err_pct_circle": -41.6222513560995,
+      "err_deg_circle": -37.460026220489546,
+      "err_pct_cap": NaN,
+      "u_max_fluid": 0.018327436608274367,
+      "u_max_liquid_core": 0.018274662829360112,
+      "interface_width_10_90": NaN,
+      "mass_drift_r": -3.035310695844199e-13,
+      "mass_drift_b": -7.577849877512175e-13,
+      "converged_dphi": 0.11598116449266258,
+      "history": [
+        {
+          "step": 1,
+          "theta_circle": 90.0560413952864,
+          "theta_cap": NaN,
+          "u_max": 0.002770760893996282,
+          "dphi_max": NaN,
+          "mass_r": 341.02560204876175,
+          "mass_b": 5802.974397951239,
+          "mass_drift_r": 0.0,
+          "mass_drift_b": 0.0
+        },
+        {
+          "step": 250,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.02159646103969722,
+          "dphi_max": 1.53524981634362,
+          "mass_r": 341.0256020487575,
+          "mass_b": 5802.9743979509985,
+          "mass_drift_r": -1.2501279636920095e-14,
+          "mass_drift_b": -4.137647089272418e-14
+        },
+        {
+          "step": 500,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.019348783630590106,
+          "dphi_max": 0.3271129495087305,
+          "mass_r": 341.02560204875317,
+          "mass_b": 5802.974397950812,
+          "mass_drift_r": -2.516924300233246e-14,
+          "mass_drift_b": -7.350592745715016e-14
+        },
+        {
+          "step": 750,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.01450131182062402,
+          "dphi_max": 0.7394234665948501,
+          "mass_r": 341.02560204874885,
+          "mass_b": 5802.974397950631,
+          "mass_drift_r": -3.783720636774482e-14,
+          "mass_drift_b": -1.0469500968310512e-13
+        },
+        {
+          "step": 1000,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.015680791904567812,
+          "dphi_max": 0.8306312794351919,
+          "mass_r": 341.02560204874453,
+          "mass_b": 5802.974397950448,
+          "mass_drift_r": -5.0505169733157186e-14,
+          "mass_drift_b": -1.3619755002188377e-13
+        },
+        {
+          "step": 1250,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.02355338229714989,
+          "dphi_max": 0.24373460263984545,
+          "mass_r": 341.0256020487402,
+          "mass_b": 5802.9743979502655,
+          "mass_drift_r": -6.317313309856954e-14,
+          "mass_drift_b": -1.6770009036066241e-13
+        },
+        {
+          "step": 1500,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.03156843642729012,
+          "dphi_max": 0.14795353474488485,
+          "mass_r": 341.0256020487359,
+          "mass_b": 5802.974397950084,
+          "mass_drift_r": -7.584109646398191e-14,
+          "mass_drift_b": -1.990459016430292e-13
+        },
+        {
+          "step": 1750,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.03794842713825874,
+          "dphi_max": 0.13045754150701888,
+          "mass_r": 341.0256020487316,
+          "mass_b": 5802.974397949902,
+          "mass_drift_r": -8.8342376100902e-14,
+          "mass_drift_b": -2.3039171292539603e-13
+        },
+        {
+          "step": 2000,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.04232357058120743,
+          "dphi_max": 0.11336612089916243,
+          "mass_r": 341.0256020487272,
+          "mass_b": 5802.974397949718,
+          "mass_drift_r": -1.013437069232989e-13,
+          "mass_drift_b": -2.620509823205865e-13
+        },
+        {
+          "step": 2250,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.045263548980866514,
+          "dphi_max": 0.11602717101622798,
+          "mass_r": 341.02560204872293,
+          "mass_b": 5802.974397949534,
+          "mass_drift_r": -1.13844986560219e-13,
+          "mass_drift_b": -2.9371025171577697e-13
+        },
+        {
+          "step": 2500,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.04747813343871674,
+          "dphi_max": 0.12811028161290722,
+          "mass_r": 341.0256020487186,
+          "mass_b": 5802.974397949354,
+          "mass_drift_r": -1.2651294992563136e-13,
+          "mass_drift_b": -3.247426048853201e-13
+        },
+        {
+          "step": 2750,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.049569035874887465,
+          "dphi_max": 0.15129446593047402,
+          "mass_r": 341.02560204871423,
+          "mass_b": 5802.974397949174,
+          "mass_drift_r": -1.3934759701953599e-13,
+          "mass_drift_b": -3.557749580548632e-13
+        },
+        {
+          "step": 3000,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.0519031342908888,
+          "dphi_max": 0.21589908066922534,
+          "mass_r": 341.02560204870997,
+          "mass_b": 5802.974397948994,
+          "mass_drift_r": -1.518488766564561e-13,
+          "mass_drift_b": -3.8680731122440637e-13
+        },
+        {
+          "step": 3250,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.05445787548527449,
+          "dphi_max": 0.33888634585611266,
+          "mass_r": 341.02560204870554,
+          "mass_b": 5802.974397948814,
+          "mass_drift_r": -1.6485020747885298e-13,
+          "mass_drift_b": -4.178396643939495e-13
+        },
+        {
+          "step": 3500,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.05524867497206099,
+          "dphi_max": 0.536541911351715,
+          "mass_r": 341.0256020487013,
+          "mass_b": 5802.974397948634,
+          "mass_drift_r": -1.773514871157731e-13,
+          "mass_drift_b": -4.4887201756349265e-13
+        },
+        {
+          "step": 3750,
+          "theta_circle": 41.9977723274699,
+          "theta_cap": NaN,
+          "u_max": 0.0496124528617983,
+          "dphi_max": 0.6034346337569977,
+          "mass_r": 341.025602048697,
+          "mass_b": 5802.97439794845,
+          "mass_drift_r": -1.8985276675269317e-13,
+          "mass_drift_b": -4.805312869586831e-13
+        },
+        {
+          "step": 4000,
+          "theta_circle": 35.165460654606285,
+          "theta_cap": NaN,
+          "u_max": 0.04139826199589248,
+          "dphi_max": 0.4887761238710142,
+          "mass_r": 341.02560204869275,
+          "mass_b": 5802.97439794827,
+          "mass_drift_r": -2.0235404638961326e-13,
+          "mass_drift_b": -5.115636401282262e-13
+        },
+        {
+          "step": 4250,
+          "theta_circle": 40.27697757553588,
+          "theta_cap": NaN,
+          "u_max": 0.03434089407599287,
+          "dphi_max": 0.3929089604747631,
+          "mass_r": 341.0256020486884,
+          "mass_b": 5802.974397948088,
+          "mass_drift_r": -2.1502200975502563e-13,
+          "mass_drift_b": -5.42909451410593e-13
+        },
+        {
+          "step": 4500,
+          "theta_circle": 45.02515796485959,
+          "theta_cap": NaN,
+          "u_max": 0.029212089009069474,
+          "dphi_max": 0.31360345778071397,
+          "mass_r": 341.02560204868416,
+          "mass_b": 5802.974397947912,
+          "mass_drift_r": -2.2752328939194574e-13,
+          "mass_drift_b": -5.733148883544889e-13
+        },
+        {
+          "step": 4750,
+          "theta_circle": 48.75215377212147,
+          "theta_cap": NaN,
+          "u_max": 0.02567246084403433,
+          "dphi_max": 0.2568733172998251,
+          "mass_r": 341.02560204867984,
+          "mass_b": 5802.974397947735,
+          "mass_drift_r": -2.401912527573581e-13,
+          "mass_drift_b": -6.037203252983847e-13
+        },
+        {
+          "step": 5000,
+          "theta_circle": 51.33259942777688,
+          "theta_cap": NaN,
+          "u_max": 0.023262898291945423,
+          "dphi_max": 0.20946317627734856,
+          "mass_r": 341.0256020486755,
+          "mass_b": 5802.974397947558,
+          "mass_drift_r": -2.5285921612277047e-13,
+          "mass_drift_b": -6.342824912986923e-13
+        },
+        {
+          "step": 5250,
+          "theta_circle": 52.83322986269123,
+          "theta_cap": NaN,
+          "u_max": 0.021548444228342387,
+          "dphi_max": 0.18591324326075848,
+          "mass_r": 341.0256020486712,
+          "mass_b": 5802.97439794738,
+          "mass_drift_r": -2.655271794881828e-13,
+          "mass_drift_b": -6.650013863554117e-13
+        },
+        {
+          "step": 5500,
+          "theta_circle": 53.41025364784215,
+          "theta_cap": NaN,
+          "u_max": 0.020251295412965862,
+          "dphi_max": 0.15708698869319943,
+          "mass_r": 341.0256020486669,
+          "mass_b": 5802.974397947199,
+          "mass_drift_r": -2.7819514285359515e-13,
+          "mass_drift_b": -6.961904685813667e-13
+        },
+        {
+          "step": 5750,
+          "theta_circle": 53.25105120398227,
+          "theta_cap": NaN,
+          "u_max": 0.019213684576659923,
+          "dphi_max": 0.129361777658485,
+          "mass_r": 341.02560204866256,
+          "mass_b": 5802.97439794702,
+          "mass_drift_r": -2.9086310621900755e-13,
+          "mass_drift_b": -7.269093636380861e-13
+        },
+        {
+          "step": 6000,
+          "theta_circle": 52.539973779510454,
+          "theta_cap": NaN,
+          "u_max": 0.018327436608274367,
+          "dphi_max": 0.11598116449266258,
+          "mass_r": 341.02560204865824,
+          "mass_b": 5802.974397946841,
+          "mass_drift_r": -3.035310695844199e-13,
+          "mass_drift_b": -7.577849877512175e-13
+        }
+      ],
+      "phi_field_sha256": "2e8d3eabbe917a020def2a39403aa2553ec42c287e5fe3d7b104dac19fb9b5da",
+      "pass_15pct": false
+    }
+  },
+  "figures": [
+    "fig0_phase_fields.png",
+    "fig1_angle_vs_prescribed.png",
+    "fig2_error_gate.png",
+    "fig3_relaxation.png"
+  ]
+}
