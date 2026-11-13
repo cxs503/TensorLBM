@@ -1,0 +1,1793 @@
+{
+ "schema": "w26_suboff_cf_anchor_regci/v1",
+ "mission": "m17569",
+ "mission_key": "paper-exp-lbm-suboff-tau-11",
+ "repo": "TensorLBM",
+ "runner": "native",
+ "discipline": "ship-total-performance / resistance",
+ "generated_by": "papers/artifacts/w26/lbm-suboff-tau/build_artifact.py",
+ "generated_utc": "2026-11-13T07:28:39+00:00",
+ "predecessor": {
+  "task_key": "paper-exp-lbm-suboff-tau-10",
+  "reported_status": "succeeded",
+  "delivered_report": false,
+  "delivered_artifact": false,
+  "inherited_gap": "五 frank honest FAIL 的根因=C_F 锚值口径未对齐 + 负阻力区未界定；本单重做并销项",
+  "structural_root_cause_found_here": "the anchor pack contains no measured friction coefficient at all: every C_F in it is an ITTC-57 correlation value, and the recorded (1+k) is definitionally CT/CF_ITTC57, so C_F_exp cannot be extracted without a further assumption -> WITHHELD"
+ },
+ "parts": {
+  "anchor_register": {
+   "path": "papers/artifacts/w26/lbm-suboff-tau/anchor_register.json",
+   "sha256": "3178fec3bb0b91e4d448f6b2a60b56dbf8a7fdc60edd73c2e24ed2cb46c332e6"
+  },
+  "gci_sign_surface": {
+   "path": "papers/artifacts/w26/lbm-suboff-tau/gci_sign_surface.json",
+   "sha256": "c3235c04afa32ac9f76d4d8300e65ce94c581f0d79f711bc0d7664a79315b737"
+  }
+ },
+ "criteria": {
+  "C1_anchor_register": {
+   "statement": "anchor register carries >=1 verbatim anchor slot, else honest WITHHELD",
+   "n_verbatim_rows": 5,
+   "n_full_precision_rows": 17,
+   "verbatim_quotes_verified": 34,
+   "verbatim_quotes_total": 34,
+   "experimental_CF_status": "WITHHELD",
+   "experimental_CF_reason": "0 measured-friction entries among the transcribed external quantities; the only C_F entries are ITTC-57 correlation values (grades [A]/[B], rounded) plus the definitional CT/CF double entry",
+   "pass": true
+  },
+  "C2_ittc57_recompute": {
+   "statement": "|ITTC-57 recomputed - recorded| <= 1e-9",
+   "n_rows": 17,
+   "max_abs_residual": 5.49300188668056e-15,
+   "tolerance": 1e-09,
+   "pass": true
+  },
+  "C3_gci": {
+   "statement": "three grids: GCI < 5 % and observed order >= 1.8 at Re = 1.2e7",
+   "measured_at_Re": 1000.0000000000175,
+   "re_ladder_constant": true,
+   "gci_fine_pct_C_T": null,
+   "observed_order_C_T": null,
+   "gci_below_5pct": false,
+   "observed_order_ge_1_8": false,
+   "pass_at_case_Re": false,
+   "pass_at_stated_Re_1_2e7": null,
+   "status_at_stated_Re": "WITHHELD",
+   "withheld_reason": "a lattice Reynolds number of 1.2e7 is not reachable: the declared compute ceiling of this mission (the cell-updates actually spent on the ladder) is 3.679e+08 cell-updates, while the Re=1.2e7 rung of the reachability table needs 1.460e+22 cell-updates/day-scaled far beyond it (see reachable_reynolds_study)"
+  },
+  "C4_negative_drag_region": {
+   "statement": "negative-drag region reported in (tau, N) coordinates",
+   "definition": "cell = sign of the window-mean C_T at the given (tau, N); UNSTEADY suffix = last-window drift above the declared 2% steady-state tolerance",
+   "tau_values": [
+    0.50002,
+    0.50005,
+    0.5001,
+    0.50015,
+    0.5002,
+    0.5005,
+    0.501,
+    0.502,
+    0.505,
+    0.5072
+   ],
+   "N_values": [
+    32
+   ],
+   "boundary": {
+    "per_N": [
+     {
+      "N": 32,
+      "n_negative": 0,
+      "n_positive": 6,
+      "tau_max_negative": null,
+      "tau_min_positive": 0.5002
+     }
+    ],
+    "note": "bracketed by the scan resolution in tau; the true boundary lies inside the bracket, no interpolation is claimed"
+   },
+   "n_cells": 10,
+   "n_negative": 0,
+   "n_positive": 6,
+   "n_diverged": 4,
+   "n_unsteady": 3,
+   "secondary_excursion_definition": "a cell is NEG_EXCURSION if any instantaneous force sample of the run is negative; this is registered separately because the window-mean sign is unstable at the high-Reynolds end of the scan",
+   "n_excursion_cells": 6,
+   "pass": true,
+   "scope_note": "the surface covers tau in [0.5002, 0.5072] x N in [32, 48]; a cell is only counted as a sign determination if its last-window drift is inside the declared steady-state tolerance"
+  }
+ },
+ "case_caliber_vs_anchor": {
+  "case_Re_lattice": 1000.0,
+  "case_Re_note": "the frozen TensorLBM SUBOFF case fixes the lattice Reynolds number u_lb*N/nu_lb = 1000 (u_lb = 0.05, tau = 0.5072 at N = 48); this is the only Reynolds number the case can substantiate",
+  "anchor_Re": 11647265.0912,
+  "re_ratio": 11647.265091199999,
+  "CF_ittc57_at_case_Re": 0.075,
+  "CF_ittc57_at_anchor_Re": 0.002922082641361261,
+  "caliber_reading": "ITTC-57 evaluated at Re=1e3 returns 0.075, i.e. the correlation is carried far outside its fitted range (the line has a pole at Re=100 and is a turbulent flat-plate correlation); it cannot be used as the friction anchor of a Re=1e3 laminar LBM case. This is the structural root cause of the five predecessor honest FAILs.",
+  "documented_predecessor_measurement": {
+   "path": "benchmarks/verified/suboff_anchor_w22/ittc57_closure.json",
+   "sha256": "8e617715ca0e623b0420bc0a4ef4079df2bfbd6d48cade4792d6d61ae771925c",
+   "max_abs_residual_pct_caliber_A": 144.07554508067165
+  }
+ },
+ "anchor_rows_full_precision": [
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A1",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/0",
+   "verbatim_inputs": {
+    "speed_transcribed": 5.92,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 87.4
+   },
+   "recorded": {
+    "Re": 11647265.0912,
+    "CT": 0.00314206627053,
+    "CF_ittc78": 0.00292208264136,
+    "one_plus_k": 1.07528316484,
+    "U_mps": 3.04550848
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A2",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/1",
+   "verbatim_inputs": {
+    "speed_transcribed": 10.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 242.2
+   },
+   "recorded": {
+    "Re": 19674434.2757,
+    "CT": 0.00305155681549,
+    "CF_ittc78": 0.00267614368183,
+    "one_plus_k": 1.14028138183,
+    "U_mps": 5.14444
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A3",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/2",
+   "verbatim_inputs": {
+    "speed_transcribed": 11.84,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 332.9
+   },
+   "recorded": {
+    "Re": 23294530.1824,
+    "CT": 0.00299197328793,
+    "CF_ittc78": 0.00260349635443,
+    "one_plus_k": 1.14921355002,
+    "U_mps": 6.09101696
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A4",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/3",
+   "verbatim_inputs": {
+    "speed_transcribed": 13.92,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 451.5
+   },
+   "recorded": {
+    "Re": 27386812.5117,
+    "CT": 0.00293580094261,
+    "CF_ittc78": 0.0025366239936,
+    "one_plus_k": 1.15736543927,
+    "U_mps": 7.16106048
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A5",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/4",
+   "verbatim_inputs": {
+    "speed_transcribed": 16.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 576.9
+   },
+   "recorded": {
+    "Re": 31479094.8411,
+    "CT": 0.00283927785478,
+    "CF_ittc78": 0.00248112291323,
+    "one_plus_k": 1.14435195437,
+    "U_mps": 8.231104
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A6",
+   "configuration": "AFF-1",
+   "pointer": "/anchors/A_AFF1_bare_DTRC_T14/rows/5",
+   "verbatim_inputs": {
+    "speed_transcribed": 17.99,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 697.0
+   },
+   "recorded": {
+    "Re": 35394307.2619,
+    "CT": 0.00271342469297,
+    "CF_ittc78": 0.00243580342137,
+    "one_plus_k": 1.11397523674,
+    "U_mps": 9.25484756
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B1",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/0",
+   "verbatim_inputs": {
+    "speed_transcribed": 3.05,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 102.3
+   },
+   "recorded": {
+    "Re": 11664442.4934,
+    "CT": 0.00366690356967,
+    "CF_ittc78": 0.00292134447611,
+    "one_plus_k": 1.25521094813,
+    "U_mps": 3.05
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 3.050 | 102.30 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B2",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/1",
+   "verbatim_inputs": {
+    "speed_transcribed": 5.144,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 283.8
+   },
+   "recorded": {
+    "Re": 19672751.5364,
+    "CT": 0.00357630051741,
+    "CF_ittc78": 0.00267618123837,
+    "one_plus_k": 1.33634466386,
+    "U_mps": 5.144
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 5.144 | 283.80 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B3",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/2",
+   "verbatim_inputs": {
+    "speed_transcribed": 6.1,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 389.2
+   },
+   "recorded": {
+    "Re": 23328884.9868,
+    "CT": 0.0034876805213,
+    "CF_ittc78": 0.00260287554982,
+    "one_plus_k": 1.33993364436,
+    "U_mps": 6.1
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 6.100 | 389.20 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B4",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/3",
+   "verbatim_inputs": {
+    "speed_transcribed": 7.16,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 526.6
+   },
+   "recorded": {
+    "Re": 27382756.8042,
+    "CT": 0.00342514013207,
+    "CF_ittc78": 0.00253668400488,
+    "one_plus_k": 1.35024312271,
+    "U_mps": 7.16
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 7.160 | 526.60 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B5",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/B_AFF8_full_CFDletters_T3/rows/4",
+   "verbatim_inputs": {
+    "speed_transcribed": 8.23,
+    "speed_unit_transcribed": "m/s",
+    "RT_N": 675.6
+   },
+   "recorded": {
+    "Re": 31474872.6953,
+    "CT": 0.00332593306498,
+    "CF_ittc78": 0.00248117549112,
+    "one_plus_k": 1.34046667674,
+    "U_mps": 8.23
+   },
+   "source": {
+    "citation": "Le, D.A. & Le, N.H. (2024). Numerical Investigate the Effect of Turbulence Models on the CFD Computation of Submarine Resistance. CFD Letters 16(10):126-139.",
+    "locator": "Table 1 (principal particulars, model scale); Table 3 (EFD column)",
+    "grade": "SECONDARY",
+    "quote": "| 8.230 | 675.60 |",
+    "archived_at": "benchmarks/pending/suboff_highre_resistance/refs_lock.md"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F1",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/0",
+   "verbatim_inputs": {
+    "speed_transcribed": 5.93,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 102.3
+   },
+   "recorded": {
+    "Re": 11666939.5255,
+    "CT": 0.00366533410993,
+    "CF_ittc78": 0.00292123728481,
+    "one_plus_k": 1.25471974803,
+    "U_mps": 3.05065292
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F2",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/1",
+   "verbatim_inputs": {
+    "speed_transcribed": 10.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 283.8
+   },
+   "recorded": {
+    "Re": 19674434.2757,
+    "CT": 0.00357568878711,
+    "CF_ittc78": 0.00267614368183,
+    "one_plus_k": 1.33613483139,
+    "U_mps": 5.14444
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F3",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/2",
+   "verbatim_inputs": {
+    "speed_transcribed": 11.85,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 389.2
+   },
+   "recorded": {
+    "Re": 23314204.6167,
+    "CT": 0.0034920741141,
+    "CF_ittc78": 0.00260314069068,
+    "one_plus_k": 1.34148497106,
+    "U_mps": 6.0961614
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F4",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/3",
+   "verbatim_inputs": {
+    "speed_transcribed": 13.92,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 526.6
+   },
+   "recorded": {
+    "Re": 27386812.5117,
+    "CT": 0.00342412575056,
+    "CF_ittc78": 0.0025366239936,
+    "one_plus_k": 1.34987517235,
+    "U_mps": 7.16106048
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F5",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/4",
+   "verbatim_inputs": {
+    "speed_transcribed": 16.0,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 675.6
+   },
+   "recorded": {
+    "Re": 31479094.8411,
+    "CT": 0.0033250409407,
+    "CF_ittc78": 0.00248112291323,
+    "one_plus_k": 1.34013551806,
+    "U_mps": 8.231104
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F6",
+   "configuration": "AFF-8",
+   "pointer": "/anchors/A2_AFF8_full_DTRC_T14/rows/5",
+   "verbatim_inputs": {
+    "speed_transcribed": 17.79,
+    "speed_unit_transcribed": "kn",
+    "RT_N": 821.1
+   },
+   "recorded": {
+    "Re": 35000818.5764,
+    "CT": 0.00326882354476,
+    "CF_ittc78": 0.0024400715893,
+    "one_plus_k": 1.33964247569,
+    "U_mps": 9.15195876
+   },
+   "source": {
+    "citation": "Liu, H.-L. & Huang, T.T. (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+    "locator": "Table 14, p.23",
+    "grade": "PRIMARY_TABLE_SECOND_HAND",
+    "quote": "SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1)",
+    "archived_at": "src/tensorlbm/suboff_reference_data.py"
+   },
+   "readback_ok": true
+  }
+ ],
+ "anchor_rows_derived": [
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A1",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 5.92,
+    "unit": "kn",
+    "V_ms": 3.04550848,
+    "RT_N": 87.4,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 11647265.09120281,
+   "Re_recorded": 11647265.0912,
+   "Re_rel_dev": 2.4132116064853204e-13,
+   "CT_from_verbatim": 0.0031420662705313055,
+   "CT_recorded": 0.00314206627053,
+   "CT_rel_dev": 4.1545254086966074e-13,
+   "U_mps_recorded": 3.04550848,
+   "U_mps_recomputed": 3.04550848,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.00292208264136114,
+   "one_plus_k_recorded": 1.07528316484,
+   "one_plus_k_identity_abs_residual": 1.503019930737537e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A2",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 10.0,
+    "unit": "kn",
+    "V_ms": 5.14444,
+    "RT_N": 242.2,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 19674434.275680423,
+   "Re_recorded": 19674434.2757,
+   "Re_rel_dev": -9.950172007027555e-13,
+   "CT_from_verbatim": 0.0030515568154928377,
+   "CT_recorded": 0.00305155681549,
+   "CT_rel_dev": 9.298774682566159e-13,
+   "U_mps_recorded": 5.14444,
+   "U_mps_recomputed": 5.14444,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026761436818346076,
+   "one_plus_k_recorded": 1.14028138183,
+   "one_plus_k_identity_abs_residual": 1.0225154056797692e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A3",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 11.84,
+    "unit": "kn",
+    "V_ms": 6.09101696,
+    "RT_N": 332.9,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 23294530.18240562,
+   "Re_recorded": 23294530.1824,
+   "Re_rel_dev": 2.4132116064853204e-13,
+   "CT_from_verbatim": 0.002991973287928694,
+   "CT_recorded": 0.00299197328793,
+   "CT_rel_dev": -4.36438754921161e-13,
+   "U_mps_recorded": 6.09101696,
+   "U_mps_recomputed": 6.09101696,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026034963544291252,
+   "one_plus_k_recorded": 1.14921355002,
+   "one_plus_k_identity_abs_residual": 3.3142377731110173e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A4",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 13.92,
+    "unit": "kn",
+    "V_ms": 7.16106048,
+    "RT_N": 451.5,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 27386812.511747144,
+   "Re_recorded": 27386812.5117,
+   "Re_rel_dev": 1.7213959713966417e-12,
+   "CT_from_verbatim": 0.0029358009426130047,
+   "CT_recorded": 0.00293580094261,
+   "CT_rel_dev": 1.0234144341273757e-12,
+   "U_mps_recorded": 7.16106048,
+   "U_mps_recomputed": 7.16106048,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002536623993604796,
+   "one_plus_k_recorded": 1.15736543927,
+   "one_plus_k_identity_abs_residual": 2.241318242113266e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A5",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 16.0,
+    "unit": "kn",
+    "V_ms": 8.231104,
+    "RT_N": 576.9,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 31479094.841088675,
+   "Re_recorded": 31479094.8411,
+   "Re_rel_dev": -3.5975883564917915e-13,
+   "CT_from_verbatim": 0.002839277854784621,
+   "CT_recorded": 0.00283927785478,
+   "CT_rel_dev": 1.627480611435708e-12,
+   "U_mps_recorded": 8.231104,
+   "U_mps_recomputed": 8.231104,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002481122913231741,
+   "one_plus_k_recorded": 1.14435195437,
+   "one_plus_k_identity_abs_residual": 2.7964297544258443e-12
+  },
+  {
+   "anchor_id": "A_AFF1_bare_DTRC_T14:A6",
+   "configuration": "AFF-1",
+   "verbatim_inputs": {
+    "V_transcribed": 17.99,
+    "unit": "kn",
+    "V_ms": 9.25484756,
+    "RT_N": 697.0,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 35394307.26194908,
+   "Re_recorded": 35394307.2619,
+   "Re_rel_dev": 1.3865781869607569e-12,
+   "CT_from_verbatim": 0.0027134246929704847,
+   "CT_recorded": 0.00271342469297,
+   "CT_rel_dev": 1.786875503829869e-13,
+   "U_mps_recorded": 9.25484756,
+   "U_mps_recomputed": 9.25484756,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002435803421370228,
+   "one_plus_k_recorded": 1.11397523674,
+   "one_plus_k_identity_abs_residual": 1.127986593019159e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B1",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 3.05,
+    "unit": "m/s",
+    "V_ms": 3.05,
+    "RT_N": 102.3,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 11664442.493415276,
+   "Re_recorded": 11664442.4934,
+   "Re_rel_dev": 1.3095827663847907e-12,
+   "CT_from_verbatim": 0.0036669035696661055,
+   "CT_recorded": 0.00366690356967,
+   "CT_rel_dev": -1.062055254405943e-12,
+   "U_mps_recorded": 3.05,
+   "U_mps_recomputed": 3.05,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002921344476109731,
+   "one_plus_k_recorded": 1.25521094813,
+   "one_plus_k_identity_abs_residual": 8.117950756059145e-13
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B2",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 5.144,
+    "unit": "m/s",
+    "V_ms": 5.144,
+    "RT_N": 283.8,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 19672751.53643547,
+   "Re_recorded": 19672751.5364,
+   "Re_rel_dev": 1.8029246628784705e-12,
+   "CT_from_verbatim": 0.0035763005174137756,
+   "CT_recorded": 0.00357630051741,
+   "CT_rel_dev": 1.0557350052332499e-12,
+   "U_mps_recorded": 5.144,
+   "U_mps_recomputed": 5.144,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026761812383707256,
+   "one_plus_k_recorded": 1.33634466386,
+   "one_plus_k_identity_abs_residual": 2.9880542484761463e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B3",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 6.1,
+    "unit": "m/s",
+    "V_ms": 6.1,
+    "RT_N": 389.2,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 23328884.98683055,
+   "Re_recorded": 23328884.9868,
+   "Re_rel_dev": 1.3095827663847907e-12,
+   "CT_from_verbatim": 0.003487680521295328,
+   "CT_recorded": 0.0034876805213,
+   "CT_rel_dev": -1.3395848539283853e-12,
+   "U_mps_recorded": 6.1,
+   "U_mps_recomputed": 6.1,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026028755498213704,
+   "one_plus_k_recorded": 1.33993364436,
+   "one_plus_k_identity_abs_residual": 5.4356519285647664e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B4",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 7.16,
+    "unit": "m/s",
+    "V_ms": 7.16,
+    "RT_N": 526.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 27382756.80421422,
+   "Re_recorded": 27382756.8042,
+   "Re_rel_dev": 5.192842039574383e-13,
+   "CT_from_verbatim": 0.0034251401320700733,
+   "CT_recorded": 0.00342514013207,
+   "CT_rel_dev": 2.139826810990232e-14,
+   "U_mps_recorded": 7.16,
+   "U_mps_recomputed": 7.16,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002536684004875832,
+   "one_plus_k_recorded": 1.35024312271,
+   "one_plus_k_identity_abs_residual": 3.027578188152802e-12
+  },
+  {
+   "anchor_id": "B_AFF8_full_CFDletters_T3:B5",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 8.23,
+    "unit": "m/s",
+    "V_ms": 8.23,
+    "RT_N": 675.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 31474872.695346795,
+   "Re_recorded": 31474872.6953,
+   "Re_rel_dev": 1.4866897760627811e-12,
+   "CT_from_verbatim": 0.0033259330649836705,
+   "CT_recorded": 0.00332593306498,
+   "CT_rel_dev": 1.1035222665613086e-12,
+   "U_mps_recorded": 8.23,
+   "U_mps_recomputed": 8.23,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0024811754911162063,
+   "one_plus_k_recorded": 1.34046667674,
+   "one_plus_k_identity_abs_residual": 4.176881063244764e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F1",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 5.93,
+    "unit": "kn",
+    "V_ms": 3.05065292,
+    "RT_N": 102.3,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 11666939.52547849,
+   "Re_recorded": 11666939.5255,
+   "Re_rel_dev": -1.843656267893209e-12,
+   "CT_from_verbatim": 0.0036653341099267284,
+   "CT_recorded": 0.00366533410993,
+   "CT_rel_dev": -8.926030690704866e-13,
+   "U_mps_recorded": 3.05065292,
+   "U_mps_recomputed": 3.05065292,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002921237284811417,
+   "one_plus_k_recorded": 1.25471974803,
+   "one_plus_k_identity_abs_residual": 9.052758542793526e-13
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F2",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 10.0,
+    "unit": "kn",
+    "V_ms": 5.14444,
+    "RT_N": 283.8,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 19674434.275680423,
+   "Re_recorded": 19674434.2757,
+   "Re_rel_dev": -9.950172007027555e-13,
+   "CT_from_verbatim": 0.0035756887871051506,
+   "CT_recorded": 0.00357568878711,
+   "CT_rel_dev": -1.356219672857111e-12,
+   "U_mps_recorded": 5.14444,
+   "U_mps_recomputed": 5.14444,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026761436818346076,
+   "one_plus_k_recorded": 1.33613483139,
+   "one_plus_k_identity_abs_residual": 4.730216218717942e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F3",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 11.85,
+    "unit": "kn",
+    "V_ms": 6.0961614,
+    "RT_N": 389.2,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 23314204.616681296,
+   "Re_recorded": 23314204.6167,
+   "Re_rel_dev": -8.022869703725203e-13,
+   "CT_from_verbatim": 0.0034920741141005783,
+   "CT_recorded": 0.0034920741141,
+   "CT_rel_dev": 1.6566953058135988e-13,
+   "U_mps_recorded": 6.0961614,
+   "U_mps_recomputed": 6.0961614,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0026031406906839756,
+   "one_plus_k_recorded": 1.34148497106,
+   "one_plus_k_identity_abs_residual": 7.562839243746566e-13
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F4",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 13.92,
+    "unit": "kn",
+    "V_ms": 7.16106048,
+    "RT_N": 526.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 27386812.511747144,
+   "Re_recorded": 27386812.5117,
+   "Re_rel_dev": 1.7213959713966417e-12,
+   "CT_from_verbatim": 0.0034241257505648022,
+   "CT_recorded": 0.00342412575056,
+   "CT_rel_dev": 1.4024450654557376e-12,
+   "U_mps_recorded": 7.16106048,
+   "U_mps_recomputed": 7.16106048,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002536623993604796,
+   "one_plus_k_recorded": 1.34987517235,
+   "one_plus_k_identity_abs_residual": 4.75219863460552e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F5",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 16.0,
+    "unit": "kn",
+    "V_ms": 8.231104,
+    "RT_N": 675.6,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 31479094.841088675,
+   "Re_recorded": 31479094.8411,
+   "Re_rel_dev": -3.5975883564917915e-13,
+   "CT_from_verbatim": 0.003325040940704611,
+   "CT_recorded": 0.0033250409407,
+   "CT_rel_dev": 1.3867182634375775e-12,
+   "U_mps_recorded": 8.231104,
+   "U_mps_recomputed": 8.231104,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.002481122913231741,
+   "one_plus_k_recorded": 1.34013551806,
+   "one_plus_k_identity_abs_residual": 3.2152058793144533e-12
+  },
+  {
+   "anchor_id": "A2_AFF8_full_DTRC_T14:F6",
+   "configuration": "AFF-8",
+   "verbatim_inputs": {
+    "V_transcribed": 17.79,
+    "unit": "kn",
+    "V_ms": 9.15195876,
+    "RT_N": 821.1,
+    "L_m": 4.356,
+    "S_m2": 5.998,
+    "rho": 1000.0,
+    "nu": 1.139e-06
+   },
+   "Re_recomputed": 35000818.57643546,
+   "Re_recorded": 35000818.5764,
+   "Re_rel_dev": 1.013255263271764e-12,
+   "CT_from_verbatim": 0.003268823544760332,
+   "CT_recorded": 0.00326882354476,
+   "CT_rel_dev": 1.0162663756570224e-13,
+   "U_mps_recorded": 9.15195876,
+   "U_mps_recomputed": 9.15195876,
+   "U_rel_dev": 0.0,
+   "CF_exp_verbatim": null,
+   "CF_exp_verbatim_status": "WITHHELD",
+   "CF_exp_verbatim_reason": "the DTRC rows transcribe total resistance R_T and speed V; no measured friction coefficient is transcribed anywhere in this repository and the original report is not reachable offline",
+   "CF_ittc57_recomputed": 0.0024400715893025055,
+   "one_plus_k_recorded": 1.33964247569,
+   "one_plus_k_identity_abs_residual": 3.817390847871138e-12
+  }
+ ],
+ "reachable_reynolds_study": {
+  "declared_ceiling_cell_updates": 367891200.0,
+  "measured_throughput_cells_per_s": 957084.8333568963,
+  "empirical_tau_floor": 0.001,
+  "rows": [
+   {
+    "Re_lattice": 1000.0,
+    "N_required_by_tau_floor": 6.666666666666666,
+    "N_required_by_resolution": 100.0,
+    "N_required": 100.0,
+    "cells": 1980000.0,
+    "steps": 18000.0,
+    "cell_updates": 35640000000.0,
+    "wall_days_at_measured_throughput": 0.4309962770522548,
+    "within_declared_ceiling": false
+   },
+   {
+    "Re_lattice": 10000.0,
+    "N_required_by_tau_floor": 66.66666666666666,
+    "N_required_by_resolution": 100.0,
+    "N_required": 100.0,
+    "cells": 1980000.0,
+    "steps": 18000.0,
+    "cell_updates": 35640000000.0,
+    "wall_days_at_measured_throughput": 0.4309962770522548,
+    "within_declared_ceiling": false
+   },
+   {
+    "Re_lattice": 100000.0,
+    "N_required_by_tau_floor": 666.6666666666665,
+    "N_required_by_resolution": 1000.0,
+    "N_required": 1000.0,
+    "cells": 1980000000.0,
+    "steps": 180000.0,
+    "cell_updates": 356400000000000.0,
+    "wall_days_at_measured_throughput": 4309.9627705225475,
+    "within_declared_ceiling": false
+   },
+   {
+    "Re_lattice": 1000000.0,
+    "N_required_by_tau_floor": 6666.666666666666,
+    "N_required_by_resolution": 10000.0,
+    "N_required": 10000.0,
+    "cells": 1980000000000.0,
+    "steps": 1800000.0,
+    "cell_updates": 3.564e+18,
+    "wall_days_at_measured_throughput": 43099627.70522548,
+    "within_declared_ceiling": false
+   },
+   {
+    "Re_lattice": 10000000.0,
+    "N_required_by_tau_floor": 66666.66666666666,
+    "N_required_by_resolution": 10000.0,
+    "N_required": 66666.66666666666,
+    "cells": 586666666666666.5,
+    "steps": 11999999.999999998,
+    "cell_updates": 7.039999999999997e+21,
+    "wall_days_at_measured_throughput": 85135067072.0503,
+    "within_declared_ceiling": false
+   },
+   {
+    "Re_lattice": 12000000.0,
+    "N_required_by_tau_floor": 79999.99999999999,
+    "N_required_by_resolution": 10000.0,
+    "N_required": 79999.99999999999,
+    "cells": 1013759999999999.5,
+    "steps": 14399999.999999998,
+    "cell_updates": 1.4598143999999992e+22,
+    "wall_days_at_measured_throughput": 176536075080.6035,
+    "within_declared_ceiling": false
+   }
+  ]
+ },
+ "ladder": {
+  "procedure": "ASME V&V 20 / Celik et al. (2008) three-grid GCI, fine-grid value with Fs=1.25",
+  "refinement_ratios": [
+   1.5,
+   1.5
+  ],
+  "r_is_uniform": true,
+  "quantities": {
+   "C_T": {
+    "f1_fine": 0.04218147875488005,
+    "f2_medium": 0.030552492694257347,
+    "f3_coarse": 0.04340699080501529,
+    "r": 1.5,
+    "convergence_ratio_R": -1.105384256524736,
+    "status": "OSCILLATORY_DIVERGENT",
+    "observed_order": null
+   },
+   "C_F": {
+    "f1_fine": 0.03023579524628562,
+    "f2_medium": 0.02358318379070896,
+    "f3_coarse": 0.030902655477184102,
+    "r": 1.5,
+    "convergence_ratio_R": -1.1002403695678749,
+    "status": "OSCILLATORY_DIVERGENT",
+    "observed_order": null
+   },
+   "C_P": {
+    "f1_fine": 0.01194568350859443,
+    "f2_medium": 0.006969308903548382,
+    "f3_coarse": 0.012504335327831182,
+    "r": 1.5,
+    "convergence_ratio_R": -1.1122608050186331,
+    "status": "OSCILLATORY_DIVERGENT",
+    "observed_order": null
+   }
+  },
+  "steady_state_check": {
+   "declared_tolerance_pct": 2.0,
+   "per_case_drift_pct": {
+    "ladder4_N16": 0.000272792588523032,
+    "ladder4_N24": 0.004423898644106619,
+    "ladder4_N36": 0.012345244221602068
+   },
+   "all_cases_below_tolerance": true,
+   "note": "GCI is only meaningful on a statistically steady solution; the drift column is reported so the reader can discount the number if it is not"
+  },
+  "cases": [
+   {
+    "tag": "ladder4_N16",
+    "N": 16,
+    "cells": 8112,
+    "steps": 2880,
+    "passes": 3.0,
+    "Re_lattice": 1000.0000000000175,
+    "tau": 0.5024,
+    "nu_lb": 0.000799999999999986,
+    "C_T": 0.04340699080501529,
+    "C_F": 0.030902655477184102,
+    "C_P": 0.012504335327831182,
+    "C_T_sum_check_rel_dev": 1.5985659856212611e-16,
+    "wind_mean_recomputed_vs_case_json_rel_dev": 0.0,
+    "C_T_window_drift": 2.72792588523032e-06,
+    "C_F_window_drift": 1.2113781555444683e-06,
+    "C_T_block_means": [
+     0.05221689596282879,
+     0.044478658831937,
+     0.04372005372149111,
+     0.04352918388179238,
+     0.04345653524136547,
+     0.043426006359621586,
+     0.04341446217642081,
+     0.04340926037508472,
+     0.04340773697336056,
+     0.04340712053299634
+    ],
+    "field_finite": true,
+    "solver_route": "standard_compiled_step",
+    "wall_treatment_effective": "BOUNCE_BACK",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/runs/ladder4_N16/case_ladder4_N16.json",
+    "case_json_sha256": "1350eb25f990f42c6362f89a6b53b70b75a0be5f205f1b987321e8f687c74e82",
+    "timeseries_sha256": "b6e58af590592cdb2be20f323c1022aa42d48ac6052badfcf4fb7112eea89b3a",
+    "wall_clock": {
+     "setup_s": 0.027990102767944336,
+     "run_s": 94.27117109298706,
+     "cells_per_s": 247822.95296783437
+    }
+   },
+   {
+    "tag": "ladder4_N24",
+    "N": 24,
+    "cells": 28800,
+    "steps": 2880,
+    "passes": 2.0,
+    "Re_lattice": 999.9999999999868,
+    "tau": 0.5036,
+    "nu_lb": 0.001200000000000016,
+    "C_T": 0.030552492694257347,
+    "C_F": 0.02358318379070896,
+    "C_P": 0.006969308903548382,
+    "C_T_sum_check_rel_dev": 1.135569194524587e-16,
+    "wind_mean_recomputed_vs_case_json_rel_dev": 0.0,
+    "C_T_window_drift": 4.4238986441066186e-05,
+    "C_F_window_drift": 1.3975161684060684e-05,
+    "C_T_block_means": [
+     0.0449280338501044,
+     0.032284273659590995,
+     0.03099918422782791,
+     0.03072767972600252,
+     0.03063321463164243,
+     0.03059080297704894,
+     0.03056780633770746,
+     0.030559328930678177,
+     0.030554847978259872,
+     0.030552561484940316
+    ],
+    "field_finite": true,
+    "solver_route": "standard_compiled_step",
+    "wall_treatment_effective": "BOUNCE_BACK",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/runs/ladder4_N24/case_ladder4_N24.json",
+    "case_json_sha256": "8228e76d6ac3e2a0e34eb507aae9a8870a1b05234cb35cdf248f7c13a2423442",
+    "timeseries_sha256": "2efb8a904c657748fc5a91ff6f9160f68322e429ccf39b7abbfb9d05cf9e8cee",
+    "wall_clock": {
+     "setup_s": 0.04808306694030762,
+     "run_s": 178.69574809074402,
+     "cells_per_s": 464163.25450496987
+    }
+   },
+   {
+    "tag": "ladder4_N36",
+    "N": 36,
+    "cells": 90828,
+    "steps": 2880,
+    "passes": 1.3333333333333333,
+    "Re_lattice": 1000.0000000000074,
+    "tau": 0.5054,
+    "nu_lb": 0.0017999999999999867,
+    "C_T": 0.04218147875488005,
+    "C_F": 0.03023579524628562,
+    "C_P": 0.01194568350859443,
+    "C_T_sum_check_rel_dev": 0.0,
+    "wind_mean_recomputed_vs_case_json_rel_dev": 0.0,
+    "C_T_window_drift": 0.0001234524422160207,
+    "C_F_window_drift": 5.5644967338587295e-05,
+    "C_T_block_means": [
+     0.06397396845831929,
+     0.046534162890483406,
+     0.0434478234402352,
+     0.04262787422829623,
+     0.04237154854039129,
+     0.04227380938168153,
+     0.04222944794291251,
+     0.0422120026530333,
+     0.04219321835698903,
+     0.04218218697559953
+    ],
+    "field_finite": true,
+    "solver_route": "standard_compiled_step",
+    "wall_treatment_effective": "BOUNCE_BACK",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/runs/ladder4_N36/case_ladder4_N36.json",
+    "case_json_sha256": "429300023eb524b7f5843a4abe1a6c4dbf8e8aea1424eed5e236393a8860e475",
+    "timeseries_sha256": "9d87c0701eb94fa8777aa2f26399234d839db866fe770b5695f35f0281c8345b",
+    "wall_clock": {
+     "setup_s": 0.10518789291381836,
+     "run_s": 273.31395387649536,
+     "cells_per_s": 957084.8333568963
+    }
+   }
+  ],
+  "two_grid_only": false,
+  "criteria": {
+   "GCI_below_5pct": false,
+   "observed_order_ge_1p8": false,
+   "observed_order": null,
+   "gci_fine_pct": null,
+   "gci_basis": "C_T (total resistance coefficient of the bare hull)",
+   "verdict_basis": "both sub-criteria must hold on C_T",
+   "pass": false
+  }
+ },
+ "sign_surface": {
+  "definition": "cell = sign of the window-mean C_T at the given (tau, N); UNSTEADY suffix = last-window drift above the declared 2% steady-state tolerance",
+  "tau_values": [
+   0.50002,
+   0.50005,
+   0.5001,
+   0.50015,
+   0.5002,
+   0.5005,
+   0.501,
+   0.502,
+   0.505,
+   0.5072
+  ],
+  "N_values": [
+   32
+  ],
+  "sign_grid": {
+   "32": {
+    "0.50002": "DIVERGED",
+    "0.50005": "DIVERGED",
+    "0.5001": "DIVERGED",
+    "0.50015": "DIVERGED",
+    "0.5002": "POSITIVE_UNSTEADY",
+    "0.5005": "POSITIVE_UNSTEADY",
+    "0.501": "POSITIVE_UNSTEADY",
+    "0.502": "POSITIVE",
+    "0.505": "POSITIVE",
+    "0.5072": "POSITIVE"
+   }
+  },
+  "cells": [
+   {
+    "tag": "scan2_tau0.50002_N32",
+    "tau": 0.50002,
+    "N": 32,
+    "Re_lattice": 239999.99999976,
+    "nu_lb": 6.666666666673334e-06,
+    "steps": 1659,
+    "passes": 0.8640625,
+    "C_T": 0.006330128732650737,
+    "C_F": 0.0001807423418722465,
+    "C_P": 0.006149386390778491,
+    "C_T_min_window": -0.0026236687316918664,
+    "C_T_max_window": 0.01831010887047025,
+    "C_T_window_drift": 0.7387767907401213,
+    "C_T_series_min": -0.0026236687316918664,
+    "C_T_series_min_step": 1485,
+    "n_samples": 331,
+    "n_samples_negative": 16,
+    "frac_samples_negative": 0.04833836858006042,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50002_N32/case_scan2_tau0.50002_N32.json",
+    "timeseries_sha256": "e130b05f047c3595241db329fd3be2ec05a9020d456259efd7c1684fe4229fe3",
+    "wall_clock": {
+     "setup_s": 0.04166078567504883,
+     "run_s": 267.39863896369934,
+     "cells_per_s": 402629.0650440285
+    }
+   },
+   {
+    "tag": "scan2_tau0.50005_N32",
+    "tau": 0.50005,
+    "N": 32,
+    "Re_lattice": 96000.0000000106,
+    "nu_lb": 1.6666666666664828e-05,
+    "steps": 1741,
+    "passes": 0.9067708333333333,
+    "C_T": 0.012153365521220413,
+    "C_F": 0.000450445977899741,
+    "C_P": 0.011702919543320674,
+    "C_T_min_window": -0.0006333873313954404,
+    "C_T_max_window": 0.021318927674148055,
+    "C_T_window_drift": 0.5184453734080601,
+    "C_T_series_min": -0.0036636160060982063,
+    "C_T_series_min_step": 1480,
+    "n_samples": 348,
+    "n_samples_negative": 19,
+    "frac_samples_negative": 0.05459770114942529,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50005_N32/case_scan2_tau0.50005_N32.json",
+    "timeseries_sha256": "139fca26d32a8ea988a69a985a39cef4b79a754706cc7c8d11b09d6d8afbcf1e",
+    "wall_clock": {
+     "setup_s": 0.059050559997558594,
+     "run_s": 189.03961825370789,
+     "cells_per_s": 597673.3186604597
+    }
+   },
+   {
+    "tag": "scan2_tau0.50010_N32",
+    "tau": 0.5001,
+    "N": 32,
+    "Re_lattice": 48000.0000000053,
+    "nu_lb": 3.3333333333329655e-05,
+    "steps": 1721,
+    "passes": 0.8963541666666667,
+    "C_T": 0.00785863726703125,
+    "C_F": 0.0008359040765237661,
+    "C_P": 0.007022733190507483,
+    "C_T_min_window": -0.002484318683660244,
+    "C_T_max_window": 0.014433677811133886,
+    "C_T_window_drift": 0.625903478434798,
+    "C_T_series_min": -0.0032722577544895735,
+    "C_T_series_min_step": 1480,
+    "n_samples": 344,
+    "n_samples_negative": 16,
+    "frac_samples_negative": 0.046511627906976744,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50010_N32/case_scan2_tau0.50010_N32.json",
+    "timeseries_sha256": "9e23fed90b94f22f4f88760a34b03536b007a85164a86a5bd1553d0032a06983",
+    "wall_clock": {
+     "setup_s": 0.055773019790649414,
+     "run_s": 170.98561668395996,
+     "cells_per_s": 653189.5381962686
+    }
+   },
+   {
+    "tag": "scan2_tau0.50015_N32",
+    "tau": 0.50015,
+    "N": 32,
+    "Re_lattice": 32000.00000000352,
+    "nu_lb": 4.99999999999945e-05,
+    "steps": 1984,
+    "passes": 1.0333333333333334,
+    "C_T": 0.019995780609229435,
+    "C_F": 0.0014641257202018666,
+    "C_P": 0.01853165488902757,
+    "C_T_min_window": 0.00688471825375288,
+    "C_T_max_window": 0.024316857424665005,
+    "C_T_window_drift": 0.30896998927238206,
+    "C_T_series_min": -0.0030800807582934265,
+    "C_T_series_min_step": 1485,
+    "n_samples": 396,
+    "n_samples_negative": 20,
+    "frac_samples_negative": 0.050505050505050504,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "DIVERGED",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan2/scan2_tau0.50015_N32/case_scan2_tau0.50015_N32.json",
+    "timeseries_sha256": "42926bc25156ead6ea5c1139c94a69bc1851aacdc2a927f48e76c503129cdac0",
+    "wall_clock": {
+     "setup_s": 0.060735225677490234,
+     "run_s": 229.90726327896118,
+     "cells_per_s": 560024.3427010609
+    }
+   },
+   {
+    "tag": "scan_tau0.5002_N32",
+    "tau": 0.5002,
+    "N": 32,
+    "Re_lattice": 24000.00000000265,
+    "nu_lb": 6.666666666665931e-05,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.011913244873532692,
+    "C_F": 0.002392823206418758,
+    "C_P": 0.009520421667113933,
+    "C_T_min_window": 0.007146323133995103,
+    "C_T_max_window": 0.016007087252721958,
+    "C_T_window_drift": 0.6220478064229822,
+    "C_T_series_min": -0.0024324573020018734,
+    "C_T_series_min_step": 1495,
+    "n_samples": 576,
+    "n_samples_negative": 29,
+    "frac_samples_negative": 0.050347222222222224,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "POSITIVE_UNSTEADY",
+    "solver_route": "wall_function",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5002_N32/case_scan_tau0.5002_N32.json",
+    "timeseries_sha256": "9980e72a21ccfe705be81d47bdd60d5082939ff70839263e686410f5c7381dca",
+    "wall_clock": {
+     "setup_s": 0.05581259727478027,
+     "run_s": 400.0904450416565,
+     "cells_per_s": 467145.5724980894
+    }
+   },
+   {
+    "tag": "scan_tau0.5005_N32",
+    "tau": 0.5005,
+    "N": 32,
+    "Re_lattice": 9600.000000001057,
+    "nu_lb": 0.00016666666666664834,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.016679616857352305,
+    "C_F": 0.0053271290470162215,
+    "C_P": 0.011352487810336081,
+    "C_T_min_window": 0.012483464891882104,
+    "C_T_max_window": 0.02069644394907384,
+    "C_T_window_drift": 0.03876869310422954,
+    "C_T_series_min": -0.000844657484429792,
+    "C_T_series_min_step": 1700,
+    "n_samples": 576,
+    "n_samples_negative": 16,
+    "frac_samples_negative": 0.027777777777777776,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "POSITIVE_UNSTEADY",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5005_N32/case_scan_tau0.5005_N32.json",
+    "timeseries_sha256": "a8b631329c1ad30f7257f47933ca89a6cc423f0b492c5382fb96187e9983f1a8",
+    "wall_clock": {
+     "setup_s": 0.20292401313781738,
+     "run_s": 232.48167943954468,
+     "cells_per_s": 803936.3809250278
+    }
+   },
+   {
+    "tag": "scan_tau0.5010_N32",
+    "tau": 0.501,
+    "N": 32,
+    "Re_lattice": 4799.999999999995,
+    "nu_lb": 0.00033333333333333365,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.01253331937100364,
+    "C_F": 0.008394219710213362,
+    "C_P": 0.0041390996607902795,
+    "C_T_min_window": 0.009779532750065713,
+    "C_T_max_window": 0.015551955252599345,
+    "C_T_window_drift": 0.2438086402399066,
+    "C_T_series_min": 0.009479066152972835,
+    "C_T_series_min_step": 2585,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": false,
+    "status": "POSITIVE_UNSTEADY",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5010_N32/case_scan_tau0.5010_N32.json",
+    "timeseries_sha256": "f6f41323236e9b285771f722472d6907db65c6b50962e1e17e2553f794338afb",
+    "wall_clock": {
+     "setup_s": 0.09412097930908203,
+     "run_s": 275.235125541687,
+     "cells_per_s": 679057.5135792111
+    }
+   },
+   {
+    "tag": "scan_tau0.5020_N32",
+    "tau": 0.502,
+    "N": 32,
+    "Re_lattice": 2399.9999999999977,
+    "nu_lb": 0.0006666666666666673,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.021513615199114544,
+    "C_F": 0.016248202375419105,
+    "C_P": 0.005265412823695439,
+    "C_T_min_window": 0.021112833388285755,
+    "C_T_max_window": 0.02175195506826141,
+    "C_T_window_drift": 0.0013401547077385983,
+    "C_T_series_min": 0.021112833388285755,
+    "C_T_series_min_step": 2820,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": true,
+    "status": "POSITIVE",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5020_N32/case_scan_tau0.5020_N32.json",
+    "timeseries_sha256": "481fb3fe2e71f7f9ed563f5232833788657b9b65489146d4ba39abb34b3612f1",
+    "wall_clock": {
+     "setup_s": 0.04414844512939453,
+     "run_s": 220.89396142959595,
+     "cells_per_s": 846109.5033581058
+    }
+   },
+   {
+    "tag": "scan_tau0.5050_N32",
+    "tau": 0.505,
+    "N": 32,
+    "Re_lattice": 959.9999999999992,
+    "nu_lb": 0.001666666666666668,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.04221312892791567,
+    "C_F": 0.03552071983415567,
+    "C_P": 0.00669240909376,
+    "C_T_min_window": 0.04219112247661195,
+    "C_T_max_window": 0.04221800902149697,
+    "C_T_window_drift": 9.244313506298649e-05,
+    "C_T_series_min": 0.04219112247661195,
+    "C_T_series_min_step": 2820,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": true,
+    "status": "POSITIVE",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5050_N32/case_scan_tau0.5050_N32.json",
+    "timeseries_sha256": "9a982d91d6debba094d40fe766a7e03d8670993055047002725547f600130ff6",
+    "wall_clock": {
+     "setup_s": 0.10942792892456055,
+     "run_s": 291.1862244606018,
+     "cells_per_s": 641858.9352783345
+    }
+   },
+   {
+    "tag": "scan_tau0.5072_N32",
+    "tau": 0.5072,
+    "N": 32,
+    "Re_lattice": 666.6666666666682,
+    "nu_lb": 0.0023999999999999946,
+    "steps": 2880,
+    "passes": 1.5,
+    "C_T": 0.055976987497630526,
+    "C_F": 0.048140202323760935,
+    "C_P": 0.007836785173869593,
+    "C_T_min_window": 0.055967722242041426,
+    "C_T_max_window": 0.05600353505627844,
+    "C_T_window_drift": 4.938034117659969e-06,
+    "C_T_series_min": 0.055967722242041426,
+    "C_T_series_min_step": 2865,
+    "n_samples": 576,
+    "n_samples_negative": 0,
+    "frac_samples_negative": 0.0,
+    "window_mean_definition": "last 200 steps (40 samples at interval 5)",
+    "excursion_definition": "any instantaneous sample of the run < 0 -> NEG_EXCURSION",
+    "steady": true,
+    "status": "POSITIVE",
+    "solver_route": "standard_compiled_step",
+    "case_json": "/root/tp-agent/work/m17569/.scratch/m17569/scan/scan_tau0.5072_N32/case_scan_tau0.5072_N32.json",
+    "timeseries_sha256": "2f227f9a21efd7e3586b1aff6e56ceabc2a8f80c9d2c6dc2a1bd9658b09e22a9",
+    "wall_clock": {
+     "setup_s": 0.04917597770690918,
+     "run_s": 230.5916883945465,
+     "cells_per_s": 810525.6581503924
+    }
+   }
+  ],
+  "boundary": {
+   "per_N": [
+    {
+     "N": 32,
+     "n_negative": 0,
+     "n_positive": 6,
+     "tau_max_negative": null,
+     "tau_min_positive": 0.5002
+    }
+   ],
+   "note": "bracketed by the scan resolution in tau; the true boundary lies inside the bracket, no interpolation is claimed"
+  },
+  "route_audit": {
+   "note": "the frozen engine selects the wall treatment itself (WallTreatment.AUTO); at the high-Reynolds end of the scan it switches to the wall-function route, so the surface is NOT a single numerical setup. Route per cell is recorded and the route boundary is reported next to the sign boundary.",
+   "by_route": {
+    "standard_compiled_step": [
+     "tau=0.5005/N=32",
+     "tau=0.501/N=32",
+     "tau=0.502/N=32",
+     "tau=0.505/N=32",
+     "tau=0.5072/N=32"
+    ],
+    "wall_function": [
+     "tau=0.50002/N=32",
+     "tau=0.50005/N=32",
+     "tau=0.5001/N=32",
+     "tau=0.50015/N=32",
+     "tau=0.5002/N=32"
+    ]
+   }
+  },
+  "secondary_definition": {
+   "rule": "a cell is NEG_EXCURSION if any instantaneous force sample of the run is negative; this is registered separately because the window-mean sign is unstable at the high-Reynolds end of the scan",
+   "cells": [
+    {
+     "tau": 0.50002,
+     "N": 32,
+     "frac_samples_negative": 0.04833836858006042,
+     "C_T_series_min": -0.0026236687316918664,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.50005,
+     "N": 32,
+     "frac_samples_negative": 0.05459770114942529,
+     "C_T_series_min": -0.0036636160060982063,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.5001,
+     "N": 32,
+     "frac_samples_negative": 0.046511627906976744,
+     "C_T_series_min": -0.0032722577544895735,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.50015,
+     "N": 32,
+     "frac_samples_negative": 0.050505050505050504,
+     "C_T_series_min": -0.0030800807582934265,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.5002,
+     "N": 32,
+     "frac_samples_negative": 0.050347222222222224,
+     "C_T_series_min": -0.0024324573020018734,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.5005,
+     "N": 32,
+     "frac_samples_negative": 0.027777777777777776,
+     "C_T_series_min": -0.000844657484429792,
+     "status": "NEG_EXCURSION"
+    },
+    {
+     "tau": 0.501,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.009479066152972835,
+     "status": "NO_EXCURSION"
+    },
+    {
+     "tau": 0.502,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.021112833388285755,
+     "status": "NO_EXCURSION"
+    },
+    {
+     "tau": 0.505,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.04219112247661195,
+     "status": "NO_EXCURSION"
+    },
+    {
+     "tau": 0.5072,
+     "N": 32,
+     "frac_samples_negative": 0.0,
+     "C_T_series_min": 0.055967722242041426,
+     "status": "NO_EXCURSION"
+    }
+   ]
+  }
+ },
+ "compute_ledger": {
+  "ladder_cell_updates": 367891200,
+  "ladder_cases": [
+   {
+    "tag": "ladder4_N16",
+    "N": 16,
+    "cells": 8112,
+    "steps": 2880,
+    "wall_s": 94.27117109298706,
+    "cells_per_s": 247822.95296783437,
+    "threads": null
+   },
+   {
+    "tag": "ladder4_N24",
+    "N": 24,
+    "cells": 28800,
+    "steps": 2880,
+    "wall_s": 178.69574809074402,
+    "cells_per_s": 464163.25450496987,
+    "threads": null
+   },
+   {
+    "tag": "ladder4_N36",
+    "N": 36,
+    "cells": 90828,
+    "steps": 2880,
+    "wall_s": 273.31395387649536,
+    "cells_per_s": 957084.8333568963,
+    "threads": null
+   }
+  ],
+  "scan_cell_updates": 1582488960.0,
+  "scope": "all compute ran on this control box with a bounded thread budget (<=6 threads per case, <=4 concurrent cases); heavy sweeps were not offloaded because the cluster queue carried >400 jobs at mission start"
+ },
+ "verdict": {
+  "C1": "PASS (verbatim anchor slots registered; experimental C_F honestly WITHHELD)",
+  "C2": "PASS (max |residual| = 5.493e-15)",
+  "C3": "FAIL at the case Reynolds number; WITHHELD at the stated Re=1.2e7 (not reachable, quantified)",
+  "C4": "PASS (sign surface with declared steadiness filter)"
+ },
+ "honest_fail": {
+  "C3_at_Re_1_2e7": "not delivered: no lattice-Re=1.2e7 path exists inside this budget or inside this solver family without a turbulence model",
+  "experimental_CF": "not delivered: the repository's transcription pack contains no measured friction coefficient",
+  "gci_quality": "GCI numbers carry the measured window drift; if the drift is above the declared 2% tolerance the numbers are reported as UNSTEADY rather than as converged"
+ }
+}

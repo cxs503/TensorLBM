@@ -1,0 +1,134 @@
+{
+ "schema": "w26_plan/v1",
+ "mission": "m17569",
+ "purpose": "negative-drag (tau,N) sign surface: tau x N scan at 1.5 convective passes, frozen case protocol",
+ "protocol_note": "fixed N with varying tau => lattice Re varies (this is the point of the scan); each cell's Re is recorded",
+ "cases": [
+  {
+   "tag": "scan_tau0.5002_N32",
+   "N": 32,
+   "tau": 0.5002,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5005_N32",
+   "N": 32,
+   "tau": 0.5005,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5010_N32",
+   "N": 32,
+   "tau": 0.501,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5020_N32",
+   "N": 32,
+   "tau": 0.502,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5050_N32",
+   "N": 32,
+   "tau": 0.505,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5072_N32",
+   "N": 32,
+   "tau": 0.5072,
+   "steps": 2880,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5002_N40",
+   "N": 40,
+   "tau": 0.5002,
+   "steps": 3600,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5005_N40",
+   "N": 40,
+   "tau": 0.5005,
+   "steps": 3600,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5010_N40",
+   "N": 40,
+   "tau": 0.501,
+   "steps": 3600,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5020_N40",
+   "N": 40,
+   "tau": 0.502,
+   "steps": 3600,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5050_N40",
+   "N": 40,
+   "tau": 0.505,
+   "steps": 3600,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5072_N40",
+   "N": 40,
+   "tau": 0.5072,
+   "steps": 3600,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5002_N48",
+   "N": 48,
+   "tau": 0.5002,
+   "steps": 4320,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5005_N48",
+   "N": 48,
+   "tau": 0.5005,
+   "steps": 4320,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5010_N48",
+   "N": 48,
+   "tau": 0.501,
+   "steps": 4320,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5020_N48",
+   "N": 48,
+   "tau": 0.502,
+   "steps": 4320,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5050_N48",
+   "N": 48,
+   "tau": 0.505,
+   "steps": 4320,
+   "snapshot": false
+  },
+  {
+   "tag": "scan_tau0.5072_N48",
+   "N": 48,
+   "tau": 0.5072,
+   "steps": 4320,
+   "snapshot": false
+  }
+ ]
+}

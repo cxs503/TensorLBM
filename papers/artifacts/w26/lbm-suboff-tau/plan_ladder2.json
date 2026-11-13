@@ -1,0 +1,22 @@
+{
+ "schema": "w26_plan/v1",
+ "mission": "m17569",
+ "purpose": "three-grid GCI ladder at fixed lattice Re=1000; N=32 already produced, this batch covers N=48 and N=72",
+ "protocol_note": "steps=8640 for both grids (4.5/3.0/2.0 convective passes for N=32/48/72); passes and window drift are reported per case",
+ "cases": [
+  {
+   "tag": "ladder_N48",
+   "N": 48,
+   "re_lattice": 1000,
+   "steps": 8640,
+   "snapshot": true
+  },
+  {
+   "tag": "ladder_N72",
+   "N": 72,
+   "re_lattice": 1000,
+   "steps": 8640,
+   "snapshot": true
+  }
+ ]
+}
