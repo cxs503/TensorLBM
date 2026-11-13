@@ -1,0 +1,296 @@
+{
+  "schema": "xval_capability_coverage/v1",
+  "probe_sha256": "813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97",
+  "probe_generated_at": "2026-11-13T11:09:51.313727+00:00",
+  "capabilities_total": 13,
+  "capabilities_with_oss_reference": 7,
+  "capabilities_without_oss_reference": 6,
+  "rows": [
+    {
+      "capability": "core_d2q9_srt_bgk",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.creationfunctions",
+            "lbmpy.methods"
+          ],
+          "missing_symbols": []
+        },
+        {
+          "oss_id": "pylbm",
+          "probed": true,
+          "available": false,
+          "reason": "module not importable in this interpreter"
+        },
+        {
+          "oss_id": "lettuce",
+          "probed": true,
+          "available": false,
+          "reason": "module not importable in this interpreter"
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "periodic single-relaxation-time D2Q9 step"
+    },
+    {
+      "capability": "trt_mrt_cumulant_collision",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.methods",
+            "lbmpy.cumulants"
+          ],
+          "missing_symbols": []
+        },
+        {
+          "oss_id": "pylbm",
+          "probed": true,
+          "available": false,
+          "reason": "module not importable in this interpreter"
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "multi-relaxation / cumulant collision operators"
+    },
+    {
+      "capability": "guo_body_force",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.forcemodels"
+          ],
+          "missing_symbols": []
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "Guo/Shan-Chen style body-force source terms"
+    },
+    {
+      "capability": "bounce_back_walls_and_velocity_inlet",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy",
+        "palabos"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.boundaries"
+          ],
+          "missing_symbols": []
+        },
+        {
+          "oss_id": "palabos",
+          "probed": true,
+          "available": true,
+          "version": null,
+          "symbols": [],
+          "missing_symbols": []
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "half-way bounce-back, UBB/NoSlip boundary conditions"
+    },
+    {
+      "capability": "smagorinsky_les",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.turbulence_models"
+          ],
+          "missing_symbols": []
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "eddy-viscosity subgrid closures"
+    },
+    {
+      "capability": "non_newtonian_viscosity",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.non_newtonian_models"
+          ],
+          "missing_symbols": []
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "shear-rate dependent viscosity (Bingham / power law)"
+    },
+    {
+      "capability": "phasefield_allen_cahn_cahn_hilliard",
+      "status": "OSS_REFERENCE_AVAILABLE",
+      "supporting_references": [
+        "lbmpy"
+      ],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.phasefield_allen_cahn",
+            "lbmpy.phasefield"
+          ],
+          "missing_symbols": []
+        }
+      ],
+      "look_alikes_rejected": [],
+      "note": "phase-field two-phase coupling"
+    },
+    {
+      "capability": "shan_chen_pseudopotential_multiphase",
+      "status": "NO_OSS_REFERENCE",
+      "supporting_references": [],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.phasefield",
+            "lbmpy.forcemodels"
+          ],
+          "verdict": "look_alike_rejected: implements a different capability"
+        }
+      ],
+      "look_alikes_rejected": [
+        {
+          "oss_id": "lbmpy",
+          "symbols": [
+            "lbmpy.phasefield",
+            "lbmpy.forcemodels"
+          ],
+          "why_not": "module exists but does not implement this capability (see note)"
+        }
+      ],
+      "note": "pseudo-potential Shan-Chen; the phase-field modules are not a substitute for the pseudo-potential force"
+    },
+    {
+      "capability": "free_surface_volume_tracking",
+      "status": "NO_OSS_REFERENCE",
+      "supporting_references": [],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.partially_saturated_cells",
+            "lbmpy.geometry"
+          ],
+          "verdict": "look_alike_rejected: implements a different capability"
+        }
+      ],
+      "look_alikes_rejected": [
+        {
+          "oss_id": "lbmpy",
+          "symbols": [
+            "lbmpy.partially_saturated_cells",
+            "lbmpy.geometry"
+          ],
+          "why_not": "module exists but does not implement this capability (see note)"
+        }
+      ],
+      "note": "free-surface fill level / mass tracking; partially saturated cells are a boundary treatment, not a volume-tracking free surface"
+    },
+    {
+      "capability": "immersed_boundary_ibm",
+      "status": "NO_OSS_REFERENCE",
+      "supporting_references": [],
+      "references_checked": [],
+      "look_alikes_rejected": [],
+      "note": "Lagrangian IBM force spreading; no probed reference exposes it"
+    },
+    {
+      "capability": "adaptive_mesh_refinement",
+      "status": "NO_OSS_REFERENCE",
+      "supporting_references": [],
+      "references_checked": [
+        {
+          "oss_id": "lbmpy",
+          "probed": true,
+          "available": true,
+          "version": "2.0",
+          "symbols": [
+            "lbmpy.sparse"
+          ],
+          "verdict": "look_alike_rejected: implements a different capability"
+        }
+      ],
+      "look_alikes_rejected": [
+        {
+          "oss_id": "lbmpy",
+          "symbols": [
+            "lbmpy.sparse"
+          ],
+          "why_not": "module exists but does not implement this capability (see note)"
+        }
+      ],
+      "note": "block-structured AMR; lbmpy.sparse is sparse storage, not refinement"
+    },
+    {
+      "capability": "thermal_energy_transport_lbm",
+      "status": "NO_OSS_REFERENCE",
+      "supporting_references": [],
+      "references_checked": [],
+      "look_alikes_rejected": [],
+      "note": "double-distribution thermal LBM; not exposed by any probed reference"
+    },
+    {
+      "capability": "acoustic_pulse_absorbing_boundary",
+      "status": "NO_OSS_REFERENCE",
+      "supporting_references": [],
+      "references_checked": [],
+      "look_alikes_rejected": [],
+      "note": "acoustic damping / absorbing boundary treatment"
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "mission_id": 17996,
+  "payloads": [
+    {
+      "title": "TensorLBM shan_chen_pseudopotential_multiphase 无本地可解析 OSS 参考（negative-no-oss-reference）",
+      "hypothesis": "TensorLBM 的 shan_chen_pseudopotential_multiphase 可以直接与某个 OSS 实现做 XVAL 对照并给出通过判据",
+      "failure_kind": "hypothesis_falsified",
+      "falsification_evidence": "{\"capabilities_total\": 13, \"capabilities_without_oss_reference\": 6, \"kind\": \"negative_no_oss_reference\", \"look_alikes_rejected\": [{\"oss_id\": \"lbmpy\", \"symbols\": [\"lbmpy.phasefield\", \"lbmpy.forcemodels\"], \"why_not\": \"module exists but does not implement this capability (see note)\"}], \"mission_id\": 17996, \"probe_generated_at\": \"2026-11-13T11:09:51.313727+00:00\", \"probe_schema\": \"xval_capability_coverage/v1\", \"probe_sha256\": \"813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97\", \"references_checked\": [{\"available\": true, \"oss_id\": \"lbmpy\", \"probed\": true, \"symbols\": [\"lbmpy.phasefield\", \"lbmpy.forcemodels\"], \"verdict\": \"look_alike_rejected: implements a different capability\", \"version\": \"2.0\"}]}",
+      "failure_reason": "probe 813fc5ce4dbc9ef9 在 .py-importable/可执行候选 13 族检查中找不到覆盖 shan_chen_pseudopotential_multiphase 的参考实现，因此该能力的 XVAL 判据只能是 WITHHELD；已在 artifacts/xval_negative_no_oss_reference/oss_reference_probe.json, artifacts/xval_negative_no_oss_reference/capability_coverage.json 留证据",
+      "applicable_conditions": {
+        "environment": "offline work tree; github.com unreachable, only installed packages / in-tree binaries count",
+        "probe_scope": "see references_checked in falsification_evidence"
+      },
+      "keywords": [
+        "shan_chen_pseudopotential_multiphase",
+        "XVAL",
+        "no-oss-reference",
+        "TensorLBM",
+        "WITHHELD"
+      ],
+      "domain_tags": [
+        "TensorLBM"
+      ],
+      "differentiation_required": [
+        "提供可解析 OSS 参考后才能把该能力从 WITHHELD 升级"
+      ],
+      "source_artifacts": [
+        "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+        "artifacts/xval_negative_no_oss_reference/capability_coverage.json"
+      ],
+      "confidence": 0.9,
+      "registered_by": "tensorlbm.xval.oss_reference",
+      "_mission_id": 17996
+    },
+    {
+      "title": "TensorLBM free_surface_volume_tracking 无本地可解析 OSS 参考（negative-no-oss-reference）",
+      "hypothesis": "TensorLBM 的 free_surface_volume_tracking 可以直接与某个 OSS 实现做 XVAL 对照并给出通过判据",
+      "failure_kind": "hypothesis_falsified",
+      "falsification_evidence": "{\"capabilities_total\": 13, \"capabilities_without_oss_reference\": 6, \"kind\": \"negative_no_oss_reference\", \"look_alikes_rejected\": [{\"oss_id\": \"lbmpy\", \"symbols\": [\"lbmpy.partially_saturated_cells\", \"lbmpy.geometry\"], \"why_not\": \"module exists but does not implement this capability (see note)\"}], \"mission_id\": 17996, \"probe_generated_at\": \"2026-11-13T11:09:51.313727+00:00\", \"probe_schema\": \"xval_capability_coverage/v1\", \"probe_sha256\": \"813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97\", \"references_checked\": [{\"available\": true, \"oss_id\": \"lbmpy\", \"probed\": true, \"symbols\": [\"lbmpy.partially_saturated_cells\", \"lbmpy.geometry\"], \"verdict\": \"look_alike_rejected: implements a different capability\", \"version\": \"2.0\"}]}",
+      "failure_reason": "probe 813fc5ce4dbc9ef9 在 .py-importable/可执行候选 13 族检查中找不到覆盖 free_surface_volume_tracking 的参考实现，因此该能力的 XVAL 判据只能是 WITHHELD；已在 artifacts/xval_negative_no_oss_reference/oss_reference_probe.json, artifacts/xval_negative_no_oss_reference/capability_coverage.json 留证据",
+      "applicable_conditions": {
+        "environment": "offline work tree; github.com unreachable, only installed packages / in-tree binaries count",
+        "probe_scope": "see references_checked in falsification_evidence"
+      },
+      "keywords": [
+        "free_surface_volume_tracking",
+        "XVAL",
+        "no-oss-reference",
+        "TensorLBM",
+        "WITHHELD"
+      ],
+      "domain_tags": [
+        "TensorLBM"
+      ],
+      "differentiation_required": [
+        "提供可解析 OSS 参考后才能把该能力从 WITHHELD 升级"
+      ],
+      "source_artifacts": [
+        "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+        "artifacts/xval_negative_no_oss_reference/capability_coverage.json"
+      ],
+      "confidence": 0.9,
+      "registered_by": "tensorlbm.xval.oss_reference",
+      "_mission_id": 17996
+    },
+    {
+      "title": "TensorLBM immersed_boundary_ibm 无本地可解析 OSS 参考（negative-no-oss-reference）",
+      "hypothesis": "TensorLBM 的 immersed_boundary_ibm 可以直接与某个 OSS 实现做 XVAL 对照并给出通过判据",
+      "failure_kind": "hypothesis_falsified",
+      "falsification_evidence": "{\"capabilities_total\": 13, \"capabilities_without_oss_reference\": 6, \"kind\": \"negative_no_oss_reference\", \"look_alikes_rejected\": [], \"mission_id\": 17996, \"probe_generated_at\": \"2026-11-13T11:09:51.313727+00:00\", \"probe_schema\": \"xval_capability_coverage/v1\", \"probe_sha256\": \"813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97\", \"references_checked\": []}",
+      "failure_reason": "probe 813fc5ce4dbc9ef9 在 .py-importable/可执行候选 13 族检查中找不到覆盖 immersed_boundary_ibm 的参考实现，因此该能力的 XVAL 判据只能是 WITHHELD；已在 artifacts/xval_negative_no_oss_reference/oss_reference_probe.json, artifacts/xval_negative_no_oss_reference/capability_coverage.json 留证据",
+      "applicable_conditions": {
+        "environment": "offline work tree; github.com unreachable, only installed packages / in-tree binaries count",
+        "probe_scope": "see references_checked in falsification_evidence"
+      },
+      "keywords": [
+        "immersed_boundary_ibm",
+        "XVAL",
+        "no-oss-reference",
+        "TensorLBM",
+        "WITHHELD"
+      ],
+      "domain_tags": [
+        "TensorLBM"
+      ],
+      "differentiation_required": [
+        "提供可解析 OSS 参考后才能把该能力从 WITHHELD 升级"
+      ],
+      "source_artifacts": [
+        "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+        "artifacts/xval_negative_no_oss_reference/capability_coverage.json"
+      ],
+      "confidence": 0.9,
+      "registered_by": "tensorlbm.xval.oss_reference",
+      "_mission_id": 17996
+    },
+    {
+      "title": "TensorLBM adaptive_mesh_refinement 无本地可解析 OSS 参考（negative-no-oss-reference）",
+      "hypothesis": "TensorLBM 的 adaptive_mesh_refinement 可以直接与某个 OSS 实现做 XVAL 对照并给出通过判据",
+      "failure_kind": "hypothesis_falsified",
+      "falsification_evidence": "{\"capabilities_total\": 13, \"capabilities_without_oss_reference\": 6, \"kind\": \"negative_no_oss_reference\", \"look_alikes_rejected\": [{\"oss_id\": \"lbmpy\", \"symbols\": [\"lbmpy.sparse\"], \"why_not\": \"module exists but does not implement this capability (see note)\"}], \"mission_id\": 17996, \"probe_generated_at\": \"2026-11-13T11:09:51.313727+00:00\", \"probe_schema\": \"xval_capability_coverage/v1\", \"probe_sha256\": \"813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97\", \"references_checked\": [{\"available\": true, \"oss_id\": \"lbmpy\", \"probed\": true, \"symbols\": [\"lbmpy.sparse\"], \"verdict\": \"look_alike_rejected: implements a different capability\", \"version\": \"2.0\"}]}",
+      "failure_reason": "probe 813fc5ce4dbc9ef9 在 .py-importable/可执行候选 13 族检查中找不到覆盖 adaptive_mesh_refinement 的参考实现，因此该能力的 XVAL 判据只能是 WITHHELD；已在 artifacts/xval_negative_no_oss_reference/oss_reference_probe.json, artifacts/xval_negative_no_oss_reference/capability_coverage.json 留证据",
+      "applicable_conditions": {
+        "environment": "offline work tree; github.com unreachable, only installed packages / in-tree binaries count",
+        "probe_scope": "see references_checked in falsification_evidence"
+      },
+      "keywords": [
+        "adaptive_mesh_refinement",
+        "XVAL",
+        "no-oss-reference",
+        "TensorLBM",
+        "WITHHELD"
+      ],
+      "domain_tags": [
+        "TensorLBM"
+      ],
+      "differentiation_required": [
+        "提供可解析 OSS 参考后才能把该能力从 WITHHELD 升级"
+      ],
+      "source_artifacts": [
+        "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+        "artifacts/xval_negative_no_oss_reference/capability_coverage.json"
+      ],
+      "confidence": 0.9,
+      "registered_by": "tensorlbm.xval.oss_reference",
+      "_mission_id": 17996
+    },
+    {
+      "title": "TensorLBM thermal_energy_transport_lbm 无本地可解析 OSS 参考（negative-no-oss-reference）",
+      "hypothesis": "TensorLBM 的 thermal_energy_transport_lbm 可以直接与某个 OSS 实现做 XVAL 对照并给出通过判据",
+      "failure_kind": "hypothesis_falsified",
+      "falsification_evidence": "{\"capabilities_total\": 13, \"capabilities_without_oss_reference\": 6, \"kind\": \"negative_no_oss_reference\", \"look_alikes_rejected\": [], \"mission_id\": 17996, \"probe_generated_at\": \"2026-11-13T11:09:51.313727+00:00\", \"probe_schema\": \"xval_capability_coverage/v1\", \"probe_sha256\": \"813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97\", \"references_checked\": []}",
+      "failure_reason": "probe 813fc5ce4dbc9ef9 在 .py-importable/可执行候选 13 族检查中找不到覆盖 thermal_energy_transport_lbm 的参考实现，因此该能力的 XVAL 判据只能是 WITHHELD；已在 artifacts/xval_negative_no_oss_reference/oss_reference_probe.json, artifacts/xval_negative_no_oss_reference/capability_coverage.json 留证据",
+      "applicable_conditions": {
+        "environment": "offline work tree; github.com unreachable, only installed packages / in-tree binaries count",
+        "probe_scope": "see references_checked in falsification_evidence"
+      },
+      "keywords": [
+        "thermal_energy_transport_lbm",
+        "XVAL",
+        "no-oss-reference",
+        "TensorLBM",
+        "WITHHELD"
+      ],
+      "domain_tags": [
+        "TensorLBM"
+      ],
+      "differentiation_required": [
+        "提供可解析 OSS 参考后才能把该能力从 WITHHELD 升级"
+      ],
+      "source_artifacts": [
+        "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+        "artifacts/xval_negative_no_oss_reference/capability_coverage.json"
+      ],
+      "confidence": 0.9,
+      "registered_by": "tensorlbm.xval.oss_reference",
+      "_mission_id": 17996
+    },
+    {
+      "title": "TensorLBM acoustic_pulse_absorbing_boundary 无本地可解析 OSS 参考（negative-no-oss-reference）",
+      "hypothesis": "TensorLBM 的 acoustic_pulse_absorbing_boundary 可以直接与某个 OSS 实现做 XVAL 对照并给出通过判据",
+      "failure_kind": "hypothesis_falsified",
+      "falsification_evidence": "{\"capabilities_total\": 13, \"capabilities_without_oss_reference\": 6, \"kind\": \"negative_no_oss_reference\", \"look_alikes_rejected\": [], \"mission_id\": 17996, \"probe_generated_at\": \"2026-11-13T11:09:51.313727+00:00\", \"probe_schema\": \"xval_capability_coverage/v1\", \"probe_sha256\": \"813fc5ce4dbc9ef93c6d7feb38c34e4c52ae7a79d9888df83bcabb72ae3c8e97\", \"references_checked\": []}",
+      "failure_reason": "probe 813fc5ce4dbc9ef9 在 .py-importable/可执行候选 13 族检查中找不到覆盖 acoustic_pulse_absorbing_boundary 的参考实现，因此该能力的 XVAL 判据只能是 WITHHELD；已在 artifacts/xval_negative_no_oss_reference/oss_reference_probe.json, artifacts/xval_negative_no_oss_reference/capability_coverage.json 留证据",
+      "applicable_conditions": {
+        "environment": "offline work tree; github.com unreachable, only installed packages / in-tree binaries count",
+        "probe_scope": "see references_checked in falsification_evidence"
+      },
+      "keywords": [
+        "acoustic_pulse_absorbing_boundary",
+        "XVAL",
+        "no-oss-reference",
+        "TensorLBM",
+        "WITHHELD"
+      ],
+      "domain_tags": [
+        "TensorLBM"
+      ],
+      "differentiation_required": [
+        "提供可解析 OSS 参考后才能把该能力从 WITHHELD 升级"
+      ],
+      "source_artifacts": [
+        "artifacts/xval_negative_no_oss_reference/oss_reference_probe.json",
+        "artifacts/xval_negative_no_oss_reference/capability_coverage.json"
+      ],
+      "confidence": 0.9,
+      "registered_by": "tensorlbm.xval.oss_reference",
+      "_mission_id": 17996
+    }
+  ]
+}
