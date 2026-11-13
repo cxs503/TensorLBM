@@ -15,12 +15,21 @@ from .solver2d import (
     collide_bgk2d,
     compute_wall_shear_stress,
 )
-from .wall_normal_preprocess import WallNormalTable, build_wall_normal_table
 from .d2q9 import C2Q9, W2Q9, OPPOSITE_2Q9, CS2_2Q9
+from .nebb import (
+    NebbChannelConfig,
+    NebbPoiseuilleChannel,
+    analytic_poiseuille,
+    collide_edm,
+    collide_guo,
+    force_corrected_velocity,
+    guo_source,
+    nebb_wall_plane,
+    wall_density,
+    wall_directions,
+)
 
 __all__ = [
-    "WallNormalTable",
-    "build_wall_normal_table",
     "EquilibriumExtrapolationSpec",
     "apply_cavity_extrapolation",
     "apply_channel_extrapolation",
@@ -37,4 +46,14 @@ __all__ = [
     "W2Q9",
     "OPPOSITE_2Q9",
     "CS2_2Q9",
+    "NebbChannelConfig",
+    "NebbPoiseuilleChannel",
+    "analytic_poiseuille",
+    "collide_edm",
+    "collide_guo",
+    "force_corrected_velocity",
+    "guo_source",
+    "nebb_wall_plane",
+    "wall_density",
+    "wall_directions",
 ]
