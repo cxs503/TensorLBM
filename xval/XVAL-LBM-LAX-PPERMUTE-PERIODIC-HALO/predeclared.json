@@ -1,0 +1,77 @@
+{
+  "anchor": "XVAL-LBM-LAX-PPERMUTE-PERIODIC-HALO",
+  "mission_id": 17868,
+  "repo": "TensorLBM",
+  "round": 1,
+  "kind": "cross-validation against a mature open-source implementation (XVAL)",
+  "registered_before_any_run": true,
+  "decision": {
+    "question": "Does TensorLBM's slab periodic-halo exchange (triton_fused_distributed) implement the *same* periodic-halo semantics as haimingz/vivsim's jax.lax.ppermute ring exchange, and which parts of the OSS 做法 are safe to port?",
+    "alternatives": [
+      "H1: our halo is semantically equivalent to the OSS 做法 (error vs single-domain ground truth ~ machine epsilon) => nothing to port, OSS becomes a permanent cross-check reference.",
+      "H2: our halo differs from the OSS 做法 => quantify the divergence, keep ours if ours matches the ground truth, and record the OSS 做法's deviation as a porting caveat (never copy verbatim).",
+      "H3: both differ from the single-domain ground truth => our halo is defective (defect, not a porting question)."
+    ],
+    "rule": "H1 is accepted iff (i) our arm reproduces the single-domain ground truth with rel-L2 error < 1e-12 (float64, no fp16 wire) AND (ii) the semantically-corrected OSS reference (REF-C) also matches the ground truth. H2 is accepted if REF-C matches but a literal port (REF-A) does not. H3 otherwise."
+  },
+  "hypothesis": {
+    "our_semantics": "pull streaming with 2 ghost planes; lane set = {q : cz(q)=+1} sent to the +z neighbour and read as the -z ghost, {q : cz(q)=-1} sent to the -z neighbour and read as the +z ghost; periodic wrap via modulo neighbours; one batched 4-op P2P stage per step.",
+    "oss_semantics": "jax.lax.ppermute ring with pair tables [(i,(i+1)%n)] / [((i+1)%n,i)]; per-axis one-ghost-layer exchange of the crossing lane sets (D2Q9 LEFT/RIGHT/UP/DOWN); periodic wrap is folded into the pair tables (rank n-1 <-> 0).",
+    "equivalence_prediction": "the same physical halo (crossing lanes only, periodic ring) but an independent implementation; expected agreement with the ground truth at float64 round-off."
+  },
+  "arms": {
+    "GT": "single-domain periodic collide+stream (no decomposition) — the physical ground truth. For the 2D vivsim arm it is the upstream vivsim.lbm.basic.streaming() run on the whole domain; for the 3D arm it is a whole-domain torch pull-stream.",
+    "REF-A": "vendored vivsim.multidevice.stream_cross_devices, VERBATIM (39 lines, MIT), driven with SPMD-emulated lax.ppermute. Literal port.",
+    "REF-B": "same file with only the read-plane index corrected (plane 0 <-> plane -1); pair tables untouched.",
+    "REF-C": "same file with read planes corrected AND the x branch's pair tables aligned with the y branch (the semantically correct pull-streaming halo).",
+    "GOT": "TensorLBM DistributedTritonFusedSolver3D — the REAL constructor and the REAL _start_halo_exchange/_finalize_halo, run on CPU under gloo (2 / 4 ranks). Only two environment hooks are stubbed (CUDA gate + lattice-tensor factory) and the Triton streaming kernel is replaced by a CPU pull-stream that is itself validated against GT at world=1.",
+    "CONTROL-LANE": "GOT with the crossing lane tables swapped (+z / -z), a deliberate defect injection. Must fail. Proves the metric has teeth."
+  },
+  "metrics": {
+    "primary": "rel_l2 = ||f_arm - f_GT||_2 / ||f_GT||_2 of the streamed field after N steps, per rank, gathered to the global grid then compared with GT.",
+    "secondary": ["max_abs = max|f_arm - f_GT|", "bitwise_equal (bool)", "halo_lane_planes_per_step per rank (communication volume)", "staging bytes per rank"],
+    "unit_of_analysis": "one (arm, decomposition, n_ranks, field case) configuration; 3 seeds for the random field case.",
+    "threshold": "owner precision standard: error < 15% is acceptable, > 15% is not. Disclosed stricter in-house bound for a semantic-equivalence claim: rel_l2 < 1e-12 at float64 (i.e. the halo must be bit-exact, not merely <15%)."
+  },
+  "repetitions": {
+    "random_field_seeds": [0, 1, 2],
+    "n_steps": 20,
+    "physical_case": "3D Taylor-Green vortex, 40 steps, tau=0.6 (nu=0.0333), reported as kinetic-energy trajectory + rel_l2 vs GT",
+    "rationale": "the quantity of interest is a deterministic, non-statistical data-movement equivalence; 3 seeds only guard against a lucky symmetric initial field (the documented 'symmetric field hides lane errors' trap)."
+  },
+  "variables": {
+    "controlled": ["lattice constants (D2Q9 / D3Q19 upstream tables)", "tau=0.6", "initial field (identical bytes on every arm)", "n_steps", "dtype float64 (fp16 wire only in the marked sub-arm)"],
+    "changed": ["halo convention (REF-A / REF-B / REF-C / GOT / CONTROL-LANE)", "decomposition axis (x / y for the 2D arm; z for the D3Q19 arm)", "n_ranks (2, 4)", "field symmetry (asymmetric vs mirror-symmetric)", "wire dtype (fp64 vs fp16)"],
+    "confounders_controlled": ["streaming-kernel identity: GOT uses the same CPU pull-stream as its own GT at world=1 (checked), collision is one shared elementwise function on every arm", "rank-block size: every configuration divides the axis evenly (both implementations require it)", "initial-field aliasing: buffers are deep-copied per rank"]
+  },
+  "analysis": {
+    "aggregation": "per-configuration error, no averaging across arms; mean±spread over the 3 seeds and the 2 rank counts",
+    "outliers": "none discarded; the CONTROLE-LANE arm is expected to be a large outlier and is reported as the sensitivity floor",
+    "missing_data": "if gloo P2P is unavailable the GOT arm reports as SKIPPED (honest), never as 0 error",
+    "predeclared_stop": "stop and report honest-FAIL if the GOT arm cannot be executed at all (no code path, no glue) — do not substitute a re-typed re-implementation for it"
+  },
+  "environment": {
+    "host": "loong64 control-plane container, CPU only (torch.cuda.is_available() == False)",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "jax": "not installed (no loongarch64 jaxlib wheel) -> lax.ppermute emulated; the emulation semantics are stated in jax_shim.py and validated against the real distributed data movement of the GOT arm (identical ring result)",
+    "upstream": {
+      "repo": "https://github.com/haimingz/vivsim",
+      "commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+      "version": "2.0.0",
+      "license": "MIT",
+      "files": {
+        "vivsim/multidevice.py": "sha256 2f4e95dfc71a843011d861ac43b08c42c90b1c1e0570eb2faa596d2c51d16a34",
+        "vivsim/lbm/basic.py": "sha256 406d19a26f9b0e281e910ad8fa2215c080e784c74c21597f13d4b68aaffae06a",
+        "vivsim/lbm/lattice.py": "sha256 028430db509490659ed96101295abc559605d1386e1e4ae5994397bb8d36ac68"
+      }
+    }
+  },
+  "deliverables": [
+    "artifacts/result.json (all arms, all configurations, programmatic)",
+    "artifacts/table.csv (error table, generated by analyze.py)",
+    "figures/*.png (error bars + lane-level halo map)",
+    "REPORT.md (six sections + OSS-vs-ours difference list + porting trade-offs)"
+  ],
+  "falsification": "the harness is falsified if CONTROL-LANE (a one-line lane-table swap) does NOT produce a large error while GT/GOT agree exactly."
+}

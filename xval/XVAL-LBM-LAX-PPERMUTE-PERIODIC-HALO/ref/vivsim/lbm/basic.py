@@ -1,0 +1,196 @@
+r"""
+This file implements the basic functions for 2-dimensional fluid simulations using
+the lattice Boltzmann method (LBM). The implementation includes:
+
+Lattice model:
+    * D2Q9 model, with its 9 velocity directions numbered as follows:
+
+    6   2   5
+      \ | /
+    3 - 0 - 1
+      / | \  
+    7   4   8
+
+Collision Model:
+    * Bhatnagar-Gross-Krook (BGK) model, also known as the Single-Relaxation-Time (SRT) model.
+
+Key Variables:
+    * rho: Macroscopic density, shape (NX, NY)
+    * u: Macroscopic velocity vector, shape (2, NX, NY)
+    * f: Shifted distribution function, ``f_i = f_i^full - w_i``, shape (9, NX, NY)
+    * feq: Equilibrium shifted distribution, shape (9, NX, NY)
+    * omega: Relaxation parameter, scalar
+    * nu: Kinematic viscosity in lattice units, scalar
+    where NX and NY are the numbers of lattice nodes in the x and y directions, respectively.
+
+"""
+
+import jax
+import jax.numpy as jnp
+
+from .lattice import D2Q9
+
+
+WEIGHTS = jnp.asarray(D2Q9.w)
+VELOCITIES = jnp.asarray(D2Q9.c)
+RIGHT_DIRS = jnp.asarray(D2Q9.right_dirs)
+LEFT_DIRS = jnp.asarray(D2Q9.left_dirs)
+UP_DIRS = jnp.asarray(D2Q9.up_dirs)
+DOWN_DIRS = jnp.asarray(D2Q9.down_dirs)
+ALL_DIRS = jnp.asarray(D2Q9.all_dirs)
+OPP_DIRS = jnp.asarray(D2Q9.opp_dirs)
+
+
+def shift_x_pos(x):
+    return jnp.concatenate((x[:, -1:, :], x[:, :-1, :]), axis=1)
+
+
+def shift_x_neg(x):
+    return jnp.concatenate((x[:, 1:, :], x[:, :1, :]), axis=1)
+
+
+def shift_y_pos(x):
+    return jnp.concatenate((x[:, :, -1:], x[:, :, :-1]), axis=2)
+
+
+def shift_y_neg(x):
+    return jnp.concatenate((x[:, :, 1:], x[:, :, :1]), axis=2)
+
+
+def streaming(f):
+    """Perform the D2Q9 streaming step with periodic wrap-around.
+
+    This implementation spells out the D2Q9 unit shifts with static slices.
+    It avoids the generic ``jnp.roll`` path and keeps the work visible to XLA as
+    simple concatenate operations.
+
+    Args:
+        f (jax.Array): Discrete distribution function with shape
+            ``(9, NX, NY)``.
+
+    Returns:
+        jax.Array: Streamed distribution function with the same shape as ``f``.
+    """
+
+    return jnp.concatenate((
+        f[0:1],
+        shift_x_pos(f[1:2]),
+        shift_y_pos(f[2:3]),
+        shift_x_neg(f[3:4]),
+        shift_y_neg(f[4:5]),
+        shift_x_pos(shift_y_pos(f[5:6])),
+        shift_x_neg(shift_y_pos(f[6:7])),
+        shift_x_neg(shift_y_neg(f[7:8])),
+        shift_x_pos(shift_y_neg(f[8:9])),
+    ), axis=0)
+
+
+def get_macroscopic(f):
+    """Calculate macroscopic properties from the shifted distribution function.
+    
+    Computes the fluid density and velocity by taking moments of the distribution
+    function. The density is the zeroth moment (sum of all populations), and the
+    velocity is derived from the first moment (momentum divided by density).
+    
+    Note: When body forces are present, use get_velocity_correction() to adjust
+    the velocity for second-order accuracy.
+    
+    Args:
+        f (jax.Array of shape (9, NX, NY) or (9, NX) or (9, NY)): 
+            Discrete distribution function (DDF). Can be a full 2D domain or 1D slice.
+    
+    Returns:
+        rho (jax.Array of shape (NX, NY) or (NX,) or (NY,)): The macroscopic density.
+        u (jax.Array of shape (2, NX, NY) or (2, NX) or (2, NY)): The macroscopic velocity.
+    """
+    
+    rho = 1 + jnp.sum(f, axis=0)
+    u = jnp.zeros((2, *rho.shape))
+    u = u.at[0].set((jnp.sum(f[RIGHT_DIRS], axis=0) - jnp.sum(f[LEFT_DIRS], axis=0)) / rho)
+    u = u.at[1].set((jnp.sum(f[UP_DIRS], axis=0) - jnp.sum(f[DOWN_DIRS], axis=0)) / rho)
+    return rho, u
+
+
+def get_equilibrium(rho, u):
+    """Compute the shifted equilibrium distribution from macroscopic properties.
+    
+    Calculates the Maxwell-Boltzmann equilibrium distribution for the D2Q9 lattice
+    using the second-order expansion. The equilibrium is a function of density and
+    velocity that the distribution function relaxes toward during collision.
+    
+    Args:
+        rho (jax.Array of shape (*spatial_dims)): The macroscopic density.
+            Can be a scalar, 1D array (NX,) or (NY,), or 2D array (NX, NY).
+        u (jax.Array of shape (2, *spatial_dims)): The macroscopic velocity.
+            First dimension is the velocity components (x, y).
+
+    Returns:
+        feq (jax.Array of shape (9, *spatial_dims)): The shifted equilibrium DDF.
+    """
+    
+    ndim = len(rho.shape)
+    uc = jnp.sum(u[None, ...] *  VELOCITIES.reshape((9, 2) + (1,) * ndim), axis=1)
+    weights = WEIGHTS.reshape((9,) + (1,) * ndim)
+    feq = weights * (
+        rho * (1 + 3 * uc + 4.5 * uc ** 2 - 1.5 * jnp.sum(u ** 2, axis=0)) - 1
+    )
+    return feq 
+
+
+def collision_bgk(f, feq, omega):
+    """Perform the collision step using the Bhatnagar-Gross-Krook (BGK) model.
+    
+    Also known as the Single-Relaxation-Time (SRT) model, this collision operator
+    relaxes the distribution function toward its equilibrium state. The relaxation
+    parameter omega controls the rate of relaxation and is related to the fluid
+    viscosity.
+    
+    Args:
+        f (jax.Array of shape (9, NX, NY)): Discrete distribution function (DDF).
+        feq (jax.Array of shape (9, NX, NY)): The equilibrium DDF.
+        omega (scalar): The relaxation parameter, omega = 1 / tau, where tau is
+            the relaxation time. Related to viscosity by: nu = (1/omega - 0.5) / 3.
+    
+    Returns:
+        f (jax.Array of shape (9, NX, NY)): The DDF after collision.
+    """
+
+    return (1 - omega) * f + omega * feq
+
+
+def get_omega(nu):
+    """Compute the relaxation parameter from the kinematic viscosity.
+    
+    Converts the physical kinematic viscosity (in lattice units) to the BGK
+    relaxation parameter omega used in the collision step. This relationship
+    comes from the Chapman-Enskog expansion of the LBM equations.
+    
+    Args:
+        nu (scalar): The kinematic viscosity in lattice units.
+        
+    Returns:
+        omega (scalar): The relaxation parameter, omega = 1 / (3*nu + 0.5).
+    """
+    return 1 / (3 * nu + 0.5)
+
+
+def get_velocity_correction(g, rho=1):
+    """Compute the velocity correction in the presence of external body force. 
+    
+    The result should be added to the fluid velocity obtained from `get_macroscopic`
+    to preserve second-order accuracy when body forces are present. This correction
+    is independent of the forcing scheme used.
+    
+    Args:
+        g (scalar or jax.Array): The external body force density. 
+            Can be a scalar or array of shape (2, NX, NY) for full domain,
+            or (NX,) or (NY,) for boundary slices, or a single scalar value.
+        rho (scalar or jax.Array): The macroscopic density.
+            Can be a scalar or array with compatible shape to g.
+        
+    Returns:
+        out (scalar or jax.Array): The velocity correction with the same shape as g.
+            Should be added to the velocity: u_corrected = u + get_velocity_correction(g, rho)
+    """
+
+    return g * 0.5 / rho
