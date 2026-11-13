@@ -1,0 +1,68 @@
+{
+ "anchor": "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN",
+ "model": "two-lattice (two distribution functions) Shan-Chen MCMP, linear psi, BGK, viscous velocity coupling, Guo forcing",
+ "external_anchor": {
+  "analytic": "two-layer co-moving Poiseuille, u''=-G/nu per layer with velocity + shear-stress continuity (xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py::layered_poiseuille)",
+  "references": [
+   "Shan & Chen (1993) Phys. Rev. E 47, 1815",
+   "Shan & Doolen (1995) J. Stat. Phys. 81, 379",
+   "Martys & Chen (1996) J. Comput. Phys. 126, 276",
+   "Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308",
+   "OSS: geoelements/mcmp-lbm (commit 015a26f) two-PDF SC structure"
+  ]
+ },
+ "acceptance": "err_Q_mix < 15% against closed-form two-layer solution under measured half-way wall convention (H=ny-2)",
+ "cells": [
+  {
+   "G_12": -2.5,
+   "ny": 25,
+   "steps_run": 500,
+   "converged": false,
+   "Q_mix": NaN,
+   "Q_ref_mix": 0.3571764705882353,
+   "Q_ref_comp": 0.4553999999999999,
+   "err_Q_mix_mixture": NaN,
+   "err_Q_mix_component": NaN,
+   "pass_15pct": false
+  },
+  {
+   "G_12": -2.75,
+   "ny": 25,
+   "steps_run": 500,
+   "converged": false,
+   "Q_mix": NaN,
+   "Q_ref_mix": 0.3571764705882353,
+   "Q_ref_comp": 0.4553999999999999,
+   "err_Q_mix_mixture": NaN,
+   "err_Q_mix_component": NaN,
+   "pass_15pct": false
+  },
+  {
+   "G_12": -2.5,
+   "ny": 33,
+   "steps_run": 500,
+   "converged": false,
+   "Q_mix": NaN,
+   "Q_ref_mix": 0.8752941176470592,
+   "Q_ref_comp": 1.116,
+   "err_Q_mix_mixture": NaN,
+   "err_Q_mix_component": NaN,
+   "pass_15pct": false
+  },
+  {
+   "G_12": -2.75,
+   "ny": 33,
+   "steps_run": 500,
+   "converged": false,
+   "Q_mix": NaN,
+   "Q_ref_mix": 0.8752941176470592,
+   "Q_ref_comp": 1.116,
+   "err_Q_mix_mixture": NaN,
+   "err_Q_mix_component": NaN,
+   "pass_15pct": false
+  }
+ ],
+ "all_pass_15pct": false,
+ "elapsed_s": 7.4,
+ "repro_cmd": "PYTHONPATH=src python3 xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py"
+}

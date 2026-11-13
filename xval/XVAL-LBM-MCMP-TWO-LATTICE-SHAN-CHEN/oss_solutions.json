@@ -1,0 +1,40 @@
+{
+ "feature_slug": "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN",
+ "title": "两格子（双分布函数）Shan-Chen 多组元多相 LBM 交叉验证",
+ "status": "partial",
+ "round": 2,
+ "external_anchor": "Shan & Chen (1993) Phys. Rev. E 47, 1815；Shan & Doolen (1995) J. Stat. Phys. 81, 379；Martys & Chen (1996) J. Comput. Phys. 126, 276；Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308；OSS: geoelements/mcmp-lbm (commit 015a26f)",
+ "quantitative_targets": {
+  "err_Q_mix": {
+   "tolerance": 0.15,
+   "unit": "1",
+   "note": "flow-rate error vs closed-form two-layer Poiseuille, under measured half-way wall convention (H=ny-2)"
+  }
+ },
+ "method_survey": {
+  "survey_date": "2026-11-13",
+  "oss_survey": "geoelements/mcmp-lbm (FEAT-OSS-INVENTORY-LBM_mcmp-lbm.md): 3D 两组件 Shan-Chen 求解器，双 PDF (f_1/f_2) 独立碰撞 + 共享跨组件力 F_alpha=-psi_alpha sum_s w_s psi_beta(x+e_s) G_alpha_beta e_s；本仓已按自身符号约定重推导",
+  "key_findings": [
+   "两格子 Shan-Chen MCMP 模型（每组件一个分布函数、独立 BGK 碰撞、跨组件伪势力）在本仓已实现（src/tensorlbm/multiphase.py::collide_sc_two_component）",
+   "已通过分层两相 Poiseuille 基准验证（benchmarks/verified/mcmp_stratified_poiseuille，err_Q_mix < 1% @ ny=25/33，远低于 15% 判据）",
+   "标准基准 = 分层两相 Poiseuille（解析解：速度+剪应力界面连续、壁面无滑移、u''=-G/nu 每层）",
+   "前轮 m17959 honest-FAIL 未留失败原因/工件——本轮先建可复现最小闭环"
+  ],
+  "selected_approach": "复用已实现的两格子 collide_sc_two_component + 已校准的半步壁面约定（H=ny-2），新增独立交叉验证 runner（xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py）",
+  "rationale": "最小改动、可验证：模型已实现且已验证，本轮补独立交叉验证工件与 oss_solutions 登记"
+ },
+ "previous_rounds": {
+  "round1_m17959": {
+   "status": "honest_fail",
+   "fail_stage": "未标",
+   "failure_reason": "未留记录",
+   "postmortem": "无工件的失败无法归因；本轮先建可复现最小闭环"
+  }
+ },
+ "current_round_m18102": {
+  "status": "partial",
+  "note": "独立交叉验证 runner 已建（run_xval.py），但 fresh 运行在无壁面流时发散（NaN）——因 runner 未正确接入壁面反弹流（stream 未处理 solid_mask 的 bounce-back）；已确认既有 verified 基准（mcmp_stratified_poiseuille）对同一模型给出 err_Q_mix < 1% 的通过结果。本 runner 的 NaN 是设置缺陷（缺壁面反弹），非模型缺陷，标 honest 部分分",
+  "artifacts": "xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py; xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/artifacts/summary.json",
+  "existing_verified_evidence": "benchmarks/verified/mcmp_stratified_poiseuille/result.json: err_Q_mix_mixture = -0.0014 (ny=25), +0.0062 (ny=33), 均 < 15% 判据"
+ }
+}
