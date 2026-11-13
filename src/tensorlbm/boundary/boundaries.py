@@ -48,6 +48,25 @@ def bounce_back_cells(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
+def _profile_like(
+    value: float | torch.Tensor,
+    ref: torch.Tensor,
+    name: str = "profile",
+) -> torch.Tensor:
+    """Broadcast a scalar / ``(ny,)`` / ``(ny, 1)`` profile onto the row axis of *ref*."""
+    if isinstance(value, torch.Tensor):
+        profile = value.to(device=ref.device, dtype=ref.dtype)
+        if profile.ndim == 0:
+            return torch.full_like(ref, float(profile.item()))
+        if profile.ndim == 2 and profile.shape[1] == 1:
+            profile = profile[:, 0]
+        if profile.shape != ref.shape:
+            msg = f"{name} must have shape {tuple(ref.shape)}, got {tuple(profile.shape)}"
+            raise ValueError(msg)
+        return profile
+    return torch.full_like(ref, float(value))
+
+
 def zou_he_inlet_velocity(
     f: torch.Tensor,
     u_in: float | torch.Tensor,
@@ -59,11 +78,23 @@ def zou_he_inlet_velocity(
     by analytically determining the unknown in-flowing populations so that
     mass and momentum are conserved exactly.
 
-    The method follows Zou & He (1997) Phys. Fluids 9 1591.
+    The method follows Zou & He (1997) Phys. Fluids 9 1591.  With the D2Q9
+    ordering used here (``1 = (1,0)``, ``5 = (1,1)``, ``8 = (1,-1)``,
+    ``3 = (-1,0)``, ``6 = (-1,1)``, ``7 = (-1,-1)``) the unknown in-flowing
+    populations ``f1``, ``f5``, ``f8`` are (Krueger et al. 2017, sec. 8.2.2)::
+
+        rho = (f0 + f2 + f4 + 2 (f3 + f6 + f7)) / (1 - ux)
+        f1  = f3 + (2/3) rho ux
+        f5  = f7 - (f2 - f4)/2 + rho ux/6 + rho uy/2
+        f8  = f6 + (f2 - f4)/2 + rho ux/6 - rho uy/2
+
+    so the post-BC column satisfies ``sum f = rho``, ``sum f cx = rho ux`` and
+    ``sum f cy = rho uy`` to round-off (asserted in
+    ``tests/test_zou_he_channel_reconstruction.py``).
 
     Args:
         f: Distribution tensor of shape ``(9, ny, nx)``.
-        u_in: Prescribed x-velocity at the inlet.
+        u_in: Prescribed x-velocity at the inlet (scalar or ``(ny,)`` profile).
         uy_in: Prescribed y-velocity at the inlet (default 0).
 
     Returns:
@@ -73,24 +104,9 @@ def zou_he_inlet_velocity(
     # Populations pointing into the domain (cx > 0): directions 1, 5, 8
     # Populations pointing out of the domain (cx < 0): directions 3, 6, 7
     # Tangential populations (cx = 0): 0, 2, 4
-    def _as_inlet_profile(value: float | torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
-        if isinstance(value, torch.Tensor):
-            profile = value.to(device=ref.device, dtype=ref.dtype)
-            if profile.ndim == 0:
-                return torch.full_like(ref, float(profile.item()))
-            if profile.ndim == 2 and profile.shape[1] == 1:
-                profile = profile[:, 0]
-            if profile.shape != ref.shape:
-                msg = (
-                    f"Inlet profile must have shape {tuple(ref.shape)}, got {tuple(profile.shape)}"
-                )
-                raise ValueError(msg)
-            return profile
-        return torch.full_like(ref, float(value))
-
     f0, f2, f3, f4, f6, f7 = f[0, :, 0], f[2, :, 0], f[3, :, 0], f[4, :, 0], f[6, :, 0], f[7, :, 0]
-    u_col = _as_inlet_profile(u_in, f0)
-    uy_col = _as_inlet_profile(uy_in, f0)
+    u_col = _profile_like(u_in, f0, "Inlet u profile")
+    uy_col = _profile_like(uy_in, f0, "Inlet uy profile")
     rho = (f0 + f2 + f4 + 2.0 * (f3 + f6 + f7)) / (1.0 - u_col)
 
     f_new = f.clone()
@@ -100,15 +116,71 @@ def zou_he_inlet_velocity(
     return f_new
 
 
-def zou_he_outlet_pressure(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tensor:
+def zou_he_inlet_pressure(
+    f: torch.Tensor,
+    rho_in: float = 1.0,
+    uy_in: float | torch.Tensor = 0.0,
+) -> torch.Tensor:
+    """Zou/He pressure (density) boundary condition at the left column (x=0).
+
+    Mirror of :func:`zou_he_outlet_pressure`: prescribes *rho = rho_in* and
+    *uy = uy_in* at the inlet column, the unknown in-flowing populations
+    ``f1``, ``f5``, ``f8`` are reconstructed from the known ones.  This is the
+    west-boundary counterpart needed to drive a channel by a **pressure
+    difference** (Zou & He 1997, sec. IV; Krueger et al. 2017, sec. 8.2.4);
+    a velocity inlet cannot supply that driving mechanism.
+
+    The x-velocity is implied by the mass constraint::
+
+        ux = 1 - (f0 + f2 + f4 + 2 (f3 + f6 + f7)) / rho_in
+        f1 = f3 + (2/3) rho_in ux
+        f5 = f7 - (f2 - f4)/2 + rho_in ux/6 + rho_in uy/2
+        f8 = f6 + (f2 - f4)/2 + rho_in ux/6 - rho_in uy/2
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        rho_in: Prescribed inlet density (default 1.0).
+        uy_in: Prescribed inlet y-velocity (default 0).
+
+    Returns:
+        Updated distribution tensor (same shape).
+    """
+    rho_in = check_positive_scalar(rho_in, "rho_in", where="zou_he_inlet_pressure")
+    f0, f2, f3, f4, f6, f7 = f[0, :, 0], f[2, :, 0], f[3, :, 0], f[4, :, 0], f[6, :, 0], f[7, :, 0]
+    uy_col = _profile_like(uy_in, f0, "Inlet uy profile")
+    ux = 1.0 - (f0 + f2 + f4 + 2.0 * (f3 + f6 + f7)) / rho_in
+
+    f_new = f.clone()
+    f_new[1, :, 0] = f3 + (2.0 / 3.0) * rho_in * ux
+    f_new[5, :, 0] = f7 - 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux + 0.5 * rho_in * uy_col
+    f_new[8, :, 0] = f6 + 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux - 0.5 * rho_in * uy_col
+    return f_new
+
+
+def zou_he_outlet_pressure(
+    f: torch.Tensor,
+    rho_out: float = 1.0,
+    uy_out: float | torch.Tensor = 0.0,
+) -> torch.Tensor:
     """Zou/He pressure (density) boundary condition at the right column (x=nx-1).
 
-    Prescribes *rho = rho_out* and zero y-velocity at the outlet column.
+    Prescribes *rho = rho_out* and *uy = uy_out* at the outlet column.
     The unknown out-going populations are reconstructed from the in-coming ones.
+
+    ``uy_out = 0`` reproduces the historical (tangential-velocity-free)
+    behaviour.  A non-zero ``uy_out`` closes the y-momentum of the outlet
+    column explicitly instead of silently forcing it to zero, which matters
+    when the outlet is not in a fully developed region::
+
+        ux = -1 + (f0 + f2 + f4 + 2 (f1 + f5 + f8)) / rho_out
+        f3 = f1 - (2/3) rho_out ux
+        f7 = f5 + (f2 - f4)/2 - rho_out ux/6 - rho_out uy/2
+        f6 = f8 - (f2 - f4)/2 - rho_out ux/6 + rho_out uy/2
 
     Args:
         f: Distribution tensor of shape ``(9, ny, nx)``.
         rho_out: Prescribed density at the outlet (default 1.0).
+        uy_out: Prescribed outlet y-velocity (default 0).
 
     Returns:
         Updated distribution tensor (same shape).
@@ -116,11 +188,12 @@ def zou_he_outlet_pressure(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tenso
     rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure")
     f1, f2, f4, f5, f8 = f[1, :, -1], f[2, :, -1], f[4, :, -1], f[5, :, -1], f[8, :, -1]
     ux = -1.0 + (f[0, :, -1] + f2 + f4 + 2.0 * (f1 + f5 + f8)) / rho_out
+    uy_col = _profile_like(uy_out, f1, "Outlet uy profile")
 
     f_new = f.clone()
     f_new[3, :, -1] = f1 - (2.0 / 3.0) * rho_out * ux
-    f_new[7, :, -1] = f5 + 0.5 * (f2 - f4) - (1.0 / 6.0) * rho_out * ux
-    f_new[6, :, -1] = f8 - 0.5 * (f2 - f4) - (1.0 / 6.0) * rho_out * ux
+    f_new[7, :, -1] = f5 + 0.5 * (f2 - f4) - (1.0 / 6.0) * rho_out * ux - 0.5 * rho_out * uy_col
+    f_new[6, :, -1] = f8 - 0.5 * (f2 - f4) - (1.0 / 6.0) * rho_out * ux + 0.5 * rho_out * uy_col
     return f_new
 
 
@@ -273,6 +346,40 @@ def apply_zou_he_channel_boundaries(
     """
     f = zou_he_inlet_velocity(f, u_in)
     f = zou_he_outlet_pressure(f)
+    f = bounce_back_cells(f, wall_mask)
+    f = bounce_back_cells(f, obstacle_mask)
+    return f
+
+
+def apply_zou_he_pressure_channel_boundaries(
+    f: torch.Tensor,
+    rho_in: float,
+    rho_out: float,
+    wall_mask: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Channel boundaries driven by a pressure difference (Zou/He at both ends).
+
+    Companion of :func:`apply_zou_he_channel_boundaries`: instead of a
+    prescribed inlet *velocity* it uses a Zou/He density inlet
+    (:func:`zou_he_inlet_pressure`) plus a Zou/He density outlet
+    (:func:`zou_he_outlet_pressure`), i.e. the textbook pressure-driven
+    channel set-up.  The imposed pressure drop is
+    ``dp = (rho_in - rho_out) c_s^2 = (rho_in - rho_out) / 3`` over the
+    ``nx - 1`` lattice units between the two boundary columns.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        rho_in: Prescribed inlet density.
+        rho_out: Prescribed outlet density.
+        wall_mask: Boolean tensor of shape ``(ny, nx)``.
+        obstacle_mask: Boolean tensor of shape ``(ny, nx)``.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    f = zou_he_inlet_pressure(f, rho_in)
+    f = zou_he_outlet_pressure(f, rho_out)
     f = bounce_back_cells(f, wall_mask)
     f = bounce_back_cells(f, obstacle_mask)
     return f

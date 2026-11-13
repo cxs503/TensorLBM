@@ -1,0 +1,13 @@
+{
+ "line_inlet_velocity": 70,
+ "line_inlet_pressure": 119,
+ "line_outlet_pressure": 160,
+ "line_apply_pressure": 354,
+ "sha256_boundaries": "df8285dccb517a5e",
+ "sha256_init": "694188cfefa2cd6f",
+ "pytest": {
+  "cmd": "python3 -m pytest tests/test_zou_he_channel_reconstruction.py -q",
+  "returncode": 0,
+  "summary": "6 passed, 1 warning in 18.16s"
+ }
+}
