@@ -122,7 +122,7 @@ class TestOOTCMemory:
 
         # OOTC should use at most 20% of BPTT memory for k=T/10
         assert peak_ootc < 0.25 * peak_bptt, (
-            f"OOTC memory {peak_oott/1024**2:.1f} MiB should be < 25% of "
+            f"OOTC memory {peak_ootc/1024**2:.1f} MiB should be < 25% of "
             f"BPTT {peak_bptt/1024**2:.1f} MiB"
         )
 
@@ -166,3 +166,47 @@ class TestOOTCCheckpointFile:
         assert ckpt_path.endswith(".ckpt.npy")
         # Clean up
         os.unlink(ckpt_path)
+
+class TestOOTCTailSegment:
+    """T not a multiple of k: the tail segment must be included.
+
+    Regression: the original implementation ran only (T//k)*k forward
+    steps, so for T % k != 0 the gradient was computed for the wrong
+    horizon (and J silently used the wrong terminal state).
+    """
+
+    @pytest.mark.parametrize("T,k", [(100, 30), (100, 7), (50, 13), (37, 10)])
+    def test_ootc_tail_matches_bptt(self, T, k):
+        """OOTC with a tail segment matches BPTT (gradient AND objective)."""
+        tau, T0, f0, ux_ref, uy_ref = _make_problem(N=16, T=50)
+        # rebuild reference at the actual (T, k) horizon
+        f = f0.copy()
+        for _ in range(T):
+            f = step(f, tau)
+        _, ux_t, uy_t = macro(f)
+        ux_ref = ux_t * 0.9
+        uy_ref = uy_t * 0.9
+
+        dJ_bptt, J_bptt, _, _ = bptt_gradient(tau, T, f0, ux_ref, uy_ref)
+        dJ_ootc, J_ootc, _, _, _ = ootc_gradient(tau, T, f0, ux_ref, uy_ref, k=k)
+
+        assert abs(J_bptt - J_ootc) < 1e-12, (
+            f"objective mismatch: BPTT J={J_bptt:.6e} vs OOTC J={J_ootc:.6e} "
+            f"(T={T}, k={k}) -- horizon bug?"
+        )
+        rel_err = abs(dJ_bptt - dJ_ootc) / max(abs(dJ_bptt), 1e-30)
+        assert rel_err < 1e-5, f"rel_err={rel_err:.2e} >= 1e-5 for T={T}, k={k}"
+
+    def test_ootc_tail_terminal_state(self):
+        """Terminal velocity from OOTC equals the true f^T macros."""
+        tau, _, f0, _, _ = _make_problem(N=16, T=50)
+        T, k = 45, 10  # tail = 5
+        f = f0.copy()
+        for _ in range(T):
+            f = step(f, tau)
+        rho_t, ux_t, uy_t = macro(f)
+        _, _, (ux_T, uy_T), _, _ = ootc_gradient(
+            tau, T, f0, ux_t * 0.9, uy_t * 0.9, k=k
+        )
+        assert np.allclose(ux_T, ux_t, atol=0.0)
+        assert np.allclose(uy_T, uy_t, atol=0.0)
