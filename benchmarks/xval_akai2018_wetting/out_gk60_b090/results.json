@@ -1,0 +1,362 @@
+{
+  "anchor": "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING",
+  "reference": {
+    "repo": "lanl/MF-LBM",
+    "commit": "11be324a97fe6331b2271102da370460715355e8",
+    "files": [
+      "multiphase_3D/0.src/Phase_gradient.F90:209-265"
+    ],
+    "license": "BSD-3-Clause"
+  },
+  "engine": {
+    "module": "tensorlbm.cg_wetting2d",
+    "sha256": "1a9bab40705224b57a81c6ea80337ea66bf6a71cf1262e0f2eb9128ab344e256",
+    "cg_step_sha256": "50b66d1efa5b35c72ef421b8e720ff2ca6a7a6b71c21060819efed153364cfbc"
+  },
+  "environment": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "machine": "loongarch64",
+    "threads": 8
+  },
+  "criteria": {
+    "gate": "|theta_circle - theta_target| / theta_target <= 15 %",
+    "secondary": "|theta_cap - theta_circle| <= 5 deg; mass drift <= 1e-8"
+  },
+  "results": {
+    "gk60_b090": {
+      "arm": "gk60_b090",
+      "spec": {
+        "name": "gk60_b090",
+        "theta_target": 60.0,
+        "init_theta": null,
+        "wetting": true,
+        "beta": 0.9,
+        "A": 0.04,
+        "tau": 1.0,
+        "radius": 14.0,
+        "nx": 96,
+        "ny": 64,
+        "xi": 2.0,
+        "steps": 6000,
+        "note": "sensitivity: recoloring/segregation beta (0.70 -> 0.90)"
+      },
+      "theta_target": 60.0,
+      "theta_bottom_applied": 60.0,
+      "steps_run": 6000,
+      "wall_time_s": 109.8595802783966,
+      "theta_circle": 101.4929467214208,
+      "theta_cap": NaN,
+      "theta_circle_trim15": 18.569429465539425,
+      "theta_local_median": 59.99999999999999,
+      "theta_local_n": 6,
+      "theta_tail_mean": 99.47834649004773,
+      "theta_tail_std": 1.477985837129842,
+      "circle": {
+        "theta_deg": 101.4929467214208,
+        "x_center": 48.022201792794185,
+        "y_center": 10.852632414134895,
+        "R_fit": 51.9587083316561,
+        "rms": 0.09450486907325513,
+        "n_points": 15,
+        "contact_width": 16.0,
+        "y_wall": 0.5
+      },
+      "cap": null,
+      "err_pct_circle": 69.15491120236798,
+      "err_deg_circle": 41.49294672142079,
+      "err_pct_cap": NaN,
+      "u_max_fluid": 0.005360285711925353,
+      "u_max_liquid_core": 0.0053300181396800875,
+      "interface_width_10_90": NaN,
+      "mass_drift_r": -2.737973553978527e-13,
+      "mass_drift_b": -3.550825388751735e-13,
+      "converged_dphi": 0.027700246282286373,
+      "history": [
+        {
+          "step": 1,
+          "theta_circle": 60.077673413092526,
+          "theta_cap": NaN,
+          "u_max": 0.0008289032916717615,
+          "dphi_max": NaN,
+          "mass_r": 150.41437089416968,
+          "mass_b": 5993.58562910583,
+          "mass_drift_r": 0.0,
+          "mass_drift_b": 0.0
+        },
+        {
+          "step": 250,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.016184249307566692,
+          "dphi_max": 1.7713299993841138,
+          "mass_r": 150.41437089416803,
+          "mass_b": 5993.585629105561,
+          "mass_drift_r": -1.0959452458989273e-14,
+          "mass_drift_b": -4.491642372096212e-14
+        },
+        {
+          "step": 500,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.03255255547260933,
+          "dphi_max": 0.6607042181674494,
+          "mass_r": 150.4143708941663,
+          "mass_b": 5993.58562910548,
+          "mass_drift_r": -2.248577314861592e-14,
+          "mass_drift_b": -5.842169977219734e-14
+        },
+        {
+          "step": 750,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.05551111607100009,
+          "dphi_max": 1.065089953280644,
+          "mass_r": 150.41437089416462,
+          "mass_b": 5993.585629105401,
+          "mass_drift_r": -3.363418168448432e-14,
+          "mass_drift_b": -7.162348647396662e-14
+        },
+        {
+          "step": 1000,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.05280506181076326,
+          "dphi_max": 0.63148293008731,
+          "mass_r": 150.41437089416291,
+          "mass_b": 5993.585629105318,
+          "mass_drift_r": -4.497154629723184e-14,
+          "mass_drift_b": -8.543225187466782e-14
+        },
+        {
+          "step": 1250,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.05296244315727737,
+          "dphi_max": 0.5098110448921961,
+          "mass_r": 150.4143708941612,
+          "mass_b": 5993.585629105238,
+          "mass_drift_r": -5.630891090997937e-14,
+          "mass_drift_b": -9.878578325117007e-14
+        },
+        {
+          "step": 1500,
+          "theta_circle": 180.0,
+          "theta_cap": NaN,
+          "u_max": 0.05360163600133977,
+          "dphi_max": 0.5967273778327694,
+          "mass_r": 150.4143708941595,
+          "mass_b": 5993.585629105157,
+          "mass_drift_r": -6.764627552272689e-14,
+          "mass_drift_b": -1.122910593024053e-13
+        },
+        {
+          "step": 1750,
+          "theta_circle": 73.79061027514251,
+          "theta_cap": NaN,
+          "u_max": 0.04709930742763641,
+          "dphi_max": 0.7973488519028749,
+          "mass_r": 150.4143708941578,
+          "mass_b": 5993.585629105075,
+          "mass_drift_r": -7.898364013547441e-14,
+          "mass_drift_b": -1.259480800283735e-13
+        },
+        {
+          "step": 2000,
+          "theta_circle": 43.71535471669789,
+          "theta_cap": NaN,
+          "u_max": 0.03914822710746981,
+          "dphi_max": 0.6245551201749318,
+          "mass_r": 150.4143708941561,
+          "mass_b": 5993.585629104995,
+          "mass_drift_r": -9.032100474822194e-14,
+          "mass_drift_b": -1.3930161140487577e-13
+        },
+        {
+          "step": 2250,
+          "theta_circle": 54.679354347435044,
+          "theta_cap": NaN,
+          "u_max": 0.03300386020882041,
+          "dphi_max": 0.5022849908200896,
+          "mass_r": 150.4143708941544,
+          "mass_b": 5993.585629104913,
+          "mass_drift_r": -1.0165836936096946e-13,
+          "mass_drift_b": -1.5295863213084396e-13
+        },
+        {
+          "step": 2500,
+          "theta_circle": 65.08849730466403,
+          "theta_cap": NaN,
+          "u_max": 0.0283283207423154,
+          "dphi_max": 0.36656287874659815,
+          "mass_r": 150.41437089415265,
+          "mass_b": 5993.585629104833,
+          "mass_drift_r": -1.1318469005059612e-13,
+          "mass_drift_b": -1.6631216350734623e-13
+        },
+        {
+          "step": 2750,
+          "theta_circle": 73.70046282158461,
+          "theta_cap": NaN,
+          "u_max": 0.024574590110023154,
+          "dphi_max": 0.3150396415383296,
+          "mass_r": 150.41437089415092,
+          "mass_b": 5993.585629104751,
+          "mass_drift_r": -1.2471101074022276e-13,
+          "mass_drift_b": -1.7996918423331445e-13
+        },
+        {
+          "step": 3000,
+          "theta_circle": 80.15865146688256,
+          "theta_cap": NaN,
+          "u_max": 0.021447158794813976,
+          "dphi_max": 0.23177218462625132,
+          "mass_r": 150.4143708941492,
+          "mass_b": 5993.585629104671,
+          "mass_drift_r": -1.3623733142984941e-13,
+          "mass_drift_b": -1.933227156098167e-13
+        },
+        {
+          "step": 3250,
+          "theta_circle": 84.9122550098253,
+          "theta_cap": NaN,
+          "u_max": 0.018694875408843667,
+          "dphi_max": 0.18618235223265672,
+          "mass_r": 150.41437089414745,
+          "mass_b": 5993.58562910459,
+          "mass_drift_r": -1.4776365211947607e-13,
+          "mass_drift_b": -2.068279916610519e-13
+        },
+        {
+          "step": 3500,
+          "theta_circle": 88.39787152902407,
+          "theta_cap": NaN,
+          "u_max": 0.01626102449869939,
+          "dphi_max": 0.15682281644056761,
+          "mass_r": 150.4143708941458,
+          "mass_b": 5993.585629104509,
+          "mass_drift_r": -1.5872310457846534e-13,
+          "mass_drift_b": -2.2033326771228715e-13
+        },
+        {
+          "step": 3750,
+          "theta_circle": 90.99398217454727,
+          "theta_cap": NaN,
+          "u_max": 0.014150256400172624,
+          "dphi_max": 0.12815608800739445,
+          "mass_r": 150.41437089414404,
+          "mass_b": 5993.585629104429,
+          "mass_drift_r": -1.704383813449711e-13,
+          "mass_drift_b": -2.336867990887894e-13
+        },
+        {
+          "step": 4000,
+          "theta_circle": 92.9992583698049,
+          "theta_cap": NaN,
+          "u_max": 0.012329676031865446,
+          "dphi_max": 0.10357298298385043,
+          "mass_r": 150.41437089414228,
+          "mass_b": 5993.585629104349,
+          "mass_drift_r": -1.8215365811147687e-13,
+          "mass_drift_b": -2.4704033046529167e-13
+        },
+        {
+          "step": 4250,
+          "theta_circle": 94.61882775848187,
+          "theta_cap": NaN,
+          "u_max": 0.010764235322099072,
+          "dphi_max": 0.08355564197833812,
+          "mass_r": 150.41437089414057,
+          "mass_b": 5993.585629104267,
+          "mass_drift_r": -1.9349102272422442e-13,
+          "mass_drift_b": -2.6069735119125986e-13
+        },
+        {
+          "step": 4500,
+          "theta_circle": 95.98233410364108,
+          "theta_cap": NaN,
+          "u_max": 0.009422643055318442,
+          "dphi_max": 0.06797997839935385,
+          "mass_r": 150.4143708941388,
+          "mass_b": 5993.585629104186,
+          "mass_drift_r": -2.0520629949073018e-13,
+          "mass_drift_b": -2.742026272424951e-13
+        },
+        {
+          "step": 4750,
+          "theta_circle": 97.16799156937073,
+          "theta_cap": NaN,
+          "u_max": 0.008275230350487633,
+          "dphi_max": 0.056035086301065073,
+          "mass_r": 150.4143708941371,
+          "mass_b": 5993.5856291041055,
+          "mass_drift_r": -2.165436641034777e-13,
+          "mass_drift_b": -2.8770790329373035e-13
+        },
+        {
+          "step": 5000,
+          "theta_circle": 98.22131358924331,
+          "theta_cap": NaN,
+          "u_max": 0.007295093986927148,
+          "dphi_max": 0.04904107685251369,
+          "mass_r": 150.41437089413535,
+          "mass_b": 5993.585629104025,
+          "mass_drift_r": -2.2825894086998347e-13,
+          "mass_drift_b": -3.010614346702326e-13
+        },
+        {
+          "step": 5250,
+          "theta_circle": 99.16815722216313,
+          "theta_cap": NaN,
+          "u_max": 0.006472191110683067,
+          "dphi_max": 0.04270771878280291,
+          "mass_r": 150.41437089413364,
+          "mass_b": 5993.585629103944,
+          "mass_drift_r": -2.39596305482731e-13,
+          "mass_drift_b": -3.147184553962008e-13
+        },
+        {
+          "step": 5500,
+          "theta_circle": 100.02343591900056,
+          "theta_cap": NaN,
+          "u_max": 0.005793579702771986,
+          "dphi_max": 0.03705746948699237,
+          "mass_r": 150.41437089413193,
+          "mass_b": 5993.585629103862,
+          "mass_drift_r": -2.509336700954785e-13,
+          "mass_drift_b": -3.28375476122169e-13
+        },
+        {
+          "step": 5750,
+          "theta_circle": 100.79623391908781,
+          "theta_cap": NaN,
+          "u_max": 0.0054154283993595965,
+          "dphi_max": 0.03207019528916191,
+          "mass_r": 150.41437089413023,
+          "mass_b": 5993.585629103783,
+          "mass_drift_r": -2.6227103470822605e-13,
+          "mass_drift_b": -3.415772628239383e-13
+        },
+        {
+          "step": 6000,
+          "theta_circle": 101.4929467214208,
+          "theta_cap": NaN,
+          "u_max": 0.005360285711925353,
+          "dphi_max": 0.027700246282286373,
+          "mass_r": 150.4143708941285,
+          "mass_b": 5993.585629103702,
+          "mass_drift_r": -2.737973553978527e-13,
+          "mass_drift_b": -3.550825388751735e-13
+        }
+      ],
+      "phi_field_sha256": "4e16fb62f4427a984622b2fe03b4471ee7d57575f0f374eab741cbbdc5a6e208",
+      "pass_15pct": false
+    }
+  },
+  "figures": [
+    "fig0_phase_fields.png",
+    "fig1_angle_vs_prescribed.png",
+    "fig2_error_gate.png",
+    "fig3_relaxation.png"
+  ]
+}

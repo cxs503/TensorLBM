@@ -1,0 +1,14 @@
+== arm gk30: theta_target=30.0 wetting=True
+  [gk30] step      1  theta= 29.66 cap=   nan  |u|max=3.776e-04  dphi=nan
+  [gk30] step   1000  theta=   nan cap=   nan  |u|max=1.030e-02  dphi=1.61e-02
+  [gk30] step   2000  theta=   nan cap=   nan  |u|max=1.040e-02  dphi=5.42e-05
+  [gk30] step   3000  theta=   nan cap=   nan  |u|max=1.043e-02  dphi=2.76e-06
+  [gk30] step   4000  theta=   nan cap=   nan  |u|max=1.043e-02  dphi=4.21e-07
+  [gk30] step   5000  theta=   nan cap=   nan  |u|max=1.043e-02  dphi=4.20e-08
+  [gk30] step   6000  theta=   nan cap=   nan  |u|max=1.043e-02  dphi=1.94e-08
+/root/tp-agent/work/m17366/benchmarks/xval_akai2018_wetting/run.py:328: RuntimeWarning: Mean of empty slice
+  theta_tail = float(np.nanmean([h["theta_circle"] for h in last]))
+/usr/lib64/python3.11/site-packages/numpy/lib/_nanfunctions_impl.py:1997: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+   -> theta_circle=nan (target 30.0) err=+nan%  |u|max=1.04e-02  pass15=False
+wrote out_gk30/results.json
