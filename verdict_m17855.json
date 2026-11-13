@@ -1,0 +1,52 @@
+{
+  "repo": "TensorLBM",
+  "scope": "m17790 XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN",
+  "mission_id": 17855,
+  "level": 1,
+  "verdict_by": "board-audit",
+  "evidence": {
+    "impl_files": [
+      "/root/tp-agent/work/m17790/TensorLBM/src/tensorlbm/examples/base.py",
+      "/root/tp-agent/work/m17790/TensorLBM/src/tensorlbm/examples/registry.py",
+      "/root/tp-agent/work/m17790/TensorLBM/src/tensorlbm/examples/runner.py",
+      "/root/tp-agent/work/m17790/TensorLBM/src/tensorlbm/examples/lid_driven_cavity.py"
+    ],
+    "impl_notes": "4 modules are real non-placeholder code (mission commit ee1f41f1, branch agent/m17790): base.py:22-78 ExampleResult+ABC; registry.py:23-83 register/get/list/run/run_all; runner.py:55-122 CLI; lid_driven_cavity.py:37-158 example. BUT they live in the non-packaged duplicate tree TensorLBM/src (packaged tree = src/, pyproject.toml:83 package-dir, :92-93 pythonpath=['src'] testpaths=['tests']) and only 1 of the claimed '100+ standalone scripts' was migrated.",
+    "entry": "documented invocation FAILS: `python3 -m tensorlbm.examples.runner --list` at repo root -> rc=1, ModuleNotFoundError: No module named 'tensorlbm.examples' (artifacts/board_audit_m17855/probe.json:documented_cli). runner.py:55 main() exists but is importable only with PYTHONPATH=TensorLBM/src, i.e. not a working package entry.",
+    "run_artifacts": "none committed by m17790: commit ee1f41f1 = 7 files (5 src + 1 doc + 1 test), no outputs/ or metadata/CSV; mission result.evidence.head_commit=null, checks={}. Auditor-independent reproduction artifacts (NOT deliverables): artifacts/board_audit_m17855/probe.json, artifacts/board_audit_m17855/fig_defaults_divergence.png.",
+    "tests": [
+      "TensorLBM/tests/test_examples_framework.py::TestRegistry::test_list_examples",
+      "TensorLBM/tests/test_examples_framework.py::TestRegistry::test_get_example",
+      "TensorLBM/tests/test_examples_framework.py::TestRegistry::test_get_unknown",
+      "TensorLBM/tests/test_examples_framework.py::TestRegistry::test_run_unknown_raises",
+      "TensorLBM/tests/test_examples_framework.py::TestRegistry::test_duplicate_register_raises",
+      "TensorLBM/tests/test_examples_framework.py::TestLidDrivenCavityExample::test_configure",
+      "TensorLBM/tests/test_examples_framework.py::TestLidDrivenCavityExample::test_run_smoke",
+      "TensorLBM/tests/test_examples_framework.py::TestLidDrivenCavityExample::test_metadata_content",
+      "TensorLBM/tests/test_examples_framework.py::TestLidDrivenCavityExample::test_run_with_overwrite",
+      "TensorLBM/tests/test_examples_framework.py::TestRunnerCLI::test_list_command",
+      "TensorLBM/tests/test_examples_framework.py::TestRunnerCLI::test_json_list",
+      "TensorLBM/tests/test_examples_framework.py::TestRunnerCLI::test_unknown_example"
+    ],
+    "tests_note": "12 passed in 6.45s (auditor re-ran). Smoke-only: test_run_smoke uses n=17, Re=10 -> ghia_available=false, so the Ghia comparison branch and the 0.05 tolerance are never exercised; no test asserts accuracy. The suite is not collected by CI (testpaths=['tests']) and only runs via TensorLBM/tests/conftest.py sys.path hack.",
+    "integration_callers": "none: no import of tensorlbm.examples outside TensorLBM/tests/conftest.py; documented CLI/`from tensorlbm.examples import registry` fail on the packaged tree; branch agent/m17790 not merged into main (ee1f41f1 absent from main log).",
+    "benchmark": "absent: SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN' -> 0 rows; feature_ledger acceptance = '<15%' (error bar). Delivered got = NaN: at shipped defaults (n=65, Re=100, u_lid=0.1, tau=0.692) l2_u/l2_v/max_u/max_v are all NaN because the run diverges at step 40 (max|u_x|=6.9e107 at step 35, exceeds u_lid=0.1 already at step 10). ref(Ghia 1982) vs got(NaN) => relative error unmeasurable => acceptance FAIL, not '<15%'.",
+    "repro_cmd": "cd /root/tp-agent/work/m17855 && python3 scripts/audit_m17855_probe.py trace && python3 scripts/audit_m17855_probe.py guard && python3 scripts/audit_m17855_probe.py smoke && python3 scripts/audit_m17855_probe.py cli && python3 scripts/audit_m17855_probe.py figure; cd /root/tp-agent/work/m17790 && python3 -m pytest TensorLBM/tests/test_examples_framework.py -q",
+    "external_anchor": "Ghia, Ghia & Shin 1982, JCP 48:387 (Re=100 centreline u/v tables, the reference the example itself claims); auditor got NaN -> no valid comparison; canonical implementation src/tensorlbm/lid_driven_cavity.py + tests/test_lid_driven_cavity.py still passes 20 tests, i.e. the working solver was not the one wrapped.",
+    "verdict": "reopened",
+    "level_rationale": "L1 = unit/smoke verification only. L2 (independent functional implementation) is NOT met by the delivery under the gate's scheme: no committed run artifacts (impl_files/entry alone are insufficient) and the documented entry fails; substantively the only migrated example returns success=True with NaN metrics at its shipped defaults, so nothing is validated end-to-end. The framework plumbing itself is real code, so a small rework (move to src/, wrap the canonical solver, commit artifacts, register the benchmark) reaches L2+.",
+    "blocking_defects": [
+      "B1 shipped defaults diverge (NaN at step 40) yet ExampleResult.success=True with NaN metrics; NaN guard dead for max_steps<=500 (lid_driven_cavity.py:91-93: step%500==0 and step>0)",
+      "B2 deliverable in non-packaged duplicate tree TensorLBM/src (not src/): absent from wheel, not collected by CI, not merged to main, documented CLI fails (ModuleNotFoundError)"
+    ],
+    "nonblocking": [
+      "N1 except KeyError silently drops Ghia metrics for Re outside the table (lid_driven_cavity.py:120-122) - exactly the branch the passing tests take",
+      "N2 no accuracy/tolerance assertion anywhere; ghia_tolerance=0.05 never triggered",
+      "N3 report owed: tensor_dev_missions.id=17790 report_owed=true, report_id=null, 0 rows in tensor_reports",
+      "N4 claim 'replaced 100+ standalone scripts' vs 1 example migrated; finish evidence checks={} head_commit=null",
+      "N5 mission status succeeded via auto-approve (decision_note TP_AUTO_APPROVE_DEV_ACCEPTANCE) despite server_quality_audit.gate_valid=false"
+    ],
+    "audit_report": "docs/board_audit_m17855.md",
+    "mission_commit": "ee1f41f138b45579ef19526201297a4a6f699578 (branch agent/m17790, not merged)"
+  }
+}
