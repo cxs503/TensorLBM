@@ -1,0 +1,68 @@
+{
+  "P1_detection_power": {
+    "measurement": {
+      "tau_used": 0.8,
+      "nu_measured": 0.10020625993207506,
+      "r2": 1.0
+    },
+    "prediction_matched": {
+      "tau": 0.8,
+      "nu_pred": 0.1,
+      "err_pct": 0.20625993207505633,
+      "gate_15pct": "PASS"
+    },
+    "prediction_mismatched": {
+      "tau": 1.2,
+      "nu_pred": 0.23333333333333334,
+      "err_pct": 57.0544600291107,
+      "gate_15pct": "FAIL"
+    },
+    "conclusion": "gate has detection power"
+  },
+  "P2_non_hardcoding": {
+    "baseline_nu": 0.1,
+    "perturbed_raised": "ValueError: isolation of zeta failed: diagonal coefficients differ [-552*rho/2821, -5247*rho/28210]"
+  },
+  "P3_provenance": {
+    "shipped_git_head": "e53d994dc08d9e3ff39e5ef0ee83f69768324c8e",
+    "shipped_module_sha256": "b9a42507eb5dae4cc42026731a771ea17d20517d1777f542983cffd1d366d1a7",
+    "rebuilt_vs_shipped": {
+      "D2Q9-BGK-tau0.8": {
+        "nu_shipped": 0.1,
+        "nu_head": 0.1,
+        "nu_rel_diff": 0.0,
+        "zeta_shipped": 0.1,
+        "zeta_head": 0.1
+      },
+      "D2Q9-MRT-tau0.8": {
+        "nu_shipped": 0.1,
+        "nu_head": 0.1,
+        "nu_rel_diff": 0.0,
+        "zeta_shipped": 0.036585365853658534,
+        "zeta_head": 0.036585365853658534
+      },
+      "D2Q9-MRT-tau0.8-s_e1.64": {
+        "nu_shipped": 0.1,
+        "nu_head": 0.1,
+        "nu_rel_diff": 0.0,
+        "zeta_shipped": 0.036585365853658534,
+        "zeta_head": 0.036585365853658534
+      },
+      "D3Q19-BGK-tau0.8": {
+        "nu_shipped": 0.1,
+        "nu_head": 0.1,
+        "nu_rel_diff": 0.0,
+        "zeta_shipped": 0.06666666666666667,
+        "zeta_head": 0.06666666666666667
+      },
+      "D3Q27-BGK-tau0.8": {
+        "nu_shipped": 0.1,
+        "nu_head": 0.1,
+        "nu_rel_diff": 0.0,
+        "zeta_shipped": 0.06666666666666667,
+        "zeta_head": 0.06666666666666667
+      }
+    },
+    "max_nu_rel_diff": 0.0
+  }
+}
