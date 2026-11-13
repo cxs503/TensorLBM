@@ -1,0 +1,93 @@
+{
+ "verdict_basis": "L2：交付件是真代码且可复现（重跑 results.json 与交付版逐字段 0 差异；其硬编码标定表两例复算 98.0120 vs 98.01、81.3977 vs 81.40），查表反解在表内点 LOO 6/6<15%（最大 6.11%/3.83°）。但**声称的 'Huang2007 8/9 通过 <15% = 对标 PASS' 不成立三处**：(i) 该 0.0% 误差列是 forward_cal(invert(θ)) 的恒等式（501 点扫描 max=2.84e-14°，插值函数性质，不含物理/对标信息量）；(ii) 用其自己的处方新跑 LBM 复验 2/2 超 15%（90°→103.74°，+15.26%；70°→82.11°，+17.30%）；(iii) 仓内既有真实 LBM hold-out（m15470 B2）为 17.8–27.3%（2/3 超 15%，该文档自身判 FAIL）。故不授 L3/L4/L5。",
+ "claimed_level_implicit": "报告结论：对标判据 PASS（Huang2007 方法 8/9 < 15%）；任务单声明 succeeded",
+ "delivered_level": 2,
+ "gap_to_claim": "声称 PASS 撤回为 FAIL：无一条独立证据支持 <15%（恒等式列除外），处方复验与新跑 LBM 均超差；外部锚未落地（无 OSS 代码/commit），基准登记 0 例",
+ "impl_files": [
+  "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py:86-107（CALIBRATION_DATA_COARSE/FINE 硬编码标定表，8+7 点，报告归因于 artifacts/CASE-MCMP-CONTACT-ANGLE/contact_angle_sweep.json —— 该文件在被审树中不存在）",
+  "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py:109-149（build_calibration_function：θ→f_w 分段线性反解，即所谓 'Huang2007 标定法' 的全部实现——无数值扫描、无 Huang2007 公式、无 G_ads/黏附系数）",
+  "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py:325-338（forward_cal：f_w→θ 分段线性插值，端点钳制）",
+  "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py:340-369（err_huang = |forward_cal(invert(θ))-θ|/θ：与反解互为逆运算 ⇒ 恒等 0%）",
+  "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py:210-249（short_lbm_validation：64x32、2000 步，只查 ρ 范围与质量漂移，**不测接触角**）",
+  "TensorLBM/src/tensorlbm/wetting/__init__.py:164-196（wall_psi_from_contact_angle / contact_angle_from_wall_psi：被审对象的本仓现状，交付未改动一行、未加报告 §6.3 建议的偏差告警）"
+ ],
+ "entry": "python benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py — 可执行，本单在副本上重跑通过（解析段+3×2000 步短程 LBM，本机 <60 s）",
+ "run_artifacts": [
+  "/root/tp-agent/work/m17845/benchmarks/xval_huang2007_contact_angle_inversion/results.json（分析/inventory 真值：error_analysis.young_pass=2, huang2007_pass=8；**无逐行误差表**，逐行数只在 REPORT.md 渲染文本里）",
+  "/root/tp-agent/work/m17845/benchmarks/xval_huang2007_contact_angle_inversion/REPORT.md（六段名义齐全）",
+  "/root/tp-agent/work/m17845/benchmarks/xval_huang2007_contact_angle_inversion/figures/{calibration_curve,error_comparison,cos_theta_vs_fw}.png（3 张，存在，含 .b64）",
+  "/root/tp-agent/work/m17889/artifacts/m17889_audit/audit_m17889.json（本单审计机器读数：循环性/LOO/钳制/跨网格/基准/工件/新跑 LBM 四例）",
+  "/root/tp-agent/work/m17889/artifacts/m17889_audit/cases/{spotA_coarse_theta90,spotB_coarse_theta70,scan_coarse_fw0.50,scan_coarse_fw0.55}.json（本单新跑 LBM 原始记录，含三估计器 spread 与收敛漂移）",
+  "/root/tp-agent/work/m17889/docs/audit_m17889/fig_m17889_honest_vs_claimed.png（交付声称 vs 独立复核）",
+  "缺失：报告 §6.4 点名的 artifacts/CASE-MCMP-CONTACT-ANGLE/contact_angle_sweep.json 在被审树中不存在（git ls-tree/log 亦无该路径）⇒ 标定数据只能靠 docs/CASE-MCMP-CONTACT-ANGLE.md 表格追溯，artifact 级溯源 WITHHELD"
+ ],
+ "tests": "无。交付目录 benchmarks/xval_huang2007_contact_angle_inversion/ 仅含 run_xval.py / generate_figures.py / results.json / REPORT.md / figures/，无任何测试文件；库内 wetting 模块未新增测试",
+ "integration_callers": "无。被审树 git status 仅 '?? benchmarks/xval_huang2007_contact_angle_inversion/'；wetting/__init__.py 未被修改（报告 §6.3 建议的告警未落地）；无任何调用方接入",
+ "benchmark": {
+  "registered_cases_for_anchor": 0,
+  "tensor_benchmark_cases_total": 66,
+  "query": "SELECT case_name, metric, tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION';",
+  "declared_criterion": "<15%（owner 精度标准 / 任务单）",
+  "delivered_self_report": "Huang2007 8/9 <15% ⇒ 判据 PASS",
+  "auditor_tautology": {
+   "scan_points": 501,
+   "max_abs_roundtrip_error_deg": 2.84e-14
+  },
+  "auditor_loo_interior": {
+   "pass": "6/6 <15%",
+   "worst_interior_pct": 6.11
+  },
+  "auditor_loo_ends": {
+   "f_w=0.65": "72.67% (26.38°)",
+   "f_w=0.30": "11.14% (17.98°)",
+   "cause": "端点钳制（表外推）"
+  },
+  "auditor_cross_grid_lbm": [
+   {
+    "theta_target": 70.0,
+    "f_w_from_coarse_inverse": 0.580449,
+    "fine_table_predicted_deg": 82.49,
+    "fine_lbm_measured_deg": 89.12,
+    "table_vs_lbm_gap_deg": 6.63,
+    "lbm_rel_err_pct": 27.31
+   },
+   {
+    "theta_target": 90.0,
+    "f_w_from_coarse_inverse": 0.524112,
+    "fine_table_predicted_deg": 98.99,
+    "fine_lbm_measured_deg": 106.01,
+    "table_vs_lbm_gap_deg": 7.02,
+    "lbm_rel_err_pct": 17.79
+   },
+   {
+    "theta_target": 110.0,
+    "f_w_from_coarse_inverse": 0.459738,
+    "fine_table_predicted_deg": 116.35,
+    "fine_lbm_measured_deg": 121.44,
+    "table_vs_lbm_gap_deg": 5.09,
+    "lbm_rel_err_pct": 10.4
+   }
+  ],
+  "auditor_fresh_lbm_prescription": {
+   "theta90_fw0.5241": "103.74° → +13.74° (15.26%)",
+   "theta70_fw0.580446": "82.11° → +12.11° (17.30%)"
+  },
+  "auditor_table_reproducibility": {
+   "fw0.50": "98.0120 vs 98.01 (+0.002°)",
+   "fw0.55": "81.3977 vs 81.40 (−0.0023°)"
+  },
+  "margin_over_15pct_tolerance": "处方复验 15.26%/17.30%；跨网格 17.8%/27.3% —— 判据在 90° 附近容差仅相当于 13.5°",
+  "verdict_on_criterion": "FAIL（不通过）"
+ },
+ "repro_cmd": "cd /root/tp-agent/work/m17889 && python scripts/audit/m17889_huang2007_audit.py && python scripts/audit/m17889_make_figure.py  # 审计读数+图，秒级；新跑 4 例 LBM 见 repro_cmd_lbm",
+ "repro_cmd_lbm": "cd /root/tp-agent/work/m17889 && python tests/benchmarks/wetting_contact_angle/run_case_cli.py --theta 90 --grid coarse --law calibrated --fw 0.5241 --out /tmp/a.json  # 43 s → theta_measured=103.735；--theta 70 --fw 0.580446 → 82.108；--law scan --fw 0.50 → 98.012",
+ "external_anchor": {
+  "claimed": "je-santos/MPLBM-UT 的 huang2007-contact-angle-inversion 做法；报告称源码级盘点 src/2-phase_LBM/ShanChen.cpp:296-313",
+  "verified": "平台 oss_inventory id=2：je-santos/MPLBM-UT, tier=1, status=inventoried, cache_commit=a9fc496；其 summary 明确该仓为 Palabos '图像直驱工作流层'、物理在捆绑 Palabos 内、'绝对精度无法从仓内证明(WITHHELD)'",
+  "in_tree_check": "被审树 grep -ril mplbm 仅 3 处命中，全在交付件自身（run_xval.py / results.json / REPORT.md）；无 vendored 代码、无 commit sha、无 pip 依赖、无 OSS 缓存目录（本机 /root 下无 MPLBM 检出）",
+  "status": "WITHHELD（line 级声明不可核）；且本单实现的不是 Huang2007 近似式，而是自建查表反解，'对标某 OSS 做法' 无代码级对照面",
+  "prior_in_repo_ground_truth": "docs/CASE-MCMP-CONTACT-ANGLE.md（mission 15470，honest FAIL）：B1 标定扫描真实 LBM、B2 跨网格 hold-out 0/3 通过、亚稳 split 11.11°"
+ },
+ "l3_l4_why_not": "L3 需接入主求解器/平台：零 tracked 改动、零调用方、库函数一字未改 ⇒ 不授。L4 需完整算例+误差分析+可复现：判据未成立（处方复验 2/2 超差、跨网格 2/3 超差、基准登记 0 例、误差列循环） ⇒ 不授",
+ "auditor_limitations": "①新跑 LBM 每例单realization（43–47 s/例），未做初始帽扫描；已知该体系亚稳 split≈11°（m15470），故实测角本身带 O(10°) 不确定度——但同一不确定度同样否定交付的 0.0% 主张；②跨网格 hold-out 数字取自仓内 m15470 记录（机器抽取，本单未重跑细网格）；③MPLBM-UT 源码本机不可得，OSS 侧对照仅到平台 inventory 级"
+}

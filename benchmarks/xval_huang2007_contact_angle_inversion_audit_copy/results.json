@@ -1,0 +1,116 @@
+{
+  "anchor": "XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION",
+  "analytical_comparison": [
+    {
+      "theta_target": 30,
+      "f_w_young": 0.889,
+      "theta_young_predicted": 30.0,
+      "f_w_huang_coarse": 0.65,
+      "f_w_huang_fine": 0.7,
+      "theta_young_from_huang_coarse": 54.73,
+      "theta_young_from_huang_fine": 50.37
+    },
+    {
+      "theta_target": 45,
+      "f_w_young": 0.7574,
+      "theta_young_predicted": 45.0,
+      "f_w_huang_coarse": 0.6335,
+      "f_w_huang_fine": 0.6909,
+      "theta_young_from_huang_coarse": 56.12,
+      "theta_young_from_huang_fine": 51.19
+    },
+    {
+      "theta_target": 60,
+      "f_w_young": 0.5859,
+      "theta_young_predicted": 60.0,
+      "f_w_huang_coarse": 0.6051,
+      "f_w_huang_fine": 0.6533,
+      "theta_young_from_huang_coarse": 58.46,
+      "theta_young_from_huang_fine": 54.45
+    },
+    {
+      "theta_target": 75,
+      "f_w_young": 0.3861,
+      "theta_young_predicted": 75.0,
+      "f_w_huang_coarse": 0.5671,
+      "f_w_huang_fine": 0.605,
+      "theta_young_from_huang_coarse": 61.49,
+      "theta_young_from_huang_fine": 58.46
+    },
+    {
+      "theta_target": 90,
+      "f_w_young": 0.1718,
+      "theta_young_predicted": 90.0,
+      "f_w_huang_coarse": 0.5241,
+      "f_w_huang_fine": 0.5558,
+      "theta_young_from_huang_coarse": 64.82,
+      "theta_young_from_huang_fine": 62.38
+    },
+    {
+      "theta_target": 105,
+      "f_w_young": 0.0,
+      "theta_young_predicted": 101.97,
+      "f_w_huang_coarse": 0.4765,
+      "f_w_huang_fine": 0.5026,
+      "theta_young_from_huang_coarse": 68.41,
+      "theta_young_from_huang_fine": 66.46
+    },
+    {
+      "theta_target": 120,
+      "f_w_young": 0.0,
+      "theta_young_predicted": 101.97,
+      "f_w_huang_coarse": 0.4264,
+      "f_w_huang_fine": 0.4459,
+      "theta_young_from_huang_coarse": 72.1,
+      "theta_young_from_huang_fine": 70.67
+    },
+    {
+      "theta_target": 135,
+      "f_w_young": 0.0,
+      "theta_young_predicted": 101.97,
+      "f_w_huang_coarse": 0.3773,
+      "f_w_huang_fine": 0.3895,
+      "theta_young_from_huang_coarse": 75.63,
+      "theta_young_from_huang_fine": 74.76
+    },
+    {
+      "theta_target": 150,
+      "f_w_young": 0.0,
+      "theta_young_predicted": 101.97,
+      "f_w_huang_coarse": 0.3319,
+      "f_w_huang_fine": 0.35,
+      "theta_young_from_huang_coarse": 78.85,
+      "theta_young_from_huang_fine": 77.57
+    }
+  ],
+  "calibration_analysis": {
+    "young_slope": 1.207416555537006,
+    "young_intercept": -0.207416555537006,
+    "measured_slope_coarse": 5.032,
+    "measured_intercept_coarse": -2.575,
+    "slope_ratio": 4.167575785609455,
+    "young_neutral_fw": 0.17178541621433724,
+    "measured_neutral_fw": 0.5117249602543721
+  },
+  "error_analysis": {
+    "young_pass": 2,
+    "young_total": 9,
+    "huang2007_pass": 8,
+    "huang2007_total": 9,
+    "criterion": "<15% error"
+  },
+  "parameters": {
+    "PSI_L": 0.8587183952331543,
+    "PSI_V": 0.14751529693603516,
+    "RHO_L_DEFAULT": 1.957,
+    "RHO_V_DEFAULT": 0.1596,
+    "SIGMA_DEFAULT": 0.05611,
+    "G": 5.0,
+    "tau": 1.0
+  },
+  "oss_comparison": {
+    "mplbm_ut_approach": "BounceBack with adhesion coefficient G_ads; contact angle controlled by G_ads sign (negative=wetting phase); uses calibration curve from Huang2007 for angle inversion",
+    "tensorlbm_approach": "Wall pseudopotential \u03c8_w via Young relation: cos(\u03b8) = (\u03c8_w - \u03c8_v) / (\u03c8_l - \u03c8_v); systematic error 40-90\u00b0 without calibration",
+    "key_difference": "MPLBM-UT uses calibration-based inversion (Huang2007); TensorLBM uses theoretical Young relation (unvalidated)"
+  }
+}
