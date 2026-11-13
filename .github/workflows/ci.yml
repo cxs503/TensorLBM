@@ -96,6 +96,13 @@ jobs:
             --cov=tensorlbm --cov-report=term-missing --cov-report=xml \
             --durations=30 --junitxml=artifacts/ci/junit.xml \
             2>&1 | tee artifacts/ci/pytest.log
+      # Assertion-enforced cross-validation gate (anchor XVAL-LBM-NO-TESTS-NO-CI-NO-ASSERTS): runs the
+      # anchor case for real and asserts its declared thresholds; a non-finite metric fails.
+      - name: Cross-validation assert gate
+        run: |
+          mkdir -p artifacts/ci
+          pytest -q tests/test_xval_assert_gate.py --timeout=900 -o timeout_func_only=false \
+            2>&1 | tee artifacts/ci/xval_assert_gate.log
       - name: Upload test diagnostics
         if: always()
         uses: actions/upload-artifact@v4

@@ -11,7 +11,7 @@ explicit and self-documenting for V&V reports).
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -37,6 +37,7 @@ class XValResult:
     benchmark : dict or None
         Benchmark timing data (if benchmarking was enabled).
     """
+
     case_name: str
     passed: bool
     metrics: Dict[str, float] = dataclasses.field(default_factory=dict)
@@ -76,6 +77,7 @@ class XValCase:
     external_anchor : str
         Citation or DOI for the reference data.
     """
+
     name: str
     run_fn: Callable[[], Dict[str, Any]]
     reference_fn: Optional[Callable[[], Dict[str, Any]]] = None
@@ -136,6 +138,7 @@ class XValRegistry:
         state_hash = None
         if compute_hash and "f" in result:
             from .bitwise_refdata import compute_state_hash
+
             f_arr = result["f"]
             if not isinstance(f_arr, np.ndarray):
                 f_arr = f_arr.detach().cpu().numpy()
@@ -163,20 +166,38 @@ class XValRegistry:
                 metrics[k] = rel_err
                 details[k] = {"ref": ref_val, "new": new_val, "rel_err": rel_err}
 
-        # Check thresholds
+        # Check thresholds.  Fail closed on non-finite metrics: ``nan > t`` is
+        # False in IEEE-754, so the plain comparison below used to certify a
+        # diverged run (all-NaN fields) as PASS.  A NaN/inf metric can never
+        # satisfy an acceptance criterion (owner standard: error > 15%
+        # unacceptable), so it is an explicit failure with a recorded reason.
         passed = True
+        for k, val in metrics.items():
+            if not np.isfinite(val):
+                passed = False
+                details[k] = {
+                    "value": val,
+                    "threshold": case.thresholds.get(k),
+                    "nonfinite": True,
+                    "reason": "metric is not finite (solver diverged or reference missing)",
+                }
         for k, threshold in case.thresholds.items():
-            if k in metrics:
+            if k in metrics and np.isfinite(metrics[k]):
                 if metrics[k] > threshold:
                     passed = False
 
         # Also check absolute error for metrics that are already errors
         for k, val in new_scalars.items():
             if k.startswith("eps_") or k.startswith("err_"):
-                if k in case.thresholds and val > case.thresholds[k]:
+                if k in case.thresholds and (not np.isfinite(val) or val > case.thresholds[k]):
                     passed = False
                     metrics[k] = val
                     details[k] = {"value": val, "threshold": case.thresholds[k]}
+                    if not np.isfinite(val):
+                        details[k]["nonfinite"] = True
+                        details[k]["reason"] = (
+                            "metric is not finite (solver diverged or reference missing)"
+                        )
 
         return XValResult(
             case_name=name,

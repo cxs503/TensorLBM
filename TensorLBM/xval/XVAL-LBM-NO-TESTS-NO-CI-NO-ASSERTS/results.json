@@ -1,0 +1,32 @@
+{
+  "cases": [
+    {
+      "case": "poiseuille_2d_H16",
+      "category": "analytical",
+      "external_anchor": "Poiseuille flow: u(y) = g/(2\u03bd) y(H-y); Guo forcing: Guo et al. (2002) Phys. Rev. E 65, 046308",
+      "metrics": {
+        "eps_L2": 0.004920911776990591,
+        "eps_inf": 0.003607843111901292,
+        "mass_drift": 3.0808688933348094e-13
+      },
+      "nonfinite_metrics": [],
+      "params": {
+        "H": 16,
+        "bc": "no_slip",
+        "force": 1e-05,
+        "forcing": "guo",
+        "steps": 5000,
+        "tau": 0.8
+      },
+      "passed": true,
+      "seconds": 3.84,
+      "state_hash": "c8acf2cc9ab91154a3f58051cd54e86abcfda532b1ea3ab33094f7338651188d",
+      "thresholds": {
+        "eps_L2": 0.02,
+        "eps_inf": 0.02,
+        "mass_drift": 1e-08
+      }
+    }
+  ],
+  "feature_slug": "XVAL-LBM-NO-TESTS-NO-CI-NO-ASSERTS"
+}

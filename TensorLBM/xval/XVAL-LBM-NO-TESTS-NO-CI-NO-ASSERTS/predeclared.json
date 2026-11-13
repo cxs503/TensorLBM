@@ -1,0 +1,42 @@
+{
+  "feature_slug": "XVAL-LBM-NO-TESTS-NO-CI-NO-ASSERTS",
+  "declared_before_runs": "2026-11-13",
+  "decision": "Certify TensorLBM cross-validation claims only through a machine-enforced, CI-executed assertion gate with an external anchor per case; a non-finite metric is always a failure.",
+  "alternatives": [
+    "A: keep declarative cases only (thresholds in metadata, executed by hand) -- rejected: measured below, every case was unexecuted and one certified NaN as PASS",
+    "B: report aggregate tests-count / coverage percentage -- rejected: coverage does not assert accuracy",
+    "C (selected): pytest gate that runs the anchor cases and asserts each declared threshold, plus fail-closed non-finite semantics; CI job executes it on every push"
+  ],
+  "owner_precision_standard": 0.15,
+  "metrics": {
+    "eps_inf": "max relative deviation of u(y) from the analytical Poiseuille profile",
+    "eps_L2": "L2 relative deviation of the u(y) profile from analytical",
+    "mass_drift": "abs(mean(rho)-1) absolute conservation budget",
+    "l2_u/l2_v": "L2 deviation of centerline u/u_lid, v/u_lid from Ghia et al. (1982) tabulated DNS",
+    "amplitude_rel_pct/phase_rel_pct": "relative amplitude and phase error vs the Womersley/Sexl analytical phasor"
+  },
+  "acceptance": {
+    "global": "every metric whose declared threshold is an error measure must be <= 0.15 (owner standard)",
+    "poiseuille_2d_H16": {"eps_inf": 0.02, "eps_L2": 0.02, "mass_drift": 1e-08},
+    "lid_cavity_re100_n65": {"l2_u": 0.15, "l2_v": 0.15},
+    "womersley_alpha5": {"amplitude_rel_pct": 0.15, "phase_rel_pct": 0.15}
+  },
+  "stopping_rule": "Stop and report honest FAIL for an arm as soon as its run yields a non-finite metric or exhausts its step budget; never replace a diverged run by a coarser/finer retry until the divergence is explained.",
+  "tiers": {
+    "fast (CI, every push)": ["poiseuille_2d_H16 (~4 s, threads=1)", "cavity health arm n=33 x 120 steps (~1 s)"],
+    "full (nightly / manual)": ["lid_cavity_re100_n65 (>=120 s)", "womersley_alpha5 (>110 s)"]
+  },
+  "confounders": [
+    "torch default thread pool is 128 on this host; the same Poiseuille case takes 9.9 s at 128 threads and 4.2 s at 1 thread -- wall-clock claims are only comparable at fixed thread count",
+    "dtype: cases run in float64; float32 would shift the 1e-8 mass-drift budget",
+    "architecture: CI runner and cluster nodes are loong64, the local control node is x86_64 -- timings are not portable, metrics are"
+  ],
+  "repetition_rationale": "LBM BGK/RLBM collision is deterministic (no RNG except the Womersley seeding), so a single run per configuration is the correct unit; reproducibility is asserted by SHA-256 state hash instead of repetition.",
+  "external_anchors": [
+    "Poiseuille: u(y) = g/(2 nu) y (H-y) (Schlichting, Boundary-Layer Theory)",
+    "Guo, Zheng & Shi (2002) Phys. Rev. E 65:046308 (forcing scheme)",
+    "Ghia, Ghia & Shin (1982) J. Comput. Phys. 48:387-411 (lid-driven cavity DNS)",
+    "Womersley (1955) J. Physiol. 127:553; Sexl (1930) parallel-plate oscillatory flow",
+    "Longest & Vinay (2005) / Krueger et al. (2017) The Lattice Boltzmann Method (Zou-He BC, half-way bounce-back)"
+  ]
+}

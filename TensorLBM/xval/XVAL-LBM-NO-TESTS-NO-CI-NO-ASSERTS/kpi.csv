@@ -1,0 +1,4 @@
+case,metric,value,threshold,passed
+poiseuille_2d_H16,eps_inf,0.0036078431119,0.02,True
+poiseuille_2d_H16,eps_L2,0.00492091177699,0.02,True
+poiseuille_2d_H16,mass_drift,3.08086889333e-13,1e-08,True
