@@ -706,6 +706,40 @@ def _plot_spinodal(
 
 
 # ---------------------------------------------------------------------------
+# Benchmark 2b – Free-energy binary-fluid equilibrium pressure
+# ---------------------------------------------------------------------------
+
+
+def run_binary_equilibrium_pressure_benchmark(
+    *,
+    nx: int = 128,
+    ny: int = 16,
+    steps: int = 2000,
+    resolutions: tuple[float, ...] = (1.5, 2.0, 3.0),
+    output_root: Path = Path("outputs"),
+    run_name: str | None = None,
+    overwrite: bool = False,
+) -> dict[str, object]:
+    """Measure the free-energy binary-fluid equilibrium pressure (production driver).
+
+    Wraps :func:`tensorlbm.phasefield.binary_equilibrium_pressure.equilibrium_pressure_report`
+    so the planar coexistence-pressure / normal-pressure-uniformity / capillary
+    checks run through the same run-directory convention as the other
+    multiphase benchmarks.  The report is written to
+    ``<output_root>/binary_equilibrium_pressure/<run_name>/report.json``.
+    """
+    from .phasefield.binary_equilibrium_pressure import equilibrium_pressure_report
+
+    name = run_name or f"planar_n{nx}x{ny}_steps{steps}_xi{'-'.join(str(r) for r in resolutions)}"
+    run_dir = prepare_run_dir(Path(output_root), "binary_equilibrium_pressure", name, overwrite)
+    report = equilibrium_pressure_report(
+        resolutions=tuple(resolutions), nx=nx, ny=ny, steps=steps
+    )
+    (run_dir / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True))
+    return {"run_dir": str(run_dir), "report": report}
+
+
+# ---------------------------------------------------------------------------
 # Benchmark 3 – Free-Energy droplet relaxation
 # ---------------------------------------------------------------------------
 
