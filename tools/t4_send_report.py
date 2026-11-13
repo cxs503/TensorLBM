@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = os.environ["TENSOR_API_BASE"].rstrip("/")
 USER = os.environ["TENSOR_AGENT_USER"]
 PASS = os.environ["TENSOR_AGENT_PASS"]
-MISSION = "15658"
+MISSION = "18766"
 
 
 def _post(path: str, payload: dict, token: str | None = None) -> dict:
