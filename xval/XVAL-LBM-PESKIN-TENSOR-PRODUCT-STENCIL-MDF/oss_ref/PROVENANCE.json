@@ -1,0 +1,48 @@
+{
+  "repo": "haimingz/vivsim",
+  "upstream_commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+  "license": "MIT",
+  "retrieved": "2026-11-13",
+  "local_clone": "/tmp/vivsim_src (git rev-parse HEAD succeeds on this clone)",
+  "shim": "import lines only: jax/jax.numpy -> oss_ref.np_jax_shim; bodies verified byte-identical after stripping import lines (see bodies_identical_ex_imports)",
+  "files": {
+    "oss_ref/kernels.py": {
+      "upstream_path": "vivsim/ib/kernels.py",
+      "sha256_upstream": "20779fdc2cd0c6cd6c9ffbfbdbb83ec849c07355aa441272bb3e8805118b5e9f",
+      "sha256_vendored": "6de76f43c6c3ce71e17c53d3cd2ec0c58b15036ffba23b52079486bbbeb9473e",
+      "bodies_identical_ex_imports": true
+    },
+    "oss_ref/stencil.py": {
+      "upstream_path": "vivsim/ib/stencil.py",
+      "sha256_upstream": "752165731aa7d44196f73c0ff65ce7fdd08820aff08b0a689e2487f6d093d749",
+      "sha256_vendored": "5f18f4d57baef3f25b2e0be4de000dadf386a0fe250487bb37a60203b572f08c",
+      "bodies_identical_ex_imports": true
+    },
+    "oss_ref/mdf.py": {
+      "upstream_path": "vivsim/ib/mdf.py",
+      "sha256_upstream": "a67ff4204acfa6294f6c880934eb9c0cfe50dc620ae58333839e5653206d837c",
+      "sha256_vendored": "305637840017fe6c4070410c530daa8a76e8e44695489fbf27503084e99f9f98",
+      "bodies_identical_ex_imports": true
+    },
+    "oss_ref/geometry.py": {
+      "upstream_path": "vivsim/ib/geometry.py",
+      "sha256_upstream": "65e6627e763b601bcf90118e4b65179bc0c978c4052ea344588587dec0c12576",
+      "sha256_vendored": "b11df0433c38c9897782d3496c75070964c5908864861bfdd271d7fd41ca3ae5",
+      "bodies_identical_ex_imports": true
+    },
+    "oss_ref/stencil3d.py": {
+      "upstream_path": "vivsim/ib3d/stencil.py",
+      "sha256_upstream": "3f6344a723d25810c28c4b64593b1bd828ced2dbb153bb027990a9be22859c37",
+      "sha256_vendored": "00cab9059250c409789d882209369956e27fec2a692428cb0e6c4df701e130ae",
+      "bodies_identical_ex_imports": true
+    }
+  },
+  "oss_conventions": {
+    "stencil": "tensor product: offsets arange(-radius+1, radius+1) added to floor(marker), 1-D kernel evaluated per axis and multiplied; size 4**d for radius 2",
+    "interpolate": "einsum('ms,cms->mc') on .at-style gather of a flattened (n_components, nx*ny) grid",
+    "spread": "jnp .at[:, idx].add(values) -- unbuffered scatter-add, so overlapping markers accumulate",
+    "mdf": "step = (U_target - u_marker) * (2 * ds); u_marker += 0.5 * interp(spread(step)); converged force = 2 A^{-1} r0, A = interp.spread",
+    "ds": "get_ds = half of the two adjacent segment lengths (preconditioner only)",
+    "kernels": "peskin_4pt (support 2, two branches), peskin_3pt, cosine_4pt (separate kernel, sums to 1 over integers)"
+  }
+}
