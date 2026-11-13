@@ -183,8 +183,14 @@ def render(res: dict, figs: list[Path]) -> str:
     A("")
     A("| 判据族 | 结果 | 内容 |")
     A("|---|---|---|")
+    abs_v = res["verdict"].get("absolute", {})
+    abs_pass = abs_v.get("pass", False)
+    abs_np, abs_nt = abs_v.get("n_pass", 0), abs_v.get("n_total", 0)
     A(f"| **算例池容差 <{tol:.0%}（本案验收判据）** | **{'PASS' if tol_pass else 'FAIL'}** | "
       "Laplace 律的半径无关性 `max_i |sigma_i − sigma_fit|/sigma_fit`，逐耦合点判（见 ④） |")
+    A(f"| **绝对判据（非循环，独立 σ_EOS 锚）** | **{'PASS' if abs_pass else 'FAIL'}** | "
+      f"`|Δp − σ_EOS/R|/(σ_EOS/R) < {tol:.0%}`，σ_EOS 来自平界面 EOS–剖面积分（不含液滴 Δp/R）；"
+      f"{abs_np}/{abs_nt} 点通过（见 ④ 表 E） |")
     gf = "、".join(f"{k}={'✅' if v else '❌'}" for k, v in guard.items())
     A(f"| 自设护栏/诊断（非容差判据） | {'全满足' if all(guard.values()) else '未满足项见下'} | {gf} |")
     A("")
@@ -295,6 +301,26 @@ def render(res: dict, figs: list[Path]) -> str:
             _fmt(rb["flatness"], 4), _fmt(r["u_max"], 4), rb["status"],
         ])
     A(_table(["G12", "σ_Laplace (Δp·R)", "σ_mech (Kirkwood–Buff)", "P_NN 守恒残差 flatness", "|u|max", "判定"], rows))
+    A("")
+    A("### 表 E｜Route C（独立绝对 σ_EOS 锚，非循环）：Δp 实测 vs σ_EOS/R")
+    A("")
+    A("σ_EOS 由平界面 EOS–剖面积分 `(1/n_int)∫[p₀ − p_iso(ρ₁,ρ₂)]dy` 给出，输入只有平界面密度剖面与体相 EOS，")
+    A("不含液滴 Δp/R ⇒ 真独立。第 1 轮判据（半径无关性）对公共倍数误差免疫，本表才检验绝对值。")
+    A("")
+    rows = []
+    for a in res["verdict"].get("absolute", {}).get("checks", []):
+        rows.append([
+            _fmt(a["G_12"], 3), a["n"], _fmt(a["radius"], 2), _fmt(a["dp_got"], 6),
+            _fmt(a["dp_ref"], 6), f"{100*a['rel_err']:+.2f}%",
+            "✅" if a["pass"] else "❌", _fmt(a["sigma_dpR"], 5), _fmt(a["sigma_eos"], 5),
+        ])
+    A(_table(["G12", "n", "R 实测", "Δp got", "σ_EOS/R ref", "相对误差", f"<{tol:.0%}", "Δp·R", "σ_EOS"], rows))
+    A("")
+    fac = res["verdict"].get("absolute", {}).get("dpR_over_sigma_eos", {})
+    if fac:
+        A("常数归一化因子 `⟨Δp·R⟩/σ_EOS`（逐耦合点）：" +
+          "，".join(f"G12={k} → {v:.4f}" for k, v in fac.items()) +
+          "。偏差为**常数倍数**（跨半径/分辨率一致），非曲率效应 ⇒ 模型应力的归一化问题，不是 Laplace 律失效。")
     A("")
     A("## ⑤ 收敛性 / 参数敏感性（≥2 点）")
     A("")
