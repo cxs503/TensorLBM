@@ -1,0 +1,73 @@
+{
+  "anchor": "XVAL-LBM-ISO8-WALL-NORMAL-TABLE",
+  "round": 1,
+  "repo": "TensorLBM",
+  "oss": {
+    "repo": "lanl/MF-LBM",
+    "commit": "11be324a97fe6331b2271102da370460715355e8",
+    "path": "preprocessing/3.wall_boundary_preprocess/3d_wall_boundary_process.f90",
+    "license": "BSD-3-Clause",
+    "vendored": "xval/XVAL-LBM-ISO8-WALL-NORMAL-TABLE/oss_src/"
+  },
+  "decision": "Decide whether TensorLBM may (D1) adopt MF-LBM's iso8 wall-normal table as its curved/voxel wall-orientation preprocessor, or (D2) keep a local alternative (raw central differences / no table).",
+  "alternatives": [
+    "D1 iso8 isotropic gradient of a 4x D3Q27-smoothed solid fraction (OSS) transplanted into TensorLBM",
+    "D2 2nd-order central differences of the same smoothed indicator",
+    "D3 no smoothing (raw staircase indicator) with either stencil"
+  ],
+  "hypothesis": "H1: the transplant is semantics-exact against the OSS binary (<=1e-12 max |dn|). H2: with 4 smoothing iterations the iso8 table reproduces analytic wall normals on a curved staircase within the owner 15% band (mean chordal relative error), and beats raw/central alternatives.",
+  "metrics": {
+    "K1_exactness": "max_abs_dn = max |n_ours - n_OSS| over the identical node table; also node-set identity and la_weight identity",
+    "K2_accuracy": "mean and max chordal relative normal error 2 sin(dtheta/2) against the analytic normal (sphere radial / plane normal); owner band 15%",
+    "K3_isotropy": "max/min directional gain of the operator on analytic linear fields (1.0 = isotropic)",
+    "K4_curvature": "mean kappa = -div(n) over the +/-1 cell band around the analytic level set vs 2/R (sphere); relative error"
+  },
+  "unit_of_analysis": "one geometry x stencil arm; KPIs are per-node normal errors aggregated to mean/max/p95",
+  "baseline_control": {
+    "physical": "analytic normals (sphere radial direction, plane normal) - exact reference, no numerical baseline needed",
+    "representation_control": "same smoothed indicator field fed to iso8 vs 2nd-order central differences, so the only changed variable is the stencil",
+    "oss_note": "the OSS arm is not a re-implementation: the upstream Fortran preprocessor is compiled with gfortran and run on the byte-identical wall array, then the binary normal table is parsed and compared row by row"
+  },
+  "predeclared_thresholds": {
+    "K1_max_abs_dn": 1e-12,
+    "K2_mean_rel": 0.15,
+    "K2_max_rel": 0.15,
+    "K3_anisotropy": 1.000001,
+    "K4_rel": 0.15,
+    "interpretation": "K1 is a semantics-identity check, hence machine-precision; K2/K4 use the owner 15% band; a mean inside the band with individual nodes outside is reported as such (no trimming)."
+  },
+  "stopping_rule": "every arm is run to completion on a fixed geometry list (n=48/64 sphere, n=40 plane at 26.565 and 45 deg); no case is added or dropped after seeing KPIs; wall clock budget 900 s per arm (all arms ran in <1 s of solver time, 37 s total including the OSS build).",
+  "variables_changed": [
+    "stencil (iso8 / central differences)",
+    "smoothing iterations (0,1,2,4,8,16)",
+    "geometry (sphere R=10/14, plane 26.565/45 deg)",
+    "resolution (n=48,64)"
+  ],
+  "variables_held_fixed": [
+    "voxelised wall array (identical bytes for both arms)",
+    "ghost+overlap padding 10, listing overlap 4",
+    "float64",
+    "Fortran build flags -O2 -fopenmp -ffree-line-length-none -finit-integer=0"
+  ],
+  "confounders": [
+    "upstream leaves mirror_bc unset (undefined); the harness builds with -finit-integer=0 so the arm is deterministic - a real upstream defect, recorded as D7 in the difference list",
+    "the OSS preprocessor lists nodes in the 4-cell overlap band outside the physical box; the analytic comparison is restricted to physical nodes (K1 is computed on the full table)",
+    "individual staircase nodes near the 45 deg corners carry an O(1) local error in any gradient stencil; the mean is the acceptance quantity and the max is reported untrimmed"
+  ],
+  "environment": {
+    "python": "3.11",
+    "numpy": "2.4.6",
+    "gfortran": "GNU Fortran 12.3.0",
+    "work_tree": "/root/tp-agent/work/m17865",
+    "branch": "agent/m17865"
+  },
+  "analysis": "grouped by geometry and arm, no outlier removal, errors vs analytic; sensitivity = smoothing sweep + resolution change; exactness compared elementwise against the OSS binary table",
+  "fail_stage_plan": "fail_stage in {stencil_parse, oss_build, oss_run, table_build, comparison, curvature}; failure_reason carries the measured deviation",
+  "amendments": [
+    {
+      "when": "2026-11-13",
+      "what": "curvature metric fixed as kappa = -div(n) after the sign convention was measured (grad points into the solid, so the sphere's inward normal field has divergence -2/R)",
+      "why": "first pass compared div(n) directly with +2/R and reported a 180%-looking error that was purely a sign convention, not a solver deviation"
+    }
+  ]
+}
