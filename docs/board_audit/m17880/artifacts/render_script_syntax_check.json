@@ -1,0 +1,5 @@
+{
+ "cmd": "python3 -m py_compile scripts/render_xval_m17762_report.py",
+ "rc": 1,
+ "out": "File \"scripts/render_xval_m17762_report.py\", line 48\n    w(\"**对标对象** `ebinan92/Fingering_dynamics` 的 free-energy Cahn-Hilliard 核（`lattice_boltzmann/fingering_periodic.py`，commit `%s`，`fingering_periodic.py` sha256 `%s`）  \" %% (REF[\"commit\"], REF[\"source_files\"][\"fingering_periodic.py\"][\"sha256\"]))\n                                                                                                                                                                                               ^\nSyntaxError: invalid syntax"
+}

@@ -1,0 +1,77 @@
+{
+ "snapshot_files": {
+  "refs/artifacts/fig1_ch_dispersion.png": {
+   "sha256": "a494ff2d427f6b242fd7e7c98e7e0aee0082e6be52c0ffb2c83e498f4b9175d7",
+   "bytes": 42828
+  },
+  "refs/artifacts/fig2_mode_history.png": {
+   "sha256": "ae733aeeac51b6122212fb0346518b88c055852ba62f3e9199c8ed754d42800d",
+   "bytes": 53441
+  },
+  "refs/artifacts/fig3_operator_convergence.png": {
+   "sha256": "9a2c9396cff3bb38fba3ff3d6b2ef8d26aa439a17e0a0722a93c8559c345c7dc",
+   "bytes": 53990
+  },
+  "refs/artifacts/xval_free_energy_ch_core.json": {
+   "sha256": "79eee1011ec0d44fff20d7cd60ed8acdec86d0558b59c14e3068360b19f80107",
+   "bytes": 21455
+  },
+  "refs/scripts/render_xval_m17762_report.py": {
+   "sha256": "e4f67992a4719b074771a0d00dcc1086eb539c80f4bbb4b3302e7a0d2d2f9aa7",
+   "bytes": 20650
+  },
+  "refs/scripts/xval_m17762_free_energy_ch_core.py": {
+   "sha256": "6a3e11b5b5f9265e5de2b9ab67b079cfd489330237482f4b88a801b796577b19",
+   "bytes": 32220
+  },
+  "refs/src/tensorlbm/multiphase3d.patch": {
+   "sha256": "a979df5d73394ec50df912f21649f453f2cd3612b86730d173b7ceaad4aeb70f",
+   "bytes": 4220
+  },
+  "refs/src/tensorlbm/multiphase3d.py": {
+   "sha256": "b138a59f58c61065e45f2f4b876826defaf7a54526574a0c3bfec2860ea8fc3a",
+   "bytes": 47290
+  },
+  "refs/tests/test_xval_m17762_free_energy_ch.py": {
+   "sha256": "2deda2e350ba16a951b935f58909be765452c66fd84a9505517e0fa19f3b585f",
+   "bytes": 4828
+  }
+ },
+ "originals": {
+  "src/tensorlbm/multiphase3d.py": {
+   "original_path": "/root/tp-agent/work/m17762/src/tensorlbm/multiphase3d.py",
+   "original_exists": true,
+   "original_sha256": "b138a59f58c61065e45f2f4b876826defaf7a54526574a0c3bfec2860ea8fc3a",
+   "snapshot_sha256": "b138a59f58c61065e45f2f4b876826defaf7a54526574a0c3bfec2860ea8fc3a",
+   "identical": true
+  },
+  "scripts/xval_m17762_free_energy_ch_core.py": {
+   "original_path": "/root/tp-agent/work/m17762/scripts/xval_m17762_free_energy_ch_core.py",
+   "original_exists": true,
+   "original_sha256": "6a3e11b5b5f9265e5de2b9ab67b079cfd489330237482f4b88a801b796577b19",
+   "snapshot_sha256": "6a3e11b5b5f9265e5de2b9ab67b079cfd489330237482f4b88a801b796577b19",
+   "identical": true
+  },
+  "scripts/render_xval_m17762_report.py": {
+   "original_path": "/root/tp-agent/work/m17762/scripts/render_xval_m17762_report.py",
+   "original_exists": true,
+   "original_sha256": "e4f67992a4719b074771a0d00dcc1086eb539c80f4bbb4b3302e7a0d2d2f9aa7",
+   "snapshot_sha256": "e4f67992a4719b074771a0d00dcc1086eb539c80f4bbb4b3302e7a0d2d2f9aa7",
+   "identical": true
+  },
+  "tests/test_xval_m17762_free_energy_ch.py": {
+   "original_path": "/root/tp-agent/work/m17762/tests/test_xval_m17762_free_energy_ch.py",
+   "original_exists": true,
+   "original_sha256": "2deda2e350ba16a951b935f58909be765452c66fd84a9505517e0fa19f3b585f",
+   "snapshot_sha256": "2deda2e350ba16a951b935f58909be765452c66fd84a9505517e0fa19f3b585f",
+   "identical": true
+  },
+  "artifacts/xval_free_energy_ch_core.json": {
+   "original_path": "/root/tp-agent/work/m17762/artifacts/xval_m17762/xval_free_energy_ch_core.json",
+   "original_exists": true,
+   "original_sha256": "79eee1011ec0d44fff20d7cd60ed8acdec86d0558b59c14e3068360b19f80107",
+   "snapshot_sha256": "79eee1011ec0d44fff20d7cd60ed8acdec86d0558b59c14e3068360b19f80107",
+   "identical": true
+  }
+ }
+}
