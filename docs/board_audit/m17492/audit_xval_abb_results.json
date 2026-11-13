@@ -1,0 +1,300 @@
+{
+  "anchor": "XVAL-LBM-ANTI-BOUNCE-BACK-INAMURO-WETNODE",
+  "audited_mission": 17450,
+  "audit_mission": 17492,
+  "delivered_run_sha256": "94cb63e6ff82cdfbe09fa86480d7d6812c6d2cccaaa4de7ebc9f91415b7479dd",
+  "P1_replay": [
+    {
+      "H": 20,
+      "variant": "standard",
+      "committed_l2": 0.3074798574593783,
+      "replayed_l2": 0.3074798574593783,
+      "abs_diff_l2": 0.0,
+      "committed_max_abs": 0.30618185997009273,
+      "replayed_max_abs": 0.30618185997009273,
+      "profile_max_diff": 0.0
+    },
+    {
+      "H": 20,
+      "variant": "inamuro_wetnode",
+      "committed_l2": 0.014543584730332359,
+      "replayed_l2": 0.014543584730332359,
+      "abs_diff_l2": 0.0,
+      "committed_max_abs": 0.013835369050502776,
+      "replayed_max_abs": 0.013835369050502776,
+      "profile_max_diff": 0.0
+    },
+    {
+      "H": 40,
+      "variant": "standard",
+      "committed_l2": 0.29100087845794403,
+      "replayed_l2": 0.29100087845794403,
+      "abs_diff_l2": 0.0,
+      "committed_max_abs": 0.3024762630462646,
+      "replayed_max_abs": 0.3024762630462646,
+      "profile_max_diff": 0.0
+    },
+    {
+      "H": 40,
+      "variant": "inamuro_wetnode",
+      "committed_l2": 0.006963921869994145,
+      "replayed_l2": 0.006963921869994145,
+      "abs_diff_l2": 0.0,
+      "committed_max_abs": 0.007151589915156364,
+      "replayed_max_abs": 0.007151589915156364,
+      "profile_max_diff": 0.0
+    }
+  ],
+  "P2P3_variants": {
+    "20": {
+      "delivered_inamuro": {
+        "c_wall_realised": [
+          0.0,
+          1.00000003
+        ],
+        "l2_vs_report_halfcell": 0.014548208871751489,
+        "maxabs_vs_report_halfcell": 0.013834753911942242,
+        "l2_vs_wetnode_nodegap": 0.009348038100622496,
+        "maxabs_vs_wetnode_nodegap": 0.00878460989111951,
+        "linear_fit_slope": 0.048543812444825696,
+        "implied_gap": 20.59994775104629,
+        "linear_fit_residual_max": 9.196810423217627e-07
+      },
+      "equilibrium_wetnode": {
+        "c_wall_realised": [
+          0.17152102,
+          0.82847905
+        ],
+        "l2_vs_report_halfcell": 0.014548208871751489,
+        "maxabs_vs_report_halfcell": 0.013834753911942242,
+        "l2_vs_wetnode_nodegap": 0.009348038100622496,
+        "maxabs_vs_wetnode_nodegap": 0.00878460989111951,
+        "linear_fit_slope": 0.048543812444825696,
+        "implied_gap": 20.59994775104629,
+        "linear_fit_residual_max": 9.196810423217627e-07
+      },
+      "abb_oss": {
+        "c_wall_realised": [
+          0.16666666,
+          0.83333335
+        ],
+        "l2_vs_report_halfcell": 1.6046218643453436e-08,
+        "maxabs_vs_report_halfcell": 1.788139347702611e-08,
+        "l2_vs_wetnode_nodegap": 0.02406798393632652,
+        "maxabs_vs_wetnode_nodegap": 0.022619047246518587,
+        "linear_fit_slope": 0.049999999091785416,
+        "implied_gap": 20.00000036328584,
+        "linear_fit_residual_max": 1.1701052904378173e-08
+      },
+      "abb_oss_wallself": {
+        "c_wall_realised": [
+          0.16666663,
+          0.83333332
+        ],
+        "l2_vs_report_halfcell": 1.3584692864975075e-06,
+        "maxabs_vs_report_halfcell": 1.5139579773171263e-06,
+        "l2_vs_wetnode_nodegap": 0.02406703128127405,
+        "maxabs_vs_wetnode_nodegap": 0.02261899392830119,
+        "linear_fit_slope": 0.04999990484736774,
+        "implied_gap": 20.000038061125334,
+        "linear_fit_residual_max": 9.194681689361772e-07
+      }
+    },
+    "40": {
+      "delivered_inamuro": {
+        "c_wall_realised": [
+          0.0,
+          1.00000003
+        ],
+        "l2_vs_report_halfcell": 0.006968848381507318,
+        "maxabs_vs_report_halfcell": 0.007150942645967006,
+        "l2_vs_wetnode_nodegap": 0.005272618847849458,
+        "maxabs_vs_wetnode_nodegap": 0.0047393226768912555,
+        "linear_fit_slope": 0.02465184855512492,
+        "implied_gap": 40.5649092709564,
+        "linear_fit_residual_max": 0.00036201580404870287
+      },
+      "equilibrium_wetnode": {
+        "c_wall_realised": [
+          0.16912301,
+          0.83087702
+        ],
+        "l2_vs_report_halfcell": 0.006968848381507318,
+        "maxabs_vs_report_halfcell": 0.007150942645967006,
+        "l2_vs_wetnode_nodegap": 0.005272618847849458,
+        "maxabs_vs_wetnode_nodegap": 0.0047393226768912555,
+        "linear_fit_slope": 0.02465184855512492,
+        "implied_gap": 40.5649092709564,
+        "linear_fit_residual_max": 0.00036201580404870287
+      },
+      "abb_oss": {
+        "c_wall_realised": [
+          0.16666666,
+          0.83333334
+        ],
+        "l2_vs_report_halfcell": 2.1856730269799702e-08,
+        "maxabs_vs_report_halfcell": 3.874301912620837e-08,
+        "l2_vs_wetnode_nodegap": 0.012266333934633743,
+        "maxabs_vs_wetnode_nodegap": 0.01189024371617451,
+        "linear_fit_slope": 0.024999999970077107,
+        "implied_gap": 40.000000047876625,
+        "linear_fit_residual_max": 3.9750699731833095e-08
+      },
+      "abb_oss_wallself": {
+        "c_wall_realised": [
+          0.16666662,
+          0.83333331
+        ],
+        "l2_vs_report_halfcell": 2.9582060012474187e-06,
+        "maxabs_vs_report_halfcell": 3.5479664802773314e-06,
+        "l2_vs_wetnode_nodegap": 0.012263983540694095,
+        "maxabs_vs_wetnode_nodegap": 0.011890138709554222,
+        "linear_fit_slope": 0.02499988312589696,
+        "implied_gap": 40.00018699943908,
+        "linear_fit_residual_max": 2.3075958670570884e-06
+      }
+    },
+    "80": {
+      "delivered_inamuro": {
+        "c_wall_realised": [
+          0.0,
+          1.00000003
+        ],
+        "l2_vs_report_halfcell": 0.0025808943020321435,
+        "maxabs_vs_report_halfcell": 0.0035809915047138926,
+        "l2_vs_wetnode_nodegap": 0.003884589562605752,
+        "maxabs_vs_wetnode_nodegap": 0.002882040025275423,
+        "linear_fit_slope": 0.012439722812495385,
+        "implied_gap": 80.38764328378164,
+        "linear_fit_residual_max": 0.0012000541903372727
+      },
+      "equilibrium_wetnode": {
+        "c_wall_realised": [
+          0.16789552,
+          0.8321045
+        ],
+        "l2_vs_report_halfcell": 0.0025808943020321435,
+        "maxabs_vs_report_halfcell": 0.0035809915047138926,
+        "l2_vs_wetnode_nodegap": 0.003884589562605752,
+        "maxabs_vs_wetnode_nodegap": 0.002882040025275423,
+        "linear_fit_slope": 0.012439722812495385,
+        "implied_gap": 80.38764328378164,
+        "linear_fit_residual_max": 0.0012000541903372727
+      },
+      "abb_oss": {
+        "c_wall_realised": [
+          0.16666667,
+          0.83333336
+        ],
+        "l2_vs_report_halfcell": 1.8571679090867633e-08,
+        "maxabs_vs_report_halfcell": 3.129243852928454e-08,
+        "l2_vs_wetnode_nodegap": 0.006191495310280826,
+        "maxabs_vs_wetnode_nodegap": 0.006095684972810211,
+        "linear_fit_slope": 0.012499999973526842,
+        "implied_gap": 80.0000001694282,
+        "linear_fit_residual_max": 3.185399910510256e-08
+      },
+      "abb_oss_wallself": {
+        "c_wall_realised": [
+          0.16666662,
+          0.8333333
+        ],
+        "l2_vs_report_halfcell": 1.4675541130206399e-06,
+        "maxabs_vs_report_halfcell": 2.8550624847634154e-06,
+        "l2_vs_wetnode_nodegap": 0.006190503204784287,
+        "maxabs_vs_wetnode_nodegap": 0.006095626415903277,
+        "linear_fit_slope": 0.01249997524325165,
+        "implied_gap": 80.00015844350325,
+        "linear_fit_residual_max": 1.8120227854856452e-06
+      }
+    }
+  },
+  "P2_kernel_identity_delivered_vs_equilibrium": {
+    "20": {
+      "max_abs_profile_diff": 0.0,
+      "l2_rel_diff": 0.0
+    },
+    "40": {
+      "max_abs_profile_diff": 0.0,
+      "l2_rel_diff": 0.0
+    },
+    "80": {
+      "max_abs_profile_diff": 0.0,
+      "l2_rel_diff": 0.0
+    }
+  },
+  "P4_convergence": {
+    "delivered_inamuro": {
+      "l2_wetnode_ref": [
+        0.009348038100622496,
+        0.005272618847849458,
+        0.003884589562605752
+      ],
+      "order_wetnode_ref": [
+        0.8261439046938094,
+        0.4407575349339869
+      ],
+      "l2_report_ref": [
+        0.014548208871751489,
+        0.006968848381507318
+      ],
+      "order_report_ref": 1.061849371963123
+    },
+    "equilibrium_wetnode": {
+      "l2_wetnode_ref": [
+        0.009348038100622496,
+        0.005272618847849458,
+        0.003884589562605752
+      ],
+      "order_wetnode_ref": [
+        0.8261439046938094,
+        0.4407575349339869
+      ],
+      "l2_report_ref": [
+        0.014548208871751489,
+        0.006968848381507318
+      ],
+      "order_report_ref": 1.061849371963123
+    },
+    "abb_oss": {
+      "l2_wetnode_ref": [
+        0.02406798393632652,
+        0.012266333934633743,
+        0.006191495310280826
+      ],
+      "order_wetnode_ref": [
+        0.9724111669036936,
+        0.9863443496439285
+      ],
+      "l2_report_ref": [
+        1.6046218643453436e-08,
+        2.1856730269799702e-08
+      ],
+      "order_report_ref": -0.4458442319344
+    },
+    "abb_oss_wallself": {
+      "l2_wetnode_ref": [
+        0.02406703128127405,
+        0.012263983540694095,
+        0.006190503204784287
+      ],
+      "order_wetnode_ref": [
+        0.9726305274402436,
+        0.9862990748385245
+      ],
+      "l2_report_ref": [
+        1.3584692864975075e-06,
+        2.9582060012474187e-06
+      ],
+      "order_report_ref": -1.1227405730356763
+    }
+  },
+  "P5_steady_state": {
+    "20": {
+      "max_abs_diff_1000_vs_3000": 0.0
+    },
+    "40": {
+      "max_abs_diff_1000_vs_3000": 0.0
+    }
+  }
+}
