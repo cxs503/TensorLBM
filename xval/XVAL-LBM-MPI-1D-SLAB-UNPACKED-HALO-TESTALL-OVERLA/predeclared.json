@@ -1,0 +1,89 @@
+{
+ "anchor": "XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA",
+ "round": 1,
+ "kind": "cross-validation against a mature open-source implementation (XVAL)",
+ "subject": "TensorLBM :: src/tensorlbm/parallel/slab_unpacked.py (new capability, this mission) + src/tensorlbm/domain_decomposition.py (existing packed/selective convention used as control)",
+ "reference": {
+  "oss_repo": "lbm-principles-practice/code",
+  "oss_commit": "6e2c592 (cache recorded in oss_inventory.cache_commit, cached on n315/n330)",
+  "oss_tag": "mpi-1d-slab-unpacked-halo-testall-overlap",
+  "oss_source_channel": "oss_solutions row (repo=lbm-principles-practice/code, feature_slug=分布式多卡, tag=mpi-1d-slab-unpacked-halo-testall-overlap) + oss_inventory row (repo=lbm-principles-practice/code, status=inventoried, licence MIT, gpu field: 'MPI 1D y-slab with contiguous halo rows (no packing) + MPI_Testall overlap; OpenMP row-parallel')",
+  "oss_practice_quoted": [
+   "Split NY into contiguous rank slabs with one halo row per side (halo rows allocated as rank_ny+2)",
+   "Because the layout is direction-major with contiguous y-rows, each halo block is (ndir-1)*NX contiguous doubles, so MPI_Isend/MPI_Irecv needs no packing",
+   "Call MPI_Testall after every interior y-row so the communication overlaps the remaining collision work",
+   "Combine global norms in one MPI_Allreduce over seven scalars",
+   "Ranks wrap around (rankp1/rankm1 modulo nprocs); per-rank binary shards name%0Nd_rank%d.bin, no parallel I/O"
+  ],
+  "zero_transcription_note": "the quoted practice is read from the platform's inventoried row for that OSS commit (no retyping of code); the reference implementation itself is C++/CUDA + MPI and cannot be executed here (no mpi4py, no mpirun, no GPU: checked at run time and recorded in the report), so the REFERENCE ARM IS A SEMANTICS-EXACT TRANSPLANT, never an execution of the OSS binary. This is a comparison limit, not an upgrade."
+ },
+ "decision": "does the unpacked (no-packing) 1-D y-slab halo with Testall progress polling reproduce the single-rank solution exactly while reproducing the Taylor-Green continuum decay within the owner 15% band, and what does it cost in wire bytes / staging copies relative to the packed selective convention already in this repo?",
+ "alternatives": {
+  "A1_unpacked_testall_overlap": "OSS semantics: 1-D y-slab, direction-major f[q,y,x], halo block f[1:, row, :] sent straight out of the population array (zero copy), request set polled with Testall after every streamed interior row, boundary rows streamed only after completion",
+  "A2_unpacked_blocking": "same halo blocks, no overlap: waitall immediately after posting, then stream (isolates the value of the overlap)",
+  "A3_packed_selective": "in-repo convention (tensorlbm.domain_decomposition.HaloExchange semantics): only the directions that cross the face are exchanged (6 of 8 for D2Q9), packed into contiguous staging buffers",
+  "A4_unpacked_selective": "zero-copy AND selective: exchange only the crossing directions straight out of f (both savings at once) - not an OSS practice, included to price the OSS trade-off"
+ },
+ "hypothesis": {
+  "H1": "decomposition neutrality: every arm at NP=2 and NP=4 reproduces the NP=1 single-rank solution to round-off (max|u-u_ref|/max|u_ref| < 1e-12)",
+  "H2": "physical accuracy: the Taylor-Green probe amplitude and the field L2 error stay below the owner 15% band against the continuum solution at the acceptance grid",
+  "H3": "testall overlap never changes the result (A1 == A2 exactly) and reduces wall time at NP>1",
+  "H4": "the OSS unpacked full-block convention costs exactly 8/6 = +33.3% wire bytes versus the selective convention, and saves exactly two staging memcpys per face per step (A3 staging bytes > 0, A1 staging bytes == 0)",
+  "H0_falsifier": "any identity deviation >= 1e-12, any physics error >= 15%, or any H4 byte/copy count off the closed-form value"
+ },
+ "metrics": {
+  "identity_maxrel": "max_y,x |u_arm - u_NP1| / max|u_NP1| on the full global field after the predeclared step count",
+  "probe_rel_err_pct": "100 * |u_x(0,0) - u0 exp(-2 nu k^2 t)| / |u0 exp(-2 nu k^2 t)|, the primary physics KPI",
+  "field_l2_rel_err_pct": "100 * ||u_num - u_analytic||_2 / ||u_analytic||_2 over both velocity components",
+  "wire_bytes_per_step": "bytes moved per step per rank, closed form 4 * ndir_x * NX * 8 (2 sends + 2 receives), ndir_x = 8 unpacked / 6 selective",
+  "staging_bytes_per_step": "bytes moved by explicit staging memcpy per step (packing)",
+  "messages_per_step": "Isend+Irecv count per step per rank (4: two faces, send and receive)",
+  "testall_polls_per_step": "Testall calls per step actually executed (overlap on) - the progress-polling cost",
+  "mlups": "NX*NY*steps / wall_s / 1e6 for the whole job (all ranks), the throughput KPI",
+  "mass_drift_rel": "|sum(rho) - N| / N from the single per-window Allreduce of seven scalars",
+  "ma_max": "max|u| / cs, must stay < 0.1 (incompressible LBM regime)"
+ },
+ "unit_of_analysis": "one completed run (arm x NP) at fixed grid, tau, u0 and step count; KPIs are scalars on the global reconstructed field",
+ "baseline_control": {
+  "representation_control": "A_ref = A1 at NP=1 (no transport at all: the halo is a periodic in-memory self-wrap), so any deviation at NP>1 is a decomposition/transport error and nothing else",
+  "physics_baseline": "continuum Taylor-Green vortex ux = u0 cos(kx)cos(ky)exp(-2 nu k^2 t), uy = -u0 sin(kx)sin(ky)exp(-2 nu k^2 t), k = 2 pi / NX, one wavelength per box, periodic in both directions",
+  "convention_control": "A3/A4 differ from A1 ONLY in which directions are exchanged and whether a staging copy is made - same collision, same streaming order, same time integration"
+ },
+ "predeclared_thresholds": {
+  "owner_acceptance_pct": 15.0,
+  "identity_rel": 1e-12,
+  "bytes_ratio_expected": 1.3333333333333333,
+  "interpretation": "H1/H3 hold iff every NP>1 arm matches NP=1 within 1e-12 relative (nine orders stricter than the owner band: a decomposition change must be exact, only the physics-vs-continuum comparison uses the 15% band). H2 uses the acceptance grid N=128; coarser grids are reported as convergence evidence, never as a pass.",
+  "stability_rule": "a run producing a non-finite population, rho outside [0.95, 1.05] or max|u| > 0.1 cs is declared failed and reported, never tuned away",
+  "stopping_rule": "every arm runs the step count fixed before the run (600 at N=128); the step count is NOT extended after looking at a KPI. Wall budget 600 s per arm, above which the arm moves to the cluster queue"
+ },
+ "variables_changed": [
+  "transport scheme: unpacked full block (OSS) / unpacked selective / packed selective (repo)",
+  "overlap: Testall progress polling vs blocking waitall",
+  "Testall polling granularity: every 1 / 8 / 64 streamed rows",
+  "rank count: NP = 1, 2, 4",
+  "resolution: N = 64, 128 at equal physical decay time"
+ ],
+ "variables_held_fixed": [
+  "D2Q9, BGK/SRT, tau = 0.8 (nu = 0.1), float64",
+  "Taylor-Green initial condition u0 = 0.04, one wavelength per box, periodic x and y",
+  "pull streaming, two ghost rows per slab, ranks wrap modulo nprocs",
+  "step count per grid (600 at N=128) and the seven-scalar Allreduce window"
+ ],
+ "confounders": [
+  "no MPI stack in the image (no mpi4py, no mpirun) -> ranks are OS threads and the wire is an in-process queue: the byte counts are exact but the wall times are not MI times, and the GIL damps the overlap benefit (A2/A1 speedup is a LOWER bound on a real MPI run)",
+  "the shim copies every payload, i.e. it pays exactly the staging memcpy the unpacked scheme avoids on a real wire, so A1's copy advantage is not visible in these timings",
+  "continuum Taylor-Green is not the exact discrete solution: the residual error is a lattice/Ma error of the LBM scheme itself, not a decomposition error, which is why the identity KPI (1e-12) and the physics KPI (15%) are kept separate",
+  "the NP=1 arm has no transport, so its wall time is not comparable to NP>1 (used only as the identity reference)"
+ ],
+ "environment": {
+  "python": "3.11",
+  "numpy": "2.4.6",
+  "no_mpi": "mpi4py absent, mpirun absent (checked)",
+  "ranks": "OS threads inside one process, one directed queue.Queue per (rank, rank) direction",
+  "work_tree": "/root/tp-agent/work/m17994 (branch agent/m17994)",
+  "raw_data": "artifacts/xval_mpi_slab_unpacked_halo_overlap/{results.json,kpi.csv}, driver under xval/XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA/"
+ },
+ "analysis": "grouped by arm; no outlier removal; identity errors are relative to the NP=1 field, physics errors relative to the continuum solution at the same time; the two sensitivity tables (poll granularity, grid convergence) are reported separately and are not acceptance criteria",
+ "fail_stage_plan": "fail_stage in {transport, halo_block, stream_row, physics, kpi_analysis} with failure_reason carrying the measured deviation"
+}
