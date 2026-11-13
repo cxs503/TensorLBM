@@ -1,0 +1,117 @@
+{
+  "anchor": "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC",
+  "environment": {
+    "machine": "loongarch64",
+    "numpy": "2.4.6",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "python": "3.11.6"
+  },
+  "rows": [
+    {
+      "arm": "identity/stress-projection",
+      "error": 5.873225685679384e-16,
+      "got": "stress_rel=5.873e-16, ghost_after=1.735e-17",
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "pre-reconstruction non-equilibrium stress (exact)"
+    },
+    {
+      "arm": "identity/oss-scalar-transcription",
+      "error": 1.3877787807814457e-17,
+      "got": "max|diff|=1.388e-17",
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "scalar port of LIFE src/Grid.cpp:386-466"
+    },
+    {
+      "arm": "steady/couette/regularised",
+      "error": 4.007402713863351e-11,
+      "error_pct": 4.007402713863351e-09,
+      "extra": "",
+      "ny": 16,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic couette"
+    },
+    {
+      "arm": "steady/couette/bounce_back",
+      "error": 6.319135517024741e-11,
+      "error_pct": 6.3191355170247406e-09,
+      "extra": "",
+      "ny": 16,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic couette"
+    },
+    {
+      "arm": "steady/poiseuille/regularised",
+      "error": 0.011288650465091256,
+      "error_pct": 1.1288650465091257,
+      "extra": "",
+      "ny": 16,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic poiseuille"
+    },
+    {
+      "arm": "steady/poiseuille/bounce_back",
+      "error": 0.006427283371866172,
+      "error_pct": 0.6427283371866173,
+      "extra": "",
+      "ny": 16,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic poiseuille"
+    },
+    {
+      "arm": "oscillating/oscillating_wall/regularised",
+      "error": 0.02874242955382745,
+      "error_pct": 2.874242955382745,
+      "extra": "period=200",
+      "ny": 48,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic oscillating_wall"
+    },
+    {
+      "arm": "oscillating/oscillating_wall/regularised",
+      "error": 0.05623822530796861,
+      "error_pct": 5.623822530796861,
+      "extra": "period=100",
+      "ny": 48,
+      "pass_15pct": true,
+      "pass_3pct": false,
+      "reference": "analytic oscillating_wall"
+    },
+    {
+      "arm": "oscillating/oscillating_wall/bounce_back",
+      "error": 0.04652932679287183,
+      "error_pct": 4.652932679287183,
+      "extra": "period=200",
+      "ny": 48,
+      "pass_15pct": true,
+      "pass_3pct": false,
+      "reference": "analytic oscillating_wall"
+    },
+    {
+      "arm": "oscillating/oscillating_wall/bounce_back",
+      "error": 0.09180933658230156,
+      "error_pct": 9.180933658230156,
+      "extra": "period=100",
+      "ny": 48,
+      "pass_15pct": true,
+      "pass_3pct": false,
+      "reference": "analytic oscillating_wall"
+    }
+  ],
+  "thresholds": {
+    "ghost_moment_rel": 1e-13,
+    "identity_rel": 1e-13,
+    "oscillating_l2_rel": 0.15,
+    "oss_transcription_rel": 1e-12,
+    "owner_acceptance_pct": 15.0,
+    "stability": "any non-finite population or |rho-1| > 0.05 is a declared failure",
+    "steady_l2_rel": 0.03,
+    "target_pct": 3.0
+  }
+}
