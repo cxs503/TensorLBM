@@ -107,6 +107,7 @@ PROTOCOL: dict[str, Any] = {
         "checkpoints": [5000, 10000, 15000, 20000],
         "slab_half": 48.0,
     },
+    "eos_anchor": {"n": 96, "steps": 20000},
     "hero": {"G_12": -2.75, "radius": 20.0, "n": 96},
     "dtype": "float32",
     "device": "cpu",
@@ -119,6 +120,7 @@ QUICK: dict[str, Any] = {
     "resolution_study": {"radius": 16.0, "n": [64]},
     "steps_droplet": 2500,
     "steps_coexist": 2500,
+    "eos_anchor": {"n": 64, "steps": 3000},
     "flat": {"ny": 96, "nx": 8, "steps": 3000, "checkpoints": [1500, 3000], "slab_half": 24.0},
 }
 
@@ -301,6 +303,84 @@ def job_flat(args: tuple[float, int, int, int, dict[str, Any], list[int], float]
     }
 
 
+
+
+def eos_sigma_from_fields(rho1: torch.Tensor, rho2: torch.Tensor, G12: float, n_int: int = 2) -> dict[str, Any]:
+    """EOS-profile (gradient-theory) surface tension of a flat static interface.
+
+    ``sigma_EOS = (1/n_int) * sum_y [ p0 - p_iso(rho1(y), rho2(y)) ]`` with
+    ``p_iso = cs^2 (rho1+rho2) + G12 cs^2 rho1 rho2`` (the same EOS the droplet
+    pressure uses).  ``p0`` is the bulk gas-side EOS pressure.  Only the density
+    profile and the bulk EOS enter, so the result is independent of any droplet
+    ``dp`` or ``R``.
+    """
+    p = (1.0 / 3.0) * (rho1 + rho2) + G12 * (1.0 / 3.0) * rho1 * rho2
+    prof = p.mean(dim=1)  # x-uniform interface
+    nn = prof.numel()
+    k = max(4, nn // 32)
+    p_gas = float(prof[:k].mean())
+    p_liq = float(prof[-k:].mean())
+    deficit = p_gas - prof
+    return {
+        "sigma_eos": float(deficit.sum()) / n_int,
+        "p_bulk_gas": p_gas,
+        "p_bulk_liq": p_liq,
+        "bulk_dp": p_liq - p_gas,
+        "max_deficit": float(deficit.max()),
+        "deficit_negative_rows": int((deficit < -1e-6).sum()),
+    }
+
+
+def job_eos_anchor(args: tuple[float, int, int, dict[str, Any]]) -> dict[str, Any]:
+    """Route C (independent absolute sigma, Round 2): EOS-profile integral.
+
+    A flat static interface is in normal-force balance, so the normal pressure
+    is constant and equal to the bulk EOS pressure ``p0``; the tangential
+    pressure is the local EOS pressure of the *same* equation of state the
+    droplet measurement uses::
+
+        sigma_EOS = (1/n_int) * sum_y [ p0 - p_iso(rho1(y), rho2(y)) ],
+        p_iso(rho1, rho2) = cs^2 (rho1+rho2) + G12 cs^2 rho1 rho2.
+
+    Only the relaxed flat-interface *density profile* and the bulk EOS enter -
+    no droplet ``dp`` or ``R`` - so this is an independent anchor for
+    ``dp = sigma / R`` (gradient theory; Rowlinson & Widom ch. 3;
+    Sbragaglia et al. 2007 PRE 75 026702).  It is the non-circular check that
+    Round 1's radius-independence fit cannot provide: a common multiplicative
+    error in the model stress passes the Round-1 fit but fails here.
+    """
+    G, n, steps, coex = args
+    _quiet()
+    t0 = time.time()
+    s = mv.simulate_planar_slab(
+        G_12=G,
+        n=n,
+        rho1_in=coex["rho1_liq"],
+        rho2_in=coex["rho2_liq"],
+        rho1_out=coex["rho1_gas"],
+        rho2_out=coex["rho2_gas"],
+        half_thickness=0.25 * n,
+        steps=steps,
+        tau1=PROTOCOL["tau"],
+        tau2=PROTOCOL["tau"],
+        stop_tol=PROTOCOL["stop_tol"],
+        check_every=PROTOCOL["check_every"],
+    )
+    rho1, rho2 = s["rho1"], s["rho2"]
+    r = eos_sigma_from_fields(rho1, rho2, G, n_int=2)
+    r.update(
+        {
+            "G_12": G,
+            "n": n,
+            "converged": bool(s["converged"]),
+            "steps_run": int(s["steps_run"]),
+            "u_max": float(s["u_max"]),
+            "elapsed_s": round(time.time() - t0, 1),
+        }
+    )
+    return r
+
+
 # ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
@@ -388,6 +468,11 @@ def build(out_dir: Path, jobs: int, quick: bool = False, calib_root: Path | None
             for G in G_levels
         ]
         flat_rows = pool.map(job_flat, flat_tasks)
+
+        # ---- 4b. Route C: independent absolute sigma (EOS-profile, non-circular) ----
+        eos_spec = proto["eos_anchor"]
+        eos_tasks = [(G, eos_spec["n"], eos_spec["steps"], coex[round(G, 4)]) for G in G_levels]
+        eos_rows = pool.map(job_eos_anchor, eos_tasks)
 
     # ---- 5. analysis: per-G Laplace fits (library, one unknown per level) ----
     levels: list[dict[str, Any]] = []
@@ -497,6 +582,42 @@ def build(out_dir: Path, jobs: int, quick: bool = False, calib_root: Path | None
     def _strip(case: dict[str, Any]) -> dict[str, Any]:
         return {k: v for k, v in case.items() if not k.startswith("_")}
 
+    # ---- 6. Route C: absolute criterion against the independent sigma_EOS ----
+    # Non-circular: sigma_EOS comes from the flat-interface EOS-profile integral
+    # (no droplet dp or R).  A common multiplicative stress error passes the
+    # Round-1 radius-independence fit but fails here.
+    eos_by_G = {round(r["G_12"], 4): r for r in eos_rows}
+    absolute_checks = []
+    for c in droplet_cases:
+        if c["radius"] is None or c["dp"] is None:
+            continue
+        e = eos_by_G.get(round(c["G_12"], 4))
+        if e is None or e["sigma_eos"] <= 0:
+            continue
+        ref = e["sigma_eos"] / c["radius"]
+        rel_err = (c["dp"] - ref) / ref
+        absolute_checks.append(
+            {
+                "G_12": c["G_12"],
+                "n": c["n"],
+                "radius": c["radius"],
+                "dp_got": c["dp"],
+                "dp_ref": ref,
+                "rel_err": rel_err,
+                "pass": abs(rel_err) < TOL,
+                "sigma_dpR": c["sigma"],
+                "sigma_eos": e["sigma_eos"],
+            }
+        )
+    n_abs_pass = sum(1 for a in absolute_checks if a["pass"])
+    absolute_pass = bool(absolute_checks) and n_abs_pass == len(absolute_checks)
+    abs_factor = {}
+    for G in G_levels:
+        sub = [a for a in absolute_checks if round(a["G_12"], 4) == round(G, 4)]
+        e = eos_by_G.get(round(G, 4))
+        if sub and e is not None and e["sigma_eos"] > 0:
+            abs_factor[repr(G)] = sum(a["sigma_dpR"] for a in sub) / (len(sub) * e["sigma_eos"])
+
     summary = {
         "case": {
             "case_code": proto["case_code"],
@@ -546,6 +667,30 @@ def build(out_dir: Path, jobs: int, quick: bool = False, calib_root: Path | None
                 for lv in levels
             ],
             "routeB_status": [{"G_12": lv["G_12"], **lv["exploratory_routeB"]} for lv in levels],
+            "routeC_status": [
+                {
+                    "G_12": r["G_12"],
+                    "n": r["n"],
+                    "sigma_eos": r["sigma_eos"],
+                    "bulk_dp": r["bulk_dp"],
+                    "max_deficit": r["max_deficit"],
+                    "deficit_negative_rows": r["deficit_negative_rows"],
+                    "converged": r["converged"],
+                    "steps_run": r["steps_run"],
+                }
+                for r in eos_rows
+            ],
+            "absolute": {
+                "definition": (
+                    "|dp - sigma_EOS/R| / (sigma_EOS/R) < tol; sigma_EOS from the "
+                    "flat-interface EOS-profile integral (independent of the droplet)"
+                ),
+                "n_pass": n_abs_pass,
+                "n_total": len(absolute_checks),
+                "pass": absolute_pass,
+                "dpR_over_sigma_eos": abs_factor,
+                "checks": absolute_checks,
+            },
         },
         "elapsed_s": round(time.time() - t_start, 1),
         "repro_cmd": (
