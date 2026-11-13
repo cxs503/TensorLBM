@@ -1,0 +1,1277 @@
+{
+  "anchor": "XVAL-LBM-VON-NEUMANN-AUTO",
+  "mission": 18789,
+  "quick": true,
+  "provenance": {
+    "repo": "TensorLBM",
+    "branch": "agent/m18789",
+    "external_anchor": "Sterling & Chen (1996) JCP 123:196-206; Lallemand & Luo (2000) PRE 61:6546"
+  },
+  "gate_pct": 15.0,
+  "checks": [
+    {
+      "id": "C1-shear-tau0.6-ma0.0-m2",
+      "quantity": "shear growth rate",
+      "ref": -0.021599971128441604,
+      "got": -0.021599966919045498,
+      "err_pct": 1.9487970983644842e-05,
+      "abs_err_pct": 1.9487970983644842e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.999999999970032,
+      "purity": 0.9999999803195126,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.6-ma0.0-m4",
+      "quantity": "shear growth rate",
+      "ref": -0.09969180515079085,
+      "got": -0.09968998666896225,
+      "err_pct": 0.0018241036219988052,
+      "abs_err_pct": 0.0018241036219988052,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999997391753789,
+      "purity": 0.9999865197947913,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.6-ma0.2-m2",
+      "quantity": "shear growth rate",
+      "ref": -0.020701597616795783,
+      "got": -0.020701577103530253,
+      "err_pct": 9.909025337256975e-05,
+      "abs_err_pct": 9.909025337256975e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999999999895508,
+      "purity": 0.9999999815913125,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.6-ma0.2-m4",
+      "quantity": "shear growth rate",
+      "ref": -0.09603680504719361,
+      "got": -0.09603856394903268,
+      "err_pct": 0.0018314872492914515,
+      "abs_err_pct": 0.0018314872492914515,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999998340852895,
+      "purity": 0.9999888493948155,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.8-ma0.0-m2",
+      "quantity": "shear growth rate",
+      "ref": -0.06382197921089783,
+      "got": -0.06382195805136581,
+      "err_pct": 3.315398907561843e-05,
+      "abs_err_pct": 3.315398907561843e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999999999998697,
+      "purity": 0.9999999998470701,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.8-ma0.0-m4",
+      "quantity": "shear growth rate",
+      "ref": -0.2876820724517815,
+      "got": -0.2876819232526133,
+      "err_pct": 5.186251854876842e-05,
+      "abs_err_pct": 5.186251854876842e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999999999996447,
+      "purity": 0.9999999974931084,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.8-ma0.2-m2",
+      "quantity": "shear growth rate",
+      "ref": -0.06117618532876192,
+      "got": -0.06117616116445091,
+      "err_pct": 3.9499538718586134e-05,
+      "abs_err_pct": 3.9499538718586134e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999999999997794,
+      "purity": 0.9999999999814074,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-shear-tau0.8-ma0.2-m4",
+      "quantity": "shear growth rate",
+      "ref": -0.2744346085331214,
+      "got": -0.27443457103907654,
+      "err_pct": 1.3662287373034629e-05,
+      "abs_err_pct": 1.3662287373034629e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.99999999999996,
+      "purity": 0.9999999978107248,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-acoustic-tau0.6-ma0.0-m2",
+      "quantity": "acoustic growth rate",
+      "ref": -0.020573029259305004,
+      "got": -0.020573029265927224,
+      "err_pct": 3.218884321749792e-08,
+      "abs_err_pct": 3.218884321749792e-08,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999999999999999,
+      "purity": 0.9999999999999996,
+      "phase_speed_ref": 0.5678110256960345,
+      "phase_speed_got": 0.5678110258533269,
+      "phase_speed_err_pct": 2.770154051397492e-08,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "C1-acoustic-tau0.6-ma0.0-m4",
+      "quantity": "acoustic growth rate",
+      "ref": -0.08071972479175912,
+      "got": -0.08071964981101158,
+      "err_pct": 9.289024180255245e-05,
+      "abs_err_pct": 9.289024180255245e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "fit_r2": 0.9999999999785163,
+      "purity": 0.9999999998857515,
+      "phase_speed_ref": 0.5363774907447854,
+      "phase_speed_got": 0.5363774606515859,
+      "phase_speed_err_pct": 5.610451595590571e-06,
+      "ref_source": "von_neumann.spectrum (analytic eigenvalue)"
+    },
+    {
+      "id": "CE-nu-tau0.55-theta0.0010",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.01666666666666668,
+      "got": 0.01666666851762868,
+      "err_pct": 1.1105771989539095e-05,
+      "abs_err_pct": 1.1105771989539095e-05,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.55-theta0.0100",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.01666666666666668,
+      "got": 0.01666680417366888,
+      "err_pct": 0.0008250420132083207,
+      "abs_err_pct": 0.0008250420132083207,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.6-theta0.0010",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.033333333333333326,
+      "got": 0.03333333620281213,
+      "err_pct": 8.608436422030687e-06,
+      "abs_err_pct": 8.608436422030687e-06,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.6-theta0.0100",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.033333333333333326,
+      "got": 0.033333599988850514,
+      "err_pct": 0.0007999665515637246,
+      "abs_err_pct": 0.0007999665515637246,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.7-theta0.0010",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.06666666666666665,
+      "got": 0.06666667174037866,
+      "err_pct": 7.61056800913096e-06,
+      "abs_err_pct": 7.61056800913096e-06,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.7-theta0.0100",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.06666666666666665,
+      "got": 0.06666713332308484,
+      "err_pct": 0.0006999846272823242,
+      "abs_err_pct": 0.0006999846272823242,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.8-theta0.0010",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.10000000000000002,
+      "got": 0.10000000505838706,
+      "err_pct": 5.058387042566891e-06,
+      "abs_err_pct": 5.058387042566891e-06,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau0.8-theta0.0100",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.10000000000000002,
+      "got": 0.10000053333210675,
+      "err_pct": 0.0005333321067280127,
+      "abs_err_pct": 0.0005333321067280127,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau1.0-theta0.0010",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.16666666666666666,
+      "got": 0.1666666671451526,
+      "err_pct": 2.8709156718598194e-07,
+      "abs_err_pct": 2.8709156718598194e-07,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "CE-nu-tau1.0-theta0.0100",
+      "quantity": "nu at theta->0 (Chapman-Enskog)",
+      "ref": 0.16666666666666666,
+      "got": 0.16666666666214794,
+      "err_pct": 2.7112312395161098e-09,
+      "abs_err_pct": 2.7112312395161098e-09,
+      "tol_pct": 2.0,
+      "pass": true,
+      "ref_source": "Chapman-Enskog: nu = (tau - 0.5)/3"
+    },
+    {
+      "id": "sound-speed-tau0.6",
+      "quantity": "sound speed at theta->0",
+      "ref": 0.5773502691896257,
+      "got": 0.5773487616576302,
+      "err_pct": 0.00026111220103636505,
+      "abs_err_pct": 0.00026111220103636505,
+      "tol_pct": 0.1,
+      "pass": true,
+      "ref_source": "Lattice theory: cs = 1/sqrt(3)"
+    },
+    {
+      "id": "sound-speed-tau0.8",
+      "quantity": "sound speed at theta->0",
+      "ref": 0.5773502691896257,
+      "got": 0.5773495314483552,
+      "err_pct": 0.0001277805363377322,
+      "abs_err_pct": 0.0001277805363377322,
+      "tol_pct": 0.1,
+      "pass": true,
+      "ref_source": "Lattice theory: cs = 1/sqrt(3)"
+    },
+    {
+      "id": "sound-speed-tau1.0",
+      "quantity": "sound speed at theta->0",
+      "ref": 0.5773502691896257,
+      "got": 0.577351071076035,
+      "err_pct": 0.0001388908002761596,
+      "abs_err_pct": 0.0001388908002761596,
+      "tol_pct": 0.1,
+      "pass": true,
+      "ref_source": "Lattice theory: cs = 1/sqrt(3)"
+    },
+    {
+      "id": "Ma2-shift-tau0.7-ma0.1",
+      "quantity": "Ma^2 viscosity shift",
+      "ref": -0.010000000000000002,
+      "got": -0.009999728703929733,
+      "err_pct": 0.002712960702686006,
+      "abs_err_pct": 2.712960702686007e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "ref_source": "nu_num(0, Ma) = nu_phys * (1 - Ma^2)"
+    },
+    {
+      "id": "Ma2-shift-tau0.7-ma0.2",
+      "quantity": "Ma^2 viscosity shift",
+      "ref": -0.04000000000000001,
+      "got": -0.03999975105982334,
+      "err_pct": 0.000622350441667474,
+      "abs_err_pct": 2.4894017666698964e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "ref_source": "nu_num(0, Ma) = nu_phys * (1 - Ma^2)"
+    },
+    {
+      "id": "Ma2-shift-tau0.7-ma0.3",
+      "quantity": "Ma^2 viscosity shift",
+      "ref": -0.09,
+      "got": -0.08999977599018905,
+      "err_pct": 0.000248899789945245,
+      "abs_err_pct": 2.2400981095072048e-05,
+      "tol_pct": 5.0,
+      "pass": true,
+      "ref_source": "nu_num(0, Ma) = nu_phys * (1 - Ma^2)"
+    }
+  ],
+  "convergence": [
+    {
+      "arm": "BGK-tau0.6",
+      "nx": 16,
+      "nu_got": 0.03501655426198441,
+      "nu_ref": 0.033333333333333326,
+      "err_pct": 5.049662785953259
+    },
+    {
+      "arm": "BGK-tau0.6",
+      "nx": 32,
+      "nu_got": 0.033747026189804456,
+      "nu_ref": 0.033333333333333326,
+      "err_pct": 1.2410785694133915
+    },
+    {
+      "arm": "BGK-tau0.6",
+      "nx": 64,
+      "nu_got": 0.03343629630436372,
+      "nu_ref": 0.033333333333333326,
+      "err_pct": 0.3088889130911794
+    },
+    {
+      "arm": "BGK-tau0.8",
+      "nx": 16,
+      "nu_got": 0.10346429561671748,
+      "nu_ref": 0.10000000000000002,
+      "err_pct": 3.46429561671746
+    },
+    {
+      "arm": "BGK-tau0.8",
+      "nx": 32,
+      "nu_got": 0.1008328745752031,
+      "nu_ref": 0.10000000000000002,
+      "err_pct": 0.8328745752030767
+    },
+    {
+      "arm": "BGK-tau0.8",
+      "nx": 64,
+      "nu_got": 0.10020625993408322,
+      "nu_ref": 0.10000000000000002,
+      "err_pct": 0.20625993408319993
+    }
+  ],
+  "summary": {
+    "checks_passed": 26,
+    "checks_total": 26,
+    "c1_passed": 10,
+    "c1_total": 10,
+    "c2_pass": true,
+    "c3_pass": true,
+    "c4_pass": true,
+    "limits_passed": 16,
+    "limits_total": 16,
+    "all_pass": true,
+    "wall_time_s": 18.6
+  },
+  "c2_stability": {
+    "criterion": "C2",
+    "threshold": {
+      "stable_lambda_max": 1.0,
+      "unstable_guard_lambda": 1.001,
+      "divergence_growth_factor": 100.0,
+      "steps": 5000,
+      "blowup_tol": 0.05,
+      "tpr_min": 0.9,
+      "fpr_max": 0.1,
+      "box_n": 32
+    },
+    "n_points": 12,
+    "unstable_guarded": {
+      "n": 4,
+      "diverged": 4,
+      "rate": 1.0,
+      "tpr": 1.0
+    },
+    "weakly_unstable_below_guard": {
+      "n": 5,
+      "diverged": 0,
+      "rate": 0.0
+    },
+    "stable": {
+      "n": 8,
+      "diverged": 0,
+      "rate": 0.0,
+      "fpr": 0.0
+    },
+    "tpr": 1.0,
+    "fpr": 0.0,
+    "pass": true,
+    "points": [
+      {
+        "collision": "bgk",
+        "tau": 0.45,
+        "ma": 0.0,
+        "lambda_max_grid": 1.222222222222225,
+        "mode": [
+          7,
+          9
+        ],
+        "stable_pred": false,
+        "seeded": {
+          "diverged": true,
+          "growth_reached": true,
+          "blowup": false,
+          "steps": 81,
+          "growth_factor": 11459462.090539608,
+          "lambda_pred": 1.222222222222225,
+          "mode": [
+            7,
+            9
+          ],
+          "growth_pred": 0.2006706954621534,
+          "growth_meas": 0.20067069546213837,
+          "mode_branch": "kinetic"
+        },
+        "broadband": {
+          "diverged": true,
+          "blowup": false,
+          "growth_reached": true,
+          "steps": 30,
+          "growth_factor": 228.68959411673825,
+          "amplitude_final": 2.4386330828393905e-05
+        },
+        "diverged": true
+      },
+      {
+        "collision": "mrt",
+        "tau": 0.45,
+        "ma": 0.0,
+        "lambda_max_grid": 1.2222222222222228,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": false,
+        "seeded": {
+          "diverged": true,
+          "growth_reached": true,
+          "blowup": false,
+          "steps": 81,
+          "growth_factor": 11459462.11528323,
+          "lambda_pred": 1.2222222222222228,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": 0.2006706954621516,
+          "growth_meas": 0.20067069546212066,
+          "mode_branch": "kinetic"
+        },
+        "diverged": true
+      },
+      {
+        "collision": "bgk",
+        "tau": 0.45,
+        "ma": 0.2,
+        "lambda_max_grid": 1.2222222222222265,
+        "mode": [
+          0,
+          7
+        ],
+        "stable_pred": false,
+        "seeded": {
+          "diverged": true,
+          "growth_reached": true,
+          "blowup": false,
+          "steps": 81,
+          "growth_factor": 11459461.97383172,
+          "lambda_pred": 1.2222222222222265,
+          "mode": [
+            0,
+            7
+          ],
+          "growth_pred": 0.20067069546215469,
+          "growth_meas": 0.2006706954634605,
+          "mode_branch": "kinetic"
+        },
+        "broadband": {
+          "diverged": true,
+          "blowup": false,
+          "growth_reached": true,
+          "steps": 30,
+          "growth_factor": 247.28359492733685,
+          "amplitude_final": 2.636910340246746e-05
+        },
+        "diverged": true
+      },
+      {
+        "collision": "mrt",
+        "tau": 0.45,
+        "ma": 0.2,
+        "lambda_max_grid": 1.2222222222222228,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": false,
+        "seeded": {
+          "diverged": true,
+          "growth_reached": true,
+          "blowup": false,
+          "steps": 81,
+          "growth_factor": 11459462.120923242,
+          "lambda_pred": 1.2222222222222228,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": 0.2006706954621516,
+          "growth_meas": 0.20067069546269745,
+          "mode_branch": "kinetic"
+        },
+        "diverged": true
+      },
+      {
+        "collision": "bgk",
+        "tau": 0.55,
+        "ma": 0.0,
+        "lambda_max_grid": 0.9999999999999997,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.9999999986122212,
+          "lambda_pred": 0.9999999999999997,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": -3.33066907387547e-16,
+          "growth_meas": 4.018970636568113e-18,
+          "mode_branch": "kinetic"
+        },
+        "broadband": {
+          "diverged": false,
+          "blowup": false,
+          "growth_reached": false,
+          "steps": 2000,
+          "growth_factor": 9.229241340140109e-05,
+          "amplitude_final": 9.84160794394768e-12
+        },
+        "diverged": false
+      },
+      {
+        "collision": "mrt",
+        "tau": 0.55,
+        "ma": 0.0,
+        "lambda_max_grid": 0.9999999999999999,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 1.0000000029297553,
+          "lambda_pred": 0.9999999999999999,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": -1.1102230246251565e-16,
+          "growth_meas": 4.887928451874504e-12,
+          "mode_branch": "kinetic"
+        },
+        "diverged": false
+      },
+      {
+        "collision": "bgk",
+        "tau": 0.55,
+        "ma": 0.2,
+        "lambda_max_grid": 1.0000000000000004,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.999999993700432,
+          "lambda_pred": 1.0000000000000004,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": 4.440892098500625e-16,
+          "growth_meas": -7.115464127580572e-14,
+          "mode_branch": "kinetic"
+        },
+        "broadband": {
+          "diverged": false,
+          "blowup": false,
+          "growth_reached": false,
+          "steps": 2000,
+          "growth_factor": 9.824587616348652e-05,
+          "amplitude_final": 1.0476455861062038e-11
+        },
+        "diverged": false
+      },
+      {
+        "collision": "mrt",
+        "tau": 0.55,
+        "ma": 0.2,
+        "lambda_max_grid": 0.9999999999999989,
+        "mode": [
+          0,
+          8
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.9999999804135882,
+          "lambda_pred": 0.9999999999999989,
+          "mode": [
+            0,
+            8
+          ],
+          "growth_pred": -1.1102230246251571e-15,
+          "growth_meas": -1.0409273332593317e-11,
+          "mode_branch": "kinetic"
+        },
+        "diverged": false
+      },
+      {
+        "collision": "bgk",
+        "tau": 0.8,
+        "ma": 0.0,
+        "lambda_max_grid": 1.0000000000000004,
+        "mode": [
+          0,
+          8
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.9999999989808499,
+          "lambda_pred": 1.0000000000000004,
+          "mode": [
+            0,
+            8
+          ],
+          "growth_pred": 4.440892098500625e-16,
+          "growth_meas": 2.7180897602518604e-17,
+          "mode_branch": "kinetic"
+        },
+        "broadband": {
+          "diverged": false,
+          "blowup": false,
+          "growth_reached": false,
+          "steps": 2000,
+          "growth_factor": 4.197211697422072e-06,
+          "amplitude_final": 4.4756996226899094e-13
+        },
+        "diverged": false
+      },
+      {
+        "collision": "mrt",
+        "tau": 0.8,
+        "ma": 0.0,
+        "lambda_max_grid": 1.000000000000002,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.9999999877412874,
+          "lambda_pred": 1.000000000000002,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": 1.9984014443252798e-15,
+          "growth_meas": -5.15399315727812e-12,
+          "mode_branch": "kinetic"
+        },
+        "diverged": false
+      },
+      {
+        "collision": "bgk",
+        "tau": 0.8,
+        "ma": 0.2,
+        "lambda_max_grid": 1.0000000000000002,
+        "mode": [
+          8,
+          0
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.9999999977670722,
+          "lambda_pred": 1.0000000000000002,
+          "mode": [
+            8,
+            0
+          ],
+          "growth_pred": 2.2204460492503128e-16,
+          "growth_meas": 1.9898585274467536e-17,
+          "mode_branch": "kinetic"
+        },
+        "broadband": {
+          "diverged": false,
+          "blowup": false,
+          "growth_reached": false,
+          "steps": 2000,
+          "growth_factor": 4.279913843958072e-06,
+          "amplitude_final": 4.563889114364624e-13
+        },
+        "diverged": false
+      },
+      {
+        "collision": "mrt",
+        "tau": 0.8,
+        "ma": 0.2,
+        "lambda_max_grid": 1.0000000000000022,
+        "mode": [
+          0,
+          8
+        ],
+        "stable_pred": true,
+        "seeded": {
+          "diverged": false,
+          "growth_reached": false,
+          "blowup": false,
+          "steps": 2000,
+          "growth_factor": 0.9999999760841763,
+          "lambda_pred": 1.0000000000000022,
+          "mode": [
+            0,
+            8
+          ],
+          "growth_pred": 2.2204460492503107e-15,
+          "growth_meas": -9.91837759379692e-12,
+          "mode_branch": "kinetic"
+        },
+        "diverged": false
+      }
+    ]
+  },
+  "c3_equivalent_equation": {
+    "criterion": "C3",
+    "threshold": {
+      "theta_window": [
+        0.02,
+        0.6
+      ],
+      "quad_fit_rel_dev_max": 0.1,
+      "viscosity_intercept_rel_err_max": 0.02,
+      "intercept_checked_at_ma": 0.0,
+      "direction": 0.0
+    },
+    "curves": [
+      {
+        "tau": 0.6,
+        "ma": 0.0,
+        "collision": "BGK(tau=0.6)",
+        "nu_phys": 0.033333333333333326,
+        "nu_num": [
+          0.033334400014633364,
+          0.03333760026618906,
+          0.03334293468347322,
+          0.03335040426661108,
+          0.03336001041489331,
+          0.03337175492521299,
+          0.033385639991763305,
+          0.03340166820476495,
+          0.03341984254893793,
+          0.03344016640141083,
+          0.03346264353019062,
+          0.03348727809136417,
+          0.03351407462680089,
+          0.033543038060734436,
+          0.03357417369705071,
+          0.03364298466631353,
+          0.03380282861402908,
+          0.03399658520904779,
+          0.0342247685297694,
+          0.034487963642694984,
+          0.0347868159949643,
+          0.035122017090051014,
+          0.03549428529632523,
+          0.03590434029756515,
+          0.036352869264312776,
+          0.0368404822826203,
+          0.037367653902151056
+        ],
+        "sigma": [
+          -1.3333760005853347e-05,
+          -5.3340160425902476e-05,
+          -0.0001200345648605036,
+          -0.00021344258730631084,
+          -0.00033360010414893305,
+          -0.000480553270923067,
+          -0.0006543585438385606,
+          -0.0008550827060419824,
+          -0.0010828028985855884,
+          -0.0013376066560564324,
+          -0.0016195919468612254,
+          -0.0019288672180625755,
+          -0.002265551444771739,
+          -0.002629774183961579,
+          -0.0030216756327345637,
+          -0.0038891290274258453,
+          -0.00591130457415583,
+          -0.008375971897669827,
+          -0.011297680946474884,
+          -0.014693696668542717,
+          -0.01858409458528995,
+          -0.022991859286801163,
+          -0.027942978768952312,
+          -0.033466524610386,
+          -0.03959470397926847,
+          -0.04636286399897005,
+          -0.05380942161909752
+        ],
+        "tracking_overlap_min": 0.9997989385708939,
+        "theta": [
+          0.02,
+          0.039999999999999994,
+          0.06,
+          0.07999999999999999,
+          0.09999999999999999,
+          0.11999999999999998,
+          0.13999999999999999,
+          0.15999999999999998,
+          0.17999999999999997,
+          0.19999999999999996,
+          0.21999999999999995,
+          0.23999999999999996,
+          0.25999999999999995,
+          0.27999999999999997,
+          0.3,
+          0.34,
+          0.4181818181818182,
+          0.49636363636363634,
+          0.5745454545454545,
+          0.6527272727272727,
+          0.730909090909091,
+          0.8090909090909091,
+          0.8872727272727272,
+          0.9654545454545453,
+          1.0436363636363635,
+          1.1218181818181818,
+          1.2
+        ],
+        "fit": {
+          "a": 0.03333248259178899,
+          "b": 0.0026968069351191973,
+          "max_rel_dev": 6.0286233859655394e-05,
+          "n": 19,
+          "intercept_rel_err": 2.5522246330095262e-05
+        },
+        "window": [
+          0.02,
+          0.6
+        ],
+        "pass_dev": true,
+        "pass_intercept": true,
+        "intercept_checked": true
+      },
+      {
+        "tau": 0.8,
+        "ma": 0.0,
+        "collision": "BGK(tau=0.8)",
+        "nu_phys": 0.10000000000000002,
+        "nu_num": [
+          0.10000213340127256,
+          0.10000853443701618,
+          0.10001920558883606,
+          0.10003415100239171,
+          0.10005337648620818,
+          0.10007688951969715,
+          0.10010469926320067,
+          0.10013681656691543,
+          0.1001732539844761,
+          0.10021402578748534,
+          0.10025914798216036,
+          0.10030863832832729,
+          0.10036251636038036,
+          0.10042080341017127,
+          0.10048352263280223,
+          0.10062235950016184,
+          0.10094608283394602,
+          0.10134081707882309,
+          0.10180907097162335,
+          0.10235389611382315,
+          0.10297894779211286,
+          0.10368856027990622,
+          0.10448783940978161,
+          0.10538277590325253,
+          0.10638038376455823,
+          0.10748886897694403,
+          0.1087178347194155
+        ],
+        "sigma": [
+          -4.000085336050903e-05,
+          -0.00016001365509922584,
+          -0.0003600691401198098,
+          -0.0006402185664153067,
+          -0.0010005337648620817,
+          -0.0014411072090836385,
+          -0.001962052105558733,
+          -0.0025635025041130344,
+          -0.003245613429097024,
+          -0.0040085610314994115,
+          -0.004852542762336559,
+          -0.00577777756771165,
+          -0.006784506105961711,
+          -0.007872990987357427,
+          -0.009043517036952201,
+          -0.01163194475821871,
+          -0.017653050518729736,
+          -0.024968032251463157,
+          -0.033607426746917086,
+          -0.04360817350428311,
+          -0.05501424753387309,
+          -0.06787744512207745,
+          -0.08225835381290257,
+          -0.09822754669903133,
+          -0.11586705230152586,
+          -0.13527216542797965,
+          -0.15655368199595832
+        ],
+        "tracking_overlap_min": 0.9997194471738345,
+        "theta": [
+          0.02,
+          0.039999999999999994,
+          0.06,
+          0.07999999999999999,
+          0.09999999999999999,
+          0.11999999999999998,
+          0.13999999999999999,
+          0.15999999999999998,
+          0.17999999999999997,
+          0.19999999999999996,
+          0.21999999999999995,
+          0.23999999999999996,
+          0.25999999999999995,
+          0.27999999999999997,
+          0.3,
+          0.34,
+          0.4181818181818182,
+          0.49636363636363634,
+          0.5745454545454545,
+          0.6527272727272727,
+          0.730909090909091,
+          0.8090909090909091,
+          0.8872727272727272,
+          0.9654545454545453,
+          1.0436363636363635,
+          1.1218181818181818,
+          1.2
+        ],
+        "fit": {
+          "a": 0.09999627958371056,
+          "b": 0.005463666088354889,
+          "max_rel_dev": 9.05780376863667e-05,
+          "n": 19,
+          "intercept_rel_err": 3.7204162894599595e-05
+        },
+        "window": [
+          0.02,
+          0.6
+        ],
+        "pass_dev": true,
+        "pass_intercept": true,
+        "intercept_checked": true
+      }
+    ],
+    "max_rel_dev": 9.05780376863667e-05,
+    "max_intercept_rel_err": 3.7204162894599595e-05,
+    "intercept_rel_err_by_ma": {
+      "0.6": {
+        "ma": 0.0,
+        "rel_err": 2.5522246330095262e-05
+      },
+      "0.8": {
+        "ma": 0.0,
+        "rel_err": 3.7204162894599595e-05
+      }
+    },
+    "pass": true
+  },
+  "c4_viscosity_band": {
+    "criterion": "C4",
+    "threshold": {
+      "ratio_threshold": 0.01,
+      "band_required_ma_max": 0.0
+    },
+    "rows": [
+      {
+        "tau": 0.6,
+        "ma": 0.0,
+        "nu_phys": 0.033333333333333326,
+        "theta": [
+          0.02,
+          0.08444444444444445,
+          0.14888888888888888,
+          0.21333333333333332,
+          0.2777777777777778,
+          0.3422222222222222,
+          0.4066666666666667,
+          0.47111111111111115,
+          0.5355555555555556,
+          0.6
+        ],
+        "nu_num": [
+          0.033334400014633364,
+          0.03335235426782578,
+          0.03339249888761614,
+          0.033454911652425326,
+          0.033539712732417265,
+          0.03364706391354246,
+          0.03377716746593251,
+          0.03393026458753093,
+          0.034106633325153846,
+          0.03430658584655625
+        ],
+        "ratio": [
+          3.200043900114525e-05,
+          0.0005706280347737154,
+          0.0017749666284844205,
+          0.003647349572760001,
+          0.006191381972518175,
+          0.009411917406274077,
+          0.013315023977975574,
+          0.017907937625928076,
+          0.023198999754615594,
+          0.029197575396687707
+        ],
+        "theta_max_below_1pct": 0.3422222222222222,
+        "bands_below_1pct": [
+          [
+            0.02,
+            0.3422222222222222
+          ]
+        ],
+        "tracking_overlap_min": 0.9999067520361653,
+        "monotone": true,
+        "intercept_shift": 3.200043900108973e-05
+      },
+      {
+        "tau": 0.6,
+        "ma": 0.2,
+        "nu_phys": 0.033333333333333326,
+        "theta": [
+          0.02,
+          0.08444444444444445,
+          0.14888888888888888,
+          0.21333333333333332,
+          0.2777777777777778,
+          0.3422222222222222,
+          0.4066666666666667,
+          0.47111111111111115,
+          0.5355555555555556,
+          0.6
+        ],
+        "nu_num": [
+          0.032000976380076235,
+          0.032017412773458966,
+          0.032054178294495625,
+          0.032111378272838595,
+          0.032189176815137256,
+          0.03228779755643191,
+          0.032407524664064706,
+          0.032548704065354435,
+          0.03271174486686581,
+          0.032897120914707305
+        ],
+        "ratio": [
+          0.03997070859771274,
+          0.03947761679623082,
+          0.038374651165131037,
+          0.03665865181484194,
+          0.0343246955458821,
+          0.03136607330704256,
+          0.027774260078058603,
+          0.023538878039366738,
+          0.018647653994025504,
+          0.013086372558780635
+        ],
+        "theta_max_below_1pct": 0.0,
+        "bands_below_1pct": [],
+        "tracking_overlap_min": 0.999904057172023,
+        "monotone": false,
+        "intercept_shift": -0.03997070859771279
+      },
+      {
+        "tau": 0.8,
+        "ma": 0.0,
+        "nu_phys": 0.10000000000000002,
+        "theta": [
+          0.02,
+          0.08444444444444445,
+          0.14888888888888888,
+          0.21333333333333332,
+          0.2777777777777778,
+          0.3422222222222222,
+          0.4066666666666667,
+          0.47111111111111115,
+          0.5355555555555556,
+          0.6
+        ],
+        "nu_num": [
+          0.10000213340127256,
+          0.10003805321242906,
+          0.10011844111616751,
+          0.10024362281376027,
+          0.10041410863794112,
+          0.10063059980066175,
+          0.10089399707297846,
+          0.10120541209717747,
+          0.10156618159333636,
+          0.10197788479610068
+        ],
+        "ratio": [
+          2.133401272544355e-05,
+          0.000380532124290428,
+          0.0011844111616748918,
+          0.0024362281376025248,
+          0.00414108637941099,
+          0.0063059980066172685,
+          0.008939970729784362,
+          0.012054120971774494,
+          0.01566181593336338,
+          0.019778847961006565
+        ],
+        "theta_max_below_1pct": 0.4066666666666667,
+        "bands_below_1pct": [
+          [
+            0.02,
+            0.4066666666666667
+          ]
+        ],
+        "tracking_overlap_min": 0.99984350859145,
+        "monotone": true,
+        "intercept_shift": 2.133401272552682e-05
+      },
+      {
+        "tau": 0.8,
+        "ma": 0.2,
+        "nu_phys": 0.10000000000000002,
+        "theta": [
+          0.02,
+          0.08444444444444445,
+          0.14888888888888888,
+          0.21333333333333332,
+          0.2777777777777778,
+          0.3422222222222222,
+          0.4066666666666667,
+          0.47111111111111115,
+          0.5355555555555556,
+          0.6
+        ],
+        "nu_num": [
+          0.09600195633161554,
+          0.09603489457962217,
+          0.09610860840989995,
+          0.096223393273708,
+          0.09637971210992498,
+          0.09657820102184267,
+          0.09681967719118573,
+          0.0971051492344438,
+          0.09743583027790331,
+          0.09781315411241544
+        ],
+        "ratio": [
+          0.03998043668384479,
+          0.039651054203778534,
+          0.03891391590100073,
+          0.03776606726292014,
+          0.036202878900750406,
+          0.0342179897815735,
+          0.03180322808814292,
+          0.028948507655562193,
+          0.025641697220967066,
+          0.021868458875845816
+        ],
+        "theta_max_below_1pct": 0.0,
+        "bands_below_1pct": [],
+        "tracking_overlap_min": 0.9998375757808502,
+        "monotone": false,
+        "intercept_shift": -0.03998043668384477
+      }
+    ],
+    "bands_by_ma": {
+      "0.0": {
+        "n_tau": 2,
+        "n_with_band": 2,
+        "theta_max_median": 0.37444444444444447,
+        "theta_max_min": 0.3422222222222222,
+        "theta_max_max": 0.4066666666666667
+      },
+      "0.2": {
+        "n_tau": 2,
+        "n_with_band": 0,
+        "theta_max_median": 0.0,
+        "theta_max_min": 0.0,
+        "theta_max_max": 0.0
+      }
+    },
+    "min_theta_max": 0.0,
+    "max_theta_max": 0.4066666666666667,
+    "intercept_shift_by_ma": {
+      "0.0": 2.6667225863308275e-05,
+      "0.2": -0.03997557264077878
+    },
+    "intercept_shift_vs_ma2": {
+      "n_points": 2,
+      "slope": -0.0015964685559416434,
+      "intercept": -0.03991171389854108,
+      "max_abs_resid": 4.864043066016288e-06,
+      "points": [
+        [
+          0.2,
+          -0.03997070859771279
+        ],
+        [
+          0.2,
+          -0.03998043668384477
+        ]
+      ]
+    },
+    "ma_threshold_from_shift": 2.5027635161391713,
+    "pass": true
+  }
+}
