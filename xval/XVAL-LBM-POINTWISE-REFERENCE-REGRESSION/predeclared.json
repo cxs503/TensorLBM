@@ -1,0 +1,86 @@
+{
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "round": 1,
+  "owner_standard_pct": 15.0,
+  "target_pct": 3.0,
+  "declared_before_running": true,
+  "decision": "Does the pointwise reference-regression discipline used by the OSS LBM generator lbmpy (lssfau/lbmpy: every generated collision kernel is compared point-by-point against an independently constructed reference operator, per lattice node and per discrete direction, with a declared tolerance) hold for TensorLBM's in-repo D2Q9/D3Q19 collision kernels -- SRT/BGK, TRT, MRT (Lallemand-Luo basis), regularised BGK -- and can it be parked as a machine-checked regression gate in this repository?",
+  "reference_source": {
+    "oss": "lssfau/lbmpy (lbmpy 2.0, pystencils 2.0), installed wheel",
+    "practice_read_from_source": [
+      "lbmpy/methods/creationfunctions.py :: create_srt / create_trt / create_mrt_raw -> symbolic collapse of the relaxation operator into per-direction update equations (the reference operator, independent of any kernel code path)",
+      "lbmpy/methods/abstractlbmethod.py :: LbmCollisionRule.lambdify(symbols, fixed_symbols) -> pointwise evaluation of exactly those equations on a numpy PDF field",
+      "lbmpy/tests/test_zero_centering.py -> assert_allclose(reference, kernel_output, rtol=1e-5): the repository's own regression style, i.e. reference arrays compared elementwise against kernel output",
+      "lbmpy/moments.py :: moment_matrix(moments, stencil) -> the moment basis of a method is a first-class object, so a MRT basis can be reconstructed and re-instantiated independently"
+    ],
+    "provenance_captured_at_runtime": "sha256 of the installed lbmpy modules used + version + the first symbolic update equation, written into summary.json (no hand transcription)"
+  },
+  "alternatives": {
+    "A0_oss_pointwise": "lbmpy 2.0 collision rule (create_srt / create_trt / MomentBasedLbMethod on the reconstructed Lallemand-Luo basis) lambdified and applied pointwise to the identical post-equilibrium PDF field, permuted into TensorLBM's direction order by matching velocity tuples",
+    "A1_from_definition": "independent numpy re-implementation of the same operator written from the textbook definition (moment transform + relaxation + reconstruction, or the BGK/TRT two-rate decomposition). Shorter independence distance than A0 (it is a re-derivation, not a second project), used only for the regularised-BGK arm where lbmpy has no counterpart",
+    "A2_controls": "positive controls that must FAIL: (C1) same comparison with the direction permutation removed, (C2) reference evaluated at tau*(1+1e-6) against the kernel at tau, (C3) reference at omega*(1+1e-6). A harness that passes these is vacuous and the whole run is rejected",
+    "A3_rejection": "declare the OSS cross-validation NOT_SUPPORTED and record the friction instead of substituting a weaker self-consistency check"
+  },
+  "hypothesis": "H1: every TensorLBM D2Q9 collision kernel reproduces the lbmpy pointwise reference operator to fp64 round-off (scaled max-abs deviation < 1e-10) for all tested relaxation times and flow amplitudes, and the D3Q19 BGK kernel agrees within its documented float32-lattice-constant floor (< 1e-6). H0 (falsifier): any active arm exceeds its predeclared threshold, or any positive control fails to be detected, or the reconstructed MRT moment basis does not reproduce the in-repo M matrix.",
+  "metrics": {
+    "eps_scaled_inf": "max_i |f_kernel,i - f_ref,i| / max_i |f_ref,i| over all Q directions and all nodes (primary gate; scale-free because the fields have a non-zero mean)",
+    "eps_rel_pointwise_max": "max_i |f_kernel,i - f_ref,i| / |f_ref,i| (reported only -- at zero crossings of a near-equilibrium field this metric is unbounded and is NOT a gate)",
+    "eps_rel_rms": "||f_kernel - f_ref||_2 / ||f_ref||_2 (secondary)",
+    "moment_err_rho": "|rho_kernel - rho_ref| / rho_ref (conserved moment, per node max)",
+    "moment_err_j": "|j_kernel - j_ref| / |j_ref| max over the two (three) momentum components",
+    "m_conservation_residual": "max |sum_i f_i^post - sum_i f_i^pre| / mean(f) -- a property of the reference AND the kernel, so a non-zero value flags both",
+    "mrt_basis_maxdiff": "max |M_lbmpy - M_repo| for the reconstructed Lallemand-Luo basis (must be 0 to round-off)",
+    "physical_decay_err_pct": "|nu_measured - nu_theory| / nu_theory * 100 for a periodic shear wave evolved 200 steps with (a) the TensorLBM kernel and (b) the lbmpy pointwise reference (physics-level counterpart of the code-level gate, the quantity the owner 15% standard applies to)"
+  },
+  "unit_of_analysis": "one arm point = one (kernel, lattice, tau, flow amplitude, dtype, seed) combination; each point yields the scalar metrics above",
+  "baseline_control": {
+    "physical_baseline": "the lbmpy 2.0 pointwise reference operator (A0) and, for the regularised kernel, the from-definition reference (A1)",
+    "numerical_control": "positive controls C1/C2/C3 above; a run whose controls are not detected is discarded",
+    "physics_baseline": "analytic shear-wave decay nu_theory = (tau - 1/2)/3 and the induced decay factor exp(-nu k^2 t)",
+    "comparison_limit": "both implementations are evaluated on the SAME input PDF field, so discretisation error cancels and only the operator algebra is under test; the arm therefore says nothing about which discretisation is more accurate, only whether the two implementations compute the same operator"
+  },
+  "predeclared_thresholds": {
+    "gate_fp64": 1e-10,
+    "gate_d3q19_float32_lattice": 1e-6,
+    "gate_from_definition_rlbm": 1e-10,
+    "mrt_basis_identity": 1e-12,
+    "control_detection_min": 1e-6,
+    "physical_decay_pct": 15.0,
+    "physical_decay_target_pct": 3.0,
+    "interpretation": "PASS iff every active arm is below its gate AND every positive control produces an error above control_detection_min AND the MRT basis identity holds AND the physics-level decay error is < 15%. The owner 15% band is the acceptance caliber for the physics arm; for the code-equivalence arms the appropriate caliber is round-off (a 15% band there would be vacuous, so the tighter predeclared gate is used and reported as such)."
+  },
+  "stopping_rule": "all arms are single-pass pointwise evaluations (no time marching except the physics arm, which is fixed at 200 steps); no threshold, no sweep range and no seed is changed after the first results are seen. Any arm failing its gate is reported as FAIL and is not re-tuned.",
+  "variables_changed": [
+    "collision model: SRT/BGK, TRT (Lambda=3/16), MRT (Lallemand-Luo basis, s_e/s_eps/s_q free), regularised BGK",
+    "kernel code path: solver.collide_bgk vs solver.collide_bgk_matmul (matmul reformulation of the same operator) vs solver.collide_mrt vs solver.collide_trt vs solver.collide_rlbm",
+    "lattice: D2Q9 (fp64) and D3Q19 (fp64 populations, float32 lattice constants by contract)",
+    "relaxation time: tau in {0.51, 0.55, 0.7, 1.0, 3.0}",
+    "flow amplitude: max|u| in {1e-5, 1e-3, 0.05, 0.15} (Mach 3e-5 .. 0.45)",
+    "dtype: float64 and float32",
+    "RNG seed: 5 seeds per configuration"
+  ],
+  "variables_held_fixed": [
+    "equilibrium: discrete 2nd-order Maxwellian, compressible (u = j/rho) on both sides -- lbmpy create_*(compressible=True), TensorLBM d2q9.equilibrium",
+    "the input PDF field is bit-identical for reference and kernel (single array, no copy drift)",
+    "domain 8x8 (D2Q9) / 4x4x4 (D3Q19) periodic, single-step collision only (no streaming in the code-equivalence arms)",
+    "one pointwise call per configuration; no time accumulation"
+  ],
+  "confounders": [
+    "direction ordering differs (lbmpy D2Q9: rest,N,S,W,E,...; TensorLBM: rest,E,N,W,S,...) -- handled by deriving the permutation from the velocity tuples, and C1 proves the permutation matters",
+    "weight precision: TensorLBM D3Q19 deliberately uses float32 lattice constants, which floors that arm at ~1e-8 -- predeclared as gate_d3q19_float32_lattice instead of pretending it is round-off",
+    "equilibrium convention: compressible vs incompressible and continuous vs discrete Maxwellian -- fixed by construction (a mismatch here would show up as an O(1) failure, which is the point of the test)",
+    "moment-basis representation: the MRT reference re-derives the in-repo M matrix in lbmpy moment polynomials, so both sides share that basis by construction (declared, not a confounder)",
+    "floating-point summation order differs between a vectorised torch reduction and a generated scalar expression: irreducible round-off, bounded by the fp64 gates"
+  ],
+  "repetitions": "5 RNG seeds x every (kernel, tau) configuration; the gate is applied to the worst seed (max), the table reports the median too. Rationale: the deviation is round-off dominated (expected ~1e-15), so 5 draws already separate round-off from a systematic O(1e-6) defect by 10 orders of magnitude; more draws buy nothing.",
+  "environment": {
+    "python": "3.11",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "lbmpy": "2.0 (installed wheel, sha256 records in summary.json)",
+    "pystencils": "2.0",
+    "repo_commit": "branch agent/m18192",
+    "note": "runs on the controller node; ~2 s per arm point, well below the 10 min cluster threshold (no cluster_queue submission needed)"
+  },
+  "analysis_plan": "per-arm metrics computed on the raw arrays, aggregated by (kernel, tau) over seeds with max and median; gates applied to the max over seeds and amplitudes; figures: (1) pointwise error map vs |f| for the worst arm, (2) eps_scaled_inf vs tau for all kernels with the gate line, (3) eps vs flow amplitude / Mach, (4) shear-wave decay vs analytic. No outlier removal, no dropping of arms."
+}
