@@ -1,0 +1,1 @@
+ERROR DSLSyntaxError: line 23: unknown instruction 'nonsense' (known: ['stencil', 'polynomial', 'equilibrium', 'relaxation', 'domain', 'boundary', 'init', 'force', 'run'])
