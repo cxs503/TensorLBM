@@ -1,0 +1,25 @@
+{
+  "cases_dir": "/srv/tensor/agent/work/m20996/xval/XVAL-LBM-INSTRUCTION-DSL-TESTS-SH/dsl_shell_suite/cases",
+  "total": 17,
+  "passed": 17,
+  "failed": 0,
+  "results": [
+    {"case": "i01_unknown_instruction", "status": "PASS", "detail": "i01_unknown_instruction: a word that is not an instruction must name the offender and the vocabulary"},
+    {"case": "i02_unknown_argument", "status": "PASS", "detail": "i02_unknown_argument: an argument outside the instruction's whitelist must list what is allowed"},
+    {"case": "i03_expression_not_executable", "status": "PASS", "detail": "i03_expression_not_executable: instruction expressions are sandboxed: attribute access is not lowered"},
+    {"case": "i04_relaxation_out_of_range", "status": "PASS", "detail": "i04_relaxation_out_of_range: s=2.5 would give a negative viscosity; the invariant guard must refuse it"},
+    {"case": "i05_singular_moment_matrix", "status": "PASS", "detail": "i05_singular_moment_matrix: duplicated moment polynomial makes M singular -> no invertible lowering"},
+    {"case": "i06_equilibrium_loses_mass", "status": "PASS", "detail": "i06_equilibrium_loses_mass: an equilibrium that does not recover rho is not an equilibrium"},
+    {"case": "i07_unsupported_boundary_mix", "status": "PASS", "detail": "i07_unsupported_boundary_mix: a boundary layout the 2-D lowering cannot honour is refused, not approximated"},
+    {"case": "i08_three_dimensional_stencil", "status": "PASS", "detail": "i08_three_dimensional_stencil: dim=3 stencil must be refused by the 2-D lowering instead of silently run"},
+    {"case": "i09_mach_guard", "status": "PASS", "detail": "i09_mach_guard: u=0.5 lattice units (Ma~0.87) is beyond the incompressible guard"},
+    {"case": "i10_missing_run_instruction", "status": "PASS", "detail": "i10_missing_run_instruction: a program without run control cannot be executed"},
+    {"case": "i11_duplicate_instruction", "status": "PASS", "detail": "i11_duplicate_instruction: a second 'domain' line silently overriding the first is a defect, not a shorthand"},
+    {"case": "i12_steps_below_one", "status": "PASS", "detail": "i12_steps_below_one: run steps=0 would produce a record that claims a run happened"},
+    {"case": "v01_static_uniform", "status": "PASS", "detail": "v01_static_uniform: uniform rho=1 at rest, 10 steps: no spurious velocity or kinetic energy"},
+    {"case": "v02_force_unit_momentum", "status": "PASS", "detail": "v02_force_unit_momentum: body force gx=1e-6 for 100 steps: u_max = n*g exactly (momentum invariant)"},
+    {"case": "v03_tg_decay_32", "status": "PASS", "detail": "v03_tg_decay_32: Taylor-Green 32^2 A=0.05, 200 steps: u_max and KE against exp(-2nu k^2 t) decay"},
+    {"case": "v04_channel_poiseuille", "status": "PASS", "detail": "v04_channel_poiseuille: channel 8x22 walls y=1/2,ny-3/2 (H=ny-2), g=1e-5, 12000 steps: u_max = gH^2/(8nu)"},
+    {"case": "v05_lattice_invariants", "status": "PASS", "detail": "v05_lattice_invariants: scheme self-checks surfaced through the CLI: cs2=1/3, tau=1/s, nu=(tau-1/2)/3"}
+  ]
+}
