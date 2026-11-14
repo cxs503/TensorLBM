@@ -1,0 +1,17 @@
+[
+ {
+  "name": "w28_fig1_anchor_and_ittc57.png",
+  "caption": "图1 锚件 6 点 C_T(V) 与 ITTC-1957 C_F(Re)：独立复算与登记值逐点闭合",
+  "sha256_bytes": 95685
+ },
+ {
+  "name": "w28_fig2_transposition_vs_anchor.png",
+  "caption": "图2 三档×三臂同 Re 口径换算（OP1）与锚 C_T ±15% 带：细化使偏差朝同一方向增大，且 OP2 相差数百个百分点（算子依赖）",
+  "sha256_bytes": 183652
+ },
+ {
+  "name": "w28_fig3_gci_and_order.png",
+  "caption": "图3 三档 GCI 与观测收敛阶（三臂全报）：p≈1.0–1.6 ≪ 1.8，GCI 15–31% ≫ 5%，等加密比捷径会把 p 伪装成 >2",
+  "sha256_bytes": 67303
+ }
+]
