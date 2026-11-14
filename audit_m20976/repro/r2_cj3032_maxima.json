@@ -1,0 +1,114 @@
+{
+ "source_job": "cj3032",
+ "source": "/root/tp-agent/cluster/jobs/cj3032.log output_tail, programmatic regex extraction",
+ "window_T": [
+  0.5,
+  4.0
+ ],
+ "g": 5e-05,
+ "h0_over_a": 2.0,
+ "tau_default": 1.0,
+ "note": "max abs rel err over T in [0.5,4] vs Martin&Moyce 1952; scalars only - per-T series were lost when the job crashed after printing the summary; recompute jobs cj3085/cj3087 queued",
+ "rows": [
+  {
+   "label": "tensorlbm_koerner_a16_tau1",
+   "a": 16,
+   "tau": 1.0,
+   "Z_cell_err_pct": 28.16,
+   "Z_sub05_err_pct": 27.39,
+   "u_max": 0.2377,
+   "inventory_drift_pct": 0.0322,
+   "wall_s": 54.62
+  },
+  {
+   "label": "tensorlbm_koerner_a24_tau1",
+   "a": 24,
+   "tau": 1.0,
+   "Z_cell_err_pct": 16.67,
+   "Z_sub05_err_pct": 15.88,
+   "u_max": 0.2406,
+   "inventory_drift_pct": 0.0585,
+   "wall_s": 104.04
+  },
+  {
+   "label": "tensorlbm_koerner_a32_tau1",
+   "a": 32,
+   "tau": 1.0,
+   "Z_cell_err_pct": 13.81,
+   "Z_sub05_err_pct": 14.66,
+   "u_max": 0.2442,
+   "inventory_drift_pct": 0.0531,
+   "wall_s": 269.9
+  },
+  {
+   "label": "tensorlbm_koerner_a48_tau1",
+   "a": 48,
+   "tau": 1.0,
+   "Z_cell_err_pct": 28.05,
+   "Z_sub05_err_pct": 27.37,
+   "u_max": 0.2517,
+   "inventory_drift_pct": 0.0783,
+   "wall_s": 733.93
+  },
+  {
+   "label": "tensorlbm_koerner_a64_tau1",
+   "a": 64,
+   "tau": 1.0,
+   "Z_cell_err_pct": 42.86,
+   "Z_sub05_err_pct": 42.19,
+   "u_max": 0.2587,
+   "inventory_drift_pct": 0.0991,
+   "wall_s": 1398.86
+  },
+  {
+   "label": "oss_port_a48_tau1",
+   "a": 48,
+   "tau": 1.0,
+   "Z_cell_err_pct": 79.37,
+   "Z_sub05_err_pct": 70.05,
+   "u_max": 0.8165,
+   "inventory_drift_pct": 609.7923,
+   "wall_s": 561.79
+  },
+  {
+   "label": "tensorlbm_koerner_a32_tau0.6",
+   "a": 32,
+   "tau": 0.6,
+   "Z_cell_err_pct": 66.62,
+   "Z_sub05_err_pct": 65.14,
+   "u_max": 0.253,
+   "inventory_drift_pct": 0.0665,
+   "wall_s": 268.69
+  },
+  {
+   "label": "tensorlbm_koerner_a32_tau0.8",
+   "a": 32,
+   "tau": 0.8,
+   "Z_cell_err_pct": 25.67,
+   "Z_sub05_err_pct": 24.76,
+   "u_max": 0.2475,
+   "inventory_drift_pct": 0.07,
+   "wall_s": 215.09
+  },
+  {
+   "label": "tensorlbm_koerner_a32_tau1.2",
+   "a": 32,
+   "tau": 1.2,
+   "Z_cell_err_pct": 15.96,
+   "Z_sub05_err_pct": 16.32,
+   "u_max": 0.2421,
+   "inventory_drift_pct": 0.0768,
+   "wall_s": 181.49
+  },
+  {
+   "label": "tensorlbm_koerner_a32_tau1.4",
+   "a": 32,
+   "tau": 1.4,
+   "Z_cell_err_pct": 18.12,
+   "Z_sub05_err_pct": 17.07,
+   "u_max": 0.2406,
+   "inventory_drift_pct": 0.0592,
+   "wall_s": 215.14
+  }
+ ]
+}
