@@ -1,0 +1,92 @@
+{
+ "annulus_checks": [
+  {
+   "R": 4.0,
+   "R_out": 16.0,
+   "c_a_closed": 1.1333333333333333,
+   "c_a_numeric_n2000": 1.1370718469546406,
+   "c_a_numeric_n8000": 1.1342669900598545
+  },
+  {
+   "R": 6.0,
+   "R_out": 24.0,
+   "c_a_closed": 1.1333333333333333,
+   "c_a_numeric_n2000": 1.1370718469437806,
+   "c_a_numeric_n8000": 1.1342669901687101
+  },
+  {
+   "R": 8.0,
+   "R_out": 64.0,
+   "c_a_closed": 1.0317460317460319,
+   "c_a_numeric_n2000": 1.0391313811934058,
+   "c_a_numeric_n8000": 1.033588566744695
+  }
+ ],
+ "repo_potential": [
+  {
+   "box": 4.0,
+   "R": 4.0,
+   "nx": 32,
+   "c_a_raw": 1.0566933686678006,
+   "c_a_area_normalised": 1.0214461920319424,
+   "body_area": 52.0,
+   "annulus_inscribed": 1.1333333333333333,
+   "annulus_areaeq": 1.1032426838154878
+  },
+  {
+   "box": 6.0,
+   "R": 4.0,
+   "nx": 48,
+   "c_a_raw": 1.117984282766606,
+   "c_a_area_normalised": 1.0806926798672072,
+   "body_area": 52.0,
+   "annulus_inscribed": 1.0571428571428572,
+   "annulus_areaeq": 1.044606391805407
+  },
+  {
+   "box": 12.0,
+   "R": 4.0,
+   "nx": 96,
+   "c_a_raw": 1.1565056247465637,
+   "c_a_area_normalised": 1.117929099858178,
+   "body_area": 52.0,
+   "annulus_inscribed": 1.013986013986014,
+   "annulus_areaeq": 1.010968129692439
+  }
+ ],
+ "shipped_cost": {
+  "base(default)": {
+   "D": 24,
+   "box": 12.0,
+   "kc": 1.0,
+   "beta": 100.0,
+   "period_steps": 600.0,
+   "n_spin_pred_periods": 364.756261112416,
+   "n_steps_to_converge": 328280.6350011744,
+   "n_steps_shipped": 2700.0,
+   "ratio": 121.58542037080532
+  },
+  "kc05": {
+   "D": 24,
+   "box": 12.0,
+   "kc": 0.5,
+   "beta": 100.0,
+   "period_steps": 300.0,
+   "n_spin_pred_periods": 364.756261112416,
+   "n_steps_to_converge": 164140.3175005872,
+   "n_steps_shipped": 1350.0,
+   "ratio": 121.58542037080532
+  },
+  "res16": {
+   "D": 16,
+   "box": 12.0,
+   "kc": 1.0,
+   "beta": 100.0,
+   "period_steps": 400.0,
+   "n_spin_pred_periods": 364.756261112416,
+   "n_steps_to_converge": 218853.75666744958,
+   "n_steps_shipped": 1800.0,
+   "ratio": 121.58542037080532
+  }
+ }
+}
