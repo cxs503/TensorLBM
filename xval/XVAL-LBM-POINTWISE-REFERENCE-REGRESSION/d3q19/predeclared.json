@@ -1,0 +1,81 @@
+{
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "round": 3,
+  "written_before_any_run": true,
+  "question": "Round 2 (merged, m20532) verified the D2Q9 whole step (collide+stream, 30 steps) pointwise against lbmpy and explicitly left 'D3Q19 whole step' as debt. This round closes that debt with the same discipline: every arm is compared pointwise (per node, per discrete direction) against an independently constructed reference step.",
+  "scope": {
+    "lattice": "D3Q19",
+    "grids": [[8, 8, 8], [6, 9, 13]],
+    "grid_note": "(6,9,13) is asymmetric in all three axes so an axis transposition cannot cancel",
+    "taus": [0.55, 0.7, 1.0],
+    "steps": 30,
+    "seeds": [0, 1],
+    "initial_field": "discrete-equilibrium + sinusoidal rho/u perturbation + 1e-3 non-equilibrium noise, built by lbmpy_pointwise_ref.make_test_field('D3Q19', ...) -- the SAME float64 array is handed to both sides",
+    "reference_step": "S_ref = definition_stream3d (numpy np.roll, refcore3d) o Collide_lbmpy (LbmCollisionRule.lambdify, continuous_equilibrium=False)",
+    "arms": {
+      "A1_solver3d_bgk": "tensorlbm.solver3d.collide_bgk3d + tensorlbm.diff3d.stream3d",
+      "A2_diff3d_step": "tensorlbm.diff3d.step3d (own collide_bgk3d + roll streaming)",
+      "A3_adv_bgk_d3q19": "tensorlbm.collision_d3q19_advanced.collide_bgk_d3q19 + diff3d.stream3d",
+      "A4_mrt_degenerate": "solver3d.collide_mrt3d with s_e=s_eps=s_q=s_pi=1/tau (algebraically BGK)",
+      "A5_mrt_native": "solver3d.collide_mrt3d with native rates (s_e=1.19, s_eps=1.4, s_q=1.2, s_pi=1.19)"
+    }
+  },
+  "acceptance_criteria": {
+    "C1_code_equivalence": {
+      "metric": "eps_inf = max|f_arm - f_ref| / max|f_ref| at t=30 (worst over seeds), for A1..A4 against the SRT reference",
+      "threshold": 1e-10,
+      "rationale": "fp64 round-off accumulation over 30 steps; round 2 measured 3.3e-14 for the D2Q9 analogue, so 1e-10 leaves >3 orders of margin while still catching any algebraic difference"
+    },
+    "C2_mrt_native_vs_symbolic": {
+      "metric": "eps_inf of A5 against MomentBasedLbMethod built from the repo's own _M_D3Q19_DATA",
+      "threshold": 1e-10
+    },
+    "C3_mrt_basis_reconstruction": {
+      "metric": "max|M_lbmpy - M_repo|",
+      "threshold": 1e-12
+    },
+    "C4_conservation": {
+      "metric": "per-step relative mass drift |sum f^{n+1} - sum f^n| / sum f^n and max momentum drift / total mass",
+      "threshold": 1e-12
+    },
+    "C5_convention_classification": {
+      "prediction": "a reference built with continuous_equilibrium=True must NOT match the repo (repo uses the discrete moment-conserving equilibrium); the mismatch is a convention artefact, classified WITHHELD-from-equivalence, not a defect",
+      "metric": "eps_inf(A1 vs continuous-equilibrium reference) at t=1 and t=30, plus sum_i f_i^eq,cont / rho at rest",
+      "expected_rest_mass_ratio": 1.219,
+      "threshold": "report only -- this arm is not an acceptance gate; it must not be silently omitted"
+    },
+    "C6_physics_shear_wave": {
+      "anchor": "u_x = u0 sin(k z) on a periodic box, amplitude decays as u0 exp(-nu k_eff^2 t), k_eff = 2 sin(k/2)",
+      "metric": "relative error of the least-squares decay rate vs nu k^2 (continuum) and vs nu k_eff^2 (lattice dispersion)",
+      "threshold": 0.03,
+      "resolution_study": [16, 32]
+    },
+    "C7_physics_abc": {
+      "anchor": "Arnold-Beltrami-Childress flow, curl u = u => exact decay exp(-nu t)",
+      "metric": "relative error of the fitted decay rate vs nu",
+      "threshold": 0.03,
+      "resolution_study": [12, 16, 24],
+      "note": "if the coarsest grid exceeds 3% the resolution study must show the error vanishing, otherwise C7 is FAIL (honest)"
+    },
+    "C8_sensitivity_controls": {
+      "tau_perturbation": {"reference_tau_scaled_by": 1.001, "must_detect_above": 1e-11},
+      "permutation_control": {"operation": "apply the reference collision with the direction permutation set to identity", "must_detect_above": 1e-3},
+      "purpose": "prove the metric is sensitive; a green gate on an insensitive metric is worthless"
+    },
+    "C9_frozen_refdata": {
+      "metric": "re-running the frozen gate reproduces the frozen reference and the frozen repo outputs",
+      "reference_tolerance": 1e-12,
+      "repo_output_tolerance": 1e-13,
+      "note": "the frozen bundle also carries per-array sha256 so tampering is caught"
+    }
+  },
+  "stopping_rules": [
+    "If a code-equivalence arm stays above 1e-8 after removing a genuine setup bug, STOP and write the defect up as a finding instead of widening the tolerance.",
+    "No threshold may be relaxed after seeing a result; additional arms may only be ADDED.",
+    "If the physics arm misses 3% on the coarsest grid, report the coarse error as-is and let the resolution study decide the verdict."
+  ],
+  "environment": {
+    "expected": "python 3.11, numpy fp64, torch fp64, lbmpy 2.0 (provenance hashes recorded in summary.json)",
+    "no_lbmpy_fallback": "the frozen bundle (C9) makes the regression gate independent of lbmpy"
+  }
+}
