@@ -1,13 +1,52 @@
-"""Adjoint sensitivity analysis for TensorLBM.
+"""Adjoint sensitivity analysis for TensorLBM -- FROZEN-FIELD SURROGATE ONLY.
 
-Computes shape sensitivity (gradient of an objective w.r.t. boundary node
-positions) using the discrete adjoint approach applied to 2-D LBM fields.
+.. warning::
 
-For LBM the adjoint equations can be derived from the BGK lattice Boltzmann
-operator.  In this implementation we use *algorithmic differentiation* (AD)
-via PyTorch autograd to compute exact gradients through a frozen-field
-surrogate objective, making it mesh-agnostic and easy to couple with the
-existing solver.
+   **Verdict GAP-DIFFLBM-ADJOINT-VERDICT (2026-11-14): this module is a
+   frozen-field surrogate and must NOT be used to drive a shape optimisation.**
+   Every result it returns is flagged ``shape_derivative_only=True`` and is
+   rejected by :func:`optimization_path_eligible`.
+
+   Measured on the reference case of
+   ``benchmarks/adjoint_verdict_diff_lbm.py`` (plane channel, SDF disk,
+   Re = 40, objective = lift, parameter = disk centre ``y_c``):
+
+   ===========================  =========  ==========================
+   quantity                     value      meaning
+   ===========================  =========  ==========================
+   cos(this module, unrolled AD)  -1.000    exactly anti-parallel
+   |g_surrogate| / |g_true|        2.289   amplitude also wrong
+   optimisation step (y_c + 2)    21.0 -> 22.5   target moved the wrong way
+   same step with the true grad.  21.0 -> 19.5   (``C_L`` values, scaled)
+   ===========================  =========  ==========================
+
+   The reason is structural, not numerical: this module differentiates the
+   *objective only*, on a flow field produced by an ordinary forward solve, so
+   the derivative contains the explicit (mask/metric) term of the shape
+   derivative but **not the flow response** ``∂J/∂f · ∂f/∂y_c``.  For lift the
+   flow response is not a correction, it is the whole signal (the wake and the
+   wall-induced pressure asymmetry *are* the lift), which is why the surrogate
+   comes out anti-parallel.
+
+   Use :func:`tensorlbm.shape_gradient.shape_gradient_through_flow` instead:
+   it keeps the geometric parameter inside the autograd graph of the LBM step
+   chain and returns ``shape_derivative_only=False`` /
+   ``includes_flow_response=True`` (verified against finite differences of the
+   converged solver in the same benchmark).
+
+What this module still is good for
+----------------------------------
+A cheap, mesh-agnostic *diagnostic*: "which boundary nodes does the objective
+feel most strongly", i.e. a distribution/attention map over a frozen snapshot.
+It answers no question of the form "how would the flow have evolved".
+
+Implementation note
+-------------------
+The sensitivity is obtained with PyTorch autograd applied to the objective
+functional of the *frozen* fields ``(rho, ux, uy)`` and propagated to the
+boundary nodes with a central field difference; ``perturbation_scale`` is a
+uniform factor on that product.  Because a uniform factor cannot change a
+cosine similarity, the recorded verdict does not depend on its value.
 
 Objectives supported:
   - drag coefficient C_D
@@ -19,16 +58,57 @@ Usage
 -----
 >>> from tensorlbm.adjoint import adjoint_sensitivity
 >>> result = adjoint_sensitivity(rho, ux, uy, obstacle_mask, objective="drag")
+>>> result["shape_derivative_only"]
+True
 """
 
 from __future__ import annotations
 
+import math
 from typing import Literal
 
 import torch
 import torch.nn.functional as F
 
 ObjectiveType = Literal["drag", "lift", "pressure_loss", "mixing_uniformity"]
+
+#: Contract flag of the whole module (GAP-DIFFLBM-ADJOINT-VERDICT).
+SHAPE_DERIVATIVE_ONLY: bool = True
+
+#: Measured evidence behind :data:`SHAPE_DERIVATIVE_ONLY`
+#: (``benchmarks/adjoint_verdict_diff_lbm.py``, artifact
+#: ``artifacts/adjoint_verdict_diff_lbm.json``).
+FROZEN_FIELD_VERDICT: dict = {
+    "anchor": "GAP-DIFFLBM-ADJOINT-VERDICT",
+    "objective": "lift",
+    "parameter": "y_c (disk centre, transverse)",
+    "cos_vs_unrolled_ad": -1.000,
+    "amplitude_ratio_vs_true": 2.289,
+    "optimization_trajectory_reversed": True,
+    "shape_derivative_only": True,
+    "includes_flow_response": False,
+    "optimization_path_eligible": False,
+    "replacement": "tensorlbm.shape_gradient.shape_gradient_through_flow",
+}
+
+
+def optimization_path_eligible(result: dict | None = None) -> bool:
+    """Gate: may this gradient enter a shape-optimisation loop?
+
+    ``adjoint.py`` answers **False** by construction.  The gate is written so
+    that any future gradient source has to *claim* both flags ---
+    ``shape_derivative_only is False`` **and** ``includes_flow_response is
+    True`` --- before it is accepted, instead of being trusted by default::
+
+        >>> optimization_path_eligible(adjoint_sensitivity(rho, ux, uy, mask))
+        False
+    """
+    if result is None:
+        return False
+    return bool(
+        result.get("shape_derivative_only") is False
+        and result.get("includes_flow_response") is True
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -61,10 +141,7 @@ def _objective_lift(
 ) -> torch.Tensor:
     """Lift proxy: integral of pressure × surface-normal-y over obstacle."""
     p = cs2 * (rho - rho.mean())
-    surf_top = mask & (~F.pad(mask, (0, 0, 0, 1))[: 1 + mask.shape[0] - 1, :])
-    surf_bottom = mask & (~F.pad(mask, (0, 0, 1, 0))[1:, :])
-    # trim to same shape
-    mask.shape[0]
+    # roll is periodic; the top/bottom rows are one-sided in a bounded domain
     surf_top = mask & ~(torch.roll(mask, -1, dims=0))
     surf_bottom = mask & ~(torch.roll(mask, 1, dims=0))
     lift = (p * surf_top.float()).sum() - (p * surf_bottom.float()).sum()
@@ -139,14 +216,23 @@ def adjoint_sensitivity(
     perturbation_scale: float = 1e-3,
     finite_diff_check: bool = False,
 ) -> dict:
-    """Compute shape sensitivity gradients using PyTorch autograd.
+    """Frozen-field shape sensitivity (``shape_derivative_only=True``).
+
+    .. warning::
+
+       **Diagnostic only -- not a shape derivative.**  The returned
+       ``sensitivity_x`` / ``sensitivity_y`` are ``∂J/∂(x_i, y_i)`` computed
+       with the flow field *frozen*; the flow response ``∂J/∂f · ∂f/∂y_c`` is
+       absent, and for a lift objective that term dominates and even flips the
+       sign (measured cos = -1.000 against the unrolled AD gradient, see
+       :data:`FROZEN_FIELD_VERDICT`).  The result therefore carries
+       ``shape_derivative_only=True`` and ``optimization_path_eligible=False``;
+       :func:`optimization_path_eligible` rejects it, and a shape-optimisation
+       loop must use :func:`tensorlbm.shape_gradient.shape_gradient_through_flow`.
 
     For each boundary node the gradient ∂J/∂(x_i, y_i) is estimated by
-    computing ∂J/∂rho · ∂rho/∂x_i + ∂J/∂u · ∂u/∂x_i through the AD graph.
-
-    In practice this uses a smooth surrogate: we perturb the density field
-    at boundary-adjacent cells and measure the objective change.  The result
-    is a per-node sensitivity vector that can guide shape optimisation.
+    computing ∂J/∂rho · ∂rho/∂x_i + ∂J/∂u · ∂u/∂x_i through the AD graph
+    evaluated on the frozen fields.
 
     Parameters
     ----------
@@ -164,6 +250,10 @@ def adjoint_sensitivity(
     Returns
     -------
     dict with keys:
+        shape_derivative_only : bool  – always ``True`` (no flow response)
+        includes_flow_response : bool – always ``False``
+        optimization_path_eligible : bool – always ``False``; see the gate
+        frozen_field_verdict : dict – measured evidence for the flag
         objective_value : float
         sensitivity_x : list[float]  – ∂J/∂x for each boundary node
         sensitivity_y : list[float]  – ∂J/∂y for each boundary node
@@ -213,6 +303,9 @@ def adjoint_sensitivity(
             "node_y": [],
             "gradient_norm": 0.0,
             "most_sensitive_node": {},
+            "shape_derivative_only": True,
+            "includes_flow_response": False,
+            "optimization_path_eligible": False,
         }
 
     # Shape sensitivity via implicit differentiation:
@@ -276,6 +369,10 @@ def adjoint_sensitivity(
         "node_y": ys.tolist(),
         "gradient_norm": grad_norm,
         "most_sensitive_node": most_sensitive,
+        "shape_derivative_only": True,
+        "includes_flow_response": False,
+        "optimization_path_eligible": False,
+        "frozen_field_verdict": dict(FROZEN_FIELD_VERDICT),
     }
 
     if finite_diff_check and n_nodes > 0:
@@ -294,6 +391,3 @@ def adjoint_sensitivity(
         }
 
     return result
-
-
-import math  # noqa: E402
