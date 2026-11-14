@@ -1,0 +1,59 @@
+### anchor couette (documented repro: --anchor-ny 22 --anchor-steps 10000 / --dfg-re 20 --dfg-steps 10000 --dfg-sample-from 7000)
+  profile_max_rel_err          artifact=1.18206833211e-11  repro=1.18206833211e-11  MATCH
+  force_on_moving_wall         artifact=-0.00200000000008  repro=-0.00200000000008  MATCH
+  force_analytic_magnitude     artifact=0.002  repro=0.002  MATCH
+  force_rel_err                artifact=3.85253894758e-11  repro=3.85253894758e-11  MATCH
+
+### anchor poiseuille (documented repro: --anchor-ny 22 --anchor-steps 10000 / --dfg-re 20 --dfg-steps 10000 --dfg-sample-from 7000)
+  profile_max_rel_err          artifact=0.0023057644293  repro=0.0023057644293  MATCH
+  force_on_lower_wall          artifact=0.00159999999998  repro=0.00159999999998  MATCH
+  force_on_upper_wall          artifact=0.00159999999998  repro=0.00159999999998  MATCH
+  force_analytic_per_wall      artifact=0.0016  repro=0.0016  MATCH
+  force_rel_err                artifact=1.47859426525e-11  repro=1.47859426525e-11  MATCH
+
+### anchor dfg (documented repro: --anchor-ny 22 --anchor-steps 10000 / --dfg-re 20 --dfg-steps 10000 --dfg-sample-from 7000)
+  C_D_mean                     artifact=74.8322906494  repro=74.8322906494  MATCH
+  C_L_amplitude                artifact=9.67975699595e-14  repro=9.67975699595e-14  MATCH
+  C_D_rel_err_to_mid           artifact=12.4108047759  repro=12.4108047759  MATCH
+
+overall: anchors block reproduced bit-for-bit
+
+### parameter set actually used by the delivered anchors (artifact)
+{
+ "couette": {
+  "ny": 22,
+  "nx": 8,
+  "uw": 0.05,
+  "tau": 0.8,
+  "nu": 0.10000000000000002,
+  "steps": 10000
+ },
+ "poiseuille": {
+  "ny": 22,
+  "nx": 8,
+  "nu": 0.1,
+  "tau": 0.8,
+  "body_force": 2e-05,
+  "steps": 10000
+ },
+ "dfg": {
+  "D_cells": 8.0,
+  "ny": 35,
+  "nx": 176,
+  "um": 0.2,
+  "re": 20.0,
+  "nu": 0.08,
+  "tau": 0.74,
+  "blockage": 0.24242424242424243,
+  "steps": 10000,
+  "sample_from": 7000,
+  "clock_s": 51.6
+ }
+}
+
+### doc claim vs artifact (finding F1/F2)
+doc section 3, appended rows: 'Couette anchor 34x8 ... 20000 steps', 'Poiseuille 34x8 ... 20000 steps',
+                             'DFG 2-D-2 D=10, 43x220, Re=100, tau=0.53, 60000 steps'
+artifact:                    couette/poiseuille ny=22 nx=8 steps=10000; DFG 2-D-1 Re=20 steps=10000 ->
+                             the appended rows were never executed; section 4 compares the Re=20 run
+                             against the 2-D-2 (Re=100) reference range 3.22-3.24.

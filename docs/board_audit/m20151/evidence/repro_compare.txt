@@ -1,0 +1,30 @@
+### documented repro: --part grad_main  --grad-ny 30 --grad-nx 96 --grad-dcells 8 --grad-steps 200
+closure        theta0  artifact ad_drag  repro ad_drag          d  art rel_err_h2 repro rel_err_h2
+bb_static       0.060      -0.096351586   -0.096351586   0.00e+00      4.6137e-06       4.6137e-06 MATCH
+bb_static       0.250       8.310134882    8.310134882   0.00e+00      4.0083e-05       4.0083e-05 MATCH
+bb_moving       0.075      -0.419738885   -0.419738885   0.00e+00      9.8379e-06       9.8379e-06 MATCH
+bb_moving       0.250       7.747618270    7.747618270   0.00e+00      3.6943e-05       3.6943e-05 MATCH
+penalization   10.300       0.049129650    0.049129650   0.00e+00      1.6681e-05       1.6681e-05 MATCH
+penalization    0.250      11.363144804   11.363144804   0.00e+00      1.8035e-05       1.8035e-05 MATCH
+
+### documented repro: --part grad_coarse --grad-ny 26 --grad-nx 88 --grad-dcells 7 --grad-tau 0.6 --grad-steps 200
+closure        theta0  artifact ad_drag  repro ad_drag          d  art rel_err_h2 repro rel_err_h2
+bb_static       0.060      -0.129993677   -0.129993677   0.00e+00      6.5901e-06       6.5901e-06 MATCH
+bb_static       0.254       2.288697216    2.288697216   0.00e+00      6.0371e-04       6.0371e-04 MATCH
+bb_moving       0.076      -0.405228380   -0.405228380   0.00e+00      2.4707e-06       2.4707e-06 MATCH
+bb_moving       0.254       1.540648431    1.540648431   0.00e+00      9.7636e-04       9.7636e-04 MATCH
+penalization    7.300       0.050408832    0.050408832   0.00e+00      2.6200e-05       2.6200e-05 MATCH
+penalization    0.254       6.717619998    6.717619998   0.00e+00      1.7887e-05       1.7887e-05 MATCH
+
+### documented repro: --part grad_horizon --grad-ny 30 --grad-nx 96 --grad-dcells 8 --grad-steps 200
+closure        theta0  artifact ad_drag  repro ad_drag          d  art rel_err_h2 repro rel_err_h2
+bb_static       0.060       0.029643963    0.029643963   0.00e+00      1.5441e-05       1.5441e-05 MATCH
+bb_static       0.250       6.740379196    6.740379196   0.00e+00      3.3363e-05       3.3363e-05 MATCH
+bb_moving       0.075      -0.238142455   -0.238142455   0.00e+00      6.6668e-06       6.6668e-06 MATCH
+bb_moving       0.250       6.471810386    6.471810386   0.00e+00      2.9436e-05       2.9436e-05 MATCH
+penalization   10.300       0.002820439    0.002820439   0.00e+00      5.3462e-05       5.3462e-05 MATCH
+penalization    0.250       8.243978685    8.243978685   0.00e+00      2.4570e-05       2.4570e-05 MATCH
+
+overall: documented repro commands reproduce the delivered blocks BIT-FOR-BIT (to double precision)
+note: the delivered `lattice` block (ny=44, nx=140, D=10, u0=0.2, from an earlier --part run) does NOT describe
+      the gradient_matrix in the same file; the documented 30x96 / D=8 / 200-step command does (finding F2/F3).
