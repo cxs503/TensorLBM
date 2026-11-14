@@ -315,8 +315,11 @@ def analytic_normals(indices: np.ndarray, kind: str, geom: dict) -> np.ndarray:
 
 
 def angle_deg(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    c = np.clip((a * b).sum(1) / (np.linalg.norm(a, axis=1) * np.linalg.norm(b, axis=1)), -1.0, 1.0)
-    return np.degrees(np.arccos(c))
+    den = np.linalg.norm(a, axis=1) * np.linalg.norm(b, axis=1)
+    num = (a * b).sum(1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        c = np.where(den > 0.0, num / np.where(den > 0.0, den, 1.0), np.nan)
+    return np.degrees(np.arccos(np.clip(c, -1.0, 1.0)))
 
 
 def rel_err(n: np.ndarray, ref: np.ndarray) -> np.ndarray:
@@ -403,6 +406,36 @@ def evaluate(case: dict, stencil: dict, exe: Path, do_oss: bool = True) -> dict:
         m = np.linalg.norm(g, axis=1, keepdims=True)
         return np.divide(g, m, out=np.zeros_like(g), where=m > 0)
 
+    # --- well-posedness certificate ---------------------------------------
+    # A row's normal is only a property of the geometry if the wall does not
+    # meet a non-periodic face inside the row's support (radius 2 + n_smooth):
+    # there the ghost band only replicates the face plane along the face normal,
+    # i.e. the solid is continued in a direction the wall may not have.
+    wp = M.well_posed_mask(idx, walls, n_smooth=4)
+    wp &= inphys
+    ill = inphys & ~wp
+    thresh = 0.15                                   # owner acceptance band
+    e_all = np.linalg.norm(ours["normals"] - ref, axis=1)
+    res["well_posed"] = {
+        "radius": M.support_radius(4),
+        "n_well_posed": int(wp.sum()),
+        "n_ill_posed": int(ill.sum()),
+        "well_posed": stats(ours["normals"], wp),
+        "ill_posed": stats(ours["normals"], ill),
+        # certificate: every node outside the 15 % band is ill posed, none inside
+        "band": thresh,
+        "n_outliers": int((inphys & (e_all >= thresh)).sum()),
+        "n_outliers_well_posed": int((wp & (e_all >= thresh)).sum()),
+        "n_outliers_ill_posed": int((ill & (e_all >= thresh)).sum()),
+    }
+    # error decay with the distance to the nearest domain face (1 = on the face)
+    face_dist = np.minimum(idx, np.asarray(walls.shape)[None, :] - idx + 1).min(axis=1)  # 1 = on a face
+    bins = {}
+    for d in (1, 2, 3, 4, 5, 6):
+        bins[f"d={d}"] = stats(ours["normals"], inphys & (face_dist == d))
+    bins["d>=7"] = stats(ours["normals"], inphys & (face_dist >= 7))
+    res["face_distance_bins"] = bins
+
     res["central_smooth4"] = stats(unit(at(central_difference_field(F4))))
     res["central_nosmooth"] = stats(unit(at(central_difference_field(F0))))
     res["iso8_nosmooth"] = stats(unit(at(M.iso8_gradient(F0))))
@@ -411,11 +444,17 @@ def evaluate(case: dict, stencil: dict, exe: Path, do_oss: bool = True) -> dict:
 
     # --- smoothing-iteration sweep (iso8)
     sweep = {}
+    sweep_wp = {}
     for it in (0, 1, 2, 4, 8, 16):
         Fi = M.smooth_solid_fraction(markers.astype(float), it, pad)
-        sweep[str(it)] = stats(unit(at(M.iso8_gradient(Fi))))
+        nr = unit(at(M.iso8_gradient(Fi)))
+        sweep[str(it)] = stats(nr)
+        # the well-posed set depends on the smoothing depth too
+        wp_it = M.well_posed_mask(idx, walls, n_smooth=it) & inphys
+        sweep_wp[str(it)] = stats(nr, wp_it)
         del Fi
     res["smooth_sweep_iso8"] = sweep
+    res["smooth_sweep_iso8_wellposed"] = sweep_wp
 
     # --- downstream: mean curvature of the iso8 level set, kappa = div(n)
     def curvature(fields):
@@ -540,6 +579,14 @@ def _write_tables(results) -> None:
         for r in results:
             for it, st in r["smooth_sweep_iso8"].items():
                 f.write(f"{r['case']},iso8_smooth_sweep,{it},{st['mean_rel']:.6g},{st['max_rel']:.6g}\n")
+            w = r["well_posed"]
+            for cls in ("well_posed", "ill_posed"):
+                st = w[cls]
+                f.write(f"{r['case']},iso8_smooth4_{cls},{cls},"
+                        f"{st['mean_rel']:.6g},{st['max_rel']:.6g}\n")
+            for key, st in r["face_distance_bins"].items():
+                f.write(f"{r['case']},iso8_smooth4_face_dist,{key},"
+                        f"{st['mean_rel']:.6g},{st['max_rel']:.6g}\n")
             for arm in ("curvature_iso8", "curvature_central"):
                 c = r[arm]
                 f.write(f"{r['case']},{arm},kappa_mean,{c['kappa_mean']:.6g},"
@@ -658,6 +705,28 @@ def _figures(results) -> None:
     ax.set_title("operator anisotropy on analytic linear fields")
     fig.tight_layout()
     fig.savefig(figdir / "fig4_operator_anisotropy.png", dpi=140)
+    plt.close(fig)
+
+    # (5) where the outliers live: error vs distance to the nearest domain face
+    fig, ax = plt.subplots(figsize=(6.6, 4.3))
+    for r in results:
+        keys = ["d=1", "d=2", "d=3", "d=4", "d=5", "d=6", "d>=7"]
+        xs = np.arange(len(keys))
+        ys = [r["face_distance_bins"][k]["max_rel"] for k in keys]
+        ax.plot(xs, [np.nan if y is None else max(y, 1e-12) for y in ys], marker="o",
+                label=f"{r['case']} max")
+    ax.axhline(0.15, color="r", ls=":", label="owner band 15%")
+    ax.axvline(3.0, color="0.6", ls="--", lw=1)
+    ax.text(3.05, 1e-4, "support radius 2+n_smooth = 6", fontsize=7, color="0.35")
+    ax.set_xticks(np.arange(7))
+    ax.set_xticklabels(["1", "2", "3", "4", "5", "6", ">=7"])
+    ax.set_xlabel("distance of the node to the nearest domain face [cells]")
+    ax.set_ylabel("max relative normal error")
+    ax.set_yscale("log")
+    ax.legend(fontsize=7)
+    ax.set_title("all >15 % rows are wall/face junctions (ill posed by construction)")
+    fig.tight_layout()
+    fig.savefig(figdir / "fig5_face_distance_error.png", dpi=140)
     plt.close(fig)
 
     print("figures ->", sorted(p.name for p in figdir.glob("*.png")))
