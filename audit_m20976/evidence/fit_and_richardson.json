@@ -1,0 +1,107 @@
+{
+ "ladder_used": [
+  [
+   16,
+   28.16,
+   27.39
+  ],
+  [
+   24,
+   16.67,
+   15.88
+  ],
+  [
+   32,
+   13.81,
+   14.66
+  ],
+  [
+   48,
+   28.05,
+   27.37
+  ],
+  [
+   64,
+   42.86,
+   42.19
+  ]
+ ],
+ "fits": {
+  "Z_cell": {
+   "ok": false,
+   "reason": "no admissible (E_inf, p) in grid",
+   "n": 5,
+   "samples": [
+    [
+     16.0,
+     28.16
+    ],
+    [
+     24.0,
+     16.67
+    ],
+    [
+     32.0,
+     13.81
+    ],
+    [
+     48.0,
+     28.05
+    ],
+    [
+     64.0,
+     42.86
+    ]
+   ]
+  },
+  "Z_sub0.05": {
+   "ok": false,
+   "reason": "no admissible (E_inf, p) in grid",
+   "n": 5,
+   "samples": [
+    [
+     16.0,
+     27.39
+    ],
+    [
+     24.0,
+     15.88
+    ],
+    [
+     32.0,
+     14.66
+    ],
+    [
+     48.0,
+     27.37
+    ],
+    [
+     64.0,
+     42.19
+    ]
+   ]
+  }
+ },
+ "richardson_3grid": {
+  "Z_cell": {
+   "status": "NOT_COMPUTABLE_FROM_ARTEFACT",
+   "why": "KeyError: 'points'"
+  },
+  "Z_sub0.05": {
+   "status": "NOT_COMPUTABLE_FROM_ARTEFACT",
+   "why": "KeyError: 'points'"
+  }
+ },
+ "h1": {
+  "Z_cell": {
+   "E_inf_below_3pct": false,
+   "monotone_falling": null,
+   "verdict": "H1 falsified"
+  },
+  "Z_sub0.05": {
+   "E_inf_below_3pct": false,
+   "monotone_falling": null,
+   "verdict": "H1 falsified"
+  }
+ }
+}
