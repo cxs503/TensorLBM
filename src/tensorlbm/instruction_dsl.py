@@ -341,6 +341,10 @@ def parse(text: str) -> Program:
     init: Dict[str, Any] | None = None
     force_pairs: Dict[str, str] = {}
     run_pairs: Dict[str, str] | None = None
+    # scalar instructions are singletons: a second declaration silently
+    # replacing the first would let a copy/paste or a typo change the run
+    # without any diagnostic, so duplicates are rejected outright.
+    scalar_seen: Dict[str, str] = {}
 
     for lineno, raw in enumerate(text.splitlines(), 1):
         line = raw.split("#", 1)[0].strip()
@@ -355,6 +359,13 @@ def parse(text: str) -> Program:
                 f"{where}: unknown instruction {head!r} "
                 f"(known: {list(_KNOWN_INSTRUCTIONS)})"
             )
+        if name not in ("polynomial", "equilibrium"):
+            if name in scalar_seen:
+                raise DSLSyntaxError(
+                    f"{where}: duplicate instruction {name!r} "
+                    f"(first declared at {scalar_seen[name]})"
+                )
+            scalar_seen[name] = where
         if name in ("polynomial", "equilibrium"):
             if not rest:
                 raise DSLSyntaxError(f"{where}: {name} needs an expression")

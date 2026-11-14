@@ -1,0 +1,1 @@
+ERROR DSLSemanticError: stencil dim=3 is not supported by the 2-D lowering
