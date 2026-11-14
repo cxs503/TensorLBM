@@ -1,0 +1,232 @@
+{
+  "schema": "tensorlbm-t3-slots-v1",
+  "version": "1.0",
+  "generated_by": "benchmarks/validation_matrix/t3_coverage.py",
+  "purpose": "Machine-readable contract for the T3 nine-case lineage (GAP-LBM-T3-BENCH). The validation matrix judges cases; this file states which physics each slot actually requires, which physics each case exercises, and therefore which slots a passing case may (and may not) credit.",
+  "rules": [
+    "slot_state=verified: every required component has at least one case with status==passed, physics_class in slot.requires.physics_class and no disqualifying credit_caveat.",
+    "slot_state=partial: at least one required component is covered, but not all.",
+    "slot_state=gap: no required component is covered by a qualifying passing case.",
+    "A passing case whose physics_class is not in the slot's requirement is recorded as substitute evidence and never credits the slot.",
+    "credit_caveat downgrades a component to 'proxy' (recorded, not counted as full credit).",
+    "level_basis=grid|resolution counts as convergence evidence; temporal_split is fit stability only and is reported as a caveat."
+  ],
+  "slots": [
+    {
+      "slot": "cavity",
+      "lineage": "1. 方腔流 (lid-driven cavity, Ghia 1982)",
+      "requires": {
+        "physics_class": [
+          "incompressible_recirculating"
+        ],
+        "components": [
+          "field_profile_vs_experiment"
+        ]
+      }
+    },
+    {
+      "slot": "cylinder",
+      "lineage": "2. 圆柱绕流 (circular cylinder, Braza 1986)",
+      "requires": {
+        "physics_class": [
+          "incompressible_bluff_body"
+        ],
+        "components": [
+          "drag",
+          "strouhal"
+        ]
+      }
+    },
+    {
+      "slot": "sphere",
+      "lineage": "3. 球体阻力 (sphere drag, Schiller-Naumann)",
+      "requires": {
+        "physics_class": [
+          "incompressible_bluff_body"
+        ],
+        "components": [
+          "drag"
+        ]
+      }
+    },
+    {
+      "slot": "channel",
+      "lineage": "4. 湍流槽道 (turbulent channel, Moser DNS)",
+      "requires": {
+        "physics_class": [
+          "wall_bounded_turbulent"
+        ],
+        "components": [
+          "uplus_profile_vs_dns"
+        ]
+      }
+    },
+    {
+      "slot": "taylor_green",
+      "lineage": "5. Taylor-Green 涡衰减 (analytic)",
+      "requires": {
+        "physics_class": [
+          "periodic_analytic"
+        ],
+        "components": [
+          "decay_rate_vs_analytic"
+        ]
+      }
+    },
+    {
+      "slot": "static_droplet",
+      "lineage": "6. 静态液滴 (Laplace law)",
+      "requires": {
+        "physics_class": [
+          "multiphase_capillary"
+        ],
+        "components": [
+          "laplace_pressure"
+        ]
+      }
+    },
+    {
+      "slot": "rayleigh_taylor",
+      "lineage": "7. Rayleigh-Taylor 线性增长 (critical-mode dispersion)",
+      "requires": {
+        "physics_class": [
+          "multiphase_instability"
+        ],
+        "components": [
+          "linear_growth_rate"
+        ]
+      }
+    },
+    {
+      "slot": "dam_break",
+      "lineage": "8. 溃坝 (Ritter 1892 self-similar)",
+      "requires": {
+        "physics_class": [
+          "free_surface_gravity"
+        ],
+        "components": [
+          "front_position",
+          "profile"
+        ]
+      }
+    },
+    {
+      "slot": "ship",
+      "lineage": "9. 船体阻力与波浪 (resistance + wave)",
+      "requires": {
+        "physics_class": [
+          "marine_hydrodynamics"
+        ],
+        "components": [
+          "resistance",
+          "wave"
+        ]
+      }
+    }
+  ],
+  "case_attributes": {
+    "cavity_re100": {
+      "physics_class": "incompressible_recirculating",
+      "components": [
+        "field_profile_vs_experiment"
+      ],
+      "level_basis": "grid"
+    },
+    "cylinder_re100": {
+      "physics_class": "incompressible_bluff_body",
+      "components": [
+        "drag",
+        "strouhal"
+      ],
+      "level_basis": "grid"
+    },
+    "sphere_re100": {
+      "physics_class": "incompressible_bluff_body",
+      "components": [
+        "drag"
+      ],
+      "level_basis": "grid"
+    },
+    "channel_turb_re180": {
+      "physics_class": "wall_bounded_turbulent",
+      "components": [
+        "uplus_profile_vs_dns"
+      ],
+      "level_basis": "grid",
+      "evidence_addendum": {
+        "note": "The matrix entry for this case points at benchmarks/pending/channel_turb_3d/result.json, whose grids.* metric paths do not exist, so the slot row reads 'unresolved' and the measured FAIL ladder is not visible. The ladder is frozen in validation_report.json (sha256 recorded by t3_coverage.py) and the recorded gate number is re-derived by benchmarks/validation_matrix/channel_budget.py.",
+        "ladder_source": "benchmarks/pending/channel_turb_3d/validation_report.json",
+        "dns_anchor": "benchmarks/pending/channel_turb_3d/dns_ref/mkm180.csv",
+        "gate_reproduction": "benchmarks/pending/channel_turb_3d/gate_reproduction.json"
+      }
+    },
+    "channel_core_path_ci": {
+      "physics_class": "wall_bounded_laminar",
+      "components": [
+        "uplus_profile_vs_dns"
+      ],
+      "level_basis": "resolution",
+      "substitute_for": "channel",
+      "note": "Laminar body-force channel through the fused core path. It is a real verified anchor, but the channel slot's lineage is the turbulent Moser-DNS case, so this case must not credit that slot."
+    },
+    "taylor_green_2d": {
+      "physics_class": "periodic_analytic",
+      "components": [
+        "decay_rate_vs_analytic"
+      ],
+      "level_basis": "temporal_split",
+      "level_basis_caveat": "Two levels are two halves of one run (fit stability), not a grid/resolution series. The slot credit rests on the analytic decay rate, not on grid convergence."
+    },
+    "static_droplet_laplace_ci": {
+      "physics_class": "multiphase_capillary",
+      "components": [
+        "laplace_pressure"
+      ],
+      "level_basis": "grid"
+    },
+    "rayleigh_taylor_rt": {
+      "physics_class": "multiphase_instability",
+      "components": [
+        "linear_growth_rate"
+      ],
+      "level_basis": "none"
+    },
+    "dam_break_ritter_ci": {
+      "physics_class": "free_surface_gravity",
+      "components": [
+        "front_position",
+        "profile"
+      ],
+      "level_basis": "grid"
+    },
+    "ship_resistance_suboff": {
+      "physics_class": "marine_hydrodynamics",
+      "components": [
+        "resistance"
+      ],
+      "level_basis": "grid",
+      "credit_caveats": [
+        "friction_proxy_anchor"
+      ],
+      "note": "The declared anchor is the Blasius laminar flat-plate friction coefficient at Re=1000 (S=pi*D*L), i.e. a friction proxy, not a hull experiment at that Reynolds number; the artifact itself records that the TODO Ct=0.004 belongs to the full-scale Re=2e6 case. Recorded as proxy credit."
+    },
+    "ship_wave_michell": {
+      "physics_class": "marine_hydrodynamics",
+      "components": [
+        "wave"
+      ],
+      "level_basis": "none",
+      "note": "WITHHELD: the 3-D free-surface C_W against Michell was never obtained (cost), and the 2-D substitute was 8.8-13.8% period error."
+    },
+    "cylinder_re100_dfg": {
+      "physics_class": "incompressible_bluff_body",
+      "components": [
+        "drag",
+        "strouhal",
+        "lift_amplitude"
+      ],
+      "level_basis": "grid",
+      "note": "Schafer-Turek 2D-2 confined cylinder (24% blockage). Machine verdict failed on lift amplitude; drag/Strouhal are recorded per level."
+    }
+  }
+}
