@@ -43,8 +43,11 @@ def test_stream_conv_2d_is_bitwise_identical_to_gather(dtype):
     f = torch.rand(9, 17, 23, dtype=dtype)
     a, b = stream_gather(f), SC.stream_conv_2d(f)
     assert torch.equal(a, b)
-    # conservation holds to round-off (the two summations use different orders)
-    assert float(f.sum()) == __import__('pytest').approx(float(b.sum()), rel=1e-15)
+    # conservation holds to round-off (the two summations accumulate in a different order,
+    # so the achievable tolerance is the summation error of the dtype, not 1 ulp of the values:
+    # float32 over 9*17*23 = 3519 terms already loses ~1e-6 relative)
+    tol = 1e-14 if dtype is torch.float64 else 1e-5
+    assert float(f.sum()) == __import__('pytest').approx(float(b.sum()), rel=tol)
 
 
 def test_stream_conv_2d_keeps_uniform_state_uniform():
