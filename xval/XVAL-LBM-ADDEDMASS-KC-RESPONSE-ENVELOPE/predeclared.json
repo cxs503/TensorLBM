@@ -1,0 +1,42 @@
+{
+  "anchor": "XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE",
+  "parent_anchor": "XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY",
+  "parent_reports": [17584, 17643],
+  "declared_by": "m20245",
+  "declared_at": "2026-11-14",
+  "problem": "The shipped arm oscillatory_cylinder_inertia reports C_I = 1.5524 / 1.8317 (+55 % / +83 %) vs the analytic C_a = 1 at KC = 0.486 / 0.944 (m18997, reproduced bit-for-bit by the m19108 board audit). Is that number (a) nonlinear/history physics, (b) a spin-up deficit, or (c) an estimator bias?  The parent mission left it as an honest FAIL; the audit could only confirm reproducibility.",
+  "exploratory_probes_before_declaration": [
+    "probe A (diag_phase.py): D=16 box=12 KC=0.2 beta=100, shipped transient: C_I=-0.12, C_Q=+1.24 at 8 periods of spin-up -> the force is 95 deg out of phase with the drive, i.e. a transient, not added mass.",
+    "probe B (diag_beta.py): same point, beta = 50...1600 -> C_I and C_Q are beta-independent, so the contamination is not viscous.",
+    "probe C (diag_windows.py): per-period harmonic fits drift ~+20 deg/period and U grows monotonically -> the periodic state is not reached.",
+    "probe D (diag_spinup.py): D=12 box=4 beta=25, transient 2/10/25/50 periods -> residual 0.178/0.025/0.002/0.005 and phase drift +1.38/-0.13/0.00/+0.01 deg/period: the criterion N_spin ~ beta*(box/2pi)^2 = 10.1 periods holds."
+  ],
+  "hypotheses": {
+    "H1_spinup": "The discarded transient of the shipped arm (1.5 periods, 3 kept) is far shorter than the slowest viscous mode of the box.  Predicted requirement N_spin ~ beta*(L/(2*pi*D))^2 periods.  Test: at fixed (D,KC,beta,box), raising the transient to >= 1.5*N_spin must drop the first-harmonic residual by > 10x and the per-period phase drift to < 1 deg/period.",
+    "H2_beta": "With H1 satisfied, C_I approaches the potential reference as beta grows; the quadrature force C_Q is allowed to stay finite (viscous stress) and must decrease with beta.",
+    "H3_kc": "With H1 satisfied, C_I is KC-independent to < 5 % for KC <= 0.2 (linear-response regime).",
+    "H4_falsification": "If, at converged spin-up, C_I stays > 15 % above the potential reference for every beta >= 100 at KC <= 0.2, the estimator is biased and the honest FAIL cannot be repaired by spin-up; this is reported as such instead of being tuned away."
+  },
+  "references": {
+    "R1_unbounded": "C_a = m_a/(rho*pi*R^2) = 1 (circular cylinder, potential flow, per unit length).",
+    "R2_annulus_closed": "Concentric circular container: C_a = (Ro^2+R^2)/(Ro^2-R^2) (Lamb 1932 §71).  Two radii are used for the square periodic cell - inscribed Ro=L/2 and equal-area Ro=L/sqrt(pi) - as a bracket for confinement, not as a theorem.",
+    "R2_numeric": "Independent radial FD + energy-integral check of R2 (different formula path from the closed form).",
+    "R3_repo_same_mask": "fsi_added_mass.potential_added_mass on the same mask/domain: kept to measure the discretisation bias of the reference the arm consumes, not as a truth anchor."
+  },
+  "metrics": {
+    "primary": "relative error of C_I (E1 momentum exchange, area-normalised) and of C_Q vs each reference",
+    "secondary": [
+      "per-period phase drift (deg/period) and per-period C_I spread in the measured window",
+      "first-harmonic fit residual (resid_rel)",
+      "estimator spread |E1 - E2| in C_I",
+      "achieved KC / beta / Re, acoustic number omega*L/c_s, Stokes layer thickness / R"
+    ],
+    "thresholds": {"owner_precision": 0.15, "in_house_strict": 0.03},
+    "reproducibility": "deterministic float64, fixed arm set, no seeds; every number in the report is recomputed from runs/*.json by analyze.py"
+  },
+  "predeclared_verdict_rule": "Pass (envelope established) iff there exists a declared arm with (a) H1 satisfied (drift < 1 deg/period, residual < 0.05), and (b) |C_I - C_a^ref|/C_a^ref < 0.15 for the bracket median of R2, and (c) the passing arm is not the one with the largest cost.  Otherwise honest FAIL with the measured dependence reported.",
+  "not_in_scope": [
+    "re-running the shipped defaults (D=24 box=12 beta=100) to convergence: N_spin ~ 365 periods = ~1.5e5 steps at 288^2 cells, ~1 h per arm, not affordable in this slot",
+    "any viscous (Bessel / oscillatory-Stokes) exact reference for C_Q: not computed here, so low-beta C_Q is reported as WITHHELD, not as validated"
+  ]
+}
