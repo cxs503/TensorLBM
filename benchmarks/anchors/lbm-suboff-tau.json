@@ -1,0 +1,914 @@
+{
+ "schema": "lbm-suboff-tau-anchor/v1",
+ "anchor_grade": "TRANSCRIBED-SECONDARY",
+ "grade_rationale": {
+ "gate": "anchor-gate-v3",
+ "anchor_grade": "TRANSCRIBED-SECONDARY",
+ "grade_letter": "C",
+ "grade_scale": {
+  "A": "primary document verified in this environment (page/PDF read, primary doc sha256 registered)",
+  "B": "transcription + verbatim quote + source-document sha256 (primary hashed, not re-read)",
+  "C": "second-hand transcription (no primary document acquired, no primary-document sha256)",
+  "D": "second-hand reproduction / model-derived placeholder"
+ },
+ "state_used_for_grading": {
+  "status": "TRANSCRIBED",
+  "acquisition_status": "WITHHELD",
+  "rule": "anchor-grade derives from (status, acquisition_status): a value that is only a transcription of an in-repo secondary archive, while the primary reports are not acquired, is grade C = TRANSCRIBED-SECONDARY"
+ },
+ "why_not_A_or_B": "A requires the primary report to be read in this environment; B additionally requires a sha256 of the primary document itself. Neither holds: DTRC/SHD-1298-01 (Groves, Huang & Chang 1989) and CRDKNSWC/HD-1298-11 (Liu & Huang 1998, Table 14) are both acquisition_status=WITHHELD -- the sandbox is offline (DNS failure exit 6 / timeout exit 28 are recorded on this file) and no copy exists in the environment. Only sha256 of in-repo secondary archives could be registered.",
+ "primary_documents": [
+  {
+   "doc_id": "DTRC-SHD-1298-01",
+   "citation": "P. E. Groves, T. T. Huang, S. S. Chang (1989). Geometric Characteristics of DARPA SUBOFF Models. DTRC Report SHD-1298-01.",
+   "role": "hull geometry / offset tables",
+   "acquisition_status": "WITHHELD",
+   "n_recorded_probes": 3,
+   "probe_examples": [
+    "curl -m 20 -sS https://apps.dtic.mil/sti/citations/ADA359226",
+    "curl -m 15 -sS https://www.google.com",
+    "find / -iname '*1298*' -o -iname '*SHD*' \\( -iname '*.pdf' -o -iname '*.txt' -o -iname '*.html' \\)"
+   ]
+  },
+  {
+   "doc_id": "CRDKNSWC-HD-1298-11",
+   "citation": "H.-L. Liu, T. T. Huang (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "role": "bare-hull (AFF-1) tow-tank resistance table used as the drag anchor",
+   "acquisition_status": "WITHHELD",
+   "n_recorded_probes": 2,
+   "probe_examples": [
+    "curl -m 20 -sS https://apps.dtic.mil/sti/citations/ADA359226",
+    "curl -m 15 -sS https://www.google.com"
+   ]
+  }
+ ],
+ "claim_boundary": {
+  "may_be_cited_as_published_experimental_benchmark": false,
+  "may_be_cited_as": "second-hand transcription of Table 14 (report p.23) as archived in-repo",
+  "refused_labels": [
+   "A",
+   "B",
+   "PRIMARY-VERIFIED",
+   "PRIMARY-OBTAINED"
+  ],
+  "consequence": "no agreement claim against this anchor may be promoted above 'agrees with a second-hand transcription'; an A/B claim requires re-acquiring the primaries"
+ },
+ "what_would_raise_the_grade": [
+  "obtain CRDKNSWC/HD-1298-11 (DTIC ADA359226), store it in-repo with sha256, re-read Table 14 page 23 and match all 6 (V, R_T) pairs -> grade B; then read DTRC/SHD-1298-01 Table 1 for the geometry -> grade A"
+ ],
+ "registered_by": {
+  "task_key": "paper-exp-lbm-suboff-tau-13",
+  "mission_id": 19903,
+  "previous_task_key": "paper-exp-lbm-suboff-tau-12",
+  "previous_mission_id": 18960,
+  "why_this_task": "W27 graded the anchor only in prose (status=TRANSCRIBED / acquisition_status=WITHHELD, prose grade PRIMARY_TABLE_SECOND_HAND); the machine-readable gate-v3 grading fields were missing, so no gate could refuse an A/B promotion"
+ },
+ "amendment": {
+  "kind": "single contiguous byte insertion into the W27 blob (no other byte changed)",
+  "inserted_keys": [
+   "anchor_grade",
+   "grade_rationale"
+  ],
+  "insert_offset_bytes": 41,
+  "branch_blob_sha256": "b452bccd7d35ce1c294b159342b2d0e0fbb75c6fd5c574975df732abe7b54f88",
+  "verify": "bytes[:offset] + bytes[offset+len(inserted_text):] must hash to the branch blob sha256"
+ }
+},
+ "anchor_id": "lbm-suboff-tau",
+ "task_key": "paper-exp-lbm-suboff-tau-12",
+ "mission_id": 18960,
+ "repo": "TensorLBM",
+ "discipline": "ship-total-performance / resistance (bare submarine hull)",
+ "generated_by": "benchmarks/anchors/lbm_suboff_tau_anchor.py",
+ "generated_utc": "2026-11-13T18:45:58+00:00",
+ "environment": {
+  "python": "3.11.6",
+  "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+  "network": "unavailable (DNS/connect failures recorded under /documents/*/acquisition)"
+ },
+ "status": "TRANSCRIBED",
+ "status_meaning": {
+  "TRANSCRIBED": "values are verbatim transcriptions of the source table archived in-repo; the primary document has not been re-read in this environment",
+  "VERIFIED": "values re-read from the primary document (page image/PDF) and matched here",
+  "OBTAINED": "primary document acquired and stored in-repo with sha256"
+ },
+ "acquisition_status": "WITHHELD",
+ "gate_contract": {
+  "reader": "any anchor gate may load this file and read /status, /acquisition_status, /anchor_points[*].{Re,C_T,C_F.value}, /conventions, /geometry",
+  "accepted_status_values": [
+   "TRANSCRIBED",
+   "VERIFIED",
+   "OBTAINED"
+  ],
+  "accepted_acquisition_status_values": [
+   "OBTAINED",
+   "TRANSCRIBED",
+   "WITHHELD"
+  ],
+  "loader": "benchmarks/anchors/lbm_suboff_tau_anchor.py::load_anchor",
+  "required_top_level_keys": [
+   "schema",
+   "status",
+   "acquisition_status",
+   "conventions",
+   "geometry",
+   "anchor_points",
+   "documents",
+   "criteria"
+  ],
+  "no_hand_copy_rule": "anchor_points[*] values were parsed at build time from the quoted archives; a consumer must not treat any value without a /provenance block as evidence"
+ },
+ "case": {
+  "hull": "DARPA SUBOFF AFF-1 bare hull (configuration 1)",
+  "geometry": "axisymmetric body of revolution, L_max = 4.356 m, D_max = 0.508 m",
+  "facility": "DTRC tow tank (US Navy David Taylor Research Center)",
+  "quantity": "total resistance coefficient C_T at the tow-tank Reynolds number",
+  "n_points": 6
+ },
+ "conventions": {
+  "rho_kg_m3": 1000.0,
+  "rho_provenance": "declared fresh-water density assumption (convention, not measured)",
+  "nu_m2_s": 1.139e-06,
+  "nu_provenance": {
+   "path": "docs/IN12_S6_WALL_LADDER.md",
+   "line": 35,
+   "quote": "AFF-8 SUBOFF，L_max=4.356 m，WSA=5.998 m²，五速拖曳锚点（EFD，refs_lock 锁定），Re 以 L_max、nu=1.139e-6 m²/s 计。",
+   "nu_m2_s": 1.139e-06
+  },
+  "kn_to_ms": 0.514444,
+  "kn_to_ms_provenance": "international knot definition 1852 m / 3600 s",
+  "re_length": "L_max",
+  "ct_definition": "C_T = R_T / (0.5 * rho * V^2 * S_wetted)",
+  "cf_definition": "C_F = 0.075/(log10(Re)-2)^2  (ITTC-1957 correlation line)",
+  "reference_area": "WSA = 5.998 m^2 (Table 1 transcription of the experimental-data report)",
+  "ittc57_transcription": {
+   "formula": {
+    "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+    "line": 89,
+    "quote": "| ITTC-1957 Cf（仅摩擦，供对照） | 1.2×10⁷ | 0.00291 ±5% | ITTC 1957 模型-实船相关线 [A]（公式 Cf=0.075/(lgRe−2)²） | [A] |"
+   },
+   "known_answers": [
+    {
+     "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+     "line": 89,
+     "quote": "| ITTC-1957 Cf（仅摩擦，供对照） | 1.2×10⁷ | 0.00291 ±5% | ITTC 1957 模型-实船相关线 [A]（公式 Cf=0.075/(lgRe−2)²） | [A] |",
+     "re": 12000000.0,
+     "cf_recorded": 0.00291,
+     "declared_band_pct": 5.0
+    },
+    {
+     "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+     "line": 90,
+     "quote": "| ITTC-1957 Cf（对照） | 2.0×10⁶ | 0.00405 ±5% | 同上 [A] | [A] |",
+     "re": 2000000.0,
+     "cf_recorded": 0.00405,
+     "declared_band_pct": 5.0
+    }
+   ]
+  }
+ },
+ "geometry": {
+  "L_max_m": 4.356,
+  "L_PP_m": 4.261,
+  "D_max_m": 0.508,
+  "displacement_m3": 0.708,
+  "WSA_m2": 5.998,
+  "verbatim": {
+   "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+   "pointer": "/S1_Table1_verbatim",
+   "quote": "{\"Dmax_m\": 0.508, \"LPP_m\": 4.261, \"Lmax_m\": 4.356, \"WSA_m2\": 5.998, \"displacement_m3\": 0.708}",
+   "note": "frozen reference lock; the lock records these as a verbatim transcription of Table 1 of the experimental-data report"
+  },
+  "shd1298_citations": [
+   {
+    "path": "src/tensorlbm/suboff_cad.py",
+    "line": 4,
+    "quote": "tables (Groves, Huang, Chang 1989, DTRC/SHD-1298-01), ported from"
+   },
+   {
+    "path": "src/tensorlbm/suboff_cad.py",
+    "line": 78,
+    "quote": "# Source: Groves, Huang, Chang (1989), DTRC/SHD-1298-01."
+   }
+  ],
+  "compiled_table_quote": {
+   "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+   "line": 79,
+   "quote": "模型参数 [B]：L = 4.356 m，D = 0.508 m（L/D ≈ 8.57）；湿表面积 S(AFF-1) ≈ 6.0 m²，"
+  }
+ },
+ "documents": [
+  {
+   "doc_id": "DTRC-SHD-1298-01",
+   "citation": "P. E. Groves, T. T. Huang, S. S. Chang (1989). Geometric Characteristics of DARPA SUBOFF Models. DTRC Report SHD-1298-01.",
+   "role": "hull geometry / offset tables",
+   "acquisition_status": "WITHHELD",
+   "acquisition": {
+    "attempts": [
+     {
+      "command": "curl -m 20 -sS https://apps.dtic.mil/sti/citations/ADA359226",
+      "result": "DNS failure (curl exit 6: could not resolve host)"
+     },
+     {
+      "command": "curl -m 15 -sS https://www.google.com",
+      "result": "connection timed out (curl exit 28) - sandbox is offline"
+     },
+     {
+      "command": "find / -iname '*1298*' -o -iname '*SHD*' \\( -iname '*.pdf' -o -iname '*.txt' -o -iname '*.html' \\)",
+      "result": "no copy of SHD-1298-01 in the environment"
+     }
+    ],
+    "statement": "the primary geometry report is not present in this environment and the sandbox is offline; geometry values used here come from the in-repo frozen reference lock (Table 1 transcription), not from a direct read of SHD-1298-01"
+   },
+   "in_repo_secondary_citations": [
+    {
+     "path": "src/tensorlbm/suboff_cad.py",
+     "line": 4,
+     "quote": "tables (Groves, Huang, Chang 1989, DTRC/SHD-1298-01), ported from"
+    },
+    {
+     "path": "src/tensorlbm/suboff_cad.py",
+     "line": 78,
+     "quote": "# Source: Groves, Huang, Chang (1989), DTRC/SHD-1298-01."
+    }
+   ]
+  },
+  {
+   "doc_id": "CRDKNSWC-HD-1298-11",
+   "citation": "H.-L. Liu, T. T. Huang (1998). Summary of DARPA Suboff Experimental Program Data. CRDKNSWC/HD-1298-11 (DTIC ADA359226).",
+   "role": "bare-hull (AFF-1) tow-tank resistance table used as the drag anchor",
+   "acquisition_status": "WITHHELD",
+   "acquisition": {
+    "attempts": [
+     {
+      "command": "curl -m 20 -sS https://apps.dtic.mil/sti/citations/ADA359226",
+      "result": "DNS failure (curl exit 6)"
+     },
+     {
+      "command": "curl -m 15 -sS https://www.google.com",
+      "result": "connection timed out (curl exit 28)"
+     }
+    ],
+    "statement": "primary PDF unobtainable offline; the registered values are verbatim transcriptions of Table 14 (report page 23) archived in-repo, grade PRIMARY_TABLE_SECOND_HAND"
+   },
+   "in_repo_verbatim_archives": [
+    {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+     "locator": {
+      "line": 23,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+     },
+     "quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |"
+    },
+    {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "locator": {
+      "lines": [
+       94,
+       95,
+       96,
+       97,
+       98,
+       99,
+       100,
+       101,
+       102,
+       103,
+       104,
+       105
+      ]
+     },
+     "quote": "Compiled SUBOFF reference resistance data for the accuracy-recommendation gate.\n\nThis module compiles known literature values for the DARPA SUBOFF submarine\nhull resistance coefficient (Ct) into a typed, frozen data structure.  Each\nentry carries an explicit source citation, applicable conditions, and a\ndeclared uncertainty.  Values that could not be independently confirmed from\nprimary sources are marked ``WITHHELD_NO_REFERENCE_DATA_AVAILABLE`` and carry\nno numeric Ct/Re/uncertainty.\n\nThe compiled data is consumed by\n:mod:`tensorlbm.accuracy_recommendation` to construct\n:class:`~tensorlbm.accuracy_recommendation.ErrorMetric` records for the\nphysical-accuracy admission gate.\n\nReference data sources\n----------------------\n\n1. **ITTC 1957 Model-Ship Correlation Line** — a semi-empirical friction\n   formula: ``Cf = 0.075 / (log10(Re) - 2)^2``.  This is a well-established\n   correlation line used throughout naval hydrodynamics and is already\n   used in :mod:`tensorlbm.suboff_resistance`.  It provides a *frictional*\n   resistance coefficient only; it does not include pressure or form drag.\n\n2. **DARPA SUBOFF dimensional tow-tank resistance** — primary Table 14 of\n   Liu & Huang (1998), CRDKNSWC/HD-1298-11 / ADA359226, provides six force\n   measurements each for configuration 1 (AFF-1 bare hull) and configuration\n   8 (AFF-8 full appendages).  These are stored separately in\n   ``SUBOFF_TOW_TANK_RESISTANCE_TABLE14`` so no uncertain area convention is\n   introduced by converting the published Newton values to Ct.\n\n3. **Legacy Ct placeholders** — the older ``SuboffReferenceDatum`` registry\n   is retained for API compatibility.  Its task-supplied AFF-8 Ct≈0.0040 and\n   withheld AFF-1 entry must not be treated as primary experimental evidence;\n   new validation should use the dimensional Table 14 registry.\n\n4. **Published CFD reference values** — WITHHELD.  Specific RANS/LES Ct\n   values for SUBOFF AFF-1 could not be independently confirmed from\n   published literature.\n\nAll non-withheld values are based on the wetted-surface-area normalization,\nconsistent with the ITTC-1957 convention and the SUBOFF experimental\ntradition.\n"
+    }
+   ]
+  }
+ ],
+ "anchor_points": [
+  {
+   "id": "AFF1-P1",
+   "configuration": 1,
+   "hull_type": "AFF-1 bare hull",
+   "speed_knots": 5.92,
+   "speed_ms": 3.04550848,
+   "resistance_n": 87.4,
+   "Re": 11647265.09120281,
+   "C_T": 0.0031420662705313055,
+   "C_F": {
+    "value": 0.00292208264136114,
+    "kind": "ITTC57_CORRELATION_DERIVED",
+    "grade": "CONVENTION",
+    "definition": "Cf = 0.075/(log10(Re)-2)^2 evaluated at this point's Re",
+    "experimental_value": "WITHHELD",
+    "experimental_note": "the experimental program reports total tow-tank resistance; no measured friction coefficient for SUBOFF is transcribed anywhere in-repo (criterion A2), so none is registered"
+   },
+   "provenance": {
+    "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+    "locator": {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "line": 23,
+     "char_offset_md": 581,
+     "table": "Table 14",
+     "report_page": 23,
+     "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+    },
+    "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "cross_transcription": {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "line": 94,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "agrees": true
+    }
+   }
+  },
+  {
+   "id": "AFF1-P2",
+   "configuration": 1,
+   "hull_type": "AFF-1 bare hull",
+   "speed_knots": 10.0,
+   "speed_ms": 5.14444,
+   "resistance_n": 242.2,
+   "Re": 19674434.275680423,
+   "C_T": 0.0030515568154928377,
+   "C_F": {
+    "value": 0.0026761436818346076,
+    "kind": "ITTC57_CORRELATION_DERIVED",
+    "grade": "CONVENTION",
+    "definition": "Cf = 0.075/(log10(Re)-2)^2 evaluated at this point's Re",
+    "experimental_value": "WITHHELD",
+    "experimental_note": "the experimental program reports total tow-tank resistance; no measured friction coefficient for SUBOFF is transcribed anywhere in-repo (criterion A2), so none is registered"
+   },
+   "provenance": {
+    "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+    "locator": {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "line": 23,
+     "char_offset_md": 581,
+     "table": "Table 14",
+     "report_page": 23,
+     "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+    },
+    "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "cross_transcription": {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "line": 95,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "agrees": true
+    }
+   }
+  },
+  {
+   "id": "AFF1-P3",
+   "configuration": 1,
+   "hull_type": "AFF-1 bare hull",
+   "speed_knots": 11.84,
+   "speed_ms": 6.09101696,
+   "resistance_n": 332.9,
+   "Re": 23294530.18240562,
+   "C_T": 0.002991973287928694,
+   "C_F": {
+    "value": 0.0026034963544291252,
+    "kind": "ITTC57_CORRELATION_DERIVED",
+    "grade": "CONVENTION",
+    "definition": "Cf = 0.075/(log10(Re)-2)^2 evaluated at this point's Re",
+    "experimental_value": "WITHHELD",
+    "experimental_note": "the experimental program reports total tow-tank resistance; no measured friction coefficient for SUBOFF is transcribed anywhere in-repo (criterion A2), so none is registered"
+   },
+   "provenance": {
+    "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+    "locator": {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "line": 23,
+     "char_offset_md": 581,
+     "table": "Table 14",
+     "report_page": 23,
+     "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+    },
+    "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "cross_transcription": {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "line": 96,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "agrees": true
+    }
+   }
+  },
+  {
+   "id": "AFF1-P4",
+   "configuration": 1,
+   "hull_type": "AFF-1 bare hull",
+   "speed_knots": 13.92,
+   "speed_ms": 7.16106048,
+   "resistance_n": 451.5,
+   "Re": 27386812.511747144,
+   "C_T": 0.0029358009426130047,
+   "C_F": {
+    "value": 0.002536623993604796,
+    "kind": "ITTC57_CORRELATION_DERIVED",
+    "grade": "CONVENTION",
+    "definition": "Cf = 0.075/(log10(Re)-2)^2 evaluated at this point's Re",
+    "experimental_value": "WITHHELD",
+    "experimental_note": "the experimental program reports total tow-tank resistance; no measured friction coefficient for SUBOFF is transcribed anywhere in-repo (criterion A2), so none is registered"
+   },
+   "provenance": {
+    "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+    "locator": {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "line": 23,
+     "char_offset_md": 581,
+     "table": "Table 14",
+     "report_page": 23,
+     "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+    },
+    "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "cross_transcription": {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "line": 97,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "agrees": true
+    }
+   }
+  },
+  {
+   "id": "AFF1-P5",
+   "configuration": 1,
+   "hull_type": "AFF-1 bare hull",
+   "speed_knots": 16.0,
+   "speed_ms": 8.231104,
+   "resistance_n": 576.9,
+   "Re": 31479094.841088675,
+   "C_T": 0.002839277854784621,
+   "C_F": {
+    "value": 0.002481122913231741,
+    "kind": "ITTC57_CORRELATION_DERIVED",
+    "grade": "CONVENTION",
+    "definition": "Cf = 0.075/(log10(Re)-2)^2 evaluated at this point's Re",
+    "experimental_value": "WITHHELD",
+    "experimental_note": "the experimental program reports total tow-tank resistance; no measured friction coefficient for SUBOFF is transcribed anywhere in-repo (criterion A2), so none is registered"
+   },
+   "provenance": {
+    "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+    "locator": {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "line": 23,
+     "char_offset_md": 581,
+     "table": "Table 14",
+     "report_page": 23,
+     "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+    },
+    "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "cross_transcription": {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "line": 98,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "agrees": true
+    }
+   }
+  },
+  {
+   "id": "AFF1-P6",
+   "configuration": 1,
+   "hull_type": "AFF-1 bare hull",
+   "speed_knots": 17.99,
+   "speed_ms": 9.25484756,
+   "resistance_n": 697.0,
+   "Re": 35394307.26194908,
+   "C_T": 0.0027134246929704847,
+   "C_F": {
+    "value": 0.002435803421370228,
+    "kind": "ITTC57_CORRELATION_DERIVED",
+    "grade": "CONVENTION",
+    "definition": "Cf = 0.075/(log10(Re)-2)^2 evaluated at this point's Re",
+    "experimental_value": "WITHHELD",
+    "experimental_note": "the experimental program reports total tow-tank resistance; no measured friction coefficient for SUBOFF is transcribed anywhere in-repo (criterion A2), so none is registered"
+   },
+   "provenance": {
+    "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+    "locator": {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "line": 23,
+     "char_offset_md": 581,
+     "table": "Table 14",
+     "report_page": 23,
+     "citation_line": "Program Data*, CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23,"
+    },
+    "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "cross_transcription": {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "line": 99,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)",
+     "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "agrees": true
+    }
+   }
+  }
+ ],
+ "operator_layer_checks": [
+  {
+   "id": "OP1_sha256_cross_source",
+   "what": "live sha256 of every quoted archive is found verbatim in independent pre-existing repo sha256 registries (written by earlier, unrelated builds)",
+   "rows": [
+    {
+     "path": "src/tensorlbm/suboff_reference_data.py",
+     "sha256_recomputed": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+     "witness_registries_recording_this_sha": [
+      "benchmarks/verified/suboff_anchor/anchor.json",
+      "benchmarks/verified/suboff_anchor/anchor_points.json",
+      "benchmarks/verified/suboff_sail_resistance/gci_v4.json",
+      "benchmarks/verified/suboff_anchor_w22/anchor_transcription.json",
+      "papers/artifacts/w26/lbm-suboff-tau/anchor_register.json"
+     ],
+     "n_witnesses": 5,
+     "all_match": true
+    },
+    {
+     "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+     "sha256_recomputed": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+     "witness_registries_recording_this_sha": [
+      "benchmarks/verified/suboff_anchor/anchor_points.json",
+      "benchmarks/verified/suboff_sail_resistance/gci_v4.json"
+     ],
+     "n_witnesses": 2,
+     "all_match": true
+    },
+    {
+     "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "sha256_recomputed": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c",
+     "witness_registries_recording_this_sha": [
+      "benchmarks/verified/suboff_anchor_w22/anchor_transcription.json",
+      "papers/artifacts/w26/lbm-suboff-tau/anchor_register.json"
+     ],
+     "n_witnesses": 2,
+     "all_match": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "OP2_ittc57_independent_recompute",
+   "what": "same ITTC-57 value from two independent arithmetic paths (math.log10 double vs Decimal-40dps), plus known-answer rows recorded in-repo",
+   "tolerance_abs": 1e-09,
+   "rows": [
+    {
+     "point": "AFF1-P1",
+     "Re": 11647265.09120281,
+     "cf_double": 0.00292208264136114,
+     "cf_decimal_40dps": 0.00292208264136114,
+     "abs_residual": 0.0,
+     "rel_residual": 0.0,
+     "pass_abs_1e9": true
+    },
+    {
+     "point": "AFF1-P2",
+     "Re": 19674434.275680423,
+     "cf_double": 0.0026761436818346076,
+     "cf_decimal_40dps": 0.002676143681834607,
+     "abs_residual": 4.336808689942018e-19,
+     "rel_residual": 1.6205440385655809e-16,
+     "pass_abs_1e9": true
+    },
+    {
+     "point": "AFF1-P3",
+     "Re": 23294530.18240562,
+     "cf_double": 0.0026034963544291252,
+     "cf_decimal_40dps": 0.0026034963544291257,
+     "abs_residual": 4.336808689942018e-19,
+     "rel_residual": 1.6657633042443649e-16,
+     "pass_abs_1e9": true
+    },
+    {
+     "point": "AFF1-P4",
+     "Re": 27386812.511747144,
+     "cf_double": 0.002536623993604796,
+     "cf_decimal_40dps": 0.0025366239936047957,
+     "abs_residual": 4.336808689942018e-19,
+     "rel_residual": 1.7096773904511482e-16,
+     "pass_abs_1e9": true
+    },
+    {
+     "point": "AFF1-P5",
+     "Re": 31479094.841088675,
+     "cf_double": 0.002481122913231741,
+     "cf_decimal_40dps": 0.002481122913231741,
+     "abs_residual": 0.0,
+     "rel_residual": 0.0,
+     "pass_abs_1e9": true
+    },
+    {
+     "point": "AFF1-P6",
+     "Re": 35394307.26194908,
+     "cf_double": 0.002435803421370228,
+     "cf_decimal_40dps": 0.002435803421370228,
+     "abs_residual": 0.0,
+     "rel_residual": 0.0,
+     "pass_abs_1e9": true
+    }
+   ],
+   "max_abs_residual": 4.336808689942018e-19,
+   "known_answer_checks": [
+    {
+     "quote": "| ITTC-1957 Cf（仅摩擦，供对照） | 1.2×10⁷ | 0.00291 ±5% | ITTC 1957 模型-实船相关线 [A]（公式 Cf=0.075/(lgRe−2)²） | [A] |",
+     "locator": {
+      "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+      "line": 89
+     },
+     "Re": 12000000.0,
+     "cf_recorded": 0.00291,
+     "cf_recomputed": 0.002907192853386463,
+     "rel_dev_pct": -0.09646551936552987,
+     "declared_band_pct": 5.0,
+     "within_band": true
+    },
+    {
+     "quote": "| ITTC-1957 Cf（对照） | 2.0×10⁶ | 0.00405 ±5% | 同上 [A] | [A] |",
+     "locator": {
+      "path": "docs/sphere_suboff_highre_reference_data_zh.md",
+      "line": 90
+     },
+     "Re": 2000000.0,
+     "cf_recorded": 0.00405,
+     "cf_recomputed": 0.004054304100826604,
+     "rel_dev_pct": 0.10627409448405244,
+     "declared_band_pct": 5.0,
+     "within_band": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "OP3_dimensional_analysis",
+   "entries": [
+    {
+     "quantity": "C_T = R_T/(0.5 rho V^2 S)",
+     "dims": {
+      "m": 0,
+      "s": 0,
+      "kg": 0
+     },
+     "dimensionless": true
+    },
+    {
+     "quantity": "Re = V L / nu",
+     "dims": {
+      "m": 0,
+      "s": 0,
+      "kg": 0
+     },
+     "dimensionless": true
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "OP4_algebraic_reconstruction",
+   "what": "Re and C_T are reproduced from the verbatim V_kn / R_T plus the locked geometry (L_max, WSA) and the declared conventions (rho, nu, kn->m/s) alone",
+   "rows": [
+    {
+     "point": "AFF1-P1",
+     "rel_dev_Re": 0.0,
+     "rel_dev_CT": 0.0
+    },
+    {
+     "point": "AFF1-P2",
+     "rel_dev_Re": 0.0,
+     "rel_dev_CT": 0.0
+    },
+    {
+     "point": "AFF1-P3",
+     "rel_dev_Re": 0.0,
+     "rel_dev_CT": 0.0
+    },
+    {
+     "point": "AFF1-P4",
+     "rel_dev_Re": 0.0,
+     "rel_dev_CT": 0.0
+    },
+    {
+     "point": "AFF1-P5",
+     "rel_dev_Re": 0.0,
+     "rel_dev_CT": 0.0
+    },
+    {
+     "point": "AFF1-P6",
+     "rel_dev_Re": 0.0,
+     "rel_dev_CT": 0.0
+    }
+   ],
+   "max_rel_dev": 0.0,
+   "tolerance_rel": 1e-12,
+   "pass": true
+  },
+  {
+   "id": "OP5_monotone_structure",
+   "what": "R_T strictly increasing and C_T strictly decreasing with speed",
+   "rt_increasing": true,
+   "ct_decreasing": true,
+   "speeds_increasing": true,
+   "pass": true
+  },
+  {
+   "id": "OP6_cross_transcription",
+   "what": "the two independent in-repo transcriptions of Table 14 (markdown table and the frozen python registry) agree pointwise",
+   "rows": [
+    {
+     "point": "AFF1-P1",
+     "V_kn": 5.92,
+     "R_T_N": 87.4,
+     "registry_line": 94,
+     "registry_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+     "agrees": true
+    },
+    {
+     "point": "AFF1-P2",
+     "V_kn": 10.0,
+     "R_T_N": 242.2,
+     "registry_line": 95,
+     "registry_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)",
+     "agrees": true
+    },
+    {
+     "point": "AFF1-P3",
+     "V_kn": 11.84,
+     "R_T_N": 332.9,
+     "registry_line": 96,
+     "registry_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)",
+     "agrees": true
+    },
+    {
+     "point": "AFF1-P4",
+     "V_kn": 13.92,
+     "R_T_N": 451.5,
+     "registry_line": 97,
+     "registry_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)",
+     "agrees": true
+    },
+    {
+     "point": "AFF1-P5",
+     "V_kn": 16.0,
+     "R_T_N": 576.9,
+     "registry_line": 98,
+     "registry_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)",
+     "agrees": true
+    },
+    {
+     "point": "AFF1-P6",
+     "V_kn": 17.99,
+     "R_T_N": 697.0,
+     "registry_line": 99,
+     "registry_quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)",
+     "agrees": true
+    }
+   ],
+   "n_bare_rows_registry": 6,
+   "pass": true
+  },
+  {
+   "id": "OP7_configuration_ratio",
+   "what": "AFF-8/AFF-1 total-resistance ratio recomputed from the verbatim rows (definitional identity -> transcription fidelity, not independent evidence)",
+   "rows": [
+    {
+     "V_AFF1_kn": 5.92,
+     "V_AFF8_kn": 5.93,
+     "R_T_ratio": 1.1704805491990846
+    },
+    {
+     "V_AFF1_kn": 10.0,
+     "V_AFF8_kn": 10.0,
+     "R_T_ratio": 1.1717588769611893
+    },
+    {
+     "V_AFF1_kn": 11.84,
+     "V_AFF8_kn": 11.85,
+     "R_T_ratio": 1.1691198558125564
+    },
+    {
+     "V_AFF1_kn": 13.92,
+     "V_AFF8_kn": 13.92,
+     "R_T_ratio": 1.1663344407530454
+    },
+    {
+     "V_AFF1_kn": 16.0,
+     "V_AFF8_kn": 16.0,
+     "R_T_ratio": 1.171086843473739
+    },
+    {
+     "V_AFF1_kn": 17.99,
+     "V_AFF8_kn": 17.79,
+     "R_T_ratio": 1.1780487804878048
+    }
+   ],
+   "pass": true
+  },
+  {
+   "id": "OP8_geometry_gate",
+   "what": "geometry validated (Cb, L/D, WSA) before any drag value is used",
+   "detail": {
+    "L_over_D": 8.574803149606298,
+    "L_over_D_recorded": 8.57,
+    "L_over_D_dev_pct": 0.056046086421212456,
+    "Cb_recomputed": 0.8019145264601178,
+    "Cb_nominal": 0.8,
+    "Cb_dev_pct": 0.2393158075147256,
+    "WSA_recorded_m2": 5.998,
+    "WSA_analytic_coef_L2": 0.31576,
+    "WSA_analytic_m2": 5.99146263936,
+    "WSA_dev_pct": -0.10899234144715443,
+    "Cb_band_pct": 3.0,
+    "L_over_D_band_pct": 1.0,
+    "WSA_band_pct": 1.0,
+    "pass": true
+   },
+   "pass": true
+  }
+ ],
+ "criteria": [
+  {
+   "id": "A1_verbatim_quote_and_sha256",
+   "statement": "anchor file carries >=1 verbatim quote with locator, and the sha256 of the quoted archive recomputes consistently (cross-source)",
+   "n_verbatim_quotes": 15,
+   "n_witness_registries": 5,
+   "n_sha256_cross_checked": 3,
+   "pass": true
+  },
+  {
+   "id": "A2_experimental_CF",
+   "statement": "verbatim experimental C_F anchor present, else honest WITHHELD",
+   "status": "WITHHELD",
+   "evidence": "the in-repo transcription chain (Table 14 of HD-1298-11 via docs/suboff_experimental_resistance_validation_2026-08-01.md and src/tensorlbm/suboff_reference_data.py) carries dimensional total resistance R_T(V) only; no measured friction coefficient is transcribed anywhere in-repo and the primary report is not reachable offline (see /documents/*/acquisition).",
+   "honest_withheld": true
+  },
+  {
+   "id": "A3_ittc57_recompute_residual",
+   "statement": "|ITTC-57 recomputed (independent path) - registered C_F| <= 1e-9",
+   "tolerance_abs": 1e-09,
+   "max_abs_residual": 4.336808689942018e-19,
+   "known_answer_band_pct": 5.0,
+   "known_answer_pass": true,
+   "pass": true
+  },
+  {
+   "id": "A4_geometry_gate",
+   "statement": "geometry verified (Cb within 3% of 0.80, L/D within 1% of 8.57, WSA within 1% of the analytic surface-of-revolution value) before the drag anchor is used",
+   "detail": {
+    "L_over_D": 8.574803149606298,
+    "L_over_D_recorded": 8.57,
+    "L_over_D_dev_pct": 0.056046086421212456,
+    "Cb_recomputed": 0.8019145264601178,
+    "Cb_nominal": 0.8,
+    "Cb_dev_pct": 0.2393158075147256,
+    "WSA_recorded_m2": 5.998,
+    "WSA_analytic_coef_L2": 0.31576,
+    "WSA_analytic_m2": 5.99146263936,
+    "WSA_dev_pct": -0.10899234144715443,
+    "Cb_band_pct": 3.0,
+    "L_over_D_band_pct": 1.0,
+    "WSA_band_pct": 1.0,
+    "pass": true
+   },
+   "pass": true
+  }
+ ],
+ "summary": {
+  "n_anchor_points": 6,
+  "Re_range": [
+   11647265.09120281,
+   35394307.26194908
+  ],
+  "C_T_range": [
+   0.0027134246929704847,
+   0.0031420662705313055
+  ],
+  "reference_point": {
+   "id": "AFF1-P1",
+   "V_knots": 5.92,
+   "Re": 11647265.09120281,
+   "C_T": 0.0031420662705313055,
+   "C_F_ittc57": 0.00292208264136114
+  },
+  "all_operator_checks_pass": true,
+  "all_criteria_pass_or_honest_withheld": true
+ },
+ "provenance": {
+  "generator_sha256": "2f214291b95f9cbcdd6290bfb778a4c94d2386a29449d7adacd5d0647698808c",
+  "inputs": {
+   "docs/suboff_experimental_resistance_validation_2026-08-01.md": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+   "src/tensorlbm/suboff_reference_data.py": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+   "docs/sphere_suboff_highre_reference_data_zh.md": "2a20e026b9dbbef74b96cdc24c0bb72766552013d0ccd77930807d585b07172b",
+   "benchmarks/pending/suboff_highre_resistance/refs_lock.json": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c",
+   "docs/IN12_S6_WALL_LADDER.md": "c28392a9d3a9624fb2256f2a7ab9c898162ffd0eeb4ef42713bbb87b2a68c693",
+   "src/tensorlbm/suboff_cad.py": "9e97470f291fa62f1ba1eefc68d6385283f473480ae4f469f5150be8152b832b"
+  },
+  "commands": [
+   "python benchmarks/anchors/lbm_suboff_tau_anchor.py",
+   "python benchmarks/anchors/lbm_suboff_tau_anchor.py --check"
+  ]
+ }
+}
