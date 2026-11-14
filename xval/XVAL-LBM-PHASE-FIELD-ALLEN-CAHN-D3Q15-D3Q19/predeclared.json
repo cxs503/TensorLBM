@@ -1,32 +1,493 @@
 {
-  "anchor": "XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19",
-  "mission_id": 18133,
-  "repo": "TensorLBM",
-  "oss_reference": "lssfau/walberla apps/benchmarks/PhaseFieldAllenCahn (oss_solutions.id=363, tag phase-field-allen-cahn-d3q15-d3q19); formulation read from the installed lbmpy (the library waLBerla calls)",
-  "decision": "Adopt, or reject, the waLBerla two-lattice Allen-Cahn scheme (D3Q15 phase field in phi in [0,1] + D3Q19 hydro with the split pressure/viscous/surface-tension force) as TensorLBM's coupled Allen-Cahn formulation, and fix the parameter mapping between the two conventions.",
-  "alternatives": [
-    "A1: keep the shipped TensorLBM stepper as is (psi in [-1,1], seven-point laplacian, D3Q19 AC+hydro populations, Korteweg force mu grad psi, Guo forcing)",
-    "A2: port the OSS formulation verbatim (D3Q15 AC lattice, lbmpy isotropic FD operators, split force, interface-tracking force, omega_phi = 1/(0.5+3M))",
-    "A3: port the OSS free-energy normalisation (beta = 12 sigma/W, kappa = 3/2 sigma W, phi in [0,1], tanh(2s/W) profile) but keep TensorLBM's data layout and explicit FD kernel"
+ "anchor": "XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19",
+ "mission": 19468,
+ "title": "Cross-lattice (D3Q15 vs D3Q19) acceptance of the conservative Allen-Cahn phase-field LBE",
+ "decision": "Does one lattice-parametric CAC phase-field code path produce the SAME, analytically correct capillary physics on D3Q15 as on D3Q19 (the lattice the frozen verified D3Q19 module uses), within the owner 15% bound?",
+ "alternatives": [
+  "A (chosen): keep the frozen D3Q19 CAC scheme (Liang et al. PRE 97 033309) and generalise only the velocity set + the two lattice-specific derivative stencils that lbmpy derives for D3Q15/D3Q19.",
+  "B: implement a separate D3Q15 code base (duplicate physics) -- rejected: no way to attribute a lattice difference to the lattice rather than to a code difference.",
+  "C: derive the D3Q15 Laplacian as the velocity-weighted 6*sum w_i (phi_i - phi) instead of lbmpy's 15-point stencil -- kept as a measured sensitivity arm, not as the default.",
+  "D: run lbmpy/walberla itself as the reference solver -- rejected for this round: need for a C/C++ code generation + compile toolchain on the nodes; lbmpy 2.0 source is read as the method/structure oracle instead (documented in oss_solutions).",
+  "E (adopted as the OSS-faithful configuration): mixed lattices -- phase field (h-population) on D3Q15 and hydrodynamics (g-population) on D3Q19, exactly as walberla's PhaseFieldAllenCahn app (oss_solutions row 363); implemented as lattice_phase/lattice_hydro in one code path."
+ ],
+ "hypothesis": "H1: the analytic Young-Laplace law dp = 2 sigma/R and the model's own tanh interface solution are satisfied on both lattices with the same input sigma, so |sigma_rec/sigma_in - 1| <= 15% on each lattice and the two lattices agree with each other within 15%. H0 (rejected if any criterion fails): the D3Q15 velocity set cannot carry the CAC/HCH scheme at this resolution, e.g. it loses isotropy of the capillary force or becomes unstable.",
+ "outcome_metrics": {
+  "sigma_rec": "dp*R/2 from the static-droplet pressure readout (fp64 recompute), averaged over the final sampling window",
+  "sigma_rel_err_pct": "|sigma_rec - sigma_in| / sigma_in * 100",
+  "cross_lattice_pct": "|sigma_rec(D3Q15) - sigma_rec(D3Q19)| / mean * 100 at the same physical configuration",
+  "W_fit_pct": "|W_fit - W_in| / W_in * 100 from the tanh fit of the radial/planar profile",
+  "profile_max_dev": "max |phi_sim - phi_tanh(fitted)| on the interface band (dimensionless, 0..1 scale)",
+  "phi_drift_rel": "|integral phi(t) - integral phi(0)| / integral phi(0) (conservative-AC invariant)",
+  "u_max": "max |u| (spurious currents, lattice units)"
+ },
+ "baseline_control": {
+  "analytic_references": [
+   "Young-Laplace, 3-D sphere: dp = 2 sigma/R (Young 1805; Laplace 1806) -- no fitted constant",
+   "CAC equilibrium profile phi = 0.5[1 - tanh(2 (y-y0)/W)] (Liang, Xu, Chen, Wang, Chai, Shi, PRE 97, 033309 (2018), Eq.(30)/(33); same profile family as lbmpy phasefield_allen_cahn)",
+   "discrete phase-inventory conservation (conservative AC): integral phi constant to round-off",
+   "prior in-repo verified point (not a free parameter, used only as a consistency check): benchmarks/verified/laplace_cac_phasefield sigma_rec errors <= 0.45% at 96^3/128^3, rho ratio 10/100, D3Q19"
   ],
-  "hypothesis": "H1: the two formulations are the same continuum Allen-Cahn/mean-curvature model, so on one configuration the curvature-driven shrinkage of a sphere obeys dR^2/dt = -4 M sigma for both, and the two arms agree within 15%. H2: the OSS and TensorLBM interface-force normal integrals both reproduce the Laplace value sigma K = 2 sigma/R within 15%. H3 (found during work): the two conventions do NOT share the label W - the OSS profile is tanh(2s/W), TensorLBM's is tanh(s/W), so W_OSS = 2 W_TensorLBM for the same physical thickness.",
-  "metrics": {
-    "primary": "M2 curvature-driven shrinkage: D_eff := -(1/4) d(R^2)/dt from a linear fit of R^2(t), R from the enclosed volume of a sphere; gate |D_eff - M sigma|/(M sigma) <= 15% per arm and |D_A - D_B|/|D_B| <= 15%",
-    "secondary": ["M1 equilibrium interface thickness on a planar interface after 300 steps vs the arm's own analytic profile width (5%)", "M3 normal line integral of the interface force through a static sphere vs sigma K = 2 sigma/R (Laplace, 15%)"],
-    "diagnostics": ["phi range must stay in [-1.05, 1.05] (psi) / [-0.05, 1.05] (phi)", "R^2(t) fit r^2 > 0.99", "selftest: lbmpy operator reconstruction residual must be exactly 0"]
+  "control_arms": [
+   "CTRL_uniform15 / CTRL_uniform19: phi == 1 everywhere (single phase), so mu grad(phi) vanishes identically and the pressure field must stay uniform -> dp ~ 0. This isolates the pressure readout and the force chain from any real capillary signal."
+  ]
+ },
+ "accept_pct": 15.0,
+ "predeclared_thresholds": {
+  "sigma_rel_err_pct_max": 15.0,
+  "sigma_rel_err_pct_target": 3.0,
+  "cross_lattice_pct_max": 15.0,
+  "cross_lattice_pct_target": 3.0,
+  "W_fit_rel_err_pct_max": 15.0,
+  "profile_max_dev_max": 0.05,
+  "phi_drift_rel_max": 1.0,
+  "phi_drift_rel_max_conservative": 1e-06,
+  "u_max_max": 0.05,
+  "control_dp_max": 1e-06,
+  "nan_allowed": 0
+ },
+ "stopping_rule": "a Laplace arm stops when |dp(t) - dp(t-500)| / |dp(t-500)| < 1e-3 (evaluated every 500 steps after min_steps) or at max_steps; arms that hit max_steps are reported with converged=false and their dp kept (never silently discarded).",
+ "variables": {
+  "controlled": [
+   "dx = dt = 1, cs^2 = 1/3, dtype float64, periodic box",
+   "nu = 0.1 in both phases (equal kinematic viscosity; mu = nu*rho per phase, harmonic mu(phi) mixing)",
+   "M = 0.05 (tau_f = 0.5 + 3M = 0.65), sigma_in = 0.01, W = 4",
+   "droplet initialised with the model's own tanh profile, p0 = 0.01",
+   "pressure readout bands: r/R in [0.95,1.05] (inside) and [1.6,2.2] (outside), both away from |phi-0.5|<0.45"
+  ],
+  "changed": [
+   "lattice: D3Q19 (19 velocities, face diagonals) vs D3Q15 (15 velocities, body diagonals)",
+   "grid/R: 48^3 / R=12 vs 64^3 / R=16 (resolution pair, same W and sigma)",
+   "rho_l/rho_g: 10 vs 100 (density-contrast point)",
+   "W: 4 vs 5 (interface-width point)",
+   "lap_scheme: lbmpy 15-point stencil vs velocity-weighted stencil (D3Q15 discretisation sensitivity)"
+  ],
+  "confounders": [
+   "the D3Q15 Laplacian stencil has a different O(dx^2) error constant than the velocity-weighted one -- separated by the lap_scheme arm",
+   "spurious (parasitic) currents advect the interface and bias dp -- u_max reported per arm",
+   "the interface band r/R in [0.95,1.05] sits inside the drop only if R/W >= 3; true for every arm (R/W = 3.0 at R=12/W=4)",
+   "R = 12 with W = 4 is only 3 interface widths per radius; the 64^3/R=16 arm is the resolution control for that",
+   "an arm that does not reach its stopping criterion has a dp that still contains a transient -- flagged via converged"
+  ]
+ },
+ "repetition_rationale": "Deterministic float64 scheme, no random seeds: repetitions are the independent arms (2 lattices x the parameter sweep) plus one bitwise repeat of the primary D3Q15 arm (arm L15_n48_R12_repeat) to demonstrate determinism rather than assume it.",
+ "analysis_plan": [
+  "sigma_rec from the final sampling window of each arm; error vs sigma_in",
+  "paired lattice comparison at identical physical parameters (same grid, R, rho ratio, W)",
+  "convergence flag + dp time series per arm reported, no arm discarded",
+  "failed criteria reported as failed (honest-FAIL), partial credit by criterion"
+ ],
+ "environment": {
+  "python": "3.11",
+  "torch": "2.7.1 CPU, float64",
+  "module": "src/tensorlbm/phasefield/ac_lattice_generic.py",
+  "driver": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/run_xval.py",
+  "raw_data": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/artifacts/*.json",
+  "lbmpy_oracle": "lbmpy 2.0 site-packages (phasefield_allen_cahn/derivatives.py, parameter_calculation.py) read-only"
+ },
+ "arms": {
+  "L19_n48_R12": {
+   "kind": "laplace",
+   "lattice": "D3Q19",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
   },
-  "baseline_control": "analytic sharp-interface Allen-Cahn law v_n = -M sigma K, i.e. dR^2/dt = -4 M sigma (no free parameters: M = 0.2, sigma = 0.02 => D_analytic = 4.0e-3); static sphere is the exact control for M3",
-  "accept_pct": 15.0,
-  "predeclared_thresholds": {"accept_pct": 15.0, "m1_pct": 5.0, "fit_r2_min": 0.99, "range_tol": 0.05},
-  "stopping_rule": "each arm runs a fixed 1200 steps (900 for the coarse row); no convergence-based stopping, because the metric is a linear fit and the run length is part of the design",
-  "variables": {
-    "controlled": ["sigma = 0.02", "mobility M = 0.2", "periodic box", "sphere initial condition with the arm's own equilibrium profile", "float64", "same analytic target for every row"],
-    "changed": ["W in {4, 3}", "resolution (n=64,R0=12) vs (n=48,R0=9)"],
-    "confounders": ["periodic images of the sphere in a 64^3 box (R0/halfbox = 0.375) slow the shrinkage slightly", "the two arms use different interface thickness for the same W label (factor 2) - hence the label-W rows are not thickness matched", "the OSS AC step's Guo source carries (1 - omega_phi/2); the exact force model used by the walberla app could not be read offline"]
+  "L15_n48_R12": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
   },
-  "repetition_rationale": "deterministic problem (no seeds); repeats are the two sweeps (W, resolution) and the two arms",
-  "environment": {"python": "3.11", "torch": "float64 CPU", "lbmpy": "2.0 (installed)", "entry": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/run_xval.py", "raw": "xval/.../artifacts/probe.json, summary.json, table.csv"},
-  "analysis": "per row err = 100*(D_eff - M sigma)/(M sigma); aggregate = per-arm max |err| over the sweep, plus A-vs-B difference; sensitivity points = W and resolution",
-  "safety_resource_limits": "each config < 200 s on one core, whole driver < 30 min single process (below the 10 min cluster threshold it is kept local; no node pinning)",
-  "interpretation_limits": ["static/quasi-static regime only; dynamic (Cox-Voinov) wetting and the D3Q19 hydrodynamics at 1000:1 density ratio are out of scope this round", "the 15% gate applies to D_eff, not to local field errors", "the OSS C++ runtime was not available (no network); the OSS arm is the lbmpy formulation executed in numpy/torch, not the walberla binary"]
+  "L15_n48_R12_repeat": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L19_n64_R16": {
+   "kind": "laplace",
+   "lattice": "D3Q19",
+   "grid": 64,
+   "radius": 16.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 6000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L15_n64_R16": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 64,
+   "radius": 16.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 6000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L19_n48_R12_rel100": {
+   "kind": "laplace",
+   "lattice": "D3Q19",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 100.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L15_n48_R12_rel100": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 100.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L19_n48_R12_W5": {
+   "kind": "laplace",
+   "lattice": "D3Q19",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 5.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L15_n48_R12_W5": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 5.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L19_n48_R12_lapw": {
+   "kind": "laplace",
+   "lattice": "D3Q19",
+   "lap_scheme": "weights",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "L15_n48_R12_lapw": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "lap_scheme": "weights",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ]
+  },
+  "P19_planar_W4": {
+   "kind": "profile",
+   "lattice": "D3Q19",
+   "shape": [
+    8,
+    64,
+    8
+   ],
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 4000,
+   "sample_every": 500
+  },
+  "P15_planar_W4": {
+   "kind": "profile",
+   "lattice": "D3Q15",
+   "shape": [
+    8,
+    64,
+    8
+   ],
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 4000,
+   "sample_every": 500
+  },
+  "CTRL_uniform19": {
+   "kind": "control",
+   "lattice": "D3Q19",
+   "grid": 16,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 400,
+   "sample_every": 100
+  },
+  "CTRL_uniform15": {
+   "kind": "control",
+   "lattice": "D3Q15",
+   "grid": 16,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 400,
+   "sample_every": 100
+  },
+  "MIX15_19_n48_R12": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ],
+   "lattice_phase": "D3Q15",
+   "lattice_hydro": "D3Q19"
+  },
+  "MIX15_19_n64_R16": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 64,
+   "radius": 16.0,
+   "rho_ratio": 10.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 6000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ],
+   "lattice_phase": "D3Q15",
+   "lattice_hydro": "D3Q19"
+  },
+  "MIX15_19_n48_R12_rel100": {
+   "kind": "laplace",
+   "lattice": "D3Q15",
+   "grid": 48,
+   "radius": 12.0,
+   "rho_ratio": 100.0,
+   "nu": 0.1,
+   "sigma": 0.01,
+   "width": 4.0,
+   "mobility": 0.05,
+   "p0": 0.01,
+   "max_steps": 8000,
+   "min_steps": 3000,
+   "sample_every": 500,
+   "steady_rel_tol": 0.001,
+   "inner_band": [
+    0.95,
+    1.05
+   ],
+   "outer_band": [
+    1.6,
+    2.2
+   ],
+   "lattice_phase": "D3Q15",
+   "lattice_hydro": "D3Q19"
+  }
+ }
 }
