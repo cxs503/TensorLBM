@@ -1,25 +1,45 @@
-"""XVAL driver (lean): TensorLBM readouts on the OSS-calibrated SCMP droplet.
+#!/usr/bin/env python3
+"""XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION — cross-validation driver.
 
-Anchor XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION, round 1.
+Anchor: ``XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION``
+Reference practice: ``lbm-principles-practice/code`` ``shan-chen`` Laplace
+pressure calibration (SCMP pseudopotential droplet, ``dp = sigma / R`` fit).
 
-Design after the first (slow) draft: the two kernels were shown to be
-*algebraically identical* (max |drho| = 8.9e-16 after 5 identical steps, see
-``kernel_equivalence``), so instead of time-stepping two solvers at five radii
-we time-step the OSS port (numpy) and evaluate the three TensorLBM readouts --
-closure ``pressure_eos``, model-free ``pressure_flux``, Korteweg ``sigma_K`` --
-on the *same* converged field.  The TensorLBM kernel is time-stepped once
-(R_init = 16, 4000 steps) to confirm that the agreement survives the full run.
-That keeps the comparison arms identical while cutting the wall clock by ~4x.
+What is cross-validated (three independent legs)
+------------------------------------------------
+L1  *Implementation leg.*  The TensorLBM library path
+    (``tensorlbm.multiphase.collide_sc_single_component`` + ``tensorlbm.solver.stream``)
+    against an independent from-scratch NumPy SCMP solver (``ref_sc.py``) that
+    imports nothing from ``tensorlbm``.  Same lattice ordering only, so that
+    distribution functions can be compared cell-by-cell (step 0 equivalence is
+    enforced in ``tests/test_xval_sc_laplace.py``).
+L2  *Thermodynamic leg.*  The simulated bulk densities are compared with the
+    Maxwell equal-area construction on the Shan-Chen equation of state
+    ``p(rho) = cs^2 rho + (G_eff cs^2 / 2) psi^2`` — an analytic reference that
+    does not use the lattice solver at all.
+L3  *Protocol leg.*  Sensitivity of the calibrated surface tension to choices
+    the earlier ``benchmarks/verified/laplace_droplet`` acceptance did not
+    probe: pressure-band radius, periodic-domain extent (``L = 4R`` vs ``6R``
+    vs ``8R``) and forcing scheme (velocity-shift vs Guo).
 
-Records produced in ``artifacts/xval_shan_chen_laplace/``:
-summary.json, radius_sweep.csv, time_convergence.csv, sensitivity.csv,
-fig_laplace_gamma.png, fig_profiles.png, figures_b64.json.
+Physics
+-------
+A stationary 2-D liquid drop in a periodic box obeys Young-Laplace
+``dp = p_in - p_out = sigma / R`` (cylinder).  Fitting ``dp`` against ``1/R``
+over several radii yields ``sigma``; linearity (R^2) and a vanishing intercept
+are the consistency checks.  All quantities are lattice units,
+``psi(rho) = 1 - exp(-rho)``, ``G_lib = +5`` (= textbook ``G_eff = -5``),
+``tau = 1`` (``nu = 1/6``), D2Q9.
+
+Usage
+-----
+    python run_xval.py            # full study  (artifacts/result.json + figures)
+    python run_xval.py --quick    # reduced study (CI / smoke)
 """
 
 from __future__ import annotations
 
-import base64
-import csv
+import argparse
 import json
 import math
 import sys
@@ -28,389 +48,446 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[1]
+sys.path.insert(0, str(REPO / "src"))  # canonical TensorLBM package
+sys.path.insert(0, str(HERE))
 
-import torch  # noqa: E402
+import ref_sc as REF  # noqa: E402  independent reference implementation
 
-torch.set_num_threads(2)
-
-from oss_port import (OSSShanChen, RadiusEstimatorFailed, box_mean,  # noqa: E402
-                      closure_pressure)
-from tensorlbm.d2q9 import equilibrium  # noqa: E402
-from tensorlbm.sc_surface_tension import (build_stencil, pressure_eos,  # noqa: E402
-                                          pressure_flux, sigma_korteweg, step_sc)
-
-OUT = ROOT / "artifacts" / "xval_shan_chen_laplace"
-OUT.mkdir(parents=True, exist_ok=True)
-
-N, TAU, G_EFF, RHO0 = 64, 1.0, -4.7, 1.0
-RHO_L_INIT, RHO_G_INIT = 2.1, 0.15
-STEPS = 4000
-RADII = [8.0, 12.0, 16.0, 20.0, 24.0]
-STENCIL = build_stencil("d2q9")
-
-OSS_REF = {  # report §九 table 1 (+ §4.3), inventoried OSS run
-    8.0: {"rho_g": 0.19504, "rho_l": 1.68702, "dp": 1.7074e-3, "r": 6.382, "gamma": 0.010897},
-    12.0: {"rho_g": 0.18687, "rho_l": 1.67736, "dp": 1.6591e-3, "r": 12.291, "gamma": 0.020392},
-    16.0: {"rho_g": 0.18432, "rho_l": 1.66937, "dp": 1.1918e-3, "r": 17.432, "gamma": 0.020776},
-    20.0: {"rho_g": 0.18308, "rho_l": 1.66419, "dp": 8.5034e-4, "r": 22.365, "gamma": 0.019018},
-    24.0: {"rho_g": 0.17411, "rho_l": 1.63248, "dp": -9.3354e-4, "r": 5207.67, "gamma": -4.8616},
+# ---------------------------------------------------------------------------
+# Fixed model / protocol parameters (lattice units)
+# ---------------------------------------------------------------------------
+CFG = {
+    "model": "SCMP single-component Shan-Chen (Shan & Chen 1993/1994)",
+    "psi": "psi(rho) = 1 - exp(-rho)  (rho0 = 1)",
+    "G_lib": 5.0,  # library argument
+    "G_eff": -5.0,  # textbook convention (attraction), = -G_lib
+    "tau": 1.0,  # nu = 1/6
+    "lattice": "D2Q9",
+    "forcing_default": "velocity_shift",
+    "rho_l_init": 1.957,
+    "rho_v_init": 0.1596,
+    "w_int": 4.0,
+    "domain_rule": "L = 4R (same as benchmarks/verified/laplace_droplet)",
+    "bands": (0.5, 1.5),  # r <= 0.5 R_eq (liquid) / r >= 1.5 R_eq (vapour)
+    "min_steps": 4000,
+    "max_steps": 16000,
+    "sample_every": 500,
+    "conv_dp": 2e-3,
+    "conv_r": 2e-3,
+    "sigma_locked_doc": 0.0561,  # value locked in tensorlbm.multiphase docs
+    "criteria_pct": 15.0,  # owner accuracy standard
 }
-OSS_REF_LSQR = 0.020268
-KEY = ("rho_l", "rho_g", "rho_ratio", "p_l", "p_g", "dp", "r", "gamma")
 
 
-def sharp_droplet(R: float, n: int = N) -> np.ndarray:
-    y = np.arange(n, dtype=np.float64)[:, None]
-    x = np.arange(n, dtype=np.float64)[None, :]
-    c = 0.5 * (n - 1)
-    return np.where(np.sqrt((x - c) ** 2 + (y - c) ** 2) <= R, RHO_L_INIT, RHO_G_INIT)
+# ---------------------------------------------------------------------------
+# Solvers (identical model, two independent code paths)
+# ---------------------------------------------------------------------------
+class TorchSolver:
+    """TensorLBM library path."""
+
+    name = "tensorlbm"
+
+    def __init__(self, forcing: str = "velocity_shift", threads: int = 8):
+        import torch
+
+        torch.set_num_threads(threads)
+        self.torch = torch
+        from tensorlbm.d2q9 import equilibrium, macroscopic
+        from tensorlbm.multiphase import collide_sc_single_component, psi_exp
+        from tensorlbm.solver import stream
+
+        self._eq = equilibrium
+        self._mac = macroscopic
+        self._collide = collide_sc_single_component
+        self._psi = psi_exp
+        self._stream = stream
+        self.forcing = forcing
+
+    def init(self, rho: np.ndarray):
+        t = self.torch
+        r = t.tensor(np.ascontiguousarray(rho), dtype=t.float32)
+        z = t.zeros_like(r)
+        return self._eq(r, z, z)
+
+    def step(self, f):
+        return self._stream(
+            self._collide(f, G=CFG["G_lib"], tau=CFG["tau"], psi_fn=self._psi, forcing=self.forcing)
+        )
+
+    def fields(self, f) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        rho, ux, uy = self._mac(f)
+        return rho.numpy(), ux.numpy(), uy.numpy()
+
+    def force(self, rho: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        t = self.torch
+        r = t.tensor(np.ascontiguousarray(rho), dtype=t.float32)
+        from tensorlbm.multiphase import sc_single_component_force
+
+        fx, fy = sc_single_component_force(r, G=CFG["G_lib"], psi_fn=self._psi)
+        return fx.numpy(), fy.numpy()
 
 
-def tl_init(rho_np):
-    rho = torch.tensor(rho_np, dtype=torch.float64)
-    u = torch.zeros_like(rho)
-    return equilibrium(rho, u, u).to(torch.float64)
+class NumpySolver:
+    """Independent from-scratch reference implementation (``ref_sc.py``)."""
+
+    name = "ref_numpy"
+
+    def __init__(self, forcing: str = "velocity_shift"):
+        self.forcing = forcing
+
+    def init(self, rho: np.ndarray):
+        z = np.zeros_like(rho)
+        return REF.equilibrium(rho, z, z)
+
+    def step(self, f):
+        return REF.stream(REF.collide_sc(f, G=CFG["G_lib"], tau=CFG["tau"], forcing=self.forcing))
+
+    def fields(self, f):
+        return REF.macroscopic(f)
+
+    def force(self, rho: np.ndarray):
+        return REF.sc_force_standard(rho, CFG["G_lib"])
 
 
-def calibrate_arrays(rho, p, box=4, two_sided=False):
-    """OSS calibrator (chapter9/shanchen.cpp:326-377) on an arbitrary p field."""
-    n = rho.shape[0]
-    c, off = n // 2, box // 2
-    rho_l, rho_g = box_mean(rho, c - off, c - off, box), box_mean(rho, 0, 0, box)
-    p_l, p_g = box_mean(p, c - off, c - off, box), box_mean(p, 0, 0, box)
-    rho_av = 0.5 * (rho_l + rho_g)
-    row = rho[n // 2]
-
-    def scan(sign):
-        prev = row[c]
-        for j in range(1, n // 2):
-            cur = row[c + sign * j]
-            if (prev - rho_av) * (cur - rho_av) <= 0.0 and cur != prev:
-                return float(j - 1 + (rho_av - prev) / (cur - prev))
-            prev = cur
-        raise RadiusEstimatorFailed("no rho = rho_av crossing (upstream UB guard)")
-
-    rp = scan(+1)
-    rm = scan(-1) if two_sided else None
-    r = rp if rm is None else 0.5 * (rp + rm)
-    return {"rho_l": rho_l, "rho_g": rho_g, "rho_ratio": rho_l / rho_g,
-            "p_l": p_l, "p_g": p_g, "dp": p_l - p_g, "r": r, "r_plus": rp,
-            "r_minus": rm, "gamma": (p_l - p_g) * r}
+# ---------------------------------------------------------------------------
+# Initial conditions
+# ---------------------------------------------------------------------------
+def init_droplet(L: int, R: float) -> tuple[np.ndarray, np.ndarray]:
+    ys, xs = np.meshgrid(np.arange(L) + 0.5, np.arange(L) + 0.5, indexing="ij")
+    rr = np.sqrt((xs - L / 2.0) ** 2 + (ys - L / 2.0) ** 2)
+    rho = CFG["rho_v_init"] + 0.5 * (CFG["rho_l_init"] - CFG["rho_v_init"]) * (
+        1.0 + np.tanh((R - rr) / CFG["w_int"])
+    )
+    return np.clip(rho, 1e-3, None), rr
 
 
-def calib_safe(rho, p, box=4, two_sided=False):
-    try:
-        out = calibrate_arrays(rho, p, box=box, two_sided=two_sided)
-        out["status"] = "ok"
-        return out
-    except RadiusEstimatorFailed as exc:
-        n = rho.shape[0]
-        c, off = n // 2, max(box // 2, 1)
-        rho_l, rho_g = box_mean(rho, c - off, c - off, box), box_mean(rho, 0, 0, box)
-        p_l, p_g = box_mean(p, c - off, c - off, box), box_mean(p, 0, 0, box)
-        return {"rho_l": rho_l, "rho_g": rho_g, "rho_ratio": rho_l / rho_g,
-                "p_l": p_l, "p_g": p_g, "dp": p_l - p_g, "r": None, "gamma": None,
-                "status": "radius_estimator_failed: %s" % exc}
+def eos_pressure(rho: np.ndarray) -> np.ndarray:
+    return REF.eos_pressure(rho, CFG["G_eff"])
 
 
-def lsqr_origin(xs, ys):
-    pairs = [(float(a), float(b)) for a, b in zip(xs, ys)
-             if a is not None and b is not None]
-    if len(pairs) < 2:
-        return float("nan"), float("nan")
-    xs = np.array([p[0] for p in pairs])
-    ys = np.array([p[1] for p in pairs])
-    slope = float((xs * ys).sum() / (xs * xs).sum())
-    ss_res = float(((ys - slope * xs) ** 2).sum())
-    ss_tot = float(((ys - ys.mean()) ** 2).sum())
-    return slope, (1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan"))
+# ---------------------------------------------------------------------------
+# Measurement
+# ---------------------------------------------------------------------------
+def measure(fields, rr: np.ndarray, R_guess: float, bands=(0.5, 1.5)) -> dict:
+    """Young-Laplace pressure measurement (self-consistent equivalent radius)."""
+    rho, ux, uy = fields
+    p = eos_pressure(rho)
+    umag = np.sqrt(ux * ux + uy * uy)
+    r_eq = float(R_guess)
+    for _ in range(6):
+        inside = rr <= r_eq * 0.5
+        outside = rr >= r_eq * 1.5
+        rho_in = float(rho[inside].mean())
+        rho_out = float(rho[outside].mean())
+        mid = 0.5 * (rho_in + rho_out)
+        n_liq = int((rho > mid).sum())
+        r_eq_new = math.sqrt(n_liq / math.pi)
+        if abs(r_eq_new - r_eq) < 1e-5:
+            r_eq = r_eq_new
+            break
+        r_eq = r_eq_new
+    out = {"R_eq": r_eq, "u_max": float(umag.max()), "u_mean": float(umag.mean())}
+    a, b = bands
+    inside = rr <= a * r_eq
+    outside = rr >= b * r_eq
+    out["p_in"] = float(p[inside].mean())
+    out["p_out"] = float(p[outside].mean())
+    out["dp"] = out["p_in"] - out["p_out"]
+    out["rho_in"] = float(rho[inside].mean())
+    out["rho_out"] = float(rho[outside].mean())
+    out["mass"] = float(rho.sum())
+    return out
 
 
-def relerr(got, ref):
-    if got is None or ref in (None, 0):
-        return float("nan")
-    return abs(got - ref) / abs(ref)
+def band_sensitivity(fields, rr: np.ndarray, R_eq: float) -> dict:
+    """dp for several (inner, outer) band pairs — protocol fragility probe."""
+    rho = fields[0]
+    p = eos_pressure(rho)
+    out = {}
+    for a, b in ((0.4, 1.6), (0.5, 1.5), (0.6, 1.4), (0.7, 1.3)):
+        ins = rr <= a * R_eq
+        outs = rr >= b * R_eq
+        out[f"{a}-{b}"] = float(p[ins].mean() - p[outs].mean())
+    return out
 
 
-def fnum(x, f="%.5e"):
-    return "FAILED" if x is None else f % x
+# ---------------------------------------------------------------------------
+# One droplet case
+# ---------------------------------------------------------------------------
+def run_case(
+    solver,
+    R: float,
+    L: int,
+    verbose: bool = True,
+    min_steps: int | None = None,
+    max_steps: int | None = None,
+) -> dict:
+    min_steps = CFG["min_steps"] if min_steps is None else min_steps
+    max_steps = CFG["max_steps"] if max_steps is None else max_steps
+    rho0, rr = init_droplet(L, R)
+    f = solver.init(rho0)
+    mass0 = float(rho0.sum())
+    t0 = time.perf_counter()
+    hist: list[dict] = []
+    step = 0
+    converged = False
+    for step in range(1, max_steps + 1):
+        f = solver.step(f)
+        if step % CFG["sample_every"] == 0:
+            m = measure(solver.fields(f), rr, R)
+            m["step"] = step
+            if not np.isfinite(m["dp"]) or not np.isfinite(m["R_eq"]):
+                raise RuntimeError(f"non-finite state: {solver.name} R={R} L={L} step={step}")
+            hist.append(m)
+            if len(hist) >= 2 and step >= min_steps:
+                d_dp = abs(hist[-1]["dp"] - hist[-2]["dp"]) / max(abs(hist[-1]["dp"]), 1e-12)
+                d_r = abs(hist[-1]["R_eq"] - hist[-2]["R_eq"]) / max(hist[-1]["R_eq"], 1e-12)
+                if d_dp < CFG["conv_dp"] and d_r < CFG["conv_r"]:
+                    converged = True
+                    break
+    fields = solver.fields(f)
+    final = measure(fields, rr, R)
+    final.update(
+        {
+            "solver": solver.name,
+            "forcing": solver.forcing,
+            "R_init": R,
+            "L": L,
+            "step": step,
+            "converged": converged,
+            "mass_drift_rel": abs(final["mass"] - mass0) / mass0,
+            "band_sensitivity": band_sensitivity(fields, rr, final["R_eq"]),
+            "sigma_i": final["dp"] * final["R_eq"],  # 2-D cylinder: dp = sigma / R
+            "wall_s": time.perf_counter() - t0,
+        }
+    )
+    # radial profiles (for figures / band diagnostics)
+    r = np.sqrt(rr)
+    nb = 60
+    edges = np.linspace(0.0, L / 2.0, nb + 1)
+    idx = np.clip(np.digitize(r.ravel(), edges) - 1, 0, nb - 1)
+    prof_rho = np.bincount(idx, weights=fields[0].ravel(), minlength=nb) / np.maximum(
+        np.bincount(idx, minlength=nb), 1
+    )
+    prof_p = np.bincount(idx, weights=eos_pressure(fields[0]).ravel(), minlength=nb) / np.maximum(
+        np.bincount(idx, minlength=nb), 1
+    )
+    final["profile"] = {
+        "r": (0.5 * (edges[:-1] + edges[1:])).round(6).tolist(),
+        "rho": np.round(prof_rho, 6).tolist(),
+        "p": np.round(prof_p, 8).tolist(),
+    }
+    if verbose:
+        print(
+            f"  [{solver.name:9s} L={L:3d} R={R:4.1f}] steps={step:5d} conv={converged} "
+            f"R_eq={final['R_eq']:7.3f} dp={final['dp']:.6f} sigma_i={final['sigma_i']:.5f} "
+            f"u_max={final['u_max']:.3f} rho_in={final['rho_in']:.4f} rho_out={final['rho_out']:.4f} "
+            f"({final['wall_s']:.0f}s)",
+            flush=True,
+        )
+    return final
 
 
-def readouts(solver: OSSShanChen):
-    """TensorLBM readouts on the OSS solver state (populations + density)."""
-    rho_t = torch.tensor(solver.rho(), dtype=torch.float64)
-    f_t = torch.tensor(solver.f, dtype=torch.float64)
-    p_cl = pressure_eos(rho_t, G_EFF).numpy()
-    p_fl = pressure_flux(f_t, G_EFF).numpy()
-    sk = sigma_korteweg(rho_t, N, STENCIL, G_EFF)
-    return rho_t.numpy(), p_cl, p_fl, sk
+# ---------------------------------------------------------------------------
+# Fits
+# ---------------------------------------------------------------------------
+def laplace_fit(rows: list[dict]) -> dict:
+    """Fit dp = sigma/R (+ intercept) and report two-dimensional residuals."""
+    R = np.array([r["R_eq"] for r in rows], dtype=float)
+    dp = np.array([r["dp"] for r in rows], dtype=float)
+    x = 1.0 / R
+    sigma_o = float((dp * x).sum() / (x * x).sum())  # through origin
+    # free-intercept least squares  dp = sigma x + b
+    A = np.vstack([x, np.ones_like(x)]).T
+    (sigma_f, b), *_ = np.linalg.lstsq(A, dp, rcond=None)
+    pred = A @ np.array([sigma_f, b])
+    ss_res = float(((dp - pred) ** 2).sum())
+    ss_tot = float(((dp - dp.mean()) ** 2).sum())
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+    sigma_i = dp * R
+    dev_o = (sigma_i - sigma_o) / sigma_o * 100.0
+    dev_f = (sigma_i - sigma_f) / sigma_f * 100.0
+    return {
+        "sigma_through_origin": sigma_o,
+        "sigma_free_intercept": float(sigma_f),
+        "intercept": float(b),
+        "intercept_frac_pct": float(abs(b) / (abs(sigma_f) * x.max()) * 100.0),
+        "R2": r2,
+        "max_abs_dev_pct_through_origin": float(np.abs(dev_o).max()),
+        "max_abs_dev_pct_free_intercept": float(np.abs(dev_f).max()),
+        "per_radius": [
+            {
+                "R_eq": float(R[i]),
+                "dp": float(dp[i]),
+                "sigma_i": float(sigma_i[i]),
+                "dev_pct_through_origin": float(dev_o[i]),
+                "dev_pct_free_intercept": float(dev_f[i]),
+            }
+            for i in range(len(R))
+        ],
+        "n_points": int(len(R)),
+    }
 
 
-def kernel_equivalence(steps=5):
-    o = OSSShanChen(N, TAU, G_EFF, RHO0, RHO_L_INIT, RHO_G_INIT)
-    o.f = tl_init(sharp_droplet(16.0)).numpy().copy()
-    f_tl = torch.tensor(o.f.copy())
-    for _ in range(steps):
-        o.step()
-        f_tl = step_sc(f_tl, G_eff=G_EFF, tau=TAU, stencil=STENCIL)
-    return {"steps": steps,
-            "max_abs_drho": float(np.max(np.abs(o.rho() - f_tl.sum(0).numpy()))),
-            "max_abs_df": float(np.max(np.abs(o.f - f_tl.numpy())))}
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--quick", action="store_true", help="reduced study")
+    ap.add_argument("--out", default=str(HERE / "artifacts"))
+    ap.add_argument("--stage", default="all", help="all|main|sensitivity")
+    args = ap.parse_args(argv)
+    out = Path(args.out)
+    (out / "figures").mkdir(parents=True, exist_ok=True)
 
+    res: dict = {"anchor": "XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION", "config": CFG}
+    res["config"]["bands"] = list(CFG["bands"])
 
-def tl_full_run(R=16.0, steps=STEPS):
-    """TensorLBM kernel time-stepped in full (dynamics-equivalence check)."""
-    f = tl_init(sharp_droplet(R))
-    t0 = time.time()
-    for _ in range(steps):
-        f = step_sc(f, G_eff=G_EFF, tau=TAU, stencil=STENCIL)
-    return f, time.time() - t0
+    # ---- L2: analytic Maxwell coexistence on the SC EOS -------------------
+    rho_v_mx, rho_l_mx, p_c = REF.maxwell_coexistence(CFG["G_eff"])
+    res["maxwell"] = {"rho_v": rho_v_mx, "rho_l": rho_l_mx, "p_c": p_c}
+    print(f"Maxwell (analytic EOS): rho_v={rho_v_mx:.5f} rho_l={rho_l_mx:.5f} p_c={p_c:.6f}")
 
+    if args.quick:
+        radii = [8.0, 12.0]
+        dom_study = []
+        forcing_study = []
+        solvers = [TorchSolver()]
+        min_steps, max_steps = 1500, 4000
+    else:
+        radii = [12.0, 16.0, 20.0, 24.0]
+        dom_study = [4.0, 6.0, 8.0] if args.stage in ("all", "sensitivity") else []
+        forcing_study = ["velocity_shift", "guo"] if args.stage in ("all", "sensitivity") else []
+        solvers = [TorchSolver(), NumpySolver()]
+        min_steps, max_steps = None, None
 
-def main() -> int:
-    t0 = time.time()
-    S = {"anchor": "XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
-         "parameters": {"n": N, "tau": TAU, "G_eff": G_EFF, "rho0": RHO0,
-                        "rho_l_init": RHO_L_INIT, "rho_g_init": RHO_G_INIT,
-                        "steps": STEPS, "radii_init": RADII,
-                        "lattice": "D2Q9, single component, fully periodic"},
-         "oss_ref": {str(k): v for k, v in OSS_REF.items()},
-         "oss_ref_lsqr": OSS_REF_LSQR,
-         "arm_note": "dynamics = OSS port (numpy); TensorLBM readouts evaluated on "
-                     "the same field; TensorLBM kernel time-stepped once at R=16 "
-                     "to confirm the 4000-step agreement (kernel_equivalence_4000)",
-         "dtype": "float64", "torch_threads": 2}
+    def _span(R, f):
+        return int(round(f * R))
 
-    print("[1/5] kernel equivalence, 5 steps", flush=True)
-    S["kernel_equivalence_5"] = kernel_equivalence(5)
-    print("   ", S["kernel_equivalence_5"], flush=True)
+    # ---- L1/L3 main scan ---------------------------------------------------
+    if args.stage in ("all", "main"):
+        runs = []
+        for solver in solvers:
+            print(f"== droplet Laplace scan, solver={solver.name} ==")
+            for R in radii:
+                runs.append(
+                    run_case(solver, R, _span(R, 4.0), min_steps=min_steps, max_steps=max_steps)
+                )
+        by_solver: dict[str, list] = {}
+        for r in runs:
+            by_solver.setdefault(r["solver"], []).append(r)
+        res["laplace"] = {}
+        for name, rows in by_solver.items():
+            fit = laplace_fit(rows)
+            fit["rows"] = rows
+            res["laplace"][name] = fit
+            print(
+                f"  FIT {name:9s} sigma_origin={fit['sigma_through_origin']:.5f} "
+                f"sigma_free={fit['sigma_free_intercept']:.5f} R2={fit['R2']:.8f} "
+                f"maxdev(origin)={fit['max_abs_dev_pct_through_origin']:.2f}% "
+                f"intercept={fit['intercept']:+.2e} ({fit['intercept_frac_pct']:.2f}%)"
+            )
+        # cross-implementation deviation, same radii
+        d = None
+        if len(by_solver) == 2:
+            so = {r["R_init"]: r for r in by_solver["tensorlbm"]}
+            sr = {r["R_init"]: r for r in by_solver["ref_numpy"]}
+            common = sorted(set(so) & set(sr))
+            d = {
+                "radii": common,
+                "sigma_origin_rel_pct": abs(
+                    res["laplace"]["tensorlbm"]["sigma_through_origin"]
+                    - res["laplace"]["ref_numpy"]["sigma_through_origin"]
+                )
+                / res["laplace"]["ref_numpy"]["sigma_through_origin"]
+                * 100.0,
+                "dp_rel_pct": [
+                    abs(so[R]["dp"] - sr[R]["dp"]) / abs(sr[R]["dp"]) * 100.0 for R in common
+                ],
+                "rho_in_rel_pct": [
+                    abs(so[R]["rho_in"] - sr[R]["rho_in"]) / sr[R]["rho_in"] * 100.0 for R in common
+                ],
+                "rho_out_rel_pct": [
+                    abs(so[R]["rho_out"] - sr[R]["rho_out"]) / sr[R]["rho_out"] * 100.0 for R in common
+                ],
+            }
+            d["max_dp_rel_pct"] = float(np.max(d["dp_rel_pct"]))
+            d["max_rho_in_rel_pct"] = float(np.max(d["rho_in_rel_pct"]))
+            d["max_rho_out_rel_pct"] = float(np.max(d["rho_out_rel_pct"]))
+            res["impl_vs_impl"] = d
+            print(
+                f"  IMPL-IMPL: max|dp| dev={d['max_dp_rel_pct']:.3f}% "
+                f"sigma dev={d['sigma_origin_rel_pct']:.3f}% "
+                f"rho_in={d['max_rho_in_rel_pct']:.3f}% rho_out={d['max_rho_out_rel_pct']:.3f}%"
+            )
 
-    print("[2/5] radius sweep", flush=True)
-    rows, fields = [], {}
-    for R in RADII:
-        s = OSSShanChen(N, TAU, G_EFF, RHO0, RHO_L_INIT, RHO_G_INIT)
-        s.init_droplet(R)
-        tR = time.time()
-        s.run(STEPS)
-        wall = time.time() - tR
-        rho, p_cl, p_fl, sk = readouts(s)
-        ux, uy = s.velocity(*s.force())[1:]
-        u_max = float(np.sqrt(ux ** 2 + uy ** 2).max())
-        for arm, ro, rec in (("OSS", "closure", calib_safe(rho, closure_pressure(rho, G_EFF, RHO0))),
-                             ("TL", "closure", calib_safe(rho, p_cl)),
-                             ("TL", "flux", calib_safe(rho, p_fl))):
-            row = {"R_init": R, "arm": arm, "readout": ro, "wall_s": wall,
-                   "status": rec["status"], "u_max": u_max,
-                   "sigma_K": sk["sigma_K"]}
-            row.update({k: rec[k] for k in KEY})
-            rows.append(row)
-        fields[R] = {"rho": rho, "p_cl": p_cl, "p_fl": p_fl,
-                     "sigma_K": sk["sigma_K"], "u_max": u_max}
-        print("   R=%4.1f OSS gamma=%s (r=%s dp=%s) TL closure=%s TL flux=%s "
-              "sigma_K=%.5f u_max=%.2e"
-              % (R, fnum(rows[-3]["gamma"]), fnum(rows[-3]["r"], "%.3f"),
-                 fnum(rows[-3]["dp"]), fnum(rows[-2]["gamma"]),
-                 fnum(rows[-1]["gamma"]), sk["sigma_K"], u_max), flush=True)
-    S["radius_sweep"] = rows
-    with (OUT / "radius_sweep.csv").open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
-        w.writeheader()
-        for r in rows:
-            w.writerow(r)
+    # ---- L3 sensitivity: domain extent ------------------------------------
+    if dom_study:
+        print("== domain-extent sensitivity (solver=tensorlbm, velocity_shift) ==")
+        sol = TorchSolver()
+        rows = [run_case(sol, 16.0, _span(16.0, f)) for f in dom_study]
+        res["domain_study"] = {
+            "R": 16.0,
+            "rows": rows,
+            "dp_spread_pct": float(
+                (max(r["dp"] for r in rows) - min(r["dp"] for r in rows))
+                / np.mean([r["dp"] for r in rows])
+                * 100.0
+            ),
+        }
+        print(f"  dp spread over L/R in {dom_study}: {res['domain_study']['dp_spread_pct']:.2f}%")
 
-    def pick(R, arm, ro):
-        return next(r for r in rows if r["R_init"] == R and r["arm"] == arm
-                    and r["readout"] == ro)
+    # ---- L3 sensitivity: forcing scheme -----------------------------------
+    if forcing_study:
+        print("== forcing-scheme sensitivity (R=16, L=6R) ==")
+        rows = [run_case(TorchSolver(forcing=fs), 16.0, 96) for fs in forcing_study]
+        res["forcing_study"] = {
+            "R": 16.0,
+            "L": 96,
+            "rows": rows,
+            "dp_spread_pct": float(
+                (max(r["dp"] for r in rows) - min(r["dp"] for r in rows))
+                / np.mean([r["dp"] for r in rows])
+                * 100.0
+            ),
+        }
+        print(f"  dp spread over forcings: {res['forcing_study']['dp_spread_pct']:.2f}%")
 
-    print("[3/5] TensorLBM full 4000-step run at R=16 (dynamics check)", flush=True)
-    f_tl, wall_tl = tl_full_run(16.0)
-    rho_tl = f_tl.sum(0).numpy()
-    cal_tl = calib_safe(rho_tl, pressure_eos(f_tl.sum(0), G_EFF).numpy())
-    cal_oss16 = pick(16.0, "TL", "closure")
-    S["kernel_equivalence_4000"] = {
-        "R_init": 16.0, "steps": STEPS,
-        "max_abs_drho_vs_oss_port": float(np.max(np.abs(rho_tl - fields[16.0]["rho"]))),
-        "gamma_tl_kernel": cal_tl["gamma"], "gamma_oss_port": cal_oss16["gamma"],
-        "relerr_gamma": relerr(cal_tl["gamma"], cal_oss16["gamma"]),
-        "wall_s": wall_tl}
-    print("   ", S["kernel_equivalence_4000"], flush=True)
+    # ---- verdict -----------------------------------------------------------
+    if "laplace" in res:
+        crit = CFG["criteria_pct"]
+        verdict = {}
+        for name, fit in res["laplace"].items():
+            verdict[name] = {
+                "sigma": fit["sigma_through_origin"],
+                "dev_vs_locked_doc_pct": abs(
+                    fit["sigma_through_origin"] - CFG["sigma_locked_doc"]
+                )
+                / CFG["sigma_locked_doc"]
+                * 100.0,
+                "laplace_linear_R2": fit["R2"],
+                "max_dev_pct": fit["max_abs_dev_pct_through_origin"],
+                "pass_15pct": bool(abs(fit["sigma_through_origin"] - CFG["sigma_locked_doc"])
+                                   / CFG["sigma_locked_doc"] * 100.0 < crit),
+                "pass_3pct": bool(abs(fit["sigma_through_origin"] - CFG["sigma_locked_doc"])
+                                  / CFG["sigma_locked_doc"] * 100.0 < 3.0),
+            }
+        res["verdict"] = verdict
+        res["pass_all_15pct"] = all(v["pass_15pct"] for v in verdict.values())
 
-    comp = []
-    for R in RADII:
-        ref = OSS_REF[R]
-        go, gt, gf = pick(R, "OSS", "closure"), pick(R, "TL", "closure"), pick(R, "TL", "flux")
-        comp.append({"R_init": R, "status": gt["status"],
-                     "oss_ref_gamma": ref["gamma"], "oss_ref_r": ref["r"],
-                     "oss_ref_dp": ref["dp"],
-                     "gamma_oss_port": go["gamma"], "gamma_tl_closure": gt["gamma"],
-                     "gamma_tl_flux": gf["gamma"],
-                     "relerr_gamma_port_vs_ref": relerr(go["gamma"], ref["gamma"]),
-                     "relerr_gamma_tl_vs_ref": relerr(gt["gamma"], ref["gamma"]),
-                     "relerr_flux_vs_closure": relerr(gf["gamma"], gt["gamma"]),
-                     "r_port": go["r"], "ref_r": ref["r"], "relerr_r": relerr(go["r"], ref["r"]),
-                     "dp_port": go["dp"], "relerr_dp": relerr(go["dp"], ref["dp"]),
-                     "ref_rho_ratio": ref["rho_l"] / ref["rho_g"],
-                     "rho_ratio_port": go["rho_ratio"],
-                     "relerr_rho_ratio": relerr(go["rho_ratio"], ref["rho_l"] / ref["rho_g"]),
-                     "dp_over_mean_p": abs(go["dp"]) / (0.5 * abs(go["p_l"] + go["p_g"]))})
-    S["comparison_vs_oss_ref"] = comp
-
-    def lsqr_for(arm, ro):
-        xs, ys = [], []
-        for R in (12.0, 16.0, 20.0):
-            r = pick(R, arm, ro)
-            if r["r"] is None or r["gamma"] is None:
-                continue
-            xs.append(1.0 / r["r"])
-            ys.append(r["dp"])
-        return lsqr_origin(xs, ys)
-
-    g_o, r2_o = lsqr_for("OSS", "closure")
-    g_c, r2_c = lsqr_for("TL", "closure")
-    g_f, r2_f = lsqr_for("TL", "flux")
-    S["laplace_lsqr"] = {
-        "form": "through-origin LSQ of dp = sigma*(1/r) over R_init = 12/16/20",
-        "oss_port": {"gamma": g_o, "r2": r2_o, "relerr_vs_ref": relerr(g_o, OSS_REF_LSQR)},
-        "tl_closure": {"gamma": g_c, "r2": r2_c, "relerr_vs_ref": relerr(g_c, OSS_REF_LSQR)},
-        "tl_flux": {"gamma": g_f, "r2": r2_f, "relerr_vs_ref": relerr(g_f, OSS_REF_LSQR)},
-        "oss_ref": {"gamma": OSS_REF_LSQR, "r2": 0.988}}
-
-    S["korteweg_anchor"] = [
-        {"R_init": R, "sigma_K": fields[R]["sigma_K"],
-         "dp_closure_times_r": pick(R, "TL", "closure")["gamma"],
-         "dp_flux_times_r": pick(R, "TL", "flux")["gamma"],
-         "relerr_closureR_vs_sigmaK": relerr(pick(R, "TL", "closure")["gamma"],
-                                             fields[R]["sigma_K"]),
-         "relerr_fluxR_vs_sigmaK": relerr(pick(R, "TL", "flux")["gamma"],
-                                          fields[R]["sigma_K"])}
-        for R in RADII]
-
-    print("[4/5] time convergence at R=16", flush=True)
-    s = OSSShanChen(N, TAU, G_EFF, RHO0, RHO_L_INIT, RHO_G_INIT)
-    s.init_droplet(16.0)
-    tconv, done = [], 0
-    for k in (1000, 2000, 4000, 8000):
-        s.run(k - done)
-        done = k
-        rho, p_cl, p_fl, sk = readouts(s)
-        c = calib_safe(rho, p_cl)
-        tconv.append({"steps": k, "gamma": c["gamma"], "dp": c["dp"], "r": c["r"],
-                      "sigma_K": sk["sigma_K"],
-                      "kappa3": sk["kappa3"], "status": c["status"]})
-        print("   steps=%5d gamma=%s dp=%s sigma_K=%.5f"
-              % (k, fnum(c["gamma"]), fnum(c["dp"]), sk["sigma_K"]), flush=True)
-    S["time_convergence"] = tconv
-    with (OUT / "time_convergence.csv").open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(tconv[0]))
-        w.writeheader()
-        for r in tconv:
-            w.writerow(r)
-
-    print("[5/5] sensitivities at R=16", flush=True)
-    rho16, p16 = fields[16.0]["rho"], fields[16.0]["p_cl"]
-    sens = []
-    for box in (4, 8):
-        for two in (False, True):
-            c = calib_safe(rho16, p16, box=box, two_sided=two)
-            sens.append({"arm": "TL_closure", "box": box, "two_sided": two,
-                         "r_definition": "midline", "dp": c["dp"], "r": c["r"],
-                         "gamma": c["gamma"], "status": c["status"]})
-    mid = 0.5 * (float(rho16.max()) + float(rho16.min()))
-    area_r = math.sqrt(float((rho16 > mid).sum()) / math.pi)
-    c = calib_safe(rho16, p16)
-    sens.append({"arm": "TL_closure", "box": 4, "two_sided": False,
-                 "r_definition": "area_equivalent", "dp": c["dp"], "r": area_r,
-                 "gamma": c["dp"] * area_r, "status": "ok"})
-    S["sensitivity"] = sens
-    with (OUT / "sensitivity.csv").open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["arm", "box", "two_sided", "r_definition",
-                                           "dp", "r", "gamma", "status"],
-                           extrasaction="ignore")
-        w.writeheader()
-        for r in sens:
-            w.writerow(r)
-
-    figs = []
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-
-        fig, ax = plt.subplots(figsize=(6.6, 4.5))
-        for arm, ro, lab, mk in (("OSS", "closure", "OSS port (closure readout)", "o"),
-                                 ("TL", "closure", "TensorLBM (closure readout)", "s"),
-                                 ("TL", "flux", "TensorLBM (flux readout)", "^")):
-            xs, ys = [], []
-            for R in RADII:
-                r = pick(R, arm, ro)
-                if r["r"] is not None:
-                    xs.append(r["r"])
-                    ys.append(r["gamma"])
-            ax.plot(xs, ys, mk + "-", label=lab, alpha=0.85)
-        refR = [R for R in RADII if OSS_REF[R]["r"] < 100.0]
-        ax.plot([OSS_REF[R]["r"] for R in refR], [OSS_REF[R]["gamma"] for R in refR],
-                "kx", ms=9, label="OSS inventoried run (report table 1)")
-        ax.axhline(g_c, color="C1", ls=":", lw=1,
-                   label=r"LSQR $\gamma$=%.5f (TensorLBM)" % g_c)
-        ax.axhline(OSS_REF_LSQR, color="0.4", ls=":", lw=1,
-                   label=r"LSQR $\gamma$=%.5f (OSS)" % OSS_REF_LSQR)
-        ax.axhspan(0.85 * OSS_REF_LSQR, 1.15 * OSS_REF_LSQR, color="0.85", alpha=0.5,
-                   label="15% band around OSS $\\gamma$")
-        ax.set_ylim(-0.004, 0.028)
-        ax.set_xlabel("drop radius r (lattice units)")
-        ax.set_ylabel(r"$\gamma = \Delta p\, r$  (lattice units)")
-        ax.set_title("Young-Laplace calibration: TensorLBM vs OSS "
-                     r"($G=-4.7$, $64^2$, 4000 steps)")
-        ax.legend(fontsize=7, loc="lower right")
-        ax.grid(alpha=0.3)
-        fig.tight_layout()
-        fig.savefig(OUT / "fig_laplace_gamma.png", dpi=140)
-        plt.close(fig)
-        figs.append({"name": "fig_laplace_gamma.png",
-                     "caption": "gamma = dp*r vs drop radius: OSS port, TensorLBM closure "
-                                "readout, TensorLBM flux readout, the OSS inventoried points "
-                                "(report §九 table 1, R_init=24 omitted: the radius "
-                                "estimator fails in both arms there) and the 15% band "
-                                "around the OSS LSQR gamma."})
-        fig, axs = plt.subplots(1, 2, figsize=(9.8, 3.9))
-        y = N // 2
-        axs[0].plot(rho16[y], label="density (both arms, |diff|<1e-15)")
-        axs[0].axhline(mid, color="0.5", lw=0.8, ls="--", label=r"$\rho_{av}$")
-        axs[0].set_xlabel("x (lattice units)")
-        axs[0].set_ylabel(r"$\rho$")
-        axs[0].set_title(r"mid-plane density, $R_{init}$=16, 4000 steps")
-        axs[0].legend(fontsize=8)
-        axs[0].grid(alpha=0.3)
-        axs[1].plot(p16[y], label=r"closure $p=\rho/3+G\psi^2/6$")
-        axs[1].plot(fields[16.0]["p_fl"][y], "--", label="momentum-flux $p$")
-        axs[1].set_xlabel("x (lattice units)")
-        axs[1].set_ylabel("p (lattice units)")
-        axs[1].set_title("pressure readouts across the interface")
-        axs[1].legend(fontsize=8)
-        axs[1].grid(alpha=0.3)
-        fig.tight_layout()
-        fig.savefig(OUT / "fig_profiles.png", dpi=140)
-        plt.close(fig)
-        figs.append({"name": "fig_profiles.png",
-                     "caption": "mid-plane density and the two pressure readouts across "
-                                "the interface at R_init=16, 4000 steps; the readouts "
-                                "differ only inside the interface band, so the bulk-band "
-                                "difference isolates the non-equilibrium correction."})
-    except Exception as exc:  # pragma: no cover
-        S["figure_error"] = repr(exc)
-
-    S["wall_clock_s"] = time.time() - t0
-    (OUT / "summary.json").write_text(json.dumps(S, indent=2, default=float))
-    if figs:
-        (OUT / "figures_b64.json").write_text(json.dumps(
-            [{"name": f["name"], "caption": f["caption"],
-              "png_base64": base64.b64encode((OUT / f["name"]).read_bytes()).decode()}
-             for f in figs], indent=1))
-    print("\n== LSQR ==", json.dumps(S["laplace_lsqr"], indent=1, default=float), flush=True)
-    print("wall clock %.1f s" % S["wall_clock_s"], flush=True)
+    path = out / f"result{'_quick' if args.quick else ''}.json"
+    if path.exists():  # merge stages (main / sensitivity) into one artifact
+        try:
+            old = json.loads(path.read_text(encoding="utf-8"))
+            old.update(res)
+            res = old
+        except json.JSONDecodeError:
+            pass
+    path.write_text(json.dumps(res, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"\nSaved -> {path}")
     return 0
 
 
