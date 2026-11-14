@@ -1,0 +1,37 @@
+{
+  "mission_id": 2371,
+  "backfill_mission_id": 19269,
+  "report_id": 17733,
+  "files_created": [
+    "docs/report_m2371.md",
+    "docs/evidence_m2371_backfill.md"
+  ],
+  "file_details": {
+    "docs/report_m2371.md": {
+      "size_bytes": 13812,
+      "lines": 254,
+      "md5": "413563ce7d579c6b22788810560421f3"
+    },
+    "docs/evidence_m2371_backfill.md": {
+      "size_bytes": 1435,
+      "lines": 47
+    }
+  },
+  "api_post": {
+    "endpoint": "$TENSOR_API_BASE/tensor/reports",
+    "method": "POST",
+    "exit_code": 0,
+    "response": {
+      "report_id": 17733,
+      "readback.ok": true,
+      "ledger_ok": true,
+      "digest_checks": {
+        "markdown": "pass",
+        "figures": "pass",
+        "mission_id": "pass"
+      }
+    }
+  },
+  "verification_status": "all_checks_passed",
+  "timestamp": "2026-11-13T22:54:00Z"
+}
