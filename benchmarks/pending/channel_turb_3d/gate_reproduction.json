@@ -1,0 +1,152 @@
+{
+  "schema": "tensorlbm-t3-channel-gate-reproduction-v1",
+  "case": "channel_turb_re180",
+  "slot": "channel",
+  "scope": "Independent re-derivation of the recorded T3 gate number from the frozen L3 statistics and the frozen MKM-1999 table, plus the normalisation sensitivity of that number. The slot verdict is unchanged: honest FAIL on the 3% DNS u+ gate.",
+  "inputs": {
+    "l3_result": {
+      "path": "benchmarks/pending/channel_turb_3d/runs_3d/L3_result.json",
+      "sha256": "ccb249214ae4987dc90bf22820953deb25ec77559426ed3c67ccb1538949b115"
+    },
+    "ladder": {
+      "path": "benchmarks/pending/channel_turb_3d/validation_report.json",
+      "sha256": "24034c8ddbccddfd9b611c03ab9f7481f30f81a152fce220e0fdc40a9d44ab6b"
+    },
+    "dns_table": {
+      "path": "benchmarks/pending/channel_turb_3d/dns_ref/mkm180.csv",
+      "sha256": "e05c1ddb0cf8fb2c37ddd98436a0ab1bee53b747cf70a50efae52732e0bf8a73",
+      "citation": "Moser, Kim & Mansour, Phys. Fluids 11, 943 (1999), Re_tau=178.12"
+    }
+  },
+  "reproduction": {
+    "criterion": "|recomputed - recorded| <= 0.01 percentage points",
+    "recorded_rms_pct": 5.330965065942242,
+    "recomputed_rms_pct": 5.330965065942245,
+    "delta_pp": 3.552713678800501e-15,
+    "n_points": 12,
+    "y_plus_range": [
+      31.935483870967744,
+      95.80645161290323
+    ],
+    "convention": "relative RMS, wall origin 0.5 node, u_tau = sqrt(target_wall_shear)",
+    "pass": true
+  },
+  "friction": {
+    "u_tau_measured": 0.002770791905384009,
+    "u_tau_target": 0.003,
+    "gap_pct": -7.640269820533041
+  },
+  "uplus_conventions": {
+    "rel_offset0.5_target_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.003,
+      "mode": "relative",
+      "n_points": 12,
+      "rms_u_plus": 0.8424358041754131,
+      "rms_pct": 5.330965065942245,
+      "y_plus_range": [
+        31.935483870967744,
+        95.80645161290323
+      ]
+    },
+    "rel_offset0.5_measured_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.002770791905384009,
+      "mode": "relative",
+      "n_points": 13,
+      "rms_u_plus": 2.5194467008724564,
+      "rms_pct": 15.797503010347205,
+      "y_plus_range": [
+        34.858349777411725,
+        99.21222628955645
+      ]
+    },
+    "rel_offset0.1_measured_u_tau": {
+      "wall_offset": 0.1,
+      "u_tau": 0.002770791905384009,
+      "mode": "relative",
+      "n_points": 13,
+      "rms_u_plus": 2.3237967809155626,
+      "rms_pct": 14.708290059721321,
+      "y_plus_range": [
+        31.64065595180449,
+        95.9945324639492
+      ]
+    },
+    "abs_offset0.5_target_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.003,
+      "mode": "absolute",
+      "n_points": 12,
+      "rms_u_plus": 0.8662879863208652,
+      "rms_pct": 5.481902560685074,
+      "y_plus_range": [
+        31.935483870967744,
+        95.80645161290323
+      ]
+    },
+    "abs_offset0.5_measured_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.002770791905384009,
+      "mode": "absolute",
+      "n_points": 13,
+      "rms_u_plus": 2.5395858206033313,
+      "rms_pct": 15.923779864889939,
+      "y_plus_range": [
+        34.858349777411725,
+        99.21222628955645
+      ]
+    }
+  },
+  "normalisation_sensitivity": {
+    "ratio_measured_over_target": 2.96334768938408,
+    "note": "u+ is conventionally normalised by the *measured* friction velocity. The recorded gate number uses the target value; under the measured value the same frozen field gives 15.80%, i.e. x2.96 the recorded number. The matrix must declare this convention."
+  },
+  "budget_diagnostic": {
+    "definition": "tau_total(y) = nu*dU/dy - <u'v'> must be linear and vanish at the centreline",
+    "ranges": {
+      "full[1,ny-2]": {
+        "nodes": [
+          1,
+          62
+        ],
+        "tau_w_fit": 8.2293606087073e-06,
+        "u_tau_fit": 0.0028686862164948087,
+        "zero_crossing_node": 32.03454645681024,
+        "centre_node": 31.5,
+        "max_abs_residual": 2.789154971335002e-06,
+        "residual_pct_of_tau_w": 33.892729993917875
+      },
+      "outer[4,ny-5]": {
+        "nodes": [
+          4,
+          59
+        ],
+        "tau_w_fit": 8.751025221076256e-06,
+        "u_tau_fit": 0.0029582131804648994,
+        "zero_crossing_node": 32.012183204770345,
+        "centre_node": 31.5,
+        "max_abs_residual": 6.968430199722381e-07,
+        "residual_pct_of_tau_w": 7.962987219988105
+      },
+      "core[10,ny-11]": {
+        "nodes": [
+          10,
+          53
+        ],
+        "tau_w_fit": 9.161209457090989e-06,
+        "u_tau_fit": 0.003026748991424791,
+        "zero_crossing_node": 32.140880499623556,
+        "centre_node": 31.5,
+        "max_abs_residual": 3.116382095708584e-07,
+        "residual_pct_of_tau_w": 3.4017147084181465
+      }
+    },
+    "verdict": "diagnostic only: the outer/core balance closes to a few percent, the full-range residual is dominated by one-sided near-wall derivative estimates, so this range must not be used as a mesh-quality gate"
+  },
+  "verdict": {
+    "reproduction_pass": true,
+    "dns_gate_pass": false,
+    "dns_gate_reason": "recorded best-level RMS 5.33% > 3% gate, and under the conventional measured-u_tau normalisation it is 15.80%. The matrix keeps this slot failed."
+  }
+}
