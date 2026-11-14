@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import textwrap
@@ -34,20 +35,63 @@ from .registry import DEFAULT_ROOT, discover
 ARTIFACT_ROOT = Path("artifacts") / "model_units"
 RUN_ROOT = Path("runs") / "model_units"
 
+#: ``<repo>/src`` -- the checkout this module was imported from.
+REPO_SRC = Path(__file__).resolve().parents[2]
+
+
+def _probe_env() -> dict[str, str]:
+    """Environment for the per-unit probe subprocess.
+
+    The probe must import *this checkout's* ``tensorlbm``.  A stale editable
+    install (or any ``PYTHONPATH`` entry pointing at another worktree) otherwise
+    wins the import search and the build artefact silently describes a
+    different code base: the fingerprint would still be "deterministic", the CI
+    verdict would still be "pass", and both would be about the wrong model.
+    Putting ``REPO_SRC`` first makes the choice explicit instead of ambient.
+    """
+    env = dict(os.environ)
+    parts = [str(REPO_SRC)]
+    for item in env.get("PYTHONPATH", "").split(os.pathsep):
+        if not item:
+            continue
+        try:
+            if Path(item).resolve() == REPO_SRC:
+                continue
+        except OSError:  # pragma: no cover - pathological path
+            pass
+        parts.append(item)
+    env["PYTHONPATH"] = os.pathsep.join(parts)
+    return env
+
 
 def _probe(unit: ModelUnit, timeout: int = 300) -> dict[str, Any]:
     """Import the kernel module alone in a subprocess and probe it."""
     kernel = unit.kernel_source
     code = textwrap.dedent(
         f"""
-        import hashlib, json, sys
+        import hashlib, json, pathlib, sys
         import torch
+        import tensorlbm
+
+        pkg_dir = pathlib.Path(tensorlbm.__file__).resolve().parent
+        pkg_root = pkg_dir.parent
+        expected = pathlib.Path({str(REPO_SRC)!r}).resolve()
+        if pkg_root != expected:
+            raise SystemExit(
+                "probe imported tensorlbm from " + str(pkg_root) + " instead of "
+                + str(expected) + " (stale install or PYTHONPATH shadowing)"
+            )
 
         mod = __import__({kernel!r}, fromlist=["probe"])
         closure = sorted(
             m for m in sys.modules if m.split(".")[0] == "tensorlbm"
         )
-        probe = {{"module": {kernel!r}, "closure": closure, "n_modules": len(closure)}}
+        probe = {{
+            "module": {kernel!r},
+            "closure": closure,
+            "n_modules": len(closure),
+            "tensorlbm_root": str(pkg_dir),
+        }}
         torch.manual_seed(0)
         if hasattr(mod, "equilibrium3d"):
             rho = torch.ones(3, 4, 5, dtype=torch.float64)
@@ -72,6 +116,7 @@ def _probe(unit: ModelUnit, timeout: int = 300) -> dict[str, Any]:
         text=True,
         timeout=timeout,
         check=False,
+        env=_probe_env(),
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -109,6 +154,7 @@ def build(unit: ModelUnit, out_root: Path | str = ARTIFACT_ROOT) -> dict[str, An
         "kind": "model_unit_build",
         "unit": unit.to_dict(),
         "kernel_import": probe,
+        "tensorlbm_root": probe.get("tensorlbm_root"),
         "library_surface_modules": mono,
         "monolithic_tensorlbm_modules": mono,
         "isolation_ratio": (probe["n_modules"] / mono) if mono else None,
@@ -171,7 +217,11 @@ def test(unit: ModelUnit, out_root: Path | str = RUN_ROOT) -> dict[str, Any]:
     return record
 
 
-def doctor(root: Path | str = DEFAULT_ROOT, repo_root: Path | None = None) -> dict[str, Any]:
+def doctor(
+    root: Path | str = DEFAULT_ROOT,
+    repo_root: Path | None = None,
+    models_root: Path | str | None = None,
+) -> dict[str, Any]:
     """Consistency gates for the unit registry (the CI ``plan`` job's checks)."""
     from .registry import _filesystem_manifests, _git_tracked_manifests, manifest_paths
 
@@ -226,10 +276,51 @@ def doctor(root: Path | str = DEFAULT_ROOT, repo_root: Path | None = None) -> di
     else:  # pragma: no cover - workflow always present in this repo
         add("workflow_present", False, str(workflow))
 
+    # --- provenance: the build/test artefacts must describe *this* checkout.
+    import tensorlbm
+
+    origin = Path(tensorlbm.__file__).resolve()
+    expected = (repo / "src" / "tensorlbm" / "__init__.py").resolve()
+    if expected.is_file():
+        add(
+            "runtime_package_origin",
+            origin == expected,
+            f"imported {origin}, expected {expected}",
+        )
+    else:  # a repo without an in-repo package: nothing to pin, not a failure
+        add(
+            "runtime_package_origin",
+            True,
+            f"imported {origin}; no in-repo package under {repo / 'src'}",
+            advisory=True,
+        )
+    probe_path = _probe_env()["PYTHONPATH"].split(os.pathsep)[0]
+    add(
+        "probe_env_isolated",
+        probe_path == str(REPO_SRC),
+        f"probe PYTHONPATH[0]={probe_path} (repo src first)",
+    )
+
+    # --- every model directory, whatever its manifest dialect, is a CI unit.
+    from .coverage import coverage_report
+
+    cov = coverage_report(
+        models_root=models_root if models_root is not None else Path("models"),
+        repo_root=repo,
+    )
+    add(
+        "manifest_kind_coverage",
+        cov["ok"],
+        f"directories={cov['directories']} cells={cov['cells']} "
+        f"by_kind={cov['by_kind']} uncovered={cov['uncovered']} "
+        f"orphans={cov['orphans']} duplicates={cov['duplicates']}",
+    )
+
     return {
         "kind": "model_unit_doctor",
         "root": str(root_path),
         "units": [u.unit_id for u in units],
         "checks": checks,
+        "coverage": {k: v for k, v in cov.items() if k != "cells_detail"},
         "ok": all(c["ok"] for c in checks if not c["advisory"]),
     }
