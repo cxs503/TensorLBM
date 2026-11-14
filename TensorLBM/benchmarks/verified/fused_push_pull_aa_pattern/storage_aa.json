@@ -1,0 +1,20 @@
+[
+  {
+    "baseline_mb": 448.6,
+    "extra_fields": 2.17,
+    "field_mb": 58.32,
+    "grid": 900,
+    "kernel": "ab",
+    "peak_mb": 575.5,
+    "steps": 3
+  },
+  {
+    "baseline_mb": 447.9,
+    "extra_fields": 0.25,
+    "field_mb": 58.32,
+    "grid": 900,
+    "kernel": "aa",
+    "peak_mb": 462.5,
+    "steps": 3
+  }
+]
