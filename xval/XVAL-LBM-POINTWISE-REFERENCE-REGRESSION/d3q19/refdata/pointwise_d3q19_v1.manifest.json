@@ -1,0 +1,94 @@
+{
+ "file": "pointwise_d3q19_v1.npz",
+ "sha256": "b02d92e007d1e8aedecc8d8bf3a599ff55e678c020272b8ad47412eb5ee30d9c",
+ "arrays": {
+  "f0": "0571ec66b6324aaa6287f9deb19f491e7ea61a575172400edf0b35cadf20b24c",
+  "ref_t1": "ae556e6b373ed4a2fc50e163fda44718c729cc8aecb7c79299e5476b61b6c1aa",
+  "ref_t30": "a4d47bbd7724a358bf26490f25462ad23fea627407ffdd35736fb9a6c9442612",
+  "ref_continuous_t1": "ce6aa5243f21cbaa2c189d9d60108e974510588ac4c436acc0da5655467a59ee",
+  "repo_A1_solver3d_bgk_t30": "e2df5354e637ea8eef189ff1d319ab0f9d7ed9b6136c16a8d2f8baf1c6791572",
+  "repo_A2_diff3d_step_t30": "e2df5354e637ea8eef189ff1d319ab0f9d7ed9b6136c16a8d2f8baf1c6791572",
+  "repo_A3_adv_bgk_d3q19_t30": "e2df5354e637ea8eef189ff1d319ab0f9d7ed9b6136c16a8d2f8baf1c6791572",
+  "repo_A4_mrt_uniform_t30": "94b4d7d8167797d34ce740b4fe2c465c39757473e09b6e0c130b347ef818a6b8",
+  "repo_A5_mrt_native_t30": "4cfcb6e0a66d5a62f555aa3fbb7fbce46439e8a17d30db24280495758949c0fe"
+ },
+ "shapes": {
+  "f0": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "ref_t1": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "ref_t30": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "ref_continuous_t1": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "repo_A1_solver3d_bgk_t30": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "repo_A2_diff3d_step_t30": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "repo_A3_adv_bgk_d3q19_t30": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "repo_A4_mrt_uniform_t30": [
+   19,
+   6,
+   9,
+   13
+  ],
+  "repo_A5_mrt_native_t30": [
+   19,
+   6,
+   9,
+   13
+  ]
+ },
+ "config": {
+  "grid": [
+   6,
+   9,
+   13
+  ],
+  "tau": 0.7,
+  "seed": 0,
+  "steps": 30
+ },
+ "provenance": {
+  "lbmpy_version": "2.0",
+  "lbmpy_root": "/usr/lib/python3.11/site-packages/lbmpy",
+  "pystencils_version": "2.0",
+  "source_sha256": {
+   "methods/creationfunctions.py": "9eb9786eb8e60306bce7a88eff8fc5169cefe51d5a9485a01a2537fe048f1ba2",
+   "methods/abstractlbmethod.py": "5fb547e2d523c627c0f86cf9f73bcf951468e0bcb4a587885dbd5c48f6a0e14e",
+   "methods/momentbased/momentbasedmethod.py": "e87a974f8053942dc9327f90e7f064a0dc56760e4c8178dff1fb8cb6748a4e0c",
+   "methods/conservedquantitycomputation.py": "d8243291d11f31a11063900ce00e5ffb874e6947de6886dfdf56ecd8c591a96c",
+   "moments.py": "6f2fa4e359cf21fb825d224b60d46baa16d3b831e3dc8998f79be9310026c896",
+   "stencils.py": "68bede6b983844aa6bab93f6803aacd874e81f0ac686660a687673ac5a032c3b"
+  }
+ }
+}
