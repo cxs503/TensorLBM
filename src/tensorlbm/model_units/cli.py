@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from .build import ARTIFACT_ROOT, build, doctor, test
+from .coverage import (
+    DEFAULT_MODELS_ROOT,
+    coverage_report,
+    discover_directories,
+    matrix_cells,
+)
 from .registry import DEFAULT_ROOT, ci_matrix, discover, makefile_targets
 
 
@@ -34,6 +40,11 @@ def _select(units, names: list[str] | None):
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m tensorlbm.model_units")
     parser.add_argument("--root", default=str(DEFAULT_ROOT), help="model unit root directory")
+    parser.add_argument(
+        "--models-root",
+        default=str(DEFAULT_MODELS_ROOT),
+        help="root holding every model directory, whatever its manifest dialect",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="list discovered model units")
@@ -84,7 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "ci-matrix":
-        matrix = ci_matrix(units)
+        cov = coverage_report(models_root=args.models_root)
+        matrix = {"include": cov["cells_detail"]}
         text = json.dumps(matrix, sort_keys=True)
         if args.out:
             Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -93,31 +105,45 @@ def main(argv: list[str] | None = None) -> int:
             with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
                 fh.write(f"matrix={text}\n")
         print(text)
-        return 0
+        return 0 if cov["ok"] else 1
 
     if args.command == "makefile":
+        directories = discover_directories(args.models_root)
+        extra = [
+            cell
+            for cell in matrix_cells(directories, models_root=args.models_root)
+            if cell["kind"] != "unit_toml"
+        ]
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text(makefile_targets(units) + "\n", encoding="utf-8")
+        Path(args.out).write_text(
+            makefile_targets(units, extra_cells=extra) + "\n", encoding="utf-8"
+        )
         print(args.out)
         return 0
 
     if args.command == "verify":
-        report = doctor(args.root)
+        report = doctor(args.root, models_root=args.models_root)
+        cov = coverage_report(models_root=args.models_root)
+        matrix = {"include": cov["cells_detail"]}
         ci_names = sorted(u.name for u in units if u.ci)
-        matrix = ci_matrix(units)
         on_matrix = sorted(cell["unit"] for cell in matrix["include"])
-        coverage_ok = ci_names == on_matrix
+        missing_ci = sorted(set(ci_names) - set(on_matrix))
         out = Path(args.matrix_out)
         drift: list[str] = []
         if out.is_file():
             committed = json.loads(out.read_text())
-            old = {c["unit"]: c.get("cmd") for c in committed.get("include", [])}
-            new = {c["unit"]: c.get("cmd") for c in matrix["include"]}
+            key = lambda c: (c.get("kind", "unit_toml"), c["unit"])  # noqa: E731
+            old = {key(c): c.get("cmd") for c in committed.get("include", [])}
+            new = {key(c): c.get("cmd") for c in matrix["include"]}
             if old != new:
-                drift = sorted(set(old) ^ set(new)) or ["cmd changed"]
+                drift = sorted(map(str, set(old.items()) ^ set(new.items()))) or [
+                    "cmd changed"
+                ]
+        coverage_ok = bool(cov["ok"] and not missing_ci)
         report["matrix"] = {
             "ci_units": ci_names,
             "on_matrix": on_matrix,
+            "missing_ci": missing_ci,
             "coverage_ok": coverage_ok,
             "drift": drift,
         }
