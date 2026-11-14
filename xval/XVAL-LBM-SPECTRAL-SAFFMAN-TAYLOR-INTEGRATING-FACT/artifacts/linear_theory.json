@@ -1,0 +1,360 @@
+{
+ "k": 0.05026548245743669,
+ "k2": 0.002526618726678876,
+ "mode": 4,
+ "pe": 500.0,
+ "w_front": 4.0,
+ "dt": 0.1,
+ "ny": 128,
+ "nx": 256,
+ "t_fit": [
+  2.0,
+  8.0
+ ],
+ "anchor_grid": {
+  "N": 601,
+  "L": 400.0
+ },
+ "V1_sigma_R0": -0.002542039948325535,
+ "V1_rel_dev_vs_minus_k2": 0.006103501681446684,
+ "V2_sharp_step": {
+  "rows": [
+   {
+    "R": -2.0,
+    "w": 8.0,
+    "k_w": 0.40212385965949354,
+    "sigma_num": 0.027199093457062642,
+    "sigma_step": 0.03766208227303196,
+    "rel_dev": 0.2778122765522545
+   },
+   {
+    "R": -2.0,
+    "w": 4.0,
+    "k_w": 0.20106192982974677,
+    "sigma_num": 0.03083445480343605,
+    "sigma_step": 0.03766208227303196,
+    "rel_dev": 0.1812865103978823
+   },
+   {
+    "R": -2.0,
+    "w": 2.0,
+    "k_w": 0.10053096491487339,
+    "sigma_num": 0.03340422926704773,
+    "sigma_step": 0.03766208227303196,
+    "rel_dev": 0.1130541050576238
+   },
+   {
+    "R": -1.0,
+    "w": 8.0,
+    "k_w": 0.40212385965949354,
+    "sigma_num": 0.012581136689345976,
+    "sigma_step": 0.0158011727477777,
+    "rel_dev": 0.20378462471303557
+   },
+   {
+    "R": -1.0,
+    "w": 4.0,
+    "k_w": 0.20106192982974677,
+    "sigma_num": 0.01426268272697465,
+    "sigma_step": 0.0158011727477777,
+    "rel_dev": 0.09736555921264932
+   },
+   {
+    "R": -1.0,
+    "w": 2.0,
+    "k_w": 0.10053096491487339,
+    "sigma_num": 0.015103070502894722,
+    "sigma_step": 0.0158011727477777,
+    "rel_dev": 0.044180407114475705
+   },
+   {
+    "R": -0.5,
+    "w": 8.0,
+    "k_w": 0.40212385965949354,
+    "sigma_num": 0.00444892056645491,
+    "sigma_step": 0.005528428979772664,
+    "rel_dev": 0.1952649509051204
+   },
+   {
+    "R": -0.5,
+    "w": 4.0,
+    "k_w": 0.20106192982974677,
+    "sigma_num": 0.005110120228756208,
+    "sigma_step": 0.005528428979772664,
+    "rel_dev": 0.07566503115929653
+   },
+   {
+    "R": -0.5,
+    "w": 2.0,
+    "k_w": 0.10053096491487339,
+    "sigma_num": 0.005386065686639518,
+    "sigma_step": 0.005528428979772664,
+    "rel_dev": 0.02575112996007064
+   }
+  ],
+  "step_R-2.0": {
+   "kappa": "(0.20047119743172792+0j)",
+   "sigma": "(0.03766208227303196+0j)"
+  },
+  "step_R-1.0": {
+   "kappa": "(0.13538017386034254+0j)",
+   "sigma": "(0.0158011727477777+0j)"
+  },
+  "step_R-0.5": {
+   "kappa": "(0.08974991758465041+0j)",
+   "sigma": "(0.005528428979772664+0j)"
+  },
+  "monotone": true
+ },
+ "anchor_sensitivity": [
+  {
+   "N": 401,
+   "L": 400.0,
+   "h": 2.0,
+   "sigma": 0.01428294278653258
+  },
+  {
+   "N": 801,
+   "L": 400.0,
+   "h": 1.0,
+   "sigma": 0.01425567762210278
+  },
+  {
+   "N": 601,
+   "L": 800.0,
+   "h": 2.6666666666666288,
+   "sigma": 0.014312481839829975
+  }
+ ],
+ "module_runs": [
+  {
+   "R": -2.0,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": -0.038090268723105766,
+   "n_fit": 61,
+   "amp_end": 4.643526308824232e-06
+  },
+  {
+   "R": -1.0,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": -0.020851138110254,
+   "n_fit": 61,
+   "amp_end": 5.3186496399708365e-06
+  },
+  {
+   "R": -0.5,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": -0.01177471100149258,
+   "n_fit": 61,
+   "amp_end": 5.718205726047997e-06
+  },
+  {
+   "R": 0.0,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": -0.0025266187408199124,
+   "n_fit": 61,
+   "amp_end": 6.158463825879971e-06
+  },
+  {
+   "R": 0.5,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": 0.006772161982315362,
+   "n_fit": 61,
+   "amp_end": 6.6347021809630935e-06
+  },
+  {
+   "R": 1.0,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": 0.01602481460357954,
+   "n_fit": 61,
+   "amp_end": 7.140966575840543e-06
+  },
+  {
+   "R": 2.0,
+   "dt": 0.1,
+   "ny": 128,
+   "nx": 256,
+   "sigma": 0.034212833032528554,
+   "n_fit": 61,
+   "amp_end": 8.228057974425424e-06
+  }
+ ],
+ "comparison": [
+  {
+   "R": -2.0,
+   "sigma_module": -0.038090268723105766,
+   "sigma_theory": 0.03083445480343605,
+   "sigma_step_analytic": 0.03766208227303196,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 0.06892472352654182,
+   "rel_err_module_vs_theory": 2.235315135809087,
+   "sign_agree": false,
+   "pass_15pct": false
+  },
+  {
+   "R": -1.0,
+   "sigma_module": -0.020851138110254,
+   "sigma_theory": 0.01426268272697465,
+   "sigma_step_analytic": 0.0158011727477777,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 0.03511382083722865,
+   "rel_err_module_vs_theory": 2.4619366152497224,
+   "sign_agree": false,
+   "pass_15pct": false
+  },
+  {
+   "R": -0.5,
+   "sigma_module": -0.01177471100149258,
+   "sigma_theory": 0.005110120228756208,
+   "sigma_step_analytic": 0.005528428979772664,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 0.016884831230248788,
+   "rel_err_module_vs_theory": 3.304194514882974,
+   "sign_agree": false,
+   "pass_15pct": false
+  },
+  {
+   "R": 0.0,
+   "sigma_module": -0.0025266187408199124,
+   "sigma_theory": -0.002542039948325535,
+   "sigma_step_analytic": NaN,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 1.5421207505622765e-05,
+   "rel_err_module_vs_theory": 0.0060664693785716685,
+   "sign_agree": true,
+   "pass_15pct": true
+  },
+  {
+   "R": 0.5,
+   "sigma_module": 0.006772161982315362,
+   "sigma_theory": -0.0025891776632226316,
+   "sigma_step_analytic": NaN,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 0.009361339645537994,
+   "rel_err_module_vs_theory": 3.6155648098270556,
+   "sign_agree": false,
+   "pass_15pct": false
+  },
+  {
+   "R": 1.0,
+   "sigma_module": 0.01602481460357954,
+   "sigma_theory": -0.002589837599334641,
+   "sigma_step_analytic": NaN,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 0.01861465220291418,
+   "rel_err_module_vs_theory": 7.187575084899724,
+   "sign_agree": false,
+   "pass_15pct": false
+  },
+  {
+   "R": 2.0,
+   "sigma_module": 0.034212833032528554,
+   "sigma_theory": -0.002590663188023839,
+   "sigma_step_analytic": NaN,
+   "k2_diffusive": 0.002526618726678876,
+   "abs_err_module_vs_theory": 0.036803496220552394,
+   "rel_err_module_vs_theory": 14.20620649982144,
+   "sign_agree": false,
+   "pass_15pct": false
+  }
+ ],
+ "mirror_comparison": [
+  {
+   "R": -2.0,
+   "sigma_module": -0.038090268723105766,
+   "sigma_theory_minusR": -0.002590663188023839,
+   "rel_dev": 13.702902677272018,
+   "pass_15pct": false
+  },
+  {
+   "R": -1.0,
+   "sigma_module": -0.020851138110254,
+   "sigma_theory_minusR": -0.002589837599334641,
+   "rel_dev": 7.051137305138706,
+   "pass_15pct": false
+  },
+  {
+   "R": -0.5,
+   "sigma_module": -0.01177471100149258,
+   "sigma_theory_minusR": -0.0025891776632226316,
+   "rel_dev": 3.5476643680129443,
+   "pass_15pct": false
+  },
+  {
+   "R": 0.5,
+   "sigma_module": 0.006772161982315362,
+   "sigma_theory_minusR": 0.005110120228756208,
+   "rel_dev": 0.32524513693559265,
+   "pass_15pct": false
+  },
+  {
+   "R": 1.0,
+   "sigma_module": 0.01602481460357954,
+   "sigma_theory_minusR": 0.01426268272697465,
+   "rel_dev": 0.1235484172463722,
+   "pass_15pct": true
+  },
+  {
+   "R": 2.0,
+   "sigma_module": 0.034212833032528554,
+   "sigma_theory_minusR": 0.03083445480343605,
+   "rel_dev": 0.10956503854629634,
+   "pass_15pct": true
+  }
+ ],
+ "figures": {
+  "sigma_vs_R": "fig_linear_theory_sigma_vs_R.png",
+  "eigenmode": "fig_linear_theory_eigenmode.png",
+  "step_limit": "fig_linear_theory_step_limit.png"
+ },
+ "log": [
+  "== XVAL round-2 anchor study (compact local run) ==",
+  "   k = 5.026548e-02  k^2 = 2.526619e-03  w = 4.0  grid N=601 L=400.0",
+  "V1 R=0: sigma=-2.542040e-03 vs -k^2=-2.526619e-03 rel.dev=0.610%",
+  "V2 R=-2.0  w=8.0  sigma_num=+2.719909e-02 sigma_step=+3.766208e-02 rel.dev=27.78%",
+  "V2 R=-2.0  w=4.0  sigma_num=+3.083445e-02 sigma_step=+3.766208e-02 rel.dev=18.13%",
+  "V2 R=-2.0  w=2.0  sigma_num=+3.340423e-02 sigma_step=+3.766208e-02 rel.dev=11.31%",
+  "V2 R=-1.0  w=8.0  sigma_num=+1.258114e-02 sigma_step=+1.580117e-02 rel.dev=20.38%",
+  "V2 R=-1.0  w=4.0  sigma_num=+1.426268e-02 sigma_step=+1.580117e-02 rel.dev=9.74%",
+  "V2 R=-1.0  w=2.0  sigma_num=+1.510307e-02 sigma_step=+1.580117e-02 rel.dev=4.42%",
+  "V2 R=-0.5  w=8.0  sigma_num=+4.448921e-03 sigma_step=+5.528429e-03 rel.dev=19.53%",
+  "V2 R=-0.5  w=4.0  sigma_num=+5.110120e-03 sigma_step=+5.528429e-03 rel.dev=7.57%",
+  "V2 R=-0.5  w=2.0  sigma_num=+5.386066e-03 sigma_step=+5.528429e-03 rel.dev=2.58%",
+  "   w->0 monotone: True",
+  "   sensitivity N=401  L=400.0  h=2.000 sigma=+1.428294e-02",
+  "   sensitivity N=801  L=400.0  h=1.000 sigma=+1.425568e-02",
+  "   sensitivity N=601  L=800.0  h=2.667 sigma=+1.431248e-02",
+  "M  module R=-2.0  sigma=-3.809027e-02",
+  "M  module R=-1.0  sigma=-2.085114e-02",
+  "M  module R=-0.5  sigma=-1.177471e-02",
+  "M  module R=0.0   sigma=-2.526619e-03",
+  "M  module R=0.5   sigma=+6.772162e-03",
+  "M  module R=1.0   sigma=+1.602481e-02",
+  "M  module R=2.0   sigma=+3.421283e-02",
+  "X  R=-2.0  sigma_module=-3.809027e-02 sigma_theory=+3.083445e-02 sigma_step=+3.766208e-02 sign_agree=False rel.dev=223.5%",
+  "X  R=-1.0  sigma_module=-2.085114e-02 sigma_theory=+1.426268e-02 sigma_step=+1.580117e-02 sign_agree=False rel.dev=246.2%",
+  "X  R=-0.5  sigma_module=-1.177471e-02 sigma_theory=+5.110120e-03 sigma_step=+5.528429e-03 sign_agree=False rel.dev=330.4%",
+  "X  R=0.0   sigma_module=-2.526619e-03 sigma_theory=-2.542040e-03 sigma_step=+nan sign_agree=True rel.dev=0.6%",
+  "X  R=0.5   sigma_module=+6.772162e-03 sigma_theory=-2.589178e-03 sigma_step=+nan sign_agree=False rel.dev=361.6%",
+  "X  R=1.0   sigma_module=+1.602481e-02 sigma_theory=-2.589838e-03 sigma_step=+nan sign_agree=False rel.dev=718.8%",
+  "X  R=2.0   sigma_module=+3.421283e-02 sigma_theory=-2.590663e-03 sigma_step=+nan sign_agree=False rel.dev=1420.6%",
+  "Y  R=-2.0  sigma_module=-3.809027e-02 sigma_theory(-R)=-2.590663e-03 rel.dev=1370.3%",
+  "Y  R=-1.0  sigma_module=-2.085114e-02 sigma_theory(-R)=-2.589838e-03 rel.dev=705.1%",
+  "Y  R=-0.5  sigma_module=-1.177471e-02 sigma_theory(-R)=-2.589178e-03 rel.dev=354.8%",
+  "Y  R=0.5   sigma_module=+6.772162e-03 sigma_theory(-R)=+5.110120e-03 rel.dev=32.5%",
+  "Y  R=1.0   sigma_module=+1.602481e-02 sigma_theory(-R)=+1.426268e-02 rel.dev=12.4%",
+  "Y  R=2.0   sigma_module=+3.421283e-02 sigma_theory(-R)=+3.083445e-02 rel.dev=11.0%"
+ ]
+}
