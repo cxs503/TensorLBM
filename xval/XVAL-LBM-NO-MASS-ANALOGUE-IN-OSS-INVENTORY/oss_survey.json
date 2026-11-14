@@ -1,0 +1,21 @@
+{
+  "anchor": "XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY",
+  "survey_utc": "2026-11-14T00:00:00Z",
+  "oss_inventory": ["/root/oss-cache/Maarten-vd-Sande_lbm", "/root/oss-cache/pylbm", "/root/oss-cache/hschwane/GraSPH"],
+  "mass_exchange_found": {
+    "file": "/root/oss-cache/Maarten-vd-Sande_lbm/lbm/streamcollide.py",
+    "symbols": ["interface_mass_exchange", "get_epsilon", "get_normal", "lbm_streaming(fin,fout,equi,u,rho,mass,cell_type,...)"],
+    "semantics": "Thuerrey/Koerner free-surface VOF mass-EXCHANGE (four-branch I/I selector, table 4.1 of Thuerey 2007)"
+  },
+  "mass_analogue_added_mass_found": {
+    "found": false,
+    "grep_terms": ["added_mass", "addedmass", "virtual_mass", "mass_analogue", "inertia_coefficient", "potential_added_mass", "C_a"],
+    "scan": "grep -rl over all three OSS checkouts returned NO hit for any added-mass / virtual-mass / FSI 'mass analogue' routine",
+    "consequence": "The OSS inventory supplies the free-surface mass-EXCHANGE but NOT the FSI added-mass 'mass analogue'. The added-mass validation must therefore be anchored on the analytic/literature lineage (potential flow C_a = 1, Lamb 1932 §71), not on an OSS checkout."
+  },
+  "oss_analogue_available": {
+    "free_surface_mass_exchange": "yes (Maarten-vd-Sande/lbm streamcollide.py::interface_mass_exchange) - already validated by sibling anchors XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE / XVAL-LBM-MASS-EXCHANGE-SELECTOR",
+    "fsi_added_mass": "no - this is the 'no-mass-analogue-in-oss-inventory' gap this anchor closes"
+  },
+  "validation_anchor": "analytic/literature: potential flow C_a = 1 (unbounded circular cylinder); Lamb 1932 §71 concentric-container bracket (Ro^2+R^2)/(Ro^2-R^2); independent radial-FD + energy-integral check"
+}

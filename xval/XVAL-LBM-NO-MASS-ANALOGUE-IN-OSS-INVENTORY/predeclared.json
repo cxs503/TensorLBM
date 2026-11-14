@@ -1,0 +1,47 @@
+{
+  "anchor": "XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY",
+  "round": 3,
+  "mission_id": 21062,
+  "supersedes": "m20245 (XVAL-LBM-ADDEDMASS-KC-RESPONSE-ENVELOPE, honest FAIL at D=8)",
+  "parent_reports": [17584, 17643],
+  "child_reports": [18750],
+  "declared_utc": "2026-11-14T00:00:00Z",
+  "declared_before_any_production_run": true,
+  "decision": "Does TensorLBM's FSI added-mass ('mass analogue') coefficient C_I, measured by the oscillatory-cylinder-inertia arm (E1 Ladd momentum exchange, first-harmonic decomposition), reproduce the potential-flow added-mass anchor C_a = 1 within the owner accuracy standard (<15%) and the platform 3% caliber, once the spin-up deficit diagnosed by the child mission is corrected at D>=16?",
+  "oss_inventory_claim": {
+    "survey": "~/oss-cache holds Maarten-vd-Sande/lbm (Thuerey minimal D2Q9 free surface), pylbm, hschwane/GraSPH. Grep of streamcollide.py finds `interface_mass_exchange` (the free-surface Thuerrey/Koerner VOF mass-EXCHANGE) but NO added-mass / virtual-mass / FSI 'mass analogue' routine in any OSS checkout.",
+    "consequence": "There is no OSS mass-analogue reference to port or diff against; the added-mass validation must therefore be anchored on the analytic/literature lineage (potential flow C_a = 1 for a circular cylinder, Lamb 1932 §71 concentric-container bracket), not on an OSS checkout. This is the 'no-mass-analogue-in-oss-inventory' approach: the OSS inventory supplies the mass-EXCHANGE (free-surface) but not the mass-ANALOGUE (FSI added mass), so the latter is validated against closed-form potential theory.",
+    "evidence_file": "oss_survey.json (grep of streamcollide.py + full OSS tree scan)"
+  },
+  "benchmark": {
+    "name": "oscillatory cylinder in a doubly-periodic box, uniform harmonic body force (Guo 2nd-order source)",
+    "geometry": "circular cylinder of diameter D in a square periodic box of side L = box*D; solid fraction ~0.05",
+    "references": {
+      "R1_unbounded": "C_a = m_a/(rho*pi*R^2) = 1 (circular cylinder, potential flow, per unit length)",
+      "R2_annulus_closed": "C_a = (Ro^2+R^2)/(Ro^2-R^2) (Lamb 1932 §71), concentric-container bracket with inscribed Ro=L/2 and equal-area Ro=L/sqrt(pi)",
+      "R2_numeric": "independent radial-FD + energy-integral check of R2 (different formula path)"
+    },
+    "control_case": "child mission's D=8 cheap point (beta00050, kc0.20) must reproduce C_I = +2.1588 (the honest-FAIL anchor) to guard against a broken setup"
+  },
+  "metrics": {
+    "primary": "relative error of C_I (E1 momentum-exchange, area-normalised) vs R1/R2 bracket",
+    "secondary": ["per-period phase drift (deg/period)", "first-harmonic fit residual", "E1/E2 estimator spread", "stokes layer / R", "acoustic number omega*L/c_s"],
+    "thresholds": {"owner_precision": 0.15, "platform_caliber": 0.03}
+  },
+  "predeclared_thresholds": {
+    "acceptance_owner_standard_pct": 15.0,
+    "platform_caliber_pct": 3.0,
+    "grid_sets": [8, 12, 16],
+    "spinup_rule": "transient >= 1.5 * N_spin, N_spin = beta*(box/(2*pi))^2 (child H1, verified at D=8)",
+    "convergence_gate": "|C_I(D=16) - C_I(D=12)| / C_I(D=12) <= 2% (two-resolution span) AND phase drift < 1 deg/period AND resid < 0.05",
+    "stopping_rule": "run each arm until the child's spin-up criterion is met; no threshold relaxed after seeing results",
+    "exclusions": "none; every completed grid is reported, including non-converged ones"
+  },
+  "confounders": [
+    "half-way bounce-back walls make the effective cavity length H=nx (library convention), 1 lattice unit larger than nominal",
+    "float64 accumulation; D=16 needs 4x the D=8 cell count",
+    "the child's D=8 honest FAIL showed C_I stays +84.9% above the annulus bracket even at converged spin-up -> the D>=16 run tests whether this is a genuine estimator/geometry bias or a resolution artifact"
+  ],
+  "analysis_plan": "analyze.py recomputes every error and every gate flag from the raw run JSONs; no number is typed by hand. Figures from figures.py read the same JSONs.",
+  "repro_cmd": "python xval/XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY/run_xval.py --group resolution --out xval/XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY/runs/"
+}
