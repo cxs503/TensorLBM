@@ -21,16 +21,27 @@ DS = res.get("domain_study", {})
 FS = res.get("forcing_study", {})
 
 
-def row_tbl(rows):
+def row_tbl(rows, per_radius=None):
+    """Per-radius table.
+
+    The residual against the through-origin fit lives in ``per_radius`` (it is
+    a fit property, not a per-run property), so it is looked up by ``R_init``
+    here instead of read off the run row -- doing the latter printed ``+nan%``
+    in the published table (key mismatch).
+    """
+    lut = {round(float(q["R_eq"]), 6): q for q in (per_radius or [])}
     out = [
         "| R_init | L | R_eq | Δp | ρ_in | ρ_out | σ_i = Δp·R_eq | dev vs through-origin fit | u_max | steps |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for q in rows:
+        fit_row = lut.get(round(float(q["R_eq"]), 6), {})
+        dev = q.get("dev_pct_through_origin", fit_row.get("dev_pct_through_origin"))
+        dev_s = f"{dev:+.2f}%" if dev is not None else "n/a"
         out.append(
             f"| {q['R_init']:.0f} | {q['L']} | {q['R_eq']:.3f} | {q['dp']:.6f} | "
             f"{q['rho_in']:.4f} | {q['rho_out']:.4f} | {q['sigma_i']:.5f} | "
-            f"{q.get('dev_pct_through_origin', float('nan')):+.2f}% | {q['u_max']:.3f} | {q['step']} |"
+            f"{dev_s} | {q['u_max']:.3f} | {q['step']} |"
         )
     return "\n".join(out)
 
@@ -179,11 +190,11 @@ md = f"""# XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION — Cross-validation 
 
 ### 3.2 液滴 Laplace 扫描（TensorLBM 路径，velocity-shift，L=4R）
 
-{row_tbl(LAP['tensorlbm']['rows'])}
+{row_tbl(LAP['tensorlbm']['rows'], LAP['tensorlbm']['per_radius'])}
 
 ### 3.3 独立实现（ref_sc.py，从零复现）对照
 
-{row_tbl(LAP['ref_numpy']['rows'])}
+{row_tbl(LAP['ref_numpy']['rows'], LAP['ref_numpy']['per_radius'])}
 
 实现间偏差（同半径逐项）：max |Δp| = **{IMPL.get('max_dp_rel_pct', float('nan')):.3f}%**，
 σ 偏差 = **{IMPL.get('sigma_origin_rel_pct', float('nan')):.3f}%**，
