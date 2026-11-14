@@ -1,0 +1,397 @@
+{
+ "gradient_matrix": {
+  "n_rows_reported": 6,
+  "n_pairs_h1h2": 24,
+  "closures": [
+   "bb_moving",
+   "bb_static",
+   "penalization"
+  ],
+  "objectives": [
+   "drag",
+   "lift"
+  ],
+  "worst_rel_err": 0.0017698657949588531,
+  "n_fail": 0,
+  "n_degenerate": 0,
+  "artifact_summary": {
+   "n_pairs": 18,
+   "n_pass": 18,
+   "worst_rel_err": 0.0013086173155267076,
+   "all_pass": true,
+   "by_closure": {
+    "bb_static": {
+     "n": 6,
+     "n_pass": 6,
+     "worst_rel_err": 0.000603705612023785
+    },
+    "bb_moving": {
+     "n": 6,
+     "n_pass": 6,
+     "worst_rel_err": 0.0009763625753534144
+    },
+    "penalization": {
+     "n": 6,
+     "n_pass": 6,
+     "worst_rel_err": 0.0013086173155267076
+    }
+   }
+  },
+  "worst_rel_err_fine_step_only": 0.0004430091199143717,
+  "worst_rel_err_coarse_step": 0.0017698657949588531,
+  "summary_scope_defect": true,
+  "artifact_summary_consistent": false,
+  "rows": [
+   {
+    "closure": "bb_static",
+    "theta0": 0.06,
+    "objective": "drag",
+    "h": 0.002,
+    "ad": -0.09635158580876796,
+    "fd": -0.09635336392560534,
+    "rel_err": 1.8454123083381157e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.06,
+    "objective": "drag",
+    "h": 0.001,
+    "ad": -0.09635158580876796,
+    "fd": -0.09635203034585871,
+    "rel_err": 4.613676423355246e-06,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.06,
+    "objective": "lift",
+    "h": 0.002,
+    "ad": 0.7458018002511929,
+    "fd": 0.7458018281786966,
+    "rel_err": 3.7446279410712065e-08,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.06,
+    "objective": "lift",
+    "h": 0.001,
+    "ad": 0.7458018002511929,
+    "fd": 0.7458018072337702,
+    "rel_err": 9.362510557656729e-09,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.25000000000000006,
+    "objective": "drag",
+    "h": 0.002,
+    "ad": 8.310134882096161,
+    "fd": 8.311467540262573,
+    "rel_err": 0.00016033969451917073,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.25000000000000006,
+    "objective": "drag",
+    "h": 0.001,
+    "ad": 8.310134882096161,
+    "fd": 8.310467992679094,
+    "rel_err": 4.0083252017329364e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.25000000000000006,
+    "objective": "lift",
+    "h": 0.002,
+    "ad": 1.043036228623305,
+    "fd": 1.0414775502680038,
+    "rel_err": 0.0014966029319596161,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_static",
+    "theta0": 0.25000000000000006,
+    "objective": "lift",
+    "h": 0.001,
+    "ad": 1.043036228623305,
+    "fd": 1.0426465285173907,
+    "rel_err": 0.0003737605173523826,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.07500000000000001,
+    "objective": "drag",
+    "h": 0.002,
+    "ad": -0.4197388852536283,
+    "fd": -0.41975540266522837,
+    "rel_err": 3.93500869678009e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.07500000000000001,
+    "objective": "drag",
+    "h": 0.001,
+    "ad": -0.4197388852536283,
+    "fd": -0.4197430146470893,
+    "rel_err": 9.837908712971162e-06,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.07500000000000001,
+    "objective": "lift",
+    "h": 0.002,
+    "ad": 0.5917516147283047,
+    "fd": 0.5917506467225941,
+    "rel_err": 1.6358338025484886e-06,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.07500000000000001,
+    "objective": "lift",
+    "h": 0.001,
+    "ad": 0.5917516147283047,
+    "fd": 0.5917513729187668,
+    "rel_err": 4.0863367457164556e-07,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.25000000000000006,
+    "objective": "drag",
+    "h": 0.002,
+    "ad": 7.747618269994653,
+    "fd": 7.748763442778694,
+    "rel_err": 0.00014778781059677379,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.25000000000000006,
+    "objective": "drag",
+    "h": 0.001,
+    "ad": 7.747618269994653,
+    "fd": 7.747904499677105,
+    "rel_err": 3.694285112363758e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.25000000000000006,
+    "objective": "lift",
+    "h": 0.002,
+    "ad": 1.7000359702560774,
+    "fd": 1.698403367177366,
+    "rel_err": 0.0009612575612263242,
+    "pass_1e2": true
+   },
+   {
+    "closure": "bb_moving",
+    "theta0": 0.25000000000000006,
+    "objective": "lift",
+    "h": 0.001,
+    "ad": 1.7000359702560774,
+    "fd": 1.6996278039299317,
+    "rel_err": 0.00024015041716894393,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 10.3,
+    "objective": "drag",
+    "h": 0.02,
+    "ad": 0.04912964999446813,
+    "fd": 0.0491263738813863,
+    "rel_err": 6.66874597694125e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 10.3,
+    "objective": "drag",
+    "h": 0.01,
+    "ad": 0.04912964999446813,
+    "fd": 0.04912883045321559,
+    "rel_err": 1.6681472874106864e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 10.3,
+    "objective": "lift",
+    "h": 0.02,
+    "ad": -0.014020997829867626,
+    "fd": -0.014020473846729914,
+    "rel_err": 3.7372712466106464e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 10.3,
+    "objective": "lift",
+    "h": 0.01,
+    "ad": -0.014020997829867626,
+    "fd": -0.014020866579946,
+    "rel_err": 9.361042049513859e-06,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 0.25000000000000006,
+    "objective": "drag",
+    "h": 0.002,
+    "ad": 11.363144804193993,
+    "fd": 11.363964484882361,
+    "rel_err": 7.212981785170387e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 0.25000000000000006,
+    "objective": "drag",
+    "h": 0.001,
+    "ad": 11.363144804193993,
+    "fd": 11.363349741786543,
+    "rel_err": 1.8034963035226428e-05,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 0.25000000000000006,
+    "objective": "lift",
+    "h": 0.002,
+    "ad": -0.3975964952899638,
+    "fd": -0.39830143537651974,
+    "rel_err": 0.0017698657949588531,
+    "pass_1e2": true
+   },
+   {
+    "closure": "penalization",
+    "theta0": 0.25000000000000006,
+    "objective": "lift",
+    "h": 0.001,
+    "ad": -0.3975964952899638,
+    "fd": -0.3977727122291344,
+    "rel_err": 0.0004430091199143717,
+    "pass_1e2": true
+   }
+  ]
+ },
+ "anchors": {
+  "couette": {
+   "profile_max_rel_err_reported": 1.182068332106212e-11,
+   "profile_max_rel_err_recomputed": 3.720097146997503e-11,
+   "force_on_moving_wall": -0.0020000000000770513,
+   "force_analytic": 0.0020000000000000005,
+   "force_rel_err_reported": 3.852538947579642e-11,
+   "force_rel_err_recomputed": 3.852538947579642e-11,
+   "sign_consistent": true,
+   "reference": "exact: u(y)=U(y-y_wall)/H, wall force |mu U/H L|"
+  },
+  "poiseuille": {
+   "profile_max_rel_err_reported": 0.0023057644293036864,
+   "profile_max_rel_err_recomputed": 0.023589743604286704,
+   "force_on_lower_wall": 0.0015999999999763426,
+   "force_analytic_per_wall": 0.0016,
+   "force_rel_err_recomputed": 1.4785942652542627e-11,
+   "sign_consistent": true,
+   "reference": "exact: u(y)=F/(2 nu) y (H-y), wall force F H L / 2"
+  }
+ },
+ "dfg": {
+  "params": {
+   "D_cells": 8.0,
+   "ny": 35,
+   "nx": 176,
+   "um": 0.2,
+   "re": 20.0,
+   "nu": 0.08,
+   "tau": 0.74,
+   "blockage": 0.24242424242424243,
+   "steps": 10000,
+   "sample_from": 7000,
+   "clock_s": 51.6
+  },
+  "C_D_got": 74.83229064941406,
+  "C_L_got": 9.679756995950584e-14,
+  "artifact_side_reference": [
+   5.57,
+   5.59
+  ],
+  "artifact_side_rel_err_to_mid": 12.410804775880656,
+  "artifact_side_rel_err_recomputed": 12.410804775880656,
+  "doc_side_reference_2D2_Re100": [
+   3.22,
+   3.24
+  ],
+  "doc_side_rel_err_to_mid": 22.167891841923858,
+  "doc_side_rel_err_vs_artifact_halfwidth": 12.410804775880656,
+  "C_D_history_first_last": [
+   51.187711926792154,
+   104.69753736319738
+  ],
+  "C_D_history_monotone_growth": true,
+  "verdict": "FAIL against both references (honest FAIL disclosed in the report)"
+ },
+ "doc_artifact_drift": {
+  "artifact_lattice_main": {
+   "ny": 44,
+   "nx": 140,
+   "d_cells": 10.0,
+   "u0": 0.20000000000000004,
+   "tau": 0.65,
+   "re": 40.0,
+   "xc": 101,
+   "yc": 15
+  },
+  "artifact_lattice_coarse": {
+   "ny": 37,
+   "nx": 116,
+   "d_cells": 7.5,
+   "u0": 0.2666666666666667,
+   "tau": 0.65,
+   "re": 40.0,
+   "xc": 84,
+   "yc": 13
+  },
+  "doc_claim_repro_grad_flags": [
+   [
+    "30",
+    "96",
+    "8",
+    "200"
+   ],
+   [
+    "30",
+    "96",
+    "8",
+    "200"
+   ]
+  ],
+  "doc_claim_1200_steps": true,
+  "doc_claim_800_steps": true,
+  "doc_claim_dfg_2D2_Re100": true,
+  "artifact_dfg_re": 20.0,
+  "artifact_matrix_steps_effective": 200,
+  "artifact_horizon_steps_effective": 100,
+  "artifact_resolution_scan_lattice": {
+   "ny": 22,
+   "nx": 73,
+   "d_cells": 5.25
+  },
+  "note": "delivered `lattice` block was written by an earlier --part invocation (setdefault in run_gap_diff_boundary_grad.py) and does not describe the gradient_matrix actually contained in the file"
+ },
+ "overall": {
+  "gradient_claim_holds": false,
+  "exact_anchors_hold": true,
+  "external_benchmark": "FAIL (DFG cylinder diverges; honest FAIL in report)",
+  "level_implication": "L2: real implementation + run artifacts + verified AD-vs-FD self-consistency + exact channel anchors; no integration caller and no passing external benchmark -> L3/L4 not earned"
+ }
+}

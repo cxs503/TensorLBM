@@ -1,0 +1,378 @@
+{
+  "gap": "GAP-DIFFLBM-BOUNDARY-GRAD",
+  "criterion": "3 closures x 2 targets (drag, lift): |AD - central FD| / |FD| <= 1e-2",
+  "env": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "machine": "loongarch64",
+    "threads": 6,
+    "dtype": "float64",
+    "mode": "quick",
+    "started": "2026-11-14T08:33:29Z"
+  },
+  "anchors": {
+    "couette": {
+      "name": "plane Couette (moving bottom wall)",
+      "reference": "exact: u(y)=U(y-y_wall)/H, wall force |mu U/H L|",
+      "params": {
+        "ny": 34,
+        "nx": 8,
+        "uw": 0.05,
+        "tau": 0.8,
+        "nu": 0.10000000000000002,
+        "steps": 4000
+      },
+      "profile_max_rel_err": 0.013430895454653799,
+      "force_on_moving_wall": -0.001302880958373831,
+      "force_on_fixed_wall": 0.0011971200189185849,
+      "force_analytic_magnitude": 0.0012500000000000002,
+      "force_rel_err": 0.0423047666990646,
+      "sign_consistent": true
+    },
+    "poiseuille": {
+      "name": "plane Poiseuille (static bounce-back walls)",
+      "reference": "exact: u(y)=F/(2 nu) y (H-y), wall force F H L / 2",
+      "params": {
+        "ny": 34,
+        "nx": 8,
+        "nu": 0.1,
+        "tau": 0.8,
+        "body_force": 2e-05,
+        "steps": 4000
+      },
+      "profile_max_rel_err": 0.02267222954275368,
+      "force_on_lower_wall": 0.002516151703769176,
+      "force_on_upper_wall": 0.002516151703769176,
+      "force_analytic_per_wall": 0.00256,
+      "force_rel_err": 0.017128240715165676,
+      "sign_consistent": true
+    },
+    "dfg": {
+      "name": "DFG 2-D-2 (Schaefer & Turek) cylinder in a channel, Re=100",
+      "reference": "Schafer & Turek 1996 (NNFM 48:547-566) 2D-2: C_D 3.22-3.24, C_L amplitude ~1.0",
+      "params": {
+        "D_cells": 10.0,
+        "ny": 43,
+        "nx": 220,
+        "um": 0.1,
+        "re": 100.0,
+        "nu": 0.01,
+        "tau": 0.53,
+        "blockage": 0.24390243902439024,
+        "steps": 1500,
+        "sample_from": 1000,
+        "clock_s": 9.7
+      },
+      "C_D_mean": 3.8997292518615723,
+      "C_D_ref": [
+        3.22,
+        3.24
+      ],
+      "C_D_rel_err_to_mid": 0.20734651760420195,
+      "C_L_amplitude": 9.992007221626409e-14,
+      "C_L_ref_amplitude": 1.0,
+      "C_L_rel_err": 0.9999999999999001,
+      "strouhal_note": "C_L amplitude taken as half peak-to-peak of the sampled window",
+      "samples": {
+        "C_D": [
+          4.111858232268938,
+          3.8888325324230046,
+          4.193898096754366,
+          3.9352723391325464,
+          3.843051696472987,
+          3.895386080326925,
+          3.8178342776051,
+          3.8330205769526895,
+          3.6967703967241885,
+          3.7813702003864105
+        ],
+        "C_L": [
+          -7.549516567451063e-14,
+          1.1990408665951688e-13,
+          -1.3322676295501875e-14,
+          -7.993605777301126e-14,
+          -1.77635683940025e-14,
+          -1.77635683940025e-14,
+          -7.771561172376095e-14,
+          -6.439293542825907e-14,
+          1.5543122344752188e-14,
+          -2.2204460492503128e-14
+        ]
+      }
+    }
+  },
+  "gradient_matrix": [
+    {
+      "closure": "bb_static",
+      "parameter": "inlet incidence angle alpha",
+      "theta0": 0.06,
+      "drag": 1.05340287891348,
+      "lift": -0.09062293301434785,
+      "ad": {
+        "drag": -0.5855574695795065,
+        "lift": -1.5070091412873838
+      },
+      "fd": {
+        "h1": {
+          "h": 0.002,
+          "drag": -0.5855574379750039,
+          "lift": -1.5070128468986088,
+          "rel_err_drag": 5.397336029041827e-08,
+          "rel_err_lift": 2.458911503379735e-06
+        },
+        "h2": {
+          "h": 0.001,
+          "drag": -0.5855574616896453,
+          "lift": -1.507010067701639,
+          "rel_err_drag": 1.3474102415232112e-08,
+          "rel_err_lift": 6.147366065707639e-07
+        }
+      },
+      "steps": 200,
+      "ad_clock_s": 9.3,
+      "rel_err_drag": 1.3474102415232112e-08,
+      "rel_err_lift": 6.147366065707639e-07,
+      "pass_1e2": true,
+      "resolution": "main",
+      "unit": "rad",
+      "ny": 40,
+      "nx": 120,
+      "d_cells": 10.0,
+      "u0": 0.2,
+      "tau": 0.65,
+      "alpha0": 0.06,
+      "re": 39.99999999999999
+    },
+    {
+      "closure": "bb_static",
+      "parameter": "inlet speed u0",
+      "theta0": 0.2,
+      "unit": "lattice",
+      "drag": 1.05340287891348,
+      "lift": -0.09062293301434785,
+      "ad": {
+        "drag": 11.999776770908321,
+        "lift": 0.5223970101568747
+      },
+      "fd": {
+        "h1": {
+          "h": 0.002,
+          "drag": 12.001166271756347,
+          "lift": 0.5237816304520908,
+          "rel_err_drag": 0.0001157804847097126,
+          "rel_err_lift": 0.00264350678740113
+        },
+        "h2": {
+          "h": 0.001,
+          "drag": 12.00012410483775,
+          "lift": 0.5227431968084852,
+          "rel_err_drag": 2.894419477624517e-05,
+          "rel_err_lift": 0.00066224994170015
+        }
+      },
+      "steps": 200,
+      "resolution": "main",
+      "ny": 40,
+      "nx": 120,
+      "d_cells": 10.0,
+      "tau": 0.65,
+      "alpha0": 0.06,
+      "re": 39.99999999999999,
+      "rel_err_drag": 2.894419477624517e-05,
+      "rel_err_lift": 0.00066224994170015,
+      "pass_1e2": true
+    },
+    {
+      "closure": "bb_moving",
+      "parameter": "bottom wall speed u_w",
+      "theta0": 0.06,
+      "drag": 1.002671190623067,
+      "lift": -0.09734607464973652,
+      "ad": {
+        "drag": -0.7754463887406017,
+        "lift": -0.1137207453785184
+      },
+      "fd": {
+        "h1": {
+          "h": 0.002,
+          "drag": -0.7754530474571864,
+          "lift": -0.11372256249168877,
+          "rel_err_drag": 8.586872675925415e-06,
+          "rel_err_lift": 1.5978475427950614e-05
+        },
+        "h2": {
+          "h": 0.001,
+          "drag": -0.7754480534153396,
+          "lift": -0.11372119965750993,
+          "rel_err_drag": 2.1467263095351344e-06,
+          "rel_err_lift": 3.994672874567783e-06
+        }
+      },
+      "steps": 200,
+      "ad_clock_s": 7.2,
+      "rel_err_drag": 2.1467263095351344e-06,
+      "rel_err_lift": 3.994672874567783e-06,
+      "pass_1e2": true,
+      "resolution": "main",
+      "unit": "lattice",
+      "ny": 40,
+      "nx": 120,
+      "d_cells": 10.0,
+      "u0": 0.2,
+      "tau": 0.65,
+      "alpha0": 0.06,
+      "re": 39.99999999999999
+    },
+    {
+      "closure": "bb_moving",
+      "parameter": "inlet speed u0",
+      "theta0": 0.2,
+      "unit": "lattice",
+      "drag": 1.002671190623067,
+      "lift": -0.09734607464973652,
+      "ad": {
+        "drag": 11.642558311364809,
+        "lift": 0.5959622348167831
+      },
+      "fd": {
+        "h1": {
+          "h": 0.002,
+          "drag": 11.64397443213383,
+          "lift": 0.5972973141487488,
+          "rel_err_drag": 0.00012161833378063429,
+          "rel_err_lift": 0.00223520062846483
+        },
+        "h2": {
+          "h": 0.001,
+          "drag": 11.642912310998565,
+          "lift": 0.5962960273670354,
+          "rel_err_drag": 3.04047324500942e-05,
+          "rel_err_lift": 0.0005597765789688454
+        }
+      },
+      "steps": 200,
+      "resolution": "main",
+      "ny": 40,
+      "nx": 120,
+      "d_cells": 10.0,
+      "tau": 0.65,
+      "alpha0": 0.06,
+      "re": 39.99999999999999,
+      "rel_err_drag": 3.04047324500942e-05,
+      "rel_err_lift": 0.0005597765789688454,
+      "pass_1e2": true
+    },
+    {
+      "closure": "penalization",
+      "parameter": "body centre height y_c",
+      "theta0": 15.3,
+      "drag": 1.320295235906563,
+      "lift": 0.0008677605931686925,
+      "ad": {
+        "drag": -0.012384141101366777,
+        "lift": -0.021375907138234604
+      },
+      "fd": {
+        "h1": {
+          "h": 0.02,
+          "drag": -0.012387152663684287,
+          "lift": -0.021373300116003087,
+          "rel_err_drag": 0.0002431198193220205,
+          "rel_err_lift": 0.00012197565267728328
+        },
+        "h2": {
+          "h": 0.01,
+          "drag": -0.012384894458572493,
+          "lift": -0.021375255013296023,
+          "rel_err_drag": 6.082871422405316e-05,
+          "rel_err_lift": 3.0508405077505068e-05
+        }
+      },
+      "steps": 200,
+      "ad_clock_s": 9.6,
+      "rel_err_drag": 6.082871422405316e-05,
+      "rel_err_lift": 3.0508405077505068e-05,
+      "pass_1e2": true,
+      "resolution": "main",
+      "unit": "lattice cell",
+      "ny": 40,
+      "nx": 120,
+      "d_cells": 10.0,
+      "u0": 0.2,
+      "tau": 0.65,
+      "alpha0": 0.06,
+      "re": 39.99999999999999
+    },
+    {
+      "closure": "penalization",
+      "parameter": "inlet speed u0",
+      "theta0": 0.2,
+      "unit": "lattice",
+      "drag": 1.320295235906563,
+      "lift": 0.0008677605931686925,
+      "ad": {
+        "drag": 14.731868164616385,
+        "lift": 1.0363470332491165
+      },
+      "fd": {
+        "h1": {
+          "h": 0.002,
+          "drag": 14.731947004582857,
+          "lift": 1.036357370996557,
+          "rel_err_drag": 5.351632506362359e-06,
+          "rel_err_lift": 9.975079764796343e-06
+        },
+        "h2": {
+          "h": 0.001,
+          "drag": 14.731887851033964,
+          "lift": 1.0363496688212386,
+          "rel_err_drag": 1.3363132938448483e-06,
+          "rel_err_lift": 2.543130182207971e-06
+        }
+      },
+      "steps": 200,
+      "resolution": "main",
+      "ny": 40,
+      "nx": 120,
+      "d_cells": 10.0,
+      "tau": 0.65,
+      "alpha0": 0.06,
+      "re": 39.99999999999999,
+      "rel_err_drag": 1.3363132938448483e-06,
+      "rel_err_lift": 2.543130182207971e-06,
+      "pass_1e2": true
+    }
+  ],
+  "resolution_scan": [],
+  "horizon_scan": [],
+  "repro_cmd": "python scripts/run_gap_diff_boundary_grad.py --mode full",
+  "external_anchor": {
+    "couette_poiseuille": "exact Navier-Stokes solutions (Batchelor, An Introduction to Fluid Dynamics, 1967, S4.2/S4.3)",
+    "dfg": "Schaefer & Turek, Flow Simulation with High-Performance Computers II, NNFM 48 (1996) 547-566, benchmark 2D-2, DOI 10.1007/978-3-322-89849-8_39",
+    "closures": "Ladd, JFM 271 (1994) 285-339; Zou & He, Phys. Fluids 9 (1997) 1591-1598; Angot, Bruneau & Fabrie, Numer. Math. 81 (1999) 497-520"
+  },
+  "summary": {
+    "n_pairs": 6,
+    "n_pass": 6,
+    "worst_rel_err": 0.00066224994170015,
+    "all_pass": true,
+    "by_closure": {
+      "bb_static": {
+        "n": 2,
+        "n_pass": 2,
+        "worst_rel_err": 0.00066224994170015
+      },
+      "bb_moving": {
+        "n": 2,
+        "n_pass": 2,
+        "worst_rel_err": 0.0005597765789688454
+      },
+      "penalization": {
+        "n": 2,
+        "n_pass": 2,
+        "worst_rel_err": 6.082871422405316e-05
+      }
+    }
+  }
+}
