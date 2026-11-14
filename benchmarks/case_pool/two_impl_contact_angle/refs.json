@@ -1,0 +1,36 @@
+{
+  "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+  "title": "two independent contact-angle wall conditions (walberla two-independent-impls做法)",
+  "reference": {
+    "law": "Young: sigma_lg*cos(theta) = sigma_sg - sigma_sl.  In the diffuse-interface (Allen-Cahn / Cahn-Hilliard) model the same law is imposed as (i) a wall VALUE psi_w with cos(theta)=(3 psi_w - psi_w^3)/2, (ii) a wall FLUX kappa*d_n psi = (3/4) sigma cos(theta)(1-psi^2), (iii) a GEOMETRIC ghost psi_g = psi_0 + cot(theta)|d_t psi|.  The prescribed theta is the continuum Young reference theta_ref.",
+    "theta_ref_deg": [60.0, 90.0, 110.0, 135.0],
+    "analytic_relation_wall_value": "cos(theta) = (3*psi_w - psi_w^3)/2",
+    "analytic_relation_geometric": "psi_ghost = psi_0 + cot(theta)*|d_t psi|",
+    "source": [
+      "de Gennes, Rev. Mod. Phys. 57 (1985) 827 (Young's law / wall free energy)",
+      "Jacqmin, J. Comput. Phys. 155 (1999) 96 (wetting boundary condition for diffuse interfaces)",
+      "Briant, Wagner & Yeomans, Phys. Rev. E 69 (2004) 031602 (order-parameter wetting in LBM)",
+      "walberla free-surface ContactAngle.h / OSS inventory row 281 (two independent contact-angle implementations)"
+    ]
+  },
+  "arms": ["dirichlet", "neumann_flux", "geometric_ghost"],
+  "estimators": {
+    "theta_cap_deg": "conserved-content Laplace-cap area inversion (implementation-blind, uses content + apex)",
+    "theta_circle_deg": "algebraic least-squares circle fit of the mid-level contour (implementation-blind, global shape)",
+    "theta_normal_deg": "contact-line interface-normal direction from field gradients at the two mid-level crossings of the two wall-adjacent rows (implementation-blind, local derivative; benchmark-side, shares no code with the module estimators)"
+  },
+  "gates": {
+    "G1_measurable": "every row measurable==true (finite estimators, circle_rms < 0.15*xi)",
+    "G2_accuracy_vs_young_pct": 15.0,
+    "G2_definition": "|theta_med - theta_ref|/theta_ref*100 with theta_med = median of the finite estimators; must be < 15% (owner accuracy standard)",
+    "G3_cross_arm_spread_pct": 15.0,
+    "G3_definition": "per angle, (max(theta_med) - min(theta_med))/theta_ref*100 across arms; must be < 15%",
+    "G4_estimator_spread_deg": 10.0,
+    "G4_definition": "max(estimator) - min(estimator) per row (diagnostic gate: predeclared at 10 deg; a violation is reported, not silently widened)",
+    "G5_conservation": "converged==true, mass_error < 1e-6, drift < 1e-9",
+    "G6_neutral_limit_degeneracy": "at theta=90 deg the neumann_flux and geometric_ghost arms reduce to the same Neumann ghost -> max|psi_a - psi_b| < 1e-9 (consistency check of the two implementations in their common limit)",
+    "G7_solver_cross_check_pct": 15.0,
+    "G7_definition": "production solver CAC2D (wall_phi_policy='wall_order', psi_w = psi_wall_from_angle(theta)) measured angle vs theta_ref, < 15% (optional --solver arm; needs the LBE solve)"
+  },
+  "predeclared_note": "G2/G3 use the owner accuracy standard 15%; G4 was fixed at 10 deg before the graded sweep was inspected and is kept at 10 deg even though round-2/3 review measured an 11.2 deg gap for the dirichlet arm at 90 deg (reported as an open item, see docs/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS.md section 5)."
+}
