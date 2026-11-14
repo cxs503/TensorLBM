@@ -1,0 +1,62 @@
+{
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "round": 2,
+  "title": "Full-step (collide+stream) pointwise reference regression + frozen lbmpy-free gate",
+  "registered_utc": "2026-11-14T00:00:00Z",
+  "pre_registered_before_runs": true,
+  "why_round2": "Round 1 (merged #2263) gated single-step *collision* kernels only; the streaming half of the step, the accumulated 30-step trajectory, and the run-time dependence on a live lbmpy install were uncovered. Round 2 closes those three gaps.",
+  "gates": {
+    "G_code_equivalence": {
+      "metric": "eps_scaled_inf = max|got-ref| / max|ref| (fp64)",
+      "value": 1e-10,
+      "rationale": "same-operator comparison; owner 15% physics standard is a null criterion here (round 1 calibration, unchanged)"
+    },
+    "G_stream_crosscheck": {
+      "metric": "eps_scaled_inf of each in-repo streaming kernel vs the np.roll definition",
+      "value": 1e-12,
+      "rationale": "definition-level identity; anything above fp64 noise is a defect"
+    },
+    "G_conservation": {
+      "metric": "relative drift of total mass and total momentum over 30 periodic steps",
+      "value": 1e-12,
+      "rationale": "periodic streaming is exactly conservative; drift above fp64 noise means a kernel leaks"
+    },
+    "G_physics_shear_decay": {
+      "metric": "max over time of |A_measured(t)/A_analytic(t) - 1|, A_analytic = A0 exp(-nu k^2 t)",
+      "value": 0.03,
+      "rationale": "owner target 3%; >15% unacceptable. Lattice correction is O(k^2) ~ 1% at k=2*pi/64"
+    },
+    "G_refdata_reproduction": {
+      "metric": "eps_scaled_inf between regenerated and frozen reference arrays",
+      "value": 1e-12,
+      "rationale": "frozen reference data must be reproducible from source, not hand-written"
+    }
+  },
+  "arms": {
+    "S": "stepwise pointwise: reference = definition-stream(lbmpy collision), in-repo = solver.stream(solver.collide_*), 30 steps",
+    "X": "cross-implementation streaming audit: every in-repo D2Q9/D3Q19 streaming kernel vs the definition",
+    "P": "physics: shear-wave amplitude decay vs exp(-nu k^2 t)"
+  },
+  "cases": [
+    {"arm": "S1", "model": "srt", "tau": 0.55, "field": "shear_wave 64x8 u0=0.02", "steps": 30},
+    {"arm": "S2", "model": "srt", "tau": 0.7, "field": "shear_wave 64x8 u0=0.02", "steps": 30},
+    {"arm": "S3", "model": "srt", "tau": 1.0, "field": "shear_wave 64x8 u0=0.02", "steps": 30},
+    {"arm": "S4", "model": "trt", "tau": 0.7, "lambda_trt": 0.1875, "field": "shear_wave 64x8 u0=0.02", "steps": 30},
+    {"arm": "S5", "model": "mrt_native", "tau": 0.7, "field": "shear_wave 64x8 u0=0.02", "steps": 30},
+    {"arm": "S6", "model": "srt", "tau": 0.7, "field": "non-square 7x11 asymmetric + 1e-3 noise", "steps": 30},
+    {"arm": "S7", "model": "srt", "tau": 0.7, "field": "high-Ma 32x32 u0=0.1 + 1e-2 noise (nonlinear regime)", "steps": 30},
+    {"arm": "P1", "model": "srt", "tau": 0.8, "field": "shear_wave 64x8 u0=0.02", "steps": 2000},
+    {"arm": "P2", "model": "srt", "tau": 1.0, "field": "shear_wave 64x8 u0=0.02", "steps": 2000}
+  ],
+  "frozen_reference": {
+    "file": "refdata/pointwise_stepwise_d2q9_v1.npz",
+    "manifest": "refdata/pointwise_stepwise_d2q9_v1.manifest.json",
+    "purpose": "let the gate run on machines without lbmpy (round 1 gate skips there)",
+    "contents": "per case: f0, reference states at checkpoints {1,5,30}, sha256 of every array"
+  },
+  "honest_limits": [
+    "the streaming reference IS the definition (np.roll), hence algebraically equivalent to any correct gather kernel; it can only expose indexing/order/axis defects, not model errors",
+    "collision oracle is round-1's lbmpy construction, i.e. the same OSS truth source; a shared misconception in lbmpy's compressible SRT would not be detected",
+    "arms stay in 2D D2Q9 for the stepwise gate (D3Q19 only in the streaming cross-check)"
+  ]
+}

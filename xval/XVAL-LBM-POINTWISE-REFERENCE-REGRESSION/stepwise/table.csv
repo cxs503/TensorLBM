@@ -1,0 +1,16 @@
+arm,kind,model,tau,steps,eps_scaled_inf,gate,pass,extra_metric,extra_value
+S1,stepwise,srt,0.55,30,5.370704e-15,1e-10,True,mass_drift_rel,2.998e-15
+S2,stepwise,srt,0.7,30,3.334832e-14,1e-10,True,mass_drift_rel,2.331e-15
+S3,stepwise,srt,1.0,30,8.493206e-15,1e-10,True,mass_drift_rel,1.776e-15
+S4,stepwise,trt,0.7,30,2.373102e-14,1e-10,True,mass_drift_rel,2.220e-15
+S5,stepwise,mrt_native,0.7,30,3.796963e-14,1e-10,True,mass_drift_rel,3.997e-15
+S6,stepwise,srt,0.7,30,3.312304e-14,1e-10,True,mass_drift_rel,2.402e-15
+S7,stepwise,srt,0.7,30,3.397249e-14,1e-10,True,mass_drift_rel,2.439e-15
+solver.stream,streaming,D2Q9,-,-,0.000000e+00,1e-12,True,layout,(9,ny,nx) gather
+lattice.stream,streaming,D2Q9,-,-,0.000000e+00,1e-12,True,layout,(ny,nx,9) per-direction roll
+les_bptt.stream,streaming,D2Q9,-,-,0.000000e+00,1e-12,True,layout,(B,9,ny,nx) conv2d
+diff_boundary_grad.stream,streaming,D2Q9,-,-,0.000000e+00,1e-12,True,layout,(9,ny,nx)
+h_theorem.stream,streaming,D2Q9,-,-,0.000000e+00,1e-12,True,layout,(9,ny,nx) spec-driven
+channel_kernel_numpy.stream,streaming,D3Q19,-,-,0.000000e+00,1e-12,True,layout,(19,nz,ny,nx)
+P1,physics,srt,0.8,2000,1.504677e-03,3e-02,True,rate_err_rel,5.144e-04
+P2,physics,srt,1.0,2000,5.531693e-07,3e-02,True,rate_err_rel,1.722e-07
