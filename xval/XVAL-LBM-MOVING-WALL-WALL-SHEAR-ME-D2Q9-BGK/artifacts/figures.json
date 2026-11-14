@@ -1,0 +1,22 @@
+[
+ {
+  "name": "fig1_couette.png",
+  "caption": "Steady plane Couette: velocity profile (left) and wall shear from momentum exchange vs the exact N-S value for four grids (right). Errors are at round-off, i.e. the discrete ME force of the halfway moving-wall closure equals rho*nu*U0/H_eff to machine precision.",
+  "png": "figures/fig1_couette.png"
+ },
+ {
+  "name": "fig2_stokes2.png",
+  "caption": "Stokes' second problem (oscillating wall, delta_bl = 8): measured wall force over one period vs the analytic viscous traction (left); amplitude/phase error over the parameter sweep (right).",
+  "png": "figures/fig2_stokes2.png"
+ },
+ {
+  "name": "fig3_rayleigh.png",
+  "caption": "Impulsive (Rayleigh) start-up of the wall: |tau_w| vs the half-space similarity solution on log-log axes, and the relative error history; the power-law decay is reproduced without any rescaling.",
+  "png": "figures/fig3_rayleigh.png"
+ },
+ {
+  "name": "fig4_ablation_drift.png",
+  "caption": "Left: wall-force amplitude error of the reference closure vs four ablations (the case discriminates). Right: measured fluid-mass loss rate when the wall carries a velocity component along its own normal (out of contract; quantified, not corrected).",
+  "png": "figures/fig4_ablation_drift.png"
+ }
+]
