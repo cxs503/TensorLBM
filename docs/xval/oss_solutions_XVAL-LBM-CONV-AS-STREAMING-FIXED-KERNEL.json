@@ -1,0 +1,24 @@
+{
+  "schema": "oss_solutions row payload (mission DB role has no INSERT/UPDATE grant on public.oss_solutions; has_table_privilege('oss_solutions','INSERT') = false, verified from mission 20684. Committed so the platform can ingest it.)",
+  "insert_target": "public.oss_solutions",
+  "row": {
+    "repo": "loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow",
+    "feature_slug": "XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL",
+    "tag": "round2-method-selection",
+    "method": "conv-as-streaming: transport = one constant stencil cross-correlation per population (tap index along a field axis = 1 - c_axis), periodic wrap by circular padding; wall reflection = 1x1 cross-channel convolution (direction-reversal matrix) blended through the solid mask. TensorLBM keeps its gather transport as default and adopts this as an opt-in backend (src/tensorlbm/streaming_conv.py: stream_conv_2d, stream_conv_3d, bounce_blend). Kernels are DERIVED from the velocity table, never copied from upstream tables (upstream D3Q19 STREAM has one wrong tap at q=3).",
+    "files": "src/tensorlbm/streaming_conv.py; benchmarks/xval_conv_as_streaming/{run_xval.py,predeclared.json,render_report.py,oss_ref/*}; tests/test_streaming_conv.py; docs/xval/conv_streaming_fixed_kernel_r2_research.md; upstream basis LatFlow/{D2Q9.py,D3Q19.py,Domain.py,utils.py} (tarball sha256 7e4e3459730aecd57daef1cc5695e10368424b497a23849b3c10d095c4e23f10)",
+    "conventions": "field layout (q, ny, nx) / (q, nz, ny, nx) (channel-first), float64 CPU torch; ordering f <- collide(stream(f)); upward push: out[q, y, x] = f[q, y - c_y, x - c_x]; PyTorch conv2d is a cross-correlation (no kernel flip), groups=q depthwise; half-way bounce-back wall spacing H = Ny - 2; TG initial condition f = f_eq(rho, u0) on cell centres x_i = i + 0.5.",
+    "transfer": "Adopt as optional transport backend only. Bit-wise equivalent to the production gather transport (2D circle-pad, 3D D3Q19 vs canonical roll traversal) so it can be swapped per call site without touching collision/macroscopic kernels. Do NOT copy upstream's shipped stream tables; derive them. Do NOT adopt the AA-pattern/in-place half-shift or fused-push variants for this anchor: they change the time-stepping schedule or the q-slot permutation and would destroy the arm-to-arm bitwise equivalence evidence. Payoff is kernel fusion on GPU; on CPU-only hosts the cost is the same class as the gather transport, so no speed claim is made.",
+    "evidence": "Mission 17680 (round 1): 2D gather vs fixed-kernel bitwise equal (max abs diff 0), derived kernel vs upstream D2Q9 table bitwise equal, 3D D3Q19 conv vs canonical roll bitwise equal, bounce 1x1 conv vs explicit reversal bitwise equal; TG decay-rate error 0.026 %, Poiseuille profile error 0.383 % at --quick. Mission 20684 (round 2): full predeclared ladder (n in {32,64}, Re in {50,100}, Ny in {16,24}, 30000-step channel) executed on the compute cluster; numbers in runs/xval_conv_as_streaming/result.json and docs/XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL.md. Owner gate 15 % / internal target 3 %."
+  },
+  "literature_anchors": [
+    "Kruger, Kusumaatmaja, Kuzmin, Shardt, Silva, Viggen, The Lattice Boltzmann Method: Principles and Practice, Springer 2017, ch. 6 (streaming, memory layout, half-way bounce-back, Taylor-Green benchmark)",
+    "Succi, The Lattice Boltzmann Equation for Fluid Dynamics and Beyond, OUP 2001, ch. 3",
+    "Wellein, Zeiser, Hager, Donath, On the single processor performance of simple lattice Boltzmann kernels, Computers & Fluids 35 (2006) 910-919",
+    "Bailey, Myre, Walsh, Lilja, Saar, Accelerating lattice Boltzmann method fluid simulations with general purpose graphics processing units, J. Comput. Phys. 228 (2009) 1390-1402",
+    "Mohrhard, Trunk, Krause, Kramer, Anisotropic lattice Boltzmann method for capturing the anisotropy of porous media, Comput. Math. Appl. (2016) - AA-pattern / fused push variants",
+    "Hanel, Molekulare Gasdynamik, Springer 2004, ch. 5",
+    "Taylor, Green, Mechanism of the production of small eddies from large ones, Proc. R. Soc. A 158 (1937) 499-521",
+    "PyTorch documentation, torch.nn.functional.conv2d (cross-correlation convention, groups, 'circular' padding)"
+  ]
+}
