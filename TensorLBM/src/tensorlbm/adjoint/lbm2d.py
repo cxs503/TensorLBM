@@ -53,7 +53,10 @@ def stream(f: np.ndarray) -> np.ndarray:
     """Periodic streaming: out_i(x) = f_i(x - e_i)."""
     out = np.empty_like(f)
     for i in range(9):
-        out[i] = np.roll(f[i], shift=(EX[i], EY[i]), axis=(0, 1))
+        # int() is required: EX/EY are float64 and some numpy builds (the
+        # cluster nodes run numpy>=2 where np.roll rejects float shifts)
+        # raise TypeError("slice indices must be integers") otherwise.
+        out[i] = np.roll(f[i], shift=(int(EX[i]), int(EY[i])), axis=(0, 1))
     return out
 
 
