@@ -1,0 +1,50 @@
+{
+  "anchor": "XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D",
+  "declared_before_runs": true,
+  "repo": "TensorLBM",
+  "subject": "curved-interface (2-D droplet) Young-Laplace calibration of the free-energy binary-fluid LBM against the analytic tension of the same free-energy functional",
+  "reference_provenance": {
+    "free_energy_and_tension": "Swift, Orlandini, Osborn & Yeomans, Phys. Rev. Lett. 78, 19 (1996); Briant & Yeomans & Yeomans PRE 69, 031602 (2004): f = A(-phi^2/2 + phi^4/4) + kappa|grad phi|^2/2, xi = sqrt(2 kappa/A), sigma = (2/3) sqrt(2 kappa A) = (4/3) kappa/xi",
+    "laplace_law": "Young-Laplace: p_in - p_out = sigma (1/R1 + 1/R2); for the 2-D (cylinder) droplet one curvature => dp = sigma/R, NOT 2 sigma/R",
+    "pressure_tensor_moment_balance": "Rowlinson & Widom, J. Chem. Phys. 76, 1878 (1982): radial balance dP_rr/dr + (P_rr - P_tt)/r = 0 => dp = integral (P_rr - P_tt)/r dr, sigma = integral (P_rr - P_tt) dr",
+    "surface_of_tension": "Rowlinson & Widom (1982): R_sigma = integral r (P_rr - P_tt) dr / integral (P_rr - P_tt) dr -- the radius the Laplace law refers to in the sharp-interface limit"
+  },
+  "analytic_checks": [
+    {"A": 0.1, "kappa": 0.2,  "sigma": 0.13333333333333333, "xi": 2.0, "band": 1e-06},
+    {"A": 0.05, "kappa": 0.225, "sigma": 0.1, "xi": 3.0, "band": 1e-06},
+    {"A": 0.2, "kappa": 0.45, "sigma": 0.4, "xi": 2.1213203435596424, "band": 1e-06}
+  ],
+  "cases": {
+    "protocol": "static droplet, periodic box, populations advanced by the production kernel collide_and_stream; measures taken on the last step after the transient",
+    "parameter_window": "A=0.1, kappa=0.2 (xi=2, sigma=2/15) -- the window in which the explicit Cahn-Hilliard branch of this kernel is stable at dt=1 (measured: kappa>=0.29 diverges, see limitations)",
+    "case_list": ["N64_R10", "N64_R12", "N80_R16"],
+    "steps": 800,
+    "mobility": "Gamma=0.05, tau_phi=1.0 => M = Gamma (tau_phi-1/2)/3"
+  },
+  "criteria": {
+    "owner_band": 0.15,
+    "stretch_band": 0.03,
+    "sigma_integral_band": 0.15,
+    "dp_tensor_band": 0.15,
+    "xi_band": 0.15,
+    "contour_consistency_cells": 0.35,
+    "spurious_velocity_over_cs": 0.01,
+    "conservation_drift": 1e-08,
+    "meaning": {
+      "C1_sigma_capillary_vs_analytic": "headline KPI: |dp_bulk * R_fit - sigma_analytic| / sigma_analytic <= 0.15 (owner standard; 0.03 stretch)",
+      "C2_sigma_integral_vs_analytic": "independent route: sigma = integral (P_rr-P_tt) dr from the measured pressure tensor (one interface) vs analytic sigma",
+      "C3_tensor_capillary_vs_sigma_over_R": "dp from the exact polar moment balance integral (P_rr-P_tt)/r dr vs sigma_analytic/R_sigma",
+      "C4_interface_width_recovered": "atanh tanh-fit of the measured profile returns the model xi = sqrt(2 kappa/A)",
+      "C5_radius_definition_consistency": "R_fit - R_contour stays below 0.35 cells (the diffuse interface has no unique radius; the report states which one the KPI uses)",
+      "C6_spurious_current": "max|u|/c_s <= 0.01 (low-Mach assumption of the model)",
+      "C7_conservation": "|Delta mean phi| and |Delta mean rho| <= 1e-8 over the run (rest populations f0 = rho - sum, g0 = phi - sum)"
+    }
+  },
+  "verdict_rule": "PASS iff every analytic check and every per-case criterion holds; otherwise FAIL is reported per criterion (no aggregate cherry-picking, no post-hoc band widening). The 15 % owner band is the acceptance criterion; the 3 % stretch band is reported separately and never substituted for it.",
+  "known_limitations_declared_up_front": [
+    "2-D (cylinder) geometry: the 3-D sphere coefficient 2 sigma/R is NOT tested here.",
+    "The Laplace law is a sharp-interface limit: a finite xi/R correction of O((xi/R)^2) is expected and is reported as a trend over R/xi, not removed.",
+    "Only the parameter window in which this kernel's explicit Cahn-Hilliard branch is stable at dt=1 is graded; a wider kappa study is a separate mission (it needs the stability fix, not a criterion change).",
+    "The droplet is not allowed to dissolve: phi is conserved by construction, and the measured phi drift is reported (C7) rather than assumed."
+  ]
+}
