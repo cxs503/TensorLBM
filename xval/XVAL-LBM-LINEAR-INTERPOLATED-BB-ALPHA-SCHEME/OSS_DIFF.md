@@ -19,3 +19,14 @@ Porting tradeoff: keep the α-family + `K̂` in the production module (tested, n
 default); do **not** port pylbm code (formulas/conventions only); the moving-wall/Dirichlet value term
 (`−α e⁻_q(x_w)`) is left out (it vanishes for the vertical cut links of this benchmark, mandatory for
 inclined/moving walls); the 15 % acceptance line is not relaxed for the measured failure.
+
+## Correction (REPORT_V3, measured)
+
+The row "the moving-wall/Dirichlet value term (`−α e⁻_q(x_w)`) is left out (it vanishes for the
+vertical cut links of this benchmark, mandatory for inclined/moving walls)" mixed two statements.
+It is correct that the term vanishes on the **wall-normal** cut links of a wall-aligned channel; it
+is **wrong** that it therefore vanishes for a wall-aligned channel, because a *sliding* wall gives
+`e⁻_q = 3 w_q ρ_w c_qx u_wx ≠ 0` on the **diagonal** cut links.  The term is now implemented in the
+production operator (`wall_velocity` / `wall_density` / `weights`), pinned by
+`tests/test_interpolated_bounce_back_moving_wall.py`, and measured on three analytic benchmarks in
+`REPORT_V3.md` (plane Couette error 100 % → 0.0013 %).
