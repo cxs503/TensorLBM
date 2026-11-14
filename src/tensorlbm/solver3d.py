@@ -588,6 +588,46 @@ def collide_rlbm3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     return feq + (1.0 - 1.0 / tau) * fneq_reg
 
 
+
+# ---------------------------------------------------------------------------
+# Differentiable / inverse-problem entry point (GAP-DIFFLBM-3D-COST)
+# ---------------------------------------------------------------------------
+
+
+def inversion_gradient_3d(f0, f_obs, steps, tau0=0.62, lr=0.5, iters=25,
+                          segment=4, dtype=None, device=None):
+    """Recover the BGK relaxation time ``tau`` from a 3-D population snapshot.
+
+    Solver-side entry point for 3-D differentiable simulation: the forward chain
+    is the D3Q19 kernel of this module (:func:`stream3d`, :func:`collide_bgk3d`
+    semantics, re-implemented in :mod:`tensorlbm.diff3d` for autograd with an
+    explicit ``tau`` leaf), and the gradient is obtained with the
+    memory-bounded (disk-checkpointed) reverse mode, so the peak state count is
+    independent of ``steps``.  See :func:`tensorlbm.diff3d.recover_tau`.
+
+    Parameters
+    ----------
+    f0 : (19, n, n, n) tensor
+        Initial populations, typically ``tensorlbm.diff3d.abc_initial(n, amp)``.
+    f_obs : (19, n, n, n) tensor
+        Target populations at ``t = steps`` (the "observed" state).
+    steps : int
+        Number of LBM steps in the inversion window.
+    tau0 : float
+        Initial guess for the relaxation time.
+
+    Returns
+    -------
+    (tau_hat, history)
+    """
+    from .diff3d import recover_tau
+
+    if dtype is None:
+        dtype = f0.dtype
+    return recover_tau(f0, f_obs, steps, tau0=tau0, lr=lr, iters=iters,
+                       segment=segment, dtype=dtype, device=device)
+
+
 __all__ = [
     "collide_bgk3d",
     "collide_mrt3d",
@@ -600,4 +640,5 @@ __all__ = [
     "stream3d_gather",
     "stream3d_roll",
     "correct_mass3d",
+    "inversion_gradient_3d",
 ]
