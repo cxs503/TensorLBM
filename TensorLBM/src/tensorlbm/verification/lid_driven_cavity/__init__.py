@@ -4,8 +4,8 @@ Classic benchmark: square cavity with moving lid, validated against
 Ghia et al. (1982) JCP 48:387-411 DNS reference data.
 
 Provides:
-- Cavity solver (D2Q9 BGK, bounce-back walls, moving lid)
-- Ghia 1982 reference data (Re=100, 400, 1000, unverified offline;
+- Cavity solver (D2Q9 BGK/RLBM/TRT, bounce-back walls, moving lid)
+- Ghia 1982 reference data (Re=100, 400, 1000, BOUND from OCR witness;
   Re=5000 must be injected with provenance via ``load_reference_json``)
 - Verification gates (velocity profile comparison)
 - Grid convergence study
@@ -24,6 +24,7 @@ from .reference_data import (
     GHIA_RE1000,
     LITERATURE_ANCHORS,
     load_reference_json,
+    interpolate_ghia,
 )
 from .verification import (
     VerificationResult,
@@ -42,6 +43,7 @@ __all__ = [
     "GHIA_RE1000",
     "LITERATURE_ANCHORS",
     "load_reference_json",
+    "interpolate_ghia",
     "VerificationResult",
     "run_single_case",
     "run_grid_convergence",
