@@ -740,6 +740,65 @@ def run_binary_equilibrium_pressure_benchmark(
 
 
 # ---------------------------------------------------------------------------
+# Benchmark 2c – Free-energy droplet: analytic Young-Laplace calibration
+# ---------------------------------------------------------------------------
+
+
+def run_free_energy_young_laplace_benchmark(
+    *,
+    cases: list | None = None,
+    smoke: bool = False,
+    output_root: Path = Path("outputs"),
+    run_name: str | None = None,
+    overwrite: bool = False,
+) -> dict[str, object]:
+    """Grade the curved-interface Laplace law of the free-energy model.
+
+    Calls the calibration protocol of
+    :mod:`tensorlbm.phasefield.laplace_droplet_calibration` (time-averaged bulk
+    pressure jump, three radius definitions, analytic tension of the *same* free
+    energy functional) on the production free-energy kernel, and writes the
+    graded report through the usual run-directory convention.
+
+    This is the production/benchmark-side caller of the protocol: the platform
+    benchmark endpoint (``/api/v1/benchmarks/multiphase`` ->
+    :func:`run_multiphase_benchmark_suite`) reaches it, so the calibration is not
+    a standalone script.
+    """
+    from .phasefield.laplace_droplet_calibration import (
+        LaplaceCriteria,
+        default_cases,
+        grade_report,
+        run_suite,
+        smoke_cases,
+    )
+
+    case_list = cases if cases is not None else (smoke_cases() if smoke else default_cases())
+    criteria = LaplaceCriteria()
+    rows = run_suite(case_list, criteria)
+    report = grade_report(rows, criteria)
+    report.update(
+        {
+            "anchor": "XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D",
+            "case_ids": [r["case"]["case_id"] for r in rows],
+            "smoke": bool(smoke),
+            "rows": rows,
+        }
+    )
+    name = run_name or ("smoke" if smoke else "young_laplace_d2")
+    run_dir = prepare_run_dir(Path(output_root), "free_energy_young_laplace", name, overwrite)
+    (run_dir / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True))
+    return {
+        "run_dir": str(run_dir),
+        "verdict": report["verdict"],
+        "worst_abs_rel_error_sigma_capillary": report[
+            "worst_abs_rel_error_sigma_capillary"
+        ],
+        "case_ids": report["case_ids"],
+    }
+
+
+# ---------------------------------------------------------------------------
 # Benchmark 3 – Free-Energy droplet relaxation
 # ---------------------------------------------------------------------------
 
