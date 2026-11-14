@@ -1,0 +1,398 @@
+{
+  "slug": "GAP-DIFFLBM-ADJOINT-VERDICT",
+  "cases": [
+    {
+      "resolution": "R1",
+      "config": {
+        "ny": 36,
+        "nx": 64,
+        "radius": 3.0,
+        "interface": 0.8,
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "wall_offset": 1.0,
+        "u_scale": 0.06,
+        "dtype": "torch.float64",
+        "viscosity": 0.05000000000000001,
+        "re_diameter": 7.199999999999998
+      },
+      "point": {
+        "xc": 32.0,
+        "yc": 14.0
+      },
+      "steady_state": {
+        "lift": 0.013143698419145596,
+        "drag": 0.06469916399528307,
+        "drift": 4.1142076527903026e-07,
+        "u_max": 0.05828002176413604,
+        "re_measured": 6.993602611696323,
+        "seconds": 20.20628233999014
+      },
+      "objective": {
+        "lift": 0.01312741615995793,
+        "drag": 0.06466270503195434
+      },
+      "grad_ad": [
+        0.00010428427700572914,
+        -0.0022695189580521653
+      ],
+      "grad_fd": {
+        "0.05": [
+          0.00010428368007867062,
+          -0.0022694834318666424
+        ]
+      },
+      "grad_fd_seconds": {
+        "0.05": 14.167189110070467
+      },
+      "grad_frozen": [
+        -0.00015772127208187742,
+        0.0010706488408381825
+      ],
+      "grad_shipped_proxy": [
+        1.6893507387816687e-05,
+        -0.0008470834841633836
+      ],
+      "shipped_proxy_raw": {
+        "objective": -0.0029432826300589037,
+        "n_boundary_nodes": 16,
+        "shape_derivative_only": true,
+        "error": null
+      },
+      "ad_vs_fd": {
+        "relerr_y": 1.5653864233622757e-05,
+        "cos": 0.9999999999998964,
+        "fd_step_sensitivity_y": null,
+        "fd_step_used": 0.05
+      },
+      "verdict_2d": {
+        "grad_ad": [
+          0.00010428427700572914,
+          -0.0022695189580521653
+        ],
+        "grad_frozen": [
+          -0.00015772127208187742,
+          0.0010706488408381825
+        ],
+        "norm_ad": 0.002271913623223558,
+        "norm_frozen": 0.001082203742395705,
+        "cosine": -0.9949697528765004,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.47634017919228583,
+        "amplitude_ratio_inverse": 2.0993400172449586,
+        "sign_agreement": false,
+        "component_rel_error": [
+          2.512416604021837,
+          1.4717514418813564
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "verdict_1d_yc": {
+        "grad_ad": [
+          -0.0022695189580521653
+        ],
+        "grad_frozen": [
+          0.0010706488408381825
+        ],
+        "norm_ad": 0.0022695189580521653,
+        "norm_frozen": 0.0010706488408381825,
+        "cosine": -1.0,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.47175144188135637,
+        "amplitude_ratio_inverse": 2.119760346702864,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.4717514418813564
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "timings": {
+        "ad_seconds": 7.905977040529251
+      }
+    },
+    {
+      "resolution": "R1",
+      "config": {
+        "ny": 36,
+        "nx": 64,
+        "radius": 3.0,
+        "interface": 0.8,
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "wall_offset": 1.0,
+        "u_scale": 0.06,
+        "dtype": "torch.float64",
+        "viscosity": 0.05000000000000001,
+        "re_diameter": 7.199999999999998
+      },
+      "point": {
+        "xc": 32.0,
+        "yc": 21.0
+      },
+      "steady_state": {
+        "lift": -0.013143698419145455,
+        "drag": 0.06469916399528314,
+        "drift": 4.114207652599483e-07,
+        "u_max": 0.058280021764136096,
+        "re_measured": 6.99360261169633,
+        "seconds": 17.164733009412885
+      },
+      "objective": {
+        "lift": -0.013127416159957836,
+        "drag": 0.06466270503195432
+      },
+      "grad_ad": [
+        -0.00010428427700573625,
+        -0.0022695189580521514
+      ],
+      "grad_fd": {
+        "0.05": [
+          -0.00010428368007757774,
+          -0.0022694834318671975
+        ]
+      },
+      "grad_fd_seconds": {
+        "0.05": 12.581957450136542
+      },
+      "grad_frozen": [
+        0.00015772127208186923,
+        0.0010706488408381942
+      ],
+      "grad_shipped_proxy": [
+        -1.689350738789025e-05,
+        -0.0008470834841630321
+      ],
+      "shipped_proxy_raw": {
+        "objective": 0.0029432826300586816,
+        "n_boundary_nodes": 16,
+        "shape_derivative_only": true,
+        "error": null
+      },
+      "ad_vs_fd": {
+        "relerr_y": 1.5653863982905795e-05,
+        "cos": 0.9999999999998963,
+        "fd_step_sensitivity_y": null,
+        "fd_step_used": 0.05
+      },
+      "verdict_2d": {
+        "grad_ad": [
+          -0.00010428427700573625,
+          -0.0022695189580521514
+        ],
+        "grad_frozen": [
+          0.00015772127208186923,
+          0.0010706488408381942
+        ],
+        "norm_ad": 0.0022719136232235444,
+        "norm_frozen": 0.0010822037423957153,
+        "cosine": -0.9949697528765014,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.47634017919229327,
+        "amplitude_ratio_inverse": 2.0993400172449257,
+        "sign_agreement": false,
+        "component_rel_error": [
+          2.512416604021656,
+          1.4717514418813644
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "verdict_1d_yc": {
+        "grad_ad": [
+          -0.0022695189580521514
+        ],
+        "grad_frozen": [
+          0.0010706488408381942
+        ],
+        "norm_ad": 0.0022695189580521514,
+        "norm_frozen": 0.0010706488408381942,
+        "cosine": -1.0,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.4717514418813644,
+        "amplitude_ratio_inverse": 2.119760346702828,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.4717514418813644
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "timings": {
+        "ad_seconds": 5.86507579125464
+      }
+    }
+  ],
+  "timestamp": "2026-11-14T10:22:04",
+  "environment": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "numpy": "2.4.6",
+    "host": "ec6ae0b42a0c",
+    "cpus": 128,
+    "threads": 6,
+    "dtype": "float64"
+  },
+  "study": {
+    "objective": "lift = momentum-exchange force on disk along +y",
+    "parameter": [
+      "xc",
+      "yc"
+    ],
+    "resolutions": {
+      "R1": {
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "interface": 0.8,
+        "wall_offset": 1.0,
+        "ny": 36,
+        "nx": 64,
+        "radius": 3.0
+      },
+      "R2": {
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "interface": 0.8,
+        "wall_offset": 1.0,
+        "ny": 42,
+        "nx": 74,
+        "radius": 3.5
+      }
+    },
+    "n_warm": 4500,
+    "fd_steps": [
+      0.05,
+      0.1
+    ],
+    "horizons": [
+      300,
+      600
+    ],
+    "gate": 0.99,
+    "predeclared": true
+  },
+  "repro_cmd": "python benchmarks/adjoint_verdict_bench.py --out runs/GAP-DIFFLBM-ADJOINT-VERDICT/run_r1 --threads 6",
+  "lift_sweep": {
+    "resolution": "R1",
+    "n_warm": 4500,
+    "rows": [
+      {
+        "yc": 13.870000000000001,
+        "lift": 0.010759007404514704,
+        "drag": 0.05986266468662819
+      },
+      {
+        "yc": 15.685,
+        "lift": 0.006322163838001312,
+        "drag": 0.06344657655682091
+      },
+      {
+        "yc": 17.5,
+        "lift": 2.3192181404095783e-17,
+        "drag": 0.06478988507291733
+      },
+      {
+        "yc": 19.315,
+        "lift": -0.006322163838001385,
+        "drag": 0.06344657655682094
+      },
+      {
+        "yc": 21.130000000000003,
+        "lift": -0.010759007404514735,
+        "drag": 0.05986266468662815
+      }
+    ]
+  },
+  "trajectories": {
+    "ad": [
+      {
+        "iter": 0,
+        "xc": 32.0,
+        "yc": 21.0,
+        "lift": -0.013127416159957836
+      },
+      {
+        "iter": 1,
+        "xc": 32.0,
+        "yc": 20.995460962083897,
+        "lift": -0.013117104444644334,
+        "step_dir_y": -0.0022695189580521514
+      },
+      {
+        "iter": 2,
+        "xc": 32.0,
+        "yc": 20.9909133619653,
+        "lift": NaN,
+        "step_dir_y": -0.0022738000592979627
+      }
+    ],
+    "frozen": [
+      {
+        "iter": 0,
+        "xc": 32.0,
+        "yc": 21.0,
+        "lift": -0.013127416159957836
+      },
+      {
+        "iter": 1,
+        "xc": 32.0,
+        "yc": 21.002141297681675,
+        "lift": -0.013132273303524934,
+        "step_dir_y": 0.0010706488408381942
+      },
+      {
+        "iter": 2,
+        "xc": 32.0,
+        "yc": 21.004292546791245,
+        "lift": NaN,
+        "step_dir_y": 0.0010756245547845823
+      }
+    ],
+    "start_yc": 21.0,
+    "adverse": true
+  },
+  "figures": [
+    {
+      "name": "fig_field.png",
+      "caption": "Steady velocity magnitude |u| and transverse velocity u_y around the off-centre disk (smooth penalisation, contour at solid fraction 0.5)."
+    },
+    {
+      "name": "fig_gradient.png",
+      "caption": "d(lift)/dy_c from expanded AD (reference), central finite differences and the frozen-field proxy, for two resolutions x two parameter points."
+    },
+    {
+      "name": "fig_lift_sweep.png",
+      "caption": "Steady lift force on the disk as a function of the disk-centre ordinate y_c (warm-started forward solves)."
+    },
+    {
+      "name": "fig_cos_gate.png",
+      "caption": "Cosine similarity between the frozen-field proxy and the flow-response AD gradient against the 0.99 admission gate."
+    },
+    {
+      "name": "fig_trajectory.png",
+      "caption": "Optimisation trajectory of the disk ordinate using the AD gradient vs the frozen-field proxy gradient (ascent on lift)."
+    }
+  ],
+  "elapsed_seconds": 22.022755110636353
+}
