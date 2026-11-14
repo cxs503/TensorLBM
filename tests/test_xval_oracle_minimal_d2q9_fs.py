@@ -35,8 +35,12 @@ def test_design_declares_owner_gate():
 
 def test_port_matches_upstream_snapshot():
     """Port == unmodified upstream (float32 round-off) on a static column."""
-    import oss_oracle_port as P
     import oss_original as O
+
+    if not (Path(O.OSS_ROOT) / "lbm" / "util.py").exists():
+        pytest.skip(f"OSS snapshot absent ({O.OSS_ROOT}) — port/upstream "
+                    "equivalence not checkable on this host")
+    import oss_oracle_port as P
 
     # keep repo ``src/lbm`` from shadowing the OSS ``lbm`` package
     src_path = str(HERE.parent / "src")
@@ -74,10 +78,16 @@ def test_port_ledger_conservative_static():
 def test_tensorlbm_arm_smoke():
     import run_xval as X
 
-    r = X.run_tensorlbm(a=8, tau=1.0, g=5e-5, t_max=1.0, sample_dt=0.25)
+    a = 8
+    r = X.run_tensorlbm(a=a, tau=1.0, g=5e-5, t_max=1.0, sample_dt=0.25)
     assert r["status"] == "ok"
     Z = [s["Z"] for s in r["series"]]
-    assert Z[0] == pytest.approx(1.0, abs=0.1)
+    Zf = [s["Z_fill"] for s in r["series"]]
+    # legacy R1 convention counts the empty INTERFACE envelope -> (a+1)/a at t=0
+    assert Z[0] == pytest.approx((a + 1) / a, abs=1e-12)
+    # physical (fill-based) front is exactly the column width at t=0
+    assert Zf[0] == pytest.approx(1.0, abs=1e-12)
+    assert Z[0] - Zf[0] == pytest.approx(1.0 / a, abs=1e-12)
     assert Z[-1] >= Z[0], "front retreated"
     assert max(Z) > 1.0, f"front never left the column: {Z}"
     assert max(abs(p["drift_pct"]) for p in r["inventory"]) < 0.5
@@ -94,3 +104,67 @@ def test_evaluate_gate_logic():
     bad["series"][0]["Z"] = 2.5
     assert X.evaluate(good)["vs_mm"]["pass_15pct"] is True
     assert X.evaluate(bad)["vs_mm"]["pass_15pct"] is False
+
+
+def test_front_metric_definitions_differ_by_one_interface_cell():
+    """``Z_cell`` is physical (fill-based); ``Z_cell_flag`` counts the empty
+    INTERFACE envelope and therefore reads exactly +1/a higher."""
+    import numpy as np
+
+    import resolution_study as R
+
+    a, h0 = 4.0, 8.0
+    fill = np.zeros((8, 20), dtype=np.float32)
+    fill[:, 1:5] = 1.0                      # 4 liquid columns, indices 1..4
+    mask = np.zeros((8, 20), dtype=bool)
+    mask[:, 1:6] = True                     # + empty interface envelope at index 5
+    m = R.snapshot_metrics(fill, a=a, h0=h0, fluid_mask=mask)
+    assert m["Z_cell"] == pytest.approx(4 / a)
+    assert m["Z_cell_flag"] == pytest.approx(5 / a)
+    assert m["Z_cell_flag"] - m["Z_cell"] == pytest.approx(1.0 / a)
+    # sub-cell metrics interpolate the toe and are not offset by a whole cell
+    assert m["Z_sub0.1"] <= m["Z_cell"] + 1.0 / a
+
+
+def test_series_roundtrip_through_log_line():
+    """series_row -> series_from_rows must preserve every judged metric."""
+    import resolution_study as R
+
+    m = {"T": 1.25, "step": 400, "Z_cell": 2.5, "Z_cell_flag": 2.5625,
+         "Z_sub0.02": 2.4375, "Z_sub0.05": 2.375, "Z_sub0.1": 2.3125}
+    back = R.series_from_rows([R.series_row(m)])[0]
+    for k in R.SER_KEYS:
+        assert back[k] == pytest.approx(m[k], abs=1e-9)
+    assert back["T"] == pytest.approx(m["T"])
+
+
+def test_collector_rebuilds_runs_from_job_log(tmp_path, monkeypatch):
+    """The stdout recovery path must rebuild the artifact analyzer consumes."""
+    import json
+
+    import collect_job_stdout as C
+    import resolution_study as R
+
+    rec = {"l": "tensorlbm_koerner_a16_tau1", "k": "arm", "a": 16, "tau": 1.0,
+           "st": "ok", "steps": 3200, "wall": 54.6, "u": 0.2377,
+           "art": "artifacts/runs_r3/tensorlbm_koerner_a16_tau1.json",
+           "S": [R.series_row({"T": 0.5, "Z_cell": 1.6875, "Z_cell_flag": 1.75,
+                               "Z_sub0.02": 1.65, "Z_sub0.05": 1.6, "Z_sub0.1": 1.55}),
+                 R.series_row({"T": 1.0, "Z_cell": 2.125, "Z_cell_flag": 2.1875,
+                               "Z_sub0.02": 2.1, "Z_sub0.05": 2.05, "Z_sub0.1": 2.0})],
+           "inv": 0.0322}
+    log = tmp_path / "cj9999.log"
+    log.write_text(json.dumps({"state": "done", "rc": 0,
+                               "output_tail": "R2SER:" + json.dumps(rec) + "\nR2END:ladder\n"}))
+    monkeypatch.setattr(C, "LOG_DIR", tmp_path)
+    got = C.parse_job("cj9999")
+    assert got["complete"] is True
+    run = got["runs"]["tensorlbm_koerner_a16_tau1"]
+    assert run["steps"] == 3200 and run["a"] == 16
+    assert len(run["series"]) == 2
+    ev = R.eval_run(run, "mm")
+    assert "Z_cell_flag_err_pct" in ev["vs_mm"]["points"][0]
+    assert ev["vs_mm"]["Z_cell_flag"]["max_abs_rel_err_pct"] is not None
+    # the two conventions must differ by exactly the declared +1 cell
+    assert (ev["vs_mm"]["points"][0]["Z_cell_flag"]
+            - ev["vs_mm"]["points"][0]["Z_cell"]) == pytest.approx(1.0 / 16.0, abs=1e-9)

@@ -80,7 +80,7 @@ PRIMARY_FRAC = 0.05
 
 DESIGN = {
     "anchor": "XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS",
-    "round": "R2",
+    "round": "R3",
     "parent_artifact": "xval/oracle_minimal_d2q9_fs/artifacts/xval_results.json (R1, 8 runs)",
     "experiment_reference": {
         "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324, Fig. 4",
@@ -99,7 +99,14 @@ DESIGN = {
     "thresholds_pct": {"z_max_rel_err": 15.0, "inventory_drift": 1.0,
                        "asymptotic_target": 3.0},
     "control": {"hydrostatic_steps": 400, "u_max_gate": 1e-6},
-    "front_metric": {"Z_cell": "rightmost LIQUID|INTERFACE column / a (R1)",
+    "front_metric": {"Z_cell": "rightmost LIQUID|INTERFACE column / a (R1, "
+                              "counts the leading INTERFACE layer => +1 cell)",
+                     "Z_cell_flag": "rightmost LIQUID|INTERFACE column / a (legacy "
+                                    "R1 run_xval convention). It also counts the empty "
+                                    "one-cell INTERFACE envelope in front of the block, "
+                                    "so Z_cell_flag(t=0) = (a+1)/a: a +1 cell (+1/a) high "
+                                    "bias, recorded to quantify the metric-definition "
+                                    "error instead of assuming it",
                      "Z_sub": "sub-cell toe, depth threshold = f*h0",
                      "f_fracs": list(THRESH_FRACS), "f_primary": PRIMARY_FRAC},
     "hypothesis": "H1: E(a) = E_inf + C a^-p with E_inf < 3 % on Z_sub(f=0.05)",
@@ -154,9 +161,22 @@ def front_subcell(depth: np.ndarray, thr: float) -> float:
     return float(i) + min(max(frac, 0.0), 1.0)
 
 
-def snapshot_metrics(fill: np.ndarray, a: float, h0: float) -> dict:
+def snapshot_metrics(fill: np.ndarray, a: float, h0: float,
+                     fluid_mask: np.ndarray | None = None) -> dict:
+    """Front metrics for one snapshot.
+
+    ``Z_cell``  = rightmost column with liquid content (fill > 1e-6), the
+                  physical column front: exactly 1 at t = 0.
+    ``Z_cell_flag`` = rightmost LIQUID|INTERFACE column (legacy R1 convention,
+                  computed only when ``fluid_mask`` is supplied); it counts the
+                  empty interface envelope and reads (a+1)/a at t = 0.
+    ``Z_sub*``  = sub-cell toe at depth threshold f*h0.
+    """
     depth = depth_profile(fill)
     out = {"Z_cell": front_cells(fill) / a}
+    if fluid_mask is not None:
+        cols = np.flatnonzero(np.asarray(fluid_mask).any(axis=0))
+        out["Z_cell_flag"] = (float(cols[-1]) if cols.size else 0.0) / a
     for f in THRESH_FRACS:
         out[f"Z_sub{f:g}"] = front_subcell(depth, f * h0) / a
     return out
@@ -199,7 +219,9 @@ def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float,
                                torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0),
                                            torch.zeros_like(mass)))
         if step % sample_every == 0 or step == n_steps:
-            m = snapshot_metrics(fill_now.cpu().numpy(), float(a), float(h0))
+            m = snapshot_metrics(fill_now.cpu().numpy(), float(a), float(h0),
+                                 fluid_mask=((flags == LIQUID) | (flags == INTERFACE)
+                                             ).cpu().numpy())
             m.update({"step": step, "T": step * dtT})
             series.append(m)
             inv_tr.append({"step": step,
@@ -253,7 +275,8 @@ def run_oss_port(a: int, tau: float, g: float, t_max: float, sample_dt: float):
         if step % sample_every == 0 or step == n_steps:
             fill = np.where(st.flags() == P.FLUID, 1.0,
                             np.where(st.flags() == P.INTERFACE, P.I(st.mass), 0.0))
-            m = snapshot_metrics(fill, float(a), float(h0))
+            m = snapshot_metrics(fill, float(a), float(h0),
+                                 fluid_mask=((st.flags() & (P.FLUID | P.INTERFACE)) != 0))
             m.update({"step": step, "T": step * dtT})
             series.append(m)
             inv_tr.append({"step": step,
@@ -335,10 +358,47 @@ def run_task(task: dict) -> dict:
             out = fn(**task)
             out["label"] = f"{arm}_a{task['a']}_tau{task['tau']:g}"
             return out
-        return hydrostatic_control(**task)
+        out = hydrostatic_control(**task)
+        out["kind"] = "control"
+        out["label"] = f"control_{out.get('arm', task.get('arm', 'arm'))}"
+        return out
     except Exception as exc:
         return {"kind": kind, "status": "error", **task,
                 "error": f"{type(exc).__name__}: {exc}"}
+
+
+def result_label(r: dict) -> str:
+    """Stable per-run artifact name (arm -> arm_aA_tauT, control -> control_arm)."""
+    if r.get("label"):
+        return str(r["label"])
+    if r.get("kind") == "control":
+        return f"control_{r.get('arm', 'arm')}"
+    return f"{r.get('arm', 'arm')}_a{r.get('a')}_tau{r.get('tau', 1.0):g}"
+
+
+SER_KEYS = ("Z_cell", "Z_cell_flag", "Z_sub0.02", "Z_sub0.05", "Z_sub0.1")
+
+
+def series_row(m: dict) -> list:
+    """One [T, Z_cell, Z_cell_flag, Z_sub.02, Z_sub.05, Z_sub.10] row (log-safe)."""
+    row = [round(float(m["T"]), 4)]
+    for k in SER_KEYS:
+        v = m.get(k)
+        row.append(round(float(v), 4) if v is not None else None)
+    return row
+
+
+def series_from_rows(rows: list, steps_hint: int | None = None) -> list:
+    """Inverse of ``series_row``: rebuild the ``series`` dicts ``eval_run`` needs."""
+    out = []
+    for i, row in enumerate(rows):
+        m = {"T": row[0]}
+        for k, v in zip(SER_KEYS, row[1:]):
+            if v is not None:
+                m[k] = v
+        m["step"] = i if steps_hint is None else int(round(i * steps_hint / max(len(rows) - 1, 1)))
+        out.append(m)
+    return out
 
 
 def plan() -> list[dict]:
@@ -368,7 +428,7 @@ def plan() -> list[dict]:
 def eval_run(res: dict, ref: str = "mm") -> dict:
     lo, hi = DESIGN["window_T"]
     interp = mm_interp if ref == "mm" else ritter_interp
-    keys = ["Z_cell"] + [f"Z_sub{f:g}" for f in THRESH_FRACS]
+    keys = ["Z_cell", "Z_cell_flag"] + [f"Z_sub{f:g}" for f in THRESH_FRACS]
     pts = []
     for s in res.get("series", []):
         T = s["T"]
@@ -488,7 +548,7 @@ def analyze(payload: dict) -> dict:
         ev = eval_run(ev, "ritter")
         runs[r["a"]] = ev
     out = {"ladder": {}, "fits": {}, "richardson": {}, "tau_sweep": {}, "controls": []}
-    keys = ["Z_cell"] + [f"Z_sub{f:g}" for f in THRESH_FRACS]
+    keys = ["Z_cell", "Z_cell_flag"] + [f"Z_sub{f:g}" for f in THRESH_FRACS]
     for a, r in sorted(runs.items()):
         out["ladder"][a] = {"steps": r["steps"], "u_max": round(r["u_max"], 4),
                             "wall_seconds": r["wall_seconds"],
@@ -607,6 +667,8 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=12)
     ap.add_argument("--shard", choices=["all", "ladder", "extras"], default="all")
     ap.add_argument("--tag", default="resolution_ladder.json")
+    ap.add_argument("--only", default="",
+                    help="comma-separated label substrings (e.g. a16,a32); default all")
     args = ap.parse_args()
 
     if args.plan:
@@ -623,7 +685,14 @@ def main() -> int:
             tasks = [t for t in tasks if not (t["kind"] == "arm"
                                               and t["arm"] == "tensorlbm_koerner"
                                               and t["tau"] == 1.0 and t["a"] != DESIGN["tau_sweep"]["a"])]
-        print(f"[r2] {len(tasks)} tasks, up to {args.workers} parallel", flush=True)
+        if args.only:
+            sel = [x for x in args.only.split(",") if x]
+            tasks = [t for t in tasks
+                     if any(k in result_label(t) for k in sel)]
+        if not tasks:
+            print("[r3] no task selected", flush=True)
+            return 2
+        print(f"[r3] {len(tasks)} tasks, up to {args.workers} parallel", flush=True)
         t0 = time.time()
         with Pool(processes=min(args.workers, len(tasks))) as pool:
             results = pool.map(run_task, tasks)
@@ -640,10 +709,27 @@ def main() -> int:
                   f"Z_sub.05 {ev['vs_mm']['Z_sub0.05']['max_abs_rel_err_pct']:>7.2f}%  "
                   f"u_max {r['u_max']:.4f}  inv {ev.get('inventory_drift_max_pct')}%  "
                   f"{r['wall_seconds']}s", flush=True)
+        runs_dir = ART / "runs_r3"
+        runs_dir.mkdir(parents=True, exist_ok=True)
+        for r in results:
+            lab = result_label(r)
+            slim = {k: v for k, v in r.items()
+                    if k not in ("final_fill", "final_umag")}
+            slim["label"] = lab
+            slim["artifact"] = f"xval/oracle_minimal_d2q9_fs/artifacts/runs_r3/{lab}.json"
+            (runs_dir / f"{lab}.json").write_text(json.dumps(slim, indent=1))
+            if "final_fill" in r:
+                np.savez_compressed(runs_dir / f"{lab}_fields.npz",
+                                    fill=np.asarray(r["final_fill"], dtype=np.float32),
+                                    umag=np.asarray(r["final_umag"], dtype=np.float32))
         payload = {"design": DESIGN,
                    "env": {"python": sys.version.split()[0], "numpy": np.__version__,
                            "workers": args.workers},
-                   "runs": results, "wall_seconds": round(time.time() - t0, 1)}
+                   "runs": [{k: v for k, v in r.items()
+                             if k not in ("final_fill", "final_umag")} for r in results],
+                   "run_artifacts": [f"artifacts/runs_r3/{result_label(r)}.json"
+                                     for r in results],
+                   "wall_seconds": round(time.time() - t0, 1)}
         (ART / args.tag).write_text(json.dumps(payload, indent=1))
         print(f"[r2] wrote {ART / args.tag} in {payload['wall_seconds']}s", flush=True)
         # one short line per run: the cluster log keeps only ~9 kB of the tail
@@ -662,11 +748,34 @@ def main() -> int:
                 inv = [p["drift_pct"] for p in r["inventory"] if isinstance(p, dict)]
                 slim["inventory_drift_max_pct"] = round(max(abs(x) for x in inv), 4) if inv else None
             print("R2RUN:" + json.dumps(slim, separators=(",", ":")), flush=True)
+        for r in results:
+            lab = result_label(r)
+            rec = {"l": lab, "k": r.get("kind", "arm"), "a": r.get("a"),
+                   "tau": r.get("tau"), "st": r.get("status"),
+                   "steps": r.get("steps"), "wall": r.get("wall_seconds"),
+                   "u": (round(float(r["u_max"]), 5) if r.get("u_max") is not None else None),
+                   "art": f"artifacts/runs_r3/{lab}.json"}
+            if r.get("series"):
+                rec["S"] = [series_row(m) for m in r["series"]]
+            if r.get("inventory"):
+                rec["inv"] = round(max(abs(p["drift_pct"]) for p in r["inventory"]), 4)
+            print("R2SER:" + json.dumps(rec, separators=(",", ":"), allow_nan=True),
+                  flush=True)
         print("R2END:" + args.shard, flush=True)
         return 0
 
     if args.analyze:
-        payload = json.loads((ART / args.tag).read_text())
+        payload = (json.loads((ART / args.tag).read_text())
+                   if (ART / args.tag).exists() else {"runs": []})
+        seen = {result_label(r) for r in payload["runs"]}
+        runs_dir = ART / "runs_r3"
+        if runs_dir.exists():
+            for f in sorted(runs_dir.glob("*.json")):
+                r = json.loads(f.read_text())
+                if result_label(r) not in seen:
+                    payload["runs"].append(r)
+        print(f"[r3] analysing {len(payload['runs'])} runs "
+              f"({len(seen)} from {args.tag}, rest from artifacts/runs_r3/)", flush=True)
         analysis = analyze(payload)
         (ART / "resolution_analysis.json").write_text(json.dumps(analysis, indent=1))
         (ART / "resolution_numbers.md").write_text(render_numbers_md(analysis, payload))

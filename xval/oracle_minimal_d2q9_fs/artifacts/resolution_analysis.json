@@ -1,0 +1,118 @@
+{
+ "ladder": {
+  "16": {
+   "steps": 3200,
+   "u_max": 0.2377,
+   "wall_seconds": 65.32,
+   "inventory_drift_max_pct": 0.0322,
+   "errors_mm": {
+    "Z_cell": 28.161,
+    "Z_cell_flag": 28.161,
+    "Z_sub0.02": 26.776,
+    "Z_sub0.05": 27.394,
+    "Z_sub0.1": 28.527
+   },
+   "errors_ritter": {
+    "Z_cell": 35.417,
+    "Z_cell_flag": 35.417,
+    "Z_sub0.02": 33.746,
+    "Z_sub0.05": 34.365,
+    "Z_sub0.1": 35.396
+   }
+  }
+ },
+ "fits": {
+  "mm": {
+   "Z_cell": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_cell_flag": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_sub0.02": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_sub0.05": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_sub0.1": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   }
+  },
+  "ritter": {
+   "Z_cell": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_cell_flag": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_sub0.02": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_sub0.05": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   },
+   "Z_sub0.1": {
+    "ok": false,
+    "reason": "need >= 3 finite samples (got 1)"
+   }
+  }
+ },
+ "richardson": {
+  "mm": {
+   "Z_cell": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_cell_flag": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_sub0.02": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_sub0.05": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_sub0.1": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   }
+  },
+  "ritter": {
+   "Z_cell": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_cell_flag": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_sub0.02": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_sub0.05": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   },
+   "Z_sub0.1": {
+    "ok": false,
+    "reason": "need >= 3 grids"
+   }
+  }
+ },
+ "tau_sweep": {},
+ "controls": []
+}

@@ -160,7 +160,16 @@ def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float):
             fluid = (flags == LIQUID) | (flags == INTERFACE)
             cols = torch.nonzero(fluid.any(dim=0)).flatten()
             front = int(cols.max().item()) if cols.numel() else 0  # 0-based, wall at 0
-            series.append({"step": step, "T": step * dtT, "Z": front / a})
+            # physical front: rightmost column holding actual liquid mass.  The
+            # flag-inclusive ``Z`` above also counts the *empty* one-cell
+            # INTERFACE envelope placed in front of the block, i.e. it reads
+            # (a+1)/a at t = 0 (+1 cell bias, +1/a in Z).  Both are recorded:
+            # ``Z`` stays the R1-comparable legacy value, ``Z_fill`` is the
+            # corrected one (Z_fill(t=0) = 1 exactly).
+            cols_fill = torch.nonzero((fill > 1e-6).any(dim=0)).flatten()
+            front_fill = int(cols_fill.max().item()) if cols_fill.numel() else 0
+            series.append({"step": step, "T": step * dtT, "Z": front / a,
+                           "Z_fill": front_fill / a})
             inv_tr.append({"step": step,
                            "drift_pct": 100.0 * (total_liquid_inventory_2d(f, mass, flags)
                                                  - inv0) / inv0})
