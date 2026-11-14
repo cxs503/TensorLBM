@@ -24,6 +24,9 @@ validation:
   the Eulerian body-force field and the body force/torque.
 * :func:`interior_mask_force` – Eulerian solid-mask forcing (used only to
   fill the interior of a solid body when it is not represented by markers).
+* :func:`solid_interior_reset` – the *hard* solid-node alternative to
+  :func:`interior_mask_force`: the solid cells are overwritten with a fluid at
+  rest instead of being penalised by a booked body force.
 
 Everything is expressed in *lattice units* (``dt = 1``), so a Lagrangian
 marker force ``F_k`` is a momentum change per lattice node per time step.
@@ -61,6 +64,7 @@ __all__ = [
     "guo_force_2d",
     "guo_force_3d",
     "interior_mask_force",
+    "solid_interior_reset",
     "momentum_audit",
     "kernel_profile",
 ]
@@ -540,6 +544,54 @@ def interior_mask_force(
     """
     force = torch.where(mask.unsqueeze(0), u_target - u_grid, torch.zeros_like(u_grid))
     return force
+
+
+def solid_interior_reset(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    feq_at_rest,
+    *,
+    rho: float | None = None,
+) -> torch.Tensor:
+    """Overwrite the solid interior with a fluid at rest (*hard* solid nodes).
+
+    The immersed-boundary force is only defined on the marker set, so the fluid
+    *inside* the body has to be dealt with separately.  There are two ways to do
+    it, and they are **not** equivalent for force accounting:
+
+    * :func:`interior_mask_force` penalises the interior velocity with a booked
+      body force ``u_target − u``.  That force is a real momentum source/sink on
+      the Eulerian grid, so it perturbs the pressure field around the body and
+      it must be balanced by an equally larger marker force; if the interior is
+      not *fully* brought to rest each step (one pass removes only part of the
+      deficit) the residual permeability keeps inflating the drag measured on
+      the markers.
+    * ``solid_interior_reset`` removes the interior momentum by **overwrite**
+      instead: the distribution in the solid cells is replaced by the
+      equilibrium of a fluid at rest (``rho`` kept local by default).  No force
+      is booked there, so ``F_body = −Σ_k F_k`` (see :func:`momentum_audit`)
+      stays an exact statement and the measured drag is carried by the markers
+      alone — which is what a drag benchmark wants.
+
+    Args:
+        f: ``(q, *shape)`` post-streaming distribution function.
+        mask: ``(*shape,)`` boolean solid mask.
+        feq_at_rest: callable ``rho -> (q, *shape)`` returning the equilibrium
+            distribution of a fluid at rest for this lattice and dtype, e.g.
+            ``lambda r: equilibrium(r, torch.zeros_like(r), torch.zeros_like(r))``
+            (2-D) or the 3-D equivalent.
+        rho: optional fixed density inside the body (``1.0`` for an
+            incompressible solid); ``None`` keeps the local density and only
+            zeroes the momentum.
+
+    Returns:
+        ``(q, *shape)`` distribution function with the solid cells reset.
+    """
+    rho_local = f.sum(dim=0)
+    if rho is not None:
+        rho_local = torch.where(mask, torch.full_like(rho_local, float(rho)), rho_local)
+    feq = feq_at_rest(rho_local)
+    return torch.where(mask.unsqueeze(0), feq, f)
 
 
 # --------------------------------------------------------------------------- #
