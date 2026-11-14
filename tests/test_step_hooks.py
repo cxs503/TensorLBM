@@ -303,3 +303,109 @@ def test_couette_reaches_analytic_linear_profile():
     assert err < 5e-3, f"Couette profile error {err:.3%} too large"
     # ... and the top/lower masks themselves carry no spurious flow through them
     assert torch.isfinite(state["f"]).all()
+
+# --------------------------------------------------------------------------
+# Round 2: partially saturated cells (fractional solid fraction)
+# --------------------------------------------------------------------------
+from tensorlbm.step_hooks import (  # noqa: E402
+    layer_weight,
+    partial_cell_layer,
+    partial_cell_weight,
+)
+
+
+def _rand_field(ny: int = 6, nx: int = 5, seed: int = 7) -> torch.Tensor:
+    g = torch.Generator().manual_seed(seed)
+    return torch.rand(9, ny, nx, dtype=torch.float64, generator=g) * 0.1 + 0.05
+
+
+def test_partial_cell_weight_limits_and_monotonicity():
+    """B(0)=0 (no wall), B(1)=1 (pure bounce-back), monotone in eps_s, tau-dependent."""
+    tau = 0.8
+    eps = torch.linspace(0.0, 1.0, 11, dtype=torch.float64)
+    b = partial_cell_weight(eps, tau)
+    assert float(b[0]) == 0.0
+    assert float(b[-1]) == 1.0
+    assert torch.all(b[1:] > b[:-1])
+    # the raw-mask blend is NOT the Noble-Torczynski weight inside (0,1)
+    mid = partial_cell_weight(torch.tensor(0.5, dtype=torch.float64), tau)
+    assert float(mid) < 0.5
+    assert float(partial_cell_weight(torch.tensor(0.5, dtype=torch.float64), 1.2)) > float(mid)
+    with pytest.raises(ValueError):
+        partial_cell_weight(torch.tensor(0.5, dtype=torch.float64), 0.5)
+
+
+def test_partial_cell_layer_validation():
+    f = _rand_field()
+    with pytest.raises((TypeError, ValueError)):  # tau is required
+        partial_cell_layer("p", torch.full(f.shape[1:], 0.5, dtype=torch.float64), None)  # type: ignore[arg-type]
+    with pytest.raises(ValueError):  # tau out of range
+        partial_cell_layer("p", torch.full(f.shape[1:], 0.5, dtype=torch.float64), 0.4)
+    with pytest.raises(ValueError):  # solid fraction outside [0, 1]
+        partial_cell_layer("p", torch.full(f.shape[1:], 1.5, dtype=torch.float64), 0.8)
+    with pytest.raises(ValueError):
+        partial_cell_layer(
+            "p", torch.full(f.shape[1:], 0.5, dtype=torch.float64), 0.8, reflect="sideways"
+        )
+
+
+def test_partial_cell_eps_one_is_the_bounce_layer_bitwise():
+    """A mask partition may mix full and partial cells: eps_s=1 must be bounce-back."""
+    f = _rand_field()
+    m = torch.zeros(f.shape[1:], dtype=torch.float64)
+    m[1:3, 1:3] = 1.0
+    a = compose_masked_boundaries(f, f, [stationary_bounce_layer("wall", m)])
+    b = compose_masked_boundaries(f, f, [partial_cell_layer("part", m, 0.8, reflect="pre")])
+    assert torch.equal(a, b)
+
+
+def test_partial_cell_eps_zero_is_the_identity():
+    f = _rand_field()
+    z = torch.zeros(f.shape[1:], dtype=torch.float64)
+    out = compose_masked_boundaries(f, f, [partial_cell_layer("part", z, 0.8)])
+    assert torch.equal(out, f)
+
+
+def test_partial_cell_conserves_mass_and_weight_is_not_the_mask():
+    f = _rand_field()
+    blob = torch.zeros(f.shape[1:], dtype=torch.float64)
+    blob[2:4, 1:4] = 0.37
+    layer = partial_cell_layer("part", blob, 0.8)
+    out = compose_masked_boundaries(f, f, [layer])
+    assert abs(float(out.sum()) - float(f.sum())) < 1e-14 * abs(float(f.sum()))
+    w = layer_weight(layer, f)
+    assert torch.allclose(w[0], partial_cell_weight(blob, 0.8))
+    assert not torch.allclose(w[0], blob)  # the naive float-mask weight
+
+
+def test_partial_cell_reflect_choice_changes_the_operator():
+    """pre vs post reflection differ once the cell is not fully solid."""
+    f_pre = _rand_field(seed=3)
+    f_post = f_pre + 0.01 * _rand_field(seed=4)
+    m = torch.zeros(f_pre.shape[1:], dtype=torch.float64)
+    m[2, 2] = 0.5
+    a = compose_masked_boundaries(f_post, f_pre, [partial_cell_layer("p", m, 0.8, reflect="pre")])
+    b = compose_masked_boundaries(f_post, f_pre, [partial_cell_layer("p", m, 0.8, reflect="post")])
+    assert not torch.equal(a, b)
+    # ... and they coincide on a fully solid cell
+    m1 = torch.zeros_like(m)
+    m1[2, 2] = 1.0
+    a1 = compose_masked_boundaries(f_post, f_pre, [partial_cell_layer("p", m1, 0.8, reflect="pre")])
+    b1 = compose_masked_boundaries(f_post, f_pre, [partial_cell_layer("p", m1, 0.8, reflect="post")])
+    assert not torch.equal(a1, b1)  # post-collision pull-back at eps_s=1 is the trap
+    boun = compose_masked_boundaries(f_post, f_pre, [stationary_bounce_layer("wall", m1)])
+    assert torch.equal(a1, boun)
+
+
+def test_partial_cell_moving_wall_reduces_to_stationary_layer():
+    f = _rand_field()
+    m = torch.zeros(f.shape[1:], dtype=torch.float64)
+    m[1, :] = 0.5
+    zero = partial_cell_layer("p", m, 0.8, velocity=(0.0, 0.0))
+    still = partial_cell_layer("p", m, 0.8)
+    a = compose_masked_boundaries(f, f, [zero])
+    b = compose_masked_boundaries(f, f, [still])
+    assert torch.equal(a, b)
+    moving = partial_cell_layer("p", m, 0.8, velocity=(0.01, 0.0))
+    c = compose_masked_boundaries(f, f, [moving])
+    assert not torch.allclose(a, c)
