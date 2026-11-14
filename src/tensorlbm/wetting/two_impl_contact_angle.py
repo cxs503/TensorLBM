@@ -195,8 +195,21 @@ def wall_angle_readback(
 ) -> Dict[str, float]:
     """Angle the arm *actually applied*, read back from the wall gradient.
 
-    ``tan(theta) = |d_t psi| / d_n psi`` at the wall-adjacent row (``d_n`` into
-    the fluid), which is exactly the continuum condition the ghost encodes.
+    ``tan(theta) = |d_t psi| / (-d_n psi)`` at the wall-adjacent row
+    (``d_n = psi[0] - psi_ghost`` is positive into the fluid, while the continuum
+    condition is ``d_n psi = -cos(theta)(1-psi^2)/xi``, i.e.
+    ``cos(theta) = -d_n xi/(1-psi^2)`` and ``sin(theta) = |d_t psi| xi/(1-psi^2)``;
+    the earlier form used ``+d_n`` and therefore returned ``180 deg - theta``
+    above 90 deg -- measured 70.0 deg for a prescribed 110 deg, fixed here).
+    For the two *gradient* arms (``neumann_flux``,
+    ``geometric_ghost``) this is exactly the continuum condition the ghost
+    encodes, and it returns the prescribed angle.  For the ``dirichlet`` arm it
+    does **not**: the ghost carries a wall *value* ``psi_w``, so
+    ``psi[0] - psi_w`` is the profile difference across one half spacing, not
+    ``d_n psi`` of the imposed condition -- measured 53.4 deg at a prescribed
+    90 deg and 36.3 deg at 110 deg (benchmark
+    ``benchmarks/case_pool/two_impl_contact_angle``), i.e. the read-back of the
+    Dirichlet arm is NOT an angle and must not be used as evidence.
     Averaged over the columns where the interface meets the wall
     (``|d_t psi| > 10 % of its maximum``).  Diagnostic only: it is built from the
     same ghost the arm imposed, so it validates the *implementation*, not the
@@ -208,7 +221,7 @@ def wall_angle_readback(
     mask = dt > 0.1 * float(dt.max())
     if int(mask.sum()) < 2:
         return {"theta_deg": float("nan"), "n_columns": float(mask.sum())}
-    ang = torch.atan2(dt[mask], dn[mask])
+    ang = torch.atan2(dt[mask], -dn[mask])
     return {
         "theta_deg": float(torch.rad2deg(torch.median(ang))),
         "theta_mean_deg": float(torch.rad2deg(ang.mean())),
