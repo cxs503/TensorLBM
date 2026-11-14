@@ -441,6 +441,235 @@ def run_poiseuille(ny: int, nx: int, tau: float, u_peak: float, steps: int, arm:
     }
 
 
+# ------------------------------------------- fractional (sub-cell) wall masks
+FRACTIONAL_MODES = ("naive_eps", "nt_pre", "nt_post")
+
+
+def run_fractional_wall(
+    case: str,
+    ny: int,
+    nx: int,
+    tau: float,
+    eps_s: float,
+    mode: str,
+    *,
+    u_wall: float = 0.02,
+    u_peak: float = 0.02,
+    steps: int | None = None,
+) -> dict:
+    """Wall that sits *inside* a cell: row 0 fully solid, row 1 partially solid.
+
+    Geometry: cell centres at integer ``y``; cell ``k`` spans ``[k-0.5, k+0.5]``.
+    The solid occupies the low face of the partially saturated cell, so the
+    no-slip interface is at ``y_b = 0.5 + eps_s`` and the channel is
+    ``y_b <= y <= ny-1.5``.  ``eps_s = 1`` is the plain staircase (row 1 fully
+    solid, interface at the face ``y = 1.5``), which pins the convention.
+
+    ``mode`` is how the partial row is expressed:
+
+    * ``naive_eps`` -- a float mask fed to the ``bounce`` layer, i.e. upstream's
+      ``f*(1-boundary) + bounce`` transplanted verbatim (round 1).  The blend
+      weight is the raw solid fraction.
+    * ``nt_pre`` / ``nt_post`` -- the Noble-Torczynski weight ``B(eps_s, tau)``,
+      reflecting the pre-collision (``pre``) or post-collision (``post``)
+      populations of the partially saturated cell.
+    """
+    if mode not in FRACTIONAL_MODES:
+        raise ValueError(f"unknown fractional mode {mode!r}")
+    nu = (tau - 0.5) / 3.0
+    y_b = 0.5 + float(eps_s)
+    y_t = ny - 1.5
+    H = y_t - y_b
+    if steps is None:
+        steps = (
+            steps_for_couette(H, nu) if case == "couette" else steps_for_poiseuille(H, nu)
+        )
+    solid = torch.zeros(ny, nx, dtype=DT)
+    solid[0, :] = 1.0
+    part = torch.zeros(ny, nx, dtype=DT)
+    part[1, :] = float(eps_s)
+    top = torch.zeros(ny, nx, dtype=DT)
+    top[-1, :] = 1.0
+    f0 = rest_field(ny, nx)
+    tables = SH.tables_for(f0)
+
+    if mode == "naive_eps":
+        partial = SH.BoundaryLayer(name="partial_row1", mask=part, kind="bounce")
+    else:
+        partial = SH.partial_cell_layer(
+            "partial_row1", part, tau, reflect=mode.split("_", 1)[1]
+        )
+    if case == "couette":
+        layers = [SH.stationary_bounce_layer("solid_row0", solid), partial,
+                  SH.moving_bounce_layer("lid", top, (u_wall, 0.0))]
+        force = None
+        g = None
+    elif case == "poiseuille":
+        layers = [SH.stationary_bounce_layer("solid_row0", solid), partial,
+                  SH.stationary_bounce_layer("top_wall", top)]
+        g = 8.0 * nu * u_peak / H**2
+        force = (g, 0.0)
+    else:
+        raise ValueError(f"unknown case {case!r}")
+
+    op = SH.masked_step(
+        tau=tau,
+        layers=layers,
+        tables=tables,
+        source=(
+            (lambda f_str, st: plain_source(f_str, force)) if force is not None else None
+        ),
+    )
+    t0 = time.perf_counter()
+    with torch.no_grad():
+        state, _ = SH.solve_with_hooks({"f": f0.clone()}, steps, operator=op)
+        f_final = state["f"]
+        mass0 = float(f0.sum())
+        mass1 = float(f_final.sum())
+        if force is None:
+            _, ux, _uy = macroscopic(f_final)
+        else:
+            ux = velocity_with_force(f_final, force)
+    wall_s = time.perf_counter() - t0
+
+    # rows 2..ny-2 are fluid; the partial cell's own macroscopic velocity is a
+    # mixture and is excluded from the fit and from the error norm
+    rows = np.arange(2, ny - 1, dtype=float)
+    got = ux.numpy()[2:-1, nx // 2]
+    if case == "couette":
+        exact = u_wall * (rows - y_b) / H
+        slope, intercept = np.polyfit(rows, got, 1)
+        d_eff = -intercept / slope if slope != 0.0 else float("nan")
+        width_eff = float("nan")
+    else:
+        yy = rows - y_b
+        exact = g / (2.0 * nu) * yy * (H - yy)
+        a2, a1, a0 = np.polyfit(rows, got, 2)
+        if abs(a2) > 0:
+            disc = max(a1 * a1 - 4.0 * a2 * a0, 0.0)
+            roots = sorted([(-a1 - math.sqrt(disc)) / (2 * a2), (-a1 + math.sqrt(disc)) / (2 * a2)])
+            d_eff, width_eff = float(roots[0]), float(roots[1] - roots[0])
+        else:
+            d_eff, width_eff = float("nan"), float("nan")
+    denom = float(np.linalg.norm(exact)) or 1.0
+    peak = float(exact.max())
+    return {
+        "case": case,
+        "arm": mode,
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
+        "nu": nu,
+        "eps_s": float(eps_s),
+        "H": H,
+        "H_eff": H + float(eps_s) - 0.5,  # width from the *staircase* convention
+        "y_bottom_geom": y_b,
+        "steps": steps,
+        "u_wall": u_wall if case == "couette" else None,
+        "g": g,
+        "mach": math.sqrt(3.0) * (u_wall if case == "couette" else u_peak),
+        "Re_H": (u_wall if case == "couette" else u_peak) * H / nu,
+        "d_eff_dx": float(d_eff),
+        "width_eff_dx": float(width_eff),
+        "offset_err_dx": float(d_eff - y_b),
+        "offset_err_pct_H": 100.0 * abs(float(d_eff - y_b)) / H,
+        "profile_l2_pct": 100.0 * float(np.linalg.norm(got - exact) / denom),
+        "max_err_pct": 100.0 * float(np.abs(got - exact).max() / peak),
+        "mass_drift_rel": abs(mass1 - mass0) / mass0,
+        "finite": bool(torch.isfinite(f_final).all()),
+        "f_sha256": f_digest(f_final),
+        "wall_s": wall_s,
+        "_profile": got,
+        "_exact": exact,
+    }
+
+
+def run_fractional_limits(tau: float = 0.8, ny: int = 16, nx: int = 8) -> dict:
+    """Structural limits the mask partition depends on (bit-wise, one step)."""
+    torch.manual_seed(20261114)
+    f = torch.rand(9, ny, nx, dtype=DT) * 0.1 + 0.05
+    zero = torch.zeros(ny, nx, dtype=DT)
+    ones = torch.ones(ny, nx, dtype=DT)
+    ref = f.clone()
+    # eps_s = 1 must be bit-wise the plain bounce layer
+    w1 = torch.zeros(ny, nx, dtype=DT)
+    w1[2:5, 3:6] = 1.0
+    a = SH.compose_masked_boundaries(
+        f.clone(), f.clone(), [SH.stationary_bounce_layer("wall", w1)]
+    )
+    b = SH.compose_masked_boundaries(
+        f.clone(), f.clone(), [SH.partial_cell_layer("part", w1, tau, reflect="pre")]
+    )
+    eps1_rel = float((a - b).abs().max()) / max(float(ref.abs().max()), 1e-300)
+    # eps_s = 0 must be the identity
+    z = SH.compose_masked_boundaries(
+        f.clone(), f.clone(), [SH.partial_cell_layer("part", zero, tau)]
+    )
+    eps0_rel = float((z - f).abs().max()) / max(float(ref.abs().max()), 1e-300)
+    # mass conservation over an interior partial blob (no wall where fluid is)
+    blob = torch.zeros(ny, nx, dtype=DT)
+    blob[4:9, 3:7] = 0.37
+    m = SH.compose_masked_boundaries(
+        f.clone(), f.clone(), [SH.partial_cell_layer("part", blob, tau)]
+    )
+    mass_rel = float((m.sum() - f.sum()).abs()) / float(f.sum())
+    # the eps_s=1 identity must also hold through a full masked_step run
+    return {
+        "eps1_vs_bounce_max_rel": eps1_rel,
+        "eps0_vs_identity_max_rel": eps0_rel,
+        "partial_blob_mass_rel": mass_rel,
+        "weights": {
+            "eps_0.25": float(SH.partial_cell_weight(torch.tensor(0.25, dtype=DT), tau)),
+            "eps_0.5": float(SH.partial_cell_weight(torch.tensor(0.5, dtype=DT), tau)),
+            "eps_0.75": float(SH.partial_cell_weight(torch.tensor(0.75, dtype=DT), tau)),
+            "eps_1.0": float(SH.partial_cell_weight(torch.tensor(1.0, dtype=DT), tau)),
+        },
+        "bit_identical_eps1": bool(float((a - b).abs().max()) == 0.0),
+        "bit_identical_eps0": bool(float((z - f).abs().max()) == 0.0),
+    }
+
+
+def run_fractional_sweep(quick: bool = False) -> list[dict]:
+    """eps_s x {naive, NT-pre, NT-post} x resolution, Couette + Poiseuille."""
+    nx = 8
+    eps_list = (0.5,) if quick else (0.25, 0.5, 0.75, 1.0)
+    ny_couette = (16,) if quick else (16, 24)
+    rows: list[dict] = []
+    for ny in ny_couette:
+        for eps in eps_list:
+            for mode in (("naive_eps", "nt_pre") if quick else FRACTIONAL_MODES):
+                r = run_fractional_wall("couette", ny, nx, 0.8, eps, mode)
+                rows.append(r)
+                print(
+                    f"[frac-couette] ny={ny} eps={eps:.2f} {mode:9s} "
+                    f"d_eff={r['d_eff_dx']:.4f} offset={r['offset_err_dx']:+.4f}dx "
+                    f"L2={r['profile_l2_pct']:.4f}%",
+                    flush=True,
+                )
+    poi_modes = ("nt_pre",) if quick else FRACTIONAL_MODES
+    for eps in eps_list:
+        for mode in poi_modes:
+            r = run_fractional_wall("poiseuille", 16, nx, 0.8, eps, mode)
+            rows.append(r)
+            print(
+                f"[frac-poiseuille] ny=16 eps={eps:.2f} {mode:9s} "
+                f"d_eff={r['d_eff_dx']:.4f} offset={r['offset_err_dx']:+.4f}dx "
+                f"L2={r['profile_l2_pct']:.4f}%",
+                flush=True,
+            )
+    if not quick:
+        for tau in (0.6, 0.7, 0.9):
+            for mode in FRACTIONAL_MODES:
+                r = run_fractional_wall("couette", 16, nx, tau, 0.5, mode)
+                rows.append(r)
+                print(
+                    f"[frac-tau] tau={tau:.2f} eps=0.50 {mode:9s} "
+                    f"offset={r['offset_err_dx']:+.4f}dx L2={r['profile_l2_pct']:.4f}%",
+                    flush=True,
+                )
+    return rows
+
+
 # ------------------------------------------------------ arbitrary-mask checks
 def run_mask_invariance(ny: int = 24, nx: int = 24, tau: float = 0.8, steps: int = 500) -> dict:
     """Arbitrary geometry: a blob mask plus a disjoint moving patch.
@@ -730,6 +959,103 @@ def make_figures(result: dict, fig_dir: Path) -> list[dict]:
     return figs
 
 
+def make_fractional_figures(result: dict, fig_dir: Path) -> list[dict]:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    rows = result["fractional"]["configs"]
+    figs: list[dict] = []
+    style = {
+        "naive_eps": ("o", "upstream float-mask blend (weight = eps_s)"),
+        "nt_pre": ("s", "Noble-Torczynski B(eps_s,tau), pre-collision reflect"),
+        "nt_post": ("^", "Noble-Torczynski B(eps_s,tau), post-collision reflect"),
+    }
+
+    ny_ref = max(r["ny"] for r in rows if r["case"] == "couette")
+    fig, ax = plt.subplots(figsize=(6.4, 4.4))
+    for mode, (mark, label) in style.items():
+        pts = sorted(
+            (r for r in rows if r["case"] == "couette" and r["ny"] == ny_ref and r["arm"] == mode and r["tau"] == 0.8),
+            key=lambda r: r["eps_s"],
+        )
+        if not pts:
+            continue
+        ax.plot(
+            [r["eps_s"] for r in pts],
+            [r["offset_err_dx"] for r in pts],
+            mark + "-",
+            ms=5,
+            lw=1.2,
+            label=label,
+        )
+    ax.axhline(0.0, color="k", lw=0.8)
+    ax.set_xlabel(r"solid fraction $\epsilon_s$ of the partially saturated cell")
+    ax.set_ylabel(r"recovered wall offset error $d_{eff} - y_b$ ($\Delta x$)")
+    ax.set_title(f"Sub-cell wall position, plane Couette, Ny={ny_ref}, tau=0.8")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=7)
+    fig.tight_layout()
+    out = fig_dir / "fig6_fractional_wall_offset.png"
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+    figs.append(
+        {
+            "name": out.name,
+            "path": str(out),
+            "caption": "Recovered no-slip position minus the intended interface position "
+            "for a wall inside a cell; a float-mask blend moves the wall by up to ~0.45 dx.",
+        }
+    )
+
+    fig, ax = plt.subplots(figsize=(6.4, 4.4))
+    eps_list_ = sorted({r["eps_s"] for r in rows if r["case"] == "couette"})
+    eps_ref = eps_list_[len(eps_list_) // 2]
+    for mode, (mark, label) in style.items():
+        row = next(
+            (
+                r
+                for r in rows
+                if r["case"] == "couette"
+                and r["ny"] == ny_ref
+                and r["arm"] == mode
+                and r["tau"] == 0.8
+                and r["eps_s"] == eps_ref
+            ),
+            None,
+        )
+        if row is None:
+            continue
+        ax.plot(np.asarray(row["_profile"]), np.arange(2, row["ny"] - 1), mark, ms=4, mfc="none", label=label)
+    ref = next(
+        r
+        for r in rows
+        if r["case"] == "couette" and r["ny"] == ny_ref and r["arm"] == "nt_pre" and r["tau"] == 0.8 and r["eps_s"] == eps_ref
+    )
+    ax.plot(np.asarray(ref["_exact"]), np.arange(2, ref["ny"] - 1), "-", color="k", lw=1.2,
+            label=rf"analytic, wall at $y_b$={ref['y_bottom_geom']:.2f}")
+    ax.set_xlabel("u_x (lattice)")
+    ax.set_ylabel("y")
+    ax.set_title(rf"Couette profile with $\epsilon_s$={eps_ref:.2f}, Ny={ny_ref}")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=7)
+    fig.tight_layout()
+    out = fig_dir / "fig7_fractional_profiles.png"
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+    figs.append(
+        {
+            "name": out.name,
+            "path": str(out),
+            "caption": "Couette profile for a half-solid cell: the float-mask blend shifts the "
+            "whole profile, the Noble-Torczynski blend stays on the analytic line.",
+        }
+    )
+    return figs
+
+
 # ---------------------------------------------------------------------- main
 def steps_for_couette(H: float, nu: float) -> int:
     """12 transient e-folding times of the Couette start-up (residual < 1e-5).
@@ -758,7 +1084,7 @@ def git_commit() -> str:
         return "unknown"
 
 
-def build_checks(couette_rows, pois_rows, sens, invariance) -> list[dict]:
+def build_checks(couette_rows, pois_rows, sens, invariance, frac_rows, frac_limits) -> list[dict]:
     def find(rows, ny, arm):
         return next(r for r in rows if r["ny"] == ny and r["arm"] == arm)
 
@@ -808,6 +1134,63 @@ def build_checks(couette_rows, pois_rows, sens, invariance) -> list[dict]:
             "kpi": "hook cadence neutrality (save_interval 50 vs 500, sha256 equal)",
             "value": 0.0 if sens["save_interval_sha_equal"] else 100.0,
             "gated": True,
+        },
+    ]
+    # ---- round 2: sub-cell (fractional) wall masks
+    def frac_worst(case, mode, key, ny=None):
+        pool = [r for r in frac_rows if r["case"] == case and r["arm"] == mode]
+        if ny is not None:
+            pool = [r for r in pool if r["ny"] == ny]
+        if not pool:
+            return float("nan"), None
+        worst = max(pool, key=lambda r: abs(r[key]))
+        return float(worst[key]), worst
+
+    nt_cou, nt_cou_row = frac_worst("couette", "nt_pre", "profile_l2_pct")
+    nt_poi, nt_poi_row = frac_worst("poiseuille", "nt_pre", "profile_l2_pct")
+    nt_off, nt_off_row = frac_worst("couette", "nt_pre", "offset_err_pct_H")
+    nv_cou, nv_cou_row = frac_worst("couette", "naive_eps", "profile_l2_pct")
+    nv_off, nv_off_row = frac_worst("couette", "naive_eps", "offset_err_pct_H")
+    checks += [
+        {
+            "kpi": f"fractional couette profile_l2_pct (NT-pre, worst eps={nt_cou_row['eps_s'] if nt_cou_row else None})",
+            "value": nt_cou,
+            "gated": True,
+        },
+        {
+            "kpi": f"fractional poiseuille profile_l2_pct (NT-pre, worst eps={nt_poi_row['eps_s'] if nt_poi_row else None})",
+            "value": nt_poi,
+            "gated": True,
+        },
+        {
+            "kpi": f"fractional wall offset err % of H (NT-pre, worst eps={nt_off_row['eps_s'] if nt_off_row else None})",
+            "value": nt_off,
+            "gated": True,
+        },
+        {
+            "kpi": "partial-cell eps_s=1 vs bounce layer (max rel * 100; must be 0)",
+            "value": 100.0 * frac_limits["eps1_vs_bounce_max_rel"],
+            "gated": True,
+        },
+        {
+            "kpi": "partial-cell eps_s=0 vs identity (max rel * 100; must be 0)",
+            "value": 100.0 * frac_limits["eps0_vs_identity_max_rel"],
+            "gated": True,
+        },
+        {
+            "kpi": "partial-cell blob mass drift (rel * 100)",
+            "value": 100.0 * frac_limits["partial_blob_mass_rel"],
+            "gated": True,
+        },
+        {
+            "kpi": f"fractional couette profile_l2_pct (upstream float-mask blend, worst eps={nv_cou_row['eps_s'] if nv_cou_row else None})",
+            "value": nv_cou,
+            "gated": False,
+        },
+        {
+            "kpi": f"fractional wall offset err % of H (upstream float-mask blend, worst eps={nv_off_row['eps_s'] if nv_off_row else None})",
+            "value": nv_off,
+            "gated": False,
         },
     ]
     for c in checks:
@@ -911,7 +1294,39 @@ def main(argv: list[str] | None = None) -> int:
         "ported_profile_l2_pct": b_ref["profile_l2_pct"],
     }
 
-    checks = build_checks(couette_rows, pois_rows, sens, invariance)
+    frac_limits = run_fractional_limits()
+    frac_rows = run_fractional_sweep(quick=args.quick)
+    print("[frac-limits] eps1_vs_bounce=", frac_limits["eps1_vs_bounce_max_rel"],
+          "eps0_vs_identity=", frac_limits["eps0_vs_identity_max_rel"], flush=True)
+
+    frac_best = {
+        mode: {
+            case: max(
+                (r for r in frac_rows if r["arm"] == mode and r["case"] == case),
+                key=lambda r: r["profile_l2_pct"],
+                default=None,
+            )
+            for case in ("couette", "poiseuille")
+        }
+        for mode in FRACTIONAL_MODES
+    }
+    frac_summary = {
+        mode: {
+            case: (
+                None
+                if frac_best[mode][case] is None
+                else {
+                    k: frac_best[mode][case][k]
+                    for k in ("eps_s", "ny", "tau", "d_eff_dx", "offset_err_dx",
+                              "offset_err_pct_H", "profile_l2_pct", "max_err_pct", "H")
+                }
+            )
+            for case in ("couette", "poiseuille")
+        }
+        for mode in FRACTIONAL_MODES
+    }
+
+    checks = build_checks(couette_rows, pois_rows, sens, invariance, frac_rows, frac_limits)
     gate15 = all(c["pass_15"] for c in checks if c["gated"])
     gate3 = all(c["pass_3"] for c in checks if c["gated"])
 
@@ -954,6 +1369,13 @@ def main(argv: list[str] | None = None) -> int:
         | {"save_interval_sha_equal": sens["save_interval_sha_equal"]},
         "invariance": invariance,
         "composite_channel": composite,
+        "fractional": {
+            "modes": list(FRACTIONAL_MODES),
+            "geometry": "row 0 solid, row 1 partially saturated with eps_s, interface at y_b = 0.5 + eps_s",
+            "limits": frac_limits,
+            "summary": frac_summary,
+            "configs": [dict(r) for r in frac_rows],
+        },
         "upstream_lid": upstream_lid,
         "timing": timing,
         "verdict": {
@@ -965,12 +1387,12 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    figs = make_figures(result, OUT_DIR / "figures")
+    figs = make_figures(result, OUT_DIR / "figures") + make_fractional_figures(result, OUT_DIR / "figures")
     result["figures"] = [{"name": f["name"], "caption": f["caption"]} for f in figs]
 
     # CSV of every arm x configuration
     rows = []
-    for r in couette_rows + pois_rows:
+    for r in couette_rows + pois_rows + frac_rows:
         rows.append(
             {
                 "case": r["case"],
@@ -979,6 +1401,9 @@ def main(argv: list[str] | None = None) -> int:
                 "tau": r["tau"],
                 "nu": r["nu"],
                 "steps": r["steps"],
+                "eps_s": r.get("eps_s"),
+                "d_eff_dx": (round(r["d_eff_dx"], 6) if "d_eff_dx" in r else None),
+                "offset_err_dx": (round(r["offset_err_dx"], 6) if "offset_err_dx" in r else None),
                 "profile_l2_pct": round(r["profile_l2_pct"], 6),
                 "max_or_peak_err_pct": round(
                     r.get("max_err_pct", r.get("peak_err_pct", float("nan"))), 6
@@ -996,6 +1421,10 @@ def main(argv: list[str] | None = None) -> int:
         OUT_DIR / "profiles.npz",
         **{f"couette_{r['ny']}_{r['arm']}": np.asarray(r["_profile"]) for r in couette_rows},
         **{f"poiseuille_{r['ny']}_{r['arm']}": np.asarray(r["_profile"]) for r in pois_rows},
+        **{
+            f"frac_{r['case']}_{r['ny']}_eps{r['eps_s']:.2f}_tau{r['tau']:.2f}_{r['arm']}": np.asarray(r["_profile"])
+            for r in frac_rows
+        },
         composite_ux=np.asarray(composite["_ux"]),
         composite_rho=np.asarray(composite["_rho"]),
     )
@@ -1010,6 +1439,13 @@ def main(argv: list[str] | None = None) -> int:
         for k, v in result["sensitivity"].items()
     }
     slim["composite_channel"] = strip(composite)
+    slim["fractional"] = {
+        "modes": list(FRACTIONAL_MODES),
+        "geometry": result["fractional"]["geometry"],
+        "limits": frac_limits,
+        "summary": frac_summary,
+        "configs": [strip(r) for r in frac_rows],
+    }
     (OUT_DIR / "result.json").write_text(json.dumps(slim, indent=1, sort_keys=False, default=float))
     (OUT_DIR / "oss_ref").mkdir(exist_ok=True)
     (OUT_DIR / "oss_ref" / "evidence.json").write_text(json.dumps(evidence, indent=1))
@@ -1019,6 +1455,12 @@ def main(argv: list[str] | None = None) -> int:
 
     DOC_PATH.parent.mkdir(parents=True, exist_ok=True)
     DOC_PATH.write_text(build_markdown(result))
+
+    from render_report_r2 import build_markdown_r2  # noqa: E402
+
+    (ROOT / "docs" / "XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R2.md").write_text(
+        build_markdown_r2(result)
+    )
 
     print(
         f"[verdict] {result['verdict']['verdict']} gate15={gate15} gate3={gate3} "
