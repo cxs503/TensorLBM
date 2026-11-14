@@ -354,18 +354,18 @@
         {
           "Re": 1.0094082008369667,
           "variant": "resolution_extrapolated",
-          "cd_lbm": 36.097313844856075,
+          "cd_lbm": 35.925375094724856,
           "cd_clift_gauvin": 27.365781557746825,
-          "rel_err": 0.3190675285002956,
+          "rel_err": 0.3127845451413736,
           "tag": null,
           "cd_method": "raw lambda=1/8 (no extrapolation)"
         },
         {
           "Re": 1.0094082008369667,
           "variant": "hasimoto_corrected",
-          "cd_lbm": 20.997691227509172,
+          "cd_lbm": 17.403922809836946,
           "cd_clift_gauvin": 27.365781557746825,
-          "rel_err": -0.23270266616722832,
+          "rel_err": -0.3640261005112727,
           "tag": null,
           "cd_method": "raw lambda=1/8 (no extrapolation)"
         },
@@ -390,9 +390,9 @@
         {
           "Re": 2.015826761173695,
           "variant": "hasimoto_corrected",
-          "cd_lbm": 11.722205469815448,
+          "cd_lbm": 9.715942431348783,
           "cd_clift_gauvin": 14.796544715467007,
-          "rel_err": -0.20777413272964435,
+          "rel_err": -0.3433641016748599,
           "tag": null,
           "cd_method": "raw lambda=1/8 (no extrapolation)"
         },
@@ -417,9 +417,9 @@
         {
           "Re": 5.036716344141737,
           "variant": "hasimoto_corrected",
-          "cd_lbm": 5.1351938040949205,
+          "cd_lbm": 4.256302067292694,
           "cd_clift_gauvin": 6.93542651242412,
-          "rel_err": -0.2595705837419318,
+          "rel_err": -0.3862955566369341,
           "tag": null,
           "cd_method": "raw lambda=1/8 (no extrapolation)"
         },
@@ -433,95 +433,95 @@
           "cd_method": "raw lambda=1/8 (no extrapolation)"
         },
         {
-          "Re": 10.078241350774793,
+          "Re": 10.075440967437292,
+          "variant": "raw_run_lambda",
+          "cd_lbm": 4.168457408249438,
+          "cd_clift_gauvin": 4.129125286573437,
+          "rel_err": 0.00952553360487654,
+          "tag": null,
+          "cd_method": "lambda-extrapolation"
+        },
+        {
+          "Re": 10.075440967437292,
           "variant": "resolution_extrapolated",
-          "cd_lbm": 4.31077913293155,
-          "cd_clift_gauvin": 4.128311502473775,
-          "rel_err": 0.044199094556802966,
+          "cd_lbm": 4.420753854805312,
+          "cd_clift_gauvin": 4.129125286573437,
+          "rel_err": 0.07062720261362757,
           "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
+          "cd_method": "lambda-extrapolation"
         },
         {
-          "Re": 10.078241350774793,
-          "variant": "hasimoto_corrected",
-          "cd_lbm": 3.122009546013541,
-          "cd_clift_gauvin": 4.128311502473775,
-          "rel_err": -0.24375630469193899,
-          "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
-        },
-        {
-          "Re": 10.078241350774793,
+          "Re": 10.075440967437292,
           "variant": "lambda_extrapolated",
-          "cd_lbm": 4.7390694835142435,
-          "cd_clift_gauvin": 4.128311502473775,
-          "rel_err": 0.14794377330162448,
+          "cd_lbm": 2.45662118245502,
+          "cd_clift_gauvin": 4.129125286573437,
+          "rel_err": -0.40505046179074594,
           "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
+          "cd_method": "lambda-extrapolation"
         },
         {
-          "Re": 20.147140955027044,
+          "Re": 20.14584311828422,
+          "variant": "raw_run_lambda",
+          "cd_lbm": 2.2434789728478624,
+          "cd_clift_gauvin": 2.5979812962548365,
+          "rel_err": -0.1364529929133874,
+          "tag": null,
+          "cd_method": "lambda-extrapolation"
+        },
+        {
+          "Re": 20.14584311828422,
           "variant": "resolution_extrapolated",
           "cd_lbm": 2.5203651049569804,
-          "cd_clift_gauvin": 2.5978762218659424,
-          "rel_err": -0.02983633949014286,
+          "cd_clift_gauvin": 2.5979812962548365,
+          "rel_err": -0.02987557739916952,
           "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
+          "cd_method": "lambda-extrapolation"
         },
         {
-          "Re": 20.147140955027044,
-          "variant": "hasimoto_corrected",
-          "cd_lbm": 1.660368970002983,
-          "cd_clift_gauvin": 2.5978762218659424,
-          "rel_err": -0.3608744881577108,
-          "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
-        },
-        {
-          "Re": 20.147140955027044,
+          "Re": 20.14584311828422,
           "variant": "lambda_extrapolated",
-          "cd_lbm": 2.5203651049569804,
-          "cd_clift_gauvin": 2.5978762218659424,
-          "rel_err": -0.02983633949014286,
+          "cd_lbm": 1.4128205765205077,
+          "cd_clift_gauvin": 2.5979812962548365,
+          "rel_err": -0.45618523945604117,
           "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
+          "cd_method": "lambda-extrapolation"
         },
         {
-          "Re": 50.36629465923095,
+          "Re": 50.361794930431145,
+          "variant": "raw_run_lambda",
+          "cd_lbm": 1.0107988885297918,
+          "cd_clift_gauvin": 1.5331918653122714,
+          "rel_err": -0.34072250747044086,
+          "tag": null,
+          "cd_method": "lambda-extrapolation"
+        },
+        {
+          "Re": 50.361794930431145,
           "variant": "resolution_extrapolated",
-          "cd_lbm": 1.0954626880826914,
-          "cd_clift_gauvin": 1.5331198640792376,
-          "rel_err": -0.28546833567993374,
+          "cd_lbm": 1.0718152897101216,
+          "cd_clift_gauvin": 1.5331918653122714,
+          "rel_err": -0.3009255306139909,
           "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
+          "cd_method": "lambda-extrapolation"
         },
         {
-          "Re": 50.36629465923095,
-          "variant": "hasimoto_corrected",
-          "cd_lbm": 0.7216701467224936,
-          "cd_clift_gauvin": 1.5331198640792376,
-          "rel_err": -0.5292800232838187,
-          "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
-        },
-        {
-          "Re": 50.36629465923095,
+          "Re": 50.361794930431145,
           "variant": "lambda_extrapolated",
-          "cd_lbm": 1.0954626880826914,
-          "cd_clift_gauvin": 1.5331198640792376,
-          "rel_err": -0.28546833567993374,
+          "cd_lbm": 0.7568074898710929,
+          "cd_clift_gauvin": 1.5331918653122714,
+          "rel_err": -0.5063843560656051,
           "tag": null,
-          "cd_method": "raw lambda=1/6 (no extrapolation)"
+          "cd_method": "lambda-extrapolation"
         }
       ],
       "worst_row": {
-        "Re": 50.36629465923095,
-        "variant": "hasimoto_corrected",
-        "cd_lbm": 0.7216701467224936,
-        "cd_clift_gauvin": 1.5331198640792376,
-        "rel_err": -0.5292800232838187,
+        "Re": 50.361794930431145,
+        "variant": "lambda_extrapolated",
+        "cd_lbm": 0.7568074898710929,
+        "cd_clift_gauvin": 1.5331918653122714,
+        "rel_err": -0.5063843560656051,
         "tag": null,
-        "cd_method": "raw lambda=1/6 (no extrapolation)"
+        "cd_method": "lambda-extrapolation"
       },
       "n_within_15pct": 6,
       "n_rows": 19,
@@ -560,7 +560,7 @@
     "D_worst_rel_err": 5.107151468783489e-06,
     "F_ledger_residual_below_1e-10": true,
     "E_lbm_fluid_leg_within_15pct_best": 6,
-    "E_lbm_worst_rel_err": -0.5292800232838187,
+    "E_lbm_worst_rel_err": -0.5063843560656051,
     "lbm_leg_gating": false,
     "note": "Arm C is a tautology check (H3): the solver and the reference share the Stokes closure, so it proves the force->acceleration->velocity plumbing only.  The acceptance verdict is carried by arms A/B (closed-form contact) and D (literature drag law).  Arm E is reported, not gating."
   }
