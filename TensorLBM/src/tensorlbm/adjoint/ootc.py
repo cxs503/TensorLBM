@@ -53,7 +53,7 @@ def _adjoint_step(f_n: np.ndarray, lam: np.ndarray, tau: float):
 def ootc_gradient(tau: float, T: int, f0: np.ndarray,
                 ux_ref: np.ndarray, uy_ref: np.ndarray,
                 k: int = 100, ckpt_path: str | None = None,
-                verbose: bool = False):
+                verbose: bool = False, return_field: bool = False):
     """OOTC gradient dJ/dtau with on-disk checkpoints every k steps.
 
     J(tau) = 1/2 || u_T(tau) - u_ref ||^2  (same objective as BPTT).
@@ -68,8 +68,12 @@ def ootc_gradient(tau: float, T: int, f0: np.ndarray,
     ux_ref, uy_ref : reference terminal velocity field
     k : checkpoint interval (segment length)
     ckpt_path : path for the checkpoint memmap file (default: temp)
+    return_field : also return the adjoint field dJ/df^0 (9, ny, nx)
 
-    Returns (dJ_dtau, J, (ux_T, uy_T), n_checkpoints, ckpt_path).
+    Returns (dJ_dtau, J, (ux_T, uy_T), n_checkpoints, ckpt_path), and
+    with ``return_field=True`` a sixth item dJ_df0 (the costate after the
+    sweep reaches n = 0).  The field costs one extra (9, ny, nx) array,
+    i.e. O(N*Q) -- it does not change the memory scaling in T.
     """
     if T <= 0:
         raise ValueError(f"T must be positive, got {T}")
@@ -130,4 +134,7 @@ def ootc_gradient(tau: float, T: int, f0: np.ndarray,
         if verbose:
             print(f"[ootc] segment {m}/{n_ckpt - 1} done", flush=True)
 
+    if return_field:
+        # lam after the segment containing n = 0 is dJ/df^0
+        return dJ_dtau, J, (ux_t, uy_t), n_ckpt, ckpt_path, lam
     return dJ_dtau, J, (ux_t, uy_t), n_ckpt, ckpt_path
