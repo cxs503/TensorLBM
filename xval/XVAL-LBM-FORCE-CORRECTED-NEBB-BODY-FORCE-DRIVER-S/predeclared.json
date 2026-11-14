@@ -1,0 +1,59 @@
+{
+  "decision": "Validate that TensorLBM's force-corrected NEBB + body-force driver reproduces the closed-form Poiseuille solution within <15% (owner standard) and <3% (ecosystem stretch).",
+  "alternatives": [
+    "A: D2Q9 NEBB module (tensorlbm.nebb_bodyforce.BodyForceChannel) with force-corrected wall velocity and shear-reconstruction NEBB",
+    "B: D3Q19 main solver (GPUCorePathSolver) with Guo forcing + half-way bounce-back",
+    "C: OSS vivsim D2Q9 reference (NOT_RUN, jax absent)"
+  ],
+  "hypothesis": "H1: Force-corrected NEBB (arm A) reproduces analytic Poiseuille to machine precision (<1e-12). H2: D3Q19 main solver (arm B) reproduces analytic Poiseuille within <3%. H3: No-slip is enforced (first fluid row matches analytic value at that row within 1% of u_max). H4: Grid refinement shows monotonic convergence.",
+  "metrics": {
+    "primary": "max pointwise relative error of steady ux(y) profile vs closed-form Poiseuille (interior fluid rows)",
+    "secondary": "u_max relative error, no-slip check (first fluid row vs analytic at that row)",
+    "invariants": [
+      "mass conservation: |Δρ|/ρ < 1e-12 at steady state",
+      "wall velocity: |u_wall,corrected| < 1e-15 (exact no-slip)",
+      "arm-to-arm consistency: max|B-A|/max|A| < 1e-9 (for comparable setups)"
+    ]
+  },
+  "baseline_control": "Closed-form Poiseuille solution u_x(y) = G_x/(2ν) · (y-y₀) · (H-(y-y₀)) with y₀=0 for NEBB (wall at node plane) and y₀=0.5 for half-way BB.",
+  "accept_pct": 15.0,
+  "ecosystem_pct": 3.0,
+  "predeclared_thresholds": {
+    "owner_threshold": 0.15,
+    "ecosystem_threshold": 0.03,
+    "no_slip_tol": 0.01,
+    "arm_to_arm_tol": 1e-9
+  },
+  "stopping_rule": "Fixed work: run both arms at ny=10 and ny=20, with ν=0.2, u_max=0.05, gx=1e-3. Steps capped at 200,000 (A) and 8,000 (B) with steady-state check (residual <1e-13). No result-dependent extension.",
+  "variables": {
+    "controlled": [
+      "D2Q9 lattice (arm A) / D3Q19 lattice (arm B), c_s² = 1/3",
+      "ν = 0.2 (τ = 1.1), u_max = 0.05, gx = 1e-3",
+      "float64 CPU, periodic x (and z for D3Q19), no-slip top/bottom walls",
+      "initial condition: f = feq(ρ=1, u = -g/2) for arm A; rest for arm B"
+    ],
+    "changed": ["grid ny (10, 20)", "forcing scheme (EDM, Guo-BGK) for arm A"],
+    "confounders": [
+      "wall position convention: NEBB has wall at node plane (y₀=0), half-way BB has wall at y₀=0.5",
+      "D2Q9 vs D3Q19 lattice differences (isotropy, discrete velocity set)",
+      "EDM vs Guo-BGK forcing schemes (different force term formulations)"
+    ]
+  },
+  "repetition_rationale": "Deterministic simulation: repeat runs reproduce bit-for-bit. Verified by running the driver twice and diffing output JSON.",
+  "environment": {
+    "python": "3.11",
+    "numpy": "2.4.6",
+    "torch": "2.7.1 (float64, CPU)",
+    "script": "tools/nebb_bodyforce_xval.py",
+    "module": "src/tensorlbm/nebb_bodyforce.py",
+    "tests": "tests/test_nebb_bodyforce.py"
+  },
+  "analysis": "Primary metric = max pointwise relative error (interior rows); pass iff <= 15%. Ecosystem stretch = pass iff <= 3%. No-slip check: first fluid row matches analytic value at that row within 1% of u_max. Convergence: monotonic error reduction with grid refinement.",
+  "safety_resource_limits": "Whole driver < 2 min on one CPU core; no cluster submission needed; no file outside the worktree is touched.",
+  "interpretation_limits": [
+    "Single-phase, static geometry, CPU float64, BGK only",
+    "D2Q9 (2D) and D3Q19 (3D with 1×ny×1 effective 2D) only",
+    "Wall models: force-corrected NEBB and half-way bounce-back only",
+    "Not tested: moving walls, curved boundaries, multiphase, turbulence"
+  ]
+}
