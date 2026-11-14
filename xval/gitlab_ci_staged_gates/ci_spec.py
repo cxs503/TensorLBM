@@ -70,14 +70,61 @@ def marker_expr(commands: list[str]) -> str | None:
     return None
 
 
+# Lines that are NOT pytest invocations even though they contain "pytest"
+_NON_PYTEST_PATTERNS = (
+    "pip install",
+    "pip freeze",
+    "echo",
+    "export",
+    "mkdir",
+    "cp ",
+    "mv ",
+    "rm ",
+    "cat ",
+    "tee ",
+    "grep ",
+    "which pytest",
+    "python -c",
+)
+
+# Path arguments that appear on a pytest command line
+_PYTEST_PATH_RE = re.compile(r"(?:^|\s|=)((?:app/)?tests(?:/[\w./-]+)?)(?=\s|$|\\)")
+
+
+def _is_pytest_invocation(line: str) -> bool:
+    """True if the line is an actual pytest command, not a mention in pip/echo/etc."""
+    if "pytest" not in line:
+        return False
+    for pat in _NON_PYTEST_PATTERNS:
+        if pat in line and "pytest" not in line.split(pat)[0]:
+            return False
+    # Must have pytest as a command word (not just in a string/comment)
+    return bool(re.search(r"\bpytest\b", line))
+
+
 def path_scope(commands: list[str]) -> list[str]:
-    """Path arguments of the test/lint invocation (empty = whole project)."""
+    """Path arguments of the test/lint invocation (empty = whole project).
+
+    When a job contains multiple pytest invocations, the scope is the union of
+    their path arguments.  However, if *any* pytest invocation omits a path
+    argument (meaning it runs the whole project by default), the scope is
+    empty — the whole-project invocation subsumes any narrower one.
+    """
     scope: list[str] = []
+    has_unscoped_pytest = False
     for line in commands:
-        if "pytest" in line:
-            scope.extend(re.findall(r"(?:^|\s)((?:app/)?tests(?:/[\w./-]+)?)(?=\s|$)", line))
-        else:
+        if not _is_pytest_invocation(line):
+            # Also check for python3? tests/... invocations (non-pytest)
             scope.extend(re.findall(r"python3?\s+((?:app/)?tests/[\w./-]+\.py)", line))
+            continue
+        paths = _PYTEST_PATH_RE.findall(line)
+        if paths:
+            scope.extend(paths)
+        else:
+            # pytest invoked without a path argument → whole project
+            has_unscoped_pytest = True
+    if has_unscoped_pytest:
+        return []  # whole project
     return sorted({t.rstrip("/") for t in scope})
 
 
@@ -93,7 +140,7 @@ def classify_selection(commands: list[str]) -> str:
         ):
             return "targeted"
         return "pytest"
-    if re.search(r"python3?\s+(tests|app/tests)/[\w/]+\.py", text):
+    if re.search(r"python3?\s+(tests|app/tests)/[\w./-]+\.py", text):
         return "targeted"
     if any(t in text for t in _LINT_TOOLS):
         return "lint"
