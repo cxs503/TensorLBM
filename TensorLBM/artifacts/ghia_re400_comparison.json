@@ -1,0 +1,29 @@
+[
+  {
+    "n": 33,
+    "re": 400.0,
+    "u_lid": 0.1,
+    "use_rlbm": true,
+    "ramp_steps": 1000,
+    "elapsed_seconds": 45.2,
+    "errors": {
+      "l2_u": 0.256241,
+      "l2_v": 0.186633,
+      "max_u": 0.787971,
+      "max_v": 0.378623,
+      "max_rel_u": 7.6721,
+      "max_rel_v": 5.6606
+    },
+    "extrema": {
+      "u_min_sim": -0.27024,
+      "u_min_y": 0.9375,
+      "u_min_ref": -0.32726,
+      "u_min_rel_err": 17.42,
+      "v_min_sim": -0.378623,
+      "v_min_x": 0.5,
+      "v_min_ref": -0.44993,
+      "v_min_rel_err": 15.85
+    },
+    "note": "n=33 is too coarse for Re=400; convergence study requires n>=129"
+  }
+]
