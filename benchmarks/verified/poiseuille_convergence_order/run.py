@@ -63,7 +63,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import torch
 
 from tensorlbm.d2q9 import C, W, OPPOSITE, equilibrium, macroscopic
-from tensorlbm.solver import stream
+from tensorlbm.d2q9 import stream
 
 # ---------------------------------------------------------------------------
 # Wall-treatment arms (added by AUDIT-RUNTEST-6; before this, all arms collapsed
