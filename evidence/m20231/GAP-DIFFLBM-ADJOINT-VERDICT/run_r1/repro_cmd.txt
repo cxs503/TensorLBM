@@ -1,0 +1,1 @@
+python benchmarks/adjoint_verdict_bench.py --out runs/GAP-DIFFLBM-ADJOINT-VERDICT/run_r1 --threads 6
