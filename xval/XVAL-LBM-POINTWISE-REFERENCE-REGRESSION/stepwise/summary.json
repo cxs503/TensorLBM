@@ -1,0 +1,674 @@
+{
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "gates": {
+    "G_code_equivalence": {
+      "metric": "eps_scaled_inf = max|got-ref| / max|ref| (fp64)",
+      "rationale": "same-operator comparison; owner 15% physics standard is a null criterion here (round 1 calibration, unchanged)",
+      "value": 1e-10
+    },
+    "G_conservation": {
+      "metric": "relative drift of total mass and total momentum over 30 periodic steps",
+      "rationale": "periodic streaming is exactly conservative; drift above fp64 noise means a kernel leaks",
+      "value": 1e-12
+    },
+    "G_physics_shear_decay": {
+      "metric": "max over time of |A_measured(t)/A_analytic(t) - 1|, A_analytic = A0 exp(-nu k^2 t)",
+      "rationale": "owner target 3%; >15% unacceptable. Lattice correction is O(k^2) ~ 1% at k=2*pi/64",
+      "value": 0.03
+    },
+    "G_refdata_reproduction": {
+      "metric": "eps_scaled_inf between regenerated and frozen reference arrays",
+      "rationale": "frozen reference data must be reproducible from source, not hand-written",
+      "value": 1e-12
+    },
+    "G_stream_crosscheck": {
+      "metric": "eps_scaled_inf of each in-repo streaming kernel vs the np.roll definition",
+      "rationale": "definition-level identity; anything above fp64 noise is a defect",
+      "value": 1e-12
+    }
+  },
+  "physics": [
+    {
+      "A_final_analytic": 0.002909773269731228,
+      "A_final_inrepo": 0.0029053950000361914,
+      "A_final_reference": 0.002905395000040784,
+      "a0": 0.019999999999999993,
+      "analytic_rate": 0.0009638285547938828,
+      "arm": "P1",
+      "eps_inrepo_vs_ref_final": 1.5965978539233003e-12,
+      "err_final_vs_analytic_rel": 0.00150467726835668,
+      "err_vs_analytic_max_rel": 0.00150467726835668,
+      "fitted_rate": 0.0009643243894125611,
+      "gate": 0.03,
+      "k": 0.09817477042468103,
+      "nu": 0.10000000000000002,
+      "nu_k2": 0.0009638285547938828,
+      "pass": true,
+      "rate_err_rel": 0.0005144427566625698,
+      "series": {
+        "A_analytic": [
+          0.01816232544428789,
+          0.01649350327721137,
+          0.014978018711857095,
+          0.013601782517769117,
+          0.012352000035507417,
+          0.011217052226637068,
+          0.01018638765328783,
+          0.009250424383034483,
+          0.008400460907122417,
+          0.007628595243858763,
+          0.006927651475085482,
+          0.006291113032755182,
+          0.005713062115385031,
+          0.00518812467115274,
+          0.004711420436150759,
+          0.004278517563311945,
+          0.0038853914201986595,
+          0.0035283871726046,
+          0.0032041858061147782,
+          0.002909773269731228
+        ],
+        "A_inrepo": [
+          0.018152089778933927,
+          0.01648339077910564,
+          0.014968093199496279,
+          0.013592095038649613,
+          0.012342590674535787,
+          0.011207951690004722,
+          0.010177618653808604,
+          0.009242002850059376,
+          0.008392397041575407,
+          0.007620894436641612,
+          0.006920315105055214,
+          0.006284139158652406,
+          0.005706446074465798,
+          0.0051818595958287635,
+          0.00470549769865232,
+          0.004272927157240172,
+          0.0038801222868113973,
+          0.003523427478771837,
+          0.003199523180071208,
+          0.0029053950000361914
+        ],
+        "A_reference": [
+          0.018152089778935437,
+          0.01648339077910842,
+          0.014968093199499936,
+          0.013592095038654113,
+          0.01234259067454086,
+          0.011207951690010256,
+          0.010177618653814483,
+          0.009242002850065626,
+          0.008392397041581866,
+          0.0076208944366482475,
+          0.006920315105061852,
+          0.006284139158658862,
+          0.005706446074472062,
+          0.0051818595958347275,
+          0.004705497698658035,
+          0.004272927157245631,
+          0.0038801222868166054,
+          0.003523427478776823,
+          0.003199523180076097,
+          0.002905395000040784
+        ],
+        "t": [
+          100.0,
+          200.0,
+          300.0,
+          400.0,
+          500.0,
+          600.0,
+          700.0,
+          800.0,
+          900.0,
+          1000.0,
+          1100.0,
+          1200.0,
+          1300.0,
+          1400.0,
+          1500.0,
+          1600.0,
+          1700.0,
+          1800.0,
+          1900.0,
+          2000.0
+        ]
+      },
+      "steps": 2000,
+      "tau": 0.8
+    },
+    {
+      "A_final_analytic": 0.0008049061632422998,
+      "A_final_inrepo": 0.0008049066084916704,
+      "A_final_reference": 0.0008049066084912097,
+      "a0": 0.019999999999999993,
+      "analytic_rate": 0.0016063809246564709,
+      "arm": "P2",
+      "eps_inrepo_vs_ref_final": 5.499350974606235e-13,
+      "err_final_vs_analytic_rel": 5.531692897076113e-07,
+      "err_vs_analytic_max_rel": 5.531692897076113e-07,
+      "fitted_rate": 0.0016063806480718981,
+      "gate": 0.03,
+      "k": 0.09817477042468103,
+      "nu": 0.16666666666666666,
+      "nu_k2": 0.0016063809246564709,
+      "pass": true,
+      "rate_err_rel": 1.7217869585639534e-07,
+      "series": {
+        "A_analytic": [
+          0.017032004317564266,
+          0.014504458553676394,
+          0.012352000035507418,
+          0.010518965896765818,
+          0.008957953628501337,
+          0.007628595243858765,
+          0.006496513356517637,
+          0.005532432176866118,
+          0.0047114204361507605,
+          0.004012246660519015,
+          0.0034168301222546344,
+          0.0029097732697312296,
+          0.0024779635446597705,
+          0.0021102342895706035,
+          0.001797075976551935,
+          0.001530390289581179,
+          0.0013032807009852538,
+          0.0011098741263089516,
+          0.000945169045562347,
+          0.0008049061632422998
+        ],
+        "A_inrepo": [
+          0.017032004788643314,
+          0.014504459356018419,
+          0.012352001060419424,
+          0.01051896706051949,
+          0.008957954867317543,
+          0.0076285965098301205,
+          0.006496514614302687,
+          0.005532433401014758,
+          0.004711421608946708,
+          0.004012247770244978,
+          0.003416831161801796,
+          0.0029097742354897036,
+          0.0024779644356365603,
+          0.002110235106692448,
+          0.0017970767221174436,
+          0.0015303909668331604,
+          0.0013032813137798106,
+          0.0011098746788623885,
+          0.0009451695422589279,
+          0.0008049066084916704
+        ],
+        "A_reference": [
+          0.01703200478864307,
+          0.01450445935601805,
+          0.012352001060418952,
+          0.010518967060518997,
+          0.008957954867316955,
+          0.007628596509829601,
+          0.006496514614302155,
+          0.005532433401014165,
+          0.004711421608946169,
+          0.004012247770244435,
+          0.003416831161801315,
+          0.0029097742354892093,
+          0.002477964435636093,
+          0.002110235106692042,
+          0.0017970767221169998,
+          0.0015303909668327438,
+          0.0013032813137794932,
+          0.0011098746788619574,
+          0.000945169542258448,
+          0.0008049066084912097
+        ],
+        "t": [
+          100.0,
+          200.0,
+          300.0,
+          400.0,
+          500.0,
+          600.0,
+          700.0,
+          800.0,
+          900.0,
+          1000.0,
+          1100.0,
+          1200.0,
+          1300.0,
+          1400.0,
+          1500.0,
+          1600.0,
+          1700.0,
+          1800.0,
+          1900.0,
+          2000.0
+        ]
+      },
+      "steps": 2000,
+      "tau": 1.0
+    }
+  ],
+  "provenance": {
+    "lbmpy_root": "/usr/lib/python3.11/site-packages/lbmpy",
+    "lbmpy_version": "2.0",
+    "pystencils_version": "2.0",
+    "source_sha256": {
+      "methods/abstractlbmethod.py": "5fb547e2d523c627c0f86cf9f73bcf951468e0bcb4a587885dbd5c48f6a0e14e",
+      "methods/conservedquantitycomputation.py": "d8243291d11f31a11063900ce00e5ffb874e6947de6886dfdf56ecd8c591a96c",
+      "methods/creationfunctions.py": "9eb9786eb8e60306bce7a88eff8fc5169cefe51d5a9485a01a2537fe048f1ba2",
+      "methods/momentbased/momentbasedmethod.py": "e87a974f8053942dc9327f90e7f064a0dc56760e4c8178dff1fb8cb6748a4e0c",
+      "moments.py": "6f2fa4e359cf21fb825d224b60d46baa16d3b831e3dc8998f79be9310026c896",
+      "stencils.py": "68bede6b983844aa6bab93f6803aacd874e81f0ac686660a687673ac5a032c3b"
+    }
+  },
+  "round": 2,
+  "stepwise": [
+    {
+      "arm": "S1",
+      "conservation_pass": true,
+      "eps_rel_rms": 4.1500986634281185e-15,
+      "eps_scaled_inf": 5.37070388162419e-15,
+      "eps_scaled_inf_max_over_traj": 5.37070388162419e-15,
+      "field": "shear_wave 64x8 u0=0.02",
+      "gate": 1e-10,
+      "lambda_trt": null,
+      "mass_drift_rel": 2.9976021664879227e-15,
+      "model": "srt",
+      "momentum_drift_abs_over_mass": 1.4474099002681484e-17,
+      "pass": true,
+      "steps": 30,
+      "tau": 0.55,
+      "trajectory": [
+        {
+          "abs_diff_max": 3.3306690738754696e-16,
+          "eps_rel_pointwise_max": 1.498801083243963e-15,
+          "eps_rel_rms": 3.6010290009464304e-16,
+          "eps_scaled_inf": 7.494005416219806e-16,
+          "scale_abs_max": 0.4444444444444445,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 6.661338147750939e-16,
+          "eps_rel_pointwise_max": 3.2543825955377714e-15,
+          "eps_rel_rms": 8.466806784588531e-16,
+          "eps_scaled_inf": 1.498801083243961e-15,
+          "scale_abs_max": 0.4444444444444446,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 1.3322676295501878e-15,
+          "eps_rel_pointwise_max": 6.461049717679713e-15,
+          "eps_rel_rms": 2.14829624472312e-15,
+          "eps_scaled_inf": 2.9976021664879223e-15,
+          "scale_abs_max": 0.4444444444444445,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 2.3869795029440866e-15,
+          "eps_rel_pointwise_max": 1.243716261470693e-14,
+          "eps_rel_rms": 4.1500986634281185e-15,
+          "eps_scaled_inf": 5.37070388162419e-15,
+          "scale_abs_max": 0.44444444444444486,
+          "step": 30
+        }
+      ]
+    },
+    {
+      "arm": "S2",
+      "conservation_pass": true,
+      "eps_rel_rms": 3.2861484852226867e-14,
+      "eps_scaled_inf": 3.3348324102177124e-14,
+      "eps_scaled_inf_max_over_traj": 3.3348324102177124e-14,
+      "field": "shear_wave 64x8 u0=0.02",
+      "gate": 1e-10,
+      "lambda_trt": null,
+      "mass_drift_rel": 2.3314683517128287e-15,
+      "model": "srt",
+      "momentum_drift_abs_over_mass": 5.9631119486702744e-18,
+      "pass": true,
+      "steps": 30,
+      "tau": 0.7,
+      "trajectory": [
+        {
+          "abs_diff_max": 3.0531133177191805e-16,
+          "eps_rel_pointwise_max": 3.181413058121427e-15,
+          "eps_rel_rms": 1.005536602353329e-15,
+          "eps_scaled_inf": 6.869504964868158e-16,
+          "scale_abs_max": 0.4444444444444443,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 2.3869795029440866e-15,
+          "eps_rel_pointwise_max": 7.918551629402201e-15,
+          "eps_rel_rms": 5.166978909563359e-15,
+          "eps_scaled_inf": 5.370703881624171e-15,
+          "scale_abs_max": 0.4444444444444464,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 7.382983113757291e-15,
+          "eps_rel_pointwise_max": 2.0344627553048206e-14,
+          "eps_rel_rms": 1.6180731711350826e-14,
+          "eps_scaled_inf": 1.6611712005953665e-14,
+          "scale_abs_max": 0.44444444444445086,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 1.482147737874584e-14,
+          "eps_rel_pointwise_max": 3.881864355877542e-14,
+          "eps_rel_rms": 3.2861484852226867e-14,
+          "eps_scaled_inf": 3.3348324102177124e-14,
+          "scale_abs_max": 0.44444444444445796,
+          "step": 30
+        }
+      ]
+    },
+    {
+      "arm": "S3",
+      "conservation_pass": true,
+      "eps_rel_rms": 9.27889067967791e-15,
+      "eps_scaled_inf": 8.493206138382531e-15,
+      "eps_scaled_inf_max_over_traj": 8.493206138382531e-15,
+      "field": "shear_wave 64x8 u0=0.02",
+      "gate": 1e-10,
+      "lambda_trt": null,
+      "mass_drift_rel": 1.7763568394002505e-15,
+      "model": "srt",
+      "momentum_drift_abs_over_mass": 1.7509865085640897e-17,
+      "pass": true,
+      "steps": 30,
+      "tau": 1.0,
+      "trajectory": [
+        {
+          "abs_diff_max": 1.6653345369377348e-16,
+          "eps_rel_pointwise_max": 1.4988010832439633e-15,
+          "eps_rel_rms": 3.700702054872324e-16,
+          "eps_scaled_inf": 3.7470027081099033e-16,
+          "scale_abs_max": 0.4444444444444444,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 7.771561172376096e-16,
+          "eps_rel_pointwise_max": 4.871103520542896e-15,
+          "eps_rel_rms": 1.4469361648006897e-15,
+          "eps_scaled_inf": 1.7486012637846243e-15,
+          "scale_abs_max": 0.44444444444444375,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 1.942890293094024e-15,
+          "eps_rel_pointwise_max": 1.4392928159964207e-14,
+          "eps_rel_rms": 4.663071711383423e-15,
+          "eps_scaled_inf": 4.371503159461575e-15,
+          "scale_abs_max": 0.4444444444444423,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 3.774758283725532e-15,
+          "eps_rel_pointwise_max": 2.876004953364755e-14,
+          "eps_rel_rms": 9.27889067967791e-15,
+          "eps_scaled_inf": 8.493206138382531e-15,
+          "scale_abs_max": 0.4444444444444401,
+          "step": 30
+        }
+      ]
+    },
+    {
+      "arm": "S4",
+      "conservation_pass": true,
+      "eps_rel_rms": 2.3066415683348287e-14,
+      "eps_scaled_inf": 2.373101715136223e-14,
+      "eps_scaled_inf_max_over_traj": 2.373101715136223e-14,
+      "field": "shear_wave 64x8 u0=0.02",
+      "gate": 1e-10,
+      "lambda_trt": 0.1875,
+      "mass_drift_rel": 2.220446049250313e-15,
+      "model": "trt",
+      "momentum_drift_abs_over_mass": 6.993104012531504e-18,
+      "pass": true,
+      "steps": 30,
+      "tau": 0.7,
+      "trajectory": [
+        {
+          "abs_diff_max": 2.7755575615628914e-16,
+          "eps_rel_pointwise_max": 2.6509420457826858e-15,
+          "eps_rel_rms": 8.299228504008387e-16,
+          "eps_scaled_inf": 6.245004513516508e-16,
+          "scale_abs_max": 0.4444444444444443,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 1.6653345369377348e-15,
+          "eps_rel_pointwise_max": 5.747262528422531e-15,
+          "eps_rel_rms": 3.593523497077314e-15,
+          "eps_scaled_inf": 3.747002708109893e-15,
+          "scale_abs_max": 0.4444444444444457,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 5.384581669432009e-15,
+          "eps_rel_pointwise_max": 1.489684652699706e-14,
+          "eps_rel_rms": 1.1445965677230475e-14,
+          "eps_scaled_inf": 1.2115308756221904e-14,
+          "scale_abs_max": 0.44444444444444875,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 1.0547118733938987e-14,
+          "eps_rel_pointwise_max": 2.699596791787548e-14,
+          "eps_rel_rms": 2.3066415683348287e-14,
+          "eps_scaled_inf": 2.373101715136223e-14,
+          "scale_abs_max": 0.44444444444445363,
+          "step": 30
+        }
+      ]
+    },
+    {
+      "arm": "S5",
+      "conservation_pass": true,
+      "eps_rel_rms": 3.747334952222428e-14,
+      "eps_scaled_inf": 3.796962751666588e-14,
+      "eps_scaled_inf_max_over_traj": 3.796962751666588e-14,
+      "field": "shear_wave 64x8 u0=0.02",
+      "gate": 1e-10,
+      "lambda_trt": null,
+      "mass_drift_rel": 3.9968028886505635e-15,
+      "model": "mrt_native",
+      "momentum_drift_abs_over_mass": 3.89011739487799e-15,
+      "pass": true,
+      "steps": 30,
+      "tau": 0.7,
+      "trajectory": [
+        {
+          "abs_diff_max": 4.440892098500626e-16,
+          "eps_rel_pointwise_max": 7.618905506490097e-15,
+          "eps_rel_rms": 9.416966552393656e-16,
+          "eps_scaled_inf": 9.992007221626405e-16,
+          "scale_abs_max": 0.44444444444444464,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 2.831068712794149e-15,
+          "eps_rel_pointwise_max": 1.4802591481083448e-14,
+          "eps_rel_rms": 5.905921859476942e-15,
+          "eps_scaled_inf": 6.369905767537529e-15,
+          "scale_abs_max": 0.4444443632466137,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 8.604228440844963e-15,
+          "eps_rel_pointwise_max": 3.439559736743555e-14,
+          "eps_rel_rms": 1.85733880347309e-14,
+          "eps_scaled_inf": 1.9359514063109814e-14,
+          "scale_abs_max": 0.4444444428096778,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 1.687538997430238e-14,
+          "eps_rel_pointwise_max": 6.492942008580553e-14,
+          "eps_rel_rms": 3.747334952222428e-14,
+          "eps_scaled_inf": 3.796962751666588e-14,
+          "scale_abs_max": 0.44444444357257185,
+          "step": 30
+        }
+      ]
+    },
+    {
+      "arm": "S6",
+      "conservation_pass": true,
+      "eps_rel_rms": 3.297154317670533e-14,
+      "eps_scaled_inf": 3.3123039388428064e-14,
+      "eps_scaled_inf_max_over_traj": 3.3123039388428064e-14,
+      "field": "non-square 7x11 asymmetric + 1e-3 noise",
+      "gate": 1e-10,
+      "lambda_trt": null,
+      "mass_drift_rel": 2.401759943224768e-15,
+      "model": "srt",
+      "momentum_drift_abs_over_mass": 8.795507604582892e-18,
+      "pass": true,
+      "steps": 30,
+      "tau": 0.7,
+      "trajectory": [
+        {
+          "abs_diff_max": 3.0531133177191805e-16,
+          "eps_rel_pointwise_max": 3.383596232348626e-15,
+          "eps_rel_rms": 1.0128788701045578e-15,
+          "eps_scaled_inf": 6.836599171113935e-16,
+          "scale_abs_max": 0.4465836362937913,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 2.275957200481571e-15,
+          "eps_rel_pointwise_max": 8.78200889517311e-15,
+          "eps_rel_rms": 5.043910083676899e-15,
+          "eps_scaled_inf": 5.109225867921135e-15,
+          "scale_abs_max": 0.4454602828916669,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 7.271960811294775e-15,
+          "eps_rel_pointwise_max": 2.0520986639354692e-14,
+          "eps_rel_rms": 1.6228950792365537e-14,
+          "eps_scaled_inf": 1.6354371599912856e-14,
+          "scale_abs_max": 0.44464935670983063,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 1.4710455076283324e-14,
+          "eps_rel_pointwise_max": 3.7184900320115414e-14,
+          "eps_rel_rms": 3.297154317670533e-14,
+          "eps_scaled_inf": 3.3123039388428064e-14,
+          "scale_abs_max": 0.4441154962796862,
+          "step": 30
+        }
+      ]
+    },
+    {
+      "arm": "S7",
+      "conservation_pass": true,
+      "eps_rel_rms": 3.347463240507223e-14,
+      "eps_scaled_inf": 3.3972487457833033e-14,
+      "eps_scaled_inf_max_over_traj": 3.3972487457833033e-14,
+      "field": "high-Ma 32x32 u0=0.1 + 1e-2 noise (nonlinear regime)",
+      "gate": 1e-10,
+      "lambda_trt": null,
+      "mass_drift_rel": 2.439144061063999e-15,
+      "model": "srt",
+      "momentum_drift_abs_over_mass": 4.3308665856960215e-19,
+      "pass": true,
+      "steps": 30,
+      "tau": 0.7,
+      "trajectory": [
+        {
+          "abs_diff_max": 3.469446951953614e-16,
+          "eps_rel_pointwise_max": 6.0277019680721014e-15,
+          "eps_rel_rms": 1.0069166215726899e-15,
+          "eps_scaled_inf": 6.962717172298563e-16,
+          "scale_abs_max": 0.49828922618844,
+          "step": 1
+        },
+        {
+          "abs_diff_max": 2.4424906541753444e-15,
+          "eps_rel_pointwise_max": 1.1209142494321625e-14,
+          "eps_rel_rms": 5.143854771568528e-15,
+          "eps_scaled_inf": 5.2626193064299355e-15,
+          "scale_abs_max": 0.4641207185918005,
+          "step": 5
+        },
+        {
+          "abs_diff_max": 7.549516567451064e-15,
+          "eps_rel_pointwise_max": 2.7584739199138844e-14,
+          "eps_rel_rms": 1.648929560258612e-14,
+          "eps_scaled_inf": 1.6593187984390578e-14,
+          "scale_abs_max": 0.4549768600556439,
+          "step": 15
+        },
+        {
+          "abs_diff_max": 1.532107773982716e-14,
+          "eps_rel_pointwise_max": 5.200501302358006e-14,
+          "eps_rel_rms": 3.347463240507223e-14,
+          "eps_scaled_inf": 3.3972487457833033e-14,
+          "scale_abs_max": 0.4509848670587876,
+          "step": 30
+        }
+      ]
+    }
+  ],
+  "streaming_audit": [
+    {
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-12,
+      "impl": "solver.stream",
+      "lattice": "D2Q9",
+      "layout": "(9,ny,nx) gather",
+      "note": "",
+      "pass": true
+    },
+    {
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-12,
+      "impl": "lattice.stream",
+      "lattice": "D2Q9",
+      "layout": "(ny,nx,9) per-direction roll",
+      "note": "",
+      "pass": true
+    },
+    {
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-12,
+      "impl": "les_bptt.stream",
+      "lattice": "D2Q9",
+      "layout": "(B,9,ny,nx) conv2d",
+      "note": "BPTT kernel, depthwise conv instead of roll",
+      "pass": true
+    },
+    {
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-12,
+      "impl": "diff_boundary_grad.stream",
+      "lattice": "D2Q9",
+      "layout": "(9,ny,nx)",
+      "note": "",
+      "pass": true
+    },
+    {
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-12,
+      "impl": "h_theorem.stream",
+      "lattice": "D2Q9",
+      "layout": "(9,ny,nx) spec-driven",
+      "note": "",
+      "pass": true
+    },
+    {
+      "eps_scaled_inf": 0.0,
+      "gate": 1e-12,
+      "impl": "channel_kernel_numpy.stream",
+      "lattice": "D3Q19",
+      "layout": "(19,nz,ny,nx)",
+      "note": "_shift per direction, cubic domain 5x6x7",
+      "pass": true
+    }
+  ]
+}
