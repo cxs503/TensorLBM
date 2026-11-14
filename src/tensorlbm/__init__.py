@@ -1058,6 +1058,27 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "zou_he_outlet_pressure_27": ("boundary.boundaries_d3q27", "zou_he_outlet_pressure_27"),
     "zou_he_outlet_pressure_3d": ("boundary.boundaries3d", "zou_he_outlet_pressure_3d"),
     "zou_he_outlet_pressure_z": ("boundary.boundaries3d", "zou_he_outlet_pressure_z"),
+    # Adjoint / differentiable LBM (GAP-DIFFLBM-ADJOINT-VERDICT)
+    "adjoint_sensitivity": ("adjoint", "adjoint_sensitivity"),
+    "optimization_path_eligible": ("adjoint", "optimization_path_eligible"),
+    "SHAPE_DERIVATIVE_ONLY": ("adjoint", "SHAPE_DERIVATIVE_ONLY"),
+    "FROZEN_FIELD_VERDICT": ("adjoint", "FROZEN_FIELD_VERDICT"),
+    # Flow-response shape gradient
+    "ChannelDisk": ("shape_gradient", "ChannelDisk"),
+    "SteadySolution": ("shape_gradient", "SteadySolution"),
+    "disk_fluid_weight": ("shape_gradient", "disk_fluid_weight"),
+    "stream_periodic": ("shape_gradient", "stream_periodic"),
+    "step": ("shape_gradient", "step"),
+    "rollout": ("shape_gradient", "rollout"),
+    "lift_from_probe": ("shape_gradient", "lift_from_probe"),
+    "drag_from_probe": ("shape_gradient", "drag_from_probe"),
+    "poiseuille_umax": ("shape_gradient", "poiseuille_umax"),
+    "make_channel": ("shape_gradient", "make_channel"),
+    "poiseuille_profile": ("shape_gradient", "poiseuille_profile"),
+    "initial_condition": ("shape_gradient", "initial_condition"),
+    "run_to_steady": ("shape_gradient", "run_to_steady"),
+    "shape_gradient_through_flow": ("shape_gradient", "shape_gradient_through_flow"),
+    "frozen_field_gradient": ("shape_gradient", "frozen_field_gradient"),
 }
 
 # Submodules the eager ``from .x import y`` statements bound on the package as
@@ -3144,4 +3165,25 @@ __all__ = [
     "OutputFormat",
     "PhysicsConfig",
     "SolverConfig",
+    # Adjoint / differentiable LBM (GAP-DIFFLBM-ADJOINT-VERDICT)
+    "adjoint_sensitivity",
+    "optimization_path_eligible",
+    "SHAPE_DERIVATIVE_ONLY",
+    "FROZEN_FIELD_VERDICT",
+    # Flow-response shape gradient
+    "ChannelDisk",
+    "SteadySolution",
+    "disk_fluid_weight",
+    "stream_periodic",
+    "step",
+    "rollout",
+    "lift_from_probe",
+    "drag_from_probe",
+    "poiseuille_umax",
+    "make_channel",
+    "poiseuille_profile",
+    "initial_condition",
+    "run_to_steady",
+    "shape_gradient_through_flow",
+    "frozen_field_gradient",
 ]
