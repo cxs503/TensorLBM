@@ -1,0 +1,341 @@
+{
+  "schema": "tensorlbm-t3-coverage-v1",
+  "contract": {
+    "path": "benchmarks/validation_matrix/t3_slots.json",
+    "version": "1.0"
+  },
+  "matrix_version": "1.1",
+  "headline": {
+    "verified": 6,
+    "partial": 1,
+    "gap": 2,
+    "slots": 9,
+    "statement": "6/9 T3 lineages are verified by a passing case whose physics matches the lineage and whose evidence carries the required components; 1 is partial and 2 is a gap. The matrix case count ('passed N') is not this number and must not be reported as slot coverage."
+  },
+  "slots": [
+    {
+      "slot": "cavity",
+      "lineage": "1. 方腔流 (lid-driven cavity, Ghia 1982)",
+      "state": "verified",
+      "requires": {
+        "physics_class": [
+          "incompressible_recirculating"
+        ],
+        "components": [
+          "field_profile_vs_experiment"
+        ]
+      },
+      "components": {
+        "field_profile_vs_experiment": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "cavity_re100",
+              "physics_class": "incompressible_recirculating",
+              "level_basis": "grid"
+            }
+          ]
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": []
+    },
+    {
+      "slot": "cylinder",
+      "lineage": "2. 圆柱绕流 (circular cylinder, Braza 1986)",
+      "state": "verified",
+      "requires": {
+        "physics_class": [
+          "incompressible_bluff_body"
+        ],
+        "components": [
+          "drag",
+          "strouhal"
+        ]
+      },
+      "components": {
+        "drag": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "cylinder_re100",
+              "physics_class": "incompressible_bluff_body",
+              "level_basis": "grid"
+            }
+          ]
+        },
+        "strouhal": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "cylinder_re100",
+              "physics_class": "incompressible_bluff_body",
+              "level_basis": "grid"
+            }
+          ]
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": [
+        {
+          "case": "cylinder_re100_dfg",
+          "status": "failed",
+          "reason": "one or more machine-checked criteria failed"
+        }
+      ]
+    },
+    {
+      "slot": "sphere",
+      "lineage": "3. 球体阻力 (sphere drag, Schiller-Naumann)",
+      "state": "verified",
+      "requires": {
+        "physics_class": [
+          "incompressible_bluff_body"
+        ],
+        "components": [
+          "drag"
+        ]
+      },
+      "components": {
+        "drag": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "sphere_re100",
+              "physics_class": "incompressible_bluff_body",
+              "level_basis": "grid"
+            }
+          ]
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": []
+    },
+    {
+      "slot": "channel",
+      "lineage": "4. 湍流槽道 (turbulent channel, Moser DNS)",
+      "state": "gap",
+      "requires": {
+        "physics_class": [
+          "wall_bounded_turbulent"
+        ],
+        "components": [
+          "uplus_profile_vs_dns"
+        ]
+      },
+      "components": {
+        "uplus_profile_vs_dns": {
+          "state": "missing",
+          "evidence": []
+        }
+      },
+      "substitute_evidence": [
+        {
+          "case": "channel_core_path_ci",
+          "physics_class": "wall_bounded_laminar",
+          "reason": "passing case does not exercise the slot's declared physics class; recorded as substitute evidence only"
+        }
+      ],
+      "blockers": [
+        {
+          "case": "channel_turb_re180",
+          "status": "failed",
+          "reason": "TERMINAL honest FAIL (benchmarks/pending/channel_turb_3d/README.md): root cause = domain size too small + insufficient statistical sample; the u+ RMS error in the log layer never reaches the 3% gate. The tabular Moser DNS anchor is also not frozen in-repo, so the anchor itself is WITHHELD."
+        }
+      ],
+      "measured_ladder": {
+        "source": "benchmarks/pending/channel_turb_3d/validation_report.json",
+        "levels": [
+          {
+            "level": "L1",
+            "grid": "64x32x32",
+            "u_tau_err_pct": -20.549513298934837,
+            "rms_y30_100_pct": 20.43434670057914,
+            "eddy_turnovers": 3.0
+          },
+          {
+            "level": "L2",
+            "grid": "128x48x64",
+            "u_tau_err_pct": -14.256802304623815,
+            "rms_y30_100_pct": 11.665111463802477,
+            "eddy_turnovers": 1.956521739130435
+          },
+          {
+            "level": "L3",
+            "grid": "256x64x128",
+            "u_tau_err_pct": -7.640269820533037,
+            "rms_y30_100_pct": 5.330965065942242,
+            "eddy_turnovers": 1.4516129032258063
+          }
+        ],
+        "gate_reproduction": {
+          "path": "benchmarks/pending/channel_turb_3d/gate_reproduction.json",
+          "recorded_rms_pct": 5.330965065942242,
+          "recomputed_rms_pct": 5.330965065942245,
+          "delta_pp": 3.552713678800501e-15,
+          "measured_u_tau_rms_pct": 15.797503010347205
+        }
+      }
+    },
+    {
+      "slot": "taylor_green",
+      "lineage": "5. Taylor-Green 涡衰减 (analytic)",
+      "state": "verified",
+      "requires": {
+        "physics_class": [
+          "periodic_analytic"
+        ],
+        "components": [
+          "decay_rate_vs_analytic"
+        ]
+      },
+      "components": {
+        "decay_rate_vs_analytic": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "taylor_green_2d",
+              "physics_class": "periodic_analytic",
+              "level_basis": "temporal_split"
+            }
+          ]
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": []
+    },
+    {
+      "slot": "static_droplet",
+      "lineage": "6. 静态液滴 (Laplace law)",
+      "state": "verified",
+      "requires": {
+        "physics_class": [
+          "multiphase_capillary"
+        ],
+        "components": [
+          "laplace_pressure"
+        ]
+      },
+      "components": {
+        "laplace_pressure": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "static_droplet_laplace_ci",
+              "physics_class": "multiphase_capillary",
+              "level_basis": "grid"
+            }
+          ]
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": []
+    },
+    {
+      "slot": "rayleigh_taylor",
+      "lineage": "7. Rayleigh-Taylor 线性增长 (critical-mode dispersion)",
+      "state": "gap",
+      "requires": {
+        "physics_class": [
+          "multiphase_instability"
+        ],
+        "components": [
+          "linear_growth_rate"
+        ]
+      },
+      "components": {
+        "linear_growth_rate": {
+          "state": "missing",
+          "evidence": []
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": [
+        {
+          "case": "rayleigh_taylor_rt",
+          "status": "failed",
+          "reason": "Honest FAIL with root cause (benchmarks/pending/rayleigh_taylor/README.md): over 10 (lambda, g) cases the SCMP pseudo-potential model has NO growth window inside the reachable parameter surface (sigma_sim <= 0 or NaN; lambda=280/g=6.5e-6 already at 91% of the vapor-spinodal gravity ceiling), and the earlier VOF module track failed structurally. Two independent model classes fail -> the slot stays "
+        }
+      ]
+    },
+    {
+      "slot": "dam_break",
+      "lineage": "8. 溃坝 (Ritter 1892 self-similar)",
+      "state": "verified",
+      "requires": {
+        "physics_class": [
+          "free_surface_gravity"
+        ],
+        "components": [
+          "front_position",
+          "profile"
+        ]
+      },
+      "components": {
+        "front_position": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "dam_break_ritter_ci",
+              "physics_class": "free_surface_gravity",
+              "level_basis": "grid"
+            }
+          ]
+        },
+        "profile": {
+          "state": "verified",
+          "evidence": [
+            {
+              "case": "dam_break_ritter_ci",
+              "physics_class": "free_surface_gravity",
+              "level_basis": "grid"
+            }
+          ]
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": []
+    },
+    {
+      "slot": "ship",
+      "lineage": "9. 船体阻力与波浪 (resistance + wave)",
+      "state": "partial",
+      "requires": {
+        "physics_class": [
+          "marine_hydrodynamics"
+        ],
+        "components": [
+          "resistance",
+          "wave"
+        ]
+      },
+      "components": {
+        "resistance": {
+          "state": "proxy",
+          "evidence": [
+            {
+              "case": "ship_resistance_suboff",
+              "physics_class": "marine_hydrodynamics",
+              "level_basis": "grid",
+              "credit_caveats": [
+                "friction_proxy_anchor"
+              ]
+            }
+          ]
+        },
+        "wave": {
+          "state": "missing",
+          "evidence": []
+        }
+      },
+      "substitute_evidence": [],
+      "blockers": [
+        {
+          "case": "ship_wave_michell",
+          "status": "pending",
+          "reason": "WITHHELD (benchmarks/wave_wake_michell/REPORT.md): the primary criterion 'LBM free-surface C_W within 15% of Michell' was NOT obtained - the 3-D Koerner free-surface kernel measured 9.56 s/step at 4e5 cells, extrapolating to ~35 h for a lambda/dx>=20 Wigley case, outside the node budget. 2-D free-surface substitute: period error 8.8-13.8%. Reported as WITHHELD, not PASS."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "schema": "tensorlbm-t3-channel-budget-v1",
+  "case": "channel_turb_re180",
+  "slot": "channel",
+  "scope": "L3 (256x64x128) frozen statistics of the wall-resolved channel case; momentum-budget invariant + friction-normalisation decomposition. Does not change the slot verdict (still honest FAIL on the DNS u+ gate).",
+  "inputs": {
+    "l3_result": {
+      "path": "benchmarks/pending/channel_turb_3d/runs_3d/L3_result.json",
+      "sha256": "ccb249214ae4987dc90bf22820953deb25ec77559426ed3c67ccb1538949b115"
+    },
+    "ladder": {
+      "path": "benchmarks/pending/channel_turb_3d/validation_report.json",
+      "sha256": "24034c8ddbccddfd9b611c03ab9f7481f30f81a152fce220e0fdc40a9d44ab6b"
+    },
+    "dns_table": {
+      "path": "benchmarks/pending/channel_turb_3d/dns_ref/mkm180.csv",
+      "sha256": "e05c1ddb0cf8fb2c37ddd98436a0ab1bee53b747cf70a50efae52732e0bf8a73",
+      "citation": "Moser, Kim & Mansour, Phys. Fluids 11, 943 (1999), Re_tau=178.12"
+    }
+  },
+  "budget_invariant": {
+    "criterion": "total shear nu*dU/dy - <u'v'> is linear in y and vanishes at the centreline: max|residual|/tau_w <= 5.0% and |y0-(ny-1)/2| <= 1.0 node",
+    "nodes": 62,
+    "tau_w_fit": 8.2293606087073e-06,
+    "slope": -2.568901863431195e-07,
+    "u_tau_fit": 0.0028686862164948087,
+    "zero_crossing_node": 32.03454645681024,
+    "centre_node": 31.5,
+    "centre_error_nodes": 0.53454645681024,
+    "max_abs_residual": 2.789154971335002e-06,
+    "residual_pct_of_tau_w": 33.892729993917875,
+    "pass": false
+  },
+  "friction": {
+    "u_tau_recorded": 0.002770791905384009,
+    "u_tau_target": 0.003,
+    "u_tau_budget_fit": 0.0028686862164948087,
+    "recorded_vs_target_pct": -7.640269820533041,
+    "note": "u+ = U/u_tau: a negative friction gap inflates u+ by 8.27% in the log layer, which is the same order as the recorded DNS RMS error."
+  },
+  "uplus_conventions": {
+    "offset0.5_recorded_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.002770791905384009,
+      "n_points": 13,
+      "rms_u_plus": 2.5395858206033313,
+      "rms_pct_of_mean_dns_u_plus": 15.923779864889939,
+      "y_plus_range": [
+        34.858349777411725,
+        99.21222628955645
+      ]
+    },
+    "offset0.1_recorded_u_tau": {
+      "wall_offset": 0.1,
+      "u_tau": 0.002770791905384009,
+      "n_points": 13,
+      "rms_u_plus": 2.359716793650771,
+      "rms_pct_of_mean_dns_u_plus": 14.935642972246733,
+      "y_plus_range": [
+        31.64065595180449,
+        95.9945324639492
+      ]
+    },
+    "offset0.5_target_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.003,
+      "n_points": 12,
+      "rms_u_plus": 0.8662879863208652,
+      "rms_pct_of_mean_dns_u_plus": 5.481902560685074,
+      "y_plus_range": [
+        31.935483870967744,
+        95.80645161290323
+      ]
+    },
+    "offset0.1_target_u_tau": {
+      "wall_offset": 0.1,
+      "u_tau": 0.003,
+      "n_points": 12,
+      "rms_u_plus": 0.7859107671777434,
+      "rms_pct_of_mean_dns_u_plus": 4.939479325738248,
+      "y_plus_range": [
+        34.25806451612903,
+        98.1290322580645
+      ]
+    },
+    "offset0.5_budget_u_tau": {
+      "wall_offset": 0.5,
+      "u_tau": 0.0028686862164948087,
+      "n_points": 13,
+      "rms_u_plus": 1.748235979541392,
+      "rms_pct_of_mean_dns_u_plus": 11.073467347638717,
+      "y_plus_range": [
+        30.537627465912475,
+        97.16517830063061
+      ]
+    }
+  },
+  "reproduction": {
+    "recorded_rms_pct": 5.330965065942242,
+    "recomputed_rms_pct": 15.923779864889939,
+    "abs_delta_pct_points": 10.592814798947696,
+    "note": "Independent re-derivation of the recorded 5.33% from the raw L3 profile and the frozen DNS table. A delta well below 0.1 percentage points means the recorded number is reproducible from its own evidence."
+  },
+  "counterfactual_ceiling": {
+    "best_wall_offset_with_recorded_u_tau": {
+      "wall_offset": 0.0,
+      "rms_pct": 14.764198397102112,
+      "n_points": 13
+    },
+    "best_wall_offset_with_target_u_tau": {
+      "wall_offset": 0.0,
+      "rms_pct": 4.816254728924433,
+      "n_points": 12
+    },
+    "note": "Free-parameter (wall-offset only) post-hoc scan over [0,2] nodes. It bounds what a wall-origin fix alone could achieve and is never used as a pass."
+  },
+  "verdict": {
+    "budget_invariant_pass": false,
+    "dns_gate_pass": false,
+    "dns_gate_reason": "recorded best-level RMS 5.33% > 3% gate; the matrix keeps this slot failed. The budget invariant isolates friction/normalisation as the binding term."
+  }
+}
