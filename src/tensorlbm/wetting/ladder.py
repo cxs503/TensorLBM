@@ -240,6 +240,89 @@ def contact_wall_order(
     }
 
 
+def contact_two_impl(
+    theta_deg: float,
+    arm: str = "dirichlet",
+    sigma: float = 0.02,
+    shape=(64, 64),
+    radius: float = 12.0,
+    steps: int = 0,
+    wall_thickness: int = 2,
+    gravity: float = 2.0e-6,
+) -> dict:
+    """Integration arm of ``XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS``.
+
+    Drives the **production** solver (:class:`tensorlbm.cac_lbm2d.CAC2D`, D2Q9
+    CAC/HCH + bounce-back, ``wall_phi_policy="wall_order"``) with a wall
+    condition taken from :mod:`tensorlbm.wetting.two_impl_contact_angle`, so the
+    two contact-angle implementations are compared *in the same solver* rather
+    than only inside the psi-descent harness:
+
+    ``arm="dirichlet"``
+        the Young wall *value* ``psi_w = two_impl.psi_wall_from_angle(theta)``
+        (``cos(theta) = (3 psi_w - psi_w^3)/2``) is handed to the solver as its
+        wall order parameter; the emergent angle is the solver's own flux.
+    ``arm="neumann_flux"`` / ``"geometric_ghost"``
+        these two conditions are *not* expressible through the solver's wall
+        order parameter (they are a flux and a geometric ghost), so they are
+        rejected here instead of being silently approximated by the dirichlet
+        mapping -- the psi-descent harness in
+        ``benchmarks/case_pool/two_impl_contact_angle`` is where they run.
+
+    ``steps=0`` builds and initialises the simulation but does not integrate
+    (the cheap wiring test); ``steps>0`` runs the LBE and measures the angle
+    with the two implementation-blind estimators of
+    :mod:`tensorlbm.wetting.metrics`, which never see the solver's angle.
+    """
+    from .two_impl_contact_angle import psi_wall_from_angle  # lazy: no import cycle
+
+    if arm != "dirichlet":
+        raise ValueError(
+            "contact_two_impl only maps arm='dirichlet' onto the solver wall order parameter "
+            "(got %r); run 'neumann_flux' / 'geometric_ghost' through the psi-descent harness"
+            % (arm,)
+        )
+    t0 = time.time()
+    ny, nx = shape
+    mask = cac.solid_plate(shape, wall_thickness, "bottom")
+    mask |= cac.solid_plate(shape, wall_thickness, "top")
+    y_wall = wall_thickness - 0.5
+    psi_wall = psi_wall_from_angle(math.radians(float(theta_deg)))
+    sim = _sim(shape, sigma=sigma, wall_mask=mask, policy="wall_order", angle=None, axes="wp",
+               gravity=(0.0, -gravity), gravity_mode="rho",
+               wall_order_parameter=float(psi_wall), wall_order_parameter_top=-1.0)
+    theta_young = math.degrees(math.acos(max(-1.0, min(1.0, young_cos_theta(psi_wall)))))
+    y0 = y_wall - radius * math.cos(math.radians(theta_young))
+    sim.initialize(cac.init_phi_droplet(shape, radius, BASE["width"], center=(y0, nx / 2.0)))
+    out = {
+        "case": "contact_two_impl",
+        "arm": arm,
+        "theta_ref_deg": float(theta_deg),
+        "psi_wall_from_angle": float(psi_wall),
+        "theta_young_from_psi_wall_deg": float(theta_young),
+        "solver_wall_order_parameter": float(sim.wall_order_parameter),
+        "solver_wall_phi_policy": str(sim.wall_phi_policy),
+        "inputs": {"shape": list(shape), "steps": steps, "R_init": radius, "sigma_input": sigma,
+                   "wall_thickness": wall_thickness, "wall_phi_policy": "wall_order", **BASE},
+    }
+    if steps > 0:
+        diags = cac.run(sim, steps, sample_every=max(1, steps // 4))
+        phi = _numpy(sim)["phi"].numpy()
+        fit = M.contact_angle_circle_fit(phi, y_wall)
+        cap = M.spherical_cap_inversion(phi, y_wall)
+        vals = [float(v["theta_deg"]) for v in (fit, cap) if isinstance(v, dict) and "theta_deg" in v
+                and math.isfinite(float(v["theta_deg"]))]
+        theta_meas = float(np.median(vals)) if vals else float("nan")
+        out.update({
+            "theta_measured_deg": theta_meas,
+            "err_pct": (theta_meas - theta_young) / theta_young * 100.0 if theta_young > 0 else float("nan"),
+            "meas": {"circle_fit": fit, "cap_inversion": cap, "n_estimators": len(vals)},
+            "u_max": diags[-1]["u_max_fluid"],
+        })
+    out["wall_time_s"] = time.time() - t0
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Case 4: Jurin capillary rise
 # ---------------------------------------------------------------------------
