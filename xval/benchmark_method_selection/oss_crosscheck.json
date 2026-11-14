@@ -52,12 +52,12 @@
   },
   "throughput": {
     "grid": "100x100",
-    "s_per_step_oss_100x100": 5.126,
-    "s_per_step_oss_200x200_extrapolated": 20.505,
+    "s_per_step_oss_100x100": 4.767,
+    "s_per_step_oss_200x200_extrapolated": 19.069,
     "extrapolation": "linear in cell count (pure-Python per-cell loop)",
     "s_per_step_tensorlbm_measured": 0.0212,
     "steps_needed_for_case": 21259,
-    "oss_wall_hours_full_case": 121.1
+    "oss_wall_hours_full_case": 112.6
   },
-  "elapsed_s": 6.4
+  "elapsed_s": 6.0
 }
