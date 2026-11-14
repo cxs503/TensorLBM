@@ -1,0 +1,8 @@
+{
+ "case": "impulse_identity",
+ "rel_res": 2.2475343433738285e-16,
+ "abs_res": 1.3877787807814457e-17,
+ "identity": "sum_{q in UP} c_q inj_q = rho_w (cs^2 u_x, u_y)",
+ "all_dirs_rel_res": 2.2475343433738285e-16,
+ "all_dirs_identity": "sum_{all q} c_q inj_q = 2 rho_w u_w"
+}
