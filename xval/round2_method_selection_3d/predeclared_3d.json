@@ -1,0 +1,69 @@
+{
+ "schema": "xval-round2-method-selection-3d/predeclared/v1",
+ "anchor": "XVAL-LBM-ROUND2-METHOD-SELECTION-3D",
+ "written_before_runs": true,
+ "acceptance": {
+  "criterion": "relative error of the measured decay exponent vs the closed-form Navier-Stokes value",
+  "band": 0.15,
+  "owner_rule": "error > 15 % is unacceptable"
+ },
+ "decision": "D1: for 3-D bulk (periodic) viscous-transport work, which collision selection should TensorLBM adopt as default - and is the choice material inside the owner 15 % band? Arms: BGK (Qian-d'Humieres-Lallemand 1992), TRT with magic Lambda = 3/16 (Ginzburg 2005; Ginzburg-Verhaeghe-d'Humieres 2008), MRT with the recorded TensorLBM rates s_e=1.19, s_eps=1.4, s_q=1.2, s_pi=1.19 (d'Humieres 1992; Lallemand-Luo 2000), and regularised BGK (Latt-Chopard 2006), crossed with the initial-condition protocol (equilibrium-only vs equilibrium + first-order viscous stress, the CASE-TAYLOR-GREEN-3D round-2 lesson) at two resolutions.",
+ "alternatives": [
+  "ALT-A (operator effect): the four collision operators differ by >= 15 % on the primary KPI at matched N, i.e. the operator choice is the dominant error term.",
+  "ALT-B (IC effect): all operators agree inside the band, but the IC protocol shifts the KPI by >= 15 % (or by more than the operator spread) - the IC, not the operator, is the selection knob.",
+  "ALT-C (both inside the band): every arm at N >= 32 is inside 15 % of the exact solution, so the selection is a stability/cost question rather than an accuracy question. Reported honestly if measured."
+ ],
+ "case": {
+  "name": "ABC (Arnold-Beltrami-Childress) Beltrami flow, exact unsteady Navier-Stokes solution",
+  "initial_field": "u = A (sin k z + cos k y, sin k x + cos k z, sin k y + cos k x), k = 2 pi / N",
+  "why_exact": "curl u = k u (Beltrami), hence (u.grad)u = grad(|u|^2/2) is absorbed by the pressure and NS reduces to du/dt = nu lap u = -nu k^2 u",
+  "exact_solution": "u(t) = u(0) exp(-nu k^2 t)",
+  "external_anchor": [
+   "Dombre et al. (1986), J. Fluid Mech. 167, 353 - ABC/Beltrami flows and their exactness",
+   "Childress (1970), J. Math. Phys. 11, 3063 - ABC kinematic dynamo (flow definition)",
+   "CASE-TAYLOR-GREEN-3D (this repo, docs/CASE_TAYLOR_GREEN_3D.md) - same closed form, machine-checked |curl u - k u| / |curl u| = 2.1e-15",
+   "Kruger et al. (2017), The Lattice Boltzmann Method, Springer ch. 8 - viscosity recovery from a decaying Fourier mode"
+  ]
+ },
+ "protocol": {
+  "collide": [
+   "bgk",
+   "trt(Lambda=3/16)",
+   "mrt(1.19,1.4,1.2,1.19)",
+   "rlbm"
+  ],
+  "ic": [
+   "tau"
+  ],
+  "N": [
+   16
+  ],
+  "tau_main": 0.56,
+  "tau_low": 0.505,
+  "steps_main": {
+   "16": 120
+  },
+  "steps_low": 30,
+  "steps_low_N": 16,
+  "amplitude_A": 0.02,
+  "cadence": 10,
+  "fit_window": "from 20 % of the run to the end, least squares on ln A_proj(t)",
+  "kpi_primary": "err_nu_pct = 100 * (nu_fit - nu) / nu, nu = (tau - 1/2)/3, nu_fit = -slope / k^2",
+  "kpi_secondary": [
+   "l2_rel field error vs the exact field at the last step",
+   "finite-field flag",
+   "max |u|"
+  ],
+  "stability_rung": "tau = 0.505 at N = 32: survival of 2400 steps + the same decay-exponent KPI",
+  "budget_note": "hard 120 s single-command cap: one grid (N=16), one IC protocol (viscous-stress 'tau'), 120 steps, plus a 30-step low-tau (0.505) stability rung. The two-grid/two-IC matrix of the first predeclaration is NOT executed - recorded as an open item, not as a pass."
+ },
+ "stopping_rule": "any arm producing non-finite fields is recorded as a measured failure (status=diverged) and excluded from the accuracy table; no tolerance is changed after the runs.",
+ "machine_checkable": {
+  "tensor_benchmark_cases.anchor_slug": "XVAL-LBM-ROUND2-METHOD-SELECTION-3D",
+  "metrics": [
+   "err_nu_pct_primary_arm",
+   "kernel_K5_K6_K7_rel_error",
+   "weights_abs_diff"
+  ]
+ }
+}
