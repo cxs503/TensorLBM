@@ -1,0 +1,212 @@
+{
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "array_sha256": {
+    "S1/f0": "b681940dcf586728ebd73612d41ff1bc0b3f0989cee9e1f293e7a6ab700c6623",
+    "S1/f_ref_step1": "85799aab2859ab1a4c9733fb818cc303c1c2d857b5e62e58f2fdf3e6206f429b",
+    "S1/f_ref_step30": "b227b979973dc37fda4fd5db4ea3fe44ad8d5766240a472c2ef93917245896c8",
+    "S2/f0": "b681940dcf586728ebd73612d41ff1bc0b3f0989cee9e1f293e7a6ab700c6623",
+    "S2/f_ref_step1": "8b7218e5ddf69aa7cd8c17db422093026078986ecfdbc8d30967daa0aeb2ed3c",
+    "S2/f_ref_step30": "fc1260db21211db1a882f9d94001b6ef4bb71fcd2afd48a3f9ef7517ae156afc",
+    "S3/f0": "b681940dcf586728ebd73612d41ff1bc0b3f0989cee9e1f293e7a6ab700c6623",
+    "S3/f_ref_step1": "bf6dabadfb4efc3a7940a6676b57fda20ba90e7f3f93d18b70482625a41df1c0",
+    "S3/f_ref_step30": "8f03f6bf012fa1cc0255bb372e7e1903153ea2a54666e90d9fac7e9ea93e97ce",
+    "S4/f0": "b681940dcf586728ebd73612d41ff1bc0b3f0989cee9e1f293e7a6ab700c6623",
+    "S4/f_ref_step1": "90a3a8598301af08e0cbacd66dcc2c17ec770f6cc3f0218be54794289d224f8a",
+    "S4/f_ref_step30": "37ad3b9f45b45367773c63df36adfef9f376be5529d061d7ba0e72f194e5ef1d",
+    "S5/f0": "b681940dcf586728ebd73612d41ff1bc0b3f0989cee9e1f293e7a6ab700c6623",
+    "S5/f_ref_step1": "3a04da0d2a0039080ce82dd7dbe1931a34bf326363eef91f48d96b5f118da1ed",
+    "S5/f_ref_step30": "b502ae34cf78acd52ae9e4a6931a51690197518d7b3983361dc0b2291b17cf18",
+    "S6/f0": "49d788c575942b859004e1196f61aff5cecbf78919e7217604fcfac6c51e23cb",
+    "S6/f_ref_step1": "64884ad888b75c4fb8248609d73dac0db0600bacef4d78f27024eaae0b45c893",
+    "S6/f_ref_step30": "dc8bb2a72bc3dd2a01a11c854b89bcd6f3c03fdc05104335f7fee57f71d45d38",
+    "S7/f0": "a075df5627518e4f939fca17ce829f36cd5edd20cdd963bcd4f8d67660f058c9",
+    "S7/f_ref_step1": "d7afce52afe00a8dc1ddd4f92ba6dbf019bbd82944e67293ee34195490617ec7",
+    "S7/f_ref_step30": "db9b47c1114ddd069ff39014e2632a7e734dbd6887b8efe540491a2fd8d0075d"
+  },
+  "cases": [
+    {
+      "arm": "S1",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "shear_wave 64x8 u0=0.02",
+      "keys": [
+        "S1/f0",
+        "S1/f_ref_step1",
+        "S1/f_ref_step30"
+      ],
+      "model": "srt",
+      "params": {
+        "tau": 0.55
+      },
+      "shape": [
+        9,
+        64,
+        8
+      ],
+      "steps": 30
+    },
+    {
+      "arm": "S2",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "shear_wave 64x8 u0=0.02",
+      "keys": [
+        "S2/f0",
+        "S2/f_ref_step1",
+        "S2/f_ref_step30"
+      ],
+      "model": "srt",
+      "params": {
+        "tau": 0.7
+      },
+      "shape": [
+        9,
+        64,
+        8
+      ],
+      "steps": 30
+    },
+    {
+      "arm": "S3",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "shear_wave 64x8 u0=0.02",
+      "keys": [
+        "S3/f0",
+        "S3/f_ref_step1",
+        "S3/f_ref_step30"
+      ],
+      "model": "srt",
+      "params": {
+        "tau": 1.0
+      },
+      "shape": [
+        9,
+        64,
+        8
+      ],
+      "steps": 30
+    },
+    {
+      "arm": "S4",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "shear_wave 64x8 u0=0.02",
+      "keys": [
+        "S4/f0",
+        "S4/f_ref_step1",
+        "S4/f_ref_step30"
+      ],
+      "model": "trt",
+      "params": {
+        "lambda_trt": 0.1875,
+        "tau": 0.7
+      },
+      "shape": [
+        9,
+        64,
+        8
+      ],
+      "steps": 30
+    },
+    {
+      "arm": "S5",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "shear_wave 64x8 u0=0.02",
+      "keys": [
+        "S5/f0",
+        "S5/f_ref_step1",
+        "S5/f_ref_step30"
+      ],
+      "model": "mrt_native",
+      "params": {
+        "tau": 0.7
+      },
+      "shape": [
+        9,
+        64,
+        8
+      ],
+      "steps": 30
+    },
+    {
+      "arm": "S6",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "non-square 7x11 asymmetric + 1e-3 noise",
+      "keys": [
+        "S6/f0",
+        "S6/f_ref_step1",
+        "S6/f_ref_step30"
+      ],
+      "model": "srt",
+      "params": {
+        "tau": 0.7
+      },
+      "shape": [
+        9,
+        7,
+        11
+      ],
+      "steps": 30
+    },
+    {
+      "arm": "S7",
+      "checkpoints": [
+        1,
+        30
+      ],
+      "field": "high-Ma 32x32 u0=0.1 + 1e-2 noise (nonlinear regime)",
+      "keys": [
+        "S7/f0",
+        "S7/f_ref_step1",
+        "S7/f_ref_step30"
+      ],
+      "model": "srt",
+      "params": {
+        "tau": 0.7
+      },
+      "shape": [
+        9,
+        32,
+        32
+      ],
+      "steps": 30
+    }
+  ],
+  "created_utc": "2026-11-14T14:46:38Z",
+  "dtype": "float64",
+  "gate_eps_scaled_inf": 1e-10,
+  "generator": "xval/XVAL-LBM-POINTWISE-REFERENCE-REGRESSION/stepwise/make_refdata.py",
+  "name": "pointwise_stepwise_d2q9_v1",
+  "note": "reference arrays only; the in-repo kernels are compared against them by tests/test_xval_pointwise_stepwise_refdata.py, which needs no lbmpy install",
+  "npz_sha256": "2f6349a06f4746d13c344f7b9ad7a5f8e976b0c19c2adf2569466f6f9242a5f1",
+  "oracle": "lbmpy collision symbols evaluated pointwise + np.roll definition streaming",
+  "provenance": {
+    "lbmpy_root": "/usr/lib/python3.11/site-packages/lbmpy",
+    "lbmpy_version": "2.0",
+    "pystencils_version": "2.0",
+    "source_sha256": {
+      "methods/abstractlbmethod.py": "5fb547e2d523c627c0f86cf9f73bcf951468e0bcb4a587885dbd5c48f6a0e14e",
+      "methods/conservedquantitycomputation.py": "d8243291d11f31a11063900ce00e5ffb874e6947de6886dfdf56ecd8c591a96c",
+      "methods/creationfunctions.py": "9eb9786eb8e60306bce7a88eff8fc5169cefe51d5a9485a01a2537fe048f1ba2",
+      "methods/momentbased/momentbasedmethod.py": "e87a974f8053942dc9327f90e7f064a0dc56760e4c8178dff1fb8cb6748a4e0c",
+      "moments.py": "6f2fa4e359cf21fb825d224b60d46baa16d3b831e3dc8998f79be9310026c896",
+      "stencils.py": "68bede6b983844aa6bab93f6803aacd874e81f0ac686660a687673ac5a032c3b"
+    }
+  },
+  "round": 2
+}
