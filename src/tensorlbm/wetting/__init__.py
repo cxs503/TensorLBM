@@ -66,3 +66,21 @@ __all__ = list(__all__) + [
     "run_to_equilibrium",
     "wall_order_step",
 ]
+
+from . import two_impl_contact_angle as two_impl
+from .two_impl_contact_angle import (
+    ARMS as CONTACT_ANGLE_ARMS,
+    measure_contact_angle as measure_contact_angle_two_impl,
+    psi_wall_from_angle,
+    run_arm as run_contact_angle_arm,
+    wall_ghost_rows,
+)
+
+__all__ = list(__all__) + [
+    "two_impl",
+    "CONTACT_ANGLE_ARMS",
+    "measure_contact_angle_two_impl",
+    "psi_wall_from_angle",
+    "run_contact_angle_arm",
+    "wall_ghost_rows",
+]
