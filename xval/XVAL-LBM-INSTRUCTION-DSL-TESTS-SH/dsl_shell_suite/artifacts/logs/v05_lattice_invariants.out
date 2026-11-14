@@ -1,0 +1,11 @@
+program_digest=c2bc54fe8cd0164a7481c3bb6a26c7548ccba1b0d0251db264d05b2f92971233
+steps=1
+converged=False
+nu=0.018518518518518528
+tau=0.5555555555555556
+cs2=0.33333333333333337
+u_max=0.0
+kinetic_energy=0.0
+nx=8
+ny=8
+history_points=2

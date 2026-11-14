@@ -1,0 +1,24 @@
+# D2Q9 second-order scheme declared in the instruction grammar.
+stencil dim=2 velocity=1.0 velocities=(0,0);(1,0);(0,1);(-1,0);(0,-1);(1,1);(-1,1);(-1,-1);(1,-1)
+polynomial 1
+polynomial X
+polynomial Y
+polynomial X^2+Y^2
+polynomial X^2-Y^2
+polynomial X*Y
+polynomial X*Y^2
+polynomial X^2*Y
+polynomial X^2*Y^2
+equilibrium rho
+equilibrium rho*ux
+equilibrium rho*uy
+equilibrium 2/3*rho + rho*(ux^2+uy^2)
+equilibrium rho*(ux^2-uy^2)
+equilibrium rho*ux*uy
+equilibrium 1/3*rho*ux + rho*ux*uy^2
+equilibrium 1/3*rho*uy + rho*ux^2*uy
+equilibrium rho*(1/3+ux^2)*(1/3+uy^2)
+relaxation 0,0,0,1.8,1.8,1.8,1.8,1.8,1.8
+domain nx=8 ny=8
+init uniform rho=1.0 ux=0.5
+run steps=1

@@ -1,0 +1,1 @@
+ERROR DSLSemanticError: unsupported boundary mix {'xmin': 'bounce_back', 'xmax': 'periodic', 'ymin': 'periodic', 'ymax': 'periodic'} -- the 2-D lowering supports all-periodic or (x periodic + y bounce_back)
