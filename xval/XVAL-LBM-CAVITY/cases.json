@@ -1,0 +1,10 @@
+[
+ {"tag": "A_re100_W128", "party": "A", "re": 100, "n_nodes": 130, "u_lid": 0.06, "max_steps": 250000, "resid_tol": 1e-06, "threads": 4},
+ {"tag": "A_re100_W64",  "party": "A", "re": 100, "n_nodes": 66,  "u_lid": 0.06, "max_steps": 150000, "resid_tol": 1e-06, "threads": 4},
+ {"tag": "A_re400_W128", "party": "A", "re": 400, "n_nodes": 130, "u_lid": 0.06, "max_steps": 500000, "resid_tol": 1e-06, "threads": 4},
+ {"tag": "A_re400_W64",  "party": "A", "re": 400, "n_nodes": 66,  "u_lid": 0.06, "max_steps": 300000, "resid_tol": 1e-06, "threads": 4},
+ {"tag": "B_re100_N128", "party": "B", "re": 100, "n": 128, "u_lid": 0.06, "max_steps": 250000, "resid_tol": 1e-06, "generator": "cython"},
+ {"tag": "B_re100_N64",  "party": "B", "re": 100, "n": 64,  "u_lid": 0.06, "max_steps": 150000, "resid_tol": 1e-06, "generator": "cython"},
+ {"tag": "B_re400_N128", "party": "B", "re": 400, "n": 128, "u_lid": 0.06, "max_steps": 500000, "resid_tol": 1e-06, "generator": "cython"},
+ {"tag": "B_re400_N64",  "party": "B", "re": 400, "n": 64,  "u_lid": 0.06, "max_steps": 300000, "resid_tol": 1e-06, "generator": "cython"}
+]
