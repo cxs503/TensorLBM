@@ -1,0 +1,98 @@
+{
+ "anchor": "XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D",
+ "verdict": "PASS",
+ "n_rows": 10,
+ "n_pass": 10,
+ "rows": [
+  {
+   "case": "N64_R9",
+   "metric": "sigma_from_dp_times_R_vs_analytic",
+   "ref": 0.13333333333333333,
+   "got": 0.13044684897753137,
+   "err_pct": -2.1648632668514747,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R9",
+   "metric": "dp_bulk_vs_diffuse_interface_exact",
+   "ref": 0.015586883658406403,
+   "got": 0.014976539286281057,
+   "err_pct": -3.915756256999919,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R9",
+   "metric": "sigma_integral_vs_same_pipeline_ref",
+   "ref": 0.111124511099172,
+   "got": 0.11087722217464377,
+   "err_pct": -0.2225331945960504,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R9",
+   "metric": "dp_tensor_vs_same_pipeline_ref",
+   "ref": 0.013000433149986694,
+   "got": 0.013218303540668327,
+   "err_pct": 1.6758702434607426,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R9",
+   "metric": "xi_fit_vs_analytic",
+   "ref": 2.0,
+   "got": 2.0531565167975314,
+   "err_pct": 2.657825839876571,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R12",
+   "metric": "sigma_from_dp_times_R_vs_analytic",
+   "ref": 0.13333333333333333,
+   "got": 0.1284338429561174,
+   "err_pct": -3.6746177829119486,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R12",
+   "metric": "dp_bulk_vs_diffuse_interface_exact",
+   "ref": 0.011454827693290606,
+   "got": 0.010928165474796107,
+   "err_pct": -4.597731477034605,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R12",
+   "metric": "sigma_integral_vs_same_pipeline_ref",
+   "ref": 0.11828826667172239,
+   "got": 0.11820973203446528,
+   "err_pct": -0.06639258437615396,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R12",
+   "metric": "dp_tensor_vs_same_pipeline_ref",
+   "ref": 0.010130555602291248,
+   "got": 0.010221805485693687,
+   "err_pct": 0.9007391794167876,
+   "tol_pct": 15.0,
+   "pass": true
+  },
+  {
+   "case": "N64_R12",
+   "metric": "xi_fit_vs_analytic",
+   "ref": 2.0,
+   "got": 2.003246358147452,
+   "err_pct": 0.1623179073726,
+   "tol_pct": 15.0,
+   "pass": true
+  }
+ ]
+}

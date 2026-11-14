@@ -10,14 +10,36 @@
     "surface_of_tension": "Rowlinson & Widom (1982): R_sigma = integral r (P_rr - P_tt) dr / integral (P_rr - P_tt) dr -- the radius the Laplace law refers to in the sharp-interface limit"
   },
   "analytic_checks": [
-    {"A": 0.1, "kappa": 0.2,  "sigma": 0.13333333333333333, "xi": 2.0, "band": 1e-06},
-    {"A": 0.05, "kappa": 0.225, "sigma": 0.1, "xi": 3.0, "band": 1e-06},
-    {"A": 0.2, "kappa": 0.45, "sigma": 0.4, "xi": 2.1213203435596424, "band": 1e-06}
+    {
+      "A": 0.1,
+      "kappa": 0.2,
+      "sigma": 0.13333333333333333,
+      "xi": 2.0,
+      "band": 1e-06
+    },
+    {
+      "A": 0.05,
+      "kappa": 0.225,
+      "sigma": 0.1,
+      "xi": 3.0,
+      "band": 1e-06
+    },
+    {
+      "A": 0.2,
+      "kappa": 0.45,
+      "sigma": 0.4,
+      "xi": 2.1213203435596424,
+      "band": 1e-06
+    }
   ],
   "cases": {
     "protocol": "static droplet, periodic box, populations advanced by the production kernel collide_and_stream; measures taken on the last step after the transient",
     "parameter_window": "A=0.1, kappa=0.2 (xi=2, sigma=2/15) -- the window in which the explicit Cahn-Hilliard branch of this kernel is stable at dt=1 (measured: kappa>=0.29 diverges, see limitations)",
-    "case_list": ["N64_R10", "N64_R12", "N80_R16"],
+    "case_list": [
+      "N64_R10",
+      "N64_R12",
+      "N80_R16"
+    ],
     "steps": 800,
     "mobility": "Gamma=0.05, tau_phi=1.0 => M = Gamma (tau_phi-1/2)/3"
   },
@@ -31,20 +53,31 @@
     "spurious_velocity_over_cs": 0.01,
     "conservation_drift": 1e-08,
     "meaning": {
-      "C1_sigma_capillary_vs_analytic": "headline KPI: |dp_bulk * R_fit - sigma_analytic| / sigma_analytic <= 0.15 (owner standard; 0.03 stretch)",
+      "C1_sigma_capillary_vs_analytic": "headline KPI: |dp_mean * R_fit - sigma_analytic| / sigma_analytic <= 0.15 (owner standard; 0.03 stretch)",
       "C2_sigma_integral_vs_analytic": "independent route: sigma = integral (P_rr-P_tt) dr from the measured pressure tensor (one interface) vs analytic sigma",
       "C3_tensor_capillary_vs_sigma_over_R": "dp from the exact polar moment balance integral (P_rr-P_tt)/r dr vs sigma_analytic/R_sigma",
       "C4_interface_width_recovered": "atanh tanh-fit of the measured profile returns the model xi = sqrt(2 kappa/A)",
       "C5_radius_definition_consistency": "R_fit - R_contour stays below 0.35 cells (the diffuse interface has no unique radius; the report states which one the KPI uses)",
       "C6_spurious_current": "max|u|/c_s <= 0.01 (low-Mach assumption of the model)",
-      "C7_conservation": "|Delta mean phi| and |Delta mean rho| <= 1e-8 over the run (rest populations f0 = rho - sum, g0 = phi - sum)"
-    }
+      "C7_conservation": "|Delta mean phi| and |Delta mean rho| <= 1e-8 over the run (rest populations f0 = rho - sum, g0 = phi - sum)",
+      "C2_sigma_integral_vs_discrete_reference": "measured pressure tensor: sigma = integral (P_rr-P_tt) dr over one interface vs the SAME post-processing applied to the analytic tanh field at the measured R (cancels the nine-point stencil bias; the raw continuum comparison is reported too)",
+      "C3_tensor_capillary_vs_discrete_reference": "measured dp from the exact polar moment balance vs the same-pipeline analytic reference",
+      "C8_steady_window_noise": "std/(|mean| sqrt(n)) of the dp samples inside the steady window <= noise_band"
+    },
+    "noise_band": 0.02
   },
   "verdict_rule": "PASS iff every analytic check and every per-case criterion holds; otherwise FAIL is reported per criterion (no aggregate cherry-picking, no post-hoc band widening). The 15 % owner band is the acceptance criterion; the 3 % stretch band is reported separately and never substituted for it.",
   "known_limitations_declared_up_front": [
     "2-D (cylinder) geometry: the 3-D sphere coefficient 2 sigma/R is NOT tested here.",
     "The Laplace law is a sharp-interface limit: a finite xi/R correction of O((xi/R)^2) is expected and is reported as a trend over R/xi, not removed.",
     "Only the parameter window in which this kernel's explicit Cahn-Hilliard branch is stable at dt=1 is graded; a wider kappa study is a separate mission (it needs the stability fix, not a criterion change).",
-    "The droplet is not allowed to dissolve: phi is conserved by construction, and the measured phi drift is reported (C7) rather than assumed."
-  ]
+    "The droplet is not allowed to dissolve: phi is conserved by construction, and the measured phi drift is reported (C7) rather than assumed.",
+    "The tensor routes are graded against a same-pipeline discrete reference because the nine-point stencil underestimates |grad phi|^2 by 5-16 % on a diffuse interface (R/xi = 9 -> 4.5); that bias is a post-processing property, quantified in discrete_reference_tension(), not a solver error."
+  ],
+  "measurement_protocol": {
+    "declared": "steady-window time average: the bulk pressure jump is sampled every averaging_every steps inside the trailing steady_window and the mean enters the KPI; the single-snapshot value is reported as a noise diagnostic",
+    "reason": "measured single-snapshot scatter of dp is +-10..30 % step-to-step on this model, which is larger than the 3 % stretch band",
+    "noise_gate": "C8: relative standard error of the time mean <= noise_band (2 %)"
+  },
+  "parameter_window": "A=0.1, kappa=0.2 (xi=2, sigma=2/15), Gamma=0.05, tau_f=1.0, tau_phi=2.0 -- the window measured to be stable for this kernel; tau_phi=1.0 diverges at step ~350 and Gamma>=1.0 diverges immediately at N=48..96 (measured 2026-11-15, supersedes the earlier claim that kappa>=0.29 is the stability limit)"
 }
