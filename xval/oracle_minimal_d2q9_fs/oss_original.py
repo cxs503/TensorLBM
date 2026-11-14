@@ -52,6 +52,15 @@ def import_oss(oss_root: Path = OSS_ROOT):
     if root in sys.path:
         sys.path.remove(root)
     sys.path.insert(0, root)
+    # The upstream snapshot has no ``lbm/__init__.py`` (namespace package), so
+    # any *regular* ``lbm`` package from another checkout on sys.path (editable
+    # install, or the repo's own ``src/lbm``) wins the lookup and the oracle
+    # import dies with ``No module named 'lbm.util'``.  Pin ``lbm`` to the
+    # snapshot by installing a synthetic package module with that __path__.
+    pkg = types.ModuleType("lbm")
+    pkg.__path__ = [str(Path(root) / "lbm")]
+    pkg.__file__ = str(Path(root) / "lbm" / "__init__.py")
+    sys.modules["lbm"] = pkg
     import lbm.util as U  # noqa: WPS433
     import lbm.init as INIT  # noqa: WPS433
     import lbm.streamcollide as SC  # noqa: WPS433

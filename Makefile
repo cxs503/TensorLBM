@@ -116,3 +116,10 @@ clean:
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
 	rm -rf .pytest_cache .mypy_cache .ruff_cache build dist *.egg-info
 	rm -rf artifacts/architecture artifacts/ci coverage.xml htmlcov
+
+# anchor XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS: Körner free-surface dam break vs Martin & Moyce 1952
+xval-oracle-d2q9:
+	PYTHONPATH=src $(PYTHON) benchmarks/xval_oracle_minimal_d2q9_fs/run.py
+
+xval-oracle-d2q9-full:
+	PYTHONPATH=src $(PYTHON) benchmarks/xval_oracle_minimal_d2q9_fs/run.py --full

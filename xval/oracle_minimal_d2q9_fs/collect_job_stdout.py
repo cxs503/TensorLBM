@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Collect the R2 payload from a dispatched job's stdout log and analyse it.
+"""Recover the per-run R3 artifacts from dispatched job logs.
 
-Why: dispatched jobs run in a node-side checkout; ``fetch`` returns the *staged
-input* tree, not the files the job wrote.  ``resolution_study.py --run`` therefore
-also prints a one-line compact payload (``R2JSON:{...}``) which this helper
-scrapes out of ``/srv/tensor/agent/cluster/jobs/cjN.log`` and turns back into
-``artifacts/resolution_ladder.json`` -> ``--analyze`` -> figures.
+Why: dispatched jobs run in a node-side checkout and ``fetch`` returns the
+*staged input* tree, not the files the job wrote, so the only dependable return
+channel is stdout (``/srv/tensor/agent/cluster/jobs/cjN.log``, tail-truncated).
+``resolution_study.py --run`` therefore prints, besides the per-run maximum
+line ``R2RUN:``, one compact ``R2SER:`` line per run carrying the **full**
+T-series ([T, Z_cell, Z_cell0, Z_sub.02, Z_sub.05, Z_sub.10]).  This helper
+turns those lines back into the same per-run JSON files a local run would have
+written (``artifacts/runs_r3/<label>.json``), so ``--analyze`` is
+source-agnostic and sharded jobs compose.
 
-Usage:  python xval/oracle_minimal_d2q9_fs/collect_job_stdout.py cj3062
+Usage:
+    python xval/oracle_minimal_d2q9_fs/collect_job_stdout.py cj3120 [cj3121 ...]
+    python xval/oracle_minimal_d2q9_fs/resolution_study.py --analyze
 """
 
 from __future__ import annotations
@@ -18,18 +24,18 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
+RUNS = ART / "runs_r3"
 LOG_DIR = Path("/srv/tensor/agent/cluster/jobs")
 sys.path.insert(0, str(HERE))
 import resolution_study as _R  # noqa: E402
 
-R_DESIGN = _R.DESIGN
 
-
-def find_payload(jid: str) -> dict:
+def _log_text(jid: str) -> str:
     log = LOG_DIR / f"{jid}.log"
-    text = log.read_text()
-    # the cluster logs the job stdout inline as a JSON string field "output_tail"
-    blob = None
+    if not log.exists():
+        raise SystemExit(f"missing log {log}")
+    text = log.read_text(errors="ignore")
+    # the cluster wraps job stdout as a JSON-string field; prefer that blob
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith("{"):
@@ -40,53 +46,62 @@ def find_payload(jid: str) -> dict:
             continue
         blob = rec.get("output_tail") or rec.get("output") or ""
         if blob:
-            break
-    if blob is None:
-        blob = text
-    head, runs, done = {}, [], False
-    for line in blob.splitlines():
+            return blob
+    return text
+
+
+def parse_job(jid: str) -> dict:
+    """Return {"head": {...}, "runs": {label: run_dict}, "complete": bool}."""
+    head, runs, complete = {}, {}, False
+    for line in _log_text(jid).splitlines():
         if line.startswith("R2HEAD:"):
             head = json.loads(line[len("R2HEAD:"):])
-        elif line.startswith("R2RUN:"):
-            runs.append(json.loads(line[len("R2RUN:"):]))
+        elif line.startswith("R2SER:"):
+            rec = json.loads(line[len("R2SER:"):])
+            lab = rec["l"]
+            run = {"label": lab, "arm": rec.get("k", "arm"), "kind": rec.get("k", "arm"),
+                   "a": rec.get("a"), "tau": rec.get("tau"),
+                   "status": rec.get("st") or "ok", "steps": rec.get("steps"),
+                   "wall_seconds": rec.get("wall"), "u_max": rec.get("u"),
+                   "recovered_from_job": jid}
+            if rec.get("S"):
+                run["series"] = _R.series_from_rows(rec["S"])
+            if rec.get("inv") is not None:
+                # only the maximum drift survives in the compact line; keep the
+                # scalar so eval_run can still judge the ledger
+                run["inventory"] = [{"step": None, "drift_pct": rec["inv"]}]
+            # controls report u_max_lattice under a separate key
+            if rec.get("k") == "control":
+                run["kind"] = "control"
+                run["u_max_lattice"] = rec.get("u")
+            runs[lab] = run
         elif line.startswith("R2END:"):
-            done = True
-    if not runs:
-        raise SystemExit(f"no R2RUN payload in {log} (job may still be running or crashed)")
-    for r in runs:  # controls carry no tau/series
-        if "series" not in r:
-            r["kind"] = "control"
-    return {"design": R_DESIGN, "env": head.get("env", {}),
-            "wall_seconds": head.get("wall_seconds"), "runs": runs, "complete": done}
+            complete = True
+    return {"head": head, "runs": runs, "complete": complete}
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
+    jids = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if not jids:
         raise SystemExit(__doc__)
-    jid = sys.argv[1]
-    payload = find_payload(jid)
-    payload["source_job"] = jid
-    (ART / "resolution_ladder.json").write_text(json.dumps(payload, indent=1))
-    print(f"[collect] {len(payload['runs'])} runs -> artifacts/resolution_ladder.json")
-    import resolution_study as R
-    analysis = R.analyze(payload)
-    analysis["source_job"] = jid
-    (ART / "resolution_analysis.json").write_text(json.dumps(analysis, indent=1))
-    (ART / "resolution_numbers.md").write_text(R.render_numbers_md(analysis, payload))
-    for ref in ("mm", "ritter"):
-        for k, f in analysis["fits"][ref].items():
-            if f.get("ok"):
-                print(f"  fit[{ref}] {k}: p={f['p']} E_inf={f['E_inf_pct']}% "
-                      f"monotone={f['monotone_falling']} H1={f['hypothesis_H1_supported']}")
-            else:
-                print(f"  fit[{ref}] {k}: FAILED {f.get('reason')}")
-        for k, r in analysis["richardson"][ref].items():
-            if r.get("ok"):
-                print(f"  rich[{ref}] {k}: Z_inf max {r['Z_inf_max_abs_rel_err_pct']}% "
-                      f"p_obs {r['p_obs_median']} pass3%={r['pass_3pct']}")
-    for c in analysis["controls"]:
-        print(f"  control {c.get('arm')}: u_max={c.get('u_max_lattice')} pass={c.get('pass')}")
-    print(f"[collect] wrote artifacts/resolution_analysis.json + resolution_numbers.md")
+    RUNS.mkdir(parents=True, exist_ok=True)
+    total, merged = 0, {}
+    for jid in jids:
+        got = parse_job(jid)
+        if not got["runs"]:
+            print(f"[collect] {jid}: no R2SER payload (queued/crashed?)", flush=True)
+            continue
+        for lab, run in got["runs"].items():
+            (RUNS / f"{lab}.json").write_text(json.dumps(run, indent=1))
+            merged[lab] = jid
+            total += 1
+        print(f"[collect] {jid}: {len(got['runs'])} runs, complete={got['complete']}",
+              flush=True)
+    if not total:
+        raise SystemExit("nothing recovered")
+    (ART / "r3_recovery.json").write_text(json.dumps(
+        {"source_jobs": jids, "runs": sorted(merged), "per_job": merged}, indent=1))
+    print(f"[collect] {total} per-run artifacts -> artifacts/runs_r3/*.json", flush=True)
     return 0
 
 
