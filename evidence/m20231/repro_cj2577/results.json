@@ -1,0 +1,683 @@
+{
+  "slug": "GAP-DIFFLBM-ADJOINT-VERDICT",
+  "cases": [
+    {
+      "resolution": "R1",
+      "config": {
+        "ny": 36,
+        "nx": 64,
+        "radius": 3.0,
+        "interface": 0.8,
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "wall_offset": 1.0,
+        "u_scale": 0.06,
+        "dtype": "torch.float64",
+        "viscosity": 0.05000000000000001,
+        "re_diameter": 7.199999999999998
+      },
+      "point": {
+        "xc": 32.0,
+        "yc": 14.0
+      },
+      "steady_state": {
+        "lift": 0.013141818233623362,
+        "drag": 0.06469333095645698,
+        "drift": 1.4913451390485832e-08,
+        "u_max": 0.058278450986272955,
+        "re_measured": 6.993414118352753,
+        "seconds": 17.152384179993533
+      },
+      "objective": {
+        "lift": 0.013126917255696782,
+        "drag": 0.06466115986147278
+      },
+      "grad_ad": [
+        0.00010426565643795601,
+        -0.0022694053933563748
+      ],
+      "grad_fd": {
+        "0.05": [
+          0.0001042650594983846,
+          -0.002269369867883078
+        ],
+        "0.1": [
+          0.00010426142050028002,
+          -0.0022692769867430247
+        ]
+      },
+      "grad_fd_seconds": {
+        "0.05": 8.259971519990359,
+        "0.1": 8.450340370007325
+      },
+      "grad_frozen": [
+        -0.00015774876330822656,
+        0.0010705900511714405
+      ],
+      "grad_shipped_proxy": [
+        1.690962868461371e-05,
+        -0.0008470472479035576
+      ],
+      "shipped_proxy_raw": {
+        "objective": -0.0029431958855050304,
+        "n_boundary_nodes": 16,
+        "shape_derivative_only": true,
+        "error": null
+      },
+      "ad_vs_fd": {
+        "relerr_y": 1.5654333742322386e-05,
+        "cos": 0.9999999999998964,
+        "fd_step_sensitivity_y": 4.092816308523207e-05,
+        "fd_step_used": 0.05
+      },
+      "verdict_2d": {
+        "grad_ad": [
+          0.00010426565643795601,
+          -0.0022694053933563748
+        ],
+        "grad_frozen": [
+          -0.00015774876330822656,
+          0.0010705900511714405
+        ],
+        "norm_ad": 0.0022717993235555466,
+        "norm_frozen": 0.00108214958762296,
+        "cosine": -0.9949658508910502,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.4763403071752437,
+        "amplitude_ratio_inverse": 2.0993394531949696,
+        "sign_agreement": false,
+        "component_rel_error": [
+          2.512950368294051,
+          1.471749143764955
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "verdict_1d_yc": {
+        "grad_ad": [
+          -0.0022694053933563748
+        ],
+        "grad_frozen": [
+          0.0010705900511714405
+        ],
+        "norm_ad": 0.0022694053933563748,
+        "norm_frozen": 0.0010705900511714405,
+        "cosine": -1.0,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.4717491437649549,
+        "amplitude_ratio_inverse": 2.11977067307247,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.471749143764955
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "timings": {
+        "ad_seconds": 4.876690889999736
+      }
+    },
+    {
+      "resolution": "R1",
+      "config": {
+        "ny": 36,
+        "nx": 64,
+        "radius": 3.0,
+        "interface": 0.8,
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "wall_offset": 1.0,
+        "u_scale": 0.06,
+        "dtype": "torch.float64",
+        "viscosity": 0.05000000000000001,
+        "re_diameter": 7.199999999999998
+      },
+      "point": {
+        "xc": 32.0,
+        "yc": 21.0
+      },
+      "steady_state": {
+        "lift": -0.013141818233623367,
+        "drag": 0.06469333095645698,
+        "drift": 1.4913450894354918e-08,
+        "u_max": 0.05827845098627307,
+        "re_measured": 6.993414118352767,
+        "seconds": 16.843242400034796
+      },
+      "objective": {
+        "lift": -0.013126917255696756,
+        "drag": 0.06466115986147286
+      },
+      "grad_ad": [
+        -0.00010426565643795504,
+        -0.002269405393356398
+      ],
+      "grad_fd": {
+        "0.05": [
+          -0.00010426505949821113,
+          -0.0022693698678830088
+        ],
+        "0.1": [
+          -0.00010426142049967287,
+          -0.0022692769867428426
+        ]
+      },
+      "grad_fd_seconds": {
+        "0.05": 8.617227769980673,
+        "0.1": 8.47047099005431
+      },
+      "grad_frozen": [
+        0.00015774876330823062,
+        0.001070590051171403
+      ],
+      "grad_shipped_proxy": [
+        -1.690962868453966e-05,
+        -0.0008470472479033354
+      ],
+      "shipped_proxy_raw": {
+        "objective": 0.002943195885504846,
+        "n_boundary_nodes": 16,
+        "shape_derivative_only": true,
+        "error": null
+      },
+      "ad_vs_fd": {
+        "relerr_y": 1.5654333783218668e-05,
+        "cos": 0.9999999999998963,
+        "fd_step_sensitivity_y": 4.092816313491981e-05,
+        "fd_step_used": 0.05
+      },
+      "verdict_2d": {
+        "grad_ad": [
+          -0.00010426565643795504,
+          -0.002269405393356398
+        ],
+        "grad_frozen": [
+          0.00015774876330823062,
+          0.001070590051171403
+        ],
+        "norm_ad": 0.00227179932355557,
+        "norm_frozen": 0.0010821495876229235,
+        "cosine": -0.9949658508910488,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.47634030717522274,
+        "amplitude_ratio_inverse": 2.099339453195062,
+        "sign_agreement": false,
+        "component_rel_error": [
+          2.512950368294104,
+          1.4717491437649335
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "verdict_1d_yc": {
+        "grad_ad": [
+          -0.002269405393356398
+        ],
+        "grad_frozen": [
+          0.001070590051171403
+        ],
+        "norm_ad": 0.002269405393356398,
+        "norm_frozen": 0.001070590051171403,
+        "cosine": -1.0,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.47174914376493354,
+        "amplitude_ratio_inverse": 2.119770673072566,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.4717491437649335
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "timings": {
+        "ad_seconds": 4.4545871099689975
+      }
+    },
+    {
+      "resolution": "R2",
+      "config": {
+        "ny": 42,
+        "nx": 74,
+        "radius": 3.5,
+        "interface": 0.8,
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "wall_offset": 1.0,
+        "u_scale": 0.06,
+        "dtype": "torch.float64",
+        "viscosity": 0.05000000000000001,
+        "re_diameter": 8.399999999999999
+      },
+      "point": {
+        "xc": 37.0,
+        "yc": 16.416666666666664
+      },
+      "steady_state": {
+        "lift": 0.02045078457010759,
+        "drag": 0.09041054254917874,
+        "drift": 1.4433237408018051e-07,
+        "u_max": 0.08030036395231302,
+        "re_measured": 11.24205095332382,
+        "seconds": 20.34949880995555
+      },
+      "objective": {
+        "lift": 0.020445262856947005,
+        "drag": 0.09035588136804133
+      },
+      "grad_ad": [
+        0.0002764248698604297,
+        -0.0035922410815089133
+      ],
+      "grad_fd": {
+        "0.05": [
+          0.00027642390342082906,
+          -0.0035921195407410955
+        ],
+        "0.1": [
+          0.0002764210101806157,
+          -0.003591754968623982
+        ]
+      },
+      "grad_fd_seconds": {
+        "0.05": 10.151959150040057,
+        "0.1": 10.046977669990156
+      },
+      "grad_frozen": [
+        -0.0001343956495666206,
+        0.0023413627074500903
+      ],
+      "grad_shipped_proxy": [
+        3.70475587034848e-05,
+        -0.002183220367099762
+      ],
+      "shipped_proxy_raw": {
+        "objective": -0.005701074844684443,
+        "n_boundary_nodes": 18,
+        "shape_derivative_only": true,
+        "error": null
+      },
+      "ad_vs_fd": {
+        "relerr_y": 3.383539062084346e-05,
+        "cos": 0.9999999999973067,
+        "fd_step_sensitivity_y": 0.00010149220062930063,
+        "fd_step_used": 0.05
+      },
+      "verdict_2d": {
+        "grad_ad": [
+          0.0002764248698604297,
+          -0.0035922410815089133
+        ],
+        "grad_frozen": [
+          -0.0001343956495666206,
+          0.0023413627074500903
+        ],
+        "norm_ad": 0.0036028609043866353,
+        "norm_frozen": 0.00234521673166052,
+        "cosine": -0.999810631112853,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.6509317994500203,
+        "amplitude_ratio_inverse": 1.5362592530352817,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.4861923228343332,
+          1.6517832891289705
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "verdict_1d_yc": {
+        "grad_ad": [
+          -0.0035922410815089133
+        ],
+        "grad_frozen": [
+          0.0023413627074500903
+        ],
+        "norm_ad": 0.0035922410815089133,
+        "norm_frozen": 0.0023413627074500903,
+        "cosine": -1.0,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.6517832891289707,
+        "amplitude_ratio_inverse": 1.5342522839706105,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.6517832891289705
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "timings": {
+        "ad_seconds": 5.948093979968689
+      }
+    },
+    {
+      "resolution": "R2",
+      "config": {
+        "ny": 42,
+        "nx": 74,
+        "radius": 3.5,
+        "interface": 0.8,
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "wall_offset": 1.0,
+        "u_scale": 0.06,
+        "dtype": "torch.float64",
+        "viscosity": 0.05000000000000001,
+        "re_diameter": 8.399999999999999
+      },
+      "point": {
+        "xc": 37.0,
+        "yc": 24.583333333333336
+      },
+      "steady_state": {
+        "lift": -0.02045078457010766,
+        "drag": 0.09041054254917875,
+        "drift": 1.4433237383038033e-07,
+        "u_max": 0.08030036395231333,
+        "re_measured": 11.242050953323863,
+        "seconds": 20.026696800021455
+      },
+      "objective": {
+        "lift": -0.02044526285694697,
+        "drag": 0.0903558813680414
+      },
+      "grad_ad": [
+        -0.00027642486986043167,
+        -0.0035922410815089263
+      ],
+      "grad_fd": {
+        "0.05": [
+          -0.0002764239034206556,
+          -0.0035921195407396384
+        ],
+        "0.1": [
+          -0.00027642101017993914,
+          -0.0035917549686243465
+        ]
+      },
+      "grad_fd_seconds": {
+        "0.05": 9.990866329986602,
+        "0.1": 10.103999840037432
+      },
+      "grad_frozen": [
+        0.000134395649566616,
+        0.0023413627074500916
+      ],
+      "grad_shipped_proxy": [
+        -3.704755870298482e-05,
+        -0.002183220367099966
+      ],
+      "shipped_proxy_raw": {
+        "objective": 0.005701074844684665,
+        "n_boundary_nodes": 18,
+        "shape_derivative_only": true,
+        "error": null
+      },
+      "ad_vs_fd": {
+        "relerr_y": 3.383539103013592e-05,
+        "cos": 0.9999999999973067,
+        "fd_step_sensitivity_y": 0.0001014922001222708,
+        "fd_step_used": 0.05
+      },
+      "verdict_2d": {
+        "grad_ad": [
+          -0.00027642486986043167,
+          -0.0035922410815089263
+        ],
+        "grad_frozen": [
+          0.000134395649566616,
+          0.0023413627074500916
+        ],
+        "norm_ad": 0.0036028609043866483,
+        "norm_frozen": 0.002345216731660521,
+        "cosine": -0.9998106311128532,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.6509317994500182,
+        "amplitude_ratio_inverse": 1.5362592530352865,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.4861923228343132,
+          1.6517832891289688
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "verdict_1d_yc": {
+        "grad_ad": [
+          -0.0035922410815089263
+        ],
+        "grad_frozen": [
+          0.0023413627074500916
+        ],
+        "norm_ad": 0.0035922410815089263,
+        "norm_frozen": 0.0023413627074500916,
+        "cosine": -1.0,
+        "cosine_gate": 0.99,
+        "amplitude_ratio": 0.6517832891289687,
+        "amplitude_ratio_inverse": 1.5342522839706152,
+        "sign_agreement": false,
+        "component_rel_error": [
+          1.6517832891289688
+        ],
+        "gate_decision": "blocked",
+        "shape_derivative_only": true,
+        "flow_response_included": false,
+        "gradient_valid_for_optimization": false,
+        "criterion": "cos(expanded-AD, frozen-field) >= 0.99 required before the proxy may enter the optimisation path (GAP-DIFFLBM-ADJOINT-VERDICT)"
+      },
+      "timings": {
+        "ad_seconds": 5.810630480002146
+      }
+    }
+  ],
+  "timestamp": "2026-11-14T18:48:51",
+  "environment": {
+    "python": "3.11.6",
+    "torch": "2.13.0",
+    "numpy": "2.0.1",
+    "host": "node330",
+    "cpus": 128,
+    "threads": 6,
+    "dtype": "float64"
+  },
+  "study": {
+    "objective": "lift = momentum-exchange force on disk along +y",
+    "parameter": [
+      "xc",
+      "yc"
+    ],
+    "resolutions": {
+      "R1": {
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "interface": 0.8,
+        "wall_offset": 1.0,
+        "ny": 36,
+        "nx": 64,
+        "radius": 3.0
+      },
+      "R2": {
+        "tau": 0.65,
+        "body_force": 6.6e-05,
+        "n_steps": 600,
+        "n_avg": 200,
+        "interface": 0.8,
+        "wall_offset": 1.0,
+        "ny": 42,
+        "nx": 74,
+        "radius": 3.5
+      }
+    },
+    "n_warm": 6000,
+    "fd_steps": [
+      0.05,
+      0.1
+    ],
+    "horizons": [
+      300,
+      600
+    ],
+    "gate": 0.99,
+    "predeclared": true
+  },
+  "repro_cmd": "python benchmarks/adjoint_verdict_bench.py --out runs/repro_m20231 --threads 6",
+  "lift_sweep": {
+    "resolution": "R1",
+    "n_warm": 6000,
+    "rows": [
+      {
+        "yc": 13.870000000000001,
+        "lift": 0.01075893619568233,
+        "drag": 0.05986252220826798
+      },
+      {
+        "yc": 15.685,
+        "lift": 0.006322120153934796,
+        "drag": 0.06344641930051852
+      },
+      {
+        "yc": 17.5,
+        "lift": -1.0836322995392289e-17,
+        "drag": 0.06478972108119385
+      },
+      {
+        "yc": 19.315,
+        "lift": -0.006322120153934784,
+        "drag": 0.06344641930051849
+      },
+      {
+        "yc": 21.130000000000003,
+        "lift": -0.010758936195682446,
+        "drag": 0.05986252220826789
+      }
+    ]
+  },
+  "horizon": {
+    "resolution": "R1",
+    "yc": 21.0,
+    "rows": [
+      {
+        "horizon": 300,
+        "grad_ad": [
+          -4.296243773047039e-05,
+          -0.0009620358973974354
+        ],
+        "objective": -0.0131083290570453,
+        "grad_frozen": [
+          0.00015748107112013182,
+          0.0010688719835584741
+        ],
+        "cos_1d": -1.0
+      },
+      {
+        "horizon": 600,
+        "grad_ad": [
+          -0.00010426565643795504,
+          -0.002269405393356398
+        ],
+        "objective": -0.013126917255696756,
+        "grad_frozen": [
+          0.00015774876330823062,
+          0.001070590051171403
+        ],
+        "cos_1d": -1.0
+      }
+    ],
+    "rel_dev_vs_finest": [
+      0.5760845989818476,
+      0.0
+    ]
+  },
+  "trajectories": {
+    "ad": [
+      {
+        "iter": 0,
+        "xc": 32.0,
+        "yc": 21.0,
+        "lift": -0.013126917255696756
+      },
+      {
+        "iter": 1,
+        "xc": 32.0,
+        "yc": 20.995461189213287,
+        "lift": -0.013116606572855108,
+        "step_dir_y": -0.002269405393356398
+      },
+      {
+        "iter": 2,
+        "xc": 32.0,
+        "yc": 20.990913817107465,
+        "lift": -0.013106258096252078,
+        "step_dir_y": -0.00227368605291099
+      },
+      {
+        "iter": 3,
+        "xc": 32.0,
+        "yc": 20.986358370426878,
+        "lift": NaN,
+        "step_dir_y": -0.0022777233402930704
+      }
+    ],
+    "frozen": [
+      {
+        "iter": 0,
+        "xc": 32.0,
+        "yc": 21.0,
+        "lift": -0.013126917255696756
+      },
+      {
+        "iter": 1,
+        "xc": 32.0,
+        "yc": 21.002141180102342,
+        "lift": -0.013131773889650283,
+        "step_dir_y": 0.001070590051171403
+      },
+      {
+        "iter": 2,
+        "xc": 32.0,
+        "yc": 21.004292311259277,
+        "lift": -0.013136648990184328,
+        "step_dir_y": 0.0010755655784680598
+      },
+      {
+        "iter": 3,
+        "xc": 32.0,
+        "yc": 21.00644345338589,
+        "lift": NaN,
+        "step_dir_y": 0.001075571063306781
+      }
+    ],
+    "start_yc": 21.0,
+    "adverse": true
+  }
+}
