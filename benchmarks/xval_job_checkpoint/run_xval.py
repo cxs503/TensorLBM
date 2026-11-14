@@ -694,6 +694,14 @@ def main(argv: list[str] | None = None) -> int:
         steps = 80
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
+    # Idempotent repro (audit m18147 F2): the case directories under ``out/cases``
+    # carry ``job_status.txt`` files, and a re-run in a populated directory used to
+    # die on the residual ``done`` state.  Drop the harness-owned case dirs first so
+    # ``repro.sh`` can be executed any number of times.
+    if (out / "cases").exists():
+        import shutil as _shutil
+
+        _shutil.rmtree(out / "cases")
 
     sim = taylor_green(nx, ny)
     ke_start = kinetic_energy(sim)
