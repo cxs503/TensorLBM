@@ -56,7 +56,10 @@ def anti_stream(lam: np.ndarray) -> np.ndarray:
     """mu_j(y) = lambda_j(y + e_j): roll by -e_j (periodic)."""
     out = np.empty_like(lam)
     for i in range(9):
-        out[i] = np.roll(lam[i], shift=(-EX[i], -EY[i]), axis=(0, 1))
+        # int(): same numpy-version portability requirement as stream();
+        # the shift must be exactly minus the forward streaming shift.
+        out[i] = np.roll(lam[i], shift=(-int(EX[i]), -int(EY[i])),
+                         axis=(0, 1))
     return out
 
 
@@ -128,12 +131,17 @@ def seed_terminal(ux_t: np.ndarray, uy_t: np.ndarray, rho_t: np.ndarray,
 
 
 def bptt_gradient(tau: float, T: int, f0: np.ndarray,
-                 ux_ref: np.ndarray, uy_ref: np.ndarray):
+                 ux_ref: np.ndarray, uy_ref: np.ndarray,
+                 return_field: bool = False):
     """Exact BPTT gradient dJ/dtau with full trajectory storage.
 
     J(tau) = 1/2 || u_T(tau) - u_ref ||^2  (terminal velocity mismatch).
 
     Returns (dJ_dtau, J, (ux_T, uy_T), states) with states[n] = f^n.
+    With ``return_field=True`` an extra item is appended: the adjoint
+    field dJ/df^0 (shape (9, ny, nx)), i.e. the costate after the whole
+    backward sweep -- the gradient w.r.t. the *initial* distribution,
+    which is what a long-horizon initial-field inversion needs.
     """
     # ---- forward, store everything ----
     states = [f0]
@@ -157,4 +165,7 @@ def bptt_gradient(tau: float, T: int, f0: np.ndarray,
         dJ_dtau += float(np.sum((f_n - feq) * mu) / (tau * tau))
         lam = mu - (mu - b_action_t(f_n, mu)) / tau
 
+    # after the sweep over n = T-1 .. 0, lam == dJ/df^0
+    if return_field:
+        return dJ_dtau, J, (ux_t, uy_t), states, lam
     return dJ_dtau, J, (ux_t, uy_t), states
