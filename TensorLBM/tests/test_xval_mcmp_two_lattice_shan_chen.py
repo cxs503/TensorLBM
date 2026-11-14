@@ -1,4 +1,3 @@
-import sys; sys.path.insert(0, "/root/tp-agent/work/m20945/src")
 """Test: XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN cross-validation.
 
 Validates that TensorLBM's two-component Shan-Chen (MCMP) implementation
