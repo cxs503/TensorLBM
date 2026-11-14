@@ -1,0 +1,25 @@
+{
+ "feature_slug": "XVAL-LBM-CAVITY",
+ "anchor": "横向对比|XVAL-CAVITY｜我方+开源同规格三方｜判据: metrics 逐项（工具间差+vs ref）",
+ "round": 2,
+ "method_selection": {
+   "case": "2-D lid-driven cavity, Re=100 (+400 planned), U_lid=0.06, W=64/128 lattice spacings",
+   "collision": {"ours": "D2Q9 MRT (d'Humieres 1992; Lallemand & Luo PRE 61:6546)", "oss": "pylbm d'Humieres MRT"},
+   "walls": {"ours": "pre-streaming half-way bounce-back + Zou-He 1997 lid", "oss": "BFL bounce-back distance=0.5 + prescribed-moment lid"},
+   "reference": "Ghia, Ghia & Shin, JCP 48 (1982) 387-411, Table I/II -- machine transcription with sha256 (benchmarks/verified/cavity/re5000/reference/ghia_re5000_reference.json)",
+   "steady_state": "max|du|/U <= 1e-6",
+   "rejected": {"Re=5000": "round-1 failure: tau-0.5 = 0.0019, BGK/RLBM diverged; out of current capability",
+                "Maarten-vd-Sande/lbm": "no cavity case, needs hand-written BC -> would inject our own assumptions"}
+ },
+ "migration": {
+   "obstacle": "pylbm imports mpi4py at module import; no MPI toolchain on host/nodes",
+   "fix": "mpi4py_shim/ single-rank subset (COMM_WORLD, allreduce, Create_cart, Irecv/Isend self-copy, Request.Waitall); real comm raises NotImplementedError",
+   "limit": "serial equivalence only, not an MPI-scale run"
+ },
+ "evidence": {
+   "Re100_W64": {"tensorlbm_max_abs_dev_pct": 0.83, "pylbm_max_abs_dev_pct": 2.49,
+                 "inter_tool_max_abs_pct": 3.12, "du_min_pct": -4.42, "vortex_dist": 0.0080},
+   "not_run": ["Re=400 W=64/128", "Re=100 W=128"],
+   "failure_reason": "cluster job cj2558 nodes lacked numpy/torch (run_all failed per-case, rc=0 overall); local 120 s command ceiling"
+ }
+}
