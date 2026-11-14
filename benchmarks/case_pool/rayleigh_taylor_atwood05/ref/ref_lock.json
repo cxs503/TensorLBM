@@ -1,0 +1,155 @@
+{
+  "anchor": {
+    "crossref": {
+      "doi": "10.1017/cbo9780511975264",
+      "isbn": [
+        "9780521787505",
+        "9780521782401",
+        "9780511975264"
+      ],
+      "issued": [
+        [
+          2001,
+          1,
+          1
+        ]
+      ],
+      "path": "sources/crossref_tryggvason_2011.json",
+      "publisher": "Cambridge University Press",
+      "sha256": "9d71e441335266b36051303fcf4c6bafdbf7ce16523e1c8f9afc44b5dad92f65",
+      "status": "fetched",
+      "title": "Direct Numerical Simulations of Gas\u2013Liquid Multiphase Flows",
+      "type": "monograph"
+    },
+    "lineage": "spectral DNS of single-mode Rayleigh-Taylor instability",
+    "monograph": "Tryggvason, Scardovelli & Zaleski, Direct Numerical Simulations of Gas-Liquid Multiphase Flows, Cambridge University Press, 2011"
+  },
+  "atwood": 0.5,
+  "case_code": "CASE-RT-INSTABILITY-ATWOOD",
+  "limitation": "Anchor monograph is paywalled (DOI 10.1017/CBO9780511975264 resolves to metadata only here): no page/table number of the book is quoted and no value is copied from it. Targets are the closed forms above, evaluated by this script (MU registered in the case report).",
+  "references": {
+    "L_linear": {
+      "citation": "Rayleigh 1883 PLMS 14:170; Taylor 1950 Proc. R. Soc. A 201:192; Chandrasekhar 1961 Hydrodynamic and Hydromagnetic Stability sec. 92",
+      "formula": "sigma = sqrt(A g k); sigma_visc = sqrt(A g k + nu^2 k^4) - nu k^2",
+      "transcription": "none - closed form evaluated in code"
+    },
+    "N_nonlinear": {
+      "c_2d": 1.0,
+      "c_3d_reference_value": 3.0,
+      "citation": "Goncharov 2002 PRL 88:134502, as quoted in arXiv:2009.14655 Eq. (1), p. 3",
+      "formula": "u_s = sqrt(2Ag/((1-A)Ck)); u_b = sqrt(2Ag/((1+A)Ck))",
+      "transcription": "formula from the arXiv text; C convention reported both ways"
+    }
+  },
+  "sources": [
+    {
+      "bytes": 4847,
+      "path": "sources/crossref_tryggvason_2011.json",
+      "sha256": "9d71e441335266b36051303fcf4c6bafdbf7ce16523e1c8f9afc44b5dad92f65"
+    }
+  ],
+  "suite": [
+    {
+      "atwood": 0.5,
+      "fr_bubble_c1": 0.5641895835477563,
+      "fr_spike_c1": 0.9772050238058397,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "label": "base_l064_g2e-4_nu5e-3",
+      "lam": 64,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0031332853432887507,
+      "sigma_viscous": 0.003085464497242449,
+      "sigma_viscous_ratio": 0.9847377941020501,
+      "u_bubble_c1": 0.03685270927694245,
+      "u_bubble_c3": 0.021276921621409744,
+      "u_spike_c1": 0.06383076486422923,
+      "u_spike_c3": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_c1": 0.5641895835477564,
+      "fr_spike_c1": 0.97720502380584,
+      "g": 0.0003,
+      "k": 0.06544984694978735,
+      "label": "grid_l096_g3e-4_nu5e-3",
+      "lam": 96,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0031332853432887503,
+      "sigma_viscous": 0.00311194013575584,
+      "sigma_viscous_ratio": 0.9931875953849431,
+      "u_bubble_c1": 0.05527906391541368,
+      "u_bubble_c3": 0.031915382432114614,
+      "u_spike_c1": 0.09574614729634384,
+      "u_spike_c3": 0.05527906391541368
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_c1": 0.5641895835477563,
+      "fr_spike_c1": 0.9772050238058397,
+      "g": 0.0004,
+      "k": 0.04908738521234052,
+      "label": "grid_l128_g4e-4_nu5e-3",
+      "lam": 128,
+      "nu": 0.005,
+      "sigma_inviscid": 0.0031332853432887507,
+      "sigma_viscous": 0.003121260648993726,
+      "sigma_viscous_ratio": 0.9961622728294502,
+      "u_bubble_c1": 0.0737054185538849,
+      "u_bubble_c3": 0.04255384324281949,
+      "u_spike_c1": 0.12766152972845846,
+      "u_spike_c3": 0.0737054185538849
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_c1": 0.5641895835477563,
+      "fr_spike_c1": 0.9772050238058397,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "label": "nu_l064_g2e-4_tau505",
+      "lam": 64,
+      "nu": 0.0016666666666666668,
+      "sigma_inviscid": 0.0031332853432887507,
+      "sigma_viscous": 0.0031172627119502947,
+      "sigma_viscous_ratio": 0.9948863159326439,
+      "u_bubble_c1": 0.03685270927694245,
+      "u_bubble_c3": 0.021276921621409744,
+      "u_spike_c1": 0.06383076486422923,
+      "u_spike_c3": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_c1": 0.5641895835477563,
+      "fr_spike_c1": 0.9772050238058397,
+      "g": 0.0002,
+      "k": 0.09817477042468103,
+      "label": "nu_l064_g2e-4_tau530",
+      "lam": 64,
+      "nu": 0.01,
+      "sigma_inviscid": 0.0031332853432887507,
+      "sigma_viscous": 0.003038384551729393,
+      "sigma_viscous_ratio": 0.969712049442727,
+      "u_bubble_c1": 0.03685270927694245,
+      "u_bubble_c3": 0.021276921621409744,
+      "u_spike_c1": 0.06383076486422923,
+      "u_spike_c3": 0.03685270927694245
+    },
+    {
+      "atwood": 0.5,
+      "fr_bubble_c1": 0.5641895835477563,
+      "fr_spike_c1": 0.9772050238058398,
+      "g": 0.0001,
+      "k": 0.09817477042468103,
+      "label": "g_l064_g1e-4_nu5e-3",
+      "lam": 64,
+      "nu": 0.005,
+      "sigma_inviscid": 0.002215567313631895,
+      "sigma_viscous": 0.0021678999365640525,
+      "sigma_viscous_ratio": 0.978485249906624,
+      "u_bubble_c1": 0.026058800634822396,
+      "u_bubble_c3": 0.015045055561273502,
+      "u_spike_c1": 0.045135166683820505,
+      "u_spike_c3": 0.026058800634822396
+    }
+  ]
+}
