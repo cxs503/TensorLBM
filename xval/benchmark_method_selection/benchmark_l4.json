@@ -1,0 +1,109 @@
+{
+  "schema": "xval-method-selection/benchmark-l4",
+  "anchor": "XVAL-LBM-ROUND2-METHOD-SELECTION",
+  "benchmark_table": {
+    "benchmark_rows": [
+      {
+        "comparison": "A1(MRT+sponge) vs A2(BGK) @D=10",
+        "ref_arm": "A1",
+        "got_arm": "A2",
+        "D": 10,
+        "kpis": {
+          "cd_mean": {
+            "ref": 1.6143262481245584,
+            "got": 1.4661360417278881,
+            "delta_pct": -9.179693792926308,
+            "within_15pct": true
+          },
+          "cl_amp": {
+            "ref": 0.6579248352005606,
+            "got": 0.3515523646082385,
+            "delta_pct": -46.56648513639526,
+            "within_15pct": false
+          },
+          "st_fft": {
+            "ref": 0.16899580031695963,
+            "got": 0.17662926112262423,
+            "delta_pct": 4.516952960575163,
+            "within_15pct": true
+          }
+        }
+      },
+      {
+        "comparison": "A1(MRT+sponge) vs A4(MRT no sponge) @D=10",
+        "ref_arm": "A1",
+        "got_arm": "A4",
+        "D": 10,
+        "kpis": {
+          "cd_mean": {
+            "ref": 1.6143262481245584,
+            "got": 1.6423615055096823,
+            "delta_pct": 1.7366537537064668,
+            "within_15pct": true
+          },
+          "cl_amp": {
+            "ref": 0.6579248352005606,
+            "got": 0.556625096634633,
+            "delta_pct": -15.396855863488955,
+            "within_15pct": false
+          },
+          "st_fft": {
+            "ref": 0.16899580031695963,
+            "got": 0.1717673074998151,
+            "delta_pct": 1.6399858325812633,
+            "within_15pct": true
+          }
+        }
+      },
+      {
+        "comparison": "OSS kernel cross-check (collision + streaming)",
+        "ref": "Maarten-vd-Sande/lbm@573a01c (executed source)",
+        "got": "TensorLBM collide_mrt / stream",
+        "kpis": {
+          "k1_collision_rel_L2": {
+            "ref": 1.0,
+            "got": NaN,
+            "delta_pct": NaN,
+            "within_15pct": true
+          },
+          "k2_streaming_rel_L2": {
+            "ref": 1.0,
+            "got": NaN,
+            "delta_pct": NaN,
+            "within_15pct": true
+          }
+        }
+      },
+      {
+        "comparison": "A3(TRT magic Lambda) stability",
+        "ref_arm": "A3",
+        "D": 10,
+        "status": "blowup",
+        "fail_step": 600,
+        "total_steps_planned": 21259,
+        "reason": "non_finite_population"
+      },
+      {
+        "comparison": "A5(TRT clamped Lambda) stability",
+        "ref_arm": "A5",
+        "D": 10,
+        "status": "blowup",
+        "fail_step": 5800,
+        "total_steps_planned": 21259,
+        "reason": "non_finite_population"
+      }
+    ],
+    "n_comparisons": 5
+  },
+  "figures": [
+    {
+      "name": "kpi_comparison",
+      "caption": "KPI comparison: A1(ref) vs A2(BGK) vs A4(MRT no sponge) at D=10"
+    },
+    {
+      "name": "delta_vs_ref",
+      "caption": "Delta vs A1 reference: green = within 15%, red = outside"
+    }
+  ],
+  "repro_cmd": "python3 benchmarks/xval_method_selection_bench.py --smoke && python3 xval/benchmark_method_selection/run_round2_entry.py --rung 10 && python3 xval/benchmark_method_selection/analyze_round2.py && python3 xval/benchmark_method_selection/benchmark_l4.py"
+}
