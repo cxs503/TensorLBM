@@ -10,7 +10,7 @@ executing code:
     order — the pre-stream order reverses the sign),
   * the two arms do not disagree by more than 50 % at D=6 (guards against the
     harness manufacturing a method difference),
-  * the arm table is complete and self-consistent (A1..A5 defined, no duplicates),
+  * the arm table is complete and self-consistent (A1..A6 defined, no duplicates),
   * the executed-OSS-source kernel cross-check agrees to float32 round-off
     (skipped when the OSS checkout is absent).
 """
@@ -32,11 +32,14 @@ from run_arm import ARMS  # noqa: E402
 
 
 def test_arm_table_defined():
-    assert set(ARMS) == {"A1", "A2", "A3", "A4", "A5"}
+    """Round-2 arm table: A1..A6 with the 2x2 factorial {MRT,BGK}x{sponge on,off}."""
+    assert set(ARMS) == {"A1", "A2", "A3", "A4", "A5", "A6"}
     # A1 and A4 differ only in the sponge, A4 and A2 only in the collision model
     assert ARMS["A1"]["collision"] == ARMS["A4"]["collision"] == "mrt"
     assert ARMS["A1"]["sponge"] is True and ARMS["A4"]["sponge"] is False
     assert ARMS["A2"]["collision"] == "bgk" and ARMS["A2"]["sponge"] is False
+    # A6 completes the 2x2 factorial: BGK + sponge
+    assert ARMS["A6"]["collision"] == "bgk" and ARMS["A6"]["sponge"] is True
 
 
 def test_smoke_two_selections_finite_positive_drag(tmp_path):
