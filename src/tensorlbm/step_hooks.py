@@ -23,6 +23,15 @@ ported onto TensorLBM's torch conventions:
 
   with ``M <= 1`` enforced (a cell belongs to at most one BC).
 
+A third, round-2 addition generalises the mask from a binary indicator to a
+**solid fraction**: :func:`partial_cell_layer` implements the Noble-Torczynski
+(1998) partially saturated cell, which uses the normalised weight
+``B = eps_s (tau-1/2) / ((1-eps_s) + (tau-1/2))`` and reflects post-collision
+populations, so a wall may sit at a sub-cell position.  A naive float mask fed
+to the ``bounce`` layer (upstream transplanted verbatim) also accepts partial
+values, but weights the reflection by ``eps_s`` instead of ``B``; the two are
+compared in the benchmark.
+
 Two porting decisions are deliberate and are measured in
 ``benchmarks/xval_per_step_hook_mask_blend``:
 
@@ -56,14 +65,17 @@ __all__ = [
     "equilibrium_layer",
     "layer_populations",
     "masked_step",
+    "layer_weight",
     "moving_bounce_layer",
+    "partial_cell_layer",
+    "partial_cell_weight",
     "solve_with_hooks",
     "stationary_bounce_layer",
     "tables_for",
     "velocity_ramp_hook",
 ]
 
-KINDS = ("bounce", "moving", "equilibrium")
+KINDS = ("bounce", "moving", "equilibrium", "partial")
 
 # --------------------------------------------------------------------- tables
 @dataclass(frozen=True)
@@ -113,6 +125,11 @@ class BoundaryLayer:
     * a tensor with trailing axis ``dim`` and the field's spatial shape, or
     * a callable ``state -> velocity`` (this is how a per-step setup hook feeds
       a time-dependent wall/lid velocity into the BC).
+
+    ``kind="partial"`` reinterprets ``mask`` as the **solid fraction** ``eps_s``
+    of a partially saturated cell and needs ``tau``: the blend weight is then the
+    Noble-Torczynski weight :func:`partial_cell_weight` instead of the raw mask,
+    and the reflected populations are the *post-collision* ones.
     """
 
     name: str
@@ -120,12 +137,29 @@ class BoundaryLayer:
     kind: str = "bounce"
     velocity: Any = None
     density: Any = 1.0
+    tau: float | None = None
+    reflect: str = "post"
 
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
             raise ValueError(f"unknown boundary kind {self.kind!r}; expected one of {KINDS}")
         if self.kind in ("moving", "equilibrium") and self.velocity is None:
             raise ValueError(f"boundary layer {self.name!r} of kind {self.kind!r} needs a velocity")
+        if self.kind == "partial":
+            if self.tau is None:
+                raise ValueError(
+                    f"boundary layer {self.name!r} of kind 'partial' needs a relaxation time tau "
+                    "(the Noble-Torczynski weight depends on it)"
+                )
+            if not float(self.tau) > 0.5:
+                raise ValueError(
+                    f"partial layer {self.name!r} needs tau > 0.5, got {self.tau}"
+                )
+            if self.reflect not in ("pre", "post"):
+                raise ValueError(
+                    f"partial layer {self.name!r}: reflect must be 'pre' or 'post', "
+                    f"got {self.reflect!r}"
+                )
         m = self.mask
         if not isinstance(m, torch.Tensor):
             raise TypeError(f"mask of layer {self.name!r} must be a torch.Tensor")
@@ -160,6 +194,59 @@ def equilibrium_layer(
 ) -> BoundaryLayer:
     """Dirichlet velocity BC by equilibrium substitution on the masked cells."""
     return BoundaryLayer(name=name, mask=mask, kind="equilibrium", velocity=velocity, density=density)
+
+
+def partial_cell_layer(
+    name: str,
+    solid_fraction: torch.Tensor,
+    tau: float,
+    velocity: Any = None,
+    *,
+    reflect: str = "post",
+) -> BoundaryLayer:
+    """Partially saturated cell (Noble & Torczynski 1998) as a mask layer.
+
+    ``solid_fraction`` is ``eps_s`` in [0, 1] -- the fraction of the cell volume
+    occupied by solid, i.e. a *sub-cell* wall position, which the binary
+    ``bounce`` layer cannot express.  The reflected populations are the
+    post-collision ones and the blend weight is
+    :func:`partial_cell_weight`, not ``eps_s``.
+    """
+    return BoundaryLayer(
+        name=name,
+        mask=solid_fraction,
+        kind="partial",
+        velocity=velocity,
+        tau=float(tau),
+        reflect=reflect,
+    )
+
+
+def partial_cell_weight(solid_fraction: torch.Tensor, tau: float) -> torch.Tensor:
+    """Noble-Torczynski blend weight ``B`` for a partially saturated cell.
+
+    ``B = eps_s (tau - 1/2) / ((1 - eps_s) + (tau - 1/2))``
+
+    The limits are the reason the model is usable as a generalisation of
+    bounce-back: ``eps_s = 0`` gives ``B = 0`` (pure fluid collision) and
+    ``eps_s = 1`` gives ``B = 1`` (pure bounce-back, bit-wise the ``bounce``
+    layer).  Using ``eps_s`` itself as the blend weight -- what a naive float
+    mask blend does -- ignores the ``(1 - eps_s)`` normalisation of the fluid
+    part and therefore misplaces the wall for ``0 < eps_s < 1``.
+    """
+    b = 1.0 - solid_fraction
+    inv_tau = float(tau) - 0.5
+    if not inv_tau > 0.0:
+        raise ValueError(f"partial_cell_weight needs tau > 0.5, got {tau}")
+    return solid_fraction * inv_tau / (b + inv_tau)
+
+
+def layer_weight(layer: BoundaryLayer, f: torch.Tensor) -> torch.Tensor:
+    """Per-cell blend weight of ``layer`` (``(1, *spatial)``), mask or ``B``."""
+    m = _mask_like(layer.mask, f)
+    if layer.kind == "partial":
+        return partial_cell_weight(m, float(layer.tau))
+    return m
 
 
 # ------------------------------------------------------------------ internals
@@ -211,18 +298,31 @@ def layer_populations(
     *,
     tables: TableSet | None = None,
     state: dict[str, Any] | None = None,
+    f_post: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Candidate populations ``f_bc`` that this layer would install on its mask."""
+    """Candidate populations ``f_bc`` that this layer would install on its mask.
+
+    ``f_pre`` is the pre-collision (post-streaming) state, which is what
+    upstream's ``CollideSC`` reflects.  ``kind="partial"`` reflects the
+    post-collision state ``f_post`` instead, as the Noble-Torczynski derivation
+    requires; pass it explicitly or it falls back to ``f_pre``.
+    """
     tables = tables or tables_for(f_pre)
     reversed_pop = f_pre[tables.opposite.to(f_pre.device)]
     if layer.kind == "bounce":
         return reversed_pop
+    if layer.kind == "partial":
+        base = f_pre if (layer.reflect == "pre" or f_post is None) else f_post
+        reversed_post = base[tables.opposite.to(base.device)]
+        if layer.velocity is None:
+            return reversed_post
     w = tables.weights.to(dtype=f_pre.dtype, device=f_pre.device)
     wshape = [w.shape[0]] + [1] * (f_pre.ndim - 1)
     velocity = _resolve(layer.velocity, state, f_pre)
     cu = _velocity_kernel(velocity, tables, f_pre)
-    if layer.kind == "moving":
-        return reversed_pop + 6.0 * w.view(*wshape) * cu.reshape(wshape)
+    if layer.kind in ("moving", "partial"):
+        base_rev = reversed_pop if layer.kind == "moving" else reversed_post
+        return base_rev + 6.0 * w.view(*wshape) * cu.reshape(wshape)
     # kind == "equilibrium": feq(rho, u) with cs^2 = 1/3 and dx = dt = 1
     u = _as_velocity_tensor(velocity, f_pre, tables.dim)
     uu = (u * u).sum(dim=-1) if u.ndim > 1 else (u * u).sum()
@@ -265,7 +365,10 @@ def compose_masked_boundaries(
     if not layers:
         return f_post_collision
     tables = tables or tables_for(f_pre_collision)
-    coverage = blend_coverage(layers, f_post_collision)
+    weights = [layer_weight(layer, f_post_collision) for layer in layers]
+    coverage = weights[0].clone() if weights else f_post_collision.new_zeros(())
+    for w in weights[1:]:
+        coverage = coverage + w
     if strict:
         worst = float(coverage.max()) if coverage.numel() else 0.0
         if worst > 1.0 + overlap_tolerance:
@@ -275,10 +378,13 @@ def compose_masked_boundaries(
                 "give each cell to at most one boundary layer or pass strict=False"
             )
     out = f_post_collision * (1.0 - coverage)
-    for layer in layers:
-        m = _mask_like(layer.mask, f_post_collision)
-        out = out + m * layer_populations(
-            layer, f_pre_collision, tables=tables, state=state
+    for layer, weight in zip(layers, weights):
+        out = out + weight * layer_populations(
+            layer,
+            f_pre_collision,
+            tables=tables,
+            state=state,
+            f_post=f_post_collision,
         )
     return out
 

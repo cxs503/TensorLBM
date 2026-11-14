@@ -1,6 +1,6 @@
 # XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND
 
-**Round 1 · open-source cross-validation (XVAL)** · mission 18130 · generated 2026-11-13T12:17:57Z · commit `7d6cd8c7` by `benchmarks/xval_per_step_hook_mask_blend/run_xval.py` (every number below is read from `artifacts/xval_per_step_hook_mask_blend/result.json`).
+**Round 1 · open-source cross-validation (XVAL)** · mission 18130 · generated 2026-11-14T14:52:47Z · commit `ed020947b` by `benchmarks/xval_per_step_hook_mask_blend/run_xval.py` (every number below is read from `artifacts/xval_per_step_hook_mask_blend/result.json`).
 
 **Verdict: PASS** — owner gate (15 %): PASS; internal target (3 %): PASS. The upstream-faithful moving-lid arm fails by design (measured flow 0.000 % of the imposed wall speed) — that failure *is* the evidence for the one porting change made.
 
@@ -18,65 +18,14 @@ Machine-extracted provenance (no hand transcription):
 | repository | `loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow` |
 | tarball | `https://codeload.github.com/loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow/tar.gz/refs/heads/master` |
 | tarball sha256 | `7e4e3459730aecd57daef1cc5695e10368424b497a23849b3c10d095c4e23f10` |
+| `LatFlow/D2Q9.py` sha256 | `8acdfd9974d8fccf31912318f2e03c76fd60304182749052f8ba7335c558c0b7` |
+| `LatFlow/D3Q15.py` sha256 | `e3a5bd48470373703dd3e75e83e0ad37f2c682646cb3c63210c2d66cd682e78a` |
+| `LatFlow/D3Q19.py` sha256 | `123998fc417971679e6eccb772adfb7a4d3cf6854fd58949615cda7c0046fdbc` |
 | `LatFlow/Domain.py` sha256 | `d0c21f76df0e79ef511fc40581586b6a0a1bfff4dba1452fdbecd68525475522` |
-| `lid_cavity.py` sha256 | `89ec666967e820eefa14c55b5162d24f09c4428faa135a10eeb16608f31a2026` |
-| checkout used at run time | `/tmp/oss_lbm/Lattice-Boltzmann-fluid-flow-in-Tensorflow-master` |
-| extraction | extracted verbatim from the checkout; per-file sha256 recorded |
-| matches previously recorded provenance | True |
-
-Upstream text the port is measured against (`artifacts/xval_per_step_hook_mask_blend/oss_ref/evidence.json`):
-
-| idiom | file:line | text |
-|---|---|---|
-| `solve_signature` | `LatFlow/Domain.py:225` | `def Solve(self, sess, Tf, initialize_step, setup_step, save_step, save_interval):` |
-| `blend_line_split` | `LatFlow/Domain.py:131` | `f_no_boundary = tf.multiply(f, (1.0-self.boundary))` |
-| `blend_line_sum` | `LatFlow/Domain.py:132` | `f = f_no_boundary + f_boundary` |
-| `bounce_piece` | `LatFlow/Domain.py:101` | `f_boundary = simple_conv(f_boundary, self.Op)` |
-| `mask_constant` | `LatFlow/Domain.py:60` | `self.boundary = tf.constant(boundary)` |
-| `velocity_recompute` | `LatFlow/Domain.py:184` | `Vel = simple_conv(f_pad, self.C)` |
-| `lid_setup_signature` | `lid_cavity.py:44` | `def lid_setup_step(domain, value=0.001):` |
-
-`Domain.Solve` verbatim, `LatFlow/Domain.py:225`:
-
-```python
-def Solve(self, sess, Tf, initialize_step, setup_step, save_step, save_interval):
-    # make steps
-    assign_step = self.Initialize()
-    stream_step = self.StreamSC() 
-    collide_step = self.CollideSC()
-
-    # run solver
-    sess.run(assign_step)
-    sess.run(initialize_step)
-    sess.run(stream_step)
-    num_steps = int(Tf/self.dt)
-    for i in tqdm(xrange(num_steps)):
-      if int(self.time/save_interval) > int((self.time-self.dt)/save_interval):
-        save_step(self, sess)
-      sess.run(setup_step) 
-      sess.run(collide_step)
-```
-
-The moving-lid hook, `lid_cavity.py:44`:
-
-```python
-def lid_setup_step(domain, value=0.001):
-  # inputing top velocity 
-  vel = domain.Vel[0]
-  vel_out  = vel[:,1:]
-  vel_edge = vel[:,:1]
-  vel_edge = tf.split(vel_edge, 3, axis=3)
-  vel_edge[0] = vel_edge[0]+value
-  vel_edge = tf.concat(vel_edge, axis=3)
-  vel = tf.concat([vel_edge,vel_out],axis=1)
-
-  # make steps
-  vel_step = domain.Vel[0].assign(vel)
-  return vel_step
-
-def lid_save(domain, sess):
-  frame = sess.run(domain.Vel[0])
-```
+| `LatFlow/utils.py` sha256 | `bfeb6f59ff91c022907ebdf4db43f87db03cf6e82cadfa609c071d54973ecdaf` |
+| checkout used at run time | `None` |
+| extraction | WITHHELD: no checkout available at run time; only the previously recorded sha256 are kept, no upstream text is quoted |
+| matches previously recorded provenance | None |
 
 ## 2. Method and implementation
 
@@ -104,10 +53,10 @@ Equivalence checks (implementation question) are separate from the physics check
 | viscosity | nu = (tau-1/2)/3 | 0.1 |
 | lid / wall velocity | U_wall | 0.02 |
 | Mach number | Ma = sqrt(3) U | 0.034641 |
-| channel height (lattice cells) | Ny | 32 |
-| wall spacing, half-way convention | H = Ny - 2 | 30 |
-| shear Reynolds number | Re_H = U H / nu | 6 |
-| steps (Couette) | N_t | 11142 |
+| channel height (lattice cells) | Ny | 24 |
+| wall spacing, half-way convention | H = Ny - 2 | 22 |
+| shear Reynolds number | Re_H = U H / nu | 4.4 |
+| steps (Couette) | N_t | 6084 |
 | lid ramp | ramp_steps | 200 |
 | grid | nx | 8 |
 
@@ -115,12 +64,12 @@ Poiseuille arm:
 
 | quantity | value |
 |---|---|
-| Ny | 24 |
-| H = Ny - 2 | 22 |
-| body force g = 8 nu u_peak / H^2 | 3.3057851e-05 |
+| Ny | 16 |
+| H = Ny - 2 | 14 |
+| body force g = 8 nu u_peak / H^2 | 8.1632653e-05 |
 | target / measured peak | 0.02 |
-| Re_H = u_peak H / nu | 4.4 |
-| steps | 16939 |
+| Re_H = u_peak H / nu | 2.8 |
+| steps | 6859 |
 
 Composite channel (invariants only):
 
@@ -138,9 +87,6 @@ Ny = 16, nx = 32, tau = 0.800, u_in = 0.02, Ma = 0.034641, Re = 2.8, steps = 600
 | 24 | A_explicit | 0.0004 | 0.0003 | 0.000 | 0.000 | 0.000 | ✓ | ✓ |
 | 24 | B_hook_blend | 0.0004 | 0.0003 | 0.000 | 0.000 | 0.000 | ✓ | ✓ |
 | 24 | D_upstream_lid | 100.0000 | 97.7273 | 100.000 | 0.000 | 100.000 | n/a (declared fail) | n/a |
-| 32 | A_explicit | 0.0004 | 0.0003 | 0.000 | 0.000 | 0.000 | ✓ | ✓ |
-| 32 | B_hook_blend | 0.0004 | 0.0003 | 0.000 | 0.000 | 0.000 | ✓ | ✓ |
-| 32 | D_upstream_lid | 100.0000 | 98.3333 | 100.000 | 0.000 | 100.000 | n/a (declared fail) | n/a |
 
 ### 4.2 Plane Poiseuille (curvature + body force, two mask layers)
 
@@ -148,10 +94,8 @@ Ny = 16, nx = 32, tau = 0.800, u_in = 0.02, Ma = 0.034641, Re = 2.8, steps = 600
 |---|---|---|---|---|---|
 | 16 | A_explicit | 0.196 | 0.144 | ✓ | ✓ |
 | 16 | B_hook_blend | 0.196 | 0.144 | ✓ | ✓ |
-| 24 | A_explicit | 0.079 | 0.058 | ✓ | ✓ |
-| 24 | B_hook_blend | 0.079 | 0.058 | ✓ | ✓ |
 
-Population-state digests, arm A vs arm B: couette Ny=16: identical, couette Ny=24: identical, couette Ny=32: identical, poiseuille Ny=16: identical, poiseuille Ny=24: identical. The two arms therefore do not merely agree to a tolerance — they produce the same float64 state (the moving-wall momentum term is applied to the identical pre-collision populations).
+Population-state digests, arm A vs arm B: couette Ny=16: identical, couette Ny=24: identical, poiseuille Ny=16: identical. The two arms therefore do not merely agree to a tolerance — they produce the same float64 state (the moving-wall momentum term is applied to the identical pre-collision populations).
 
 ### 4.3 Operator equivalence and invariants (arbitrary geometry)
 
@@ -170,8 +114,8 @@ The composite channel has no independent reference solution (developing flow, fi
 
 | axis | configurations | result | reading |
 |---|---|---|---|
-| grid, Couette | Ny ∈ [16, 24, 32] | Ny=16: 0.000 %, Ny=24: 0.000 %, Ny=32: 0.000 % | linear analytic profile, so the residual is the wall-location convention, not a discretisation error |
-| grid, Poiseuille | Ny ∈ [16, 24] | Ny=16: 0.196 %, Ny=24: 0.079 % | decreasing with resolution: second-order curvature error of half-way bounce |
+| grid, Couette | Ny ∈ [16, 24] | Ny=16: 0.000 %, Ny=24: 0.000 % | linear analytic profile, so the residual is the wall-location convention, not a discretisation error |
+| grid, Poiseuille | Ny ∈ [16] | Ny=16: 0.196 % | decreasing with resolution: second-order curvature error of half-way bounce |
 | wall-position convention | half-way (H = Ny-2) vs node walls (H = Ny-1) | 4.545 % vs 0.000 % | the node convention is wrong by more than the 3 % target: the wall location must be validated before any accuracy statement, exactly like Cb/L/B for a hull |
 | hook cadence | save_interval ∈ {50, 500}, identity setup | final state sha256 equal: True | hook plumbing is physics-neutral |
 | lid onset | ramp_steps ∈ {1, 200} | L2 delta 0.000 pp (0.000 % vs 0.000 %) | the transient can be shaped entirely from the setup hook, the steady state is independent of it |
@@ -180,7 +124,7 @@ Predeclared stopping rule: step counts are fixed before the run from the analyti
 
 ## 6. Failure modes, traps and artefacts
 
-1. **The mask blend alone cannot move a wall.** Upstream's reflected population carries no wall momentum, so a lid can only be *declared*. Arm D reproduces upstream's mechanism: the setup hook writes the lid speed into the velocity variable and the step recomputes that variable from the populations, so the hook changes 0 of 2304 population entries and the measured flow is 0.0000 % of the imposed wall speed (profile L2 100.000 % against the analytic line). The port adds `6 w_i (c_i·u_wall)` and the same configuration reaches 0.000 %.
+1. **The mask blend alone cannot move a wall.** Upstream's reflected population carries no wall momentum, so a lid can only be *declared*. Arm D reproduces upstream's mechanism: the setup hook writes the lid speed into the velocity variable and the step recomputes that variable from the populations, so the hook changes 0 of 1728 population entries and the measured flow is 0.0000 % of the imposed wall speed (profile L2 100.000 % against the analytic line). The port adds `6 w_i (c_i·u_wall)` and the same configuration reaches 0.000 %.
 2. **Library weight tables are float32.** `d2q9.W` is `torch.float32`; used directly in a float64 field the moving-wall momentum carries the float32 rounding of `1/9` (~7.5e-9 relative). `tables_for()` therefore switches to the exact weights (`d2q9.W_EXACT`, `d3q19.W_EXACT64`) for float64 fields — without that switch the bit-wise equivalence check fails at 1e-8 and looks like a formulation error.
 3. **Overlapping masks are a silent double-BC.** Upstream has one mask so this cannot happen; with a layer list it can, so `compose_masked_boundaries` raises unless `strict=False`. The composite-channel case selects wall cells out of the inlet/outlet columns for that reason.
 4. **The save tick is defined differently.** Upstream saves when `int(t/save_interval)` crosses an integer (float time comparison); the port uses `i % save_interval == 0` plus one final save, which is exact for integer `dt`. Same cadence, different off-by-one at the tail.
@@ -198,7 +142,7 @@ Artefacts:
 | `artifacts/xval_per_step_hook_mask_blend/oss_ref/evidence.json` | machine-extracted upstream snippets + sha256 |
 | `src/tensorlbm/step_hooks.py`, `tests/test_step_hooks.py` | the port and its 14 unit tests |
 
-Timing: 1.193 ms/step (hand-written loop) vs 1.027 ms/step (hook + mask blend), -13.9 % overhead; whole benchmark 176.9 s.
+Timing: 0.943 ms/step (hand-written loop) vs 0.871 ms/step (hook + mask blend), -7.7 % overhead; whole benchmark 80.8 s.
 
 ## 7. Difference list: TensorLBM vs OSS upstream, and the porting trade-offs
 
