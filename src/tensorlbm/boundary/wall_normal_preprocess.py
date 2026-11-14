@@ -33,6 +33,7 @@ from .wall_normal_iso8 import (
     DEFAULT_OVERLAP,
     in_physical_domain,
     wall_normal_table,
+    well_posed_mask,
 )
 
 __all__ = ["WallNormalTable", "build_wall_normal_table"]
@@ -47,12 +48,20 @@ class WallNormalTable:
         normals:  ``(N, 3)`` float64, unit normals pointing **out of the solid**.
         grad_mag: ``(N,)`` float64, |grad| of the smoothed indicator (pre-normalisation).
         n_nodes:  number of rows.
+        well_posed: ``(N,)`` bool, True where the normal is a property of the
+            geometry rather than of the ghost padding -- see
+            :func:`tensorlbm.boundary.wall_normal_iso8.well_posed_mask`.  Rows
+            flagged False (the wall meets a non-periodic domain face inside the
+            ``2 + n_smooth`` support) are kept by default; drop them with
+            ``drop_ill_posed=True`` when a downstream condition cannot tolerate
+            a padding-defined normal.
     """
 
     indices: np.ndarray
     normals: np.ndarray
     grad_mag: np.ndarray
     n_nodes: int
+    well_posed: np.ndarray | None = None
 
     def as_arrays(self) -> tuple[np.ndarray, np.ndarray]:
         """``(indices, normals)`` for direct use in a boundary-condition kernel."""
@@ -69,6 +78,7 @@ def build_wall_normal_table(
     overlap: int = DEFAULT_OVERLAP,
     outward: bool = True,
     physical_only: bool = True,
+    drop_ill_posed: bool = False,
 ) -> WallNormalTable:
     """Build the wall-normal table for a voxelised solid mask.
 
@@ -105,12 +115,19 @@ def build_wall_normal_table(
     idx = raw["indices"] - 1                      # Fortran 1-based -> 0-based
     nrm = -raw["normals"] if outward else raw["normals"]
     mag = raw["grad_mag"]
+    keep = np.ones(len(idx), dtype=bool)
     if physical_only:
-        keep = in_physical_domain(raw["indices"], walls.shape)
-        idx, nrm, mag = idx[keep], nrm[keep], mag[keep]
+        keep &= in_physical_domain(raw["indices"], walls.shape)
+    ok = well_posed_mask(raw["indices"], walls, n_smooth=n_smooth,
+                         periodic=periodic, domain_walls=domain_walls)
+    if drop_ill_posed:
+        # an ill-posed row can also lie outside the physical box; require both
+        keep &= ok
+    idx, nrm, mag, ok = idx[keep], nrm[keep], mag[keep], ok[keep]
     return WallNormalTable(
         indices=idx.astype(np.int64),
         normals=np.ascontiguousarray(nrm),
         grad_mag=np.ascontiguousarray(mag),
         n_nodes=int(len(idx)),
+        well_posed=ok,
     )
