@@ -1,0 +1,106 @@
+{
+ "jobs": {
+  "cj3032": {
+   "bytes": 1673,
+   "mtime": 1794689678.528,
+   "rc": 1,
+   "node": "n330",
+   "head": "local-tree",
+   "job_id_field": "cj3032",
+   "has_R2RUN_lines": false,
+   "tail_chars": 1561
+  },
+  "cj3062": {
+   "bytes": 8816,
+   "mtime": 1794691401.024,
+   "rc": 0,
+   "node": "n330",
+   "head": "local-tree",
+   "job_id_field": "cj3062",
+   "has_R2RUN_lines": false,
+   "tail_chars": 8000
+  },
+  "cj3085": "MISSING (no log on disk)",
+  "cj3087": "MISSING (no log on disk)"
+ },
+ "summary_lines": {
+  "cj3032": {
+   "tensorlbm_koerner_a16_tau1": {
+    "Z_cell_pct": 28.16,
+    "Z_sub05_pct": 27.39,
+    "u_max": 0.2377,
+    "inv_drift_pct": 0.0322,
+    "wall_s": 54.62
+   },
+   "tensorlbm_koerner_a24_tau1": {
+    "Z_cell_pct": 16.67,
+    "Z_sub05_pct": 15.88,
+    "u_max": 0.2406,
+    "inv_drift_pct": 0.0585,
+    "wall_s": 104.04
+   },
+   "tensorlbm_koerner_a32_tau1": {
+    "Z_cell_pct": 13.81,
+    "Z_sub05_pct": 14.66,
+    "u_max": 0.2442,
+    "inv_drift_pct": 0.0531,
+    "wall_s": 269.9
+   },
+   "tensorlbm_koerner_a48_tau1": {
+    "Z_cell_pct": 28.05,
+    "Z_sub05_pct": 27.37,
+    "u_max": 0.2517,
+    "inv_drift_pct": 0.0783,
+    "wall_s": 733.93
+   },
+   "tensorlbm_koerner_a64_tau1": {
+    "Z_cell_pct": 42.86,
+    "Z_sub05_pct": 42.19,
+    "u_max": 0.2587,
+    "inv_drift_pct": 0.0991,
+    "wall_s": 1398.86
+   },
+   "oss_port_a48_tau1": {
+    "Z_cell_pct": 79.37,
+    "Z_sub05_pct": 70.05,
+    "u_max": 0.8165,
+    "inv_drift_pct": 609.7923,
+    "wall_s": 561.79
+   },
+   "tensorlbm_koerner_a32_tau0.6": {
+    "Z_cell_pct": 66.62,
+    "Z_sub05_pct": 65.14,
+    "u_max": 0.253,
+    "inv_drift_pct": 0.0665,
+    "wall_s": 268.69
+   },
+   "tensorlbm_koerner_a32_tau0.8": {
+    "Z_cell_pct": 25.67,
+    "Z_sub05_pct": 24.76,
+    "u_max": 0.2475,
+    "inv_drift_pct": 0.07,
+    "wall_s": 215.09
+   },
+   "tensorlbm_koerner_a32_tau1.2": {
+    "Z_cell_pct": 15.96,
+    "Z_sub05_pct": 16.32,
+    "u_max": 0.2421,
+    "inv_drift_pct": 0.0768,
+    "wall_s": 181.49
+   },
+   "tensorlbm_koerner_a32_tau1.4": {
+    "Z_cell_pct": 18.12,
+    "Z_sub05_pct": 17.07,
+    "u_max": 0.2406,
+    "inv_drift_pct": 0.0592,
+    "wall_s": 215.14
+   }
+  },
+  "cj3062": {}
+ },
+ "series_runs": {
+  "cj3032": {},
+  "cj3062": {}
+ },
+ "recomputed": {}
+}
