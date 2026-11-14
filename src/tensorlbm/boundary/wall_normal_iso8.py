@@ -75,6 +75,8 @@ __all__ = [
     "iso8_gradient",
     "iso8_divergence",
     "in_physical_domain",
+    "support_radius",
+    "well_posed_mask",
 ]
 
 # --------------------------------------------------------------------------- #
@@ -455,6 +457,110 @@ def wall_normal_table(walls: np.ndarray, *, periodic=(0, 0, 0),
         "n_fluid_boundary": int(len(fidx)),
         "n_solid_boundary": int(len(sidx)),
     }
+
+
+# --------------------------------------------------------------------------- #
+# well-posedness of a table row (where the normal can be trusted at all)
+# --------------------------------------------------------------------------- #
+
+#: max ``|h|`` component over the 34 ISO8 pairs (the gradient's own reach)
+GRADIENT_RADIUS = 2
+
+
+def support_radius(n_smooth: int | None = None) -> int:
+    """Reach, in cells, of one table entry: ``GRADIENT_RADIUS + n_smooth``.
+
+    The smoothed indicator at a node is built from the raw mask within
+    ``n_smooth`` cells (one cell per D3Q27 sweep) and the ISO8 gradient then
+    reaches ``GRADIENT_RADIUS`` cells further, so the whole support has radius
+    ``2 + n_smooth``.  Every claim about a normal is a claim about the mask
+    inside that ball -- see :func:`well_posed_mask`.
+    """
+    n = DEFAULT_SMOOTH_ITERATIONS if n_smooth is None else int(n_smooth)
+    return GRADIENT_RADIUS + n
+
+
+def _dilate(mask: np.ndarray, radius: int, axes: Sequence[int] = (0, 1, 2)) -> np.ndarray:
+    """Binary dilation by an L-infinity ball: ``out[p] = any(mask[p + d], |d|_inf <= r)``.
+
+    Separable: ``max`` over the three axes one after the other.
+    """
+    out = np.asarray(mask, dtype=bool).copy()
+    for ax in axes:
+        if radius <= 0:
+            continue
+        acc = out.copy()
+        for step in range(1, radius + 1):
+            for sign in (1, -1):
+                off = [0, 0, 0]
+                off[ax] = sign * step
+                acc |= _shifted(out, off).astype(bool)
+        out = acc
+    return out
+
+
+def well_posed_mask(indices: np.ndarray, walls: np.ndarray, *,
+                    n_smooth: int | None = None,
+                    periodic: Sequence[int] = (0, 0, 0),
+                    domain_walls: Sequence[int] = (0, 0, 0, 0, 0, 0)) -> np.ndarray:
+    """Select the table rows whose normal is the wall normal of *this* geometry.
+
+    A row is **ill-posed** when its support (radius :func:`support_radius`) reaches
+    across a non-periodic domain face *and* the wall itself meets that face
+    within the support.  There the ghost band holds only a plane-wise replication
+    of the face plane (:func:`_pad_solid`), i.e. the solid is continued *normal to
+    the face*; when the wall arrives at the face at an angle that continuation is
+    not the wall's own continuation, so the smoothed level set -- and with it the
+    normal -- is a property of the padding, not of the geometry.  Rows far from
+    any face, and rows near a face the wall does not reach (all-fluid ghost band,
+    where the replication is exact), stay well posed.  Domain faces flagged as
+    walls always make their band ill-posed: the normal of a wall-to-wall corner
+    is not single valued.
+
+    Args:
+        indices: ``(N, 3)`` node indices in the *Fortran 1-based* convention used
+            by :func:`wall_normal_table`.
+        walls: ``(nx, ny, nz)`` integer solid mask (1 = solid), same array the
+            table was built from.
+        n_smooth: smoothing iterations the table was built with.
+        periodic: per-axis periodic flags.
+        domain_walls: ``(xmin,xmax,ymin,ymax,zmin,zmax)`` wall flags.
+
+    Returns:
+        ``(N,)`` boolean array, True = the normal is well posed.
+    """
+    walls = np.asarray(walls)
+    idx = np.asarray(indices)
+    r = support_radius(n_smooth)
+    n = walls.shape
+    solid = walls == 1
+    # rows listed in the upstream overlap band lie outside the physical box;
+    # they have no geometry of their own to be well posed about
+    inside = np.all((idx >= 1) & (idx <= np.asarray(n)[None, :]), axis=1)
+    ok = inside.copy()
+    safe = np.clip(idx - 1, 0, np.asarray(n)[None, :] - 1)
+    for ax in range(3):
+        if periodic[ax]:
+            continue
+        tangential = tuple(a for a in range(3) if a != ax)
+        for side in (0, 1):
+            # nodes whose support reaches across this face
+            if side == 0:
+                crossed = (idx[:, ax] - r) <= 0
+                plane = np.take(solid, 0, axis=ax)
+            else:
+                crossed = (idx[:, ax] + r) > n[ax]
+                plane = np.take(solid, n[ax] - 1, axis=ax)
+            if not crossed.any():
+                continue
+            # does the wall meet this face within the tangential support window?
+            if domain_walls[2 * ax + side]:
+                reach = np.ones(n, dtype=bool)          # face is itself a wall
+            else:
+                band = np.broadcast_to(np.expand_dims(plane, ax), n)
+                reach = _dilate(band, r, axes=tangential)
+            ok &= ~(crossed & reach[tuple(safe.T)])
+    return ok
 
 
 def in_physical_domain(indices: np.ndarray, shape: Sequence[int]) -> np.ndarray:
