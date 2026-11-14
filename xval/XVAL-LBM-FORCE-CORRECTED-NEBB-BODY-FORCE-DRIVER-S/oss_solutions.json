@@ -1,0 +1,23 @@
+{
+  "feature_slug": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "method": "Force-corrected NEBB (non-equilibrium bounce-back) wall boundary condition with Guo/EDM body-force driver for D2Q9/D3Q19 LBM Poiseuille channel flow",
+  "source": "TensorLBM (src/tensorlbm/nebb_bodyforce.py, src/tensorlbm/boundary/nebb.py, tools/nebb_bodyforce_xval.py)",
+  "oss_reference": "haimingz/vivsim (JAX, Apache-2.0): lbm/boundary/nebb.py, lbm/boundary/_helpers.py, lbm/forcing/{edm,guo}.py, lbm/basic.py, examples/2d/poiseuille_channel.py",
+  "literature": [
+    "Guo, Z., Zheng, C., & Shi, B. (2002). Discrete lattice effects on the forcing term in the lattice Boltzmann method. Phys. Rev. E, 65, 046308.",
+    "Zou, Q., & He, X. (1997). On pressure and velocity boundary conditions for the lattice Boltzmann method. Phys. Fluids, 9(6), 2315-2324.",
+    "Batchelor, G. K. (1967). An Introduction to Fluid Dynamics, §4.2 (Poiseuille flow).",
+    "Ladd, A. J. C. (1994). Numerical simulations of particulate suspensions via a discretized Boltzmann equation. J. Fluid Mech., 271, 285-309."
+  ],
+  "migration_plan": "Already implemented in TensorLBM. Two arms: (A) D2Q9 NEBB module (tensorlbm.nebb_bodyforce.BodyForceChannel) with force-corrected wall velocity u_wall - F/(2ρ) and shear-reconstruction NEBB kernel; (B) D3Q19 main solver (GPUCorePathSolver) with collide_guo_into + apply_channel_walls (half-way bounce-back). Both validated against closed-form Poiseuille solution.",
+  "validation_status": "PASS (D2Q9: 6e-14 machine precision; D3Q19: 0.31% at ny=10, 0.12% at ny=20; both < 3% ecosystem stretch and < 15% owner threshold)",
+  "key_formulas": {
+    "guo_forcing": "F_i = (1 - 1/(2τ)) · w_i · [3(c_i - u) + 9(c_i·u)c_i] · F",
+    "corrected_wall_velocity": "u_w_corrected = u_w - F/(2ρ_w)",
+    "velocity_correction_bulk": "u_physical = u_macroscopic + F/(2ρ)",
+    "analytic_poiseuille": "u_x(y) = G_x/(2ν) · (y - y₀) · (H - (y - y₀))",
+    "nebb_shear_reconstruction": "f_k = f_k^eq(ρ_w, u_w_corrected) - f_opp^eq(ρ_w, u_w_corrected) + f_opp"
+  },
+  "date": "2026-11-14",
+  "mission": "m19695"
+}
