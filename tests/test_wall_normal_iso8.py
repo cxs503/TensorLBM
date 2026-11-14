@@ -160,3 +160,90 @@ def test_platform_caller_rejects_bad_input():
         build_wall_normal_table(np.zeros((8, 8, 8), float))
     with pytest.raises(ValueError):
         build_wall_normal_table(np.zeros((8, 8, 8), np.int8) + 2)
+
+
+# --------------------------------------------------------------------------- #
+# well-posedness certificate: which rows are a property of the geometry?
+# --------------------------------------------------------------------------- #
+
+def _unit_err(nrm, idx, kind, geom):
+    ref = H.analytic_normals(idx, kind, geom)
+    return np.linalg.norm(nrm - ref, axis=1)
+
+
+def test_well_posed_mask_flat_wall_touches_only_the_faces_the_wall_reaches():
+    n = 24
+    walls = np.zeros((n, n, n), np.int8)
+    walls[: n // 3] = 1                        # solid slab against the x=1 face
+    r = W.support_radius()
+    assert r == W.GRADIENT_RADIUS + W.DEFAULT_SMOOTH_ITERATIONS
+    # probe along x at fixed (j,k): Fortran 1-based indices, as the table reports
+    xs = np.arange(1, n + 1)
+    idx = np.stack([xs, np.full_like(xs, 12), np.full_like(xs, 15)], axis=1)
+    wp = W.well_posed_mask(idx, walls)
+    # the slab fills the x=1 face, so every row whose support reaches it is ill posed
+    near_lo = idx[:, 0] - r <= 0
+    assert near_lo.any() and not wp[near_lo].any()
+    # the x=n face is pure fluid there: the replication is exact and harmless
+    near_hi = idx[:, 0] + r > n
+    assert near_hi.any() and wp[near_hi].all()
+    # rows whose whole support is inside the physical box are unaffected
+    assert wp[(idx[:, 0] - r > 0) & (idx[:, 0] + r <= n)].all()
+
+
+def test_well_posed_mask_flags_rows_outside_the_physical_box():
+    walls = np.zeros((16, 16, 16), np.int8)
+    walls[:8] = 1
+    t = W.wall_normal_table(walls)
+    idx = t["indices"]
+    phys = W.in_physical_domain(idx, walls.shape)
+    wp = W.well_posed_mask(idx, walls)
+    assert phys.sum() < len(idx), "the overlap band should be listed"
+    assert not wp[~phys].any(), "rows outside the box cannot be well posed"
+    # a domain face declared as a wall makes its whole band ill posed
+    wp2 = W.well_posed_mask(idx, walls, domain_walls=(0, 1, 0, 0, 0, 0))
+    assert not wp2[phys & (idx[:, 0] + W.support_radius() > walls.shape[0])].any()
+
+
+def test_well_posed_certificate_tilted_plane():
+    """Every row outside the 15 % band must be ill posed, none inside it."""
+    n, geom = 32, {"normal": (1.0, 1.0, 0.0), "offset": 16.0}
+    walls = H.plane_walls(n, geom["normal"], geom["offset"])
+    t = W.wall_normal_table(walls)
+    idx = t["indices"]
+    phys = W.in_physical_domain(idx, walls.shape)
+    idx, nrm = idx[phys], t["normals"][phys]
+    err = _unit_err(nrm, idx, "plane", geom)
+    wp = W.well_posed_mask(idx, walls)
+    assert wp.sum() > 100 and (~wp).sum() > 100, "both classes must be populated"
+    bad = err >= 0.15
+    assert bad.sum() > 0, "the tilted plane must still expose junction rows"
+    assert not (bad & wp).any(), "a row outside the 15 % band was called well posed"
+    assert err[wp].max() < 0.15, f"well-posed max error {err[wp].max():.3f}"
+
+
+def test_sphere_table_is_fully_well_posed_within_the_band():
+    walls = H.sphere_walls(32, 8.0, (16.2, 15.7, 16.4))
+    t = W.wall_normal_table(walls)
+    idx = t["indices"]
+    phys = W.in_physical_domain(idx, walls.shape)
+    wp = W.well_posed_mask(idx[phys], walls)
+    assert wp.all(), "a sphere inside the box has no wall/face junction"
+    err = _unit_err(t["normals"][phys], idx[phys], "sphere",
+                    {"radius": 8.0, "center": (16.2, 15.7, 16.4)})
+    assert err.max() < 0.15, f"sphere per-row error {err.max():.3f} exceeds 15 %"
+
+
+def test_platform_caller_reports_and_can_drop_ill_posed_rows():
+    from tensorlbm.boundary import build_wall_normal_table
+    n, geom = 24, {"normal": (1.0, 1.0, 0.0), "offset": 12.0}
+    walls = H.plane_walls(n, geom["normal"], geom["offset"])
+    keep = build_wall_normal_table(walls)
+    assert keep.well_posed is not None
+    assert 0 < keep.well_posed.sum() < keep.n_nodes
+    drop = build_wall_normal_table(walls, drop_ill_posed=True)
+    assert drop.n_nodes == int(keep.well_posed.sum())
+    assert drop.well_posed.all()
+    # the surviving rows are exactly the well-posed subset, unchanged
+    assert np.array_equal(drop.indices, keep.indices[keep.well_posed])
+    assert np.array_equal(drop.normals, keep.normals[keep.well_posed])
