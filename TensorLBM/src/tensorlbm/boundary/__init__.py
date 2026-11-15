@@ -9,6 +9,11 @@ from .solver2d import (
     compute_wall_shear_stress,
 )
 from .d2q9 import C2Q9, W2Q9, OPPOSITE_2Q9, CS2_2Q9
+from .zou_he_channel import (
+    zou_he_wall,
+    zou_he_channel,
+    zou_he_column_density_momentum,
+)
 from .inamuro_wetnode import (
     compute_boundary_distance,
     compute_boundary_distance_from_levelset,
@@ -35,6 +40,9 @@ __all__ = [
     "W2Q9",
     "OPPOSITE_2Q9",
     "CS2_2Q9",
+    "zou_he_wall",
+    "zou_he_channel",
+    "zou_he_column_density_momentum",
     "compute_boundary_distance",
     "compute_boundary_distance_from_levelset",
     "apply_inamuro_wetnode",
