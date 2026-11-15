@@ -1,3 +1,12 @@
+> **SUPERSEDED — do not cite these numbers as delivery evidence.**
+> The converged point quoted below (`X1/s = 2.920`, 88 000 steps) came from an artefact that only ever
+> existed on the unmerged branch `agent/m17034` (`f3a211d78`); it is **not** in any delivered commit, and
+> the solver changed afterwards (`cf178e1de`). Board audit `m21802`
+> (`docs/board_audit/m21802/CASE-BACKSTEP-FVM-RE100_m21672_audit.md`, finding F3) flagged this page as an
+> unmarked stale PASS. Round 4 therefore judged the anchor **WITHHELD**, and round 5
+> (`docs/CASE_BACKWARD_STEP_LBM_ROUND5.md`) re-ran the point with the delivered code and committed the
+> artefact under `artifacts/case_backward_step_armaly/h1_re100/`. Cite round 5, not this page.
+
 # CASE-BACKWARD-STEP-LBM · 第 3 轮：首个收敛解落地，Re=100 达标（<15%）
 
 **锚点**：feature_ledger `CASE-BACKWARD-STEP-LBM`（算例池·后台阶再附长度，ref Armaly et al. 1983，容差 <15%）
