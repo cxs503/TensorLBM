@@ -1,0 +1,173 @@
+{
+ "impl_files": [
+  "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/reference_data.py:73-103 (GHIA_RE400 BOUND, provenance=\"BOUND\" at :85; Re100 :67, Re1000 :103)",
+  "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/reference_data.py:131 (interpolate_ghia)",
+  "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/__init__.py:1-50 (exports interpolate_ghia, docstring BOUND)",
+  "TensorLBM/benchmarks/ghia_re400_benchmark.py:40-120 (run_cavity_re400 drives CavitySolver, emits L2/max/rel/extrema)",
+  "TensorLBM/benchmarks/anchors/run_anchors.py:38-87 (witness sha256 + CSV gate), :89-165 (table integrity)",
+  "TensorLBM/benchmarks/anchors/ghia1982_provenance.json (3 Re tables, suspect_entries, witness sha256 3637ef9e…)"
+ ],
+ "entry": "TensorLBM/benchmarks/ghia_re400_benchmark.py:228 main() (n_values=[129,257] hardcoded); TensorLBM/benchmarks/anchors/run_anchors.py main()",
+ "run_artifacts": {
+  "files": [
+   "TensorLBM/artifacts/ghia_re400_comparison.json (sha256 99ae31d3d683f6ad63107ab9ea4c8f522825889c72875f3193fd469e730efe8b; n=33, max_rel_u=7.6721, max_rel_v=5.6606, u_min_rel_err=17.42%, v_min_rel_err=15.85%)",
+   "TensorLBM/artifacts/ghia_re400_report.md (sha256 ac67f229759afa1621d0986cbde01c583c43c23db18f97648d6153b387e2436d; sections ①-⑥ present)"
+  ],
+  "receipt": "NONE for the n=33 sheet. The only cluster receipt is cj3122: rc=1, 'bash: line 1: cd: TensorLBM: No such file or directory' (audit_m21106/evidence/cj3122_receipt.log) — zero simulation steps.",
+  "artifact_not_machine_output": "artifact keys {elapsed_seconds,errors,extrema,n,note,ramp_steps,re,u_lid,use_rlbm} vs run_cavity_re400 return {…,profiles} with no 'note' → hand-shaped",
+  "figures": "none (artifacts/ghia_re400_profiles.png never produced)"
+ },
+ "tests": {
+  "file": "TensorLBM/tests/test_lid_driven_cavity.py",
+  "result": "3 failed, 31 passed in 20.60 s (pytest rerun on merged main; audit_m21106/evidence/pytest_lid_driven_cavity.log)",
+  "failures": [
+   "TestReferenceData::test_transcribed_tables_carry_unverified_provenance — asserts provenance=='UNVERIFIED_OFFLINE' (:108) vs delivered 'BOUND'",
+   "TestReferenceData::test_ghia_re100_data — np.all(GHIA_RE100.u[:7]<0) (:93) false because new table starts at bottom-wall u=0",
+   "TestReferenceData::test_interpolate_ghia — expects u(0.0625)=-0.03717 (:134); corrected Ghia grid gives -0.04192 (-0.03717 is y=0.0547)"
+  ],
+  "new_tests": "none added by the mission; mission result.checks is empty string"
+ },
+ "integration_callers": [
+  "TensorLBM/src/tensorlbm/verification/benchmark_suite.py:187 get_ghia_reference(100.0)",
+  "TensorLBM/src/tensorlbm/examples/lid_driven_cavity.py:102 get_ghia_reference(re)"
+ ],
+ "benchmark": {
+  "arbiter_query": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='GAP-DIFFLBM-EXT-LIT-GHIA400'",
+  "arbiter_rows": 0,
+  "criterion": "post-SUSPECT_ENTRIES max-point rel err < 5%",
+  "measured": {
+   "max_rel_u_pct": 767.21,
+   "max_rel_v_pct": 566.06,
+   "l2_u": 0.256241,
+   "l2_v": 0.186633,
+   "u_min_rel_err_pct": 17.42,
+   "v_min_rel_err_pct": 15.85,
+   "n": 33,
+   "re": 400
+  },
+  "verdict": "FAIL (criterion missed by >100x); metric ill-conditioned (|u_ref| down to 0.02135) but extrema metric also misses 5%"
+ },
+ "repro_cmd": {
+  "documented": "cd TensorLBM && python benchmarks/ghia_re400_benchmark.py",
+  "executable": "yes, but main() hardcodes n_values=[129,257] (:229) and parses no CLI args → cannot emit the committed n=33 JSON; no run log exists for the committed sheet",
+  "anchor_verifier": "python benchmarks/anchors/run_anchors.py --verbose → RESULT: PASS, 0 errors (witness sha256 3637ef9e… verified); step [2] CSV gate vacuous (no csv_anchors key)"
+ },
+ "external_anchor": {
+  "reference": "Ghia, U., Ghia, K.N., Shin, C.T. (1982) J. Comput. Phys. 48(3):387-411, Table I/II, pp.398-399",
+  "witness": "benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt sha256 3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b (tracked, verified)",
+  "independent_crosscheck": "bit-exact vs copy_tableI_u_gist.txt (17/17 points, max|Δ|=0 for Re=100/400/1000) and copy_tableII_v_pinn.txt (Re=100/400 17/17 exact; Re=1000 16/17, one 5.0e-4) → audit_m21106/evidence/reference_crosscheck.json"
+ },
+ "level_rationale": {
+  "L1": "met — anchor verifier PASS, 17-point structural/boundary checks",
+  "L2": "met — real reference module + interpolation + harness driving the D2Q9 RLBM solver with error metrics",
+  "L3_not": "real callers exist (benchmark_suite.py:187, examples/lid_driven_cavity.py:102) but integration is red (3 failing tests) and nothing is registered on the platform (0 benchmark rows, 0 tensor_reports rows)",
+  "L4_not": "acceptance metric FAIL (767%/566%), single resolution only (report §5 expectations, not measurements), committed artifact not reproducible by repro_cmd, no figures",
+  "L5_not_applicable": true
+ },
+ "findings": [
+  {
+   "id": "F1",
+   "severity": "blocking",
+   "claim": "predeclared <5% max-point criterion not met",
+   "evidence": "artifacts/ghia_re400_comparison.json max_rel_u 767.21%, max_rel_v 566.06%, extrema 17.42%/15.85%",
+   "impact": "acceptance FAIL; report §6 admits it",
+   "action": "raise resolution or negotiate a well-conditioned metric, keep honest-FAIL"
+  },
+  {
+   "id": "F2",
+   "severity": "blocking",
+   "claim": "3 unit tests red on merged main",
+   "evidence": "pytest tests/test_lid_driven_cavity.py → 3 failed/31 passed in 20.60 s",
+   "impact": "main CI red; provenance and orientation assertions stale",
+   "action": "update tests and record in result.checks"
+  },
+  {
+   "id": "F3",
+   "severity": "blocking",
+   "claim": "0 rows in tensor_benchmark_cases for the anchor",
+   "evidence": "audit_m21106/evidence/benchmark_cases_query.txt",
+   "impact": "no machine referee → gate cannot confirm",
+   "action": "register anchor row"
+  },
+  {
+   "id": "F4",
+   "severity": "major",
+   "claim": "repro_cmd cannot reproduce the committed artifact",
+   "evidence": "main() :229 n_values=[129,257], no --n parsing; artifact lacks profiles and adds note",
+   "impact": "L4 unreachable; number sheet has no receipt",
+   "action": "add CLI, make JSON machine-emitted, keep profiles"
+  },
+  {
+   "id": "F5",
+   "severity": "major",
+   "claim": "report §4/§6 says cj3122 ran out of time window",
+   "evidence": "cj3122.log rc=1 'bash: line 1: cd: TensorLBM: No such file or directory'",
+   "impact": "evidence narrative incorrect (job never started); FAIL conclusion unchanged",
+   "action": "correct text and re-submit with proper stage_dir"
+  },
+  {
+   "id": "F6",
+   "severity": "major",
+   "claim": "no paper-grade report in ledger; §5 carries no second resolution",
+   "evidence": "tensor_reports WHERE mission_id=20981 → 0 rows; §5 lists expected ~10%/~3-5%/<2%",
+   "impact": "convergence unmeasured; figures missing",
+   "action": "run ≥2 resolutions and publish report+figures"
+  },
+  {
+   "id": "F7",
+   "severity": "moderate",
+   "claim": "max-point relative error metric is ill-conditioned",
+   "evidence": "denominator |u_ref| min 0.02135 (Re=400,y=0.6172) → 767% from one point",
+   "impact": "criterion unmeetable at any resolution; verdict robust via extrema 17.4%>5%",
+   "action": "predeclare denominator floor or extrema+L2 in the benchmark row"
+  },
+  {
+   "id": "F8",
+   "severity": "positive",
+   "claim": "reference-data correction is genuine",
+   "evidence": "bit-exact vs two independent transcriptions; witness sha256 verified; Re=5000 still raises",
+   "impact": "removes the fabricated-table defect the anchor targeted",
+   "action": "none"
+  },
+  {
+   "id": "F9",
+   "severity": "minor",
+   "claim": "CSV sha256 gate vacuous",
+   "evidence": "run_anchors.py:64-87 reads csv_anchors, absent from provenance → 0 files verified",
+   "impact": "mission's '两表 2/2' claim not demonstrated",
+   "action": "either register CSVs or drop the claim"
+  },
+  {
+   "id": "F10",
+   "severity": "minor",
+   "claim": "doc inconsistencies",
+   "evidence": "suspect_entries mixes u(0.5)=-0.15612 with v=0.05186; report ramp 2000 vs artifact 1000; tol 1e-6 vs resid_tol=1e-7",
+   "impact": "text only",
+   "action": "fix text"
+  }
+ ],
+ "checks_run": {
+  "pytest": "tests/test_lid_driven_cavity.py 3 failed / 31 passed in 20.60 s",
+  "anchor_verifier": "run_anchors.py --verbose RESULT: PASS 0 errors",
+  "reference_crosscheck": "GHIA_RE100/400/1000 vs 2 independent transcriptions: 17/17 or 16/17 exact",
+  "arbiter_sql": "tensor_benchmark_cases anchor_slug='GAP-DIFFLBM-EXT-LIT-GHIA400' → 0 rows",
+  "report_ledger_sql": "tensor_reports mission_id=20981 → 0 rows",
+  "artifact_schema": "JSON keys vs run_cavity_re400 return dict (profiles missing, note extra)",
+  "cluster_receipt": "cj3122.log rc=1 cd error",
+  "merge_identity": "git merge-base --is-ancestor c6b088889 HEAD yes; 6f586288a file-identical"
+ },
+ "checks_not_run": [
+  "n=33 rerun of run_cavity_re400(33,50000,ramp=1000): local run killed by the 120 s guard, follow-up job cj3190 (2 cores) still queued at sign-off → 767%/566% reported, NOT independently reproduced",
+  "n=129 / n=257: never executed by the mission (cj3122 died at cd) → nothing to reproduce",
+  "mechanical OCR→table re-parse: pypdf layer interleaves Re columns, so the 'no human transcription' claim cannot be machine-replayed"
+ ],
+ "audit_report": "audit_m21106/AUDIT_m21106_GHIA400.md",
+ "evidence_dir": "audit_m21106/evidence/ (benchmark_cases_query.txt, tensor_reports_query.txt, pytest_lid_driven_cavity.log, reference_crosscheck.json, cj3122_receipt.log, artifact_sha256.txt)",
+ "disposition": "request changes (reopened); level L2",
+ "supersedes": {
+  "verdict_id": 874,
+  "mission_id": 21041,
+  "gate_state": "invalid",
+  "why": "prior audit asserted the deliverables were 'NOT in current main'; they are in main as c6b088889 (verified ancestor of HEAD) and the anchor verifier passes there. This re-audit re-binds every pointer to the merged tree and re-runs the checks."
+ }
+}

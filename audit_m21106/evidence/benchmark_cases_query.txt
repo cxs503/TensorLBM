@@ -1,0 +1,5 @@
+case_name|metric|tolerance|status|repo
+(0 rows)
+rows_for_anchor
+0
+(1 row)
