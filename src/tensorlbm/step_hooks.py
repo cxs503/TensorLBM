@@ -229,8 +229,17 @@ def partial_cell_weight(solid_fraction: torch.Tensor, tau: float) -> torch.Tenso
 
     The limits are the reason the model is usable as a generalisation of
     bounce-back: ``eps_s = 0`` gives ``B = 0`` (pure fluid collision) and
-    ``eps_s = 1`` gives ``B = 1`` (pure bounce-back, bit-wise the ``bounce``
-    layer).  Using ``eps_s`` itself as the blend weight -- what a naive float
+    ``eps_s = 1`` gives ``B = 1``.
+
+    .. warning::
+       ``B = 1`` is *not* by itself the ``bounce`` layer.  It is bit-wise the
+       ``bounce`` layer only for ``reflect="pre"``; with the default
+       ``reflect="post"`` the fully solid cell reflects post-collision
+       populations, which displaces the no-slip interface by ``0.40 dx``
+       (plane Couette, ``eps_s = 1``, measured in
+       ``docs/XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R3-FRACTIONAL-MASK.md``
+       §6).  Keep ``eps_s < 1`` for the post-collision operator, or use
+       ``reflect="pre"`` if the solid limit must reproduce bounce-back.  Using ``eps_s`` itself as the blend weight -- what a naive float
     mask blend does -- ignores the ``(1 - eps_s)`` normalisation of the fluid
     part and therefore misplaces the wall for ``0 < eps_s < 1``.
     """
