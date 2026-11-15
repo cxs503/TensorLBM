@@ -20,7 +20,8 @@ answer at finite resolution:
   form with the ``(1 - omega/2)`` weight and the ``+F/2`` velocity correction.
 
 Both closures are implemented here so that the difference can be *measured*
-instead of argued about (see ``xval/xval_lbm_periodic_dpdx``).
+instead of argued about (see ``xval/xval_lbm_periodic_dpdx`` and the round-2
+report in ``docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX.md``).
 
 Physics / discretisation
 ------------------------
@@ -41,6 +42,22 @@ wall-node centres (``0`` and ``ny - 1``, ``H = ny - 1``).  That is a genuine
 ``O(dx)`` geometry offset, not a discretisation error, and it is why the xval
 runs a matched-height pair (``ny`` and ``ny + 1``) as well as the matched-grid
 pair.
+
+Round-2 defect history (2026-11-15)
+-----------------------------------
+Round 1 of the xval left the two ported arms on an honest FAIL: both blew up
+after a few thousand steps.  Two transcription defects were the cause and are
+fixed here; ``tests/test_xval_life_periodic_dpdx.py`` now pins both.
+
+1. ``_shift`` streamed with the *opposite* sign (``out[x] = a[x + c]`` instead
+   of ``out[x] = a[x - c]``), i.e. every population travelled backwards and the
+   wall closures were fed from the wrong neighbour row.
+2. ``equilibrium`` used ``1 + 3 cu + 1.5 cu^2 - 1.5 u^2`` instead of the
+   second-order Hermite form ``1 + 3 cu + 4.5 cu^2 - 1.5 u^2``.  The wrong
+   quadratic coefficient breaks the equilibrium's own moments
+   (``sum f = 0.9975 rho`` and ``sum c^2 f = 0.6658 rho`` for ``u = 0.05``), so
+   the effective sound speed and the mass are both off; the arm then diverges
+   exponentially (density growth ~1 %/100 steps measured in round 1).
 
 Unit conversion
 ---------------
@@ -122,15 +139,29 @@ _OPP = np.array(D2Q9_OPP, dtype=np.int64)
 
 
 def _shift(a: np.ndarray, d0: int, d1: int) -> np.ndarray:
-    """Periodic pull in ``(x, y)``: ``out[x, y] = a[x + d0, y + d1]``."""
-    return np.roll(a, shift=(-d0, -d1), axis=(0, 1))
+    """Pull streaming for lattice direction ``d = (d0, d1)``.
+
+    ``out[x, y] = a[x - d0, y - d1]`` — a population that belongs to direction
+    ``d`` at ``(x, y)`` after the step comes from ``(x, y) - d`` *before* it
+    (``p[recv] = p[recv - d]``, the pull form of ``Grid.cpp:229``).  The wrap is
+    periodic in both axes; the ``y`` wrap only ever touches the two wall rows,
+    whose entries are rewritten by the wall closure right afterwards
+    (``WALL_HALFWAY_BB``) or rebuilt from the moments (``WALL_REGULARISED``),
+    so no information crosses the walls.
+    """
+    return np.roll(a, shift=(d0, d1), axis=(0, 1))
 
 
 def equilibrium(rho: np.ndarray, ux: np.ndarray, uy: np.ndarray) -> np.ndarray:
-    """Second-order D2Q9 equilibrium, shape ``(9, nx, ny)`` (vectorised)."""
+    """Second-order D2Q9 equilibrium, shape ``(9, nx, ny)`` (vectorised).
+
+    ``w_i rho [1 + 3 (c_i.u) + 4.5 (c_i.u)^2 - 1.5 u^2]`` — the Hermite form
+    that reproduces ``sum_i f^eq = rho``, ``sum_i c_i f^eq = rho u`` and
+    ``sum_i c_i^2 f^eq = 2 rho c_s^2`` exactly (asserted in the test file).
+    """
     cu = _CX[:, None, None] * ux[None] + _CY[:, None, None] * uy[None]
     usqr = 1.5 * (ux * ux + uy * uy)
-    return _W[:, None, None] * rho[None] * (1.0 + cu * (3.0 + 1.5 * cu) - usqr[None])
+    return _W[:, None, None] * rho[None] * (1.0 + cu * (3.0 + 4.5 * cu) - usqr[None])
 
 
 def guo_source(u: np.ndarray, force: np.ndarray, weight: float) -> np.ndarray:
@@ -436,6 +467,7 @@ class DpdxChannel:
         """
         prev = self.profile()
         n = 0
+        delta = float("nan")
         while n < max_steps:
             for _ in range(check_every):
                 self.step()
