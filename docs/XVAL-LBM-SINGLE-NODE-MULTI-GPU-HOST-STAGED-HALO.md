@@ -302,3 +302,95 @@ tools/xval_host_staged_halo/run_xval_host_staged_halo.py`): `table_tg_physics.cs
 `summary.json` now carries `checks.D3_ic_selfcheck_all_pass`,
 `checks.D3b_discrete_eigenvalue_all_pass`, `worst_case.discrete_eigenvalue_rel_err` and the
 `d3/d3b_protocol` blocks.
+
+---
+
+## ⑧ Independent audit of the D3b reference (mission m21930, 2026-11-15)
+
+Scope: the *physics reference* of section ⑦ was re-derived and re-executed
+independently. The transport port (`HostStagedHalo`, R1–R9) and the TG arm (D3)
+were not touched; nothing here re-opens a reported verdict by decree — the
+numbers below are what the code produces.
+
+### ⑧.1 Findings (severity-ranked)
+
+| # | severity | finding | evidence |
+|---|---|---|---|
+| F1 | **blocking** | The delivered driver could not produce **any** artifact: `discrete_transverse_rates` used `D3Q19_W`, which was never imported (the local copy of the routine shadows the shipped one). The `NameError` fires in `table_shear_discrete()`, i.e. *before* `main()` writes its first CSV, so the whole ⑦.3 table set is unreachable from the landed code. | `git blame` → the routine and the doc table both enter in `613c7dcdf` (m21387); `python -c "import ...; D.discrete_transverse_rates(...)"` → `NameError: name 'D3Q19_W' is not defined` |
+| F2 | **blocking** | Even with the import fixed the reference was algebraically wrong: `zip(vals, vecs)` iterates the **rows** of the eigenvector matrix while numpy returns eigenvectors as **columns**. The "transverse mode" filter therefore classified unrelated vectors, and with the correct pairing the same filter returns **0 candidates** → `RuntimeError: no transverse eigenmode found`. The documented `gamma_discrete` values (e.g. `0.001371`/step at 24³, ν=0.02) match **neither** the buggy filter (no output at all) **nor** the correct eigenvalue (`0.0013785`): they are not reproducible from any committed state of the routine. | row-paired candidates: `{16,24,32}³ × {0.02,0.10}` → `0` candidates for all six cases; correct spectrum → 6 transverse modes (`2` shear + `4` ghost) |
+| F3 | major | The selection rule "median of the candidates" (⑦.3, driver comment) is meaningless on the correct spectrum: the transverse sector holds **6** modes — the hydrodynamic shear pair (rate 0.0031/step at 16³, ν=0.02) and four ghost modes ~77× faster (0.2396/step). A median over six picks a ghost mode. | `transverse_modes()` output in the figure (left panel, log scale) |
+| F4 | minor | The doc's D3b protocol (`t = 0 → 200`, "exact 0.001407 measured") is not the driver's protocol (`t = 20 → 220`). Protocol text and code had drifted apart. | driver `table_shear_discrete(t1=20, t2=220)` vs ⑦.3 text |
+
+Tests that would have caught F1/F2: none existed — all 25 transport tests stop
+at the port; nothing executed the driver. Added 12 (see ⑧.3).
+
+### ⑧.2 Fix and re-measured values
+
+1. The linear reference now lives in the shipped module
+   (`src/tensorlbm/host_staged_halo.py`): `linearised_step_operator`,
+   `transverse_modes` (column-indexed eigenvectors, zero-mass + momentum ⊥ k
+   selection, all candidates returned), `discrete_transverse_rate` (two
+   **slowest** rates, degeneracy check `<1e-6`, separation check `>10×` against
+   the ghost modes, otherwise raise), `shear_khat2`, and
+   `linear_mode_decay_rate` (exact linear prediction of the arm from its own
+   initial perturbation; propagated by repeated multiplication because the
+   eigenbasis of the non-normal operator is ill-conditioned).
+2. The driver imports these; its local copy is now a one-line wrapper, so the
+   reference cannot drift from the tested implementation again. No threshold
+   was re-tuned (`THRESH_DISCRETE = 3 %` unchanged).
+
+Re-measured (fp64, `a = 1e-4`, `t = 20 → 220`, device grids `1×1×1` and
+`2×2×2`; both grids give the same rate to `1e-14`):
+
+| grid | ν | `gamma_LBM` | exact eigenvalue | error | `ν·khat²` closed form | error |
+|---|---|---|---|---|---|---|
+| 16³ | 0.02 | 0.00312409 | 0.00312353 | **+0.018 %** | 0.00304482 | +2.60 % |
+| 16³ | 0.10 | 0.01554956 | 0.01554956 | **+0.000 %** | 0.01522369 | +2.14 % |
+| 24³ | 0.02 | 0.00137842 | 0.00137851 | **−0.007 %** | 0.00136297 | +1.13 % |
+| 24³ | 0.10 | 0.00687907 | 0.00687907 | **+0.000 %** | 0.00681498 | +0.94 % |
+| 32³ | 0.02 | 0.000773377 | 0.000773508 | **−0.017 %** | 0.000768589 | +0.62 % |
+
+The linear modal cross-check `linear_mode_decay_rate` (from the arm's own
+`f = feq(1, u_y = a sin kx)`) reproduces the measured slope to `<1e-15`
+relative, i.e. the D3b arm is limited only by the O(a²) nonlinearity of the
+initial projection — one order of magnitude tighter than the ⑦.3 claim
+("+0.4 % … +2.6 %", which was reference-limited, not solver-limited).
+`ν·khat²` is a *closed form*, not the discrete rate: it is 0.5–2.6 % low, a
+monotone O(k²) correction, so section ⑦'s "agrees to 1.7 %" is confirmed as an
+approximation statement, not an identity.
+
+**Consequence for the anchor**: D3b verdict stays PASS and becomes
+quantitative (≤0.02 % vs the exact discrete reference, ≪3 % gate, ≪15 % owner
+band); D3/D1/D2 are untouched and unaffected (they never call the fixed
+routine). No honest FAIL is overwritten: the m18373 D3 verdict withdrawn in ⑦
+stays withdrawn, and the m21387 D3b *numbers* are marked unreproducible rather
+than re-labelled.
+
+### ⑧.3 Reproduce
+
+```
+PYTHONPATH=src pytest tests/test_host_staged_halo.py -q          # 37 passed
+PYTHONPATH=src python tools/xval_host_staged_halo/audit_reference_figure_m21930.py
+PYTHONPATH=src python tools/xval_host_staged_halo/run_xval_host_staged_halo.py   # full driver
+```
+
+New tests: `test_transverse_mode_selection_is_the_slow_shear_pair` (6 modes,
+slowest pair, <3 % vs closed form — 9 cases),
+`test_eigenvectors_must_be_columns_not_rows` (invariant `A v = λv`, row-paired
+vector rejected, 2 cases), `test_shear_arm_reproduces_the_linear_reference`
+(executes the driver path end-to-end, so a broken reference routine fails the
+suite instead of surfacing only at report time).
+
+### ⑧.4 Independence limits / checks not run
+
+* Same machine, same torch/numpy; no GPU exists on this node, so neither this
+  audit nor the original mission exercises PCIe staging — every "host staged"
+  byte here is host RAM.
+* `discrete_transverse_rate` is exact for the **linearised** operator; the
+  finite-amplitude O(a²) term is not modelled (it is measured to be <0.02 % at
+  `a = 1e-4`, but no amplitude sweep was run here).
+* The full 4-device-grid × 3-grid × 3-ν D3b matrix and the D1/D2/D4 tables were
+  not re-executed inside this audit worktree (submitted as cluster job
+  `cj3787`); the verdict-bearing numbers above come from the same code at
+  16³/24³/32³ × 2 device grids.
+* Not audited here: `table_timing` (wall-clock claims) and `make_figures`.

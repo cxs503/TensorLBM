@@ -45,6 +45,7 @@ import torch
 try:  # repo checkout usage
     from tensorlbm.host_staged_halo import (
         D3Q19_C,
+        D3Q19_W,
         FLUIDX3D_D3Q19_INDEX_TRANSFER,
         FLUIDX3D_D3Q19_VELOCITY_SET,
         REF_TRANSFERS_PER_FACE,
@@ -52,11 +53,16 @@ try:  # repo checkout usage
         HostStagedHalo,
         HostStagedLayout,
         crossing_indices,
+        discrete_transverse_rate,
+        linear_mode_decay_rate,
+        shear_khat2,
+        transverse_modes,
     )
 except ImportError:  # pragma: no cover - direct script usage
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from tensorlbm.host_staged_halo import (  # type: ignore[no-redef]
         D3Q19_C,
+        D3Q19_W,
         FLUIDX3D_D3Q19_INDEX_TRANSFER,
         FLUIDX3D_D3Q19_VELOCITY_SET,
         REF_TRANSFERS_PER_FACE,
@@ -64,6 +70,10 @@ except ImportError:  # pragma: no cover - direct script usage
         HostStagedHalo,
         HostStagedLayout,
         crossing_indices,
+        discrete_transverse_rate,
+        linear_mode_decay_rate,
+        shear_khat2,
+        transverse_modes,
     )
 
 ART = Path(__file__).resolve().parents[2] / "artifacts" / "xval_host_staged_halo"
@@ -190,44 +200,16 @@ def shear_velocity(n: int, a: float = 1e-4) -> torch.Tensor:
 
 
 def discrete_transverse_rates(kvec: tuple[float, float, float], nu: float) -> list[dict]:
-    """Exact per-step decay exponent of the *transverse* modes (linearised BGK).
+    """Transverse eigenmodes of the linearised BGK collide+stream operator.
 
-    Linearised D3Q19 BGK collide+stream operator for a single Fourier mode
-    ``f_q(x) = f_hat_q exp(i k.x)``::
-
-        A = S (I - omega (I - P)),   S = diag(exp(-i c_q . k)),
-                                     P_qq' = W_q (1 + 3 c_q . c_q')
-
-    (``S`` is pull streaming ``f_q(x - c_q)``, ``P`` is the equilibrium
-    linearised about ``u = 0``; the labels of the D3Q19 velocity set are the
-    solver's own, so no external convention is imported).  Eigenmodes of ``A``
-    that carry no density and have ``k . u = 0`` are the transverse (shear)
-    modes; their amplitude decays as ``|lambda|^t``, hence the exponent
-    ``-ln|lambda|`` per step.  This is an *exact* discrete reference -- unlike
-    ``4*nu*k^2`` it contains no continuum limit and no finite-``k`` ambiguity.
+    Thin wrapper over :func:`tensorlbm.host_staged_halo.transverse_modes` so the
+    reference is shared with the test-suite instead of duplicated here.  The
+    wrapper existed in m21387 with its own copy of the algebra, in which (a)
+    ``D3Q19_W`` was never imported (the arm could not run at all) and (b)
+    eigenvalues were paired with *rows* of the eigenvector matrix instead of
+    columns, so the "transverse" selection was arbitrary -- see doc section 8.
     """
-    c = np.array(D3Q19_C, dtype=np.float64)
-    w = np.array(D3Q19_W, dtype=np.float64)
-    omega = 1.0 / (3.0 * nu + 0.5)
-    proj = w[:, None] * (1.0 + 3.0 * (c @ c.T))
-    phase = np.exp(-1j * (c @ np.asarray(kvec, dtype=np.float64)))
-    step_op = phase[:, None] * (np.eye(19) - omega * (np.eye(19) - proj))
-    vals, vecs = np.linalg.eig(step_op)
-    k = np.asarray(kvec, dtype=np.float64)
-    out = []
-    for lam, vec in zip(vals, vecs):
-        if abs(lam) >= 1.0:
-            continue
-        if abs(complex(vec.sum())) > 1e-9:  # carries density -> not transverse
-            continue
-        mom = c.T @ vec
-        mom = mom / (np.linalg.norm(mom) + 1e-300)
-        if abs(np.dot(k, mom)) > 1e-8:  # not perpendicular to k
-            continue
-        out.append({"lambda_abs": float(abs(lam)), "rate": float(-math.log(abs(lam))), "polarisation": mom.tolist()})
-    if not out:
-        raise RuntimeError(f"no transverse eigenmode found for k={kvec}, nu={nu}")
-    return out
+    return transverse_modes(kvec, nu)
 
 
 def tg_analytic_decay(nx: int, ny: int, nu: float) -> float:
@@ -487,7 +469,11 @@ def _shear_amplitude(solver: HostStagedD3Q19, n: int, k: float) -> float:
     return float((u * prof).mean() / (prof * prof).mean())
 
 
-def table_shear_discrete() -> list[dict]:
+def table_shear_discrete(
+    grids: tuple[int, ...] = (16, 24, 32),
+    nus: tuple[float, ...] = (0.02, 0.05, 0.10),
+    device_grids: tuple[tuple[int, int, int], ...] = ((1, 1, 1), (2, 1, 1), (1, 1, 2), (2, 2, 2)),
+) -> list[dict]:
     """D3b: single-mode shear decay vs the *exact discrete* eigenvalue.
 
     Tighter than D3 because the reference is the linearised collide+stream
@@ -498,15 +484,20 @@ def table_shear_discrete() -> list[dict]:
     """
     rows = []
     a, t1, t2 = 1e-4, 20, 220
-    for n in (16, 24, 32):
+    for n in grids:
         k = 2 * math.pi / n
         u0_field = shear_velocity(n, a)
-        for nu in (0.02, 0.05, 0.10):
-            rates = discrete_transverse_rates((k, 0.0, 0.0), nu)
-            # for an axis-aligned wavevector the y- and z-polarised transverse
-            # modes are degenerate; take the median candidate as the reference
-            gamma_disc = sorted(r["rate"] for r in rates)[len(rates) // 2]
-            for dx, dy, dz in ((1, 1, 1), (2, 1, 1), (1, 1, 2), (2, 2, 2)):
+        for nu in nus:
+            # slowest (hydrodynamic) transverse pair; the four ghost modes of
+            # the same sector decay ~70x faster for nu = 0.02
+            gamma_disc = discrete_transverse_rate((k, 0.0, 0.0), nu)
+            # exact linear prediction from the arm's own initial perturbation
+            # (f = feq(1, u) with u_y = a sin(kx) -> +k Fourier amplitude a/2i)
+            c = np.array(D3Q19_C, dtype=np.float64)
+            w = np.array(D3Q19_W, dtype=np.float64)
+            dfhat = w * 3.0 * (c[:, 1] * a / 2j)
+            gamma_modal = linear_mode_decay_rate((k, 0.0, 0.0), nu, dfhat, 1, t1, t2)
+            for dx, dy, dz in device_grids:
                 lay = HostStagedLayout(n, n, n, dx, dy, dz)
                 solver = HostStagedD3Q19(lay, nu=nu, dtype=torch.float64)
                 solver.set_velocity(u0_field)
@@ -527,8 +518,12 @@ def table_shear_discrete() -> list[dict]:
                         "t2": t2,
                         "gamma_LBM": gamma,
                         "gamma_discrete": gamma_disc,
-                        "gamma_continuum": nu * 2 * (1 - math.cos(k)),
+                        "gamma_modal": gamma_modal,
+                        "gamma_continuum": nu * shear_khat2((k, 0.0, 0.0)),
                         "rel_err": abs(gamma - gamma_disc) / gamma_disc,
+                        "rel_err_vs_modal": abs(gamma - gamma_modal) / gamma_modal,
+                        "rel_err_vs_continuum": abs(gamma - nu * shear_khat2((k, 0.0, 0.0)))
+                        / (nu * shear_khat2((k, 0.0, 0.0))),
                         "pass": abs(gamma - gamma_disc) / gamma_disc <= THRESH_DISCRETE,
                     }
                 )
