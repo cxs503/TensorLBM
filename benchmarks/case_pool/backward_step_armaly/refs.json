@@ -50,6 +50,8 @@
   "cross_checks": [
     {
       "quantity": "X1/s at Re=100",
+      "re": 100,
+      "tolerance_pct": 5.0,
       "value": 2.878,
       "band": [
         2.792,

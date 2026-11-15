@@ -398,15 +398,14 @@ def run_armaly_case(cfg: ArmalyConfig, out_dir: Path | None = None) -> dict:
     tau_top = np.zeros(nx)
     tau_top = -wall_shear_from_near_wall(ux_mean[ny - 2], ux_mean[ny - 3], ux_mean[ny - 4])
 
-    _, ux_final, _ = macroscopic(f)
-    rho_final = macroscopic(f)[0]
+    # one macroscopic pass on the final state feeds the diagnostics below (the same
+    # state used to be re-transformed three times: pure redundancy, no physics)
+    rho_final, ux_final, _ = macroscopic(f)
 
     # mass-flux conservation check over the *fluid* rows only (solid rows carry
     # bounce-back populations whose macroscopic velocity is not a flux).
-    _rho_f, _ux_f, _ = macroscopic(f)
-
     def _flux(col: int, rows) -> float:
-        return float((_rho_f[rows, col] * _ux_f[rows, col]).sum())
+        return float((rho_final[rows, col] * ux_final[rows, col]).sum())
 
     out = {
         "case": "CASE-BACKWARD-STEP-LBM",
