@@ -39,6 +39,7 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
 
 try:  # repo checkout usage
@@ -72,6 +73,7 @@ THRESH_INVARIANCE_F64 = 1e-10
 THRESH_INVARIANCE_F32 = 1e-4
 THRESH_ACCOUNTING = 0.15  # 15 % (owner accuracy standard)
 THRESH_PHYSICS = 0.15
+THRESH_DISCRETE = 0.03  # exact discrete eigenvalue reference
 ITEM_BYTES = 4  # reference default build: FP32 fpxx (defines.hpp:93-97)
 
 
@@ -99,15 +101,133 @@ def abc_velocity(nx: int, ny: int, nz: int, u0: float = 0.05) -> torch.Tensor:
 
 
 def tg_velocity(nx: int, ny: int, nz: int, u0: float = 0.05) -> torch.Tensor:
-    """2D Taylor-Green vortex embedded in 3D (exact Navier-Stokes solution)."""
+    """2D Taylor-Green vortex embedded in 3D (exact Navier-Stokes solution).
+
+    ``u = u0 (sin X cos Y, -cos X sin Y, 0)`` with ``X = 2*pi*i/nx``,
+    ``Y = 2*pi*j/ny`` on the lattice indices ``i, j``.  The field is periodic,
+    divergence-free and a pure superposition of the two Fourier modes
+    ``(kx, +-ky, 0)`` with ``|k| = sqrt(2)*kx``, so it is resolved exactly by the
+    lattice and its kinetic energy decays as ``exp(-4*nu*kx^2*t)``.
+
+    NB: the index grids below are *unscaled* indices; the wavenumber is applied
+    exactly once (``sin(kx*i)``).  Scaling the index by ``kx`` and then
+    multiplying by ``kx`` again yields ``sin(kx^2 * i)``, which is **not**
+    periodic on an ``nx`` torus -- that defect silently invalidated the first
+    version of the D3 arm (see ``docs/XVAL-LBM-SINGLE-NODE-MULTI-GPU-HOST-STAGED-HALO.md`` ⑥).
+    """
     kx, ky = 2 * math.pi / nx, 2 * math.pi / ny
     z, y, x = torch.meshgrid(
-        torch.arange(nz) * 2 * math.pi / nz, torch.arange(ny) * ky, torch.arange(nx) * kx, indexing="ij"
+        torch.arange(nz, dtype=torch.float64),
+        torch.arange(ny, dtype=torch.float64),
+        torch.arange(nx, dtype=torch.float64),
+        indexing="ij",
     )
     ux = u0 * torch.sin(kx * x) * torch.cos(ky * y)
     uy = -u0 * torch.cos(kx * x) * torch.sin(ky * y)
     uz = torch.zeros_like(ux)
     return torch.stack([ux, uy, uz])
+
+
+def tg_selfcheck(nx: int, ny: int, nz: int, u0: float = 0.05) -> dict:
+    """Integrity gate for the Taylor-Green initial condition (D3 arm).
+
+    A physics arm is only meaningful if its initial condition *is* the claimed
+    analytic field.  Four independent properties are asserted before any solver
+    is stepped, so that a wrong initial condition can never again be reported as
+    a solver inaccuracy:
+
+    1. the sampled field resolves the mode: ``max|u| == u0`` (a mode that is
+       not an integer number of periods on the torus is under-sampled and its
+       peak is strictly smaller),
+    2. zero discrete divergence (central differences),
+    3. spectral purity (all FFT amplitude outside the ``(+-1, +-1)`` mode pair),
+    4. kinetic energy equal to the analytic ``u0**2/4``.
+    """
+    u = tg_velocity(nx, ny, nz, u0)
+    peak = float(u.abs().max())
+    peak_err = abs(peak - u0)
+    dudx = (torch.roll(u[0], -1, 2) - torch.roll(u[0], 1, 2)) / 2.0
+    dudy = (torch.roll(u[1], -1, 1) - torch.roll(u[1], 1, 1)) / 2.0
+    divergence = float((dudx + dudy).abs().max())
+    amp = torch.fft.fft2(u[0][0].to(torch.complex128)).abs()  # (z, y, x) -> z = 0 plane
+    total = float(amp.sum())
+    mode = float(amp[(-1, 1)] + amp[(-1, -1)] + amp[(1, 1)] + amp[(1, -1)])
+    off_mode = (total - mode) / total
+    ke = 0.5 * float((u * u).sum(dim=0).mean())
+    ke_exact = u0**2 / 4.0
+    ok = peak_err < 1e-12 and divergence < 1e-12 and off_mode < 1e-12 and abs(ke / ke_exact - 1.0) < 1e-12
+    return {
+        "grid": f"{nx}x{ny}x{nz}",
+        "u0": u0,
+        "peak_amplitude": peak,
+        "peak_err": peak_err,
+        "divergence_err": divergence,
+        "off_mode_energy_fraction": off_mode,
+        "ke_measured": ke,
+        "ke_analytic": ke_exact,
+        "ke_rel_err": abs(ke / ke_exact - 1.0),
+        "pass": ok,
+    }
+
+
+def shear_velocity(n: int, a: float = 1e-4) -> torch.Tensor:
+    """Single-mode shear wave ``u = (0, a sin(k x), 0)``, ``k = 2*pi/n``.
+
+    A pure transverse mode with wavevector along ``x``: its amplitude is an
+    exact exponential of the linearised collide+stream operator, so it can be
+    compared against the *discrete* eigenvalue of that operator (no continuum
+    limit involved).  ``a`` is kept at the linear-regime level.
+    """
+    k = 2 * math.pi / n
+    z, y, x = torch.meshgrid(
+        torch.arange(n, dtype=torch.float64),
+        torch.arange(n, dtype=torch.float64),
+        torch.arange(n, dtype=torch.float64),
+        indexing="ij",
+    )
+    zero = torch.zeros_like(x)
+    return torch.stack([zero, a * torch.sin(k * x), zero])
+
+
+def discrete_transverse_rates(kvec: tuple[float, float, float], nu: float) -> list[dict]:
+    """Exact per-step decay exponent of the *transverse* modes (linearised BGK).
+
+    Linearised D3Q19 BGK collide+stream operator for a single Fourier mode
+    ``f_q(x) = f_hat_q exp(i k.x)``::
+
+        A = S (I - omega (I - P)),   S = diag(exp(-i c_q . k)),
+                                     P_qq' = W_q (1 + 3 c_q . c_q')
+
+    (``S`` is pull streaming ``f_q(x - c_q)``, ``P`` is the equilibrium
+    linearised about ``u = 0``; the labels of the D3Q19 velocity set are the
+    solver's own, so no external convention is imported).  Eigenmodes of ``A``
+    that carry no density and have ``k . u = 0`` are the transverse (shear)
+    modes; their amplitude decays as ``|lambda|^t``, hence the exponent
+    ``-ln|lambda|`` per step.  This is an *exact* discrete reference -- unlike
+    ``4*nu*k^2`` it contains no continuum limit and no finite-``k`` ambiguity.
+    """
+    c = np.array(D3Q19_C, dtype=np.float64)
+    w = np.array(D3Q19_W, dtype=np.float64)
+    omega = 1.0 / (3.0 * nu + 0.5)
+    proj = w[:, None] * (1.0 + 3.0 * (c @ c.T))
+    phase = np.exp(-1j * (c @ np.asarray(kvec, dtype=np.float64)))
+    step_op = phase[:, None] * (np.eye(19) - omega * (np.eye(19) - proj))
+    vals, vecs = np.linalg.eig(step_op)
+    k = np.asarray(kvec, dtype=np.float64)
+    out = []
+    for lam, vec in zip(vals, vecs):
+        if abs(lam) >= 1.0:
+            continue
+        if abs(complex(vec.sum())) > 1e-9:  # carries density -> not transverse
+            continue
+        mom = c.T @ vec
+        mom = mom / (np.linalg.norm(mom) + 1e-300)
+        if abs(np.dot(k, mom)) > 1e-8:  # not perpendicular to k
+            continue
+        out.append({"lambda_abs": float(abs(lam)), "rate": float(-math.log(abs(lam))), "polarisation": mom.tolist()})
+    if not out:
+        raise RuntimeError(f"no transverse eigenmode found for k={kvec}, nu={nu}")
+    return out
 
 
 def tg_analytic_decay(nx: int, ny: int, nu: float) -> float:
@@ -306,47 +426,110 @@ def decay_rate(solver_factory, steps: int) -> tuple[float, float]:
     return k0, solver.kinetic_energy()
 
 
-def table_tg_physics() -> list[dict]:
-    """Taylor-Green decay vs analytic (physics accuracy arm)."""
-    rows = []
-    steps = 200
+def _tg_arm_one(lay: HostStagedLayout, u0: torch.Tensor, nu: float, dtype, t1: int, t2: int) -> float:
+    """Measured kinetic-energy decay exponent of the TG arm.
+
+    Protocol (fixed *before* the runs): step a transient ``t1`` first -- the
+    equilibrium initialisation ``f = feq(rho=1, u)`` carries no O(Ma^2) pressure
+    field, so the first steps contain an acoustic transient that is not part of
+    the viscous decay -- then take the log-slope between ``t1`` and ``t2``.
+    """
+    solver = HostStagedD3Q19(lay, nu=nu, dtype=dtype)
+    solver.set_velocity(u0.to(dtype))
+    solver.step(t1)
+    k1 = solver.kinetic_energy()
+    solver.step(t2 - t1)
+    k2 = solver.kinetic_energy()
+    return math.log(k1 / k2) / (t2 - t1)
+
+
+def table_tg_physics() -> tuple[list[dict], list[dict]]:
+    """D3: Taylor-Green decay vs the analytic ``4*nu*k^2`` (continuum reference).
+
+    Returns ``(tg_rows, selfcheck_rows)``.  The run is gated on
+    :func:`tg_selfcheck`: if the initial condition is not the claimed analytic
+    field the arm raises instead of producing a physics verdict.
+    """
+    rows, checks = [], []
+    t1, t2 = 40, 200
     for n in (24, 32, 40):
+        chk = tg_selfcheck(n, n, n, 0.05)
+        checks.append(chk)
+        if not chk["pass"]:
+            raise RuntimeError(f"Taylor-Green initial condition failed its self-check: {chk}")
+        u0_field = tg_velocity(n, n, n, 0.05)
         for nu in (0.02, 0.05):
-            u0 = tg_velocity(n, n, n, 0.05)
             gamma_theory = tg_analytic_decay(n, n, nu)
-            # single device (control)
-            s1 = run_solver(HostStagedLayout(n, n, n), u0, nu=nu, steps=steps, dtype=torch.float64)
-            k0 = 0.05**2 / 4.0
-            k1 = s1.kinetic_energy()
-            gamma1 = math.log(k0 / k1) / steps
-            rows.append(
-                {
-                    "grid": f"{n}^3",
-                    "nu": nu,
-                    "tau": 3 * nu + 0.5,
-                    "D": "1x1x1",
-                    "steps": steps,
-                    "gamma_LBM": gamma1,
-                    "gamma_theory": gamma_theory,
-                    "rel_err": abs(gamma1 - gamma_theory) / gamma_theory,
-                    "pass": abs(gamma1 - gamma_theory) / gamma_theory <= THRESH_PHYSICS,
-                }
-            )
-            for dx, dy, dz in ((1, 1, 2), (2, 1, 1), (2, 2, 2)):
+            for dx, dy, dz in ((1, 1, 1), (1, 1, 2), (2, 1, 1), (2, 2, 2)):
                 lay = HostStagedLayout(n, n, n, dx, dy, dz)
-                s = run_solver(lay, u0, nu=nu, steps=steps, dtype=torch.float64)
-                g = math.log(k0 / s.kinetic_energy()) / steps
+                g = _tg_arm_one(lay, u0_field, nu, torch.float64, t1, t2)
                 rows.append(
                     {
                         "grid": f"{n}^3",
                         "nu": nu,
                         "tau": 3 * nu + 0.5,
                         "D": f"{dx}x{dy}x{dz}",
-                        "steps": steps,
+                        "t1": t1,
+                        "t2": t2,
                         "gamma_LBM": g,
                         "gamma_theory": gamma_theory,
                         "rel_err": abs(g - gamma_theory) / gamma_theory,
                         "pass": abs(g - gamma_theory) / gamma_theory <= THRESH_PHYSICS,
+                    }
+                )
+    return rows, checks
+
+
+def _shear_amplitude(solver: HostStagedD3Q19, n: int, k: float) -> float:
+    """Fourier amplitude of ``u_y`` on the ``sin(k x)`` mode (linear projection)."""
+    u = solver.project_velocity()[1]
+    prof = torch.sin(k * torch.arange(n, dtype=torch.float64)).view(1, 1, n)
+    return float((u * prof).mean() / (prof * prof).mean())
+
+
+def table_shear_discrete() -> list[dict]:
+    """D3b: single-mode shear decay vs the *exact discrete* eigenvalue.
+
+    Tighter than D3 because the reference is the linearised collide+stream
+    operator itself (:func:`discrete_transverse_rates`): no continuum limit and
+    no finite-``k`` ambiguity.  The declared threshold is 3 % -- the remaining
+    error is the O(a^2) nonlinearity of the initial projection plus the
+    transient decay of the non-hydrodynamic eigenmodes.
+    """
+    rows = []
+    a, t1, t2 = 1e-4, 20, 220
+    for n in (16, 24, 32):
+        k = 2 * math.pi / n
+        u0_field = shear_velocity(n, a)
+        for nu in (0.02, 0.05, 0.10):
+            rates = discrete_transverse_rates((k, 0.0, 0.0), nu)
+            # for an axis-aligned wavevector the y- and z-polarised transverse
+            # modes are degenerate; take the median candidate as the reference
+            gamma_disc = sorted(r["rate"] for r in rates)[len(rates) // 2]
+            for dx, dy, dz in ((1, 1, 1), (2, 1, 1), (1, 1, 2), (2, 2, 2)):
+                lay = HostStagedLayout(n, n, n, dx, dy, dz)
+                solver = HostStagedD3Q19(lay, nu=nu, dtype=torch.float64)
+                solver.set_velocity(u0_field)
+                solver.step(t1)
+                a1 = _shear_amplitude(solver, n, k)
+                solver.step(t2 - t1)
+                a2 = _shear_amplitude(solver, n, k)
+                gamma = math.log(a1 / a2) / (t2 - t1)
+                rows.append(
+                    {
+                        "grid": f"{n}^3",
+                        "nu": nu,
+                        "tau": 3 * nu + 0.5,
+                        "k": k,
+                        "khat_sq": 2 * (1 - math.cos(k)),
+                        "D": f"{dx}x{dy}x{dz}",
+                        "t1": t1,
+                        "t2": t2,
+                        "gamma_LBM": gamma,
+                        "gamma_discrete": gamma_disc,
+                        "gamma_continuum": nu * 2 * (1 - math.cos(k)),
+                        "rel_err": abs(gamma - gamma_disc) / gamma_disc,
+                        "pass": abs(gamma - gamma_disc) / gamma_disc <= THRESH_DISCRETE,
                     }
                 )
     return rows
@@ -415,7 +598,7 @@ def table_timing(repeats: int = 5) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def make_figures(layout_rows, transport_rows, invariance_rows, tg_rows, timing_rows) -> list[Path]:
+def make_figures(layout_rows, transport_rows, invariance_rows, tg_rows, timing_rows, shear_rows) -> list[Path]:
     import matplotlib
 
     matplotlib.use("Agg")
@@ -532,7 +715,8 @@ def main() -> int:
     layout_rows = table_layout()
     transport_rows = table_transport()
     invariance_rows = table_invariance()
-    tg_rows = table_tg_physics()
+    tg_rows, selfcheck_rows = table_tg_physics()
+    shear_rows = table_shear_discrete()
     sens_rows = table_sensitivity()
     timing_rows = table_timing()
 
@@ -540,14 +724,18 @@ def main() -> int:
     write_csv(ART / "table_transport.csv", transport_rows)
     write_csv(ART / "table_invariance.csv", invariance_rows)
     write_csv(ART / "table_tg_physics.csv", tg_rows)
+    write_csv(ART / "table_shear_discrete.csv", shear_rows)
+    write_csv(ART / "table_ic_selfcheck.csv", selfcheck_rows)
     write_csv(ART / "table_sensitivity.csv", sens_rows)
     write_csv(ART / "table_timing.csv", timing_rows)
-    figs = make_figures(layout_rows, transport_rows, invariance_rows, tg_rows, timing_rows)
+    figs = make_figures(layout_rows, transport_rows, invariance_rows, tg_rows, timing_rows, shear_rows)
 
     checks = {
         "D1_invariance_all_pass": all(r["pass"] for r in invariance_rows),
         "D2_accounting_all_pass": all(r["pass"] for r in transport_rows),
         "D3_physics_all_pass": all(r["pass"] for r in tg_rows),
+        "D3_ic_selfcheck_all_pass": all(r["pass"] for r in selfcheck_rows),
+        "D3b_discrete_eigenvalue_all_pass": all(r["pass"] for r in shear_rows),
         "D4_copy_volume_zero_for_swap": all(r["ours_host_copy_bytes_swap"] == 0 for r in transport_rows),
         "D4_swap_equals_copy_solution": max(
             abs(r["rel_L2_vs_single_device"]) for r in invariance_rows if r["staging"] == "copy"
@@ -555,15 +743,30 @@ def main() -> int:
         <= THRESH_INVARIANCE_F32,
     }
     summary = {
-        "mission": "m18373",
+        "mission": "m21387",
         "anchor": "XVAL-LBM-SINGLE-NODE-MULTI-GPU-HOST-STAGED-HALO",
         "reference": "ProjectPhysX/FluidX3D (lbm.cpp:721-733,1283-1316,1343-1382; kernel.cpp:904-931,2091-2137)",
+        "supersedes": "m18373 (PR #2292): its D3 verdict was withdrawn -- the TG initial condition double-applied the wavenumber (non-periodic field), see docs ⑥",
         "thresholds": {
             "invariance_float64": THRESH_INVARIANCE_F64,
             "invariance_float32": THRESH_INVARIANCE_F32,
             "accounting": THRESH_ACCOUNTING,
             "physics": THRESH_PHYSICS,
+            "discrete_eigenvalue": THRESH_DISCRETE,
         },
+        "d3_protocol": {
+            "ic": "u = u0(sin X cos Y, -cos X sin Y, 0), X = 2*pi*i/nx -- periodicity/divergence/spectrum/KE gated by tg_selfcheck",
+            "transient_skip": 40,
+            "window_end": 200,
+            "reference": "continuum 4*nu*k^2",
+        },
+        "d3b_protocol": {
+            "mode": "u = (0, a sin(k x), 0), a = 1e-4 (linear regime), k = 2*pi/n",
+            "reference": "exact transverse eigenvalue of the linearised D3Q19 BGK step operator (discrete_transverse_rates)",
+            "transient_skip": 20,
+            "window_end": 220,
+        },
+        "ic_selfcheck": selfcheck_rows,
         "reference_table_check": {
             # the reference's own index table, mapped through the reference's own
             # velocity set, must be exactly the geometric crossing set (the integer
@@ -581,6 +784,7 @@ def main() -> int:
             "invariance_rel_L2": max(r["rel_L2_vs_single_device"] for r in invariance_rows),
             "accounting_rel_err": max(r["rel_err"] for r in transport_rows),
             "physics_rel_err": max(r["rel_err"] for r in tg_rows),
+            "discrete_eigenvalue_rel_err": max(r["rel_err"] for r in shear_rows),
             "sensitivity_rel_L2": max(r["rel_L2_multi_vs_single"] for r in sens_rows),
         },
         "checks": checks,
@@ -597,6 +801,8 @@ def main() -> int:
             "table_transport.csv",
             "table_invariance.csv",
             "table_tg_physics.csv",
+            "table_shear_discrete.csv",
+            "table_ic_selfcheck.csv",
             "table_sensitivity.csv",
             "table_timing.csv",
         ],
