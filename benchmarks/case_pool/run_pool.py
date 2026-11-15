@@ -16,12 +16,21 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import inspect
 import subprocess
 import sys
 from pathlib import Path
 
 POOL = Path(__file__).resolve().parent
 REPO = POOL.parents[1]
+
+#: Package root of the pool cases (``benchmarks/``).  Importing
+#: ``case_pool.<case>.run_case`` needs this on ``sys.path``; the documented
+#: invocation only sets ``PYTHONPATH=src``, so bootstrap it here (audit m21802:
+#: without this the driver died with ModuleNotFoundError: case_pool).
+POOL_ROOT = POOL.parent
+if str(POOL_ROOT) not in sys.path:
+    sys.path.insert(0, str(POOL_ROOT))
 
 
 def discover() -> list[str]:
@@ -33,10 +42,37 @@ def discover() -> list[str]:
     return out
 
 
+def _main_accepts_argv(fn) -> bool:
+    """True when the case's ``main`` takes an argv-like first parameter."""
+    try:
+        params = list(inspect.signature(fn).parameters.values())
+    except (TypeError, ValueError):        # builtins / C callables: assume argv
+        return True
+    return any(p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD, p.VAR_POSITIONAL)
+               for p in params)
+
+
 def run_case(name: str, extra: list[str]) -> int:
-    """Run one pool case by importing its run_case.main (in-process)."""
+    """Run one pool case by importing its run_case.main (in-process).
+
+    ``extra`` is forwarded only to cases whose ``main`` accepts argv; several
+    pool cases expose ``main()`` with no parameters, and the driver used to
+    crash on them (TypeError: main() takes 0 positional arguments).
+    """
     mod = importlib.import_module(f"case_pool.{name}.run_case")
-    return mod.main(extra)
+    if _main_accepts_argv(mod.main):
+        return mod.main(extra)
+    # Cases that expose ``main()`` parse ``sys.argv`` themselves; showing them the
+    # driver's own flags would make argparse abort (unrecognized arguments), so
+    # the call runs against a clean argv and the flags are reported as dropped.
+    if extra:
+        print(f"[run_pool] {name}: main() takes no argv; not forwarding {extra}")
+    saved = sys.argv
+    sys.argv = [f"{name}.run_case"]
+    try:
+        return mod.main()
+    finally:
+        sys.argv = saved
 
 
 def main(argv: list[str] | None = None) -> int:
