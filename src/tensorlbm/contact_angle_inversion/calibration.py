@@ -413,11 +413,66 @@ def forward(cal: CalibrationResult, f_w: float) -> float:
         return young_prediction(f_w, cal.psi_l, cal.psi_v)
 
 
+def inversion_branches(
+    cal: CalibrationResult,
+    theta_target: float,
+    *,
+    tol: float = 1e-9,
+) -> List[float]:
+    """All wall fractions whose calibration curve crosses ``cos(theta_target)``.
+
+    The measured ``cos(theta)`` of a Shan-Chen sessile drop is **not** guaranteed
+    to be monotone in ``f_w``: the coarse sweep of m18090 dips near
+    ``f_w = 0.60-0.65``.  ``_linear_interp_inverse`` silently returns the *first*
+    bracket it meets, so on a non-monotone table the returned wall fraction is one
+    of two or more equally consistent answers.  This helper makes the ambiguity
+    explicit instead of silent.
+
+    Args:
+        cal: Calibration result from :func:`calibrate`.
+        theta_target: Target contact angle in degrees.
+        tol: Width of the degenerate-bracket tolerance.
+
+    Returns:
+        Sorted list of ``f_w`` candidates (possibly empty, 1, or several).
+        Duplicates closer than ``1e-6`` in ``f_w`` are collapsed.
+    """
+    cos_target = max(-1.0, min(1.0, math.cos(math.radians(theta_target))))
+    fw = cal.fw_values
+    cos = cal.cos_values
+    out: List[float] = []
+    for i in range(len(fw) - 1):
+        y0, y1 = cos[i], cos[i + 1]
+        if abs(y1 - y0) < 1e-12:
+            continue
+        lo, hi = (y0, y1) if y0 <= y1 else (y1, y0)
+        if lo - tol <= cos_target <= hi + tol:
+            t = (cos_target - y0) / (y1 - y0)
+            t = max(0.0, min(1.0, t))
+            out.append(fw[i] + t * (fw[i + 1] - fw[i]))
+    # collapse near-duplicates (a target exactly on a node hits two brackets)
+    collapsed: List[float] = []
+    for v in sorted(out):
+        if not collapsed or abs(v - collapsed[-1]) > 1e-6:
+            collapsed.append(v)
+    return collapsed
+
+
+def is_monotone(cal: CalibrationResult) -> bool:
+    """True when ``cos(theta)`` is strictly monotone over the calibrated ``f_w`` range."""
+    cos = cal.cos_values
+    if len(cos) < 3:
+        return True
+    d = [cos[i + 1] - cos[i] for i in range(len(cos) - 1)]
+    return all(x < 0 for x in d) or all(x > 0 for x in d)
+
+
 def invert(
     cal: CalibrationResult,
     theta_target: float,
     *,
     fallback_to_young: bool = False,
+    on_ambiguous: str = "first",
 ) -> float:
     """Find wall fraction f_w that produces the target contact angle.
 
@@ -425,9 +480,17 @@ def invert(
         cal: Calibration result from :func:`calibrate`.
         theta_target: Target contact angle in degrees.
         fallback_to_young: If True and inversion fails, return Young prediction.
+        on_ambiguous: What to do when the calibration curve crosses the target
+            ``cos(theta)`` more than once (non-monotone sweep, see
+            :func:`inversion_branches`):
+            ``"first"`` (default, historical behaviour) returns the lowest ``f_w``,
+            ``"last"`` the highest, ``"mean"`` the midpoint of the candidate set,
+            and ``"nan"`` returns NaN so the caller must not silently accept one
+            of several equally consistent wall fractions.
 
     Returns:
-        Wall fraction f_w, or NaN if inversion fails.
+        Wall fraction f_w, or NaN if inversion fails or is ambiguous under
+        ``on_ambiguous="nan"``.
     """
     cos_target = math.cos(math.radians(theta_target))
     cos_target = max(-1.0, min(1.0, cos_target))
@@ -445,6 +508,17 @@ def invert(
         if fallback_to_young:
             return (cal.psi_v + cos_target * (cal.psi_l - cal.psi_v)) / cal.psi_l
         return float("nan")
+
+    branches = inversion_branches(cal, theta_target)
+    if len(branches) > 1:
+        if on_ambiguous == "nan":
+            return float("nan")
+        if on_ambiguous == "last":
+            return branches[-1]
+        if on_ambiguous == "mean":
+            return 0.5 * (branches[0] + branches[-1])
+        if on_ambiguous != "first":
+            raise ValueError(f"on_ambiguous must be first/last/mean/nan, got {on_ambiguous!r}")
 
     fw = _linear_interp_inverse(cal.fw_values, cal.cos_values, cos_target)
     if not math.isfinite(fw) and fallback_to_young:

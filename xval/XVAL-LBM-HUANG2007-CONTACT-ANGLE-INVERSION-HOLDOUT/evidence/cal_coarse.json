@@ -1,0 +1,97 @@
+{
+ "calibration": {
+  "nx": 64,
+  "ny": 32,
+  "radius": 8.0,
+  "steps": 5000,
+  "wall_rows": 2,
+  "psi_l": 0.8587183952331543,
+  "psi_v": 0.14751529693603516,
+  "points": [
+   {
+    "f_w": 0.4,
+    "theta_measured": 153.42053525472613,
+    "cos_measured": -0.8943146597591776,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   },
+   {
+    "f_w": 0.45,
+    "theta_measured": 144.85900399095618,
+    "cos_measured": -0.8177380829520109,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   },
+   {
+    "f_w": 0.5,
+    "theta_measured": 127.3787144476223,
+    "cos_measured": -0.6070806704241462,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   },
+   {
+    "f_w": 0.55,
+    "theta_measured": 114.0457085935548,
+    "cos_measured": -0.40746530857561286,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   },
+   {
+    "f_w": 0.6,
+    "theta_measured": 95.15637363381235,
+    "cos_measured": -0.0898742639841091,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   },
+   {
+    "f_w": 0.65,
+    "theta_measured": 95.86075332107742,
+    "cos_measured": -0.10211115744187617,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   },
+   {
+    "f_w": 0.7,
+    "theta_measured": 75.81395483798165,
+    "cos_measured": 0.24507126256138287,
+    "status": "ok",
+    "n_contour": 0,
+    "drift_deg": 0.0
+   }
+  ],
+  "fw_values": [
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7
+  ],
+  "cos_values": [
+   -0.8943146597591776,
+   -0.8177380829520109,
+   -0.6070806704241462,
+   -0.40746530857561286,
+   -0.0898742639841091,
+   -0.10211115744187617,
+   0.24507126256138287
+  ],
+  "valid_range": [
+   0.4,
+   0.7
+  ],
+  "young_slope": 1.207416555537006,
+  "measured_slope": 3.8332985888728492,
+  "slope_ratio": 3.1747937953094953,
+  "neutral_fw_young": 0.17178541621433724,
+  "neutral_fw_measured": 0.6496349234623793
+ },
+ "monotone": false
+}
