@@ -67,6 +67,31 @@ import time
 import numpy as np
 import torch
 
+# --------------------------------------------------------------------------
+# Thread discipline (2026-11-15, m22295)
+# --------------------------------------------------------------------------
+# One step of this kernel is 9 x (L+2)^2 float64 *and* ~60 torch kernel
+# launches, i.e. it is launch-overhead bound, not flop bound.  On a host whose
+# default intra-op pool is sized to the core count (128 here) the pool
+# hand-off dominates: measured with ``aa_fused_step`` at L = 64 on one and the
+# same idle-ish process,
+#
+#     torch threads | ms / step
+#     --------------+-----------
+#         128       |   26.1
+#          16       |    6.5
+#           8       |    6.2
+#           4       |    5.9
+#           2       |    5.9
+#           1       |    7.0
+#
+# i.e. pinning costs 4.4x of wall clock over the default.  Sweeps submitted
+# without this pin were observed to sit in ``running`` for > 6 h for a task
+# that needs minutes, which is how the ``< 15 %`` acceptance of this anchor
+# stayed unpaid.  Keep it small (1..4) and overridable.
+_THREADS = max(1, int(os.environ.get("TLBM_THREADS", "2")))
+torch.set_num_threads(_THREADS)
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
