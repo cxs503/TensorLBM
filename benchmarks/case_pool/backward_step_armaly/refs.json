@@ -29,7 +29,23 @@
         "source": "Armaly 1983 experimental curve at Re=400 (literature read, tier LITERATURE_APPROXIMATE, +-0.3)"
       }
     },
-    "tolerance_pct": 15.0
+    "tolerance_pct": 15.0,
+    "ledger_tolerance_pct": 10.0,
+    "ledger_tolerance_source": "feature_ledger CASE-BACKSTEP-FVM-RE100 acceptance '<10%'; registered as the machine referee in tensor_benchmark_cases (anchor_slug=CASE-BACKSTEP-FVM-RE100, metric 'X1/s = primary lower-wall reattachment length in step heights', tolerance '10%'), plus a 5% cross-check row against Erturk 2008 2.878. The looser tolerance_pct=15 above is kept as the historical in-repo band.",
+    "accepted_rungs": {
+      "note": "which grid rungs a committed converged point may come from; g2 (h_in=104, 3244x202 ~ 655k cells) does not fit a single 2 h cluster job at ~70 steps/s, so it is declared not_run rather than faked",
+      "rungs": {
+        "h1": {
+          "hi": 26,
+          "s": 25,
+          "expansion_ratio": 1.9615384615384615
+        },
+        "g1": {
+          "hi": 52,
+          "s": 49
+        }
+      }
+    }
   },
   "cross_checks": [
     {
