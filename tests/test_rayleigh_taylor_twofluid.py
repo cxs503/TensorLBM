@@ -28,6 +28,8 @@ from tensorlbm.rayleigh_taylor_twofluid import (
     ratio_from_atwood,
     column_front_state,
     column_height,
+    gradient_front_state,
+    interface_profile_gradient,
     precondition_scmp_rt,
     run_scmp_rt,
     scmp_coexistence,
@@ -360,22 +362,125 @@ def test_column_height_is_a_clamped_mass_moment():
                                rho_low=0.386).min()) == float(cfg.ny - 2)
 
 
-@pytest.mark.xfail(strict=False, reason=(
-    "known limitation L2 (docs/CASE-RT-TWOFLUID-PRECOND.md): the column-height "
-    "moment does not resolve an interface displacement -- a known 1.28-row cosine "
-    "shift reads back ~0 instead of a0/lambda = 0.02.  Kept as an executable "
-    "record of the defect: once the estimator is fixed this test flips to XPASS."))
-def test_column_estimator_resolves_a_known_interface_shift():
-    cfg = SCMPRTConfig(lam=64, layers=4.0, sc_g=2.8, gravity=2.0e-4, tau_relax=1.0,
-                       a0_over_lam=0.02, interface_width=2.0)
+# ---------------------------------------------------------------------------
+# Front estimator: calibration against a known imposed displacement
+#
+# The legacy ``column_height`` estimator is a conserved mass moment.  A vertical
+# shift of the density profile leaves such a sum almost unchanged, so the moment
+# cannot measure an interface *position*.  These tests pin the defect, the fix
+# (``gradient_front_state``) and the three calibration criteria that
+# ``docs/CASE-RT-TWOFLUID-PRECOND.md`` requires before any gate may be built on
+# an estimator: seed readback, gravity-null drift, hydrostatic common mode.
+# ---------------------------------------------------------------------------
+
+RHO_HIGH_CAL = 1.2078184525247444
+RHO_LOW_CAL = 0.2545369048466741
+
+
+def _relaxed_like_profile(cfg: SCMPRTConfig, a_over_lam: float = 0.02,
+                          bulk_low: float | None = None) -> torch.Tensor:
+    """A profile with the *measured* relaxed-SCMP density structure, displaced by one mode.
+
+    ``artifacts_estimator/calibration.json`` records the relaxed flat interface of
+    the case at ``tau = 1.0``: heavy bulk ``rho ~ 1.19``, light bulk ``rho ~ 0.45``
+    and a **diffuse** transition (~20 rows).  Both bulk values sit strictly inside
+    ``(rho_low, rho_high) = (0.255, 1.208)`` of the coexistence calibration, which
+    is exactly the regime the ``clamp`` in :func:`column_height` cannot see (see
+    ``test_column_moment_sensitivity_is_a_clamp_artefact``).
+    """
     y = torch.arange(cfg.ny, dtype=torch.float64).view(cfg.ny, 1)
     x = torch.arange(cfg.nx, dtype=torch.float64).view(1, cfg.nx)
-    # a diffuse equilibrium-like profile, displaced by exactly a0 = 0.02 lambda
-    base = 0.779 + 0.393 * torch.tanh((y - 0.5 * cfg.ny) / 2.0)
-    moved = 0.779 + 0.393 * torch.tanh(
-        (y - (0.5 * cfg.ny + cfg.a0_over_lam * cfg.lam
-              * torch.cos(2.0 * math.pi * x / cfg.lam))) / 2.0)
-    ref = 0.5 * cfg.ny
-    st = column_front_state(moved, cfg, rho_high=1.172, rho_low=0.386,
-                            reference_row=ref)
-    assert abs(st["amplitude_lam"] - cfg.a0_over_lam) < 0.2 * cfg.a0_over_lam
+    low = 0.45 if bulk_low is None else bulk_low
+    high = 1.19
+    half = 0.5 * (high + low)
+    amp = 0.5 * (high - low)
+    y_int = 0.5 * cfg.ny + a_over_lam * cfg.lam * torch.cos(
+        2.0 * math.pi * x / cfg.lam)
+    rho = half + amp * torch.tanh((y - y_int) / cfg.interface_width)
+    rho[0, :] = 0.0
+    rho[-1, :] = 0.0
+    return rho
+
+
+def test_gradient_estimator_reads_back_a_known_amplitude():
+    """Seed readback criterion (i): error < 5 % for a0 >= 0.02 lam."""
+    cfg = SCMPRTConfig(lam=64, layers=4.0, sc_g=2.8, gravity=2.0e-4, tau_relax=1.0,
+                       a0_over_lam=0.02, interface_width=2.0)
+    for a_lam in (0.02, 0.05, 0.2):
+        st = gradient_front_state(_relaxed_like_profile(cfg, a_lam), cfg,
+                                  rho_high=RHO_HIGH_CAL, rho_low=RHO_LOW_CAL)
+        assert abs(st["amplitude_lam"] / a_lam - 1.0) < 0.05, (a_lam, st)
+        # the spike is the descending front: negative displacement
+        assert st["spike_tip_lam"] < 0.0 < st["bubble_tip_lam"]
+
+
+def test_gradient_estimator_sub_row_resolution_floor():
+    """Documented sensitivity floor: a0 = 0.005 lam (0.32 row) is near it."""
+    cfg = SCMPRTConfig(lam=64, layers=4.0, sc_g=2.8, gravity=2.0e-4, tau_relax=1.0,
+                       a0_over_lam=0.005, interface_width=2.0)
+    st = gradient_front_state(_relaxed_like_profile(cfg, 0.005), cfg,
+                              rho_high=RHO_HIGH_CAL, rho_low=RHO_LOW_CAL)
+    assert abs(st["amplitude_lam"] / 0.005 - 1.0) < 0.25
+
+
+def test_gradient_estimator_rejects_hydrostatic_bulk_compression():
+    """Common-mode criterion (iii): a bulk density ramp must not move the amplitude.
+
+    ``eps = g H / c_s^2`` for the case parameters is 0.15, i.e. a 15 % density
+    ramp across the box -- the same order as what gravity imposes on the whole
+    box during a run.
+    """
+    cfg = SCMPRTConfig(lam=64, layers=4.0, sc_g=2.8, gravity=2.0e-4, tau_relax=1.0,
+                       a0_over_lam=0.02, interface_width=2.0)
+    base = _relaxed_like_profile(cfg, 0.02)
+    y = torch.arange(cfg.ny, dtype=torch.float64).view(cfg.ny, 1)
+    for eps in (0.1536, -0.1536, 0.4608):
+        compressed = base * (1.0 + eps * y / cfg.ny)
+        compressed[0, :] = 0.0
+        compressed[-1, :] = 0.0
+        st = gradient_front_state(compressed, cfg, rho_high=RHO_HIGH_CAL,
+                                  rho_low=RHO_LOW_CAL)
+        assert abs(st["amplitude_lam"] / 0.02 - 1.0) < 0.05, (eps, st)
+        assert abs(st["common_mode_lam"]) < 5e-3
+
+
+def test_gradient_estimator_ignores_a_wall_depletion_layer():
+    """A vapour-depleted layer against the wall must not be read as an interface.
+
+    The ``phi = 0`` crossing estimator invented a second crossing there and
+    doubled ``n_columns`` (``CASE-RT-TWOFLUID-PRECOND.md`` L3).
+    """
+    cfg = SCMPRTConfig(lam=64, layers=4.0, sc_g=2.8, gravity=2.0e-4, tau_relax=1.0,
+                       a0_over_lam=0.02, interface_width=2.0)
+    clean = _relaxed_like_profile(cfg, 0.02)
+    dirty = clean.clone()
+    dirty[1:5, :] = 0.05
+    a = gradient_front_state(clean, cfg, rho_high=RHO_HIGH_CAL, rho_low=RHO_LOW_CAL)
+    b = gradient_front_state(dirty, cfg, rho_high=RHO_HIGH_CAL, rho_low=RHO_LOW_CAL)
+    assert abs(b["amplitude_lam"] - a["amplitude_lam"]) < 1e-3
+    assert abs(b["spike_tip_lam"] - a["spike_tip_lam"]) < 1e-3
+
+
+def test_interface_profile_gradient_reports_quality_diagnostics():
+    cfg = SCMPRTConfig(lam=32, layers=4.0, interface_width=2.0)
+    prof = interface_profile_gradient(_relaxed_like_profile(cfg, 0.02), cfg)
+    assert prof["valid"]
+    assert prof["lock_spread_rows"] >= 0
+    assert 0.0 < prof["peak_ratio"] <= 1.0
+    assert prof["n_wall_locked"] == 0
+    assert prof["search_rows"][0] >= 1
+    # rows are inside the box and monotone in the mode: two locks per wavelength
+    assert prof["lock_spread_rows"] <= int(round(2.0 * 0.02 * cfg.lam)) + 3
+
+
+def test_run_scmp_rt_accepts_the_gradient_estimator():
+    cfg = SCMPRTConfig(lam=32, layers=4.0, sc_g=2.8, gravity=2.0e-4, tau_relax=1.0,
+                       interface_width=2.0, steps=20, sample_every=10, ma_limit=1e9,
+                       name="ut_gradient")
+    res = run_scmp_rt(cfg, rho_high=1.172, rho_low=0.386, precondition_steps=60,
+                      ramp_steps=10, ma_guard="bulk", front_estimator="gradient")
+    assert res["front_estimator"] == "gradient"
+    assert res["history"]
+    assert all("grad_peak_ratio" in row for row in res["history"])
+    with pytest.raises(ValueError):
+        run_scmp_rt(cfg, rho_high=1.172, rho_low=0.386, front_estimator="nope")
