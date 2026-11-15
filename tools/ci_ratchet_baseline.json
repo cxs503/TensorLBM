@@ -1,0 +1,47 @@
+{
+  "format": {
+    "fingerprint": "d53d134d4fc1ba0f",
+    "kind": "format",
+    "parse_errors": 4,
+    "paths": [
+      "src",
+      "tests",
+      "examples",
+      "benchmarks"
+    ],
+    "ruff_version": "ruff 0.15.0",
+    "total": 2101
+  },
+  "ruff": {
+    "by_code": {
+      "E401": 14,
+      "E402": 48,
+      "E701": 5,
+      "E702": 91,
+      "E712": 4,
+      "E722": 11,
+      "E731": 17,
+      "E741": 52,
+      "F401": 1424,
+      "F541": 140,
+      "F601": 8,
+      "F811": 19,
+      "F821": 12,
+      "F822": 12,
+      "F823": 1,
+      "F841": 365,
+      "I001": 705,
+      "invalid-syntax": 100
+    },
+    "kind": "ruff",
+    "paths": [
+      "src",
+      "tests",
+      "examples",
+      "benchmarks"
+    ],
+    "ruff_version": "ruff 0.15.0",
+    "total": 3028
+  },
+  "ruff_version": "ruff 0.15.0"
+}
