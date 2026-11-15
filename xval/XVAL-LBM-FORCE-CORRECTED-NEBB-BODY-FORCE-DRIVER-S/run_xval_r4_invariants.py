@@ -246,18 +246,29 @@ def check_edm_vs_guo(ny: int = 20, nu: float = 0.2, u_max: float = 0.05):
     }
 
 
-def main():
-    out_path = Path("/tmp/xval_r4_invariants.json")
+def main(argv=None):
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument(
+        "--out",
+        default=str(_REPO / "xval" / "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S"
+                    / "artifacts" / "r4_invariants.json"),
+        help="path of the JSON artifact (default: the committed artifacts/ dir)",
+    )
+    args = ap.parse_args(argv)
+    out_path = Path(args.out).resolve()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     
     results = {
         "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
         "round": 4,
-        "mission": "m21157",
+        "mission": "m21204",
         "purpose": "Verify predeclared invariants + grid convergence study",
     }
     
     print("=" * 70)
-    print("Round 4 Validation Extension (Lightweight)")
+    print("Round 4 Validation Extension (invariants + grid convergence)")
     print("=" * 70)
     
     # 1. Mass conservation
