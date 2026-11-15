@@ -3,6 +3,18 @@
 Reference: joconnor22/LIFE ``src/Grid.cpp::regularisedBC``; the per-node
 transcription lives in ``xval/XVAL-LBM-REG-BC-NEQ-STRESS/reference.py`` and the
 upstream snapshot in ``.../oss_src/Grid.cpp`` (md5 pinned in PROVENANCE.json).
+
+Invariants checked here (see the anchor report
+``docs/reports/XVAL_LBM_REGULARISED_BC_ROUND2_AUDIT.md``):
+
+* I1  the torch port reproduces the LIFE transcription node by node
+      (non-corner <= 1e-8, corners inside the owner 15 % gate);
+* I2  the second-order Hermite projection preserves the two lowest moments, so
+      a reconstructed node leaves with exactly the density and velocity that
+      step 1 of the algorithm prescribed, and with exactly the non-equilibrium
+      stress accumulated in step 3 (``Pi_neq`` idempotent under projection);
+* I3  the reconstructed populations are finite and non-negative for a
+      physically admissible state.
 """
 
 from __future__ import annotations
@@ -103,18 +115,52 @@ def test_port_matches_life_transcription_all_nodes():
 
 
 def test_reconstruction_preserves_density_and_stress():
+    """I2: the Hermite projection is moment-exact below second order.
+
+    ``f_q = f_q^eq + (w_q/2c_s^4) Q_q:Pi_neq`` reproduces ``sum f``,
+    ``sum c f`` and ``sum c c f`` of the reconstructed set exactly, hence the
+    node leaves with the density/velocity set in step 1 and with the
+    non-equilibrium stress accumulated in step 3.
+    """
     _, _, f_port, diag, kinds, iy, ix, rho_f, u_bc = _compare(9, 17)
     import numpy as np
 
     c = C2Q9.numpy()
-    flat = ((kinds != rb.FLUID) & (kinds != rb.PRESSURE)).numpy()[iy, ix]
+    fp = f_port.numpy()[:, iy, ix]
+    kv = kinds.numpy()[iy, ix]
+
+    # (a) velocity-type nodes carry the prescribed velocity ...
+    vel_mask = (kv == rb.VELOCITY) | (kv == rb.WALL) | (kv == rb.FREE_SLIP)
     got = np.stack([diag["ux"].numpy(), diag["uy"].numpy()], axis=1)
-    assert np.abs(got[flat] - u_bc.numpy()[iy, ix][flat]).max() < 1.0e-12
+    assert np.abs(got[vel_mask] - u_bc.numpy()[iy, ix][vel_mask]).max() < 1.0e-12
+
+    # (b) ... and the density recovered by the Zou/He closure, i.e. the
+    #     momentum of the reconstructed set is rho * u, not a free parameter.
+    rho_nodes = fp.sum(axis=0)
+    mom_x = (c[:, 0, None] * fp).sum(axis=0)
+    mom_y = (c[:, 1, None] * fp).sum(axis=0)
+    assert np.abs(mom_x - rho_nodes * got[:, 0]).max() < 1.0e-12
+    assert np.abs(mom_y - rho_nodes * got[:, 1]).max() < 1.0e-12
+
+    # (c) pressure nodes keep the prescribed density
+    pres_mask = kv == rb.PRESSURE
+    assert np.abs(rho_nodes[pres_mask] - 1.0).max() < 1.0e-12
+
+    # (d) the projection reproduces the accumulated non-equilibrium stress
     pre = np.array([diag["pi_neq_xx_pre"].numpy(), diag["pi_neq_yy_pre"].numpy(), diag["pi_neq_xy_pre"].numpy()])
     post = np.array([diag["pi_neq_xx"].numpy(), diag["pi_neq_yy"].numpy(), diag["pi_neq_xy"].numpy()])
     assert np.abs(post - pre).max() < 1.0e-12
-    mom = (c[:, 0, None] * f_port.numpy()[:, iy, ix]).sum(axis=0)
-    assert np.abs(mom).max() < 1.0e-12
+    # (e) the off-equilibrium part carries neither mass nor momentum: the
+    #     projection only reshuffles moments above second order
+    w = rb.W2Q9.numpy()
+    rho_n, ux_n, uy_n = diag["rho"].numpy(), diag["ux"].numpy(), diag["uy"].numpy()
+    cu = np.einsum("qi,i...->q...", c.astype(float), np.stack([ux_n, uy_n]))
+    u2 = ux_n**2 + uy_n**2
+    feq = w[:, None] * rho_n[None, :] * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u2[None, :])
+    fneq = fp - feq
+    assert np.abs(fneq.sum(axis=0)).max() < 1.0e-12
+    assert np.abs((c[:, 0, None] * fneq).sum(axis=0)).max() < 1.0e-12
+    assert np.abs((c[:, 1, None] * fneq).sum(axis=0)).max() < 1.0e-12
 
 
 def test_single_node_wall_reconstruction_is_deterministic():

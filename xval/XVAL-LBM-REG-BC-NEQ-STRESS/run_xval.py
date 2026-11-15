@@ -19,6 +19,9 @@ Usage::
 
 from __future__ import annotations
 
+import argparse
+import platform
+
 import json
 import sys
 import time
@@ -107,11 +110,16 @@ def zouhe_columns(out: torch.Tensor, prof_bb: np.ndarray, rho_out: float = 1.0):
     A[:, 1] = np.stack([-ux, np.ones(n), np.ones(n), np.ones(n)], axis=1)
     b[:, 1] = f[2, rows, 0] + f[6, rows, 0] + f[8, rows, 0]
     A[:, 2] = np.stack([np.zeros(n), np.zeros(n), np.ones(n), -np.ones(n)], axis=1)
-    b[:, 2] = -f[3, rows, 0] + f[4, rows, 0] - f[6, rows, 0] + f[8, rows, 0]
+    # y-momentum (u_y = 0): f5 - f7 = -(f3 - f4) + (f6 - f8).  The earlier
+    # version had the sign of the f6/f8 terms flipped, i.e. it broke the
+    # symmetry of the diagonal pair and the inlet diverged (K3 ~ 1.8e4 %).
+    b[:, 2] = -f[3, rows, 0] + f[4, rows, 0] + f[6, rows, 0] - f[8, rows, 0]
     A[:, 3] = np.stack([-(1.0 / 18.0 + ux / 6.0), np.zeros(n), np.ones(n), np.ones(n)], axis=1)
     b[:, 3] = np.zeros(n)
-    sol = np.linalg.solve(A, b)
-    f[0, rows, 0] = sol[:, 0]
+    sol = np.linalg.solve(A, b[..., None])[..., 0]
+    # x = [rho, f1, f5, f7]: rho is a *solved* unknown, f0 was a known in K, so
+    # writing sol[:,0] into f0 (as the first version did) injected mass every
+    # step and the inlet diverged.  Only the three unknown populations are set.
     f[1, rows, 0] = sol[:, 1]
     f[5, rows, 0] = sol[:, 2]
     f[7, rows, 0] = sol[:, 3]
@@ -127,7 +135,7 @@ def zouhe_columns(out: torch.Tensor, prof_bb: np.ndarray, rho_out: float = 1.0):
     b[:, 2] = -(f[3, rows, -1] - f[4, rows, -1]) - (f[5, rows, -1] - f[7, rows, -1])
     A[:, 3] = np.array([rho_out / 6.0, 0.0, 1.0, 1.0])
     b[:, 3] = np.full(n, rho_out / 18.0)
-    sol = np.linalg.solve(A, b)
+    sol = np.linalg.solve(A, b[..., None])[..., 0]
     f[2, rows, -1] = sol[:, 1]
     f[6, rows, -1] = sol[:, 2]
     f[8, rows, -1] = sol[:, 3]
@@ -189,8 +197,14 @@ def compare_implementations(fs, kinds, normals, u_bc, rho_bc, rho_f, u_f):
     post = np.array([diag["pi_neq_xx"].numpy(), diag["pi_neq_yy"].numpy(), diag["pi_neq_xy"].numpy()])
     out["K2_pi_neq_preserved"] = float(np.abs(post - pre).max())
     c = C2Q9.numpy()
-    mom = (c[:, 0, None] * fp).sum(axis=0)
-    out["K2_momentum_after"] = float(np.abs(mom).max())
+    rho_n = fp.sum(axis=0)
+    got_u = np.stack([diag["ux"].numpy(), diag["uy"].numpy()], axis=1)
+    # invariant: the projection preserves rho and rho*u set in step 1, so the
+    # reconstructed set carries exactly the prescribed momentum (|mom| alone is
+    # not an invariant -- a velocity inlet has non-zero momentum by design)
+    mom_x = (c[:, 0, None] * fp).sum(axis=0) - rho_n * got_u[:, 0]
+    mom_y = (c[:, 1, None] * fp).sum(axis=0) - rho_n * got_u[:, 1]
+    out["K2_momentum_after"] = float(max(np.abs(mom_x).max(), np.abs(mom_y).max()))
     # prescribed state must be reproduced exactly at flat velocity-type nodes
     flat = ((kinds != rb.FLUID) & (kinds != rb.PRESSURE)).numpy()[iy, ix] & ~corner
     got = np.stack([diag["ux"].numpy(), diag["uy"].numpy()], axis=1)
@@ -272,6 +286,9 @@ def run_channel(arm, ny, nx, umax, re, max_steps, parity_steps=()):
         "K5_mass_drift_pct": K5,
         "K6_outlet_uy_pct": K6,
         "K7_wall_slip_pct": K7,
+        "profile_mid_column": ux[:, mid].tolist(),
+        "profile_analytic": y_ex.tolist(),
+        "kappa": float(np.abs(uy[rows, :]).max()) / umax,
         "rho_max_dev": float(np.abs(rho[rows, cols] - 1.0).max()),
         "u_mid_column": ux[rows, mid].tolist(),
         "y_mid_analytic": y_ex[rows].tolist(),
@@ -279,15 +296,47 @@ def run_channel(arm, ny, nx, umax, re, max_steps, parity_steps=()):
     }
 
 
-def main():
-    cases = [
-        dict(ny=33, nx=129, umax=0.05, re=100.0, max_steps=3000),
-        dict(ny=17, nx=65, umax=0.05, re=100.0, max_steps=1500),
-    ]
-    results = {"mission": 18240, "anchor": "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-RECON", "cases": []}
+def main(argv=None):
+    """Round-2 driver: resolution ladder for the regularised D2Q9 arm.
+
+    The legacy ``zouhe`` arm (hand-rolled Zou/He inlet+outlet closure in
+    :func:`zouhe_columns`) is kept for provenance but is **not** a usable
+    baseline: three separate defects were found and two fixed in round 2
+    (``np.linalg.solve`` batch shape, inlet y-momentum sign, inlet density
+    written into the rest population) and it still diverges
+    (``|u| -> inf`` within ~10^3 steps at H=16, Re=100), see the round-2 audit
+    report section "failure modes".  A trustworthy status-quo baseline must
+    use the production ``tensorlbm.boundary.boundaries.zou_he_inlet_velocity``
+    / ``zou_he_outlet_pressure`` pair; that is tracked as follow-up work
+    instead of being faked here.
+    """
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--arms", default="reg", help="comma separated subset of {reg}; zouhe is unstable (see docstring)")
+    ap.add_argument("--res", default="32,16,64", help="comma separated channel heights H (H lattices, nx = 4H+1)")
+    ap.add_argument("--steps", type=int, default=6000, help="max time steps per case")
+    args = ap.parse_args(argv)
+
+    arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+    cases = [dict(ny=int(H) + 1, nx=4 * int(H) + 1, umax=0.05, re=100.0, max_steps=args.steps)
+             for H in args.res.split(",")]
+    results = {
+        "mission": 21104,
+        "anchor": "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC",
+        "round": 2,
+        "env": {
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+        "cases": [],
+    }
     for case in cases:
-        for arm in ("reg", "zouhe"):
-            parity_steps = (400, 1200) if arm == "reg" and case["ny"] == 33 else ()
+        for arm in arms:
+            if arm == "zouhe":
+                print("skip zouhe arm: unstable, see docstring / round-2 audit report")
+                continue
+            parity_steps = (200, 1200)
             try:
                 r = run_channel(arm=arm, parity_steps=parity_steps, **case)
             except Exception:
@@ -299,13 +348,13 @@ def main():
             print(
                 f"arm={arm:5s} H={r['H']:3d} Re={r['Re']:5.1f} steps={r['steps']:6d} "
                 f"conv={r['converged']} K3={r['K3_profile_err_pct']:.4f}% K4={r['K4_field_l2_pct']:.4f}% "
-                f"K5={r['K5_mass_drift_pct']:.3e}% K6={r['K6_outlet_uy_pct']:.4f}%"
+                f"K5={r['K5_mass_drift_pct']:.3e}% K6={r['K6_outlet_uy_pct']:.4f}% K7={r['K7_wall_slip_pct']:.3e}%"
             )
             for p in r["parity"]:
                 print(
                     f"   parity@{p['step']}: K1_all={p['K1_all_pct']:.3e}% "
                     f"noncorner={p['K1_noncorner_pct']:.3e}% corner={p['K1_corner_pct']:.3e}% "
-                    f"K2_pi={p['K2_pi_neq_preserved']:.2e}"
+                    f"K2_pi={p['K2_pi_neq_preserved']:.2e} K2_mom={p['K2_momentum_after']:.2e}"
                 )
     out_dir = HERE / "out"
     out_dir.mkdir(exist_ok=True)

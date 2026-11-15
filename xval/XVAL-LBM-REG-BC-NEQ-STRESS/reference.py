@@ -15,6 +15,21 @@ upstream line range it transcribes:
 The transcription is deliberately dumb: numpy, one node at a time, in-place
 updates in BC-vector order (ascending flat id), exactly like the upstream
 serial reading order.  It is the *reference arm*, not production code.
+
+Axis convention (fixed 2026-11-14, was the defect behind the two red tests in
+``tests/test_regularised_bc_2d.py``): ``normal`` is a *physical* lattice normal
+``(n_x, n_y)``, while every field here is indexed ``[y, x]``.  The upstream
+stencil walkers (``Utils.h`` ``extrapolate`` / ``zeroGradient``) step one node
+along the normal, so the row index must advance by ``n_y`` and the column index
+by ``n_x``.  The first version of this file advanced rows by ``normal[0]`` and
+columns by ``normal[1]``, i.e. it walked the stencil along the normal rotated by
+90 degrees: harmless on pure x-normal or pure y-normal boundaries of a state
+that is uniform along the other axis, but wrong for the tangential
+zero-gradient of every pressure outlet (21 % deviation) and for the corner
+density extrapolation (22-36 %).  :func:`_step` is the single place that maps
+the physical normal onto array strides; the production port
+(``tensorlbm.regularised_bc_2d``) already used ``(n_x, n_y)`` consistently, so
+the two arms now agree to 3e-14.
 """
 
 from __future__ import annotations
@@ -51,23 +66,27 @@ def _clamp(i: int, n: int) -> int:
     return 0 if i < 0 else (n - 1 if i >= n else i)
 
 
+def _step(normal: np.ndarray) -> tuple[int, int]:
+    """Lattice normal ``(n_x, n_y)`` -> ``(row_stride, col_stride)`` = ``(n_y, n_x)``."""
+    n = np.asarray(normal, dtype=np.int64)
+    return int(n[1]), int(n[0])
+
+
 def extrapolate(vec: np.ndarray, normal: np.ndarray, i: int, j: int) -> float:
     """Utils.h L151-161, first-order extrapolation (used for corner density)."""
     ny, nx = vec.shape
-    i1 = _clamp(i + normal[0], ny)
-    j1 = _clamp(j + normal[1], nx)
-    i2 = _clamp(i + 2 * normal[0], ny)
-    j2 = _clamp(j + 2 * normal[1], nx)
+    di, dj = _step(normal)
+    i1, j1 = _clamp(i + di, ny), _clamp(j + dj, nx)
+    i2, j2 = _clamp(i + 2 * di, ny), _clamp(j + 2 * dj, nx)
     return 2.0 * vec[i1, j1] - vec[i2, j2]
 
 
 def zero_gradient(vec: np.ndarray, normal: np.ndarray, i: int, j: int) -> float:
     """Utils.h L200-210, second-order zero-gradient (tangential velocity)."""
     ny, nx = vec.shape
-    i1 = _clamp(i + normal[0], ny)
-    j1 = _clamp(j + normal[1], nx)
-    i2 = _clamp(i + 2 * normal[0], ny)
-    j2 = _clamp(j + 2 * normal[1], nx)
+    di, dj = _step(normal)
+    i1, j1 = _clamp(i + di, ny), _clamp(j + dj, nx)
+    i2, j2 = _clamp(i + 2 * di, ny), _clamp(j + 2 * dj, nx)
     return (4.0 / 3.0) * vec[i1, j1] - (1.0 / 3.0) * vec[i2, j2]
 
 
@@ -86,7 +105,7 @@ def life_regularised_bc(
     ----------
     f : (9, ny, nx) populations *after* collide+stream (pre-BC state).
     kind : (ny, nx) int, FLUID/WALL/VELOCITY/PRESSURE/FREE_SLIP.
-    normal : (ny, nx, 2) int, outward lattice normal (0 or +-1 per axis).
+    normal : (ny, nx, 2) int, outward lattice normal (n_x, n_y); 0 or +-1 per axis.
     u_bc : (ny, nx, 2) prescribed velocity for VELOCITY nodes.
     rho_bc : (ny, nx) prescribed density for PRESSURE nodes.
     rho, u : (ny, nx) / (ny, nx, 2) macroscopic fields, updated in place copies.
@@ -118,7 +137,7 @@ def life_regularised_bc(
             if t == FLUID:
                 continue
             n = np.asarray(normal[i, j], dtype=np.int64)
-            nd = 0 if n[0] != 0 else 1  # getNormalVector: normalDirection
+            nd = 0 if n[0] != 0 else 1  # getNormalVector: normalDirection (x first)
             is_corner = bool(n[0] != 0 and n[1] != 0)
             (corner_nodes if is_corner else edge_nodes).append((i, j))
 
