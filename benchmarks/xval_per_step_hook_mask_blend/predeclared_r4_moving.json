@@ -1,0 +1,66 @@
+{
+  "anchor": "XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND",
+  "round": 4,
+  "title": "Moving sub-cell (partially saturated) wall + per-step hook: analytic verification",
+  "frozen_before_measurement": true,
+  "frozen_at_utc": "2026-11-15T02:40:00Z",
+  "mission": 21235,
+  "why": "R3 closed the stationary sub-cell wall but explicitly left two holes: (a) the moving sub-cell wall (the Noble-Torczynski momentum term 6 w_i (c_i.u_w), reachable through partial_cell_layer(velocity=...)) was never measured -- only a smoke test asserted 'moving differs from stationary'; (b) per-step setup hooks were never exercised together with a sub-cell mask, which is the anchor's own subject. R4 measures both against a closed-form Couette solution and fixes the solid-limit defect R3 pinned as xfail.",
+  "geometry": {
+    "cell_centres": "integer y; cell k spans [k-0.5, k+0.5]",
+    "rows": "row 0 fully solid (bounce); row 1 partially saturated, solid on its low face; row ny-1 the second wall",
+    "interface": "y_b = 0.5 + eps_s",
+    "top": "y_t = ny - 1.5",
+    "H": "y_t - y_b",
+    "case": "plane Couette with the *bottom* wall moving at U and the top wall stationary",
+    "analytic": "u(y) = U (y_t - y) / H"
+  },
+  "parameters": {
+    "tau": [0.8],
+    "tau_sensitivity": [0.7, 0.9],
+    "eps_s": [0.25, 0.5, 0.75, 1.0],
+    "ny": [16, 24],
+    "nx": 8,
+    "U": 0.02,
+    "Ma": 0.034641,
+    "dtype": "float64",
+    "stop_rule": "12 transient e-folding times of the Couette start-up + 200 steps (run_xval.steps_for_couette), unchanged from R1/R2/R3"
+  },
+  "arms": {
+    "naive_eps": "BoundaryLayer(kind='moving', mask=eps_s): raw solid fraction as blend weight, pre-collision reflection (upstream transplant + momentum)",
+    "nt_pre": "partial_cell_layer(reflect='pre'): NT weight B, pre-collision reflection, momentum term scaled by B",
+    "nt_post": "partial_cell_layer(reflect='post'): NT weight B, post-collision reflection, momentum term scaled by B (library default)",
+    "staircase": "moving_bounce_layer on row 1 with mask=1 (eps_s=1 reference, no sub-cell position)"
+  },
+  "metrics": {
+    "profile_l2_pct": "100 * ||u_measured - u_analytic||_2 / ||u_analytic||_2 over fluid rows 2..ny-2 only",
+    "max_err_pct": "100 * max|u_measured - u_analytic| / U",
+    "u_wall_recovered": "linear least-squares fit u = a + b y over fluid rows, evaluated at y_b, divided by U (1.0 = wall velocity reproduced)",
+    "offset_err_dx": "y at which the fitted line reaches U, minus y_b (dx)",
+    "note": "the partially saturated row itself is a fluid/solid mixture and is excluded from every error norm (same convention as R3)"
+  },
+  "predictions": {
+    "P1_hook_drives_sub_cell_wall": "a per-step setup_step hook writing the wall velocity into state and a callable velocity on the partial layer reproduces the direct-argument run bit-wise; a hook writing zero leaves the field at rest",
+    "P2_hook_ramp_equivalence": "ramping the hook-driven wall velocity 0 -> U over 200 steps and then running to the same stop rule reproduces the constant-U profile within 1 % L2",
+    "P3_solid_limit_moving_bitwise": "eps_s = 1 with the library default collapses bit-wise to moving_bounce_layer (this is the R3 xfail; it holds only after the solid-limit fix)",
+    "P4_wall_velocity_recovered": "the fitted velocity at y_b equals U within 3 % for the library default at every eps_s",
+    "P5_profile_accuracy": "profile L2 < 3 % for the library default at every eps_s and both ny",
+    "P6_error_monotone_in_eps": "the profile L2 decreases monotonically with eps_s (no interior minimum) for every arm"
+  },
+  "thresholds": {
+    "wall_velocity_tol_rel": 0.03,
+    "profile_l2_internal_target_pct": 3.0,
+    "owner_ceiling_pct": 15.0,
+    "hook_ramp_equivalence_pct": 1.0,
+    "bitwise_tol": 1e-12
+  },
+  "stop_rule_if": "any arm is non-finite, or the hook fails to reach the boundary condition (P1 false) -- then report the operator defect instead of tuning arms",
+  "deliverables": [
+    "artifacts/xval_moving_subcell_wall/result.json",
+    "artifacts/xval_moving_subcell_wall/table.csv",
+    "artifacts/xval_moving_subcell_wall/profiles.npz",
+    "artifacts/xval_moving_subcell_wall/figures/*.png",
+    "docs/XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R4-MOVING-SUBCELL-WALL.md",
+    "tests/test_moving_subcell_wall.py"
+  ]
+}
