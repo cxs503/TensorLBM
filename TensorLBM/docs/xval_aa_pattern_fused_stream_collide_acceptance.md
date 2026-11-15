@@ -1,5 +1,21 @@
 # XVAL: Acceptance of the AA-Pattern Fused Stream-Collide Kernel (Re = 100 Cavity)
 
+> **CORRECTION (2026-11-16, mission m22379).** The `u_y` (horizontal centre
+> line) numbers below — 4.80 % / 4.59 % / 4.50 % at L = 32/64/128, quoted as a
+> solver property and used to declare `< 3 %` "not met" — are **withdrawn**. They
+> were produced by scoring against a *scrambled hand-typed copy* of Ghia's
+> Table II (values attached to the wrong `x/L` stations, 16 rows instead of 17)
+> and by sampling the centre line half a cell off `y/H = 1/2`. Re-scored against
+> the provenance-bearing table
+> (`reference_data.GHIA_RE100`, `provenance="BOUND"`), the same runs give
+> `L2(u_y)` = 1.05 % / 0.77 % / 0.38 % at L = 32/64/128, i.e. converging, and
+> **both centre lines are below the 3 % gate on every grid**. The `< 15 %`
+> acceptance of the anchor is met with a factor 4–40 margin. Details, evidence
+> and the corrected table: `docs/xval_aa_pattern_ghia_table_defect.md`
+> (`artifacts/xval_aa_pattern/cavity_accept_corrected.json`,
+> `fig7_ghia_table_defect.png`, `fig8_cavity_convergence_corrected.png`).
+> The text below is kept unchanged as the historical record.
+
 **Anchor**: `XVAL-LBM-AA-PATTERN-FUSED-STREAM-COLLIDE` (lanl/MF-LBM `aa-pattern-fused-stream-collide`)
 **Mission**: m21739 · **Date**: 2026-11-15 · **Status**: partial acceptance — coarse-grid point PASS, converged multi-grid sweep still queued
 
