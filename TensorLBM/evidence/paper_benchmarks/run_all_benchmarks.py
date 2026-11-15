@@ -256,6 +256,41 @@ def run_layered_poiseuille() -> dict:
     }
 
 
+def run_two_component_sc_layered_poiseuille() -> dict:
+    """Benchmark: two-component Shan-Chen layered Poiseuille (MCMP, EDM forcing).
+
+    Shares its scoring code with the anchor cross-validation entry point via
+    :mod:`tensorlbm.verification.layered_poiseuille.benchmark`, so the numbers
+    quoted here are produced by exactly the same comparison against the exact
+    piecewise-quadratic layered solution.
+    """
+    from tensorlbm.verification.layered_poiseuille.benchmark import benchmark_single_case
+
+    out = benchmark_single_case("layered_r167_light")
+    rec = out["record"]
+    m = rec["metrics"]
+    return {
+        "name": "Two-component Shan-Chen layered Poiseuille (nu ratio 1.67, EDM)",
+        "category": "analytical",
+        "external_anchor": "Shan & Chen (1993) PRE 47:1815; Martys & Chen (1996) PRE 53:743; "
+                           "piecewise Poiseuille: d/dy(nu du/dy) = -g with u and nu*du/dy continuous",
+        "params": dict(rec["config"]),
+        "ref_u_peak": m["u_peak_ref"],
+        "got_u_peak": m["u_peak_num"],
+        "u_peak_err": m["u_peak_err"],
+        "eps_inf": m["eps_inf"],
+        "eps_L2_rel": m["eps_l2_rel"],
+        "Q_err": m["Q_err"],
+        "nu_fit_lower": m.get("nu_fit_lower"),
+        "nu_fit_upper": m.get("nu_fit_upper"),
+        "ref_nu": [rec["nu_a"], rec["nu_b"]],
+        "y_iface_ref": m["y_iface_ref"],
+        "y_iface": m["y_iface"],
+        "gates": rec["gates"],
+        "passed": bool(rec["gate_pass"]),
+    }
+
+
 def run_asbl() -> dict:
     """Benchmark 7: Asymptotic Suction Boundary Layer."""
     import torch
@@ -331,6 +366,20 @@ def run_cdr_da1() -> dict:
     }
 
 
+#: benchmark registry (name -> runner); ``main`` runs a (possibly sharded) subset.
+BENCHMARKS = [
+    ("poiseuille_2d", run_poiseuille_2d),
+    ("lid_cavity_re100", run_lid_cavity_re100),
+    ("womersley_alpha5", run_womersley_alpha5),
+    ("circular_poiseuille", run_circular_poiseuille),
+    ("square_duct_poiseuille", run_square_duct_poiseuille),
+    ("layered_poiseuille", run_layered_poiseuille),
+    ("two_component_sc_layered_poiseuille", run_two_component_sc_layered_poiseuille),
+    ("asbl", run_asbl),
+    ("cdr_da1", run_cdr_da1),
+]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run all paper-level benchmarks")
     parser.add_argument("--out", default="artifacts/paper_evidence", help="Output directory")
@@ -340,16 +389,7 @@ def main():
     outdir = Path(args.out)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    benchmarks = [
-        ("poiseuille_2d", run_poiseuille_2d),
-        ("lid_cavity_re100", run_lid_cavity_re100),
-        ("womersley_alpha5", run_womersley_alpha5),
-        ("circular_poiseuille", run_circular_poiseuille),
-        ("square_duct_poiseuille", run_square_duct_poiseuille),
-        ("layered_poiseuille", run_layered_poiseuille),
-        ("asbl", run_asbl),
-        ("cdr_da1", run_cdr_da1),
-    ]
+    benchmarks = list(BENCHMARKS)
 
     # Handle sharding
     if args.shard:
