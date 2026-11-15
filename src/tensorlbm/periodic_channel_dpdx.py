@@ -91,6 +91,7 @@ __all__ = [
     "dpdx_to_lattice_force",
     "life_force_xy",
     "poiseuille_analytic",
+    "poiseuille_transient",
     "observed_order",
     "fit_parabola",
 ]
@@ -203,6 +204,85 @@ def poiseuille_analytic(
     s = (y - y_w) / h
     u_max = g * h * h / (8.0 * nu)
     return s, 4.0 * u_max * s * (1.0 - s), y_w, h
+
+
+def poiseuille_transient(
+    ny: int,
+    nu: float,
+    g: float,
+    t: float,
+    *,
+    wall: str = WALL_HALFWAY_BB,
+    n_modes: int | None = None,
+    tol: float = 1e-14,
+    max_modes: int = 200_001,
+) -> tuple[np.ndarray, np.ndarray, float, float, int]:
+    """Exact start-up solution of the forced plane channel (from rest).
+
+    The channel is at rest and a constant body-force density ``g`` (= the
+    lattice acceleration, ``nu u'' = -g``) is switched on at ``t = 0+``.  The
+    classical Fourier-series solution is
+
+    .. math::
+
+        u(s,t) = u_\infty(s)
+                 - \frac{4 g H^2}{\nu \pi^3}
+                   \sum_{k=0}^{\infty} \frac{\sin((2k+1)\pi s)}{(2k+1)^3}
+                   e^{-(2k+1)^2 \pi^2 \nu t / H^2},
+
+    with the steady parabola ``u_\infty = g H^2 s (1-s) / (2 nu)`` on
+    ``s = (y - y_w)/H``.  It is the transient counterpart of
+    :func:`poiseuille_analytic` and the only benchmark that exercises the
+    *time* accuracy of the force injection (the steady benchmark cannot see an
+    ``O(\Delta t)`` offset in the reported velocity -- see the round-4 report
+    ``docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX_R4.md``).
+
+    Returns ``(s, u, y_w, H, n_modes)``: the wall-normalised coordinate and
+    profile on the fluid rows ``y = 1 .. ny-2``, the closure's wall origin and
+    height (same conventions as :func:`poiseuille_analytic`), and the number of
+    odd Fourier modes actually summed.
+
+    Parameters
+    ----------
+    n_modes:
+        Fixed number of odd modes; by default the series is summed until the
+        largest remaining term is below ``tol`` times the steady peak.
+        ``t`` must be positive -- at ``t = 0`` the exact value is ``u = 0``
+        everywhere (the series is only conditionally convergent there), so the
+        analytic value is returned early rather than summed.
+    """
+    if not t > 0.0:
+        raise ValueError(
+            f"transient solution needs t > 0 (the exact value at t = 0 is u = 0); got t={t!r}")
+    if not nu > 0.0:
+        raise ValueError(f"nu must be positive, got {nu!r}")
+    h = float(ny - 2) if wall == WALL_HALFWAY_BB else float(ny - 1)
+    y_w = 0.5 if wall == WALL_HALFWAY_BB else 0.0
+    y = np.arange(1, ny - 1, dtype=np.float64)
+    s = (y - y_w) / h
+    u_ss = g * h * h / (2.0 * nu) * s * (1.0 - s)
+    u = u_ss.copy()
+    amp = 4.0 * g * h * h / (nu * np.pi ** 3)
+    if amp == 0.0:
+        return s, u, y_w, h, 0
+    tau_d = nu * t / (h * h)          # non-dimensional diffusive time
+    scale = float(np.max(np.abs(u_ss))) / abs(amp)   # tolerance in series units
+    limit = int(n_modes) if n_modes is not None else int(max_modes)
+    used = 0
+    for k in range(limit):
+        n = 2 * k + 1
+        term = np.sin(n * np.pi * s) / n ** 3 * np.exp(-(n * n * np.pi ** 2) * tau_d)
+        u -= amp * term
+        used = k + 1
+        if n_modes is None and float(np.max(np.abs(term))) < tol * scale:
+            break
+    else:  # loop exhausted
+        if n_modes is None:
+            raise ValueError(
+                "transient series did not reach tol before max_modes: "
+                f"t={t!r} is too small for nu={nu!r}, H={h}; the series needs "
+                f"O((nu t / H^2)^-1/2) modes")
+    return s, u, y_w, h, used
 
 
 def dpdx_to_lattice_force(
