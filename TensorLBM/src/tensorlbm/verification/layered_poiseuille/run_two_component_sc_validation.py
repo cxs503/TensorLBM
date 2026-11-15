@@ -40,7 +40,7 @@ import platform
 import subprocess
 import sys
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -161,7 +161,19 @@ def case_reference(case: Dict[str, Any], cfg: TwoComponentSCConfig):
 # one case
 # --------------------------------------------------------------------------- #
 def run_case(name: str, *, verbose: bool = True) -> Dict[str, Any]:
-    case = CASE_MATRIX[name]
+    """Run one of the pre-registered :data:`CASE_MATRIX` cases by name."""
+    return run_case_spec(CASE_MATRIX[name], name=name, verbose=verbose)
+
+
+def run_case_spec(case: Dict[str, Any], *, name: Optional[str] = None,
+                  verbose: bool = True) -> Dict[str, Any]:
+    """Run an arbitrary case specification (``{"kind", "cfg", "note"}``).
+
+    Factored out of :func:`run_case` so other callers - the paper-evidence
+    benchmark harness and the cross-validation registry - drive exactly the
+    same scoring code instead of re-implementing the reference comparison.
+    """
+    name = name or case.get("case", "unnamed")
     cfg = TwoComponentSCConfig(**case["cfg"])
     solver = TwoComponentSCSolver(cfg)
     t0 = time.time()
