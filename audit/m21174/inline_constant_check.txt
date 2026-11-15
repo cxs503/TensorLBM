@@ -1,0 +1,4 @@
+inline keys ['y', 'u', 'x', 'v'] n 17 17
+u: 17 BOUND points, mismatches=0 []
+v: 17 BOUND points, mismatches=0 []
+canonical extrema: u_min ref -0.32726 v_min ref -0.44993
