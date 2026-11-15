@@ -574,97 +574,122 @@ def run_pnp_edl(
 def run_electroosmosis(
     config: PNPConfig,
     steps_flow: int = 20000,
+    *,
+    method: str = "lbm",
+    u_hs_lat: float = 0.02,
+    max_steps: int = 200_000,
+    tol: float = 1e-12,
 ) -> dict:
-    """Run electro-osmotic flow simulation.
+    """Electro-osmotic flow in a symmetric slit, solved numerically.
 
-    Returns dict with:
-        y: grid positions
-        u: velocity profile
-        u_hs: Helmholtz-Smoluchowski velocity
-        u_error: relative error
-        flatness: velocity flatness metric (should be <2% for plug flow)
+    The flow field is obtained from a real numerical solve of the steady
+    Stokes problem with the electro-osmotic body force ``rho_e * E``:
+
+    * ``method="lbm"`` - D2Q9 BGK lattice Boltzmann with a wall-normal varying
+      body force and no-slip half-way bounce-back walls, marched to a steady
+      state (``eof_lbm.solve_stokes_lbm``);
+    * ``method="fd"``  - direct finite-difference (Thomas) solve of the same
+      discrete problem, used as an independent discretisation.
+
+    Both are scored against the exact Poisson-Boltzmann-consistent profile
+    ``u(y) = u_hs (1 - psi(y)/zeta)`` (``u_hs = -eps*zeta*E/mu``), which solves
+    ``mu u'' = -rho_e E`` with no-slip at both walls for *any* EDL structure.
+
+    History / defect record
+    -----------------------
+    Prior to this fix the routine did not solve anything: it assigned
+    ``u_num = u_hs * (1 - psi/zeta)`` - i.e. the analytical expression itself -
+    and then reported ``|mean(u_num) - u_hs| / u_hs`` as a "numerical error".
+    Gate C3 could therefore never fail for physical reasons (circular).  In
+    addition the default configuration (H = 1 um, kappa_H = 3.3) has no plug
+    core, so the flatness metric was evaluated on an empty bulk region and
+    returned 0.0 by fallback.  Both defects are fixed here and locked by
+    ``tests/test_eof_lbm_verification.py``.
+
+    Parameters
+    ----------
+    steps_flow : int
+        Deprecated, unused (kept for call-site compatibility).  The solver
+        marches to a steady-state tolerance instead of a fixed step count.
+    u_hs_lat : float
+        Target Helmholtz-Smoluchowski velocity in lattice units (sets the
+        force amplitude; kept small for Mach-number accuracy).
+
+    Returns
+    -------
+    dict with ``y`` [m], ``u`` [m/s] (numerical), ``u_hs`` [m/s],
+    ``u_analytic`` [m/s], ``psi`` [V], ``u_error`` (max profile error
+    normalised by ``u_hs``), ``l2_error``, ``flatness``, ``method``,
+    ``kappa_H``, ``nodes_per_debye``, ``steps``, ``converged`` and the
+    independent FD cross-check (``u_error_fd``, ``lbm_vs_fd``).
     """
-    device = config.device
-    dtype = config.dtype
-    ny = config.ny
-    dy = config.dy
-    H = config.H
-    c_bulk = config.c_bulk
-    zeta = config.zeta
-    D = config.D_ion
-    z_vals = config.z
-    E_x = config.E_x
-    mu = config.mu
-    rho_f = config.rho_f
-    dt = config.dt
+    from .eof_lbm import run_eof_benchmark
 
-    # Grid
-    y = torch.linspace(0, H, ny, dtype=dtype, device=device)
+    if method not in ("lbm", "fd"):
+        raise ValueError("method must be 'lbm' or 'fd'")
 
-    # First, equilibrate EDL
-    c_plus = torch.full((ny,), c_bulk, dtype=dtype, device=device)
-    c_minus = torch.full((ny,), c_bulk, dtype=dtype, device=device)
-    psi = torch.zeros(ny, dtype=dtype, device=device)
-    u = torch.zeros(ny, dtype=dtype, device=device)
+    ny = int(config.ny)
+    kappa_H = float(config.kappa_H)
+    if not (kappa_H > 0.0):
+        raise ValueError("kappa_H must be positive (check ionic strength)")
+    nodes_per_debye = (ny - 2) / kappa_H
 
-    # EDL equilibration
-    for step in range(5000):
-        rho = _F * (z_vals[0] * c_plus + z_vals[1] * c_minus)
-        psi = solve_poisson_tridiagonal(rho, dy, bc_left=zeta, bc_right=0.0)
-        c_plus = nernst_planck_step(c_plus, psi, u, D, z_vals[0], dy, dt,
-                                     bc_type="dirichlet", bc_val=c_bulk)
-        c_minus = nernst_planck_step(c_minus, psi, u, D, z_vals[1], dy, dt,
-                                      bc_type="dirichlet", bc_val=c_bulk)
+    u_hs = helmholtz_smoluchowski_velocity(
+        config.zeta, config.E_x, config.mu, epsilon_r=_EPSILON_R
+    )
+    if abs(u_hs) < 1e-30:
+        raise ValueError("degenerate case: zero zeta potential or zero field")
 
-    # Now apply electric field and solve for flow
-    # Simplified: Stokes flow with electric body force
-    # μ·d²u/dy² + ρ_e·E_x = 0
-    # With BC: u(0)=0 (no-slip), du/dy(H)=0 (symmetry)
+    lat = run_eof_benchmark(
+        ny=ny, kappa_H=kappa_H, u_hs=u_hs_lat, solver=method,
+        max_steps=max_steps, tol=tol,
+    )
+    fd = run_eof_benchmark(ny=ny, kappa_H=kappa_H, u_hs=u_hs_lat, solver="fd")
 
-    # Analytical HS velocity
-    u_hs = helmholtz_smoluchowski_velocity(zeta, E_x, mu)
+    scale = u_hs / u_hs_lat
+    H_eff = float(lat["H_eff"])
+    y_phys = np.asarray(lat["y_phys"]) / H_eff * config.H
+    u_num = np.asarray(lat["u"]) * scale
+    u_ana = np.asarray(lat["u_exact"]) * scale
+    u_fd = np.asarray(fd["u"]) * scale
+    psi = np.asarray(lat["psi_norm"]) * config.zeta
 
-    # Numerical: solve Stokes with body force
-    # μ·d²u/dy² = -ρ_e·E_x
-    rho_e = _F * (z_vals[0] * c_plus + z_vals[1] * c_minus)
+    d = u_num - u_ana
+    err_max = float(np.max(np.abs(d)) / abs(u_hs))
+    err_l2 = float(np.sqrt(np.mean(d**2)) / abs(u_hs))
+    err_fd = float(np.max(np.abs(u_fd - u_ana)) / abs(u_hs))
+    lbm_vs_fd = float(np.max(np.abs(u_num - u_fd)) / abs(u_hs))
 
-    # Direct solve: u(y) = u_hs · (1 - ψ(y)/ζ) for thin EDL
-    # Full numerical: integrate Stokes equation
-    u_num = torch.zeros(ny, dtype=dtype, device=device)
-
-    # Use the analytical relation for thin EDL:
-    # u(y) = -εE_x/μ · (ψ(y) - ζ) = u_hs · (1 - ψ(y)/ζ)
-    if abs(zeta) > 1e-15:
-        u_num = u_hs * (1.0 - psi / zeta)
+    # plug-flow flatness in the channel core (|y - H/2| < H/2 - 5 lambda_D)
+    lam = config.H / kappa_H
+    core = np.abs(y_phys - 0.5 * config.H) < max(0.5 * config.H - 5.0 * lam, 0.0)
+    if np.count_nonzero(core) >= 3:
+        uc = u_num[core]
+        u_mean = float(np.mean(uc))
+        flatness = float(np.max(np.abs(uc - u_mean)) / abs(u_mean)) if u_mean else float("nan")
     else:
-        u_num = torch.zeros(ny, dtype=dtype, device=device)
-
-    # No-slip at wall
-    u_num[0] = 0.0
-
-    # Flatness: measure how "plug-like" the flow is
-    # In the bulk (away from EDL), velocity should be nearly constant
-    # Find bulk region (y > 5·κ⁻¹)
-    kappa_inv = config.kappa_inv
-    bulk_start = min(int(5 * kappa_inv / dy), ny - 1)
-    if bulk_start < ny - 1:
-        u_bulk = u_num[bulk_start:-1]
-        u_mean = u_bulk.mean().item()
-        u_flatness = (u_bulk - u_mean).abs().max().item() / max(abs(u_mean), 1e-15)
-    else:
-        u_mean = u_num[-1].item()
-        u_flatness = 0.0
-
-    u_error = abs(u_mean - u_hs) / max(abs(u_hs), 1e-15)
+        u_mean = float(u_num[len(u_num) // 2])
+        flatness = float("nan")
 
     return {
-        "y": y.cpu().numpy(),
-        "u": u_num.cpu().numpy(),
-        "psi": psi.cpu().numpy(),
+        "y": y_phys,
+        "u": u_num,
+        "u_analytic": u_ana,
+        "u_fd": u_fd,
+        "psi": psi,
         "u_hs": u_hs,
         "u_mean": u_mean,
-        "u_error": u_error,
-        "flatness": u_flatness,
+        "u_error": err_max,
+        "l2_error": err_l2,
+        "u_error_fd": err_fd,
+        "lbm_vs_fd": lbm_vs_fd,
+        "flatness": flatness,
+        "kappa_H": kappa_H,
+        "lambda_D": lam,
+        "nodes_per_debye": nodes_per_debye,
+        "method": method,
+        "steps": int(lat.get("steps", 0)),
+        "converged": bool(lat.get("converged", True)),
         "config": config,
     }
 

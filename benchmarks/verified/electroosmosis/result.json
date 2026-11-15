@@ -1,0 +1,128 @@
+{
+  "benchmark": "electroosmosis",
+  "capability": "LBM electro-osmotic (EDL-driven) flow in a slit",
+  "reference": "exact Poisson-Boltzmann profile u = u_hs(1 - psi/zeta)",
+  "tolerance": 0.03,
+  "units": "lattice (u_hs_lat = 0.02, tau = 1.0, nu = 1/6)",
+  "cases": [
+    {
+      "kappa_H": 5.0,
+      "ny": 65,
+      "nodes_per_debye": 12.6,
+      "lbm_max_rel": 0.0002426115438086587,
+      "lbm_l2_rel": 0.00013466561782522757,
+      "lbm_bias_rel": 5.514501188264273e-05,
+      "fd_max_rel": 0.0007669057811029371,
+      "lbm_vs_fd_max_rel": 0.0010095173249115145,
+      "flatness_core": 0.003093927613813021,
+      "steps": 32500,
+      "converged": true,
+      "residual": 9.422601587871782e-13,
+      "passed": true
+    },
+    {
+      "kappa_H": 5.0,
+      "ny": 129,
+      "nodes_per_debye": 25.4,
+      "lbm_max_rel": 6.211829404704637e-05,
+      "lbm_l2_rel": 3.316687873964866e-05,
+      "lbm_bias_rel": 1.3598281554536427e-05,
+      "fd_max_rel": 0.00019124805574889485,
+      "lbm_vs_fd_max_rel": 0.0002533663497959412,
+      "flatness_core": 0.0033479580946477404,
+      "steps": 103500,
+      "converged": true,
+      "residual": 9.7234720275452e-13,
+      "passed": true
+    },
+    {
+      "kappa_H": 10.0,
+      "ny": 65,
+      "nodes_per_debye": 6.3,
+      "lbm_max_rel": 0.0010191622418607646,
+      "lbm_l2_rel": 0.0008110869871806511,
+      "lbm_bias_rel": 0.0006275203652518472,
+      "fd_max_rel": 0.0029844761164618864,
+      "lbm_vs_fd_max_rel": 0.0038788521577324186,
+      "flatness_core": 0.0008812341566790026,
+      "steps": 37500,
+      "converged": true,
+      "residual": 8.963177422494084e-13,
+      "passed": true
+    },
+    {
+      "kappa_H": 10.0,
+      "ny": 129,
+      "nodes_per_debye": 12.7,
+      "lbm_max_rel": 0.0002512284283939792,
+      "lbm_l2_rel": 0.00020002764075715106,
+      "lbm_bias_rel": 0.00015486367595989853,
+      "fd_max_rel": 0.0007547633091508743,
+      "lbm_vs_fd_max_rel": 0.0009934470394752138,
+      "flatness_core": 0.0009532527784563584,
+      "steps": 123500,
+      "converged": true,
+      "residual": 9.555724267418242e-13,
+      "passed": true
+    },
+    {
+      "kappa_H": 20.0,
+      "ny": 65,
+      "nodes_per_debye": 3.15,
+      "lbm_max_rel": 0.004161577228340742,
+      "lbm_l2_rel": 0.0037190103570438277,
+      "lbm_bias_rel": 0.0033218204415107508,
+      "fd_max_rel": 0.011292135098110006,
+      "lbm_vs_fd_max_rel": 0.014331511961336129,
+      "flatness_core": 0.004073677235786693,
+      "steps": 41000,
+      "converged": true,
+      "residual": 9.685377500012748e-13,
+      "passed": true
+    },
+    {
+      "kappa_H": 20.0,
+      "ny": 129,
+      "nodes_per_debye": 6.35,
+      "lbm_max_rel": 0.0010309066975274297,
+      "lbm_l2_rel": 0.0009220010737086735,
+      "lbm_bias_rel": 0.0008243854876888668,
+      "fd_max_rel": 0.0029389118093095523,
+      "lbm_vs_fd_max_rel": 0.0038203652368032966,
+      "flatness_core": 0.0046942221117939106,
+      "steps": 138500,
+      "converged": true,
+      "residual": 9.591528959962403e-13,
+      "passed": true
+    }
+  ],
+  "negative_controls": [
+    {
+      "control": "physical",
+      "max_rel_error": 0.004161575383913353,
+      "passes_3pct": true
+    },
+    {
+      "control": "force_0.8x",
+      "max_rel_error": 0.1966525800989688,
+      "passes_3pct": false
+    },
+    {
+      "control": "field_reversed",
+      "max_rel_error": 2.003979975693974,
+      "passes_3pct": false
+    },
+    {
+      "control": "no_field",
+      "max_rel_error": 0.9999092001406622,
+      "passes_3pct": false
+    }
+  ],
+  "worst_case_error": 0.004161577228340742,
+  "all_passed": true,
+  "verdict": "VERIFIED",
+  "figures": [
+    "eof_profiles_convergence.png",
+    "eof_edl_and_controls.png"
+  ]
+}

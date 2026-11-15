@@ -44,6 +44,15 @@ from .pnp_solver import (
     run_electroosmosis,
     run_electrophoresis,
 )
+from .eof_lbm import (
+    debye_huckel_psi,
+    charge_density_from_potential,
+    eof_exact_velocity,
+    solve_stokes_fd,
+    solve_stokes_lbm,
+    eof_profile_errors,
+    run_eof_benchmark,
+)
 from .gates import (
     GATE_THRESHOLDS,
     check_c1_da1_concentration,
@@ -77,4 +86,11 @@ __all__ = [
     "check_c4_henry",
     "check_c5_conservation",
     "check_c6_negative_controls",
+    "debye_huckel_psi",
+    "charge_density_from_potential",
+    "eof_exact_velocity",
+    "solve_stokes_fd",
+    "solve_stokes_lbm",
+    "eof_profile_errors",
+    "run_eof_benchmark",
 ]
