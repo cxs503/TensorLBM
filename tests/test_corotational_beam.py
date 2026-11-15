@@ -83,15 +83,25 @@ def test_tangent_is_exact_derivative_and_symmetric():
     q = np.zeros(b.n_dof)
     q[3:] = rng.normal(scale=0.05, size=b.n_dof - 3)
     K = b.tangent_stiffness(q)
-    eps = 1e-6
     eye = np.eye(b.n_dof)
-    Kfd = np.column_stack(
-        [
-            (b.internal_forces(q + eps * eye[i]) - b.internal_forces(q - eps * eye[i])) / (2 * eps)
-            for i in range(b.n_dof)
-        ]
-    )
-    assert np.linalg.norm(K - Kfd) / np.linalg.norm(K) < 1e-8
+
+    def fd_err(eps):
+        Kfd = np.column_stack(
+            [
+                (b.internal_forces(q + eps * eye[i]) - b.internal_forces(q - eps * eye[i])) / (2 * eps)
+                for i in range(b.n_dof)
+            ]
+        )
+        return np.linalg.norm(K - Kfd) / np.linalg.norm(K)
+
+    # The measured deviation is pure central-difference truncation, O(eps^2):
+    # 0.808 (eps=1e-2), 2.19e-8 (1e-6), 2.27e-10 (1e-7), floor 5.7e-10 (1e-8).
+    # eps=1e-6 with a 1e-8 bound was below that truncation level; the eps^2
+    # ratio is asserted as well so the looser bound cannot hide a real defect.
+    assert fd_err(1e-4) < 1e-3
+    assert fd_err(1e-6) < 1e-7
+    assert fd_err(1e-6) / fd_err(1e-5) < 0.2      # ~eps^2 (measured 0.010)
+    assert np.linalg.norm(K - K.T) / np.linalg.norm(K) < 1e-12
     assert np.abs(K - K.T).max() / np.abs(K).max() < 1e-12
 
 
@@ -117,7 +127,14 @@ def test_life_and_tl_agree_for_inextensible_small_strain():
     q = np.zeros(b1.n_dof)
     q[3:] = 1e-6 * np.arange(b1.n_dof - 3)
     g1, g2 = b1.internal_forces(q), b2.internal_forces(q)
-    assert np.linalg.norm(g1 - g2) / np.linalg.norm(g1) < 1e-8
+    # The arms differ *by construction* in the transverse nodal-force
+    # denominator ((M1+M2)/L0 vs (M1+M2)/L), i.e. by the axial strain (the
+    # documented 1.24 % deviation at finite strain).  A strain-independent 1e-8
+    # bound cannot hold; what must hold is that the deviation vanishes *with*
+    # the strain, which is what is asserted here.
+    strain = abs(q[-2]) / b1.L0.sum() + abs(q[-1]) / b1.L0.sum()
+    dev = np.linalg.norm(g1 - g2) / np.linalg.norm(g1)
+    assert 1e-9 < dev < strain, (dev, strain)
 
 
 @pytest.mark.parametrize("form", ["consistent", "life"])
@@ -150,9 +167,18 @@ def test_newmark_undamped_amplitude_preserved():
     q0, _ = b.solve_static({b.n_node - 1: (0.0, -0.004, 0.0)}, n_steps=1)
     res = b.solve_newmark(dt=T1 / 200, n_steps=400, q0=q0)
     tip = res["q_hist"][:, 3 * (b.n_node - 1) + 1]
-    amp = 0.5 * (tip[:40].max() - tip[:40].min())
-    amp_end = 0.5 * (tip[-40:].max() - tip[-40:].min())
+    # A 40-step window is only 0.2 T1, so its half peak-to-peak is not an
+    # amplitude: that metric compared two arbitrary phases and reported 7.3 %.
+    # Compare one whole period at each end of the record instead, and add the
+    # conserved quantity (g = dU/dq => the total energy must not drift).
+    per = 200
+    amp = 0.5 * (tip[:per].max() - tip[:per].min())
+    amp_end = 0.5 * (tip[-per:].max() - tip[-per:].min())
     assert abs(amp_end / amp - 1.0) < 0.01
+    qd = np.gradient(res["q_hist"], T1 / 200, axis=0)
+    E = np.array([b.kinetic_energy(v) + b.potential_energy(u)
+                  for u, v in zip(res["q_hist"], qd)])
+    assert np.max(np.abs(E - b.potential_energy(q0))) / abs(b.potential_energy(q0)) < 0.05
     assert res["converged"]
 
 
@@ -172,3 +198,93 @@ def test_bad_input_validation():
         CorotationalBeam2D([[0.0, 0.0]], E=1.0, A=1.0, I=1.0, rho=1.0)
     with pytest.raises(ValueError):
         straight_beam(1.0, 2, E=1.0, A=1.0, I=1.0, rho=1.0, formulation="timoshenko")
+
+# ----------------------------------------------------------------------
+# temporal order of Newmark + Newton against a semi-analytic reference
+# ----------------------------------------------------------------------
+def _modal_basis(b, nmax=4):
+    K, M, fr = b.linear_stiffness(), b.M, b.free_dofs
+    Lc = np.linalg.cholesky(M[np.ix_(fr, fr)])
+    Li = np.linalg.solve(Lc, np.eye(len(fr)))
+    Ks = Li @ K[np.ix_(fr, fr)] @ Li.T
+    vals, vecs = np.linalg.eigh(0.5 * (Ks + Ks.T))
+    idx = np.argsort(vals)[:nmax]
+    phi = np.zeros((b.n_dof, nmax))
+    phi[fr] = Li.T @ vecs[:, idx]
+    return np.sqrt(vals[idx]), phi
+
+
+def _order(fn, fracs=(10, 20, 40, 80)):
+    errs = []
+    for f in fracs:
+        errs.append(fn(f))
+    rates = [np.log(errs[i] / errs[i + 1]) / np.log(2) for i in range(len(errs) - 1)]
+    return np.asarray(errs), float(np.min(rates))
+
+
+def test_euler_bernoulli_roots_are_the_tabulated_clamped_free_ones():
+    """The first five (kL)^2 of cos(kL)cosh(kL) = -1 (Blevins 1979, Table 8-1)."""
+    tabulated = np.array([3.51601527, 22.03449156, 61.6972140, 120.901916, 199.85953])
+    assert np.allclose(euler_bernoulli_frequency(5), tabulated, rtol=1e-7)
+
+
+def test_newmark_second_order_free_vibration():
+    """Free vibration vs the exact modal solution: order >= 1.9 with the
+    consistent initial acceleration (order ~1.0 with the legacy zero start)."""
+    b = _beam(n=8, rho=1.0)
+    w, phi = _modal_basis(b, 2)
+    tip = 3 * (b.n_node - 1) + 1
+    q0, _ = b.solve_static({b.n_node - 1: (0.0, -0.004, 0.0)}, n_steps=1)
+    c0 = phi.T @ (b.M @ q0)
+    T1 = 2 * np.pi / w[0]
+
+    def err(frac, legacy):
+        dt = T1 / frac
+        res = b.solve_newmark(dt=dt, n_steps=2 * frac, q0=q0,
+                              qddot0=np.zeros(b.n_dof) if legacy else None)
+        t = dt * np.arange(1, 2 * frac + 1)
+        c = res["q_hist"] @ (b.M @ phi)
+        ex = np.cos(np.outer(t, w)) * c0
+        return np.linalg.norm(c[:, 0] - ex[:, 0]) / np.linalg.norm(ex[:, 0])
+
+    _, p_new = _order(lambda f: err(f, False))
+    _, p_old = _order(lambda f: err(f, True))
+    assert p_new >= 1.9, p_new
+    assert p_old < 1.6, p_old          # the defect this test pins down
+
+
+def test_newmark_second_order_forced_vibration_and_load_time_level():
+    """Harmonic forcing vs the exact Duhamel solution: order >= 1.9 when the
+    load is sampled at t_{n+1}; the LIFE ordering loads(t_n) is only O(dt)."""
+    b = _beam(n=8, rho=1.0)
+    w, phi = _modal_basis(b, 2)
+    tip = 3 * (b.n_node - 1) + 1
+    T1 = 2 * np.pi / w[0]
+    Om, P = 0.63 * w[0], 1e-4
+    F = phi.T @ (np.eye(b.n_dof)[tip] * P)
+
+    def err(frac, level):
+        dt = T1 / frac
+        res = b.solve_newmark(dt=dt, n_steps=2 * frac, load_time_level=level,
+                              loads=lambda t: {b.n_node - 1: (0.0, P * np.sin(Om * t), 0.0)})
+        t = dt * np.arange(1, 2 * frac + 1)
+        c = res["q_hist"] @ (b.M @ phi)
+        ex = np.array([F[i] / w[i] * (w[i] * np.sin(Om * t) - Om * np.sin(w[i] * t))
+                       / (w[i] ** 2 - Om ** 2) for i in range(2)]).T
+        assert res["converged"]          # residual scale must not fake failure
+        return np.linalg.norm(c[:, 0] - ex[:, 0]) / np.linalg.norm(ex[:, 0])
+
+    _, p_new = _order(lambda f: err(f, "t"))
+    _, p_old = _order(lambda f: err(f, "t-dt"))
+    assert p_new >= 1.9, p_new
+    assert p_old < 1.6, p_old
+
+
+def test_newton_flags_are_meaningful_without_external_load():
+    """Free vibration: no external load, yet the steps must be reported
+    converged (the residual scale must not divide by ~0)."""
+    b = _beam(n=6, rho=1.0)
+    T1 = 2 * np.pi / b.mode_frequencies(1)[0]
+    q0, _ = b.solve_static({b.n_node - 1: (0.0, -0.004, 0.0)}, n_steps=1)
+    res = b.solve_newmark(dt=T1 / 100, n_steps=100, q0=q0)
+    assert res["converged"] and res["max_iterations"] < 8

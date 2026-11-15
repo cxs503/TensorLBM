@@ -297,3 +297,100 @@ python -m pytest tests/test_corotational_beam.py -q
 
 Mesh-convergence deltas (predeclared rule: `<1 %` between $n=16$ and $n=32$ for S2/S3):
 `{"S2[1.0]/TL": 0.0075, "S2[1.0]/LIFE": 0.0075, "S2[2.0]/TL": 0.0181, "S2[2.0]/LIFE": 0.0181, "S2[5.0]/TL": 0.0327, "S2[5.0]/LIFE": 0.0327, "S2[10.0]/TL": 0.0416, "S2[10.0]/LIFE": 0.0416, "S3[1.5707963267948966]/TL": 0.0301, "S3[1.5707963267948966]/LIFE": 0.0301, "S3[3.141592653589793]/TL": 0.1206, "S3[3.141592653589793]/LIFE": 0.1206}`
+
+---
+
+# Round 2 (m21660): verification debt on the merged capability
+
+Re-audit of the *merged* deliverable above. The element formulation was not touched; what was
+found and fixed is the verification layer around it. **The merged branch did not ship green
+tests**: `pytest tests/test_corotational_beam.py` on the merge commit gave **4 failed, 11 passed**.
+All four were real findings; two of them are defects in the library, two in the tests metrics.
+
+## R2.1 Findings
+
+| # | finding | class | evidence |
+|---|---|---|---|
+| F1 | `euler_bernoulli_frequency(n)` returned `((2n+1)pi/2)^2` for every `n >= 2` (bisection bracket `((2n-1)pi/2,(2n+1)pi/2)` does not contain the roots: `(kL)_2 = 4.6941 < 3pi/2 = 4.7124`). The function silently collapsed onto its own bracket edge. | **library defect** | returned `[3.5160, 61.6850, 61.6972, 199.8595, 199.8595]`; tabulated `[3.5160, 22.0345, 61.6972, 120.9019, 199.8595]` (Blevins 1979, Table 8-1) |
+| F2 | The D1 modal arm built its analytic reference with F1, so the reported row `mode=2, err = -64.28 %` and its explanation ("resolution-limited third mode, not the element formulation") are **both wrong**: the FE value (22.0345, err 3.2e-7) is right, the reference (61.685) was not. Nothing in D1 was resolution-limited. | **overstated claim / falsified explanation** | `table.csv` D1 rows; `run_torder.py --T1_MODAL` |
+| F3 | `solve_newmark` starts from `qddot0 = 0` instead of the consistent initial acceleration `M qddot = f - g(q0)`; an inconsistent start costs one order of accuracy (free vibration order 1.03 instead of 2). | **library defect** | `torder_summary.json`, arm `D4a_free_zero_IC_legacy` |
+| F4 | `solve_newmark` sampled the external load at `t_n` while enforcing equilibrium at `t_{n+1}` (LIFE ordering). For time-dependent loads this is an O(dt) error: forced order 1.01 instead of 2. | **library defect** | arm `D4b_forced_load_at_t-dt` |
+| F5 | The Newton residual was normalised by `|f_ext|` alone, so a small (or zero) external load produced **spurious non-convergence**: 282 of 320 steps reported `converged=False` in the forced case although the residual was at the double-precision floor; in free vibration (`f = 0`) the denominator fell back to 1.0 and the flags became trivially true. | **library defect (diagnostics)** | `n_unconverged` columns of `torder.csv` |
+| F6 | Three test tolerances/metrics were wrong, not the code: the tangent test used a central-difference step whose truncation error (2.19e-8 at `eps=1e-6`, scaling as `eps^2`) exceeds its own `1e-8` bound; the LIFE-vs-TL test demanded a strain-independent `1e-8` agreement although the two arms differ *by construction* by the axial strain (documented 1.24 % at finite strain); the amplitude test measured a half peak-to-peak over 40 steps = 0.2 T1, i.e. over less than one period (that is where the "7.3 % amplitude loss" came from). | **test defects** | `tests/test_corotational_beam.py` |
+
+## R2.2 Fixes
+
+* `euler_bernoulli_frequency`: uniform sign-change scan + bisection (no analytic bracket, no
+  tabulated constants, `cosh` overflow guarded at `kL ~ 700`).
+* `solve_newmark`: new `initial_acceleration()` (consistent Newmark start-up, Bathe 1996 Ch. 9);
+  new `load_time_level` argument with default `"t"` (equilibrium and load at the same time level)
+  and `"t-dt"` reproducing the LIFE ordering for regression/parity studies.
+* Newton residual scale: `max(|f_ext|, |g|)` on the free DOFs, so the `converged` flag means what
+  it says. The `roundoff_floor` stagnation path is unchanged and still reported (`floor_limited`).
+* Tests: `eps^2`-justified tangent bound plus an explicit order ratio; strain-scaled LIFE/TL
+  bound; whole-period amplitude envelope plus an energy-drift bound; four new tests
+  (tabulated roots, free/forced temporal order with the legacy arms as negative controls,
+  and meaningful Newton flags without external load). **19 passed** (was 4 failed / 11 passed).
+
+## R2.3 Results
+
+### R2.3.1 Corrected modal arm (T1)
+
+`xval/corotational_beam_newmark/run_torder.py` -> `torder.csv` (`T1_MODAL`):
+
+| mode | tabulated $(kL)^2$ | FE, $n=32$ | FE err | legacy reference | legacy err |
+|---|---|---|---|---|---|
+| 1 | 3.51601527 | 3.5160153 | 8.6e-7 % | 3.51601527 | 0 |
+| 2 | 22.03449156 | 22.0344986 | 3.2e-5 % | 61.68502751 | **+179.96 %** |
+| 3 | 61.6972140 | 61.6973694 | 2.5e-4 % | 61.69721441 | 7e-7 % |
+| 4 | 120.901916 | 120.9030794 | 9.6e-4 % | 199.85948912 | **+65.31 %** |
+| 5 | 199.859530 | 199.8647698 | 2.6e-3 % | 199.85953012 | 0 |
+
+Max FE error over the five modes: **2.62e-3 %**, i.e. **0 KPI rows fail the 3 % (and 15 %) criterion**.
+The merged table's `n_fail15 = 2` was an artefact of F1/F2.
+
+### R2.3.2 Temporal order (T2)
+
+Semi-analytic reference = exact time integration (per-mode Duhamel / free-vibration closed form)
+of the *linearised discrete* model, so the space-discretisation error is excluded by construction
+and the measured order is the integrator's. Beam `n=8`, two periods, mode 1.
+
+| arm | observed order (last 3 refinements) | error at `dt=T1/320` |
+|---|---|---|
+| free vibration, consistent IC (**fixed**) | **1.998** | 2.32e-4 |
+| free vibration, zero IC (legacy) | 1.029 | 1.00e-2 |
+| forced harmonic, load at `t` (**fixed**) | **2.003** | 1.16e-4 |
+| forced harmonic, load at `t-dt` (legacy) | 1.008 | 1.44e-2 |
+
+So the merged characterisation of the dynamics arms (D2: amplitude drift 1.12 %, D3: energy drift
+0.0045 %) was measuring quantities that are *insensitive to phase*; the integrator was in fact
+first-order in time, and neither of the two defects shows up in an amplitude or energy metric.
+
+## R2.4 Error verdict (owner criteria)
+
+| KPI | reference | error | < 3 % | < 15 % |
+|---|---|---|---|---|
+| 5 clamped-free eigenvalues, `n=32` | tabulated (Blevins) | <= 2.62e-3 % | yes | yes |
+| free-vibration order | 2 (theory, `beta=1/4`, `gamma=1/2`) | 1.998 (0.1 % from 2) | yes | yes |
+| forced-vibration order | 2 | 2.003 (0.15 % from 2) | yes | yes |
+| error at `dt=T1/320` | semi-analytic | 2.3e-4 / 1.2e-4 | yes | yes |
+
+## R2.5 Not re-measured (declared gaps)
+
+* The D3 (nonlinear energy-drift) arm was **not re-run** after the code change: the stage exceeds
+  the local 2-minute shell budget (`d2` alone takes 76 s) and the full stage set needs the cluster.
+  Its merged numbers (0.0045 %) therefore date from the pre-fix code; the fix lowers the start-up
+  error, so a re-run can only change the drift at the floor level, but that is an expectation,
+  not a measurement.
+* `table.csv` / `summary.json` of the merged run still carry the pre-fix D1 rows; they are kept as
+  evidence of F1/F2 and superseded by `torder.csv` (`T1_MODAL`, `T1_REF_BUG_LEGACY`).
+* Space is 2D Euler-Bernoulli only (no shear, no 3D twist); the modal comparison is restricted to
+  mode 1 because modes >= 3 are under-resolved at `dt = T1/10..T1/320` (their `omega dt` is not small),
+  which is a property of the dt ladder, not of the scheme.
+
+## R2.6 Reproduce (round 2)
+
+```
+python -m pytest tests/test_corotational_beam.py -q          # 19 passed
+python xval/corotational_beam_newmark/run_torder.py          # torder.csv, torder_summary.json, figures/
+```
