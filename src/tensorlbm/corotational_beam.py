@@ -81,24 +81,50 @@ def wrap_angle(a: np.ndarray | float) -> np.ndarray | float:
 
 def euler_bernoulli_frequency(n_modes: int) -> np.ndarray:
     """Dimensionless eigenvalues ``(kL)^2`` of a clamped-free Euler-Bernoulli
-    beam from ``cos(kL) cosh(kL) = -1`` (roots found by bisection, no
-    tabulated constants are hard-coded).
+    beam from ``cos(kL) cosh(kL) = -1`` (roots found by a sign-change scan plus
+    bisection, no tabulated constants are hard-coded).
 
     ``omega_i = (kL)_i ** 2 * sqrt(E I / (rho A L**4))``.
+
+    Bracketing note: the naive bracket ``((2n-1)pi/2, (2n+1)pi/2)`` is *wrong*
+    for ``n >= 2``.  Because ``|cos| = 1/cosh`` at a root, the roots sit close
+    to ``(k+1/2)pi`` but the pairs crowd the *ends* of the interval, e.g.
+    ``(kL)_2 = 4.6941 < 3*pi/2 = 4.7124`` and ``(kL)_3 = 7.85476 > 5*pi/2``
+    -- a fixed symmetric bracket silently collapses onto its own edge and
+    returns ``((2n+1)pi/2)^2`` instead of the root (this was a real defect:
+    it shifted every mode > 1, so modal references built from this function
+    were wrong).  A uniform sign-change scan cannot miss a root and needs no
+    analytic bracket; ``cosh`` overflows only beyond ``kL ~ 710``, far above
+    any mode count of practical interest (a guard is raised instead).
     """
-    roots = []
-    # The n-th root lies in ((2n-1)pi/2, (2n+1)pi/2).
-    for n in range(1, n_modes + 1):
-        lo = (2 * n - 1) * np.pi / 2.0 + 1e-12
-        hi = (2 * n + 1) * np.pi / 2.0 - 1e-12
-        f = lambda x: np.cos(x) * np.cosh(x) + 1.0  # noqa: E731
-        for _ in range(200):
-            mid = 0.5 * (lo + hi)
-            if f(lo) * f(mid) <= 0.0:
-                hi = mid
-            else:
-                lo = mid
-        roots.append(0.5 * (lo + hi))
+    def f(x: float) -> float:
+        return float(np.cos(x) * np.cosh(x) + 1.0)
+
+    xmax = (2.0 * n_modes + 2.0) * np.pi
+    if xmax > 700.0:
+        raise ValueError("n_modes too large for a float64 cosh scan")
+    dx = 1e-3
+    roots: list[float] = []
+    x = 1e-9
+    fx = f(x)
+    while len(roots) < n_modes and x < xmax:
+        xn = x + dx
+        fn = f(xn)
+        if fx == 0.0:
+            roots.append(x)
+        elif fx * fn < 0.0:
+            lo, hi, flo = x, xn, fx
+            for _ in range(200):
+                mid = 0.5 * (lo + hi)
+                fm = f(mid)
+                if flo * fm <= 0.0:
+                    hi = mid
+                else:
+                    lo, flo = mid, fm
+            roots.append(0.5 * (lo + hi))
+        x, fx = xn, fn
+    if len(roots) < n_modes:  # pragma: no cover - cannot happen below 700
+        raise RuntimeError("euler_bernoulli_frequency: root scan failed")
     return np.asarray(roots) ** 2
 
 
@@ -606,14 +632,32 @@ class CorotationalBeam2D:
         qdot0: np.ndarray | None = None,
         qddot0: np.ndarray | None = None,
         predictor: bool = True,
+        load_time_level: str = "t",
         sample: Callable[[int, float, np.ndarray, np.ndarray, np.ndarray], None] | None = None,
     ) -> dict:
         """Implicit Newmark-beta integration with Newton-Raphson iterations.
 
         The algorithm is the one of ``LIFE/src/FEMBody.cpp`` (setNewmark /
         newtonRaphsonDynamic / finishNewmark + 2nd order predictor), re-used
-        unchanged by both formulations.
+        unchanged by both formulations, with three deviations that restore the
+        second-order accuracy of the scheme (each one measured in
+        ``xval/corotational_beam_newmark/run_torder.py``):
+
+        * ``load_time_level`` -- the equilibrium is enforced at ``t_{n+1}``, so
+          the external load is sampled at ``t_{n+1}`` (``"t"``, default).  The
+          LIFE ordering ``loads(t_n)`` (``"t-dt"``) lags the load by one step
+          and drops the observed order from 2 to 1 for time-dependent loads.
+        * consistent initial acceleration -- if ``qddot0`` is not given it is
+          obtained from the equilibrium at ``t=0`` instead of being set to
+          zero; a zero start is an O(dt) inconsistent start and drops the
+          observed order from 2 to 1 in free vibration.
+        * residual scale -- the Newton residual is measured against
+          ``max(|f_ext|, |g|)`` rather than ``|f_ext|`` alone, so that a small
+          or vanishing external load (free vibration, load passing through
+          zero) no longer produces spurious non-convergence flags.
         """
+        if load_time_level not in ("t", "t-dt"):
+            raise ValueError("load_time_level must be 't' or 't-dt'")
         a0 = 1.0 / (beta * dt * dt)
         a2 = 1.0 / (beta * dt)
         a3 = 1.0 / (2.0 * beta) - 1.0
@@ -622,21 +666,25 @@ class CorotationalBeam2D:
 
         q = np.zeros(self.n_dof) if q0 is None else np.array(q0, dtype=float)
         qdot = np.zeros(self.n_dof) if qdot0 is None else np.array(qdot0, dtype=float)
-        qddot = np.zeros(self.n_dof) if qddot0 is None else np.array(qddot0, dtype=float)
+        if qddot0 is None:
+            qddot = self.initial_acceleration(q, loads(0.0) if loads else None,
+                                              qdot=qdot)
+        else:
+            qddot = np.array(qddot0, dtype=float)
 
         records: list[NewtonRecord] = []
         hist_q, hist_t = [], []
 
         for step in range(1, n_steps + 1):
             t = step * dt
-            f_ext = self.external_load(loads(t - dt) if loads else None)
+            t_load = t if load_time_level == "t" else t - dt
+            f_ext = self.external_load(loads(t_load) if loads else None)
             q_n, qdot_n, qddot_n = q.copy(), qdot.copy(), qddot.copy()
 
             if predictor:
                 q = self._predict(q, qdot, qddot, dt)
 
             rec = NewtonRecord(iterations=0, residuals=[], converged=False)
-            fnorm = np.linalg.norm(f_ext[self.free_dofs]) or 1.0
             prev = np.inf
             for _ in range(maxit):
                 g = self.internal_forces(q)
@@ -644,6 +692,13 @@ class CorotationalBeam2D:
                     f_ext
                     - g
                     - self.M @ (a0 * (q - q_n) - a2 * qdot_n - a3 * qddot_n)
+                )
+                # residual scale: external *and* internal force level, so that
+                # a small load does not inflate the relative residual
+                fnorm = max(
+                    float(np.linalg.norm(f_ext[self.free_dofs])),
+                    float(np.linalg.norm(g[self.free_dofs])),
+                    1.0,
                 )
                 rn = np.linalg.norm(r[self.free_dofs]) / fnorm
                 rec.residuals.append(float(rn))
@@ -679,6 +734,25 @@ class CorotationalBeam2D:
             "converged": all(r.converged for r in records),
             "max_iterations": max((r.iterations for r in records), default=0),
         }
+
+    def initial_acceleration(self, q, loads=None, *, qdot=None) -> np.ndarray:
+        """Consistent initial acceleration ``M qddot = f_ext - g(q)``.
+
+        Uses only the free DOFs (constrained accelerations are zero), i.e. the
+        standard Newmark start-up of Bathe (1996) Ch. 9; a zero start is
+        inconsistent whenever ``f(0) != g(q0)`` and costs one order of
+        accuracy in time.
+        """
+        fr = self.free_dofs
+        f = self.external_load(loads)
+        r = (f - self.internal_forces(q))[fr]
+        qddot = np.zeros(self.n_dof)
+        Mff = self.M[np.ix_(fr, fr)]
+        try:
+            qddot[fr] = np.linalg.solve(Mff, r)
+        except np.linalg.LinAlgError:  # pragma: no cover - M is SPD
+            qddot[fr] = np.linalg.lstsq(Mff, r, rcond=None)[0]
+        return qddot
 
     def _predict(self, q, qdot, qddot, dt) -> np.ndarray:
         """Constant-acceleration predictor (Newmark displacement predictor)."""
