@@ -663,8 +663,12 @@ def main(argv=None) -> int:
     }
     res["runtime_s"] = time.perf_counter() - t_start
     res["figures"] = make_figures(res, out_dir)
+    try:  # --out may point outside the checkout (e.g. /tmp scratch); never crash on it
+        repro_out = out_dir.relative_to(REPO).as_posix()
+    except ValueError:
+        repro_out = str(out_dir)
     res["repro_cmd"] = (
-        f"python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out {out_dir.relative_to(REPO)}"
+        f"python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out {repro_out}"
     )
 
     (out_dir / "results.json").write_text(json.dumps(res, indent=2))

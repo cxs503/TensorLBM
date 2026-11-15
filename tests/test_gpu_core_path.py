@@ -21,7 +21,9 @@ from tensorlbm.gpu_core_path import (
     GPUCorePathConfig,
     GPUCorePathSolver,
     apply_channel_walls,
+    apply_channel_walls_nebb,
     channel_analytic_velocity,
+    channel_analytic_velocity_nebb,
     collide_guo_into,
     get_best_available_backend,
     run_channel_case,
@@ -336,3 +338,94 @@ def test_lossy_tier_is_refused_by_default():
                            backend="eager")
     with pytest.raises(ValueError, match="allow_lossy_store"):
         GPUCorePathSolver(cfg)
+
+
+# ---------------------------------------------------------------------------
+# wall_bc="nebb" — force-corrected NEBB walls on the core path (anchor
+# XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S).  The dispatch existed in
+# m18182 and was dropped by the m18379 refactor; these tests pin it so it
+# cannot silently disappear again.
+# ---------------------------------------------------------------------------
+def test_config_accepts_nebb_wall_and_rejects_unknown():
+    assert GPUCorePathConfig(wall_bc="nebb").validate() is None
+    with pytest.raises(ValueError, match="wall_bc"):
+        GPUCorePathConfig(wall_bc="zouhe").validate()
+
+
+def test_nebb_analytic_reference_uses_node_wall_height():
+    """Wall rows are the no-slip planes, so H = ny - 1 and ux(0) = ux(ny-1) = 0."""
+    cfg = GPUCorePathConfig(ny=18, tau=0.8, u_max_target=0.05)
+    y, prof = channel_analytic_velocity_nebb(cfg)
+    assert y.tolist() == list(range(18))
+    assert float(prof[0]) == 0.0 and float(prof[-1]) == 0.0
+    H = 17.0
+    peak = cfg.body_force * H * H / (8.0 * cfg.nu)  # continuous peak, at y = H/2
+    # ny is even, so the peak falls between rows: the grid maximum is just below
+    assert 0.99 * peak < float(prof.max()) <= peak
+    # the half-way reference uses the other height (H = ny - 2), so the two
+    # references cannot be silently interchanged
+    _, prof_halfway = channel_analytic_velocity(cfg)
+    assert prof.shape == prof_halfway.shape
+    assert float(prof_halfway.max()) < float(prof.max())
+    assert float(prof_halfway.max()) == pytest.approx(
+        cfg.body_force * (cfg.ny - 2) ** 2 / (8.0 * cfg.nu), rel=1e-2
+    )
+
+
+def test_nebb_wall_reconstructs_only_the_outside_borne_populations():
+    """Algebra + streaming-convention pin (not just "it runs").
+
+    :func:`stream_into` rolls by ``+c``, so the populations a wall row receives
+    from *outside* the domain are those with ``c_y > 0`` at the bottom row and
+    ``c_y < 0`` at the top row; those, and only those, may be overwritten by
+    the closure.  Passing the sign the other way round would look plausible and
+    still return a smooth profile, so the direction set is asserted explicitly
+    against the lattice table.
+    """
+    cfg = GPUCorePathConfig(ny=8, nz=2, nx=2, tau=0.8, u_max_target=0.05,
+                            wall_bc="nebb", backend="eager")
+    cfg.validate()
+    ny = cfg.ny
+    C_ = torch.as_tensor(C, dtype=torch.float64)
+    W_ = torch.as_tensor(W, dtype=torch.float64)
+    f = W_[:, None, None, None].repeat(1, cfg.nz, ny, cfg.nx).clone()
+    before = f.clone()
+    apply_channel_walls_nebb(f, cfg, C_, W_)
+
+    cy = C[:, 1].tolist()
+    cx = C[:, 0].tolist()
+    # the wall velocity is along x, so among the outside-borne directions only
+    # the ones with c_x != 0 can change (odd part of f_eq ~ c_k . u_w)
+    bottom_expected = {q for q in range(19) if cy[q] > 0 and cx[q] != 0}
+    top_expected = {q for q in range(19) if cy[q] < 0 and cx[q] != 0}
+    changed_bottom = {q for q in range(19) if not torch.equal(f[q, :, 0, :], before[q, :, 0, :])}
+    changed_top = {q for q in range(19) if not torch.equal(f[q, :, -1, :], before[q, :, -1, :])}
+    assert changed_bottom == bottom_expected, (changed_bottom, bottom_expected)
+    assert changed_top == top_expected, (changed_top, top_expected)
+    # ... and nothing on the *fluid* side of either wall may be overwritten
+    # (the mirror-image sign convention would change exactly those)
+    assert not changed_bottom & {q for q in range(19) if cy[q] < 0}
+    assert not changed_top & {q for q in range(19) if cy[q] > 0}
+    # interior rows are untouched by the wall kernel
+    assert torch.equal(f[:, :, 1:-1, :], before[:, :, 1:-1, :])
+    # the closure is not a no-op: a resting state with a body force moves
+    assert not torch.equal(f, before)
+
+
+def test_core_path_nebb_channel_matches_its_own_analytic_reference():
+    """End-to-end L3 check: the main solver reaches the analytic parabola.
+
+    ny=10, short budget — the point is that the wall closure is wired into
+    :func:`core_step` (a missing dispatch would leave the half-way no-slip
+    planes a half cell off and blow the error past 15%).
+    """
+    from tensorlbm.verification.nebb_bodyforce.run import run_core_path_arm
+
+    row = run_core_path_arm("nebb", ny=10, nx=4, nz=2, max_steps=12000)
+    assert row["backend_used"] == "eager"
+    assert row["height_used"] == 9.0
+    assert row["err_global_vs_analytic"] < 0.15, row["err_global_vs_analytic"]
+    prof = row["profile_ux_fluid"]
+    # a correct no-slip wall makes the steady profile symmetric about the
+    # channel centreline to round-off level
+    assert max(abs(a - b) for a, b in zip(prof, reversed(prof))) < 1e-9
