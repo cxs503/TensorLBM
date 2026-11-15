@@ -84,6 +84,8 @@ def load_reference(ref_json=None):
 
     ``ref_json`` format (see ``reference/ghia_re5000_reference.json``):
     ``{"u_re5000": [[y, u], ...], "v_re5000": [[x, v], ...], "source": ...}``.
+    The Reynolds number selects the payload keys: a file declaring ``"re": 3200``
+    must carry ``u_re3200`` / ``v_re3200`` (see ``../re3200/``).
     No library fallback on purpose: a path that silently substitutes an
     unverified table cannot be told apart from a verified one.
     """
@@ -94,10 +96,15 @@ def load_reference(ref_json=None):
         raise FileNotFoundError(f"--ref-json not found: {path}")
     raw = path.read_bytes()
     data = json.loads(raw.decode("utf-8"))
-    u = np.asarray(data["u_re5000"], dtype=float)
-    v = np.asarray(data["v_re5000"], dtype=float)
+    # key suffix comes from the file's own declared Re; default keeps older files working
+    sfx = str(int(float(data["re"]))) if data.get("re") else "5000"
+    u_key, v_key = f"u_re{sfx}", f"v_re{sfx}"
+    if u_key not in data or v_key not in data:
+        raise ValueError(f"reference declares re={sfx} but has no {u_key}/{v_key} rows")
+    u = np.asarray(data[u_key], dtype=float)
+    v = np.asarray(data[v_key], dtype=float)
     if u.ndim != 2 or u.shape[1] != 2 or v.ndim != 2 or v.shape[1] != 2:
-        raise ValueError("u_re5000 / v_re5000 must be [[coord, value], ...]")
+        raise ValueError(f"{u_key} / {v_key} must be [[coord, value], ...]")
     provenance = {
         "source": data.get("source"),
         "table": data.get("table"),
@@ -106,6 +113,8 @@ def load_reference(ref_json=None):
         "ref_file": str(path),
         "ref_sha256": hashlib.sha256(raw).hexdigest(),
         "n_rows": [int(u.shape[0]), int(v.shape[0])],
+        "re": data.get("re"),
+        "scored_rows_note": data.get("provenance", {}).get("quarantined"),
     }
     return u[:, 0], u[:, 1], v[:, 0], v[:, 1], provenance
 
