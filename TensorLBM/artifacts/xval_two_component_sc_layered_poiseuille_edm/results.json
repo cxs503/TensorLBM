@@ -20,11 +20,11 @@
   "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
   "numpy": "2.4.6",
   "torch": "2.7.1",
-  "git_commit": "1e5e0891b709ec8e6e4711aaed06442ac8c80e4c",
+  "git_commit": "1a222a9cbd61c6654b2fbc75d2c479c9c056a448",
   "argv": [
-   "/root/tp-agent/work/m21640/TensorLBM/src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py",
+   "/root/tp-agent/work/m21732/TensorLBM/src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py",
    "--case",
-   "layered_r167",
+   "control_mixture",
    "--no-figure",
    "--out",
    "artifacts/xval_two_component_sc_layered_poiseuille_edm"
@@ -50,7 +50,7 @@
     "init_layer_frac": 1.0,
     "interface_width": 1.0
    },
-   "wall_seconds": 37.6,
+   "wall_seconds": 40.7,
    "height": 32.0,
    "nu_a": 0.1,
    "nu_b": 0.1,
@@ -349,7 +349,7 @@
     "init_layer_frac": 0.5,
     "interface_width": 2.0
    },
-   "wall_seconds": 37.6,
+   "wall_seconds": 40.7,
    "height": 32.0,
    "nu_a": 0.1,
    "nu_b": 0.1,
@@ -1262,17 +1262,6 @@
   "n_cases": 4,
   "n_gate_pass": 3,
   "n_diverged": 0,
-  "all_gates_pass": false,
-  "n_gate_pass_iface_matched": 1,
-  "cases_ran": [
-   "control_single",
-   "control_mixture",
-   "layered_r167",
-   "layered_static"
-  ],
-  "not_run": [
-   "layered_r233",
-   "layered_r167_h48"
-  ]
+  "all_gates_pass": false
  }
 }

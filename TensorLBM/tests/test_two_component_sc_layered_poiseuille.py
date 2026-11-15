@@ -7,6 +7,8 @@ its run gave ``u_max = g*t`` because the vertical streaming was a no-op), the
 component must be conserved exactly (mass is not a convergence property).
 """
 
+import os
+
 import numpy as np
 import pytest
 import torch
@@ -172,3 +174,99 @@ def test_layered_poiseuille_within_15pct():
     a2 = np.polyfit(y[lower], u[lower], 2)[0]
     nu_lower = -cfg.g_x / (2 * a2)
     assert abs(nu_lower - cfg.nu_a) / cfg.nu_a < 0.30, f"nu_lower={nu_lower:.4f} vs {cfg.nu_a}"
+
+
+# --------------------------------------------------------------------------- #
+# integration: the shared ref-vs-got benchmark layer and its production callers
+# --------------------------------------------------------------------------- #
+def test_benchmark_kpi_table_binds_ref_got_and_gate():
+    """The benchmark layer must expose ref/got/err/gate, not just a bool."""
+    from tensorlbm.verification.layered_poiseuille.benchmark import benchmark_single_case
+
+    out = benchmark_single_case("layered_r167_light")
+    rec = out["record"]
+    assert rec["status"] == "RAN"
+    rows = {r["kpi"]: r for r in out["kpi_table"]}
+
+    for kpi in ("u_peak", "Q_total", "eps_inf", "eps_l2_rel", "y_iface"):
+        assert kpi in rows, f"missing KPI row {kpi}"
+        assert np.isfinite(rows[kpi]["err"])
+
+    # numbers in the table are the numbers the solver produced (no hand transcription)
+    assert rows["u_peak"]["ref"] == pytest.approx(rec["metrics"]["u_peak_ref"])
+    assert rows["u_peak"]["got"] == pytest.approx(rec["metrics"]["u_peak_num"])
+    assert rows["u_peak"]["threshold"] == pytest.approx(0.15)      # owner standard
+    assert rows["y_iface"]["threshold"] == pytest.approx(0.05)     # 5 % of H
+    for r in rows.values():
+        if r["pass"] is not None:
+            assert r["pass"] == (r["err"] <= r["threshold"])
+
+    # the curvature KPI is *reported as skipped with a reason* where the fit
+    # window is under-resolved (H=22 here), never silently dropped
+    assert rows["nu_lower"]["pass"] is None
+    assert "under-resolved" in rows["nu_lower"]["skipped"]
+
+
+def test_benchmark_artifact_writer_roundtrip(tmp_path):
+    """benchmark.json/csv/md must be written and the sha256 must match the JSON."""
+    import hashlib
+    import json
+
+    from tensorlbm.verification.layered_poiseuille.benchmark import (
+        run_benchmark, write_artifacts,
+    )
+
+    payload = run_benchmark(cases=["control_single_light"], verbose=False)
+    paths = write_artifacts(payload, str(tmp_path))
+    for key in ("json", "csv", "md", "sha256"):
+        assert os.path.exists(paths[key]), f"{key} artifact missing"
+    digest = hashlib.sha256(open(paths["json"], "rb").read()).hexdigest()
+    assert digest == payload["sha256"]
+    body = json.load(open(paths["json"]))
+    assert body["kpi_table"] and "repro_cmd" in body
+    assert "| case | KPI | ref (exact) | got | error | gate | verdict |" in open(paths["md"]).read()
+
+
+def test_static_case_gate_is_spurious_current_not_profile_error():
+    """A g=0 run has no driven reference: only the spurious-current KPI applies."""
+    from tensorlbm.verification.layered_poiseuille.benchmark import kpi_table
+    from tensorlbm.verification.layered_poiseuille.run_two_component_sc_validation import (
+        CASE_MATRIX, run_case_spec,
+    )
+
+    spec = dict(CASE_MATRIX["layered_static"])
+    spec["cfg"] = dict(spec["cfg"], steps=1500, ny=24, g_ramp_steps=500)
+    rec = run_case_spec(spec, name="layered_static_short", verbose=False)
+    rows = kpi_table(rec)
+    assert [r["kpi"] for r in rows] == ["spurious_ratio"]
+    assert rec["metrics"]["spurious_ratio"] <= 0.15
+
+
+def test_registry_registers_two_component_case():
+    from tensorlbm.verification.xval.cases import register_default_cases
+    from tensorlbm.verification.xval.registry import XValRegistry
+
+    reg = XValRegistry()
+    register_default_cases(reg)
+    assert "two_component_sc_layered_poiseuille" in reg.list_cases()
+    case = reg.get("two_component_sc_layered_poiseuille")
+    assert case.thresholds["eps_inf"] == pytest.approx(0.15)
+    assert case.category == "analytical"
+
+
+def test_paper_evidence_harness_registers_the_benchmark():
+    """The paper-evidence harness must really call our benchmark (not a stub)."""
+    import importlib.util
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    path = root / "evidence" / "paper_benchmarks" / "run_all_benchmarks.py"
+    spec = importlib.util.spec_from_file_location("paper_bench_harness", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    names = [name for name, _ in mod.BENCHMARKS]
+    assert "two_component_sc_layered_poiseuille" in names
+    fn = dict(mod.BENCHMARKS)["two_component_sc_layered_poiseuille"]
+    import inspect
+    src = inspect.getsource(fn)
+    assert "benchmark_single_case" in src, "harness must delegate to the shared scoring layer"
