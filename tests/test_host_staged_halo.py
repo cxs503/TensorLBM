@@ -285,3 +285,97 @@ def test_dense_reference_step_is_reproduced_bitwise() -> None:
         f = torch.stack([torch.roll(f[q], shifts[q], dims=(0, 1, 2)) for q in range(19)])
         solver.step(1)
     assert float((solver.slabs[0] - f).abs().max()) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Linear-reference integrity (mission m21930)
+#
+# The D3b arm of the cross-validation driver compares a measured shear decay
+# rate against the transverse eigenvalue of the linearised BGK collide+stream
+# operator.  In the m21387 delivery that reference was (a) unrunnable --
+# ``D3Q19_W`` was never imported, so the arm raised ``NameError`` and the
+# driver could not write any artifact -- and (b) algebraically wrong: the
+# eigenvalues were paired with *rows* of the eigenvector matrix.  The tests
+# below pin the properties that both defects violate.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("n", [16, 24, 32])
+@pytest.mark.parametrize("nu", [0.02, 0.05, 0.10])
+def test_transverse_mode_selection_is_the_slow_shear_pair(n: int, nu: float) -> None:
+    """The reference rate must be the slowest transverse pair, not a ghost mode.
+
+    The transverse sector of D3Q19 BGK contains the hydrodynamic shear pair
+    *and* four fast ghost modes (``|lambda| ~ 0.79`` at ``nu = 0.02``); picking
+    any of them would shift the reference by up to two orders of magnitude.
+    """
+    from tensorlbm.host_staged_halo import discrete_transverse_rate, shear_khat2, transverse_modes
+
+    k = 2 * math.pi / n
+    modes = transverse_modes((k, 0.0, 0.0), nu)
+    assert len(modes) == 6, "expected 2 shear modes + 4 ghost modes"
+    rate = discrete_transverse_rate((k, 0.0, 0.0), nu)
+    assert 0.0 < rate < 0.3 * modes[2]["rate"], (rate, modes[2]["rate"])
+    continuum = nu * shear_khat2((k, 0.0, 0.0))
+    assert abs(rate - continuum) / continuum < 0.03, (rate, continuum)
+
+
+@pytest.mark.parametrize("nu", [0.02, 0.10])
+def test_eigenvectors_must_be_columns_not_rows(nu: float) -> None:
+    """Invariant test: the selected vector must satisfy ``A v = lambda v``.
+
+    Rows of the eigenvector matrix do not; pairing an eigenvalue with row ``i``
+    (the m21387 defect) silently classifies an unrelated vector, which is why
+    the reference could be an arbitrary eigenvalue of the spectrum.
+    """
+    import numpy as np
+
+    from tensorlbm.host_staged_halo import D3Q19_C, linearised_step_operator, transverse_modes
+
+    k = 2 * math.pi / 24
+    A = linearised_step_operator((k, 0.0, 0.0), nu)
+    vals, vecs = np.linalg.eig(A)
+    c = np.asarray(D3Q19_C, dtype=float)
+    slow = transverse_modes((k, 0.0, 0.0), nu)[0]
+    # there is exactly one column whose |lambda| reproduces the reported rate
+    hits = [j for j, lam in enumerate(vals) if abs(-math.log(abs(lam)) - slow["rate"]) < 1e-12]
+    assert len(hits) == 2, hits
+    for j in hits:
+        v = vecs[:, j]
+        assert np.linalg.norm(A @ v - vals[j] * v) < 1e-10  # column: eigenvector
+        assert abs(v.sum()) < 1e-9  # no mass
+        mom = c.T @ v
+        assert abs(mom[0]) / np.linalg.norm(mom) < 1e-8  # transverse to k = x
+    # the row-paired partner of the same eigenvalue is not an eigenvector
+    j = hits[0]
+    row = vecs[j, :]
+    assert np.linalg.norm(A @ row - vals[j] * row) > 1e-3
+
+
+def test_shear_arm_reproduces_the_linear_reference() -> None:
+    """End-to-end: the driver's D3b arm must run and match its own reference.
+
+    This executes the driver code path, so the ``NameError`` class of defect
+    (a reference routine that cannot run in the delivered state) fails the
+    suite instead of only showing up when a report is written.
+    """
+    import importlib.util
+    from pathlib import Path
+
+    driver_path = Path(__file__).resolve().parents[1] / "tools" / "xval_host_staged_halo" / "run_xval_host_staged_halo.py"
+    spec = importlib.util.spec_from_file_location("xval_host_staged_halo_driver", driver_path)
+    driver = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(driver)
+
+    rows = driver.table_shear_discrete(grids=(16,), nus=(0.02, 0.10), device_grids=((1, 1, 1), (2, 2, 2)))
+    assert rows
+    worst_eigen = max(r["rel_err"] for r in rows)
+    worst_modal = max(r["rel_err_vs_modal"] for r in rows)
+    assert all(r["pass"] for r in rows)
+    assert worst_eigen < 0.01, worst_eigen
+    assert worst_modal < 0.01, worst_modal
+    # the decomposition must not move the measured rate at all
+    by_case = {}
+    for r in rows:
+        by_case.setdefault((r["grid"], r["nu"]), set()).add(round(r["gamma_LBM"], 12))
+    assert all(len(v) == 1 for v in by_case.values()), by_case
