@@ -1,0 +1,39 @@
+{
+  "round": "R3 (verification debt)",
+  "anchor": "XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND",
+  "question": "The mask-blend boundary of the port was generalised from a binary indicator to a solid fraction eps_s (partial_cell_layer, Noble & Torczynski 1998 weight B = eps_s*(tau-1/2)/((1-eps_s)+(tau-1/2)), post-collision reflection). The library code and its unit tests are merged, and the sweep harness exists in run_xval.py, but no verification number has ever been published: does the sub-cell wall actually sit where the analytic solution says it does, and how wrong is the naive upstream float-mask transplant?",
+  "written_before_measurement": true,
+  "unit_of_analysis": "one (case, Ny, tau, eps_s, mode) arm; every KPI is a scalar per arm",
+  "geometry_convention": {
+    "cell_centres": "integer y, cell k spans [k-0.5, k+0.5]",
+    "partial_row": "row 1 of the lattice, solid occupying the low face, so the no-slip interface is at y_b = 0.5 + eps_s",
+    "channel": "y_b <= y <= Ny-1.5, so H = (Ny-1.5) - (0.5+eps_s)",
+    "note": "eps_s = 1 is the plain staircase (interface at the shared face y = 1.5) and therefore pins the convention against round 1/2 results"
+  },
+  "modes": {
+    "naive_eps": "float mask (raw eps_s) fed to the binary bounce layer, i.e. upstream's f*(1-m)+bounce*f*m transplanted verbatim -- pre-collision populations, weight = eps_s",
+    "nt_pre": "Noble-Torczynski weight B(eps_s, tau) with the pre-collision populations",
+    "nt_post": "Noble-Torczynski weight B(eps_s, tau) with the post-collision populations (the published NT formulation)"
+  },
+  "references": "closed-form plane Couette u = U*(y-y_b)/H and plane Poiseuille u = g*y*(H-y)/(2*nu) using the *exact* sub-cell y_b, not a snapped wall; the interface offset d_eff is measured by least-squares on the fluid rows only (the partial cell's own macroscopic velocity is a mixture and is excluded)",
+  "predeclared_predictions": {
+    "P1_nt_post_places_the_wall": "nt_post: |d_eff - y_b| <= 0.05 dx and profile L2 < 3% for every eps_s in {0.25,0.5,0.75} at tau=0.8 on Couette; Poiseuille to the same bound or better",
+    "P2_naive_is_biased": "naive_eps: interface offset error >= 0.25 dx at eps_s=0.5, and the error is monotone in (1 - eps_s) across eps_s in {0.25,0.5,0.75}; no closed form is asserted, the measured curve is reported as is",
+    "P3_tau_robustness": "at eps_s=0.5, |d_eff - y_b| <= 0.05 dx for nt_post at every tau in {0.6,0.7,0.8,0.9} (the NT weight is tau dependent; the wall position must not be)",
+    "P4_reflect_choice_matters": "nt_pre is worse than nt_post at eps_s in {0.25,0.5,0.75} (the NT model reflects post-collision populations); falsifier: both agree to <= 0.05 dx, in which case the reflect choice is immaterial for a converged static case and the 'post' default is a preference, not a correctness requirement",
+    "P5_eps_one_collapse": "at eps_s = 1 exactly, naive_eps, nt_pre and nt_post reduce to the staircase bounce result -- profile L2 and peak error agree within 1e-9 relative"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "internal_target_pct": 3.0,
+    "wall_position_tolerance_dx": 0.05,
+    "collapse_rel": 1e-09
+  },
+  "falsifiers": [
+    "any nt_post arm with |d_eff - y_b| > 0.05 dx or L2 >= 15% (owner gate) falsifies the claim that the fractional mask is a verified wall model",
+    "a non-monotone naive_eps bias curve falsifies the reading that the raw eps_s weight is a wall-position error of the saturated-cell normalisation",
+    "a non-finite population or |u| > 10*U_ref declares the run failed and it is reported, never re-tuned"
+  ],
+  "stopping_rule": "step counts are inherited unchanged from round 1/2 predeclared stopping rule (12 viscous e-folding times for Couette + ramp, 3.5*H^2/nu for Poiseuille); no arm is extended after looking at a KPI",
+  "analysis_plan": "table (case, Ny, tau, eps_s, mode) -> d_eff, offset error in dx, L2 %, peak error %; verdict by P1..P5; figures: d_eff vs eps_s against the exact y_b line, and L2 % vs eps_s per mode; the numbers are injected programmatically into the report, never transcribed"
+}
