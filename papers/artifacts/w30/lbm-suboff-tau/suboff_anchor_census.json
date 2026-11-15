@@ -1,0 +1,1858 @@
+{
+ "schema": "suboff-anchor-census/v1",
+ "artifact_id": "w30-lbm-suboff-tau-anchor-census",
+ "task": "m21512",
+ "task_keys_closed": [
+  "paper-exp-lbm-suboff-tau-3",
+  "paper-exp-lbm-suboff-tau-4",
+  "paper-exp-lbm-suboff-tau-6"
+ ],
+ "topic": "lbm-suboff-tau",
+ "repo": "TensorLBM",
+ "git_commit": "e3bf2f4c097a619c1e85d5d8bc4456371ac15b70",
+ "generated_utc": "2026-11-15T06:55:24+00:00",
+ "generator": "benchmarks/anchors/suboff_anchor_census.py",
+ "discipline": "ship-total-performance / resistance (DARPA SUBOFF, bare hull)",
+ "sources": {
+  "benchmarks/anchors/dtrc-suboff-1989.json": "5afa2ff694bfe521b020689e16a36797df3b9b02336112971bb7c63ae2ce1b73",
+  "benchmarks/anchors/dtrc_suboff_1989_anchor.py": "b5fe4d19273c9ec56141eac2e956f3907484a87bcdc6688f81ba8ef9ca8d9b0d",
+  "docs/suboff_experimental_resistance_validation_2026-08-01.md": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+  "src/tensorlbm/suboff_reference_data.py": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+  "benchmarks/pending/suboff_highre_resistance/refs_lock.md": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+  "benchmarks/pending/suboff_highre_resistance/refs_lock.json": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c",
+  "benchmarks/pending/suboff_highre_resistance/formal/formal_verdict.json": "8653bc9573c1f9d94ba26e01cdf318fa0f6216c81c7f88b3e66eedefb0f2f0a6",
+  "benchmarks/verified/suboff_sail_resistance/result.json": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef",
+  "benchmarks/verified/suboff_sail_resistance/verdict.json": "8407056397d402e8a8f58618720ed8c58095901068bbae995111106ae0cbc5d9",
+  "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5",
+  "benchmarks/anchors/lbm-suboff-tau.json": "146ed124a961983fd6638c59fe39820d190011fec393b51389f968fd50ee11df"
+ },
+ "anchor": {
+  "anchor_id": "dtrc-suboff-1989",
+  "status": "TRANSCRIBED",
+  "acquisition_status": "WITHHELD",
+  "grade_scale": {
+   "A": "primary document verified in this environment (page/PDF read, primary doc sha256 registered)",
+   "B": "transcription + verbatim quote + source-document sha256 (source hashed, not re-read)",
+   "C": "second-hand transcription: neither the primary document nor a hashed source document is available in this environment",
+   "D": "second-hand reproduction / model-derived placeholder"
+  },
+  "geometry_gate": {
+   "A_mid_m2": 0.2026829916389991,
+   "Cb_recomputed": 0.8019145264601178,
+   "Cb_nominal": 0.8,
+   "Cb_dev_pct": 0.23931580751472836,
+   "Cb_band_pct": 3.0,
+   "L_over_D": 8.574803149606298,
+   "L_over_D_recorded": 8.57,
+   "L_over_D_dev_pct": 0.05604608642120201,
+   "L_over_D_band_pct": 1.0,
+   "WSA_recorded_m2": 5.998,
+   "WSA_analytic_coef_L2": 0.31576,
+   "WSA_analytic_m2": 5.99146263936,
+   "WSA_dev_pct": 0.10911126436896623,
+   "WSA_band_pct": 1.0,
+   "pass": true
+  },
+  "conventions": {
+   "rho_kg_m3": 1000.0,
+   "rho_provenance": "declared fresh-water assumption (convention, not measured)",
+   "nu_m2_s": 1.139e-06,
+   "nu_provenance": "declared fresh-water ~15 degC assumption (benchmarks/pending/suboff_highre_resistance/refs_lock.json:/assumptions)",
+   "kn_to_ms": 0.514444,
+   "kn_to_ms_provenance": "international knot = 1852 m / 3600 s",
+   "re_length": "L_max = 4.356 m",
+   "ct_definition": "C_T = R_T / (0.5 * rho * V^2 * S_wetted)",
+   "cf_definition": "C_F = 0.075/(log10(Re)-2)^2 (ITTC-1957 correlation line)",
+   "reference_area": "WSA = 5.998 m^2 (Table 1 transcription)"
+  },
+  "n_points": 11,
+  "points": [
+   {
+    "id": "T14-P1",
+    "family": "T14",
+    "speed_kn": 5.92,
+    "speed_ms": 3.04550848,
+    "resistance_n": 87.4,
+    "Re": 11647265.09120281,
+    "C_T": 0.0031420662705313055,
+    "C_F": 0.00292208264136114,
+    "form_factor_CT_over_CF": 1.0752831648415304,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of Table 14 archived in-repo; the primary report CRDKNSWC/HD-1298-11 is not acquired (offline sandbox) and no sha256 of it can be registered. The in-repo python mirror (src/tensorlbm/suboff_reference_data.py) shares the same transcription lineage, so it is not an independent witness and cannot lift the grade to B.",
+    "provenance": {
+     "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+     "locator": {
+      "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+      "line": 23,
+      "char_offset": 581,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23"
+     },
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+    },
+    "recompute": {
+     "C_F_decimal": 0.00292208264136114,
+     "C_F_float": 0.00292208264136114,
+     "path_spread_abs": 0.0,
+     "C_T_from_RT": 0.0031420662705313055,
+     "C_T_decimal": 0.0031420662705313055,
+     "C_T_path_spread_abs": 0.0,
+     "registered_C_F": 0.00292208264136114,
+     "registered_C_F_register": "benchmarks/anchors/lbm-suboff-tau.json",
+     "residual_vs_registered_C_F_abs": 0.0,
+     "registered_C_T": 0.0031420662705313055,
+     "residual_vs_registered_C_T_abs": 0.0,
+     "residual_vs_registered_C_T_rel": 0.0,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "a second independent transcription of the same Table 14 rows (the existing one shares lineage with the python mirror)"
+    ]
+   },
+   {
+    "id": "T14-P2",
+    "family": "T14",
+    "speed_kn": 10.0,
+    "speed_ms": 5.14444,
+    "resistance_n": 242.2,
+    "Re": 19674434.275680423,
+    "C_T": 0.0030515568154928377,
+    "C_F": 0.002676143681834607,
+    "form_factor_CT_over_CF": 1.1402813818280748,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of Table 14 archived in-repo; the primary report CRDKNSWC/HD-1298-11 is not acquired (offline sandbox) and no sha256 of it can be registered. The in-repo python mirror (src/tensorlbm/suboff_reference_data.py) shares the same transcription lineage, so it is not an independent witness and cannot lift the grade to B.",
+    "provenance": {
+     "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+     "locator": {
+      "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+      "line": 23,
+      "char_offset": 581,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23"
+     },
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+    },
+    "recompute": {
+     "C_F_decimal": 0.002676143681834607,
+     "C_F_float": 0.0026761436818346076,
+     "path_spread_abs": 4.336808689942018e-19,
+     "C_T_from_RT": 0.0030515568154928377,
+     "C_T_decimal": 0.0030515568154928386,
+     "C_T_path_spread_abs": 8.673617379884035e-19,
+     "registered_C_F": 0.0026761436818346076,
+     "registered_C_F_register": "benchmarks/anchors/lbm-suboff-tau.json",
+     "residual_vs_registered_C_F_abs": 4.336808689942018e-19,
+     "registered_C_T": 0.0030515568154928377,
+     "residual_vs_registered_C_T_abs": 0.0,
+     "residual_vs_registered_C_T_rel": 0.0,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "a second independent transcription of the same Table 14 rows (the existing one shares lineage with the python mirror)"
+    ]
+   },
+   {
+    "id": "T14-P3",
+    "family": "T14",
+    "speed_kn": 11.84,
+    "speed_ms": 6.09101696,
+    "resistance_n": 332.9,
+    "Re": 23294530.18240562,
+    "C_T": 0.002991973287928694,
+    "C_F": 0.0026034963544291257,
+    "form_factor_CT_over_CF": 1.14921355001657,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of Table 14 archived in-repo; the primary report CRDKNSWC/HD-1298-11 is not acquired (offline sandbox) and no sha256 of it can be registered. The in-repo python mirror (src/tensorlbm/suboff_reference_data.py) shares the same transcription lineage, so it is not an independent witness and cannot lift the grade to B.",
+    "provenance": {
+     "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+     "locator": {
+      "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+      "line": 23,
+      "char_offset": 581,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23"
+     },
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+    },
+    "recompute": {
+     "C_F_decimal": 0.0026034963544291257,
+     "C_F_float": 0.0026034963544291252,
+     "path_spread_abs": 4.336808689942018e-19,
+     "C_T_from_RT": 0.002991973287928694,
+     "C_T_decimal": 0.0029919732879286945,
+     "C_T_path_spread_abs": 4.336808689942018e-19,
+     "registered_C_F": 0.0026034963544291252,
+     "registered_C_F_register": "benchmarks/anchors/lbm-suboff-tau.json",
+     "residual_vs_registered_C_F_abs": 4.336808689942018e-19,
+     "registered_C_T": 0.002991973287928694,
+     "residual_vs_registered_C_T_abs": 0.0,
+     "residual_vs_registered_C_T_rel": 0.0,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "a second independent transcription of the same Table 14 rows (the existing one shares lineage with the python mirror)"
+    ]
+   },
+   {
+    "id": "T14-P4",
+    "family": "T14",
+    "speed_kn": 13.92,
+    "speed_ms": 7.16106048,
+    "resistance_n": 451.5,
+    "Re": 27386812.511747144,
+    "C_T": 0.002935800942613005,
+    "C_F": 0.0025366239936047957,
+    "form_factor_CT_over_CF": 1.1573654392667552,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of Table 14 archived in-repo; the primary report CRDKNSWC/HD-1298-11 is not acquired (offline sandbox) and no sha256 of it can be registered. The in-repo python mirror (src/tensorlbm/suboff_reference_data.py) shares the same transcription lineage, so it is not an independent witness and cannot lift the grade to B.",
+    "provenance": {
+     "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+     "locator": {
+      "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+      "line": 23,
+      "char_offset": 581,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23"
+     },
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+    },
+    "recompute": {
+     "C_F_decimal": 0.0025366239936047957,
+     "C_F_float": 0.002536623993604796,
+     "path_spread_abs": 4.336808689942018e-19,
+     "C_T_from_RT": 0.002935800942613005,
+     "C_T_decimal": 0.0029358009426130047,
+     "C_T_path_spread_abs": 4.336808689942018e-19,
+     "registered_C_F": 0.002536623993604796,
+     "registered_C_F_register": "benchmarks/anchors/lbm-suboff-tau.json",
+     "residual_vs_registered_C_F_abs": 4.336808689942018e-19,
+     "registered_C_T": 0.0029358009426130047,
+     "residual_vs_registered_C_T_abs": 4.336808689942018e-19,
+     "residual_vs_registered_C_T_rel": 2.220446049250313e-16,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "a second independent transcription of the same Table 14 rows (the existing one shares lineage with the python mirror)"
+    ]
+   },
+   {
+    "id": "T14-P5",
+    "family": "T14",
+    "speed_kn": 16.0,
+    "speed_ms": 8.231104,
+    "resistance_n": 576.9,
+    "Re": 31479094.841088675,
+    "C_T": 0.002839277854784622,
+    "C_F": 0.002481122913231741,
+    "form_factor_CT_over_CF": 1.1443519543682632,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of Table 14 archived in-repo; the primary report CRDKNSWC/HD-1298-11 is not acquired (offline sandbox) and no sha256 of it can be registered. The in-repo python mirror (src/tensorlbm/suboff_reference_data.py) shares the same transcription lineage, so it is not an independent witness and cannot lift the grade to B.",
+    "provenance": {
+     "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+     "locator": {
+      "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+      "line": 23,
+      "char_offset": 581,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23"
+     },
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+    },
+    "recompute": {
+     "C_F_decimal": 0.002481122913231741,
+     "C_F_float": 0.002481122913231741,
+     "path_spread_abs": 0.0,
+     "C_T_from_RT": 0.002839277854784622,
+     "C_T_decimal": 0.0028392778547846214,
+     "C_T_path_spread_abs": 4.336808689942018e-19,
+     "registered_C_F": 0.002481122913231741,
+     "registered_C_F_register": "benchmarks/anchors/lbm-suboff-tau.json",
+     "residual_vs_registered_C_F_abs": 0.0,
+     "registered_C_T": 0.002839277854784621,
+     "residual_vs_registered_C_T_abs": 8.673617379884035e-19,
+     "residual_vs_registered_C_T_rel": 2.220446049250313e-16,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "a second independent transcription of the same Table 14 rows (the existing one shares lineage with the python mirror)"
+    ]
+   },
+   {
+    "id": "T14-P6",
+    "family": "T14",
+    "speed_kn": 17.99,
+    "speed_ms": 9.25484756,
+    "resistance_n": 697.0,
+    "Re": 35394307.26194908,
+    "C_T": 0.0027134246929704847,
+    "C_F": 0.002435803421370228,
+    "form_factor_CT_over_CF": 1.1139752367389666,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of Table 14 archived in-repo; the primary report CRDKNSWC/HD-1298-11 is not acquired (offline sandbox) and no sha256 of it can be registered. The in-repo python mirror (src/tensorlbm/suboff_reference_data.py) shares the same transcription lineage, so it is not an independent witness and cannot lift the grade to B.",
+    "provenance": {
+     "verbatim_quote": "| AFF-1 裸艇 | 5.92 / 10.00 / 11.84 / 13.92 / 16.00 / 17.99 | 87.40 / 242.2 / 332.9 / 451.5 / 576.9 / 697.0 |",
+     "locator": {
+      "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+      "line": 23,
+      "char_offset": 581,
+      "table": "Table 14",
+      "report_page": 23,
+      "citation_line": "CRDKNSWC/HD-1298-11, ADA359226, Table 14, report p.23"
+     },
+     "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3"
+    },
+    "recompute": {
+     "C_F_decimal": 0.002435803421370228,
+     "C_F_float": 0.002435803421370228,
+     "path_spread_abs": 0.0,
+     "C_T_from_RT": 0.0027134246929704847,
+     "C_T_decimal": 0.0027134246929704847,
+     "C_T_path_spread_abs": 0.0,
+     "registered_C_F": 0.002435803421370228,
+     "registered_C_F_register": "benchmarks/anchors/lbm-suboff-tau.json",
+     "residual_vs_registered_C_F_abs": 0.0,
+     "registered_C_T": 0.0027134246929704847,
+     "residual_vs_registered_C_T_abs": 0.0,
+     "residual_vs_registered_C_T_rel": 0.0,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "a second independent transcription of the same Table 14 rows (the existing one shares lineage with the python mirror)"
+    ]
+   },
+   {
+    "id": "S1-P1",
+    "family": "S1",
+    "speed_kn": 5.9287308239575145,
+    "speed_ms": 3.05,
+    "resistance_n": 102.3,
+    "Re": 11664442.493415276,
+    "C_T": 0.0036669035696661042,
+    "C_F": 0.0029213444761097304,
+    "form_factor_CT_over_CF": 1.2552109481279705,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of the EFD column of Table 3 of a third-party paper (CFD Letters 16(10) 2024), which itself cites HD-1298-11 as [24]. The paper PDF (refs/cfdletters2024_suboff.pdf) is NOT present in this checkout, so not even a secondary source document can be hashed -> this is C and not B.",
+    "provenance": {
+     "verbatim_quote": "| 3.050 | 102.30 |",
+     "locator": {
+      "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "table": "Table 3 (EFD column)",
+      "cited_primary": "Liu & Huang 1998, CRDKNSWC/HD-1298-11 (ref [24] of CFD Letters 16(10) 2024, 126-139)",
+      "line": 35
+     },
+     "sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec"
+    },
+    "recompute": {
+     "C_F_decimal": 0.0029213444761097304,
+     "C_F_float": 0.002921344476109731,
+     "path_spread_abs": 4.336808689942018e-19,
+     "C_T_from_RT": 0.0036669035696661042,
+     "C_T_decimal": 0.0036669035696661047,
+     "C_T_path_spread_abs": 4.336808689942018e-19,
+     "registered_C_F": 0.002921344476109731,
+     "registered_C_F_register": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "residual_vs_registered_C_F_abs": 4.336808689942018e-19,
+     "registered_C_T": 0.0036669035696661055,
+     "residual_vs_registered_C_T_abs": 1.3010426069826053e-18,
+     "residual_vs_registered_C_T_rel": 3.3306690738754696e-16,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "the third-party source PDF refs/cfdletters2024_suboff.pdf (absent from this checkout), which would raise the grade to B"
+    ]
+   },
+   {
+    "id": "S1-P2",
+    "family": "S1",
+    "speed_kn": 9.999144707684414,
+    "speed_ms": 5.144,
+    "resistance_n": 283.8,
+    "Re": 19672751.53643547,
+    "C_T": 0.0035763005174137756,
+    "C_F": 0.002676181238370725,
+    "form_factor_CT_over_CF": 1.3363446638580607,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of the EFD column of Table 3 of a third-party paper (CFD Letters 16(10) 2024), which itself cites HD-1298-11 as [24]. The paper PDF (refs/cfdletters2024_suboff.pdf) is NOT present in this checkout, so not even a secondary source document can be hashed -> this is C and not B.",
+    "provenance": {
+     "verbatim_quote": "| 5.144 | 283.80 |",
+     "locator": {
+      "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "table": "Table 3 (EFD column)",
+      "cited_primary": "Liu & Huang 1998, CRDKNSWC/HD-1298-11 (ref [24] of CFD Letters 16(10) 2024, 126-139)",
+      "line": 36
+     },
+     "sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec"
+    },
+    "recompute": {
+     "C_F_decimal": 0.002676181238370725,
+     "C_F_float": 0.0026761812383707256,
+     "path_spread_abs": 4.336808689942018e-19,
+     "C_T_from_RT": 0.0035763005174137756,
+     "C_T_decimal": 0.0035763005174137756,
+     "C_T_path_spread_abs": 0.0,
+     "registered_C_F": 0.0026761812383707256,
+     "registered_C_F_register": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "residual_vs_registered_C_F_abs": 4.336808689942018e-19,
+     "registered_C_T": 0.0035763005174137756,
+     "residual_vs_registered_C_T_abs": 0.0,
+     "residual_vs_registered_C_T_rel": 0.0,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "the third-party source PDF refs/cfdletters2024_suboff.pdf (absent from this checkout), which would raise the grade to B"
+    ]
+   },
+   {
+    "id": "S1-P3",
+    "family": "S1",
+    "speed_kn": 11.857461647915029,
+    "speed_ms": 6.1,
+    "resistance_n": 389.2,
+    "Re": 23328884.98683055,
+    "C_T": 0.003487680521295327,
+    "C_F": 0.0026028755498213704,
+    "form_factor_CT_over_CF": 1.339933644362935,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of the EFD column of Table 3 of a third-party paper (CFD Letters 16(10) 2024), which itself cites HD-1298-11 as [24]. The paper PDF (refs/cfdletters2024_suboff.pdf) is NOT present in this checkout, so not even a secondary source document can be hashed -> this is C and not B.",
+    "provenance": {
+     "verbatim_quote": "| 6.100 | 389.20 |",
+     "locator": {
+      "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "table": "Table 3 (EFD column)",
+      "cited_primary": "Liu & Huang 1998, CRDKNSWC/HD-1298-11 (ref [24] of CFD Letters 16(10) 2024, 126-139)",
+      "line": 37
+     },
+     "sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec"
+    },
+    "recompute": {
+     "C_F_decimal": 0.0026028755498213704,
+     "C_F_float": 0.0026028755498213704,
+     "path_spread_abs": 0.0,
+     "C_T_from_RT": 0.003487680521295327,
+     "C_T_decimal": 0.0034876805212953276,
+     "C_T_path_spread_abs": 4.336808689942018e-19,
+     "registered_C_F": 0.0026028755498213704,
+     "registered_C_F_register": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "residual_vs_registered_C_F_abs": 0.0,
+     "registered_C_T": 0.003487680521295328,
+     "residual_vs_registered_C_T_abs": 8.673617379884035e-19,
+     "residual_vs_registered_C_T_rel": 2.220446049250313e-16,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "the third-party source PDF refs/cfdletters2024_suboff.pdf (absent from this checkout), which would raise the grade to B"
+    ]
+   },
+   {
+    "id": "S1-P4",
+    "family": "S1",
+    "speed_kn": 13.91793859001174,
+    "speed_ms": 7.16,
+    "resistance_n": 526.6,
+    "Re": 27382756.80421422,
+    "C_T": 0.0034251401320700733,
+    "C_F": 0.002536684004875832,
+    "form_factor_CT_over_CF": 1.35024312270922,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of the EFD column of Table 3 of a third-party paper (CFD Letters 16(10) 2024), which itself cites HD-1298-11 as [24]. The paper PDF (refs/cfdletters2024_suboff.pdf) is NOT present in this checkout, so not even a secondary source document can be hashed -> this is C and not B.",
+    "provenance": {
+     "verbatim_quote": "| 7.160 | 526.60 |",
+     "locator": {
+      "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "table": "Table 3 (EFD column)",
+      "cited_primary": "Liu & Huang 1998, CRDKNSWC/HD-1298-11 (ref [24] of CFD Letters 16(10) 2024, 126-139)",
+      "line": 38
+     },
+     "sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec"
+    },
+    "recompute": {
+     "C_F_decimal": 0.002536684004875832,
+     "C_F_float": 0.002536684004875832,
+     "path_spread_abs": 0.0,
+     "C_T_from_RT": 0.0034251401320700733,
+     "C_T_decimal": 0.0034251401320700733,
+     "C_T_path_spread_abs": 0.0,
+     "registered_C_F": 0.002536684004875832,
+     "registered_C_F_register": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "residual_vs_registered_C_F_abs": 0.0,
+     "registered_C_T": 0.0034251401320700733,
+     "residual_vs_registered_C_T_abs": 0.0,
+     "residual_vs_registered_C_T_rel": 0.0,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "the third-party source PDF refs/cfdletters2024_suboff.pdf (absent from this checkout), which would raise the grade to B"
+    ]
+   },
+   {
+    "id": "S1-P5",
+    "family": "S1",
+    "speed_kn": 15.997853993826345,
+    "speed_ms": 8.23,
+    "resistance_n": 675.6,
+    "Re": 31474872.695346795,
+    "C_T": 0.003325933064983669,
+    "C_F": 0.0024811754911162067,
+    "form_factor_CT_over_CF": 1.3404666767393512,
+    "evidence_grade": "C",
+    "acquisition_status": "WITHHELD",
+    "grade_reason": "grade C: the value is a verbatim transcription of the EFD column of Table 3 of a third-party paper (CFD Letters 16(10) 2024), which itself cites HD-1298-11 as [24]. The paper PDF (refs/cfdletters2024_suboff.pdf) is NOT present in this checkout, so not even a secondary source document can be hashed -> this is C and not B.",
+    "provenance": {
+     "verbatim_quote": "| 8.230 | 675.60 |",
+     "locator": {
+      "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+      "table": "Table 3 (EFD column)",
+      "cited_primary": "Liu & Huang 1998, CRDKNSWC/HD-1298-11 (ref [24] of CFD Letters 16(10) 2024, 126-139)",
+      "line": 39
+     },
+     "sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec"
+    },
+    "recompute": {
+     "C_F_decimal": 0.0024811754911162067,
+     "C_F_float": 0.0024811754911162063,
+     "path_spread_abs": 4.336808689942018e-19,
+     "C_T_from_RT": 0.003325933064983669,
+     "C_T_decimal": 0.00332593306498367,
+     "C_T_path_spread_abs": 8.673617379884035e-19,
+     "registered_C_F": 0.0024811754911162063,
+     "registered_C_F_register": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+     "residual_vs_registered_C_F_abs": 4.336808689942018e-19,
+     "registered_C_T": 0.0033259330649836705,
+     "residual_vs_registered_C_T_abs": 1.3010426069826053e-18,
+     "residual_vs_registered_C_T_rel": 4.440892098500626e-16,
+     "C_F_tolerance_abs": 1e-09,
+     "pass": true
+    },
+    "what_is_missing": [
+     "CRDKNSWC/HD-1298-11 (DTIC ADA359226), Table 14, report p.23, as a hashed primary PDF",
+     "the third-party source PDF refs/cfdletters2024_suboff.pdf (absent from this checkout), which would raise the grade to B"
+    ]
+   }
+  ],
+  "cross_family_conflict": {
+   "statement": "the two in-repo transcriptions of the same DTRC tow-tank table differ by a nearly constant factor ~1.17 across all overlapping speeds; they cannot both be Table 14 AFF-1 bare-hull values as recorded",
+   "pairs": [
+    {
+     "S1_id": "S1-P1",
+     "T14_id": "T14-P1",
+     "speed_kn": 5.9287308239575145,
+     "speed_gap_kn": 0.008730823957514566,
+     "speed_gap_pct": 0.14726295081965982,
+     "RT_S1_N": 102.3,
+     "RT_T14_N": 87.4,
+     "ratio_S1_over_T14": 1.1704805491990846,
+     "speed_gap_perturbs_ratio_pct": 0.2807568157376814,
+     "same_speed_within_0p2pct": true
+    },
+    {
+     "S1_id": "S1-P2",
+     "T14_id": "T14-P2",
+     "speed_kn": 9.999144707684414,
+     "speed_gap_kn": 0.0008552923155864534,
+     "speed_gap_pct": 0.008553654743381753,
+     "RT_S1_N": 283.8,
+     "RT_T14_N": 242.2,
+     "ratio_S1_over_T14": 1.1717588769611893,
+     "speed_gap_perturbs_ratio_pct": 0.016307542768257313,
+     "same_speed_within_0p2pct": true
+    },
+    {
+     "S1_id": "S1-P3",
+     "T14_id": "T14-P3",
+     "speed_kn": 11.857461647915029,
+     "speed_gap_kn": 0.017461647915029133,
+     "speed_gap_pct": 0.14726295081965982,
+     "RT_S1_N": 389.2,
+     "RT_T14_N": 332.9,
+     "ratio_S1_over_T14": 1.1691198558125564,
+     "speed_gap_perturbs_ratio_pct": 0.2807568157376814,
+     "same_speed_within_0p2pct": true
+    },
+    {
+     "S1_id": "S1-P4",
+     "T14_id": "T14-P4",
+     "speed_kn": 13.91793859001174,
+     "speed_gap_kn": 0.002061409988259655,
+     "speed_gap_pct": 0.014811173184361032,
+     "RT_S1_N": 526.6,
+     "RT_T14_N": 451.5,
+     "ratio_S1_over_T14": 1.1663344407530454,
+     "speed_gap_perturbs_ratio_pct": 0.02823750167598431,
+     "same_speed_within_0p2pct": true
+    },
+    {
+     "S1_id": "S1-P5",
+     "T14_id": "T14-P5",
+     "speed_kn": 15.997853993826345,
+     "speed_gap_kn": 0.002146006173655124,
+     "speed_gap_pct": 0.013414337788576387,
+     "RT_S1_N": 675.6,
+     "RT_T14_N": 576.9,
+     "ratio_S1_over_T14": 1.171086843473739,
+     "speed_gap_perturbs_ratio_pct": 0.025574434993920883,
+     "same_speed_within_0p2pct": true
+    }
+   ],
+   "ratio_mean": 1.169756113239923,
+   "ratio_sd": 0.0021458902033115014,
+   "ratio_min": 1.1663344407530454,
+   "ratio_max": 1.1717588769611893,
+   "constant_offset_share_pct": 14.512094557022003,
+   "sixth_point_check": {
+    "T14_id": "T14-P6",
+    "T14_speed_kn": 17.99,
+    "T14_RT_N": 697.0,
+    "S1_derived_speed_kn": 17.79,
+    "S1_derived_RT_N": 824.1379310344828,
+    "S1_derived_source": "benchmarks/pending/suboff_highre_resistance/refs_lock.json:/derived_6th[0] (back-derived from the Flow360 DDES error table — NOT an S1 table row)",
+    "ratio": 1.182407361598971
+   },
+   "speed_gap_tolerance_pct": 0.2,
+   "speed_gap_max_pct": 0.14726295081965982,
+   "max_ratio_perturbation_from_speed_gap_pct": 0.2807568157376814,
+   "max_dev_pct_between_families": 17.263512706003613,
+   "gate_15pct_verdict": "CONFLICT_EXCEEDS_GATE",
+   "resolution_requires": "primary CRDKNSWC/HD-1298-11 Table 14 (p.23); offline this stays WITHHELD",
+   "hypotheses_ranked": [
+    {
+     "id": "H1",
+     "statement": "one of the two transcriptions is not the AFF-1 bare-hull row (wrong configuration column, e.g. a with-appendages or a different model-scale row)",
+     "supporting": "the offset is a pure multiplicative constant 1.170 independent of speed (sd 0.0021); appendages alone explain only ~2.6% (in-repo appendage share), so a column mix-up rather than a physics difference is the better fit",
+     "test": "read Table 14 page 23 and match both the speed list and the R_T list; also compare against Table 15/16 configuration rows"
+    },
+    {
+     "id": "H2",
+     "statement": "one family was normalised at a different density or reference scale before being tabulated",
+     "supporting": "rho band 997-1000 gives only 0.3% and a model-scale change scales as L^2 (factor 4 or 0.25), so neither closes 1.17 cleanly",
+     "test": "check the primary for a reference-temperature / density footnote; both families would then need a re-derivation"
+    },
+    {
+     "id": "H3",
+     "statement": "the 6-significant-digit transcription pair is right and the third-party paper rescaled EFD to a different reference area for its C_T comparison",
+     "supporting": "S1's Table 3 is titled 'resistance in comparison with EFD' and may tabulate a rescaled force; but the in-repo S1 transcription is dimensional N, not a coefficient",
+     "test": "compare S1 Table 3 numbers with the paper's own CFD column and with its stated reference area"
+    }
+   ]
+  }
+ },
+ "lbm_evidence": {
+  "verified_case": {
+   "case": "suboff_sail_resistance",
+   "hull_configuration": "SUBOFF with sail (AFF-3 family), total-wetted-area normalisation including the sail own area; the DTRC anchor is the AFF-1 BARE hull, so even a perfect Re match would leave a configuration difference (in-repo appendage share ~2.6%)",
+   "observable": "Cd_total window mean over the last 1000 force samples (last 10000 steps), total-wetted-area normalization (frozen in prereg.md)",
+   "lattice_reynolds": 1000.0,
+   "physical_re_equivalent": null,
+   "reference_used_in_case": {
+    "kind": "Blasius laminar flat plate Cf = 1.328/sqrt(Re) at Re=1000",
+    "value": 0.04199504732703608,
+    "source": "benchmarks/verified/suboff_sail_resistance/verdict.json:/cf_ref_recomputed"
+   },
+   "instrument_primary": "standard (erratum E2) — frozen primary caliber",
+   "instrument_coship": "mix50 — formal archive, co-disclosed, overall FAIL",
+   "primary_gate_outcome": "PASS",
+   "coship_gate_outcome": "FAIL",
+   "tiers": [
+    {
+     "tier": "L96",
+     "resolution_cells_per_hull_length": 96,
+     "domain": [
+      576,
+      203,
+      203
+     ],
+     "steps": 14400,
+     "appendage_solid_cells": 48,
+     "u_lb": 0.05,
+     "nu_lb_derived": 0.0048000000000000004,
+     "tau_derived": 0.5144,
+     "re_lattice": 1000.0,
+     "Cd_total_primary_E2_standard": 0.0385703619256417,
+     "Cd_pressure_primary_E2_standard": 0.007165424312493779,
+     "Cd_friction_primary_E2_standard": 0.03140493761314792,
+     "err_vs_laminar_ref_pct_primary": -8.154974501456492,
+     "drift_pct_primary": 1.7775287766119925,
+     "Cd_total_coship_mix50": 0.042648661292759835,
+     "err_vs_laminar_ref_pct_coship_mix50": 1.5564072606794266,
+     "coship_mix50_verdict": "FAIL"
+    },
+    {
+     "tier": "L112",
+     "resolution_cells_per_hull_length": 112,
+     "domain": [
+      672,
+      237,
+      237
+     ],
+     "steps": 16800,
+     "appendage_solid_cells": 70,
+     "u_lb": 0.05,
+     "nu_lb_derived": 0.005600000000000001,
+     "tau_derived": 0.5168,
+     "re_lattice": 1000.0,
+     "Cd_total_primary_E2_standard": 0.04076867077371583,
+     "Cd_pressure_primary_E2_standard": 0.006628803048342275,
+     "Cd_friction_primary_E2_standard": 0.03413986772537355,
+     "err_vs_laminar_ref_pct_primary": -2.9202885372883514,
+     "drift_pct_primary": 0.35196636765819744,
+     "Cd_total_coship_mix50": 0.04448487172275888,
+     "err_vs_laminar_ref_pct_coship_mix50": 5.928852458084677,
+     "coship_mix50_verdict": "FAIL"
+    },
+    {
+     "tier": "L128",
+     "resolution_cells_per_hull_length": 128,
+     "domain": [
+      768,
+      271,
+      271
+     ],
+     "steps": 19200,
+     "appendage_solid_cells": 126,
+     "u_lb": 0.05,
+     "nu_lb_derived": 0.0064,
+     "tau_derived": 0.5192,
+     "re_lattice": 1000.0,
+     "Cd_total_primary_E2_standard": 0.04239577341027158,
+     "Cd_pressure_primary_E2_standard": 0.006495627589678578,
+     "Cd_friction_primary_E2_standard": 0.035900145820593,
+     "err_vs_laminar_ref_pct_primary": 0.9542222446252913,
+     "drift_pct_primary": 0.13897067483216713,
+     "Cd_total_coship_mix50": 0.045862176545034064,
+     "err_vs_laminar_ref_pct_coship_mix50": 9.208536396882106,
+     "coship_mix50_verdict": "FAIL"
+    }
+   ]
+  },
+  "regime_matched_case": {
+   "case": "benchmarks/pending/suboff_highre_resistance (AFF-8 full appendage, wall-model LES)",
+   "status_in_repo": "pending (precision fails at single-GPU reachable grid)",
+   "M1_rule": "|CT_sim/CT_EFD - 1| <= 5% at >= 4/5 anchors",
+   "M1_pass_count": 0,
+   "M1_verdict": "FAIL",
+   "M2_verdict": "FAIL",
+   "overall": "FAIL",
+   "rows": [
+    {
+     "tag": "r1_slip_a1",
+     "Re": 11664442.493415276,
+     "C_T_anchor": 0.0036669035696661055,
+     "C_T_lbm": 0.051173484438575216,
+     "dev_pct": 1295.5503183094308,
+     "C_F_lbm_friction": 0.007367567728682241,
+     "C_F_ratioreg_to_ittc": 2.5219784208719593,
+     "y_plus_mean": 1878.2914085388184,
+     "y_plus_band_ok": true,
+     "steps_completed": 16000,
+     "finite": true,
+     "M1_pass_5pct": false
+    },
+    {
+     "tag": "r2_slip_a2",
+     "Re": 19672751.53643547,
+     "C_T_anchor": 0.0035763005174137756,
+     "C_T_lbm": 0.07539373231781663,
+     "dev_pct": 2008.1486846731239,
+     "C_F_lbm_friction": 0.00673170172233021,
+     "C_F_ratioreg_to_ittc": 2.515413241006244,
+     "y_plus_mean": 3031.168670654297,
+     "y_plus_band_ok": true,
+     "steps_completed": 16000,
+     "finite": true,
+     "M1_pass_5pct": false
+    },
+    {
+     "tag": "r3_slip_a3",
+     "Re": 23328884.98683055,
+     "C_T_anchor": 0.003487680521295328,
+     "C_T_lbm": 0.06171340493376773,
+     "dev_pct": 1669.468406207324,
+     "C_F_lbm_friction": 0.006484986233885102,
+     "C_F_ratioreg_to_ittc": 2.4914699568829377,
+     "y_plus_mean": 3519.11922454834,
+     "y_plus_band_ok": true,
+     "steps_completed": 16000,
+     "finite": true,
+     "M1_pass_5pct": false
+    },
+    {
+     "tag": "r4_slip_a4",
+     "Re": 27382756.80421422,
+     "C_T_anchor": 0.0034251401320700733,
+     "C_T_lbm": 0.07522511759765779,
+     "dev_pct": 2096.263939490076,
+     "C_F_lbm_friction": 0.00634724213163307,
+     "C_F_ratioreg_to_ittc": 2.502180846898099,
+     "y_plus_mean": 4080.116567993164,
+     "y_plus_band_ok": true,
+     "steps_completed": 16000,
+     "finite": true,
+     "M1_pass_5pct": false
+    },
+    {
+     "tag": "r5_slip_a5",
+     "Re": 31474872.695346795,
+     "C_T_anchor": 0.0033259330649836705,
+     "C_T_lbm": 0.10186265785873225,
+     "dev_pct": 2962.6791299912215,
+     "C_F_lbm_friction": 0.006264327988515476,
+     "C_F_ratioreg_to_ittc": 2.524742006740258,
+     "y_plus_mean": 4660.108557128906,
+     "y_plus_band_ok": true,
+     "steps_completed": 16000,
+     "finite": true,
+     "M1_pass_5pct": false
+    }
+   ]
+  }
+ },
+ "error_table": {
+  "gate_pct": 15.0,
+  "sign_convention": "dev_pct = (C_T_lbm / C_T_anchor - 1) * 100",
+  "branch_verified_laminar_Re1000": {
+   "renormalisation_family_breakdown_at_L128": {
+    "T14": {
+     "n": 6,
+     "n_pass_renormalised": 6,
+     "dev_range_pct": [
+      -12.772389066166944,
+      -6.113826064129457
+     ]
+    },
+    "S1": {
+     "n": 5,
+     "n_pass_renormalised": 0,
+     "dev_range_pct": [
+      -25.232559568928703,
+      -19.571907498744288
+     ]
+    }
+   },
+   "renormalisation_discriminating_power": "WEAK — do not use it to adjudicate the cross-family conflict. A laminar boundary layer has a systematically smaller form factor than a turbulent one, so copying the LBM (1+k) onto the anchor-Re ITTC-57 line biases the prediction towards the *lower* (1+k) family (here T14, 1+k 1.08-1.16) and away from the higher one (S1, 1+k 1.26-1.35). The renormalised column is reported only to show that the Reynolds gap explains the magnitude of the raw deviation.",
+   "branch": "verified_laminar_Re1000",
+   "admissible_for_the_anchor": false,
+   "why_not_admissible": "the case is a fixed-Re=1000 (lattice) laminar-flow verification against Blasius; the DTRC anchor lives at Re = 1.2e7..3.5e7 with a turbulent boundary layer. The Reynolds gap is ~4 decades, so the raw deviation measures the regime gap, not the solver.",
+   "n_rows": 33,
+   "n_pass_raw": 0,
+   "n_pass_renormalised_diagnostic": 10,
+   "rows": [
+    {
+     "anchor_id": "T14-P1",
+     "anchor_family": "T14",
+     "Re_anchor": 11647265.09120281,
+     "C_T_anchor": 0.0031420662705313055,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.0662239601056065,
+     "dev_raw_pct": 1127.5476901102938,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0026837875470466527,
+     "dev_renormalised_pct": -14.585266000998775,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P1",
+     "anchor_family": "T14",
+     "Re_anchor": 11647265.09120281,
+     "C_T_anchor": 0.0031420662705313055,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.0662239601056065,
+     "dev_raw_pct": 1197.5114865041367,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.0028367493969353778,
+     "dev_renormalised_pct": -9.71707301209469,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P1",
+     "anchor_family": "T14",
+     "Re_anchor": 11647265.09120281,
+     "C_T_anchor": 0.0031420662705313055,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.0662239601056065,
+     "dev_raw_pct": 1249.295965138975,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.002949965803931342,
+     "dev_renormalised_pct": -6.113826064129457,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P2",
+     "anchor_family": "T14",
+     "Re_anchor": 19674434.275680423,
+     "C_T_anchor": 0.0030515568154928377,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.2939022533826865,
+     "dev_raw_pct": 1163.9568671905079,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0024579048469586563,
+     "dev_renormalised_pct": -19.454069002425058,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P2",
+     "anchor_family": "T14",
+     "Re_anchor": 19674434.275680423,
+     "C_T_anchor": 0.0030515568154928377,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.2939022533826865,
+     "dev_raw_pct": 1235.995796202521,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.002597992564652625,
+     "dev_renormalised_pct": -14.863372313353452,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P2",
+     "anchor_family": "T14",
+     "Re_anchor": 19674434.275680423,
+     "C_T_anchor": 0.0030515568154928377,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.2939022533826865,
+     "dev_raw_pct": 1289.3162072233777,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0027016800401448078,
+     "dev_renormalised_pct": -11.465517324524189,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P3",
+     "anchor_family": "T14",
+     "Re_anchor": 23294530.18240562,
+     "C_T_anchor": 0.002991973287928694,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.367253955769588,
+     "dev_raw_pct": 1189.1278836364038,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0023911818905790806,
+     "dev_renormalised_pct": -20.080105653801937,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P3",
+     "anchor_family": "T14",
+     "Re_anchor": 23294530.18240562,
+     "C_T_anchor": 0.002991973287928694,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.367253955769588,
+     "dev_raw_pct": 1262.6014289031127,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.0025274667488220113,
+     "dev_renormalised_pct": -15.525089778734458,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P3",
+     "anchor_family": "T14",
+     "Re_anchor": 23294530.18240562,
+     "C_T_anchor": 0.002991973287928694,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.367253955769588,
+     "dev_raw_pct": 1316.9836870308973,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0026283394957810962,
+     "dev_renormalised_pct": -12.153644339496662,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P4",
+     "anchor_family": "T14",
+     "Re_anchor": 27386812.511747144,
+     "C_T_anchor": 0.002935800942613005,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.43754148865723,
+     "dev_raw_pct": 1213.793498932261,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0023297629537284976,
+     "dev_renormalised_pct": -20.643020447602435,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P4",
+     "anchor_family": "T14",
+     "Re_anchor": 27386812.511747144,
+     "C_T_anchor": 0.002935800942613005,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.43754148865723,
+     "dev_raw_pct": 1288.6728552321308,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.0024625472538854494,
+     "dev_renormalised_pct": -16.120087770880577,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P4",
+     "anchor_family": "T14",
+     "Re_anchor": 27386812.511747144,
+     "C_T_anchor": 0.002935800942613005,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.43754148865723,
+     "dev_raw_pct": 1344.0956399631539,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0025608290240142755,
+     "dev_renormalised_pct": -12.772389066166944,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P5",
+     "anchor_family": "T14",
+     "Re_anchor": 31479094.841088675,
+     "C_T_anchor": 0.002839277854784622,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.4980222360386115,
+     "dev_raw_pct": 1258.4567590186596,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0022787879723078983,
+     "dev_renormalised_pct": -19.74057880711504,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P5",
+     "anchor_family": "T14",
+     "Re_anchor": 31479094.841088675,
+     "C_T_anchor": 0.002839277854784622,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.4980222360386115,
+     "dev_raw_pct": 1335.8816874866375,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.0024086669652006,
+     "dev_renormalised_pct": -15.166211678028485,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P5",
+     "anchor_family": "T14",
+     "Re_anchor": 31479094.841088675,
+     "C_T_anchor": 0.002839277854784622,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.4980222360386115,
+     "dev_raw_pct": 1393.1886056459093,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0025047983399862934,
+     "dev_renormalised_pct": -11.78044319384518,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P6",
+     "anchor_family": "T14",
+     "Re_anchor": 35394307.26194908,
+     "C_T_anchor": 0.0027134246929704847,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.5489334167282385,
+     "dev_raw_pct": 1321.4642486877835,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.002237164273451881,
+     "dev_renormalised_pct": -17.552004326946104,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "T14-P6",
+     "anchor_family": "T14",
+     "Re_anchor": 35394307.26194908,
+     "C_T_anchor": 0.0027134246929704847,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.5489334167282385,
+     "dev_raw_pct": 1402.4802744418487,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.0023646709332650756,
+     "dev_renormalised_pct": -12.85289990206493,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "T14-P6",
+     "anchor_family": "T14",
+     "Re_anchor": 35394307.26194908,
+     "C_T_anchor": 0.0027134246929704847,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.5489334167282385,
+     "dev_raw_pct": 1462.445183022912,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0024590463994522867,
+     "dev_renormalised_pct": -9.374805727138902,
+     "pass_renormalised_diagnostic_only": true
+    },
+    {
+     "anchor_id": "S1-P1",
+     "anchor_family": "S1",
+     "Re_anchor": 11664442.493415276,
+     "C_T_anchor": 0.0036669035696661042,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.066863986351422,
+     "dev_raw_pct": 951.8510016109801,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0026831095789832744,
+     "dev_renormalised_pct": -26.8290117804328,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P1",
+     "anchor_family": "S1",
+     "Re_anchor": 11664442.493415276,
+     "C_T_anchor": 0.0036669035696661042,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.066863986351422,
+     "dev_raw_pct": 1011.8010059214097,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.002836032788239192,
+     "dev_renormalised_pct": -22.658648247534053,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P1",
+     "anchor_family": "S1",
+     "Re_anchor": 11664442.493415276,
+     "C_T_anchor": 0.0036669035696661042,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.066863986351422,
+     "dev_raw_pct": 1056.173665459438,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.002949220594942902,
+     "dev_renormalised_pct": -19.571907498744288,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P2",
+     "anchor_family": "S1",
+     "Re_anchor": 19672751.53643547,
+     "C_T_anchor": 0.0035763005174137756,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.293865106920802,
+     "dev_raw_pct": 978.498905162872,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0024579393407688304,
+     "dev_renormalised_pct": -31.271454152116252,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P2",
+     "anchor_family": "S1",
+     "Re_anchor": 19672751.53643547,
+     "C_T_anchor": 0.0035763005174137756,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.293865106920802,
+     "dev_raw_pct": 1039.9677005666724,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.002598029024429524,
+     "dev_renormalised_pct": -27.354286593669563,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P2",
+     "anchor_family": "S1",
+     "Re_anchor": 19672751.53643547,
+     "C_T_anchor": 0.0035763005174137756,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.293865106920802,
+     "dev_raw_pct": 1085.4645101505716,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0027017179550537476,
+     "dev_renormalised_pct": -24.454951649099332,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P3",
+     "anchor_family": "S1",
+     "Re_anchor": 23328884.98683055,
+     "C_T_anchor": 0.003487680521295327,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.367893982015404,
+     "dev_raw_pct": 1005.9029544172995,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.002390611712428792,
+     "dev_renormalised_pct": -31.455541933040443,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P3",
+     "anchor_family": "S1",
+     "Re_anchor": 23328884.98683055,
+     "C_T_anchor": 0.003487680521295327,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.367893982015404,
+     "dev_raw_pct": 1068.9336372637224,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.0025268640735000556,
+     "dev_renormalised_pct": -27.5488664150472,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P3",
+     "anchor_family": "S1",
+     "Re_anchor": 23328884.98683055,
+     "C_T_anchor": 0.003487680521295327,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.367893982015404,
+     "dev_raw_pct": 1115.5864951336125,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.002627712767317679,
+     "dev_renormalised_pct": -24.657297270400658,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P4",
+     "anchor_family": "S1",
+     "Re_anchor": 27382756.80421422,
+     "C_T_anchor": 0.0034251401320700733,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.437477169312492,
+     "dev_raw_pct": 1026.0958804138238,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0023298180710956823,
+     "dev_renormalised_pct": -31.97889776008681,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P4",
+     "anchor_family": "S1",
+     "Re_anchor": 27382756.80421422,
+     "C_T_anchor": 0.0034251401320700733,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.437477169312492,
+     "dev_raw_pct": 1090.277454402317,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.002462605512654216,
+     "dev_renormalised_pct": -28.1020507862878,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P4",
+     "anchor_family": "S1",
+     "Re_anchor": 27382756.80421422,
+     "C_T_anchor": 0.0034251401320700733,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.437477169312492,
+     "dev_raw_pct": 1137.7821570952365,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.0025608896079262087,
+     "dev_renormalised_pct": -25.232559568928703,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P5",
+     "anchor_family": "S1",
+     "Re_anchor": 31474872.695346795,
+     "C_T_anchor": 0.003325933064983669,
+     "lbm_tier": "L96",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.0385703619256417,
+     "regime_match": false,
+     "re_gap_decades": 4.497963982216907,
+     "dev_raw_pct": 1059.685452834905,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9184502549854351,
+     "C_T_pred_renormalised": 0.0022788362624792916,
+     "dev_renormalised_pct": -31.482798422148008,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P5",
+     "anchor_family": "S1",
+     "Re_anchor": 31474872.695346795,
+     "C_T_anchor": 0.003325933064983669,
+     "lbm_tier": "L112",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04076867077371583,
+     "regime_match": false,
+     "re_gap_decades": 4.497963982216907,
+     "dev_raw_pct": 1125.781456726821,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 0.9707971146271165,
+     "C_T_pred_renormalised": 0.002408718007659132,
+     "dev_renormalised_pct": -27.577676381440973,
+     "pass_renormalised_diagnostic_only": false
+    },
+    {
+     "anchor_id": "S1-P5",
+     "anchor_family": "S1",
+     "Re_anchor": 31474872.695346795,
+     "C_T_anchor": 0.003325933064983669,
+     "lbm_tier": "L128",
+     "lbm_re_lattice": 1000.0,
+     "C_D_lbm": 0.04239577341027158,
+     "regime_match": false,
+     "re_gap_decades": 4.497963982216907,
+     "dev_raw_pct": 1174.70314591192,
+     "gate_pct": 15.0,
+     "pass_raw": false,
+     "diagnostic_1plus_k_used": 1.009542222446253,
+     "C_T_pred_renormalised": 0.002504851419580628,
+     "dev_renormalised_pct": -24.687257060210044,
+     "pass_renormalised_diagnostic_only": false
+    }
+   ]
+  },
+  "branch_pending_highre_wallmodel": {
+   "branch": "pending_highre_wallmodel",
+   "admissible_for_the_anchor": true,
+   "admissible_because": "same hull family, same Re range, same fluid assumptions as the anchor (S1 family); this is the only in-repo LBM calculation in the anchor's Reynolds domain",
+   "status_in_repo": "pending (precision fails at single-GPU reachable grid)",
+   "n_rows": 5,
+   "n_pass": 0,
+   "rows": [
+    {
+     "anchor_id": "S1-P1",
+     "anchor_family": "S1",
+     "Re": 11664442.493415276,
+     "C_T_anchor": 0.0036669035696661042,
+     "C_T_lbm": 0.051173484438575216,
+     "regime_match": true,
+     "dev_pct": 1295.5503183094313,
+     "gate_pct": 15.0,
+     "pass": false,
+     "diagnostics": {
+      "C_F_lbm_friction": 0.007367567728682241,
+      "C_F_lbm_fric_over_ittc_at_anchor_Re": 2.5219784208719593,
+      "y_plus_mean": 1878.2914085388184,
+      "y_plus_band_ok": true,
+      "finite": true,
+      "steps_completed": 16000
+     }
+    },
+    {
+     "anchor_id": "S1-P2",
+     "anchor_family": "S1",
+     "Re": 19672751.53643547,
+     "C_T_anchor": 0.0035763005174137756,
+     "C_T_lbm": 0.07539373231781663,
+     "regime_match": true,
+     "dev_pct": 2008.1486846731239,
+     "gate_pct": 15.0,
+     "pass": false,
+     "diagnostics": {
+      "C_F_lbm_friction": 0.00673170172233021,
+      "C_F_lbm_fric_over_ittc_at_anchor_Re": 2.515413241006244,
+      "y_plus_mean": 3031.168670654297,
+      "y_plus_band_ok": true,
+      "finite": true,
+      "steps_completed": 16000
+     }
+    },
+    {
+     "anchor_id": "S1-P3",
+     "anchor_family": "S1",
+     "Re": 23328884.98683055,
+     "C_T_anchor": 0.003487680521295327,
+     "C_T_lbm": 0.06171340493376773,
+     "regime_match": true,
+     "dev_pct": 1669.4684062073243,
+     "gate_pct": 15.0,
+     "pass": false,
+     "diagnostics": {
+      "C_F_lbm_friction": 0.006484986233885102,
+      "C_F_lbm_fric_over_ittc_at_anchor_Re": 2.4914699568829377,
+      "y_plus_mean": 3519.11922454834,
+      "y_plus_band_ok": true,
+      "finite": true,
+      "steps_completed": 16000
+     }
+    },
+    {
+     "anchor_id": "S1-P4",
+     "anchor_family": "S1",
+     "Re": 27382756.80421422,
+     "C_T_anchor": 0.0034251401320700733,
+     "C_T_lbm": 0.07522511759765779,
+     "regime_match": true,
+     "dev_pct": 2096.263939490076,
+     "gate_pct": 15.0,
+     "pass": false,
+     "diagnostics": {
+      "C_F_lbm_friction": 0.00634724213163307,
+      "C_F_lbm_fric_over_ittc_at_anchor_Re": 2.502180846898099,
+      "y_plus_mean": 4080.116567993164,
+      "y_plus_band_ok": true,
+      "finite": true,
+      "steps_completed": 16000
+     }
+    },
+    {
+     "anchor_id": "S1-P5",
+     "anchor_family": "S1",
+     "Re": 31474872.695346795,
+     "C_T_anchor": 0.003325933064983669,
+     "C_T_lbm": 0.10186265785873225,
+     "regime_match": true,
+     "dev_pct": 2962.679129991223,
+     "gate_pct": 15.0,
+     "pass": false,
+     "diagnostics": {
+      "C_F_lbm_friction": 0.006264327988515476,
+      "C_F_lbm_fric_over_ittc_at_anchor_Re": 2.524742006740258,
+      "y_plus_mean": 4660.108557128906,
+      "y_plus_band_ok": true,
+      "finite": true,
+      "steps_completed": 16000
+     }
+    }
+   ]
+  }
+ },
+ "resolution_and_tau_sensitivity": {
+  "grid_ladder": {
+   "knob": "cells per hull length L (h = 1/L), Re_lattice fixed at 1000",
+   "what_changes": "resolution only — nu_lb = u_lb*L/1000 shifts tau from 0.5144 to 0.5192, i.e. the physical problem is held fixed",
+   "tiers": [
+    {
+     "tier": "L96",
+     "tau_derived": 0.5144,
+     "Cd_total_primary": 0.0385703619256417,
+     "err_vs_case_reference_pct": -8.154974501456492,
+     "Cd_total_coship_mix50": 0.042648661292759835,
+     "err_vs_case_reference_pct_coship": 1.5564072606794266,
+     "delta_vs_finest_pct": -9.023096353522508
+    },
+    {
+     "tier": "L112",
+     "tau_derived": 0.5168,
+     "Cd_total_primary": 0.04076867077371583,
+     "err_vs_case_reference_pct": -2.9202885372883514,
+     "Cd_total_coship_mix50": 0.04448487172275888,
+     "err_vs_case_reference_pct_coship": 5.928852458084677,
+     "delta_vs_finest_pct": -3.8378887933237738
+    },
+    {
+     "tier": "L128",
+     "tau_derived": 0.5192,
+     "Cd_total_primary": 0.04239577341027158,
+     "err_vs_case_reference_pct": 0.9542222446252913,
+     "Cd_total_coship_mix50": 0.045862176545034064,
+     "err_vs_case_reference_pct_coship": 9.208536396882106,
+     "delta_vs_finest_pct": 0.0
+    }
+   ],
+   "n_tiers": 3,
+   "spread_max_over_min_pct": 9.918007749071013,
+   "monotone_in_L": true,
+   "case_reference_convergence": {
+    "primary_E2_standard_abs_err_seq_pct": [
+     8.154974501456492,
+     2.9202885372883514,
+     0.9542222446252913
+    ],
+    "verdict": "PASS",
+    "note": "against its own laminar reference the primary caliber converges (|err| 8.15 -> 2.92 -> 0.95%), while the co-shipped mix50 archive diverges (1.56 -> 5.93 -> 9.21%): the ladder is instrument-sensitive at the few-% level, which is itself part of the resolution statement"
+   },
+   "pathology_note": "archived, not superseded; co-disclosed per erratum E2"
+  },
+  "tau_ladder": {
+   "knob": "tau (= lattice viscosity nu_lb = (tau-0.5)/3)",
+   "what_changes": "IN AN LBM, TAU IS THE REYNOLDS NUMBER, NOT A NUMERICAL KNOB: u_lb and L are case-frozen, so tau from 0.51 to 1.0 sweeps Re_lattice from 1200 down to 24 (50x). A tau sweep therefore measures Re-sensitivity of C_D, and cannot be read as discretisation error.",
+   "tiers": [
+    {
+     "arm": "A",
+     "tau": 0.51,
+     "nu_lb": 0.0033333333333333366,
+     "re_lattice": 1200.0,
+     "Cd_total": 0.03529894518793348,
+     "Cd_friction": 0.02707405243039655,
+     "Cd_pressure": 0.008224892757536932,
+     "delta_vs_armA_pct": 0.0
+    },
+    {
+     "arm": "B",
+     "tau": 0.55,
+     "nu_lb": 0.016666666666666666,
+     "re_lattice": 240.0,
+     "Cd_total": 0.10675115591701798,
+     "Cd_friction": 0.094646,
+     "Cd_pressure": 0.012105,
+     "delta_vs_armA_pct": 202.42024329245277
+    },
+    {
+     "arm": "C",
+     "tau": 0.6,
+     "nu_lb": 0.03333333333333333,
+     "re_lattice": 120.0,
+     "Cd_total": 0.18333695438256414,
+     "Cd_friction": 0.1668,
+     "Cd_pressure": 0.016539,
+     "delta_vs_armA_pct": 419.3836626178724
+    },
+    {
+     "arm": "D",
+     "tau": 0.7,
+     "nu_lb": 0.06666666666666667,
+     "re_lattice": 60.0,
+     "Cd_total": 0.3259551324295614,
+     "Cd_friction": 0.30174,
+     "Cd_pressure": 0.024219,
+     "delta_vs_armA_pct": 823.4132371212761
+    },
+    {
+     "arm": "E",
+     "tau": 0.9999999999999998,
+     "nu_lb": 0.16666666666666666,
+     "re_lattice": 24.0,
+     "Cd_total": 0.739867821324605,
+     "Cd_friction": 0.69608,
+     "Cd_pressure": 0.043791,
+     "delta_vs_armA_pct": 1996.0054681110414
+    }
+   ],
+   "n_tiers": 5,
+   "spread_max_over_min_pct": 1996.0054681110414,
+   "monotone_in_tau": true,
+   "overall": "HONEST-FAIL",
+   "overall_note": "G1 与 G3 通过，G2 在冻结口径下严格判 FAIL（仅 A 档带内），overall 由 G2 决定。同时披露：均匀网格上『负阻力病理』根本不存在，故 G1 的通过不等于『治愈成功』。",
+   "case_independent": true,
+   "caveat": "u_lb 与 L 被案例冻结，故 τ 阶梯本身就是雷诺阶梯：nu_lb=(tau-0.5)/3，Re=u_lb*L/nu_lb。τ↑ 则 ν↑ 则 Re↓，本次 5 档跨 Re 1200 到 24（50 倍）。这不是等 Re 扫描，冻结的 Cf_ref@Re=1000 只在有效 Re 约 1000 的档上口径成立。"
+  },
+  "admitted_into_error_table": {
+   "grid_tier": "L128",
+   "instrument": "standard (erratum E2, frozen primary caliber)",
+   "Cd_total": 0.04239577341027158,
+   "rationale": "finest grid of the only verified LBM artifact; its own reference gate (G1 |err| <= 3%) passes at 0.95%. The co-shipped mix50 archive at the same tier (0.045862) is reported alongside, and the whole ladder is disclosed — no tier shopping",
+   "tau_arm": "not applicable (tau is not a resolution knob; the case's own derived tau at L128 is 0.5192)"
+  }
+ },
+ "criteria": [
+  {
+   "id": "Q1_anchor_points_sha256",
+   "question": "锚件逐点 >=3 个数值点且 sha256 可核",
+   "verdict": "达标",
+   "n_points": 11,
+   "n_families": 2,
+   "sha256_checked": {
+    "docs/suboff_experimental_resistance_validation_2026-08-01.md": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+    "benchmarks/pending/suboff_highre_resistance/refs_lock.md": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+    "benchmarks/pending/suboff_highre_resistance/formal/formal_verdict.json": "8653bc9573c1f9d94ba26e01cdf318fa0f6216c81c7f88b3e66eedefb0f2f0a6"
+   },
+   "regrades": {
+    "T14-P1": "C",
+    "T14-P2": "C",
+    "T14-P3": "C",
+    "T14-P4": "C",
+    "T14-P5": "C",
+    "T14-P6": "C",
+    "S1-P1": "C",
+    "S1-P2": "C",
+    "S1-P3": "C",
+    "S1-P4": "C",
+    "S1-P5": "C"
+   },
+   "note": "11 points / 2 families, each with verbatim quote + locator + recomputable sha256. Grades are C for all points (primary WITHHELD) — the anchor may not be cited as a published experimental benchmark."
+  },
+  {
+   "id": "Q2_ittc57_recompute",
+   "question": "C_F 独立复算与 ITTC-57 闭式残差 <= 1e-9",
+   "verdict": "达标",
+   "tolerance_abs": 1e-09,
+   "n_points": 11,
+   "max_abs_residual": 4.336808689942018e-19,
+   "residuals": [
+    0.0,
+    4.336808689942018e-19,
+    4.336808689942018e-19,
+    4.336808689942018e-19,
+    0.0,
+    0.0,
+    4.336808689942018e-19,
+    4.336808689942018e-19,
+    0.0,
+    0.0,
+    4.336808689942018e-19
+   ],
+   "C_F_recomputed": [
+    0.00292208264136114,
+    0.002676143681834607,
+    0.0026034963544291257,
+    0.0025366239936047957,
+    0.002481122913231741,
+    0.002435803421370228,
+    0.0029213444761097304,
+    0.002676181238370725,
+    0.0026028755498213704,
+    0.002536684004875832,
+    0.0024811754911162067
+   ],
+   "two_path_max_spread": 4.336808689942018e-19,
+   "note": "two independent arithmetic paths (50-digit Decimal vs math.log10 float) are compared against the C_F each register recorded; the larger of the two residuals is reported, not the friendlier one."
+  },
+  {
+   "id": "Q3_lbm_vs_anchor",
+   "question": "LBM vs 锚逐点相对偏差列表，判定门 |偏差| < 15%",
+   "verdict": "不达标",
+   "gate_pct": 15.0,
+   "branches": {
+    "verified_laminar_Re1000": {
+     "n_rows": 33,
+     "n_pass_raw": 0,
+     "raw_dev_range_pct": [
+      951.8510016109801,
+      1462.445183022912
+     ],
+     "n_pass_renormalised_diagnostic": 10,
+     "dev_renormalised_range_pct": [
+      -31.97889776008681,
+      -6.113826064129457
+     ],
+     "admissible": false
+    },
+    "pending_highre_wallmodel": {
+     "n_rows": 5,
+     "n_pass": 0,
+     "dev_range_pct": [
+      1295.5503183094313,
+      2962.679129991223
+     ],
+     "admissible": true
+    }
+   },
+   "root_cause_hypotheses": [
+    {
+     "branch": "verified_laminar_Re1000",
+     "rank": 1,
+     "hypothesis": "regime mismatch: Re_lattice = 1000 (laminar, Blasius reference) vs anchor Re = 1.2e7..3.5e7 (turbulent). The raw deviation is the Reynolds gap.",
+     "quantitative_support": "raw dev +952..+1462% at Re gap 4.07 decades; after transferring the LBM form factor (1+k) onto the anchor-Re ITTC-57 line the residual shrinks to -32.0..-6.1%, i.e. the bulk of the deviation is the Reynolds number, not the scheme",
+     "test": "run the same case at Re_lattice = 1e4/1e5 (same geometry, nu from the documented closed form) and check that the (1+k) ratio stays ~1.09 while the friction level follows the Re law"
+    },
+    {
+     "branch": "pending_highre_wallmodel",
+     "rank": 1,
+     "hypothesis": "resolution starvation of the wall model: y+_mean 1878..4660 sits far outside the wall-law validity band, so the delivered friction is the *resolved-Re* (1e5) friction, not the anchor-Re friction",
+     "quantitative_support": "C_F_fric/ITTC(anchor Re) = 2.491..2.525 and nearly constant across the five anchors, i.e. a structural wall-chain level error, not a per-anchor drift; dev range +1296..+2963%",
+     "test": "re-run on a grid whose y+_mean lands in [30, 3000] (~1e8 cells, multi-node) per the in-repo promotion path"
+    },
+    {
+     "branch": "both",
+     "rank": 2,
+     "hypothesis": "anchor itself is ambiguous: the two in-repo transcription families differ by 17.0%, larger than the 15% gate, so no simulation can be adjudicated to 15% against it",
+     "quantitative_support": "ratio 1.1698 +- 0.0021",
+     "test": "acquire CRDKNSWC/HD-1298-11 Table 14 p.23 and re-register"
+    }
+   ],
+   "next_experiments": [
+    "E1 (anchor side): obtain the primary HD-1298-11 PDF; re-register both families; the 17% conflict must be adjudicated before any 15% claim",
+    "E2 (solver side): wall-model path on a grid with y+_mean in the valid band (multi-node submission) — the only admissible route to the anchor's Re",
+    "E3 (scheme side): laminar Re ladder (1e3 -> 1e5) of the verified case to separate the form factor from the friction law"
+   ]
+  },
+  {
+   "id": "Q4_resolution_declaration",
+   "question": "网格/tau 对 C_T 的敏感性（>=3 档），标明哪一档进入误差表",
+   "verdict": "达标",
+   "grid_tiers": 3,
+   "tau_tiers": 5,
+   "grid_spread_pct": 9.918007749071013,
+   "tau_spread_pct": 1996.0054681110414,
+   "admitted": {
+    "grid_tier": "L128",
+    "instrument": "standard (erratum E2, frozen primary caliber)",
+    "Cd_total": 0.04239577341027158,
+    "rationale": "finest grid of the only verified LBM artifact; its own reference gate (G1 |err| <= 3%) passes at 0.95%. The co-shipped mix50 archive at the same tier (0.045862) is reported alongside, and the whole ladder is disclosed — no tier shopping",
+    "tau_arm": "not applicable (tau is not a resolution knob; the case's own derived tau at L128 is 0.5192)"
+   },
+   "caveat": "tau is the Reynolds number in LBM, not a discretisation knob; the grid ladder is the only resolution evidence, and only 3 tiers of it exist in-repo"
+  }
+ ],
+ "verdict": {
+  "Q1": "达标",
+  "Q2": "达标",
+  "Q3": "不达标",
+  "Q4": "达标",
+  "overall": "PARTIAL — anchor register + ITTC recompute + sensitivity 达标; the LBM-to-anchor 15% gate is 不达标 in every admissible branch and the anchor itself carries a 17% cross-transcription conflict",
+  "must_not_be_reported_as": [
+   "validation of the LBM solver against DTRC tow-tank data",
+   "an agreement claim within 15%",
+   "a primary/anchor grade A or B"
+  ]
+ },
+ "claim_boundary": {
+  "what_this_artifact_supports": [
+   "a per-point, sha256-traced register of the DTRC SUBOFF resistance numbers recoverable in this checkout, with grades as-is (all C)",
+   "an independent ITTC-1957 closure at 1e-9 or better on 11 points",
+   "the statement that the LBM-vs-anchor 15% gate is NOT met, with the quantified Reynolds gap and the wall-model y+ root cause",
+   "a 3-tier grid sensitivity and a 5-arm tau(=Re) sensitivity"
+  ],
+  "what_it_does_not_support": [
+   "any A/B anchor claim",
+   "any <15% agreement claim against the DTRC data",
+   "treating the verified Re=1000 case as an anchor validation"
+  ]
+ }
+}
