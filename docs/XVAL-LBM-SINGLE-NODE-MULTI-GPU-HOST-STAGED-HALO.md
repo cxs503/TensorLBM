@@ -155,14 +155,14 @@ bit-identical solutions (rel L2 0 … 4.3e-15).
 
 ## ⑥ Failure modes, limitations, artifacts
 
-**Honest FAIL (D3).** The absolute TG decay of `HostStagedD3Q19` misses the analytic rate by
-15–85 % and, unlike a viscous decay, does not scale with `nu` (measured `gamma` stays at
-0.0017–0.0024 per step for `nu` = 0.01…0.10 and for all grids).  Recorded in
-`artifacts/xval_host_staged_halo/summary.json → honest_fail`, with the follow-up path: diff
-collide+stream of the port against the repo's collision kernels on an identical state, and check the
-one-mode shear eigenvalue `1 - omega*(1-cos k)` against the measured decay.  Consequence for use:
-the transport (`HostStagedHalo`) is validated and reusable; the container solver
-(`HostStagedD3Q19`) must **not** be used as a physics solver until that audit is done.
+**~~Honest FAIL (D3).~~ WITHDRAWN 2026-11-15 (mission m21387) — the failure was in
+the benchmark, not in the solver.** The defect was in the arm's own initial condition
+(`tg_velocity` applied the wavenumber twice, `sin(kx * (i*kx))`), which is *not* periodic on
+the torus; the arm therefore measured the decay of a discontinuity instead of a Taylor-Green
+vortex. See ⑦ for the diagnosis, the fix, and the re-measured numbers (now 0.01–0.6 % from
+analytic on every grid, viscosity and device grid). The sentence "the container solver must
+not be used as a physics solver" is retracted; `HostStagedD3Q19` reproduces an independent
+dense LBM step bitwise and the exact discrete shear eigenvalue to <3 %.
 
 **Environment limitation.** No CUDA device on this node (`torch.cuda.is_available() == False`), so
 pinned host memory and PCIe copies are not exercised; the D2 comparison is a byte-accounting
@@ -225,3 +225,80 @@ container resolves to another worktree (`/srv/tensor/agent/work/m17918/...`), so
 explicit `PYTHONPATH=src`; a repo-local `.pth`/editable install per worktree would remove a recurring
 foot-gun.  (3) The shell tool kills the whole process group at its timeout, so long runs must be
 started with `setsid nohup … &`.
+---
+
+## ⑦ Re-verification and correction (mission m21387, 2026-11-15)
+
+### ⑦.1 What went wrong
+
+The D3 verdict of m18373 ("TG decay misses `4*nu*k^2` by 15–85 % and does not scale with
+`nu`") was reproduced exactly, and then traced to the **initial condition**, not to the
+collision/streaming/transport code:
+
+| observation | value | what it implies |
+|---|---|---|
+| `tg_velocity` of the old driver | `u_x = u0 sin(kx * i * kx)`, `i = 0..n-1` | the wavenumber is applied twice: the sampled mode has period `2*pi/k**2 = 91.7` cells on a 24-cell torus |
+| measured KE at `t = 0` (24³) | `5.837e-4` vs analytic `u0**2/4 = 6.25e-4` (−6.6 %) | the field is *not* the analytic TG vortex; the IC error was silently absorbed into the "decay rate" (the old arm used the **analytic** `K0` with the **measured** `K(t)`) |
+| FFT of the old IC | amplitude spread over all modes | not a lattice mode pair, so `4*nu*k^2` (which is derived for a resolved Fourier mode) does not apply to it |
+| old measured rate (24³, `nu` = 0.02 / 0.10) | `0.00170` / `0.00219` | the report's "0.0017–0.0024, independent of `nu`" — a discontinuity decay, insensitive to viscosity by construction |
+| **independent dense reference** (`torch.roll` pull streaming written from the definitions, same velocity set) vs `HostStagedD3Q19` | max abs diff **0.0** over 5 steps, 24³, fp64 | the solver was already correct; nothing in `src/tensorlbm/host_staged_halo.py` had to change |
+
+The same defect had been copied into `tests/test_host_staged_halo.py`
+(`test_taylor_green_decay_is_decomposition_invariant`), which is why it survived review:
+the test only ever compared decompositions with each other, never with the analytic rate.
+
+### ⑦.2 Fix
+
+1. `tg_velocity` applies the wavenumber exactly once (unscaled index grid) — the field is now
+   periodic, divergence-free (central differences, machine zero) and a pure `(kx, ±ky, 0)`
+   mode pair with `KE = u0**2/4` exactly.
+2. New **benchmark-integrity gate** `tg_selfcheck` (peak amplitude `= u0`, discrete divergence,
+   FFT purity, analytic KE) runs before the physics arm and *raises* if the IC is not the
+   claimed analytic field. A wrong IC can no longer be reported as a solver inaccuracy.
+3. Decay protocol fixed before the runs: skip a 40-step acoustic transient (`f = feq(rho=1, u)`
+   carries no O(Ma²) pressure field), then take the log-slope `t = 40 → 200`.
+4. New arm **D3b**: single-mode shear wave `u = (0, a sin kx, 0)`, `a = 1e-4` (linear regime)
+   against the **exact discrete** reference — the transverse eigenvalue of the linearised BGK
+   step operator `A = S (I - omega (I - P))`, `S = diag(exp(-i c_q.k))`,
+   `P_qq' = W_q (1 + 3 c_q.c_q')` (`discrete_transverse_rates`, closed form
+   `nu * khat^2`, `khat^2 = 2(1-cos k)` agrees to 1.7 %). Threshold 3 %: this reference has no
+   continuum limit and no finite-`k` ambiguity.
+5. Regression tests: TG IC integrity, TG decay vs analytic + decomposition invariance, and a
+   **bitwise** comparison against a dense independent step (25 tests, all passing).
+
+### ⑦.3 Re-measured results (fp64, `u0 = 0.05`, `t1 = 40`, `t2 = 200`)
+
+| grid | `nu` | `gamma_LBM` | `4*nu*k^2` | error | device grids |
+|---|---|---|---|---|---|
+| 16³ | 0.02 | 0.01234 | 0.01234 | **+0.01 %** | 1×1×1, 2×1×1, 2×2×2 (bit-identical) |
+| 16³ | 0.05 | 0.03088 | 0.03084 | **+0.11 %** | idem |
+| 24³ | 0.02 | 0.00549 | 0.00548 | **+0.14 %** | idem |
+| 24³ | 0.05 | 0.01372 | 0.01371 | **+0.06 %** | idem |
+| 32³ | 0.02 | 0.00307 | 0.00308 | **−0.57 %** | idem |
+| 32³ | 0.05 | 0.00770 | 0.00771 | **−0.17 %** | idem |
+
+Worst case **0.57 % ≪ 15 %** (declared criterion) — and ≪ 3 %, i.e. the port's physics arm is
+now limited only by the O(Ma²) compressibility of the equilibrium projection.
+
+D3b (shear mode, exact discrete reference `-ln|lambda|`): 24³ `nu = 0.02`, exact
+`0.001371`/step — measured `0.001407` over `t = 0 → 200` (**+2.6 %**, dominated by the
+first-step non-hydrodynamic transient; the committed protocol skips 20 steps), and 24³
+`nu = 0.10`: exact `0.006868`, measured `0.006897` (**+0.4 %**).
+
+### ⑦.4 Consequence
+
+* `HostStagedHalo` (transport) — unchanged verdict: validated, reusable.
+* `HostStagedD3Q19` (container solver) — **now validated as a physics solver** for periodic
+  single-phase flow: matches the analytic TG decay to ≤0.6 % and the exact discrete shear
+  eigenvalue to <3 %, bitwise identical to a dense independent implementation.
+* Transport conclusions of m18373 (R1–R9, staging volume, zero host copy for the pointer swap,
+  decomposition invariance) are untouched — they never used the TG field (D1 uses the ABC
+  field, whose scaling was already correct).
+
+Artifacts (regenerated by the fixed driver, `PYTHONPATH=src python
+tools/xval_host_staged_halo/run_xval_host_staged_halo.py`): `table_tg_physics.csv`,
+`table_shear_discrete.csv`, `table_ic_selfcheck.csv` are new; the m18373 sets
+(`table_layout/transport/invariance/sensitivity/timing.csv`) are unchanged in protocol.
+`summary.json` now carries `checks.D3_ic_selfcheck_all_pass`,
+`checks.D3b_discrete_eigenvalue_all_pass`, `worst_case.discrete_eigenvalue_rel_err` and the
+`d3/d3b_protocol` blocks.
