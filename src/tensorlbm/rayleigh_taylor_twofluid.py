@@ -80,6 +80,8 @@ __all__ = [
     "init_scmp_rt",
     "interface_crossings",
     "front_state",
+    "column_height",
+    "column_front_state",
     "layzer_velocity",
     "run_scmp_rt",
 ]
@@ -293,6 +295,12 @@ def scmp_coexistence(
     mid = 0.5 * (ny - 1)
     prof = torch.tanh((y - mid) / width).expand(ny, nx).contiguous()
     rho = 0.5 * (rho_high_init + rho_low_init) + 0.5 * (rho_high_init - rho_low_init) * prof
+    # rows 0 and ny-1 are solid: they hold no mass, and the half-way bounce-back
+    # discards whatever is put there.  Leaving them filled made the reported mass
+    # drift read exactly -2/ny (-4.167 % at ny = 48) although the fluid mass is
+    # conserved to machine precision -- a bookkeeping defect, not a leak.
+    rho[0, :] = 0.0
+    rho[-1, :] = 0.0
     zero = torch.zeros_like(rho)
     f = equilibrium(rho, zero, zero)
     mass0 = float(rho.sum())
@@ -490,6 +498,84 @@ def front_state(phi: torch.Tensor, cfg: SCMPRTConfig) -> dict:
     }
 
 
+def column_height(
+    rho: torch.Tensor,
+    *,
+    rho_high: float,
+    rho_low: float,
+) -> torch.Tensor:
+    """Heavy-fluid column height per column, in rows (a conserved moment).
+
+    ``h(x) = sum_y (rho - rho_low) / (rho_high - rho_low)`` over the free rows,
+    which is the lattice counterpart of the heavy-fluid column height used by the
+    Boussinesq arm of this case.  It has two properties the ``phi = 0`` crossing
+    does not have (both measured, see the case report):
+
+    * it is a **mass** moment, so it is immune to the hydrostatic density offset
+      that gravity imposes on the whole box (``Delta rho / rho ~ g H / c_s^2``):
+      a fixed threshold density drifts with that offset, which reads as a
+      uniform descent of the interface;
+    * it does not need a threshold, so a thin low-density layer against a wall
+      cannot invent a spurious "interface" (the crossing estimator does exactly
+      that once the vapour phase depletes at the bottom wall).
+    """
+    frac = (rho[1:-1, :] - rho_low) / (rho_high - rho_low)
+    return frac.clamp(0.0, 1.0).sum(dim=0)
+
+
+def column_front_state(
+    rho: torch.Tensor,
+    cfg: SCMPRTConfig,
+    *,
+    rho_high: float,
+    rho_low: float,
+    reference_row: float | None = None,
+) -> dict:
+    """Spike/bubble displacements from the column-height moment.
+
+    The heavy phase sits **on top**, so a column that holds ``h`` rows of heavy
+    fluid has its interface at row ``ny - 1 - h``.  Displacements are reported
+    relative to ``reference_row`` (the t = 0 value, which absorbs both the diffuse
+    interface half-width and the hydrostatic offset), in wavelengths: negative is
+    the descending spike, positive the rising bubble.
+
+    ``spike_q10`` / ``bubble_q90`` are the pre-declared robust estimators (a
+    single bad column cannot move a quantile); the raw extrema are reported for
+    audit.
+
+    All reported displacements are measured **relative to the instantaneous mean
+    interface**, not to a fixed row.  Under gravity the whole box compresses
+    (``Delta rho / rho ~ g H / c_s^2``), which shifts the mean interface even when
+    the perturbation does not move; referencing the mean cancels that common mode
+    exactly, and it is also the frame in which the Layzer-Goncharov terminal
+    velocity is defined.  The common mode itself is returned as
+    ``common_mode_lam`` for audit.
+    """
+    is_mean_referenced = True
+    h = column_height(rho, rho_high=rho_high, rho_low=rho_low)
+    y_i = (cfg.ny - 1) - h
+    ref = float(y_i.mean()) if reference_row is None else float(reference_row)
+    d = (y_i - ref) / cfg.lam
+    x = torch.arange(cfg.nx, dtype=d.dtype)
+    phase = torch.cos(2.0 * math.pi * x / cfg.nx)
+    amp = 2.0 * float(((y_i - y_i.mean()) * phase).sum()) / cfg.nx / cfg.lam
+    mean = float(d.mean())
+    d_rel = d - mean
+    return {
+        "valid": True,
+        "reference_row": ref,
+        "mean_interface_lam": mean,
+        "common_mode_lam": mean,
+        "mean_referenced": is_mean_referenced,
+        "spike_tip_lam": float(d_rel.min()),
+        "bubble_tip_lam": float(d_rel.max()),
+        "spike_q10_lam": float(torch.quantile(d_rel, 0.10)),
+        "bubble_q90_lam": float(torch.quantile(d_rel, 0.90)),
+        "amplitude_lam": amp,
+        "n_columns": int(d.numel()),
+    }
+
+
 def layzer_velocity(atwood: float, gravity: float, lam: float, *, c_2d: float = 1.0) -> dict:
     """Two-fluid Layzer-Goncharov terminal velocities (closed form)."""
     k = 2.0 * math.pi / lam
@@ -513,6 +599,156 @@ def _linear_fit(t: list[float], h: list[float]) -> tuple[float, float]:
     return slope, (1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan"))
 
 
+def _interface_band(cfg: SCMPRTConfig, cells: int) -> torch.Tensor:
+    """Boolean ``(ny, nx)`` mask of the row band straddling the flat interface."""
+    band = torch.zeros((cfg.ny, cfg.nx), dtype=torch.bool)
+    lo = max(1, int(cfg.y_interface) - cells)
+    hi = min(cfg.ny - 1, int(cfg.y_interface) + cells + 1)
+    band[lo:hi, :] = True
+    return band
+
+
+def _ma_split(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    band: torch.Tensor,
+) -> tuple[float, float, float]:
+    """``(ma_all, ma_iface, ma_bulk)``; walls and the interface band excluded
+    from the bulk metric.  ``ma_* = |u|_max / c_s``."""
+    speed = torch.sqrt(ux * ux + uy * uy)
+    fluid = torch.ones_like(band)
+    fluid[0, :] = False
+    fluid[-1, :] = False
+    inv_cs = 1.0 / math.sqrt(CS2)
+    ma_all = float(speed[fluid].max()) * inv_cs
+    iface = fluid & band
+    bulk = fluid & ~band
+    ma_iface = float(speed[iface].max()) * inv_cs if bool(iface.any()) else 0.0
+    ma_bulk = float(speed[bulk].max()) * inv_cs if bool(bulk.any()) else 0.0
+    return ma_all, ma_iface, ma_bulk
+
+
+def _flat_state(
+    cfg: SCMPRTConfig,
+    *,
+    rho_high: float,
+    rho_low: float,
+) -> torch.Tensor:
+    """Equilibrium populations of a **flat** (unperturbed) two-phase slab."""
+    dtype, device = cfg.dtype, torch.device("cpu")
+    y = torch.arange(cfg.ny, dtype=dtype, device=device).view(cfg.ny, 1)
+    half = 0.5 * (rho_high + rho_low)
+    amp = 0.5 * (rho_high - rho_low)
+    rho = half + amp * torch.tanh((y - cfg.y_interface) / cfg.interface_width)
+    rho = rho.expand(cfg.ny, cfg.nx).contiguous()
+    rho[0, :] = 0.0
+    rho[-1, :] = 0.0
+    zero = torch.zeros_like(rho)
+    return equilibrium(rho, zero, zero)
+
+
+def _perturb_density(
+    rho: torch.Tensor,
+    cfg: SCMPRTConfig,
+    *,
+    rho_high: float,
+    rho_low: float,
+) -> torch.Tensor:
+    """Displace the interface by one cosine mode of amplitude ``a0_over_lam*lam``.
+
+    The displacement is applied by **sampling the relaxed 1-D profile at
+    ``y - d(x)``** instead of writing an ideal ``tanh`` back into the box.  An
+    ideal profile at a hand-picked width is *not* the model's equilibrium profile
+    (the measured equilibrium interface is wider than ``interface_width``), so
+    re-writing it would re-introduce exactly the start-up impulse that the
+    preconditioning step removes.  ``rho_high``/``rho_low`` are kept in the
+    signature for API symmetry with :func:`precondition_scmp_rt` and are not used.
+    """
+    del rho_high, rho_low
+    ny, nx = rho.shape
+    prof = rho.mean(dim=1)                      # relaxed profile, averaged over x
+    y_idx = torch.arange(ny, dtype=rho.dtype).view(ny, 1)
+    x_idx = torch.arange(nx, dtype=rho.dtype).view(1, nx)
+    a0 = cfg.a0_over_lam * cfg.lam
+    d = a0 * torch.cos(2.0 * math.pi * x_idx / cfg.lam)
+    src = (y_idx - d).clamp(0.0, float(ny - 1))
+    i0 = src.floor().clamp(0.0, float(ny - 2)).long()
+    frac = src - i0.to(src.dtype)
+    out = prof[i0] * (1.0 - frac) + prof[(i0 + 1).clamp(max=ny - 1)] * frac
+    out[0, :] = 0.0
+    out[-1, :] = 0.0
+    return out
+
+
+def precondition_scmp_rt(
+    cfg: SCMPRTConfig,
+    *,
+    rho_high: float,
+    rho_low: float,
+    relax_steps: int = 800,
+    sample_every: int = 100,
+) -> tuple[torch.Tensor, dict]:
+    """Relax a **flat** interface at ``g = 0``, then seed the single mode.
+
+    Why this exists (measured, not assumed)
+    ---------------------------------------
+    ``init_scmp_rt`` puts a hand-picked ``tanh(width)`` interface into the box and
+    switches gravity on at the same time.  The initial profile is then *not* the
+    model's equilibrium profile, so the first steps carry a force impulse
+    ``|F|/rho`` that the case report (mission m21799) recorded as a spurious
+    ``Ma`` of 0.26 / 0.30 at step 5 -- above the 0.20 guard, which aborted both
+    finite-density-ratio runs before the interface moved at all
+    (``stop_reason = "mach"``, ``steps_run = 5``).
+
+    The staged protocol removes the two causes separately:
+
+    1. relax the flat interface with gravity **off** until the pseudopotential
+       spurious current has settled (its floor is returned in ``info``);
+    2. rebuild the populations from the relaxed density field (velocity reset to
+       zero, so the residual pseudo-momentum of step 1 is dropped) and *then*
+       displace the interface by the single mode;
+    3. the caller ramps gravity in over ``ramp_steps`` (see ``run_scmp_rt``).
+
+    Returns ``(f, info)`` with ``info`` holding the spurious-current decay curve.
+    """
+    f = _flat_state(cfg, rho_high=rho_high, rho_low=rho_low)
+    trace: list[dict] = []
+    band = _interface_band(cfg, int(round(3.0 * cfg.interface_width)))
+    mass0 = float(f.sum())
+    for step in range(1, relax_steps + 1):
+        f = scmp_step(f, tau=cfg.tau_relax, sc_g=cfg.sc_g, gravity_y=0.0,
+                      psi_kind=cfg.psi_kind)
+        if step % sample_every and step != relax_steps:
+            continue
+        rho, ux, uy = velocity_field(f, sc_g=cfg.sc_g, gravity_y=0.0,
+                                     psi_kind=cfg.psi_kind)
+        ma_all, ma_iface, ma_bulk = _ma_split(ux, uy, band)
+        trace.append({
+            "step": step,
+            "ma_all": ma_all,
+            "ma_iface": ma_iface,
+            "ma_bulk": ma_bulk,
+            "mass_drift_pct": 100.0 * (float(f.sum()) - mass0) / mass0,
+            "rho_min": float(rho[1:-1].min()),
+            "rho_max": float(rho[1:-1].max()),
+        })
+    rho_relaxed = f.sum(dim=0)
+    rho_pert = _perturb_density(rho_relaxed, cfg, rho_high=rho_high, rho_low=rho_low)
+    zero = torch.zeros_like(rho_pert)
+    f = equilibrium(rho_pert, zero, zero)
+    info = {
+        "relax_steps": relax_steps,
+        "spurious_ma_floor": trace[-1]["ma_all"] if trace else float("nan"),
+        "spurious_ma_iface_floor": trace[-1]["ma_iface"] if trace else float("nan"),
+        "spurious_ma_peak": max((r["ma_all"] for r in trace), default=float("nan")),
+        "relax_mass_drift_pct": trace[-1]["mass_drift_pct"] if trace else float("nan"),
+        "rho_high_relaxed": trace[-1]["rho_max"] if trace else float("nan"),
+        "rho_low_relaxed": trace[-1]["rho_min"] if trace else float("nan"),
+        "relax_trace": trace,
+    }
+    return f, info
+
+
 def run_scmp_rt(
     cfg: SCMPRTConfig,
     *,
@@ -520,6 +756,13 @@ def run_scmp_rt(
     rho_low: float,
     pos_window: tuple[float, float] = (0.15, 0.45),
     sub_windows: tuple[tuple[float, float], ...] = ((0.15, 0.30), (0.30, 0.45)),
+    precondition_steps: int = 0,
+    ramp_steps: int = 0,
+    ma_guard: str = "all",
+    iface_band_cells: int | None = None,
+    gravity_scale: float = 1.0,
+    front_estimator: str = "column",
+    amp_window: tuple[float, float] = (0.03, 0.08),
 ) -> dict:
     """Run the finite-density-ratio RT case and measure the terminal front velocities.
 
@@ -531,10 +774,51 @@ def run_scmp_rt(
     therefore fixed by the initial condition and the box, not by the result, and
     it is passed in by the caller.  ``tau = t sqrt(A g k)`` is reported for each
     sample so the correspondence to the dimensionless time is auditable.
+
+    Staged start-up (``precondition_steps`` / ``ramp_steps`` / ``ma_guard``)
+    ----------------------------------------------------------------------
+    With the defaults (``0``, ``0``, ``"all"``) this is the original single-shot
+    start-up: ``init_scmp_rt`` profile plus gravity from the first step, guarded
+    on the *maximum* Mach number of the whole fluid.  That combination aborted
+    the case runs at step 5 (see ``precondition_scmp_rt``).  The staged options
+    are opt-in:
+
+    ``precondition_steps > 0``  relax a flat interface at ``g = 0`` first, reset
+        the velocity, then seed the single mode (``precondition_scmp_rt``);
+    ``ramp_steps > 0``          ramp gravity linearly from 0 to its value over
+        the first ``ramp_steps`` steps;
+    ``ma_guard``               ``"all"`` (legacy), ``"iface"`` or ``"bulk"`` --
+        which of the three reported Mach numbers is the stopping criterion.
+        ``ma_iface`` is dominated by the pseudopotential spurious current at the
+        interface and is therefore reported but not recommended as a guard;
+        ``ma_bulk`` is the physical compressibility check.
+    ``gravity_scale``          multiplies ``cfg.gravity``; ``0.0`` gives the
+        *null-dynamics control* (perturbed interface, no gravity), whose measured
+        front drift is the sensitivity floor of the estimator.
     """
     cfg.validate()
-    f, phi = init_scmp_rt(cfg, rho_high=rho_high, rho_low=rho_low)
+    if ma_guard not in ("all", "iface", "bulk"):
+        raise ValueError(f"ma_guard must be 'all', 'iface' or 'bulk', got {ma_guard!r}")
+    if front_estimator not in ("column", "crossings"):
+        raise ValueError(
+            f"front_estimator must be 'column' or 'crossings', got {front_estimator!r}"
+        )
+    band = _interface_band(cfg, iface_band_cells if iface_band_cells is not None
+                           else int(round(3.0 * cfg.interface_width)))
+    precondition_info: dict = {}
+    if precondition_steps > 0:
+        f, precondition_info = precondition_scmp_rt(
+            cfg, rho_high=rho_high, rho_low=rho_low, relax_steps=precondition_steps
+        )
+        phi = _mirror_wall_rows((f.sum(dim=0) - 0.5 * (rho_high + rho_low))
+                                / (0.5 * (rho_high - rho_low)))
+    else:
+        f, phi = init_scmp_rt(cfg, rho_high=rho_high, rho_low=rho_low)
     atwood = atwood_from_ratio(rho_high / rho_low)
+    ref_row = float(
+        ((cfg.ny - 1) - column_height(f.sum(dim=0), rho_high=rho_high,
+                                      rho_low=rho_low)).mean()
+    )
     scale = math.sqrt(atwood * cfg.gravity * cfg.k)
     midpoint = 0.5 * (rho_high + rho_low)
     amplitude = 0.5 * (rho_high - rho_low)
@@ -544,38 +828,72 @@ def run_scmp_rt(
     stop_reason = "completed"
     step = 0
     for step in range(1, cfg.steps + 1):
+        ramp = 1.0 if ramp_steps <= 0 else min(1.0, step / float(ramp_steps))
+        g_now = -cfg.gravity * gravity_scale * ramp
         f = scmp_step(f, tau=cfg.tau_relax, sc_g=cfg.sc_g,
-                      gravity_y=-cfg.gravity, psi_kind=cfg.psi_kind)
+                      gravity_y=g_now, psi_kind=cfg.psi_kind)
         if step % cfg.sample_every and step != cfg.steps:
             continue
-        rho, ux, uy = velocity_field(f, sc_g=cfg.sc_g, gravity_y=-cfg.gravity,
+        rho, ux, uy = velocity_field(f, sc_g=cfg.sc_g, gravity_y=g_now,
                                      psi_kind=cfg.psi_kind)
         if not torch.isfinite(rho).all():
             stop_reason = "blowup"
             break
         phi = _mirror_wall_rows((rho - midpoint) / amplitude)
-        speed = float(torch.sqrt(ux[1:-1, :] ** 2 + uy[1:-1, :] ** 2).max())
+        state_col = column_front_state(rho, cfg, rho_high=rho_high,
+                                       rho_low=rho_low, reference_row=ref_row)
+        state_xc = front_state(phi, cfg)
+        primary = state_col if front_estimator == "column" else state_xc
+        secondary = state_xc if front_estimator == "column" else state_col
+        ma_all, ma_iface, ma_bulk = _ma_split(ux, uy, band)
+        speed = max(ma_all, 0.0) * math.sqrt(CS2)
         row = {
             "step": step,
             "t": float(step),
             "tau": step * scale,
             "max_speed": speed,
-            "ma": speed / math.sqrt(CS2),
+            "ma": ma_all,
+            "ma_all": ma_all,
+            "ma_iface": ma_iface,
+            "ma_bulk": ma_bulk,
+            "gravity_y": float(g_now),
             "mass_drift_pct": 100.0 * (float(f.sum()) - mass0) / mass0,
             "rho_min": float(rho.min()),
             "rho_max": float(rho.max()),
         }
-        row.update(front_state(phi, cfg))
+        row.update({k: v for k, v in primary.items() if k != "valid"})
+        row.update({f"alt_{k}": v for k, v in secondary.items() if k != "valid"})
+        row["valid"] = bool(primary.get("valid", False)) if front_estimator == "crossings" \
+            else True
         history.append(row)
         if not row.get("valid", False):
             stop_reason = "interface_lost"
             break
-        if row["ma"] > cfg.ma_limit:
+        guard_ma = {"all": ma_all, "iface": ma_iface, "bulk": ma_bulk}[ma_guard]
+        if guard_ma > cfg.ma_limit:
             stop_reason = "mach"
             break
         if max(abs(row["bubble_tip_lam"]), abs(row["spike_tip_lam"])) > 0.5 * cfg.layers - 1.0:
             stop_reason = "wall"
             break
+
+    # linear growth rate of the column-height mode (the anchor quantity, linear
+    # regime) against the equal-viscosity dispersion relation
+    lin = [r for r in history
+           if r.get("amplitude_lam") is not None
+           and amp_window[0] <= abs(r["amplitude_lam"]) <= amp_window[1]]
+    nu = cfg.nu
+    k = cfg.k
+    sigma_theory = math.sqrt(atwood * cfg.gravity * k + nu * nu * k ** 4) - nu * k * k
+    sigma_amp = float("nan")
+    sigma_r2 = float("nan")
+    if len(lin) >= 3:
+        try:
+            sigma_amp, sigma_r2 = _linear_fit(
+                [r["t"] for r in lin], [math.log(abs(r["amplitude_lam"])) for r in lin]
+            )
+        except ValueError:
+            pass
 
     ref = layzer_velocity(atwood, cfg.gravity, cfg.lam)
 
@@ -626,6 +944,21 @@ def run_scmp_rt(
         "atwood_measured": atwood,
         "steps_run": step,
         "stop_reason": stop_reason,
+        "precondition_steps": precondition_steps,
+        "ramp_steps": ramp_steps,
+        "ma_guard": ma_guard,
+        "gravity_scale": gravity_scale,
+        "precondition": precondition_info,
+        "front_estimator": front_estimator,
+        "reference_row": ref_row,
+        "amp_window_lam": list(amp_window),
+        "sigma_amp": sigma_amp,
+        "sigma_amp_r2": sigma_r2,
+        "sigma_theory_visc": sigma_theory,
+        "sigma_theory_inv": math.sqrt(atwood * cfg.gravity * k),
+        "err_sigma_pct": (100.0 * (sigma_amp / sigma_theory - 1.0)
+                          if sigma_amp == sigma_amp and sigma_theory else float("nan")),
+        "n_amp_fit": len(lin),
         "window_position_lam": list(pos_window),
         "window_tau_span": primary["spike"].get("tau_span", []),
         "u_spike_sim": u_spike,
@@ -644,6 +977,9 @@ def run_scmp_rt(
         "fit_bubble_r2": primary["bubble"].get("r2", float("nan")),
         "terminal_drift_pct": drift,
         "ma_peak": max((r["ma"] for r in history), default=float("nan")),
+        "ma_peak_iface": max((r["ma_iface"] for r in history), default=float("nan")),
+        "ma_peak_bulk": max((r["ma_bulk"] for r in history), default=float("nan")),
+        "ma_peak_guard": ma_guard,
         "mass_drift_pct": history[-1]["mass_drift_pct"] if history else float("nan"),
         "rho_min_end": history[-1]["rho_min"] if history else float("nan"),
         "rho_max_end": history[-1]["rho_max"] if history else float("nan"),
