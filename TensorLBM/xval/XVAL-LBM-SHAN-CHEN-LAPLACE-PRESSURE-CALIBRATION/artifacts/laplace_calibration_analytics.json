@@ -1,0 +1,46 @@
+{
+  "maxwell_G5": {
+    "rho_v": 0.15289492889061668,
+    "rho_l": 1.9288661839961052,
+    "p": 0.034213643266237034,
+    "G": 5.0
+  },
+  "maxwell_G4.7": {
+    "rho_v": 0.2032219096259059,
+    "rho_l": 1.6779578322410418,
+    "p": 0.04124808891753316,
+    "G": 4.7
+  },
+  "library_constants": {
+    "rho_l": 1.957,
+    "rho_v": 0.1596,
+    "sigma": 0.05611
+  },
+  "reference_cpp_run": {
+    "g": -4.7,
+    "rho_l": 1.6707,
+    "rho_v": 0.18473,
+    "source": "OSS inventory \u00a79"
+  },
+  "dp_correct_sign": 0.002769622951745987,
+  "dp_plus_sign": 1.1954970653313135,
+  "ratio": 431.64614323320257,
+  "solver_arms": {
+    "library_current_force_CS2k_G5_ramp800_R10_n48": {
+      "status": "uniform (no phase separation)",
+      "rho": 0.4173
+    },
+    "force_without_CS2_k_Gdiv3_G5_R10_12_14_n48": {
+      "status": "diverged",
+      "steps": [
+        24,
+        23,
+        21
+      ]
+    },
+    "run_young_laplace_radius16_n64_G5_and_G2": {
+      "status": "diverged",
+      "steps": "<1500"
+    }
+  }
+}
