@@ -1,0 +1,88 @@
+{
+  "level": 1,
+  "verdict_summary": "m21548 交差核验：证据链（判定门/阶梯/测试）是**真代码且有单元验证**，但算例本身**没有任何运行工件**（artifacts/case_backward_step_armaly/ 为空），Re=100 的 X1/s 从未产出，tensor_benchmark_cases 该 anchor **0 行**（无容差裁判）、got 不存在；且交付分支 agent/m21548 未并入 main，trunk 上仍是旧版硬编码 15% 的 verdict.py，测试文件与 ladder.py 在 trunk 根本不存在。按功能实质判 L1（数学/单元验证），L2 因 run_artifacts 真空而不可达，L4 因无基准登记+无 got 数值而 WITHHELD。",
+  "level_rationale": "L1=数学/单元验证：审计者复跑 m21548 交付的 tests/test_case_pool_backward_step_armaly_verdict.py → 10 passed, 1 failed, 1 skipped in 0.31 s；ladder.observed_order/richardson 在合成场 p∈{0.8,1,1.5,2} 上精确回读。L2 不达（判据要求 impl_files+entry+run_artifacts 三者俱全，且 run_artifacts 必须是非空真实工件）：m21548 的 artifacts/case_backward_step_armaly/ 是空目录（ls -A 0 项），cj3511 自报 succeeded 但 fetch 只回传递交快照，result.json 从未落盘；全盘扫描 /srv/tensor/agent/work/*/artifacts/case_backward_step_armaly 仅 m21548 一个空目录，其余 work 树的同算例 JSON 属 m15519（另一单、另一几何 ER=2.0），不能计入本单。L3 不达：交付分支 agent/m21548（commit 8c1a35b3e）git branch -a --contains 仅自身，未并入 main；trunk 缺 ladder.py 与本单测试文件，verdict.py 仍是硬编码 TOLERANCE_PCT = 15.0 的旧版（m21631:benchmarks/case_pool/backward_step_armaly/verdict.py:46），即本单自称修掉的缺陷在主线**仍然存在**；无主求解器/平台侧调用方。L4 不达：tensor_benchmark_cases WHERE anchor_slug='CASE-BACKSTEP-FVM-RE100' → 0 行（全表 139 行，%BACKWARD%/%BACKSTEP% 均 0 行），无 ref/tolerance 裁判，got 无值，误差无从计算；AUDITOR 自己的短跑（h1_re100, 6000 步, X1/s=2.9054）**不构成**本单验收点（未稳态、max_speed=10.59 远超 u_bar=0.1）。L5 不达（无 external anchor 的独立机读表：refs.json 自述 PRIMARY_PDF_CLOSED，数值来自 SECONDARY_IN_REPO 的二手 digitisation）。",
+  "impl_files": [
+    "benchmarks/case_pool/backward_step_armaly/verdict.py",
+    "benchmarks/case_pool/backward_step_armaly/run_case.py",
+    "benchmarks/case_pool/backward_step_armaly/refs.json",
+    "benchmarks/case_pool/backward_step_armaly/postprocess.py",
+    "src/tensorlbm/bfs_armaly.py"
+  ],
+  "impl_files_note": "以上为 TensorLBM trunk（审计工作树 m21631）实存文件；本单自称的核心增量 ladder.py 与双门 refs.json judgement 段**只在未合并分支**上：/srv/tensor/agent/work/m21548/benchmarks/case_pool/backward_step_armaly/ladder.py（10084 B）、.../verdict.py（16983 B，双参考 10% 门）、.../refs.json（4259 B，含 judgement.gates）。trunk refs.json 2924 B 无 judgement 段（grep -c judgement = 0）。",
+  "entry": "benchmarks/case_pool/backward_step_armaly/run_case.py:59 main() -> build_config() -> tensorlbm.bfs_armaly.run_armaly_case() -> artifacts/<tag>/{result.json,wall_shear.csv,field.npz}；判定入口 benchmarks/case_pool/backward_step_armaly/verdict.py（trunk 版 :46 TOLERANCE_PCT=15.0，分支版改读 refs.json::judgement.gates）",
+  "entry_auditor_rerun": "PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/run_case.py --help → 正常；--preset h1_re100 --steps 6000 --l-over-h 7 → rc=0，64 s，2.9054（工件 audit/m21631/audit_repro/{result.json,field.npz,wall_shear.csv}）",
+  "run_artifacts": "",
+  "run_artifacts_note": "本单 run_artifacts = **无**。实测 /srv/tensor/agent/work/m21548/artifacts/case_backward_step_armaly/ 为空目录（0 项，2026-11-15 07:31 创建）；全盘 find /srv/tensor/agent/work -maxdepth 4 -path '*backward_step*' -name '*.json' 只命中 m15519/runs/case_backward_step_armaly/*（re100_m16.json 等，X1/s=2.693，ER=2.0 几何，属另一单）。doc 自述 cj3511 succeeded rc=0 但 fetch 只回传 206 MB 递交快照、无 run 目录 —— 即算完的数没回来，不能作为工件。审计者自己的复现工件（非本单交付）见 audit_repro。",
+  "audit_repro": {
+    "path": "audit/m21631/audit_repro/",
+    "h1_re100_6000steps": {
+      "file": "audit/m21631/audit_repro/result.json",
+      "x1_over_s": 2.905363524438717,
+      "x1_over_s_reverse_extent": 2.88,
+      "steady_at_step": null,
+      "max_speed_final": 10.585729598999023,
+      "mass_flux_rel_error": 0.12219649094801682,
+      "expansion_ratio": 1.9615384615384615,
+      "note": "ER=51/26（+0.99 % vs 1.9423），6000 步，未稳态；仅证明代码链路 输入→计算→输出 可跑，**不是**验收点"
+    },
+    "g1_re100_smoke_3000steps": {
+      "file": "audit/m21631/audit_repro/smoke_result.json",
+      "x1_over_s": 2.6498674331156624,
+      "max_speed_series_peak": 3.678,
+      "note": "h_in=8 微网格（ER=1.875，-3.47 %），3000 步；X1/s 在 2.35–2.73 之间摆动，steady_at_step=null"
+    }
+  },
+  "tests": [
+    "tests/test_case_pool_backward_step_armaly_verdict.py::test_observed_order_is_read_back_exactly",
+    "tests/test_case_pool_backward_step_armaly_verdict.py::test_two_rungs_must_be_labelled_assumed",
+    "tests/test_case_pool_backward_step_armaly_verdict.py::test_gate_comes_from_refs_json_not_hardcoded",
+    "tests/test_case_pool_backward_step_armaly_verdict.py::test_no_reference_is_not_a_pass",
+    "tests/test_case_pool_backward_step_armaly_verdict.py::test_each_condition_fails_independently (FAILED)",
+    "tests/test_case_pool_backward_step_armaly_verdict.py::test_real_result_json_when_artefacts_present (skipped: 无 artefact)"
+  ],
+  "tests_result": "审计者复跑（m21548 工作树，OMP_NUM_THREADS=2, python3 -m pytest tests/test_case_pool_backward_step_armaly_verdict.py -q）→ **1 failed, 10 passed, 1 skipped in 0.31 s**。失败项：test_each_condition_fails_independently:162 → `assert 'caliper' in rows['caliper']['note_missing']` 得到 `[]`，即「caliper 条件可独立失败」这一被 doc §2.3 明文声称的性质**不成立**（该条件在伪造 artefact 上没有独立触发）。末个用例 skipped 是因为 artifacts 目录无 result.json —— 与 run_artifacts 真空一致。",
+  "integration_callers": "",
+  "integration_callers_note": "无。交付分支 agent/m21548（含 commit 8c1a35b3e）git branch -a --contains → 仅 agent/m21548，未并 main；trunk 无 tests/test_case_pool_backward_step_armaly_verdict.py、无 ladder.py；tensor_benchmark_cases 无该 anchor 行；feature_ledger 中 CASE-BACKSTEP-FVM-RE100 仍 status='open'（domain=TensorLBM, created 2026-11-14）；tensor_reports 无 mission_id=21548 的报告（平台报告从未发布）。",
+  "benchmark": {
+    "registry": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='CASE-BACKSTEP-FVM-RE100' → **0 rows**（全表 139 行；ILIKE '%BACKSTEP%' 0 行、'%STEP%' 只命中 CASE-FORWARD-STEP / CASE-DEM-BIAXIAL-CELL-KNOWN-ANGLE / 3 条 XVAL-LBM）",
+    "ref_source": "仓内 refs.json（非注册裁判）：Armaly 1983 experimental 3.05（tier SECONDARY_IN_REPO，PRIMARY_PDF_CLOSED，来源为 NAFEMS/Feel++ digitisation 二手）、Erturk 2008 2-D 2.878（Table 1，ER=1.942）；ledger 验收 <10 %",
+    "got": null,
+    "error_pct": null,
+    "verdict": "无 ref→got 对照，容差内与否**无法计算**；任何'通过'声称都无据。历史 m15519 同算例（ER=2.0，h_in=16，12000 步）got=2.693 vs ref 3.0 → -10.23 %，在 10 % 门外，且几何 ER 与本单 52:49 不等价，不可继承。",
+    "auditor_repro_not_a_benchmark": "2.9054（6000 步，未稳态）不进入基准判定"
+  },
+  "repro_cmd": "PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/run_case.py --preset h1_re100 --steps 6000 --l-over-h 7   # 审计者实测 rc=0, 64 s, X1/s=2.9054；生产点需 --preset g1_re100 --l-over-h 7 --steps 170000（doc ⑥ 声明：本单从未取回该作业工件）",
+  "external_anchor": "Armaly, Durst, Pereira & Schonung, J. Fluid Mech. 127(4):473-496 (1983), doi:10.1017/S0022112083002839；X1/s@Re=100 = 3.05 为二手 digitisation（refs.json::acquisition_status=PRIMARY_PDF_CLOSED，Semantic Scholar/OpenAlex 均无 OA PDF）→ 外部锚仅到 SECONDARY_IN_REPO 级，不具备 L5 要求的机读独立锚",
+  "overstated_claims": [
+    "docs/CASE_BACKSTEP_FVM_RE100.md §2.3 写 '（10 passed, 1 skipped）'，漏掉同名文件里的 1 failed —— 实测 1 failed, 10 passed, 1 skipped（F2）",
+    "doc §2.3 声称 'steady / caliper / mass / lattice / gate 五个条件逐项可独立失败'，被失败用例直接证伪（caliper 未独立触发，F2）",
+    "doc 标题与结论把'证据链已补齐并通过'与'算例数值未产出'并列，容易被读成算例已完成；实际算例池验收（<10 %）零证据（F1）",
+    "doc §2.2 列出的 3 项代码增量（ladder.py / verdict 双门 / --tag）在 main 上全部不可见（分支未合并），仅存在于 agent/m21548 —— 若按'已入库'口径，实质只剩 docs（F4）"
+  ],
+  "findings": [
+    "F1 (blocking, 高确定性): Re=100 判定量 X1/s 无任何运行工件；artifacts/case_backward_step_armaly/ 空目录；cj3511 自报 succeeded 而工件未取回 → 算例池验收不可判定",
+    "F2 (blocking, 已复现): 交付测试 1 failed —— caliper 条件不可独立失败；doc 的测试结论漏报该失败",
+    "F3 (blocking, 已复现): tensor_benchmark_cases 该 anchor 0 行 → 无容差裁判；refs.json 自设 10 % 门属自声明，不是平台基准",
+    "F4 (blocking, 已复现): 分支未合并 main，trunk verdict.py 仍硬编码 15 %（:46），ladder.py 与测试文件缺失 → 增量零集成",
+    "F5 (medium): 平台报告从未发布（tensor_reports mission_id=21548 → 0 行），违反 owner 报告纪律",
+    "F6 (low, 观察未定论): 审计者 6000 步复现在 h1_re100 上 max_speed=10.59（u_bar=0.1）、mass_flux_rel_error=12.2 %，steady_at_step=null；微网格 smoke 亦有 max_speed≈3.3 的尖峰。单次短跑不足以定性为求解器缺陷，但提示 170–200k 步生产点先验应做 max_speed/质量通量监控，否则'收敛点'可能是被出口海绵层伪平衡的态"
+  ],
+  "checks_run": [
+    "psql: tensor_benchmark_cases WHERE anchor_slug='CASE-BACKSTEP-FVM-RE100' → 0 rows（139 行全表核对）",
+    "psql: tensor_dev_missions id=21548 → status=succeeded, result.checks 自报 '10 passed, 1 skipped, 1 failed', server_quality_audit.gate_valid=false, key_present=false, fail_stage=budget_exhausted+forced_finish",
+    "psql: feature_ledger slug=CASE-BACKSTEP-FVM-RE100 → status=open；tensor_reports mission_id=21548 → 0 rows",
+    "fs: ls -A /srv/tensor/agent/work/m21548/artifacts/case_backward_step_armaly → 0 项；全 work 盘扫描 backward_step 产物 → 仅 m15519（另一单）",
+    "git: m21631 trunk 无 ladder.py / 无本单测试文件；verdict.py:46 TOLERANCE_PCT=15.0；refs.json 无 judgement 段；m21548 内 git branch -a --contains 8c1a35b3e → 仅 agent/m21548",
+    "pytest: m21548 tests/test_case_pool_backward_step_armaly_verdict.py → 1 failed, 10 passed, 1 skipped (0.31 s)",
+    "exec: run_case.py --help OK；--preset h1_re100 --steps 6000 → rc=0, X1/s=2.9054；--preset g1_re100 --smoke --steps 3000 → rc=0, X1/s=2.6499",
+    "exec: verdict.py（分支版）无 artefact 运行 → 'runs=0 pass=0 all_judged_pass=False'（诚实报空，未伪造通过）"
+  ],
+  "checks_not_run": [
+    "170k/200k 步生产收敛点（cj3510–cj3513 状态未复核；本单为交差核验不重做算例，且本机禁长跑）",
+    "TensorFVM 臂（锚点 slug 含 FVM，doc 已声明本单只做 LBM 臂，FVM 仓不在白名单）",
+    "Armaly 1983 原始 Table/Fig.4 一手取数（PDF 无 OA，refs.json 自述 PRIMARY_PDF_CLOSED）"
+  ],
+  "disposition": "request changes / 返修：算例池该 anchor 未成熟。返修只需一件事——把 g1_re100（h_in=52, s=49, ER 精确）170k 步的生产点真正跑完并落 result.json/field.npz/wall_shear.csv，用分支版 verdict.py 双门（3.05 / 2.878，各 10 %）判一次，同时修掉 caliper 独立失败用例，并把 ladder.py/judgement refs 并入 main、登记 tensor_benchmark_cases 一行（ref/tolerance）后重判。",
+  "independence_limitations": "审计者未参与 m21548；但 (a) 复现跑用同一仓代码、同一 refs.json 数值，故数值层面与作者共享同一实现偏差；(b) 无法访问 Armaly 1983 一手表，外部锚沿用二手 digitisation；(c) 生产点未重跑（受本机禁长跑与'非重做'约束），故'无工件'结论基于磁盘/DB 状态而非重算。"
+}
