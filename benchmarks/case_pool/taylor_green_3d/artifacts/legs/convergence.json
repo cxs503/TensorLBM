@@ -1,0 +1,36 @@
+{
+  "reference_convergence": {
+    "n": 32,
+    "eddy_times": 1.0,
+    "t_lattice": 101.85916357881302,
+    "variants": [
+      {
+        "order": 10,
+        "nfft": 60,
+        "energy_ratio": 0.7848565164272445,
+        "enstrophy_ratio": 0.8470196480051735,
+        "support_peak_index": 20.0,
+        "cutoff_index": 20.0
+      },
+      {
+        "order": 12,
+        "nfft": 60,
+        "energy_ratio": 0.7848514872299748,
+        "enstrophy_ratio": 0.8469085724642461,
+        "support_peak_index": 20.0,
+        "cutoff_index": 20.0
+      },
+      {
+        "order": 12,
+        "nfft": 72,
+        "energy_ratio": 0.7848514872299749,
+        "enstrophy_ratio": 0.8469085724642469,
+        "support_peak_index": 24.0,
+        "cutoff_index": 24.0
+      }
+    ],
+    "order_convergence_rel": 0.00013115411100894647,
+    "workgrid_invariance_rel": 8.881784197001252e-16,
+    "note": "order_convergence_rel = |order 10 vs order 12| at nfft=60; workgrid_invariance_rel = |nfft 60 vs nfft 72| at the primary order"
+  }
+}

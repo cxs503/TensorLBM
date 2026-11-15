@@ -1,0 +1,15 @@
+{
+  "anchor": {
+    "t_lattice": 101.85916357881302,
+    "nu": 0.01,
+    "n": 32.0,
+    "order": 12.0,
+    "z_invariant_ratio_series": 0.8546359991532334,
+    "z_invariant_ratio_closed_form": 0.8546359991532334,
+    "z_invariant_rel_err": 0.0,
+    "abc_beltrami_ratio_series": 0.9244652503762559,
+    "abc_beltrami_ratio_closed_form": 0.9244652503762558,
+    "abc_beltrami_rel_err": 2.220446049250313e-16,
+    "max_rel_err": 2.220446049250313e-16
+  }
+}

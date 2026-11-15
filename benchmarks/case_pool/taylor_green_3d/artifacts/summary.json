@@ -1,0 +1,442 @@
+{
+  "case": "CASE-TAYLOR-GREEN-3D",
+  "repo": "TensorLBM",
+  "reference": "exact time-Taylor series (\u7ea7\u6570\u7cbe\u786e\u89e3), src/tensorlbm/tg3d_series.py",
+  "protocol": {
+    "grid_primary": 32,
+    "grids_ladder": [
+      24,
+      32
+    ],
+    "eddy_times": 1.0,
+    "amplitude": 0.05,
+    "reynolds": 160.0,
+    "series_order": 12,
+    "tol_pct": 8.0,
+    "thresholds": {
+      "Q0_series_vs_closed_form_rel": {
+        "tolerance": 1e-09,
+        "direction": "le"
+      },
+      "Q1_energy_ratio_rel_err_pct": {
+        "tolerance": 8.0,
+        "direction": "le"
+      },
+      "Q2_enstrophy_ratio_rel_err_pct": {
+        "tolerance": 8.0,
+        "direction": "le"
+      },
+      "Q3_velocity_l2_rel_err_pct": {
+        "tolerance": 8.0,
+        "direction": "le"
+      },
+      "Q4_vorticity_l2_rel_err_pct": {
+        "tolerance": 8.0,
+        "direction": "le"
+      },
+      "Q5_series_truncation_rel": {
+        "tolerance": 0.001,
+        "direction": "le"
+      },
+      "Q6_rho_deviation": {
+        "tolerance": 0.01,
+        "direction": "le"
+      },
+      "Q7_observed_order": {
+        "tolerance": 1.5,
+        "direction": "ge"
+      },
+      "Q8_series_order_convergence_rel": {
+        "tolerance": 0.001,
+        "direction": "le"
+      },
+      "Q9_series_workgrid_invariance_rel": {
+        "tolerance": 1e-09,
+        "direction": "le"
+      }
+    }
+  },
+  "quantities": [
+    {
+      "id": "Q0_series_vs_closed_form_rel",
+      "ref": 0.0,
+      "got": 2.220446049250313e-16,
+      "tolerance": 1e-09,
+      "direction": "le",
+      "unit": "rel",
+      "pass": true
+    },
+    {
+      "id": "Q1_energy_ratio_rel_err_pct",
+      "ref": 0.7845756538624972,
+      "got": 2.1358084884335993,
+      "tolerance": 8.0,
+      "direction": "le",
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "id": "Q2_enstrophy_ratio_rel_err_pct",
+      "ref": 0.8467600380301601,
+      "got": 2.5383771169231073,
+      "tolerance": 8.0,
+      "direction": "le",
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "id": "Q3_velocity_l2_rel_err_pct",
+      "ref": 0.02213679860872117,
+      "got": 3.2843837413361134,
+      "tolerance": 8.0,
+      "direction": "le",
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "id": "Q4_vorticity_l2_rel_err_pct",
+      "ref": 0.02213679860872117,
+      "got": 6.647267467774568,
+      "tolerance": 8.0,
+      "direction": "le",
+      "unit": "%",
+      "pass": true
+    },
+    {
+      "id": "Q5_series_truncation_rel",
+      "ref": 0.0,
+      "got": 0.000180279870990202,
+      "tolerance": 0.001,
+      "direction": "le",
+      "unit": "rel",
+      "pass": true
+    },
+    {
+      "id": "Q6_rho_deviation",
+      "ref": 0.0,
+      "got": 0.0047790805117753354,
+      "tolerance": 0.01,
+      "direction": "le",
+      "unit": "rel",
+      "pass": true
+    },
+    {
+      "id": "Q7_observed_order",
+      "ref": 1.5,
+      "got": 1.9646348457862841,
+      "tolerance": 1.5,
+      "direction": "ge",
+      "unit": "-",
+      "pass": true
+    },
+    {
+      "id": "Q8_series_order_convergence_rel",
+      "ref": 0.0,
+      "got": 0.00013115411100894647,
+      "tolerance": 0.001,
+      "direction": "le",
+      "unit": "rel",
+      "pass": true
+    },
+    {
+      "id": "Q9_series_workgrid_invariance_rel",
+      "ref": 0.0,
+      "got": 8.881784197001252e-16,
+      "tolerance": 1e-09,
+      "direction": "le",
+      "unit": "rel",
+      "pass": true
+    }
+  ],
+  "verdict": {
+    "pass": true,
+    "failed": [],
+    "n_quantities": 10
+  },
+  "legs": {
+    "anchor": {
+      "t_lattice": 101.85916357881302,
+      "nu": 0.01,
+      "n": 32.0,
+      "order": 12.0,
+      "z_invariant_ratio_series": 0.8546359991532334,
+      "z_invariant_ratio_closed_form": 0.8546359991532334,
+      "z_invariant_rel_err": 0.0,
+      "abc_beltrami_ratio_series": 0.9244652503762559,
+      "abc_beltrami_ratio_closed_form": 0.9244652503762558,
+      "abc_beltrami_rel_err": 2.220446049250313e-16,
+      "max_rel_err": 2.220446049250313e-16
+    },
+    "reference_convergence": {
+      "n": 32,
+      "eddy_times": 1.0,
+      "t_lattice": 101.85916357881302,
+      "variants": [
+        {
+          "order": 10,
+          "nfft": 60,
+          "energy_ratio": 0.7848565164272445,
+          "enstrophy_ratio": 0.8470196480051735,
+          "support_peak_index": 20.0,
+          "cutoff_index": 20.0
+        },
+        {
+          "order": 12,
+          "nfft": 60,
+          "energy_ratio": 0.7848514872299748,
+          "enstrophy_ratio": 0.8469085724642461,
+          "support_peak_index": 20.0,
+          "cutoff_index": 20.0
+        },
+        {
+          "order": 12,
+          "nfft": 72,
+          "energy_ratio": 0.7848514872299749,
+          "enstrophy_ratio": 0.8469085724642469,
+          "support_peak_index": 24.0,
+          "cutoff_index": 24.0
+        }
+      ],
+      "order_convergence_rel": 0.00013115411100894647,
+      "workgrid_invariance_rel": 8.881784197001252e-16,
+      "note": "order_convergence_rel = |order 10 vs order 12| at nfft=60; workgrid_invariance_rel = |nfft 60 vs nfft 72| at the primary order"
+    },
+    "primary": {
+      "n": 32,
+      "steps": 102,
+      "eddy_time": 1.0013826583317464,
+      "tau": 0.53,
+      "nu": 0.01,
+      "ma": 0.08660254037844387,
+      "reynolds": 160.0,
+      "energy_ratio_lbm": 0.7678186204491185,
+      "energy_ratio_series": 0.7845756538624972,
+      "energy_ratio_rel_err_pct": -2.1358084884335993,
+      "energy_pointwise_rel_err_pct": -2.1358084884335993,
+      "enstrophy_ratio_lbm": 0.8252660749895531,
+      "enstrophy_ratio_series": 0.8467600380301601,
+      "enstrophy_ratio_rel_err_pct": -2.5383771169231073,
+      "velocity_l2_rel_err_pct": 3.2843837413361134,
+      "vorticity_l2_rel_err_pct": 6.647267467774568,
+      "u_l2_abs": 0.000727057414357157,
+      "u_l2_ref": 0.02213679860872117,
+      "series_field_order": 3.0,
+      "series_truncation_rel": 0.000180279870990202,
+      "rho_deviation": 0.0047790805117753354,
+      "wall_s": 52.76,
+      "field_saved": "field_primary.npz"
+    },
+    "primary_history": [
+      {
+        "step": 0.0,
+        "eddy_time": 0.0,
+        "energy_ratio_lbm": 1.0,
+        "energy_ratio_series": 1.0,
+        "enstrophy_ratio_lbm": 1.0,
+        "enstrophy_ratio_series": 1.0,
+        "rho_min": 0.9999999999999996,
+        "rho_max": 1.0000000000000004
+      },
+      {
+        "step": 10.0,
+        "eddy_time": 0.09817477042468103,
+        "energy_ratio_lbm": 0.9569343651644692,
+        "energy_ratio_series": 0.977126211102345,
+        "enstrophy_ratio_lbm": 0.9575928230701511,
+        "enstrophy_ratio_series": 0.9780780997484413,
+        "rho_min": 0.9952209194882247,
+        "rho_max": 1.0047329165458518
+      },
+      {
+        "step": 20.0,
+        "eddy_time": 0.19634954084936207,
+        "energy_ratio_lbm": 0.9348959589529934,
+        "energy_ratio_series": 0.9547335330452791,
+        "enstrophy_ratio_lbm": 0.9378670499605256,
+        "enstrophy_ratio_series": 0.9583477885528634,
+        "rho_min": 0.9979226177999164,
+        "rho_max": 1.0021307203511138
+      },
+      {
+        "step": 30.0,
+        "eddy_time": 0.2945243112740431,
+        "energy_ratio_lbm": 0.9140202312274583,
+        "energy_ratio_series": 0.9327749138786461,
+        "enstrophy_ratio_lbm": 0.9211482745543289,
+        "enstrophy_ratio_series": 0.9405012029939274,
+        "rho_min": 0.9981382286918452,
+        "rho_max": 1.0018382556180248
+      },
+      {
+        "step": 40.0,
+        "eddy_time": 0.39269908169872414,
+        "energy_ratio_lbm": 0.8918017117952503,
+        "energy_ratio_series": 0.9112099629842425,
+        "enstrophy_ratio_lbm": 0.9039636783587863,
+        "enstrophy_ratio_series": 0.9242687324871928,
+        "rho_min": 0.996798050740864,
+        "rho_max": 1.0033737051152467
+      },
+      {
+        "step": 50.0,
+        "eddy_time": 0.4908738521234052,
+        "energy_ratio_lbm": 0.8720276586616489,
+        "energy_ratio_series": 0.8900041639008097,
+        "enstrophy_ratio_lbm": 0.8897786663287016,
+        "enstrophy_ratio_series": 0.9094109550036686,
+        "rho_min": 0.9973851631788445,
+        "rho_max": 1.0027352597152168
+      },
+      {
+        "step": 60.0,
+        "eddy_time": 0.5890486225480862,
+        "energy_ratio_lbm": 0.8516946244695569,
+        "energy_ratio_series": 0.8691282512889009,
+        "enstrophy_ratio_lbm": 0.8762155317792439,
+        "enstrophy_ratio_series": 0.8957125761468407,
+        "rho_min": 0.9994236958982752,
+        "rho_max": 1.0007937735145283
+      },
+      {
+        "step": 70.0,
+        "eddy_time": 0.6872233929727672,
+        "energy_ratio_lbm": 0.8299888693107818,
+        "energy_ratio_series": 0.8485577149825726,
+        "enstrophy_ratio_lbm": 0.8620866768501941,
+        "enstrophy_ratio_series": 0.8829781462371324,
+        "rho_min": 0.9955616160300514,
+        "rho_max": 1.0047741527244387
+      },
+      {
+        "step": 80.0,
+        "eddy_time": 0.7853981633974483,
+        "energy_ratio_lbm": 0.8114681393621972,
+        "energy_ratio_series": 0.8282724116742711,
+        "enstrophy_ratio_lbm": 0.8510363381887107,
+        "enstrophy_ratio_series": 0.8710297275531875,
+        "rho_min": 0.9997687744038705,
+        "rho_max": 1.0005223380673434
+      },
+      {
+        "step": 90.0,
+        "eddy_time": 0.8835729338221293,
+        "energy_ratio_lbm": 0.7914105287881673,
+        "energy_ratio_series": 0.8082562963753603,
+        "enstrophy_ratio_lbm": 0.8389141426682554,
+        "enstrophy_ratio_series": 0.8597075527290016,
+        "rho_min": 0.9976180732024391,
+        "rho_max": 1.0028489437968064
+      },
+      {
+        "step": 100.0,
+        "eddy_time": 0.9817477042468103,
+        "energy_ratio_lbm": 0.771350667501986,
+        "energy_ratio_series": 0.788497346094433,
+        "enstrophy_ratio_lbm": 0.8273204251897815,
+        "enstrophy_ratio_series": 0.848876517641352,
+        "rho_min": 0.9974125773517296,
+        "rho_max": 1.0029641076010973
+      },
+      {
+        "step": 102.0,
+        "eddy_time": 1.0013826583317464,
+        "energy_ratio_lbm": 0.7678186204491185,
+        "energy_ratio_series": 0.7845756538624972,
+        "enstrophy_ratio_lbm": 0.8252660749895531,
+        "enstrophy_ratio_series": 0.8467600380301601,
+        "rho_min": 0.9978344873252092,
+        "rho_max": 1.002684004465455
+      }
+    ],
+    "grid": {
+      "grids": [
+        24,
+        32
+      ],
+      "energy_ratio_rel_err_pct": [
+        3.7585584094858904,
+        2.1358084884335993
+      ],
+      "enstrophy_ratio_rel_err_pct": [
+        4.401567191594003,
+        2.5383771169231073
+      ],
+      "velocity_l2_rel_err_pct": [
+        3.478663429531124,
+        3.2843837413361134
+      ],
+      "observed_order": 1.9646348457862841,
+      "monotone_decreasing": true
+    },
+    "exactness": {
+      "n": 32,
+      "order": 12,
+      "nu": 0.01,
+      "tau": 0.53,
+      "convective_acceleration": {
+        "classic_z_dependent": {
+          "adv_rms": 8.677505738590559e-05,
+          "curl_adv_rms": 1.967406798974292e-05,
+          "curl_over_adv": 0.22672492052927726,
+          "u_rms": 0.014433756729740645
+        },
+        "z_invariant": {
+          "adv_rms": 0.0001417030753307983,
+          "curl_adv_rms": 4.0422096413002253e-19,
+          "curl_over_adv": 2.8525913300497553e-15,
+          "u_rms": 0.020412414523193152
+        },
+        "abc_beltrami": {
+          "adv_rms": 0.00034710022954362237,
+          "curl_adv_rms": 2.2484478675244473e-18,
+          "curl_over_adv": 6.477805763714916e-15,
+          "u_rms": 0.05
+        }
+      },
+      "curl_over_adv_classic": 0.22672492052927726,
+      "curl_over_adv_z_invariant": 2.8525913300497553e-15,
+      "series_dealias": {
+        "nfft": 60,
+        "support_peak_index": 20.0,
+        "cutoff_index": 20.0,
+        "margin": 0.0
+      },
+      "series_tail_at_T": {
+        "energy_last_order_rel": 6.6466198179604585e-06,
+        "enstrophy_last_order_rel": 0.000180279870990202,
+        "energy_step_rel": 6.6466198178840485e-06,
+        "enstrophy_step_rel": 0.00018027987099025422,
+        "energy": 0.0002451798918320304,
+        "enstrophy": 3.0604931389193344e-05
+      },
+      "anchor": {
+        "t_lattice": 101.85916357881302,
+        "nu": 0.01,
+        "n": 32.0,
+        "order": 12.0,
+        "z_invariant_ratio_series": 0.8546359991532334,
+        "z_invariant_ratio_closed_form": 0.8546359991532334,
+        "z_invariant_rel_err": 0.0,
+        "abc_beltrami_ratio_series": 0.9244652503762559,
+        "abc_beltrami_ratio_closed_form": 0.9244652503762558,
+        "abc_beltrami_rel_err": 2.220446049250313e-16,
+        "max_rel_err": 2.220446049250313e-16
+      }
+    }
+  },
+  "wall_s": 0.0,
+  "environment": {
+    "python": "3.11.6",
+    "numpy": "2.4.6"
+  },
+  "assembly": {
+    "per_leg_files": [
+      "anchor",
+      "convergence",
+      "exactness",
+      "grid",
+      "primary"
+    ],
+    "note": null
+  }
+}
