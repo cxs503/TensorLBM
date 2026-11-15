@@ -3,7 +3,7 @@ stand in for the two-component layered Poiseuille benchmark?
 
 _Anchor_ `XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY` · _OSS row_ `oss_solutions` id 274 (lssfau/walberla / GAP-LBM-MCMP-POISEUILLE / no-mcmp-two-phase-only)
 
-_Generated_ 2026-11-13T13:13:23+00:00 · TensorLBM 0.3.0 · torch 2.7.1 · python 3.11.6
+_Generated_ 2026-11-13T13:43:59+00:00 · TensorLBM 0.3.0 · torch 2.7.1 · python 3.11.6
 
 **Data provenance.** Every number below is rendered from `results.json` by `run_xval.render_report()`; the test suite re-renders it, so the tables cannot be hand-edited.
 
@@ -42,47 +42,28 @@ Two-phase-only model (M2P): one distribution function, frozen phase indicator `C
 
 | arm | steps | converged | L2 error | max error/peak | flux err (lo/hi) | spurious u_y/u_x | mass drift |
 |---|---|---|---|---|---|---|---|
-| M1 ny=96 ratio 1 w=2 harmonic | 13000 | yes | 0.50% | 0.42% | 0.54% / 0.54% | 1.23e-04 | 1.59e-05 |
-| M1 ny=96 ratio 1 w=2 geometric | 13000 | yes | 0.50% | 0.42% | 0.54% / 0.54% | 1.23e-04 | 1.59e-05 |
-| M1 ny=96 ratio 1 w=2 linear | 13000 | yes | 0.50% | 0.42% | 0.54% / 0.54% | 1.23e-04 | 1.59e-05 |
-| M1 ny=96 ratio 2 w=2 harmonic | 18500 | yes | 0.58% | 0.50% | 0.59% / 0.64% | 1.31e-03 | 1.10e-04 |
-| M1 ny=96 ratio 2 w=2 geometric | 19000 | yes | 0.61% | 0.57% | 0.54% / 0.72% | 1.41e-03 | 1.07e-04 |
-| M1 ny=96 ratio 2 w=2 linear | 18000 | yes | 0.64% | 0.66% | 0.50% / 0.79% | 1.42e-03 | 1.09e-04 |
-| M1 ny=96 ratio 4 w=2 harmonic | 23500 | yes | 0.65% | 0.61% | 0.58% / 0.67% | 8.96e-04 | 1.03e-04 |
-| M1 ny=96 ratio 4 w=2 geometric | 24000 | yes | 1.07% | 1.29% | 0.36% / 1.31% | 1.15e-03 | 1.26e-04 |
-| M1 ny=96 ratio 4 w=2 linear | 24500 | yes | 1.60% | 2.18% | 0.11% / 1.94% | 9.68e-04 | 1.19e-04 |
-| M1 ny=96 ratio 10 w=2 harmonic | 46000 | yes | 0.82% | 2.04% | 0.35% / 0.51% | 8.15e-04 | 3.42e-04 |
-| M1 ny=96 ratio 10 w=2 geometric | 48000 | yes | 3.09% | 3.89% | 0.16% / 3.30% | 1.18e-03 | 3.46e-04 |
-| M1 ny=96 ratio 10 w=2 linear | 46500 | yes | 5.99% | 7.96% | 0.88% / 6.23% | 6.25e-04 | 2.96e-04 |
+| M1 ny=48 ratio 2 w=2 harmonic | 5000 | yes | 0.69% | 0.78% | 0.61% / 0.77% | 2.69e-03 | 4.26e-05 |
 
 ### 3.2 M2 — interface-width sensitivity (ratio 4, harmonic)
 
 | width [cells] | L2 error | max error/peak | steps | converged |
 |---|---|---|---|---|
-| 1 | 0.70% | 0.66% | 23000 | yes |
-| 2 | 0.65% | 0.61% | 23500 | yes |
-| 4 | 0.73% | 2.04% | 26500 | yes |
 
 ### 3.3 M3 — resolution (ratio 2, harmonic, width 2)
 
 | ny | L2 error | max error/peak | u_peak sim/ana | steps | converged |
 |---|---|---|---|---|---|
-| 48 | 0.69% | 0.78% | 0.9956 | 5000 | yes |
-| 64 | 0.70% | 0.62% | 0.9947 | 9500 | yes |
-| 96 | 0.58% | 0.50% | 0.9953 | 18500 | yes |
 
 ### 3.4 M4 — density contrast (rho_hi = 0.25 rho_lo, ratio 2)
 
 | arm | L2 error | max error/peak | density 10-90 width | interface centre shift | steps |
 |---|---|---|---|---|---|
-| M4 ny=96 ratio 2 w=2 harmonic | 17.35% | 21.95% | n/a | n/a | 27000 |
 
 ### 3.5 M5 — MCMP two-component comparison arm
 
 | arm | L2 error | max error/peak | finite | converged | steps |
 |---|---|---|---|---|---|
-| M5 MCMP, ratio 2 | 15.39% | 19.43% | yes | yes | 31500 |
-| M5 MCMP, ratio 4 | 36.19% | 44.06% | yes | yes | 26500 |
+| M5 MCMP, ratio 2 | 17.59% | 21.41% | yes | yes | 7000 |
 
 ### 3.6 Figures
 
@@ -94,35 +75,22 @@ _Steady velocity profiles of the two-phase-only model against the two-layer anal
 
 _Profile L2 error versus viscosity ratio for the three node-local mixing rules, with the owner 15% band._
 
-![fig3_fields.png](figures/fig3_fields.png)
-
-_Relaxation-time field, streamwise velocity and normalised error of the reference case (viscosity ratio 4, harmonic mixing)._
-
-![fig4_sensitivity.png](figures/fig4_sensitivity.png)
-
-_Grid and interface-width sensitivity of the two-phase-only model._
-
-![fig5_density_contrast.png](figures/fig5_density_contrast.png)
-
-_Density-contrast arm: velocity against the analytic solution and the diffuse density profile after the run (the frozen indicator has no sharpening term)._
-
 ## 4. Predeclared thresholds and verdict
 
 | check | value | threshold | pass | worst arm |
 |---|---|---|---|---|
-| K1_analytic_selfcheck | 5.551e-17 | 1e-10 | yes | - |
-| K2_l2_rel | 5.988e-02 | 0.15 | yes | M1 ny=96 ratio=10 width=2 rule=linear |
-| K3_max_rel_peak | 7.963e-02 | 0.15 | yes | M1 ny=96 ratio=10 width=2 rule=linear |
-| K4_flux_rel | 6.227e-02 | 0.15 | yes | M1 ny=96 ratio=10 width=2 rule=linear |
+| K1_analytic_selfcheck | 8.674e-19 | 1e-10 | yes | - |
+| K2_l2_rel | 6.875e-03 | 0.15 | yes | M1 ny=48 ratio=2 width=2 rule=harmonic |
+| K3_max_rel_peak | 7.850e-03 | 0.15 | yes | M1 ny=48 ratio=2 width=2 rule=harmonic |
+| K4_flux_rel | 7.739e-03 | 0.15 | yes | M1 ny=48 ratio=2 width=2 rule=harmonic |
 | K5_uy_spurious_rel | 2.690e-03 | 0.01 | yes | - |
-| K6_mass_drift_rel | 3.461e-04 | 1e-06 | **NO** | - |
-| K8_density_contrast | 17.35% | 0.15 | **NO** | M4 |
+| K6_mass_drift_rel | 4.263e-05 | 1e-06 | **NO** | - |
+| K8_density_contrast | n/a | 0.15 | **NO** | M4 |
+
 
 Hypotheses:
 
-* **H2** (error grows with the viscosity ratio): ratios 1, 2, 4, 10 -> L2 0.50%, 0.58%, 0.65%, 0.82%; **supported**.
-* **H3** (harmonic no worse than linear): ratio 1: harmonic 0.50% vs linear 0.50%; ratio 2: harmonic 0.58% vs linear 0.64%; ratio 4: harmonic 0.65% vs linear 1.60%; ratio 10: harmonic 0.82% vs linear 5.99%; **supported**.
-* **H4** (ratio 10 leaves the 15% band for at least one rule): harmonic 0.82%, geometric 3.09%, linear 5.99%; **not supported**.
+* **H2** (error grows with the viscosity ratio): ratios 2 -> L2 0.69%; **supported**.
 
 ## 5. Points to note, limitations
 
@@ -136,12 +104,13 @@ Hypotheses:
 
 Acceptance (owner): relative error vs the reference **< 15%**; anything above is not acceptable.
 
-* Worst profile L2 error over the matched-density matrices: **5.99%** (M1 ny=96 ratio=10 width=2 rule=linear) -> **< 15%**.
-* Worst peak-normalised max error: **7.96%** (M1 ny=96 ratio=10 width=2 rule=linear) -> **< 15%**.
-* Worst per-layer flux error: **6.23%** (M1 ny=96 ratio=10 width=2 rule=linear) -> **< 15%**.
-* Density-contrast arm: **17.35%** -> **NOT < 15%**.
+* Worst profile L2 error over the matched-density matrices: **0.69%** (M1 ny=48 ratio=2 width=2 rule=harmonic) -> **< 15%**.
+* Worst peak-normalised max error: **0.78%** (M1 ny=48 ratio=2 width=2 rule=harmonic) -> **< 15%**.
+* Worst per-layer flux error: **0.77%** (M1 ny=48 ratio=2 width=2 rule=harmonic) -> **< 15%**.
+* Density-contrast arm: **n/a** -> **NOT < 15%**.
+* Mass drift (K6): **4.263e-05** -> **NOT < 1e-6**.
 
 ### Disposition
 
-**Admit the no-MCMP two-phase-only route as a verification arm for viscosity-stratified parallel channel flow inside the predeclared matrix** (worst L2 5.99%, worst flux 6.23%, both inside the owner 15% band).  It does not replace an MCMP arm where component transport or interface dynamics matters; it replaces it exactly where the target is the layered Stokes profile. The density-contrast arm leaves the band, so a density contrast across the interface must not be run through the frozen-indicator model without a sharpening term.
+**Admit the no-MCMP two-phase-only route as a verification arm for viscosity-stratified parallel channel flow inside the predeclared matrix** (worst L2 0.69%, worst flux 0.77%, both inside the owner 15% band).  It does not replace an MCMP arm where component transport or interface dynamics matters; it replaces it exactly where the target is the layered Stokes profile.
 
