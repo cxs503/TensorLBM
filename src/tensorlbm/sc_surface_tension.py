@@ -45,17 +45,27 @@ with ``a1 = sum_d w_d d_x^2`` and ``kappa3 = a3/a1``,
 O(d^3) term of (4) is a pure-divergence (Korteweg) stress
 
     P^K_ab = K [ psi d_a d_b psi - d_a psi d_b psi ]
-             + K [ d_a psi d_b psi - (1/2)|grad psi|^2 delta_ab ],  K = G_eff kappa3 ,
+             + K [ d_a psi d_b psi - (1/2)|grad psi|^2 delta_ab ],  K = G_eff cs^2 kappa3 ,
                                                                         (5)
 
 whose normal-tangential difference integrates to
 
     sigma_K = |K| Integral (d_n psi)^2 dn
-            = |G_eff| kappa3 Integral (d_n psi)^2 dn .                  (6)
+            = |G_eff| cs^2 kappa3 Integral (d_n psi)^2 dn .             (6)
 
-Equation (6) is the *independent* surface-tension anchor of the Laplace gate: it
-contains no radius, so comparing ``Delta p * R`` with ``sigma_K`` tests the
-curvature relation itself.  It also predicts that ``sigma`` scales with
+The ``cs^2`` in (5)/(6) is not optional: the force this module applies is
+``F = -G_eff cs^2 psi grad psi`` (see :func:`sc_force`), whose leading term
+fixes the closure ``p = rho cs^2 + G_eff cs^2 psi^2 / 2`` and whose O(d^3) term
+fixes ``K = G_eff cs^2 kappa3``.  Dropping it (as an earlier version of this
+docstring did) makes ``sigma_K`` three times too large.
+
+Equation (6) is a *truncation-level* surface-tension estimate, not an accuracy
+anchor.  Measured on converged drops (``audit_r2/``, ``G_eff = -5``, R = 12/20/30,
+cross-checked at ``G_eff = -4.7``) it is systematically **29-34 % low** against
+``Delta p * R`` at every radius and at both couplings, i.e. the deficit is a
+property of the gradient truncation, not of a particular case.  Use it to test
+the *scaling* of the capillary stress (``kappa3`` dependence, ``kappa -> 0``
+control), never as a <15 % accuracy reference.  It also predicts that ``sigma`` scales with
 ``kappa3`` -- a stencil property, not a material property -- and that a
 spectrally exact gradient (``kappa3 = 0``, ``mode="spectral"``) keeps phase
 separation but removes the capillary stress entirely: that is the ``kappa -> 0``
