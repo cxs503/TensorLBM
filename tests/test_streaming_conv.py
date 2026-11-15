@@ -23,7 +23,7 @@ import pytest
 import torch
 
 from tensorlbm import streaming_conv as SC
-from tensorlbm.d2q9 import C as C2D, OPPOSITE, equilibrium, macroscopic
+from tensorlbm.d2q9 import C as C2D, OPPOSITE, W, equilibrium, macroscopic
 from tensorlbm.solver import collide_bgk, stream as stream_gather
 
 REF_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "xval_conv_as_streaming" / "oss_ref"
@@ -113,6 +113,93 @@ def test_collide_stream_loop_reproduces_taylor_green_decay_rate():
     gamma = -np.log(energies["B"] / k0) / steps
     assert abs(gamma - gamma_theory) / gamma_theory < 0.03
     assert energies["A"] == pytest.approx(energies["B"], rel=1e-12)
+
+
+# ------------------------------------------------ wall-bounded (channel) arm
+class _bounded_threads:
+    """Cap intra-op threads for the duration of a test.
+
+    A 12x16 conv3x3 with the default 128 intra-op threads is ~16x *slower* than with 4 (measured: 7.11 s vs
+    0.44 s per 300 steps), because the per-op dispatch overhead dwarfs the work. The cap is restored on exit so
+    it cannot leak into other tests.
+    """
+
+    def __init__(self, n: int = 4) -> None:
+        self.n = n
+
+    def __enter__(self):
+        self.prev = torch.get_num_threads()
+        torch.set_num_threads(self.n)
+        return self
+
+    def __exit__(self, *exc):
+        torch.set_num_threads(self.prev)
+        return False
+
+
+def _channel_steady(ny: int, nx: int, tau: float, umax_target: float, steps: int, arm: str):
+    """Plane Poiseuille, half-way bounce-back walls; returns (f, ux profile, analytic profile, uratio).
+
+    The force is plain momentum injection ``3 w (c.F)`` (see ``benchmarks/xval_conv_as_streaming``): it
+    balances the steady ``g H^2 / (8 nu)`` parabola exactly, whereas the textbook Guo prefactor
+    ``(1 - 1/(2 tau))`` would under-inject by that factor against the *unmodified* BGK collision.
+    Velocity carries the half-force shift ``u = (sum c f + F/2) / rho``.
+    """
+    nu = (tau - 0.5) / 3.0
+    height = float(ny - 2)
+    g = 8.0 * nu * umax_target / height**2
+    force = (g, 0.0)
+    c = C2D.to(dtype=torch.float64)
+    cf = c[:, 0].view(9, 1, 1) * force[0]
+    src = 3.0 * W.to(dtype=torch.float64).view(9, 1, 1) * cf
+    mask = torch.zeros(ny, nx, dtype=torch.float64)
+    mask[0, :] = 1.0
+    mask[-1, :] = 1.0
+    opposite = OPPOSITE.to(torch.int64)
+    transport = stream_gather if arm == "A" else SC.stream_conv_2d
+
+    f = equilibrium(
+        torch.ones(ny, nx, dtype=torch.float64),
+        torch.zeros(ny, nx, dtype=torch.float64),
+        torch.zeros(ny, nx, dtype=torch.float64),
+    )
+    with torch.no_grad():
+        for _ in range(steps):
+            fs = transport(f)
+            fc = collide_bgk(fs, tau) + src
+            if arm == "A":
+                fn = fc.clone()
+                fn[:, mask > 0] = fs[opposite][:, mask > 0]
+            else:
+                fn = SC.bounce_blend(fc, fs, mask, opposite=opposite)
+            f = fn
+    rho, ux, _ = macroscopic(f)
+    prof = (ux + 0.5 * force[0] / rho).numpy()[1:-1, nx // 2]
+    y_pos = np.arange(1, ny - 1) - 0.5
+    exact = g / (2.0 * nu) * y_pos * (height - y_pos)
+    return f, prof, exact
+
+
+def test_wall_bounded_channel_arms_are_bitwise_identical_and_reach_the_parabola():
+    """The conv transport must also be a drop-in replacement under a *wall* + body force, not only periodic.
+
+    This is the CI-sized slice of the round-3 ladder
+    (``docs/XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL_R3.md``): the periodic Taylor-Green test above never
+    exercises bounce-back or forcing, so the wall arm had no regression coverage.
+    """
+    ny, nx, tau, umax, steps = 12, 16, 0.8, 0.02, 4000
+    with _bounded_threads(4):
+        fa, prof_a, exact = _channel_steady(ny, nx, tau, umax, steps, "A")
+        fb, prof_b, _ = _channel_steady(ny, nx, tau, umax, steps, "B")
+        # (3) the wall arm is actually steady at the claimed step count (no transient read as discretisation)
+        _, prof_long, _ = _channel_steady(ny, nx, tau, umax, steps * 2, "B")
+    # (1) transport formulation: structurally identical state, not merely close
+    assert torch.equal(fa, fb)
+    assert np.allclose(prof_a, prof_b, rtol=0.0, atol=0.0)
+    # (2) physics: the analytic peak is recovered far inside the 3 % internal target
+    peak_err = abs(prof_b.max() - exact.max()) / exact.max()
+    assert peak_err < 0.03, f"peak error {100 * peak_err:.3f} % exceeds 3 %"
+    assert np.linalg.norm(prof_long - prof_b) / np.linalg.norm(prof_long) < 1e-3
 
 
 # ----------------------------------------------------- kernel derivation audit
