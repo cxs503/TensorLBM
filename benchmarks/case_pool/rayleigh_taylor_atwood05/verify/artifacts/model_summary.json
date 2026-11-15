@@ -1,0 +1,30 @@
+{
+  "provenance": "linear_stability_model.py --selftest: T1 (nu=0, M=0 thickness ladder) and T3 (xi=2, M beta=4.5e-3, H/h independence)",
+  "sigma_inviscid_analytic": 0.0031332853432887507,
+  "sigma_viscous_analytic": 0.003085464497242449,
+  "sharp_model_at_case_nu": 0.00291146,
+  "diffuse_model_h025": 0.002743024,
+  "diffuse_model_h0125": 0.00274796,
+  "thickness_ladder_inviscid": [
+    {
+      "xi": 1.0,
+      "sigma": 0.002980093
+    },
+    {
+      "xi": 0.5,
+      "sigma": 0.003047755
+    },
+    {
+      "xi": 0.25,
+      "sigma": 0.003083518
+    },
+    {
+      "xi": 0.125,
+      "sigma": 0.003102012
+    },
+    {
+      "xi": 0.0625,
+      "sigma": 0.003111195
+    }
+  ]
+}

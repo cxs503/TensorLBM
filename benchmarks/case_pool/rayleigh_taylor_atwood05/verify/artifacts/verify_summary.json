@@ -1,0 +1,80 @@
+{
+  "lbm_ladder": [
+    {
+      "ac_mobility": 20.0,
+      "sigma_sim": 0.002772472580044335,
+      "err_vs_visc_pct": -10.144077738630353,
+      "r2": 0.9996760236891087
+    },
+    {
+      "ac_mobility": 10.0,
+      "sigma_sim": 0.0028056394250274845,
+      "err_vs_visc_pct": -9.069139264608317,
+      "r2": 0.999651492966008
+    },
+    {
+      "ac_mobility": 5.0,
+      "sigma_sim": 0.0028280194141869115,
+      "err_vs_visc_pct": -8.343803122208083,
+      "r2": 0.9996250427056483
+    },
+    {
+      "ac_mobility": 2.0,
+      "sigma_sim": 0.002843211569252968,
+      "err_vs_visc_pct": -7.8514249055851355,
+      "r2": 0.9995632619107172
+    },
+    {
+      "ac_mobility": 0.5,
+      "sigma_sim": 0.002848350311320394,
+      "err_vs_visc_pct": -7.684878115887239,
+      "r2": 0.9995504716311208
+    }
+  ],
+  "gate_admissibility_base_case": {
+    "sigma_visc": 0.003085464497242449,
+    "sigma_inv": 0.0031332853432887507,
+    "gate_lo": 0.0026226448226560816,
+    "gate_hi": 0.003548284171828816,
+    "nu_eff_min_over_nu": 0.0,
+    "nu_eff_max_over_nu": 11.627638530746356,
+    "upper_side_reachable": false,
+    "max_achievable_positive_pct": 1.5498751027289481
+  },
+  "nu_eff_conditioning_base_case": 105.37339359967241,
+  "model_summary": {
+    "provenance": "linear_stability_model.py --selftest: T1 (nu=0, M=0 thickness ladder) and T3 (xi=2, M beta=4.5e-3, H/h independence)",
+    "sigma_inviscid_analytic": 0.0031332853432887507,
+    "sigma_viscous_analytic": 0.003085464497242449,
+    "sharp_model_at_case_nu": 0.00291146,
+    "diffuse_model_h025": 0.002743024,
+    "diffuse_model_h0125": 0.00274796,
+    "thickness_ladder_inviscid": [
+      {
+        "xi": 1.0,
+        "sigma": 0.002980093
+      },
+      {
+        "xi": 0.5,
+        "sigma": 0.003047755
+      },
+      {
+        "xi": 0.25,
+        "sigma": 0.003083518
+      },
+      {
+        "xi": 0.125,
+        "sigma": 0.003102012
+      },
+      {
+        "xi": 0.0625,
+        "sigma": 0.003111195
+      }
+    ]
+  },
+  "figures": [
+    "fig1_mobility_ladder.png",
+    "fig2_deficit.png",
+    "fig3_interface_width.png"
+  ]
+}
