@@ -71,7 +71,7 @@ def run_channel(
     rho_in: float = 1.0,
     rho_out: float = 1.0,
     measure_cols: tuple[int, ...] = (),
-    sample_every: int = 500,
+    sample_every: int = 1000,
     drift_tol: float = 1e-7,
 ) -> dict:
     """March a 2-D channel to steady state; return profiles and diagnostics.
@@ -307,6 +307,50 @@ def closure_test(ny: int = 18, nx: int = 12) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# verdict (pure function: predeclared metric + predeclared steady gate)
+# ---------------------------------------------------------------------------
+def decide_verdict(
+    dp_max: dict,
+    drifts: dict,
+    *,
+    threshold: float = 0.15,
+    stretch: float = 0.03,
+    drift_tol: float = 1e-6,
+    drift_window_steps: int = 1000,
+) -> dict:
+    """Turn the measured arms into a verdict without hiding a failed metric.
+
+    ``PREREG.md`` declares **two** gating quantities: the primary ``dp_max``
+    (< 0.15) *and* the steady-state condition ``drift < 1e-6`` (last row of the
+    metric table).  Round 2 evaluated only the first one, so it could print a
+    PASS while every arm sat 160x-2 600x above the declared drift bound.  A
+    ``PASS`` here therefore requires *both*; the metric-only outcome stays
+    available as ``PASS_dp_max`` so that neither statement is lost.
+    """
+    worst = max(dp_max.values()) if dp_max else None
+    not_steady = sorted(k for k in dp_max if not (drifts.get(k) is not None
+                                                  and drifts[k] < drift_tol))
+    metric_ok = bool(dp_max) and worst < threshold
+    return {
+        "primary_metric": "dp_max",
+        "threshold": threshold,
+        "stretch": stretch,
+        "dp_max_all": dp_max,
+        "worst": worst,
+        "PASS_dp_max": metric_ok,
+        "STRETCH_dp_max": bool(dp_max) and worst < stretch,
+        "drift_tol": drift_tol,
+        "drift_window_steps": drift_window_steps,
+        "drift_all": drifts,
+        "steady_ok": not not_steady,
+        "not_steady": not_steady,
+        # PASS/STRETCH mean "every predeclared gate satisfied"
+        "PASS": metric_ok and not not_steady,
+        "STRETCH": bool(dp_max) and worst < stretch and not not_steady,
+    }
+
+
+# ---------------------------------------------------------------------------
 # suite
 # ---------------------------------------------------------------------------
 def main() -> int:
@@ -532,22 +576,19 @@ def main() -> int:
     report["results"] = results
     report["wall_time_s"] = time.time() - t0
 
-    # ---- verdict (predeclared metric dp_max) -----------------------------
+    # ---- verdict (predeclared metric dp_max + predeclared steady gate) ----
     gating = {
         k: v["dp_max"]
         for k, v in results.items()
         if isinstance(v, dict) and "dp_max" in v
     }
-    report["verdict"] = {
-        "primary_metric": "dp_max",
-        "threshold": 0.15,
-        "stretch": 0.03,
-        "dp_max_all": gating,
-        "worst": max(gating.values()) if gating else None,
-        "PASS": bool(gating) and max(gating.values()) < 0.15,
-        "STRETCH": bool(gating) and max(gating.values()) < 0.03,
-        "closure_ok": report["closure"]["closure_err"] < 1e-12,
+    drifts = {
+        k: v.get("drift")
+        for k, v in results.items()
+        if isinstance(v, dict) and "dp_max" in v
     }
+    report["verdict"] = decide_verdict(gating, drifts)
+    report["verdict"]["closure_ok"] = report["closure"]["closure_err"] < 1e-12
 
     path = outdir / "zou_he_channel_results.json"
     path.write_text(json.dumps(report, indent=1))
