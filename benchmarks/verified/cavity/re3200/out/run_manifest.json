@@ -1,0 +1,57 @@
+{
+ "case": "cavity_re3200_ghia",
+ "anchor": "REPRO-LBM-HOU1995",
+ "description": "2-D lid-driven square cavity, Re = 3200, compared pointwise with the Re = 3200 column of Ghia, Ghia & Shin (1982) Table I/II",
+ "started_at": "2026-11-15T11:39:37+0000",
+ "finished_at": "2026-11-15T11:41:10+0000",
+ "argv": [
+  "--n",
+  "128",
+  "--steps",
+  "6000",
+  "--monitor-every",
+  "1000",
+  "--threads",
+  "4",
+  "--save-fields",
+  "--verbose",
+  "--out-dir",
+  "benchmarks/verified/cavity/re3200/out"
+ ],
+ "out_dir": "benchmarks/verified/cavity/re3200/out",
+ "git_sha": "77371975a0059c8d7fd4e3fa8ee54a70b0327263",
+ "environment": {
+  "python": "3.11.6",
+  "host": "ec6ae0b42a0c",
+  "machine": "loongarch64",
+  "cpu_count": 128,
+  "torch": "2.7.1",
+  "torch_threads": 4
+ },
+ "reference": {
+  "file": "/srv/tensor/agent/work/m21790/benchmarks/verified/cavity/re3200/reference/ghia_re3200_reference.json",
+  "sha256": "42470d4e2526494754fb5b4a52777412a1c4d75f906895a6074ce4a41e39e2b9",
+  "file_sha256": "a8190cab1214eeee1d5ac4de7cd21f4144ee9c9f7da90de4f74794765affdfbc",
+  "hash_verified": true,
+  "source": "U. Ghia, K. N. Ghia, C. T. Shin, J. Comput. Phys. 48 (1982) 387-411",
+  "table": "Table I (u along the vertical centreline x/L=0.5) / Table II (v along the horizontal centreline y/L=0.5), Re = 3200 column"
+ },
+ "tolerance_pct": 5.0,
+ "grids": [
+  {
+   "n": 128,
+   "run_status": "ok",
+   "steps": 6000,
+   "converged": false,
+   "tau": 0.51190625,
+   "final_resid": 0.36242261260900555,
+   "elapsed_s": 93.9,
+   "repro_cmd": "/usr/local/bin/python -m tensorlbm.verification.cavity_re3200 --n 128 --re 3200 --u-lid 0.1 --steps 6000 --monitor-every 1000 --ramp-steps 1000 --coord-convention wall --out-dir benchmarks/verified/cavity/re3200/out",
+   "file": "re3200_n128.json",
+   "sha256": "27b3274368c4058137f443136a6b93480e3a14b6f09dafa28ce2d40b1e558bb6",
+   "max_abs_err_pct": 96.44208839647432,
+   "pass": false
+  }
+ ],
+ "failed_grids": []
+}
