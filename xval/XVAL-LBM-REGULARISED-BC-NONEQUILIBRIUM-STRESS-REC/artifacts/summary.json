@@ -44,6 +44,26 @@
       "reference": "analytic couette"
     },
     {
+      "arm": "steady/couette/regularised",
+      "error": 5.121190941478452e-10,
+      "error_pct": 5.1211909414784526e-08,
+      "extra": "",
+      "ny": 32,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic couette"
+    },
+    {
+      "arm": "steady/couette/bounce_back",
+      "error": 4.4252887831880953e-10,
+      "error_pct": 4.425288783188095e-08,
+      "extra": "",
+      "ny": 32,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic couette"
+    },
+    {
       "arm": "steady/poiseuille/regularised",
       "error": 0.011288650465091256,
       "error_pct": 1.1288650465091257,
@@ -59,6 +79,26 @@
       "error_pct": 0.6427283371866173,
       "extra": "",
       "ny": 16,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic poiseuille"
+    },
+    {
+      "arm": "steady/poiseuille/regularised",
+      "error": 0.002691277888962849,
+      "error_pct": 0.26912778889628486,
+      "extra": "",
+      "ny": 32,
+      "pass_15pct": true,
+      "pass_3pct": true,
+      "reference": "analytic poiseuille"
+    },
+    {
+      "arm": "steady/poiseuille/bounce_back",
+      "error": 0.0013997349973038304,
+      "error_pct": 0.13997349973038303,
+      "extra": "",
+      "ny": 32,
       "pass_15pct": true,
       "pass_3pct": true,
       "reference": "analytic poiseuille"
