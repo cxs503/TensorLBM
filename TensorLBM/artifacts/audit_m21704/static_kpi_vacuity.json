@@ -1,0 +1,20 @@
+{
+ "nx1_shipped": {
+  "nx": 1,
+  "noise": 0.0,
+  "max_abs_ux": 0.0,
+  "ratio_to_driven_peak": 0.0
+ },
+ "nx8_uniform": {
+  "nx": 8,
+  "noise": 0.0,
+  "max_abs_ux": 0.0,
+  "ratio_to_driven_peak": 0.0
+ },
+ "nx8_perturbed_1e-3": {
+  "nx": 8,
+  "noise": 0.001,
+  "max_abs_ux": 9.075849984170442e-14,
+  "ratio_to_driven_peak": 7.408857129935055e-12
+ }
+}
