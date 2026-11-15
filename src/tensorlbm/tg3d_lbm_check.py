@@ -171,6 +171,7 @@ def compare_to_series(
     ser: TG3DSeries,
     *,
     order: int | None = None,
+    band_limit: bool = False,
 ) -> list[dict[str, float]]:
     """Per-sample comparison of the LBM run against the exact series.
 
@@ -207,7 +208,8 @@ def compare_to_series(
     # the field is sampled on the n³ lattice: modes above Nyquist would alias,
     # so the truncation order is capped (truncation level is reported)
     field_order = None if order is None else int(order)
-    ue, ve, we = ser.velocity_field(t_end, n=n, order=field_order)
+    ue, ve, we = ser.velocity_field(t_end, n=n, order=field_order,
+                                    band_limit=band_limit)
     field_order = ser.last_field_order
     ub = run["final"]["u"]
     vb = run["final"]["v"]
