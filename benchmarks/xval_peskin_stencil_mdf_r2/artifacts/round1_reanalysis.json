@@ -1,0 +1,16 @@
+{
+  "source": "benchmarks/xval_ib3d_diffuse_interface_mdf/artifacts/physics_mdf_iter5_peskin4pt.json (round 1)",
+  "cd_drive_mean": 1.4098021406601322,
+  "reynolds_measured": 100.23558909694354,
+  "d_over_h": 0.16666666666666666,
+  "volume_fraction": 0.002424068405547679,
+  "hasimoto_factor": 1.3055239568360892,
+  "cd_schiller_naumann": 1.090539914521618,
+  "cd_predicted_hasimoto": 1.4237259842939531,
+  "error_vs_unconfined_sn": 0.29275611271739976,
+  "error_vs_hasimoto_corrected": -0.009779861987084524,
+  "cd_marker_mean": 0.90516944448701,
+  "marker_vs_drive_rel": -0.35794575821599384,
+  "steps": 3000,
+  "converged": false
+}
