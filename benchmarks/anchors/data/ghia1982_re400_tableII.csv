@@ -1,0 +1,26 @@
+# Ghia, U., Ghia, K. N., & Shin, C. T. (1982). High-Re solutions for incompressible flow using the Navier-Stokes equations and a multigrid method. Journal of Computational Physics 48(3), 387-411.
+# Table II (p. 398-399): Re=400, v vs x, 129x129 grid results.
+# Provenance: BOUND. Transcribed from the OCR text layer of the published PDF
+#   witness: ghia1982_tables_I_II.ocr.txt
+#   witness sha256: 3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b
+#   pdf sha256:     1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93
+# Generated mechanically by benchmarks/anchors/make_ghia_csv.py from
+#   benchmarks/anchors/ghia1982_provenance.json -- do not edit by hand.
+x,v
+1.0000,0.00000
+0.9688,-0.12146
+0.9609,-0.15663
+0.9531,-0.19254
+0.9453,-0.22847
+0.9063,-0.23827
+0.8594,-0.44993
+0.8047,-0.38598
+0.5000,0.05186
+0.2344,0.30174
+0.2266,0.30203
+0.1563,0.28124
+0.0938,0.22965
+0.0781,0.20920
+0.0703,0.19713
+0.0625,0.18360
+0.0000,0.00000

@@ -1,0 +1,99 @@
+{
+ "verdict_summary": "L3 系统集成（锚链/闸门/打分器/库内常量缺陷修复为真实可跑代码并接入库与 benchmark harness），但基准验证未通过 => L4 WITHHELD",
+ "impl_files": [
+  "benchmarks/anchors/run_anchors.py",
+  "benchmarks/anchors/make_ghia_csv.py",
+  "benchmarks/verified/cavity/re400/anchor_check.py",
+  "src/tensorlbm/lid_driven_cavity.py"
+ ],
+ "entry": "benchmarks/verified/cavity/re400/anchor_check.py",
+ "run_artifacts": [
+  "benchmarks/verified/cavity/re400/artifacts/run_raw.json",
+  "benchmarks/verified/cavity/re400/artifacts/ghia_re400_anchor.json",
+  "benchmarks/verified/cavity/re400/artifacts/report.md",
+  "benchmarks/verified/cavity/re400/artifacts/profiles.png"
+ ],
+ "tests": [
+  "tests/test_ghia_re400_anchor_lit.py"
+ ],
+ "tests_result": "9 passed in 0.39 s (audit rerun, work/m21174); tests/test_lid_driven_cavity.py 20 passed 9.41 s (no regression from the constant correction)",
+ "integration_callers": "tensorlbm.lid_driven_cavity:GHIA_RE400/zou_he_moving_lid consumed by app/backend/services/generic_run.py and benchmarks/verified/cavity/*/run.py (grep -rl tensorlbm.lid_driven_cavity /root/tensor-ecosystem/TensorLBM -> xval/XVAL-LBM-CAVITY/party_a_tensorlbm.py, app/backend/services/generic_run.py)",
+ "benchmark": {
+  "anchor_slug": "GAP-DIFFLBM-EXT-LIT-GHIA400",
+  "ref_source": "Ghia, Ghia & Shin (1982) JCP 48(3):387-411 Table I/II, BOUND transcription (OCR witness sha256 3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b)",
+  "predeclared_gate": "M1 max-point dev <5% AND M3 extremum rel <5% (owner bar <15%, ecosystem <3%)",
+  "got": {
+   "run": "artifacts/run_raw.json n=65 steps=60000 u_lid=0.1 tau=0.548",
+   "M1_max_point_dev_pct": 19.89,
+   "M2_strict_rel_pct": 205.35,
+   "M3_u_min_rel_pct": 4.96,
+   "M3_v_min_rel_pct": 44.21,
+   "worst_point": "Table II v @ x=0.8594: ref -0.44993 got -0.25102, |dv|=0.19891 (=19.89% of U_lid)",
+   "alt_run_n97_steps12000": {
+    "M1_pct": 26.46,
+    "M3_v_min_pct": 58.81
+   }
+  },
+  "verdict": "FAIL — 19.89% > 5% predeclared, > 15% owner bar; M3 v_min 44.21% >> 3%",
+  "benchmark_cases_rows": 0,
+  "benchmark_cases_check": "SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='GAP-DIFFLBM-EXT-LIT-GHIA400' -> 0 rows (audit/m21174/benchmark_cases_query.txt); no machine referee registered"
+ },
+ "repro_cmd": "python benchmarks/anchors/run_anchors.py  &&  python benchmarks/verified/cavity/re400/anchor_check.py  (scorer reproduces 19.89% byte-stable from committed run_raw.json);  solver-side repro printed in artifacts/report.md §6 `run.py --nx 65 --steps 60000 --u-lid 0.1` does NOT reproduce the artifact: run.py diverges to NaN (see audit/m21174/runner_stability_probe.log)",
+ "external_anchor": "benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt",
+ "external_anchor_sha256": "3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b",
+ "verified_true": [
+  "anchor gate 6/6 PASS on independent rerun (witness sha256 matches on-disk OCR file; 4/4 CSV sha256; code-constant drift guard; OCR value presence 102/102)",
+  "inline GHIA_RE400 u/v now equal the BOUND CSV at 17/17 + 17/17 points, max|dv| < 5e-5 (audit/m21174/inline_constant_check.txt); pre-merge tree carried v(x=0.9063)=-0.38598 (wrong) and no -0.23827 -> the claimed drift defect was real and is fixed",
+  "anchor values are canonical literature (u_min -0.32726 @ y=0.2813, v_min -0.44993 @ x=0.8594)",
+  "scorer is deterministic: rerun reproduces M1=19.89% M2=205.35% M3=4.96%/44.21% and rewrites identical artifacts (only the ISO timestamp changes)"
+ ],
+ "findings": [
+  {
+   "id": "F1",
+   "severity": "blocking",
+   "claim": "predeclared accuracy gate not met",
+   "evidence": "M1 19.89% vs <5% tol (and vs >15% owner bar); M3 v_min 44.21%; n=97/12000 arm 26.46%",
+   "impact": "L4/L5 withheld, gap GAP-DIFFLBM-EXT-LIT-GHIA400 precision arm still open"
+  },
+  {
+   "id": "F2",
+   "severity": "blocking",
+   "claim": "shipped run artifact not reproducible by any shipped command",
+   "evidence": "artifacts/report.md §6 repro = run.py --nx 65 --steps 60000 --u-lid 0.1; same params 3000 steps -> last_resid=nan (tau 0.5487); nx=33/1500 u_lid=0.06 -> nan; nx=65/2000 u_lid=0.06 -> nan (audit/m21174/runner_stability_probe.log). No committed script/log records the producing command or commit; run_raw.json last_resid=None means convergence is unevidenced",
+   "impact": "run_artifacts exist but cannot be regenerated; run provenance WITHHELD"
+  },
+  {
+   "id": "F3",
+   "severity": "blocking",
+   "claim": "no machine referee",
+   "evidence": "0 rows in tensor_benchmark_cases for anchor_slug GAP-DIFFLBM-EXT-LIT-GHIA400",
+   "impact": "tolerance cannot be machine-checked at gate time; acceptance rests on the mission's own predeclared file"
+  },
+  {
+   "id": "F4",
+   "severity": "medium",
+   "claim": "six-section doc and shipped artifacts disagree on the scored run",
+   "evidence": "docs/JOUR-DIFFLBM_GHIA400_ANCHOR_M21138.md §3/§6 report n=97/12000 (M1 26.46%); artifacts in commit 9f72af226 score n=65/60000 (M1 19.89%); §6 repro step 3 points at run_raw_n97_steps12000.json",
+   "impact": "headline honest-FAIL still holds (both FAIL) but the numbers in the report do not match the shipped evidence"
+  },
+  {
+   "id": "F5",
+   "severity": "minor",
+   "claim": "M3 metric label imprecise",
+   "evidence": "reported 'v_min' 44.21% is got-at-reference-coordinate (-0.25102 @ x=0.8594); the profile extremum is -0.28601 (-36.43%)",
+   "impact": "overstates the error (conservative, not lenient); label should read 'value at reference extremum coordinate'"
+  },
+  {
+   "id": "F6",
+   "severity": "minor",
+   "claim": "V3/MRT runner defect left open",
+   "evidence": "run.py diverges to NaN within 1500-3000 steps at nx=33/65; result.json still advertises 1.50%/0.83% max dev for the same runner",
+   "impact": "the repo's advertised Re=400 result is not currently reproducible; mission recorded it in §5.2 but shipped no fix or xfail test"
+  }
+ ],
+ "disposition": "request changes (reopen precision arm); L3 confirmed for the anchor/gate/scorer/drift-fix capability, L4 withheld",
+ "level": 3,
+ "level_rationale": "real code (provenance chain + 6-step gate + scorer + library-constant defect fix) wired into the shipped library module and the repo benchmark harness, with green tests and deterministic scorer -> L3. Benchmark validation (L4) is NOT achieved: the predeclared <5% gate fails at 19.89% and the run artifact is not regenerable.",
+ "independence_limits": "no cluster rerun was completed (cj3214 still running on n315 at audit time), so the finite 60000-step profiles could not be regenerated on a second machine; all solver-side NaN reproductions are control-plane (CPU, torch eager and torch.compile default) only",
+ "entry_symbol": "benchmarks/verified/cavity/re400/anchor_check.py:362 main() ; benchmarks/anchors/run_anchors.py:main()"
+}
