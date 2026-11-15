@@ -203,14 +203,52 @@ def exp_e3(ny: int = 64, nx: int = 8, U: float = 0.02, nu_target: float = 0.05,
 # --------------------------------------------------------------------------
 # E4: lid-driven cavity vs Ghia et al. (1982), Re = 100
 # --------------------------------------------------------------------------
-GHIA_U = np.array([
-    [0.0000, 0.00000], [0.0547, -0.03717], [0.0625, -0.04192], [0.0703, -0.04775],
-    [0.1016, -0.06434], [0.1719, -0.10150], [0.2813, -0.15662], [0.4531, -0.21090],
-    [0.5000, -0.20581], [0.6172, -0.13641], [0.7344, 0.00332], [0.8516, 0.23151],
-    [0.9531, 0.68717], [0.9609, 0.73722], [0.9688, 0.78871], [0.9766, 0.84123],
-    [1.0000, 1.00000],
-])
-GHIA_V = np.array([
+# --------------------------------------------------------------------------
+# Reference table: SINGLE SOURCE OF TRUTH (defect fix, 2026-11-16)
+# --------------------------------------------------------------------------
+# This module used to carry a hand-embedded copy of Ghia's Table I/II.  The
+# Table I copy (``u``) happened to be right; the Table II copy (``v``) was
+# *scrambled*: values were attached to the wrong ``x/L`` stations, so the
+# ``v``-profile metric could not fall below ~4.5 % on any grid (a
+# grid-independent plateau that was mistaken for a solver error).
+#
+# The right half of the horizontal centre line is where the two copies part.
+# BOUND table (this one):  v(0.8047) = -0.24533, v(0.8594) = -0.22445,
+# v(0.9063) = -0.16914, v(0.9453) = -0.10313, v(0.9531) = -0.08864,
+# v(0.9609) = -0.07391, v(0.9688) = -0.05906, v(1.0) = 0 -- monotone towards the
+# wall, negative everywhere on the right half (the flow descends there).
+# Retired copy: v(0.9531) = -0.03717, v(0.9609) = **+0.00730**,
+# v(0.9688) = **+0.02526**, v(0.9766) = **+0.05248**, v(1.0) = 0 -- a sign
+# change to positive one cell away from a solid wall, where v must approach
+# zero from below.  A converged solver cannot match that, which is exactly the
+# grid-independent ~4.5 % floor that was read as a solver defect.
+#
+# The BOUND table is ``tensorlbm.verification.lid_driven_cavity.reference_data.
+# GHIA_RE100`` (provenance ``"BOUND"``: mechanically extracted OCR of Ghia et
+# al. 1982, sha256 recorded in ``benchmarks/anchors/ghia1982_provenance.json``).
+# Import it here instead of re-typing it; see
+# ``tests/test_ghia_reference_single_source.py`` and
+# ``docs/xval_aa_pattern_ghia_table_defect.md``.
+_REF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src")
+if _REF_DIR not in sys.path:
+    sys.path.insert(0, _REF_DIR)
+
+from tensorlbm.verification.lid_driven_cavity.reference_data import (  # noqa: E402
+    GHIA_RE100 as _GHIA_RE100,
+)
+
+
+def _as_table(coord, value) -> np.ndarray:
+    """``[coordinate, normalised velocity]`` as the rest of this module expects."""
+    return np.column_stack([np.asarray(coord, dtype=float), np.asarray(value, dtype=float)])
+
+
+GHIA_U = _as_table(_GHIA_RE100.y, _GHIA_RE100.u)   # Table I  (u at x/L = 1/2)
+GHIA_V = _as_table(_GHIA_RE100.x, _GHIA_RE100.v)   # Table II (v at y/L = 1/2)
+
+#: The scrambled Table II copy that used to live here, kept ONLY so that the
+#: regression test can assert it is *not* what the metric compares against.
+GHIA_V_RETIRED_SCRAMBLED = np.array([
     [0.0000, 0.00000], [0.0625, 0.09233], [0.0703, 0.10091], [0.0781, 0.10890],
     [0.0938, 0.12317], [0.1563, 0.16077], [0.2266, 0.17507], [0.2344, 0.17527],
     [0.5000, 0.05454], [0.7344, -0.24533], [0.8516, -0.18866], [0.9531, -0.03717],
@@ -295,10 +333,47 @@ def _moments(f):
     return rho, ux, uy
 
 
+def _centre_line_weights(L: int) -> tuple:
+    """Linear-interpolation weights that place the sampling line *exactly* on
+    ``x/H = 1/2`` (and, by symmetry, ``y/H = 1/2``).
+
+    Cell centres sit at ``(j + 1/2) / L``, so for an even ``L`` no node lies on
+    the centre line: the old code took row/column ``L // 2`` of the padded array,
+    which is one half cell *off* the centre line (``+/- 1/(2L)``).
+    On the horizontal centre line that half-cell offset is *not* harmless -- near
+    the top wall ``|dv/dy|`` is large, and the offset alone contributed
+    ``~8e-3`` (in units of ``U``) at ``L = 128``, decreasing only as ``O(1/L)``.
+    Returns ``(j, w)`` such that ``(1 - w) * phi[j] + w * phi[j + 1]`` is the
+    centre-line value.
+    """
+    if L % 2 == 1:
+        return L // 2, 0.0
+    return L // 2 - 1, 0.5
+
+
 def _sample_profiles(f, L, wt):
+    """Centre-line profiles on the *exact* centre lines ``x/H = y/H = 1/2``.
+
+    Returns ``(u_x(y), u_y(x), y_star)`` with ``y_star = (j + 1/2) / L`` the
+    cell-centre stations of the profiles.
+    """
     _, ux, uy = _moments(f)
-    uxc = ux[wt:wt + L, wt:wt + L][:, L // 2].numpy()
-    uyc = uy[wt:wt + L, wt:wt + L][L // 2, :].numpy()
+    return _sample_profiles_from_moments(ux, uy, L, wt)
+
+
+def _sample_profiles_from_moments(ux, uy, L, wt):
+    """Same as :func:`_sample_profiles` but from an already known moment field
+    (used by the offline metric re-computation, which stores ``u`` rather than
+    the nine planes)."""
+    blk_x = ux[wt:wt + L, wt:wt + L]
+    blk_y = uy[wt:wt + L, wt:wt + L]
+    j, w = _centre_line_weights(L)
+    if w == 0.0:
+        uxc = blk_x[:, j].numpy()
+        uyc = blk_y[j, :].numpy()
+    else:
+        uxc = ((1.0 - w) * blk_x[:, j] + w * blk_x[:, j + 1]).numpy()
+        uyc = ((1.0 - w) * blk_y[j, :] + w * blk_y[j + 1, :]).numpy()
     y_star = (np.arange(L) + 0.5) / L
     return uxc, uyc, y_star
 
