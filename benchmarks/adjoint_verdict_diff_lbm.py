@@ -53,7 +53,7 @@ import os
 import platform
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
 
@@ -71,7 +71,6 @@ from tensorlbm.shape_gradient import (  # noqa: E402
     run_to_steady,
     shape_gradient_through_flow,
 )
-
 
 # ---------------------------------------------------------------------------
 # configurations (predeclared)
@@ -421,12 +420,16 @@ def run_config(cfg: Config, args, artifact_dir: str) -> dict:
         "cos_frozen_vs_ad": rec["frozen"]["cos_vs_ad"],
         "cos_ship_vs_ad_y_only": rec["ship"]["cos_vs_ad_y_only"],
         "cos_frozen_vs_ad_y_only": rec["frozen"]["cos_vs_ad_y_only"],
-        "ship_passes_gate": bool(abs(rec["ship"]["cos_vs_ad"]) >= gate),
-        "frozen_passes_gate": bool(abs(rec["frozen"]["cos_vs_ad"]) >= gate),
+        # Signed cosine, not |cos|: a gradient that is exactly anti-parallel
+        # (cos = -1, the measured outcome for the frozen-field surrogate) has
+        # |cos| = 1 yet points the wrong way -- it must fail the gate.  The
+        # predeclared criterion is the signed ``cos < 0.99``.
+        "ship_passes_gate": bool(rec["ship"]["cos_vs_ad"] >= gate),
+        "frozen_passes_gate": bool(rec["frozen"]["cos_vs_ad"] >= gate),
         "ad_matches_fd": bool(ad_err is not None and ad_err <= args.ad_tol),
         "ad_rel_error_vs_fd": ad_err,
         "ship_admissible": False,
-        "frozen_admissible": bool(abs(rec["frozen"]["cos_vs_ad"]) >= gate),
+        "frozen_admissible": bool(rec["frozen"]["cos_vs_ad"] >= gate),
     }
     rec["verdict"]["ship_admissible"] = bool(
         rec["verdict"]["ship_passes_gate"]
@@ -438,6 +441,54 @@ def run_config(cfg: Config, args, artifact_dir: str) -> dict:
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
+
+
+def summarise(payload: dict, ad_tol: float = 0.05) -> dict:
+    """Fill ``payload['summary']`` and ``payload['verdict']`` from the configs.
+
+    Shared by the single-process run (:func:`main`) and by the sharded-campaign
+    merger (``benchmarks/adjoint_verdict_merge.py``) so that a campaign split
+    over several jobs is summarised by exactly the same code as a serial run.
+    """
+    if not payload.get("configs"):
+        raise ValueError("summarise(): no configs in payload")
+    # ---- summary ---------------------------------------------------------
+    rows = []
+    for name, rec in payload["configs"].items():
+        rows.append(
+            {
+                "config": name,
+                "reynolds": rec["config"]["reynolds"],
+                "C_L_base": rec["base"]["C_L"],
+                "C_D_base": rec["base"]["C_D"],
+                "g_fd": rec["fd"]["reference"],
+                "g_ad": rec["ad"]["reference"],
+                "g_frozen": rec["frozen"]["dJ_dy_c"],
+                "g_ship": rec["ship"]["dJ_dy_c"],
+        "g_ad_vec": rec["ad"]["vector"],
+        "g_fd_vec": rec["fd"]["reference_vector"],
+                "ad_rel_err_vs_fd": rec["ad"][f"n={UNROLL_SWEEP[-1]}"]["rel_error_vs_fd"],
+                "cos_frozen_vs_ad": rec["frozen"]["cos_vs_ad"],
+                "cos_ship_vs_ad": rec["ship"]["cos_vs_ad"],
+                "ratio_ship_vs_ad": rec["ship"]["amplitude_ratio_vs_ad"],
+                "g_ad_xc": rec["ad"]["vector"][1],
+                "g_fd_xc": rec["fd"]["reference_vector"][1],
+                "ship_improved": rec["trajectory"]["ship"]["improved"],
+                "ad_improved": rec["trajectory"]["ad"]["improved"],
+            }
+        )
+    payload["summary"] = rows
+    # Signed criterion (see the per-config gate above): cos < 0.99 => banned.
+    passed = all(r["cos_frozen_vs_ad"] < 0.99 and r["cos_ship_vs_ad"] < 0.99 for r in rows)
+    payload["verdict"] = {
+        "gate": "cos < 0.99 => frozen-field surrogate is banned from the optimisation path",
+        "frozen_field_surrogate_banned": passed,
+        "adjoint_py_declares_shape_derivative_only": True,
+        "adjoint_py_optimization_path_eligible": False,
+        "ad_matches_fd_all_configs": all((r["ad_rel_err_vs_fd"] or 1) <= ad_tol for r in rows),
+        "wall_seconds": round(payload.get("wall_seconds") or 0.0, 1),
+    }
+    return payload["verdict"]
 
 
 def main() -> int:
@@ -494,49 +545,24 @@ def main() -> int:
         with open(args.out, "w") as fh:
             json.dump(payload, fh, indent=2)
 
-    # ---- summary ---------------------------------------------------------
-    rows = []
-    for name, rec in payload["configs"].items():
-        rows.append(
-            {
-                "config": name,
-                "reynolds": rec["config"]["reynolds"],
-                "C_L_base": rec["base"]["C_L"],
-                "C_D_base": rec["base"]["C_D"],
-                "g_fd": rec["fd"]["reference"],
-                "g_ad": rec["ad"]["reference"],
-                "g_frozen": rec["frozen"]["dJ_dy_c"],
-                "g_ship": rec["ship"]["dJ_dy_c"],
-        "g_ad_vec": rec["ad"]["vector"],
-        "g_fd_vec": rec["fd"]["reference_vector"],
-                "ad_rel_err_vs_fd": rec["ad"][f"n={UNROLL_SWEEP[-1]}"]["rel_error_vs_fd"],
-                "cos_frozen_vs_ad": rec["frozen"]["cos_vs_ad"],
-                "cos_ship_vs_ad": rec["ship"]["cos_vs_ad"],
-                "ratio_ship_vs_ad": rec["ship"]["amplitude_ratio_vs_ad"],
-                "g_ad_xc": rec["ad"]["vector"][1],
-                "g_fd_xc": rec["fd"]["reference_vector"][1],
-                "ship_improved": rec["trajectory"]["ship"]["improved"],
-                "ad_improved": rec["trajectory"]["ad"]["improved"],
-            }
-        )
-    payload["summary"] = rows
-    passed = all(abs(r["cos_frozen_vs_ad"]) < 0.99 and abs(r["cos_ship_vs_ad"]) < 0.99 for r in rows)
-    payload["verdict"] = {
-        "gate": "cos < 0.99 => frozen-field surrogate is banned from the optimisation path",
-        "frozen_field_surrogate_banned": passed,
-        "adjoint_py_declares_shape_derivative_only": True,
-        "adjoint_py_optimization_path_eligible": False,
-        "ad_matches_fd_all_configs": all((r["ad_rel_err_vs_fd"] or 1) <= args.ad_tol for r in rows),
-        "wall_seconds": round(time.time() - t0, 1),
-    }
+    payload["wall_seconds"] = time.time() - t0
+    summarise(payload, args.ad_tol)
+
     with open(args.out, "w") as fh:
         json.dump(payload, fh, indent=2)
     print(json.dumps(payload["verdict"], indent=2))
 
     if args.figures:
-        from postprocess_adjoint_verdict import make_figures  # local sibling module
+        # The figure/table renderer lives in the report generator (single
+        # implementation, every number read back from the JSON).
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from adjoint_verdict_report import make_figures
 
-        make_figures(payload, os.path.dirname(args.out) or ".")
+        artifact_dir = os.path.join(
+            os.path.dirname(args.out) or ".", os.path.basename(args.out)[:-5]
+        )
+        for path in make_figures(payload, artifact_dir):
+            print("figure:", path)
     return 0
 
 
