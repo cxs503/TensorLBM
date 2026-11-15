@@ -1,0 +1,525 @@
+{
+ "arm_symbol": {
+  "table_matches_library_d2q9": true,
+  "M0": "1",
+  "M2": {
+   "(0, 0)": "1/3",
+   "(0, 1)": "0",
+   "(1, 0)": "0",
+   "(1, 1)": "1/3"
+  },
+  "M2_equals_cs2_delta": true,
+  "M3_all_zero": true,
+  "M4_equals_cs4_delta_delta": true,
+  "stencil_closed_form_x": "-2*I*(cos(ky)/18 + 1/9)*sin(kx)",
+  "stencil_closed_form_x_verified": true,
+  "gain_small_k_expansion": "k**4/360 - k**2/18 + 1/3",
+  "gain_leading_cs2": "1/3",
+  "gain_leading_cs2_float": 0.3333333333333333,
+  "gain_k2_coefficient": "-1/18",
+  "gain_k2_coefficient_float": -0.05555555555555555,
+  "gain_equals_cs2_times_1_minus_k2_over_6": true,
+  "cs2": 0.3333333333333333,
+  "k_at_3pct_gain_error": 0.4242640687119285,
+  "k_at_15pct_gain_error": 0.9486832980505138
+ },
+ "arm_spectral": {
+  "rows": [
+   {
+    "m": 1,
+    "dir": "axis",
+    "k": 0.09817477042468103,
+    "k_measured_axis": 0.09817477042468103,
+    "gain_lattice": 0.3327981334914121,
+    "gain_closed_form": 0.3327981310118728,
+    "gain_over_cs2": 0.9983944004742362,
+    "rel_err_vs_continuum": 0.001605599525763779,
+    "cells_per_wavelength": 64.0
+   },
+   {
+    "m": 1,
+    "dir": "diagonal",
+    "k": 0.13884009181744894,
+    "k_measured_axis": 0.09817477042468103,
+    "gain_lattice": 0.33226396216616416,
+    "gain_closed_form": 0.33226395969060474,
+    "gain_over_cs2": 0.9967918864984925,
+    "rel_err_vs_continuum": 0.0032081135015075146,
+    "cells_per_wavelength": 45.254833995939045
+   },
+   {
+    "m": 2,
+    "dir": "axis",
+    "k": 0.19634954084936207,
+    "k_measured_axis": 0.19634954084936207,
+    "gain_lattice": 0.3311956195156682,
+    "gain_closed_form": 0.33119561704806855,
+    "gain_over_cs2": 0.9935868585470047,
+    "rel_err_vs_continuum": 0.006413141452995319,
+    "cells_per_wavelength": 32.0
+   },
+   {
+    "m": 2,
+    "dir": "diagonal",
+    "k": 0.2776801836348979,
+    "k_measured_axis": 0.19634954084936207,
+    "gain_lattice": 0.32907434252877754,
+    "gain_closed_form": 0.32907434007698266,
+    "gain_over_cs2": 0.9872230275863326,
+    "rel_err_vs_continuum": 0.012776972413667376,
+    "cells_per_wavelength": 22.627416997969522
+   },
+   {
+    "m": 3,
+    "dir": "axis",
+    "k": 0.2945243112740431,
+    "k_measured_axis": 0.2945243112740431,
+    "gain_lattice": 0.32853505161316826,
+    "gain_closed_form": 0.32853504916539134,
+    "gain_over_cs2": 0.9856051548395048,
+    "rel_err_vs_continuum": 0.014394845160495162,
+    "cells_per_wavelength": 21.333333333333332
+   },
+   {
+    "m": 3,
+    "dir": "diagonal",
+    "k": 0.4165202754523468,
+    "k_measured_axis": 0.2945243112740431,
+    "gain_lattice": 0.3238195152722801,
+    "gain_closed_form": 0.3238195128596366,
+    "gain_over_cs2": 0.9714585458168403,
+    "rel_err_vs_continuum": 0.028541454183159676,
+    "cells_per_wavelength": 15.084944665313014
+   },
+   {
+    "m": 4,
+    "dir": "axis",
+    "k": 0.39269908169872414,
+    "k_measured_axis": 0.39269908169872414,
+    "gain_lattice": 0.3248317885549963,
+    "gain_closed_form": 0.3248317861348109,
+    "gain_over_cs2": 0.9744953656649888,
+    "rel_err_vs_continuum": 0.025504634335011156,
+    "cells_per_wavelength": 16.0
+   },
+   {
+    "m": 4,
+    "dir": "diagonal",
+    "k": 0.5553603672697958,
+    "k_measured_axis": 0.39269908169872414,
+    "gain_lattice": 0.31658967268832927,
+    "gain_closed_form": 0.3165896703295524,
+    "gain_over_cs2": 0.9497690180649878,
+    "rel_err_vs_continuum": 0.05023098193501219,
+    "cells_per_wavelength": 11.313708498984761
+   },
+   {
+    "m": 5,
+    "dir": "axis",
+    "k": 0.4908738521234052,
+    "k_measured_axis": 0.4908738521234052,
+    "gain_lattice": 0.3201071845641708,
+    "gain_closed_form": 0.32010718217918643,
+    "gain_over_cs2": 0.9603215536925125,
+    "rel_err_vs_continuum": 0.039678446307487514,
+    "cells_per_wavelength": 12.8
+   },
+   {
+    "m": 5,
+    "dir": "diagonal",
+    "k": 0.6942004590872447,
+    "k_measured_axis": 0.4908738521234052,
+    "gain_lattice": 0.30750790068872247,
+    "gain_closed_form": 0.30750789839761006,
+    "gain_over_cs2": 0.9225237020661674,
+    "rel_err_vs_continuum": 0.0774762979338326,
+    "cells_per_wavelength": 9.050966799187808
+   },
+   {
+    "m": 6,
+    "dir": "axis",
+    "k": 0.5890486225480862,
+    "k_measured_axis": 0.5890486225480862,
+    "gain_lattice": 0.3143884425905038,
+    "gain_closed_form": 0.31438844024812734,
+    "gain_over_cs2": 0.9431653277715114,
+    "rel_err_vs_continuum": 0.05683467222848859,
+    "cells_per_wavelength": 10.666666666666666
+   },
+   {
+    "m": 6,
+    "dir": "diagonal",
+    "k": 0.8330405509046936,
+    "k_measured_axis": 0.5890486225480862,
+    "gain_lattice": 0.2967271072180449,
+    "gain_closed_form": 0.2967271050072557,
+    "gain_over_cs2": 0.8901813216541348,
+    "rel_err_vs_continuum": 0.10981867834586523,
+    "cells_per_wavelength": 7.542472332656507
+   }
+  ],
+  "max_rel_diff_lattice_vs_closed_form": 7.450580818968433e-09,
+  "max_rel_diff_fft_gain_vs_unity": 2.220446049250313e-16,
+  "anisotropy_closed_form": [
+   {
+    "k": 0.3,
+    "spread_rel": 4.548358353662108e-05
+   },
+   {
+    "k": 0.6,
+    "spread_rel": 0.0007516138016193026
+   },
+   {
+    "k": 1.0,
+    "spread_rel": 0.006268208315720059
+   },
+   {
+    "k": 1.5,
+    "spread_rel": 0.03711767413747511
+   },
+   {
+    "k": 2.0,
+    "spread_rel": 0.14771382447108988
+   }
+  ],
+  "refinement": [
+   {
+    "n": 32,
+    "k": 0.5890486225480862,
+    "rel_err_vs_continuum": 0.10981867834586512
+   },
+   {
+    "n": 64,
+    "k": 0.2945243112740431,
+    "rel_err_vs_continuum": 0.028541454183159676
+   },
+   {
+    "n": 128,
+    "k": 0.14726215563702155,
+    "rel_err_vs_continuum": 0.007205236791242853
+   },
+   {
+    "n": 256,
+    "k": 0.07363107781851078,
+    "rel_err_vs_continuum": 0.001805702146081778
+   }
+  ],
+  "refinement_order": [
+   1.943992706931366,
+   1.9859410931105255,
+   1.9964859063558211
+  ],
+  "gain_error_vs_k": [
+   {
+    "k": 0.3,
+    "rel_err_vs_continuum": 0.015,
+    "cells_per_wavelength": 20.943951023931955
+   },
+   {
+    "k": 0.6,
+    "rel_err_vs_continuum": 0.06,
+    "cells_per_wavelength": 10.471975511965978
+   },
+   {
+    "k": 0.957,
+    "rel_err_vs_continuum": 0.15264149999999999,
+    "cells_per_wavelength": 6.565501888379923
+   },
+   {
+    "k": 1.5,
+    "rel_err_vs_continuum": 0.375,
+    "cells_per_wavelength": 4.1887902047863905
+   },
+   {
+    "k": 2.0,
+    "rel_err_vs_continuum": 0.6666666666666666,
+    "cells_per_wavelength": 3.141592653589793
+   }
+  ]
+ },
+ "arm_oss": {
+  "oss_source": {
+   "package": "lbmpy 2.0 (upstream sdist file tests/shan_chen/test_shan_chen_two_component.py:55-59,73-81)",
+   "operator": "F_a = -g_ab * psi(rho_a) * sum_d w_d d psi(rho_b(x+d))   [forward gather]",
+   "convention_bridge": "G_12 (library, <0 repulsive) = -g_ab (OSS, >0 repulsive)"
+  },
+  "n": 48,
+  "cases": {
+   "random_linear": {
+    "G_12_library": 1.3,
+    "g_ab_oss": -1.3,
+    "rel_rms_diff": 1.4137261479643949e-16,
+    "max_abs_diff": 1.1102230246251565e-16,
+    "rms_force": 0.12883508129949287
+   },
+   "smooth_linear": {
+    "G_12_library": 1.3,
+    "g_ab_oss": -1.3,
+    "rel_rms_diff": 8.830515521282387e-16,
+    "max_abs_diff": 2.3407158099783363e-17,
+    "rms_force": 0.012243005551147821
+   },
+   "random_exp": {
+    "G_12_library": -1.3,
+    "g_ab_oss": 1.3,
+    "rel_rms_diff": 1.6190587850387548e-16,
+    "max_abs_diff": 2.7755575615628914e-17,
+    "rms_force": 0.030825950038854865
+   }
+  },
+  "max_rel_rms_diff": 8.830515521282387e-16,
+  "frozen_oss_transcription_sha256": "bcb03ce105513c1012a19707dac702b23c6ffcb72eff771587857a7030ea245c"
+ },
+ "arm_physics": {
+  "cases": [
+   {
+    "normal_axis": 0,
+    "interface_contrast": 0.7412198185920715,
+    "p_uniformity_rel": 0.01499018631875515,
+    "boltzmann_relation_residual_rel": 0.026500768959522247,
+    "operator_error_on_interface_rel": 0.03653871312327466,
+    "interface_spectrum_frac_above_k06": 0.0024999722372740507,
+    "newton_third_law_residual_rel": NaN,
+    "rho1_min": 0.13320587575435638,
+    "rho1_max": 0.8962846994400024,
+    "rho2_min": 0.13294287025928497,
+    "rho2_max": 0.8956022262573242,
+    "p_mean": 0.44118818640708923,
+    "G": -2.5,
+    "status": "ok",
+    "n": 64,
+    "steps_requested": 4000,
+    "steps_run": 2250,
+    "converged": true,
+    "u_max": 0.009179305285215378,
+    "p_uniformity_library_convention": 0.49072006344795227,
+    "psi": "linear",
+    "tau": 1.0,
+    "u_eq": "self",
+    "mass_drift_rel": 2.1509295301712677e-06
+   }
+  ],
+  "profiles": {
+   "G-2.5": {
+    "rho1": [
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857,
+     0.6275128722190857
+    ],
+    "rho2": [
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454,
+     0.3725067377090454
+    ]
+   }
+  }
+ },
+ "verdict": {
+  "items": [
+   {
+    "quantity": "symbolic stencil closed form (vs sympy sum)",
+    "measured": 0.0,
+    "reference": "exact algebra",
+    "rel_err": 0.0,
+    "gate": 0.03,
+    "pass": true,
+    "note": "identity verified symbolically"
+   },
+   {
+    "quantity": "stencil gain vs cs^2 for k->0",
+    "measured": 9.992007221626409e-14,
+    "reference": "cs^2 = 1/3",
+    "rel_err": 9.992007221626409e-14,
+    "gate": 0.03,
+    "pass": true,
+    "note": "leading coefficient of the small-k expansion"
+   },
+   {
+    "quantity": "lattice gain vs closed form (all reciprocal modes)",
+    "measured": 7.450580818968433e-09,
+    "reference": "closed form",
+    "rel_err": 7.450580818968433e-09,
+    "gate": 0.03,
+    "pass": true,
+    "note": "float32 weight table in tensorlbm.d2q9.W bounds this at ~1e-8"
+   },
+   {
+    "quantity": "FFT (spectral) gain vs unity",
+    "measured": 2.220446049250313e-16,
+    "reference": "du/dx",
+    "rel_err": 2.220446049250313e-16,
+    "gate": 0.03,
+    "pass": true,
+    "note": "independent FFT reference machinery"
+   },
+   {
+    "quantity": "library kernel vs OSS (lbmpy) operator",
+    "measured": 8.830515521282387e-16,
+    "reference": "independent OSS",
+    "rel_err": 8.830515521282387e-16,
+    "gate": 0.03,
+    "pass": true,
+    "note": "RMS over random/smooth/exp-psi fields"
+   },
+   {
+    "quantity": "EOS pressure uniformity across flat interface (G=-2.5)",
+    "measured": 0.01499018631875515,
+    "reference": "p = const (derived convention)",
+    "rel_err": 0.01499018631875515,
+    "gate": 0.03,
+    "pass": true,
+    "note": "mechanical equilibrium of a flat interface"
+   },
+   {
+    "quantity": "discrete Boltzmann relation ln rho1 - G psi2 = const (G=-2.5)",
+    "measured": 0.026500768959522247,
+    "reference": "analytic ODE integral",
+    "rel_err": 0.026500768959522247,
+    "gate": 0.03,
+    "pass": true,
+    "note": "continuum-limit force balance"
+   },
+   {
+    "quantity": "Newton 3rd law, sum(F1+F2) (G=-2.5)",
+    "measured": NaN,
+    "reference": "0",
+    "rel_err": NaN,
+    "gate": 0.03,
+    "pass": false,
+    "note": "telescoping on a periodic box"
+   },
+   {
+    "quantity": "operator error on the measured interface (G=-2.5)",
+    "measured": 0.03653871312327466,
+    "reference": "spectral force on the same profile",
+    "rel_err": 0.03653871312327466,
+    "gate": 0.15,
+    "pass": true,
+    "note": "intrinsic high-k truncation of the D2Q9 stencil, not an implementation defect"
+   }
+  ],
+  "all_pass_3pct": false
+ }
+}
