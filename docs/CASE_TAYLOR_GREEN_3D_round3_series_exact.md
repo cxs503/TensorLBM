@@ -12,6 +12,9 @@ component (see §5) and therefore not claimed as a meshing result.
 
 ---
 
+
+> **round-4 correction (2026-11-15).** The field-level numbers in ③ (`velocity L2 +2.657 %`, `vorticity L2 +4.600 %`) are **withdrawn**: they were scored against a reference field truncated at order 4, whose spectral support `|k|∞ = 20` exceeds the Nyquist index 16 of the 32³ lattice, so the reference aliased. The Nyquist-safe values for the same run are `u L2 +3.284 %` and `vorticity L2 +6.647 %` (still inside the 8 % case band). The ⑤ claim that the −2 % offset is a compressibility floor is also withdrawn — it is Ma-independent and shrinks with grid refinement. The modal metrics in ③ are unaffected and reproduce. See `docs/CASE_TAYLOR_GREEN_3D_round4_field_metrics_and_attribution.md`.
+
 ## ① Case, physics, parameters
 
 Periodic box, lattice units `Δx = Δt = 1`, D3Q27 BGK, `float64`, `ν = (τ − ½)/3`.
