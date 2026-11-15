@@ -1,0 +1,74 @@
+{
+  "tag": "neumann_flux__th110.0__baseline__xi3",
+  "arm": "neumann_flux",
+  "grid": "baseline",
+  "interface_width": 3.0,
+  "theta_prescribed_deg": 110.0,
+  "max_iter": 30000,
+  "iterations": 16400,
+  "converged": true,
+  "drift": 9.556635205409947e-10,
+  "mass_error": 6.822963211246404e-16,
+  "theta_cap_deg": 107.69353035542747,
+  "theta_circle_deg": 109.86438899634645,
+  "gas_reference": -0.9643757272205715,
+  "gas_supersaturation": 0.03562427277942848,
+  "circle_rms": 0.0024627623820482605,
+  "apex_height_r2": 19.67681213343547,
+  "measurable": true,
+  "theta_geodesic_deg": 70.20601085344649,
+  "geodesic_levels": {
+    "lvl35": {
+      "theta_geodesic_deg": 71.23253756856442,
+      "apex_height": 20.61370957866938,
+      "basal_half_width": 14.766821557857124,
+      "n_contour_rows": 21.0,
+      "axis_x": 39.999999992030105,
+      "level": -0.26169881428865593,
+      "basal_fit_order": 3.0
+    },
+    "lvl50": {
+      "theta_geodesic_deg": 70.20601085344649,
+      "apex_height": 19.67681213343547,
+      "basal_half_width": 13.830637203196991,
+      "n_contour_rows": 20.0,
+      "axis_x": 39.999999992030105,
+      "level": 0.03944843411073651,
+      "basal_fit_order": 3.0
+    },
+    "lvl65": {
+      "theta_geodesic_deg": 69.07004729759429,
+      "apex_height": 18.72441695748983,
+      "basal_half_width": 12.88579463826783,
+      "n_contour_rows": 19.0,
+      "axis_x": 39.999999992030105,
+      "level": 0.34059568251012895,
+      "basal_fit_order": 3.0
+    }
+  },
+  "level_spread_deg": 2.162490270970139,
+  "offset_circle": {
+    "theta_mid_deg": 70.20601085344649,
+    "R_circ": 14.699115315484118,
+    "centre_offset": 4.977696817951353,
+    "theta_offset_pred_deg": {
+      "lvl35": 71.42667147153922,
+      "lvl65": 68.80925887113266
+    },
+    "theta_offset_meas_deg": {
+      "lvl35": 71.23253756856442,
+      "lvl65": 69.07004729759429
+    },
+    "offset_dev_deg": 0.26078842646163025
+  },
+  "level_convention": {
+    "mid": 70.20601085344649,
+    "tanh_zero": 70.35505010773153,
+    "gas_min": NaN,
+    "spread_deg": 0.14903925428504294
+  },
+  "apex_height_r3": 19.67681213343547,
+  "basal_half_width": 13.830637203196991,
+  "symmetry_error": 0.3314875976485574,
+  "wall_seconds": 19.483020305633545
+}

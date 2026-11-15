@@ -1,0 +1,62 @@
+{
+  "tag": "geometric_ghost__th045.0__baseline__xi3",
+  "arm": "geometric_ghost",
+  "grid": "baseline",
+  "interface_width": 3.0,
+  "theta_prescribed_deg": 45.0,
+  "max_iter": 30000,
+  "iterations": 1000,
+  "converged": true,
+  "drift": 1.0502709812953981e-13,
+  "mass_error": 0.0,
+  "theta_cap_deg": NaN,
+  "theta_circle_deg": 64.18179520827394,
+  "gas_reference": -0.9673820713859295,
+  "gas_supersaturation": 0.032617928614070535,
+  "circle_rms": 0.37932151631422906,
+  "apex_height_r2": NaN,
+  "measurable": false,
+  "theta_geodesic_deg": NaN,
+  "geodesic_levels": {
+    "lvl35": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": 24.0,
+      "basal_half_width": NaN,
+      "n_contour_rows": 0.0,
+      "axis_x": 39.950579395735225,
+      "level": -0.9673820713859289
+    },
+    "lvl50": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": NaN,
+      "basal_half_width": 48.52748737445086,
+      "n_contour_rows": 19.0,
+      "axis_x": 39.950579395735225,
+      "level": -0.9673820713859287,
+      "basal_fit_order": 3.0
+    },
+    "lvl65": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": 22.9,
+      "basal_half_width": NaN,
+      "n_contour_rows": 3.0,
+      "axis_x": 39.950579395735225,
+      "level": -0.9673820713859284
+    }
+  },
+  "level_spread_deg": NaN,
+  "offset_circle": {
+    "theta_mid_deg": NaN,
+    "offset_dev_deg": NaN
+  },
+  "level_convention": {
+    "mid": NaN,
+    "tanh_zero": NaN,
+    "gas_min": NaN,
+    "spread_deg": NaN
+  },
+  "apex_height_r3": NaN,
+  "basal_half_width": 48.52748737445086,
+  "symmetry_error": 4.440892098500626e-16,
+  "wall_seconds": 1.1298949718475342
+}
