@@ -1,0 +1,30 @@
+{
+ "thin_limit": {
+  "a": 32.0,
+  "h": 3.0,
+  "ny": 10,
+  "nx": 213,
+  "converged": true,
+  "iterations": 95200,
+  "mass_imbalance_rel": 1.9703808029625236e-09,
+  "div_scaled": 3.113600750923734e-09,
+  "normal_load_top": 4.975534180415775,
+  "pressure_load_top": 4.974513897553252,
+  "reynolds_load": 4.8545185185185185,
+  "h_over_a": 0.09375,
+  "err_normal_vs_rey_pct": 2.4928458185012436
+ },
+ "grid_ny24": {
+  "ny": 24,
+  "nx": 128,
+  "converged": true,
+  "iterations": 55600,
+  "mass_imbalance_rel": 6.687786956172115e-09,
+  "div_scaled": 8.695831836178468e-08,
+  "normal_load_top": 0.08557088409586724,
+  "pressure_load_top": 0.08549389215907813,
+  "reynolds_load": 0.07585185185185185
+ },
+ "grid_ny16_ref_normal": 0.08524377,
+ "grid_rel_diff_pct": 0.38373959277875347
+}
