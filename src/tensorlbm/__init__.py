@@ -1080,6 +1080,9 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "run_to_steady": ("shape_gradient", "run_to_steady"),
     "shape_gradient_through_flow": ("shape_gradient", "shape_gradient_through_flow"),
     "frozen_field_gradient": ("shape_gradient", "frozen_field_gradient"),
+    # Horizon-free (implicit-function) version of the same total derivative
+    "fixed_point_adjoint": ("fixed_point_adjoint", "fixed_point_adjoint"),
+    "fixed_point_residual": ("fixed_point_adjoint", "fixed_point_residual"),
 }
 
 # Submodules the eager ``from .x import y`` statements bound on the package as
@@ -3188,4 +3191,6 @@ __all__ = [
     "run_to_steady",
     "shape_gradient_through_flow",
     "frozen_field_gradient",
+    "fixed_point_adjoint",
+    "fixed_point_residual",
 ]
