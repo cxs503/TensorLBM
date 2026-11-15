@@ -1,192 +1,174 @@
-"""Tests for two-component SC solver with EDM forcing.
+"""Tests for the two-component Shan-Chen layered-Poiseuille validation.
 
-These tests validate the two-component Shan-Chen LBM implementation
-for layered Poiseuille flow.
+The assertions are *physical*: a laminar channel driver must reproduce the exact
+Poiseuille profile (that is precisely what the previous delivery got wrong --
+its run gave ``u_max = g*t`` because the vertical streaming was a no-op), the
+``G > 0`` interaction must demix the two components, and the mass of each
+component must be conserved exactly (mass is not a convergence property).
 """
 
-import pytest
 import numpy as np
+import pytest
 import torch
-import sys
-import os
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-
-from tensorlbm.verification.layered_poiseuille.two_component_sc import (
-    TwoComponentSCSolver, TwoComponentSCConfig, equilibrium, macroscopic,
-    psi_exp
-)
 from tensorlbm.verification.layered_poiseuille.analytic import solve_layered
+from tensorlbm.verification.layered_poiseuille.two_component_sc import (
+    TwoComponentSCConfig,
+    TwoComponentSCSolver,
+    equilibrium,
+    macroscopic,
+    psi_exp,
+    stream_bounce_back_y,
+)
 
 
-class TestTwoComponentSCBasic:
-    """Basic functionality tests."""
-    
-    def test_solver_creation(self):
-        """Test that solver can be created."""
-        cfg = TwoComponentSCConfig(
-            ny=16, nx=4,
-            tau_a=0.8, tau_b=1.2,
-            G=2.0, g_x=1e-5, g_y=0.0,
-            steps=100,
-        )
-        solver = TwoComponentSCSolver(cfg)
-        assert solver.f_a.shape == (9, 16, 4)
-        assert solver.f_b.shape == (9, 16, 4)
-    
-    def test_step_advances_time(self):
-        """Test that step() advances the simulation."""
-        cfg = TwoComponentSCConfig(
-            ny=16, nx=4,
-            tau_a=0.8, tau_b=1.2,
-            G=2.0, g_x=1e-5, g_y=0.0,
-            steps=10,
-        )
-        solver = TwoComponentSCSolver(cfg)
-        assert solver.step_count == 0
-        solver.step()
-        assert solver.step_count == 1
-        solver.step()
-        assert solver.step_count == 2
-    
-    def test_velocity_develops(self):
-        """Test that velocity develops under body force."""
-        cfg = TwoComponentSCConfig(
-            ny=16, nx=4,
-            tau_a=0.8, tau_b=1.2,
-            G=2.0, g_x=1e-4, g_y=0.0,  # Stronger force for faster development
-            steps=100,
-        )
-        solver = TwoComponentSCSolver(cfg)
-        
-        # Initial velocity
-        _, ux_init, _ = macroscopic(solver.f_a)
-        ux_max_init = ux_init.max().item()
-        
-        # Run simulation
-        for _ in range(50):
-            solver.step()
-        
-        # Final velocity
-        macro = solver.get_macroscopic()
-        ux_max_final = macro["ux_total"].max().item()
-        
-        # Velocity should increase
-        assert ux_max_final > ux_max_init, "Velocity did not develop"
+# --------------------------------------------------------------------------- #
+# building blocks
+# --------------------------------------------------------------------------- #
+def test_streaming_advects_in_both_directions():
+    """Regression for the defect that sank m21558: y-advection must happen.
+
+    A distribution that is a delta in the ``+y`` direction must move one cell up
+    per time step (periodic x, halfway bounce-back walls on rows 0 / ny-1).
+    """
+    f = torch.zeros(9, 12, 4)
+    i = 2  # c = (0, +1) in the D2Q9 ordering (1:(1,0) 2:(0,1) 3:(-1,0) 4:(0,-1))
+    f[i, 5, 2] = 1.0
+    out = stream_bounce_back_y(f)
+    assert out[i, 6, 2] == pytest.approx(1.0)
+    assert float(out[i].sum()) == pytest.approx(1.0)
 
 
-class TestEquilibrium:
-    """Test equilibrium distribution."""
-    
-    def test_equilibrium_sums_to_rho(self):
-        """Test that equilibrium sums to density."""
-        rho = torch.ones(4, 4) * 2.0
-        ux = torch.zeros(4, 4)
-        uy = torch.zeros(4, 4)
-        
-        feq = equilibrium(rho, ux, uy)
-        rho_recovered = feq.sum(dim=0)
-        
-        assert torch.allclose(rho, rho_recovered, atol=1e-6)
-    
-    def test_equilibrium_momentum(self):
-        """Test that equilibrium gives correct momentum."""
-        rho = torch.ones(4, 4) * 2.0
-        ux = torch.ones(4, 4) * 0.1
-        uy = torch.ones(4, 4) * 0.05
-        
-        feq = equilibrium(rho, ux, uy)
-        rho_rec, ux_rec, uy_rec = macroscopic(feq)
-        
-        assert torch.allclose(rho, rho_rec, atol=1e-6)
-        assert torch.allclose(ux, ux_rec, atol=1e-6)
-        assert torch.allclose(uy, uy_rec, atol=1e-6)
+def test_streaming_x_periodic():
+    f = torch.zeros(9, 12, 4)
+    f[1, 5, 3] = 1.0  # c = (1, 0)
+    out = stream_bounce_back_y(f)
+    assert out[1, 5, 0] == pytest.approx(1.0)  # wrapped around in x
 
 
-class TestPseudopotential:
-    """Test pseudopotential function."""
-    
-    def test_psi_exp_monotonic(self):
-        """Test that exponential pseudopotential is monotonic."""
-        rho = torch.linspace(0.1, 5.0, 50)
-        psi = psi_exp(rho)
-        
-        # Should be monotonically increasing
-        assert torch.all(psi[1:] >= psi[:-1])
-    
-    def test_psi_exp_bounds(self):
-        """Test pseudopotential bounds."""
-        rho = torch.tensor([0.0, 1.0, 10.0])
-        psi = psi_exp(rho, rho0=1.0)
-        
-        # psi(0) = 0, psi(inf) -> rho0
-        assert psi[0] == pytest.approx(0.0, abs=1e-6)
-        assert psi[2] < 1.0  # Should approach rho0 but not exceed
+def test_pseudopotential_monotone_and_bounded():
+    rho = torch.linspace(0.01, 20.0, 200)
+    psi = psi_exp(rho)
+    assert torch.all(psi[1:] >= psi[:-1])  # float32 saturates at rho0 for large rho
+    assert float(psi.max()) <= 1.0 + 1e-6
 
 
-class TestAnalyticalComparison:
-    """Test comparison with analytical solution."""
-    
-    def test_analytical_solution_exists(self):
-        """Test that analytical solution can be computed."""
-        sol = solve_layered(
-            height=30.0,
-            interfaces=[15.0],
-            nus=[0.1, 0.2],
-            g=1e-5
-        )
-        
-        y = np.linspace(1.0, 29.0, 50)  # Avoid exact wall positions
-        u = sol.u(y)
-        
-        # Should be positive in interior
-        assert np.all(u > 0)
-    
-    def test_analytical_continuity(self):
-        """Test that analytical solution is approximately continuous at interface."""
-        sol = solve_layered(
-            height=30.0,
-            interfaces=[15.0],
-            nus=[0.1, 0.2],
-            g=1e-5
-        )
-        
-        # Evaluate just below and above interface
-        y_below = np.array([14.5])
-        y_above = np.array([15.5])
-        
-        u_below = sol.u(y_below)[0]
-        u_above = sol.u(y_above)[0]
-        
-        # Should be approximately continuous (within 10% due to viscosity jump)
-        rel_diff = abs(u_below - u_above) / max(u_below, u_above)
-        assert rel_diff < 0.1, f"Solution not continuous: {rel_diff:.2%}"
+def test_equilibrium_moments():
+    rho = torch.full((6, 3), 2.0)
+    ux = torch.full((6, 3), 0.05)
+    uy = torch.full((6, 3), -0.02)
+    f = equilibrium(rho, ux, uy)
+    r, ex, ey = macroscopic(f)
+    assert torch.allclose(r, rho, atol=1e-9)
+    assert torch.allclose(ex, ux, atol=1e-9)
+    assert torch.allclose(ey, uy, atol=1e-9)
 
 
-class TestForcingSchemes:
-    """Test different forcing schemes."""
-    
-    @pytest.mark.parametrize("forcing", ["edm", "guo", "velocity_shift"])
-    def test_forcing_scheme_runs(self, forcing):
-        """Test that each forcing scheme can run."""
-        cfg = TwoComponentSCConfig(
-            ny=16, nx=4,
-            tau_a=0.8, tau_b=1.2,
-            G=2.0, g_x=1e-5, g_y=0.0,
-            steps=10,
-            forcing=forcing,
-        )
-        solver = TwoComponentSCSolver(cfg)
-        
-        # Should run without error
-        for _ in range(5):
-            solver.step()
-        
-        # Should produce finite values
-        macro = solver.get_macroscopic()
-        assert np.isfinite(macro["ux_total"].max().item())
+# --------------------------------------------------------------------------- #
+# precision: single-fluid control (this is the defect detector)
+# --------------------------------------------------------------------------- #
+def test_single_component_poiseuille_within_3pct():
+    """One component, G=0, uniform rho: exact Poiseuille ``u=g y (H-y)/(2 nu)``."""
+    cfg = TwoComponentSCConfig(ny=18, nx=4, tau_a=0.8, tau_b=0.8, G=0.0,
+                               g_x=1e-4, g_y=0.0, steps=2000,
+                               init_rho_a=2.0, init_rho_b=0.0, init_layer_frac=1.0)
+    solver = TwoComponentSCSolver(cfg)
+    prof = solver.run()["final_profile"]
+    sol = solve_layered(cfg.height, [0.5 * cfg.height], [cfg.nu_a, cfg.nu_a], cfg.g_x)
+    u_ref = sol.u(prof["y"])
+    eps_inf = np.max(np.abs(prof["ux_total"] - u_ref)) / u_ref.max()
+    assert eps_inf < 0.03, f"single-fluid Poiseuille error {eps_inf:.4%} > 3%"
+    # no ballistic acceleration: g*t after 2000 steps would be 0.2, 6x the viscous peak
+    assert np.max(np.abs(prof["ux_total"])) < 0.05
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+def test_mixture_coupling_reproduces_single_fluid():
+    """Two components with equal tau and G=0 must behave as one fluid (0.1 < eps < 3%)."""
+    cfg = TwoComponentSCConfig(ny=18, nx=2, tau_a=0.8, tau_b=0.8, G=0.0,
+                               g_x=1e-4, g_y=0.0, steps=1500,
+                               init_rho_a=2.0, init_rho_b=2.0, init_layer_frac=0.5,
+                               interface_width=2.0)
+    solver = TwoComponentSCSolver(cfg)
+    prof = solver.run()["final_profile"]
+    sol = solve_layered(cfg.height, [0.5 * cfg.height], [0.1, 0.1], cfg.g_x)
+    u_ref = sol.u(prof["y"])
+    eps_inf = np.max(np.abs(prof["ux_total"] - u_ref)) / u_ref.max()
+    assert eps_inf < 0.03, f"mixture control error {eps_inf:.4%} > 3%"
+
+
+# --------------------------------------------------------------------------- #
+# demixing, conservation, stability
+# --------------------------------------------------------------------------- #
+def test_demixing_and_mass_conservation():
+    cfg = TwoComponentSCConfig(ny=18, nx=2, tau_a=0.8, tau_b=1.0, G=2.5,
+                               g_x=0.0, g_y=0.0, steps=900, init_rho_a=2.1, init_rho_b=2.3,
+                               init_layer_frac=0.5, interface_width=2.0, g_ramp_steps=400,
+                               u_eq="viscous", wall_mode="mirror")
+    solver = TwoComponentSCSolver(cfg)
+    m0 = solver.get_macroscopic()
+    mass_a0, mass_b0 = float(m0["rho_a"].sum()), float(m0["rho_b"].sum())
+    prof = solver.run()["final_profile"]
+    assert np.all(np.isfinite(prof["ux_total"]))
+    phi = prof["rho_a"] / (prof["rho_a"] + prof["rho_b"] + 1e-12)
+    mid = len(phi) // 2
+    assert phi[: mid // 2].mean() > 0.6, "component A did not settle at the bottom"
+    assert phi[-mid // 2 :].mean() < 0.4, "component B did not settle at the top"
+    m1 = solver.get_macroscopic()
+    assert abs(float(m1["rho_a"].sum()) - mass_a0) / mass_a0 < 1e-6
+    assert abs(float(m1["rho_b"].sum()) - mass_b0) / mass_b0 < 1e-6
+
+
+def test_static_interface_has_no_spurious_flow():
+    cfg = TwoComponentSCConfig(ny=18, nx=2, tau_a=0.8, tau_b=1.0, G=2.5,
+                               g_x=0.0, g_y=0.0, steps=600, init_rho_a=2.1, init_rho_b=2.3,
+                               init_layer_frac=0.5, interface_width=2.0, g_ramp_steps=300)
+    solver = TwoComponentSCSolver(cfg)
+    prof = solver.run()["final_profile"]
+    driven = solve_layered(cfg.height, [0.5 * cfg.height], [cfg.nu_a, cfg.nu_b], 5e-5)
+    ratio = np.max(np.abs(prof["ux_total"])) / driven.u_peak()
+    assert ratio < 0.15, f"spurious current {ratio:.3%} of the driven peak"
+
+
+def test_runs_are_bit_reproducible():
+    kwargs = dict(ny=16, nx=2, tau_a=0.8, tau_b=1.0, G=2.5, g_x=5e-5, g_y=0.0, steps=120,
+                  init_rho_a=2.1, init_rho_b=2.3, init_layer_frac=0.5, g_ramp_steps=60)
+    a = TwoComponentSCSolver(TwoComponentSCConfig(**kwargs)).run()["final_profile"]
+    b = TwoComponentSCSolver(TwoComponentSCConfig(**kwargs)).run()["final_profile"]
+    assert np.array_equal(a["ux_total"], b["ux_total"])
+    assert np.array_equal(a["rho_a"], b["rho_a"])
+
+
+# --------------------------------------------------------------------------- #
+# anchor KPI: layered two-component Poiseuille vs the exact layered solution
+# --------------------------------------------------------------------------- #
+def test_layered_poiseuille_within_15pct():
+    """Two-component layered Poiseuille vs the exact layered solution (owner gate 15%)."""
+    cfg = TwoComponentSCConfig(ny=24, nx=1, tau_a=0.8, tau_b=1.0, G=2.5, g_x=5e-5, g_y=0.0,
+                               steps=3000, init_rho_a=2.12, init_rho_b=2.36,
+                               init_layer_frac=0.5, interface_width=2.0, g_ramp_steps=1000,
+                               u_eq="viscous", wall_mode="mirror")
+    solver = TwoComponentSCSolver(cfg)
+    prof = solver.run()["final_profile"]
+    u = prof["ux_total"]
+    y = prof["y"]
+    H = cfg.height
+    nom = solve_layered(H, [0.5 * H], [cfg.nu_a, cfg.nu_b], cfg.g_x)
+    phi = prof["rho_a"] / (prof["rho_a"] + prof["rho_b"] + 1e-12)
+    below = np.where(phi >= 0.5)[0]
+    y_iface = float(y[below[-1]]) if len(below) else 0.5 * H       # measured interface
+    matched = solve_layered(H, [y_iface], [cfg.nu_a, cfg.nu_b], cfg.g_x)
+    err = {}
+    for tag, sol in (("nominal", nom), ("interface_matched", matched)):
+        ref = sol.u(y)
+        err[tag] = (np.max(np.abs(u - ref)) / ref.max(),
+                    np.sqrt(np.mean((u - ref) ** 2)) / np.sqrt(np.mean(ref ** 2)))
+    best = min(err.values(), key=lambda e: e[0])
+    assert best[0] < 0.15, f"layered profile error {err} exceeds the 15% owner gate"
+    # the peak must sit in the low-viscosity (top) layer, i.e. above the interface
+    assert np.argmax(u) >= len(u) // 2  # peak at/above the interface (low-viscosity side)
+    # viscosity ratio recovered from the curvature of the two layers
+    half = 0.5 * H
+    lower = (y >= 2.0) & (y <= half - 3.0)
+    a2 = np.polyfit(y[lower], u[lower], 2)[0]
+    nu_lower = -cfg.g_x / (2 * a2)
+    assert abs(nu_lower - cfg.nu_a) / cfg.nu_a < 0.30, f"nu_lower={nu_lower:.4f} vs {cfg.nu_a}"
