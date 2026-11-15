@@ -1,0 +1,74 @@
+{
+  "tag": "dirichlet__th090.0__baseline__xi3",
+  "arm": "dirichlet",
+  "grid": "baseline",
+  "interface_width": 3.0,
+  "theta_prescribed_deg": 90.0,
+  "max_iter": 30000,
+  "iterations": 8800,
+  "converged": true,
+  "drift": 7.697236832290844e-10,
+  "mass_error": 2.4743090187712593e-16,
+  "theta_cap_deg": 85.31570373651999,
+  "theta_circle_deg": 96.48812114851066,
+  "gas_reference": -0.9549940917452091,
+  "gas_supersaturation": 0.045005908254790894,
+  "circle_rms": 0.01636473865808548,
+  "apex_height_r2": 13.43572978031563,
+  "measurable": true,
+  "theta_geodesic_deg": 86.4038618915048,
+  "geodesic_levels": {
+    "lvl35": {
+      "theta_geodesic_deg": 117.27193604874259,
+      "apex_height": 14.36541079213442,
+      "basal_half_width": 23.567576639002226,
+      "n_contour_rows": 14.0,
+      "axis_x": 39.88549018865032,
+      "level": -0.27159912563520716,
+      "basal_fit_order": 3.0
+    },
+    "lvl50": {
+      "theta_geodesic_deg": 86.4038618915048,
+      "apex_height": 13.43572978031563,
+      "basal_half_width": 12.617842202860517,
+      "n_contour_rows": 13.0,
+      "axis_x": 39.88549018865032,
+      "level": 0.021284431269079418,
+      "basal_fit_order": 3.0
+    },
+    "lvl65": {
+      "theta_geodesic_deg": 54.98951577034698,
+      "apex_height": 12.527026549617725,
+      "basal_half_width": 6.519700619318433,
+      "n_contour_rows": 13.0,
+      "axis_x": 39.88549018865032,
+      "level": 0.3141679881733661,
+      "basal_fit_order": 3.0
+    }
+  },
+  "level_spread_deg": 62.282420278395605,
+  "offset_circle": {
+    "theta_mid_deg": 86.4038618915048,
+    "R_circ": 12.642736276360546,
+    "centre_offset": 0.7929935039550826,
+    "theta_offset_pred_deg": {
+      "lvl35": 86.65020360577682,
+      "lvl65": 86.11838261542326
+    },
+    "theta_offset_meas_deg": {
+      "lvl35": 117.27193604874259,
+      "lvl65": 54.98951577034698
+    },
+    "offset_dev_deg": 31.128866845076274
+  },
+  "level_convention": {
+    "mid": 86.4038618915048,
+    "tanh_zero": 87.56307427973681,
+    "gas_min": NaN,
+    "spread_deg": 1.1592123882320067
+  },
+  "apex_height_r3": 13.43572978031563,
+  "basal_half_width": 12.617842202860517,
+  "symmetry_error": 0.2738801743571008,
+  "wall_seconds": 9.630831003189087
+}

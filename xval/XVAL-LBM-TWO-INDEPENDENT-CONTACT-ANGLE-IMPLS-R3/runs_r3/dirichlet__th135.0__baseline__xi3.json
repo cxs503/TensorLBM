@@ -1,0 +1,72 @@
+{
+  "tag": "dirichlet__th135.0__baseline__xi3",
+  "arm": "dirichlet",
+  "grid": "baseline",
+  "interface_width": 3.0,
+  "theta_prescribed_deg": 135.0,
+  "max_iter": 30000,
+  "iterations": 23600,
+  "converged": true,
+  "drift": 9.875536777226301e-10,
+  "mass_error": 6.02787735852586e-16,
+  "theta_cap_deg": 146.53422944063047,
+  "theta_circle_deg": 146.79855897289923,
+  "gas_reference": -0.964300927135266,
+  "gas_supersaturation": 0.03569907286473395,
+  "circle_rms": 0.0050525164769167265,
+  "apex_height_r2": 26.945660394577683,
+  "measurable": true,
+  "theta_geodesic_deg": 14.527192791419177,
+  "geodesic_levels": {
+    "lvl35": {
+      "theta_geodesic_deg": 27.001538360514548,
+      "apex_height": 27.894970972898363,
+      "basal_half_width": 6.697386083770138,
+      "n_contour_rows": 28.0,
+      "axis_x": 39.981340073806166,
+      "level": -0.26588662805686303,
+      "basal_fit_order": 3.0
+    },
+    "lvl50": {
+      "theta_geodesic_deg": 14.527192791419177,
+      "apex_height": 26.945660394577683,
+      "basal_half_width": 3.434418901189408,
+      "n_contour_rows": 26.0,
+      "axis_x": 39.981340073806166,
+      "level": 0.033433785833881235,
+      "basal_fit_order": 3.0
+    },
+    "lvl65": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": 25.993198088634877,
+      "basal_half_width": -0.4331678148789371,
+      "n_contour_rows": 24.0,
+      "axis_x": 39.981340073806166,
+      "level": 0.3327541997246255,
+      "basal_fit_order": 3.0
+    }
+  },
+  "level_spread_deg": NaN,
+  "offset_circle": {
+    "theta_mid_deg": 14.527192791419177,
+    "R_circ": 13.691700935955552,
+    "centre_offset": 13.253959458622132,
+    "theta_offset_pred_deg": {
+      "lvl35": 24.967485840370934
+    },
+    "theta_offset_meas_deg": {
+      "lvl35": 27.001538360514548
+    },
+    "offset_dev_deg": 2.0340525201436144
+  },
+  "level_convention": {
+    "mid": 14.527192791419177,
+    "tanh_zero": 18.07489040494683,
+    "gas_min": NaN,
+    "spread_deg": 3.547697613527655
+  },
+  "apex_height_r3": 26.945660394577683,
+  "basal_half_width": 3.434418901189408,
+  "symmetry_error": 0.3295174965081762,
+  "wall_seconds": 25.302743196487427
+}
