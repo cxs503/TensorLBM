@@ -89,6 +89,10 @@ def tensorlbm_velocities(lattice: str) -> np.ndarray:
         from tensorlbm.d3q19 import C  # noqa: PLC0415
 
         return C.numpy().astype(int)
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import C  # noqa: PLC0415
+
+        return C.detach().cpu().numpy().astype(int)
     raise ValueError(f"unsupported lattice {lattice!r}")
 
 
@@ -154,7 +158,33 @@ _MONOMIALS_D3Q19 = [
     "x**2*z**2",
     "y**2*z**2",
 ]
-_MONOMIALS = {"D2Q9": _MONOMIALS_D2Q9, "D3Q19": _MONOMIALS_D3Q19}
+_MONOMIALS_D3Q27 = [
+    "*".join(p for p in (a, b, c) if p) or "1"
+    for c in ("", "z", "z**2")
+    for b in ("", "y", "y**2")
+    for a in ("", "x", "x**2")
+]
+_MONOMIALS = {"D2Q9": _MONOMIALS_D2Q9, "D3Q19": _MONOMIALS_D3Q19,
+              "D3Q27": _MONOMIALS_D3Q27}
+
+
+def _small_rational(value: float, max_denom: int = 64) -> "sp.Rational":
+    """Nearest rational with a small denominator (moment coefficients are 0,±1,±2,±3,±1/3,...).
+
+    ``Rational(float).limit_denominator`` happily returns a huge denominator that
+    merely reproduces the float, which defeats the purpose of an *exact* basis;
+    searching small denominators first keeps the reconstruction exact.
+    """
+    import sympy as _sp  # noqa: PLC0415
+
+    best = value
+    best_err = abs(value - best)
+    for q in range(1, max_denom + 1):
+        cand = round(value * q) / q
+        err = abs(value - cand)
+        if err < best_err:
+            best, best_err = cand, err
+    return _sp.Rational(best).limit_denominator(max_denom)
 
 
 def moment_polynomials_from_matrix(matrix: np.ndarray, lattice: str) -> list[sp.Expr]:
@@ -178,13 +208,33 @@ def moment_polynomials_from_matrix(matrix: np.ndarray, lattice: str) -> list[sp.
     )
     if vandermonde.det() == 0:
         raise ValueError("monomial basis is not unisolvent on this stencil")
-    inv = vandermonde.inv()
+    if len(vel) <= 19:
+        inv = vandermonde.inv()
+        polys = []
+        for row in matrix:
+            rhs = sp.Matrix([sp.nsimplify(float(x), rational=True) for x in row])
+            coeffs = inv * rhs
+            poly = sp.expand(sum(c * b for c, b in zip(coeffs, basis)))
+            polys.append(poly)
+        return polys
+    # D3Q27: a symbolic 27x27 inverse is needlessly slow, and the coefficients
+    # are recovered to machine precision anyway by an exact-in-spirit float
+    # solve followed by rational reconstruction; the residual check below makes
+    # the reconstruction auditable instead of assumed.
+    import builtins  # noqa: PLC0415
+    import sympy as _sp  # noqa: PLC0415
+
+    vand_float = np.array(
+        [[float(_sp.expand(b.subs(s))) for b in basis] for s in subs], dtype=np.float64
+    )
     polys = []
     for row in matrix:
-        rhs = sp.Matrix([sp.nsimplify(float(x), rational=True) for x in row])
-        coeffs = inv * rhs
-        poly = sp.expand(sum(c * b for c, b in zip(coeffs, basis)))
-        polys.append(poly)
+        coeffs = np.linalg.solve(vand_float, np.asarray(row, dtype=np.float64))
+        recon = vand_float @ coeffs
+        if np.max(np.abs(recon - np.asarray(row, dtype=np.float64))) > 1e-10:
+            raise ValueError(f"moment row reconstruction failed: {row[:5]}")
+        rat = [float(c) for c in coeffs]  # float coefficients: residual is checked above
+        polys.append(_sp.expand(builtins.sum(c * b for c, b in zip(rat, basis))))
     return polys
 
 
@@ -197,10 +247,13 @@ class PointwiseReference:
     Parameters
     ----------
     lattice:
-        ``"D2Q9"`` or ``"D3Q19"``.
+        ``"D2Q9"``, ``"D3Q19"`` or ``"D3Q27"``.
     model:
-        ``"srt"``, ``"trt"``, ``"mrt"`` (lbmpy ``create_mrt_raw`` default basis)
-        or ``"mrt_from_matrix"`` (basis reconstructed from a supplied M matrix).
+        ``"srt"``, ``"trt"``, ``"mrt"`` (lbmpy ``create_mrt_raw`` default basis),
+        ``"mrt_from_matrix"`` (basis reconstructed from a supplied M matrix),
+        ``"cumulant"`` (Geier 2015 default polynomial cumulant set) or
+        ``"cumulant_discrete_eq"`` (same relaxation, discrete-Maxwellian
+        equilibrium).
     params:
         model parameters, see :func:`build`.
     """
@@ -271,6 +324,26 @@ def build(lattice: str, model: str, **params: Any):
             st, eq, {poly: float(rate) for poly, rate in zip(polys, rates)},
             conserved_quantity_computation=cqc,
         )
+    if model == "cumulant":
+        # Geier 2015 default polynomial cumulant set; a single relaxation rate
+        # sets the shear viscosity and every other cumulant group relaxes with 1
+        # (exactly the TensorLBM ``collide_cumulant_geier_d3q27`` default
+        # omega_b = omega_odd = omega_even = 1).
+        rates = params.get("relaxation_rates", [1.0 / params["tau"]])
+        return creation.create_with_default_polynomial_cumulants(st, rates)
+    if model == "cumulant_discrete_eq":
+        # Same cumulant relaxation as ``cumulant`` but the *discrete* 2nd-order
+        # Maxwellian of the repo is used as the equilibrium, which is the only
+        # equilibrium convention under which the equilibrium cumulants of the
+        # two implementations can coincide term by term.
+        creation_mod = creation
+        momentbase = _require("lbmpy.methods.momentbased.cumulantbasedmethod")
+        rates = params.get("relaxation_rates", [1.0 / params["tau"]])
+        groups = momentbase.cascaded_moment_sets_literature(st)
+        rr_dict = creation_mod._get_relaxation_info_dict(rates, groups, st.D, True)
+        eq_mod = _require("lbmpy.equilibrium")
+        eq = eq_mod.DiscreteHydrodynamicMaxwellian(st, order=2, compressible=True)
+        return momentbase.CumulantBasedLbMethod(st, eq, rr_dict)
     raise ValueError(f"unknown model {model!r}")
 
 
