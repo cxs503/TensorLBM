@@ -95,6 +95,29 @@ ERRATA = {
 
 
 # --------------------------------------------------------------------------- #
+# target-column quarantine policy
+# --------------------------------------------------------------------------- #
+# A cell may be quarantined only when the OCR token is provably corrupt *and* the
+# paper's own neighbouring rows bracket the true value, so the damage is bounded
+# without inventing a number.  Quarantined cells are excluded from the scored rows
+# and exported in ``quarantined`` with their admissible interval.
+QUARANTINE = {
+    ("I", "3200", 0.4531): {
+        "kind": "lost_decimal_point",
+        "ocr_token": "-0.86636",
+        "admissible_interval": [-0.24427, -0.04272],   # bracketing rows, Re=3200
+        "reconstructed_as": -0.06636,
+        "why": "the OCR layer drops a decimal point ('-0.86636' for '-0.06636'); "
+               "the bracketing rows y=0.5 (-0.04272) and y=0.2813 (-0.24427) make "
+               "|u|>0.24 impossible at y=0.4531.  The reconstructed value lies inside "
+               "the bracket, but it is NOT used for scoring: the row is dropped from "
+               "u_re3200 and exported here with its interval.",
+        "scored": False,
+    },
+}
+
+
+# --------------------------------------------------------------------------- #
 # parsing
 # --------------------------------------------------------------------------- #
 def parse_copy(path: Path) -> dict:
@@ -235,7 +258,13 @@ def compare_library(table: dict, which: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="verify only, do not write the JSON")
+    ap.add_argument("--re", default=TARGET_RE,
+                    choices=RES, help="Ghia column to admit (default: %(default)s)")
+    ap.add_argument("--out", default=None,
+                    help="output JSON (default: reference/ghia_re<RE>_reference.json)")
     args = ap.parse_args()
+    target = str(args.re)
+    out_json = Path(args.out) if args.out else REF_DIR / f"ghia_re{target}_reference.json"
 
     t1_path = REF_DIR / "copy_tableI_u_gist.txt"
     t2_path = REF_DIR / "copy_tableII_v_pinn.txt"
@@ -266,14 +295,37 @@ def main() -> int:
                                   "pass": all(c["pass"] for c in mat_check.values())}
 
     # gates: witness complete, no unexplained library discrepancy, Re=5000 column clean
+    def _quarantined(which, coord):
+        return any(k[0] == which and k[1] == target and abs(k[2] - coord) < 1e-9
+                   for k in QUARANTINE)
+
+    quarantined_cells, admissible = [], {}
     tgt = {}
     for key, tab, which in (("table_I_u", tab1, "I"), ("table_II_v", tab2, "II")):
-        loose = [c for c in checks[key]["witness"]["one_glyph_diff"] if str(c["re"]) == TARGET_RE]
+        loose_all = [c for c in checks[key]["witness"]["one_glyph_diff"]
+                     if str(c["re"]) == target]
         # only *gross* excursions matter in the scored column: the profiles legitimately
         # overshoot between sparsely tabulated extrema by up to a few 1e-3
-        brack = [c for c in checks[key]["bracket"]
-                 if str(c["re"]) == TARGET_RE and c["excess"] > 0.05]
-        tgt[key] = {"re": int(TARGET_RE), "one_glyph_diff": loose, "bracket_violations": brack,
+        brack_all = [c for c in checks[key]["bracket"]
+                     if str(c["re"]) == target and c["excess"] > 0.05]
+        loose = [c for c in loose_all if not _quarantined(which, c["coord"])]
+        brack = [c for c in brack_all if not _quarantined(which, c["coord"])]
+        for k, info in QUARANTINE.items():
+            if k[0] != which or k[1] != target:
+                continue
+            col = tab["cols"][target]
+            idx = min(range(len(tab["coord"])), key=lambda i: abs(tab["coord"][i] - k[2]))
+            as_tab = col[idx]
+            lo, hi = info["admissible_interval"]
+            admissible[f"{which}@{k[2]:g}"] = {
+                "as_transcribed": as_tab,
+                "inside_bracket": bool(lo <= as_tab <= hi),
+                "interval": [lo, hi],
+            }
+            quarantined_cells.append({"table": which, "re": int(target), "coord": k[2],
+                                      **info})
+        tgt[key] = {"re": int(target), "one_glyph_diff": loose, "bracket_violations": brack,
+                    "quarantined": [c for c in quarantined_cells if c["table"] == which],
                     "pass": not loose and not brack}
     checks["target_column_clean"] = tgt
 
@@ -287,17 +339,21 @@ def main() -> int:
         "third_copy_lowRe": checks["third_copy_lowRe"]["pass"],
     }
 
-    u_rows = [[c, v] for c, v in zip(tab1["coord"], tab1["cols"][TARGET_RE])]
-    v_rows = [[c, v] for c, v in zip(tab2["coord"], tab2["cols"][TARGET_RE])]
+    def _scored_rows(tab, which):
+        return [[c, v] for c, v in zip(tab["coord"], tab["cols"][target])
+                if not _quarantined(which, c)]
+
+    u_rows = _scored_rows(tab1, "I")
+    v_rows = _scored_rows(tab2, "II")
     payload = {
-        "case": "cavity_re5000_ghia",
+        "case": f"cavity_re{int(float(target))}_ghia",
         "source": "U. Ghia, K. N. Ghia, C. T. Shin, J. Comput. Phys. 48 (1982) 387-411",
         "table": "Table I (u along the vertical centreline x/L=0.5) / Table II (v along the "
-                 "horizontal centreline y/L=0.5), Re = 5000 column",
+                 f"horizontal centreline y/L=0.5), Re = {int(float(target))} column",
         "page": "398-399",
-        "re": float(TARGET_RE),
-        "u_re5000": u_rows,
-        "v_re5000": v_rows,
+        "re": float(target),
+        f"u_re{int(float(target))}": u_rows,
+        f"v_re{int(float(target))}": v_rows,
         "u_columns": {re_k: tab1["cols"][re_k] for re_k in RES},
         "v_columns": {re_k: tab2["cols"][re_k] for re_k in RES},
         "coords": {"u_y": tab1["coord"], "v_x": tab2["coord"]},
@@ -332,6 +388,9 @@ def main() -> int:
                        for k, v in ERRATA.items()],
         },
     }
+    if quarantined_cells:
+        payload["provenance"]["quarantined"] = quarantined_cells
+        payload["provenance"]["quarantine_check"] = admissible
     payload["sha256"] = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
     ok = all(gates.values())
@@ -356,8 +415,9 @@ def main() -> int:
         print("[FAIL] a verification gate failed -- reference NOT written", file=sys.stderr)
         return 1
     if not args.check:
-        OUT_JSON.write_text(json.dumps(payload, indent=1), encoding="utf-8")
-        print(f"[ok] wrote {OUT_JSON.name} sha256={payload['sha256'][:16]}")
+        out_json.parent.mkdir(parents=True, exist_ok=True)
+        out_json.write_text(json.dumps(payload, indent=1), encoding="utf-8")
+        print(f"[ok] wrote {out_json} sha256={payload['sha256'][:16]}")
     return 0
 
 
