@@ -1,0 +1,39 @@
+{
+  "dns": {
+    "n": 32,
+    "steps": 102,
+    "eddy_times": 1.0,
+    "t_lattice": 102.0,
+    "nu": 0.01,
+    "reynolds": 160.0,
+    "ma": 0.08660254037844387,
+    "series_order": 12,
+    "energy_ratio_series": 0.7845756538624986,
+    "enstrophy_ratio_series": 0.8467600380313768,
+    "levels": [
+      {
+        "dt": 1.0,
+        "steps": 102,
+        "energy_ratio_dns": 0.7845738897042542,
+        "enstrophy_ratio_dns": 0.8467019346765827,
+        "energy_rel_err": -2.2485508385239328e-06,
+        "enstrophy_rel_err": -6.861844227923353e-05,
+        "max_rel_err": 6.861844227923353e-05
+      },
+      {
+        "dt": 0.5,
+        "steps": 204,
+        "energy_ratio_dns": 0.7845738897046673,
+        "enstrophy_ratio_dns": 0.8467019346841347,
+        "energy_rel_err": -2.248550311945152e-06,
+        "enstrophy_rel_err": -6.861843336058993e-05,
+        "max_rel_err": 6.861843336058993e-05
+      }
+    ],
+    "series_vs_dns_rel": 6.861844227923353e-05,
+    "dt_refinement_rel": 8.919309735233583e-12,
+    "velocity_l2_rel_pct_series_vs_dns": 0.11440404281487218,
+    "note": "series_vs_dns_rel is the gated Q10 (production dt = 1); dt_refinement_rel = |dt=1 vs dt=1/2| of the DNS decay ratios, i.e. how much of the residual is the DNS time error; velocity_l2_rel_pct_series_vs_dns is informational (field at T, same grid, same layout)",
+    "wall_s": 90.54
+  }
+}
