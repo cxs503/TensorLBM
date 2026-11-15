@@ -91,6 +91,8 @@ __all__ = [
     "dpdx_to_lattice_force",
     "life_force_xy",
     "poiseuille_analytic",
+    "observed_order",
+    "fit_parabola",
 ]
 
 # ---------------------------------------------------------------------------
@@ -481,3 +483,83 @@ class DpdxChannel:
             if delta < tol:
                 return {"converged": True, "delta": delta, "steps": self.steps}
         return {"converged": False, "delta": delta, "steps": self.steps}
+
+# ---------------------------------------------------------------------------
+# verification utilities (round 3)
+# ---------------------------------------------------------------------------
+def observed_order(
+    err_coarse: float,
+    err_fine: float,
+    h_coarse: float,
+    h_fine: float,
+) -> float:
+    """Observed order of accuracy ``p = log(e_coarse/e_fine) / log(h_fine/h_coarse)``.
+
+    ``h`` is a *resolution length*: bigger means better resolved.  For a plane
+    channel that length is the wall distance (``H = ny - 2`` for halfway
+    bounce-back, ``H = ny - 1`` for the node-based regularised closure), **not**
+    ``ny`` and not an assumed number of refinement steps.  The round-2 xval
+    estimated this order as ``log2(e_17 / e_25)``, i.e. it assumed the
+    ``17 -> 25`` grid pair doubles the resolution while ``H`` actually grows by
+    ``24/16 = 1.5``; that under-reports a second-order scheme as
+    ``p = 1.15`` (see ``docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX_R3.md``).
+
+    Raises ``ValueError`` when the errors are not positive or the pair does not
+    refine, so a meaningless order cannot silently reach a report.
+    """
+    e1, e2 = float(err_coarse), float(err_fine)
+    h1, h2 = float(h_coarse), float(h_fine)
+    if not (e1 > 0.0 and e2 > 0.0):
+        raise ValueError(f"errors must be positive, got {e1!r}, {e2!r}")
+    if not (h1 > 0.0 and h2 > h1):
+        raise ValueError(
+            f"h must be a resolution length that grows under refinement: "
+            f"h_coarse={h1!r}, h_fine={h2!r}")
+    return float(np.log(e1 / e2) / np.log(h2 / h1))
+
+
+def fit_parabola(u: np.ndarray, y: np.ndarray) -> dict:
+    """Least-squares parabola fit to a wall-normal profile.
+
+    Returns the *geometric* quantities a wall closure is judged by, so the wall
+    origin is **measured** instead of assumed:
+    ``y_wall`` (lower root), ``y_wall_top`` (upper root), ``h`` (root spread),
+    ``u_max`` (vertex value), ``u_max_target``-independent, and
+    ``rms_residual``.  A closure whose convention is right fits with
+    ``y_wall`` and ``h`` equal to its nominal values to the discretisation
+    error, and the residual then measures the *non-parabolic* part of the
+    discrete solution.
+    """
+    u = np.asarray(u, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    if u.shape != y.shape or u.size < 4:
+        raise ValueError("need matching arrays with >= 4 samples")
+    a, b, c = np.polyfit(y, u, 2)
+    if not a < 0.0:
+        raise ValueError(f"profile is not concave (a={a!r}); no channel solution")
+    # curvature significance: a genuine channel profile has
+    # |a| span^2 ~ 4 u_max, a flat/noisy one has |a| span^2 / max|u| ~ 1e-16.
+    # Without this a nearly flat array still yields "roots" ~1e8 cells away.
+    span = float(y.max() - y.min())
+    scale = float(np.max(np.abs(u)))
+    if scale <= 0.0 or -a * span * span < 1e-6 * scale:
+        raise ValueError(
+            "profile curvature is not significant "
+            f"(|a|*span^2/|u|={-a * span * span / max(scale, 1e-300):.2e})")
+    disc = b * b - 4.0 * a * c
+    if disc <= 0.0:
+        raise ValueError(f"no real wall roots (disc={disc!r})")
+    roots = np.sort((-b + np.array([-1.0, 1.0]) * np.sqrt(disc)) / (2.0 * a))
+    y_bot, y_top = float(roots[0]), float(roots[1])
+    y_vertex = -b / (2.0 * a)
+    u_max = float(a * y_vertex ** 2 + b * y_vertex + c)
+    resid = u - (a * y * y + b * y + c)
+    return {
+        "y_wall": y_bot,
+        "y_wall_top": y_top,
+        "h": y_top - y_bot,
+        "y_vertex": float(y_vertex),
+        "u_max": u_max,
+        "rms_residual": float(np.sqrt(np.mean(resid ** 2))),
+        "rel_l2_residual": float(np.linalg.norm(resid) / np.linalg.norm(u)),
+    }

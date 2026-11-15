@@ -42,7 +42,8 @@ sys.path.insert(0, str(ROOT / "src"))
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from tensorlbm.periodic_channel_dpdx import (  # noqa: E402
+from tensorlbm.periodic_channel_dpdx import (
+    observed_order,  # noqa: E402
     D2Q9_C, FORCE_GUO_HALF_FROZEN, FORCE_SPLIT_GUO, WALL_HALFWAY_BB, WALL_NONE,
     WALL_REGULARISED, DpdxChannel, dpdx_to_lattice_force, equilibrium,
     poiseuille_analytic,
@@ -258,15 +259,23 @@ def main() -> dict:
 
     rep["unit_mapping"] = unit_mapping()
 
-    # grid-refinement order of each validated arm (same target u_max)
+    # grid-refinement order of each validated arm (same target u_max).
+    # Round-3 note: the order must be formed with the *wall distance* H as the
+    # resolution length, never with an assumed factor-2 refinement -- an
+    # ``ny`` 17->25 pair is only 16->24 in H (1.5x) and ``log2`` there reports
+    # a second-order scheme as 1.15 (see the round-3 report and
+    # ``tensorlbm.periodic_channel_dpdx.observed_order``).
     orders = {}
     for name in ("PORT-REG", "PORT-BB"):
+        h = {ny: (float(ny - 2) if name == "PORT-BB" else float(ny - 1))
+             for ny in (17, 33, 65)}
         errs = {ny: steady[f"{name}|U0.02|ny{ny}"]["rel_l2_vs_analytic"]
                 for ny in (17, 33, 65)}
         orders[name] = {
             "rel_l2": errs,
-            "observed_order_17_33": float(np.log2(errs[17] / errs[33])),
-            "observed_order_33_65": float(np.log2(errs[33] / errs[65])),
+            "h": h,
+            "observed_order_17_33": observed_order(errs[17], errs[33], h[17], h[33]),
+            "observed_order_33_65": observed_order(errs[33], errs[65], h[33], h[65]),
         }
     rep["grid_order"] = orders
 
