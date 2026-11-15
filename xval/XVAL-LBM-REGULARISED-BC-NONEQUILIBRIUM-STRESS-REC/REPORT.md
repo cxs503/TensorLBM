@@ -68,6 +68,8 @@
 * 未移植：角点（双法向）分支与 CENTRAL_MOMENTS 分支（OSS_DIFF.md 列明）。
 * 失败模式（实测）：把半程反弹的反射种群取成碰撞后状态会让壁节点形成自反馈回路并数值发散（ny=16,U=0.05,τ=0.8，约 1e2 步 rho 溢出），控制臂固定用到达态（碰撞前）反射，代码注释登记。
 * 工件：`artifacts/{identity,steady,oscillating,summary}.json` + 本报告 + OSS_DIFF.md + PREREG.md。
+* 后续（R4，见 `REPORT_R4.md`）：分辨率阶梯证明二阶收敛（p=1.97），本报告的 2.87%/5.62% 确属分辨率欠账；
+  同时撤回“时间步无关”表述，并把相位指标改为 PREREG 声明的 `|A_ref|>0.1U0` 掩膜（本节数值为未掩膜值）。
 
 ## 8 复现命令
 ```bash

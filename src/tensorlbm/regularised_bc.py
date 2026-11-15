@@ -24,8 +24,15 @@ populations from the *second moment* of the distribution instead:
    ``Q_q = c_q c_q - cs^2 I`` (the second-order Hermite projector).
 
 Step 4 is a projection: it keeps the density, the momentum and ``S`` exactly
-and removes all higher-order (ghost) content -- the property that makes this
-closure second order and time-step independent at a wall.  The algorithm here
+and removes all higher-order (ghost) content.  *Measured* (xval R4, see
+``xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/REPORT_R4.md``): the
+wall error of the oscillating Stokes layer is second order in ``Delta_x/delta``
+(measured exponent 1.81-2.00 over tau in {0.8, 1.0, 1.5}), 0.20 % at
+``delta = 10`` cells; the closure is *not* relaxation-rate independent -- at
+fixed ``delta/Delta_x = 6`` its error spans 0.074 %-6.44 % over
+``tau`` in [0.55, 2.0] (minimum at tau = 1, where BGK is a full relaxation to
+equilibrium), i.e. the ghost-mode removal fixes the wall term but not the
+unsteady error of the scheme around it.  The algorithm here
 is a semantics transplant of ``src/Grid.cpp:386-466`` (``regularisedBC``) and
 its call sites (``src/Grid.cpp:321/333/351/368`` for ``eWall`` / ``eVelocity``
 / ``eFreeSlip`` / ``ePressure``); the OSS C++ code was read, not copied, and
@@ -776,7 +783,15 @@ def _run_oscillating(cfg: ChannelConfig, spec: LatticeSpec) -> dict:
     _, amp_ref = stokes_layer(cfg, y_fluid)
     err = amp - amp_ref
     rel = float(np.linalg.norm(err) / np.linalg.norm(amp_ref))
-    phase_err = float(np.max(np.abs(np.angle(amp / amp_ref))))
+    dphi = np.angle(amp / amp_ref)
+    # Unmasked maximum: dominated by the far field, where |A_ref| -> 0 and the
+    # phase of the ratio is the phase of two numerical zeros (kept for
+    # continuity with the R2 artifacts, NOT a physical error measure).
+    phase_err = float(np.max(np.abs(dphi)))
+    # Preregistered metric: maximum phase error on the support |A_ref| > 0.1 U0
+    # (``PREREG.md`` -> oscillating.phase_max_abs).
+    strong = np.abs(amp_ref) > 0.1 * cfg.u_wall
+    phase_err_masked = float(np.max(np.abs(dphi[strong]))) if strong.any() else float("nan")
     amp_err = float(np.max(np.abs(np.abs(amp) - np.abs(amp_ref))) / np.max(np.abs(amp_ref)))
     transient = float(np.max(np.abs(amp - amp_prev)) / np.max(np.abs(amp)))
     rho, _ = macroscopic(spec, f)
@@ -799,6 +814,7 @@ def _run_oscillating(cfg: ChannelConfig, spec: LatticeSpec) -> dict:
         "l2_rel_complex": rel,
         "amp_max_rel": amp_err,
         "phase_max_abs": phase_err,
+        "phase_max_abs_masked": phase_err_masked,
         "period_to_period_change": transient,
     }
 
