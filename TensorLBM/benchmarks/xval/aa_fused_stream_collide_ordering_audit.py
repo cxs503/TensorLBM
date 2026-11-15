@@ -304,9 +304,21 @@ def _sample_profiles(f, L, wt):
 
 
 def _l2_profile(numeric, y_star, ref, U):
-    vals = np.interp(ref[:, 0], y_star, numeric)
-    vals = np.where(ref[:, 0] >= y_star[-1], numeric[-1], vals)
-    return float(np.sqrt(np.mean((vals - ref[:, 1]) ** 2)) / U)
+    """``L2`` of ``u/U`` vs a normalised reference table (Ghia).
+
+    FIXED 2026-11-15 (m21739): the previous version subtracted the normalised
+    reference from the *dimensional* profile and divided the residual by ``U``
+    afterwards, i.e. it reported ``sqrt(mean((u - u_ghia)^2))/U`` and so
+    inflated every error by a factor ``~1/U`` (=10 for the lid velocity used
+    here).  The normalisation must happen before the subtraction, otherwise a
+    converged cavity scores ``L2 ~ 0.9`` instead of ``~0.09`` and the ``< 15 %``
+    acceptance can never be met by *any* solver.
+    """
+    num = np.asarray(numeric, dtype=float) / U
+    ys = np.asarray(y_star, dtype=float)
+    vals = np.interp(ref[:, 0], ys, num)
+    vals = np.where(ref[:, 0] >= ys[-1], num[-1], vals)
+    return float(np.sqrt(np.mean((vals - ref[:, 1]) ** 2)))
 
 
 ARMS = {
