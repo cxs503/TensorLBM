@@ -102,3 +102,37 @@ Per case (each < 120 s, deterministic — no random seeds involved):
 PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.run_two_component_sc_validation \
     --case layered_r167 --no-figure --out artifacts/xval_two_component_sc_layered_poiseuille_edm
 ```
+
+
+## Round 3 (m21732): benchmark layer, real entry, production callers
+
+The round-2 delivery had implementation, tests and a JSON artifact but no
+reusable ref-vs-got layer, no single entry the machines could point at, and no
+call site outside the validation script itself.  Round 3 adds exactly that:
+
+* `src/tensorlbm/verification/layered_poiseuille/benchmark.py` -- shared scoring
+  layer: drives `run_case_spec` and reshapes the result into an explicit
+  `ref`/`got`/`err`/`threshold`/`pass` table (`kpi_table`), with CSV/markdown
+  writers and a sha256'd JSON payload.  Layer-curvature (`nu_*`) KPIs are
+  reported as *skipped with a reason* when `H < 32` (fit window <= 5 points)
+  instead of being silently dropped.
+* `xval/two_component_sc_layered_poiseuille/run_benchmark.py` -- CLI entry that
+  writes `benchmark.json` / `benchmark.csv` / `benchmark.md` /
+  `benchmark.sha256` and exits non-zero when a gate fails.
+* production callers (grep-able, not tests):
+  `evidence/paper_benchmarks/run_all_benchmarks.py` (`BENCHMARKS` entry),
+  `src/tensorlbm/verification/xval/cases.py` (`XValCase` in `ALL_CASES`),
+  `.github/workflows/multiphase-benchmarks.yml` (CI gate step).
+* `xval/.../make_report_artifacts.py` regenerates the tables in
+  `docs/XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM-BENCHMARK.md` and the
+  figures from the run payloads, so no number is hand-copied.
+
+Round-3 artifact provenance (honest): `benchmark.json` comes from a light-matrix
+run (`H = 22`, 3000 steps, 4 cases) in this worktree;
+`results.json` records `control_single` / `control_mixture` re-run in this
+worktree and the round-2 core records for `layered_r167` / `layered_static`
+(identical code path, deterministic run).  The `core`/`full` matrix re-run
+(adding `layered_r233` and the `H = 48` resolution check, previously not run)
+was submitted to the compute gate as jobs `cj3671` (validation `--matrix full`)
+and `cj3672` (benchmark `--matrix core`) and had not been dispatched when this
+round closed; `--matrix full` remains one command.
