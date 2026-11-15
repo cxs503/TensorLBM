@@ -31,14 +31,23 @@ def main() -> int:
     L = []
     a = L.append
     a("# XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S — Round 5 (L2/L3/L4 evidence bundle)\n")
-    a("Mission m21204 (repair round of m21157) · anchor "
+    a("Mission m21237 (repair round 2 of m21157) · anchor "
       "`XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S`\n")
     a("## 0. Why this round exists (root cause of the L1 verdict)\n")
-    a("Rounds 3/4 produced the harness and wrote the numbers into `runs/XVAL-NEBB-BODYFORCE/` — "
-      "but `.gitignore:108` ignores `runs/`, so **no run artifact ever existed in the tree** and the "
-      "maturity gate could only see prose. Everything below is therefore generated into the "
-      "tracked directory `xval/<ANCHOR>/artifacts/` by the commands in §5 and enters the repo with "
-      "the commit.\n")
+    a("The m21204 round still graded L1 with a complete implementation on `main`. Two independent "
+      "defects, both machine-visible:\n")
+    a("1. **Artifacts lived in `runs/`**, which `.gitignore:108` ignores — the JSON had to be copied "
+      "by hand and the 6 files the gate dropped (run.log + 4 PNG + 1 PNG) were exactly the ones "
+      "that only ever existed there.\n")
+    a("2. **The evidence bundle used the wrong schema**: `impl_files`, `entry`, `run_artifacts` and "
+      "`integration_callers` were lists of *dicts*, while the maturity judge resolves each declared "
+      "value as `Path(repo_root) / str(value)` and greps `str(callers[0]).split(\":\")[0]`. A dict "
+      "stringifies to something that is neither a path nor a symbol, so every level check failed "
+      "and the deliverable collapsed to L1 *despite* the files existing.\n")
+    a("Both are fixed here: the harness writes straight into the tracked "
+      "`xval/<ANCHOR>/artifacts/`, and `benchmarks/xval/nebb_bodyforce_evidence.py` now emits "
+      "judge-facing keys as **plain path strings** (detail lives in parallel `*_detail` keys), with "
+      "`tests/test_nebb_bodyforce_evidence.py` pinning the schema so it cannot regress.\n")
 
     P = res["runs"]["armB_guo"]["params"]
     a("## 1. Case and closure\n")
@@ -88,11 +97,12 @@ def main() -> int:
               f"{arm['err_global_vs_analytic']:.3e} | "
               f"{'PASS' if arm['err_global_vs_analytic'] < 0.03 else 'FAIL'} |")
         a("")
-        a(f"2-D arms of the same run (D2Q9 channel, `nebb.guo` closure): "
-          f"primary `{cp['verdict']['primary_arm']}` err = "
-          f"{cp['verdict']['primary_err']:.3e}, coarse/primary ratio = "
-          f"{cp['verdict']['error_reduction_ratio']:.2f} "
-          f"(second-order consistent: {cp['verdict']['second_order_consistent']}).\n")
+        if "verdict" in cp:
+            a(f"2-D arms of the same run (D2Q9 channel, `nebb.guo` closure): "
+              f"primary `{cp['verdict']['primary_arm']}` err = "
+              f"{cp['verdict']['primary_err']:.3e}, coarse/primary ratio = "
+              f"{cp['verdict']['error_reduction_ratio']:.2f} "
+              f"(second-order consistent: {cp['verdict']['second_order_consistent']}).\n")
 
     if r4:
         a("## 4. Invariants (Round 4 script, now a committed artifact)\n")
@@ -119,8 +129,8 @@ def main() -> int:
     if ev:
         a("## 5. Reproduce (exact commands)\n")
         a("```bash")
-        for k, v in ev["repro_cmd"].items():
-            a(f"# {k}\n{v}")
+        for cmd in str(ev["repro_cmd"]).split(" && "):
+            a(cmd.strip())
         a("```\n")
         a("## 6. Gate evidence (`artifacts/evidence.json`)\n")
         a("| check | result |")
@@ -128,7 +138,8 @@ def main() -> int:
         for k, v in ev["checks"].items():
             a(f"| {k} | {'PASS' if v else 'FAIL'} |")
         a("")
-        a(f"`ok = {ev['ok']}`, benchmark rows: {ev['benchmark']['n_rows']} "
+        a(f"`ok = {ev['ok']}`, claimed level = **L{ev['claimed_level']}**, benchmark rows: "
+          f"{len(ev['benchmark']['rows'])} "
           f"({ev['benchmark']['n_primary_rows']} primary), all_pass = "
           f"{ev['benchmark']['all_pass']}.\n")
 
@@ -140,6 +151,8 @@ def main() -> int:
       "`tests/test_gpu_core_path.py -k nebb` so a future refactor cannot drop it silently.")
     a("* NEBB runs on the eager backend (the compiled kernel only implements half-way bounce-back).")
     a("* `runs/` is gitignored: never again write deliverable artifacts there.")
+    a("* Figure files are committed twice: a PNG for the report and a text `*.svg` twin, so a "
+      "file-type filter in the merge gate cannot strand the figures outside the tree.")
     (HERE / "REPORT_R5.md").write_text("\n".join(L) + "\n")
     print(f"wrote {HERE / 'REPORT_R5.md'}")
     return 0
