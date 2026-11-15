@@ -235,7 +235,7 @@
    "drift_pct": 0.03221854567527771
   }
  ],
- "wall_seconds": 65.32,
+ "wall_seconds": 74.08,
  "label": "tensorlbm_koerner_a16_tau1",
  "vs_mm": {
   "points": [
