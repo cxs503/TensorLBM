@@ -1,0 +1,67 @@
+{
+ "C1_coarse": {
+  "key_round2": "C1_coarse_col60",
+  "dp_max_round2": 0.015063998807235917,
+  "dp_max_reproduced": 0.015063998807235917,
+  "dp_max_abs_delta": 0.0,
+  "profile_max_abs_delta": 0.0,
+  "profile_bitwise_equal": true,
+  "amplitude_err_round2": 0.004985359002372773,
+  "amplitude_err_reproduced": 0.004985359002372773,
+  "drift_round2": 0.0001644332767401382,
+  "drift_reproduced": 0.0001644332767401382,
+  "steps": 5000
+ },
+ "C2_fine": {
+  "key_round2": "C2_fine_col110",
+  "dp_max_round2": 0.008817402160274301,
+  "dp_max_reproduced": 0.008817402160274301,
+  "dp_max_abs_delta": 0.0,
+  "profile_max_abs_delta": 0.0,
+  "profile_bitwise_equal": true,
+  "amplitude_err_round2": 0.0031128438431955677,
+  "amplitude_err_reproduced": 0.0031128438431955677,
+  "drift_round2": 0.0025532254121254545,
+  "drift_reproduced": 0.0025532254121254545,
+  "steps": 8000
+ },
+ "C3_coarse": {
+  "key_round2": "C3_coarse_col60",
+  "dp_max_round2": 0.024426618113074176,
+  "dp_max_reproduced": 0.024426618113074176,
+  "dp_max_abs_delta": 0.0,
+  "profile_max_abs_delta": 0.0,
+  "profile_bitwise_equal": true,
+  "amplitude_err_round2": -0.027802304555577004,
+  "amplitude_err_reproduced": -0.027802304555577004,
+  "drift_round2": 6.709177073182069e-05,
+  "drift_reproduced": 6.709177073182069e-05,
+  "steps": 5000
+ },
+ "C4_fine": {
+  "key_round2": "C4_fine_col110",
+  "dp_max_round2": 0.012231153791465646,
+  "dp_max_reproduced": 0.012231153791465646,
+  "dp_max_abs_delta": 0.0,
+  "profile_max_abs_delta": 0.0,
+  "profile_bitwise_equal": true,
+  "amplitude_err_round2": -0.013138195890828172,
+  "amplitude_err_reproduced": -0.013138195890828172,
+  "drift_round2": 0.00035711032680816327,
+  "drift_reproduced": 0.00035711032680816327,
+  "steps": 8000
+ },
+ "P_inlet_profile": {
+  "key_round2": "P_inlet_profile",
+  "dp_max_round2": 0.04153498736135049,
+  "dp_max_reproduced": 0.04153498736135049,
+  "dp_max_abs_delta": 0.0,
+  "profile_max_abs_delta": 0.0,
+  "profile_bitwise_equal": true,
+  "amplitude_err_round2": 0.03793106006944267,
+  "amplitude_err_reproduced": 0.03793106006944267,
+  "drift_round2": 6.892137719273213e-05,
+  "drift_reproduced": 6.892137719273213e-05,
+  "steps": 5000
+ }
+}
