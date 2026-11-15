@@ -437,6 +437,9 @@ class JobCheckpointManager:
             VolumeTrigger(volume_interval) if volume_interval is not None else None
         )
         self._status: JobStatusRecord | None = None
+        #: Set while an explicit ``begin(force_restart=True)`` re-arms a case,
+        #: which is the only sanctioned way to leave a terminal state.
+        self._rearm = False
         self.receipts: list[CheckpointReceipt] = []
 
     # -- helpers -------------------------------------------------------------
@@ -462,8 +465,17 @@ class JobCheckpointManager:
             updated_at=_utc_now(),
             checkpoints=int(checkpoints),
         )
-        self.status_file.write(record, previous=self._status)
+        previous = self._status
+        if previous is None and not self._rearm:
+            # A manager that never read ``job_status.txt`` must not overwrite the
+            # generation already on disk: MF-LBM consults the status file at
+            # start-up, so an unread terminal state would silently retire (or
+            # resurrect) a case.  Fail closed instead; the sanctioned re-arm is
+            # ``begin(force_restart=True)``.
+            previous = self.status_file.read()
+        self.status_file.write(record, previous=previous)
         self._status = record
+        self._rearm = False
         return record
 
     # -- lifecycle -----------------------------------------------------------
@@ -473,6 +485,7 @@ class JobCheckpointManager:
         existing = None if force_restart else self.status_file.read()
         if force_restart:
             self._status = None
+            self._rearm = True
             existing = None
 
         if existing is None:
