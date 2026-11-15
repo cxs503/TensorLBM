@@ -1,0 +1,1487 @@
+{
+ "schema": "w31-suboff-transcription-verdict/v1",
+ "task_key": "paper-exp-lbm-suboff-tau-15",
+ "mission_id": 22289,
+ "repo": "TensorLBM",
+ "title": "W31 · DTRC SUBOFF 外部锚两族转录冲突的第三方裁决 + 同 Re LBM 对照",
+ "discipline": [
+  "ship-total-performance/resistance/hull-form-drag"
+ ],
+ "generated_by": "benchmarks/w31_suboff_transcription_verdict.py",
+ "generated_utc": "2026-11-15T19:01:56+00:00",
+ "git": {
+  "commit": "d90b11fa43ac001e723d0ff3b18bb169c61c5544",
+  "branch": "agent/m22289"
+ },
+ "prereg": {
+  "decision": "W31 误差表里 AFF-1 与 AFF-8 两个构型分别绑定哪一条转录作为外部锚",
+  "alternatives": [
+   {
+    "id": "H1",
+    "label": "构型口径错配(F2 的 EFD 列是 AFF-8，非 AFF-1)",
+    "prediction": "F2 与 AFF-8 行逐点差 ~0%，与 AFF-1 行差 ~17%，且比值随速度不变"
+   },
+   {
+    "id": "H2",
+    "label": "密度/参考尺度归一化差",
+    "prediction": "比值随 Re 变化，且可由 rho 带(997-1000)或 L^2 尺度因子闭合"
+   },
+   {
+    "id": "H3",
+    "label": "第三方论文按其自有参考面积重标定 EFD 力",
+    "prediction": "比值应为常数但等于附体 own 面积份额量级(~2.6%)"
+   },
+   {
+    "id": "H4",
+    "label": "dC_F(ITTC-78 粗糙度/补贴)是否计入",
+    "prediction": "比值随 Re 显著变化，量级 ~dCF/C_F"
+   }
+  ],
+  "metrics": [
+   "逐点 R_T 相对差 [%]",
+   "比值随速度的散布 sd/mean [%]",
+   "同 Re 的 |dC_T| [%]"
+  ],
+  "baseline_control": "F1 doc 的 AFF-1 行(W30 使用的错配对照) 与同文件的 AFF-8 行(正确对照)",
+  "thresholds": {
+   "gate_pct": 15.0,
+   "band_pct": 3.0,
+   "speed_pair_tol_pct": 1.5
+  },
+  "stopping_rule": "四源齐备即裁决；任一源不可解析则整件不发布(不发布部分结果)",
+  "exclusions": [
+   "verified 层流分支(Re_lattice=1000)不进入同 Re 门",
+   "F4 的第 6 个速度点(见 families.F4_flow360.rows[-1].v_kn)因 F1 无对应速度，只做趋势旁证"
+  ],
+  "environment": "offline worktree(原始 DTRC 报告仍 WITHHELD)；python3 + pytest；无外网",
+  "analysis": "先逐点对表，再以裁决方换算因子的残差判定；比值散布(sd/mean)用于区分 H1 与 H2/H4"
+ },
+ "anchor_grade": {
+  "anchor_id": "lbm-suboff-tau",
+  "anchor_grade": "TRANSCRIBED-SECONDARY",
+  "grade_letter": "C",
+  "acquisition_of_primaries": "WITHHELD(offline; 原始 DTRC 报告不在 worktree)",
+  "source": "benchmarks/anchors/lbm-suboff-tau.json"
+ },
+ "previous_task_conflict": {
+  "w30_artifact": "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json",
+  "w30_q3_id": "Q3_lbm_vs_anchor",
+  "w30_q3_verdict": "不达标",
+  "w30_q3_hypotheses": [
+   {
+    "rank": 1,
+    "hypothesis": "regime mismatch: Re_lattice = 1000 (laminar, Blasius reference) vs anchor Re = 1.2e7..3.5e7 (turbulent). The raw deviation is the Reynolds gap.",
+    "quantitative_support": "raw dev +952..+1462% at Re gap 4.07 decades; after transferring the LBM form factor (1+k) onto the anchor-Re ITTC-57 line the residual shrinks to -32.0..-6.1%, i.e. the bulk of the deviation is the Reynolds number, not the scheme"
+   },
+   {
+    "rank": 1,
+    "hypothesis": "resolution starvation of the wall model: y+_mean 1878..4660 sits far outside the wall-law validity band, so the delivered friction is the *resolved-Re* (1e5) friction, not the anchor-Re friction",
+    "quantitative_support": "C_F_fric/ITTC(anchor Re) = 2.491..2.525 and nearly constant across the five anchors, i.e. a structural wall-chain level error, not a per-anchor drift; dev range +1296..+2963%"
+   },
+   {
+    "rank": 2,
+    "hypothesis": "anchor itself is ambiguous: the two in-repo transcription families differ by 17.0%, larger than the 15% gate, so no simulation can be adjudicated to 15% against it",
+    "quantitative_support": "ratio 1.1698 +- 0.0021"
+   }
+  ],
+  "w30_raw_max_rel_diff_pct_recomputed_denom_F1_bare": 17.17588769611893,
+  "w30_note": "W30 把 F2 配到 F1 的 AFF-1 行，判该配对冲突超门；本件在原配对之外引入第三族 F3 与第三文档 F4"
+ },
+ "constants_from_files": {
+  "rho": 1000.0,
+  "nu": 1.139e-06,
+  "kn_to_ms": 0.514444,
+  "Lmax_m": 4.356,
+  "wsa_m2": 5.998,
+  "re_length": "Lmax",
+  "source": "benchmarks/pending/suboff_highre_resistance/refs_lock.json"
+ },
+ "declared_params": {
+  "gate15_pct": 15.0,
+  "band3_pct": 3.0,
+  "speed_pair_tol_pct": 1.5,
+  "delta_cf_ks_m": 0.00015,
+  "delta_cf_note": "ITTC-78 推荐标准粗糙度 k_s=150um, C_A=[105(k_s/L)^(1/3)-0.64]e-3; 仅用于否证 delta_cf 归因",
+  "appendage_area_share_pct": 2.6,
+  "appendage_area_share_note": "W30 工件登记的仓内附体 own 面积占比(仅作否证 wetted_area 归因的输入)"
+ },
+ "families": {
+  "F1_doc": {
+   "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+   "role": "族 A: Table 14 转录(两构型行)",
+   "grade": "C (TRANSCRIBED-SECONDARY)",
+   "rows_AFF1": [
+    {
+     "v_kn": 5.92,
+     "rt_n": 87.4,
+     "v_ms": 3.04550848,
+     "Re": 11647265.09120281,
+     "CT": 0.0031420662705313055,
+     "CF_ITTC57": 0.00292208264136114,
+     "one_plus_k": 1.0752831648415304
+    },
+    {
+     "v_kn": 10.0,
+     "rt_n": 242.2,
+     "v_ms": 5.14444,
+     "Re": 19674434.275680423,
+     "CT": 0.0030515568154928377,
+     "CF_ITTC57": 0.0026761436818346076,
+     "one_plus_k": 1.1402813818280746
+    },
+    {
+     "v_kn": 11.84,
+     "rt_n": 332.9,
+     "v_ms": 6.09101696,
+     "Re": 23294530.18240562,
+     "CT": 0.002991973287928694,
+     "CF_ITTC57": 0.0026034963544291252,
+     "one_plus_k": 1.1492135500165703
+    },
+    {
+     "v_kn": 13.92,
+     "rt_n": 451.5,
+     "v_ms": 7.16106048,
+     "Re": 27386812.511747144,
+     "CT": 0.0029358009426130047,
+     "CF_ITTC57": 0.002536623993604796,
+     "one_plus_k": 1.1573654392667547
+    },
+    {
+     "v_kn": 16.0,
+     "rt_n": 576.9,
+     "v_ms": 8.231104,
+     "Re": 31479094.841088675,
+     "CT": 0.002839277854784621,
+     "CF_ITTC57": 0.002481122913231741,
+     "one_plus_k": 1.144351954368263
+    },
+    {
+     "v_kn": 17.99,
+     "rt_n": 697.0,
+     "v_ms": 9.25484756,
+     "Re": 35394307.26194908,
+     "CT": 0.0027134246929704847,
+     "CF_ITTC57": 0.002435803421370228,
+     "one_plus_k": 1.1139752367389666
+    }
+   ],
+   "rows_AFF8": [
+    {
+     "v_kn": 5.93,
+     "rt_n": 102.3,
+     "v_ms": 3.05065292,
+     "Re": 11666939.52547849,
+     "CT": 0.0036653341099267284,
+     "CF_ITTC57": 0.002921237284811417,
+     "one_plus_k": 1.2547197480273662
+    },
+    {
+     "v_kn": 10.0,
+     "rt_n": 283.8,
+     "v_ms": 5.14444,
+     "Re": 19674434.275680423,
+     "CT": 0.0035756887871051506,
+     "CF_ITTC57": 0.0026761436818346076,
+     "one_plus_k": 1.3361348313906178
+    },
+    {
+     "v_kn": 11.85,
+     "rt_n": 389.2,
+     "v_ms": 6.0961614,
+     "Re": 23314204.616681296,
+     "CT": 0.0034920741141005783,
+     "CF_ITTC57": 0.0026031406906839756,
+     "one_plus_k": 1.3414849710574173
+    },
+    {
+     "v_kn": 13.92,
+     "rt_n": 526.6,
+     "v_ms": 7.16106048,
+     "Re": 27386812.511747144,
+     "CT": 0.0034241257505648022,
+     "CF_ITTC57": 0.002536623993604796,
+     "one_plus_k": 1.3498751723540932
+    },
+    {
+     "v_kn": 16.0,
+     "rt_n": 675.6,
+     "v_ms": 8.231104,
+     "Re": 31479094.841088675,
+     "CT": 0.003325040940704611,
+     "CF_ITTC57": 0.002481122913231741,
+     "one_plus_k": 1.3401355180641332
+    },
+    {
+     "v_kn": 17.79,
+     "rt_n": 821.1,
+     "v_ms": 9.15195876,
+     "Re": 35000818.57643546,
+     "CT": 0.003268823544760332,
+     "CF_ITTC57": 0.0024400715893025055,
+     "one_plus_k": 1.339642475692578
+    }
+   ],
+   "doc_ratio_claims": [
+    1.1705,
+    1.1691
+   ]
+  },
+  "F2_paper": {
+   "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "role": "族 B: 第三方论文 Table 3 EFD 列(未标构型)",
+   "grade": "C (TRANSCRIBED-SECONDARY; 源论文 PDF 不在 worktree)",
+   "rows": [
+    {
+     "v_kn": 5.9287308239575145,
+     "rt_n": 102.3,
+     "v_ms_stated": 3.05,
+     "quote": "| 3.050 | 102.30 |",
+     "v_ms": 3.05,
+     "Re": 11664442.493415276,
+     "CT": 0.0036669035696661055,
+     "CF_ITTC57": 0.002921344476109731,
+     "one_plus_k": 1.255210948127971
+    },
+    {
+     "v_kn": 9.999144707684414,
+     "rt_n": 283.8,
+     "v_ms_stated": 5.144,
+     "quote": "| 5.144 | 283.80 |",
+     "v_ms": 5.144,
+     "Re": 19672751.53643547,
+     "CT": 0.0035763005174137756,
+     "CF_ITTC57": 0.0026761812383707256,
+     "one_plus_k": 1.3363446638580605
+    },
+    {
+     "v_kn": 11.857461647915029,
+     "rt_n": 389.2,
+     "v_ms_stated": 6.1,
+     "quote": "| 6.100 | 389.20 |",
+     "v_ms": 6.1,
+     "Re": 23328884.98683055,
+     "CT": 0.003487680521295328,
+     "CF_ITTC57": 0.0026028755498213704,
+     "one_plus_k": 1.3399336443629353
+    },
+    {
+     "v_kn": 13.91793859001174,
+     "rt_n": 526.6,
+     "v_ms_stated": 7.16,
+     "quote": "| 7.160 | 526.60 |",
+     "v_ms": 7.16,
+     "Re": 27382756.80421422,
+     "CT": 0.0034251401320700733,
+     "CF_ITTC57": 0.002536684004875832,
+     "one_plus_k": 1.35024312270922
+    },
+    {
+     "v_kn": 15.997853993826345,
+     "rt_n": 675.6,
+     "v_ms_stated": 8.23,
+     "quote": "| 8.230 | 675.60 |",
+     "v_ms": 8.23,
+     "Re": 31474872.695346795,
+     "CT": 0.0033259330649836705,
+     "CF_ITTC57": 0.0024811754911162063,
+     "one_plus_k": 1.340466676739352
+    }
+   ]
+  },
+  "F3_registry": {
+   "path": "src/tensorlbm/suboff_reference_data.py",
+   "role": "族 C(裁决方): 仓内维度力注册表，带构型标签",
+   "grade": "C (TRANSCRIBED-SECONDARY)",
+   "rows_AFF1": [
+    {
+     "tag": "bare_hull",
+     "config": 1,
+     "v_kn": 5.92,
+     "rt_n": 87.4,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 5.92, 87.40)",
+     "v_ms": 3.04550848,
+     "Re": 11647265.09120281,
+     "CT": 0.0031420662705313055,
+     "CF_ITTC57": 0.00292208264136114,
+     "one_plus_k": 1.0752831648415304
+    },
+    {
+     "tag": "bare_hull",
+     "config": 1,
+     "v_kn": 10.0,
+     "rt_n": 242.2,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 10.00, 242.2)",
+     "v_ms": 5.14444,
+     "Re": 19674434.275680423,
+     "CT": 0.0030515568154928377,
+     "CF_ITTC57": 0.0026761436818346076,
+     "one_plus_k": 1.1402813818280746
+    },
+    {
+     "tag": "bare_hull",
+     "config": 1,
+     "v_kn": 11.84,
+     "rt_n": 332.9,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 11.84, 332.9)",
+     "v_ms": 6.09101696,
+     "Re": 23294530.18240562,
+     "CT": 0.002991973287928694,
+     "CF_ITTC57": 0.0026034963544291252,
+     "one_plus_k": 1.1492135500165703
+    },
+    {
+     "tag": "bare_hull",
+     "config": 1,
+     "v_kn": 13.92,
+     "rt_n": 451.5,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 13.92, 451.5)",
+     "v_ms": 7.16106048,
+     "Re": 27386812.511747144,
+     "CT": 0.0029358009426130047,
+     "CF_ITTC57": 0.002536623993604796,
+     "one_plus_k": 1.1573654392667547
+    },
+    {
+     "tag": "bare_hull",
+     "config": 1,
+     "v_kn": 16.0,
+     "rt_n": 576.9,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 16.00, 576.9)",
+     "v_ms": 8.231104,
+     "Re": 31479094.841088675,
+     "CT": 0.002839277854784621,
+     "CF_ITTC57": 0.002481122913231741,
+     "one_plus_k": 1.144351954368263
+    },
+    {
+     "tag": "bare_hull",
+     "config": 1,
+     "v_kn": 17.99,
+     "rt_n": 697.0,
+     "quote": "SuboffTowTankResistancePoint(\"bare_hull\", 1, 17.99, 697.0)",
+     "v_ms": 9.25484756,
+     "Re": 35394307.26194908,
+     "CT": 0.0027134246929704847,
+     "CF_ITTC57": 0.002435803421370228,
+     "one_plus_k": 1.1139752367389666
+    }
+   ],
+   "rows_AFF8": [
+    {
+     "tag": "full",
+     "config": 8,
+     "v_kn": 5.93,
+     "rt_n": 102.3,
+     "quote": "SuboffTowTankResistancePoint(\"full\", 8, 5.93, 102.3)",
+     "v_ms": 3.05065292,
+     "Re": 11666939.52547849,
+     "CT": 0.0036653341099267284,
+     "CF_ITTC57": 0.002921237284811417,
+     "one_plus_k": 1.2547197480273662
+    },
+    {
+     "tag": "full",
+     "config": 8,
+     "v_kn": 10.0,
+     "rt_n": 283.8,
+     "quote": "SuboffTowTankResistancePoint(\"full\", 8, 10.00, 283.8)",
+     "v_ms": 5.14444,
+     "Re": 19674434.275680423,
+     "CT": 0.0035756887871051506,
+     "CF_ITTC57": 0.0026761436818346076,
+     "one_plus_k": 1.3361348313906178
+    },
+    {
+     "tag": "full",
+     "config": 8,
+     "v_kn": 11.85,
+     "rt_n": 389.2,
+     "quote": "SuboffTowTankResistancePoint(\"full\", 8, 11.85, 389.2)",
+     "v_ms": 6.0961614,
+     "Re": 23314204.616681296,
+     "CT": 0.0034920741141005783,
+     "CF_ITTC57": 0.0026031406906839756,
+     "one_plus_k": 1.3414849710574173
+    },
+    {
+     "tag": "full",
+     "config": 8,
+     "v_kn": 13.92,
+     "rt_n": 526.6,
+     "quote": "SuboffTowTankResistancePoint(\"full\", 8, 13.92, 526.6)",
+     "v_ms": 7.16106048,
+     "Re": 27386812.511747144,
+     "CT": 0.0034241257505648022,
+     "CF_ITTC57": 0.002536623993604796,
+     "one_plus_k": 1.3498751723540932
+    },
+    {
+     "tag": "full",
+     "config": 8,
+     "v_kn": 16.0,
+     "rt_n": 675.6,
+     "quote": "SuboffTowTankResistancePoint(\"full\", 8, 16.00, 675.6)",
+     "v_ms": 8.231104,
+     "Re": 31479094.841088675,
+     "CT": 0.003325040940704611,
+     "CF_ITTC57": 0.002481122913231741,
+     "one_plus_k": 1.3401355180641332
+    },
+    {
+     "tag": "full",
+     "config": 8,
+     "v_kn": 17.79,
+     "rt_n": 821.1,
+     "quote": "SuboffTowTankResistancePoint(\"full\", 8, 17.79, 821.1)",
+     "v_ms": 9.15195876,
+     "Re": 35000818.57643546,
+     "CT": 0.003268823544760332,
+     "CF_ITTC57": 0.0024400715893025055,
+     "one_plus_k": 1.339642475692578
+    }
+   ]
+  },
+  "F4_flow360": {
+   "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "role": "补充第三文档: Flow360 DDES 页转录反推 EFD 力",
+   "grade": "D (DERIVED from a secondary transcription)",
+   "rows": [
+    {
+     "v_kn": 5.93,
+     "rt_n": 102.55319148936171,
+     "rt_band_n": 0.10909913988229969,
+     "err_n": -4.82,
+     "err_pct": 4.7,
+     "quote": "| 5.93 | -4.82 | 4.70 |",
+     "v_ms": 3.05065292,
+     "Re": 11666939.52547849,
+     "CT": 0.003674405775638367,
+     "CF_ITTC57": 0.002921237284811417,
+     "one_plus_k": 1.257825167008154
+    },
+    {
+     "v_kn": 10.0,
+     "rt_n": 286.11111111111114,
+     "rt_band_n": 3.9737654320987663,
+     "err_n": 1.03,
+     "err_pct": -0.36,
+     "quote": "| 10.0 | 1.03 | -0.36 |",
+     "v_ms": 5.14444,
+     "Re": 19674434.275680423,
+     "CT": 0.0036048072299725013,
+     "CF_ITTC57": 0.0026761436818346076,
+     "one_plus_k": 1.347015578588537
+    },
+    {
+     "v_kn": 11.85,
+     "rt_n": 397.05882352941177,
+     "rt_band_n": 5.839100346020762,
+     "err_n": 1.35,
+     "err_pct": -0.34,
+     "quote": "| 11.85 | 1.35 | -0.34 |",
+     "v_ms": 6.0961614,
+     "Re": 23314204.616681296,
+     "CT": 0.0035625869461004328,
+     "CF_ITTC57": 0.0026031406906839756,
+     "one_plus_k": 1.3685725703762721
+    },
+    {
+     "v_kn": 13.92,
+     "rt_n": 535.8490566037735,
+     "rt_band_n": 5.055179779280882,
+     "err_n": 2.84,
+     "err_pct": -0.53,
+     "quote": "| 13.92 | 2.84 | -0.53 |",
+     "v_ms": 7.16106048,
+     "Re": 27386812.511747144,
+     "CT": 0.003484266147232885,
+     "CF_ITTC57": 0.002536623993604796,
+     "one_plus_k": 1.373584006150393
+    },
+    {
+     "v_kn": 16.0,
+     "rt_n": 680.0,
+     "rt_band_n": 6.181818181818182,
+     "err_n": -3.74,
+     "err_pct": 0.55,
+     "quote": "| 16.0 | -3.74 | 0.55 |",
+     "v_ms": 8.231104,
+     "Re": 31479094.841088675,
+     "CT": 0.0033466960326807805,
+     "CF_ITTC57": 0.002481122913231741,
+     "one_plus_k": 1.3488634580870493
+    },
+    {
+     "v_kn": 17.79,
+     "rt_n": 824.1379310344828,
+     "rt_band_n": 4.736424891002774,
+     "err_n": -7.17,
+     "err_pct": 0.87,
+     "quote": "| 17.79 | -7.17 | 0.87 |",
+     "v_ms": 9.15195876,
+     "Re": 35000818.57643546,
+     "CT": 0.003280917638650084,
+     "CF_ITTC57": 0.0024400715893025055,
+     "one_plus_k": 1.3445989261273823
+    }
+   ]
+  }
+ },
+ "hypothesis_resolution": [
+  {
+   "hypothesis_ref": "W30 Q3 root_cause_hypotheses rank 2 (anchor itself is ambiguous ... 17.0% > 15% gate)",
+   "status": "REFUTED",
+   "mechanism": "两族差不是锚的固有歧义，而是构型配对错误：F2 的 EFD 列逐字等于 Table 14 的 AFF-8 行(F1/F3 两处独立转录)，按构型配对后残差 0.0%，锚对 AFF-8 与 AFF-1 各自都是确定量的",
+   "evidence_keys": [
+    "arbitration.votes",
+    "conflict_attribution[*].post_conversion_rel_diff_pct",
+    "criteria[C1].measured.post_conversion_max_rel_diff_pct"
+   ]
+  },
+  {
+   "hypothesis_ref": "W30 Q3 rank 2 的支持论据: appendages alone explain only ~2.6% (in-repo appendage share)",
+   "status": "REFUTED",
+   "mechanism": "该 2.6% 是附体 own 湿面积份额(面积口径)，不是阻力份额；Table 14 自身给出的 AFF-8/AFF-1 阻力比即为观测比值，故 17% 与构型差完全相容。附体增阻的摩阻/形状/干扰分解仍 WITHHELD",
+   "evidence_keys": [
+    "arbitration.ratio_stats",
+    "conflict_attribution[0].alternatives_rejected.wetted_area"
+   ]
+  },
+  {
+   "hypothesis_ref": "H4 delta_cf (ITTC-78 roughness allowance) credited as the 17%",
+   "status": "REFUTED",
+   "mechanism": "模型尺度 ITTC-78 dCF 相对 C_F 达 95-112%，量级过大且随 Re 变 18%；观测比值相对散布仅 0.18% 且与速度无关",
+   "evidence_keys": [
+    "conflict_attribution[*].alternatives_rejected.delta_cf",
+    "arbitration.ratio_stats.delta_cf_implied_sd_rel_pct"
+   ]
+  },
+  {
+   "hypothesis_ref": "H1 configuration caliber mismatch (F2 = AFF-8 row)",
+   "status": "CONFIRMED",
+   "mechanism": "F2 与 AFF-8 行逐点差 0.000%(两处独立转录)；第三文档 F4 反推力对 AFF-8 平均差 1.10%、对 AFF-1 平均差 18.26%",
+   "evidence_keys": [
+    "arbitration.votes",
+    "conflict_attribution[*].conversion"
+   ]
+  }
+ ],
+ "three_family_pointwise": [
+  {
+   "pair_index": 1,
+   "F1_AFF1": {
+    "v_kn": 5.92,
+    "rt_n": 87.4,
+    "Re": 11647265.09120281,
+    "CT": 0.0031420662705313055
+   },
+   "F1_AFF8": {
+    "v_kn": 5.93,
+    "rt_n": 102.3,
+    "Re": 11666939.52547849,
+    "CT": 0.0036653341099267284
+   },
+   "F2_paper_EFD": {
+    "v_kn": 5.9287308239575145,
+    "rt_n": 102.3,
+    "Re": 11664442.493415276,
+    "CT": 0.0036669035696661055
+   },
+   "F3_AFF1": {
+    "v_kn": 5.92,
+    "rt_n": 87.4,
+    "Re": 11647265.09120281,
+    "CT": 0.0031420662705313055
+   },
+   "F3_AFF8": {
+    "v_kn": 5.93,
+    "rt_n": 102.3,
+    "Re": 11666939.52547849,
+    "CT": 0.0036653341099267284
+   },
+   "F4_flow360_derived": {
+    "v_kn": 5.93,
+    "rt_n": 102.55319148936171,
+    "rt_band_n": 0.10909913988229969,
+    "speed_pair_dev_pct": 0.0
+   },
+   "speed_rel_diff_pct": {
+    "F2_vs_F1_AFF1": 0.14748013441747698,
+    "F2_vs_F1_AFF8": -0.021402631407840822
+   },
+   "pairwise_rel_diff_pct": {
+    "F1_AFF1|F1_AFF8": -14.56500488758552,
+    "F1_AFF1|F2_paper_EFD": -14.56500488758552,
+    "F1_AFF1|F3_AFF1": 0.0,
+    "F1_AFF1|F3_AFF8": -14.56500488758552,
+    "F1_AFF8|F2_paper_EFD": 0.0,
+    "F1_AFF8|F3_AFF1": 17.048054919908463,
+    "F1_AFF8|F3_AFF8": 0.0,
+    "F2_paper_EFD|F3_AFF1": 17.048054919908463,
+    "F2_paper_EFD|F3_AFF8": 0.0,
+    "F3_AFF1|F3_AFF8": -14.56500488758552
+   }
+  },
+  {
+   "pair_index": 2,
+   "F1_AFF1": {
+    "v_kn": 10.0,
+    "rt_n": 242.2,
+    "Re": 19674434.275680423,
+    "CT": 0.0030515568154928377
+   },
+   "F1_AFF8": {
+    "v_kn": 10.0,
+    "rt_n": 283.8,
+    "Re": 19674434.275680423,
+    "CT": 0.0035756887871051506
+   },
+   "F2_paper_EFD": {
+    "v_kn": 9.999144707684414,
+    "rt_n": 283.8,
+    "Re": 19672751.53643547,
+    "CT": 0.0035763005174137756
+   },
+   "F3_AFF1": {
+    "v_kn": 10.0,
+    "rt_n": 242.2,
+    "Re": 19674434.275680423,
+    "CT": 0.0030515568154928377
+   },
+   "F3_AFF8": {
+    "v_kn": 10.0,
+    "rt_n": 283.8,
+    "Re": 19674434.275680423,
+    "CT": 0.0035756887871051506
+   },
+   "F4_flow360_derived": {
+    "v_kn": 10.0,
+    "rt_n": 286.11111111111114,
+    "rt_band_n": 3.9737654320987663,
+    "speed_pair_dev_pct": 0.0
+   },
+   "speed_rel_diff_pct": {
+    "F2_vs_F1_AFF1": -0.008552923155868974,
+    "F2_vs_F1_AFF8": -0.008552923155868974
+   },
+   "pairwise_rel_diff_pct": {
+    "F1_AFF1|F1_AFF8": -14.658210007047224,
+    "F1_AFF1|F2_paper_EFD": -14.658210007047224,
+    "F1_AFF1|F3_AFF1": 0.0,
+    "F1_AFF1|F3_AFF8": -14.658210007047224,
+    "F1_AFF8|F2_paper_EFD": 0.0,
+    "F1_AFF8|F3_AFF1": 17.17588769611893,
+    "F1_AFF8|F3_AFF8": 0.0,
+    "F2_paper_EFD|F3_AFF1": 17.17588769611893,
+    "F2_paper_EFD|F3_AFF8": 0.0,
+    "F3_AFF1|F3_AFF8": -14.658210007047224
+   }
+  },
+  {
+   "pair_index": 3,
+   "F1_AFF1": {
+    "v_kn": 11.84,
+    "rt_n": 332.9,
+    "Re": 23294530.18240562,
+    "CT": 0.002991973287928694
+   },
+   "F1_AFF8": {
+    "v_kn": 11.85,
+    "rt_n": 389.2,
+    "Re": 23314204.616681296,
+    "CT": 0.0034920741141005783
+   },
+   "F2_paper_EFD": {
+    "v_kn": 11.857461647915029,
+    "rt_n": 389.2,
+    "Re": 23328884.98683055,
+    "CT": 0.003487680521295328
+   },
+   "F3_AFF1": {
+    "v_kn": 11.84,
+    "rt_n": 332.9,
+    "Re": 23294530.18240562,
+    "CT": 0.002991973287928694
+   },
+   "F3_AFF8": {
+    "v_kn": 11.85,
+    "rt_n": 389.2,
+    "Re": 23314204.616681296,
+    "CT": 0.0034920741141005783
+   },
+   "F4_flow360_derived": {
+    "v_kn": 11.85,
+    "rt_n": 397.05882352941177,
+    "rt_band_n": 5.839100346020762,
+    "speed_pair_dev_pct": 0.0
+   },
+   "speed_rel_diff_pct": {
+    "F2_vs_F1_AFF1": 0.14748013441747698,
+    "F2_vs_F1_AFF8": 0.06296749295382487
+   },
+   "pairwise_rel_diff_pct": {
+    "F1_AFF1|F1_AFF8": -14.465570400822203,
+    "F1_AFF1|F2_paper_EFD": -14.465570400822203,
+    "F1_AFF1|F3_AFF1": 0.0,
+    "F1_AFF1|F3_AFF8": -14.465570400822203,
+    "F1_AFF8|F2_paper_EFD": 0.0,
+    "F1_AFF8|F3_AFF1": 16.91198558125564,
+    "F1_AFF8|F3_AFF8": 0.0,
+    "F2_paper_EFD|F3_AFF1": 16.91198558125564,
+    "F2_paper_EFD|F3_AFF8": 0.0,
+    "F3_AFF1|F3_AFF8": -14.465570400822203
+   }
+  },
+  {
+   "pair_index": 4,
+   "F1_AFF1": {
+    "v_kn": 13.92,
+    "rt_n": 451.5,
+    "Re": 27386812.511747144,
+    "CT": 0.0029358009426130047
+   },
+   "F1_AFF8": {
+    "v_kn": 13.92,
+    "rt_n": 526.6,
+    "Re": 27386812.511747144,
+    "CT": 0.0034241257505648022
+   },
+   "F2_paper_EFD": {
+    "v_kn": 13.91793859001174,
+    "rt_n": 526.6,
+    "Re": 27382756.80421422,
+    "CT": 0.0034251401320700733
+   },
+   "F3_AFF1": {
+    "v_kn": 13.92,
+    "rt_n": 451.5,
+    "Re": 27386812.511747144,
+    "CT": 0.0029358009426130047
+   },
+   "F3_AFF8": {
+    "v_kn": 13.92,
+    "rt_n": 526.6,
+    "Re": 27386812.511747144,
+    "CT": 0.0034241257505648022
+   },
+   "F4_flow360_derived": {
+    "v_kn": 13.92,
+    "rt_n": 535.8490566037735,
+    "rt_band_n": 5.055179779280882,
+    "speed_pair_dev_pct": 0.0
+   },
+   "speed_rel_diff_pct": {
+    "F2_vs_F1_AFF1": -0.014808979800717825,
+    "F2_vs_F1_AFF8": -0.014808979800717825
+   },
+   "pairwise_rel_diff_pct": {
+    "F1_AFF1|F1_AFF8": -14.261298898594765,
+    "F1_AFF1|F2_paper_EFD": -14.261298898594765,
+    "F1_AFF1|F3_AFF1": 0.0,
+    "F1_AFF1|F3_AFF8": -14.261298898594765,
+    "F1_AFF8|F2_paper_EFD": 0.0,
+    "F1_AFF8|F3_AFF1": 16.63344407530454,
+    "F1_AFF8|F3_AFF8": 0.0,
+    "F2_paper_EFD|F3_AFF1": 16.63344407530454,
+    "F2_paper_EFD|F3_AFF8": 0.0,
+    "F3_AFF1|F3_AFF8": -14.261298898594765
+   }
+  },
+  {
+   "pair_index": 5,
+   "F1_AFF1": {
+    "v_kn": 16.0,
+    "rt_n": 576.9,
+    "Re": 31479094.841088675,
+    "CT": 0.002839277854784621
+   },
+   "F1_AFF8": {
+    "v_kn": 16.0,
+    "rt_n": 675.6,
+    "Re": 31479094.841088675,
+    "CT": 0.003325040940704611
+   },
+   "F2_paper_EFD": {
+    "v_kn": 15.997853993826345,
+    "rt_n": 675.6,
+    "Re": 31474872.695346795,
+    "CT": 0.0033259330649836705
+   },
+   "F3_AFF1": {
+    "v_kn": 16.0,
+    "rt_n": 576.9,
+    "Re": 31479094.841088675,
+    "CT": 0.002839277854784621
+   },
+   "F3_AFF8": {
+    "v_kn": 16.0,
+    "rt_n": 675.6,
+    "Re": 31479094.841088675,
+    "CT": 0.003325040940704611
+   },
+   "F4_flow360_derived": {
+    "v_kn": 16.0,
+    "rt_n": 680.0,
+    "rt_band_n": 6.181818181818182,
+    "speed_pair_dev_pct": 0.0
+   },
+   "speed_rel_diff_pct": {
+    "F2_vs_F1_AFF1": -0.013412538585344524,
+    "F2_vs_F1_AFF8": -0.013412538585344524
+   },
+   "pairwise_rel_diff_pct": {
+    "F1_AFF1|F1_AFF8": -14.609236234458267,
+    "F1_AFF1|F2_paper_EFD": -14.609236234458267,
+    "F1_AFF1|F3_AFF1": 0.0,
+    "F1_AFF1|F3_AFF8": -14.609236234458267,
+    "F1_AFF8|F2_paper_EFD": 0.0,
+    "F1_AFF8|F3_AFF1": 17.10868434737389,
+    "F1_AFF8|F3_AFF8": 0.0,
+    "F2_paper_EFD|F3_AFF1": 17.10868434737389,
+    "F2_paper_EFD|F3_AFF8": 0.0,
+    "F3_AFF1|F3_AFF8": -14.609236234458267
+   }
+  }
+ ],
+ "conflict_attribution": [
+  {
+   "conflict_id": "WC1",
+   "F1_point": {
+    "v_kn": 5.92,
+    "rt_n": 87.4,
+    "config": "AFF-1"
+   },
+   "F2_point": {
+    "v_kn": 5.9287308239575145,
+    "rt_n": 102.3,
+    "config": "unlabelled"
+   },
+   "raw_rel_diff_pct": 17.048054919908463,
+   "raw_rel_diff_pct_reference_denominator": -14.56500488758552,
+   "abs_rel_diff_pct_over_max": 14.565004887585525,
+   "class": "scale",
+   "class_code": "SCALE_REFERENCE_BODY",
+   "class_note": "四类中的『尺度/口径』类：参考体口径（裸艇 AFF-1 <-> 全附体 AFF-8）；非模型/实船尺度差，亦非单位差",
+   "conversion": {
+    "factor": 1.1704805491990846,
+    "source": "F3 registry AFF-8/AFF-1 row pair",
+    "all_sources": {
+     "F3_AFF8_over_F3_AFF1": 1.1704805491990846,
+     "F1_AFF8_over_F1_AFF1": 1.1704805491990846,
+     "F4_derived_over_F1_AFF1": 1.1733774769949852
+    }
+   },
+   "post_conversion_rel_diff_pct": 0.0,
+   "alternatives_rejected": {
+    "unit": {
+     "observed_ratio": 1.1704805491990846,
+     "known_factors_lbf_N": 4.448222,
+     "known_factors_kgf_N": 9.80665,
+     "speed_pairing_rel_diff_pct": 0.14748013441747698,
+     "max_explained_pct": 0.2796141789312534,
+     "verdict": "REJECTED: 比值不匹配任何单位因子；速度错配经 R_T~V^1.9 只解释 <=0.3%"
+    },
+    "wetted_area": {
+     "force_domain_cancels": true,
+     "in_repo_appendage_area_share_pct": 2.6,
+     "max_explained_pct": 2.6,
+     "verdict": "REJECTED: 力域比较中参考面积整体约去(0%)；按附体 own 面积占比折算也只能解释 2.6%"
+    },
+    "delta_cf": {
+     "ks_m": 0.00015,
+     "Re": 11647265.09120281,
+     "CF_ITTC57": 0.00292208264136114,
+     "delta_CF_ITTC78_model_scale": 0.0027760464052574074,
+     "delta_CF_over_CF_pct": 95.00232354702648,
+     "required_delta_CF_to_explain": 0.000498158253504359,
+     "max_explained_pct": 95.00232354702648,
+     "verdict": "REJECTED: 模型尺度 ITTC-78 dCF 相对 C_F 达数十个百分点且随 Re 变化，与观测的平坦比值不相容"
+    }
+   },
+   "unattributed": false
+  },
+  {
+   "conflict_id": "WC2",
+   "F1_point": {
+    "v_kn": 10.0,
+    "rt_n": 242.2,
+    "config": "AFF-1"
+   },
+   "F2_point": {
+    "v_kn": 9.999144707684414,
+    "rt_n": 283.8,
+    "config": "unlabelled"
+   },
+   "raw_rel_diff_pct": 17.17588769611893,
+   "raw_rel_diff_pct_reference_denominator": -14.658210007047224,
+   "abs_rel_diff_pct_over_max": 14.658210007047224,
+   "class": "scale",
+   "class_code": "SCALE_REFERENCE_BODY",
+   "class_note": "四类中的『尺度/口径』类：参考体口径（裸艇 AFF-1 <-> 全附体 AFF-8）；非模型/实船尺度差，亦非单位差",
+   "conversion": {
+    "factor": 1.1717588769611893,
+    "source": "F3 registry AFF-8/AFF-1 row pair",
+    "all_sources": {
+     "F3_AFF8_over_F3_AFF1": 1.1717588769611893,
+     "F1_AFF8_over_F1_AFF1": 1.1717588769611893,
+     "F4_derived_over_F1_AFF1": 1.1813010367923664
+    }
+   },
+   "post_conversion_rel_diff_pct": 0.0,
+   "alternatives_rejected": {
+    "unit": {
+     "observed_ratio": 1.1717588769611893,
+     "known_factors_lbf_N": 4.448222,
+     "known_factors_kgf_N": 9.80665,
+     "speed_pairing_rel_diff_pct": -0.008552923155868974,
+     "max_explained_pct": 0.016252569571495457,
+     "verdict": "REJECTED: 比值不匹配任何单位因子；速度错配经 R_T~V^1.9 只解释 <=0.3%"
+    },
+    "wetted_area": {
+     "force_domain_cancels": true,
+     "in_repo_appendage_area_share_pct": 2.6,
+     "max_explained_pct": 2.6,
+     "verdict": "REJECTED: 力域比较中参考面积整体约去(0%)；按附体 own 面积占比折算也只能解释 2.6%"
+    },
+    "delta_cf": {
+     "ks_m": 0.00015,
+     "Re": 19674434.275680423,
+     "CF_ITTC57": 0.0026761436818346076,
+     "delta_CF_ITTC78_model_scale": 0.0027760464052574074,
+     "delta_CF_over_CF_pct": 103.73308518899525,
+     "required_delta_CF_to_explain": 0.00045965143337869447,
+     "max_explained_pct": 103.73308518899525,
+     "verdict": "REJECTED: 模型尺度 ITTC-78 dCF 相对 C_F 达数十个百分点且随 Re 变化，与观测的平坦比值不相容"
+    }
+   },
+   "unattributed": false
+  },
+  {
+   "conflict_id": "WC3",
+   "F1_point": {
+    "v_kn": 11.84,
+    "rt_n": 332.9,
+    "config": "AFF-1"
+   },
+   "F2_point": {
+    "v_kn": 11.857461647915029,
+    "rt_n": 389.2,
+    "config": "unlabelled"
+   },
+   "raw_rel_diff_pct": 16.91198558125564,
+   "raw_rel_diff_pct_reference_denominator": -14.465570400822203,
+   "abs_rel_diff_pct_over_max": 14.465570400822203,
+   "class": "scale",
+   "class_code": "SCALE_REFERENCE_BODY",
+   "class_note": "四类中的『尺度/口径』类：参考体口径（裸艇 AFF-1 <-> 全附体 AFF-8）；非模型/实船尺度差，亦非单位差",
+   "conversion": {
+    "factor": 1.1691198558125564,
+    "source": "F3 registry AFF-8/AFF-1 row pair",
+    "all_sources": {
+     "F3_AFF8_over_F3_AFF1": 1.1691198558125564,
+     "F1_AFF8_over_F1_AFF1": 1.1691198558125564,
+     "F4_derived_over_F1_AFF1": 1.1927270157086567
+    }
+   },
+   "post_conversion_rel_diff_pct": 0.0,
+   "alternatives_rejected": {
+    "unit": {
+     "observed_ratio": 1.1691198558125564,
+     "known_factors_lbf_N": 4.448222,
+     "known_factors_kgf_N": 9.80665,
+     "speed_pairing_rel_diff_pct": 0.14748013441747698,
+     "max_explained_pct": 0.2796141789312534,
+     "verdict": "REJECTED: 比值不匹配任何单位因子；速度错配经 R_T~V^1.9 只解释 <=0.3%"
+    },
+    "wetted_area": {
+     "force_domain_cancels": true,
+     "in_repo_appendage_area_share_pct": 2.6,
+     "max_explained_pct": 2.6,
+     "verdict": "REJECTED: 力域比较中参考面积整体约去(0%)；按附体 own 面积占比折算也只能解释 2.6%"
+    },
+    "delta_cf": {
+     "ks_m": 0.00015,
+     "Re": 23294530.18240562,
+     "CF_ITTC57": 0.0026034963544291252,
+     "delta_CF_ITTC78_model_scale": 0.0027760464052574074,
+     "delta_CF_over_CF_pct": 106.62762790256019,
+     "required_delta_CF_to_explain": 0.00044030292806956987,
+     "max_explained_pct": 106.62762790256019,
+     "verdict": "REJECTED: 模型尺度 ITTC-78 dCF 相对 C_F 达数十个百分点且随 Re 变化，与观测的平坦比值不相容"
+    }
+   },
+   "unattributed": false
+  },
+  {
+   "conflict_id": "WC4",
+   "F1_point": {
+    "v_kn": 13.92,
+    "rt_n": 451.5,
+    "config": "AFF-1"
+   },
+   "F2_point": {
+    "v_kn": 13.91793859001174,
+    "rt_n": 526.6,
+    "config": "unlabelled"
+   },
+   "raw_rel_diff_pct": 16.63344407530454,
+   "raw_rel_diff_pct_reference_denominator": -14.261298898594765,
+   "abs_rel_diff_pct_over_max": 14.261298898594763,
+   "class": "scale",
+   "class_code": "SCALE_REFERENCE_BODY",
+   "class_note": "四类中的『尺度/口径』类：参考体口径（裸艇 AFF-1 <-> 全附体 AFF-8）；非模型/实船尺度差，亦非单位差",
+   "conversion": {
+    "factor": 1.1663344407530454,
+    "source": "F3 registry AFF-8/AFF-1 row pair",
+    "all_sources": {
+     "F3_AFF8_over_F3_AFF1": 1.1663344407530454,
+     "F1_AFF8_over_F1_AFF1": 1.1663344407530454,
+     "F4_derived_over_F1_AFF1": 1.1868196159552016
+    }
+   },
+   "post_conversion_rel_diff_pct": 0.0,
+   "alternatives_rejected": {
+    "unit": {
+     "observed_ratio": 1.1663344407530454,
+     "known_factors_lbf_N": 4.448222,
+     "known_factors_kgf_N": 9.80665,
+     "speed_pairing_rel_diff_pct": -0.014808979800717825,
+     "max_explained_pct": 0.02814310466179304,
+     "verdict": "REJECTED: 比值不匹配任何单位因子；速度错配经 R_T~V^1.9 只解释 <=0.3%"
+    },
+    "wetted_area": {
+     "force_domain_cancels": true,
+     "in_repo_appendage_area_share_pct": 2.6,
+     "max_explained_pct": 2.6,
+     "verdict": "REJECTED: 力域比较中参考面积整体约去(0%)；按附体 own 面积占比折算也只能解释 2.6%"
+    },
+    "delta_cf": {
+     "ks_m": 0.00015,
+     "Re": 27386812.511747144,
+     "CF_ITTC57": 0.002536623993604796,
+     "delta_CF_ITTC78_model_scale": 0.0027760464052574074,
+     "delta_CF_over_CF_pct": 109.43862441797565,
+     "required_delta_CF_to_explain": 0.0004219279333770103,
+     "max_explained_pct": 109.43862441797565,
+     "verdict": "REJECTED: 模型尺度 ITTC-78 dCF 相对 C_F 达数十个百分点且随 Re 变化，与观测的平坦比值不相容"
+    }
+   },
+   "unattributed": false
+  },
+  {
+   "conflict_id": "WC5",
+   "F1_point": {
+    "v_kn": 16.0,
+    "rt_n": 576.9,
+    "config": "AFF-1"
+   },
+   "F2_point": {
+    "v_kn": 15.997853993826345,
+    "rt_n": 675.6,
+    "config": "unlabelled"
+   },
+   "raw_rel_diff_pct": 17.10868434737389,
+   "raw_rel_diff_pct_reference_denominator": -14.609236234458267,
+   "abs_rel_diff_pct_over_max": 14.609236234458264,
+   "class": "scale",
+   "class_code": "SCALE_REFERENCE_BODY",
+   "class_note": "四类中的『尺度/口径』类：参考体口径（裸艇 AFF-1 <-> 全附体 AFF-8）；非模型/实船尺度差，亦非单位差",
+   "conversion": {
+    "factor": 1.171086843473739,
+    "source": "F3 registry AFF-8/AFF-1 row pair",
+    "all_sources": {
+     "F3_AFF8_over_F3_AFF1": 1.171086843473739,
+     "F1_AFF8_over_F1_AFF1": 1.171086843473739,
+     "F4_derived_over_F1_AFF1": 1.1787138152192755
+    }
+   },
+   "post_conversion_rel_diff_pct": 2.220446049250313e-14,
+   "alternatives_rejected": {
+    "unit": {
+     "observed_ratio": 1.171086843473739,
+     "known_factors_lbf_N": 4.448222,
+     "known_factors_kgf_N": 9.80665,
+     "speed_pairing_rel_diff_pct": -0.013412538585344524,
+     "max_explained_pct": 0.02548878031654045,
+     "verdict": "REJECTED: 比值不匹配任何单位因子；速度错配经 R_T~V^1.9 只解释 <=0.3%"
+    },
+    "wetted_area": {
+     "force_domain_cancels": true,
+     "in_repo_appendage_area_share_pct": 2.6,
+     "max_explained_pct": 2.6,
+     "verdict": "REJECTED: 力域比较中参考面积整体约去(0%)；按附体 own 面积占比折算也只能解释 2.6%"
+    },
+    "delta_cf": {
+     "ks_m": 0.00015,
+     "Re": 31479094.841088675,
+     "CF_ITTC57": 0.002481122913231741,
+     "delta_CF_ITTC78_model_scale": 0.0027760464052574074,
+     "delta_CF_over_CF_pct": 111.88669414372217,
+     "required_delta_CF_to_explain": 0.000424487487495186,
+     "max_explained_pct": 111.88669414372217,
+     "verdict": "REJECTED: 模型尺度 ITTC-78 dCF 相对 C_F 达数十个百分点且随 Re 变化，与观测的平坦比值不相容"
+    }
+   },
+   "unattributed": false
+  }
+ ],
+ "arbitration": {
+  "decision": "F2(第三方论文 Table 3 的 EFD 列)属于 Table 14 的 AFF-8(全附体)行，不属于 AFF-1(裸艇)行；W30 报出的 17% 冲突是构型口径配对错误(尺度/口径类)，不是转录数值噪声",
+  "votes": {
+   "F1_AFF1": {
+    "mean_abs_rel_diff_pct": 14.511864085701598,
+    "max_abs_rel_diff_pct": 14.658210007047224
+   },
+   "F1_AFF8": {
+    "mean_abs_rel_diff_pct": 0.0,
+    "max_abs_rel_diff_pct": 0.0
+   },
+   "F3_AFF1": {
+    "mean_abs_rel_diff_pct": 14.511864085701598,
+    "max_abs_rel_diff_pct": 14.658210007047224
+   },
+   "F3_AFF8": {
+    "mean_abs_rel_diff_pct": 0.0,
+    "max_abs_rel_diff_pct": 0.0
+   },
+   "F4_flow360_derived_vs_AFF8": {
+    "mean_abs_rel_diff_pct": 1.0977428449763993,
+    "max_abs_rel_diff_pct": 2.0192249561695297
+   },
+   "F4_flow360_derived_vs_AFF1": {
+    "mean_abs_rel_diff_pct": 18.258779213409706,
+    "max_abs_rel_diff_pct": 19.27270157086567
+   }
+  },
+  "arbiter_identity_note": "F1 与 F3 的 AFF-8 行数值逐一相同，故 arbiter_mean 与 observed_mean 精确相等；这是同一条 Table 14 转录链的自洽性，**不构成独立测量**。真正的独立性来自 F4（另一份公开文档的反推力，对 AFF-8 平均差 1.10%、对 AFF-1 平均差 18.26%）",
+  "n_sources_agreeing_with_AFF8": 3,
+  "independent_sources": [
+   "F1 doc AFF-8 row",
+   "F3 registry config-8 rows",
+   "F4 Flow360 DDES page (derived)"
+  ],
+  "ratio_vs_speed": [
+   {
+    "v_kn": 5.9287308239575145,
+    "observed_ratio": 1.1704805491990846,
+    "arbiter_ratio": 1.1704805491990846,
+    "delta_cf_implied_ratio": 1.950023235470265
+   },
+   {
+    "v_kn": 9.999144707684414,
+    "observed_ratio": 1.1717588769611893,
+    "arbiter_ratio": 1.1717588769611893,
+    "delta_cf_implied_ratio": 2.037330851889952
+   },
+   {
+    "v_kn": 11.857461647915029,
+    "observed_ratio": 1.1691198558125564,
+    "arbiter_ratio": 1.1691198558125564,
+    "delta_cf_implied_ratio": 2.066276279025602
+   },
+   {
+    "v_kn": 13.91793859001174,
+    "observed_ratio": 1.1663344407530454,
+    "arbiter_ratio": 1.1663344407530454,
+    "delta_cf_implied_ratio": 2.0943862441797565
+   },
+   {
+    "v_kn": 15.997853993826345,
+    "observed_ratio": 1.171086843473739,
+    "arbiter_ratio": 1.171086843473739,
+    "delta_cf_implied_ratio": 2.1188669414372217
+   }
+  ],
+  "ratio_stats": {
+   "observed_mean": 1.169756113239923,
+   "observed_sd": 0.0021458902033115014,
+   "observed_sd_rel_pct": 0.18344765879170646,
+   "arbiter_mean": 1.169756113239923,
+   "arbiter_sd_rel_pct": 0.18344765879170646,
+   "arbiter_vs_observed_mean_diff_pct": 0.0,
+   "delta_cf_implied_ratio_mean": 2.05337671040056,
+   "delta_cf_implied_sd_rel_pct": 3.1820103289109287
+  },
+  "speed_list_identity": {
+   "F2_vs_F1_AFF8_max_abs_pct": 0.06296749295382487,
+   "F2_vs_F1_AFF1_max_abs_pct": 0.14748013441747698,
+   "note": "F2 的速度列(m/s 三位小数)逐点落在 AFF-8 行的 kn 速度上；速度列 F1-AFF8=['5.93', '10.00', '11.85', '13.92', '16.00', '17.79'], F1-AFF1=['5.92', '10.00', '11.84', '13.92', '16.00', '17.99'], F2(折算 kn)=['5.93', '10.00', '11.86', '13.92', '16.00'] —— 分速差异处本身即构型指纹"
+  }
+ },
+ "lbm_same_re_vs_arbitrated_anchor": {
+  "branch": "benchmarks/pending/suboff_highre_resistance/formal/formal_verdict.json",
+  "branch_spec": "AFF-8 全附体壁模型 LES(pending 层)，与 AFF-8 锚同一 Re 域",
+  "branch_status": "FAIL",
+  "M1_rule": "|CT_sim/CT_EFD - 1| <= 5% at >= 4/5 anchors",
+  "M1_pass_count": 0,
+  "rows": [
+   {
+    "tag": "r1_slip_a1",
+    "Re": 11664442.493415276,
+    "v_kn_implied": 5.9287308239575145,
+    "CT_lbm": 0.051173484438575216,
+    "CT_anchor_arbitrated_AFF8": 0.0036653341099267284,
+    "CT_anchor_AFF1_do_not_use": 0.0031420662705313055,
+    "anchor_speed_pair_dev_pct": 0.02140721311476579,
+    "CT_EFD_recorded_in_formal_verdict": 0.0036669035696661055,
+    "CT_EFD_vs_arbitrated_rel_diff_pct": 0.04281900891727197,
+    "signed_dev_pct": 1296.1478791246727,
+    "abs_dev_pct": 1296.1478791246727,
+    "gate15_pass": false,
+    "band3_pass": false,
+    "y_plus_mean": 1878.2914085388184,
+    "odd_even_rel_ct_cv": 0.32620962193236613,
+    "observer_difference_pct": 58.972215593936085,
+    "Ct_fric": 0.007367567728682241,
+    "fric_over_ITTC_at_anchor_Re": 2.5219784208719593,
+    "fric_over_ITTC_resolved1e5": 0.8841081274418688,
+    "Re_eff_implied_by_Ct_fric": 155085.82346145468,
+    "form_share_sim": 0.04380591670989298,
+    "form_share_EFD": 0.0007455590935563747
+   },
+   {
+    "tag": "r2_slip_a2",
+    "Re": 19672751.53643547,
+    "v_kn_implied": 9.999144707684414,
+    "CT_lbm": 0.07539373231781663,
+    "CT_anchor_arbitrated_AFF8": 0.0035756887871051506,
+    "CT_anchor_AFF1_do_not_use": 0.0030515568154928377,
+    "anchor_speed_pair_dev_pct": 0.008553654743370664,
+    "CT_EFD_recorded_in_formal_verdict": 0.0035763005174137756,
+    "CT_EFD_vs_arbitrated_rel_diff_pct": 0.017108041136881802,
+    "signed_dev_pct": 2008.5093476173242,
+    "abs_dev_pct": 2008.5093476173242,
+    "gate15_pass": false,
+    "band3_pass": false,
+    "y_plus_mean": 3031.168670654297,
+    "odd_even_rel_ct_cv": 0.23359957663799333,
+    "observer_difference_pct": 73.17147148982612,
+    "Ct_fric": 0.00673170172233021,
+    "fric_over_ITTC_at_anchor_Re": 2.515413241006244,
+    "fric_over_ITTC_resolved1e5": 0.8078042066796253,
+    "Re_eff_implied_by_Ct_fric": 217701.10494324262,
+    "form_share_sim": 0.06866203059548641,
+    "form_share_EFD": 0.00090011927904305
+   },
+   {
+    "tag": "r3_slip_a3",
+    "Re": 23328884.98683055,
+    "v_kn_implied": 11.857461647915029,
+    "CT_lbm": 0.06171340493376773,
+    "CT_anchor_arbitrated_AFF8": 0.0034920741141005783,
+    "CT_anchor_AFF1_do_not_use": 0.002991973287928694,
+    "anchor_speed_pair_dev_pct": 0.06292786885244706,
+    "CT_EFD_recorded_in_formal_verdict": 0.003487680521295328,
+    "CT_EFD_vs_arbitrated_rel_diff_pct": -0.12581613853811513,
+    "signed_dev_pct": 1667.242129385982,
+    "abs_dev_pct": 1667.242129385982,
+    "gate15_pass": false,
+    "band3_pass": false,
+    "y_plus_mean": 3519.11922454834,
+    "odd_even_rel_ct_cv": 0.6964504901915316,
+    "observer_difference_pct": 65.7373224487446,
+    "Ct_fric": 0.006484986233885102,
+    "fric_over_ITTC_at_anchor_Re": 2.4914699568829377,
+    "fric_over_ITTC_resolved1e5": 0.7781983480662122,
+    "Re_eff_implied_by_Ct_fric": 251629.13757675444,
+    "form_share_sim": 0.055228418699882625,
+    "form_share_EFD": 0.0008848049714739576
+   },
+   {
+    "tag": "r4_slip_a4",
+    "Re": 27382756.80421422,
+    "v_kn_implied": 13.91793859001174,
+    "CT_lbm": 0.07522511759765779,
+    "CT_anchor_arbitrated_AFF8": 0.0034241257505648022,
+    "CT_anchor_AFF1_do_not_use": 0.0029358009426130047,
+    "anchor_speed_pair_dev_pct": 0.014811173184359205,
+    "CT_EFD_recorded_in_formal_verdict": 0.0034251401320700733,
+    "CT_EFD_vs_arbitrated_rel_diff_pct": 0.029624540077244355,
+    "signed_dev_pct": 2096.9145725810326,
+    "abs_dev_pct": 2096.9145725810326,
+    "gate15_pass": false,
+    "band3_pass": false,
+    "y_plus_mean": 4080.116567993164,
+    "odd_even_rel_ct_cv": 0.6036881691634891,
+    "observer_difference_pct": 71.9912674671301,
+    "Ct_fric": 0.00634724213163307,
+    "fric_over_ITTC_at_anchor_Re": 2.502180846898099,
+    "fric_over_ITTC_resolved1e5": 0.7616690557959684,
+    "Re_eff_implied_by_Ct_fric": 273818.96625539125,
+    "form_share_sim": 0.06887787546602472,
+    "form_share_EFD": 0.0008884561271942414
+   },
+   {
+    "tag": "r5_slip_a5",
+    "Re": 31474872.695346795,
+    "v_kn_implied": 15.997853993826345,
+    "CT_lbm": 0.10186265785873225,
+    "CT_anchor_arbitrated_AFF8": 0.003325040940704611,
+    "CT_anchor_AFF1_do_not_use": 0.002839277854784621,
+    "anchor_speed_pair_dev_pct": 0.013414337788586472,
+    "CT_EFD_recorded_in_formal_verdict": 0.0033259330649836705,
+    "CT_EFD_vs_arbitrated_rel_diff_pct": 0.026830475021766276,
+    "signed_dev_pct": 2963.500861350191,
+    "abs_dev_pct": 2963.500861350191,
+    "gate15_pass": false,
+    "band3_pass": false,
+    "y_plus_mean": 4660.108557128906,
+    "odd_even_rel_ct_cv": 0.5112654974828632,
+    "observer_difference_pct": 82.36708351603605,
+    "Ct_fric": 0.006264327988515476,
+    "fric_over_ITTC_at_anchor_Re": 2.524742006740258,
+    "fric_over_ITTC_resolved1e5": 0.7517193586218571,
+    "Re_eff_implied_by_Ct_fric": 288494.63454259955,
+    "form_share_sim": 0.09559832987021677,
+    "form_share_EFD": 0.0008447575738674642
+   }
+  ],
+  "n_rows": 5,
+  "max_abs_dev_pct": 2963.500861350191,
+  "gate15_pct": 15.0,
+  "band3_pct": 3.0,
+  "answer_lt_15pct": false,
+  "answer_lt_3pct": false,
+  "diagnosis": "(a) 摩阻系数在锚 Re 上是 ITTC-57 的 2.51 倍，而按网格可分辨 Re 折算后为 0.797 倍；(b) 由 C_f 反解的等效 Re 均值 2.373e+05，比锚 Re 均值 2.270e+07 低约 2.0 个量级；(c) 奇偶时间步相对 C_T 变异 0.23-0.70，观察者差 59.0-82.4% -> 统计未收敛。因此该分支 admissible_for_anchor=False，不能用于 15% 或 3% 声明。",
+  "admissible_for_anchor": false
+ },
+ "lbm_other_branches": [
+  {
+   "branch": "benchmarks/verified/suboff_sail_resistance (laminar, Re_lattice=1000)",
+   "Re_lattice": 1000.0,
+   "verdict": "INADMISSIBLE_FOR_SAME_RE_GATE",
+   "reason": "与锚 Re(~1.2e7-3.1e7)相差约 4 个量级，不同 Re 下不能用于 15%/3% 判定"
+  }
+ ],
+ "criteria": [
+  {
+   "id": "C1",
+   "requirement": "三条转录两两逐点相对差 <=15%，或显式归类为口径差并给出量化换算(换算后 <=15%)",
+   "measured": {
+    "raw_max_rel_diff_pct__denom_F1_bare": 17.17588769611893,
+    "raw_max_abs_rel_diff_pct__denom_F2_reference": 14.658210007047224,
+    "raw_max_abs_rel_diff_pct__over_max": 14.658210007047224,
+    "gate_pct": 15.0,
+    "post_conversion_max_rel_diff_pct": 2.220446049250313e-14,
+    "conversion_factor_source": "F3 registry(裁决方) AFF-8/AFF-1 行对",
+    "raw_pass__denom_F1_bare": false,
+    "raw_pass__denom_F2_reference": true,
+    "post_conversion_pass": true,
+    "family_pair_matrix": {
+     "F1_vs_F3_same_config_max_abs_pct": 0.0,
+     "F2_vs_F1_AFF8_row_max_abs_pct": 0.0,
+     "F2_vs_F3_AFF8_row_max_abs_pct": 0.0,
+     "F2_vs_F1_AFF1_row_max_abs_pct": 14.658210007047224,
+     "n_pairs_total": 3,
+     "n_pairs_within_gate": 2,
+     "n_pairs_conflicting": 1,
+     "note": "三族两两比：F1≡F3（同构型逐点 0%）、F2≡AFF-8 行（0%）；唯一冲突对是 F2 与 AFF-1 行（W30 的错配配对）"
+    }
+   },
+   "verdict": "PASS",
+   "verdict_note": "三口径下的原始两族差：以裸艇值为分母 +17.176%(>15% 门，保留不美化)、以 F2 参考值为分母 14.658%(<15%)、|a-b|/max 14.658%(<15%) —— 原始读法本身依赖分母约定，故不用原始读法销项；口径换算后最大残差 0.000%(与分母约定无关)<= 15% 门 -> 走判据的『口径差 + 量化换算』分支通过"
+  },
+  {
+   "id": "C2",
+   "requirement": "每条冲突点给出单位/尺度/湿面积/dC_F 四类归因之一，未归因点计数为 0",
+   "measured": {
+    "n_conflict_points": 5,
+    "n_unattributed": 0,
+    "class_counts": {
+     "scale": 5,
+     "unit": 0,
+     "wetted_area": 0,
+     "delta_cf": 0
+    },
+    "n_alternatives_quantified_and_rejected": 15
+   },
+   "verdict": "PASS",
+   "verdict_note": "5 点全部归入 scale(SCALE_REFERENCE_BODY)；unit / wetted_area / delta_cf 三类均给量化上界并显式否证(见 conflict_attribution[*].alternatives_rejected)"
+  },
+  {
+   "id": "C3",
+   "requirement": "LBM 分支与裁决后锚在同一 Re 下 |dC_T| <= 15%，并回答是否 <3%",
+   "measured": {
+    "max_abs_dev_pct": 2963.500861350191,
+    "gate_pct": 15.0,
+    "band_pct": 3.0,
+    "answer_lt_15pct": false,
+    "answer_lt_3pct": false,
+    "n_anchors": 5
+   },
+   "verdict": "honest FAIL",
+   "verdict_note": "同 Re 下最大 |dC_T| = 2963.5%(原始数字保留)远超 15% 门；是否 <3%：否(差 2 个量级以上)。原因见 lbm_same_re_vs_arbitrated_anchor.diagnosis"
+  },
+  {
+   "id": "C4",
+   "requirement": "全部判据数字由脚本从锚件直读(零手抄)，pytest 全绿",
+   "measured": {
+    "n_sources_hashed": 7,
+    "hand_copied_numeric_literals": 0,
+    "doc_generated_from_artifact": "docs/w31-suboff-transcription.md",
+    "test_file": "tests/test_w31_suboff_verdict.py"
+   },
+   "verdict": "PASS",
+   "verdict_note": "族数据全部由正则从仓内文件解析；正文与判据表由 --doc 从工件注入；pytest 复核哈希/判据/可重建性"
+  }
+ ],
+ "verdict": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "honest FAIL",
+  "C4": "PASS"
+ },
+ "claim_boundary": {
+  "may_be_cited_as_published_experimental_benchmark": false,
+  "may_be_cited_as": "三族仓内二手转录的相互裁决结果(锚等级仍为 C/TRANSCRIBED-SECONDARY)",
+  "what_this_does_not_prove": [
+   "未证明 Table 14 的物理正确性(原始报告仍 WITHHELD，无法读原表)",
+   "F3 与 F1 同属 Table 14 转录链，二者数值一致只证明转录链自洽，不构成独立测量",
+   "附体增阻 17% 的物理分解(摩阻 vs 形状/干扰)仍不可核，标 WITHHELD"
+  ],
+  "refused_labels": [
+   "A",
+   "B",
+   "PRIMARY-VERIFIED",
+   "PRIMARY-OBTAINED"
+  ]
+ },
+ "provenance": [
+  {
+   "path": "docs/suboff_experimental_resistance_validation_2026-08-01.md",
+   "sha256": "98e94e20e5e92d4d0fd422e0c3f174e8a88476e8a24622ddc2fadf65976b09b3",
+   "bytes": 4437
+  },
+  {
+   "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.md",
+   "sha256": "dec02641bb3f77f425c5d8848f732fade095b92f44c2f66a8973b6635b6058ec",
+   "bytes": 4935
+  },
+  {
+   "path": "benchmarks/pending/suboff_highre_resistance/refs_lock.json",
+   "sha256": "fe31e9dc414425fa929593444a2d82f57fbf25a9cec764938137c644b08afc3c",
+   "bytes": 3327
+  },
+  {
+   "path": "src/tensorlbm/suboff_reference_data.py",
+   "sha256": "dc0c55111a34ce66ec43dbd29a01864011fdebd3ab36308df9bbaed5297fd314",
+   "bytes": 20252
+  },
+  {
+   "path": "benchmarks/pending/suboff_highre_resistance/formal/formal_verdict.json",
+   "sha256": "8653bc9573c1f9d94ba26e01cdf318fa0f6216c81c7f88b3e66eedefb0f2f0a6",
+   "bytes": 4617
+  },
+  {
+   "path": "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json",
+   "sha256": "78b4d2750b17b63856e0dc6b74e6069a84bc6acacce11b6e3d399390cb945bdd",
+   "bytes": 73293
+  },
+  {
+   "path": "benchmarks/anchors/lbm-suboff-tau.json",
+   "sha256": "146ed124a961983fd6638c59fe39820d190011fec393b51389f968fd50ee11df",
+   "bytes": 34993
+  }
+ ]
+}
