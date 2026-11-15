@@ -1,0 +1,188 @@
+{
+  "stage": "operator",
+  "environment": {
+    "python": "3.11.6",
+    "machine": "loongarch64",
+    "platform": "Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38",
+    "torch": "2.7.1",
+    "torch_threads": 128,
+    "tensorlbm": "0.3.0",
+    "git_head": "91b09d5c5c6637f7bc33486aa038f2131c942629",
+    "oss_repo": "https://github.com/haimingz/vivsim",
+    "oss_commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+    "run_id": ""
+  },
+  "setup": {
+    "grid_zyx": [
+      18,
+      20,
+      22
+    ],
+    "n_markers": 512,
+    "sphere_radius": 3.0,
+    "sphere_markers": 162,
+    "dtype": "float64"
+  },
+  "cases": [
+    {
+      "kernel": "peskin4pt",
+      "stencil_points": 64,
+      "partition_of_unity_max_abs_err": 4.440892098500626e-16,
+      "first_moment_max_abs": 3.3306690738754696e-16,
+      "second_moment_continuous_ref": 0.5239675849679425,
+      "second_moment_x_mean": 0.5245764336396554,
+      "second_moment_translation_spread": 0.04289224800856872,
+      "second_moment_rel_err_vs_continuous": 0.001161996828010284,
+      "second_moment_y_abs_err_vs_x": 0.042742731716608695,
+      "second_moment_z_abs_err_vs_x": 0.042718314237684796,
+      "offdiag_xy_max_abs": 2.7985968577282083e-17,
+      "linear_field_reproduction_rel_err": 8.721133699218685e-16,
+      "smooth_field_interp_rel_err": 0.04681760169854514,
+      "spread_interp_adjointness_rel_err": 2.791612661984797e-16,
+      "momentum_conservation_rel_err": 3.2881326563715686e-16
+    },
+    {
+      "kernel": "peskin3pt",
+      "stencil_points": 64,
+      "partition_of_unity_max_abs_err": 4.440892098500626e-16,
+      "first_moment_max_abs": 2.2638141361497333e-16,
+      "second_moment_continuous_ref": 0.29846673730730916,
+      "second_moment_x_mean": 0.2971641315877205,
+      "second_moment_translation_spread": 0.08332471655770374,
+      "second_moment_rel_err_vs_continuous": -0.004364324585514806,
+      "second_moment_y_abs_err_vs_x": 0.0829223525729611,
+      "second_moment_z_abs_err_vs_x": 0.08323297950493325,
+      "offdiag_xy_max_abs": 2.5207700510287978e-17,
+      "linear_field_reproduction_rel_err": 5.232680219531211e-16,
+      "smooth_field_interp_rel_err": 0.028804710182214012,
+      "spread_interp_adjointness_rel_err": 0.0,
+      "momentum_conservation_rel_err": 4.29110220615381e-16
+    },
+    {
+      "kernel": "cosine4pt",
+      "stencil_points": 64,
+      "partition_of_unity_max_abs_err": 4.440892098500626e-16,
+      "first_moment_max_abs": 0.02108819435450074,
+      "second_moment_continuous_ref": 0.5227638641946313,
+      "second_moment_x_mean": 0.5233969197498288,
+      "second_moment_translation_spread": 0.0428921274295454,
+      "second_moment_rel_err_vs_continuous": 0.001210978031491966,
+      "second_moment_y_abs_err_vs_x": 0.042771928787277314,
+      "second_moment_z_abs_err_vs_x": 0.042773541257134284,
+      "offdiag_xy_max_abs": 0.0004443846672854389,
+      "linear_field_reproduction_rel_err": 0.0014168528085632909,
+      "smooth_field_interp_rel_err": 0.04733761498829313,
+      "spread_interp_adjointness_rel_err": 1.446391821632799e-16,
+      "momentum_conservation_rel_err": 0.0
+    }
+  ],
+  "interpolation_order": {
+    "rows": [
+      {
+        "n": 8,
+        "max_abs_err": 0.10350137722644237
+      },
+      {
+        "n": 16,
+        "max_abs_err": 0.04040686227615253
+      },
+      {
+        "n": 32,
+        "max_abs_err": 0.01036785643163074
+      },
+      {
+        "n": 48,
+        "max_abs_err": 0.00463110322134197
+      },
+      {
+        "n": 64,
+        "max_abs_err": 0.0026100336788714706
+      }
+    ],
+    "observed_order": 1.7698125772490105
+  },
+  "mdf": {
+    "series": {
+      "1": {
+        "residual_series": [
+          0.6300090272122191
+        ],
+        "final_slip_rel": 0.6300090272122191,
+        "grid_force_sum_x": -24.413100218564644,
+        "marker_reaction_sum_x": 24.413100218564647,
+        "closure_rel": 1.4552488815406095e-16
+      },
+      "2": {
+        "residual_series": [
+          0.6300090272122191,
+          0.39654936066679636
+        ],
+        "final_slip_rel": 0.39654936066679636,
+        "grid_force_sum_x": -39.68826000983465,
+        "marker_reaction_sum_x": 39.68826000983466,
+        "closure_rel": 1.79030961695985e-16
+      },
+      "3": {
+        "residual_series": [
+          0.6300090272122191,
+          0.39654936066679636,
+          0.2508741095269251
+        ],
+        "final_slip_rel": 0.2508741095269251,
+        "grid_force_sum_x": -49.24598217119329,
+        "marker_reaction_sum_x": 49.24598217119328,
+        "closure_rel": 1.4428440746496801e-16
+      },
+      "5": {
+        "residual_series": [
+          0.6300090272122191,
+          0.39654936066679636,
+          0.2508741095269251,
+          0.1596366420824283,
+          0.10311334133655871
+        ],
+        "final_slip_rel": 0.10311334133655871,
+        "grid_force_sum_x": -58.968544807016094,
+        "marker_reaction_sum_x": 58.9685448070161,
+        "closure_rel": 1.2049521284363788e-16
+      },
+      "8": {
+        "residual_series": [
+          0.6300090272122191,
+          0.39654936066679636,
+          0.2508741095269251,
+          0.1596366420824283,
+          0.10311334133655871,
+          0.06714468431084726,
+          0.0442135528887167,
+          0.02956016168038312
+        ],
+        "final_slip_rel": 0.02956016168038312,
+        "grid_force_sum_x": -63.69276696005433,
+        "marker_reaction_sum_x": 63.692766960054335,
+        "closure_rel": 1.1155783767499462e-16
+      },
+      "12": {
+        "residual_series": [
+          0.6300090272122191,
+          0.39654936066679636,
+          0.2508741095269251,
+          0.1596366420824283,
+          0.10311334133655871,
+          0.06714468431084726,
+          0.0442135528887167,
+          0.02956016168038312,
+          0.020168370456817842,
+          0.014125383278019744,
+          0.010217061542907555,
+          0.007671992929076094
+        ],
+        "final_slip_rel": 0.007671992929076094,
+        "grid_force_sum_x": -64.992232380361,
+        "marker_reaction_sum_x": 64.99223238036102,
+        "closure_rel": 2.1865466371480047e-16
+      }
+    },
+    "max_contraction_ratio": 0.7509001386413113
+  }
+}
