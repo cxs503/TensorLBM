@@ -31,6 +31,49 @@
     ],
     "order_convergence_rel": 0.00013115411100894647,
     "workgrid_invariance_rel": 8.881784197001252e-16,
+    "field_workgrid": {
+      "n": 32,
+      "order": 12,
+      "t_lattice": 102.0,
+      "factors": [
+        3.0,
+        3.5
+      ],
+      "nfft": [
+        96,
+        112
+      ],
+      "top_nfft": 112,
+      "levels": [
+        {
+          "factor": 3.0,
+          "nfft": 96,
+          "dealias_margin": 0.0,
+          "field_order": 1,
+          "field_support": 2.0,
+          "energy_ratio": 0.7845756538624986
+        },
+        {
+          "factor": 3.5,
+          "nfft": 112,
+          "dealias_margin": 0.3333333333333357,
+          "field_order": 1,
+          "field_support": 2.0,
+          "energy_ratio": 0.7845756538625427
+        }
+      ],
+      "field_workgrid_rel": 1.766771968545883e-13,
+      "pairs": {
+        "nfft_96_vs_112_pct": 1.766771968545883e-13
+      },
+      "default_nfft_level": {
+        "nfft": 60,
+        "field_order": 3,
+        "energy_ratio": 0.7845756538624972,
+        "field_rel_vs_covered_band_pct": 11.012395380563083
+      },
+      "note": "field_workgrid_rel = max L2 spread of the reference velocity field over working grids nfft >= 3n on the n^3 evaluation grid; default_nfft_level is the (ungated) spread of the library default work grid 5*order, which is what an unguarded field comparison uses"
+    },
     "note": "order_convergence_rel = |order 10 vs order 12| at nfft=60; workgrid_invariance_rel = |nfft 60 vs nfft 72| at the primary order"
   }
 }

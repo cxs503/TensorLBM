@@ -192,3 +192,78 @@ def test_committed_artifact_is_evidence() -> None:
     else:
         # an honest FAIL must name the failing quantities (no silent pass)
         assert s["verdict"]["failed"]
+
+# --------------------------------------------------------------------------- #
+# layer 1b: the *field-level* reference must be reproducible, and the series
+#           must be cross-checked against an independent discretisation
+# --------------------------------------------------------------------------- #
+def test_reference_field_is_reproducible_across_work_grids() -> None:
+    """Q11: the series *field* must not depend on the working grid nfft.
+
+    Energy/enstrophy are modal sums and are nfft-invariant to 1e-16, so they
+    cannot detect a field-level reconstruction problem: at the library default
+    work grid (nfft = 5*order) the same series returns fields differing by
+    several percent on an n = 24/32 lattice.  With nfft >= 3n (de-aliasing band
+    covering the evaluation band) the field reproduces itself.
+    """
+    chk = rc.field_workgrid_check(n=rc.SMOKE_GRID)
+    assert chk["field_workgrid_rel"] <= rc.FIELD_WORKGRID_REL
+    assert chk["field_workgrid_rel"] < 0.1 * rc.TOL_PCT
+    # the default work grid is *not* covered, and the defect is recorded
+    assert chk["default_nfft_level"] is not None
+    for lv in chk["levels"]:
+        assert lv["nfft"] >= rc.FIELD_NFFT_FACTOR * rc.SMOKE_GRID
+        assert lv["dealias_margin"] > 0.0
+
+
+def test_dns_cross_check_agrees_with_series() -> None:
+    """Q10: series vs an independent pseudo-spectral DNS of the same problem.
+
+    The closed-form anchor is nonlinearly trivial (both closed forms have a zero
+    or gradient-only convective term), so it cannot test the recursion's
+    convective term.  The DNS can, and shares no code path with the series.
+    """
+    leg = rc.leg_dns(n=rc.SMOKE_GRID, substeps=(1, 2))
+    assert leg["series_vs_dns_rel"] <= rc.DNS_XCHECK_REL
+    # genuinely two different computations (not the same object twice)
+    assert leg["series_vs_dns_rel"] > 0.0
+    # the residual is attributed: refining the DNS time step barely moves it
+    assert leg["dt_refinement_rel"] <= leg["series_vs_dns_rel"]
+    assert leg["reynolds"] == rc.REYNOLDS
+
+
+def test_verdict_fails_when_cross_checks_break() -> None:
+    """The new gates must be able to fail, else they are decoration."""
+    anchor = {"max_rel_err": 0.0}
+    refconv = {"order_convergence_rel": 0.0, "workgrid_invariance_rel": 0.0,
+               "field_workgrid": {"field_workgrid_rel": 1e-9}}
+    primary = {"n": rc.SMOKE_GRID, "energy_ratio_series": 1.0,
+               "energy_ratio_rel_err_pct": 0.0, "enstrophy_ratio_series": 1.0,
+               "enstrophy_ratio_rel_err_pct": 0.0, "u_l2_ref": 1.0,
+               "velocity_l2_rel_err_pct": 0.0, "vorticity_l2_rel_err_pct": 0.0,
+               "series_truncation_rel": 0.0, "rho_deviation": 0.0, "history": []}
+    good = {"series_vs_dns_rel": 1e-9}
+    ok = rc.build_verdict(grid=rc.SMOKE_GRID, anchor=anchor, refconv=refconv,
+                          primary=primary, grid_leg=None, dns=good)
+    assert ok["verdict"]["pass"]
+    bad_dns = dict(good, series_vs_dns_rel=1.0)
+    v1 = rc.build_verdict(grid=rc.SMOKE_GRID, anchor=anchor, refconv=refconv,
+                          primary=primary, grid_leg=None, dns=bad_dns)
+    assert v1["verdict"]["failed"] == ["Q10_series_vs_dns_rel"]
+    bad_fw = {"order_convergence_rel": 0.0, "workgrid_invariance_rel": 0.0,
+              "field_workgrid": {"field_workgrid_rel": 6e-2}}
+    v2 = rc.build_verdict(grid=rc.SMOKE_GRID, anchor=anchor, refconv=bad_fw,
+                          primary=primary, grid_leg=None, dns=good)
+    assert v2["verdict"]["failed"] == ["Q11_series_field_workgrid_rel"]
+
+
+def test_committed_artifact_carries_cross_check_evidence() -> None:
+    """The committed evidence must show Q10/Q11 numbers and the leg they came from."""
+    s = json.loads((ART / "summary.json").read_text())
+    qids = {q["id"] for q in s["quantities"]}
+    assert {"Q10_series_vs_dns_rel", "Q11_series_field_workgrid_rel"} <= qids
+    assert s["legs"]["dns"]["levels"], "dns leg has no per-level rows"
+    assert s["legs"]["reference_convergence"]["field_workgrid"]["levels"]
+    for q in s["quantities"]:
+        if q["id"] in ("Q10_series_vs_dns_rel", "Q11_series_field_workgrid_rel"):
+            assert q["got"] <= q["tolerance"]
