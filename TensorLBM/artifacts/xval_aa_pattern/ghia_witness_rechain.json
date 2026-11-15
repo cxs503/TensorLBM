@@ -1,0 +1,2903 @@
+{
+  "anchor": "XVAL-LBM-AA-PATTERN-FUSED-STREAM-COLLIDE",
+  "provenance_file": "benchmarks/anchors/ghia1982_provenance.json",
+  "witness": {
+    "path": "/srv/tensor/agent/work/m22506/benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt",
+    "path_rel": "benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt",
+    "sha256": "3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b",
+    "pinned": "3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b",
+    "match": true,
+    "bytes": 6697
+  },
+  "ocr_tokens": {
+    "I": 184,
+    "II": 165
+  },
+  "magnitude_rechain": {
+    "I": {
+      "n_expected": 68,
+      "n_matched": 67,
+      "n_missing": 1,
+      "n_skipped_tokens": 48,
+      "misses": [
+        {
+          "cell": "I/Re1000/u[11]",
+          "value": -0.38289
+        }
+      ],
+      "n_out_of_order": 1,
+      "coverage": 0.9852941176470589
+    },
+    "II": {
+      "n_expected": 68,
+      "n_matched": 66,
+      "n_missing": 2,
+      "n_skipped_tokens": 29,
+      "misses": [
+        {
+          "cell": "II/Re400/v[8]",
+          "value": 0.05186
+        },
+        {
+          "cell": "II/Re1000/v[5]",
+          "value": -0.5155
+        }
+      ],
+      "n_out_of_order": 0,
+      "coverage": 0.9705882352941176
+    }
+  },
+  "magnitude_rechain_hits": {
+    "I": [
+      {
+        "cell": "I/Re100/y[0]",
+        "value": 1.0,
+        "token": "100",
+        "ocr_sign": 1,
+        "index": 1
+      },
+      {
+        "cell": "I/Re100/y[1]",
+        "value": 0.9766,
+        "token": "0.9766",
+        "ocr_sign": 1,
+        "index": 11
+      },
+      {
+        "cell": "I/Re100/y[2]",
+        "value": 0.9688,
+        "token": "0.9688",
+        "ocr_sign": 1,
+        "index": 13
+      },
+      {
+        "cell": "I/Re100/y[3]",
+        "value": 0.9609,
+        "token": "0.9609",
+        "ocr_sign": 1,
+        "index": 15
+      },
+      {
+        "cell": "I/Re100/y[4]",
+        "value": 0.9531,
+        "token": "0.9531",
+        "ocr_sign": 1,
+        "index": 17
+      },
+      {
+        "cell": "I/Re100/y[5]",
+        "value": 0.8516,
+        "token": "0.8516",
+        "ocr_sign": 1,
+        "index": 19
+      },
+      {
+        "cell": "I/Re100/y[6]",
+        "value": 0.7344,
+        "token": "0.7344",
+        "ocr_sign": 1,
+        "index": 21
+      },
+      {
+        "cell": "I/Re100/y[7]",
+        "value": 0.6172,
+        "token": "0.6172",
+        "ocr_sign": 1,
+        "index": 23
+      },
+      {
+        "cell": "I/Re100/y[8]",
+        "value": 0.5,
+        "token": "0.5000",
+        "ocr_sign": 1,
+        "index": 25
+      },
+      {
+        "cell": "I/Re100/y[9]",
+        "value": 0.4531,
+        "token": "0.4531",
+        "ocr_sign": 1,
+        "index": 27
+      },
+      {
+        "cell": "I/Re100/y[10]",
+        "value": 0.2813,
+        "token": "0.2813",
+        "ocr_sign": 1,
+        "index": 29
+      },
+      {
+        "cell": "I/Re100/y[11]",
+        "value": 0.1719,
+        "token": "0.1719",
+        "ocr_sign": 1,
+        "index": 31
+      },
+      {
+        "cell": "I/Re100/y[12]",
+        "value": 0.1016,
+        "token": "0.1016",
+        "ocr_sign": 1,
+        "index": 33
+      },
+      {
+        "cell": "I/Re100/y[13]",
+        "value": 0.0703,
+        "token": "0.0703",
+        "ocr_sign": 1,
+        "index": 35
+      },
+      {
+        "cell": "I/Re100/y[14]",
+        "value": 0.0625,
+        "token": "0.0625",
+        "ocr_sign": 1,
+        "index": 37
+      },
+      {
+        "cell": "I/Re100/y[15]",
+        "value": 0.0547,
+        "token": "0.0547",
+        "ocr_sign": 1,
+        "index": 39
+      },
+      {
+        "cell": "I/Re100/y[16]",
+        "value": 0.0,
+        "token": "0.0000",
+        "ocr_sign": 1,
+        "index": 41
+      },
+      {
+        "cell": "I/Re100/u[0]",
+        "value": 1.0,
+        "token": "1",
+        "ocr_sign": 1,
+        "index": 42
+      },
+      {
+        "cell": "I/Re100/u[1]",
+        "value": 0.84123,
+        "token": "0.84123",
+        "ocr_sign": 1,
+        "index": 43
+      },
+      {
+        "cell": "I/Re100/u[2]",
+        "value": 0.78871,
+        "token": "0.78871",
+        "ocr_sign": 1,
+        "index": 44
+      },
+      {
+        "cell": "I/Re100/u[3]",
+        "value": 0.73722,
+        "token": "0.73722",
+        "ocr_sign": 1,
+        "index": 45
+      },
+      {
+        "cell": "I/Re100/u[4]",
+        "value": 0.68717,
+        "token": "0.68717",
+        "ocr_sign": 1,
+        "index": 46
+      },
+      {
+        "cell": "I/Re100/u[5]",
+        "value": 0.23151,
+        "token": "0.23151",
+        "ocr_sign": 1,
+        "index": 47
+      },
+      {
+        "cell": "I/Re100/u[6]",
+        "value": 0.00332,
+        "token": "0.00332",
+        "ocr_sign": 1,
+        "index": 48
+      },
+      {
+        "cell": "I/Re100/u[7]",
+        "value": -0.13641,
+        "token": "AI13641",
+        "ocr_sign": "mangled",
+        "index": 49
+      },
+      {
+        "cell": "I/Re100/u[8]",
+        "value": -0.20581,
+        "token": "-0.20581",
+        "ocr_sign": -1,
+        "index": 50
+      },
+      {
+        "cell": "I/Re100/u[9]",
+        "value": -0.2109,
+        "token": "-0.21090",
+        "ocr_sign": -1,
+        "index": 51
+      },
+      {
+        "cell": "I/Re100/u[10]",
+        "value": -0.15662,
+        "token": "AI.15662",
+        "ocr_sign": "mangled",
+        "index": 52
+      },
+      {
+        "cell": "I/Re100/u[11]",
+        "value": -0.1015,
+        "token": "Al.10150",
+        "ocr_sign": "mangled",
+        "index": 53
+      },
+      {
+        "cell": "I/Re100/u[12]",
+        "value": -0.06434,
+        "token": "a.06434",
+        "ocr_sign": "mangled",
+        "index": 55
+      },
+      {
+        "cell": "I/Re100/u[13]",
+        "value": -0.04775,
+        "token": "-0.04775",
+        "ocr_sign": -1,
+        "index": 57
+      },
+      {
+        "cell": "I/Re100/u[14]",
+        "value": -0.04192,
+        "token": "a.04192",
+        "ocr_sign": "mangled",
+        "index": 59
+      },
+      {
+        "cell": "I/Re100/u[15]",
+        "value": -0.03717,
+        "token": "-0.03717",
+        "ocr_sign": -1,
+        "index": 61
+      },
+      {
+        "cell": "I/Re100/u[16]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 63
+      },
+      {
+        "cell": "I/Re400/u[0]",
+        "value": 1.0,
+        "token": "1",
+        "ocr_sign": 1,
+        "index": 65
+      },
+      {
+        "cell": "I/Re400/u[1]",
+        "value": 0.75837,
+        "token": "0.75837",
+        "ocr_sign": 1,
+        "index": 66
+      },
+      {
+        "cell": "I/Re400/u[2]",
+        "value": 0.68439,
+        "token": "0.68439",
+        "ocr_sign": 1,
+        "index": 67
+      },
+      {
+        "cell": "I/Re400/u[3]",
+        "value": 0.61756,
+        "token": "0.61756",
+        "ocr_sign": 1,
+        "index": 68
+      },
+      {
+        "cell": "I/Re400/u[4]",
+        "value": 0.55892,
+        "token": "0.55892",
+        "ocr_sign": 1,
+        "index": 69
+      },
+      {
+        "cell": "I/Re400/u[5]",
+        "value": 0.29093,
+        "token": "0.29093",
+        "ocr_sign": 1,
+        "index": 70
+      },
+      {
+        "cell": "I/Re400/u[6]",
+        "value": 0.16256,
+        "token": "0.16256",
+        "ocr_sign": 1,
+        "index": 71
+      },
+      {
+        "cell": "I/Re400/u[7]",
+        "value": 0.02135,
+        "token": "0.02135",
+        "ocr_sign": 1,
+        "index": 72
+      },
+      {
+        "cell": "I/Re400/u[8]",
+        "value": -0.11477,
+        "token": "-0.11477",
+        "ocr_sign": -1,
+        "index": 73
+      },
+      {
+        "cell": "I/Re400/u[9]",
+        "value": -0.17119,
+        "token": "-0.17119",
+        "ocr_sign": -1,
+        "index": 74
+      },
+      {
+        "cell": "I/Re400/u[10]",
+        "value": -0.32726,
+        "token": "-0.32726",
+        "ocr_sign": -1,
+        "index": 75
+      },
+      {
+        "cell": "I/Re400/u[11]",
+        "value": -0.24299,
+        "token": "-0.24299",
+        "ocr_sign": -1,
+        "index": 54
+      },
+      {
+        "cell": "I/Re400/u[12]",
+        "value": -0.14612,
+        "token": "-0.14612",
+        "ocr_sign": -1,
+        "index": 56
+      },
+      {
+        "cell": "I/Re400/u[13]",
+        "value": -0.10338,
+        "token": "-0.10338",
+        "ocr_sign": -1,
+        "index": 58
+      },
+      {
+        "cell": "I/Re400/u[14]",
+        "value": -0.09266,
+        "token": "AI.09266",
+        "ocr_sign": "mangled",
+        "index": 60
+      },
+      {
+        "cell": "I/Re400/u[15]",
+        "value": -0.08186,
+        "token": "-0.08186",
+        "ocr_sign": -1,
+        "index": 62
+      },
+      {
+        "cell": "I/Re400/u[16]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 63
+      },
+      {
+        "cell": "I/Re1000/u[0]",
+        "value": 1.0,
+        "token": "1",
+        "ocr_sign": 1,
+        "index": 65
+      },
+      {
+        "cell": "I/Re1000/u[1]",
+        "value": 0.65928,
+        "token": "0.65928",
+        "ocr_sign": 1,
+        "index": 77
+      },
+      {
+        "cell": "I/Re1000/u[2]",
+        "value": 0.57492,
+        "token": "0.57492",
+        "ocr_sign": 1,
+        "index": 78
+      },
+      {
+        "cell": "I/Re1000/u[3]",
+        "value": 0.51117,
+        "token": "0.51117",
+        "ocr_sign": 1,
+        "index": 79
+      },
+      {
+        "cell": "I/Re1000/u[4]",
+        "value": 0.46604,
+        "token": "0.46604",
+        "ocr_sign": 1,
+        "index": 80
+      },
+      {
+        "cell": "I/Re1000/u[5]",
+        "value": 0.33304,
+        "token": "0.33304",
+        "ocr_sign": 1,
+        "index": 81
+      },
+      {
+        "cell": "I/Re1000/u[6]",
+        "value": 0.18719,
+        "token": "0.18719",
+        "ocr_sign": 1,
+        "index": 82
+      },
+      {
+        "cell": "I/Re1000/u[7]",
+        "value": 0.05702,
+        "token": "0.05702",
+        "ocr_sign": 1,
+        "index": 83
+      },
+      {
+        "cell": "I/Re1000/u[8]",
+        "value": -0.0608,
+        "token": "-0.06080",
+        "ocr_sign": -1,
+        "index": 84
+      },
+      {
+        "cell": "I/Re1000/u[9]",
+        "value": -0.10648,
+        "token": "-0.10648",
+        "ocr_sign": -1,
+        "index": 85
+      },
+      {
+        "cell": "I/Re1000/u[10]",
+        "value": -0.27805,
+        "token": "-0.27805",
+        "ocr_sign": -1,
+        "index": 86
+      },
+      {
+        "cell": "I/Re1000/u[12]",
+        "value": -0.2973,
+        "token": "-0.29730",
+        "ocr_sign": -1,
+        "index": 88
+      },
+      {
+        "cell": "I/Re1000/u[13]",
+        "value": -0.2222,
+        "token": "a.22220",
+        "ocr_sign": "mangled",
+        "index": 89
+      },
+      {
+        "cell": "I/Re1000/u[14]",
+        "value": -0.20196,
+        "token": "-0.20196",
+        "ocr_sign": -1,
+        "index": 90
+      },
+      {
+        "cell": "I/Re1000/u[15]",
+        "value": -0.18109,
+        "token": "AI.18109",
+        "ocr_sign": "mangled",
+        "index": 91
+      },
+      {
+        "cell": "I/Re1000/u[16]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 92
+      }
+    ],
+    "II": [
+      {
+        "cell": "II/Re100/x[0]",
+        "value": 1.0,
+        "token": "100",
+        "ocr_sign": 1,
+        "index": 1
+      },
+      {
+        "cell": "II/Re100/x[1]",
+        "value": 0.9688,
+        "token": "0.9688",
+        "ocr_sign": 1,
+        "index": 11
+      },
+      {
+        "cell": "II/Re100/x[2]",
+        "value": 0.9609,
+        "token": "0.9609",
+        "ocr_sign": 1,
+        "index": 13
+      },
+      {
+        "cell": "II/Re100/x[3]",
+        "value": 0.9531,
+        "token": "0.9531",
+        "ocr_sign": 1,
+        "index": 15
+      },
+      {
+        "cell": "II/Re100/x[4]",
+        "value": 0.9453,
+        "token": "0.9453",
+        "ocr_sign": 1,
+        "index": 17
+      },
+      {
+        "cell": "II/Re100/x[5]",
+        "value": 0.9063,
+        "token": "0.9063",
+        "ocr_sign": 1,
+        "index": 19
+      },
+      {
+        "cell": "II/Re100/x[6]",
+        "value": 0.8594,
+        "token": "0.8594",
+        "ocr_sign": 1,
+        "index": 21
+      },
+      {
+        "cell": "II/Re100/x[7]",
+        "value": 0.8047,
+        "token": "0.8047",
+        "ocr_sign": 1,
+        "index": 23
+      },
+      {
+        "cell": "II/Re100/x[8]",
+        "value": 0.5,
+        "token": "0.5000",
+        "ocr_sign": 1,
+        "index": 25
+      },
+      {
+        "cell": "II/Re100/x[9]",
+        "value": 0.2344,
+        "token": "0.2344",
+        "ocr_sign": 1,
+        "index": 27
+      },
+      {
+        "cell": "II/Re100/x[10]",
+        "value": 0.2266,
+        "token": "0.2266",
+        "ocr_sign": 1,
+        "index": 29
+      },
+      {
+        "cell": "II/Re100/x[11]",
+        "value": 0.1563,
+        "token": "0.1563",
+        "ocr_sign": 1,
+        "index": 31
+      },
+      {
+        "cell": "II/Re100/x[12]",
+        "value": 0.0938,
+        "token": "0.0938",
+        "ocr_sign": 1,
+        "index": 33
+      },
+      {
+        "cell": "II/Re100/x[13]",
+        "value": 0.0781,
+        "token": "0.0781",
+        "ocr_sign": 1,
+        "index": 35
+      },
+      {
+        "cell": "II/Re100/x[14]",
+        "value": 0.0703,
+        "token": "0.0703",
+        "ocr_sign": 1,
+        "index": 37
+      },
+      {
+        "cell": "II/Re100/x[15]",
+        "value": 0.0625,
+        "token": "0.0625",
+        "ocr_sign": 1,
+        "index": 39
+      },
+      {
+        "cell": "II/Re100/x[16]",
+        "value": 0.0,
+        "token": "0.0000",
+        "ocr_sign": 1,
+        "index": 41
+      },
+      {
+        "cell": "II/Re100/v[0]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 42
+      },
+      {
+        "cell": "II/Re100/v[1]",
+        "value": -0.05906,
+        "token": "-0.05906",
+        "ocr_sign": -1,
+        "index": 43
+      },
+      {
+        "cell": "II/Re100/v[2]",
+        "value": -0.07391,
+        "token": "-0.07391",
+        "ocr_sign": -1,
+        "index": 44
+      },
+      {
+        "cell": "II/Re100/v[3]",
+        "value": -0.08864,
+        "token": "-0.08864",
+        "ocr_sign": -1,
+        "index": 45
+      },
+      {
+        "cell": "II/Re100/v[4]",
+        "value": -0.10313,
+        "token": "-0.10313",
+        "ocr_sign": -1,
+        "index": 46
+      },
+      {
+        "cell": "II/Re100/v[5]",
+        "value": -0.16914,
+        "token": "-0.16914",
+        "ocr_sign": -1,
+        "index": 47
+      },
+      {
+        "cell": "II/Re100/v[6]",
+        "value": -0.22445,
+        "token": "-0.22445",
+        "ocr_sign": -1,
+        "index": 48
+      },
+      {
+        "cell": "II/Re100/v[7]",
+        "value": -0.24533,
+        "token": "-0.24533",
+        "ocr_sign": -1,
+        "index": 49
+      },
+      {
+        "cell": "II/Re100/v[8]",
+        "value": 0.05454,
+        "token": "0.05454",
+        "ocr_sign": 1,
+        "index": 50
+      },
+      {
+        "cell": "II/Re100/v[9]",
+        "value": 0.17527,
+        "token": "0.17527",
+        "ocr_sign": 1,
+        "index": 51
+      },
+      {
+        "cell": "II/Re100/v[10]",
+        "value": 0.17507,
+        "token": "0.17507",
+        "ocr_sign": 1,
+        "index": 52
+      },
+      {
+        "cell": "II/Re100/v[11]",
+        "value": 0.16077,
+        "token": "0.16077",
+        "ocr_sign": 1,
+        "index": 53
+      },
+      {
+        "cell": "II/Re100/v[12]",
+        "value": 0.12317,
+        "token": "0.12317",
+        "ocr_sign": 1,
+        "index": 54
+      },
+      {
+        "cell": "II/Re100/v[13]",
+        "value": 0.1089,
+        "token": "0.10890",
+        "ocr_sign": 1,
+        "index": 55
+      },
+      {
+        "cell": "II/Re100/v[14]",
+        "value": 0.10091,
+        "token": "0.10091",
+        "ocr_sign": 1,
+        "index": 56
+      },
+      {
+        "cell": "II/Re100/v[15]",
+        "value": 0.09233,
+        "token": "0.09233",
+        "ocr_sign": 1,
+        "index": 57
+      },
+      {
+        "cell": "II/Re100/v[16]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 58
+      },
+      {
+        "cell": "II/Re400/v[0]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 59
+      },
+      {
+        "cell": "II/Re400/v[1]",
+        "value": -0.12146,
+        "token": "a.12146",
+        "ocr_sign": "mangled",
+        "index": 60
+      },
+      {
+        "cell": "II/Re400/v[2]",
+        "value": -0.15663,
+        "token": "-0.15663",
+        "ocr_sign": -1,
+        "index": 61
+      },
+      {
+        "cell": "II/Re400/v[3]",
+        "value": -0.19254,
+        "token": "-0.19254",
+        "ocr_sign": -1,
+        "index": 62
+      },
+      {
+        "cell": "II/Re400/v[4]",
+        "value": -0.22847,
+        "token": "-0.22847",
+        "ocr_sign": -1,
+        "index": 63
+      },
+      {
+        "cell": "II/Re400/v[5]",
+        "value": -0.23827,
+        "token": "-0.23827",
+        "ocr_sign": -1,
+        "index": 64
+      },
+      {
+        "cell": "II/Re400/v[6]",
+        "value": -0.44993,
+        "token": "a.44993",
+        "ocr_sign": "mangled",
+        "index": 65
+      },
+      {
+        "cell": "II/Re400/v[7]",
+        "value": -0.38598,
+        "token": "-0.38598",
+        "ocr_sign": -1,
+        "index": 66
+      },
+      {
+        "cell": "II/Re400/v[9]",
+        "value": 0.30174,
+        "token": "0.30174",
+        "ocr_sign": 1,
+        "index": 68
+      },
+      {
+        "cell": "II/Re400/v[10]",
+        "value": 0.30203,
+        "token": "0.30203",
+        "ocr_sign": 1,
+        "index": 69
+      },
+      {
+        "cell": "II/Re400/v[11]",
+        "value": 0.28124,
+        "token": "0.28124",
+        "ocr_sign": 1,
+        "index": 70
+      },
+      {
+        "cell": "II/Re400/v[12]",
+        "value": 0.22965,
+        "token": "0.22965",
+        "ocr_sign": 1,
+        "index": 71
+      },
+      {
+        "cell": "II/Re400/v[13]",
+        "value": 0.2092,
+        "token": "0.20920",
+        "ocr_sign": 1,
+        "index": 72
+      },
+      {
+        "cell": "II/Re400/v[14]",
+        "value": 0.19713,
+        "token": "0.19713",
+        "ocr_sign": 1,
+        "index": 73
+      },
+      {
+        "cell": "II/Re400/v[15]",
+        "value": 0.1836,
+        "token": "0.18360",
+        "ocr_sign": 1,
+        "index": 74
+      },
+      {
+        "cell": "II/Re400/v[16]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 75
+      },
+      {
+        "cell": "II/Re1000/v[0]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 76
+      },
+      {
+        "cell": "II/Re1000/v[1]",
+        "value": -0.21388,
+        "token": "a.21388",
+        "ocr_sign": "mangled",
+        "index": 77
+      },
+      {
+        "cell": "II/Re1000/v[2]",
+        "value": -0.27669,
+        "token": "-0.27669",
+        "ocr_sign": -1,
+        "index": 78
+      },
+      {
+        "cell": "II/Re1000/v[3]",
+        "value": -0.33714,
+        "token": "a.33714",
+        "ocr_sign": "mangled",
+        "index": 79
+      },
+      {
+        "cell": "II/Re1000/v[4]",
+        "value": -0.39188,
+        "token": "-0.39188",
+        "ocr_sign": -1,
+        "index": 80
+      },
+      {
+        "cell": "II/Re1000/v[6]",
+        "value": -0.42665,
+        "token": "a.42665",
+        "ocr_sign": "mangled",
+        "index": 83
+      },
+      {
+        "cell": "II/Re1000/v[7]",
+        "value": -0.31966,
+        "token": "-0.3",
+        "ocr_sign": -1,
+        "index": 84
+      },
+      {
+        "cell": "II/Re1000/v[8]",
+        "value": 0.02526,
+        "token": "0.02526",
+        "ocr_sign": 1,
+        "index": 86
+      },
+      {
+        "cell": "II/Re1000/v[9]",
+        "value": 0.32235,
+        "token": "0.32235",
+        "ocr_sign": 1,
+        "index": 87
+      },
+      {
+        "cell": "II/Re1000/v[10]",
+        "value": 0.33075,
+        "token": "0.33075",
+        "ocr_sign": 1,
+        "index": 88
+      },
+      {
+        "cell": "II/Re1000/v[11]",
+        "value": 0.37095,
+        "token": "0.37095",
+        "ocr_sign": 1,
+        "index": 89
+      },
+      {
+        "cell": "II/Re1000/v[12]",
+        "value": 0.32627,
+        "token": "0.32627",
+        "ocr_sign": 1,
+        "index": 90
+      },
+      {
+        "cell": "II/Re1000/v[13]",
+        "value": 0.30353,
+        "token": "0.30353",
+        "ocr_sign": 1,
+        "index": 91
+      },
+      {
+        "cell": "II/Re1000/v[14]",
+        "value": 0.29012,
+        "token": "0.29012",
+        "ocr_sign": 1,
+        "index": 92
+      },
+      {
+        "cell": "II/Re1000/v[15]",
+        "value": 0.27485,
+        "token": "0.27485",
+        "ocr_sign": 1,
+        "index": 93
+      },
+      {
+        "cell": "II/Re1000/v[16]",
+        "value": 0.0,
+        "token": "0.00000",
+        "ocr_sign": 1,
+        "index": 94
+      }
+    ]
+  },
+  "sign_audit": {
+    "disagreements": [],
+    "n_cells_value_reproduced_2plus": 101,
+    "n_cells": 102,
+    "n_cells_with_multiple_witnesses": 102,
+    "n_disagreements": 0
+  },
+  "sign_audit_cells": {
+    "I/Re100/u[0]": {
+      "cell": "I/Re100/u[0]",
+      "value": 1.0,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[1]": {
+      "cell": "I/Re100/u[1]",
+      "value": 0.84123,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[2]": {
+      "cell": "I/Re100/u[2]",
+      "value": 0.78871,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[3]": {
+      "cell": "I/Re100/u[3]",
+      "value": 0.73722,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[4]": {
+      "cell": "I/Re100/u[4]",
+      "value": 0.68717,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[5]": {
+      "cell": "I/Re100/u[5]",
+      "value": 0.23151,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[6]": {
+      "cell": "I/Re100/u[6]",
+      "value": 0.00332,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[7]": {
+      "cell": "I/Re100/u[7]",
+      "value": -0.13641,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[8]": {
+      "cell": "I/Re100/u[8]",
+      "value": -0.20581,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[9]": {
+      "cell": "I/Re100/u[9]",
+      "value": -0.2109,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[10]": {
+      "cell": "I/Re100/u[10]",
+      "value": -0.15662,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[11]": {
+      "cell": "I/Re100/u[11]",
+      "value": -0.1015,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[12]": {
+      "cell": "I/Re100/u[12]",
+      "value": -0.06434,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[13]": {
+      "cell": "I/Re100/u[13]",
+      "value": -0.04775,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[14]": {
+      "cell": "I/Re100/u[14]",
+      "value": -0.04192,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[15]": {
+      "cell": "I/Re100/u[15]",
+      "value": -0.03717,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re100/u[16]": {
+      "cell": "I/Re100/u[16]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "gist": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "II/Re100/v[0]": {
+      "cell": "II/Re100/v[0]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "pinn": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[1]": {
+      "cell": "II/Re100/v[1]",
+      "value": -0.05906,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[2]": {
+      "cell": "II/Re100/v[2]",
+      "value": -0.07391,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[3]": {
+      "cell": "II/Re100/v[3]",
+      "value": -0.08864,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[4]": {
+      "cell": "II/Re100/v[4]",
+      "value": -0.10313,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[5]": {
+      "cell": "II/Re100/v[5]",
+      "value": -0.16914,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[6]": {
+      "cell": "II/Re100/v[6]",
+      "value": -0.22445,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[7]": {
+      "cell": "II/Re100/v[7]",
+      "value": -0.24533,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[8]": {
+      "cell": "II/Re100/v[8]",
+      "value": 0.05454,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[9]": {
+      "cell": "II/Re100/v[9]",
+      "value": 0.17527,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[10]": {
+      "cell": "II/Re100/v[10]",
+      "value": 0.17507,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[11]": {
+      "cell": "II/Re100/v[11]",
+      "value": 0.16077,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[12]": {
+      "cell": "II/Re100/v[12]",
+      "value": 0.12317,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[13]": {
+      "cell": "II/Re100/v[13]",
+      "value": 0.1089,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[14]": {
+      "cell": "II/Re100/v[14]",
+      "value": 0.10091,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[15]": {
+      "cell": "II/Re100/v[15]",
+      "value": 0.09233,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re100/v[16]": {
+      "cell": "II/Re100/v[16]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "pinn": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "I/Re400/u[0]": {
+      "cell": "I/Re400/u[0]",
+      "value": 1.0,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[1]": {
+      "cell": "I/Re400/u[1]",
+      "value": 0.75837,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[2]": {
+      "cell": "I/Re400/u[2]",
+      "value": 0.68439,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[3]": {
+      "cell": "I/Re400/u[3]",
+      "value": 0.61756,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[4]": {
+      "cell": "I/Re400/u[4]",
+      "value": 0.55892,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[5]": {
+      "cell": "I/Re400/u[5]",
+      "value": 0.29093,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[6]": {
+      "cell": "I/Re400/u[6]",
+      "value": 0.16256,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[7]": {
+      "cell": "I/Re400/u[7]",
+      "value": 0.02135,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[8]": {
+      "cell": "I/Re400/u[8]",
+      "value": -0.11477,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[9]": {
+      "cell": "I/Re400/u[9]",
+      "value": -0.17119,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[10]": {
+      "cell": "I/Re400/u[10]",
+      "value": -0.32726,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[11]": {
+      "cell": "I/Re400/u[11]",
+      "value": -0.24299,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[12]": {
+      "cell": "I/Re400/u[12]",
+      "value": -0.14612,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[13]": {
+      "cell": "I/Re400/u[13]",
+      "value": -0.10338,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[14]": {
+      "cell": "I/Re400/u[14]",
+      "value": -0.09266,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[15]": {
+      "cell": "I/Re400/u[15]",
+      "value": -0.08186,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re400/u[16]": {
+      "cell": "I/Re400/u[16]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "gist": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "II/Re400/v[0]": {
+      "cell": "II/Re400/v[0]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "pinn": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[1]": {
+      "cell": "II/Re400/v[1]",
+      "value": -0.12146,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[2]": {
+      "cell": "II/Re400/v[2]",
+      "value": -0.15663,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[3]": {
+      "cell": "II/Re400/v[3]",
+      "value": -0.19254,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[4]": {
+      "cell": "II/Re400/v[4]",
+      "value": -0.22847,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[5]": {
+      "cell": "II/Re400/v[5]",
+      "value": -0.23827,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[6]": {
+      "cell": "II/Re400/v[6]",
+      "value": -0.44993,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[7]": {
+      "cell": "II/Re400/v[7]",
+      "value": -0.38598,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[8]": {
+      "cell": "II/Re400/v[8]",
+      "value": 0.05186,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[9]": {
+      "cell": "II/Re400/v[9]",
+      "value": 0.30174,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[10]": {
+      "cell": "II/Re400/v[10]",
+      "value": 0.30203,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[11]": {
+      "cell": "II/Re400/v[11]",
+      "value": 0.28124,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[12]": {
+      "cell": "II/Re400/v[12]",
+      "value": 0.22965,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[13]": {
+      "cell": "II/Re400/v[13]",
+      "value": 0.2092,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[14]": {
+      "cell": "II/Re400/v[14]",
+      "value": 0.19713,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[15]": {
+      "cell": "II/Re400/v[15]",
+      "value": 0.1836,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re400/v[16]": {
+      "cell": "II/Re400/v[16]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "pinn": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "I/Re1000/u[0]": {
+      "cell": "I/Re1000/u[0]",
+      "value": 1.0,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[1]": {
+      "cell": "I/Re1000/u[1]",
+      "value": 0.65928,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[2]": {
+      "cell": "I/Re1000/u[2]",
+      "value": 0.57492,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[3]": {
+      "cell": "I/Re1000/u[3]",
+      "value": 0.51117,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[4]": {
+      "cell": "I/Re1000/u[4]",
+      "value": 0.46604,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[5]": {
+      "cell": "I/Re1000/u[5]",
+      "value": 0.33304,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[6]": {
+      "cell": "I/Re1000/u[6]",
+      "value": 0.18719,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[7]": {
+      "cell": "I/Re1000/u[7]",
+      "value": 0.05702,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "gist": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[8]": {
+      "cell": "I/Re1000/u[8]",
+      "value": -0.0608,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[9]": {
+      "cell": "I/Re1000/u[9]",
+      "value": -0.10648,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[10]": {
+      "cell": "I/Re1000/u[10]",
+      "value": -0.27805,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[11]": {
+      "cell": "I/Re1000/u[11]",
+      "value": -0.38289,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[12]": {
+      "cell": "I/Re1000/u[12]",
+      "value": -0.2973,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[13]": {
+      "cell": "I/Re1000/u[13]",
+      "value": -0.2222,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[14]": {
+      "cell": "I/Re1000/u[14]",
+      "value": -0.20196,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[15]": {
+      "cell": "I/Re1000/u[15]",
+      "value": -0.18109,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "gist": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "I/Re1000/u[16]": {
+      "cell": "I/Re1000/u[16]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "gist": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "gist",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "gist",
+        "matlab"
+      ]
+    },
+    "II/Re1000/v[0]": {
+      "cell": "II/Re1000/v[0]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "pinn": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[1]": {
+      "cell": "II/Re1000/v[1]",
+      "value": -0.21388,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[2]": {
+      "cell": "II/Re1000/v[2]",
+      "value": -0.27669,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[3]": {
+      "cell": "II/Re1000/v[3]",
+      "value": -0.33714,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[4]": {
+      "cell": "II/Re1000/v[4]",
+      "value": -0.39188,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[5]": {
+      "cell": "II/Re1000/v[5]",
+      "value": -0.5155,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab"
+      ]
+    },
+    "II/Re1000/v[6]": {
+      "cell": "II/Re1000/v[6]",
+      "value": -0.42665,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[7]": {
+      "cell": "II/Re1000/v[7]",
+      "value": -0.31966,
+      "provenance_sign": -1.0,
+      "witnesses": {
+        "pinn": -1.0,
+        "matlab": -1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[8]": {
+      "cell": "II/Re1000/v[8]",
+      "value": 0.02526,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[9]": {
+      "cell": "II/Re1000/v[9]",
+      "value": 0.32235,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[10]": {
+      "cell": "II/Re1000/v[10]",
+      "value": 0.33075,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[11]": {
+      "cell": "II/Re1000/v[11]",
+      "value": 0.37095,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[12]": {
+      "cell": "II/Re1000/v[12]",
+      "value": 0.32627,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[13]": {
+      "cell": "II/Re1000/v[13]",
+      "value": 0.30353,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[14]": {
+      "cell": "II/Re1000/v[14]",
+      "value": 0.29012,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[15]": {
+      "cell": "II/Re1000/v[15]",
+      "value": 0.27485,
+      "provenance_sign": 1.0,
+      "witnesses": {
+        "pinn": 1.0,
+        "matlab": 1.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    },
+    "II/Re1000/v[16]": {
+      "cell": "II/Re1000/v[16]",
+      "value": 0.0,
+      "provenance_sign": 0.0,
+      "witnesses": {
+        "pinn": 0.0,
+        "matlab": 0.0
+      },
+      "agree": [
+        "pinn",
+        "matlab"
+      ],
+      "n_witnesses": 2,
+      "value_reproduced_by": [
+        "matlab",
+        "pinn"
+      ]
+    }
+  },
+  "invariant_gates": {
+    "u(y=1)=1": 0.0,
+    "u(y=0)=0": 0.0,
+    "v(x=0)=0": 0.0,
+    "v(x=1)=0": 0.0,
+    "v>0 on 0<x<1/2": true,
+    "v<0 on 1/2<x<1": true,
+    "single u sign change": true,
+    "u monotone decreasing above y=0.5": true,
+    "|v| max inside domain (not at wall)": true,
+    "all_pass": true
+  },
+  "detection_power": {
+    "n_trials": 200,
+    "caught": 144,
+    "catch_rate": 0.72,
+    "baseline_missing": 2
+  },
+  "rescore": {
+    "L128": {
+      "source": "cavity_accept_field_L128.npz",
+      "L2_u": 0.006705116691661053,
+      "L2_v": 0.003758355820395652,
+      "worst": 0.006705116691661053,
+      "gate_15pct": true,
+      "gate_3pct": true
+    },
+    "L32": {
+      "source": "cavity_accept_field_L32.npz",
+      "L2_u": 0.026101241178891295,
+      "L2_v": 0.010464989959435338,
+      "worst": 0.026101241178891295,
+      "gate_15pct": true,
+      "gate_3pct": true
+    }
+  },
+  "verdict": {
+    "witness_sha256_match": true,
+    "all_magnitudes_rederived": true,
+    "magnitude_coverage": 0.9779411764705882,
+    "anchor_re100_fully_rederived": true,
+    "all_signs_corroborated": true,
+    "invariants_pass": true,
+    "detection_power_ge_2_3": true,
+    "acceptance_gate_15pct_met": true,
+    "pass": true
+  },
+  "magnitude_rechain_summary": {
+    "n_cells": 136,
+    "n_missing": 3,
+    "coverage": 0.9779411764705882,
+    "anchor_re100_missing": [],
+    "residual_cells_corroborated": true,
+    "missing_cells": [
+      "I/Re1000/u[11]",
+      "II/Re400/v[8]",
+      "II/Re1000/v[5]"
+    ],
+    "known_provenance_defects_off_anchor": [
+      {
+        "cell": "II/Re1000/v[5]",
+        "provenance_value": -0.5155,
+        "witness_sign": {
+          "pinn": -1.0,
+          "matlab": -1.0
+        },
+        "value_reproduced_by": [
+          "matlab"
+        ]
+      }
+    ]
+  }
+}
