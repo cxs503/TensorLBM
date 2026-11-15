@@ -196,46 +196,92 @@ def test_mass_conservation() -> None:
     assert abs(float(rho1 - rho0)) / float(rho0) < 1e-12
 
 
-def test_taylor_green_decay_is_decomposition_invariant() -> None:
-    """TG decay rate must not depend on the device grid.
-
-    NOTE (honest scope): the *absolute* decay rate of this minimal ported
-    solver does not reproduce ``4*nu*k^2`` (see
-    ``artifacts/xval_host_staged_halo/summary.json`` -> ``honest_fail``), so the
-    physics assertion is restricted to what the transport can be held to: the
-    measured rate is bit-identical across decompositions.
-    """
-    n, steps, nu = 16, 60, 0.02
+def _tg_velocity(n: int, u0: float = 0.05) -> torch.Tensor:
+    """Periodic Taylor-Green field on an ``n^3`` torus (wavenumber applied once)."""
     k = 2 * math.pi / n
     z, y, x = torch.meshgrid(
-        torch.arange(n) * 2 * math.pi / n, torch.arange(n) * k, torch.arange(n) * k, indexing="ij"
+        torch.arange(n, dtype=torch.float64),
+        torch.arange(n, dtype=torch.float64),
+        torch.arange(n, dtype=torch.float64),
+        indexing="ij",
     )
-    u0 = torch.stack(
-        [0.05 * torch.sin(k * x) * torch.cos(k * y), -0.05 * torch.cos(k * x) * torch.sin(k * y), torch.zeros_like(x)]
+    return torch.stack(
+        [u0 * torch.sin(k * x) * torch.cos(k * y), -u0 * torch.cos(k * x) * torch.sin(k * y), torch.zeros_like(x)]
     )
+
+
+def _tg_decay(n: int, nu: float, devs: tuple[int, int, int], t1: int = 20, t2: int = 100) -> float:
+    solver = HostStagedD3Q19(HostStagedLayout(n, n, n, *devs), nu=nu, dtype=torch.float64)
+    solver.set_velocity(_tg_velocity(n))
+    solver.step(t1)
+    k1 = solver.kinetic_energy()
+    solver.step(t2 - t1)
+    return math.log(k1 / solver.kinetic_energy()) / (t2 - t1)
+
+
+def test_taylor_green_initial_condition_is_a_periodic_single_mode() -> None:
+    """The physics arm is only meaningful if its IC *is* the analytic field.
+
+    Regression for the m18373 defect: ``sin(k * i * k)`` (wavenumber applied
+    twice) is not periodic on the torus and silently turned the decay arm into a
+    measurement of a discontinuity.
+    """
+    n, u0 = 16, 0.05
+    u = _tg_velocity(n, u0)
+    # a mode that is not an integer number of periods on the torus is
+    # under-sampled: its discrete peak is strictly smaller than u0
+    assert abs(float(u.abs().max()) - u0) < 1e-14
+    dudx = (torch.roll(u[0], -1, 2) - torch.roll(u[0], 1, 2)) / 2
+    dudy = (torch.roll(u[1], -1, 1) - torch.roll(u[1], 1, 1)) / 2
+    assert float((dudx + dudy).abs().max()) < 1e-14
+    amp = torch.fft.fft2(u[0][0].to(torch.complex128)).abs()  # (z, y, x) -> z = 0 plane
+    total = float(amp.sum())
+    mode = float(amp[(-1, 1)] + amp[(-1, -1)] + amp[(1, 1)] + amp[(1, -1)])
+    assert (total - mode) / total < 1e-14
+    assert abs(0.5 * float((u * u).sum(dim=0).mean()) / (u0**2 / 4.0) - 1.0) < 1e-14
+
+
+def test_taylor_green_decay_matches_analytic_and_is_decomposition_invariant() -> None:
+    """TG kinetic energy must decay at ``4*nu*k^2`` on every device grid."""
+    n, nu = 16, 0.02
+    gamma_theory = 4.0 * nu * (2 * math.pi / n) ** 2
     gammas = {}
     for devs in ((1, 1, 1), (1, 1, 2), (2, 2, 2)):
-        solver = HostStagedD3Q19(HostStagedLayout(n, n, n, *devs), nu=nu, dtype=torch.float64)
-        solver.set_velocity(u0)
-        k0 = solver.kinetic_energy()
-        solver.step(steps)
-        gammas[devs] = math.log(k0 / solver.kinetic_energy()) / steps
+        gammas[devs] = _tg_decay(n, nu, devs)
+    for devs, g in gammas.items():
+        assert abs(g - gamma_theory) / gamma_theory < 0.15, (devs, g, gamma_theory)
     ref = gammas[(1, 1, 1)]
     for devs, g in gammas.items():
         assert abs(g - ref) / ref < 1e-10, (devs, g, ref)
 
 
-def test_divergence_free_initial_field() -> None:
-    """The invariance arm relies on an exactly divergence-free field.
+def test_dense_reference_step_is_reproduced_bitwise() -> None:
+    """The slab/collide/stream port must equal an independent dense LBM step.
 
-    Component ``i`` of the ABC field is independent of coordinate ``i``, so a
-    central difference of each component along its own axis is machine zero.
+    The reference below is written from the definitions (pull streaming with
+    explicit ``torch.roll`` on ``(z, y, x)`` axes, BGK equilibrium), so any
+    index/axis/velocity-set slip in the port shows up as a non-zero diff.
     """
-    u = abc_velocity(16, 0.05)
-    dims = {0: 2, 1: 1, 2: 0}  # coordinate axis -> tensor dim of a (z, y, x) field
-    div = torch.zeros_like(u[0])
-    for comp, dim in dims.items():
-        comp_slice = u[comp]
-        d = (torch.roll(comp_slice, -1, dims=dim) - torch.roll(comp_slice, 1, dims=dim)) / 2.0
-        div = div + d
-    assert float(div.abs().max()) < 1e-6
+    from tensorlbm.host_staged_halo import D3Q19_C, D3Q19_W
+
+    n, nu = 12, 0.02
+    c = torch.tensor(D3Q19_C, dtype=torch.float64)
+    w = torch.tensor(D3Q19_W, dtype=torch.float64).view(19, 1, 1, 1)
+    shifts = [(int(v[2]), int(v[1]), int(v[0])) for v in D3Q19_C]  # (z, y, x) order
+
+    def feq(rho: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
+        cu = torch.einsum("qa,azyx->qzyx", c, u)
+        u2 = (u * u).sum(dim=0)
+        return w * rho * (1 + 3 * cu + 4.5 * cu * cu - 1.5 * u2)
+
+    f = feq(torch.ones(1, n, n, n, dtype=torch.float64), _tg_velocity(n))
+    solver = HostStagedD3Q19(HostStagedLayout(n, n, n), nu=nu, dtype=torch.float64)
+    solver.set_velocity(_tg_velocity(n))
+    omega = 1.0 / (3 * nu + 0.5)
+    for _ in range(3):
+        rho = f.sum(dim=0)
+        u = torch.einsum("qa,qzyx->azyx", c, f) / rho
+        f = f - omega * (f - feq(rho, u))
+        f = torch.stack([torch.roll(f[q], shifts[q], dims=(0, 1, 2)) for q in range(19)])
+        solver.step(1)
+    assert float((solver.slabs[0] - f).abs().max()) == 0.0
