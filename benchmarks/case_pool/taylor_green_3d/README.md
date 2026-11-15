@@ -50,3 +50,18 @@ the band is met because the scheme converges, not because a grid was picked.
 * `make_report.py` — artifact → markdown tables + PNG figures (`artifacts/figures/`).
 * `artifacts/summary.json`, `artifacts/summary.md`, `artifacts/field_primary.npz`.
 * `tests/test_case_pool_taylor_green_3d.py` — 3-layer acceptance tests.
+
+## Reference-evidence audit (m22117)
+
+`docs/CASE-TAYLOR-GREEN-3D-reference-audit.md` records the adversarial review of
+this case's evidence and the two holes it closed:
+
+* `Q10_series_vs_dns_rel` (leg `dns`) — the declared pseudo-spectral DNS
+  cross-check is now actually run and gated (1e-3); the closed-form anchor alone
+  cannot test the convective term, because both closed forms are nonlinearly
+  trivial.
+* `Q11_series_field_workgrid_rel` (leg `convergence`) — the reference *field*
+  reproduces itself across covered work grids (`nfft >= 3N`) to 5e-10, using the
+  new `velocity_field(..., band_limit=True)`; the legacy order-clamping path is
+  work-grid dependent by up to 11 % at N = 32 and is no longer used for any gate.
+  Q5/Q9 only bound modal sums and are not a field-level error bound.
