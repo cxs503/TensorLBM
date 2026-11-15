@@ -1,0 +1,149 @@
+{
+  "primary": {
+    "n": 32,
+    "steps": 102,
+    "eddy_time": 1.0013826583317464,
+    "tau": 0.53,
+    "nu": 0.01,
+    "ma": 0.08660254037844387,
+    "reynolds": 160.0,
+    "energy_ratio_lbm": 0.7678186204491185,
+    "energy_ratio_series": 0.7845756538624972,
+    "energy_ratio_rel_err_pct": -2.1358084884335993,
+    "energy_pointwise_rel_err_pct": -2.1358084884335993,
+    "enstrophy_ratio_lbm": 0.8252660749895531,
+    "enstrophy_ratio_series": 0.8467600380301601,
+    "enstrophy_ratio_rel_err_pct": -2.5383771169231073,
+    "velocity_l2_rel_err_pct": 3.2843837413361134,
+    "vorticity_l2_rel_err_pct": 6.647267467774568,
+    "u_l2_abs": 0.000727057414357157,
+    "u_l2_ref": 0.02213679860872117,
+    "series_field_order": 3.0,
+    "series_truncation_rel": 0.000180279870990202,
+    "rho_deviation": 0.0047790805117753354,
+    "wall_s": 52.76,
+    "history": [
+      {
+        "step": 0.0,
+        "eddy_time": 0.0,
+        "energy_ratio_lbm": 1.0,
+        "energy_ratio_series": 1.0,
+        "enstrophy_ratio_lbm": 1.0,
+        "enstrophy_ratio_series": 1.0,
+        "rho_min": 0.9999999999999996,
+        "rho_max": 1.0000000000000004
+      },
+      {
+        "step": 10.0,
+        "eddy_time": 0.09817477042468103,
+        "energy_ratio_lbm": 0.9569343651644692,
+        "energy_ratio_series": 0.977126211102345,
+        "enstrophy_ratio_lbm": 0.9575928230701511,
+        "enstrophy_ratio_series": 0.9780780997484413,
+        "rho_min": 0.9952209194882247,
+        "rho_max": 1.0047329165458518
+      },
+      {
+        "step": 20.0,
+        "eddy_time": 0.19634954084936207,
+        "energy_ratio_lbm": 0.9348959589529934,
+        "energy_ratio_series": 0.9547335330452791,
+        "enstrophy_ratio_lbm": 0.9378670499605256,
+        "enstrophy_ratio_series": 0.9583477885528634,
+        "rho_min": 0.9979226177999164,
+        "rho_max": 1.0021307203511138
+      },
+      {
+        "step": 30.0,
+        "eddy_time": 0.2945243112740431,
+        "energy_ratio_lbm": 0.9140202312274583,
+        "energy_ratio_series": 0.9327749138786461,
+        "enstrophy_ratio_lbm": 0.9211482745543289,
+        "enstrophy_ratio_series": 0.9405012029939274,
+        "rho_min": 0.9981382286918452,
+        "rho_max": 1.0018382556180248
+      },
+      {
+        "step": 40.0,
+        "eddy_time": 0.39269908169872414,
+        "energy_ratio_lbm": 0.8918017117952503,
+        "energy_ratio_series": 0.9112099629842425,
+        "enstrophy_ratio_lbm": 0.9039636783587863,
+        "enstrophy_ratio_series": 0.9242687324871928,
+        "rho_min": 0.996798050740864,
+        "rho_max": 1.0033737051152467
+      },
+      {
+        "step": 50.0,
+        "eddy_time": 0.4908738521234052,
+        "energy_ratio_lbm": 0.8720276586616489,
+        "energy_ratio_series": 0.8900041639008097,
+        "enstrophy_ratio_lbm": 0.8897786663287016,
+        "enstrophy_ratio_series": 0.9094109550036686,
+        "rho_min": 0.9973851631788445,
+        "rho_max": 1.0027352597152168
+      },
+      {
+        "step": 60.0,
+        "eddy_time": 0.5890486225480862,
+        "energy_ratio_lbm": 0.8516946244695569,
+        "energy_ratio_series": 0.8691282512889009,
+        "enstrophy_ratio_lbm": 0.8762155317792439,
+        "enstrophy_ratio_series": 0.8957125761468407,
+        "rho_min": 0.9994236958982752,
+        "rho_max": 1.0007937735145283
+      },
+      {
+        "step": 70.0,
+        "eddy_time": 0.6872233929727672,
+        "energy_ratio_lbm": 0.8299888693107818,
+        "energy_ratio_series": 0.8485577149825726,
+        "enstrophy_ratio_lbm": 0.8620866768501941,
+        "enstrophy_ratio_series": 0.8829781462371324,
+        "rho_min": 0.9955616160300514,
+        "rho_max": 1.0047741527244387
+      },
+      {
+        "step": 80.0,
+        "eddy_time": 0.7853981633974483,
+        "energy_ratio_lbm": 0.8114681393621972,
+        "energy_ratio_series": 0.8282724116742711,
+        "enstrophy_ratio_lbm": 0.8510363381887107,
+        "enstrophy_ratio_series": 0.8710297275531875,
+        "rho_min": 0.9997687744038705,
+        "rho_max": 1.0005223380673434
+      },
+      {
+        "step": 90.0,
+        "eddy_time": 0.8835729338221293,
+        "energy_ratio_lbm": 0.7914105287881673,
+        "energy_ratio_series": 0.8082562963753603,
+        "enstrophy_ratio_lbm": 0.8389141426682554,
+        "enstrophy_ratio_series": 0.8597075527290016,
+        "rho_min": 0.9976180732024391,
+        "rho_max": 1.0028489437968064
+      },
+      {
+        "step": 100.0,
+        "eddy_time": 0.9817477042468103,
+        "energy_ratio_lbm": 0.771350667501986,
+        "energy_ratio_series": 0.788497346094433,
+        "enstrophy_ratio_lbm": 0.8273204251897815,
+        "enstrophy_ratio_series": 0.848876517641352,
+        "rho_min": 0.9974125773517296,
+        "rho_max": 1.0029641076010973
+      },
+      {
+        "step": 102.0,
+        "eddy_time": 1.0013826583317464,
+        "energy_ratio_lbm": 0.7678186204491185,
+        "energy_ratio_series": 0.7845756538624972,
+        "enstrophy_ratio_lbm": 0.8252660749895531,
+        "enstrophy_ratio_series": 0.8467600380301601,
+        "rho_min": 0.9978344873252092,
+        "rho_max": 1.002684004465455
+      }
+    ],
+    "field_saved": "field_primary.npz"
+  }
+}
