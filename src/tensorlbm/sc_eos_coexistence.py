@@ -69,7 +69,9 @@ __all__ = [
     "MaxwellResult",
     "chemical_potential",
     "classic_to_library",
+    "FlatInterfaceResult",
     "coexistence_exists",
+    "flat_interface_coexistence",
     "library_to_classic",
     "maxwell_coexistence",
     "mechanical_pressure",
@@ -501,3 +503,185 @@ def relax_scmp(
         "mass_drift": abs(mass1 - mass0) / max(abs(mass0), 1e-12),
     }
     return out
+
+@dataclass(frozen=True)
+class FlatInterfaceResult:
+    """Coexisting densities measured from a relaxed periodic flat interface.
+
+    ``diverged=False`` with a density pair is the calibration result; a
+    divergence is reported with the step at which the state became non-finite so
+    the failure is auditable instead of silently dropped.
+    """
+
+    G: float
+    G_classic: float
+    forcing: str
+    ny: int
+    nx: int
+    tau: float
+    steps: int
+    diverged: bool
+    diverged_at_step: int | None = None
+    rho_liquid: float | None = None
+    rho_vapour: float | None = None
+    rho_liquid_seed: float | None = None
+    rho_vapour_seed: float | None = None
+    p_liquid: float | None = None
+    p_vapour: float | None = None
+    spurious_u_max: float | None = None
+    mass_drift: float | None = None
+    spurious_u_history: Any = None
+    spurious_u_profile: Any = None
+    profile: Any = None
+
+    def as_dict(self, keep_profile: bool = False) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        for key, value in asdict(self).items():
+            if key in ("profile", "spurious_u_profile") and not keep_profile:
+                continue
+            out[key] = round(value, 12) if isinstance(value, float) else value
+        return out
+
+
+def flat_interface_coexistence(
+    G: float,
+    psi_fn: Callable[[torch.Tensor], torch.Tensor],
+    ny: int = 64,
+    nx: int = 2,
+    forcing: str = "edm",
+    tau: float = 1.0,
+    steps: int = 20000,
+    seed_width: float = 4.0,
+    seed_rho_liquid: float | None = None,
+    seed_rho_vapour: float | None = None,
+    average_over: int = 5000,
+    u_probe_every: int = 0,
+    rho_floor: float = 1e-6,
+    device: str = "cpu",
+) -> FlatInterfaceResult:
+    """Measure the *scheme's own* coexisting densities on a periodic flat interface.
+
+    This is the coexistence calibration the R4 route calls for (Shan & Chen 1993/
+    1994): a fully periodic strip holds two planar interfaces, no walls and no
+    body force, so a relaxed state has zero Laplace pressure and the plateaux are
+    the coexistence densities of the *discretised* model.  Two things decide
+    whether the run is informative, and both are done here because round 1 of
+    ``XVAL-LBM-R4-COEXISTENCE`` got them wrong:
+
+    1. **The initial state is the Maxwell binodal of the same EOS**, not a nominal
+       pair.  Starting from an arbitrary ``(rho_l, rho_v)`` either shocks the
+       interface (blow-up at large ``G``) or relaxes on a diffusion time that is
+       much longer than the run, so the measured plateaux are initial-state
+       artefacts.
+    2. **The library collision operator is used** (:func:`tensorlbm.multiphase.
+       collide_sc_single_component`) with its momentum-exact forcings
+       (``edm``/``guo``/``velocity_shift``) rather than a hand-rolled velocity
+       shift.  The hand-rolled variant in the round-1 driver divided the force by
+       ``2*rho`` evaluated on the *unfloored* density and produced NaN once
+       ``rho_v <~ 0.25``; the floor is applied inside the pseudopotential here.
+
+    Args:
+        G: SC coupling, library convention (> 0 attractive).
+        psi_fn: Pseudopotential ψ(ρ).
+        ny, nx: Domain size (``nx`` only needs to be wide enough for the 3-D
+            stencil roll; 2 is enough).
+        forcing: Forwarded to the collision operator (``edm``, ``guo`` or
+            ``velocity_shift``).
+        tau: BGK relaxation time.
+        steps: Number of time steps.
+        seed_width: tanh width of the initial interface, in cells.
+        seed_rho_liquid, seed_rho_vapour: Seed plateaux; ``None`` takes the
+            Maxwell binodal of the same EOS.
+        average_over: Number of trailing steps averaged for the plateaux.
+        u_probe_every: If > 0, record ``max|u|`` every that many steps (the
+            spurious-current decay is the evidence that the state is static; a
+            non-decaying ``max|u|`` means the plateaux are still moving).
+        rho_floor: Density floor applied *inside* the pseudopotential.
+        device: Torch device string.
+
+    Returns:
+        :class:`FlatInterfaceResult`.  ``diverged=True`` reports
+        ``diverged_at_step`` and no densities.
+    """
+    from . import d2q9, solver  # noqa: PLC0415
+    from .multiphase import collide_sc_single_component  # noqa: PLC0415
+
+    if seed_rho_liquid is None or seed_rho_vapour is None:
+        maxwell = maxwell_coexistence(G=G, psi_fn=psi_fn, rho_lo=1e-5, rho_hi=50.0, n=12000)
+        if not maxwell.found:
+            raise ValueError(
+                f"no Maxwell coexistence at G={G} ({maxwell.reason}); pass explicit seeds"
+            )
+        seed_rho_liquid = float(maxwell.rho_liquid)  # type: ignore[arg-type]
+        seed_rho_vapour = float(maxwell.rho_vapour)  # type: ignore[arg-type]
+
+    def _psi(clipped: torch.Tensor) -> torch.Tensor:
+        return psi_fn(torch.clamp(clipped, min=rho_floor))
+
+    y = torch.arange(ny).view(-1, 1).double()
+    prof = seed_rho_vapour + 0.5 * (seed_rho_liquid - seed_rho_vapour) * (
+        torch.tanh((y - ny / 4) / seed_width) - torch.tanh((y - 3 * ny / 4) / seed_width)
+    )
+    rho = prof.expand(ny, nx).contiguous().to(device)
+    zeros = torch.zeros_like(rho)
+    f = d2q9.equilibrium(rho, zeros, zeros)
+    mass0 = float(rho.sum().item())
+    acc = torch.zeros_like(rho)
+    nacc = 0
+    u_hist: list[dict[str, float]] = []
+    diverged_at: int | None = None
+    want_avg = max(1, int(average_over))
+    for step in range(steps):
+        f = collide_sc_single_component(f, G=G, tau=tau, psi_fn=_psi, forcing=forcing)
+        f = solver.stream(f)
+        if not bool(torch.isfinite(f).all()):
+            diverged_at = step
+            break
+        if u_probe_every and (step % u_probe_every == 0 or step == steps - 1):
+            _, ux_p, uy_p = d2q9.macroscopic(f)
+            u_hist.append({"step": step + 1,
+                           "u_max": float(torch.sqrt(ux_p**2 + uy_p**2).max())})
+        if step >= steps - want_avg:
+            rho_t, _, _ = d2q9.macroscopic(f)
+            acc += rho_t
+            nacc += 1
+
+    def _empty(**kw: Any) -> FlatInterfaceResult:
+        return FlatInterfaceResult(G=G, G_classic=library_to_classic(G), forcing=forcing,
+                                   ny=ny, nx=nx, tau=tau, steps=steps,
+                                   diverged=True, diverged_at_step=diverged_at,
+                                   rho_liquid_seed=seed_rho_liquid,
+                                   rho_vapour_seed=seed_rho_vapour, **kw)
+
+    if diverged_at is not None or nacc == 0:
+        return _empty()
+
+    rho_avg = acc / nacc
+    rho_f, ux, uy = d2q9.macroscopic(f)
+    liq = slice(ny // 2 - ny // 8, ny // 2 + ny // 8)
+    vap = slice(0, max(2, ny // 8))
+    rho_l = float(rho_avg[liq, :].mean())
+    rho_v = float(rho_avg[vap, :].mean())
+    p_l = float(mechanical_pressure(rho_avg[liq, :], G=G, psi_fn=_psi).mean())
+    p_v = float(mechanical_pressure(rho_avg[vap, :], G=G, psi_fn=_psi).mean())
+    return FlatInterfaceResult(
+        G=G,
+        G_classic=library_to_classic(G),
+        forcing=forcing,
+        ny=ny,
+        nx=nx,
+        tau=tau,
+        steps=steps,
+        diverged=False,
+        rho_liquid=rho_l,
+        rho_vapour=rho_v,
+        rho_liquid_seed=seed_rho_liquid,
+        rho_vapour_seed=seed_rho_vapour,
+        p_liquid=p_l,
+        p_vapour=p_v,
+        spurious_u_max=float(torch.sqrt(ux**2 + uy**2).max()),
+        mass_drift=abs(float(rho_f.sum().item()) - mass0) / max(abs(mass0), 1e-12),
+        spurious_u_history=u_hist or None,
+        spurious_u_profile=[float(v) for v in torch.sqrt(ux**2 + uy**2).max(dim=1).values],
+        profile=[float(v) for v in rho_avg[:, 0]],
+    )
