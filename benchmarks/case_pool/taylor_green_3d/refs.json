@@ -28,18 +28,27 @@
     "validity_window": {
       "eddy_time_max": 1.25,
       "why": "the Taylor series converges inside a finite radius; the run is held to T <= 1.25 eddy times and the retained-order tail is written out so a reader can see the truncation level"
-    }
+    },
+    "field_reference_note": "field-side quantities (Q3, Q4) use velocity_field(band_limit=True) on a work grid nfft = max(default_nfft(order), 3N): the series' 2/3-dealiasing band then covers the evaluation band.  The legacy order-clamping path makes the returned field depend on the work grid by up to 11% at N=32 (recorded in artifacts as legs.reference_convergence.field_workgrid.default_nfft_level); it is not used for any gate."
   },
   "cross_checks": [
     {
-      "quantity": "energy / enstrophy histories",
-      "source": "spectral_dns_reference (src/tensorlbm/tg3d_series.py): de-aliased Fourier pseudo-spectral DNS, integrating-factor RK4, same IC and same nu -- a different code path from the series",
-      "role": "guards against a mistake in the series recursion"
+      "quantity": "energy / enstrophy histories (and the band-limited velocity field)",
+      "source": "spectral_dns_reference (src/tensorlbm/tg3d_series.py): de-aliased Fourier pseudo-spectral DNS, integrating-factor RK4, same IC, same box, same nu -- a different code path from the series",
+      "role": "guards against a mistake in the series recursion (the closed forms used by Q0 are nonlinearly trivial and cannot test the convective term)",
+      "enforced_by": "leg `dns` -> Q10_series_vs_dns_rel (le 1e-3); DNS time step refined 1 vs 1/2 so the residual is attributed, not asserted"
     },
     {
       "quantity": "energy decay ratio",
-      "source": "closed form for the z-invariant Taylor-Green mode (exponential decay, machine-checked exact NS solution in benchmarks/case_taylor_green_3d/run_case.py --verify)",
-      "role": "the zero-nonlinearity limit the series must reproduce exactly"
+      "source": "closed form for the z-invariant Taylor-Green mode (exponential decay, machine-checked exact NS solution)",
+      "role": "the zero-nonlinearity limit the series must reproduce exactly",
+      "enforced_by": "leg `anchor` -> Q0_series_vs_closed_form_rel (le 1e-9)"
+    },
+    {
+      "quantity": "reference velocity field on the N^3 lattice",
+      "source": "the same series, evaluated band-limited (velocity_field(band_limit=True)) on working grids nfft >= 3N and 3.5N",
+      "role": "bounds the reference's own field-level error, which the modal sums (Q5, Q9) cannot see",
+      "enforced_by": "leg `convergence` -> Q11_series_field_workgrid_rel (le 1e-3)"
     }
   ],
   "predeclared_rejection_of_alternatives": {

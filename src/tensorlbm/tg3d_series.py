@@ -439,7 +439,8 @@ class TG3DSeries:
         out = np.fft.ifftshift(out, axes=(1, 2, 3))
         return np.fft.ifftn(out, axes=(1, 2, 3)).real * (n**3)
 
-    def velocity_field(self, t: float, *, n: int | None = None, order: int | None = None) -> Field3D:
+    def velocity_field(self, t: float, *, n: int | None = None, order: int | None = None,
+                       band_limit: bool = False) -> Field3D:
         """Velocity field at time ``t`` on an ``n³`` grid over the box.
 
         The truncation order is automatically lowered (and reported via
@@ -450,6 +451,19 @@ class TG3DSeries:
         """
         n = self.nfft if n is None else int(n)
         top = self.order if order is None else min(int(order), self.order)
+        if band_limit:
+            # Keep the full retained order and let ``_to_grid`` restriction-map
+            # the spectrum onto the representable band |k_i| < n/2.  This is the
+            # exact band-limited projection of the series field; the default
+            # path instead *lowers the truncation order* until the support fits,
+            # which discards in-band content of the high orders and makes the
+            # returned field depend on the working grid (see the case-pool case
+            # CASE-TAYLOR-GREEN-3D, quantity Q11).
+            spec = self._series_spectrum(t, top)
+            self.last_field_order = top
+            self.last_field_support = self._spectrum_peak(spec)
+            field = self._to_grid(spec, n)
+            return field[0], field[1], field[2]
         while top >= 0:
             spec = self._series_spectrum(t, top)
             peak = self._spectrum_peak(spec)
