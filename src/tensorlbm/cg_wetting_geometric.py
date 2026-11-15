@@ -338,10 +338,19 @@ def rotate_wall_color_gradient(
     Args:
         gx, gy:    phase-gradient components ``(ny, nx)`` (``phi > 0`` wetting).
         solid:     boolean solid mask ``(ny, nx)``.
-        theta_deg: prescribed static contact angle in degrees, inside the
-                   ``phi > 0`` phase.  Either one value for all walls or a map
-                   through ``theta_by_direction`` (keyed by the wall-normal
-                   lattice direction, e.g. ``{(0, -1): 60.0, (0, 1): 90.0}``).
+        theta_deg: angle in degrees enforced between ``g_hat`` and the wall
+                   normal, i.e. ``angle(g_hat, n_s) = theta_deg``.  This is the
+                   *reference implementation's* angle argument, which is the
+                   **mirror** of the physical contact angle:
+                   ``theta_deg = 180 - theta_physical`` (see
+                   :mod:`tensorlbm.cg_wetting_convention` for the derivation and
+                   for the analytic-cap test that pins it).  Callers that hold
+                   a physical contact angle should go through
+                   ``physical_to_reference_angle`` -- the solver entry point
+                   ``color_gradient_two_tau_step`` does this by default.
+                   Either one value for all walls or a map through
+                   ``theta_by_direction`` (keyed by the wall-normal lattice
+                   direction, e.g. ``{(0, -1): 60.0, (0, 1): 90.0}``).
         periodic:  ``(x, y)`` periodicity of the domain.
         theta_by_direction: per-face override, e.g. a neutral top wall.
 
