@@ -1,0 +1,57 @@
+{
+  "exactness": {
+    "n": 32,
+    "order": 12,
+    "nu": 0.01,
+    "tau": 0.53,
+    "convective_acceleration": {
+      "classic_z_dependent": {
+        "adv_rms": 8.677505738590559e-05,
+        "curl_adv_rms": 1.967406798974292e-05,
+        "curl_over_adv": 0.22672492052927726,
+        "u_rms": 0.014433756729740645
+      },
+      "z_invariant": {
+        "adv_rms": 0.0001417030753307983,
+        "curl_adv_rms": 4.0422096413002253e-19,
+        "curl_over_adv": 2.8525913300497553e-15,
+        "u_rms": 0.020412414523193152
+      },
+      "abc_beltrami": {
+        "adv_rms": 0.00034710022954362237,
+        "curl_adv_rms": 2.2484478675244473e-18,
+        "curl_over_adv": 6.477805763714916e-15,
+        "u_rms": 0.05
+      }
+    },
+    "curl_over_adv_classic": 0.22672492052927726,
+    "curl_over_adv_z_invariant": 2.8525913300497553e-15,
+    "series_dealias": {
+      "nfft": 60,
+      "support_peak_index": 20.0,
+      "cutoff_index": 20.0,
+      "margin": 0.0
+    },
+    "series_tail_at_T": {
+      "energy_last_order_rel": 6.6466198179604585e-06,
+      "enstrophy_last_order_rel": 0.000180279870990202,
+      "energy_step_rel": 6.6466198178840485e-06,
+      "enstrophy_step_rel": 0.00018027987099025422,
+      "energy": 0.0002451798918320304,
+      "enstrophy": 3.0604931389193344e-05
+    },
+    "anchor": {
+      "t_lattice": 101.85916357881302,
+      "nu": 0.01,
+      "n": 32.0,
+      "order": 12.0,
+      "z_invariant_ratio_series": 0.8546359991532334,
+      "z_invariant_ratio_closed_form": 0.8546359991532334,
+      "z_invariant_rel_err": 0.0,
+      "abc_beltrami_ratio_series": 0.9244652503762559,
+      "abc_beltrami_ratio_closed_form": 0.9244652503762558,
+      "abc_beltrami_rel_err": 2.220446049250313e-16,
+      "max_rel_err": 2.220446049250313e-16
+    }
+  }
+}
