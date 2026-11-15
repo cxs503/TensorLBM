@@ -45,7 +45,7 @@ import torch
 # thread fan-out on a 64x64 tensor (measured 13.8 ms/step vs 175 ms/step)
 torch.set_num_threads(1)
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1] / "TensorLBM"
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
@@ -57,7 +57,7 @@ from tensorlbm.multiphase import (  # noqa: E402
     psi_linear,
     sc_two_component_force,
 )
-from tensorlbm.solver import stream  # noqa: E402
+from tensorlbm.d2q9 import stream  # noqa: E402
 
 PSI = {"exp": psi_exp, "linear": psi_linear}
 
