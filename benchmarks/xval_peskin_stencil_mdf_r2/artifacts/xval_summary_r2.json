@@ -1,0 +1,91 @@
+{
+  "stage": "summarize",
+  "rows": [
+    {
+      "tag": "peskin4pt_it5_D8_box5",
+      "diameter": 8.0,
+      "box_D": 5.0,
+      "d_over_h": 0.2,
+      "volume_fraction": 0.004188790204786391,
+      "n_iter": 5,
+      "dtype": "float32",
+      "reynolds_measured": NaN,
+      "cd_drive": NaN,
+      "cd_drive_std": NaN,
+      "cd_marker": NaN,
+      "marker_vs_drive_rel": NaN,
+      "cd_schiller_naumann": NaN,
+      "error_vs_sn": NaN,
+      "hasimoto_factor": 1.388050801247376,
+      "cd_pred_hasimoto": NaN,
+      "error_vs_hasimoto": NaN,
+      "steps": 12000,
+      "converged_at": null,
+      "wall_time_s": 439.57142424583435,
+      "slip_rel_mean": NaN,
+      "mass_drift_rel": 0.004087029654236543,
+      "marker_area_rel_err": -0.004765015701428843
+    },
+    {
+      "tag": "peskin4pt_it5_D8_box6",
+      "diameter": 8.0,
+      "box_D": 6.0,
+      "d_over_h": 0.16666666666666666,
+      "volume_fraction": 0.002424068405547679,
+      "n_iter": 5,
+      "dtype": "float32",
+      "reynolds_measured": NaN,
+      "cd_drive": NaN,
+      "cd_drive_std": NaN,
+      "cd_marker": NaN,
+      "marker_vs_drive_rel": NaN,
+      "cd_schiller_naumann": NaN,
+      "error_vs_sn": NaN,
+      "hasimoto_factor": 1.3055239568360892,
+      "cd_pred_hasimoto": NaN,
+      "error_vs_hasimoto": NaN,
+      "steps": 12000,
+      "converged_at": null,
+      "wall_time_s": 592.9499807357788,
+      "slip_rel_mean": NaN,
+      "mass_drift_rel": 0.002464228259391852,
+      "marker_area_rel_err": -0.004765015701428843
+    }
+  ],
+  "extrapolation": {
+    "all": {
+      "boxes": [
+        "peskin4pt_it5_D8_box5",
+        "peskin4pt_it5_D8_box6"
+      ],
+      "cd_inf": NaN,
+      "cd_inf_sigma": NaN,
+      "slope_b": NaN,
+      "residuals": [
+        NaN,
+        NaN
+      ],
+      "reynolds_mean": NaN,
+      "schiller_naumann": NaN,
+      "clift": NaN,
+      "error_vs_sn": NaN,
+      "error_vs_clift": NaN
+    }
+  },
+  "acceptance": {
+    "band": 0.15,
+    "per_case": {
+      "peskin4pt_it5_D8_box5": {
+        "vs_sn": NaN,
+        "vs_hasimoto": NaN,
+        "marker_vs_drive": NaN
+      },
+      "peskin4pt_it5_D8_box6": {
+        "vs_sn": NaN,
+        "vs_hasimoto": NaN,
+        "marker_vs_drive": NaN
+      }
+    },
+    "extrapolated_vs_sn": NaN
+  }
+}
