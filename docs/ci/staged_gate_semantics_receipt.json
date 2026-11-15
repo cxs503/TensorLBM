@@ -1,0 +1,174 @@
+{
+  "advisory": [
+    "lint-full",
+    "prerelease-pytorch-nightly",
+    "typecheck-full"
+  ],
+  "claims": {
+    "failed": [],
+    "n_checks": 67,
+    "n_failed": 0
+  },
+  "events": {
+    "branch_push": {
+      "event_findings": [],
+      "gate_power": {
+        "architecture-audit": 3,
+        "build-documentation": 0,
+        "coverage-report": 2,
+        "format-check": 8,
+        "gate-semantics": 8,
+        "lint": 8,
+        "package-build": 3,
+        "platform-test": 3,
+        "repository-layout": 3,
+        "testsuite-fast": 3,
+        "typecheck-core": 8
+      },
+      "n_active": 14,
+      "n_skipped": 2,
+      "ran": [
+        "architecture-audit",
+        "build-documentation",
+        "coverage-report",
+        "format-check",
+        "gate-semantics",
+        "lint",
+        "lint-full",
+        "package-build",
+        "platform-test",
+        "prerelease-pytorch-nightly",
+        "repository-layout",
+        "testsuite-fast",
+        "typecheck-core",
+        "typecheck-full"
+      ]
+    },
+    "main_push": {
+      "event_findings": [],
+      "gate_power": {
+        "architecture-audit": 4,
+        "build-documentation": 1,
+        "coverage-report": 3,
+        "format-check": 9,
+        "gate-semantics": 9,
+        "lint": 9,
+        "package-build": 4,
+        "pages": 0,
+        "platform-test": 4,
+        "repository-layout": 4,
+        "testsuite-fast": 4,
+        "typecheck-core": 9
+      },
+      "n_active": 15,
+      "n_skipped": 1,
+      "ran": [
+        "architecture-audit",
+        "build-documentation",
+        "coverage-report",
+        "format-check",
+        "gate-semantics",
+        "lint",
+        "lint-full",
+        "package-build",
+        "pages",
+        "platform-test",
+        "prerelease-pytorch-nightly",
+        "repository-layout",
+        "testsuite-fast",
+        "typecheck-core",
+        "typecheck-full"
+      ]
+    },
+    "mr": {
+      "event_findings": [],
+      "gate_power": {
+        "architecture-audit": 3,
+        "build-documentation": 0,
+        "coverage-report": 2,
+        "format-check": 8,
+        "gate-semantics": 8,
+        "lint": 8,
+        "package-build": 3,
+        "platform-test": 3,
+        "repository-layout": 3,
+        "testsuite-fast": 3,
+        "typecheck-core": 8
+      },
+      "n_active": 14,
+      "n_skipped": 2,
+      "ran": [
+        "architecture-audit",
+        "build-documentation",
+        "coverage-report",
+        "format-check",
+        "gate-semantics",
+        "lint",
+        "lint-full",
+        "package-build",
+        "platform-test",
+        "prerelease-pytorch-nightly",
+        "repository-layout",
+        "testsuite-fast",
+        "typecheck-core",
+        "typecheck-full"
+      ]
+    },
+    "schedule": {
+      "event_findings": [],
+      "gate_power": {
+        "nightly-full": 0
+      },
+      "n_active": 1,
+      "n_skipped": 15,
+      "ran": [
+        "nightly-full"
+      ]
+    }
+  },
+  "findings": [],
+  "gates": [
+    "architecture-audit",
+    "build-documentation",
+    "coverage-report",
+    "format-check",
+    "gate-semantics",
+    "lint",
+    "nightly-full",
+    "package-build",
+    "pages",
+    "platform-test",
+    "repository-layout",
+    "testsuite-fast",
+    "typecheck-core"
+  ],
+  "immediate_jobs": [
+    "architecture-audit",
+    "build-documentation",
+    "format-check",
+    "gate-semantics",
+    "lint",
+    "lint-full",
+    "package-build",
+    "platform-test",
+    "prerelease-pytorch-nightly",
+    "repository-layout",
+    "testsuite-fast",
+    "typecheck-core",
+    "typecheck-full"
+  ],
+  "n_error": 0,
+  "n_jobs": 16,
+  "source": "/srv/tensor/agent/work/m22498/.gitlab-ci.yml",
+  "stages": [
+    "quality",
+    "test",
+    "reporting",
+    "prerelease",
+    "integration",
+    "nightly",
+    "docs",
+    "deploy"
+  ],
+  "unverifiable_rules": {}
+}
