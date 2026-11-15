@@ -1,0 +1,35 @@
+{
+  "provenance": {
+    "note": "R4 salvage: job cj3126 (submitted 2026-11-14 22:24) ran the a=32 tau sweep to completion but died in the *analysis* stage (TypeError: unsupported format string passed to NoneType.__format__ at resolution_study.py:708), and its per-run artifacts were not preserved in the fetched tree. These are the max |rel err| scalars printed by that job's run stage. The signed per-T series are lost; cj3218 re-runs the same tau sweep to recover them.",
+    "job_id": "cj3126",
+    "node": "n330",
+    "rc": 1,
+    "log": "/srv/tensor/agent/cluster/jobs/cj3126.log",
+    "log_field": "output_tail",
+    "extracted_utc": "2026-11-15T00:29Z",
+    "sign_available": false,
+    "reference": "Martin & Moyce (1952), artifact src/artifacts/martin_moyce_1952_dam_break.json",
+    "window_T": [0.5, 4.0]
+  },
+  "runs": [
+    {"label": "tensorlbm_koerner_a32_tau1", "a": 32, "tau": 1.0, "u_max": 0.2442,
+     "inv_drift_max_pct": 0.0531, "wall_seconds": 253.56,
+     "Z_cell_max_abs_rel_err_pct": 13.81, "Z_sub0.05_max_abs_rel_err_pct": 14.66},
+    {"label": "tensorlbm_koerner_a32_tau0.6", "a": 32, "tau": 0.6, "u_max": 0.2530,
+     "inv_drift_max_pct": 0.0665, "wall_seconds": 257.19,
+     "Z_cell_max_abs_rel_err_pct": 66.62, "Z_sub0.05_max_abs_rel_err_pct": 65.14},
+    {"label": "tensorlbm_koerner_a32_tau0.8", "a": 32, "tau": 0.8, "u_max": 0.2475,
+     "inv_drift_max_pct": 0.07, "wall_seconds": 529.08,
+     "Z_cell_max_abs_rel_err_pct": 25.67, "Z_sub0.05_max_abs_rel_err_pct": 24.76},
+    {"label": "tensorlbm_koerner_a32_tau1.2", "a": 32, "tau": 1.2, "u_max": 0.2421,
+     "inv_drift_max_pct": 0.0768, "wall_seconds": 348.04,
+     "Z_cell_max_abs_rel_err_pct": 15.96, "Z_sub0.05_max_abs_rel_err_pct": 16.32},
+    {"label": "tensorlbm_koerner_a32_tau1.4", "a": 32, "tau": 1.4, "u_max": 0.2406,
+     "inv_drift_max_pct": 0.0592, "wall_seconds": 266.39,
+     "Z_cell_max_abs_rel_err_pct": 18.12, "Z_sub0.05_max_abs_rel_err_pct": 17.07},
+    {"label": "oss_port_a48_tau1", "a": 48, "tau": 1.0, "u_max": 0.8165,
+     "inv_drift_max_pct": 609.7923, "wall_seconds": 975.67,
+     "Z_cell_max_abs_rel_err_pct": 79.37, "Z_sub0.05_max_abs_rel_err_pct": 70.05,
+     "arm": "oss_port", "flag": "diverged: u_max=0.816 (Ma 1.6), inventory drift 610 %"}
+  ]
+}
