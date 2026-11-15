@@ -1,0 +1,410 @@
+{
+  "case": "cavity_re400_ghia_anchor",
+  "reference": {
+    "citation": "Ghia, Ghia & Shin (1982) JCP 48(3):387-411, Tables I-II",
+    "provenance": "BOUND (OCR witness sha256 pinned)",
+    "witness_sha256": "3637ef9ef72a76bb090f4e31765ed2870d18db67f0f99611730e61927e060f5b",
+    "csv": {
+      "I": {
+        "path": "benchmarks/anchors/data/ghia1982_re400_tableI.csv",
+        "sha256": "d1fd64cb8908dd8f36ebc725a796d5ef23deffd29e7ef3af874eb7aee6e19a41"
+      },
+      "II": {
+        "path": "benchmarks/anchors/data/ghia1982_re400_tableII.csv",
+        "sha256": "9c80212769831607538a05407c0f3f07f819a28de40fca2931c7bc9303584160"
+      }
+    }
+  },
+  "criteria": {
+    "M1_max_point_dev_pct": 5.0,
+    "M2_max_point_rel_pct": 5.0,
+    "M3_extremum_rel_pct": 5.0,
+    "M2_rel_floor_frac": 0.05
+  },
+  "excluded_suspect_entries": [
+    {
+      "re": 400,
+      "table": "GHIA_RE400 (reference_data.py inline constant)",
+      "reason": "Fabricated data: values do not match OCR source at any coordinate. Max relative error >400% at x=0.5 (existing=-0.15612 vs OCR=0.05186). Coordinate grid also wrong (14 uniform-spaced points vs 17 non-uniform Ghia grid points). See docs/audit_m15543.md finding F-A for similar Re=100 issue.",
+      "action": "REPLACE with BOUND transcription from OCR witness",
+      "resolved": true,
+      "resolved_note": "Replaced by BOUND transcription (see reynolds_numbers / csv_anchors)"
+    },
+    {
+      "re": 100,
+      "table": "GHIA_RE100 (reference_data.py inline constant)",
+      "reason": "UNVERIFIED_OFFLINE per reference_data.py docstring: hand-entered without page/table/sha256 record. Centre value u(0.5)=-0.15612 vs literature -0.20581 (24% error). Coordinate grid wrong (14 points vs 17 Ghia points).",
+      "action": "REPLACE with BOUND transcription from OCR witness",
+      "resolved": true,
+      "resolved_note": "Replaced by BOUND transcription (see reynolds_numbers / csv_anchors)"
+    },
+    {
+      "re": 1000,
+      "table": "GHIA_RE1000 (reference_data.py inline constant)",
+      "reason": "UNVERIFIED_OFFLINE per reference_data.py docstring: hand-entered without page/table/sha256 record. Coordinate grid wrong (14 points vs 17 Ghia points).",
+      "action": "REPLACE with BOUND transcription from OCR witness",
+      "resolved": true,
+      "resolved_note": "Replaced by BOUND transcription (see reynolds_numbers / csv_anchors)"
+    },
+    {
+      "re": 400,
+      "table": "GHIA_RE400 (inline constants in src/tensorlbm/lid_driven_cavity.py and src/tensorlbm/lid_driven_cavity_3d.py)",
+      "reason": "Four v-values drifted from the witness: v(x=0.9063) carried 0.8047's value -0.38598 instead of -0.23827 (|dv| = 0.14771 = 33% of the v-extremum), v(x=0.1563)=+0.28003 vs +0.28124, v(x=0.0938)=+0.22980 vs +0.22965, and the 0.2266/0.2344 pair swapped (+0.30174/+0.30203). Present in main since 3d5ef2fa6 (2026-05-23); invisible until a code-vs-witness drift guard existed.",
+      "action": "CORRECTED 2026-11-15 to BOUND values; guarded by run_anchors.py step [5] and tests/test_ghia_re400_anchor_lit.py",
+      "resolved": true,
+      "resolved_note": "Values now equal benchmarks/anchors/data/ghia1982_re400_tableII.csv (sha256 pinned)",
+      "impact": "Any cavity result scored against the old constant at x=0.9063 was scored against a wrong reference (0.83% max-deviation claims in benchmarks/verified/cavity/re400/result.json predate the drift and are re-measured here)."
+    }
+  ],
+  "results": [
+    {
+      "n": 65,
+      "re": 400.0,
+      "u_lid": 0.1,
+      "tau": 0.548,
+      "steps": 60000,
+      "last_resid": null,
+      "metrics": {
+        "M1_max_point_dev_pct": 19.891176972866063,
+        "M1_tol_pct": 5.0,
+        "M1_pass": false,
+        "M2_max_point_rel_pct": 205.35011058648118,
+        "M2_tol_pct": 5.0,
+        "M2_rel_floor_frac": 0.05,
+        "M2_n_conditioned": 30,
+        "M2_n_ill_conditioned": 4,
+        "M2_pass": false,
+        "M3_extremum_rel_pct": {
+          "u_min": 4.955762512182779,
+          "v_min": 44.20949252742886
+        },
+        "M3_pass": false,
+        "rmse_u": 0.036296496618456534,
+        "rmse_v": 0.08614977673188257
+      },
+      "extrema": {
+        "u_min": {
+          "coord_y": 0.2813,
+          "ref": -0.32726,
+          "got": -0.31104177160263063,
+          "rel_pct": 4.955762512182779
+        },
+        "v_min": {
+          "coord_x": 0.8594,
+          "ref": -0.44993,
+          "got": -0.25101823027133935,
+          "rel_pct": 44.20949252742886
+        }
+      },
+      "ill_conditioned_points": [
+        {
+          "table": "I",
+          "coord": 0.6172,
+          "ref": 0.02135,
+          "rel_pct": 1.0850095916406868
+        },
+        {
+          "table": "I",
+          "coord": 0.0,
+          "ref": 0.0,
+          "rel_pct": 0.0
+        },
+        {
+          "table": "II",
+          "coord": 1.0,
+          "ref": 0.0,
+          "rel_pct": 0.0
+        },
+        {
+          "table": "II",
+          "coord": 0.0,
+          "ref": 0.0,
+          "rel_pct": 0.0
+        }
+      ],
+      "points": [
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 1.0,
+          "ref": 1.0,
+          "got": 0.9999998807907104,
+          "delta": -1.1920928955078125e-07
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.9766,
+          "ref": 0.75837,
+          "got": 0.8386880896568301,
+          "delta": 0.08031808965683007
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.9688,
+          "ref": 0.68439,
+          "got": 0.7588621367454528,
+          "delta": 0.07447213674545272
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.9609,
+          "ref": 0.61756,
+          "got": 0.6868751374244688,
+          "delta": 0.06931513742446882
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.9531,
+          "ref": 0.55892,
+          "got": 0.6159039759635921,
+          "delta": 0.05698397596359217
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.8516,
+          "ref": 0.29093,
+          "got": 0.28571214165687564,
+          "delta": -0.005217858343124382
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.7344,
+          "ref": 0.16256,
+          "got": 0.16133589878082283,
+          "delta": -0.0012241012191771816
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.6172,
+          "ref": 0.02135,
+          "got": 0.021581649547815288,
+          "delta": 0.00023164954781528663
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.5,
+          "ref": -0.11477,
+          "got": -0.11560594290494919,
+          "delta": -0.0008359429049491912
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.4531,
+          "ref": -0.17119,
+          "got": -0.1725462880373001,
+          "delta": -0.0013562880373000907
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.2813,
+          "ref": -0.32726,
+          "got": -0.31104177160263063,
+          "delta": 0.01621822839736936
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.1719,
+          "ref": -0.24299,
+          "got": -0.21675836839675902,
+          "delta": 0.02623163160324099
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.1016,
+          "ref": -0.14612,
+          "got": -0.1250627010345459,
+          "delta": 0.021057298965454108
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.0703,
+          "ref": -0.10338,
+          "got": -0.08514770323038101,
+          "delta": 0.01823229676961899
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.0625,
+          "ref": -0.09266,
+          "got": -0.07518116384744644,
+          "delta": 0.017478836152553565
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.0547,
+          "ref": -0.08186,
+          "got": -0.06501459146738052,
+          "delta": 0.016845408532619482
+        },
+        {
+          "table": "I",
+          "profile": "u",
+          "coord": 0.0,
+          "ref": 0.0,
+          "got": 0.0,
+          "delta": 0.0
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 1.0,
+          "ref": 0.0,
+          "got": 0.0,
+          "delta": 0.0
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.9688,
+          "ref": -0.12146,
+          "got": -0.08026008548736574,
+          "delta": 0.04119991451263426
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.9609,
+          "ref": -0.15663,
+          "got": -0.10182976971864707,
+          "delta": 0.05480023028135292
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.9531,
+          "ref": -0.19254,
+          "got": -0.1230839294433595,
+          "delta": 0.06945607055664049
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.9453,
+          "ref": -0.22847,
+          "got": -0.14024018259048454,
+          "delta": 0.08822981740951547
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.9063,
+          "ref": -0.23827,
+          "got": -0.20672996439933777,
+          "delta": 0.031540035600662236
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.8594,
+          "ref": -0.44993,
+          "got": -0.25101823027133935,
+          "delta": 0.19891176972866065
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.8047,
+          "ref": -0.38598,
+          "got": -0.27895334358215335,
+          "delta": 0.10702665641784664
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.5,
+          "ref": 0.05186,
+          "got": -0.054634567350149155,
+          "delta": -0.10649456735014916
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.2344,
+          "ref": 0.30174,
+          "got": 0.3101130993366242,
+          "delta": 0.008373099336624168
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.2266,
+          "ref": 0.30203,
+          "got": 0.3248882685661316,
+          "delta": 0.0228582685661316
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.1563,
+          "ref": 0.28124,
+          "got": 0.42853567547798155,
+          "delta": 0.14729567547798156
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.0938,
+          "ref": 0.22965,
+          "got": 0.34289196467399596,
+          "delta": 0.11324196467399597
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.0781,
+          "ref": 0.2092,
+          "got": 0.28580003743171695,
+          "delta": 0.07660003743171695
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.0703,
+          "ref": 0.19713,
+          "got": 0.2532458740711212,
+          "delta": 0.0561158740711212
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.0625,
+          "ref": 0.1836,
+          "got": 0.2206917107105255,
+          "delta": 0.0370917107105255
+        },
+        {
+          "table": "II",
+          "profile": "v",
+          "coord": 0.0,
+          "ref": 0.0,
+          "got": 0.0,
+          "delta": 0.0
+        }
+      ]
+    }
+  ],
+  "run_artifacts": [
+    {
+      "n": 65,
+      "steps": 60000,
+      "last_resid": null,
+      "u_lid": 0.1,
+      "tau": 0.548
+    }
+  ]
+}

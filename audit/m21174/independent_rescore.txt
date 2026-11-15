@@ -1,0 +1,4 @@
+run: {'nx': 65, 'steps': 60000, 'u_lid': 0.1, 'tau': 0.548, 'last_resid': None}
+M1 (max |dev| / u_lid) = 198.91% at ('v', 0.8594, -0.44993, -0.25101823027133935)
+table I: ref extremum -0.32726 @ 0.2813 | got-at-ref-coord -0.31104 (+4.96%) | got profile min -0.31177 (+4.73%)
+table II: ref extremum -0.44993 @ 0.8594 | got-at-ref-coord -0.25102 (+44.21%) | got profile min -0.28601 (+36.43%)
