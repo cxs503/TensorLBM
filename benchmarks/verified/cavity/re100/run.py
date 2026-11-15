@@ -47,7 +47,7 @@ def stationary_pre_bounce(f_pre, f, wall):
     return torch.where(wall.unsqueeze(0), f_pre[opp], f)
 
 
-def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
+def run_case(nx, re, u_lid, steps, device, compile_mode="default", capture=None):
     ny = nx
     tau = 3.0 * u_lid * nx / re + 0.5
     rho0 = torch.ones((ny, nx), device=device)
@@ -148,6 +148,13 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default"):
         f"max_abs_dev={max_abs_dev_pct:.2f}%",
         flush=True,
     )
+
+    if capture is not None:
+        # Additive hook (GAP-DIFFLBM-CAV-RES): expose the centreline
+        # profiles so a resolution study can compute self-convergence
+        # (Richardson) orders without duplicating the solver.  Existing
+        # callers are unaffected.
+        capture.update({"y": y_pos, "x": x_pos, "u_cl": u_cl, "v_cl": v_cl})
 
     return {
         "nx": nx,
