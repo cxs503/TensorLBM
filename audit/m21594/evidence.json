@@ -1,0 +1,541 @@
+{
+  "provenance": {
+    "delivered_commit": "1b685d33c1016089ccaaba225c39215e692c2360",
+    "merge_commit_repo_master": "481ac88da (Merge #2475 (m21558) via merge-master)",
+    "origin_tree": "/srv/tensor/agent/work/m21558/TensorLBM",
+    "snapshot_tree": "audit/m21594/snapshot",
+    "files": {
+      "src/tensorlbm/verification/layered_poiseuille/two_component_sc.py": {
+        "exists": true,
+        "sha256": "4bf12e8efed234b4434648ce93115cb15b91cee477332f7314969ff2afdf3fd6",
+        "sha256_origin": "4bf12e8efed234b4434648ce93115cb15b91cee477332f7314969ff2afdf3fd6",
+        "bytes": 12941
+      },
+      "src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py": {
+        "exists": true,
+        "sha256": "8504e10419859cecfc8cae6f7a007abe438ac5f315fba14b3de88178b69bea78",
+        "sha256_origin": "8504e10419859cecfc8cae6f7a007abe438ac5f315fba14b3de88178b69bea78",
+        "bytes": 12176
+      },
+      "src/tensorlbm/verification/layered_poiseuille/analytic.py": {
+        "exists": true,
+        "sha256": "cd3d41db0618bd54b7b3f74f7d70c6d94feb7c1c79004e20c531d2b73811d0ff",
+        "sha256_origin": "cd3d41db0618bd54b7b3f74f7d70c6d94feb7c1c79004e20c531d2b73811d0ff",
+        "bytes": 10803
+      },
+      "tests/test_two_component_sc_layered_poiseuille.py": {
+        "exists": true,
+        "sha256": "cead3153ca2200be499a4e679761e8ca3aa2dd618f57bb11e62845b848f83a32",
+        "sha256_origin": "cead3153ca2200be499a4e679761e8ca3aa2dd618f57bb11e62845b848f83a32",
+        "bytes": 5924
+      },
+      "run_quick_validation.py": {
+        "exists": true,
+        "sha256": "e8ae48e7d71ad571e282ade066de5df260e123857168c32358e319c44da66a91",
+        "sha256_origin": "e8ae48e7d71ad571e282ade066de5df260e123857168c32358e319c44da66a91",
+        "bytes": 6008
+      },
+      "docs/XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM.md": {
+        "exists": true,
+        "sha256": "d910f2547a40d9a014af3936c8bf2eb3fd060d72a970777e6d1d8f349651c2dc",
+        "sha256_origin": "d910f2547a40d9a014af3936c8bf2eb3fd060d72a970777e6d1d8f349651c2dc",
+        "bytes": 6837
+      },
+      "docs/XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM-STATUS.md": {
+        "exists": true,
+        "sha256": "28461b9fb8452a477e6c66d8956ae340736c3c060fee3109733519ce4185ad92",
+        "sha256_origin": "28461b9fb8452a477e6c66d8956ae340736c3c060fee3109733519ce4185ad92",
+        "bytes": 6968
+      },
+      "artifacts/xval_two_component_sc_layered_poiseuille_edm/quick_validation_results.json": {
+        "exists": true,
+        "sha256": "c9d24146d6482485c8525b54514fed4ed0b5a519c3a00114732e6149af33e4dd",
+        "sha256_origin": "c9d24146d6482485c8525b54514fed4ed0b5a519c3a00114732e6149af33e4dd",
+        "bytes": 3898
+      }
+    },
+    "artifact_dir_listing": [
+      "quick_validation_results.json"
+    ],
+    "png_present": false,
+    "full_campaign_artifacts_present": []
+  },
+  "benchmark": {
+    "anchor_slug": "XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM",
+    "rows_total": 0,
+    "rows": "",
+    "poiseuille_rows_in_judge_table": [
+      "CASE-SPH-POISEUILLE-MORRIS|passed",
+      "GAP-LBM-MCMP-POISEUILLE|pending",
+      "XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET|passed"
+    ]
+  },
+  "reports": {
+    "m21558_rows": "",
+    "anchor_title_rows": []
+  },
+  "prior_verdicts": [
+    "884|TensorLBM|m21558 XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM|2|board-audit"
+  ],
+  "integration_callers": {
+    "all_hits": [
+      "src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py",
+      "tests/test_two_component_sc_layered_poiseuille.py",
+      "run_quick_validation.py"
+    ],
+    "non_self_hits": [],
+    "note": "命中仅为 verification 子包自身 + 测试 + 独立 run 脚本；src/tensorlbm 主求解器/平台入口无 caller"
+  },
+  "recompute": {
+    "config_delivered": {
+      "ny": 32,
+      "nx": 4,
+      "tau_a": 0.8,
+      "tau_b": 1.2,
+      "nu_a": 0.1,
+      "nu_b": 0.2333333333333333,
+      "G": 2.0,
+      "g_x": 0.0001,
+      "steps": 2000
+    },
+    "stored": {
+      "u_peak_num": 0.2000044882297516,
+      "u_peak_ana": 0.0719999997317791,
+      "u_peak_err": 1.777840256690979,
+      "eps_inf": 2.5329582723771558,
+      "eps_l2": 2.6476999479413794
+    },
+    "recomputed": {
+      "u_peak_num": 0.2000044882297516,
+      "u_peak_ana": 0.0719999997317791,
+      "u_peak_err": 1.777840124650366,
+      "eps_inf": 2.5329582723771558,
+      "eps_l2": 2.6476999479413794,
+      "analytic_u_peak_independent": 0.0719999997317791,
+      "metric_definition": "eps 定义在交付内不一致：run_quick_validation.py:96 margin=2，run_two_component_sc_validation.py:125 margin=3；m=2 -> 253.30/264.77%，m=3 -> 244.35/251.02%（无预注册度量定义）"
+    },
+    "delta_vs_stored": {
+      "u_peak_err": -1.3204061311000714e-07,
+      "eps_inf": 0.0,
+      "eps_l2": 0.0
+    },
+    "pass_15pct": {
+      "u_peak_err": false,
+      "eps_inf": false,
+      "eps_l2": false
+    },
+    "all_within_15pct": false,
+    "wall_cell_density": {
+      "rho_a[0](y=0.5)": 583.7568969726562,
+      "rho_b[0](y=0.5)": 65.32618713378906,
+      "rho_a[-1](y=29.5)": 65.40544128417969,
+      "rho_b[-1](y=29.5)": 586.9959716796875,
+      "nominal": 2.1,
+      "peak_over_nominal": 279.52189127604163
+    },
+    "profile_shape": {
+      "interior_mean": 0.1984555835907276,
+      "interior_std": 0.0053561769316463545,
+      "g_t_at_2000": 0.2,
+      "u_interior_over_g_t": 0.992277917953638
+    }
+  },
+  "layer_order": {
+    "analytic_side": "solve_layered(nus=[nu_a=0.1, nu_b=0.2333]) -> layer0 (ν=0.1) 贴 y=0 壁",
+    "numeric_side": {
+      "rho_a_y0.5": 0.10000000149011612,
+      "rho_b_y0.5": 2.0037572383880615,
+      "rho_a_y29.5": 2.003714084625244,
+      "rho_b_y29.5": 0.10000000149011612,
+      "A_index_range": "16..30 => A(ν=0.1) 位于 y>15 一侧",
+      "code_comment": "two_component_sc.py:131 'Component A in bottom layer'（实现 132 行 rho[16:-1]=2 即 y>15 一侧） 与实现相反"
+    },
+    "verdict": "FLIPPED（数值低黏层在上、解析低黏层在下）",
+    "mirror_reference_relative_dev": 0.22360248447204983,
+    "u_peak_ref": 0.0719999997317791,
+    "u_peak_mirror": 0.07199999973177909
+  },
+  "transient_reference": {
+    "formula": "start-up series for single-viscosity plane Poiseuille (nu=0.1 / 0.2333), t=2000, H=30, g=1e-4",
+    "boundary_layer_sqrt_nu_t": 14.142135623730951,
+    "half_height": 15.0,
+    "y": [
+      0.5,
+      1.5,
+      2.5,
+      3.5,
+      4.5,
+      5.5,
+      6.5,
+      7.5,
+      8.5,
+      9.5,
+      10.5,
+      11.5,
+      12.5,
+      13.5,
+      14.5,
+      15.5,
+      16.5,
+      17.5,
+      18.5,
+      19.5,
+      20.5,
+      21.5,
+      22.5,
+      23.5,
+      24.5,
+      25.5,
+      26.5,
+      27.5,
+      28.5,
+      29.5
+    ],
+    "u_nu0.1": [
+      0.006697142098068442,
+      0.019348853047386223,
+      0.03102276288716937,
+      0.04173340053896857,
+      0.05149489252667104,
+      0.060320808203330634,
+      0.06822401108248687,
+      0.07521651790281852,
+      0.08130936697024967,
+      0.08651249721997789,
+      0.09083463932344535,
+      0.09428322003330439,
+      0.09686428081439216,
+      0.09858241165220662,
+      0.09944070076408962,
+      0.09944070076408962,
+      0.09858241165220662,
+      0.09686428081439218,
+      0.09428322003330439,
+      0.09083463932344532,
+      0.08651249721997788,
+      0.08130936697024967,
+      0.07521651790281851,
+      0.06822401108248687,
+      0.06032080820333065,
+      0.05149489252667103,
+      0.04173340053896857,
+      0.031022762887169375,
+      0.01934885304738622,
+      0.006697142098068443
+    ],
+    "u_nu0.2333": [
+      0.0031451136355777156,
+      0.009114083259292116,
+      0.014654992353718742,
+      0.019768175296634233,
+      0.02445395720478288,
+      0.028712650371829518,
+      0.032544550846804805,
+      0.035949935190530094,
+      0.038929057445559134,
+      0.04148214635283481,
+      0.043609402845555374,
+      0.0453109978477084,
+      0.046587070401391685,
+      0.047437726143439045,
+      0.047863036148040966,
+      0.047863036148040966,
+      0.047437726143439045,
+      0.046587070401391685,
+      0.0453109978477084,
+      0.043609402845555374,
+      0.04148214635283481,
+      0.03892905744555914,
+      0.03594993519053009,
+      0.032544550846804805,
+      0.028712650371829518,
+      0.02445395720478288,
+      0.019768175296634233,
+      0.014654992353718742,
+      0.009114083259292118,
+      0.0031451136355777156
+    ],
+    "delivered_vs_transient_nu0.1_eps_inf": 1.6993046128290157,
+    "delivered_braked_depth_lu": 6.0,
+    "expected_braked_depth_lu_nu0.1": 20.0,
+    "note": "交付 profile 在 2000 步几乎未出现壁面剪切层（仅贴壁 1 格），而 nu=0.1 的正确起动解在同期已有 ~14 lu 量级的制动层；两支都不是稳态，故 177.78% 的成因不是「有效黏度未标定」，而更接近「动量扩散未发生 / 强迫尺度错」"
+  },
+  "D2_steady_state": {
+    "2000": {
+      "u_peak_num": 0.20000436902046204,
+      "u_peak_ana": 0.07187500000000001,
+      "u_peak_err": 1.7826694820238191,
+      "eps_inf": 2.4434702168340268,
+      "eps_l2": 2.509201505820121,
+      "u_max_over_g_t": 1.0000218451023102,
+      "interior_std": 0.00628936338732527,
+      "wall_rho_peak": 585.3287353515625,
+      "trace": [
+        {
+          "step": 500,
+          "u_max": 0.05046217516064644,
+          "rho_wall_max": 159.35829162597656,
+          "mass_a": 755.9200439453125,
+          "mass_b": 755.5575561523438
+        },
+        {
+          "step": 1000,
+          "u_max": 0.10223757475614548,
+          "rho_wall_max": 320.2554626464844,
+          "mass_a": 1400.099609375,
+          "mass_b": 1399.390625
+        },
+        {
+          "step": 1500,
+          "u_max": 0.15003624558448792,
+          "rho_wall_max": 482.5420837402344,
+          "mass_a": 2050.711181640625,
+          "mass_b": 2052.015380859375
+        },
+        {
+          "step": 2000,
+          "u_max": 0.20006251335144043,
+          "rho_wall_max": 650.5633544921875,
+          "mass_a": 2724.339599609375,
+          "mass_b": 2713.34521484375
+        }
+      ],
+      "wall_s": 27.5
+    }
+  },
+  "D3_single_component_control": {
+    "u_peak_num": 0.20000484585762024,
+    "u_peak_ana": 0.11237499999999996,
+    "u_peak_err": 0.7797984058520161,
+    "eps_inf": 1.3671018698059019,
+    "eps_l2": 1.2460046739149564,
+    "u_max_over_g_t": 1.0000242292881012,
+    "interior_std": 7.699787703947399e-07,
+    "wall_rho_peak": 2.0107972621917725,
+    "trace": [
+      {
+        "step": 500,
+        "u_max": 0.05000082030892372,
+        "rho_wall_max": 0.10000000149011612,
+        "mass_a": 126.91656494140625,
+        "mass_b": 1.2800056765627232e-06
+      },
+      {
+        "step": 1000,
+        "u_max": 0.10000213980674744,
+        "rho_wall_max": 0.10000000149011612,
+        "mass_a": 126.91696166992188,
+        "mass_b": 1.2800105650967453e-06
+      },
+      {
+        "step": 1500,
+        "u_max": 0.15000347793102264,
+        "rho_wall_max": 0.10000000149011612,
+        "mass_a": 126.91731262207031,
+        "mass_b": 1.2800162494386313e-06
+      },
+      {
+        "step": 2000,
+        "u_max": 0.20000484585762024,
+        "rho_wall_max": 0.10000000149011612,
+        "mass_a": 126.91761779785156,
+        "mass_b": 1.2800214790331665e-06
+      }
+    ],
+    "wall_s": 25.4
+  },
+  "D4_mass_ledger": {
+    "2000": {
+      "mass_first": {
+        "step": 500,
+        "u_max": 0.05046217516064644,
+        "rho_wall_max": 159.35829162597656,
+        "mass_a": 755.9200439453125,
+        "mass_b": 755.5575561523438
+      },
+      "mass_last": {
+        "step": 2000,
+        "u_max": 0.20006251335144043,
+        "rho_wall_max": 650.5633544921875,
+        "mass_a": 2724.339599609375,
+        "mass_b": 2713.34521484375
+      },
+      "rho_wall_max": 650.5633544921875
+    },
+    "single_component_G0": {
+      "mass_first": {
+        "step": 500,
+        "u_max": 0.05000082030892372,
+        "rho_wall_max": 0.10000000149011612,
+        "mass_a": 126.91656494140625,
+        "mass_b": 1.2800056765627232e-06
+      },
+      "mass_last": {
+        "step": 2000,
+        "u_max": 0.20000484585762024,
+        "rho_wall_max": 0.10000000149011612,
+        "mass_a": 126.91761779785156,
+        "mass_b": 1.2800214790331665e-06
+      },
+      "rho_wall_max": 0.10000000149011612
+    }
+  },
+  "sim_pass_15pct": {
+    "D2_2000": false,
+    "D3_single_component": false
+  },
+  "sim_meta": {
+    "nu_a": 0.1,
+    "nu_b": 0.2333333333333333,
+    "H": 30.0,
+    "g": 0.0001,
+    "diffusion_time_H2_over_nu": 9000.0,
+    "solve_layered_u_peak_layered": 0.0719999997317791,
+    "solve_layered_u_peak_single": 0.11249999999999999
+  },
+  "report_structure": {
+    "main_doc_headings": [
+      "# Two-Component Shan-Chen LBM with EDM Forcing: Layered Poiseuille Validation",
+      "## Anchor",
+      "## Status",
+      "## Objective",
+      "## Physical Setup",
+      "### Geometry",
+      "### Fluid Properties",
+      "### Driving Force",
+      "### Analytical Solution",
+      "## Numerical Method",
+      "### Two-Component Shan-Chen Model",
+      "### EDM Forcing Scheme (Kupershtokh 2004)",
+      "### Lattice",
+      "## Implementation",
+      "### Files",
+      "### Key Parameters",
+      "### Viscosity Relation",
+      "## Validation Metrics",
+      "### Primary Metrics",
+      "### Secondary Metrics",
+      "### Acceptance Criteria",
+      "## Validation Cases",
+      "### Case 1: Baseline (Moderate Viscosity Contrast)",
+      "### Case 2: High Viscosity Contrast",
+      "### Case 3: Off-Center Interface",
+      "### Case 4: Grid Convergence",
+      "## Preliminary Results",
+      "### Smoke Test (100 steps, 32×4 grid)",
+      "### Observations",
+      "## Challenges & Mitigations",
+      "### Challenge 1: Slow Convergence",
+      "### Challenge 2: Interface Diffuseness",
+      "### Challenge 3: Viscosity Measurement",
+      "## Next Steps",
+      "## References",
+      "## Related Work in TensorLBM",
+      "## Notes"
+    ],
+    "status_doc_headings": [
+      "# Two-Component SC Layered Poiseuille Validation - Status Report",
+      "## Anchor",
+      "## Status",
+      "## What Was Delivered",
+      "### 1. Two-Component SC Solver (`src/tensorlbm/verification/layered_poiseuille/two_component_sc.py`)",
+      "### 2. Test Suite (`tests/test_two_component_sc_layered_poiseuille.py`)",
+      "### 3. Documentation (`docs/XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM.md`)",
+      "### 4. Validation Scripts",
+      "### 5. Preliminary Results",
+      "## Validation Results",
+      "### Quick Validation (2000 steps, 32×4 grid)",
+      "## Root Cause Analysis",
+      "### Issue 1: Effective Viscosity Mismatch",
+      "### Issue 2: Incomplete Phase Separation",
+      "### Issue 3: Interface Diffuseness",
+      "## Next Steps for Full Validation",
+      "## Technical Achievements",
+      "## Honest Assessment",
+      "## Recommendation",
+      "## Files Modified/Created",
+      "### Created",
+      "### Modified",
+      "## Test Results",
+      "## Conclusion"
+    ],
+    "main_doc_has_15pct_gate": false,
+    "main_doc_has_acceptance": true,
+    "status_doc_declares_fail": true,
+    "status_doc_says_do_not_mark_verified": true,
+    "main_doc_length_lines": 193,
+    "status_doc_length_lines": 158
+  },
+  "level_checks": {
+    "impl_real_code": true,
+    "entry_runs_reproduced": true,
+    "unit_tests_12_passed": true,
+    "unit_tests_assert_accuracy": false,
+    "benchmark_row_exists": false,
+    "benchmark_within_15pct": false,
+    "steady_state_reached": null,
+    "single_component_control_pass": false,
+    "integrated_in_main_solver": false
+  },
+  "level": 2,
+  "level_reason": "L2 = 独立功能实现（真代码：输入→计算→输出；交付 profile 可由 json 逐点复算；12 单测通过）。不到 L3：模块仅存在于 verification 子包，主求解器/平台入口无 caller（integration_callers 空）。不到 L4：tensor_benchmark_cases 该 anchor 0 行（无裁判行可判），且唯一可独立复算的对照（analytic.solve_layered）实测 u_peak_err=177.78%、eps_inf=253.30%、eps_l2=264.77%，全部 > 15% owner 门；无外部锚（OSS/文献 ref）登账。诚实性成立：STATUS.md 自认 FAIL 并写明「Do not mark as verified」，故判 honest-FAIL 而非虚标。",
+  "verdict": "honest-FAIL",
+  "evidence_keys": {
+    "impl_files": "snapshot/src/tensorlbm/verification/layered_poiseuille/two_component_sc.py:1-331 (sha256 4bf12e8efed234b4)",
+    "entry": "snapshot/run_quick_validation.py:14-80（入口 main；:11 sys.path 硬编码 m21558 绝对路径）",
+    "run_artifacts": "snapshot/artifacts/xval_two_component_sc_layered_poiseuille_edm/quick_validation_results.json (sha256 c9d24146d6482485) + quick_validation.png；4-case campaign 工件缺失",
+    "tests": "snapshot/tests/test_two_component_sc_layered_poiseuille.py:1-192 — 12 passed（无精度断言）",
+    "integration_callers": "无（grep two_component_sc 仅 verification 子包/测试/独立 run 脚本）",
+    "benchmark": "tensor_benchmark_cases anchor_slug='XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM' -> 0 行（无裁判行）；独立复算 u_peak_err=177.78% / eps_inf=253.30% / eps_l2=264.77% > 15%",
+    "repro_cmd": "cd TensorLBM && python3 run_quick_validation.py（复算 177.78%/253.30%/264.77%；非比特级，init 无 seed）",
+    "external_anchor": "无（无 OSS/文献数值锚登账；docs References 仅方法文献）",
+    "anchor": "XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM"
+  },
+  "defects": {
+    "D1_layer_order_flip": {
+      "analytic_side": "solve_layered(nus=[nu_a=0.1, nu_b=0.2333]) -> layer0 (ν=0.1) 贴 y=0 壁",
+      "numeric_side": {
+        "rho_a_y0.5": 0.10000000149011612,
+        "rho_b_y0.5": 2.0037572383880615,
+        "rho_a_y29.5": 2.003714084625244,
+        "rho_b_y29.5": 0.10000000149011612,
+        "A_index_range": "16..30 => A(ν=0.1) 位于 y>15 一侧",
+        "code_comment": "two_component_sc.py:131 'Component A in bottom layer'（实现 132 行 rho[16:-1]=2 即 y>15 一侧） 与实现相反"
+      },
+      "verdict": "FLIPPED（数值低黏层在上、解析低黏层在下）",
+      "mirror_reference_relative_dev": 0.22360248447204983,
+      "u_peak_ref": 0.0719999997317791,
+      "u_peak_mirror": 0.07199999973177909
+    },
+    "D2_never_steady": {
+      "2000": {
+        "u_max_over_g_t": 1.0000218451023102,
+        "eps_inf": 2.4434702168340268
+      }
+    },
+    "D3_single_component": {
+      "eps_inf": 1.3671018698059019,
+      "u_peak_err": 0.7797984058520161,
+      "u_max_over_g_t": 1.0000242292881012
+    },
+    "D4_wall_density": {
+      "rho_a[0](y=0.5)": 583.7568969726562,
+      "rho_b[0](y=0.5)": 65.32618713378906,
+      "rho_a[-1](y=29.5)": 65.40544128417969,
+      "rho_b[-1](y=29.5)": 586.9959716796875,
+      "nominal": 2.1,
+      "peak_over_nominal": 279.52189127604163
+    },
+    "D5_repro_portability": {
+      "hardcoded_path": "run_quick_validation.py:10 sys.path.insert(0, '/srv/tensor/agent/work/m21558/TensorLBM/src')",
+      "probe_cmd": "cp snapshot/run_quick_validation.py /tmp/m21594_port/ ; sed -i 's#/srv/tensor/agent/work/m21558/TensorLBM/src#/nonexistent#' .../run_quick_validation.py ; cd /tmp/m21594_port && python3 -c 'import tensorlbm.verification.layered_poiseuille.two_component_sc'",
+      "probe_result": "ModuleNotFoundError: No module named 'tensorlbm.verification.layered_poiseuille.two_component_sc'（tensorlbm 解析到 /srv/tensor/agent/work/m21384/TensorLBM/src —— pip editable 装到别的工作树）",
+      "conclusion": "repro 只在 m21558 工作树绝对路径存在的机器上可跑，非 hermetic"
+    },
+    "D7_test_scope": {
+      "pytest": "python3 -m pytest tests/test_two_component_sc_layered_poiseuille.py -q -> 12 passed (4.64s)",
+      "asserts": "equilibrium 和/动量守恒、psi 单调/有界、step_count 递增、ux_max 增大、三个 forcing 方案不崩、analytic 模块自身可算/界面连续；无一条把求解器输出与解析解比对并断言 15%"
+    },
+    "D6_no_seed": "two_component_sc.py:138 torch.randn_like 无 manual_seed"
+  }
+}
