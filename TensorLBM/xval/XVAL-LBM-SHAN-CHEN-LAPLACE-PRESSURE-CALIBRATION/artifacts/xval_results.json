@@ -1,0 +1,75 @@
+{
+  "reference": {
+    "repo": "lbm-principles-practice/code",
+    "file": "chapter9/shanchen.cpp",
+    "procedure": "4x4 box bulk pressures + rho_av crossing radius + gamma=dp*r",
+    "oss_inventory_densities": {
+      "rho_l": 1.6707,
+      "rho_v": 0.18473,
+      "g": -4.7
+    }
+  },
+  "library_constants": {
+    "rho_l": 1.957,
+    "rho_v": 0.1596,
+    "sigma": 0.05611
+  },
+  "analytics": {
+    "maxwell_G5.0": {
+      "rho_v": 0.15289492889061668,
+      "rho_l": 1.9288661839961052,
+      "p": 0.034213643266237034,
+      "G": 5.0,
+      "err_rho_l_vs_library_pct": 1.4375991826210968,
+      "err_rho_v_vs_library_pct": 4.201172374300323
+    },
+    "maxwell_G4.7": {
+      "rho_v": 0.2032219096259059,
+      "rho_l": 1.6779578322410418,
+      "p": 0.04124808891753316,
+      "G": 4.7,
+      "err_rho_l_vs_reference_pct": 0.4344186413504343,
+      "err_rho_v_vs_reference_pct": 10.0102363589595
+    },
+    "pressure_sign_check": {
+      "p_l_minus_p_v_correct_sign": 0.0027696013353530474,
+      "p_l_minus_p_v_plus_sign": 1.1954970653313135,
+      "ratio_wrong_over_correct": 431.6495121775065
+    }
+  },
+  "sweep": [
+    {
+      "radius_init": 10.0,
+      "status": "diverged",
+      "step": 24
+    },
+    {
+      "radius_init": 12.0,
+      "status": "diverged",
+      "step": 23
+    },
+    {
+      "radius_init": 14.0,
+      "status": "diverged",
+      "step": 21
+    }
+  ],
+  "defect_probes": [
+    {
+      "arm": "library_default_width1.5_noramp",
+      "status": "diverged",
+      "step": 14,
+      "radius_init": 14.0,
+      "width": 1.5,
+      "ramp": 0
+    },
+    {
+      "arm": "width3_noramp",
+      "status": "diverged",
+      "step": 21,
+      "radius_init": 14.0,
+      "width": 3.0,
+      "ramp": 0
+    }
+  ]
+}
