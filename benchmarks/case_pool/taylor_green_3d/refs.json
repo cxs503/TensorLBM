@@ -1,0 +1,50 @@
+{
+  "case": "CASE-TAYLOR-GREEN-3D",
+  "title": "Decay of the 3-D Taylor-Green vortex against the exact time-Taylor series",
+  "observable": "Q1 energy decay ratio E(T)/E(0), Q2 enstrophy ratio Omega(T)/Omega(0) at T = 1 eddy time, Q3 velocity L2 field error, Q4 vorticity L2 field error -- all at fixed Re = A*N/nu = 160",
+  "primary_reference": {
+    "kind": "ANALYTIC_SERIES",
+    "label_zh": "级数精确解",
+    "definition": "u(x,t) = sum_n t^n u^(n)(x) with u^(n+1) = ( nu*Lap u^(n) - P sum_{j=0..n} (u^(j).grad)u^(n-j) ) / (n+1), P = Helmholtz projection; every u^(n) is a finite Fourier series on integer wavevectors, so the recursion is evaluated with exact spectral derivatives and no time discretisation",
+    "implementation": "src/tensorlbm/tg3d_series.py (class TG3DSeries)",
+    "cite": [
+      "Taylor G.I., Green A.E., Proc. R. Soc. A 158(895):499-512 (1937), doi:10.1098/rspa.1937.0150 -- the initial field",
+      "Morf R.H., Orszag S.A., Frisch U., Phys. Rev. A 21(1):258 (1980), doi:10.1103/PhysRevA.21.258 -- time-Taylor-series construction of the inviscid problem",
+      "Brachet M.E. et al., J. Fluid Mech. 130:411-452 (1983), doi:10.1017/S0022112083001148 -- the series as a verification reference for 3-D Taylor-Green"
+    ],
+    "acquisition_status": "ANALYTIC_DERIVED_IN_CODE_NO_PDF_REQUIRED",
+    "acquisition_log": [
+      "the reference is a recursion, not a table: no digitisation and no hand-copying is possible by construction",
+      "why the classic (z-dependent) field and not the z-invariant one: the z-invariant mode has the closed form u = u0 exp(-nu|k|^2 t) (that is what benchmarks/case_taylor_green_3d checks), but it never produces w != 0 or vortex stretching, so it does not exercise the 3-D convective term",
+      "the series generator is itself pinned against two independent closed forms before it is used as a reference: see Q0 in THRESHOLDS -- applied to the z-invariant mode and to the Beltrami (ABC) flow it must reproduce exp(-nu|k|^2 t) decay ratios to 1e-9",
+      "series truncation and dealiasing are bounded and reported per run (artifacts/summary.json -> legs.exactness)"
+    ]
+  },
+  "adopted_numeric_reference": {
+    "tier": "ANALYTIC_SERIES_EVALUATED_IN_RUN",
+    "note": "every reference number in the tables is computed by TG3DSeries inside the run; nothing is typed from a paper",
+    "tolerance_pct": 8.0,
+    "tolerance_source": "feature_ledger CASE-TAYLOR-GREEN-3D acceptance: ref = 级数精确解, band < 8%",
+    "validity_window": {
+      "eddy_time_max": 1.25,
+      "why": "the Taylor series converges inside a finite radius; the run is held to T <= 1.25 eddy times and the retained-order tail is written out so a reader can see the truncation level"
+    }
+  },
+  "cross_checks": [
+    {
+      "quantity": "energy / enstrophy histories",
+      "source": "spectral_dns_reference (src/tensorlbm/tg3d_series.py): de-aliased Fourier pseudo-spectral DNS, integrating-factor RK4, same IC and same nu -- a different code path from the series",
+      "role": "guards against a mistake in the series recursion"
+    },
+    {
+      "quantity": "energy decay ratio",
+      "source": "closed form for the z-invariant Taylor-Green mode (exponential decay, machine-checked exact NS solution in benchmarks/case_taylor_green_3d/run_case.py --verify)",
+      "role": "the zero-nonlinearity limit the series must reproduce exactly"
+    }
+  ],
+  "predeclared_rejection_of_alternatives": {
+    "z_invariant_mode_as_primary": "rejected as primary for the 3-D point: no w, no vortex stretching; kept as the Q0 anchor instead",
+    "another_LBM_as_reference": "rejected: self-reference is not a benchmark",
+    "single_grid_point": "rejected: a pass at one N cannot be told apart from a fortuitous error cancellation, so a fixed-Re grid ladder with an observed-order estimate is part of the case"
+  }
+}
