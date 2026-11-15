@@ -1,0 +1,113 @@
+{
+  "anchor": "XVAL-LBM-AA-PATTERN-FUSED-STREAM-COLLIDE",
+  "acceptance_rule": "max(L2_u, L2_v) < 0.15 vs Ghia et al. (1982) Re=100",
+  "metric": "L2 of u/U against Ghia centre-line tables; normalisation before subtraction",
+  "couette_gate": {
+    "status": "ran",
+    "rel_err_max": 5.993750812824383e-06,
+    "fluid_mass_drift_rel": 7.890355036010989e-13,
+    "gate_1pct": true
+  },
+  "ordering_equality": {
+    "status": "not_run"
+  },
+  "cavity": [
+    {
+      "task_index": 2,
+      "L": 32,
+      "tau": 0.596,
+      "steps_run": 9000,
+      "converged_at": null,
+      "L2_u_full": 0.026022894086342372,
+      "L2_v_full": 0.04802555440626738,
+      "L2_u_interior": 0.00821541728945767,
+      "L2_v_interior": 0.050035057883433307,
+      "floor_u": 0.026134985097973323,
+      "fluid_mass_rel_drift": 8.364420267525927e-13,
+      "elapsed_s": 39.99806189537048,
+      "artifact": "artifacts/xval_aa_pattern/cavity_accept_2.json"
+    },
+    {
+      "task_index": 3,
+      "L": 64,
+      "tau": 0.692,
+      "steps_run": 26000,
+      "converged_at": 26000,
+      "L2_u_full": 0.013300557655404457,
+      "L2_v_full": 0.04591105578456398,
+      "L2_u_interior": 0.004757373770475867,
+      "L2_v_interior": 0.04875215876034654,
+      "floor_u": 0.013086428012972006,
+      "fluid_mass_rel_drift": 2.0820012380795557e-12,
+      "elapsed_s": 129.9298095703125,
+      "artifact": "artifacts/xval_aa_pattern/cavity_accept_3.json"
+    },
+    {
+      "task_index": 4,
+      "L": 128,
+      "tau": 0.884,
+      "steps_run": 49000,
+      "converged_at": 49000,
+      "L2_u_full": 0.007042984926583101,
+      "L2_v_full": 0.04500439310994365,
+      "L2_u_interior": 0.0034370955055843017,
+      "L2_v_interior": 0.04802794421230152,
+      "floor_u": 0.006660213916447897,
+      "fluid_mass_rel_drift": 3.0715430199279573e-12,
+      "elapsed_s": 497.02335953712463,
+      "artifact": "artifacts/xval_aa_pattern/cavity_accept_4.json"
+    }
+  ],
+  "grids_run": [
+    32,
+    64,
+    128
+  ],
+  "grids_not_run": [
+    192
+  ],
+  "worst_cavity_error": 0.04802555440626738,
+  "gate": 0.15,
+  "gate_pass_all_run_grids": true,
+  "observed_order": {
+    "u_interior": {
+      "p": 0.6285719582439471,
+      "reason": null,
+      "C": 0.0699375235812015,
+      "points": [
+        [
+          32,
+          0.00821541728945767
+        ],
+        [
+          64,
+          0.004757373770475867
+        ],
+        [
+          128,
+          0.0034370955055843017
+        ]
+      ]
+    },
+    "v_interior": {
+      "p": 0.02953262016148093,
+      "reason": null,
+      "C": 0.055325920138168914,
+      "points": [
+        [
+          32,
+          0.050035057883433307
+        ],
+        [
+          64,
+          0.04875215876034654
+        ],
+        [
+          128,
+          0.04802794421230152
+        ]
+      ]
+    }
+  },
+  "honest_note": "a grid in grids_not_run carries no evidence; the pass statement is restricted to grids_run"
+}

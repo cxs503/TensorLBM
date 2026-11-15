@@ -1,0 +1,10 @@
+{
+  "L": 32,
+  "threads": 2,
+  "elapsed_s": 156.49482440948486,
+  "steps_run": 31000,
+  "L2_u_full": 0.02602289626212493,
+  "L2_v_full": 0.04802565143922435,
+  "speedup_vs_unpinned_artifact": 0.25558712274542333,
+  "identical_to_committed": false
+}

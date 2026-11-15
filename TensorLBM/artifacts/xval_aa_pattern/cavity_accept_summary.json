@@ -24,5 +24,41 @@
     ],
     "gate_15pct": true,
     "gate_3pct": false
+  },
+  "cavity_L64": {
+    "L": 64,
+    "tau": 0.692,
+    "steps_run": 26000,
+    "converged_at": 26000,
+    "L2_u_full": 0.013300557655404457,
+    "L2_v_full": 0.04591105578456398,
+    "L2_u_interior": 0.004757373770475867,
+    "L2_v_interior": 0.04875215876034654,
+    "metric_floor_u": 0.013086428012972006,
+    "fluid_mass_rel_drift": 2.0820012380795557e-12,
+    "rho_fluid_range": [
+      0.9468142870386749,
+      1.085146343039785
+    ],
+    "gate_15pct": true,
+    "gate_3pct": false
+  },
+  "cavity_L128": {
+    "L": 128,
+    "tau": 0.884,
+    "steps_run": 49000,
+    "converged_at": 49000,
+    "L2_u_full": 0.007042984926583101,
+    "L2_v_full": 0.04500439310994365,
+    "L2_u_interior": 0.0034370955055843017,
+    "L2_v_interior": 0.04802794421230152,
+    "metric_floor_u": 0.006660213916447897,
+    "fluid_mass_rel_drift": 3.0715430199279573e-12,
+    "rho_fluid_range": [
+      0.9162176553932847,
+      1.1255352158820793
+    ],
+    "gate_15pct": true,
+    "gate_3pct": false
   }
 }
