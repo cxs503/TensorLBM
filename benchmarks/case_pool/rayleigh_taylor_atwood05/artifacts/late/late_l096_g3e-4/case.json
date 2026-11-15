@@ -1,0 +1,89 @@
+{
+  "ac_mobility": 20.0,
+  "ac_width": 2.0,
+  "atwood": 0.5,
+  "c_eff": 0.5187410152656265,
+  "err_fr_vs_layzer_c1_pct": 38.843229285605396,
+  "err_legacy_estimator_vs_tip_pct": 18.856786885010337,
+  "err_sigma_vs_viscous_pct": -11.181748853187901,
+  "err_u_spike_vs_two_fluid_pct": -1.9620041431325674,
+  "fr_layzer_c1": 0.5641895835477563,
+  "fr_layzer_c3": 0.32573500793528,
+  "fr_meas": 0.7833390370907135,
+  "front_fit_n": 66,
+  "front_fit_r2_bub": 0.9993502293052625,
+  "front_fit_r2_spk": 0.9993683362303611,
+  "front_max_lam": 1.4602180875887878,
+  "front_symmetry_max_rel_dev": 0.012824271783784457,
+  "g": 0.0003,
+  "gate_terminal_15pct": null,
+  "lam": 96,
+  "layers": 8.0,
+  "ma_peak": 0.8788498685477117,
+  "mean_dev_max_lam": 0.6503375281679838,
+  "multi_columns_max": 78,
+  "n_steps_planned": 5200,
+  "n_steps_run": 3594,
+  "name": "late_l096_g3e-4",
+  "note": "1.5x grid at constant A g/lam",
+  "nu": 0.0050000000000000044,
+  "phase_scheme": "allen_cahn",
+  "phi_integral_drift_pct_per_cell": 0.004816355021430358,
+  "phi_max": 1.0,
+  "phi_min": -1.0,
+  "sample_every": 6,
+  "sigma_sim": 0.0027639708053140673,
+  "sigma_units": "lattice (d ln a / dt)",
+  "sigma_viscous": 0.00311194013575584,
+  "slope_first_half": 0.784448041518929,
+  "slope_second_half": NaN,
+  "slope_subwindow_drift_pct": NaN,
+  "stop_reason": "mach",
+  "tau_reached": 4.4925,
+  "two_fluid_asymmetry_pred": 1.7320508075688772,
+  "two_fluid_asymmetry_sim": 1.0028354943735431,
+  "u_bubble_sim": 0.09413376498227148,
+  "u_layzer_c1": 0.06770275002573076,
+  "u_legacy_estimator": 0.11172619318824016,
+  "u_mean_sim": 0.09400068445088562,
+  "u_robust_sim": 0.09427238208345237,
+  "u_spike_sim": 0.09386760391949976,
+  "u_spike_two_fluid_c1": 0.09574614729634384,
+  "wall_clearance_lam": 2.5,
+  "wall_seconds": 94.8354926109314,
+  "window": [
+    4.0,
+    6.0
+  ],
+  "window_complete": false,
+  "window_covered": [
+    4.005,
+    4.4925
+  ],
+  "windows": {
+    "late": {
+      "n": 63,
+      "r2": 0.9996894244365336,
+      "sigma": 0.00295335019649229,
+      "slope_per_tau": 2.362680157193832
+    },
+    "late2": {
+      "n": 56,
+      "r2": 0.9996454935436802,
+      "sigma": 0.002907561284864566,
+      "slope_per_tau": 2.326049027891653
+    },
+    "legacy": {
+      "n": 101,
+      "r2": 0.9999282425160149,
+      "sigma": 0.002662298752663857,
+      "slope_per_tau": 2.1298390021310856
+    },
+    "primary": {
+      "n": 83,
+      "r2": 0.999432922841042,
+      "sigma": 0.0027639708053140673,
+      "slope_per_tau": 2.2111766442512537
+    }
+  }
+}

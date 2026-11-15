@@ -1,0 +1,276 @@
+{
+  "cases": [
+    {
+      "ac_mobility": 20.0,
+      "ac_width": 2.0,
+      "atwood": 0.5,
+      "c_eff": 0.8973548161717092,
+      "err_fr_vs_layzer_c1_pct": 5.564501444722891,
+      "err_legacy_estimator_vs_tip_pct": 80.339028035188,
+      "err_sigma_vs_viscous_pct": -10.144078283663195,
+      "err_u_spike_vs_two_fluid_pct": -25.371090772251037,
+      "fr_layzer_c1": 0.5641895835477563,
+      "fr_layzer_c3": 0.32573500793527993,
+      "fr_meas": 0.5955839210752473,
+      "front_fit_n": 267,
+      "front_fit_r2_bub": 0.9932706191457292,
+      "front_fit_r2_spk": 0.9932912110545591,
+      "front_max_lam": 2.503262618781634,
+      "front_symmetry_max_rel_dev": 0.023471601433572988,
+      "g": 0.0002,
+      "gate_terminal_15pct": true,
+      "lam": 64,
+      "layers": 8.0,
+      "ma_peak": 0.5482582056035612,
+      "mean_dev_max_lam": 1.761836906239378,
+      "multi_columns_max": 51,
+      "n_steps_planned": 5200,
+      "n_steps_run": 5166,
+      "name": "late_l064_g2e-4",
+      "note": "reference point, terminal window reached",
+      "nu": 0.0050000000000000044,
+      "phase_scheme": "allen_cahn",
+      "phi_integral_drift_pct_per_cell": 0.0029098078576048473,
+      "phi_max": 1.0,
+      "phi_min": -1.0,
+      "sample_every": 6,
+      "sigma_sim": 0.00277247256322754,
+      "sigma_units": "lattice (d ln a / dt)",
+      "sigma_viscous": 0.003085464497242449,
+      "slope_first_half": 0.6175468857901475,
+      "slope_second_half": 0.5268737953839308,
+      "slope_subwindow_drift_pct": -14.682786439802232,
+      "stop_reason": "wall",
+      "tau_reached": 6.4575000000000005,
+      "two_fluid_asymmetry_pred": 1.7320508075688772,
+      "two_fluid_asymmetry_sim": 1.0004412658998256,
+      "u_bubble_sim": 0.04765722380213606,
+      "u_layzer_c1": 0.045135166683820505,
+      "u_legacy_estimator": 0.08592562035207697,
+      "u_mean_sim": 0.04764671368601978,
+      "u_robust_sim": 0.047724321997781025,
+      "u_spike_sim": 0.04763620356990351,
+      "u_spike_two_fluid_c1": 0.06383076486422923,
+      "wall_clearance_lam": 2.5,
+      "wall_seconds": 59.35295534133911,
+      "window": [
+        4.0,
+        6.0
+      ],
+      "window_complete": true,
+      "window_covered": [
+        4.005,
+        6.0
+      ],
+      "windows": {
+        "late": {
+          "n": 67,
+          "r2": 0.9998298302253967,
+          "sigma": 0.002743186054313546,
+          "slope_per_tau": 2.194548843450837
+        },
+        "late2": {
+          "n": 64,
+          "r2": 0.9986096886420569,
+          "sigma": 0.002568264864277747,
+          "slope_per_tau": 2.0546118914221974
+        },
+        "legacy": {
+          "n": 102,
+          "r2": 0.9994673177795101,
+          "sigma": 0.002641714038159338,
+          "slope_per_tau": 2.1133712305274703
+        },
+        "primary": {
+          "n": 85,
+          "r2": 0.9996760230873188,
+          "sigma": 0.00277247256322754,
+          "slope_per_tau": 2.217978050582032
+        }
+      }
+    },
+    {
+      "ac_mobility": 20.0,
+      "ac_width": 2.0,
+      "atwood": 0.5,
+      "c_eff": 0.8553850965345626,
+      "err_fr_vs_layzer_c1_pct": 8.123267181870574,
+      "err_legacy_estimator_vs_tip_pct": 74.53716200482752,
+      "err_sigma_vs_viscous_pct": -11.892217001385708,
+      "err_u_spike_vs_two_fluid_pct": -23.43427202402424,
+      "fr_layzer_c1": 0.5641895835477563,
+      "fr_layzer_c3": 0.32573500793527993,
+      "fr_meas": 0.6100202108316234,
+      "front_fit_n": 267,
+      "front_fit_r2_bub": 0.9899637689434381,
+      "front_fit_r2_spk": 0.9899854400612806,
+      "front_max_lam": 2.4812910941979918,
+      "front_symmetry_max_rel_dev": 0.017987214214689053,
+      "g": 0.0002,
+      "gate_terminal_15pct": true,
+      "lam": 64,
+      "layers": 10.0,
+      "ma_peak": 0.5391013321119441,
+      "mean_dev_max_lam": 1.6922772574518001,
+      "multi_columns_max": 50,
+      "n_steps_planned": 5200,
+      "n_steps_run": 5196,
+      "name": "late_l064_g2e-4_L10",
+      "note": "wall-confinement control (5 lam per side)",
+      "nu": 0.0050000000000000044,
+      "phase_scheme": "allen_cahn",
+      "phi_integral_drift_pct_per_cell": 0.0030285470870179774,
+      "phi_max": 1.0,
+      "phi_min": -1.0,
+      "sample_every": 6,
+      "sigma_sim": 0.0027185343637296626,
+      "sigma_units": "lattice (d ln a / dt)",
+      "sigma_viscous": 0.003085464497242449,
+      "slope_first_half": 0.5476642515703115,
+      "slope_second_half": 0.5296626798301657,
+      "slope_subwindow_drift_pct": -3.286972207612626,
+      "stop_reason": null,
+      "tau_reached": 6.495,
+      "two_fluid_asymmetry_pred": 1.7320508075688772,
+      "two_fluid_asymmetry_sim": 0.9970996802207629,
+      "u_bubble_sim": 0.04873074394212926,
+      "u_layzer_c1": 0.045135166683820505,
+      "u_legacy_estimator": 0.08517695709131047,
+      "u_mean_sim": 0.04880161686652987,
+      "u_robust_sim": 0.04886590148040197,
+      "u_spike_sim": 0.048872489790930465,
+      "u_spike_two_fluid_c1": 0.06383076486422923,
+      "wall_clearance_lam": 3.5,
+      "wall_seconds": 64.56888604164124,
+      "window": [
+        4.0,
+        6.0
+      ],
+      "window_complete": true,
+      "window_covered": [
+        4.005,
+        6.0
+      ],
+      "windows": {
+        "late": {
+          "n": 66,
+          "r2": 0.9998406934595545,
+          "sigma": 0.002782084997343569,
+          "slope_per_tau": 2.2256679978748553
+        },
+        "late2": {
+          "n": 61,
+          "r2": 0.9998192414280752,
+          "sigma": 0.0026954974110840473,
+          "slope_per_tau": 2.156397928867238
+        },
+        "legacy": {
+          "n": 104,
+          "r2": 0.9998142404437056,
+          "sigma": 0.002602479199844317,
+          "slope_per_tau": 2.0819833598754536
+        },
+        "primary": {
+          "n": 86,
+          "r2": 0.9994516153538366,
+          "sigma": 0.0027185343637296626,
+          "slope_per_tau": 2.17482749098373
+        }
+      }
+    },
+    {
+      "ac_mobility": 20.0,
+      "ac_width": 2.0,
+      "atwood": 0.5,
+      "c_eff": 0.5187410152656265,
+      "err_fr_vs_layzer_c1_pct": 38.843229285605396,
+      "err_legacy_estimator_vs_tip_pct": 18.856786885010337,
+      "err_sigma_vs_viscous_pct": -11.181748853187901,
+      "err_u_spike_vs_two_fluid_pct": -1.9620041431325674,
+      "fr_layzer_c1": 0.5641895835477563,
+      "fr_layzer_c3": 0.32573500793528,
+      "fr_meas": 0.7833390370907135,
+      "front_fit_n": 66,
+      "front_fit_r2_bub": 0.9993502293052625,
+      "front_fit_r2_spk": 0.9993683362303611,
+      "front_max_lam": 1.4602180875887878,
+      "front_symmetry_max_rel_dev": 0.012824271783784457,
+      "g": 0.0003,
+      "gate_terminal_15pct": null,
+      "lam": 96,
+      "layers": 8.0,
+      "ma_peak": 0.8788498685477117,
+      "mean_dev_max_lam": 0.6503375281679838,
+      "multi_columns_max": 78,
+      "n_steps_planned": 5200,
+      "n_steps_run": 3594,
+      "name": "late_l096_g3e-4",
+      "note": "1.5x grid at constant A g/lam",
+      "nu": 0.0050000000000000044,
+      "phase_scheme": "allen_cahn",
+      "phi_integral_drift_pct_per_cell": 0.004816355021430358,
+      "phi_max": 1.0,
+      "phi_min": -1.0,
+      "sample_every": 6,
+      "sigma_sim": 0.0027639708053140673,
+      "sigma_units": "lattice (d ln a / dt)",
+      "sigma_viscous": 0.00311194013575584,
+      "slope_first_half": 0.784448041518929,
+      "slope_second_half": NaN,
+      "slope_subwindow_drift_pct": NaN,
+      "stop_reason": "mach",
+      "tau_reached": 4.4925,
+      "two_fluid_asymmetry_pred": 1.7320508075688772,
+      "two_fluid_asymmetry_sim": 1.0028354943735431,
+      "u_bubble_sim": 0.09413376498227148,
+      "u_layzer_c1": 0.06770275002573076,
+      "u_legacy_estimator": 0.11172619318824016,
+      "u_mean_sim": 0.09400068445088562,
+      "u_robust_sim": 0.09427238208345237,
+      "u_spike_sim": 0.09386760391949976,
+      "u_spike_two_fluid_c1": 0.09574614729634384,
+      "wall_clearance_lam": 2.5,
+      "wall_seconds": 94.8354926109314,
+      "window": [
+        4.0,
+        6.0
+      ],
+      "window_complete": false,
+      "window_covered": [
+        4.005,
+        4.4925
+      ],
+      "windows": {
+        "late": {
+          "n": 63,
+          "r2": 0.9996894244365336,
+          "sigma": 0.00295335019649229,
+          "slope_per_tau": 2.362680157193832
+        },
+        "late2": {
+          "n": 56,
+          "r2": 0.9996454935436802,
+          "sigma": 0.002907561284864566,
+          "slope_per_tau": 2.326049027891653
+        },
+        "legacy": {
+          "n": 101,
+          "r2": 0.9999282425160149,
+          "sigma": 0.002662298752663857,
+          "slope_per_tau": 2.1298390021310856
+        },
+        "primary": {
+          "n": 83,
+          "r2": 0.999432922841042,
+          "sigma": 0.0027639708053140673,
+          "slope_per_tau": 2.2111766442512537
+        }
+      }
+    }
+  ],
+  "gate_pct": 15.0,
+  "window": [
+    4.0,
+    6.0
+  ]
+}

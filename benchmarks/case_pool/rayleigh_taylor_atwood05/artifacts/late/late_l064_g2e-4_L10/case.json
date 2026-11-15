@@ -1,0 +1,89 @@
+{
+  "ac_mobility": 20.0,
+  "ac_width": 2.0,
+  "atwood": 0.5,
+  "c_eff": 0.8553850965345626,
+  "err_fr_vs_layzer_c1_pct": 8.123267181870574,
+  "err_legacy_estimator_vs_tip_pct": 74.53716200482752,
+  "err_sigma_vs_viscous_pct": -11.892217001385708,
+  "err_u_spike_vs_two_fluid_pct": -23.43427202402424,
+  "fr_layzer_c1": 0.5641895835477563,
+  "fr_layzer_c3": 0.32573500793527993,
+  "fr_meas": 0.6100202108316234,
+  "front_fit_n": 267,
+  "front_fit_r2_bub": 0.9899637689434381,
+  "front_fit_r2_spk": 0.9899854400612806,
+  "front_max_lam": 2.4812910941979918,
+  "front_symmetry_max_rel_dev": 0.017987214214689053,
+  "g": 0.0002,
+  "gate_terminal_15pct": true,
+  "lam": 64,
+  "layers": 10.0,
+  "ma_peak": 0.5391013321119441,
+  "mean_dev_max_lam": 1.6922772574518001,
+  "multi_columns_max": 50,
+  "n_steps_planned": 5200,
+  "n_steps_run": 5196,
+  "name": "late_l064_g2e-4_L10",
+  "note": "wall-confinement control (5 lam per side)",
+  "nu": 0.0050000000000000044,
+  "phase_scheme": "allen_cahn",
+  "phi_integral_drift_pct_per_cell": 0.0030285470870179774,
+  "phi_max": 1.0,
+  "phi_min": -1.0,
+  "sample_every": 6,
+  "sigma_sim": 0.0027185343637296626,
+  "sigma_units": "lattice (d ln a / dt)",
+  "sigma_viscous": 0.003085464497242449,
+  "slope_first_half": 0.5476642515703115,
+  "slope_second_half": 0.5296626798301657,
+  "slope_subwindow_drift_pct": -3.286972207612626,
+  "stop_reason": null,
+  "tau_reached": 6.495,
+  "two_fluid_asymmetry_pred": 1.7320508075688772,
+  "two_fluid_asymmetry_sim": 0.9970996802207629,
+  "u_bubble_sim": 0.04873074394212926,
+  "u_layzer_c1": 0.045135166683820505,
+  "u_legacy_estimator": 0.08517695709131047,
+  "u_mean_sim": 0.04880161686652987,
+  "u_robust_sim": 0.04886590148040197,
+  "u_spike_sim": 0.048872489790930465,
+  "u_spike_two_fluid_c1": 0.06383076486422923,
+  "wall_clearance_lam": 3.5,
+  "wall_seconds": 64.56888604164124,
+  "window": [
+    4.0,
+    6.0
+  ],
+  "window_complete": true,
+  "window_covered": [
+    4.005,
+    6.0
+  ],
+  "windows": {
+    "late": {
+      "n": 66,
+      "r2": 0.9998406934595545,
+      "sigma": 0.002782084997343569,
+      "slope_per_tau": 2.2256679978748553
+    },
+    "late2": {
+      "n": 61,
+      "r2": 0.9998192414280752,
+      "sigma": 0.0026954974110840473,
+      "slope_per_tau": 2.156397928867238
+    },
+    "legacy": {
+      "n": 104,
+      "r2": 0.9998142404437056,
+      "sigma": 0.002602479199844317,
+      "slope_per_tau": 2.0819833598754536
+    },
+    "primary": {
+      "n": 86,
+      "r2": 0.9994516153538366,
+      "sigma": 0.0027185343637296626,
+      "slope_per_tau": 2.17482749098373
+    }
+  }
+}
