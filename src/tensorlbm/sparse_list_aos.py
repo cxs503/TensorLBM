@@ -64,15 +64,51 @@ C_D2Q9_LBMPY = np.array(
     dtype=np.int64,
 )
 
+# Repo (actuator_disk_selfpropulsion.py:666) ordering: rest, axes, face diagonals.
+C_D3Q19 = np.array(
+    [
+        [0, 0, 0],
+        [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
+        [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
+        [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
+        [0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1],
+    ],
+    dtype=np.int64,
+)
+
+# Same lattice in the lbmpy/pystencils ``LBStencil("D3Q19")`` ordering (y-first,
+# z-last), used when the index array is produced by ``lbmpy.sparse.SparseLbMapper``.
+C_D3Q19_LBMPY = np.array(
+    [
+        [0, 0, 0],
+        [0, 1, 0], [0, -1, 0], [-1, 0, 0], [1, 0, 0], [0, 0, 1], [0, 0, -1],
+        [-1, 1, 0], [1, 1, 0], [-1, -1, 0], [1, -1, 0],
+        [0, 1, 1], [0, -1, 1], [-1, 0, 1], [1, 0, 1],
+        [0, 1, -1], [0, -1, -1], [-1, 0, -1], [1, 0, -1],
+    ],
+    dtype=np.int64,
+)
+
 FLUID = 1
 WALL = 2
 GHOST = 0
 
 
+_WEIGHT_TABLES = {
+    # dim -> {squared stencil norm: weight}
+    2: {0: 4.0 / 9.0, 1: 1.0 / 9.0, 2: 1.0 / 36.0},          # D2Q9
+    3: {0: 1.0 / 3.0, 1: 1.0 / 18.0, 2: 1.0 / 36.0},         # D3Q19
+}
+
+
 def weights_for(stencil: np.ndarray) -> np.ndarray:
-    """D2Q9 weights from the squared stencil norm (4/9, 1/9, 1/36)."""
-    norms = (stencil**2).sum(axis=1)
-    table = {0: 4.0 / 9.0, 1: 1.0 / 9.0, 2: 1.0 / 36.0}
+    """Lattice weights from the squared stencil norm (D2Q9 / D3Q19)."""
+    st = np.asarray(stencil)
+    norms = (st**2).sum(axis=1)
+    dim = st.shape[1]
+    if dim not in _WEIGHT_TABLES:
+        raise ValueError(f"no weight table for a {dim}-dimensional stencil")
+    table = _WEIGHT_TABLES[dim]
     return np.array([table[int(n)] for n in norms], dtype=np.float64)
 
 
@@ -169,79 +205,114 @@ def build_index_array(
 # --------------------------------------------------------------------------- #
 # shared collision operator (identical in both arms)
 # --------------------------------------------------------------------------- #
-def equilibrium(rho, ux, uy, stencil: np.ndarray | None = None):
-    """Second-order D2Q9 equilibrium, population axis last."""
+def equilibrium_vec(rho, u, stencil: np.ndarray | None = None):
+    """Second-order equilibrium for ``dim`` dimensions; ``u`` has shape ``(N, dim)``."""
     st = C_D2Q9 if stencil is None else np.asarray(stencil)
     w = weights_for(st)
-    cu = np.multiply.outer(ux, st[:, 0]) + np.multiply.outer(uy, st[:, 1])
-    usq = (ux * ux + uy * uy)[..., None]
+    u = np.asarray(u, dtype=np.float64)
+    if u.shape[-1] != st.shape[1]:
+        raise ValueError("velocity has the wrong number of components for this stencil")
+    cu = u @ st.T                                   # (N, Q)
+    usq = (u * u).sum(axis=-1)[..., None]           # (N, 1)
+    rho = np.asarray(rho, dtype=np.float64)
     return rho[..., None] * w * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq)
 
 
+def equilibrium(rho, ux, uy, stencil: np.ndarray | None = None):
+    """Second-order 2-D equilibrium, population axis last (D3Q19: use
+    :func:`equilibrium_vec` with a ``(N, 3)`` velocity)."""
+    st = C_D2Q9 if stencil is None else np.asarray(stencil)
+    if st.shape[1] != 2:
+        raise ValueError("equilibrium() is the 2-D wrapper; use equilibrium_vec()")
+    return equilibrium_vec(rho, np.stack([ux, uy], axis=-1), st)
+
+
 def _collide_guo(f, tau, force, stencil: np.ndarray | None = None):
-    """BGK collision with Guo forcing; ``f`` has shape ``(N, Q)``."""
+    """BGK collision with Guo forcing; ``f`` has shape ``(N, Q)``, any dimension."""
     st = C_D2Q9 if stencil is None else np.asarray(stencil)
     w = weights_for(st)
-    fx, fy = force
+    dim = st.shape[1]
+    F = np.asarray(force, dtype=np.float64).reshape(dim)
     rho = f.sum(axis=-1)
-    mx = f @ st[:, 0]
-    my = f @ st[:, 1]
-    ux = (mx + 0.5 * fx) / rho
-    uy = (my + 0.5 * fy) / rho
-    feq = equilibrium(rho, ux, uy, st)
+    u = (f @ st + 0.5 * F) / rho[..., None]
+    feq = equilibrium_vec(rho, u, st)
     # Guo source term (Guo, Zheng & Shi 2002), full form:
     #   (1 - 1/(2 tau)) w_i [ 3 (c_i - u) . F + 9 (c_i . u)(c_i . F) ] / rho
     # The second (O(Ma F)) term is *not* optional: without it sum_i Lambda_i =
     # -3 (u . F)/rho and the forcing leaks/gains mass every step.
-    cuf = st[None, :, 0] * fx + st[None, :, 1] * fy
-    cdotu = st[None, :, 0] * ux[..., None] + st[None, :, 1] * uy[..., None]
-    force_term = (
-        w
-        * (3.0 * (cuf - (ux[..., None] * fx + uy[..., None] * fy)) + 9.0 * cdotu * cuf)
-        / rho[..., None]
-    )
+    cuf = st @ F                                    # (Q,)
+    cdotu = u @ st.T                                # (N, Q)
+    uF = (u * F).sum(axis=-1)                       # (N,)
+    force_term = (w * (3.0 * (cuf - uF[..., None]) + 9.0 * cdotu * cuf)) / rho[..., None]
     omega = 1.0 / tau
-    return f + omega * (feq - f) + (1.0 - 0.5 * omega) * force_term, rho, ux, uy
+    return f + omega * (feq - f) + (1.0 - 0.5 * omega) * force_term, rho, u
+
+
+def velocity_from_vec(f, force, stencil: np.ndarray | None = None):
+    """Density ``(N,)`` and velocity ``(N, dim)`` with the Guo half-force correction."""
+    st = C_D2Q9 if stencil is None else np.asarray(stencil)
+    F = np.asarray(force, dtype=np.float64).reshape(st.shape[1])
+    rho = f.sum(axis=-1)
+    return rho, (f @ st + 0.5 * F) / rho[..., None]
 
 
 def velocity_from(f, force, stencil: np.ndarray | None = None):
-    """Density and velocity with the Guo half-force correction."""
+    """2-D wrapper: density, ux, uy (D3Q19: use :func:`velocity_from_vec`)."""
     st = C_D2Q9 if stencil is None else np.asarray(stencil)
-    rho = f.sum(axis=-1)
-    return rho, (f @ st[:, 0] + 0.5 * force[0]) / rho, (f @ st[:, 1] + 0.5 * force[1]) / rho
+    rho, u = velocity_from_vec(f, force, st)
+    if u.shape[-1] != 2:
+        raise ValueError("velocity_from() is the 2-D wrapper; use velocity_from_vec()")
+    return rho, u[..., 0], u[..., 1]
 
 
 # --------------------------------------------------------------------------- #
 # dense reference arm
 # --------------------------------------------------------------------------- #
-def dense_collide_stream(f, tau=0.8, force=(0.0, 0.0), periodic=(True, False),
+def dense_collide_stream(f, tau=0.8, force=(0.0, 0.0), periodic=None,
                          stencil: np.ndarray | None = None):
     """One dense step (pull gather, then collide) with halfway bounce-back.
 
-    ``f`` has shape ``(Q, L, H)`` and holds *post-collision* populations (the
-    same state convention as :meth:`SparseListLBM.step`, which makes the two
-    arms step-by-step comparable).  Walls are the planes ``y < 0`` and
-    ``y >= H`` (no-slip), ``x``/``y`` are periodic where ``periodic`` is True.
+    ``f`` has shape ``(Q, n_0, ..., n_{dim-1})`` and holds *post-collision*
+    populations (the same state convention as :meth:`SparseListLBM.step`, which
+    makes the two arms step-by-step comparable).  Axis ``k`` is periodic where
+    ``periodic[k]`` is True and a no-slip wall plane otherwise, so
+    ``periodic=(True, False)`` is the 2-D channel and ``(True, False, False)``
+    the 3-D duct with two wall pairs.
     """
     st = C_D2Q9 if stencil is None else np.asarray(stencil)
     opp = opposite_indices(st)
     q = f.shape[0]
-    length, height = f.shape[1], f.shape[2]
+    shape = f.shape[1:]
+    dim = st.shape[1]
+    if len(shape) != dim:
+        raise ValueError(f"field has {len(shape)} axes but the stencil has {dim}")
+    periodic = (True,) * dim if periodic is None else tuple(bool(p) for p in periodic)
+    if len(periodic) != dim:
+        raise ValueError("periodic must have one flag per axis")
     g = np.empty_like(f)  # streamed-in populations (pre collision)
     g[0] = f[0]
     for d in range(1, q):
-        cx, cy = int(st[d, 0]), int(st[d, 1])
-        xs = (np.arange(length) - cx) % length if periodic[0] else np.arange(length) - cx
-        ys = (np.arange(height) - cy) % height if periodic[1] else np.arange(height) - cy
-        okx = (xs >= 0) & (xs < length)
-        oky = (ys >= 0) & (ys < height)
-        if not periodic[0] and not okx.all():
-            raise ValueError("non-periodic x with an outflow neighbour is not supported")
-        src = f[d][np.ix_(xs.clip(0, length - 1), ys.clip(0, height - 1))]
-        ok = okx[:, None] & oky[None, :]
+        take, ok_axis = [], []
+        for k in range(dim):
+            n = shape[k]
+            shift = np.arange(n) - int(st[d, k])
+            if periodic[k]:
+                take.append(shift % n)
+                ok_axis.append(np.ones(n, dtype=bool))
+            else:
+                ok_axis.append((shift >= 0) & (shift < n))
+                take.append(shift.clip(0, n - 1))
+        src = f[d][np.ix_(*take)]
+        ok = np.ones(shape, dtype=bool)
+        for k in range(dim):
+            axis_shape = [1] * dim
+            axis_shape[k] = shape[k]
+            ok = ok & ok_axis[k].reshape(axis_shape)
         # halfway bounce-back == index aliasing: own cell, opposite direction
         g[d] = np.where(ok, src, f[opp[d]])
-    return _collide_guo(g.transpose(1, 2, 0), tau, force, st)[0].transpose(2, 0, 1)
+    moved = np.moveaxis(g, 0, -1)                        # (*shape, Q)
+    collided = _collide_guo(moved.reshape(-1, q), tau, force, st)[0]
+    return np.moveaxis(collided.reshape(shape + (q,)), -1, 0)
 
 
 # --------------------------------------------------------------------------- #
@@ -282,7 +353,8 @@ class SparseListLBM:
         self.index_array = idx
         self.layout = layout
         self.tau = float(tau)
-        self.force = (float(force[0]), float(force[1]))
+        self.dim = self.stencil.shape[1]
+        self.force = tuple(float(f) for f in np.asarray(force, dtype=np.float64).reshape(self.dim))
         self.n_cells = self.coords.shape[0]
         self.q = self.stencil.shape[0]
         self._write_offsets = np.stack(
@@ -299,12 +371,18 @@ class SparseListLBM:
         return cells * self.q + d
 
     # -- initialisation / IO ---------------------------------------------- #
-    def reset(self, rho=1.0, ux=None, uy=None):
+    def reset(self, rho=1.0, ux=None, uy=None, u=None):
+        """Initialise to a local equilibrium.  ``u`` is ``(N, dim)``; for 2-D the
+        ``ux``/``uy`` separate components are kept for backwards compatibility."""
         rho_f = np.full(self.n_cells, rho, dtype=np.float64) if np.isscalar(rho) else np.asarray(rho, float)
-        ux_f = np.zeros(self.n_cells) if ux is None else np.asarray(ux, float)
-        uy_f = np.zeros(self.n_cells) if uy is None else np.asarray(uy, float)
+        if u is None:
+            comps = [np.zeros(self.n_cells) if ux is None else np.asarray(ux, float),
+                     np.zeros(self.n_cells) if uy is None else np.asarray(uy, float)]
+            if self.dim > 2:
+                comps += [np.zeros(self.n_cells)] * (self.dim - 2)
+            u = np.stack(comps[: self.dim], axis=-1)
         self.pdf = np.zeros(self.n_cells * self.q, dtype=np.float64)
-        self.pdf[self._write_offsets] = equilibrium(rho_f, ux_f, uy_f, self.stencil)
+        self.pdf[self._write_offsets] = equilibrium_vec(rho_f, u, self.stencil)
 
     def populations(self) -> np.ndarray:
         """``(N, Q)`` view of the populations in list order."""
@@ -319,7 +397,9 @@ class SparseListLBM:
         return out
 
     def macroscopic(self):
-        return velocity_from(self.populations(), self.force, self.stencil)
+        """``(rho, ux, uy[, uz])`` from the list state (Guo half-force corrected)."""
+        rho, u = velocity_from_vec(self.populations(), self.force, self.stencil)
+        return (rho,) + tuple(u[:, k] for k in range(self.dim))
 
     # -- time step --------------------------------------------------------- #
     def step(self):
@@ -344,6 +424,35 @@ def poiseuille_analytic(y, height, force_x, nu):
     """Halfway-wall plane Poiseuille profile; walls sit at ``y = -0.5`` and ``y = H-0.5``."""
     s = np.asarray(y, dtype=np.float64) + 0.5
     return force_x / (2.0 * nu) * s * (height - s)
+
+
+def duct_poiseuille_analytic(y, z, height_y, height_z, force_x, nu, n_terms=201):
+    """Steady Stokes flow in a rectangular duct, walls at ``-1/2``/``H-1/2``.
+
+    Fourier series (White, *Viscous Fluid Flow*, 3rd ed., §3-3.3) for a duct of
+    half-widths ``a = H_y/2`` (y) and ``b = H_z/2`` (z)::
+
+        u(y,z) = 16 a^2 G/(pi^3 nu) sum_{n odd} (-1)^((n-1)/2) cos(n pi Y / 2a)
+                 [1 - cosh(n pi Z / 2a) / cosh(n pi b / 2a)] / n^3
+
+    with ``Y = y - (H_y-1)/2`` and ``Z = z - (H_z-1)/2``.  Since the walls sit
+    half a cell outside the first/last fluid row (halfway bounce-back), the
+    half-widths are exactly ``H/2``.  The series reduces to the plane-channel
+    parabola ``G (a^2 - Y^2)/(2 nu)`` as ``b -> infinity``.
+    """
+    ay = 0.5 * float(height_y)
+    az = 0.5 * float(height_z)
+    Y = np.asarray(y, dtype=np.float64) - 0.5 * (height_y - 1)
+    Z = np.asarray(z, dtype=np.float64) - 0.5 * (height_z - 1)
+    total = np.zeros(np.broadcast(Y, Z).shape, dtype=np.float64)
+    for n in range(1, n_terms + 1, 2):
+        t = n * np.pi / (2.0 * ay)
+        tz = t * Z
+        tb = t * az
+        # 1 - cosh(tz)/cosh(tb) in an overflow-free form (|tz| < tb always)
+        ratio = np.exp(np.abs(tz) - tb) * (1.0 + np.exp(-2.0 * np.abs(tz))) / (1.0 + np.exp(-2.0 * tb))
+        total = total + (-1.0) ** ((n - 1) // 2) * (1.0 - ratio) * np.cos(t * Y) / n**3
+    return 16.0 * ay**2 * force_x / (np.pi**3 * nu) * total
 
 
 def taylor_green_analytic(amplitude0, nu, k, t):
