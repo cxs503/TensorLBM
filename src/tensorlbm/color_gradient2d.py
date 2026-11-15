@@ -128,6 +128,7 @@ def color_gradient_two_tau_step(
     wall_contact_angle: float | None = None,
     wall_contact_angle_by_direction: dict[tuple[int, int], float] | None = None,
     wetting_periodic: tuple[bool, bool] = (True, False),
+    contact_angle_convention: str = "physical",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """One Color-Gradient iteration (collision only; streaming is external).
 
@@ -198,6 +199,18 @@ def color_gradient_two_tau_step(
                      ``{(0, 1): 90.0}`` keeps the top wall neutral.
         wetting_periodic: ``(x, y)`` periodicity handed to the wall-normal
                      table (``(True, False)`` for a channel with walls).
+        contact_angle_convention: how ``wall_contact_angle`` is interpreted.
+                     ``"physical"`` (default) = contact angle measured inside
+                     the ``phi > 0`` phase, mapped internally to the ported
+                     kernel's angle argument as ``180 - theta`` (see
+                     :mod:`tensorlbm.cg_wetting_convention` for the derivation;
+                     the kernel argument is the *mirror* angle, which is why the
+                     upstream reference only exposes ``theta < 90``).
+                     ``"reference"`` passes the value through unchanged -- it
+                     reproduces round 1 of
+                     ``XVAL-LBM-GEOMETRIC-WETTING-CONTACT-ANGLE`` verbatim and
+                     realises ``180 - theta``; kept for exact reproduction and
+                     for tests that pin the kernel convention.
 
     Returns:
         Post-collision ``(f_r_out, f_b_out)``.
@@ -279,10 +292,21 @@ def color_gradient_two_tau_step(
         # geometrical wetting: isotropic gradient on the wall-extended phase
         # field, then rotate at the wall-adjacent fluid nodes (port of
         # openLBMPM RKCG2D ``updateColorGradientOnWettingNew``).
+        from .cg_wetting_convention import physical_to_reference_angle
         from .cg_wetting_geometric import (  # local import: avoids a cycle
             isotropic_color_gradient,
             rotate_wall_color_gradient,
         )
+
+        # the ported kernel's angle argument is the mirror of the physical
+        # contact angle (see cg_wetting_convention); map before rotating.
+        theta_arg = physical_to_reference_angle(wall_contact_angle, contact_angle_convention)
+        theta_arg_by_direction = None
+        if wall_contact_angle_by_direction:
+            theta_arg_by_direction = {
+                key: physical_to_reference_angle(val, contact_angle_convention)
+                for key, val in wall_contact_angle_by_direction.items()
+            }
 
         _phi = (rho_r_safe - rho_b_safe) / (rho_r_safe + rho_b_safe).clamp(min=1e-12)
         g_x, g_y = isotropic_color_gradient(_phi, solid_mask, periodic=wetting_periodic)
@@ -290,9 +314,9 @@ def color_gradient_two_tau_step(
             g_x,
             g_y,
             solid_mask,
-            wall_contact_angle,
+            theta_arg,
             periodic=wetting_periodic,
-            theta_by_direction=wall_contact_angle_by_direction,
+            theta_by_direction=theta_arg_by_direction,
         )
         mag64 = torch.sqrt(g_x * g_x + g_y * g_y)
         mag_safe = torch.clamp(mag64, min=1e-12)
