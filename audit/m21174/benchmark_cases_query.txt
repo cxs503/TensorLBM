@@ -1,0 +1,3 @@
+# SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='GAP-DIFFLBM-EXT-LIT-GHIA400';
+# -> no rows
+-- rowcount: 0
