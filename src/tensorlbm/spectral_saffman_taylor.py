@@ -25,8 +25,22 @@ exponential viscosity law ``mu ~ exp(R c)`` (``R`` = log-viscosity ratio):
 Formulation reference (cited in the OSS header):
 C. T. Tan & G. M. Homsy, Phys. Fluids 31, 2339 (1988).
 
-Elliptic treatment (``elliptic="oss_frozen"`` reproduces the OSS
-``getPhi_hat`` symbol)::
+Elliptic treatment.  Two closures are available.
+
+``elliptic="exact_varcoef"`` (validated): the *exact* variable-coefficient
+curl--Darcy relation for the perturbation streamfunction is solved matrix-free
+at every flow update::
+
+    lap(psi) + R (c_x psi_x + c_y psi_y) = -R c_y
+
+(the ``-R c_y`` right-hand side is the unit base flow ``psi0 = y``; the same
+equation with ``R = 0`` reduces to ``lap psi = 0``).  The solve is a restarted
+GMRES with the ``lap`` Fourier symbol as right preconditioner and a warm start
+from the previous step's streamfunction; the measured relative residual is
+reported in ``solver_stats`` and is < 1e-9 in the XVAL growth-rate studies.
+
+``elliptic="oss_frozen"`` reproduces the OSS
+``getPhi_hat`` symbol (kept as the transcription-fidelity reference)::
 
     psi_hat = -R * 1j*kn * c_hat / (km^2 + kn^2 + 1j*R*(km*c_x + kn*c_y))
 
@@ -35,10 +49,14 @@ a constant multiplier.  A pointwise product is *not* a product in Fourier space,
 so this is an approximation, not an exact spectral discretisation of the
 curl-Darcy relation.  The XVAL study measures the consequence: the normalised
 residual of the exact relation ``lap(psi) + R (c_x psi_x + c_y psi_y) + R c_y``
-is O(1) (1.5--2.0) for R >= 0.05, yet the resulting time-dependent solution is
-stable (round-off amplification 1.01--1.03 per step at 128x256, Pe = 500) and
-reproduces the OSS reference to 3e-15.  It is therefore kept as the
-cross-validated core; an exact variable-coefficient solve remains future work.
+is O(1) (1.5--2.0) for R >= 0.05, the resulting linear growth rate at
+``R != 0`` has the *wrong sign* for the documented convention ``mu = exp(R c)``,
+and the magnitude is recovered only after mirroring ``R -> -R``
+(docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R2.md).  ``oss_frozen``
+is therefore retained only as the transcription-fidelity reference against the
+OSS code (relative L2 3e-15); ``exact_varcoef`` is the physically validated
+closure (R3 report), whose growth rate matches the first-principles linear
+stability anchor to < 3% at ``|R| = 1, 2``.
 
 Architecture note (Tensor ecosystem boundary contract): pure solver numerics --
 no platform state, no cross-repository orchestration.
@@ -52,7 +70,9 @@ from typing import Callable, Dict, Optional
 import numpy as np
 import torch
 
-__all__ = ["SpectralSaffmanTaylor2D", "FingeringDiagnostics"]
+__all__ = ["SpectralSaffmanTaylor2D", "FingeringDiagnostics", "ELLIPTIC_CLOSURES"]
+
+ELLIPTIC_CLOSURES = ("oss_frozen", "exact_varcoef")
 
 
 @dataclass
@@ -88,9 +108,15 @@ class SpectralSaffmanTaylor2D:
     mode_index :
         Transverse Fourier mode used by the ``mode_amplitude`` diagnostic.
     elliptic :
-        Only ``"oss_frozen"`` is implemented (faithful to the OSS symbol).  The
-        exact variable-coefficient Darcy solve is future work, registered in
-        the XVAL report.
+        ``"exact_varcoef"`` solves the exact variable-coefficient
+        curl-Darcy relation ``lap psi + R (c_x psi_x + c_y psi_y) = -R c_y``
+        with a restarted GMRES (physics-validated, XVAL R3).
+        ``"oss_frozen"`` reproduces the OSS ``getPhi_hat`` frozen-coefficient
+        symbol (default, transcription-fidelity reference; its growth rate has
+        the wrong sign for ``R != 0``, see XVAL R2) -- pass
+        ``elliptic="exact_varcoef"`` for physics-validated growth rates.
+    gmres_tol, gmres_restart, gmres_maxit :
+        GMRES controls used by ``elliptic="exact_varcoef"``.
     """
 
     def __init__(
@@ -104,13 +130,16 @@ class SpectralSaffmanTaylor2D:
         dt: float = 0.1,
         mode_index: int = 4,
         elliptic: str = "oss_frozen",
+        gmres_tol: float = 1e-9,
+        gmres_restart: int = 20,
+        gmres_maxit: int = 60,
         device: str = "cpu",
         dtype: torch.dtype = torch.float64,
     ):
         if ny % 2 or nx % 2:
             raise ValueError("ny and nx must be even (FFT Nyquist layout)")
-        if elliptic not in ("oss_frozen",):
-            raise ValueError("elliptic must be 'oss_frozen'")
+        if elliptic not in ELLIPTIC_CLOSURES:
+            raise ValueError(f"elliptic must be one of {ELLIPTIC_CLOSURES}")
         self.ny, self.nx = int(ny), int(nx)
         self.aspect = float(aspect)
         self.pe = float(pe)
@@ -118,6 +147,9 @@ class SpectralSaffmanTaylor2D:
         self.dt = float(dt)
         self.mode_index = int(mode_index)
         self.elliptic = elliptic
+        self.gmres_tol = float(gmres_tol)
+        self.gmres_restart = int(gmres_restart)
+        self.gmres_maxit = int(gmres_maxit)
         self.device = torch.device(device)
         self.dtype = dtype
         cplx = torch.complex128 if dtype == torch.float64 else torch.complex64
@@ -148,6 +180,10 @@ class SpectralSaffmanTaylor2D:
         self.phi_x = torch.zeros((ny, nx), dtype=dtype, device=self.device)
         self.phi_y = torch.zeros((ny, nx), dtype=dtype, device=self.device)
         self.j_hat_prev: Optional[torch.Tensor] = None
+        self._psi: Optional[torch.Tensor] = None        # last streamfunction (real)
+        self._phi_hat = torch.zeros((ny, nx), dtype=cplx, device=self.device)
+        self.solver_stats: Dict[str, float] = {"gmres_iter": 0.0, "gmres_residual": 0.0,
+                                               "darcy_residual": 0.0}
         self.t = 0.0
         self.stage = 0
 
@@ -175,6 +211,7 @@ class SpectralSaffmanTaylor2D:
         self.c = c.to(dtype=self.dtype, device=self.device).clone()
         self.c_hat = self._fft2(self.c)
         self._update_derivs()
+        self._psi = None
         self.t, self.stage, self.j_hat_prev = 0.0, 0, None
 
     def random_front_ic(self, seed: int = 0) -> np.ndarray:
@@ -219,14 +256,101 @@ class SpectralSaffmanTaylor2D:
         den_safe = torch.where(self._nonzero, den, torch.ones_like(den))
         return -torch.where(self._nonzero, num / den_safe, torch.zeros_like(num))
 
+    # --------------------------------------- exact variable-coefficient solve
+    def _grad_real(self, psi: torch.Tensor, axis: str) -> torch.Tensor:
+        """Real-space first derivative of a real field (spectral)."""
+        k = self._km if axis == "x" else self._kn
+        return self._ifft2(self._fft2(psi) * k * 1j).real
+
+    def _darcy_operator(self, psi: torch.Tensor) -> torch.Tensor:
+        """``A psi = lap psi + R (c_x psi_x + c_y psi_y)`` (matrix-free)."""
+        psi_hat = self._fft2(psi)
+        lap = self._ifft2(-self._k2 * psi_hat).real
+        conv = self.c_x.real * self._dx(psi_hat).real + self.c_y.real * self._dy(psi_hat).real
+        return lap + self.viscosity_ratio * conv
+
+    def _lap_precondition(self, r: torch.Tensor) -> torch.Tensor:
+        """``lap^{-1}`` in Fourier space (zero mode dropped)."""
+        r_hat = self._fft2(r)
+        r_hat = torch.where(self._nonzero, r_hat / (-self._k2_safe), torch.zeros_like(r_hat))
+        return self._ifft2(r_hat).real
+
+    def _solve_streamfunction(self, max_outer: int = 100) -> torch.Tensor:
+        """Solve the exact curl-Darcy relation for the perturbation streamfunction.
+
+        ``lap psi + R (c_x psi_x + c_y psi_y) = -R c_y``, mean-zero ``psi``,
+        restarted GMRES with right ``lap`` preconditioning; the previous
+        streamfunction is reused as the initial guess (the coefficients change by
+        O(dt) between successive flow updates).  Returns the real streamfunction;
+        ``solver_stats['gmres_*']`` and ``['darcy_residual']`` are refreshed.
+        """
+        b = -self.viscosity_ratio * self.c_y.real
+        nb = float(torch.linalg.vector_norm(b))
+        if nb == 0.0 or self.viscosity_ratio == 0.0:
+            self.solver_stats.update(gmres_iter=0.0, gmres_residual=0.0, darcy_residual=0.0)
+            return torch.zeros_like(self.c)
+
+        x = torch.zeros_like(self.c) if self._psi is None else self._psi.clone()
+        res = float(torch.linalg.vector_norm(b - self._darcy_operator(x))) / nb
+        it, restart, tol = 0, self.gmres_restart, self.gmres_tol
+        while res > tol and it < self.gmres_maxit:
+            r = b - self._darcy_operator(x)
+            beta = float(torch.linalg.vector_norm(r))
+            if beta == 0.0:
+                break
+            V = [r / beta]
+            H = np.zeros((restart + 1, restart))
+            m = 0
+            for j in range(restart):
+                w = self._darcy_operator(self._lap_precondition(V[j]))
+                for i in range(j + 1):
+                    H[i, j] = float(torch.sum(w * V[i]))
+                    w = w - H[i, j] * V[i]
+                H[j + 1, j] = float(torch.linalg.vector_norm(w))
+                if H[j + 1, j] < 1e-14:
+                    m = j + 1
+                    break
+                V.append(w / H[j + 1, j])
+                m = j + 1
+            rhs = np.zeros(m + 1)
+            rhs[0] = beta
+            y = np.linalg.lstsq(H[:m + 1, :m], rhs, rcond=None)[0]
+            combo = torch.zeros_like(x)
+            for j in range(m):
+                combo = combo + float(y[j]) * V[j]
+            x = x + self._lap_precondition(combo)
+            it += m
+            res = float(torch.linalg.vector_norm(b - self._darcy_operator(x))) / nb
+        self.solver_stats.update(gmres_iter=float(it), gmres_residual=res,
+                                 darcy_residual=self._darcy_residual(x))
+        return x
+
+    def _darcy_residual(self, psi: torch.Tensor) -> float:
+        """Normalised residual of ``lap psi + R (c_x psi_x + c_y psi_y) + R c_y = 0``."""
+        psi_hat = self._fft2(psi)
+        lap = self._ifft2(-self._k2 * psi_hat).real
+        conv = self.c_x.real * self._dx(psi_hat).real + self.c_y.real * self._dy(psi_hat).real
+        res = lap + self.viscosity_ratio * conv + self.viscosity_ratio * self.c_y.real
+        scale = (float(torch.linalg.vector_norm(lap))
+                 + abs(self.viscosity_ratio) * float(torch.linalg.vector_norm(conv))) or 1.0
+        return float(torch.linalg.vector_norm(res)) / scale
+
     # ------------------------------------------------------------- flow update
     def _update_flow(self) -> None:
         """Refresh the flow used by the convective term (J = u c_x + v c_y).
 
-        ``u = psi_y``, ``v = -psi_x`` with ``psi`` from the OSS frozen-coefficient
-        symbol (the scheme this port cross-validates).
+        ``u = psi_y``, ``v = -psi_x`` with ``psi`` from the selected elliptic
+        closure: the OSS frozen-coefficient symbol (``oss_frozen``, the scheme
+        this port cross-validates) or the exact variable-coefficient GMRES solve
+        (``exact_varcoef``).
         """
-        phi_hat = self.phi_hat_oss()
+        if self.elliptic == "oss_frozen":
+            self._psi = None
+            phi_hat = self.phi_hat_oss()
+        else:
+            self._psi = self._solve_streamfunction()
+            phi_hat = self._fft2(self._psi)
+        self._phi_hat = phi_hat
         self.phi_x = self._dx(phi_hat).real
         self.phi_y = self._dy(phi_hat).real
 
@@ -321,11 +445,11 @@ class SpectralSaffmanTaylor2D:
 
             res = lap(psi) + R (c_x psi_x + c_y psi_y) + R c_y  ==  0
 
-        The OSS frozen-coefficient symbol does not satisfy it (this is the number
-        reported in the XVAL difference list); the variable-coefficient solve
-        does, up to the CG tolerance.
+        Evaluated on the flow of the *active* closure: the OSS frozen-coefficient
+        symbol does not satisfy it (O(1) residual, XVAL R2); the exact
+        variable-coefficient GMRES solve does, up to ``gmres_tol``.
         """
-        phi_hat = self.phi_hat_oss()
+        phi_hat = self._phi_hat
         psi_x = self._dx(phi_hat).real
         psi_y = self._dy(phi_hat).real
         lap = self._ifft2(-self._k2 * phi_hat).real
