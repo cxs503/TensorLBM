@@ -57,12 +57,28 @@ variables:
   tags:
     - docker
 
+# Rung 1 runs a RATCHET, not a plain ruff gate.
+#
+# A plain `ruff check src tests examples benchmarks` rung is red by
+# construction (~3k findings) and `ruff format --check` wants to rewrite ~2k
+# files, so the first blocking rung could never pass and no pipeline would
+# reach stage 2 -- the ladder would be decorative (the anti-pattern this
+# anchor is about; see docs/ci/staged_gate_semantics.md).  The ratchet keeps
+# the full rule set at blocking strength ("no new debt") against a frozen
+# baseline that may only shrink: tools/ci_ratchet_baseline.json.
 lint:
   extends: .quality-base
   script:
     - python -m pip install --upgrade pip
     - pip install -e ".[dev]"
-    - ruff check src tests examples benchmarks
+    - python tools/ci_ratchet.py ruff
+        --paths src tests examples benchmarks
+        --baseline tools/ci_ratchet_baseline.json
+        --json-out artifacts/ci/ci_ratchet_ruff.json
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/
   allow_failure: false
 
 format-check:
@@ -70,8 +86,50 @@ format-check:
   script:
     - python -m pip install --upgrade pip
     - pip install -e ".[dev]"
-    - ruff format --check src tests examples benchmarks
+    - python tools/ci_ratchet.py format
+        --paths src tests examples benchmarks
+        --baseline tools/ci_ratchet_baseline.json
+        --json-out artifacts/ci/ci_ratchet_format.json
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/
   allow_failure: false
+
+# Advisory twin of `lint`: the full rule set at full strength.  Informational
+# until the frozen baseline is burnt down, so debt stays visible without
+# blocking the ladder.
+lint-full:
+  extends: .quality-base
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - ruff check src tests examples benchmarks
+  allow_failure: true
+
+# The ladder checks itself: parses this file, falsifies the four header claims
+# (C1-C4) by fault injection, validates the artefact contracts, and probes the
+# cheap blocking gates.  Blocking, in the same stage it audits.
+gate-semantics:
+  stage: quality
+  needs: []
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - python tools/verify_ci_staged_gates.py --probe
+        --json-out artifacts/ci/staged_gate_semantics.json
+        --markdown-out artifacts/ci/staged_gate_semantics.md
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/staged_gate_semantics.json
+      - artifacts/ci/staged_gate_semantics.md
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+  tags:
+    - docker
 
 typecheck-core:
   extends: .quality-base
