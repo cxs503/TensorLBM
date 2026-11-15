@@ -85,7 +85,11 @@ def sc_force(
     """Shan-Chen interaction force.
 
     With the library convention (G > 0 = attractive):
-        F = G * cs^2 * psi * sum_i w_i * psi(x+c_i) * c_i
+        F = G * psi * sum_i w_i * psi(x+c_i) * c_i
+    (c_s^2 enters only through the neighbour sum, which approximates
+    sum_i w_i c_i psi(x+c_i) ~ c_s^2 grad(psi); an extra c_s^2 prefactor
+    was a defect: it made the effective coupling G/3 too weak to establish
+    the documented coexistence -- see the XVAL Laplace-pressure report.)
 
     Args:
         rho:        Density field (ny, nx)
