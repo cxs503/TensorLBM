@@ -218,126 +218,6 @@ def free_slip_z_walls_3d(
     return free_slip_cells_3d(f, wall_mask, axis=2)
 
 
-def zou_he_inlet_velocity_3d(
-    f: torch.Tensor,
-    u_in: float,
-    uy_in: float = 0.0,
-    uz_in: float = 0.0,
-) -> torch.Tensor:
-    """Zou/He inlet velocity boundary condition at the left face (x=0) for D3Q19.
-
-    Prescribes *ux = u_in*, *uy = uy_in*, *uz = uz_in* at every cell of the
-    inlet plane.  The density at the inlet is derived from mass conservation
-    and the unknown in-flowing populations are reconstructed with the
-    non-equilibrium bounce-back method (Latt & Chopard 2008).
-
-    Args:
-        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        u_in: Prescribed x-velocity at the inlet.
-        uy_in: Prescribed y-velocity at the inlet (default 0).
-        uz_in: Prescribed z-velocity at the inlet (default 0).
-
-    Returns:
-        Updated distribution tensor (same shape).
-    """
-    device = f.device
-    # Directions with cx > 0 (unknown after streaming from outside):
-    #   1:(1,0,0), 7:(1,1,0), 9:(1,-1,0), 11:(1,0,1), 13:(1,0,-1)
-    # Their opposites (cx < 0, known):
-    #   2:(-1,0,0), 8:(-1,-1,0), 10:(-1,1,0), 12:(-1,0,-1), 14:(-1,0,1)
-    #
-    # Step 1: Determine rho from mass + x-momentum balance at x=0 only
-    sum_cx0 = (
-        f[0, :, :, 0]
-        + f[3, :, :, 0]
-        + f[4, :, :, 0]
-        + f[5, :, :, 0]
-        + f[6, :, :, 0]
-        + f[15, :, :, 0]
-        + f[16, :, :, 0]
-        + f[17, :, :, 0]
-        + f[18, :, :, 0]
-    )  # cx=0 directions at x=0  → shape (nz, ny)
-    sum_cx_neg = (
-        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0] + f[12, :, :, 0] + f[14, :, :, 0]
-    )  # cx<0 directions at x=0 → shape (nz, ny)
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
-
-    # Step 2: Compute equilibrium at (rho, u_in, uy_in, uz_in) for the inlet plane only.
-    # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1).
-    rho3 = rho.unsqueeze(-1)  # (nz, ny, 1)
-    ux_field = torch.full_like(rho3, u_in)
-    uy_field = torch.full_like(rho3, uy_in)
-    uz_field = torch.full_like(rho3, uz_in)
-    feq = equilibrium3d(rho3, ux_field, uy_field, uz_field, device=device)  # (19, nz, ny, 1)
-
-    # Step 3: Non-equilibrium bounce-back (vectorised, no Python loop, no .item())
-    #   f[k, :, :, 0] = feq[k, :, :, 0] - feq[opp_k, :, :, 0] + f[opp_k, :, :, 0]
-    f_new = f
-    f_new[_D3Q19_INLET_DIRS, :, :, 0] = (
-        feq[_D3Q19_INLET_DIRS, :, :, 0]
-        - feq[_D3Q19_INLET_OPP, :, :, 0]
-        + f[_D3Q19_INLET_OPP, :, :, 0]
-    )
-    return f_new
-
-
-def zou_he_outlet_pressure_3d(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tensor:
-    """Zou/He pressure boundary condition at the right face (x=nx-1) for D3Q19.
-
-    Prescribes *rho = rho_out* at the outlet plane.  The unknown populations
-    (cx < 0) are reconstructed with non-equilibrium bounce-back.
-
-    Args:
-        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        rho_out: Prescribed outlet density (default 1.0).
-
-    Returns:
-        Updated distribution tensor (same shape).
-    """
-    rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure_3d")
-    device = f.device
-    # Directions with cx < 0 (unknown at outlet): 2,8,10,12,14
-    # Their opposites (cx > 0, known): 1,7,9,11,13
-    sum_cx0 = (
-        f[0, :, :, -1]
-        + f[3, :, :, -1]
-        + f[4, :, :, -1]
-        + f[5, :, :, -1]
-        + f[6, :, :, -1]
-        + f[15, :, :, -1]
-        + f[16, :, :, -1]
-        + f[17, :, :, -1]
-        + f[18, :, :, -1]
-    )
-    sum_cx_pos = (
-        f[1, :, :, -1] + f[7, :, :, -1] + f[9, :, :, -1] + f[11, :, :, -1] + f[13, :, :, -1]
-    )
-    ux_out = -1.0 + (sum_cx0 + 2.0 * sum_cx_pos) / rho_out
-
-    rho_field = torch.full_like(f[0, :, :, -1], rho_out)  # (nz, ny)
-    ux_field = ux_out  # (nz, ny)
-    uy_field = torch.zeros_like(rho_field)
-    uz_field = torch.zeros_like(rho_field)
-    # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1)
-    feq = equilibrium3d(
-        rho_field.unsqueeze(-1),
-        ux_field.unsqueeze(-1),
-        uy_field.unsqueeze(-1),
-        uz_field.unsqueeze(-1),
-        device=device,
-    )  # (19, nz, ny, 1)
-
-    # Vectorised update: no Python loop, no .item()
-    f_new = f
-    f_new[_D3Q19_OUTLET_DIRS, :, :, -1] = (
-        feq[_D3Q19_OUTLET_DIRS, :, :, 0]
-        - feq[_D3Q19_OUTLET_OPP, :, :, 0]
-        + f[_D3Q19_OUTLET_OPP, :, :, -1]
-    )
-    return f_new
-
-
 def zou_he_moving_lid_3d(
     f: torch.Tensor,
     u_lid: float,
@@ -920,3 +800,17 @@ def nscbc_outlet_3d(
     f_new = f.clone()
     f_new[:, :, :, -1] = equilibrium3d(rho_corrected, ux_out, uy_out, uz_out)
     return f_new
+
+# ---------------------------------------------------------------------------
+# Zou/He channel inlet/outlet reconstruction (D3Q19).
+#
+# The field-capable implementations live in ``zou_he_3d`` so that the scalar
+# and per-cell (profile) forms share one algebra; the names are re-exported
+# here because this module is the historical import site.
+# ---------------------------------------------------------------------------
+from .zou_he_3d import (  # noqa: E402  (re-export after the module body)
+    plane_field as zou_he_plane_field,
+    zou_he_inlet_pressure_3d,
+    zou_he_inlet_velocity_3d,
+    zou_he_outlet_pressure_3d,
+)
