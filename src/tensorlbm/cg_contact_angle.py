@@ -260,6 +260,47 @@ def contact_angle_local_normal(
 # ---------------------------------------------------------------------------
 
 
+def _contact_half_width(
+    phi: np.ndarray, y_wall: float, level: float = 0.0, nx: int | None = None
+) -> float:
+    """Half contact width of a sessile drop, extrapolated to the wall plane.
+
+    The ``phi = level`` isocontour inside the first fluid row already sits about
+    half a cell above the wall, so the chord is evaluated in rows ``i0`` and
+    ``i0+1`` and linearly extrapolated to ``y = y_wall``.  If the cap is thinner
+    than one cell above ``i0`` the single-row chord is used (no extrapolation).
+    """
+    ny, ncols = phi.shape
+    i0 = int(math.floor(y_wall)) + 1
+    if i0 + 1 >= ny:
+        raise ValueError(f"wall plane y={y_wall} leaves no fluid rows (ny={ny})")
+    x_center = (ncols - 1) / 2.0 if nx is None else float(nx)
+
+    def _chord(row: np.ndarray) -> tuple[float, float] | None:
+        xs = [
+            j + (level - row[j]) / (row[j + 1] - row[j])
+            for j in range(ncols - 1)
+            if (row[j] - level) * (row[j + 1] - level) < 0.0
+        ]
+        if len(xs) < 2:
+            return None
+        # leftmost/rightmost crossing: NOT ``min/max(key=|x - x_center|)``,
+        # which ties on a symmetric cap (both sides equally far) and returns
+        # the same crossing twice, giving a zero-width chord.
+        return min(xs), max(xs)
+
+    c0 = _chord(phi[i0, :])
+    if c0 is None:
+        raise ValueError("no interface crossing in the first fluid row")
+    c1 = _chord(phi[i0 + 1, :])
+    if c1 is None:
+        return 0.5 * (c0[1] - c0[0])
+    f = (y_wall - i0) / ((i0 + 1) - i0)
+    xl = c0[0] + (c1[0] - c0[0]) * f
+    xr = c0[1] + (c1[1] - c0[1]) * f
+    return 0.5 * (xr - xl)
+
+
 def contact_angle_cap_inversion(
     phi: np.ndarray,
     y_wall: float,
@@ -286,9 +327,14 @@ def contact_angle_cap_inversion(
     def half_width(theta: float) -> float:
         return math.sin(theta)
 
-    # contact width from the contour extents (the contour stops where the
-    # interface meets the wall)
-    b = 0.5 * float(x.max() - x.min()) + 0.5
+    # Contact half-width: chord of the phi = level isocontour in the two rows
+    # adjacent to the wall, linearly extrapolated to the wall plane.  (R5
+    # correction: the previous estimate 0.5*(x.max()-x.min()) + 0.5 took the
+    # *widest* contour extent, which for theta > 90 deg is above the wall and
+    # not the contact line, and added half a cell.  Measured bias on exact
+    # diffused caps: up to -8 deg at theta = 120 deg before, <= 3 deg after; see
+    # benchmarks/xval_akai2018_wetting/estimator_analytic_study.py.)
+    b = _contact_half_width(phi, y_wall, level)
     A = float(np.trapezoid(np.clip(y - y_wall, 0.0, None), x)) if hasattr(np, "trapezoid") else float(
         np.trapz(np.clip(y - y_wall, 0.0, None), x)
     )
