@@ -1,0 +1,79 @@
+{
+  "case": "CASE-BACKWARD-STEP-LBM",
+  "caliber": "Armaly et al. 1983: parabolic inlet, Re = u_bar*D_h/nu (D_h = 2*h_in), ER = H/h_in",
+  "config": {
+    "re": 100.0,
+    "hi": 26,
+    "s": 25,
+    "u_bar": 0.1,
+    "l_over_h": 7.0,
+    "up_over_hi": 4.0,
+    "n_steps": 6000,
+    "avg_from": 0.45,
+    "avg_stride": 200,
+    "check_interval": 4000,
+    "steady_tol": 0.005,
+    "steady_hits": 3,
+    "collision": "trt",
+    "sponge_width_h": 3.0,
+    "seed": 0,
+    "tag": "audit_m21631_h1"
+  },
+  "derived": {
+    "H": 51,
+    "nx": 461,
+    "ny": 53,
+    "n_cells": 24433,
+    "x_step": 104,
+    "expansion_ratio": 1.9615384615384615,
+    "expansion_ratio_deviation_pct": 0.990099009900991,
+    "nu": 0.052000000000000005,
+    "tau": 0.656,
+    "d_h_inlet": 52,
+    "u_max_inlet": 0.15000000000000002,
+    "mach_inlet": 0.2598076211353316,
+    "reynolds": 100.0
+  },
+  "result": {
+    "x1_over_s": 2.905363524438717,
+    "x1_over_s_row1": 2.8808414526231707,
+    "x1_over_H": 0.056967912243896406,
+    "n_averaged_samples": 17,
+    "average_window_steps": [
+      2700,
+      6000
+    ],
+    "steps_run": 6000,
+    "steady_at_step": null,
+    "max_speed_final": 10.585729598999023,
+    "rho_min": 0.9994892477989197,
+    "rho_max": 1.0531024932861328,
+    "mass_flux_inlet": 2.7022016048431396,
+    "mass_flux_outlet": 3.0199124813079834,
+    "mass_flux_target": 2.6,
+    "mass_flux_rel_error": 0.12219649094801682,
+    "x1_over_s_reverse_extent": 2.88,
+    "u1_min_over_u_bar": -0.022948517272358433,
+    "min_tau_w": -0.004802813534350954,
+    "max_tau_w": 0.006579650976859468
+  },
+  "convergence_history": [
+    {
+      "step": 4000,
+      "max_speed": 9.468005180358887,
+      "mean_rho": 1.0012704133987427,
+      "x1_over_s_instant": 3.096442068913809,
+      "wall_time_s": 42.47350025177002
+    },
+    {
+      "step": 6000,
+      "max_speed": 10.585729598999023,
+      "mean_rho": 1.008381724357605,
+      "x1_over_s_instant": 2.789818001091837,
+      "wall_time_s": 64.16427826881409
+    }
+  ],
+  "wall_time_s": 64.17594289779663,
+  "entry": "benchmarks/case_pool/backward_step_armaly/run_case.py",
+  "tag": "audit_m21631_h1"
+}
