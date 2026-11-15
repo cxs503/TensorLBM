@@ -11,7 +11,14 @@ behind a passing average.
 
 Conditions (all must hold for a point to be judged PASS)
 -------------------------------------------------------
-``error``      ``|X1/s - X1/s_ref| <= 15 %``  (anchor tolerance, refs.json)
+``error``      ``|X1/s - X1/s_ref| <= tol``  where ``tol`` is read from
+               ``refs.json::adopted_numeric_reference.ledger_tolerance_pct`` (10 %, the
+               feature_ledger acceptance of CASE-BACKSTEP-FVM-RE100 and the tolerance of
+               the registered ``tensor_benchmark_cases`` row) -- the historical in-repo
+               15 % band is only a fallback if that key disappears
+``cross_check`` for every ``refs.json::cross_checks`` entry that carries a ``re``: the
+               same observable against that independent anchor (Erturk 2008 2.878 at
+               Re=100, 5 % = the registered cross-check row)
 ``steady``     the instantaneous reattachment length stops drifting: either the run
                stopped itself on ``steady_tol`` or the drift of the last three sampled
                checks is ``<= 1 %`` -- a *converged* point is what round 2 lacked
@@ -43,7 +50,8 @@ CASE = REPO / "benchmarks" / "case_pool" / "backward_step_armaly"
 ART = REPO / "artifacts" / "case_backward_step_armaly"
 FIG = REPO / "figures" / "CASE_BACKWARD_STEP_LBM_round3"
 
-TOLERANCE_PCT = 15.0
+TOLERANCE_PCT = 15.0   # fallback only: the live gate comes from refs.json
+CROSS_CHECK_FALLBACK_PCT = 5.0
 STEADY_DRIFT_PCT = 1.0
 CALIPER_SLACK = 0.5
 MASS_FLUX_TOL = 1e-3
@@ -53,6 +61,33 @@ MACH_MAX = 0.3
 
 def _finite(v) -> bool:
     return isinstance(v, (int, float)) and math.isfinite(float(v))
+
+
+def tolerances(refs: dict) -> dict:
+    """Judgement gates, read from ``refs.json`` instead of being hardcoded here.
+
+    Round-2/3 of this case kept a 15 % constant in this module while the registered
+    referee row (``tensor_benchmark_cases``, anchor ``CASE-BACKSTEP-FVM-RE100``) is 10 %,
+    so a 12 %-off point would have been called PASS by the verdict and FAIL by the
+    referee.  The number now has exactly one home: ``refs.json``.
+    """
+    ref = refs.get("adopted_numeric_reference", {})
+    primary = ref.get("ledger_tolerance_pct", ref.get("tolerance_pct", TOLERANCE_PCT))
+    cross: dict[float, dict] = {}
+    for c in refs.get("cross_checks", []):
+        try:
+            re = float(c["re"])
+            val = float(c["value"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        cross[re] = {"value": val,
+                     "tolerance_pct": float(c.get("tolerance_pct", CROSS_CHECK_FALLBACK_PCT)),
+                     "quantity": c.get("quantity", ""), "source": c.get("source", ""),
+                     "band": c.get("band")}
+    return {"primary_pct": float(primary),
+            "primary_source": "refs.json::adopted_numeric_reference.ledger_tolerance_pct"
+            if "ledger_tolerance_pct" in ref else "refs.json::adopted_numeric_reference.tolerance_pct",
+            "cross_check": cross}
 
 
 def steadiness(run: dict) -> dict:
@@ -82,15 +117,23 @@ def judge_run(tag: str, run: dict, refs: dict) -> dict:
     ext = res.get("x1_over_s_reverse_extent")
     mass = res.get("mass_flux_rel_error")
     tau, mach = der.get("tau"), der.get("mach_inlet")
+    tols = tolerances(refs)
+    cc = tols["cross_check"].get(float(int(re)))
 
     checks = {
-        "error": _finite(err) and abs(err) <= TOLERANCE_PCT,
+        "error": _finite(err) and abs(err) <= tols["primary_pct"],
         "steady": bool(st["self_stopped"]) or (st["drift_pct"] is not None
                                                and st["drift_pct"] <= STEADY_DRIFT_PCT),
         "caliper": _finite(ext) and _finite(x1) and float(ext) <= float(x1) + CALIPER_SLACK,
         "mass": _finite(mass) and abs(float(mass)) <= MASS_FLUX_TOL,
         "lattice": _finite(tau) and _finite(mach) and float(tau) >= TAU_MIN and float(mach) <= MACH_MAX,
     }
+    cc_row = None
+    if cc is not None:
+        cc_err = 100.0 * (float(x1) - cc["value"]) / cc["value"] if _finite(x1) else None
+        checks["cross_check"] = _finite(cc_err) and abs(cc_err) <= cc["tolerance_pct"]
+        cc_row = {"value": cc["value"], "tolerance_pct": cc["tolerance_pct"],
+                  "error_pct": cc_err, "source": cc["source"]}
     return {
         "tag": tag, "re": re, "hi": cfg.get("hi"), "s": cfg.get("s"),
         "expansion_ratio": der.get("expansion_ratio"),
@@ -99,6 +142,7 @@ def judge_run(tag: str, run: dict, refs: dict) -> dict:
         "steps_run": res.get("steps_run"), "average_window_steps": res.get("average_window_steps"),
         "n_averaged_samples": res.get("n_averaged_samples"),
         "x1_over_s": x1, "ref_x1_over_s": ref, "error_pct": err,
+        "tolerance_pct": tols["primary_pct"], "cross_check": cc_row,
         "x1_over_s_reverse_extent": ext, "x1_over_s_row1": res.get("x1_over_s_row1"),
         "mass_flux_rel_error": mass, "steadiness": st,
         "checks": checks, "pass": all(checks.values()),
@@ -119,10 +163,14 @@ def evaluate(repo: Path = REPO, tags: list[str] | None = None) -> dict:
         runs = {k: v for k, v in runs.items() if k in tags}
     rows = [judge_run(tag, run, refs) for tag, run in sorted(runs.items())]
     judged = [r for r in rows if r["re"] in (100.0, 200.0, 400.0)]
+    tols = tolerances(refs)
     return {
         "case": "CASE-BACKWARD-STEP-LBM",
         "reference": "Armaly et al. 1983 JFM 127:473 (in-repo anchor tier SECONDARY_IN_REPO)",
-        "tolerance_pct": TOLERANCE_PCT,
+        "tolerance_pct": tols["primary_pct"],
+        "tolerance_source": tols["primary_source"],
+        "cross_check_anchors": {f"{re:g}": {k: v for k, v in c.items() if k != "source"}
+                                for re, c in tols["cross_check"].items()},
         "conditions": {"steady_drift_pct": STEADY_DRIFT_PCT, "caliper_slack": CALIPER_SLACK,
                        "mass_flux_tol": MASS_FLUX_TOL, "tau_min": TAU_MIN, "mach_max": MACH_MAX},
         "runs": rows,
@@ -140,16 +188,21 @@ def _fmt(v, nd=3) -> str:
 def render_md(v: dict) -> str:
     lines = [
         "# CASE-BACKWARD-STEP-LBM · converged-ladder verdict (machine generated)", "",
-        f"reference: {v['reference']} · tolerance {v['tolerance_pct']:.0f} %", "",
-        "| tag | Re | h_in | steps | steady@ | X1/s (shear) | reverse-extent | ref | err % | checks |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        f"reference: {v['reference']} · tolerance {v['tolerance_pct']:.0f} % "
+        f"(from refs.json::{v.get('tolerance_source', 'n/a')})", "",
+        "| tag | Re | h_in | steps | steady@ | X1/s (shear) | reverse-extent | ref | err % | "
+        "cross-check err % | checks |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in v["runs"]:
         failed = ",".join(r["note_missing"]) or "-"
+        cc = r.get("cross_check")
+        cc_cell = f"{_fmt(cc['error_pct'], 2)} vs {_fmt(cc['value'])}" if cc else "-"
         lines.append(
             f"| {r['tag']} | {r['re']:.0f} | {r['hi']} | {r['steps_run']} | {r['steadiness']['steady_at_step']} | "
             f"{_fmt(r['x1_over_s'])} | {_fmt(r['x1_over_s_reverse_extent'])} | {r['ref_x1_over_s']:.2f} | "
             f"{_fmt(r['error_pct'], 2) if r['error_pct'] is not None else 'n/a'} | "
+            f"{cc_cell} | "
             f"{'PASS' if r['pass'] else 'FAIL(' + failed + ')'} |")
     lines += ["", f"runs={v['n_runs']} pass={v['n_pass']} "
                   f"max|err|={_fmt(v['max_abs_error_pct'], 2)} % "
