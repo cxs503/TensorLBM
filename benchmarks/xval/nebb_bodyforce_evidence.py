@@ -45,7 +45,12 @@ NODE = "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S"
 
 IMPL_FILES = [
     "src/tensorlbm/nebb_bodyforce.py",
+    "src/tensorlbm/boundary/nebb.py",
+    "src/tensorlbm/gpu_core_path.py",
+    "src/tensorlbm/verification/nebb_bodyforce/run.py",
     "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py",
 ]
 
 ENTRIES = [
@@ -58,6 +63,23 @@ ENTRIES = [
                 "error table and writes the JSON artifact",
     },
     {
+        "path": "src/tensorlbm/verification/nebb_bodyforce/run.py",
+        "kind": "solver_verification",
+        "command": "python -m tensorlbm.verification.nebb_bodyforce.run --ny 10 20 "
+                   "--out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S"
+                   "/artifacts/corepath",
+        "note": "drives the repo main core-path solver with wall_bc='nebb' (the L3 "
+                "call path) and writes result.json + profiles.csv + figure",
+    },
+    {
+        "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
+        "kind": "invariants",
+        "command": "python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S"
+                   "/run_xval_r4_invariants.py",  # supplementary: not a gate row
+        "note": "mass conservation / arm-to-arm / grid-convergence invariants "
+                "(writes artifacts/r4_invariants.json)",
+    },
+    {
         "path": "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
         "kind": "benchmark",
         "command": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py "
@@ -68,6 +90,31 @@ ENTRIES = [
 ]
 
 INTEGRATION_CALLERS = [
+    {
+        "file": "src/tensorlbm/gpu_core_path.py",
+        "symbols": ["wall_bc", "apply_channel_walls_nebb", "nebb_wall_plane",
+                    "channel_analytic_velocity_nebb"],
+        "kind": "main_solver",
+        "note": "the repo main core-path solver (GPUCorePathSolver.step -> core_step) "
+                "dispatches wall_bc='nebb' to the force-corrected NEBB wall kernel; "
+                "added by m18182, dropped by the m18379 refactor, restored by m21204 "
+                "(regression pins: tests/test_gpu_core_path.py -k nebb)",
+    },
+    {
+        "file": "src/tensorlbm/verification/nebb_bodyforce/run.py",
+        "symbols": ["run_core_path_arm", "channel_analytic_velocity_nebb"],
+        "kind": "solver_verification",
+        "note": "solver-level driver: runs GPUCorePathSolver with wall_bc='nebb' to "
+                "steady state against the matching analytic reference",
+    },
+    {
+        "file": "tests/test_gpu_core_path.py",
+        "symbols": ["apply_channel_walls_nebb", "channel_analytic_velocity_nebb",
+                    "wall_bc"],
+        "kind": "test",
+        "note": "regression pins for the core-path NEBB dispatch (outside-borne "
+                "direction set, node-wall reference, steady-state accuracy)",
+    },
     {
         "file": "src/tensorlbm/boundary/antibb_channel_benchmark.py",
         "symbols": ["corrected_wall_velocity", "nebb_row", "wall_spec"],
@@ -93,8 +140,19 @@ INTEGRATION_CALLERS = [
     },
 ]
 
-RUN_FILES = ["results.json", "run.log", "cli_guo_ny10.json"]
-FIGURES = ["fig_profile.png", "fig_cross_arm.png", "fig_convergence.png", "fig_field.png"]
+RUN_FILES = [
+    "results.json",
+    "run.log",
+    "cli_guo_ny10.json",
+    "corepath/result.json",
+]
+FIGURES = [
+    "fig_profile.png",
+    "fig_cross_arm.png",
+    "fig_convergence.png",
+    "fig_field.png",
+    "corepath/nebb_bodyforce_xval.png",
+]
 TESTS = ["tests/test_nebb_bodyforce.py"]
 PLACEHOLDER_MARKERS = ("NotImplementedError", "TODO", "FIXME", "placeholder")
 
@@ -232,13 +290,41 @@ def main(argv=None) -> int:
 
     primary_rows = [r for r in bench_rows if r.get("primary")]
     sensitivity_rows = [r for r in bench_rows if not r.get("primary")]
+    corepath = run_dir / "corepath" / "result.json"
+    corepath_rows = []
+    if corepath.is_file():
+        cp = json.loads(corepath.read_text())
+        th = cp.get("thresholds", {})
+        for key, arm in cp.get("arms", {}).items():
+            if "err_global_vs_analytic" not in arm:
+                continue
+            e = arm["err_global_vs_analytic"]
+            corepath_rows.append({
+                "case": key,
+                "path": "main core-path solver (wall_bc dispatch)",
+                "wall_bc": arm.get("wall_bc"),
+                "ny": arm.get("cfg", {}).get("ny"),
+                "steps_to_steady": arm.get("steps_to_steady"),
+                "umax_got": arm.get("umax"),
+                "umax_ref": arm.get("umax_analytic"),
+                "rel_err": e,
+                "tolerance": th.get("owner_15pct", 0.15),
+                "pass": bool(e < th.get("owner_15pct", 0.15)),
+                "stretch_3pct": bool(e < th.get("ecosystem_3pct", 0.03)),
+            })
+
     benchmark = {
         "rows": bench_rows,
+        "corepath_rows": corepath_rows,
         "cross_arm_rows": cross_rows,
         # the declared claims are the two arms (accuracy) and their agreement
         # (cross-validation); the wall-model variants are *sensitivity* rows and
         # are reported, not frozen into the gate.
-        "all_pass": all(r["pass"] for r in primary_rows) and all(r["pass"] for r in cross_rows),
+        "all_pass": (
+            all(r["pass"] for r in primary_rows)
+            and all(r["pass"] for r in cross_rows)
+            and all(r["pass"] for r in corepath_rows)
+        ),
         "sensitivity_rows_pass": {r["case"]: r["pass"] for r in sensitivity_rows},
         "n_rows": len(bench_rows) + len(cross_rows),
         "n_primary_rows": len(primary_rows),
@@ -291,7 +377,7 @@ def main(argv=None) -> int:
             "benchmark": results.get("repro_cmd"),
             "cli": ENTRIES[0]["command"],
             "evidence": "python benchmarks/xval/nebb_bodyforce_evidence.py "
-                        "--run-dir runs/XVAL-NEBB-BODYFORCE --strict",
+                        f"--run-dir {run_dir} --strict",
             "tests": "python -m pytest tests/test_nebb_bodyforce.py -q",
         },
         "checks": checks,
