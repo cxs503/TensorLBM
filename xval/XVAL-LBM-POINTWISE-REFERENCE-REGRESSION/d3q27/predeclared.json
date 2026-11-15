@@ -1,0 +1,74 @@
+{
+  "anchor": "XVAL-LBM-POINTWISE-REFERENCE-REGRESSION",
+  "round": 4,
+  "lattice": "D3Q27",
+  "parent_rounds": {
+    "round_1": "D2Q9 single-step collision vs live lbmpy (merged)",
+    "round_2": "D2Q9 stepwise frozen refdata, lbmpy-free gate (merged)",
+    "round_3": "D3Q19 whole step, 2 grids / 3 taus / 2 seeds, frozen refdata (merged)",
+    "gap_targeted_here": "D3Q27 -- the flagship 3-D lattice (BGK/TRT/MRT/cumulant) had no pointwise independent reference at all"
+  },
+  "grids": [[8, 8, 8], [6, 9, 13]],
+  "grid_note": "(6,9,13) is asymmetric in all three axes so an axis transposition cannot cancel",
+  "taus": [0.55, 0.7, 1.0],
+  "steps": 30,
+  "seeds": [0, 1],
+  "amplitude": 0.05,
+  "noise": 0.001,
+  "initial_field": "discrete-equilibrium27 + gaussian rho/u perturbation + 1e-3 non-equilibrium noise; the SAME float64 array is handed to both sides",
+  "reference_stream": "definition_stream27 (numpy np.roll pull streaming, refcore27) -- pinned against the repo streaming kernel separately (arm S0)",
+  "reference_collisions": {
+    "srt": "lbmpy create_srt(compressible=True, continuous_equilibrium=False): discrete 2nd-order Maxwellian, the convention of tensorlbm.d3q27.equilibrium27",
+    "trt": "lbmpy create_trt(tau_plus=tau, tau_minus from Lambda=3/16)",
+    "mrt_repo": "lbmpy MomentBasedLbMethod over the moment polynomials reconstructed from the repo's own _M_D3Q27_DATA, rates = collide_mrt27 documented defaults [0,0,0,0,s_e]+[1/tau]*5+[s_q]*9+[s_eps]+[s_pi]*7",
+    "cumulant": "lbmpy create_with_default_polynomial_cumulants (Geier 2015), continuous Maxwellian equilibrium, non-shear groups relaxed with 1",
+    "cumulant_discrete_eq": "same cumulant relaxation, discrete 2nd-order Maxwellian equilibrium"
+  },
+  "arms": {
+    "A1_d3q27_bgk": "collide_bgk27 + stream27_roll",
+    "A2_d3q27_trt": "collide_trt27(lambda=3/16) + stream27_roll",
+    "A3_d3q27_mrt_native": "collide_mrt27 (documented defaults) + stream27_roll",
+    "A4_d3q27_cumulant_geier": "cumulant.collide_cumulant_geier_d3q27 + stream27_roll",
+    "A5_d3q27_cumulant_legacy": "cumulant.collide_cumulant_d3q27 + stream27_roll"
+  },
+  "arm_classification": {
+    "gated": ["A1_d3q27_bgk", "A2_d3q27_trt", "A3_d3q27_mrt_native", "A4_d3q27_cumulant_geier"],
+    "convention_probe": ["A5_d3q27_cumulant_legacy"],
+    "probe_rationale": "A5 relaxes the cumulants of f_neq (not the full distribution) with omega=1 for non-shear groups, so its fixed point is feq rather than feq's cumulant image. Whether it coincides with the lbmpy full-cumulant rule at omega=1 for non-shear groups is exactly what the probe measures; the outcome is reported, not tuned."
+  },
+  "predeclared_thresholds": {
+    "gate_fp64_code_equivalence": 1e-10,
+    "mrt_basis_identity": 1e-12,
+    "streaming_pin_abs": 0.0,
+    "control_detection_min": 1e-6,
+    "physics_decay_pct_acceptance": 15.0,
+    "physics_decay_pct_target": 3.0,
+    "interpretation": "PASS iff every gated arm is below gate_fp64_code_equivalence at every (grid, tau, seed) AND every positive control exceeds control_detection_min AND the MRT basis identity holds AND the streaming pin is exact AND the shear-wave decay error is < 15% (owner caliber) with the 3% target reported separately. The convention probe A5 has no gate: its measured gap and amplitude scaling exponent are reported as the finding."
+  },
+  "controls": {
+    "C1_tau_perturbation": "reference evaluated at tau*(1+1e-3) instead of the arm's tau -- must be detected",
+    "C2_wrong_equilibrium_convention": "reference SRT built with continuous_equilibrium=True -- must be detected",
+    "C3_direction_mispermutation": "arm sees a population-rotated field (roll by one direction) -- must be detected",
+    "C4_streaming_omission": "reference step without streaming -- must be detected"
+  },
+  "stopping_rule": "one pass; no threshold, sweep range or seed is changed after the first results are seen. Any gated arm above its gate is reported as FAIL and is not re-tuned. The probe arm is reported as measured.",
+  "variables_changed": [
+    "collision model: BGK / TRT / MRT(native rates) / cumulant Geier / cumulant legacy",
+    "grid: 8^3 and 6x9x13 periodic",
+    "relaxation time tau in {0.55, 0.7, 1.0}",
+    "amplitude sweep {0.002, 0.01, 0.05, 0.15} for the convention-attribution fit",
+    "RNG seed 0,1"
+  ],
+  "variables_held_fixed": [
+    "equilibrium: discrete 2nd-order Maxwellian on the reference side of the gated arms",
+    "input PDF field bit-identical for both sides (single float64 array)",
+    "fp64 throughout; float32 sensitivity reported separately (not gated)"
+  ],
+  "confounders": [
+    "direction ordering differs between lbmpy and TensorLBM -- handled by deriving the permutation from velocity tuples (bijection asserted)",
+    "the cumulant reference's equilibrium convention (continuous vs discrete Maxwellian) changes the order>=3 equilibrium cumulants; this is why A4 is compared against the discrete-equilibrium cumulant reference and the continuous one is reported as a second, non-gated number",
+    "floating-point summation order differs between a vectorised torch reduction and a scalar generated expression: irreducible round-off, bounded by the fp64 gate",
+    "MRT rates are the repo's own defaults (s_e=1.19, s_eps=1.4, s_q=1.2, s_pi=s_e); the basis is reconstructed symbolically from the repo matrix, so a wrong repo basis would show up here rather than being assumed"
+  ],
+  "repetitions": "2 seeds x every (grid, tau) for the gated sweep; the gate uses the worst seed, the table reports both. The deviation is round-off dominated, so 2 draws suffice to separate round-off from a systematic defect by >8 orders of magnitude."
+}
