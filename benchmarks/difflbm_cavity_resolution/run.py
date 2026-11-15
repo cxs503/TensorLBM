@@ -35,6 +35,18 @@ Cases (7 shards, one resolution each)
   Re=100 : n = 33, 65, 97, 129   (60000 steps)
   Re=400 : n = 65, 97, 129       (100000 steps, the verified setting)
 
+Pre-registered extension (declared 2026-11-15, before any n >= 97 case was
+launched; never a post-hoc addition)
+---------------------------------------------------------------------
+The self-convergence order needs three grids with exact cell-size halving
+(``ORDERSET = 33/65/129``).  For Re=400 the predeclared sweep above starts at
+n=65, so the order criterion would be unanswerable.  One extra case,
+``Re=400, n=33`` (same 100000 steps, run through ``--cases 400:33``), is
+therefore declared *a priori* to complete the Re=400 Richardson triple.  It
+does not touch any threshold and does not change the Q1/Q2 metrics.  If that
+run turns out to be linearly unstable (tau = 0.5149 at n=33 is close to the
+SRT stability limit), the outcome is reported as a limitation, not dropped.
+
 Usage
 -----
     PYTHONPATH=src:benchmarks python3 benchmarks/difflbm_cavity_resolution/run.py --shard i --shards 7
