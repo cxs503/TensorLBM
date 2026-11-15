@@ -1,0 +1,42 @@
+{
+ "case": "cavity_re3200_ghia",
+ "anchor": "REPRO-LBM-HOU1995",
+ "reference": {
+  "file": "ghia_re3200_reference.json",
+  "sha256": "42470d4e2526494754fb5b4a52777412a1c4d75f906895a6074ce4a41e39e2b9",
+  "quarantined": [
+   {
+    "table": "I",
+    "re": 3200,
+    "coord": 0.4531,
+    "kind": "lost_decimal_point",
+    "ocr_token": "-0.86636",
+    "admissible_interval": [
+     -0.24427,
+     -0.04272
+    ],
+    "reconstructed_as": -0.06636,
+    "why": "the OCR layer drops a decimal point ('-0.86636' for '-0.06636'); the bracketing rows y=0.5 (-0.04272) and y=0.2813 (-0.24427) make |u|>0.24 impossible at y=0.4531.  The reconstructed value lies inside the bracket, but it is NOT used for scoring: the row is dropped from u_re3200 and exported here with its interval.",
+    "scored": false
+   }
+  ]
+ },
+ "tolerance_pct": 5.0,
+ "grids": {
+  "128": {
+   "status": "WITHHELD",
+   "reason": "missing re3200_n128.json"
+  },
+  "192": {
+   "status": "WITHHELD",
+   "reason": "missing re3200_n192.json"
+  },
+  "256": {
+   "status": "WITHHELD",
+   "reason": "missing re3200_n256.json"
+  }
+ },
+ "grid_convergence": {
+  "status": "WITHHELD"
+ }
+}
