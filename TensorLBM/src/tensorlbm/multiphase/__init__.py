@@ -2,7 +2,7 @@
 
 Implements the pseudopotential model with:
 - psi_exp (Shan-Chen 1994) pseudopotential
-- Guo forcing scheme (second-order accurate)
+- Pluggable forcing schemes: velocity_shift, EDM, Guo
 - Wall wetting boundary condition via wall pseudopotential
 - Half-way bounce-back on solid walls
 
@@ -15,10 +15,13 @@ References
 ----------
 Shan & Chen (1993) Phys. Rev. E 47, 1815
 Shan & Chen (1994) Phys. Rev. E 49, 2941
+Kupershtokh (2004) — Exact Difference Method (EDM)
 Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308 (Guo forcing)
 """
 
 from __future__ import annotations
+
+from typing import Callable, Literal
 
 import torch
 
@@ -130,6 +133,14 @@ def collide_guo(
 
     Second-order accurate forcing that correctly recovers the Navier-Stokes
     equations with body force.
+
+    Reference: Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308.
+
+    Formula:
+        u* = u + F/(2ρ)
+        feq = feq(ρ, u*)
+        S_i = w_i (1 - 1/(2τ)) [(c_i - u*)·F/cs² + (c_i·u*)(c_i·F)/cs⁴]
+        f_out = f - (f - feq)/τ + S
     """
     rho, ux, uy = macroscopic(f)
     feq = equilibrium(rho, ux, uy)
@@ -152,6 +163,219 @@ def collide_guo(
     src = w * (1.0 - 1.0 / (2.0 * tau)) * ((cf - uf.unsqueeze(0)) / CS2 + cu * cf / CS2 ** 2)
 
     return f - (f - feq) / tau + src
+
+
+# ---------------------------------------------------------------------------
+# Velocity-shift forcing (Shan & Chen 1993)
+# ---------------------------------------------------------------------------
+
+def collide_velocity_shift(
+    f: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Velocity-shift forcing collision (Shan & Chen 1993).
+
+    First-order accurate in force. The equilibrium is evaluated at a shifted
+    velocity that includes the force contribution.
+
+    Reference: Shan & Chen (1993) Phys. Rev. E 47, 1815.
+
+    Formula:
+        u_eq = u + τ·F/ρ
+        feq = feq(ρ, u_eq)
+        f_out = f - (f - feq)/τ
+    """
+    rho, ux, uy = macroscopic(f)
+    rho_safe = torch.clamp(rho, min=1e-12)
+
+    # Shifted velocity for equilibrium
+    uxeq = ux + tau * fx / rho_safe
+    uyeq = uy + tau * fy / rho_safe
+
+    feq = equilibrium(rho, uxeq, uyeq)
+    return f - (f - feq) / tau
+
+
+# ---------------------------------------------------------------------------
+# Exact Difference Method (EDM, Kupershtokh 2004)
+# ---------------------------------------------------------------------------
+
+def collide_edm(
+    f: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Exact Difference Method (EDM) collision (Kupershtokh 2004).
+
+    Adds the exact difference of equilibrium distributions to account for
+    the force, ensuring exact momentum conservation per time step.
+
+    Reference: Kupershtokh (2004) "New method of incorporating a body force
+    term into the lattice Boltzmann equation".
+
+    Formula:
+        feq_u = feq(ρ, u)
+        feq_d = feq(ρ, u + F/ρ)
+        f_out = f - (f - feq_u)/τ + (feq_d - feq_u)
+    """
+    rho, ux, uy = macroscopic(f)
+    rho_safe = torch.clamp(rho, min=1e-12)
+
+    feq_u = equilibrium(rho, ux, uy)
+
+    # Shifted velocity
+    uxd = ux + fx / rho_safe
+    uyd = uy + fy / rho_safe
+    feq_d = equilibrium(rho, uxd, uyd)
+
+    return f - (f - feq_u) / tau + (feq_d - feq_u)
+
+
+# ---------------------------------------------------------------------------
+# Pluggable SCMP collision (unified interface)
+# ---------------------------------------------------------------------------
+
+#: Supported forcing scheme names
+ForcingScheme = Literal["velocity_shift", "edm", "guo"]
+
+#: Mapping from scheme name to collision function
+_FORCING_SCHEMES: dict[str, Callable] = {
+    "velocity_shift": collide_velocity_shift,
+    "edm": collide_edm,
+    "guo": collide_guo,
+}
+
+
+def collide_sc_single_component(
+    f: torch.Tensor,
+    G: float = 5.0,
+    tau: float = 1.0,
+    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    solid_mask: torch.Tensor | None = None,
+    wall_psi: float | None = None,
+    gx: float = 0.0,
+    gy: float = 0.0,
+    forcing: ForcingScheme = "guo",
+    scheme: Literal["standard", "pressure_tensor"] = "standard",
+) -> torch.Tensor:
+    """Pluggable SCMP collision with selectable forcing scheme.
+
+    This is the unified entry point for single-component multiphase LBM
+    simulations. It computes the SC interaction force and applies the
+    selected forcing scheme.
+
+    Parameters
+    ----------
+    f : torch.Tensor
+        Distribution function, shape (9, ny, nx).
+    G : float
+        Shan-Chen coupling constant (> 0 = attractive).
+    tau : float
+        Relaxation time.
+    psi_fn : callable, optional
+        Pseudopotential function. Defaults to psi_exp.
+    solid_mask : torch.Tensor, optional
+        Boolean mask of solid cells.
+    wall_psi : float, optional
+        Pseudopotential value for solid cells (wetting control).
+    gx, gy : float
+        External body force acceleration.
+    forcing : str
+        Forcing scheme: "velocity_shift", "edm", or "guo".
+    scheme : str
+        Force discretisation: "standard" or "pressure_tensor".
+        Currently only "standard" is implemented.
+
+    Returns
+    -------
+    f_post : torch.Tensor
+        Post-collision distribution function.
+
+    References
+    ----------
+    - velocity_shift: Shan & Chen (1993) Phys. Rev. E 47, 1815
+    - edm: Kupershtokh (2004)
+    - guo: Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308
+    """
+    if forcing not in _FORCING_SCHEMES:
+        raise ValueError(
+            f"forcing must be one of {list(_FORCING_SCHEMES.keys())}, got '{forcing}'"
+        )
+    if scheme != "standard":
+        raise ValueError(
+            f"scheme must be 'standard', got '{scheme}' "
+            "(pressure_tensor not yet implemented for pluggable interface)"
+        )
+
+    rho = f.sum(dim=0)
+
+    # Compute SC force (uses psi_exp by default, or custom psi_fn)
+    if psi_fn is not None:
+        psi = psi_fn(rho)
+        sx, sy = _sc_neighbor_sum(psi, solid_mask, wall_psi)
+        fx = G * CS2 * psi * sx
+        fy = G * CS2 * psi * sy
+    else:
+        fx, fy = sc_force(rho, G, solid_mask, wall_psi, gx, gy)
+
+    # Add external body force
+    if gx != 0.0:
+        fx = fx + rho * gx
+    if gy != 0.0:
+        fy = fy + rho * gy
+
+    collide_fn = _FORCING_SCHEMES[forcing]
+    return collide_fn(f, fx, fy, tau)
+
+
+def sc_single_component_force(
+    rho: torch.Tensor,
+    G: float = 5.0,
+    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    solid_mask: torch.Tensor | None = None,
+    wall_psi: float | None = None,
+    gx: float = 0.0,
+    gy: float = 0.0,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute SC interaction force with optional custom pseudopotential.
+
+    Parameters
+    ----------
+    rho : torch.Tensor
+        Density field (ny, nx).
+    G : float
+        Shan-Chen coupling constant (> 0 = attractive).
+    psi_fn : callable, optional
+        Pseudopotential function. Defaults to psi_exp.
+    solid_mask : torch.Tensor, optional
+        Boolean mask of solid cells.
+    wall_psi : float, optional
+        Pseudopotential value for solid cells.
+    gx, gy : float
+        External body force acceleration.
+
+    Returns
+    -------
+    (Fx, Fy) : tuple[torch.Tensor, torch.Tensor]
+        Force per unit volume fields.
+    """
+    if psi_fn is not None:
+        psi = psi_fn(rho)
+        sx, sy = _sc_neighbor_sum(psi, solid_mask, wall_psi)
+        fx = G * CS2 * psi * sx
+        fy = G * CS2 * psi * sy
+    else:
+        fx, fy = sc_force(rho, G, solid_mask, wall_psi, gx, gy)
+
+    if gx != 0.0:
+        fx = fx + rho * gx
+    if gy != 0.0:
+        fy = fy + rho * gy
+
+    return fx, fy
 
 
 # ---------------------------------------------------------------------------
@@ -206,8 +430,9 @@ def step_sc(
     wall_psi: float | None = None,
     gx: float = 0.0,
     gy: float = 0.0,
+    forcing: ForcingScheme = "guo",
 ) -> torch.Tensor:
-    """One time step: collide (Guo) + stream + bounce-back.
+    """One time step: collide (pluggable forcing) + stream + bounce-back.
 
     Parameters
     ----------
@@ -217,6 +442,7 @@ def step_sc(
     solid_mask : Solid cell mask
     wall_psi : Wall pseudopotential
     gx, gy : Body force
+    forcing : Forcing scheme ("velocity_shift", "edm", or "guo")
 
     Returns
     -------
@@ -224,7 +450,9 @@ def step_sc(
     """
     rho = f.sum(dim=0)
     fx, fy = sc_force(rho, G, solid_mask, wall_psi, gx, gy)
-    f_post = collide_guo(f, fx, fy, tau)
+
+    collide_fn = _FORCING_SCHEMES[forcing]
+    f_post = collide_fn(f, fx, fy, tau)
 
     if solid_mask is not None:
         return stream_bounce_back(f_post, solid_mask)

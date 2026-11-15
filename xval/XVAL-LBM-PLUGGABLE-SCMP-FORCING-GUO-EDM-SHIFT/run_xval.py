@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT — Round 1 cross-benchmark.
+"""XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT — Round 2 cross-benchmark.
 
 Cross-validate TensorLBM's pluggable SCMP forcing schemes (velocity_shift,
 EDM, Guo) against a clean reference implementation derived from the
@@ -32,21 +32,31 @@ import torch
 # ---------------------------------------------------------------------------
 # Repo import — use the work directory directly
 # ---------------------------------------------------------------------------
-_WORK = Path(__file__).resolve().parents[2]  # m18371 root
-sys.path.insert(0, str(_WORK / "src"))
+_REPO = (Path(__file__).resolve().parents[2] / "TensorLBM")  # TensorLBM root
+sys.path.insert(0, str(_REPO / "src"))
 
-from tensorlbm.d2q9 import C, W, equilibrium, macroscopic  # noqa: E402
+from tensorlbm.d2q9 import C, W, equilibrium, macroscopic, stream  # noqa: E402
 from tensorlbm.multiphase import (  # noqa: E402
     collide_sc_single_component,
-    psi_exp,
     sc_single_component_force,
+    collide_velocity_shift,
+    collide_edm,
+    collide_guo,
+    psi_exp,
+    sc_force,
+    stream_periodic,
 )
-from tensorlbm.solver import stream  # noqa: E402
+from tensorlbm.multiphase.laplace import (  # noqa: E402
+    sc_pressure,
+    interface_radius,
+    laplace_pressure_calibration,
+    fit_laplace,
+)
 
 # Verify we're using the right repo
 import tensorlbm
-assert tensorlbm.__file__.startswith(str(_WORK / "src")), (
-    f"Wrong repo: {tensorlbm.__file__} (expected {_WORK / 'src'})"
+assert tensorlbm.__file__.startswith(str(_REPO / "src")), (
+    f"Wrong repo: {tensorlbm.__file__} (expected {_REPO / 'src'})"
 )
 
 # ---------------------------------------------------------------------------
@@ -62,10 +72,10 @@ W_ARR = W.numpy()  # (9,)
 
 def _feq_2d(rho, ux, uy):
     """D2Q9 equilibrium, numpy, shape (9, ny, nx)."""
-    cu = C_ARR[0] * ux[np.newaxis] + C_ARR[1] * uy[np.newaxis]
+    cu = C_ARR[:, 0][:, np.newaxis, np.newaxis] * ux[np.newaxis] + C_ARR[:, 1][:, np.newaxis, np.newaxis] * uy[np.newaxis]
     u2 = ux**2 + uy**2
     return W_ARR[:, np.newaxis, np.newaxis] * rho[np.newaxis] * (
-        1.0 + cu / CS2 + 0.5 * (cu / CS2) ** 2 - 0.5 * u2[np.newaxis] / CS2
+        1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u2[np.newaxis]
     )
 
 
@@ -73,8 +83,8 @@ def _macroscopic_2d(f):
     """Return (rho, ux, uy) from f of shape (9, ny, nx)."""
     rho = f.sum(axis=0)
     rho_s = np.clip(rho, 1e-12, None)
-    ux = (C_ARR[0] @ f) / rho_s
-    uy = (C_ARR[1] @ f) / rho_s
+    ux = (C_ARR[:, 0] @ f) / rho_s
+    uy = (C_ARR[:, 1] @ f) / rho_s
     return rho, ux, uy
 
 
@@ -135,8 +145,8 @@ def collide_ref_guo(f, G, tau, psi_fn, gx=0.0, gy=0.0):
     feq = _feq_2d(rho, uxp, uyp)
 
     # Guo source term
-    cu = C_ARR[0] * uxp[np.newaxis] + C_ARR[1] * uyp[np.newaxis]  # (9, ny, nx)
-    cf = C_ARR[0] * Fx[np.newaxis] + C_ARR[1] * Fy[np.newaxis]    # (9, ny, nx)
+    cu = C_ARR[:, 0][:, np.newaxis, np.newaxis] * uxp[np.newaxis] + C_ARR[:, 1][:, np.newaxis, np.newaxis] * uyp[np.newaxis]  # (9, ny, nx)
+    cf = C_ARR[:, 0][:, np.newaxis, np.newaxis] * Fx[np.newaxis] + C_ARR[:, 1][:, np.newaxis, np.newaxis] * Fy[np.newaxis]    # (9, ny, nx)
     uf = uxp * Fx + uyp * Fy  # (ny, nx)
 
     pref = 1.0 - 0.5 / tau
@@ -209,6 +219,7 @@ def stream_numpy(f):
     f_new = np.empty_like(f)
     for i in range(9):
         cx, cy = int(C_ARR[i, 0]), int(C_ARR[i, 1])
+        # For velocity (cx, cy), shift by (-cy, -cx) in (row, col)
         f_new[i] = np.roll(np.roll(f[i], -cy, axis=0), -cx, axis=1)
     return f_new
 
@@ -337,32 +348,17 @@ def run_droplet(collide_fn, L, R, rho_l, rho_v, G, tau, psi_fn,
 
 
 # ---------------------------------------------------------------------------
-# Sigma fitting
+# Sigma extraction from Laplace fit
 # ---------------------------------------------------------------------------
 
-def fit_sigma(runs):
-    """Fit σ from ΔP vs 1/R_eff linear regression."""
-    xs = [1.0 / r["r_eff"] for r in runs if r.get("r_eff", 0) > 0]
-    ys = [r["dp"] for r in runs if r.get("r_eff", 0) > 0]
-    n = len(xs)
-    if n < 2:
-        return dict(n=n, sigma=float("nan"), intercept=float("nan"),
-                    rms_residual=float("nan"), dp_max=max(ys) if ys else 0,
-                    resid_gate=False, points=[])
-    mx = sum(xs) / n
-    my = sum(ys) / n
-    sxx = sum((x - mx)**2 for x in xs)
-    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
-    intercept = my - slope * mx
-    resid = [y - (slope * x + intercept) for x, y in zip(xs, ys)]
-    rms = math.sqrt(sum(e**2 for e in resid) / n)
-    return dict(
-        n=n, sigma=slope, intercept=intercept,
-        rms_residual=rms, dp_max=max(ys),
-        resid_gate=rms <= 0.03 * max(ys),
-        points=[dict(r_eff=r["r_eff"], inv_r=1.0/r["r_eff"], dp=r["dp"], tag=r.get("tag",""))
-                for r in runs if r.get("r_eff", 0) > 0],
-    )
+def extract_sigma(results_list):
+    """Extract surface tension σ from a list of droplet results via Laplace fit."""
+    dps = [r["dp"] for r in results_list if r["stable"] and r.get("r_eff", 0) > 0]
+    radii = [r["r_eff"] for r in results_list if r["stable"] and r.get("r_eff", 0) > 0]
+    if len(dps) < 2:
+        return None, None, None
+    fit = fit_laplace(dps, radii)
+    return fit["sigma"], fit["r2"], fit["max_rel_err"]
 
 
 # ---------------------------------------------------------------------------
@@ -371,124 +367,207 @@ def fit_sigma(runs):
 
 def main():
     device = torch.device("cpu")
-
-    # SCMP parameters (classic psi_exp, moderate density ratio)
-    G = 5.0       # coupling (G > 0 = attraction in library convention)
-    tau = 1.0
-    psi_fn = psi_exp  # classic Shan-Chen pseudopotential
-
-    # Coexistence densities for psi_exp at G=5 (from literature / repo calibration)
-    rho_l = 4.5
-    rho_v = 0.37
-
     L = 128
+    G = 5.0
+    tau = 1.0
+    rho_l_init = 4.5
+    rho_v_init = 0.37
     radii = [12, 16, 20, 24]
+    psi_fn = psi_exp
 
-    forcing_schemes = ["velocity_shift", "edm", "guo"]
-    collide_ref = {
-        "velocity_shift": collide_ref_velocity_shift,
-        "edm": collide_ref_edm,
-        "guo": collide_ref_guo,
+    # Reference collide functions (numpy)
+    ref_collide = {
+        "velocity_shift": lambda f: collide_ref_velocity_shift(f, G, tau, psi_fn),
+        "edm": lambda f: collide_ref_edm(f, G, tau, psi_fn),
+        "guo": lambda f: collide_ref_guo(f, G, tau, psi_fn),
     }
-    collide_tl = {
-        "velocity_shift": collide_tl_velocity_shift,
-        "edm": collide_tl_edm,
-        "guo": collide_tl_guo,
+
+    # TensorLBM collide functions (torch)
+    tl_collide = {
+        "velocity_shift": lambda f: collide_tl_velocity_shift(f, G, tau, psi_fn),
+        "edm": lambda f: collide_tl_edm(f, G, tau, psi_fn),
+        "guo": lambda f: collide_tl_guo(f, G, tau, psi_fn),
     }
 
     results = {"ref": {}, "tl": {}}
+    all_results = []
 
-    for scheme in forcing_schemes:
-        print(f"\n=== {scheme} ===")
-        ref_runs = []
-        tl_runs = []
+    print("=" * 70)
+    print("XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT — Round 2")
+    print(f"L={L}, G={G}, tau={tau}, radii={radii}")
+    print("=" * 70)
 
-        for R in radii:
-            tag = f"{scheme}_L{L}_R{R}"
-            print(f"  [{tag}] reference ...", end="", flush=True)
-            t0 = time.time()
-            r_ref = run_droplet(
-                lambda f, s=scheme: collide_ref[s](f, G, tau, psi_fn),
-                L, R, rho_l, rho_v, G, tau, psi_fn,
-                max_steps=8000, sample=200, is_torch=False
-            )
-            r_ref["tag"] = tag
-            r_ref["wall_s"] = round(time.time() - t0, 1)
-            ref_runs.append(r_ref)
-            print(f" stable={r_ref['stable']} dp={r_ref.get('dp', float('nan')):.5f} "
-                  f"r_eff={r_ref.get('r_eff', float('nan')):.2f} "
-                  f"u_max={r_ref.get('u_max', float('nan')):.2e} "
-                  f"t={r_ref['wall_s']}s")
+    for arm_name, collide_dict, is_torch in [
+        ("ref", ref_collide, False),
+        ("tl", tl_collide, True),
+    ]:
+        for scheme_name, collide_fn in collide_dict.items():
+            print(f"\n--- {arm_name.upper()} / {scheme_name} ---")
+            scheme_results = []
+            for R in radii:
+                t0 = time.time()
+                r = run_droplet(
+                    collide_fn, L, R, rho_l_init, rho_v_init, G, tau, psi_fn,
+                    device=device, is_torch=is_torch
+                )
+                elapsed = time.time() - t0
+                status = "OK" if r["stable"] else "FAIL"
+                rl = f"{r.get('rho_l', float('nan')):.4f}" if r["stable"] else "nan"
+                rv = f"{r.get('rho_v', float('nan')):.4f}" if r["stable"] else "nan"
+                dp = f"{r.get('dp', float('nan')):.6f}" if r["stable"] else "nan"
+                reff = f"{r.get('r_eff', float('nan')):.2f}" if r["stable"] else "nan"
+                umax = f"{r.get('u_max', float('nan')):.2e}" if r["stable"] else "nan"
+                print(f"  R={R}: {status} rl={rl} rv={rv} dp={dp} R_eff={reff} "
+                      f"u_max={umax} steps={r['steps_run']} t={elapsed:.1f}s")
+                scheme_results.append(r)
 
-            print(f"  [{tag}] TensorLBM ...", end="", flush=True)
-            t0 = time.time()
-            r_tl = run_droplet(
-                lambda f, s=scheme: collide_tl[s](f, G, tau, psi_fn),
-                L, R, rho_l, rho_v, G, tau, psi_fn,
-                max_steps=8000, sample=200, is_torch=True, device=device
-            )
-            r_tl["tag"] = tag
-            r_tl["wall_s"] = round(time.time() - t0, 1)
-            tl_runs.append(r_tl)
-            print(f" stable={r_tl['stable']} dp={r_tl.get('dp', float('nan')):.5f} "
-                  f"r_eff={r_tl.get('r_eff', float('nan')):.2f} "
-                  f"u_max={r_tl.get('u_max', float('nan')):.2e} "
-                  f"t={r_tl['wall_s']}s")
+            sigma, r2, max_err = extract_sigma(scheme_results)
+            sigma_str = f"{sigma:.6f}" if sigma is not None else "N/A"
+            r2_str = f"{r2:.4f}" if r2 is not None else "N/A"
+            print(f"  σ={sigma_str}  R²={r2_str}")
 
-        results["ref"][scheme] = ref_runs
-        results["tl"][scheme] = tl_runs
+            results[arm_name][scheme_name] = {
+                "sigma": sigma,
+                "r2": r2,
+                "max_rel_err": max_err,
+                "n": len([r for r in scheme_results if r["stable"]]),
+                "runs": scheme_results,
+            }
 
-    # Fit sigma for each arm + scheme
-    sigma_results = {}
-    for arm in ("ref", "tl"):
-        sigma_results[arm] = {}
-        for scheme in forcing_schemes:
-            runs = results[arm][scheme]
-            sigma_results[arm][scheme] = fit_sigma(runs)
+    # -----------------------------------------------------------------------
+    # Comparison
+    # -----------------------------------------------------------------------
+    print("\n" + "=" * 70)
+    print("COMPARISON: TensorLBM vs Reference")
+    print("=" * 70)
 
-    # Cross-arm comparison
     comparison = {}
-    for scheme in forcing_schemes:
-        sig_ref = sigma_results["ref"][scheme]["sigma"]
-        sig_tl = sigma_results["tl"][scheme]["sigma"]
-        if sig_ref and sig_tl and not (math.isnan(sig_ref) or math.isnan(sig_tl)):
-            err = abs(sig_tl - sig_ref) / abs(sig_ref) * 100
+    all_pass_15 = True
+    all_pass_3 = True
+
+    for scheme in ["velocity_shift", "edm", "guo"]:
+        ref_sigma = results["ref"][scheme]["sigma"]
+        tl_sigma = results["tl"][scheme]["sigma"]
+        if ref_sigma is not None and tl_sigma is not None and ref_sigma != 0:
+            err_pct = abs(tl_sigma - ref_sigma) / abs(ref_sigma) * 100
+            pass_15 = err_pct < 15
+            pass_3 = err_pct < 3
+            if not pass_15:
+                all_pass_15 = False
+            if not pass_3:
+                all_pass_3 = False
+            status = "PASS" if pass_15 else "FAIL"
+            print(f"  {scheme}: σ_ref={ref_sigma:.6f} σ_tl={tl_sigma:.6f} "
+                  f"err={err_pct:.2f}% [{status}]")
+            comparison[scheme] = {
+                "sigma_ref": ref_sigma,
+                "sigma_tl": tl_sigma,
+                "error_pct": err_pct,
+                "pass_15": pass_15,
+                "pass_3": pass_3,
+            }
         else:
-            err = float("nan")
-        comparison[scheme] = dict(
-            sigma_ref=sig_ref, sigma_tl=sig_tl, error_pct=err,
-            pass_15=err < 15 if not math.isnan(err) else False,
-            pass_3=err < 3 if not math.isnan(err) else False,
-        )
+            print(f"  {scheme}: insufficient data for comparison")
+            comparison[scheme] = {
+                "sigma_ref": ref_sigma,
+                "sigma_tl": tl_sigma,
+                "error_pct": None,
+                "pass_15": False,
+                "pass_3": False,
+            }
 
-    # Output
-    out = dict(
-        parameters=dict(G=G, tau=tau, L=L, radii=radii, rho_l=rho_l, rho_v=rho_v),
-        sigma=sigma_results,
-        comparison=comparison,
-        verdict=dict(
-            all_pass_15=all(c["pass_15"] for c in comparison.values()),
-            all_pass_3=all(c["pass_3"] for c in comparison.values()),
-        ),
-    )
+    # -----------------------------------------------------------------------
+    # Single-step verification
+    # -----------------------------------------------------------------------
+    print("\n--- Single-step verification (L=64, R=12) ---")
+    L_ss = 64
+    R_ss = 12
+    f_ref = init_droplet(L_ss, R_ss, rho_l_init, rho_v_init)
+    f_tl = init_droplet_torch(L_ss, R_ss, rho_l_init, rho_v_init, device)
 
-    outpath = Path(__file__).parent / "results.json"
-    with open(outpath, "w") as f:
-        json.dump(out, f, indent=2, default=str)
-    print(f"\nResults written to {outpath}")
+    single_step = {}
+    for scheme in ["velocity_shift", "edm", "guo"]:
+        f_ref_1 = stream_numpy(ref_collide[scheme](f_ref))
+        f_tl_1 = stream(tl_collide[scheme](f_tl))
 
-    # Print summary table
-    print("\n=== Cross-arm comparison (σ from Laplace fit) ===")
-    print(f"{'Scheme':>16} | {'σ_ref':>10} | {'σ_TL':>10} | {'Error %':>8} | <15% | <3%")
-    print("-" * 65)
-    for scheme in forcing_schemes:
-        c = comparison[scheme]
-        print(f"{scheme:>16} | {c['sigma_ref']:>10.6f} | {c['sigma_tl']:>10.6f} | "
-              f"{c['error_pct']:>7.2f}% | {'✓' if c['pass_15'] else '✗'}    | "
-              f"{'✓' if c['pass_3'] else '✗'}")
+        rho_ref = f_ref_1.sum(axis=0)
+        rho_tl = f_tl_1.sum(dim=0).cpu().numpy()
 
-    return out
+        single_step[scheme] = {
+            "ref_rho_min": float(rho_ref.min()),
+            "ref_rho_max": float(rho_ref.max()),
+            "ref_mass": float(rho_ref.sum()),
+            "tl_rho_min": float(rho_tl.min()),
+            "tl_rho_max": float(rho_tl.max()),
+            "tl_mass": float(rho_tl.sum()),
+            "rho_max_diff": float(abs(rho_ref.max() - rho_tl.max())),
+            "mass_diff": float(abs(rho_ref.sum() - rho_tl.sum())),
+        }
+        print(f"  {scheme}: ref ρ=[{single_step[scheme]['ref_rho_min']:.4f}, "
+              f"{single_step[scheme]['ref_rho_max']:.4f}] mass={single_step[scheme]['ref_mass']:.2f}  "
+              f"tl ρ=[{single_step[scheme]['tl_rho_min']:.4f}, "
+              f"{single_step[scheme]['tl_rho_max']:.4f}] mass={single_step[scheme]['tl_mass']:.2f}  "
+              f"Δmass={single_step[scheme]['mass_diff']:.6f}")
+
+    # -----------------------------------------------------------------------
+    # Save results
+    # -----------------------------------------------------------------------
+    ad = Path(__file__).parent / "artifacts"
+    ad.mkdir(parents=True, exist_ok=True)
+
+    # Compact results for JSON
+    compact_results = {
+        "anchor": "XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT",
+        "mission_id": 21238,
+        "parameters": {
+            "G": G, "tau": tau, "L": L, "radii": radii,
+            "rho_l": rho_l_init, "rho_v": rho_v_init, "psi_fn": "psi_exp"
+        },
+        "sigma": {
+            "ref": {
+                s: {"sigma": results["ref"][s]["sigma"], "r2": results["ref"][s]["r2"],
+                     "n": results["ref"][s]["n"]}
+                for s in ["velocity_shift", "edm", "guo"]
+            },
+            "tl": {
+                s: {"sigma": results["tl"][s]["sigma"], "r2": results["tl"][s]["r2"],
+                     "n": results["tl"][s]["n"]}
+                for s in ["velocity_shift", "edm", "guo"]
+            },
+        },
+        "comparison": comparison,
+        "verdict": {
+            "all_pass_15": all_pass_15,
+            "all_pass_3": all_pass_3,
+        },
+        "single_step_verification": single_step,
+    }
+
+    with open(ad / "xval_results.json", "w") as fp:
+        json.dump(compact_results, fp, indent=2)
+
+    # Also update the results.json in the xval directory
+    with open(Path(__file__).parent / "results.json", "w") as fp:
+        json.dump(compact_results, fp, indent=2)
+
+    print(f"\nResults saved to {ad}/xval_results.json")
+
+    # -----------------------------------------------------------------------
+    # Verdict
+    # -----------------------------------------------------------------------
+    print("\n" + "=" * 70)
+    print("VERDICT")
+    print("=" * 70)
+    print(f"  All <15%: {'PASS' if all_pass_15 else 'FAIL'}")
+    print(f"  All <3%:  {'PASS' if all_pass_3 else 'FAIL'}")
+
+    if all_pass_15:
+        print("\n  TensorLBM pluggable SCMP forcing schemes PASS the 15% criterion.")
+    else:
+        print("\n  TensorLBM pluggable SCMP forcing schemes FAIL the 15% criterion.")
+
+    return 0 if all_pass_15 else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
