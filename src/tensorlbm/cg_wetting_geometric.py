@@ -519,10 +519,14 @@ def run_sessile_drop_contact_angle(
     """
     from .cg_contact_angle import measure_contact_angle
     from .color_gradient2d import color_gradient_two_tau_step
-    from .solver import stream
+    from .solver import OPPOSITE_2D, stream
 
-    # local imports keep this module importable on its own (no cycle)
-    OPP = (0, 3, 2, 1, 4, 7, 8, 5, 6)
+    # Canonical D2Q9 opposite map (``solver.OPPOSITE_2D``).  Earlier revisions of
+    # this driver hard-coded ``(0, 3, 2, 1, 4, 7, 8, 5, 6)``, which maps the two
+    # vertical directions onto *themselves*: the walls were then not bounce-back
+    # at all, the wetting phase leaked out of the drop and re-condensed at the
+    # far wall.  See docs/XVAL-LBM-GEOMETRIC-WETTING-CONTACT-ANGLE-R3-OPP-MAP.md.
+    OPP = tuple(int(v) for v in OPPOSITE_2D)
 
     solid = torch.zeros(ny, nx, dtype=torch.bool, device=device)
     solid[0, :] = True
