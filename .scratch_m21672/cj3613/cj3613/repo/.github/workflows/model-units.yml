@@ -1,0 +1,81 @@
+name: Model units
+
+# Cross-validated against CFD-GO/TCLB (XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT):
+# in TCLB the model *directory* is the build unit (``CLB/<model>``) and the CI
+# unit; the model list comes from enumerating ``conf.mk`` files, never from a
+# hand-maintained matrix.  Here the same rule holds with ``model.toml``:
+#
+#   plan   enumerates models/lbm/*/model.toml and emits the matrix as a job output
+#   unit   one matrix cell per model directory: build in isolation + run its case
+#   drift  fails if the workflow's matrix were ever hand-written, or if a model
+#          directory did not make it onto the matrix
+#
+# Adding a model = adding one directory.  No file in this workflow changes.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  plan:
+    runs-on: ci-loong64
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Enumerate model units (generated matrix)
+        id: matrix
+        run: python -m tensorlbm.model_units ci-matrix --github-output
+      - name: Registry gates
+        run: python -m tensorlbm.model_units doctor
+      - name: Makefile fragment is regenerable from the model directories
+        run: |
+          mkdir -p artifacts/model_units
+          python -m tensorlbm.model_units makefile --out artifacts/model_units/Makefile.models.a
+          python -m tensorlbm.model_units makefile --out artifacts/model_units/Makefile.models.b
+          diff artifacts/model_units/Makefile.models.a artifacts/model_units/Makefile.models.b
+      - name: Matrix covers every model directory, and does not drift
+        run: |
+          python -m tensorlbm.model_units ci-matrix --out artifacts/model_units/ci_matrix.json
+          python -m tensorlbm.model_units verify
+
+  unit:
+    needs: plan
+    runs-on: ci-loong64
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: ${{ matrix.unit }} (${{ matrix.lattice }})
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Build and verify ${{ matrix.unit }}
+        run: ${{ matrix.cmd }}
+      - name: Keep build/test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-unit-${{ matrix.unit }}
+          path: |
+            artifacts/model_units/${{ matrix.unit }}.build.json
+            runs/model_units/${{ matrix.unit }}/result.json
+          if-no-files-found: warn
