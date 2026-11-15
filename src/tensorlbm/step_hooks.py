@@ -209,8 +209,14 @@ def partial_cell_layer(
     ``solid_fraction`` is ``eps_s`` in [0, 1] -- the fraction of the cell volume
     occupied by solid, i.e. a *sub-cell* wall position, which the binary
     ``bounce`` layer cannot express.  The reflected populations are the
-    post-collision ones and the blend weight is
+    post-collision ones (pre-collision where ``eps_s == 1``, so the solid limit
+    is bit-wise the binary layer) and the blend weight is
     :func:`partial_cell_weight`, not ``eps_s``.
+
+    ``velocity`` makes it a *moving* sub-cell wall; the momentum term
+    ``6 w_i (c_i . u_wall)`` enters through the same ``B`` weight, so the wall
+    velocity is under-driven for small ``eps_s`` -- measured in
+    ``docs/XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R4-MOVING-SUBCELL-WALL.md``.
     """
     return BoundaryLayer(
         name=name,
@@ -232,16 +238,18 @@ def partial_cell_weight(solid_fraction: torch.Tensor, tau: float) -> torch.Tenso
     ``eps_s = 1`` gives ``B = 1``.
 
     .. warning::
-       ``B = 1`` is *not* by itself the ``bounce`` layer.  It is bit-wise the
-       ``bounce`` layer only for ``reflect="pre"``; with the default
-       ``reflect="post"`` the fully solid cell reflects post-collision
-       populations, which displaces the no-slip interface by ``0.40 dx``
-       (plane Couette, ``eps_s = 1``, measured in
-       ``docs/XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R3-FRACTIONAL-MASK.md``
-       §6).  Keep ``eps_s < 1`` for the post-collision operator, or use
-       ``reflect="pre"`` if the solid limit must reproduce bounce-back.  Using ``eps_s`` itself as the blend weight -- what a naive float
-    mask blend does -- ignores the ``(1 - eps_s)`` normalisation of the fluid
-    part and therefore misplaces the wall for ``0 < eps_s < 1``.
+       ``B = 1`` reproduces the binary ``bounce`` layer only because the
+       operator switches its reflection base at ``eps_s == 1`` (a fully solid
+       cell has no fluid to collide, so :func:`layer_populations` reflects the
+       *pre*-collision state there; see the R4 note in
+       ``docs/XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R4-MOVING-SUBCELL-WALL.md``).
+       Before that fix the default ``reflect="post"`` displaced the wall by
+       ``0.40 dx`` at ``eps_s = 1`` (R3 §6).  For ``0 < eps_s < 1`` the model is
+       first-order in the wall position; its accuracy -- both stationary and
+       moving -- is measured in R3/R4.  Using ``eps_s`` itself as the blend
+       weight -- what a naive float mask blend does -- ignores the
+       ``(1 - eps_s)`` normalisation of the fluid part and therefore misplaces
+       the wall for ``0 < eps_s < 1``.
     """
     b = 1.0 - solid_fraction
     inv_tau = float(tau) - 0.5
@@ -322,6 +330,17 @@ def layer_populations(
         return reversed_pop
     if layer.kind == "partial":
         base = f_pre if (layer.reflect == "pre" or f_post is None) else f_post
+        if base is not f_pre:
+            # Solid limit: a fully solid cell holds no fluid to collide, so its
+            # post-collision state is not a physical reflected state -- its
+            # populations are themselves written by the BC further in, and
+            # reflecting that state again is a reflection of a reflection, which
+            # displaced the interface by 0.40 dx (R3).  Where eps_s == 1 the
+            # reflection is therefore taken from the pre-collision state, which
+            # makes the limit bit-wise the binary bounce / moving layer.
+            solid = _mask_like(layer.mask, f_pre) >= 1.0
+            if bool(solid.any()):
+                base = torch.where(solid, f_pre, base)
         reversed_post = base[tables.opposite.to(base.device)]
         if layer.velocity is None:
             return reversed_post
