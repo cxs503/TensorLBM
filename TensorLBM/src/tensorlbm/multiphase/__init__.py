@@ -84,6 +84,7 @@ def sc_force(
     wall_psi: float | None = None,
     gx: float = 0.0,
     gy: float = 0.0,
+    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen interaction force.
 
@@ -104,7 +105,8 @@ def sc_force(
     Returns:
         (Fx, Fy): Force per unit volume fields
     """
-    psi = psi_exp(rho)
+    _psi = psi_fn if psi_fn is not None else psi_exp
+    psi = _psi(rho)
     sx, sy = _sc_neighbor_sum(psi, solid_mask, wall_psi)
 
     fx = G * CS2 * psi * sx
@@ -498,6 +500,8 @@ def sc_two_component_force(
     wall_mode: str = "mirror",
     gy: float = 0.0,
     gx: float = 0.0,
+    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    g_self: tuple[float, float] = (0.0, 0.0),
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Cross-species Shan-Chen force of a two-component (MCMP) model.
 
@@ -519,8 +523,9 @@ def sc_two_component_force(
     -------
     (fx_a, fy_a, fx_b, fy_b) : force per unit volume of each component
     """
-    psi_a = psi_exp(rho_a)
-    psi_b = psi_exp(rho_b)
+    _psi = psi_fn if psi_fn is not None else psi_exp
+    psi_a = _psi(rho_a)
+    psi_b = _psi(rho_b)
     if solid_mask is not None:
         zero = torch.zeros_like(psi_a)
         psi_a = torch.where(solid_mask, zero, psi_a)
@@ -545,6 +550,16 @@ def sc_two_component_force(
     fy_a = -G * psi_a * fy_a + rho_a * gy
     fx_b = -G * psi_b * fx_b + rho_b * gx
     fy_b = -G * psi_b * fy_b + rho_b * gy
+
+    # Self-interaction (optional, for full MCMP with g_ss != 0)
+    if g_self[0] != 0.0:
+        sx_a, sy_a = _sc_neighbor_sum(psi_a, solid_mask, wall_psi if solid_mask is not None else None)
+        fx_a = fx_a + g_self[0] * CS2 * psi_a * sx_a
+        fy_a = fy_a + g_self[0] * CS2 * psi_a * sy_a
+    if g_self[1] != 0.0:
+        sx_b, sy_b = _sc_neighbor_sum(psi_b, solid_mask, wall_psi if solid_mask is not None else None)
+        fx_b = fx_b + g_self[1] * CS2 * psi_b * sx_b
+        fy_b = fy_b + g_self[1] * CS2 * psi_b * sy_b
 
     if solid_mask is not None:
         zero = torch.zeros_like(fx_a)
@@ -582,3 +597,112 @@ def collide_edm_common(
     feq_d = equilibrium(rho, ux + fx / rho_safe, uy + fy / rho_safe)
     del u2
     return f - (f - feq) / tau + (feq_d - feq)
+
+
+# ---------------------------------------------------------------------------
+# Two-component (MCMP) extensions — pluggable psi, self-interaction, Guo
+# ---------------------------------------------------------------------------
+
+def psi_linear(rho: torch.Tensor, rho0: float = 1.0) -> torch.Tensor:
+    """Linear pseudopotential psi(rho) = rho (simplest MCMP choice)."""
+    return rho
+
+
+def guo_force_term(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Guo (2002) source term S_i for one component, at a *supplied* velocity.
+
+    Returns the source term (shape (9, ny, nx)) to be *added* to the
+    post-collision distribution.  The caller is responsible for the BGK
+    relaxation part.
+
+    Reference: Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308.
+    """
+    device = rho.device
+    c = C.to(device).to(rho.dtype)
+    w = W.to(device).to(rho.dtype).view(9, 1, 1)
+
+    cf = c[:, 0].view(9, 1, 1) * fx.unsqueeze(0) + c[:, 1].view(9, 1, 1) * fy.unsqueeze(0)
+    cu = c[:, 0].view(9, 1, 1) * ux.unsqueeze(0) + c[:, 1].view(9, 1, 1) * uy.unsqueeze(0)
+    uf = ux * fx + uy * fy
+
+    src = w * (1.0 - 1.0 / (2.0 * tau)) * ((cf - uf.unsqueeze(0)) / CS2 + cu * cf / CS2 ** 2)
+    return src
+
+
+def collide_sc_two_component(
+    f1: torch.Tensor,
+    f2: torch.Tensor,
+    G_12: float = 6.0,
+    tau1: float = 1.0,
+    tau2: float = 1.0,
+    u_eq: str = "mixture",
+    force_scheme: str = "guo",
+    psi_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    g_self: tuple[float, float] = (0.0, 0.0),
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Two-component Shan-Chen BGK collision with Guo forcing.
+
+    Both components relax towards equilibrium at the common mixture velocity.
+    The force is computed with the pluggable pseudopotential and optional
+    self-interaction.
+
+    Parameters
+    ----------
+    f1, f2 : distribution functions (9, ny, nx)
+    G_12 : cross-interaction coupling (positive = repulsive/demixing)
+    tau1, tau2 : relaxation times
+    u_eq : velocity for equilibrium (only "mixture" supported)
+    force_scheme : "guo" (only Guo supported for MCMP)
+    psi_fn : pseudopotential function (default: psi_exp)
+    g_self : (g_11, g_22) self-interaction strengths (library sign: positive=attractive)
+
+    Returns
+    -------
+    (f1_post, f2_post)
+    """
+    if psi_fn is None:
+        psi_fn = psi_exp
+
+    rho1, ux1, uy1 = macroscopic(f1)
+    rho2, ux2, uy2 = macroscopic(f2)
+
+    # Cross-component force
+    Fx1, Fy1, Fx2, Fy2 = sc_two_component_force(rho1, rho2, G_12, psi_fn=psi_fn)
+
+    # Add self-interaction (same formula as single-component, applied per-species)
+    if g_self[0] != 0.0:
+        fx_self, fy_self = sc_force(rho1, g_self[0], psi_fn=psi_fn)
+        Fx1 = Fx1 + fx_self
+        Fy1 = Fy1 + fy_self
+    if g_self[1] != 0.0:
+        fx_self, fy_self = sc_force(rho2, g_self[1], psi_fn=psi_fn)
+        Fx2 = Fx2 + fx_self
+        Fy2 = Fy2 + fy_self
+
+    # Mixture velocity (mass-weighted)
+    r1 = rho1.clamp(min=1e-12)
+    r2 = rho2.clamp(min=1e-12)
+    rt = r1 + r2
+    umx = (r1 * ux1 + r2 * ux2) / rt
+    umy = (r1 * uy1 + r2 * uy2) / rt
+
+    # BGK relaxation at mixture velocity + Guo source term
+    feq1 = equilibrium(rho1, umx, umy)
+    feq2 = equilibrium(rho2, umx, umy)
+
+    if force_scheme == "guo":
+        src1 = guo_force_term(rho1, umx, umy, Fx1, Fy1, tau1)
+        src2 = guo_force_term(rho2, umx, umy, Fx2, Fy2, tau2)
+        f1_post = f1 - (f1 - feq1) / tau1 + src1
+        f2_post = f2 - (f2 - feq2) / tau2 + src2
+    else:
+        raise ValueError(f"force_scheme must be 'guo', got '{force_scheme}'")
+
+    return f1_post, f2_post
