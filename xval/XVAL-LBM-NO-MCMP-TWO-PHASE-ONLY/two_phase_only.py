@@ -187,9 +187,15 @@ def analytic_profile(sol: TwoLayerSolution, ny: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
-def phase_indicator(ny: int, nx: int, y_int: float, width: float, device=None) -> torch.Tensor:
-    """Frozen ``C`` field: 1 below the interface, 0 above, tanh of ``width`` cells."""
-    ys = torch.arange(ny, dtype=torch.float32, device=device).view(ny, 1).expand(ny, nx)
+def phase_indicator(ny: int, nx: int, y_int: float, width: float, device=None,
+                    dtype: torch.dtype = torch.float32) -> torch.Tensor:
+    """Frozen ``C`` field: 1 below the interface, 0 above, tanh of ``width`` cells.
+
+    ``dtype`` is threaded through so the same model can be re-run in float64 for
+    the arithmetic-round-off audit of the mass budget (see ``mass_budget_rel``
+    in the module notes).  The production matrix stays float32.
+    """
+    ys = torch.arange(ny, dtype=dtype, device=device).view(ny, 1).expand(ny, nx)
     return 0.5 * (1.0 - torch.tanh((ys - y_int) / width))
 
 
@@ -257,6 +263,7 @@ def run_two_phase_only(
     stop_tol: float = 1e-7,
     check_every: int = 200,
     device: str | torch.device = "cpu",
+    dtype: torch.dtype = torch.float32,
 ) -> dict:
     """Steady two-layer Poiseuille in the two-phase-only (no-MCMP) model.
 
@@ -269,7 +276,7 @@ def run_two_phase_only(
     device = torch.device(device)
     rho_hi = rho_lo if rho_hi is None else rho_hi
     y_int = 0.5 * (ny - 1)
-    C = phase_indicator(ny, nx, y_int, width, device=device)
+    C = phase_indicator(ny, nx, y_int, width, device=device, dtype=dtype)
     nu = mix_viscosity(C, nu_lo, nu_hi, rule)
     tau = 0.5 + 3.0 * nu
 
@@ -281,12 +288,21 @@ def run_two_phase_only(
     wall = _wall_mask(ny, nx, device)
     # The walls are solid: keep their initial equilibrium as the bounce-back buffer.
     mass0 = float(rho0[1:-1, :].sum())
+    # Whole-domain mass budget (M21325).  ``mass0`` above is the *fluid-only*
+    # baseline used by the predeclared K6 check; the wall rows hold their own
+    # initial mass and are the only place mass can be parked by the full-way
+    # bounce-back, so a fluid-only sum cannot distinguish "mass moved into the
+    # wall buffer" from "mass was destroyed".  Both baselines are recorded here
+    # and reported (``mass_total_drift_rel`` / ``mass_redistribution_share``).
+    mass0_wall = float(rho0[0, :].sum() + rho0[-1, :].sum())
+    mass0_total = mass0 + mass0_wall
 
     sol = two_layer_analytic(ny, y_int, G, nu_lo, nu_hi)
     y = np.arange(ny, dtype=np.float64)
     u_ana = analytic_profile(sol, ny)
 
     history: list[tuple[int, float]] = []
+    mass_history: list[dict] = []
     prev = None
     steps = 0
     converged = False
@@ -298,6 +314,15 @@ def run_two_phase_only(
             rho, ux, uy = macroscopic(f)
             u_peak = float(ux[1:-1, :].abs().max())
             history.append((step, u_peak))
+            m_fluid, m_wall = _mass_parts(rho)
+            mass_history.append(
+                {
+                    "step": int(step),
+                    "fluid_rel": abs(m_fluid - mass0) / mass0,
+                    "wall_rel": abs(m_wall - mass0_wall) / mass0_total,
+                    "total_rel": abs(m_fluid + m_wall - mass0_total) / mass0_total,
+                }
+            )
             if prev is not None and abs(u_peak - prev) <= stop_tol * max(abs(prev), 1e-12):
                 converged = True
                 break
@@ -352,6 +377,7 @@ def run_two_phase_only(
             "rule": rule,
             "rho_lo": rho_lo,
             "rho_hi": rho_hi,
+            "dtype": str(dtype).replace("torch.", ""),
             "max_steps": max_steps,
             "stop_tol": stop_tol,
             "check_every": check_every,
@@ -370,6 +396,8 @@ def run_two_phase_only(
         "Q_hi_rel": _rel(Q_hi, Q_hi_ana),
         "uy_spurious_rel": (uy_max / u_peak_sim) if u_peak_sim else float("nan"),
         "mass_drift_rel": abs(float(rho[1:-1, :].sum()) - mass0) / mass0,
+        **_mass_budget(rho, mass0, mass0_wall, mass0_total),
+        "mass_history": mass_history,
         "interface_width_10_90": width_10_90,
         "interface_centre": centre,
         "interface_centre_shift": abs(centre - y_int) if centre is not None else None,
@@ -379,6 +407,35 @@ def run_two_phase_only(
         "tau_profile": [float(v) for v in tau.mean(dim=1).cpu().numpy()],
         "analytic_checks": sol.residuals(),
         "history": history,
+    }
+
+
+def _mass_parts(rho: torch.Tensor) -> tuple[float, float]:
+    """Total mass in the fluid rows and in the two wall rows."""
+    m_fluid = float(rho[1:-1, :].sum())
+    m_wall = float(rho[0, :].sum() + rho[-1, :].sum())
+    return m_fluid, m_wall
+
+
+def _mass_budget(rho: torch.Tensor, mass0: float, mass0_wall: float,
+                 mass0_total: float) -> dict:
+    """Whole-domain mass budget that distinguishes transport from loss.
+
+    ``mass_total_drift_rel`` is the only quantity that can certify conservation:
+    the bounce-back buffer rows are part of the closed domain.  ``share`` is the
+    fraction of the fluid deficit that shows up as wall surplus -- it is ``~1``
+    when mass is merely parked in the (static) wall rows and ``~0`` when mass is
+    genuinely destroyed by the operator chain.
+    """
+    m_fluid, m_wall = _mass_parts(rho)
+    d_fluid = m_fluid - mass0
+    d_wall = m_wall - mass0_wall
+    denom = abs(d_fluid)
+    return {
+        "mass_wall_drift_rel": abs(d_wall) / mass0_total,
+        "mass_total_drift_rel": abs(d_fluid + d_wall) / mass0_total,
+        "mass_redistribution_share": (abs(d_wall) / denom) if denom > 0 else None,
+        "mass_dtype": str(rho.dtype),
     }
 
 
