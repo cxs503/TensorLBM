@@ -1,0 +1,107 @@
+[
+  {
+    "arm": "rep_d8",
+    "group": "rep",
+    "status": "ok",
+    "cfg": {
+      "D": 8,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 1.5,
+      "measure": 3.0,
+      "name": "rep_d8"
+    }
+  },
+  {
+    "arm": "rep_d12",
+    "group": "rep",
+    "status": "ok",
+    "cfg": {
+      "D": 12,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 1.5,
+      "measure": 3.0,
+      "name": "rep_d12"
+    }
+  },
+  {
+    "arm": "rep_d16",
+    "group": "rep",
+    "status": "ok",
+    "cfg": {
+      "D": 16,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 1.5,
+      "measure": 3.0,
+      "name": "rep_d16"
+    }
+  },
+  {
+    "arm": "proto_t1p5_m3",
+    "group": "protocol",
+    "status": "ok",
+    "cfg": {
+      "D": 16,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 1.5,
+      "measure": 3.0,
+      "name": "proto_t1p5_m3"
+    }
+  },
+  {
+    "arm": "proto_t3_m3",
+    "group": "protocol",
+    "status": "ok",
+    "cfg": {
+      "D": 16,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 3.0,
+      "measure": 3.0,
+      "name": "proto_t3_m3"
+    }
+  },
+  {
+    "arm": "proto_t8_m5",
+    "group": "protocol",
+    "status": "ok",
+    "cfg": {
+      "D": 16,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 8.0,
+      "measure": 5.0,
+      "name": "proto_t8_m5"
+    }
+  },
+  {
+    "arm": "e3_beta_50",
+    "group": "e3",
+    "status": "ok",
+    "cfg": {
+      "D": 16,
+      "box": 4.0,
+      "kc": 0.2,
+      "beta": 50.0,
+      "u0": 0.04,
+      "transient": 3.0,
+      "measure": 3.0,
+      "name": "e3_beta_50"
+    }
+  }
+]
