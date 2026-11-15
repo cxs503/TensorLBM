@@ -193,42 +193,115 @@ def spherical_cap_inversion(phi: np.ndarray, y_wall: float, level: float = 0.5) 
         ``A = R^2 (theta - sin theta cos theta)``,  ``w = 2 R sin theta``
 
     (``theta = 90`` deg gives a half disc, ``A = pi R^2 / 2``).  ``A`` and ``w``
-    are measured from the ``phi > level`` mask, so ``theta`` follows from a
-    1-D root solve and is an estimator independent of the circle fit.
+    are measured from the phase field, so ``theta`` follows from a 1-D root
+    solve and is an estimator independent of the circle fit.
+
+    Both quantities must come from the *same* sharp-cap geometry:
+
+    * ``w`` from the two rows adjacent to the wall: the chord of the
+      ``phi = level`` isocontour at rows ``i0`` and ``i0+1`` is linearly
+      extrapolated to the wall plane ``y = y_wall`` (the isocontour inside the
+      first fluid row already sits half a cell above the wall).  Fallback, when
+      the cap is thinner than one lattice cell above ``i0``: the single-row
+      chord, flagged ``extrapolation="single_row"``.
+    * ``A`` from the column integral ``int (y_if(x) - y_wall) dx`` of the same
+      isocontour (``interface_contour``), i.e. the area of the cap above the
+      wall plane.
+
+    .. note:: **R5 correction** (2026-11, anchor
+       ``XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING``).  The previous version measured
+       ``A`` as the plain sum of ``phi`` over every row below the wall and ``w``
+       as the number of liquid columns plus one.  For a colour-gradient field
+       (``phi in [-1, 1]``, vapour at ``-1``) that sum is ``2 A_liquid -
+       A_domain``: it mixes the vapour into the "cap area", and the ``+1`` cell
+       inflates the width.  On exact diffused caps of known angle the old
+       estimator was off by a median 122 deg and failed its root bracket in 156
+       of 162 cases (``benchmarks/xval_akai2018_wetting/estimator_analytic_study.py``).
+       The form below returns the prescribed angle to within 2 deg over
+       ``theta in [30, 150] deg``, ``R in [10, 40]``, ``xi in [1, 3]`` and to
+       within 0.5 deg for ``R >= 20``.
     """
-    lum = phi > level
-    i_wall = int(math.floor(y_wall)) + 1
-    # sub-pixel liquid content above the wall (the diffuse profile integrates to
-    # the sharp area, the hard mask does not)
-    area = float(phi[i_wall:].sum().item())
-    cols = np.where(lum[i_wall:].any(axis=0))[0]
-    if len(cols) == 0:
-        raise ValueError("empty drop")
-    w = float(cols.max() - cols.min() + 1)
+    ny, nx = phi.shape
+    i0 = int(math.floor(y_wall)) + 1
+    if i0 + 1 >= ny:
+        raise ValueError(f"wall plane y={y_wall} leaves no fluid rows (ny={ny})")
+    x_center = (nx - 1) / 2.0
 
-    def f(th):  # residual in area, R eliminated through w
-        R = w / (2.0 * math.sin(th))
-        return R * R * (th - math.sin(th) * math.cos(th)) - area
+    def _chord(row: np.ndarray) -> tuple[float, float] | None:
+        xs = [
+            j + (level - row[j]) / (row[j + 1] - row[j])
+            for j in range(nx - 1)
+            if (row[j] - level) * (row[j + 1] - level) < 0.0
+        ]
+        if len(xs) < 2:
+            return None
+        # leftmost/rightmost crossing: NOT ``min/max(key=|x - x_center|)``,
+        # which ties on a symmetric cap (both sides equally far) and returns
+        # the same crossing twice, giving a zero-width chord.
+        return min(xs), max(xs)
 
-    lo, hi = 1e-4, math.pi - 1e-4
+    c0 = _chord(phi[i0, :])
+    if c0 is None:
+        raise ValueError("no interface crossing in the first fluid row")
+    c1 = _chord(phi[i0 + 1, :])
+    if c1 is None:
+        xl, xr = c0
+        extrapolation = "single_row"
+    else:
+        f = (y_wall - i0) / ((i0 + 1) - i0)  # <= 0, linear extrapolation to the wall
+        xl = c0[0] + (c1[0] - c0[0]) * f
+        xr = c0[1] + (c1[1] - c0[1]) * f
+        extrapolation = "two_row"
+    w = xr - xl
+    if not math.isfinite(w) or w <= 0.0:
+        raise ValueError(f"degenerate contact width (w={w})")
+
+    pts = interface_contour(phi, y_wall, level)
+    if len(pts) < 8:
+        raise ValueError(f"too few contour points ({len(pts)}) for the cap area")
+    pts = pts[np.argsort(pts[:, 0])]
+    xs_c = np.concatenate([[xl], pts[:, 0], [xr]])
+    hs_c = np.concatenate([[0.0], np.clip(pts[:, 1] - y_wall, 0.0, None), [0.0]])
+    order = np.argsort(xs_c)
+    if hasattr(np, "trapezoid"):
+        area = float(np.trapezoid(hs_c[order], xs_c[order]))
+    else:  # pragma: no cover - numpy < 2.0
+        area = float(np.trapz(hs_c[order], xs_c[order]))
+    if not math.isfinite(area) or area <= 0.0:
+        raise ValueError(f"degenerate cap area (A={area})")
+
+    target = area / (w * w)
+
+    def f(th: float) -> float:
+        return (th - math.sin(th) * math.cos(th)) / (4.0 * math.sin(th) ** 2) - target
+
+    lo, hi = 1e-6, math.pi - 1e-6
     flo, fhi = f(lo), f(hi)
-    if flo * fhi > 0:
-        raise ValueError("cap inversion bracket failed")
+    if flo * fhi > 0.0:
+        raise ValueError(
+            f"cap inversion bracket failed: f(lo)={flo:.3e}, f(hi)={fhi:.3e}, target={target:.3e}"
+        )
     for _ in range(200):
         mid = 0.5 * (lo + hi)
         fm = f(mid)
-        if flo * fm <= 0:
+        if flo * fm <= 0.0:
             hi, fhi = mid, fm
         else:
             lo, flo = mid, fm
+        if hi - lo < 1e-13:
+            break
     th = 0.5 * (lo + hi)
     R = w / (2.0 * math.sin(th))
-    return {"theta_deg": math.degrees(th), "R_cap": R, "area": area, "contact_width": w}
-
-
-# ---------------------------------------------------------------------------
-# Capillary rise (Jurin)
-# ---------------------------------------------------------------------------
+    return {
+        "theta_deg": math.degrees(th),
+        "R_cap": R,
+        "area": area,
+        "contact_width": w,
+        "x_left": float(xl),
+        "x_right": float(xr),
+        "extrapolation": extrapolation,
+        "n_points": int(pts.shape[0]),
+    }
 
 
 def meniscus_height(phi: np.ndarray, x_lo: int, x_hi: int, level: float = 0.5) -> tuple[float, float]:
