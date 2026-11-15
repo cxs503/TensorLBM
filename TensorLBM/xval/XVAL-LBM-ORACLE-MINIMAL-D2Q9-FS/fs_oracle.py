@@ -198,9 +198,6 @@ class FreeSurfaceSim:
         x_lo = 1 if x_lo is None else x_lo
         x_hi = nx - 1 if x_hi is None else x_hi
         self.ctype[:] = GAS
-        self.fill_box_walls()  # re-applies the obstacle frame
-        self.ctype[:x_lo, :] = GAS
-        self.ctype[x_hi:, :] = GAS
         self.mass[:] = 0.0
         for ix in range(x_lo, x_hi):
             h = float(height_fn(ix))
@@ -224,6 +221,11 @@ class FreeSurfaceSim:
                         if j_iface + 1 < ny - 1:
                             self.ctype[ix, j_iface + 1] = INTERFACE
                             self.mass[ix, j_iface + 1] = 0.5 * rho_l
+        # the closed-box frame must win over the column initialisation (before
+        # this fix the GAS wipe also removed the two side walls of the frame,
+        # so a "closed box" silently had open sides -> free fall, mass loss).
+        self.fill_box_walls()
+        self.mass[self.ctype == OBSTACLE] = 0.0
         self._finalise_init()
 
     def set_dam(self, dam_width: int, dam_height: int, rho_l: float = 1.0) -> None:
@@ -291,17 +293,23 @@ class FreeSurfaceSim:
         fx = rho * gx
         fy = rho * gy
         if p.forcing == "guo":
-            # Guo: u* = u + F/(2 rho); S_i = w_i (1 - w/2)[...]
-            rs = np.where(rho > RHO_FLOOR, rho, RHO_FLOOR)
-            usx = ux + 0.5 * fx / rs
-            usy = uy + 0.5 * fy / rs
-            feq = equilibrium(rho, usx, usy)
+            # Guo-Zheng-Shi (PRE 65, 046308) forcing.  The half-force velocity
+            # shift belongs to the *macroscopic momentum* definition
+            # (rho*u = sum(c f) + F/2, applied in ``macroscopic``), NOT to the
+            # equilibrium/force-term argument: evaluating f^eq and S_i at
+            # u* = u + F/(2 rho) while still using the (1 - w/2) coefficient
+            # counts the half step twice and yields
+            #     a_eff = F (1 + omega/2)          （R1 defect, see REPORT)
+            # i.e. +50% force at omega = 1.  Measured before the fix:
+            # slope/analytic = 1.42 / 1.54 / 1.83 at omega = 0.8 / 1.0 / 1.5,
+            # matching 1 + omega/2 = 1.40 / 1.50 / 1.75.
+            feq = equilibrium(rho, ux, uy)
             fout = f + omega * (feq - f)
             for i in range(9):
-                cu = CX[i] * usx + CY[i] * usy
+                cu = CX[i] * ux + CY[i] * uy
                 cf = CX[i] * fx + CY[i] * fy
                 src = W[i] * (1.0 - 0.5 * omega) * (
-                    (cf - (usx * fx + usy * fy)) / CS2 + cu * cf / (CS2 * CS2)
+                    (cf - (ux * fx + uy * fy)) / CS2 + cu * cf / (CS2 * CS2)
                 )
                 fout[i] += src
         elif p.forcing == "raw":
@@ -340,6 +348,14 @@ class FreeSurfaceSim:
         eps = self.eps()
         f_new = np.zeros_like(self.f)
         dm = np.zeros_like(self.mass)
+        void_gain = np.zeros_like(self.mass)  # mass streamed into each void cell
+        # The outermost cell ring is a wall even if the caller left it as gas:
+        # a population leaving through the domain edge has nobody to receive it,
+        # so it must be reflected (weight 1 + bounce-back credit) rather than
+        # booked as a void flux that is deposited nowhere.
+        obs_eff = obs.copy()
+        obs_eff[0, :] = obs_eff[-1, :] = True
+        obs_eff[:, 0] = obs_eff[:, -1] = True
 
         # ---- pass 1: incoming populations -----------------------------------
         # A void-facing population is replaced by the reflected equilibrium
@@ -388,12 +404,36 @@ class FreeSurfaceSim:
             if i == 0:
                 continue
             tgt_liq = shift(liquid.astype(np.float64), CX[i], CY[i]) > 0.5
+            tgt_obs = shift(obs_eff.astype(np.float64), CX[i], CY[i]) > 0.5
+            tgt_gas = shift(gas.astype(np.float64), CX[i], CY[i]) > 0.5
             src_liq = shift(liquid.astype(np.float64), -CX[i], -CY[i]) > 0.5
+            src_obs = shift(obs_eff.astype(np.float64), -CX[i], -CY[i]) > 0.5
             eps_src = shift(eps, -CX[i], -CY[i])
             eps_tgt = shift(eps, CX[i], CY[i])
-            w_out = np.where(tgt_liq, 0.5 * (eps + eps_tgt), 1.0)
-            w_in = np.where(src_liq, 0.5 * (eps + eps_src), 1.0)
-            dm += np.where(liquid, w_in * f_new[i] - w_out * fout[i], 0.0)
+            # outgoing mass: shared (therefore antisymmetric) face weight for a
+            # liquid-liquid face; a full-cell weight towards a wall; and only the
+            # *filled fraction* towards a void cell -- a cell that is 30% full
+            # cannot discharge a whole cell worth of mass into the vacuum.
+            w_out = np.where(
+                tgt_liq,
+                0.5 * (eps + eps_tgt),
+                np.where(tgt_obs, 1.0, eps),
+            )
+            # incoming mass: liquid sender -> shared face weight; wall sender ->
+            # the bounce-back population (exact wall reflection, weight 1);
+            # void sender -> ZERO.  The reflected (anti-bounce-back) populations
+            # from a void cell are a momentum boundary condition only; crediting
+            # them as mass was the R2 mass source (REPORT section 5, R2).
+            credit = np.where(
+                src_liq,
+                0.5 * (eps + eps_src) * f_new[i],
+                np.where(src_obs, f_new[i], 0.0),
+            )
+            dm += np.where(liquid, credit - w_out * fout[i], 0.0)
+            # mass that leaves towards a void cell is deposited *in that cell*
+            # (it re-opens as interface below) -> the ledger stays exact.
+            into_void = np.where(liquid & tgt_gas, w_out * fout[i], 0.0)
+            void_gain += shift(into_void, -CX[i], -CY[i])
 
         # macroscopic quantities
         fx = self.rho * p.gravity[0] if p.forcing == "guo" else None
@@ -411,6 +451,41 @@ class FreeSurfaceSim:
         self.ux, self.uy = ux_new, uy_new
         self.mass = mass_new
         self.time += 1
+
+        # ---- void-ward mass redistribution ------------------------------
+        # The mass booked as ``void_gain`` left the liquid through a void-facing
+        # face (it was already subtracted from the senders in ``dm``).  It is
+        # given back to the *interface* cells facing the same void cell, weighted
+        # by their free capacity (1 - eps), i.e. the emptiest part of the surface
+        # absorbs it -- the standard free-surface "distribute excess mass" step.
+        # Handing it to the void cell itself instead dissolves the surface into a
+        # full-domain mist (measured: 1752/1752 interior cells became interface
+        # and the free surface vanished, while the total mass stayed exact).
+        if void_gain.any():
+            cap = np.where(iface, np.maximum(1.0 - eps, 0.0), 0.0)
+            wsum = np.zeros_like(self.mass)
+            nliq = np.zeros_like(self.mass)
+            donor = []
+            for i in range(1, 9):
+                tgt_gas = shift(gas.astype(np.float64), CX[i], CY[i]) > 0.5
+                don = liquid & tgt_gas
+                donor.append(don)
+                w = np.where(don, cap, 0.0)
+                wsum += shift(w, -CX[i], -CY[i])
+                nliq += shift(don.astype(np.float64), -CX[i], -CY[i])
+            back = np.zeros_like(self.mass)
+            for i in range(1, 9):
+                don = donor[i - 1]
+                g_at = shift(void_gain, CX[i], CY[i])
+                w_at = shift(wsum, CX[i], CY[i])
+                n_at = shift(nliq, CX[i], CY[i])
+                share = np.where(
+                    w_at > 0.0,
+                    np.where(don, cap, 0.0) / np.where(w_at > 0.0, w_at, 1.0),
+                    np.where(don, 1.0 / np.where(n_at > 0.0, n_at, 1.0), 0.0),
+                )
+                back += np.where(don, g_at * share, 0.0)
+            self.mass = self.mass + back
 
         self._update_types(rho_prev, mass_prev, ctype_prev)
         self.mass_history.append(self.total_mass())
@@ -434,13 +509,23 @@ class FreeSurfaceSim:
             has_iface |= shift(iface.astype(np.float64), CX[i], CY[i]) > 0.5
             empty_adj |= shift(gas.astype(np.float64), CX[i], CY[i]) > 0.5
 
+        # ``eps`` is clipped to 1 for the weights, so over-fill can only be seen
+        # through the raw VoF mass; without this an interface cell next to a void
+        # cell can never become fluid and the shell would pile up mass forever.
+        eps_raw = np.where(iface, self.mass / self.p.rho_l, 0.0)
         to_fluid = iface & (
-            (eps > 1.0 + FILL_OFFSET) | ((eps >= 1.0 - LONELY_EPS) & ~empty_adj)
+            (eps_raw > 1.0 + FILL_OFFSET) | ((eps >= 1.0 - LONELY_EPS) & ~empty_adj)
         )
         to_gas = iface & (
             (eps < -FILL_OFFSET)
-            | ((eps <= LONELY_EPS) & has_fluid & empty_adj)
             | (~has_fluid & ~has_iface)
+            # nearly empty and *not* anchored to a fluid cell: unattached fringe.
+            # The previous form demoted the frontier shell (tiny eps + fluid
+            # neighbour + void neighbour) one step after it was created, so mass
+            # could never enter a new cell and the free surface could not advance
+            # at all (measured: front frozen at its initial column for 3000 steps
+            # while the dam column accumulated 112 cell-heights of mass).
+            | ((eps <= LONELY_EPS) & ~has_fluid)
         )
 
         if not (to_fluid.any() or to_gas.any()):
