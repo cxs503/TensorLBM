@@ -1,353 +1,410 @@
-#!/usr/bin/env python3
-"""Validation: Two-component SC with EDM forcing for layered Poiseuille flow.
+"""Entry point: cross-validate the two-component Shan-Chen model on layered Poiseuille.
 
-This script validates the two-component Shan-Chen LBM with EDM (Exact Difference
-Method) forcing against the analytical solution for layered Poiseuille flow.
+The script runs a pre-registered case matrix with :class:`TwoComponentSCSolver`
+and compares every run against the *exact* layered plane-Poiseuille solution of
+:func:`..analytic.solve_layered` (piecewise quadratic, velocity and shear-stress
+continuity at the interface).  It writes one JSON artifact (profiles + metrics +
+gate verdicts) and a figure, and prints a table.
 
-Physical setup:
-- Two immiscible fluids with different viscosities (tau_A != tau_B)
-- Body force drives flow in x-direction
-- No-slip walls at top and bottom
-- Analytical solution: piecewise parabolic velocity profile
+Usage
+-----
+::
 
-The two-component SC model naturally forms layers due to the repulsive
-interaction force between components. Each component develops its own
-velocity profile, and the total velocity should match the analytical
-layered Poiseuille solution.
+    cd TensorLBM
+    PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.run_two_component_sc_validation \
+        --matrix core --out artifacts/xval_two_component_sc_layered_poiseuille_edm
 
-References:
-- Martys & Chen (1996) Phys. Rev. E 53, 743 - two-component SC
-- Kupershtokh (2004) - EDM forcing
-- Analytical solution: solve_layered() in analytic.py
+``--case NAME`` runs a single case (used by the cluster shard driver).
+
+Pre-registered gates
+--------------------
+``GATE`` per case kind, fixed before the runs (owner standard: >15% error is not
+acceptable; self target 3%):
+
+* ``control``  (one component, G = 0): ``eps_inf <= 3%``  -- proves the viscous
+  solution is actually reached (the defect that sank the previous delivery was
+  ``u_max = g*t``, i.e. no viscous braking at all).
+* ``layered``  (two components, G > 0): ``u_peak_err <= 15%``, ``Q_err <= 15%``,
+  ``eps_l2_rel <= 15%``, ``eps_inf <= 15%`` (full field, no cells excluded).
+* ``static``   (two components, g = 0): spurious current ``max|u| / u_ref <= 15%``
+  (``u_ref`` = the analytic peak of the same configuration at ``g_x = 5e-5``).
 """
 
-import sys
-import os
+from __future__ import annotations
 
-# Add src to path - must be done before any tensorlbm imports
-# Script is in: TensorLBM/src/tensorlbm/verification/layered_poiseuille/
-# We need: TensorLBM/src
-script_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.abspath(os.path.join(script_dir, '..', '..', '..', '..'))
-print(f"DEBUG: script_dir = {script_dir}")
-print(f"DEBUG: src_dir = {src_dir}")
-if src_dir not in sys.path:
-    sys.path.insert(0, src_dir)
-
+import argparse
+import hashlib
 import json
+import os
+import platform
+import subprocess
+import sys
+import time
+from typing import Any, Dict, List
+
 import numpy as np
-import torch
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
-from tensorlbm.verification.layered_poiseuille.two_component_sc import (
-    TwoComponentSCSolver, TwoComponentSCConfig
-)
-from tensorlbm.verification.layered_poiseuille.analytic import solve_layered
+from .analytic import solve_layered
+from .metrics import layer_fluxes, peak_metrics, profile_errors, rel_err
+from .two_component_sc import (TwoComponentSCConfig, TwoComponentSCSolver,
+                               layered_reference)
+
+#: owner standard: a deviation above this is not acceptable
+GATE_OWNER = 0.15
+#: publication target used by the sibling layered-Poiseuille anchor
+GATE_TARGET = 0.03
+
+CASE_MATRIX: Dict[str, Dict[str, Any]] = {
+    # -- controls: the solver must reproduce a single-fluid Poiseuille profile ----
+    "control_single": dict(
+        kind="control",
+        cfg=dict(ny=34, nx=1, tau_a=0.8, tau_b=0.8, G=0.0, g_x=1e-4, g_y=0.0, steps=6000,
+                 init_rho_a=2.0, init_rho_b=0.0, init_layer_frac=1.0, interface_width=1.0),
+        note="one component (A only), nu=0.1, exact single-fluid Poiseuille",
+    ),
+    "control_mixture": dict(
+        kind="control",
+        cfg=dict(ny=34, nx=1, tau_a=0.8, tau_b=0.8, G=0.0, g_x=1e-4, g_y=0.0, steps=6000,
+                 init_rho_a=2.0, init_rho_b=2.0, init_layer_frac=0.5, interface_width=2.0),
+        note="two components, G=0 -> they mix to rho_total=2, equal tau; exact single-fluid Poiseuille",
+    ),
+    # -- anchor cases: two-component layered Poiseuille --------------------------
+    "layered_r167": dict(
+        kind="layered",
+        cfg=dict(ny=34, nx=1, tau_a=0.8, tau_b=1.0, G=2.5, g_x=5e-5, g_y=0.0, steps=12000,
+                 init_rho_a=2.12, init_rho_b=2.36, init_layer_frac=0.5, interface_width=2.0,
+                 g_ramp_steps=2000),
+        note="nu_A=0.1000 (bottom), nu_B=0.1667 (top): viscosity ratio 1.67",
+    ),
+    "layered_r233": dict(
+        kind="layered",
+        cfg=dict(ny=34, nx=1, tau_a=0.8, tau_b=1.2, G=2.5, g_x=5e-5, g_y=0.0, steps=12000,
+                 init_rho_a=2.12, init_rho_b=2.36, init_layer_frac=0.5, interface_width=2.0,
+                 g_ramp_steps=2000),
+        note="nu_A=0.1000 (bottom), nu_B=0.2333 (top): viscosity ratio 2.33",
+    ),
+    "layered_r167_h48": dict(
+        kind="layered",
+        cfg=dict(ny=50, nx=1, tau_a=0.8, tau_b=1.0, G=2.5, g_x=5e-5, g_y=0.0, steps=16000,
+                 init_rho_a=2.12, init_rho_b=2.36, init_layer_frac=0.5, interface_width=2.0,
+                 g_ramp_steps=2000),
+        note="resolution check: same physics, H=48 instead of H=32",
+    ),
+    # -- static interface: spurious currents -------------------------------------
+    "layered_static": dict(
+        kind="static",
+        cfg=dict(ny=34, nx=1, tau_a=0.8, tau_b=1.0, G=2.5, g_x=0.0, g_y=0.0, steps=6000,
+                 init_rho_a=2.12, init_rho_b=2.36, init_layer_frac=0.5, interface_width=2.0,
+                 g_ramp_steps=2000),
+        note="g=0: residual velocity must stay far below the driven peak",
+    ),
+}
+
+MATRICES = {
+    "core": ["control_single", "control_mixture", "layered_r167", "layered_r233", "layered_static"],
+    "full": list(CASE_MATRIX),
+}
 
 
-def run_validation_case(
-    ny: int = 64,
-    nx: int = 8,
-    tau_a: float = 0.8,
-    tau_b: float = 1.2,
-    G: float = 2.0,
-    g_x: float = 1e-5,
-    steps: int = 20000,
-    init_layer_frac: float = 0.5,
-    forcing: str = "edm",
-    label: str = "default",
-) -> dict:
-    """Run a single validation case and return metrics."""
-    
-    # Viscosities from relaxation times: nu = cs^2 * (tau - 0.5)
-    nu_a = (1.0/3.0) * (tau_a - 0.5)
-    nu_b = (1.0/3.0) * (tau_b - 0.5)
-    H = ny - 2  # Effective channel height (half-way bounce-back)
-    interface_y = init_layer_frac * H
-    
-    print(f"\n{'='*60}")
-    print(f"Validation case: {label}")
-    print(f"{'='*60}")
-    print(f"Grid: {ny} x {nx}, H = {H}")
-    print(f"Component A: tau={tau_a:.3f}, nu={nu_a:.4f}")
-    print(f"Component B: tau={tau_b:.3f}, nu={nu_b:.4f}")
-    print(f"SC coupling: G={G}")
-    print(f"Body force: g_x={g_x}")
-    print(f"Forcing scheme: {forcing}")
-    print(f"Interface at y/H = {init_layer_frac}")
-    print(f"Steps: {steps}")
-    
-    # Create and run solver
-    cfg = TwoComponentSCConfig(
-        ny=ny, nx=nx,
-        tau_a=tau_a, tau_b=tau_b,
-        G=G, g_x=g_x, g_y=0.0,
-        steps=steps,
-        init_rho_a=2.0, init_rho_b=2.0,
-        init_layer_frac=init_layer_frac,
-        forcing=forcing,
-        sample_every=500,
-    )
-    
+# --------------------------------------------------------------------------- #
+# helpers
+# --------------------------------------------------------------------------- #
+def _git_commit(repo_root: str) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "-C", repo_root, "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except Exception:  # pragma: no cover - git may be unavailable
+        return "unknown"
+
+
+def interface_position(phi: np.ndarray, y: np.ndarray, skip_wall: int = 2) -> float:
+    """``y`` where the A-fraction crosses 0.5 (linear interpolation, walls skipped)."""
+    sel = slice(skip_wall, len(y) - skip_wall)
+    yy, pp = y[sel], phi[sel]
+    below = np.where(pp >= 0.5)[0]
+    if len(below) == 0 or below[-1] + 1 >= len(pp):
+        return float("nan")
+    k = below[-1]
+    t = (pp[k] - 0.5) / (pp[k] - pp[k + 1])
+    return float(yy[k] + t * (yy[k + 1] - yy[k]))
+
+
+def layer_viscosity_fit(u: np.ndarray, y: np.ndarray, g: float, lo: float, hi: float) -> float:
+    """Effective kinematic viscosity of a layer from its own curvature.
+
+    In a steady unidirectional flow with constant viscosity ``u'' = -g/nu``,
+    so a quadratic fit inside one layer returns ``nu = -g / (2 a2)``.  The fit
+    window stays clear of the walls and of the interface.
+    """
+    sel = (y >= lo) & (y <= hi)
+    if int(sel.sum()) < 4:
+        return float("nan")
+    a2, _, _ = np.polyfit(y[sel], u[sel], 2)
+    return float(-g / (2.0 * a2)) if a2 != 0.0 else float("nan")
+
+
+def case_reference(case: Dict[str, Any], cfg: TwoComponentSCConfig):
+    """Exact reference solution for one case."""
+    if case["kind"] == "control":
+        # both components share tau -> single-fluid channel of the whole height
+        nu = cfg.nu_a
+        sol = solve_layered(cfg.height, [0.5 * cfg.height], [nu, nu], cfg.g_x)
+        return sol, [0.5 * cfg.height], nu
+    if case["kind"] in ("layered", "static"):
+        sol = layered_reference(cfg)
+        return sol, [0.5 * cfg.height], None
+    raise ValueError(case["kind"])
+
+
+# --------------------------------------------------------------------------- #
+# one case
+# --------------------------------------------------------------------------- #
+def run_case(name: str, *, verbose: bool = True) -> Dict[str, Any]:
+    case = CASE_MATRIX[name]
+    cfg = TwoComponentSCConfig(**case["cfg"])
     solver = TwoComponentSCSolver(cfg)
-    result = solver.run(monitor_every=1000)
-    
-    # Get final profile
-    profile = result["final_profile"]
-    y_num = profile["y"]
-    ux_total = profile["ux_total"]
-    rho_a = profile["rho_a"]
-    rho_b = profile["rho_b"]
-    
-    # Analytical solution
-    # The analytical solution expects the interface position in wall coordinates
-    # y_wall goes from 0.5 to H-0.5, so interface is at init_layer_frac * H
-    interface_pos = init_layer_frac * H
-    analytic_sol = solve_layered(
-        height=H,
-        interfaces=[interface_pos],
-        nus=[nu_a, nu_b],
-        g=g_x
-    )
-    
-    # Evaluate analytical solution at numerical grid points
-    # Note: y_num is in wall coordinates (0.5 to H-0.5)
-    y_analytic = np.linspace(0.5, H - 0.5, 200)
-    ux_analytic = analytic_sol.u(y_analytic)
-    
-    # Interpolate analytical solution to numerical grid
-    ux_analytic_on_grid = analytic_sol.u(y_num)
-    
-    # Compute errors
-    # Only compare in the interior (exclude near-wall regions where SC effects dominate)
-    margin = 3
-    y_interior = y_num[margin:-margin]
-    ux_num_interior = ux_total[margin:-margin]
-    ux_ana_interior = ux_analytic_on_grid[margin:-margin]
-    
-    # Error metrics
-    scale = np.max(np.abs(ux_ana_interior))
-    if scale > 0:
-        eps_inf = np.max(np.abs(ux_num_interior - ux_ana_interior)) / scale
-        eps_l2 = np.linalg.norm(ux_num_interior - ux_ana_interior) / np.linalg.norm(ux_ana_interior)
-    else:
-        eps_inf = float('nan')
-        eps_l2 = float('nan')
-    
-    # Peak velocity comparison
-    u_peak_num = np.max(ux_total)
-    u_peak_ana = analytic_sol.u_peak()
-    u_peak_err = abs(u_peak_num - u_peak_ana) / u_peak_ana if u_peak_ana > 0 else float('nan')
-    
-    # Flow rate comparison
-    q_num = np.trapezoid(ux_total, y_num)
-    q_ana = analytic_sol.flow_rate()
-    q_err = abs(q_num - q_ana) / abs(q_ana) if abs(q_ana) > 0 else float('nan')
-    
-    # Phase distribution: check if components are layered
-    # Component A should be dominant in bottom, B in top
-    rho_a_bottom = np.mean(rho_a[:ny//4])
-    rho_a_top = np.mean(rho_a[-ny//4:])
-    rho_b_bottom = np.mean(rho_b[:ny//4])
-    rho_b_top = np.mean(rho_b[-ny//4:])
-    
-    layer_separation = (rho_a_bottom - rho_a_top) + (rho_b_top - rho_b_bottom)
-    
-    print(f"\nResults:")
-    print(f"  Peak velocity: num={u_peak_num:.6e}, ana={u_peak_ana:.6e}, err={u_peak_err:.2%}")
-    print(f"  Flow rate: num={q_num:.6e}, ana={q_ana:.6e}, err={q_err:.2%}")
-    print(f"  Profile eps_inf: {eps_inf:.2%}")
-    print(f"  Profile eps_L2: {eps_l2:.2%}")
-    print(f"  Layer separation: {layer_separation:.3f}")
-    print(f"  rho_A (bottom/top): {rho_a_bottom:.3f} / {rho_a_top:.3f}")
-    print(f"  rho_B (bottom/top): {rho_b_bottom:.3f} / {rho_b_top:.3f}")
-    
-    return {
-        "label": label,
-        "config": {
-            "ny": ny, "nx": nx,
-            "tau_a": tau_a, "tau_b": tau_b,
-            "nu_a": nu_a, "nu_b": nu_b,
-            "G": G, "g_x": g_x,
-            "steps": steps,
-            "init_layer_frac": init_layer_frac,
-            "forcing": forcing,
-        },
+    t0 = time.time()
+    out = solver.run()
+    wall = time.time() - t0
+    prof = out["final_profile"]
+    y = prof["y"]
+    u = prof["ux_total"]
+
+    if not np.all(np.isfinite(u)) or not np.all(np.isfinite(prof["rho_a"])):
+        return {"case": name, "kind": case["kind"], "status": "DIVERGED",
+                "note": case["note"], "config": case["cfg"], "wall_seconds": wall}
+
+    sol, interfaces, nu_single = case_reference(case, cfg)
+    u_ref = sol.u(y)
+    errs = profile_errors(u, u_ref)
+    pm = peak_metrics(u, y)
+    pk_ref = float(np.max(u_ref))
+    q_num = layer_fluxes(u, y, interfaces)
+    q_ref = layer_fluxes(u_ref, y, interfaces)
+    phi = prof["rho_a"] / (prof["rho_a"] + prof["rho_b"] + 1e-12)
+
+    rec: Dict[str, Any] = {
+        "case": name,
+        "kind": case["kind"],
+        "note": case["note"],
+        "status": "RAN",
+        "config": case["cfg"],
+        "wall_seconds": round(wall, 1),
+        "height": cfg.height,
+        "nu_a": cfg.nu_a,
+        "nu_b": cfg.nu_b,
         "metrics": {
-            "u_peak_num": u_peak_num,
-            "u_peak_ana": u_peak_ana,
-            "u_peak_err": u_peak_err,
-            "q_num": q_num,
-            "q_ana": q_ana,
-            "q_err": q_err,
-            "eps_inf": eps_inf,
-            "eps_l2": eps_l2,
-            "layer_separation": layer_separation,
+            "u_peak_err": rel_err(pm["u_peak_num"], pk_ref),
+            "u_peak_num": pm["u_peak_num"],
+            "u_peak_ref": pk_ref,
+            "y_peak_num": pm["y_peak_num"],
+            "eps_inf": errs["eps_inf"],
+            "eps_l2_rel": errs["eps_l2_rel"],
+            "eps_mean": errs["eps_mean"],
+            "Q_err": rel_err(q_num[0] + q_num[1], q_ref[0] + q_ref[1]),
+            "Q_layer_err": [rel_err(a, b) for a, b in zip(q_num, q_ref)],
+            "Q_num": q_num,
+            "Q_ref": q_ref,
+            "y_iface": interface_position(phi, y),
+            "y_iface_ref": interfaces[0],
+            "y_iface_err": abs(interface_position(phi, y) - interfaces[0]) / cfg.height,
+            "rho_total_min": float(prof["rho_total"].min()),
+            "rho_total_max": float(prof["rho_total"].max()),
+            "mass_a": float(prof["rho_a"].sum()),
+            "mass_b": float(prof["rho_b"].sum()),
+            "steady_drift": float(out["max_profile_drift"]),
         },
-        "profile": {
-            "y": y_num.tolist(),
-            "ux_total": ux_total.tolist(),
-            "ux_analytic": ux_analytic_on_grid.tolist(),
-            "rho_a": rho_a.tolist(),
-            "rho_b": rho_b.tolist(),
+        "profiles": {k: [float(v) for v in prof[k]] for k in
+                     ("y", "rho_a", "rho_b", "rho_total", "ux_total")},
+        "u_ref": [float(v) for v in u_ref],
+        "phi": [float(v) for v in phi],
+    }
+
+    # layer-wise effective viscosity (layered/static cases only)
+    if case["kind"] in ("layered",):
+        half = 0.5 * cfg.height
+        rec["metrics"]["nu_fit_lower"] = layer_viscosity_fit(u, y, cfg.g_x, 2.0, half - 4.0)
+        rec["metrics"]["nu_fit_upper"] = layer_viscosity_fit(u, y, cfg.g_x, half + 4.0, cfg.height - 2.0)
+        rec["metrics"]["nu_fit_err_lower"] = rel_err(rec["metrics"]["nu_fit_lower"], cfg.nu_a)
+        rec["metrics"]["nu_fit_err_upper"] = rel_err(rec["metrics"]["nu_fit_upper"], cfg.nu_b)
+
+    # ---- pre-registered gates -------------------------------------------- #
+    m = rec["metrics"]
+    gates: Dict[str, Any] = {}
+    if case["kind"] == "control":
+        gates["control_eps_inf<=3%"] = m["eps_inf"] <= GATE_TARGET
+        gates["control_u_peak<=3%"] = m["u_peak_err"] <= GATE_TARGET
+    elif case["kind"] == "layered":
+        gates["u_peak_err<=15%"] = m["u_peak_err"] <= GATE_OWNER
+        gates["Q_err<=15%"] = m["Q_err"] <= GATE_OWNER
+        gates["eps_l2_rel<=15%"] = m["eps_l2_rel"] <= GATE_OWNER
+        gates["eps_inf<=15%"] = m["eps_inf"] <= GATE_OWNER
+        gates["interface_position<=5%H"] = m["y_iface_err"] <= 0.05
+    elif case["kind"] == "static":
+        # reference scale: the analytic peak of the same configuration, driven
+        driven = solve_layered(cfg.height, [0.5 * cfg.height], [cfg.nu_a, cfg.nu_b], 5e-5)
+        u_scale = driven.u_peak()
+        m["spurious_ratio"] = float(np.max(np.abs(u)) / u_scale)
+        gates["spurious_ratio<=15%"] = m["spurious_ratio"] <= GATE_OWNER
+    rec["gates"] = gates
+    rec["gate_pass"] = all(gates.values()) if gates else None
+    if verbose:
+        print(f"[{name:18s}] {case['kind']:8s} " + " ".join(
+            f"{k}={v*100:.2f}%" for k, v in m.items()
+            if isinstance(v, float) and k.startswith(("u_peak_err", "eps_", "Q_err", "y_iface_err", "spurious"))
+        ) + f"  gates={'PASS' if rec['gate_pass'] else 'FAIL'}  {wall:.0f}s", flush=True)
+    return rec
+
+
+# --------------------------------------------------------------------------- #
+# figure
+# --------------------------------------------------------------------------- #
+def make_figure(records: List[Dict[str, Any]], png_path: str) -> str:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    ran = [r for r in records if r.get("status") == "RAN"]
+    if not ran:
+        raise RuntimeError("no completed case to plot")
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.6))
+
+    ax = axes[0]
+    for r in ran:
+        if r["kind"] in ("layered", "control"):
+            ax.plot(r["profiles"]["ux_total"], r["profiles"]["y"], lw=1.4, label=f"{r['case']} (num)")
+            ax.plot(r["u_ref"], r["profiles"]["y"], "k--", lw=0.9)
+    ax.set_xlabel(r"$u_x$ [lu]")
+    ax.set_ylabel("wall distance y [lu]")
+    ax.set_title("velocity profiles (dashed = exact layered solution)")
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3)
+
+    ax = axes[1]
+    for r in ran:
+        if r["kind"] == "layered":
+            ax.plot(r["phi"], r["profiles"]["y"], lw=1.4, label=f"{r['case']} $\\phi_A$")
+    ax.axvline(0.5, color="k", ls=":", lw=0.8)
+    ax.set_xlabel(r"$\phi_A=\rho_A/(\rho_A+\rho_B)$")
+    ax.set_ylabel("wall distance y [lu]")
+    ax.set_title("demixing: A below, B above")
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3)
+
+    ax = axes[2]
+    for r in ran:
+        if r["kind"] in ("layered", "control"):
+            u = np.asarray(r["profiles"]["ux_total"])
+            ref = np.asarray(r["u_ref"])
+            ax.plot(100 * (u - ref) / np.max(ref), r["profiles"]["y"], lw=1.3, label=r["case"])
+    ax.axvline(0.0, color="k", lw=0.6)
+    ax.axvline(15.0, color="r", ls="--", lw=0.8, label="±15% owner gate")
+    ax.axvline(-15.0, color="r", ls="--", lw=0.8)
+    ax.set_xlabel("local error [% of exact peak]")
+    ax.set_ylabel("wall distance y [lu]")
+    ax.set_title("pointwise deviation from the exact solution")
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(png_path, dpi=150)
+    plt.close(fig)
+    return png_path
+
+
+# --------------------------------------------------------------------------- #
+def main(argv: List[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--matrix", default="core", choices=sorted(MATRICES))
+    ap.add_argument("--case", default=None, help="run a single case by name")
+    ap.add_argument("--out", default="artifacts/xval_two_component_sc_layered_poiseuille_edm",
+                    help="artifact directory (created if missing)")
+    ap.add_argument("--no-figure", action="store_true")
+    ap.add_argument("--figure-only", action="store_true", help="rebuild the figure from results.json")
+    ap.add_argument("--json-only", default=None, help="write just this case to <out>/<name>.json")
+    args = ap.parse_args(argv)
+    out_dir = os.path.abspath(args.out)
+    os.makedirs(out_dir, exist_ok=True)
+
+    def _load(path):
+        if os.path.exists(path):
+            with open(path) as fh:
+                return {r["case"]: r for r in json.load(fh).get("records", [])}
+        return {}
+
+    json_path0 = os.path.join(out_dir, "results.json")
+    if args.figure_only:
+        old = list(_load(json_path0).values())
+        make_figure(old, os.path.join(out_dir, "two_component_sc_layered.png"))
+        print(f"figure rebuilt from {len(old)} records")
+        return 0
+
+    names = [args.case] if args.case else MATRICES[args.matrix]
+    out_dir = os.path.abspath(args.out)
+    os.makedirs(out_dir, exist_ok=True)
+
+    acc = _load(json_path0)
+    for name in names:
+        if name not in CASE_MATRIX:
+            raise SystemExit(f"unknown case {name}; choose from {sorted(CASE_MATRIX)}")
+        rec = run_case(name)
+        acc[name] = rec
+        if args.json_only:
+            with open(os.path.join(out_dir, args.json_only), "w") as fh:
+                json.dump(rec, fh, indent=1)
+
+    records = [acc[k] for k in CASE_MATRIX if k in acc]
+    here = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(here, "..", "..", "..", ".."))
+    payload = {
+        "benchmark": "xval_two_component_sc_layered_poiseuille_edm",
+        "anchor": "XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM",
+        "model": {
+            "kind": "two-component Shan-Chen (MCMP) D2Q9 BGK, one f per component",
+            "pseudopotential": "psi = rho0 (1 - exp(-rho/rho0)), rho0 = 1",
+            "interaction": "F_sigma = -G psi_sigma sum_i w_i psi_sigma'(x+c_i) c_i (G>0 repulsive)",
+            "force_scheme": "EDM (Kupershtokh 2004): f += feq(rho, u*+F/rho) - feq(rho, u*)",
+            "u_eq": "viscous (Martys & Chen 1996 viscosity-weighted coupling)",
+            "walls": "halfway bounce-back at rows 0 / ny-1, wall_mode=mirror (neutral wetting)",
+            "reference": "exact piecewise-quadratic layered solution, analytic.solve_layered "
+                         "(2N x 2N LU solve, independent of the solver)",
         },
-        "analytic_full": {
-            "y": y_analytic.tolist(),
-            "ux": ux_analytic.tolist(),
+        "gates": {"owner_standard": GATE_OWNER, "self_target": GATE_TARGET,
+                  "rule": "control eps_inf<=3%; layered u_peak/Q/eps_l2/eps_inf<=15%, "
+                          "interface position<=5%H; static spurious<=15% of driven peak"},
+        "environment": {
+            "python": sys.version.split()[0],
+            "platform": platform.platform(),
+            "numpy": np.__version__,
+            "torch": __import__("torch").__version__,
+            "git_commit": _git_commit(repo_root),
+            "argv": sys.argv,
+        },
+        "records": records,
+        "summary": {
+            "n_cases": len(records),
+            "n_gate_pass": sum(1 for r in records if r.get("gate_pass")),
+            "n_diverged": sum(1 for r in records if r.get("status") != "RAN"),
+            "all_gates_pass": all(bool(r.get("gate_pass")) for r in records),
         },
     }
 
+    json_path = os.path.join(out_dir, "results.json")
+    with open(json_path, "w") as fh:
+        json.dump(payload, fh, indent=1)
+    digest = hashlib.sha256(open(json_path, "rb").read()).hexdigest()
+    payload["sha256"] = digest
+    with open(os.path.join(out_dir, "sha256.txt"), "w") as fh:
+        fh.write(digest + "  results.json\n")
 
-def generate_figures(results: list, output_dir: str):
-    """Generate validation figures."""
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for res in results:
-        label = res["label"]
-        profile = res["profile"]
-        y = np.array(profile["y"])
-        ux_total = np.array(profile["ux_total"])
-        ux_ana = np.array(profile["ux_analytic"])
-        rho_a = np.array(profile["rho_a"])
-        rho_b = np.array(profile["rho_b"])
-        
-        # Figure 1: Velocity profile comparison
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-        
-        # Velocity profile
-        ax = axes[0]
-        ax.plot(ux_ana, y, 'k-', linewidth=2, label='Analytical')
-        ax.plot(ux_total, y, 'r--', linewidth=2, label='Two-component SC (EDM)')
-        ax.set_xlabel('Velocity $u_x$', fontsize=12)
-        ax.set_ylabel('Wall-normal coordinate $y$', fontsize=12)
-        ax.set_title(f'Velocity Profile - {label}', fontsize=14)
-        ax.legend(fontsize=10)
-        ax.grid(True, alpha=0.3)
-        
-        # Add error annotation
-        metrics = res["metrics"]
-        textstr = f'$\\epsilon_\\infty$ = {metrics["eps_inf"]:.2%}\n$\\epsilon_{{L2}}$ = {metrics["eps_l2"]:.2%}\n$Q_{{err}}$ = {metrics["q_err"]:.2%}'
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=10,
-                verticalalignment='top', bbox=props)
-        
-        # Density profiles (phase distribution)
-        ax = axes[1]
-        ax.plot(rho_a, y, 'b-', linewidth=2, label='Component A')
-        ax.plot(rho_b, y, 'r-', linewidth=2, label='Component B')
-        ax.plot(rho_a + rho_b, y, 'k--', linewidth=1.5, label='Total')
-        ax.set_xlabel('Density $\\rho$', fontsize=12)
-        ax.set_ylabel('Wall-normal coordinate $y$', fontsize=12)
-        ax.set_title(f'Phase Distribution - {label}', fontsize=14)
-        ax.legend(fontsize=10)
-        ax.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f'{label}_velocity_profile.png'), dpi=150, bbox_inches='tight')
-        plt.close()
-        
-        # Figure 2: Error distribution
-        fig, ax = plt.subplots(figsize=(8, 5))
-        error = ux_total - ux_ana
-        scale = np.max(np.abs(ux_ana))
-        error_rel = error / scale if scale > 0 else error
-        ax.plot(y, error_rel, 'b-', linewidth=1.5)
-        ax.axhline(y=0, color='k', linestyle='--', linewidth=0.5)
-        ax.set_xlabel('Wall-normal coordinate $y$', fontsize=12)
-        ax.set_ylabel('Relative velocity error $(u_{num} - u_{ana}) / u_{max}$', fontsize=12)
-        ax.set_title(f'Error Distribution - {label}', fontsize=14)
-        ax.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f'{label}_error_distribution.png'), dpi=150, bbox_inches='tight')
-        plt.close()
-    
-    print(f"\nFigures saved to {output_dir}")
+    if not args.no_figure:
+        make_figure(records, os.path.join(out_dir, "two_component_sc_layered.png"))
 
-
-def main():
-    """Run validation campaign."""
-    output_dir = os.path.join(src_dir, 'artifacts', 
-                              'xval_two_component_sc_layered_poiseuille_edm')
-    os.makedirs(output_dir, exist_ok=True)
-    
-    results = []
-    
-    # Case 1: Baseline - moderate viscosity contrast
-    results.append(run_validation_case(
-        ny=64, nx=8,
-        tau_a=0.8, tau_b=1.2,
-        G=2.0, g_x=1e-5,
-        steps=20000,
-        init_layer_frac=0.5,
-        forcing="edm",
-        label="baseline_m3",
-    ))
-    
-    # Case 2: Higher viscosity contrast (5:1)
-    results.append(run_validation_case(
-        ny=64, nx=8,
-        tau_a=0.7, tau_b=1.3,
-        G=2.0, g_x=1e-5,
-        steps=20000,
-        init_layer_frac=0.5,
-        forcing="edm",
-        label="contrast_m5",
-    ))
-    
-    # Case 3: Off-center interface
-    results.append(run_validation_case(
-        ny=64, nx=8,
-        tau_a=0.8, tau_b=1.2,
-        G=2.0, g_x=1e-5,
-        steps=20000,
-        init_layer_frac=0.3,
-        forcing="edm",
-        label="interface_30pct",
-    ))
-    
-    # Case 4: Finer grid
-    results.append(run_validation_case(
-        ny=96, nx=8,
-        tau_a=0.8, tau_b=1.2,
-        G=2.0, g_x=1e-5,
-        steps=30000,
-        init_layer_frac=0.5,
-        forcing="edm",
-        label="fine_grid_96",
-    ))
-    
-    # Generate figures
-    generate_figures(results, os.path.join(output_dir, 'figures'))
-    
-    # Save results
-    output_file = os.path.join(output_dir, 'validation_results.json')
-    with open(output_file, 'w') as f:
-        json.dump(results, f, indent=2)
-    print(f"\nResults saved to {output_file}")
-    
-    # Summary
-    print("\n" + "="*60)
-    print("VALIDATION SUMMARY")
-    print("="*60)
-    for res in results:
-        m = res["metrics"]
-        print(f"\n{res['label']}:")
-        print(f"  Peak velocity error: {m['u_peak_err']:.2%}")
-        print(f"  Flow rate error: {m['q_err']:.2%}")
-        print(f"  Profile eps_inf: {m['eps_inf']:.2%}")
-        print(f"  Profile eps_L2: {m['eps_l2']:.2%}")
-        print(f"  Layer separation: {m['layer_separation']:.3f}")
-        
-        # Acceptance check
-        if m['u_peak_err'] < 0.15 and m['q_err'] < 0.15:
-            print(f"  ✓ PASS: errors < 15%")
-        else:
-            print(f"  ✗ FAIL: errors >= 15%")
-    
-    return results
+    print(json.dumps(payload["summary"], indent=1))
+    print(f"artifact: {json_path} (sha256 {digest[:16]}...)")
+    return 0 if payload["summary"]["all_gates_pass"] else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
