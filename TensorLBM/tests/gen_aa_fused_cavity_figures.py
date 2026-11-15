@@ -27,19 +27,16 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ART = os.path.abspath(os.path.join(HERE, "..", "artifacts", "xval_aa_pattern"))
-GHIA_U = np.array([
-    [0.0000, 0.00000], [0.0547, -0.03717], [0.0625, -0.04192], [0.0703, -0.04775],
-    [0.1016, -0.06434], [0.1719, -0.10150], [0.2813, -0.15662], [0.4531, -0.21090],
-    [0.5000, -0.20581], [0.6172, -0.13641], [0.7344, 0.00332], [0.8516, 0.23151],
-    [0.9531, 0.68717], [0.9609, 0.73722], [0.9688, 0.78871], [0.9766, 0.84123],
-    [1.0000, 1.00000],
-])
-GHIA_V = np.array([
-    [0.0000, 0.00000], [0.0625, 0.09233], [0.0703, 0.10091], [0.0781, 0.10890],
-    [0.0938, 0.12317], [0.1563, 0.16077], [0.2266, 0.17507], [0.2344, 0.17527],
-    [0.5000, 0.05454], [0.7344, -0.24533], [0.8516, -0.18866], [0.9531, -0.03717],
-    [0.9609, 0.00730], [0.9688, 0.02526], [0.9766, 0.05248], [1.0000, 0.00000],
-])
+# Ghia (1982) tables: single source of truth (see
+# docs/xval_aa_pattern_ghia_table_defect.md).  The inline copy that used to live
+# here had a scrambled Table II, which also corrupted the published figures.
+import sys as _sys
+
+_sys.path.insert(0, os.path.join(HERE, "..", "benchmarks", "xval"))
+from aa_fused_stream_collide_ordering_audit import (  # noqa: E402
+    GHIA_U,
+    GHIA_V,
+)
 
 
 def load():
