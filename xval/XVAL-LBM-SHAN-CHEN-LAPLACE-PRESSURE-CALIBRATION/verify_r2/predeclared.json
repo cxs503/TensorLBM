@@ -1,0 +1,21 @@
+{
+  "P1_cross_dim_ratio_prediction": 1.0,
+  "P1_tol": 0.15,
+  "P2_mech_balance_tol": 0.001,
+  "P3_radius_consistency_tol": 0.15,
+  "P4_sigmaK_vs_laplace_tol": 0.15,
+  "P5_coexist_vs_maxwell_tol": 0.15,
+  "note": "pre-registered before any numeric leg was run; not adjusted afterwards",
+  "radii": [
+    10.0,
+    14.0,
+    18.0
+  ],
+  "dims": [
+    2,
+    3
+  ],
+  "tau": 1.0,
+  "G_lib": 5.0,
+  "G_eff": -5.0
+}
