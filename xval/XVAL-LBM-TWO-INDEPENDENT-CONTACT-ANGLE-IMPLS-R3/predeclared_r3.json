@@ -1,0 +1,45 @@
+{
+  "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+  "round": 3,
+  "seat": "tp-ver-2 (verifier)",
+  "question": "Can the round-2 PASS (10/10 + 10/10 measurable rows within 15 % of the analytic Young angle) be independently reproduced, and does it survive (a) a third shape estimator written from scratch in this round, (b) a level-sensitivity probe of the measurement itself, and (c) a convergence qualification of the rows that were counted?",
+  "reference": "Young's law with the wall free energy of the model under test: cos(theta) = (3 psi_w - psi_w^3)/2. The reference is analytic, so every probe below compares a measurement with a closed-form number, never with another simulation.",
+  "independent_third_estimator": {
+    "name": "theta_geodesic",
+    "formula": "theta = 2 atan(h / a), h = apex height of the mid-level contour above the wall, a = basal half width obtained by a quadratic extrapolation of the right-hand mid-level contour to the wall plane",
+    "why_independent": "the round-2 estimators are a conserved-content Laplace-cap inversion (theta_cap) and an algebraic least-squares circle fit (theta_circle); theta_geodesic uses neither the conserved content nor a circle fit, only the apex and the basal width of one contour, and it is coded from scratch in run_r3.py (no import of the round-2 measurement module)"
+  },
+  "probes": {
+    "P1_reproduce": "Re-run the round-2 matrix (same predeclared grids/angles/numerics) and compare theta_cap / theta_circle against the committed summary.json row by row; the relaxation is deterministic, so |delta| must be <= 0.01 deg for every row.",
+    "P2_third_estimator": "For every measurable row of the two independent arms, |theta_geodesic - theta_prescribed| / theta_prescribed <= 15 % (same anchor gate as round 2) and |theta_geodesic - theta_circle| <= 10 deg.",
+    "P4_convergence": "Round-2 rows whose relaxation stopped at max_iter without meeting tol = 1e-9 are re-run with max_iter = 200000; the angle must not move by more than 0.5 deg. Rows that do move are reported as CONVERGENCE_QUALIFIED = false and the round-2 pass count is restated without them.",
+    "P5_cross_arm_nondegenerate": "The round-2 cross-arm table contains theta = 90 deg, where both independent closures degenerate to the same zero-flux mirror (cos 90 = 0 and cot 90 = 0). Cross-arm agreement is therefore restated on the non-degenerate subset {70, 110, 135} deg, threshold 15 %.",
+    "P3a_estimator_calibration": "On analytically known diffuse circular caps (R = 14/18/22, xi = 2/3, theta = 45..135 deg, 30 caps, no simulation involved) the third estimator must return the true angle within 0.5 deg when xi/R <= 0.12, and within 2.0 deg when 0.12 < xi/R <= 0.25. Two tiers are declared because a contour-extrapolation estimator must lose accuracy at the coarse-cell corner; the audited matrix runs at xi/R = 0.1875 on both grids, i.e. in the second tier, so the second tier is the accuracy certificate that must be carried into P2. This criterion is written from the synthetic caps alone, before any audited row is measured.",
+    "P3b_level_convention": "Level-convention ambiguity of a diffuse interface: 0.5(gas+liquid) [round-2 convention] vs psi=0 vs 0.5(gas+min). Reported for every audited row; spread must be <= 1.0 deg, otherwise the round-2 convention choice is an unquantified measurement ambiguity.",
+    "P3c_offset_circle_law": "A diffuse circular interface has concentric level sets, so an offset contour is a circle of radius R+delta sharing the mid-level centre and its wall angle is the closed form theta_off(delta) = 2 atan(sqrt((R+delta-d)/(R+delta+d))), d = R cos theta_0. The measured offset angles must follow that law within 2.0 deg. This replaces the naive 'the angle must not depend on the level' expectation, which is geometrically wrong for a curved interface and was verified wrong on synthetic caps before this threshold was written."
+  },
+  "predeclared_thresholds": {
+    "reproduce_deg": 0.01,
+    "accept_pct": 15.0,
+    "third_estimator_gap_deg": 10.0,
+    "convergence_angle_deg": 0.5,
+    "cross_arm_pct": 15.0,
+    "gas_supersaturation_abs": 0.1,
+    "estimator_calibration_deg": 0.5,
+    "level_convention_deg": 1.0,
+    "offset_circle_deg": 2.0,
+    "estimator_calibration_coarse_deg": 2.0,
+    "xi_over_R_fine": 0.12,
+    "xi_over_R_coarse": 0.25
+  },
+  "predeclared_rules": [
+    "No threshold is changed after inspection. A probe either passes as declared or is reported as FAIL with the offending rows enumerated.",
+    "A row is audited only if it is measurable under the round-2 rule (apex >= 2 xi, circle_rms <= 0.15 xi); measurability is copied from the round-2 summary, not recomputed favourably.",
+    "P4 may only lower the round-2 pass count, never raise it.",
+    "Findings are ranked blocking / material / minor; the disposition is one of approve, approve with notes, request changes."
+  ],
+  "matrix": {
+    "rows": "identical to the round-2 predeclared matrix (34 rows)",
+    "golden_fields": "all baseline and refined rows of the two independent arms (18 rows) are stored as compressed fields so the third estimator can be recomputed offline"
+  }
+}
