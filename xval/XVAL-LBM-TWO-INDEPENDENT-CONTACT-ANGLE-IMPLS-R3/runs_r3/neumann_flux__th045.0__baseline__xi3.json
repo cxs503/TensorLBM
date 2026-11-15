@@ -1,0 +1,61 @@
+{
+  "tag": "neumann_flux__th045.0__baseline__xi3",
+  "arm": "neumann_flux",
+  "grid": "baseline",
+  "interface_width": 3.0,
+  "theta_prescribed_deg": 45.0,
+  "max_iter": 30000,
+  "iterations": 1800,
+  "converged": true,
+  "drift": 3.19371196155771e-11,
+  "mass_error": 2.0985732134390725e-16,
+  "theta_cap_deg": 71.0670742889273,
+  "theta_circle_deg": 2.654947772641942e-05,
+  "gas_reference": -0.9699283846458586,
+  "gas_supersaturation": 0.03007161535414138,
+  "circle_rms": 0.0,
+  "apex_height_r2": 1.6698808409103705,
+  "measurable": true,
+  "theta_geodesic_deg": NaN,
+  "geodesic_levels": {
+    "lvl35": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": 2.269509356501003,
+      "basal_half_width": NaN,
+      "n_contour_rows": 0.0,
+      "axis_x": 39.5000000000051,
+      "level": -0.9469584698949459
+    },
+    "lvl50": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": 1.6698808409103705,
+      "basal_half_width": NaN,
+      "n_contour_rows": 0.0,
+      "axis_x": 39.5000000000051,
+      "level": -0.9371142207159833
+    },
+    "lvl65": {
+      "theta_geodesic_deg": NaN,
+      "apex_height": 1.2650215058211864,
+      "basal_half_width": NaN,
+      "n_contour_rows": 0.0,
+      "axis_x": 39.5000000000051,
+      "level": -0.9272699715370206
+    }
+  },
+  "level_spread_deg": NaN,
+  "offset_circle": {
+    "theta_mid_deg": NaN,
+    "offset_dev_deg": NaN
+  },
+  "level_convention": {
+    "mid": NaN,
+    "tanh_zero": NaN,
+    "gas_min": NaN,
+    "spread_deg": NaN
+  },
+  "apex_height_r3": 1.6698808409103705,
+  "basal_half_width": NaN,
+  "symmetry_error": 4.4853010194856324e-14,
+  "wall_seconds": 2.2599294185638428
+}
