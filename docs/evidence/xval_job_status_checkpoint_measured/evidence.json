@@ -1,0 +1,339 @@
+{
+  "config_signature": {
+    "matching_signature_resumes": true,
+    "matching_signature_step": 20,
+    "mismatched_signature_error": "config signature mismatch: checkpoint was written for a different case ('c378fd3afb11acb422392725d6903edfbde1c5e72688d50c00f7eb0225e7ade5' != '52d3b463dc6e408b09a56993402b0708dd83767293230064a72c574eb002eb42')",
+    "mismatched_signature_rejected": true
+  },
+  "dual_backup": {
+    "both_corrupt_error": "no usable checkpoint generation:\n  cannot deserialize checkpoint outputs/xval_job_status_checkpoint_measured/_scratch/dual/checkpoint.pt: invalid load key, 'n'.\n  cannot deserialize checkpoint outputs/xval_job_status_checkpoint_measured/_scratch/dual/checkpoint_bak.pt: unpickling stack underflow",
+    "both_corrupt_fails_closed": true,
+    "clean_source": "primary",
+    "dual_backup_recovered": true,
+    "recovered_step": 10,
+    "single_generation_error": "no usable checkpoint generation:\n  cannot deserialize checkpoint outputs/xval_job_status_checkpoint_measured/_scratch/single/checkpoint.pt: unpickling stack underflow\n  dual_backup=False: no second backup to try",
+    "single_generation_fails_closed": true,
+    "source_after_primary_corruption": "backup"
+  },
+  "payload_tamper": {
+    "digest_tamper_error": "no usable checkpoint generation:\n  checkpoint outputs/xval_job_status_checkpoint_measured/_scratch/tamper/checkpoint.pt digest mismatch (stored '589344ac6587caf4db5c9ca5050890ae81538c19c89002ab8074a8723f476bbe' != recomputed 'f436e7599b1f036e1731580a3a6ae081834a7d1379bd4606cdb00ffecbb90417')\n  dual_backup=False: no second backup to try",
+    "digest_tamper_rejected": true,
+    "schema_mismatch_error": "no usable checkpoint generation:\n  checkpoint outputs/xval_job_status_checkpoint_measured/_scratch/tamper/checkpoint.pt schema 'some-other-schema' != expected 'tensorlbm-job-checkpoint-v1'\n  dual_backup=False: no second backup to try",
+    "schema_mismatch_rejected": true,
+    "truncated_payload_error": "cannot deserialize checkpoint outputs/xval_job_status_checkpoint_measured/_scratch/truncated.pt: invalid load key, '\\x00'.",
+    "truncated_payload_rejected": true
+  },
+  "resume_parity": {
+    "backup_bytes": 31194,
+    "bit_identical": true,
+    "checkpoint_bytes": 31194,
+    "checkpoint_count_after_first_segment": 100,
+    "checkpoint_step": 100,
+    "checkpoints_counted": 2,
+    "final_status": "done",
+    "final_step": 200,
+    "max_abs_population_diff": 0.0,
+    "max_abs_rho_diff": 0.0,
+    "max_abs_ux_diff": 0.0,
+    "max_abs_uy_diff": 0.0,
+    "rel_l2_population_diff": 0.0,
+    "rel_l2_population_diff_pct": 0.0,
+    "resume_source": "primary",
+    "resumed_flag": true,
+    "resumed_step": 100,
+    "steps_after_resume": 100,
+    "total_steps": 200
+  },
+  "status_persistence": {
+    "empty_file_returns_none": true,
+    "first_token_is_status": true,
+    "missing_file_returns_none": true,
+    "reloaded": "continue\nstep=123\nreason=periodic checkpoint\nupdated_at=t0\ncheckpoints=4\n",
+    "roundtrip_equal": true
+  },
+  "summary": {
+    "agreement_with_reference_pct": 100.0,
+    "dual_backup_recovery": true,
+    "fresh_case_first_write_unconstrained": true,
+    "illegal_transition_rejection_pct": 100.0,
+    "legal_transition_coverage_pct": 100.0,
+    "resume_bit_identical": true,
+    "resume_rel_l2_pct": 0.0,
+    "stale_terminal_overwrite_blocked": true,
+    "tamper_fail_closed": true,
+    "terminal_absorbing": true
+  },
+  "terminal_absorbing": {
+    "all_terminal_rearmable": true,
+    "all_terminal_veto_continue": true,
+    "done": {
+      "begin_finished": true,
+      "begin_resumed": false,
+      "begin_source": "terminal",
+      "begin_step": 50,
+      "rearm_resumed": false,
+      "rearm_source": "fresh",
+      "rearm_step": 0
+    },
+    "failed": {
+      "begin_finished": true,
+      "begin_resumed": false,
+      "begin_source": "terminal",
+      "begin_step": 50,
+      "rearm_resumed": false,
+      "rearm_source": "fresh",
+      "rearm_step": 0
+    },
+    "reached_max_step": {
+      "begin_finished": true,
+      "begin_resumed": false,
+      "begin_source": "terminal",
+      "begin_step": 50,
+      "rearm_resumed": false,
+      "rearm_source": "fresh",
+      "rearm_step": 0
+    }
+  },
+  "transitions": {
+    "agreement_pct": 100.0,
+    "illegal_pairs": 13,
+    "illegal_rejected": 13,
+    "illegal_rejection_pct": 100.0,
+    "implementation_table_equals_reference": {
+      "continue": true,
+      "done": true,
+      "failed": true,
+      "new": true,
+      "reached_max_step": true
+    },
+    "legal_accepted": 12,
+    "legal_coverage_pct": 100.0,
+    "legal_pairs": 12,
+    "mismatches": [],
+    "pairs": [
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "new",
+        "legal_in_reference": true,
+        "to": "new"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "new",
+        "legal_in_reference": true,
+        "to": "continue"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "new",
+        "legal_in_reference": true,
+        "to": "done"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "new",
+        "legal_in_reference": true,
+        "to": "failed"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "new",
+        "legal_in_reference": true,
+        "to": "reached_max_step"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'continue' -> 'new' (legal: ['continue', 'done', 'failed', 'reached_max_step'])",
+        "from": "continue",
+        "legal_in_reference": false,
+        "to": "new"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "continue",
+        "legal_in_reference": true,
+        "to": "continue"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "continue",
+        "legal_in_reference": true,
+        "to": "done"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "continue",
+        "legal_in_reference": true,
+        "to": "failed"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "continue",
+        "legal_in_reference": true,
+        "to": "reached_max_step"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'done' -> 'new' (legal: ['done'])",
+        "from": "done",
+        "legal_in_reference": false,
+        "to": "new"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'done' -> 'continue' (legal: ['done'])",
+        "from": "done",
+        "legal_in_reference": false,
+        "to": "continue"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "done",
+        "legal_in_reference": true,
+        "to": "done"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'done' -> 'failed' (legal: ['done'])",
+        "from": "done",
+        "legal_in_reference": false,
+        "to": "failed"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'done' -> 'reached_max_step' (legal: ['done'])",
+        "from": "done",
+        "legal_in_reference": false,
+        "to": "reached_max_step"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'failed' -> 'new' (legal: ['failed'])",
+        "from": "failed",
+        "legal_in_reference": false,
+        "to": "new"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'failed' -> 'continue' (legal: ['failed'])",
+        "from": "failed",
+        "legal_in_reference": false,
+        "to": "continue"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'failed' -> 'done' (legal: ['failed'])",
+        "from": "failed",
+        "legal_in_reference": false,
+        "to": "done"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "failed",
+        "legal_in_reference": true,
+        "to": "failed"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'failed' -> 'reached_max_step' (legal: ['failed'])",
+        "from": "failed",
+        "legal_in_reference": false,
+        "to": "reached_max_step"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'reached_max_step' -> 'new' (legal: ['reached_max_step'])",
+        "from": "reached_max_step",
+        "legal_in_reference": false,
+        "to": "new"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'reached_max_step' -> 'continue' (legal: ['reached_max_step'])",
+        "from": "reached_max_step",
+        "legal_in_reference": false,
+        "to": "continue"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'reached_max_step' -> 'done' (legal: ['reached_max_step'])",
+        "from": "reached_max_step",
+        "legal_in_reference": false,
+        "to": "done"
+      },
+      {
+        "accepted": false,
+        "agrees_with_reference": true,
+        "error": "illegal job status transition 'reached_max_step' -> 'failed' (legal: ['reached_max_step'])",
+        "from": "reached_max_step",
+        "legal_in_reference": false,
+        "to": "failed"
+      },
+      {
+        "accepted": true,
+        "agrees_with_reference": true,
+        "error": null,
+        "from": "reached_max_step",
+        "legal_in_reference": true,
+        "to": "reached_max_step"
+      }
+    ],
+    "total_pairs": 25
+  },
+  "triggers": {
+    "no_write_at_0p99_interval": true,
+    "no_write_before_interval": true,
+    "receipts_volume": 2,
+    "receipts_wall_clock": 1,
+    "same_step_vetoed": true,
+    "solver_step_vetoed_without_elapsed_time": true,
+    "volume_below_quantum_no_write": true,
+    "volume_crossing_writes": true,
+    "volume_second_quantum_writes": true,
+    "volume_trigger": "volume",
+    "wall_clock_trigger": "wall_clock",
+    "write_after_interval": true
+  },
+  "write_without_begin": {
+    "fresh_case_first_write_unconstrained": true,
+    "status_written_anyway": "done",
+    "terminal_overwrite_by_stale_manager_blocked": true,
+    "terminal_overwrite_error": "illegal job status transition 'done' -> 'failed' (legal: ['done'])",
+    "terminal_status_after_intruder": "done",
+    "terminal_write_without_begin_error": null
+  }
+}
