@@ -114,6 +114,39 @@ DESIGN = {
 
 
 # ---------------------------------------------------------------------------
+# Reynolds-number bookkeeping (R4)
+# ---------------------------------------------------------------------------
+# The ladder is run at a *fixed lattice* tau, so the viscosity is fixed in
+# lattice units while both the depth h0 = 2a and the gravity wave speed
+# U0 = sqrt(g h0) grow with a.  Every rung is therefore a different physical
+# problem:  Re(a, tau) = U0 * h0 / nu  with  nu = (tau - 1/2)/3  grows like
+# a**(3/2).  ``tau_for_re`` inverts that relation so a resolution ladder can be
+# run at *matched* Re (R4 fixed-Re trio).
+RE_REF_A = 32.0        # the declared tau = 1 rung used as the Re reference
+
+
+def reynolds(a: float, tau: float, g: float | None = None) -> float:
+    """Re = U0 * h0 / nu, U0 = sqrt(g h0), h0 = 2a, nu = (tau - 1/2)/3."""
+    g = DESIGN["case"]["g"] if g is None else g
+    h0 = 2.0 * float(a)
+    nu = (float(tau) - 0.5) / 3.0
+    return math.sqrt(g * h0) * h0 / nu
+
+
+def tau_for_re(a: float, re_target: float, g: float | None = None) -> float:
+    """Relaxation time that puts an ``a`` rung at ``re_target`` (Re matching)."""
+    g = DESIGN["case"]["g"] if g is None else g
+    h0 = 2.0 * float(a)
+    nu = math.sqrt(g * h0) * h0 / float(re_target)
+    return 0.5 + 3.0 * nu
+
+
+def re_reference(g: float | None = None) -> float:
+    """Re of the reference rung (a = 32, tau = 1) -- the fixed-Re target."""
+    return reynolds(RE_REF_A, 1.0, g)
+
+
+# ---------------------------------------------------------------------------
 # metrics
 # ---------------------------------------------------------------------------
 RITTER = json.loads((REPO / "src" / "artifacts" / "ritter_1892_dam_break_analytical.json").read_text())
@@ -191,7 +224,7 @@ def pixel_z(umag: np.ndarray, fill: np.ndarray, mask: np.ndarray) -> np.ndarray:
 # arm A: TensorLBM Körner free surface (identical setup to run_xval.py)
 # ---------------------------------------------------------------------------
 def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float,
-                  snapshots: bool = False):
+                  snapshots: bool = False, width_in_a: float = 5.0):
     import torch
     torch.set_num_threads(1)
     from tensorlbm.d2q9 import equilibrium
@@ -200,7 +233,7 @@ def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float,
         init_flags_from_fill_2d, total_liquid_inventory_2d,
     )
 
-    h0, nx = int(round(2.0 * a)), int(round(5.0 * a))
+    h0, nx = int(round(2.0 * a)), int(round(float(width_in_a) * a))
     ny = h0 + a
     fill, solid = init_fill_rectangular_2d(ny, nx, float(a + 1), float(h0 + 1), "cpu")
     flags = init_flags_from_fill_2d(fill, solid)
@@ -240,12 +273,14 @@ def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float,
         if not torch.isfinite(f).all():
             return {"arm": "tensorlbm_koerner", "a": a, "tau": tau, "g": g,
                     "status": "nan", "nan_at_step": step, "series": series,
-                    "inventory": inv_tr, "wall_seconds": round(time.time() - t0, 2)}
+                    "inventory": inv_tr, "wall_seconds": round(time.time() - t0, 2),
+                    "width_in_a": float(width_in_a), "re": reynolds(a, tau, g)}
         if snapshots:
             last = (np.round(((ux ** 2 + uy ** 2).sqrt() * fluid).cpu().numpy(), 5),
                     np.round(fill_now.cpu().numpy(), 4))
     out = {"arm": "tensorlbm_koerner", "a": a, "tau": tau, "g": g, "status": "ok",
            "h0": h0, "nx": nx, "ny": ny, "steps": n_steps, "nu": (tau - 0.5) / 3.0,
+           "width_in_a": float(width_in_a), "re": reynolds(a, tau, g),
            "u_max": u_max, "series": series, "inventory": inv_tr,
            "wall_seconds": round(time.time() - t0, 2)}
     if snapshots and last is not None:
@@ -356,7 +391,9 @@ def run_task(task: dict) -> dict:
             arm = task.pop("arm")
             fn = run_tensorlbm if arm == "tensorlbm_koerner" else run_oss_port
             out = fn(**task)
-            out["label"] = f"{arm}_a{task['a']}_tau{task['tau']:g}"
+            w = float(out.get("width_in_a", 5.0) or 5.0)
+            out["label"] = (f"{arm}_a{task['a']}_tau{task['tau']:g}"
+                            + (f"_w{w:g}" if w != 5.0 else ""))
             return out
         out = hydrostatic_control(**task)
         out["kind"] = "control"
@@ -373,7 +410,9 @@ def result_label(r: dict) -> str:
         return str(r["label"])
     if r.get("kind") == "control":
         return f"control_{r.get('arm', 'arm')}"
-    return f"{r.get('arm', 'arm')}_a{r.get('a')}_tau{r.get('tau', 1.0):g}"
+    w = float(r.get("width_in_a", 5.0) or 5.0)
+    return (f"{r.get('arm', 'arm')}_a{r.get('a')}_tau{r.get('tau', 1.0):g}"
+            + (f"_w{w:g}" if w != 5.0 else ""))
 
 
 SER_KEYS = ("Z_cell", "Z_cell_flag", "Z_sub0.02", "Z_sub0.05", "Z_sub0.1")
@@ -401,7 +440,42 @@ def series_from_rows(rows: list, steps_hint: int | None = None) -> list:
     return out
 
 
-def plan() -> list[dict]:
+def plan_re() -> list[dict]:
+    """R4 campaign -- three controlled questions, 6 runs, ~80 core-min.
+
+    (i)  fixed-Re trio a = 24/32/48: ``tau`` set from ``tau_for_re`` so every
+         rung has the same Re as the reference rung (a = 32, tau = 1).  The
+         a = 32 member already exists from the R2 ladder, so only 24 and 48 are
+         scheduled.  If E(a) is flat across the trio, the residual error is a
+         Reynolds-number mismatch, not discretisation.
+    (ii) tau sweep at a = 32 (0.6/0.8/1.2/1.4): re-run so the *signed* per-T
+         series survive (cj3126 crashed in the analysis stage and lost them;
+         only the max |err| scalars were printed).
+    (iii) domain-width control a = 64 at nx = 8a: at nx = 5a the a = 48/64
+         fronts reach the downstream wall inside the declared window
+         (Z(4) = 4.19 / 4.72 of a 4a-long run), so the late-window overshoot is
+         confounded with wall reflection.
+    """
+    common = {"g": DESIGN["case"]["g"], "t_max": DESIGN["window_T"][1],
+              "sample_dt": DESIGN["sample_dT"]}
+    re0 = re_reference()
+    tasks = []
+    for a in (24, 48):
+        tasks.append({"kind": "arm", "arm": "tensorlbm_koerner", "a": a,
+                      "tau": round(tau_for_re(a, re0), 6), **common})
+    for tau in DESIGN["tau_sweep"]["tau"]:
+        if tau == 1.0:
+            continue  # a = 32 / tau = 1 already in the R2 ladder
+        tasks.append({"kind": "arm", "arm": "tensorlbm_koerner",
+                      "a": DESIGN["tau_sweep"]["a"], "tau": tau, **common})
+    tasks.append({"kind": "arm", "arm": "tensorlbm_koerner", "a": 64, "tau": 1.0,
+                  "width_in_a": 8.0, **common})
+    return tasks
+
+
+def plan(campaign: str = "default") -> list[dict]:
+    if campaign == "re":
+        return plan_re()
     common = {"g": DESIGN["case"]["g"], "t_max": DESIGN["window_T"][1],
               "sample_dt": DESIGN["sample_dT"]}
     tasks = []
@@ -544,6 +618,8 @@ def analyze(payload: dict) -> dict:
             continue
         if r.get("arm") != "tensorlbm_koerner" or r.get("tau") != 1.0:
             continue
+        if float(r.get("width_in_a", 5.0) or 5.0) != 5.0:
+            continue  # domain-width control, not a ladder rung
         ev = eval_run(r, "mm")
         ev = eval_run(ev, "ritter")
         runs[r["a"]] = ev
@@ -667,17 +743,20 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=12)
     ap.add_argument("--shard", choices=["all", "ladder", "extras"], default="all")
     ap.add_argument("--tag", default="resolution_ladder.json")
+    ap.add_argument("--campaign", choices=["default", "re"], default="default",
+                    help="default = R2 ladder+tau sweep; re = R4 fixed-Re trio + "
+                         "tau sweep + domain-width control")
     ap.add_argument("--only", default="",
                     help="comma-separated label substrings (e.g. a16,a32); default all")
     args = ap.parse_args()
 
     if args.plan:
-        for t in plan():
+        for t in plan(args.campaign):
             print(t)
         return 0
 
     if args.run:
-        tasks = plan()
+        tasks = plan(args.campaign)
         if args.shard == "ladder":
             tasks = [t for t in tasks if t["kind"] == "arm" and t["arm"] == "tensorlbm_koerner"
                      and t["tau"] == 1.0]
@@ -705,10 +784,17 @@ def main() -> int:
                 print(f"  control {r.get('arm')}: u_max={r.get('u_max_lattice')}", flush=True)
                 continue
             ev = eval_run(r)
-            print(f"  {r['label']:<34} Z_cell {ev['vs_mm']['Z_cell']['max_abs_rel_err_pct']:>7.2f}%  "
-                  f"Z_sub.05 {ev['vs_mm']['Z_sub0.05']['max_abs_rel_err_pct']:>7.2f}%  "
-                  f"u_max {r['u_max']:.4f}  inv {ev.get('inventory_drift_max_pct')}%  "
-                  f"{r['wall_seconds']}s", flush=True)
+
+            def _fmt(v):
+                # a run with no series inside the window yields None (R4 fix:
+                # cj3126 died here on a NoneType __format__)
+                return "   n/a" if v is None else f"{v:>6.2f}"
+
+            print(f"  {r['label']:<40} Z_cell {_fmt(ev['vs_mm']['Z_cell']['max_abs_rel_err_pct'])}%  "
+                  f"Z_sub.05 {_fmt(ev['vs_mm']['Z_sub0.05']['max_abs_rel_err_pct'])}%  "
+                  f"u_max {r.get('u_max', float('nan')):.4f}  "
+                  f"inv {ev.get('inventory_drift_max_pct')}%  "
+                  f"{r.get('wall_seconds')}s", flush=True)
         runs_dir = ART / "runs_r3"
         runs_dir.mkdir(parents=True, exist_ok=True)
         for r in results:
