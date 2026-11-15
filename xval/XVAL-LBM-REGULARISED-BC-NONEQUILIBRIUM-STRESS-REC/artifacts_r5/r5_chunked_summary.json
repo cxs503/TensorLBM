@@ -1,0 +1,92 @@
+{
+ "anchor": "XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC",
+ "arm": "R5",
+ "body_force": 2e-05,
+ "offset_absolute": {
+  "ny16_w0_regularised": -4.8e-05,
+  "ny24_w0_bounce_back": -2.5146e-05,
+  "ny24_w0_regularised": -4.79952e-05,
+  "ny24_w1_regularised": -2.13312e-05
+ },
+ "offset_over_umax": {
+  "bounce_back": {
+   "0.0": -0.001905,
+   "0.5": -0.001905,
+   "1.0": -0.001905
+  },
+  "regularised": {
+   "0.0": -0.003636,
+   "0.5": -0.002626,
+   "1.0": -0.001616
+  }
+ },
+ "oscillating_delta6": {
+  "bounce_back": {
+   "l2": 0.845,
+   "phase": 0.00891
+  },
+  "regularised": {
+   "l2": 0.5299,
+   "phase": 0.00569
+  },
+  "regularised3_completed": {
+   "l2": 0.5299,
+   "phase": 0.00569
+  },
+  "regularised3_neighbour": {
+   "l2": 0.9877,
+   "phase": 0.0103
+  },
+  "regularised_neighbour_stress": {
+   "l2": 1.1747,
+   "phase": 0.0122
+  }
+ },
+ "provenance": {
+  "cluster": "run_compute cj3642: bash xval/XVAL-LBM-REGULARISED-BC-NONEQUILIBRIUM-STRESS-REC/run_all_r5.sh",
+  "invariants": "run_xval_r5.py --arm invariant",
+  "ny24_arm_matrix": "PYTHONPATH=src python -m tensorlbm.regularised_bc --case poiseuille --ny 24 --tau 0.8 --body-force 2e-5 (per --wall-bc), plus run_xval_r5.py --arm ladder",
+  "offset_profile": "run_channel()['ux'] - ['ux_exact'] at every fluid row",
+  "oscillating": "run_xval_r5.py --arm osc --deltas 6",
+  "wall_force_sweep": "run_xval_r5.py --arm ladder --nys 24 --walls 0,0.5,1 (ChannelConfig.wall_force)"
+ },
+ "steady_l2_pct_ny24_wallforce0": {
+  "bounce_back": 0.2603,
+  "regularised": 0.4861,
+  "regularised3_completed": 0.4861,
+  "regularised3_neighbour": 0.6076,
+  "regularised_neighbour_stress": 0.6886
+ },
+ "steady_l2_pct_ny24_wallforce1": {
+  "bounce_back": 0.2603,
+  "regularised": 0.216
+ },
+ "third_moment_representability": {
+  "D2Q9": {
+   "max_rel_residual": 1.06e-14,
+   "rank_gram3": 2,
+   "symmetric_dim": 4
+  },
+  "D3Q19": {
+   "max_rel_residual": 7.97e-15,
+   "rank_gram3": 6,
+   "symmetric_dim": 10
+  }
+ },
+ "u_max": {
+  "ny16": 0.0056,
+  "ny24": 0.0132
+ },
+ "wall_force_sweep_l2_pct": {
+  "bounce_back": {
+   "0.0": 0.2603,
+   "0.5": 0.2603,
+   "1.0": 0.2603
+  },
+  "regularised": {
+   "0.0": 0.4861,
+   "0.5": 0.351,
+   "1.0": 0.216
+  }
+ }
+}

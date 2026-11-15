@@ -1,0 +1,17 @@
+{
+ "D2Q9": {
+  "lattice": "D2Q9",
+  "max_rel_residual": 1.0601162889277636e-14,
+  "mean_rel_residual": 8.341535202761875e-15,
+  "rank_gram3": 2,
+  "symmetric_dim": 4
+ },
+ "D3Q19": {
+  "lattice": "D3Q19",
+  "max_rel_residual": 7.971003339759769e-15,
+  "mean_rel_residual": 6.8215975657230785e-15,
+  "rank_gram3": 6,
+  "symmetric_dim": 10
+ },
+ "note": "max_rel_residual = |M3(order-3 output) - T_in| / |T_in| on random lattice distributions; rank_gram3/symmetric_dim = rank of the discrete Gram matrix over the symmetric third-moment directions."
+}

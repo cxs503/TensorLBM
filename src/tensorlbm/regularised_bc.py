@@ -75,8 +75,12 @@ import numpy as np
 __all__ = [
     "D2Q9",
     "D3Q19",
+    "WALL_BCS",
     "ChannelConfig",
     "LatticeSpec",
+    "hermite_third_basis",
+    "neighbour_moments",
+    "project_third_order",
     "apply_regularised_wall",
     "complete_unknowns",
     "equilibrium",
@@ -273,6 +277,9 @@ def regularised_face(
     u_wall: np.ndarray | tuple | list | float = 0.0,
     rho_bc: float | np.ndarray | None = None,
     u_tangential: np.ndarray | None = None,
+    order: int = 2,
+    stress: np.ndarray | None = None,
+    t_ne: np.ndarray | None = None,
 ) -> np.ndarray:
     """Rebuild one boundary plane from its non-equilibrium stress.
 
@@ -293,6 +300,12 @@ def regularised_face(
         u_tangential: prescribed tangential velocity, ``(dims,)+shape`` or
             ``(dims,)``.  Required for ``"pressure"``/``"free_slip"`` unless
             the caller accepts a zero tangential velocity.
+        order: Hermite order of the projection, ``2`` (upstream semantics:
+            ghost content discarded) or ``3`` (third moment carried over, see
+            :func:`project_third_order`).
+        stress, t_ne: optional external non-equilibrium stress / third moment
+            used by step 3 instead of the anti-symmetric completion; ``t_ne``
+            is ignored for ``order=2``.
 
     Returns:
         New populations ``(Q, ...)`` for the boundary plane.
@@ -306,6 +319,8 @@ def regularised_face(
     kind = str(kind).lower()
     if kind not in ("velocity", "pressure", "free_slip"):
         raise ValueError(f"kind must be velocity|pressure|free_slip, got {kind!r}")
+    if order not in (2, 3):
+        raise ValueError(f"order must be 2 or 3, got {order!r}")
 
     shape = f_face.shape[1:]
     dtype = f_face.dtype
@@ -339,7 +354,9 @@ def regularised_face(
         u = ut.copy()
         rho = (2.0 * fplus + fzero)  # n.u == 0
     f_completed = complete_unknowns(spec, f_face, normal, rho=rho, u=u)
-    return project_second_order(spec, f_completed, rho=rho, u=u)
+    if order == 3:
+        return project_third_order(spec, f_completed, rho=rho, u=u, stress=stress, t_ne=t_ne)
+    return project_second_order(spec, f_completed, rho=rho, u=u, stress=stress)
 
 
 def complete_unknowns(
@@ -372,6 +389,7 @@ def project_second_order(
     *,
     rho: np.ndarray | None = None,
     u: np.ndarray | None = None,
+    stress: np.ndarray | None = None,
 ) -> np.ndarray:
     """Steps 3-4: rebuild every population from the non-equilibrium stress.
 
@@ -384,7 +402,8 @@ def project_second_order(
     if rho is None or u is None:
         rho, u = macroscopic(spec, f)
     feq = equilibrium(spec, rho, u)
-    stress = nonequilibrium_stress(spec, f, rho=rho, u=u)
+    if stress is None:
+        stress = nonequilibrium_stress(spec, f, rho=rho, u=u)
     dtype = f.dtype
     c = spec.c.astype(dtype)
     q2 = np.einsum("qa,qb->qab", c, c) - spec.cs2 * np.eye(spec.dims, dtype=dtype)
@@ -392,6 +411,175 @@ def project_second_order(
     shape = (-1,) + (1,) * (f.ndim - 1)
     weight = (spec.w.astype(dtype) / (2.0 * spec.cs2**2)).reshape(shape)
     return feq + weight * proj
+
+
+def hermite_third_basis(spec: LatticeSpec, dtype=np.float64) -> np.ndarray:
+    """Third-order Hermite tensor ``H3_q = c c c - cs^2 (delta c + delta c + delta c)``.
+
+    Shape ``(Q, dims, dims, dims)``.  Its 0th, 1st and 2nd moments under the
+    lattice weights vanish exactly (odd moments / 4th-moment isotropy), so a
+    term ``w_q H3_q : a3`` changes *only* moments of third and higher order.
+    """
+    c = spec.c.astype(dtype)
+    d = spec.dims
+    eye = np.eye(d, dtype=dtype)
+    h3 = np.einsum("qa,qb,qc->qabc", c, c, c).copy()
+    for a in range(d):
+        for b in range(d):
+            for e in range(d):
+                h3[:, a, b, e] -= spec.cs2 * (
+                    eye[b, e] * c[:, a] + eye[a, e] * c[:, b] + eye[a, b] * c[:, e]
+                )
+    return h3
+
+
+_THIRD_ORDER_CACHE: dict[tuple[str, str], np.ndarray] = {}
+
+
+def third_moment_operator(spec: LatticeSpec, dtype: np.dtype | type = np.float64) -> np.ndarray:
+    """Least-squares operator mapping a target third moment to its image ``T~``.
+
+    The third-order term ``w_q / (6 cs^6) H3_q : T`` has third moment
+    ``A T`` with ``A = G3 / (6 cs^6)``, ``G3_abc,def = sum_q w_q H3_abc H3_def``.
+    ``A`` is **not** the identity on every velocity set: it has full rank and
+    ``A = 1`` on D2Q9, but on D3Q19 only 6 of the 10 independent components of a
+    symmetric third moment are representable (``sum_q w_q c^6`` is not
+    isotropic), so ``A`` is rank deficient there.  The returned operator is the
+    pseudo-inverse ``6 cs^6 pinv(G3)``: it reproduces the representable part of
+    ``T`` exactly and drops the rest, which is the least-squares (Gram)
+    high-order regularisation of Mattila, Philippi & Hegele (2017).
+    """
+    key = (spec.name, np.dtype(dtype).str)
+    cached = _THIRD_ORDER_CACHE.get(key)
+    if cached is not None:
+        return cached
+    h3 = hermite_third_basis(spec, np.float64)
+    d = spec.dims
+    flat = h3.reshape(h3.shape[0], d**3)
+    g3 = np.einsum("q,qp,qq2->pq2", spec.w, flat, flat) if False else (flat * spec.w[:, None]).T @ flat
+    g3 = 0.5 * (g3 + g3.T)
+    op = (6.0 * spec.cs2**3) * np.linalg.pinv(g3, rcond=1e-10, hermitian=True)
+    op = op.astype(np.dtype(dtype))
+    _THIRD_ORDER_CACHE[key] = op
+    return op
+
+
+def project_third_order(
+    spec: LatticeSpec,
+    f: np.ndarray,
+    *,
+    rho: np.ndarray | None = None,
+    u: np.ndarray | None = None,
+    stress: np.ndarray | None = None,
+    t_ne: np.ndarray | None = None,
+) -> np.ndarray:
+    """Hermite projection of degree 3: keep the second *and* third moment.
+
+    ``f_q = f_q^eq + (w_q / 2 cs^4) H2_q : S + (w_q / 6 cs^6) H3_q : T~`` with
+    ``S`` the non-equilibrium stress, ``T`` the third moment of the
+    non-equilibrium part and ``T~`` its representable image
+    (:func:`third_moment_operator`; ``T~ = T`` exactly on D2Q9).
+
+    The shipped second-order projection (``project_second_order``) discards
+    ``T`` unconditionally, which is exact only where the third moment of
+    ``f^neq`` vanishes -- not the case in a body-force channel, where the
+    discrete solution carries an O(h^2) third-moment content.
+
+    ``rho``, the momentum and ``S`` are reproduced exactly by construction.
+    """
+    _check_field(spec, f, what="f")
+    if rho is None or u is None:
+        rho, u = macroscopic(spec, f)
+    feq = equilibrium(spec, rho, u)
+    fneq = f - feq
+    if stress is None:
+        stress = nonequilibrium_stress(spec, f, rho=rho, u=u)
+    if t_ne is None:
+        t_ne = third_moment(spec, fneq)
+    dtype = f.dtype
+    c = spec.c.astype(dtype)
+    shape = (-1,) + (1,) * (f.ndim - 1)
+    d = spec.dims
+    h2 = np.einsum("qa,qb->qab", c, c) - spec.cs2 * np.eye(d, dtype=dtype)
+    h3 = hermite_third_basis(spec, dtype)
+    t_flat = np.asarray(t_ne, dtype=dtype).reshape(d**3, -1)
+    t_img = (third_moment_operator(spec, dtype) @ t_flat).reshape(
+        (d,) * 3 + tuple(t_ne.shape[3:])
+    )
+    w2 = (spec.w.astype(dtype) / (2.0 * spec.cs2**2)).reshape(shape)
+    w3 = (spec.w.astype(dtype) / (6.0 * spec.cs2**3)).reshape(shape)
+    return (
+        feq
+        + w2 * np.einsum("qab,ab...->q...", h2, stress)
+        + w3 * np.einsum("qabc,abc...->q...", h3, t_img)
+    )
+
+
+def third_moment_representability(
+    spec: LatticeSpec, *, n: int = 16, seed: int = 0, shape: tuple[int, ...] = (4, 4)
+) -> dict:
+    """Measured third-moment content of the order-3 map on this velocity set.
+
+    Two numbers, both measured rather than assumed:
+
+    * ``rank_gram3`` / ``symmetric_dim``: rank of the discrete Gram matrix of
+      the third-order Hermite basis over the symmetric third-moment directions.
+      On D2Q9 ``H3_xxx = c_x^3 - 3 cs^2 c_x`` vanishes identically on the
+      velocity set (``c^3 = c`` for ``c_x in {0, +-1}``), so only the two mixed
+      directions survive: the D2Q9 third moment *is* fully representable.
+      D3Q19 keeps 6 of the 10 symmetric components (its sixth moment is not
+      isotropic), so the order-3 closure is only a least-squares projection
+      there.
+    * ``max_rel_residual``: ``|M3(f_out - f^eq) - T| / |T|`` for random lattice
+      distributions passed through :func:`project_third_order` (``n`` draws).
+    """
+    rng = np.random.default_rng(seed)
+    d = spec.dims
+    cc = spec.c.astype(float)
+    rel: list[float] = []
+    for _ in range(n):
+        f = spec.w.reshape((-1,) + (1,) * len(shape)) * (
+            1.0 + 0.02 * rng.standard_normal((spec.q,) + shape)
+        )
+        rho, u = macroscopic(spec, f)
+        out = project_third_order(spec, f, rho=rho, u=u)
+        t_in = third_moment(spec, f - equilibrium(spec, rho, u))
+        rho2, u2 = macroscopic(spec, out)
+        t_out = third_moment(spec, out - equilibrium(spec, rho2, u2))
+        rel.append(float(np.linalg.norm(t_out - t_in) / max(np.linalg.norm(t_in), 1e-300)))
+    gram = third_moment_gram(spec)
+    # symmetric directions only: (a,b,c) with a <= b <= c
+    keep = [
+        a * d * d + b * d + c for a in range(d) for b in range(a, d) for c in range(b, d)
+    ]
+    return {
+        "lattice": spec.name,
+        "rank_gram3": int(np.linalg.matrix_rank(gram[np.ix_(keep, keep)])),
+        "symmetric_dim": len(keep),
+        "max_rel_residual": float(np.max(rel)),
+        "mean_rel_residual": float(np.mean(rel)),
+    }
+
+
+def third_moment_gram(spec: LatticeSpec) -> np.ndarray:
+    """Discrete Gram matrix ``G3 = sum_q w_q H3_q H3_q`` of the third-order basis."""
+    h3 = hermite_third_basis(spec, np.float64)
+    flat = h3.reshape(h3.shape[0], spec.dims**3)
+    g3 = (flat * spec.w[:, None]).T @ flat
+    return 0.5 * (g3 + g3.T)
+
+
+def neighbour_moments(
+    spec: LatticeSpec, f: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """``(S, T)`` of a fluid slice: non-equilibrium stress and third moment.
+
+    Used as the zero-gradient extrapolation of the non-equilibrium content onto
+    the boundary plane (``stress_source="neighbour"``).
+    """
+    rho, u = macroscopic(spec, f)
+    feq = equilibrium(spec, rho, u)
+    return nonequilibrium_stress(spec, f, rho=rho, u=u), third_moment(spec, f - feq)
 
 
 def _resolve_tangential(
@@ -451,6 +639,8 @@ def apply_regularised_wall(
     rho_bc: float | None = None,
     u_tangential: np.ndarray | None = None,
     component_of_axis: tuple[int, ...] | None = None,
+    order: int = 2,
+    stress_source: str = "completed",
 ) -> np.ndarray:
     """Apply :func:`regularised_face` to one plane of a full ``(Q, ...)`` field.
 
@@ -459,6 +649,13 @@ def apply_regularised_wall(
         axis: spatial axis of the boundary plane (0 = first spatial axis).
         side: ``"low"`` (plane index 0, inward normal ``+e_axis``) or
             ``"high"`` (plane index -1, inward normal ``-e_axis``).
+        order: Hermite order of the reconstruction (2 = upstream, 3 = the
+            third moment of the non-equilibrium part is carried over).
+        stress_source: source of the non-equilibrium stress (and of the third
+            moment for ``order=3``): ``"completed"`` = the anti-symmetric
+            completion of the plane itself (upstream semantics),
+            ``"neighbour"`` = zero-gradient extrapolation from the adjacent
+            interior plane.
 
     Returns a new array; the input is not modified.
     """
@@ -477,6 +674,17 @@ def apply_regularised_wall(
         component_of_axis = tuple(range(spec.dims))[::-1]
     normal = np.zeros(spec.dims, dtype=np.int64)
     normal[component_of_axis[axis]] = 1 if side == "low" else -1
+    stress_source = str(stress_source).lower()
+    if stress_source not in ("completed", "neighbour"):
+        raise ValueError(
+            f"stress_source must be 'completed' or 'neighbour', got {stress_source!r}"
+        )
+    stress = None
+    t_ne = None
+    if stress_source == "neighbour":
+        inner = [slice(None)] * f.ndim
+        inner[axis + 1] = 1 if side == "low" else -2
+        stress, t_ne = neighbour_moments(spec, f[tuple(inner)])
     face = regularised_face(
         spec,
         f[index],
@@ -485,6 +693,9 @@ def apply_regularised_wall(
         u_wall=u_wall,
         rho_bc=rho_bc,
         u_tangential=u_tangential,
+        order=order,
+        stress=stress,
+        t_ne=t_ne,
     )
     out = f.copy()
     out[index] = face
@@ -494,6 +705,15 @@ def apply_regularised_wall(
 # ---------------------------------------------------------------------------
 # D2Q9 plane-channel driver (Couette, Poiseuille, oscillating wall)
 # ---------------------------------------------------------------------------
+
+
+WALL_BCS = (
+    "regularised",  # order 2, stress from the anti-symmetric completion (upstream)
+    "regularised_neighbour_stress",  # order 2, stress from the interior neighbour
+    "regularised3_completed",  # order 3, and the third moment of the completion
+    "regularised3_neighbour",  # order 3, third moment from the neighbour
+    "bounce_back",  # control: half-way bounce back
+)
 
 
 @dataclass(frozen=True)
@@ -519,20 +739,45 @@ class ChannelConfig:
     check_every: int = 200
     tol: float = 1.0e-10
     init: str = "rest"
+    wall_force: float = 0.0
+    """Weight of the Guo body-force term on the two boundary rows.
+
+    0 (shipped) omits the force on the boundary row; 1 gives it the same
+    half-step force as an interior node.  For the reconstructed-node
+    (``regularised``) closures the boundary row *is* a fluid node, so 0 is a
+    modelling inconsistency and not a conservative step -- see REPORT_R5.
+    """
 
     @property
     def nu(self) -> float:
         return (self.tau - 0.5) / 3.0
 
     @property
+    def is_regularised(self) -> bool:
+        """True for every arm that closes the wall with the reconstructed BC."""
+        return self.wall_bc != "bounce_back"
+
+    @property
+    def projection_order(self) -> int:
+        """Hermite order of the wall reconstruction (3 arms only)."""
+        return 3 if self.wall_bc.startswith("regularised3") else 2
+
+    @property
+    def stress_source(self) -> str:
+        """``"completed"`` (upstream) or ``"neighbour"`` (zero-gradient)."""
+        return "neighbour" if self.wall_bc.endswith("neighbour") or self.wall_bc.endswith(
+            "neighbour_stress"
+        ) else "completed"
+
+    @property
     def wall_origin(self) -> float:
         """Height of the lower no-slip plane in lattice units."""
-        return 0.0 if self.wall_bc == "regularised" else 0.5
+        return 0.0 if self.is_regularised else 0.5
 
     @property
     def height(self) -> float:
         """Distance between the two no-slip planes."""
-        return (self.ny - 1) - (1 if self.wall_bc == "bounce_back" else 0)
+        return (self.ny - 1) - (0 if self.is_regularised else 1)
 
 
 def _stream(spec: LatticeSpec, f: np.ndarray) -> np.ndarray:
@@ -638,12 +883,21 @@ def _step(
     if cfg.case == "poiseuille":
         f = _guo_body_force(spec, f, force)
     moving = cfg.case in ("couette", "oscillating_wall")
-    if cfg.wall_bc == "regularised":
+    if cfg.is_regularised:
+        order, source = cfg.projection_order, cfg.stress_source
         f = _stream(spec, f)
         f = apply_regularised_wall(
-            spec, f, axis=0, side="high", u_wall=(wall_u, 0.0) if moving else 0.0
+            spec,
+            f,
+            axis=0,
+            side="high",
+            u_wall=(wall_u, 0.0) if moving else 0.0,
+            order=order,
+            stress_source=source,
         )
-        return apply_regularised_wall(spec, f, axis=0, side="low", u_wall=0.0)
+        return apply_regularised_wall(
+            spec, f, axis=0, side="low", u_wall=0.0, order=order, stress_source=source
+        )
     # Half-way bounce back reflects the *arriving* (pre-collision) populations:
     # using the post-collision state here feeds the wall node's own collision
     # back into itself and diverges (verified numerically, m18423).
@@ -685,7 +939,7 @@ def run_channel(cfg: ChannelConfig) -> dict:
     spec = D2Q9
     if cfg.case not in ("couette", "poiseuille", "oscillating_wall"):
         raise ValueError(f"unknown case {cfg.case!r}")
-    if cfg.wall_bc not in ("regularised", "bounce_back"):
+    if cfg.wall_bc not in WALL_BCS:
         raise ValueError(f"unknown wall_bc {cfg.wall_bc!r}")
     if cfg.ny < 8:
         raise ValueError("ny must be >= 8")
@@ -697,7 +951,11 @@ def run_channel(cfg: ChannelConfig) -> dict:
     f = _initial_state(spec, cfg)
     force = np.zeros((2, ny, nx))
     if cfg.case == "poiseuille":
+        # Guo forcing on the interior rows; ``wall_force`` is the weight given
+        # to the two boundary rows (0 = shipped behaviour, see REPORT_R5.md).
         force[0, 1:-1, :] = cfg.body_force
+        force[0, 0, :] = cfg.wall_force * cfg.body_force
+        force[0, -1, :] = cfg.wall_force * cfg.body_force
 
     ux_prev = None
     converged = False
@@ -822,7 +1080,7 @@ def _run_oscillating(cfg: ChannelConfig, spec: LatticeSpec) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--case", default="couette", choices=("couette", "poiseuille", "oscillating_wall"))
-    parser.add_argument("--wall-bc", default="regularised", choices=("regularised", "bounce_back"))
+    parser.add_argument("--wall-bc", default="regularised", choices=WALL_BCS)
     parser.add_argument("--ny", type=int, default=32)
     parser.add_argument("--nx", type=int, default=2)
     parser.add_argument("--tau", type=float, default=0.8)
