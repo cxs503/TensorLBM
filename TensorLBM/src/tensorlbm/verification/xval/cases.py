@@ -252,7 +252,55 @@ WOMERSLEY_ALPHA5_CASE = XValCase(
 # All cases
 # ---------------------------------------------------------------------------
 
-ALL_CASES = [POISEUILLE_2D_CASE, LID_CAVITY_RE100_CASE, WOMERSLEY_ALPHA5_CASE]
+# ---------------------------------------------------------------------------
+# Case 4: two-component Shan-Chen layered Poiseuille (MCMP, EDM forcing)
+# ---------------------------------------------------------------------------
+
+def _two_component_sc_layered_run() -> Dict[str, Any]:
+    """Run the two-component SC layered channel and return its error scalars."""
+    from tensorlbm.verification.layered_poiseuille.benchmark import benchmark_single_case
+
+    out = benchmark_single_case("layered_r167_light")
+    rec = out["record"]
+    m = rec["metrics"]
+    scalars = {
+        "eps_inf": float(m["eps_inf"]),
+        "eps_l2_rel": float(m["eps_l2_rel"]),
+        "u_peak_err": float(m["u_peak_err"]),
+        "Q_err": float(m["Q_err"]),
+    }
+    return {
+        "f": np.asarray(rec["profiles"]["ux_total"], dtype=float),
+        "scalars": scalars,
+        "arrays": {
+            "y": np.asarray(rec["profiles"]["y"], dtype=float),
+            "ux_total": np.asarray(rec["profiles"]["ux_total"], dtype=float),
+            "ux_ref": np.asarray(rec["u_ref"], dtype=float),
+            "phi_a": np.asarray(rec["phi"], dtype=float),
+        },
+    }
+
+
+def _two_component_sc_layered_reference() -> Dict[str, Any]:
+    """Reference scalars: the reported quantities are already errors vs the exact solution."""
+    return {"scalars": {}}
+
+
+TWO_COMPONENT_SC_LAYERED_CASE = XValCase(
+    name="two_component_sc_layered_poiseuille",
+    run_fn=_two_component_sc_layered_run,
+    reference_fn=_two_component_sc_layered_reference,
+    thresholds={"eps_inf": 0.15, "eps_l2_rel": 0.15, "u_peak_err": 0.15, "Q_err": 0.15},
+    params={"ny": 24, "nx": 1, "tau_a": 0.8, "tau_b": 1.0, "G": 2.5,
+            "g_x": 5e-5, "steps": 3000, "nu_ratio": 1.67},
+    category="analytical",
+    external_anchor="Shan & Chen (1993) PRE 47:1815; Martys & Chen (1996) PRE 53:743; "
+                    "Kupershtokh (2004) EDM forcing; exact layered Poiseuille solution",
+)
+
+
+ALL_CASES = [POISEUILLE_2D_CASE, LID_CAVITY_RE100_CASE, WOMERSLEY_ALPHA5_CASE,
+             TWO_COMPONENT_SC_LAYERED_CASE]
 
 
 def register_default_cases(registry) -> None:
