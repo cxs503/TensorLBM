@@ -47,10 +47,10 @@ import torch  # noqa: E402
 
 from tensorlbm.cg_wetting_geometric import sessile_drop_initial  # noqa: E402
 from tensorlbm.color_gradient2d import color_gradient_two_tau_step  # noqa: E402
-from tensorlbm.solver import stream  # noqa: E402
+from tensorlbm.solver import OPPOSITE_2D, stream  # noqa: E402
 from wall_drop_measure import measure_wall_drop  # noqa: E402
 
-OPP = (0, 3, 2, 1, 4, 7, 8, 5, 6)
+OPP = tuple(int(v) for v in OPPOSITE_2D)  # canonical map; see R3 doc
 
 
 def run_arm(theta: float, *, steps: int, ny: int, nx: int, radius: float, A: float,
