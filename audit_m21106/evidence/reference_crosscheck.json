@@ -1,0 +1,48 @@
+{
+ "copy_tableI_u_gist.txt": {
+  "Re100_u": {
+   "points": 17,
+   "matched": 17,
+   "max_abs_diff": 0.0,
+   "n_exact": 17,
+   "unmatched_coords": []
+  },
+  "Re400_u": {
+   "points": 17,
+   "matched": 17,
+   "max_abs_diff": 0.0,
+   "n_exact": 17,
+   "unmatched_coords": []
+  },
+  "Re1000_u": {
+   "points": 17,
+   "matched": 17,
+   "max_abs_diff": 0.0,
+   "n_exact": 17,
+   "unmatched_coords": []
+  }
+ },
+ "copy_tableII_v_pinn.txt": {
+  "Re100_v": {
+   "points": 17,
+   "matched": 17,
+   "max_abs_diff": 0.0,
+   "n_exact": 17,
+   "unmatched_coords": []
+  },
+  "Re400_v": {
+   "points": 17,
+   "matched": 17,
+   "max_abs_diff": 0.0,
+   "n_exact": 17,
+   "unmatched_coords": []
+  },
+  "Re1000_v": {
+   "points": 17,
+   "matched": 17,
+   "max_abs_diff": 0.0004999999999999449,
+   "n_exact": 16,
+   "unmatched_coords": []
+  }
+ }
+}
