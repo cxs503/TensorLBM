@@ -499,6 +499,10 @@ def main(argv=None) -> int:
     ap.add_argument("--src", default=None)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--sample-every", type=int, default=500)
+    ap.add_argument("--nx", type=int, default=None, help="override grid width")
+    ap.add_argument("--ny", type=int, default=None, help="override grid height")
+    ap.add_argument("--radius", type=float, default=None, help="override drop radius")
+    ap.add_argument("--xi", type=float, default=None, help="override initial interface width")
     args = ap.parse_args(argv)
 
     out = Path(args.out)
@@ -507,6 +511,17 @@ def main(argv=None) -> int:
     for name in [a.strip() for a in args.arms.split(",") if a.strip()]:
         spec = ARMS[name]
         spec.steps = args.steps
+        # geometry overrides (resolution study: keep xi/R small enough that the
+        # interface is resolved); the analytic ghost condition itself does not
+        # depend on the grid, only the end-to-end cap relaxation does.
+        if args.nx is not None:
+            spec.nx = args.nx
+        if args.ny is not None:
+            spec.ny = args.ny
+        if args.radius is not None:
+            spec.radius = args.radius
+        if args.xi is not None:
+            spec.xi = args.xi
         print(f"== arm {name}: theta_target={spec.theta_target} wetting={spec.wetting}", flush=True)
         res = run_arm(spec, device=args.device, sample_every=args.sample_every)
         fields[name] = np.load(HERE / f"_last_phi_{name}.npy")

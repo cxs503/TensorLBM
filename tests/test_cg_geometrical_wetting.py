@@ -137,3 +137,58 @@ def test_color_gradient_step_backward_compatible() -> None:
     # see the wall, and leaves solid cells untouched
     assert not torch.allclose(wet_r, ref_r)
     assert torch.equal(wet_r[:, solid], ref_r[:, solid])
+
+# ---------------------------------------------------------------------------
+# Bounce-back direction table (regression for the leaky-wall defect)
+# ---------------------------------------------------------------------------
+def test_opp_is_a_true_opposite_table() -> None:
+    """``cg_wetting2d.OPP`` must satisfy ``c[OPP[k]] == -c[k]`` for every ``k``.
+
+    The module used to carry a private copy ``(0, 3, 2, 1, 4, 7, 8, 5, 6)``
+    that mapped the two *vertical* directions ``(0, +-1)`` onto themselves.
+    Used as the halfway-bounce-back table of a wall driver that voided the
+    wall-normal momentum, so the wetting phase leaked through the plate; the
+    end-to-end sessile-drop benchmark then reported a bubble of 50-140 deg
+    instead of the prescribed angle.  The table is now derived from
+    :data:`tensorlbm.d2q9.OPPOSITE`; this test pins both the identity and the
+    derivation, because a re-typed literal is exactly how the defect appeared.
+    """
+    from tensorlbm import d2q9
+    from tensorlbm.cg_wetting2d import OPP
+
+    assert OPP == tuple(int(v) for v in d2q9.OPPOSITE.tolist())
+    c = d2q9.C.tolist()
+    for k in range(9):
+        assert c[OPP[k]] == [-v for v in c[k]], f"direction {k} is not reflected"
+    # the two wall-normal directions of a horizontal plate are the ones that
+    # used to be self-mapped -- assert them explicitly
+    assert OPP[2] == 4 and OPP[4] == 2
+
+
+def test_bounce_back_reflects_wall_normal_momentum() -> None:
+    """A halfway bounce-back with ``OPP`` must reverse the flux through a wall.
+
+    Functional counterpart of the table test: a state whose only non-zero
+    content is a population walking *into* the plate has, after the
+    bounce-back swap, all of it walking *away* from the plate.  With the old
+    self-mapped table the vertical populations stayed where they were, i.e.
+    the wall was transparent to the wall-normal momentum.
+    """
+    import torch
+
+    from tensorlbm.cg_wetting2d import OPP
+
+    q, ny, nx = 9, 8, 8
+    f = torch.zeros(q, ny, nx, dtype=torch.float64)
+    # population 4 walks in the (0, -1) direction, i.e. into a bottom wall
+    f[4, :, :] = 1.0
+    solid = torch.zeros(ny, nx, dtype=torch.bool)
+    solid[0, :] = True
+    g = torch.where(solid.unsqueeze(0), f[list(OPP)], f)
+    # the wall row must now hold the reflected population 2 = (0, +1)
+    assert torch.allclose(g[2, 0, :], torch.ones(nx, dtype=torch.float64))
+    # and the net wall-normal mass flux through the plate must vanish
+    net = float((g[2, 0, :] - g[4, 0, :]).sum())
+    assert net == nx * 1.0  # +1 per column: everything leaves the wall
+    # y-momentum in the wall row is now positive (away from the fluid)
+    assert float(g[2, 0, :].sum() - g[4, 0, :].sum()) > 0.0

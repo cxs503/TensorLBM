@@ -60,6 +60,8 @@ from typing import Dict, Iterable, Tuple
 
 import torch
 
+from .d2q9 import C as _D2Q9_C, OPPOSITE as _D2Q9_OPPOSITE
+
 __all__ = [
     "OPP",
     "WALL_DIRECTIONS",
@@ -70,7 +72,21 @@ __all__ = [
 
 #: D2Q9 opposite-direction table for the ``tensorlbm.d2q9.C`` ordering
 #: (0 rest, 1 E, 2 N, 3 W, 4 S, 5 NE, 6 NW, 7 SW, 8 SE).
-OPP: Tuple[int, ...] = (0, 3, 2, 1, 4, 7, 8, 5, 6)
+#:
+#: ``tensorlbm.d2q9.OPPOSITE`` is the single source of truth -- deriving the
+#: tuple from it instead of re-typing the table removes a whole class of
+#: silent defects.  (This module previously carried a private copy
+#: ``(0, 3, 2, 1, 4, 7, 8, 5, 6)`` that mapped the two *vertical* directions
+#: ``(0, +-1)`` onto themselves; used as a bounce-back table it therefore left
+#: the wall-normal momentum unreflected, leaking the wetting phase through the
+#: plate.  See ``docs/XVAL-LBM-GEOMETRIC-WETTING-CONTACT-ANGLE-R3-OPP-MAP.md``
+#: for the same defect in the sibling module, and
+#: ``tests/test_cg_geometrical_wetting.py::test_opp_is_a_true_opposite_table``
+#: for the regression that pins the identity ``c[OPP[k]] == -c[k]``.)
+OPP: Tuple[int, ...] = tuple(int(v) for v in _D2Q9_OPPOSITE.tolist())
+assert all(
+    tuple(_D2Q9_C[OPP[k]].tolist()) == tuple((-_D2Q9_C[k]).tolist()) for k in range(9)
+), "OPP is not a true opposite-direction table"
 
 #: Lattice directions that can act as a "wall normal" (fluid -> solid) in 2-D.
 WALL_DIRECTIONS: Tuple[Tuple[int, int], ...] = ((0, 1), (0, -1), (1, 0), (-1, 0))
