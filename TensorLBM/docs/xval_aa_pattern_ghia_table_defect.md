@@ -117,10 +117,18 @@ python tests/gen_aa_fused_corrected_figures.py                 # fig7, fig8
 
 ## 5. Notes, limits, honest gaps
 
-1. **Provenance is inherited, not re-verified.** The OCR witness
-   `benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt`
-   is *not present in this worktree*; the sha256 and the `BOUND` gates are read
-   from `benchmarks/anchors/ghia1982_provenance.json`. Two independent
+1. **Provenance is inherited, not re-verified** — *corrected 2026-11-15: the
+   witness IS present* at the repository root
+   (`<repo>/benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt`,
+   sha256 matches the pin), it had only been looked up relative to the
+   `TensorLBM/` package directory.  The chain is now closed end-to-end in
+   `docs/xval_aa_pattern_ghia_witness_rechain.md`
+   (`benchmarks/xval/ghia_witness_rechain.py`): all 34 Re = 100 provenance cells
+   are re-derived from the OCR stream, 0 sign disagreements against three
+   independent transcriptions, and the acceptance numbers of §3 are reproduced
+   from the witness-derived table alone (2.61 %/1.05 % at L = 32,
+   0.67 %/0.38 % at L = 128).  Residual: the text layer cannot fix *signs*, so
+   signs still rest on the independent copies. Two independent
    corroborations stand in: (i) the converged solver reproduces the BOUND table
    and violates the retired one; (ii) the retired table is unphysical next to
    the wall (§2). A future mission with the witness file should re-hash it.
