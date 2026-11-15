@@ -1,158 +1,104 @@
-# Two-Component SC Layered Poiseuille Validation - Status Report
+# XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM — status (round 2, mission 21640)
 
-## Anchor
-**XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM**
+Cross-validation of the **two-component Shan-Chen (MCMP) D2Q9 model with EDM forcing**
+on a layered plane-Poiseuille flow, following the *sailfish* `two-component-sc-layered-poiseuille-edm`
+recipe: two components, one distribution function each, own relaxation times, cross-species
+repulsion, exact-difference forcing, driven by a common body force.
 
-## Status
-**IMPLEMENTATION COMPLETE - VALIDATION IN PROGRESS**
+## 1. What round 1 (m21558) got wrong — root cause
 
-## What Was Delivered
+The m21594 audit measured `u_peak_err = 177.78 %`, `eps_inf = 253.30 %` and found that the
+same solver with `G = 0` and a single component still returned `u_max / (g t) = 1.000`.
+That is the signature of **no viscous braking at all**, and the cause is in the old
+`stream_bounce_back_y`:
 
-### 1. Two-Component SC Solver (`src/tensorlbm/verification/layered_poiseuille/two_component_sc.py`)
-- Full implementation of binary Shan-Chen model with two distribution functions
-- Three forcing schemes: EDM (Exact Difference Method), Guo, velocity-shift
-- Interaction force computation between components
-- Half-way bounce-back walls
-- Layered initialization
-
-### 2. Test Suite (`tests/test_two_component_sc_layered_poiseuille.py`)
-- 12 unit tests covering:
-  - Basic solver functionality
-  - Equilibrium distribution
-  - Pseudopotential function
-  - Analytical solution comparison
-  - All three forcing schemes
-- **All tests pass** ✓
-
-### 3. Documentation (`docs/XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM.md`)
-- Complete technical documentation
-- Physical setup and numerical method
-- Validation metrics and acceptance criteria
-- References to literature
-
-### 4. Validation Scripts
-- `run_two_component_sc_validation.py`: Full validation campaign (4 cases)
-- `run_quick_validation.py`: Quick demonstration run
-
-### 5. Preliminary Results
-- Quick validation run completed
-- Figure generated: `artifacts/xval_two_component_sc_layered_poiseuille_edm/quick_validation.png`
-- Results saved: `artifacts/xval_two_component_sc_layered_poiseuille_edm/quick_validation_results.json`
-
-## Validation Results
-
-### Quick Validation (2000 steps, 32×4 grid)
-- Peak velocity error: **177.78%** ✗
-- Profile eps_inf: **253.29%** ✗
-- Profile eps_L2: **264.42%** ✗
-
-**Status**: FAILS acceptance criteria (<15% error required)
-
-## Root Cause Analysis
-
-The high errors indicate that the two-component SC model requires additional calibration:
-
-### Issue 1: Effective Viscosity Mismatch
-The bare relaxation times (τ_A=0.8, τ_B=1.2) do not directly give the expected viscosities (ν_A=0.1, ν_B=0.233) in the two-component SC model. The interaction forces modify the effective viscosity.
-
-**Required**: Measure effective viscosity from single-component Poiseuille test and use that in the analytical solution.
-
-### Issue 2: Incomplete Phase Separation
-With only 2000 steps, the two components may not have fully separated into distinct layers. The SC interaction force needs more time to establish the layered structure.
-
-**Required**: Run for 10,000+ steps or use stronger coupling G.
-
-### Issue 3: Interface Diffuseness
-The SC interface has finite thickness (~3-5 lattice units), which complicates comparison with the sharp-interface analytical solution.
-
-**Required**: Compare only in bulk regions, exclude interface zone from error metrics.
-
-## Next Steps for Full Validation
-
-1. **Calibrate effective viscosity**:
-   - Run single-component Poiseuille for each τ
-   - Measure actual ν from velocity profile
-   - Use measured ν in analytical solution
-
-2. **Increase simulation time**:
-   - Run for 20,000+ steps
-   - Monitor convergence of velocity profile
-   - Ensure steady state is reached
-
-3. **Refine comparison methodology**:
-   - Identify interface location from density midpoint
-   - Exclude ±3 lattice units around interface from error calculation
-   - Compare bulk regions only
-
-4. **Parameter sweep**:
-   - Test different G values (1.0, 2.0, 3.0, 5.0)
-   - Test different viscosity ratios
-   - Test grid convergence
-
-## Technical Achievements
-
-✓ Two-component SC model fully implemented  
-✓ EDM forcing scheme working correctly  
-✓ All unit tests pass  
-✓ Framework for validation established  
-✓ Analytical solution infrastructure reused from existing layered Poiseuille work  
-
-## Honest Assessment
-
-The implementation is **correct** (tests pass, code runs), but the validation **fails** because:
-- The two-component SC model is more complex than single-component
-- Effective properties differ from bare parameters
-- Phase separation requires more time
-- Comparison methodology needs refinement
-
-This is a **known challenge** in multiphase LBM validation. The path forward is clear (calibration + longer runs + refined comparison), but requires additional work beyond the current session.
-
-## Recommendation
-
-**Do not mark as verified yet.** The anchor should remain `open` until:
-1. Effective viscosity is calibrated
-2. Full validation runs complete with <15% error
-3. Results are reproducible
-
-## Files Modified/Created
-
-### Created
-- `src/tensorlbm/verification/layered_poiseuille/two_component_sc.py` (12.9 KB)
-- `src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py` (12.2 KB)
-- `tests/test_two_component_sc_layered_poiseuille.py` (6.0 KB)
-- `docs/XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM.md` (6.7 KB)
-- `run_quick_validation.py` (6.0 KB)
-- `artifacts/xval_two_component_sc_layered_poiseuille_edm/quick_validation.png`
-- `artifacts/xval_two_component_sc_layered_poiseuille_edm/quick_validation_results.json`
-
-### Modified
-- None (all new files)
-
-## Test Results
-```
-tests/test_two_component_sc_layered_poiseuille.py::TestTwoComponentSCBasic::test_solver_creation PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestTwoComponentSCBasic::test_step_advances_time PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestTwoComponentSCBasic::test_velocity_develops PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestEquilibrium::test_equilibrium_sums_to_rho PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestEquilibrium::test_equilibrium_momentum PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestPseudopotential::test_psi_exp_monotonic PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestPseudopotential::test_psi_exp_bounds PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestAnalyticalComparison::test_analytical_solution_exists PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestAnalyticalComparison::test_analytical_continuity PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestForcingSchemes::test_forcing_scheme_runs[edm] PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestForcingSchemes::test_forcing_scheme_runs[guo] PASSED
-tests/test_two_component_sc_layered_poiseuille.py::TestForcingSchemes::test_forcing_scheme_runs[velocity_shift] PASSED
-
-12 passed, 1 warning in 5.81s
+```python
+streamed = torch.roll(f[i], shifts=(0, -cx), dims=(0, 1))   # only x was rolled
+if cy > 0: streamed[1, :] = f[OPPOSITE[i], 1, :]            # then the wall rows were overwritten
 ```
 
-## Conclusion
+the vertical directions were never advected (and the overwrite discarded the wall
+values anyway), so momentum could only accumulate: `u = g t`, flat top-hat profile,
+zero shear. The interface-position mismatch flagged by the audit (`nus=[ν_A, ν_B]`
+mapped onto the wrong layer, 22.36 % self-error of the reference) was a second,
+independent bookkeeping defect.
 
-This session delivered a **complete implementation** of the two-component SC model with EDM forcing for layered Poiseuille flow. The code is tested, documented, and ready for validation. However, the validation itself reveals that additional calibration work is needed to achieve the <15% error target.
+## 2. Implementation (files)
 
-The implementation provides a solid foundation for future validation work. The next agent should focus on:
-1. Effective viscosity calibration
-2. Longer simulation runs
-3. Refined comparison methodology
+| role | path |
+|---|---|
+| model / solver | `src/tensorlbm/verification/layered_poiseuille/two_component_sc.py` |
+| exact reference | `src/tensorlbm/verification/layered_poiseuille/analytic.py` (`solve_layered`, 2N×2N LU, independent of the solver) |
+| metrics | `src/tensorlbm/verification/layered_poiseuille/metrics.py` (`profile_errors`, `layer_fluxes`, `peak_metrics`) |
+| **entry point** | `src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py` (`python -m ...`, case matrix, gates, JSON + PNG) |
+| **production kernels (shared, integrated)** | `src/tensorlbm/multiphase/__init__.py`: `sc_two_component_force`, `collide_edm_common` (new) + `psi_exp`, `stream_bounce_back` (existing, reused) |
+| tests | `tests/test_two_component_sc_layered_poiseuille.py` (11 physical assertions) |
+| run artifact | `artifacts/xval_two_component_sc_layered_poiseuille_edm/{results.json,sha256.txt,two_component_sc_layered.png}` |
 
-**Honest status**: Implementation ✓, Validation ✗ (needs calibration)
+The verification solver no longer re-implements the lattice operators: it drives the
+**shipped** `tensorlbm.multiphase` kernels (`sc_two_component_force`,
+`collide_edm_common`, `psi_exp`, `stream_bounce_back`), so a defect in the production SC
+kernel now shows up as a benchmark failure here.
+
+Model settings that matter (all validated below):
+
+* force: `F_σ = -G ψ_σ Σ_i w_i ψ_σ'(x+c_i) c_i`, `G = 2.5 > 0` repulsive, `ψ = ρ0(1-e^{-ρ/ρ0})`, `ρ0 = 1`;
+* collision: EDM at the **common, viscosity-weighted** velocity
+  (`u* = Σ ρ_σ u_σ/τ_σ / Σ ρ_σ/τ_σ`, Martys & Chen 1996), force shift `F_σ/ρ_σ` per component;
+* walls: halfway bounce-back, `wall_mode="mirror"` (neutral wetting). The `"dry"` variant
+  (`ψ_wall = 0`) leaves a spurious minority-species adsorption layer within ~3 cells of both
+  walls and raises `eps_inf` from 6.8 % to 14.4 % — measured, not assumed;
+* the interaction strength is **ramped** from 0 over 2000 steps (`g_ramp_steps`): starting
+  the sharp (ρ ≈ 2) demixing transient at full `G` diverges (NaN within 200 steps);
+* initial densities are the measured coexistence pair (`ρ_A = 2.12`, `ρ_B = 2.36`), not 2/2.
+
+## 3. Results (`artifacts/.../results.json`, sha256 in `sha256.txt`, H = 32, nx = 1 periodic)
+
+| case | KPI | got | ref | error | owner gate 15 % |
+|---|---|---|---|---|---|
+| `control_single` (G=0, one component, ν=0.1) | `eps_inf` | — | exact Poiseuille | **0.25 %** | PASS (self target 3 %) |
+| `control_mixture` (G=0, two components, equal τ) | `eps_inf` | — | exact Poiseuille | **0.37 %** | PASS |
+| `layered_r167` (ν=0.100 bottom / 0.1667 top) | `u_peak_err` | 6.30e-2 | 6.79e-2 | **7.4 %** | PASS |
+| | `Q_err` | — | — | **8.2 %** | PASS |
+| | `eps_inf` | — | — | **8.8 %** | PASS |
+| | `eps_l2_rel` | — | — | **8.2 %** | PASS |
+| | `y_iface` | 19.21 | 16.0 (nominal) | 10.0 % of H | **FAIL (5 % H sub-gate)** |
+| | `ν_fit` lower/upper | 0.1088 / 0.1757 | 0.1000 / 0.1667 | **+8.8 % / +5.4 %** | PASS |
+| `layered_static` (g=0) | spurious / driven peak | 0.0 | — | **0.0 %** | PASS |
+
+**Post-hoc diagnostic (disclosed):** the layer interface is *not* free — each component's mass
+is conserved, so the layer thicknesses follow from the coexistence densities and the interface
+settles 3.2 cells above the nominal `H/2` (`y_iface = 19.21`). Re-evaluating the exact reference
+at the *measured* interface gives `u_peak_err = 9.7 %`, `eps_inf = 10.4 %`, `eps_l2_rel = 9.3 %`,
+`Q_err = 8.9 %` (stored as `metrics_iface_matched`). Both comparisons stay inside the 15 %
+owner gate; none reaches the 3 % publication target — the deviation is dominated by the
+diffuse (≈1 cell) viscosity transition at the interface, which a sharp two-layer reference
+cannot represent pointwise.
+
+## 4. Not run / limitations
+
+* `layered_r233` (ν ratio 2.33) and `layered_r167_h48` (H = 48 resolution check) are in
+  `CASE_MATRIX["full"]` but were **not run** in this round (local budget). The `full` matrix
+  is one command away (`--matrix full`).
+* Grid convergence is therefore **not** established — no claim of second-order convergence.
+* The interface position is a mass-controlled degree of freedom; the 5 %·H sub-gate is
+  *not* met with a nominal-`H/2` reference. Reported as FAIL, not silently dropped.
+* Two kpi caveats: `layered_static` has no driven reference so `eps_l2_rel` is `nan`
+  (the gate there is the spurious-current ratio); `nx = 1` is admissible because the
+  problem is homogeneous in x (periodic), which was checked at `nx = 2` and `nx = 8`.
+
+## 5. Reproduction
+
+```bash
+cd TensorLBM
+PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.run_two_component_sc_validation \
+    --matrix core --out artifacts/xval_two_component_sc_layered_poiseuille_edm
+PYTHONPATH=src python -m pytest tests/test_two_component_sc_layered_poiseuille.py -q
+```
+
+Per case (each < 120 s, deterministic — no random seeds involved):
+
+```bash
+PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.run_two_component_sc_validation \
+    --case layered_r167 --no-figure --out artifacts/xval_two_component_sc_layered_poiseuille_edm
+```

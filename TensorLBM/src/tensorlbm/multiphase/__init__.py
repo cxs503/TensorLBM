@@ -458,3 +458,127 @@ def step_sc(
         return stream_bounce_back(f_post, solid_mask)
     else:
         return stream_periodic(f_post)
+
+
+# ---------------------------------------------------------------------------
+# Two-component (MCMP) extensions
+# ---------------------------------------------------------------------------
+#: Wall treatment of the cross-species interaction stencil
+WALL_MODES = ("mirror", "dry")
+
+
+def _wall_extend(field: torch.Tensor, fill: float, wall_mode: str) -> torch.Tensor:
+    """Extend ``field`` through the first/last row for the interaction stencil.
+
+    ``wall_mode="mirror"`` mirrors the adjacent fluid row (neutral wetting: the
+    wall prefers neither species); ``"dry"`` fills the wall row with ``fill``.
+    The dry variant leaves a spurious adsorption layer of the minority species
+    within a few cells of the wall (measured in the XVAL layered-Poiseuille
+    two-component study), which the mirror variant removes.
+    """
+    if wall_mode == "mirror":
+        ext = field.clone()
+        ext[0, :] = field[1, :]
+        ext[-1, :] = field[-2, :]
+        return ext
+    if wall_mode == "dry":
+        ext = field.clone()
+        ext[0, :] = fill
+        ext[-1, :] = fill
+        return ext
+    raise ValueError(f"unknown wall_mode {wall_mode!r}; choose from {WALL_MODES}")
+
+
+def sc_two_component_force(
+    rho_a: torch.Tensor,
+    rho_b: torch.Tensor,
+    G: float = 2.5,
+    solid_mask: torch.Tensor | None = None,
+    wall_psi: float = 0.0,
+    wall_mode: str = "mirror",
+    gy: float = 0.0,
+    gx: float = 0.0,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Cross-species Shan-Chen force of a two-component (MCMP) model.
+
+    Library convention for the *two-component* force (note that it differs from
+    the single-component :func:`sc_force`):
+
+        F_a = -G * psi(rho_a) * sum_i w_i psi(rho_b)(x+c_i) c_i
+        F_b = -G * psi(rho_b) * sum_i w_i psi(rho_a)(x+c_i) c_i
+        F_sigma += rho_sigma * (gx, gy)
+
+    ``G > 0`` is **repulsive** (demixing), ``G < 0`` attractive; no ``cs^2``
+    prefactor is applied (the neighbour sum already carries the lattice weights).
+    Solid neighbours are passed through the ``wall_mode`` extension of the
+    pseudopotential, and the body force is applied as an acceleration ``(gx, gy)``
+    common to both species, so that a layered co-flow has ``u'' = -g/nu`` inside
+    every layer.
+
+    Returns
+    -------
+    (fx_a, fy_a, fx_b, fy_b) : force per unit volume of each component
+    """
+    psi_a = psi_exp(rho_a)
+    psi_b = psi_exp(rho_b)
+    if solid_mask is not None:
+        zero = torch.zeros_like(psi_a)
+        psi_a = torch.where(solid_mask, zero, psi_a)
+        psi_b = torch.where(solid_mask, zero, psi_b)
+    ext_a = _wall_extend(psi_a, wall_psi, wall_mode)
+    ext_b = _wall_extend(psi_b, wall_psi, wall_mode)
+
+    fx_a = torch.zeros_like(psi_a)
+    fy_a = torch.zeros_like(psi_a)
+    fx_b = torch.zeros_like(psi_b)
+    fy_b = torch.zeros_like(psi_b)
+    for i in range(1, 9):
+        dx, dy = _C_INT[i]
+        nb_b = _shifted(ext_b, dx, dy)
+        nb_a = _shifted(ext_a, dx, dy)
+        fx_a = fx_a + W[i] * dx * nb_b
+        fy_a = fy_a + W[i] * dy * nb_b
+        fx_b = fx_b + W[i] * dx * nb_a
+        fy_b = fy_b + W[i] * dy * nb_a
+
+    fx_a = -G * psi_a * fx_a + rho_a * gx
+    fy_a = -G * psi_a * fy_a + rho_a * gy
+    fx_b = -G * psi_b * fx_b + rho_b * gx
+    fy_b = -G * psi_b * fy_b + rho_b * gy
+
+    if solid_mask is not None:
+        zero = torch.zeros_like(fx_a)
+        fx_a = torch.where(solid_mask, zero, fx_a)
+        fy_a = torch.where(solid_mask, zero, fy_a)
+        fx_b = torch.where(solid_mask, zero, fx_b)
+        fy_b = torch.where(solid_mask, zero, fy_b)
+    return fx_a, fy_a, fx_b, fy_b
+
+
+def collide_edm_common(
+    f: torch.Tensor,
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """EDM collision of one component of a mixture, at a *supplied* velocity.
+
+    ``collide_edm`` recovers the velocity from ``f`` itself, which is only right
+    for a single-component model.  In a two-component model both components
+    relax towards equilibrium at the common (viscosity-weighted) velocity
+    ``(ux, uy)`` while the force shift stays component-specific
+    (``F_sigma / rho_sigma``)::
+
+        f^+ = f - (f - feq(rho, u)) / tau + [feq(rho, u + F/rho) - feq(rho, u)]
+
+    ``rho`` is the density of the component that owns ``f``.
+    """
+    rho_safe = torch.clamp(rho, min=1e-12)
+    u2 = torch.zeros_like(rho)
+    feq = equilibrium(rho, ux, uy)
+    feq_d = equilibrium(rho, ux + fx / rho_safe, uy + fy / rho_safe)
+    del u2
+    return f - (f - feq) / tau + (feq_d - feq)
