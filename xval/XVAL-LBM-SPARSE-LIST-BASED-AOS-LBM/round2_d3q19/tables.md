@@ -59,3 +59,21 @@ owner precision standard: <15 % · tau = 0.8 · nu = 0.100000 · float64 · sing
 | 0 | 4096 | 622592 | 622592 | 2.553 | 0.00622 | 0.00437 |
 | 0.125 | 3584 | 622592 | 544768 | 2.234 | 0.00625 | 0.00313 |
 | 0.422 | 2368 | 622592 | 359936 | 1.476 | 0.00618 | 0.00216 |
+# XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM -- generated tables (updated)
+
+```
+
+=== P2 — 3-D rectangular duct (walls in y and z), White duct Fourier series ===
+| Hy x Hz | arm | steps | conv | u_max got | u_max ref | L∞/ref | L2 rel | mass | <15% |
+|---|---|---|---|---|---|---|---|---|---|
+| 8x12 | sparse_soa | 1400 | Y | 0.303271 | 0.300000 | 1.157e-02 | 9.345e-03 | 9.71e-14 | OK |
+| 8x12 | sparse_aos | 1400 | Y | 0.303271 | 0.300000 | 1.157e-02 | 9.345e-03 | 9.71e-14 | OK |
+| 16x24 | sparse_soa | 4400 | Y | 0.300806 | 0.300000 | 2.928e-03 | 2.327e-03 | 3.07e-13 | OK |
+| 16x24 | sparse_aos | 4400 | Y | 0.300806 | 0.300000 | 2.928e-03 | 2.327e-03 | 3.07e-13 | OK |
+
+=== Convergence check ===
+Coarser (8x12): 0.011572
+Finer (16x24):  0.002928
+Finer < Coarser: True
+
+```
