@@ -82,6 +82,8 @@ __all__ = [
     "front_state",
     "column_height",
     "column_front_state",
+    "interface_profile_gradient",
+    "gradient_front_state",
     "layzer_velocity",
     "run_scmp_rt",
 ]
@@ -576,6 +578,158 @@ def column_front_state(
     }
 
 
+def interface_profile_gradient(
+    rho: torch.Tensor,
+    cfg: SCMPRTConfig,
+    *,
+    wall_guard: int = 3,
+    search_half_width_lam: float = 0.6,
+    lock_half_width_cells: int | None = None,
+) -> dict:
+    """Per-column interface row from the **density-gradient centroid**.
+
+    Why this estimator exists (measured defect, mission m22097)
+    -----------------------------------------------------------
+    :func:`column_height` is a *conserved mass moment*: it sums the clamped heavy
+    fraction over the free rows.  For an interface displacement that is (to
+    leading order) a vertical shift of the density profile, that sum is almost
+    invariant -- a shifted copy of the same 1-D profile occupies the same number
+    of equivalent rows, and only the wall-cut terms change.  Measured on a
+    relaxed SCMP interface (``artifacts_estimator/calibration.json``, check K1):
+    imposing a known ``a0 = 0.02 lam`` cosine (1.28 rows) changed the per-column
+    moment by a spread of **0.063 rows**, i.e. 2.4 % of the imposed +/-1.28 row
+    signal, and the fitted amplitude came back as ``5.4e-5 lam``
+    (error ``-99.7 %``).  The same blindness was recorded independently in
+    ``docs/CASE-RT-TWOFLUID-PRECOND.md`` (P4: ``-0.0021 lam`` against a planned
+    ``+0.02 lam``) -- its guessed mechanism (``clamp`` saturation) is only a
+    secondary aggravation: in a synthetic profile whose bulk density exceeds
+    ``rho_high`` by 36 % the moment still tracked the shift to within ``-0.9 %``.
+    A conserved moment is simply the wrong functional for a *position*.
+
+    The replacement is the standard interface-tracking estimator: per column,
+    lock onto the row of maximum ``|d rho / d y|`` inside a search window (walls
+    excluded), then take the ``|d rho / d y|``-weighted centroid over a narrow
+    band around that lock.  It is (i) position sensitive by construction,
+    (ii) insensitive to a bulk density offset because only the *shape* of the
+    gradient enters, and (iii) threshold free, so the low-density layer that
+    collects against a wall cannot invent a second interface.
+
+    Returns ``y_rows`` (per column, lattice rows) plus the lock rows, the search
+    window and two quality indicators.  All returned values are floats/ints --
+    the dict is safe to serialise into a run history.
+    """
+    ny, nx = rho.shape
+    dtype = rho.dtype
+    if ny < 2 * wall_guard + 8:
+        raise ValueError("box too short for the wall guard")
+    deriv = torch.zeros_like(rho)
+    deriv[1:-1, :] = 0.5 * (rho[2:, :] - rho[:-2, :])
+    weight = deriv.abs()
+
+    half = search_half_width_lam * cfg.lam
+    lo = max(wall_guard, int(math.floor(cfg.y_interface - half)))
+    hi = min(ny - 1 - wall_guard, int(math.ceil(cfg.y_interface + half)) + 1)
+    if hi - lo < 5:
+        raise ValueError("search window collapsed: increase layers or reduce the guard")
+
+    lock = torch.argmax(weight[lo:hi, :], dim=0) + lo          # (nx,)
+    # sub-row refinement: parabolic vertex of |d rho / d y| around the lock.
+    # Without it the centroid below is biased towards the integer lock row
+    # (measured -11 % at a = 0.005 lam on an exact tanh interface).
+    lc = lock.clamp(min=lo + 1, max=hi - 2)
+    w_km1 = weight.gather(0, (lc - 1).view(1, nx)).view(nx)
+    w_k = weight.gather(0, lc.view(1, nx)).view(nx)
+    w_kp1 = weight.gather(0, (lc + 1).view(1, nx)).view(nx)
+    curv = w_km1 - 2.0 * w_k + w_kp1
+    delta = torch.where(
+        curv.abs() > 1e-30,
+        0.5 * (w_km1 - w_kp1) / torch.where(curv.abs() > 1e-30, curv, torch.ones_like(curv)),
+        torch.zeros_like(curv),
+    ).clamp(-0.5, 0.5)
+    lock_f = lock.to(dtype) + delta                            # fractional lock row
+    lw = lock_half_width_cells
+    if lw is None:
+        lw = max(2, int(round(2.0 * cfg.interface_width)))
+    idx = torch.arange(ny, dtype=dtype).view(ny, 1)
+    band = (idx >= (lock_f - lw).clamp(min=wall_guard)) & (
+        idx <= (lock_f + lw).clamp(max=ny - 1 - wall_guard)
+    )
+    wl = weight * band
+    denom = wl.sum(dim=0)
+    ok = denom > 1e-30
+    y_rows = (wl * idx).sum(dim=0) / denom.clamp_min(1e-30)
+    peaks = weight.gather(0, lock.view(1, nx)).view(nx)
+    edge = (lock <= lo) | (lock >= hi - 1)
+    return {
+        "valid": bool(ok.all()),
+        "y_rows": y_rows,
+        "lock_rows": lock,
+        "search_rows": (int(lo), int(hi)),
+        "lock_spread_rows": int(lock.max()) - int(lock.min()),
+        "peak_min": float(peaks.min()),
+        "peak_max": float(peaks.max()),
+        "peak_ratio": float(peaks.min()) / float(peaks.max()) if float(peaks.max()) else 0.0,
+        "n_wall_locked": int(edge.sum()),
+    }
+
+
+def gradient_front_state(
+    rho: torch.Tensor,
+    cfg: SCMPRTConfig,
+    *,
+    rho_high: float,
+    rho_low: float,
+    reference_row: float | None = None,
+    wall_guard: int = 3,
+    search_half_width_lam: float = 0.6,
+    lock_half_width_cells: int | None = None,
+) -> dict:
+    """Spike/bubble displacements from :func:`interface_profile_gradient`.
+
+    Same contract as :func:`column_front_state` (displacements in wavelengths,
+    negative = descending spike, all reported relative to the **instantaneous**
+    mean interface so the hydrostatic common mode cancels), same key names, so
+    the two are drop-in interchangeable in :func:`run_scmp_rt`.  The estimated
+    absolute level is returned as ``mean_interface_lam`` relative to
+    ``reference_row`` (default: the geometric interface row).
+    """
+    del rho_high, rho_low  # the gradient estimator is density-scale free
+    prof = interface_profile_gradient(
+        rho,
+        cfg,
+        wall_guard=wall_guard,
+        search_half_width_lam=search_half_width_lam,
+        lock_half_width_cells=lock_half_width_cells,
+    )
+    if not prof["valid"]:
+        return {"valid": False, "estimator": "gradient"}
+    y = prof["y_rows"]
+    nx = int(y.numel())
+    mean = float(y.mean())
+    ref = float(cfg.y_interface) if reference_row is None else float(reference_row)
+    d = (y - mean) / cfg.lam
+    x = torch.arange(nx, dtype=y.dtype)
+    phase = torch.cos(2.0 * math.pi * x / nx)
+    amp = 2.0 * float(((y - mean) * phase).sum()) / nx / cfg.lam
+    return {
+        "valid": True,
+        "estimator": "gradient",
+        "reference_row": ref,
+        "mean_interface_lam": (mean - ref) / cfg.lam,
+        "common_mode_lam": (mean - ref) / cfg.lam,
+        "mean_referenced": True,
+        "spike_tip_lam": float(d.min()),
+        "bubble_tip_lam": float(d.max()),
+        "spike_q10_lam": float(torch.quantile(d, 0.10)),
+        "bubble_q90_lam": float(torch.quantile(d, 0.90)),
+        "amplitude_lam": amp,
+        "n_columns": nx,
+        "grad_lock_spread_rows": prof["lock_spread_rows"],
+        "grad_peak_ratio": prof["peak_ratio"],
+        "grad_n_wall_locked": prof["n_wall_locked"],
+    }
+
+
 def layzer_velocity(atwood: float, gravity: float, lam: float, *, c_2d: float = 1.0) -> dict:
     """Two-fluid Layzer-Goncharov terminal velocities (closed form)."""
     k = 2.0 * math.pi / lam
@@ -799,9 +953,10 @@ def run_scmp_rt(
     cfg.validate()
     if ma_guard not in ("all", "iface", "bulk"):
         raise ValueError(f"ma_guard must be 'all', 'iface' or 'bulk', got {ma_guard!r}")
-    if front_estimator not in ("column", "crossings"):
+    if front_estimator not in ("column", "crossings", "gradient"):
         raise ValueError(
-            f"front_estimator must be 'column' or 'crossings', got {front_estimator!r}"
+            "front_estimator must be 'column', 'crossings' or 'gradient', got "
+            f"{front_estimator!r}"
         )
     band = _interface_band(cfg, iface_band_cells if iface_band_cells is not None
                            else int(round(3.0 * cfg.interface_width)))
@@ -815,10 +970,18 @@ def run_scmp_rt(
     else:
         f, phi = init_scmp_rt(cfg, rho_high=rho_high, rho_low=rho_low)
     atwood = atwood_from_ratio(rho_high / rho_low)
-    ref_row = float(
-        ((cfg.ny - 1) - column_height(f.sum(dim=0), rho_high=rho_high,
-                                      rho_low=rho_low)).mean()
-    )
+    if front_estimator == "gradient":
+        # reference level of the gradient estimator: its own t = 0 mean row, so
+        # the reported common mode is the drift of the interface *level* and not
+        # an artefact of the estimator's offset convention
+        ref_row = float(
+            interface_profile_gradient(f.sum(dim=0), cfg)["y_rows"].mean()
+        )
+    else:
+        ref_row = float(
+            ((cfg.ny - 1) - column_height(f.sum(dim=0), rho_high=rho_high,
+                                          rho_low=rho_low)).mean()
+        )
     scale = math.sqrt(atwood * cfg.gravity * cfg.k)
     midpoint = 0.5 * (rho_high + rho_low)
     amplitude = 0.5 * (rho_high - rho_low)
@@ -843,8 +1006,14 @@ def run_scmp_rt(
         state_col = column_front_state(rho, cfg, rho_high=rho_high,
                                        rho_low=rho_low, reference_row=ref_row)
         state_xc = front_state(phi, cfg)
-        primary = state_col if front_estimator == "column" else state_xc
-        secondary = state_xc if front_estimator == "column" else state_col
+        if front_estimator == "gradient":
+            primary = gradient_front_state(rho, cfg, rho_high=rho_high,
+                                           rho_low=rho_low, reference_row=ref_row)
+            secondary = state_col
+        elif front_estimator == "column":
+            primary, secondary = state_col, state_xc
+        else:
+            primary, secondary = state_xc, state_col
         ma_all, ma_iface, ma_bulk = _ma_split(ux, uy, band)
         speed = max(ma_all, 0.0) * math.sqrt(CS2)
         row = {
@@ -863,8 +1032,8 @@ def run_scmp_rt(
         }
         row.update({k: v for k, v in primary.items() if k != "valid"})
         row.update({f"alt_{k}": v for k, v in secondary.items() if k != "valid"})
-        row["valid"] = bool(primary.get("valid", False)) if front_estimator == "crossings" \
-            else True
+        row["valid"] = bool(primary.get("valid", False)) \
+            if front_estimator in ("crossings", "gradient") else True
         history.append(row)
         if not row.get("valid", False):
             stop_reason = "interface_lost"
