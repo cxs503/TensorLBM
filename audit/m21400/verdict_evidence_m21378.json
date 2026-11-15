@@ -1,0 +1,155 @@
+{
+  "level": 3,
+  "verdict_summary": "L3 系统集成：m21378 把锚点问法从自研复刻搬回随仓发布的库路径（tensorlbm.multiphase.collide_sc_single_component + tensorlbm.solver.stream），并查实/改对上游第 1 轮的三处硬伤（未 import 库、压力约定反号致 sigma 放大 ~270x、tau=1 判别退化）。基准验证 L4 WITHHELD：外部锚 TCLB 本体从未运行，tensor_benchmark_cases 该 anchor 0 行。",
+  "level_rationale": "L1: 5 项不变式测试（审计者复跑 5 passed in 21.34 s）。L2: run_xval.py LibSolver/run_case 输入->compute->输出真代码。L3: 求解全走库公开 API 面（forcing in {velocity_shift,edm,guo}），测试落仓内 tests/ 并被默认套件收集。L4 不达: (a) TCLB 未执行（报告 ④.6 自认配方级对标），(b) tensor_benchmark_cases anchor 0 行无容差裁判，(c) tau=1 臂的 ref(SIGMA_DEFAULT=0.05611) 与 got 同代码路径（tau=1 时 EDM 恒等于 velocity_shift），(d) 半径 3/5 档、仅跑 23/45 例。",
+  "impl_files": [
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/run_xval.py",
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/local_sweep.py",
+    "tests/test_xval_sc_edm_laplace_r2.py",
+    "TensorLBM/src/tensorlbm/multiphase/__init__.py"
+  ],
+  "entry": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/local_sweep.py",
+  "entry_symbol": "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/local_sweep.py:33 main() -> run_xval.run_case per (forcing,tau,R);  run_xval.py:27 CLI (--quick|--shard i --nshards n|--merge), run_xval.py:206 run_case(), run_xval.py:264 leg_identity(), run_xval.py:115 maxwell_coexistence()",
+  "run_artifacts": [
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/compact.json",
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/part0.json",
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/part1.json",
+    "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/shard_00.json"
+  ],
+  "run_artifacts_note": "compact.json = 21 例 (3 forcing x tau{1.0,0.8} x R{10,12,14} + 3 forcing x tau=1.2 x R=12) + legs{laplace,maxwell,scheme} + identity + maxwell; 审计者把 REPORT.md 表格逐格比对 compact.json -> 全部一致（零手抄成立）。fig1_laplace_tau_coexistence.png 在 m21378 commit 9b2791376 中存在，但 merge #2455 后被推送门滤除（git cat-file -e HEAD:...png 在 m21400 失败），且 tensor_reports id=19330 的 figures 无 png_base64 -> 图在仓库态/报告态都取不回（F3）。全量 45 例 cj3388 交付时仍 queued、从未 fetch -> not_run。",
+  "tests": [
+    "tests/test_xval_sc_edm_laplace_r2.py"
+  ],
+  "tests_result": "审计者复跑 PYTHONPATH=TensorLBM/src python3 -m pytest tests/test_xval_sc_edm_laplace_r2.py -q -> 5 passed, 1 warning in 21.34 s（交付自报 5 passed in 20.5 s）。断言为不变式而非仅执行代码：tau=1 时 vs 与 edm allclose atol=1e-15 且 tau=0.8 必分离 >1e-6；三力项 200 步质量守恒 rel<1e-10 且 rho>0；sigma 落 (0.02,0.12) 且加号约定 dp 比它大 >50x；dp(8)>dp(12)>0 且 sigma 一致 <25%；Maxwell 共存被两自旋odal压力夹住且 p(rho) 在区间内非单调。",
+  "integration_callers": "tensorlbm.multiphase.collide_sc_single_component(forcing=...)/tensorlbm.solver.stream/tensorlbm.d2q9.{equilibrium,macroscopic} —— forcing 是库公开 API 面；grep -rn 'collide_sc_single_component' xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/run_xval.py -> :164,:273；库定义 TensorLBM/src/tensorlbm/multiphase/__init__.py；上游第 1 轮 run_xval.py:6-11 无任何 tensorlbm import（自研复刻，R2 REVIEW_R1.md S1 属实）",
+  "benchmark": {
+    "ref_source": "tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO' -> 0 rows（全表 138 行，%LYCETT%/%EDM% 均 0 行）=> 无登记基准例、无容差裁判",
+    "refs_actually_used": {
+      "sigma_library_calibration": "0.05611 @ TensorLBM/src/tensorlbm/multiphase/__init__.py:37 (SIGMA_DEFAULT; 文档 line 12 标 'measured' at G=5/psi_exp/tau=1) —— 弱独立：tau=1 时 EDM 恒等于 velocity_shift，故 tau=1 臂属自参照",
+      "maxwell_equal_area_analytic": "p_sat=0.03421364, rho_l=1.92886613, rho_v=0.15289487, ratio=12.616 @ run_xval.py:115 —— 强（无求解器）；审计者独立重算偏差 rho_l 3.5e-8% / rho_v 4.2e-7%（audit/m21400/probe_m21378_results.json）"
+    },
+    "got_edm_R12": {
+      "tau0.8": {
+        "sigma": 0.054962,
+        "err_sigma_pct": -2.04,
+        "rho_in": 1.97088,
+        "err_rho_l_pct": 2.18,
+        "rho_out": 0.16105,
+        "err_rho_v_pct": 5.33
+      },
+      "tau1.0": {
+        "sigma": 0.055185,
+        "err_sigma_pct": -1.63,
+        "rho_in": 1.97176,
+        "err_rho_l_pct": 2.22,
+        "rho_out": 0.16186,
+        "err_rho_v_pct": 5.86
+      },
+      "tau1.2": {
+        "sigma": 0.055077,
+        "err_sigma_pct": -1.82,
+        "rho_in": 1.97255,
+        "err_rho_l_pct": 2.26,
+        "rho_out": 0.16249,
+        "err_rho_v_pct": 6.28
+      },
+      "sigma_fit_3radii": {
+        "tau0.8": 0.054159,
+        "tau1.0": 0.05417,
+        "err_pct": -3.45,
+        "r2_origin": 0.9578
+      }
+    },
+    "honest_fails_reverified": {
+      "velocity_shift_sigma": {
+        "tau0.8": 0.042302,
+        "err_pct": -24.61,
+        "tau1.2": 0.07277,
+        "err_pct_tau1.2": 29.69,
+        "rho_v_tau1.2": 0.193528,
+        "err_rho_v_pct": 26.58
+      },
+      "guo_sigma": {
+        "tau0.8": 0.033983,
+        "tau1.0": 0.034067,
+        "tau1.2": 0.034174,
+        "err_pct": [
+          -39.4,
+          -39.3,
+          -39.1
+        ],
+        "rho_v_err_pct": "16.3-18.5"
+      }
+    },
+    "verdict": "L4 WITHHELD —— EDM 臂对库标定 sigma 1.63-2.04%（<3% 达标）且 sigma 对 tau 的离散远小于 velocity_shift；但外部锚（TCLB）零执行、基准表零行，不足以构成基准验证。"
+  },
+  "repro_cmd": "PYTHONPATH=TensorLBM/src python3 -m pytest tests/test_xval_sc_edm_laplace_r2.py -q  (审计者复跑 5 passed in 21.34 s, rc=0);  cd xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2 && PYTHONPATH=../../TensorLBM/src python3 -c \"import run_xval as X; print(X.run_case('edm',0.8,12.0))\"  (审计者整例重放: sigma/dp/R_eq/rho_in/rho_out 与 compact.json 逐位相同 rel dev 0.000e+00, steps 2500, ~40s); 整轮 local_sweep.py 本机 120s 上限被收割 -> 改递 compute 门 cj3406，收尾时仍 queued => 整轮 not_run;  fp: python run_xval.py --shard {i} --nshards 9 后 --merge  = 交付 cj3388 从未 fetch);  PYTHONPATH=TensorLBM/src python3 audit/m21400/probe_m21378.py  (solver-free 三探针，8 s，产出 probe_m21378_results.json)",
+  "verified_true": [
+    "C1 上游未 import 库：R1 run_xval.py:6-11 只有 json/math/time/dataclasses/numpy/torch/matplotlib，无 tensorlbm；R2 run_xval.py:163-165 才 import collide_sc_single_component/solver.stream —— 属实",
+    "C2 压力符号：用交付同一组带内密度重算，减号 dp=0.004446 -> sigma=0.055185（与 compact 0.05518531 相对差 1.4e-6）；加号 dp=1.202153 -> sigma=14.9213，比值 270.4（guo 459x / vs@1.2 196x，故 '271 倍' 是 edm@tau=1 的具体值，量级陈述成立） —— 属实",
+    "整例确定性复现：审计者用交付 run_xval.run_case 重放 edm@tau=0.8@R=12，sigma=0.054962/dp=0.004428/R_eq=12.412171/rho_in=1.970882/rho_out=0.161048 与 compact.json 逐位一致（rel dev 0.000e+00，步数同 2500）",
+    "C3 tau=1 退化：审计者自建随机场(seed 20261115, 9x12x12) 扫 tau in {0.5,0.8,1.0,1.2,1.6}，|vs-edm| = 5.55e-17 (tau=1) vs 2.36e-4~7.09e-4 (tau!=1)，且代数上 tau=1 两式都收口到 feq(u+F/rho) —— 属实",
+    "Maxwell 等面积构造：独立重算 p_sat/rho_l/rho_v 与 compact.json 偏差 <5e-7% —— 属实，可作解析参照",
+    "REPORT.md 表格数字与 compact.json 逐格一致（21 例 + legs + identity + maxwell），未发现手抄转录错误",
+    "Guo 分支 sigma 偏低 39% 被交付主动标为 honest FAIL 并留新条目线索（XVAL-LBM-SC-GUO-FORCING-BIAS-AUDIT），属正确 negative knowledge"
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "claim": "外部锚为空：TCLB 未执行 + tensor_benchmark_cases 该 anchor 0 行",
+      "severity": "medium",
+      "evidence": "报告 ④.6 自认『与 TCLB 的对标是配方级、非代码级』; SELECT count(*) FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO' -> 0; 仓内无 TCLB build/run/log/SHA",
+      "impact": "L4 不可达，判级封顶 L3"
+    },
+    {
+      "id": "F2",
+      "claim": "头号数字『sigma 对 tau 离散度 ±25.6% / ±0.4%』无工件字段，且两列口径不一致",
+      "severity": "medium",
+      "evidence": "compact.json 无该字段（legs.scheme 仅逐点 d_sigma_pct_*）；审计者统一口径重算 R0=12: velocity_shift sigma=[0.042302,0.055185,0.072770] 全幅 53.68%/半幅 26.84%/单侧 -25.46%/+28.22%；edm 全幅 0.40%/半幅 0.20%；guo 全幅 0.56%。报告的 ±0.4% 取全幅、±25.6% 近似只取负侧单支",
+      "impact": "非阻断（结论方向不变且原表述低估自身缺陷），但违反程序化注入零手抄"
+    },
+    {
+      "id": "F3",
+      "claim": "图在仓库态缺失且平台报告未内嵌图",
+      "severity": "low",
+      "evidence": "git cat-file -e HEAD:xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/fig1_laplace_tau_coexistence.png -> not exist（m21378 commit 有，merge #2455 被门禁滤除）；tensor_reports id=19330 figures::text 长度 121B = 仅 name+caption 无 png_base64",
+      "impact": "下游无法取回图，只能重跑 local_sweep"
+    },
+    {
+      "id": "F4",
+      "claim": "上游第 1 轮报告的虚列工件与错误 PASS 结论仍在库内",
+      "severity": "low",
+      "evidence": "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO/REPORT.md §6.2 列 fig1_laplace.png/fig2_spurious.png -> 全树 find 无命中; 同报告 §⑧ 仍写 PASS，§④ 把 rho_l 20.9% 误差解释为物理差异; R2 REVIEW_R1.md 已复核但未回改 R1 目录（未标 superseded）",
+      "impact": "sigma≈16 / PASS 结论可被后续任务误引"
+    },
+    {
+      "id": "F5",
+      "claim": "整轮扫频重跑超出本机 120 s shell 上限；交付未给整轮耗时",
+      "severity": "low",
+      "evidence": "审计者本机直跑整轮被 120s 硬超时收割；改递 compute 门 cj3406（4 核），收尾时仍 queued；compact.json 每例有 wall_s 但无整轮 wall。已确认：单例 edm@tau=0.8@R=12 用交付 run_case 重放与工件逐位一致（rel dev 0.000e+00）",
+      "impact": "数值结论已由 solver-free 探针独立覆盖，不影响判级；复现命令的可执行性只在 pytest 上得到确认"
+    },
+    {
+      "id": "F6",
+      "claim": "交付为预算耗尽强制收尾，服务端质检标记 finish gate 证据缺键",
+      "severity": "low",
+      "evidence": "tensor_dev_missions id=21378 result: fail_stage='budget_exhausted+forced_finish', evidence.server_quality_audit={gate_valid:false, key_present:false, gate_missing_warning:true}; 全量 45 例 cj3388 未 fetch",
+      "impact": "不采信任何隐含的『全量已覆盖』表述"
+    }
+  ],
+  "falsified_hypotheses": [
+    "『EDM 与 velocity-shift 结果几乎相同 => 力项影响被掩盖』(R1 §④ 的物理解释): 伪 —— tau=1 是恒等式 5.55e-17，与力幅大小无关",
+    "『sigma≈16 通过 <15%』(R1 自判 PASS): 伪 —— 压力符号错，真值 0.055（比值 270.4）",
+    "『三种力项等价』: 伪 —— Guo sigma 低 39%、rho_v 低 16-19%（交付已如实标 honest FAIL）"
+  ],
+  "external_anchor": "WITHHELD —— CFD-GO/TCLB models/multiphase/d2q9_scmp/Dynamics.c.Rt (shan-chen-edm-lycett-luo: psi sqrt(-p_cs+rho/3) @543-555, gs stencil @oss_inventory id=54, EDM @497-510, Lycett-Luo Phi @800-858)。沙箱无 TCLB 运行时：无 build/run/log/SHA，交付与审计双方均未执行 TCLB 本体，故 external_anchor 无 sha256 可锚。",
+  "external_anchor_sha256": null,
+  "disposition": "approve with notes —— L3 confirmed（实质增量、真库路径、测试可复跑、数值与工件自洽）；L4 保持 open，返修清单见 audit/m21400/AUDIT_M21378.md §6",
+  "independence_limits": "审计者与交付者共用同一源码树（m21400 HEAD 含 m21378 merge），无法排除共享实现假设；对库约定类主张(C2)只做到与库文档/自洽性一致，未做独立实现回归。Maxwell 参照是解析自洽参照（同一 SC 状态方程），能证明共存密度与 EOS 一致，不能证明该 EOS/力项配方与 TCLB 或实验一致。全量 45 例(local_sweep/run_xval 全扫) not_run。",
+  "checks_not_run": [
+    "TCLB 本体构建与运行（沙箱无运行时）-> external_anchor not_run",
+    "全量 45 例 cj3388 从未 fetch -> not_run",
+    "整轮 local_sweep.py 23 例未重放（本机 120s 收割，compute 门 cj3406 收尾时仍 queued）-> 整轮 not_run；单例 edm@0.8@R12 已逐位复现",
+    "float32/float64 dtype 精度对齐未单独量化（量级 ~1e-7，远小于 1.6-6% 结论误差，不构成风险）"
+  ]
+}
