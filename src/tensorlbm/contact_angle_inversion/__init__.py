@@ -14,6 +14,8 @@ This module provides:
 - :func:`calibrate` — run the sweep and return the calibration object.
 - :func:`invert` — given a calibration and target angle, return ``f_w``.
 - :func:`forward` — given a calibration and ``f_w``, return predicted ``theta``.
+- :func:`inversion_branches` / :func:`is_monotone` — expose the ambiguity of a
+  non-monotone calibration curve instead of silently picking one branch.
 - :class:`CalibrationResult` — holds the fitted curve and metadata.
 
 References
@@ -34,6 +36,8 @@ from .calibration import (
     calibrate,
     forward,
     invert,
+    inversion_branches,
+    is_monotone,
     young_prediction,
 )
 
@@ -42,5 +46,7 @@ __all__ = [
     "calibrate",
     "forward",
     "invert",
+    "inversion_branches",
+    "is_monotone",
     "young_prediction",
 ]
