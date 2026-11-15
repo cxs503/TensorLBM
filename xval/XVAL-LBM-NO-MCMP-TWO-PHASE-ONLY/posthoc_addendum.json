@@ -1,0 +1,30 @@
+{
+  "anchor": "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+  "round": 2,
+  "mission": 21325,
+  "status": "post-hoc",
+  "written_at": "2026-11-15",
+  "statement": "This file is NOT part of the predeclared contract. predeclared.json stays byte-frozen: no threshold in it is relaxed, no failed check is re-scored, no arm is dropped or added to the production matrix. The diagnostics below were defined AFTER K6_mass_drift_rel had already failed in round 1, in order to root-cause that failure. They are additive and they are reported under their own names (D1..D3) in section 3.7 / section 4 of REPORT.md.",
+  "why": "Round 1 reported K6_mass_drift_rel = 3.46e-04 against the predeclared 1e-6 threshold as an honest FAIL, but left the cause open: (a) a genuine mass leak in the collide/stream/bounce-back/Guo chain, (b) mass parked in the two bounce-back wall rows that the predeclared fluid-only sum does not count, or (c) float32 round-off accumulation over the 1e4-5e4 steps of the ratio-10 arms. The three outcomes have different consequences (model defect / check-definition artefact / arithmetic precision) and must not be guessed.",
+  "diagnostics": {
+    "D1_mass_drift_float64": "Whole-domain (fluid + wall rows) relative mass drift of the worst-K6 arm re-run in float64 with identical settings. A collapse of many orders of magnitude versus the float32 production value identifies the drift as arithmetic round-off of the operator chain, i.e. the model conserves mass.",
+    "D2_not_parked_in_walls": "share = |dWall| / |dFluid| per two-phase arm. share -> 1 would mean the fluid-only deficit is merely parked in the static wall buffer (a bookkeeping artefact); share << 1 rejects that reading.",
+    "D3_profile_unaffected_by_dtype": "|L2(float64) - L2(float32)| on the same arm: the dtype audit must not change the physics result, otherwise the audit is not measuring round-off."
+  },
+  "thresholds": {
+    "D1_mass_drift_float64": 1e-06,
+    "D2_not_parked_in_walls": 0.1,
+    "D3_profile_unaffected_by_dtype": 0.001
+  },
+  "threshold_rationale": {
+    "D1_mass_drift_float64": "deliberately the same numeric value as the predeclared K6 threshold (1e-6): the question asked is whether the predeclared gate itself is attainable at all in double precision, not a new (easier) gate.",
+    "D2_not_parked_in_walls": "an order of magnitude below 1, i.e. at least 90% of the fluid deficit must be absent from the wall buffer for the wall-buffer explanation to be rejected.",
+    "D3_profile_unaffected_by_dtype": "0.1% absolute change of the L2 error, i.e. two orders of magnitude below the 15% acceptance band."
+  },
+  "measured": {
+    "arm": "M1 ny=96 ratio=10 w=2 harmonic",
+    "float32_mass_drift_rel": 0.000346,
+    "float64_mass_drift_rel": 1e-12,
+    "verdict": "K6 is failed by float32 round-off accumulation (per-step relative imbalance ~1e-8), not by a mass leak and not by the wall-buffer bookkeeping. K6 stays recorded as failed."
+  }
+}

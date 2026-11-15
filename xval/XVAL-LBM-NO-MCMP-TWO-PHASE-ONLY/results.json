@@ -594,6 +594,8 @@
     "rows": {}
    }
   },
-  "all_declared_thresholds_pass": false
+  "posthoc_checks": {},
+  "all_declared_thresholds_pass": false,
+  "all_posthoc_pass": null
  }
 }
