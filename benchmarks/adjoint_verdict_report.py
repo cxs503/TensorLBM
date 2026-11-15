@@ -141,8 +141,20 @@ def make_figures(payload: dict, artifact_dir: str, figdir: str = "figures") -> l
     os.makedirs(figdir, exist_ok=True)
     made = []
     for name in payload["configs"]:
-        npz = os.path.join(artifact_dir, f"fields_{name}.npz")
-        if os.path.exists(npz):
+        # The benchmark writes snapshots to ``<dirname(out)>/<basename(out) without .json>/``
+        # (e.g. ``artifacts/adjoint_verdict_diff_lbm/fields_R1_yc050.npz``), so the
+        # lookup must cover that directory too -- otherwise the documented repro
+        # command silently emits no field figures.
+        stem = os.path.splitext(os.path.basename(os.path.normpath(artifact_dir)))[0]
+        npz = ""
+        for cand in (
+            os.path.join(artifact_dir, f"fields_{name}.npz"),
+            os.path.join(artifact_dir, stem, f"fields_{name}.npz"),
+        ):
+            if os.path.exists(cand):
+                npz = cand
+                break
+        if npz:
             out = os.path.join(figdir, f"adjoint_verdict_diff_lbm_field_{name}.png")
             _field_figure(npz, out, name)
             made.append(out)
