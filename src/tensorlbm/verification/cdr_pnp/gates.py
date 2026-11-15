@@ -11,6 +11,7 @@ from .pnp_solver import (
     henry_function, electrophoretic_mobility, run_pnp_edl, run_electroosmosis,
     run_electrophoresis, _F,
 )
+from .eof_lbm import run_eof_benchmark
 
 __all__ = [
     "GATE_THRESHOLDS", "check_c1_da1_concentration", "check_c2_debye_length",
@@ -23,6 +24,11 @@ GATE_THRESHOLDS = {
     "C2_debye_length_rel_error": 0.03,
     "C3_electroosmosis_rel_error": 0.03,
     "C3_electroosmosis_flatness": 0.02,
+    # A real (discretised) solve can never reproduce the exact profile to
+    # machine precision; a circular "verification" would.
+    "C3_min_discretisation_error": 1e-6,
+    "C3_negative_control_min_error": 0.10,
+    "C3_min_nodes_per_debye": 3.0,
     "C4_henry_rel_error": 0.05,
     "C5_mass_conservation": 1e-8,
     "C5_electroneutrality": 1e-6,
@@ -69,23 +75,87 @@ def check_c2_debye_length(kappa_a_values=None, tol=None):
     return {"gate": "C2", "results": results, "all_passed": all_passed}
 
 
-def check_c3_electroosmosis(tol_velocity=None, tol_flatness=None):
+def check_c3_electroosmosis(tol_velocity=None, tol_flatness=None,
+                            method="lbm", ny=129, negative_controls=True):
+    """Gate C3: electro-osmotic flow vs the Poisson-Boltzmann exact profile.
+
+    The flow field is obtained from a *numerical* solve (LBM by default, FD as
+    an independent discretisation); see ``pnp_solver.run_electroosmosis`` for
+    the defect record of the previous circular implementation.
+
+    Negative controls (required, enabled by default): a 0.8x force and a
+    reversed field must both violate the pass criterion, and a zero field must
+    produce no flow - otherwise the gate has no discriminating power.
+    """
     if tol_velocity is None:
         tol_velocity = GATE_THRESHOLDS["C3_electroosmosis_rel_error"]
     if tol_flatness is None:
         tol_flatness = GATE_THRESHOLDS["C3_electroosmosis_flatness"]
-    config = PNPConfig(ny=256, H=1e-6, c_bulk=1.0, z=[1, -1], D_ion=1e-9,
-                       zeta=-0.05, E_x=1e4, mu=1e-3, steps=10000, dt=1e-9)
-    result = run_electroosmosis(config)
-    u_error = result["u_error"]
-    flatness = result["flatness"]
+    # kappa_H = 20 puts the plug core (|y-H/2| < H/2 - 5 lambda_D) inside the
+    # channel; the historical default H=1e-6 gave kappa_H=3.3 with no core at
+    # all, so the flatness metric was vacuous.
+    base = PNPConfig(ny=ny, c_bulk=1.0, zeta=-0.05, E_x=1e4, mu=1e-3)
+    H = 20.0 * base.kappa_inv
+    config = PNPConfig(ny=ny, H=H, c_bulk=1.0, zeta=-0.05, E_x=1e4, mu=1e-3)
+    result = run_electroosmosis(config, method=method)
+    fd = run_electroosmosis(config, method="fd")
+
+    nodes_per_debye = result["nodes_per_debye"]
+    passed_resolution = bool(nodes_per_debye >= GATE_THRESHOLDS["C3_min_nodes_per_debye"])
+    passed_velocity = bool(result["u_error"] < tol_velocity)
+    passed_flatness = bool(np.isfinite(result["flatness"]) and
+                           result["flatness"] < tol_flatness)
+    # A circular implementation would report a bit-identical profile and the
+    # two discretisations would agree exactly.
+    passed_not_circular = bool(
+        result["u_error"] > GATE_THRESHOLDS["C3_min_discretisation_error"]
+        and result["lbm_vs_fd"] > GATE_THRESHOLDS["C3_min_discretisation_error"]
+    ) if method == "lbm" else bool(
+        result["u_error"] > GATE_THRESHOLDS["C3_min_discretisation_error"])
+
+    nc = {}
+    passed_nc = True
+    if negative_controls:
+        min_err = GATE_THRESHOLDS["C3_negative_control_min_error"]
+        for name, kw in (("force_0.8x", dict(force_scale=0.8)),
+                         ("field_reversed", dict(force_sign=-1.0)),
+                         ("no_field", dict(force_scale=0.0))):
+            # coarse grid: the controls detect gross (>=10%) deviations, so
+            # they do not need the fine grid of the pass criterion.
+            r = run_eof_benchmark(ny=65, kappa_H=20.0, u_hs=0.02, solver="lbm",
+                                  max_steps=120_000, tol=1e-11,
+                                  force_scale=kw.get("force_scale", 1.0),
+                                  force_sign=kw.get("force_sign", 1.0))
+            err = r["errors"]["max_rel"]
+            detected = bool(err >= max(min_err, tol_velocity))
+            nc[name] = {"error": err, "detected": detected}
+            passed_nc = passed_nc and detected
+
+    passed = bool(passed_velocity and passed_flatness and passed_resolution
+                  and passed_not_circular and passed_nc)
     return {
-        "gate": "C3", "u_hs": result["u_hs"], "u_mean": result["u_mean"],
-        "u_error": u_error, "u_threshold": tol_velocity,
-        "passed_velocity": bool(u_error < tol_velocity),
-        "flatness": flatness, "flatness_threshold": tol_flatness,
-        "passed_flatness": bool(flatness < tol_flatness),
-        "passed": bool(u_error < tol_velocity and flatness < tol_flatness),
+        "gate": "C3",
+        "method": method,
+        "kappa_H": result["kappa_H"],
+        "nodes_per_debye": nodes_per_debye,
+        "u_hs": result["u_hs"],
+        "u_mean": result["u_mean"],
+        "u_error": result["u_error"],
+        "l2_error": result["l2_error"],
+        "u_error_fd": fd["u_error"],
+        "lbm_vs_fd": result["lbm_vs_fd"],
+        "u_threshold": tol_velocity,
+        "flatness": result["flatness"],
+        "flatness_threshold": tol_flatness,
+        "negative_controls": nc,
+        "passed_velocity": passed_velocity,
+        "passed_flatness": passed_flatness,
+        "passed_resolution": passed_resolution,
+        "passed_not_circular": passed_not_circular,
+        "passed_negative_controls": passed_nc,
+        "converged": result["converged"],
+        "steps": result["steps"],
+        "passed": passed,
     }
 
 
