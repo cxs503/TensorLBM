@@ -66,7 +66,7 @@ class ContactModel(ABC):
         normal : torch.Tensor
             Contact normal vector (unit vector).
         overlap : float
-            Overlap distance in meters.
+            Overlap distance in meters (positive = overlapping).
         relative_velocity : torch.Tensor
             Relative velocity at contact point in m/s.
         
@@ -98,6 +98,12 @@ class LinearSpringDashpot(ContactModel):
         s_t = tangential displacement (m)
         μ = friction coefficient
         |F_n| = magnitude of normal force
+    
+    **No-tension condition**: The no-tension condition (no adhesive forces) is
+    enforced by setting the force to zero when overlap ≤ 0 (particles are not
+    in contact). During contact (overlap > 0), the full Kelvin-Voigt model is
+    used, which matches the analytical solution for the restitution coefficient
+    e = exp(-πζ/√(1-ζ²)) from Di Renzo & Di Maio (2004).
     
     Parameters
     ----------
@@ -138,7 +144,14 @@ class LinearSpringDashpot(ContactModel):
         overlap: float,
         relative_velocity: torch.Tensor,
     ) -> ContactInfo:
-        """Compute linear spring-dashpot contact force."""
+        """Compute linear spring-dashpot contact force.
+        
+        The no-tension condition is enforced by checking overlap > 0 (contact
+        is active). During contact, the full Kelvin-Voigt model is used without
+        clipping the total force, which preserves the analytical restitution
+        coefficient. This fixes the +8.9% bias on e that occurred when the
+        total force was clipped with max(0, F).
+        """
         device = p1.position.device
         
         # Normal components
@@ -147,9 +160,17 @@ class LinearSpringDashpot(ContactModel):
         tangential_velocity = relative_velocity - normal_velocity
         
         # Normal force: F_n = k_n * δ - η_n * v_n
-        # Positive overlap = compression = repulsive force
-        f_n_magnitude = self.normal_stiffness * overlap - self.normal_damping * v_n.item()
-        f_n_magnitude = max(0.0, f_n_magnitude)  # No tension
+        # No-tension condition: force is zero when not in contact (overlap <= 0).
+        # During contact (overlap > 0), use the full Kelvin-Voigt model without
+        # clipping the total force. This matches the analytical solution for the
+        # restitution coefficient e = exp(-πζ/√(1-ζ²)).
+        if overlap > 0.0:
+            # In contact: full Kelvin-Voigt model
+            f_n_magnitude = self.normal_stiffness * overlap - self.normal_damping * v_n.item()
+        else:
+            # Not in contact: no force
+            f_n_magnitude = 0.0
+        
         normal_force = f_n_magnitude * normal
         
         # Tangential force (simplified: no history tracking for now)
