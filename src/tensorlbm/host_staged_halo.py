@@ -34,9 +34,11 @@ transport can be validated on a CPU-only node as well as on CUDA devices.
 
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass
 
+import numpy as np
 import torch
 
 __all__ = [
@@ -48,6 +50,11 @@ __all__ = [
     "HostStagedLayout",
     "HostStagedHalo",
     "HostStagedD3Q19",
+    "linearised_step_operator",
+    "transverse_modes",
+    "discrete_transverse_rate",
+    "shear_khat2",
+    "linear_mode_decay_rate",
 ]
 
 # ---------------------------------------------------------------------------
@@ -646,3 +653,136 @@ class HostStagedD3Q19:
             x0, y0, z0 = lay.global_offset(d)
             out[z0 : z0 + oz, y0 : y0 + oy, x0 : x0 + ox] = rho.cpu()
         return out
+
+# ---------------------------------------------------------------------------
+# Exact linear reference for the transverse (shear) modes
+# ---------------------------------------------------------------------------
+#
+# A single Fourier mode ``f_q(x) = f_hat_q exp(i k.x)`` of the linearised,
+# athermal D3Q19 BGK collide+stream step satisfies ``f_hat <- A f_hat`` with
+#
+#     A = S (I - omega (I - P)),  S = diag(exp(-i c_q.k)),
+#                                 P_qq' = W_q (1 + 3 c_q.c_q')
+#
+# (``S`` is the pull-streaming factor of ``HostStagedD3Q19._stream`` and ``P``
+# is the equilibrium projection linearised about ``u = 0``, i.e. exactly the
+# operator the solver steps).  The transverse (shear) branch of ``A`` is the
+# set of eigenmodes that carry no mass and whose momentum is orthogonal to
+# ``k``; their amplitude decays as ``|lambda|^t``.  ``-ln|lambda|`` is an
+# *exact discrete* decay exponent -- no continuum limit, no finite-``k``
+# ambiguity -- and is therefore a sharper physics gate than ``2*nu*k^2``.
+#
+# Conventions matter: ``numpy.linalg.eig`` returns eigenvectors as *columns*.
+# Pairing eigenvalues with ``vecs[:, j]`` is required; iterating the matrix
+# (``for lam, vec in zip(vals, vecs)``) yields rows and silently misclassifies
+# the modes (defect found in mission m21930, see
+# ``docs/XVAL-LBM-SINGLE-NODE-MULTI-GPU-HOST-STAGED-HALO.md`` section 8).
+
+
+def linearised_step_operator(kvec, nu: float) -> np.ndarray:
+    """Complex ``19x19`` matrix of one linearised D3Q19 BGK collide+stream step."""
+    c = np.asarray(D3Q19_C, dtype=np.float64)
+    w = np.asarray(D3Q19_W, dtype=np.float64)
+    omega = 1.0 / (3.0 * nu + 0.5)
+    proj = w[:, None] * (1.0 + 3.0 * (c @ c.T))
+    phase = np.exp(-1j * (c @ np.asarray(kvec, dtype=np.float64)))
+    return phase[:, None] * (np.eye(19) - omega * (np.eye(19) - proj))
+
+
+def shear_khat2(kvec) -> float:
+    """Lattice-corrected squared wavenumber ``sum_d 2*(1-cos k_d)``."""
+    k = np.asarray(kvec, dtype=np.float64)
+    return float(np.sum(2.0 * (1.0 - np.cos(k))))
+
+
+def transverse_modes(kvec, nu: float, *, mass_tol: float = 1e-9,
+                     perp_tol: float = 1e-8) -> list[dict]:
+    """Transverse eigenmodes of :func:`linearised_step_operator`.
+
+    Selection: ``|lambda| < 1`` (decaying), zero mass, non-zero momentum
+    orthogonal to ``k``.  Returned sorted by increasing decay rate.
+    """
+    k = np.asarray(kvec, dtype=np.float64)
+    c = np.asarray(D3Q19_C, dtype=np.float64)
+    vals, vecs = np.linalg.eig(linearised_step_operator(kvec, nu))
+    out: list[dict] = []
+    for j, lam in enumerate(vals):
+        if abs(lam) >= 1.0:
+            continue
+        vec = vecs[:, j]  # column j is the right eigenvector of vals[j]
+        mass = abs(complex(vec.sum()))
+        mom = c.T @ vec
+        norm = float(np.linalg.norm(mom))
+        if mass > mass_tol or norm < 1e-12:
+            continue
+        if abs(complex(np.dot(k, mom))) / norm > perp_tol:
+            continue
+        out.append({
+            "lambda_abs": float(abs(lam)),
+            "rate": float(-math.log(abs(lam))),
+            "mass": mass,
+            "polarisation": (mom / norm).real.tolist(),
+        })
+    out.sort(key=lambda r: r["rate"])
+    return out
+
+
+def discrete_transverse_rate(kvec, nu: float, *, degeneracy_tol: float = 1e-6) -> float:
+    """Rate ``-ln|lambda|`` of the *slowest* transverse (shear) mode pair.
+
+    The transverse sector contains the physical shear pair **and** four fast
+    ``(+-1,+-1,+-1)``-type ghost modes (``|lambda| ~ 0.79`` at ``nu = 0.02``);
+    only the slowest pair is the hydrodynamic shear branch, so the selection is
+    "two slowest transverse rates", with a degeneracy check and a separation
+    check against the ghost modes.  Raises instead of silently returning an
+    arbitrary eigenvalue when the spectrum does not look like that.
+    """
+    modes = transverse_modes(kvec, nu)
+    rates = [m["rate"] for m in modes]
+    if len(rates) < 2 or min(rates) <= 0.0:
+        raise RuntimeError(
+            f"expected >= 2 transverse modes for k={kvec}, nu={nu}; got {rates}"
+        )
+    pair = rates[:2]
+    spread = (pair[1] - pair[0]) / (sum(pair) / 2.0)
+    if spread > degeneracy_tol:
+        raise RuntimeError(
+            f"slowest transverse pair is not degenerate for k={kvec}, nu={nu}: {pair} "
+            f"(spread {spread:.2e})"
+        )
+    if len(rates) > 2 and rates[2] < 10.0 * pair[1]:
+        raise RuntimeError(
+            f"slowest transverse pair is not separated from the ghost modes for k={kvec}, "
+            f"nu={nu}: {rates}"
+        )
+    return float(sum(pair) / 2.0)
+
+
+def linear_mode_decay_rate(kvec, nu: float, dfhat, component: int, t1: int, t2: int) -> float:
+    """Decay exponent of one momentum component of an arbitrary initial Fourier mode.
+
+    ``dfhat`` is the initial perturbation vector (19 complex amplitudes, the
+    same ordering as :data:`D3Q19_C`); the momentum of the mode after ``t``
+    steps is ``c . (A^t dfhat)``.  The returned value is the log-slope of
+    ``|component|`` between ``t1`` and ``t2`` -- the same quantity that is
+    measured from a run, but computed from linear theory, so it carries the
+    genuine transient of the initial projection instead of assuming that the
+    slowest eigenmode has already separated.
+
+    The propagation is done by repeated multiplication rather than by
+    ``vecs @ (coeff * vals**t)``: the eigenbasis of the non-normal operator is
+    ill-conditioned (some unphysical modes have ``|lambda| > 1`` at
+    ``omega > 1``) and the modal expansion is numerically unstable there.
+    """
+    op = linearised_step_operator(kvec, nu)
+    c = np.asarray(D3Q19_C, dtype=np.float64)
+    v = np.asarray(dfhat, dtype=complex)
+    amps = {}
+    for t in range(max(t1, t2) + 1):
+        if t in (t1, t2):
+            amps[t] = abs((c.T @ v)[component])
+        v = op @ v
+    a1, a2 = amps[t1], amps[t2]
+    if a1 == 0.0 or a2 == 0.0:
+        raise RuntimeError("initial mode has no projection on the requested component")
+    return float(math.log(a1 / a2) / (t2 - t1))
