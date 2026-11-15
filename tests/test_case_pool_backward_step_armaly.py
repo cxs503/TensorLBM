@@ -105,19 +105,85 @@ def test_short_run_conserves_mass_flux_and_returns_finite_observable():
     assert 0.5 < res["x1_over_s"] < 8.0
 
 
-@pytest.mark.skipif(not (ART / "g2_re100" / "result.json").is_file(),
-                    reason="pool artefacts not generated yet")
-def test_committed_benchmark_meets_reference_tolerance():
-    """Grade the committed artefacts exactly like a benchmark table would."""
-    tol = REFS["adopted_numeric_reference"]["tolerance_pct"]
-    points = REFS["adopted_numeric_reference"]["points"]
-    checked = 0
-    for re, ref in points.items():
-        path = ART / f"g2_re{re}" / "result.json"
-        if not path.is_file():
+def _committed_points() -> dict[str, dict]:
+    """Every committed run artefact of the pool case, keyed by tag."""
+    out: dict[str, dict] = {}
+    for path in sorted(ART.glob("*/result.json")):
+        try:
+            out[path.parent.name] = json.loads(path.read_text())
+        except (json.JSONDecodeError, OSError):
             continue
-        got = json.loads(path.read_text())["result"]["x1_over_s"]
-        err = 100.0 * (got - ref["x1_over_s"]) / ref["x1_over_s"]
-        assert abs(err) <= tol, f"Re={re}: got {got:.3f} vs ref {ref['x1_over_s']} -> {err:+.1f}%"
+    return out
+
+
+POINTS = _committed_points()
+
+
+def _is_steady(run: dict) -> bool:
+    """A point counts only if the run stopped itself on the steady tolerance or its
+    last three sampled X1/s checks drift by <= 1 % (same gate as verdict.py)."""
+    res = run.get("result", {})
+    if res.get("steady_at_step") is not None:
+        return True
+    tail = [h["x1_over_s_instant"] for h in (run.get("convergence_history") or [])[-3:]
+            if isinstance(h.get("x1_over_s_instant"), (int, float))]
+    if len(tail) < 3 or not tail[0]:
+        return False
+    return 100.0 * max(abs(v - tail[0]) for v in tail) / abs(tail[0]) <= 1.0
+
+
+@pytest.mark.skipif(not POINTS, reason="no committed pool artefacts yet")
+def test_committed_benchmark_meets_reference_tolerance():
+    """Grade every committed artefact exactly like the registered referee table would.
+
+    The gate is ``ledger_tolerance_pct`` (10 %, the feature_ledger acceptance of
+    CASE-BACKSTEP-FVM-RE100 and the tolerance of the registered
+    ``tensor_benchmark_cases`` row), not the looser historical in-repo band.
+    """
+    ref = REFS["adopted_numeric_reference"]
+    tol = ref["ledger_tolerance_pct"]
+    points = ref["points"]
+    checked = 0
+    for tag, run in POINTS.items():
+        re = float(run["config"]["re"])
+        if str(int(re)) not in points:
+            continue
+        got = run["result"].get("x1_over_s")
+        assert isinstance(got, (int, float)) and math.isfinite(got), f"{tag}: X1/s = {got}"
+        x1_ref = float(points[str(int(re))]["x1_over_s"])
+        err = 100.0 * (got - x1_ref) / x1_ref
+        assert abs(err) <= tol, f"{tag} (Re={re:g}): got {got:.3f} vs ref {x1_ref} -> {err:+.1f}% > {tol}%"
+        # the cross-check anchor of the same case: 2D numerical band, 5 % gate
+        if int(re) == 100:
+            erturk = next(c for c in REFS["cross_checks"] if c["quantity"].startswith("X1/s at Re=100"))
+            err2 = 100.0 * (got - erturk["value"]) / erturk["value"]
+            assert abs(err2) <= 5.0, f"{tag}: {got:.3f} vs Erturk 2008 {erturk['value']} -> {err2:+.1f}% > 5%"
         checked += 1
     assert checked >= 1
+
+
+@pytest.mark.skipif(not POINTS, reason="no committed pool artefacts yet")
+def test_committed_point_is_converged_and_flux_tight():
+    """The committed point must be a *converged* point (round 2/4 lacked one):
+    self-stopped (or <= 1 % drift), mass-flux imbalance <= 1e-3, tau >= 0.55."""
+    for tag, run in POINTS.items():
+        if run["config"].get("n_steps", 0) < 20000:
+            continue                      # smoke/short artefacts are not judged points
+        res, der = run["result"], run["derived"]
+        assert _is_steady(run), f"{tag}: transient (steady_at_step={res.get('steady_at_step')}, drift > 1%)"
+        assert abs(res["mass_flux_rel_error"]) <= 1e-3, f"{tag}: mass flux {res['mass_flux_rel_error']:.2e}"
+        assert der["tau"] >= 0.55 and der["mach_inlet"] <= 0.3, f"{tag}: lattice window {der}"
+
+
+@pytest.mark.skipif(not POINTS, reason="no committed pool artefacts yet")
+def test_verdict_gate_passes_on_committed_artefacts():
+    """verdict.py must judge the committed artefacts all-PASS (CI gate; round 4 had runs=[])."""
+    sys.path.insert(0, str(REPO / "benchmarks" / "case_pool" / "backward_step_armaly"))
+    import importlib
+    verdict = importlib.import_module("verdict")
+    v = verdict.evaluate()
+    assert v["n_runs"] >= 1, "verdict saw no runs"
+    assert v["all_judged_pass"] is True, json.dumps(
+        [{k: r[k] for k in ("tag", "error_pct", "checks", "note_missing")} for r in v["runs"]], indent=2)
+    tol = REFS["adopted_numeric_reference"]["ledger_tolerance_pct"]
+    assert v["max_abs_error_pct"] <= tol
