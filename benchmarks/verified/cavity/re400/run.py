@@ -174,6 +174,15 @@ def run_case(nx, re, u_lid, steps, device, compile_mode="default", capture=None)
         "rmse_u": rmse_u,
         "rmse_v": rmse_v,
         "max_abs_dev_pct": max_abs_dev_pct,
+        # Raw centreline profiles, stored so that any later version of the
+        # anchor (or any other BOUND table) can be re-scored without re-running
+        # the solver.  Normalised by u_lid.
+        "profiles": {
+            "y": y_pos.tolist(),
+            "x": x_pos.tolist(),
+            "u_cl": u_cl.tolist(),
+            "v_cl": v_cl.tolist(),
+        },
     }
 
 
