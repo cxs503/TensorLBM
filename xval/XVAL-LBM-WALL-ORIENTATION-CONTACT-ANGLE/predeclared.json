@@ -1,0 +1,51 @@
+{
+  "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+  "round": "3-wall-orientation",
+  "question": "The two contact-angle wall conditions that the anchor cross-validated on a HORIZONTAL plate (angle-driven ghost, wall-order-parameter / Young wall energy) must also reproduce the prescribed Young angle when the same wall is rotated to the other three sides of the box. A 90 deg rotated copy of one physical experiment is the same experiment; if the discretised wall condition is orientation dependent, the anchor's PASS was a bottom-plate-only result.",
+  "reference": "Young's law cos(theta_Y) = (3 psi_w - psi_w^3)/2 with the wall energy of the model; a rotation of the configuration by 90 deg leaves theta invariant (isotropy of the continuum problem). The reference angle per row is theta_prescribed for the 'contact' arm, and the emergent Young angle of psi_w for the 'wall_order' arm.",
+  "arms": {
+    "contact": "angle-driven wall ghost, phi_solid = phi_fluid + cos(theta) 4 phi (1-phi) / W (src/tensorlbm/cac_lbm2d.py)",
+    "wall_order": "wetting from a wall order parameter psi_w via the wall free energy, theta_Y = acos((3 psi_w - psi_w^3)/2) (independent of any angle input)"
+  },
+  "orientations": ["bottom", "top", "left", "right"],
+  "predeclared_thresholds": {
+    "accept_pct": 15.0,
+    "orientation_pct": 15.0,
+    "mirror_deg": 0.5,
+    "cross_arm_pct": 15.0,
+    "min_apex_over_width": 1.0,
+    "circle_rms_over_width": 0.5
+  },
+  "predeclared_rules": [
+    "A row PASSES the accuracy gate iff |theta_measured - theta_ref| / theta_ref <= accept_pct for BOTH independent estimators (circle fit of the level set, spherical-cap area inversion).",
+    "A row is MEASURABLE iff the fitted cap apex height >= min_apex_over_width * W and the circle-fit rms <= circle_rms_over_width * W; otherwise it is reported NOT_MEASURABLE and excluded from pass counts (measurement limit, not a boundary-condition result).",
+    "MIRROR gate: bottom vs top and left vs right are exact mirror images of one experiment (gravity is switched off, so there is no distinguished vertical); they must agree within mirror_deg. A failure here is a code asymmetry, not a physics limit.",
+    "ORIENTATION gate: the axis-rotated pairs (bottom vs left, bottom vs right) must agree within orientation_pct of the prescribed angle.",
+    "CROSS-ARM gate: at every (orientation, angle) the two arms must agree within cross_arm_pct of the prescribed angle.",
+    "The XVAL PASSES iff every measurable row passes the accuracy gate and all three invariance gates pass over measurable rows. No threshold may be relaxed after inspection; deviations are reported as honest FAIL.",
+    "No gravity: gravity is set to zero in every run so that a 90 deg rotation is an exact symmetry of the discrete problem and any measured asymmetry is attributable to the wall condition."
+  ],
+  "matrix": {
+    "shape": [112, 112],
+    "radius": 22.0,
+    "wall_thickness": 2,
+    "width": 4.0,
+    "surface_tension": 0.02,
+    "angles_deg": [60.0, 90.0, 120.0],
+    "steps": 4000,
+    "sample_every": 1000
+  },
+  "numerics": {
+    "rho_l": 1.0,
+    "rho_g": 0.1,
+    "mu_l": 0.1,
+    "mu_g": 0.01,
+    "mobility": 0.05,
+    "mu_law": "harmonic",
+    "p0": 0.01,
+    "gravity": [0.0, 0.0],
+    "dtype": "float32",
+    "threads": 1,
+    "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)"
+  }
+}

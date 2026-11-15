@@ -1,0 +1,1441 @@
+{
+  "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+  "round": "3-wall-orientation",
+  "n_rows": 24,
+  "thresholds": {
+    "accept_pct": 15.0,
+    "orientation_pct": 15.0,
+    "mirror_deg": 0.5,
+    "cross_arm_pct": 15.0,
+    "min_apex_over_width": 1.0,
+    "circle_rms_over_width": 0.5
+  },
+  "per_arm": {
+    "contact": {
+      "n_rows": 12,
+      "n_measurable": 8,
+      "n_pass": 8,
+      "max_err_pct": 10.167128103345723,
+      "median_err_pct": 6.426265219668852,
+      "max_circle_rms_over_width": 0.005346814402254745
+    },
+    "wall_order": {
+      "n_rows": 12,
+      "n_measurable": 8,
+      "n_pass": 8,
+      "max_err_pct": 10.167128103345735,
+      "median_err_pct": 6.426265219668859,
+      "max_circle_rms_over_width": 0.005346814402254745
+    }
+  },
+  "mirror": [
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "bottom",
+        "top"
+      ],
+      "diff_deg": 0.006269638379137632,
+      "pass": true
+    },
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "left",
+        "right"
+      ],
+      "diff_deg": 0.0488653583938401,
+      "pass": true
+    },
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "bottom",
+        "top"
+      ],
+      "diff_deg": 0.008971783400909317,
+      "pass": true
+    },
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "left",
+        "right"
+      ],
+      "diff_deg": 0.0034471157242990103,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "bottom",
+        "top"
+      ],
+      "diff_deg": 0.006269638379137632,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "left",
+        "right"
+      ],
+      "diff_deg": 0.0488653583938401,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "bottom",
+        "top"
+      ],
+      "diff_deg": 0.008971783400909317,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "left",
+        "right"
+      ],
+      "diff_deg": 0.0034471157242990103,
+      "pass": true
+    }
+  ],
+  "orientation": [
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "bottom",
+        "left"
+      ],
+      "diff_pct": 0.03875788994924455,
+      "pass": true
+    },
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "bottom",
+        "right"
+      ],
+      "diff_pct": 0.015536952710577782,
+      "pass": true
+    },
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "bottom",
+        "left"
+      ],
+      "diff_pct": 0.004622833539661049,
+      "pass": true
+    },
+    {
+      "arm": "contact",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "bottom",
+        "right"
+      ],
+      "diff_pct": 0.007495429976576892,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "bottom",
+        "left"
+      ],
+      "diff_pct": 0.03875788994924455,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 90.0,
+      "pair": [
+        "bottom",
+        "right"
+      ],
+      "diff_pct": 0.015536952710577782,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "bottom",
+        "left"
+      ],
+      "diff_pct": 0.004622833539661049,
+      "pass": true
+    },
+    {
+      "arm": "wall_order",
+      "theta_prescribed_deg": 120.0,
+      "pair": [
+        "bottom",
+        "right"
+      ],
+      "diff_pct": 0.007495429976576892,
+      "pass": true
+    }
+  ],
+  "cross_arm": [
+    {
+      "theta_prescribed_deg": 90.0,
+      "orientation": "bottom",
+      "theta_contact_deg": 91.8856666494942,
+      "theta_wall_order_deg": 91.8856666494942,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 90.0,
+      "orientation": "top",
+      "theta_contact_deg": 91.89193628787334,
+      "theta_wall_order_deg": 91.89193628787334,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 90.0,
+      "orientation": "left",
+      "theta_contact_deg": 91.92054875044852,
+      "theta_wall_order_deg": 91.92054875044852,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 90.0,
+      "orientation": "right",
+      "theta_contact_deg": 91.87168339205468,
+      "theta_wall_order_deg": 91.87168339205468,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 120.0,
+      "orientation": "bottom",
+      "theta_contact_deg": 122.79916833946444,
+      "theta_wall_order_deg": 122.79916833946444,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 120.0,
+      "orientation": "top",
+      "theta_contact_deg": 122.80814012286535,
+      "theta_wall_order_deg": 122.80814012286535,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 120.0,
+      "orientation": "left",
+      "theta_contact_deg": 122.80471573971204,
+      "theta_wall_order_deg": 122.80471573971204,
+      "diff_pct": 0.0,
+      "pass": true
+    },
+    {
+      "theta_prescribed_deg": 120.0,
+      "orientation": "right",
+      "theta_contact_deg": 122.80816285543634,
+      "theta_wall_order_deg": 122.80816285543634,
+      "diff_pct": 0.0,
+      "pass": true
+    }
+  ],
+  "anchor_pass": true,
+  "verdict": "PASS",
+  "rows": [
+    {
+      "tag": "contact__th060.0__bottom",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "bottom",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 60.0,
+      "psi_wall": null,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 16.095506191253662
+    },
+    {
+      "tag": "contact__th060.0__left",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "left",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 60.0,
+      "psi_wall": null,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.242217302322388
+    },
+    {
+      "tag": "contact__th060.0__right",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "right",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 60.0,
+      "psi_wall": null,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.29927134513855
+    },
+    {
+      "tag": "contact__th060.0__top",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "top",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 60.0,
+      "psi_wall": null,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.535858154296875
+    },
+    {
+      "tag": "contact__th090.0__bottom",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "bottom",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": null,
+      "theta_measured_deg": 91.8856666494942,
+      "theta_circle_deg": 91.35602915394941,
+      "theta_cap_deg": 92.41530414503897,
+      "err_circle_pct": 1.506699059943786,
+      "err_cap_pct": 2.683671272265526,
+      "estimator_gap_deg": 1.0592749910895662,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.006852842800346869,
+      "circle_rms_over_width": 0.0017132107000867173,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.0027673144909875305,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.001872062683105
+    },
+    {
+      "tag": "contact__th090.0__left",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "left",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": null,
+      "theta_measured_deg": 91.92054875044852,
+      "theta_circle_deg": 91.4253472184647,
+      "theta_cap_deg": 92.41575028243236,
+      "err_circle_pct": 1.5837191316274375,
+      "err_cap_pct": 2.6841669804803954,
+      "estimator_gap_deg": 0.990403063967662,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.006633857154183231,
+      "circle_rms_over_width": 0.0016584642885458078,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.002757985963996229,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.566723585128784
+    },
+    {
+      "tag": "contact__th090.0__right",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "right",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": null,
+      "theta_measured_deg": 91.87168339205468,
+      "theta_circle_deg": 91.31300137798587,
+      "theta_cap_deg": 92.43036540612347,
+      "err_circle_pct": 1.4588904199843,
+      "err_cap_pct": 2.7004060068038567,
+      "estimator_gap_deg": 1.117364028137601,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.0074146469353975775,
+      "circle_rms_over_width": 0.0018536617338493944,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.0027690171083197264,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.946272611618042
+    },
+    {
+      "tag": "contact__th090.0__top",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "top",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": null,
+      "theta_measured_deg": 91.89193628787334,
+      "theta_circle_deg": 91.37169431022437,
+      "theta_cap_deg": 92.41217826552231,
+      "err_circle_pct": 1.5241047891381894,
+      "err_cap_pct": 2.6801980728025714,
+      "estimator_gap_deg": 1.040483955297944,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.006742936991890157,
+      "circle_rms_over_width": 0.0016857342479725394,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.0027659839344279496,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.853460311889648
+    },
+    {
+      "tag": "contact__th120.0__bottom",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "bottom",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 120.0,
+      "psi_wall": null,
+      "theta_measured_deg": 122.79916833946444,
+      "theta_circle_deg": 132.18254931904062,
+      "theta_cap_deg": 113.41578735988826,
+      "err_circle_pct": 10.152124432533848,
+      "err_cap_pct": 5.486843866759786,
+      "estimator_gap_deg": 18.766761959152362,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.021272074567191934,
+      "circle_rms_over_width": 0.0053180186417979836,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004459927177304982,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.85947299003601
+    },
+    {
+      "tag": "contact__th120.0__left",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "left",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 120.0,
+      "psi_wall": null,
+      "theta_measured_deg": 122.80471573971204,
+      "theta_circle_deg": 132.19365971204462,
+      "theta_cap_deg": 113.41577176737947,
+      "err_circle_pct": 10.161383093370517,
+      "err_cap_pct": 5.48685686051711,
+      "estimator_gap_deg": 18.777887944665153,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.021384091537935683,
+      "circle_rms_over_width": 0.005346022884483921,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004461319982621383,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.867173433303833
+    },
+    {
+      "tag": "contact__th120.0__right",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "right",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 120.0,
+      "psi_wall": null,
+      "theta_measured_deg": 122.80816285543634,
+      "theta_circle_deg": 132.20055372401487,
+      "theta_cap_deg": 113.41577198685782,
+      "err_circle_pct": 10.167128103345723,
+      "err_cap_pct": 5.4868566776184835,
+      "estimator_gap_deg": 18.784781737157047,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.021368782268513253,
+      "circle_rms_over_width": 0.005342195567128313,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004460258827853461,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.043175220489502
+    },
+    {
+      "tag": "contact__th120.0__top",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "contact",
+      "wall_policy": "contact",
+      "orientation": "top",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 120.0,
+      "psi_wall": null,
+      "theta_measured_deg": 122.80814012286535,
+      "theta_circle_deg": 132.20050651409244,
+      "theta_cap_deg": 113.41577373163828,
+      "err_circle_pct": 10.167088761743699,
+      "err_cap_pct": 5.486855223634765,
+      "estimator_gap_deg": 18.784732782454157,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.02138725760901898,
+      "circle_rms_over_width": 0.005346814402254745,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004460816322953455,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.135824203491211
+    },
+    {
+      "tag": "wall_order__th060.0__bottom",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "bottom",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 59.99999999999999,
+      "psi_wall": 0.3472963553338607,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 16.631864309310913
+    },
+    {
+      "tag": "wall_order__th060.0__left",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "left",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 59.99999999999999,
+      "psi_wall": 0.3472963553338607,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.80392837524414
+    },
+    {
+      "tag": "wall_order__th060.0__right",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "right",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 59.99999999999999,
+      "psi_wall": 0.3472963553338607,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.372087955474854
+    },
+    {
+      "tag": "wall_order__th060.0__top",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "top",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 60.0,
+      "theta_ref_deg": 59.99999999999999,
+      "psi_wall": 0.3472963553338607,
+      "theta_measured_deg": NaN,
+      "theta_circle_deg": NaN,
+      "theta_cap_deg": NaN,
+      "err_circle_pct": null,
+      "err_cap_pct": null,
+      "estimator_gap_deg": null,
+      "apex_height": 0.0,
+      "apex_over_width": 0.0,
+      "circle_rms": NaN,
+      "circle_rms_over_width": NaN,
+      "measurable": false,
+      "pass": false,
+      "u_max": NaN,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 18.27540421485901
+    },
+    {
+      "tag": "wall_order__th090.0__bottom",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "bottom",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": 4.082155997157843e-17,
+      "theta_measured_deg": 91.8856666494942,
+      "theta_circle_deg": 91.35602915394941,
+      "theta_cap_deg": 92.41530414503897,
+      "err_circle_pct": 1.506699059943786,
+      "err_cap_pct": 2.683671272265526,
+      "estimator_gap_deg": 1.0592749910895662,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.006852842800346869,
+      "circle_rms_over_width": 0.0017132107000867173,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.0027673144909875305,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.134504556655884
+    },
+    {
+      "tag": "wall_order__th090.0__left",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "left",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": 4.082155997157843e-17,
+      "theta_measured_deg": 91.92054875044852,
+      "theta_circle_deg": 91.4253472184647,
+      "theta_cap_deg": 92.41575028243236,
+      "err_circle_pct": 1.5837191316274375,
+      "err_cap_pct": 2.6841669804803954,
+      "estimator_gap_deg": 0.990403063967662,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.006633857154183231,
+      "circle_rms_over_width": 0.0016584642885458078,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.002757985963996229,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.479036092758179
+    },
+    {
+      "tag": "wall_order__th090.0__right",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "right",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": 4.082155997157843e-17,
+      "theta_measured_deg": 91.87168339205468,
+      "theta_circle_deg": 91.31300137798587,
+      "theta_cap_deg": 92.43036540612347,
+      "err_circle_pct": 1.4588904199843,
+      "err_cap_pct": 2.7004060068038567,
+      "estimator_gap_deg": 1.117364028137601,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.0074146469353975775,
+      "circle_rms_over_width": 0.0018536617338493944,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.0027690171083197264,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.153364896774292
+    },
+    {
+      "tag": "wall_order__th090.0__top",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "top",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 90.0,
+      "theta_ref_deg": 90.0,
+      "psi_wall": 4.082155997157843e-17,
+      "theta_measured_deg": 91.89193628787334,
+      "theta_circle_deg": 91.37169431022437,
+      "theta_cap_deg": 92.41217826552231,
+      "err_circle_pct": 1.5241047891381894,
+      "err_cap_pct": 2.6801980728025714,
+      "estimator_gap_deg": 1.040483955297944,
+      "apex_height": 22.0,
+      "apex_over_width": 5.5,
+      "circle_rms": 0.006742936991890157,
+      "circle_rms_over_width": 0.0016857342479725394,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.0027659839344279496,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.219935417175293
+    },
+    {
+      "tag": "wall_order__th120.0__bottom",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "bottom",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 119.99999999999999,
+      "psi_wall": -0.3472963553338606,
+      "theta_measured_deg": 122.79916833946444,
+      "theta_circle_deg": 132.18254931904062,
+      "theta_cap_deg": 113.41578735988826,
+      "err_circle_pct": 10.152124432533862,
+      "err_cap_pct": 5.486843866759775,
+      "estimator_gap_deg": 18.766761959152362,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.021272074567191934,
+      "circle_rms_over_width": 0.0053180186417979836,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004459927177304982,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.050638437271118
+    },
+    {
+      "tag": "wall_order__th120.0__left",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "left",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 119.99999999999999,
+      "psi_wall": -0.3472963553338606,
+      "theta_measured_deg": 122.80471573971204,
+      "theta_circle_deg": 132.19365971204462,
+      "theta_cap_deg": 113.41577176737947,
+      "err_circle_pct": 10.161383093370532,
+      "err_cap_pct": 5.486856860517099,
+      "estimator_gap_deg": 18.777887944665153,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.021384091537935683,
+      "circle_rms_over_width": 0.005346022884483921,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004461319982621383,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.757850170135498
+    },
+    {
+      "tag": "wall_order__th120.0__right",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "right",
+      "axes_policy": "pw",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 119.99999999999999,
+      "psi_wall": -0.3472963553338606,
+      "theta_measured_deg": 122.80816285543634,
+      "theta_circle_deg": 132.20055372401487,
+      "theta_cap_deg": 113.41577198685782,
+      "err_circle_pct": 10.167128103345735,
+      "err_cap_pct": 5.486856677618472,
+      "estimator_gap_deg": 18.784781737157047,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.021368782268513253,
+      "circle_rms_over_width": 0.005342195567128313,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004460258827853461,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 14.592851877212524
+    },
+    {
+      "tag": "wall_order__th120.0__top",
+      "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+      "round": "3-wall-orientation",
+      "arm": "wall_order",
+      "wall_policy": "wall_order",
+      "orientation": "top",
+      "axes_policy": "wp",
+      "theta_prescribed_deg": 120.0,
+      "theta_ref_deg": 119.99999999999999,
+      "psi_wall": -0.3472963553338606,
+      "theta_measured_deg": 122.80814012286535,
+      "theta_circle_deg": 132.20050651409244,
+      "theta_cap_deg": 113.41577373163828,
+      "err_circle_pct": 10.167088761743711,
+      "err_cap_pct": 5.486855223634754,
+      "estimator_gap_deg": 18.784732782454157,
+      "apex_height": 35.0,
+      "apex_over_width": 8.75,
+      "circle_rms": 0.02138725760901898,
+      "circle_rms_over_width": 0.005346814402254745,
+      "measurable": true,
+      "pass": true,
+      "u_max": 0.004460816322953455,
+      "inputs": {
+        "shape": [
+          112,
+          112
+        ],
+        "radius": 22.0,
+        "wall_thickness": 2,
+        "width": 4.0,
+        "surface_tension": 0.02,
+        "steps": 800,
+        "gravity": [
+          0.0,
+          0.0
+        ],
+        "solver": "tensorlbm.cac_lbm2d.CAC2D (D2Q9 conservative Allen-Cahn + HCH hydrodynamics, half-way bounce-back)",
+        "rho_l": 1.0,
+        "rho_g": 0.1,
+        "mu_l": 0.1,
+        "mu_g": 0.01,
+        "mobility": 0.05,
+        "mu_law": "harmonic",
+        "p0": 0.01
+      },
+      "wall_seconds": 15.053354501724243
+    }
+  ]
+}
