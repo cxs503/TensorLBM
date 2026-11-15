@@ -1,0 +1,79 @@
+{
+  "case": "CASE-BACKWARD-STEP-LBM",
+  "caliber": "Armaly et al. 1983: parabolic inlet, Re = u_bar*D_h/nu (D_h = 2*h_in), ER = H/h_in",
+  "config": {
+    "re": 100.0,
+    "hi": 8,
+    "s": 7,
+    "u_bar": 0.1,
+    "l_over_h": 10.0,
+    "up_over_hi": 3.0,
+    "n_steps": 400,
+    "avg_from": 0.5,
+    "avg_stride": 50,
+    "check_interval": 200,
+    "steady_tol": 0.005,
+    "steady_hits": 3,
+    "collision": "trt",
+    "sponge_width_h": 3.0,
+    "seed": 0,
+    "tag": "smoke"
+  },
+  "derived": {
+    "H": 15,
+    "nx": 174,
+    "ny": 17,
+    "n_cells": 2958,
+    "x_step": 24,
+    "expansion_ratio": 1.875,
+    "expansion_ratio_deviation_pct": -3.4653465346534573,
+    "nu": 0.016,
+    "tau": 0.548,
+    "d_h_inlet": 16,
+    "u_max_inlet": 0.15000000000000002,
+    "mach_inlet": 0.2598076211353316,
+    "reynolds": 100.0
+  },
+  "result": {
+    "x1_over_s": 2.076108953962696,
+    "x1_over_s_row1": 2.1323611679495724,
+    "x1_over_H": 0.13840726359751307,
+    "n_averaged_samples": 5,
+    "average_window_steps": [
+      200,
+      400
+    ],
+    "steps_run": 400,
+    "steady_at_step": null,
+    "max_speed_final": 2.6962273120880127,
+    "rho_min": 0.9981594085693359,
+    "rho_max": 1.0467337369918823,
+    "mass_flux_inlet": 0.8373475670814514,
+    "mass_flux_outlet": 0.4369092881679535,
+    "mass_flux_target": 0.8,
+    "mass_flux_rel_error": 0.5005478486418724,
+    "x1_over_s_reverse_extent": 2.142857142857143,
+    "u1_min_over_u_bar": -0.10173353273421526,
+    "min_tau_w": -0.02063316907733678,
+    "max_tau_w": 0.023679286241531386
+  },
+  "convergence_history": [
+    {
+      "step": 200,
+      "max_speed": 2.8600096702575684,
+      "mean_rho": 0.9940807819366455,
+      "x1_over_s_instant": 1.6771398059896245,
+      "wall_time_s": 3.871983289718628
+    },
+    {
+      "step": 400,
+      "max_speed": 2.6962273120880127,
+      "mean_rho": 1.0128835439682007,
+      "x1_over_s_instant": 2.3754611966794497,
+      "wall_time_s": 8.611180543899536
+    }
+  ],
+  "wall_time_s": 8.633677005767822,
+  "entry": "benchmarks/case_pool/backward_step_armaly/run_case.py",
+  "tag": "smoke"
+}
