@@ -1,0 +1,40 @@
+case,arm,param,kpi,got,ref,err_pct,note
+T1_MODAL,TL,mode=1,n=32,dimensionless_(kL)^2,3.51601529837,3.51601527,8.07021e-07,corrected analytic reference
+T1_MODAL,TL,mode=2,n=32,dimensionless_(kL)^2,22.0344986354,22.03449156,3.21107e-05,corrected analytic reference
+T1_MODAL,TL,mode=3,n=32,dimensionless_(kL)^2,61.6973693897,61.697214,0.000251859,corrected analytic reference
+T1_MODAL,TL,mode=4,n=32,dimensionless_(kL)^2,120.903079412,120.901916,0.000962277,corrected analytic reference
+T1_MODAL,TL,mode=5,n=32,dimensionless_(kL)^2,199.864769752,199.85953,0.00262172,corrected analytic reference
+T1_REF_BUG,euler_bernoulli_frequency,n=1,dimensionless_(kL)^2,3.5160152685,3.51601527,-4.26576e-08,after fix
+T1_REF_BUG_LEGACY,pre-fix_bisection,n=1,dimensionless_(kL)^2,3.51601527,3.51601527,0,merged-report reference (defect)
+T1_REF_BUG,euler_bernoulli_frequency,n=2,dimensionless_(kL)^2,22.0344915647,22.03449156,2.11794e-08,after fix
+T1_REF_BUG_LEGACY,pre-fix_bisection,n=2,dimensionless_(kL)^2,61.68502751,22.03449156,179.948,merged-report reference (defect)
+T1_REF_BUG,euler_bernoulli_frequency,n=3,dimensionless_(kL)^2,61.6972144135,61.697214,6.70288e-07,after fix
+T1_REF_BUG_LEGACY,pre-fix_bisection,n=3,dimensionless_(kL)^2,61.69721441,61.697214,6.64536e-07,merged-report reference (defect)
+T1_REF_BUG,euler_bernoulli_frequency,n=4,dimensionless_(kL)^2,120.901916052,120.901916,4.32629e-08,after fix
+T1_REF_BUG_LEGACY,pre-fix_bisection,n=4,dimensionless_(kL)^2,199.85948912,120.901916,65.3071,merged-report reference (defect)
+T1_REF_BUG,euler_bernoulli_frequency,n=5,dimensionless_(kL)^2,199.859530117,199.85953,5.84427e-08,after fix
+T1_REF_BUG_LEGACY,pre-fix_bisection,n=5,dimensionless_(kL)^2,199.85953012,199.85953,6.00422e-08,merged-report reference (defect)
+D4_TEMPORAL_ORDER,D4a_free_consistent_IC,dt=T1/10,n=8el,modal_L2_error_mode1,0.228681464131,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_consistent_IC,dt=T1/20,n=8el,modal_L2_error_mode1,0.0588592164635,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_consistent_IC,dt=T1/40,n=8el,modal_L2_error_mode1,0.0148143584463,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_consistent_IC,dt=T1/80,n=8el,modal_L2_error_mode1,0.0037094922001,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_consistent_IC,dt=T1/160,n=8el,modal_L2_error_mode1,0.000927576338975,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_consistent_IC,dt=T1/320,n=8el,modal_L2_error_mode1,0.000231743590404,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_zero_IC_legacy,dt=T1/10,n=8el,modal_L2_error_mode1,0.508544270556,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_zero_IC_legacy,dt=T1/20,n=8el,modal_L2_error_mode1,0.208909683218,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_zero_IC_legacy,dt=T1/40,n=8el,modal_L2_error_mode1,0.0915940204875,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_zero_IC_legacy,dt=T1/80,n=8el,modal_L2_error_mode1,0.0425240688774,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_zero_IC_legacy,dt=T1/160,n=8el,modal_L2_error_mode1,0.0204457747535,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4a_free_zero_IC_legacy,dt=T1/320,n=8el,modal_L2_error_mode1,0.0100196236,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t,dt=T1/10,n=8el,modal_L2_error_mode1,0.117807693709,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t,dt=T1/20,n=8el,modal_L2_error_mode1,0.0300560670437,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t,dt=T1/40,n=8el,modal_L2_error_mode1,0.00749370101319,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t,dt=T1/80,n=8el,modal_L2_error_mode1,0.00186475578694,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t,dt=T1/160,n=8el,modal_L2_error_mode1,0.000464712293167,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t,dt=T1/320,n=8el,modal_L2_error_mode1,0.00011596650596,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t-dt,dt=T1/10,n=8el,modal_L2_error_mode1,0.533012335671,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t-dt,dt=T1/20,n=8el,modal_L2_error_mode1,0.250014994386,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t-dt,dt=T1/40,n=8el,modal_L2_error_mode1,0.119861120238,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t-dt,dt=T1/80,n=8el,modal_L2_error_mode1,0.0585899294704,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t-dt,dt=T1/160,n=8el,modal_L2_error_mode1,0.0289571652526,0,nan,unconverged_steps=0
+D4_TEMPORAL_ORDER,D4b_forced_load_at_t-dt,dt=T1/320,n=8el,modal_L2_error_mode1,0.0143940298905,0,nan,unconverged_steps=0
