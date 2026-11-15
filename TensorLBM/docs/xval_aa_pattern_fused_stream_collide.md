@@ -5,6 +5,23 @@
 
 ---
 
+> **CORRECTION (2026-11-15, mission m21666).** The equivalence result of §4.1
+> ("bit-identical, max diff 5.55e-17") is **not evidence**: the test compared two
+> operators on a *spatially uniform* state, where every stencil is the identity,
+> so the difference is exactly `0.0` for *any* pair of operators.  The audited
+> implementation also used the wrong operator ordering — it pulled
+> **pre-collision** populations and collided at the destination (`C∘S`),
+> which is *not* the AA-pattern fused pull of lanl/MF-LBM (`S[C[f]]`, collision
+> increment taken at the source); it deviates from the canonical operator by
+> 2.3e-3 (relative, per step) on a non-uniform field, and its solid-node
+> bounce-back leaks mass in wall-bounded boxes, so the cavity table of §4.2/§5.3
+> cannot be used as accuracy evidence.
+> The module is fixed and re-validated in
+> `docs/xval_aa_pattern_fused_stream_collide_ordering.md`
+> (`benchmarks/xval/aa_fused_stream_collide_ordering_audit.py`,
+> `tests/test_aa_fused_stream_collide.py`); the original text below is kept
+> unchanged as the historical record.
+
 ## 1. Problem Statement & Reference
 
 ### 1.1 Objective
