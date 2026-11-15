@@ -28,6 +28,7 @@ import torch
 from tensorlbm.d3q27 import OPPOSITE as OPPOSITE27
 from tensorlbm.d3q27 import equilibrium27
 from ..input_contract import check_positive_scalar
+from .zou_he_3d import plane_field
 
 # ---------------------------------------------------------------------------
 # Module-level direction-index constants (derived from the fixed D3Q27 lattice).
@@ -105,141 +106,18 @@ def far_field_bc_27(
     return f
 
 
-def zou_he_inlet_velocity_27(
-    f: torch.Tensor,
-    u_in: float,
-    uy_in: float = 0.0,
-    uz_in: float = 0.0,
-) -> torch.Tensor:
-    """Zou/He inlet velocity BC at the left face (x=0) for D3Q27.
-
-    Prescribes *ux = u_in*, *uy = uy_in*, *uz = uz_in* at every cell of the
-    inlet plane.  The density at the inlet is derived from mass conservation
-    and the unknown in-flowing populations (cx > 0) are reconstructed with
-    the non-equilibrium bounce-back method.
-
-    Directions with cx > 0 (unknown): 1, 7, 9, 11, 13, 19, 21, 23, 25
-    Directions with cx < 0 (known):   2, 8, 10, 12, 14, 20, 22, 24, 26
-    Directions with cx = 0:           0, 3, 4, 5, 6, 15, 16, 17, 18
-
-    Args:
-        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
-        u_in: Prescribed x-velocity at the inlet.
-        uy_in: Prescribed y-velocity at the inlet (default 0).
-        uz_in: Prescribed z-velocity at the inlet (default 0).
-
-    Returns:
-        Updated distribution tensor (same shape).
-    """
-    device = f.device
-
-    # cx=0 directions: 0, 3, 4, 5, 6, 15, 16, 17, 18
-    sum_cx0 = (
-        f[0, :, :, 0]
-        + f[3, :, :, 0]
-        + f[4, :, :, 0]
-        + f[5, :, :, 0]
-        + f[6, :, :, 0]
-        + f[15, :, :, 0]
-        + f[16, :, :, 0]
-        + f[17, :, :, 0]
-        + f[18, :, :, 0]
-    )
-    # cx<0 directions: 2, 8, 10, 12, 14, 20, 22, 24, 26
-    sum_cx_neg = (
-        f[2, :, :, 0]
-        + f[8, :, :, 0]
-        + f[10, :, :, 0]
-        + f[12, :, :, 0]
-        + f[14, :, :, 0]
-        + f[20, :, :, 0]
-        + f[22, :, :, 0]
-        + f[24, :, :, 0]
-        + f[26, :, :, 0]
-    )
-
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
-
-    # Wrap to 3-D to satisfy equilibrium27 which expects (nz, ny, nx)
-    rho3 = rho.unsqueeze(-1)  # (nz, ny, 1)
-    ux3 = torch.full_like(rho3, u_in)
-    uy3 = torch.full_like(rho3, uy_in)
-    uz3 = torch.full_like(rho3, uz_in)
-    feq3 = equilibrium27(rho3, ux3, uy3, uz3, device=device)  # (27, nz, ny, 1)
-
-    f_new = f.clone()
-    # Vectorised update: no Python loop, no .item()
-    f_new[_D3Q27_INLET_DIRS, :, :, 0] = (
-        feq3[_D3Q27_INLET_DIRS, :, :, 0]
-        - feq3[_D3Q27_INLET_OPP, :, :, 0]
-        + f[_D3Q27_INLET_OPP, :, :, 0]
-    )
-    return f_new
-
-
-def zou_he_outlet_pressure_27(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tensor:
-    """Zou/He pressure outlet BC at the right face (x=nx-1) for D3Q27.
-
-    Prescribes *rho = rho_out* at the outlet plane.  Unknown populations
-    (cx < 0) are reconstructed with non-equilibrium bounce-back.
-
-    Directions with cx < 0 (unknown at outlet): 2, 8, 10, 12, 14, 20, 22, 24, 26
-    Directions with cx > 0 (known):             1, 7, 9, 11, 13, 19, 21, 23, 25
-
-    Args:
-        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
-        rho_out: Prescribed outlet density (default 1.0).
-
-    Returns:
-        Updated distribution tensor (same shape).
-    """
-    rho_out = check_positive_scalar(rho_out, "rho_out", where="zou_he_outlet_pressure_27")
-    device = f.device
-
-    sum_cx0 = (
-        f[0, :, :, -1]
-        + f[3, :, :, -1]
-        + f[4, :, :, -1]
-        + f[5, :, :, -1]
-        + f[6, :, :, -1]
-        + f[15, :, :, -1]
-        + f[16, :, :, -1]
-        + f[17, :, :, -1]
-        + f[18, :, :, -1]
-    )
-    sum_cx_pos = (
-        f[1, :, :, -1]
-        + f[7, :, :, -1]
-        + f[9, :, :, -1]
-        + f[11, :, :, -1]
-        + f[13, :, :, -1]
-        + f[19, :, :, -1]
-        + f[21, :, :, -1]
-        + f[23, :, :, -1]
-        + f[25, :, :, -1]
-    )
-    ux_out = -1.0 + (sum_cx0 + 2.0 * sum_cx_pos) / rho_out
-
-    rho_field = torch.full_like(f[0, :, :, -1], rho_out)  # (nz, ny)
-    ux_field = ux_out  # (nz, ny)
-    uy_field = torch.zeros_like(rho_field)
-    uz_field = torch.zeros_like(rho_field)
-
-    # Wrap to 3-D to satisfy equilibrium27 which expects (nz, ny, nx)
-    rho3 = rho_field.unsqueeze(-1)  # (nz, ny, 1)
-    ux3 = ux_field.unsqueeze(-1)
-    uy3 = uy_field.unsqueeze(-1)
-    uz3 = uz_field.unsqueeze(-1)
-    feq3 = equilibrium27(rho3, ux3, uy3, uz3, device=device)  # (27, nz, ny, 1)
-
-    f_new = f.clone()
-    # Vectorised update: no Python loop, no .item()
-    f_new[_D3Q27_OUTLET_DIRS, :, :, -1] = (
-        feq3[_D3Q27_OUTLET_DIRS, :, :, 0]
-        - feq3[_D3Q27_OUTLET_OPP, :, :, 0]
-        + f[_D3Q27_OUTLET_OPP, :, :, -1]
-    )
-    return f_new
+# ---------------------------------------------------------------------------
+# Zou/He x-face inlet/outlet reconstruction (D3Q27).
+#
+# Implementations live in ``zou_he_27`` (shared closure core in ``zou_he_3d``);
+# re-exported here because this module is the historical import site.
+# ---------------------------------------------------------------------------
+from .zou_he_27 import (  # noqa: E402  (re-export after the module body)
+    zou_he_inlet_pressure_27,
+    zou_he_inlet_velocity_27,
+    zou_he_outlet_pressure_27,
+    zou_he_outlet_velocity_27,
+)
 
 
 def make_channel_wall_mask_27(
