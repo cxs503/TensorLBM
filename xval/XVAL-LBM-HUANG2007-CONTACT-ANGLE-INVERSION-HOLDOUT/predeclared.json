@@ -1,0 +1,38 @@
+{
+  "anchor": "XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION",
+  "round": "holdout+transfer (2026-11-13, seat tp-ver-2 / m22445)",
+  "subject": "src/tensorlbm/contact_angle_inversion/ (m18090 deliverable: calibrate/invert/forward)",
+  "why": [
+    "m18090 validated the calibrated inversion on 3 hold-out angles at ONE configuration (nx=128, ny=64, G=5, tau=1.0).",
+    "Its own coarse calibration table is NON-MONOTONE in cos(f_w) near f_w=0.60-0.65, so the delivered invert() (first-bracket search) has more than one solution there - never tested.",
+    "No published evidence that a coarse calibration transfers to (a) the production grid or (b) a different viscosity (tau)."
+  ],
+  "declared_settings": {
+    "calibration": {"nx": 64, "ny": 32, "radius": 8.0, "steps": 5000, "sample_interval": 250,
+                    "tau": 1.0, "G": 5.0, "fw_values": [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70],
+                    "wall_fraction_fraction_of": "psi_l"},
+    "measurement": "tensorlbm.sc_surface_tension.contact_angle_from_mask(mid = 0.5*(rho_l+rho_v)), identical to the delivered calibration",
+    "arms": {
+      "A_inband_coarse": {"note": "same config as the calibration (coarse), target angles placed inside / next to the ambiguous band",
+                          "nx": 64, "ny": 32, "radius": 8.0, "steps": 5000, "tau": 1.0},
+      "B_fine_transfer": {"note": "calibration from the coarse grid applied on the production grid (resolution transfer)",
+                          "nx": 128, "ny": 64, "radius": 15.0, "steps": 6000, "tau": 1.0},
+      "C_tau_transfer": {"note": "calibration from tau=1.0 applied at tau=1.2 (viscosity/transport transfer; a static angle must not care)",
+                         "nx": 64, "ny": 32, "radius": 8.0, "steps": 5000, "tau": 1.2}
+    }
+  },
+  "gates": {
+    "accuracy_gate_pct": 15.0,
+    "gate_source": "owner precision standard (error > 15% is unacceptable); m18090 acceptance uses the same gate",
+    "G1_inband": "every Arm A row with status ok must satisfy |theta_measured - theta_target| / theta_target < 15% AND converge (tail drift <= 1 deg).",
+    "G2_resolution_transfer": "every Arm B row < 15%. If it fails, the deliverable's inversion is NOT portable in resolution and the failure is reported as an honest negative (no recalibration added in this round).",
+    "G3_tau_transfer": "every Arm C row < 15% (a static contact angle must be independent of tau).",
+    "H1_branch": "if the coarse calibration is non-monotone at the evaluated target, BOTH inversion branches are run; the branch spread |theta_first - theta_last| is reported as the inversion ambiguity of the delivered calibrate/invert pair (no pass/fail gate: this is a diagnostic).",
+    "measurability": "a row whose measurement returns status != ok, or whose tail drift > 1 deg, is reported as NOT_MEASURED and excluded from the pass counts (never counted as a pass)."
+  },
+  "honesty_rules": [
+    "no hand-copied numbers: every table in REPORT.md is rendered from summary.json, produced by run_xval.py report",
+    "no identity checks: the error is always measured-from-LBM minus target, never forward(invert(theta))",
+    "an arm that fails is reported as FAIL, not dropped"
+  ]
+}
