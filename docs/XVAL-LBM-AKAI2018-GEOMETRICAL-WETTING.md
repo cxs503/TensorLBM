@@ -1,4 +1,12 @@
-# XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING — 几何润湿（color-gradient）交叉对标
+# XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING
+
+> **R4 更正（superseded in part）**：本文 §六 把端到端 FAIL 归因为「伪流过大 / 外形估计器不适配 /
+> 步数不足」，**根因判定不完整**。真实缺陷是驱动里的**反弹映射表写错**（`cg_wetting2d.OPP`
+> 把竖直两向映到自己，壁面法向动量不翻转、润湿相漏出底板）。修正后同几何同步数（R=14/6000 步）
+> gk60 由 124.60°（+107.7%）→ **60.41°（+0.69%）**、gk90 由 52.54°（−41.6%）→ **88.03°（−2.19%）**，
+> 端到端 **PASS**（均 <3%）。见 `docs/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-R4-OPP-FIX.md`。
+> 本文的 §一–§五（BC 本体解析验证 22 例 0.00%）仍然有效。
+ — 几何润湿（color-gradient）交叉对标
 
 对标锚点：`XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING`（第 1 轮·开源对标）
 对标对象：`lanl/MF-LBM` @ `11be324a97fe6331b2271102da370460715355e8`，`multiphase_3D/0.src/Phase_gradient.F90:209-265`
