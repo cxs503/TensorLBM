@@ -11,6 +11,13 @@
     "dtype": "float64",
     "device": "cpu"
   },
+  "friction": [
+    {
+      "issue": "upstream vivsim requires JAX; `pip install jax` timed out in this environment (no usable wheel/network) so the OSS arm is a source-transcribed NumPy port, not the upstream binary",
+      "impact": "cross-check validates the formulation + our implementation, not the JAX code path of the upstream package",
+      "mitigation": "line-by-line mapping table in src/tensorlbm/nebb_bodyforce.py, sha256 of every transcribed upstream file recorded here, shift-convention invariance tested in tests/test_nebb_bodyforce.py"
+    }
+  ],
   "oss_provenance": {
     "tree": "/tmp/vivsim_src",
     "oss_binary_executed": false,
@@ -24,14 +31,259 @@
       "examples/2d/poiseuille_channel.py": null
     }
   },
-  "friction": [
-    {
-      "issue": "upstream vivsim requires JAX; `pip install jax` timed out in this environment (no usable wheel/network) so the OSS arm is a source-transcribed NumPy port, not the upstream binary",
-      "impact": "cross-check validates the formulation + our implementation, not the JAX code path of the upstream package",
-      "mitigation": "line-by-line mapping table in src/tensorlbm/nebb_bodyforce.py, sha256 of every transcribed upstream file recorded here, shift-convention invariance tested in tests/test_nebb_bodyforce.py"
-    }
-  ],
   "impl_files": [
+    "src/tensorlbm/nebb_bodyforce.py",
+    "src/tensorlbm/boundary/nebb.py",
+    "src/tensorlbm/gpu_core_path.py",
+    "src/tensorlbm/verification/nebb_bodyforce/run.py",
+    "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py"
+  ],
+  "entry": [
+    "src/tensorlbm/nebb_bodyforce.py",
+    "src/tensorlbm/verification/nebb_bodyforce/run.py",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
+    "benchmarks/xval/xval_vivsim_nebb_bodyforce.py"
+  ],
+  "run_artifacts": [
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/results.json",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/cli_guo_ny10.json",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/result.json",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/r4_invariants.json"
+  ],
+  "integration_callers": [
+    "apply_channel_walls_nebb",
+    "channel_analytic_velocity_nebb",
+    "corrected_wall_velocity",
+    "BodyForceChannel",
+    "nb.nebb_row"
+  ],
+  "benchmark": {
+    "metric": "max_y |u_x(y) - u_ref(y)| / max_y |u_ref(y)|",
+    "reference": "closed-form plane-Poiseuille parabola on the node walls (Guo et al. 2002 body-force channel; Batchelor 1967 \u00a74.2)",
+    "tolerance_owner_15pct": 0.15,
+    "tolerance_stretch_3pct": 0.03,
+    "cross_arm_tolerance": 1e-09,
+    "rows": [
+      {
+        "case": "armA_edm",
+        "primary": true,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.04999999999999966,
+        "rel_err": 7.077671781985373e-15,
+        "rel_err_offset_fit": 6.106226635438366e-15,
+        "wall_offset_fitted": -2.0816681711721685e-15,
+        "tolerance": 0.15,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "armB_edm",
+        "primary": true,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.05000000000000287,
+        "rel_err": 5.731526364627371e-14,
+        "rel_err_offset_fit": 5.856426454897708e-14,
+        "wall_offset_fitted": -2.7755575615628914e-15,
+        "tolerance": 0.15,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "armA_guo",
+        "primary": true,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "guo",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.049999999999999385,
+        "rel_err": 1.2351231148954867e-14,
+        "rel_err_offset_fit": 1.2767564783189294e-14,
+        "wall_offset_fitted": 6.938893903907228e-16,
+        "tolerance": 0.15,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "armB_guo",
+        "primary": true,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "guo",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.050000000000001606,
+        "rel_err": 3.2057689836051395e-14,
+        "rel_err_offset_fit": 3.677613769070848e-14,
+        "wall_offset_fitted": -1.0408340855860843e-14,
+        "tolerance": 0.15,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "armB_wall_force_corrected_nebb_recovered",
+        "primary": false,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "guo",
+        "wall": "force_corrected_nebb_recovered",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.050000000000001606,
+        "rel_err": 3.2057689836051395e-14,
+        "rel_err_offset_fit": 3.677613769070848e-14,
+        "wall_offset_fitted": -1.0408340855860843e-14,
+        "tolerance": 0.15,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "armB_wall_nonequilibrium_nebb",
+        "primary": false,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "guo",
+        "wall": "nonequilibrium_nebb",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.052200000000001814,
+        "rel_err": 0.04400000000003623,
+        "rel_err_offset_fit": 3.283346349166824e-14,
+        "wall_offset_fitted": 0.09673797382448585,
+        "tolerance": 0.15,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "armB_wall_halfway_bounce_back",
+        "primary": false,
+        "ny": 10,
+        "nu": 0.2,
+        "gx": 0.001,
+        "scheme": "guo",
+        "wall": "halfway_bounce_back",
+        "ref_kind": "analytic_poiseuille (walls on node planes)",
+        "umax_ref": 0.05,
+        "umax_got": 0.062450000000002504,
+        "rel_err": 0.24900000000005001,
+        "rel_err_offset_fit": 3.533335887017595e-14,
+        "wall_offset_fitted": 0.522947341949756,
+        "tolerance": 0.15,
+        "pass": false,
+        "recomputed_matches_stored": true
+      }
+    ],
+    "cross_arm_rows": [
+      {
+        "case": "cross_arm_edm",
+        "metric": "max|armB-armA|/max|armA|",
+        "rel_diff": 6.439293542825951e-14,
+        "tolerance": 1e-09,
+        "pass": true,
+        "recomputed_matches_stored": true
+      },
+      {
+        "case": "cross_arm_guo",
+        "metric": "max|armB-armA|/max|armA|",
+        "rel_diff": 4.440892098500681e-14,
+        "tolerance": 1e-09,
+        "pass": true,
+        "recomputed_matches_stored": true
+      }
+    ],
+    "n_primary_rows": 4,
+    "all_pass": true,
+    "source": "results.json",
+    "recomputed_from": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/results.json",
+    "reproduces_stored_rows": true,
+    "verdict": {
+      "primary_max_rel_err_armB": 5.731526364627371e-14,
+      "primary_max_rel_err_armA": 1.2351231148954867e-14,
+      "max_cross_arm_rel_diff": 6.439293542825951e-14,
+      "pass_owner_15pct": true,
+      "pass_stretch_3pct": true,
+      "pass_cross_arm_1e-9": true,
+      "wall_model_variants": {
+        "armB_wall_force_corrected_nebb_recovered": 3.2057689836051395e-14,
+        "armB_wall_nonequilibrium_nebb": 0.04400000000003623,
+        "armB_wall_halfway_bounce_back": 0.24900000000005001
+      },
+      "n_rows": 7
+    }
+  },
+  "repro_cmd": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts && python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/cli_guo_ny10.json && python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath && python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py && python benchmarks/xval/nebb_bodyforce_evidence.py --strict && python -m pytest tests/test_nebb_bodyforce.py tests/test_gpu_core_path.py -q",
+  "tests": [
+    "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[bottom]",
+    "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[left]",
+    "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[right]",
+    "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[top]",
+    "tests/test_nebb_bodyforce.py::test_lattice_constants_match_repo_d2q9",
+    "tests/test_nebb_bodyforce.py::test_nebb_row_imposes_prescribed_moments[bottom]",
+    "tests/test_nebb_bodyforce.py::test_nebb_row_imposes_prescribed_moments[top]",
+    "tests/test_nebb_bodyforce.py::test_recovered_density_makes_row_self_consistent[bottom]",
+    "tests/test_nebb_bodyforce.py::test_recovered_density_makes_row_self_consistent[top]",
+    "tests/test_nebb_bodyforce.py::test_nebb_invariant_under_population_shift",
+    "tests/test_nebb_bodyforce.py::test_shear_reconstruction_reduces_to_zou_he_on_equilibrium_row",
+    "tests/test_nebb_bodyforce.py::test_driver_reproduces_closed_form_poiseuille",
+    "tests/test_nebb_bodyforce.py::test_edm_and_guo_schemes_agree",
+    "tests/test_nebb_bodyforce.py::test_wall_models_are_distinguishable",
+    "tests/test_nebb_bodyforce.py::test_invalid_configuration_rejected",
+    "tests/test_nebb_bodyforce.py::test_nebb_row_works_on_torch_tensors",
+    "tests/test_nebb_bodyforce.py::test_cli_entry_writes_artifact",
+    "tests/test_nebb_bodyforce.py::test_channel_benchmark_uses_force_corrected_nebb",
+    "tests/test_gpu_core_path.py::test_config_derived_physics_is_self_consistent",
+    "tests/test_gpu_core_path.py::test_config_rejects_bad_input",
+    "tests/test_gpu_core_path.py::test_solver_constructs_and_steps",
+    "tests/test_gpu_core_path.py::test_collision_matches_independent_reference",
+    "tests/test_gpu_core_path.py::test_streaming_moves_population_along_its_velocity",
+    "tests/test_gpu_core_path.py::test_half_way_bounce_back_reflects_at_wall_rows",
+    "tests/test_gpu_core_path.py::test_mass_conserved_without_body_force",
+    "tests/test_gpu_core_path.py::test_taylor_green_decay_matches_exact_solution",
+    "tests/test_gpu_core_path.py::test_channel_matches_analytic_parabola",
+    "tests/test_gpu_core_path.py::test_precision_tier_is_honoured",
+    "tests/test_gpu_core_path.py::test_forced_triton_backend_raises_without_cuda",
+    "tests/test_gpu_core_path.py::test_distributed_solver_requires_cuda",
+    "tests/test_gpu_core_path.py::test_compiled_backend_matches_eager",
+    "tests/test_gpu_core_path.py::test_general_sim_engine_routes_to_core_path",
+    "tests/test_gpu_core_path.py::test_general_sim_core_path_rejects_solid_domain",
+    "tests/test_gpu_core_path.py::test_store_tier_really_rounds_between_steps",
+    "tests/test_gpu_core_path.py::test_store_state_is_what_the_next_step_reads",
+    "tests/test_gpu_core_path.py::test_memory_report_flags_the_store_trade_off",
+    "tests/test_gpu_core_path.py::test_lossy_store_tier_warns_at_construction",
+    "tests/test_gpu_core_path.py::test_validate_rejects_unknown_precision",
+    "tests/test_gpu_core_path.py::test_float32_tier_tracks_float64_on_the_channel_anchor",
+    "tests/test_gpu_core_path.py::test_lossy_tier_stays_within_the_referee_line_on_taylor_green",
+    "tests/test_gpu_core_path.py::test_lossy_tier_is_refused_by_default",
+    "tests/test_gpu_core_path.py::test_config_accepts_nebb_wall_and_rejects_unknown",
+    "tests/test_gpu_core_path.py::test_nebb_analytic_reference_uses_node_wall_height",
+    "tests/test_gpu_core_path.py::test_nebb_wall_reconstructs_only_the_outside_borne_populations",
+    "tests/test_gpu_core_path.py::test_core_path_nebb_channel_matches_its_own_analytic_reference"
+  ],
+  "external_anchor": [
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/REPORT_R5.md",
+    "docs/xval_nebb_bodyforce_anchor.md"
+  ],
+  "impl_files_detail": [
     {
       "path": "src/tensorlbm/nebb_bodyforce.py",
       "exists": true,
@@ -180,7 +432,7 @@
       "path": "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
       "exists": true,
       "ok": true,
-      "lines": 682,
+      "lines": 692,
       "public_functions": [
         "sha256",
         "oss_provenance",
@@ -206,8 +458,8 @@
       ],
       "placeholder_markers": [],
       "bare_pass_functions": 0,
-      "bytes": 29578,
-      "sha256": "32e006e43c69c495452b71886e95abb9891004b8e70a544962cf5a088c7a3d5f"
+      "bytes": 29898,
+      "sha256": "e722d3ebb7f47146ac87b48b400c558561c5af89ba4ed795cce7513203e9387a"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
@@ -244,53 +496,54 @@
       "sha256": "2608ca0d2b21181dc419f8cb560a0390859c5c10f5a2d843d9b8ce0ace9802f0"
     }
   ],
-  "entry": [
+  "entry_detail": [
     {
       "path": "src/tensorlbm/nebb_bodyforce.py",
       "kind": "cli",
-      "command": "python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out runs/XVAL-NEBB-BODYFORCE/cli_guo_ny10.json",
+      "command": "python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/cli_guo_ny10.json",
       "note": "package CLI (`python -m tensorlbm.nebb_bodyforce`); prints the error table and writes the JSON artifact",
       "exists": true,
-      "sha256": "9cb9a5e956218b3cda0c610edba235f5fcea8a40e508a0fe527f8aeabc5d2f4d"
+      "bytes": 32232,
+      "sha256": "9cb9a5e956218b3cda0c610edba235f5fcea8a40e508a0fe527f8aeabc5d2f4d",
+      "role": "cli"
     },
     {
       "path": "src/tensorlbm/verification/nebb_bodyforce/run.py",
       "kind": "solver_verification",
       "command": "python -m tensorlbm.verification.nebb_bodyforce.run --ny 10 20 --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath",
-      "note": "drives the repo main core-path solver with wall_bc='nebb' (the L3 call path) and writes result.json + profiles.csv + figure",
+      "note": "drives repo main core-path solver with wall_bc='nebb' (the L3 call path); writes result.json + profiles.csv + figure",
       "exists": true,
-      "sha256": "3bc0df2885554f8a5d877927984ce1b1819bf604a037e72349b958683048c817"
+      "bytes": 12425,
+      "sha256": "3bc0df2885554f8a5d877927984ce1b1819bf604a037e72349b958683048c817",
+      "role": "solver_verification"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
       "kind": "invariants",
       "command": "python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
-      "note": "mass conservation / arm-to-arm / grid-convergence invariants (writes artifacts/r4_invariants.json)",
+      "note": "mass conservation / arm-to-arm / grid-refinement invariants (writes artifacts/r4_invariants.json)",
       "exists": true,
-      "sha256": "1222f739bf86908b275bc9804e97fb73ce73d3a12200b94780d0d710e190b752"
+      "bytes": 13619,
+      "sha256": "1222f739bf86908b275bc9804e97fb73ce73d3a12200b94780d0d710e190b752",
+      "role": "invariants"
     },
     {
       "path": "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
       "kind": "benchmark",
-      "command": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out runs/XVAL-NEBB-BODYFORCE",
-      "note": "XVAL harness: OSS arm vs TensorLBM arm, wall/scheme/grid sensitivity, results.json + four figures",
+      "command": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts",
+      "note": "XVAL harness: OSS-transcription arm vs TensorLBM arm, wall/scheme/grid sensitivity, results.json + figures",
       "exists": true,
-      "sha256": "32e006e43c69c495452b71886e95abb9891004b8e70a544962cf5a088c7a3d5f"
+      "bytes": 29898,
+      "sha256": "e722d3ebb7f47146ac87b48b400c558561c5af89ba4ed795cce7513203e9387a",
+      "role": "benchmark"
     }
   ],
-  "run_artifacts": [
+  "run_artifacts_detail": [
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/results.json",
       "exists": true,
-      "bytes": 33893,
-      "sha256": "3a7ddd0d143cce4fa2baa30ac4bff6f590a7ee01e1d3c6b8a6c67fc3eb817c82",
-      "role": "run artifact"
-    },
-    {
-      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/run.log",
-      "exists": true,
-      "bytes": 2210,
-      "sha256": "443e4b6302074e9400f20ac171eb42ed038946f83fb88725f84224f82d0d7146",
+      "bytes": 33910,
+      "sha256": "4e479d5a76f4d1603dc027f694a30723b7608ca7982dec7a48c2f7b091a5eeaf",
       "role": "run artifact"
     },
     {
@@ -303,8 +556,15 @@
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/result.json",
       "exists": true,
-      "bytes": 4295,
-      "sha256": "93c908303e96d1343a7583d42410b732692ec8115096757ff02ed95b5f834489",
+      "bytes": 4294,
+      "sha256": "3a162053d5143612bbde3a711150391928e88b5b698ab70ad5ffd744ba3bd6ea",
+      "role": "run artifact"
+    },
+    {
+      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/r4_invariants.json",
+      "exists": true,
+      "bytes": 2119,
+      "sha256": "5e3754c052de8eeb39d29af91a6974f1b87c31cdbec4c5fc34334b8311bfe2c4",
       "role": "run artifact"
     },
     {
@@ -312,354 +572,125 @@
       "exists": true,
       "bytes": 63471,
       "sha256": "d2ef98cd74d84f77753ba1ce6020b47c3de35950bbe52cd21a0bee7af9e31ec1",
-      "role": "steady u_x(y) for both arms and the closed-form parabola"
+      "role": "figure (text SVG twin + PNG for the report)"
+    },
+    {
+      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_profile.svg",
+      "exists": true,
+      "bytes": 44749,
+      "sha256": "e8920d92f192cdb9021736826679857ff7c7fd42bbc248623b23279599f67626",
+      "role": "figure (text SVG twin + PNG for the report)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_cross_arm.png",
       "exists": true,
       "bytes": 61108,
       "sha256": "652b1c27546b3491aca847bbd263f0da821951c4df56b8bc3f1934a565ce9462",
-      "role": "arm-A vs arm-B difference and wall-model comparison"
+      "role": "figure (text SVG twin + PNG for the report)"
+    },
+    {
+      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_cross_arm.svg",
+      "exists": true,
+      "bytes": 52675,
+      "sha256": "63771e66d4380786c7700eb980b907a56e2578c4158f52954c12ce7781f1822e",
+      "role": "figure (text SVG twin + PNG for the report)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_convergence.png",
       "exists": true,
-      "bytes": 95411,
-      "sha256": "44d06d09248cf37d353162d17438529de09694d9b4565c78ceb40a06ba2929f2",
-      "role": "grid-refinement error of both arms (log-log)"
+      "bytes": 83938,
+      "sha256": "4de6be1704df809e70e535864839bb7f6edf1ee5b981b756ab2d568fffd8a259",
+      "role": "figure (text SVG twin + PNG for the report)"
+    },
+    {
+      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_convergence.svg",
+      "exists": true,
+      "bytes": 60056,
+      "sha256": "44b26e5a03e4e2fbb7270ea3f606ac7c8e06ee8a77f735db7d47ccc9e2c2f3d4",
+      "role": "figure (text SVG twin + PNG for the report)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_field.png",
       "exists": true,
       "bytes": 21604,
       "sha256": "bee61e695d342a128005c2f3738a344f52b5eec354757e099ded2dadd80ca742",
-      "role": "u_x(x, y) field of the TensorLBM arm"
+      "role": "figure (text SVG twin + PNG for the report)"
+    },
+    {
+      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_field.svg",
+      "exists": true,
+      "bytes": 30078,
+      "sha256": "0739bb28bb5be9abf6f5dc7f20d2b857f536a734f8995de6d15a84c75e492e9a",
+      "role": "figure (text SVG twin + PNG for the report)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/nebb_bodyforce_xval.png",
       "exists": true,
       "bytes": 76676,
       "sha256": "4a4e891521d7159504a526adf4e69f6db6d5d3d8e412cfc980fa2f8111dede80",
-      "role": "run artifact"
+      "role": "figure (text SVG twin + PNG for the report)"
+    },
+    {
+      "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/nebb_bodyforce_xval.svg",
+      "exists": true,
+      "bytes": 47115,
+      "sha256": "7b0f3138795d8d99bf0653d80324a0f90c30b48a05ed56e212a81fa77cb1152d",
+      "role": "figure (text SVG twin + PNG for the report)"
     }
   ],
-  "integration_callers": [
+  "integration_callers_detail": [
     {
+      "symbol": "apply_channel_walls_nebb",
       "file": "src/tensorlbm/gpu_core_path.py",
-      "symbols": [
-        "wall_bc",
-        "apply_channel_walls_nebb",
-        "nebb_wall_plane",
-        "channel_analytic_velocity_nebb"
-      ],
       "kind": "main_solver",
-      "note": "the repo main core-path solver (GPUCorePathSolver.step -> core_step) dispatches wall_bc='nebb' to the force-corrected NEBB wall kernel; added by m18182, dropped by the m18379 refactor, restored by m21204 (regression pins: tests/test_gpu_core_path.py -k nebb)",
+      "note": "repo main core-path solver (GPUCorePathSolver.step -> core_step) dispatches wall_bc='nebb' to the force-corrected NEBB wall kernel; added by m18182, dropped by the m18379 refactor, restored by m21204 (regression pins: tests/test_gpu_core_path.py -k nebb)",
       "exists": true,
-      "symbols_found": [
-        "wall_bc",
-        "apply_channel_walls_nebb",
-        "nebb_wall_plane",
-        "channel_analytic_velocity_nebb"
-      ],
+      "symbol_found": true,
       "verified": true,
       "sha256": "b741130aaa340a62c9d644ec6d18ed31c584a3858e33f3dda144b7a3486f3636"
     },
     {
+      "symbol": "channel_analytic_velocity_nebb",
       "file": "src/tensorlbm/verification/nebb_bodyforce/run.py",
-      "symbols": [
-        "run_core_path_arm",
-        "channel_analytic_velocity_nebb"
-      ],
       "kind": "solver_verification",
       "note": "solver-level driver: runs GPUCorePathSolver with wall_bc='nebb' to steady state against the matching analytic reference",
       "exists": true,
-      "symbols_found": [
-        "run_core_path_arm",
-        "channel_analytic_velocity_nebb"
-      ],
+      "symbol_found": true,
       "verified": true,
       "sha256": "3bc0df2885554f8a5d877927984ce1b1819bf604a037e72349b958683048c817"
     },
     {
-      "file": "tests/test_gpu_core_path.py",
-      "symbols": [
-        "apply_channel_walls_nebb",
-        "channel_analytic_velocity_nebb",
-        "wall_bc"
-      ],
-      "kind": "test",
-      "note": "regression pins for the core-path NEBB dispatch (outside-borne direction set, node-wall reference, steady-state accuracy)",
-      "exists": true,
-      "symbols_found": [
-        "apply_channel_walls_nebb",
-        "channel_analytic_velocity_nebb",
-        "wall_bc"
-      ],
-      "verified": true,
-      "sha256": "3fbc332af2fe3dee4dc489633ece67bdc4b93466fca25a92fa99bce986bbf8b1"
-    },
-    {
+      "symbol": "corrected_wall_velocity",
       "file": "src/tensorlbm/boundary/antibb_channel_benchmark.py",
-      "symbols": [
-        "corrected_wall_velocity",
-        "nebb_row",
-        "wall_spec"
-      ],
       "kind": "main_solver",
-      "note": "the D2Q9 channel benchmark harness (used by the anti-bounceback verification study) gained wall_mode='force_corrected_nebb', which calls the module's wall kernel and half-force-step wall velocity",
+      "note": "D2Q9 channel benchmark harness (anti-bounceback study) gained wall_mode='force_corrected_nebb', which calls the module wall kernel and the half-force-step wall velocity",
       "exists": true,
-      "symbols_found": [
-        "corrected_wall_velocity",
-        "nebb_row",
-        "wall_spec"
-      ],
+      "symbol_found": true,
       "verified": true,
       "sha256": "dca63459788437d7127f35726b18851c843d498772d40be36da767c5d00bcb2b"
     },
     {
+      "symbol": "BodyForceChannel",
       "file": "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
-      "symbols": [
-        "BodyForceChannel",
-        "analytic_poiseuille",
-        "effective_wall_offset"
-      ],
       "kind": "benchmark_driver",
       "note": "the XVAL harness drives the module and compares it with the OSS transcription",
       "exists": true,
-      "symbols_found": [
-        "BodyForceChannel",
-        "analytic_poiseuille",
-        "effective_wall_offset"
-      ],
+      "symbol_found": true,
       "verified": true,
-      "sha256": "32e006e43c69c495452b71886e95abb9891004b8e70a544962cf5a088c7a3d5f"
+      "sha256": "e722d3ebb7f47146ac87b48b400c558561c5af89ba4ed795cce7513203e9387a"
     },
     {
+      "symbol": "nb.nebb_row",
       "file": "tests/test_nebb_bodyforce.py",
-      "symbols": [
-        "nb.nebb_row",
-        "nb.BodyForceChannel",
-        "nb.wall_spec"
-      ],
       "kind": "test",
-      "note": "anchor tests (kernel moments, shift invariance, driver accuracy, wall-model negative control, torch path, CLI)",
+      "note": "anchor tests (kernel moments, shift invariance, driver accuracy, wall-model negative control, CLI)",
       "exists": true,
-      "symbols_found": [
-        "nb.nebb_row",
-        "nb.BodyForceChannel",
-        "nb.wall_spec"
-      ],
+      "symbol_found": true,
       "verified": true,
       "sha256": "bc48bf5c8f197aa7f463a769001595f27a1d7f519ac79460d89e22d2f4c22a84"
     }
   ],
-  "benchmark": {
-    "rows": [
-      {
-        "case": "armA_edm",
-        "primary": true,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "edm",
-        "wall": "force_corrected_nebb",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.04999999999999966,
-        "rel_err": 7.077671781985373e-15,
-        "rel_err_offset_fit": 6.106226635438366e-15,
-        "wall_offset_fitted": -2.0816681711721685e-15,
-        "tolerance": 0.15,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "armB_edm",
-        "primary": true,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "edm",
-        "wall": "force_corrected_nebb",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.05000000000000287,
-        "rel_err": 5.731526364627371e-14,
-        "rel_err_offset_fit": 5.856426454897708e-14,
-        "wall_offset_fitted": -2.7755575615628914e-15,
-        "tolerance": 0.15,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "armA_guo",
-        "primary": true,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "guo",
-        "wall": "force_corrected_nebb",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.049999999999999385,
-        "rel_err": 1.2351231148954867e-14,
-        "rel_err_offset_fit": 1.2767564783189294e-14,
-        "wall_offset_fitted": 6.938893903907228e-16,
-        "tolerance": 0.15,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "armB_guo",
-        "primary": true,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "guo",
-        "wall": "force_corrected_nebb",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.050000000000001606,
-        "rel_err": 3.2057689836051395e-14,
-        "rel_err_offset_fit": 3.677613769070848e-14,
-        "wall_offset_fitted": -1.0408340855860843e-14,
-        "tolerance": 0.15,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "armB_wall_force_corrected_nebb_recovered",
-        "primary": false,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "guo",
-        "wall": "force_corrected_nebb_recovered",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.050000000000001606,
-        "rel_err": 3.2057689836051395e-14,
-        "rel_err_offset_fit": 3.677613769070848e-14,
-        "wall_offset_fitted": -1.0408340855860843e-14,
-        "tolerance": 0.15,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "armB_wall_nonequilibrium_nebb",
-        "primary": false,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "guo",
-        "wall": "nonequilibrium_nebb",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.052200000000001814,
-        "rel_err": 0.04400000000003623,
-        "rel_err_offset_fit": 3.283346349166824e-14,
-        "wall_offset_fitted": 0.09673797382448585,
-        "tolerance": 0.15,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "armB_wall_halfway_bounce_back",
-        "primary": false,
-        "ny": 10,
-        "nu": 0.2,
-        "gx": 0.001,
-        "scheme": "guo",
-        "wall": "halfway_bounce_back",
-        "ref_kind": "analytic_poiseuille (walls on node planes)",
-        "umax_ref": 0.05,
-        "umax_got": 0.062450000000002504,
-        "rel_err": 0.24900000000005001,
-        "rel_err_offset_fit": 3.533335887017595e-14,
-        "wall_offset_fitted": 0.522947341949756,
-        "tolerance": 0.15,
-        "pass": false,
-        "recomputed_matches_stored": true
-      }
-    ],
-    "corepath_rows": [
-      {
-        "case": "corepath_halfway_ny18",
-        "path": "main core-path solver (wall_bc dispatch)",
-        "wall_bc": "halfway",
-        "ny": 18,
-        "steps_to_steady": 6600,
-        "umax_got": 0.04962487761308275,
-        "umax_ref": 0.04980468750000001,
-        "rel_err": 0.003610300474573962,
-        "tolerance": 0.15,
-        "pass": true,
-        "stretch_3pct": true
-      },
-      {
-        "case": "corepath_nebb_ny18",
-        "path": "main core-path solver (wall_bc dispatch)",
-        "wall_bc": "nebb",
-        "ny": 18,
-        "steps_to_steady": 7200,
-        "umax_got": 0.05642171774480045,
-        "umax_ref": 0.05625,
-        "rel_err": 0.0030550299327552115,
-        "tolerance": 0.15,
-        "pass": true,
-        "stretch_3pct": true
-      }
-    ],
-    "cross_arm_rows": [
-      {
-        "case": "cross_arm_edm",
-        "metric": "max|armB-armA|/max|armA|",
-        "rel_diff": 6.439293542825951e-14,
-        "tolerance": 1e-09,
-        "pass": true,
-        "recomputed_matches_stored": true
-      },
-      {
-        "case": "cross_arm_guo",
-        "metric": "max|armB-armA|/max|armA|",
-        "rel_diff": 4.440892098500681e-14,
-        "tolerance": 1e-09,
-        "pass": true,
-        "recomputed_matches_stored": true
-      }
-    ],
-    "all_pass": true,
-    "sensitivity_rows_pass": {
-      "armB_wall_force_corrected_nebb_recovered": true,
-      "armB_wall_nonequilibrium_nebb": true,
-      "armB_wall_halfway_bounce_back": false
-    },
-    "n_rows": 9,
-    "n_primary_rows": 4,
-    "source": "results.json",
-    "recomputed_from": "artifacts/results.json",
-    "reproduces_stored_rows": true,
-    "thresholds": {
-      "owner": 0.15,
-      "stretch": 0.03,
-      "cross_arm": 1e-09
-    },
-    "verdict": {
-      "primary_max_rel_err_armB": 5.731526364627371e-14,
-      "primary_max_rel_err_armA": 1.2351231148954867e-14,
-      "max_cross_arm_rel_diff": 6.439293542825951e-14,
-      "pass_owner_15pct": true,
-      "pass_stretch_3pct": true,
-      "pass_cross_arm_1e-9": true,
-      "wall_model_variants": {
-        "armB_wall_force_corrected_nebb_recovered": 3.2057689836051395e-14,
-        "armB_wall_nonequilibrium_nebb": 0.04400000000003623,
-        "armB_wall_halfway_bounce_back": 0.24900000000005001
-      },
-      "n_rows": 7
-    }
-  },
-  "tests": [
+  "tests_detail": [
     {
       "path": "tests/test_nebb_bodyforce.py",
       "exists": true,
@@ -669,19 +700,26 @@
         "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[left]",
         "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[right]"
       ]
+    },
+    {
+      "path": "tests/test_gpu_core_path.py",
+      "exists": true,
+      "n_collected": 27,
+      "node_ids_sample": [
+        "tests/test_gpu_core_path.py::test_config_derived_physics_is_self_consistent",
+        "tests/test_gpu_core_path.py::test_config_rejects_bad_input",
+        "tests/test_gpu_core_path.py::test_solver_constructs_and_steps"
+      ]
     }
   ],
-  "repro_cmd": {
-    "benchmark": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts",
-    "cli": "python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out runs/XVAL-NEBB-BODYFORCE/cli_guo_ny10.json",
-    "evidence": "python benchmarks/xval/nebb_bodyforce_evidence.py --run-dir /root/tp-agent/work/m21204/xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts --strict",
-    "tests": "python -m pytest tests/test_nebb_bodyforce.py -q"
-  },
+  "claimed_level": 5,
   "checks": {
     "impl_files_ok": true,
     "entries_exist": true,
     "run_artifacts_exist": true,
+    "figures_present": true,
     "integration_callers_verified": true,
+    "external_anchor_present": true,
     "tests_collected": true,
     "benchmark_rows_recomputed": true,
     "benchmark_all_pass": true
