@@ -1,0 +1,34 @@
+{
+  "ac_mobility": 5.0,
+  "sigma_sim": 0.0028280194141869115,
+  "r2": 0.9996250427056483,
+  "n_points": 83,
+  "window": [
+    0.02,
+    0.08
+  ],
+  "nu": 0.0050000000000000044,
+  "sigma_visc": 0.003085464497242449,
+  "sigma_inviscid": 0.0031332853432887507,
+  "err_vs_visc_pct": -8.343803122208083,
+  "err_vs_inv_pct": -9.742678870779987,
+  "gate_pct": 15.0,
+  "pass": true,
+  "max_mach": 0.040087986036053236,
+  "n_steps_run": 1020,
+  "wall_s": 8.81437873840332,
+  "base": {
+    "lam": 64,
+    "layers": 8.0,
+    "g": 0.0002,
+    "atwood": 0.5,
+    "tau": 0.515,
+    "tau_phi": 0.501,
+    "ac_sigma": 0.0003,
+    "ac_width": 2.0,
+    "phase_scheme": "allen_cahn",
+    "seed_eigenmode": true,
+    "eta0_frac": 0.01
+  },
+  "m_beta": 0.001125
+}
