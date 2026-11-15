@@ -43,6 +43,7 @@ from typing import Any
 import numpy as np
 
 __all__ = [
+    "contact_angle_geodesic",
     "interface_contour",
     "circle_fit",
     "contact_angle_circle_fit",
@@ -360,4 +361,139 @@ def measure_contact_angle(
         out["cap"] = cap
     except Exception as exc:  # noqa: BLE001
         out["cap_error"] = repr(exc)
+    return out
+
+# ---------------------------------------------------------------------------
+# Estimator 4: geodesic (apex height / basal width)
+# ---------------------------------------------------------------------------
+
+
+def _geodesic_measure_a_h(
+    phi: np.ndarray,
+    xi: float,
+    *,
+    frac: float = 0.5,
+    wall_y: float = -0.5,
+) -> tuple[float, float]:
+    """Measure apex height h and basal half-width a for geodesic estimator."""
+    ny, nx = phi.shape
+    gas = 0.5 * (float(phi[-4:, :4].mean()) + float(phi[-4:, -4:].mean()))
+    liquid = float(phi.max())
+    level = gas + frac * (liquid - gas)
+
+    # Crossing along centre column
+    xs_grid = np.arange(nx, dtype=float)
+    w = np.clip(phi - gas, 0.0, None).sum(axis=0)
+    x_c = float((xs_grid * w).sum() / w.sum()) if w.sum() > 0 else (nx - 1) / 2.0
+    jc = int(min(nx - 2, max(1, round(x_c))))
+
+    # Apex height
+    d = phi[:, jc] - level
+    s = d[:-1] * d[1:]
+    idx = np.nonzero(s < 0.0)[0]
+    if idx.size == 0:
+        return float("nan"), float("nan")
+    i = int(idx[-1])
+    height = i + float(d[i] / (d[i] - d[i + 1])) - wall_y
+
+    # Basal half-width from contour extrapolation
+    ys, xs = [], []
+    for k in range(ny):
+        row = phi[k]
+        d_row = row - level
+        for j in range(jc, nx - 1):
+            if d_row[j] * d_row[j + 1] < 0.0:
+                x_cross = j + float(d_row[j] / (d_row[j] - d_row[j + 1]))
+                ys.append(float(k))
+                xs.append(x_cross - x_c)
+                break
+
+    if len(ys) < 4:
+        return float("nan"), height
+
+    ys_a, xs_a = np.asarray(ys), np.asarray(xs)
+    near = ys_a <= 3.0 * xi
+    if int(near.sum()) < 4:
+        near = np.ones_like(ys_a, dtype=bool)
+    deg = 3 if int(near.sum()) >= 5 else (2 if int(near.sum()) >= 4 else 1)
+    coef = np.polyfit(ys_a[near], xs_a[near], deg)
+    a = float(np.polyval(coef, wall_y))
+    return a, height
+
+
+def contact_angle_geodesic(
+    phi: np.ndarray,
+    xi: float,
+    y_wall: float = 0.5,
+    *,
+    frac: float = 0.5,
+    lbm_convention: bool = False,
+) -> dict[str, Any]:
+    """Contact angle from apex height and basal half-width (geodesic relation).
+
+    For a circular cap of radius R and contact angle theta:
+    - a = R sin(theta) (contact half-width)
+    - h = apex height above wall
+
+    The relation between a/h and theta depends on the geometric convention:
+
+    **Standard convention** (synthetic caps, lbm_convention=False):
+        h = R(1 + cos theta) for theta < 90 deg, h = R(1 - cos theta) for theta > 90 deg
+        -> a/h = tan(theta/2) for theta < 90 deg, a/h = cot(theta/2) for theta > 90 deg
+        -> theta = 2 atan(a/h) works for all angles
+
+    **LBM convention** (LBM simulation fields, lbm_convention=True):
+        h = R(1 - cos theta) for all theta
+        -> a/h = cot(theta/2) for all theta
+        -> theta = 180 deg - 2 atan(a/h) for all angles
+
+    The LBM convention arises because LBM fields follow a different geometric
+    convention than the synthetic caps used for calibration. See
+    xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md for details.
+
+    Parameters
+    ----------
+    phi : ndarray
+        Phase field (ny, nx), phi > 0 is the wetting phase.
+    xi : float
+        Interface width in lattice units.
+    y_wall : float
+        Wall position in lattice units.
+    frac : float
+        Level set fraction (0.5 = mid-level contour).
+    lbm_convention : bool
+        If True, apply the supplement correction for LBM fields.
+        If False, use the standard formula (for synthetic caps).
+
+    Returns
+    -------
+    dict with keys:
+        theta_deg : contact angle in degrees
+        apex_height : h in lattice units
+        basal_half_width : a in lattice units
+        a_over_h : ratio a/h
+        convention : "standard" or "lbm"
+    """
+    a, h = _geodesic_measure_a_h(phi, xi, frac=frac, wall_y=y_wall - 1.0)
+    
+    out = {
+        "theta_deg": float("nan"),
+        "apex_height": h,
+        "basal_half_width": a,
+        "a_over_h": float("nan"),
+        "convention": "lbm" if lbm_convention else "standard",
+    }
+    
+    if math.isfinite(a) and math.isfinite(h) and a > 0.0 and h > 0.0:
+        ratio = a / h
+        out["a_over_h"] = ratio
+        theta_raw = math.degrees(2.0 * math.atan(ratio))
+        
+        if lbm_convention:
+            # LBM convention: apply supplement correction
+            out["theta_deg"] = 180.0 - theta_raw
+        else:
+            # Standard convention: raw formula works
+            out["theta_deg"] = theta_raw
+    
     return out
