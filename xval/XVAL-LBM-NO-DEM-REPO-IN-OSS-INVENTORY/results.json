@@ -19,9 +19,9 @@
         "eta_Ns_per_m": 0.24790709930259347,
         "mass_kg": 3.8411206177891206e-06,
         "omega_n_rad_s": 161350.7645102826,
-        "e_sim": 0.5792947831381147,
+        "e_sim": 0.5359482942772459,
         "e_analytic": 0.526620599330303,
-        "e_rel_err": 0.10002302202913588,
+        "e_rel_err": 0.01771236248412001,
         "t_c_sim_s": 1.9375273618987504e-05,
         "t_c_analytic_s": 1.987207550665385e-05,
         "t_c_rel_err": -0.024999999999999956,
@@ -31,8 +31,8 @@
         "delta_max_over_radius": 0.00023589564421364756,
         "n_contact_steps": 39,
         "tensile_clipped_steps": 5,
-        "vz_at_separation_m_s": 0.028964739156905735,
-        "e_ratio_sim_over_analytic": 1.1000230220291358
+        "vz_at_separation_m_s": 0.027563770262352263,
+        "e_ratio_sim_over_analytic": 1.01771236248412
       },
       {
         "steps_per_contact": 80,
@@ -42,9 +42,9 @@
         "eta_Ns_per_m": 0.24790709930259347,
         "mass_kg": 3.8411206177891206e-06,
         "omega_n_rad_s": 161350.7645102826,
-        "e_sim": 0.5753450292118828,
+        "e_sim": 0.5311692189989284,
         "e_analytic": 0.526620599330303,
-        "e_rel_err": 0.09252283321909935,
+        "e_rel_err": 0.008637375131944769,
         "t_c_sim_s": 1.9623674562820676e-05,
         "t_c_analytic_s": 1.987207550665385e-05,
         "t_c_rel_err": -0.012499999999999978,
@@ -54,8 +54,8 @@
         "delta_max_over_radius": 0.00023506037600921903,
         "n_contact_steps": 79,
         "tensile_clipped_steps": 10,
-        "vz_at_separation_m_s": 0.02876725146059414,
-        "e_ratio_sim_over_analytic": 1.0925228332190993
+        "vz_at_separation_m_s": 0.026961374957253724,
+        "e_ratio_sim_over_analytic": 1.0086373751319448
       },
       {
         "steps_per_contact": 160,
@@ -65,9 +65,9 @@
         "eta_Ns_per_m": 0.24790709930259347,
         "mass_kg": 3.8411206177891206e-06,
         "omega_n_rad_s": 161350.7645102826,
-        "e_sim": 0.5734894244954017,
+        "e_sim": 0.5288670750822143,
         "e_analytic": 0.526620599330303,
-        "e_rel_err": 0.08899922491581459,
+        "e_rel_err": 0.004265833419292935,
         "t_c_sim_s": 1.974787503473726e-05,
         "t_c_analytic_s": 1.987207550665385e-05,
         "t_c_rel_err": -0.006250000000000075,
@@ -77,8 +77,8 @@
         "delta_max_over_radius": 0.00023467259523796656,
         "n_contact_steps": 159,
         "tensile_clipped_steps": 20,
-        "vz_at_separation_m_s": 0.02867447122477009,
-        "e_ratio_sim_over_analytic": 1.0889992249158147
+        "vz_at_separation_m_s": 0.02664964734445858,
+        "e_ratio_sim_over_analytic": 1.0042658334192929
       }
     ],
     "contact_no_clip_control": [
@@ -552,7 +552,7 @@
   },
   "verdict": {
     "A_contact_restitution_within_15pct": true,
-    "A_contact_restitution_within_2pct": false,
+    "A_contact_restitution_within_2pct": true,
     "B_contact_duration_within_15pct": true,
     "B_peak_overlap_within_15pct": true,
     "C_stokes_tautology_within_15pct": true,
