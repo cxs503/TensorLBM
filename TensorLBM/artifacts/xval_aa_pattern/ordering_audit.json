@@ -1,0 +1,101 @@
+{
+  "anchor": "XVAL-LBM-AA-PATTERN-FUSED-STREAM-COLLIDE",
+  "note": "audit of tensorlbm.aa_fused_stream_collide ordering",
+  "torch": "2.7.1",
+  "E1_E2_operator_ordering": {
+    "uniform": {
+      "max_rel_diff_canonical_vs_separate_fns": 0.0,
+      "max_rel_diff_aa_fused_vs_canonical": 0.0,
+      "max_rel_diff_audited_vs_canonical": 0.0,
+      "max_rel_diff_audited_vs_aa_fused": 0.0
+    },
+    "nonuniform": {
+      "max_rel_diff_canonical_vs_separate_fns": 0.0,
+      "max_rel_diff_aa_fused_vs_canonical": 0.0,
+      "max_rel_diff_audited_vs_canonical": 0.002311279833153258,
+      "max_rel_diff_audited_vs_aa_fused": 0.002311279833153258
+    },
+    "divergence_trace_nonuniform": [
+      {
+        "step": 1,
+        "max_rel_diff": 0.002311279833153258
+      },
+      {
+        "step": 2,
+        "max_rel_diff": 0.001726039400136517
+      },
+      {
+        "step": 5,
+        "max_rel_diff": 0.0018192345203881957
+      },
+      {
+        "step": 10,
+        "max_rel_diff": 0.0017829413568801395
+      },
+      {
+        "step": 20,
+        "max_rel_diff": 0.0017150052717917724
+      },
+      {
+        "step": 50,
+        "max_rel_diff": 0.0015264107105230579
+      },
+      {
+        "step": 100,
+        "max_rel_diff": 0.0012572146498748805
+      },
+      {
+        "step": 200,
+        "max_rel_diff": 0.0008532367335973467
+      }
+    ]
+  },
+  "E3_shear_wave": [
+    {
+      "scheme": "canonical",
+      "ny": 64,
+      "U": 0.02,
+      "nu_target": 0.05,
+      "tau": 0.65,
+      "steps": 4000,
+      "amplitude_initial": 0.019999999999999997,
+      "amplitude_final": 0.0029035496528932183,
+      "amplitude_exact_final": 0.0029097732697312296,
+      "amp_rel_error_final": 0.002138866592374109,
+      "nu_eff": 0.050036561416509896,
+      "nu_rel_error": 0.0007312283301978972,
+      "elapsed_s": 5.674398899078369
+    },
+    {
+      "scheme": "fused",
+      "ny": 64,
+      "U": 0.02,
+      "nu_target": 0.05,
+      "tau": 0.65,
+      "steps": 4000,
+      "amplitude_initial": 0.019999999999999997,
+      "amplitude_final": 0.0029035496528932183,
+      "amplitude_exact_final": 0.0029097732697312296,
+      "amp_rel_error_final": 0.002138866592374109,
+      "nu_eff": 0.050036561416509896,
+      "nu_rel_error": 0.0007312283301978972,
+      "elapsed_s": 6.793739318847656
+    },
+    {
+      "scheme": "audited",
+      "ny": 64,
+      "U": 0.02,
+      "nu_target": 0.05,
+      "tau": 0.65,
+      "steps": 4000,
+      "amplitude_initial": 0.019999999999999997,
+      "amplitude_final": 0.0029035496528932404,
+      "amplitude_exact_final": 0.0029097732697312296,
+      "amp_rel_error_final": 0.002138866592366508,
+      "nu_eff": 0.0500365614165101,
+      "nu_rel_error": 0.000731228330201894,
+      "elapsed_s": 5.953455924987793
+    }
+  ],
+  "elapsed_s": 19.2443790435791
+}

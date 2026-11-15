@@ -8,7 +8,9 @@ array) formulation must satisfy, not merely that the code runs:
 * equivalence with the canonical collide-then-stream push scheme -- bit for bit --
   for a periodic domain **and** for a wall-bounded channel with halfway
   bounce-back (a destination-colliding pull scheme is only equivalent in the
-  periodic case, see ``test_legacy_kernel_leaks_mass_with_walls``);
+  periodic case: ``test_legacy_kernel_leaks_mass_with_walls`` pins that defect
+  for the retired operator, ``test_fixed_aa_fused_step_conserves_mass_with_walls``
+  re-validates the fixed ``aa_fused_step``);
 * exact mass conservation in a closed walled box;
 * plane Couette and plane Poiseuille against their analytic solutions, with the
   owner precision standard (error < 3 %) as the gate.
@@ -92,16 +94,46 @@ def test_mass_conservation_closed_box():
         assert drift < 1e-12, (step.__name__, drift)
 
 
-def test_legacy_kernel_leaks_mass_with_walls():
-    """Characterisation of the pre-existing destination-colliding kernel.
+def _legacy_wall_step(f, tau, solid, nx, ny):
+    """Retired destination-colliding kernel + its solid-node bounce-back."""
+    from tensorlbm.aa_fused_stream_collide import stream_then_collide_legacy, OPPOSITE
 
-    ``aa_fused_stream_collide.aa_fused_step`` collides at the *destination* and
-    applies bounce-back on *solid* nodes; with walls present it does not
-    conserve mass, so its wall-bounded results cannot be used as evidence. This
-    test documents the defect and fails loudly if the old kernel is ever
-    "fixed" without being re-validated.
+    out = stream_then_collide_legacy(f, tau)
+    for i in range(1, 9):
+        out[i, solid] = out[int(OPPOSITE[i]), solid]
+    return out
+
+
+def test_legacy_kernel_leaks_mass_with_walls():
+    """Negative control for the *retired* destination-colliding kernel.
+
+    ``stream_then_collide_legacy`` collides at the destination and applies
+    bounce-back on *solid* nodes; with walls present it does not conserve mass.
+    It is kept only so the 2026-11-13 numbers stay reproducible -- this test
+    fails loudly if it is ever silently "fixed" and re-used as evidence.
     """
-    from tensorlbm.aa_fused_stream_collide import aa_fused_step
+    nx, ny, steps = 16, 16, 500
+    solid = torch.zeros(ny, nx, dtype=torch.bool)
+    solid[0, :] = solid[-1, :] = True
+    solid[:, 0] = solid[:, -1] = True
+    fluid = ~solid
+
+    f = rest_state(nx, ny, perturb=True)
+    m0 = float(f[:, fluid].sum())
+    for _ in range(steps):
+        f = _legacy_wall_step(f, 0.8, solid, nx, ny)
+    drift = abs(float(f[:, fluid].sum()) - m0) / m0
+    assert drift > 1e-8, f"legacy kernel now conserves mass (drift={drift:.2e}); re-validate its BCs"
+
+
+def test_fixed_aa_fused_step_conserves_mass_with_walls():
+    """Re-validation of ``aa_fused_stream_collide.aa_fused_step`` after the fix.
+
+    The module now uses the AA-pattern pull (collision increment taken at the
+    source) plus halfway bounce-back, so it is bit-identical to the canonical
+    colliding kernel and exactly mass conserving in a closed walled box.
+    """
+    from tensorlbm.aa_fused_stream_collide import aa_fused_step, separate_step
 
     nx, ny, steps = 16, 16, 500
     solid = torch.zeros(ny, nx, dtype=torch.bool)
@@ -114,7 +146,16 @@ def test_legacy_kernel_leaks_mass_with_walls():
     for _ in range(steps):
         f = aa_fused_step(f, 0.8, solid_mask=solid)
     drift = abs(float(f[:, fluid].sum()) - m0) / m0
-    assert drift > 1e-8, f"legacy kernel now conserves mass (drift={drift:.2e}); re-validate its BCs"
+    assert drift < 1e-12, f"mass drift={drift:.2e}"
+
+    # and the fused step is bit-identical to the materialised canonical step
+    f_ref = rest_state(nx, ny, perturb=True)
+    for _ in range(20):
+        f_ref = separate_step(f_ref, 0.8, solid_mask=solid)
+    f_new = rest_state(nx, ny, perturb=True)
+    for _ in range(20):
+        f_new = aa_fused_step(f_new, 0.8, solid_mask=solid)
+    assert torch.equal(f_ref, f_new)
 
 
 def test_couette_analytic():
