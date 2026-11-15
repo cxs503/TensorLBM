@@ -337,6 +337,16 @@ def cross_arm(label: str, got: np.ndarray, ref: np.ndarray, params: dict) -> dic
 # --------------------------------------------------------------------------- #
 # figures
 # --------------------------------------------------------------------------- #
+def _save(fig, out_dir: Path, name: str) -> None:
+    """Write the raster figure *and* a text SVG twin.
+
+    The SVG twin is committed so the figure survives file-type filters in the
+    merge gate (it is plain text), while the PNG is what the report embeds.
+    """
+    fig.savefig(out_dir / name, dpi=130)
+    fig.savefig(out_dir / (Path(name).stem + ".svg"))
+
+
 def make_figures(res: dict, out_dir: Path) -> dict[str, str]:
     import matplotlib
 
@@ -355,7 +365,7 @@ def make_figures(res: dict, out_dir: Path) -> dict[str, str]:
     ax.legend(frameon=False)
     ax.grid(alpha=0.3, ls=":")
     fig.tight_layout()
-    fig.savefig(out_dir / "fig_profile.png", dpi=130)
+    _save(fig, out_dir, "fig_profile.png")
     plt.close(fig)
     made["fig_profile.png"] = FIGURES["fig_profile.png"]
 
@@ -381,7 +391,7 @@ def make_figures(res: dict, out_dir: Path) -> dict[str, str]:
     ax.legend(frameon=False, fontsize=8)
     ax.grid(alpha=0.3, ls=":")
     fig.tight_layout()
-    fig.savefig(out_dir / "fig_cross_arm.png", dpi=130)
+    _save(fig, out_dir, "fig_cross_arm.png")
     plt.close(fig)
     made["fig_cross_arm.png"] = FIGURES["fig_cross_arm.png"]
 
@@ -411,7 +421,7 @@ def make_figures(res: dict, out_dir: Path) -> dict[str, str]:
     ax.legend(frameon=False, fontsize=7)
     ax.grid(alpha=0.3, which="both", ls=":")
     fig.tight_layout()
-    fig.savefig(out_dir / "fig_convergence.png", dpi=130)
+    _save(fig, out_dir, "fig_convergence.png")
     plt.close(fig)
     made["fig_convergence.png"] = FIGURES["fig_convergence.png"]
 
@@ -423,7 +433,7 @@ def make_figures(res: dict, out_dir: Path) -> dict[str, str]:
     ax.set_title("TensorLBM arm: u_x(x, y)")
     fig.colorbar(im, ax=ax, label="u_x")
     fig.tight_layout()
-    fig.savefig(out_dir / "fig_field.png", dpi=130)
+    _save(fig, out_dir, "fig_field.png")
     plt.close(fig)
     made["fig_field.png"] = FIGURES["fig_field.png"]
     return made

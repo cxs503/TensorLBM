@@ -1,0 +1,73 @@
+{
+  "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "round": 4,
+  "mission": "m21204",
+  "purpose": "Verify predeclared invariants + grid convergence study",
+  "mass_conservation": [
+    {
+      "ny": 10,
+      "rho_mean": 0.9999999999999272,
+      "rho_max_deviation": 7.316369732279782e-14,
+      "rho_relative_deviation": 7.316369732279782e-14,
+      "pass_1e12": true
+    },
+    {
+      "ny": 20,
+      "rho_mean": 0.9999999999997684,
+      "rho_max_deviation": 2.3225865675158275e-13,
+      "rho_relative_deviation": 2.3225865675158275e-13,
+      "pass_1e12": true
+    }
+  ],
+  "mass_conservation_pass": true,
+  "arm_to_arm_consistency": {
+    "ny_d2q9": 20,
+    "ny_d3q19": 21,
+    "H_matched": 19,
+    "arm_to_arm_max_rel_err": 0.005209103300623506,
+    "d2q9_u_max": 0.049999999999986805,
+    "d3q19_u_max": 0.04973954483495571,
+    "d2q9_pointwise_err": 2.645106356169435e-13,
+    "note": "D2Q9 (NEBB, y\u2080=0, H=ny-1) vs D3Q19 (half-way BB, y\u2080=0.5, H=ny-2) \u2014 matched by physical H",
+    "pass_1e2": true
+  },
+  "grid_convergence": [
+    {
+      "ny": 6,
+      "dh": 0.2,
+      "d2q9_err": 1.6445178552260128e-14,
+      "d3q19_err": 0.007999937202000169
+    },
+    {
+      "ny": 10,
+      "dh": 0.1111111111111111,
+      "d2q9_err": 6.019490461639519e-14,
+      "d3q19_err": 0.003076708305466278,
+      "convergence_rate_d2q9": -2.2075277446145494,
+      "convergence_rate_d3q19": 1.6257146605485133
+    },
+    {
+      "ny": 20,
+      "dh": 0.05263157894736842,
+      "d2q9_err": 2.645106356169435e-13,
+      "d3q19_err": 0.001211121627228052,
+      "convergence_rate_d2q9": -1.9810830055299502,
+      "convergence_rate_d3q19": 1.2477187221172894
+    }
+  ],
+  "grid_convergence_pass": false,
+  "edm_vs_guo": {
+    "ny": 20,
+    "edm_err": 2.645106356169435e-13,
+    "guo_err": 2.4855117963795687e-13,
+    "max_abs_diff": 9.853229343548264e-16,
+    "pass_consistent": true
+  },
+  "summary": {
+    "mass_conservation_pass": true,
+    "arm_to_arm_consistency_pass": true,
+    "grid_convergence_pass": false,
+    "edm_guo_consistency_pass": true,
+    "all_invariants_pass": false
+  }
+}
