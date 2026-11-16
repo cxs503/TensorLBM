@@ -1,0 +1,105 @@
+{
+ "levels": [
+  {
+   "config": {
+    "ny": 32,
+    "nx": 64,
+    "gamma": 0.01,
+    "amplitude": 1.6,
+    "width": 2.0,
+    "sigma": 0.1,
+    "mobility": 0.0,
+    "steps": 200,
+    "dt": 1.0,
+    "dtype": "torch.float64",
+    "total_time": 200.0
+   },
+   "l2_rel": 0.0002022342737291032,
+   "max_abs_err": 0.0009975407645944623,
+   "phase_budget_rel": 8.669512051280668e-18,
+   "phi_range": [
+    -0.9999999277459857,
+    0.9999999277459857
+   ],
+   "finite": true,
+   "max_advective_cfl": 0.145
+  },
+  {
+   "config": {
+    "ny": 64,
+    "nx": 128,
+    "gamma": 0.01,
+    "amplitude": 1.6,
+    "width": 2.0,
+    "sigma": 0.1,
+    "mobility": 0.0,
+    "steps": 200,
+    "dt": 1.0,
+    "dtype": "torch.float64",
+    "total_time": 200.0
+   },
+   "l2_rel": 2.089098363496412e-05,
+   "max_abs_err": 0.00015290364143072388,
+   "phase_budget_rel": 4.1249366231854605e-17,
+   "phi_range": [
+    -1.0,
+    1.0
+   ],
+   "finite": true,
+   "max_advective_cfl": 0.305
+  },
+  {
+   "config": {
+    "ny": 64,
+    "nx": 128,
+    "gamma": 0.01,
+    "amplitude": 1.6,
+    "width": 2.0,
+    "sigma": 0.1,
+    "mobility": 0.0,
+    "steps": 400,
+    "dt": 0.5,
+    "dtype": "torch.float64",
+    "total_time": 200.0
+   },
+   "l2_rel": 1.6929197788602103e-05,
+   "max_abs_err": 0.00012523229262018098,
+   "phase_budget_rel": 7.49988476942811e-18,
+   "phi_range": [
+    -1.0,
+    1.0
+   ],
+   "finite": true,
+   "max_advective_cfl": 0.1525
+  },
+  {
+   "config": {
+    "ny": 128,
+    "nx": 256,
+    "gamma": 0.01,
+    "amplitude": 1.6,
+    "width": 2.0,
+    "sigma": 0.1,
+    "mobility": 0.0,
+    "steps": 400,
+    "dt": 0.5,
+    "dtype": "torch.float64",
+    "total_time": 200.0
+   },
+   "l2_rel": 1.8007346950440573e-06,
+   "max_abs_err": 1.912241185764163e-05,
+   "phase_budget_rel": 1.5318059993222982e-17,
+   "phi_range": [
+    -1.0,
+    1.0
+   ],
+   "finite": true,
+   "max_advective_cfl": 0.3125
+  }
+ ],
+ "observed_orders": {
+  "space_only_32x64_to_64x128": 3.27507519200398,
+  "space_and_time_32x64_to_64x128": 3.578442003201806,
+  "space_and_time_64x128_to_128x256": 3.2328560633493386
+ }
+}
