@@ -1,0 +1,16 @@
+{
+ "run": {
+  "R_init": 10.0,
+  "nan": true,
+  "elapsed_s": 12.973024606704712
+ },
+ "tag": "primary",
+ "G": 2.0,
+ "rho_in": 0.99,
+ "rho_out": 0.07,
+ "n": 64,
+ "steps": 3500,
+ "velocity_mode": "self",
+ "psi_kind": "rho",
+ "self_coupling": 0.0
+}
