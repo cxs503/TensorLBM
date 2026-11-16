@@ -98,6 +98,9 @@ running it on every pipeline, reducing CI cost while preserving the intent.
 | `xval/gitlab_ci_staged_gates/predeclared.json` | Pre-declared experiment protocol |
 | `xval/gitlab_ci_staged_gates/summary.json` | Analysis results |
 | `tests/test_ci_staged_gates_xval.py` | Acceptance tests (18 tests) |
+| `tools/ci_ratchet.py` | Rung-1 ratchet + signed acceptance ledger |
+| `tools/ci_ratchet_baseline.json` | Ratchet baseline (`floor`, `acceptances`) |
+| `tests/test_ci_ratchet_acceptance.py` | Ledger / attribution tests (13 tests) |
 
 ## Acceptance Tests
 
@@ -112,3 +115,50 @@ The 18 tests verify:
 6. Guard coverage on default events
 7. `.gitlab-ci.yml` structural correctness (stages, tiers, markers, needs, etc.)
 8. Parity between `.gitlab-ci.yml` and GitHub Actions CI
+
+## Rung-1 Maintenance: the Ratchet Acceptance Ledger
+
+Rung 1 (`lint`, `format-check`) is a *ratchet*: `tools/ci_ratchet.py` compares
+the current `ruff check` / `ruff format --check` debt against the frozen counts
+in `tools/ci_ratchet_baseline.json`, so the rung is reachable while new debt is
+blocked. `tests/test_ci_staged_gate_semantics.py::test_quality_rung_is_reachable`
+runs exactly the two CI commands, so a red ratchet fails the ladder itself.
+
+On a shared trunk the aggregate baseline can go red through debt the current
+change did not write. Raising the numbers by hand would ratify it silently, so
+an increase is only possible through a **signed acceptance**:
+
+```
+python tools/ci_ratchet.py ruff   --accept-drift --ref <baseline-commit> --reason "..."
+python tools/ci_ratchet.py format --accept-drift --ref <baseline-commit> --reason "..."
+python tools/ci_ratchet.py ruff --audit      # verify the ledger chain
+```
+
+`--accept-drift` re-measures the tree at the baseline commit (`git archive`
+export into a temp dir -- no git state is touched) and refuses the update unless
+**every** increase is attributable to a file that did not exist at that commit.
+Growth inside a pre-existing file is always refused: fix it instead. Each
+accepted increase is appended to `acceptances` in the baseline with the ref
+pair, the reason, the per-rule delta, the debt-carrying new files and the commit
+that added each of them; `floor` keeps the original counts, so `--audit` can
+prove `floor + sum(signed drift) == baseline`.
+
+### 2026-11-16 restore (mission m22913)
+
+Rung 1 was red on `main`: 40 merges after the baseline commit
+`ea9ca221f3059dc085abacd92b573d14b1e6c2db` added 88 files under the ratcheted
+paths, leaving `ruff +23` and `format +33`. The audit split that growth into:
+
+| class | findings | action |
+|---|---|---|
+| pre-existing files that regressed (`src/tensorlbm/porous_media.py`: I001 + format; `tests/test_oscillatory_cylinder_inertia.py`: I001) | 3 | **fixed** (import order, one line reflow) |
+| files added after the baseline commit | `ruff` +21 over 20 files, `format` +32 over 33 files | **accepted**, signed per file with its introducing commit |
+
+Result: `ruff 3049` (floor 3028 + 21 signed), `format 2133` (floor 2101 + 32
+signed). Both rungs are green and the debt is nameable: every accepted file maps
+to the merge that added it (`acceptances[].introduced_by`). The receipt of this
+restore is `artifacts/ci/rung1_acceptance_receipt.json`.
+
+Guarded by `tests/test_ci_ratchet_acceptance.py` (13 tests): chain arithmetic,
+"new files only" provenance (re-derived with `git cat-file`), tamper detection,
+and a falsifiability check that `evaluate()` still fails on unexplained growth.
