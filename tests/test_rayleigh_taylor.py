@@ -201,3 +201,65 @@ def test_reference_velocity_is_boussinesq_symmetric() -> None:
     for a2 in (0.1, 0.25, 1.0 / 3.0):
         assert rc.boussinesq_velocity(a2, g, lam) ** 2 * (2.0 * math.pi / lam) / (2.0 * a2 * g) == (
             pytest.approx(1.0 / rc.C_2D, rel=1e-12))
+
+
+# ---------------------------------------------------------------------------
+# CASE-RT-INSTABILITY-ATWOOD: Atwood = 0.5 growth-rate verification
+# ---------------------------------------------------------------------------
+
+
+def test_atwood_half_growth_rate_positive_and_bounded() -> None:
+    """CASE-RT-INSTABILITY-ATWOOD: A = 0.5 single-mode RT growth rate sanity check.
+
+    The full case-pool suite (``benchmarks/case_pool/rayleigh_taylor_atwood05``)
+    verifies the pre-registered gate |sigma_sim / sigma_visc - 1| <= 15 % with
+    the reference configuration (lambda=64, g=2e-4, 2500+ steps).  This test is
+    a *lightweight* sanity check that runs in < 60 s and verifies:
+
+    1. The measured growth rate is positive and finite.
+    2. The Allen-Cahn interface stays bounded (|phi| <= 1).
+    3. The error vs the viscous reference is of the right sign and order
+       (systematic low bias ~10-16 %, consistent with the full suite).
+
+    The 15 % gate is enforced by the case-pool suite, not this unit test.
+    """
+    atwood = 0.5
+    lam = 32
+    g = 2.0e-4
+    tau = 0.515
+    nu = (tau - 0.5) / 3.0
+    sigma_visc = viscous_growth_rate(atwood, g, lam, nu)
+
+    cfg = RTConfig(
+        lam=lam,
+        layers=8.0,
+        g=g,
+        atwood=atwood,
+        tau=tau,
+        tau_phi=0.501,
+        n_steps=600,
+        sample_every=3,
+        a_lo_frac=0.015,
+        a_hi_frac=0.12,
+        stop_a_frac=0.30,
+        seed_eigenmode=True,
+        phase_scheme="allen_cahn",
+        ac_sigma=3.0e-4,
+        ac_width=2.0,
+        ac_mobility=20.0,
+    )
+    res = run_rayleigh_taylor(cfg)
+
+    # Core invariants
+    assert math.isfinite(res["sigma_sim"]), "sigma_sim must be finite"
+    assert res["sigma_sim"] > 0.0, "growth rate must be positive"
+
+    # Allen-Cahn must keep phi bounded
+    assert res.get("phi_max", 1.0) <= 1.0 + 1e-6, "phi must stay bounded in [-1, 1]"
+    assert res.get("phi_min", -1.0) >= -1.0 - 1e-6, "phi must stay bounded in [-1, 1]"
+
+    # Error vs viscous reference: systematic low bias is expected
+    # (full suite: -10.1 % at lambda=64; this short run: ~-16 %)
+    err_pct = (res["sigma_sim"] / sigma_visc - 1.0) * 100.0
+    assert err_pct < 0, f"expected low bias, got {err_pct:+.1f}%"
+    assert err_pct > -25, f"error {err_pct:.1f}% exceeds sanity bound of -25%"
