@@ -287,14 +287,32 @@ def stokes_cylinder_coefficients(beta: float) -> dict[str, float]:
     unit length is ``F = rho pi R^2 a Gamma`` with ``a`` the relative acceleration,
     so the in-phase (added-mass) coefficient is ``Re Gamma`` and the quadrature
     (viscous) coefficient is ``-Im Gamma``.  ``Gamma -> 1`` as ``k -> infinity``
-    (potential flow) and grows like ``1 + 4/sqrt(2 k^2)`` as the Stokes layer
-    thickens: at finite ``beta = D^2/(nu T)`` the potential value ``C_a`` is *not*
-    the right reference for a linear-response force measurement.
+    (potential flow) and approaches it like ``1 + 2/k`` (i.e. ``1 + sqrt(2) delta/R``)
+    as the Stokes layer thickens: at finite ``beta = D^2/(nu T)`` the potential value
+    ``C_a`` is *not* the right reference for a linear-response force measurement.
+
+    Resolution parameter
+    --------------------
+    With ``T = 2 pi/omega`` the similarity numbers map onto the Stokes layer
+    ``delta = sqrt(2 nu/omega)`` and the Stokes parameter ``k = R sqrt(omega/nu)`` as
+
+        delta/R = sqrt(2 nu/omega)/R = 2/sqrt(pi beta),
+        k       = R sqrt(omega/nu)  = sqrt(pi beta/2) = sqrt(2)/(delta/R).
+
+    Both are used verbatim as the resolution axis of the validation reports, and the
+    ``sqrt(2)`` between them is not a convention: it is Stokes' second problem.  An
+    earlier version of this function returned ``delta/R = 2 sqrt(2/(pi beta))`` (a
+    factor ``sqrt(2)`` too thick) and then took ``k = 1/(delta/R)``, which made the
+    reference ``Re Gamma`` 5-19 % too large in the ``beta = 25..100`` band and the
+    quadrature reference ``-Im Gamma`` up to 2.1x too large.  The measurement test
+    ``tests/test_stokes_layer_thickness.py`` pins both mappings against an LBM
+    measurement of the decay length next to a no-slip wall, so the defect cannot
+    silently return.
     """
     from scipy.special import kv
 
-    delta_over_R = 2.0 * math.sqrt(2.0 / (beta * math.pi))   # = sqrt(2 nu/omega)/R
-    k = 1.0 / delta_over_R
+    delta_over_R = 2.0 / math.sqrt(math.pi * beta)   # = sqrt(2 nu/omega)/R
+    k = math.sqrt(math.pi * beta / 2.0)              # = R sqrt(omega/nu) = sqrt(2)/delta_over_R
     arg = complex(1.0, 1.0) * k
     gamma = 1.0 + 4.0 * kv(1, arg) / (arg * kv(0, arg))
     return {
