@@ -177,3 +177,61 @@ def test_job_payload_is_json_serialisable_and_assembles(case: TaylorGreenCase) -
     assert payload["schema"] == SCHEMA
     assert payload["summary"]["by_track"]["twin16"]["tau_hat"][0] == job["run"]["tau_hat"]
     assert json.dumps(payload)
+
+# ---------------------------------------------------------------------------
+# 5. The reference consumer drives the inverse infrastructure
+# ---------------------------------------------------------------------------
+
+
+def test_recover_drives_tensorlbm_inverse(case: TaylorGreenCase, tmp_path, monkeypatch):
+    """`recover` must call the shared loop, not re-implement it.
+
+    Pins the wiring of the GAP-PP-4-opt-loop infrastructure into its reference
+    consumer: the demo used to carry its own private Adam+L-BFGS loop, so the
+    package it is supposed to exercise was dead code from the demo's point of
+    view.
+    """
+    import tensorlbm.opt_loop_tau_recovery as demo
+    from tensorlbm.inverse import ConvergenceLog, validate_convergence_payload
+
+    calls = {"n": 0}
+    real = demo.optimise_loop
+
+    def counting(*args, **kwargs):
+        calls["n"] += 1
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(demo, "optimise_loop", counting)
+
+    tau_true = 0.55
+    times = _times(case, tau_true, n_obs=3, decay=0.6)
+    obs = twin_observations(case, tau_true, times)
+    log = ConvergenceLog(problem="tg_twin", seed=0)
+    result = recover(
+        case, obs, tau_true=tau_true, iters=2, lr=0.3, polish=6, seed=0, convergence_log=log
+    )
+    assert calls["n"] == 1, "recover() did not delegate to inverse.optimise_loop"
+
+    path = log.write(tmp_path / "conv.json")
+    from tensorlbm.inverse import read_convergence_json
+
+    payload = read_convergence_json(path)
+    assert validate_convergence_payload(payload) == []
+    assert payload["seed"] == 0
+
+    phases = [h["phase"] for h in result.history]
+    assert phases[0] == "adam" and phases[-1] == "final"
+    assert "lbfgs_eval" in phases
+    assert result.stop_reason in {"lbfgs_polish", "adam_tol"}
+    # iters counts Adam iterations only; the record count includes the polish
+    assert result.adam_iterations == 2
+    assert result.n_records == len(result.history) > result.adam_iterations
+    # per-time residual is logged for Adam iterations (by-product of the loss)
+    adam_rows = [h for h in result.history if h["phase"] == "adam"]
+    assert all(len(h["per_time"]) == len(times) for h in adam_rows)
+    # flattened rows stay consistent with the parameters they report
+    for h in adam_rows:
+        assert h["tau"] == pytest.approx(0.5 + 3.0 * h["nu"])
+        assert h["rel_err_pct"] == pytest.approx(
+            100.0 * (h["nu"] - case.nu_from_tau(tau_true)) / case.nu_from_tau(tau_true)
+        )
