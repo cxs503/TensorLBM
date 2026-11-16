@@ -62,8 +62,8 @@ u_x(y) = g_x / (2 nu) * y * (H - y),      u_max = g_x H^2 / (8 nu)
 | quantity | anchor | status |
 |---|---|---|
 | steady `u_x(y)` profile | closed form above | anchored, rel-err ≤ 3e-14 |
-| arm-vs-arm difference | two independent transcriptions | anchored, ≤ 6e-14 |
+| arm-vs-arm difference | two independent transcriptions | ≤ 6e-14 -- but **not independent evidence**: the `edm`/`guo`/`recovered` arms are one velocity trajectory to 6.5e-14 (they differ only in a momentum-neutral population mode at O(g²)), see `docs/xval_nebb_bodyforce_transient.md` §3.3 |
 | wall position (node vs half-cell) | `H = ny-1` vs `H = ny-2` | anchored, negative control separates them (0.25 vs 3e-14) |
 | grid-refinement order, D3Q19 core path | `O(h^2)` expectation | **not** confirmed (measured 1.44) — honest open item, `artifacts/r4_invariants.json` |
-| transient / unsteady channel start-up | — | out of scope (steady-state driver only) |
+| transient / unsteady channel start-up | impulsively started Poiseuille series (Batchelor 1967 §4.2), checked against an independent implicit-FD solution | **anchored** -- `docs/xval_nebb_bodyforce_transient.md`, err ≤ 1.2e-3 of `u_max`, decay rate ≡ `pi^2 nu/H^2` to 0.13 % |
 | 3-D duct, curved walls, turbulence | — | not supported by this driver |
