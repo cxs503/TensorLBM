@@ -1,0 +1,203 @@
+{
+  "anchor": "XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+  "cross_dim": null,
+  "droplets": [
+    {
+      "L": 40,
+      "R_eq": 10.539931227391522,
+      "R_init": 10.0,
+      "converged": true,
+      "dim": 2,
+      "dp": 0.005191975583632787,
+      "dt_s": 6.166474429890513,
+      "mass_drift": 3.3788703369451904e-05,
+      "max_u": 0.1381024271249771,
+      "rho_in": 1.9782871802647908,
+      "rho_out": 0.16293577353159586,
+      "sigma": 0.05472306558578553,
+      "steps": 4000
+    },
+    {
+      "L": 56,
+      "R_eq": 14.461313744703505,
+      "R_init": 14.0,
+      "converged": true,
+      "dim": 2,
+      "dp": 0.00386635089914004,
+      "dt_s": 7.7745814602822065,
+      "mass_drift": 3.238248154216704e-05,
+      "max_u": 0.1377813071012497,
+      "rho_in": 1.96672256787618,
+      "rho_out": 0.1611138383547465,
+      "sigma": 0.055912513399580616,
+      "steps": 4000
+    },
+    {
+      "L": 72,
+      "R_eq": 18.27312427054543,
+      "R_init": 18.0,
+      "converged": true,
+      "dim": 2,
+      "dp": 0.0030530368288358054,
+      "dt_s": 10.06323418021202,
+      "mass_drift": 4.389091632344298e-05,
+      "max_u": 0.13932341833909354,
+      "rho_in": 1.9596396287282307,
+      "rho_out": 0.16011287768681845,
+      "sigma": 0.055788521375868615,
+      "steps": 5000
+    }
+  ],
+  "fit": {
+    "2": {
+      "intercept_frac": 0.0002997317824721957,
+      "intercept_free": 0.00016764515837275804,
+      "max_dev": 0.013549141013733815,
+      "per_radius_dev": [
+        0.013549141013733815,
+        0.0078921252069633,
+        0.005657015806770639
+      ],
+      "sigma_mean_of_radii": 0.055474700120411585,
+      "sigma_through_origin": 0.05525223144886347,
+      "slope_free": 0.053066499658804105
+    },
+    "3": null
+  },
+  "flat": {
+    "2": {
+      "converged": false,
+      "dim": 2,
+      "drho_fit": 1.7759746313095093,
+      "dt_s": 35.13439453020692,
+      "half": 48.0,
+      "int_dpsi_sq": 0.21257428661562328,
+      "int_dpsi_sq_tanh": 0.16461465319501958,
+      "mech_gap": 0.0005291906660599879,
+      "n": {
+        "half": 48,
+        "nx": 8,
+        "ny": 192
+      },
+      "p_l": 0.03453207015991211,
+      "p_v": 0.03455035388469696,
+      "rho_l": 1.931382179260254,
+      "rho_v": 0.15550096333026886,
+      "sigma_K": 0.17714523884635272,
+      "sigma_K_tanh": 0.1371788776625163,
+      "steps": 24000,
+      "width_fit": 2.0
+    },
+    "3": null
+  },
+  "kappa3": {
+    "2": {
+      "a1": 0.3333333358168602,
+      "a3": 0.0555555559694767,
+      "kappa3": 0.16666666666666666,
+      "n_vel": 9
+    },
+    "3": {
+      "a1": 0.3333333358168602,
+      "a3": 0.0555555559694767,
+      "kappa3": 0.16666666666666666,
+      "n_vel": 19
+    }
+  },
+  "kappa3_ratio": 1.0,
+  "maxwell": {
+    "mu_residual": 0.00015583336173341782,
+    "p_c": 0.034187680145543305,
+    "p_spinodal": [
+      -0.007695402430823506,
+      0.04417470844835908
+    ],
+    "rho_l": 1.928660650585614,
+    "rho_v": 0.15269618499985813
+  },
+  "protocol": {
+    "G_eff": -5.0,
+    "G_lib": 5.0,
+    "L_factor": 4,
+    "dims": [
+      2,
+      3
+    ],
+    "law": "dp = (dims-1) sigma / R",
+    "model": "SCMP SC94, psi=1-exp(-rho), D2Q9/D3Q19",
+    "predeclared": {
+      "G_eff": -5.0,
+      "G_lib": 5.0,
+      "P1_cross_dim_ratio_prediction": 1.0,
+      "P1_tol": 0.15,
+      "P2_mech_balance_tol": 0.001,
+      "P3_radius_consistency_tol": 0.15,
+      "P4_sigmaK_vs_laplace_tol": 0.15,
+      "P5_coexist_vs_maxwell_tol": 0.15,
+      "dims": [
+        2,
+        3
+      ],
+      "note": "pre-registered before any numeric leg was run; not adjusted afterwards",
+      "radii": [
+        10.0,
+        14.0,
+        18.0
+      ],
+      "tau": 1.0
+    },
+    "radii": [
+      10.0,
+      14.0,
+      18.0
+    ],
+    "tau": 1.0,
+    "thresholds": {
+      "mech_balance": 0.001,
+      "tight": 0.03,
+      "tolerance": 0.15
+    }
+  },
+  "provenance": {
+    "droplet_2d": {
+      "dim": 2,
+      "jobs": 1,
+      "leg": "droplet",
+      "machine": "loongarch64",
+      "python": "3.11.6",
+      "quick": false,
+      "radii": [
+        10.0,
+        14.0,
+        18.0
+      ],
+      "threads": 4,
+      "torch": "2.7.1",
+      "wallclock_s": 24.009074948728085
+    },
+    "flat_2d": {
+      "dim": 2,
+      "jobs": 3,
+      "leg": "flat",
+      "machine": "loongarch64",
+      "python": "3.11.6",
+      "quick": false,
+      "radii": null,
+      "threads": 4,
+      "torch": "2.7.1",
+      "wallclock_s": 35.138868149369955
+    }
+  },
+  "round": "R3",
+  "verdicts": {
+    "P1_cross_dim": "NOT_RUN",
+    "P2_mech_balance_2d": true,
+    "P2_mech_balance_3d": "NOT_RUN",
+    "P3_radius_consistency_2d": true,
+    "P3_radius_consistency_3d": "NOT_RUN",
+    "P4_sigmaK_vs_lap_2d": false,
+    "P4_sigmaK_vs_lap_3d": "NOT_RUN",
+    "P5_coexist_vs_maxwell_2d": true,
+    "P5_coexist_vs_maxwell_3d": "NOT_RUN"
+  }
+}
