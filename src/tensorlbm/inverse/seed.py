@@ -6,13 +6,22 @@ that generates a reproducible initial-guess perturbation from a seed.
 
 All random sources in the inverse pipeline (initial guess jitter, observation
 noise, mini-batch shuffling if any) must flow through these utilities so that
-``seed_everything(s)`` guarantees bit-for-bit reproducibility.
+``seed_everything(s)`` guarantees bit-for-bit reproducibility: PyTorch (CPU and
+CUDA), NumPy and the stdlib ``random`` module are all seeded here.
+
+Scope of the guarantee (what this function does *not* do):
+
+- hash randomisation of the *running* interpreter (``PYTHONHASHSEED`` is only
+  honoured by child processes; the variable is exported for that reason);
+- thread-count-dependent floating-point reductions: keep ``OMP_NUM_THREADS`` /
+  ``torch.set_num_threads`` fixed across the runs you compare.
 """
 
 from __future__ import annotations
 
 import math
 import os
+import random
 
 import torch
 
@@ -31,6 +40,7 @@ def seed_everything(seed: int, *, deterministic: bool = True) -> None:
             disable benchmarking (has a performance cost on GPU).
     """
     torch.manual_seed(seed)
+    random.seed(seed)  # stdlib RNG: forward models that sample with `random`
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
@@ -39,6 +49,10 @@ def seed_everything(seed: int, *, deterministic: bool = True) -> None:
         np.random.seed(seed)
     except ImportError:
         pass
+    # PYTHONHASHSEED only takes effect for *child* interpreters launched
+    # after this call; the running interpreter's hash randomisation cannot be
+    # changed retroactively.  Set and exported so that subprocess-based
+    # forward models inherit it.
     os.environ["PYTHONHASHSEED"] = str(seed)
     if deterministic:
         torch.backends.cudnn.deterministic = True
