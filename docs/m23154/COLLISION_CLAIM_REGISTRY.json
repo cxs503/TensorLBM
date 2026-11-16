@@ -1,0 +1,1726 @@
+{
+ "conservation_tol": 1e-12,
+ "d2q9": {
+  "CUMULANT": {
+   "entrypoint": "tensorlbm.cumulant.collide_cumulant_d2q9",
+   "f_min": 0.024663634879027885,
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 2.4051675443263633e-15
+  }
+ },
+ "families": {
+  "BGK": {
+   "claims": [
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 77,
+     "source": "README.md",
+     "text": "- **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK"
+     ],
+     "line": 82,
+     "source": "README.md",
+     "text": "- Non-Newtonian **power-law BGK** rheology utilities (shear-rate, apparent viscosity, variable-\u03c4 collision)",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 340,
+     "source": "README.md",
+     "text": "`bench_mlups.py` compares throughput of BGK / MRT / TRT / RLBM collision operators on D2Q9 and D3Q19 grids.",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 61,
+     "source": "README.zh-CN.md",
+     "text": "- **BGK**\u3001**MRT**\u3001**TRT**\u3001**\u6b63\u5219\u5316 BGK (RLBM)**\u3001**\u7d2f\u79ef\u91cf\uff08Cumulant\uff09** \u78b0\u649e\u7b97\u5b50\uff08\u652f\u6301\u4e8c\u7ef4\u548c\u4e09\u7ef4\uff09",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK"
+     ],
+     "line": 66,
+     "source": "README.zh-CN.md",
+     "text": "- **\u975e\u725b\u987f\u5e42\u5f8b BGK**\uff1a\u63d0\u4f9b\u526a\u5207\u7387\u4f30\u8ba1\u3001\u8868\u89c2\u9ecf\u5ea6\u8ba1\u7b97\u4e0e\u7a7a\u95f4\u53d8 \u03c4 \u78b0\u649e",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 32,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| MRT, TRT, RLBM, BGK | `benchmarks/pending/collision_kernels_3d_tg/` (3-D TG decay) | decay rate within 0.5 % of `6 nu k^2` |",
+     "withheld": false
+    }
+   ],
+   "conservation": [],
+   "grade": "REAL",
+   "lattices": {
+    "D3Q19": "tensorlbm.solver3d.collide_bgk3d",
+    "D3Q27": "tensorlbm.d3q27.collide_bgk27"
+   },
+   "reason": "conservation OK and Taylor-Green |err| <= 3.0% (0.335%)",
+   "tg": {
+    "bgk27": {
+     "max_abs_err_pct": 0.33468126698148815,
+     "min_r2": 0.9999954918013354,
+     "runs": [
+      {
+       "dtype": "float32",
+       "err_pct": 0.3263245041068255,
+       "kernel": "bgk27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999954918013354,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_bgk27_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.31367975839867357,
+       "kernel": "bgk27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999980420711572,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_bgk27_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.33468126698148815,
+       "kernel": "bgk27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956356016148,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_bgk27_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.31367975839867357,
+       "kernel": "bgk27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999980420711572,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.33468126698148815,
+       "kernel": "bgk27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956356016148,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.3263245041068255,
+       "kernel": "bgk27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999954918013354,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  },
+  "CM": {
+   "claims": [
+    {
+     "families": [
+      "CM",
+      "CUMULANT"
+     ],
+     "line": 14,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| D3Q19 | **available**: `solver3d.collide_mrt3d`, 19\u00d719 explicit transform | **available**: `cascaded_collision.collide_cascaded_d3q19` \u2014 full central-moment hierarchy (0th\u20134th order) | **available**: `cumulant.collide_cumulant_d3q19` | **available**: `entropic_kbc.collide_kbc_d3q19` \u2014 per-cell entropy-optimal ghost relaxation, shear viscosity pinned to `c_s^2(tau-1/2)` by construction |",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM",
+      "CUMULANT"
+     ],
+     "line": 15,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| D3Q27 | **available**: `d3q27.collide_mrt27`, full-rank 27\u00d727 Gram\u2013Schmidt transform/inverse | **available**: `cascaded_collision.collide_cascaded_d3q27` | **available**: `cumulant.collide_cumulant_d3q27` (Geier 2015 partition; also `collide_cumulant_geier_d3q27`) | **available**: `entropic_kbc.collide_kbc_d3q27` |",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM"
+     ],
+     "line": 25,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "`cascaded_collision` / `entropic_kbc` modules above.",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM"
+     ],
+     "line": 48,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "f_post = collide_advanced_3d(\"D3Q19\", \"CM\", f, tau=0.8)      # cascaded_collision",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM"
+     ],
+     "line": 54,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "requests through a D3Q19 kernel.  Aliases: `CM` / `cascaded`,",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM",
+      "KBC"
+     ],
+     "line": 37,
+     "source": "docs/general_capability_matrix_r1.md",
+     "text": "CM/cascaded \u548c KBC/entropic KBC \u5747\u9075\u5faa `advanced_collision_contract` \u7684\u663e\u5f0f withholding\uff1a\u4e0d\u80fd\u88ab legacy \u51fd\u6570\u540d\u63d0\u5347\u4e3a\u53ef\u7528\u80fd\u529b\u3002\u58c1\u9762\u51fd\u6570\u3001AMR\u3001\u6e4d\u6d41\u3001\u591a\u76f8\u3001IBM/\u52a8\u6001\u51e0\u4f55\u3001\u4e0d\u540c\u8fb9\u754c\u6216\u8f93\u51fa\u7ec4\u5408\u540c\u6837\u4e0d\u4f1a\u56e0\u4e3a\u4ed3\u5e93\u4e2d\u5b58\u5728\u6a21\u5757\u800c\u88ab\u81ea\u52a8\u62fc\u63a5\uff1b\u5bf9**\u8f93\u5165 schema \u4e2d\u5df2\u77e5\u4f46\u5c1a\u672a\u5b8c\u6574\u9a8c\u8bc1**\u7684\u503c\uff0cR1 \u8fd4\u56de `withheld` \u548c `WITHHELD_UNVERIFIED_COMPOSITION` \u539f\u56e0\u3002\u6240\u6709\u5b57\u6bb5\uff08\u5305\u62ec `outputs` \u5217\u8868\u7684\u6bcf\u4e2a\u5143\u7d20\uff09\u4e2d**\u672a\u77e5**\u7684\u503c\u90fd\u5728\u7ec4\u5408\u8bc1\u636e\u8bc4\u4f30\u4e4b\u524d\u8fd4\u56de `not_supported`\uff0c\u5e76\u7ed9\u51fa `UNKNOWN_VALUE` \u53ca\u5bf9\u5e94 `field`\u3002",
+     "withheld": true
+    }
+   ],
+   "conservation": [],
+   "grade": "REAL",
+   "lattices": {
+    "D3Q19": "tensorlbm.cascaded_collision.collide_cascaded_d3q19",
+    "D3Q27": "tensorlbm.cascaded_collision.collide_cascaded_d3q27"
+   },
+   "reason": "conservation OK and Taylor-Green |err| <= 3.0% (0.412%)",
+   "tg": {
+    "cascaded_d3q27": {
+     "max_abs_err_pct": 0.4121879599801708,
+     "min_r2": 0.9999955244795848,
+     "runs": [
+      {
+       "dtype": "float64",
+       "err_pct": 0.012810160363807555,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.003210212981337446,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501282585721362,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.028874977450910055,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012810160363807555,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012812887289118113,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012289733225590013,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012286921085555288,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501282585721362,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.1150043798900588,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.4121879599801708,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999955244795848,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_cascaded_d3q27_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.18257641225946925,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999976262094236,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_cascaded_d3q27_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.37383260853372297,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956505140308,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_cascaded_d3q27_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.18257641225946925,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999976262094236,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.37383260853372297,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956505140308,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.4121879599801708,
+       "kernel": "cascaded_d3q27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999955244795848,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  },
+  "CUMULANT": {
+   "claims": [
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 77,
+     "source": "README.md",
+     "text": "- **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 61,
+     "source": "README.zh-CN.md",
+     "text": "- **BGK**\u3001**MRT**\u3001**TRT**\u3001**\u6b63\u5219\u5316 BGK (RLBM)**\u3001**\u7d2f\u79ef\u91cf\uff08Cumulant\uff09** \u78b0\u649e\u7b97\u5b50\uff08\u652f\u6301\u4e8c\u7ef4\u548c\u4e09\u7ef4\uff09",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM",
+      "CUMULANT"
+     ],
+     "line": 14,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| D3Q19 | **available**: `solver3d.collide_mrt3d`, 19\u00d719 explicit transform | **available**: `cascaded_collision.collide_cascaded_d3q19` \u2014 full central-moment hierarchy (0th\u20134th order) | **available**: `cumulant.collide_cumulant_d3q19` | **available**: `entropic_kbc.collide_kbc_d3q19` \u2014 per-cell entropy-optimal ghost relaxation, shear viscosity pinned to `c_s^2(tau-1/2)` by construction |",
+     "withheld": false
+    },
+    {
+     "families": [
+      "CM",
+      "CUMULANT"
+     ],
+     "line": 15,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| D3Q27 | **available**: `d3q27.collide_mrt27`, full-rank 27\u00d727 Gram\u2013Schmidt transform/inverse | **available**: `cascaded_collision.collide_cascaded_d3q27` | **available**: `cumulant.collide_cumulant_d3q27` (Geier 2015 partition; also `collide_cumulant_geier_d3q27`) | **available**: `entropic_kbc.collide_kbc_d3q27` |",
+     "withheld": false
+    }
+   ],
+   "conservation": [],
+   "grade": "REAL",
+   "lattices": {
+    "D3Q19": "tensorlbm.cumulant.collide_cumulant_d3q19",
+    "D3Q27": "tensorlbm.cumulant.collide_cumulant_d3q27"
+   },
+   "reason": "conservation OK and Taylor-Green |err| <= 3.0% (0.412%)",
+   "tg": {
+    "cumulant_d3q27": {
+     "max_abs_err_pct": 0.4121706093349963,
+     "min_r2": 0.9999955242189841,
+     "runs": [
+      {
+       "dtype": "float64",
+       "err_pct": 0.012810160395469727,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.0032102129828778803,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501282571374505,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.028874977435734694,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012810160395469727,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.01281291507593263,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012289733232778707,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012286903102856624,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501282571374505,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11500405307506706,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.4121706093349963,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999955242189841,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_cumulant_d3q27_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.1825360010008122,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999976256373991,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_cumulant_d3q27_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.37382388804141997,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956503162645,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_cumulant_d3q27_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.1825360010008122,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999976256373991,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.37382388804141997,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956503162645,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.4121706093349963,
+       "kernel": "cumulant_d3q27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999955242189841,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  },
+  "KBC": {
+   "claims": [
+    {
+     "families": [
+      "KBC"
+     ],
+     "line": 35,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| entropic KBC | `entropic_kbc` docstring + collision-level \u03c4-control; the fp32 3-D TG sweep in `benchmarks/pending/collision_kernels_3d_tg/` reports a **FAIL** for `collide_kbc_d3q19` (+8.59 / \u221216.19 / \u221236.51 %), which is under re-measurement in float64 (`docs/m23154/`, mission 23154) | **WITHHELD at decay-rate level** until the float64 verdict lands |",
+     "withheld": true
+    },
+    {
+     "families": [
+      "CM",
+      "KBC"
+     ],
+     "line": 37,
+     "source": "docs/general_capability_matrix_r1.md",
+     "text": "CM/cascaded \u548c KBC/entropic KBC \u5747\u9075\u5faa `advanced_collision_contract` \u7684\u663e\u5f0f withholding\uff1a\u4e0d\u80fd\u88ab legacy \u51fd\u6570\u540d\u63d0\u5347\u4e3a\u53ef\u7528\u80fd\u529b\u3002\u58c1\u9762\u51fd\u6570\u3001AMR\u3001\u6e4d\u6d41\u3001\u591a\u76f8\u3001IBM/\u52a8\u6001\u51e0\u4f55\u3001\u4e0d\u540c\u8fb9\u754c\u6216\u8f93\u51fa\u7ec4\u5408\u540c\u6837\u4e0d\u4f1a\u56e0\u4e3a\u4ed3\u5e93\u4e2d\u5b58\u5728\u6a21\u5757\u800c\u88ab\u81ea\u52a8\u62fc\u63a5\uff1b\u5bf9**\u8f93\u5165 schema \u4e2d\u5df2\u77e5\u4f46\u5c1a\u672a\u5b8c\u6574\u9a8c\u8bc1**\u7684\u503c\uff0cR1 \u8fd4\u56de `withheld` \u548c `WITHHELD_UNVERIFIED_COMPOSITION` \u539f\u56e0\u3002\u6240\u6709\u5b57\u6bb5\uff08\u5305\u62ec `outputs` \u5217\u8868\u7684\u6bcf\u4e2a\u5143\u7d20\uff09\u4e2d**\u672a\u77e5**\u7684\u503c\u90fd\u5728\u7ec4\u5408\u8bc1\u636e\u8bc4\u4f30\u4e4b\u524d\u8fd4\u56de `not_supported`\uff0c\u5e76\u7ed9\u51fa `UNKNOWN_VALUE` \u53ca\u5bf9\u5e94 `field`\u3002",
+     "withheld": true
+    }
+   ],
+   "conservation": [],
+   "grade": "WITHHELD",
+   "lattices": {
+    "D3Q19": "tensorlbm.entropic_kbc.collide_kbc_d3q19",
+    "D3Q27": "tensorlbm.entropic_kbc.collide_kbc_d3q27"
+   },
+   "reason": "Taylor-Green decay deviates from gamma_E = 6 nu k^2 by up to 38.09% (tolerance 3.0%), R^2 min 0.97880",
+   "tg": {
+    "kbc_d3q19": {
+     "max_abs_err_pct": 38.08754544259668,
+     "min_r2": 0.9787995272421565,
+     "runs": [
+      {
+       "dtype": "float64",
+       "err_pct": 24.45379388000494,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 25.132978207480956,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": -16.260825013088382,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": -16.75876049313174,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": -38.08754544259668,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": -37.70381401642601,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": -36.51196401713626,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999714369805766,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_kbc_d3q19_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 8.590359740737982,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9787995272421565,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_kbc_d3q19_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": -16.185082757918256,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999897403766477,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_kbc_d3q19_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 8.590359740737982,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9787995272421565,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": -16.185082757918256,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999897403766477,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": -36.51196401713626,
+       "kernel": "kbc_d3q19",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999714369805766,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  },
+  "MRT": {
+   "claims": [
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 77,
+     "source": "README.md",
+     "text": "- **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 340,
+     "source": "README.md",
+     "text": "`bench_mlups.py` compares throughput of BGK / MRT / TRT / RLBM collision operators on D2Q9 and D3Q19 grids.",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 61,
+     "source": "README.zh-CN.md",
+     "text": "- **BGK**\u3001**MRT**\u3001**TRT**\u3001**\u6b63\u5219\u5316 BGK (RLBM)**\u3001**\u7d2f\u79ef\u91cf\uff08Cumulant\uff09** \u78b0\u649e\u7b97\u5b50\uff08\u652f\u6301\u4e8c\u7ef4\u548c\u4e09\u7ef4\uff09",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 32,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| MRT, TRT, RLBM, BGK | `benchmarks/pending/collision_kernels_3d_tg/` (3-D TG decay) | decay rate within 0.5 % of `6 nu k^2` |",
+     "withheld": false
+    },
+    {
+     "families": [
+      "MRT"
+     ],
+     "line": 14,
+     "source": "docs/general_capability_matrix_r1.md",
+     "text": "result = assess_capability(CapabilityRequest(lattice=\"D3Q19\", collision=\"MRT\"))",
+     "withheld": false
+    },
+    {
+     "families": [
+      "MRT"
+     ],
+     "line": 35,
+     "source": "docs/general_capability_matrix_r1.md",
+     "text": "`advanced_collision_contract` \u5df2\u8bc1\u660e D3Q19 \u4e0e D3Q27 \u7684 MRT \u5185\u6838\u53ef\u6267\u884c\uff1b\u4f46\u662f R1 \u53ea\u5c06\u524d\u8ff0 D3Q19 \u5b8c\u6574\u7ec4\u5408\u6807\u4e3a `supported`\u3002D3Q27/MRT \u4ec5\u6709\u7ec4\u4ef6\u7ea7\u8bc1\u636e\uff0c\u7f3a\u5c11\u8be5\u5b8c\u6574\u5e73\u53f0\u7ec4\u5408\u8bc1\u636e\uff0c\u6545\u8fd4\u56de `withheld`\u3002",
+     "withheld": true
+    }
+   ],
+   "conservation": [],
+   "grade": "REAL",
+   "lattices": {
+    "D3Q19": "tensorlbm.solver3d.collide_mrt3d",
+    "D3Q27": "tensorlbm.d3q27.collide_mrt27"
+   },
+   "reason": "conservation OK and Taylor-Green |err| <= 3.0% (0.464%)",
+   "tg": {
+    "mrt27": {
+     "max_abs_err_pct": 0.4644364588949762,
+     "min_r2": 0.9999953846789575,
+     "runs": [
+      {
+       "dtype": "float64",
+       "err_pct": 0.18503537270687237,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.046101700015573066,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.4644364588949762,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11496408545518672,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.18503537270687237,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.18504337612157418,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.2720761998133286,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.2720813606288119,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.4644364588949762,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.46442200121789984,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.42317019038319614,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999953846789575,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_mrt27_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.21462380024010871,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.999996587358897,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_mrt27_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.40651488869165003,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999955275024904,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_mrt27_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.21462380024010871,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.999996587358897,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.40651488869165003,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999955275024904,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.42317019038319614,
+       "kernel": "mrt27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999953846789575,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  },
+  "RLBM": {
+   "claims": [
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 77,
+     "source": "README.md",
+     "text": "- **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 340,
+     "source": "README.md",
+     "text": "`bench_mlups.py` compares throughput of BGK / MRT / TRT / RLBM collision operators on D2Q9 and D3Q19 grids.",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 61,
+     "source": "README.zh-CN.md",
+     "text": "- **BGK**\u3001**MRT**\u3001**TRT**\u3001**\u6b63\u5219\u5316 BGK (RLBM)**\u3001**\u7d2f\u79ef\u91cf\uff08Cumulant\uff09** \u78b0\u649e\u7b97\u5b50\uff08\u652f\u6301\u4e8c\u7ef4\u548c\u4e09\u7ef4\uff09",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 32,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| MRT, TRT, RLBM, BGK | `benchmarks/pending/collision_kernels_3d_tg/` (3-D TG decay) | decay rate within 0.5 % of `6 nu k^2` |",
+     "withheld": false
+    }
+   ],
+   "conservation": [],
+   "grade": "REAL",
+   "lattices": {
+    "D3Q19": "tensorlbm.solver3d.collide_rlbm3d",
+    "D3Q27": "tensorlbm.d3q27.collide_rlbm27"
+   },
+   "reason": "conservation OK and Taylor-Green |err| <= 3.0% (0.403%)",
+   "tg": {
+    "rlbm27": {
+     "max_abs_err_pct": 0.4029846334892684,
+     "min_r2": 0.9999954885585377,
+     "runs": [
+      {
+       "dtype": "float64",
+       "err_pct": 0.012809991802038845,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.0032100458466771675,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501319508756824,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.028875340094741686,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012809991802038845,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012809991797271825,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.01228987114552937,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.012289871168150165,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501319508756824,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.11501319511388053,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.4029846334892684,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999954885585377,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_rlbm27_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.3117613933419223,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.999997370451082,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_rlbm27_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.36877164952087044,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956341523368,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_rlbm27_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.3117613933419223,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.999997370451082,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.36877164952087044,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956341523368,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.4029846334892684,
+       "kernel": "rlbm27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999954885585377,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  },
+  "TRT": {
+   "claims": [
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 77,
+     "source": "README.md",
+     "text": "- **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 340,
+     "source": "README.md",
+     "text": "`bench_mlups.py` compares throughput of BGK / MRT / TRT / RLBM collision operators on D2Q9 and D3Q19 grids.",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM",
+      "CUMULANT"
+     ],
+     "line": 61,
+     "source": "README.zh-CN.md",
+     "text": "- **BGK**\u3001**MRT**\u3001**TRT**\u3001**\u6b63\u5219\u5316 BGK (RLBM)**\u3001**\u7d2f\u79ef\u91cf\uff08Cumulant\uff09** \u78b0\u649e\u7b97\u5b50\uff08\u652f\u6301\u4e8c\u7ef4\u548c\u4e09\u7ef4\uff09",
+     "withheld": false
+    },
+    {
+     "families": [
+      "BGK",
+      "MRT",
+      "TRT",
+      "RLBM"
+     ],
+     "line": 32,
+     "source": "docs/advanced_collision_capability_matrix.md",
+     "text": "| MRT, TRT, RLBM, BGK | `benchmarks/pending/collision_kernels_3d_tg/` (3-D TG decay) | decay rate within 0.5 % of `6 nu k^2` |",
+     "withheld": false
+    }
+   ],
+   "conservation": [],
+   "grade": "REAL",
+   "lattices": {
+    "D3Q19": "tensorlbm.solver3d.collide_trt3d",
+    "D3Q27": "tensorlbm.d3q27.collide_trt27"
+   },
+   "reason": "conservation OK and Taylor-Green |err| <= 3.0% (0.673%)",
+   "tg": {
+    "trt27": {
+     "max_abs_err_pct": 0.6725029545366495,
+     "min_r2": 0.9999954899746131,
+     "runs": [
+      {
+       "dtype": "float64",
+       "err_pct": 0.045079645302086024,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.011250963300263317,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.6725029545299257,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.16611484452176,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_extra.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.045079645302086024,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.04507964530995473,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.3045978206883542,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.3045978206671906,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.6725029545299257,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float64",
+       "err_pct": 0.6725029545366495,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": null,
+       "r2": null,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/audit_viscosity.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.47128549235811595,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999954899746131,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_trt27_N128.json",
+       "tau": 1.3,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.37770896904183515,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999956399314466,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_trt27_N64.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.43284556278293884,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956344561082,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/case_trt27_N96.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.37770896904183515,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": 64,
+       "r2": 0.9999956399314466,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 0.9,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.43284556278293884,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": 96,
+       "r2": 0.9999956344561082,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.1,
+       "tier": "prior"
+      },
+      {
+       "dtype": "float32",
+       "err_pct": 0.47128549235811595,
+       "kernel": "trt27",
+       "mass_drift_rel": null,
+       "n": 128,
+       "r2": 0.9999954899746131,
+       "source": "benchmarks/pending/collision_kernels_3d_tg/result.json",
+       "tau": 1.3,
+       "tier": "prior"
+      }
+     ]
+    }
+   }
+  }
+ },
+ "generated_by": "tools/collision_claim_registry.py emit-ledger",
+ "smoke": [
+  {
+   "entrypoint": "tensorlbm.solver3d.collide_bgk3d",
+   "f_min": 0.024743592877320572,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.3932055608255858e-15,
+   "shear_factor": -0.11111111111107425,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.solver3d.collide_trt3d",
+   "f_min": 0.024743592877320572,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.7572363418544668e-15,
+   "shear_factor": -0.11111111111128892,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.solver3d.collide_rlbm3d",
+   "f_min": 0.02474359287731758,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.4864944060009227e-14,
+   "momentum_err_rel": 2.5284638797843808e-14,
+   "shear_factor": -0.11111111193883008,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.solver3d.collide_mrt3d",
+   "f_min": 0.024743618803246468,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 7.795593705014906e-15,
+   "shear_factor": -0.11111111112900912,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.cascaded_collision.collide_cascaded_d3q19",
+   "f_min": 0.024743709130962972,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 6.079427901600847e-16,
+   "shear_factor": -0.11111111111115231,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.cumulant.collide_cumulant_d3q19",
+   "f_min": 0.024743685469913165,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.155554874829299e-15,
+   "shear_factor": -0.11111111111058636,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.entropic_kbc.collide_kbc_d3q19",
+   "f_min": 0.024743685469913165,
+   "lattice": "D3Q19",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.155554874829299e-15,
+   "shear_factor": -0.11111111111058636,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.d3q27.collide_bgk27",
+   "f_min": 0.004013815610588864,
+   "lattice": "D3Q27",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.461453017963643e-15,
+   "shear_factor": -0.1111111111109192,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.d3q27.collide_trt27",
+   "f_min": 0.004013815610588864,
+   "lattice": "D3Q27",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 2.0619422161053086e-15,
+   "shear_factor": -0.11111111111112901,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.d3q27.collide_rlbm27",
+   "f_min": 0.0040138156105882505,
+   "lattice": "D3Q27",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.2751953489476027e-15,
+   "shear_factor": -0.11111111193887996,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.d3q27.collide_mrt27",
+   "f_min": 0.004013912627049769,
+   "lattice": "D3Q27",
+   "mass_err_rel": 1.760350021947556e-15,
+   "momentum_err_rel": 5.070578293387412e-15,
+   "shear_factor": -0.11111111111151932,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.cascaded_collision.collide_cascaded_d3q27",
+   "f_min": 0.004013899198996302,
+   "lattice": "D3Q27",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 7.418569538414327e-16,
+   "shear_factor": -0.11111111111098264,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.cumulant.collide_cumulant_d3q27",
+   "f_min": 0.004013899198994585,
+   "lattice": "D3Q27",
+   "mass_err_rel": 4.40087505486889e-16,
+   "momentum_err_rel": 1.1370015582825686e-15,
+   "shear_factor": -0.11111111111106557,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  },
+  {
+   "entrypoint": "tensorlbm.entropic_kbc.collide_kbc_d3q27",
+   "f_min": 0.004013846474786394,
+   "lattice": "D3Q27",
+   "mass_err_rel": 2.200437527434445e-16,
+   "momentum_err_rel": 1.2751953489476027e-15,
+   "shear_factor": -0.11111111111171447,
+   "shear_factor_expected": -0.11111111111111116,
+   "tau": 0.9
+  }
+ ],
+ "tg_tolerance_pct": 3.0
+}
