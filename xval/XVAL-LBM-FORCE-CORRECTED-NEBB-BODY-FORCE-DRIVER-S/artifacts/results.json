@@ -87,7 +87,7 @@
       "steps_used": 1401,
       "steady_residual": 1.1046719095020308e-14,
       "u_wall_corrected": -6.505213034913027e-19,
-      "runtime_s": 0.7807832602411509,
+      "runtime_s": 0.7905193902552128,
       "history": {
         "step": [
           1,
@@ -282,7 +282,7 @@
       "steps_used": 1401,
       "steady_residual": 1.0672018824209317e-14,
       "u_wall_corrected": 4.336808689942018e-19,
-      "runtime_s": 0.774523489177227,
+      "runtime_s": 0.8506768885999918,
       "history": {
         "step": [
           1,
@@ -1276,7 +1276,7 @@
     },
     "n_rows": 7
   },
-  "runtime_s": 228.1191387809813,
+  "runtime_s": 248.1711754091084,
   "figures": {
     "fig_profile.png": "steady u_x(y) for both arms and the closed-form parabola",
     "fig_cross_arm.png": "arm-A vs arm-B difference and wall-model comparison",

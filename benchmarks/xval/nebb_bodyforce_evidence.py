@@ -54,6 +54,9 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[2]
 NODE = "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S"
 ARTIFACTS = f"xval/{NODE}/artifacts"
+#: transient (impulsive-start) campaign of the same driver -- separate run dir
+#: because it is a different referee (start-up series, not the steady parabola)
+STARTUP_ART = "artifacts/xval_nebb_startup"
 
 IMPL_FILES = [
     "src/tensorlbm/nebb_bodyforce.py",
@@ -63,6 +66,8 @@ IMPL_FILES = [
     "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
     f"xval/{NODE}/run_xval_r4_invariants.py",
     f"xval/{NODE}/run_corepath_l3.py",
+    "src/tensorlbm/nebb_bodyforce_startup.py",
+    "benchmarks/xval/xval_nebb_startup_transient.py",
 ]
 
 ENTRIES = [
@@ -96,6 +101,15 @@ ENTRIES = [
                    f"--out {ARTIFACTS}",
         "note": "XVAL harness: OSS-transcription arm vs TensorLBM arm, wall/"
                 "scheme/grid sensitivity, results.json + figures",
+    },
+    {
+        "path": "benchmarks/xval/xval_nebb_startup_transient.py",
+        "kind": "benchmark_transient",
+        "command": "python benchmarks/xval/xval_nebb_startup_transient.py "
+                   f"--out {STARTUP_ART}",
+        "note": "impulsive-start transient campaign against the closed-form start-up "
+                "series (Batchelor 1967 §4.2); writes STARTUP_ART/results.json + "
+                "figures.json + 3 PNGs",
     },
 ]
 
@@ -145,6 +159,8 @@ RUN_FILES = [
     f"{ARTIFACTS}/cli_guo_ny10.json",
     f"{ARTIFACTS}/corepath/result.json",
     f"{ARTIFACTS}/r4_invariants.json",
+    f"{STARTUP_ART}/results.json",
+    f"{STARTUP_ART}/figures.json",
 ]
 FIGURES = [
     f"{ARTIFACTS}/fig_profile.png",
@@ -157,12 +173,25 @@ FIGURES = [
     f"{ARTIFACTS}/fig_field.svg",
     f"{ARTIFACTS}/corepath/nebb_bodyforce_xval.png",
     f"{ARTIFACTS}/corepath/nebb_bodyforce_xval.svg",
+    f"{STARTUP_ART}/fig_startup_profiles.png",
+    f"{STARTUP_ART}/fig_startup_profiles.svg",
+    f"{STARTUP_ART}/fig_startup_errors.png",
+    f"{STARTUP_ART}/fig_startup_errors.svg",
+    f"{STARTUP_ART}/fig_startup_decay.png",
+    f"{STARTUP_ART}/fig_startup_decay.svg",
 ]
 EXTERNAL_ANCHOR = [
     f"xval/{NODE}/REPORT_R5.md",
+    f"xval/{NODE}/REPORT_R6.md",
     "docs/xval_nebb_bodyforce_anchor.md",
+    "docs/xval_nebb_bodyforce_transient.md",
 ]
-TESTS = ["tests/test_nebb_bodyforce.py", "tests/test_gpu_core_path.py"]
+TESTS = [
+    "tests/test_nebb_bodyforce.py",
+    "tests/test_gpu_core_path.py",
+    "tests/test_nebb_bodyforce_startup.py",
+    "tests/test_nebb_bodyforce_evidence.py",
+]
 PLACEHOLDER_MARKERS = ("NotImplementedError", "TODO", "FIXME", "placeholder")
 
 
@@ -223,6 +252,36 @@ def audit_caller(row: dict) -> dict:
             "sha256": sha256(path) if path.is_file() else None}
 
 
+def figure_twin(rel_path: str) -> str | None:
+    """Raster/SVG twin of a declared figure, if the declared one is absent.
+
+    The merge gate drops binary files, so every committed PNG also carries a
+    plain-text ``.svg`` twin written by the same ``savefig`` call.  A figure is
+    therefore "present" if either member of the pair exists.
+    """
+    p = REPO / rel_path
+    if p.is_file():
+        return None
+    twin = p.with_suffix(".svg") if p.suffix.lower() != ".svg" else p.with_suffix(".png")
+    return twin.name if twin.is_file() else None
+
+
+def audit_figure(rel_path: str, role: str = "") -> dict:
+    p = REPO / rel_path
+    twin = figure_twin(rel_path)
+    present = p.is_file() or twin is not None
+    used = p if p.is_file() else (p.with_suffix(".svg") if twin and p.suffix.lower() != ".svg"
+                                  else p.with_suffix(".png"))
+    return {
+        "path": rel_path,
+        "exists": present,
+        "present_as": "declared" if p.is_file() else (f"twin:{twin}" if twin else None),
+        "bytes": used.stat().st_size if present else 0,
+        "sha256": sha256(used) if present else None,
+        "role": role,
+    }
+
+
 def audit_file(rel_path: str, role: str = "") -> dict:
     p = REPO / rel_path
     return {
@@ -270,6 +329,110 @@ def recompute_rows(results: dict) -> tuple[list[dict], bool]:
     return rows, ok
 
 
+#: pre-declared transient tolerances (owner 15 %, ecosystem stretch 3 %) -- fixed
+#: in docs/xval_nebb_bodyforce_transient.md before the campaign was run, not
+#: re-tuned after seeing the numbers.
+TRANSIENT_OWNER = 0.15
+TRANSIENT_STRETCH = 0.03
+
+
+def recompute_transient(startup: dict, rerun: bool = True) -> tuple[list[dict], bool]:
+    """Re-derive the impulsive-start (transient) rows from the raw campaign.
+
+    Two independent checks per arm:
+
+    * **ref column** -- the start-up series ``plane_poiseuille_startup`` is
+      re-evaluated here, at the stored sample times / geometry, and must
+      reproduce every stored ``umax_analytic`` sample to ``1e-10`` of the
+      steady scale.  The reference is therefore recomputed from the closed
+      form, not copied out of the artifact.
+    * **got column** -- with ``rerun`` the LBM arm is re-integrated from rest
+      (cheap: 2 x ny lattice, a few thousand steps) and its transient error
+      history must reproduce the stored one to ``1e-9`` relative, so the
+      benchmark cannot be satisfied by a stale artifact.
+
+    ``decay_rate_theory`` is likewise rebuilt from ``pi^2 nu / H^2``.
+    """
+    sys.path.insert(0, str(REPO / "src"))
+    from tensorlbm.nebb_bodyforce_startup import (  # noqa: E402
+        plane_poiseuille_startup,
+        run_startup,
+    )
+
+    arms = {a["label"]: a for a in startup["arms"]}
+    rows, ok = [], True
+    for row in startup["summary_rows"]:
+        arm = arms[row["arm"]]
+        cfg = arm["config"]
+        ny, nu, gx, H = cfg["ny"], cfg["nu"], cfg["gx"], cfg["H"]
+        y = np.arange(ny, dtype=float)
+        scale = float(cfg["umax_steady_analytic"])
+
+        # --- ref: closed-form series, re-evaluated from the literature formula ---
+        ref_dev = 0.0
+        for smp in arm["samples"]:
+            ana = plane_poiseuille_startup(y, smp["t"], gx, nu, H)
+            ref_dev = max(ref_dev, abs(float(ana.max()) - smp["umax_analytic"]) / scale)
+        rate_theory = float(np.pi**2 * nu / H**2)
+        rate_dev = abs(rate_theory - row["decay_rate_theory"]) / rate_theory
+
+        # --- got: re-integrate the arm and reproduce its error history -----------
+        if rerun:
+            res = run_startup(ny=ny, nu=nu, scheme=row["scheme"], wall=row["wall"])
+            got_max = max(s.errors["max_rel_to_scale"] for s in res.samples)
+            got_final = res.samples[-1].errors["max_rel_to_scale"]
+            got_dev = abs(got_max - row["max_err_rel_to_scale_all"]) / max(
+                abs(row["max_err_rel_to_scale_all"]), 1e-30)
+            got_dev = max(got_dev, abs(got_final - row["err_at_final"]) / max(abs(row["err_at_final"]), 1e-30))
+            rerun_notes = {"recomputed": True, "max_err_rel_to_scale_all": got_max}
+        else:
+            got_max, got_final, got_dev = None, None, 0.0
+            rerun_notes = {"recomputed": False}
+
+        agrees = ref_dev < 1e-10 and rate_dev < 1e-10 and got_dev < 1e-9
+        primary = row["wall"].startswith("force_corrected_nebb")
+        passes = row["max_err_rel_to_scale_all"] < (TRANSIENT_STRETCH if primary else TRANSIENT_OWNER)
+        ok = ok and agrees and (passes or not primary)
+        rows.append(
+            {
+                "case": row["arm"],
+                "primary": bool(primary),
+                "ny": ny, "nu": nu, "gx": gx, "H": H,
+                "scheme": row["scheme"], "wall": row["wall"],
+                "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 §4.2)",
+                "t_final": arm["samples"][-1]["t"],
+                "n_samples": len(arm["samples"]),
+                "umax_ref": row["umax_analytic_final"],
+                "umax_got": row["umax_final"],
+                "rel_err_final": row["err_at_final"],
+                "max_rel_err_transient": row["max_err_rel_to_scale_all"],
+                "decay_rate_theory": rate_theory,
+                "decay_rate_measured": row["decay_rate_measured"],
+                "decay_rate_rel_err": row["decay_rate_rel_err"],
+                "nu_effective": row["nu_effective"],
+                "mass_drift_rel": row["mass_drift_rel"],
+                "tolerance": TRANSIENT_STRETCH if primary else TRANSIENT_OWNER,
+                "pass": bool(passes),
+                "ref_recomputed_dev": ref_dev,
+                "rate_recomputed_dev": rate_dev,
+                "got_recomputed_dev": got_dev,
+                "recomputed_matches_stored": bool(agrees),
+                **rerun_notes,
+            }
+        )
+    return rows, ok
+
+
+def benchmark_transient_ok(transient: dict) -> bool:
+    """The transient section is only evidence if it recomputed and passed."""
+    return bool(
+        transient["rows"]
+        and transient["reproduces_stored_rows"]
+        and transient["n_primary_rows"] >= 4
+        and transient["all_pass"]
+    )
+
+
 def collect_tests() -> tuple[list[str], list[dict]]:
     ids: list[str] = []
     rows = []
@@ -291,6 +454,8 @@ def main(argv=None) -> int:
                          "committed one, so a fresh clone verifies without re-running)")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--no-tests", action="store_true", help="skip pytest collection")
+    ap.add_argument("--no-rerun", action="store_true",
+                    help="do not re-integrate the transient arms (ref/rate checks only)")
     args = ap.parse_args(argv)
     run_dir = Path(args.run_dir).resolve()
     results_path = run_dir / "results.json"
@@ -305,7 +470,8 @@ def main(argv=None) -> int:
 
     run_artifacts = [audit_file(p, results.get("figures", {}).get(p.rsplit("/", 1)[-1], "run artifact"))
                      for p in RUN_FILES]
-    figures = [audit_file(p, "figure (text SVG twin + PNG for the report)") for p in FIGURES]
+    figures = [audit_figure(p, "figure (PNG for the report, text SVG twin for the repo)")
+               for p in FIGURES]
     anchors = [audit_file(p, "external anchor") for p in EXTERNAL_ANCHOR]
 
     bench_rows, recomputed_ok = recompute_rows(results)
@@ -319,6 +485,30 @@ def main(argv=None) -> int:
                            "pass": bool(rel_diff < c["tolerance"]),
                            "recomputed_matches_stored": abs(rel_diff - c["rel_diff"]) < 1e-12})
         recomputed_ok = recomputed_ok and abs(rel_diff - c["rel_diff"]) < 1e-12
+
+    # ---- transient (impulsive start) campaign: separate referee, separate run dir
+    startup_path = REPO / STARTUP_ART / "results.json"
+    startup = json.loads(startup_path.read_text()) if startup_path.is_file() else None
+    if startup is None:
+        transient_rows, transient_recomputed = [], False
+    else:
+        transient_rows, transient_recomputed = recompute_transient(startup, rerun=not args.no_rerun)
+    transient_primary = [r for r in transient_rows if r["primary"]]
+    transient = {
+        "metric": "max_t max_y |u_LBM(y,t) - u_series(y,t)| / max_y u_steady(y)",
+        "reference": "closed-form impulsively-started plane-Poiseuille series "
+                     "(Batchelor 1967 §4.2, 512 odd modes), referee independent of "
+                     "the steady benchmark's parabola",
+        "tolerance_owner_15pct": TRANSIENT_OWNER,
+        "tolerance_stretch_3pct": TRANSIENT_STRETCH,
+        "rows": transient_rows,
+        "n_primary_rows": len(transient_primary),
+        "all_pass": bool(transient_primary) and all(r["pass"] for r in transient_primary),
+        "recomputed_from": f"{STARTUP_ART}/results.json",
+        "reproduces_stored_rows": bool(transient_recomputed),
+        "source": "benchmarks/xval/xval_nebb_startup_transient.py",
+        "negative_controls": (startup or {}).get("negative_controls", {}),
+    }
 
     primary_rows = [r for r in bench_rows if r["primary"]]
     benchmark = {
@@ -352,8 +542,11 @@ def main(argv=None) -> int:
         f"--out {ARTIFACTS}/cli_guo_ny10.json && "
         f"python xval/{NODE}/run_corepath_l3.py --out {ARTIFACTS}/corepath && "
         f"python xval/{NODE}/run_xval_r4_invariants.py && "
+        f"python benchmarks/xval/xval_nebb_startup_transient.py --out {STARTUP_ART} && "
         f"python benchmarks/xval/nebb_bodyforce_evidence.py --strict && "
-        "python -m pytest tests/test_nebb_bodyforce.py tests/test_gpu_core_path.py -q"
+        "python -m pytest tests/test_nebb_bodyforce.py "
+        "tests/test_nebb_bodyforce_startup.py tests/test_gpu_core_path.py -q   "
+        f"# or: bash xval/{NODE}/repro_all.sh"
     )
 
     checks = {
@@ -366,12 +559,16 @@ def main(argv=None) -> int:
         # with --no-tests the declared test files stand in for the node-id list
         "tests_collected": bool(test_ids) or all((REPO / p).is_file() for p in TESTS),
         "benchmark_rows_recomputed": benchmark["reproduces_stored_rows"],
+        "transient_artifacts_present": startup is not None,
+        "transient_rows_recomputed": benchmark_transient_ok(transient),
     }
     mandatory = ["impl_files_ok", "entries_exist", "run_artifacts_exist",
-                 "integration_callers_verified", "benchmark_rows_recomputed"]
+                 "integration_callers_verified", "benchmark_rows_recomputed",
+                 "transient_artifacts_present", "transient_rows_recomputed"]
     if args.strict:
         checks["benchmark_all_pass"] = benchmark["all_pass"]
-        mandatory.append("benchmark_all_pass")
+        checks["transient_all_pass"] = transient["all_pass"]
+        mandatory += ["benchmark_all_pass", "transient_all_pass"]
     ok = all(checks[k] for k in mandatory)
 
     # machine-readable level, computed from the same checks the campaign judge uses
@@ -380,7 +577,8 @@ def main(argv=None) -> int:
         level = 2
         if checks["integration_callers_verified"]:
             level = 3
-            if checks["benchmark_rows_recomputed"] and benchmark["all_pass"] and repro_cmd:
+            if (checks["benchmark_rows_recomputed"] and benchmark["all_pass"]
+                    and transient["all_pass"] and repro_cmd):
                 level = 4
                 if checks["external_anchor_present"]:
                     level = 5
@@ -400,6 +598,7 @@ def main(argv=None) -> int:
         "run_artifacts": [r["path"] for r in run_artifacts],
         "integration_callers": [c["symbol"] for c in callers],
         "benchmark": benchmark,
+        "benchmark_transient": transient,
         "repro_cmd": repro_cmd,
         "tests": test_ids or [p for p in TESTS],
         "external_anchor": [r["path"] for r in anchors],

@@ -32,7 +32,7 @@
       },
       "steps_to_steady": 6600,
       "steady_residual": 5.031322580784092e-13,
-      "elapsed_s": 24.98938995040953,
+      "elapsed_s": 22.741475380957127,
       "backend_used": "eager",
       "backend_note": "",
       "profile_ux_fluid": [
@@ -101,7 +101,7 @@
       },
       "steps_to_steady": 7200,
       "steady_residual": 7.69870278638507e-13,
-      "elapsed_s": 44.25061244890094,
+      "elapsed_s": 43.87419887073338,
       "backend_used": "eager",
       "backend_note": "",
       "profile_ux_fluid": [
