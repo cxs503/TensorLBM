@@ -1,0 +1,138 @@
+{
+  "anchor": "XVAL-LBM-NO-MASS-ANALOGUE-IN-OSS-INVENTORY",
+  "round": 3,
+  "mission": 23214,
+  "written_before_runs": true,
+  "parent": "r2/REPORT2.md (round 2, mission m22082-era closure; claim: C_I within 6.0-14.6 % of 'C_a x Gamma_re(beta)', PASS at the 15 % gate, quadrature channel WITHHELD at 29-38 % low)",
+  "audit_finding_pre_run": {
+    "defect": "src/tensorlbm/oscillatory_cylinder_inertia.py::stokes_cylinder_coefficients mapped beta -> Stokes layer thickness beta -> k with a factor sqrt(2) error",
+    "evidence": "shipped: delta_over_R = 2*sqrt(2/(pi*beta)), k = 1/delta_over_R.  Derived: delta = sqrt(2 nu/omega), k = R sqrt(omega/nu) = sqrt(pi*beta/2), delta/R = 2/sqrt(pi*beta) -> k = sqrt(2)/(delta/R).  Ratio of shipped to derived: exactly sqrt(2) in delta/R, 1/sqrt(2) in k.",
+    "consequence_analytic": {
+      "Gamma_re(beta=25)": {
+        "shipped": 1.6414,
+        "corrected": 1.3196,
+        "shipped_over_corrected": 1.2439
+      },
+      "Gamma_re(beta=50)": {
+        "shipped": 1.4525,
+        "corrected": 1.2258,
+        "shipped_over_corrected": 1.185
+      },
+      "Gamma_re(beta=100)": {
+        "shipped": 1.3196,
+        "corrected": 1.1596,
+        "shipped_over_corrected": 1.138
+      },
+      "C_Q_viscous(beta=50)": {
+        "shipped": 0.5009,
+        "corrected": 0.2382,
+        "shipped_over_corrected": 2.103
+      }
+    },
+    "measured_resolution_parameter_was_overstated_too": "round-2 quoted Stokes layer thickness 2.55 / 1.81 / 1.28 cells at beta 25 / 50 / 100 (D = 16). The true values are 1.81 / 1.28 / 0.90 cells: the primary arm is at 1.28 cells, i.e. the layer is barely resolved, which is the physical explanation of the residual the round-2 report attributed to 'resolution effect, not physics'."
+  },
+  "hypotheses": [
+    {
+      "id": "H1-reference-correction",
+      "statement": "Re-scoring the round-2 raw measurements against the corrected exact unsteady-Stokes reference reverses the round-2 acceptance verdict: the in-phase error at beta = 25 / 50 / 100 (D = 16) exceeds the owner 15 % gate, i.e. the round-2 PASS lines were an artefact of the sqrt(2) reference error.",
+      "predicted": "beta = 50, E1: C_I = 1.5569 against C_a*Gamma_re = 0.968*1.2258 = 1.1870 -> +31.1 % (round 2 quoted +10.7 %)",
+      "falsified_if": "any of the three healthy D = 16 arms lands inside |err| <= 15 % against the corrected reference"
+    },
+    {
+      "id": "H2-quadrature-sign",
+      "statement": "With the corrected reference the quadrature channel changes sign of its discrepancy: the same measurement that round 2 called 32 % LOW becomes ~+43 % HIGH, so 'the quadrature is underestimated' (round-2 hypothesis: staircase tangential area) is not supported by its own data.",
+      "predicted": "beta = 50, E1: C_Q = 0.3403 vs -Im Gamma = 0.2382 -> +42.9 %",
+      "falsified_if": "the recomputed quadrature error stays negative at every healthy arm"
+    },
+    {
+      "id": "H3-resolution-is-the-driver",
+      "statement": "Once the reference is right, the in-phase error is controlled by the Stokes layer resolved in cells, delta_true = D/sqrt(pi*beta): refining the same physical problem (fixed beta = 50, KC, Ma, Re, box/D) from D = 16 -> 32 -> 64 raises delta_true from 1.28 -> 2.55 -> 5.11 cells and the error falls monotonically.",
+      "predicted": "err(D=16) ~ +31 % > err(D=32) > err(D=64)",
+      "falsified_if": "the error does not decrease between two consecutive rungs, or the D = 64 error is larger than the D = 16 error"
+    },
+    {
+      "id": "H4-error-floor-vs-3pct-caliber",
+      "statement": "The 3 % platform caliber is reachable inside the local budget at most one rung above D = 64; it is NOT claimed for this round.",
+      "decision_rule": {
+        "upgrade_to_3pct": "|err| <= 3 % at D = 64 (delta_true = 5.11 cells)",
+        "partial": "3 % < |err| at D = 64 <= 15 % -> record the measured error-vs-delta curve and state the delta needed for 3 % by extrapolation, no claim",
+        "honest_fail": "|err| > 15 % at D = 64 -> there is a floor that resolution does not remove; report it as the closure state of the anchor"
+      }
+    },
+    {
+      "id": "H5-delta-only-scaling",
+      "statement": "The error is a function of delta_true (cells) and of the mask discretisation relative to D, not of D separately: (D = 16, beta = 50) and (D = 32, beta = 100) share delta_true = 1.28 cells and must give the same in-phase error within the estimator spread.",
+      "predicted": "|err(D=16,beta=50) - err(D=32,beta=100)| <= 3 pp",
+      "falsified_if": "the two arms differ by more than 3 pp"
+    },
+    {
+      "id": "H6-mask-not-stokes-layer",
+      "added_after_re_scoring_committed_data": true,
+      "note": "Added after re-scoring the *committed* round-2 raw JSON against the corrected reference (pre-existing evidence, no new run involved); the D = 32 / 64 arms had not returned when this was written.",
+      "statement": "At fixed D = 16 the in-phase error is flat in beta (2x change of the Stokes layer) while the corrected reference moves by 15 %, so the residual is not a Stokes-layer resolution effect and round 2's 'resolution, not the estimator, sets the error' reading is unsupported by its own data. The candidate mechanism is the staircase mask: halfway bounce-back moves the wall half a cell outside the last solid centre (blocked area n_solid + P/2, i.e. +11-16 % at D = 16) while the same-mask potential reference uses n_solid, and a staircase surface raises the added mass further.",
+      "predicted_if_geometric": "err ~ C/D: ~ +15 % at D = 32, ~ +7.5 % at D = 64",
+      "predicted_if_flat": "err stays ~ +31 % at D = 32 and 64",
+      "falsified_if": "the error is neither monotone in D nor flat (e.g. it grows with D)"
+    }
+  ],
+  "arms": [
+    {
+      "name": "r3_b50_d32",
+      "D": 32,
+      "box": 4.0,
+      "beta": 50.0,
+      "omega": "2*pi/400",
+      "delta_true_cells": 2.553,
+      "purpose": "H3 rung +1, same physics as the round-2 primary arm"
+    },
+    {
+      "name": "r3_b25_d32",
+      "D": 32,
+      "box": 4.0,
+      "beta": 25.0,
+      "omega": "2*pi/400",
+      "delta_true_cells": 3.61,
+      "purpose": "H3 second rung in beta (thicker layer at the same D)"
+    },
+    {
+      "name": "r3_b100_d32",
+      "D": 32,
+      "box": 4.0,
+      "beta": 100.0,
+      "omega": "2*pi/400",
+      "delta_true_cells": 1.277,
+      "purpose": "H5 control: same delta_true as the round-2 primary arm, different D"
+    },
+    {
+      "name": "r3_b50_d64",
+      "D": 64,
+      "box": 4.0,
+      "beta": 50.0,
+      "omega": "2*pi/800",
+      "delta_true_cells": 5.106,
+      "purpose": "H3 rung +2 / H4 decision arm"
+    }
+  ],
+  "protocol_unchanged_from_r2": {
+    "drive": "Guo body force a(t) = a0 cos(omega t) on fluid nodes, 3-period cosine ramp",
+    "gate": "trailing 3-period first-harmonic amplitude change < 0.5 % per period",
+    "measure": "3 periods, integer number of periods",
+    "estimators": "E1 Ladd momentum exchange, E2 pressure+viscous traction, E3 global momentum balance",
+    "reference": "same-mask potential solve C_a on the arm grid and on a 2x refined grid (Richardson) times the corrected exact Gamma(beta)"
+  },
+  "acceptance_gates_used_in_this_round": {
+    "owner_precision_gate": "|err| <= 15 % (owner standard, > 15 % unacceptable)",
+    "platform_caliber": "|err| <= 3 % (must be explicitly answered, not implied)",
+    "invariants": [
+      "gate_closed == true",
+      "|dM|/M <= 1e-6 per window",
+      "max|rho-1| = O(Ma^2) = 3e-4 (cold-start ringing allowed up to 1e-2)",
+      "|E1-E3| <= 0.001 in the in-phase channel"
+    ]
+  },
+  "no_claims": [
+    "No 3 % claim is made in advance for any arm.",
+    "The quadrature channel stays WITHHELD unless the corrected comparison lands inside 15 %.",
+    "The OSS-inventory statement of the anchor is unchanged by this round (it is a survey claim, not a numeric one)."
+  ]
+}
