@@ -62,7 +62,7 @@ torch.set_num_threads(int(os.environ.get("RT_THREADS", "4")))
 BENCH_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BENCH_DIR.parents[2]
 SRC_ROOT = REPO_ROOT / "src"
-for _p in (str(SRC_ROOT), str(REPO_ROOT)):
+for _p in (str(SRC_ROOT), str(REPO_ROOT), str(BENCH_DIR / "ref")):
     if _p in sys.path:
         sys.path.remove(_p)
     sys.path.insert(0, _p)
@@ -94,24 +94,22 @@ TAU_LO = 4.0
 TAU_HI = 6.0
 #: acceptance gate (case-pool tolerance for this case).
 GATE_PCT = 10.0
-#: Potential-flow geometric constant, 2-D.
-#:
-#: Reference-correction (m2026-11-13, round 2 of CASE-RAYLEIGH-TAYLOR).  The pool
-#: previously used ``C_2D = 3.0``, which is the *three-dimensional* (Layzer)
-#: constant of ``u_b = sqrt(2 A g / ((1+A) C k))``; in two dimensions the
-#: potential-flow bubble/spike pair is ``C = 1``, i.e. the Froude numbers are
-#: ``u_b / sqrt(Ag lam/(1+A)) = sqrt(1/pi)`` and ``u_s = u_b sqrt((1+A)/(1-A))``
-#: (the ``sqrt(1/(3 pi)) = 0.3257`` cross-check in ``ref/ref_lock.py`` is the 3-D
-#: value and does not survive in 2-D).  Evidence, in the solver's own data: the
-#: product invariant ``u_b u_s = 2 A g/(C k)`` is Atwood-independent, and the two
-#: independent runs give ``C = 0.90`` (A = 1/2) and ``C = 1.01`` (A = 1/3) -- see
-#: ``docs/CASE-RAYLEIGH-TAYLOR.md`` sec. 4.  With ``C = 3`` no 2-D solver can
-#: pass this gate: the prediction is then a factor sqrt(3) below the correct
-#: 2-D value, which no mesh refinement can recover.
-C_2D = 1.0
+#: Reference constant of the saturated-velocity gate.  It is **not** defined
+#: here: the single source of truth is ``ref/ref_lock.py``, which also records
+#: why the two literature conventions disagree (``CONVENTION_CONFLICT``).  The
+#: previous revision re-defined it locally as ``C_2D = 1.0`` after back-solving
+#: it *from the solver's own terminal velocities* -- a circular reference that
+#: manufactured a PASS (-0.6 % at A = 1/3) out of a 1.7x velocity overshoot
+#: (the fitted numbers are recorded in ``ref_lock.CONVENTION_CONFLICT``).  Importing the locked
+#: value makes that failure mode impossible, and the alternate convention is
+#: still evaluated (``C_2D_ALT``) so its influence on the verdict is visible.
+from ref_lock import C_2D, C_2D_ALT, CONVENTION_CONFLICT  # noqa: E402
+from ref_lock import boussinesq_velocity as _locked_boussinesq_velocity  # noqa: E402
 
 
-def goncharov_velocity(atwood: float, g: float, lam: float, branch: str, c: float = C_2D) -> float:
+
+def goncharov_velocity(atwood: float, g: float, lam: float, branch: str,
+                       c: float = C_2D) -> float:
     """One branch of the two-fluid potential-flow saturated velocity."""
     k = 2.0 * math.pi / float(lam)
     if branch == "b":
@@ -129,19 +127,24 @@ def boussinesq_velocity(atwood: float, g: float, lam: float, c: float = C_2D) ->
     force.  Those equations are invariant under ``(phi, y) -> (-phi, -y)``, which
     exchanges bubble and spike, so the solver *must* return one common velocity
 
-        u_b = u_s = sqrt(2 A g / (C k)),
+        u_b = u_s = sqrt(2 A g / (C k)).
 
-    which is the geometric mean of the two two-fluid branches up to a
-    ``(1-A^2)^{1/4}`` factor,
-    ``sqrt(u_b^G u_s^G) = sqrt(2Ag/(Ck)) (1-A^2)^{-1/4}``.
-    Comparing a Boussinesq run with the *unequal*
-    two-fluid branches would build in a spurious +/-(1 +/- A)^{1/2} split
-    (+22 % bubble / -18 % spike at A = 1/2) that has nothing to do with the
-    solver.  Both branches are therefore still reported
-    (``u_bubble_goncharov``, ``u_spike_goncharov``) for provenance, but the gates
-    use this symmetric value.
+    That symmetry is proved (and tested to machine precision) in
+    ``tests/test_case_pool_rayleigh_taylor_reference_audit.py``: it is a property
+    of the Boussinesq model class, **not** a measurement, so comparing a
+    Boussinesq run against the unequally split two-fluid branches would build a
+    spurious +/- (1 +/- A)^{1/2} (+/-22 % at A = 1/2) into the gate.  Both
+    branches are still reported (``u_*_goncharov_twofluid``) for provenance.
+
+    The *value of C* comes from ``ref/ref_lock.py`` (primary ``C = 3``, the
+    2-D-specific literature statement) -- see ``CONVENTION_CONFLICT`` there.
     """
-    return math.sqrt(2.0 * atwood * g / (c * 2.0 * math.pi / float(lam)))
+    return _locked_boussinesq_velocity(atwood, g, lam, c)
+
+
+def boussinesq_velocity_alt(atwood: float, g: float, lam: float) -> float:
+    """Same reference under the competing convention ``C = 1`` (arXiv:2009.14655)."""
+    return _locked_boussinesq_velocity(atwood, g, lam, C_2D_ALT)
 
 
 def froude_normalisation(atwood: float, g: float, lam: float) -> float:
@@ -306,6 +309,7 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
     sig_visc = viscous_growth_rate(spec.atwood, spec.g, spec.lam, cfg.nu)
     ub_ref = boussinesq_velocity(spec.atwood, spec.g, spec.lam)
     us_ref = ub_ref
+    ub_ref_alt = boussinesq_velocity_alt(spec.atwood, spec.g, spec.lam)
     fr_scale = froude_normalisation(spec.atwood, spec.g, spec.lam)
     max_u = max(rec["max_u"]) if rec["max_u"] else float("nan")
 
@@ -341,7 +345,12 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
         "u_spike_ref": us_ref,
         "u_bubble_goncharov_twofluid": goncharov_velocity(spec.atwood, spec.g, spec.lam, "b"),
         "u_spike_goncharov_twofluid": goncharov_velocity(spec.atwood, spec.g, spec.lam, "s"),
-        "reference_model": "boussinesq-symmetric sqrt(2Ag/(Ck)), C_2D=1", 
+        "reference_model": f"boussinesq-symmetric sqrt(2Ag/(Ck)), C_2D={C_2D} (locked in ref/ref_lock.py)",
+        "reference_C_2D": C_2D,
+        "reference_C_2D_alt": C_2D_ALT,
+        "u_ref_alt": ub_ref_alt,
+        "u_bubble_rel_error_pct_alt_C1": 100.0 * (ub / ub_ref_alt - 1.0) if math.isfinite(ub) else float("nan"),
+        "convention_conflict_status": CONVENTION_CONFLICT["status"],
         "u_bubble_rel_error_pct": 100.0 * (ub / ub_ref - 1.0) if math.isfinite(ub) else float("nan"),
         "u_spike_rel_error_pct": 100.0 * (us / us_ref - 1.0) if math.isfinite(us) else float("nan"),
         "fr_bubble_sim": ub / fr_scale if math.isfinite(ub) else float("nan"),
@@ -425,6 +434,8 @@ def aggregate(out_root: Path) -> dict:
             "linear_window_a_over_lam": [A_LO_FRAC, A_HI_FRAC],
             "terminal_window_tau": [TAU_LO, TAU_HI],
             "goncharov_C_2D": C_2D,
+            "goncharov_C_2D_alt": C_2D_ALT,
+            "convention_conflict": CONVENTION_CONFLICT["status"],
         },
         "cases": cases,
         "n_cases": len(cases),
