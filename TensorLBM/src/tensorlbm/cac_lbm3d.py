@@ -201,18 +201,20 @@ def f_equilibrium(
     wv: torch.Tensor,
     cf: torch.Tensor,
 ) -> torch.Tensor:
-    """Phase-field equilibrium: feq_i = w_i phi [1 + 3 (c_i·u) + 4.5 (c_i·u)^2 - 1.5 u^2]."""
+    """Phase-field equilibrium [Liang 2018 Eq.9]: feq_i = w_i phi [1 + 3 (c_i·u)].
+
+    First-order form only (no quadratic velocity terms) — the CAC h-LBE
+    equilibrium is linear in u, unlike the standard hydrodynamic equilibrium.
+    """
     ux, uy, uz = u
-    u2 = ux ** 2 + uy ** 2 + uz ** 2
     # Reshape velocity for broadcasting: (1, nz, ny, nx)
     ux = ux.unsqueeze(0)
     uy = uy.unsqueeze(0)
     uz = uz.unsqueeze(0)
-    u2 = u2.unsqueeze(0)
     phi = phi.unsqueeze(0)
     # cf is (19, 3), reshape to (19, 1, 1, 1) for each component
     cu = cf[:, 0].view(19, 1, 1, 1) * ux + cf[:, 1].view(19, 1, 1, 1) * uy + cf[:, 2].view(19, 1, 1, 1) * uz
-    feq = wv.view(19, 1, 1, 1) * phi * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u2)
+    feq = wv.view(19, 1, 1, 1) * phi * (1.0 + 3.0 * cu)
     return feq
 
 
@@ -262,20 +264,24 @@ def f_source(
     wv: torch.Tensor,
     cf: torch.Tensor,
 ) -> torch.Tensor:
-    """Source term for the phase-field LBE.
+    """Source term for the phase-field LBE [Liang 2018 Eq.11].
 
-    S_i = w_i * 3 * c_i · (phi_u_dt + lam n_hat / tau_f)
+    F_i = (1 - 1/(2τ_f)) (w_i/c_s²) c_i · [d(φu)/dt + c_s² λ n]
+
+    With c_s² = 1/3, this becomes:
+    F_i = (1 - 1/(2τ_f)) * 3 * w_i * c_i · [d(φu)/dt + (1/3) λ n]
     """
+    coef = 1.0 - 0.5 / tau_f  # (1 - 1/(2τ_f))
     dphix, dphiy, dphiz = phi_u_dt
     nx, ny, nz = n_hat
-    # Combined flux
-    fx = dphix + lam * nx / tau_f
-    fy = dphiy + lam * ny / tau_f
-    fz = dphiz + lam * nz / tau_f
+    # Combined flux: d(φu)/dt + c_s² λ n = d(φu)/dt + (1/3) λ n
+    fx = dphix + (lam / 3.0) * nx
+    fy = dphiy + (lam / 3.0) * ny
+    fz = dphiz + (lam / 3.0) * nz
 
     src = torch.zeros((19, *fx.shape), dtype=fx.dtype, device=fx.device)
     for i in range(19):
-        src[i] = float(wv[i]) * 3.0 * (
+        src[i] = coef * 3.0 * float(wv[i]) * (
             float(cf[i, 0]) * fx + float(cf[i, 1]) * fy + float(cf[i, 2]) * fz
         )
     return src
@@ -290,17 +296,26 @@ def g_force(
     wv: torch.Tensor,
     cf: torch.Tensor,
 ) -> torch.Tensor:
-    """Force source term for the HCH LBE (Guo-style)."""
+    """Force source term for the HCH LBE [Liang 2018 Eq.18→20].
+
+    G_i = (1 - 1/(2τ_g)) w_i [3 (c·F) + 3 (c·u)(c·∇ρ)]
+
+    where ∇ρ = drho * ∇φ.
+    """
     fx, fy, fz = F
     ux, uy, uz = u
+    gx, gy, gz = grad
 
     src = torch.zeros((19, *fx.shape), dtype=fx.dtype, device=fx.device)
     for i in range(19):
         ci_x, ci_y, ci_z = float(cf[i, 0]), float(cf[i, 1]), float(cf[i, 2])
-        # Guo source: (1 - 1/(2tau)) * w_i * [(c_i - u)·F/cs^2]
+        cF = ci_x * fx + ci_y * fy + ci_z * fz
+        cu = ci_x * ux + ci_y * uy + ci_z * uz
+        cgr = ci_x * gx + ci_y * gy + ci_z * gz
+        # Eq.20: 3(c·F) + 3(c·u)(c·∇ρ) = 3(c·F) + 3(c·u)(c·∇φ)*drho
         src[i] = float(wv[i]) * (1.0 - 0.5 * inv_tau_g[0]) * (
-            (ci_x - ux) * fx + (ci_y - uy) * fy + (ci_z - uz) * fz
-        ) / CS2
+            3.0 * cF + 3.0 * cu * cgr * drho
+        )
     return src
 
 
@@ -329,7 +344,9 @@ def macroscopic_g(
         for a in range(3):
             u_star[a] = u_star[a] + float(c[i, a]) * g[i]
     rho_safe = torch.clamp(rho, min=1e-12)
-    u_star = [u / (rho_safe * CS2) for u in u_star]
+    # [Liang 2018 Eq.21]: rho u = sum c_i g_i + 0.5 F
+    # => u* = sum c_i g_i / rho, u = u* + 0.5 F / rho
+    u_star = [u / rho_safe for u in u_star]
     u = [u_star[a] + 0.5 * F[a] / rho_safe for a in range(3)]
     ugr = u[0] * grad[0] + u[1] * grad[1] + u[2] * grad[2]
     u2 = u[0] ** 2 + u[1] ** 2 + u[2] ** 2
