@@ -1,0 +1,53 @@
+{
+  "round": 6,
+  "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "written_before_running": true,
+  "purpose": "Diagnose Round 5's residual (D3Q19 err ~3e-3 on both wall closures at ny=18) and its pre-declared FAIL (grid-convergence rate 1.63/1.25 vs target 1.8-2.2).",
+  "predeclared_checks": [
+    {
+      "id": "A1",
+      "claim": "The nebb wall closure is driven with the half-way width: u_max_phys/u_max_target equals ((ny-1)/(ny-2))**2, not 1.",
+      "metric": "ratio_phys_to_target on wall_bc='nebb'",
+      "pass_if": "|ratio - ((ny-1)/(ny-2))**2| < 0.01 * ((ny-1)/(ny-2))**2 for ny in {10,18,26}",
+      "falsified_if": "|ratio - 1| < 0.01 for all ny  -> driving is already closure-aware, defect A does not exist",
+      "why_it_matters": "ny=10 => +26.6% centre-line velocity vs the declared target; exceeds the owner 15% acceptance threshold on a declared-quantity basis."
+    },
+    {
+      "id": "A2",
+      "claim": "The halfway closure is driven with its own width (control): ratio_phys_to_target == 1.",
+      "metric": "ratio_phys_to_target on wall_bc='halfway'",
+      "pass_if": "|ratio - 1| < 0.01 for ny in {10,18,26}",
+      "falsified_if": "|ratio - 1| >= 0.01"
+    },
+    {
+      "id": "B1",
+      "claim": "The public velocity diagnostic reports the raw moment, while the collision's equilibrium uses u* = u_raw + a/2, so the reported velocity is low by a/2 (= 4 nu / H**2 of u_max).",
+      "metric": "deficit_ratio = (u_phys - u_raw)/(a/2), u_phys reconstructed outside the solver",
+      "pass_if": "deficit_ratio in [0.95, 1.05] for wall_bc in {halfway, nebb}, ny in {10,18,26}",
+      "falsified_if": "deficit_ratio < 0.05 (no bias) for all ny",
+      "why_it_matters": "4 nu/H**2 = 1.25% at ny=10, 0.31% at ny=18, 0.08% at ny=34: a constant-analytic bias in every reported core-path velocity, i.e. 42% of the 3% stretch budget already at ny=10."
+    },
+    {
+      "id": "B2",
+      "claim": "Cross-implementation inconsistency: the D2Q9 NEBB module exposes the corrected physical velocity (ChannelResult.ux_corrected / .profile) while the D3Q19 core path exposes only the raw moment (solver.channel_profile() == raw profile).",
+      "metric": "public_profile_equals_raw == 0.0 on core path AND d2q9 err_phys_vs_analytic << err_raw_vs_analytic",
+      "pass_if": "core-path public profile equals the raw moment bitwise (max|diff| == 0) and d2q9 err_phys < 1e-10",
+      "falsified_if": "core-path public profile differs from the raw moment (a correction is already applied)"
+    },
+    {
+      "id": "H2_exactness",
+      "claim": "(falsifiable hypothesis) The plane-Poiseuille steady state of this BGK+Guo lattice is exactly quadratic (Holdych, Noble & Georgiadis 1998), so once the momentum definition is consistent the physical-velocity error against the analytic parabola collapses to round-off at every ny.",
+      "metric": "err_phys_pointwise after the fix",
+      "pass_if": "< 1e-10 for wall_bc in {halfway, nebb}, ny in {10,18,26}",
+      "falsified_if": ">= 1e-8 at any ny -> there is genuine truncation error and the order study is the meaningful certificate instead; report the measured rate, no tuning"
+    },
+    {
+      "id": "G1",
+      "claim": "Round 5's sub-2 convergence rate is explained by the same bias plus the fixed-u_max protocol.",
+      "metric": "rate_err_phys_vs_analytic over ny 10->20->40 for both protocols",
+      "accept": "If H2 passes (round-off), the rate is undefined/round-off-limited and is reported as such, NOT as a tuned 2.0. The 'proper' protocol (u_max ~ 1/H at fixed tau) is the only protocol under which a rate is meaningful."
+    }
+  ],
+  "error_judgement_rule": "Owner standard: pointwise error vs analytic > 15% unacceptable; ecosystem stretch < 3%. Every number quoted in REPORT_R6.md must be produced by run_xval_r6_driver_consistency.py and stored in artifacts/r6/.",
+  "no_tuning_rule": "No threshold, grid, or step count may be changed after seeing a result. Any post-hoc addition is labelled a new hypothesis with its own JSON entry."
+}
