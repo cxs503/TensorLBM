@@ -1,0 +1,45 @@
+{
+ "case": "graetz_tube",
+ "anchor_slug": "KPI-LBM-VERIFIED-CAPS",
+ "capability": "circular-tube Graetz entrance-region Nusselt number Nu(x*) from the D2Q5 lattice advection-diffusion solver",
+ "created_utc": "2026-11-16T00:06:05Z",
+ "pre_registered_before_fine_level_runs": true,
+ "disclosure": "The n_r=40 coarse level and the defect hypothesis (half-cell wall geometry in graetz_lbm) were explored BEFORE this pre-registration. All fine-level (n_r=80) runs, the acceptance decision, and the reference used for the verdict are fixed below and were not tuned after seeing the fine-level numbers. Station list, thresholds and both geometric variants are identical for every level.",
+ "reference": {
+  "kind": "independent re-implementation of the Graetz/Shah-London series",
+  "module": "benchmarks/verified/graetz_tube/reference_series.py",
+  "locked_inputs": "published eigenvalues lambda_n = 2.70436, 6.67903, 10.67338, 14.67108, 18.66987, 22.66914, ... (Chandrasekhar 1961; Shah & London 1978); Nu_inf = lambda_1^2/2 = 3.6568",
+  "independence": "reference eigenfunctions (RK4) + Sturm-Liouville orthogonality coefficients + cup-mixing temperature are computed in the reference module; the library series and the library FV march are only used as cross-checks, never as the verdict reference"
+ },
+ "case_parameters": {
+  "u_mean": 0.05,
+  "alpha": 0.03,
+  "tau": 0.59,
+  "x_star_stations": [
+   0.002,
+   0.005,
+   0.01,
+   0.02,
+   0.04
+  ],
+  "levels_n_r": [
+   40,
+   56
+  ],
+  "variants": {
+   "orig": "library graetz_lbm as merged: velocity profile radius R = n_r-1, wall Dirichlet half a cell outside",
+   "reff": "consistent geometry: R_eff = n_r-1/2 used in velocity profile, diameter, cup-mixing and Nu"
+  }
+ },
+ "gates": {
+  "G1_accuracy": "max |Nu_lbm/Nu_ref - 1| <= 3% over x* in [0.005, 0.04] at BOTH levels",
+  "G2_monotone": "at every gated station |rel_err(n_r=80)| < |rel_err(n_r=40)|",
+  "G3_frontier_report": "x* = 0.002 is reported, not gated (thermal boundary layer ~2 cells there at n_r=40); a >3% value is disclosed, never masked",
+  "G4_variant_verdict": "the accepted geometric convention is the one that satisfies G1+G2; the other is reported as a defect with its numbers"
+ },
+ "acceptance_rule": "A variant is VERIFIED only if G1 and G2 hold simultaneously; otherwise the case is reported FAIL for that variant.",
+ "amendment_1": {
+  "utc": "2026-11-16T00:35Z",
+  "reason": "compute budget: the n_r=80 fine level (~520 s/node) could not be scheduled inside the mission window; the refinement pair is reduced to n_r in {40,56} (ratio 1.4). Reference, stations, thresholds and the verdict rule are unchanged; no n_r=80 number was ever produced or seen before this amendment."
+ }
+}
