@@ -17,12 +17,9 @@ import tempfile
 import numpy as np
 import pytest
 
-import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TensorLBM", "src"))
-
-from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro
-from tensorlbm.adjoint.bptt import bptt_gradient
-from tensorlbm.adjoint.ootc import ootc_gradient
+from tensorlbm.adjoint_ootc.bptt import bptt_gradient
+from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step
+from tensorlbm.adjoint_ootc.ootc import ootc_gradient
 
 
 def _make_problem(N=32, T=100, tau=1.0, amp=0.05):
