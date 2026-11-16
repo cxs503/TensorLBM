@@ -1,0 +1,57 @@
+{
+  "round": 7,
+  "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "written_before_running": true,
+  "purpose": "Repair round: turn the Round-6 diagnosis into a controlled A/B on ONE tree (same solver, same closure, same grid), so that (a) the drive-width defect is shown to be detectable by the metric, (b) the fix is shown to remove it, (c) the velocity diagnostic is shown to report the physical velocity. Round 6 compared a pre-fix snapshot with a post-fix snapshot across two worktrees; that is a two-tree comparison and cannot exclude tree drift. This round varies only the driving normalisation inside a single process.",
+  "design": {
+    "factors": {
+      "wall_bc": ["nebb", "halfway"],
+      "ny": [10, 18],
+      "drive": ["closure_width", "legacy_halfway_width"]
+    },
+    "controlled": "solver (GPUCorePathSolver, FP64FP64, eager), tau=1.1 (nu=0.2), nx=8, nz=4, init=rest, declared u_max_target=0.05, steady tolerance 1e-12, check every 200 steps",
+    "changed": "only the body-force normalisation: closure_width derives a = 8 nu u_max / H_wall^2 with H_wall = ny-1 for nebb and ny-2 for halfway; legacy_halfway_width derives a = 8 nu u_max / (ny-2)^2 regardless of closure (= the pre-fix formula, emulated exactly by u_max_target *= (H_wall/(ny-2))^2 on the fixed tree)",
+    "unit_of_analysis": "one steady channel solution per cell of the 2x2x2 design",
+    "repetitions": "deterministic solver, no stochastic terms (float64, fixed seed irrelevant); each cell run once, the analytic parabola is evaluated in closed form at the same y nodes",
+    "confounders": "two-tree drift (removed by the single-process design), convergence level (recorded as steps_used + steady_residual per arm), nz/nx wall-periodicity (identical across arms)"
+  },
+  "predeclared_checks": [
+    {
+      "id": "P1_fix",
+      "claim": "With the fixed normalisation the achieved centre-line velocity equals the declared target on BOTH closures.",
+      "metric": "ratio_vs_declared = u_max_phys(closure_width arm) / 0.05",
+      "pass_if": "|ratio_vs_declared - 1| < 0.01 for wall_bc in {nebb, halfway}, ny in {10, 18}",
+      "falsified_if": "|ratio_vs_declared - 1| >= 0.01 at any cell -> the fix does not deliver the declared velocity"
+    },
+    {
+      "id": "P2_defect_detectable",
+      "claim": "The same metric recovers the pre-fix overshoot when the drive is normalised with the legacy half-way width.",
+      "metric": "ratio_vs_declared = u_max_phys(legacy_halfway_width arm) / 0.05 on wall_bc='nebb'",
+      "pass_if": "|ratio_vs_declared - ((ny-1)/(ny-2))**2| < 0.01 * ((ny-1)/(ny-2))**2 for ny in {10, 18}  (1.26531 / 1.12886)",
+      "falsified_if": "ratio_vs_declared stays within 1 % of 1 -> the metric cannot see the defect and P1 proves nothing"
+    },
+    {
+      "id": "P3_width_control",
+      "claim": "On the half-way closure the two normalisations must coincide (H_wall == ny-2), i.e. the legacy width is only wrong for a wall-node closure.",
+      "metric": "|ratio_vs_declared(legacy) - ratio_vs_declared(closure)| on wall_bc='halfway'",
+      "pass_if": "< 1e-9 for ny in {10, 18}",
+      "falsified_if": ">= 1e-9 -> the emulation is not exactly the legacy formula, so P2 would be confounded"
+    },
+    {
+      "id": "P4_exactness",
+      "claim": "(holdych1998 exactness) Once the drive and the momentum definition are consistent, the plane-Poiseuille steady state of this BGK+Guo lattice is exactly quadratic, so the physical-velocity error against the closed-form parabola is round-off at every ny.",
+      "metric": "err_phys_pointwise on the closure_width arm",
+      "pass_if": "< 1e-10 for all four (wall_bc, ny) cells",
+      "falsified_if": ">= 1e-8 at any cell -> genuine truncation error remains; report the measured profile error, no tuning"
+    },
+    {
+      "id": "P5_diagnostic",
+      "claim": "The public velocity diagnostic reports the physical velocity (raw moment + a/2), not the raw moment.",
+      "metric": "diagnostic_shift_ratio = (public_profile - raw_profile) / (a/2)",
+      "pass_if": "in [0.99, 1.01] on the closure_width arm for both closures",
+      "falsified_if": "< 0.05 -> the diagnostic still reports the raw moment (Round-5 behaviour)"
+    }
+  ],
+  "error_judgement_rule": "Owner standard: pointwise error against the analytic reference > 15 % unacceptable, ecosystem stretch < 3 %. Every number quoted in REPORT_R7.md must be produced by run_xval_r7_drive_width_ab.py and stored in artifacts/r7/.",
+  "no_tuning_rule": "No tolerance, grid, viscosity, or step count may be changed after seeing a result. Any post-hoc hypothesis is added as a new id with its own JSON entry and its own run."
+}
