@@ -88,12 +88,17 @@ import matplotlib
 import torch
 
 from .boundaries import bounce_back_cells
-from .d2q9 import C, W, equilibrium, macroscopic
+from .d2q9 import C, OPPOSITE, W, W_EXACT, equilibrium, macroscopic
 from .multiphase import (
     collide_sc_two_component,
     color_gradient_step,
 )
 from .solver import stream
+from .porous.fluid_node_table import (
+    build_fluid_node_table,
+    compressed_step,
+    macroscopic_with_forcing,
+)
 from .utils import (
     flow_step_image_path,
     prepare_run_dir,
@@ -1547,6 +1552,370 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
 
 
 # ---------------------------------------------------------------------------
+# Single-phase Darcy channel: production layout dispatch
+# ---------------------------------------------------------------------------
+
+
+def _guo_forcing_terms(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    tau: float,
+    force_x: float,
+    force_y: float,
+    device: torch.device,
+) -> torch.Tensor:
+    """Guo (2002) body-force correction to the post-collision populations.
+
+    ``S_i = (1 - 1/(2 tau)) w_i [3 (c_ix - u_x) + 9 (c_i . u) c_ix] F_x`` (+ y
+    part).  Implemented here from :data:`tensorlbm.d2q9.C`/:data:`W` so that the
+    dense production path does not share the forcing kernel of
+    :mod:`tensorlbm.porous.fluid_node_table`; the two layouts are then compared
+    over independently written force terms.
+    """
+    c = _c_on(device).to(rho.dtype)
+    # exact (float64) lattice weights: ``W`` is float32 in :mod:`tensorlbm.d2q9`
+    # and would leak a ~1e-8 relative error into the force term (identity G1)
+    w = torch.tensor(W_EXACT, dtype=rho.dtype, device=device)
+    cu = c[:, 0].view(9, 1, 1) * ux.unsqueeze(0) + c[:, 1].view(9, 1, 1) * uy.unsqueeze(0)
+    pref = (1.0 - 1.0 / (2.0 * tau)) * w.view(9, 1, 1)
+    sx = pref * (3.0 * (c[:, 0].view(9, 1, 1) - ux.unsqueeze(0)) + 9.0 * cu * c[:, 0].view(9, 1, 1))
+    sy = pref * (3.0 * (c[:, 1].view(9, 1, 1) - uy.unsqueeze(0)) + 9.0 * cu * c[:, 1].view(9, 1, 1))
+    return sx * force_x + sy * force_y
+
+
+def _guo_macroscopic(
+    f: torch.Tensor,
+    force_x: float,
+    force_y: float,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Guo-corrected moments ``u = (sum_i f_i c_i + F/2) / rho`` (dense path)."""
+    c = _c_on(device)
+    rho = f.sum(dim=0)
+    mx = (c[:, 0].view(9, 1, 1) * f).sum(dim=0)
+    my = (c[:, 1].view(9, 1, 1) * f).sum(dim=0)
+    return rho, (mx + 0.5 * force_x) / rho, (my + 0.5 * force_y) / rho
+
+
+def _slab_channel_mask(ny: int, nx: int, h_fluid: int, device: torch.device) -> torch.Tensor:
+    """Solid mask of a horizontal slit: ``h_fluid`` fluid rows centred in ``y``."""
+    if not 1 <= h_fluid <= ny:
+        raise ValueError(f"h_fluid must satisfy 1 <= h_fluid <= ny (got {h_fluid}, ny={ny})")
+    solid = torch.ones((ny, nx), dtype=torch.bool, device=device)
+    y0 = (ny - h_fluid) // 2
+    solid[y0 : y0 + h_fluid, :] = False
+    return solid
+
+
+def _collide_dense(
+    f: torch.Tensor,
+    tau: float,
+    force_x: float,
+    force_y: float,
+    device: torch.device,
+) -> torch.Tensor:
+    """BGK collision + Guo forcing on the full lattice (production dense path)."""
+    rho, ux, uy = _guo_macroscopic(f, force_x, force_y, device)
+    feq = equilibrium(rho, ux, uy)
+    f_post = f - (f - feq) / tau
+    return f_post + _guo_forcing_terms(rho, ux, uy, tau, force_x, force_y, device)
+
+
+def _solid_neighbour_mask(solid: torch.Tensor, device: torch.device) -> torch.Tensor:
+    """``nbr[d]`` is True on sites whose ``d``-neighbour is solid (periodic wrap).
+
+    Shape ``(9, ny, nx)``; row 0 is unused (rest direction).  Periodic in both
+    directions, matching :func:`tensorlbm.solver.stream`.
+    """
+    c = _c_on(device)
+    nbr = torch.zeros((9,) + tuple(solid.shape), dtype=torch.bool, device=device)
+    for d in range(1, 9):
+        cy, cx = int(c[d, 1].item()), int(c[d, 0].item())
+        nbr[d] = torch.roll(solid, shifts=(-cy, -cx), dims=(0, 1))
+    return nbr
+
+
+def _stream_with_reflection(
+    f_post: torch.Tensor,
+    solid: torch.Tensor,
+    device: torch.device,
+    *,
+    wall: str,
+) -> torch.Tensor:
+    """Streaming of the production dense path with a selectable wall rule.
+
+    ``wall="node"`` is the shipped update of this module: stream, then
+    :func:`tensorlbm.boundaries.bounce_back_cells` on the solid cells, i.e. the
+    populations are reflected *at the solid node* (no-slip plane on the solid
+    node centre, the convention in which
+    :func:`_two_phase_poiseuille_analytical` places its walls).
+
+    ``wall="halfway"`` reflects at the *fluid* node instead, so the no-slip
+    plane sits half-way between the last fluid and the first solid node — the
+    convention of :func:`tensorlbm.porous.compressed_step`.  It is written here
+    with a per-direction neighbour mask (only the pairs that face a solid site
+    are swapped) on top of the production :func:`tensorlbm.solver.stream`, so
+    the compressed kernel can be checked against an independently written
+    half-way update of the main solver.
+    """
+    f_streamed = stream(f_post)
+    if wall == "node":
+        return bounce_back_cells(f_streamed, solid)
+    if wall != "halfway":
+        raise ValueError(f"wall rule must be 'node' or 'halfway' (got {wall!r})")
+    nbr = _solid_neighbour_mask(solid, device)
+    f_new = f_streamed.clone()
+    opp = OPPOSITE.to(device)
+    for d in range(1, 9):
+        f_new[opp[d]][nbr[d]] = f_post[d][nbr[d]]
+    return f_new
+
+
+def _single_phase_step_dense(
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    tau: float,
+    force_x: float,
+    force_y: float,
+    device: torch.device,
+    *,
+    wall: str = "node",
+) -> torch.Tensor:
+    """One dense step of the production update (collision → streaming → wall)."""
+    f_post = _collide_dense(f, tau, force_x, force_y, device)
+    return _stream_with_reflection(f_post, solid, device, wall=wall)
+
+
+@dataclass(frozen=True)
+class SinglePhaseDarcyConfig:
+    """Configuration of the single-phase Darcy channel (:func:`run_single_phase_darcy`).
+
+    The case is the periodic-slab plane-Poiseuille channel of the XVAL
+    ``XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE``: a horizontal slit of
+    ``h_fluid`` fluid rows between two solid rows, driven by a uniform body
+    force ``g`` in ``x``, periodic in ``x`` and wall-bounded by half-way
+    bounce-back in ``y``.
+
+    Attributes:
+        ny, nx: Lattice size in ``y`` and ``x``.
+        h_fluid: Number of fluid rows (the slit height in lattice units).
+        g: Body force per unit mass along ``x`` (lattice units).
+        tau: BGK relaxation time (``nu = (tau - 0.5) / 3``).
+        steps_cap: Maximum number of steps (stop-loss for the steady criterion).
+        tol: Steady criterion, ``max|u_x(n) - u_x(n - check_every)| / max|u_x(n)|``.
+        check_every: Steps between two steady-criterion evaluations.
+        layout: ``"compressed"`` (fluid-node compaction + neighbour table) or
+            ``"dense"`` (full-lattice production update).  ``"compressed"`` is
+            the default because it is the point of the entry point; the dense
+            arm is the control.
+        device: Torch device name accepted by :func:`tensorlbm.utils.resolve_device`.
+        output_root: Root directory for run artefacts.
+        run_name: Override of the auto-generated run directory name.
+        overwrite: Remove an existing run directory of the same name.
+    """
+
+    ny: int = 24
+    nx: int = 24
+    h_fluid: int = 16
+    g: float = 1.0e-4
+    tau: float = 0.8
+    steps_cap: int = 8000
+    tol: float = 1.0e-10
+    check_every: int = 50
+    layout: Literal["compressed", "dense", "dense_halfway"] = "compressed"
+    device: str = "cpu"
+    output_root: Path = Path("runs")
+    run_name: str | None = None
+    overwrite: bool = True
+
+    def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
+        if self.ny < 4 or self.nx < 4:
+            raise ValueError("ny and nx must both be >= 4")
+        if not 1 <= self.h_fluid <= self.ny:
+            raise ValueError("h_fluid must satisfy 1 <= h_fluid <= ny")
+        if self.g <= 0.0:
+            raise ValueError("g must be > 0 (the body force drives the flow)")
+        if self.tau <= 0.5:
+            raise ValueError("tau must be > 0.5 for a positive viscosity")
+        if self.steps_cap < self.check_every:
+            raise ValueError("steps_cap must be >= check_every")
+        if self.tol <= 0.0:
+            raise ValueError("tol must be > 0")
+        if self.layout not in ("compressed", "dense", "dense_halfway"):
+            raise ValueError(
+                "layout must be 'compressed', 'dense' or 'dense_halfway' "
+                f"(got {self.layout!r})"
+            )
+
+    @property
+    def nu(self) -> float:
+        return (self.tau - 0.5) / 3.0
+
+    def resolved_run_name(self) -> str:
+        if self.run_name:
+            return self.run_name
+        return (
+            f"single_phase_darcy_{self.layout}_ny{self.ny}_h{self.h_fluid}"
+            f"_g{self.g:g}_tau{self.tau:g}"
+        )
+
+
+def run_single_phase_darcy(config: SinglePhaseDarcyConfig) -> dict[str, object]:
+    """Steady single-phase channel flow on a selectable lattice layout.
+
+    This is the integration entry point that ties the compressed fluid-node
+    neighbour table of :mod:`tensorlbm.porous.fluid_node_table` into the porous
+    media solver module: with ``layout="compressed"`` the populations live only
+    on the ``K`` fluid nodes and the shipped
+    :func:`tensorlbm.porous.compressed_step` push-streaming kernel advances
+    them; with ``layout="dense"`` the *production* full-lattice update
+    (:func:`tensorlbm.solver.stream` + :func:`tensorlbm.boundaries.bounce_back_cells`)
+    does the same physics.  Both arms report the superficial Darcy permeability
+    ``k = nu <u_x> / g`` and its error against the periodic-slab analytic value
+    ``k_ref = (h_fluid / ny) * h_fluid**2 / 12``.
+
+    Args:
+        config: Channel configuration (see :class:`SinglePhaseDarcyConfig`).
+
+    Returns:
+        Dictionary with the layout label, the stop reason and step count, the
+        permeability ``k_darcy_super``/``k_ref_analytic``/``err_pct``, the
+        steady ``u_max``/Mach number, the cross-stream profile (mean over ``x``)
+        and the terminal-state summary.
+    """
+    config.validate()
+    device = resolve_device(config.device)
+    run_dir = prepare_run_dir(
+        Path(config.output_root),
+        "single_phase_darcy",
+        config.resolved_run_name(),
+        config.overwrite,
+    )
+
+    ny, nx, h = config.ny, config.nx, config.h_fluid
+    solid = _slab_channel_mask(ny, nx, h, device)
+    n_total = ny * nx
+    nu = config.nu
+    print(
+        f"Single-phase Darcy channel  layout={config.layout}  NX={nx} NY={ny} "
+        f"H={h}  g={config.g:g}  tau={config.tau:g}  steps_cap={config.steps_cap}"
+    )
+    print(f"Run directory: {run_dir}")
+
+    steps = 0
+    converged = False
+    if config.layout == "compressed":
+        fluid = ~solid
+        n_fluid = int(fluid.sum())
+        table = build_fluid_node_table(solid)
+        # rest state on the compacted layout: f_i = w_i (rho = 1, u = 0), with
+        # the exact float64 weights (``W`` is float32 and would seed a 7.5e-9
+        # mass bias that no later step removes)
+        f = torch.zeros((9, n_fluid), dtype=torch.float64, device=device)
+        f += torch.tensor(W_EXACT, dtype=torch.float64, device=device).view(9, 1)
+        u_prev = torch.zeros(n_fluid, device=device)
+        ux_fluid = u_prev
+        for steps in range(1, config.steps_cap + 1):
+            f = compressed_step(f, table, config.tau, config.g, 0.0)
+            if steps % config.check_every == 0:
+                _, ux_fluid, _ = macroscopic_with_forcing(f, config.g, 0.0)
+                denom = max(float(ux_fluid.abs().max().item()), 1e-300)
+                delta = float((ux_fluid - u_prev).abs().max().item()) / denom
+                u_prev = ux_fluid.clone()
+                if delta < config.tol:
+                    converged = True
+                    break
+        ux_full = torch.zeros((ny, nx), device=device)
+        ux_full[fluid] = ux_fluid
+    else:
+        # rest state with the exact (float64) weights, matching the compressed
+        # arm's initial populations bit for bit (identity gate G1)
+        f = torch.zeros((9, ny, nx), dtype=torch.float64, device=device)
+        f += torch.tensor(W_EXACT, dtype=torch.float64, device=device).view(9, 1, 1)
+        wall_rule = "halfway" if config.layout == "dense_halfway" else "node"
+        fluid = ~solid
+        ux_prev = torch.zeros((ny, nx), device=device)
+        for steps in range(1, config.steps_cap + 1):
+            f = _single_phase_step_dense(
+                f, solid, config.tau, config.g, 0.0, device, wall=wall_rule
+            )
+            if steps % config.check_every == 0:
+                _, ux, _ = _guo_macroscopic(f, config.g, 0.0, device)
+                ux = ux * fluid
+                denom = max(float(ux.abs().max().item()), 1e-300)
+                delta = float((ux - ux_prev).abs().max().item()) / denom
+                ux_prev = ux.clone()
+                if delta < config.tol:
+                    converged = True
+                    break
+        ux_full = ux_prev
+
+    ux_total = float(ux_full.sum().item())
+    u_mean_super = ux_total / n_total
+    k_super = nu * u_mean_super / config.g
+    k_ref = (float(h) / float(ny)) * (float(h) ** 2) / 12.0
+    err_pct = 100.0 * (k_super - k_ref) / k_ref
+    u_max = float(ux_full.abs().max().item())
+    profile = (ux_full.sum(dim=1) / nx).tolist()
+
+    final_state: dict[str, object] = {
+        "finite": bool(torch.isfinite(f).all().item()),
+        "min_f": float(f.min().item()),
+        "u_max": u_max,
+        "ma_max": u_max / math.sqrt(_CS2),
+        "rho_min": float(f.sum(dim=0).min().item()),
+        "rho_max": float(f.sum(dim=0).max().item()),
+    }
+
+    metadata: dict[str, object] = {
+        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "layout": config.layout,
+        "steps": steps,
+        "converged": converged,
+        "nu": nu,
+        "porosity": h / ny,
+        "k_darcy_super": k_super,
+        "k_intrinsic": k_super / (h / ny),
+        "k_ref_analytic": k_ref,
+        "err_pct": err_pct,
+        "u_max": u_max,
+        "ux_profile_mean_x": profile,
+        "final_state": final_state,
+    }
+
+    (run_dir / "run_metadata.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    fig, ax = plt.subplots(figsize=(4.6, 3.2), dpi=130)
+    ys = [y - (ny - 1) / 2.0 for y in range(ny)]
+    ax.plot([u * 1e3 for u in profile], ys, "o-", label=f"{config.layout} (LBM)")
+    y0 = (ny - h) // 2
+    ys_int = [y - (ny - 1) / 2.0 for y in range(y0, y0 + h)]
+    u_ana = [
+        config.g / (2.0 * nu) * ((h * h) / 4.0 - (y - y0 - (h - 1) / 2.0) ** 2) for y in range(h)
+    ]
+    ax.plot([u * 1e3 for u in u_ana], ys_int, "--", label="analytic parabola")
+    ax.set_xlabel(r"$\langle u_x\rangle_x$  [$10^{-3}$]")
+    ax.set_ylabel(r"$y - (n_y-1)/2$")
+    ax.set_title(f"single-phase Darcy channel ({config.layout})")
+    ax.legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(run_dir / "profile.png")
+    plt.close(fig)
+    metadata["artifacts"] = [str(run_dir / "run_metadata.json"), str(run_dir / "profile.png")]
+
+    print(
+        f"  steps={steps} converged={converged}  k_super={k_super:.6e}  "
+        f"k_ref={k_ref:.6e}  err={err_pct:.4f}%  u_max={u_max:.4e}"
+    )
+    return metadata
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -1568,4 +1937,7 @@ __all__ = [
     # Porous drainage
     "PorousDrainageConfig",
     "run_porous_drainage",
+    # Single-phase Darcy channel (layout dispatch: compressed / dense)
+    "SinglePhaseDarcyConfig",
+    "run_single_phase_darcy",
 ]
