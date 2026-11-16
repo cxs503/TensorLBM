@@ -40,6 +40,7 @@ from tensorlbm.diff_lid_cavity import (
     step,
     tau_from_reynolds,
 )
+from tensorlbm.input_contract import check_positive_scalar, check_relaxation_time
 from tensorlbm.lid_driven_cavity import zou_he_moving_lid
 from tensorlbm.solver import collide_bgk
 
@@ -236,6 +237,36 @@ def test_collide_bgk_still_rejects_illegal_float_tau() -> None:
     assert collide_bgk(f, torch.tensor(0.7, dtype=DT)).requires_grad is False
 
 
+def test_input_contract_keeps_0dim_tensor_in_graph() -> None:
+    """Regression: the public input-contract guards must NOT detach a 0-dim
+    tensor tau (``float(tau)`` would strip the autograd graph and break
+    solver-in-the-loop differentiable optimisation).
+
+    ``check_relaxation_time`` / ``check_positive_scalar`` are the shared
+    validation entry points; a 0-dim ``torch.Tensor`` is a "plain scalar" to
+    ``float()``, so without the explicit tensor guard the value is coerced and
+    the graph is silently detached.  This pins the hotpatch that keeps the
+    tensor flowing through untouched (documented non-plain-scalar policy).
+    """
+    tau = torch.tensor(0.66, dtype=DT, requires_grad=True)
+    out = check_relaxation_time(tau, where="collision")
+    assert isinstance(out, torch.Tensor), "tensor tau must not be coerced to float"
+    assert out.requires_grad, "autograd graph must survive the guard"
+    # value-identical to the float path (no physics change)
+    assert torch.equal(out.detach(), torch.tensor(0.66, dtype=DT))
+
+    rho = torch.tensor(1.0, dtype=DT, requires_grad=True)
+    out2 = check_positive_scalar(rho, "rho", where="inlet")
+    assert isinstance(out2, torch.Tensor), "tensor rho must not be coerced to float"
+    assert out2.requires_grad
+
+    # plain scalars still get the range check (no behaviour change)
+    with pytest.raises(ValueError):
+        check_relaxation_time(0.4, where="collision")
+    with pytest.raises(ValueError):
+        check_positive_scalar(-1.0, "rho", where="inlet")
+
+
 # ---------------------------------------------------------------------------
 # 8. inverse smoke test (small grid, short chain)
 # ---------------------------------------------------------------------------
@@ -251,7 +282,7 @@ def test_invert_recovers_tau_smoke() -> None:
         f_truth = rollout(initial_field(geom), tau_true, u, steps, wall_mask=geom.wall_mask)
         target = centreline_probes(f_truth, u)
     res = invert_relaxation_time(
-        target, geom, 0.1, tau_true * 0.92, steps, iters=iters, lr=0.08, checkpoint_every=100
+        target, geom, 0.1, tau_true * 1.08, steps, iters=iters, lr=0.08, checkpoint_every=100
     )
     rel = abs(res["tau_recovered"] - tau_true) / tau_true
     assert rel < 0.02, (res["tau_recovered"], tau_true, rel)
