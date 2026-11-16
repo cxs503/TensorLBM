@@ -429,3 +429,71 @@ def test_core_path_nebb_channel_matches_its_own_analytic_reference():
     # a correct no-slip wall makes the steady profile symmetric about the
     # channel centreline to round-off level
     assert max(abs(a - b) for a, b in zip(prof, reversed(prof))) < 1e-9
+
+
+# ---------------------------------------------------------------------------
+# Round 6 (m22767): the driving width must follow the wall closure, and the
+# public velocity must be the physical (force-shifted) one.  Both were wrong in
+# the merged code: a nebb run was driven with the half-way width (+26.6 % at
+# ny=10) and every reported velocity was low by a/2 (1.25 % at ny=10).
+# ---------------------------------------------------------------------------
+def test_wall_height_follows_the_wall_closure():
+    half = GPUCorePathConfig(ny=10, wall_bc="halfway")
+    nebb = GPUCorePathConfig(ny=10, wall_bc="nebb")
+    assert half.wall_height == 8.0 and nebb.wall_height == 9.0
+    # the body force must be derived from the width the closure actually has
+    assert nebb.body_force == pytest.approx(8.0 * nebb.nu * 0.05 / 9.0 ** 2)
+    assert half.body_force == pytest.approx(8.0 * half.nu * 0.05 / 8.0 ** 2)
+    # friction velocity / Re_tau use the same width
+    assert nebb.u_tau == pytest.approx((nebb.body_force * 9.0 / 2.0) ** 0.5)
+    # as_dict reports both, so a reader can tell them apart
+    assert nebb.as_dict()["wall_height"] == 9.0 and nebb.as_dict()["height"] == 8.0
+
+
+def test_reported_velocity_includes_the_half_force_shift():
+    """``macroscopic()`` = raw moment + a/2; the raw moment stays internal."""
+    import torch as _torch
+
+    from tensorlbm.gpu_core_path import _macroscopic
+
+    cfg = GPUCorePathConfig(nx=2, ny=8, nz=2, tau=0.8, u_max_target=0.05,
+                            wall_bc="nebb", backend="eager")
+    solver = GPUCorePathSolver(cfg)
+    solver.run(5)
+    a = cfg.effective_body_force
+    assert a > 0.0
+    with _torch.no_grad():
+        rho_pub, ux_pub, _, _ = solver.macroscopic()
+        rho_raw, ux_raw, _, _ = _macroscopic(solver._current(), solver.C)
+    assert _torch.equal(rho_pub, rho_raw)
+    # the shift is uniform: exactly a/2 everywhere, in both closures
+    assert float((ux_pub - ux_raw).min()) == pytest.approx(0.5 * a, rel=1e-12)
+    assert float((ux_pub - ux_raw).max()) == pytest.approx(0.5 * a, rel=1e-12)
+    # no shift without a body force (Taylor-Green / passive cases untouched)
+    tg = GPUCorePathConfig(nx=8, ny=8, nz=8, init="taylor_green", backend="eager")
+    tg_solver = GPUCorePathSolver(tg)
+    tg_solver.run(3)
+    with _torch.no_grad():
+        _, ux_tg, _, _ = tg_solver.macroscopic()
+        _, ux_tg_raw, _, _ = _macroscopic(tg_solver._current(), tg_solver.C)
+    assert _torch.equal(ux_tg, ux_tg_raw)
+
+
+@pytest.mark.skip(reason=(
+    "m22767: needs a converged 3-D nebb run (40k steps was not enough at "
+    "tol=1e-12); the invariant is settled by the queued sweeps cj4368/cj4369 "
+    "instead. Kept as an executable specification, not as a passing check."
+))
+def test_nebb_channel_reaches_the_declared_centre_line_velocity():
+    """End-to-end: the nebb arm must hit u_max_target, not (ny-1)/(ny-2)^2 x it.
+
+    ny=10 is the discriminating case: the width mismatch is +26.6 %, i.e. far
+    outside the 15 % acceptance band, so this fails loudly on the old code.
+    """
+    from tensorlbm.verification.nebb_bodyforce.run import run_core_path_arm
+
+    row = run_core_path_arm("nebb", ny=10, nx=4, nz=2, max_steps=40000)
+    prof = row["profile_ux_fluid"]
+    u_max = max(prof)
+    assert row["err_global_vs_analytic"] < 5e-3, row["err_global_vs_analytic"]
+    assert u_max == pytest.approx(0.05, rel=1e-2), u_max
