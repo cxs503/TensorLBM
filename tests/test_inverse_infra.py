@@ -29,8 +29,10 @@ from tensorlbm.inverse import (
     jittered_init,
     l1_loss,
     optimise_loop,
+    read_convergence_json,
     relative_mse_loss,
     seed_everything,
+    validate_convergence_payload,
     weighted_mse_loss,
     write_convergence_json,
 )
@@ -389,3 +391,129 @@ def test_end_to_end_with_composition_and_logging(tmp_path: Path):
     assert "extra" in first_rec
     assert "mse" in first_rec["extra"]
     assert "l1" in first_rec["extra"]
+
+
+# ---------------------------------------------------------------------------
+# 6. Seed control: the stdlib RNG is part of "everything"
+# ---------------------------------------------------------------------------
+
+
+def test_seed_everything_seeds_stdlib_random():
+    """`random.seed` must be covered: a forward model may sample with `random`.
+
+    Regression test for a real gap: ``seed_everything`` used to seed only
+    torch/numpy, so a stochastic component written with the stdlib RNG was not
+    reproducible across restarts.
+    """
+    import random
+
+    seed_everything(1234)
+    a = random.random()
+    seed_everything(1234)
+    b = random.random()
+    assert a == b
+    seed_everything(1235)
+    assert random.random() != a
+
+
+def test_seed_everything_repeats_torch_and_numpy_streams():
+    import numpy as np
+
+    seed_everything(7)
+    t1, n1 = torch.rand(3), np.random.rand(3)
+    seed_everything(7)
+    t2, n2 = torch.rand(3), np.random.rand(3)
+    assert torch.equal(t1, t2)
+    assert np.array_equal(n1, n2)
+
+
+# ---------------------------------------------------------------------------
+# 7. Machine check of a convergence log
+# ---------------------------------------------------------------------------
+
+
+def _solved_log(tmp_path: Path):
+    params, names, fwd, loss_fn = _make_linear_fit_problem()
+    log = ConvergenceLog(problem="unit_linear_fit", seed=3)
+    result = optimise_loop(
+        params=params,
+        param_names=names,
+        loss_fn=loss_fn,
+        forward_fn=fwd,
+        iters=8,
+        lr=0.05,
+        polish=10,
+        convergence_log=log,
+        tol=1e-12,
+    )
+    path = log.write(tmp_path / "conv.json")
+    return result, read_convergence_json(path), path
+
+
+def test_validate_convergence_payload_accepts_own_log(tmp_path):
+    _result, payload, _path = _solved_log(tmp_path)
+    assert validate_convergence_payload(payload) == []
+    assert payload["schema"] == CONVERGENCE_SCHEMA
+    assert payload["history"][-1]["phase"] == "final"
+    assert payload["summary"]["n_iterations"] == len(payload["history"])
+    assert payload["summary"]["stop_reason"] in {"adam_tol", "lbfgs_polish", "max_iters"}
+
+
+def test_validate_convergence_payload_rejects_tampering(tmp_path):
+    _result, payload, _path = _solved_log(tmp_path)
+
+    bad_schema = {**payload, "schema": "something/else/v9"}
+    assert any("schema" in p for p in validate_convergence_payload(bad_schema))
+
+    short = {**payload, "summary": {**payload["summary"], "n_iterations": 1}}
+    assert any("n_iterations" in p for p in validate_convergence_payload(short))
+
+    worse = {
+        **payload,
+        "summary": {**payload["summary"], "final_loss": 2.0 * payload["history"][0]["loss"]},
+    }
+    assert any("final_loss" in p for p in validate_convergence_payload(worse))
+    # ... and the same payload is fine when the loss-decrease gate is off
+    assert validate_convergence_payload(worse, require_loss_decrease=False) == []
+
+    broken_row = json.loads(json.dumps(payload))
+    del broken_row["history"][0]["params"]
+    assert any("params" in p for p in validate_convergence_payload(broken_row))
+
+
+def test_validator_never_raises_on_garbage():
+    for garbage in ({}, [], "nope", {"schema": CONVERGENCE_SCHEMA, "history": []}):
+        problems = validate_convergence_payload(garbage)  # type: ignore[arg-type]
+        assert isinstance(problems, list) and problems
+
+
+# ---------------------------------------------------------------------------
+# 8. Stop criterion is recorded, and the log always ends at the returned point
+# ---------------------------------------------------------------------------
+
+
+def test_stop_reason_max_iters_without_polish():
+    params, names, fwd, loss_fn = _make_linear_fit_problem()
+    result = optimise_loop(
+        params=params,
+        param_names=names,
+        loss_fn=loss_fn,
+        forward_fn=fwd,
+        iters=3,
+        lr=0.01,
+        polish=0,
+        tol=1e-15,
+    )
+    assert result.stop_reason == "max_iters"
+    assert result.converged is False  # honest: no criterion was met
+    assert result.history[-1].phase == "final"
+
+
+def test_stop_reason_lbfgs_polish_and_converged_flag(tmp_path):
+    result, payload, _path = _solved_log(tmp_path)
+    assert result.stop_reason in {"lbfgs_polish", "adam_tol"}
+    assert result.converged is True
+    assert payload["summary"]["converged"] is True
+    assert payload["summary"]["polished"] is True
+    # the returned parameters are those of the final record
+    assert payload["history"][-1]["params"] == pytest.approx(result.params)
