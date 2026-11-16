@@ -1,0 +1,117 @@
+{
+  "ac_mobility": 20.0,
+  "ac_width": 2.0,
+  "atwood": 0.5,
+  "c_eff": 0.8973548161717092,
+  "err_fr_vs_layzer_c1_pct": 5.564501444722891,
+  "err_legacy_estimator_vs_tip_pct": 80.339028035188,
+  "err_sigma_vs_viscous_pct": -10.144077738630386,
+  "err_u_spike_vs_two_fluid_pct": -25.371090772251037,
+  "fr_layzer_c1": 0.5641895835477563,
+  "fr_layzer_c3": 0.32573500793527993,
+  "fr_meas": 0.5955839210752473,
+  "front_fit_n": 267,
+  "front_fit_r2_bub": 0.9932706191457292,
+  "front_fit_r2_spk": 0.9932912110545591,
+  "front_max_lam": 2.503262618781634,
+  "front_symmetry_max_rel_dev": 0.023471601433572988,
+  "g": 0.0002,
+  "gate_terminal_15pct": true,
+  "lam": 64,
+  "layers": 8.0,
+  "ma_peak": 0.5482582056035612,
+  "mean_dev_max_lam": 1.761836906239378,
+  "multi_columns_max": 51,
+  "n_steps_planned": 5200,
+  "n_steps_run": 5166,
+  "name": "S_ref_l064_g2e-4",
+  "note": "reference point, Ma-matched anchor",
+  "nu": 0.0050000000000000044,
+  "phase_scheme": "allen_cahn",
+  "phi_integral_drift_pct_per_cell": 0.0029098727864117924,
+  "phi_max": 1.0,
+  "phi_min": -1.0,
+  "sample_every": 6,
+  "sigma_sim": 0.002772472580044334,
+  "sigma_units": "lattice (d ln a / dt)",
+  "sigma_viscous": 0.003085464497242449,
+  "slope_first_half": 0.6175468857901475,
+  "slope_second_half": 0.5268737953839308,
+  "slope_subwindow_drift_pct": -14.682786439802232,
+  "stop_reason": "wall",
+  "tau_reached": 6.4575000000000005,
+  "two_fluid_asymmetry_pred": 1.7320508075688772,
+  "two_fluid_asymmetry_sim": 1.0004412658998256,
+  "u_bubble_sim": 0.04765722380213606,
+  "u_layzer_c1": 0.045135166683820505,
+  "u_legacy_estimator": 0.08592562035207697,
+  "u_mean_sim": 0.04764671368601978,
+  "u_robust_sim": 0.047724321997781025,
+  "u_spike_sim": 0.04763620356990351,
+  "u_spike_two_fluid_c1": 0.06383076486422923,
+  "wall_clearance_lam": 2.5,
+  "wall_seconds": 53.77160167694092,
+  "window": [
+    4.0,
+    6.0
+  ],
+  "window_complete": true,
+  "window_covered": [
+    4.005,
+    6.0
+  ],
+  "windows": {
+    "late": {
+      "a_range": [
+        0.04031076919786493,
+        0.11851583158805504
+      ],
+      "n": 67,
+      "r2": 0.9998298290121469,
+      "sigma": 2.194548729592986,
+      "t_range": [
+        0.6675,
+        1.1625
+      ]
+    },
+    "late2": {
+      "a_range": [
+        0.06034940368579045,
+        0.15882173071047354
+      ],
+      "n": 64,
+      "r2": 0.9986096960951342,
+      "sigma": 2.0546119877708886,
+      "t_range": [
+        0.8475,
+        1.32
+      ]
+    },
+    "legacy": {
+      "a_range": [
+        0.010002663851853978,
+        0.049377031944072725
+      ],
+      "n": 102,
+      "r2": 0.9994673177362934,
+      "sigma": 2.113371233366979,
+      "t_range": [
+        0.00125,
+        0.7575000000000001
+      ]
+    },
+    "primary": {
+      "a_range": [
+        0.020106358425780874,
+        0.07990691384763005
+      ],
+      "n": 85,
+      "r2": 0.9996760236891087,
+      "sigma": 2.217978064035467,
+      "t_range": [
+        0.34500000000000003,
+        0.975
+      ]
+    }
+  }
+}

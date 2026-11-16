@@ -198,6 +198,24 @@ python3 benchmarks/case_pool/rayleigh_taylor_atwood05/make_report.py
 
 ---
 
+## 更正 / 增补（m23051，2026-11-16）：F4 已过期，终端速度门进入「分辨率阶梯」阶段
+
+* **F4「非线性（势流终速）支臂在本配置下测不到」已由 `artifacts/late` 推翻**：真实原因不是盒子/初始幅值，
+  而是 (i) 幅值护栏 `stop_a_frac=0.60` 被当成了壁面距离、(ii) 前缘估计量用「逐列最低交点」，界面卷起后失跟。
+  换成 `layers=8` + 壁面距离停止判据 + 尖端估计量后，τ∈[4,6] 窗可达（`artifacts/late/acceptance_table.md`：
+  Fr = 0.5956 vs 1/√π，+5.56 %）。上表 F4 行保留原样以留痕，判读以 `artifacts/late` 为准。
+  独立复现见 `artifacts/audit/AUDIT.json`（A2/A3，从 `history.csv` 重算 Fr 与门）。
+* **终端速度门目前只有单点 PASS**：既有 λ=96 臂把 g 随 λ 抬高（那是**线性**期相似群），Ma 涨到 0.879
+  并触发 Ma 护栏（Fr=0.7833，+38.8 %，INCOMPLETE），因此「+5.56 % PASS」既没有分辨率收敛证据，
+  也没排除压缩性（参考臂 Ma_peak = 0.548）——见 `artifacts/late/ma_confound.md` 与
+  `figures/late_fr_vs_ma_confound.png`。
+* **为补这条欠账新增**：`run_simladder.py`（Ma、ζ、k a₀ 固定的相似阶梯 λ=64/96/128 + Ma 证伪臂 + kξ 控制臂，
+  判据预注册在模块 docstring）、`tests/test_rt_atwood_case_bundle.py`（6 条回归）、
+  `verify/audit_bundle.py`（证据包 A0–A10 独立复核）。本分支提交时阶梯作业仍在集群排队
+  （cj4553 / cj4554），故 `artifacts/simladder/STATUS.md` 如实记为 **NOT_RUN / queued**，不得当结果引用。
+* **另修 1 处缺陷**：`run_case.velocity_in_window` 返回 τ-斜率却按格子速度比较（差 1/tau_unit = 800 倍），
+  旧套件因窗未进入（nan）而未暴露；现加 `tau_unit` 参数并修正调用方，回归测试见上表测试文件。
+
 ## 增补：界面厚度 kξ→0 收敛支臂（`verify/REPORT_KDELTA.md`）
 
 独立复核（`verify/REPORT_VERIFY.md` V1/V2、处置 2）要求把「模型形态差」与「求解器误差」分开。
