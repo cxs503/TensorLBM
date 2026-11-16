@@ -1,0 +1,89 @@
+{
+  "mission_id": "m23039",
+  "anchor": "LBM-P0-COLLISION",
+  "title": "高阶碰撞算子适用域实证矩阵",
+  "decision": "对 TensorLBM 中已有的碰撞算子（BGK/SRT、MRT、TRT、RLBM）在三个标准工况（Taylor-Green 衰减收敛阶、圆柱绕流、通道流）下进行数值实证，产出适用域对照表与成熟度结论。KBC 与 Cumulant 算子未实现，记为 NOT_SUPPORTED。",
+  "hypothesis": "H1: BGK 在低 Re 工况下可收敛至二阶精度，但在高 Re（tau→0.5）时稳定性差；H2: TRT 通过 magic parameter 可改善壁面边界精度与稳定性；H3: RLBM 通过正则化过滤非水动力模态，在低粘度下比 BGK 更稳定；H4: MRT 在 TensorLBM 中实为 BGK 的别名（MOCK），数值行为与 BGK 完全一致。",
+  "alternatives": [
+    "BGK (SRT) — 单松弛时间",
+    "MRT — 多松弛时间（代码中实为 BGK 别名）",
+    "TRT — 双松弛时间",
+    "RLBM — 正则化 BGK",
+    "KBC — 未实现",
+    "Cumulant — 未实现"
+  ],
+  "test_cases": [
+    {
+      "name": "Taylor-Green 衰减收敛阶",
+      "description": "2D Taylor-Green vortex decay，解析解已知，用于测量收敛阶",
+      "analytical_solution": "u(x,y,t) = -U0 cos(x) sin(y) exp(-2νt), v(x,y,t) = U0 sin(x) cos(y) exp(-2νt)",
+      "metrics": ["velocity_L2_error", "observed_convergence_order", "energy_decay_error"],
+      "grids": [32, 64, 128, 256],
+      "reynolds_numbers": [100, 1000],
+      "external_anchor": "Taylor & Green 1937, Proc. R. Soc. London A; 解析解见 e.g. Krüger et al. 2017, §7.3"
+    },
+    {
+      "name": "圆柱绕流",
+      "description": "2D flow past circular cylinder，稳态 Re=20/40 与涡脱落 Re=100",
+      "metrics": ["Cd_error_pct", "Cl_amplitude_error_pct", "Strouhal_error_pct", "recirculation_length_error"],
+      "reynolds_numbers": [20, 40, 100],
+      "external_anchor": "Re=20,40: Dennis & Chang 1970 JFM 42:471; Re=100: Liu et al. 1998 JCP 143:35 (Cd=1.35, Cl_amp=0.33, St=0.165)"
+    },
+    {
+      "name": "通道流",
+      "description": "2D/3D plane channel flow，层流 Poiseuille 与湍流 Re_tau=180",
+      "metrics": ["velocity_profile_error_pct", "wall_shear_stress_error_pct", "mass_conservation"],
+      "reynolds_numbers": [100, 1000, "Re_tau=180"],
+      "external_anchor": "层流: u(y) = (G/2μ)(H²/4 - y²) 解析解; 湍流: DNS data of Moser et al. 1999 (Re_tau=180)"
+    }
+  ],
+  "predeclared_thresholds": {
+    "convergence_order_min": 1.5,
+    "velocity_L2_error_max_pct": 5.0,
+    "Cd_error_max_pct": 5.0,
+    "Cl_amplitude_error_max_pct": 10.0,
+    "Strouhal_error_max_pct": 5.0,
+    "velocity_profile_error_max_pct": 5.0,
+    "mass_conservation_max_deviation": 1e-6,
+    "stability_criterion": "simulation completes without NaN/Inf for all prescribed steps"
+  },
+  "stopping_rules": [
+    "若某算子在某工况下出现 NaN/Inf，记为 UNSTABLE，不再尝试更高 Re",
+    "若收敛阶 < 1.5，记为 不满足二阶收敛",
+    "若误差 > 阈值，记为 误差超标，但仍记录数值"
+  ],
+  "confounders_controlled": [
+    "网格分辨率（统一使用相同网格序列）",
+    "时间步长（LBM 中 dt=dx=1，通过 tau 控制 Re）",
+    "边界条件（各工况使用相同 BC 实现）",
+    "初始条件（统一从平衡态初始化）",
+    "随机种子（湍流通道流使用固定 seed=42）"
+  ],
+  "repetition_rationale": "每个算子×工况组合运行一次（LBM 为确定性算法，无需统计重复）；收敛阶测试使用 4 级网格序列（32/64/128/256）以可靠估计阶数。",
+  "environment": {
+    "hardware": "CPU (调度系统指派)",
+    "software": "PyTorch + TensorLBM (main branch)",
+    "precision": "float64 for 2D cases, float32 for 3D turbulent channel"
+  },
+  "analysis_plan": {
+    "aggregation": "取各工况最终稳态/周期平均量",
+    "convergence_order": "Richardson extrapolation: p = log(E1/E2) / log(N2/N1)",
+    "outliers": "NaN/Inf 记为不稳定，不参与误差计算",
+    "missing_data": "未实现的算子（KBC, Cumulant）记为 NOT_SUPPORTED"
+  },
+  "safety_limits": {
+    "max_runtime_per_case_seconds": 1800,
+    "max_memory_gb": 8,
+    "timeout_seconds": 3600
+  },
+  "existing_operators_inventory": {
+    "BGK": {"file": "TensorLBM/src/tensorlbm/solver.py:collide_bgk", "status": "REAL"},
+    "MRT": {"file": "TensorLBM/src/tensorlbm/solver.py:collide_mrt", "status": "MOCK (delegates to collide_bgk)"},
+    "TRT": {"file": "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/solver.py:_collide_trt", "status": "REAL"},
+    "RLBM": {"file": "TensorLBM/src/tensorlbm/solver.py:collide_rlbm_2d", "status": "REAL"},
+    "KBC": {"status": "NOT_SUPPORTED"},
+    "Cumulant": {"status": "NOT_SUPPORTED"}
+  },
+  "feature_ledger_check": "已查 feature_ledger LBM 域，无重复任务",
+  "negative_knowledge_check": "已查 negative_knowledge_ledger，无相关负面记录"
+}
