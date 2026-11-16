@@ -366,6 +366,12 @@ def write_benchmark_md(run: dict[str, Any], summary: dict[str, Any], out: Path) 
             err = float("nan")
             qty = "max rel. deviation from the f_eq fixed point (and rho,u conservation)"
             ref_s, got_s = "0 (exact)", f"{got:.3e}"
+        elif r["case"] == "acoustic_decay":
+            ref = m.get("S_ref", float("nan"))
+            got = m.get("S_meas", float("nan"))
+            err = m.get("acoustic_rel_error_pct", float("nan"))
+            qty = "4 nu/3 + nu_b (sound attenuation, bulk channel)"
+            ref_s, got_s = f"{ref:.5f}", f"{got:.5f}"
         else:
             ref = m.get("nu_ref", float("nan"))
             got = m.get("nu_fit", float("nan"))
