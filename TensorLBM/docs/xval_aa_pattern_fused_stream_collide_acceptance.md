@@ -206,3 +206,5 @@ python tests/gen_aa_fused_cavity_figures.py
 pytest tests/test_aa_fused_cavity_acceptance.py tests/test_aa_fused_stream_collide.py -q
 # 21 passed
 ```
+4. **Scope**: D2Q9 / BGK only. Nothing here transfers automatically to MRT/TRT or D3Q19/27 variants
+   of the pattern. BGK at `tau = 0.596` (L=32) is a marginally stable relaxation; TRT/regularised
