@@ -171,7 +171,7 @@ def collide_rlbm_2d(
 
     # Collision
     omega = 1.0 / tau
-    f_out = f - omega * fneq_reg
+    f_out = feq + (1.0 - omega) * fneq_reg
 
     # Preserve solid nodes if mask provided
     if fluid_mask is not None:
