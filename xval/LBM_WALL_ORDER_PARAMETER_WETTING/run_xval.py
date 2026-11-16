@@ -108,12 +108,13 @@ def arm_port(psi_wall: float, xi: float, ny: int = 56, nx: int = 80, radius: flo
 # ---------------------------------------------------------------------------
 # arm: cac (production phase-field solver, wall_order policy)
 # ---------------------------------------------------------------------------
-def arm_cac(psi_wall: float, steps: int = 2500, shape=(112, 112), tag: str | None = None) -> dict:
+def arm_cac(psi_wall: float, steps: int = 2500, shape=(112, 112), tag: str | None = None,
+            closure: str = "potential") -> dict:
     from tensorlbm.wetting import ladder as L
 
     t0 = time.time()
     try:
-        res = L.contact_wall_order(psi_wall, steps=steps, shape=shape)
+        res = L.contact_wall_order(psi_wall, steps=steps, shape=shape, closure=closure)
     except Exception as exc:  # measurement or solver failure: recorded, never tuned
         res = {"theta_measured_deg": float("nan"), "err_pct": float("nan"),
                "meas": {"error": f"{type(exc).__name__}: {exc}"}, "psi_wall": psi_wall}
@@ -126,6 +127,9 @@ def arm_cac(psi_wall: float, steps: int = 2500, shape=(112, 112), tag: str | Non
         "steps": steps,
         "shape": list(shape),
         "wall_phi_policy": "wall_order",
+        "wall_contact_closure": closure,
+        "mass_drift_rel": res.get("mass_drift_rel"),
+        "stable": res.get("stable"),
         "theta_deg": theta,
         "theta_analytic_deg": theta_analytic,
         "err_pct": (theta - theta_analytic) / theta_analytic * 100.0 if math.isfinite(theta) else None,
@@ -165,23 +169,49 @@ def summarize() -> dict:
         rows.append(json.loads(f.read_text()))
     port = [r for r in rows if r.get("arm") == "port"]
     cac = [r for r in rows if r.get("arm") == "cac"]
-    errs = [abs(r["err_pct"]) for r in port if r.get("err_pct") is not None]
+    port_reused = not port
+    # Merge-safe: a checkout that only re-ran one arm must not silently erase the
+    # other arm's record (the pre-fix version replaced summary.json wholesale and
+    # turned the port arm into n_port = 0 when runs/ was not repopulated).
+    carried = {}
+    sj = HERE / "summary.json"
+    if (not port or not cac) and sj.exists():
+        prev = json.loads(sj.read_text())
+        if not port:
+            for r in prev.get("port_rows", []):
+                carried.setdefault("port", []).append(r)
+        if not cac:
+            for r in prev.get("cac_rows", []):
+                carried.setdefault("cac", []).append(r)
+    # the port rows may be carried from the previous summary (no run dirs in this
+    # checkout); the gates below are evaluated on the union so that a partial
+    # re-run cannot turn a measured pass into a vacuous "False".
+    port_all = port if port else [dict(r, provenance="carried") for r in carried.get("port", [])]
+    errs = [abs(r["err_pct"]) for r in port_all if r.get("err_pct") is not None]
     window = PREDECLARED["validated_window"]["abs_psi_max"]
-    in_win = [r for r in port if abs(r["psi_wall"]) <= window and r.get("err_pct") is not None]
-    out_win = [r for r in port if abs(r["psi_wall"]) > window and r.get("err_pct") is not None]
+    in_win = [r for r in port_all if abs(r["psi_wall"]) <= window and r.get("err_pct") is not None]
+    out_win = [r for r in port_all if abs(r["psi_wall"]) > window and r.get("err_pct") is not None]
     summary = {
         "anchor": PREDECLARED["spec_id"],
         "accept_pct": accept,
-        "n_port": len(port),
+        "n_port": len(port_all),
+        "port_rows_provenance": "re-executed" if port else "carried from previous summary.json",
         "n_cac": len(cac),
+        "arms_present": {"port": bool(port), "cac": bool(cac)},
+        "arms_carried_from_previous_summary": {k: len(v) for k, v in carried.items()},
         "port_rows": [{k: r.get(k) for k in ("tag", "psi_wall", "interface_width", "theta_deg",
                                              "theta_analytic_deg", "err_pct", "pass", "converged",
                                              "iterations")}
                       | {"layer_fraction": r.get("measurement", {}).get("layer_fraction"),
                          "cap_measurable": r.get("measurement", {}).get("cap_measurable")}
                       for r in sorted(port, key=lambda r: (r["interface_width"], r["psi_wall"]))],
-        "cac_rows": [{k: r.get(k) for k in ("tag", "psi_wall", "steps", "theta_deg",
-                                            "theta_analytic_deg", "err_pct", "pass")} for r in cac],
+        "cac_rows": ([{k: r.get(k) for k in ("tag", "psi_wall", "steps", "theta_deg",
+                                             "theta_analytic_deg", "err_pct", "pass")} for r in cac]
+                     if cac else carried.get("cac", [])),
+        "cac_raw": [{k: r.get(k) for k in ("tag", "psi_wall", "steps", "theta_deg",
+                                           "theta_analytic_deg", "err_pct", "pass",
+                                           "mass_drift_rel", "stable", "wall_contact_closure")}
+                    for r in cac],
         "gates": {
             "n_in_window": len(in_win),
             "n_out_of_window": len(out_win),
@@ -190,13 +220,19 @@ def summarize() -> dict:
             if in_win else None,
             "all_in_window_within_accept": bool(in_win) and all(abs(r["err_pct"]) < accept for r in in_win),
             "out_of_window_max_abs_err_pct": max((abs(r["err_pct"]) for r in out_win), default=None),
+            "cac_arm_present": bool(cac),
             "cac_all_within_accept": bool(cac) and all(r.get("pass") for r in cac),
-            "all_converged": all(r.get("converged") for r in port),
+            "cac_max_abs_mass_drift": max((abs(r["mass_drift_rel"]) for r in cac
+                                           if r.get("mass_drift_rel") is not None), default=None),
+            "cac_all_mass_conserving": bool(cac) and all(
+                abs(r.get("mass_drift_rel") or 0.0) < 0.02 for r in cac),
+            "cac_all_stable": bool(cac) and all(bool(r.get("stable")) for r in cac),
+            "all_converged": all(r.get("converged") for r in port_all),
         },
         "convergence_in_xi": {},
         "layer_capacity": {},
     }
-    for r in port:
+    for r in port_all:
         summary["convergence_in_xi"].setdefault(f"{r['psi_wall']:+.2f}", {})[
             f"{r['interface_width']:.1f}"] = r["theta_deg"]
         summary["layer_capacity"][f"{r['psi_wall']:+.2f}@{r['interface_width']:.1f}"] = \

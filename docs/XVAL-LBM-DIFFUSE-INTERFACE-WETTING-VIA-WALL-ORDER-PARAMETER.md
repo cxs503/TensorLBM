@@ -162,3 +162,108 @@ is ported into `tensorlbm.wetting.wall_order_parameter_2d`, `theta(psi_w)` is fi
 a 15 % gate for `|psi_w| <= 0.5`; the reference's order-parameter closure is **not**
 adopted (spurious `nabla^2 psi` diffusion, quantified), and the strong-wetting branch
 `psi_w >= 0.7` is reported as out of the validated range.
+
+## (9) Round 2 (m22828): the missing integration arm, its defect, and its repair
+
+Round 1 published `n_cac = 0` in `summary.json`: the *independent* arm of the
+predeclaration (production phase-field solver, `CAC2D`, `wall_phi_policy="wall_order"`)
+was declared but never delivered. Re-executing it exposed why: the arm is unusable
+for `psi_w != 0` in the closure that was in the tree.
+
+### (9a) Defect (measured, not inferred)
+
+`CAC2D` imposed the Young angle by overwriting the populations **at the solid
+nodes** with `feq(phi_ghost)`. Since the ghost carries
+`phi_fluid + cos(theta) * 4 phi (1-phi) / W`, that overwrite is a **phase source**,
+not a boundary condition on the chemical potential. Its global mean was then
+removed (`wall_contact_zero_net`) to make `int(phi)` stationary — but the mean was
+subtracted from *every* active wall node, including bulk-phase nodes where
+`phi(1-phi) = 0` and the physical flux is exactly zero, so the correction itself
+creates a flux there.
+
+| `theta` (prescribed) | closure `"population"` (legacy) | closure `"potential"` (new) |
+|---|---|---|
+| 60 deg | mass drift **-91.3 %** / 800 steps, theta = 46.2 deg (-23.0 %) | -0.02 %, theta = 59.5 deg (-0.87 %) |
+| 90 deg | -0.12 %, theta = 89.9 deg (-0.14 %) | -0.004 %, theta = 88.9 deg (-1.18 %) |
+| 120 deg | +1.98 %, theta = 127.6 deg (+6.3 %) | -0.012 %, theta = 117.9 deg (-1.72 %) |
+
+(`xval/LBM_WALL_ORDER_PARAMETER_WETTING/closure_compare.json`, 112x112, R = 22,
+`mobility = 0.05`, `sigma = 0.02`, W = 4, sqrt(Bo) >> 1; both estimators agree.)
+The `theta = 90` row is the control: the shift is identically zero there, which is
+why the round-1 ladder (90 deg, 120 deg) passed its <= 1 % mass-drift claim and the
+defect stayed invisible. With `wall_contact_zero_net=False` the same run *gains*
++11 % in 800 steps — i.e. the legacy route is a phase reservoir, and its
+"zero-net" correction overshoots into a sink.
+
+### (9b) Repair
+
+New constructor argument `wall_contact_closure` (`"population"` = legacy, kept
+bit-compatible so published numbers stay reproducible; `"potential"` = default for
+the wall-order arm):
+
+* the ghost field is built exactly as before (same `4 phi (1-phi)/W` slope, same
+  per-wall-normal extrapolation, same `psi_w` -> `cos(theta)` mapping), but it
+  enters **only** the 9-point gradient/Laplacian stencils that build the chemical
+  potential — the diffuse-interface surface-energy route;
+* the populations at solid nodes keep their halfway-bounce-back values, so the
+  streaming step is conservative: no phase is created or destroyed at the wall.
+
+Measured on the same 2D lens (112x112, 2500 steps): mass drift
+`<= 9.7e-4` at every `psi_w`, `phi_min = -4e-8` (no undershoot),
+`max|u| <= 8e-4`.
+
+### (9c) The independent arm, delivered
+
+`xval/LBM_WALL_ORDER_PARAMETER_WETTING/run_xval.py cac` on the predeclared ladder
+`psi_w in {0, +0.35, +0.50}`, 2500 steps, production solver, measurement by
+`tensorlbm.wetting.metrics` (which never sees the solver's internal angle):
+
+| `psi_w` | theta CAC [deg] | theta analytic [deg] | err | mass drift | gate 15 % |
+|---|---|---|---|---|---|
+| 0.00 | 89.03 | 90.00 | -1.07 % | -3.7e-5 | pass |
+| +0.35 | 59.11 | 59.76 | -1.09 % | +2.3e-4 | pass |
+| +0.50 | 46.08 | 46.57 | -1.04 % | +9.7e-4 | pass |
+
+This is the first *independent* confirmation of the `theta(psi_w)` law: a different
+solver (CAC/CHC phase field vs Allen-Cahn descent of the port arm), a different
+order parameter (conserved `phi` vs `psi`), and a different measurement toolbox
+agree with the analytic Young law of the same free energy to **1.1 % max**, i.e.
+inside the owner's 15 % bar, and they agree with each other to <= 1.3 deg at the
+three shared `psi_w` values. Honest limitation unchanged: both arms share the free
+energy and the `psi_w -> cos(theta)` mapping, so this is a *two-solver* consistency
+check plus the CAC solver's own dynamics — not an experiment; the OSS reference
+still supplies no number (NaN, section (4)).
+
+### (9d) Harness defects fixed in the same round
+
+* `summarize()` used to rewrite `summary.json` wholesale, so re-running a single
+  arm replaced the other arm's record with an empty list (`n_port = 0`), and the
+  gates then read `all_in_window_within_accept = false` on a measured pass. It now
+  merges missing arms from the previous summary and records
+  `arms_present` / `arms_carried_from_previous_summary` / `port_rows_provenance`;
+  a vacuous gate can no longer masquerade as a failure (or a pass).
+* `arm_cac` now records `wall_contact_closure`, `mass_drift_rel` and `stable`, and
+  the summary carries the new gates `cac_arm_present`, `cac_all_mass_conserving`
+  (< 2 % drift) and `cac_all_stable`, so a silently absent or diverging integration
+  arm is a *failing gate*, not a missing row.
+
+### (9e) Status of this round's gates
+
+| gate | value | verdict |
+|---|---|---|
+| port arm, `|psi_w| <= 0.5` (10 rows, carried from R1) | max 3.67 %, median 1.36 % | pass |
+| port arm, `psi_w = +0.70` (out of validated window) | -29.5 % | reported, excluded |
+| CAC arm, 3 rows (this round) | max 1.09 % | pass |
+| CAC mass conservation | <= 9.7e-4 | pass |
+| `all_converged` (port, declared tol 1e-8) | **false** | open debt |
+| OSS reference numeric comparison | NaN | **WITHHELD** (unchanged) |
+
+The port-arm stationarity debt from round 1 is *not* closed here: the rows ran to
+the 30000-iteration cap with a residual drift ~1e-5, and `converged = false` is
+still reported per row. The angle is stationary to < 0.1 deg by the
+iteration-ladder evidence of section (5), but the declared tolerance is not met and
+this document does not claim it is.
+
+Reproduce: `python3 xval/LBM_WALL_ORDER_PARAMETER_WETTING/run_xval.py cac --psi-wall 0.35`
+then `... summarize`; tests `tests/test_wall_contact_closure.py` (defect
+characterisation + repair + end-to-end arm).
