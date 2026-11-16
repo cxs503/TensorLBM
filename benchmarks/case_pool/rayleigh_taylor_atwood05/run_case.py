@@ -289,13 +289,26 @@ def fourier_mode(field: torch.Tensor, lam: int) -> float:
     return float((2.0 / nx) * torch.abs((prof * basis).sum()).item())
 
 
-def velocity_in_window(taus: list[float], fronts: list[float], lo: float, hi: float) -> float:
-    """Drift velocity of a front over the tau window (linear slope)."""
+def velocity_in_window(taus: list[float], fronts: list[float], lo: float, hi: float,
+                      tau_unit: float = 1.0) -> float:
+    """Drift velocity of a front over a ``tau`` window, **in lattice units**.
+
+    ``fronts`` is recorded in lattice cells whereas ``taus = t * tau_unit`` is the
+    dimensionless time ``tau = t sqrt(A g / lam)``, so the raw least-squares slope
+    is ``d(front)/d(tau)`` and must be multiplied by ``d tau / dt = tau_unit``
+    before it is compared with the lattice velocities of
+    :func:`ref_lock.goncharov`.  The pre-fix form returned the raw tau-slope, which
+    is off by ``1/tau_unit`` (800 lattice units per step at the reference point).
+    The defect was invisible in the ``run_case.py`` suite because the pre-declared
+    window ``tau in [4, 6]`` was never entered there (see ``run_late.py``), so the
+    value was ``nan`` either way; it is fixed here so the function cannot return a
+    silently mis-scaled number if the window ever becomes reachable.
+    """
     pts = [(t, f) for t, f in zip(taus, fronts) if lo <= t <= hi and math.isfinite(f)]
     if len(pts) < 3:
         return float("nan")
     s, _b, _r2 = linear_fit([p[0] for p in pts], [p[1] for p in pts])
-    return s
+    return s * float(tau_unit)
 
 
 # ---------------------------------------------------------------------------
@@ -376,8 +389,8 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
     nu_eff = ref_lock.nu_eff_from_sigma(spec.atwood, spec.g, spec.lam, sigma_primary)
 
     # ---- secondary (ungated) nonlinear front velocities
-    u_s = velocity_in_window(rec["tau"], rec["h_s"], TAU_LO, TAU_HI)
-    u_b = velocity_in_window(rec["tau"], rec["h_b"], TAU_LO, TAU_HI)
+    u_s = velocity_in_window(rec["tau"], rec["h_s"], TAU_LO, TAU_HI, tau_unit)
+    u_b = velocity_in_window(rec["tau"], rec["h_b"], TAU_LO, TAU_HI, tau_unit)
     u_s_c1 = ref_lock.goncharov(spec.atwood, spec.g, spec.lam, "s", ref_lock.C_2D)
     u_b_c1 = ref_lock.goncharov(spec.atwood, spec.g, spec.lam, "b", ref_lock.C_2D)
     u_s_c3 = ref_lock.goncharov(spec.atwood, spec.g, spec.lam, "s", ref_lock.C_3D)
