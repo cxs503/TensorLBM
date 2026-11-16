@@ -223,6 +223,10 @@ md = f"""# XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION — Cross-validation 
   ＋ 逐半径残差。
 - `artifacts/figures/fig3_sigma_vs_R.png` — σ_i = Δp·R_eq 的有限半径（曲率）趋势与 ±3% 带。
 - `artifacts/figures/fig4_sensitivity.png` — 测量带 / 域尺寸 / 力格式三种敏感性。
+- **图已入库**：上述 4 张 PNG 随 `artifacts/figures/` 一起提交，`artifacts/figures/PROVENANCE.json`
+  记录每张图与 `artifacts/result.json` / `artifacts/field_snapshot_R20.json` 的 sha256；
+  `tests/test_xval_sc_laplace_artifacts.py` 强制「报告引用的图必须存在且哈希自洽、REPORT.md 的数字与
+  result.json 逐项一致、REPORT.md 可由 make_report.py 原样重生成」，防止报告与产物漂移。
 
 ## ⑤ 注意点（坑 / 局限 / 适用范围）
 
