@@ -1,0 +1,354 @@
+{
+ "case": "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+ "anchor": "lssfau/walberla no-mcmp-two-phase-only",
+ "repo": "TensorLBM",
+ "gates": {
+  "G1": [
+   {
+    "gate": "G1_kernel_identity",
+    "G": 5.0,
+    "psi": "exp",
+    "dtype": "float64",
+    "shape": [
+     48,
+     64
+    ],
+    "force_scale": 0.09615295661274709,
+    "max_abs_diff": 0.0,
+    "rel_err": 0.0,
+    "component_symmetry": 0.0,
+    "exact": true,
+    "tolerance": 1e-12,
+    "pass": true
+   },
+   {
+    "gate": "G1_kernel_identity",
+    "G": 5.0,
+    "psi": "linear",
+    "dtype": "float64",
+    "shape": [
+     48,
+     64
+    ],
+    "force_scale": 0.3831763528607975,
+    "max_abs_diff": 0.0,
+    "rel_err": 0.0,
+    "component_symmetry": 0.0,
+    "exact": true,
+    "tolerance": 1e-12,
+    "pass": true
+   },
+   {
+    "gate": "G1_kernel_identity",
+    "G": -1.0,
+    "psi": "exp",
+    "dtype": "float64",
+    "shape": [
+     48,
+     64
+    ],
+    "force_scale": 0.019230591322549416,
+    "max_abs_diff": 0.0,
+    "rel_err": 0.0,
+    "component_symmetry": 0.0,
+    "exact": true,
+    "tolerance": 1e-12,
+    "pass": true
+   },
+   {
+    "gate": "G1_kernel_identity",
+    "G": 5.0,
+    "psi": "exp",
+    "dtype": "float32",
+    "shape": [
+     48,
+     64
+    ],
+    "force_scale": 0.09577596932649612,
+    "max_abs_diff": 0.0,
+    "rel_err": 0.0,
+    "component_symmetry": 0.0,
+    "exact": true,
+    "tolerance": 1e-12,
+    "pass": true
+   }
+  ],
+  "G2": {
+   "gate": "G2_null_coupling_purity",
+   "psi": "exp",
+   "null_max": 0.0,
+   "inert_partner_max": 0.0,
+   "nontrivial_max": 0.028840305397282315,
+   "null_over_nontrivial": 0.0,
+   "teeth_amplitude": 0.028840305397282315,
+   "tolerance": 1e-12,
+   "pass": true
+  },
+  "G3": {
+   "gate": "G3_duplicated_partner_dynamics",
+   "G": 5.0,
+   "steps": 400,
+   "tau": 1.0,
+   "dtype": "float64",
+   "shape": [
+    64,
+    64
+   ],
+   "radius": 14.0,
+   "history": [
+    {
+     "step": 1,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.2,
+     "rho_sc_max": 1.0000042324407428
+    },
+    {
+     "step": 50,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.16853201879060817,
+     "rho_sc_max": 2.686335371473081
+    },
+    {
+     "step": 100,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.16211347827887002,
+     "rho_sc_max": 1.896298694729031
+    },
+    {
+     "step": 150,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.14567500542775436,
+     "rho_sc_max": 1.8645230689861292
+    },
+    {
+     "step": 200,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.15050236790116986,
+     "rho_sc_max": 2.214949054731129
+    },
+    {
+     "step": 250,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.15582779786150497,
+     "rho_sc_max": 1.8914782400517276
+    },
+    {
+     "step": 300,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.15811166044749156,
+     "rho_sc_max": 1.9844636735490906
+    },
+    {
+     "step": 350,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.15895301447297105,
+     "rho_sc_max": 2.037861160154483
+    },
+    {
+     "step": 400,
+     "max_abs_diff": 0.0,
+     "rel_diff": 0.0,
+     "rho_sc_min": 0.16108689971952506,
+     "rho_sc_max": 1.9368250890741068
+    }
+   ],
+   "final_max_abs_diff": 0.0,
+   "final_rel_diff": 0.0,
+   "partner_tracks_component": 0.0,
+   "sc_density_contrast": 1.7757381893545818,
+   "sc_rho_max": 1.9368250890741068,
+   "sc_rho_min": 0.16108689971952506,
+   "tolerance": 1e-10,
+   "pass": true,
+   "phase_separated": true
+  },
+  "G4": {
+   "gate": "G4_no_self_interaction",
+   "G_12": -1.0,
+   "steps": 400,
+   "contrast_initial": 0.7999999839410772,
+   "contrast_inert_partner": 0.15448883882796496,
+   "contrast_ratio_inert": 0.19311105241140056,
+   "contrast_history_inert": [
+    0.31689702156856936,
+    0.06233424203021648,
+    0.08813829246093713,
+    0.15448883882796496
+   ],
+   "contrast_complementary": 0.20371667718200082,
+   "contrast_history_complementary": [
+    0.30646014508752906,
+    0.2396437228733108,
+    0.12454162657566087,
+    0.20371667718200082
+   ],
+   "spatial_correlation_initial": -1.0,
+   "spatial_correlation_final": -0.7527288803448812,
+   "contrast_decayed": true,
+   "pass": true
+  },
+  "G5": {
+   "gate": "G5_coupling_sign",
+   "steps": 400,
+   "rows": [
+    {
+     "G_12": -1.0,
+     "alignment": -0.05234889445996731,
+     "alignment_sign": -1,
+     "tracer_correlation": -0.9991361761631591,
+     "tracer_contrast": 0.11288690664417267,
+     "tracer_sign": -1,
+     "agrees_with_docstring": true
+    },
+    {
+     "G_12": -0.5,
+     "alignment": -0.026174447229983654,
+     "alignment_sign": -1,
+     "tracer_correlation": -0.999664871608153,
+     "tracer_contrast": 0.055921249763715264,
+     "tracer_sign": -1,
+     "agrees_with_docstring": true
+    },
+    {
+     "G_12": 0.5,
+     "alignment": 0.026174447229983654,
+     "alignment_sign": 1,
+     "tracer_correlation": 0.9999403794615311,
+     "tracer_contrast": 0.05442207224469908,
+     "tracer_sign": 1,
+     "agrees_with_docstring": true
+    },
+    {
+     "G_12": 1.0,
+     "alignment": 0.05234889445996731,
+     "alignment_sign": 1,
+     "tracer_correlation": 0.9995396332179429,
+     "tracer_contrast": 0.107012464272913,
+     "tracer_sign": 1,
+     "agrees_with_docstring": true
+    }
+   ],
+   "alignment_oddness_rel": 0.0,
+   "segregating_for_negative": true,
+   "adhesion_for_positive": true,
+   "psib_sign_convention": "G_12 < 0: species A is repelled from B-rich regions (segregation); G_12 > 0: A is attracted (adhesion/mixing); SCMP like-species attraction needs G > 0.",
+   "pass": true
+  },
+  "G6": {
+   "gate": "G6_two_phase_coexistence",
+   "forcing": "edm",
+   "steps": 8000,
+   "rows": [
+    {
+     "G": 4.5,
+     "maxwell": {
+      "found": true,
+      "G": 4.5,
+      "G_classic": -4.5,
+      "reason": "equal-area construction converged",
+      "p_sat": 0.046777101361,
+      "rho_vapour": 0.251891806722,
+      "rho_liquid": 1.492038905621,
+      "density_ratio": 5.923332422118,
+      "rho_spinodal_vapour": 0.406023263931,
+      "rho_spinodal_liquid": 1.097904324532,
+      "area_residual": -0.0,
+      "p_min": 3.333259e-06,
+      "p_min_at_rho": 1.0000003e-05
+     },
+     "flat": {
+      "G": 4.5,
+      "G_classic": -4.5,
+      "forcing": "edm",
+      "ny": 64,
+      "nx": 2,
+      "tau": 1.0,
+      "steps": 8000,
+      "diverged": false,
+      "diverged_at_step": null,
+      "rho_liquid": 1.493523881168,
+      "rho_vapour": 0.25344378547,
+      "rho_liquid_seed": 1.492038428783,
+      "rho_vapour_seed": 0.251891806722,
+      "p_liquid": 0.046884007563,
+      "p_vapour": 0.046890703071,
+      "spurious_u_max": 0.07000919049,
+      "mass_drift": 0.0,
+      "spurious_u_history": null
+     },
+     "rho_liquid_sim": 1.4935238811677074,
+     "rho_vapour_sim": 0.2534437854699025,
+     "rho_liquid_maxwell": 1.4920389056205752,
+     "rho_vapour_maxwell": 0.25189180672168754,
+     "err_liquid": 0.0009952659689625122,
+     "err_vapour": 0.006161291105151776,
+     "err_max": 0.006161291105151776,
+     "within_15pct": true,
+     "within_3pct": true,
+     "pass": true
+    },
+    {
+     "G": 5.0,
+     "maxwell": {
+      "found": true,
+      "G": 5.0,
+      "G_classic": -5.0,
+      "reason": "equal-area construction converged",
+      "p_sat": 0.034213653954,
+      "rho_vapour": 0.152894966304,
+      "rho_liquid": 1.928865969181,
+      "density_ratio": 12.615627680915,
+      "rho_spinodal_vapour": 0.323577851057,
+      "rho_spinodal_liquid": 1.284437894821,
+      "area_residual": 0.0,
+      "p_min": -0.007695406675,
+      "p_min_at_rho": 1.286238789558
+     },
+     "flat": {
+      "G": 5.0,
+      "G_classic": -5.0,
+      "forcing": "edm",
+      "ny": 64,
+      "nx": 2,
+      "tau": 1.0,
+      "steps": 8000,
+      "diverged": false,
+      "diverged_at_step": null,
+      "rho_liquid": 1.931518186594,
+      "rho_vapour": 0.155500341692,
+      "rho_liquid_seed": 1.928865969181,
+      "rho_vapour_seed": 0.152894951403,
+      "p_liquid": 0.03454929638,
+      "p_vapour": 0.034550275351,
+      "spurious_u_max": 0.134237133103,
+      "mass_drift": 0.0,
+      "spurious_u_history": null
+     },
+     "rho_liquid_sim": 1.931518186594359,
+     "rho_vapour_sim": 0.15550034169229549,
+     "rho_liquid_maxwell": 1.928865969181061,
+     "rho_vapour_maxwell": 0.15289496630430238,
+     "err_liquid": 0.0013750138452719763,
+     "err_vapour": 0.017040295380344312,
+     "err_max": 0.017040295380344312,
+     "within_15pct": true,
+     "within_3pct": true,
+     "pass": true
+    }
+   ],
+   "pass": true,
+   "worst_err": 0.017040295380344312
+  }
+ },
+ "pass": true,
+ "gate_count": 9,
+ "gate_count_passed": 9
+}
