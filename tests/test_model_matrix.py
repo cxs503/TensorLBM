@@ -201,10 +201,12 @@ def test_coverage_accounting_and_reports(tmp_path):
         progress=False,
     )
     summary = summarize(run, min_coverage=0.85)
-    # bgk: 3 declared cases; mrt-smag: 1 declared + 2 declared-inapplicable
-    assert summary["cells_declared"] == 4
-    assert summary["cells_not_applicable"] == 2
-    assert summary["cells_covered"] == 4
+    # bgk: 4 declared cases (feq, shear, acoustic, tg since R2);
+    # mrt-smag: 1 declared + 3 declared-inapplicable (LES has no molecular
+    # reference for either the shear or the bulk channel)
+    assert summary["cells_declared"] == 5
+    assert summary["cells_not_applicable"] == 3
+    assert summary["cells_covered"] == 5
     assert summary["coverage_fraction"] == 1.0
     assert summary["verdict"] == "PASS", summary["gate_failures"]
     # guard model never claims a gate pass
