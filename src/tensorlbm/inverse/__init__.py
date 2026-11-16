@@ -54,7 +54,14 @@ Quick start
 
 from __future__ import annotations
 
-from .convergence import CONVERGENCE_SCHEMA, ConvergenceLog, IterationRecord, write_convergence_json
+from .convergence import (
+    CONVERGENCE_SCHEMA,
+    ConvergenceLog,
+    IterationRecord,
+    read_convergence_json,
+    validate_convergence_payload,
+    write_convergence_json,
+)
 from .losses import (
     LossComponent,
     LossComposition,
@@ -79,8 +86,10 @@ __all__ = [
     "jittered_init",
     "l1_loss",
     "optimise_loop",
+    "read_convergence_json",
     "relative_mse_loss",
     "seed_everything",
+    "validate_convergence_payload",
     "weighted_mse_loss",
     "write_convergence_json",
 ]

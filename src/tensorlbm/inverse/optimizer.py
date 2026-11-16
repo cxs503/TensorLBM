@@ -58,6 +58,10 @@ class OptimiseResult:
     initial_loss: float
     params: dict[str, float]
     history: list[IterationRecord] = field(default_factory=list)
+    #: Which criterion ended the run: ``"adam_tol"``, ``"lbfgs_polish"``,
+    #: ``"polish_stalled"`` or ``"max_iters"``.  ``converged`` is exactly
+    #: ``stop_reason in {"adam_tol", "lbfgs_polish"}``.
+    stop_reason: str = "max_iters"
 
     @property
     def loss_reduction(self) -> float:
@@ -98,7 +102,7 @@ def optimise_loop(
     tol: float = 1e-10,
     problem_name: str = "inverse",
     seed: int = 0,
-    extra_per_iter: Callable[[], dict[str, float]] | None = None,
+    extra_per_iter: Callable[[], dict[str, Any]] | None = None,
 ) -> OptimiseResult:
     """Run the Adam + optional L-BFGS polish optimisation loop.
 
@@ -131,6 +135,7 @@ def optimise_loop(
     loss_value = float("inf")
     loss_prev = float("inf")
     converged = False
+    stop_reason = "max_iters"
     initial_loss: float | None = None
 
     for it in range(iters):
@@ -179,11 +184,14 @@ def optimise_loop(
         # Convergence check
         if it > 2 and abs(loss_prev - loss_value) < tol * max(1.0, abs(loss_prev)):
             converged = True
+            stop_reason = "adam_tol"
             break
         loss_prev = loss_value
 
     # L-BFGS polish
+    polished = False
     if polish > 0 and loss_value == loss_value:  # not NaN
+        pre_polish_loss = loss_value
         opt_l = torch.optim.LBFGS(
             params,
             lr=1.0,
@@ -217,31 +225,43 @@ def optimise_loop(
             return value
 
         opt_l.step(closure)
+        polished = True
 
-        # Final constraint clamp
-        with torch.no_grad():
-            for name, p in zip(param_names, params):
-                if name in box_constraints:
-                    lo, hi = box_constraints[name]
-                    p.clamp_(min=lo, max=hi)
-
-        # Final evaluation
-        sim_eval, obs_eval = forward_fn()
-        if isinstance(loss_fn, LossComposition):
-            loss_value = float(loss_fn(sim_eval, obs_eval).detach())
-        else:
-            loss_value = float(loss_fn(sim_eval, obs_eval).detach())
-
-        param_values = _extract_param_values(params, param_names)
-        rec = IterationRecord(
-            iter=len(history),
-            phase="final",
-            loss=loss_value,
-            params=param_values,
+        # A completed polish counts as a stopping criterion only if it did not
+        # make the objective worse: a stalled line search is *not* convergence.
+        post_polish = next(
+            (r.loss for r in reversed(history) if r.phase == "lbfgs_eval"),
+            math.inf,
         )
-        history.append(rec)
-        if convergence_log:
-            convergence_log.record(rec)
+        converged = math.isfinite(post_polish) and post_polish <= pre_polish_loss * (
+            1.0 + 1e-12
+        )
+        stop_reason = "lbfgs_polish" if converged else "polish_stalled"
+
+    # Final constraint clamp (both phases): the polish loop is unconstrained
+    # internally, so the returned point is projected back into the box.  The
+    # clamp is applied for polish == 0 as well, so the reported point always
+    # satisfies the declared box constraints.
+    with torch.no_grad():
+        for name, p in zip(param_names, params):
+            if name in box_constraints:
+                lo, hi = box_constraints[name]
+                p.clamp_(min=lo, max=hi)
+
+    # Final evaluation at the returned point, so the log always ends with a
+    # post-step, post-clamp record (previously only produced when polish > 0).
+    sim_eval, obs_eval = forward_fn()
+    loss_value = float(loss_fn(sim_eval, obs_eval).detach())
+    param_values = _extract_param_values(params, param_names)
+    rec = IterationRecord(
+        iter=len(history),
+        phase="final",
+        loss=loss_value,
+        params=param_values,
+    )
+    history.append(rec)
+    if convergence_log:
+        convergence_log.record(rec)
 
     wall_s = time.time() - t_start
     param_values = _extract_param_values(params, param_names)
@@ -253,6 +273,9 @@ def optimise_loop(
             final_loss=loss_value,
             initial_loss=initial_loss if initial_loss is not None else loss_value,
             params=param_values,
+            stop_reason=stop_reason,
+            polished=polished,
+            n_lbfgs_evaluations=sum(1 for r in history if r.phase == "lbfgs_eval"),
         )
 
     return OptimiseResult(
@@ -263,4 +286,5 @@ def optimise_loop(
         initial_loss=initial_loss if initial_loss is not None else loss_value,
         params=param_values,
         history=history,
+        stop_reason=stop_reason,
     )

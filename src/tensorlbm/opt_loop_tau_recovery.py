@@ -80,6 +80,14 @@ import torch
 
 from tensorlbm.autograd_path import rollout
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.inverse import (
+    ConvergenceLog,
+    LossComponent,
+    LossComposition,
+    jittered_init,
+    optimise_loop,
+    seed_everything,
+)
 
 __all__ = [
     "SCHEMA",
@@ -355,7 +363,15 @@ class RecoverResult:
     loss_final: float
     converged: bool
     wall_s: float
-    history: list[dict[str, float]] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
+    #: Adam iterations actually executed (``iters`` has always meant this; the
+    #: field used to carry the *total* record count including every L-BFGS
+    #: line-search evaluation -- see ``n_records``).
+    adam_iterations: int = 0
+    #: Total number of records in ``history`` (Adam + L-BFGS + final).
+    n_records: int = 0
+    #: Which criterion ended the run (see ``inverse.optimise_loop``).
+    stop_reason: str = "max_iters"
 
     @property
     def passed(self) -> bool:
@@ -365,6 +381,42 @@ class RecoverResult:
         payload = asdict(self)
         payload["passed_under_3pct"] = self.passed
         return payload
+
+
+def _flat_record(
+    rec: Any,
+    case: TaylorGreenCase,
+    nu_true: float,
+    fit_amplitude: bool,
+) -> dict[str, Any]:
+    """Flatten one :class:`tensorlbm.inverse.IterationRecord` into the demo row.
+
+    The row keeps the key set of the pre-infrastructure implementation
+    (``nu``, ``tau``, ``reynolds``, ``rel_err_pct``, ... are derived from the
+    logged ``log_nu`` parameter instead of being logged twice), so downstream
+    readers of the convergence JSON do not change.
+    """
+    log_nu = float(rec.params.get("log_nu", float("nan")))
+    nu = math.exp(log_nu) if math.isfinite(log_nu) else float("nan")
+    amp = float(rec.params.get("amplitude", 1.0)) if fit_amplitude else 1.0
+    grads = rec.gradients or {}
+    return {
+        "iter": float(rec.iter),
+        "phase": rec.phase,
+        "loss": float(rec.loss),
+        "per_time": [float(v) for v in rec.extra.get("per_time", [])],
+        "log_nu": log_nu,
+        "nu": nu,
+        "tau": 0.5 + 3.0 * nu,
+        "reynolds": case.reynolds(nu) if math.isfinite(nu) else float("nan"),
+        "rel_err_pct": 100.0 * (nu - nu_true) / nu_true if math.isfinite(nu) else float("nan"),
+        "amplitude": amp,
+        "grad_log_nu": float(grads.get("log_nu", float("nan"))),
+        "grad_amplitude": (
+            float(grads.get("amplitude", float("nan"))) if fit_amplitude else None
+        ),
+        "lr": float(rec.lr),
+    }
 
 
 def recover(
@@ -380,143 +432,93 @@ def recover(
     seed: int = 0,
     tol: float = 1e-10,
     polish: int = 0,
+    convergence_log: ConvergenceLog | None = None,
 ) -> RecoverResult:
     """Recover ``tau`` (hence ``nu`` and ``Re``) from ``obs`` by gradient descent.
 
-    The unknown is ``log nu`` so ``tau = 1/2 + 3 nu`` stays physical; Adam with
-    a cosine-decayed learning rate; per-iteration ``tau``, ``nu``, ``Re``,
-    relative error and loss are recorded for the convergence JSON.
+    The unknown is ``log nu`` so ``tau = 1/2 + 3 nu`` stays physical.  The loop
+    itself is **not** re-implemented here: this reference consumer drives
+    :func:`tensorlbm.inverse.optimise_loop` (Adam + cosine schedule + box
+    constraint + optional L-BFGS polish), whose per-iteration records are
+    flattened into the demo payload by :func:`_flat_record`.  Seeding of the
+    initial guess goes through :func:`tensorlbm.inverse.jittered_init`, and the
+    loss is a one-component :class:`~tensorlbm.inverse.LossComposition`, so
+    every piece of the inverse infrastructure is exercised end-to-end by a real
+    LBM inverse problem.
+
+    Passing a :class:`~tensorlbm.inverse.ConvergenceLog` records the same run in
+    the ``tensorlbm/inverse/convergence/v1`` schema (the demo's own payload has
+    its own, richer schema).
     """
     t_start = time.time()
+    seed_everything(int(seed))
+
     nu_true = case.nu_from_tau(tau_true)
     if tau_init is None:
-        gen = torch.Generator().manual_seed(int(seed) + 104729)
-        jitter = 1.0 + 0.25 * float(2.0 * torch.rand(1, generator=gen, dtype=case.dtype) - 1.0)
-        tau_init = case.tau_from_nu(nu_true * jitter)
+        tau_init = case.tau_from_nu(
+            jittered_init(nu_true, seed=int(seed), relative_range=0.25)
+        )
     nu_init = case.nu_from_tau(tau_init)
 
     log_nu = torch.tensor(math.log(nu_init), dtype=case.dtype, requires_grad=True)
     amplitude = torch.tensor(1.0, dtype=case.dtype, requires_grad=bool(fit_amplitude))
     params = [log_nu] + ([amplitude] if fit_amplitude else [])
-    opt = torch.optim.Adam(params, lr=lr)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, iters))
+    param_names = ["log_nu"] + (["amplitude"] if fit_amplitude else [])
 
-    history: list[dict[str, float]] = []
-    loss_value = float("inf")
-    loss_prev = float("inf")
-    converged = False
+    # The default loss is a one-component composition so that the convergence
+    # log carries a named component ("rel_mse") exactly like a multi-objective
+    # problem would.  ``per_time`` (the per-observation-time residual) is a
+    # by-product of the same evaluation, stashed for ``extra_per_iter``.
+    per_time_stash: dict[str, list[float]] = {}
 
-    for it in range(iters):
-        opt.zero_grad()
+    def _rel_mse(sim: Any, obs_obj: Any) -> torch.Tensor:
+        total, per_time = loss_and_norms(sim, obs_obj)
+        per_time_stash["per_time"] = per_time
+        return total
+
+    loss_fn = LossComposition((LossComponent("rel_mse", _rel_mse, 1.0),))
+
+    def forward_fn() -> tuple[Any, Any]:
         nu = torch.exp(log_nu)
-        tau = 0.5 + 3.0 * nu
-        sim = simulate(case, tau, obs.times, amplitude=amplitude if fit_amplitude else 1.0)
-        loss, per_time = loss_and_norms(sim, obs)
-        loss.backward()
-        grad_log_nu = float(log_nu.grad) if log_nu.grad is not None else float("nan")
-        grad_amp = float(amplitude.grad) if (fit_amplitude and amplitude.grad is not None) else float("nan")
-        opt.step()
-        sched.step()
-        with torch.no_grad():
-            lo = math.log((TAU_MIN - 0.5) / 3.0)
-            hi = math.log((TAU_MAX - 0.5) / 3.0)
-            log_nu.clamp_(min=lo, max=hi)
-
-        nu_v = float(torch.exp(log_nu).detach())
-        tau_v = 0.5 + 3.0 * nu_v
-        re_v = case.reynolds(nu_v)
-        loss_value = float(loss.detach())
-        history.append(
-            {
-                "iter": float(it),
-                "phase": "adam",
-                "loss": loss_value,
-                "per_time": [float(v) for v in per_time],
-                "log_nu": float(log_nu.detach()),
-                "nu": nu_v,
-                "tau": tau_v,
-                "reynolds": re_v,
-                "rel_err_pct": 100.0 * (nu_v - nu_true) / nu_true,
-                "amplitude": float(amplitude.detach()) if fit_amplitude else 1.0,
-                "grad_log_nu": grad_log_nu,
-                "grad_amplitude": grad_amp,
-                "lr": float(sched.get_last_lr()[0]),
-            }
+        sim = simulate(
+            case,
+            0.5 + 3.0 * nu,
+            obs.times,
+            amplitude=amplitude if fit_amplitude else 1.0,
         )
-        if it > 2 and abs(loss_prev - loss_value) < tol * max(1.0, abs(loss_prev)):
-            converged = True
-            break
-        loss_prev = loss_value
+        return sim, obs
 
-    if polish > 0 and loss_value == loss_value:  # L-BFGS polish on the same objective
-        opt_l = torch.optim.LBFGS(
-            params,
-            lr=1.0,
-            max_iter=int(polish),
-            history_size=10,
-            line_search_fn="strong_wolfe",
-            tolerance_grad=1e-14,
-            tolerance_change=1e-16,
+    def extra_per_iter() -> dict[str, Any]:
+        return {"per_time": list(per_time_stash.get("per_time", []))}
+
+    box = {
+        "log_nu": (
+            math.log((TAU_MIN - 0.5) / 3.0),
+            math.log((TAU_MAX - 0.5) / 3.0),
         )
+    }
 
-        def closure() -> torch.Tensor:
-            opt_l.zero_grad()
-            nu_t = torch.exp(log_nu)
-            sim_t = simulate(case, 0.5 + 3.0 * nu_t, obs.times, amplitude=amplitude if fit_amplitude else 1.0)
-            value, _ = loss_and_norms(sim_t, obs)
-            value.backward()
-            # every line-search evaluation is part of the convergence record
-            nu_e = float(nu_t.detach())
-            history.append(
-                {
-                    "iter": float(len(history)),
-                    "phase": "lbfgs_eval",
-                    "loss": float(value.detach()),
-                    "per_time": [],
-                    "log_nu": float(log_nu.detach()),
-                    "nu": nu_e,
-                    "tau": 0.5 + 3.0 * nu_e,
-                    "reynolds": case.reynolds(nu_e),
-                    "rel_err_pct": 100.0 * (nu_e - nu_true) / nu_true,
-                    "amplitude": float(amplitude.detach()) if fit_amplitude else 1.0,
-                    "grad_log_nu": float(log_nu.grad) if log_nu.grad is not None else float("nan"),
-                    "grad_amplitude": None,
-                    "lr": 1.0,
-                }
-            )
-            return value
+    result = optimise_loop(
+        params=params,
+        param_names=param_names,
+        loss_fn=loss_fn,
+        forward_fn=forward_fn,
+        iters=iters,
+        lr=lr,
+        polish=polish,
+        box_constraints=box,
+        convergence_log=convergence_log,
+        tol=tol,
+        problem_name=track,
+        seed=int(seed),
+        extra_per_iter=extra_per_iter,
+    )
 
-        before = loss_value
-        opt_l.step(closure)
-        with torch.no_grad():
-            log_nu.clamp_(min=math.log((TAU_MIN - 0.5) / 3.0), max=math.log((TAU_MAX - 0.5) / 3.0))
-        nu_v = float(torch.exp(log_nu.detach()))
-        tau_v = 0.5 + 3.0 * nu_v
-        with torch.no_grad():
-            sim_eval = simulate(case, tau_v, obs.times, amplitude=float(amplitude.detach()) if fit_amplitude else 1.0)
-            loss_value = float(loss_and_norms(sim_eval, obs)[0])
-        history.append(
-            {
-                "iter": float(len(history)),
-                "phase": "lbfgs",
-                "loss": loss_value,
-                "per_time": [],
-                "log_nu": float(log_nu.detach()),
-                "nu": nu_v,
-                "tau": tau_v,
-                "reynolds": case.reynolds(nu_v),
-                "rel_err_pct": 100.0 * (nu_v - nu_true) / nu_true,
-                "amplitude": float(amplitude.detach()) if fit_amplitude else 1.0,
-                "grad_log_nu": float(log_nu.grad) if log_nu.grad is not None else float("nan"),
-                "grad_amplitude": float(amplitude.grad) if (fit_amplitude and amplitude.grad is not None) else float("nan"),
-                "lr": 1.0,
-                "polish_gain": before - loss_value,
-            }
-        )
-        converged = True
-
+    history = [_flat_record(rec, case, nu_true, fit_amplitude) for rec in result.history]
     nu_hat = float(torch.exp(log_nu.detach()))
     tau_hat = 0.5 + 3.0 * nu_hat
+    amplitude_hat = float(amplitude.detach()) if fit_amplitude else 1.0
+
     return RecoverResult(
         track=track,
         seed=int(seed),
@@ -527,18 +529,21 @@ def recover(
         nu_true=float(nu_true),
         re_true=float(case.reynolds(nu_true)),
         tau_init=float(tau_init),
-        iters=len(history),
+        iters=sum(1 for r in result.history if r.phase == "adam"),
         lr=float(lr),
         tau_hat=float(tau_hat),
         nu_hat=float(nu_hat),
         re_hat=float(case.reynolds(nu_hat)),
-        amplitude_hat=float(amplitude.detach()) if fit_amplitude else 1.0,
+        amplitude_hat=amplitude_hat,
         rel_err_pct=100.0 * (nu_hat - nu_true) / nu_true,
         loss_initial=history[0]["loss"],
-        loss_final=history[-1]["loss"],
-        converged=bool(converged),
+        loss_final=float(result.final_loss),
+        converged=bool(result.converged),
         wall_s=time.time() - t_start,
         history=history,
+        adam_iterations=sum(1 for r in result.history if r.phase == "adam"),
+        n_records=len(history),
+        stop_reason=result.stop_reason,
     )
 
 
@@ -632,7 +637,13 @@ def _track_spec(spec: TrackSpec) -> dict[str, Any]:
     }
 
 
-def run_job(spec: TrackSpec, seed: int, *, with_gradient_check: bool = False) -> dict[str, Any]:
+def run_job(
+    spec: TrackSpec,
+    seed: int,
+    *,
+    with_gradient_check: bool = False,
+    convergence_dir: Path | None = None,
+) -> dict[str, Any]:
     """Run a single (track, seed) inversion and return a self-describing record."""
     case = TaylorGreenCase(n=spec.n)
     nu_true = case.nu_from_tau(spec.tau_true)
@@ -644,6 +655,7 @@ def run_job(spec: TrackSpec, seed: int, *, with_gradient_check: bool = False) ->
     grad = None
     if with_gradient_check:
         grad = gradient_check(case, obs, tau=spec.tau_true, eps=1e-3)
+    log = ConvergenceLog(problem=f"{spec.name}/seed{int(seed)}", seed=int(seed))
     result = recover(
         case,
         obs,
@@ -654,7 +666,11 @@ def run_job(spec: TrackSpec, seed: int, *, with_gradient_check: bool = False) ->
         fit_amplitude=spec.fit_amplitude,
         seed=int(seed),
         polish=spec.polish,
+        convergence_log=log,
     )
+    convergence_path = None
+    if convergence_dir is not None:
+        convergence_path = log.write(Path(convergence_dir) / f"{spec.name}_seed{int(seed)}.json")
     return {
         "track": spec.name,
         "seed": int(seed),
@@ -674,6 +690,14 @@ def run_job(spec: TrackSpec, seed: int, *, with_gradient_check: bool = False) ->
         "observation": obs.to_payload(),
         "gradient_check": grad,
         "run": result.to_payload(),
+        "convergence_json": str(convergence_path) if convergence_path else None,
+        "infrastructure": {
+            "package": "tensorlbm.inverse",
+            "loop": "optimise_loop",
+            "loss": "LossComposition(rel_mse)",
+            "log_schema": "tensorlbm/inverse/convergence/v1",
+            "seed_control": "seed_everything + jittered_init",
+        },
     }
 
 
@@ -743,12 +767,18 @@ def run_demo(
     seeds: Sequence[int] = (0, 1, 2),
     tracks: Sequence[TrackSpec] = DEFAULT_TRACKS,
     progress: bool = True,
+    convergence_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Run every track over every seed (single process; the CLI shards for HPC)."""
     jobs = []
     for spec in tracks:
         for k, seed in enumerate(seeds):
-            job = run_job(spec, int(seed), with_gradient_check=(k == 0))
+            job = run_job(
+                spec,
+                int(seed),
+                with_gradient_check=(k == 0),
+                convergence_dir=convergence_dir,
+            )
             jobs.append(job)
             if progress:
                 print(
@@ -767,6 +797,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--iters", type=int, default=None, help="override the track iteration count")
     parser.add_argument("--polish", type=int, default=None, help="override L-BFGS polish iterations")
     parser.add_argument("--threads", type=int, default=0, help="torch intra-op threads (0 = leave default)")
+    parser.add_argument("--convergence-dir", type=Path, default=None,
+                        help="also write one tensorlbm/inverse/convergence/v1 JSON per (track, seed)")
     parser.add_argument("--shard", nargs=2, type=int, metavar=("I", "N"), default=None,
                         help="run only jobs i::N of the (track x seed) product; writes per-job records")
     parser.add_argument("--merge", nargs="+", type=Path, default=None,
@@ -817,7 +849,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         picked = jobs_all[i::n]
         jobs = []
         for k, (spec, seed) in enumerate(picked):
-            job = run_job(spec, seed, with_gradient_check=(seed == seeds[0]))
+            job = run_job(
+                spec,
+                seed,
+                with_gradient_check=(seed == seeds[0]),
+                convergence_dir=args.convergence_dir,
+            )
             jobs.append(job)
             print(
                 f"[shard {i}/{n}] {spec.name} seed={seed} tau_hat={job['run']['tau_hat']:.6f} "
@@ -829,7 +866,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"wrote {args.out}")
         return 0
 
-    payload = run_demo(seeds=seeds, tracks=tracks)
+    payload = run_demo(seeds=seeds, tracks=tracks, convergence_dir=args.convergence_dir)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, indent=2) + "\n")
     print(f"wrote {args.out}")

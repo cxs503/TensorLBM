@@ -14,8 +14,14 @@
 ## 验收标准（GAP-PP-4-opt-loop）
 
 - [x] τ/Re 恢复 demo 端到端跑通并产出机读收敛 JSON
-- [x] TG 衰减 Re 恢复 <3%（实测 <0.001%）
-- [x] 3 种子可复现（seed 0/1/2 均通过）
+      （`--convergence-dir` 每个 (track, seed) 一份 `tensorlbm/inverse/convergence/v1`，
+      由 `inverse.validate_convergence_payload` 机检）
+- [x] TG 衰减 Re 恢复 <3%（n=16 实测：twin −2.6e−6%，analytic +0.180%；
+      n=32 与 6-track × 3-seed 全套见 `cj4540` 工件）
+- [x] 3 种子可复现（analytic16 seed 0/1/2 收敛到同一最优点，log ν 极差 ≤3e−9）
+
+> 复核记录：`docs/adversarial_review_inverse_infra.md`（m23029，共 9 条发现，
+> F1–F6 已修并加回归测试，F7–F9 为已文档化局限）。
 
 ## 快速开始
 
@@ -89,7 +95,11 @@ comp = LossComposition((
 ## 与 opt_loop_tau_recovery 的关系
 
 `tensorlbm.opt_loop_tau_recovery` 是本基础设施的参考消费者——Taylor-Green
-涡衰减 τ/Re 恢复 demo。该模块展示了：
+涡衰减 τ/Re 恢复 demo。**它确实调用本包**（m23029 之前它自带一份私有
+Adam+L-BFGS 循环，本包对它来说是死代码；现在 `recover()` 委托给
+`inverse.optimise_loop`，损失经 `LossComposition` 组装，种子经
+`seed_everything`/`jittered_init`，收敛日志可写 `ConvergenceLog` schema）。
+该模块展示了：
 
 1. **振幅 nuisance 参数的必要性**：固定振幅会导致 +3.9% 偏差（n=16），
    拟合振幅后偏差降至 -0.10%
@@ -99,14 +109,18 @@ comp = LossComposition((
 ## 测试
 
 ```bash
-# 基础设施包测试（22 项）
-PYTHONPATH=src pytest tests/test_inverse_infra.py -v
+# 基础设施包测试（29 项，含校验器/停止判据/stdlib RNG 种子回归）
+PYTHONPATH=src pytest tests/test_inverse_infra.py -q
 
-# Taylor-Green demo 测试（9 项）
-PYTHONPATH=src pytest tests/test_opt_loop_tau_recovery.py -v
+# Taylor-Green demo 测试（10 项，含"demo 必须委托本包"的 wiring 测试）
+PYTHONPATH=src pytest tests/test_opt_loop_tau_recovery.py -q
 ```
 
 ## 产出工件
 
-- `artifacts/opt_loop_tau_recovery.json` — 3 种子机读收敛记录
-- `artifacts/opt_loop_seed{0,1,2}.json` — 各种子详细收敛历史
+- `artifacts/opt_loop_verify_n16_seed0.json` — n=16 twin/analytic 臂机读结果（本次复核）
+- `artifacts/opt_loop_verify_summary.json` — 上表数字 + 4 份收敛日志的机检结果
+- `artifacts/inverse_convergence/{analytic16,twin16}_seed*.json` — 本包 schema 的收敛日志
+- `artifacts/fig_inverse_convergence.png` — loss / τ 轨迹图
+- `artifacts/opt_loop_tau_recovery.json` — 6 track × 3 seed 生产工件（集群 `cj4540`，
+  队列拥堵，交付时未回；回来后按本文件路径落盘即可）
