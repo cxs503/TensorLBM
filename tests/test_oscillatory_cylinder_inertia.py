@@ -11,6 +11,7 @@ import math
 
 import numpy as np
 import pytest
+import torch
 
 from tensorlbm.oscillatory_cylinder_inertia import (
     CASES,
@@ -105,3 +106,85 @@ def test_cli_list_runs(capsys):
     assert main(["--list"]) == 0
     out = capsys.readouterr().out
     assert "base" in out and "quick" in out
+
+
+def test_interior_nodes_stay_inside_solid():
+    """Zeroed core cells must not be able to stream into a fluid node.
+
+    Regression: the 4-neighbour definition put solid cells that are only
+    *diagonally* adjacent to fluid in the zeroed set, so a zero population was
+    injected into the flow every step (max|rho-1| ~ 0.2, mass drift ~ -9 % per
+    window).  Any solid cell with a fluid neighbour in the 8-point stencil must
+    keep its populations.
+    """
+    from tensorlbm.oscillatory_cylinder_inertia import _interior_nodes
+
+    for D, nx in ((8, 32), (16, 64), (24, 96)):
+        mask = circle_mask(nx, nx, D)
+        core = _interior_nodes(mask)
+        assert not bool((core & ~mask).any()), "zeroed set must be inside the solid"
+        fluid = ~mask
+        leaks = 0
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy == 0 and dx == 0:
+                    continue
+                leaks += int((core & torch.roll(torch.roll(fluid, dy, 0), dx, 1)).sum())
+        assert leaks == 0, f"zeroed core cell streams into fluid (D={D}, {leaks} leaks)"
+        assert int(core.sum()) > 0, "a solid core must exist for a cylinder"
+
+
+def test_mass_budget_under_body_force():
+    """Harmonic body force on a body-filled periodic box must conserve fluid mass.
+
+    This is the invariant the interior-zeroing defect broke: the fluid mass and the
+    near-wall density have to stay flat while the drive is on, no matter that the
+    total momentum oscillates strongly.
+    """
+    from tensorlbm.boussinesq import apply_guo_forcing
+    from tensorlbm.boundary.boundaries import bounce_back_cells
+    from tensorlbm.d2q9 import equilibrium, macroscopic
+    from tensorlbm.oscillatory_cylinder_inertia import _interior_nodes
+    from tensorlbm.solver import stream
+
+    torch.set_num_threads(1)
+    D, nx, tau, omega, a0 = 8, 32, 0.7, 2 * math.pi / 100.0, 1e-3
+    mask = circle_mask(nx, nx, D)
+    fluid = ~mask
+    core = _interior_nodes(mask)
+    rho0 = torch.ones((nx, nx), dtype=torch.float64)
+    zero = torch.zeros_like(rho0)
+    f = bounce_back_cells(equilibrium(rho0, zero, zero), mask)
+    Fx = torch.zeros((nx, nx), dtype=torch.float64)
+    mass0 = None
+    drho = 0.0
+    for step in range(1, 201):
+        Fx[fluid] = a0 * math.cos(omega * step)
+        old = f[:, mask].clone()
+        f = apply_guo_forcing(f, torch.stack([Fx, torch.zeros_like(Fx)]), tau)
+        f[:, mask] = old
+        f = stream(f)
+        rho, _ux, _uy = macroscopic(f)
+        f = bounce_back_cells(f, mask)
+        f[:, core] = 0.0
+        mass = float(rho[fluid].sum())
+        mass0 = mass if mass0 is None else mass0
+        drho = max(drho, float((rho[fluid] - 1.0).abs().max()))
+    # an impulsive start legitimately rings the box acoustically (a few %); the
+    # defect signature was ~0.28, i.e. 10x this band
+    assert drho < 0.08, f"near-wall density excursion {drho:.4f} (should be O(Ma))"
+    assert abs(mass - mass0) / mass0 < 1e-4, f"fluid mass drifted {abs(mass-mass0)/mass0:.2e}"
+
+
+def test_stokes_cylinder_coefficients_limits_and_monotonicity():
+    """Analytic unsteady-Stokes reference: potential limit 1, thick layer > 1."""
+    from tensorlbm.oscillatory_cylinder_inertia import stokes_cylinder_coefficients
+
+    c_hi = stokes_cylinder_coefficients(5000.0)
+    assert abs(c_hi["Gamma_re"] - 1.0) < 0.07
+    rows = [stokes_cylinder_coefficients(b) for b in (25.0, 50.0, 100.0, 400.0)]
+    re = [r["Gamma_re"] for r in rows]
+    assert all(a > b for a, b in zip(re, re[1:])), f"Gamma_re must fall with beta: {re}"
+    assert all(r["C_I_viscous"] > 1.0 for r in rows)
+    assert all(r["C_Q_viscous"] > 0.0 for r in rows)
+    assert abs(rows[1]["Gamma_re"] - 1.4525) < 1e-3   # beta = 50 reference value

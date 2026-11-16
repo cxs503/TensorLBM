@@ -66,6 +66,7 @@ __all__ = [
     "inertia_coefficient",
     "potential_reference",
     "run_arm",
+    "stokes_cylinder_coefficients",
     "main",
 ]
 
@@ -139,13 +140,28 @@ def geometry_readout(mask: torch.Tensor) -> dict[str, float]:
 
 
 def _interior_nodes(mask: torch.Tensor) -> torch.Tensor:
-    """Solid cells with no 4-neighbour fluid cell (their populations must be zeroed)."""
+    """Solid cells whose populations can be zeroed without touching a fluid node.
+
+    The neighbourhood must be the **full 8-point stencil**: streaming carries every
+    population to a first neighbour, so a solid cell that is only *diagonally*
+    adjacent to a fluid cell still injects its (stale) population into the fluid
+    each step.  A 4-neighbour definition puts such cells in the zeroed set, which
+    silently injects a zero population into the flow at every time step: in the
+    ``base``-family arms this showed up as ``max|rho - 1| ~ 0.2`` and a fluid mass
+    drift of several percent per measurement window, i.e. as a spurious
+    compressibility/mass-budget artefact that was previously attributed to the
+    case parameters.  With the 8-neighbour definition the same arms hold
+    ``max|rho - 1| ~ 0.01`` and ``|dM|/M ~ 1e-6`` (see
+    ``tests/test_oscillatory_cylinder_inertia.py::test_interior_nodes_stay_inside_solid``
+    and the XVAL round-2 report).
+    """
     fluid = ~mask
     dil = torch.zeros_like(mask)
-    dil[1:, :] |= fluid[:-1, :]
-    dil[:-1, :] |= fluid[1:, :]
-    dil[:, 1:] |= fluid[:, :-1]
-    dil[:, :-1] |= fluid[:, 1:]
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dy == 0 and dx == 0:
+                continue
+            dil |= torch.roll(torch.roll(fluid, int(dy), 0), int(dx), 1)
     return mask & ~dil
 
 
@@ -257,6 +273,39 @@ def potential_reference(nx: int, ny: int, D: float, rho: float = 1.0) -> dict[st
     out["area_solid"] = a_solid
     out["area_halfway"] = a_half
     return out
+
+
+def stokes_cylinder_coefficients(beta: float) -> dict[str, float]:
+    """Exact unsteady Stokes (1851) force on a cylinder in oscillatory flow.
+
+    A cylinder of radius ``R`` in a viscous fluid of viscosity ``nu``, oscillating
+    harmonically at frequency ``omega``, carries the hydrodynamic function
+
+        Gamma = 1 + 4 K_1((1+i) k) / ((1+i) k K_0((1+i) k)),   k = R sqrt(omega/nu)
+
+    with ``K_0, K_1`` modified Bessel functions of the second kind.  The force per
+    unit length is ``F = rho pi R^2 a Gamma`` with ``a`` the relative acceleration,
+    so the in-phase (added-mass) coefficient is ``Re Gamma`` and the quadrature
+    (viscous) coefficient is ``-Im Gamma``.  ``Gamma -> 1`` as ``k -> infinity``
+    (potential flow) and grows like ``1 + 4/sqrt(2 k^2)`` as the Stokes layer
+    thickens: at finite ``beta = D^2/(nu T)`` the potential value ``C_a`` is *not*
+    the right reference for a linear-response force measurement.
+    """
+    from scipy.special import kv
+
+    delta_over_R = 2.0 * math.sqrt(2.0 / (beta * math.pi))   # = sqrt(2 nu/omega)/R
+    k = 1.0 / delta_over_R
+    arg = complex(1.0, 1.0) * k
+    gamma = 1.0 + 4.0 * kv(1, arg) / (arg * kv(0, arg))
+    return {
+        "beta": float(beta),
+        "k": float(k),
+        "delta_over_R": float(delta_over_R),
+        "Gamma_re": float(gamma.real),
+        "Gamma_im": float(gamma.imag),
+        "C_I_viscous": float(gamma.real),
+        "C_Q_viscous": float(-gamma.imag),
+    }
 
 
 # --------------------------------------------------------------------------- #
