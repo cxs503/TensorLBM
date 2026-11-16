@@ -1,0 +1,78 @@
+{
+  "case": "closure_compare",
+  "shape": [
+    112,
+    112
+  ],
+  "steps": 800,
+  "radius": 22.0,
+  "note": "wall_contact_closure legacy('population') vs 'potential' on the same 2D lens",
+  "rows": [
+    {
+      "theta_input_deg": 60.0,
+      "closure": "population",
+      "mass_drift_rel": -0.9133689434846265,
+      "phi_min": -0.09095925837755203,
+      "u_max": 0.005031903639692466,
+      "stable": true,
+      "theta_circle": 46.2189052472907,
+      "theta_cap": 45.784017715789325,
+      "err_pct": -22.968491254515502
+    },
+    {
+      "theta_input_deg": 60.0,
+      "closure": "potential",
+      "mass_drift_rel": 0.00022290332692797259,
+      "phi_min": -4.034780687334205e-08,
+      "u_max": 0.000711892113876181,
+      "stable": true,
+      "theta_circle": 59.477653253558586,
+      "theta_cap": 59.40924909880163,
+      "err_pct": -0.8705779107356904
+    },
+    {
+      "theta_input_deg": 90.0,
+      "closure": "population",
+      "mass_drift_rel": -0.001159250918816792,
+      "phi_min": -9.490885531704407e-06,
+      "u_max": 0.0007659656272216243,
+      "stable": true,
+      "theta_circle": 89.87079776496488,
+      "theta_cap": 90.20242596868611,
+      "err_pct": -0.14355803892791463
+    },
+    {
+      "theta_input_deg": 90.0,
+      "closure": "potential",
+      "mass_drift_rel": -4.3218736965105334e-05,
+      "phi_min": -1.5616709703181186e-08,
+      "u_max": 0.0006026176815049268,
+      "stable": true,
+      "theta_circle": 88.94201038835578,
+      "theta_cap": 89.34611924561179,
+      "err_pct": -1.175544012938019
+    },
+    {
+      "theta_input_deg": 120.0,
+      "closure": "population",
+      "mass_drift_rel": 0.01984664789609194,
+      "phi_min": -2.134135890230482e-08,
+      "u_max": 0.00460200859086559,
+      "stable": true,
+      "theta_circle": 127.59274046103867,
+      "theta_cap": 129.80541338042661,
+      "err_pct": 6.327283717532227
+    },
+    {
+      "theta_input_deg": 120.0,
+      "closure": "potential",
+      "mass_drift_rel": -0.00012094766921319318,
+      "phi_min": -1.673487659559214e-08,
+      "u_max": 0.000683364229963209,
+      "stable": true,
+      "theta_circle": 117.93324348980418,
+      "theta_cap": 119.32780485013573,
+      "err_pct": -1.7222970918298466
+    }
+  ]
+}

@@ -144,6 +144,7 @@ def contact(
     steps: int = 3500,
     wall_thickness: int = 2,
     gravity: float = 2.0e-6,
+    closure: str = "population",
 ) -> dict:
     """Drop on a flat plate with a prescribed Young angle.
 
@@ -160,7 +161,7 @@ def contact(
     mask |= cac.solid_plate(shape, wall_thickness, "top")
     y_wall = wall_thickness - 0.5
     sim = _sim(shape, sigma=sigma, wall_mask=mask, policy="contact", angle=theta_deg, axes="wp",
-               gravity=(0.0, -gravity), gravity_mode="rho")
+               gravity=(0.0, -gravity), gravity_mode="rho", wall_contact_closure=closure)
     y0 = y_wall - radius * math.cos(math.radians(theta_deg))
     sim.initialize(cac.init_phi_droplet(shape, radius, BASE["width"], center=(y0, nx / 2.0)))
     diags = cac.run(sim, steps, sample_every=max(1, steps // 4))
@@ -173,6 +174,7 @@ def contact(
     return {
         "case": "contact",
         "theta_input_deg": float(theta_deg),
+        "closure": str(closure),
         "inputs": {"shape": list(shape), "steps": steps, "R_init": radius, "sigma_input": sigma,
                    "wall_thickness": wall_thickness, "wall_flux": flux, "h_wall": h_wall, **BASE},
         "meas": {"circle_fit": fit, "cap_inversion": cap},
@@ -191,6 +193,7 @@ def contact_wall_order(
     wall_thickness: int = 2,
     gravity: float = 2.0e-6,
     sample_every: int | None = None,
+    closure: str = "potential",
 ) -> dict:
     """Drop on a flat plate whose wetting is set by a *wall order parameter*.
 
@@ -204,6 +207,16 @@ def contact_wall_order(
     Two independent estimators are reported per run (circle fit of the level set
     and spherical-cap area inversion, both from :mod:`tensorlbm.wetting.metrics`,
     which never see the solver's internal angle), plus the analytic angle.
+
+    ``closure`` selects the wall treatment of :class:`tensorlbm.cac_lbm2d.CAC2D`.
+    The default ``"potential"`` puts the Young condition into the chemical
+    potential and leaves the solid populations to halfway bounce-back (phase
+    conserving to round-off, measured below); the legacy ``"population"``
+    overwrites them with ``feq(phi_ghost)`` and is *not* phase conserving for
+    ``cos(theta) != 0`` (it drains the drop: 93 % of the phase field lost in 800
+    steps at ``theta = 60 deg``, see
+    ``docs/XVAL-LBM-DIFFUSE-INTERFACE-WETTING-VIA-WALL-ORDER-PARAMETER.md``).
+    ``"population"`` is kept only so the historical numbers stay reproducible.
     """
     t0 = time.time()
     ny, nx = shape
@@ -212,12 +225,16 @@ def contact_wall_order(
     y_wall = wall_thickness - 0.5
     sim = _sim(shape, sigma=sigma, wall_mask=mask, policy="wall_order", angle=None, axes="wp",
                gravity=(0.0, -gravity), gravity_mode="rho", wall_order_parameter=float(psi_wall),
-               wall_order_parameter_top=float(psi_wall_top))
+               wall_order_parameter_top=float(psi_wall_top), wall_contact_closure=closure)
     theta_young = math.degrees(analytic_contact_angle(psi_wall))
     y0 = y_wall - radius * math.cos(math.radians(theta_young))
-    sim.initialize(cac.init_phi_droplet(shape, radius, BASE["width"], center=(y0, nx / 2.0)))
+    phi0 = cac.init_phi_droplet(shape, radius, BASE["width"], center=(y0, nx / 2.0))
+    sim.initialize(phi0)
+    fluid = sim.fluid_mask
+    mass0 = float((phi0 * fluid).sum())
     diags = cac.run(sim, steps, sample_every=sample_every or max(1, steps // 4))
     phi = _numpy(sim)["phi"].numpy()
+    mass_end = float(torch.from_numpy(phi)[fluid].sum())
     fit = M.contact_angle_circle_fit(phi, y_wall)
     cap = M.spherical_cap_inversion(phi, y_wall)
     measured = [fit.get("theta_deg") if isinstance(fit, dict) else None,
@@ -235,6 +252,9 @@ def contact_wall_order(
         "inputs": {"shape": list(shape), "steps": steps, "R_init": radius, "sigma_input": sigma,
                    "wall_thickness": wall_thickness, "wall_phi_policy": "wall_order", **BASE},
         "meas": {"circle_fit": fit, "cap_inversion": cap, "n_estimators": len(measured)},
+        "closure": str(closure),
+        "mass_drift_rel": (mass_end - mass0) / mass0 if mass0 != 0.0 else float("nan"),
+        "stable": bool(np.isfinite(phi).all()),
         "u_max": diags[-1]["u_max_fluid"],
         "wall_time_s": time.time() - t0,
     }
