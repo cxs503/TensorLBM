@@ -3,6 +3,7 @@
 Provides:
 - D3Q19 MRT collision with Smagorinsky SGS model for LES
 - D2Q9 single-phase flow with regularized BGK (RLBM) for high-Re stability
+- D2Q9 MRT collision (Guo/Shyy moment basis)
 - Shan-Chen multiphase model (SCMP) with EDM forcing
 - Wetting/diffuse-interface verification (three-anchor: contact angle, Ca scaling, Young-Laplace)
 - Adjoint / differentiable LBM (BPTT reference + out-of-core checkpointed gradient)
@@ -22,6 +23,7 @@ from .d2q9 import (
     macroscopic,
     stream,
     collide_bgk,
+    collide_mrt as collide_mrt_2d,
     CS2 as CS2_2D,
 )
 from . import adjoint
@@ -33,6 +35,7 @@ __all__ = [
     "collide_mrt", "collide_smagorinsky_mrt3d",
     # 2D
     "equilibrium", "macroscopic", "stream", "collide_bgk", "CS2_2D",
+    "collide_mrt_2d",
     "collide_rlbm_2d",
     # Adjoint / differentiable
     "adjoint",
