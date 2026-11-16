@@ -125,6 +125,19 @@ def _sc_neighbor_weighted_sum_3d(
 # ---------------------------------------------------------------------------
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.multiphase.shan_chen_force.d3q19",
+    kind='multiphase',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_multiphase.py',
+    evidence={'grade': 'MECHANICS', 'note': 'Shan-Chen 两相作用力（3D）；静滴/混合物测试通过，无 Laplace 压差 vs 解析的误差带'},
+)
 def sc_two_component_force_3d(
     rho1: torch.Tensor,
     rho2: torch.Tensor,

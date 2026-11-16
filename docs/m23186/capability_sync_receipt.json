@@ -1,0 +1,33 @@
+{
+  "repo": "TensorLBM",
+  "upserted": 25,
+  "tombstoned": 1,
+  "source_commit": "21ff1b7d1e7e3247e989331d7bbc223f5c2bd0a9",
+  "client": {
+    "mode": "static",
+    "count": 25,
+    "summary": {
+      "count": 25,
+      "by_maturity": {
+        "mature": 4,
+        "developing": 21,
+        "planned": 0
+      },
+      "by_kind": {
+        "acoustics": 1,
+        "amr": 1,
+        "backend": 1,
+        "collision": 15,
+        "differentiable": 1,
+        "force": 1,
+        "free_surface": 1,
+        "icing": 1,
+        "multiphase": 3
+      },
+      "wired": 14,
+      "tested": 22,
+      "verified": 4,
+      "with_endpoint": 6
+    }
+  }
+}

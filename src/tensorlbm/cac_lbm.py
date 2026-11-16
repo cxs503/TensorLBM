@@ -40,6 +40,8 @@ New physics (library has no equivalent; NOTES.md section 6a):
   library bounce call).
 """
 
+
+
 from __future__ import annotations
 
 import torch
@@ -47,6 +49,25 @@ import torch
 from tensorlbm.boundaries3d import bounce_back_cells_3d
 from tensorlbm.d3q19 import W_EXACT64, C
 from tensorlbm.phasefield.stream_boundary_contract import stream_d3q19_adapter
+
+
+# module-level capability claim: the framework itself is the unit
+from .registry import capability
+
+
+@capability(
+    id="lbm.phasefield.cac_hch",
+    kind='multiphase',
+    maturity='developing',
+    wired=False,
+    tested=False,
+    verified=False,
+    
+    evidence={'grade': 'MECHANICS', 'feature_ledger': 'GAP-PP3-CAC-HCH', 'note': '保守 Allen-Cahn + 化学势相场框架；高密度比发散在案，登记为框架(mode=module)而非可用求解器'},
+)
+def _capability_claim() -> str:
+    """Registry anchor for lbm.phasefield.cac_hch."""
+    return "lbm.phasefield.cac_hch"
 
 CS2 = 1.0 / 3.0
 
