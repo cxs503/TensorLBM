@@ -1,0 +1,128 @@
+{
+  "arm": "rot_60",
+  "spec": {
+    "name": "rot_60",
+    "theta": 60.0,
+    "bc": "rotation",
+    "init_theta": null,
+    "radius": 18.0,
+    "nx": 128,
+    "ny": 96,
+    "xi": 2.0,
+    "tau": 1.0,
+    "A": 0.04,
+    "beta": 0.7,
+    "max_steps": 750,
+    "note": ""
+  },
+  "theta_target": 60.0,
+  "theta_bottom_applied": 60.0,
+  "steps_run": 750,
+  "converged": false,
+  "wall_time_s": 34.95954704284668,
+  "theta_cap": 62.748325335013085,
+  "theta_vol": 64.52190156775015,
+  "theta_circle": 61.72944565841984,
+  "theta_circle_sym": 114.57584847707362,
+  "cap": {
+    "theta_deg": 62.748325335013085,
+    "R_cap": 16.89811095045591,
+    "area": 196.48149449853986,
+    "contact_width": 30.044968282056004,
+    "x_left": 48.477515858972,
+    "x_right": 78.522484141028,
+    "extrapolation": "two_row",
+    "n_points": 30
+  },
+  "circle": {
+    "theta_deg": 61.72944565841984,
+    "x_center": 63.50000000000011,
+    "y_center": -7.703165272624801,
+    "R_fit": 17.31956896035032,
+    "rms": 0.005954862015504201,
+    "n_points": 14,
+    "contact_width": 29.0,
+    "y_wall": 0.5
+  },
+  "clusters": [
+    198
+  ],
+  "err_pct_cap": 4.580542225021808,
+  "err_pct_vol": 7.536502612916915,
+  "u_max_fluid": 0.0050894102436401046,
+  "u_max_core": 0.005059325490311868,
+  "interface_width_10_90": NaN,
+  "liquid_volume_exact": 204.30542887967874,
+  "mass_drift_r": -4.07603503674526e-14,
+  "mass_drift_b": -5.795503322625164e-14,
+  "environment": {
+    "python": "3.11.6",
+    "torch": "2.7.1",
+    "machine": "loongarch64",
+    "threads": 4
+  },
+  "history": [
+    {
+      "step": 1,
+      "theta_cap": 64.32146272517093,
+      "theta_vol": 65.87314492100937,
+      "theta_circle": 60.07669512262789,
+      "theta_circle_sym": 116.30742909955322,
+      "clusters": [
+        200
+      ],
+      "u_max_fluid": 0.0008268494462479724,
+      "u_max_core": 0.0007572058689319556,
+      "dphi_max": NaN,
+      "mass_drift_r": 0.0,
+      "mass_drift_b": 1.5053255383441981e-16
+    },
+    {
+      "step": 250,
+      "theta_cap": 61.56919506582141,
+      "theta_vol": 63.21599271184052,
+      "theta_circle": 61.983123717609146,
+      "theta_circle_sym": 114.29323893454814,
+      "clusters": [
+        196
+      ],
+      "u_max_fluid": 0.0041900710370707485,
+      "u_max_core": 0.0031952512580203014,
+      "dphi_max": 0.38221414735295123,
+      "mass_drift_r": -1.3633154730410767e-14,
+      "mass_drift_b": -2.1375622644487614e-14
+    },
+    {
+      "step": 500,
+      "theta_cap": 62.2023550919441,
+      "theta_vol": 63.974919636432354,
+      "theta_circle": 62.26636358429256,
+      "theta_circle_sym": 113.99102595124327,
+      "clusters": [
+        198
+      ],
+      "u_max_fluid": 0.004265550804240377,
+      "u_max_core": 0.0018568902239310433,
+      "dphi_max": 0.08006743152697415,
+      "mass_drift_r": -2.7266309460821534e-14,
+      "mass_drift_b": -3.9740594212286834e-14
+    },
+    {
+      "step": 750,
+      "theta_cap": 62.748325335013085,
+      "theta_vol": 64.52190156775015,
+      "theta_circle": 61.72944565841984,
+      "theta_circle_sym": 114.57584847707362,
+      "clusters": [
+        198
+      ],
+      "u_max_fluid": 0.0050894102436401046,
+      "u_max_core": 0.005059325490311868,
+      "dphi_max": 0.04946935638021489,
+      "mass_drift_r": -4.07603503674526e-14,
+      "mass_drift_b": -5.795503322625164e-14
+    }
+  ],
+  "pass_15pct": true,
+  "pass_3pct": false
+}
