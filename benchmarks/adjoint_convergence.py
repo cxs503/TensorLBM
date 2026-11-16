@@ -10,17 +10,12 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import time
 import tracemalloc
 
-import numpy as np
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TensorLBM", "src"))
-
-from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro
-from tensorlbm.adjoint.bptt import bptt_gradient
-from tensorlbm.adjoint.ootc import ootc_gradient
+from tensorlbm.adjoint_ootc.bptt import bptt_gradient
+from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step
+from tensorlbm.adjoint_ootc.ootc import ootc_gradient
 
 
 def main():
