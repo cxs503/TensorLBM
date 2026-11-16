@@ -38,19 +38,24 @@
     "src/tensorlbm/verification/nebb_bodyforce/run.py",
     "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
     "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
-    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py"
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py",
+    "src/tensorlbm/nebb_bodyforce_startup.py",
+    "benchmarks/xval/xval_nebb_startup_transient.py"
   ],
   "entry": [
     "src/tensorlbm/nebb_bodyforce.py",
     "src/tensorlbm/verification/nebb_bodyforce/run.py",
     "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py",
-    "benchmarks/xval/xval_vivsim_nebb_bodyforce.py"
+    "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
+    "benchmarks/xval/xval_nebb_startup_transient.py"
   ],
   "run_artifacts": [
     "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/results.json",
     "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/cli_guo_ny10.json",
     "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/result.json",
-    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/r4_invariants.json"
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/r4_invariants.json",
+    "artifacts/xval_nebb_startup/results.json",
+    "artifacts/xval_nebb_startup/figures.json"
   ],
   "integration_callers": [
     "apply_channel_walls_nebb",
@@ -231,7 +236,326 @@
       "n_rows": 7
     }
   },
-  "repro_cmd": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts && python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/cli_guo_ny10.json && python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath && python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py && python benchmarks/xval/nebb_bodyforce_evidence.py --strict && python -m pytest tests/test_nebb_bodyforce.py tests/test_gpu_core_path.py -q",
+  "benchmark_transient": {
+    "metric": "max_t max_y |u_LBM(y,t) - u_series(y,t)| / max_y u_steady(y)",
+    "reference": "closed-form impulsively-started plane-Poiseuille series (Batchelor 1967 \u00a74.2, 512 odd modes), referee independent of the steady benchmark's parabola",
+    "tolerance_owner_15pct": 0.15,
+    "tolerance_stretch_3pct": 0.03,
+    "rows": [
+      {
+        "case": "edm/force_corrected_nebb",
+        "primary": true,
+        "ny": 21,
+        "nu": 0.1,
+        "gx": 2e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 2432.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.009974669290064882,
+        "rel_err_final": 2.3283067312508676e-05,
+        "max_rel_err_transient": 0.0011641088590497086,
+        "decay_rate_theory": 0.0024674011002723396,
+        "decay_rate_measured": 0.002470654561496041,
+        "decay_rate_rel_err": 0.0013185781684795503,
+        "nu_effective": 0.10013185781684797,
+        "mass_drift_rel": 1.4735302924929694e-13,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "guo/force_corrected_nebb",
+        "primary": true,
+        "ny": 21,
+        "nu": 0.1,
+        "gx": 2e-05,
+        "H": 20.0,
+        "scheme": "guo",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 2432.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.00997466929006482,
+        "rel_err_final": 2.3283067306263672e-05,
+        "max_rel_err_transient": 0.001164108859067316,
+        "decay_rate_theory": 0.0024674011002723396,
+        "decay_rate_measured": 0.0024706545614953724,
+        "decay_rate_rel_err": 0.0013185781682085217,
+        "nu_effective": 0.10013185781682085,
+        "mass_drift_rel": 1.5445845660689794e-13,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/force_corrected_nebb_recovered",
+        "primary": true,
+        "ny": 21,
+        "nu": 0.1,
+        "gx": 2e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb_recovered",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 2432.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.009974669290064882,
+        "rel_err_final": 2.3283067312508676e-05,
+        "max_rel_err_transient": 0.0011641088590497086,
+        "decay_rate_theory": 0.0024674011002723396,
+        "decay_rate_measured": 0.002470654561496041,
+        "decay_rate_rel_err": 0.0013185781684795503,
+        "nu_effective": 0.10013185781684797,
+        "mass_drift_rel": 1.4735302924929694e-13,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/nonequilibrium_nebb",
+        "primary": false,
+        "ny": 21,
+        "nu": 0.1,
+        "gx": 2e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "nonequilibrium_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 2432.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.01000656868435409,
+        "rel_err_final": 0.0032132224962332437,
+        "max_rel_err_transient": 0.00326311957388227,
+        "decay_rate_theory": 0.0024674011002723396,
+        "decay_rate_measured": 0.0026339812664391065,
+        "decay_rate_rel_err": 0.06751239842941653,
+        "nu_effective": 0.10675123984294166,
+        "mass_drift_rel": 1.6054882291341309e-13,
+        "tolerance": 0.15,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/halfway_bounce_back",
+        "primary": false,
+        "ny": 21,
+        "nu": 0.1,
+        "gx": 2e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "halfway_bounce_back",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 2432.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.01096320869760371,
+        "rel_err_final": 0.10083538214056958,
+        "max_rel_err_transient": 0.10083538214056958,
+        "decay_rate_theory": 0.0024674011002723396,
+        "decay_rate_measured": 0.003944809209050438,
+        "decay_rate_rel_err": 0.5987709532167386,
+        "nu_effective": 0.15987709532167385,
+        "mass_drift_rel": 1.5361257239765974e-13,
+        "tolerance": 0.15,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/force_corrected_nebb ny=11 nu=0.1",
+        "primary": true,
+        "ny": 11,
+        "nu": 0.1,
+        "gx": 8e-05,
+        "H": 10.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 608.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.009975360906664529,
+        "rel_err_final": 9.244472727720082e-05,
+        "max_rel_err_transient": 0.004688365895084718,
+        "decay_rate_theory": 0.009869604401089358,
+        "decay_rate_measured": 0.009921974372363408,
+        "decay_rate_rel_err": 0.005306187476801879,
+        "nu_effective": 0.10053061874768018,
+        "mass_drift_rel": 3.455821487560487e-14,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/force_corrected_nebb ny=21 nu=0.1",
+        "primary": true,
+        "ny": 21,
+        "nu": 0.1,
+        "gx": 2e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 2432.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.009974669290064882,
+        "rel_err_final": 2.3283067312508676e-05,
+        "max_rel_err_transient": 0.0011641088590497086,
+        "decay_rate_theory": 0.0024674011002723396,
+        "decay_rate_measured": 0.002470654561496041,
+        "decay_rate_rel_err": 0.0013185781684795503,
+        "nu_effective": 0.10013185781684797,
+        "mass_drift_rel": 1.4735302924929694e-13,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/force_corrected_nebb ny=41 nu=0.1",
+        "primary": true,
+        "ny": 41,
+        "nu": 0.1,
+        "gx": 5e-06,
+        "H": 40.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 9727.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974420685650184,
+        "umax_got": 0.009974479031545844,
+        "rel_err_final": 5.8345895660033564e-06,
+        "max_rel_err_transient": 0.0002905586115315665,
+        "decay_rate_theory": 0.0006168502750680849,
+        "decay_rate_measured": 0.0006170533119432676,
+        "decay_rate_rel_err": 0.0003291509842647583,
+        "nu_effective": 0.10003291509842648,
+        "mass_drift_rel": 6.346359752081674e-13,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/force_corrected_nebb ny=21 nu=0.05",
+        "primary": true,
+        "ny": 21,
+        "nu": 0.05,
+        "gx": 1e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 4863.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974404902175571,
+        "umax_got": 0.009974706630918075,
+        "rel_err_final": 3.017287425032683e-05,
+        "max_rel_err_transient": 0.0009813494227724727,
+        "decay_rate_theory": 0.0012337005501361698,
+        "decay_rate_measured": 0.0012360115704501103,
+        "decay_rate_rel_err": 0.0018732425090394946,
+        "nu_effective": 0.05009366212545197,
+        "mass_drift_rel": 3.9705804781641783e-13,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      },
+      {
+        "case": "edm/force_corrected_nebb ny=21 nu=0.2",
+        "primary": true,
+        "ny": 21,
+        "nu": 0.2,
+        "gx": 4e-05,
+        "H": 20.0,
+        "scheme": "edm",
+        "wall": "force_corrected_nebb",
+        "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 \u00a74.2)",
+        "t_final": 1216.0,
+        "n_samples": 12,
+        "umax_ref": 0.009974436459391757,
+        "umax_got": 0.009974359898773015,
+        "rel_err_final": 7.65606187422968e-06,
+        "max_rel_err_transient": 0.0020000046330290403,
+        "decay_rate_theory": 0.004934802200544679,
+        "decay_rate_measured": 0.004930299441878043,
+        "decay_rate_rel_err": 0.0009124496755187966,
+        "nu_effective": 0.19981751006489626,
+        "mass_drift_rel": 6.817826726460007e-14,
+        "tolerance": 0.03,
+        "pass": true,
+        "ref_recomputed_dev": 0.0,
+        "rate_recomputed_dev": 0.0,
+        "got_recomputed_dev": 0.0,
+        "recomputed_matches_stored": true,
+        "recomputed": false
+      }
+    ],
+    "n_primary_rows": 8,
+    "all_pass": true,
+    "recomputed_from": "artifacts/xval_nebb_startup/results.json",
+    "reproduces_stored_rows": true,
+    "source": "benchmarks/xval/xval_nebb_startup_transient.py",
+    "negative_controls": {
+      "wall_convention": {
+        "H_node_walls_on_nodes": 2.3283067312508676e-05,
+        "H_half_cells_outside": 0.09720337184452207,
+        "ratio": 4174.852502887375
+      },
+      "viscosity": {
+        "rate_theory_nu": 0.0024674011002723396,
+        "rate_theory_nu_over_2": 0.0012337005501361698,
+        "rate_theory_2nu": 0.004934802200544679,
+        "rate_measured": 0.002470654561496041,
+        "rel_err_vs_nu": 0.0013185781684795503,
+        "rel_err_vs_nu_over_2": 1.0026371563369592,
+        "rel_err_vs_2nu": 0.4993407109157602
+      }
+    }
+  },
+  "repro_cmd": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts && python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/cli_guo_ny10.json && python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_corepath_l3.py --out xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath && python xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/run_xval_r4_invariants.py && python benchmarks/xval/xval_nebb_startup_transient.py --out artifacts/xval_nebb_startup && python benchmarks/xval/nebb_bodyforce_evidence.py --strict && python -m pytest tests/test_nebb_bodyforce.py tests/test_nebb_bodyforce_startup.py tests/test_gpu_core_path.py -q   # or: bash xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/repro_all.sh",
   "tests": [
     "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[bottom]",
     "tests/test_nebb_bodyforce.py::test_wall_spec_matches_oss_table[left]",
@@ -277,11 +601,42 @@
     "tests/test_gpu_core_path.py::test_config_accepts_nebb_wall_and_rejects_unknown",
     "tests/test_gpu_core_path.py::test_nebb_analytic_reference_uses_node_wall_height",
     "tests/test_gpu_core_path.py::test_nebb_wall_reconstructs_only_the_outside_borne_populations",
-    "tests/test_gpu_core_path.py::test_core_path_nebb_channel_matches_its_own_analytic_reference"
+    "tests/test_gpu_core_path.py::test_core_path_nebb_channel_matches_its_own_analytic_reference",
+    "tests/test_nebb_bodyforce_startup.py::test_series_vanishes_at_t_zero",
+    "tests/test_nebb_bodyforce_startup.py::test_series_tends_to_steady_parabola",
+    "tests/test_nebb_bodyforce_startup.py::test_series_ballistic_limit",
+    "tests/test_nebb_bodyforce_startup.py::test_series_symmetry",
+    "tests/test_nebb_bodyforce_startup.py::test_series_against_independent_fd_solution",
+    "tests/test_nebb_bodyforce_startup.py::test_envelope_matches_projected_mode",
+    "tests/test_nebb_bodyforce_startup.py::test_fit_decay_rate_recovers_known_rate",
+    "tests/test_nebb_bodyforce_startup.py::test_fit_decay_rate_rejects_thin_samples",
+    "tests/test_nebb_bodyforce_startup.py::test_startup_errors_are_scale_normalised",
+    "tests/test_nebb_bodyforce_startup.py::test_lbm_follows_startup_series",
+    "tests/test_nebb_bodyforce_startup.py::test_startup_conserves_mass",
+    "tests/test_nebb_bodyforce_startup.py::test_decay_rate_measures_viscosity",
+    "tests/test_nebb_bodyforce_startup.py::test_half_step_time_level_visible_early",
+    "tests/test_nebb_bodyforce_startup.py::test_wall_convention_is_discriminated",
+    "tests/test_nebb_bodyforce_startup.py::test_second_order_transient_convergence",
+    "tests/test_nebb_bodyforce_startup.py::test_decay_rate_tracks_viscosity",
+    "tests/test_nebb_bodyforce_startup.py::test_halfway_bounce_back_is_rejected",
+    "tests/test_nebb_bodyforce_startup.py::test_decay_rate_rejects_wrong_viscosity",
+    "tests/test_nebb_bodyforce_startup.py::test_classic_nebb_rate_is_distinguishable",
+    "tests/test_nebb_bodyforce_evidence.py::test_judge_keys_are_plain_paths_that_exist",
+    "tests/test_nebb_bodyforce_evidence.py::test_impl_files_are_not_placeholders",
+    "tests/test_nebb_bodyforce_evidence.py::test_integration_callers_are_greppable",
+    "tests/test_nebb_bodyforce_evidence.py::test_entry_points_run_dry",
+    "tests/test_nebb_bodyforce_evidence.py::test_benchmark_rows_recompute_from_raw_profiles",
+    "tests/test_nebb_bodyforce_evidence.py::test_negative_control_still_separates_wall_models",
+    "tests/test_nebb_bodyforce_evidence.py::test_repro_cmd_and_tests_are_declared",
+    "tests/test_nebb_bodyforce_evidence.py::test_declared_level_is_at_least_l4",
+    "tests/test_nebb_bodyforce_evidence.py::test_transient_rows_recompute_from_series",
+    "tests/test_nebb_bodyforce_evidence.py::test_transient_negative_controls_separate"
   ],
   "external_anchor": [
     "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/REPORT_R5.md",
-    "docs/xval_nebb_bodyforce_anchor.md"
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/REPORT_R6.md",
+    "docs/xval_nebb_bodyforce_anchor.md",
+    "docs/xval_nebb_bodyforce_transient.md"
   ],
   "impl_files_detail": [
     {
@@ -494,6 +849,52 @@
       "bare_pass_functions": 0,
       "bytes": 3949,
       "sha256": "2608ca0d2b21181dc419f8cb560a0390859c5c10f5a2d843d9b8ce0ace9802f0"
+    },
+    {
+      "path": "src/tensorlbm/nebb_bodyforce_startup.py",
+      "exists": true,
+      "ok": true,
+      "lines": 502,
+      "public_functions": [
+        "steady_poiseuille",
+        "plane_poiseuille_startup",
+        "startup_amplitude_envelope",
+        "modal_amplitude",
+        "fit_decay_rate",
+        "startup_errors",
+        "time_offset_scan",
+        "run_startup",
+        "decay_rate_report",
+        "main",
+        "as_dict",
+        "summary",
+        "mass_drift_rel"
+      ],
+      "classes": [
+        "StartupSample",
+        "StartupResult"
+      ],
+      "placeholder_markers": [],
+      "bare_pass_functions": 0,
+      "bytes": 18851,
+      "sha256": "f25e48381b5ec9c8780d5f38c33aa8f0807cff118996eaead11725e057f87e07"
+    },
+    {
+      "path": "benchmarks/xval/xval_nebb_startup_transient.py",
+      "exists": true,
+      "ok": true,
+      "lines": 348,
+      "public_functions": [
+        "negative_controls",
+        "make_figures",
+        "main",
+        "err"
+      ],
+      "classes": [],
+      "placeholder_markers": [],
+      "bare_pass_functions": 0,
+      "bytes": 14856,
+      "sha256": "013b6376ee23bf0bb1e2c86ba434f4c11fd3a04c5f1354a8f669097f0751a216"
     }
   ],
   "entry_detail": [
@@ -536,14 +937,24 @@
       "bytes": 29898,
       "sha256": "e722d3ebb7f47146ac87b48b400c558561c5af89ba4ed795cce7513203e9387a",
       "role": "benchmark"
+    },
+    {
+      "path": "benchmarks/xval/xval_nebb_startup_transient.py",
+      "kind": "benchmark_transient",
+      "command": "python benchmarks/xval/xval_nebb_startup_transient.py --out artifacts/xval_nebb_startup",
+      "note": "impulsive-start transient campaign against the closed-form start-up series (Batchelor 1967 \u00a74.2); writes STARTUP_ART/results.json + figures.json + 3 PNGs",
+      "exists": true,
+      "bytes": 14856,
+      "sha256": "013b6376ee23bf0bb1e2c86ba434f4c11fd3a04c5f1354a8f669097f0751a216",
+      "role": "benchmark_transient"
     }
   ],
   "run_artifacts_detail": [
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/results.json",
       "exists": true,
-      "bytes": 33910,
-      "sha256": "4e479d5a76f4d1603dc027f694a30723b7608ca7982dec7a48c2f7b091a5eeaf",
+      "bytes": 33911,
+      "sha256": "4235f3245237ec97bc7806e574076d45fda267dd737437233c7b5d2474f3e5bf",
       "role": "run artifact"
     },
     {
@@ -556,8 +967,8 @@
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/result.json",
       "exists": true,
-      "bytes": 4294,
-      "sha256": "3a162053d5143612bbde3a711150391928e88b5b698ab70ad5ffd744ba3bd6ea",
+      "bytes": 4295,
+      "sha256": "72e0fcd0d1ca3d0b41104e8786744ac0e1afd62804bdfc72a28e2324677e4d3c",
       "role": "run artifact"
     },
     {
@@ -568,74 +979,146 @@
       "role": "run artifact"
     },
     {
+      "path": "artifacts/xval_nebb_startup/results.json",
+      "exists": true,
+      "bytes": 140267,
+      "sha256": "64d80a1dc0d1125ac721edd6c69a3d3d22a6b0a0ca80e4e6aadaf6a578f2b11a",
+      "role": "run artifact"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/figures.json",
+      "exists": true,
+      "bytes": 606,
+      "sha256": "650043c5d3f03566d7cede92f4bb13e05277e669fea4f4b5fb28c14bad192680",
+      "role": "run artifact"
+    },
+    {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_profile.png",
       "exists": true,
+      "present_as": "declared",
       "bytes": 63471,
       "sha256": "d2ef98cd74d84f77753ba1ce6020b47c3de35950bbe52cd21a0bee7af9e31ec1",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_profile.svg",
       "exists": true,
+      "present_as": "declared",
       "bytes": 44749,
-      "sha256": "e8920d92f192cdb9021736826679857ff7c7fd42bbc248623b23279599f67626",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "sha256": "b17d5cb49d33c3b031034827a77cd27d2320b4e55f1d95eabb90facb5dc5b4ec",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_cross_arm.png",
       "exists": true,
+      "present_as": "declared",
       "bytes": 61108,
       "sha256": "652b1c27546b3491aca847bbd263f0da821951c4df56b8bc3f1934a565ce9462",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_cross_arm.svg",
       "exists": true,
+      "present_as": "declared",
       "bytes": 52675,
-      "sha256": "63771e66d4380786c7700eb980b907a56e2578c4158f52954c12ce7781f1822e",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "sha256": "69a1b56cb8078e6d9624bfc6f8bb9ec182c04b7753e99b56979009ca3365163a",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_convergence.png",
       "exists": true,
+      "present_as": "declared",
       "bytes": 83938,
       "sha256": "4de6be1704df809e70e535864839bb7f6edf1ee5b981b756ab2d568fffd8a259",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_convergence.svg",
       "exists": true,
+      "present_as": "declared",
       "bytes": 60056,
-      "sha256": "44b26e5a03e4e2fbb7270ea3f606ac7c8e06ee8a77f735db7d47ccc9e2c2f3d4",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "sha256": "8948b8d44f5aa5fea3116e4cb969c6866822aaeaec35e980f15d046a90791959",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_field.png",
       "exists": true,
+      "present_as": "declared",
       "bytes": 21604,
       "sha256": "bee61e695d342a128005c2f3738a344f52b5eec354757e099ded2dadd80ca742",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/fig_field.svg",
       "exists": true,
+      "present_as": "declared",
       "bytes": 30078,
-      "sha256": "0739bb28bb5be9abf6f5dc7f20d2b857f536a734f8995de6d15a84c75e492e9a",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "sha256": "14bd8ba03ed251ededf18f9b1588e83e8329db74952547f80c6d216705320535",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/nebb_bodyforce_xval.png",
       "exists": true,
+      "present_as": "declared",
       "bytes": 76676,
       "sha256": "4a4e891521d7159504a526adf4e69f6db6d5d3d8e412cfc980fa2f8111dede80",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     },
     {
       "path": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/corepath/nebb_bodyforce_xval.svg",
       "exists": true,
+      "present_as": "declared",
       "bytes": 47115,
       "sha256": "7b0f3138795d8d99bf0653d80324a0f90c30b48a05ed56e212a81fa77cb1152d",
-      "role": "figure (text SVG twin + PNG for the report)"
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/fig_startup_profiles.png",
+      "exists": true,
+      "present_as": "declared",
+      "bytes": 159448,
+      "sha256": "aad506ed1512409be7eb3c574b25e9ae46e00dfb563e31a9dd11894542db49ea",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/fig_startup_profiles.svg",
+      "exists": true,
+      "present_as": "declared",
+      "bytes": 107043,
+      "sha256": "60be1b96a5b76ef8705f6bc657d9edf9d25eef575bcff63ce0a363b287865dcf",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/fig_startup_errors.png",
+      "exists": true,
+      "present_as": "declared",
+      "bytes": 127598,
+      "sha256": "3bdef92f3314b7a4fe5246d4ba4245f02835dcb84d1e21a88af4c5bcb3ef682f",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/fig_startup_errors.svg",
+      "exists": true,
+      "present_as": "declared",
+      "bytes": 119640,
+      "sha256": "1c1e70d71d81379f850a7a83db58d9ef1e8a8937fc333b22123e4315736f77cc",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/fig_startup_decay.png",
+      "exists": true,
+      "present_as": "declared",
+      "bytes": 110041,
+      "sha256": "6d429493e4bc58ea41eb97eefec111a5cbf765e96c9ca4a9b1c84fc5561174ba",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
+    },
+    {
+      "path": "artifacts/xval_nebb_startup/fig_startup_decay.svg",
+      "exists": true,
+      "present_as": "declared",
+      "bytes": 104387,
+      "sha256": "3427872e08a5aa788c61c3a1aba3ad52f9ad535f23cfb837fcc721061b1f52d1",
+      "role": "figure (PNG for the report, text SVG twin for the repo)"
     }
   ],
   "integration_callers_detail": [
@@ -710,6 +1193,26 @@
         "tests/test_gpu_core_path.py::test_config_rejects_bad_input",
         "tests/test_gpu_core_path.py::test_solver_constructs_and_steps"
       ]
+    },
+    {
+      "path": "tests/test_nebb_bodyforce_startup.py",
+      "exists": true,
+      "n_collected": 19,
+      "node_ids_sample": [
+        "tests/test_nebb_bodyforce_startup.py::test_series_vanishes_at_t_zero",
+        "tests/test_nebb_bodyforce_startup.py::test_series_tends_to_steady_parabola",
+        "tests/test_nebb_bodyforce_startup.py::test_series_ballistic_limit"
+      ]
+    },
+    {
+      "path": "tests/test_nebb_bodyforce_evidence.py",
+      "exists": true,
+      "n_collected": 10,
+      "node_ids_sample": [
+        "tests/test_nebb_bodyforce_evidence.py::test_judge_keys_are_plain_paths_that_exist",
+        "tests/test_nebb_bodyforce_evidence.py::test_impl_files_are_not_placeholders",
+        "tests/test_nebb_bodyforce_evidence.py::test_integration_callers_are_greppable"
+      ]
     }
   ],
   "claimed_level": 5,
@@ -722,7 +1225,10 @@
     "external_anchor_present": true,
     "tests_collected": true,
     "benchmark_rows_recomputed": true,
-    "benchmark_all_pass": true
+    "transient_artifacts_present": true,
+    "transient_rows_recomputed": true,
+    "benchmark_all_pass": true,
+    "transient_all_pass": true
   },
   "ok": true
 }

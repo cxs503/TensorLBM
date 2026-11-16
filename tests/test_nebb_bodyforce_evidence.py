@@ -16,7 +16,11 @@ the *schema* and the *numbers*, so the bundle cannot rot silently:
 * every integration caller's symbol really occurs in its declared file;
 * the benchmark rows recompute from the stored raw profiles in
   ``artifacts/results.json`` and all primary rows are inside tolerance;
-* ``repro_cmd`` is a runnable shell line and ``tests`` is non-empty.
+* ``repro_cmd`` is a runnable shell line and ``tests`` is non-empty;
+* the *transient* (impulsive-start) campaign section recomputes from
+  ``artifacts/xval_nebb_startup/results.json``: the closed-form start-up series is
+  re-evaluated at the stored sample times and every primary transient row is
+  inside its pre-declared tolerance.
 
 Fast (no simulation): the profiles come from the committed artifact.
 """
@@ -152,3 +156,52 @@ def test_declared_level_is_at_least_l4(ev):
         assert checks.get(key) is True, key
     assert ev["claimed_level"] >= 4
     assert ev["ok"] is True
+
+
+def test_transient_rows_recompute_from_series(ev):
+    """The transient section must be evidence, not a copied table.
+
+    ``ref`` is rebuilt here from ``plane_poiseuille_startup`` at the stored
+    sample times, and ``decay_rate_theory`` from ``pi^2 nu / H^2``; the LBM arm
+    itself is not re-integrated (that is the ``--no-rerun``-off path of the
+    builder) so the test stays fast.
+    """
+    sys.path.insert(0, str(REPO / "src"))
+    sys.path.insert(0, str(REPO / "benchmarks" / "xval"))
+    import nebb_bodyforce_evidence as evd  # noqa: E402
+
+    startup_path = REPO / evd.STARTUP_ART / "results.json"
+    if not startup_path.is_file():
+        pytest.skip(f"transient campaign artifact missing: {startup_path}")
+    startup = json.loads(startup_path.read_text())
+
+    rows, ok = evd.recompute_transient(startup, rerun=False)
+    assert ok, "stored transient numbers do not match the recomputed series"
+    assert len(rows) >= 10  # 5 arm/scheme combos + 5 resolutions
+
+    stored = {r["case"]: r for r in ev["benchmark_transient"]["rows"]}
+    for row in rows:
+        assert row["case"] in stored, row["case"]
+        assert stored[row["case"]]["umax_ref"] == pytest.approx(row["umax_ref"], rel=1e-12)
+        assert stored[row["case"]]["decay_rate_theory"] == pytest.approx(
+            row["decay_rate_theory"], rel=1e-12)
+        assert row["ref_recomputed_dev"] < 1e-10
+        assert row["rate_recomputed_dev"] < 1e-10
+
+    primary = [r for r in rows if r["primary"]]
+    assert len(primary) >= 4
+    for row in primary:
+        assert row["pass"], f"{row['case']}: {row['max_rel_err_transient']:.3e}"
+        assert row["max_rel_err_transient"] < 0.03, row["case"]
+    assert ev["benchmark_transient"]["all_pass"] is True
+    assert ev["checks"]["transient_rows_recomputed"] is True
+
+
+def test_transient_negative_controls_separate(ev):
+    """A metric that accepts everything proves nothing: the transient campaign
+    must reject the wrong-wall-convention and wrong-viscosity readings."""
+    ctrl = ev["benchmark_transient"]["negative_controls"]
+    assert ctrl["wall_convention"]["ratio"] > 10, ctrl["wall_convention"]
+    assert ctrl["viscosity"]["rel_err_vs_nu"] < 0.05, ctrl["viscosity"]
+    assert ctrl["viscosity"]["rel_err_vs_nu_over_2"] > 0.5, ctrl["viscosity"]
+    assert ctrl["viscosity"]["rel_err_vs_2nu"] > 0.4, ctrl["viscosity"]
