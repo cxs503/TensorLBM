@@ -45,7 +45,7 @@ single-mode perturbation. Lattice units `dx = dt = 1`, `cs^2 = 1/3`, so the
 Mach number is `Ma = |u0| sqrt(3)`. Two collision models are audited:
 
 * **BGK**: `f^post = f - (f - f^eq)/tau`, viscosity `nu = (tau - 1/2)/3`.
-* **MRT** (production default of `tensorlbm.solver.collide_mrt`): moment
+* **MRT** (`tensorlbm.solver.collide_mrt`, the MRT entry of the 2-D solver): moment
   ordering `(rho, e, eps, jx, qx, jy, qy, pxx, pxy)`, relaxation rates
   `(0, 1.64, 1.54, 0, 1.7, 0, 1.7, 1/tau, 1/tau)`. A small rate search is
   reported in §3.5 to test whether any rate set changes the BGK/MRT verdict.

@@ -83,6 +83,19 @@ def _relaxation_time(tau, *, where: str):
     return check_relaxation_time(tau, where=where)
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.bgk.d2q9",
+    kind='collision',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_lbm_verification.py',
+    evidence={'grade': 'MECHANICS', 'note': 'D2Q9 主力碰撞算子；Poiseuille 解析带仅在 D3Q19 侧登记，D2Q9 侧仅有机理/收敛测试'},
+)
 def collide_bgk(f: torch.Tensor, tau: float, tau_field: torch.Tensor | None = None) -> torch.Tensor:
     """Single-relaxation-time BGK collision step.
 
@@ -287,6 +300,19 @@ def collide_bgk_matmul(f: torch.Tensor, tau: float) -> torch.Tensor:
     return f * (1.0 - inv_tau) + feq * inv_tau
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.mrt.d2q9",
+    kind='collision',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_autograd.py',
+    evidence={'grade': 'MECHANICS', 'note': 'D2Q9 显式 MRT 矩阵 + tau_field 吸收层；机理/可微测试，无解析误差带'},
+)
 def collide_mrt(
     f: torch.Tensor,
     tau: float,
