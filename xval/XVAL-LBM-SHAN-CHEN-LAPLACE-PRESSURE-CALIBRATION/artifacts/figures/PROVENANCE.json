@@ -1,0 +1,28 @@
+{
+  "anchor": "XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION",
+  "generator": "make_figures.py",
+  "result_json": {
+    "sha256": "03720580b4317a2d1a5fd18e130e9492da783cbceefa979a2ac8a879e947f9fb"
+  },
+  "field_snapshot": {
+    "sha256": "6aff6bbd8f6adac0fe4adc03c8067b817dbbffab4d9e3cc13710c3fc8c6c8440"
+  },
+  "figures": {
+    "fig1_droplet_field.png": {
+      "sha256": "7afdf08a58a2cf8d7bf52f32b259edfb875eff3b3cbc8e04b4707e6bfa7bbb57",
+      "bytes": 125395
+    },
+    "fig2_laplace_fit.png": {
+      "sha256": "c5443a1e609f7e7122c56ca32350fb6f861e932c4317ef6e2588be9e13a24950",
+      "bytes": 82146
+    },
+    "fig3_sigma_vs_R.png": {
+      "sha256": "54d4c0d30784c3cd00c09cd60b51a9f07d82da096f9a32c28abf5ce0aa69a540",
+      "bytes": 50947
+    },
+    "fig4_sensitivity.png": {
+      "sha256": "ebbc7b63e4ac26b476ed27ad93431fc26ff7f950492d272f8ada0c43c7e28402",
+      "bytes": 79500
+    }
+  }
+}
