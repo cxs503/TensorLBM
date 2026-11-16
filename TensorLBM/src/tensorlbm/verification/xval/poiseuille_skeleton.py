@@ -17,6 +17,17 @@ and that must *not* be re-implemented per arm:
 3. :func:`profile_kpis` / :func:`fit_effective_height` -- the error metrics and
    the geometry check, reduced identically for both arms.
 
+and the harness that makes the skeleton falsifiable:
+
+4. :func:`run_baseline_case` -- runs the in-repo D2Q9 channel from rest to
+   steady state and returns the measured profile, its KPIs and its slip
+   decomposition (:func:`slip_decomposition`);
+5. :func:`convergence_study` -- the grid-refinement sweep with measured orders.
+
+Without (4)/(5) every test of the skeleton compared analytic functions with
+analytic functions and could not fail; see
+``docs/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETO.md``.
+
 Wall convention (identical in both codes, checked in the case report)
 --------------------------------------------------------------------
 With ``resolution = N`` lattice nodes across the channel and solid rows at
@@ -30,7 +41,7 @@ and the fluid node centres are at ``y = 0.5, 1.5, ..., H - 0.5``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Dict, Mapping, Sequence
 
 import numpy as np
@@ -233,3 +244,251 @@ def two_code_diff_metrics(u_a: Sequence[float], u_b: Sequence[float]) -> Mapping
         "l2_rel": float(np.linalg.norm(ua - ub) / (0.5 * (np.linalg.norm(ua) + np.linalg.norm(ub)))),
         "peak_ratio": float(float(np.max(np.abs(ua))) / float(np.max(np.abs(ub)))),
     }
+
+# ---------------------------------------------------------------------------
+# Solver binding: the skeleton as a *run-and-compare* harness
+# ---------------------------------------------------------------------------
+#
+# Everything above describes the case; nothing above ever touches a lattice
+# Boltzmann solver.  A baseline skeleton whose only consumer is an analytic
+# function compared to another analytic function cannot fail, and therefore
+# cannot detect a solver defect (the OSS ``PoiseuilleFlow2D`` skeleton exists
+# precisely to *run* the flow and diff the profile).  The two functions below
+# close that loop with the in-repo D2Q9 channel solver:
+#
+#   * :func:`run_baseline_case` -- one resolution, one steady-state run, the
+#     same three KPIs used by the cross-validation arms;
+#   * :func:`convergence_study` -- the grid-refinement sweep with the measured
+#     orders of accuracy.
+#
+# The initial condition is **rest** (``u = 0``), not the analytic parabola:
+# seeding the analytic solution would make the comparison circular.
+
+
+def slip_decomposition(y: Sequence[float], u_num: Sequence[float],
+                       u_exact: Sequence[float]) -> Dict[str, float]:
+    """Split the profile error into a uniform slip and the residual shape error.
+
+    Half-way bounce-back combined with a body-force source term does not impose
+    ``u = 0`` exactly on the half-way wall: the source term is reflected by the
+    boundary and leaves a uniform additive slip ``s``.  Because ``s`` is
+    independent of ``y`` it is harmless for the *shape* of the profile but it
+    dominates ``eps_inf``.  This function removes it:
+
+        ``s = mean(u_num - u_exact)``,
+        ``eps_inf_shape = max|u_num - s - u_exact| / max|u_exact|``.
+
+    ``eps_l2_shape`` is the same removal in the L2 norm.  A solver that
+    reproduces the parabola in the interior returns ``eps_inf_shape`` at round-off.
+    """
+    un = np.asarray(u_num, dtype=float)
+    ue = np.asarray(u_exact, dtype=float)
+    yy = np.asarray(y, dtype=float)
+    if not (yy.shape == un.shape == ue.shape):
+        raise ValueError("y, u_num, u_exact must have the same shape")
+    scale = float(np.max(np.abs(ue)))
+    if scale <= 0.0:
+        raise ValueError("degenerate reference profile")
+    slip = float(np.mean(un - ue))
+    corrected = un - slip
+    return {
+        "slip": slip,
+        "slip_rel": slip / scale,
+        "eps_inf_shape": float(np.max(np.abs(corrected - ue)) / scale),
+        "eps_l2_shape": float(np.linalg.norm(corrected - ue) / np.linalg.norm(ue)),
+    }
+
+
+@dataclass(frozen=True)
+class BaselineRun:
+    """Result of one baseline run at one resolution."""
+
+    params: OSSBaseline
+    y: np.ndarray
+    u_num: np.ndarray
+    u_exact: np.ndarray
+    kpis: Dict[str, float]
+    h_eff: np.ndarray
+    steps: int
+    converged: bool
+    mass_drift: float
+    forcing: str
+    slip_kpis: Dict[str, float]
+
+    def as_dict(self) -> Dict[str, object]:
+        return {
+            "params": self.params.as_dict(),
+            "steps": self.steps,
+            "converged": self.converged,
+            "forcing": self.forcing,
+            "mass_drift": self.mass_drift,
+            "kpis": dict(self.kpis),
+            "slip_kpis": dict(self.slip_kpis),
+            "h_eff_spread": float(np.ptp(self.h_eff)),
+            "h_eff_mean": float(np.mean(self.h_eff)),
+            "u_peak_num": float(np.max(self.u_num)),
+            "u_peak_exact": float(np.max(self.u_exact)),
+        }
+
+
+def _build_skeleton_channel(params: OSSBaseline, nx: int, forcing: str):
+    """Channel with exactly one solid row per wall -> H = resolution - 2 fluid rows."""
+    from ...ice_hydro.lbm_channel import ChannelConfig, D2Q9Channel
+
+    n_nodes = params.resolution
+    cfg = ChannelConfig(
+        nx=int(nx),
+        ny=int(n_nodes),
+        tau=float(params.relaxation_parameter_lu),
+        steps=0,
+        skip=1,
+        cover_amplitude=0.0,
+        cover_depth=float(n_nodes - 1),   # top solid row only
+        bc="no_slip",
+        force=float(params.acceleration_lu),
+        forcing=forcing,
+    )
+    return D2Q9Channel(cfg)
+
+
+def run_baseline_case(
+    resolution: int = 16,
+    *,
+    reynolds_number: float = 1.0,
+    mach_number: float = 0.02,
+    acceleration_pu: float = 0.001,
+    force_scale: float = 1.0,
+    nx: int = 2,
+    forcing: str = "guo",
+    nu_lu: float | None = None,
+    force_lu: float | None = None,
+    max_steps: int = 400_000,
+    tol: float = 1e-10,
+    window: int = 200,
+) -> BaselineRun:
+    """Run the OSS baseline case at ``resolution`` and diff against the parabola.
+
+    The flow is driven from rest by the uniform body force of
+    :func:`oss_units`; steady state is declared when the wall-normal peak
+    velocity changes by less than ``tol`` (relative) over ``window`` steps, and
+    the reported profile is the time average over one further window.
+
+    ``nu_lu`` / ``force_lu`` override the OSS unit conversion so that the grid
+    can be refined at *fixed* lattice viscosity and force (the textbook
+    refinement).  The OSS convention fixes Re and Ma instead, which makes
+    ``nu`` grow with the resolution -- the two refinements answer different
+    questions and both are reported.
+
+    Returns a :class:`BaselineRun` carrying the sampled profile, the analytic
+    reference on the same nodes, the KPI dict of :func:`profile_kpis` and the
+    per-node effective height of :func:`fit_effective_height`.
+    """
+    from ...ice_hydro.lbm_channel import CX
+
+    params = oss_units(
+        resolution,
+        reynolds_number=reynolds_number,
+        mach_number=mach_number,
+        acceleration_pu=acceleration_pu,
+        force_scale=force_scale,
+    )
+    if nu_lu is not None or force_lu is not None:
+        nu_eff = float(nu_lu) if nu_lu is not None else params.viscosity_lu
+        g_eff = float(force_lu) if force_lu is not None else params.acceleration_lu
+        params = replace(
+            params,
+            viscosity_lu=nu_eff,
+            relaxation_parameter_lu=nu_eff / CS_LU ** 2 + 0.5,
+            acceleration_lu=g_eff,
+            u_peak_lu=g_eff * params.height_lu ** 2 / (8.0 * nu_eff),
+        )
+    ch = _build_skeleton_channel(params, nx=nx, forcing=forcing)
+    rows = np.where(ch.fluid[0, :])[0]
+    n_fluid = rows.size
+    if n_fluid != int(params.height_lu):
+        raise RuntimeError(
+            f"geometry mismatch: {n_fluid} fluid rows vs H = {params.height_lu}"
+        )
+
+    y, height = wall_normal_coordinates(params.resolution)
+    u_exact = analytic_profile(y, height, params.acceleration_lu, params.viscosity_lu)
+
+    def profile() -> tuple[np.ndarray, float]:
+        rho = ch.f.sum(axis=0)
+        ux = (ch.f * CX[:, None, None]).sum(axis=0) / rho
+        return ux[:, rows].mean(axis=0), float(rho[ch.fluid].mean())
+
+    prev_peak = 0.0
+    steps = 0
+    converged = False
+    while steps < max_steps:
+        for _ in range(window):
+            ch.f = ch._stream_from(ch._collide(ch.f))
+        steps += window
+        prof, _ = profile()
+        peak = float(np.max(np.abs(prof)))
+        if prev_peak > 0.0 and abs(peak - prev_peak) <= tol * peak:
+            converged = True
+            break
+        prev_peak = peak
+
+    acc = np.zeros(n_fluid)
+    rho_acc = 0.0
+    for _ in range(window):
+        ch.f = ch._stream_from(ch._collide(ch.f))
+        prof, rho_mean = profile()
+        acc += prof
+        rho_acc += rho_mean
+    u_num = acc / window
+    rho_mean = rho_acc / window
+
+    return BaselineRun(
+        params=params,
+        y=y,
+        u_num=u_num,
+        u_exact=u_exact,
+        kpis=profile_kpis(y, u_num, u_exact),
+        h_eff=fit_effective_height(y, u_num, params.acceleration_lu, params.viscosity_lu),
+        steps=steps,
+        converged=converged,
+        mass_drift=rho_mean - 1.0,
+        forcing=forcing,
+        slip_kpis=slip_decomposition(y, u_num, u_exact),
+    )
+
+
+def convergence_study(
+    resolutions: Sequence[int] = (8, 16, 32, 64),
+    **kwargs,
+) -> Dict[str, object]:
+    """Grid-refinement sweep; returns per-resolution KPIs and measured orders.
+
+    Each resolution doubles the previous one, so the observed order of the error
+    norm ``e`` follows from ``p = log2(e_coarse / e_fine)``.
+    """
+    res_list = [int(r) for r in resolutions]
+    runs = [run_baseline_case(r, **kwargs) for r in res_list]
+    table = []
+    for r, run in zip(res_list, runs):
+        row = {"resolution": r}
+        row.update(run.kpis)
+        row.update({
+            "steps": run.steps,
+            "converged": run.converged,
+            "mass_drift": run.mass_drift,
+            "h_eff_spread": float(np.ptp(run.h_eff)),
+        })
+        table.append(row)
+    orders = []
+    for i in range(1, len(table)):
+        prev, cur = table[i - 1], table[i]
+        factor = cur["resolution"] / prev["resolution"]
+        order = {}
+        if not np.isclose(factor, 2.0):
+            order = {"order_inf": float("nan"), "order_l2": float("nan")}
+        else:
+            for key in ("eps_inf", "eps_l2_rel"):
+                num, den = prev[key], cur[key]
+                order[f"order_{key}"] = float(np.log(num / den) / np.log(2.0)) if den > 0 else float("nan")
+        orders.append({"resolution_pair": (prev["resolution"], cur["resolution"]), **order})
+    return {"table": table, "orders": orders, "runs": runs}
