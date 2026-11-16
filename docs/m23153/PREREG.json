@@ -1,0 +1,47 @@
+{
+  "mission_id": "m23153",
+  "anchor": "LBM-P0-MRT",
+  "title": "MRT 碰撞算子真实现（Guo/Shyy 矩基）",
+  "decision": "实现 TensorLBM 中 D2Q9 和 D3Q19 的真实 MRT 碰撞算子，替换 m23039 已实证的 MOCK 实现。使用 Guo/Shyy 矩基（D2Q9）和 d'Humières 矩基（D3Q19），在三个标准工况下验证 MRT 行为。",
+  "hypothesis": "H1: 真实 MRT 算子在矩空间进行松弛，守恒量（密度、动量）松弛率为 0；H2: 当所有非守恒模态松弛率相等时，MRT 退化为 BGK；H3: MRT 在平衡态下不改变分布函数；H4: MRT 在 tau>0.5 时数值稳定。",
+  "acceptance_criteria": {
+    "mass_conservation": "碰撞前后总质量变化 < 1e-10",
+    "momentum_conservation": "碰撞前后总动量变化 < 1e-10",
+    "equilibrium_invariance": "平衡态分布经 MRT 碰撞后不变（误差 < 1e-12）",
+    "bgk_reduction": "当 s_e=s_q=s_nu 时，MRT 与 BGK 结果一致（误差 < 1e-10）",
+    "stability": "tau ∈ [0.51, 2.0] 范围内 100 步碰撞无 NaN/Inf",
+    "poiseuille_r2": "Poiseuille 流速剖面 R² > 0.9"
+  },
+  "test_cases": [
+    {
+      "name": "Taylor-Green 衰减",
+      "description": "2D TG vortex decay，验证能量衰减行为",
+      "metrics": ["energy_error_pct"],
+      "grids": [32],
+      "reynolds_numbers": [100]
+    },
+    {
+      "name": "Poiseuille 通道流",
+      "description": "2D plane channel flow，验证抛物线流速剖面",
+      "metrics": ["u_max_error_pct", "r2"],
+      "grids": [32],
+      "reynolds_numbers": [100]
+    },
+    {
+      "name": "方腔驱动流",
+      "description": "2D lid-driven cavity，验证与 Ghia 文献对比",
+      "metrics": ["u_min_error_pct"],
+      "grids": [33],
+      "reynolds_numbers": [100]
+    }
+  ],
+  "mrt_parameters": {
+    "d2q9_basis": "Guo/Shyy (Phys. Rev. E 78, 036704, 2008)",
+    "d3q19_basis": "d'Humières (Phil. Trans. R. Soc. Lond. A 360, 437, 2002)",
+    "default_s_e": 1.0,
+    "default_s_q": 1.0,
+    "s_nu": "1/tau"
+  },
+  "feature_ledger_check": "已查 feature_ledger LBM 域，m23039 已确认 MRT 为 MOCK，本单为修复",
+  "negative_knowledge_check": "已查 negative_knowledge_ledger，无相关负面记录"
+}
