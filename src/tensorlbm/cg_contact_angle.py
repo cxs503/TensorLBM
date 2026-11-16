@@ -38,6 +38,7 @@ match the solver's layout.
 from __future__ import annotations
 
 import math
+import warnings
 from typing import Any
 
 import numpy as np
@@ -473,73 +474,75 @@ def contact_angle_geodesic(
     y_wall: float = 0.5,
     *,
     frac: float = 0.5,
-    lbm_convention: bool = False,
+    lbm_convention: bool | None = None,
 ) -> dict[str, Any]:
-    """Contact angle from apex height and basal half-width (geodesic relation).
+    """Contact angle from apex height and basal half-width (sessile-cap geometry).
 
-    For a circular cap of radius R and contact angle theta:
-    - a = R sin(theta) (contact half-width)
-    - h = apex height above wall
+    For a cap resting on a flat wall the *exact* closed form is
 
-    The relation between a/h and theta depends on the geometric convention:
+        z_c = -R cos(theta)   (circle centre, measured from the wall)
+        h   = R (1 - cos theta)   (apex height above the wall)
+        a   = R sin(theta)        (contact half-width)
 
-    **Standard convention** (synthetic caps, lbm_convention=False):
-        h = R(1 + cos theta) for theta < 90 deg, h = R(1 - cos theta) for theta > 90 deg
-        -> a/h = tan(theta/2) for theta < 90 deg, a/h = cot(theta/2) for theta > 90 deg
-        -> theta = 2 atan(a/h) works for all angles
+    for **every** ``theta`` in ``(0, 180)`` -- the centre is below the wall for a
+    wetting cap (``theta < 90``) and above it for a non-wetting one, and the
+    same algebra covers both branches.  Hence
 
-    **LBM convention** (LBM simulation fields, lbm_convention=True):
-        h = R(1 - cos theta) for all theta
-        -> a/h = cot(theta/2) for all theta
-        -> theta = 180 deg - 2 atan(a/h) for all angles
+        a / h = cot(theta / 2)   =>   theta = 2 atan(h / a)
 
-    The LBM convention arises because LBM fields follow a different geometric
-    convention than the synthetic caps used for calibration. See
-    xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md for details.
+    with no branch test and no caller-supplied convention.
+
+    .. warning::
+
+       The former implementation returned ``2 atan(a/h)``, which is the
+       **supplement** ``180 deg - theta`` for every ``theta`` (identical only at
+       90 deg).  ``lbm_convention`` selected between the two and is therefore
+       deprecated: it is accepted for keyword compatibility, ignored, and emits
+       a :class:`DeprecationWarning`.  Evidence and the falsifiability argument
+       (analytic caps built in both templates, cross-checked against the
+       independent circle fit of :func:`tensorlbm.wetting.metrics.contact_angle_circle_fit`,
+       plus the ten committed round-3 golden fields) are in
+       ``xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/REPORT_R5.md``.
 
     Parameters
     ----------
     phi : ndarray
-        Phase field (ny, nx), phi > 0 is the wetting phase.
+        Phase field (ny, nx); ``phi > 0`` is the wetting (liquid) phase.
     xi : float
         Interface width in lattice units.
     y_wall : float
-        Wall position in lattice units.
+        Wall position in lattice units (the first cell centre is ``y_wall + 0.5``).
     frac : float
         Level set fraction (0.5 = mid-level contour).
-    lbm_convention : bool
-        If True, apply the supplement correction for LBM fields.
-        If False, use the standard formula (for synthetic caps).
+    lbm_convention : bool | None
+        Deprecated and ignored; the physical relation is used unconditionally.
 
     Returns
     -------
-    dict with keys:
-        theta_deg : contact angle in degrees
-        apex_height : h in lattice units
-        basal_half_width : a in lattice units
-        a_over_h : ratio a/h
-        convention : "standard" or "lbm"
+    dict with keys ``theta_deg``, ``apex_height``, ``basal_half_width``,
+    ``a_over_h``, ``h_over_a``, ``convention`` (always ``"physical_sessile"``).
     """
+    if lbm_convention is not None:
+        warnings.warn(
+            "contact_angle_geodesic: 'lbm_convention' is deprecated and ignored; "
+            "theta = 2 atan(h/a) holds for every sessile cap.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     a, h = _geodesic_measure_a_h(phi, xi, frac=frac, wall_y=y_wall - 1.0)
-    
+
     out = {
         "theta_deg": float("nan"),
         "apex_height": h,
         "basal_half_width": a,
         "a_over_h": float("nan"),
-        "convention": "lbm" if lbm_convention else "standard",
+        "h_over_a": float("nan"),
+        "convention": "physical_sessile",
     }
-    
+
     if math.isfinite(a) and math.isfinite(h) and a > 0.0 and h > 0.0:
-        ratio = a / h
-        out["a_over_h"] = ratio
-        theta_raw = math.degrees(2.0 * math.atan(ratio))
-        
-        if lbm_convention:
-            # LBM convention: apply supplement correction
-            out["theta_deg"] = 180.0 - theta_raw
-        else:
-            # Standard convention: raw formula works
-            out["theta_deg"] = theta_raw
-    
+        out["a_over_h"] = a / h
+        out["h_over_a"] = h / a
+        out["theta_deg"] = math.degrees(2.0 * math.atan(h / a))
+
     return out
