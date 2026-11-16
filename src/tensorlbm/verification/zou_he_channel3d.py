@@ -164,6 +164,13 @@ class Channel3DResult:
             "inlet": self.inlet,
             "H": self.H,
             "metrics": self.metrics,
+            # Raw field data, so a reviewer can recompute every error in the
+            # metrics without re-running the solver (a metrics-only artifact
+            # cannot be audited).
+            "u_profile": [float(v) for v in self.u_profile],
+            "u_exact": [float(v) for v in self.u_exact],
+            "u_profile_inlet_plane": [float(v) for v in self.u_profile_inlet_plane],
+            "trace": {k: [float(v) for v in vals] for k, vals in self.trace.items()},
         }
 
 
