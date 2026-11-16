@@ -1,0 +1,24 @@
+{
+  "gh408_short": {
+    "n_steps": 300,
+    "final_mass_drift": 0.36451319381255687,
+    "final_centroid_y": 123.15688205341588,
+    "final_max_speed": 0.0093368049710989,
+    "final_ke": 0.33098745346069336,
+    "phi_min": -1.040460228919983,
+    "phi_max": 1.0029133558273315,
+    "density_ratio": 10.0,
+    "elapsed_seconds": 72.73635982908309
+  },
+  "density_ratio_test": {
+    "n_steps": 120,
+    "final_mass_drift": 0.36607082495348076,
+    "final_centroid_y": 68.75269760620907,
+    "final_max_speed": 0.008688526228070259,
+    "final_ke": 0.041417550295591354,
+    "phi_min": -1.0238258838653564,
+    "phi_max": 1.0032618045806885,
+    "density_ratio": 5.000000000000001,
+    "elapsed_seconds": 8.19628430902958
+  }
+}
