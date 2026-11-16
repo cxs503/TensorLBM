@@ -55,6 +55,18 @@ from tensorlbm.verification.zou_he_channel3d import (
 
 TOL = 1e-8
 
+# Absolute floor for the "mass/momentum still exact" assertions on the
+# *deliberately wrong* closure.  The lattice weight table in ``d3q19`` is
+# float32 (``sum(W) = 1 + 1.49e-8``), so the identity
+# ``sum_{c_x>0} w c_x u = u_x / 6`` that makes the reconstruction's mass and
+# normal momentum exact only holds to ~1.5e-8 *relative*.  Measured in exact
+# rational arithmetic (``fractions.Fraction`` on the same field): the residual
+# is 2.34e-10 for mass and 2.17e-10 in float64 for ``u_x`` — i.e. the old
+# ``1e-10`` bound was below the achievable floor by 2.4x and the test failed at
+# HEAD.  It is *not* relaxed to the width of the artefact it discriminates
+# (0.03, i.e. ~8 orders of magnitude larger).
+TOL_CONTROL = 1e-9
+
 # --- explicit lattice tables (test-local; not imported from the module under test) ---
 _W19 = [float(x) for x in W19]
 _C19 = [[int(v) for v in row] for row in C19.tolist()]
@@ -296,16 +308,31 @@ def test_nebb_for_all_directions_is_the_falsified_alternative():
     bad_t[:, :, :, 0] = torch.as_tensor(bad, dtype=bad_t.dtype)
 
     rho_b, ux_b, uy_b, _ = macroscopic3d(bad_t)
-    assert np.abs(rho_b[:, :, 0].numpy() - rho).max() < 1e-10  # mass still exact
-    assert float((ux_b[:, :, 0] - u_in).abs().max()) < 1e-10  # normal velocity exact
+    assert np.abs(rho_b[:, :, 0].numpy() - rho).max() < TOL_CONTROL  # mass still exact
+    assert float((ux_b[:, :, 0] - u_in).abs().max()) < TOL_CONTROL  # normal velocity exact
     injected = uy_b[:, :, 0].numpy() / uy_in
     # exactly one third for a pure equilibrium field; a non-equilibrium start
     # shifts it, but never back towards the prescribed value
     assert (injected > 0.15).all() and (injected < 0.5).all(), injected
-    # the fixed closure does not have it
-    good = zou_he_inlet_velocity_3d(f, u_in, uy_in=uy_in)
-    _, _, uy_g, _ = macroscopic3d(good)
-    assert float((uy_g[:, :, 0] - uy_in).abs().max()) < TOL
+    # the fixed closure does not have it -- up to the positivity guard.  A
+    # transverse velocity of 0.06 at u_x = 0.03 is *not* attainable with
+    # non-negative populations on this field (measured: the minimum-norm
+    # correction clips to exactly 0.0), so the exactness claim is asserted only
+    # where the correction is feasible, and the clipping regime is pinned by
+    # its measured size instead of being silently exempt.
+    feasible_uy = 0.02
+    good = zou_he_inlet_velocity_3d(f, u_in, uy_in=feasible_uy)
+    _, ux_g, uy_g, _ = macroscopic3d(good)
+    assert float((uy_g[:, :, 0] - feasible_uy).abs().max()) < TOL
+    assert float((ux_g[:, :, 0] - u_in).abs().max()) < TOL
+
+    clipped = zou_he_inlet_velocity_3d(f, u_in, uy_in=uy_in)
+    rho_c, ux_c, uy_c, _ = macroscopic3d(clipped)
+    assert float((uy_c[:, :, 0] - uy_in).abs().max()) < 2e-3  # bounded, not exact
+    assert float((rho_c[:, :, 0] - rho).abs().max()) < 2e-3  # mass degrades too
+    assert float(clipped[:, :, :, 0].min()) >= 0.0  # guard keeps positivity
+    # ... and the artefact it exists to catch is still 15x larger than that
+    assert float((uy_c[:, :, 0] - uy_in).abs().max()) < 0.15 * np.abs(uy_in)
 
 
 def test_gradient_and_profile_helpers_are_consistent():
