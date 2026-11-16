@@ -1,0 +1,41 @@
+{
+  "mission": "m23014",
+  "prereg": "docs/m23014/PREREG.json",
+  "purpose": "Record every departure from the pre-registered plan, with reason. The pre-registered thresholds are NOT changed; what changed is which experiments could be executed.",
+  "deviations": [
+    {
+      "id": "D1",
+      "predeclared": "Execute two new grid levels D48 and D56 (hybrid: `run.py --levels 48 56`) to decide the H1 convergence branch.",
+      "actual": "Submitted cj4520 (D56, 40000 steps) and cj4521 (D48, 34000 steps) to the scheduler. Neither started: cj4520 sat 'queued' for 76.2 min while the scheduler's in-flight count rose from 87 to 108; cj4521 was withdrawn at 50.7 min.",
+      "reason": "Scheduler saturation, not capacity: at the 50-min mark both nodes reported healthy with ~83 cores free each (n315 load 45.29/128, n330 load 40.75/128). The wait was queue ordering.",
+      "impact_on_verdict": "The H1 convergence branch is WITHHELD, not decided. The verdict is therefore applied at the finest EXECUTED level (D40) instead of the pre-registered finest (D56).",
+      "not_a_threshold_change": true
+    },
+    {
+      "id": "D2",
+      "predeclared": "Run D40 at U_mean=0.06 (tau 0.600 -> 0.572) as the H2 discriminator.",
+      "actual": "cj4522 submitted, never started (same queue), withdrawn.",
+      "reason": "Same scheduler saturation. Substituted by an equivalent test on ALREADY-FROZEN data: the existing D20 pair (u=0.0600 vs u=0.0833, tau 0.536 vs 0.550) gives the same contrast at fixed geometry and fixed Re, at zero compute cost.",
+      "impact_on_verdict": "No weakening for the branch decision (H2 came out 'marginal' on both the frozen D20 pair and the pre-registered margin), but the smaller tau span (0.014 vs the planned 0.028) means H2's sensitivity is bounded, not tightly measured.",
+      "caveat": "At fixed D, lowering U_mean changes the Mach number AND tau together, so this design cannot separate compressibility from relaxation. Reported as a confound, not resolved."
+    },
+    {
+      "id": "D3",
+      "predeclared": "Interrupt the analysis with an extra D64 level only if the D48<->D56 span falls between 3% and 6%.",
+      "actual": "Not reached (D48/D56 never ran).",
+      "reason": "contingency not triggered",
+      "impact_on_verdict": "none"
+    }
+  ],
+  "fail_stage": "convergence-ladder",
+  "failure_reason": "The two new refinement levels (D48, D56) could not be executed: the compute scheduler kept them queued for the entire mission window (76 min, in-flight queue growing 87 -> 108, nodes healthy). The convergence branch of the pre-registered decision tree is therefore WITHHELD. Everything that could be decided from frozen data plus zero-compute geometry analysis was decided and is reported.",
+  "resubmit_verbatim": [
+    "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 48 56 --steps 34000 40000 --threads 32 --tag u0833",
+    "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 40 --u-mean 0.06 --steps 38000 --threads 32 --tag u0600"
+  ],
+  "honesty_notes": [
+    "No frozen artifact was overwritten; existing FAIL rows untouched.",
+    "The C_L amplitude reference band remains WITHHELD-grade (in-repo transcription of Schaefer-Turek Table 3); no network access to the original PDF.",
+    "The 35% headline is contradicted by the data, but the replacement statement is weaker than a pass: it is 'estimator artifact + resolution cliff, convergence unproven'."
+  ]
+}

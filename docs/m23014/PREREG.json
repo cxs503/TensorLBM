@@ -1,0 +1,119 @@
+{
+  "mission": "m23014",
+  "anchor": "LBM-P0-DFG",
+  "case": "CASE-CYLINDER-DRAG-RE100",
+  "repo": "TensorLBM",
+  "frozen_at_utc": "2026-11-16",
+  "frozen_before_any_new_run": true,
+
+  "physical_problem": {
+    "statement": "2D laminar vortex shedding behind a circular cylinder confined in a plane channel (Schaefer & Turek DFG case 2D-2, Re=100). Reported headline defect: C_L amplitude error +35--36%.",
+    "geometry": "channel x in [0,2.2], y in [0,0.41]; cylinder centre (0.2,0.2), D=0.1; blockage D/H=0.2439",
+    "inflow": "parabolic, U_max/U_mean=1.5, U_mean=1.0 (physical)",
+    "reynolds": 100.0,
+    "observables": ["Cd", "Cl_amplitude", "St", "dp/(0.5 rho U^2)"]
+  },
+
+  "prior_work_acknowledged": {
+    "mission": "m16827",
+    "what_it_settled": "The +36.04% headline (D28) decomposes into ~13.4% of VALUE from an estimator/window defect (D1 peak-pick over the whole record incl. start-up transient + D3 window bookkeeping) and a RESIDUAL +17.75% real error at D28. At D40 the re-judged error is +2.83%.",
+    "what_it_left_open": [
+      "no D>=56 grid level: is the residual real error convergent?",
+      "no re-run: conclusions rest on frozen series only",
+      "reference band for C_L amplitude traced to in-repo transcription, not the original table (WITHHELD)"
+    ],
+    "no_duplication_statement": "This mission does NOT re-derive the D1/D3 estimator defect (m16827) and does NOT re-judge the same frozen series for the same purpose. New work: (i) extend the refinement ladder with genuinely new levels D48/D56, (ii) tau/viscosity discriminator at fixed geometry, (iii) geometric blockage audit, (iv) window-length sensitivity of the estimator. Overlap with feature_ledger/knowledge_base/negative_knowledge_ledger checked at start: no existing entry answers these."
+  },
+
+  "external_anchor": {
+    "primary": "Schaefer, M. & Turek, S. (1996) 'Benchmark computations of laminar flow around a cylinder', Notes on Numerical Fluid Mechanics vol. 48, Vieweg, pp. 547-566, case 2D-2, Table 3.",
+    "frozen_register": "benchmarks/verified/cylinder/re100_dfg/REFERENCE.md (sha256 recorded in benchmarks/validation_matrix/references.json)",
+    "bands": {
+      "cd": [3.22, 3.24],
+      "cl_amp": [0.99, 1.01],
+      "st": [0.295, 0.305],
+      "dp_half_rho_u2": [4.92, 5.00]
+    },
+    "error_convention": "value vs band mid-point, percent",
+    "anchor_caveat": "Per m16827 the C_L amplitude band 0.99-1.01 is an in-repo transcription; the printed table's primary columns are Cd/dp/St. Treated as WITHHELD-grade traceability, unchanged by this mission. Cd/dp/St bands are unfrozen and independently quoted in the literature."
+  },
+
+  "reproducible_parameters": {
+    "solver": "src/tensorlbm/validation/cylinder_dfg.py::run_case (D2Q9, MRT collision, pull streaming, half-way bounce-back, Ladd momentum exchange, Zou/He inlet+outlet)",
+    "entry_point": "benchmarks/verified/cylinder/re100_dfg/run.py",
+    "fixed": {"u_mean_lb": 0.0833, "avg_periods": 12.0, "transient_periods": 5.0, "re": 100.0},
+    "lattice_scaling_note": "At fixed Re and fixed U_mean, nu_lb = u*D/Re grows with D, hence tau grows (D20:0.550, D28:0.570, D40:0.600, D48:0.620, D56:0.640). Re is exactly preserved at every level; only the discretisation error decreases. This is the correct fixed-Mach/fixed-Re refinement, not a conflation.",
+    "existing_frozen_levels": {"D20": "14000 steps, tau 0.550", "D28": "20000 steps, tau 0.570", "D40": "27200 steps, tau 0.600"},
+    "new_levels_this_mission": {
+      "D48": {"steps": 34000, "tau": 0.620, "cells": "1056x197", "rationale": "17 periods at St=0.30 (period 1920 steps)"},
+      "D56": {"steps": 40000, "tau": 0.640, "cells": "1232x230", "rationale": "finest level, >= min_steps_required=38097"},
+      "D40_u0060": {"steps": 38000, "tau": 0.572, "rationale": "same geometry/Re, lower U_mean -> tau shifted toward the D28 value; discriminates hypothesis 2 (viscosity/tau model) from hypothesis 1 (grid) at fixed geometry"}
+    }
+  },
+
+  "hypotheses": {
+    "H1_grid_convergence": {
+      "statement": "The residual C_L amplitude error is a discretisation error that decays with the refinement ladder; the D28->D40 jump is a transient of an under-resolved regime.",
+      "prediction": "cl_amp(D48) and cl_amp(D56) sit close to 1.00 and the span |cl_amp(D56)-cl_amp(D48)| / cl_amp(D56) < 3%.",
+      "falsified_if": "cl_amp stays >= +10% at BOTH D48 and D56, or the span between the two finest levels is >= 3% (no convergence yet)."
+    },
+    "H2_turbulence_viscosity_model": {
+      "statement": "The error is caused by the collision/relaxation model: MRT relaxation settings, or tau being inconsistent with Re (compressibility/finite-tau error).",
+      "prediction": "cl_amp at fixed D40 changes materially (>= 5%) when tau is shifted by lowering U_mean at constant Re.",
+      "falsified_if": "cl_amp changes < 2% between D40(tau=0.600) and D40(tau=0.572). Note: DFG 2D-2 is a laminar case - no turbulence model is active by definition, so this hypothesis can only be about tau/MRT, which is what is tested."
+    },
+    "H3_boundary_distance_blockage": {
+      "statement": "The error comes from the discretised geometry/solid boundary: blockage ratio, cylinder mask area, wall distance, or the DFG pressure-probe placement.",
+      "prediction": "the discretised mask area deviates from pi*D^2/4 by more than ~1%, or an effective blockage different from 0.2439, or the probe extrapolation is off by more than the observed error share.",
+      "falsified_if": "mask area matches pi*D^2/4 within 1% at every level, blockage equals D/H=0.2439, and the probe columns are fluid columns adjacent to the DFG probe positions (inside the stated extrapolation contract).",
+      "note": "Blockage and inlet/outlet distances are FIXED by the benchmark definition and may not be tuned; the test is fidelity to the spec, not sensitivity."
+    },
+    "H4_sampling_window": {
+      "statement": "The error is a statistics artifact: start-up transient inside the averaging window, or too short a sampling duration.",
+      "prediction": "removing the transient and lengthening the averaging window changes the estimate by far more than the tolerance.",
+      "falsified_if": "on the retained window, cl_amp is stable (drift < 2%) across window lengths 6..12 periods, i.e. 12 periods is already enough.",
+      "status_at_freeze": "Already measured by m16827 on frozen series: 13.4% of value at D28 is transient contamination, and peak-vs-fundamental contributes a further 1.7%. This mission re-measures it and adds the window-length stability curve; it is NOT expected to be the residual root cause."
+    }
+  },
+
+  "quantitative_acceptance": {
+    "primary_gate": "Cl amplitude error < 10% AND dp error < 5% AND Cd error < 5%, SIMULTANEOUSLY, at the finest converged level.",
+    "secondary_gate": "convergence span between the two finest levels < 3% for the reported value of each metric.",
+    "tightened_note": "The task states <10% for Cl; the case's own frozen tolerance is 5%. Reported against BOTH. The 5% matrix tolerance is NOT relaxed.",
+    "estimator_convention": "cl_amp = fundamental (least-squares) amplitude at the shedding frequency over the transient-free window, transient_periods=5, avg_periods=12 (as fixed by m16827); peak-pick median reported alongside for audit only."
+  },
+
+  "decision_rules_predeclared": [
+    "If primary_gate AND secondary_gate pass at D56 -> the +35% headline is root-caused as (dominant) estimator/window artifact + (residual) under-resolution; case may be re-scored using the finest converged level, and the minimum documented resolution for this case becomes D56.",
+    "If primary_gate passes at D56 but secondary_gate fails -> honest FAIL on convergence; status stays failed; root cause = 'no converged level exists below D56'.",
+    "If cl_amp remains >= +10% at D56 -> H1 falsified: the residual error is NOT grid convergence. Escalate to a solver-side defect investigation; record honest FAIL with the ladder as evidence.",
+    "Thresholds above are frozen. No threshold, window, level, or metric definition may be changed after inspecting the new results. Any deviation must be logged as a deviation with its reason, and the original criterion preserved in the record."
+  ],
+
+  "cost_and_resource_plan": {
+    "local": "only analysis of frozen series, geometric audit, figure rendering (<10 min, <8 cores). No heavy solve on the control plane.",
+    "cluster": "D48/D56/D40_u0060 submitted to the scheduler as shards; estimated 900-2700 s each from the measured D40 cost (895 s / 27.2k steps / 144k cells).",
+    "stopping_rule": "no extra levels are added after seeing results unless a predeclared falsification branch requires one; a D64 level would only be considered if the span between D48 and D56 is between 3% and 6% (borderline), and that contingency is declared here in advance."
+  },
+
+  "analysis_plan": {
+    "aggregation": "per-level: Cd, cl_amp, St, dp; error vs band midpoint; convergence span between consecutive levels",
+    "uncertainty": "estimator stderr and IQR per level are reported for cl_amp; no outlier removal",
+    "blinding": "the estimator and the acceptance gates are code-frozen before the new levels are read; the new levels are scored by the same unchanged code path",
+    "raw_data": "docs/m23014/runs/ (record area, not for GitHub) + artifacts committed under benchmarks/verified/cylinder/re100_dfg/artifacts/ as NEW files (existing frozen files never overwritten)"
+  },
+
+  "five_level_status_legend": {
+    "implementation": "code exists and runs",
+    "unit_test": "asserted by pytest",
+    "benchmark": "measured number against a reference band",
+    "validation": "independent reproduction / external anchor agreement",
+    "production": "used in a delivered engineering result"
+  },
+
+  "known_limitations_declared_in_advance": [
+    "C_L amplitude reference band traceability is WITHHELD (in-repo transcription); a pass on it is weaker evidence than a pass on Cd/dp/St.",
+    "Lattice-Boltzmann at these resolutions remains a low-order method: absolute 5% agreement on all four quantities at D56 is not guaranteed a priori.",
+    "This mission cannot recover the original 1996 table (no network access to the PDF); it will not claim to have verified the band."
+  ]
+}
