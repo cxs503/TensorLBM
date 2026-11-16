@@ -1,0 +1,49 @@
+{
+ "G5": {
+  "gate": "G5_coupling_sign",
+  "steps": 400,
+  "rows": [
+   {
+    "G_12": -1.0,
+    "alignment": -0.05234889445996731,
+    "alignment_sign": -1,
+    "tracer_correlation": -0.9991361761631591,
+    "tracer_contrast": 0.11288690664417267,
+    "tracer_sign": -1,
+    "agrees_with_docstring": true
+   },
+   {
+    "G_12": -0.5,
+    "alignment": -0.026174447229983654,
+    "alignment_sign": -1,
+    "tracer_correlation": -0.999664871608153,
+    "tracer_contrast": 0.055921249763715264,
+    "tracer_sign": -1,
+    "agrees_with_docstring": true
+   },
+   {
+    "G_12": 0.5,
+    "alignment": 0.026174447229983654,
+    "alignment_sign": 1,
+    "tracer_correlation": 0.9999403794615311,
+    "tracer_contrast": 0.05442207224469908,
+    "tracer_sign": 1,
+    "agrees_with_docstring": true
+   },
+   {
+    "G_12": 1.0,
+    "alignment": 0.05234889445996731,
+    "alignment_sign": 1,
+    "tracer_correlation": 0.9995396332179429,
+    "tracer_contrast": 0.107012464272913,
+    "tracer_sign": 1,
+    "agrees_with_docstring": true
+   }
+  ],
+  "alignment_oddness_rel": 0.0,
+  "segregating_for_negative": true,
+  "adhesion_for_positive": true,
+  "psib_sign_convention": "G_12 < 0: species A is repelled from B-rich regions (segregation); G_12 > 0: A is attracted (adhesion/mixing); SCMP like-species attraction needs G > 0.",
+  "pass": true
+ }
+}
