@@ -1,0 +1,56 @@
+{
+  "anchor": "XVAL-LBM-CONV-AS-STREAMING-FIXED-KERNEL",
+  "mission": 22987,
+  "round": 4,
+  "kind": "open-source cross-validation (XVAL) -- 3D physics extension",
+  "scope_note": "Rounds 1-3 validated the conv-as-streaming fixed-kernel formulation in 2D (Taylor-Green decay + plane Poiseuille) and, in 3D, only the *operator* (conv3d vs canonical roll traversal on a random field). Round 4 asks the question rounds 1-3 never asked: does the same fixed-kernel transport plus 1x1 bounce convolution reproduce physics in 3D against closed-form 3D solutions, with a solid mask that is not a single flat wall?",
+  "decision": "Keep the D3Q19 fixed-kernel transport + bounce_blend as a drop-in 3D transport option for TensorLBM (same adoption decision as rounds 1-3, now with 3D physical evidence), or restrict the option to 2D if 3D fails a predeclared KPI.",
+  "alternatives": {
+    "A_native_gather_3d": "gather over shifted source cells with modulo indexing on a (19, nz, ny, nx) field -- the 3D analogue of tensorlbm.solver.stream (which is 2D-only); wall bounce as explicit direction reversal at solid nodes.",
+    "B_conv_fixed_kernel_3d": "tensorlbm.streaming_conv.stream_conv_3d -- one fixed 3x3x3 depthwise cross-correlation (tap index 1 - c_axis) over circular-padded fields; wall bounce via streaming_conv.bounce_blend (1x1 cross-channel convolution through the solid mask).",
+    "REF_analytic_3d": "closed-form references only: (i) 3D Stokes-mode decay of a divergence-free Fourier mode with |k|^2 = kx^2+ky^2+kz^2, velocity decay exponent nu*|k|^2 exact; (ii) plane Poiseuille parabola for a 3D slit channel (walls in y only, periodic x and z); (iii) Boussinesq series solution of the square duct, self-checked here by finite-difference Poisson residual and by its friction-velocity product f*Re = 56.908 (Shah & London 1978)."
+  },
+  "hypothesis": "H1: in 3D, replacing only the transport operator (A -> B) leaves the population field bit-wise identical, the Stokes decay exponent within 3% of nu*|k|^2, the 3D slit-channel profile within 3% of the parabola, and the square-duct centreline velocity and f*Re within 3% of the series/literature values (owner gate 15%). H0 (falsifier): any predeclared KPI at or beyond the 15% owner gate, or the two arms not bit-identical.",
+  "metrics": {
+    "arm_pair_max_rel": "max|u_A - u_B| / max|u_A| over all fluid nodes at the final step (dimensionless)",
+    "f_sha256_equal": "sha256 of the final population field is equal between arms (bit-wise equivalence under walls + forcing)",
+    "gamma_fit_rel_err_pct": "fitted velocity decay exponent vs nu*|k|^2 for the 3D Stokes mode (percent)",
+    "gamma_fit_r2": "coefficient of determination of the ln(max|u|) least-squares fit",
+    "profile_l2_pct_slit": "||u_num(y) - u_parabola(y)||_2 / ||u_parabola||_2 over fluid rows of the 3D slit channel (percent)",
+    "peak_rel_err_pct_slit": "|u_max_num - u_max_analytic| / u_max_analytic for the slit channel (percent)",
+    "field_l2_pct_duct": "||u_num(y,z) - u_series(y,z)||_2 / ||u_series||_2 over the duct cross-section (percent)",
+    "center_rel_err_pct_duct": "square-duct centreline velocity vs series (percent)",
+    "fRe_rel_err_pct_duct": "f*Re from the numerical mean velocity vs 56.908 (percent)",
+    "step_cost_ratio": "wall time per step, conv arm / gather arm (dimensionless; informational, not a gate)"
+  },
+  "unit_of_analysis": "one transport arm at one 3D configuration; every KPI is a scalar per arm-configuration",
+  "baseline_control": {
+    "baseline": "arm A at the coarsest configuration of each case",
+    "control": "arm B at the identical configuration: the single changed variable is the transport/bounce operator; collision (BGK), forcing source, initial condition, sampling schedule, dtype and thread count are shared code",
+    "reference": "closed forms and a literature constant, never another LBM implementation"
+  },
+  "predeclared_thresholds": {
+    "owner_acceptance_pct": 15.0,
+    "internal_target_pct": 3.0,
+    "implementation_equivalence_rel": 1e-12,
+    "duct_series_selfcheck_pct": 1.0,
+    "note": "the duct series is itself a judge, so it is validated before use: FD Poisson residual and f*Re against 56.908 must be inside 1%, otherwise the duct KPI is reported as WITHHELD rather than pass/fail"
+  },
+  "sensitivity_points": [
+    "3D Stokes mode: n in {24, 32} at k = 2*pi/n in each axis, A = 1e-3 (Stokes regime), tau = 0.8",
+    "3D slit channel: Ny in {12, 16, 24} at tau = 0.8, u_max_target = 0.02",
+    "square duct: n in {12, 16} at tau = 0.8, u_max_target = 0.02"
+  ],
+  "stopping_rule": "fixed step counts predeclared from the analytic time scales before any run: Stokes mode 800 steps (about 7 e-folding times at nu = 0.1, n = 32); slit channel and square duct 30000 steps (the same viscous-time budget rounds 2-3 used for the 2D channel, H^2/nu scaled by the duct side). No arm is extended or truncated after inspecting a KPI.",
+  "variables_changed": ["transport operator (gather vs fixed-kernel conv)", "bounce operator (index reversal vs 1x1 conv blend)"],
+  "variables_controlled": ["lattice D3Q19", "BGK tau = 0.8", "forcing source term", "initial condition", "float64", "torch CPU, 4 threads", "step count"],
+  "confounders": [
+    "half-way wall placement: analytical references are evaluated at the half-way wall planes (wall at 0.5 and N-1.5), so no O(1) offset is embedded in the comparison",
+    "duct corners: the series has a corner singularity, so the cross-section L2 KPI is expected to converge slower than the 2D profile KPI; the centreline and f*Re KPIs are the corner-free ones",
+    "compressibility: the Stokes-mode amplitude is set to 1e-3 so that O(Ma^2) terms are below 1e-6 relative"
+  ],
+  "repetition_rationale": "each configuration is deterministic (fixed initial condition, no RNG except in the random-field equivalence probe, which is seeded); a repeat must reproduce bit-wise, so a single deterministic run per configuration is sufficient and the reproducibility claim is checked by re-running one configuration",
+  "environment": "CPU torch float64, torch.set_num_threads(4), commit + dirty flag recorded in result.json",
+  "analysis_plan": "per case: (1) arm-pair bit-wise comparison; (2) each arm against its closed-form reference; (3) failure modes reported as-is (non-finite populations, |u| > 10*u_target, non-converged steady state via half-run drift)",
+  "sections_delivered": ["3D Stokes-mode decay", "3D slit channel Poiseuille", "square duct Poiseuille", "arm-pair bit-wise equivalence in 3D", "transport cost in 3D", "error verdict vs 15% and 3%"]
+}
