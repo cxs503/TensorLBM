@@ -194,6 +194,18 @@ def run_channel(case: ChannelCase, verbose: bool = False) -> Dict[str, object]:
     block_mean: Optional[torch.Tensor] = None
     block_start = 0
     converged = False
+    # telemetry: drift of the running time average between consecutive blocks,
+    # one entry per completed block.  A grid-refinement study needs to show that
+    # the residual is *at* the floor, not merely that max_steps was reached.
+    drift_hist: List[float] = []
+    drift_steps: List[int] = []
+    # Second residual: the drift of the *streamwise-averaged* profile.  The
+    # pointwise criterion above measures the acoustic ripple a soft Zou-He
+    # boundary does not damp, so it can stay at 1e-2 forever even when the mean
+    # field is at its floor.  Averaging along x removes the standing wave and
+    # leaves the quantity the Poiseuille comparison actually uses.
+    drift_profile_hist: List[float] = []
+    prof_prev: Optional[torch.Tensor] = None
     for step in range(1, case.max_steps + 1):
         # --- macroscopic + BGK collision -------------------------------------
         rho = f.sum(0)
@@ -231,6 +243,15 @@ def run_channel(case: ChannelCase, verbose: bool = False) -> Dict[str, object]:
                 if block_mean is not None:
                     u_scale = max(mean.abs().max().item(), 1e-30)
                     drift = (mean - block_mean).abs().max().item() / u_scale
+                    drift_hist.append(drift)
+                    drift_steps.append(step)
+                    prof_now = mean[1:ny - 1, :].mean(dim=1)
+                    if prof_prev is not None:
+                        drift_profile_hist.append(
+                            (prof_now - prof_prev).abs().max().item()
+                            / max(prof_now.abs().max().item(), 1e-30)
+                        )
+                    prof_prev = prof_now.clone()
                     if verbose:
                         print(f"  step {step:6d}  block drift = {drift:.3e}")
                     if drift < case.tol:
@@ -279,6 +300,13 @@ def run_channel(case: ChannelCase, verbose: bool = False) -> Dict[str, object]:
         "steps": step,
         "navg": navg,
         "converged": converged,
+        "drift_hist": drift_hist,
+        "drift_steps": drift_steps,
+        "drift_last": (drift_hist[-1] if drift_hist else float("nan")),
+        "drift_profile_hist": drift_profile_hist,
+        "drift_profile_last": (
+            drift_profile_hist[-1] if drift_profile_hist else float("nan")
+        ),
         "q_col": q_col,
         "f": f,
         "rho": rho,

@@ -21,6 +21,11 @@ solution of a pressure-driven channel.
 * `make_report.py` — aggregates the JSON records into `REPORT.md` and
   `figures/*.png`; every number in the report is read back from the records.
 
+* `refinement.py` / `run_ladder.sh` / `make_refinement_report.py` — the
+  grid-refinement (h-) study added after the campaign: fixed `L/H = 8`, longer
+  averaging, residual telemetry, observed order of accuracy.  Output:
+  `REFINEMENT.md` + `figures/fig4..fig6`.
+
 Reproduce (light, ~30 s per case):
 
 ```bash
@@ -38,3 +43,17 @@ Headline (pressure-driven arm, `drho = 4e-3`, `tau = 0.65`): `u_x,max` within
 flux constant to `4e-7` relative, fitted pressure gradient within `2e-5` of the
 nominal `drho/(nx-1)`.  See `REPORT.md` for the full table, the figures and the
 negative results (inlet closure is *not* the error-dominant term).
+## Grid-refinement follow-up
+
+`REFINEMENT.md` reports the h-study (H = 16, 24, 32 at `L/H = 8`): the mean-field
+metrics are insensitive to the averaging schedule (0.02 % under a doubled
+window, 0.07 % against the independent campaign record), the shape-only profile
+error converges at **p = 2.05** and the raw max-error at **p = 1.53** -- i.e. the
+Zou-He channel closure is a consistent second-order-except-amplitude discretisation,
+and the 0.35 % campaign number is discretisation error, not averaging noise.
+
+```bash
+bash xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/run_ladder.sh
+PYTHONPATH=src python xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/make_refinement_report.py
+PYTHONPATH=src python -m pytest tests/test_zou_he_channel_refinement.py -q
+```
