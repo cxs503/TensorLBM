@@ -177,7 +177,8 @@ class GPUCorePathConfig:
         :mod:`tensorlbm.boundary.nebb`: wall density recovered from the field,
         wall velocity shifted by ``-a/(2 rho_w)`` so it is consistent with the
         Guo body force).  ``"nebb"`` runs on the eager backend (the compiled
-        kernel only implements ``"halfway"``).
+        kernel only implements ``"halfway"``).  The closure sets the width the
+        body force is derived from (see :attr:`wall_height`).
     allow_lossy_store:
         Must be set to ``True`` to run a float16 store tier.  float16 spacing
         at ``w_q ~ 1/18`` is ``2**-15 ~ 3e-5``, which exceeds the per-step
@@ -209,12 +210,27 @@ class GPUCorePathConfig:
     # -- derived physics ------------------------------------------------
     @property
     def height(self) -> float:
-        """Channel width in lattice units (wall planes at 0.5 and ny-1.5)."""
+        """Half-way-bounce-back channel width (wall planes at 0.5 and ny-1.5)."""
         return float(self.ny - 2)
 
     @property
+    def wall_height(self) -> float:
+        """Width of the *active* wall closure: the no-slip plane separation.
+
+        ``"halfway"`` puts the planes half a cell outside the wall rows, so the
+        width is ``ny - 2`` (:attr:`height`).  ``"nebb"`` puts the planes *on*
+        the wall rows, so the width is ``ny - 1``.  Every conversion from a
+        target or friction velocity to a body force must use this width, not
+        :attr:`height`: driving a wall-node closure with the half-way width
+        gives ``u_max = u_max_target * ((ny-1)/(ny-2))**2`` (+26.6 % at
+        ny=10, +12.9 % at ny=18), i.e. the achieved centre-line velocity is no
+        longer the declared one.
+        """
+        return float(self.ny - 1) if self.wall_bc == "nebb" else float(self.ny - 2)
+
+    @property
     def half_height(self) -> float:
-        return 0.5 * self.height
+        return 0.5 * self.wall_height
 
     @property
     def nu(self) -> float:
@@ -222,13 +238,17 @@ class GPUCorePathConfig:
 
     @property
     def body_force(self) -> float:
-        """Body-force acceleration producing ``u_max_target`` on a parabola."""
-        return 8.0 * self.nu * self.u_max_target / self.height**2
+        """Body-force acceleration producing ``u_max_target`` on a parabola.
+
+        Uses :attr:`wall_height`, so the declared centre-line velocity is the
+        one the *selected* wall closure actually produces.
+        """
+        return 8.0 * self.nu * self.u_max_target / self.wall_height**2
 
     @property
     def u_tau(self) -> float:
         """Friction velocity implied by the body force: ``sqrt(a H / 2)``."""
-        return math.sqrt(self.body_force * self.height / 2.0)
+        return math.sqrt(self.body_force * self.wall_height / 2.0)
 
     @property
     def effective_body_force(self) -> float:
@@ -238,7 +258,7 @@ class GPUCorePathConfig:
     @property
     def re_tau(self) -> float:
         """Friction Reynolds number ``u_tau H / (2 nu)``."""
-        return self.u_tau * self.height / (2.0 * self.nu)
+        return self.u_tau * self.wall_height / (2.0 * self.nu)
 
     @property
     def ma(self) -> float:
@@ -287,6 +307,7 @@ class GPUCorePathConfig:
             "re_tau": self.re_tau,
             "ma": self.ma,
             "height": self.height,
+            "wall_height": self.wall_height,
             "precision": self.precision,
             "backend": self.backend,
             "init": self.init,
@@ -302,12 +323,28 @@ class GPUCorePathConfig:
 # ---------------------------------------------------------------------------
 
 
-def _macroscopic(f: torch.Tensor, C_: torch.Tensor) -> tuple[torch.Tensor, ...]:
+def _macroscopic(
+    f: torch.Tensor, C_: torch.Tensor, body_force: float = 0.0
+) -> tuple[torch.Tensor, ...]:
+    """``(rho, ux, uy, uz)`` from the populations.
+
+    With ``body_force == 0`` this is the raw moment ``sum_q c_q f_q / rho``.
+    With a body force it returns the *physical* velocity: the raw moment
+    shifted by ``F/(2 rho) = a/2`` (uniform acceleration).  The collision
+    evaluates the equilibrium at ``u* = u_raw + a/2`` (Guo, Zheng & Shi
+    2002), so ``u*`` -- not the raw moment -- is the velocity the flow
+    carries.  The collision keeps using the raw moment (it applies the
+    shift itself); only diagnostics take it through here.  Omitting it
+    biases every reported velocity low by ``a/2``, which is ``4 nu/H**2``
+    relative to u_max: 1.25 % at ny=10, 0.31 % at ny=18.
+    """
     rho = f.sum(dim=0)
     inv = 1.0 / torch.clamp(rho, min=1e-12)
     ux = (f * C_[:, 0].view(-1, 1, 1, 1)).sum(dim=0) * inv
     uy = (f * C_[:, 1].view(-1, 1, 1, 1)).sum(dim=0) * inv
     uz = (f * C_[:, 2].view(-1, 1, 1, 1)).sum(dim=0) * inv
+    if body_force:
+        ux = ux + 0.5 * float(body_force)
     return rho, ux, uy, uz
 
 
@@ -495,6 +532,8 @@ def channel_analytic_velocity_nebb(cfg: GPUCorePathConfig) -> tuple[torch.Tensor
     ``y = 0 .. ny-1`` (including the two wall rows, where it vanishes).
     Returns ``(y, ux_profile)`` with ``ux_profile`` shaped ``(ny,)``.
     """
+    # wall-node closure: the planes are the wall rows, so this is ny-1 no
+    # matter which closure the config itself selects
     H = float(cfg.ny - 1)
     y = torch.arange(cfg.ny, dtype=torch.float64)
     prof = cfg.body_force / (2.0 * cfg.nu) * y * (H - y)
@@ -723,7 +762,7 @@ class GPUCorePathSolver:
     # -- diagnostics ----------------------------------------------------
     def macroscopic(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """``(rho, ux, uy, uz)`` on the full grid, in compute dtype."""
-        return _macroscopic(self._current(), self.C)
+        return _macroscopic(self._current(), self.C, self.cfg.effective_body_force)
 
     def interior(self) -> dict[str, torch.Tensor]:
         """Macroscopic fields restricted to the fluid rows ``1 .. ny-2``.
