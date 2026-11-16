@@ -311,6 +311,270 @@ def run_shear_decay(
     }
 
 
+
+# --------------------------------------------------------------------------- #
+#  Case: wall-bounded Poiseuille channel (boundary-condition axis)
+# --------------------------------------------------------------------------- #
+
+
+def _wall_ops(lattice: str):
+    """Production lattice tables + production half-way bounce-back for *lattice*.
+
+    The wall case must not carry its own boundary numerics: the reflection is
+    the shipped ``bounce_back_cells_3d`` / ``bounce_back_cells_27`` swap, the
+    streaming is the shipped periodic roll, and the body force is injected with
+    the lattice's own ``C``/``W`` tables.
+    """
+    key = lattice.upper()
+    if key == "D3Q19":
+        from ..boundary.boundaries3d import bounce_back_cells_3d  # noqa: PLC0415
+        from ..d3q19 import C, W  # noqa: PLC0415
+
+        return C, W, bounce_back_cells_3d
+    if key == "D3Q27":
+        from ..boundary.boundaries_d3q27 import bounce_back_cells_27  # noqa: PLC0415
+        from ..d3q27 import C, W  # noqa: PLC0415
+
+        return C, W, bounce_back_cells_27
+    raise ValueError(f"lattice {lattice!r} has no wall operator in this repository")
+
+
+def wall_poiseuille_exact(y: torch.Tensor, ny: int, g: float, nu: float) -> torch.Tensor:
+    """Analytic plane-Poiseuille profile for a half-way-bounce-back channel.
+
+    The solid rows are ``y = 0`` and ``y = ny - 1``; half-way bounce-back places
+    the *numerical* walls half a lattice unit outside the first *fluid* node,
+    i.e. at ``Y = 1/2`` and ``Y = ny - 3/2`` (fluid nodes sit at ``Y = 1 ..
+    ny-2``, channel width ``H = ny - 2``).  The steady solution of
+    ``nu d2u/dY2 = -g`` with no-slip at those walls is
+
+    .. math:: u(Y) = \\frac{g}{2\\nu} (Y - 1/2)(ny - 3/2 - Y)
+
+    This is the *a-priori* reference: ``g`` and ``nu = (tau-1/2)/3`` are inputs,
+    nothing is fitted to the simulation.
+    """
+    return (g / (2.0 * nu)) * (y - 0.5) * ((ny - 1.5) - y)
+
+
+def _parabolic_wall_offset(y: torch.Tensor, u: torch.Tensor) -> tuple[float, float]:
+    """Wall positions implied by a least-squares parabola through the profile.
+
+    Two independent choices make the number checkable rather than fitted: the
+    parabola is anchored on the *interior* fluid nodes only (one wall node of
+    each side is dropped), and the two roots are taken separately so the low
+    and high wall are not assumed symmetric.
+    """
+    yin = y[1:-1]
+    uin = u[1:-1]
+    a = torch.stack([yin * yin, yin, torch.ones_like(yin)], dim=1)
+    coef = torch.linalg.lstsq(a, uin.unsqueeze(1)).solution.flatten()
+    c2, c1, c0 = (float(v) for v in coef)
+    disc = c1 * c1 - 4.0 * c2 * c0
+    if c2 == 0.0 or disc < 0.0:
+        return float("nan"), float("nan")
+    sq = math.sqrt(disc)
+    r1 = (-c1 - sq) / (2.0 * c2)
+    r2 = (-c1 + sq) / (2.0 * c2)
+    return min(r1, r2), max(r1, r2)
+
+
+def wall_poiseuille_step(
+    spec: ModelSpec,
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    source: torch.Tensor,
+    collider: Callable[[torch.Tensor], torch.Tensor],
+) -> torch.Tensor:
+    """One wall-bounded step: collide -> body-force kick -> NoDynamics -> BB -> stream.
+
+    This is the exact order documented by :func:`tensorlbm.lbm_step_correct.
+    lbm_step_correct` in ``wall_treatment='bb'`` mode (collision, solid restore,
+    half-way bounce-back *before* streaming), with the constant body force
+    added between collision and the solid restore.  Every piece is a shipped
+    operator; the composition itself is cross-checked against
+    :class:`tensorlbm.rotating_frame.RotatingFrameLBM` (a validated Guo-forced
+    stepper) in ``tests/test_model_matrix_wall.py``.
+    """
+    stream = lattice_ops(spec.lattice)["stream"]
+    f_pre = f
+    f_post = collider(f) + source
+    f_post = torch.where(solid.unsqueeze(0), f_pre, f_post)
+    f_post = _wall_ops(spec.lattice)[2](f_post, solid)
+    return stream(f_post)
+
+
+def run_wall_poiseuille(
+    spec: ModelSpec,
+    grid: Grid,
+    tau: float,
+    *,
+    g: float = 1e-5,
+    dtype=torch.float64,
+    tol_pct: float = 3.0,
+    enforcement: str = "gate",
+    max_offset: float = 0.15,
+    max_steps: int = 40000,
+) -> dict:
+    """Steady plane Poiseuille flow between two half-way bounce-back walls.
+
+    Why this case exists: every other case in this module is *periodic*, so the
+    whole model matrix is blind to the boundary operator -- an inverted
+    reflection table, a one-cell mask slip or a missing NoDynamics restore is
+    invisible to it.  This case puts the production wall operator into the
+    matrix and measures three things that a broken wall cannot fake:
+
+    ``rel_l2_pct``
+        velocity profile vs the analytic parabola (walls at ``y = +-1/2``)
+    ``wall_offset_lattice``
+        the wall position implied by a parabola fitted through the interior
+        nodes.  Ideal half-way bounce-back gives ``0.0 +- O(1/H)``; a mask or
+        reflection that lands the wall one cell away gives ``~1``.
+    ``symmetry_rel``
+        ``max_j |u(j) - u(ny-1-j)| / u_max`` -- the channel is symmetric, so an
+        asymmetric streaming/reflection convention shows up here.
+
+    plus the mass drift (a wall that leaks mass) and the centreline velocity.
+
+    The inverse of this case is not claimed: it verifies the *discrete*
+    steady state of a straight, grid-aligned wall.  Curved/interpolated walls
+    and unsteady wall forces are out of scope (see the round-3 doc).
+    """
+    ops = lattice_ops(spec.lattice)
+    C, W, _bb = _wall_ops(spec.lattice)
+    ny = int(grid.ny)
+    if ny < 6:
+        return {
+            "status": "FAIL",
+            "metrics": {"ny": float(ny)},
+            "ref": {},
+            "tolerance": {},
+            "notes": "channel needs at least 4 fluid rows",
+        }
+    nx = 2  # the flow is x- and z-invariant: two cells keep the case cheap
+    nz = 1
+    shape = (nz, ny, nx)
+    nu = nu_from_tau(tau)
+    H = ny - 2
+
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    solid[:, -1, :] = True
+
+    c = C.to(dtype=dtype)
+    w = W.to(dtype=dtype)
+    # constant body force: sum_i c_i (3 w_i c_i.F) = F exactly, sum_i 3 w_i c_i.F = 0
+    source = (3.0 * w).view(-1, 1, 1, 1) * (c[:, 0].view(-1, 1, 1, 1) * g)
+
+    y = torch.arange(ny, dtype=dtype)
+    u_exact = wall_poiseuille_exact(y, ny, g, nu)
+    u0 = torch.full(shape, 0.0, dtype=dtype)
+    u0 = u_exact.view(1, ny, 1).expand(shape).clone()
+    rho0 = torch.ones(shape, dtype=dtype)
+    f = ops["equilibrium"](rho0, u0, torch.zeros_like(u0), torch.zeros_like(u0)).to(dtype)
+    collider = build_collider(spec.name, tau)
+
+    m0 = float(rho0.mean()) * ny * nx * nz
+    # The transient that the analytic initial state leaves behind is the wall
+    # boundary layer; 4 diffusive times is enough to push it below round-off
+    # level for every tau used by the matrix.
+    steps_min = int(max(800, round(4.0 * H * H / (math.pi**2 * nu))))
+    mass_drift = 0.0
+    u_prev = u_exact.clone()  # 1-D profile, same shape as the sampled slice
+    steps = 0
+    converged = False
+    for n in range(1, max_steps + 1):
+        f = wall_poiseuille_step(spec, f, solid, source, collider)
+        steps = n
+        if n < steps_min:
+            continue
+        if n % 100 == 0 or n == steps_min:
+            rho, ux, _uy, _uz = ops["macroscopic"](f)
+            mass_drift = max(mass_drift, abs(float(rho.mean()) * ny * nx * nz - m0) / m0)
+            if not torch.isfinite(f).all():
+                break
+            u_now = ux[0, :, 0]
+            scale = max(float(u_now.abs().max()), 1e-30)
+            if float((u_now - u_prev).abs().max()) / scale < 1e-10:
+                converged = True
+                break
+            u_prev = u_now
+
+    rho, ux, _uy, _uz = ops["macroscopic"](f)
+    finite = bool(torch.isfinite(f).all())
+    profile = ux[0, :, 0].clone()
+    fl = slice(1, ny - 1)
+    uf = profile[fl]
+    ue = u_exact[fl]
+    den = float((ue * ue).sum())
+    rel_l2 = 100.0 * math.sqrt(float(((uf - ue) ** 2).sum()) / den) if den > 0 else float("inf")
+    u_center = float(profile[ny // 2])
+    u_center_exact = float(u_exact[ny // 2])
+    u_max = float(ue.abs().max())
+    sym = float((profile[fl] - profile.flip(0)[fl]).abs().max()) / max(u_max, 1e-30)
+    y_lo, y_hi = _parabolic_wall_offset(y, profile)
+    off_lo = y_lo - 0.5
+    off_hi = (ny - 1.5) - y_hi
+    offset = 0.5 * (off_lo + off_hi)
+
+    ok = (
+        finite
+        and rel_l2 <= tol_pct
+        and abs(offset) <= max_offset
+        and sym <= 5e-3
+        and mass_drift <= 1e-10
+        and u_center > 0.0
+    )
+    notes = (
+        "gate case: boundary operator axis (half-way bounce-back + NoDynamics restore); "
+        "reference is the a-priori parabola with walls at Y=+-1/2"
+    )
+    if not finite:
+        notes = "distribution went non-finite (wall + forcing composition unstable)"
+    elif not converged:
+        notes += f"; steady-state detector did not fire within {steps} steps"
+    return {
+        "status": "PASS" if ok else "FAIL",
+        "metrics": {
+            "rel_l2_pct": rel_l2,
+            "wall_offset_lattice": offset,
+            "wall_offset_low": off_lo,
+            "wall_offset_high": off_hi,
+            "u_center": u_center,
+            "u_center_exact": u_center_exact,
+            "u_center_rel_err_pct": 100.0 * (u_center - u_center_exact) / u_center_exact,
+            "u_max_exact": u_max,
+            "mach": u_max / CS,
+            "symmetry_rel": sym,
+            "mass_drift_rel": mass_drift,
+            "steps": float(steps),
+            "converged": 1.0 if converged else 0.0,
+            "tau": tau,
+            "nu": nu,
+            "H": float(H),
+            "g": g,
+        },
+        "ref": {
+            "solution": "u_x(Y) = g/(2 nu) (Y - 1/2)(ny - 3/2 - Y), no-slip at Y = 1/2 and Y = ny - 3/2",
+            "nu": nu,
+            "g": g,
+            "wall_position": "half-way bounce-back => Y = 1/2 and Y = ny - 3/2",
+        },
+        "tolerance": {
+            "rel_l2_pct": tol_pct,
+            "wall_offset_lattice_max": max_offset,
+            "symmetry_rel_max": 5e-3,
+            "mass_drift_rel": 1e-10,
+            "enforcement": enforcement,
+        },
+        "notes": notes,
+        "curves": {
+            "y": [float(v) for v in y.tolist()],
+            "u": [float(v) for v in profile.tolist()],
+            "u_exact": [float(v) for v in u_exact.tolist()],
+        },
+    }
+
+
 # --------------------------------------------------------------------------- #
 #  Case: acoustic-wave decay (analytic bulk viscosity)
 # --------------------------------------------------------------------------- #
@@ -624,6 +888,17 @@ CASES: dict[str, CaseSpec] = {
         runner=run_acoustic_decay,
         tol_pct=3.0,
         metrics_doc="S_meas, S_ref, acoustic_rel_error_pct, nu_b_implied, fit_r2",
+    ),
+    "wall_poiseuille": CaseSpec(
+        name="wall_poiseuille",
+        description=(
+            "steady plane Poiseuille between two half-way bounce-back walls: velocity profile "
+            "vs the analytic parabola (walls at Y=+-1/2), implied wall offset, channel symmetry"
+        ),
+        enforcement="gate",
+        runner=run_wall_poiseuille,
+        tol_pct=3.0,
+        metrics_doc="rel_l2_pct, wall_offset_lattice, symmetry_rel, mass_drift_rel, u_center_rel_err_pct",
     ),
     "tg_decay": CaseSpec(
         name="tg_decay",
