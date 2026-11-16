@@ -326,6 +326,11 @@ def calibrate(
                 status = "unconverged"
         elif meas.get("status") == "no_contour" or meas.get("status") == "too_few_points":
             status = "no_interface"
+        else:
+            # Any other rejection (no-liquid, degenerate-fit, insufficient-rows,
+            # ...) used to fall through to "ok" with a NaN angle, which let an
+            # unmeasured point be counted as a calibration point.
+            status = "not_measured"
 
         cos_meas = math.cos(math.radians(theta_meas)) if math.isfinite(theta_meas) else float("nan")
 
