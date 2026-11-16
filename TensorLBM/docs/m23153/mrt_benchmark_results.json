@@ -1,0 +1,78 @@
+{
+  "mission": "m23153",
+  "anchor": "LBM-P0-MRT",
+  "title": "MRT \u78b0\u649e\u7b97\u5b50\u771f\u5b9e\u73b0\u5b9e\u8bc1",
+  "timestamp": "2026-11-16T08:07:41Z",
+  "cases": {
+    "taylor_green": {
+      "bgk": {
+        "n": 32,
+        "re": 100,
+        "collision": "bgk",
+        "tau": 0.5094247779607693,
+        "E0": 0.0012499999720603228,
+        "E_final": 0.0009685407888768043,
+        "E_analytical": 1.1671517073174936e-06,
+        "err_E_pct": 82883.2816766242,
+        "stable": true
+      },
+      "mrt": {
+        "n": 32,
+        "re": 100,
+        "collision": "mrt",
+        "tau": 0.5094247779607693,
+        "E0": 0.0012499999720603228,
+        "E_final": 0.0009670182057767451,
+        "E_analytical": 1.1671517073174936e-06,
+        "err_E_pct": 82752.82878943624,
+        "stable": true
+      }
+    },
+    "poiseuille": {
+      "bgk": {
+        "ny": 32,
+        "nx": 32,
+        "collision": "bgk",
+        "tau": 0.8,
+        "u_max_sim": 0.007360809214244708,
+        "u_max_analytical": 0.012012499999999999,
+        "err_u_max_pct": 38.72375263896184,
+        "r2": 0.999763756273526,
+        "stable": true
+      },
+      "mrt": {
+        "ny": 32,
+        "nx": 32,
+        "collision": "mrt",
+        "tau": 0.8,
+        "u_max_sim": 0.007361249121598,
+        "u_max_analytical": 0.012012499999999999,
+        "err_u_max_pct": 38.720090559017684,
+        "r2": 0.999769243778521,
+        "stable": true
+      }
+    },
+    "lid_driven_cavity": {
+      "bgk": {
+        "n": 33,
+        "re": 100,
+        "collision": "bgk",
+        "tau": 0.596,
+        "u_min_sim": -0.10345118687183738,
+        "u_min_ghia": -0.2109,
+        "err_u_min_pct": 50.947753972575924,
+        "stable": true
+      },
+      "mrt": {
+        "n": 33,
+        "re": 100,
+        "collision": "mrt",
+        "tau": 0.596,
+        "u_min_sim": -0.10341581017397768,
+        "u_min_ghia": -0.2109,
+        "err_u_min_pct": 50.964528129929974,
+        "stable": true
+      }
+    }
+  }
+}
