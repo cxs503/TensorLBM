@@ -1,0 +1,32 @@
+{
+  "anchor": "XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION",
+  "round": "error-budget (estimator bias + interpolation vs transfer)",
+  "subject": "src/tensorlbm/contact_angle_inversion/ (m18090 deliverable; m22445 holdout round)",
+  "why": [
+    "m18090 reported 1.09-2.57% errors at one configuration; m22445 re-ran the same inversion on the production grid and got 11.03% at theta=90, attributing the loss to resolution transfer.",
+    "m22445's own Arm A (theta=90, calibrated grid, no transfer at all) already missed by 7.71%, which means a term other than resolution was active and was never separated out.",
+    "The angle operator every calibration number depends on (contact_angle_from_mask) has never been measured against a known angle, so there is no measured floor under any quoted error.",
+    "Both rounds quote total errors only; no error budget exists."
+  ],
+  "claims_under_test": {
+    "C1": "The delivered inversion's residual error is dominated by Huang2007/resolution transfer.",
+    "C2": "contact_angle_from_mask is an accurate angle measurement (bias small compared with the 15% gate).",
+    "C3": "Piecewise-linear interpolation between the 7 delivered calibration nodes is adequate."
+  },
+  "gates": {
+    "gate_pct": 15.0,
+    "gate_source": "owner precision standard (error > 15% unacceptable)",
+    "strict_pct": 3.0,
+    "G1_estimator": "For every synthetic cap the estimator accepts (status ok), |theta_meas - theta_true| / theta_true must be < 15%. Points the estimator rejects are reported as NOT_MEASURED, never as passes; the measurable theta band per radius is reported.",
+    "G2_interpolation": "Leave-one-out chord error of the DELIVERED 7-node curve (cos space, as shipped) must be < 15% on the nodes it covers.",
+    "G3_transfer_share": "With the w f_w held fixed, the difference between the coarse and the production-grid measurement gives the transfer term; the budget must state the interpolation and transfer shares of the total 11.03% theta=90 error rather than attributing the whole error to one mechanism.",
+    "G4_fix": "End-to-end hold-out at theta=90 and theta=105 using the refined curve: each row must be inside 15%; whether it reaches 3% is reported, not gated (measurement floor may forbid it).",
+    "measurability": "a row whose estimator returns status != ok, or whose tail drift > 1 deg, is NOT_MEASURED and excluded from pass counts."
+  },
+  "honesty_rules": [
+    "synthetic ground truth is analytic, no LBM physics involved: bias measured there is estimator-only",
+    "every table in REPORT.md is rendered from evidence/*.json, no hand-copied numbers",
+    "a variant that loses is reported (delivered vs refined, linear vs pchip), not dropped",
+    "the previously claimed C1/C3, if contradicted, is stated as contradicted in the report"
+  ]
+}
