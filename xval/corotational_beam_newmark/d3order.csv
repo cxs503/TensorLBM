@@ -1,0 +1,5 @@
+case,arm,param,kpi,value,status,note
+D3R_RESOLVED,TL,"lambda=5.0,dt=0.04s,window=20s,n=16",energy_drift_pct,8.06235220164192e-06,PASS,omega_max*dt=1.57
+D3R_RESOLVED,TL,"lambda=5.0,dt=0.02s,window=20s,n=16",energy_drift_pct,3.842941159910688e-06,PASS,omega_max*dt=0.78
+D3R_RESOLVED,LIFE,"lambda=5.0,dt=0.04s,window=20s,n=16",energy_drift_pct,2.638333905365346e-05,PASS,omega_max*dt=1.57
+D3R_RESOLVED,LIFE,"lambda=5.0,dt=0.02s,window=20s,n=16",energy_drift_pct,3.0402988748818942e-05,PASS,omega_max*dt=0.78
