@@ -153,6 +153,18 @@ class TritonStepState:
         )
 
 
+from ..registry import capability
+
+
+@capability(
+    id="lbm.backend.triton.suboff_step",
+    kind='backend',
+    maturity='developing',
+    wired=False,
+    tested=False,
+    verified=False,
+    evidence={'grade': 'NONE', 'note': 'Triton 融合步：仅在装有 triton 的 GPU 节点可用，本环境无法执行 ⇒ 未验证、未接线（诚实标 NONE）'},
+)
 def triton_suboff_step(
     f: torch.Tensor,
     obstacle_int8: torch.Tensor,

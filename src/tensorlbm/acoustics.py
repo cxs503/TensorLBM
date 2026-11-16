@@ -169,6 +169,20 @@ def _retarded_time_index(
     return max(0, min(t_idx - delay_samples, n_steps - 1))
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.acoustics.fwh_farfield",
+    kind='acoustics',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_acoustics.py',
+    evidence={'grade': 'MECHANICS', 'note': 'FWH 时域积分远场声压；验证脚本 acoustics_validation 存在，未登记 vs 解析单极/偶极源的误差带'},
+    endpoint='api:tensorlbm.acoustics.compute_fwh_far_field',
+)
 def compute_fwh_far_field(
     surface: FWHSurface,
     observers: list[AcousticObserver],

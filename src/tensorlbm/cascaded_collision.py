@@ -442,6 +442,19 @@ def _relax_d3q27(
 # ---------------------------------------------------------------------------
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.cascaded.d3q19",
+    kind='collision',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_cascaded_collision.py',
+    evidence={'grade': 'MECHANICS', 'note': "全中心矩层级 CM 算子；引用方为 free_surface_lbm 与契约模块，主 stepper 无 'cascaded' 分派 ⇒ wired=False"},
+)
 def collide_cascaded_d3q19(
     f: torch.Tensor,
     tau: float,
@@ -509,6 +522,19 @@ def collide_cascaded_d3q19(
     return feq + f_neq_star
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.cascaded.d3q27",
+    kind='collision',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_cascaded_collision.py',
+    evidence={'grade': 'MECHANICS', 'note': 'D3Q27 CM 算子；main path 未接线'},
+)
 def collide_cascaded_d3q27(
     f: torch.Tensor,
     tau: float,
