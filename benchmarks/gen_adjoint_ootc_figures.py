@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -103,8 +103,7 @@ def gen_convergence_plot():
 
 def gen_velocity_field():
     """Figure 3: Velocity field at terminal state (N=64)."""
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TensorLBM", "src"))
-    from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro
+    from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step
 
     N, T, tau = 64, 2000, 1.0
     f0 = initial_pulse(N, N, amp=0.05, sigma=float(N) / 8.0)

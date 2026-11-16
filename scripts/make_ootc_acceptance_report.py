@@ -23,11 +23,11 @@ import base64
 import json
 import os
 import subprocess
-import sys
 import time
 from datetime import datetime, timezone
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
@@ -35,7 +35,6 @@ import numpy as np  # noqa: E402
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ART = os.path.join(REPO, "artifacts", "adjoint_ootc_acceptance")
 FIG = os.path.join(ART, "figures")
-sys.path.insert(0, os.path.join(REPO, "TensorLBM", "src"))
 
 MEM_GATE_GIB = 8.0
 MISSION = 20040
@@ -186,8 +185,8 @@ def fig_gates(res):
 
 def fig_fields(N=128, T=4000, k=100, tau=1.0):
     """Field snapshot: terminal velocity and the adjoint field dJ/df0."""
-    from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro
-    from tensorlbm.adjoint.ootc import ootc_gradient
+    from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step
+    from tensorlbm.adjoint_ootc.ootc import ootc_gradient
     f0 = initial_pulse(N, N, amp=0.05, sigma=N / 8.0)
     f = f0.copy()
     for _ in range(T):
@@ -259,7 +258,7 @@ def build_md(res, scale, figs, field_meta):
     A("")
     A("## 2. 怎么做的（方法 / 工具链）")
     A("")
-    A("**前向**：`tensorlbm.adjoint.lbm2d`，numpy float64，逐位确定（BGK 碰撞＋周期 streaming）。")
+    A("**前向**：`tensorlbm.adjoint_ootc.lbm2d`，numpy float64，逐位确定（BGK 碰撞＋周期 streaming）。")
     A("")
     A("**参考梯度（BPTT）**：全轨迹存储的反向传播，内存 O(T·N·Q)。碰撞 Jacobian 用转置")
     A("`Bᵀ=∂feq/∂f` 作用（修正 m17532 的 D1/D2 缺陷后已与复步 Jacobian 逐列吻合）。")
