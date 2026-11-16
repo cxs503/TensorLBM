@@ -1,0 +1,115 @@
+{
+  "mission_id": 23013,
+  "anchor": "LBM-P0-DROPLET",
+  "title": "液滴入水边界与诊断修复 (GH #408)",
+  "physical_problem": {
+    "description": "二维液滴在重力作用下落入静止液池，发生撞击、界面变形与并合。使用 D2Q9 Free-Energy 两相流模型。",
+    "geometry": "2D rectangular domain with physical tank boundaries (bottom wall + side walls + outflow)",
+    "initial_condition": {
+      "droplet": "circular, radius R, centered at (nx/2, water_level - R - gap)",
+      "pool": "static liquid below y = water_level, gas above",
+      "interface": "tanh profile with interface_width"
+    },
+    "governing_equations": "D2Q9 Free-Energy LBM with phase-field advection and Korteweg capillary force",
+    "external_anchor": [
+      "Worthington (1908) 'A Study of Splashes' — classic water entry",
+      "Truscott, Epps & Belden (2014) Annu. Rev. Fluid Mech. 46 355 — review of water entry",
+      "Swift et al. (1996) Phys. Rev. E 54 5041 — Free-Energy LBM foundation",
+      "Lee & Lin (2005) J. Comput. Phys. 209 1 — phase-field LBM for large density ratios"
+    ]
+  },
+  "gh408_items": [
+    {
+      "id": "GH408-1",
+      "description": "周期 streaming → 物理水槽边界（底壁+侧壁+出流）",
+      "rationale": "Periodic streaming is unphysical for droplet impact. Need: bottom wall (bounce-back), side walls (bounce-back or outflow), top (outflow/pressure BC).",
+      "implementation": "Replace periodic stream with bounce-back on bottom/sides, pressure/outflow on top"
+    },
+    {
+      "id": "GH408-2",
+      "description": "初始水面线=静态定义，与动态界面分离",
+      "rationale": "The initial water level should be a static reference line, distinct from the evolving dynamic interface",
+      "implementation": "Keep water_level as static reference; dynamic interface tracked via phi=0 contour"
+    },
+    {
+      "id": "GH408-3",
+      "description": "合并后质心追踪改语义（报两相质量加权或停止报）",
+      "rationale": "After coalescence, 'droplet centroid' is meaningless. Report two-phase mass-weighted centroid or stop reporting",
+      "implementation": "Change to report mass-weighted centroid of all liquid phase, with clear semantic documentation"
+    },
+    {
+      "id": "GH408-4",
+      "description": "Boussinesq 近似 → cAC 真实水气密度比通路",
+      "rationale": "Current Boussinesq uses rho_heavy/rho_light as effective density scaling. Need pathway to real water-air density ratio (~1000:1) via cAC (Allen-Cahn) formulation",
+      "implementation": "Add density_ratio parameter pathway; connect to LBM-P0-CAC-G; do NOT parallel-build"
+    }
+  ],
+  "acceptance_criteria": {
+    "impact_force_peak": {
+      "metric": "Peak impact force magnitude",
+      "threshold": "Order-of-magnitude consistent with literature (F_peak ~ ρU²D for water entry)",
+      "tolerance": "Within 1 order of magnitude of analytical estimate"
+    },
+    "mass_conservation": {
+      "metric": "Relative phase-mass drift over full simulation",
+      "threshold": "< 1% relative drift over 3000 steps",
+      "tolerance": "1e-2"
+    },
+    "interface_morphology": {
+      "metric": "Interface shape evolution (splash crown, cavity formation)",
+      "threshold": "Qualitatively consistent with Worthington splash morphology",
+      "tolerance": "Visual inspection + phi bounded in [-1.1, 1.1]"
+    },
+    "boundary_correctness": {
+      "metric": "No mass/particles leaking through walls",
+      "threshold": "Zero population flux through solid boundaries",
+      "tolerance": "Mass conservation within 0.5% with walls"
+    }
+  },
+  "reproducible_parameters": {
+    "nx": 240,
+    "ny": 160,
+    "radius": 14.0,
+    "gap": 8.0,
+    "water_level": 100.0,
+    "n_steps": 3000,
+    "output_interval": 150,
+    "g": 2e-5,
+    "tau_f": 0.8,
+    "tau_g": 0.8,
+    "A": 0.04,
+    "B": 0.04,
+    "kappa": 0.02,
+    "Gamma": 0.5,
+    "interface_width": 3.0,
+    "rho_heavy": 1.0,
+    "rho_light": 0.1
+  },
+  "stopping_rules": {
+    "max_phi": "If |phi| > 1.5 anywhere, stop and flag numerical instability",
+    "mass_drift": "If relative mass drift > 5%, stop and flag conservation failure",
+    "max_speed": "If max |u| > 0.3 (lattice), stop and flag CFL violation"
+  },
+  "confounders": [
+    "Grid resolution affects interface thickness and parasitic currents",
+    "Time step (implicit in lattice units) affects stability",
+    "Density ratio limited by Free-Energy model stability (~10:1 typical)",
+    "2D vs 3D: splash morphology differs qualitatively"
+  ],
+  "analysis_plan": {
+    "aggregation": "Time-series of mass drift, centroid, max speed, kinetic energy",
+    "comparison": "Before/after boundary fix comparison on identical parameters",
+    "validation": "Compare impact force peak order-of-magnitude with analytical estimate"
+  },
+  "resource_limits": {
+    "max_cores": 4,
+    "max_time_seconds": 600,
+    "device": "cpu"
+  },
+  "implementation_level": {
+    "boundary_fix": "implementation",
+    "centroid_semantic": "implementation",
+    "density_ratio_pathway": "implementation",
+    "physical_validation": "benchmark"
+  }
+}
