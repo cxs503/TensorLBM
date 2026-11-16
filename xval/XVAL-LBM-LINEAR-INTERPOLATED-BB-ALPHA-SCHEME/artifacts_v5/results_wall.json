@@ -1,0 +1,35 @@
+[
+ {
+  "wall": "laminus",
+  "delta": 0.375,
+  "nu": 0.3,
+  "closure": "cli",
+  "correction": true,
+  "l2_rel": 0.027690984454518706,
+  "max_rel": 0.03435408580069549,
+  "steps": 4000,
+  "converged": false
+ },
+ {
+  "wall": "half",
+  "delta": 0.375,
+  "nu": 0.3,
+  "closure": "cli",
+  "correction": true,
+  "l2_rel": 0.016072074850873853,
+  "max_rel": 0.01656643137760696,
+  "steps": 4000,
+  "converged": false
+ },
+ {
+  "wall": "zero",
+  "delta": 0.375,
+  "nu": 0.3,
+  "closure": "cli",
+  "correction": true,
+  "l2_rel": 0.03148111902087279,
+  "max_rel": 0.03764809587904593,
+  "steps": 4000,
+  "converged": false
+ }
+]
