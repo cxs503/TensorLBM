@@ -162,8 +162,12 @@ work below. No number in this document comes from the retired `stream_then_colli
 3. **Smooth single-mode flows do not discriminate operator orderings** (ordering audit, finding F4).
    The Couette gate is used only for the *wall* term; the operator identity is carried by the
    structural `torch.equal` test, not by a profile error.
-4. **Scope**: D2Q9 / BGK only. Nothing here transfers automatically to MRT/TRT or D3Q19/27 variants
-   of the pattern. BGK at `tau = 0.596` (L=32) is a marginally stable relaxation; TRT/regularised
+4. **Scope (updated 2026-11-16, m22757)**: D2Q9 / BGK only *for this document*. The D3Q19
+   transfer of the pattern is implemented and verified separately
+   (`src/tensorlbm/aa_fused_push_pull_3d.py`,
+   `docs/xval_aa_pattern_d3q19_fused_stream_collide.md`: bit-identical to the materialised
+   oracle, Couette / Poiseuille / shear-wave viscosity / Taylor-Green all below 1 %).
+   Nothing else here transfers automatically to MRT/TRT or D3Q27 variants BGK at `tau = 0.596` (L=32) is a marginally stable relaxation; TRT/regularised
    collision would be the right tool if finer `Re` is required.
 5. **Not run (honest)**: the converged multi-grid sweep `L = 32/64/128/192` was submitted to the
    scheduler as job **cj3680** (6 shards) and was still `queued` (position ≈ 58, 84 jobs in flight)
