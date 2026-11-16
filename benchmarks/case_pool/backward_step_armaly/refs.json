@@ -74,5 +74,12 @@
   "known_bias_sources": [
     "expansion ratio of the lattice geometry is exact (101/52) but the step corner is a staircase (first-order)",
     "3D effects in the experiment become noticeable above Re ~ 400 (arXiv:2507.16509 p.8), so 2D LBM is expected low there"
-  ]
+  ],
+  "method_comparison": {
+    "note": "Wall shear method systematically underestimates X1/s vs streamfunction method by ~0.15-0.16",
+    "shear_L3p": 2.597,
+    "psi_L3p": 2.753,
+    "difference": 0.156,
+    "recommendation": "Use streamfunction method as primary for reattachment length; wall shear as cross-check"
+  }
 }
