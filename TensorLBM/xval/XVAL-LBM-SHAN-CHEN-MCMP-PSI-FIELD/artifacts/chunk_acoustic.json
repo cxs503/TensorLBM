@@ -1,0 +1,56 @@
+{
+ "arms": [
+  {
+   "c_measured": 0.5775224368287982,
+   "c_predicted": 0.5773502691896257,
+   "rel_err_pct": 0.029820309846594457,
+   "period": 221.6364107044114,
+   "n_crossings": 22,
+   "damping_ratio_final_over_initial": 0.3860631129267605,
+   "name": "G=0 control",
+   "G": 0.0,
+   "psi_kind": "rho",
+   "elapsed_s": 19.46926975250244,
+   "pass_15pct": true
+  },
+  {
+   "c_measured": 0.6583368124655542,
+   "c_predicted": 0.6324555320336759,
+   "rel_err_pct": 4.092189746314092,
+   "period": 194.42935223479893,
+   "n_crossings": 25,
+   "damping_ratio_final_over_initial": 0.3893897132576624,
+   "name": "G=+1 psi=rho",
+   "G": 1.0,
+   "psi_kind": "rho",
+   "elapsed_s": 19.167927026748657,
+   "pass_15pct": true
+  },
+  {
+   "c_measured": 0.48301190258003895,
+   "c_predicted": 0.5163977794943222,
+   "rel_err_pct": -6.465147264377483,
+   "period": 265.0038214716445,
+   "n_crossings": 18,
+   "damping_ratio_final_over_initial": 0.38211521148724215,
+   "name": "G=-1 psi=rho",
+   "G": -1.0,
+   "psi_kind": "rho",
+   "elapsed_s": 19.35487151145935,
+   "pass_15pct": true
+  },
+  {
+   "c_measured": 0.8562797941617418,
+   "c_predicted": 0.7745966692414834,
+   "rel_err_pct": 10.545246082744697,
+   "period": 149.4838496397151,
+   "n_crossings": 32,
+   "damping_ratio_final_over_initial": 0.39652502504789244,
+   "name": "G=-1 psi=rho-1",
+   "G": -1.0,
+   "psi_kind": "rho_minus_ref",
+   "elapsed_s": 19.305001974105835,
+   "pass_15pct": true
+  }
+ ]
+}
