@@ -1,0 +1,26 @@
+{
+  "round": "7b",
+  "anchor": "XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S",
+  "written_before_running": true,
+  "disclosure": "P1 of predeclared_r7.json demanded |u_max_phys/u_max_declared - 1| < 1 %. A single LOCAL CALIBRATION solve (ny=10, wall_bc=nebb, closure_width arm, 1200 steps to residual 9.9e-13) already read ratio_vs_declared = 1.0311, i.e. P1's 1 % band will be missed at ny=10 by roughly a factor of three. That calibration number was seen before this file was written and is therefore NOT evidence; it only tells us that P1 as declared mixes two things -- the correctness of the drive normalisation (a definition question) and the truncation/compressibility error of the D3Q19 BGK closure (a discretisation question, which cannot vanish at ny=10 with H = 9 cells). Round 7b therefore predeclares two *new* ids that separate the two questions. No threshold in predeclared_r7.json is edited: P1 will be reported as measured, FAIL if it fails.",
+  "hypotheses": [
+    {
+      "id": "P6_differential",
+      "claim": "The legacy/closure ratio of the achieved centre-line velocity equals ((ny-1)/(ny-2))**2 up to the part of the truncation error that does not cancel between the two arms, because both arms solve the same discrete problem with the same closure and differ only in the driving amplitude (1.0 vs 1.265x at ny=10). This differential form is the normalisation metric: it is insensitive to the absolute discretisation error that made P1 fail.",
+      "metric": "D = ratio_vs_declared(legacy) / ratio_vs_declared(closure) on wall_bc='nebb'",
+      "pass_if": "|D - ((ny-1)/(ny-2))**2| < 0.01 * ((ny-1)/(ny-2))**2 for ny in {10, 18}",
+      "falsified_if": "the residual of P1 is a normalisation error rather than truncation, in which case D would stay within 1 % of 1",
+      "data": "already-produced arms of artifacts/r7/drive_width_ab.json (no new run)"
+    },
+    {
+      "id": "P7_order",
+      "claim": "With the drive normalisation fixed, the remaining physical-velocity error is genuine truncation error of the D3Q19 BGK + Guo closure and converges at first order in the wall-normal spacing H, at fixed tau and at fixed lattice Mach number (u_max_target held constant while H grows).",
+      "metric": "p = log(err(H1)/err(H2)) / log(H2/H1), err = pointwise error against the closed-form parabola, closure_width arm, wall_bc='nebb', tau=1.1, u_max_target=0.05, ny in {10, 26, 42}",
+      "pass_if": "0.7 <= p <= 1.4 for the two consecutive pairs (10->26, 26->42)",
+      "falsified_if": "p >= 1.7 (second order: the residual would then not be wall-position/truncation error) or p <= 0.4 (no convergence: the residual would be a defect, not discretisation)",
+      "why_it_matters": "Owner standard: >15 % unacceptable. The unfixed defect was +26.5 % at ny=10; a first-order truncation residual of ~3 % at ny=10 and <1 % at ny>=26 is inside the 3 % stretch budget from ny=26 up. This is the quantitative statement that the remaining error is discretisation, not another definition defect."
+    }
+  ],
+  "error_judgement_rule": "Same as predeclared_r7.json: numbers > 15 % vs the analytic reference are unacceptable, < 3 % is the ecosystem stretch target. P1's 1 % band is a self-imposed stricter band and its failure is reported, not reinterpreted.",
+  "no_tuning_rule": "The run script for P7 fixes ny = {10, 26, 42}, tau = 1.1, u_max_target = 0.05 and the closure_width normalisation before the first solve. No grid may be added or dropped afterwards."
+}
