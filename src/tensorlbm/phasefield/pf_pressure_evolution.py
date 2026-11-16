@@ -91,8 +91,11 @@ __all__ = [
     "gbar_equilibrium",
     "interface_term",
     "laplace_pressure_2d",
+    "couette_profile",
+    "layered_poiseuille_profile",
     "maxwellian",
     "mrt_relax",
+    "poiseuille_profile",
     "pressure_from_populations",
     "taylor_green_amplitude",
     "velocity",
@@ -360,6 +363,9 @@ class PFPressureEvolution:
     device: torch.device | str = "cpu"
     min_gradient: float = 0.0
     stencil_name: str = "d2q9"
+    solid: torch.Tensor | None = None
+    wall_velocity: tuple[torch.Tensor, ...] | None = None
+    wall_band: int = 2
     st: Stencil = field(init=False, repr=False)
     f: torch.Tensor = field(init=False, repr=False)
     h: torch.Tensor = field(init=False, repr=False)
@@ -460,7 +466,13 @@ class PFPressureEvolution:
                              device=self.device)
         self.f = torch.zeros_like(self.h)
         self.step_count = 0
-        self.mass0 = float(phi0.sum().item())
+        # mass is tracked over fluid nodes only when a wall mask is installed, so
+        # the reference value must be taken the same way (otherwise the wall rows
+        # appear as an instant mass jump at the first step)
+        _phi_ref = phi0 if self.solid is None else torch.where(
+            self.solid, torch.zeros_like(phi0), phi0
+        )
+        self.mass0 = float(_phi_ref.sum().item())
 
         ndim = phi0.dim()
         nb = _neighbours(phi0, self.st)
@@ -561,19 +573,131 @@ class PFPressureEvolution:
         h_eq = gamma * phi.unsqueeze(0) + theta.unsqueeze(0) * w * cdotn
         self.h = self.h - self.omega_phi * (self.h - h_eq)
 
+    def set_walls(
+        self,
+        solid: torch.Tensor,
+        wall_velocity: tuple[torch.Tensor, ...] | None = None,
+    ) -> None:
+        """Install a solid mask (``True`` = wall node) and an optional wall velocity.
+
+        The wall nodes carry no fluid populations: ``f`` is reflected by halfway
+        bounce-back and the phase field uses the neutral-wetting (``d_n phi = 0``)
+        mirror condition (see :meth:`_relax_wall_phase`).  Periodic in ``x`` is
+        retained, so the supported channel is ``x``-periodic between two
+        ``y``-walls -- exactly the layered-Poiseuille / Couette configuration.
+        """
+        solid = solid.to(device=self.device).to(torch.bool)
+        if tuple(solid.shape) != tuple(self.shape):
+            raise ValueError(f"solid mask {tuple(solid.shape)} != {self.shape}")
+        self.solid = solid
+        if wall_velocity is None:
+            self.wall_velocity = tuple(
+                torch.zeros(self.shape, dtype=self.dtype, device=self.device)
+                for _ in range(2)
+            )
+        else:
+            self.wall_velocity = tuple(
+                v.to(dtype=self.dtype, device=self.device) for v in wall_velocity
+            )
+
+    @property
+    def fluid(self) -> torch.Tensor:
+        """``True`` for fluid nodes (all nodes when no mask is installed)."""
+        if self.solid is None:
+            return torch.ones(self.shape, dtype=torch.bool, device=self.device)
+        return ~self.solid
+
     def stream(self) -> None:
-        """Periodic pull streaming for both populations."""
+        """Streaming: periodic pull, or halfway bounce-back where a wall is present.
+
+        For a fluid node ``x`` whose upstream neighbour ``x - c_q`` is solid, the
+        population that left ``x`` towards the wall (direction ``-c_q``) returns as
+        ``+c_q`` (index ``opp[q]``); the moving-wall momentum correction of the
+        halfway rule is
+
+            ``f_opp[q] <- f_opp[q] + 6 w_q rho (c_q . u_w)``   (``c_s^2 = 1/3``),
+
+        which is the ``-2 w_i rho (c_i.u_w)/c_s^2`` term with ``c_i = -c_q``.
+        """
         out_f = torch.empty_like(self.f)
         out_h = torch.empty_like(self.h)
+        if self.solid is None:
+            for q in range(self.st.q):
+                off = tuple(-int(v) for v in self.st.C[q].tolist())
+                out_f[q] = _shift(self.f[q], off)
+                out_h[q] = _shift(self.h[q], off)
+            self.f, self.h = out_f, out_h
+            return
+
+        solid_f = self.solid.to(self.dtype)
+        rho = self.density()
+        c = self._c
+        w = self.st.W.to(dtype=self.dtype, device=self.device)
+        uw = self.wall_velocity
         for q in range(self.st.q):
-            off = tuple(-int(v) for v in self.st.C[q].tolist())
-            out_f[q] = _shift(self.f[q], off)
-            out_h[q] = _shift(self.h[q], off)
+            cq = tuple(int(v) for v in self.st.C[q].tolist())
+            opp = self._opp[q]
+            if cq == (0, 0):
+                out_f[q] = self.f[q]
+                out_h[q] = self.h[q]
+                continue
+            off = tuple(-v for v in cq)
+            # the boundary sits halfway between x and x - c_q: the wall velocity is
+            # the *solid* node's, so it is sampled at the upstream (solid) node
+            hit = (_shift(solid_f, off) > 0.5) & (solid_f < 0.5)
+            refl = self.f[opp] + 2.0 * w[q] * rho * (
+                c[q, 0] * _shift(uw[0], off) + c[q, 1] * _shift(uw[1], off)
+            )
+            out_f[q] = torch.where(hit, refl, _shift(self.f[q], off))
+            out_h[q] = torch.where(hit, self.h[opp], _shift(self.h[q], off))
         self.f, self.h = out_f, out_h
+
+    def _relax_wall_phase(self) -> None:
+        """Neutral wetting (``d phi / d n = 0``) at walls: mirror fluid ``phi`` in.
+
+        Wall nodes carry the rest-state ``h`` population ``w_i phi_wall`` with
+        ``phi_wall`` the mean of the adjacent fluid ``phi`` -- i.e. ``phi`` is
+        extrapolated across the wall with zero normal gradient.  This fixes the
+        contact angle to 90 deg without any wetting parameter (the reference
+        model's ``Wall``/``Solid`` types are not ported; see the R2 report).
+        """
+        if self.solid is None:
+            return
+        st = self.st
+        phi = self.phi
+        # Fill the wall *band* pass by pass, outward from the fluid: the mixed
+        # (2-cell) directional stencil of the reference model reads phi two cells
+        # from a node, so a one-cell mirror would leave a wall-adjacent fluid node
+        # reading the wrapped (periodic) side of the domain -- that leaks an O(1)
+        # phi gradient into the wall band and drives a spurious normal velocity
+        # (measured |u_y| = 0.023 of u_max before this fix).  ``depth = 2`` fills
+        # the two outermost wall rows; deeper masks are filled one row per pass.
+        known = self.fluid.clone()
+        phi_wall = phi.clone()
+        for _ in range(self.wall_band):
+            acc = torch.zeros_like(phi)
+            cnt = torch.zeros_like(phi)
+            for q in range(st.q):
+                cq = tuple(int(v) for v in st.C[q].tolist())
+                if cq == (0, 0):
+                    continue
+                off = tuple(-v for v in cq)
+                nbm = _shift(known.to(self.dtype), off)
+                acc = acc + _shift(phi_wall, off) * nbm
+                cnt = cnt + nbm
+            fill = self.solid & (cnt > 0.0) & (~known)
+            phi_wall = torch.where(fill, acc / torch.clamp(cnt, min=1e-30), phi_wall)
+            known = known | fill
+        phi_wall = torch.where(self.solid, phi_wall, phi)
+        w = st.W.to(dtype=self.dtype, device=self.device).view(
+            st.q, *([1] * phi.dim())
+        )
+        self.h = torch.where(self.solid.unsqueeze(0), w * phi_wall.unsqueeze(0), self.h)
 
     def step(self, body: tuple[torch.Tensor, ...] | None = None) -> None:
         self.collision(body)
         self.stream()
+        self._relax_wall_phase()
         self.step_count += 1
 
     def run(self, n_steps: int, body: tuple[torch.Tensor, ...] | None = None) -> None:
@@ -582,7 +706,11 @@ class PFPressureEvolution:
 
     # -- diagnostics ----------------------------------------------------
     def mass(self) -> float:
-        return float(self.phi.sum().item())
+        """Total phase mass over *fluid* nodes (wall mirrors are excluded)."""
+        phi = self.phi
+        if self.solid is not None:
+            phi = torch.where(self.solid, torch.zeros_like(phi), phi)
+        return float(phi.sum().item())
 
     def mass_error(self) -> float:
         m = self.mass()
@@ -609,3 +737,58 @@ def laplace_pressure_2d(sigma: float, radius: float) -> float:
 def taylor_green_amplitude(u0: float, nu: float, k: float, t: float) -> float:
     """Exact viscous decay of ``u_x = U sin(k y)``: ``U exp(-nu k^2 t)``."""
     return float(u0) * math.exp(-float(nu) * float(k) ** 2 * float(t))
+
+
+# ---------------------------------------------------------------------------
+# analytic references for the wall-bounded verification (R2)
+# ---------------------------------------------------------------------------
+
+
+def couette_profile(y, height: float, wall_speed: float):
+    """Wall-driven plane Couette flow: ``u_x(y) = U y / H``."""
+    return float(wall_speed) * (y / float(height))
+
+
+def poiseuille_profile(y, height: float, force: float, mu: float):
+    """Body-force plane Poiseuille: ``u_x = F y (H - y) / (2 mu)``.
+
+    ``mu`` is the *dynamic* viscosity (``rho nu``); ``force`` the force density.
+    """
+    y = y if torch.is_tensor(y) else torch.as_tensor(y, dtype=torch.float64)
+    H, F, m = float(height), float(force), float(mu)
+    return F * y * (H - y) / (2.0 * m)
+
+
+def layered_poiseuille_profile(
+    y,
+    height: float,
+    interface_y: float,
+    kappa_lower: float,
+    kappa_upper: float,
+    s_lower: float,
+    s_upper: float,
+):
+    """Exact steady two-layer channel flow, piecewise parabolic.
+
+    Solves ``d/dy(kappa du/dy) = -s`` with piecewise-constant ``(kappa, s)`` in
+    ``0 < y < a`` (lower) and ``a < y < H`` (upper), no-slip at both walls,
+    continuity of ``u`` and of the shear flux ``kappa du/dy`` at ``y = a``.
+
+    With ``kappa = rho nu`` and ``s = |F|`` this is the one-fluid (dynamic
+    viscosity) solution; with ``kappa = nu`` and ``s = |F|/rho`` it is the
+    per-phase-accelerated solution.  Which one the discrete model reproduces is
+    an *output* of the R2 verification, not an input (see the report).
+    """
+    y = y if torch.is_tensor(y) else torch.as_tensor(y, dtype=torch.float64)
+    H, a = float(height), float(interface_y)
+    k1, k2 = float(kappa_lower), float(kappa_upper)
+    s1, s2 = float(s_lower), float(s_upper)
+    # u1 = -s1/(2 k1) y^2 + C1 y ; u2 = -s2/(2 k2) y^2 + C3 y + C4
+    c1 = (s2 * H * H / (2.0 * k2) + s1 * a * a / (2.0 * k1) - s2 * a * a / (2.0 * k2)) / (
+        a + (k1 / k2) * (H - a)
+    )
+    c3 = k1 * c1 / k2
+    c4 = -s1 / (2.0 * k1) * a * a + c1 * a + s2 / (2.0 * k2) * a * a - c3 * a
+    lower = -s1 / (2.0 * k1) * y * y + c1 * y
+    upper = -s2 / (2.0 * k2) * y * y + c3 * y + c4
+    return torch.where(y <= a, lower, upper)
