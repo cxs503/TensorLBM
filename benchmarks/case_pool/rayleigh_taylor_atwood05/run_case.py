@@ -224,6 +224,7 @@ SPECS_KDELTA = (
     kd_arm("KD_l096_m13", 96, ac_mobility=20.0 * KD_LAM0 / 96.0, note="kdelta 1.5x, M ~ 1/lam"),
     kd_arm("KD_l128_m10", 128, ac_mobility=20.0 * KD_LAM0 / 128.0, note="kdelta 2x, M ~ 1/lam"),
     kd_arm("KD_l192", 192, note="kdelta ladder 3x"),
+    kd_arm("KD_l256", 256, note="kdelta ladder 4x"),
     # startup-transient ladder: same physics, only the seeded amplitude shrinks, so
     # the fixed analysis window [0.02, 0.08] lam sits 10x/5x instead of 2x-8x above a0.
     CaseSpec("KD_l064_a4e-3", lam=64, g=2.0e-4, eta0_frac=4.0e-3,
