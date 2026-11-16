@@ -1,0 +1,46 @@
+{
+  "round": 2,
+  "mission": 23150,
+  "anchor": "XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN",
+  "written_before_first_run": true,
+  "inherited_gap": "R1 (m18452) report section 6 / diff item D-6: 'Lambda 对壁面位置误差（Ginzburg 3/16 的经典用途）需带壁算例专门对标 -> 记入后续轮次（本单未覆盖）'",
+  "question": "Is the TRT magic parameter Lambda = 3/16 actually the wall-position-optimal, viscosity-robust choice for half-way bounce-back walls in this repository's D2Q9 TRT kernel, and where do the other entries of the magic-Lambda table (1/12, 1/6, 1/4, 3/8) land on the wall-position error?",
+  "benchmark": {
+    "case": "body-force plane Poiseuille, pre-streaming half-way bounce-back walls, x-periodic",
+    "grid": "nx=4 (periodic, no resolution study in x), ny=H+2, H=32 (main) / 16,64 (resolution check)",
+    "g": 2e-06,
+    "steps": 3000,
+    "time_average_steps": 200,
+    "initial_condition": "nominal analytic profile (transient-free)",
+    "observable": "delta_eff = H_eff - H with H_eff = (12 nu Q / g)^(1/3) from the measured flux (no profile fit)",
+    "reference": "u(y)=g/(2nu)(y-1/2)(H+1/2-y), Q=g H^3/(12 nu) (White, Viscous Fluid Flow 3rd ed. sec. 3-2)"
+  },
+  "kpis": {
+    "P1": "delta_eff(Lambda, tau) map in cells, H=32",
+    "P2": "tau-spread of delta_eff at fixed Lambda: max_tau |delta_eff - mean_tau delta_eff|",
+    "P3": "profile L2 relative error vs analytic parabola",
+    "P4": "TRT( tau, Lambda=(tau-1/2)^2 ) vs BGK(tau) pointwise max |du| (identity gate)",
+    "P5": "delta_eff resolution dependence for Lambda=3/16 and 1/4 at H=16/32/64",
+    "P6": "Lambda_target=0.075 (the method_selection re-derivation for tau_minus=2.0 at tau=0.55) vs Lambda=3/16 head-to-head at tau=0.55"
+  },
+  "hypotheses_with_thresholds": {
+    "H1_magic_is_flat": "at Lambda=3/16, P2 <= 1/5 * P2(Lambda=1/4) AND max_tau |delta_eff| <= 0.03 cell (flag: pass/fail)",
+    "H2_deviation_costs": "monotone growth of |delta_eff| with |Lambda - 3/16| at fixed tau=0.80 (LOWEST |Lambda-3/16| -> smallest |delta_eff|), checked over the 5 tabulated Lambdas",
+    "H3_bgk_identity": "P4 <= 1e-13 (machine-precision identity: TRT with Lambda=(tau-1/2)^2 IS BGK)",
+    "H4_optimal_Lambda": "argmin over the scanned Lambda grid of |delta_eff| at tau=0.80 equals 3/16",
+    "H5_accuracy_band": "profile L2 (P3) <= 3% for all scanned (Lambda, tau) (tighter than the owner 15% band; declared before the run)"
+  },
+  "falsification_rule": "any hypothesis whose threshold is missed is reported as FAIL with its measured number; thresholds are not edited after the run. A FAIL on H1/H2/H4 does not invalidate the measurement - it becomes the finding.",
+  "not_covered": [
+    "curved / interpolated bounce-back walls",
+    "unsteady or high-Re channel flow (steady laminar only)",
+    "D3Q27 flow-side TRT (R1 left it open; still open here)",
+    "any statement about the OSS reference binary - this round is analytic-reference only"
+  ],
+  "environment": {
+    "dtype": "float64",
+    "backend": "torch CPU, torch.set_num_threads(1)",
+    "repo_under_test": "src/tensorlbm/solver.py: collide_trt / collide_bgk / stream, src/tensorlbm/d2q9.py",
+    "branch": "agent/m23150"
+  }
+}
