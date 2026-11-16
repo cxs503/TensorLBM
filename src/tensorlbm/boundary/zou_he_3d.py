@@ -397,7 +397,16 @@ def zou_he_inlet_velocity_3d(
     ``(nz, ny)`` profiles) and implies ``rho`` from mass + normal momentum.
     All three velocity components are reproduced exactly -- the transverse
     components are *not* approximate (see the module docstring for the defect
-    this replaced).
+    this replaced) -- **as long as the minimum-norm tangential correction stays
+    positive**.  When it does not (a prescribed transverse velocity that is not
+    attainable with non-negative populations at the implied density), the
+    positivity guard clips it and *every* moment of the plane degrades
+    together, not only the transverse one: measured on the
+    ``tests/test_zou_he_3d_inlet_outlet.py`` control field at
+    ``u_x = 0.03``, ``u_y = 0.02`` is exact to ``1e-17`` while ``u_y = 0.06``
+    leaves ``1.3e-3`` in ``u_y`` and ``1.3e-3`` in ``rho`` (relative error
+    ``1e-3``).  Infeasibility is silent today -- check the plane's ``rho`` /
+    ``u`` after the call if the inflow angle matters.
 
     Returns:
         New population tensor; the input is left untouched.
