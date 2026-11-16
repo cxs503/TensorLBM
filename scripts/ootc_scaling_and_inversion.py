@@ -23,18 +23,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 import time
 import tracemalloc
 
 import numpy as np
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, os.path.join(REPO, "TensorLBM", "src"))
 
-from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro  # noqa: E402
-from tensorlbm.adjoint.bptt import bptt_gradient  # noqa: E402
-from tensorlbm.adjoint.ootc import ootc_gradient  # noqa: E402
+from tensorlbm.adjoint_ootc.bptt import bptt_gradient  # noqa: E402
+from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step  # noqa: E402
+from tensorlbm.adjoint_ootc.ootc import ootc_gradient  # noqa: E402
 
 N = 64
 TAU = 1.0

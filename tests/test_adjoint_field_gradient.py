@@ -15,17 +15,12 @@ They also pin the backwards-compatible default tuple shapes.
 
 from __future__ import annotations
 
-import os
-import sys
-
 import numpy as np
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TensorLBM", "src"))
-
-from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro
-from tensorlbm.adjoint.bptt import bptt_gradient
-from tensorlbm.adjoint.ootc import ootc_gradient
+from tensorlbm.adjoint_ootc.bptt import bptt_gradient
+from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step
+from tensorlbm.adjoint_ootc.ootc import ootc_gradient
 
 
 def _problem(N=6, T=4, tau=1.0):
@@ -110,8 +105,8 @@ class TestRollShiftPortability:
     broke every adjoint run on the cluster nodes -- defect D5)."""
 
     def test_forward_and_adjoint_streaming_are_integer_shifts(self):
-        from tensorlbm.adjoint.lbm2d import EX, EY, stream
-        from tensorlbm.adjoint.bptt import anti_stream
+        from tensorlbm.adjoint_ootc.bptt import anti_stream
+        from tensorlbm.adjoint_ootc.lbm2d import EX, EY, stream
         # every lattice velocity must be integral, so int() loses nothing
         assert np.array_equal(EX, np.round(EX))
         assert np.array_equal(EY, np.round(EY))

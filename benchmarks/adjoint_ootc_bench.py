@@ -20,19 +20,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 import time
 import tracemalloc
 
-import numpy as np
+from tensorlbm.adjoint_ootc.bptt import bptt_gradient
 
 # Ensure the package is importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "TensorLBM", "src"))
-
-from tensorlbm.adjoint.lbm2d import initial_pulse, step, macro
-from tensorlbm.adjoint.bptt import bptt_gradient
-from tensorlbm.adjoint.ootc import ootc_gradient
-
+from tensorlbm.adjoint_ootc.lbm2d import initial_pulse, macro, step
+from tensorlbm.adjoint_ootc.ootc import ootc_gradient
 
 PROFILES = {
     "quick":  {"N": 32,  "T": 200,   "k_values": [20, 50, 100]},
@@ -66,7 +61,7 @@ def run_benchmark(N: int, T: int, k_values: list[int], out_dir: str | None = Non
     print(f"[bench] Forward reference: {t_fwd:.2f}s")
 
     # ---- BPTT reference ----
-    print(f"\n[bench] Running BPTT (full storage)...")
+    print("\n[bench] Running BPTT (full storage)...")
     tracemalloc.start()
     t0 = time.perf_counter()
     dJ_bptt, J_bptt, (ux_T, uy_T), states = bptt_gradient(tau, T, f0, ux_ref, uy_ref)

@@ -156,3 +156,31 @@ checkpointing）：前向每 k 步把状态写入磁盘 memmap，内存只保留
 未收敛到 τ_true。这是反演驱动器的收敛预算问题，不是梯度精度问题：每一步的 dJ/dτ
 本身已由中心差分独立验证到 1e-6 量级。诚实结论：τ 反演在本单为 UNFINISHED。
 
+
+---
+
+## 7. 追加（本单）：反演半场收敛 —— 第 6 节 UNFINISHED 项已闭合
+
+第 6 节诚实标注的 `τ 反演 UNFINISHED（rel 20%）` 已定位并修复：
+**梯度没错，驱动器错**。直接法/梯度下降在 J 的**非凸远场**（τ≳0.95 处
+`dg/dτ<0`，J 凹，g 在 τ≈0.9 达峰后衰减到 0+）会被 Newton 步推出物理区间，
+而原驱动器只是"12 步 + 步长折半"的陡降，必然爬行。替换为
+**包围区间保护的 Newton/割线混合驱动**（`tensorlbm.adjoint_ootc.invert_tau`）：
+
+| 项 | 第一轮 | 本单 |
+|---|---|---|
+| 恢复 τ（无偏目标） | — | 0.800000000000 |
+| 相对误差 vs τ_true | 2.0e-01 | **4.5e-14** |
+| 梯度评估次数 | 12 | 20 |
+| 是否收敛 | 否（预算耗尽） | 是（gradient tolerance） |
+| 梯度 vs 前向中心差分 | 3.4e-06 | 7.95e-08 |
+
+另量化了第一轮目标的**规格性偏差**：`u_ref = 0.9·u_T(τ_true)` 使 J 的极小点
+偏离 τ_true（本单 N=32/T=600 实测 τ_min=0.816，偏 2.0%），驱动器实际以
+0.27% 精度命中该极小点 —— 因此第一轮的 20% 是「驱动器未收敛 + 目标有偏」
+两项叠加，而非梯度精度问题。
+
+证据：`artifacts/adjoint_ootc_acceptance/inversion_convergence.json` +
+`scripts/ootc_inversion_acceptance.py`（复算命令：
+`python scripts/ootc_inversion_acceptance.py --N 32 --T 600`）。
+新增回归测试 `tests/test_adjoint_inversion.py`（16 项）。
