@@ -157,9 +157,212 @@
     "typecheck-core",
     "typecheck-full"
   ],
+  "ladder": [
+    {
+      "jobs": [
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "format-check",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "gate-semantics",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "lint",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "lint-full",
+          "needs": [],
+          "tier": "advisory"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "typecheck-core",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "typecheck-full",
+          "needs": [],
+          "tier": "advisory"
+        }
+      ],
+      "stage": "quality"
+    },
+    {
+      "jobs": [
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "architecture-audit",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "package-build",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "platform-test",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "repository-layout",
+          "needs": [],
+          "tier": "blocking"
+        },
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "testsuite-fast",
+          "needs": [],
+          "tier": "blocking"
+        }
+      ],
+      "stage": "test"
+    },
+    {
+      "jobs": [
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "coverage-report",
+          "needs": [
+            "testsuite-fast"
+          ],
+          "tier": "blocking"
+        }
+      ],
+      "stage": "reporting"
+    },
+    {
+      "jobs": [
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "prerelease-pytorch-nightly",
+          "needs": [],
+          "tier": "advisory"
+        }
+      ],
+      "stage": "prerelease"
+    },
+    {
+      "jobs": [],
+      "stage": "integration"
+    },
+    {
+      "jobs": [
+        {
+          "events": [
+            "schedule"
+          ],
+          "name": "nightly-full",
+          "needs": null,
+          "tier": "blocking"
+        }
+      ],
+      "stage": "nightly"
+    },
+    {
+      "jobs": [
+        {
+          "events": [
+            "mr",
+            "branch_push",
+            "main_push"
+          ],
+          "name": "build-documentation",
+          "needs": [],
+          "tier": "blocking"
+        }
+      ],
+      "stage": "docs"
+    },
+    {
+      "jobs": [
+        {
+          "events": [
+            "main_push"
+          ],
+          "name": "pages",
+          "needs": [
+            "coverage-report",
+            "build-documentation"
+          ],
+          "tier": "blocking"
+        }
+      ],
+      "stage": "deploy"
+    }
+  ],
   "n_error": 0,
   "n_jobs": 16,
-  "source": "/srv/tensor/agent/work/m22498/.gitlab-ci.yml",
+  "source": ".gitlab-ci.yml",
+  "source_sha256": "9817144b95505349ce878997df9437846a8026b7718f2096e8ab518d39b73c84",
   "stages": [
     "quality",
     "test",

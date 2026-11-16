@@ -119,6 +119,12 @@ gate-semantics:
     - python tools/verify_ci_staged_gates.py --probe
         --json-out artifacts/ci/staged_gate_semantics.json
         --markdown-out artifacts/ci/staged_gate_semantics.md
+    # Anti-staleness: the committed receipt and the generated ladder table in
+    # the design doc must still describe *this* .gitlab-ci.yml, else the
+    # evidence chain is folklore.  Exit 1 = STALE.
+    - python tools/verify_ci_staged_gates.py
+        --check docs/ci/staged_gate_semantics_receipt.json
+        --check-doc docs/ci/gitlab_ci_staged_gates.md
   artifacts:
     when: always
     paths:

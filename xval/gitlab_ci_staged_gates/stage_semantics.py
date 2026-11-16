@@ -40,6 +40,7 @@ returned as ``unverifiable`` and surfaced in the receipt (honest WITHHELD).
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -200,17 +201,47 @@ def _decidable(cond: str, ctx: dict[str, str]) -> bool:
     return True
 
 
+def tier_of(job: Job) -> str:
+    """Gate strength of a job, independent of its event scope.
+
+    ``manual`` (needs an explicit trigger) > ``advisory`` (``allow_failure``,
+    cannot stop the pipeline) > ``blocking``.  Event scope is reported
+    separately as ``events`` so "blocking on three events" stays visible.
+    """
+    if job.job_when == "manual":
+        return "manual"
+    if job.allow_failure:
+        return "advisory"
+    return "blocking"
+
+
 @dataclass
 class Pipeline:
     stages: list[str]
     jobs: dict[str, Job]
     source: str = "<memory>"
+    #: sha256 of the exact bytes the model was built from.  Without it a
+    #: committed receipt cannot be told apart from a stale one.
+    source_sha256: str = ""
     unverifiable: dict[str, list[str]] = field(default_factory=dict)
 
     # ------------------------------------------------------------- loading
     @classmethod
-    def load(cls, path: str | Path) -> "Pipeline":
-        return cls.from_text(Path(path).read_text(), source=str(path))
+    def load(cls, path: str | Path, root: str | Path | None = None) -> "Pipeline":
+        """Load a CI definition; ``root`` stores the source as a repo-relative path.
+
+        A committed receipt must be reproducible on any checkout, so the source
+        is recorded relative to ``root`` whenever the file lives under it.
+        """
+        p = Path(path).resolve()
+        data = p.read_bytes()
+        source = str(p)
+        if root is not None:
+            try:
+                source = p.relative_to(Path(root).resolve()).as_posix()
+            except ValueError:
+                source = p.as_posix()
+        return cls.from_text(data.decode("utf-8"), source=source)
 
     @classmethod
     def from_text(cls, text: str, source: str = "<memory>") -> "Pipeline":
@@ -252,7 +283,13 @@ class Pipeline:
             bad = job.unverifiable_rules()
             if bad:
                 unverifiable[job.name] = bad
-        return cls(stages=stages, jobs=jobs, source=source, unverifiable=unverifiable)
+        return cls(
+            stages=stages,
+            jobs=jobs,
+            source=source,
+            source_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            unverifiable=unverifiable,
+        )
 
     # ------------------------------------------------------------ structure
     def structural_findings(self) -> list[dict[str, str]]:
@@ -417,6 +454,36 @@ class Pipeline:
             out[name] = pruned
         return out
 
+    # ------------------------------------------------------------- inventory
+    def ladder(self) -> list[dict[str, Any]]:
+        """Per-stage inventory: which jobs, at which strength, on which events.
+
+        This is the single machine-readable source of truth for the ladder
+        tables in the receipt and in ``docs/ci/gitlab_ci_staged_gates.md``;
+        the documents are generated from it, so prose cannot drift from the
+        pipeline.
+        """
+        out: list[dict[str, Any]] = []
+        for stage in self.stages:
+            jobs = sorted(n for n, j in self.jobs.items() if j.stage == stage)
+            out.append(
+                {
+                    "stage": stage,
+                    "jobs": [
+                        {
+                            "name": name,
+                            "tier": tier_of(self.jobs[name]),
+                            "events": [e for e in EVENTS if self.jobs[name].runs_on(e)],
+                            "needs": list(self.jobs[name].needs)
+                            if self.jobs[name].needs is not None
+                            else None,
+                        }
+                        for name in jobs
+                    ],
+                }
+            )
+        return out
+
     def receipt(self) -> dict[str, Any]:
         """Machine-readable verdict bundle for all four ladder claims."""
         events: dict[str, Any] = {}
@@ -434,6 +501,8 @@ class Pipeline:
             findings.extend(events[event]["event_findings"])
         return {
             "source": self.source,
+            "source_sha256": self.source_sha256,
+            "ladder": self.ladder(),
             "stages": self.stages,
             "n_jobs": len(self.jobs),
             "gates": sorted(n for n, j in self.jobs.items() if j.is_gate),
