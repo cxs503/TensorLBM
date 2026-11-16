@@ -417,6 +417,19 @@ def solve_beta_entropy(
 # ---------------------------------------------------------------------------
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.kbc.d3q19",
+    kind='collision',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_entropic_kbc.py',
+    evidence={'grade': 'MECHANICS', 'note': '真 KBC（熵条件二分 + KBC 分解，非调用方给混合系数）；主求解路径未接线：仅契约/审计模块引用，无 stepper dispatch'},
+)
 def collide_kbc_d3q19(
     f: torch.Tensor,
     tau: float,
@@ -485,6 +498,19 @@ def collide_kbc_d3q19(
     return feq + s_relaxed + beta.unsqueeze(0) * h
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.kbc.d3q27",
+    kind='collision',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_entropic_kbc_viscosity.py',
+    evidence={'grade': 'MECHANICS', 'note': 'D3Q27 KBC + 粘性标定测试；主路径未接线（同上）'},
+)
 def collide_kbc_d3q27(
     f: torch.Tensor,
     tau: float,

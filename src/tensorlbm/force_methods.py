@@ -101,6 +101,20 @@ def _detect_dim(f: torch.Tensor, solid: torch.Tensor) -> int:
 # ---------------------------------------------------------------------------
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.force.momentum_exchange",
+    kind='force',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_magnus_boundary.py',
+    evidence={'grade': 'MECHANICS', 'note': '动量交换法壁面力；与其它方法对比测试存在，无实验阻力误差带'},
+    endpoint='api:tensorlbm.force_methods.force_momentum_exchange',
+)
 def force_momentum_exchange(
     f: torch.Tensor,
     solid: torch.Tensor,

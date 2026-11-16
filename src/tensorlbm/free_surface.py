@@ -477,6 +477,19 @@ def vof_face_values_1d(f: np.ndarray, vf: np.ndarray, axis: int,
     return out
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.free_surface.vof_sweep",
+    kind='free_surface',
+    maturity='developing',
+    wired=False,
+    tested=False,
+    verified=False,
+    test_path='tests/test_dam_break_lbm_face.py',
+    evidence={'grade': 'MECHANICS', 'note': 'VOF 方向扫描 + MUSCL 界面重构；质量账本测试，无解析解误差带'},
+)
 def vof_sweep_x(f: np.ndarray, uf: np.ndarray, dt: float, dx: float,
                 periodic: bool = False) -> np.ndarray:
     """Conservative x-sweep ``f -= dt/dx (u f)|_faces``."""

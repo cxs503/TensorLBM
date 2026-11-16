@@ -121,6 +121,20 @@ def _get_d3q19_mrt_matrices(
     return matrix, matrix_inv
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.bgk.d3q19",
+    kind='collision',
+    maturity='mature',
+    wired=True,
+    tested=True,
+    verified=True,
+    test_path='tests/test_lbm_verification.py',
+    evidence={'grade': 'ANALYTIC', 'reference': 'Poiseuille 解析剖面（Guo 体力, ny=12, tau=1.0, u_max=0.05）', 'max_error_pct': 0.4122, 'measured_by': 'scripts/m23186_collision_family_verification.py', 'protocol': 'nx=24,ny=10,nz=2,steps=200', 'note': '稳态剖面相对误差 0.338%（BGK 基准）'},
+    endpoint='api:tensorlbm.solver3d.collide_bgk3d',
+)
 def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     """Single-relaxation-time BGK collision step for D3Q19."""
     rho, ux, uy, uz = macroscopic3d(f)
@@ -128,6 +142,20 @@ def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     return f - (f - feq) / tau
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.mrt.d3q19",
+    kind='collision',
+    maturity='mature',
+    wired=True,
+    tested=True,
+    verified=True,
+    test_path='tests/test_lbm_verification.py',
+    evidence={'grade': 'ANALYTIC', 'reference': '同 BGK 的 Poiseuille 解析剖面（D2Q9/D3Q19 显式 MRT 矩阵）', 'max_error_pct': 0.4124, 'measured_by': 'scripts/m23186_collision_family_verification.py', 'anti_mock': {'mrt_vs_bgk_max_rel': 0.1542, 'se_sensitivity_max_rel': 0.3318}, 'protocol': 'nx=24,ny=10,nz=2,steps=200', 'note': '稳态剖面 0.343%；本算例 s_e/s_eps/s_q 系数不激活，故与 BGK 同量级——非别名由 scripts/m23186_collision_family_verification.py 的 s_e 灵敏度探针单独证明（见该脚本 anti_mock 段）'},
+    endpoint='api:tensorlbm.solver3d.collide_mrt3d',
+)
 def collide_mrt3d(
     f: torch.Tensor,
     tau: Rate,
@@ -488,6 +516,20 @@ def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     return f * (target_mass / current)
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.trt.d3q19",
+    kind='collision',
+    maturity='mature',
+    wired=True,
+    tested=True,
+    verified=True,
+    test_path='tests/test_trt.py',
+    evidence={'grade': 'ANALYTIC', 'reference': '同 BGK 的 Poiseuille 解析剖面（TRT, magic=3/16 等效 tau）', 'max_error_pct': 0.5709, 'measured_by': 'scripts/m23186_collision_family_verification.py', 'protocol': 'nx=24,ny=10,nz=2,steps=200', 'note': '稳态剖面相对误差 0.0012%，比 BGK 低两个量级（半路反弹壁面误差被 TRT 抵消）'},
+    endpoint='api:tensorlbm.solver3d.collide_trt3d',
+)
 def collide_trt3d(
     f: torch.Tensor,
     tau_plus: float,
@@ -527,6 +569,20 @@ def collide_trt3d(
     return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.rlbm.d3q19",
+    kind='collision',
+    maturity='mature',
+    wired=True,
+    tested=True,
+    verified=True,
+    test_path='tests/test_rlbm.py',
+    evidence={'grade': 'ANALYTIC', 'reference': '同 BGK 的 Poiseuille 解析剖面（正则化）', 'max_error_pct': 0.4122, 'measured_by': 'scripts/m23186_collision_family_verification.py', 'protocol': 'nx=24,ny=10,nz=2,steps=200', 'note': '稳态剖面误差与 BGK 重合（0.338%），正则化只改高阶非平衡项'},
+    endpoint='api:tensorlbm.solver3d.collide_rlbm3d',
+)
 def collide_rlbm3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     """Regularized BGK (RLBM) collision step for D3Q19.
 

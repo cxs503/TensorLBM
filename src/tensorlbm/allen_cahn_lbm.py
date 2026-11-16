@@ -162,6 +162,19 @@ def interface_profile_1d(
     raise ValueError("direction must be 'x', 'y' or 'z'")
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.phasefield.interface_width_probe",
+    kind='multiphase',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path="tests/test_allen_cahn_phasefield.py",
+    evidence={'grade': 'MECHANICS', 'note': '界面宽度反演探针（tanh 剖面），用于相场标定'},
+)
 def measure_interface_width(phi: torch.Tensor, *, axis: int = 2) -> float:
     """Measure the ``+0.5 -> -0.5`` crossing distance along ``axis``.
 

@@ -950,6 +950,19 @@ class CalibResult:
         return float(self.closure(re))
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.differentiable.closure_calibration",
+    kind='differentiable',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_autograd_calib.py',
+    evidence={'grade': 'MECHANICS', 'note': '可微闭包标定（伴随/有限差分对照）；无实测阻力标定闭环 ⇒ developing'},
+)
 def calibrate(
     targets: Sequence[DragTarget],
     box: BoxCase | HullCase,
