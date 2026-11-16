@@ -122,6 +122,7 @@ class CaseSpec:
     ac_sigma: float = AC["ac_sigma"]
     ac_width: float = AC["ac_width"]
     ac_mobility: float = AC["ac_mobility"]
+    eta0_frac: float = 0.01
     note: str = ""
 
     @property
@@ -153,6 +154,7 @@ class CaseSpec:
             ac_sigma=self.ac_sigma,
             ac_width=self.ac_width,
             ac_mobility=self.ac_mobility,
+            eta0_frac=self.eta0_frac,
         )
 
 
@@ -183,6 +185,51 @@ SPECS_EXTRA = (
              note="half Allen-Cahn mobility"),
     CaseSpec("A050_l096_g3e-4_w15", lam=96, g=3.0e-4, ac_width=1.5,
              note="thinner interface on the 1.5x grid"),
+)
+
+
+#: **similarity-preserving resolution ladder** (``--specs kdelta``): the only
+#: dimensionless group that is *not* held fixed is the interface thickness in
+#: units of the wavelength, ``k*xi = 2*pi*ac_width/lam``, which halves per
+#: refinement.  The two groups that do control the linear problem are pinned:
+#:
+#:   viscous/inviscid ratio  zeta = nu k^2 / sqrt(A g k) = 1.5383e-2
+#:   lattice Mach number     Ma ~ sqrt(A g lam)           (u_rt = sigma*lam/2)
+#:
+#: zeta fixed through ``nu = nu0 * lam/64`` (tau = 0.5 + 3 nu), Ma fixed through
+#: ``g = g0 * 64/lam``.  Note that the pre-existing grid ladder in ``SPECS`` does
+#: the opposite: it pins ``A g / lam``, which makes Ma grow like ``lam``
+#: (0.247 -> 0.363 -> 0.542 over lam = 64 -> 128) and therefore confounds the
+#: interface-thickness trend with a compressibility trend.  Both ladders are kept
+#: so the confound is visible in the artifacts.
+KD_LAM0, KD_G0, KD_TAU0 = 64, 2.0e-4, 0.515
+
+
+def kd_arm(name: str, lam: int, *, ac_mobility: float | None = None, note: str = "") -> CaseSpec:
+    """One similarity-preserving arm of the ``kdelta`` ladder."""
+    s = lam / float(KD_LAM0)
+    nu = (KD_TAU0 - 0.5) / 3.0 * s                 # nu ~ lam  (keeps zeta)
+    return CaseSpec(name, lam=lam, g=KD_G0 / s, tau=0.5 + 3.0 * nu,
+                    ac_mobility=AC["ac_mobility"] if ac_mobility is None else ac_mobility,
+                    note=note)
+
+
+SPECS_KDELTA = (
+    kd_arm("KD_l064", 64, note="kdelta reference (identical to A050_l064_g2e-4)"),
+    kd_arm("KD_l096", 96, note="kdelta ladder 1.5x"),
+    kd_arm("KD_l128", 128, note="kdelta ladder 2x"),
+    # the Allen-Cahn relaxation rate in lattice units is ~ M*beta; the physical
+    # rate is ~ sigma ~ 1/lam, so the model-form similarity wants M ~ 1/lam.
+    # These two arms repeat the ladder with M rescaled accordingly.
+    kd_arm("KD_l096_m13", 96, ac_mobility=20.0 * KD_LAM0 / 96.0, note="kdelta 1.5x, M ~ 1/lam"),
+    kd_arm("KD_l128_m10", 128, ac_mobility=20.0 * KD_LAM0 / 128.0, note="kdelta 2x, M ~ 1/lam"),
+    kd_arm("KD_l192", 192, note="kdelta ladder 3x"),
+    # startup-transient ladder: same physics, only the seeded amplitude shrinks, so
+    # the fixed analysis window [0.02, 0.08] lam sits 10x/5x instead of 2x-8x above a0.
+    CaseSpec("KD_l064_a4e-3", lam=64, g=2.0e-4, eta0_frac=4.0e-3,
+             note="a0 = 0.004 lam (startup transient arm)"),
+    CaseSpec("KD_l064_a2e-3", lam=64, g=2.0e-4, eta0_frac=2.0e-3,
+             note="a0 = 0.002 lam (startup transient arm)"),
 )
 
 
@@ -352,6 +399,7 @@ def run_case(spec: CaseSpec, out_root: Path, quick: bool = False) -> dict:
         "ac_sigma": spec.ac_sigma,
         "ac_width": spec.ac_width,
         "ac_mobility": spec.ac_mobility,
+        "eta0_frac": spec.eta0_frac,
         "interface_thickness_cells": spec.ac_width,
         "n_steps_planned": cfg.n_steps,
         "n_steps_run": int(rec["step"][-1]) if rec["step"] else 0,
@@ -458,14 +506,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", nargs="*", default=None, help="subset of case names")
     ap.add_argument("--out", default=None)
     ap.add_argument("--aggregate", action="store_true")
-    ap.add_argument("--specs", choices=("main", "extra"), default="main")
+    ap.add_argument("--specs", choices=("main", "extra", "kdelta"), default="main")
     args = ap.parse_args(argv)
     out_root = Path(args.out) if args.out else BENCH_DIR / "artifacts" / "runs"
     if args.aggregate:
         s = aggregate(out_root)
         print(f"[RT-A050] aggregate: {s['n_gate_pass']}/{s['n_cases']} within {GATE_PCT}%")
         return 0
-    base = SPECS if args.specs == "main" else SPECS_EXTRA
+    base = {"main": SPECS, "extra": SPECS_EXTRA, "kdelta": SPECS_KDELTA}[args.specs]
     specs = base if not args.only else tuple(x for x in base if x.name in set(args.only))
     out_root.mkdir(parents=True, exist_ok=True)
     for spec in specs:
