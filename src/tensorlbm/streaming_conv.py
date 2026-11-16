@@ -242,14 +242,29 @@ def bounce_blend(
     The reflected populations are taken from the *pre*-collision state (that is
     upstream's choice, see ``LatFlow/Domain.py`` ``CollideSC``), and the wall
     sits on the solid cell face -- i.e. a half-way bounce-back.  ``boundary``
-    is 1.0 on solid cells and accepts shapes ``(ny, nx)`` or ``(1, ny, nx)``.
+    is 1.0 on solid cells and accepts shapes ``(ny, nx)`` / ``(1, ny, nx)`` for a
+    2D field and ``(nz, ny, nx)`` / ``(1, nz, ny, nx)`` for a 3D field: the rank
+    of the field, not a separate switch, decides which convolution runs, so the
+    wall operator stays a drop-in replacement for explicit index reversal in 3D
+    as well (`stream_conv_3d` alone was never enough to run a 3D simulation with
+    walls -- this function used to be hard-wired to ``conv2d`` and raised on a
+    4D field).
     """
-    if boundary.dim() == 2:
+    spatial_rank = f_post_collision.dim() - 1
+    if spatial_rank not in (2, 3):
+        raise ValueError(
+            "bounce_blend expects a (q, ...) field of rank 3 (2D) or 4 (3D), "
+            f"got {tuple(f_post_collision.shape)}"
+        )
+    if boundary.dim() == spatial_rank:
         mask = boundary.unsqueeze(0)
-    elif boundary.dim() == 3:
+    elif boundary.dim() == spatial_rank + 1:
         mask = boundary
     else:
-        raise ValueError(f"boundary mask must be (ny, nx) or (1, ny, nx), got {tuple(boundary.shape)}")
+        raise ValueError(
+            f"boundary mask must have shape {spatial_rank} or {spatial_rank + 1} "
+            f"(field rank {f_post_collision.dim()}), got {tuple(boundary.shape)}"
+        )
     mask = mask.to(dtype=f_post_collision.dtype, device=f_post_collision.device)
     q = f_post_collision.shape[0]
     if kernel is None:
@@ -261,7 +276,11 @@ def bounce_blend(
         weight = weight.permute(3, 2, 0, 1)
     if tuple(weight.shape[:2]) != (q, q):
         raise ValueError(f"bounce kernel shape {tuple(weight.shape)} does not fit q={q}")
-    # 1x1 cross-channel convolution (upstream's Op), channel-first in torch
-    stacked = (f_pre_collision * mask).unsqueeze(0)  # [1, q, ny, nx]
-    reflected = F.conv2d(stacked, weight).squeeze(0)  # [q, ny, nx]
+    # 1x1 (2D) / 1x1x1 (3D) cross-channel convolution (upstream's Op), channel-first in torch
+    stacked = (f_pre_collision * mask).unsqueeze(0)  # [1, q, ...]
+    if spatial_rank == 3:
+        weight = weight.unsqueeze(-1)  # [q, q, 1, 1] -> [q, q, 1, 1, 1]
+        reflected = F.conv3d(stacked, weight).squeeze(0)
+    else:
+        reflected = F.conv2d(stacked, weight).squeeze(0)
     return f_post_collision * (1.0 - mask) + reflected * mask
