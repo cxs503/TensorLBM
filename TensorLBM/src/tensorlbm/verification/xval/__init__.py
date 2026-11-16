@@ -11,12 +11,15 @@ This module provides infrastructure for:
    solutions cited by DOI, computing L2/L∞ error norms.
 4. **Benchmarking**: wall-clock timing with warm-up, repetition, and
    statistical reporting (mean, std, min, max).
+5. **Single-phase Poiseuille baseline skeleton**: analytical framework for
+   plane-Poiseuille flow validation following lettucecfd/lettuce unit-convention
+   semantics (``XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETO``).
 
 Design principles
 -----------------
 * Zero external dependencies beyond numpy/torch (already required by TensorLBM).
 * Reference data stored as compressed ``.npz`` files alongside the source code
-  so that regression tests are self-contained and version-controlled.
+   so that regression tests are self-contained and version-controlled.
 * Acceptance thresholds are *declared* per case, not hard-coded in the framework.
 * All hash computations use SHA-256 for collision resistance.
 
@@ -32,6 +35,8 @@ Method selection rationale (external_anchor)
   conditions, compare LBM output, report error norms with citation.
 * Benchmarking: ASME V&V 20-2009 "Standard for Verification and Validation in
   Computational Fluid Dynamics and Heat Transfer" for convergence metrics.
+* Poiseuille skeleton: lettucecfd/lettuce ``PoiseuilleFlow2D.make_units`` unit
+  conversion semantics; exact plane-Poiseuille solution ``u(y) = g/(2ν)·y(H−y)``.
 """
 
 from .bitwise_refdata import (
@@ -48,6 +53,17 @@ from .continuous_error import (
     compute_continuous_errors,
     print_error_report,
     save_artifacts,
+)
+from .poiseuille_skeleton import (
+    OSSBaseline,
+    oss_units,
+    analytic_profile,
+    analytic_solution_object,
+    profile_kpis,
+    wall_normal_coordinates,
+    fit_effective_height,
+    two_code_diff_metrics,
+    CS_LU,
 )
 
 __all__ = [
@@ -66,4 +82,14 @@ __all__ = [
     "compute_continuous_errors",
     "print_error_report",
     "save_artifacts",
+    # Poiseuille baseline skeleton
+    "OSSBaseline",
+    "oss_units",
+    "analytic_profile",
+    "analytic_solution_object",
+    "profile_kpis",
+    "wall_normal_coordinates",
+    "fit_effective_height",
+    "two_code_diff_metrics",
+    "CS_LU",
 ]
