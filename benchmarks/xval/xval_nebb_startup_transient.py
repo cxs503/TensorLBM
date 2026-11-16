@@ -164,6 +164,9 @@ def make_figures(results: dict, out_dir: Path, profiles: dict) -> list[dict]:
     fig.tight_layout()
     p = out_dir / "fig_startup_profiles.png"
     fig.savefig(p, dpi=150)
+    # text twin: survives the merge gate's binary filter, same convention as
+    # benchmarks/xval/xval_vivsim_nebb_bodyforce.py::_save
+    fig.savefig(p.with_suffix('.svg'))
     plt.close(fig)
     figs.append({"name": "fig_startup_profiles", "path": p,
                  "caption": "Transient velocity profiles (force-corrected NEBB + EDM body force) "
@@ -187,6 +190,9 @@ def make_figures(results: dict, out_dir: Path, profiles: dict) -> list[dict]:
     fig.tight_layout()
     p = out_dir / "fig_startup_errors.png"
     fig.savefig(p, dpi=150)
+    # text twin: survives the merge gate's binary filter, same convention as
+    # benchmarks/xval/xval_vivsim_nebb_bodyforce.py::_save
+    fig.savefig(p.with_suffix('.svg'))
     plt.close(fig)
     figs.append({"name": "fig_startup_errors", "path": p,
                  "caption": "Relative transient error vs dimensionless time for every arm and grid; "
@@ -230,6 +236,9 @@ def make_figures(results: dict, out_dir: Path, profiles: dict) -> list[dict]:
     fig.tight_layout()
     p = out_dir / "fig_startup_decay.png"
     fig.savefig(p, dpi=150)
+    # text twin: survives the merge gate's binary filter, same convention as
+    # benchmarks/xval/xval_vivsim_nebb_bodyforce.py::_save
+    fig.savefig(p.with_suffix('.svg'))
     plt.close(fig)
     figs.append({"name": "fig_startup_decay", "path": p,
                  "caption": "Left: projected slowest-mode amplitude with the theoretical exponential; "
