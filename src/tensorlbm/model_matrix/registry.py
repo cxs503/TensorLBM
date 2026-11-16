@@ -39,6 +39,7 @@ Design decisions (transfer from the OSS practice)
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -301,14 +302,40 @@ def _specs() -> list[ModelSpec]:
     ]
 
 
+WALL_CASE = "wall_poiseuille"
+"""Case name of the boundary-condition axis (see :func:`.cases.run_wall_poiseuille`)."""
+
 _CACHE: dict[str, ModelSpec] | None = None
+
+
+def _with_wall_axis(specs: list[ModelSpec]) -> list[ModelSpec]:
+    """Declare the wall-bounded case for every model that can run it.
+
+    Rounds 1-2 of the matrix were *periodic only*: no boundary-condition cell
+    existed, so a broken reflection table, a one-cell mask slip or a missing
+    NoDynamics restore was invisible to the gate (see
+    ``docs/MODEL_MATRIX_CI_PLUS_COVERAGE_R3.md``).  The wall axis is declared
+    here for *all* models rather than for a hand-picked subset, because the
+    composition (collide -> body-force kick -> solid restore -> half-way
+    bounce-back -> stream) is model-agnostic: the collision operator is the
+    same adapter the periodic cases use and the wall operator comes from the
+    lattice module.  A model that cannot run a steady plane-Poiseuille channel
+    is therefore a finding, not a declaration choice.
+    """
+    out: list[ModelSpec] = []
+    for spec in specs:
+        if WALL_CASE in spec.cases or spec.lattice.upper() not in ("D3Q19", "D3Q27"):
+            out.append(spec)
+            continue
+        out.append(dataclasses.replace(spec, cases=spec.cases + (WALL_CASE,)))
+    return out
 
 
 def registry() -> dict[str, ModelSpec]:
     """Return ``{model_name: ModelSpec}`` (built once, then cached)."""
     global _CACHE
     if _CACHE is None:
-        specs = _specs()
+        specs = _with_wall_axis(_specs())
         names = [s.name for s in specs]
         dupes = {n for n in names if names.count(n) > 1}
         if dupes:
