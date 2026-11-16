@@ -1,0 +1,57 @@
+{
+  "anchor": "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY",
+  "round": 3,
+  "mission": 23124,
+  "status": "predeclared",
+  "written_before_any_measurement": true,
+  "round1_artifacts_stay_byte_frozen": "xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/{predeclared.json,posthoc_addendum.json,results.json,REPORT.md} are NOT modified by round 3. No round-1 threshold is relaxed, no round-1 FAIL is re-scored.",
+  "gap_being_closed": "Round 1 declared, verbatim in its REPORT.md section 5: 'The phase indicator is frozen. ... Nothing here validates interface dynamics, coalescence or any flow with a non-zero normal velocity at the interface.' The OSS row's borrowable piece is a phase-field (Allen-Cahn) layered initialisation plus the variable-density equilibrium assembly, so the frozen indicator is a *simplification* of the OSS route, not the OSS route. Round 3 replaces the frozen indicator by an Allen-Cahn-evolved phase field (M2P-E) and measures what the simplification cost.",
+  "alternatives": [
+    "P1 frozen indicator (round-1 model M2P) - kept as the control arm at identical settings",
+    "P2 Allen-Cahn-evolved phase field advected by the LBM velocity, conservative flux form div(phi u) from tensorlbm.phasefield.operators, relaxation -M mu with double-well params (beta, kappa) inverted from (sigma, W) by tensorlbm.allen_cahn_lbm.free_energy_parameters",
+    "P3 exact shear-translation solution of the pure advection equation (analytic; used to verify the advection operator itself, no LBM in the loop)"
+  ],
+  "hypothesis": {
+    "H-R3-1": "With the interface free to evolve, the layered Poiseuille profile stays inside the owner 15% band for viscosity ratios <= 4 at width 2, i.e. the frozen assumption is not load-bearing for the *profile*.",
+    "H-R3-2": "In a strictly parallel body-force-driven channel the Allen-Cahn interface does not migrate: |interface centre shift| <= 1 lattice cell and the 10-90 width does not grow by more than 50%, so the round-1 frozen convention costs at most one cell of interface position.",
+    "H-R3-3": "The Allen-Cahn advection term is second order in space and time, i.e. the exact shear-translation solution is reproduced with an observed convergence order p >= 1.5."
+  },
+  "predeclared_thresholds": {
+    "E1_l2_rel": 0.15,
+    "E2_max_rel_peak": 0.15,
+    "E3_interface_centre_shift_cells": 1.0,
+    "E3_interface_width_growth_rel": 0.5,
+    "E4_uy_spurious_rel": 0.01,
+    "E5_phase_field_budget_rel": 0.001,
+    "E6_shear_translation_l2_rel": 0.05,
+    "E6_observed_order_min": 1.5,
+    "E7_degradation_vs_frozen_l2_abs": 0.05
+  },
+  "threshold_rationale": {
+    "E1_l2_rel": "the owner acceptance band, unchanged from round 1 (no relaxation).",
+    "E2_max_rel_peak": "owner acceptance band, unchanged from round 1.",
+    "E3_interface_centre_shift_cells": "one lattice cell is the resolution at which the round-1 indicator fixes the interface; a migration beyond it means the frozen geometry was materially wrong.",
+    "E3_interface_width_growth_rel": "50% growth of the 10-90 width over the whole transient; the AC equilibrium width is W=2 cells and the tanh initial profile is that equilibrium, so any growth is a discretisation/diffusion artefact.",
+    "E4_uy_spurious_rel": "identical to round-1 K5 (1%) so the two rounds are directly comparable.",
+    "E5_phase_field_budget_rel": "the flux-form advection conserves the phase-field integral exactly in the continuum for div u = 0; 1e-3 is the float32 accumulation floor for ~1e4 steps, i.e. the check is a conservation check, not a physics band.",
+    "E6_shear_translation_l2_rel": "5% of the profile L2 norm - the exact solution is analytic and the discretisation is central-difference, so anything above 5% would indicate a mis-paired flux/derivative axis rather than discretisation error.",
+    "E6_observed_order_min": "a second-order scheme must show at least p=1.5 after one refinement; below that the advective term is not second order.",
+    "E7_degradation_vs_frozen_l2_abs": "0.05 absolute L2 (i.e. roughly one third of the band) allows the evolving interface to cost something but not to be a different model."
+  },
+  "matrix": {
+    "matched_arms": "ny in {48, 96} x nu_lo/nu_hi in {2, 4}, width 2, harmonic mixing, G = 4e-6 (identical to the round-1 M1 matrix so the frozen and evolving arms are compared arm by arm), mobility 1e-2, sigma 0.1, dt 1",
+    "advective_stress_arm": "ny=96, ratio 2, G = 4e-5 (Ma ~ 0.05, 10x the matched force), reported against the Stokes reference and used only as an informational stress test (not gated)",
+    "shear_translation": "ny in {32, 64}, nx in {64, 128}, slope 0.2, gamma 0.01, total time 200 (dt 1 then dt 1/2), M = 0"
+  },
+  "provenance": {
+    "library_entry_points": [
+      "tensorlbm.allen_cahn_lbm.free_energy_parameters",
+      "tensorlbm.allen_cahn_lbm.step_allen_cahn_field",
+      "tensorlbm.multiphase.guo_force_term",
+      "tensorlbm.d2q9.equilibrium",
+      "tensorlbm.solver.stream",
+      "tensorlbm.boundary.boundaries.bounce_back_cells"
+    ],
+    "numbers_rendered": "all numbers in the round-3 report are rendered from outputs/xval_no_mcmp_evolving_round3/results_round3.json (zero hand-typed numbers)"
+  }
+}
