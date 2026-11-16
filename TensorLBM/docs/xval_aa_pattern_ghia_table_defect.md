@@ -153,3 +153,7 @@ python tests/gen_aa_fused_corrected_figures.py                 # fig7, fig8
 | `artifacts/xval_aa_pattern/fig7_ghia_table_defect.png` | `v` profile at L = 128 vs both tables + point-wise residual |
 | `artifacts/xval_aa_pattern/fig8_cavity_convergence_corrected.png` | `L2(u_x)`, `L2(u_y)` vs `L` with floors and the 3 %/15 % gates |
 | `artifacts/xval_aa_pattern/cavity_accept_field_L32.npz`, `…_L128.npz` | converged fields used by the recomputation |
+1. **Provenance is inherited, not re-verified.** The OCR witness
+   `benchmarks/verified/cavity/re5000/reference/ghia1982_tables_I_II.ocr.txt`
+   is *not present in this worktree*; the sha256 and the `BOUND` gates are read
+   from `benchmarks/anchors/ghia1982_provenance.json`. Two independent
