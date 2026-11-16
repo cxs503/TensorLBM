@@ -49,7 +49,16 @@ from typing import Any, Callable
 
 import torch
 
-from .registry import ModelSpec, build_collider, lattice_ops, nu_from_tau
+from .registry import (
+    ModelSpec,
+    build_collider,
+    bulk_viscosity,
+    lattice_ops,
+    nu_from_tau,
+)
+
+CS = 1.0 / math.sqrt(3.0)
+"""Lattice speed of sound (isothermal LBM), units of c = dx/dt."""
 
 
 @dataclass(frozen=True)
@@ -303,6 +312,177 @@ def run_shear_decay(
 
 
 # --------------------------------------------------------------------------- #
+#  Case: acoustic-wave decay (analytic bulk viscosity)
+# --------------------------------------------------------------------------- #
+
+
+def _sound_field(spec: ModelSpec, grid: Grid, amp: float, dtype: torch.dtype) -> torch.Tensor:
+    """Right-going linear acoustic wave ``rho = 1 + a cos(kx)``, ``u_x = c_s a cos(kx)``.
+
+    ``(dq, du) ~ (1, c_s)`` is the acoustic eigenvector, so the initial state
+    excites one sound mode and nothing else: no vorticity mode (``u`` is
+    curl-free) and no entropy mode (``u = c_s dq`` closes the impedance
+    relation).  The wave is periodic because ``k = 2 pi / nx``.
+    """
+    ops = lattice_ops(spec.lattice)
+    shape = grid.shape()
+    k = 2.0 * math.pi / grid.nx
+    x = torch.arange(grid.nx, dtype=dtype).view(1, 1, grid.nx)
+    cos = torch.cos(k * x).expand(shape).contiguous()
+    rho = 1.0 + amp * cos
+    ux = CS * amp * cos
+    zero = torch.zeros(shape, dtype=dtype)
+    return ops["equilibrium"](rho, ux, zero, zero).to(dtype)
+
+
+def _acoustic_amplitude(f: torch.Tensor, grid: Grid, spec: ModelSpec) -> float:
+    """Envelope of the running sound wave: ``|A_c + i A_s|``.
+
+    A *travelling* wave rotates between the ``cos(kx)`` and ``sin(kx)``
+    quadratures at frequency ``c_s k``; projecting onto ``cos`` alone would
+    therefore measure an oscillation, not a decay.  Both quadratures are
+    sampled and the magnitude is used.  (This was the bug in the first
+    attempt -- see the R2 report, "注意点".)
+    """
+    ops = lattice_ops(spec.lattice)
+    rho, _ux, _uy, _uz = ops["macroscopic"](f)
+    k = 2.0 * math.pi / grid.nx
+    x = torch.arange(grid.nx, dtype=rho.dtype).view(1, 1, grid.nx)
+    dr = rho - 1.0
+    ac = 2.0 * float((dr * torch.cos(k * x)).mean())
+    as_ = 2.0 * float((dr * torch.sin(k * x)).mean())
+    return math.hypot(ac, as_)
+
+
+def run_acoustic_decay(
+    spec: ModelSpec,
+    grid: Grid,
+    tau: float,
+    *,
+    amp: float = 1e-4,
+    steps: int | None = None,
+    dtype=torch.float64,
+    tol_pct: float = 3.0,
+    enforcement: str = "gate",
+    floor_ratio: float = 0.20,
+    sample_every: int = 2,
+) -> dict:
+    """Sound attenuation: the *bulk* channel of the same collision operator.
+
+    Linear acoustics of the Navier-Stokes equations gives, for the amplitude
+    attenuation rate ``gamma`` of a plane wave,
+
+    .. math::
+        \gamma = \tfrac{1}{2} k^2 \left( \tfrac{4}{3}\nu + \nu_b \right)
+        \quad\Longrightarrow\quad
+        S \equiv \tfrac{2\gamma}{k^2} = \tfrac{4}{3}\nu + \nu_b ,
+        \qquad \nu_b = \tfrac{2}{9}\left(\tfrac{1}{s_b} - \tfrac{1}{2}\right).
+
+    ``shear_decay`` cannot see ``nu_b`` at all (a shear wave is solenoidal, so
+    the trace moment is never excited); this case is what makes the bulk
+    channel of every registry entry verifiable, and it is the reason a
+    deliberately corrupted ``s_b`` no longer hides behind a green gate
+    (``model_matrix.mutation``, class ``bulk_only``).
+    """
+    k = 2.0 * math.pi / grid.nx
+    nu = nu_from_tau(tau)
+    nu_b, s_b = bulk_viscosity(spec, tau)
+    S_ref = 4.0 * nu / 3.0 + nu_b
+    gamma = 0.5 * S_ref * k * k
+    if not gamma > 0.0:
+        return {
+            "status": "NOT_APPLICABLE",
+            "metrics": {"S_ref": S_ref, "s_b": s_b},
+            "ref": {},
+            "tolerance": {},
+            "notes": f"non-dissipative acoustic channel (s_b={s_b:.4f}, nu_b={nu_b:.6g})",
+        }
+    if steps is None:
+        # ~2 e-folds of envelope decay: long enough for a slope, short enough
+        # to stay away from the round-off floor.
+        steps = int(round(2.0 / gamma))
+        steps = max(200, min(steps, 4000))
+
+    collider = build_collider(spec.name, tau)
+    stream = lattice_ops(spec.lattice)["stream"]
+    f = _sound_field(spec, grid, amp, dtype)
+    mass0 = float(lattice_ops(spec.lattice)["macroscopic"](f)[0].mean())
+
+    times: list[float] = []
+    amps: list[float] = []
+    mass_drift = 0.0
+    for n in range(0, steps + 1):
+        if n % sample_every == 0:
+            times.append(float(n))
+            amps.append(_acoustic_amplitude(f, grid, spec))
+            rho, _ux, _uy, _uz = lattice_ops(spec.lattice)["macroscopic"](f)
+            mass_drift = max(mass_drift, abs(float(rho.mean()) - mass0) / mass0)
+            if not torch.isfinite(f).all():
+                return {
+                    "status": "FAIL",
+                    "metrics": {"nonfinite": 1.0, "tau": tau},
+                    "ref": {"S": S_ref},
+                    "tolerance": {"acoustic_rel_error_pct": tol_pct},
+                    "notes": "distribution went non-finite before the fit window closed",
+                }
+        if n < steps:
+            f = stream(collider(f))
+
+    rate, r2 = _fit_decay_rate(times, amps, floor_ratio)
+    S_meas = 2.0 * rate / (k * k)
+    err_pct = 100.0 * (S_meas - S_ref) / S_ref
+    # invert the measurement for the eigenvalue the operator actually uses
+    num = 9.0 * (S_meas - 4.0 * nu / 3.0) / 2.0 + 0.5
+    s_b_implied = 1.0 / num if num != 0.0 else float("inf")
+
+    # The envelope of a *travelling* wave carries a small residual from the
+    # lattice dispersion of the acoustic branch (it shrinks with resolution:
+    # r2 = 0.9983/0.9993/0.9996 at nx = 16/24/32 for the cascaded operator), so
+    # the fit-linearity guard here is a sanity bound, not the discriminator --
+    # the discriminator is the attenuation error itself (<=0.4% measured).
+    ok = abs(err_pct) <= tol_pct and mass_drift <= 1e-10 and r2 >= 0.995
+    return {
+        "status": "PASS" if ok else "FAIL",
+        "metrics": {
+            "S_meas": S_meas,
+            "S_ref": S_ref,
+            "acoustic_rel_error_pct": err_pct,
+            "nu_b_ref": nu_b,
+            "nu_b_implied": S_meas - 4.0 * nu / 3.0,
+            "s_b": s_b,
+            "s_b_implied": s_b_implied,
+            "nu_ref": nu,
+            "decay_rate_fit": rate,
+            "decay_rate_ref": gamma,
+            "fit_r2": r2,
+            "mass_drift_rel": mass_drift,
+            "k": k,
+            "amp": amp,
+            "mach": CS * amp,
+            "steps": float(steps),
+            "tau": tau,
+        },
+        "ref": {
+            "solution": "rho-1 = amp cos(kx - c_s k t) exp(-gamma t), u_x = c_s (rho-1)",
+            "S_formula": "2 gamma / k^2 = 4 nu/3 + nu_b",
+            "nu_b_formula": "(2/9)(1/s_b - 1/2)",
+            "S": S_ref,
+            "nu_b": nu_b,
+            "s_b": s_b,
+            "nu": nu,
+        },
+        "tolerance": {
+            "acoustic_rel_error_pct": tol_pct,
+            "mass_drift_rel": 1e-10,
+            "fit_r2_min": 0.995,
+            "enforcement": enforcement,
+        },
+        "notes": "gate case: sound attenuation measures 4nu/3+nu_b (the bulk channel)",
+        "curves": {"t": times, "amplitude": amps},
+    }
+
+
+# --------------------------------------------------------------------------- #
 #  Case: Taylor-Green vortex decay (advisory, finite-Mach probe)
 # --------------------------------------------------------------------------- #
 
@@ -437,6 +617,14 @@ CASES: dict[str, CaseSpec] = {
         tol_pct=3.0,
         metrics_doc="nu_fit, nu_ref, nu_rel_error_pct, fit_r2, mass_drift_rel",
     ),
+    "acoustic_decay": CaseSpec(
+        name="acoustic_decay",
+        description="periodic acoustic wave: measured 4nu/3+nu_b vs analytic 4nu/3+(2/9)(1/s_b-1/2), amp=1e-4",
+        enforcement="gate",
+        runner=run_acoustic_decay,
+        tol_pct=3.0,
+        metrics_doc="S_meas, S_ref, acoustic_rel_error_pct, nu_b_implied, fit_r2",
+    ),
     "tg_decay": CaseSpec(
         name="tg_decay",
         description="Taylor-Green vortex at u0=0.1: fitted nu vs analytic, advisory (O(Ma^2) probe)",
@@ -485,6 +673,8 @@ def run_case(
         if case_name == "tg_decay":
             out = cs.runner(spec, grid, tau, dtype=dtype, tol_pct=cs.tol_pct, enforcement="advisory")
         elif case_name == "shear_decay":
+            out = cs.runner(spec, grid, tau, dtype=dtype, tol_pct=cs.tol_pct, enforcement="gate")
+        elif case_name == "acoustic_decay":
             out = cs.runner(spec, grid, tau, dtype=dtype, tol_pct=cs.tol_pct, enforcement="gate")
         else:
             out = cs.runner(spec, grid, tau, dtype=dtype)
