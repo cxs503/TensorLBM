@@ -2,6 +2,14 @@
 
 # XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS / free-surface increment: 修正版最小 D2Q9 自由面 oracle 的守恒性与力项缺陷复核
 
+> **⚠️ 历史快照（2026-11-15 运行，平台报告 19326）**：本报告与 `results_fs.json`、
+> `figures/` 记录的是 **R1/R2 修复之前** 的量化状态，数字不再更新。R1（Guo 静水梯度
+> −54.0%）与 R2（溃坝质量漂移 69.9%）已由后续单 #2470 (m21493) 定位根因并修复：
+> R1 达解析精度、R2 质量账本达机器精度，但溃坝**相变拓扑**仍失效（新诚实 FAIL，R3）。
+> 当前代码的量化状态见 [`REPORT_R1R2.md`](REPORT_R1R2.md) 与 `results_r1r2.json`；
+> 修复后的 oracle 为 `fs_oracle.py`，本报告的原始 oracle 快照保留在 `fs_oracle_orig.py`。
+> 图由 `restore_figures.py` 从 `results_fs.json` 确定性复原（与 2026-11-15 原件逐字节一致）。
+
 ## 1. 案例介绍
 
 锚点做法是 Maarten-vd-Sande/lbm（Thuerey/Koerner VoF-ε 家族）的 500 行教学级 2D D2Q9 自由面
@@ -47,11 +55,11 @@
 
 ## 4. 结果图
 
-![summary](fs_validation_summary.png)
+![summary](figures/fs_validation_summary.png)
 （a）静水梯度实测与解析、和缺陷理论的对照；（b）骨架移植版质量指数发散；
 （c）修正版溃坝液面推进与质量漂移。
 
-![rows](fs_dambreak_rows.png)
+![rows](figures/fs_dambreak_rows.png)
 修正版溃坝：按行统计的液体格数随时间（液面向左下铺开）。
 
 ## 5. 注意点（踩过的坑 / 局限）
