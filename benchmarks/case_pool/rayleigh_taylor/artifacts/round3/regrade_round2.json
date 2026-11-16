@@ -1,0 +1,99 @@
+{
+  "C_primary": 3.0,
+  "C_alt": 1.0,
+  "gate_pct": 10.0,
+  "convention_conflict": {
+    "quantity": "Goncharov geometric constant C in u_b = sqrt(2Ag/((1+A)Ck))",
+    "primary": {
+      "c": 3.0,
+      "source": "arXiv:1910.03663 Fig. 3 caption p.6 (2-D RTI, A = 0.04), Fr_B = sqrt(1/(3*pi)); equivalent to the classic 2-D Layzer value u_b = sqrt(2Ag/(3k))"
+    },
+    "alternate": {
+      "c": 1.0,
+      "source": "arXiv:2009.14655 Eq. (1) p.3, verbatim 'C is a constant given by 1 or 3 for the two-dimensional or three-dimensional geometry'"
+    },
+    "fr_b_primary": 0.32573500793528,
+    "fr_b_alternate": 0.5641895835477563,
+    "ratio_alternate_over_primary": 1.7320508075688772,
+    "status": "UNRESOLVED (publisher copy of Goncharov 2002 PRL 88:134502 not reachable: HTTP 403)",
+    "policy": "gates use C = 3 (2-D-specific primary source); both errors are reported; no constant is fitted to solver output"
+  },
+  "rows": [
+    {
+      "case": "A050_l064_g1e-4",
+      "scheme": "allen_cahn",
+      "atwood": 0.5,
+      "lam": 64,
+      "g": 0.0001,
+      "u_measured": 0.030236219681963866,
+      "u_spike_measured": 0.03024158770230694,
+      "u_b_over_u_s": 0.9998224954193571,
+      "u_ref_C3": 0.018426354638471226,
+      "u_ref_C1": 0.031915382432114614,
+      "err_C3_pct": 64.09224871226328,
+      "err_C1_pct": -5.261296034043772,
+      "pass_C3": false,
+      "pass_C1": true,
+      "sigma_err_pct_round2": -14.631305534230787,
+      "phi_max": 1.0,
+      "source": "benchmarks/case_pool/rayleigh_taylor/artifacts/round2/acceptance.json"
+    },
+    {
+      "case": "A050_l064_g2e-4",
+      "scheme": "allen_cahn",
+      "atwood": 0.5,
+      "lam": 64,
+      "g": 0.0002,
+      "u_measured": 0.047692064995974254,
+      "u_spike_measured": 0.04769305543765817,
+      "u_b_over_u_s": 0.9999792329999655,
+      "u_ref_C3": 0.026058800634822396,
+      "u_ref_C1": 0.045135166683820505,
+      "err_C3_pct": 83.0171145031261,
+      "err_C1_pct": 5.664980324688407,
+      "pass_C3": false,
+      "pass_C1": true,
+      "sigma_err_pct_round2": -15.215119232940177,
+      "phi_max": 1.0,
+      "source": "benchmarks/case_pool/rayleigh_taylor/artifacts/round2/acceptance.json"
+    },
+    {
+      "case": "A033_l064_g2e-4",
+      "scheme": "allen_cahn",
+      "atwood": 0.3333333333333333,
+      "lam": 64,
+      "g": 0.0002,
+      "u_measured": 0.036642408263497794,
+      "u_spike_measured": 0.036648579396441706,
+      "u_b_over_u_s": 0.9998316133109239,
+      "u_ref_C3": 0.021276921621409744,
+      "u_ref_C1": 0.03685270927694245,
+      "err_C3_pct": 72.21668113223035,
+      "err_C1_pct": -0.5706527893628577,
+      "pass_C3": false,
+      "pass_C1": true,
+      "sigma_err_pct_round2": -14.706770540307556,
+      "phi_max": 1.0,
+      "source": "benchmarks/case_pool/rayleigh_taylor/artifacts/round2/acceptance.json"
+    },
+    {
+      "case": "A050_l064_g2e-4_legacy",
+      "scheme": "bgk",
+      "atwood": 0.5,
+      "lam": 64,
+      "g": 0.0002,
+      "u_measured": 0.05229039906257189,
+      "u_spike_measured": 0.052512266080055214,
+      "u_b_over_u_s": 0.9957749487111243,
+      "u_ref_C3": 0.026058800634822396,
+      "u_ref_C1": 0.045135166683820505,
+      "err_C3_pct": 100.6631072371619,
+      "err_C1_pct": 15.852898979802177,
+      "pass_C3": false,
+      "pass_C1": false,
+      "sigma_err_pct_round2": -6.597515666411868,
+      "phi_max": 2.286224603652954,
+      "source": "benchmarks/case_pool/rayleigh_taylor/artifacts/round2/acceptance.json"
+    }
+  ]
+}
