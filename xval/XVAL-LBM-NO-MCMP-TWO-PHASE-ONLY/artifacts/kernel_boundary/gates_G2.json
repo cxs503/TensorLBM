@@ -1,0 +1,13 @@
+{
+ "G2": {
+  "gate": "G2_null_coupling_purity",
+  "psi": "exp",
+  "null_max": 0.0,
+  "inert_partner_max": 0.0,
+  "nontrivial_max": 0.028840305397282315,
+  "null_over_nontrivial": 0.0,
+  "teeth_amplitude": 0.028840305397282315,
+  "tolerance": 1e-12,
+  "pass": true
+ }
+}
