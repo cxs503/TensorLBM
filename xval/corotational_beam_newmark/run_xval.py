@@ -111,9 +111,37 @@ def record(case, arm, param, kpi, got, ref, unit=""):
             pass15=None if err is None else bool(abs(err) < OWNER_PCT),
             unit=unit,
             note=note,
+            status="PASS",
         )
     )
     return err
+
+
+def record_fail(case, arm, param, kpi, note, unit=""):
+    """Append one *explicitly failed* KPI row.
+
+    Round-3 defect (F7): the merged harness only appended a row when the
+    computation reported ``converged``.  A predeclared point that diverged was
+    therefore dropped *silently*: ``summary.json`` then read
+    ``D3_NONLINEAR_ENERGY: n=3, n_fail=0`` although 4 points had been
+    predeclared, and ``n_fail15 = 0`` looked like a clean pass.  A failed point
+    must be counted as a failure, never disappear.
+    """
+    rows.append(
+        dict(
+            case=case,
+            arm=arm,
+            param=param,
+            kpi=kpi,
+            got=float("nan"),
+            ref=0.0,
+            err_pct=None,
+            pass15=False,
+            unit=unit,
+            note=note,
+            status="FAILED",
+        )
+    )
 
 
 # ---------------------------------------------------------------------- S1
@@ -301,9 +329,28 @@ def case_d3(n_elem=16, lam=5.0, periods=(1, 1), fracs=(200, 1000)):
                 energy_hist=e.tolist(),
             )
             out[arm]["ladder"][str(frac)] = d
+            kpi = "energy_drift_pct"
             if d["converged"]:
-                record("D3_NONLINEAR_ENERGY", arm, f"lambda={lam},dt=T1/{frac},n={n_elem}",
-                       "energy_drift_pct", d["energy_drift_pct"], 0.0, "%")
+                e = record("D3_NONLINEAR_ENERGY", arm,
+                           f"lambda={lam},dt=T1/{frac},n={n_elem}", kpi,
+                           d["energy_drift_pct"], 0.0, "%")
+                del e
+                if arm == "LIFE":
+                    # the "energy" of this case is kinetic + the strain energy of
+                    # the *consistent* family; that is a conserved quantity of the
+                    # TL model only, so for the LIFE arm the drift is a mismatch
+                    # indicator, not an energy-conservation error
+                    rows[-1]["note"] += (
+                        "; metric = KE + consistent-family strain energy, which is"
+                        " NOT an invariant of the LIFE force vector"
+                    )
+            else:
+                # a divergence / non-converged Newton solve is a FAILED point,
+                # not a missing one (round-3 defect F7)
+                record_fail("D3_NONLINEAR_ENERGY", arm,
+                            f"lambda={lam},dt=T1/{frac},n={n_elem}", kpi,
+                            f"FAILED: max|q|={d['max_abs_q']:.2e}L, "
+                            f"Newton hit maxit={d['new_iters_max']}", "%")
     return out
 
 
@@ -437,6 +484,20 @@ def run_stage(stage: str):
     return 0
 
 
+def predeclared_points():
+    """Every (case, arm, param, kpi) point the predeclaration requires.
+
+    Used by ``assemble()`` to refuse a partial table: a missing point is a
+    harness defect, not a pass.
+    """
+    pts = []
+    for arm in ARMS:
+        for frac in (200, 1000):
+            pts.append(("D3_NONLINEAR_ENERGY", arm,
+                        f"lambda=5.0,dt=T1/{frac},n=16", "energy_drift_pct"))
+    return pts
+
+
 def assemble():
     raw = HERE / "runs" / "raw"
     t0 = time.time()
@@ -446,7 +507,16 @@ def assemble():
         summary.update(payload["cases"])
         all_rows.extend(payload["rows"])
 
+    have = {(r["case"], r["arm"], r["param"], r["kpi"]) for r in all_rows}
+    absent = [p for p in predeclared_points() if p not in have]
+    if absent:
+        raise RuntimeError(
+            "assemble(): predeclared points missing from the KPI table "
+            "(silent censorship guard F7): " + repr(absent)
+        )
+
     for r in all_rows:
+        r.setdefault("status", "PASS")
         if r.get("unit") == "%":
             r["err_pct"] = r["got"]
             r["note"] = "kpi already a % deviation from an exact zero reference"
@@ -514,7 +584,14 @@ def assemble():
     kpis = {
         "n_kpi_rows": len(rows),
         "n_fail15": sum(1 for r in rows if r["pass15"] is False),
-        "max_abs_err_pct": max(abs(r["err_pct"]) for r in rows if r["err_pct"] is not None),
+        "n_failed_points": sum(1 for r in rows if r.get("status") == "FAILED"),
+        "failed_points": [f"{r['case']}/{r['arm']}/{r['param']}"
+                          for r in rows if r.get("status") == "FAILED"],
+        "max_abs_err_pct": max(
+            (abs(r["err_pct"]) for r in rows
+             if r["err_pct"] is not None and np.isfinite(r["err_pct"])),
+            default=float("nan"),
+        ),
         "by_case": {},
         "wall_clock_s": None,
     }
@@ -523,8 +600,12 @@ def assemble():
         d["n"] += 1
         if r["pass15"] is False:
             d["n_fail"] += 1
-        if r["err_pct"] is not None:
+        if r.get("status") == "FAILED":
+            # already counted by the pass15 branch above; only record the identity
+            d.setdefault("failed", []).append(r["arm"] + "@" + r["param"])
+        if r["err_pct"] is not None and np.isfinite(r["err_pct"]):
             d["max_abs_err_pct"] = max(d["max_abs_err_pct"], abs(r["err_pct"]))
+    kpis["predeclared_points_complete"] = True
     kpis["wall_clock_s"] = time.time() - t0
     (HERE / "summary.json").write_text(json.dumps(kpis, indent=1))
     print(json.dumps(kpis, indent=1))
