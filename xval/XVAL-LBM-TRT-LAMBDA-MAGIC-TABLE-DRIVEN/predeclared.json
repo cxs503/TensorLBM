@@ -1,0 +1,42 @@
+{
+ "anchor": "XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN",
+ "round": 1,
+ "original_authorship": "m18452 (round 1)",
+ "provenance": "RECONSTRUCTED by m23150 (round 2). The R1 report cites this file as an artifact but it was never merged; thresholds below are transcribed verbatim from the R1 report section 2 KPI table, not re-chosen after the fact.",
+ "kpis": {
+  "K1": {
+   "definition": "Lambda inversion identity: repo omega(Lambda, omega) vs the three OSS writings over omega in [0.51,1.99] x Lambda in {1/12,1/6,3/16,1/4,3/8}",
+   "threshold": 1e-15
+  },
+  "K2": {
+   "definition": "discrete tables (weights / complement maps) identical (1 = same, 0 = different)",
+   "threshold": 1.0
+  },
+  "K3": {
+   "definition": "field identity on the shared case, repo vs OSS binary",
+   "threshold": 1e-13
+  },
+  "K4": {
+   "definition": "relative L2 vs the analytic solution, max over t",
+   "threshold": 0.15
+  },
+  "K5": {
+   "definition": "Lambda sensitivity (field relL2 + 5x5 eigen-spectrum branch deviation)",
+   "threshold": "report only"
+  },
+  "K6": {
+   "definition": "refinement observed order p",
+   "threshold": "report only"
+  },
+  "K7": {
+   "definition": "effect of the OSS second-order (u^2) equilibrium term",
+   "threshold": 0.15
+  }
+ },
+ "arms": {
+  "A": "OSS gaussian_1d_magic12: u=0, Lambda=1/12, 50 nodes x 20 steps, periodic; repo runs D2Q5 with ny=1",
+  "B": "OSS gaussian_1d_magic6: u=0.5, Lambda=1/6, 50 nodes x 10 steps"
+ },
+ "reference_data": "committed OSS binary output under gaussian_1d_magic{12,6}_hi/ (precision(17) instrumented build). The OSS C++ sources (oss_src/) were never merged; round 2 verifies the gates against the committed fields instead of recompiling.",
+ "r2_note": "round 2 adds predeclared_r2.json (wall-position calibration) and restores xval_trt_lambda.py"
+}

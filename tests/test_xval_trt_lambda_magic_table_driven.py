@@ -1,9 +1,13 @@
 """XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN -- acceptance tests (mission 18452).
 
-The OSS reference (``lbm-principles-practice/code`` @ 6e2c592, MIT) is compiled
-from the vendored verbatim sources in
-``xval/XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN/oss_src/`` inside a tmp dir, so
-the assertions compare against numbers the reference binary produced itself.
+The OSS reference (``lbm-principles-practice/code`` @ 6e2c592, MIT) numbers are the
+fields committed under ``xval/XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN/
+gaussian_1d_magic{12,6}_hi/`` (the ``precision(17)`` instrumented build recorded in
+the R1 report), so the assertions compare against numbers the reference binary
+produced itself.  The OSS C++ sources and the R1 driver were never merged; round 2
+(m23150) restored ``xval_trt_lambda.py`` (no g++/oss_src needed) and transcribed the
+pre-registration into ``predeclared.json``.  When ``oss_src/`` *is* present the
+fixture compiles it and the assertions run unchanged against fresh binary output.
 
 Gated (matches ``predeclared.json``):
   K1  magic relation identity  <= 1e-15
@@ -40,7 +44,10 @@ def _load_harness():
     return mod
 
 
-pytestmark = pytest.mark.skipif(shutil.which("g++") is None, reason="g++ required to build the OSS reference")
+#: committed reference fields are the primary evidence source (see module docstring)
+_HAS_COMMITTED = os.path.isdir(os.path.join(XV, "gaussian_1d_magic12_hi"))
+pytestmark = pytest.mark.skipif(not _HAS_COMMITTED,
+                               reason="committed OSS reference fields absent")
 
 
 def _build_reference(tmpdir, stem: str) -> np.ndarray:
@@ -65,9 +72,15 @@ def harness():
 
 
 @pytest.fixture(scope="module")
-def ref(tmp_path_factory):
-    tmpdir = str(tmp_path_factory.mktemp("oss"))
-    return {stem: _build_reference(tmpdir, stem) for stem in ("gaussian_1d_magic12", "gaussian_1d_magic6")}
+def ref(tmp_path_factory, harness):
+    """Reference fields: recompiled from oss_src/ when available, else the committed ones."""
+    if os.path.isdir(os.path.join(XV, "oss_src")) and shutil.which("g++"):
+        tmpdir = str(tmp_path_factory.mktemp("oss"))
+        return {stem: _build_reference(tmpdir, stem)
+                for stem in ("gaussian_1d_magic12", "gaussian_1d_magic6")}
+    return {stem: harness.load_reference(stem.rsplit("_", 1)[-1] if False else
+                                         ("magic12" if "magic12" in stem else "magic6"))
+            for stem in ("gaussian_1d_magic12", "gaussian_1d_magic6")}
 
 
 def test_k1_magic_relation_identity(harness):
