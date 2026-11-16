@@ -55,6 +55,7 @@ from .d2q9 import C, OPPOSITE, W
 CS2 = 1.0 / 3.0
 
 WALL_POLICIES = ("freeze", "neumann", "contact", "wall_order")
+CONTACT_CLOSURES = ("population", "potential")
 
 
 def _w(dtype, device) -> torch.Tensor:
@@ -311,6 +312,7 @@ class CAC2D:
         wall_order_parameter: float | None = None,
         wall_order_parameter_top: float | None = None,
         wall_contact_zero_net: bool = True,
+        wall_contact_closure: str = "population",
         device=torch.device("cpu"),
         dtype=torch.float32,
     ):
@@ -338,6 +340,8 @@ class CAC2D:
             raise ValueError("wall_order_parameter_top is only used by wall_phi_policy='wall_order'")
         if gravity_mode not in ("uniform", "rho"):
             raise ValueError(f"unknown gravity_mode {gravity_mode!r}")
+        if wall_contact_closure not in CONTACT_CLOSURES:
+            raise ValueError(f"unknown wall_contact_closure {wall_contact_closure!r}")
         self.shape = shape
         self.device, self.dtype = device, dtype
         self.rho_l, self.rho_g = rho_l, rho_g
@@ -357,6 +361,9 @@ class CAC2D:
         )
         self.wall_contact_cos_top = cos_top
         self.wall_contact_zero_net = bool(wall_contact_zero_net)
+        self.wall_contact_closure = str(wall_contact_closure)
+        self._wall_ghost = None       # ghost phi field (potential closure)
+        self._wall_ghost_mask = None  # active wall nodes for that field
         self.contact_angle_deg = None if contact_angle_deg is None else float(contact_angle_deg)
         self.wall_contact_flux = (
             0.0 if contact_angle_deg is None else wall_contact_flux_from_angle(contact_angle_deg, width)
@@ -459,13 +466,23 @@ class CAC2D:
             cos_n = torch.where(c_neg > c_pos, torch.full_like(base, float(self.wall_contact_cos_top)),
                                 torch.full_like(base, float(self.wall_contact_cos)))
         ghost = wall_contact_ghost(base, cos_n, self.width)
-        if self.wall_contact_zero_net:
+        if self.wall_contact_zero_net and self.wall_contact_closure == "population":
             # Global phase conservation: the conservative Allen-Cahn field is a
             # conserved quantity, so a wall flux may *redistribute* phase but must
             # not create it.  The mean wetting shift over the active wall is
             # therefore removed (zero-net-flux constraint), which keeps int(phi)
             # drift at the round-off level.
             ghost = ghost - (ghost - base)[has].mean()
+        self._wall_ghost = ghost
+        self._wall_ghost_mask = has
+        if self.wall_contact_closure == "potential":
+            # Mass-conservative route: the wall value enters *only* the
+            # gradient/Laplacian stencils that build the chemical potential
+            # (the diffuse-interface surface-energy term), while the
+            # populations at solid nodes keep their halfway-bounce-back values.
+            # Overwriting those populations with feq(ghost) pumps phase through
+            # the wall (measured below in docs/); see the class docstring.
+            return
         phi_new = torch.where(has, ghost, phi)
         feq = f_equilibrium(phi_new, zero, self.wv, self.cf)
         self.f = torch.where(has.unsqueeze(0), feq, self.f)
@@ -474,9 +491,16 @@ class CAC2D:
         fm = self.fluid_mask
         phi = self.f.sum(dim=0)
         rho = rho_of_phi(phi, self.rho_l, self.rho_g)
-        nb = shifted_neighbors(phi, axes=self.axes)  # (8, ny, nx): phi(x + c_i)
-        grad = iso_gradient_2d(phi, axes=self.axes, nb=nb)
-        lap = iso_laplacian_2d(phi, axes=self.axes, nb=nb)
+        # stencil field: identical to ``phi`` except for the ``potential`` wall
+        # closure, where the solid nodes carry the wetting ghost value so the
+        # Young condition enters through the chemical potential instead of a
+        # phase source at the wall.
+        st_phi = phi
+        if self.wall_contact_closure == "potential" and self._wall_ghost is not None:
+            st_phi = torch.where(self._wall_ghost_mask, self._wall_ghost, phi)
+        nb = shifted_neighbors(st_phi, axes=self.axes)  # (8, ny, nx): phi(x + c_i)
+        grad = iso_gradient_2d(st_phi, axes=self.axes, nb=nb)
+        lap = iso_laplacian_2d(st_phi, axes=self.axes, nb=nb)
         mu_phi = chemical_potential(phi, lap, self.beta, self.k)
         mu = viscosity_of_phi(phi, self.rho_l, self.rho_g, self.mu_l, self.mu_g, self.mu_law)
         rho_safe = torch.where(fm, rho, torch.ones_like(rho))
