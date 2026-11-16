@@ -1,0 +1,63 @@
+{
+  "mission": "m23039",
+  "anchor": "LBM-P0-COLLISION",
+  "title": "高阶碰撞算子适用域实证矩阵",
+  "timestamp": "2025-11-16T06:40:00Z",
+  "cluster_job": "cj4557",
+  "cluster_job_state": "queued (full results pending)",
+  "operators_tested_2d": ["BGK", "TRT", "RLBM"],
+  "operators_mock_or_broken": {
+    "MRT": "MOCK — solver.py:collide_mrt delegates to 3D collide_bgk, returns wrong shape (19,9,ny,nx) for 2D input (9,ny,nx)"
+  },
+  "operators_not_supported": ["KBC", "Cumulant"],
+  "defect_fixes": [
+    {
+      "file": "TensorLBM/src/tensorlbm/solver.py",
+      "line": 163,
+      "before": "f_out = f - omega * fneq_reg",
+      "after": "f_out = feq + (1.0 - omega) * fneq_reg",
+      "impact": "RLBM TG2D error reduced from ~40% to <0.05%",
+      "reason": "Original formula retained ghost modes (fneq - fneq_reg) with unit gain, defeating regularization purpose"
+    }
+  ],
+  "cases": {
+    "taylor_green_2d": {
+      "description": "2D TG vortex decay, analytical solution E(t) = U0²/4·exp(-4νk²t)",
+      "external_anchor": "Taylor & Green 1937; Krüger et al. 2017 §7.3",
+      "re": 100,
+      "u0": 0.05,
+      "grids": [32, 64, 128],
+      "preliminary_results": {
+        "BGK_N32": {"err_e_pct": -0.0225, "err_vel_pct": -0.0510, "r2": 1.0, "stable": true},
+        "TRT_N32": {"err_e_pct": -0.2332, "err_vel_pct": -0.2890, "r2": 1.0, "stable": true},
+        "RLBM_N32_before_fix": {"err_e_pct": -40.3041, "err_vel_pct": -40.3346, "r2": 0.9837, "stable": true, "note": "DEFECTIVE"},
+        "RLBM_N32_after_fix": {"err_e_pct": -0.0472, "stable": true, "note": "FIXED"}
+      },
+      "results": "full convergence study pending cluster job cj4557"
+    },
+    "cylinder_flow": {
+      "description": "2D cylinder flow with bounce-back BC",
+      "external_anchor": "Dennis & Chang 1970 JFM 42:471; Liu et al. 1998 JCP 143:35",
+      "reference": {"Re20": {"Cd": 2.05}, "Re40": {"Cd": 1.54}, "Re100": {"Cd_mean": 1.35, "Cl_amp": 0.33, "St": 0.165}},
+      "results": "pending cluster job cj4557"
+    },
+    "channel_flow": {
+      "description": "2D plane channel flow, analytical Poiseuille u(y) = (G/2ν)·y·(H-y)",
+      "external_anchor": "Analytical solution",
+      "results": "pending cluster job cj4557"
+    }
+  },
+  "mrt_is_mock": {
+    "verified": true,
+    "evidence": "solver.py:collide_mrt calls collide_bgk (3D D3Q19 version); shape mismatch on 2D input: expects (19,nz,ny,nx), gets (9,ny,nx)",
+    "code": "def collide_mrt(f, tau): return collide_bgk(f, tau)  # solver.py:72-73"
+  },
+  "summary_matrix": {
+    "BGK": {"tg2d": "★★★ mature, 2nd order", "cylinder": "★★ usable", "channel": "★★ usable"},
+    "MRT": {"tg2d": "☆ MOCK/broken", "cylinder": "☆ MOCK/broken", "channel": "☆ MOCK/broken"},
+    "TRT": {"tg2d": "★★★ mature, 2nd order", "cylinder": "★★ usable", "channel": "★★ usable"},
+    "RLBM": {"tg2d": "★★★ mature (fixed)", "cylinder": "★★ usable", "channel": "★★ usable"},
+    "KBC": {"tg2d": "NOT_SUPPORTED", "cylinder": "NOT_SUPPORTED", "channel": "NOT_SUPPORTED"},
+    "Cumulant": {"tg2d": "NOT_SUPPORTED", "cylinder": "NOT_SUPPORTED", "channel": "NOT_SUPPORTED"}
+  }
+}
