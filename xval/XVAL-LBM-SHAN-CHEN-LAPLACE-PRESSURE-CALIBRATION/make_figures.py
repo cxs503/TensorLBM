@@ -8,6 +8,7 @@ the report cannot drift from the tables.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -182,6 +183,32 @@ def fig_sensitivity():
     plt.close(fig)
 
 
+def write_provenance() -> dict:
+    """Stamp the committed figures against the result files they were built from.
+
+    ``tests/test_xval_sc_laplace_artifacts.py`` compares these digests with the
+    bytes on disk, so a figure that has gone stale with respect to
+    ``artifacts/result.json`` (or a result file edited without regenerating the
+    figures) is caught instead of silently shipping.
+    """
+
+    def sha256(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    prov = {
+        "anchor": res.get("anchor", HERE.name),
+        "generator": "make_figures.py",
+        "result_json": {"sha256": sha256(ART / "result.json")},
+        "field_snapshot": {"sha256": sha256(ART / "field_snapshot_R20.json")},
+        "figures": {
+            p.name: {"sha256": sha256(p), "bytes": p.stat().st_size}
+            for p in sorted(FIG.glob("*.png"))
+        },
+    }
+    (FIG / "PROVENANCE.json").write_text(json.dumps(prov, indent=2) + "\n", encoding="utf-8")
+    return prov
+
+
 if __name__ == "__main__":
     m = fig_field()
     fig_laplace()
@@ -191,5 +218,7 @@ if __name__ == "__main__":
         json.dumps({k: m[k] for k in ("R_eq", "dp", "p_in", "p_out", "rho_in", "rho_out", "u_max")},
                    indent=2)
     )
-    print("figures ->", sorted(p.name for p in FIG.glob("*.png")))
+    prov = write_provenance()
+    print("figures ->", sorted(prov["figures"]))
+    print("provenance ->", FIG / "PROVENANCE.json")
     print(f"field snapshot: R_eq={m['R_eq']:.3f} dp={m['dp']:.6f} u_max={m['u_max']:.4f}")
