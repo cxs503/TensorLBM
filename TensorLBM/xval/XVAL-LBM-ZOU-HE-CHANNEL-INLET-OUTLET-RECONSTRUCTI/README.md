@@ -57,3 +57,40 @@ bash xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/run_ladder.sh
 PYTHONPATH=src python xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/make_refinement_report.py
 PYTHONPATH=src python -m pytest tests/test_zou_he_channel_refinement.py -q
 ```
+
+## Validity envelope + independent reproduction
+
+`REPORT.md` validates one point of parameter space (`drho = 4e-3`, `tau = 0.65`)
+and `REFINEMENT.md` refines `H` at that point.  `ENVELOPE.md` adds the two axes
+the closure actually feels and a second code path:
+
+* `independent.py` — the same case re-solved in pure NumPy with the textbook
+  D2Q9 table, the Zou-He algebra re-derived from mass + x-momentum + y-momentum
+  and loop-based streaming; imports nothing from `tensorlbm`.  It reproduces the
+  library record to round-off (profile deviation `2e-15`), so the headline
+  number is a property of the method, not of one implementation.
+* `run_envelope.sh` — 11 library runs: `drho` in `[4e-4, 1.6e-2]` (Ma 0.0012 to
+  0.047) at `tau = 0.65`, and `tau` in `[0.55, 1.50]` at `drho = 4e-3`.
+* `make_envelope_report.py` — aggregates them into `ENVELOPE.md` +
+  `figures/fig7..fig9` (every number read back from the JSON records).
+
+Headline of the envelope: all 11 cells are inside the 3 % target, but `tau` is
+the real axis — `1.31e-3` at `tau = 1.0` up to `1.70e-2` at `tau = 1.5`, i.e.
+13x the floor, while a 40x change of `drho` costs only 1.44x.  The error is
+explained by one measured wall-position parameter,
+
+    delta(tau) = 1/64 - (tau - 1/2)^2/12      (max residual 1.1e-4, tau in [0.55, 1.5])
+    rel_umax  ~= 4 |delta| / H                (matches all six tau cells to <=17 %)
+
+so at these resolutions the error budget is *wall position*, and the Zou-He
+closure adds nothing measurable on top of it — the quantitative form of the
+negative result in `REPORT.md` section 5.
+
+```bash
+bash xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/run_envelope.sh
+python3 xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/make_envelope_report.py
+PYTHONPATH=src python3 xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/independent.py \
+    --height 16 --length 128 --steps 8000 --burn-in 2000 --avg-window 500 \
+    --out artifacts/xval_zouhe/indep_H16.json
+PYTHONPATH=src python3 -m pytest tests/test_zou_he_channel_envelope.py -q
+```
