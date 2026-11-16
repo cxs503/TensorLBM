@@ -1,0 +1,82 @@
+{
+  "anchor": "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS",
+  "round": 5,
+  "written_before_measurement": true,
+  "subject_under_audit": [
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/run_r3.py::geodesic_angle",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/run_r4.py + results_r4.json",
+    "src/tensorlbm/cg_contact_angle.py::contact_angle_geodesic (lbm_convention flag)"
+  ],
+  "data_sources": {
+    "committed_golden_fields": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/*.npz (10 fields, 2 independent arms x 5 angles, no solver run in this round)",
+    "analytic_caps": "generated in-process from the closed forms declared in claims.C1"
+  },
+  "claims_under_test": {
+    "C1": "A sessile cap (ball resting on the wall, positive order parameter inside) has circle-centre height z_c = -R cos(theta), apex height h = R (1 - cos theta) and contact half-width a = R sin(theta), for EVERY theta in (0, 180). Hence a/h = cot(theta/2) and theta = 2 atan(h/a) = 180 - 2 atan(a/h) unconditionally. There is ONE geometric convention; the 'two conventions' framing of R4 is a mislabelling.",
+    "C2": "The round-3 third estimator theta = 2 atan(a/h) therefore reports 180 - theta on every sessile field. The R3 P2 FAIL (6 of 8 audited rows, max 72.05 %) is a branch defect of the audit estimator, not evidence against the two wall closures.",
+    "C3": "R4's fix (apply the supplement only when a/h > 1) is not the physical relation: the ratio's side of 1 switches at theta = 90 deg, exactly where the mislabelling also switches, so the two branches are aliased in a/h alone and no conditional on a/h can be correct for both a correctly labelled and a mislabelled cap. R4's committed results_r4.json (n_fail = 12, max error 89.98 deg) contradicts its report (0 FAIL).",
+    "C4": "The two independent arms' committed fields reproduce the prescribed Young angle within the owner's 15 % gate under the physical relation, and agree with the independent circle fit (`tensorlbm.wetting.metrics.contact_angle_circle_fit`) within 10 deg."
+  },
+  "thresholds": {
+    "analytic_fine_deg": 0.5,
+    "analytic_coarse_deg": 2.0,
+    "xi_over_R_fine": 0.12,
+    "xi_over_R_coarse": 0.25,
+    "cross_estimator_deg": 2.0,
+    "accept_pct": 15.0,
+    "third_estimator_gap_deg": 10.0,
+    "reproduce_deg": 0.01,
+    "mirror_identity_deg": 1e-06,
+    "mislabel_recovery_deg": 0.5
+  },
+  "gates": [
+    {
+      "id": "G1_analytic_physical",
+      "statement": "On analytic caps built in the physical convention (z_c = wall - R cos theta), the single-formula estimator theta = 2 atan(h/a) returns the true angle with no caller-supplied convention flag, for theta = 45..135 deg, R = 14/18/22, xi = 2/3 (30 caps), inside the two declared xi/R tiers.",
+      "quantity": "max |theta_est - theta_true| per tier",
+      "threshold": "0.5 deg when xi/R <= 0.12; 2.0 deg when 0.12 < xi/R <= 0.25",
+      "falsified_if": "any tier violation"
+    },
+    {
+      "id": "G2_analytic_cross_estimator",
+      "statement": "On the same 30 analytic caps the independent circle fit (contact_angle_circle_fit) agrees with the geodesic estimator. This is the check R3/R4 lacked: every analytic object in those rounds was generated AND scored with the same relation, so a global reflection was invisible.",
+      "quantity": "max |theta_geodesic - theta_circle|",
+      "threshold": "2.0 deg",
+      "falsified_if": "any cap exceeds 2.0 deg"
+    },
+    {
+      "id": "G3_mislabel_recovery",
+      "statement": "On caps generated with the R3 generator (z_c = wall + R cos(label)), whose true contact angle is 180 - label, the estimator must return 180 - label (geometry) and the ratio formula must return label (the mislabelled template). This makes the estimator falsifiable: it must follow the field, not the name of the file.",
+      "quantity": "max |theta_phys - (180 - label)| and max |2 atan(a/h) - label|",
+      "threshold": "0.5 deg",
+      "falsified_if": "either deviates by more than 0.5 deg"
+    },
+    {
+      "id": "G4_committed_fields_accept",
+      "statement": "On the 10 committed golden fields, for the 8 rows measurable under the round-2 rule and belonging to the independent pair, the corrected angle is inside the owner's 15 % gate of the prescribed angle and within 10 deg of the circle fit.",
+      "quantity": "max err_pct, max gap_deg",
+      "threshold": "15 % and 10 deg",
+      "falsified_if": "any audited row exceeds either bound (the two theta = 45 rows stay NOT_MEASURABLE as in R2/R3)"
+    },
+    {
+      "id": "G5_mirror_identity",
+      "statement": "On every measured field and cap, 2 atan(a/h) + 2 atan(h/a) = 180 deg exactly, i.e. the R3 defect is exactly the supplement reflection and nothing else.",
+      "quantity": "max |180 - (theta_ratio + theta_phys)|",
+      "threshold": "1e-6 deg",
+      "falsified_if": "any identity violation (would mean the defect is not a pure reflection)"
+    },
+    {
+      "id": "G6_offline_reproduction",
+      "statement": "The round-2 acceptance quantities (theta_cap, theta_circle) are re-derived offline from the committed npz fields through the library measurement and must match the committed R3 JSON, i.e. the evidence bundle is independently re-derivable (closes R3 finding F3 for the acceptance quantity).",
+      "quantity": "max |theta_cap_rederived - theta_cap_committed|, same for theta_circle",
+      "threshold": "0.01 deg",
+      "falsified_if": "any row exceeds 0.01 deg"
+    }
+  ],
+  "rules": [
+    "Thresholds and gates are frozen before any measurement in this round; the JSON is committed in the same commit as the results.",
+    "The corrected estimator is fixed by the closed forms in C1, never tuned to hit the prescribed angle. Any gate that fails is reported as FAIL with the offending rows enumerated.",
+    "No solver run happens in this round: every number comes from the 10 committed fields, the analytic caps, or the existing library measurement.",
+    "A PASS on G4 restates a measurement of fields that were already committed; it does not add a new simulation result and must be worded as a correction of the audit estimator, not as a new validation of the solver."
+  ]
+}
