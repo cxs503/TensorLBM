@@ -1,0 +1,43 @@
+{
+  "case": "brinkman_channel",
+  "capability": "volume-averaged Darcy/Brinkman drag closure in a bounded channel",
+  "reference": "closed-form Brinkman-Poiseuille profile (Brinkman 1947; Vafai & Kim 1990)",
+  "protocol": {
+    "solver": "D2Q9 BGK + zero-sum Guo (2002) forcing, half-way bounce-back walls",
+    "tape": "steady state gate on u_bar (relative change per sampling chunk)",
+    "sweep": {
+      "Da": [
+        0.001,
+        0.003,
+        0.01,
+        0.03,
+        0.1
+      ],
+      "ny": 66,
+      "g": 1e-05
+    },
+    "ladder": {
+      "Da": 0.01,
+      "ny": [
+        34,
+        66,
+        130
+      ],
+      "g_scaling": "g ~ (64/H)^2 so that Re and Ma stay fixed (self-similar)"
+    },
+    "controls": [
+      "drag off (K -> inf) must reproduce the Poiseuille parabola",
+      "truncated Guo source (negative control) must show a mass sink"
+    ]
+  },
+  "thresholds": {
+    "eps_inf": 0.03,
+    "eps_inf_target": 0.01,
+    "shape_rel": 0.01,
+    "amp_err": 0.01,
+    "mass_drift": 1e-09,
+    "steady_rel_change": 1e-09,
+    "min_order": 1.5
+  },
+  "declared_before_runs": true
+}
