@@ -1,0 +1,13 @@
+{
+  "before_total": 3119,
+  "after_total": 3023,
+  "after_per_dir": {
+    "src": 1443,
+    "tests": 901,
+    "examples": 46,
+    "benchmarks": 633
+  },
+  "syntax_before": 100,
+  "syntax_after": 0,
+  "target": 3049
+}
