@@ -1,6 +1,188 @@
 {
+  "acceptances": [
+    {
+      "by_code_delta": {
+        "E401": 1,
+        "F401": 9,
+        "F811": 1,
+        "F841": 3,
+        "I001": 7
+      },
+      "delta": 21,
+      "fixed_files": {
+        "benchmarks/adjoint_convergence.py": {
+          "at_ref": 2,
+          "now": 0
+        },
+        "benchmarks/adjoint_ootc_bench.py": {
+          "at_ref": 3,
+          "now": 0
+        },
+        "benchmarks/gen_adjoint_ootc_figures.py": {
+          "at_ref": 2,
+          "now": 0
+        },
+        "tests/diagnose_q.py": {
+          "at_ref": 1,
+          "now": 0
+        },
+        "tests/test_adjoint_field_gradient.py": {
+          "at_ref": 2,
+          "now": 0
+        },
+        "tests/test_adjoint_ootc.py": {
+          "at_ref": 2,
+          "now": 0
+        }
+      },
+      "from_total": 3028,
+      "introduced_by": {
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/linear_stability_model.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/make_figures.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_interface_width.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_mobility_ladder.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/verify_ref_closure.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/verified/brinkman_channel/run.py": "64f2c86c9 m22688: matured mission deliverables\uff082 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/verified/graetz_tube/make_artifacts.py": "74bc6a94c Merge #2559 (m22593) via merge-master",
+        "benchmarks/verified/graetz_tube/study.py": "74bc6a94c Merge #2559 (m22593) via merge-master",
+        "benchmarks/xval/xval_nebb_startup_transient.py": "1624d8276 Merge #2566 (m22690) via merge-master",
+        "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "benchmarks/xval_akai2018_wetting_rotation/run.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "benchmarks/xval_compressed_node_table_prod/run_bench.py": "ca7f05d99 Merge #2578 (m22809) via merge-master",
+        "src/tensorlbm/adjoint_ootc/inversion.py": "68eda949e Merge #2574 (m22781) via merge-master",
+        "src/tensorlbm/model_matrix/mutation.py": "a0842d99c m22866: matured mission deliverables\uff0812 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "src/tensorlbm/porous/fluid_node_table.py": "abe8c480c Merge #2570 (m22754) via merge-master",
+        "tests/test_brinkman_channel.py": "64f2c86c9 m22688: matured mission deliverables\uff082 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "tests/test_model_matrix_plus_coverage.py": "a0842d99c m22866: matured mission deliverables\uff0812 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "tests/test_porous_fluid_node_table.py": "abe8c480c Merge #2570 (m22754) via merge-master",
+        "tests/test_wall_contact_closure.py": "9f8467809 m22828: matured mission deliverables\uff081 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09"
+      },
+      "mode": "ruff",
+      "new_debt_files": {
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/linear_stability_model.py": 2,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/make_figures.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_interface_width.py": 2,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_mobility_ladder.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/verify_ref_closure.py": 1,
+        "benchmarks/verified/brinkman_channel/run.py": 4,
+        "benchmarks/verified/graetz_tube/make_artifacts.py": 2,
+        "benchmarks/verified/graetz_tube/study.py": 1,
+        "benchmarks/xval/xval_nebb_startup_transient.py": 1,
+        "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.py": 1,
+        "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py": 2,
+        "benchmarks/xval_akai2018_wetting_rotation/run.py": 1,
+        "benchmarks/xval_compressed_node_table_prod/run_bench.py": 1,
+        "src/tensorlbm/adjoint_ootc/inversion.py": 2,
+        "src/tensorlbm/model_matrix/mutation.py": 3,
+        "src/tensorlbm/porous/fluid_node_table.py": 1,
+        "tests/test_brinkman_channel.py": 2,
+        "tests/test_model_matrix_plus_coverage.py": 2,
+        "tests/test_porous_fluid_node_table.py": 1,
+        "tests/test_wall_contact_closure.py": 1
+      },
+      "reason": "rung-1 restore: +21 ruff findings all in files added after the baseline commit by later merged missions (benchmarks/xval*, src/tensorlbm/{adjoint_ootc,model_matrix,porous}); no pre-existing file regressed (2 such regressions were fixed instead of accepted)",
+      "recorded_at": "2026-11-16T04:40:16Z",
+      "ref_from": "ea9ca221f3059dc085abacd92b573d14b1e6c2db",
+      "ref_measured_total": 3029,
+      "ref_to": "35548308d",
+      "to_total": 3049
+    },
+    {
+      "by_code_delta": {},
+      "delta": 32,
+      "fixed_files": {
+        "benchmarks/gen_adjoint_ootc_figures.py": {
+          "at_ref": 1,
+          "now": 0
+        }
+      },
+      "from_total": 2101,
+      "introduced_by": {
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/kdelta_convergence.py": "bd2a382f7 m22723: matured mission deliverables\uff081 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/linear_stability_model.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/make_figures.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_interface_width.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_mobility_ladder.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/publish_report.py": "bd2a382f7 m22723: matured mission deliverables\uff081 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/verify_ref_closure.py": "70d2fd9e0 m22528: matured mission deliverables\uff083 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/verified/brinkman_channel/run.py": "64f2c86c9 m22688: matured mission deliverables\uff082 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "benchmarks/verified/graetz_tube/make_artifacts.py": "74bc6a94c Merge #2559 (m22593) via merge-master",
+        "benchmarks/verified/graetz_tube/reference_series.py": "74bc6a94c Merge #2559 (m22593) via merge-master",
+        "benchmarks/verified/graetz_tube/study.py": "74bc6a94c Merge #2559 (m22593) via merge-master",
+        "benchmarks/xval/make_nebb_startup_report.py": "1624d8276 Merge #2566 (m22690) via merge-master",
+        "benchmarks/xval/xval_nebb_startup_transient.py": "1624d8276 Merge #2566 (m22690) via merge-master",
+        "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "benchmarks/xval_akai2018_wetting_rotation/run.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "benchmarks/xval_compressed_node_table_prod/run_bench.py": "ca7f05d99 Merge #2578 (m22809) via merge-master",
+        "src/tensorlbm/brinkman_channel.py": "64f2c86c9 m22688: matured mission deliverables\uff082 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "src/tensorlbm/contact_angle_inversion/subcell.py": "b021537dd Merge #2581 (m22841) via merge-master",
+        "src/tensorlbm/contact_angle_inversion/synthetic.py": "b021537dd Merge #2581 (m22841) via merge-master",
+        "src/tensorlbm/model_matrix/mutation.py": "a0842d99c m22866: matured mission deliverables\uff0812 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "src/tensorlbm/nebb_bodyforce_startup.py": "1624d8276 Merge #2566 (m22690) via merge-master",
+        "src/tensorlbm/porous/fluid_node_table.py": "abe8c480c Merge #2570 (m22754) via merge-master",
+        "tests/test_brinkman_channel.py": "64f2c86c9 m22688: matured mission deliverables\uff082 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "tests/test_contact_angle_estimator_budget.py": "b021537dd Merge #2581 (m22841) via merge-master",
+        "tests/test_graetz_tube_verified.py": "74bc6a94c Merge #2559 (m22593) via merge-master",
+        "tests/test_model_matrix_plus_coverage.py": "a0842d99c m22866: matured mission deliverables\uff0812 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "tests/test_nebb_bodyforce_startup.py": "1624d8276 Merge #2566 (m22690) via merge-master",
+        "tests/test_porous_darcy_layouts.py": "ca7f05d99 Merge #2578 (m22809) via merge-master",
+        "tests/test_porous_fluid_node_table.py": "abe8c480c Merge #2570 (m22754) via merge-master",
+        "tests/test_wall_contact_closure.py": "9f8467809 m22828: matured mission deliverables\uff081 \u4e2a\u6587\u4ef6\u88ab\u95e8\u7981\u6ee4\u9664\uff09",
+        "tests/test_xval_akai2018_wetting_rotation.py": "12bf0a6be Merge #2560 (m22599) via merge-master",
+        "tests/test_zou_he_channel3d_ladder_gate.py": "86ff9ab4f Merge #2562 (m22656) via merge-master"
+      },
+      "mode": "format",
+      "new_debt_files": {
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/kdelta_convergence.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/linear_stability_model.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/make_figures.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_interface_width.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/probe_mobility_ladder.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/publish_report.py": 1,
+        "benchmarks/case_pool/rayleigh_taylor_atwood05/verify/verify_ref_closure.py": 1,
+        "benchmarks/verified/brinkman_channel/run.py": 1,
+        "benchmarks/verified/graetz_tube/make_artifacts.py": 1,
+        "benchmarks/verified/graetz_tube/reference_series.py": 1,
+        "benchmarks/verified/graetz_tube/study.py": 1,
+        "benchmarks/xval/make_nebb_startup_report.py": 1,
+        "benchmarks/xval/xval_nebb_startup_transient.py": 1,
+        "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.py": 1,
+        "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py": 1,
+        "benchmarks/xval_akai2018_wetting_rotation/run.py": 1,
+        "benchmarks/xval_compressed_node_table_prod/run_bench.py": 1,
+        "src/tensorlbm/brinkman_channel.py": 1,
+        "src/tensorlbm/contact_angle_inversion/subcell.py": 1,
+        "src/tensorlbm/contact_angle_inversion/synthetic.py": 1,
+        "src/tensorlbm/model_matrix/mutation.py": 1,
+        "src/tensorlbm/nebb_bodyforce_startup.py": 1,
+        "src/tensorlbm/porous/fluid_node_table.py": 1,
+        "tests/test_brinkman_channel.py": 1,
+        "tests/test_contact_angle_estimator_budget.py": 1,
+        "tests/test_graetz_tube_verified.py": 1,
+        "tests/test_model_matrix_plus_coverage.py": 1,
+        "tests/test_nebb_bodyforce_startup.py": 1,
+        "tests/test_porous_darcy_layouts.py": 1,
+        "tests/test_porous_fluid_node_table.py": 1,
+        "tests/test_wall_contact_closure.py": 1,
+        "tests/test_xval_akai2018_wetting_rotation.py": 1,
+        "tests/test_zou_he_channel3d_ladder_gate.py": 1
+      },
+      "reason": "rung-1 restore: +32 unformatted files, all added after the baseline commit by later merged missions; no pre-existing file became unformatted (src/tensorlbm/porous_media.py was fixed instead of accepted)",
+      "recorded_at": "2026-11-16T04:40:28Z",
+      "ref_from": "ea9ca221f3059dc085abacd92b573d14b1e6c2db",
+      "ref_measured_total": 2101,
+      "ref_to": "35548308d",
+      "to_total": 2133
+    }
+  ],
+  "floor": {
+    "format": 2101,
+    "ruff": 3028
+  },
   "format": {
-    "fingerprint": "d53d134d4fc1ba0f",
+    "fingerprint": "e77607b7a67de166",
     "kind": "format",
     "parse_errors": 4,
     "paths": [
@@ -10,11 +192,12 @@
       "benchmarks"
     ],
     "ruff_version": "ruff 0.15.0",
-    "total": 2101
+    "total": 2133
   },
+  "measured_at_commit": "ea9ca221f3059dc085abacd92b573d14b1e6c2db",
   "ruff": {
     "by_code": {
-      "E401": 14,
+      "E401": 15,
       "E402": 48,
       "E701": 5,
       "E702": 91,
@@ -22,15 +205,15 @@
       "E722": 11,
       "E731": 17,
       "E741": 52,
-      "F401": 1424,
+      "F401": 1433,
       "F541": 140,
       "F601": 8,
-      "F811": 19,
+      "F811": 20,
       "F821": 12,
       "F822": 12,
       "F823": 1,
-      "F841": 365,
-      "I001": 705,
+      "F841": 368,
+      "I001": 712,
       "invalid-syntax": 100
     },
     "kind": "ruff",
@@ -41,7 +224,7 @@
       "benchmarks"
     ],
     "ruff_version": "ruff 0.15.0",
-    "total": 3028
+    "total": 3049
   },
   "ruff_version": "ruff 0.15.0"
 }
