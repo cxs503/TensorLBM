@@ -1,0 +1,60 @@
+{
+ "mission": 23154,
+ "anchor": "LBM-P0-KBC",
+ "repo": "TensorLBM",
+ "branch": "agent/m23154",
+ "question": "KBC / Cumulant collision families: are they implemented and viscosity-controlled (path A), or must the claim be withdrawn (path B)?",
+ "path_resolution": "PATH A (verify the existing implementation) — the modules src/tensorlbm/entropic_kbc.py (entropic KBC, 640 lines) and src/tensorlbm/cumulant.py (cumulant D2Q9/D3Q19/D3Q27, 1615 lines) exist and are registered in advanced_collision_contract as AVAILABLE for D3Q19 and D3Q27; the m23039 audit that declared them NOT_SUPPORTED scanned only the legacy 2-D solver path (solver.py / verification/lid_driven_cavity). Path A therefore becomes a quantitative verification, not a new implementation: no kernel code is changed unless a gate fails.",
+ "prereg_frozen_at_utc": "2026-11-16T08:10:00Z",
+ "platform_frozen_criteria": {
+  "note": "The dispatch states the acceptance criteria are frozen on the platform side (acceptance_criteria column). The mission endpoints of this deployment returned HTTP 404 for /missions/23154, so the platform row could not be re-read from the API; the criteria below are the transcription of the dispatch text plus the protocol fixed before any sweep result was inspected. The hash below freezes that transcription so it cannot be edited after the fact.",
+  "dispatch_text": "路径A（实现）：KBC entropic 或 cumulant 至少其一+Taylor-Green 涡衰减验证；路径B（除名）：README/API/文档彻底清除 KBC/Cumulant 认领+负向知识登记（nkl）说明未实现与再启用条件。两路径都须交付「文档认领↔实现注册表一致性脚本」。",
+  "sha256_of_dispatch_text": "5dd674065b3b3bf3c2f2e3ce4625c9155c911ebcac556775318c53dff1b3a375"
+ },
+ "protocol": {
+  "case": "3-D Taylor-Green vortex, periodic N^3, u = (U0 sin kx cos ky cos kz, -U0 cos kx sin ky cos kz, 0), k = 2*pi/N",
+  "analytic_anchor": "kinetic energy E(t) = E0 exp(-gamma_E t), gamma_E = 6 nu k^2 (8 plane waves with |kappa|^2 = 3 k^2); nu = c_s^2 (tau - 1/2) = (tau - 1/2)/3",
+  "u0": 0.05,
+  "dtype": "float64",
+  "tau_sweep_tier_A": "N = 32, tau in {0.6, 0.8, 1.0, 1.5} (decisive test of nu(tau))",
+  "grid_tier_B": "N = 48, tau = 0.7 (Re = 24 canonical point; isolates discretisation from kernel error)",
+  "reconciliation_tier_C": "N in {32, 48} with the fp32 protocol of benchmarks/pending/collision_kernels_3d_tg (tau = 0.5 + 3 U0 N/24) — same protocol that published the kbc_d3q19 FAIL, re-run to attribute it",
+  "step_order": "f <- collide(stream(f))",
+  "fit_window": "samples after the first two recorded ones with E/E0 > 1e-8; least squares on ln E(t)",
+  "kernels_under_test": [
+   "entropic_kbc.collide_kbc_d3q19",
+   "entropic_kbc.collide_kbc_d3q27",
+   "cumulant.collide_cumulant_d3q27 (legacy)",
+   "cumulant.collide_cumulant_geier_d3q27",
+   "controls: solver3d.collide_bgk3d, d3q27.collide_mrt27/collide_trt27/collide_rlbm27, cascaded_collision.collide_cascaded_d3q27"
+  ],
+  "gates": {
+   "G1_rate": "|gamma_sim/gamma_theory - 1| <= 3% at every (tau, N) point",
+   "G2_exponence": "R^2 of the ln E(t) fit >= 0.999",
+   "G3_mass": "|Delta rho / rho| <= 1e-12",
+   "G4_positivity": "min f >= -1e-14 for the entropic KBC kernels"
+  },
+  "verdict_rule": {
+   "kernel_REAL": "G1..G4 hold at every measured (tau, N)",
+   "family_REAL": "every lattice the registry advertises AVAILABLE has at least one audited kernel with kernel_REAL",
+   "family_WITHHELD": "registered but at least one measured (tau, N) deviates by more than 3% (deviation quoted, never rounded away)",
+   "path_A_PASS": "KBC family REAL or CUMULANT family REAL, AND the doc-claim <-> registry consistency script passes with zero FAIL",
+   "path_B_required": "neither family REAL => claims must be deleted from README/API/docs and a negative-knowledge (nkl) entry filed"
+  }
+ },
+ "consistency_script": {
+  "tool": "tools/collision_claim_registry.py",
+  "gates": {
+   "R1": "prose claim of AVAILABLE with ledger grade below REAL => FAIL",
+   "R2": "prose WITHHELD / not-implemented claim while ledger grade REAL => FAIL (stale withholding)",
+   "R3": "every registry AVAILABLE kernel must import and conserve mass/momentum to 1e-12 in one float64 collision",
+   "R4": "every registry family must have a ledger row"
+  },
+  "surface": [
+   "README.md",
+   "README.zh-CN.md",
+   "docs/advanced_collision_capability_matrix.md",
+   "docs/general_capability_matrix_r1.md"
+  ]
+ }
+}
