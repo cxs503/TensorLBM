@@ -1,0 +1,164 @@
+{
+  "case_family": "periodic-slab single-phase Darcy channel, body force g",
+  "params": {
+    "g": 0.0001,
+    "tau": 0.8,
+    "nu": 0.10000000000000002,
+    "nx": "= ny",
+    "porosity": 0.6666666666666666
+  },
+  "reference": "k_super = (H/ny) * H**2 / 12 (half-way no-slip planes)",
+  "rows": [
+    {
+      "case": "compressed_ny12_h8",
+      "layout": "compressed",
+      "ny": 12,
+      "h_fluid": 8,
+      "steps": 1500,
+      "converged": true,
+      "k_ref_analytic": 3.5555555555555554,
+      "k_got": 3.5399999997434226,
+      "err_pct": -0.43750000721623356,
+      "u_max": 0.00780999999941085,
+      "ma_max": 0.013527316806092494,
+      "wall_seconds": 3.471626980230212
+    },
+    {
+      "case": "dense_halfway_ny12_h8",
+      "layout": "dense_halfway",
+      "ny": 12,
+      "h_fluid": 8,
+      "steps": 1500,
+      "converged": true,
+      "k_ref_analytic": 3.5555555555555554,
+      "k_got": 3.539999999743447,
+      "err_pct": -0.4375000072155466,
+      "u_max": 0.007809999999410911,
+      "ma_max": 0.013527316806092602,
+      "wall_seconds": 3.399435628205538
+    },
+    {
+      "case": "dense_ny12_h8",
+      "layout": "dense",
+      "ny": 12,
+      "h_fluid": 8,
+      "steps": 1800,
+      "converged": true,
+      "k_ref_analytic": 3.5555555555555554,
+      "k_got": 4.662222221752547,
+      "err_pct": 31.12499998679039,
+      "u_max": 0.009493333332339959,
+      "ma_max": 0.016442935664799967,
+      "wall_seconds": 1.9305284693837166
+    },
+    {
+      "case": "compressed_ny24_h16",
+      "layout": "compressed",
+      "ny": 24,
+      "h_fluid": 16,
+      "steps": 5600,
+      "converged": true,
+      "k_ref_analytic": 14.222222222222221,
+      "k_got": 14.206666661051756,
+      "err_pct": -0.10937503947983651,
+      "u_max": 0.03180999998685441,
+      "ma_max": 0.05509653616599716,
+      "wall_seconds": 13.918324640020728
+    },
+    {
+      "case": "dense_halfway_ny24_h16",
+      "layout": "dense_halfway",
+      "ny": 24,
+      "h_fluid": 16,
+      "steps": 5600,
+      "converged": true,
+      "k_ref_analytic": 14.222222222222221,
+      "k_got": 14.206666661051718,
+      "err_pct": -0.1093750394800988,
+      "u_max": 0.03180999998685439,
+      "ma_max": 0.05509653616599712,
+      "wall_seconds": 15.319951141253114
+    },
+    {
+      "case": "dense_ny24_h16",
+      "layout": "dense",
+      "ny": 24,
+      "h_fluid": 16,
+      "steps": 6150,
+      "converged": true,
+      "k_ref_analytic": 14.222222222222221,
+      "k_got": 16.417324255626927,
+      "err_pct": 15.434311172376834,
+      "u_max": 0.035125986377990574,
+      "ma_max": 0.06083999307265196,
+      "wall_seconds": 9.21867840923369
+    }
+  ],
+  "gates": {
+    "G1_identity_lt_1e-8": {
+      "H8": {
+        "k_rel_diff": 6.899691113989759e-15,
+        "profile_max_rel": 9.10674296036035e-15,
+        "steps_equal": true
+      },
+      "H16": {
+        "k_rel_diff": 2.625773836847636e-15,
+        "profile_max_rel": 5.453390369989586e-15,
+        "steps_equal": true
+      }
+    },
+    "G2_physics_lt_3pct": {
+      "compressed_ny12_h8": {
+        "err_pct": -0.43750000721623356,
+        "pass_3pct": true
+      },
+      "dense_halfway_ny12_h8": {
+        "err_pct": -0.4375000072155466,
+        "pass_3pct": true
+      },
+      "dense_ny12_h8": {
+        "err_pct": 31.12499998679039,
+        "pass_3pct": false
+      },
+      "compressed_ny24_h16": {
+        "err_pct": -0.10937503947983651,
+        "pass_3pct": true
+      },
+      "dense_halfway_ny24_h16": {
+        "err_pct": -0.1093750394800988,
+        "pass_3pct": true
+      },
+      "dense_ny24_h16": {
+        "err_pct": 15.434311172376834,
+        "pass_3pct": false
+      }
+    },
+    "G2_all_compressed_pass": true,
+    "G3_wall_convention": {
+      "detail": {
+        "H8": {
+          "err_pct": 31.12499998679039,
+          "k_eff_width": 8.756256749196336,
+          "predicted_width_h_plus_1": 9,
+          "k_at_h_plus_1": 5.0625
+        },
+        "H16": {
+          "err_pct": 15.434311172376834,
+          "k_eff_width": 16.784108869781416,
+          "predicted_width_h_plus_1": 17,
+          "k_at_h_plus_1": 17.05902777777778
+        }
+      },
+      "err_pct_dense": {
+        "H8": 31.12499998679039,
+        "H16": 15.434311172376834
+      },
+      "ratio_lowH_over_highH": 2.016610889800872,
+      "expected_ratio_for_half_cell_offset": 2.0
+    }
+  },
+  "artifacts": {
+    "profile_figure": "/root/tp-agent/work/m22809/benchmarks/xval_compressed_node_table_prod/figures/profiles.png",
+    "convention_figure": "/root/tp-agent/work/m22809/benchmarks/xval_compressed_node_table_prod/figures/wall_convention.png"
+  }
+}
