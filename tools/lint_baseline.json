@@ -1,0 +1,19 @@
+{
+  "baseline": {
+    "invalid_syntax_findings": 0,
+    "ruff_check_findings": 3023,
+    "ruff_format_unformatted_files": 2195
+  },
+  "ledger_slug": "LBM-P0-RUFF",
+  "ledger_target": {
+    "ruff_check_findings": 3049
+  },
+  "measured_with": "ruff 0.15.0",
+  "note": "Legacy debt ceiling. ruff_check_findings must never increase; lower it with `python tools/lint_ratchet.py --update` after paying debt down. invalid_syntax_findings is pinned at 0 (unparsable committed sources are dead code).",
+  "scope": [
+    "src",
+    "tests",
+    "examples",
+    "benchmarks"
+  ]
+}

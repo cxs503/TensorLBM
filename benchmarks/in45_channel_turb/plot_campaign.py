@@ -185,9 +185,7 @@ def figure_stresses(gates: dict) -> Path:
     ax = axes[0]
     for name, run in gates.items():
         y_plus = np.array(run["y_plus"])
-        ax.plot(y_plus, np.array(run["C2_rms_profiles_under_10pct"]["peaks"] and [
-            -1.0
-        ] * 0 + np.array(run.get("uv_plus", [])), "o-", ms=3, label=f"{name} $\\langle u'v'\\rangle^+$")
+        ax.plot(y_plus, np.array(run.get("uv_plus", [])), "o-", ms=3, label=f"{name} $\\langle u'v'\\rangle^+$")
         ax.plot(y_plus, run["uu_plus"], ":", lw=1.0, alpha=0.7, label=f"{name} $\\langle u'u'\\rangle^+$")
     band = gates[list(gates)[0]]["C2_rms_profiles_under_10pct"]["literature_peak_band"]
     ax.axhspan(band["uv_peak"][0], band["uv_peak"][1], color="0.6", alpha=0.2, label="MKM $\\langle u'v'\\rangle^+$ peak band")
