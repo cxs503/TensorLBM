@@ -97,6 +97,19 @@ class ModelSpec:
     inapplicable_reason: dict[str, str] = field(default_factory=dict)
     """case -> reason it is deliberately not applicable to this model."""
     les: bool = False
+    bulk_param: str | None = None
+    """Name of the operator parameter that sets the trace/energy (bulk) mode
+    relaxation eigenvalue ``s_b``.
+
+    ``None`` means the operator is *single rate*: every mode relaxes at
+    ``1/tau``, so ``s_b = 1/tau`` and ``nu_b = (2/3) nu`` (the BGK value).
+    Declaring the parameter is what makes the bulk-viscosity case checkable:
+    without it the matrix only ever verifies the shear channel
+    (see ``docs/MODEL_MATRIX_CI_PLUS_COVERAGE_R2.md``).  The declared
+    eigenvalue is *not* trusted -- :func:`bulk_viscosity` derives the
+    reference from it and the ``acoustic_decay`` case measures whether the
+    operator really uses it.
+    """
 
     def identity(self) -> dict[str, Any]:
         return {
@@ -108,15 +121,18 @@ class ModelSpec:
             "family": self.family,
             "enforcement": self.enforcement,
             "les": self.les,
+            "bulk_param": self.bulk_param,
+            "bulk_eigenvalue": self.params.get(self.bulk_param) if self.bulk_param else None,
         }
 
 
 def _specs() -> list[ModelSpec]:
     from .. import advanced_collision as adv  # noqa: PLC0415
+    from .. import cascaded_collision, cumulant  # noqa: PLC0415
     from .. import solver3d as s3  # noqa: PLC0415
     from ..turbulence import turbulence as turb  # noqa: PLC0415
 
-    core_cases = ("feq_fixed_point", "shear_decay", "tg_decay")
+    core_cases = ("feq_fixed_point", "shear_decay", "acoustic_decay", "tg_decay")
     return [
         ModelSpec(
             name="d3q19/bgk",
@@ -152,6 +168,7 @@ def _specs() -> list[ModelSpec]:
             params={"s_e": 1.19, "s_eps": 1.4, "s_q": 1.2},
             family="multi-relaxation-time",
             cases=core_cases,
+            bulk_param="s_e",
         ),
         ModelSpec(
             name="d3q19/mrt-smag",
@@ -168,6 +185,8 @@ def _specs() -> list[ModelSpec]:
                 "shear_decay": "LES on: SGS viscosity is a function of the local strain "
                 "rate, so nu=(tau-1/2)/3 is not the operator's effective viscosity",
                 "tg_decay": "same as shear_decay (LES on)",
+                "acoustic_decay": "LES on: the SGS viscosity shifts the trace "
+                "relaxation too, so neither nu nor nu_b has a molecular reference",
             },
             enforcement="guard",
         ),
@@ -192,6 +211,8 @@ def _specs() -> list[ModelSpec]:
             inapplicable_reason={
                 "shear_decay": "LES on: SGS viscosity replaces the molecular reference",
                 "tg_decay": "same as shear_decay (LES on)",
+                "acoustic_decay": "LES on: the SGS viscosity shifts the trace "
+                "relaxation too, so neither nu nor nu_b has a molecular reference",
             },
             enforcement="guard",
         ),
@@ -200,9 +221,10 @@ def _specs() -> list[ModelSpec]:
             lattice="D3Q27",
             collide=adv.collide_cascaded_d3q27,
             source="tensorlbm.advanced_collision:collide_cascaded_d3q27",
-            params={"C_s": 0.0},
+            params={"C_s": 0.0, "s_bulk": 1.0},
             family="cascaded-central-moment",
             cases=core_cases,
+            bulk_param="s_bulk",
         ),
         ModelSpec(
             name="d3q27/cascaded-les",
@@ -216,8 +238,65 @@ def _specs() -> list[ModelSpec]:
             inapplicable_reason={
                 "shear_decay": "LES on: SGS viscosity replaces the molecular reference",
                 "tg_decay": "same as shear_decay (LES on)",
+                "acoustic_decay": "LES on: the SGS viscosity shifts the trace "
+                "relaxation too, so neither nu nor nu_b has a molecular reference",
             },
             enforcement="guard",
+        ),
+        # -- second-order-moment family: previously outside the matrix ------ #
+        # These operators shipped long before the matrix existed and had no
+        # declared verification surface.  Registering them is the "plus
+        # coverage" half of the anchor: the denominator of the coverage
+        # fraction now includes the operators a user can actually select.
+        ModelSpec(
+            name="d3q19/cumulant",
+            lattice="D3Q19",
+            collide=cumulant.collide_cumulant_d3q19,
+            source="tensorlbm.cumulant:collide_cumulant_d3q19",
+            params={"C_s": 0.0, "omega_b": 1.0},
+            family="cumulant",
+            cases=core_cases,
+            bulk_param="omega_b",
+        ),
+        ModelSpec(
+            name="d3q27/cumulant-legacy",
+            lattice="D3Q27",
+            collide=cumulant.collide_cumulant_d3q27,
+            source="tensorlbm.cumulant:collide_cumulant_d3q27",
+            params={"C_s": 0.0, "omega_b": 1.0},
+            family="cumulant (central-moment legacy variant)",
+            cases=core_cases,
+            bulk_param="omega_b",
+        ),
+        ModelSpec(
+            name="d3q27/cumulant-geier",
+            lattice="D3Q27",
+            collide=cumulant.collide_cumulant_geier_d3q27,
+            source="tensorlbm.cumulant:collide_cumulant_geier_d3q27",
+            params={"C_s": 0.0, "omega_b": 1.0},
+            family="cumulant (Geier 2015)",
+            cases=core_cases,
+            bulk_param="omega_b",
+        ),
+        ModelSpec(
+            name="d3q19/cascaded",
+            lattice="D3Q19",
+            collide=cascaded_collision.collide_cascaded_d3q19,
+            source="tensorlbm.cascaded_collision:collide_cascaded_d3q19",
+            params={"s_bulk": 1.0},
+            family="cascaded-central-moment",
+            cases=core_cases,
+            bulk_param="s_bulk",
+        ),
+        ModelSpec(
+            name="d3q27/cascaded-impl2",
+            lattice="D3Q27",
+            collide=cascaded_collision.collide_cascaded_d3q27,
+            source="tensorlbm.cascaded_collision:collide_cascaded_d3q27",
+            params={"s_bulk": 1.0},
+            family="cascaded-central-moment (independent 2nd implementation)",
+            cases=core_cases,
+            bulk_param="s_bulk",
         ),
     ]
 
@@ -282,6 +361,36 @@ def build_collider(name: str, tau: float) -> Callable[[torch.Tensor], torch.Tens
 def nu_from_tau(tau: float) -> float:
     """BGK/TRT/MRT/regularized/KBC shear viscosity in lattice units."""
     return (tau - 0.5) / 3.0
+
+
+def bulk_eigenvalue(spec: "ModelSpec", tau: float) -> float:
+    """Trace/energy-mode relaxation eigenvalue ``s_b`` this operator uses.
+
+    Single-rate operators (BGK, TRT, regularized) relax every mode at
+    ``1/tau``; operators with an independent trace rate declare it through
+    :attr:`ModelSpec.bulk_param`.
+    """
+    if spec.bulk_param is None:
+        return 1.0 / tau
+    if spec.bulk_param not in spec.params:
+        raise KeyError(
+            f"{spec.name}: bulk_param {spec.bulk_param!r} is not in params {sorted(spec.params)}"
+        )
+    return float(spec.params[spec.bulk_param])
+
+
+def bulk_viscosity(spec: "ModelSpec", tau: float) -> tuple[float, float]:
+    """``(nu_b, s_b)`` in lattice units.
+
+    Standard second-order-chapman-Enskog result for the trace moment,
+    ``nu_b = (2/9) (1/s_b - 1/2)``: it reproduces the classical BGK value
+    ``nu_b = 2 nu / 3`` when ``s_b = 1/tau``, and it is the formula whose
+    prediction the ``acoustic_decay`` case tests against the measured sound
+    attenuation (which sees ``4 nu/3 + nu_b`` and is therefore blind-free with
+    respect to the bulk channel).
+    """
+    s_b = bulk_eigenvalue(spec, tau)
+    return (2.0 / 9.0) * (1.0 / s_b - 0.5), s_b
 
 
 def resolve_collide_fn(spec_or_name: "ModelSpec | str", tau: float, **kwargs: Any):
