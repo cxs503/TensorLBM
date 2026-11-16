@@ -1,0 +1,31 @@
+{
+ "uniform_force_max": 0.0,
+ "single_component_force_max": 0.0,
+ "momentum_sum": [
+  -8.881784197001252e-16,
+  4.85722573273506e-16
+ ],
+ "gather_vs_scatter": [
+  1.3877787807814457e-17,
+  2.0816681711721685e-17
+ ],
+ "psi_linearity": [
+  1.1102230246251565e-16,
+  2.3592239273284576e-16
+ ],
+ "self_coupling_extra_force_max": 0.20572877037248702,
+ "production_kernel_max_abs_diff": 0.19741433195177174,
+ "production_kernel_diff": [
+  0.19741433195177174,
+  0.16693419208296922,
+  0.17321884440721244,
+  0.13598967600557565
+ ],
+ "production_kernel_interior_max_abs_diff": 1.4049025276463567e-09,
+ "production_kernel_boundary_max_abs_diff": 0.19741433195177174,
+ "production_kernel_interior_ratio": {
+  "mean": 1.0000000074505806,
+  "std": 2.4535007827437115e-15
+ },
+ "production_kernel_force_scale": 0.1885628233367818
+}
