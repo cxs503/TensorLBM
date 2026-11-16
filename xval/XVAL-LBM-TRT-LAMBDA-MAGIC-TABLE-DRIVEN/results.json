@@ -1,0 +1,115 @@
+{
+ "case": "xval_trt_lambda_r1_restored",
+ "anchor": "XVAL-LBM-TRT-LAMBDA-MAGIC-TABLE-DRIVEN",
+ "restored_by": "mission 23150 (round 2)",
+ "reference_source": "committed OSS fields (precision(17) build) under gaussian_1d_magic{12,6}_hi/; OSS C++ sources absent from the tree",
+ "k1": {
+  "max_abs_omega_diff": {
+   "oss_1d_solve_minus": 0.0,
+   "oss_1d_solve_plus": 0.0,
+   "oss_2d_solve_plus": 5.551115123125783e-16
+  },
+  "max_abs_roundtrip_lambda_diff": 1.1102230246251565e-16,
+  "n_points": 375
+ },
+ "k2": {
+  "w_identity_1d": 1.0,
+  "w_identity_total": 1.0,
+  "opp_map_1d": 0.0,
+  "opp_map_2d_d2q9": 1.0,
+  "d2q9_weights_ok": 1.0,
+  "d2q9_opposite_involutive": 1.0,
+  "d3q27_opposite_involutive": 1.0
+ },
+ "k3": {
+  "magic12": {
+   "max_abs": 4.440892098500626e-16,
+   "rel_l2": 3.7143040701172363e-16,
+   "shape": [
+    21,
+    50
+   ],
+   "equilibrium": "linear"
+  },
+  "magic6": {
+   "max_abs": 5.551115123125783e-16,
+   "rel_l2": 2.1697878020491202e-16,
+   "shape": [
+    11,
+    50
+   ],
+   "equilibrium": "oss"
+  },
+  "k3_d_branch_reversal": {
+   "max_abs": 0.3987886499634836,
+   "rel_l2": 0.30674181768945147,
+   "note": "wrong branch attribution misses by ~31% -> the odd branch sets D"
+  }
+ },
+ "k4": {
+  "magic12": {
+   "max_over_t": 0.040313986283280964,
+   "final": 0.014641593643702116,
+   "n_steps": 20
+  },
+  "magic6": {
+   "max_over_t": 0.025353948180068652,
+   "final": 0.025353948180068652,
+   "n_steps": 10
+  }
+ },
+ "k5": {
+  "0.08333333": {
+   "rel_l2_final": 0.014641593643702116,
+   "max_over_t": 0.040313986283280964
+  },
+  "0.16666667": {
+   "rel_l2_final": 0.013637184500365251,
+   "max_over_t": 0.04080396921123422
+  },
+  "0.18750000": {
+   "rel_l2_final": 0.013414188619356051,
+   "max_over_t": 0.04092185019607135
+  },
+  "0.25000000": {
+   "rel_l2_final": 0.01282254818112702,
+   "max_over_t": 0.04126313073890583
+  },
+  "0.37500000": {
+   "rel_l2_final": 0.0120426234313488,
+   "max_over_t": 0.041888503237750944
+  },
+  "bgk_single_rate": {
+   "rel_l2_final": 0.04094748859103447
+  }
+ },
+ "k6": {
+  "rows": [
+   {
+    "nx": 50,
+    "n_steps": 1,
+    "rel_l2_pct": 2.9927056287792504
+   },
+   {
+    "nx": 100,
+    "n_steps": 4,
+    "rel_l2_pct": 1.3028284782980142
+   },
+   {
+    "nx": 200,
+    "n_steps": 16,
+    "rel_l2_pct": 0.31424241581076146
+   }
+  ],
+  "observed_order": [
+   1.199803217331236,
+   2.051697329837605
+  ]
+ },
+ "k7": {
+  "max_abs_vs_oss_second_order": 5.551115123125783e-16,
+  "max_abs_oss_vs_linear": 0.024378588098389775,
+  "rel_l2_final_linear": 0.028170933880472416,
+  "rel_l2_final_second_order": 0.025353948180068652
+ }
+}
