@@ -131,8 +131,17 @@ def zou_he_wall(
         raise ValueError(f"unknown mode {mode!r}; expected 'velocity' or 'pressure'")
     if f.shape[0] != 9:
         raise ValueError(f"expected 9 populations on axis 0, got {f.shape[0]}")
-    if mode == "velocity" and ux is None and uy is None:
-        raise ValueError("velocity mode needs ux and/or uy")
+    if mode == "velocity":
+        # The *normal* component is what the reconstruction solves for; the
+        # transverse one defaults to 0.  Without this guard a caller who omits
+        # the normal component gets a TypeError from arithmetic on ``None``
+        # several lines below instead of a contract error.
+        normal = "ux" if side in ("west", "east") else "uy"
+        if (ux if normal == "ux" else uy) is None:
+            raise ValueError(
+                f"velocity mode on side {side!r} needs the normal component "
+                f"{normal!r} (the transverse one defaults to 0)"
+            )
     if mode == "pressure" and rho is None:
         raise ValueError("pressure mode needs rho")
 
