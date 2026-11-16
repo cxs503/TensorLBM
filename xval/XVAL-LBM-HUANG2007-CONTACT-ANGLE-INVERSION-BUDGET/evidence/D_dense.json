@@ -1,0 +1,79 @@
+{
+ "arm": "D_dense_calibration",
+ "config": {
+  "nx": 64,
+  "ny": 32,
+  "radius": 8.0,
+  "steps": 5000
+ },
+ "fw_values": [
+  0.58,
+  0.6,
+  0.62,
+  0.64,
+  0.66,
+  0.68,
+  0.7,
+  0.72
+ ],
+ "points": [
+  {
+   "cos_measured": -0.20200962192050867,
+   "drift_deg": 0.0,
+   "f_w": 0.58,
+   "status": "ok",
+   "theta_measured": 101.65450090985989
+  },
+  {
+   "cos_measured": -0.0898742639841091,
+   "drift_deg": 0.0,
+   "f_w": 0.6,
+   "status": "ok",
+   "theta_measured": 95.15637363381235
+  },
+  {
+   "cos_measured": -0.0898742639841091,
+   "drift_deg": 0.0,
+   "f_w": 0.62,
+   "status": "ok",
+   "theta_measured": 95.15637363381235
+  },
+  {
+   "cos_measured": -0.0898742639841091,
+   "drift_deg": 0.0,
+   "f_w": 0.64,
+   "status": "ok",
+   "theta_measured": 95.15637363381235
+  },
+  {
+   "cos_measured": 0.12075270187193225,
+   "drift_deg": 0.0,
+   "f_w": 0.66,
+   "status": "ok",
+   "theta_measured": 83.06445487918948
+  },
+  {
+   "cos_measured": 0.19372156929596834,
+   "drift_deg": 0.0,
+   "f_w": 0.68,
+   "status": "ok",
+   "theta_measured": 78.82994909695223
+  },
+  {
+   "cos_measured": 0.24507126256138287,
+   "drift_deg": 0.0,
+   "f_w": 0.7,
+   "status": "ok",
+   "theta_measured": 75.81395483798165
+  },
+  {
+   "cos_measured": NaN,
+   "drift_deg": NaN,
+   "f_w": 0.72,
+   "status": "not_measured",
+   "theta_measured": NaN
+  }
+ ],
+ "seconds": 107.37852048873901,
+ "tag": "D_dense"
+}
