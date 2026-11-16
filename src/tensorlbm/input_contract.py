@@ -42,6 +42,14 @@ def _as_float(value, name: str, where: str) -> float | None:
     own their own validation, and coercing a tensor here would silently strip a
     gradient or force a device sync on every step.
     """
+    # torch.Tensor (including 0-dim) must NOT be coerced to float: this would
+    # detach the autograd graph and break differentiable optimisation paths.
+    try:
+        import torch
+        if isinstance(value, torch.Tensor):
+            return None
+    except ImportError:
+        pass
     try:
         return float(value)
     except (TypeError, ValueError):
