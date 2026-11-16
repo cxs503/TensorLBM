@@ -1080,6 +1080,19 @@ def seed_counts_total(rate: float, steps: int) -> int:
 RIME_DENSITY_CAP_G_CM3 = 0.917  # solid ice
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.icing.rime_density",
+    kind='icing',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_aircraft_icing.py',
+    evidence={'grade': 'MECHANICS', 'note': 'Macklin 霜冰密度经验式；结冰整套流程(aircraft_icing)仍为 developing，主求解路径未接线'},
+)
 def rime_density_macklin(mvd: float, v_inf: float, t_surface_c: float) -> float:
     """Macklin (1962) rime density [kg/m^3].
 

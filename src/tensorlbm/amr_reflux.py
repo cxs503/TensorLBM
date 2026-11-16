@@ -128,6 +128,19 @@ def _check_axis(tensor: torch.Tensor, axis: int) -> None:
         raise ValueError("invalid axis for field")
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.amr.reflux_restrict",
+    kind='amr',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_amr_flux_conservation.py',
+    evidence={'grade': 'MECHANICS', 'note': 'AMR 残差限制/回灌守恒；通量守恒测试'},
+)
 def restrict_residual(residual: torch.Tensor, ratio: int = 2, axis: int = 0) -> torch.Tensor:
     """Volume-weighted mean of the fine residuals over ``ratio`` fine cells.
 

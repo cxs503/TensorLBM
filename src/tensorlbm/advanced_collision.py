@@ -185,6 +185,19 @@ def collide_kbc_d3q27(
 # ── Cascaded (Central Moment) LBM ─────────────────────────────────────────────
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.cascaded.d3q27.second_order",
+    kind='collision',
+    maturity='developing',
+    wired=False,
+    tested=True,
+    verified=False,
+    test_path='tests/test_cascaded_collision.py',
+    evidence={'grade': 'MECHANICS', 'note': '二阶正则化重建（非 CM/KBC）：契约 advanced_collision_contract 已声明其高阶中心矩未实现，不得当作 CM 使用'},
+)
 def collide_cascaded_d3q27(
     f: torch.Tensor,
     tau: float,

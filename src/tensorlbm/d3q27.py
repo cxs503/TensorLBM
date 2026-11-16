@@ -438,6 +438,19 @@ def macroscopic27(
     return rho, ux, uy, uz
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.bgk.d3q27",
+    kind='collision',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_d3q27.py',
+    evidence={'grade': 'MECHANICS', 'note': 'D3Q27 玻尔兹曼 BGK；test_d3q27 断言平衡态/守恒/一阶 Chapman-Enskog，本仓无该格子的解析剖面误差带'},
+)
 def collide_bgk27(f: torch.Tensor, tau: float) -> torch.Tensor:
     """D3Q27 single-relaxation-time BGK collision.
 
@@ -453,6 +466,19 @@ def collide_bgk27(f: torch.Tensor, tau: float) -> torch.Tensor:
     return f - (f - feq) / tau
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.trt.d3q27",
+    kind='collision',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_d3q27_trt_rlbm.py',
+    evidence={'grade': 'MECHANICS', 'note': 'TRT magics 与 BGK 极限一致性测试；无解析误差带'},
+)
 def collide_trt27(
     f: torch.Tensor,
     tau_plus: float,
@@ -496,6 +522,19 @@ def collide_trt27(
     return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.rlbm.d3q27",
+    kind='collision',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_d3q27_trt_rlbm.py',
+    evidence={'grade': 'MECHANICS', 'note': '正则化 D3Q27；与 BGK 极限一致性测试；无解析误差带'},
+)
 def collide_rlbm27(f: torch.Tensor, tau: float) -> torch.Tensor:
     """Regularized BGK (RLBM) collision step for D3Q27.
 
@@ -675,6 +714,19 @@ def _get_d3q27_mrt_matrices(
     return matrix, matrix_inv
 
 
+from .registry import capability
+
+
+@capability(
+    id="lbm.collision.mrt.d3q27",
+    kind='collision',
+    maturity='developing',
+    wired=True,
+    tested=True,
+    verified=False,
+    test_path='tests/test_d3q19_d3q27_mrt_consistency.py',
+    evidence={'grade': 'MECHANICS', 'note': 'D3Q27 MRT 与 D3Q19 MRT 的粘性/极限一致性测试；无解析误差带'},
+)
 def collide_mrt27(
     f: torch.Tensor,
     tau: float | torch.Tensor,
