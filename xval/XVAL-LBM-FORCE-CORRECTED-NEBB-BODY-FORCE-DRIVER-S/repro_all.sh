@@ -25,22 +25,32 @@ ART="xval/${NODE}/artifacts"
 STARTUP_ART="artifacts/xval_nebb_startup"
 mkdir -p "$ART"
 
-echo "== 1/6 XVAL harness (arm A vs arm B, D2Q9) =="
+echo "== 1/9 XVAL harness (arm A vs arm B, D2Q9) =="
 python3 benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out "$ART"
 
-echo "== 2/6 package CLI entry =="
+echo "== 2/9 package CLI entry =="
 python3 -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo --out "$ART/cli_guo_ny10.json"
 
-echo "== 3/6 L3: main core-path solver, wall_bc='nebb' =="
+echo "== 3/9 L3: main core-path solver, wall_bc='nebb' =="
 python3 "xval/${NODE}/run_corepath_l3.py" --ny 18 --out "$ART/corepath"
 
-echo "== 4/6 invariants =="
+echo "== 4/9 invariants =="
 python3 "xval/${NODE}/run_xval_r4_invariants.py"
 
-echo "== 5/6 startup-transient series-solution check =="
+echo "== 5/9 startup-transient series-solution check =="
 python3 benchmarks/xval/xval_nebb_startup_transient.py --out "$STARTUP_ART"
 
-echo "== 6/6 evidence bundle (--strict) =="
+echo "== 6/9 evidence bundle (--strict) =="
 python3 benchmarks/xval/nebb_bodyforce_evidence.py --strict
+
+echo "== 7/9 Round 7: single-tree A/B of the drive normalisation =="
+python3 "xval/${NODE}/run_xval_r7_drive_width_ab.py" --out "$ART/r7"
+
+echo "== 8/9 Round 7b: order of the residual error after the fix =="
+python3 "xval/${NODE}/run_xval_r7b_order_refine.py" --out "$ART/r7"
+
+echo "== 9/9 Round 7 evidence bundle (--strict, recomputes ref from closed form) =="
+python3 benchmarks/xval/nebb_bodyforce_evidence_r7.py --strict
+python3 "xval/${NODE}/make_report_r7.py"
 
 echo "OK: artifacts under $ART and $STARTUP_ART"
