@@ -187,4 +187,8 @@ def test_stokes_cylinder_coefficients_limits_and_monotonicity():
     assert all(a > b for a, b in zip(re, re[1:])), f"Gamma_re must fall with beta: {re}"
     assert all(r["C_I_viscous"] > 1.0 for r in rows)
     assert all(r["C_Q_viscous"] > 0.0 for r in rows)
-    assert abs(rows[1]["Gamma_re"] - 1.4525) < 1e-3   # beta = 50 reference value
+    # beta = 50: Gamma = 1 + 4 K_1(z)/(z K_0(z)) with z = (1+i) sqrt(pi beta/2);
+    # the value is pinned against the sqrt(2)/(delta/R) identity in
+    # tests/test_stokes_layer_thickness.py (an earlier build quoted 1.4525, which is
+    # what k = 1/(delta/R) with a sqrt(2)-too-thick delta gives).
+    assert abs(rows[1]["Gamma_re"] - 1.2258) < 1e-3
