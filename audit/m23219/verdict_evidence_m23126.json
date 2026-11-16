@@ -1,0 +1,157 @@
+{
+ "level": 2,
+ "claim_by_author": "XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD：psi 场多组分 Shan-Chen 模块 + 交叉验证（REPORT.md 判「锚点 PASS」，暗示 L4）",
+ "auditor_level_rationale": "真代码 L2：530 行独立实现（psi 场 3 种、gather/scatter 邻域和、力算子、EDM 碰撞、streaming、MCMPPsiSolver、诊断），输入→计算→输出全链可执行且本审计逐位复现。不给 L3：integration_callers 为空——主求解器/平台无任何路径导入该模块（见 integration_callers）。不给 L4：基准裁判（tensor_benchmark_cases 本 anchor 唯一一行）status=failed，且登记的 Palabos 参考值 provenance=WITHHELD；交付自报的「Young-Laplace PASS / 声速 4 臂 PASS」参考全是自推导解析式或 Δp∝1/R 自洽律，不构成外部锚。",
+ "impl_files": [
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py"
+ ],
+ "entry": "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/run_xval.py",
+ "run_artifacts": [
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/results.json",
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_exact.json",
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_acoustic.json",
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R6.json",
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R8.json",
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R10.json",
+  "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R12.json"
+ ],
+ "tests": [
+  "TensorLBM/tests/test_mcmp_psi_field.py"
+ ],
+ "integration_callers": "NONE。审计证据：grep -rln 'mcmp_psi' TensorLBM -> 仅 mcmp_psi.py 自身 / tests/test_mcmp_psi_field.py / xval/XVAL-.../run_xval.py / docs/XVAL-....md；src/tensorlbm/multiphase/__init__.py 无 `from .mcmp_psi import`（该文件只定义生产核 sc_two_component_force:494）；全仓无 verification/、无平台 API 路由引用该模块。xval 驱动是验证用途，不是集成。",
+ "benchmark": {
+  "judge": "tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD'（唯一一行，registered_by_audit=m18359，registered_for=m18326）",
+  "status": "failed",
+  "metric": "sigma relative error TL vs Palabos ref at 3 coupling levels",
+  "tolerance": "<15% (owner standard; xval_driver.py:180 TOL_PRIMARY=0.15); measured worst 354.1% -> FAIL",
+  "ref_values": {
+   "G_Palabos=1.2": 0.045,
+   "G_Palabos=1.4": 0.065,
+   "G_Palabos=1.6": 0.085
+  },
+  "ref_provenance": "WITHHELD —— 手抄 dict（xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/xval_driver.py:135-160），无 palabos build/run/log/SHA；且为 psi_exp EOS，本交付为 psi=rho，两侧不同 EOS",
+  "got_delivered": {
+   "sigma_fit_G2.0": 0.08991267246749596,
+   "sigma_per_radius": [
+    0.0957465,
+    0.0979572,
+    0.099794
+   ],
+   "conditions": "G=2.0, psi=rho, n=64, rho_in=0.99/rho_out=0.07（与登记 G=1.2/1.4/1.6 不匹配）"
+  },
+  "auditor_error_recompute": {
+   "fit_vs_ref_G1.2": "+99.8%",
+   "fit_vs_ref_G1.4": "+38.3%",
+   "fit_vs_ref_G1.6": "+5.8%",
+   "per_radius_max_vs_ref_G1.6": "+17.4%",
+   "note": "G=1.6 一栏 +5.8% 是**跨 G/跨 EOS** 的最近邻比较，不能计 PASS；登记的 3 个耦合档位本交付一个数都没有 → 基准度量在匹配条件下不可计算"
+  },
+  "verdict": "L4 不成立：登记行仍 failed；交付『锚点 PASS』无基准支撑。"
+ },
+ "repro_cmd": "python -m pytest tests/test_mcmp_psi_field.py -q && cd TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD && PYTHONPATH=../../src python run_xval.py --only exact && PYTHONPATH=../../src python run_xval.py --only acoustic && PYTHONPATH=../../src python run_xval.py --only merge",
+ "external_anchor": "WITHHELD。锚点声明 omalaspinas/palabos shanChenMultiComponentProcessor3D（3D processor），本交付为 D2Q9 自写实现；环境内无 palabos 构建/运行/日志/SHA（唯一 palabos 树 /tmp/palabos_probe 的 segregation2D.cpp:113,122,124 用 G=-120/rho0=200/psi0=4，与登记 refs 的 G=1.2/rho0=1 无对应关系）。交付自认『未能逐行对照 Palabos 源码（本环境无外网）』。声速/Laplace 的『参考』均来自同一离散算子的梯度展开（c_eff^2=c_s^2(1+G psi psi')）或 Δp∝1/R 自洽律 → 自洽验证，不是外部锚。",
+ "findings": [
+  {
+   "id": "F1",
+   "claim": "『锚点 PASS』与基准裁判冲突：登记行 status=failed，且 3 档耦合（G=1.2/1.4/1.6）交付里一个数都没有",
+   "impact": "L4 不可达，判级封顶 L3；L3 又因零集成调用而不可达 → L2",
+   "evidence": "tensor_benchmark_cases 该 anchor 唯一行 status=failed、tolerance 引 xval_driver.py:180 TOL_PRIMARY=0.15、worst 354.1%；交付 sigma 只在 G=2.0（fit 0.0899；逐半径 0.0957/0.0980/0.0998），误差 vs refs = +99.8%/+38.3%/+5.8%（未匹配条件）",
+   "severity": "blocking-for-L4"
+  },
+  {
+   "id": "F2",
+   "claim": "Young-Laplace 一栏把自洽律当参考判 PASS（REPORT.md 表格『reference: Δp ∝ 1/R → PASS』）",
+   "impact": "夸大：σ 的绝对量级没有任何外部比较，只有 1/R 线性（R²=0.9994，且仅 3 点）",
+   "evidence": "results.json laplace.fit: sigma=0.08991, intercept=+8.15e-4, r2=0.99942；逐半径 sigma 单调 0.09575→0.09979（漂移 4.23%），fit 与逐半径均值差 -8.10%（截距非零=Laplace 律不严格过原点）。REPORT.md 与 docs §③/§⑥ 均自陈该 -8.10%，但结论行仍写 PASS",
+   "severity": "medium"
+  },
+  {
+   "id": "F3",
+   "claim": "4 张结果为图在仓库态取不到；平台报告 4 图 png_base64 全 null",
+   "impact": "下游只能重跑 --only merge 才能拿图；m23126 的『图已入账』不成立",
+   "evidence": "commit 93cb61632 有 laplace/acoustic/drop_profile/fields.png；git ls-tree HEAD 该目录 0 个 png（merge #2608 门禁滤除）；tensor_reports id=20779 figures[].png_base64 = null",
+   "severity": "low"
+  },
+  {
+   "id": "F4",
+   "claim": "repro_cmd 与随货 chunk 的步数不一致（文档 4000/4000/3500/3500 vs 实跑 6000/3500/3500/3500）",
+   "impact": "照文档复现不会重放随货 Laplace 数值；可复现性只在 exact/acoustic 两阶段被本审计确认逐位一致",
+   "evidence": "chunk_laplace_primary_R6.json meta.steps=6000（history 到 step 6000）；R8/R10/R12 meta.steps=3500（history 到 3000）；REPORT.md 复现段写 --radius 6,8 --steps 4000；results.json laplace.steps=3500 掩盖混设",
+   "severity": "medium"
+  },
+  {
+   "id": "F5",
+   "claim": "test_mcmp_psi_field.py:108 恒真断言",
+   "impact": "界面带内动量抵消这一条无判据（全局守恒由 :53 覆盖，结论不受影响）",
+   "evidence": "`assert abs(fa + fb) < 0.05 * abs(fa) or True`",
+   "severity": "low"
+  },
+  {
+   "id": "F6",
+   "claim": "R_init=10 稳定性臂 NaN 未给机理；仅记『honest FAIL』",
+   "impact": "求解器鲁棒性边界（为何 R=6/8/12 稳定而 R=10 NaN）不明确，不能外推适用范围；属工程风险非判级阻断",
+   "evidence": "chunk_laplace_primary_R10.json: {R_init:10, nan:true, elapsed_s:12.97}；同参数 R=6/8/12 nan=false；审计递交 cj4697 复跑该臂",
+   "severity": "low"
+  },
+  {
+   "id": "F7",
+   "claim": "范围收窄未在标题/结论处声明：锚点是最新 3D palabos processor，交付只有 D2Q9",
+   "impact": "『Palabos 做法』只在 2D 下实现；3D 伪势 processor 的语义（以及 palabos 的 multi-component 速度耦合细节）未覆盖",
+   "evidence": "mcmp_psi.py 模块 docstring 明写 D2Q9；docs §⑤(4) 自认未逐行对照；REPORT.md 未在 verdict 表标注维度差",
+   "severity": "low"
+  }
+ ],
+ "checks_run": [
+  "grep 证据链（模块/测试/驱动/集成调用者）",
+  "pytest tests/test_mcmp_psi_field.py -q -> 12 passed in 8.43s（m23126 工作树）",
+  "run_xval.py --only exact -> 12/12 字段与随货 chunk 逐位一致（.audit/m23219/repro）",
+  "run_xval.py --only acoustic -> 4 臂 c_meas/err% 与随货 chunk 逐位一致",
+  "git ls-tree 核验 PNG 是否随 merge 保留（负）",
+  "tensor_benchmark_cases / tensor_reports / tensor_maturity_verdicts 直查",
+  "基准误差重算（fit 与逐半径两口径 × 3 档 ref）"
+ ],
+ "checks_not_run": [
+  "laplace_primary 整轮重跑：本机 120 s shell 上限内不可完成，已递交 compute 门 cj4697（4 核）——截稿时仍 queued",
+  "Palabos 侧真锚：环境无 palabos 构建/输入卡/日志，无法执行 → ref 侧沿用基准表 WITHHELD 判定",
+  "消融臂 common_velocity / self_coupling：交付自记 not_run，本审计未补",
+  "3D（D3Q19/D3Q27）语义：交付未实现，无从核验"
+ ],
+ "overstated_claims": [
+  "REPORT.md verdict 表与 docs §⑥『物理量对标 <15%（锚点验收）… 锚点 PASS』——唯一裁判 tensor_benchmark_cases 该 anchor 行 status=failed，且交付在登记耦合档位无数据",
+  "REPORT.md verdict 表 Young-Laplace 行以自洽律 Δp∝1/R 作 reference 判 PASS（σ 绝对值无外部比较）",
+  "finish checks 称『laplace_primary（分块，单进程 <2 min）』——R6 单臂 6000 步随货 elapsed_s=80.9，四臂合计 180 s 以上；分块后单块可在 2 min 内属实，但整轮不是",
+  "figures 入账：main 上 0 个 png，平台报告 4 图未内嵌"
+ ],
+ "disposition": "approve-with-notes-for-L2：模块作为 L2 独立实现（真代码/真测试/可复现 exact+acoustic 逐位一致）成立，缺陷 F5/F6 为工程改进项；但**交差（锚点 XVAL）不成立**——基准裁判 failed + 外部锚 WITHHELD，建议 maturity_gate 维持 reopened（返修），返修清单=F1 落实 palabos 真锚（或改登记基准为可用外部解/解析极限并同步容差）、F3 把 4 张 png 落进 main 并内嵌平台报告、F4 使 repro_cmd 与随货 steps 一致。",
+ "auditor_independence_limits": "同一环境、同一仓、无外网：无法取得 palabos 侧独立数据，因此 ref 侧只能沿用 m18359 登记的 WITHHELD 判定；laplace 整轮重跑受本机 120 s 限制，改由集群作业 cj4697 覆盖（截稿 queued），故 Laplace 数值的独立复现记为 not_run 而非 passed。",
+ "impl_pointers": [
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:113 neighbor_vec_sum (periodic gather, w_i psi(x+c_i) c_i)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:126 neighbor_vec_sum_scatter (independent forward discretisation)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:146 mcmp_psi_force (F_k = -G psi_k * S_k', self_coupling=0 默认；自作用排除)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:78 psi_of / :101 psi_slope (rho | rho_minus_ref | exp 三种 psi 场)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:189 eos_pressure / :204 effective_sound_speed (梯度展开解析 EOS)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:233 collide_edm / :249 stream (审计确认 roll 位移为 (+cy,+cx)，即 f(x-c) 取到 x)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:278 MCMPPsiSolver (step/run, velocity_mode=self|common)",
+  "TensorLBM/src/tensorlbm/multiphase/mcmp_psi.py:385 measure_drop / :417 acoustic_mode_speed (诊断)"
+ ],
+ "entry_detail": "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/run_xval.py:373 main(); stages: --only exact | acoustic | laplace_primary | merge（审计实跑 exact/acoustic）",
+ "run_artifacts_detail": {
+  "shipped_in_repo": [
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/results.json",
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_exact.json",
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_acoustic.json",
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R6.json (steps=6000)",
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R8.json (steps=3500)",
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R10.json (steps=3500, nan=true)",
+   "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R12.json (steps=3500)"
+  ],
+  "figures_missing_in_repo_state": [
+   "artifacts/laplace.png",
+   "artifacts/acoustic.png",
+   "artifacts/drop_profile.png",
+   "artifacts/fields.png"
+  ],
+  "figure_evidence": "m23126 工作树/commit 93cb61632 有 4 个 PNG（73308/56414/96763/54651 B），但 git ls-tree HEAD -- TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/ 只有 7 个 json + REPORT.md + run_xval.py：merge #2608 被门禁滤除 → main 上取不到图；平台报告 tensor_reports id=20779 figures 4 项 png_base64 全 null（未内嵌）。"
+ },
+ "tests_detail": null
+}
