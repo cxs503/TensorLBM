@@ -1,0 +1,103 @@
+{
+ "config": {
+  "L": 1.0,
+  "EI": 1.0,
+  "A": 120000.0,
+  "rhoA": 1.0,
+  "n_elem": 16,
+  "lam": 5.0,
+  "fracs": []
+ },
+ "arms": {
+  "TL": {
+   "q0_tip": [
+    -0.38756961095706854,
+    -0.7141320008232594
+   ],
+   "strain_energy_q0": 1.1194059605761528,
+   "ladder": {}
+  },
+  "LIFE": {
+   "q0_tip": [
+    -0.38756120207414124,
+    -0.7141264637998982
+   ],
+   "strain_energy_q0": 1.119378275894888,
+   "ladder": {}
+  }
+ },
+ "step_adequacy": {
+  "TL": {
+   "omega1": 0.010149863132073243,
+   "T1": 619.0413826689861,
+   "omega_max": 39.144627601808246,
+   "T_min": 0.1605120725912677,
+   "ratio_omega_max_over_omega1": 3856.6655621308305,
+   "note": "omega_max*dt > 1 means the stiffest discrete mode is not resolved by the step; Newmark (beta=1/4, gamma=1/2) is non-dissipative but the *Newton predictor* at such a step is far outside the quadratic-convergence basin"
+  },
+  "LIFE": {
+   "omega1": 0.010149863132073243,
+   "T1": 619.0413826689861,
+   "omega_max": 39.144627601808246,
+   "T_min": 0.1605120725912677,
+   "ratio_omega_max_over_omega1": 3856.6655621308305,
+   "note": "omega_max*dt > 1 means the stiffest discrete mode is not resolved by the step; Newmark (beta=1/4, gamma=1/2) is non-dissipative but the *Newton predictor* at such a step is far outside the quadratic-convergence basin"
+  }
+ },
+ "order": {},
+ "resolved_window": {
+  "window_s": 20.0,
+  "dts": [
+   0.04,
+   0.02
+  ],
+  "arms": {
+   "TL": {
+    "0.04": {
+     "dt": 0.04,
+     "steps": 500,
+     "omega_max_dt": 1.5657851040723298,
+     "converged": true,
+     "max_abs_q_over_L": 1.2155508355081843,
+     "n_unconverged_steps": 0,
+     "tip_y_over_L_at_window": -0.7000713450187447,
+     "energy_drift_pct": 8.06235220164192e-06
+    },
+    "0.02": {
+     "dt": 0.02,
+     "steps": 1000,
+     "omega_max_dt": 0.7828925520361649,
+     "converged": true,
+     "max_abs_q_over_L": 1.215709913347115,
+     "n_unconverged_steps": 0,
+     "tip_y_over_L_at_window": -0.7000701159151002,
+     "energy_drift_pct": 3.842941159910688e-06
+    }
+   },
+   "LIFE": {
+    "0.04": {
+     "dt": 0.04,
+     "steps": 500,
+     "omega_max_dt": 1.5657851040723298,
+     "converged": true,
+     "max_abs_q_over_L": 1.2155371779578348,
+     "n_unconverged_steps": 0,
+     "tip_y_over_L_at_window": -0.7000656772628262,
+     "energy_drift_pct": 2.638333905365346e-05
+    },
+    "0.02": {
+     "dt": 0.02,
+     "steps": 1000,
+     "omega_max_dt": 0.7828925520361649,
+     "converged": true,
+     "max_abs_q_over_L": 1.2156962600065244,
+     "n_unconverged_steps": 0,
+     "tip_y_over_L_at_window": -0.7000644498639147,
+     "energy_drift_pct": 3.0402988748818942e-05
+    }
+   }
+  }
+ },
+ "arm_parity_nonlinear": {},
+ "wall_clock_s": 48.1186249256134
+}
