@@ -88,17 +88,17 @@ import matplotlib
 import torch
 
 from .boundaries import bounce_back_cells
-from .d2q9 import C, OPPOSITE, W, W_EXACT, equilibrium, macroscopic
+from .d2q9 import OPPOSITE, W_EXACT, C, W, equilibrium, macroscopic
 from .multiphase import (
     collide_sc_two_component,
     color_gradient_step,
 )
-from .solver import stream
 from .porous.fluid_node_table import (
     build_fluid_node_table,
     compressed_step,
     macroscopic_with_forcing,
 )
+from .solver import stream
 from .utils import (
     flow_step_image_path,
     prepare_run_dir,
@@ -1747,8 +1747,7 @@ class SinglePhaseDarcyConfig:
             raise ValueError("tol must be > 0")
         if self.layout not in ("compressed", "dense", "dense_halfway"):
             raise ValueError(
-                "layout must be 'compressed', 'dense' or 'dense_halfway' "
-                f"(got {self.layout!r})"
+                f"layout must be 'compressed', 'dense' or 'dense_halfway' (got {self.layout!r})"
             )
 
     @property

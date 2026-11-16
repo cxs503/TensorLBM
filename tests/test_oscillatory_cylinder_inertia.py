@@ -141,8 +141,8 @@ def test_mass_budget_under_body_force():
     near-wall density have to stay flat while the drive is on, no matter that the
     total momentum oscillates strongly.
     """
-    from tensorlbm.boussinesq import apply_guo_forcing
     from tensorlbm.boundary.boundaries import bounce_back_cells
+    from tensorlbm.boussinesq import apply_guo_forcing
     from tensorlbm.d2q9 import equilibrium, macroscopic
     from tensorlbm.oscillatory_cylinder_inertia import _interior_nodes
     from tensorlbm.solver import stream
