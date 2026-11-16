@@ -1,0 +1,58 @@
+{
+  "mission_id": "m23012",
+  "title": "cAC gravity + hydrostatic pressure + mass conservation with walls (T1 gate S2/S3)",
+  "physical_problem": {
+    "description": "Convective Allen-Cahn (cAC) phase-field coupled with Hua-Hu-Chen (HCH) incompressible hydrodynamics under gravity, verifying hydrostatic pressure profile and mass conservation with solid walls.",
+    "equations": [
+      "Phase-field (cAC): ∂_t φ + ∇·(φu) = -M μ + ∇·(λ n̂), where μ = 4βφ(φ-1)(φ-0.5) - κ∇²φ",
+      "Hydrodynamics (HCH): ∂_t p + ρc_s²∇·u = 0, ρ(∂_t u + u·∇u) = -∇p + ∇·(μ∇u) + F",
+      "Body force: F = μ_φ ∇φ + ρ g (gravity_mode=rho) or F = μ_φ ∇φ + g (gravity_mode=uniform)",
+      "Hydrostatic equilibrium: p(z) = p₀ + ρ g z"
+    ],
+    "external_anchor": {
+      "reference": "Liang, Xu, Chen, Wang, Chai & Shi, Phys. Rev. E 97, 033309 (2018)",
+      "doi": "10.1103/PhysRevE.97.033309",
+      "hydrostatic_law": "p(z) = p₀ + ρ g z (classical hydrostatics, any fluid mechanics textbook)",
+      "mass_conservation": "∫_Ω φ dV = const for conservative Allen-Cahn with no-flux walls"
+    }
+  },
+  "parameters": {
+    "lattice": "D3Q19",
+    "dtype": "float64",
+    "grid": [128, 128, 128],
+    "viscosity_mixing": "harmonic",
+    "rho_l": 1.0,
+    "rho_g": 0.1,
+    "mu_l": 0.1,
+    "mu_g": 0.01,
+    "sigma": 0.01,
+    "width": 4.0,
+    "mobility": 0.05,
+    "p0": 0.01,
+    "gravity": [0.0, 0.0, -1e-5],
+    "gravity_mode": "rho",
+    "wall_policy": "neumann",
+    "wall_thickness": 2,
+    "steps": 6000,
+    "sample_every": 100
+  },
+  "thresholds": {
+    "hydrostatic_pressure_error_pct": 1.0,
+    "mass_drift_rel_pct": 0.01,
+    "phase_integral_drift": 1e-10
+  },
+  "current_status": {
+    "hydrostatic_pressure_error_at_tau": 2.1,
+    "hydrostatic_pressure_error_late": 22.0,
+    "mass_drift_6000_steps_pct": 0.15,
+    "phase_integral_drift": "TBD"
+  },
+  "acceptance_criteria": {
+    "pass": "All three thresholds met; results written to benchmarks/verified/cac_hydrostatic_mass/",
+    "fail": "Root cause analysis + negative_knowledge registration at /api/v1/tensor/negative-knowledge/register"
+  },
+  "verification_level": "T1 (gate for S2/S3 segments)",
+  "independent_verification": "Re-run from origin/main to confirm baseline",
+  "predeclared": true,
+  "predeclared_date": "2026-11-16"
+}
