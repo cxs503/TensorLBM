@@ -80,7 +80,7 @@ def main():
         f.write("# Viscoplastic turbulent channel campaign\n")
         f.write("# Submit with: run_cluster submit --cmd 'bash benchmarks/in45_hb_turb/artifacts/run_cluster.sh'\n\n")
         for cmd in commands:
-            f.write(f"echo 'Running {cmd[\"name\"]}...'\n")
+            f.write(f"echo 'Running {cmd['name']}...'\n")
             f.write(f"{cmd['cmd']}\n\n")
     sh_path.chmod(0o755)
     print(f"Shell script: {sh_path}")

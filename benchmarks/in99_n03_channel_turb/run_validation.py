@@ -100,14 +100,11 @@ def analyze_result(result, dns):
     }
 
 def main():
-    print("="*60 + "
-IN99-N03: LBM Turbulent Channel Validation
-" + "="*60)
+    print("="*60 + "\nIN99-N03: LBM Turbulent Channel Validation\n" + "="*60)
     configs = get_grid_configs()
     all_results, all_analyses, all_criteria = {}, {}, {}
     for cfg in configs:
-        print(f"
-Running Re_tau={cfg.re_tau} ({cfg.label})")
+        print(f"\nRunning Re_tau={cfg.re_tau} ({cfg.label})")
         result = run_case(cfg, sgs_on=True)
         dns = load_dns(int(cfg.re_tau))
         analysis = analyze_result(result, dns)
@@ -116,8 +113,8 @@ Running Re_tau={cfg.re_tau} ({cfg.label})")
         with open(out, "w") as f:
             json.dump({"result": {k: v for k, v in result.items() if k not in ("config", "wall_units")},
                        "analysis": {k: v for k, v in analysis.items() if "dns" not in k and k not in ("y_plus","u_plus","uu_plus","vv_plus","ww_plus","uv_plus")}}, f, indent=2, default=str)
-        print(f"  Buffer err: {analysis["buffer_layer_error_pct"]:.2f}%  Log err: {analysis["log_law_error_pct"]:.2f}%  RMS: {analysis["rms_error_y30_100_pct"]:.2f}%")
-        print(f"  u_tau consistency: {analysis["u_tau_self_consistency_pct"]:.2f}%  RS peak y+: {analysis["reynolds_stress_peak_yplus"]:.1f}")
+        print(f"  Buffer err: {analysis['buffer_layer_error_pct']:.2f}%  Log err: {analysis['log_law_error_pct']:.2f}%  RMS: {analysis['rms_error_y30_100_pct']:.2f}%")
+        print(f"  u_tau consistency: {analysis['u_tau_self_consistency_pct']:.2f}%  RS peak y+: {analysis['reynolds_stress_peak_yplus']:.1f}")
     # Negative control
     cfg180 = configs[0]
     result_nosgs = run_case(cfg180, sgs_on=False)
@@ -126,13 +123,11 @@ Running Re_tau={cfg.re_tau} ({cfg.label})")
     with open(RUNS_DIR / f"{cfg180.label}_nosgs_result.json", "w") as f:
         json.dump({"result": {k: v for k, v in result_nosgs.items() if k not in ("config", "wall_units")},
                    "analysis": {k: v for k, v in analysis_nosgs.items() if "dns" not in k}}, f, indent=2, default=str)
-    print(f"
-Negative control RMS error: {analysis_nosgs["rms_error_y30_100_pct"]:.2f}%")
+    print(f"\nNegative control RMS error: {analysis_nosgs['rms_error_y30_100_pct']:.2f}%")
     summary = {"mission": "IN99-N03", "analyses": {k: {kk: vv for kk, vv in v.items() if "dns" not in kk and kk not in ("y_plus","u_plus","uu_plus","vv_plus","ww_plus","uv_plus")} for k, v in all_analyses.items()},
                "negative_control": {k: v for k, v in analysis_nosgs.items() if "dns" not in k}}
     with open(RUNS_DIR / "summary.json", "w") as f: json.dump(summary, f, indent=2, default=str)
-    print(f"
-Summary saved to {RUNS_DIR / "summary.json"}")
+    print(f"\nSummary saved to {RUNS_DIR / 'summary.json'}")
     return summary
 
 if __name__ == "__main__": main()
