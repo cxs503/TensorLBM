@@ -1,0 +1,17 @@
+{
+  "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=src python examples/droplet_impact.py --n-steps 3000 --output-interval 750 --output-root /workspace/scratch/ac2422c73ef8/ch-experiments/impact-default --overwrite",
+  "source_sha256": {
+    "examples/droplet_impact.py": "2d8f131b0b8da934fe6ada6f49a17ac55d99e3f8c43d12c4ad2df99f6eecbeda",
+    "src/tensorlbm/phasefield/ch_equilibrium.py": "b2cc0ffe78614f496941c0eb37c1e0ce427d4d6d7134dd9a85d219b485e8fd85",
+    "src/tensorlbm/multiphase.py": "7b93da8088094b54489ca99a09eeb72635dac6296e4b68f10ba97089d97d64f8",
+    "src/tensorlbm/boundary/tank.py": "33b032d56d69f6fe9397f6f0259d81f4ac73c0406d1ddf11290a2fd566862636",
+    "src/tensorlbm/phasefield/operators.py": "195eae0642ca95ef4b58dd38e566629876d67d627c793b910e9cb5cb05b23fe2",
+    "src/tensorlbm/d2q9.py": "a5e1ddc0bea25dbdcbafada70858cf97ac6e7a1a038d47550408076b574f8af5"
+  },
+  "run_artifact_sha256": {
+    "impact_metadata.json": "c275b616ae33ee5ffe93543da5a1876adbd2e6522da6231187093365b34746da",
+    "impact_history.csv": "ce0e8bcc721b6e600e935981d5bd58d62e4179eddbebdd65545e2d045813b076",
+    "impact_step3000.png": "993b7c6475c7d89516a7b613cfc7fc7b8be629d720b9e7b7d92ffcc5bcb5ff4f"
+  },
+  "physical_validation_passed": false
+}

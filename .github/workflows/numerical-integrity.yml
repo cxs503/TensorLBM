@@ -42,6 +42,8 @@ jobs:
             tests/test_gh408_droplet_impact.py \
             tests/test_droplet_impact_initialization.py \
             tests/test_phasefield_common_operators.py \
+            tests/test_xval_m17762_free_energy_ch.py \
+            tests/test_ch_moment_closure.py \
             tests/test_general_capability_matrix.py \
             tests/test_advanced_collision_contract.py \
             tests/test_validation_evidence_admission.py \
@@ -53,6 +55,9 @@ jobs:
           python benchmarks/status_ledger.py --check
           python benchmarks/validation_matrix/runner.py audit
           python benchmarks/validation_matrix/independent_audit.py
+      - name: CH dispersion and freely evolved interface gates
+        run: |
+          python benchmarks/phasefield_ch_core/run.py --output artifacts/numerical-integrity/ch_core/report.json --plot
       - name: Run exploratory droplet with health gates
         run: |
           python examples/droplet_impact.py --fast --output-root artifacts/numerical-integrity/droplet

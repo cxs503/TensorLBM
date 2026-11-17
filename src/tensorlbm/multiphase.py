@@ -1266,6 +1266,7 @@ def free_energy_step(
     rho_heavy: float | None = None,
     rho_light: float | None = None,
     *,
+    geq_convention: str = "swift",
     boundary: str = "periodic",
     solid_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -1285,11 +1286,14 @@ def free_energy_step(
         g:          Order-parameter distribution, shape ``(9, ny, nx)``;
                     its zeroth moment is the phase field φ = Σᵢ gᵢ.
         tau_f:      Relaxation time for momentum (ν = cs²(τ_f − ½)).
-        tau_g:      Relaxation time for phase field (M = cs²(τ_g − ½)).
+        tau_g:      Phase relaxation time; with lee_lin, M = Gamma*(tau_g - 0.5).
         A:          Double-well coefficient.
         B:          Quartic coefficient.
         kappa:      Interfacial-tension parameter (gradient penalty).
         Gamma:      Phase-field mobility coupling.
+        geq_convention: "swift" retains historical extra phi diffusion for
+                    reproducibility; "lee_lin" uses CH moment closure without
+                    that diffusion. This changes g, not the momentum model.
         gx:         x body-force acceleration.
         gy:         y body-force acceleration.
         rho_heavy:  Effective density for the φ=+1 phase (Boussinesq buoyancy).
@@ -1300,6 +1304,9 @@ def free_energy_step(
     Returns:
         Updated ``(f, g)`` after one collision step.
     """
+    from .phasefield.ch_equilibrium import ch_equilibrium, validate_convention
+
+    validate_convention(geq_convention)
     device = f.device
     c = _c_on(device)
     w = _w_for(f.dtype, device)
@@ -1356,6 +1363,8 @@ def free_energy_step(
     diff_factor = c_sq / _CS2 - 2.0  # anisotropic, sums to 0 over w_i
     geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff
+    if geq_convention == "lee_lin":
+        geq = ch_equilibrium(phi, (ux_adv, uy_adv), mu, Gamma)
     g_out = g - (g - geq) / tau_g
 
     if solid_mask is not None:
@@ -1369,6 +1378,10 @@ def init_free_energy_g(
     phi: torch.Tensor,
     ux: torch.Tensor | None = None,
     uy: torch.Tensor | None = None,
+    *,
+    geq_convention: str = "swift",
+    mu: torch.Tensor | None = None,
+    Gamma: float = 0.5,
 ) -> torch.Tensor:
     """Initialise the FE order-parameter distribution in equilibrium.
 
@@ -1377,9 +1390,21 @@ def init_free_energy_g(
         ux:  Initial x-velocity (optional, defaults to zero).
         uy:  Initial y-velocity (optional, defaults to zero).
 
+    ``geq_convention="lee_lin"`` removes ordinary phi diffusion. Supply
+    the discrete ``mu`` and matching ``Gamma`` for well-prepared CH data;
+    omitted ``mu`` means zero. Legacy initialization is unchanged.
+
     Returns:
         Equilibrium distribution g, shape ``(9, ny, nx)``.
     """
+    from .phasefield.ch_equilibrium import ch_equilibrium, validate_convention
+
+    validate_convention(geq_convention)
+    if geq_convention == "lee_lin":
+        velocity = tuple(torch.zeros_like(phi) if u is None else u for u in (ux, uy))
+        return ch_equilibrium(phi, velocity, mu, Gamma)
+    if mu is not None:
+        raise ValueError("mu initialization is supported only with geq_convention=lee_lin")
     device = phi.device
     c = _c_on(device)
     w = _w_for(phi.dtype, device).view(9, 1, 1)
