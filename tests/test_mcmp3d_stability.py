@@ -36,7 +36,9 @@ def test_gself_and_psi_defaults_are_bit_identical():
     r1 = torch.rand(6, 6, 6) + 0.5
     r2 = torch.rand(6, 6, 6) + 0.5
     base = sc_two_component_force_3d(r1, r2, -1.0)
-    new = sc_two_component_force_3d(r1, r2, -1.0, G_self=0.0, psi1_fn=psi_linear, psi2_fn=psi_linear)
+    new = sc_two_component_force_3d(
+        r1, r2, -1.0, G_self=0.0, psi1_fn=psi_linear, psi2_fn=psi_linear
+    )
     for a, b in zip(base, new):
         assert torch.equal(a, b)
 
@@ -88,8 +90,18 @@ def test_self_coupling_sign_convention():
 
 def test_harness_record_is_json_serialisable_and_classified():
     rec = run_case(
-        dict(name="unit-stable", G_12=-1.0, steps=200, nz=24, ny=8, nx=8,
-             rho1_in=0.92, rho1_out=0.14, rho2_in=0.08, rho2_out=0.86)
+        dict(
+            name="unit-stable",
+            G_12=-1.0,
+            steps=200,
+            nz=24,
+            ny=8,
+            nx=8,
+            rho1_in=0.92,
+            rho1_out=0.14,
+            rho2_in=0.08,
+            rho2_out=0.86,
+        )
     )
     json.dumps(rec)
     assert rec["steps_run"] == 200 and rec["diverged"] is False

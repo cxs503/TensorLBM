@@ -4,10 +4,20 @@
   "title": "Body-force driven laminar channel (Poiseuille) through the T2 GPU core path — analytic profile + resolution convergence (CI tier)",
   "reference_basis": "analytic",
   "scope": "2-D body-force driven laminar channel solved through the fused T2 GPU core path (collision + Guo force + streaming + half-way bounce-back in one step); centre-line velocity and full-profile L2 deviation vs the closed-form Poiseuille parabola at two resolutions (H=16 and H=32). Complements the turbulent Re_tau=180 DNS slot (honest FAIL, domain/statistics) with a verified laminar channel anchor that is CI-runnable.",
-  "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T13:13:00Z",
+  "matrix_version": "1.2",
+  "generated_utc": "2026-11-17T10:53:57Z",
   "artifact": "benchmarks/validation_matrix/cases/channel_core_path/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/channel_core_path/run.py",
+  "evidence_admission": {
+    "origin": "recorded_solver_run",
+    "method": "lbm",
+    "claim_scope": "benchmark_validation",
+    "synthetic": false,
+    "lbm_validation_eligible": true,
+    "exclusion_reasons": [],
+    "engineering_validated": false
+  },
+  "lbm_validation_pass": true,
   "references": [
     {
       "id": "poiseuille_channel_analytic",
@@ -16,7 +26,7 @@
       "formula": "u(y) = a / (2 nu) * s * (H - s),  s = y - 0.5,  H = ny - 2",
       "origin": "Batchelor 1967 §4.2 (laminar plane Poiseuille flow, lattice units); analytic anchor implemented in the T2 GPU core-path channel runner",
       "source": "src/tensorlbm/gpu_core_path.py",
-      "source_sha256": "d2c9dee35b7b5df9de66aeed7e986a501470694bcd3c9d7666c06b0dc1310209",
+      "source_sha256": "45f386ec1f42438ddd4d9d0516288d784e008e9981609ac581b8f37152441de0",
       "token": "u(y) = a / (2 nu) * s * (H - s)"
     }
   ],
@@ -166,18 +176,18 @@
     }
   ],
   "unresolved_metrics": [],
-  "artifact_sha256": "5c28b2ee8398a000c098126dc38e6c44c463996a5d9d6d6c18572c5419715291",
-  "artifact_bytes": 1523,
+  "artifact_sha256": "af667124d4517899c84f3141593502c8a6c44aa1527f73608800bc84d18f145e",
+  "artifact_bytes": 1519,
   "evidence_chain": [
     {
       "kind": "artifact",
       "path": "benchmarks/validation_matrix/cases/channel_core_path/result.json",
-      "sha256": "5c28b2ee8398a000c098126dc38e6c44c463996a5d9d6d6c18572c5419715291"
+      "sha256": "af667124d4517899c84f3141593502c8a6c44aa1527f73608800bc84d18f145e"
     },
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+      "sha256": "3ade9ff759a137452ee172664a4aa11a32a61f9267056d60914698b3b1cc2a00"
     },
     {
       "kind": "references",

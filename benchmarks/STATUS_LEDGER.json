@@ -55,7 +55,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/bstep_3d/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/bstep_3d/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -103,7 +103,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/channel_turb_3d/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/channel_turb_3d/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -115,7 +115,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/channel_turb_re180/validation_status.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/channel_turb_re180/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -151,7 +151,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/cylinder_re100_dfg/validation_status.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/cylinder_re100_dfg/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -163,7 +163,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/cylinder_re40_st/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/cylinder_re40_st/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -187,7 +187,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/dam_break_3d_mm/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/dam_break_3d_mm/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -199,7 +199,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/dam_break_ritter_ci/validation_status.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/dam_break_ritter_ci/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -211,7 +211,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/dam_break_sc/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/dam_break_sc/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -223,7 +223,7 @@
    "index_rows": 2,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/dit_turbulence/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/dit_turbulence/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -295,7 +295,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/naca_0012/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/naca_0012/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -367,7 +367,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verdict",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/poiseuille_3d_annulus/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/poiseuille_3d_annulus/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -379,9 +379,21 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verdict",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/poiseuille_3d_ellipse/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/poiseuille_3d_ellipse/result.json",
    "readme": true,
    "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "poiseuille_3d_ellipse_bodyforce",
+   "dir": "benchmarks/pending/poiseuille_3d_ellipse_bodyforce",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
    "validation_status_json": false
   },
   {
@@ -403,7 +415,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/propeller_openwater/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/propeller_openwater/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -427,7 +439,7 @@
    "index_rows": 1,
    "machine": "fail",
    "machine_key": "verified",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/rayleigh_benard/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/rayleigh_benard/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -451,7 +463,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/rayleigh_taylor_rt/validation_status.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/rayleigh_taylor_rt/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -583,7 +595,7 @@
    "index_rows": 0,
    "machine": "fail",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/static_droplet_laplace_ci/validation_status.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/static_droplet_laplace_ci/validation_status.json",
    "readme": false,
    "result_json": false,
    "validation_status_json": true
@@ -595,7 +607,7 @@
    "index_rows": 1,
    "machine": "pass",
    "machine_key": "status",
-   "machine_source": "/srv/tensor/agent/work/m17013/benchmarks/pending/stokes_second_problem/result.json",
+   "machine_source": "/workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/stokes_second_problem/result.json",
    "readme": true,
    "result_json": true,
    "validation_status_json": false
@@ -674,17 +686,17 @@
   }
  ],
  "counts": {
-  "advertised_pending": 56,
-  "advertised_verified": 81,
-  "pending_dirs": 56,
+  "advertised_pending": 57,
+  "advertised_verified": 91,
+  "pending_dirs": 57,
   "pending_index_rows": 32,
   "pending_machine_fail": 16,
   "pending_machine_pass": 1,
-  "pending_machine_unknown": 39,
-  "pending_with_readme": 40,
+  "pending_machine_unknown": 40,
+  "pending_with_readme": 41,
   "pending_with_result_json": 27,
   "status_md_verified_rows": 36,
-  "verified_dirs": 81
+  "verified_dirs": 91
  },
  "index_rows": [
   {
@@ -917,10 +929,12 @@
  "verified": [
   "acoustics",
   "aircraft_icing_naca0012_rime",
+  "brinkman_channel",
   "cavity",
   "cavity_3d_full",
   "cavity_natural_convection",
   "cavity_re100",
+  "channel_core_path_ci",
   "compressible_shock_family",
   "couette_2d",
   "couette_3d",
@@ -928,11 +942,16 @@
   "cylinder",
   "cylinder_3d",
   "cylinder_re100",
+  "dam_break_ritter_ci",
   "droplet_oscillation",
+  "electroosmosis",
   "floating_body_free_decay",
   "forchheimer_weak_inertia",
+  "fused_push_pull_aa_pattern",
   "fwh_acoustics",
   "fwh_rotating",
+  "graetz_tube",
+  "inamuro_wetnode_xval",
   "kovasznay_2d",
   "laplace_cac_phasefield",
   "laplace_droplet",
@@ -974,6 +993,8 @@
   "sphere_re200",
   "square_cylinder",
   "square_cylinder_re200",
+  "squeeze_film_ns",
+  "staircase_wall_offset",
   "startup_poiseuille",
   "static_droplet_laplace_ci",
   "stefan_phase_change",
@@ -990,6 +1011,7 @@
   "taylor_couette",
   "taylor_green_2d",
   "taylor_green_3d",
+  "tgv2d_analytic_l2_xval",
   "thermal_cavity",
   "thermal_cavity_3d",
   "wave_tank",
@@ -1014,7 +1036,7 @@
    },
    {
     "case": "cylinder_re40_st",
-    "detail": "index class pass_candidate implies pass, machine verdict fail (verified=False in /srv/tensor/agent/work/m17013/benchmarks/pending/cylinder_re40_st/result.json)",
+    "detail": "index class pass_candidate implies pass, machine verdict fail (verified=False in /workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/cylinder_re40_st/result.json)",
     "id": "status_claim_conflict",
     "severity": "soft"
    },

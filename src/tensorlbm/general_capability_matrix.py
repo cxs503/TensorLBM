@@ -119,14 +119,14 @@ _COMPONENT_EVIDENCE: dict[str, dict[str, tuple[bool, EvidenceTier, str]]] = {
             "advanced_collision_contract advertises MRT for D3Q19 and D3Q27.",
         ),
         "cm": (
-            False,
-            EvidenceTier.UNIMPLEMENTED,
-            "CM is explicitly withheld: no standalone validated central-moment kernel.",
+            True,
+            EvidenceTier.COMPONENT_CONTRACT,
+            "advanced_collision_contract registers cascaded_collision CM kernels for D3Q19/D3Q27; full compositions remain withheld.",
         ),
         "kbc": (
-            False,
-            EvidenceTier.UNIMPLEMENTED,
-            "KBC is explicitly withheld: no entropy-solved KBC kernel.",
+            True,
+            EvidenceTier.COMPONENT_CONTRACT,
+            "advanced_collision_contract registers entropic_kbc kernels for D3Q19/D3Q27; decay-rate and full-composition validation remain withheld.",
         ),
     },
     "multiphase": {
@@ -344,6 +344,7 @@ def assess_capability(candidate: CapabilityRequest | Mapping[str, Any]) -> Capab
     expected = asdict(_R1_SUPPORTED)
     actual = asdict(request)
     for field in (
+        "collision",
         "turbulence",
         "multiphase",
         "boundary",

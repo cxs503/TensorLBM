@@ -1,0 +1,64 @@
+name: Numerical integrity (CPU)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p0-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      PYTHONPATH: src
+      TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install CPU test environment
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e '.[dev]'
+      - name: Conservation, boundaries, evidence and capability contracts
+        run: |
+          mkdir -p artifacts/numerical-integrity
+          git rev-parse HEAD > artifacts/numerical-integrity/source_sha.txt
+          python -c 'import json, platform, torch; print(json.dumps({"python": platform.python_version(), "torch": torch.__version__, "cuda_available": torch.cuda.is_available()}))' > artifacts/numerical-integrity/environment.json
+          python -m pytest -q --timeout=300 --junitxml=artifacts/numerical-integrity/tests.xml \
+            tests/test_d3q27_guo_moments.py \
+            tests/test_multiphase_force_moments.py \
+            tests/test_multiphase_physical_benchmarks.py \
+            tests/test_gh408_droplet_impact.py \
+            tests/test_droplet_impact_initialization.py \
+            tests/test_phasefield_common_operators.py \
+            tests/test_general_capability_matrix.py \
+            tests/test_advanced_collision_contract.py \
+            tests/test_validation_evidence_admission.py \
+            tests/test_validation_matrix.py \
+            tests/test_validation_matrix_gated_display.py \
+            tests/test_benchmarks_status_ledger.py
+      - name: Check ledger and reference consistency
+        run: |
+          python benchmarks/status_ledger.py --check
+          python benchmarks/validation_matrix/runner.py audit
+          python benchmarks/validation_matrix/independent_audit.py
+      - name: Run exploratory droplet with health gates
+        run: |
+          python examples/droplet_impact.py --fast --output-root artifacts/numerical-integrity/droplet
+      - name: Preserve evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: numerical-integrity-cpu
+          path: artifacts/numerical-integrity

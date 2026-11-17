@@ -113,5 +113,3 @@ def test_field_route_error_decreases_with_interface_width() -> None:
         measured = sigma_from_profile(phi, centre=centre, kappa=kappa)
         errors.append(abs(measured - ref["sigma"]) / ref["sigma"])
     assert errors[0] > errors[1] > errors[2], errors
-
-

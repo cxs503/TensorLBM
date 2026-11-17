@@ -27,7 +27,7 @@ import torch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from .d3q27 import C, W, equilibrium27, macroscopic27
+from .d3q27 import W_EXACT64, C, W, equilibrium27, macroscopic27
 from .multiphase import (
     psi_carnahan_starling,
     psi_exp,
@@ -261,14 +261,11 @@ def collide_sc_two_component_27(
         sgs_model:   Sub-grid model selector: ``'smagorinsky'`` (default),
                      ``'wale'``, or ``'vreman'``.  Only active when ``C_s > 0``.
         u_eq:        Equilibrium-velocity convention: ``"self"`` (default,
-                     legacy behaviour, bit-identical to the previous
-                     implementation) or ``"mixture"`` (Shan–Doolen
+                     component-specific velocity) or ``"mixture"`` (Shan–Doolen
                      centre-of-mass coupling).  ``"mixture"`` requires the
-                     velocity-shift forcing (``use_guo=False``): the Guo
-                     branch keeps the τ_σ F_σ/ρ_σ shift inside the
-                     equilibrium *and* adds the (1 − 1/(2τ_σ)) F_σ
-                     correction, so the mixture momentum-exchange identity
-                     above no longer holds for that combination.  The
+                     velocity-shift forcing (``use_guo=False``). The Guo
+                     kernel is defined for component-specific half-force
+                     velocities; a mixture Guo collision is not implemented.  The
                      combination ``u_eq="mixture"`` with ``C_s > 0`` is
                      permitted (the SGS closure only replaces the relaxation
                      rate applied to the same non-equilibrium) but, like all
@@ -298,8 +295,7 @@ def collide_sc_two_component_27(
     if use_guo and u_eq == "mixture":
         raise ValueError(
             "u_eq='mixture' is only defined for the velocity-shift forcing "
-            "(use_guo=False); the Guo branch double-counts the force shift "
-            "and breaks the mixture momentum-exchange identity"
+            "(use_guo=False); a mixture Guo collision is not implemented"
         )
     device = f1.device
     rho1, ux1, uy1, uz1 = macroscopic27(f1)
@@ -457,7 +453,9 @@ def _bgk_collision_guo_27(
     """
     cs2 = 1.0 / 3.0
     cs4 = cs2 * cs2
-    w = _w_on_27(device).view(27, 1, 1, 1)  # (27, 1, 1, 1)
+    # Build weights in the working dtype; casting the float32 table to float64
+    # would retain its rounding error in the force moments.
+    w = W_EXACT64.to(device=device, dtype=f1.dtype).view(27, 1, 1, 1)
     c = _c_on_27(device)
     cx = c[:, 0].float().view(27, 1, 1, 1)
     cy = c[:, 1].float().view(27, 1, 1, 1)
@@ -468,19 +466,13 @@ def _bgk_collision_guo_27(
     if rho2_s is None:
         rho2_s = torch.clamp(rho2, min=1e-12)
 
-    # Velocity-shift equilibrium for BGK step (uses base tau, not tau_eff)
-    feq1 = equilibrium27(
-        rho1,
-        ux1 + tau1 * Fx1 / rho1_s,
-        uy1 + tau1 * Fy1 / rho1_s,
-        uz1 + tau1 * Fz1 / rho1_s,
-    )
-    feq2 = equilibrium27(
-        rho2,
-        ux2 + tau2 * Fx2 / rho2_s,
-        uy2 + tau2 * Fy2 / rho2_s,
-        uz2 + tau2 * Fz2 / rho2_s,
-    )
+    # Guo uses the physical half-force velocity in BOTH equilibrium and source.
+    # BGK then supplies F/(2*tau_eff), and the source supplies the remainder.
+    # A tau*F/rho equilibrium shift would count the force twice.
+    ux1, uy1, uz1 = ux1 + 0.5 * Fx1 / rho1_s, uy1 + 0.5 * Fy1 / rho1_s, uz1 + 0.5 * Fz1 / rho1_s
+    ux2, uy2, uz2 = ux2 + 0.5 * Fx2 / rho2_s, uy2 + 0.5 * Fy2 / rho2_s, uz2 + 0.5 * Fz2 / rho2_s
+    feq1 = equilibrium27(rho1, ux1, uy1, uz1)
+    feq2 = equilibrium27(rho2, ux2, uy2, uz2)
 
     # Compute per-cell effective relaxation time if SGS is enabled
     if C_s > 0.0:

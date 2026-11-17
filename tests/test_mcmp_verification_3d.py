@@ -67,9 +67,12 @@ def test_droplet_radius_3d_perfect_sphere():
 def test_init_static_droplet_3d_shape():
     """init_static_droplet_3d returns correct shapes."""
     f1, f2 = init_static_droplet_3d(
-        n=32, radius=8.0,
-        rho1_in=0.9, rho2_in=0.1,
-        rho1_out=0.1, rho2_out=0.9,
+        n=32,
+        radius=8.0,
+        rho1_in=0.9,
+        rho2_in=0.1,
+        rho1_out=0.1,
+        rho2_out=0.9,
     )
     assert f1.shape == (19, 32, 32, 32)
     assert f2.shape == (19, 32, 32, 32)
@@ -78,8 +81,12 @@ def test_init_static_droplet_3d_shape():
 def test_measure_laplace_3d_guardrails_on_diverged():
     """measure_laplace_3d returns guardrails when density is non-finite."""
     run = {
-        "G_12": -2.5, "n": 32, "radius_init": 8.0,
-        "steps_run": 100, "converged": False, "u_max": float("nan"),
+        "G_12": -2.5,
+        "n": 32,
+        "radius_init": 8.0,
+        "steps_run": 100,
+        "converged": False,
+        "u_max": float("nan"),
         "rho1": torch.full((32, 32, 32), float("nan")),
         "rho2": torch.full((32, 32, 32), 0.5),
     }

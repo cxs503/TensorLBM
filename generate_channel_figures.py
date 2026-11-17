@@ -188,6 +188,17 @@ def generate_summary_figure(all_results, save_path):
     return save_path
 
 
+def load_verification_results(path):
+    """Refuse labelled fixtures before they acquire LBM/DNS figure labels."""
+    from benchmarks.validation_matrix.evidence_admission import admit_evidence
+
+    with open(path) as fp:
+        data = json.load(fp)
+    if admit_evidence({}, data)["synthetic"]:
+        raise ValueError("Synthetic/demo fixtures cannot be rendered as LBM verification figures")
+    return data
+
+
 def main():
     """Generate all figures from verification results."""
     import argparse
@@ -200,8 +211,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load results
-    with open(args.results) as f:
-        data = json.load(f)
+    data = load_verification_results(args.results)
 
     results = data.get("results", {})
 

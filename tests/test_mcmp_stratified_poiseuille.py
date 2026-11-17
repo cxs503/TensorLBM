@@ -105,7 +105,9 @@ def test_forcing_delivers_exact_momentum(scheme):
     expected = rho * fx_body
     # float32 round-off of the (rho ~ 0.5, F ~ 1e-3) populations
     assert torch.allclose(dp, expected, rtol=1e-5, atol=1e-8), (
-        scheme, float((dp - expected).abs().max()))
+        scheme,
+        float((dp - expected).abs().max()),
+    )
 
 
 @pytest.mark.physics

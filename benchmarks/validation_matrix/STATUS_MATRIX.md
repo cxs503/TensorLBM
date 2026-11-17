@@ -1,6 +1,8 @@
 # Validation matrix — three-level status (generated)
 
-generated: 2026-11-13T13:13:00Z | matrix v1.1 | **passed 8 / failed 3 / pending 1**
+generated: 2026-11-17T10:53:57Z | matrix v1.2 | **passed 8 / failed 3 / pending 1**
+
+LBM benchmark passes admitted by method/scope: **5**. Numeric passes for references/correlations are not complete LBM or engineering validation.
 
 Gate: every metric |err| <= its tolerance at every **gated** level AND the level
 series converges (span <= 3%, monotone where >= 3 levels exist). A level declared
@@ -23,6 +25,23 @@ is withheld or not yet produced — never a hidden pass.
 | 10 | cylinder | `cylinder_re100_dfg` | **failed** | cl_amp_err_pct +36.04% (tol 5%) [gated D28] | cd_err_pct span 3.72% | `benchmarks/verified/cylinder/re100_dfg/artifacts/result.json` |
 | 11 | rayleigh_taylor | `rayleigh_taylor_rt` | **failed** | — | — | `python benchmarks/pending/rayleigh_taylor/run.py` |
 | 12 | ship | `ship_wave_michell` | **pending** | — | — | `python benchmarks/wave_wake_michell/run.py` |
+
+## Evidence scope (separate from numeric verdict)
+
+| case | method | claim scope | admitted LBM pass |
+|------|--------|-------------|-------------------|
+| `cavity_re100` | lbm | benchmark_validation | True |
+| `channel_core_path_ci` | lbm | benchmark_validation | True |
+| `cylinder_re100` | lbm | benchmark_validation | True |
+| `dam_break_ritter_ci` | shallow_water_fvm | reference_only | False |
+| `ship_resistance_suboff` | lbm | correlation_only | False |
+| `sphere_re100` | lbm | correlation_only | False |
+| `static_droplet_laplace_ci` | lbm | benchmark_validation | True |
+| `taylor_green_2d` | lbm | benchmark_validation | True |
+| `channel_turb_re180` | lbm | benchmark_validation | False |
+| `cylinder_re100_dfg` | lbm | benchmark_validation | False |
+| `rayleigh_taylor_rt` | lbm | benchmark_validation | False |
+| `ship_wave_michell` | analytic_thin_ship | reference_only | False |
 
 ## Root causes / blockers
 

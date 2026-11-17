@@ -4,10 +4,20 @@
   "title": "Turbulent channel Re_tau=180 vs Moser DNS (u+ profile)",
   "reference_basis": "DNS reference data (not in-repo -> WITHHELD)",
   "scope": "3-D periodic channel, D3Q19 natural KBC, Guo body force; u+ RMS error in y+ in [30,100].",
-  "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T13:13:00Z",
+  "matrix_version": "1.2",
+  "generated_utc": "2026-11-17T10:53:57Z",
   "artifact": "benchmarks/pending/channel_turb_3d/result.json",
   "repro_cmd": "python benchmarks/pending/channel_turb_3d/run.py",
+  "evidence_admission": {
+    "origin": "recorded_solver_run",
+    "method": "lbm",
+    "claim_scope": "benchmark_validation",
+    "synthetic": false,
+    "lbm_validation_eligible": true,
+    "exclusion_reasons": [],
+    "engineering_validated": false
+  },
+  "lbm_validation_pass": false,
   "references": [
     {
       "id": "moser_channel_uplus",
@@ -16,7 +26,7 @@
       "formula": "DNS profile (tabular, not tabulated in-repo)",
       "origin": "Moser, Kim & Mansour 1999, Phys. Fluids 11:943 (Re_tau=178.12)",
       "source": "benchmarks/pending/channel_turb_3d/README.md",
-      "source_sha256": "b54b9ca16252f066301984c2b9e7c5765945ac8b36de72760b5b38c6546f6dfa",
+      "source_sha256": "ecf0878d16da7dc5905952109bc4cb1986c413faa3ec9bce4d06a90827a3a816",
       "token": "Moser, Kim & Mansour 1999"
     }
   ],
@@ -100,7 +110,7 @@
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+      "sha256": "3ade9ff759a137452ee172664a4aa11a32a61f9267056d60914698b3b1cc2a00"
     },
     {
       "kind": "references",
@@ -110,7 +120,7 @@
     {
       "kind": "runner",
       "path": "benchmarks/pending/channel_turb_3d/run.py",
-      "sha256": "b8206b4cefeaa2a0bf8e1472f1b810497b4a52e0f86a908d57c09331b98a2f1a"
+      "sha256": "d511d3b98b19e34bc740335ebd1d56fb30a813ac41e3ef939aaed5bb1a34a5e9"
     }
   ],
   "notes": "Missing artifact paths are reported as pending-with-reason by the runner, never as passed. This slot exists to keep the negative result visible in the matrix."

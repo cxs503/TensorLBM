@@ -32,8 +32,7 @@ def _load():
 
 def _pairings(*, sigmas: dict[str, float], flatness: float) -> dict[str, dict]:
     return {
-        p: {"sigma": sigmas[p], "flatness": flatness}
-        for p in ("fwd", "bwd", "sym", "isotropic")
+        p: {"sigma": sigmas[p], "flatness": flatness} for p in ("fwd", "bwd", "sym", "isotropic")
     }
 
 
@@ -61,8 +60,12 @@ def test_all_pairings_vetoed_by_gate_does_not_divide_by_zero():
     mod = _load()
     res = {
         "levels": [
-            _level(_pairings(sigmas={"fwd": -0.0201, "bwd": 0.0, "sym": -0.0101, "isotropic": 0.0},
-                             flatness=0.436))
+            _level(
+                _pairings(
+                    sigmas={"fwd": -0.0201, "bwd": 0.0, "sym": -0.0101, "isotropic": 0.0},
+                    flatness=0.436,
+                )
+            )
         ]
     }
     out = mod._summary(res)  # used to raise ZeroDivisionError
@@ -73,8 +76,9 @@ def test_all_pairings_vetoed_by_gate_does_not_divide_by_zero():
 
 def test_positive_sigma_pairing_is_selected_and_finite():
     mod = _load()
-    pairings = _pairings(sigmas={"fwd": 0.30, "bwd": 0.0, "sym": 0.15, "isotropic": 0.0},
-                         flatness=0.03)
+    pairings = _pairings(
+        sigmas={"fwd": 0.30, "bwd": 0.0, "sym": 0.15, "isotropic": 0.0}, flatness=0.03
+    )
     pairings["fwd"]["flatness"] = 0.045  # flattest eligible pairing is ``sym``
     pairings["sym"]["flatness"] = 0.020
     pairings["bwd"]["flatness"] = 0.060  # fails the 5% normal-force gate anyway
@@ -91,8 +95,9 @@ def test_positive_sigma_pairing_is_selected_and_finite():
 def test_flat_but_zero_sigma_pairing_is_not_selected():
     """bwd is the flattest but sigma == 0: it must not win the selection."""
     mod = _load()
-    pairings = _pairings(sigmas={"fwd": 0.30, "bwd": 0.0, "sym": 0.15, "isotropic": 0.0},
-                         flatness=0.03)
+    pairings = _pairings(
+        sigmas={"fwd": 0.30, "bwd": 0.0, "sym": 0.15, "isotropic": 0.0}, flatness=0.03
+    )
     pairings["sym"]["flatness"] = 0.020
     pairings["bwd"]["flatness"] = 0.001
     out = mod._summary({"levels": [_level(pairings)]})

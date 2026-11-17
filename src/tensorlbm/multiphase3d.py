@@ -24,7 +24,7 @@ import torch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from .d3q19 import C, W, equilibrium3d, macroscopic3d
+from .d3q19 import W_EXACT64, C, W, equilibrium3d, macroscopic3d
 from .multiphase import (
     psi_carnahan_starling,
     psi_exp,
@@ -33,6 +33,7 @@ from .multiphase import (
     psi_power,
 )  # re-export for convenience
 from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
+from .registry import capability
 from .solver3d import _get_d3q19_mrt_matrices
 from .turbulence import (
     _neq_stress_norm_3d,
@@ -125,18 +126,18 @@ def _sc_neighbor_weighted_sum_3d(
 # ---------------------------------------------------------------------------
 
 
-from .registry import capability
-
-
 @capability(
     id="lbm.multiphase.shan_chen_force.d3q19",
-    kind='multiphase',
-    maturity='developing',
+    kind="multiphase",
+    maturity="developing",
     wired=True,
     tested=True,
     verified=False,
-    test_path='tests/test_multiphase.py',
-    evidence={'grade': 'MECHANICS', 'note': 'Shan-Chen 两相作用力（3D）；静滴/混合物测试通过，无 Laplace 压差 vs 解析的误差带'},
+    test_path="tests/test_multiphase.py",
+    evidence={
+        "grade": "MECHANICS",
+        "note": "Shan-Chen 两相作用力（3D）；静滴/混合物测试通过，无 Laplace 压差 vs 解析的误差带",
+    },
 )
 def sc_two_component_force_3d(
     rho1: torch.Tensor,
@@ -292,14 +293,11 @@ def collide_sc_two_component_3d(
                      to :func:`sc_two_component_force_3d`.
         psi2_fn:     Pseudopotential of component 2 (default ψ=ρ).
         u_eq:        Equilibrium-velocity convention: ``"self"`` (default,
-                     legacy behaviour, bit-identical to the previous
-                     implementation) or ``"mixture"`` (Shan–Doolen
+                     component-specific velocity) or ``"mixture"`` (Shan–Doolen
                      centre-of-mass coupling).  ``"mixture"`` requires the
-                     velocity-shift forcing (``use_guo=False``): the Guo
-                     branch keeps the τ_σ F_σ/ρ_σ shift inside the
-                     equilibrium *and* adds the (1 − 1/(2τ_σ)) F_σ
-                     correction, so the mixture momentum-exchange identity
-                     above no longer holds for that combination.
+                     velocity-shift forcing (``use_guo=False``). The Guo
+                     kernel uses component-specific half-force velocities;
+                     a mixture Guo collision is not implemented.
 
     Returns:
         Updated ``(f1, f2)`` after BGK collision.
@@ -324,8 +322,7 @@ def collide_sc_two_component_3d(
     if use_guo and u_eq == "mixture":
         raise ValueError(
             "u_eq='mixture' is only defined for the velocity-shift forcing "
-            "(use_guo=False); the Guo branch double-counts the force shift "
-            "and breaks the mixture momentum-exchange identity"
+            "(use_guo=False); a mixture Guo collision is not implemented"
         )
     device = f1.device
     rho1, ux1, uy1, uz1 = macroscopic3d(f1)
@@ -450,7 +447,7 @@ def _bgk_collision_guo_3d(
     """
     cs2 = 1.0 / 3.0
     cs4 = cs2 * cs2
-    w = _w_on_3d(device).view(19, 1, 1, 1)  # (19, 1, 1, 1)
+    w = W_EXACT64.to(device=device, dtype=f1.dtype).view(19, 1, 1, 1)
     c = _c_on_3d(device)
     cx = c[:, 0].float().view(19, 1, 1, 1)
     cy = c[:, 1].float().view(19, 1, 1, 1)
@@ -464,18 +461,10 @@ def _bgk_collision_guo_3d(
     # (measured momentum gain 1.5× too large at τ = 1).
     rho1_s = torch.clamp(rho1, min=1e-12)
     rho2_s = torch.clamp(rho2, min=1e-12)
-    feq1 = equilibrium3d(
-        rho1,
-        ux1 + 0.5 * Fx1 / rho1_s,
-        uy1 + 0.5 * Fy1 / rho1_s,
-        uz1 + 0.5 * Fz1 / rho1_s,
-    )
-    feq2 = equilibrium3d(
-        rho2,
-        ux2 + 0.5 * Fx2 / rho2_s,
-        uy2 + 0.5 * Fy2 / rho2_s,
-        uz2 + 0.5 * Fz2 / rho2_s,
-    )
+    ux1, uy1, uz1 = ux1 + 0.5 * Fx1 / rho1_s, uy1 + 0.5 * Fy1 / rho1_s, uz1 + 0.5 * Fz1 / rho1_s
+    ux2, uy2, uz2 = ux2 + 0.5 * Fx2 / rho2_s, uy2 + 0.5 * Fy2 / rho2_s, uz2 + 0.5 * Fz2 / rho2_s
+    feq1 = equilibrium3d(rho1, ux1, uy1, uz1)
+    feq2 = equilibrium3d(rho2, ux2, uy2, uz2)
 
     f1_post = f1 - (f1 - feq1) / tau1
     f2_post = f2 - (f2 - feq2) / tau2
@@ -1389,14 +1378,17 @@ def wall_adhesion_force_3d(
             raise ValueError("grain_ids shape must match psi shape")
         if g_wall_by_grain:
             for gid, gw in g_wall_by_grain.items():
-                g_field = torch.where(grain_ids == int(gid), torch.as_tensor(
-                    float(gw), dtype=psi.dtype, device=device), g_field)
+                g_field = torch.where(
+                    grain_ids == int(gid),
+                    torch.as_tensor(float(gw), dtype=psi.dtype, device=device),
+                    g_field,
+                )
     g_field = torch.where(solid_mask, g_field, torch.zeros_like(g_field))
 
     fx = torch.zeros_like(psi)
     fy = torch.zeros_like(psi)
     fz = torch.zeros_like(psi)
-    C_dev = C.to(device)[:, [2, 1, 0]]   # (x, y, z) -> (z, y, x) array axes
+    C_dev = C.to(device)[:, [2, 1, 0]]  # (x, y, z) -> (z, y, x) array axes
     W_dev = W.to(device)
     for i in range(C_dev.shape[0]):
         s_shift = _shift_field(solid_mask.to(psi.dtype), -C_dev[i])

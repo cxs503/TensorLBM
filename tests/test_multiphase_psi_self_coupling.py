@@ -17,6 +17,7 @@ The tests cover:
 4. the guard rail: ``sc_form="edm"`` rejects a pseudopotential/self coupling
    instead of silently ignoring it.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -65,9 +66,7 @@ def test_default_path_is_bit_identical():
 def test_force_matches_explicit_neighbour_sum_with_potential_and_self_term():
     rho1, rho2 = _fields()
     g12, g11, g22 = -3.0, 0.7, -0.4
-    out = sc_two_component_force(
-        rho1, rho2, g12, psi_fn=psi_exp, g_self=(g11, g22)
-    )
+    out = sc_two_component_force(rho1, rho2, g12, psi_fn=psi_exp, g_self=(g11, g22))
     p1 = psi_exp(rho1).numpy()
     p2 = psi_exp(rho2).numpy()
     s1x, s1y = _backward_sum(p1)
@@ -121,6 +120,6 @@ def test_self_coupling_only_touches_its_own_component():
     rho1, rho2 = _fields(seed=5)
     base = sc_two_component_force(rho1, rho2, -2.0, psi_fn=psi_exp)
     with_self = sc_two_component_force(rho1, rho2, -2.0, psi_fn=psi_exp, g_self=(0.5, 0.0))
-    assert torch.equal(base[0], with_self[0]) is False      # component 1 changes
-    assert torch.equal(base[2], with_self[2]) is True       # component 2 untouched
+    assert torch.equal(base[0], with_self[0]) is False  # component 1 changes
+    assert torch.equal(base[2], with_self[2]) is True  # component 2 untouched
     assert torch.equal(base[1], with_self[1]) is False

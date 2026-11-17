@@ -1,16 +1,16 @@
 """Tests for GH #408 droplet impact boundary fixes."""
 
-import pytest
-import torch
 import sys
 from pathlib import Path
+
+import pytest
+import torch
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from tensorlbm.d2q9 import equilibrium, macroscopic
-from tensorlbm.multiphase import free_energy_step, init_free_energy_g
-from tensorlbm.solver import stream
+from tensorlbm.multiphase import init_free_energy_g
 
 
 class TestTankBoundaries:
@@ -19,6 +19,7 @@ class TestTankBoundaries:
     def test_wall_mask_shape(self):
         """Test that wall mask has correct shape."""
         from examples.droplet_impact import _make_tank_wall_mask
+
         device = torch.device("cpu")
         mask = _make_tank_wall_mask(100, 80, device)
         assert mask.shape == (100, 80)
@@ -35,43 +36,48 @@ class TestTankBoundaries:
         assert mask[0, 0]
         assert mask[0, -1]
 
-    def test_boundary_applies_bounce_back(self):
-        """Test that bounce-back is applied on walls."""
-        from examples.droplet_impact import _apply_tank_boundaries, _make_tank_wall_mask
-        device = torch.device("cpu")
-        ny, nx = 50, 40
-        rho = torch.ones((ny, nx), dtype=torch.float32, device=device)
-        zero = torch.zeros_like(rho)
-        f = equilibrium(rho, zero, zero)
-        g = init_free_energy_g(torch.zeros_like(rho), zero, zero)
-        wall_mask = _make_tank_wall_mask(ny, nx, device)
+    def test_nonuniform_populations_are_conserved_without_wrap(self):
+        from examples.droplet_impact import _make_tank_wall_mask
+        from tensorlbm.boundary.tank import stream_tank
+        from tensorlbm.d2q9 import OPPOSITE
 
-        f_out, g_out = _apply_tank_boundaries(f, g, wall_mask)
+        mask = _make_tank_wall_mask(9, 10, torch.device("cpu"))
+        rng = torch.Generator().manual_seed(42)
+        f = torch.rand((9, 9, 10), generator=rng, dtype=torch.float64)
+        g = torch.randn((9, 9, 10), generator=rng, dtype=torch.float64)
+        a, b = stream_tank(f, g, mask)
+        torch.testing.assert_close(a[:, ~mask].sum(), f[:, ~mask].sum(), atol=1e-12, rtol=0)
+        torch.testing.assert_close(b[:, ~mask].sum(), g[:, ~mask].sum(), atol=1e-12, rtol=0)
+        # Tagged outgoing pulse at the bottom must reflect locally, not appear at top.
+        pulse = torch.zeros_like(f)
+        pulse[2, -2, 4] = 7.0
+        streamed, _ = stream_tank(pulse, pulse, mask)
+        assert streamed[int(OPPOSITE[2]), -2, 4] == 7
+        assert streamed[:, 0].count_nonzero() == 0
+        assert streamed.sum() == 7
+        # A top outgoing pulse also reflects at the top.
+        pulse.zero_()
+        pulse[4, 0, 4] = 3.0
+        streamed, _ = stream_tank(pulse, pulse, mask)
+        assert streamed[2, 0, 4] == 3
+        assert streamed[:, -2].count_nonzero() == 0
 
-        # After bounce-back, distributions at walls should be swapped
-        # Check bottom wall (y=ny-1)
-        # f[1] (right) should become f[3] (left) after bounce-back
-        assert torch.allclose(f_out[1, -1, :], f[3, -1, :])
-        assert torch.allclose(f_out[3, -1, :], f[1, -1, :])
+    @pytest.mark.parametrize("rho_top", [0.97, 1.03])
+    def test_top_pressure_prescribes_density_and_zero_tangential_velocity(self, rho_top):
+        from examples.droplet_impact import _make_tank_wall_mask
+        from tensorlbm.boundary.tank import stream_tank
 
-    def test_top_boundary_extrapolation(self):
-        """Test that top boundary uses zero-gradient extrapolation."""
-        from examples.droplet_impact import _apply_tank_boundaries, _make_tank_wall_mask
-        device = torch.device("cpu")
-        ny, nx = 50, 40
-        rho = torch.ones((ny, nx), dtype=torch.float32, device=device)
-        zero = torch.zeros_like(rho)
-        f = equilibrium(rho, zero, zero)
-        g = init_free_energy_g(torch.zeros_like(rho), zero, zero)
-        wall_mask = _make_tank_wall_mask(ny, nx, device)
-
-        f_out, g_out = _apply_tank_boundaries(f, g, wall_mask)
-
-        # Top boundary (y=0): f[2] should be extrapolated from f[4] at y=1
-        # (excluding corners which are walls)
-        assert torch.allclose(f_out[2, 0, 1:-1], f[4, 1, 1:-1])
-        assert torch.allclose(f_out[5, 0, 1:-1], f[7, 1, 1:-1])
-        assert torch.allclose(f_out[6, 0, 1:-1], f[8, 1, 1:-1])
+        rho = torch.ones((12, 14), dtype=torch.float64)
+        f = equilibrium(rho, 0.02 * rho, -0.01 * rho)
+        g = torch.randn_like(f)
+        mask = _make_tank_wall_mask(12, 14, torch.device("cpu"))
+        out, phase = stream_tank(f, g, mask, top_bc="pressure", rho_top=rho_top)
+        actual_rho, ux, _ = macroscopic(out)
+        torch.testing.assert_close(actual_rho[0, 1:-1], torch.full((12,), rho_top, dtype=rho.dtype))
+        torch.testing.assert_close(
+            ux[0, 1:-1], torch.zeros(12, dtype=rho.dtype), atol=1e-14, rtol=0
+        )
+        torch.testing.assert_close(phase[:, ~mask].sum(), g[:, ~mask].sum(), atol=1e-12, rtol=0)
 
 
 class TestDensityRatioPathway:
@@ -80,6 +86,7 @@ class TestDensityRatioPathway:
     def test_default_density_params(self):
         """Test default density parameters."""
         from examples.droplet_impact import _resolve_density_params
+
         rho_h, rho_l = _resolve_density_params(None, 1.0, 0.1)
         assert rho_h == 1.0
         assert rho_l == 0.1
@@ -87,6 +94,7 @@ class TestDensityRatioPathway:
     def test_density_ratio_5(self):
         """Test density ratio = 5."""
         from examples.droplet_impact import _resolve_density_params
+
         rho_h, rho_l = _resolve_density_params(5.0, 1.0, 0.1)
         assert abs(rho_h / rho_l - 5.0) < 1e-10
         assert abs((rho_h + rho_l) / 2 - 1.0) < 1e-10
@@ -94,6 +102,7 @@ class TestDensityRatioPathway:
     def test_density_ratio_10(self):
         """Test density ratio = 10."""
         from examples.droplet_impact import _resolve_density_params
+
         rho_h, rho_l = _resolve_density_params(10.0, 1.0, 0.1)
         assert abs(rho_h / rho_l - 10.0) < 1e-10
         assert abs((rho_h + rho_l) / 2 - 1.0) < 1e-10
@@ -101,6 +110,7 @@ class TestDensityRatioPathway:
     def test_density_ratio_invalid(self):
         """Test that invalid density ratio raises error."""
         from examples.droplet_impact import _resolve_density_params
+
         with pytest.raises(ValueError, match="density_ratio must be >= 1.0"):
             _resolve_density_params(0.5, 1.0, 0.1)
 
@@ -110,14 +120,21 @@ class TestCentroidSemantic:
 
     def test_centroid_uses_all_liquid(self):
         """Test that centroid uses all liquid phase, not just upper region."""
-        # This is verified by the variable name change and documentation
-        # The actual computation is:
-        #   w = liquid_weight (all liquid)
-        #   cx = sum(w * xx) / sum(w)
-        # This is different from the old:
-        #   w = liquid_weight * top_mask
-        #   cx = sum(w * xx) / sum(w)
-        pass  # Semantic change verified by code review
+        from examples.droplet_impact import _diagnostics
+
+        rho = torch.ones((6, 8), dtype=torch.float64)
+        yy, xx = torch.meshgrid(torch.arange(6), torch.arange(8), indexing="ij")
+        phi = -rho.clone()
+        phi[1, 2] = 1
+        phi[4, 6] = 1
+        z = torch.zeros_like(rho)
+        f = equilibrium(rho, z, z)
+        g = init_free_energy_g(phi, z, z)
+        result = _diagnostics(
+            f, g, torch.zeros_like(rho, dtype=torch.bool), xx, yy, float(g.sum()), 48, 0
+        )
+        assert result["liquid_centroid_x"] == pytest.approx(4, abs=1e-7)
+        assert result["liquid_centroid_y"] == pytest.approx(2.5, abs=1e-7)
 
 
 class TestInitialPhaseField:
@@ -126,6 +143,7 @@ class TestInitialPhaseField:
     def test_phase_field_bounded(self):
         """Test that initial phase field is bounded in [-1, 1]."""
         from examples.droplet_impact import _initial_phase_field
+
         device = torch.device("cpu")
         ny, nx = 100, 80
         y = torch.arange(ny, dtype=torch.float32, device=device)
@@ -138,6 +156,7 @@ class TestInitialPhaseField:
     def test_water_level_static_reference(self):
         """Test that water_level is used as static reference."""
         from examples.droplet_impact import _initial_phase_field
+
         device = torch.device("cpu")
         ny, nx = 100, 80
         y = torch.arange(ny, dtype=torch.float32, device=device)

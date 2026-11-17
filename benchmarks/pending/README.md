@@ -398,7 +398,7 @@ forchheimer/fibrous 的参考类裁决。
 <!-- STATUS_LEDGER:BEGIN -->
 ### 机器台账（自动生成，勿手改；`python benchmarks/status_ledger.py --write`）
 
-pending 目录 **56** · 已登记行 **32** · 带 result.json **27** · 机器判决 pass/fail/unknown = **1/16/39**
+pending 目录 **57** · 已登记行 **32** · 带 result.json **27** · 机器判决 pass/fail/unknown = **1/16/40**
 
 违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
@@ -406,7 +406,7 @@ pending 目录 **56** · 已登记行 **32** · 带 result.json **27** · 机器
 
 - `duplicate_index_row` `cavity_3d_full` — 2 index rows (lines [41, 42])
 - `missing_machine_verdict` `cavity_3d_re100` — no README and no machine verdict on disk
-- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in /srv/tensor/agent/work/m17013/benchmarks/pending/cylinder_re40_st/result.json)
+- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in /workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/cylinder_re40_st/result.json)
 - `duplicate_index_row` `dit_turbulence` — 2 index rows (lines [45, 47])
 - `missing_machine_verdict` `dtmb5415_resistance` — no README and no machine verdict on disk
 - `missing_machine_verdict` `kcs_resistance` — no README and no machine verdict on disk
@@ -458,6 +458,7 @@ pending 目录 **56** · 已登记行 **32** · 带 result.json **27** · 机器
 | `phasefield_water_entry` | yes | **no** | unknown | 0 | **unregistered** |
 | `poiseuille_3d_annulus` | yes | yes | fail (`verdict`) | 1 | unknown |
 | `poiseuille_3d_ellipse` | yes | yes | fail (`verdict`) | 1 | fail |
+| `poiseuille_3d_ellipse_bodyforce` | yes | **no** | unknown | 0 | **unregistered** |
 | `porous_ladder` | **no** | yes | unknown | 0 | **unregistered** |
 | `propeller_openwater` | yes | yes | fail (`verified`) | 0 | **unregistered** |
 | `pseudopotential_edm_upgrade` | **no** | **no** | unknown | 0 | **unregistered** |

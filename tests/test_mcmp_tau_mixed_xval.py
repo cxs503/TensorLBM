@@ -36,7 +36,9 @@ from tensorlbm.mcmp_tau_mixed import (
 from tensorlbm.multiphase import collide_sc_two_component
 from tensorlbm.solver import stream
 
-XVAL_DIR = Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY"
+XVAL_DIR = (
+    Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY"
+)
 
 
 def _random_state(seed: int, rho=(1.0, 1.0), u=(0.05, -0.02), tau=(1.0, 0.7), dtype=torch.float64):
@@ -108,7 +110,9 @@ def test_channel_reference_is_self_consistent():
     assert float(nonzero.min()) > 0.0
 
 
-@pytest.mark.parametrize("mode,expect_conserved", [("viscous", True), ("mixture", False), ("self", True)])
+@pytest.mark.parametrize(
+    "mode,expect_conserved", [("viscous", True), ("mixture", False), ("self", True)]
+)
 def test_momentum_conservation_of_coupling_modes(mode, expect_conserved):
     n, steps, tau1, tau2 = 12, 60, 1.0, 0.7
     rho = torch.ones((n, n), dtype=torch.float64)

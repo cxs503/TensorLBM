@@ -1,0 +1,312 @@
+{
+  "scope": "P0 numerical integrity; CPU local execution, not complete engineering validation",
+  "date": "2026-11-17",
+  "base_sha": "2d21ee08d95600d61d3b77f5e0e9b7b088d14f6d",
+  "environment": {
+    "python": "3.12.14",
+    "torch": "2.15.0+cpu",
+    "cuda_available": false,
+    "OMP_NUM_THREADS": 1,
+    "MKL_NUM_THREADS": 1
+  },
+  "tests": {
+    "total": 288,
+    "passed": 287,
+    "skipped": 1,
+    "failed": 0,
+    "seconds": 98.075,
+    "skip_reason": "empty parametrization: all advanced kernels now have implementations; complete compositions still withheld",
+    "collection_ignored": "21 repository files with Triton imports, not counted as passed"
+  },
+  "spinodal": {
+    "spinodal": {
+      "benchmark": "spinodal_decomposition",
+      "config": {
+        "G": 5.0,
+        "device": "cpu",
+        "dtype": "float64",
+        "n_steps": 1200,
+        "noise_amp": 0.05,
+        "nx": 64,
+        "ny": 64,
+        "output_interval": 200,
+        "output_root": "/tmp/pytest-of-agent/pytest-20/test_spinodal_2d_physically_se0",
+        "overwrite": false,
+        "rho0": 0.7,
+        "run_name": null,
+        "seed": 42,
+        "tau": 1.0
+      },
+      "density_ratio": 12.4364,
+      "diagnostics": [
+        {
+          "density_ratio": 13.2364,
+          "rho_max": 2.039506,
+          "rho_min": 0.154083,
+          "rho_std": 0.693739,
+          "step": 200
+        },
+        {
+          "density_ratio": 12.9532,
+          "rho_max": 2.028421,
+          "rho_min": 0.156596,
+          "rho_std": 0.757488,
+          "step": 400
+        },
+        {
+          "density_ratio": 12.7262,
+          "rho_max": 1.995826,
+          "rho_min": 0.156828,
+          "rho_std": 0.763774,
+          "step": 600
+        },
+        {
+          "density_ratio": 12.4737,
+          "rho_max": 1.999199,
+          "rho_min": 0.160273,
+          "rho_std": 0.768848,
+          "step": 800
+        },
+        {
+          "density_ratio": 12.4004,
+          "rho_max": 2.002767,
+          "rho_min": 0.161509,
+          "rho_std": 0.767271,
+          "step": 1000
+        },
+        {
+          "density_ratio": 12.4364,
+          "rho_max": 2.006162,
+          "rho_min": 0.161314,
+          "rho_std": 0.769741,
+          "step": 1200
+        }
+      ],
+      "final_mass": 2866.73877111,
+      "initial_mass": 2866.73877111,
+      "note": "SCMP (Shan-Chen single-component) spinodal decomposition. rho_liquid / rho_gas → Maxwell construction coexistence densities at steady state.",
+      "phase_separated": true,
+      "relative_mass_drift": 6.868627337720557e-14,
+      "rho_gas": 0.161314,
+      "rho_liquid": 2.006162
+    },
+    "spinodal_3d": {
+      "benchmark": "spinodal_decomposition_3d",
+      "config": {
+        "G": 5.0,
+        "device": "cpu",
+        "dtype": "float64",
+        "n_steps": 500,
+        "noise_amp": 0.05,
+        "nx": 24,
+        "ny": 24,
+        "nz": 24,
+        "output_interval": 100,
+        "output_root": "/tmp/pytest-of-agent/pytest-20/test_spinodal_3d_physically_se0",
+        "overwrite": false,
+        "rho0": 0.7,
+        "run_name": null,
+        "seed": 42,
+        "tau": 1.0
+      },
+      "density_ratio": 12.239,
+      "diagnostics": [
+        {
+          "density_ratio": 13.2991,
+          "rho_max": 2.067542,
+          "rho_min": 0.155464,
+          "rho_std": 0.560453,
+          "step": 100
+        },
+        {
+          "density_ratio": 12.4003,
+          "rho_max": 1.962347,
+          "rho_min": 0.15825,
+          "rho_std": 0.660924,
+          "step": 200
+        },
+        {
+          "density_ratio": 12.3148,
+          "rho_max": 1.984558,
+          "rho_min": 0.161153,
+          "rho_std": 0.698104,
+          "step": 300
+        },
+        {
+          "density_ratio": 12.2327,
+          "rho_max": 1.969765,
+          "rho_min": 0.161024,
+          "rho_std": 0.698101,
+          "step": 400
+        },
+        {
+          "density_ratio": 12.239,
+          "rho_max": 1.965704,
+          "rho_min": 0.160609,
+          "rho_std": 0.697476,
+          "step": 500
+        }
+      ],
+      "final_mass": 9681.75274826,
+      "initial_mass": 9681.75274826,
+      "note": "3D SCMP spinodal decomposition benchmark on D3Q19.",
+      "phase_separated": true,
+      "relative_mass_drift": 2.7993838324059203e-14,
+      "rho_gas": 0.160609,
+      "rho_liquid": 1.965704
+    }
+  },
+  "droplet": {
+    "benchmark": "2d_free_energy_droplet_impact",
+    "status": "exploratory_not_yet_reference_validated",
+    "health": {
+      "passed": true,
+      "failures": [],
+      "checked_every_step": true,
+      "completed_steps": 120,
+      "max_observed": {
+        "relative_phase_mass_drift": 3.604517272367771e-07,
+        "max_speed": 0.01230188924819231,
+        "abs_phi": 1.0013717412948608
+      },
+      "thresholds": {
+        "relative_phase_mass_drift": 0.0001,
+        "max_speed": 0.15,
+        "abs_phi": 1.2,
+        "min_density_exclusive": 0.0
+      }
+    },
+    "config": {
+      "nx": 120,
+      "ny": 90,
+      "radius": 9.0,
+      "gap": 5.0,
+      "water_level": 58.0,
+      "n_steps": 120,
+      "output_interval": 30,
+      "g": 2e-05,
+      "tau_f": 0.8,
+      "tau_g": 0.8,
+      "A": 0.04,
+      "B": 0.04,
+      "kappa": 0.02,
+      "Gamma": 0.5,
+      "interface_width": 3.0,
+      "density_ratio": null,
+      "top_bc": "bounce_back",
+      "rho_top": 1.0,
+      "max_mass_drift": 0.0001,
+      "max_speed": 0.15,
+      "max_abs_phi": 1.2,
+      "device": "cpu",
+      "output_root": "/workspace/scratch/ac2422c73ef8/droplet-p0-final",
+      "run_name": null,
+      "fast": true,
+      "overwrite": true
+    },
+    "derived": {
+      "initial_droplet_center_y": 44.0,
+      "initial_droplet_center_x": 60.0,
+      "initial_phase_mass": -2765.2295576930046,
+      "phase_mass_normalization_l1": 9785.702331334352,
+      "rho_heavy_used": 1.0,
+      "rho_light_used": 0.1,
+      "buoyancy_density_ratio": 10.0,
+      "elapsed_seconds_including_contours": 2.6733137359988177,
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "device": "cpu"
+    },
+    "final_metrics": {
+      "step": 120,
+      "finite": true,
+      "time_lu": 120.0,
+      "phase_mass": -2765.233084966312,
+      "relative_phase_mass_drift": 3.604517272367771e-07,
+      "liquid_centroid_x": 59.534021556752734,
+      "liquid_centroid_y": 70.52205276353855,
+      "max_speed": 0.011427671648561954,
+      "min_density": 0.9784485101699829,
+      "kinetic_energy_proxy": 0.07543477541450906,
+      "phi_min": -0.9977329969406128,
+      "phi_max": 1.0009841918945312
+    },
+    "diagnostic_notes": [
+      "Conserved totals exclude solid storage; phase drift is normalized by initial sum(abs(phi)).",
+      "Liquid centroid includes ALL liquid; kinetic energy is an uncalibrated lattice proxy.",
+      "Momentum and phase stream without periodic wrap; scalar stencils use no-flux walls.",
+      "Pressure top, if selected, fixes momentum density but keeps phase impermeable; not a two-phase outflow.",
+      "Density ratio changes Boussinesq gravity only; no cAC or variable-inertial-density solver is selected.",
+      "Passing health gates does not validate impact, splash height, coexistence, or water/air density ratios."
+    ]
+  },
+  "hydrostatic_column_1000_steps": {
+    "grid": [
+      32,
+      12
+    ],
+    "gravity": 2e-05,
+    "dtype": "float64",
+    "rho_relative_max_error": 2.4735816748228333e-13,
+    "physical_speed_max": 5.566192939557371e-16,
+    "relative_phase_mass_drift": 5.977727273749488e-14,
+    "phi_max_error": 1.0702549957386509e-13,
+    "scope": "single phase analytic static baseline, not two-phase interface or impact validation"
+  },
+  "ledger": {
+    "hard_violations": 0,
+    "soft_violations": 17,
+    "verified_directory_count": 91,
+    "pending_directory_count": 57,
+    "counts_are_capability_passes": false
+  },
+  "frozen_matrix": {
+    "numeric_passed": 8,
+    "failed": 3,
+    "pending": 1,
+    "lbm_benchmark_passes_admitted_by_scope": 5,
+    "rerun_current_solver": false
+  },
+  "quality_checks": {
+    "lint_ratchet": "pass, ruff 0.15.0; baseline unchanged",
+    "docs_consistency": "pass",
+    "reference_anchors": "17/17",
+    "independent_matrix_audit": "0 blocking findings, 3 advisory notes"
+  },
+  "source_sha256": {
+    ".github/workflows/numerical-integrity.yml": "b9ce0d32c77887544973ffa035acc62d8effb1a07a65f298e439fe4d3b10e0b1",
+    "benchmarks/validation_matrix/evidence_admission.py": "22beafa7786aa6f8587591bcfb0c6c6a438065b8349ea823b6d6ea939d1a4d71",
+    "benchmarks/validation_matrix/runner.py": "5abc91433e28a677b6fa18309a1fb25d11588597f117e7d5f3e76763f9ae1942",
+    "examples/droplet_impact.py": "1e1f8e52fc5f803f4e42a5865b5f4d93ca201bad087a4230d7ff280dce78553b",
+    "generate_channel_figures.py": "06759b437427f1c163fcd75ed3f7408738a15a64bd7cc733d34c18ade904c3b1",
+    "generate_synthetic_results.py": "b0ca230f5a89d830a71ab1c3b3e9d65207e58957a9395fad6de92ec776829412",
+    "src/tensorlbm/boundary/tank.py": "33b032d56d69f6fe9397f6f0259d81f4ac73c0406d1ddf11290a2fd566862636",
+    "src/tensorlbm/general_capability_matrix.py": "2cd1d38c6f09a6c2fbea70fba98641b180896eee04e09fccb3f46b07492cd17b",
+    "src/tensorlbm/multiphase.py": "7b56e915155f83975ce3d7a8bed0b78880fb26ab1ecbff00264170a9289d1aaa",
+    "src/tensorlbm/multiphase3d.py": "20586a4c4e2a1bdf305e8a1d8d69475c649b7f2d87f013587a6fcd5db4beb87c",
+    "src/tensorlbm/multiphase3d_d3q27.py": "08d389634d2fc31344d9bdfc491a3bf815a2404352ebea841aed365369c66ab3",
+    "src/tensorlbm/multiphase_benchmarks.py": "9f392c2f39528d3aa1da16cbd26d37f13f368e114e99f0a8851a5bc2e720efb3",
+    "src/tensorlbm/phasefield/operators.py": "195eae0642ca95ef4b58dd38e566629876d67d627c793b910e9cb5cb05b23fe2",
+    "tests/test_d3q27_guo_moments.py": "1a28cf2a915f20444d2034caad267146315568c73304fad995fbda19b0553230",
+    "tests/test_droplet_impact_initialization.py": "f917c1c89fd282fa3828261bd817fe313fa0cc339ac69d509b15c947b283a9c7",
+    "tests/test_general_capability_matrix.py": "5f58f61a14a4c4e0b050010f34f1b6a8af560fbc58d8b3cbb299059f16c97c35",
+    "tests/test_gh408_droplet_impact.py": "806be4633c53e3a77f1e132619e33fe7342959a83e3886523afdd96bedd2a9ba",
+    "tests/test_mcmp3d_stability.py": "c5848b04bbdd887dee1887b18f33c28fa0c06a8d82b2fea1286e2e81366a4e31",
+    "tests/test_mcmp_coexistence_selection.py": "00196e851117123fea0633ffd7cd791f4e43b253af6811d99648a7d53f1e5a96",
+    "tests/test_mcmp_droplet_radius_guard.py": "9d4af9e71e186638582cde55db4e1d3392a0246ba0d4531ea8fbb27c0d9dae56",
+    "tests/test_mcmp_laplace_anchor_gate.py": "7a84fa5f31af83dd0cbc9091e0d8571826c3ab1b5971de88a67a940e85b3b251",
+    "tests/test_mcmp_stratified_poiseuille.py": "c98efb73e41f38ee45cfa032a8139553068a42b0246a9681205f6388d767d7b8",
+    "tests/test_mcmp_tau_mixed_xval.py": "767ad93c750c03579ec9cf7c404224d36cc37e102e0defeb32282a448c3e3c9f",
+    "tests/test_mcmp_verification_3d.py": "6029fcfac3ecbab9968be3a4e947459992b776cada9d0593d05296e8bfc9ff6b",
+    "tests/test_mcmp_wall_neutral.py": "877db51eb8121a9ae4d4fe283fcd846c3eb8e7b7c1f5a22dd1f3f4e1f957c0f3",
+    "tests/test_multiphase_benchmarks.py": "8362879d5a385cf82e4129bcb7a9bcc0653210fc28ac7ba27e1b1fa939a13bb6",
+    "tests/test_multiphase_force_moments.py": "9f64f298172a3ca012665f550549e831e6ec8ca76734881c63b169af0575b927",
+    "tests/test_multiphase_physical_benchmarks.py": "96aa4ef8e934151da857ae22478015dece002f81bcbb07970df7448f4a0f03f9",
+    "tests/test_multiphase_psi_self_coupling.py": "e55a7620746f42addbc6fba5b95eb4040cb47c7a83f37d133fb8ded5bdbfd490",
+    "tests/test_phasefield_laplace_face.py": "11f2abeb80a5b1287ec76c69a5b00b3685fbaa5c414bb71debdea2d1042e9396",
+    "tests/test_phasefield_pf_pressure_evolution.py": "b0cb51afac83c8c4115478ba1903351459f7bb25c4780c8994f2446183a481e6",
+    "tests/test_validation_evidence_admission.py": "06eafda45a1ea000d02970ff1fceee62cab9fb1fdb43106e16ea20652111e302"
+  },
+  "pytest_log_sha256": "1edd5bd4421bfe304902b77d52de48f6a667d6bdc468aeb064cbcb7ca9742b5b",
+  "junit_sha256": "fb104ef4a1be004ced9d1a86ec71d1ed50cead9b54b12811cb2ff44d78961d76"
+}

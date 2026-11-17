@@ -30,12 +30,12 @@ def test_d3q27_mrt_is_withheld_without_complete_composition_evidence() -> None:
     assert any(reason.code == "WITHHELD_D3Q27_COMPOSITION" for reason in result.reasons)
 
 
-def test_cm_and_kbc_are_explicitly_withheld_not_advertised_from_legacy_names() -> None:
+def test_cm_and_kbc_compositions_remain_withheld_despite_available_kernels() -> None:
     for collision in ("CM", "KBC"):
         result = assess_capability({"lattice": "D3Q19", "collision": collision})
         assert result.status is CapabilityStatus.WITHHELD
-        assert result.evidence_tier is EvidenceTier.UNIMPLEMENTED
-        assert any(reason.code == "WITHHELD_COLLISION_FAMILY" for reason in result.reasons)
+        assert result.evidence_tier is EvidenceTier.NO_COMPOSITION_EVIDENCE
+        assert any(reason.code == "WITHHELD_UNVERIFIED_COMPOSITION" for reason in result.reasons)
 
 
 def test_wall_function_and_amr_candidates_are_withheld_as_unverified_compositions() -> None:
@@ -107,8 +107,14 @@ def test_component_registry_exposes_only_audited_collision_availability() -> Non
     matrix = capability_matrix()
 
     assert matrix["collision"]["mrt"]["available"] is True
-    assert matrix["collision"]["cm"]["available"] is False
-    assert matrix["collision"]["kbc"]["available"] is False
+    from tensorlbm.advanced_collision_contract import collision_capability_matrix
+
+    kernels = collision_capability_matrix()
+    for family in ("cm", "kbc"):
+        assert matrix["collision"][family]["available"] is True
+        assert matrix["collision"][family]["evidence_tier"] == "component_contract"
+        for lattice in ("D3Q19", "D3Q27"):
+            assert kernels[lattice][family.upper()].available
 
 
 # ---------------------------------------------------------------------------

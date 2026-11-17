@@ -12,6 +12,7 @@ import math
 from pathlib import Path
 
 import pytest
+import torch
 
 from tensorlbm.multiphase_benchmarks import (
     Spinodal3DConfig,
@@ -19,6 +20,33 @@ from tensorlbm.multiphase_benchmarks import (
     run_spinodal_decomposition,
     run_spinodal_decomposition_3d,
 )
+
+
+@pytest.mark.parametrize("cls", [SpinodaleConfig, Spinodal3DConfig])
+@pytest.mark.parametrize("G", [-5.0, 0.0, float("nan")])
+def test_spinodal_rejects_nonattractive_or_nonfinite_coupling(cls, G):
+    with pytest.raises(ValueError, match="G must be > 0"):
+        cls(G=G).validate()
+
+
+def test_single_component_attraction_points_toward_density_peak():
+    from tensorlbm.d3q19 import C, equilibrium3d
+    from tensorlbm.multiphase import psi_exp, sc_single_component_force
+    from tensorlbm.multiphase3d import collide_sc_single_component_3d
+
+    x = torch.arange(32, dtype=torch.float64)
+    rho = (0.7 + 0.02 * torch.cos(2 * torch.pi * x / 32))[None, :].expand(16, 32)
+    fx, _ = sc_single_component_force(rho, G=5.0, psi_fn=psi_exp)
+    # Between the maximum at x=0 and minimum at x=16, attraction points left.
+    assert (fx[:, 1:16] < 0).all()
+    reversed_fx, _ = sc_single_component_force(rho, G=-5.0, psi_fn=psi_exp)
+    torch.testing.assert_close(reversed_fx, -fx)
+    rho3 = rho[None].expand(12, 16, 32)
+    z = torch.zeros_like(rho3)
+    f = equilibrium3d(rho3, z, z, z)
+    out = collide_sc_single_component_3d(f, G=5.0, psi_fn=psi_exp)
+    fx3 = ((out - f) * C[:, 0, None, None, None]).sum(0)
+    assert (fx3[:, :, 1:16] < 0).all()
 
 
 def test_spinodal_2d_reports_mass_conservation(tmp_path: Path) -> None:
@@ -35,7 +63,7 @@ def test_spinodal_2d_reports_mass_conservation(tmp_path: Path) -> None:
     assert "relative_mass_drift" in result
     assert math.isfinite(float(result["relative_mass_drift"]))
     assert float(result["relative_mass_drift"]) < 1e-5
-    assert (tmp_path / "spinodal" / "spinodal_G-4.0_rho0.70_nx16_steps5" / "spinodal.json").exists()
+    assert (tmp_path / "spinodal" / "spinodal_G5.0_rho0.70_nx16_steps5" / "spinodal.json").exists()
 
 
 def test_spinodal_3d_reports_mass_conservation(tmp_path: Path) -> None:
@@ -54,7 +82,7 @@ def test_spinodal_3d_reports_mass_conservation(tmp_path: Path) -> None:
     assert math.isfinite(float(result["relative_mass_drift"]))
     assert float(result["relative_mass_drift"]) < 1e-5
     assert (
-        tmp_path / "spinodal_3d" / "spinodal_3d_G-4.0_rho0.70_n12x12x12_steps3" / "spinodal_3d.json"
+        tmp_path / "spinodal_3d" / "spinodal_3d_G5.0_rho0.70_n12x12x12_steps3" / "spinodal_3d.json"
     ).exists()
 
 
@@ -65,7 +93,7 @@ def test_spinodal_2d_physically_separates(tmp_path: Path) -> None:
         SpinodaleConfig(
             nx=64,
             ny=64,
-            G=-4.0,
+            G=5.0,
             tau=1.0,
             rho0=0.7,
             noise_amp=0.05,
@@ -89,7 +117,7 @@ def test_spinodal_3d_physically_separates(tmp_path: Path) -> None:
             nx=24,
             ny=24,
             nz=24,
-            G=-4.0,
+            G=5.0,
             tau=1.0,
             rho0=0.7,
             noise_amp=0.05,

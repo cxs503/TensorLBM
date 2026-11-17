@@ -36,7 +36,7 @@ import torch
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-from .d2q9 import C, W, equilibrium, macroscopic
+from .d2q9 import C, W, _w_for, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -332,9 +332,7 @@ def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 
 
-def _apply_wall_psi(
-    psi: torch.Tensor, solid_mask: torch.Tensor, wall_psi: object
-) -> torch.Tensor:
+def _apply_wall_psi(psi: torch.Tensor, solid_mask: torch.Tensor, wall_psi: object) -> torch.Tensor:
     """Fill the pseudopotential inside solid cells (scalar *or* per-cell field)."""
     fill = _wall_fill(wall_psi, psi)
     if isinstance(fill, torch.Tensor) and fill.ndim > 0:
@@ -673,14 +671,18 @@ def guo_force_term(
         raise ValueError("guo_force_term: rho/ux/uy/fx/fy must share one shape")
     device = fx.device
     c = C.to(device).float()
-    w = W.to(device)
+    w = _w_for(fx.dtype, device)
     cx = c[:, 0].view(9, 1, 1)
     cy = c[:, 1].view(9, 1, 1)
     cu = cx * ux + cy * uy
     pref = 1.0 - 0.5 / tau
-    return pref * w.view(9, 1, 1) * (
-        ((cx - ux) / _CS2 + cu * cx / (_CS2 * _CS2)) * fx
-        + ((cy - uy) / _CS2 + cu * cy / (_CS2 * _CS2)) * fy
+    return (
+        pref
+        * w.view(9, 1, 1)
+        * (
+            ((cx - ux) / _CS2 + cu * cx / (_CS2 * _CS2)) * fx
+            + ((cy - uy) / _CS2 + cu * cy / (_CS2 * _CS2)) * fy
+        )
     )
 
 
@@ -855,8 +857,12 @@ def collide_sc_two_component(
         w_tot = w1 + w2
         u_visc_x = (w1 * ux1 + w2 * ux2) / w_tot
         u_visc_y = (w1 * uy1 + w2 * uy2) / w_tot
-        feq1 = equilibrium(rho1, u_visc_x + _shift1 * Fx1 / rho1_s, u_visc_y + _shift1 * Fy1 / rho1_s)
-        feq2 = equilibrium(rho2, u_visc_x + _shift2 * Fx2 / rho2_s, u_visc_y + _shift2 * Fy2 / rho2_s)
+        feq1 = equilibrium(
+            rho1, u_visc_x + _shift1 * Fx1 / rho1_s, u_visc_y + _shift1 * Fy1 / rho1_s
+        )
+        feq2 = equilibrium(
+            rho2, u_visc_x + _shift2 * Fx2 / rho2_s, u_visc_y + _shift2 * Fy2 / rho2_s
+        )
     else:
         raise ValueError(f"u_eq must be 'self', 'mixture', or 'viscous', got {u_eq!r}")
 
@@ -1259,6 +1265,9 @@ def free_energy_step(
     gy: float = 0.0,
     rho_heavy: float | None = None,
     rho_light: float | None = None,
+    *,
+    boundary: str = "periodic",
+    solid_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D2Q9.
 
@@ -1285,13 +1294,15 @@ def free_energy_step(
         gy:         y body-force acceleration.
         rho_heavy:  Effective density for the φ=+1 phase (Boussinesq buoyancy).
         rho_light:  Effective density for the φ=−1 phase.
+        boundary:   'periodic' (legacy default) or 'no_flux' for scalar stencils.
+        solid_mask: Inactive solid cells; their distributions are preserved.
 
     Returns:
         Updated ``(f, g)`` after one collision step.
     """
     device = f.device
     c = _c_on(device)
-    w = _w_on(device)
+    w = _w_for(f.dtype, device)
     cx = c[:, 0].float().view(9, 1, 1)
     cy = c[:, 1].float().view(9, 1, 1)
     w_v = w.view(9, 1, 1)
@@ -1308,11 +1319,11 @@ def free_energy_step(
         rho_eff = rho
 
     # Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ
-    mu = -A * phi + B * phi**3 - kappa * _laplacian_2d(phi)
+    from .phasefield.operators import central_gradient_2d, laplacian_2d
 
-    # Korteweg (capillary) body force: F_cap = −φ ∇μ
-    grad_mu_x = 0.5 * (torch.roll(mu, -1, dims=-1) - torch.roll(mu, 1, dims=-1))
-    grad_mu_y = 0.5 * (torch.roll(mu, -1, dims=-2) - torch.roll(mu, 1, dims=-2))
+    mu = -A * phi + B * phi**3 - kappa * laplacian_2d(phi, boundary=boundary, solid_mask=solid_mask)
+    # Use the same boundary policy for the chemical potential and its force.
+    grad_mu_x, grad_mu_y = central_gradient_2d(mu, boundary=boundary, solid_mask=solid_mask)
     Fx = -phi * grad_mu_x + rho_eff * gx
     Fy = -phi * grad_mu_y + rho_eff * gy
 
@@ -1330,8 +1341,13 @@ def free_energy_step(
     # that the zeroth moment of geq equals φ (conservation of the order parameter).
     # We use the correction: geq_i = w_i φ feq_factor_i + Γ w_i (c_i²/cs² - D) μ
     # where D = spatial dimension = 2, so that Σ geq_i = φ.
-    cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0)
-    u_sq = (ux**2 + uy**2).unsqueeze(0)
+    # Advection uses the physical, half-force velocity. Raw momentum/rho has
+    # an offset -F/(2*rho) even at hydrostatic rest and would transport phase
+    # spuriously towards a wall.
+    ux_adv = ux + 0.5 * Fx / rho_s
+    uy_adv = uy + 0.5 * Fy / rho_s
+    cu = cx * ux_adv.unsqueeze(0) + cy * uy_adv.unsqueeze(0)
+    u_sq = (ux_adv**2 + uy_adv**2).unsqueeze(0)
     # Advection part: same form as feq for rho=phi
     geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
     # Diffusion part: Γ w_i (|c_i|² − D cs²) μ / cs⁴
@@ -1341,6 +1357,10 @@ def free_energy_step(
     geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff
     g_out = g - (g - geq) / tau_g
+
+    if solid_mask is not None:
+        f_out = torch.where(solid_mask[None], f, f_out)
+        g_out = torch.where(solid_mask[None], g, g_out)
 
     return f_out, g_out
 
@@ -1362,7 +1382,7 @@ def init_free_energy_g(
     """
     device = phi.device
     c = _c_on(device)
-    w = _w_on(device).view(9, 1, 1)
+    w = _w_for(phi.dtype, device).view(9, 1, 1)
     if ux is None:
         ux = torch.zeros_like(phi)
     if uy is None:
