@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import subprocess
@@ -116,6 +117,23 @@ def _git_commit(repo_root: str) -> str:
         ).strip()
     except Exception:  # pragma: no cover - git may be unavailable
         return "unknown"
+
+
+def _finite_or_none(obj):
+    """Recursively map non-finite floats to ``None`` (JSON ``null``).
+
+    Board-audit m21704 F5/R3: the artifact must be strict-JSON / PostgreSQL
+    ``jsonb``-safe, so ``NaN``/``Inf`` (e.g. an unlocatable interface or an
+    under-resolved viscosity fit) are serialised as ``null`` instead of bare
+    ``NaN`` tokens that break ``json.loads`` strict parsing and ``jsonb`` ingest.
+    """
+    if isinstance(obj, dict):
+        return {k: _finite_or_none(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_finite_or_none(v) for v in obj]
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return None
+    return obj
 
 
 def interface_position(phi: np.ndarray, y: np.ndarray, skip_wall: int = 2) -> float:
@@ -364,7 +382,7 @@ def main(argv: List[str] | None = None) -> int:
         acc[name] = rec
         if args.json_only:
             with open(os.path.join(out_dir, args.json_only), "w") as fh:
-                json.dump(rec, fh, indent=1)
+                json.dump(_finite_or_none(rec), fh, indent=1)
 
     records = [acc[k] for k in CASE_MATRIX if k in acc]
     here = os.path.dirname(os.path.abspath(__file__))
@@ -404,7 +422,7 @@ def main(argv: List[str] | None = None) -> int:
 
     json_path = os.path.join(out_dir, "results.json")
     with open(json_path, "w") as fh:
-        json.dump(payload, fh, indent=1)
+        json.dump(_finite_or_none(payload), fh, indent=1)
     digest = hashlib.sha256(open(json_path, "rb").read()).hexdigest()
     payload["sha256"] = digest
     with open(os.path.join(out_dir, "sha256.txt"), "w") as fh:
