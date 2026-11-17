@@ -1,7 +1,7 @@
 {
   "matrix": "TensorLBM validation matrix",
-  "version": "1.1",
-  "updated": "2026-11-12",
+  "version": "1.2",
+  "updated": "2026-11-17",
   "acceptance": {
     "error_tol_pct": 3.0,
     "convergence_span_pct": 3.0,
@@ -84,7 +84,12 @@
         "cmd": "python benchmarks/verified/cavity/re100/run.py",
         "budget_s": 900
       },
-      "notes": "Frozen verified artifact; the matrix re-checks the recorded error and the two-grid span, it does not re-run the 159 s/192 s simulations."
+      "notes": "Frozen verified artifact; the matrix re-checks the recorded error and the two-grid span, it does not re-run the 159 s/192 s simulations.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "cylinder_re100",
@@ -139,7 +144,12 @@
         "cmd": "python benchmarks/verified/cylinder/re100/run.py",
         "budget_s": 1800
       },
-      "notes": "Errors are read from the verified artifact's own bookkeeping (grids.D48/D64 .err_pct/.st_err_pct), which uses the Braza band Cd=1.35+-0.05 and the St band 0.164-0.165 with the band LOWER bound as denominator (St=0.160 -> -2.4%). Against the band midpoint 0.165 the D64 St error would be -3.03%, i.e. marginally outside the 3% gate; that convention sensitivity is recorded here rather than hidden. Cd error is not monotone (-1.53% -> -2.55%) although both levels stay inside the gate."
+      "notes": "Errors are read from the verified artifact's own bookkeeping (grids.D48/D64 .err_pct/.st_err_pct), which uses the Braza band Cd=1.35+-0.05 and the St band 0.164-0.165 with the band LOWER bound as denominator (St=0.160 -> -2.4%). Against the band midpoint 0.165 the D64 St error would be -3.03%, i.e. marginally outside the 3% gate; that convention sensitivity is recorded here rather than hidden. Cd error is not monotone (-1.53% -> -2.55%) although both levels stay inside the gate.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "sphere_re100",
@@ -180,7 +190,12 @@
         "cmd": "python benchmarks/verified/sphere_re100/run.py",
         "budget_s": 7200
       },
-      "notes": "Recorded errors +2.771% / +2.540% (span 0.231%), monotone decreasing by the case README; the machine check uses the frozen cd_by_grid values."
+      "notes": "Recorded errors +2.771% / +2.540% (span 0.231%), monotone decreasing by the case README; the machine check uses the frozen cd_by_grid values.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "correlation_only"
+      }
     },
     {
       "id": "channel_turb_re180",
@@ -221,7 +236,12 @@
         "cmd": "python benchmarks/pending/channel_turb_3d/run.py",
         "budget_s": 36000
       },
-      "notes": "Missing artifact paths are reported as pending-with-reason by the runner, never as passed. This slot exists to keep the negative result visible in the matrix."
+      "notes": "Missing artifact paths are reported as pending-with-reason by the runner, never as passed. This slot exists to keep the negative result visible in the matrix.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "taylor_green_2d",
@@ -262,7 +282,12 @@
         "cmd": "python benchmarks/verified/taylor_green_2d/run.py",
         "budget_s": 300
       },
-      "notes": "Levels are two independent halves of the energy-decay fit (temporal split). Reference = analytic gamma_E = 4 nu k^2, frozen in the artifact as gamma_e_theory; the velocity-rate cross-check (-0.0007%) is recorded in the case README. Two-grid convergence for this slot is carried by case_taylor_green_3d."
+      "notes": "Levels are two independent halves of the energy-decay fit (temporal split). Reference = analytic gamma_E = 4 nu k^2, frozen in the artifact as gamma_e_theory; the velocity-rate cross-check (-0.0007%) is recorded in the case README. Two-grid convergence for this slot is carried by case_taylor_green_3d.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "static_droplet_laplace_ci",
@@ -316,7 +341,12 @@
         "cmd": "python benchmarks/validation_matrix/cases/static_droplet_laplace_ci/run.py",
         "budget_s": 900
       },
-      "notes": "HONEST FAIL of the CI tier, root cause quantified: with the uniform 3% Laplace gate the R=8/12/16 set fails (per-radius sigma deviation 4.689%, fit R^2=0.9961) while the R=12/16/20 set passes (0.822%, R^2=0.999984). R=8 is only two interface widths (W=4 in the SCMP model) and lies below the resolvable radius R >= 3W required for the Laplace law, so the coarse set is outside the model's validity range rather than evidence against it. The two-level span criterion also fails (3.87%) for the same single reason. Next build: gate R=12/16/20 and R=16/20/24, keep R=8/12/16 as a documented non-gated ladder. No threshold was relaxed and no artifact was edited."
+      "notes": "HONEST FAIL of the CI tier, root cause quantified: with the uniform 3% Laplace gate the R=8/12/16 set fails (per-radius sigma deviation 4.689%, fit R^2=0.9961) while the R=12/16/20 set passes (0.822%, R^2=0.999984). R=8 is only two interface widths (W=4 in the SCMP model) and lies below the resolvable radius R >= 3W required for the Laplace law, so the coarse set is outside the model's validity range rather than evidence against it. The two-level span criterion also fails (3.87%) for the same single reason. Next build: gate R=12/16/20 and R=16/20/24, keep R=8/12/16 as a documented non-gated ladder. No threshold was relaxed and no artifact was edited.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "rayleigh_taylor_rt",
@@ -333,7 +363,12 @@
         "cmd": "python benchmarks/pending/rayleigh_taylor/run.py",
         "budget_s": 36000
       },
-      "notes": "No artifact paths are declared: the negative evidence is the documented parameter-surface scan, so the runner reports 'declared failed' with the blocker text (never passed)."
+      "notes": "No artifact paths are declared: the negative evidence is the documented parameter-surface scan, so the runner reports 'declared failed' with the blocker text (never passed).",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "dam_break_ritter_ci",
@@ -396,7 +431,12 @@
         "cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
         "budget_s": 300
       },
-      "notes": "History: with the original first-order global-wave-speed Rusanov flux the CI tier FAILED the profile metric (9.82% / 6.29% at nx=200/400 vs the 5% gate); the gate was NOT relaxed. Root cause was diagnosed as the first-order flux's grid-independent numerical viscosity, and src/tensorlbm/shallow_water.py gained a second-order scheme (minmod MUSCL + local-speed HLL + SSP-RK2), after which the same gated levels give 1.17% / 0.83% (front 0.12% / 0.06%, mass drift <= 2.3e-14%), i.e. ~8x and ~7.6x less profile error than the frozen baseline. The legacy flux stays selectable (--scheme rusanov) and its 9.8248% value is pinned by tests/test_shallow_water_muscl2.py as the improvement baseline."
+      "notes": "History: with the original first-order global-wave-speed Rusanov flux the CI tier FAILED the profile metric (9.82% / 6.29% at nx=200/400 vs the 5% gate); the gate was NOT relaxed. Root cause was diagnosed as the first-order flux's grid-independent numerical viscosity, and src/tensorlbm/shallow_water.py gained a second-order scheme (minmod MUSCL + local-speed HLL + SSP-RK2), after which the same gated levels give 1.17% / 0.83% (front 0.12% / 0.06%, mass drift <= 2.3e-14%), i.e. ~8x and ~7.6x less profile error than the frozen baseline. The legacy flux stays selectable (--scheme rusanov) and its 9.8248% value is pinned by tests/test_shallow_water_muscl2.py as the improvement baseline. The MUSCL/HLL/SSPRK2 producer solves shallow-water equations by finite volumes, not LBM.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "shallow_water_fvm",
+        "claim_scope": "reference_only"
+      }
     },
     {
       "id": "ship_resistance_suboff",
@@ -440,7 +480,12 @@
         "cmd": "python benchmarks/verified/suboff_re1000/run.py",
         "budget_s": 24000
       },
-      "notes": "Pre-registered gate of the case (README): finest tier |err| <= 3% AND the error decreases with resolution. L=48 (-3.17%) is therefore informational and only L=80 (-1.15%) is gated; the monotone requirement is still checked over both levels."
+      "notes": "Pre-registered gate of the case (README): finest tier |err| <= 3% AND the error decreases with resolution. L=48 (-3.17%) is therefore informational and only L=80 (-1.15%) is gated; the monotone requirement is still checked over both levels. The Blasius flat-plate comparison does not validate SUBOFF engineering resistance.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "correlation_only"
+      }
     },
     {
       "id": "ship_wave_michell",
@@ -457,7 +502,12 @@
         "cmd": "python benchmarks/wave_wake_michell/run.py",
         "budget_s": 3600
       },
-      "notes": "Kept pending to make the missing wave-resistance evidence explicit in the matrix; the 3-D cost is the documented blocker."
+      "notes": "Kept pending to make the missing wave-resistance evidence explicit in the matrix; the 3-D cost is the documented blocker.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "analytic_thin_ship",
+        "claim_scope": "reference_only"
+      }
     },
     {
       "id": "cylinder_re100_dfg",
@@ -527,7 +577,12 @@
         "cmd": "python benchmarks/verified/cylinder/re100_dfg/run.py --levels 20 28 40 --steps 14000 20000 27200 --threads 8",
         "budget_s": 5400
       },
-      "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there). Registry schema fix v1.1: metric paths point at the artifact's per_metric.<metric>.err_pct.<D> schema produced by the case's own aggregate() (v1.0 addressed grids.<D>.err_pct.<metric>, which the artifact never contained, so the case judged as 'pending: metric paths unresolved')."
+      "notes": "Anchor = the DFG 2D-2 table; the free-stream Braza anchor of the sibling case cylinder_re100 (Cd=1.35) does NOT apply here (blockage 0.244 doubles the drag). Errors are vs the band midpoint: cd->3.23, st->0.30, cl_amp->1.00, dp->2.48 raw. dp is sampled at the nearest fluid columns (x=0.145/0.255) and extrapolated to the DFG x=0.15/0.25 (the probes lie on the digital cylinder surface); the raw nearest-column value is kept in the artifact for sensitivity. Provenance limit: NNFM vol.48 PDF was not reachable offline, so the bands are transcribed from the two in-repo registers cited in REFERENCE.md (declared there). Registry schema fix v1.1: metric paths point at the artifact's per_metric.<metric>.err_pct.<D> schema produced by the case's own aggregate() (v1.0 addressed grids.<D>.err_pct.<metric>, which the artifact never contained, so the case judged as 'pending: metric paths unresolved').",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     },
     {
       "id": "channel_core_path_ci",
@@ -585,7 +640,12 @@
         "cmd": "python benchmarks/validation_matrix/cases/channel_core_path/run.py",
         "budget_s": 600
       },
-      "notes": "Verified laminar channel anchor for the T3 channel slot: the merged T2 GPU core-path feature (src/tensorlbm/gpu_core_path.py) is re-judged against the analytic Poiseuille parabola at two resolutions. u_max_err 0.36%->0.099% (monotone, span<3%), profile L2 0.49%->0.13%, mass drift <2e-5%. The turbulent Re_tau=180 DNS entry stays a documented honest FAIL (domain too small + insufficient statistics); this laminar case is the CI-runnable verified half of the slot."
+      "notes": "Verified laminar channel anchor for the T3 channel slot: the merged T2 GPU core-path feature (src/tensorlbm/gpu_core_path.py) is re-judged against the analytic Poiseuille parabola at two resolutions. u_max_err 0.36%->0.099% (monotone, span<3%), profile L2 0.49%->0.13%, mass drift <2e-5%. The turbulent Re_tau=180 DNS entry stays a documented honest FAIL (domain too small + insufficient statistics); this laminar case is the CI-runnable verified half of the slot.",
+      "evidence": {
+        "origin": "recorded_solver_run",
+        "method": "lbm",
+        "claim_scope": "benchmark_validation"
+      }
     }
   ]
 }

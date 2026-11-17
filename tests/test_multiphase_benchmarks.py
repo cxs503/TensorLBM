@@ -143,9 +143,9 @@ class TestSpinodaleConfig:
         with pytest.raises(ValueError, match="nx and ny"):
             cfg.validate()
 
-    def test_invalid_G_positive(self) -> None:
-        cfg = SpinodaleConfig(G=1.0)
-        with pytest.raises(ValueError, match="G must be < 0"):
+    def test_invalid_G_negative(self) -> None:
+        cfg = SpinodaleConfig(G=-1.0)
+        with pytest.raises(ValueError, match="G must be > 0"):
             cfg.validate()
 
     def test_invalid_tau(self) -> None:
@@ -169,7 +169,7 @@ class TestSpinodaleConfig:
             cfg = SpinodaleConfig(
                 nx=16,
                 ny=16,
-                G=-4.0,
+                G=5.0,
                 tau=1.0,
                 rho0=0.7,
                 noise_amp=0.05,

@@ -1,0 +1,7 @@
+........................................................................ [ 25%]
+........................................................................ [ 50%]
+......................................s................................. [ 75%]
+........................................................................ [100%]
+============================== collection-ignore ===============================
+(triton absent): 21 files: test_backend_dispatch.py, test_backend_family_parity.py, test_capability_registry.py, test_checkpoint.py, test_codegen_pin.py, test_free_energy_soy_cupy_dropin.py, test_gpu_core_path.py, test_hardware_portability.py, test_hetero_equivalence.py, test_precision_policy.py, test_reporters.py, test_selective_halo_exchange.py, test_torch_fallback.py, test_triton_backend_guards.py, test_triton_fused.py, test_triton_fused_asymmetric.py, test_triton_fused_diff.py, test_triton_kernel_smag_closure.py, test_triton_obstacle_wall_parity.py, test_triton_suboff_mass_reduce.py, test_voxel_accel.py
+287 passed, 1 skipped, 2 warnings in 98.07s (0:01:38)

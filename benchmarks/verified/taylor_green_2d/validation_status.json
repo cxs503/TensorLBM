@@ -4,10 +4,20 @@
   "title": "2-D Taylor-Green vortex decay vs analytic gamma = 2 nu k^2",
   "reference_basis": "analytic",
   "scope": "D2Q9 periodic box; velocity decay rate fitted over two independent halves of the run (temporal split, not a grid refinement).",
-  "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T13:13:00Z",
+  "matrix_version": "1.2",
+  "generated_utc": "2026-11-17T10:53:57Z",
   "artifact": "benchmarks/verified/taylor_green_2d/result.json",
   "repro_cmd": "python benchmarks/verified/taylor_green_2d/run.py",
+  "evidence_admission": {
+    "origin": "recorded_solver_run",
+    "method": "lbm",
+    "claim_scope": "benchmark_validation",
+    "synthetic": false,
+    "lbm_validation_eligible": true,
+    "exclusion_reasons": [],
+    "engineering_validated": false
+  },
+  "lbm_validation_pass": true,
   "references": [
     {
       "id": "tg2d_gamma_e_theory",
@@ -16,7 +26,7 @@
       "formula": null,
       "origin": "analytic Taylor-Green solution (energy decays twice as fast as velocity)",
       "source": "benchmarks/verified/taylor_green_2d/README.md",
-      "source_sha256": "4bc2cdd7501418eea6bf14a3e7c4cdb9d3d75b41c83ef826e8b8c22dbec4cb61",
+      "source_sha256": "a72226a6674dfa93281b8a534afd4246f8269a1bd8afe2a9d8df909ce2807c44",
       "token": "γ_E_theory = 4νk²"
     }
   ],
@@ -95,7 +105,7 @@
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+      "sha256": "3ade9ff759a137452ee172664a4aa11a32a61f9267056d60914698b3b1cc2a00"
     },
     {
       "kind": "references",
@@ -105,7 +115,7 @@
     {
       "kind": "runner",
       "path": "benchmarks/verified/taylor_green_2d/run.py",
-      "sha256": "5e29f6520c5a6a4476a9de64316647e1d606afcd3e7c52c94780caaba9be49f6"
+      "sha256": "e7cd9ea2754af8106bfa8c4e08559f06e09e7890a67ea622e710c743da7e3f41"
     }
   ],
   "notes": "Levels are two independent halves of the energy-decay fit (temporal split). Reference = analytic gamma_E = 4 nu k^2, frozen in the artifact as gamma_e_theory; the velocity-rate cross-check (-0.0007%) is recorded in the case README. Two-grid convergence for this slot is carried by case_taylor_green_3d."

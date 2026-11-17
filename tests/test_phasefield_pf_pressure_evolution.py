@@ -60,33 +60,42 @@ def test_interface_term_has_no_pressure_source_when_static():
     sol = M.PFPressureEvolution(shape=(24, 24), rho_h=10.0, rho_l=1.0)
     phi = sol.tanh_drop((24, 24), 7.0, 4.0)
     nb = _neighbours(phi, ST)
-    grad = M.__dict__["isotropic_gradient"](phi, ST, nb) if "isotropic_gradient" in M.__dict__ else None
+    grad = (
+        M.__dict__["isotropic_gradient"](phi, ST, nb)
+        if "isotropic_gradient" in M.__dict__
+        else None
+    )
     from tensorlbm.phasefield.cac_h_population import isotropic_gradient
+
     grad = isotropic_gradient(phi, ST, nb)
     mu = M.chem_potential(phi, ST, sigma=0.05, width=4.0, nb=nb)
     u = (torch.zeros_like(phi), torch.zeros_like(phi))
     gamma = M.maxwellian(ST, u, 2, dtype=DT, device="cpu")
     # The centred stencil is exactly antisymmetric -> the source is round-off.
-    term_c = M.interface_term(gamma, M.directional_centred(phi, ST, nb), mu, u, grad,
-                              10.0, 1.0, ST)
-    assert float(term_c.sum(0).abs().max()) < 1e-14 * max(
-        1.0, float(term_c.abs().max()))
+    term_c = M.interface_term(gamma, M.directional_centred(phi, ST, nb), mu, u, grad, 10.0, 1.0, ST)
+    assert float(term_c.sum(0).abs().max()) < 1e-14 * max(1.0, float(term_c.abs().max()))
     # The reference's *mixed* (upwind) stencil is not exactly conservative: its
     # weight sum is zero only to second order, so a small O(truncation) pressure
     # source survives (measured ~10% of the term scale at W = 4).  This is an
     # inherited property of the OSS scheme, quantified here so that a future
     # change cannot silently make it worse.
-    term_m = M.interface_term(gamma, M.directional_mixed(phi, ST, nb), mu, u, grad,
-                              10.0, 1.0, ST)
+    term_m = M.interface_term(gamma, M.directional_mixed(phi, ST, nb), mu, u, grad, 10.0, 1.0, ST)
     src = float(term_m.sum(0).abs().max())
     scale = float(term_m.abs().max())
     assert 0.0 < src < 0.2 * scale, (src, scale)
 
 
 def test_mass_conservation_is_exact():
-    sol = M.PFPressureEvolution(shape=(32, 32), rho_h=100.0, rho_l=1.0,
-                                sigma=0.05, width=4.0, mobility=0.05,
-                                viscosity_h=1 / 6, viscosity_l=1 / 6)
+    sol = M.PFPressureEvolution(
+        shape=(32, 32),
+        rho_h=100.0,
+        rho_l=1.0,
+        sigma=0.05,
+        width=4.0,
+        mobility=0.05,
+        viscosity_h=1 / 6,
+        viscosity_l=1 / 6,
+    )
     sol.initialize(sol.tanh_drop((32, 32), 8.0, 4.0))
     sol.run(200)
     assert sol.mass_error() < 1e-11
@@ -95,9 +104,17 @@ def test_mass_conservation_is_exact():
 
 def test_single_phase_control_is_quiescent():
     """phi_h = phi_l -> mu = 0 identically: no interface force, no pressure drift."""
-    sol = M.PFPressureEvolution(shape=(24, 24), rho_h=1.0, rho_l=1.0,
-                                phi_h=0.0, phi_l=0.0, sigma=0.05, width=4.0,
-                                viscosity_h=1 / 6, viscosity_l=1 / 6)
+    sol = M.PFPressureEvolution(
+        shape=(24, 24),
+        rho_h=1.0,
+        rho_l=1.0,
+        phi_h=0.0,
+        phi_l=0.0,
+        sigma=0.05,
+        width=4.0,
+        viscosity_h=1 / 6,
+        viscosity_l=1 / 6,
+    )
     sol.initialize(torch.zeros(24, 24, dtype=DT))
     _, _, grad, mu = sol.kinetics()
     assert float(mu.abs().max()) == 0.0
@@ -111,17 +128,21 @@ def test_single_phase_control_is_quiescent():
 
 def test_taylor_green_recovers_viscosity():
     n, nu = 32, 0.1
-    sol = M.PFPressureEvolution(shape=(n, n), rho_h=1.0, rho_l=1.0,
-                                phi_h=0.0, phi_l=0.0, viscosity_h=nu,
-                                viscosity_l=nu)
+    sol = M.PFPressureEvolution(
+        shape=(n, n), rho_h=1.0, rho_l=1.0, phi_h=0.0, phi_l=0.0, viscosity_h=nu, viscosity_l=nu
+    )
     phi = torch.zeros(n, n, dtype=DT)
     y = torch.arange(n, dtype=DT).view(n, 1).expand(n, n)
     k = 2 * math.pi / n
     u0 = 0.01
     ux, uy = u0 * torch.sin(k * y), torch.zeros_like(y)
     sol.initialize(phi, u0=(ux, uy))
-    sol.f = M.gbar_equilibrium(M.maxwellian(ST, (ux, uy), 2, dtype=DT, device="cpu"),
-                               torch.zeros_like(phi), torch.ones_like(phi), ST)
+    sol.f = M.gbar_equilibrium(
+        M.maxwellian(ST, (ux, uy), 2, dtype=DT, device="cpu"),
+        torch.zeros_like(phi),
+        torch.ones_like(phi),
+        ST,
+    )
     rec = []
     for step in range(1201):
         if step % 100 == 0:
@@ -131,19 +152,26 @@ def test_taylor_green_recovers_viscosity():
     t = torch.tensor([r[0] for r in rec], dtype=DT)
     a = torch.tensor([abs(r[1]) for r in rec], dtype=DT)
     slope = float((torch.log(a[1:]) - torch.log(a[:-1])).mean() / 100.0)
-    nu_fit = -slope / k ** 2
+    nu_fit = -slope / k**2
     assert abs(nu_fit - nu) / nu < 0.05
 
 
 def test_laplace_law_coarse():
     """Small static drop must already show dp = sigma/R within 25%."""
     n, R, W, sigma, nu = 40, 9.0, 4.0, 0.05, 1 / 6
-    sol = M.PFPressureEvolution(shape=(n, n), rho_h=100.0, rho_l=1.0, sigma=sigma,
-                                width=W, mobility=0.05, viscosity_h=nu, viscosity_l=nu)
+    sol = M.PFPressureEvolution(
+        shape=(n, n),
+        rho_h=100.0,
+        rho_l=1.0,
+        sigma=sigma,
+        width=W,
+        mobility=0.05,
+        viscosity_h=nu,
+        viscosity_l=nu,
+    )
     sol.initialize(sol.tanh_drop((n, n), R, W))
     c = 0.5 * (n - 1)
-    y, x = torch.meshgrid(torch.arange(n, dtype=DT), torch.arange(n, dtype=DT),
-                          indexing="ij")
+    y, x = torch.meshgrid(torch.arange(n, dtype=DT), torch.arange(n, dtype=DT), indexing="ij")
     r = torch.sqrt((x - c) ** 2 + (y - c) ** 2)
     r_eff = math.sqrt(float(sol.phi.sum()) / math.pi)
     sol.run(1500)

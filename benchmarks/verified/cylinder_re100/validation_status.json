@@ -4,10 +4,20 @@
   "title": "Circular cylinder Re=100 vs Braza 1986 experiment (Cd, St)",
   "reference_basis": "experimental",
   "scope": "2-D free-stream cylinder with sponge outflow, D=48/64, seeded shedding. Cd and St against the Braza band.",
-  "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T13:13:00Z",
+  "matrix_version": "1.2",
+  "generated_utc": "2026-11-17T10:53:57Z",
   "artifact": "benchmarks/verified/cylinder/re100/result.json",
   "repro_cmd": "python benchmarks/verified/cylinder/re100/run.py",
+  "evidence_admission": {
+    "origin": "recorded_solver_run",
+    "method": "lbm",
+    "claim_scope": "benchmark_validation",
+    "synthetic": false,
+    "lbm_validation_eligible": true,
+    "exclusion_reasons": [],
+    "engineering_validated": false
+  },
+  "lbm_validation_pass": true,
   "references": [
     {
       "id": "cylinder_cd_re100",
@@ -16,7 +26,7 @@
       "formula": null,
       "origin": "Braza, Chassaing & Ha Minh 1986, JFM 165 (experiment Cd=1.35+-0.05)",
       "source": "benchmarks/verified/cylinder/re100/README.md",
-      "source_sha256": "150a774768337487130c86770d88da7c3aac318185771e466afa2ffced472247",
+      "source_sha256": "36294b605e4268ec71dfb4fb047a507b1e36eff9fe80d81daf1c7b5df83c8a0e",
       "token": "Cd=1.35±0.05"
     },
     {
@@ -26,7 +36,7 @@
       "formula": null,
       "origin": "Braza et al. 1986 (St=0.164-0.165 band; 2-D literature 0.164-0.168)",
       "source": "benchmarks/verified/cylinder/re100/README.md",
-      "source_sha256": "150a774768337487130c86770d88da7c3aac318185771e466afa2ffced472247",
+      "source_sha256": "36294b605e4268ec71dfb4fb047a507b1e36eff9fe80d81daf1c7b5df83c8a0e",
       "token": "St≈0.164-0.165"
     }
   ],
@@ -149,18 +159,18 @@
     }
   ],
   "unresolved_metrics": [],
-  "artifact_sha256": "b9a27d4b25dbe5dc115e9b5b212b36f4f9e1f8b10cac534fc11b16b525732b6d",
-  "artifact_bytes": 1282,
+  "artifact_sha256": "12e4923b74eb55072219e782be54753038e82794b303b7389d80fef81f280b7b",
+  "artifact_bytes": 1428,
   "evidence_chain": [
     {
       "kind": "artifact",
       "path": "benchmarks/verified/cylinder/re100/result.json",
-      "sha256": "b9a27d4b25dbe5dc115e9b5b212b36f4f9e1f8b10cac534fc11b16b525732b6d"
+      "sha256": "12e4923b74eb55072219e782be54753038e82794b303b7389d80fef81f280b7b"
     },
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+      "sha256": "3ade9ff759a137452ee172664a4aa11a32a61f9267056d60914698b3b1cc2a00"
     },
     {
       "kind": "references",

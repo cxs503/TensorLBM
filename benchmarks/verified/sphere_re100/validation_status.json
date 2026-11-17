@@ -4,10 +4,22 @@
   "title": "Sphere Re=100 drag vs Schiller-Naumann",
   "reference_basis": "correlation (multi-source audited)",
   "scope": "D3Q19, BFL interpolated smooth wall, per-link momentum ledger; D=40/60.",
-  "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T13:13:00Z",
+  "matrix_version": "1.2",
+  "generated_utc": "2026-11-17T10:53:57Z",
   "artifact": "benchmarks/verified/sphere_re100/result.json",
   "repro_cmd": "python benchmarks/verified/sphere_re100/run.py",
+  "evidence_admission": {
+    "origin": "recorded_solver_run",
+    "method": "lbm",
+    "claim_scope": "correlation_only",
+    "synthetic": false,
+    "lbm_validation_eligible": false,
+    "exclusion_reasons": [
+      "reference_or_correlation_only"
+    ],
+    "engineering_validated": false
+  },
+  "lbm_validation_pass": false,
   "references": [
     {
       "id": "sphere_cd_re100",
@@ -95,7 +107,7 @@
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+      "sha256": "3ade9ff759a137452ee172664a4aa11a32a61f9267056d60914698b3b1cc2a00"
     },
     {
       "kind": "references",

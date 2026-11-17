@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Generate synthetic verification results for figure generation and report.
+"""Generate explicitly synthetic plotting fixtures, never validation evidence.
 
-This creates realistic synthetic data based on DNS references and known LBM
-behavior patterns, enabling figure generation and report writing while the
-actual cluster computation runs.
+Output lives in runs/demo_synthetic_channel. These values are invented for
+rendering tests and must not be admitted as solver or scientific results.
 """
 
 import json
@@ -16,7 +15,10 @@ import numpy as np
 
 def generate_synthetic_profiles(re_tau, ny=65):
     """Generate synthetic channel flow profiles based on DNS + known LBM errors."""
-    from tensorlbm.verification.turbulent_channel.reference_data import get_dns_reference, interpolate_dns
+    from tensorlbm.verification.turbulent_channel.reference_data import (
+        get_dns_reference,
+        interpolate_dns,
+    )
 
     dns_ref = get_dns_reference(re_tau)
 
@@ -79,13 +81,12 @@ def generate_synthetic_profiles(re_tau, ny=65):
 def generate_synthetic_spectrum(nx=128):
     """Generate synthetic energy spectrum with -5/3 inertial range."""
     np.random.seed(123)
-    nk = nx // 2 + 1
     k = np.fft.rfftfreq(nx, d=1.0) * 2 * np.pi
     k = k[1:]  # remove k=0
 
     # -5/3 spectrum with some noise
-    E = k ** (-5.0/3.0) * 1.5
-    E *= (1 + 0.1 * np.random.randn(len(E)))
+    E = k ** (-5.0 / 3.0) * 1.5
+    E *= 1 + 0.1 * np.random.randn(len(E))
     E = np.maximum(E, 1e-10)
 
     return k.tolist(), E.tolist()
@@ -114,9 +115,10 @@ def generate_synthetic_sgs(ny=65, re_tau=180):
     }
 
 
-def main():
-    """Generate synthetic verification results."""
-    output_dir = Path("runs/turbulent_channel_verification")
+def main(output_dir=None):
+    """Generate labelled demo fixtures; return the serializable payload."""
+    started = time.perf_counter()
+    output_dir = Path(output_dir or "runs/demo_synthetic_channel")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results = {}
@@ -127,7 +129,11 @@ def main():
         sgs = generate_synthetic_sgs(re_tau=re_tau)
 
         # DNS comparison
-        from tensorlbm.verification.turbulent_channel.reference_data import get_dns_reference, log_law_error
+        from tensorlbm.verification.turbulent_channel.reference_data import (
+            get_dns_reference,
+            log_law_error,
+        )
+
         dns_ref = get_dns_reference(re_tau)
 
         y_plus = np.array(profiles["y_plus"])
@@ -135,14 +141,21 @@ def main():
         uv_plus = np.array(profiles["uv_plus"])
 
         u_error = np.abs(u_plus - np.interp(y_plus, dns_ref.y_plus, dns_ref.u_plus))
-        u_error_pct = u_error / np.where(np.interp(y_plus, dns_ref.y_plus, dns_ref.u_plus) > 0.1,
-                                         np.interp(y_plus, dns_ref.y_plus, dns_ref.u_plus), 1.0) * 100
+        u_error_pct = (
+            u_error
+            / np.where(
+                np.interp(y_plus, dns_ref.y_plus, dns_ref.u_plus) > 0.1,
+                np.interp(y_plus, dns_ref.y_plus, dns_ref.u_plus),
+                1.0,
+            )
+            * 100
+        )
 
         log_err = log_law_error(y_plus, u_plus)
 
         # Reynolds stress peak
         uv_sim = -uv_plus
-        peak_idx = np.argmax(uv_sim[1:len(uv_sim)//2]) + 1
+        peak_idx = np.argmax(uv_sim[1 : len(uv_sim) // 2]) + 1
         uv_peak_sim = float(uv_sim[peak_idx])
         uv_peak_y_sim = float(y_plus[peak_idx])
 
@@ -167,18 +180,20 @@ def main():
                 "threshold": 5.0,
             },
             "C2_uv_peak_location_lt_10pct": {
-                "pass": abs(uv_peak_y_sim - dns_ref.uv_peak_y_plus) / dns_ref.uv_peak_y_plus * 100 < 10.0,
+                "pass": abs(uv_peak_y_sim - dns_ref.uv_peak_y_plus) / dns_ref.uv_peak_y_plus * 100
+                < 10.0,
                 "value": abs(uv_peak_y_sim - dns_ref.uv_peak_y_plus) / dns_ref.uv_peak_y_plus * 100,
                 "threshold": 10.0,
             },
             "C3_uv_peak_amplitude_lt_15pct": {
-                "pass": abs(uv_peak_sim - dns_ref.uv_peak_value) / dns_ref.uv_peak_value * 100 < 15.0,
+                "pass": abs(uv_peak_sim - dns_ref.uv_peak_value) / dns_ref.uv_peak_value * 100
+                < 15.0,
                 "value": abs(uv_peak_sim - dns_ref.uv_peak_value) / dns_ref.uv_peak_value * 100,
                 "threshold": 15.0,
             },
             "C4_spectrum_slope_error_lt_0.1": {
-                "pass": abs(slope - (-5.0/3.0)) < 0.1,
-                "value": abs(slope - (-5.0/3.0)),
+                "pass": abs(slope - (-5.0 / 3.0)) < 0.1,
+                "value": abs(slope - (-5.0 / 3.0)),
                 "threshold": 0.1,
             },
             "C5_spectrum_r2_gt_0.95": {
@@ -197,7 +212,9 @@ def main():
         results[f"ReTau{int(re_tau)}"] = {
             "re_tau": re_tau,
             "config": {
-                "nx": 128, "ny": 65, "nz": 64,
+                "nx": 128,
+                "ny": 65,
+                "nz": 64,
                 "re_tau": re_tau,
                 "u_tau": 0.05,
                 "smagorinsky_cs": 0.1,
@@ -207,7 +224,7 @@ def main():
                 "steps": 50000,
                 "warmup_steps": 15000,
                 "n_samples": 7000,
-                "elapsed_s": 3600.0,
+                "elapsed_s": None,  # no solver was executed
             },
             "profiles": profiles,
             "spectrum": {
@@ -232,11 +249,15 @@ def main():
                     "peak_dns": dns_ref.uv_peak_value,
                     "peak_y_sim": uv_peak_y_sim,
                     "peak_y_dns": dns_ref.uv_peak_y_plus,
-                    "peak_value_error_pct": abs(uv_peak_sim - dns_ref.uv_peak_value) / dns_ref.uv_peak_value * 100,
-                    "peak_location_error_pct": abs(uv_peak_y_sim - dns_ref.uv_peak_y_plus) / dns_ref.uv_peak_y_plus * 100,
+                    "peak_value_error_pct": abs(uv_peak_sim - dns_ref.uv_peak_value)
+                    / dns_ref.uv_peak_value
+                    * 100,
+                    "peak_location_error_pct": abs(uv_peak_y_sim - dns_ref.uv_peak_y_plus)
+                    / dns_ref.uv_peak_y_plus
+                    * 100,
                 },
                 "log_law": log_err,
-                "centerline_u_plus": float(u_plus[len(u_plus)//2]),
+                "centerline_u_plus": float(u_plus[len(u_plus) // 2]),
                 "dns_centerline_u_plus": dns_ref.u_centerline_plus,
             },
             "acceptance": acceptance,
@@ -298,10 +319,13 @@ def main():
     n_total = len(all_acceptance)
 
     final_result = {
-        "campaign": "P127W2-N04: Turbulent Channel Flow Verification",
+        "campaign": "SYNTHETIC plotting demo — not solver validation",
+        "synthetic": True,
+        "evidence_type": "synthetic_fixture",
+        "usable_for_physical_validation": False,
         "results": results,
         "grid_convergence": gci_result,
-        "acceptance_summary": {
+        "demo_criteria_summary": {
             "all_pass": n_pass == n_total,
             "n_pass": n_pass,
             "n_total": n_total,
@@ -309,12 +333,13 @@ def main():
         },
         "metadata": {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "elapsed_seconds": 10800,
+            "fixture_generation_seconds": time.perf_counter() - started,
+            "solver_steps_executed": 0,
             "device": "cpu",
         },
     }
 
-    json_path = output_dir / "verification_results.json"
+    json_path = output_dir / "synthetic_plot_fixture.json"
     with open(json_path, "w") as f:
         json.dump(final_result, f, indent=2, default=str)
     print(f"Results saved to: {json_path}")

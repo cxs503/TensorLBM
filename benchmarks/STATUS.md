@@ -1,8 +1,11 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **81** | pending: **56**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
+verified: **91** | pending: **57**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
 
-Acceptance: every checkpoint within 3% AND mesh-converged (two grids, span <=3%).
+These are **directory inventory counts**, not counts of scientifically validated LBM capabilities.
+See [the validation matrix](validation_matrix/STATUS_MATRIX.md) for numeric verdicts and separately admitted LBM benchmark passes. Synthetic, reference-only and correlation-only results cannot supply those passes.
+
+Legacy table criterion: checkpoints within 3% and two-grid span <=3%. A two-grid span is not proof of monotone convergence or engineering validity; use each benchmark's declared uncertainty and acceptance criteria.
 
 **Validation matrix v1** (nine-case lineage, machine-checked gates, one-command
 reproduction): see [`validation_matrix/`](validation_matrix/README.md) and the
@@ -99,18 +102,20 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 <!-- STATUS_LEDGER:BEGIN -->
 ### verified 机器台账（自动生成，勿手改）
 
-verified 目录 **81** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=81 pending=56
+verified 目录 **91** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=91 pending=57
 
-人工表未覆盖 **45** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
+人工表未覆盖 **55** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
 
 | verified case | in human table |
 |---|---|
 | `acoustics` | yes |
 | `aircraft_icing_naca0012_rime` | yes |
+| `brinkman_channel` | **no** |
 | `cavity` | yes |
 | `cavity_3d_full` | yes |
 | `cavity_natural_convection` | **no** |
 | `cavity_re100` | **no** |
+| `channel_core_path_ci` | **no** |
 | `compressible_shock_family` | **no** |
 | `couette_2d` | yes |
 | `couette_3d` | **no** |
@@ -118,11 +123,16 @@ verified 目录 **81** · STATUS.md 人工表已写 note 的 **36** · advertise
 | `cylinder` | yes |
 | `cylinder_3d` | yes |
 | `cylinder_re100` | **no** |
+| `dam_break_ritter_ci` | **no** |
 | `droplet_oscillation` | yes |
+| `electroosmosis` | **no** |
 | `floating_body_free_decay` | yes |
 | `forchheimer_weak_inertia` | **no** |
+| `fused_push_pull_aa_pattern` | **no** |
 | `fwh_acoustics` | **no** |
 | `fwh_rotating` | **no** |
+| `graetz_tube` | **no** |
+| `inamuro_wetnode_xval` | **no** |
 | `kovasznay_2d` | yes |
 | `laplace_cac_phasefield` | **no** |
 | `laplace_droplet` | yes |
@@ -164,6 +174,8 @@ verified 目录 **81** · STATUS.md 人工表已写 note 的 **36** · advertise
 | `sphere_re200` | yes |
 | `square_cylinder` | yes |
 | `square_cylinder_re200` | **no** |
+| `squeeze_film_ns` | **no** |
+| `staircase_wall_offset` | **no** |
 | `startup_poiseuille` | yes |
 | `static_droplet_laplace_ci` | **no** |
 | `stefan_phase_change` | yes |
@@ -180,6 +192,7 @@ verified 目录 **81** · STATUS.md 人工表已写 note 的 **36** · advertise
 | `taylor_couette` | yes |
 | `taylor_green_2d` | yes |
 | `taylor_green_3d` | yes |
+| `tgv2d_analytic_l2_xval` | **no** |
 | `thermal_cavity` | yes |
 | `thermal_cavity_3d` | **no** |
 | `wave_tank` | **no** |

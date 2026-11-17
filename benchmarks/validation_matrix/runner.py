@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
-import hashlib
 import json
 import subprocess
 import sys
@@ -44,6 +43,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from criteria import STATUSES, judge_case  # noqa: E402
+from evidence_admission import admit_evidence  # noqa: E402
 from reference_audit import audit_all, load_references, sha256_file  # noqa: E402
 
 
@@ -69,8 +69,9 @@ def find_case(matrix: dict, case_id: str) -> dict:
     for case in matrix["cases"]:
         if case["id"] == case_id:
             return case
-    raise MatrixError(f"unknown case id {case_id!r}; known: "
-                      + ", ".join(c["id"] for c in matrix["cases"]))
+    raise MatrixError(
+        f"unknown case id {case_id!r}; known: " + ", ".join(c["id"] for c in matrix["cases"])
+    )
 
 
 def _utcnow() -> str:
@@ -80,16 +81,21 @@ def _utcnow() -> str:
 def _base_evidence(case: dict) -> list[dict]:
     """Evidence chain that exists even when the case produced no artifact."""
     chain = [
-        {"kind": "matrix", "path": str(MATRIX.relative_to(REPO_ROOT)),
-         "sha256": sha256_file(MATRIX)},
-        {"kind": "references", "path": str(REFS.relative_to(REPO_ROOT)),
-         "sha256": sha256_file(REFS)},
+        {
+            "kind": "matrix",
+            "path": str(MATRIX.relative_to(REPO_ROOT)),
+            "sha256": sha256_file(MATRIX),
+        },
+        {
+            "kind": "references",
+            "path": str(REFS.relative_to(REPO_ROOT)),
+            "sha256": sha256_file(REFS),
+        },
     ]
     for token in ((case.get("repro") or {}).get("cmd") or "").split():
         candidate = REPO_ROOT / token
         if token.endswith(".py") and candidate.exists():
-            chain.append({"kind": "runner", "path": token,
-                          "sha256": sha256_file(candidate)})
+            chain.append({"kind": "runner", "path": token, "sha256": sha256_file(candidate)})
     return chain
 
 
@@ -110,6 +116,8 @@ def evaluate_case(case: dict, references: dict | None = None) -> dict:
         "generated_utc": _utcnow(),
         "artifact": artifact_rel,
         "repro_cmd": (case.get("repro") or {}).get("cmd"),
+        "evidence_admission": admit_evidence(case),
+        "lbm_validation_pass": False,
     }
 
     for ref_id in case.get("refs", []):
@@ -140,8 +148,11 @@ def evaluate_case(case: dict, references: dict | None = None) -> dict:
                 "status": "pending",
                 "machine_pass": False,
                 "reason": f"no artifact yet: {artifact_rel or '(none declared)'}"
-                + (" — rerun `runner.py run --case " + case["id"] + "`" if artifact_rel else
-                   " — " + str(case.get("blocker", "no machine-checkable artifact")[:200])),
+                + (
+                    " — rerun `runner.py run --case " + case["id"] + "`"
+                    if artifact_rel
+                    else " — " + str(case.get("blocker", "no machine-checkable artifact")[:200])
+                ),
                 "blocker": case.get("blocker"),
                 "metrics": [],
                 "convergence": [],
@@ -158,6 +169,7 @@ def evaluate_case(case: dict, references: dict | None = None) -> dict:
         return result
 
     payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    result["evidence_admission"] = admit_evidence(case, payload)
     metric_values: dict[str, list[float]] = {}
     resolved = {}
     for spec in metric_specs:
@@ -193,9 +205,8 @@ def evaluate_case(case: dict, references: dict | None = None) -> dict:
             )
         else:
             result["status"] = "pending"
-            result["reason"] = (
-                "artifact present but metric paths unresolved: "
-                + ", ".join(result["unresolved_metrics"])
+            result["reason"] = "artifact present but metric paths unresolved: " + ", ".join(
+                result["unresolved_metrics"]
             )
 
     result["artifact_sha256"] = sha256_file(artifact_path)
@@ -205,6 +216,15 @@ def evaluate_case(case: dict, references: dict | None = None) -> dict:
     ] + _base_evidence(case)
     if case.get("notes"):
         result["notes"] = case["notes"]
+    if result["evidence_admission"]["synthetic"]:
+        result.update(
+            status="failed",
+            machine_pass=False,
+            reason="synthetic/demo data cannot satisfy a physical validation gate",
+        )
+    result["lbm_validation_pass"] = (
+        result["machine_pass"] and result["evidence_admission"]["lbm_validation_eligible"]
+    )
     return result
 
 
@@ -214,9 +234,7 @@ def run_repro(case: dict) -> dict:
     if not cmd:
         raise MatrixError(f"case {case['id']} declares no repro command")
     started = _dt.datetime.now(_dt.timezone.utc)
-    proc = subprocess.run(
-        cmd, shell=True, cwd=REPO_ROOT, capture_output=True, text=True
-    )
+    proc = subprocess.run(cmd, shell=True, cwd=REPO_ROOT, capture_output=True, text=True)
     return {
         "cmd": cmd,
         "returncode": proc.returncode,
@@ -252,14 +270,9 @@ def _key_metric_cell(metrics: list[dict]) -> str:
     """
     unresolved = [m["metric"] for m in metrics if m.get("missing")]
     unresolved += [
-        f"{m['metric']}@{lvl}"
-        for m in metrics
-        for lvl in (m.get("unresolved_levels") or [])
+        f"{m['metric']}@{lvl}" for m in metrics for lvl in (m.get("unresolved_levels") or [])
     ]
-    gated = [
-        m for m in metrics
-        if m.get("max_abs_err_pct_gated") is not None
-    ]
+    gated = [m for m in metrics if m.get("max_abs_err_pct_gated") is not None]
     if not gated:
         if unresolved:
             return "unresolved: " + ", ".join(unresolved[:3])
@@ -295,6 +308,9 @@ def render_table(results: list[dict]) -> str:
         f"**passed {counts['passed']} / failed {counts['failed']} / "
         f"pending {counts['pending']}**",
         "",
+        f"LBM benchmark passes admitted by method/scope: **{sum(bool(r.get('lbm_validation_pass')) for r in results)}**. "
+        "Numeric passes for references/correlations are not complete LBM or engineering validation.",
+        "",
         "Gate: every metric |err| <= its tolerance at every **gated** level AND the level",
         "series converges (span <= 3%, monotone where >= 3 levels exist). A level declared",
         "informational (`tol_pct_by_level: null`) is reported as `info` and never sets the",
@@ -320,8 +336,20 @@ def render_table(results: list[dict]) -> str:
             conv = "; ".join(convs) or "—"
         ev = r.get("artifact") or (r.get("repro_cmd") or "—")
         lines.append(
-            f"| {i} | {r['slot']} | `{r['case']}` | **{r['status']}** | {worst} | "
-            f"{conv} | `{ev}` |"
+            f"| {i} | {r['slot']} | `{r['case']}` | **{r['status']}** | {worst} | {conv} | `{ev}` |"
+        )
+    lines += [
+        "",
+        "## Evidence scope (separate from numeric verdict)",
+        "",
+        "| case | method | claim scope | admitted LBM pass |",
+        "|------|--------|-------------|-------------------|",
+    ]
+    for r in results:
+        admission = r.get("evidence_admission", {})
+        lines.append(
+            f"| `{r['case']}` | {admission.get('method', 'unclassified')} | "
+            f"{admission.get('claim_scope', 'unclassified')} | {bool(r.get('lbm_validation_pass'))} |"
         )
     lines += ["", "## Root causes / blockers", ""]
     for r in results:
@@ -351,8 +379,7 @@ def cmd_list(args) -> int:
     matrix = load_matrix()
     for case in matrix["cases"]:
         declared = case.get("declared_status", "machine")
-        print(f"{case['id']:<28} slot={case['slot']:<15} declared={declared:<8} "
-              f"{case['title']}")
+        print(f"{case['id']:<28} slot={case['slot']:<15} declared={declared:<8} {case['title']}")
     return 0
 
 
@@ -378,8 +405,11 @@ def cmd_run(args) -> int:
     if args.case:
         cases = [find_case(matrix, args.case)]
     elif args.tier == "ci":
-        cases = [c for c in matrix["cases"] if "ci" in c["id"] or "ci" in (
-            c.get("repro") or {}).get("cmd", "")]
+        cases = [
+            c
+            for c in matrix["cases"]
+            if "ci" in c["id"] or "ci" in (c.get("repro") or {}).get("cmd", "")
+        ]
     else:
         cases = matrix["cases"]
 
@@ -418,9 +448,14 @@ def _record(case: dict, run: dict | None, result: dict) -> Path | None:
     import runledger
 
     if run is None:
-        run = {"cmd": (case.get("repro") or {}).get("cmd"), "returncode": None,
-               "elapsed_s": 0.0, "stdout": "", "stderr": "",
-               "note": "judged frozen artifact without execution (--no-exec)"}
+        run = {
+            "cmd": (case.get("repro") or {}).get("cmd"),
+            "returncode": None,
+            "elapsed_s": 0.0,
+            "stdout": "",
+            "stderr": "",
+            "note": "judged frozen artifact without execution (--no-exec)",
+        }
     return runledger.record_run(case, run, result)
 
 
@@ -440,8 +475,9 @@ def cmd_status(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = ap.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="list the matrix cases").set_defaults(func=cmd_list)
@@ -451,18 +487,28 @@ def main(argv: list[str] | None = None) -> int:
     p_run = sub.add_parser("run", help="execute a case and judge it")
     p_run.add_argument("--case")
     p_run.add_argument("--tier", choices=["ci", "all"], default="all")
-    p_run.add_argument("--no-exec", action="store_true",
-                       help="skip the repro command and judge the existing artifact")
-    p_run.add_argument("--strict", action="store_true",
-                       help="exit non-zero on a `failed` verdict (default: only on "
-                            "execution failures; honest FAILs stay recorded)")
-    p_run.add_argument("--no-record", action="store_true",
-                       help="do not append the run to artifacts/validation_matrix/runs/")
+    p_run.add_argument(
+        "--no-exec",
+        action="store_true",
+        help="skip the repro command and judge the existing artifact",
+    )
+    p_run.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit non-zero on a `failed` verdict (default: only on "
+        "execution failures; honest FAILs stay recorded)",
+    )
+    p_run.add_argument(
+        "--no-record",
+        action="store_true",
+        help="do not append the run to artifacts/validation_matrix/runs/",
+    )
     p_run.set_defaults(func=cmd_run)
 
     p_st = sub.add_parser("status", help="render the three-level status table")
-    p_st.add_argument("--write", action="store_true",
-                      help="write STATUS_MATRIX.md and the per-case status files")
+    p_st.add_argument(
+        "--write", action="store_true", help="write STATUS_MATRIX.md and the per-case status files"
+    )
     p_st.set_defaults(func=cmd_status)
 
     args = ap.parse_args(argv)

@@ -528,7 +528,7 @@ class SpinodaleConfig:
     ----------
     nx, ny:          Domain size (periodic, no walls).
     G:               SC self-coupling constant (> 0 for phase separation,
-                    library convention; classic −4.0 is exactly critical).
+                    library convention; +4.0 is critical, default +5.0 is supercritical).
     tau:             Relaxation time (ν = cs²(τ − ½)).
     rho0:            Mean initial density.
     noise_amp:       Amplitude of the initial uniform-random density noise.
@@ -538,6 +538,7 @@ class SpinodaleConfig:
     output_root:     Root directory for output files.
     run_name:        Optional run identifier.
     device:          PyTorch device string.
+    dtype:           float64 (reference default) or float32 (explicit fast path).
     overwrite:       Overwrite existing run directory if *True*.
     """
 
@@ -553,6 +554,7 @@ class SpinodaleConfig:
     output_root: Path = Path("outputs")
     run_name: str | None = None
     device: str = "cpu"
+    dtype: str = "float64"
     overwrite: bool = False
 
     def __post_init__(self) -> None:
@@ -564,13 +566,19 @@ class SpinodaleConfig:
         if self.nx < 10 or self.ny < 10:
             msg = "nx and ny must be ≥ 10"
             raise ValueError(msg)
-        if self.G >= 0:
-            msg = "G must be < 0 for SCMP phase separation (attractive interaction)"
+        if not math.isfinite(self.G) or self.G <= 0:
+            msg = "G must be > 0 for SCMP attraction in the x-c library convention"
             raise ValueError(msg)
-        if self.tau <= 0.5:
+        if self.dtype not in ("float32", "float64"):
+            raise ValueError("dtype must be float32 or float64")
+        if self.n_steps < 1 or self.output_interval < 1:
+            raise ValueError("n_steps and output_interval must be positive")
+        if not math.isfinite(self.tau) or self.tau <= 0.5:
             msg = "tau must be > 0.5"
             raise ValueError(msg)
-        if self.rho0 <= 0:
+        if not math.isfinite(self.noise_amp) or self.noise_amp < 0:
+            raise ValueError("noise_amp must be finite and nonnegative")
+        if not math.isfinite(self.rho0) or self.rho0 <= 0:
             msg = "rho0 must be positive"
             raise ValueError(msg)
 
@@ -602,17 +610,18 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
     """
     config.validate()
     device = resolve_device(config.device)
+    dtype = getattr(torch, config.dtype)
     run_dir = prepare_run_dir(
         config.output_root, "spinodal", config.resolved_run_name(), config.overwrite
     )
 
     ny, nx = config.ny, config.nx
     torch.manual_seed(config.seed)
-    rho0 = torch.full((ny, nx), config.rho0, device=device)
-    noise = (torch.rand((ny, nx), device=device) - 0.5) * 2.0 * config.noise_amp
+    rho0 = torch.full((ny, nx), config.rho0, device=device, dtype=dtype)
+    noise = (torch.rand((ny, nx), device=device, dtype=dtype) - 0.5) * 2.0 * config.noise_amp
     rho = (rho0 + noise).clamp(min=0.01)
 
-    zero = torch.zeros((ny, nx), device=device)
+    zero = torch.zeros((ny, nx), device=device, dtype=dtype)
     f = equilibrium(rho, zero, zero)
     initial_mass = float(rho.sum().item())
 
@@ -626,6 +635,8 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
     for step in range(1, config.n_steps + 1):
         f = collide_sc_single_component(f, G=config.G, tau=config.tau, psi_fn=psi_exp)
         f = stream(f)
+        if not torch.isfinite(f).all():
+            raise FloatingPointError(f"nonfinite spinodal state at step {step}")
 
         if step % config.output_interval == 0 or step == config.n_steps:
             rho_cur, _, _ = macroscopic(f)
@@ -652,7 +663,9 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
     rho_liquid = float(rho_final.max().item())
     rho_gas = float(rho_final.min().item())
     density_ratio = rho_liquid / max(rho_gas, 1e-12)
-    phase_separated = density_ratio > 2.0  # heuristic: ratio > 2 → phase separation
+    phase_separated = (
+        rho_gas > 0.0 and density_ratio > 2.0
+    )  # heuristic: ratio > 2 → phase separation
 
     metadata: dict[str, object] = {
         "benchmark": "spinodal_decomposition",
@@ -663,7 +676,7 @@ def run_spinodal_decomposition(config: SpinodaleConfig) -> dict[str, object]:
         "phase_separated": phase_separated,
         "initial_mass": round(initial_mass, 8),
         "final_mass": round(final_mass, 8),
-        "relative_mass_drift": round(relative_mass_drift, 10),
+        "relative_mass_drift": relative_mass_drift,
         "diagnostics": diagnostics,
         "note": (
             "SCMP (Shan-Chen single-component) spinodal decomposition. "
@@ -732,9 +745,7 @@ def run_binary_equilibrium_pressure_benchmark(
 
     name = run_name or f"planar_n{nx}x{ny}_steps{steps}_xi{'-'.join(str(r) for r in resolutions)}"
     run_dir = prepare_run_dir(Path(output_root), "binary_equilibrium_pressure", name, overwrite)
-    report = equilibrium_pressure_report(
-        resolutions=tuple(resolutions), nx=nx, ny=ny, steps=steps
-    )
+    report = equilibrium_pressure_report(resolutions=tuple(resolutions), nx=nx, ny=ny, steps=steps)
     (run_dir / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True))
     return {"run_dir": str(run_dir), "report": report}
 
@@ -791,9 +802,7 @@ def run_free_energy_young_laplace_benchmark(
     return {
         "run_dir": str(run_dir),
         "verdict": report["verdict"],
-        "worst_abs_rel_error_sigma_capillary": report[
-            "worst_abs_rel_error_sigma_capillary"
-        ],
+        "worst_abs_rel_error_sigma_capillary": report["worst_abs_rel_error_sigma_capillary"],
         "case_ids": report["case_ids"],
     }
 
@@ -1238,6 +1247,7 @@ class Spinodal3DConfig:
     output_root: Path = Path("outputs")
     run_name: str | None = None
     device: str = "cpu"
+    dtype: str = "float64"
     overwrite: bool = False
 
     def __post_init__(self) -> None:
@@ -1248,13 +1258,19 @@ class Spinodal3DConfig:
         if self.nx < 12 or self.ny < 12 or self.nz < 12:
             msg = "nx, ny and nz must be ≥ 12"
             raise ValueError(msg)
-        if self.G >= 0:
-            msg = "G must be < 0 for SCMP phase separation (attractive interaction)"
+        if not math.isfinite(self.G) or self.G <= 0:
+            msg = "G must be > 0 for SCMP attraction in the x-c library convention"
             raise ValueError(msg)
-        if self.tau <= 0.5:
+        if self.dtype not in ("float32", "float64"):
+            raise ValueError("dtype must be float32 or float64")
+        if self.n_steps < 1 or self.output_interval < 1:
+            raise ValueError("n_steps and output_interval must be positive")
+        if not math.isfinite(self.tau) or self.tau <= 0.5:
             msg = "tau must be > 0.5"
             raise ValueError(msg)
-        if self.rho0 <= 0:
+        if not math.isfinite(self.noise_amp) or self.noise_amp < 0:
+            raise ValueError("noise_amp must be finite and nonnegative")
+        if not math.isfinite(self.rho0) or self.rho0 <= 0:
             msg = "rho0 must be positive"
             raise ValueError(msg)
 
@@ -1271,6 +1287,7 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
     """Run 3-D spinodal decomposition (SCMP) benchmark on D3Q19."""
     config.validate()
     device = resolve_device(config.device)
+    dtype = getattr(torch, config.dtype)
     run_dir = prepare_run_dir(
         config.output_root,
         "spinodal_3d",
@@ -1279,14 +1296,14 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
     )
 
     torch.manual_seed(config.seed)
-    rho0 = torch.full((config.nz, config.ny, config.nx), config.rho0, device=device)
+    rho0 = torch.full((config.nz, config.ny, config.nx), config.rho0, device=device, dtype=dtype)
     noise = (
-        (torch.rand((config.nz, config.ny, config.nx), device=device) - 0.5)
+        (torch.rand((config.nz, config.ny, config.nx), device=device, dtype=dtype) - 0.5)
         * 2.0
         * config.noise_amp
     )
     rho = (rho0 + noise).clamp(min=0.01)
-    zero = torch.zeros((config.nz, config.ny, config.nx), device=device)
+    zero = torch.zeros((config.nz, config.ny, config.nx), device=device, dtype=dtype)
     f = equilibrium3d(rho, zero, zero, zero)
     initial_mass = float(rho.sum().item())
     diagnostics: list[dict[str, object]] = []
@@ -1299,6 +1316,8 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
             psi_fn=psi_exp,
         )
         f = stream3d(f)
+        if not torch.isfinite(f).all():
+            raise FloatingPointError(f"nonfinite spinodal state at step {step}")
         if step % config.output_interval == 0 or step == config.n_steps:
             rho_cur, _, _, _ = macroscopic3d(f)
             rho_max = float(rho_cur.max().item())
@@ -1320,7 +1339,7 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
     rho_liquid = float(rho_final.max().item())
     rho_gas = float(rho_final.min().item())
     density_ratio = rho_liquid / max(rho_gas, 1e-12)
-    phase_separated = density_ratio > 2.0
+    phase_separated = rho_gas > 0.0 and density_ratio > 2.0
 
     metadata: dict[str, object] = {
         "benchmark": "spinodal_decomposition_3d",
@@ -1331,7 +1350,7 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
         "phase_separated": phase_separated,
         "initial_mass": round(initial_mass, 8),
         "final_mass": round(final_mass, 8),
-        "relative_mass_drift": round(relative_mass_drift, 10),
+        "relative_mass_drift": relative_mass_drift,
         "diagnostics": diagnostics,
         "note": "3D SCMP spinodal decomposition benchmark on D3Q19.",
     }

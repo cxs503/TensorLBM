@@ -34,6 +34,6 @@ matrix = capability_matrix()  # audited component evidence only
 
 `advanced_collision_contract` 已证明 D3Q19 与 D3Q27 的 MRT 内核可执行；但是 R1 只将前述 D3Q19 完整组合标为 `supported`。D3Q27/MRT 仅有组件级证据，缺少该完整平台组合证据，故返回 `withheld`。
 
-CM/cascaded 和 KBC/entropic KBC 均遵循 `advanced_collision_contract` 的显式 withholding：不能被 legacy 函数名提升为可用能力。壁面函数、AMR、湍流、多相、IBM/动态几何、不同边界或输出组合同样不会因为仓库中存在模块而被自动拼接；对**输入 schema 中已知但尚未完整验证**的值，R1 返回 `withheld` 和 `WITHHELD_UNVERIFIED_COMPOSITION` 原因。所有字段（包括 `outputs` 列表的每个元素）中**未知**的值都在组合证据评估之前返回 `not_supported`，并给出 `UNKNOWN_VALUE` 及对应 `field`。
+CM/cascaded 和 KBC/entropic KBC 的真实内核已由 `advanced_collision_contract` 注册，组件层为 `component_contract`，不再误报 `unimplemented`；完整组合仍为 `withheld / no_composition_evidence`。KBC 衰减率验证仍未通过，不能从内核可调用性推断科学验证通过；legacy 同名近似函数也不作为内核证据。壁面函数、AMR、湍流、多相、IBM/动态几何、不同边界或输出组合同样不会因为仓库中存在模块而被自动拼接；对**输入 schema 中已知但尚未完整验证**的值，R1 返回 `withheld` 和 `WITHHELD_UNVERIFIED_COMPOSITION` 原因。所有字段（包括 `outputs` 列表的每个元素）中**未知**的值都在组合证据评估之前返回 `not_supported`，并给出 `UNKNOWN_VALUE` 及对应 `field`。
 
 后续壁面函数、AMR、组合验证及精度推荐应先新增完整组合的可复现实证和测试，再收窄/升级此注册表；不能仅通过模块存在性修改状态。

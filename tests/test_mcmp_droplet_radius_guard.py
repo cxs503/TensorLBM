@@ -59,8 +59,9 @@ def test_synthetic_droplet_radius_still_measured() -> None:
     """The guard must not disturb the well-resolved measurement path."""
     n, radius_true, width = 96, 16.0, 2.0
     c = n // 2
-    y, x = torch.meshgrid(torch.arange(n, dtype=torch.float32),
-                          torch.arange(n, dtype=torch.float32), indexing="ij")
+    y, x = torch.meshgrid(
+        torch.arange(n, dtype=torch.float32), torch.arange(n, dtype=torch.float32), indexing="ij"
+    )
     r = torch.sqrt((x - c) ** 2 + (y - c) ** 2)
     liq, gas = 0.95, 0.14
     field = gas + (liq - gas) * 0.5 * (1.0 - torch.tanh((r - radius_true) / width))

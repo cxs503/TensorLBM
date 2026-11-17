@@ -4,10 +4,23 @@
   "title": "Ritter 1892 dam-break self-similarity (CI tier)",
   "reference_basis": "analytic",
   "scope": "1-D shallow-water finite-volume dam break onto a dry bed, nx=200/400, t_end=5 sqrt(h0/g); second-order MUSCL(minmod)+local-HLL+SSP-RK2 scheme. Metrics: front law, mass closure, depth-profile L2 error. Not covered: 3-D LBM free-surface dam break (tracked separately).",
-  "matrix_version": "1.1",
-  "generated_utc": "2026-11-13T13:13:00Z",
+  "matrix_version": "1.2",
+  "generated_utc": "2026-11-17T10:53:57Z",
   "artifact": "benchmarks/validation_matrix/cases/dam_break_ritter_ci/result.json",
   "repro_cmd": "python benchmarks/validation_matrix/cases/dam_break_ritter_ci/run.py",
+  "evidence_admission": {
+    "origin": "recorded_solver_run",
+    "method": "shallow_water_fvm",
+    "claim_scope": "reference_only",
+    "synthetic": false,
+    "lbm_validation_eligible": false,
+    "exclusion_reasons": [
+      "not_lbm_solver_evidence",
+      "reference_or_correlation_only"
+    ],
+    "engineering_validated": false
+  },
+  "lbm_validation_pass": false,
   "references": [
     {
       "id": "ritter_front_law",
@@ -191,7 +204,7 @@
     {
       "kind": "matrix",
       "path": "benchmarks/validation_matrix/matrix.json",
-      "sha256": "65bcd3370e827546121266f6a11e60c5ee011e5a56496b578bb8411eaa07f838"
+      "sha256": "3ade9ff759a137452ee172664a4aa11a32a61f9267056d60914698b3b1cc2a00"
     },
     {
       "kind": "references",
@@ -204,5 +217,5 @@
       "sha256": "d8630ab06d32bfc52f5b4fc89bb4592fa6a2a742455ef9ee808df39e1648f51f"
     }
   ],
-  "notes": "History: with the original first-order global-wave-speed Rusanov flux the CI tier FAILED the profile metric (9.82% / 6.29% at nx=200/400 vs the 5% gate); the gate was NOT relaxed. Root cause was diagnosed as the first-order flux's grid-independent numerical viscosity, and src/tensorlbm/shallow_water.py gained a second-order scheme (minmod MUSCL + local-speed HLL + SSP-RK2), after which the same gated levels give 1.17% / 0.83% (front 0.12% / 0.06%, mass drift <= 2.3e-14%), i.e. ~8x and ~7.6x less profile error than the frozen baseline. The legacy flux stays selectable (--scheme rusanov) and its 9.8248% value is pinned by tests/test_shallow_water_muscl2.py as the improvement baseline."
+  "notes": "History: with the original first-order global-wave-speed Rusanov flux the CI tier FAILED the profile metric (9.82% / 6.29% at nx=200/400 vs the 5% gate); the gate was NOT relaxed. Root cause was diagnosed as the first-order flux's grid-independent numerical viscosity, and src/tensorlbm/shallow_water.py gained a second-order scheme (minmod MUSCL + local-speed HLL + SSP-RK2), after which the same gated levels give 1.17% / 0.83% (front 0.12% / 0.06%, mass drift <= 2.3e-14%), i.e. ~8x and ~7.6x less profile error than the frozen baseline. The legacy flux stays selectable (--scheme rusanov) and its 9.8248% value is pinned by tests/test_shallow_water_muscl2.py as the improvement baseline. The MUSCL/HLL/SSPRK2 producer solves shallow-water equations by finite volumes, not LBM."
 }

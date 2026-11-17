@@ -95,12 +95,10 @@ def test_uniform_mixture_has_no_wall_force_under_mirror():
     assert float(Fy1.abs().max()) < 1e-8
     assert float(Fy2.abs().max()) < 1e-8
     # the dry wall, by contrast, pulls hard on the first fluid rows
-    Fx1, Fy1, Fx2, Fy2 = sc_two_component_force(
-        rho1, rho2, -2.5, 0.0, 0.0, wall, wall_mode="dry"
-    )
+    Fx1, Fy1, Fx2, Fy2 = sc_two_component_force(rho1, rho2, -2.5, 0.0, 0.0, wall, wall_mode="dry")
     dry_wall_force = float(Fy1.abs().max())
-    assert dry_wall_force > 0.05          # ~|G| rho1 rho2 / 6 = 0.0875
-    assert dry_wall_force > 1e3 * 5e-5    # >> the benchmark body force
+    assert dry_wall_force > 0.05  # ~|G| rho1 rho2 / 6 = 0.0875
+    assert dry_wall_force > 1e3 * 5e-5  # >> the benchmark body force
     # cs^2/2 = 1/6 is the D2Q9 y-stencil coefficient of the one-sided sum
     assert dry_wall_force == pytest.approx(2.5 * 0.7 * 0.3 / 6.0, rel=1e-5)
 
@@ -112,12 +110,15 @@ def test_dry_wall_is_bit_identical_to_historical_path():
     wall = _channel(ny, nx)
     ys = torch.arange(ny, dtype=torch.float32).view(ny, 1).expand(ny, nx)
     alpha = 0.5 * (1.0 - torch.tanh((ys - ny // 2) / 3.0))
-    f1 = equilibrium(0.7 * alpha + 0.3 * (1 - alpha), torch.zeros_like(alpha),
-                     torch.zeros_like(alpha))
-    f2 = equilibrium(0.3 * alpha + 0.7 * (1 - alpha), torch.zeros_like(alpha),
-                     torch.zeros_like(alpha))
-    kw = dict(G_12=-2.5, tau1=1.0, tau2=0.75, gx=5e-5, solid_mask=wall,
-              u_eq="viscous", force_scheme="guo")
+    f1 = equilibrium(
+        0.7 * alpha + 0.3 * (1 - alpha), torch.zeros_like(alpha), torch.zeros_like(alpha)
+    )
+    f2 = equilibrium(
+        0.3 * alpha + 0.7 * (1 - alpha), torch.zeros_like(alpha), torch.zeros_like(alpha)
+    )
+    kw = dict(
+        G_12=-2.5, tau1=1.0, tau2=0.75, gx=5e-5, solid_mask=wall, u_eq="viscous", force_scheme="guo"
+    )
     a1, a2 = collide_sc_two_component(f1, f2, **kw)
     b1, b2 = collide_sc_two_component(f1, f2, wall_mode="dry", **kw)
     assert torch.equal(a1, b1) and torch.equal(a2, b2)
@@ -138,8 +139,16 @@ def _run(ny, steps, wall_mode, gx=5e-5, g12=-2.5):
     f1, f2 = equilibrium(rho1, z, z), equilibrium(rho2, z, z)
     for _ in range(steps):
         f1, f2 = collide_sc_two_component(
-            f1, f2, G_12=g12, tau1=1.0, tau2=0.75, gx=gx, solid_mask=wall,
-            u_eq="viscous", force_scheme="guo", wall_mode=wall_mode,
+            f1,
+            f2,
+            G_12=g12,
+            tau1=1.0,
+            tau2=0.75,
+            gx=gx,
+            solid_mask=wall,
+            u_eq="viscous",
+            force_scheme="guo",
+            wall_mode=wall_mode,
         )
         f1, f2 = stream(f1), stream(f2)
         f1, f2 = bounce_back_cells(f1, wall), bounce_back_cells(f2, wall)
@@ -164,6 +173,7 @@ def test_mirror_wall_reduces_transverse_current_and_centres_interface():
     assert dry["phi_contrast"] > 0.5 and mir["phi_contrast"] > 0.5
     # the neutral wall cuts the transverse current by a large factor
     assert mir["spurious"] < 0.5 * dry["spurious"]
+
     # the interface is still resolvable and finite in both runs (the
     # equilibrium interface position is measured by the acceptance records,
     # not by a 3000-step transient: this test guards the mechanism only).
