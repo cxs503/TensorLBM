@@ -4,7 +4,7 @@
 
 ## 1. 物理问题与模型范围
 
-二维液滴从静止气相中在重力作用下落向静止液池，随后发生撞击、界面变形与并合。该算例使用 TensorLBM 现有的 D2Q9 Free-Energy / phase-field 两相流实现，属于二维定性研究基准；它不是三维真实液滴、真实水-空气密度比或完整实验复现。
+二维液滴从静止气相中在重力作用下落向静止液池，随后发生撞击、界面变形与并合。该算例使用 TensorLBM 现有的 D2Q9 Free-Energy / phase-field 两相流实现，属于二维定性研究基准；它不是三维真实液滴、真实水-空气密度比或完整实验复现。`--density-ratio` 只改变 Boussinesq 重力系数；默认槽顶封闭，`--top-bc pressure` 只重建动量密度，相场仍不可穿透。
 
 本案例首先验证四件事：
 
@@ -54,6 +54,16 @@ PYTHONPATH=src python examples/droplet_impact.py \
 
 若运行目录已存在且不为空，脚本默认拒绝覆盖；使用新的 `--run-name` 或显式传入 `--overwrite`。
 
+默认采用 `--geq-convention lee_lin --dtype float64 --tau-g 1.0`，相迁移率
+`M=Gamma*(tau_g-0.5)=0.25`。`A=B=0.004`，tanh 宽度 `xi=3`，由
+`kappa=A*xi**2/2=0.018` 保持初始化与自由能一致，解析表面张力 `sigma=0.008`。
+只指定 `--kappa` 时自动推导宽度；同时指定不相容的宽度会报错。
+`swift` 选项仅用于复现带额外相场扩散的旧公式。求解器 API 为兼容仍默认 `swift`，
+所以直接调用时必须在初始化和每个碰撞步骤都显式传入 `geq_convention="lee_lin"`。
+
+[2026-11-17 实算与适用范围](../audits/ch_core_20261117/README.md)包含 3,000 步健康记录，
+以及较强表面张力配置的长期失稳证据。通过健康检查不表示已经发生撞击、并合或飞溅。
+
 ## 5. 输出文件
 
 每次运行会生成一个独立目录，例如 `outputs/droplet_impact/baseline_cpu/`：
@@ -61,7 +71,7 @@ PYTHONPATH=src python examples/droplet_impact.py \
 | 文件 | 内容 | 用途 |
 |---|---|---|
 | `contours/phase_XXXXXXX.png` | 序参量云图、零等值线、速度矢量和初始液位 | 查看液滴下落、撞击与并合演化 |
-| `diagnostic_curves.png` | 相质量漂移、上部区域液相质心、最大速度、动能代理量曲线 | 快速判断数值行为与异常 |
+| `diagnostic_curves.png` | 相质量漂移、全部液相质心、最大速度、动能代理量曲线 | 快速判断数值行为与异常 |
 | `history.csv` | 每个采样时刻的诊断数据 | 后处理、对比和回归测试 |
 | `run_metadata.json` | 完整参数、设备/软件版本、最终指标和限制说明 | 追溯、自动化评估与归档 |
 
@@ -69,13 +79,13 @@ PYTHONPATH=src python examples/droplet_impact.py \
 
 ## 6. 诊断量如何解读
 
-- **relative_phase_mass_drift**：相场序参量总和相对初值的漂移。漂移增大可能意味着离散误差、边界影响或数值不稳定；它不是液体真实质量误差的直接等价物。
-- **upper_region_liquid_centroid_y**：上部诊断区域内液相权重的质心。液滴撞击并与液池并合后，该量不再代表独立液滴轨迹。
-- **max_speed**：全域最大格子速度，用于发现异常速度增长。
-- **kinetic_energy_proxy**：基于初始均匀密度构造的速度平方代理量，**不是经过物理单位标定的动能**。
+- **relative_phase_mass_drift**：仅对流体单元统计序参量总和漂移，除以初始流体单元 `sum(abs(phi))`。漂移增大可能意味着离散误差、边界影响或数值不稳定；它不是液体真实质量误差的直接等价物。
+- **liquid_centroid_y**：全部液相（包含液池）的权重质心，始终不是独立液滴轨迹。
+- **max_speed**：流体单元的原始动量速度 `j/rho` 最大值（不含半步力修正），用于发现异常速度增长。
+- **kinetic_energy_proxy**：基于当前密度和原始动量速度构造的代理量，**不是经过物理单位标定的动能**。
 - **phi_min / phi_max**：监测相场是否出现过冲。出现明显越界时，应检查参数、时间步和模型稳定性。
 
-这些量是工程诊断，不等于已建立的验收阈值。当前版本不会因为图像看起来合理就自动宣称 benchmark 通过。
+每步检查有限性、正密度、速度不超过 0.15、`abs(phi)` 不超过 1.2、归一化相场漂移不超过 1e-4。越界时先写 JSON/CSV 证据，再以失败状态退出。它们是数值健康阈值，不是物理精度验收；正常结束仍标记为探索性结果。
 
 ## 7. 建议的验证矩阵
 

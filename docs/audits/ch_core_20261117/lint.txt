@@ -1,0 +1,7 @@
+ruff ruff 0.15.0
+metric                              current  baseline   delta  status
+invalid_syntax_findings                   0         0      +0  ok
+ruff_check_findings                    3022      3023      -1  improved
+ruff_format_unformatted_files          2195      2195      +0  ok
+ratchet available: ruff_check_findings is 1 below baseline (3022 vs 3023); run `--update` to lock the gain in.
+lint_ratchet: OK — no new lint/format debt.

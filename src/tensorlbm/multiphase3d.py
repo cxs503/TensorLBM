@@ -743,6 +743,10 @@ def init_free_energy_g_3d(
     ux: torch.Tensor | None = None,
     uy: torch.Tensor | None = None,
     uz: torch.Tensor | None = None,
+    *,
+    geq_convention: str = "swift",
+    mu: torch.Tensor | None = None,
+    Gamma: float = 0.5,
 ) -> torch.Tensor:
     """Initialise the 3-D FE order-parameter distribution in equilibrium.
 
@@ -752,9 +756,21 @@ def init_free_energy_g_3d(
         uy:  Initial y-velocity (optional, defaults to zero).
         uz:  Initial z-velocity (optional, defaults to zero).
 
+    ``geq_convention="lee_lin"`` removes ordinary phi diffusion. Supply
+    the discrete ``mu`` and matching ``Gamma`` for well-prepared CH data;
+    omitted ``mu`` means zero. Legacy initialization is unchanged.
+
     Returns:
         Equilibrium distribution g, shape ``(19, nz, ny, nx)``.
     """
+    from .phasefield.ch_equilibrium import ch_equilibrium, validate_convention
+
+    validate_convention(geq_convention)
+    if geq_convention == "lee_lin":
+        velocity = tuple(torch.zeros_like(phi) if u is None else u for u in (ux, uy, uz))
+        return ch_equilibrium(phi, velocity, mu, Gamma)
+    if mu is not None:
+        raise ValueError("mu initialization is supported only with geq_convention=lee_lin")
     device = phi.device
     c = _c_on_3d(device)
     w = _w_on_3d(device).view(19, 1, 1, 1)
@@ -790,6 +806,8 @@ def free_energy_step_3d(
     rho_light: float | None = None,
     C_s: float = 0.0,
     sgs_model: str = "smagorinsky",
+    *,
+    geq_convention: str = "swift",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D3Q19.
 
@@ -806,11 +824,14 @@ def free_energy_step_3d(
         g:          Order-parameter distribution, shape ``(19, nz, ny, nx)``;
                     its zeroth moment is the phase field φ = Σᵢ gᵢ.
         tau_f:      Relaxation time for momentum (ν = cs²(τ_f − ½)).
-        tau_g:      Relaxation time for phase field (M = cs²(τ_g − ½)).
+        tau_g:      Phase relaxation time; with lee_lin, M = Gamma*(tau_g - 0.5).
         A:          Double-well coefficient.
         B:          Quartic coefficient.
         kappa:      Interfacial-tension parameter (gradient penalty).
         Gamma:      Phase-field mobility coupling.
+        geq_convention: "swift" retains historical extra phi diffusion for
+                    reproducibility; "lee_lin" uses CH moment closure without
+                    that diffusion. This changes g, not the momentum model.
         gx:         x body-force acceleration.
         gy:         y body-force acceleration.
         gz:         z body-force acceleration.
@@ -830,6 +851,9 @@ def free_energy_step_3d(
     _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
     if sgs_model not in _VALID_SGS_MODELS:
         raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
+    from .phasefield.ch_equilibrium import ch_equilibrium, validate_convention
+
+    validate_convention(geq_convention)
     device = f.device
     c = _c_on_3d(device)
     w = _w_on_3d(device)
@@ -889,6 +913,10 @@ def free_energy_step_3d(
     diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
     geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff
+    if geq_convention == "lee_lin":
+        # Physical velocity, as in the corrected D2Q9 phase advection.
+        velocity = (ux + 0.5 * Fx / rho_s, uy + 0.5 * Fy / rho_s, uz + 0.5 * Fz / rho_s)
+        geq = ch_equilibrium(phi, velocity, mu, Gamma)
     g_out = g - (g - geq) / tau_g
 
     return f_out, g_out

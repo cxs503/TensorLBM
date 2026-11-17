@@ -33,6 +33,7 @@ import torch
 from tensorlbm.boundary.tank import stream_tank
 from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.multiphase import free_energy_step, init_free_energy_g
+from tensorlbm.phasefield.operators import laplacian_2d
 
 # ---------------------------------------------------------------------------
 # Boundary-condition helpers for physical tank
@@ -84,12 +85,19 @@ def parser() -> argparse.ArgumentParser:
         "--g", type=float, default=2.0e-5, help="Downward body acceleration in lattice units"
     )
     p.add_argument("--tau-f", type=float, default=0.8)
-    p.add_argument("--tau-g", type=float, default=0.8)
-    p.add_argument("--A", type=float, default=0.04)
-    p.add_argument("--B", type=float, default=0.04)
-    p.add_argument("--kappa", type=float, default=0.02)
+    p.add_argument("--tau-g", type=float, default=1.0)
+    p.add_argument("--A", type=float, default=0.004)
+    p.add_argument("--B", type=float, default=0.004)
+    p.add_argument("--kappa", type=float, default=None, help="Default: A*interface_width**2/2")
     p.add_argument("--Gamma", type=float, default=0.5)
-    p.add_argument("--interface-width", type=float, default=3.0)
+    p.add_argument(
+        "--interface-width",
+        type=float,
+        default=None,
+        help="tanh width xi; default 3 or sqrt(2*kappa/A)",
+    )
+    p.add_argument("--geq-convention", choices=["lee_lin", "swift"], default="lee_lin")
+    p.add_argument("--dtype", choices=["float64", "float32"], default="float64")
     p.add_argument(
         "--density-ratio",
         type=float,
@@ -266,11 +274,30 @@ def _health_failures(metrics, args):
     return [name for name, failed in checks.items() if failed]
 
 
+def _resolve_phasefield_parameters(args):
+    """Keep tanh initialization, free energy and mobility on one convention."""
+    if args.A <= 0 or args.B <= 0 or not math.isclose(args.A, args.B, rel_tol=1e-12):
+        raise ValueError("this +/-1 phase example requires positive A == B")
+    if args.Gamma < 0:
+        raise ValueError("Gamma must be nonnegative")
+    if args.kappa is None:
+        args.interface_width = 3.0 if args.interface_width is None else args.interface_width
+        args.kappa = 0.5 * args.A * args.interface_width**2
+    elif args.kappa <= 0:
+        raise ValueError("kappa must be positive")
+    xi = math.sqrt(2.0 * args.kappa / args.A)
+    if args.interface_width is None:
+        args.interface_width = xi
+    if args.interface_width <= 0 or not math.isclose(args.interface_width, xi, rel_tol=1e-10):
+        raise ValueError("interface-width must match sqrt(2*kappa/A)")
+
+
 def main() -> None:
     args = parser().parse_args()
     for name, value in vars(args).items():
         if isinstance(value, float) and not math.isfinite(value):
             raise ValueError(f"{name} must be finite")
+    _resolve_phasefield_parameters(args)
     if args.fast:
         args.nx, args.ny, args.n_steps, args.output_interval = 120, 90, 120, 30
         args.radius, args.water_level, args.gap = 9.0, 58.0, 5.0
@@ -309,16 +336,29 @@ def main() -> None:
             frame.unlink()
 
     ny, nx = args.ny, args.nx
-    y = torch.arange(ny, dtype=torch.float32, device=device)
-    x = torch.arange(nx, dtype=torch.float32, device=device)
+    dtype = getattr(torch, args.dtype)
+    y = torch.arange(ny, dtype=dtype, device=device)
+    x = torch.arange(nx, dtype=dtype, device=device)
     yy, xx = torch.meshgrid(y, x, indexing="ij")
     cy, cx = args.water_level - args.radius - args.gap, nx / 2.0
     phi0 = _initial_phase_field(xx, yy, args.radius, cx, cy, args.water_level, args.interface_width)
-    rho0 = torch.ones((ny, nx), dtype=torch.float32, device=device)
+    rho0 = torch.ones((ny, nx), dtype=dtype, device=device)
     zero = torch.zeros_like(rho0)
     f = equilibrium(rho0, zero, zero)
-    g = init_free_energy_g(phi0, zero, zero)
     wall_mask = _make_tank_wall_mask(ny, nx, device)
+    mu0 = (
+        -args.A * phi0
+        + args.B * phi0**3
+        - args.kappa * laplacian_2d(phi0, boundary="no_flux", solid_mask=wall_mask)
+    )
+    g = init_free_energy_g(
+        phi0,
+        zero,
+        zero,
+        geq_convention=args.geq_convention,
+        mu=mu0 if args.geq_convention == "lee_lin" else None,
+        Gamma=args.Gamma,
+    )
     initial_phi = g.sum(0)[~wall_mask].double()
     initial_mass = float(initial_phi.sum())
     # L1 normalization avoids singular relative error when signed phi sums to 0.
@@ -339,6 +379,7 @@ def main() -> None:
                 B=args.B,
                 kappa=args.kappa,
                 Gamma=args.Gamma,
+                geq_convention=args.geq_convention,
                 gx=0.0,
                 gy=args.g,
                 rho_heavy=rho_heavy,
@@ -407,6 +448,14 @@ def main() -> None:
         },
         "config": vars(args),
         "derived": {
+            "equilibrium_interface_width": math.sqrt(2 * args.kappa / args.A),
+            "surface_tension_analytic": (2 / 3) * math.sqrt(2 * args.kappa * args.A),
+            "ch_mobility": args.Gamma * (args.tau_g - 0.5)
+            if args.geq_convention == "lee_lin"
+            else None,
+            "legacy_extra_phi_diffusivity": (args.tau_g - 0.5) / 3
+            if args.geq_convention == "swift"
+            else 0.0,
             "initial_droplet_center_y": cy,
             "initial_droplet_center_x": cx,
             "initial_phase_mass": initial_mass,
@@ -426,6 +475,7 @@ def main() -> None:
             "Momentum and phase stream without periodic wrap; scalar stencils use no-flux walls.",
             "Pressure top, if selected, fixes momentum density but keeps phase impermeable; not a two-phase outflow.",
             "Density ratio changes Boussinesq gravity only; no cAC or variable-inertial-density solver is selected.",
+            "The lee_lin selector corrects phase moments; swift is retained only for legacy reproduction.",
             "Passing health gates does not validate impact, splash height, coexistence, or water/air density ratios.",
         ],
     }

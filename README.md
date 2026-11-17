@@ -114,6 +114,7 @@ AI turbulence closures and flow-model pipelines are useful foundations for AI-as
 - **[AI4S 应用目录 / AI4S Apps](docs/AI4S_APPS.md)** – 面向工业流体问题的 AI4Science 应用列表、输入输出约定与示例入口。
 - **[Browser Platform 说明](docs/PLATFORM.md)** – 平台架构、用户旅程、部署形态与与库边界说明。
 - **[Pre-trained Models](docs/PRETRAINED_MODELS.md)** – 可直接下载的 checkpoint 列表与使用说明。
+- **[Cahn–Hilliard 核心修正与实算验收](docs/audits/ch_core_20261117/README.md)** – D2Q9/D3Q19 phase moments, analytic growth/decay, grid refinement, evolved planar interfaces, and explicit failed strong-capillarity runs. Impact remains exploratory.
 - **[液滴入水基准教程 / Droplet-Impact Benchmark](docs/benchmarks/droplet_impact.md)** – 2D Free-Energy case, phase-field contours, diagnostic curves, CSV history, and validation plan.
 - **[Couette–Poiseuille 混合驱动通道流教程 / Couette–Poiseuille Channel Flow](docs/benchmarks/tutorials/couette_poiseuille.md)** – 上壁滑动 + 体积力叠加的解析验证：可运行片段带断言，剖面 L2 误差 7.40e-04，关键量逐项误差均 <3%。
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
