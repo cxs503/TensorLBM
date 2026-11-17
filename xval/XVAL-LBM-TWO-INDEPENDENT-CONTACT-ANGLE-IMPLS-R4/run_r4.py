@@ -3,6 +3,17 @@
 XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS - Round 4: Geodesic Estimator Fix
 
 This script fixes the geodesic angle estimator convention issue identified in R3.
+
+Round 5 (m23072) established the exact closed form for a sessile cap:
+    z_c = -R cos(theta),  h = R(1 - cos theta),  a = R sin(theta)
+for EVERY theta in (0, 180), so
+    a/h = cot(theta/2)  =>  theta = 2 atan(h/a) = 2 atan(1/(a/h))
+with no branch test and no caller-supplied convention.
+
+This round-4 script is the *matured* deliverable: it applies the round-5
+closed form (the round-4 ``a/h > 1`` conditional and ``lbm_convention``
+boolean were the supplement-mirror and are retired), and writes its artefacts
+into the current worktree (no hard-coded /srv path).
 """
 
 import math
@@ -36,7 +47,12 @@ def gas_level(psi, frac):
 
 
 def synthetic_cap_corrected(theta_deg, radius=14.0, xi=2.0, ny=58, nx=69, wall_y=-0.5):
-    """Diffuse circular cap matching LBM convention: h = R(1 - cos theta)."""
+    """Diffuse circular cap matching the physical sessile convention.
+
+    Centre at ``y_c = wall_y - R cos(theta)`` (below the wall for a wetting
+    cap, above it for a non-wetting one); the true contact angle is
+    ``theta_deg`` for every ``theta`` in ``(0, 180)``.
+    """
     th = math.radians(theta_deg)
     y_c = wall_y - radius * math.cos(th)
     x_c = (nx - 1) / 2.0
@@ -47,7 +63,10 @@ def synthetic_cap_corrected(theta_deg, radius=14.0, xi=2.0, ny=58, nx=69, wall_y
 
 
 def geodesic_angle_corrected(psi, xi, frac=0.5, wall_y=-0.5):
-    """CORRECTED geodesic angle estimator."""
+    """CORRECTED geodesic angle estimator (round-5 closed form).
+
+    ``theta = 2 atan(h/a)`` holds for every sessile cap; no branch test.
+    """
     ny, nx = psi.shape
     gas, _liquid, level = gas_level(psi, frac)
     xs_grid = np.arange(nx, dtype=float)
@@ -62,14 +81,15 @@ def geodesic_angle_corrected(psi, xi, frac=0.5, wall_y=-0.5):
         if math.isfinite(x):
             ys.append(float(k))
             xs.append(x - x_c)
-    
+
     out = {
         "theta_geodesic_deg": float("nan"),
         "apex_height": float(height),
         "basal_half_width": float("nan"),
         "a_over_h": float("nan"),
+        "h_over_a": float("nan"),
     }
-    
+
     if len(ys) >= 4:
         ys_a, xs_a = np.asarray(ys), np.asarray(xs)
         near = ys_a <= 3.0 * xi
@@ -82,41 +102,39 @@ def geodesic_angle_corrected(psi, xi, frac=0.5, wall_y=-0.5):
         if a > 0.0 and height > 0.0:
             ratio = a / height
             out["a_over_h"] = ratio
-            theta_raw = math.degrees(2.0 * math.atan(ratio))
-            if ratio > 1.0:
-                out["theta_geodesic_deg"] = 180.0 - theta_raw
-            else:
-                out["theta_geodesic_deg"] = theta_raw
+            out["h_over_a"] = height / a
+            # round-5 closed form: theta = 2 atan(h/a) for ALL angles
+            out["theta_geodesic_deg"] = math.degrees(2.0 * math.atan(height / a))
     return out
 
 
 def validate_synthetic_caps():
     """Validate corrected estimator on synthetic caps."""
     print("=" * 90)
-    print("Validation: Corrected geodesic estimator on synthetic caps (LBM convention)")
+    print("Validation: Corrected geodesic estimator on synthetic caps (round-5 closed form)")
     print("=" * 90)
-    
+
     test_angles = [45.0, 70.0, 90.0, 110.0, 135.0]
     results = []
-    
+
     print(f"\n{'theta_prescribed':>14} {'theta_measured':>14} {'error_deg':>10} {'a_over_h':>8} {'status':>10}")
     print("-" * 90)
-    
+
     for radius in (14.0, 18.0, 22.0):
         for xi in (2.0, 3.0):
             for theta_deg in test_angles:
                 ny, nx = int(2 * radius + 30), int(2 * radius + 41)
                 psi = synthetic_cap_corrected(theta_deg, radius=radius, xi=xi, ny=ny, nx=nx)
                 meas = geodesic_angle_corrected(psi, xi)
-                
+
                 theta_meas = meas["theta_geodesic_deg"]
                 error = abs(theta_meas - theta_deg) if math.isfinite(theta_meas) else float("nan")
                 ratio = meas["a_over_h"]
-                
+
                 xi_over_R = xi / radius
                 limit = 2.0 if xi_over_R <= 0.12 else 4.0
                 status = "PASS" if error <= limit else "FAIL"
-                
+
                 results.append({
                     "theta_prescribed": theta_deg,
                     "theta_measured": theta_meas,
@@ -128,19 +146,19 @@ def validate_synthetic_caps():
                     "limit_deg": limit,
                     "status": status,
                 })
-                
+
                 if radius == 14.0 and xi == 2.0:
                     print(f"{theta_deg:14.1f} {theta_meas:14.2f} {error:10.2f} {ratio:8.3f} {status:>10}")
-    
+
     print("-" * 90)
-    
+
     errors = [r["error_deg"] for r in results if math.isfinite(r["error_deg"])]
     fine_errors = [r["error_deg"] for r in results if r["xi_over_R"] <= 0.12 and math.isfinite(r["error_deg"])]
     coarse_errors = [r["error_deg"] for r in results if r["xi_over_R"] > 0.12 and math.isfinite(r["error_deg"])]
-    
+
     n_pass = sum(1 for r in results if r["status"] == "PASS")
     n_fail = sum(1 for r in results if r["status"] == "FAIL")
-    
+
     print(f"\nSummary:")
     print(f"  Total tests: {len(results)}")
     print(f"  PASS: {n_pass}, FAIL: {n_fail}")
@@ -150,7 +168,7 @@ def validate_synthetic_caps():
     if coarse_errors:
         print(f"  Max error (coarse xi/R > 0.12): {max(coarse_errors):.2f} deg")
     print(f"  Mean error: {sum(errors)/len(errors):.2f} deg")
-    
+
     return results
 
 
@@ -159,14 +177,14 @@ def compare_with_r3():
     print("\n" + "=" * 90)
     print("Comparison with R3 audit findings")
     print("=" * 90)
-    
+
     print("\nR3 audit reported (geometric_ghost arm, baseline grid, xi=3):")
     print("  theta=70 deg  -> theta_geodesic = 111.19 deg (error 58.8%, returns supplement)")
     print("  theta=90 deg  -> theta_geodesic = 90.06 deg  (error 0.07%, correct)")
     print("  theta=110 deg -> theta_geodesic = 70.21 deg  (error 36.2%, returns supplement)")
     print("  theta=135 deg -> theta_geodesic = 45.72 deg  (error 66.1%, returns supplement)")
-    
-    print("\nWith corrected estimator (synthetic caps, same parameters):")
+
+    print("\nWith corrected estimator (round-5 closed form, synthetic caps, same parameters):")
     radius = 16.0
     xi = 3.0
     for theta_deg in [70.0, 90.0, 110.0, 135.0]:
@@ -175,7 +193,7 @@ def compare_with_r3():
         meas = geodesic_angle_corrected(psi, xi)
         error = abs(meas["theta_geodesic_deg"] - theta_deg)
         print(f"  theta={theta_deg:3.0f} deg -> theta_geodesic = {meas['theta_geodesic_deg']:6.2f} deg (error {error:.2f} deg)")
-    
+
     print("\nConclusion: Corrected estimator returns the correct angle for all cases.")
 
 
@@ -203,15 +221,24 @@ for LBM simulation fields. The root cause is a geometric convention mismatch:
    - Center below wall for theta < 90 deg
    - Formula theta = 2 atan(a/h) returns supplement for all angles
 
-## Fix
+## Fix (Round 5 closed form)
 
-### 1. Updated synthetic_cap() to match LBM convention
+The exact closed form for a sessile cap is:
 
-Changed center position from y_c = wall_y + R cos theta to y_c = wall_y - R cos theta.
+    z_c = -R cos(theta)   (circle centre, measured from the wall)
+    h   = R (1 - cos theta)   (apex height above the wall)
+    a   = R sin(theta)        (contact half-width)
 
-### 2. Applied supplement correction in geodesic_angle()
+for **every** ``theta`` in ``(0, 180)`` -- the centre is below the wall for a
+wetting cap (``theta < 90``) and above it for a non-wetting one, and the
+same algebra covers both branches.  Hence
 
-When a/h > 1 (theta < 90 deg), apply: theta = 180 deg - 2 atan(a/h).
+    a / h = cot(theta / 2)   =>   theta = 2 atan(h / a)
+
+with no branch test and no caller-supplied convention.
+
+The round-4 ``a/h > 1`` conditional and ``lbm_convention`` boolean were the
+supplement-mirror (``2 atan(a/h) = 180 - 2 atan(h/a)``) and are retired.
 
 ## Validation Results
 
@@ -233,7 +260,7 @@ All tests pass the gate.
 
 - **Two independent implementations (neumann_flux, geometric_ghost)**: No change needed.
 - **Third estimator (geodesic)**: Now correctly measures the contact angle for LBM fields.
-- **Synthetic cap calibration**: Updated to match LBM convention.
+- **Synthetic cap calibration**: Updated to match the physical sessile convention.
 
 ## Conclusion
 
@@ -246,12 +273,12 @@ The XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS anchor is now fully validated:
 
 **Verdict: PASS** - All probes pass, all gates met.
 """
-    
-    report_path = Path("/srv/tensor/agent/work/m21643/xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md")
+
+    report_path = Path(__file__).resolve().parent / "REPORT_R4.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(report)
     print(f"\nReport written to: {report_path}")
-    
+
     return report
 
 
@@ -260,8 +287,8 @@ def main():
     results = validate_synthetic_caps()
     compare_with_r3()
     report = generate_report()
-    
-    results_path = Path("/srv/tensor/agent/work/m21643/xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/results_r4.json")
+
+    results_path = Path(__file__).resolve().parent / "results_r4.json"
     results_path.parent.mkdir(parents=True, exist_ok=True)
     with open(results_path, "w") as f:
         json.dump({
@@ -273,7 +300,7 @@ def main():
             "results": results,
         }, f, indent=2)
     print(f"Results saved to: {results_path}")
-    
+
     print("\n" + "=" * 90)
     print("Round 4 validation complete. All tests PASS.")
     print("=" * 90)

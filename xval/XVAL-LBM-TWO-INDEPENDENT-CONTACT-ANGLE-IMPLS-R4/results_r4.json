@@ -1,14 +1,14 @@
 {
   "n_tests": 30,
-  "n_pass": 18,
-  "n_fail": 12,
-  "max_error_deg": 89.98148850734032,
-  "mean_error_deg": 26.13551915280245,
+  "n_pass": 30,
+  "n_fail": 0,
+  "max_error_deg": 1.6078884245926943,
+  "mean_error_deg": 0.16536012770019398,
   "results": [
     {
       "theta_prescribed": 45.0,
-      "theta_measured": 45.94720107041243,
-      "error_deg": 0.947201070412433,
+      "theta_measured": 45.94720107041244,
+      "error_deg": 0.9472010704124401,
       "a_over_h": 2.3588736263046823,
       "radius": 14.0,
       "xi": 2.0,
@@ -18,8 +18,8 @@
     },
     {
       "theta_prescribed": 70.0,
-      "theta_measured": 69.89605808210072,
-      "error_deg": 0.10394191789927731,
+      "theta_measured": 69.89605808210074,
+      "error_deg": 0.1039419178992631,
       "a_over_h": 1.4309087026651524,
       "radius": 14.0,
       "xi": 2.0,
@@ -40,30 +40,30 @@
     },
     {
       "theta_prescribed": 110.0,
-      "theta_measured": 70.04648878792199,
-      "error_deg": 39.95351121207801,
+      "theta_measured": 109.95351121207803,
+      "error_deg": 0.046488787921973085,
       "a_over_h": 0.7008123078298841,
       "radius": 14.0,
       "xi": 2.0,
       "xi_over_R": 0.14285714285714285,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 135.0,
-      "theta_measured": 45.05009696961087,
-      "error_deg": 89.94990303038912,
+      "theta_measured": 134.94990303038912,
+      "error_deg": 0.05009696961087684,
       "a_over_h": 0.4147258416822815,
       "radius": 14.0,
       "xi": 2.0,
       "xi_over_R": 0.14285714285714285,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 45.0,
-      "theta_measured": 46.60788842459269,
-      "error_deg": 1.6078884245926872,
+      "theta_measured": 46.607888424592694,
+      "error_deg": 1.6078884245926943,
       "a_over_h": 2.3215341000287038,
       "radius": 14.0,
       "xi": 3.0,
@@ -84,8 +84,8 @@
     },
     {
       "theta_prescribed": 90.0,
-      "theta_measured": 89.93076190411675,
-      "error_deg": 0.06923809588325014,
+      "theta_measured": 89.93076190411676,
+      "error_deg": 0.06923809588323593,
       "a_over_h": 1.0012091634844922,
       "radius": 14.0,
       "xi": 3.0,
@@ -95,25 +95,25 @@
     },
     {
       "theta_prescribed": 110.0,
-      "theta_measured": 70.02792602021653,
-      "error_deg": 39.972073979783474,
+      "theta_measured": 109.97207397978349,
+      "error_deg": 0.027926020216511915,
       "a_over_h": 0.7005707847649769,
       "radius": 14.0,
       "xi": 3.0,
       "xi_over_R": 0.21428571428571427,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 135.0,
-      "theta_measured": 45.096319301381,
-      "error_deg": 89.903680698619,
+      "theta_measured": 134.903680698619,
+      "error_deg": 0.0963193013809871,
       "a_over_h": 0.4151986646860144,
       "radius": 14.0,
       "xi": 3.0,
       "xi_over_R": 0.21428571428571427,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 45.0,
@@ -128,8 +128,8 @@
     },
     {
       "theta_prescribed": 70.0,
-      "theta_measured": 70.03997662186833,
-      "error_deg": 0.03997662186833395,
+      "theta_measured": 70.03997662186835,
+      "error_deg": 0.03997662186834816,
       "a_over_h": 1.427088131967183,
       "radius": 18.0,
       "xi": 2.0,
@@ -139,8 +139,8 @@
     },
     {
       "theta_prescribed": 90.0,
-      "theta_measured": 89.96443194355307,
-      "error_deg": 0.03556805644693384,
+      "theta_measured": 89.96443194355308,
+      "error_deg": 0.03556805644691963,
       "a_over_h": 1.0006209724570219,
       "radius": 18.0,
       "xi": 2.0,
@@ -150,30 +150,30 @@
     },
     {
       "theta_prescribed": 110.0,
-      "theta_measured": 70.047583096972,
-      "error_deg": 39.952416903027995,
+      "theta_measured": 109.952416903028,
+      "error_deg": 0.04758309697200502,
       "a_over_h": 0.7008265477671303,
       "radius": 18.0,
       "xi": 2.0,
       "xi_over_R": 0.1111111111111111,
       "limit_deg": 2.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 135.0,
-      "theta_measured": 45.037639001337794,
-      "error_deg": 89.9623609986622,
+      "theta_measured": 134.9623609986622,
+      "error_deg": 0.0376390013377943,
       "a_over_h": 0.4145984322127737,
       "radius": 18.0,
       "xi": 2.0,
       "xi_over_R": 0.1111111111111111,
       "limit_deg": 2.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 45.0,
-      "theta_measured": 45.11165713130859,
-      "error_deg": 0.1116571313085899,
+      "theta_measured": 45.111657131308604,
+      "error_deg": 0.11165713130860411,
       "a_over_h": 2.407575608610532,
       "radius": 18.0,
       "xi": 3.0,
@@ -205,25 +205,25 @@
     },
     {
       "theta_prescribed": 110.0,
-      "theta_measured": 70.0327757608241,
-      "error_deg": 39.967224239175906,
+      "theta_measured": 109.9672242391759,
+      "error_deg": 0.03277576082409439,
       "a_over_h": 0.7006338802053791,
       "radius": 18.0,
       "xi": 3.0,
       "xi_over_R": 0.16666666666666666,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 135.0,
-      "theta_measured": 45.058355499125014,
-      "error_deg": 89.94164450087499,
+      "theta_measured": 134.941644500875,
+      "error_deg": 0.05835549912501392,
       "a_over_h": 0.4148103092080131,
       "radius": 18.0,
       "xi": 3.0,
       "xi_over_R": 0.16666666666666666,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 45.0,
@@ -260,30 +260,30 @@
     },
     {
       "theta_prescribed": 110.0,
-      "theta_measured": 69.95911205064395,
-      "error_deg": 40.04088794935605,
+      "theta_measured": 110.04088794935605,
+      "error_deg": 0.04088794935604767,
       "a_over_h": 0.6996759134626693,
       "radius": 22.0,
       "xi": 2.0,
       "xi_over_R": 0.09090909090909091,
       "limit_deg": 2.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 135.0,
-      "theta_measured": 45.01851149265969,
-      "error_deg": 89.98148850734032,
+      "theta_measured": 134.98148850734032,
+      "error_deg": 0.01851149265968388,
       "a_over_h": 0.4144028347273532,
       "radius": 22.0,
       "xi": 2.0,
       "xi_over_R": 0.09090909090909091,
       "limit_deg": 2.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 45.0,
-      "theta_measured": 44.90165114100364,
-      "error_deg": 0.09834885899635992,
+      "theta_measured": 44.901651141003654,
+      "error_deg": 0.09834885899634571,
       "a_over_h": 2.420086268655351,
       "radius": 22.0,
       "xi": 3.0,
@@ -293,8 +293,8 @@
     },
     {
       "theta_prescribed": 70.0,
-      "theta_measured": 69.95201433366236,
-      "error_deg": 0.04798566633763812,
+      "theta_measured": 69.95201433366238,
+      "error_deg": 0.04798566633762391,
       "a_over_h": 1.4294216157697597,
       "radius": 22.0,
       "xi": 3.0,
@@ -315,25 +315,25 @@
     },
     {
       "theta_prescribed": 110.0,
-      "theta_measured": 70.00154698578449,
-      "error_deg": 39.998453014215514,
+      "theta_measured": 109.99845301421551,
+      "error_deg": 0.00154698578448631,
       "a_over_h": 0.7002276573195345,
       "radius": 22.0,
       "xi": 3.0,
       "xi_over_R": 0.13636363636363635,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "theta_prescribed": 135.0,
-      "theta_measured": 45.03037170763265,
-      "error_deg": 89.96962829236735,
+      "theta_measured": 134.96962829236736,
+      "error_deg": 0.0303717076326393,
       "a_over_h": 0.41452411383802495,
       "radius": 22.0,
       "xi": 3.0,
       "xi_over_R": 0.13636363636363635,
       "limit_deg": 4.0,
-      "status": "FAIL"
+      "status": "PASS"
     }
   ]
 }
