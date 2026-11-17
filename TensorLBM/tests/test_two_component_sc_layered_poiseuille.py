@@ -164,8 +164,14 @@ def test_layered_poiseuille_within_15pct():
         ref = sol.u(y)
         err[tag] = (np.max(np.abs(u - ref)) / ref.max(),
                     np.sqrt(np.mean((u - ref) ** 2)) / np.sqrt(np.mean(ref ** 2)))
-    best = min(err.values(), key=lambda e: e[0])
-    assert best[0] < 0.15, f"layered profile error {err} exceeds the 15% owner gate"
+    # preregistered KPI is against the *nominal* H/2 reference (board-audit
+    # m21704 R3: no best-of-two selection -- the solver may not pick the
+    # reference that flatters it).  The interface-matched comparison is kept
+    # in ``err`` for disclosure but is not the gate.
+    assert err["nominal"][0] < 0.15, (
+        f"layered profile error vs nominal reference {err['nominal'][0]:.4%} "
+        f"exceeds the 15% owner gate (iface-matched {err['interface_matched'][0]:.4%})"
+    )
     # the peak must sit in the low-viscosity (top) layer, i.e. above the interface
     assert np.argmax(u) >= len(u) // 2  # peak at/above the interface (low-viscosity side)
     # viscosity ratio recovered from the curvature of the two layers

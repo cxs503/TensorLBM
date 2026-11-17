@@ -32,7 +32,7 @@ independent bookkeeping defect.
 | metrics | `src/tensorlbm/verification/layered_poiseuille/metrics.py` (`profile_errors`, `layer_fluxes`, `peak_metrics`) |
 | **entry point** | `src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py` (`python -m ...`, case matrix, gates, JSON + PNG) |
 | **production kernels (shared, integrated)** | `src/tensorlbm/multiphase/__init__.py`: `sc_two_component_force`, `collide_edm_common` (new) + `psi_exp`, `stream_bounce_back` (existing, reused) |
-| tests | `tests/test_two_component_sc_layered_poiseuille.py` (11 physical assertions) |
+| tests | `tests/test_two_component_sc_layered_poiseuille.py` (15 tests) |
 | run artifact | `artifacts/xval_two_component_sc_layered_poiseuille_edm/{results.json,sha256.txt,two_component_sc_layered.png}` |
 
 The verification solver no longer re-implements the lattice operators: it drives the
@@ -56,9 +56,9 @@ Model settings that matter (all validated below):
 
 | case | KPI | got | ref | error | owner gate 15 % |
 |---|---|---|---|---|---|
-| `control_single` (G=0, one component, ν=0.1) | `eps_inf` | — | exact Poiseuille | **0.25 %** | PASS (self target 3 %) |
+| `control_single` (G=0, one component, ν=0.1) | `eps_inf` | — | exact Poiseuille | **0.3675 %** | PASS (self target 3 %) |
 | `control_mixture` (G=0, two components, equal τ) | `eps_inf` | — | exact Poiseuille | **0.37 %** | PASS |
-| `layered_r167` (ν=0.100 bottom / 0.1667 top) | `u_peak_err` | 6.30e-2 | 6.79e-2 | **7.4 %** | PASS |
+| `layered_r167` (ν=0.100 bottom / 0.1667 top) | `u_peak_err` | 4.530e-2 | 4.894e-2 | **7.4 %** | PASS |
 | | `Q_err` | — | — | **8.2 %** | PASS |
 | | `eps_inf` | — | — | **8.8 %** | PASS |
 | | `eps_l2_rel` | — | — | **8.2 %** | PASS |
@@ -136,3 +136,44 @@ worktree and the round-2 core records for `layered_r167` / `layered_static`
 was submitted to the compute gate as jobs `cj3671` (validation `--matrix full`)
 and `cj3672` (benchmark `--matrix core`) and had not been dispatched when this
 round closed; `--matrix full` remains one command.
+
+
+## Round 4 (m24437): board-audit R3 remediation, self-consistent artifact
+
+The board audit (m21704) graded this delivery **L4 (approve with notes)** and listed
+remediation items R1–R3.  Round 4 applies the concrete, in-repo items (R3 + the F5/F6/F7
+findings) so the artifact is self-consistent and strict-JSON / `jsonb`-safe:
+
+* **F5 / R3 (NaN → null):** `run_two_component_sc_validation.py` now serialises
+  non-finite floats as JSON `null` via `_finite_or_none` (an unlocatable interface or an
+  under-resolved viscosity fit is `null`, not a bare `NaN` token).  The artifact parses under
+  strict `json.loads` and ingests into PostgreSQL `jsonb`.
+* **F6 / R3 (no best-of-two):** `test_layered_poiseuille_within_15pct` asserts the preregistered
+  KPI against the *nominal* `H/2` reference; the interface-matched comparison is kept for
+  disclosure but is not the gate.
+* **F3 / R3 (control number):** `control_single eps_inf` corrected `0.25 %` → `0.3675 %`
+  (the value in the artifact; the `0.25 %` had no source in any artifact).
+* **F7 (hand-copied numbers):** `layered_r167 u_peak_err` absolute values corrected to the
+  artifact's `4.530e-2 / 4.894e-2`; test count corrected to 15.
+* **Artifact regenerated (round 4):** the full `core` matrix (5 cases, now including
+  `layered_r233`, previously not run) was re-run on the current `main`; every KPI is
+  **bit-for-bit identical** to the round-2/3 records (only the intended `NaN → null`
+  conversions differ).  `results.json` + `sha256.txt` are regenerated together, so the hash
+  matches; `environment.git_commit` is the committing `HEAD` of a clean tree.
+
+Reproduced KPIs (round-4 re-run, `H = 32`, `nx = 1`):
+
+| case | u_peak_err | eps_inf | eps_l2_rel | Q_err | y_iface err | gate |
+|---|---|---|---|---|---|---|
+| `control_single` | 0.37 % | 0.3675 % | 0.37 % | 0.38 % | — | PASS |
+| `control_mixture` | 0.37 % | 0.3673 % | 0.37 % | 0.38 % | 0.00 %H | PASS |
+| `layered_r167` | 7.44 % | 8.84 % | 8.23 % | 8.16 % | 10.02 %H | FAIL (5 %H sub-gate) |
+| `layered_r233` | 10.15 % | 13.80 % | 11.25 % | 10.11 % | 8.22 %H | FAIL (5 %H sub-gate) |
+| `layered_static` | 0.00 % | 0.00 % | null | 0.00 % | 6.53 %H | PASS (spurious 0.00 %) |
+
+`all_gates_pass` stays `false` because the `interface_position<=5%H` sub-gate fails at `H = 32`
+for both layered cases — reported as FAIL, not dropped (the `H = 48` resolution check
+`layered_r167_h48` passes all gates per the m21704 audit; it remains one command away via
+`--matrix full`).  The `layered_static` spurious-current KPI is a symmetry artifact at
+`nx = 1` (m21704 F2); a genuinely failing spurious-current case (tilted/curved interface or
+sustained perturbation) is deferred to a future round.
