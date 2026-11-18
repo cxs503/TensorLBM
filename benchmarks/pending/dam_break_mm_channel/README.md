@@ -4,6 +4,8 @@
 
 ![两档网格与两条实验曲线](comparison.png)
 
+[自由滑移数值对照与前锋跳变诊断](crosscheck/README.md)提供 waLBerla、Basilisk 的实算结果及跳变前后场数据。
+
 ## 实验与测量
 
 Martin 与 Moyce 在矩形通道中用加热释放的蜡纸约束水柱，用摄影记录前锋和水柱下降。此处选矩形平面对称、原始半底宽 $a=2.25$ 英寸、高 $2a$ 的那组；下游通道略宽于上游。原文将实验结果列成到达指定位置或高度时的平均时间。逐行抄录印刷页 317 的表 2 和页 320 的表 6；同一表内其它尺寸的列未混入。[论文 DOI](https://doi.org/10.1098/rsta.1952.0006) · [原文扫描](https://www.math.ntu.edu.tw/~shyue/orch08/benchmarks/lowmach/broken-dam/91519.pdf) · [参考数据](experiment.csv)

@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import math
+from contextlib import ExitStack
 from pathlib import Path
 
 import numpy as np
@@ -41,11 +42,14 @@ def outer_crossing(profile):
     return i + 0.5 + (profile[i] - 0.5) / (profile[i] - profile[i + 1])
 
 
-def measure(fill, n):
+def measure(fill, n, *, connectivity_threshold=0.5):
+    """Read a half-fill contour supported by the connected liquid region."""
+    if not 0 < connectivity_threshold <= 0.5:
+        raise ValueError("connectivity threshold must be in (0, 0.5]")
     # Axis order (span, vertical, streamwise), with boundary cells removed.
     # Ignore isolated spray. Project the reservoir-connected body as in the
     # overhead and side views in the original experiment.
-    wet = fill >= 0.5
+    wet = fill >= connectivity_threshold
     seed = np.zeros_like(wet)
     seed[:, 0, 0] = wet[:, 0, 0]
     if not seed.any():
@@ -58,14 +62,18 @@ def measure(fill, n):
     return front, crest
 
 
-def simulate(n, c0, span, output, collision="bgk"):
+def simulate(n, c0, span, output, collision="bgk", *, capture=None, paper_geometry=False):
     dx = WIDTH_M / n
     dt = c0 * dx / math.sqrt(2 * GRAVITY * WIDTH_M)
     gravity = GRAVITY * dt**2 / dx
     tau = 0.5 + 3 * NU * dt / dx**2
     sigma = SURFACE_TENSION * dt**2 / (DENSITY * dx**3)
     channel = span == "channel"
-    shape = (n + 2 if channel else 3, math.ceil(2.6 * n) + 2, 18 * n + 2)
+    if paper_geometry and channel:
+        raise ValueError("paper geometry requires periodic span")
+    ny = (4 * n if paper_geometry else math.ceil(2.6 * n)) + 2
+    nx = (15 if paper_geometry else 18) * n + 2
+    shape = (n + 2 if channel else 3, ny, nx)
     fill = torch.zeros(shape, dtype=torch.float64)
     solid = torch.zeros_like(fill, dtype=torch.bool)
     solid[:, (0, -1), :] = True
@@ -84,8 +92,14 @@ def simulate(n, c0, span, output, collision="bgk"):
     stop = "window_complete"
     output.mkdir(parents=True, exist_ok=True)
     t_scale = c0 / n
-    with (output / "history.csv").open("w", newline="") as fp:
+    with ExitStack() as files:
+        fp = files.enter_context((output / "history.csv").open("w", newline=""))
         log = csv.writer(fp, lineterminator="\n")
+        wall_log = None
+        if paper_geometry:
+            wall_fp = files.enter_context((output / "wall_observations.csv").open("w", newline=""))
+            wall_log = csv.writer(wall_fp, lineterminator="\n")
+            wall_log.writerow(["step", "T", "Z", "H"])
         log.writerow(["step", "T", "Z", "H", "mass_drift", "volume_drift", "mach", "rho_min"])
         for step in range(math.ceil(END_T / t_scale) + 1):
             dens, ux, uy, uz = macroscopic3d(f)
@@ -100,6 +114,14 @@ def simulate(n, c0, span, output, collision="bgk"):
                 and mach <= MACH_LIMIT
                 and rho_min > 0
             )
+            if capture is not None and capture[0] <= step <= capture[1]:
+                np.savez_compressed(
+                    output / f"state_{step:06d}.npz",
+                    fill=fill.numpy(),
+                    flags=flags.numpy(),
+                    mass=mass.numpy(),
+                    density=dens.numpy(),
+                )
             front, crest = None, None
             if valid:
                 slab = fill[1:-1] if channel else fill
@@ -111,11 +133,25 @@ def simulate(n, c0, span, output, collision="bgk"):
             else:
                 stop = "mach_density_or_finiteness_limit"
             log.writerow([step, step * t_scale, front, crest, drift, geom, mach, rho_min])
+            if wall_log is not None:
+                # Match the zero-based interface-cell indices used by the showcase.
+                interface = flags[0, 1:-1, 1:-1].numpy() == INTERFACE
+                front_idx = np.flatnonzero(interface[0, :]).max(initial=0)
+                crest_idx = np.flatnonzero(interface[:, 0]).max(initial=0)
+                wall_log.writerow(
+                    [
+                        step,
+                        step * t_scale,
+                        front_idx / n if valid else None,
+                        crest_idx / (2 * n) if valid else None,
+                    ]
+                )
             if step % 200 == 0:
                 fp.flush()
             if not valid or step * t_scale >= END_T:
                 break
             try:
+                ledger = {} if capture is not None and capture[0] <= step < capture[1] else None
                 f, fill, flags, mass, _ = free_surface_step(
                     f,
                     fill,
@@ -129,7 +165,13 @@ def simulate(n, c0, span, output, collision="bgk"):
                     collision=collision,
                     capacity_redistribution=True,
                     simple_mass_exchange=True,
+                    free_slip_all=paper_geometry,
+                    inventory_reconciliation_ledger=ledger,
                 )
+                if ledger is not None:
+                    (output / f"transition_{step:06d}.json").write_text(
+                        json.dumps(ledger, indent=2) + "\n"
+                    )
             except TopologyTransactionError as err:
                 stop = str(err)
                 break
@@ -138,6 +180,7 @@ def simulate(n, c0, span, output, collision="bgk"):
         c0=c0,
         span=span,
         collision=collision,
+        paper_geometry=paper_geometry,
         shape=shape,
         dt_s=dt,
         dx_m=dx,
@@ -159,9 +202,28 @@ if __name__ == "__main__":
     parser.add_argument("--celerity", type=float, default=0.06)
     parser.add_argument("--span", choices=("channel", "periodic"), default="channel")
     parser.add_argument("--collision", choices=("bgk", "mrt"), default="bgk")
+    parser.add_argument("--capture", type=int, nargs=2, metavar=("START", "END"))
+    parser.add_argument(
+        "--paper-geometry",
+        action="store_true",
+        help="Use the waLBerla showcase's 15a × 4a free-slip domain",
+    )
+
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     if args.cells < 4 or not 0 < args.celerity < 0.15:
         parser.error("invalid resolution or lattice celerity")
+    if args.capture and not 0 <= args.capture[0] <= args.capture[1]:
+        parser.error("expected 0 <= capture start <= end")
+    if args.paper_geometry and args.span != "periodic":
+        parser.error("--paper-geometry requires --span periodic")
     torch.set_num_threads(1)
-    simulate(args.cells, args.celerity, args.span, args.out, args.collision)
+    simulate(
+        args.cells,
+        args.celerity,
+        args.span,
+        args.out,
+        args.collision,
+        capture=args.capture,
+        paper_geometry=args.paper_geometry,
+    )
