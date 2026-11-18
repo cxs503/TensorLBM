@@ -1,7 +1,7 @@
 {
  "schema": "xval-lbm-bitwise-refdata/v1",
- "checked_utc": "2026-11-13T08:26:46Z",
- "git_sha": "2db1ee723e4021b36dad462c71d80449e900f812",
+ "checked_utc": "2026-11-17T23:27:03Z",
+ "git_sha": "aace89a3d7a3dbe696ab62e83d4ff6ddc88a0403",
  "env": {
   "torch": "2.7.1",
   "numpy": "2.4.6",
@@ -13,7 +13,7 @@
  "repro_cmd": "PYTHONPATH=src python3 benchmarks/xval_bitwise_refdata/run.py check",
  "regression": {
   "schema": "xval-lbm-bitwise-refdata/v1",
-  "checked_utc": "2026-11-13T08:26:42Z",
+  "checked_utc": "2026-11-17T23:27:01Z",
   "env": {
    "torch": "2.7.1",
    "numpy": "2.4.6",
@@ -24,7 +24,7 @@
   },
   "code": {
    "src/tensorlbm/d2q9.py": "a5e1ddc0bea25dbdcbafada70858cf97ac6e7a1a038d47550408076b574f8af5",
-   "src/tensorlbm/solver.py": "06e05245f2c66b47f8bbd6e7341d97fc63bc7a29a996b5152da639ac02d2df03"
+   "src/tensorlbm/solver.py": "a361280d69baa103ec50c0b2e97a722d2452ecb48ff4ec2b23caa40560c54c8d"
   },
   "env_match": true,
   "env_diffs": [],
@@ -1380,8 +1380,14 @@
   ],
   "worst_err_pct": 0.741309242729913,
   "passed": true,
-  "elapsed_s": 3.1521928310394287
+  "elapsed_s": 2.472914457321167
  },
  "passed": true,
+ "figures": [
+  {
+   "name": "tgv_bitwise_bench.png",
+   "path": "benchmarks/xval_bitwise_refdata/figures/tgv_bitwise_bench.png"
+  }
+ ],
  "harness_sha256": "835eaecc81e7197ee93d40a70009f358e10720e805f5623e6821fad2eda9f3f5"
 }

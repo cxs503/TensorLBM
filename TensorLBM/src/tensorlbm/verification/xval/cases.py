@@ -299,8 +299,109 @@ TWO_COMPONENT_SC_LAYERED_CASE = XValCase(
 )
 
 
+
+
+# ---------------------------------------------------------------------------
+# Case 5: Bitwise reference-data regression benchmark (joconnor22/LIFE)
+# ---------------------------------------------------------------------------
+
+def _poiseuille_2d_bitwise_run() -> Dict[str, Any]:
+    """Run 2-D Poiseuille flow and return the *full* distribution array.
+
+    This is the bitwise-regression variant of case 1.  It returns the complete
+    ``f`` distribution array (not just the macroscopic ``u`` profile) so that a
+    golden snapshot can pin the solver's exact byte-level output.  A re-run is
+    accepted only if ``f`` reproduces the recorded SHA-256 digest exactly.
+    """
+    from tensorlbm.ice_hydro.lbm_channel import (
+        CX, CY, WT, ChannelConfig, D2Q9Channel,
+    )
+
+    G = 1.0e-5
+    TAU = 0.8
+    H = 16
+    STEPS = 5000
+
+    ny = H + 4
+    cfg = ChannelConfig(
+        nx=4, ny=ny, tau=TAU, force=G, steps=0, skip=1,
+        cover_amplitude=0.0, cover_depth=float(ny - 3),
+        bc="no_slip", forcing="guo",
+    )
+    ch = D2Q9Channel(cfg)
+    rows = np.where(ch.fluid[0, :])[0]
+    n_fluid = rows.size
+    nu = (TAU - 0.5) / 3.0
+    y = rows - 0.5
+    u_ana = G / (2.0 * nu) * y * (n_fluid - y)
+    u0 = np.zeros(ny)
+    u0[rows] = u_ana
+    ch.init_equilibrium(u0)
+
+    acc = np.zeros(n_fluid)
+    rho_acc = 0.0
+    n_win = max(STEPS // 4, 1)
+    n_acc = 0
+    for step in range(1, STEPS + 1):
+        ch.f = ch._stream_from(ch._collide(ch.f))
+        if step > STEPS - n_win:
+            rho = ch.f.sum(axis=0)
+            ux = (ch.f * CX[:, None, None]).sum(axis=0) / rho
+            acc += ux[0, rows]
+            rho_acc += float(rho[ch.fluid].mean())
+            n_acc += 1
+
+    u = acc / n_acc
+    rho_mean = rho_acc / n_acc
+    eps_inf = float(np.max(np.abs(u - u_ana)) / u_ana.max())
+    eps_L2 = float(np.linalg.norm(u - u_ana) / np.linalg.norm(u_ana))
+    mass_drift = float(rho_mean - 1.0)
+
+    return {
+        "f": ch.f,
+        "scalars": {
+            "eps_inf": eps_inf,
+            "eps_L2": eps_L2,
+            "mass_drift": abs(mass_drift),
+        },
+        "arrays": {
+            "f": ch.f,
+            "u_profile": u,
+            "u_analytical": u_ana,
+        },
+        "reference": {
+            "scalars": {
+                "eps_inf": 0.0,
+                "eps_L2": 0.0,
+                "mass_drift": 0.0,
+            },
+        },
+    }
+
+
+def _poiseuille_2d_bitwise_reference() -> Dict[str, Any]:
+    """Analytical reference for the bitwise Poiseuille case (scalar gates only)."""
+    return {
+        "scalars": {"eps_inf": 0.0, "eps_L2": 0.0, "mass_drift": 0.0},
+        "arrays": {},
+    }
+
+
+POISEUILLE_2D_BITWISE_CASE = XValCase(
+    name="poiseuille_2d_H16_bitwise",
+    run_fn=_poiseuille_2d_bitwise_run,
+    reference_fn=_poiseuille_2d_bitwise_reference,
+    thresholds={"eps_inf": 0.02, "eps_L2": 0.02, "mass_drift": 1e-8},
+    params={"H": 16, "tau": 0.8, "force": 1e-5, "steps": 5000, "bc": "no_slip",
+            "forcing": "guo", "criterion": "bitwise (SHA-256 of f)"},
+    category="benchmark",
+    external_anchor="joconnor22/LIFE bitwise-refdata-regression-plus-benchmark-cases; "
+                    "Poiseuille flow: u(y) = g/(2ν) y(H-y); Guo et al. (2002) Phys. Rev. E 65, 046308",
+)
+
+
 ALL_CASES = [POISEUILLE_2D_CASE, LID_CAVITY_RE100_CASE, WOMERSLEY_ALPHA5_CASE,
-             TWO_COMPONENT_SC_LAYERED_CASE]
+             TWO_COMPONENT_SC_LAYERED_CASE, POISEUILLE_2D_BITWISE_CASE]
 
 
 def register_default_cases(registry) -> None:

@@ -6,11 +6,24 @@ bitwise reproducible on this platform.  Reference data (scalar metrics + field
 snapshots) are stored as compressed .npz files; regression tests compare new
 runs against the stored golden data.
 
+Bitwise reference-data regression (joconnor22/LIFE pattern)
+-----------------------------------------------------------
+A *bitwise* regression test does not stop at a relative-error threshold.  It
+pins the exact byte-level output of a verified run: the SHA-256 of every stored
+array is recorded in the manifest, and a re-run is accepted only if its arrays
+reproduce those digests *exactly* (``np.array_equal`` / hash match).  This
+catches any change that would still pass a ``<15 %`` tolerance test but
+represents a real behavioural shift -- e.g. a reordering of the collision/
+streaming kernels, a fused-kernel rewrite, a dtype or byte-order change, or a
+different reduction order in the macroscopic moment computation.
+
 References
 ----------
 * Krüger, T. et al. (2017). *The Lattice Boltzmann Method*. Springer, §4.4.
 * Latt, J. (2007). "Choice of units in lattice Boltzmann simulations".
   http://lbmethod.org/numerics:units
+* joconnor22/LIFE: bitwise reference-data regression + benchmark cases
+  (golden-snapshot pinning of solver output).
 """
 
 from __future__ import annotations
@@ -18,7 +31,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -111,18 +124,16 @@ def verify_bitwise_reproducibility(
         hashes.append(h)
         results.append(result)
 
-    reproducible = all(h == hashes[0] for h in hashes)
-
+    reproducible = all(h == hashes[0] for h in hashes[1:])
     return {
         "reproducible": reproducible,
         "hashes": hashes,
-        "config": config,
-        "first_result": results[0],
+        "config": asdict(config),
     }
 
 
 # ---------------------------------------------------------------------------
-# Reference-data store
+# Reference-data store (golden snapshots)
 # ---------------------------------------------------------------------------
 
 _REFDATA_DIR = Path(__file__).parent / "refdata"
@@ -137,8 +148,8 @@ class ReferenceDataStore:
     ``poiseuille_2d_H16``) and an optional version tag.
 
     The manifest (``refdata/manifest.json``) records metadata: case slug,
-    version, creation timestamp, SHA-256 of the .npz file, and the
-    acceptance thresholds.
+    version, creation timestamp, SHA-256 of *every* stored array (for bitwise
+    regression), and the acceptance thresholds.
     """
     base_dir: Path = field(default_factory=lambda: _REFDATA_DIR)
 
@@ -200,13 +211,19 @@ class ReferenceDataStore:
 
         np.savez_compressed(npz_path, **save_dict)
 
-        # Update manifest
+        # Update manifest: record the SHA-256 of *every* stored array so a
+        # re-run can be pinned bitwise (not just within a tolerance band).
         manifest = self._load_manifest()
-        file_hash = compute_state_hash(np.load(npz_path, allow_pickle=False)["arr_" + list(arrays.keys())[0]])
+        loaded = np.load(npz_path, allow_pickle=False)
+        array_hashes = {}
+        for k in arrays.keys():
+            array_hashes[k] = compute_state_hash(loaded[f"arr_{k}"])
+        first_key = list(arrays.keys())[0]
         manifest["cases"][slug] = {
             "version": version,
             "npz_file": npz_path.name,
-            "sha256_first_array": file_hash,
+            "sha256_first_array": array_hashes[first_key],
+            "sha256_arrays": array_hashes,
             "scalars": scalars,
             "thresholds": thresholds,
         }
@@ -310,6 +327,104 @@ class ReferenceDataStore:
             "array_errors": array_errors,
             "passed": passed,
             "details": details,
+        }
+
+    def bitwise_compare(
+        self,
+        slug: str,
+        new_arrays: Dict[str, np.ndarray],
+        version: str = "v1",
+    ) -> Dict[str, Any]:
+        """Bitwise reference-data regression against the stored golden snapshot.
+
+        Unlike :meth:`compare` (which accepts results within a relative-error
+        tolerance band), this method pins the *exact* byte-level output of the
+        solver.  Every array in ``new_arrays`` must reproduce the SHA-256 digest
+        recorded in the manifest for the same key -- i.e. ``np.array_equal``
+        with the stored golden array -- or the regression is reported as failed.
+
+        This is the joconnor22/LIFE "bitwise refdata regression" pattern: it
+        catches a reordering of the collision/streaming kernels, a fused-kernel
+        rewrite, a dtype/byte-order change, or a different reduction order in
+        the macroscopic moment computation -- all of which would still pass a
+        ``<15 %`` tolerance test but represent a real behavioural shift.
+
+        Parameters
+        ----------
+        slug : str
+            Case identifier (e.g. ``poiseuille_2d_H16``).
+        new_arrays : dict
+            Named numpy arrays produced by a fresh run of the solver.
+        version : str
+            Version tag.
+
+        Returns
+        -------
+        dict
+            Keys:
+            - ``'bitwise_passed'``: bool, True only if *every* array matches
+              its stored golden digest exactly.
+            - ``'array_hashes'``: dict of SHA-256 digests of ``new_arrays``.
+            - ``'golden_hashes'``: dict of SHA-256 digests recorded in the
+              manifest for the stored golden snapshot.
+            - ``'details'``: per-array ``{'match': bool, 'golden': str,
+              'new': str}``.
+            - ``'n_arrays'`` / ``'n_matched'``: counts.
+        """
+        ref = self.load(slug, version)
+        ref_arrays = ref["arrays"]
+
+        # Golden digests recorded at save time (authoritative for bitwise pin).
+        manifest = self._load_manifest()
+        case_meta = manifest.get("cases", {}).get(slug, {})
+        golden_hashes = case_meta.get("sha256_arrays", {})
+
+        # If the manifest predates per-array hashing, fall back to hashing the
+        # loaded golden arrays directly (same bytes, same digest).
+        if not golden_hashes:
+            golden_hashes = {k: compute_state_hash(v) for k, v in ref_arrays.items()}
+
+        array_hashes = {}
+        details = {}
+        n_matched = 0
+        # A bitwise regression must reproduce the *complete* golden snapshot:
+        # every golden array key must be present in the re-run and match its
+        # recorded digest.  Iterate over the union of golden and new keys so a
+        # dropped key (or an extra key) is reported, not silently ignored.
+        all_keys = sorted(set(ref_arrays.keys()) | set(new_arrays.keys()))
+        for k in all_keys:
+            if k not in new_arrays:
+                # Golden key missing from the re-run: regression.
+                details[k] = {"match": False, "golden": golden_hashes.get(k),
+                              "new": None, "reason": "key_missing_in_rerun"}
+                continue
+            if k not in ref_arrays:
+                # New key not present in golden snapshot: cannot pin bitwise.
+                details[k] = {"match": False, "golden": None, "new": None,
+                              "reason": "key_absent_in_golden"}
+                continue
+            new_h = compute_state_hash(np.asarray(new_arrays[k]))
+            array_hashes[k] = new_h
+            golden_h = golden_hashes.get(k)
+            match = (golden_h is not None) and (new_h == golden_h)
+            if match:
+                n_matched += 1
+            details[k] = {
+                "match": match,
+                "golden": golden_h,
+                "new": new_h,
+            }
+
+        n_arrays = len(all_keys)
+        bitwise_passed = (n_arrays > 0) and (n_matched == n_arrays)
+
+        return {
+            "bitwise_passed": bitwise_passed,
+            "array_hashes": array_hashes,
+            "golden_hashes": golden_hashes,
+            "details": details,
+            "n_arrays": n_arrays,
+            "n_matched": n_matched,
         }
 
     def has_case(self, slug: str, version: str = "v1") -> bool:

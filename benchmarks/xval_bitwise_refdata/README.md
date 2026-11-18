@@ -64,6 +64,17 @@ PYTHONPATH=src python3 benchmarks/xval_bitwise_refdata/run.py check
 `result.json["regression"]["code"]` must match the kernel sources in the tree —
 `tests/test_xval_bitwise_refdata.py` enforces this.
 
+### Re-freeze log
+
+* **2026-11-17 (m24477)** — `src/tensorlbm/solver.py` gained `@capability(...)`
+  decorators on `collide_bgk` / `collide_mrt` (mission m23186). These are
+  **metadata-only** (no-op at runtime), but they changed the source-file sha256,
+  so the gate correctly reported `env_match=False` ("kernel changed") and went
+  red. Re-frozen against the current tree. **All 9 digests are byte-identical
+  to the pre-change golden** — this *proves* the m23186 capability-decorator
+  change was numerically neutral (no kernel numerics altered), and the red was
+  purely a source-metadata drift, not a regression.
+
 ## Known limitations
 
 * Bitwise identity is a *same-build* property. On another torch build, CPU
@@ -75,3 +86,9 @@ PYTHONPATH=src python3 benchmarks/xval_bitwise_refdata/run.py check
 * The physics benchmark uses the analytic TGV decay (no digitised external
   table), so it validates the operator against an exact solution but does not
   substitute for a wall-bounded / high-Re external benchmark.
+* **Test-isolation caveat**: this suite must be run *alone* (or with `src` as
+  the sole `tensorlbm` on `sys.path`). The `TensorLBM/tests/conftest.py` inserts
+  `TensorLBM/src` at `sys.path[0]`, which shadows the main `src/tensorlbm`
+  package; running both suites in one pytest process makes `import tensorlbm`
+  resolve to the `TensorLBM` copy and the bitwise digests diverge (a false red,
+  not a real kernel regression). Run each suite in its own process.
