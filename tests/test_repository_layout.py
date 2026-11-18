@@ -18,7 +18,16 @@ SPEC.loader.exec_module(LAYOUT)
 
 def policy() -> dict:
     return {
-        "schema_version": 1,
+        "schema_version": 2,
+        "root_directories": [
+            "benchmarks",
+            "docs",
+            "evidence",
+            "experiments",
+            "models",
+            "runs",
+            "tests",
+        ],
         "baseline_revision": "test-fixture",
         "root_files": [".gitignore", "README.md"],
         "legacy_root_files": ["old_debug.py"],
@@ -56,6 +65,22 @@ class RepositoryLayoutTests(unittest.TestCase):
     def test_new_root_path_fails(self):
         self.write("new_debug.py")
         self.assertIn("root-file:", self.check(["new_debug.py"])[0])
+
+    def test_unknown_top_level_directory_is_reported_once(self):
+        names = ["scratch_m123/a.py", "scratch_m123/sub/b.json", "experiments/topic/a.py"]
+        for name in names:
+            self.write(name)
+        failures = self.check(names)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("root-directory: scratch_m123/", failures[0])
+
+    def test_v1_policies_preserve_file_only_root_checks(self):
+        config = policy()
+        config["schema_version"] = 1
+        del config["root_directories"]
+        path = self.write("policy.json", json.dumps(config))
+        self.write("research/a.py")
+        self.assertEqual(self.check(["research/a.py"], LAYOUT.load_policy(path)), [])
 
     def test_generated_exception_is_not_a_directory_exemption(self):
         self.write("runs/old.log")
@@ -141,6 +166,9 @@ class RepositoryLayoutTests(unittest.TestCase):
         invalid.append(config)
         config = policy()
         config["large_files"] = {"docs/big.json": -1}
+        invalid.append(config)
+        config = policy()
+        config["root_directories"] = ["nested/directory"]
         invalid.append(config)
         invalid.extend([{}, {**policy(), "schema_version": 99}, []])
         for config in invalid:

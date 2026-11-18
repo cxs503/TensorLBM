@@ -238,7 +238,7 @@ def test_laminar_hb_profile_matches_analytical():
     l2 = np.linalg.norm(u_num[sl] - u_ref[sl]) / np.linalg.norm(u_ref[sl])
     # A 3e3-step run is *not* the calibrated laminar state: shear-thinning HB
     # needs O(1e4-1e5) steps because the plug viscosity grows without bound
-    # (see REPORT_P295W1R2_N04.md, section 5).  The band here only rules out
+    # (see docs/reports/REPORT_P295W1R2_N04.md, section 5).  The band here only rules out
     # order-of-magnitude / sign errors.
     # still transient (the calibrated 3 % parity needs O(1e4) steps and is
     # evaluated by the campaign itself); this band rejects sign/scale errors

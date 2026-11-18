@@ -1,12 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "baseline_revision": "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc",
   "root_files": [
-    "AGENTS.md",
     ".dockerignore",
     ".editorconfig",
     ".gitignore",
+    ".gitlab-ci.yml",
     ".pre-commit-config.yaml",
+    "AGENTS.md",
     "AUTHORS",
     "CHANGELOG.md",
     "CITATION.cff",
@@ -18,15 +19,11 @@
     "README.zh-CN.md",
     "SECURITY.md",
     "pyproject.toml",
+    "release.sh",
     "requirements.txt",
     "uv.lock"
   ],
-  "legacy_root_files": [
-    "agent_memory_context_update.md",
-    "clean_repo.sh",
-    "install_deps.sh",
-    "release.sh"
-  ],
+  "legacy_root_files": [],
   "legacy_generated_files": [
     "runs/bfs_gartling/test_m64.log",
     "runs/bfs_gartling/test_m64/case_m64.json",
@@ -427,5 +424,37 @@
   "large_files": {
     "docs/assets/static-cut-cell-bgk/shear-64.json.gz": 6313776,
     "models/suboff_v0.3.pt": 15901363
-  }
+  },
+  "root_directories": [
+    ".audit",
+    ".github",
+    "TensorLBM",
+    "_scratch",
+    "app",
+    "artifacts",
+    "audit",
+    "audits",
+    "benchmarks",
+    "cases",
+    "configs",
+    "demos",
+    "docs",
+    "evidence",
+    "examples",
+    "experiments",
+    "figures",
+    "frontend-vue",
+    "models",
+    "notebooks",
+    "papers",
+    "references",
+    "regression_rules",
+    "runs",
+    "scripts",
+    "src",
+    "teaching",
+    "tests",
+    "tools",
+    "xval"
+  ]
 }

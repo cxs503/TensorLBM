@@ -89,6 +89,25 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 case_readme = (REPO / "benchmarks" / case / "README.md").read_text(encoding="utf-8")
                 self.assertIn(f"](../../../docs/reports/{name})", case_readme)
 
+    def test_november_root_migration_destinations(self):
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            moves = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if "nov-2026 root migration" in row["verification"]
+            }
+        self.assertIn("bench_t4_medium.py", moves)
+        self.assertIn("audit_m18221", moves)
+        self.assertIn("verdict_m15215.sql", moves)
+        for old, new in moves.items():
+            with self.subTest(old=old, new=new):
+                # Local runners may recreate ignored scratch directories.
+                # Their tracked descendants, rather than filesystem presence,
+                # are governed by the repository layout checker.
+                self.assertTrue((REPO / new).exists())
+                if (REPO / new).is_file():
+                    self.assertFalse((REPO / old).is_file())
+
     def test_migrations_registered_without_reintroducing_root_exceptions(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             rows = list(csv.DictReader(stream))

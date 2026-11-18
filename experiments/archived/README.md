@@ -7,8 +7,7 @@ campaign scripts, `verify_*.py` / `diagnose_*.py` probes and the
 
 **These are not part of the package and are not maintained.**
 
-- Not imported by `tensorlbm`, `app/`, `tests/` or `scripts/` — nothing here
-  is on an import path, so the files can be deleted without breaking a build.
+- Historical workspaces can contain their own package trees and test fixtures. The installable TensorLBM package lives in [src/tensorlbm](../../src/tensorlbm/).
 - Not linted, formatted or type-checked: CI runs ruff and mypy over
   `src tests examples benchmarks` only.
 - Pinned to the repository state and hardware of the day they ran (many
@@ -26,12 +25,12 @@ campaign scripts, `verify_*.py` / `diagnose_*.py` probes and the
 | Documented, runnable examples | `examples/` |
 | One-off experiment / debug driver | **here** |
 
-The repository root is reserved for packaging metadata, `README`,
-`CHANGELOG`, `LICENSE` and the three tooling shells (`release.sh`,
-`install_deps.sh`, `clean_repo.sh`). `.gitignore` carries root-anchored
-guards (`/*_worker.py`, `/*_launcher.py`, `/verify_*.py`, `/run_*.sh`,
-`/launch_*.sh`, …) so a new one-off cannot be committed to the root by
-accident — write it here instead.
+The [workspaces](workspaces/) retain mission-specific files under their original
+relative hierarchy. [Staging snapshots](staging/) contain partial source trees
+used to launch individual campaigns. To find a former root script or a mission
+directory, search the [old-to-new path manifest](../../docs/architecture/migration_manifest.csv).
+The release command remains at the root. The old cleanup utility is under
+[scripts/maintenance](../../scripts/maintenance/).
 
 ## Reviving one
 

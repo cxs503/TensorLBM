@@ -25,9 +25,9 @@ preregistered refinement arm never ran and no benchmark case is registered in
 | E | zero-hand-copy of report numbers | cross-read `REPORT.md` ④/⑧ against `artifacts/results.json` / `cells.jsonl` | E2/E1 numbers match the artefacts; **one dangling pointer** (F4) |
 | F | pre-existing capability + regression guard | `git log -- src/tensorlbm/multiphase.py` → last touched `5885134d` (merge #1781 / m15063, *before* this mission); `pytest tests/test_multiphase_psi_eos.py` | ψ-PR is **pre-existing production code**, 3 tests pass — the mission adds evidence, not code |
 
-Artefacts of this audit: `audit_m18221/audit_pr_xval.py` (independent
-reconstruction), `audit_m18221/audit_pr_xval.json` (raw), `audit_m18221/cells_audit.jsonl`
-(reproduction cell), `audit_m18221/fig_m18221_audit.png`,
+Artefacts of this audit: `audit/m18221/audit_pr_xval.py` (independent
+reconstruction), `audit/m18221/audit_pr_xval.json` (raw), `audit/m18221/cells_audit.jsonl`
+(reproduction cell), `audit/m18221/fig_m18221_audit.png`,
 `docs/audit_m18221/evidence_snapshot/` (+ `SHA256SUMS.txt`, byte-frozen copies of
 the audited deliverables).
 
@@ -130,7 +130,7 @@ I read the delivery's code and report before writing my own reconstruction (unav
 in a cross-check), but `audit_pr_xval.py` imports **no** delivery helper: the OSS ψ is
 re-derived from the verbatim kernel text with my own de-continuation/mapping, the
 Maxwell reference is my own solver, and the reproduction ran the delivered entry point
-into a separate output file (`audit_m18221/cells_audit.jsonl`). The one shared
+into a separate output file (`audit/m18221/cells_audit.jsonl`). The one shared
 dependency is `tensorlbm` itself — which is the object under test, not a helper.
 
 ## 6. Disposition

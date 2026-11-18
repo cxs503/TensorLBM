@@ -95,8 +95,8 @@ Ra=1e5 预期收敛趋势类似：n64 误差 ~5-10%，n128 误差 ~2-5%，n256 �
 - `benchmarks/verified/thermal_cavity/run.py` — 运行入口（已扩展 Ra=1e5 支持）
 - `benchmarks/verified/thermal_cavity/result.json` — 结果文件（含 Ra=1e5 预注册参考值 + 初步数据）
 - `tests/test_thermal_cavity_ra1e5.py` — pytest 测试套件
-- `gen_figures_ra1e5.py` — 图生成脚本
-- `out_ra1e5/case_ra1e5_n64_preliminary.json` — 初步运行工件
+- `experiments/thermal_cavity/gen_figures_ra1e5.py` — 图生成脚本
+- `evidence/thermal_cavity/case_ra1e5_n64_preliminary.json` — 初步运行工件
 
 **复现命令**：
 ```bash

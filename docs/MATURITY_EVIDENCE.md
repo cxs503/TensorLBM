@@ -152,10 +152,10 @@ $ grep -n "from .boundary.boundaries import" src/tensorlbm/bfs_armaly.py
 **Command**:
 ```bash
 cd /srv/tensor/agent/work/m21831
-python3 reproduce_re100.py
+python3 experiments/backstep/reproduce_re100.py
 ```
 
-**Script**: `reproduce_re100.py` (executable, 120 lines)
+**Script**: `experiments/backstep/reproduce_re100.py` (executable, 120 lines)
 
 **Expected output**:
 ```
@@ -166,7 +166,7 @@ Wall time              = 15.5s
 
 **Verification**:
 ```bash
-$ timeout 60 python3 reproduce_re100.py 2>&1 | grep "X1/s (wall shear)"
+$ timeout 60 python3 experiments/backstep/reproduce_re100.py 2>&1 | grep "X1/s (wall shear)"
   X1/s (wall shear)      = 2.5492
 ```
 
@@ -177,7 +177,7 @@ $ timeout 60 python3 reproduce_re100.py 2>&1 | grep "X1/s (wall shear)"
 - [x] **run_artifacts**: `artifacts/case_backward_step_armaly/re100_converged/{result.json,wall_shear.csv,field.npz}`
 - [x] **integration_callers**: Uses tensorlbm.d2q9, tensorlbm.solver, tensorlbm.boundary APIs
 - [x] **benchmark**: ref=3.05, got=2.549, error=-16.4% (documented in BENCHMARK_CASE_BACKSTEP_RE100.md)
-- [x] **repro_cmd**: `python3 reproduce_re100.py` (executable script)
+- [x] **repro_cmd**: `python3 experiments/backstep/reproduce_re100.py` (executable script)
 - [x] **tests**: 19 tests pass in `tests/test_backward_facing_step.py`
 
 ## Knowledge Base Citations
@@ -229,7 +229,7 @@ $ timeout 60 python3 reproduce_re100.py 2>&1 | grep "X1/s (wall shear)"
 
 3. **Documentation**:
    - BENCHMARK_CASE_BACKSTEP_RE100.md provides comprehensive case documentation
-   - reproduce_re100.py provides easy reproduction
+   - experiments/backstep/reproduce_re100.py provides easy reproduction
    - All artifacts are machine-readable and judgeable by verdict.py
 
 ## Conclusion

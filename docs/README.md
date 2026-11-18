@@ -1,5 +1,7 @@
 # TensorLBM Documentation
 
+[Find code and evidence](architecture/repository_layout.md) · [Look up a moved file](architecture/migration_manifest.csv) · [Numerical validation matrix](../benchmarks/validation_matrix/README.md)
+
 A navigable index of the documentation in this directory, grouped by topic.
 
 ---

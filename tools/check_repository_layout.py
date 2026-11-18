@@ -32,20 +32,25 @@ def validate_path(value: object) -> str:
 
 def load_policy(path: Path) -> dict:
     policy = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(policy, dict) or policy.get("schema_version") != 1:
-        raise ValueError("Expected repository layout policy schema_version=1")
-    expected = {"schema_version", "baseline_revision", "large_files", *PATH_LISTS}
+    if not isinstance(policy, dict) or policy.get("schema_version") not in (1, 2):
+        raise ValueError("Expected repository layout policy schema_version 1 or 2")
+    path_lists = PATH_LISTS
+    if policy["schema_version"] == 2:
+        path_lists += ("root_directories",)
+    expected = {"schema_version", "baseline_revision", "large_files", *path_lists}
     if set(policy) != expected:
         raise ValueError(f"Expected policy keys: {sorted(expected)}")
-    for key in PATH_LISTS:
+    for key in path_lists:
         values = policy[key]
         if not isinstance(values, list):
             raise ValueError(f"{key} must be a list")
         paths = [validate_path(value) for value in values]
         if len(paths) != len(set(paths)):
             raise ValueError(f"Duplicate paths in {key}")
-        if key in {"root_files", "legacy_root_files"} and any("/" in p for p in paths):
-            raise ValueError(f"{key} may only contain root filenames")
+        if key in {"root_files", "legacy_root_files", "root_directories"} and any(
+            "/" in p for p in paths
+        ):
+            raise ValueError(f"{key} may only contain top-level names")
     if set(policy["root_files"]) & set(policy["legacy_root_files"]):
         raise ValueError("Canonical and legacy root files must not overlap")
     if not isinstance(policy["large_files"], dict):
@@ -85,6 +90,8 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
     roots = set(policy["root_files"]) | set(policy["legacy_root_files"])
     generated = set(policy["legacy_generated_files"])
     models = set(policy["legacy_model_files"])
+    allowed_dirs = set(policy.get("root_directories", ()))
+    unexpected_dirs = set()
     for name in names:
         path = repo / name
         try:
@@ -97,6 +104,9 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
             failures.append(
                 f"root-file: {name} — choose an owned directory or review the root policy"
             )
+        directory, separator, _ = name.partition("/")
+        if separator and policy["schema_version"] == 2 and directory not in allowed_dirs:
+            unexpected_dirs.add(directory)
         if is_generated(name) and name not in generated:
             failures.append(f"generated-file: {name} — keep raw outputs out of Git")
         if PurePosixPath(name).suffix.lower() in MODEL_SUFFIXES and name not in models:
@@ -106,6 +116,8 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         ceiling = policy["large_files"].get(name, MAX_FILE_BYTES)
         if size > ceiling:
             failures.append(f"large-file: {name} — {size} bytes exceeds reviewed ceiling {ceiling}")
+    for directory in sorted(unexpected_dirs):
+        failures.append(f"root-directory: {directory}/ — use an existing area or review the policy")
     return failures
 
 
