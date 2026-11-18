@@ -4,6 +4,27 @@ This is the file-placement contract for contributors and coding agents. It
 implements the low-risk part of the [refactoring plan](REPOSITORY_REFACTORING_PLAN.md),
 not a new solver architecture. No source relocation is authorized by this document.
 
+## Finding code, evidence and earlier work
+
+Install and import from [src/tensorlbm](../../src/tensorlbm/). The separate
+[TensorLBM tree](../../TensorLBM/README.md) contains copies from earlier work.
+Start with [examples](../../examples/) to run a case and the
+[validation matrix](../../benchmarks/validation_matrix/README.md) to check its
+evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
+
+| Looking for | Location |
+| --- | --- |
+| An audit with a mission number | [audit](../../audit/), for example [m18429](../../audit/m18429/). This groups the report, verdict SQL and reproduction material where available. |
+| A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
+| A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
+| An earlier experiment | [Archived experiments](../../experiments/archived/), including [mission workspaces](../../experiments/archived/workspaces/) and [staged snapshots](../../experiments/archived/staging/) |
+| An old repository path | Search the [migration manifest](migration_manifest.csv). A directory row maps its entire subtree, preserving the relative suffix. |
+
+Run repository-relative commands from the checkout root. The original tree at
+[bce9c9c](https://github.com/cxs503/TensorLBM/tree/bce9c9c) supplies context for
+commands, cluster paths and output names quoted in historical evidence. The
+existing `.audit/` and `_scratch/` trees still have in-repository consumers.
+
 ## Where new work belongs
 
 | Area | Responsibility | Do not put here |
@@ -71,7 +92,7 @@ update Git's index, download data, or require the baseline commit's history.
 
 Rules:
 
-1. No new root files outside the explicit root metadata allowlist.
+1. Root files and top-level directories must appear in the policy. Add a scientific topic under its existing area. Propose a new top-level area together with its purpose and consumers.
 2. No new tracked files in `runs/`, `runs_prop/`, `outputs/`, `artifacts/runs/`,
    root `build/` or `dist/`, frontend `dist/`, or recognized cache/dependency directories.
 3. No new model-weight files (`.pt`, `.pth`, `.ckpt`, `.onnx`, `.safetensors`),
@@ -118,7 +139,7 @@ accepted ownership, not that the implementing agent can approve its own change.
    results to the baseline. Update the manifest and remove obsolete exceptions.
 5. Obtain independent review before calling the migration accepted.
 
-Do not use `clean_repo.sh --apply` as a substitute for this procedure. Its glob
+Do not use `scripts/maintenance/clean_repo.sh --apply` as a substitute for this procedure. Its glob
 matching and index changes cannot establish provenance or compatibility.
 
 ## Next batches, in order
@@ -143,7 +164,7 @@ matching and index changes cannot establish provenance or compatibility.
   consumers before moving tests or flattening the legacy API into subpackages.
   No bulk source moves, tolerance changes or benchmark promotions in a layout patch.
 
-### Updated inventory after PR #412 and compatibility repair
+### Historical inventory after PR #412 and compatibility repair
 
 The 78 legacy root paths above describe the earlier report/assets batch, not the
 current inventory. At `14f200c`, there are 20 tracked root files: 17 canonical
@@ -153,3 +174,12 @@ There remain 392 tracked historical `runs/` files and one model-weight exception
 The boundary/turbulence compatibility repair adds only source alias modules,
 tests and documentation, not generated results. See the repair report for checks
 and limitations.
+
+
+### Root inventory after the November 2026 consolidation
+
+The migration started at `bce9c9c` with 228 root files and 60 top-level
+directories. The resulting tree contains 20 root files and 30 directories.
+The GitLab pipeline configuration and release entry point are root files in
+policy version 2. The tests exercise both this policy and version 1 checkouts.
+Raw-output, model and size exceptions still use exact paths and byte limits.

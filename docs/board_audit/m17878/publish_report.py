@@ -8,6 +8,7 @@ Run: python3 docs/board_audit/m17878/publish_report.py [--dry-run]
 """
 from __future__ import annotations
 
+import os
 import argparse
 import base64
 import json
@@ -16,7 +17,6 @@ from pathlib import Path
 
 BASE = "http://127.0.0.1:8010/api/v1"
 USER = "eco_admin"
-PASS = "EcoTest!2026pass"
 HERE = Path(__file__).resolve().parent
 ART = json.loads((HERE / "artifacts/verify_m17757.json").read_text())
 
@@ -162,7 +162,7 @@ def main() -> int:
         print(md[:1500])
         print("figures:", [(f["name"], len(f["png_base64"])) for f in figs])
         return 0
-    st, d = api("POST", "/auth/login", {"username": USER, "password": PASS})
+    st, d = api("POST", "/auth/login", {"username": USER, "password": os.environ["TENSOR_AGENT_PASS"]})
     tok = d.get("access_token")
     st, d = api("POST", "/tensor/reports", payload, tok)
     print(st, json.dumps(d, ensure_ascii=False)[:400])

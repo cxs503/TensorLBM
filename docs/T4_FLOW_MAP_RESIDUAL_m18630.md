@@ -1,7 +1,7 @@
 # T4 physics-AI loop: residual flow map over the exact viscous prior (m18630, re-open of #2003)
 
 **Repo**: TensorLBM · **Branch**: agent/m18630 · **Anchor**: GAP-LBM-T4-PHYSICS-AI-LOOP
-**Feature re-delivered**: `bench_t4_physics_ai_loop.py`, `src/tensorlbm/ai/flow_field_loop.py`,
+**Feature re-delivered**: `scripts/physics_ai/bench_t4_physics_ai_loop.py`, `src/tensorlbm/ai/flow_field_loop.py`,
 `tests/test_flow_field_loop.py`, `tools/t4_report_from_results.py`, `tools/t4_send_report.py`
 (all already on `main`, delivered by m15932/m15970).  This round audits the *numbers* of that
 feature, finds that the AI step loses to its own physics baselines, and fixes the
@@ -10,7 +10,7 @@ parameterisation.
 ## 1 Case and parameters
 
 Decaying multi-mode Taylor-Green vortex in a periodic box, D2Q9 BGK, lattice units, produced by
-`tensorlbm.solver` primitives.  Corpus = `bench_t4_medium.py` (n=64, 2000 steps, sample every
+`tensorlbm.solver` primitives.  Corpus = `scripts/physics_ai/bench_t4_medium.py` (n=64, 2000 steps, sample every
 200 steps, u0=0.05, Re = u0/(k1 nu) ∈ {50,100,200} train, **75 holdout**, seeds 0/1, 8 runs /
 88 snapshots / sha256 manifest).  The analytic single-mode Taylor-Green solution is used **only**
 as a ruler inside `verify_producer` (field error 0.296 %/0.310 %, decay-rate 0.124 %/0.712 % →
@@ -26,8 +26,8 @@ as a ruler inside `verify_producer` (field error 0.296 %/0.310 %, decay-rate 0.1
 * Why: the cheap priors move the target into the reach of the small training budgets used here
   (target energy `MSE(y-Py)/MSE(y) = 0.0685/0.3354 = 0.20`), and give the surrogate a
   **structural floor**: at `FNO→0` the model *is* the prior.
-* Benchmarks: `bench_t4_medium.py` budget raised 12→60 epochs, width 12→16, modes 6→8;
-  `bench_t4_physics_ai_loop.py` 12→60 epochs, width 12→20, layers 2→3, modes 6→10.
+* Benchmarks: `scripts/physics_ai/bench_t4_medium.py` budget raised 12→60 epochs, width 12→16, modes 6→8;
+  `scripts/physics_ai/bench_t4_physics_ai_loop.py` 12→60 epochs, width 12→20, layers 2→3, modes 6→10.
   `evaluate_holdout`/`_predict_rollout`/`feedback_acceleration` now all call `flow_map_step`, so
   the conditioning channel, residual base and units cannot drift between call sites (the m15970
   unit mismatch had to be fixed in three copies of the same snippet).
@@ -58,15 +58,15 @@ shrink the field, not to advance it.
 
 No figure is shipped with this note: the residual campaign that produced the table was run as a
 measurement script against the existing medium dataset, and the shared overlay filesystem hit
-100 % full (≈44 KB free) before the matplotlib stage of `bench_t4_medium.py` could be rerun.
-`bench_t4_medium.py` still writes fig1–fig4 when it runs; the missing-figure reason is therefore
+100 % full (≈44 KB free) before the matplotlib stage of `scripts/physics_ai/bench_t4_medium.py` could be rerun.
+`scripts/physics_ai/bench_t4_medium.py` still writes fig1–fig4 when it runs; the missing-figure reason is therefore
 infrastructure, not absence of data (all numbers above are in the tables).
 
 ## 5 Caveats / limitations
 
 * The 120-epoch numbers come from the same medium corpus and the same code path
   (`load_dataset`, `viscous_prior_step`, `FNO2d`, `flow_map_step`), driven by a measurement
-  script; the updated `bench_t4_medium.py` (60 ep, width 16) was **not** re-run end-to-end
+  script; the updated `scripts/physics_ai/bench_t4_medium.py` (60 ep, width 16) was **not** re-run end-to-end
   because the filesystem filled up.  Treat `0.1439` as a measured prototype value, not as a
   benchmark artifact.
 * Rollout/healing for the residual model is not measured yet (only one-step is).  The

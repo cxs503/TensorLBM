@@ -22,6 +22,7 @@ Usage::
 
 from __future__ import annotations
 
+import os
 import argparse
 import base64
 import io
@@ -121,7 +122,7 @@ def collect() -> dict:
         f"SELECT count(*) FROM tensor_benchmark_cases WHERE anchor_slug='{ANCHOR}';")
     total_cases = db_scalar("SELECT count(*) FROM tensor_benchmark_cases;")
     tok = api("/auth/login", {"username": "eco_admin",
-                              "password": "EcoTest!2026pass"}).get("access_token")
+                              "password": os.environ["TENSOR_AGENT_PASS"]}).get("access_token")
     l4 = api(f"/tensor/bench/l4-verdict/{AUDITED_MISSION}", tok=tok)
     mission = api(f"/tensor/missions/{AUDITED_MISSION}", tok=tok)
     return {
@@ -301,7 +302,7 @@ def main(argv=None) -> int:
 
     if a.publish:
         tok = api("/auth/login", {"username": "eco_admin",
-                                  "password": "EcoTest!2026pass"})["access_token"]
+                                  "password": os.environ["TENSOR_AGENT_PASS"]})["access_token"]
         payload = {
             "title": "Board audit m15485 · m15363 GAP-PP-3-3DMCMP-SPURIOUS-SCALING → L2, reopened",
             "summary": "交差核验：工装真实可用（12 测试复跑全绿、共存表 Δρ 重算最大相对误差 <3%），但生产 "

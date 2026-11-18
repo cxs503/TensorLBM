@@ -10,7 +10,7 @@ import requests
 # Get environment variables
 api_base = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
 username = os.environ.get("TENSOR_AGENT_USER", "eco_admin")
-password = os.environ.get("TENSOR_AGENT_PASS", "EcoTest!2026pass")
+password = os.environ["TENSOR_AGENT_PASS"]
 
 print(f"API Base: {api_base}")
 print(f"Username: {username}")

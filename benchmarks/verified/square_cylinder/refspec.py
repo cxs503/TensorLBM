@@ -3,7 +3,7 @@
 
 Why this file exists
 ====================
-Audit `m16183` (see ``audit_m16183.md`` at the repo root) found that the case
+Audit `m16183` (see ``audit/m16183/audit_m16183.md``) found that the case
 archive carried **two different reference constants** for the same physical
 measurement::
 

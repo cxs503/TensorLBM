@@ -40,7 +40,7 @@ def fmt(x, nd=4, pct=False):
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(REPO / "REPORT_P295W1R2_N04.md"))
+    ap.add_argument("--out", default=str(REPO / "docs/reports/REPORT_P295W1R2_N04.md"))
     args = ap.parse_args()
 
     crit = load(ART / "criteria.json", {})

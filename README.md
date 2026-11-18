@@ -1,9 +1,18 @@
 # TensorLBM
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+TensorLBM is a PyTorch lattice Boltzmann solver for fluid dynamics.
+
+| I want to… | Start here |
+| --- | --- |
+| Run a simulation | [Quick start](#installation) · [Examples](examples/) · [Droplet impact](examples/droplet_impact.py) |
+| Check a numerical claim | [Validation matrix](benchmarks/validation_matrix/README.md) · [Benchmark status](benchmarks/STATUS.md) |
+| Change the solver | [Python package](src/tensorlbm/) · [Tests](tests/) · [Contributing](CONTRIBUTING.md) |
+| Find a report or a moved file | [Documentation](docs/README.md) · [Directory guide](docs/architecture/repository_layout.md) · [Old → new paths](docs/architecture/migration_manifest.csv) |
+
 **Tensor ecosystem vision and boundary contract:** [AI-era ecosystem vision](https://github.com/cxs503/TensorPlatform/blob/main/docs/architecture/TENSOR_ECOSYSTEM_AI_ERA_VISION.md). Read this before adding cross-project features.
 **Project charter:** [TensorLBM — lattice Boltzmann solver charter](docs/PROJECT_CHARTER.md) — ownership, non-goals, integration contract, and quality gates.
-
-[English](README.md) | [简体中文](README.zh-CN.md)
 
 **System-wide overview:** [Tensor Ecosystem System Overview](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md) — architecture, repository boundaries, shared contracts, end-to-end workflow and icebreaker application roadmap.
 
@@ -14,7 +23,6 @@
 [![Browser Platform](https://img.shields.io/badge/Browser%20Platform-FastAPI%20%2B%20WebUI-0ea5e9)](docs/PLATFORM.md)
 [![HPC Benchmarks](https://img.shields.io/badge/HPC%20Benchmarks-Validated%20Cases-16a34a)](#quantitative-validation-summary)
 
-> **A specialist lattice Boltzmann solver for AI-assisted fluid dynamics.**
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
 ```bash

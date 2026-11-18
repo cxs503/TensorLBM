@@ -52,8 +52,8 @@ reference. This mission makes both ends of the chain checkable objects:
   Taylor-Green initial field (divergence-free stream function).
 - **Re definition**: `Re = u0 / (k1 * nu)`, `k1 = 2 pi / n` (fundamental wavenumber).
 - **Key code**: `src/tensorlbm/ai/flow_field_loop.py` (37 KB, real implementation),
-  `src/tensorlbm/ai/fno.py` (FNO2d), `bench_t4_medium.py` (medium driver),
-  `bench_t4_physics_ai_loop.py` (full driver).
+  `src/tensorlbm/ai/fno.py` (FNO2d), `scripts/physics_ai/bench_t4_medium.py` (medium driver),
+  `scripts/physics_ai/bench_t4_physics_ai_loop.py` (full driver).
 - **Tests**: `tests/test_flow_field_loop.py` — 10/10 passed (10.09s).
 
 ## 3. Parameter Table
@@ -129,5 +129,5 @@ pure-LBM reference — the AI loop closes without corrupting the physics.
 - `results.json` — every number quoted here
 - `figures/` — fig1 producer verification, fig2 error vs Re, fig3 field maps, fig4 feedback
 
-**Repro**: `python bench_t4_medium.py --threads 16` (~45 s)
-**Full campaign**: `python bench_t4_physics_ai_loop.py --threads 16` (cluster cj1206)
+**Repro**: `python scripts/physics_ai/bench_t4_medium.py --threads 16` (~45 s)
+**Full campaign**: `python scripts/physics_ai/bench_t4_physics_ai_loop.py --threads 16` (cluster cj1206)

@@ -88,7 +88,7 @@ train Re∈{{50,100,200,400}} / **holdout Re∈{{75,300}}**，5000 步每 250 �
 审计分四段独立复核（A 工件完整性 / B 求解器复现 / C 生产端认证 / D AI 闭环代跑），并用**自推的解析式**
 复核 mission 的标尺（u=(u0 sin kx cos ky, −u0 cos kx sin ky) ⇒ rms=u0/√2，∇²u=−2k²u ⇒ exp(−2νk²t)）。
 代码指针：`flow_field_loop.py` run_case:249 / verify_producer:292 / produce_dataset:393 /
-train_flow_map:641 / evaluate_holdout:786 / feedback_acceleration:887；驱动 `bench_t4_physics_ai_loop.py`。
+train_flow_map:641 / evaluate_holdout:786 / feedback_acceleration:887；驱动 `scripts/physics_ai/bench_t4_physics_ai_loop.py`。
 
 ## ③ 计算结果
 

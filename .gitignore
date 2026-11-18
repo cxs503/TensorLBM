@@ -125,3 +125,9 @@ artifacts/p106w3a2_n01/l1/state_*/
 
 # per-shard campaign logs (regenerable, not evidence)
 benchmarks/*/shard_*.log
+
+# Authentication files produced by the archived workspace clients
+/experiments/archived/workspaces/scratch/bearer.txt
+/experiments/archived/workspaces/scratch/login.json
+/experiments/archived/workspaces/scratch/tok.json
+/experiments/archived/workspaces/scratch/m10395/tok.txt

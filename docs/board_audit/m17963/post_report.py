@@ -4,6 +4,7 @@ All numbers come from docs/board_audit/m17963/audit_numbers.json (zero hand-copy
 """
 from __future__ import annotations
 
+import os
 import base64
 import json
 import subprocess
@@ -18,7 +19,7 @@ BASE = "http://127.0.0.1:8010/api/v1"
 def token() -> str:
     req = urllib.request.Request(
         BASE + "/auth/login",
-        data=json.dumps({"username": "eco_admin", "password": "EcoTest!2026pass"}).encode(),
+        data=json.dumps({"username": "eco_admin", "password": os.environ["TENSOR_AGENT_PASS"]}).encode(),
         headers={"Content-Type": "application/json"},
     )
     return json.load(urllib.request.urlopen(req))["access_token"]

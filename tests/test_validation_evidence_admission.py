@@ -62,7 +62,7 @@ def test_synthetic_marker_overrides_an_otherwise_passing_artifact(tmp_path, mark
 
 def test_synthetic_generator_cannot_emit_validation_evidence(tmp_path):
     spec = importlib.util.spec_from_file_location(
-        "synthetic_generator", ROOT / "generate_synthetic_results.py"
+        "synthetic_generator", ROOT / "scripts/plotting/generate_synthetic_results.py"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -83,7 +83,7 @@ def test_synthetic_generator_cannot_emit_validation_evidence(tmp_path):
 
 def test_verification_figure_loader_rejects_synthetic_fixture(tmp_path):
     spec = importlib.util.spec_from_file_location(
-        "channel_figures", ROOT / "generate_channel_figures.py"
+        "channel_figures", ROOT / "scripts/plotting/generate_channel_figures.py"
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

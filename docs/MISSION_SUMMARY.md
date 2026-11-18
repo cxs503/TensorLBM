@@ -27,7 +27,7 @@ Ran the Re=100 backward-facing step case and generated:
 **Result**: X1/s = 2.549 (reference: 3.05, error: -16.4%)
 
 ### 3. Created Reproduction Script
-- `reproduce_re100.py` - executable script that reproduces the benchmark
+- `experiments/backstep/reproduce_re100.py` - executable script that reproduces the benchmark
 - Runs in ~15 seconds, produces identical artifacts
 - Includes maturity gate assessment output
 
@@ -65,7 +65,7 @@ Ran the Re=100 backward-facing step case and generated:
 
 ### L4: Benchmark ⚠️ PARTIAL
 - **benchmark**: ref=3.05, got=2.549, error=-16.4%
-- **repro_cmd**: `python3 reproduce_re100.py`
+- **repro_cmd**: `python3 experiments/backstep/reproduce_re100.py`
 - **Issue**: Error exceeds 15% threshold due to coarse grid (h_in=8)
 - **Explanation**: Grid refinement to h_in=26 or h_in=52 expected to reduce error <10%
 
@@ -89,7 +89,7 @@ Grid refinement requires compute cluster (wall time >120s) and is recommended as
 ### New Files
 1. `BENCHMARK_CASE_BACKSTEP_RE100.md` - comprehensive benchmark documentation
 2. `MATURITY_EVIDENCE.md` - maturity gate evidence
-3. `reproduce_re100.py` - reproduction script
+3. `experiments/backstep/reproduce_re100.py` - reproduction script
 4. `artifacts/case_backward_step_armaly/re100_converged/result.json`
 5. `artifacts/case_backward_step_armaly/re100_converged/wall_shear.csv`
 6. `artifacts/case_backward_step_armaly/re100_converged/field.npz`
@@ -106,7 +106,7 @@ Grid refinement requires compute cluster (wall time >120s) and is recommended as
 ### Run reproduction script
 ```bash
 cd /srv/tensor/agent/work/m21831
-python3 reproduce_re100.py
+python3 experiments/backstep/reproduce_re100.py
 ```
 
 ### Run tests
