@@ -193,6 +193,18 @@
    "validation_status_json": false
   },
   {
+   "case": "dam_break_mm_channel",
+   "dir": "benchmarks/pending/dam_break_mm_channel",
+   "index_class": "fail",
+   "index_rows": 1,
+   "machine": "fail",
+   "machine_key": "status",
+   "machine_source": "benchmarks/pending/dam_break_mm_channel/result.json",
+   "readme": true,
+   "result_json": true,
+   "validation_status_json": false
+  },
+  {
    "case": "dam_break_ritter_ci",
    "dir": "benchmarks/pending/dam_break_ritter_ci",
    "index_class": null,
@@ -710,15 +722,15 @@
   }
  ],
  "counts": {
-  "advertised_pending": 59,
+  "advertised_pending": 60,
   "advertised_verified": 91,
-  "pending_dirs": 59,
-  "pending_index_rows": 35,
-  "pending_machine_fail": 18,
+  "pending_dirs": 60,
+  "pending_index_rows": 36,
+  "pending_machine_fail": 19,
   "pending_machine_pass": 1,
   "pending_machine_unknown": 40,
-  "pending_with_readme": 43,
-  "pending_with_result_json": 30,
+  "pending_with_readme": 44,
+  "pending_with_result_json": 31,
   "status_md_verified_rows": 36,
   "verified_dirs": 91
  },
@@ -892,79 +904,86 @@
    "target": "dam_break_3d_mm/"
   },
   {
+   "case": "dam_break_mm_channel",
+   "class": "fail",
+   "lineno": 51,
+   "status_raw": "❌",
+   "target": "dam_break_mm_channel/"
+  },
+  {
    "case": "dam_break_sc",
    "class": "closed",
-   "lineno": 51,
+   "lineno": 52,
    "status_raw": "⏸️ TERMINAL",
    "target": "dam_break_sc/"
   },
   {
    "case": "capillary_invasion_washburn",
    "class": "fail",
-   "lineno": 52,
+   "lineno": 53,
    "status_raw": "❌",
    "target": "capillary_invasion_washburn/"
   },
   {
    "case": "forchheimer",
    "class": "fail",
-   "lineno": 53,
+   "lineno": 54,
    "status_raw": "❌",
    "target": "forchheimer/"
   },
   {
    "case": "permeability3d",
    "class": "closed",
-   "lineno": 54,
+   "lineno": 55,
    "status_raw": "⏸️ superseded",
    "target": "permeability3d/"
   },
   {
    "case": "permeability_fibrous",
    "class": "closed",
-   "lineno": 55,
+   "lineno": 56,
    "status_raw": "⏸️",
    "target": "permeability_fibrous/"
   },
   {
    "case": "poiseuille_3d_annulus",
    "class": "closed",
-   "lineno": 56,
+   "lineno": 57,
    "status_raw": "⏸️",
    "target": "poiseuille_3d_annulus/"
   },
   {
    "case": "poiseuille_3d_ellipse",
    "class": "fail",
-   "lineno": 57,
+   "lineno": 58,
    "status_raw": "❌",
    "target": "poiseuille_3d_ellipse/"
   },
   {
    "case": "two_phase_poiseuille",
    "class": "closed",
-   "lineno": 58,
+   "lineno": 59,
    "status_raw": "⏸️ 终裁",
    "target": "two_phase_poiseuille/"
   },
   {
    "case": "droplet_impact_2d_pool",
    "class": "unverified",
-   "lineno": 59,
+   "lineno": 60,
    "status_raw": "⚠️",
    "target": "droplet_impact_2d_pool/"
   },
   {
    "case": "droplet_impact_3d_pool",
    "class": "fail",
-   "lineno": 60,
+   "lineno": 61,
    "status_raw": "❌",
    "target": "droplet_impact_3d_pool/"
   },
   {
    "case": "phasefield_water_entry",
    "class": "fail",
-   "lineno": 61,
+   "lineno": 62,
    "status_raw": "❌",
    "target": "phasefield_water_entry/"
   }

@@ -1,50 +1,11 @@
 #!/usr/bin/env python3
-"""3D dam-break benchmark — Martin & Moyce (1952), free-surface (VOF) common module.
+"""Historical 3D corner release with lateral spreading and a legacy comparison.
 
-Setup: water column a x a x 2a against the x=0 wall (corner), gravity -y,
-solid walls on all six faces, rest is gas.  Dimensionless:
-    T = t*sqrt(2*g/a),  X = x_front/a,  H = h_residual/(2a)  (starts at 1.0)
-
-Reference convention (DECISIVE ruling, commit 857bbe8): Martin & Moyce (1952)
-define the dimensionless time as
-
-        T = t * sqrt(2 g / a)
-
-(confirmed verbatim by Lethe's dam-break-2d.py post-processing
-``time_list = [x * ((2 * g / L1) ** 0.5) for x in time_list]`` and by
-FrankenSim).  The repo CORE already uses this (dam_break.py:299,
-dam_break_3d.py:500); this benchmark historically used T = t*sqrt(g/a), i.e. a
-factor sqrt(2) too small — FIXED here.
-
-Reference table — FrankenSim square-column (n^2 = 2, i.e. the a x a x 2a
-column solved here), in the SAME T = t*sqrt(2g/a) axis:
-
-    T = [0.41,0.84,1.19,1.43,1.63,1.83,2.00,2.20,2.32,2.51,2.66,2.83,2.95]
-    Z = [1.11,1.44,1.78,2.11,2.44,2.78,3.11,3.44,3.67,4.00,4.33,4.67,5.00]
-
-The 3D square column spreads laterally too, so its front Z(T) runs ~15-37%
-ahead of the 2D rectangular-column (Lethe/K&O) digitisation at the same T
-(ratio 1.17 @T=0.84 -> 1.37 @T=2.95).  The 2D table (T=1->1.326, T=2->2.36,
-T=2.95->3.654) is the WRONG reference for this a x a x 2a geometry; the
-FrankenSim n^2=2 square-column table is used.  (If the 2D table were used
-instead the front error is systematically understated at late T.)
-
-Measurements:
-  front x(t) = rightmost x-column holding LIQUID or INTERFACE with fill>=0.5;
-  residual height h(t) = highest wet cell (y height) within the original
-  column footprint x in [1, a//2+1).  NOTE (bug fixed 2026-09-29): the old
-  code did region.any(dim=2).nonzero()[-1,0] which returned the max *z*
-  index instead of the y height -> H was a bogus near-constant value.
-  x in [1, a//2+1); mass drift and interface-cell count are tracked as
-  quality-of-simulation diagnostics.
-
-STATUS: re-run in progress on the corrected axis + FrankenSim square-column
-table + the free-surface fix levers (TL_FS_WALL_MODE=halfway,
-TL_FS_TOGAS_EPS=1e-6, TL_FS_APRIME=1).  Historical "+50-82%" errors were a
-DOUBLE artefact (T-axis sqrt2 + wrong 2D table) — see commit 857bbe8 and
-benchmarks/pending/dam_break_recompute_mm.json.
+The secondary MM_X data are retained for reproducing historical error numbers.
+Martin & Moyce (1952) Table 2 measured a channel-filling column and anchored
+T=1.19 at Z=1.44. That experiment cannot validate this corner-release setup.
+See ../dam_break_mm_channel/ for the physical comparison using both paper tables.
 """
-
 from __future__ import annotations
 
 import argparse
@@ -66,17 +27,7 @@ from tensorlbm import (
 LIQUID = 1
 INTERFACE = 2
 
-# Martin & Moyce (1952) dimensionless reference curves.
-#
-# X reference — FrankenSim SQUARE-COLUMN digitisation (n^2 = 2, the a x a x 2a
-# column solved here), on the correct T = t*sqrt(2g/a) axis.  This is the
-# physically matching reference for a finite-width 3D column (the classic
-# Lethe / K&O table is for the 2D rectangular column and sits 15-37% lower).
-#   T=2.00 -> X=3.11, T=2.95 -> X=5.00;
-#   T=1.00 -> X=1.595 (linear interpolation of (0.84,1.44)-(1.19,1.78)).
-# (The previous table here was WRONG: the classic T=1->1.1, T=2->1.8,
-#  T=3->2.7 digitisation was the 2D-rectangular M&M curve — wrong geometry
-#  for this 3D square column — on a T-axis that was itself sqrt(2) too small.)
+# Legacy secondary front series; no matching experimental geometry established.
 MM_X = [
     (0.00, 1.00),
     (0.41, 1.11),
@@ -217,8 +168,7 @@ def run(
 
     checks = []
     T_max_sim = series[-1]["T"]
-    # M&M checkpoints on the CORRECT dimensionless-time axis T = t*sqrt(2g/a),
-    # against the FrankenSim square-column (n^2=2) reference table.
+    # Reproduce the historical secondary-series comparison on its archived clock.
     for T_ref in (1.0, 2.0, 2.95):
         X_ref = _interp_table(MM_X, T_ref)
         X_sim = interp("X", T_ref)
@@ -255,19 +205,11 @@ def run(
     result = {
         "case": "dam_break_3d_martin_moyce",
         "status": "PENDING",
-        "reason": (
-            "T axis corrected to t*sqrt(2g/a); FrankenSim square-column "
-            "(n^2=2) reference table; free-surface fix levers "
-            "TL_FS_WALL_MODE=halfway + TL_FS_TOGAS_EPS=1e-6 on."
-        ),
+        "reason": "Corner-release geometry has no matched experimental reference here.",
         "module": "tensorlbm.free_surface_lbm (D3Q19, free_surface_step) — env-gated fix levers",
         "lattice": "D3Q19",
         "collision": "bgk",
-        "reference": (
-            "Martin & Moyce (1952); T = t*sqrt(2g/a) (Lethe/FrankenSim verbatim); "
-            "FrankenSim square-column n^2=2 table: T=1.00 X=1.595, T=2.00 X=3.11, "
-            "T=2.95 X=5.00; H(T=1)~0.78"
-        ),
+        "reference": "Legacy secondary front and height tables, for historical replay only.",
         "config": {
             "a": a,
             "g": g,

@@ -47,7 +47,8 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [dit_turbulence](dit_turbulence/) | ⏸️ | 固定 C_s 跨网格不收敛（N256 +17.05%，C_s 微调不敏感）；m167 终裁：DSMag 库实现缺陷（全局平均+稳定性问题），系综/更长运行不适用 | 终裁完成，无后续动作 | 0 |
 | [rayleigh_benard](rayleigh_benard/) | ❌ | E=1.224→1.006→3.101% 非单调 + ny256 近临界臂拟合质量（二次延长散布 3.10/3.98% 仍超）；根因=格子算子 Ra_c 上移 | γ_ref 重锁格子算子特征值（新 prereg） | ~8 GPU·h/轮 |
 | [rayleigh_taylor](rayleigh_taylor/) | ⛔ | SCMP 无生长窗口：λ=280 档扫到 vapor-spinodal 重力天花板 91%（g=6.5e-6）σ_sim 仍负；10/10 案例无增长 | 高密度比伪势引擎（或晋级引擎重设计后重开） | 高 |
-| [dam_break_3d_mm](dam_break_3d_mm/) | ❌ | 引擎级五连根因：12 检查点反收敛（T*=2 时 -2.25%→+7.53%）、质量门 -49.5/-62.2%、前锋推进与记账同开关 | 晋级引擎重设计（权重触发）后两档重跑 | 高 |
+| [dam_break_3d_mm](dam_break_3d_mm/) | ❌ | 角柱横向铺展，旧参考表与原文通道实验不匹配 | 另取同几何实验 | 待定 |
+| [dam_break_mm_channel](dam_break_mm_channel/) | ❌ | 原文表 2 前锋和表 6 水柱高度，含两档网格、时间步与侧壁对照 | 完整覆盖实验时窗并复核守恒及收敛 | CPU |
 | [dam_break_sc](dam_break_sc/) | ⏸️ TERMINAL | 结构性本构/密度比缺口（密度比 12.3 vs 物理 ~800）+ 反向 G 依赖；压力张量格式不稳定（a=80 NaN@460 步）；m163 三杠杆逐一定源（pressure_tensor/EOS/guest-host）均无法突破 | 终裁完成（2026-10-22, m163）。晋级路径：高密度比伪势 EOS（~10 GPU·h）/ 双组分 SC（~20 GPU·h）/ 自由表面模型（~50-100 GPU·h） | 0（终裁） |
 | [capillary_invasion_washburn](capillary_invasion_washburn/) | ❌ | Washburn 指数 26.82→33.17% 反收敛；湿润相质量漂移 -60.7/-67.0%；W128 确定性 NaN | 修库（质量守恒/σ 可测/抗负分布）后新 prereg | 中（库为主） |
 | [forchheimer](forchheimer/) | ❌ | err_A 1.86–3.06% 平坦无 d 收敛、单调条款无判别力（参考受限；求解器侧已排除） | 锁弱惯性精确参考后重判或关闭 | 少量重跑 |
@@ -401,7 +402,7 @@ forchheimer/fibrous 的参考类裁决。
 <!-- STATUS_LEDGER:BEGIN -->
 ### 机器台账（自动生成，勿手改；`python benchmarks/status_ledger.py --write`）
 
-pending 目录 **59** · 已登记行 **35** · 带 result.json **30** · 机器判决 pass/fail/unknown = **1/18/40**
+pending 目录 **60** · 已登记行 **36** · 带 result.json **31** · 机器判决 pass/fail/unknown = **1/19/40**
 
 违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
@@ -445,6 +446,7 @@ pending 目录 **59** · 已登记行 **35** · 带 result.json **30** · 机器
 | `cylinder_re40_st` | yes | yes | fail (`verified`) | 1 | pass_candidate |
 | `dam_break_2d_multimodel` | yes | **no** | unknown | 0 | **unregistered** |
 | `dam_break_3d_mm` | yes | yes | fail (`verified`) | 1 | fail |
+| `dam_break_mm_channel` | yes | yes | fail (`status`) | 1 | fail |
 | `dam_break_ritter_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
 | `dam_break_sc` | yes | yes | fail (`verified`) | 1 | closed |
 | `dit_turbulence` | yes | yes | fail (`verified`) | 2 | fail |
