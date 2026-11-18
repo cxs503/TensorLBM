@@ -1,0 +1,42 @@
+{
+  "anchor": "XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE",
+  "passed": true,
+  "metrics": {
+    "eps_inf": 0.014818204272577119,
+    "eps_l2": 0.010806907406387765,
+    "rel_umax": 0.014818204272576773,
+    "shape_rel_l2": 0.0004165374560301468
+  },
+  "thresholds": {
+    "eps_inf": 0.15,
+    "eps_l2": 0.15
+  },
+  "details": {
+    "eps_inf": {
+      "value": 0.014818204272577119,
+      "threshold": 0.15,
+      "passed": true
+    },
+    "eps_l2": {
+      "value": 0.010806907406387765,
+      "threshold": 0.15,
+      "passed": true
+    },
+    "solver": "real:zou_he_channel",
+    "arm": "pressure-pressure",
+    "tau": 0.65,
+    "nu": 0.05000000000000001,
+    "drho": 0.0040000000000000036,
+    "g_measured": 1.4035928295708537e-05,
+    "g_nominal": 1.4035087719298258e-05,
+    "g_rel_dev": 5.989106923237216e-05,
+    "steps": 20000,
+    "converged": false,
+    "drift_last": 0.009163829814723898,
+    "mass_defect": 3.822551925132926e-06,
+    "u_max_sim": 0.01987766524940951,
+    "u_max_ref": 0.020176646925081018
+  },
+  "wall_seconds": 66.59588956832886,
+  "errors": []
+}

@@ -26,6 +26,7 @@ from .xml_template import (
     xml_to_string,
     get_default_registry,
 )
+from .real_solvers import resolve_real_solver
 
 
 @dataclass
@@ -162,6 +163,12 @@ class YamlXmlPipeline:
 
         # Stage 4: Compute verification metrics
         metrics, thresholds, passed, details = self._compute_metrics(case, solver_result)
+        # Evidence grading: record which solver produced the metrics so a
+        # stub-produced verdict can never be mistaken for a real run.
+        details["solver"] = solver_result.get("solver", "stub")
+        details.update(solver_result.get("details", {}))
+        if solver_result.get("profiles"):
+            details["profiles"] = solver_result["profiles"]
 
         # Stage 5: Save results
         result = PipelineResult(
@@ -188,6 +195,13 @@ class YamlXmlPipeline:
         """
         if self.solver_fn is not None:
             return self.solver_fn(case)
+
+        # Real solver adapters (genuine LBM runs) take precedence over the
+        # demonstration stubs; selection is declarative via
+        # reference.solution_fn (see real_solvers.REAL_SOLVER_REGISTRY).
+        real_fn = resolve_real_solver(case)
+        if real_fn is not None:
+            return real_fn(case)
 
         # Try built-in stub solvers
         anchor_lower = case.anchor.lower()
@@ -239,6 +253,14 @@ class YamlXmlPipeline:
         result_path = result_dir / f"{result.case_name}_result.json"
         with open(result_path, "w") as f:
             json.dump(result.to_dict(), f, indent=2)
+
+        # Persist solver profiles (real runs) so figures can be regenerated
+        # without re-running the simulation.
+        profiles = result.details.get("profiles")
+        if profiles:
+            prof_path = result_dir / f"{result.case_name}_profiles.json"
+            with open(prof_path, "w") as f:
+                json.dump(profiles, f, indent=2)
 
         # Save verdict
         verdict_path = result_dir / f"{result.case_name}_verdict.json"

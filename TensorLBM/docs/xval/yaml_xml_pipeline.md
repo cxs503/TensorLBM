@@ -119,6 +119,29 @@ The pipeline generates XML templates from YAML definitions. Supported template t
 
 Custom templates can be registered via `XMLTemplateRegistry.register()`.
 
+## Real Solver Wiring (anchor XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE)
+
+The pipeline's built-in fallback solvers (`runner._stub_*`) are **demonstration
+stubs**: they synthesise plausible metrics without marching a lattice and must
+never be cited as verification evidence.  Genuine runs are selected
+declaratively through `reference.solution_fn`:
+
+| `reference.solution_fn` | Real solver | Reference |
+|-------------------------|-------------|-----------|
+| `poiseuille_zou_he_2d`  | D2Q9 BGK + Zou-He pressure closures (`tensorlbm.verification.zou_he_channel.run_channel`) | exact plane Poiseuille |
+
+A YAML case that names a registered `solution_fn` is executed by the real
+solver adapter (`xval/pipeline/real_solvers.py`); the verdict is computed from
+the converged time-averaged field vs the analytic profile, and every artifact
+records `details.solver = "real:zou_he_channel"` so a stub verdict can never be
+mistaken for a real run.  Cases without a registered `solution_fn` keep the
+legacy stub path (schema/registry tests only).
+
+Campaign case: `cases/xval/poiseuille_zou_he_2d.yaml` (anchor
+`XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE`), runner
+`runs/m25066_pipeline_real/run_campaign.py`, artifacts under
+`runs/m25066_pipeline_real/`.
+
 ## Python API
 
 ### Loading a YAML Case
@@ -197,6 +220,9 @@ yml-driven-xml-template-pipeline approach:
 - **XML templates** are compatible with existing LBM solver input formats
 - **Extensible registry** allows new physics models and boundary conditions
 - **Declarative acceptance criteria** separate test logic from case definition
+- **Evidence grading**: real-solver runs are selected by
+  `reference.solution_fn` and labelled in every artifact; stub output is
+  demonstrative only (see "Real Solver Wiring" above)
 
 ## References
 
