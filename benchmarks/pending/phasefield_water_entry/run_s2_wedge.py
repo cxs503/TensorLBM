@@ -4,7 +4,7 @@ Case definition (locked in ``prereg.md`` §2.1, with the resolution amendment
 recorded in ``NOTES.md``): a symmetric 2-D wedge (extruded over 4 periodic z
 layers) enters a quiescent water tank at constant vertical velocity.  The
 force on the body is measured with Ladd's momentum-exchange method and
-compared with Wagner (1932) in the pi^2/4 convention,
+compared diagnostically with the semi-wedge anchor in De Rosis & Tafuni Eq. 45,
 
     F(t) = rho_l V^3 pi^3 t / (8 tan^2 zeta)      [per unit span]
     dF/dt / (rho_l V^3) = pi^3 / (8 tan^2 zeta)
@@ -76,6 +76,82 @@ class WedgeRun:
         return self.shape[2] / 2.0
 
 
+def arm_metrics(config: WedgeRun, pre: dict, series: list[dict]) -> dict:
+    """Score the registered penetration window. Missing observations cannot pass."""
+    first = math.ceil((config.gap + 0.02 * config.half_length) / config.v_lat)
+    last = math.floor((config.gap + 0.10 * config.half_length) / config.v_lat)
+    samples = [r for r in series if first <= r["step"] <= last]
+    complete = len(samples) >= 3 and [r["step"] for r in samples] == list(range(first, last + 1))
+    invalid = next(
+        (r for r in [pre, *series] if any(not math.isfinite(v) for v in r.values())), None
+    )
+    params = WedgeEntryParams(beta=math.radians(config.zeta_deg), v_entry=config.v_lat, rho=1.0)
+    reference = wagner_wedge_force_slope(params)
+    scale = params.rho * config.v_lat**3
+    slope = r2 = err = None
+    if complete and invalid is None:
+        xs = [r["t"] for r in samples]
+        ys = [r["fy"] for r in samples]
+        mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+        slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=True)) / sum(
+            (x - mx) ** 2 for x in xs
+        )
+        sst = sum((y - my) ** 2 for y in ys)
+        if sst > 0:
+            r2 = (
+                1 - sum((y - my - slope * (x - mx)) ** 2 for x, y in zip(xs, ys, strict=True)) / sst
+            )
+        err = slope / config.nz / reference - 1
+    speeds = [r["u_max"] for r in series if "u_max" in r and math.isfinite(r["u_max"])]
+    u_over_v = max(speeds) / config.v_lat if speeds else None
+    phase = [
+        r
+        for r in series
+        if "phi_min" in r and math.isfinite(r["phi_min"]) and math.isfinite(r["phi_max"])
+    ]
+    gate = GATES.get(config.zeta_deg)
+    checks = {
+        "gate_pass": None if gate is None else err is not None and abs(err) <= gate,
+        "gate_r2_pass": r2 is not None and r2 >= 0.98,
+        "gate_u_max_pass": u_over_v is not None and u_over_v <= 3.0,
+    }
+    full_run = bool(series) and series[-1]["step"] == config.n_measure
+    verdict = "FAIL"
+    if invalid is None and full_run and complete:
+        verdict = (
+            "NO_GATE" if gate is None else ("DIAGNOSTIC_PASS" if all(checks.values()) else "FAIL")
+        )
+    return {
+        "verdict": verdict,
+        "scope": "Single-arm diagnostic: full-body vertical MEM force per span versus Eq. 45 semi-wedge pressure. A pass does not qualify the entry case.",
+        "first_nonfinite_step": invalid["step"] if invalid is not None else None,
+        "measurement_completed": full_run,
+        "requested_fit_window_steps": [first, last],
+        "fit_window_steps": [first, last] if slope is not None else None,
+        "fit_window_penetration_cells": [r["penetration"] for r in (samples[0], samples[-1])]
+        if slope is not None
+        else None,
+        "contact_step": math.ceil(config.gap / config.v_lat),
+        "analytic_slope": reference,
+        "analytic_slope_dimensionless": reference / scale,
+        "measured_slope_total_nz": slope,
+        "measured_slope": slope / config.nz if slope is not None else None,
+        "measured_slope_dimensionless": slope / (config.nz * scale) if slope is not None else None,
+        "slope_rel_error": err,
+        "fit_r2": r2,
+        "gate": gate,
+        **checks,
+        "max_u_over_v": u_over_v,
+        "phi_range": [min(r["phi_min"] for r in phase), max(r["phi_max"] for r in phase)]
+        if phase
+        else None,
+    }
+
+
+def json_observation(row):
+    return {k: v if math.isfinite(v) else None for k, v in row.items()}
+
+
 def run(config: WedgeRun, out_dir: Path) -> dict:
     shape = config.shape
     nz, ny, nx = shape
@@ -138,7 +214,8 @@ def run(config: WedgeRun, out_dir: Path) -> dict:
     # --- measurement: constant-velocity entry ---------------------------
     series = []
     t_start = time.time()
-    for step in range(1, config.n_measure + 1):
+    steps = config.n_measure if all(math.isfinite(v) for v in pre.values()) else 0
+    for step in range(1, steps + 1):
         y_apex = y_apex0 - config.v_lat * step
         driver.step(body_at(y_apex), (0.0, -config.v_lat, 0.0))
         series.append(
@@ -152,7 +229,7 @@ def run(config: WedgeRun, out_dir: Path) -> dict:
                 "y_apex": y_apex,
             }
         )
-        if step % 50 == 0:
+        if step % 50 == 0 or step == config.n_measure or not math.isfinite(driver.force[1]):
             dd = m.diagnostics(sim)
             series[-1]["u_max"] = dd["u_max_fluid"]
             series[-1]["phi_min"] = dd["phi_min_fluid"]
@@ -163,39 +240,10 @@ def run(config: WedgeRun, out_dir: Path) -> dict:
                 flush=True,
             )
 
-    # --- compare slope ---------------------------------------------------
-    # analytic slope with rho_l = 1, v = v_lat, in lattice units
-    params = WedgeEntryParams(beta=zeta, v_entry=config.v_lat, rho=1.0)
-    analytic_slope = wagner_wedge_force_slope(params)
-    # fit over the linear window: penetration in [0.02, 0.10] * D_w is not
-    # reachable at these angles, so fit over the whole measured window and
-    # report both the fit and its R^2.
-    arm = f"zeta{config.zeta_deg:g}_dw{config.half_length:g}"
-    contact_step = int(math.ceil(config.gap / config.v_lat))
-    used = [s for s in series if s["step"] > contact_step]
-    if len(used) < 3:
-        raise SystemExit(
-            f"[s2] {arm}: only {len(used)} post-contact samples "
-            f"(contact at step {contact_step}); raise --n-measure"
-        )
-    xs = [s["t"] for s in used]
-    ys = [s["fy"] for s in used]
-    n = len(xs)
-    mx = sum(xs) / n
-    my = sum(ys) / n
-    sxx = sum((x - mx) ** 2 for x in xs)
-    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=True))
-    slope = sxy / sxx
-    ss_res = sum((y - (my + slope * (x - mx))) ** 2 for x, y in zip(xs, ys, strict=True))
-    ss_tot = sum((y - my) ** 2 for y in ys)
-    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+        if not all(math.isfinite(v) for v in series[-1].values()):
+            break
 
-    # the Ladd sum runs over every periodic z layer -> per-unit-span force
-    slope_span = slope / config.nz
-    err = (slope_span - analytic_slope) / analytic_slope
-    gate = GATES.get(config.zeta_deg)
-    u_over_v = max((s.get("u_max", 0.0) for s in series), default=float("nan")) / config.v_lat
-    gate_pass = None if gate is None else bool(abs(err) <= gate)
+    arm = f"zeta{config.zeta_deg:g}_dw{config.half_length:g}"
     result = {
         "arm": arm,
         "case": "S2_wedge_constant_velocity",
@@ -203,42 +251,17 @@ def run(config: WedgeRun, out_dir: Path) -> dict:
         "shape": list(shape),
         "cells": nz * ny * nx,
         "deadrise_deg": config.zeta_deg,
-        "analytic_slope_dimensionless": analytic_slope,
-        "measured_slope_total_nz": slope,
-        "measured_slope": slope_span,
-        "measured_slope_dimensionless": slope_span / (1.0 * config.v_lat**3),
-        "slope_rel_error": err,
-        "fit_r2": r2,
-        "gate": gate,
-        "gate_pass": gate_pass,
-        "gate_r2_pass": bool(r2 >= 0.98) if r2 == r2 else False,
-        "gate_u_max_pass": bool(u_over_v <= 3.0) if u_over_v == u_over_v else False,
-        "max_u_over_v": u_over_v,
-        "verdict": "PASS"
-        if (gate_pass and r2 >= 0.98 and u_over_v <= 3.0)
-        else ("FAIL" if gate_pass is not None else "NO_GATE"),
-        "pre_relax": pre,
-        "contact_step": contact_step,
-        "fit_window_steps": [int(xs[0]), int(xs[-1])] if xs else None,
-        "fit_window_penetration_cells": [
-            config.v_lat * xs[0] - config.gap,
-            config.v_lat * xs[-1] - config.gap,
-        ]
-        if xs
-        else None,
-        "phi_range": [
-            min((s.get("phi_min", 0.0) for s in series), default=float("nan")),
-            max((s.get("phi_max", 1.0) for s in series), default=float("nan")),
-        ],
+        **arm_metrics(config, pre, series),
+        "pre_relax": json_observation(pre),
         "wall_time_s": time.time() - t_start,
-        "series": series,
+        "series": [json_observation(row) for row in series],
     }
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / f"s2_{arm}.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    (out_dir / f"s2_{arm}.json").write_text(
+        json.dumps(result, indent=2, allow_nan=False) + "\n", encoding="utf-8"
+    )
     print(
-        f"[s2] zeta={config.zeta_deg:g} D_w={config.half_length:g}: slope {slope:+.4e} vs analytic "
-        f"{analytic_slope:+.4e} -> err {err:+.1%} (gate {gate if gate is None else f'{gate:.0%}'}) "
-        f"R2 {r2:.4f}",
+        f"[s2] {arm}: {result['verdict']}, first nonfinite step={result['first_nonfinite_step']}",
         flush=True,
     )
     return result
@@ -287,7 +310,8 @@ def main() -> int:
             "zeta_deg": r["config"]["zeta_deg"],
             "dw": r["config"]["half_length"],
             "slope": r["measured_slope"],
-            "slope_analytic": r["analytic_slope_dimensionless"],
+            "slope_analytic": r["analytic_slope"],
+            "first_nonfinite_step": r["first_nonfinite_step"],
             "slope_error": r["slope_rel_error"],
             "r2": r["fit_r2"],
             "gate": r["gate"],
@@ -299,7 +323,7 @@ def main() -> int:
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps(summary, indent=2), flush=True)
-    return 0
+    return 0 if all(r["verdict"] == "DIAGNOSTIC_PASS" for r in results) else 1
 
 
 if __name__ == "__main__":

@@ -56,6 +56,8 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [poiseuille_3d_annulus](poiseuille_3d_annulus/) | ⏸️ | **归档完成** → [verified/poiseuille_3d_annulus](../verified/poiseuille_3d_annulus/)（条款修订：δ_i spread 0.0937 → O(1/R) 单调收敛口径，内壁楼梯曲率真实漂移，已证非欠收敛） | — | 0 |
 | [poiseuille_3d_ellipse](poiseuille_3d_ellipse/) | ❌ | a=20 档 s^Q 逐 bin 5.11% > 3%（a=40 档 2.43% 过线）；楼梯椭圆各向异性无单一尺度口径 | 加 a=40/80 高档（两档全 ≤3% 即达标） | 两档仿真 |
 | [two_phase_poiseuille](two_phase_poiseuille/) | ⏸️ 终裁 | SC-MCMP 结构性（等 τ 界面条带化 34.83% vs self 7.17%；不等 τ NaN）；问题类已由 verified/poiseuille_two_phase_cg 关闭 | SC 复活需先修库（稳定性+条带化）再预注册 | 修库+重跑 |
+| [droplet_impact_2d_pool](droplet_impact_2d_pool/) | ⚠️ | 首次液桥已复现，外部动态误差待测 | 对齐实验几何和撞击参数，比较气穴深度曲线并加密 | 待定 |
+| [phasefield_water_entry](phasefield_water_entry/) | ❌ | 4° 楔体第 141 步出现非有限力，未达到测窗 | 修复稳定性，对齐半楔压力口径并完成两档网格 | 待定 |
 
 **统计**：🟡 4 · 🔵 1 · ⚠️ 3 · ⛔ 1 · ❌ 21（共 30）
 
@@ -398,7 +400,7 @@ forchheimer/fibrous 的参考类裁决。
 <!-- STATUS_LEDGER:BEGIN -->
 ### 机器台账（自动生成，勿手改；`python benchmarks/status_ledger.py --write`）
 
-pending 目录 **57** · 已登记行 **32** · 带 result.json **27** · 机器判决 pass/fail/unknown = **1/16/40**
+pending 目录 **58** · 已登记行 **34** · 带 result.json **29** · 机器判决 pass/fail/unknown = **1/17/40**
 
 违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
@@ -406,7 +408,7 @@ pending 目录 **57** · 已登记行 **32** · 带 result.json **27** · 机器
 
 - `duplicate_index_row` `cavity_3d_full` — 2 index rows (lines [41, 42])
 - `missing_machine_verdict` `cavity_3d_re100` — no README and no machine verdict on disk
-- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in /workspace/scratch/ac2422c73ef8/TensorLBM/benchmarks/pending/cylinder_re40_st/result.json)
+- `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in benchmarks/pending/cylinder_re40_st/result.json)
 - `duplicate_index_row` `dit_turbulence` — 2 index rows (lines [45, 47])
 - `missing_machine_verdict` `dtmb5415_resistance` — no README and no machine verdict on disk
 - `missing_machine_verdict` `kcs_resistance` — no README and no machine verdict on disk
@@ -429,22 +431,23 @@ pending 目录 **57** · 已登记行 **32** · 带 result.json **27** · 机器
 | `acoustic_pulse_2d` | yes | yes | unknown | 0 | **unregistered** |
 | `aircraft_icing_rg15_ipw2` | yes | yes | unknown | 0 | **unregistered** |
 | `backward_step` | yes | yes | unknown | 1 | fail |
-| `blasius_flat_plate` | yes | yes | unknown | 1 | unknown |
-| `bstep_3d` | yes | yes | fail (`verified`) | 1 | unknown |
+| `blasius_flat_plate` | yes | yes | unknown | 1 | closed |
+| `bstep_3d` | yes | yes | fail (`verified`) | 1 | unverified |
 | `capillary_invasion_washburn` | yes | yes | unknown | 1 | fail |
 | `cavity_3d_full` | yes | **no** | unknown | 2 | pass_candidate |
 | `cavity_3d_re100` | **no** | **no** | unknown | 0 | **unregistered** |
 | `channel_turb_3d` | yes | yes | fail (`status`) | 0 | **unregistered** |
 | `channel_turb_re180` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
-| `collision_kernels_3d_tg` | yes | yes | unknown | 1 | unknown |
+| `collision_kernels_3d_tg` | yes | yes | unknown | 1 | closed |
 | `couette_3d` | yes | **no** | unknown | 1 | pass_candidate |
 | `cylinder_re100_dfg` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
 | `cylinder_re40_st` | yes | yes | fail (`verified`) | 1 | pass_candidate |
 | `dam_break_2d_multimodel` | yes | **no** | unknown | 0 | **unregistered** |
 | `dam_break_3d_mm` | yes | yes | fail (`verified`) | 1 | fail |
 | `dam_break_ritter_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
-| `dam_break_sc` | yes | yes | fail (`verified`) | 1 | unknown |
+| `dam_break_sc` | yes | yes | fail (`verified`) | 1 | closed |
 | `dit_turbulence` | yes | yes | fail (`verified`) | 2 | fail |
+| `droplet_impact_2d_pool` | yes | yes | unknown | 1 | unverified |
 | `dtmb5415_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
 | `forchheimer` | yes | yes | unknown | 1 | fail |
 | `hadamard_rybczynski_droplet` | yes | yes | unknown | 1 | fail |
@@ -453,10 +456,10 @@ pending 目录 **57** · 已登记行 **32** · 带 result.json **27** · 机器
 | `naca_0012` | yes | yes | fail (`verified`) | 1 | fail |
 | `nwt_stokes2_2d` | **no** | **no** | unknown | 0 | **unregistered** |
 | `passive_scalar_verification` | yes | **no** | unknown | 0 | **unregistered** |
-| `permeability3d` | yes | yes | unknown | 1 | unknown |
-| `permeability_fibrous` | yes | yes | unknown | 1 | unknown |
-| `phasefield_water_entry` | yes | **no** | unknown | 0 | **unregistered** |
-| `poiseuille_3d_annulus` | yes | yes | fail (`verdict`) | 1 | unknown |
+| `permeability3d` | yes | yes | unknown | 1 | closed |
+| `permeability_fibrous` | yes | yes | unknown | 1 | closed |
+| `phasefield_water_entry` | yes | yes | fail (`status`) | 1 | fail |
+| `poiseuille_3d_annulus` | yes | yes | fail (`verdict`) | 1 | closed |
 | `poiseuille_3d_ellipse` | yes | yes | fail (`verdict`) | 1 | fail |
 | `poiseuille_3d_ellipse_bodyforce` | yes | **no** | unknown | 0 | **unregistered** |
 | `porous_ladder` | **no** | yes | unknown | 0 | **unregistered** |
@@ -470,17 +473,17 @@ pending 目录 **57** · 已登记行 **32** · 带 result.json **27** · 机器
 | `ship_resistance_closure` | yes | **no** | unknown | 1 | fail |
 | `ship_wave_michell` | **no** | **no** | unknown | 0 | **unregistered** |
 | `sphere_drag_closure` | yes | **no** | unknown | 0 | **unregistered** |
-| `sphere_re100` | yes | **no** | unknown | 1 | unknown |
-| `sphere_re100_mem` | yes | **no** | unknown | 1 | unknown |
-| `sphere_re200` | yes | **no** | unknown | 1 | unknown |
+| `sphere_re100` | yes | **no** | unknown | 1 | closed |
+| `sphere_re100_mem` | yes | **no** | unknown | 1 | closed |
+| `sphere_re200` | yes | **no** | unknown | 1 | unverified |
 | `sphere_settling_gcs` | yes | yes | unknown | 0 | **unregistered** |
 | `staircase_wall_offset` | **no** | **no** | unknown | 0 | **unregistered** |
 | `static_droplet_laplace_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
-| `stokes_second_problem` | yes | yes | pass (`status`) | 1 | unknown |
+| `stokes_second_problem` | yes | yes | pass (`status`) | 1 | unverified |
 | `suboff_highre_resistance` | yes | **no** | unknown | 0 | **unregistered** |
 | `taylor_aris_dispersion` | yes | yes | unknown | 1 | fail |
 | `taylor_aris_kh_extrapolation` | yes | **no** | unknown | 0 | **unregistered** |
 | `trt_wall_accuracy` | **no** | yes | unknown | 0 | **unregistered** |
-| `two_phase_poiseuille` | yes | yes | unknown | 1 | unknown |
+| `two_phase_poiseuille` | yes | yes | unknown | 1 | closed |
 | `two_phase_poiseuille_viscous` | **no** | **no** | unknown | 0 | **unregistered** |
 <!-- STATUS_LEDGER:END -->

@@ -1,0 +1,117 @@
+{
+  "case": "droplet_impact_2d_pool",
+  "status": "pending_external_validation",
+  "source_revision": "37366d8845bffbde4cd47e69d83959f827a5accd",
+  "environment": {
+    "python": "3.12.14",
+    "torch": "2.15.0+cpu",
+    "device": "cpu",
+    "precision": "float64",
+    "threads": 1
+  },
+  "commands_from_repo_root": [
+    "python examples/droplet_impact.py --require-contact --output-interval 1500 --output-root outputs/entry_qualification --run-name driven",
+    "python examples/droplet_impact.py --g 0 --output-interval 1500 --output-root outputs/entry_qualification --run-name control",
+    "python benchmarks/water_entry/paired.py outputs/entry_qualification/driven outputs/entry_qualification/control --output outputs/entry_qualification/pair.json",
+    "python benchmarks/water_entry/static_drop.py --steps 2500 --output outputs/entry_qualification/laplace.json"
+  ],
+  "driven": {
+    "trajectory": {
+      "steps": 4500,
+      "samples": 451,
+      "archive_path": "docs/audits/entry_20261118/histories/default/interface_history.csv",
+      "archive_sha256": "b3b245193128659add40a49e01cb9857aa124d5c2a798451f47ac6d35de081b9",
+      "replay_csv_rows_identical": true,
+      "final_centerline_gap": null
+    },
+    "health": {
+      "passed": true,
+      "failures": [],
+      "checked_every_step": true,
+      "completed_steps": 4500,
+      "max_observed": {
+        "relative_phase_mass_drift": 9.972377360580492e-17,
+        "max_speed": 0.01194421033608615,
+        "abs_phi": 1.0950200785168143
+      },
+      "thresholds": {
+        "relative_phase_mass_drift": 0.0001,
+        "max_speed": 0.15,
+        "abs_phi": 1.2,
+        "min_density_exclusive": 0.0
+      }
+    }
+  },
+  "quiescent": {
+    "trajectory": {
+      "steps": 4500,
+      "samples": 451,
+      "archive_path": "docs/audits/entry_20261118/histories/default_zero/interface_history.csv",
+      "archive_sha256": "73ad77e6192dbd8eb3dfcd9767d9216c36e5cd96b63cb3ad032295b604d657c0",
+      "replay_csv_rows_identical": true,
+      "final_centerline_gap": 3.7894037617447225
+    },
+    "health": {
+      "passed": true,
+      "failures": [],
+      "checked_every_step": true,
+      "completed_steps": 4500,
+      "max_observed": {
+        "relative_phase_mass_drift": 2.493094340145123e-16,
+        "max_speed": 0.0034863081764759077,
+        "abs_phi": 1.0180030104298101
+      },
+      "thresholds": {
+        "relative_phase_mass_drift": 0.0001,
+        "max_speed": 0.15,
+        "abs_phi": 1.2,
+        "min_density_exclusive": 0.0
+      }
+    }
+  },
+  "paired_control": {
+    "schema_version": 1,
+    "scope": "resolved liquid bridge versus quiescent control over sampled time window",
+    "passed": true,
+    "checks": {
+      "same_configuration_except_forcing_and_output": true,
+      "matched_healthy_duration": true,
+      "both_histories_complete": true,
+      "both_initially_separated": true,
+      "control_has_zero_drive": true,
+      "driven_has_input": true,
+      "driven_bridge_observed": true,
+      "control_remains_separated": true
+    },
+    "mismatched_keys": [],
+    "driven_bridge": [
+      3220,
+      3230
+    ],
+    "control_bridge": null
+  },
+  "static_prerequisite": {
+    "passed_own_gates": true,
+    "sigma_input": 0.008,
+    "fitted_slope": 0.008364051726228562,
+    "relative_slope_error": 0.045506465778570204,
+    "history": "docs/audits/entry_20261118/laplace.json",
+    "history_sha256": "94b1f0f2bb26f03c8abbb318db52c1c1216a03c0ada06e931af75985fc790e41",
+    "replay_json_identical": true
+  },
+  "dynamic_reference": {
+    "observable": "gas-cavity depth / pre-impact drop diameter versus time",
+    "reference": "Fluids 7 (2022) 50, Fig. 5, experimental markers from Santini et al. (2017)",
+    "url": "https://doi.org/10.3390/fluids7020050",
+    "impact_speed_m_s": 1.4,
+    "geometry": "spherical single drop into a deep pool",
+    "matched": false,
+    "relative_error": null,
+    "blockers": [
+      "planar simulation and spherical drop experiment",
+      "impact conditions and dimensionless groups have not been matched",
+      "current interface CSV does not measure post-contact cavity depth",
+      "matched grid/time refinement and independent comparison unavailable"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 # prereg — phase-field water entry benchmark（相场入水基准，W11-WE）
 
-**状态：⏸️ PENDING（未开跑正式臂）** ｜ 锁定日期 2026-10-30 ｜ 模型 = `tensorlbm.cac_lbm`（CAC D3Q19 双分布）
+**状态：PENDING（已复跑 4° / Dw=100，有限性失败；见[判定记录](result.json)）** ｜ 锁定日期 2026-10-30 ｜ 模型 = `tensorlbm.cac_lbm`（CAC D3Q19 双分布）
 **上游调研**：[`docs/benchmarks/phasefield_water_entry_survey_20261030.md`](../../../docs/benchmarks/phasefield_water_entry_survey_20261030.md)
 **探针机器数字**：[`NOTES.md`](NOTES.md) ｜ **参考锚**：[`refs/anchors.json`](refs/anchors.json)
 
@@ -112,6 +112,8 @@
 | \|Δφ/φ\| | ≤ 1e-3 | PASS（6.4e-4 / 3.7e-4） |
 
 ### S2 楔形（Wagner，分档）
+
+**2026-11-18 来源核对。** 以下 π² 段保留原始登记。式 (45) 再代入湿半宽后得到 π³/(8 tan²ζ)，量为半楔压力合力斜率。角度阈值、局部测窗与完整案例晋级条件保留；正式文献比较还需匹配半楔面载荷与原文割线时刻。[来源和测量口径](README.md#如何与-wagner-比对)
 
 无量纲斜率锚（Eq.45 除以 ρ V³）：
 
