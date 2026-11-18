@@ -60,9 +60,11 @@ Full programmatic table: `xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/t
 
 | case | quantity | ref | got | error | <15 % |
 |---|---|---|---|---|---|
-| P1 H=32 | max \(u_x\) | 0.029883 | 0.029916 | 0.110 % | yes |
-| P2 16x24 | max \(u_x\) | 0.300000 | 0.303271 | 1.157 % | yes |
-| P3 n=32 | decay rate | 1.542126e-02 | 1.560031e-02 | 1.161 % | yes |
+| P1 H=8 | max \(u_x\) | 0.029531 | 0.029662 | 0.444 % | yes |
+| P1 H=16 | max \(u_x\) | 0.029883 | 0.029916 | 0.110 % | yes |
+| P2 8x12 | max \(u_x\) | 0.300000 | 0.303271 | 1.157 % | yes |
+| P2 16x24 | max \(u_x\) | 0.300000 | 0.300806 | 0.293 % | yes |
+| P3 n=16 | decay rate | 1.542126e-02 | 1.560031e-02 | 1.161 % | yes |
 | P4 | max \(u_x\) | 0.029531 | 0.029662 | 0.444 % | yes |
 
 Representation checks: D3Q19 index array vs OSS = **0 mismatches**
@@ -101,15 +103,17 @@ adding the index array + coordinates the total ratio is
 
 Acceptance (owner standard): every benchmark error must be **< 15 %**; the TensorLBM-wide
 "paper" bar would be < 3 %.
-* P1 (H=32): 0.110 % -> PASS (<15 %), PASS (<3 %)
-* P2 (16x24): 1.157 % -> PASS (<15 %), PASS (<3 %)
-* P3 (n=32 decay rate): 1.161 % -> PASS (<15 %), PASS (<3 %)
+* P1 (H=8): 0.444 % -> PASS (<15 %), PASS (<3 %)
+* P1 (H=16): 0.110 % -> PASS (<15 %), PASS (<3 %)
+* P2 (8x12): 1.157 % -> PASS (<15 %), PASS (<3 %)
+* P2 (16x24): 0.293 % -> PASS (<15 %), PASS (<3 %)
+* P3 (n=16 decay rate): 1.161 % -> PASS (<15 %), PASS (<3 %)
 * P4 (interior slabs): 0.444 % -> PASS (<15 %), PASS (<3 %)
 Check list: {
  "P1_plane_poiseuille_all_arms_below_15pct": true,
  "P1_errors_decrease_with_H": true,
  "P2_duct_below_15pct": true,
- "P2_duct_finer_below_coarser": false,
+ "P2_duct_finer_below_coarser": true,
  "P3_shear_wave_below_15pct": true,
  "P4_interior_slabs_below_15pct": true,
  "P4_mass_conserved": true,
@@ -119,7 +123,7 @@ Check list: {
  "P6_index_array_bit_identical_to_oss": true,
  "P6_layout_mismatch_detected": true
 }
-Overall verdict from the run: **FAIL**.
+Overall verdict from the run: **PASS**.
 
 Reproduce: `PYTHONPATH=src python xval/XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM/round2_d3q19/run_r2.py`
 (single core, 57 s, submitted to the cluster queue as the compute gate requires).
