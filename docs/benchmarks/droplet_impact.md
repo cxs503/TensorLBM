@@ -154,6 +154,8 @@ python benchmarks/water_entry/static_drop.py --steps 2500 --output "$out/laplace
 
 选定外部参照为 *Crater Depth after the Impact of Multiple Drops into Deep Pools* 第 5 图中 **1.4 m/s 单滴**的实验标记。图中连续线为论文作者的数值结果。实验单滴直径范围 2.27–2.32 mm，观测量是气穴深度除以落滴直径随时间的变化。原始实验来自 Santini 等（2017）。[第 5 图和工况](https://doi.org/10.3390/fluids7020050) · [原始实验](https://www.sciencedirect.com/science/article/abs/pii/S0997754616302977)
 
+三维定量复算已按原始实验表 2 第 3 行辨认单滴工况，直径 2.27 mm，撞击速度 1.4 m/s。正式版图 5 的 18 个测点已经归档。三维案例说明书给出物性、气穴底部定义、逐点对比、网格结果和失稳记录。[三维单滴气穴深度案例](../../benchmarks/water_entry/single_drop/README.md)
+
 晋级时需保留实验点、取点不确定度和单位，使用轴对称或三维球形液滴，或另行预注册同几何的平面参考；按实测撞击速度核对 Re、We、Fr、液气密度比、黏度比和相对池深。从真实自由面直接提取气穴底部，以实验首触为时间原点，在预先锁定的时刻比较曲线，并比较最大深度。记录不同网格和时间步的误差；按仓库通用标准核对直接观测量误差 ≤3%、至少两档网格误差单调减小。当前的液桥区间、连通后池体顶部、静滴压差均不能给出该实验误差。[仓库晋级规则](../../benchmarks/pending/README.md)
 
 ## 8. 与现有多相流基准的关系

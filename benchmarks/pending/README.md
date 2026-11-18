@@ -57,6 +57,7 @@ README 记录：物理问题、计算结果现状、不达标清单、根因/诊
 | [poiseuille_3d_ellipse](poiseuille_3d_ellipse/) | ❌ | a=20 档 s^Q 逐 bin 5.11% > 3%（a=40 档 2.43% 过线）；楼梯椭圆各向异性无单一尺度口径 | 加 a=40/80 高档（两档全 ≤3% 即达标） | 两档仿真 |
 | [two_phase_poiseuille](two_phase_poiseuille/) | ⏸️ 终裁 | SC-MCMP 结构性（等 τ 界面条带化 34.83% vs self 7.17%；不等 τ NaN）；问题类已由 verified/poiseuille_two_phase_cg 关闭 | SC 复活需先修库（稳定性+条带化）再预注册 | 修库+重跑 |
 | [droplet_impact_2d_pool](droplet_impact_2d_pool/) | ⚠️ | 首次液桥已复现，外部动态误差待测 | 对齐实验几何和撞击参数，比较气穴深度曲线并加密 | 待定 |
+| [droplet_impact_3d_pool](droplet_impact_3d_pool/) | ❌ | 单滴实验 18 点，已计算增长、峰值与回缩误差 | 补足网格、边界与气穴增长/回缩精度 | 待定 |
 | [phasefield_water_entry](phasefield_water_entry/) | ❌ | 4° 楔体第 141 步出现非有限力，未达到测窗 | 修复稳定性，对齐半楔压力口径并完成两档网格 | 待定 |
 
 **统计**：🟡 4 · 🔵 1 · ⚠️ 3 · ⛔ 1 · ❌ 21（共 30）
@@ -400,7 +401,7 @@ forchheimer/fibrous 的参考类裁决。
 <!-- STATUS_LEDGER:BEGIN -->
 ### 机器台账（自动生成，勿手改；`python benchmarks/status_ledger.py --write`）
 
-pending 目录 **58** · 已登记行 **34** · 带 result.json **29** · 机器判决 pass/fail/unknown = **1/17/40**
+pending 目录 **59** · 已登记行 **35** · 带 result.json **30** · 机器判决 pass/fail/unknown = **1/18/40**
 
 违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
@@ -448,6 +449,7 @@ pending 目录 **58** · 已登记行 **34** · 带 result.json **29** · 机器
 | `dam_break_sc` | yes | yes | fail (`verified`) | 1 | closed |
 | `dit_turbulence` | yes | yes | fail (`verified`) | 2 | fail |
 | `droplet_impact_2d_pool` | yes | yes | unknown | 1 | unverified |
+| `droplet_impact_3d_pool` | yes | yes | fail (`passed_3pct_and_converged`) | 1 | fail |
 | `dtmb5415_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
 | `forchheimer` | yes | yes | unknown | 1 | fail |
 | `hadamard_rybczynski_droplet` | yes | yes | unknown | 1 | fail |

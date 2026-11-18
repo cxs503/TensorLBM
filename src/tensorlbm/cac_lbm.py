@@ -47,9 +47,8 @@ from __future__ import annotations
 import torch
 
 from tensorlbm.boundaries3d import bounce_back_cells_3d
-from tensorlbm.d3q19 import W_EXACT64, C
+from tensorlbm.d3q19 import OPPOSITE, W_EXACT64, C
 from tensorlbm.phasefield.stream_boundary_contract import stream_d3q19_adapter
-
 
 # module-level capability claim: the framework itself is the unit
 from .registry import capability
@@ -319,6 +318,11 @@ def macroscopic_g(g, rho, grad_phi, drho, F, w0: float):
 class CACSim:
     """Dual-LBE CAC phase-field simulation state + step (prereg section 2).
 
+    Optional ``hydro_odd_rate`` sets the odd pressure-PDF relaxation rate.
+    The even rate retains the specified kinematic viscosity. The
+    ``stencil_neumann`` wall policy supplies gradient ghosts without
+    replacing reflected populations in solid cells.
+
     Wall handling: solid nodes carry no collision (inv-tau zeroed there,
     vectorised NoDynamics) and are full-way bounced post-stream via the
     library ``bounce_back_cells_3d`` (h_eff convention: prereg amendment 2).
@@ -345,6 +349,7 @@ class CACSim:
         axes: str = "ppp",
         wall_mask: torch.Tensor | None = None,
         wall_phi_policy: str = "freeze",
+        hydro_odd_rate: float | None = None,
         device: torch.device = torch.device("cpu"),
         dtype: torch.dtype = torch.float32,
     ):
@@ -361,13 +366,17 @@ class CACSim:
         self.lam_coef = 4.0 / width
         self.p0 = p0
         self.axes = axes
-        if wall_phi_policy not in ("freeze", "neumann"):
+        if wall_phi_policy not in ("freeze", "neumann", "stencil_neumann"):
             raise ValueError(f"unknown wall_phi_policy {wall_phi_policy!r}")
         self.wall_phi_policy = wall_phi_policy
         self.wall_mask = wall_mask
         self.fluid_mask = (
             torch.ones(shape, dtype=torch.bool, device=device) if wall_mask is None else ~wall_mask
         )
+        if hydro_odd_rate is not None and not 0 < hydro_odd_rate < 2:
+            raise ValueError("hydro_odd_rate must be in (0, 2)")
+        self.hydro_odd_rate = hydro_odd_rate
+        self.opposite = torch.as_tensor(OPPOSITE, dtype=torch.long, device=device)
         self.gravity = gravity
         if gravity_mode not in ("uniform", "rho"):
             raise ValueError(f"unknown gravity_mode {gravity_mode!r}")
@@ -456,12 +465,21 @@ class CACSim:
         feq = f_equilibrium(phi_new, zero, self.wv, self.cf)
         self.f = torch.where(has.unsqueeze(0), feq, self.f)
 
+    def phase_for_stencil(self, phi: torch.Tensor) -> torch.Tensor:
+        """Neumann ghost values for derivatives, preserving in-flight wall PDFs."""
+        if self.wall_phi_policy != "stencil_neumann" or self.wall_mask is None:
+            return phi
+        fluid = self.fluid_mask
+        count = shifted_neighbors(fluid.to(phi.dtype), axes=self.axes).sum(0)
+        total = shifted_neighbors(phi * fluid, axes=self.axes).sum(0)
+        return torch.where(self.wall_mask & (count > 0), total / count.clamp_min(1), phi)
+
     def collide(self) -> None:
         """CAC h-LBE + HCH g-LBE collision (no streaming, no boundaries)."""
         fm = self.fluid_mask
         phi = self.f.sum(dim=0)  # Eq.(12)
         rho = rho_of_phi(phi, self.rho_l, self.rho_g)  # Eq.(13)
-        nb = shifted_neighbors(phi, axes=self.axes)
+        nb = shifted_neighbors(self.phase_for_stencil(phi), axes=self.axes)
         grad = iso_gradient_3d(nb, self.device)  # Eq.(27)
         mu_phi = chemical_potential(phi, nb, self.beta, self.k)  # Eq.(6)
         mu = viscosity_of_phi(phi, self.rho_l, self.rho_g, self.mu_l, self.mu_g, self.mu_law)
@@ -476,7 +494,7 @@ class CACSim:
             gy = self.gravity[1] * rho_fm
             gx2 = self.gravity[0] * rho_fm
         else:
-            gz, gy, gx2 = (self.gravity[2] * fm, self.gravity[1] * fm, self.gravity[0] * fm)
+            gz, gy, gx2 = (self.gravity[a] * self.fm_f[0] for a in (2, 1, 0))
         F = (
             mu_phi * grad[0] + gx2,
             mu_phi * grad[1] + gy,
@@ -493,7 +511,19 @@ class CACSim:
 
         geq = g_equilibrium(p, rho, u, self.wv, self.cf, self.w0)
         gsrc = g_force(F, u, grad, self.drho, inv_tau_g, self.wv, self.cf)
-        self.g = self.g + inv_tau_g * (geq - self.g) + self.fm_f * gsrc
+        if self.hydro_odd_rate is None:
+            self.g = self.g + inv_tau_g * (geq - self.g) + self.fm_f * gsrc
+            return
+        residual = geq - self.g
+        increment = inv_tau_g * residual + self.fm_f * gsrc
+        # Split only the pressure populations. The even (stress) relaxation
+        # keeps the input viscosity. Odd forcing uses its own trapezoidal
+        # prefactor; the density-gradient term in g_force is even in c.
+        odd_residual = 0.5 * (residual - residual[self.opposite])
+        odd_force = 3 * self.wv * sum(c * force for c, force in zip(self.cf, F))
+        delta_rate = self.fm_f * (self.hydro_odd_rate - inv_tau_g)
+        increment = increment + delta_rate * (odd_residual - 0.5 * odd_force)
+        self.g = self.g + increment
 
     def stream(self) -> None:
         """Stream both distributions (periodic or mixed non-wrapping pulls)."""
@@ -577,7 +607,7 @@ def _macro_fp64(sim: "CACSim"):
     dev = sim.device
     phi = sim.f.to(f64).sum(dim=0)
     rho = rho_of_phi(phi, sim.rho_l, sim.rho_g)
-    nb = shifted_neighbors(phi, axes=sim.axes)
+    nb = shifted_neighbors(sim.phase_for_stencil(phi), axes=sim.axes)
     grad = iso_gradient_3d(nb, dev)
     mu_phi = chemical_potential(phi, nb, sim.beta, sim.k)
     if sim.gravity_mode == "rho":
