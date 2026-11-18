@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **91** | pending: **57**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
+verified: **91** | pending: **58**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
 
 These are **directory inventory counts**, not counts of scientifically validated LBM capabilities.
 See [the validation matrix](validation_matrix/STATUS_MATRIX.md) for numeric verdicts and separately admitted LBM benchmark passes. Synthetic, reference-only and correlation-only results cannot supply those passes.
@@ -79,7 +79,8 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 | `naca_0012` | BLOCKED: perf fixed via fast_kernel (288->36 ms/step); CD_REF corrected to 0.12 (Kurtulus + Di Ilio 2020 0.119; old 0.105 rejected); surface-MEM +82% on a friction-dominated airfoil |
 | `naca0012_aero_polar` | 首个外部气动验证面（三网格极线+$C_p$+GCI）：$dC_L/d\alpha$ 对 $2\pi$ -64.8%，GCI($C_L$) 59.26%；XFOIL/Abbott 基准离线不可得 → 判据(2)(3) WITHHELD。见 `benchmarks/pending/naca0012_aero_polar/README.md` |
 | `permeability3d` | in progress |
-| `phasefield_water_entry` | BLOCKED (new 2026-10-30): phase-field (CAC) entry case pre-registered (S0-S4, Wagner/Colicchio anchors) but S2 cannot start -- no moving solid + MEM force in `cac_lbm`, wall-to-phase mass source (phi +1.5e-3 / 6000 steps, interface +0.61 cell creep), and the repo Wagner wedge force is 4/pi off its own pressure integral. Probes: S0 hydrostatics dp/dy 2.1% PASS but mass/interface gates FAIL; S1 static body straddling interface PASS (max\|u\| 1.0e-3, phi overshoot <=0.8%). Not a validation claim. See `pending/phasefield_water_entry/` + `docs/benchmarks/phasefield_water_entry_survey_20261030.md` |
+| `droplet_impact_2d_pool` | Driven bridge and static Laplace checks pass. Matched external transient crater data and convergence remain pending. [Case manual](../docs/benchmarks/droplet_impact.md) |
+| `phasefield_water_entry` | Rigid wedge S2, 4° / Dw=100: first nonfinite force at step 141, before the registered fit window (300–1100). Cylinder and sphere stages await S2. [Case and evidence](pending/phasefield_water_entry/README.md) |
 | `poiseuille_3d_annulus` | in progress |
 | `poiseuille_3d_ellipse` | in progress |
 | `propeller_openwater` | STRUCTURAL x3: CAD chord/area -32%/-24%; Re mismatch ~600x; low-tip-Mach gate vs mask time-resolution mutually exclusive |
@@ -102,7 +103,7 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 <!-- STATUS_LEDGER:BEGIN -->
 ### verified 机器台账（自动生成，勿手改）
 
-verified 目录 **91** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=91 pending=57
+verified 目录 **91** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=91 pending=58
 
 人工表未覆盖 **55** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
 

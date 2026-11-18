@@ -154,3 +154,12 @@ def test_ledger_json_artifact_is_current():
     live = L.build_ledger(ROOT)
     assert committed["counts"] == live["counts"]
     assert [c["case"] for c in committed["cases"]] == [c["case"] for c in live["cases"]]
+
+def test_unverified_index_and_portable_evidence_path(fixture: Path):
+    text = "| [alpha](alpha/) | ⚠️ | awaiting independent reference |"
+    assert L.parse_pending_index(text)[0]["class"] == "unverified"
+    for case in L.build_ledger(fixture)["cases"]:
+        if case["machine_source"]:
+            path = Path(case["machine_source"])
+            assert not path.is_absolute()
+            assert (fixture / path).is_file()

@@ -11,6 +11,7 @@ A navigable index of the documentation in this directory, grouped by topic.
 | Document | Description |
 |---|---|
 | [software_manual.md](software_manual.md) | Complete API reference, ship & ocean engineering benchmarks, quantitative comparisons |
+| [液滴入水案例说明书](benchmarks/droplet_impact.md) · [刚性楔体入水](../benchmarks/pending/phasefield_water_entry/README.md) | Reproduction commands, reference observables and physical qualification status |
 | [LBM_VERIFICATION_TEACHING.md](LBM_VERIFICATION_TEACHING.md) | Introductory LBM verification exercises and teaching notes |
 | [lbm_analytic_verification_r1.md](lbm_analytic_verification_r1.md) | **Analytic (closed-form) verification suite A–D** for the D3Q19 BGK core: shear-wave viscosity, Couette and Poiseuille profiles, wall-friction coefficient — with the measured-error ledger, observed convergence orders, negative controls, and the committed figure `artifacts/lbm_analytic_verification/convergence.png` |
 | [CHT_VERIFICATION_LADDER.md](CHT_VERIFICATION_LADDER.md) | **Conjugate-heat-transfer (CHT) verification ladder**: steady solid conduction in 1-D/2-D/3-D (composite wall, polar annulus, spherical shell), fluid-solid interface flux/temperature continuity, four analytical anchors (series resistance, erf penetration, Graetz/Shah-London Nusselt, lumped-capacitance time constant) and the h_int=0 adiabatic negative control - 11/11 gates pass, artifacts in `artifacts/cht/` |

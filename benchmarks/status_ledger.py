@@ -104,13 +104,13 @@ def parse_pending_index(text: str) -> List[Dict[str, Any]]:
         case, target, rest = m.group(1).strip(), m.group(2).strip(), m.group(3)
         cells = [c.strip() for c in rest.split("|")]
         status_raw = cells[0] if cells else ""
-        emojis = [ch for ch in status_raw if ch in LEGEND_CLASS]
+        legend = re.search("|".join(map(re.escape, LEGEND_CLASS)), status_raw)
         rows.append(
             {
                 "case": case,
                 "target": target,
                 "status_raw": status_raw,
-                "class": LEGEND_CLASS[emojis[0]] if emojis else "unknown",
+                "class": LEGEND_CLASS[legend.group()] if legend else "unknown",
                 "lineno": lineno,
             }
         )
@@ -232,6 +232,8 @@ def build_ledger(root: Path = REPO_ROOT) -> Dict[str, Any]:
     for case in pending:
         d = root / BENCH / "pending" / case
         verdict = machine_verdict(d)
+        if verdict["source"] is not None:
+            verdict["source"] = Path(verdict["source"]).relative_to(root).as_posix()
         row_list = by_case.get(case, [])
         case_class = row_list[0]["class"] if row_list else None
         rec = {

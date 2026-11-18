@@ -9,6 +9,8 @@
       "id": "wagner_wedge_added_mass",
       "kind": "analytic",
       "case": "S2_wedge_constant_velocity",
+      "paper_observable": "Pressure resultant on the semi-wedge (De Rosis & Tafuni, section 3.4, Fig. 11). Whole-body vertical MEM force divided by span is a different observable.",
+      "paper_secant_h_over_Dw": [0.002, 0.004],
       "source": "Wagner (1932) ZAMM 12:193-215; as stated in De Rosis & Tafuni (2022) Eq.(45)",
       "formula": {
         "wetted_half_width": "c(t) = (pi/2) * V * t / tan(zeta)",

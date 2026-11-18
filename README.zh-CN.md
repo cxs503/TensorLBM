@@ -4,7 +4,7 @@ TensorLBM 是基于 PyTorch 的格子 Boltzmann 流体求解器。
 
 | 我想做什么 | 从这里开始 |
 | --- | --- |
-| 运行模拟 | [快速开始](#快速开始) · [算例目录](examples/) · [液滴入水](examples/droplet_impact.py) |
+| 运行模拟 | [快速开始](#快速开始) · [算例目录](examples/) · [液滴入水案例说明书](docs/benchmarks/droplet_impact.md) |
 | 核对数值结果 | [验证矩阵](benchmarks/validation_matrix/README.md) · [基准状态](benchmarks/STATUS.md) |
 | 修改求解器 | [Python 源码](src/tensorlbm/) · [测试](tests/) · [贡献指南](CONTRIBUTING.md) |
 | 查报告或找回旧文件 | [文档索引](docs/README.md) · [目录指南](docs/architecture/repository_layout.md) · [旧路径与新路径对照表](docs/architecture/migration_manifest.csv) |

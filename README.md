@@ -6,7 +6,7 @@ TensorLBM is a PyTorch lattice Boltzmann solver for fluid dynamics.
 
 | I want to… | Start here |
 | --- | --- |
-| Run a simulation | [Quick start](#installation) · [Examples](examples/) · [Droplet impact](examples/droplet_impact.py) |
+| Run a simulation | [Quick start](#installation) · [Examples](examples/) · [Droplet impact case manual](docs/benchmarks/droplet_impact.md) |
 | Check a numerical claim | [Validation matrix](benchmarks/validation_matrix/README.md) · [Benchmark status](benchmarks/STATUS.md) |
 | Change the solver | [Python package](src/tensorlbm/) · [Tests](tests/) · [Contributing](CONTRIBUTING.md) |
 | Find a report or a moved file | [Documentation](docs/README.md) · [Directory guide](docs/architecture/repository_layout.md) · [Old → new paths](docs/architecture/migration_manifest.csv) |

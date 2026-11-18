@@ -1,6 +1,6 @@
-# 液滴入水基准教程 / Droplet-Impact Benchmark Tutorial
+# 液滴入水案例说明书
 
-**算例状态：探索性基准，尚未完成文献定量验证。** 本教程提供可复现的运行入口、相场云图、诊断曲线和机器可读指标。请勿将一次成功运行或漂亮的界面图直接解释为已验证的液滴入水物理精度。
+**验收结论（2026-11-18，CPU/FP64）**　二维液滴入池通过数值健康、受驱动液桥和静滴 Laplace 压差检查。动态实验误差尚无可报告值，归档为 `pending`。本页的运行步骤面向液滴入池；刚性楔体另有载荷基准。[液滴判定记录](../../benchmarks/pending/droplet_impact_2d_pool/result.json) · [楔体判定记录](../../benchmarks/pending/phasefield_water_entry/result.json)
 
 ## 1. 物理问题与模型范围
 
@@ -12,6 +12,15 @@
 2. **界面演化**：输出液相序参量 \(\phi\) 云图及 \(\phi=0\) 界面。
 3. **数值健康度**：监测序参量总和漂移、最大速度和速度能量代理量。
 4. **可复现性**：保存参数、运行环境、CSV 历史与 JSON 元数据。
+
+### 选对运行入口
+
+| 研究对象 | 可运行入口 | 当前可解释的输出 |
+|---|---|---|
+| 液滴进入同种液池 | [droplet_impact.py](../../examples/droplet_impact.py) | 独立液滴轨迹、格点液桥和数值健康度，本页有复算记录 |
+| 二维刚性楔体拍击 | [S2 楔体](../../benchmarks/pending/phasefield_water_entry/README.md) | 整楔动量交换力；4° / 100 格工况在有效拟合前失稳 |
+| 圆柱或球体进入两相液池 | [multiphase_water_entry.py](../../examples/multiphase_water_entry.py) | 二维圆柱、三维球体的探索性运行；正式 S3/S4 参考载荷或运动曲线待验收 |
+| 固定球体相对来流 | [sphere_water_entry.py](../../examples/sphere_water_entry.py) | D3Q19 单相速度场、Fz 与 Cd；其固定球入流边界不跟踪球体穿越气液界面 |
 
 ## 2. 环境准备
 
@@ -110,20 +119,42 @@ python benchmarks/water_entry/animate.py outputs/droplet_impact/baseline_cpu --o
 
 每步检查有限性、正密度、速度不超过 0.15、`abs(phi)` 不超过 1.2、归一化相场漂移不超过 1e-4。越界时先写 JSON/CSV 证据，再以失败状态退出。它们是数值健康阈值，不是物理精度验收；正常结束仍标记为探索性结果。
 
-## 7. 建议的验证矩阵
+## 7. 验收实录与复算
 
-在把它升级为正式定量 benchmark 前，至少完成以下矩阵，并将实际结果和失败情况一并归档：
+以下均为同一版本、CPU 单线程、双精度的实算。静止释放组与关重力对照组使用相同求解器、初始几何和 4,500 步观测窗。
 
-| 验证项 | 做法 | 报告指标 |
-|---|---|---|
-| 网格收敛 | 固定无量纲参数，逐级加密空间网格并匹配物理时间 | 最大铺展/反弹高度、界面位置、质心轨迹差异 |
-| 时间步/参数敏感性 | 逐步减小格子速度或调整稳定参数，保持目标物理量一致 | 关键曲线差异、质量漂移 |
-| 相场守恒 | 全程监测序参量积分 | 相对漂移随时间曲线 |
-| 静态界面前置验证 | 先运行现有静态液滴 / Laplace 压差测试 | 压差-曲率关系、寄生流速度 |
-| 文献/实验对比 | 选定明确的液滴撞击实验，匹配密度比、黏度比、表面张力、Bond/Weber/Reynolds 数与润湿条件 | 最大铺展比、接触时间、反弹/并合形态与误差 |
-| 可重复性 | 同一配置重复运行并保存环境 | 曲线差异、元数据与日志 |
+| 观测 | 基准或判据 | 实测 | 判定 |
+|---|---|---|---|
+| 首次液桥 | 受驱动连通，零驱动全程分离 | 驱动组 (3,220, 3,230] 步；对照组末态气隙 3.7894 格 | 配对回归通过 |
+| 驱动组数值健康 | 每步相场漂移 ≤ 1e-4、速度 ≤ 0.15、相场绝对值 ≤ 1.2、密度正且有限 | 最大漂移 9.97e-17、最大速度 0.01194、最大相场绝对值 1.0950 | 通过 |
+| 同一闭槽静滴 | 2D Young–Laplace 压差 Δp = σ/R；三半径末段误差各 < 15%，拟合斜率误差 < 15%，另检查压力平稳性与寄生速度 | R 初值 10、14、18 格，末步误差 2.36%、0.63%、0.79%；拟合斜率 0.008364，输入 σ=0.008，偏差 +4.55% | 静态前置检查通过 |
+| 动态网格敏感性 | 同无量纲参数、同物理时间 | **带初速的另一组**在 1.5 倍加密后，首个液桥的区间中点相差约 6.0% | 两档敏感性记录 |
+| 入水实验 | 对齐几何、撞击速度、物性及时间原点，比较气穴深度曲线和最大深度 | 当前液滴为二维平面截面；尚无匹配实验误差 | 待验证 |
 
-不要直接将当前格子单位参数视为真实水-空气物性。正式对比需要定义单位换算，并明确无量纲数，例如 \(We=\rho U^2D/\sigma\)、\(Bo=\Delta\rho gD^2/\sigma\) 与 \(Re=\rho UD/\mu\)。
+5 格间隙另有反例：撤去重力和初速后，弥散界面仍在 (1,437, 1,438] 步连通。使用这组条件时，单次连通记录无法区分受驱动撞击与界面自行并合。[七组轨迹、压力测量和云图](../audits/entry_20261118/README.md)
+
+![默认液滴入水实算动画，闭槽 240×160](../audits/entry_20261118/entry.gif)
+
+### 从干净的输出目录复算
+
+在仓库根目录执行。相场图每 1,500 步输出，液桥仍每 10 步采样。两个观测序列各含 451 条数据。
+
+```bash
+export PYTHONPATH=src OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+out=outputs/entry_qualification
+python examples/droplet_impact.py --require-contact --output-interval 1500 --output-root "$out" --run-name driven
+python examples/droplet_impact.py --g 0 --output-interval 1500 --output-root "$out" --run-name control
+python benchmarks/water_entry/paired.py "$out/driven" "$out/control" --output "$out/pair.json"
+python benchmarks/water_entry/static_drop.py --steps 2500 --output "$out/laplace.json"
+```
+
+核对 `pair.json` 中的 `checks`、`driven_bridge` 与 `control_bridge`；核对 `laplace.json` 中每个半径的 `settled`、`passed` 和压力历史。本次复算的两组界面 CSV 按字段比较与已有记录完全一致。使用 `--require-contact` 时程序以非零状态退出，可从 `run_metadata.json` 分别检查数值失稳、时窗内仍分离或目标跟踪丢失。[配置、参考来源、数据摘要及 SHA-256](../../benchmarks/pending/droplet_impact_2d_pool/result.json)
+
+### 与实验比什么
+
+选定外部参照为 *Crater Depth after the Impact of Multiple Drops into Deep Pools* 第 5 图中 **1.4 m/s 单滴**的实验标记。图中连续线为论文作者的数值结果。实验单滴直径范围 2.27–2.32 mm，观测量是气穴深度除以落滴直径随时间的变化。原始实验来自 Santini 等（2017）。[第 5 图和工况](https://doi.org/10.3390/fluids7020050) · [原始实验](https://www.sciencedirect.com/science/article/abs/pii/S0997754616302977)
+
+晋级时需保留实验点、取点不确定度和单位，使用轴对称或三维球形液滴，或另行预注册同几何的平面参考；按实测撞击速度核对 Re、We、Fr、液气密度比、黏度比和相对池深。从真实自由面直接提取气穴底部，以实验首触为时间原点，在预先锁定的时刻比较曲线，并比较最大深度。记录不同网格和时间步的误差；按仓库通用标准核对直接观测量误差 ≤3%、至少两档网格误差单调减小。当前的液桥区间、连通后池体顶部、静滴压差均不能给出该实验误差。[仓库晋级规则](../../benchmarks/pending/README.md)
 
 ## 8. 与现有多相流基准的关系
 
@@ -133,8 +164,3 @@ python benchmarks/water_entry/animate.py outputs/droplet_impact/baseline_cpu --o
 2. 自由能液滴弛豫：相场守恒、半径漂移与有界性。
 3. 本液滴入水算例：重力驱动、瞬态界面变形、撞击与并合的端到端工作流。
 4. 后续升级：网格收敛、实验对照、参数扫描，以及三维 D3Q19 验证。
-
-## 9. 参考文献与报告规范
-
-正式版本应为选定的实验/数值参考添加完整书目信息、DOI 或稳定链接，并说明几何、初始条件、无量纲参数、网格与误差定义。参考数据未锁定前，结果报告应标记为 `exploratory_not_yet_reference_validated`，不可填入未经运行或未经来源核实的“参考误差”。
-

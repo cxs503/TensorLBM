@@ -231,6 +231,8 @@ TensorLBM/
 
 ## 4. 船舶与海洋工程算例 / Marine Benchmarks
 
+液滴入池的配置、云图、复算命令和实验比对状态见[液滴入水案例说明书](benchmarks/droplet_impact.md)。刚性物体入水载荷另见[楔体案例说明与判定](../benchmarks/pending/phasefield_water_entry/README.md)。
+
 ### 4.1 二维绕圆柱流动 / 2D Cylinder Flow (Re = 100)
 
 #### 物理背景 / Physical Background
