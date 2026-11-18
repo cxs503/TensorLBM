@@ -1,7 +1,7 @@
 {
  "schema": "xval-lbm-bitwise-refdata/v1",
- "generated_utc": "2026-11-13T08:17:54Z",
- "git_sha": "9bcc6db6b0519502a375661cf0a76e75e57728cb",
+ "generated_utc": "2026-11-17T23:26:29Z",
+ "git_sha": "aace89a3d7a3dbe696ab62e83d4ff6ddc88a0403",
  "env": {
   "torch": "2.7.1",
   "numpy": "2.4.6",
@@ -12,7 +12,7 @@
  },
  "code": {
   "src/tensorlbm/d2q9.py": "a5e1ddc0bea25dbdcbafada70858cf97ac6e7a1a038d47550408076b574f8af5",
-  "src/tensorlbm/solver.py": "06e05245f2c66b47f8bbd6e7341d97fc63bc7a29a996b5152da639ac02d2df03"
+  "src/tensorlbm/solver.py": "a361280d69baa103ec50c0b2e97a722d2452ecb48ff4ec2b23caa40560c54c8d"
  },
  "cases": {
   "feq_int_field_16": {

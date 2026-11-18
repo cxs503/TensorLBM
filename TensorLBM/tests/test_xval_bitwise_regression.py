@@ -499,3 +499,142 @@ class TestConvergence:
         e16 = run_poiseuille(16, 5000)
         ratio = e8 / e16
         assert 3.0 <= ratio <= 5.0, f"Convergence ratio={ratio:.2f}, expected ~4"
+
+
+# ---------------------------------------------------------------------------
+# Bitwise reference-data regression (joconnor22/LIFE pattern)
+# ---------------------------------------------------------------------------
+
+
+class TestBitwiseRefdataRegression:
+    """Bitwise regression: pin the exact byte-level output of the solver.
+
+    The ``bitwise_compare`` method of :class:`ReferenceDataStore` accepts a
+    re-run only if its arrays reproduce the recorded SHA-256 digests *exactly*
+    (``np.array_equal``).  This is stricter than the ``<15 %`` tolerance used
+    by :meth:`compare` -- it catches a kernel reordering / fused rewrite /
+    dtype change that would still pass a tolerance test.
+    """
+
+    def test_bitwise_compare_identical_rerun_passes(self, tmp_path):
+        """An identical re-run must reproduce the golden snapshot bitwise."""
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import POISEUILLE_2D_BITWISE_CASE
+
+        result = POISEUILLE_2D_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "poiseuille_2d_H16_bitwise",
+            result["arrays"],
+            result["scalars"],
+            POISEUILLE_2D_BITWISE_CASE.thresholds,
+        )
+
+        # Re-run the same deterministic solver configuration.
+        result2 = POISEUILLE_2D_BITWISE_CASE.run_fn()
+        verdict = store.bitwise_compare(
+            "poiseuille_2d_H16_bitwise",
+            result2["arrays"],
+        )
+
+        assert verdict["bitwise_passed"] is True
+        assert verdict["n_arrays"] == verdict["n_matched"] == 3
+        # The distribution array f must be pinned exactly.
+        assert verdict["details"]["f"]["match"] is True
+
+    def test_bitwise_compare_has_teeth_1ulp_perturbation_fails(self, tmp_path):
+        """A 1-ULP perturbation must FAIL bitwise even though it passes <15%.
+
+        This is the core value of the bitwise regression: a change that shifts
+        the solver output by a single least-significant bit (e.g. a different
+        reduction order in the macroscopic moment computation) is invisible to
+        a ``<15 %`` tolerance test but is caught by the bitwise pin.
+        """
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import POISEUILLE_2D_BITWISE_CASE
+
+        result = POISEUILLE_2D_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "poiseuille_2d_H16_bitwise",
+            result["arrays"],
+            result["scalars"],
+            POISEUILLE_2D_BITWISE_CASE.thresholds,
+        )
+
+        # Perturb the distribution array by one ULP on a single element.
+        perturbed = dict(result["arrays"])
+        f = np.asarray(perturbed["f"], dtype=np.float64).copy()
+        # Flip the least-significant bit of one element (nextafter toward +inf).
+        f_flat = f.ravel()
+        f_flat[0] = np.nextafter(f_flat[0], np.inf, dtype=np.float64)
+        perturbed["f"] = f_flat.reshape(f.shape)
+
+        # The tolerance-based compare() must still PASS (perturbation is ~1e-16).
+        tol_verdict = store.compare(
+            "poiseuille_2d_H16_bitwise",
+            perturbed,
+            result["scalars"],
+        )
+        assert tol_verdict["passed"] is True, (
+            "1-ULP perturbation should be invisible to the <15% tolerance gate"
+        )
+
+        # But the bitwise regression must FAIL.
+        bit_verdict = store.bitwise_compare(
+            "poiseuille_2d_H16_bitwise",
+            perturbed,
+        )
+        assert bit_verdict["bitwise_passed"] is False
+        assert bit_verdict["details"]["f"]["match"] is False
+        assert bit_verdict["n_matched"] == bit_verdict["n_arrays"] - 1
+
+    def test_bitwise_compare_missing_key_fails(self, tmp_path):
+        """A re-run that drops a golden array key must not pass bitwise."""
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import POISEUILLE_2D_BITWISE_CASE
+
+        result = POISEUILLE_2D_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "poiseuille_2d_H16_bitwise",
+            result["arrays"],
+            result["scalars"],
+            POISEUILLE_2D_BITWISE_CASE.thresholds,
+        )
+
+        # Drop the u_profile key from the re-run.
+        partial = {k: v for k, v in result["arrays"].items() if k != "u_profile"}
+        verdict = store.bitwise_compare(
+            "poiseuille_2d_H16_bitwise",
+            partial,
+        )
+        assert verdict["bitwise_passed"] is False
+        assert verdict["details"]["u_profile"]["match"] is False
+
+    def test_manifest_records_all_array_hashes(self, tmp_path):
+        """The manifest must record a SHA-256 digest for every stored array."""
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import POISEUILLE_2D_BITWISE_CASE
+
+        result = POISEUILLE_2D_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "poiseuille_2d_H16_bitwise",
+            result["arrays"],
+            result["scalars"],
+            POISEUILLE_2D_BITWISE_CASE.thresholds,
+        )
+
+        manifest = store._load_manifest()
+        case_meta = manifest["cases"]["poiseuille_2d_H16_bitwise"]
+        assert "sha256_arrays" in case_meta
+        assert set(case_meta["sha256_arrays"].keys()) == set(result["arrays"].keys())
+        # Every digest is a 64-char hex SHA-256.
+        for h in case_meta["sha256_arrays"].values():
+            assert len(h) == 64
+            int(h, 16)  # must be valid hex
