@@ -1,0 +1,311 @@
+{
+  "scope": "2D closed tank, same FE/CH closure as droplet entry, gravity off",
+  "passed": true,
+  "slope": 0.008364051726228562,
+  "intercept": -1.8979755719303924e-05,
+  "cases": [
+    {
+      "initial_radius": 10,
+      "size": 88,
+      "steps_requested": 2500,
+      "healthy": true,
+      "settled": true,
+      "passed": true,
+      "sigma_input": 0.008,
+      "history": [
+        {
+          "step": 0,
+          "radius": 10.02925341359355,
+          "pressure_jump": 6.60389601682132e-05,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.9172098166628474,
+          "max_speed": 5.735615750680809e-05
+        },
+        {
+          "step": 250,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0009262191097613726,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.16116077103872795,
+          "max_speed": 0.000209964347808055
+        },
+        {
+          "step": 500,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0008867751641236099,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.11171160523458679,
+          "max_speed": 0.00011768562684575294
+        },
+        {
+          "step": 750,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0007406180819139463,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.07151919672443097,
+          "max_speed": 3.1960264849525915e-05
+        },
+        {
+          "step": 1000,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0008362456078734315,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.04836488967090302,
+          "max_speed": 4.614749895343258e-05
+        },
+        {
+          "step": 1250,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0008344021729242979,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.04605385513886118,
+          "max_speed": 3.542067571989893e-05
+        },
+        {
+          "step": 1500,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0007995103596158959,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.002311500422641277,
+          "max_speed": 2.107689860199595e-05
+        },
+        {
+          "step": 1750,
+          "radius": 10.02925341359355,
+          "pressure_jump": 0.0008263802787432106,
+          "analytic_jump": 0.0007976665530414139,
+          "relative_error": 0.03599715393896674,
+          "max_speed": 2.4023681447703184e-05
+        },
+        {
+          "step": 2000,
+          "radius": 9.901487006738307,
+          "pressure_jump": 0.000827248770904454,
+          "analytic_jump": 0.0008079594503891911,
+          "relative_error": 0.02387411955633567,
+          "max_speed": 1.9795424858157806e-05
+        },
+        {
+          "step": 2250,
+          "radius": 9.901487006738307,
+          "pressure_jump": 0.0008173668524071309,
+          "analytic_jump": 0.0008079594503891911,
+          "relative_error": 0.011643408605974237,
+          "max_speed": 1.576071225503071e-05
+        },
+        {
+          "step": 2500,
+          "radius": 9.901487006738307,
+          "pressure_jump": 0.0008270310843217499,
+          "analytic_jump": 0.0008079594503891911,
+          "relative_error": 0.023604691947562317,
+          "max_speed": 1.535068240962531e-05
+        }
+      ]
+    },
+    {
+      "initial_radius": 14,
+      "size": 88,
+      "steps_requested": 2500,
+      "healthy": true,
+      "settled": true,
+      "passed": true,
+      "sigma_input": 0.008,
+      "history": [
+        {
+          "step": 0,
+          "radius": 14.002817212590296,
+          "pressure_jump": 1.1924395185214376e-05,
+          "analytic_jump": 0.0005713136062939529,
+          "relative_error": 0.979128109231344,
+          "max_speed": 4.507978712299168e-05
+        },
+        {
+          "step": 250,
+          "radius": 14.002817212590296,
+          "pressure_jump": 0.0007057059214274908,
+          "analytic_jump": 0.0005713136062939529,
+          "relative_error": 0.23523387794897022,
+          "max_speed": 0.00024395915374305935
+        },
+        {
+          "step": 500,
+          "radius": 14.002817212590296,
+          "pressure_jump": 0.000656665279836155,
+          "analytic_jump": 0.0005713136062939529,
+          "relative_error": 0.14939548542501657,
+          "max_speed": 0.00014314109603386262
+        },
+        {
+          "step": 750,
+          "radius": 14.002817212590296,
+          "pressure_jump": 0.00048003191568590786,
+          "analytic_jump": 0.0005713136062939529,
+          "relative_error": 0.1597751035550844,
+          "max_speed": 2.8293238392326446e-05
+        },
+        {
+          "step": 1000,
+          "radius": 14.002817212590296,
+          "pressure_jump": 0.000598588184438309,
+          "analytic_jump": 0.0005713136062939529,
+          "relative_error": 0.04774011653824095,
+          "max_speed": 5.829620671205723e-05
+        },
+        {
+          "step": 1250,
+          "radius": 13.911592676604096,
+          "pressure_jump": 0.0005952165242002483,
+          "analytic_jump": 0.000575059965165171,
+          "relative_error": 0.035051229882239854,
+          "max_speed": 4.5629336140540884e-05
+        },
+        {
+          "step": 1500,
+          "radius": 13.911592676604096,
+          "pressure_jump": 0.0005483821797408472,
+          "analytic_jump": 0.000575059965165171,
+          "relative_error": 0.04639131054212975,
+          "max_speed": 1.935808816174602e-05
+        },
+        {
+          "step": 1750,
+          "radius": 13.911592676604096,
+          "pressure_jump": 0.0005824637585555292,
+          "analytic_jump": 0.000575059965165171,
+          "relative_error": 0.012874819738549537,
+          "max_speed": 2.512705266006108e-05
+        },
+        {
+          "step": 2000,
+          "radius": 13.911592676604096,
+          "pressure_jump": 0.0005818241812572955,
+          "analytic_jump": 0.000575059965165171,
+          "relative_error": 0.011762627381270763,
+          "max_speed": 1.880703648634965e-05
+        },
+        {
+          "step": 2250,
+          "radius": 13.911592676604096,
+          "pressure_jump": 0.0005672585191213164,
+          "analytic_jump": 0.000575059965165171,
+          "relative_error": 0.013566317456326193,
+          "max_speed": 1.3831877159192696e-05
+        },
+        {
+          "step": 2500,
+          "radius": 13.911592676604096,
+          "pressure_jump": 0.0005786837233341946,
+          "analytic_jump": 0.000575059965165171,
+          "relative_error": 0.006301530950746592,
+          "max_speed": 1.309314095788847e-05
+        }
+      ]
+    },
+    {
+      "initial_radius": 18,
+      "size": 88,
+      "steps_requested": 2500,
+      "healthy": true,
+      "settled": true,
+      "passed": true,
+      "sigma_input": 0.008,
+      "history": [
+        {
+          "step": 0,
+          "radius": 18.01877032173579,
+          "pressure_jump": 4.9397861072164595e-06,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.9888738910869457,
+          "max_speed": 3.807776699942675e-05
+        },
+        {
+          "step": 250,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.000568006019328493,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.27934625045544204,
+          "max_speed": 0.00024962671968121444
+        },
+        {
+          "step": 500,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.0005291138572974252,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.1917476335862489,
+          "max_speed": 0.00015554331075799227
+        },
+        {
+          "step": 750,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.0003417937210757338,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.23016218031561597,
+          "max_speed": 2.8405426712747812e-05
+        },
+        {
+          "step": 1000,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.000470963308613237,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.060772460983335996,
+          "max_speed": 6.587533491502794e-05
+        },
+        {
+          "step": 1250,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.00046778058093965846,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.05360385611498053,
+          "max_speed": 5.257486338480025e-05
+        },
+        {
+          "step": 1500,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.00041340204382800394,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.06887544021588055,
+          "max_speed": 2.0118427367603264e-05
+        },
+        {
+          "step": 1750,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.0004525787835323869,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.01936414412008247,
+          "max_speed": 2.6329801505092454e-05
+        },
+        {
+          "step": 2000,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.00045177390879286294,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.017551287486426315,
+          "max_speed": 2.1493810753513898e-05
+        },
+        {
+          "step": 2250,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.0004343655061067597,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.021658463722221577,
+          "max_speed": 1.3320168701570716e-05
+        },
+        {
+          "step": 2500,
+          "radius": 18.01877032173579,
+          "pressure_jump": 0.00044748715618114776,
+          "analytic_jump": 0.00044398146250578,
+          "relative_error": 0.007896036144351637,
+          "max_speed": 1.1883620074097628e-05
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "tail_relative_jump_error": 0.15,
+    "tail_pressure_range_over_reference": 0.05,
+    "tail_max_speed": 0.001,
+    "relative_slope_error": 0.15
+  }
+}

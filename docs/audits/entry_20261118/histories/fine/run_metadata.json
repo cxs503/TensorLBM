@@ -1,0 +1,105 @@
+{
+  "benchmark": "2d_free_energy_droplet_impact",
+  "status": "exploratory_not_yet_reference_validated",
+  "impact": {
+    "state": "after_first_bridge",
+    "first_bridge_interval_open_closed": [
+      5676,
+      5698
+    ],
+    "sampling_interval_steps": 22,
+    "criterion": "phi>0 four-connected to deep pool, overlapping >50% of previous detached footprint",
+    "contact_required": false,
+    "initial_drop_speed_scale_lu": 0.03
+  },
+  "health": {
+    "passed": true,
+    "failures": [],
+    "checked_every_step": true,
+    "completed_steps": 10125,
+    "max_observed": {
+      "relative_phase_mass_drift": 1.6415237762478405e-16,
+      "max_speed": 0.029923739024215162,
+      "abs_phi": 1.0681111433732922
+    },
+    "thresholds": {
+      "relative_phase_mass_drift": 0.0001,
+      "max_speed": 0.15,
+      "abs_phi": 1.2,
+      "min_density_exclusive": 0.0
+    }
+  },
+  "config": {
+    "nx": 180,
+    "ny": 135,
+    "radius": 15.0,
+    "gap": 12.0,
+    "water_level": 87.0,
+    "n_steps": 10125,
+    "track_interval": 22,
+    "drop_speed": 0.03,
+    "require_contact": false,
+    "output_interval": 1125,
+    "g": 5.925925925925926e-06,
+    "tau_f": 0.8,
+    "tau_g": 1.0,
+    "A": 0.0017777777777777779,
+    "B": 0.0017777777777777779,
+    "kappa": 0.018000000000000002,
+    "Gamma": 1.125,
+    "interface_width": 4.5,
+    "geq_convention": "lee_lin",
+    "dtype": "float64",
+    "density_ratio": null,
+    "top_bc": "bounce_back",
+    "rho_top": 1.0,
+    "max_mass_drift": 0.0001,
+    "max_speed": 0.15,
+    "max_abs_phi": 1.2,
+    "device": "cpu",
+    "output_root": "../water-evidence",
+    "run_name": "fine",
+    "fast": false,
+    "overwrite": false
+  },
+  "derived": {
+    "equilibrium_interface_width": 4.5,
+    "surface_tension_analytic": 0.005333333333333333,
+    "ch_mobility": 0.5625,
+    "legacy_extra_phi_diffusivity": 0.0,
+    "initial_droplet_center_y": 60.0,
+    "initial_droplet_center_x": 90.0,
+    "initial_phase_mass": -5795.400014046332,
+    "phase_mass_normalization_l1": 22162.205992576764,
+    "rho_heavy_used": 1.0,
+    "rho_light_used": 0.1,
+    "buoyancy_density_ratio": 10.0,
+    "elapsed_seconds_including_contours": 137.50956278299986,
+    "python": "3.12.14",
+    "torch": "2.15.0+cpu",
+    "device": "cpu"
+  },
+  "final_metrics": {
+    "step": 10125,
+    "finite": true,
+    "time_lu": 10125.0,
+    "phase_mass": -5795.400014046334,
+    "relative_phase_mass_drift": 8.207618881239202e-17,
+    "liquid_centroid_x": 89.50450937896181,
+    "liquid_centroid_y": 107.66398648705434,
+    "max_speed": 0.0029581333109785545,
+    "min_density": 0.9993958179837493,
+    "kinetic_energy_proxy": 0.012202255117392959,
+    "phi_min": -1.0000250784019578,
+    "phi_max": 1.0111187110369955
+  },
+  "diagnostic_notes": [
+    "Conserved totals exclude solid storage; phase drift is normalized by initial sum(abs(phi)).",
+    "Liquid centroid includes ALL liquid; kinetic energy is an uncalibrated lattice proxy.",
+    "Momentum and phase stream without periodic wrap; scalar stencils use no-flux walls.",
+    "Pressure top, if selected, fixes momentum density but keeps phase impermeable; not a two-phase outflow.",
+    "Density ratio changes Boussinesq gravity only; no cAC or variable-inertial-density solver is selected.",
+    "The lee_lin selector corrects phase moments; swift is retained only for legacy reproduction.",
+    "Passing health gates does not validate impact, splash height, coexistence, or water/air density ratios."
+  ]
+}

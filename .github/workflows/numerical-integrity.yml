@@ -39,6 +39,7 @@ jobs:
             tests/test_d3q27_guo_moments.py \
             tests/test_multiphase_force_moments.py \
             tests/test_multiphase_physical_benchmarks.py \
+            tests/test_droplet_contact.py \
             tests/test_gh408_droplet_impact.py \
             tests/test_droplet_impact_initialization.py \
             tests/test_phasefield_common_operators.py \
@@ -58,6 +59,14 @@ jobs:
       - name: CH dispersion and freely evolved interface gates
         run: |
           python benchmarks/phasefield_ch_core/run.py --output artifacts/numerical-integrity/ch_core/report.json --plot
+      - name: Closed-tank Laplace pressure and resolved entry event
+        run: |
+          python benchmarks/water_entry/static_drop.py --output artifacts/numerical-integrity/entry/laplace.json
+          entry=artifacts/numerical-integrity/entry
+          common=(--nx 120 --ny 90 --water-level 58 --radius 10 --gap 8 --n-steps 4500 --output-interval 750 --output-root "$entry")
+          python examples/droplet_impact.py "${common[@]}" --run-name driven --drop-speed 0.045 --require-contact
+          python examples/droplet_impact.py "${common[@]}" --run-name quiet --g 0
+          python benchmarks/water_entry/paired.py "$entry/driven" "$entry/quiet" --output "$entry/paired.json"
       - name: Run exploratory droplet with health gates
         run: |
           python examples/droplet_impact.py --fast --output-root artifacts/numerical-integrity/droplet

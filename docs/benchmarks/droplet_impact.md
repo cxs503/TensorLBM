@@ -40,7 +40,7 @@ CPU：
 ```bash
 PYTHONPATH=src python examples/droplet_impact.py \
   --nx 240 --ny 160 --radius 14 --gap 8 \
-  --water-level 100 --g 2e-5 --n-steps 3000 \
+  --water-level 100 --g 2e-5 --n-steps 4500 --require-contact \
   --output-interval 150 --output-root outputs/droplet_impact \
   --run-name baseline_cpu --overwrite
 ```
@@ -64,6 +64,22 @@ PYTHONPATH=src python examples/droplet_impact.py \
 [2026-11-17 实算与适用范围](../audits/ch_core_20261117/README.md)包含 3,000 步健康记录，
 以及较强表面张力配置的长期失稳证据。通过健康检查不表示已经发生撞击、并合或飞溅。
 
+默认步数从 3,000 延长到 4,500。初始液滴从静止释放。使用
+`--drop-speed U` 可在液滴内设置向下的初速度，速度剖面为
+`U * max(tanh((R-r)/xi), 0)`，池内初始速度仍为零。U 是初始化的速度尺度，
+实际接近池面时的速度需从轨迹测量。
+
+通过 `--track-interval N` 设置观测间隔（默认 10 步）。每次观测沿上下左右四个方向
+追踪 `phi>0` 液体单元，检测原液滴与深水池是否连通，并检查相邻两次观测中液滴区域
+至少有一半以上重合。接触记录为区间 `(上一次分离步, 第一次连通步]`。
+点状对角相邻、初始已连通、失去目标均不能通过接触判据。该定义测量格点液桥，
+界面厚度与采样间隔会影响读数。首次连通后，池体顶部包含已连入的液滴，
+此时中心线的池体顶部坐标不能用于计算气穴深度。
+
+`--require-contact` 可用于需要出现液桥的工况。健康检查失败或在规定时长内没有观测到
+要求的液桥时，程序写入诊断文件并以非零码结束。配对实验还要检查无驱动对照在相同时间窗
+是否保持分离。完整数值、输入和动画见[入水实算](../audits/entry_20261118/README.md)。
+
 ## 5. 输出文件
 
 每次运行会生成一个独立目录，例如 `outputs/droplet_impact/baseline_cpu/`：
@@ -72,10 +88,17 @@ PYTHONPATH=src python examples/droplet_impact.py \
 |---|---|---|
 | `contours/phase_XXXXXXX.png` | 序参量云图、零等值线、速度矢量和初始液位 | 查看液滴下落、撞击与并合演化 |
 | `diagnostic_curves.png` | 相质量漂移、全部液相质心、最大速度、动能代理量曲线 | 快速判断数值行为与异常 |
+| `interface_history.csv`、`interface_curves.png` | 独立液滴质心、中心线零等值线间隙和池体顶部位置 | 判断分离、连通及后续演化 |
 | `history.csv` | 每个采样时刻的诊断数据 | 后处理、对比和回归测试 |
 | `run_metadata.json` | 完整参数、设备/软件版本、最终指标和限制说明 | 追溯、自动化评估与归档 |
 
 序参量约定为液相约 \( +1 \)、气相约 \( -1 \)，界面由 \( \phi=0 \) 等值线表示。图中的虚线表示**初始**液池界面；液池实际界面会随时间演化。
+
+从已有运行目录导出动画：
+
+```bash
+python benchmarks/water_entry/animate.py outputs/droplet_impact/baseline_cpu --output outputs/droplet_impact/baseline_cpu/entry.gif
+```
 
 ## 6. 诊断量如何解读
 

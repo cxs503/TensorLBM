@@ -1353,18 +1353,19 @@ def free_energy_step(
     # spuriously towards a wall.
     ux_adv = ux + 0.5 * Fx / rho_s
     uy_adv = uy + 0.5 * Fy / rho_s
-    cu = cx * ux_adv.unsqueeze(0) + cy * uy_adv.unsqueeze(0)
-    u_sq = (ux_adv**2 + uy_adv**2).unsqueeze(0)
-    # Advection part: same form as feq for rho=phi
-    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
-    # Diffusion part: Γ w_i (|c_i|² − D cs²) μ / cs⁴
-    # |c_i|²/cs² for D2Q9: 0 for rest (i=0), 1 for face (i=1-4), 2 for diagonal (i=5-8)
-    c_sq = cx**2 + cy**2  # |c_i|²
-    diff_factor = c_sq / _CS2 - 2.0  # anisotropic, sums to 0 over w_i
-    geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
-    geq = geq_adv + geq_diff
     if geq_convention == "lee_lin":
         geq = ch_equilibrium(phi, (ux_adv, uy_adv), mu, Gamma)
+    else:
+        cu = cx * ux_adv.unsqueeze(0) + cy * uy_adv.unsqueeze(0)
+        u_sq = (ux_adv**2 + uy_adv**2).unsqueeze(0)
+        # Advection part: same form as feq for rho=phi
+        geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
+        # Diffusion part: Γ w_i (|c_i|² − D cs²) μ / cs⁴
+        # |c_i|²/cs² for D2Q9: 0 for rest (i=0), 1 for face (i=1-4), 2 for diagonal (i=5-8)
+        c_sq = cx**2 + cy**2  # |c_i|²
+        diff_factor = c_sq / _CS2 - 2.0  # anisotropic, sums to 0 over w_i
+        geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
+        geq = geq_adv + geq_diff
     g_out = g - (g - geq) / tau_g
 
     if solid_mask is not None:
