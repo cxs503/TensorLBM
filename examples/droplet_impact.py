@@ -30,9 +30,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
 
-from tensorlbm.boundary.tank import stream_tank
+from tensorlbm.boundary.tank import TankStreamingPlan, stream_tank
 from tensorlbm.d2q9 import equilibrium, macroscopic
 from tensorlbm.multiphase import free_energy_step, init_free_energy_g
+from tensorlbm.phasefield.impact_tracking import ImpactTracker
 from tensorlbm.phasefield.operators import laplacian_2d
 
 # ---------------------------------------------------------------------------
@@ -79,7 +80,24 @@ def parser() -> argparse.ArgumentParser:
         default=100.0,
         help="Initial pool interface y coordinate (static reference); y increases downward",
     )
-    p.add_argument("--n-steps", type=int, default=3000)
+    p.add_argument("--n-steps", type=int, default=4500)
+    p.add_argument(
+        "--track-interval",
+        type=int,
+        default=10,
+        help="Steps between liquid connectivity observations",
+    )
+    p.add_argument(
+        "--drop-speed",
+        type=float,
+        default=0.0,
+        help="Initial downward velocity scale inside the drop (lattice units)",
+    )
+    p.add_argument(
+        "--require-contact",
+        action="store_true",
+        help="Exit nonzero unless a first resolved bridge is observed",
+    )
     p.add_argument("--output-interval", type=int, default=150)
     p.add_argument(
         "--g", type=float, default=2.0e-5, help="Downward body acceleration in lattice units"
@@ -135,7 +153,7 @@ def save_contour(
         cmap="RdBu_r",
         vmin=-1,
         vmax=1,
-        extent=(0, field.shape[1], field.shape[0], 0),
+        extent=(-0.5, field.shape[1] - 0.5, field.shape[0] - 0.5, -0.5),
         interpolation="nearest",
     )
     yy, xx = torch.meshgrid(
@@ -303,6 +321,8 @@ def main() -> None:
         args.radius, args.water_level, args.gap = 9.0, 58.0, 5.0
     if args.nx < 64 or args.ny < 64:
         raise ValueError("nx and ny must both be >= 64")
+    if args.drop_speed < 0 or args.track_interval < 1:
+        raise ValueError("drop-speed must be nonnegative and track-interval positive")
     if args.output_interval < 1 or args.n_steps < 1:
         raise ValueError("n-steps and output-interval must be positive")
     if (
@@ -344,8 +364,15 @@ def main() -> None:
     phi0 = _initial_phase_field(xx, yy, args.radius, cx, cy, args.water_level, args.interface_width)
     rho0 = torch.ones((ny, nx), dtype=dtype, device=device)
     zero = torch.zeros_like(rho0)
-    f = equilibrium(rho0, zero, zero)
     wall_mask = _make_tank_wall_mask(ny, nx, device)
+    # Localize the prescribed entry momentum to the positive-phase detached drop.
+    # Both kinetic distributions must start with the same velocity field.
+    distance = ((xx - cx).square() + (yy - cy).square()).sqrt()
+    uy0 = args.drop_speed * torch.tanh((args.radius - distance) / args.interface_width).clamp_min(0)
+    f = equilibrium(rho0, zero, uy0)
+    tank = TankStreamingPlan(wall_mask, args.top_bc, args.rho_top)
+    tracker = ImpactTracker(wall_mask.cpu().numpy(), (round(cy), round(cx)), (ny - 2, round(cx)))
+    observations = []
     mu0 = (
         -args.A * phi0
         + args.B * phi0**3
@@ -354,7 +381,7 @@ def main() -> None:
     g = init_free_energy_g(
         phi0,
         zero,
-        zero,
+        uy0,
         geq_convention=args.geq_convention,
         mu=mu0 if args.geq_convention == "lee_lin" else None,
         Gamma=args.Gamma,
@@ -387,7 +414,7 @@ def main() -> None:
                 boundary="no_flux",
                 solid_mask=wall_mask,
             )
-            f, g = stream_tank(f, g, wall_mask, top_bc=args.top_bc, rho_top=args.rho_top)
+            f, g = tank.stream(f, g)
         metrics = _diagnostics(f, g, wall_mask, xx, yy, initial_mass, mass_scale, step)
         failures = _health_failures(metrics, args)
         if metrics["finite"] and not any(
@@ -398,7 +425,10 @@ def main() -> None:
             max_observed["abs_phi"] = max(
                 max_observed["abs_phi"], abs(metrics["phi_min"]), abs(metrics["phi_max"])
             )
-        if step % args.output_interval == 0 or step == args.n_steps or failures:
+        if not failures and (step % args.track_interval == 0 or step == args.n_steps):
+            observations.append(tracker.observe(g.sum(0).detach().cpu().numpy(), step))
+        first_bridge_now = tracker.contact is not None and tracker.contact[1] == step
+        if step % args.output_interval == 0 or step == args.n_steps or failures or first_bridge_now:
             # Strict JSON: invalid measurements become null, never NaN/Infinity.
             rows.append(
                 {
@@ -429,10 +459,32 @@ def main() -> None:
         writer = csv.DictWriter(fp, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
+    with (out / "interface_history.csv").open("w", newline="", encoding="utf-8") as fp:
+        writer = csv.DictWriter(
+            fp,
+            fieldnames=[
+                "step",
+                "state",
+                "drop_centroid_y",
+                "centerline_gap",
+                "pool_centerline_y",
+                "drop_area_cells",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(observations)
     elapsed = time.perf_counter() - started
     metadata = {
         "benchmark": "2d_free_energy_droplet_impact",
         "status": "failed_health_gate" if failures else "exploratory_not_yet_reference_validated",
+        "impact": {
+            "state": observations[-1]["state"] if observations else "unobserved",
+            "first_bridge_interval_open_closed": tracker.contact,
+            "sampling_interval_steps": args.track_interval,
+            "criterion": "phi>0 four-connected to deep pool, overlapping >50% of previous detached footprint",
+            "contact_required": args.require_contact,
+            "initial_drop_speed_scale_lu": args.drop_speed,
+        },
         "health": {
             "passed": not failures,
             "failures": failures,
@@ -479,6 +531,9 @@ def main() -> None:
             "Passing health gates does not validate impact, splash height, coexistence, or water/air density ratios.",
         ],
     }
+    missing_contact = args.require_contact and tracker.contact is None
+    if missing_contact and not failures:
+        metadata["status"] = "required_contact_unobserved"
     (out / "run_metadata.json").write_text(
         json.dumps(metadata, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
@@ -493,10 +548,28 @@ def main() -> None:
     fig.suptitle("Exploratory health diagnostics — not physical reference validation")
     fig.savefig(out / "diagnostic_curves.png", dpi=160)
     plt.close(fig)
+    fig, axes = plt.subplots(3, 1, figsize=(8, 7), sharex=True, constrained_layout=True)
+    for ax, key, label in zip(
+        axes,
+        ("drop_centroid_y", "centerline_gap", "pool_centerline_y"),
+        ("Detached drop centroid y", "Centreline gas gap", "Top of pool-connected liquid y"),
+    ):
+        ax.plot([row["step"] for row in observations], [row[key] for row in observations])
+        ax.set_ylabel(label + " [cells]")
+        if tracker.contact:
+            ax.axvspan(*tracker.contact, color="orange", alpha=0.4)
+    axes[-1].set_xlabel("Lattice steps")
+    fig.savefig(out / "interface_curves.png", dpi=140)
+    plt.close(fig)
     print(f"Artifacts written to: {out}")
     if failures:
         raise RuntimeError(
             f"Droplet health gate failed at step {step}: {', '.join(failures)}; see {out / 'run_metadata.json'}"
+        )
+
+    if missing_contact:
+        raise RuntimeError(
+            "Required resolved drop-pool contact was not observed; see run_metadata.json"
         )
 
 

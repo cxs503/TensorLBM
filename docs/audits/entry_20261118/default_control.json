@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "scope": "resolved liquid bridge versus quiescent control over sampled time window",
+  "passed": true,
+  "checks": {
+    "same_configuration_except_forcing_and_output": true,
+    "matched_healthy_duration": true,
+    "both_histories_complete": true,
+    "both_initially_separated": true,
+    "control_has_zero_drive": true,
+    "driven_has_input": true,
+    "driven_bridge_observed": true,
+    "control_remains_separated": true
+  },
+  "mismatched_keys": [],
+  "driven_bridge": [
+    3220,
+    3230
+  ],
+  "control_bridge": null
+}

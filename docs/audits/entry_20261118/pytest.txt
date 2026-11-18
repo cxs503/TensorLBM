@@ -1,0 +1,14 @@
+........................................................................ [ 64%]
+.......................................                                  [100%]
+=============================== warnings summary ===============================
+../../../../opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/anyio/pytest_plugin.py:14: PytestRemovedIn10Warning: _pytest.python.CallSpec2 has been renamed to CallSpec.
+  The CallSpec2 alias will be removed in pytest 10.
+  Update imports to use CallSpec instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#callspec2-renamed
+    from _pytest.python import CallSpec2
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================== collection-ignore ===============================
+(triton absent): 21 files: test_backend_dispatch.py, test_backend_family_parity.py, test_capability_registry.py, test_checkpoint.py, test_codegen_pin.py, test_free_energy_soy_cupy_dropin.py, test_gpu_core_path.py, test_hardware_portability.py, test_hetero_equivalence.py, test_precision_policy.py, test_reporters.py, test_selective_halo_exchange.py, test_torch_fallback.py, test_triton_backend_guards.py, test_triton_fused.py, test_triton_fused_asymmetric.py, test_triton_fused_diff.py, test_triton_kernel_smag_closure.py, test_triton_obstacle_wall_parity.py, test_triton_suboff_mass_reduce.py, test_voxel_accel.py
+111 passed, 1 warning in 26.98s
