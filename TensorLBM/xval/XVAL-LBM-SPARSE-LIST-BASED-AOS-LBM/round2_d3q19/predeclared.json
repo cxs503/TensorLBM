@@ -1,0 +1,12 @@
+{
+  "mission": "XVAL-LBM-SPARSE-LIST-BASED-AOS-LBM",
+  "round": "round2_d3q19",
+  "description": "Sparse List AOS LBM for D3Q19",
+  "files": [
+    "src/tensorlbm/sparse_list_aos.py",
+    "tests/test_xval_sparse_list_aos_3d.py"
+  ],
+  "tests": [
+    "test_xval_sparse_list_aos_3d.py"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "test_results": {
+    "test_xval_sparse_list_aos_3d.py": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "summary": "All tests passed."
+}
