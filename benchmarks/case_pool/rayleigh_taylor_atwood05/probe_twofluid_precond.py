@@ -15,12 +15,12 @@ P1  ``startup``    legacy start-up: Mach of the first sampled steps.  Isolates t
 P2  ``floor``      spurious-current floor of a *flat* relaxed interface (``g = 0``)
                    as a function of ``tau``: the sensitivity limit of any front
                    estimator built on this model.
-P3  ``null``       null-dynamics control: staged start-up, seeded mode, gravity
-                   **off**.  The measured front drift is the estimator noise floor
-                   -- a mode that grows at less than this cannot be resolved.
-P4  ``seed``       seed read-back: the column-height amplitude at ``t = 0`` and its
-                   decay/ growth over the first steps.  ``a(t=0)`` must read the
-                   planned ``a0`` for the gate to mean anything.
+P3  ``null``       null-dynamics control: seeded mode, gravity **off**, staged
+                   start-up.  The measured front drift is the estimator noise
+                   floor -- a mode that grows at less than this cannot be resolved.
+P4  ``seed``       seed read-back: the gradient-estimator amplitude at ``t = 0``
+                   and its evolution over the first steps.  ``a(t=0)`` must read
+                   the planned ``a0`` for the gate to mean anything.
 
 Usage::
 
@@ -107,33 +107,52 @@ def p2_floor() -> list[dict]:
 
 
 def p3_null() -> dict:
-    """Null-dynamics control: seeded mode, gravity off, staged start-up."""
+    """Null-dynamics control: seeded mode, gravity off, staged start-up.
+
+    Uses the gradient estimator (not crossings) to measure the noise floor.
+    """
     cfg = _cfg(1.0, steps=600, sample_every=100, ma_limit=1e9)
     res = run_scmp_rt(cfg, rho_high=RHO_H, rho_low=RHO_L, precondition_steps=600,
-                      ramp_steps=0, ma_guard="bulk", gravity_scale=0.0)
-    hs = [(h["t"], round(h["spike_q10_lam"], 4), round(h["bubble_q90_lam"], 4),
-           round(h["amplitude_lam"], 5)) for h in res["history"]]
+                      ramp_steps=0, ma_guard="bulk", gravity_scale=0.0,
+                      front_estimator="gradient")
+    hs = [(h["t"], round(h.get("amplitude_lam", float("nan")), 5),
+           round(h.get("spike_q10_lam", float("nan")), 4),
+           round(h.get("bubble_q90_lam", float("nan")), 4))
+          for h in res["history"]]
     return {
         "note": "gravity_scale = 0: any measured front motion is spurious",
-        "history (t, spike_q10, bubble_q90, amp)": hs,
+        "estimator": "gradient",
+        "history (t, amp, spike_q10, bubble_q90)": hs,
         "spurious_ma_floor": res["precondition"]["spurious_ma_floor"],
         "stop_reason": res["stop_reason"],
-        "front_drift_lam": max(abs(r[1]) for r in hs) if hs else float("nan"),
+        "front_drift_lam": max(abs(r[1]) for r in hs if not math.isnan(r[1])) if hs else float("nan"),
     }
 
 
 def p4_seed() -> dict:
-    """Seed read-back: does the column-height amplitude see the planned a0?"""
+    """Seed read-back: does the gradient-estimator amplitude see the planned a0?
+
+    Uses ``front_estimator="gradient"`` (not the contaminated ``crossings``).
+    The gradient estimator is calibrated in
+    ``tests/test_rayleigh_taylor_twofluid.py::test_gradient_estimator_reads_back_a_known_amplitude``
+    to read back a0 with <5% error for a0 >= 0.02 lam.
+    """
     cfg = _cfg(1.0, steps=300, sample_every=25, ma_limit=1e9)
     res = run_scmp_rt(cfg, rho_high=RHO_H, rho_low=RHO_L, precondition_steps=600,
-                      ramp_steps=200, ma_guard="bulk")
-    rows = [(h["t"], round(h["amplitude_lam"], 5), round(h["spike_q10_lam"], 4),
-             round(h["ma_bulk"], 4)) for h in res["history"]]
+                      ramp_steps=200, ma_guard="bulk",
+                      front_estimator="gradient")
+    rows = [(h["t"], round(h.get("amplitude_lam", float("nan")), 5),
+             round(h.get("spike_q10_lam", float("nan")), 4),
+             round(h.get("ma_bulk", float("nan")), 4))
+            for h in res["history"]]
     a0 = cfg.a0_over_lam
+    valid_rows = [r for r in rows if not math.isnan(r[1])]
+    readback = valid_rows[0][1] if valid_rows else float("nan")
     return {
+        "note": "front_estimator=gradient (not the contaminated crossings)",
         "planned_a0_over_lam": a0,
-        "readback_a0_over_lam": rows[0][1] if rows else float("nan"),
-        "readback_ratio": (rows[0][1] / a0) if rows else float("nan"),
+        "readback_a0_over_lam": readback,
+        "readback_ratio": (readback / a0) if readback != float("nan") else float("nan"),
         "history (t, amp, spike_q10, ma_bulk)": rows,
         "sigma_amp": res["sigma_amp"],
         "sigma_theory_visc": res["sigma_theory_visc"],
@@ -181,8 +200,11 @@ def main() -> int:
                   f"u_spurious={row['u_spurious']:.4f}")
     if "seed" in payload:
         s = payload["seed"]
-        print(f"\nseed read-back: planned a0/lam={s['planned_a0_over_lam']:.4f} "
-              f"read back {s['readback_a0_over_lam']:.5f} (ratio {s['readback_ratio']:.3f})")
+        est = s.get("estimator", "crossings")
+        print(f"\nseed read-back (estimator={est}): "
+              f"planned a0/lam={s['planned_a0_over_lam']:.4f} "
+              f"read back {s['readback_a0_over_lam']:.5f} "
+              f"(ratio {s['readback_ratio']:.3f})")
     return 0
 
 
