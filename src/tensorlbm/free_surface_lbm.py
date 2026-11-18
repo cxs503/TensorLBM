@@ -31,7 +31,7 @@ from .core.d3q19_stencil import (
     roll_from_pull_source,
     roll_to_neighbor,
 )
-from .d3q19 import C, W, equilibrium3d, macroscopic3d
+from .d3q19 import W_EXACT64, C, W, equilibrium3d, macroscopic3d
 from .free_surface_inventory_reconciliation import (
     CANONICAL_STAGE_ORDER,
     inventory_measurement,
@@ -656,6 +656,17 @@ def _compute_interface_normal(flags, mass, rho):
 # ===========================================================================
 
 
+def _guo_population_source(c_dev, weights, ux, uy, uz, fx, fy, fz):
+    """D3Q19 Guo source with caller-supplied quadrature and force prefactor."""
+    cs2 = 1.0 / 3.0
+    cx, cy, cz = (c_dev[:, axis].view(19, 1, 1, 1) for axis in range(3))
+    cu = (cx * ux + cy * uy + cz * uz) / cs2
+    forcing = ((cx - ux) * fx + (cy - uy) * fy + (cz - uz) * fz) / cs2 + cu * (
+        cx * fx + cy * fy + cz * fz
+    ) / cs2
+    return weights.view(19, 1, 1, 1) * forcing
+
+
 def _collide_mrt3d_with_tau_eff(
     f: torch.Tensor,
     feq: torch.Tensor,
@@ -962,6 +973,7 @@ def free_surface_step(
     uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
     feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
 
+    has_force = gx != 0.0 or gy != 0.0 or gz != 0.0
     # For advanced operators: set gas cells to small equilibrium (prevent NaN)
     if collision != "bgk":
         feq_gas = equilibrium3d(
@@ -987,6 +999,23 @@ def free_surface_step(
 
         f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "mrt":
+        # In moment space Guo forcing is (I - S/2) M Phi. Shifting
+        # the collision target by -Phi/2 and adding Phi afterwards applies
+        # the proper rate to each mode, including conserved momentum (s=0).
+        target = feq
+        if has_force:
+            weights = W_EXACT64.to(f)
+            force_source = _guo_population_source(
+                c_dev,
+                weights,
+                ux_eq,
+                uy_eq,
+                uz_eq,
+                rho_s * gx * force_weight,
+                rho_s * gy * force_weight,
+                rho_s * gz * force_weight,
+            )
+            target = feq - 0.5 * force_source
         if C_s > 0:
             if sgs_model == "smagorinsky":
                 tau_eff = _smagorinsky_tau(
@@ -1001,7 +1030,9 @@ def free_surface_step(
             else:  # vreman
                 nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
-            f = _collide_mrt3d_with_tau_eff(f_collide, feq, tau_eff, device)
+            f = _collide_mrt3d_with_tau_eff(f_collide, target, tau_eff, device)
+        elif has_force:
+            f = _collide_mrt3d_with_tau_eff(f_collide, target, f.new_tensor(tau), device)
         else:
             from .solver3d import collide_mrt3d
 
@@ -1025,24 +1056,20 @@ def free_surface_step(
         else:
             f = f_collide - (f_collide - feq) / tau
 
-    # Guo body force (only when gravity is non-zero).  Single mechanism with the
-    # full second-order Guo source term; the legacy truncated ``(c.F)`` form is
-    # only first-order accurate.  Körner eq. 15: F = a * rho * fill at
-    # INTERFACE, F = a * rho at LIQUID, zero elsewhere.
-    if gx != 0.0 or gy != 0.0 or gz != 0.0:
-        cs2 = 1.0 / 3.0
-        cx = c_dev[:, 0].view(19, 1, 1, 1)
-        cy = c_dev[:, 1].view(19, 1, 1, 1)
-        cz = c_dev[:, 2].view(19, 1, 1, 1)
-        w_dev = _W.to(device).float().view(19, 1, 1, 1)
-        Fx = rho_s * gx * force_weight
-        Fy = rho_s * gy * force_weight
-        Fz = rho_s * gz * force_weight
-        cu = (cx * ux + cy * uy + cz * uz) / cs2
-        forcing = ((cx - ux) * Fx + (cy - uy) * Fy + (cz - uz) * Fz) / cs2 + cu * (
-            cx * Fx + cy * Fy + cz * Fz
-        ) / cs2
-        f = f + (1.0 - 0.5 / tau) * w_dev * forcing
+    if has_force:
+        if collision != "mrt":
+            weights = (1.0 - 0.5 / tau) * _W.to(device).float()
+            force_source = _guo_population_source(
+                c_dev,
+                weights,
+                ux,
+                uy,
+                uz,
+                rho_s * gx * force_weight,
+                rho_s * gy * force_weight,
+                rho_s * gz * force_weight,
+            )
+        f = f + force_source
 
     # NOTE: surface tension is intentionally *not* a CSF body force here.
     # The reference free-surface closure (Thürey 2007 §4.2, waLBerla

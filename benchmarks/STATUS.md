@@ -1,6 +1,6 @@
 # Benchmark status (generated 2026-10-05, after the 22-agent marine sweep)
 
-verified: **91** | pending: **59**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
+verified: **91** | pending: **60**  (counts machine-refreshed by `benchmarks/status_ledger.py --write`)
 
 These are **directory inventory counts**, not counts of scientifically validated LBM capabilities.
 See [the validation matrix](validation_matrix/STATUS_MATRIX.md) for numeric verdicts and separately admitted LBM benchmark passes. Synthetic, reference-only and correlation-only results cannot supply those passes.
@@ -70,7 +70,8 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 | `collision_kernels_3d_tg` | in progress |
 | `couette_3d` | in progress |
 | `cylinder_re40_st` | BLOCKED (new): exit-BC hypothesis REFUTED (2D/3D far_field_bc both zero-gradient); residual ~2.9% is D2Q9 vs D3Q19 lattice difference; surface-MEM requires solid freeze |
-| `dam_break_3d_mm` | STRUCTURAL: X/H mutually exclusive (same mass channel) |
+| `dam_break_3d_mm` | Historical corner release; no geometry-matched experimental reference |
+| `dam_break_mm_channel` | Channel release, Martin & Moyce Tables 2 and 6; see [run evidence](pending/dam_break_mm_channel/README.md) |
 | `dam_break_sc` | STRUCTURAL: constitutive barrier (err(T=1)=0 needs density ratio 12.7, err(T=2.96)=0 needs 6.9) |
 | `dit_turbulence` | in progress |
 | `dtmb5415_resistance` | geometry FIXED (m452): waterline-clipped STL was open -> voxel body Cb 18 (35x displacement), staircase wetted area 16x smooth -> Cd_tot 1.18; capping the waterline gives Cd_tot 0.045 (Blasius +7.9% at L=32). Caliber re-based: friction-vs-Blasius is the only pass/fail frame; exp C_T(Fr=0.28) stays NOT COMPARABLE (-22.4% no-wave floor, structural). Valid resolution L >= 48 (T/dx >= 2, Cb -10.4%). See docs/sdaa_triage/DTMB5415_DIAGNOSIS.md |
@@ -104,7 +105,7 @@ are re-audited from their cited sources by `validation_matrix/reference_audit.py
 <!-- STATUS_LEDGER:BEGIN -->
 ### verified 机器台账（自动生成，勿手改）
 
-verified 目录 **91** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=91 pending=59
+verified 目录 **91** · STATUS.md 人工表已写 note 的 **36** · advertised header verified=91 pending=60
 
 人工表未覆盖 **55** 个目录（notes 待补；下表由目录扫描生成，覆盖=该目录是否已出现在上方人工表）：
 
