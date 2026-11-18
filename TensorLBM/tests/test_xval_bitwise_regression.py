@@ -638,3 +638,162 @@ class TestBitwiseRefdataRegression:
         for h in case_meta["sha256_arrays"].values():
             assert len(h) == 64
             int(h, 16)  # must be valid hex
+
+
+# ---------------------------------------------------------------------------
+# Bitwise reference-data regression -- second benchmark case (lid-driven
+# cavity Re=100, joconnor22/LIFE "plus-benchmark-cases" pattern)
+# ---------------------------------------------------------------------------
+
+
+class TestBitwiseRefdataRegressionCavity:
+    """Bitwise regression on a *second* independent solver path.
+
+    The Poiseuille bitwise case pins the channel solver (Guo forcing +
+    no-slip).  This class pins the lid-driven cavity solver (Zou-He lid BC +
+    half-way bounce-back walls + RLBM/TRT collision) -- a different code path
+    -- so the bitwise regression gate catches behavioural shifts in more than
+    one solver.  It also re-verifies the cavity result against the Ghia (1982)
+    experimental reference (owner 15% precision standard).
+    """
+
+    def test_cavity_bitwise_case_is_reproducible(self):
+        """Two identical cavity runs must produce identical state hashes."""
+        from tensorlbm.verification.xval.bitwise_refdata import compute_state_hash
+        from tensorlbm.verification.xval.cases import LID_CAVITY_BITWISE_CASE
+
+        r1 = LID_CAVITY_BITWISE_CASE.run_fn()
+        r2 = LID_CAVITY_BITWISE_CASE.run_fn()
+        h1 = compute_state_hash(np.asarray(r1["f"], dtype=np.float64))
+        h2 = compute_state_hash(np.asarray(r2["f"], dtype=np.float64))
+        assert h1 == h2, f"cavity bitwise repro failed: {h1[:16]}... != {h2[:16]}..."
+
+    def test_cavity_within_15pct_of_ghia(self):
+        """Cavity Re=100 must be within 15% of the Ghia (1982) reference."""
+        from tensorlbm.verification.xval.cases import LID_CAVITY_BITWISE_CASE
+
+        result = LID_CAVITY_BITWISE_CASE.run_fn()
+        assert result["scalars"]["l2_u"] < 0.15, f"l2_u={result['scalars']['l2_u']:.4f} > 15%"
+        assert result["scalars"]["l2_v"] < 0.15, f"l2_v={result['scalars']['l2_v']:.4f} > 15%"
+
+    def test_cavity_bitwise_compare_identical_rerun_passes(self, tmp_path):
+        """An identical cavity re-run must reproduce the golden snapshot bitwise."""
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import LID_CAVITY_BITWISE_CASE
+
+        result = LID_CAVITY_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "lid_cavity_re100_n33_bitwise",
+            result["arrays"],
+            result["scalars"],
+            LID_CAVITY_BITWISE_CASE.thresholds,
+        )
+
+        result2 = LID_CAVITY_BITWISE_CASE.run_fn()
+        verdict = store.bitwise_compare(
+            "lid_cavity_re100_n33_bitwise",
+            result2["arrays"],
+        )
+
+        assert verdict["bitwise_passed"] is True
+        assert verdict["n_arrays"] == verdict["n_matched"] == 2
+        # The centerline profiles must be pinned exactly.
+        assert verdict["details"]["u_centerline"]["match"] is True
+        assert verdict["details"]["v_centerline"]["match"] is True
+
+    def test_cavity_bitwise_has_teeth_1ulp_perturbation_fails(self, tmp_path):
+        """A 1-ULP perturbation of the cavity field must FAIL bitwise but pass <15%.
+
+        This is the core value of the bitwise regression on the *second* solver
+        path: a change that shifts the cavity output by a single least-
+        significant bit (e.g. a different reduction order in the RLBM stress
+        tensor) is invisible to a ``<15 %`` tolerance test but is caught by the
+        bitwise pin.
+        """
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import LID_CAVITY_BITWISE_CASE
+
+        result = LID_CAVITY_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "lid_cavity_re100_n33_bitwise",
+            result["arrays"],
+            result["scalars"],
+            LID_CAVITY_BITWISE_CASE.thresholds,
+        )
+
+        # Perturb the u_centerline profile by one ULP on a single element.
+        perturbed = dict(result["arrays"])
+        u = np.asarray(perturbed["u_centerline"], dtype=np.float64).copy()
+        u[0] = np.nextafter(u[0], np.inf, dtype=np.float64)
+        perturbed["u_centerline"] = u
+
+        # The tolerance-based compare() must still PASS (perturbation is ~1e-16).
+        tol_verdict = store.compare(
+            "lid_cavity_re100_n33_bitwise",
+            perturbed,
+            result["scalars"],
+        )
+        assert tol_verdict["passed"] is True, (
+            "1-ULP perturbation should be invisible to the <15% tolerance gate"
+        )
+
+        # But the bitwise regression must FAIL.
+        bit_verdict = store.bitwise_compare(
+            "lid_cavity_re100_n33_bitwise",
+            perturbed,
+        )
+        assert bit_verdict["bitwise_passed"] is False
+        assert bit_verdict["details"]["u_centerline"]["match"] is False
+        assert bit_verdict["n_matched"] == bit_verdict["n_arrays"] - 1
+
+    def test_cavity_bitwise_compare_missing_key_fails(self, tmp_path):
+        """A cavity re-run that drops a golden array key must not pass bitwise."""
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import LID_CAVITY_BITWISE_CASE
+
+        result = LID_CAVITY_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "lid_cavity_re100_n33_bitwise",
+            result["arrays"],
+            result["scalars"],
+            LID_CAVITY_BITWISE_CASE.thresholds,
+        )
+
+        # Drop the v_centerline key from the re-run.
+        partial = {k: v for k, v in result["arrays"].items() if k != "v_centerline"}
+        verdict = store.bitwise_compare(
+            "lid_cavity_re100_n33_bitwise",
+            partial,
+        )
+        assert verdict["bitwise_passed"] is False
+        assert verdict["details"]["v_centerline"]["match"] is False
+
+    def test_cavity_manifest_records_all_array_hashes(self, tmp_path):
+        """The cavity manifest must record a SHA-256 digest for every stored array."""
+        from tensorlbm.verification.xval.bitwise_refdata import ReferenceDataStore
+        from tensorlbm.verification.xval.cases import LID_CAVITY_BITWISE_CASE
+
+        result = LID_CAVITY_BITWISE_CASE.run_fn()
+        store = ReferenceDataStore(base_dir=tmp_path)
+
+        store.save(
+            "lid_cavity_re100_n33_bitwise",
+            result["arrays"],
+            result["scalars"],
+            LID_CAVITY_BITWISE_CASE.thresholds,
+        )
+
+        manifest = store._load_manifest()
+        case_meta = manifest["cases"]["lid_cavity_re100_n33_bitwise"]
+        assert "sha256_arrays" in case_meta
+        assert set(case_meta["sha256_arrays"].keys()) == set(result["arrays"].keys())
+        # Every digest is a 64-char hex SHA-256.
+        for h in case_meta["sha256_arrays"].values():
+            assert len(h) == 64
+            int(h, 16)  # must be valid hex
