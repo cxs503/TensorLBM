@@ -1,0 +1,159 @@
+{
+  "before_step": 1802,
+  "front_cell_cut": 121,
+  "before": {
+    "reported_Z": 11.24828242462547,
+    "diagnostic_Z_with_quarter_fill_connectivity": 11.24828242462547,
+    "rightmost_half_fill_cell": 144,
+    "half_fill_cells_ahead": 242,
+    "connected_half_fill_cells_ahead": 180,
+    "rightmost_connected_cell_by_threshold": {
+      "0.05": 134,
+      "0.25": 134,
+      "0.5": 134
+    },
+    "liquid_volume_ahead_cell_units": 251.16414332062234,
+    "minimum_bed_column_max_in_front_region": 0.6225421169070106
+  },
+  "after": {
+    "reported_Z": 10.0116375071953,
+    "diagnostic_Z_with_quarter_fill_connectivity": 11.250345928204519,
+    "rightmost_half_fill_cell": 144,
+    "half_fill_cells_ahead": 246,
+    "connected_half_fill_cells_ahead": 0,
+    "rightmost_connected_cell_by_threshold": {
+      "0.05": 134,
+      "0.25": 134,
+      "0.5": 119
+    },
+    "liquid_volume_ahead_cell_units": 251.91165614571526,
+    "minimum_bed_column_max_in_front_region": 0.6237195013496836
+  },
+  "inventory": {
+    "status": "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE",
+    "operator_attribution_status": "OBSERVED_COMBINED_NOT_ATOMIC",
+    "stages": {
+      "before_collision": {
+        "tracked_independent_mass": 3494.9857135757047,
+        "fill_rho_inventory": 3489.802533379312,
+        "population_density_inventory": 4942.221593619424,
+        "total_liquid_inventory": 3491.090158910193
+      },
+      "after_collision_and_forcing": {
+        "tracked_independent_mass": 3494.9857135757047,
+        "fill_rho_inventory": 3489.802533379312,
+        "population_density_inventory": 4942.221593619424,
+        "total_liquid_inventory": 3491.0901589101936
+      },
+      "after_stream_and_gas_zero": {
+        "tracked_independent_mass": 3494.9857135757047,
+        "fill_rho_inventory": 3489.802533379312,
+        "population_density_inventory": 4524.509549628886,
+        "total_liquid_inventory": 3491.1571540611344
+      },
+      "after_abb": {
+        "tracked_independent_mass": 3494.9857135757047,
+        "fill_rho_inventory": 3489.802533379312,
+        "population_density_inventory": 4942.060633430583,
+        "total_liquid_inventory": 3491.1571540611344
+      },
+      "after_wall_boundary": {
+        "tracked_independent_mass": 3494.9857135757047,
+        "fill_rho_inventory": 3489.802533379312,
+        "population_density_inventory": 4942.206342811701,
+        "total_liquid_inventory": 3491.1204256205037
+      },
+      "after_mass_exchange": {
+        "tracked_independent_mass": 3494.9554468653946,
+        "fill_rho_inventory": 3489.769206216091,
+        "population_density_inventory": 4942.206342811701,
+        "total_liquid_inventory": 3491.087098457283
+      },
+      "after_topology_redistribution": {
+        "tracked_independent_mass": 3495.006683467895,
+        "fill_rho_inventory": 3489.769206216091,
+        "population_density_inventory": 4942.206342811701,
+        "total_liquid_inventory": 3491.087098457283
+      },
+      "after_topology_clamp": {
+        "tracked_independent_mass": 3495.006683467895,
+        "fill_rho_inventory": 3489.769206216091,
+        "population_density_inventory": 4942.206342811701,
+        "total_liquid_inventory": 3491.087098457283
+      },
+      "after_topology_conversion": {
+        "tracked_independent_mass": 3494.9554468653946,
+        "fill_rho_inventory": 3489.718123181452,
+        "population_density_inventory": 4916.2118350550945,
+        "total_liquid_inventory": 3491.0440558969804
+      },
+      "after_topology_halo_isolation_boundary": {
+        "tracked_independent_mass": 3494.9554468653946,
+        "fill_rho_inventory": 3489.80641009402,
+        "population_density_inventory": 4976.2272605698,
+        "total_liquid_inventory": 3491.1153572091243
+      }
+    },
+    "stage_deltas": {
+      "after_collision_and_forcing": {
+        "tracked_independent_mass": 0.0,
+        "fill_rho_inventory": 0.0,
+        "population_density_inventory": 0.0,
+        "total_liquid_inventory": 4.547473508864641e-13
+      },
+      "after_stream_and_gas_zero": {
+        "tracked_independent_mass": 0.0,
+        "fill_rho_inventory": 0.0,
+        "population_density_inventory": -417.7120439905384,
+        "total_liquid_inventory": 0.06699515094078379
+      },
+      "after_abb": {
+        "tracked_independent_mass": 0.0,
+        "fill_rho_inventory": 0.0,
+        "population_density_inventory": 417.55108380169713,
+        "total_liquid_inventory": 0.0
+      },
+      "after_wall_boundary": {
+        "tracked_independent_mass": 0.0,
+        "fill_rho_inventory": 0.0,
+        "population_density_inventory": 0.14570938111774012,
+        "total_liquid_inventory": -0.03672844063066805
+      },
+      "after_mass_exchange": {
+        "tracked_independent_mass": -0.03026671031011574,
+        "fill_rho_inventory": -0.03332716322120177,
+        "population_density_inventory": 0.0,
+        "total_liquid_inventory": -0.033327163220747025
+      },
+      "after_topology_redistribution": {
+        "tracked_independent_mass": 0.05123660250046669,
+        "fill_rho_inventory": 0.0,
+        "population_density_inventory": 0.0,
+        "total_liquid_inventory": 0.0
+      },
+      "after_topology_clamp": {
+        "tracked_independent_mass": 0.0,
+        "fill_rho_inventory": 0.0,
+        "population_density_inventory": 0.0,
+        "total_liquid_inventory": 0.0
+      },
+      "after_topology_conversion": {
+        "tracked_independent_mass": -0.05123660250046669,
+        "fill_rho_inventory": -0.05108303463885022,
+        "population_density_inventory": -25.994507756606254,
+        "total_liquid_inventory": -0.04304256030263787
+      },
+      "after_topology_halo_isolation_boundary": {
+        "tracked_independent_mass": 0.0,
+        "fill_rho_inventory": 0.08828691256803722,
+        "population_density_inventory": 60.015425514705385,
+        "total_liquid_inventory": 0.07130131214398716
+      }
+    },
+    "pre_topology_combined_total_liquid_inventory_delta": -0.0030604529101765365,
+    "observed_total_liquid_inventory_delta": 0.025198298931172758,
+    "sum_stage_total_liquid_inventory_delta": 0.025198298931172758,
+    "total_liquid_inventory_reconciliation_residual": 0.0,
+    "abb_inventory_status": "POPULATION_ONLY_WITHHELD"
+  }
+}

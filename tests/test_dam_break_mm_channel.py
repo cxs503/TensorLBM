@@ -110,3 +110,33 @@ def test_admission_requires_both_grids_conservation_and_all_points():
     assert not ladder(bad, "mrt")["passed"]
     runs["fine"]["points"][-1]["error_pct"] = None
     assert not ladder(runs, "mrt")["passed"]
+
+
+def test_capture_records_states_and_transition_without_changing_history(tmp_path, monkeypatch):
+    import json
+
+    from benchmarks.pending.dam_break_mm_channel import run
+
+    monkeypatch.setattr(run, "END_T", 0.01)
+    baseline, captured = tmp_path / "baseline", tmp_path / "captured"
+    run.simulate(4, 0.06, "channel", baseline, "mrt")
+    run.simulate(4, 0.06, "channel", captured, "mrt", capture=(0, 1))
+    assert (baseline / "history.csv").read_bytes() == (captured / "history.csv").read_bytes()
+    assert sorted(p.name for p in captured.glob("state_*.npz")) == [
+        "state_000000.npz",
+        "state_000001.npz",
+    ]
+    ledger = json.loads((captured / "transition_000000.json").read_text())
+    assert abs(ledger["total_liquid_inventory_reconciliation_residual"]) < 1e-10
+
+
+def test_quarter_fill_connectivity_keeps_thin_bridge_but_excludes_spray():
+    field = np.zeros((3, 8, 18), dtype=float)
+    field[:, :4, :3] = 1
+    field[:, 0, 3:7] = 0.3
+    field[:, 0, 7:11] = 0.8
+    field[:, 0, 15] = 1
+    strict, _ = measure(field, 4)
+    diagnostic, _ = measure(field, 4, connectivity_threshold=0.25)
+    assert 2 < strict * 4 < 4
+    assert 10 < diagnostic * 4 < 11
