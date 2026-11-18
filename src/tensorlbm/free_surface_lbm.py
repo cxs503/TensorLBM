@@ -38,6 +38,7 @@ from .free_surface_inventory_reconciliation import (
     inventory_stage_deltas,
 )
 from .free_surface_topology_transaction import (
+    TopologyTransactionError,
     build_i_to_g_ownership_transaction,  # noqa: F401  (re-export: contract tests monkeypatch it here)
     build_topology_transaction,
     commit_topology_transaction,
@@ -720,6 +721,82 @@ def _collide_mrt3d_with_tau_eff(
 # ===========================================================================
 
 
+class _UnfundedConversion(TopologyTransactionError):
+    def __init__(self, message, donors):
+        super().__init__(message)
+        self.donors = donors
+
+
+def _capacity_redistribution(excess, mass, receivers, demoted_liquid, capture_links=False):
+    """Distribute conversion excess on moving D3Q19 links with a local debit budget.
+
+    Positive excess uses the normal interface receivers. A cell becoming interface
+    on the liquid side can fund a deficit as well. Multiple concurrent donors
+    share a receiver's available mass. Reject unowned residuals before commit.
+    """
+    donors = torch.nonzero(excess != 0)
+    result = torch.zeros_like(mass)
+    if not len(donors):
+        return result, ()
+    shifts = torch.as_tensor(moving_tensor_shifts(), device=mass.device)
+    shape = torch.as_tensor(mass.shape, device=mass.device)
+    neighbors = (donors[:, None, :] - shifts) % shape
+    _, ny, nx = mass.shape
+    index = (neighbors[..., 0] * ny + neighbors[..., 1]) * nx + neighbors[..., 2]
+    amount = excess[tuple(donors.T)]
+    positive = amount.clamp_min(0)
+    allow_credit = receivers.flatten()[index]
+    count = allow_credit.sum(1)
+    if bool(((count == 0) & (positive > 0)).any()):
+        raise _UnfundedConversion(
+            "positive conversion excess has no local receiver",
+            donors[(count == 0) & (positive > 0)],
+        )
+    links = (positive / count.clamp_min(1))[:, None] * allow_credit
+    flat_delta = result.flatten()
+    flat_delta.scatter_add_(0, index.flatten(), links.flatten())
+    capacity = (mass.flatten() + flat_delta).clamp_min(0)
+    eligible = (receivers | demoted_liquid).flatten()[index]
+    owed = (-amount).clamp_min(0)
+    tol = 16 * torch.finfo(mass.dtype).eps * max(1.0, float(owed.max()))
+    # The bulk of the requests normally settle on the first pass. Re-offer
+    # any contested balance only to local receivers with spare mass.
+    for _ in range(len(D3Q19_MOVING_Q)):
+        if float(owed.max()) <= tol:
+            break
+        available = capacity[index] * eligible
+        total = available.sum(1)
+        proposed = available * (owed / torch.where(total > 0, total, 1.0))[:, None]
+        requests = torch.zeros_like(capacity).scatter_add_(0, index.flatten(), proposed.flatten())
+        scale = (capacity / torch.where(requests > 0, requests, 1.0)).clamp(max=1)
+        accepted = proposed * scale[index]
+        used = torch.zeros_like(capacity).scatter_add_(0, index.flatten(), accepted.flatten())
+        if float(used.max()) == 0:
+            break
+        links -= accepted
+        flat_delta -= used
+        owed = (owed - accepted.sum(1)).clamp_min(0)
+        capacity = (capacity - used).clamp_min(0)
+    if float(owed.max()) > tol:
+        raise _UnfundedConversion(
+            "insufficient local liquid mass for conversion deficit", donors[owed > tol]
+        )
+    evidence = []
+    if capture_links:
+        for i, j in torch.nonzero(links != 0).tolist():
+            evidence.append(
+                dict(
+                    donor=tuple(donors[i].tolist()),
+                    receiver=tuple(neighbors[i, j].tolist()),
+                    shift=tuple(shifts[j].tolist()),
+                    mass_delta=float(links[i, j]),
+                    event_id="redistribution",
+                    operator="redistribution",
+                )
+            )
+    return flat_delta.reshape(mass.shape), tuple(evidence)
+
+
 def free_surface_step(
     f,
     fill,
@@ -757,8 +834,14 @@ def free_surface_step(
     cell_conversion_force_threshold=0.1,
     free_slip_mask=None,
     free_slip_all=False,
+    capacity_redistribution=False,
+    simple_mass_exchange=False,
 ):
     """One free-surface LBM timestep (full Körner model).
+
+    With ``simple_mass_exchange``, use average-fill mass exchange on every
+    interface/interface link. With ``capacity_redistribution``, debit only
+    locally available mass and defer unowned conversions. Both are opt-in.
 
     Reference mechanics (Körner et al. 2005; Thürey 2007; waLBerla
     ``free_surface``; Maarten-vd-Sande/lbm):
@@ -1243,13 +1326,18 @@ def free_surface_step(
     ii_weight = 0.5 * (fill.unsqueeze(0) + fill_nb)
     # Thuerey table 4.1 selector: an I/I link is dead when its pull source has
     # no LIQUID neighbour while the receiving cell has no GAS neighbour.
-    liq_nbr_count = (neighbor_flags == LIQUID).sum(dim=0)
-    liq_nbr_at_source = torch.stack(
-        [liq_nbr_count] + [roll_from_pull_source(liq_nbr_count, q) for q in D3Q19_MOVING_Q]
-    )
-    gas_nbr_here = (neighbor_flags == GAS).any(dim=0).unsqueeze(0)
-    ii_dead = from_iface & (liq_nbr_at_source == 0) & ~gas_nbr_here
-    live_iface = from_iface & ~ii_dead
+    if simple_mass_exchange:
+        # Basic Körner interface/interface flux. A link uses the same average
+        # fill on both ends, so the pair cancels in the total mass balance.
+        live_iface = from_iface
+    else:
+        liq_nbr_count = (neighbor_flags == LIQUID).sum(dim=0)
+        liq_nbr_at_source = torch.stack(
+            [liq_nbr_count] + [roll_from_pull_source(liq_nbr_count, q) for q in D3Q19_MOVING_Q]
+        )
+        gas_nbr_here = (neighbor_flags == GAS).any(dim=0).unsqueeze(0)
+        ii_dead = from_iface & (liq_nbr_at_source == 0) & ~gas_nbr_here
+        live_iface = from_iface & ~ii_dead
     mass_delta_interface = torch.where(live_iface, ii_weight * diff, torch.zeros_like(f))
     mass_delta = (mass_delta_liquid + mass_delta_interface).sum(0)
     # The exchange increment is committed as-is (no clamp): over/undershoot is
@@ -1423,38 +1511,58 @@ def free_surface_step(
     adjacent_converting = torch.stack(all_moving_neighbor_masks(to_liq)).any(dim=0)
     recv_new = gas_mask & adjacent_converting & ~solid_mask
     recv_mask = recv_iface | recv_new
-    # Count receiving cells per donor over every moving D3Q19 link.
-    shifted_recv = torch.stack(all_moving_neighbor_masks(recv_mask))
-    n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
-    # Excess per receiving neighbor
-    excess_per_nb = excess / n_recv
-    # Aggregate every D3Q19 receiver contribution in the mass dtype, then
-    # commit it once.
-    legacy_redistribution_increment = torch.stack(
-        [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
-    ).sum(dim=0)
-    redistribution_link_evidence = ()
-    if runtime_ledger is not None or ownership_ledger is not None:
-        links = []
-        shape = mass.shape
-        for q, shift in zip(D3Q19_MOVING_Q, moving_tensor_shifts()):
-            dz, dy, dx = shift
-            receiver_for_donor = roll_from_pull_source(recv_mask, q)
-            for donor in torch.nonzero(
-                (excess_per_nb != 0.0) & receiver_for_donor, as_tuple=False
-            ).tolist():
-                z, y, x = (int(value) for value in donor)
-                links.append(
-                    {
-                        "donor": (z, y, x),
-                        "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]),
-                        "shift": (dz, dy, dx),
-                        "mass_delta": float(excess_per_nb[z, y, x]),
-                        "event_id": "redistribution",
-                        "operator": "redistribution",
-                    }
+    if capacity_redistribution:
+        # An unfunded conversion stays INTERFACE with its original PDFs and
+        # mass. Each retry removes at least one donor and rebuilds its local
+        # receiver graph; no unplaced excess is erased at conversion.
+        while True:
+            demoted_liquid = liquid_pre & torch.stack(all_moving_neighbor_masks(to_gas)).any(0)
+            try:
+                redistribution_increment, redistribution_link_evidence = _capacity_redistribution(
+                    excess, mass, recv_mask, demoted_liquid,
+                    runtime_ledger is not None or ownership_ledger is not None,
                 )
-        redistribution_link_evidence = tuple(links)
+                break
+            except _UnfundedConversion as error:
+                defer = tuple(error.donors.T)
+                to_liq[defer] = False
+                to_gas[defer] = False
+                excess[defer] = 0
+                recv_new = gas_mask & torch.stack(all_moving_neighbor_masks(to_liq)).any(0) & ~solid_mask
+                recv_mask = (interface_mask & ~to_liq & ~to_gas) | recv_new
+    else:
+        # Count receiving cells per donor over every moving D3Q19 link.
+        shifted_recv = torch.stack(all_moving_neighbor_masks(recv_mask))
+        n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
+        # Excess per receiving neighbor
+        excess_per_nb = excess / n_recv
+        # Aggregate every D3Q19 receiver contribution in the mass dtype, then
+        # commit it once.
+        redistribution_increment = torch.stack(
+            [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
+        ).sum(dim=0)
+        redistribution_link_evidence = ()
+        if runtime_ledger is not None or ownership_ledger is not None:
+            links = []
+            shape = mass.shape
+            for q, shift in zip(D3Q19_MOVING_Q, moving_tensor_shifts()):
+                dz, dy, dx = shift
+                receiver_for_donor = roll_from_pull_source(recv_mask, q)
+                for donor in torch.nonzero(
+                    (excess_per_nb != 0.0) & receiver_for_donor, as_tuple=False
+                ).tolist():
+                    z, y, x = (int(value) for value in donor)
+                    links.append(
+                        {
+                            "donor": (z, y, x),
+                            "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]),
+                            "shift": (dz, dy, dx),
+                            "mass_delta": float(excess_per_nb[z, y, x]),
+                            "event_id": "redistribution",
+                            "operator": "redistribution",
+                        }
+                    )
+            redistribution_link_evidence = tuple(links)
     plan = build_topology_transaction(
         f,
         fill,
@@ -1464,7 +1572,7 @@ def free_surface_step(
         to_liq=to_liq,
         to_gas=to_gas,
         recv_new=recv_new,
-        redistribution_increment=legacy_redistribution_increment,
+        redistribution_increment=redistribution_increment,
         rho=rho_new,
         rho_liquid=rho_liquid,
         rho_gas=rho_gas,
