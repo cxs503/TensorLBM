@@ -109,6 +109,12 @@ class SolverConfig:
     checkpoint_interval: int = 0
     seed: int = 42
     precision: str = "float64"
+    # Optional time-averaging knobs for real-solver runs (0 = auto-scale
+    # from max_steps; see xval.pipeline.real_solvers).
+    burn_in: int = 0
+    ramp_steps: int = 0
+    avg_window: int = 0
+    check_every: int = 0
     description: str = ""
 
     @classmethod
@@ -120,6 +126,10 @@ class SolverConfig:
             checkpoint_interval=d.get("checkpoint_interval", 0),
             seed=d.get("seed", 42),
             precision=d.get("precision", "float64"),
+            burn_in=d.get("burn_in", 0),
+            ramp_steps=d.get("ramp_steps", 0),
+            avg_window=d.get("avg_window", 0),
+            check_every=d.get("check_every", 0),
             description=d.get("description", ""),
         )
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<lbm_case version="1.0" generator="yaml-xml-pipeline">
+  <metadata>
+    <anchor>XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE</anchor>
+    <title>YAML-driven XML template pipeline: real D2Q9 BGK Poiseuille channel</title>
+    <category>analytical</category>
+    <description>Anchor case for XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.  This case is wired to the REAL TensorLBM solver (tensorlbm.verification.zou_he_channel, D2Q9 BGK + Zou-He pressure closures) via reference.solution_fn, so the pipeline verdict is produced from a genuine converged LBM field compared with the exact plane-Poiseuille solution -- not from the demonstration stubs.  Geometry: two solid wall rows, effective height H = ny - 2.
+</description>
+  </metadata>
+  <geometry type="channel" dimensions="2D">
+    <resolution>96x26</resolution>
+    <domain>96.0x24.0</domain>
+  </geometry>
+  <physics model="bgk" lattice="D2Q9">
+    <viscosity>0.05</viscosity>
+    <density>1.0</density>
+  </physics>
+  <boundary_conditions>
+    <wall location="top" type="bounce_back"/>
+    <wall location="bottom" type="bounce_back"/>
+    <inlet type="pressure" value="1.002"/>
+    <outlet type="pressure" value="0.998"/>
+  </boundary_conditions>
+  <solver max_steps="20000" convergence_threshold="1e-06" output_interval="500" seed="42" precision="float64"/>
+  <acceptance>
+    <metric name="eps_inf" threshold="0.15"/>
+    <metric name="eps_l2" threshold="0.15"/>
+  </acceptance>
+  <reference type="analytical">
+    <citation>Exact plane Poiseuille flow, u(y) = G/(2 nu) * yt * (H - yt); Schlichting &amp; Gersten, Boundary-Layer Theory</citation>
+  </reference>
+</lbm_case>

@@ -1,0 +1,66 @@
+schema_version: "1.0"
+anchor: "XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE"
+title: "YAML-driven XML template pipeline: real D2Q9 BGK Poiseuille channel"
+description: >
+  Anchor case for XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.  This case is
+  wired to the REAL TensorLBM solver (tensorlbm.verification.zou_he_channel,
+  D2Q9 BGK + Zou-He pressure closures) via reference.solution_fn, so the
+  pipeline verdict is produced from a genuine converged LBM field compared
+  with the exact plane-Poiseuille solution -- not from the demonstration
+  stubs.  Geometry: two solid wall rows, effective height H = ny - 2.
+category: "analytical"
+
+geometry:
+  type: "channel"
+  dimensions: "2D"
+  nx: 96
+  ny: 26
+  lx: 96.0
+  ly: 24.0
+  description: "Open channel, two solid wall rows, effective height H = ny - 2 = 24"
+
+physics:
+  model: "bgk"
+  lattice: "D2Q9"
+  viscosity: 0.05        # nu = (tau - 1/2)/3  ->  tau = 0.65
+  density: 1.0
+  description: "Incompressible BGK, Ma << 1"
+
+boundary:
+  walls:
+    - location: "top"
+      type: "bounce_back"
+    - location: "bottom"
+      type: "bounce_back"
+  inlet:
+    type: "pressure"
+    value: 1.002         # rho_in  = 1 + drho/2
+  outlet:
+    type: "pressure"
+    value: 0.998         # rho_out = 1 - drho/2  ->  drho = 4e-3
+
+solver:
+  max_steps: 20000
+  convergence_threshold: 1.0e-6
+  output_interval: 500
+  burn_in: 2000
+  ramp_steps: 1500
+  avg_window: 500
+  check_every: 500
+  seed: 42
+  precision: "float64"
+
+reference:
+  type: "analytical"
+  citation: "Exact plane Poiseuille flow, u(y) = G/(2 nu) * yt * (H - yt); Schlichting & Gersten, Boundary-Layer Theory"
+  solution_fn: "poiseuille_zou_he_2d"   # selects the REAL solver adapter
+  description: "Converged streamwise-averaged profile vs exact parabola"
+
+acceptance:
+  metrics:
+    eps_inf: 0.15        # owner precision standard: >15% vs benchmark is unacceptable
+    eps_l2: 0.15
+  stopping_rule: "Both error norms must be below threshold (15% acceptance bound)"
+
+tags: ["poiseuille", "analytical", "2d", "zou-he", "real-solver", "pipeline"]
+external_anchor: "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"
