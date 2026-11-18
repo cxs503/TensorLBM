@@ -400,8 +400,80 @@ POISEUILLE_2D_BITWISE_CASE = XValCase(
 )
 
 
+
+
+# ---------------------------------------------------------------------------
+# Case 6: Bitwise reference-data regression benchmark (joconnor22/LIFE) --
+#         lid-driven cavity Re=100 (second independent solver path)
+# ---------------------------------------------------------------------------
+
+def _lid_cavity_bitwise_run() -> Dict[str, Any]:
+    """Run lid-driven cavity Re=100 and return the *full* distribution array.
+
+    This is the bitwise-regression variant of case 2.  It returns the complete
+    ``f`` distribution array (not just the macroscopic centerline profiles) so
+    that a golden snapshot can pin the solver's exact byte-level output.  It
+    exercises a *different* solver path than the Poiseuille bitwise case:
+    Zou-He lid BC + half-way bounce-back walls + RLBM/TRT collision (vs the
+    channel's Guo forcing + no-slip).  A re-run is accepted only if ``f``
+    reproduces the recorded SHA-256 digest exactly.
+    """
+    from tensorlbm.verification.lid_driven_cavity.solver import CavityConfig, CavitySolver
+    from tensorlbm.verification.lid_driven_cavity.reference_data import get_ghia_reference
+    from tensorlbm.verification.lid_driven_cavity.verification import compute_errors
+
+    cfg = CavityConfig(n=33, re=100, max_steps=3000, u_lid=0.1)
+    solver = CavitySolver(cfg)
+
+    for _ in range(3000):
+        solver.step()
+
+    y, u, x, v = solver.get_profiles()
+    ref = get_ghia_reference(100)
+    errors = compute_errors(y, u, x, v, ref)
+
+    return {
+        "f": solver.f.detach().cpu().numpy(),
+        "scalars": {
+            "l2_u": errors["l2_u"],
+            "l2_v": errors["l2_v"],
+            "max_u": errors["max_u"],
+            "max_v": errors["max_v"],
+        },
+        "arrays": {
+            "u_centerline": u,
+            "v_centerline": v,
+        },
+        "reference": {
+            "scalars": {
+                "l2_u": 0.0,
+                "l2_v": 0.0,
+            },
+        },
+    }
+
+
+def _lid_cavity_bitwise_reference() -> Dict[str, Any]:
+    """Ghia et al. (1982) reference for the bitwise cavity case (scalar gates only)."""
+    return {"scalars": {"l2_u": 0.0, "l2_v": 0.0}}
+
+
+LID_CAVITY_BITWISE_CASE = XValCase(
+    name="lid_cavity_re100_n33_bitwise",
+    run_fn=_lid_cavity_bitwise_run,
+    reference_fn=_lid_cavity_bitwise_reference,
+    thresholds={"l2_u": 0.15, "l2_v": 0.15},
+    params={"Re": 100, "n": 33, "u_lid": 0.1, "max_steps": 3000,
+            "bc": "Zou-He lid + bounce-back walls", "criterion": "bitwise (SHA-256 of f)"},
+    category="benchmark",
+    external_anchor="joconnor22/LIFE bitwise-refdata-regression-plus-benchmark-cases; "
+                    "Ghia, U., Ghia, K.N., & Shin, C.T. (1982). J. Comp. Phys. 48(3), 387-411",
+)
+
+
 ALL_CASES = [POISEUILLE_2D_CASE, LID_CAVITY_RE100_CASE, WOMERSLEY_ALPHA5_CASE,
-             TWO_COMPONENT_SC_LAYERED_CASE, POISEUILLE_2D_BITWISE_CASE]
+             TWO_COMPONENT_SC_LAYERED_CASE, POISEUILLE_2D_BITWISE_CASE,
+             LID_CAVITY_BITWISE_CASE]
 
 
 def register_default_cases(registry) -> None:

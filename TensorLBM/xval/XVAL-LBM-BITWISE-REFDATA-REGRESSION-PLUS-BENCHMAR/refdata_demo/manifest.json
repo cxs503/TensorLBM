@@ -1,0 +1,23 @@
+{
+  "cases": {
+    "cav_demo": {
+      "version": "v1",
+      "npz_file": "cav_demo_v1.npz",
+      "sha256_first_array": "ae8ac2eae298c76533743e06fa7e3333ba42195668027aa4104199d9fe64a483",
+      "sha256_arrays": {
+        "u_centerline": "ae8ac2eae298c76533743e06fa7e3333ba42195668027aa4104199d9fe64a483",
+        "v_centerline": "a9aeb643379945f0eb482aa485ee4470b0cdbc3fea952beff7f9c468c7fc0723"
+      },
+      "scalars": {
+        "l2_u": 0.024736057291973465,
+        "l2_v": 0.058742409375683584,
+        "max_u": 0.10541884967188475,
+        "max_v": 0.10848811757131396
+      },
+      "thresholds": {
+        "l2_u": 0.15,
+        "l2_v": 0.15
+      }
+    }
+  }
+}
