@@ -171,20 +171,9 @@ def count_boundary_links_outside_box(
         cx, cy, cz = (int(value) for value in C[direction].tolist())
         neighbour = torch.roll(solid, shifts=(-cz, -cy, -cx), dims=(0, 1, 2))
         count += int((~solid & neighbour & ~owned_interior).sum().item())
-    return count    if solid.ndim != 3 or solid.dtype != torch.bool:
-        raise ValueError("solid must be a bool tensor of shape (nz, ny, nx)")
-    masks = torch.zeros((19, *solid.shape), dtype=torch.bool, device=solid.device)
-    q_field = torch.full(masks.shape, 0.5, dtype=torch.float32, device=solid.device)
-    # Nonperiodic neighbor lookup: never wrap a solid across domain faces.
-    for direction in range(1, 19):
-        cx, cy, cz = (int(value) for value in C[direction].tolist())
-        src, dst = [], []
-        for size, delta in zip(solid.shape, (cz, cy, cx)):
-            lo, hi = max(0, -delta), min(size, size - delta)
-            src.append(slice(lo, hi))
-            dst.append(slice(lo + delta, hi + delta))
-        masks[(direction, *src)] = ~solid[tuple(src)] & solid[tuple(dst)]
-    return masks, q_fieldL wall-chain construction for refined grids.
+    return count    from .nonperiodic_links import halfway_fluid_solid_links_3d
+
+    return halfway_fluid_solid_links_3d(solid)L wall-chain construction for refined grids.
 
 Campaign convention (owner directive 2026-10-11, common-module build): the
 wall-model chain composition must not be copy-pasted into runners.  This
