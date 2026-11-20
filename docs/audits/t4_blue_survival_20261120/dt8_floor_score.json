@@ -1,0 +1,176 @@
+{
+  "passed_3pct_and_converged": false,
+  "status": "pending",
+  "reference_observed_peak": 1.857434,
+  "time_of_observed_peak_ms": 10.39446,
+  "digitization_resolves_3pct_at_every_point": false,
+  "experimental_length_accuracy_over_D": 0.013215859030837003,
+  "times_below_experimental_3pct_resolution_ms": [
+    0.39021
+  ],
+  "domain_and_material_match_confirmed": false,
+  "converged_grid_pairs": [],
+  "runs": {
+    "case3_dt8_floor": {
+      "case_id": "santini_case3",
+      "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
+      "span_over_D": 4.0,
+      "pool_depth_over_D": 3.0,
+      "lattice_speed": 0.04,
+      "gap_over_D": 0.18,
+      "release_speed_m_s": 1.53,
+      "physical_time_step_ms": 0.008107142857142856,
+      "cells_per_D": 8,
+      "last_recorded_step": 3028,
+      "postcontact_healthy_ms": 24.005249999999997,
+      "contact_step": 67,
+      "impact_speed_m_s": 1.4268525832946835,
+      "impact_speed_relative_error": 0.019180416639059672,
+      "side_view_speed_m_s": null,
+      "side_view_speed_relative_error": null,
+      "side_view_fit_interval_ms": null,
+      "camera_interval_speed_m_s": null,
+      "camera_speed_relative_error": null,
+      "matched_points": 18,
+      "points_within_tolerance": 0,
+      "max_geometric_volume_relative_drift": 0.0005016851596875149,
+      "max_represented_liquid_mass_relative_drift": 7.047494487821826e-05,
+      "max_sampled_depth_in_available_window": 1.4238902602744052,
+      "expected_points": 18,
+      "comparisons": [
+        {
+          "time_ms": 0.39021,
+          "experiment": 0.0389,
+          "simulation": 0.0,
+          "signed_relative_error": -1.0,
+          "relative_error": 1.0
+        },
+        {
+          "time_ms": 1.39643,
+          "experiment": 0.512426,
+          "simulation": 0.353649969825028,
+          "signed_relative_error": -0.3098516276983838,
+          "relative_error": 0.3098516276983838
+        },
+        {
+          "time_ms": 2.39506,
+          "experiment": 0.802953,
+          "simulation": 0.5625618774470569,
+          "signed_relative_error": -0.29938380272935416,
+          "relative_error": 0.29938380272935416
+        },
+        {
+          "time_ms": 3.39002,
+          "experiment": 1.083717,
+          "simulation": 0.8933192439386403,
+          "signed_relative_error": -0.17568955369470052,
+          "relative_error": 0.17568955369470052
+        },
+        {
+          "time_ms": 4.39426,
+          "experiment": 1.375756,
+          "simulation": 1.1271359716775111,
+          "signed_relative_error": -0.1807152055469784,
+          "relative_error": 0.1807152055469784
+        },
+        {
+          "time_ms": 5.39257,
+          "experiment": 1.555864,
+          "simulation": 1.2496568197652012,
+          "signed_relative_error": -0.19680844870425618,
+          "relative_error": 0.19680844870425618
+        },
+        {
+          "time_ms": 6.40017,
+          "experiment": 1.647387,
+          "simulation": 1.2842575105043779,
+          "signed_relative_error": -0.2204275555747508,
+          "relative_error": 0.2204275555747508
+        },
+        {
+          "time_ms": 7.39643,
+          "experiment": 1.707728,
+          "simulation": 1.3401330050574733,
+          "signed_relative_error": -0.21525383137275178,
+          "relative_error": 0.21525383137275178
+        },
+        {
+          "time_ms": 8.38965,
+          "experiment": 1.767968,
+          "simulation": 1.372283626442168,
+          "signed_relative_error": -0.22380742952238497,
+          "relative_error": 0.22380742952238497
+        },
+        {
+          "time_ms": 9.39829,
+          "experiment": 1.817777,
+          "simulation": 1.4151572977417683,
+          "signed_relative_error": -0.22149015102415293,
+          "relative_error": 0.22149015102415293
+        },
+        {
+          "time_ms": 10.39446,
+          "experiment": 1.857434,
+          "simulation": 1.4095966008446927,
+          "signed_relative_error": -0.24110541701902044,
+          "relative_error": 0.24110541701902044
+        },
+        {
+          "time_ms": 11.4017,
+          "experiment": 1.818519,
+          "simulation": 1.3877475951048592,
+          "signed_relative_error": -0.23688034323267493,
+          "relative_error": 0.23688034323267493
+        },
+        {
+          "time_ms": 12.39748,
+          "experiment": 1.537619,
+          "simulation": 1.352596737818276,
+          "signed_relative_error": -0.12033036934489239,
+          "relative_error": 0.12033036934489239
+        },
+        {
+          "time_ms": 13.39136,
+          "experiment": 1.304231,
+          "simulation": 1.2374727589343957,
+          "signed_relative_error": -0.05118590270098189,
+          "relative_error": 0.05118590270098189
+        },
+        {
+          "time_ms": 14.39999,
+          "experiment": 1.154726,
+          "simulation": 1.0801877653936829,
+          "signed_relative_error": -0.06455058135550518,
+          "relative_error": 0.06455058135550518
+        },
+        {
+          "time_ms": 15.39669,
+          "experiment": 1.034073,
+          "simulation": 0.8973671201564999,
+          "signed_relative_error": -0.1322013821495196,
+          "relative_error": 0.1322013821495196
+        },
+        {
+          "time_ms": 16.40439,
+          "experiment": 0.945243,
+          "simulation": 0.7998057181569475,
+          "signed_relative_error": -0.15386232095138774,
+          "relative_error": 0.15386232095138774
+        },
+        {
+          "time_ms": 17.39847,
+          "experiment": 0.874434,
+          "simulation": 0.6237112230590145,
+          "signed_relative_error": -0.28672578712742813,
+          "relative_error": 0.28672578712742813
+        }
+      ],
+      "max_full_curve_relative_error": 1.0,
+      "peak_relative_error": 0.2334100375709688,
+      "full_window_peak_depth_over_D": 1.4238902602744052,
+      "full_window_peak_time_ms": 9.90692857142857,
+      "numeric_pass": false,
+      "stop_reason": "window_complete"
+    }
+  }
+}

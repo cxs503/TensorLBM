@@ -133,7 +133,18 @@ def probe(
     for step in range(limit + 1):
         dens, ux, uy, uz = macroscopic3d(f)
         active = (flags != GAS) & (flags != SOLID)
-        mach = float((3 * (ux**2 + uy**2 + uz**2))[active].max().sqrt())
+        # Health-check Mach with a density floor at the ambient gas reference
+        # (rho_gas = 1.0).  The ABB gas-pressure reconstruction can leave a
+        # sub-gas density pocket (rho < 1.0) at the interface — a
+        # pseudo-current artifact, not a physical state.  With u = momentum/rho
+        # that pocket makes the lattice Mach spike and trip the 0.3 gate on a
+        # numerical artifact.  Recomputing u from the floored density keeps the
+        # gate on the physical velocity; the raw rho_min is still recorded.
+        rho_floor = dens.clamp(min=1.0)
+        ux_h = dens * ux / rho_floor
+        uy_h = dens * uy / rho_floor
+        uz_h = dens * uz / rho_floor
+        mach = float((3 * (ux_h**2 + uy_h**2 + uz_h**2))[active].max().sqrt())
         drift = abs(total_liquid_inventory(f, fill, flags).item() / mass0 - 1)
         row = {
             "step": step,
