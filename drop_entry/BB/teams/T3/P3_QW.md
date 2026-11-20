@@ -1,35 +1,48 @@
-# T3-P3 存活修复处方（Qwen 族）
+# DE-T3-P3R 处方卡 · 议事厅队 Qwen 族
 
 ## 1. 假设
-**因果链**：默认 span=4.0D 域宽不足 → 触水后径向自由面波在 ~5-8 ms 触及侧壁 → 虚假反射波与入射波叠加 → 局部密度/马赫数越限 → health_limit/mach_limit 提前终止（DE_A3_DIAG 表1：8 cells/D 中仅 case3_wide8(span=8.0D) 存活 24 ms，其余 7 档均 <20 ms）。
+**因果链**: 多数 run 在触水后 1–15 ms 内触发 `health_limit`，根因是 **gap=0.4D 过大 + lattice speed=0.04 过低 + 缺少 capacity/simple_exchange** 三重叠加：大间隙使液滴自由落体加速过度（撞击速度偏离目标），低晶格速度导致时间分辨率不足（每个物理步长过大），缺少质量再分配使界面单元在液滴入水瞬间填充率剧烈振荡（fill > 1+κ 或 < -κ），触发 rho_min≤0 或 volume_drift>1e-4 健康检查。
 
 ## 2. 处方
-**改什么**：不修改源码，仅以 `span=8.0D` 重跑 8 cells/D 配置（复用 case3_wide8 参数）。
-**怎么改**：
-```bash
-cd /root/tp-agent/work/m26272/benchmarks/water_entry/single_drop
-python run.py --cells 8 --span 8.0 --gap 0.4 --speed 0.04 --out runs/t3_p3_span8.json
+**改什么**: 不改代码，改运行参数。README 已给出正确参数组合（`benchmarks/water_entry/single_drop/README.md` 复算段）：
 ```
-**为什么能活过 10.4 ms**：case3_wide8 已实证 span=8.0D 可存活 24.005 ms（DE_A3_DIAG §2），覆盖峰值时刻 10.394 ms。本处方复现该配置以验证可重复性，并作为后续网格收敛的基线。
+--cells N --gap .18 --speed .06 --capacity --simple-exchange --release-speed 1.53
+```
+**为什么有效**:
+- `gap=0.18D`（非 0.4D）：间隙缩小 55%，自由落体加速量减少 55%，撞击速度更接近 1.4 m/s
+- `speed=0.06`（非 0.04）：晶格速度提高 50%，时间分辨率提高 50%，每个物理步长从 ~0.024 ms 降至 ~0.016 ms
+- `--capacity`：启用容量再分配，界面单元转换亏额由邻格共享，防止 fill 剧烈振荡
+- `--simple-exchange`：使用基本对称界面质量通量，避免 Thuerey I/I 选择器在高速入水时的不稳定
+- `--release-speed 1.53`：独立设定物理释放速度，与晶格速度解耦
 
 ## 3. 预测
-- **postcontact_healthy_ms**：≥ 22.0 ms（区间 22.0–24.0 ms）
-- **可证伪判据**：若存活 < 15.0 ms 或终止原因为 health_limit/mach_limit/step_limit，则假设不成立。
-- **次级预测**：impact_speed_relative_error < 2.0%（case3_wide8 为 0.68%）。
+- **postcontact_healthy_ms**: ≥ 24.0 ms（覆盖完整观测窗口，含峰值 10.394 ms 及回缩）
+- **峰值深度误差**: |sim_peak − 1.8574| / 1.8574 ≤ 0.03（即 sim_peak ∈ [1.802, 1.913] D）
+- **时序误差**: 全部 18 个实验时刻插值相对误差 ≤ 0.03
+- **可证伪判据**: 若 postcontact_healthy_ms < 20 ms 或峰值误差 > 5%，则处方假设不成立
 
 ## 4. 成本
-**最小验证命令**（~15 min，单节点 CPU）：
 ```bash
-cd /root/tp-agent/work/m26272/benchmarks/water_entry/single_drop
-python run.py --cells 8 --span 8.0 --gap 0.4 --speed 0.04 --out runs/t3_p3_span8.json
+# 8 cells/D 档（快速验证）
+cd /root/tp-agent/work/m26276
+export PYTHONPATH=src:. OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+python -m benchmarks.water_entry.single_drop.free_surface_probe \
+  --cells 8 --gap .18 --speed .06 --capacity --simple-exchange --release-speed 1.53 \
+  --steps 2000 --out outputs/single_drop/t3_cal8.json
+
+# 12 cells/D 档（收敛验证）
+python -m benchmarks.water_entry.single_drop.free_surface_probe \
+  --cells 12 --gap .18 --speed .06 --capacity --simple-exchange --release-speed 1.53 \
+  --steps 2000 --out outputs/single_drop/t3_cal12.json
+
+# 判分
+python -m benchmarks.water_entry.single_drop.score \
+  outputs/single_drop/t3_cal8.json outputs/single_drop/t3_cal12.json \
+  --output outputs/single_drop/t3_score.json
 ```
-**收敛验证命令**（需 2 档网格，严格递减误差）：
-```bash
-python run.py --cells 12 --span 8.0 --gap 0.4 --speed 0.04 --out runs/t3_p3_span8_12.json
-python score.py --runs runs/t3_p3_span8*.json --output score_t3_p3.json
-```
+预计单机 CPU 运行时间：~8–15 分钟/档（8 cells/D 约 8 min，12 cells/D 约 15 min）
 
 ## 5. 风险
-- **风险1**：若失效根因非域宽（如界面厚度/速度初始化），span=8.0D 无改善 → 需回退至 DE_A4 LESSONS §1 的"重力双重计力"或"壁面反射"路线。
-- **风险2**：span=8.0D 增加计算量约 2×，12 cells/D 收敛验证可能超时 → 设 timeout=3600s。
-- **风险3**：若 case3_wide8 的存活是随机波动（非确定性），重复运行可能失败 → 需 ≥2 次独立运行确认。
+1. **geometric_volume_drift 超限**: 当前测试显示 step 50 时 geometric_volume_drift=0.00058 > 1e-4。若全程超限，score.py 的 `numeric_pass` 会 FAIL。缓解：尝试 `--capacity` 单独使用（不加 simple-exchange）或调整 release_speed。
+2. **性能瓶颈**: 单机 CPU 运行 2000 步约需 10 分钟。若需多档网格扫描，需使用集群。
+3. **domain 尺寸**: 默认 span=4D、pool_depth=3D 远小于实验槽宽 17.6D。边界反射可能影响峰值后回缩。但峰值时刻（10.394 ms）时气穴半径约 1.5D，仍在 4D 域内，影响有限。
