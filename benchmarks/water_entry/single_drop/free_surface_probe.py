@@ -3,6 +3,7 @@
 import argparse
 import json
 import math
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +30,32 @@ from tensorlbm.free_surface_lbm import (
 from tensorlbm.free_surface_topology_transaction import TopologyTransactionError
 
 
+def _summarize_ledger(ledger):
+    """Reduce the per-step runtime mass ledger to a compact operator attribution.
+
+    Returns a JSON-safe dict: net/gross tracked-mass delta per operator, the
+    dominant-operator histogram, and the cumulative unexplained residual.
+    """
+    net = defaultdict(float)
+    gross = defaultdict(float)
+    dominant = defaultdict(int)
+    unexplained = 0.0
+    for rec in ledger.get("steps", []):
+        for ev in rec["operator_attribution"]["events"]:
+            if ev["tracked_mass"]:
+                net[ev["operator"]] += ev["net_delta"]
+                gross[ev["operator"]] += ev["gross_magnitude"]
+        dominant[rec["operator_attribution"]["dominant_operator"]] += 1
+        unexplained += rec["unexplained"]
+    return {
+        "operator_net_tracked_mass": {k: v for k, v in net.items()},
+        "operator_gross_tracked_mass": {k: v for k, v in gross.items()},
+        "dominant_operator_counts": dict(dominant),
+        "cumulative_unexplained_residual": unexplained,
+        "steps_recorded": len(ledger.get("steps", [])),
+    }
+
+
 def probe(
     n,
     speed,
@@ -43,6 +70,7 @@ def probe(
     release=None,
     planes_path=None,
     silhouette_path=None,
+    ledger=False,
 ):
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
@@ -101,6 +129,7 @@ def probe(
     last_speed = None
     impact_speed = None
     reason = "step_limit"
+    runtime_ledger = {"steps": []} if ledger else None
     for step in range(limit + 1):
         dens, ux, uy, uz = macroscopic3d(f)
         active = (flags != GAS) & (flags != SOLID)
@@ -186,6 +215,7 @@ def probe(
                     collision="bgk",
                     capacity_redistribution=capacity,
                     simple_mass_exchange=simple,
+                    runtime_ledger=runtime_ledger,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -209,7 +239,7 @@ def probe(
             z_over_D=(np.arange(1, nz - 1) - level) / n,
             y_over_D=(side // 2 - mid) / n,
         )
-    return {
+    result = {
         "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
         "cells_per_D": n,
         "case_id": "pilot" if pilot else "santini_case3",
@@ -229,6 +259,9 @@ def probe(
         "side_view_measurement": silhouette_summary,
         "history": history,
     }
+    if ledger:
+        result["mass_ledger_summary"] = _summarize_ledger(runtime_ledger)
+    return result
 
 
 if __name__ == "__main__":
@@ -248,6 +281,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--nearest-surface", action="store_true")
     parser.add_argument("--pilot", action="store_true")
+    parser.add_argument(
+        "--ledger",
+        action="store_true",
+        help="record the per-step runtime tracked-mass ledger and write a compact "
+        "operator-attribution summary into the output JSON (diagnostic; adds overhead)",
+    )
     parser.add_argument("--span", type=float, default=4.0)
     parser.add_argument("--pool-depth", type=float, default=3.0)
     parser.add_argument("--cells", type=int, required=True)
@@ -284,6 +323,7 @@ if __name__ == "__main__":
         args.release_speed,
         args.planes,
         args.silhouette,
+        args.ledger,
     )
     for row in result["history"]:
         for key, value in row.items():
