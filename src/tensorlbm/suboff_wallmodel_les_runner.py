@@ -45,6 +45,7 @@ import numpy as np
 import torch
 
 from .boundaries3d import bounce_back_cells_3d
+from .boundary.nonperiodic_links import halfway_fluid_solid_links_3d
 from .checkpoint_io import atomic_torch_save
 from .collision_d3q19_advanced import collide_bgk_d3q19
 from .control_volume_force import box_control_volume, observe_control_volume_force
@@ -235,14 +236,7 @@ class SuboffWallModelLesConfig:
 
 def _halfway_links(solid: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """BFL boundary-link mask and halfway q-field (q = 0.5) for Q19."""
-    q_count = 19
-    masks = torch.zeros((q_count, *solid.shape), dtype=torch.bool, device=solid.device)
-    q_field = torch.full(masks.shape, 0.5, dtype=torch.float32, device=solid.device)
-    for direction in range(1, q_count):
-        cx, cy, cz = (int(value) for value in C[direction].tolist())
-        neighbour = torch.roll(solid, shifts=(-cz, -cy, -cx), dims=(0, 1, 2))
-        masks[direction] = ~solid & neighbour
-    return masks, q_field
+    return halfway_fluid_solid_links_3d(solid)
 
 
 def _build_normals(
