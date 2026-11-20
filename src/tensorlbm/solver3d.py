@@ -55,7 +55,13 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
             cy**2 * cx,
         ]
     )
-    assert np.linalg.matrix_rank(matrix) == 19, "D3Q19 MRT matrix is rank-deficient"
+    # Rank check via torch (not ``np.linalg.matrix_rank``): on the loong64
+    # cluster nodes (numpy 2.0.1) numpy's LAPACK SVD is broken for this 19x19
+    # matrix and reports it rank-deficient, aborting the import.  torch's
+    # LAPACK is the verified backend (see ``tensorlbm.linalg_safe``).
+    assert (
+        int(torch.linalg.matrix_rank(torch.tensor(matrix, dtype=torch.float64))) == 19
+    ), "D3Q19 MRT matrix is rank-deficient"
     # The inverse is computed with a *verified* helper instead of
     # ``np.linalg.inv``: on loong64 + numpy 2.0.1 (the cluster nodes) numpy's
     # LAPACK returns NaN / garbage for this 19x19 matrix, which silently made
