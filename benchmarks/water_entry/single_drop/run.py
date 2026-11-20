@@ -200,6 +200,7 @@ def run(
         worst = np.unravel_index(int(mach_field.argmax()), mach_field.shape)
         mach = float(mach_field[worst])
         drift = abs(mass / first_mass - 1)
+        band = mach_field[(liquid > 0.1) & (liquid < 0.9)]
         row = {
             "step": step,
             "time_ms": 1000 * step * sc["dt_s"],
@@ -209,10 +210,17 @@ def run(
             "volume_drift": drift,
             "phi_at_mach_max": float(liquid[worst]),
             "mach_liquid_max": float(mach_field[liquid >= 0.5].max()),
+            "mach_max_xyz": [int(v) for v in worst],
+            "mach_band_max": float(band.max()) if band.numel() else None,
         }
         rows.append(row)
         if (
-            not all(math.isfinite(v) for v in row.values())
+            not all(
+                all(math.isfinite(x) for x in v)
+                if isinstance(v, list)
+                else v is None or math.isfinite(v)
+                for v in row.values()
+            )
             or not torch.isfinite(sim.f).all()
             or not torch.isfinite(sim.g).all()
         ):
