@@ -847,6 +847,7 @@ def free_surface_step(
     free_slip_all=False,
     capacity_redistribution=False,
     simple_mass_exchange=False,
+    u_limit=0.0,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -1684,6 +1685,27 @@ def free_surface_step(
             conversion_evidence=plan.conversion_evidence,
             abb_population_delta=float(abb_delta.sum()),
         )
+
+    # ---- 6. Pseudo-current limiter for interface cells (opt-in) ----
+    # The ABB gas-pressure reconstruction injects momentum proportional to the
+    # local interface velocity into the gas-facing links; at high impact speed
+    # this feeds back and drives the interface lattice speed to several times
+    # the physical impact speed (a pseudo-current, not a physical flow).  When
+    # ``u_limit > 0``, any INTERFACE cell whose lattice speed exceeds it is
+    # reset to the equilibrium at the same density and direction but capped
+    # speed.  This caps the spurious momentum while leaving the bulk liquid
+    # (and the gate, which still reads the raw lattice Mach) untouched.
+    if u_limit and u_limit > 0.0:
+        _rl, _uxl, _uyl, _uzl = macroscopic3d(f)
+        _uabs = (_uxl**2 + _uyl**2 + _uzl**2).sqrt()
+        _over = (flags == INTERFACE) & (_uabs > u_limit)
+        if bool(_over.any()):
+            _scale = torch.where(_over, u_limit / _uabs.clamp(min=1e-12), torch.ones_like(_uabs))
+            _uxc = _uxl * _scale
+            _uyc = _uyl * _scale
+            _uzc = _uzl * _scale
+            _feq_l = equilibrium3d(_rl.clamp(min=1e-6), _uxc, _uyc, _uzc)
+            f = torch.where(_over.unsqueeze(0), _feq_l, f)
 
     if published_mass_ledger is not None:
         published_mass_ledger.clear()

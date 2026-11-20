@@ -621,15 +621,18 @@ def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 
     The resulting matrix is verified to be full rank (rank 27).
     """
-    import numpy as np
-
-    c_np = np.array(_C_DATA, dtype=np.float64)  # (27, 3)
-    cx, cy, cz = c_np[:, 0], c_np[:, 1], c_np[:, 2]
+    # All linear algebra in torch (float64): on the loong64 cluster nodes
+    # (numpy 2.0.1) the LAPACK SVD behind ``np.linalg.matrix_rank`` is broken
+    # (returns nan) and the numpy Gram–Schmidt dot products can produce a
+    # non-finite basis, aborting the import.  torch's LAPACK is the verified
+    # backend (see ``tensorlbm.linalg_safe`` and the D3Q19 fix in solver3d.py).
+    c = torch.tensor(_C_DATA, dtype=torch.float64)  # (27, 3)
+    cx, cy, cz = c[:, 0], c[:, 1], c[:, 2]
     e2 = cx**2 + cy**2 + cz**2
 
     # Define raw moment vectors (length 27 each) in physical significance order
-    raw_rows: list[np.ndarray] = [
-        np.ones(27),  # 0: mass
+    raw_rows: list[torch.Tensor] = [
+        torch.ones(27, dtype=torch.float64),  # 0: mass
         cx,  # 1: jx
         cy,  # 2: jy
         cz,  # 3: jz
@@ -664,35 +667,37 @@ def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     # L2-normalised.  Normalisation is mathematically inert for the collision
     # operator (a row scaling D acts as M -> D M, M^-1 -> M^-1 D^-1, so
     # M^-1 diag(s) M is unchanged) but it makes the transform orthonormal:
-    # * M^-1 = M^T exactly (no ``np.linalg.inv`` call, which returns garbage on
+    # * M^-1 = M^T exactly (no matrix inverse call, which returns garbage on
     #   loong64 + numpy 2.0.1 — measured ||M M^-1 - I|| = 2.0e18 there, which
     #   silently produced 1e16 populations and an immediate NaN),
     # * the condition number drops to 1, so float32 storage of M / M^-1 costs
     #   ~1e-7 instead of ~1e-2 relative error.
-    orth_rows: list[np.ndarray] = []
+    orth_rows: list[torch.Tensor] = []
     for row in raw_rows:
-        v = row.copy()
+        v = row.clone()
         for prev in orth_rows:
-            v = v - np.dot(v, prev) * prev  # prev is unit-norm by construction
-        norm = np.sqrt(np.dot(v, v))
+            v = v - torch.dot(v, prev) * prev  # prev is unit-norm by construction
+        norm = torch.sqrt(torch.dot(v, v))
         if norm < 1e-14:
             # Row is linearly dependent — replace with an orthogonal complement
             # by searching for a standard-basis vector not yet represented
             for i in range(27):
-                e_i = np.zeros(27)
+                e_i = torch.zeros(27, dtype=torch.float64)
                 e_i[i] = 1.0
-                u = e_i.copy()
+                u = e_i.clone()
                 for prev in orth_rows:
-                    u = u - np.dot(u, prev) * prev
-                norm_u = np.sqrt(np.dot(u, u))
+                    u = u - torch.dot(u, prev) * prev
+                norm_u = torch.sqrt(torch.dot(u, u))
                 if norm_u > 1e-10:
                     v, norm = u, norm_u
                     break
         orth_rows.append(v / norm)
 
-    matrix = np.array(orth_rows, dtype=np.float64)
-    assert np.linalg.matrix_rank(matrix) == 27, "D3Q27 MRT matrix is rank-deficient"
-    eye_err = np.abs(matrix @ matrix.T - np.eye(27)).max()
+    matrix = torch.stack(orth_rows, dim=0)
+    assert (
+        int(torch.linalg.matrix_rank(matrix)) == 27
+    ), "D3Q27 MRT matrix is rank-deficient"
+    eye_err = float((matrix @ matrix.T - torch.eye(27)).abs().max())
     assert eye_err < 1e-10, f"D3Q27 MRT basis is not orthonormal (err {eye_err:.2e})"
     matrix_inv = matrix.T
     return matrix.tolist(), matrix_inv.tolist()

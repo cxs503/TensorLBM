@@ -56,6 +56,33 @@ def _summarize_ledger(ledger):
     }
 
 
+def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
+    """Top-k active cells by lattice speed (diagnostic; off by default)."""
+    active = (flags != GAS) & (flags != SOLID)
+    u2 = ((ux**2 + uy**2 + uz**2) * active.to(ux.dtype)).flatten()
+    k = min(k, int(active.sum()))
+    if k <= 0:
+        return []
+    vals, idx = torch.topk(u2, k)
+    shape = (dens.shape[0], dens.shape[1], dens.shape[2])
+    out = []
+    for v, i in zip(vals.tolist(), idx.tolist()):
+        z, y, x = (int(t) for t in torch.unravel_index(torch.tensor(i), shape))
+        out.append(
+            {
+                "z": z,
+                "y": y,
+                "x": x,
+                "flag": int(flags[z, y, x]),
+                "rho": float(dens[z, y, x]),
+                "fill": float(fill[z, y, x]),
+                "u": [float(ux[z, y, x]), float(uy[z, y, x]), float(uz[z, y, x])],
+                "u_abs": float(v**0.5),
+            }
+        )
+    return out
+
+
 def probe(
     n,
     speed,
@@ -71,10 +98,15 @@ def probe(
     planes_path=None,
     silhouette_path=None,
     ledger=False,
+    diag_path=None,
+    u_limit=None,
 ):
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
+    if u_limit is None:
+        u_limit = 2.5 * speed
+    u_limit = float(u_limit)
     nz, side = round((pool_depth + 2) * n) + 2, round(span * n)
     level = round(pool_depth * n) + 0.5
     aspect = case["aspect_ratio"]
@@ -130,21 +162,11 @@ def probe(
     impact_speed = None
     reason = "step_limit"
     runtime_ledger = {"steps": []} if ledger else None
+    diag_rows = [] if diag_path is not None else None
     for step in range(limit + 1):
         dens, ux, uy, uz = macroscopic3d(f)
         active = (flags != GAS) & (flags != SOLID)
-        # Health-check Mach with a density floor at the ambient gas reference
-        # (rho_gas = 1.0).  The ABB gas-pressure reconstruction can leave a
-        # sub-gas density pocket (rho < 1.0) at the interface — a
-        # pseudo-current artifact, not a physical state.  With u = momentum/rho
-        # that pocket makes the lattice Mach spike and trip the 0.3 gate on a
-        # numerical artifact.  Recomputing u from the floored density keeps the
-        # gate on the physical velocity; the raw rho_min is still recorded.
-        rho_floor = dens.clamp(min=1.0)
-        ux_h = dens * ux / rho_floor
-        uy_h = dens * uy / rho_floor
-        uz_h = dens * uz / rho_floor
-        mach = float((3 * (ux_h**2 + uy_h**2 + uz_h**2))[active].max().sqrt())
+        mach = float((3 * (ux**2 + uy**2 + uz**2))[active].max().sqrt())
         drift = abs(total_liquid_inventory(f, fill, flags).item() / mass0 - 1)
         row = {
             "step": step,
@@ -159,6 +181,15 @@ def probe(
             "rho_min": float(dens[active].min()),
         }
         history.append(row)
+        if diag_rows is not None:
+            diag_rows.append(
+                {
+                    "step": step,
+                    "mach_max": mach,
+                    "n_iface_fast": int(((ux**2 + uy**2 + uz**2) > 0.01).logical_and(active).sum()),
+                    "top": _top_mach_cells(dens, ux, uy, uz, flags, fill, 5),
+                }
+            )
         if not all(math.isfinite(v) for v in row.values()):
             reason = "nonfinite"
             break
@@ -227,6 +258,7 @@ def probe(
                     capacity_redistribution=capacity,
                     simple_mass_exchange=simple,
                     runtime_ledger=runtime_ledger,
+                    u_limit=u_limit,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -250,6 +282,9 @@ def probe(
             z_over_D=(np.arange(1, nz - 1) - level) / n,
             y_over_D=(side // 2 - mid) / n,
         )
+    if diag_rows is not None:
+        diag_path.parent.mkdir(parents=True, exist_ok=True)
+        diag_path.write_text(json.dumps({"rows": diag_rows}, indent=1, allow_nan=False) + "\n")
     result = {
         "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
         "cells_per_D": n,
@@ -264,6 +299,7 @@ def probe(
         "capacity_redistribution": capacity,
         "nearest_surface_velocity": nearest,
         "simple_mass_exchange": simple,
+        "u_limit": u_limit,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
@@ -304,6 +340,18 @@ if __name__ == "__main__":
     parser.add_argument("--speed", type=float, default=0.04)
     parser.add_argument("--steps", type=int, default=10000)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--diag-out",
+        type=Path,
+        default=None,
+        help="write per-step top-5 lattice-speed cells (diagnostic; off by default)",
+    )
+    parser.add_argument(
+        "--u-limit",
+        type=float,
+        default=None,
+        help="interface pseudo-current speed cap in lattice units (default 2.5*speed; 0 disables)",
+    )
     parser.add_argument("--gap", type=float, default=0.4)
     args = parser.parse_args()
     if (
@@ -335,6 +383,8 @@ if __name__ == "__main__":
         args.planes,
         args.silhouette,
         args.ledger,
+        args.diag_out,
+        args.u_limit,
     )
     for row in result["history"]:
         for key, value in row.items():
