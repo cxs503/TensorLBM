@@ -29,6 +29,7 @@ from dataclasses import dataclass
 import torch
 
 from tensorlbm.d3q19 import C
+from tensorlbm.boundary.nonperiodic_links import halfway_fluid_solid_links_3d
 from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
 
 __all__ = [
@@ -63,13 +64,7 @@ def bfl_halfway_links_3d(solid: torch.Tensor) -> tuple[torch.Tensor, torch.Tenso
     direction; the wall crossing is placed halfway along the link, matching
     the uniform formal-tier convention for direct A/B fidelity.
     """
-    masks = torch.zeros((19, *solid.shape), dtype=torch.bool, device=solid.device)
-    q_field = torch.full(masks.shape, 0.5, dtype=torch.float32, device=solid.device)
-    for direction in range(1, 19):
-        cx, cy, cz = (int(value) for value in C[direction].tolist())
-        neighbour = torch.roll(solid, shifts=(-cz, -cy, -cx), dims=(0, 1, 2))
-        masks[direction] = ~solid & neighbour
-    return masks, q_field
+    return halfway_fluid_solid_links_3d(solid)
 
 
 def suboff_surface_mesh(
