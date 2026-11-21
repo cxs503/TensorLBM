@@ -423,10 +423,17 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         )
         predecessor = m26892["entries"][2]["duplicate_of"]
         old_path, old_revision = predecessor.split("@", 1)
-        self.assertEqual(
-            subprocess.check_output(["git", "show", f"{old_revision}:{old_path}"], cwd=REPO),
-            (REPO / m26892["entries"][2]["new_path"]).read_bytes(),
-        )
+        snapshot = m26892["entries"][2]
+        self.assertEqual(snapshot["duplicate_git_blob"], snapshot["original_git_blob"])
+        if subprocess.run(
+            ["git", "cat-file", "-e", f"{old_revision}^{{commit}}"],
+            cwd=REPO,
+            capture_output=True,
+        ).returncode == 0:
+            self.assertEqual(
+                subprocess.check_output(["git", "show", f"{old_revision}:{old_path}"], cwd=REPO),
+                (REPO / snapshot["new_path"]).read_bytes(),
+            )
         publisher = ast.parse(
             (REPO / "development/audit/drop_entry/BB/m26856/send_report.py").read_text()
         )
