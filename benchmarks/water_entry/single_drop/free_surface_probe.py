@@ -259,6 +259,7 @@ def probe(
                     simple_mass_exchange=simple,
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
+                    gas_nu_ratio=args.gas_nu_ratio,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -300,6 +301,7 @@ def probe(
         "nearest_surface_velocity": nearest,
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
+        "gas_nu_ratio": args.gas_nu_ratio,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
@@ -351,6 +353,13 @@ if __name__ == "__main__":
         type=float,
         default=None,
         help="interface pseudo-current speed cap in lattice units (default 2.5*speed; 0 disables)",
+    )
+    parser.add_argument(
+        "--gas-nu-ratio",
+        type=float,
+        default=1.0,
+        help="gas/liquid kinematic-viscosity ratio for GAS-cell collision "
+        "(tau_g = 0.5 + ratio*(tau_l - 0.5); default 1.0 = legacy single tau)",
     )
     parser.add_argument("--gap", type=float, default=0.4)
     args = parser.parse_args()
