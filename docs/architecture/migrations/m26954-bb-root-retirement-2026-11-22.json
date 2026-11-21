@@ -1,0 +1,20 @@
+{
+  "source_commit": "e92f65c93eb528fe5d09d531dcad524bf1903bcd",
+  "source_pr": 2896,
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "retired_root": "BB",
+  "entries": [
+    {
+      "old_path": "BB/X/DE-X-PF3-COLORG.md",
+      "new_path": "development/audit/drop_entry/BB/m26954/DE-X-PF3-COLORG.md",
+      "original_git_blob": "10c385657ddc99b66549205deea8688fdd559779",
+      "git_mode": "100644",
+      "size_bytes": 5243,
+      "original_sha256": "fe760cf5e35709e64e7f41f2f3b8ab26d272cbe49faa979ef7b1f6bf00b0f167"
+    }
+  ],
+  "reference_scan": "The exact card basename is present only in this card in the source tree. No tracked readers, writers, published URLs, or relative Markdown links reference this file.",
+  "compatibility": "Archive the complete work card with its original Git blob and link it from the migration table. Keep every #2896 solver, benchmark and test file at its current path.",
+  "scientific_scope": "Historical working evidence. The recorded dynamic density-ratio-1000 attempt remains honest FAIL. This path migration changes no numerical work or scientific status."
+}
