@@ -10,8 +10,10 @@ mistaken for acceptable architecture.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import tomllib
@@ -20,6 +22,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "docs/architecture/source_authority_policy.json"
 TOKEN = "TensorLBM/src"
+CHECKOUT, SOURCE = TOKEN.split("/")
+SPLIT_PATH = re.compile(rf"""['"]{CHECKOUT}['"]\s*[/,]\s*['"]{SOURCE}['"]""")
 TEXT_SUFFIXES = {".py", ".sh", ".toml", ".yaml", ".yml"}
 CONTROL_PATHS = {
     Path(__file__).resolve().relative_to(ROOT).as_posix(),
@@ -39,6 +43,33 @@ def tracked_paths() -> list[Path]:
     return [Path(item.decode()) for item in raw.split(b"\0") if item]
 
 
+def _is_literal(node: ast.AST, value: str) -> bool:
+    return isinstance(node, ast.Constant) and node.value == value
+
+
+def matching_reference_lines(text: str, path: Path) -> list[str]:
+    lines = text.splitlines()
+    matched = {number for number, line in enumerate(lines, 1) if TOKEN in line}
+    if path.suffix == ".py" and SPLIT_PATH.search(text):
+        for node in ast.walk(ast.parse(text, filename=str(path))):
+            pairs = ()
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+                left = node.left
+                if isinstance(left, ast.BinOp) and isinstance(left.op, ast.Div):
+                    left = left.right
+                pairs = ((left, node.right),)
+            elif isinstance(node, ast.Call) and (
+                isinstance(node.func, ast.Name) and node.func.id == "Path"
+                or isinstance(node.func, ast.Attribute)
+                and node.func.attr in {"Path", "join", "joinpath"}
+            ):
+                pairs = zip(node.args, node.args[1:])
+            for left, right in pairs:
+                if _is_literal(left, CHECKOUT) and _is_literal(right, SOURCE):
+                    matched.update(range(left.lineno, right.end_lineno + 1))
+    return [lines[number - 1].rstrip() for number in sorted(matched)]
+
+
 def collect_active_references(policy: dict) -> dict[str, dict[str, object]]:
     roots = tuple(f"{root.rstrip('/')}/" for root in policy["active_roots"])
     result: dict[str, dict[str, object]] = {}
@@ -51,7 +82,7 @@ def collect_active_references(policy: dict) -> dict[str, dict[str, object]]:
         ):
             continue
         text = (ROOT / relative).read_text(encoding="utf-8", errors="strict")
-        lines = [line.rstrip() for line in text.splitlines() if TOKEN in line]
+        lines = matching_reference_lines(text, relative)
         if not lines:
             continue
         payload = "\n".join(lines).encode()

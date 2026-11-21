@@ -15,6 +15,25 @@ SPEC.loader.exec_module(CHECKER)
 
 
 class SourceAuthorityTests(unittest.TestCase):
+    def test_split_path_forms_are_detected(self) -> None:
+        checkout, source = CHECKER.TOKEN.split("/")
+        examples = [
+            f'path = repo / {checkout!r} / {source!r}',
+            f'path = Path(repo, {checkout!r}, {source!r})',
+            f'path = repo.joinpath({checkout!r}, {source!r})',
+            f'path = os.path.join(repo, {checkout!r}, {source!r})',
+        ]
+        for line in examples:
+            with self.subTest(line=line):
+                self.assertEqual(CHECKER.matching_reference_lines(line, Path("run.py")), [line])
+        split = f'path = os.path.join(\n    repo, {checkout!r},\n    {source!r}\n)'
+        self.assertEqual(
+            CHECKER.matching_reference_lines(split, Path("run.py")),
+            split.splitlines()[1:3],
+        )
+        prose = repr(examples[0])
+        self.assertEqual(CHECKER.matching_reference_lines(prose, Path("test_run.py")), [])
+
     def test_repository_matches_source_authority_policy(self) -> None:
         self.assertEqual(CHECKER.validate(CHECKER.load_policy()), [])
 

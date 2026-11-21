@@ -3,6 +3,7 @@
 import argparse
 import json
 import math
+import os
 from collections import defaultdict
 from pathlib import Path
 
@@ -83,6 +84,23 @@ def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
     return out
 
 
+def _read_iface_tau_dose(base_dir=None):
+    """Dose channel for the shared SDAA lane (wrapper passes no new env).
+
+    Priority: env WE_IFACE_DOSE > phase_tau_dose.json next to this module
+    > 0.0 (off).  The JSON file is tarred with the tree by the lane wrapper,
+    so per-arm doses are set by writing the file before each arm run.
+    """
+    env = os.environ.get("WE_IFACE_DOSE")
+    if env not in (None, ""):
+        return float(env)
+    base = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parent
+    cfg = base / "phase_tau_dose.json"
+    if cfg.exists():
+        return float(json.loads(cfg.read_text()).get("iface_tau_dose", 0.0))
+    return 0.0
+
+
 def probe(
     n,
     speed,
@@ -100,7 +118,12 @@ def probe(
     ledger=False,
     diag_path=None,
     u_limit=None,
+    gas_nu_ratio=1.0,
+    iface_tau_dose=None,
 ):
+    if iface_tau_dose is None:
+        iface_tau_dose = _read_iface_tau_dose()
+    iface_tau_dose = float(iface_tau_dose)
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
@@ -259,7 +282,8 @@ def probe(
                     simple_mass_exchange=simple,
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
-                    gas_nu_ratio=args.gas_nu_ratio,
+                    gas_nu_ratio=gas_nu_ratio,
+                    iface_tau_dose=iface_tau_dose,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -301,7 +325,8 @@ def probe(
         "nearest_surface_velocity": nearest,
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
-        "gas_nu_ratio": args.gas_nu_ratio,
+        "gas_nu_ratio": gas_nu_ratio,
+        "iface_tau_dose": iface_tau_dose,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
@@ -361,6 +386,14 @@ if __name__ == "__main__":
         help="gas/liquid kinematic-viscosity ratio for GAS-cell collision "
         "(tau_g = 0.5 + ratio*(tau_l - 0.5); default 1.0 = legacy single tau)",
     )
+    parser.add_argument(
+        "--iface-tau-dose",
+        type=float,
+        default=None,
+        help="fill-weighted interface relaxation dose: INTERFACE cells relax "
+        "with tau*(1+dose*(1-fill)); default None = read WE_IFACE_DOSE env or "
+        "phase_tau_dose.json, else 0.0 (off)",
+    )
     parser.add_argument("--gap", type=float, default=0.4)
     args = parser.parse_args()
     if (
@@ -394,6 +427,8 @@ if __name__ == "__main__":
         args.ledger,
         args.diag_out,
         args.u_limit,
+        args.gas_nu_ratio,
+        args.iface_tau_dose,
     )
     for row in result["history"]:
         for key, value in row.items():

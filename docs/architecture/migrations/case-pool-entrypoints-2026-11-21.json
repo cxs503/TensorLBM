@@ -1,0 +1,19 @@
+{
+  "source_revision": "a1fc9bee532f5f1a0f38af1e0e6853a8cdf347a8",
+  "entries": [
+    {
+      "old_path": "cases/oscillatory_cylinder_inertia/run.py",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/run.py",
+      "source_blob": "9fcce97d00a2c52ba5b7b265de1ae27c1a1cbf7d",
+      "old_path_role": "compatibility_wrapper",
+      "compatibility": "Legacy CLI delegates to the canonical runner; solver imports, CLI arguments, output defaults and acceptance criteria are retained."
+    },
+    {
+      "old_path": "cases/pressure_tensor_droplet/run.py",
+      "new_path": "benchmarks/case_pool/pressure_tensor_droplet/run.py",
+      "source_blob": "298dcce9f386071ffabd2f0d0fe5ac1610e8f6e7",
+      "old_path_role": "compatibility_wrapper",
+      "compatibility": "Legacy CLI delegates to the canonical runner; solver imports, CLI arguments, output defaults and acceptance criteria are retained."
+    }
+  ]
+}

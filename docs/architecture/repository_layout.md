@@ -4,6 +4,10 @@ This is the file-placement contract for contributors and coding agents. It
 implements the low-risk part of the [refactoring plan](REPOSITORY_REFACTORING_PLAN.md),
 not a new solver architecture. No source relocation is authorized by this document.
 
+See the [target layout and root migration map](target_repository_layout.md)
+for the intended separation between maintained deliverables and the
+[development archive](../../development/).
+
 ## Finding code, evidence and earlier work
 
 Install and import from [src/tensorlbm](../../src/tensorlbm/). The separate
@@ -29,6 +33,12 @@ existing `.audit/` and `_scratch/` trees still have in-repository consumers.
 The former root `audits/` directory has been consolidated under `audit/`.
 The [migration manifest](migration_manifest.csv) records the original and
 current paths. Published audit narratives under `docs/` keep their URLs.
+
+The [source authority policy](source_authority_policy.json) records existing
+references to the nested source tree. The checker covers literal paths and
+common static Python path joins. Entries identify locations to review, including
+historical replay and provenance lookups. A dynamically constructed path may
+require a runtime import trace to identify its actual source.
 
 ## Where new work belongs
 
