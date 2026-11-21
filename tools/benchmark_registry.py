@@ -74,25 +74,33 @@ def attach_validation_matrix(records: list[dict], root: Path) -> list[str]:
     return errors
 
 
-def attach_xval_cases(records: list[dict], root: Path) -> list[str]:
-    """Register declared cross-validations and check each path against the Git index."""
-    manifests = sorted(tracked_files(root, ":(glob)xval/*/benchmark_case.json"))
+def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
+    """Register standalone benchmark and cross-validation manifests from the Git index."""
+    manifests = sorted(tracked_files(root, ":(glob)xval/*/benchmark_case.json",
+                                     ":(glob)benchmarks/*/benchmark_case.json"))
     if not manifests:
         return []
     tracked = tracked_files(root)
+    registered_directories = {variant["path"] for row in records for variant in row["variants"]}
     errors = []
     for manifest in manifests:
+        if str(manifest.parent) in registered_directories:
+            errors.append(f"{manifest}: directory already has a registered case")
+            continue
         definition = json.loads((root / manifest).read_text(encoding="utf-8"))
-        case_id = f"xval:{manifest.parent.name}"
+        is_xval = manifest.parts[0] == "xval"
+        namespace = "xval" if is_xval else "campaign"
+        case_id = f"{namespace}:{manifest.parent.name}"
+        category = "cross_validation" if is_xval else "standalone_campaign"
         fields = ("source", "config", "documentation", "reference_files", "results")
         if not isinstance(definition, dict):
             errors.append(f"{manifest}: expected a JSON object")
             continue
         previous_errors = len(errors)
         if not isinstance(definition.get("scope"), str) or not definition["scope"].strip():
-            errors.append(f"{manifest}: missing cross-validation scope")
+            errors.append(f"{manifest}: missing case scope")
         if not isinstance(definition.get("criteria"), dict) or not definition["criteria"]:
-            errors.append(f"{manifest}: missing cross-validation criteria")
+            errors.append(f"{manifest}: missing case criteria")
         for field in fields:
             paths = definition.get(field)
             if not isinstance(paths, list):
@@ -102,15 +110,15 @@ def attach_xval_cases(records: list[dict], root: Path) -> list[str]:
                 if not isinstance(path, str) or PurePosixPath(path) not in tracked or not (root / path).is_file():
                     errors.append(f"{manifest}: missing tracked {field} asset {path!r}")
         if not definition.get("source") or not definition.get("results"):
-            errors.append(f"{manifest}: a cross-validation requires a source and a result")
+            errors.append(f"{manifest}: a case requires a source and a result")
         if len(errors) == previous_errors:
             records.append({
-                "id": case_id, "category": "cross_validation", "tutorial": {},
+                "id": case_id, "category": category, "tutorial": {},
                 "current_acceptance": "not_evaluated", "validation_matrix": [],
-                "variants": [{"path": str(manifest.parent), "archive_bucket": "xval",
+                "variants": [{"path": str(manifest.parent), "archive_bucket": "xval" if is_xval else None,
                               **{field: definition[field] for field in fields},
                               "references": definition.get("references", [])}],
-                "cross_validation": {"manifest": str(manifest), "scope": definition["scope"],
+                category: {"manifest": str(manifest), "scope": definition["scope"],
                                      "criteria": definition["criteria"]},
             })
     return errors
@@ -194,14 +202,55 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
             "variants": [assets(str(path))], "current_acceptance": "not_evaluated",
         })
     errors.extend(attach_validation_matrix(records, root))
-    errors.extend(attach_xval_cases(records, root))
+    errors.extend(attach_declared_cases(records, root))
     return records, errors
+
+
+def benchmark_asset_index(records: list[dict], root: Path) -> dict:
+    """Index every tracked benchmark path, retaining the basis of case attribution."""
+    variants = defaultdict(set)
+    declared = defaultdict(set)
+    for row in records:
+        case_id = row["id"]
+        for variant in row["variants"]:
+            variants[PurePosixPath(variant["path"])].add(case_id)
+            for field in ("source", "config", "reference_files", "results", "documentation"):
+                for path in variant[field]:
+                    declared[path].add(case_id)
+        for entry in row["validation_matrix"]:
+            artifact = entry["definition"].get("measure", {}).get("artifact")
+            if artifact:
+                declared[artifact].add(case_id)
+
+    indexed = subprocess.check_output(["git", "ls-files", "--stage", "-z", "--", "benchmarks"], cwd=root)
+    assets = []
+    unassigned = defaultdict(int)
+    for entry in indexed.split(b"\0"):
+        if not entry:
+            continue
+        metadata, raw_path = entry.split(b"\t", 1)
+        mode, oid, stage = metadata.decode("ascii").split()
+        path = PurePosixPath(raw_path.decode("utf-8"))
+        if stage != "0":
+            raise ValueError(f"Unresolved merge for {path}")
+        nearest = next((parent for parent in path.parents if parent in variants), None)
+        directory_ids = sorted(variants[nearest]) if nearest else []
+        declared_ids = sorted(declared.get(str(path), ()))
+        if not directory_ids and not declared_ids:
+            group = str(PurePosixPath(*path.parts[:2])) if len(path.parts) > 2 else "benchmarks"
+            unassigned[group] += 1
+        assets.append({"path": str(path), "git_oid": oid, "git_mode": mode,
+                       "declared_case_ids": declared_ids, "directory_case_ids": directory_ids})
+    return {"assets": assets, "tracked_count": len(assets),
+            "unassigned_count": sum(unassigned.values()), "unassigned_by_directory": dict(sorted(unassigned.items()))}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--json", action="store_true", help="export the complete registry")
+    group.add_argument("--asset-index", action="store_true",
+                       help="index every tracked benchmark file, with explicit and directory-based case links")
     group.add_argument("--case", help="look up a case ID or registered case path")
     group.add_argument("--find-asset", metavar="TEXT",
                        help="search tracked paths across benchmarks, docs, experiments, xval and audits")
@@ -221,6 +270,13 @@ def main() -> int:
         parser.exit(1, f"Cannot read benchmark registry inputs: {exc}\n")
     if errors:
         parser.exit(1, "\n".join(errors) + "\n")
+    if args.asset_index:
+        try:
+            inventory = benchmark_asset_index(records, ROOT)
+        except ValueError as exc:
+            parser.exit(1, f"Cannot index benchmark files: {exc}\n")
+        print(json.dumps(inventory, ensure_ascii=False, indent=2))
+        return 0
     if args.case:
         records = [
             row for row in records

@@ -1,0 +1,35 @@
+{
+  "scope": "Oscillating-foil propulsion campaign P161W2 N05.",
+  "criteria": {
+    "published_definition": "Campaign C-series criteria and negative controls recorded in the local report."
+  },
+  "source": [
+    "benchmarks/p161w2_n05_oscillating_foil/run_case.py",
+    "benchmarks/p161w2_n05_oscillating_foil/run_sweep.py",
+    "src/tensorlbm/oscillating_foil_lbm.py",
+    "src/tensorlbm/flapping_propulsion.py",
+    "src/tensorlbm/flapping_lbm_2d.py"
+  ],
+  "config": [
+    "benchmarks/p161w2_n05_oscillating_foil/run_sweep.py"
+  ],
+  "documentation": [
+    "benchmarks/p161w2_n05_oscillating_foil/README.md",
+    "benchmarks/p161w2_n05_oscillating_foil/report.md"
+  ],
+  "reference_files": [
+    "benchmarks/p161w2_n05_oscillating_foil/README.md",
+    "benchmarks/p161w2_n05_oscillating_foil/artifacts/analytic.json",
+    "benchmarks/p161w2_n05_oscillating_foil/artifacts/lock_ref.json"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/p161w2_n05_oscillating_foil/README.md",
+      "field": "Case reference and conditions",
+      "value": "Theodorsen and Garrick small-amplitude analytic anchors and the locked-body controls in this campaign."
+    }
+  ],
+  "results": [
+    "benchmarks/p161w2_n05_oscillating_foil/artifacts/results.json"
+  ]
+}

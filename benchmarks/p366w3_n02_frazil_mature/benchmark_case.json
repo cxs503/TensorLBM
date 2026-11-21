@@ -1,0 +1,84 @@
+{
+  "scope": "D3Q19 frazil slurry shear-cell flow curves.",
+  "criteria": {
+    "published_definition": "Einstein, Einstein–Batchelor–Green and Krieger–Dougherty comparisons in the case report."
+  },
+  "source": [
+    "benchmarks/p366w3_n02_frazil_mature/run_campaign.py",
+    "src/tensorlbm/frazil_powerlaw_mature.py",
+    "src/tensorlbm/frazil_powerlaw_shear.py"
+  ],
+  "config": [
+    "benchmarks/p366w3_n02_frazil_mature/cases.json"
+  ],
+  "documentation": [
+    "benchmarks/p366w3_n02_frazil_mature/README.md",
+    "docs/frazil_powerlaw_mature.md"
+  ],
+  "reference_files": [
+    "benchmarks/p366w3_n02_frazil_mature/README.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/p366w3_n02_frazil_mature/README.md",
+      "field": "Case reference and conditions",
+      "value": "Einstein, Einstein–Batchelor–Green and Krieger–Dougherty viscosity curves."
+    }
+  ],
+  "results": [
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_2_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_2_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_2_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_3_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_3_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_coarse_3_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.05_hd8_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.1_coarse_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.1_coarse_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.1_coarse_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.1_coarse_2_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.1_coarse_2_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.1_coarse_2_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_2_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_2_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_2_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_3_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_3_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_3_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_4_1_s0.85.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_4_1_s0.925.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_coarse_5_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_fine_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_fine_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_fine_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_hd11_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.2_hd8_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.3_coarse_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.3_coarse_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/dispersed_0.3_coarse_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_coarse_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_coarse_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_coarse_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_coarse_2_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_coarse_2_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_coarse_2_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_fine_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_fine_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.1_fine_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.2_coarse_1_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.2_coarse_1_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/flocculated_0.2_coarse_1_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/pure_0.0_coarse_0_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/pure_0.0_coarse_0_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/pure_0.0_coarse_0_2.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/pure_0.0_fine_0_0.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/pure_0.0_fine_0_1.json",
+    "benchmarks/p366w3_n02_frazil_mature/case_records/pure_0.0_fine_0_2.json"
+  ]
+}

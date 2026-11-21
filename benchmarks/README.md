@@ -30,9 +30,13 @@ Use `--case matrix:ship_resistance_suboff` to retrieve the matrix definition,
 reference provenance, reproduction command and archived comparison for that case.
 A missing comparison is returned as null.
 Use `--case xval:ludwig_fe_stress` to find the analytic criteria, both CLI paths, the archived result and the dated CPU replay. To register a cross-validation, add a tracked `xval/<case>/benchmark_case.json` using that case as the example.
+Use `--asset-index` to export all Git-tracked benchmark files with their object IDs.
+Each entry distinguishes explicit case links from membership in the nearest
+registered case directory. Files with neither association remain listed and
+counted by directory. Standalone campaigns use `benchmarks/<name>/benchmark_case.json`
+and can be queried as `--case campaign:<name>`, for example `campaign:dam_break_ritter`.
 Use `--json` to export all records from the published tutorial catalogue, the validation matrix and
-the immediate lifecycle/case-pool directories. Nested campaign assets and
-standalone campaign folders still require manual registration. The registry
+the immediate lifecycle/case-pool directories, and explicitly registered campaigns and cross-validations. The registry
 lists available evidence and leaves current acceptance unevaluated.
 See the
 [test/benchmark map](../docs/architecture/test_and_benchmark_map.md),

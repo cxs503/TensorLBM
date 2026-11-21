@@ -23,6 +23,35 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(sum("pdf" in row["tutorial"] for row in records), 33)
         self.assertTrue(all(row["current_acceptance"] == "not_evaluated" for row in records))
 
+    def test_asset_index_covers_every_tracked_benchmark_path(self):
+        data = subprocess.check_output([sys.executable, "tools/benchmark_registry.py", "--asset-index"], cwd=ROOT)
+        inventory = json.loads(data)
+        expected = {}
+        listings = subprocess.check_output(["git", "ls-files", "-s", "-z", "benchmarks"], cwd=ROOT)
+        for entry in listings.split(b"\0"):
+            if entry:
+                metadata, path = entry.decode().split("\t", 1)
+                expected[path] = metadata.split()[:2]
+        assets = {row["path"]: row for row in inventory["assets"]}
+        self.assertEqual(inventory["tracked_count"], len(expected))
+        self.assertEqual({p: [a["git_mode"], a["git_oid"]] for p, a in assets.items()}, expected)
+        unresolved = sum(not row["declared_case_ids"] and not row["directory_case_ids"]
+                         for row in assets.values())
+        self.assertEqual(inventory["unassigned_count"], unresolved)
+        self.assertEqual(sum(inventory["unassigned_by_directory"].values()), unresolved)
+        readme = assets["benchmarks/README.md"]
+        self.assertFalse(readme["declared_case_ids"] or readme["directory_case_ids"])
+        key = "benchmarks/p161w2_n05_oscillating_foil/artifacts/results.json"
+        self.assertEqual(assets[key]["declared_case_ids"], ["campaign:p161w2_n05_oscillating_foil"])
+
+    def test_standalone_ritter_keeps_its_gate_separate_from_matrix_case(self):
+        (campaign,) = self.registry("--case", "campaign:dam_break_ritter")
+        (matrix,) = self.registry("--case", "matrix:dam_break_ritter_ci")
+        self.assertNotEqual(campaign["id"], matrix["id"])
+        self.assertEqual(campaign["current_acceptance"], "not_evaluated")
+        self.assertIn("src/tensorlbm/shallow_water.py", campaign["variants"][0]["source"])
+        self.assertIn("benchmarks/dam_break_ritter/replays/2026-11-21.json", campaign["variants"][0]["results"])
+
     def test_find_archived_assets_by_path(self):
         result = subprocess.run(
             [sys.executable, "tools/benchmark_registry.py", "--find-asset", "M17444_AKAI2018_REPRO"],

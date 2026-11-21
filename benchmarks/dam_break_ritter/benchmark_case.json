@@ -1,0 +1,31 @@
+{
+  "scope": "One-dimensional finite-volume shallow-water dry-bed dam break against the Ritter front law.",
+  "criteria": {
+    "published_definition": "Mass-derived front error at finest grid <=5%, mass drift on every grid <=1%."
+  },
+  "source": [
+    "benchmarks/dam_break_ritter/self_similar.py",
+    "src/tensorlbm/shallow_water.py",
+    "src/tensorlbm/dam_break.py"
+  ],
+  "config": [
+    "benchmarks/dam_break_ritter/self_similar.py"
+  ],
+  "documentation": [
+    "benchmarks/dam_break_ritter/README.md"
+  ],
+  "reference_files": [
+    "benchmarks/dam_break_ritter/README.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/dam_break_ritter/README.md",
+      "field": "Case reference and conditions",
+      "value": "Ritter (1892), dry-bed shallow-water dam-break solution."
+    }
+  ],
+  "results": [
+    "benchmarks/dam_break_ritter/result.json",
+    "benchmarks/dam_break_ritter/replays/2026-11-21.json"
+  ]
+}
