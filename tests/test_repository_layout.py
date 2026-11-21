@@ -73,6 +73,18 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertEqual(len(failures), 1)
         self.assertIn("legacy-audit: audits/m1/new.json", failures[0])
 
+    def test_nested_checkout_in_an_allowed_directory_requires_review(self):
+        config = policy()
+        config["historical_checkouts"] = ["experiments/archived/original"]
+        names = []
+        for base in ("experiments/archived/original", "experiments/new_run/repo"):
+            names.extend([f"{base}/CITATION.cff", f"{base}/.github/workflows/ci.yml"])
+        for name in names:
+            self.write(name)
+        failures = self.check(names, config)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("nested-checkout: experiments/new_run/repo/", failures[0])
+
     def test_new_root_path_fails(self):
         self.write("new_debug.py")
         self.assertIn("root-file:", self.check(["new_debug.py"])[0])

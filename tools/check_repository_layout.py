@@ -37,6 +37,8 @@ def load_policy(path: Path) -> dict:
     path_lists = PATH_LISTS
     if policy["schema_version"] == 2:
         path_lists += ("root_directories",)
+        if "historical_checkouts" in policy:
+            path_lists += ("historical_checkouts",)
         if "legacy_audit_files" in policy:
             path_lists += ("legacy_audit_files",)
     expected = {"schema_version", "baseline_revision", "large_files", *path_lists}
@@ -96,6 +98,15 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
     models = set(policy["legacy_model_files"])
     allowed_dirs = set(policy.get("root_directories", ()))
     legacy_audits = set(policy.get("legacy_audit_files", ()))
+    if "historical_checkouts" in policy:
+        known = set(policy["historical_checkouts"])
+        tracked = set(names)
+        for name in names:
+            suffix = "/.github/workflows/ci.yml"
+            if name.endswith(suffix):
+                checkout = name.removesuffix(suffix)
+                if checkout not in known and f"{checkout}/CITATION.cff" in tracked:
+                    failures.append(f"nested-checkout: {checkout}/ — review the source and archive mapping")
     unexpected_dirs = set()
     for name in names:
         path = repo / name

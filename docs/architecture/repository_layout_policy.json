@@ -10,6 +10,10 @@
     "audits/m18155/verify_tgv_reference.json",
     "audits/m18155/verify_tgv_reference.py"
   ],
+  "historical_checkouts": [
+    "experiments/archived/workspaces/cj5697/repo",
+    "experiments/archived/workspaces/m21672/cj3613/cj3613/repo"
+  ],
   "root_files": [
     ".dockerignore",
     ".editorconfig",
