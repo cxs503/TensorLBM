@@ -1,5 +1,10 @@
 # Benchmark definitions and acceptance evidence
 
+Find the [published case manuals and downloads](../docs/benchmarks/tutorials/README.md).
+Use `python tools/benchmark_registry.py --find-asset couette` to search tracked
+paths in benchmarks, docs, experiments, xval, audit and audits, including files
+outside the case registry.
+
 Start with [STATUS.md](STATUS.md) and the individual case's report. Lifecycle folders
 already exist; their names alone are not independent proof of physical validity.
 

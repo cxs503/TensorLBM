@@ -22,6 +22,17 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(sum("pdf" in row["tutorial"] for row in records), 33)
         self.assertTrue(all(row["current_acceptance"] == "not_evaluated" for row in records))
 
+    def test_find_archived_assets_by_path(self):
+        result = subprocess.run(
+            [sys.executable, "tools/benchmark_registry.py", "--find-asset", "M17444_AKAI2018_REPRO"],
+            cwd=ROOT, capture_output=True, check=True,
+        )
+        paths = json.loads(result.stdout)["paths"]
+        self.assertIn("audits/m17444_akai2018_repro/benchmarks/xval_akai2018_wetting/"
+                      "analytic_verification.json", paths)
+        self.assertEqual(paths, sorted(set(paths)))
+        self.assertTrue(all((ROOT / path).is_file() for path in paths))
+
     def test_alias_retains_all_variants(self):
         path = "benchmarks/verified/poiseuille_3d_duct/duct_ar05"
         (record,) = self.registry("--case", path)
