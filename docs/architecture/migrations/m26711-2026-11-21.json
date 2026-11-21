@@ -1,0 +1,41 @@
+{
+  "source_revision": "784ae70f8e2f99663b0652208359c9749f7edcab",
+  "upstream_pr": 2814,
+  "mission_id": 26711,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_FORCE_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_FORCE_W1.md",
+      "git_blob": "f39f089acd848b76595ff52fbb6e189db463a1d5",
+      "git_mode": "100644",
+      "size_bytes": 1388,
+      "sha256": "f765351457f77af822c5fe32d302210d082f338fdd0aa8bac2e7311fd52ec6d4"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-FORCE-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-FORCE-W1.draft.md",
+      "git_blob": "bdbcbd987332fba229cc82990da2f2f0537121a8",
+      "git_mode": "100644",
+      "size_bytes": 928,
+      "sha256": "3e1a55011528d8b60a71ba221e6c49900d8f02499a4671dbdd4f631631962099"
+    },
+    {
+      "old_path": "tmp/report.json",
+      "new_path": "audit/m26711/report.json",
+      "git_blob": "a6d29aab0430044ddda5702fb33aa2295b13c878",
+      "git_mode": "100644",
+      "size_bytes": 3439,
+      "sha256": "5814dc10d58fbfb3a90fe5640ba80c9976bc2dfdc0abef6132ed02d79601bc02"
+    },
+    {
+      "old_path": "tmp/report.sh",
+      "new_path": "audit/m26711/report.sh",
+      "git_blob": "4d241ec24eb859d02e5d1f2465b18eb1b21897c6",
+      "git_mode": "100644",
+      "size_bytes": 411,
+      "sha256": "2cd676237ac3106d1fdbffae4c9be17a601b3d91ff9b7ec3bdaf82aa6e51cbac"
+    }
+  ],
+  "compatibility": "No tracked consumer of an exact repository-relative old path was found outside the four inputs. External links are unknown. The archived publisher still expects an absolute /tmp/report.json as before; it was syntax checked only. No external login or publication is part of this migration.",
+  "validation": "Repository layout failed on root directories drop_entry and tmp before relocation. Retain all Git blobs and modes, parse the report, syntax-check the shell script, and run layout, registry, migration and manual suites."
+}

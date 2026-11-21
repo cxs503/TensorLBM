@@ -123,6 +123,18 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 if (REPO / new).is_file():
                     self.assertFalse((REPO / old).is_file())
 
+    def test_mission_26711_archive_preserves_all_four_original_files(self):
+        ledger = json.loads((REPO / "docs/architecture/migrations/m26711-2026-11-21.json").read_text())
+        self.assertEqual(len(ledger["entries"]), 4)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                blob = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(hashlib.sha256(blob).hexdigest(), item["sha256"])
+                self.assertEqual(len(blob), item["size_bytes"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+        report = json.loads((REPO / "audit/m26711/report.json").read_text())
+        self.assertEqual(int(report["mission_id"]), ledger["mission_id"])
+
     def test_migrations_registered_without_reintroducing_root_exceptions(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             rows = list(csv.DictReader(stream))
