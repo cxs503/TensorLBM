@@ -481,6 +481,67 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertEqual(index[:2], [item["git_mode"], expected_blob])
                 self.assertFalse((REPO / item["old_path"]).exists())
 
+    def test_aircraft_icing_sdaa_evidence_belongs_to_the_benchmark(self):
+        ledger_path = (
+            LEDGER_PATH.parent / "aircraft-icing-sdaa-artifacts-2026-11-22.json"
+        )
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(ledger["root_directories_before"], 13)
+        self.assertEqual(ledger["root_directories_after"], 13)
+        self.assertEqual(len(ledger["entries"]), 25)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(
+            manifest,
+            {item["old_path"]: item["new_path"] for item in ledger["entries"]},
+        )
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(len(raw), item["size_bytes"])
+                self.assertEqual(
+                    hashlib.sha256(raw).hexdigest(), item["original_sha256"]
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(
+                    index[:2], [item["git_mode"], item["original_git_blob"]]
+                )
+                self.assertFalse((REPO / item["old_path"]).exists())
+
+        summary = json.loads(
+            (
+                REPO
+                / "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(summary["gates_summary"]["n_pass"], 6)
+        self.assertEqual(summary["gates_summary"]["n_total"], 11)
+        self.assertFalse(summary["gates_summary"]["all_pass"])
+        self.assertEqual(summary["verdict"]["overall"], "FAIL")
+        run_root = (
+            REPO
+            / "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs"
+        )
+        self.assertFalse(list(run_root.rglob("result.npz")))
+
+        runner = (
+            REPO / "scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn('REPO / "artifacts" / "sdaa_runs"', runner)
+        self.assertNotIn("sdaa_aircraft_icing_naca0012_rime.json", runner)
+        self.assertIn('evidence_dir / "summary.json"', runner)
+        self.assertIn('evidence_dir / "runs"', runner)
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

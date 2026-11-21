@@ -27,7 +27,8 @@ G10d (and the disclosure columns) are read from the case ``result.json``.
 
 Usage:
   TRITON_INTERPRET=1 python scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py \
-      [--budget-s 1100] [--out artifacts/sdaa_aircraft_icing_naca0012_rime.json]
+      [--budget-s 1100] \
+      [--out benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json]
 """
 
 from __future__ import annotations
@@ -333,8 +334,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget-s", type=float, default=1150.0,
                     help="wall cap for the *simulation* runs (task cap 1200 s)")
-    ap.add_argument("--out", default=str(REPO / "artifacts" / "sdaa_aircraft_icing_naca0012_rime.json"))
-    ap.add_argument("--out-root", default=str(REPO / "artifacts" / "sdaa_runs" / "aircraft_icing_naca0012_rime"))
+    evidence_dir = CASE_DIR / "evidence" / "sdaa_sweep"
+    ap.add_argument("--out", default=str(evidence_dir / "summary.json"))
+    ap.add_argument("--out-root", default=str(evidence_dir / "runs"))
     ap.add_argument("--max-runs", type=int, default=len(ORDER))
     args = ap.parse_args()
 

@@ -1,7 +1,7 @@
 # Mission 13 补报：SDAA 扫荡 — aircraft_icing_naca0012_rime
 
 > **补报单 (mission 91)**：原 mission 13 已成功交付（honest-FAIL, 6/11 PASS），但缺论文级进展报告。
-> 本报告从工件 `artifacts/sdaa_aircraft_icing_naca0012_rime.json` 程序化提取全部数字，零手抄。
+> 本报告从工件 `benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json` 程序化提取全部数字，零手抄。
 
 ---
 
@@ -134,8 +134,8 @@ SDAA 慢 **≈12.4×**。
 
 ### 4.3 产物清单
 
-- `artifacts/sdaa_aircraft_icing_naca0012_rime.json` — 主证据 JSON
-- `artifacts/sdaa_runs/aircraft_icing_naca0012_rime/{b1_prod,m20_lwc025,m20_lwc10}/result.npz` — 设备侧产物
+- `benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json` — 主证据 JSON
+- `benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/{b1_prod,m20_lwc025,m20_lwc10}/result.npz` — 设备侧产物
 - `docs/sdaa_sweep/aircraft_icing_naca0012_rime.md` — 原始扫荡记录
 
 ## 5. 局限与未完成
@@ -156,4 +156,4 @@ SDAA 慢 **≈12.4×**。
 ---
 
 *生成时间: 2026-10-29T12:55:07Z (原始 JSON) | 补报: mission 91*
-*数据来源: artifacts/sdaa_aircraft_icing_naca0012_rime.json (程序化提取)*
+*数据来源: benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json (程序化提取)*
