@@ -1,0 +1,228 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Nightly full run (03:00 UTC) so the slow campaigns keep a cadence even
+    # when no one pushes for a while.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Explicit bash enables pipefail: tee must never hide pytest failures.
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  # A new push to the same ref supersedes in-flight runs; main is never
+  # cancelled so the nightly/slow signal stays intact.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+
+jobs:
+  # Static gates run once, on a single interpreter: they are interpreter
+  # independent, so fanning them across the matrix only burns minutes.
+  lint:
+    runs-on: ci-loong64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package with dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      # Debt ratchet rather than a zero-tolerance gate: `ruff check` over the
+      # four core trees reports the legacy backlog (~3.0k findings accumulated
+      # across the merged mission history), so a hard `ruff check` step was red
+      # for reasons unrelated to the diff under review.  The ratchet pins the
+      # measured counts in tools/lint_baseline.json and fails only when a
+      # change makes a count worse; the baseline may only move down
+      # (`--update` refuses to raise it).  Unparsable committed sources
+      # (`invalid-syntax`) are pinned at 0, not merely capped.
+      - name: Lint + format ratchet (ruff)
+        run: python tools/lint_ratchet.py --check
+      # The gate is intentionally scoped to the four core modules: with the
+      # default --follow-imports=normal mypy also *reports* on every module
+      # those four import (1500+ strict findings across backends/ai/, i.e. the
+      # same signal as the advisory full run below), so the gate could never
+      # go green and stopped being a "core" gate.  --follow-imports=silent
+      # keeps full checking of the four files *and* uses the real annotations
+      # of their dependencies, while the whole-package signal stays advisory.
+      - name: Type check (mypy core gate)
+        run: mypy --follow-imports=silent src/tensorlbm/d2q9.py src/tensorlbm/d3q19.py src/tensorlbm/solver.py src/tensorlbm/utils.py --ignore-missing-imports
+      - name: Type check (mypy full advisory)
+        run: mypy src/tensorlbm --ignore-missing-imports
+        continue-on-error: true
+      - name: Check docs-implementation consistency
+        run: python scripts/check_platform_docs_consistency.py
+
+  test:
+    runs-on: ci-loong64
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package with dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Record test environment
+        if: always()
+        run: |
+          mkdir -p artifacts/ci
+          {
+            python -VV
+            uname -a
+            python -m pip freeze --all
+          } 2>&1 | tee artifacts/ci/environment.txt
+      # Pull requests and feature-branch pushes get the fast signal; pushes to main, the nightly cron and
+      # manual dispatches run the slow simulation campaigns too.  --timeout
+      # activates pytest-timeout (already a dev extra, previously unused) so a
+      # hung solver fails the job instead of burning the 6h runner limit.
+      - name: Select test scope
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] || {
+            [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" != "refs/heads/main" ];
+          }; then
+            echo 'args=-m "not slow" --timeout=600' >> "$GITHUB_OUTPUT"
+            echo "scope=fast (slow campaigns deselected)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'args=--timeout=1800' >> "$GITHUB_OUTPUT"
+            echo "scope=full (including slow campaigns)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Run tests with coverage
+        run: |
+          pytest -q ${{ steps.scope.outputs.args }} -o timeout_func_only=false \
+            --cov=tensorlbm --cov-report=term-missing --cov-report=xml \
+            --durations=30 --junitxml=artifacts/ci/junit.xml \
+            2>&1 | tee artifacts/ci/pytest.log
+      # Assertion-enforced cross-validation gate (anchor XVAL-LBM-NO-TESTS-NO-CI-NO-ASSERTS): runs the
+      # anchor case for real and asserts its declared thresholds; a non-finite metric fails.
+      - name: Cross-validation assert gate
+        run: |
+          mkdir -p artifacts/ci
+          pytest -q tests/test_xval_assert_gate.py --timeout=900 -o timeout_func_only=false \
+            2>&1 | tee artifacts/ci/xval_assert_gate.log
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics-pypy311
+          path: artifacts/ci/
+          if-no-files-found: warn
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml-pypy311
+          path: coverage.xml
+
+  # The FastAPI platform has its own dependency set and test suite under
+  # app/. Keep it separate from the numerical library matrix so failures have
+  # an unambiguous owner and app dependencies do not leak into the solver job.
+  platform-test:
+    runs-on: ci-loong64
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install solver and platform test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" -r app/requirements.txt
+      - name: Record test environment
+        if: always()
+        run: |
+          mkdir -p artifacts/ci
+          {
+            python -VV
+            uname -a
+            python -m pip freeze --all
+          } 2>&1 | tee artifacts/ci/environment.txt
+      - name: Run fast platform tests
+        run: |
+          PYTHONPATH=src pytest -q app/tests --timeout=600 -o timeout_func_only=false \
+            --durations=30 --junitxml=artifacts/ci/junit.xml \
+            2>&1 | tee artifacts/ci/pytest.log
+      - name: Upload platform diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-test-diagnostics-py3.12
+          path: artifacts/ci/
+          if-no-files-found: warn
+
+  # File placement is a separate, dependency-free gate. Historical files are
+  # grandfathered by exact path; new root clutter and raw outputs are rejected.
+  repository-layout:
+    runs-on: ci-loong64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test repository layout checker
+        run: python tests/test_repository_layout.py -v
+      - name: Check migrated report and asset provenance
+        run: python tests/test_repository_report_migration.py -v
+      - name: Check repository layout
+        run: python tools/check_repository_layout.py
+
+  # Structural audit has an independent signal: it must run even when
+  # the repository-wide Ruff gate is already red for unrelated legacy findings.
+  architecture-audit:
+    runs-on: ci-loong64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test AST import graph scanner
+        run: python tests/test_audit_import_graph.py
+      - name: Generate import graph reports
+        run: |
+          mkdir -p artifacts/architecture
+          python tools/audit_import_graph.py \
+            --root src/tensorlbm=tensorlbm \
+            --root app/backend=app.backend \
+            --root tests=tests \
+            --root app/tests=app.tests \
+            --json-out artifacts/architecture/import-audit.json \
+            --markdown-out artifacts/architecture/import-audit.md
+      - name: Publish architecture audit summary
+        if: always()
+        run: |
+          if [ -f artifacts/architecture/import-audit.md ]; then
+            cat artifacts/architecture/import-audit.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Architecture audit report was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload architecture audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: tensorlbm-import-graph-audit
+          path: artifacts/architecture/
+          if-no-files-found: error
+
+  package-build:
+    runs-on: ci-loong64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: Smoke-check wheel installs cleanly
+        run: |
+          # Only verify metadata — torch is not installed in this job
+          pip install dist/*.whl --force-reinstall --no-deps
+          python -c "
+          import importlib.metadata
+          v = importlib.metadata.version('tensorlbm')
+          print('tensorlbm', v, 'installed OK')
+          assert v, 'empty version'
+          "
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

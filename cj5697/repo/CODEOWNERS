@@ -1,0 +1,29 @@
+# CODEOWNERS — automatic reviewer assignment for the TensorLBM repository.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Ownership here is by concern area. Adjust the GitHub handles as the team
+# evolves. Use teams (@org/team) where possible so reviews survive personnel
+# changes.
+
+# Default owners for everything in the repo.
+*       @cxs503
+
+# Numerical solver core (the installable library) — highest-risk area.
+/src/tensorlbm/       @cxs503
+
+# FastAPI platform backend and routers.
+/app/backend/         @cxs503
+
+# Vue frontend.
+/frontend-vue/        @cxs503
+
+# Benchmarks and experiment evidence (lifecycle: pending/verified/archived).
+/benchmarks/          @cxs503
+/experiments/         @cxs503
+
+# Documentation and architecture policy.
+/docs/                @cxs503
+
+# Repository governance tooling (layout checker, import-graph audit).
+/tools/               @cxs503
+/docs/architecture/   @cxs503
