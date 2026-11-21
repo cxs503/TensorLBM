@@ -1,0 +1,31 @@
+{
+  "source_commit": "3798840d0fb5f10932e11ecd97151dcb537ba96a",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_womersley.json",
+      "new_path": "benchmarks/verified/womersley/evidence/sdaa/sdaa_womersley.json",
+      "git_mode": "100644",
+      "original_git_blob": "b2756f899c6ba71e584e1406ed9c8cbf940a33b7",
+      "original_sha256": "451467ec68d903cc987f9c36437c844469a7852e507f3b3c2a29ecb1e067589a",
+      "size_bytes": 17390
+    },
+    {
+      "old_path": "artifacts/sdaa_womersley_v2.json",
+      "new_path": "benchmarks/verified/womersley/evidence/sdaa/sdaa_womersley_v2.json",
+      "git_mode": "100644",
+      "original_git_blob": "becf374d844381dc6b9526af2516098ac1579865",
+      "original_sha256": "bfe7c409b3934731cf3e223c8312144fc1285fa1bd77ef06f1858afc7f400d20",
+      "size_bytes": 59528
+    }
+  ],
+  "reference_scan": "Scanned exact filenames in the tracked tree. Updated the two active runners and the two reports with current artifact pointers. Historical mission paths and the SDAA ledger artifact IDs are preserved.",
+  "compatibility": "Existing scripts and output filenames are preserved. New runs write under outputs/sdaa/womersley. The SDAA ledger discovers the archived files through the migration manifest and preserves their original artifact IDs.",
+  "scientific_scope": "The first SDAA artifact records FAIL. The v2 CPU diagnosis records honest-FAIL at the default H=29, alpha=8 setup. The retained fine-grid benchmark data has its existing archive scope. This migration did not repeat the sweep.",
+  "verification": [
+    "Compare both case-owned files to their source Git objects byte-for-byte and verify SHA-256 and size.",
+    "Resolve the linked evidence from the benchmark README and the sweep report.",
+    "Run repository governance, compile the two changed runners, and run the SDAA ledger's relocated-artifact discovery test."
+  ]
+}

@@ -2,6 +2,11 @@
 
 **判定: 达标 (VERIFIED)** — 4/4 配置全部门限通过 + 单调网格收敛（α=4 与 α=8 两条线）。
 
+历史设备证据：[SDAA 粗网格扫描](evidence/sdaa/sdaa_womersley.json)的机器判定为
+`FAIL`。[v2 CPU 诊断](evidence/sdaa/sdaa_womersley_v2.json)在默认 H=29、α=8、
+τ=0.8 配置下复现超限（3% 门限，实测 4.890%），结论为 `honest-FAIL`。两份工件
+与下文 H=59/119 的历史网格扫描采用各自的验收范围。
+
 ## 解析解
 
 平面通道（壁面 y=0, H），谐波振荡的流向体力 / 压力梯度
