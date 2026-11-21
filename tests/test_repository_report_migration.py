@@ -383,11 +383,12 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             LEDGER_PATH.parent / "m26892-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26887-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26894-drop-entry-reentry-2026-11-22.json",
+            LEDGER_PATH.parent / "m26963-bb-root-retirement-2026-11-22.json",
         ]
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
         self.assertFalse(subprocess.check_output(
-            ["git", "ls-files", "--", "audit", "drop_entry", "send_report.py"],
+            ["git", "ls-files", "--", "audit", "BB", "drop_entry", "send_report.py"],
             cwd=REPO,
             text=True,
         ))
@@ -456,6 +457,13 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertNotIn('os.path.join(ROOT, "drop_entry"', m26894_generator)
         self.assertIn('os.path.join(ROOT, "docs", "drop_entry_bb"', m26894_generator)
+        survey = json.loads(ledgers[-1].read_text(encoding="utf-8"))["entries"][0]
+        for stage in ("probe", "report"):
+            script = (REPO / f"scripts/de_x_surv1_mmreview_{stage}.py").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn(survey["published_duplicate"], script)
+            self.assertNotIn(survey["old_path"], script)
 
     def test_papers_root_is_fully_mapped_to_benchmark_and_docs_owners(self):
         ledger_path = LEDGER_PATH.parent / "papers-root-retirement-2026-11-22.json"

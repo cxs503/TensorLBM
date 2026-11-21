@@ -23,7 +23,6 @@ for _p in (str(_REPO_ROOT / "src"), str(_REPO_ROOT)):
         sys.path.insert(0, _p)
 
 ART = _REPO_ROOT / "artifacts" / "de_x_surv1_mmreview"
-CARD = _REPO_ROOT / "BB" / "X" / "DE-X-SURV1-MMREVIEW.md"
 PROTOCOL = _REPO_ROOT / "benchmarks" / "water_entry" / "single_drop" / "protocol.json"
 
 CASE_RATIO = None
@@ -151,7 +150,7 @@ def main() -> None:
 （完整数值见 `artifacts/de_x_surv1_mmreview/probe_results.json`；探针为 2D/fp64/64×64/≤3000 步，
 **不可外推到 3D/cells=8**，适用域写死在脚本里。）
 
-### 3.4 谱系判定摘要（完整矩阵见卡 `BB/X/DE-X-SURV1-MMREVIEW.md`）
+### 3.4 谱系判定摘要（完整矩阵见卡 `docs/drop_entry_bb/X_DE-X-SURV1-MMREVIEW.md`）
 
 - **M8 自由面 VOF（ctrl 现役族）**：唯一原生 collision 开关族——`bgk/kbc/cascaded/cumulant/mrt`
   （`free_surface_lbm.py:1173-1185`），**无 TRT、无 RR(RLBM)**；三档 SGS（SMAG/WALE/Vreman）已接线

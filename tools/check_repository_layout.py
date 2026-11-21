@@ -22,6 +22,7 @@ SOURCE_BACKUP_SUFFIXES = (".bak", ".orig", ".rej", "~")
 PATH_LISTS = ("root_files", "legacy_root_files", "legacy_generated_files", "legacy_model_files")
 RETIRED_ROOT_DIRECTORIES = {
     ".audit",
+    "BB",
     "TensorLBM",
     "_scratch",
     "audit",

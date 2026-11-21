@@ -31,6 +31,7 @@ integrity verified before retiring a tracked copy.
 | --- | --- | --- |
 | `.audit/` | `development/audit/` | The [archive ledger](migrations/hidden-audit-root-2026-11-21.json) maps historical replay data, drivers and the standalone audit client. |
 | `.github/` | Keep | Preserve workflow and branch-check names. |
+| `BB/` | `development/audit/drop_entry/BB/` | The [m26963 ledger](migrations/m26963-bb-root-retirement-2026-11-22.json) records the archived work card and its stable published URL. |
 | `TensorLBM/` | `development/legacy/TensorLBM/` | The full checkout is frozen and historical replay uses the archived solver. The [migration ledger](migrations/legacy-checkout-relocation-2026-11-21.json) records the exact tree and verified consumers. |
 | `_scratch/` | `development/archived/scratch/` | The [archive ledger](migrations/scratch-root-retirement-2026-11-21.json) records the prior paths and the output paths for current runs. |
 | `app/` | Keep if supported | Review product ownership, launch commands and deployment. |

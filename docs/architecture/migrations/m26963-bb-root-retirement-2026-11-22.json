@@ -1,0 +1,26 @@
+{
+  "source_commit": "9a36fe7c958960b5cb1d3618b1d8c0e9e39407cd",
+  "source_pr": 2890,
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "retired_root": "BB",
+  "entries": [
+    {
+      "old_path": "BB/X/DE-X-SURV1-MMREVIEW.md",
+      "new_path": "development/audit/drop_entry/BB/m26963/DE-X-SURV1-MMREVIEW.md",
+      "original_git_blob": "c61d96332eef9574ab7b75e5180b89721508c436",
+      "git_mode": "100644",
+      "size_bytes": 26968,
+      "original_sha256": "d6331d3067589de338f957af626d335c655b160e78305956c42b330d4b91da2e",
+      "published_duplicate": "docs/drop_entry_bb/X_DE-X-SURV1-MMREVIEW.md"
+    }
+  ],
+  "reference_scan": "The exact basename appears only in the two original card copies and the mission probe and report scripts. The report script's CARD constant had no readers. The probe and generated report now cite the published path. Other BB/X references to distinct campaign cards were outside this batch.",
+  "compatibility": "Both copies retain the original bytes, including the historical provenance text. The existing document URL, script commands, input protocol, and report API payload format are preserved. The old tracked path remains recoverable from the source commit.",
+  "verification": [
+    "Compare archived and published bytes and verify the indexed Git blob and file mode.",
+    "Run tools/check_repository_governance.sh and compile the two affected scripts.",
+    "Confirm the report command's --help works and compare the full top-level directory set."
+  ],
+  "scientific_scope": "Path and reference migration only. The original survey records retain their original scope and carry no new scientific acceptance."
+}
