@@ -26,7 +26,10 @@ externalize existing fixtures until consumers can retrieve and validate them.
 
 Use `python tools/benchmark_registry.py --case couette_2d` from the repository
 root to look up tracked runners, local references, results and tutorial downloads.
-Use `--json` to export all records from the published tutorial catalogue and
+Use `--case matrix:ship_resistance_suboff` to retrieve the matrix definition,
+reference provenance, reproduction command and archived comparison for that case.
+A missing comparison is returned as null.
+Use `--json` to export all records from the published tutorial catalogue, the validation matrix and
 the immediate lifecycle/case-pool directories. Nested campaign assets and
 standalone campaign folders still require manual registration. The registry
 lists available evidence and leaves current acceptance unevaluated.

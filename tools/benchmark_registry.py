@@ -25,6 +25,55 @@ def tracked_files(root: Path, *areas: str) -> set[PurePosixPath]:
     return {PurePosixPath(path) for path in raw.decode().split("\0") if path}
 
 
+def attach_validation_matrix(records: list[dict], root: Path) -> list[str]:
+    """Associate validation definitions by exact archived artifact path."""
+    directory = root / "benchmarks/validation_matrix"
+    definitions = json.loads((directory / "matrix.json").read_text(encoding="utf-8"))
+    references = json.loads((directory / "references.json").read_text(encoding="utf-8"))["references"]
+    report = json.loads((directory / "BENCHMARK_REF_VS_GOT.json").read_text(encoding="utf-8"))
+    historical_rows = {row["case"]: row for row in report["cases"]}
+    by_result = defaultdict(list)
+    for record in records:
+        record["validation_matrix"] = []
+        for variant in record["variants"]:
+            for result in variant["results"]:
+                by_result[result].append(record)
+    errors = []
+    seen = set()
+    for case in definitions["cases"]:
+        case_id = case["id"]
+        if case_id in seen:
+            errors.append(f"Duplicate validation matrix ID: {case_id}")
+            continue
+        seen.add(case_id)
+        artifact = case.get("measure", {}).get("artifact")
+        matches = by_result.get(artifact, [])
+        if len(matches) > 1:
+            errors.append(f"{case_id}: ambiguous registry owners of {artifact}")
+            continue
+        if matches:
+            record = matches[0]
+        else:
+            record = {"id": f"matrix:{case_id}", "category": None, "tutorial": {},
+                      "variants": [], "current_acceptance": "not_evaluated", "validation_matrix": []}
+            records.append(record)
+        missing = set(case["refs"]) - references.keys()
+        if missing:
+            errors.append(f"{case_id}: undefined reference IDs {sorted(missing)}")
+            continue
+        archived = historical_rows.get(case_id)
+        record["validation_matrix"].append({
+            "id": case_id, "definition": case,
+            "references": {key: references[key] for key in case["refs"]},
+            "archived_comparison": None if archived is None else {
+                "path": "benchmarks/validation_matrix/BENCHMARK_REF_VS_GOT.json",
+                "status": archived["status"], "artifact": archived["artifact"],
+                "artifact_sha256": archived["artifact_sha256"],
+            },
+        })
+    return errors
+
+
 def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
     catalogue = check(root)
     errors = list(catalogue["errors"])
@@ -102,6 +151,7 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
             "id": str(path), "category": None, "tutorial": {},
             "variants": [assets(str(path))], "current_acceptance": "not_evaluated",
         })
+    errors.extend(attach_validation_matrix(records, root))
     return records, errors
 
 
@@ -122,13 +172,17 @@ def main() -> int:
         print(json.dumps({"query": args.find_asset, "paths": matches},
                          ensure_ascii=False, indent=2))
         return 0 if matches else 1
-    records, errors = build_registry()
+    try:
+        records, errors = build_registry()
+    except (OSError, ValueError, KeyError) as exc:
+        parser.exit(1, f"Cannot read benchmark registry inputs: {exc}\n")
     if errors:
         parser.exit(1, "\n".join(errors) + "\n")
     if args.case:
         records = [
             row for row in records
             if row["id"] == args.case or any(v["path"] == args.case for v in row["variants"])
+            or any(f"matrix:{entry['id']}" == args.case for entry in row["validation_matrix"])
         ]
         if not records:
             parser.exit(1, f"Unknown case: {args.case}\n")
