@@ -1,4 +1,5 @@
 """Exercise the public registry command against tracked repository assets."""
+import hashlib
 import json
 import subprocess
 import sys
@@ -50,6 +51,22 @@ class BenchmarkRegistryTests(unittest.TestCase):
         for entry in entries:
             comparison = entry["archived_comparison"]
             self.assertEqual(None if comparison is None else comparison["status"], reported.get(entry["id"]))
+
+    def test_xval_registration_preserves_archived_and_replayed_results(self):
+        (case,) = self.registry("--case", "xval:ludwig_fe_stress")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        variant, = case["variants"]
+        self.assertEqual(variant["path"], "xval/ludwig_fe_stress")
+        self.assertEqual(case["cross_validation"]["criteria"]["threshold"], 0.15)
+        original, replay, ledger = (ROOT / path for path in variant["results"])
+        evidence = json.loads(ledger.read_text())
+        self.assertEqual(hashlib.sha256(original.read_bytes()).hexdigest(),
+                         evidence["compatibility"]["archive_sha256"])
+        self.assertEqual(hashlib.sha256(replay.read_bytes()).hexdigest(),
+                         evidence["run"]["result_sha256"])
+        summary = json.loads(replay.read_text())["summary"]
+        self.assertTrue(summary["pass_15pct"])
+        self.assertGreater(summary["worst_force_diff_rel"], 1.0)
 
     def test_alias_retains_all_variants(self):
         path = "benchmarks/verified/poiseuille_3d_duct/duct_ar05"

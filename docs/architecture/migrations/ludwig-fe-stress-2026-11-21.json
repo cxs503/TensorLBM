@@ -1,0 +1,45 @@
+{
+  "base_revision": "2f9647c14e1b58ea466b05ef61b75c422d59c13e",
+  "path_map": [
+    {
+      "previous": "experiments/xval_ludwig_fe_stress/run_xval.py",
+      "canonical": "xval/ludwig_fe_stress/run_xval.py",
+      "previous_git_blob": "5bc96b35012c47fad644c0967919ecdb4a147ce9",
+      "canonical_git_blob": "e3ce36bf5b33fae9eaa856303c4daa9c1888e61d"
+    }
+  ],
+  "dependencies": {
+    "numerical_implementation": "src/tensorlbm/free_energy_stress.py",
+    "original_and_candidate_solver_git_blob": "3b715578e41b41780fc19c92d981a70ca4a83a73",
+    "published_report": "docs/XVAL_LUDWIG_FE_STRESS.md",
+    "historical_consumers": "docs/board_audit/m17881 and the historical figure producer retain their original paths."
+  },
+  "compatibility": {
+    "legacy_cli": "Same default output location and stdout. Both entry points accept --output-dir.",
+    "new_default": "artifacts/runs/xval/ludwig_fe_stress/results.json",
+    "tracked_historical_result": "experiments/xval_ludwig_fe_stress/results.json",
+    "archive_sha256": "bfda1bd0994f9f1ae7050f57bac2a087493bc3b882c5ffb0978e7ca87650661d"
+  },
+  "run": {
+    "python": "3.12.14",
+    "pytorch": "2.15.0+cpu",
+    "cpu": "x86_64",
+    "OMP_NUM_THREADS": 1,
+    "MKL_NUM_THREADS": 1,
+    "dtype": "torch.float64",
+    "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python xval/ludwig_fe_stress/run_xval.py",
+    "before_migration_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python experiments/xval_ludwig_fe_stress/run_xval.py",
+    "captured_output": "xval/ludwig_fe_stress/replays/2026-11-21.json",
+    "result_sha256": "609cb9e8ab0e5614c4a817bcf8a54888e4027946c729a9af5fdf3aa633534836",
+    "same_environment_comparison": "All result bytes and stdout matched between the base CLI, canonical CLI and compatibility CLI. Historical results retain their original bytes.",
+    "archive_vs_replay_different_leaf_count": 11,
+    "archive_vs_replay_max_absolute_difference": 5.345723863570129e-14,
+    "published_15pct_surface_tension_criterion": true,
+    "worst_planar_sigma_relative_error": 0.060894777198966465,
+    "worst_curved_sigma_relative_error": 0.016439595234128968,
+    "worst_force_difference_relative_diagnostic": 1.1663299683374788
+  },
+  "tests": [
+    "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=src python -m pytest -q tests/test_free_energy_stress.py (3 passed)"
+  ]
+}
