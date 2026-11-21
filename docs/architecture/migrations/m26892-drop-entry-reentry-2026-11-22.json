@@ -28,11 +28,12 @@
       "git_mode": "100644",
       "size_bytes": 35872,
       "original_sha256": "ea40eb32d5b3fb34eb76dc4df9fd482db08f456cfecd3f4222eee7a8d1a2df23",
-      "duplicate_of": "src/tensorlbm/free_surface_lbm_2d.py@da757be16919e21ffab434fbd0a1df2327133b3a"
+      "duplicate_of": "src/tensorlbm/free_surface_lbm_2d.py@da757be16919e21ffab434fbd0a1df2327133b3a",
+      "duplicate_git_blob": "5d30353f6294e7a88bad050d3449edd2f7fe1b33"
     }
   ],
   "reference_scan": "No import, CLI, CI, benchmark registry or package consumer referred to the retired root or the .bak file. The card has a byte-identical published copy under docs/drop_entry_bb/.",
   "manifest_note": "The draft path was reused after m26734 with different bytes. Its revision-specific mapping is retained here rather than adding a duplicate old_path key to migration_manifest.csv.",
-  "compatibility": "All three assets retain identical bytes. The active free_surface_lbm_2d.py from m26892 remains unchanged; its predecessor snapshot is outside the authoritative source tree.",
+  "compatibility": "All three assets retain identical bytes. The active free_surface_lbm_2d.py from m26892 remains unchanged; its predecessor snapshot is outside the authoritative source tree. The predecessor comparison was made against full local history; shallow CI pins the independently recorded Git blob and SHA-256 instead.",
   "scientific_scope": "This migration does not modify the active numerical source, configuration, result, acceptance state or public API."
 }
