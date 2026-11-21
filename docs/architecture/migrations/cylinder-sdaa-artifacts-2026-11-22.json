@@ -1,9 +1,9 @@
 {
-  "source_commit": "88451506a7fd586a8f1da43a22a851cc37e6a171",
+  "source_commit": "b0fbb3571084296716c37b0b8071a59f2af90ece",
   "root_directories_before": 13,
   "root_directories_after": 13,
-  "tracked_artifacts_before": 70,
-  "tracked_artifacts_after": 66,
+  "tracked_artifacts_before": 61,
+  "tracked_artifacts_after": 57,
   "entries": [
     {
       "old_path": "artifacts/sdaa_cylinder.json",

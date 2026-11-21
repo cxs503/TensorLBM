@@ -185,7 +185,7 @@ TensorLBM 的 `droplet_oscillation` 是一个经过严格预注册的验证基�
 - `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` — SUBOFF RANS Re=1e5
 - `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` — SUBOFF RANS Re=1e4
 - `artifacts/suboff_best_rans_summary.json` — SUBOFF 综合摘要
-- `artifacts/kbc_diagnostic_16cube_20steps.json` — KBC 诊断
+- `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` — KBC 诊断
 
 ### 文档
 - `docs/sdaa_sweep/droplet_oscillation.md` — SDAA 扫描文档

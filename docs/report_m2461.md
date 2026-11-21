@@ -88,7 +88,7 @@
 | γ 范围 (step 4) | [−5.51, 5.20] | — | [−1, 1] |
 | h_norm (step 20) | 7.16×10⁻³ | — | → 0 |
 
-> 数据来源：`artifacts/KBC_CD_ROOT_CAUSE_ANALYSIS.md`
+> 数据来源：`development/evidence/kbc_cd_diagnostic/KBC_CD_ROOT_CAUSE_ANALYSIS.md`
 
 ### 表 4：KBC float64 隔离测试（4³, δ=0.02, τ=0.6）
 
@@ -186,8 +186,8 @@
 | 自由流 README | `benchmarks/verified/cylinder/re100/README.md` |
 | DFG 验证结果 | `benchmarks/verified/cylinder/re100_dfg/artifacts/result.json` |
 | DFG 报告载荷 | `benchmarks/verified/cylinder/re100_dfg/artifacts/report_payload.json` |
-| KBC 根因分析 | `artifacts/KBC_CD_ROOT_CAUSE_ANALYSIS.md` |
-| KBC 诊断 JSON | `artifacts/kbc_diagnostic_16cube_20steps.json` |
+| KBC 根因分析 | `development/evidence/kbc_cd_diagnostic/KBC_CD_ROOT_CAUSE_ANALYSIS.md` |
+| KBC 诊断 JSON | `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` |
 | 验证矩阵 | `benchmarks/verified/cylinder_re100/validation_status.json` |
 | Case-pool 入口 | `benchmarks/case_pool/cylinder_drag_re100/run_case.py` |
 | 力历史图 | `docs/assets/case_cylinder_drag_re100/fig1_forces_D40.png` |

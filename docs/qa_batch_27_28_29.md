@@ -70,7 +70,7 @@
 |---|---------|---------|--------|------|
 | 1 | couette_3d fp64 L2 误差 **1.62e-14** | `benchmarks/verified/couette_3d/evidence/sdaa/sdaa_couette_3d.json` | `"l2_rel_err": 1.6165870021629923e-14` | ✅ 命中 |
 | 2 | SUBOFF Cumulant 误差 **0.50%** | `artifacts/suboff_bench1_cumulant_sdaa20.json` | `"Cd_total": 0.041785936`, Cf_ref=0.041995 → 误差≈0.50% | ✅ 命中 |
-| 3 | KBC 最终 Cd **22.0622** | `artifacts/kbc_diagnostic_16cube_20steps.json` | `"kbc_final_Cd": 22.06220750870905` | ✅ 命中 |
+| 3 | KBC 最终 Cd **22.0622** | `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` | `"kbc_final_Cd": 22.06220750870905` | ✅ 命中 |
 
 #### ③ honest-FAIL 检查
 - 报告明确声明 "SUBOFF RANS 基准（Bench2/3）和 KBC 诊断均为 FAIL"

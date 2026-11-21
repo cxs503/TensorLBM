@@ -95,7 +95,7 @@ def torch_fused_obstacle_xfar_les(
 ### 文件变更
 
 - `src/tensorlbm/triton_fused_obstacle.py`: 添加 `torch_fused_obstacle_xfar_les` 函数（~230 行）
-- `artifacts/m1_torch_equiv.json`: 任务产物
+- `development/evidence/m1_p2/m1_torch_equiv.json`: 任务产物
 
 ### 使用示例
 

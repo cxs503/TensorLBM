@@ -199,7 +199,7 @@ The failure is **not** a solver or device defect — it is a **step-budget limit
 | `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` | SubOFF B2: RANS k-ε Re=1e5 on sdaa:21 |
 | `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` | SubOFF B3: RANS k-ε Re=1e4 on sdaa:22 |
 | `artifacts/suboff_best_rans_summary.json` | SubOFF combined summary table |
-| `artifacts/kbc_diagnostic_16cube_20steps.json` | KBC diagnostic on 16-cube, 20 steps |
+| `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` | KBC diagnostic on 16-cube, 20 steps |
 | `scripts/sdaa_sweep_cylinder_3d.py` | Independent sweep script (no business code modified) |
 
 ## Reproduce

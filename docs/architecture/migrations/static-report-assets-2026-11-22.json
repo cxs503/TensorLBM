@@ -1,0 +1,82 @@
+{
+  "source_commit": "88451506a7fd586a8f1da43a22a851cc37e6a171",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "artifact_files_before": 70,
+  "artifact_files_after": 61,
+  "entries": [
+    {
+      "old_path": "artifacts/KBC_CD_ROOT_CAUSE_ANALYSIS.md",
+      "new_path": "development/evidence/kbc_cd_diagnostic/KBC_CD_ROOT_CAUSE_ANALYSIS.md",
+      "git_mode": "100644",
+      "original_git_blob": "77562fa05adbad606a62dc6d0ccf40c8e4f0d417",
+      "size_bytes": 5536,
+      "original_sha256": "3e7a04198c37f7366dd565a658ea9f5a9ca749621e06b7d932ebb3e871087800"
+    },
+    {
+      "old_path": "artifacts/kbc_diagnostic_16cube_20steps.json",
+      "new_path": "development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json",
+      "git_mode": "100644",
+      "original_git_blob": "1fed325d0954a6283636be498dcdf1a468b5ffaa",
+      "size_bytes": 22671,
+      "original_sha256": "b31ca24e8d31830c992c60fd5ddc54f718d0cb7b08d8215299e95739b0f897da"
+    },
+    {
+      "old_path": "artifacts/m1_torch_equiv.json",
+      "new_path": "development/evidence/m1_p2/m1_torch_equiv.json",
+      "git_mode": "100644",
+      "original_git_blob": "51e85ac052ecaacb9801e0d5218825892246d3c0",
+      "size_bytes": 4011,
+      "original_sha256": "353e7aa9b72bbb4c662f3d40c3a4c11a5b74515acdca30a9fb552e07dceef702"
+    },
+    {
+      "old_path": "artifacts/fig1_memory_scaling_m289.png",
+      "new_path": "docs/assets/sdaa-suboff-m289/fig1_memory_scaling_m289.png",
+      "git_mode": "100644",
+      "original_git_blob": "7396ef3a72f6125b71c94610165147acaaa31d5e",
+      "size_bytes": 136683,
+      "original_sha256": "953adbb5a010c0895042c7fa57f4ea6eff182fe21e10a640daee5c10554b2765"
+    },
+    {
+      "old_path": "artifacts/fig2_cd_vs_L_m289.png",
+      "new_path": "docs/assets/sdaa-suboff-m289/fig2_cd_vs_L_m289.png",
+      "git_mode": "100644",
+      "original_git_blob": "ea6d7280f6ed5d81755778b3d478aecf0250ce83",
+      "size_bytes": 121989,
+      "original_sha256": "a4e687a92d2bf6338193e028b882d527e74a009e9c5cb429dab0a35acc472c61"
+    },
+    {
+      "old_path": "artifacts/fig3_oom_analysis_m289.png",
+      "new_path": "docs/assets/sdaa-suboff-m289/fig3_oom_analysis_m289.png",
+      "git_mode": "100644",
+      "original_git_blob": "bf295dc4fc9ce640f189be1163f48ca40ca902dd",
+      "size_bytes": 72887,
+      "original_sha256": "23e7d8ce393ca217d95f5a18f882a90b780dbfac6e08978b1a11014514bc9aa8"
+    },
+    {
+      "old_path": "artifacts/mass_drift_curve.png",
+      "new_path": "development/evidence/sdaa_m407_free_surface/mass_drift_curve.png",
+      "git_mode": "100644",
+      "original_git_blob": "8423aef9a03d1c861e842143bc73600f2df1cfe7",
+      "size_bytes": 84710,
+      "original_sha256": "f37fe6b220c8c14b7ca0ab0b88ea846e4df05adfa578380028b525aab1d77667"
+    },
+    {
+      "old_path": "artifacts/d40_long.log",
+      "new_path": "development/evidence/sphere_re100_d40/d40_long.log",
+      "git_mode": "100644",
+      "original_git_blob": "a696e9a4bbca26f1b00e9e1ac37441b76d56fd07",
+      "size_bytes": 318,
+      "original_sha256": "0b0ffd6140c6aebd43827ced0aa3ab13a8038df6705a199f4c7dc5fd91a85ce0"
+    },
+    {
+      "old_path": "artifacts/multi_card_test/summary.json",
+      "new_path": "development/evidence/multi_card_test/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "7d101fcd5eb468b2174c2ec28efdfb1a43256bf7",
+      "size_bytes": 540,
+      "original_sha256": "52069208aabb95171928816c4897e769f3be8f395b12c130b09d5c180ce62551"
+    }
+  ],
+  "compatibility": "Original objects are byte-identical. Published report paths remain stable. Original commands, register content and technical conclusions are retained."
+}

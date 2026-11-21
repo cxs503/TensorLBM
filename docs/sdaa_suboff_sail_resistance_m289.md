@@ -85,6 +85,6 @@ At 100-500 steps, the force measurements are dominated by transient effects.
 
 ## Artifacts
 - `artifacts/sdaa_suboff_sail_resistance_m289.json` — complete diagnostic data
-- `artifacts/fig1_memory_scaling_m289.png` — memory scaling + OOM boundary + extrapolation
-- `artifacts/fig2_cd_vs_L_m289.png` — Cd vs L with Blasius reference and 3% gate
-- `artifacts/fig3_oom_analysis_m289.png` — OOM allocation analysis
+- [fig1_memory_scaling_m289.png](assets/sdaa-suboff-m289/fig1_memory_scaling_m289.png) — memory scaling + OOM boundary + extrapolation
+- [fig2_cd_vs_L_m289.png](assets/sdaa-suboff-m289/fig2_cd_vs_L_m289.png) — Cd vs L with Blasius reference and 3% gate
+- [fig3_oom_analysis_m289.png](assets/sdaa-suboff-m289/fig3_oom_analysis_m289.png) — OOM allocation analysis

@@ -60,8 +60,8 @@
 | 数字 | 报告值 | 工件证据 | 状态 |
 |------|--------|---------|------|
 | bench1 Cf | 0.04179 | artifacts/suboff_bench1_cumulant_sdaa20.json: 0.041785936 | 命中 |
-| KBC Cd | 22.06 | artifacts/kbc_diagnostic_16cube_20steps.json: 22.062207 | 命中 |
-| H定理违反(step4) | 669 | artifacts/kbc_diagnostic_16cube_20steps.json kbc_steps[3]: 669 | 命中 |
+| KBC Cd | 22.06 | development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json: 22.062207 | 命中 |
+| H定理违反(step4) | 669 | development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json kbc_steps[3]: 669 | 命中 |
 
 **Report 161 (m60)**:
 | 数字 | 报告值 | 工件证据 | 状态 |
