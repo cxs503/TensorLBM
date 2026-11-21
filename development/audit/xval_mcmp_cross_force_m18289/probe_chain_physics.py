@@ -13,7 +13,7 @@ import subprocess
 
 import numpy as np
 
-REPO = pathlib.Path(__file__).resolve().parents[2]
+REPO = pathlib.Path(__file__).resolve().parents[3]
 COMMIT = "6ad01d71"
 CASES = ["arm_N64_g5_exp.npz", "arm_N64_g6_exp.npz", "arm_N64_g6_linear.npz",
          "arm_N128_g6_exp.npz"]

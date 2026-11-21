@@ -35,8 +35,8 @@ integrity verified before retiring a tracked copy.
 | `_scratch/` | `development/archived/scratch/` | The [archive ledger](migrations/scratch-root-retirement-2026-11-21.json) records the prior paths and the output paths for current runs. |
 | `app/` | Keep if supported | Review product ownership, launch commands and deployment. |
 | `artifacts/` | Split by consumer | Keep curated evidence with cases or audits. Use ignored output paths or external storage for new raw output. |
-| `audit/` | `development/audit/` | Preserve mission identifiers, immutable evidence and links from published reports. |
-| `audits/` | Merge with mission archive | #2837 stages consolidation under `audit/` before the wider archive move. |
+| `audit/` | `development/audit/` | The [migration ledger](migrations/audit-root-retirement-2026-11-21.json) records original Git objects, updated launch paths and the historical checkout. |
+| `audits/` | `development/audit/` | The [original ledger](migrations/legacy-audit-root-2026-11-21.json) records the intermediate paths under `audit/`. |
 | `benchmarks/` | Keep | One canonical entry per case. Preserve registered IDs and archived comparisons. |
 | `cases/` | Split by purpose | The [migration ledger](migrations/case-root-retirement-2026-11-21.json) maps all case runners to their benchmark owners and records the two superseded case-pool wrappers. |
 | `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |

@@ -2,13 +2,16 @@ import json, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 
-A = "audit"
+A = Path(__file__).resolve().parent
+OUT = A.parents[1] / "outputs/audit/m15468"
+OUT.mkdir(parents=True, exist_ok=True)
 pb = json.load(open(f"{A}/probe_baseline.json")); pg = json.load(open(f"{A}/probe_geometric.json"))
 p3 = json.load(open(f"{A}/probe_3d.json"))
 m154 = json.load(open("/srv/tensor/agent/work/m15468/artifacts/mcmp_spurious_2d_quick.json"))
 m154_3d = json.load(open("/srv/tensor/agent/work/m15468/artifacts/mcmp_spurious_single.json"))
-rerun = json.load(open("artifacts/mcmp_spurious_2d_quick.json"))
+rerun = json.load(open(OUT / "mcmp_spurious_2d_quick.json"))
 
 # Fig 1: u_max(t) trajectories
 fig, ax = plt.subplots(figsize=(7.2, 4.6))
@@ -23,7 +26,7 @@ ax.scatter([1500, 1500], [m154["baseline_bgk_lattice"]["u_spurious"], m154["bgk_
 ax.set_xlabel("lattice step"); ax.set_ylabel(r"$u_{spurious}=\max|\mathbf{u}|$ (lattice units)")
 ax.set_title("CASE-MCMP-SPURIOUS 2D: transient vs converged plateau (audit re-run)")
 ax.grid(alpha=.3, which="both"); ax.legend(fontsize=7.5, loc="upper right")
-fig.tight_layout(); fig.savefig(f"{A}/figs/fig1_uspurious_transient_vs_plateau.png", dpi=160); plt.close(fig)
+fig.tight_layout(); fig.savefig(f"{OUT}/fig1_uspurious_transient_vs_plateau.png", dpi=160); plt.close(fig)
 
 # Fig 2: ref vs got bars (2D + 3D)
 fig, ax = plt.subplots(figsize=(7.6, 4.4))
@@ -42,5 +45,5 @@ for i, v in enumerate(vals):
 ax.set_ylabel(r"$u_{spurious}$ (lattice units)")
 ax.set_title("CASE-MCMP-SPURIOUS ref vs got: reported vs audit-recomputed")
 ax.grid(alpha=.3, axis="y", which="both"); ax.legend(fontsize=7.5)
-fig.tight_layout(); fig.savefig(f"{A}/figs/fig2_ref_vs_got.png", dpi=160); plt.close(fig)
+fig.tight_layout(); fig.savefig(f"{OUT}/fig2_ref_vs_got.png", dpi=160); plt.close(fig)
 print("figures ok", pb["u_max_final"], pg["u_max_final"], p3["u_max"], m154_3d["u_max"])

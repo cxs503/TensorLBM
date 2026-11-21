@@ -23,7 +23,7 @@ L2 成立（真代码 + 可复算工件 + 12 单测），L3 不成立（主求�
 
 ## ② 怎么做的（审计流程，独立于交付方的证据链）
 
-1. **取证**：把交付提交 8 个文件只读快照进本审计包 `audit/m21594/snapshot/`（sha256 见 `evidence.json` E1），
+1. **取证**：把交付提交 8 个文件只读快照进本审计包 `development/audit/m21594/snapshot/`（sha256 见 `evidence.json` E1），
    原始工作树 `/srv/tensor/agent/work/m21558` 仅作出处记录；求解器与解析解按**文件路径** hermetic 载入，
    绕开 `pip` editable 安装（否则会静默 import 到别的工作树 m21384）。
 2. **三件套核验**：run_artifacts / benchmark 裁判行 / repro_cmd 逐项落真实指针（E2）。

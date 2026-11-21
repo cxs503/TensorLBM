@@ -28,7 +28,7 @@ from tensorlbm.d2q9 import CS2, equilibrium, macroscopic
 from tensorlbm.multiphase import collide_sc_single_component, psi_exp
 
 G = 5.0
-ART = Path(__file__).resolve().parents[2] / "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/compact.json"
+ART = Path(__file__).resolve().parents[3] / "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/compact.json"
 
 
 def psi_np(rho):

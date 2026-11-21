@@ -31,8 +31,8 @@
 1. **读交付**：`git show --stat 587b6fe3` → 仅 3 个文件（2 个 JSON 工件 + 1 篇报告），**零源码、零测试**；2D 引擎 `spurious_current.py` 属既有模块（node p362w2-n06），m15468 是"复用现有能力跑算例"（原单 goal 允许）。
 2. **三件套逐项核**：run_artifacts（分支上 tracked，见 ③.1）/ benchmark ref-vs-got（无裁判表，见 ①）/ repro_cmd（**脚本从未入库**，见 ③.4）。
 3. **重跑 repro**：把被审树 `runs/repro_mcmp_spurious.sh` 原样复制为 `audit/repro_mcmp_spurious.sh` 并在本工作树执行 → `rc=0`，数值与交付工件**逐位一致**（2D 可复现，见 ③.2）。
-4. **时间收敛证伪**：同配置把 `stop_tol` 收紧到 1e-4、步数上限放到 40000（`audit/mcmp_convergence_probe.py`），读 `history` 判"1500 步读数 vs 平台值"（③.3）。
-5. **3D 单点独立重跑**：按其工件申报的 (R=8, n=32, G_eff=−5, difference, kupershtokh, 400 步) 重跑 `pseudopotential_edm3d.static_droplet`（`audit/mcmp3d_probe.py`），暴露交付工件丢掉的 `rho_min/rho_max/history_len`（③.5）。
+4. **时间收敛证伪**：同配置把 `stop_tol` 收紧到 1e-4、步数上限放到 40000（`development/audit/mcmp_convergence_probe.py`），读 `history` 判"1500 步读数 vs 平台值"（③.3）。
+5. **3D 单点独立重跑**：按其工件申报的 (R=8, n=32, G_eff=−5, difference, kupershtokh, 400 步) 重跑 `pseudopotential_edm3d.static_droplet`（`development/audit/mcmp3d_probe.py`），暴露交付工件丢掉的 `rho_min/rho_max/history_len`（③.5）。
 6. **既有测试复核**：`python3 -m pytest tests/test_spurious_current_suppression.py -q` → **32 passed in 3.22 s**（既有回归网，非 m15468 新增）。
 7. **数字溯源**：报告 §5.1/§5.2 敏感性表与被审树 `docs/MCMP_VERIFY_BENCH.md` §2 逐位比对（③.6）；`tensor_reports` 中 mission_id=15468 **0 行**（原始单未发平台报告）。
 
@@ -51,7 +51,7 @@
 
 ### ③.2 repro 一键复现（审计复原执行）
 
-`bash audit/repro_mcmp_spurious.sh` → `rc=0`，~36 s：
+历史重跑得到 `rc=0`，耗时约 36 s。当前入口为 `bash development/audit/repro_mcmp_spurious.sh`，输出写到 `outputs/audit/m15468/`。
 
 | 方法 | 交付工件 | 审计重跑 | 差 |
 |---|---|---|---|
@@ -111,7 +111,7 @@
 - `audit/figs/fig1_uspurious_transient_vs_plateau.png`：两种方法的 `log U_spurious(t)` 轨迹 + 1e-3 容差线 + 1500 步停机标记 + 交付报告点；显示交付读数处于衰减中段，平台值分别为 1.73e-4 / 3.35e-3。
 - `audit/figs/fig2_ref_vs_got.png`：交付值 vs 审计收敛值 vs 3D 交付/重跑，叠加文献带 1e-3..1e-2 与容差线；直观给出"2D baseline 通过、其余不通过、3D 低估 19×"。
 
-（图为审计程序 `audit/make_audit_figs.py` 从 JSON 工件直读生成，无手抄。）
+（图为审计程序 `development/audit/make_audit_figs.py` 从 JSON 工件直读生成，无手抄。）
 
 ---
 

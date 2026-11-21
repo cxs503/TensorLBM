@@ -8,7 +8,7 @@ programmatically-written round-2 evidence from docs/GAP_PP_2_LID_WALL_DIFF.md
 import base64, json, os, urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 BASE = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
 USER = os.environ.get("TENSOR_AGENT_USER", "eco_admin")
 PASS = os.environ.get("TENSOR_AGENT_PASS", "")

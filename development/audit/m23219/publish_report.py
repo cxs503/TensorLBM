@@ -4,7 +4,7 @@
 Numbers are pulled programmatically from the shipped artifacts, this audit's
 reproduction and the benchmark judge row — nothing hand-typed.
 Figures are inlined as base64 from docs/board_audit/m23219/figs/.
-Run:  python3 audit/m23219/publish_report.py
+Run:  python3 development/audit/m23219/publish_report.py
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = HERE.parents[2]
 FIGS = ROOT / "docs/board_audit/m23219/figs"
 ART = ROOT / "development/legacy/TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
 REPRO = ROOT / "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"

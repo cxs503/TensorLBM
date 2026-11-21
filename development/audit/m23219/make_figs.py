@@ -11,7 +11,7 @@ reproduction; nothing is typed in by hand:
 * ``tensor_benchmark_cases`` row for the anchor (read live from PostgreSQL —
   the benchmark judge)
 
-Run:  python3 audit/m23219/make_figs.py
+Run:  python3 development/audit/m23219/make_figs.py
 Out:  docs/board_audit/m23219/figs/*.png
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "development/legacy/TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
 REPRO = ROOT / "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
 OUT = ROOT / "docs/board_audit/m23219/figs"
