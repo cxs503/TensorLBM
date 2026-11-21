@@ -600,6 +600,64 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertNotIn('_HERE.parents[2] / "runs"', probe)
         self.assertIn('_HERE / "evidence" / "sdaa_m452"', probe)
 
+    def test_sphere_d3q27_sdaa_evidence_keeps_its_failure_scope(self):
+        ledger_path = (
+            LEDGER_PATH.parent / "sphere-re100-d3q27-sdaa-artifacts-2026-11-22.json"
+        )
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(ledger["root_directories_before"], 13)
+        self.assertEqual(ledger["root_directories_after"], 13)
+        self.assertEqual(len(ledger["entries"]), 8)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(
+            manifest,
+            {item["old_path"]: item["new_path"] for item in ledger["entries"]},
+        )
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(len(raw), item["size_bytes"])
+                self.assertEqual(
+                    hashlib.sha256(raw).hexdigest(), item["original_sha256"]
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(
+                    index[:2], [item["git_mode"], item["original_git_blob"]]
+                )
+                self.assertFalse((REPO / item["old_path"]).exists())
+
+        case = REPO / "benchmarks/verified/sphere_re100_d3q27"
+        evidence = case / "evidence/sdaa_sweep"
+        summary = json.loads((evidence / "summary.json").read_text(encoding="utf-8"))
+        self.assertEqual(summary["overall_verdict"], "FAIL")
+        self.assertEqual(len(list((evidence / "tiers").glob("*.json"))), 5)
+        self.assertEqual(len(list((evidence / "logs").glob("*.log"))), 2)
+        self.assertFalse(
+            subprocess.check_output(
+                ["git", "ls-files", "--", "artifacts/logs"], cwd=REPO, text=True
+            )
+        )
+        readme = (case / "README.md").read_text(encoding="utf-8")
+        self.assertIn("not extend", readme)
+        self.assertIn("sweep remains FAIL", readme)
+
+        runner = (REPO / "scripts/sdaa_sweep_sphere_re100_d3q27.py").read_text()
+        self.assertNotIn('REPO / "artifacts"', runner)
+        self.assertIn('EVIDENCE_DIR / "summary.json"', runner)
+        self.assertIn('EVIDENCE_DIR / "tiers"', runner)
+        self.assertIn('EVIDENCE_DIR / "logs" / "sweep.log"', runner)
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

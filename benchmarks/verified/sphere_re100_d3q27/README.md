@@ -67,3 +67,7 @@ lint-normalized here — import order + one unused import, semantics unchanged),
 `gate/` (tier histories + verdict + run logs), `diag/` (A/B bitwise evidence,
 lattice audit, mini/smoke checks, pinned remote-pull subset), `result.json`
 (aggregate + provenance).
+
+The separate `evidence/sdaa_sweep/` directory preserves the affordable SDAA
+port sweep, its tier records and device logs. That sweep remains FAIL and does
+not extend this case's archived CUDA verification claim to SDAA.

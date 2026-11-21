@@ -103,4 +103,4 @@ NOT_APPLICABLE rows and why:
 - Cross-check performed once by hand during this sweep: re-running the case's own `verify.py` in this environment re-derives `gate/verdict27.json` with identical gate booleans (G1/G2/G3 true, verdict PASS) but last-digit float differences in the window sums (summation-order nondeterminism); the file was restored with `git checkout`, so no case/business file is modified by this sweep.
 - Caveat on scope: this sweep proves the SDAA port runs the real D3Q27/BFL route and records where the frozen gates stand at affordable resolution. It does NOT claim the archived PASS on SDAA — reaching the archived tiers (25.1M/84.7M cells, 12k/24k steps) is out of reach of the 20-minute budget on this shared card.
 
-Artifacts: `artifacts/sdaa_sphere_re100_d3q27.json`, tier JSONs under `artifacts/sdaa_sphere_re100_d3q27_tiers`, this report `docs/sdaa_sweep/sphere_re100_d3q27.md`.
+Artifacts: `benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/summary.json`, tier JSONs and device logs under the same case-owned evidence directory, this report `docs/sdaa_sweep/sphere_re100_d3q27.md`.
