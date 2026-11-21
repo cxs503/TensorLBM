@@ -1,0 +1,367 @@
+{
+  "source_commit": "13e7dd5bac4cc6b4e683394f2651b93630e84be0",
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "mappings": [
+    {
+      "old_root": "papers/artifacts/w26/lbm-suboff-tau",
+      "new_root": "benchmarks/anchors/evidence/suboff_w26",
+      "role": "SUBOFF W26 anchor evidence and replay tools"
+    },
+    {
+      "old_root": "papers/artifacts/w28/lbm-suboff-tau",
+      "new_root": "benchmarks/anchors/evidence/suboff_w28",
+      "role": "SUBOFF W28 anchor landing evidence and publication tools"
+    },
+    {
+      "old_root": "papers/reports",
+      "new_root": "docs/reports/suboff",
+      "role": "published W22 SUBOFF reports"
+    }
+  ],
+  "entries": [
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/anchor_register.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/anchor_register.json",
+      "git_mode": "100644",
+      "original_git_blob": "8eeaf0e5e078220c9c2849a643afd743c10e3a28",
+      "size_bytes": 68492,
+      "original_sha256": "3178fec3bb0b91e4d448f6b2a60b56dbf8a7fdc60edd73c2e24ed2cb46c332e6"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/build_anchor_register.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/build_anchor_register.py",
+      "git_mode": "100644",
+      "original_git_blob": "04cb3ff5c84fe06278ba8a13033467c9e670aab1",
+      "size_bytes": 26452,
+      "original_sha256": "6a3e3d5dd91beedd16d617b5ad2f0fd3ed8e7829c57816a62a8ed4041cac5c4e",
+      "new_git_blob": "b787fc57baeac5676dc85a2ac0d4a3f0046e9bf0",
+      "new_sha256": "05e536469ab546a8a0bb51415bd7d6acf49c591430be0d4e9cde720c1dd26b20",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/build_artifact.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/build_artifact.py",
+      "git_mode": "100644",
+      "original_git_blob": "585822d0536b0ecffc3bdac5ff6dce7f13ee56cc",
+      "size_bytes": 12026,
+      "original_sha256": "d00980e11c5dc50319d9c294df8fd8ec5f47fbf2c557d278bcf6309e50d001d7",
+      "new_git_blob": "440963db081f576b75040931993e264b5111e46e",
+      "new_sha256": "a3052f4f9da119e710e6a0fd550fbd886e4f06f7698081f096313e8161820c5a",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/build_gci.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/build_gci.py",
+      "git_mode": "100644",
+      "original_git_blob": "c71b8a7c15d3b828b8d934ab899a733ccf30f7e7",
+      "size_bytes": 15554,
+      "original_sha256": "8d8f1d3d6279c95a072212a45684635665254340212718e38f930b119fa58d22",
+      "new_git_blob": "f862ffc0d4b45f11422cb69795b48f28babd14b6",
+      "new_sha256": "c3bb96e7a40426e8f1053643aa9b05b1aaa03b36f018c1329d11760396d71b46",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/build_report.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/build_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "07b3a2671a91a351d14f78c10bfa70124dec1f79",
+      "size_bytes": 18218,
+      "original_sha256": "50fb4685e3efc6e8400a55ae1d9803657ebcbe2a9817f60f058597b5242f38ea",
+      "new_git_blob": "8a680c2eab722a27697a1225d4621d00b58b3454",
+      "new_sha256": "5820b53013d31f2ac16d4c54c8ae77c28103eed43f6c2e5287a61f1111905a4e",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/finalize.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/finalize.sh",
+      "git_mode": "100755",
+      "original_git_blob": "4b0bdf68c82ac351d66da1b7f533612273ea9be2",
+      "size_bytes": 2789,
+      "original_sha256": "2985e8dc0f16d065fe99f6b483692450927344fbfc79f6ec9e8bebd159b309bd",
+      "new_git_blob": "c7914ac4b349d5050dd67c8d9c1d3578f678e676",
+      "new_sha256": "6dceb80659a62f3930468e5c9a0b910103187cebebad4e4ae6d49c87921f0975",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/gci_sign_surface.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/gci_sign_surface.json",
+      "git_mode": "100644",
+      "original_git_blob": "ff6f373abc1be5f47a308ec9704094bac0aff19c",
+      "size_bytes": 21563,
+      "original_sha256": "f0ab0881063c6c6c70a44ca1619db9dc42dd619aef36bf85e06ca7dcb7c282ab"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/launch_ladder.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/launch_ladder.sh",
+      "git_mode": "100755",
+      "original_git_blob": "b528ce140039d0bc5a45c1f56629936e99454c79",
+      "size_bytes": 621,
+      "original_sha256": "8a7f27e0c59e0565b65090aaaf1bbd802e5db9b0f8dd76af673c53cbe626a77d",
+      "new_git_blob": "63ee487a8362829c92f59bc865442e267ec19a6f",
+      "new_sha256": "1d8820ef29455226a6b2075d8bed6f8ab8f7dceed3e7178dfbc9fdf23c4323e4",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/launch_ladder3.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/launch_ladder3.sh",
+      "git_mode": "100755",
+      "original_git_blob": "c7975760677155ae066a2a93a0fda4afa2d82c34",
+      "size_bytes": 349,
+      "original_sha256": "9a9155cf2b56149b8fce16586f50807f18c02668d8e89e405c5223f6e329e7d5",
+      "new_git_blob": "17cb50ea4eeb9a4208c5f9e5cb000d7bfd48ec29",
+      "new_sha256": "d3ad21372ce2e8259313b821a170edd353e1d5801c460cb83962d60beb4b1caf",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/launch_ladder4.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/launch_ladder4.sh",
+      "git_mode": "100755",
+      "original_git_blob": "c5ce9c26376daa3c31798ff61c4c9ffcf5dc7b0e",
+      "size_bytes": 353,
+      "original_sha256": "e4466a2dafdbc2cdd439ffb7534c9787197aed5676a2cd0f502976f7f7672819",
+      "new_git_blob": "655982c47770c2fc952ae79600af6df07f9d8b3a",
+      "new_sha256": "320ab01add321f22b403cc227a0cc9f0155e799506767b9474f1a59679957ffb",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/launch_ladder5.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/launch_ladder5.sh",
+      "git_mode": "100755",
+      "original_git_blob": "725b7b2e0032e7acd55532682a313f5897731b88",
+      "size_bytes": 367,
+      "original_sha256": "87182a5994ba87e21df2e5c92f0ebba90db2f02017270d41c4e0d0bb8b106099",
+      "new_git_blob": "527ad4532d583d9d68e64b9bc4c9cdb4731b4286",
+      "new_sha256": "ea84ff1ab9cca428410e13098bbc6bca1e06170d64f05d05f8fea65dc3eecf81",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/launch_scan.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/launch_scan.sh",
+      "git_mode": "100755",
+      "original_git_blob": "aed9cd208a55f6f15796f7b55d0f3bfba536ddd3",
+      "size_bytes": 501,
+      "original_sha256": "526b3cd7f6488fd4c2501aac564032d350c3b0bb095e8b3d091d281fc3ac680e",
+      "new_git_blob": "46d90695788090eef051b2c5aea94b3a2c7c72b2",
+      "new_sha256": "5260f6f8c2d38348da56a0ca6025326bb503471bcd85c963b43fa4dd9eb64d72",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/launch_scan2.sh",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/launch_scan2.sh",
+      "git_mode": "100755",
+      "original_git_blob": "09dba25f908c19fd4fec5bad6c267c62ff63a4b1",
+      "size_bytes": 344,
+      "original_sha256": "1fcaf494481a00d7bf32ddf986bf50f7c6c6ffdbd26c63cb26fceb64fbb2cace",
+      "new_git_blob": "a3bfa68f2934cc710a12a5b88311a353665af64b",
+      "new_sha256": "23f139c5a15ea947cc434f78911d72d3e66162768ce9ab26f2a0e9729454298a",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/make_figures.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "1b71838190a665c8cfbf356f4f05b5988d057112",
+      "size_bytes": 9410,
+      "original_sha256": "fab1b5bf01f34ae732d8cc79c565f26d63724ce19670d76cc8ea2c2764fb6fbc"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_ladder.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_ladder.json",
+      "git_mode": "100644",
+      "original_git_blob": "f16cde2b162228d48170fb3e5e38f44513d40d18",
+      "size_bytes": 383,
+      "original_sha256": "7b432bc6348085081a446c48fa6227783d12f511145f544a53d374fc4ca7786c"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_ladder2.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_ladder2.json",
+      "git_mode": "100644",
+      "original_git_blob": "871f98a059cc23a05d1f9a1aac43183ab9e3abb1",
+      "size_bytes": 536,
+      "original_sha256": "c2cc73519544e70e0829eaef4aa12b124990ad88f35f642c9dedc48f67c18fad"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_ladder3.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_ladder3.json",
+      "git_mode": "100644",
+      "original_git_blob": "6b810440cbfdce522d9d85f47db64aa34eee580d",
+      "size_bytes": 723,
+      "original_sha256": "63fb0e0acf7105989376cf712081b41e1dd68873b55f6beee5430c2f7cbb85e4"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_ladder4.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_ladder4.json",
+      "git_mode": "100644",
+      "original_git_blob": "71e766a70b23485eb8cc52f66736960735473b84",
+      "size_bytes": 610,
+      "original_sha256": "7fd3c84360e7da022f2e770a075a97c196729aa0fb733f0e0bab2051283ffe6d"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_ladder5.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_ladder5.json",
+      "git_mode": "100644",
+      "original_git_blob": "cfa345fc3b39e664ca82a81e5b44b3eda5791528",
+      "size_bytes": 671,
+      "original_sha256": "4aa291bda153e30bd47799dbf2a1253db4710aa8e2a773410cfe8d938c649902"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_scan.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_scan.json",
+      "git_mode": "100644",
+      "original_git_blob": "026317383257852f4b58d431b49bb113e04adab3",
+      "size_bytes": 2274,
+      "original_sha256": "b8eecdff01271bf2a3747762fbc3ede3b6644148c5c8ed90c3bf8a2f6db57e17"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/plan_scan2.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/plan_scan2.json",
+      "git_mode": "100644",
+      "original_git_blob": "728cb645217dfac5b0c5bac3c2c9d4760651ccd0",
+      "size_bytes": 659,
+      "original_sha256": "01f9d4a2445594c8f49ebf6bc90381781cb03549fb78a871bfb4c8f3b2c7f826"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/publish_and_commit.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/publish_and_commit.py",
+      "git_mode": "100644",
+      "original_git_blob": "dde6bd148c3a17b547cbd37f9c374eed91ac5dbc",
+      "size_bytes": 4984,
+      "original_sha256": "dfd6734b7fd4e88ecd3435b2a630496d6a03a99a7edccfb6911ff2398e3de78a"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/report_payload.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/report_payload.json",
+      "git_mode": "100644",
+      "original_git_blob": "a61b861261c49a2f54401a305c0e47d421487152",
+      "size_bytes": 635810,
+      "original_sha256": "f4e70be2b0c8b25f5a713b3ac8e93ab19ebe85c826053ddd91fae3236e1a8296"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/report_w26_lbm_suboff_tau11.md",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/report_w26_lbm_suboff_tau11.md",
+      "git_mode": "100644",
+      "original_git_blob": "8e32b13213b537040fa7b2b5444a59637524a746",
+      "size_bytes": 12181,
+      "original_sha256": "13425406daba696b30131746fd18f36507cb729db62bb3f81c282a637e49776f"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/run_batch.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/run_batch.py",
+      "git_mode": "100644",
+      "original_git_blob": "15c4423d09143cdf93b81cc26a016d199e065682",
+      "size_bytes": 4847,
+      "original_sha256": "82f76082cd6bf0bb4634a1ff88412725fe5ffdb8a43d5125bfdd76c48bd91a1e"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/run_case.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/run_case.py",
+      "git_mode": "100644",
+      "original_git_blob": "e262575ad3f8d2988d014d1bb5b756e7a6a87122",
+      "size_bytes": 13140,
+      "original_sha256": "3a5d895da9ab3f93618f2ab9920863c57d78d6639fd16e61cb0fb7b0a6b30deb",
+      "new_git_blob": "9ced1d57a3ea6d7c7add424dbdeffba6a4dd8357",
+      "new_sha256": "adaf3eb6baebeb7473d12d3d3a7a7695fed20e1f09c8a8d58da06d21001b31ac",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/suboff_cf_anchor_regci.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/suboff_cf_anchor_regci.json",
+      "git_mode": "100644",
+      "original_git_blob": "a2ca52f14ad8b5ac322ef39fdb603b99950533a0",
+      "size_bytes": 61998,
+      "original_sha256": "8d0218cb5829bafb5c56b9f11424c4f6b10e00215ec02687951e678049795ead"
+    },
+    {
+      "old_path": "papers/artifacts/w26/lbm-suboff-tau/test_artifact.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w26/test_artifact.py",
+      "git_mode": "100644",
+      "original_git_blob": "a4c650df994469b7d84ce1e6074aeda6b833d8fc",
+      "size_bytes": 6809,
+      "original_sha256": "30138cc325e59a6d0028159ad878380e3a7f6bd0dbfc78e53b169a47f811df1f",
+      "new_git_blob": "f955c424ae55733dfc9ac35b00933490f64b12c6",
+      "new_sha256": "b303b15488eb15d0c648017001b80cd9b45ae9b8dc3316818c79b29327507209",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w28/lbm-suboff-tau/anchor_landing.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w28/anchor_landing.json",
+      "git_mode": "100644",
+      "original_git_blob": "d1d8f0464a452aa98b004508cd3fe4148749df4f",
+      "size_bytes": 96921,
+      "original_sha256": "f45fc75eee8b096b3807ab0474ad82b1d93fddb4cf9e88de2f476fcddb26f89f"
+    },
+    {
+      "old_path": "papers/artifacts/w28/lbm-suboff-tau/build_anchor_landing.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w28/build_anchor_landing.py",
+      "git_mode": "100644",
+      "original_git_blob": "adebbb74033966293cceebdb4d8f645dddd09b58",
+      "size_bytes": 56996,
+      "original_sha256": "30632443ccbaf2a8cdf12de0f67342f1f63270fff60968c1518215bc530ca03d",
+      "new_git_blob": "809e034ac93e47f4bd5fcb5151a08eb6114e8eab",
+      "new_sha256": "0f94607e1ff5befb246cb15f4e87595d863a8df7d4856a9bdc347b081470a9da",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w28/lbm-suboff-tau/figures_manifest.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w28/figures_manifest.json",
+      "git_mode": "100644",
+      "original_git_blob": "7df5f765d7178acab3cddfdc523ab09a74c8cdcd",
+      "size_bytes": 666,
+      "original_sha256": "b855ee1115568ecd4e3b739569e293fc5ff15672921d2edb6094f8be31086d02"
+    },
+    {
+      "old_path": "papers/artifacts/w28/lbm-suboff-tau/publish_report.py",
+      "new_path": "benchmarks/anchors/evidence/suboff_w28/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "305a0752fbf7fc374f2f101ded29544deda925c2",
+      "size_bytes": 26112,
+      "original_sha256": "0617149747e4bf941aad15f8249237a1c56b7ecd1bdbf0aaefbf417fa0ccae38",
+      "new_git_blob": "bcf0b06d3c66cba9b1f35714b08cfe366ca0bae4",
+      "new_sha256": "420b627033fb527938b2ecb05391ac06ff45f0f852508b6af71ef4d305dc853f",
+      "change": "repository-relative path rewrite only"
+    },
+    {
+      "old_path": "papers/artifacts/w28/lbm-suboff-tau/report_w28_lbm_suboff_tau13.md",
+      "new_path": "benchmarks/anchors/evidence/suboff_w28/report_w28_lbm_suboff_tau13.md",
+      "git_mode": "100644",
+      "original_git_blob": "b1a5c74296450d771e3fa2651d8a0e866326cae9",
+      "size_bytes": 20425,
+      "original_sha256": "5bb158161ff75cdd662f8abe01f74ec578c2373c47a9f4674270382013d036ea"
+    },
+    {
+      "old_path": "papers/reports/w22_lbm_suboff_anchor8.md",
+      "new_path": "docs/reports/suboff/w22_lbm_suboff_anchor8.md",
+      "git_mode": "100644",
+      "original_git_blob": "e4fa46f4cfee9273693d715b07ab82e8b1f62789",
+      "size_bytes": 26518,
+      "original_sha256": "34de5c3e234f4bb2dd8eb6af48be6ba3c3fff1e143a68d59018fed181fd7ae2b"
+    },
+    {
+      "old_path": "papers/reports/w22_lbm_suboff_tau9.md",
+      "new_path": "docs/reports/suboff/w22_lbm_suboff_tau9.md",
+      "git_mode": "100644",
+      "original_git_blob": "1935b003edeedf0fdfbaed155b466d3c80d0e262",
+      "size_bytes": 16434,
+      "original_sha256": "c1f762ef411ed95d1f495d06bc227fd14c7aa65bfdd6c1ec556151db61c5149b"
+    }
+  ],
+  "consumer_updates": [
+    {
+      "path": "benchmarks/anchors/lbm_suboff_tau_anchor.py",
+      "reason": "redirect the active W26 registry consumer without rewriting the frozen anchor JSON",
+      "original_git_blob": "5e44bd02b477950b55e895bc482996f67214791a",
+      "original_sha256": "2f214291b95f9cbcdd6290bfb778a4c94d2386a29449d7adacd5d0647698808c",
+      "new_git_blob": "b331c713df198c0cec30a47f6b23c7bd973056bc",
+      "new_sha256": "2fc140ca4263a5178964e8efc2b1b202ebfc1c89e5e16f4b7c5131c16c0a908d",
+      "compatibility": "The W28 builder verifies both hashes through this ledger before accepting the historical sidecar identity."
+    }
+  ],
+  "reference_scan": "Active benchmark anchors, generators, launchers, tests and W22 report producers were redirected to their owning benchmark or docs paths. Historical JSON and report payloads retain their original path strings as provenance rather than being rewritten.",
+  "compatibility": "All 35 tracked papers assets are mapped. Twenty byte-preserved evidence/report assets retain their original Git blobs; fifteen executable or generating files record both original and path-rewritten blobs. Public reports remain under docs and active tests target the benchmark-owned evidence.",
+  "known_evidence_gaps": [
+    "W26 gci_sign_surface.json is preserved exactly with sha256 f0ab0881063c6c6c70a44ca1619db9dc42dd619aef36bf85e06ca7dcb7c282ab; this does not resolve the previously recorded mismatch with an externally expected c323... digest.",
+    "W28 and W22 reports reference figures that were not present in the tracked papers tree. No substitute or mock figure is introduced."
+  ],
+  "scientific_scope": "Structural migration only. No numerical algorithm, recorded result, acceptance state or scientific verdict is changed, and no scientific replay is claimed."
+}

@@ -8,7 +8,7 @@ inventing a value.
 
 Outputs
 -------
-papers/artifacts/w26/lbm-suboff-tau/report_w26_lbm_suboff_tau11.md
+benchmarks/anchors/evidence/suboff_w26/report_w26_lbm_suboff_tau11.md
 /tmp/report_w26_m17569.json   (payload for POST /tensor/reports, figures base64-embedded)
 """
 
@@ -283,7 +283,7 @@ def main() -> None:
     md.append("\n## 结论\n")
     for k, v in AR["verdict"].items():
         md.append(f"- **{k}**：{v}")
-    md.append("\n产物：`papers/artifacts/w26/lbm-suboff-tau/suboff_cf_anchor_regci.json`"
+    md.append("\n产物：`benchmarks/anchors/evidence/suboff_w26/suboff_cf_anchor_regci.json`"
               "（锚登记 + GCI + 符号面 + 可达性 + 算力台账），"
               "`anchor_register.json`，`gci_sign_surface.json`，script 5 个，pytest 1 个，图 5 张。\n")
 

@@ -72,7 +72,7 @@ SHA_WITNESSES = (
     "benchmarks/verified/suboff_anchor/anchor_points.json",
     "benchmarks/verified/suboff_sail_resistance/gci_v4.json",
     "benchmarks/verified/suboff_anchor_w22/anchor_transcription.json",
-    "papers/artifacts/w26/lbm-suboff-tau/anchor_register.json",
+    "benchmarks/anchors/evidence/suboff_w26/anchor_register.json",
 )
 
 SUPERSCRIPT = {"\u2070": "0", "\u00b9": "1", "\u00b2": "2", "\u00b3": "3", "\u2074": "4",

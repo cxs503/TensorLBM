@@ -2,7 +2,7 @@
 """W22 /**/ gen_report.py — paper-grade report generator (zero hand-typed numbers).
 
 Reads only machine-written artifacts and emits
-  * ``papers/reports/w22_lbm_suboff_tau9.md``      (six-element report)
+  * ``docs/reports/suboff/w22_lbm_suboff_tau9.md`` (six-element report)
   * ``runs/w22_report/payload.json``               (POST body for /tensor/reports,
                                                     figures inlined as base64)
 

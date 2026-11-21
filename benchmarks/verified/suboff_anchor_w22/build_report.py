@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""W22 — generate papers/reports/w22_lbm_suboff_anchor8.md from the two artifacts.
+"""W22 — generate docs/reports/suboff/w22_lbm_suboff_anchor8.md from the two artifacts.
 
 Every number in the report is interpolated from
   benchmarks/verified/suboff_anchor_w22/anchor_transcription.json
@@ -17,7 +17,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[3]
 CASE = HERE.parent
-OUT = REPO / "papers/reports/w22_lbm_suboff_anchor8.md"
+OUT = REPO / "docs/reports/suboff/w22_lbm_suboff_anchor8.md"
 
 TRANS = json.loads((CASE / "anchor_transcription.json").read_text(encoding="utf-8"))
 CLOS = json.loads((CASE / "ittc57_closure.json").read_text(encoding="utf-8"))
@@ -442,7 +442,7 @@ w("|---|---|")
 w(f"| `{art_rel}` | `{sha256(CASE / 'anchor_transcription.json')}` |")
 w(f"| `{clos_rel}` | `{sha256(CASE / 'ittc57_closure.json')}` |")
 w(f"| `{fig_rel}/manifest.json` | `{sha256(CASE / 'figures/manifest.json')}` |")
-w("| `papers/reports/w22_lbm_suboff_anchor8.md` | 本文件不自我记录 sha256（自指）；提交记录中的 commit 即其身份 |")
+w("| `docs/reports/suboff/w22_lbm_suboff_anchor8.md` | 本文件不自我记录 sha256（自指）；提交记录中的 commit 即其身份 |")
 w("")
 w("| 输入源 | sha256 |")
 w("|---|---|")

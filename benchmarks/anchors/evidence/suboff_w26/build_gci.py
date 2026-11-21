@@ -288,7 +288,7 @@ def main() -> None:
     out = {
         "schema": "w26_gci_sign_surface/v1",
         "mission": "m17569",
-        "generated_by": "papers/artifacts/w26/lbm-suboff-tau/build_gci.py",
+        "generated_by": "benchmarks/anchors/evidence/suboff_w26/build_gci.py",
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "tolerances": {"gci_pct": 100 * GCI_TARGET, "observed_order": P_TARGET,
                        "steady_drift_pct": 100 * DRIFT_TOL},

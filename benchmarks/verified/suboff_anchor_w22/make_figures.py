@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""W22 — figures for ../../papers/reports/w22_lbm_suboff_anchor8.md.
+"""W22 — figures for docs/reports/suboff/w22_lbm_suboff_anchor8.md.
 
 All plotted numbers are read from anchor_transcription.json / ittc57_closure.json;
 no value is re-typed here.  Each figure gets a sha256 entry in figures/manifest.json.

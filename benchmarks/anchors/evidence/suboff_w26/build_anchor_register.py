@@ -23,7 +23,7 @@ Nothing here is typed from memory: every number either comes from a regex/JSON
 pointer into a frozen in-repo artifact (and is read back for verification) or is
 computed in this script from such numbers.  Source files are hashed.
 
-Output: ``papers/artifacts/w26/lbm-suboff-tau/anchor_register.json``
+Output: ``benchmarks/anchors/evidence/suboff_w26/anchor_register.json``
 """
 
 from __future__ import annotations
@@ -469,7 +469,7 @@ def main() -> None:
         "mission_key": "paper-exp-lbm-suboff-tau-11",
         "repo": "TensorLBM",
         "discipline": "ship-total-performance / resistance",
-        "generated_by": "papers/artifacts/w26/lbm-suboff-tau/build_anchor_register.py",
+        "generated_by": "benchmarks/anchors/evidence/suboff_w26/build_anchor_register.py",
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "environment": {"python": sys.version.split()[0], "platform": platform.platform()},
         "external_anchor_targets": {

@@ -136,7 +136,7 @@ def main() -> None:
         "repo": "TensorLBM",
         "runner": "native",
         "discipline": "ship-total-performance / resistance",
-        "generated_by": "papers/artifacts/w26/lbm-suboff-tau/build_artifact.py",
+        "generated_by": "benchmarks/anchors/evidence/suboff_w26/build_artifact.py",
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "predecessor": {
             "task_key": "paper-exp-lbm-suboff-tau-10",
@@ -151,9 +151,9 @@ def main() -> None:
             ),
         },
         "parts": {
-            "anchor_register": {"path": "papers/artifacts/w26/lbm-suboff-tau/anchor_register.json",
+            "anchor_register": {"path": "benchmarks/anchors/evidence/suboff_w26/anchor_register.json",
                                 "sha256": sha256_file(_HERE / "anchor_register.json")},
-            "gci_sign_surface": {"path": "papers/artifacts/w26/lbm-suboff-tau/gci_sign_surface.json",
+            "gci_sign_surface": {"path": "benchmarks/anchors/evidence/suboff_w26/gci_sign_surface.json",
                                  "sha256": sha256_file(_HERE / "gci_sign_surface.json")},
         },
         "criteria": {
