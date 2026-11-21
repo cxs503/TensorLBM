@@ -96,6 +96,23 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 case_readme = (REPO / "benchmarks" / case / "README.md").read_text(encoding="utf-8")
                 self.assertIn(f"](../../../docs/reports/{name})", case_readme)
 
+    def test_development_archive_pilot_preserves_linked_evidence(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "development-archive-first-batch.json").read_text()
+        )
+        campaign = REPO / "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/README.md"
+        text = campaign.read_text(encoding="utf-8")
+        targets = re.findall(r"\]\(([^)]+)\)", text)
+        resolved = {(campaign.parent / target).resolve() for target in targets}
+        for target in resolved:
+            self.assertTrue(target.is_file(), str(target))
+        for item in ledger["entries"]:
+            destination = REPO / item["new_path"]
+            with self.subTest(path=destination):
+                self.assert_fingerprint(destination, item["sha256"], item["size_bytes"])
+                self.assertIn(destination, resolved)
+                self.assertFalse((REPO / item["old_path"]).exists())
+
     def test_sod_figures_and_m26765_publisher_preserve_assets(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "sod-figures-and-m26765-2026-11-21.json").read_text()
