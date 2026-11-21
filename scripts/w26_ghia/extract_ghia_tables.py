@@ -25,7 +25,7 @@ verbatim OCR token, OCR digits, ink x-extent and the sign-cluster statistics.
 
 Usage:
     GHIA_PDF=/tmp/ghia1982.pdf python3 scripts/w26_ghia/extract_ghia_tables.py \
-        --out papers/artifacts/w26/d3q19-bgk-analytic-fourcase/cells_raw.json
+        --out benchmarks/anchors/ghia_w26/cells_raw.json
 """
 from __future__ import annotations
 

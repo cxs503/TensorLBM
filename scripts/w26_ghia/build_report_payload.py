@@ -5,7 +5,7 @@ import json
 import os
 
 REPO = "/srv/tensor/agent/work/m17563"
-ART = os.path.join(REPO, "papers", "artifacts", "w26", "d3q19-bgk-analytic-fourcase",
+ART = os.path.join(REPO, "benchmarks", "anchors", "ghia_w26",
                    "anchor_register.json")
 d = json.load(open(ART, encoding="utf-8"))
 a1, a2, a3, a4 = (d["analytic_fourcase"][k] for k in ("case1", "case2", "case3", "case4"))
@@ -181,7 +181,7 @@ Poiseuille/Couette 与二阶斜率（fig4）、Taylor-Green 涡量与能量衰�
 
 figs = []
 for f in d["figures"]:
-    p = os.path.join(REPO, f["path"])
+    p = os.path.join(os.path.dirname(ART), "figures", os.path.basename(f["path"]))
     with open(p, "rb") as fh:
         b64 = base64.b64encode(fh.read()).decode()
     figs.append({"name": os.path.basename(f["path"]), "caption": f["caption"],

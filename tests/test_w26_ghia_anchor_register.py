@@ -1,6 +1,6 @@
 """W26 anchor-register acceptance tests.
 
-Checks the deliverable papers/artifacts/w26/d3q19-bgk-analytic-fourcase/anchor_register.json:
+Checks the deliverable benchmarks/anchors/ghia_w26/anchor_register.json:
 
   * every criterion in the register is PASS and the numbers behind the verdicts are
     consistent with the stored evidence;
@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-ART = os.path.join(REPO, "papers", "artifacts", "w26", "d3q19-bgk-analytic-fourcase",
+ART = os.path.join(REPO, "benchmarks", "anchors", "ghia_w26",
                    "anchor_register.json")
 SCRIPT_DIR = os.path.join(REPO, "scripts", "w26_ghia")
 sys.path.insert(0, SCRIPT_DIR)
@@ -32,8 +32,6 @@ sys.path.insert(0, SCRIPT_DIR)
 
 @pytest.fixture(scope="module")
 def register():
-    if not os.path.exists(ART):
-        pytest.skip("anchor register not built")
     with open(ART, encoding="utf-8") as fh:
         return json.load(fh)
 

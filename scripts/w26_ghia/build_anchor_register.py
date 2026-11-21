@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""W26 deliverable builder: papers/artifacts/w26/d3q19-bgk-analytic-fourcase/anchor_register.json
+"""W26 deliverable builder: benchmarks/anchors/ghia_w26/anchor_register.json
 
 Assembles
   * the Ghia (1982) Table I/II anchors for Re = 100/400/1000 with per-value
@@ -34,7 +34,7 @@ import analytic_fourcase as AF                      # noqa: E402
 import extract_ghia_tables as EX                    # noqa: E402
 
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-OUT_DIR = os.path.join(REPO, "papers", "artifacts", "w26", "d3q19-bgk-analytic-fourcase")
+OUT_DIR = os.path.join(REPO, "benchmarks", "anchors", "ghia_w26")
 FIG_DIR = os.path.join(OUT_DIR, "figures")
 PDF = os.environ.get("GHIA_PDF", "/tmp/ghia1982.pdf")
 
@@ -277,7 +277,7 @@ def defect_summary(valid: dict) -> dict:
             "no point at y=0; both are visible in the per-profile comparison above",
         "verdict": "DEFECT_REGISTERED",
         "recommendation": "consumers should read the anchor registered here "
-                          "(papers/artifacts/w26/d3q19-bgk-analytic-fourcase/anchor_register.json) "
+                          "(benchmarks/anchors/ghia_w26/anchor_register.json) "
                           "instead of the in-repo transcription; the in-repo file is left "
                           "untouched because other code imports it",
     }
