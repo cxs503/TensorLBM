@@ -849,6 +849,7 @@ def free_surface_step(
     simple_mass_exchange=False,
     u_limit=0.0,
     gas_nu_ratio=1.0,
+    iface_tau_dose=0.0,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -1056,7 +1057,22 @@ def free_surface_step(
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
             f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
         else:
-            if gas_nu_ratio != 1.0:
+            if iface_tau_dose != 0.0:
+                # Fill-weighted interface relaxation (DE-X-RELX1-PHASETAU):
+                # INTERFACE cells (0<=fill<1) relax with
+                # tau_iface = tau * g(fill), g(fill) = 1 + dose*(1-fill);
+                # LIQUID cells keep the physical tau (structural spatial
+                # separation, not a global tau_s retune).  dose=0 takes the
+                # legacy scalar path (bit-identical).  The clamp guards the
+                # BGK stability floor tau>0.5 for negative doses.
+                g_fill = 1.0 + iface_tau_dose * (1.0 - fill)
+                tau_cell = torch.where(
+                    (flags == INTERFACE).unsqueeze(0),
+                    (tau * g_fill).clamp_min(0.5 + 1e-4),
+                    tau,
+                )
+                f = f_collide - (f_collide - feq) / tau_cell
+            elif gas_nu_ratio != 1.0:
                 # Per-phase kinematic viscosity (DE-X-GAS1-GASVISC): GAS cells
                 # relax with nu_g = gas_nu_ratio * nu_l, i.e.
                 # tau_g = 0.5 + 3*nu_g = 0.5 + gas_nu_ratio*(tau - 0.5).
