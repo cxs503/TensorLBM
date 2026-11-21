@@ -1,0 +1,38 @@
+{
+  "source_commit": "ed0864397c304dd10b66966adee60f79d0aaf1eb",
+  "entries": [
+    {
+      "old_path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/README.md",
+      "new_path": "benchmarks/anchors/ghia_w26/README.md",
+      "git_blob": "537b241832759a498b60804fda8a3dfc5771a959",
+      "git_mode": "100644",
+      "sha256": "c136ee67179c8cdbdb17c2b68b150b36a8f37671400f71c54511f26647216ed8"
+    },
+    {
+      "old_path": "papers/artifacts/w26/d3q19-bgk-analytic-fourcase/anchor_register.json",
+      "new_path": "benchmarks/anchors/ghia_w26/anchor_register.json",
+      "git_blob": "446da267776d0b01c35d3c29fcc4fdb5a9c2f557",
+      "git_mode": "100644",
+      "sha256": "ea6ea673b969d27456d394e3a23af0bdf9c37a34cc1d8dad8d04146f2062cf99"
+    }
+  ],
+  "consumers": [
+    "scripts/w26_ghia/build_anchor_register.py",
+    "scripts/w26_ghia/build_report_payload.py",
+    "scripts/w26_ghia/extract_ghia_tables.py",
+    "tests/test_w26_ghia_anchor_register.py"
+  ],
+  "compatibility": "The reader, generator, and test use the new anchor path. The historical register keeps all original provenance strings and values. Report generation resolves figure names beside the relocated register.",
+  "architecture": {
+    "before_root_directories": 16,
+    "after_root_directories": 16
+  },
+  "remaining_papers": "The SUBOFF study and reports retain 36 paths under papers/. Their pinned hashes, missing source data and known baseline failures need separate verification before relocation.",
+  "scientific_acceptance": "Historical reference evidence retained. No current solver verdict assigned.",
+  "verification": {
+    "asset_integrity": "Both files match the original Git blobs and SHA-256 values.",
+    "focused_tests": "26 passed, 1 skipped (original Ghia PDF unavailable).",
+    "governance": "Repository governance passed and the registry locates both relocated files.",
+    "limits": "The original production figures and PDF are not tracked. The builders passed syntax checking; PDF extraction and full report publishing were not run."
+  }
+}
