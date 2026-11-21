@@ -180,6 +180,10 @@ jobs:
         run: python tests/test_repository_report_migration.py -v
       - name: Check repository layout
         run: python tools/check_repository_layout.py
+      - name: Enforce the canonical source authority
+        run: python tools/check_source_authority.py
+      - name: Test the source-authority gate
+        run: python -m pytest -q tests/test_source_authority.py
       - name: Test benchmark manual checker
         run: python tests/test_benchmark_manuals.py -v
       - name: Check published benchmark manual links
