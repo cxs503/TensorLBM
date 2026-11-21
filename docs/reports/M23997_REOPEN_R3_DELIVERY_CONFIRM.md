@@ -10,7 +10,7 @@
 
 | 文件 | 状态 | 入库路径 |
 |---|---|---|
-| `_scratch/probe_r3_ma.py` | ✅ 在 main | m23937 恢复（commit db2508e2c，PR #2679） |
+| [`_scratch/probe_r3_ma.py` 的归档副本](../../development/archived/scratch/probe_r3_ma.py) | ✅ 在 main | m23937 恢复（commit db2508e2c，PR #2679） |
 | `docs/reports/XVAL_LBM_PERIODIC_X_CONSTANT_DPDX_R3.md` | ✅ 在 main | #2451 |
 | `docs/reports/figures/xval_periodic_dpdx_r3_grid_order.png` | ✅ 在 main | #2451 |
 | `docs/reports/figures/xval_periodic_dpdx_r3_mach_wall.png` | ✅ 在 main | #2451 |

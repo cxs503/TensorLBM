@@ -433,7 +433,6 @@
   "root_directories": [
     ".github",
     "TensorLBM",
-    "_scratch",
     "app",
     "artifacts",
     "audit",

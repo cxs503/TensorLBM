@@ -131,3 +131,6 @@ benchmarks/*/shard_*.log
 /experiments/archived/workspaces/scratch/login.json
 /experiments/archived/workspaces/scratch/tok.json
 /experiments/archived/workspaces/scratch/m10395/tok.txt
+
+# Local scratch; tracked historical copies live under development/archived.
+/_scratch/
