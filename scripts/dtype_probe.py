@@ -232,8 +232,9 @@ def main() -> None:
     ap.add_argument("--u0-tg", type=float, default=0.05)
     ap.add_argument("--u0-couette", type=float, default=0.05)
     ap.add_argument("--tau-couette", type=float, default=0.8)
-    ap.add_argument("--out", default=str(REPO / "artifacts" / "dtype_probe.json"))
-    ap.add_argument("--plot-dir", default=str(REPO / "artifacts"))
+    output_dir = REPO / "outputs" / "device-dtype"
+    ap.add_argument("--out", default=str(output_dir / "dtype_probe.json"))
+    ap.add_argument("--plot-dir", default=str(output_dir))
     args = ap.parse_args()
 
     device = torch.device(args.device)

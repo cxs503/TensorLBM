@@ -1,0 +1,53 @@
+{
+  "source_commit": "e0812d2796580b252a512c270e2c37105010533e",
+  "original_mission_commit": "78d0f2ba7d2b1cf5bb71179012d18a17092fbf64",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 57,
+  "tracked_artifacts_after": 52,
+  "entries": [
+    {
+      "old_path": "artifacts/dtype_probe.json",
+      "new_path": "development/verification/device-dtype/m306/dtype_probe.json",
+      "git_mode": "100644",
+      "original_git_blob": "92df8a1c6538ad780929e3843f5f887350629559",
+      "size_bytes": 3591,
+      "original_sha256": "0493b8ed7217fe21d8704801f68a897228c31cc259f97096d7cea69c4e80dd91"
+    },
+    {
+      "old_path": "artifacts/dtype_error_comparison.png",
+      "new_path": "development/verification/device-dtype/m306/dtype_error_comparison.png",
+      "git_mode": "100644",
+      "original_git_blob": "81381e3d501b998585181c7b510cd0adc1d62c58",
+      "size_bytes": 50847,
+      "original_sha256": "199b93c2314799da5a95fa0d5786ce3331967034aa82c6b17decaf2884d9d72e"
+    },
+    {
+      "old_path": "artifacts/dtype_speedup_comparison.png",
+      "new_path": "development/verification/device-dtype/m306/dtype_speedup_comparison.png",
+      "git_mode": "100644",
+      "original_git_blob": "1961f5f7ccb7753f6dc123fb5a91b8cbe57e0c0e",
+      "size_bytes": 55880,
+      "original_sha256": "f6e6815eb4550f5c1c42e711c92105835ed6b11481f9aa4183e006583017903c"
+    },
+    {
+      "old_path": "artifacts/couette_profile_comparison.png",
+      "new_path": "development/verification/device-dtype/m306/couette_profile_comparison.png",
+      "git_mode": "100644",
+      "original_git_blob": "99ff8dff60b7a8739e1fcb65a0a6d783c9d49e02",
+      "size_bytes": 62102,
+      "original_sha256": "e49211df39f6dc5be1b53e1533eeda7f34b0b112e73561f63786213e10deee40"
+    },
+    {
+      "old_path": "artifacts/tg_energy_decay.png",
+      "new_path": "development/verification/device-dtype/m306/tg_energy_decay.png",
+      "git_mode": "100644",
+      "original_git_blob": "6942d2e058ca4431717984bb4e54f26769e96064",
+      "size_bytes": 56433,
+      "original_sha256": "13f46fd65c878d15935af18d48dea230d146c9434bd55cc4ddfe53edebac822a"
+    }
+  ],
+  "reference_scan": "The five assets were introduced together in m306. The current dtype_probe CLI owns their filenames; other similar figure names belong to unrelated campaigns.",
+  "compatibility": "The CLI, --out, and --plot-dir flags remain supported. The defaults route new output to ignored outputs/device-dtype. Data and plots are archived together with exact bytes.",
+  "scientific_scope": "Historical device/dtype comparison, with its original error and speedup thresholds. No new comparisons or device runs were performed."
+}
