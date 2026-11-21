@@ -257,6 +257,17 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             report = json.loads((REPO / f"audit/m{mission}/report.json").read_text())
             self.assertEqual(int(report["mission_id"]), mission)
 
+    def test_reused_tmp_report_preserves_both_mission_versions(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "m26843-root-report-2026-11-21.json").read_text()
+        )
+        entry, = ledger["entries"]
+        self.assert_fingerprint(
+            REPO / entry["new_path"], entry["sha256"], entry["size_bytes"]
+        )
+        self.assertTrue((REPO / "development/audit/m26816/report.json").is_file())
+        self.assertFalse((REPO / entry["old_path"]).exists())
+
     def test_migrations_registered_without_reintroducing_root_exceptions(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             rows = list(csv.DictReader(stream))

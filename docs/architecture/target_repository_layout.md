@@ -57,7 +57,7 @@ integrity verified before retiring a tracked copy.
 | `src/` | Keep | Keep the installable package and its published import surface stable. |
 | `teaching/` | `examples/teaching/` | Keep teaching commands and the companion comparison together. |
 | `tests/` | Keep | Preserve test collection and the semantics of fixtures and rules. |
-| `tmp/` | No tracked root | #2839 stages the publisher archive. Future local scratch should be ignored. |
+| `tmp/` | No tracked root | Reused paths are recorded by source revision. See the [m26816](migrations/m26816-root-retirement-2026-11-21.json) and [m26843](migrations/m26843-root-report-2026-11-21.json) ledgers for distinct versions of `tmp/report.json`. |
 | `tools/` | Keep | Maintain shared tooling and repository policy together. |
 | `xval/` | `benchmarks/` and `development/verification/` | Move by campaign. Link formal evidence from the canonical benchmark entry and preserve method, references and historical verdicts. |
 
