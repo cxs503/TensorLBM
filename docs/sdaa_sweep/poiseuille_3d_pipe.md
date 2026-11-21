@@ -7,9 +7,10 @@
   `scripts/sdaa_sweep_poiseuille_3d_pipe.py` / `scripts/_launch_pipe.sh` 在工作树中
   **已不存在**，`git status` 干净 —— 即本轮实际是从零重建，而非"修 m34 存量"）
 - **启动器**：`scripts/_launch_pipe.sh`
-- **工件**：`artifacts/sdaa_poiseuille_3d_pipe.json`（判据 + 设备证据）、
-  `artifacts/sdaa_poiseuille_3d_pipe_case.json`（案例原生 `run_case` 输出）
-- **日志**：`runs/sdaa_poiseuille_3d_pipe.log`
+- **工件**：[判据与设备证据](../../benchmarks/verified/poiseuille_3d_pipe/evidence/sdaa/sdaa_poiseuille_3d_pipe.json)、
+  [案例原生 `run_case` 输出](../../benchmarks/verified/poiseuille_3d_pipe/evidence/sdaa/sdaa_poiseuille_3d_pipe_case.json)
+- **日志**：历史运行使用 `runs/sdaa_poiseuille_3d_pipe.log`，当前启动器写入
+  `outputs/sdaa/poiseuille_3d_pipe/sdaa_poiseuille_3d_pipe.log`。
 - **判定**：**PASS（7/7 门）** — 单一档位 R=20
 
 ## 1. 设备证据（脚本采集，零手抄）
@@ -94,7 +95,7 @@ torch.sdaa.get_device_name(0) = /dev/tcaicard26 | torch_sdaa 3.1.1a3+gite3971b9
 
 ```bash
 # 单档 R=20，README 步数下限，原判据
-bash scripts/_launch_pipe.sh            # nohup 后台，日志 runs/sdaa_poiseuille_3d_pipe.log
+bash scripts/_launch_pipe.sh            # nohup 后台，日志位于 outputs/sdaa/poiseuille_3d_pipe/
 # 或前台直跑（约 8 分钟）
 python scripts/sdaa_sweep_poiseuille_3d_pipe.py --R 20 --min-steps 20000 --max-steps 20000
 # 快速设备/路径自检（200 步，~19 s）

@@ -1,5 +1,10 @@
 # 3D 圆管 Hagen-Poiseuille 流（D3Q19）— 解析抛物线剖面验证（R_eff^Q 方法）
 
+历史 SDAA 扫掠：[R=20 的设备与判据记录](evidence/sdaa/sdaa_poiseuille_3d_pipe.json)、
+[驱动输出](evidence/sdaa/sdaa_poiseuille_3d_pipe_case.json)、
+[说明](../../../docs/sdaa_sweep/poiseuille_3d_pipe.md)。历史 `PASS` 仅覆盖 R=20；
+驱动输出未提供独立的 SDAA 判定。
+
 ## 概述
 
 - **问题**：三维圆管内稳态层流（Hagen-Poiseuille 流），速度入口 + 压力出口驱动，管壁无滑移。

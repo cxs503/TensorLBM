@@ -60,3 +60,5 @@ This is likely due to:
 
 For full accuracy, run with original parameters (H=20,40,60 with 10000-60000 steps)
 which would take ~3-5 minutes per case on SDAA.
+
+[归档设备与判据记录](../../benchmarks/verified/poiseuille_2d/evidence/sdaa/sdaa_poiseuille_2d.json)。

@@ -80,7 +80,7 @@ torch.sdaa.is_available() → True
 
 ## 产物
 
-- `artifacts/sdaa_poiseuille_3d_duct.json`：完整结果 JSON（含设备证据、判据数值、逐条 PASS/FAIL）
+- [归档 JSON](../../benchmarks/verified/poiseuille_3d_duct/evidence/sdaa/sdaa_poiseuille_3d_duct.json)：含设备证据、判据数值、逐条 PASS/FAIL。
 - `scripts/sdaa_sweep_poiseuille_3d_duct.py`：独立运行脚本
 
 ## 备注

@@ -299,7 +299,7 @@ def main():
     passes = [c["pass"] for c in output["criteria"].values() if c.get("pass") is not None]
     output["overall_verdict"] = "PASS" if all(passes) else "FAIL"
 
-    out_path = REPO / "artifacts" / "sdaa_poiseuille_3d_duct.json"
+    out_path = REPO / "outputs" / "sdaa" / "poiseuille_3d_duct" / "sdaa_poiseuille_3d_duct.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False))
     print(f"\n[SDAA] Artifact: {out_path}")

@@ -1,5 +1,9 @@
 # 3D 矩形管 Poiseuille 流（D3Q19）— 双奇正弦级数解析验证（Shah-London）
 
+历史 SDAA 扫掠：[设备与判据记录](evidence/sdaa/sdaa_poiseuille_3d_duct.json)、
+[说明](../../../docs/sdaa_sweep/poiseuille_3d_duct.md)。该工件的名义剖面和稳态门未通过，
+总判定为 `FAIL`。
+
 Wave-3（W3-B）交付。方形 1:1（W=32/64/128）与 2:1 矩形（W=64/128，H=W/2）两组
 网格阶梯，直接模拟 vs **自推解析解**（矩形截面 Poiseuille 的双重奇正弦级数），
 Shah-London 摩擦因子常数作独立交叉。真实模拟、无外推、无修正因子
