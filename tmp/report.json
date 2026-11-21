@@ -1,0 +1,9 @@
+{
+  "title": "DE·情报检索专线 W2 处方赛马设计报告",
+  "summary": "设计了两条物理处方：Cox-Voinov动态润湿角与MCMP界面压缩，针对界面厚度与接触角滞后问题。",
+  "scenario_key": "DE-INT-W2",
+  "mission_id": 26816,
+  "tags": ["DE", "Intelligence", "Prescription", "MCMP", "Wetting"],
+  "markdown": "# DE·情报检索专线 W2 处方赛马设计报告\n\n## 1. 案例介绍\n**物理背景**：多相流LBM模型（MCMP）中，界面厚度通常较宽（~5-10网格），导致界面张力计算误差和虚假速度。此外，固定接触角边界条件无法捕捉动态接触角滞后现象，影响润湿动力学模拟精度。\n**几何与参数**：D2Q9晶格，Shan-Chen伪势模型，G=2.5，tau=1.0，密度比~10:1。\n\n## 2. 方法\n**流程**：\n1. 文献检索：Cox (1986) J. Fluid Mech. 168, 169 (Cox-Voinov定律)；Popinet (2009) J. Comput. Phys. 228, 4210 (界面压缩)。\n2. 处方设计：\n   - **ARM COXVOI**：在边界条件中实现Cox-Voinov定律 $\\theta_d^3 = \\theta_e^3 + 9 Ca \\ln(L/\\lambda)$，动态修正接触角。\n   - **ARM COMPINT**：在MCMP平流步中添加界面压缩项 $\\partial_t \\phi + \\mathbf{u} \\cdot \\nabla \\phi = \\kappa \\nabla \\cdot (\\phi \\nabla \\phi)$，减薄界面厚度。\n3. 预登记：预测误差与证伪判据。\n\n## 3. 计算结果\n本单为处方设计，无实际计算结果。预期结果：\n- **COXVOI**：动态接触角误差 < 5% vs Cox-Voinov解析解。\n- **COMPINT**：界面厚度减薄至 < 5 网格，虚假速度降低 > 50%。\n\n## 4. 结果图\n无。本单为情报检索与处方设计任务，未执行仿真计算。后续ARM实施后将补充云图与对比曲线。\n\n## 5. 注意点\n- **Cox-Voinov**：需要宏观长度尺度 $L$ 和微观截断尺度 $\\lambda$，取值需谨慎。\n- **界面压缩**：压缩系数 $\\kappa$ 需要调优，过大可能导致数值不稳定。\n\n## 6. 误差判定\n- **COXVOI**：预测接触角误差 < 5%（基准：Cox-Voinov解析解）。是否 < 3%？预测否，但 < 5% 可接受。\n- **COMPINT**：预测界面厚度 < 5 网格（基准：Popinet 2009）。是否 < 3%？预测否，但 < 5 网格可接受。\n\n自检：5/5（格式机读通过/臂≤2/预登记齐/无重开排除路线/出处可溯）",
+  "figures": []
+}
