@@ -41,7 +41,7 @@ integrity verified before retiring a tracked copy.
 | `cases/` | Split by purpose | The [migration ledger](migrations/case-root-retirement-2026-11-21.json) maps all case runners to their benchmark owners and records the two superseded case-pool wrappers. |
 | `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
 | `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
-| `drop_entry/` | `development/audit/drop_entry/` | Mission working notes and drafts are development records. The [m26734](migrations/m26734-drop-entry-reentry-2026-11-21.json), [m26892](migrations/m26892-drop-entry-reentry-2026-11-22.json), and [m26887](migrations/m26887-drop-entry-reentry-2026-11-22.json) re-entry ledgers preserve successive root regressions byte-for-byte while retaining published document copies. |
+| `drop_entry/` | `development/audit/drop_entry/` | Mission working notes and drafts are development records. The [m26734](migrations/m26734-drop-entry-reentry-2026-11-21.json), [m26892](migrations/m26892-drop-entry-reentry-2026-11-22.json), [m26887](migrations/m26887-drop-entry-reentry-2026-11-22.json), and [m26894](migrations/m26894-drop-entry-reentry-2026-11-22.json) re-entry ledgers preserve successive root regressions byte-for-byte while retaining published document copies. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
 | `evidence/` | Case data, document assets, development evidence and tools | The [migration ledger](migrations/evidence-root-retirement-2026-11-21.json) lists original blobs and updated replay commands. |
 | `examples/` | Keep | Preserve documented commands and supported entry points. |
@@ -50,7 +50,7 @@ integrity verified before retiring a tracked copy.
 | `frontend-vue/` | `app/frontend-vue/` | Keep Vue source and its build with the serving app. The [migration ledger](migrations/vue-application-root-2026-11-21.json) records file provenance. |
 | `models/` | Split by role | Judge supported library, model-unit CI, case inputs and historical weights separately. Preserve discoverability for model-unit jobs. |
 | `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
-| `papers/` | `docs/`, `benchmarks/` or `development/` | Published material, supporting case assets and working drafts have separate owners. |
+| `papers/` | `docs/`, `benchmarks/` or `development/` | Retired by the [papers migration ledger](migrations/papers-root-retirement-2026-11-22.json): 35 tracked assets moved to SUBOFF benchmark evidence or published report ownership; active path consumers were updated and unresolved external evidence gaps remain explicit. |
 | `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |

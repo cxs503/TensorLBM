@@ -1,7 +1,7 @@
 # `dtrc-suboff-1989` — DTRC SUBOFF per-point anchor register (W30, task m21512)
 
 > Why this file and not `README.md`: the W28 landing artifact
-> (`papers/artifacts/w28/lbm-suboff-tau/anchor_landing.json`) pins the sha256 of
+> (`benchmarks/anchors/evidence/suboff_w28/anchor_landing.json`) pins the sha256 of
 > `benchmarks/anchors/README.md` as a sidecar. Editing that README would rewrite
 > a historical evidence record, so this register is documented here instead.
 

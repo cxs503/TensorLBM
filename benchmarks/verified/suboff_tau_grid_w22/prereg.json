@@ -68,6 +68,6 @@
  "artifacts": [
   "benchmarks/verified/suboff_tau_grid_w22/tau_grid_matrix.json",
   "benchmarks/verified/suboff_tau_grid_w22/negative_drag_surface.json",
-  "papers/reports/w22_lbm_suboff_tau9.md"
+  "docs/reports/suboff/w22_lbm_suboff_tau9.md"
  ]
 }

@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-BUILDER = REPO / "papers/artifacts/w28/lbm-suboff-tau/build_anchor_landing.py"
-ARTIFACT = REPO / "papers/artifacts/w28/lbm-suboff-tau/anchor_landing.json"
+BUILDER = REPO / "benchmarks/anchors/evidence/suboff_w28/build_anchor_landing.py"
+ARTIFACT = REPO / "benchmarks/anchors/evidence/suboff_w28/anchor_landing.json"
 ANCHOR = REPO / "benchmarks/anchors/lbm-suboff-tau.json"
 
 BRANCH_BLOB_SHA256 = "b452bccd7d35ce1c294b159342b2d0e0fbb75c6fd5c574975df732abe7b54f88"

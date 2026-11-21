@@ -32,7 +32,7 @@ recomputation never has to trust this file.
 
 Usage
 -----
-    python3 papers/artifacts/w26/lbm-suboff-tau/run_case.py \
+    python3 benchmarks/anchors/evidence/suboff_w26/run_case.py \
         --resolution 48 --re-lattice 1000 --steps 5760 --threads 8 \
         --out <abs dir inside repo> --tag ladder_N48
 """

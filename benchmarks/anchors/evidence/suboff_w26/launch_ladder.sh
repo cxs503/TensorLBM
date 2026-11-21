@@ -6,7 +6,7 @@
 # are not yet on disk.
 set -u
 REPO=/srv/tensor/agent/work/m17569
-ART="$REPO/papers/artifacts/w26/lbm-suboff-tau"
+ART="$REPO/benchmarks/anchors/evidence/suboff_w26"
 OUT="$REPO/.scratch/m17569/runs"
 mkdir -p "$OUT"
 exec python3 "$ART/run_batch.py" \

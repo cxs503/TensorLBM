@@ -4,7 +4,7 @@
 # again after a late case lands simply refreshes the artifacts.
 set -u
 REPO=/srv/tensor/agent/work/m17569
-ART="$REPO/papers/artifacts/w26/lbm-suboff-tau"
+ART="$REPO/benchmarks/anchors/evidence/suboff_w26"
 RUN="$REPO/.scratch/m17569"
 cd "$REPO" || exit 1
 

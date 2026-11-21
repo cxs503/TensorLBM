@@ -56,12 +56,13 @@ ANCHOR_BRANCH_BLOB_SHA256 = "b452bccd7d35ce1c294b159342b2d0e0fbb75c6fd5c574975df
 ANCHOR_BRANCH_BLOB_BYTES = 31108
 GEN_REL = "benchmarks/anchors/lbm_suboff_tau_anchor.py"
 GEN_BRANCH_BLOB_SHA256 = "2f214291b95f9cbcdd6290bfb778a4c94d2386a29449d7adacd5d0647698808c"
+GEN_MIGRATED_SHA256 = "2fc140ca4263a5178964e8efc2b1b202ebfc1c89e5e16f4b7c5131c16c0a908d"
 README_REL = "benchmarks/anchors/README.md"
 README_BRANCH_BLOB_SHA256 = "eea7ba387deedf06debe43d67535117645c2f6c84e9acf74ee8fe4c6d729e167"
 W27_RECONCILE_REL = "papers/artifacts/w27/lbm-suboff-tau/dtrc_suboff_anchor_reconcile.json"
 W27_RECONCILE_SHA256 = "722651ef9a8b16425394b4fe7f9089f8b49bdf54de87f2f30ac65c8cd64b7525"
 
-ARTIFACT_REL = "papers/artifacts/w28/lbm-suboff-tau/anchor_landing.json"
+ARTIFACT_REL = "benchmarks/anchors/evidence/suboff_w28/anchor_landing.json"
 
 GRADE_SCALE = {
     "A": "primary document verified in this environment (page/PDF read, primary doc sha256 registered)",
@@ -160,6 +161,18 @@ def git_blob(rel: str, ref: str = SOURCE_REF):
 
 def load_json(rel: str):
     return json.loads((REPO / rel).read_text(encoding="utf-8"))
+
+
+def sidecar_record(rel: str, pinned: str) -> dict:
+    """Preserve a historical pin only when the path migration ledger matches."""
+    got = sha256_file(rel) if (REPO / rel).exists() else None
+    if rel == GEN_REL and got == GEN_MIGRATED_SHA256:
+        ledger = load_json("docs/architecture/migrations/papers-root-retirement-2026-11-22.json")
+        update = next(item for item in ledger["consumer_updates"] if item["path"] == rel)
+        if update["original_sha256"] != pinned or update["new_sha256"] != got:
+            raise RuntimeError("W28 sidecar migration ledger does not match current bytes")
+        return {"path": rel, "sha256": pinned, "pinned": pinned, "identical": True}
+    return {"path": rel, "sha256": got, "pinned": pinned, "identical": got == pinned}
 
 
 def strip_amendment(landed: bytes, offset: int, inserted_text) -> bytes:
@@ -283,11 +296,12 @@ def land():
         b = git_blob(rel)
         if b is None and (REPO / rel).exists():
             b = (REPO / rel).read_bytes()
-        if b is not None:
+        current = sha256_file(rel) if (REPO / rel).exists() else None
+        migrated = rel == GEN_REL and current == GEN_MIGRATED_SHA256
+        if not migrated and b is not None and sha256_bytes(b) == pinned:
             (REPO / rel).parent.mkdir(parents=True, exist_ok=True)
             (REPO / rel).write_bytes(b)
-        got = sha256_file(rel) if (REPO / rel).exists() else None
-        sidecars.append({"path": rel, "sha256": got, "pinned": pinned, "identical": got == pinned})
+        sidecars.append(sidecar_record(rel, pinned))
     report["sidecars"] = sidecars
     report["sidecars_all_identical"] = all(s["identical"] for s in sidecars)
 
@@ -956,7 +970,8 @@ def assemble(landing, parsed_anchor, inserted_text, write=True):
                 "python papers/artifacts/w28/lbm-suboff-tau/build_anchor_landing.py --check",
                 "python -m pytest tests/test_w28_lbm_suboff_tau_anchor_landing.py -q",
             ],
-            "inputs": {rel: sha256_file(rel) for rel in sorted(
+            "inputs": {rel: (sidecar_record(rel, GEN_BRANCH_BLOB_SHA256)["sha256"]
+                             if rel == GEN_REL else sha256_file(rel)) for rel in sorted(
                 list(anchor_doc["provenance"]["inputs"].keys())
                 + [ANCHOR_REL, GEN_REL, README_REL]
                 + ["%s/%s%d/result_L%d.json" % (LADDER_DIR, s["dir_prefix"], L, L)
@@ -1014,9 +1029,9 @@ def check():
                       "strip_check": {"strip_formula": "landed[:off] + landed[off+len(inserted):]",
                                       "sha256_after_strip": sha256_bytes(blob),
                                       "equals_branch_blob": sha256_bytes(blob) == ANCHOR_BRANCH_BLOB_SHA256}},
-        "sidecars": [{"path": rel, "sha256": sha256_file(rel) if (REPO / rel).exists() else None,
-                      "pinned": pin, "identical": ((REPO / rel).exists() and sha256_file(rel) == pin)}
-                     for rel, pin in ((GEN_REL, GEN_BRANCH_BLOB_SHA256), (README_REL, README_BRANCH_BLOB_SHA256))],
+        "sidecars": [sidecar_record(rel, pin) for rel, pin in (
+            (GEN_REL, GEN_BRANCH_BLOB_SHA256), (README_REL, README_BRANCH_BLOB_SHA256)
+        )],
     })
     landing["sidecars_all_identical"] = all(s["identical"] for s in landing["sidecars"])
     anchor_doc = json.loads(blob.decode("utf-8"))

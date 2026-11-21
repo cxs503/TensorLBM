@@ -35,6 +35,7 @@ RETIRED_ROOT_DIRECTORIES = {
     "figures",
     "frontend-vue",
     "notebooks",
+    "papers",
     "references",
     "regression_rules",
     "runs",

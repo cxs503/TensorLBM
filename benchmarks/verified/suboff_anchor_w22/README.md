@@ -29,7 +29,7 @@ $Re\approx1.17\times10^7$；两个因子来自不同 Re 区间，**跨 Re 的相
 | `build_anchor_transcription.py` | 抄录/回读生成器（`W22_TRANSCRIPTION_OUT` 可改输出路径） |
 | `build_ittc57_closure.py` | 复算/闭合/Prohaska 生成器（阈值预声明于 `CRITERIA_PREDECLARED`） |
 | `make_figures.py` | 出图 + manifest |
-| `build_report.py` | 生成 `papers/reports/w22_lbm_suboff_anchor8.md`（数字全由工件注入） |
+| `build_report.py` | 生成 `docs/reports/suboff/w22_lbm_suboff_anchor8.md`（数字全由工件注入） |
 
 上游锚源：`benchmarks/verified/suboff_anchor/anchor.json`、
 `benchmarks/pending/suboff_highre_resistance/refs_lock.json`；

@@ -457,6 +457,30 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertNotIn('os.path.join(ROOT, "drop_entry"', m26894_generator)
         self.assertIn('os.path.join(ROOT, "docs", "drop_entry_bb"', m26894_generator)
 
+    def test_papers_root_is_fully_mapped_to_benchmark_and_docs_owners(self):
+        ledger_path = LEDGER_PATH.parent / "papers-root-retirement-2026-11-22.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(ledger["root_directories_before"], 14)
+        self.assertEqual(ledger["root_directories_after"], 13)
+        self.assertEqual(len(ledger["entries"]), 35)
+        self.assertEqual(sum("new_sha256" in item for item in ledger["entries"]), 15)
+        self.assertFalse(subprocess.check_output(
+            ["git", "ls-files", "--", "papers"], cwd=REPO, text=True
+        ))
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                expected_sha = item.get("new_sha256", item["original_sha256"])
+                expected_blob = item.get("new_git_blob", item["original_git_blob"])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), expected_sha)
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], expected_blob])
+                self.assertFalse((REPO / item["old_path"]).exists())
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

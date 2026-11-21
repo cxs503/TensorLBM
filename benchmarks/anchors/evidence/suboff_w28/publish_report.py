@@ -7,8 +7,8 @@ base64 in the POST payload.
 
 Outputs
 -------
-papers/artifacts/w28/lbm-suboff-tau/figures/*.png
-papers/artifacts/w28/lbm-suboff-tau/report_w28_lbm_suboff_tau13.md
+benchmarks/anchors/evidence/suboff_w28/figures/*.png
+benchmarks/anchors/evidence/suboff_w28/report_w28_lbm_suboff_tau13.md
 /tmp/report_w28_m19903.json
 """
 
@@ -276,7 +276,7 @@ def build_markdown():
 | 工件 | 作用 | sha256 |
 |---|---|---|
 | `benchmarks/anchors/lbm-suboff-tau.json` | 外部锚件（W27 blob 逐字节落地 + 单点插入分级字段） | 落地前/剥离后 = `{land['plain_copy_sha256']}`；落地后 = `{land['landed_sha256']}` |
-| `papers/artifacts/w28/lbm-suboff-tau/anchor_landing.json` | 判据逐条裁决 + 复算表 + 溯源 | 见仓库 |
+| `benchmarks/anchors/evidence/suboff_w28/anchor_landing.json` | 判据逐条裁决 + 复算表 + 溯源 | 见仓库 |
 | `tests/test_w28_lbm_suboff_tau_anchor_landing.py` | 16 项守卫测试 | — |
 
 ---
