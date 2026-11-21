@@ -125,7 +125,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
 
     def test_wave_one_archive_preserves_source_files_and_both_report_versions(self):
         ledger = json.loads((REPO / "docs/architecture/migrations/m26711-2026-11-21.json").read_text())
-        self.assertEqual(len(ledger["entries"]), 11)
+        self.assertEqual(len(ledger["entries"]), 16)
         for item in ledger["entries"]:
             with self.subTest(path=item["new_path"]):
                 blob = (REPO / item["new_path"]).read_bytes()
