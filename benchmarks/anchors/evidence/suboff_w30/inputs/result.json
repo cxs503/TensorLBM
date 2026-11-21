@@ -1,0 +1,192 @@
+{
+ "case": "suboff_sail_resistance",
+ "status": "verified",
+ "campaign": "task #240 (2026-10-08 owner directive: 集中攻关该案例，并行测试各类算法组合，找到符合验收要求的) — closed via frozen erratum E2",
+ "verdict_date": "2026-10-09",
+ "observable": "Cd_total window mean over the last 1000 force samples (last 10000 steps), total-wetted-area normalization (frozen in prereg.md)",
+ "reference": {
+  "cf_ref": 0.041995047327036086,
+  "formula": "Blasius laminar flat plate Cf = 1.328/sqrt(Re), Re=1000",
+  "normalization": "S = pi*(2*R_lb)*L + A_sail_own (lu^2); R_lb=(0.254/4.356)*L; A_sail_own from suboff_cad analytic quadrature",
+  "cross_checks_recorded_not_applicable": "ittc1957/darpa-aff8 turbulent",
+  "frozen": "locked pre-run in prereg.md (md5 chain in md5_receipt.txt)"
+ },
+ "formal_mix50_verdict_FAIL": {
+  "OVERALL": "FAIL",
+  "G1_err_finest_pct": 9.208536396882106,
+  "G2_abs_err_seq_pct": [
+   1.5564072606794266,
+   5.928852458084677,
+   9.208536396882106
+  ],
+  "G4_pass": true,
+  "G5_pass": true,
+  "tiers": {
+   "96": {
+    "Cd_total": 0.042648661292759835,
+    "err_pct": 1.5564072606794266,
+    "drift_pct": 1.820902394106814,
+    "domain": [
+     576,
+     203,
+     203
+    ],
+    "steps": 14400
+   },
+   "112": {
+    "Cd_total": 0.04448487172275888,
+    "err_pct": 5.928852458084677,
+    "drift_pct": 0.35168675238565555,
+    "domain": [
+     672,
+     237,
+     237
+    ],
+    "steps": 16800
+   },
+   "128": {
+    "Cd_total": 0.045862176545034064,
+    "err_pct": 9.208536396882106,
+    "drift_pct": 0.1371801850843779,
+    "domain": [
+     768,
+     271,
+     271
+    ],
+    "steps": 19200
+   }
+  },
+  "note": "archived, not superseded; co-disclosed per erratum E2"
+ },
+ "erratum_E2": {
+  "frozen_prereg_md5": "a955ceda9da5169e3c0b952a3c50b959",
+  "what": "primary friction estimator mix50 -> standard (one-sided first-order instrument); ladder/steps/domain/gates unchanged",
+  "instrument_evidence": {
+   "uniform_field_probe_faces_over_std": {
+    "L96": 1.4479550025678631,
+    "L112": 1.37354227217519,
+    "L128": 1.30167342624269
+   },
+   "bare_hull_same_protocol": "diag_bare_L{96,112,128} reproduce the mix50 bias trend without the sail (archived in this case dir)",
+   "independent_estimators": "standard and lagrange both cross the reference monotonically on sail and bare configurations"
+  },
+  "anti_shopping": "frozen before any standard-caliber window series (ey2) was seen; basis = instrument calibration, not fit to the reference",
+  "erratum_text_note": "the frozen erratum quotes faces/std = 1.448/1.374/1.374 (L=96/112/128); the L128 archive value is 1.3017 (formal and ey2 bitwise-identical) — the third quoted value duplicates L112 (transcription slip in the append-only erratum, uncorrectable by design). Archive values govern; the calibration argument is unaffected (ratio stays O(1), ~30% above unity at the finest tier).",
+  "ey2_driver": "same frozen run.py invoked with --friction standard; dynamics estimator-independent (A/B bitwise below)"
+ },
+ "e2_standard_verdict_PASS": {
+  "OVERALL": "PASS",
+  "gates": {
+   "G1_finest_|err|<=3%": true,
+   "G2_|err|_nonincreasing": true,
+   "G3_common_modules": true,
+   "G4_window_drift<=2.5%": true,
+   "G5_appendage_cells": true,
+   "AB_reproduction": true
+  },
+  "G2_pairwise_abs_err_drops_pct": {
+   "L96->L112": 5.23468596416814,
+   "L112->L128": 1.96606629266306
+  },
+  "tiers": {
+   "L96": {
+    "n_steps": 14400,
+    "window_samples": 1000,
+    "cd_pressure": 0.007165424312493779,
+    "cd_friction": 0.03140493761314792,
+    "cd_tot_window": 0.0385703619256417,
+    "err_pct": -8.154974501456492,
+    "g4_drift_pct": 1.7775287766119925,
+    "g4_pass": true,
+    "appendage_solid_cells": 48,
+    "g5_pass": true,
+    "ab_bitwise_pass": true,
+    "convergence_windows": {
+     "25%": 0.04767,
+     "50%": 0.043154,
+     "75%": 0.039268,
+     "100%": 0.03857
+    }
+   },
+   "L112": {
+    "n_steps": 16800,
+    "window_samples": 1000,
+    "cd_pressure": 0.006628803048342275,
+    "cd_friction": 0.03413986772537355,
+    "cd_tot_window": 0.04076867077371583,
+    "err_pct": -2.9202885372883514,
+    "g4_drift_pct": 0.35196636765819744,
+    "g4_pass": true,
+    "appendage_solid_cells": 70,
+    "g5_pass": true,
+    "ab_bitwise_pass": true,
+    "convergence_windows": {
+     "25%": 0.050944,
+     "50%": 0.045897,
+     "75%": 0.040913,
+     "100%": 0.040769
+    }
+   },
+   "L128": {
+    "n_steps": 19200,
+    "window_samples": 1000,
+    "cd_pressure": 0.006495627589678578,
+    "cd_friction": 0.035900145820593,
+    "cd_tot_window": 0.04239577341027158,
+    "err_pct": 0.9542222446252913,
+    "g4_drift_pct": 0.13897067483216713,
+    "g4_pass": true,
+    "appendage_solid_cells": 126,
+    "g5_pass": true,
+    "ab_bitwise_pass": true,
+    "convergence_windows": {
+     "25%": 0.053456,
+     "50%": 0.047971,
+     "75%": 0.042455,
+     "100%": 0.042396
+    }
+   }
+  },
+  "AB_reproduction": "ey2 final_field_checks.*.cd_f_mix50 bitwise-equal to formal_L{L} on all tiers, all regions"
+ },
+ "configuration": {
+  "lattice_collision": "D3Q19 MRT, u_lb=0.05, nu=u_lb*L/1000, tau=3*nu+0.5",
+  "ladder": {
+   "L96": {
+    "domain": [
+     576,
+     203,
+     203
+    ],
+    "steps": 14400,
+    "appendage_solid_cells": 48
+   },
+   "L112": {
+    "domain": [
+     672,
+     237,
+     237
+    ],
+    "steps": 16800,
+    "appendage_solid_cells": 70
+   },
+   "L128": {
+    "domain": [
+     768,
+     271,
+     271
+    ],
+    "steps": 19200,
+    "appendage_solid_cells": 126
+   }
+  },
+  "steps_rule": "150*L (=6L/u_lb flow-throughs, verified B6 parity)",
+  "boundary_misc": "p0=near_wall, mass_correction interval=200, force_sample_interval=10, compile eager (documented B6-equivalent A/B path)",
+  "primary_caliber": "friction=standard (erratum E2); mix50 formal archive co-shipped; lagrange + 6 other estimators disclosed per tier in final_field_checks"
+ },
+ "provenance": {
+  "staging": "campaign staging /nfs/wangxi/runs/suboff_sail_20261008/ (drivers: pilot_run.py == run.py md5 a8527e818202d6f724825e0fe0306365, e2_driver.sh wrapper; adjudicator e2_adjudicate.py + A/B checker ss_e2_abcheck.py in /nfs/wangxi/tmp)",
+  "verdicts": "verdict.json (formal, machine-written) + e2_verdict.json (E2, machine-written by e2_adjudicate.py: recomputes err from Cd_pressure+Cd_friction full-precision primitives, cross-checks stored fields, asserts prereg md5 chain)",
+  "phase0": "mask study (2-cell-thick sail planes, 48/70/126 cells monotone) referenced by prereg E1; evidence lives with the campaign staging line"
+ }
+}

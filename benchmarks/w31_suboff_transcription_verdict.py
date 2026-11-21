@@ -51,13 +51,20 @@ DECLARED = {
 }
 
 
+def source_path(rel):
+    # Preserve the provenance name in the archived W31 records.
+    if rel == SRC["W30_census"]:
+        return ROOT / "benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json"
+    return ROOT / rel
+
+
 def sha256_of(rel):
-    b = (ROOT / rel).read_bytes()
+    b = source_path(rel).read_bytes()
     return {"path": rel, "sha256": hashlib.sha256(b).hexdigest(), "bytes": len(b)}
 
 
 def read(rel):
-    return (ROOT / rel).read_text(encoding="utf-8")
+    return source_path(rel).read_text(encoding="utf-8")
 
 
 def read_json(rel):

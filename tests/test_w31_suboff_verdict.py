@@ -43,7 +43,7 @@ def test_artifact_paths_required_by_task(art):
 def test_provenance_sha256_matches_files(art):
     assert len(art["provenance"]) >= 7
     for rec in art["provenance"]:
-        b = (ROOT / rec["path"]).read_bytes()
+        b = W.source_path(rec["path"]).read_bytes()
         assert hashlib.sha256(b).hexdigest() == rec["sha256"], rec["path"]
         assert len(b) == rec["bytes"], rec["path"]
         assert rec["path"] in W.SRC.values()

@@ -1,0 +1,42 @@
+{
+  "source_commit": "f67cb03b0f726c9fb047438633cc96bb33ab5372",
+  "entries": [
+    {
+      "old_path": "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json",
+      "source_commit": "f67cb03b0f726c9fb047438633cc96bb33ab5372",
+      "git_blob": "cfcdf7d03c0278795b7f94b2369dd179e9a23c42",
+      "git_mode": "100644",
+      "sha256": "78b4d2750b17b63856e0dc6b74e6069a84bc6acacce11b6e3d399390cb945bdd"
+    }
+  ],
+  "recovered_inputs": [
+    {
+      "old_path": "benchmarks/verified/suboff_sail_resistance/result.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w30/inputs/result.json",
+      "source_commit": "e3bf2f4c097a619c1e85d5d8bc4456371ac15b70",
+      "git_blob": "51cb28d47dad9ea826683688f69cab114651eb93",
+      "git_mode": "100644",
+      "sha256": "8a8cf4b96934d57d72d37a442fc4771d62e3bb550ffb1cea07e44939a6f155ef"
+    },
+    {
+      "old_path": "benchmarks/verified/suboff_sail_resistance/tau_ladder_verdict_m298.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w30/inputs/tau_ladder_verdict_m298.json",
+      "source_commit": "e3bf2f4c097a619c1e85d5d8bc4456371ac15b70",
+      "git_blob": "ba3ad08abae035fcd50c2c5ceb89ba9d62115a76",
+      "git_mode": "100644",
+      "sha256": "7bfcf64ec9fff0d90447e6227a7bac7f74cb422cc13c8c1003412a567e7f88e5"
+    }
+  ],
+  "main_root_directories": 14,
+  "remaining_papers": "35 tracked paths remain under papers/ for the W22, W26 and W28 material.",
+  "compatibility": "W30 verification reads frozen copies for the two superseded inputs only at the recorded source commit. Current generation reads the current case files. W31 still emits the original logical path and reads the relocated W30 bytes. The pinned DTRC generator remains byte-for-byte intact.",
+  "scientific_acceptance": "Original evidence and historical verdicts are retained. No solver results were generated or admitted in this migration.",
+  "verification": {
+    "source_bytes": "The census is byte-identical. Recovered inputs match both the recorded source commit and both SHA-256 values in the census.",
+    "focused": "W30 checks and W31 source hashes: 15 tests passed. Repository governance passed with zero hard status-ledger violations.",
+    "presentation": "Generated a report and four plots from the preserved census in isolated temporary output. No new solver runs were required.",
+    "baseline_failures": "The W31 full suite still has two failures reproduced on the unchanged baseline: four rebuilt arbitration values differ from the stored artifact by at most 4e-15 and two archived figures are unavailable in the expected path. The two W30 baseline hash failures are repaired."
+  },
+  "integration_base_commit": "880ad129bcdf2f68ab5b4903e2d084d0c33505d9"
+}
