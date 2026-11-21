@@ -29,6 +29,7 @@ _AUDITED_BOUNDARIES = (
     "sponge",
     "nscbc",
     "bouzidi_interpolated",
+    "zero_gradient_outlet",
 )
 _AUDITED_LATTICES = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_COLLISIONS = ("bgk", "mrt", "trt", "smagorinsky", "kbc", "cascaded")
@@ -58,11 +59,11 @@ def test_matrix_covers_all_boundary_kinds_and_lattices() -> None:
             )
 
 
-def test_matrix_has_30_entries() -> None:
-    """10 boundary kinds × 3 lattices = 30 audited cells."""
+def test_matrix_has_33_entries() -> None:
+    """11 boundary kinds × 3 lattices = 33 audited cells."""
     matrix = boundary_capability_matrix()
     count = sum(len(matrix[kind]) for kind in matrix)
-    assert count == 30
+    assert count == 33
 
 
 # ---------------------------------------------------------------------------
@@ -170,9 +171,11 @@ def test_sponge_has_mechanics_tests_but_no_physical_validation() -> None:
         assert "no physical validation" in cap.verification_evidence.lower()
 
 
-def test_nscbc_is_implementation_only_or_missing() -> None:
+def test_nscbc_evidence_by_lattice() -> None:
     matrix = boundary_capability_matrix()
-    assert matrix["nscbc"]["D2Q9"].implementation_status == "IMPLEMENTATION_ONLY"
+    d2q9 = matrix["nscbc"]["D2Q9"]
+    assert d2q9.implementation_status == "MECHANICS_TESTED"
+    assert "no validation of transverse/grazing acoustic modes" in d2q9.verification_evidence
     assert matrix["nscbc"]["D3Q19"].implementation_status == "IMPLEMENTATION_ONLY"
     assert matrix["nscbc"]["D3Q27"].implementation_status == "NO_IMPLEMENTATION"
 
