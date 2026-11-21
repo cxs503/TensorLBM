@@ -139,4 +139,4 @@ Mission 15 成功完成 SDAA 验证案例扫荡：
 
 ---
 
-*报告由 TensorPlatform 船舶总体性能智能体自动生成 | 工件来源: artifacts/sdaa_cavity_3d_full.json, artifacts/suboff_*.json, artifacts/kbc_diagnostic_16cube_20steps.json*
+*报告由 TensorPlatform 船舶总体性能智能体自动生成 | 工件来源: artifacts/sdaa_cavity_3d_full.json, artifacts/suboff_*.json, development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json*

@@ -101,7 +101,7 @@
 - `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` → bench2 结果
 - `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` → bench3 结果
 - `artifacts/suboff_best_rans_summary.json` → 汇总对比
-- `artifacts/kbc_diagnostic_16cube_20steps.json` → KBC 诊断
+- `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` → KBC 诊断
 - `docs/sdaa_adaptability.md` → 671 行分类报告
 
 ### 4.2 机器判据验证
@@ -155,7 +155,7 @@
 | 文件 | 大小/行数 | 说明 |
 |------|-----------|------|
 | `docs/sdaa_adaptability.md` | 671 行 / 30KB | 主交付物：全量分类报告 |
-| `artifacts/kbc_diagnostic_16cube_20steps.json` | KBC vs BGK 诊断 |
+| `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` | KBC vs BGK 诊断 |
 | `artifacts/suboff_bench1_cumulant_sdaa20.json` | Bench1 结果 |
 | `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` | Bench2 结果 |
 | `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` | Bench3 结果 |

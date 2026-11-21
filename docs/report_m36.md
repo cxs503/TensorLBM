@@ -33,7 +33,7 @@ SDAA 平台（node099，32 卡满编）已完成 2D Couette 跨卡逐位复现�
 提案以仓库已有 benchmark 工件为数字基础（零手抄，全部程序化提取）：
 
 - **SUBOFF benchmark 系列**（`artifacts/suboff_bench{1,2,3}_*.json`, `suboff_best_rans_summary.json`）
-- **KBC 诊断**（`artifacts/kbc_diagnostic_16cube_20steps.json`）
+- **KBC 诊断**（`development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json`）
 - **已有文档**：`docs/FORCE_METHODS_SURVEY.md`, `docs/L1_BLOCK_SHARDING_DESIGN.md`, `docs/triton_distributed_notes.md` 等 80+ 篇
 
 ### 2.3 32 卡三阶段分配
@@ -86,7 +86,7 @@ SDAA 平台（node099，32 卡满编）已完成 2D Couette 跨卡逐位复现�
 | `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` | B2 benchmark 原始数据 | — |
 | `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` | B3 benchmark 原始数据 | — |
 | `artifacts/suboff_best_rans_summary.json` | 三 benchmark 汇总 + key_findings | — |
-| `artifacts/kbc_diagnostic_16cube_20steps.json` | KBC vs BGK 诊断 | — |
+| `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` | KBC vs BGK 诊断 | — |
 
 ---
 
