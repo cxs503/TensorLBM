@@ -2,7 +2,7 @@
 
 All numbers below are measured by the scripts in this repository on this worktree;
 the commands are listed next to them. Nothing is hand-typed into a result file —
-`cases/mcmp_3d_stability/make_report.py` builds the benchmark table and the
+`benchmarks/verified/mcmp_3d_stability/make_report.py` builds the benchmark table and the
 figures directly from `artifacts/mcmp_3d_stability/**`.
 
 ## 1. Defect found: the D3Q19 "Guo" forcing branch over-injected the force by (2 − 1/(2τ))

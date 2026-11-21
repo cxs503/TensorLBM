@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-CASE = REPO / "cases" / "kovasznay_2d"
+CASE = REPO / "benchmarks/verified/kovasznay_2d/reproduction"
 for p in (REPO / "src", CASE):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))

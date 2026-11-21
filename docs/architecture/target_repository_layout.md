@@ -38,7 +38,7 @@ integrity verified before retiring a tracked copy.
 | `audit/` | `development/audit/` | Preserve mission identifiers, immutable evidence and links from published reports. |
 | `audits/` | Merge with mission archive | #2837 stages consolidation under `audit/` before the wider archive move. |
 | `benchmarks/` | Keep | One canonical entry per case. Preserve registered IDs and archived comparisons. |
-| `cases/` | Split by purpose | Benchmark cases to `benchmarks/`, supported demos to `examples/`, exploratory material to `development/`. Pilot includes m18115 and two case-pool runners with legacy CLI wrappers. |
+| `cases/` | Split by purpose | The [migration ledger](migrations/case-root-retirement-2026-11-21.json) maps all case runners to their benchmark owners and records the two superseded case-pool wrappers. |
 | `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
 | `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |

@@ -23,6 +23,21 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertEqual(sum("pdf" in row["tutorial"] for row in records), 33)
         self.assertTrue(all(row["current_acceptance"] == "not_evaluated" for row in records))
 
+    def test_relocated_kovasznay_runners_and_norberg_reference_are_searchable(self):
+        (kovasznay,) = self.registry("--case", "benchmarks/verified/kovasznay_2d")
+        directory = "benchmarks/verified/kovasznay_2d"
+        variant = next(item for item in kovasznay["variants"] if item["path"] == directory)
+        self.assertIn(f"{directory}/run.py", variant["source"])
+        self.assertIn(f"{directory}/reproduction/run.py", variant["source"])
+        self.assertIn(f"{directory}/reproduction/RESULTS.md", variant["documentation"])
+
+        (norberg,) = self.registry("--case", "benchmarks/pending/square_cylinder_norberg")
+        self.assertIn(
+            "benchmarks/pending/square_cylinder_norberg/refs/norberg1993.json",
+            norberg["variants"][0]["reference_files"],
+        )
+        self.assertEqual(norberg["current_acceptance"], "not_evaluated")
+
     def test_asset_index_covers_every_tracked_benchmark_path(self):
         data = subprocess.check_output([sys.executable, "tools/benchmark_registry.py", "--asset-index"], cwd=ROOT)
         inventory = json.loads(data)

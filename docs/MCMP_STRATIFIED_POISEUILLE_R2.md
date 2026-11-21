@@ -14,7 +14,7 @@ interface, each layer obeys `u'' = -G/nu_layer`:
 u_lower(0) = 0,  u_upper(H) = 0,  u_lower(h) = u_upper(h),  nu_lower u_lower'(h) = nu_upper u_upper'(h)
 ```
 
-closed form in `cases/mcmp_stratified_poiseuille/analytic.py` (uses `nu_lower b_lower =
+closed form in `benchmarks/verified/mcmp_stratified_poiseuille/analytic.py` (uses `nu_lower b_lower =
 nu_upper b_upper` directly; the generic 2x2 solve is singular in this equal-body-force limit).
 
 | parameter | value | note |
@@ -47,12 +47,12 @@ round-1 records, reproduced by `--mode walls`).
    cells with the mirrored nearest-fluid density (`rho_solid = rho_fluid(y=1)`), which makes the
    interaction sum a symmetric central difference across the wall plane: **zero** net wall force
    on a uniform field (asserted exactly to float32 round-off).
-2. **Spurious-current diagnostic** `cases/mcmp_stratified_poiseuille/spurious_diagnostic.py`:
+2. **Spurious-current diagnostic** `benchmarks/verified/mcmp_stratified_poiseuille/spurious_diagnostic.py`:
    time-resolved `S_all` (all fluid rows), `S_ifc` (interface band `|alpha-0.5|<0.25`), `S_bulk`
    (outside the band), plus `y_int`, `phi_contrast`, mass drift — so transient drift and the
    parasitic floor are not conflated.
-3. **Matrix driver** `cases/mcmp_stratified_poiseuille/run_r2_matrix.sh` (cell names = repro units)
-   and **benchmark assembler** `cases/mcmp_stratified_poiseuille/r2_benchmark.py` →
+3. **Matrix driver** `benchmarks/verified/mcmp_stratified_poiseuille/run_r2_matrix.sh` (cell names = repro units)
+   and **benchmark assembler** `benchmarks/verified/mcmp_stratified_poiseuille/r2_benchmark.py` →
    `benchmarks/verified/mcmp_stratified_poiseuille/result_r2.json` (every number in this report is
    generated there; nothing hand-typed).
 
@@ -161,9 +161,9 @@ calibration. The flow-rate error shows the same monotone trend (④-adjacent, §
 ## 6. Reproduction
 
 ```bash
-bash cases/mcmp_stratified_poiseuille/run_r2_matrix.sh all      # records + diagnostics
-PYTHONPATH=src:. python cases/mcmp_stratified_poiseuille/analyze.py      # 4 conventions
-PYTHONPATH=src:. python cases/mcmp_stratified_poiseuille/r2_benchmark.py # result_r2.json + figures
+bash benchmarks/verified/mcmp_stratified_poiseuille/run_r2_matrix.sh all      # records + diagnostics
+PYTHONPATH=src:. python benchmarks/verified/mcmp_stratified_poiseuille/analyze.py      # 4 conventions
+PYTHONPATH=src:. python benchmarks/verified/mcmp_stratified_poiseuille/r2_benchmark.py # result_r2.json + figures
 PYTHONPATH=src python -m pytest tests/test_mcmp_stratified_poiseuille.py \
     tests/test_mcmp_wall_neutral.py -q
 ```

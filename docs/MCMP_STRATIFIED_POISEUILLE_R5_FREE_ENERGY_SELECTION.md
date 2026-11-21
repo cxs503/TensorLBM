@@ -3,7 +3,7 @@
 **Anchor** `XVAL-LBM-R4-COEXISTENCE-CALIBRATION-AND-FREE-ENER` ｜ **Repo** TensorLBM ｜
 **Judgement** owner 15 % band (stretch 3 %) ｜ **Predecessor**
 `docs/MCMP_STRATIFIED_POISEUILLE_R4.md` ｜ **Code**
-`cases/free_energy_selection/{static_interface,selection}.py` ｜
+`benchmarks/pending/free_energy_selection/{static_interface,selection}.py` ｜
 **Tests** `tests/test_free_energy_selection_static_interface.py` (6 passed)
 
 ## 1 案例与物理背景
@@ -154,11 +154,11 @@ pseudopotential arm remains an honest FAIL and is not overwritten.
 ## 7 复现
 
 ```bash
-PYTHONPATH=src:. python cases/free_energy_selection/static_interface.py --arm matched \
+PYTHONPATH=src:. python benchmarks/pending/free_energy_selection/static_interface.py --arm matched \
     --steps 20000 --out artifacts/free_energy_selection/fe_static_matched.json
-PYTHONPATH=src:. python cases/free_energy_selection/static_interface.py --arm matched \
+PYTHONPATH=src:. python benchmarks/pending/free_energy_selection/static_interface.py --arm matched \
     --steps 20000 --float32 --out artifacts/free_energy_selection/fe_static_matched_f32.json
 # … standard arm, Γ = 0.5 arm, ny = 128 arm (see artifacts/free_energy_selection/*.json)
-PYTHONPATH=src:. python cases/free_energy_selection/selection.py     # table + figure + decision
+PYTHONPATH=src:. python benchmarks/pending/free_energy_selection/selection.py     # table + figure + decision
 PYTHONPATH=src:. python -m pytest tests/test_free_energy_selection_static_interface.py -q
 ```

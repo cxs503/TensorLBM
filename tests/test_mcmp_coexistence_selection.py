@@ -7,7 +7,7 @@ admissibility predicates are pure functions of the calibration record.
 
 from __future__ import annotations
 
-from cases.mcmp_stratified_poiseuille.coexistence import (
+from benchmarks.verified.mcmp_stratified_poiseuille.coexistence import (
     CONTRAST_MIN,
     DRIFT_MAX_CELLS,
     W_MIN_CELLS,

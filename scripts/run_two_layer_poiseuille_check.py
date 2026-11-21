@@ -12,7 +12,7 @@ import json
 import sys
 
 from tensorlbm.cases.two_layer_poiseuille import run_two_layer_poiseuille
-from cases.mcmp_stratified_poiseuille.analytic import layer_viscosities, layered_poiseuille
+from benchmarks.verified.mcmp_stratified_poiseuille.analytic import layer_viscosities, layered_poiseuille
 
 
 def main(argv=None) -> int:

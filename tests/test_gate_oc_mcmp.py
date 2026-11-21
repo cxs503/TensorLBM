@@ -159,7 +159,7 @@ def test_hygiene_flags_missing_rationale_and_zero_threshold():
 def test_mcmp_record_has_no_hand_copied_thresholds():
     """The recorded thresholds in ``result.json`` must equal the ones the
     producing sources compare against (parsed, not imported)."""
-    case = os.path.join(REPO_ROOT, "cases", "mcmp_stratified_poiseuille")
+    case = os.path.join(REPO_ROOT, "benchmarks/verified/mcmp_stratified_poiseuille")
     res = json.load(open(os.path.join(VER, "result.json"), encoding="utf-8"))
     pairs = [("r3_benchmark.py", "TARGET", "err_Q", "err_Q_mix_abs"),
              ("r3_benchmark.py", "TARGET", "err_iface", "err_interface_rel_abs"),
@@ -178,7 +178,7 @@ def test_mcmp_gate_oc_report_is_reproducible():
     """Replay the committed operating-characteristic report: every recorded
     verdict must be machine-reproducible and no mutant may survive."""
     path = os.path.join(VER, "gate_oc.json")
-    assert os.path.exists(path), "run cases/mcmp_stratified_poiseuille/gate_oc_run.py first"
+    assert os.path.exists(path), "run benchmarks/verified/mcmp_stratified_poiseuille/gate_oc_run.py first"
     rep = json.load(open(path, encoding="utf-8"))
     assert rep["reproduction"]["n_mismatch"] == 0, rep["reproduction"]["mismatches"]
     assert rep["reproduction"]["n_compared"] >= 90

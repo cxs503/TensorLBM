@@ -1,7 +1,7 @@
 """Assemble ``result.json`` for the mcmp_stratified_poiseuille benchmark.
 
 Reads every JSON record produced by
-``cases/mcmp_stratified_poiseuille/run_matrix.py`` (cluster or local; the
+``benchmarks/verified/mcmp_stratified_poiseuille/run_matrix.py`` (cluster or local; the
 records are the only source of numbers — nothing is retyped), applies the
 thresholds declared in ``spec.json`` and writes ``result.json`` next to this
 file together with a sha256 of each input record.

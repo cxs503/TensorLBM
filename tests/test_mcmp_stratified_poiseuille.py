@@ -29,12 +29,12 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cases.mcmp_stratified_poiseuille.analytic import (  # noqa: E402
+from benchmarks.verified.mcmp_stratified_poiseuille.analytic import (  # noqa: E402
     CS2,
     layer_viscosities,
     layered_poiseuille,
 )
-from cases.mcmp_stratified_poiseuille.run_sweep import run_case  # noqa: E402
+from benchmarks.verified.mcmp_stratified_poiseuille.run_sweep import run_case  # noqa: E402
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
 from tensorlbm.multiphase import collide_sc_two_component  # noqa: E402
 

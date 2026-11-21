@@ -4,7 +4,7 @@
 repair) · model: Shan–Chen two-component D2Q9 + BGK, `u_eq="viscous"`, `force_scheme="guo"`,
 neutral-wetting (`mirror`) SC wall.
 
-All numbers below are **generated** by `cases/mcmp_stratified_poiseuille/r3_benchmark.py` from the
+All numbers below are **generated** by `benchmarks/verified/mcmp_stratified_poiseuille/r3_benchmark.py` from the
 raw records in `artifacts/mcmp_stratified_poiseuille/final/` into
 `benchmarks/verified/mcmp_stratified_poiseuille/result_r3.json` (source of truth; per-record
 sha256 in `provenance`). Nothing is hand-typed.
@@ -21,7 +21,7 @@ the classical two-layer Poiseuille solution
 u'' = -G/nu_layer,  u(0)=0, u(H)=0,  u_l(h)=u_u(h),  nu_l u_l'(h) = nu_u u_u'(h)
 ```
 
-closed form in `cases/mcmp_stratified_poiseuille/analytic.py` (`layered_poiseuille`, validated
+closed form in `benchmarks/verified/mcmp_stratified_poiseuille/analytic.py` (`layered_poiseuille`, validated
 against the single-layer parabolic limit). `nu_sigma = cs²(tau_sigma - 1/2)`; two viscosity rules
 are reported because the "true" layer viscosity of a diffuse two-component interface is
 model-dependent: **mixture** `nu_layer = Σ rho_sigma nu_sigma` (continuum limit of the co-moving
@@ -152,8 +152,8 @@ the residual is the first-order half-cell wall calibration plus the diffuse-inte
 ## 6. Reproduction
 
 ```bash
-PYTHONPATH=src python cases/mcmp_stratified_poiseuille/run_final_matrix.py       # 12 cells (~35 min CPU)
-PYTHONPATH=src:. python cases/mcmp_stratified_poiseuille/r3_benchmark.py         # result_r3.json + figures
+PYTHONPATH=src python benchmarks/verified/mcmp_stratified_poiseuille/run_final_matrix.py       # 12 cells (~35 min CPU)
+PYTHONPATH=src:. python benchmarks/verified/mcmp_stratified_poiseuille/r3_benchmark.py         # result_r3.json + figures
 PYTHONPATH=src:. python -m pytest tests/test_two_layer_poiseuille_entry.py \
     tests/test_mcmp_wall_neutral.py tests/test_mcmp_stratified_poiseuille.py -q
 PYTHONPATH=src:. python scripts/run_two_layer_poiseuille_check.py --ny 25 --steps 20000
@@ -167,8 +167,8 @@ PYTHONPATH=src:. python scripts/run_two_layer_poiseuille_check.py --ny 25 --step
 | `benchmarks/verified/mcmp_stratified_poiseuille/result_r3.json` | five criteria, ref-vs-got per cell, provenance (sha256), `repro_cmd`, `external_anchor` |
 | `src/tensorlbm/multiphase.py` | `wall_mode={"dry","mirror"}` (R2) + `sc_form={"standard","edm"}` (R3) |
 | `src/tensorlbm/cases/two_layer_poiseuille.py` | library entry point (integration caller) |
-| `cases/mcmp_stratified_poiseuille/run_final_matrix.py` | pre-declared round-3 matrix driver |
-| `cases/mcmp_stratified_poiseuille/r3_benchmark.py` | benchmark assembler + figures |
+| `benchmarks/verified/mcmp_stratified_poiseuille/run_final_matrix.py` | pre-declared round-3 matrix driver |
+| `benchmarks/verified/mcmp_stratified_poiseuille/r3_benchmark.py` | benchmark assembler + figures |
 
 ## 8. External anchors
 

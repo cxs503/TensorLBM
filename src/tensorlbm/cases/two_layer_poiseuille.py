@@ -9,7 +9,7 @@ co-moving Poiseuille profile (velocity and shear stress continuous at the
 interface, no slip at both walls).
 
 This function is the *solver-side* API used by the benchmark of the ledger item
-``GAP-LBM-MCMP-POISEUILLE`` (``cases/mcmp_stratified_poiseuille/``) and by
+``GAP-LBM-MCMP-POISEUILLE`` (``benchmarks/verified/mcmp_stratified_poiseuille/``) and by
 ``scripts/run_two_layer_poiseuille_check.py``.  It returns only simulated
 quantities — the analytic reference lives with the benchmark, so that library
 code carries no case-specific constants.

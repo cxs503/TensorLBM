@@ -158,14 +158,23 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertEqual(manifest[item["old_path"]], item["new_path"])
                 self.assertFalse((REPO / item["old_path"]).exists())
 
-    def test_case_pool_entries_keep_compatibility_wrappers(self):
+    def test_retired_case_wrappers_preserve_original_bytes_and_canonical_entries(self):
         ledger = json.loads(
-            (LEDGER_PATH.parent / "case-pool-entrypoints-2026-11-21.json").read_text()
+            (LEDGER_PATH.parent / "case-root-retirement-2026-11-21.json").read_text()
         )
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "--", ledger["root_removed"]], cwd=REPO, text=True,
+        )
+        self.assertEqual(tracked, "")
         for item in ledger["entries"]:
-            canonical = REPO / item["new_path"]
+            if "current_entrypoint" not in item:
+                continue
+            canonical = REPO / item["current_entrypoint"]
             with self.subTest(runner=canonical):
-                wrapper = ast.parse((REPO / item["old_path"]).read_text(encoding="utf-8"))
+                archived = REPO / item["new_path"]
+                raw = archived.read_bytes()
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["original_sha256"])
+                wrapper = ast.parse(raw)
                 target = canonical.relative_to(REPO).with_suffix("")
                 self.assertIn(
                     ".".join(target.parts),

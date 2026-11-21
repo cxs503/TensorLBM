@@ -4,7 +4,7 @@
 **任务**：m16895（paper 席自主工时）
 **日期**：2026-11-12
 **代码**：`src/tensorlbm/audit/gate_oc.py`（通用判据机器，零领域语义）、
-`cases/mcmp_stratified_poiseuille/gate_oc_run.py`（本算例判据集，领域侧）
+`benchmarks/verified/mcmp_stratified_poiseuille/gate_oc_run.py`（本算例判据集，领域侧）
 **测试**：`tests/test_gate_oc_mcmp.py`（16 passed）
 **产物**：`benchmarks/verified/mcmp_stratified_poiseuille/gate_oc.json`、`figures/gate_oc/fig{1,2,3}_*.png`
 **不重跑任何 LBM**：本单是纯后处理审计（本机 load15≥125，按容量纪律只做轻量活）。
@@ -141,7 +141,7 @@ PASS 记录**（0 PASS / 3 FAIL / 30 WITHHELD）——判据③的 honest-FAIL �
 
 ```bash
 cd <repo>
-PYTHONPATH=src:. python cases/mcmp_stratified_poiseuille/gate_oc_run.py     # 生成 gate_oc.json + 3 图
+PYTHONPATH=src:. python benchmarks/verified/mcmp_stratified_poiseuille/gate_oc_run.py     # 生成 gate_oc.json + 3 图
 PYTHONPATH=src   python -m pytest tests/test_gate_oc_mcmp.py -q             # 16 passed
 ```
 
