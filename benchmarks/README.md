@@ -26,6 +26,9 @@ externalize existing fixtures until consumers can retrieve and validate them.
 
 Use `python tools/benchmark_registry.py --case couette_2d` from the repository
 root to look up tracked runners, local references, results and tutorial downloads.
+Each case variant also lists tracked files under its own `evidence/` directory,
+including nested run logs and figures. The registry records these paths in
+`evidence` and keeps the existing `results` field for case result inputs.
 Use `--case matrix:ship_resistance_suboff` to retrieve the matrix definition,
 reference provenance, reproduction command and archived comparison for that case.
 A missing comparison is returned as null.
