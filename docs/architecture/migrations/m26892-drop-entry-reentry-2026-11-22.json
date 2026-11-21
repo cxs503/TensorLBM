@@ -1,0 +1,38 @@
+{
+  "source_commit": "fe3d13b64ccadf30dba36033459e5f59680d72ea",
+  "root_directories_before": 15,
+  "root_directories_after": 14,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/X/TENS1-CSF-SMOOTH-R1.md",
+      "new_path": "development/audit/drop_entry/BB/m26892/TENS1-CSF-SMOOTH-R1.md",
+      "original_git_blob": "a9ea24f30f476a78a09286091ab8d2fcf083b58b",
+      "git_mode": "100644",
+      "size_bytes": 1936,
+      "original_sha256": "fff285f89a2a9d1922f4a110302526649b2265cf6d0f8e1ede0f996a4bb6e11c",
+      "published_duplicate": "docs/drop_entry_bb/X_TENS1-CSF-SMOOTH-R1.md"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-TENS1-CSF-SMOOTH.draft.md",
+      "new_path": "development/audit/drop_entry/BB/m26892/DE-X-TENS1-CSF-SMOOTH.draft.md",
+      "original_git_blob": "6b19fee9fa964b6e109137acad1619470d5e8ed7",
+      "git_mode": "100644",
+      "size_bytes": 1010,
+      "original_sha256": "e1261e02683b283bdafb18f06f1a958e588cfb24a44f08748e7eded7bdd31bec",
+      "manifest_registration": false
+    },
+    {
+      "old_path": "src/tensorlbm/free_surface_lbm_2d.py.bak",
+      "new_path": "development/audit/drop_entry/BB/m26892/source_snapshot/free_surface_lbm_2d.py.bak",
+      "original_git_blob": "5d30353f6294e7a88bad050d3449edd2f7fe1b33",
+      "git_mode": "100644",
+      "size_bytes": 35872,
+      "original_sha256": "ea40eb32d5b3fb34eb76dc4df9fd482db08f456cfecd3f4222eee7a8d1a2df23",
+      "duplicate_of": "src/tensorlbm/free_surface_lbm_2d.py@da757be16919e21ffab434fbd0a1df2327133b3a"
+    }
+  ],
+  "reference_scan": "No import, CLI, CI, benchmark registry or package consumer referred to the retired root or the .bak file. The card has a byte-identical published copy under docs/drop_entry_bb/.",
+  "manifest_note": "The draft path was reused after m26734 with different bytes. Its revision-specific mapping is retained here rather than adding a duplicate old_path key to migration_manifest.csv.",
+  "compatibility": "All three assets retain identical bytes. The active free_surface_lbm_2d.py from m26892 remains unchanged; its predecessor snapshot is outside the authoritative source tree.",
+  "scientific_scope": "This migration does not modify the active numerical source, configuration, result, acceptance state or public API."
+}

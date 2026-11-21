@@ -26,6 +26,7 @@ def policy() -> dict:
             "examples",
             "models",
             "scripts",
+            "src",
             "tests",
             "tools",
         ],
@@ -152,6 +153,22 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertEqual(self.check(["models/old.pt"]), [])
         for name in ["models/new.pt", "tests/fixtures/weights.ONNX"]:
             self.assertIn("model-file:", self.check([name])[0])
+
+    def test_source_backup_files_are_rejected(self):
+        for name in [
+            "src/tensorlbm/solver.py.bak",
+            "src/tensorlbm/solver.py.orig",
+            "src/tensorlbm/solver.py.rej",
+            "src/tensorlbm/solver.py~",
+        ]:
+            with self.subTest(name=name):
+                self.write(name)
+                self.assertTrue(any(
+                    failure.startswith("source-backup:") for failure in self.check([name])
+                ))
+        archived = "development/audit/m1/source_snapshot/solver.py.bak"
+        self.write(archived)
+        self.assertEqual(self.check([archived]), [])
 
     def test_small_evidence_and_reference_data_are_allowed(self):
         names = [

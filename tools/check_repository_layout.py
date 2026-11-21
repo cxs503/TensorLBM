@@ -18,6 +18,7 @@ MAX_FILE_BYTES = 5 * 1024 * 1024
 GENERATED_ROOTS = {"runs", "runs_prop", "outputs"}
 GENERATED_PARTS = {"__pycache__", "node_modules", ".venv", ".pytest_cache", ".ruff_cache"}
 MODEL_SUFFIXES = {".pt", ".pth", ".ckpt", ".onnx", ".safetensors"}
+SOURCE_BACKUP_SUFFIXES = (".bak", ".orig", ".rej", "~")
 PATH_LISTS = ("root_files", "legacy_root_files", "legacy_generated_files", "legacy_model_files")
 RETIRED_ROOT_DIRECTORIES = {
     ".audit",
@@ -120,6 +121,11 @@ def is_generated(name: str) -> bool:
     )
 
 
+def is_source_backup(name: str) -> bool:
+    path = PurePosixPath(name)
+    return path.parts[:1] == ("src",) and path.name.endswith(SOURCE_BACKUP_SUFFIXES)
+
+
 def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
     failures = []
     roots = set(policy["root_files"]) | set(policy["legacy_root_files"])
@@ -159,6 +165,10 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         if PurePosixPath(name).suffix.lower() in MODEL_SUFFIXES and name not in models:
             failures.append(
                 f"model-file: {name} — use a versioned external artifact with a checksum"
+            )
+        if is_source_backup(name):
+            failures.append(
+                f"source-backup: {name} — keep one authoritative source file and archive snapshots under development/"
             )
         ceiling = policy["large_files"].get(name, MAX_FILE_BYTES)
         if size > ceiling:

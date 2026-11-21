@@ -380,6 +380,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         ledgers = [
             LEDGER_PATH.parent / "m26734-drop-entry-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26856-audit-reentry-2026-11-21.json",
+            LEDGER_PATH.parent / "m26892-drop-entry-reentry-2026-11-22.json",
         ]
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
@@ -403,13 +404,28 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     self.assertEqual(index[0], item["git_mode"])
                     if "new_sha256" not in item:
                         self.assertEqual(index[1], item["original_git_blob"])
-                    self.assertEqual(manifest[item["old_path"]]["new_path"], item["new_path"])
+                    if item.get("manifest_registration", True):
+                        self.assertEqual(
+                            manifest[item["old_path"]]["new_path"], item["new_path"]
+                        )
                     self.assertFalse((REPO / item["old_path"]).exists())
         m26734 = json.loads(ledgers[0].read_text(encoding="utf-8"))
         published = m26734["entries"][0]["published_duplicate"]
         self.assertEqual(
             (REPO / published).read_bytes(),
             (REPO / m26734["entries"][0]["new_path"]).read_bytes(),
+        )
+        m26892 = json.loads(ledgers[2].read_text(encoding="utf-8"))
+        published = m26892["entries"][0]["published_duplicate"]
+        self.assertEqual(
+            (REPO / published).read_bytes(),
+            (REPO / m26892["entries"][0]["new_path"]).read_bytes(),
+        )
+        predecessor = m26892["entries"][2]["duplicate_of"]
+        old_path, old_revision = predecessor.split("@", 1)
+        self.assertEqual(
+            subprocess.check_output(["git", "show", f"{old_revision}:{old_path}"], cwd=REPO),
+            (REPO / m26892["entries"][2]["new_path"]).read_bytes(),
         )
         publisher = ast.parse(
             (REPO / "development/audit/drop_entry/BB/m26856/send_report.py").read_text()
