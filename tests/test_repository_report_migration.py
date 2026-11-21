@@ -666,6 +666,38 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)
         self.assertIn('EVIDENCE_DIR / "logs" / "sweep.log"', runner)
 
+    def test_poiseuille_sdaa_evidence_preserves_bytes_links_and_scope(self):
+        ledger_path = LEDGER_PATH.parent / "poiseuille-channel-duct-pipe-sdaa-2026-11-22.json"
+        entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]
+        self.assertEqual(len(entries), 4)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            paths = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+        preserved = {}
+        for item in entries:
+            with self.subTest(path=item["old_path"]):
+                target = REPO / item["new_path"]
+                raw = target.read_bytes()
+                self.assertEqual(len(raw), item["size_bytes"])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["original_sha256"])
+                indexed = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO, text=True,
+                ).split()
+                self.assertEqual(indexed[:2], [item["git_mode"], item["original_git_blob"]])
+                self.assertEqual(paths[item["old_path"]], item["new_path"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                case = target.parents[2]
+                link = f"](evidence/sdaa/{target.name})"
+                self.assertIn(link, (case / "README.md").read_text(encoding="utf-8"))
+                report = REPO / "docs" / "sdaa_sweep" / f"{case.name}.md"
+                self.assertIn(f"](../../{item['new_path']})", report.read_text(encoding="utf-8"))
+                preserved[target.stem] = json.loads(raw)
+        self.assertEqual(preserved["sdaa_poiseuille_2d"]["verdict"]["status"], "FAIL")
+        self.assertEqual(preserved["sdaa_poiseuille_3d_duct"]["overall_verdict"], "FAIL")
+        pipe = preserved["sdaa_poiseuille_3d_pipe"]
+        self.assertEqual((pipe["verdict"], pipe["config"]["R"]), ("PASS", 20))
+        self.assertNotIn("verdict", preserved["sdaa_poiseuille_3d_pipe_case"])
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

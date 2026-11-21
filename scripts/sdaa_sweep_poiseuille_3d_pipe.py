@@ -35,6 +35,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 CASE_DIR = REPO / "benchmarks" / "verified" / "poiseuille_3d_pipe"
+OUTPUT_DIR = REPO / "outputs" / "sdaa" / "poiseuille_3d_pipe"
 
 # --- original acceptance criteria (README), NOT tuned -----------------------
 # primary: radially-averaged profile max relative error in the central region
@@ -99,8 +100,8 @@ def main() -> int:
     ap.add_argument("--device", default="sdaa:0")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--smoke", action="store_true", help="200-step path/device check")
-    ap.add_argument("--out-json", default=str(REPO / "artifacts" / "sdaa_poiseuille_3d_pipe.json"))
-    ap.add_argument("--case-out", default=str(REPO / "artifacts" / "sdaa_poiseuille_3d_pipe_case.json"))
+    ap.add_argument("--out-json", default=str(OUTPUT_DIR / "sdaa_poiseuille_3d_pipe.json"))
+    ap.add_argument("--case-out", default=str(OUTPUT_DIR / "sdaa_poiseuille_3d_pipe_case.json"))
     args = ap.parse_args()
 
     if args.smoke:
@@ -112,6 +113,7 @@ def main() -> int:
     import torch
 
     device = torch.device(args.device)
+    Path(args.case_out).parent.mkdir(parents=True, exist_ok=True)
     wall0 = time.time()
     record: dict = {
         "case": "poiseuille_3d_pipe",

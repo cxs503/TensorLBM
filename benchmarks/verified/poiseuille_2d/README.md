@@ -1,5 +1,9 @@
 # B13: 2D Poiseuille 流（压力差驱动）— 解析解验证
 
+历史 SDAA 扫掠：[设备与判据记录](evidence/sdaa/sdaa_poiseuille_2d.json)、
+[说明](../../../docs/sdaa_sweep/poiseuille_2d.md)。该工件仅覆盖 H=20，
+总判定为 `FAIL`。
+
 ## 概述
 
 - **问题**：二维层流管道流（平行平板间 fully-developed Poiseuille 流），压力差驱动。

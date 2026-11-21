@@ -2,7 +2,7 @@
 """SDAA sweep for poiseuille_2d benchmark.
 
 This script runs the poiseuille_2d case on SDAA device and produces:
-- artifacts/sdaa_poiseuille_2d.json with device evidence and verdict
+- outputs/sdaa/poiseuille_2d/sdaa_poiseuille_2d.json with device evidence and verdict
 - docs/sdaa_sweep/poiseuille_2d.md with detailed results
 """
 
@@ -17,6 +17,7 @@ os.environ["TRITON_INTERPRET"] = "1"
 
 # Add repo paths
 REPO_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = REPO_ROOT / "outputs" / "sdaa" / "poiseuille_2d"
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -149,7 +150,7 @@ def run_sdaa_sweep():
     verdict = build_verdict(results, device_evidence)
     
     # Save artifacts
-    artifact_path = REPO_ROOT / "artifacts" / "sdaa_poiseuille_2d.json"
+    artifact_path = OUTPUT_DIR / "sdaa_poiseuille_2d.json"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     
     artifact = {
@@ -211,7 +212,7 @@ def build_verdict(results, device_evidence):
 
 def save_docs(artifact):
     """Save documentation."""
-    docs_path = REPO_ROOT / "docs" / "sdaa_sweep" / "poiseuille_2d.md"
+    docs_path = OUTPUT_DIR / "poiseuille_2d.md"
     docs_path.parent.mkdir(parents=True, exist_ok=True)
     
     lines = [
