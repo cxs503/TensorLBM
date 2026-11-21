@@ -18,8 +18,12 @@
       "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
     },
     "benchmarks/collision_operator_matrix/run_all.py": {
-      "matches": 5,
-      "matching_lines_sha256": "31f649fd3db491db1723de07b7481981285e3e63aae1287201d63900bf155e61"
+      "matches": 6,
+      "matching_lines_sha256": "1300ae9b68f45e363757e8f884ae2b35d4e6d89a70b59e0373007ea02b4957b8"
+    },
+    "benchmarks/collision_operator_matrix/run_cluster.py": {
+      "matches": 1,
+      "matching_lines_sha256": "8e34102f468a330f576b430339192aa80a387fd2149f56c35c412ce95ded0065"
     },
     "benchmarks/compile_route.py": {
       "matches": 2,
@@ -109,6 +113,14 @@
       "matches": 1,
       "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
     },
+    "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py": {
+      "matches": 1,
+      "matching_lines_sha256": "31914315ce0d9e7dc2fd2e4a4bf1891f218bb73d45fb58e95466ef10e0bc4b45"
+    },
+    "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/run_xval.py": {
+      "matches": 1,
+      "matching_lines_sha256": "31914315ce0d9e7dc2fd2e4a4bf1891f218bb73d45fb58e95466ef10e0bc4b45"
+    },
     "examples/highre_cylinder2d_accurate.py": {
       "matches": 1,
       "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
@@ -133,17 +145,25 @@
       "matches": 1,
       "matching_lines_sha256": "3eb3e76c5917e6ac8db58ff47bb5e4b24319b3bbf6513c8d26b588b1b4548c25"
     },
-    "scripts/audit/m18748_sparse_sublist_board_audit.py": {
+    "scripts/audit/m18748_make_field_figure.py": {
       "matches": 1,
-      "matching_lines_sha256": "c203bf5bf59cf5d764fd978cbba52dc5190127d92eb02c96a05f9f78ea166312"
+      "matching_lines_sha256": "dc262ca5e68e092de94a8ef7dbf00aea2a2660876da237b522e748ea4dd4ce17"
+    },
+    "scripts/audit/m18748_sparse_sublist_board_audit.py": {
+      "matches": 2,
+      "matching_lines_sha256": "8922c79de3b2980e3cf3c12dd66b4c39451e677b4d5b09bbd8f51fe0f200de47"
     },
     "scripts/audit_m17855_probe.py": {
-      "matches": 1,
-      "matching_lines_sha256": "c05e81c1d8d03c5e6d5dff53c9c279876db864f4914d7bc7cf3bd9a52188f8f2"
+      "matches": 2,
+      "matching_lines_sha256": "1e779bbd7a3daeffd8fd1accb7ac9b883fcc81db47c3b62f9f54f554fbc7b0c0"
     },
     "scripts/publish_audit_report_m17855.py": {
       "matches": 2,
       "matching_lines_sha256": "42effb676ffd68213b1ac4e69484b5c308368da4bfbfbc2003018bde65afdae4"
+    },
+    "scripts/w26_ghia/build_anchor_register.py": {
+      "matches": 1,
+      "matching_lines_sha256": "b560f181c1330c1438e5209b6fb1f8c3ebf8cbed6b9d468b8dec39432446c909"
     },
     "tests/test_adjoint_inversion.py": {
       "matches": 2,
@@ -156,6 +176,14 @@
     "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/run_xval.py": {
       "matches": 1,
       "matching_lines_sha256": "2da357fcbf4c667d8a8dcf2e04fea48af0d7320d15a516c9e39368f4f0dc2fce"
+    },
+    "xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/run_all.py": {
+      "matches": 1,
+      "matching_lines_sha256": "c90fb54de82044facec2c5508da2e5efa0b6fdcc7c9b9b8e37b9d569b6009d53"
+    },
+    "xval/model_matrix_ci_plus_coverage/run_matrix.py": {
+      "matches": 1,
+      "matching_lines_sha256": "5601588f42a845aed38cd8e4d2a00752588415b8790996a98963bb004afe6c2a"
     }
   },
   "canonical_root": "src",
