@@ -6,6 +6,8 @@ provenance; it does not validate the scientific claims in the archived reports.
 
 from __future__ import annotations
 
+import ast
+
 import csv
 import hashlib
 import json
@@ -95,6 +97,42 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertIn(f"](reports/{name})", index)
                 case_readme = (REPO / "benchmarks" / case / "README.md").read_text(encoding="utf-8")
                 self.assertIn(f"](../../../docs/reports/{name})", case_readme)
+
+    def test_case_pool_entries_keep_compatibility_wrappers(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "case-pool-entrypoints-2026-11-21.json").read_text()
+        )
+        for item in ledger["entries"]:
+            canonical = REPO / item["new_path"]
+            with self.subTest(runner=canonical):
+                wrapper = ast.parse((REPO / item["old_path"]).read_text(encoding="utf-8"))
+                target = canonical.relative_to(REPO).with_suffix("")
+                self.assertIn(
+                    ".".join(target.parts),
+                    [node.module for node in wrapper.body if isinstance(node, ast.ImportFrom)],
+                )
+                index = canonical.with_name("README.md")
+                text = index.read_text(encoding="utf-8")
+                self.assertIn(canonical.relative_to(REPO).as_posix(), text)
+                for link in re.findall(r"\]\(([^)]+)\)", text):
+                    self.assertTrue((index.parent / link).is_file(), link)
+
+    def test_development_archive_pilot_preserves_linked_evidence(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "development-archive-first-batch.json").read_text()
+        )
+        campaign = REPO / "xval/XVAL-LBM-GRAPH-UNROLL-BPTT-LES-PARAMETER/README.md"
+        text = campaign.read_text(encoding="utf-8")
+        targets = re.findall(r"\]\(([^)]+)\)", text)
+        resolved = {(campaign.parent / target).resolve() for target in targets}
+        for target in resolved:
+            self.assertTrue(target.is_file(), str(target))
+        for item in ledger["entries"]:
+            destination = REPO / item["new_path"]
+            with self.subTest(path=destination):
+                self.assert_fingerprint(destination, item["sha256"], item["size_bytes"])
+                self.assertIn(destination, resolved)
+                self.assertFalse((REPO / item["old_path"]).exists())
 
     def test_sod_figures_and_m26765_publisher_preserve_assets(self):
         ledger = json.loads(
