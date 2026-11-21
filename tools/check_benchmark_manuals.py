@@ -71,8 +71,8 @@ def check(root: Path = ROOT) -> dict:
                     errors.append(f"line {line_no}: {case_id} missing benchmark target {target_path}")
             record["benchmark_path"] = paths[0]
         records.append(record)
-    if len(records) != 33:
-        errors.append(f"expected 33 indexed cases, found {len(records)}")
+    if len(records) != 35:
+        errors.append(f"expected 35 indexed cases, found {len(records)}")
     return {"cases": records, "errors": errors, "count": len(records),
             "pdf_count": sum(bool(r["pdf"]) for r in records),
             "word_count": sum(bool(r["word"]) for r in records)}
