@@ -62,6 +62,17 @@ class RepositoryLayoutTests(unittest.TestCase):
             self.write(name)
         self.assertEqual(self.check(["README.md", "old_debug.py", "experiments/new.py"]), [])
 
+    def test_legacy_audit_directory_only_allows_retained_paths(self):
+        config = policy()
+        config["root_directories"].extend(["audit", "audits"])
+        config["legacy_audit_files"] = ["audits/m1/old.json"]
+        names = ["audits/m1/old.json", "audits/m1/new.json", "audit/m2/new.json"]
+        for name in names:
+            self.write(name)
+        failures = self.check(names, config)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("legacy-audit: audits/m1/new.json", failures[0])
+
     def test_new_root_path_fails(self):
         self.write("new_debug.py")
         self.assertIn("root-file:", self.check(["new_debug.py"])[0])

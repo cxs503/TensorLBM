@@ -95,6 +95,15 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 case_readme = (REPO / "benchmarks" / case / "README.md").read_text(encoding="utf-8")
                 self.assertIn(f"](../../../docs/reports/{name})", case_readme)
 
+    def test_audit_records_retain_bytes_and_sibling_evidence(self):
+        ledger = json.loads((LEDGER_PATH.parent / "audit-records-2026-11-21.json").read_text())
+        for move in ledger["entries"]:
+            with self.subTest(path=move["new_path"]):
+                self.assert_fingerprint(REPO / move["new_path"], move["sha256"], move["size_bytes"])
+        report = REPO / "audit/m18313/audit_m18313.md"
+        self.assertIn("numbers_from_artifact.json", report.read_text())
+        self.assertTrue(report.with_name("numbers_from_artifact.json").is_file())
+
     def test_november_root_migration_destinations(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             moves = {

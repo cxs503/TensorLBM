@@ -37,6 +37,8 @@ def load_policy(path: Path) -> dict:
     path_lists = PATH_LISTS
     if policy["schema_version"] == 2:
         path_lists += ("root_directories",)
+        if "legacy_audit_files" in policy:
+            path_lists += ("legacy_audit_files",)
     expected = {"schema_version", "baseline_revision", "large_files", *path_lists}
     if set(policy) != expected:
         raise ValueError(f"Expected policy keys: {sorted(expected)}")
@@ -47,6 +49,8 @@ def load_policy(path: Path) -> dict:
         paths = [validate_path(value) for value in values]
         if len(paths) != len(set(paths)):
             raise ValueError(f"Duplicate paths in {key}")
+        if key == "legacy_audit_files" and any(not p.startswith("audits/") for p in paths):
+            raise ValueError("Legacy audit paths must be under audits/")
         if key in {"root_files", "legacy_root_files", "root_directories"} and any(
             "/" in p for p in paths
         ):
@@ -91,6 +95,7 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
     generated = set(policy["legacy_generated_files"])
     models = set(policy["legacy_model_files"])
     allowed_dirs = set(policy.get("root_directories", ()))
+    legacy_audits = set(policy.get("legacy_audit_files", ()))
     unexpected_dirs = set()
     for name in names:
         path = repo / name
@@ -107,6 +112,8 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         directory, separator, _ = name.partition("/")
         if separator and policy["schema_version"] == 2 and directory not in allowed_dirs:
             unexpected_dirs.add(directory)
+        if directory == "audits" and "legacy_audit_files" in policy and name not in legacy_audits:
+            failures.append(f"legacy-audit: {name} — place new mission records under audit/")
         if is_generated(name) and name not in generated:
             failures.append(f"generated-file: {name} — keep raw outputs out of Git")
         if PurePosixPath(name).suffix.lower() in MODEL_SUFFIXES and name not in models:
