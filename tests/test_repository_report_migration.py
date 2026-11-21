@@ -170,6 +170,23 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     {"migrated_pending_review", "deduplicated_pending_review", "accepted"},
                 )
 
+    def test_water_entry_report_layout_preserves_assets_and_index_links(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "water-entry-report-layout-2026-11-21.json").read_text()
+        )
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                destination = item["new_path"]
+                self.assert_fingerprint(REPO / destination, item["sha256"], item["size_bytes"])
+                self.assertEqual(manifest[item["old_path"]], destination)
+                self.assertFalse((REPO / item["old_path"]).exists())
+        index = REPO / "docs/reports/water_entry/README.md"
+        for target in re.findall(r"\]\(([^)]+)\)", index.read_text(encoding="utf-8")):
+            with self.subTest(link=target):
+                self.assertTrue((index.parent / target).exists())
+
 
 if __name__ == "__main__":
     unittest.main()
