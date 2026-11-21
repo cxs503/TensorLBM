@@ -85,6 +85,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"tensorlbm.verification.cavity_re3200" = ["ghia_re3200_reference.json"]
+
 [tool.setuptools.dynamic]
 version = {attr = "tensorlbm._version.__version__"}
 

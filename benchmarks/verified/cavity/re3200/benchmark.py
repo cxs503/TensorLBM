@@ -34,7 +34,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-sys.path.insert(0, str(REPO / "TensorLBM" / "src"))
+sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.verification.cavity_re3200 import reference as refmod  # noqa: E402
 from tensorlbm.verification.cavity_re3200 import scoring  # noqa: E402
