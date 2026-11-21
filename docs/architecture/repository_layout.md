@@ -122,6 +122,9 @@ Directories whose retirement is recorded in the migration ledgers cannot be
 restored by merely adding them back to `root_directories`. Reintroductions must be
 placed under their current owner (`development/`, `benchmarks/`, `docs/`, or
 another maintained root) and preserve the new asset's provenance.
+Backup/editor files under `src/` are rejected as competing source copies; preserve
+an intentional historical snapshot under `development/` with its source revision
+and checksum instead.
 
 `repository_layout_policy.json` records the initial inventory at commit
 `ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc`: 11 canonical root files,
