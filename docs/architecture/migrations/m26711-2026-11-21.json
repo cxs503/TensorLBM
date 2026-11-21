@@ -3,7 +3,8 @@
   "upstream_prs": [
     2814,
     2817,
-    2818
+    2818,
+    2821
   ],
   "report_missions": [
     26711,
@@ -90,6 +91,24 @@
       "size_bytes": 2264,
       "sha256": "00d30a644734dc87bae04789bdb54699782d79f978e0236a508480286a804c48",
       "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_DIAG_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_DIAG_W1.md",
+      "git_blob": "3c1f31344e045b957f6eba3564901623e93d66b8",
+      "git_mode": "100644",
+      "size_bytes": 1852,
+      "sha256": "0561f4c0959d92635c5a3ca8ee9f5667e1bd9f1e2f438b593dba6f925a4676a2",
+      "source_revision": "7c86da1a41691c56333bff32c1723b5bfc78e1a7"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-DIAG-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-DIAG-W1.draft.md",
+      "git_blob": "7826a923cee34416ef73eaabcc7ce88d9edaf20e",
+      "git_mode": "100644",
+      "size_bytes": 2010,
+      "sha256": "5ccc46c93a3feeeab64314cb5691926e88e800af2e42af13adede30d975d2357",
+      "source_revision": "7c86da1a41691c56333bff32c1723b5bfc78e1a7"
     }
   ],
   "compatibility": "Two versions of the same tmp/report.json path existed on main. The source revision and original Git blob in each mapping distinguish the two mission reports. Complete contents and modes are retained. No tracked consumer of an exact repository-relative source path was found outside these files. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
