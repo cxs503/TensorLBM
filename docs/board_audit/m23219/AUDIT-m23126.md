@@ -62,7 +62,7 @@ PYTHONPATH=/srv/tensor/agent/work/m23219/TensorLBM/src python run_xval.py --only
 #   cj4697: run_xval.py --only laplace_primary --radius 6 --steps 4000；再 R=10 复跑 NaN 臂
 
 # 4) 落表
-python3 audit/m23219/insert_verdict_m23126.py
+python3 development/audit/m23219/insert_verdict_m23126.py
 ```
 
 ---
@@ -144,13 +144,13 @@ F4 使 repro_cmd 与随货 steps 一致、F2 把 Laplace 行的 reference 从「
 
 - verdict 落表：`tensor_maturity_verdicts` id=**923**，`repo=TensorLBM`，
   `scope='m23126 XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD'`，`mission_id=23219`，`level=2`，`verdict_by='board-audit'`
-  （evidence 见 `audit/m23219/verdict_evidence_m23126.json`；落表脚本 `audit/m23219/insert_verdict_m23126.py`，幂等）。
+  （evidence 见 `development/audit/m23219/verdict_evidence_m23126.json`；落表脚本 `development/audit/m23219/insert_verdict_m23126.py`，幂等）。
 - `maturity_gate.judge()` 预览（与自动裁定同一实现）：
   `judge(declared=2) -> (2, [])`；`judge(declared=4) -> (2, ['L4 缺: integration_callers(grep 无引用)', 'L3 缺: integration_callers(grep 无引用)'])`；
   `link_original -> 23126`。即机器复核与我方判级一致：**L2 通过、L3/L4 因零集成调用被降级**。
   按 gate 规则（gate_level≥2 → confirmed）L2 会被消账于「独立功能实现」这一层；
   **锚点 cross-validation 这一层不予消账**：`tensor_benchmark_cases` 该行仍 `failed`，外部锚 WITHHELD。
-- 平台报告：`tensor_reports` id=**20849**（六段 + 3 图 base64 内嵌），由 `audit/m23219/publish_report.py` 程序化发布。
+- 平台报告：`tensor_reports` id=**20849**（六段 + 3 图 base64 内嵌），由 `development/audit/m23219/publish_report.py` 程序化发布。
 - 集群作业 `cj4697`（Laplace R=6 / R=10 独立复跑，4 核，TensorLBM@main）：截稿时 **queued 12 min**（队列 133 在飞），
   记为 **not_run**，不放行为 passed；结果出来后可单独核 R6 σ=0.09575 与 R10 NaN 的可复现性。
 
@@ -159,8 +159,8 @@ F4 使 repro_cmd 与随货 steps 一致、F2 把 Laplace 行的 reference 从「
 | 文件 | 内容 |
 |---|---|
 | `docs/board_audit/m23219/AUDIT-m23126.md` | 本报告（判级、7 条发现、未做项、处置） |
-| `audit/m23219/verdict_evidence_m23126.json` | gate 契约 evidence（keys=impl_files/entry/run_artifacts/tests/integration_callers/benchmark/repro_cmd/external_anchor + findings） |
-| `audit/m23219/insert_verdict_m23126.py` | 落表脚本（幂等） |
-| `audit/m23219/make_figs.py` | 三张审计图的生成器（读随货工件 + DB 基准行，零手抄） |
-| `audit/m23219/publish_report.py` | 平台报告发布脚本（图 base64 内嵌） |
+| `development/audit/m23219/verdict_evidence_m23126.json` | gate 契约 evidence（keys=impl_files/entry/run_artifacts/tests/integration_callers/benchmark/repro_cmd/external_anchor + findings） |
+| `development/audit/m23219/insert_verdict_m23126.py` | 落表脚本（幂等） |
+| `development/audit/m23219/make_figs.py` | 三张审计图的生成器（读随货工件 + DB 基准行，零手抄） |
+| `development/audit/m23219/publish_report.py` | 平台报告发布脚本（图 base64 内嵌） |
 | `docs/board_audit/m23219/figs/*.png` | fig1 自洽性 / fig2 声速 parity / fig3 基准裁判 |

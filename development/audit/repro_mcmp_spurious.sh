@@ -1,9 +1,10 @@
 #!/bin/bash
 # CASE-MCMP-SPURIOUS 一键复现脚本
-# 用法: bash runs/repro_mcmp_spurious.sh
+# 用法: bash development/audit/repro_mcmp_spurious.sh
 
 set -e
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
+mkdir -p outputs/audit/m15468
 
 echo "=== CASE-MCMP-SPURIOUS Reproduction ==="
 echo "Running 2D spurious current benchmark (quick)..."
@@ -32,16 +33,16 @@ for method_name in ['baseline_bgk_lattice', 'bgk_geometric']:
     }
     print(f'  u_spurious = {run[\"u_max\"]:.6e}')
 
-with open('artifacts/mcmp_spurious_2d_quick.json', 'w') as f:
+with open('outputs/audit/m15468/mcmp_spurious_2d_quick.json', 'w') as f:
     json.dump(results, f, indent=2)
-print('Results saved to artifacts/mcmp_spurious_2d_quick.json')
+print('Results saved to outputs/audit/m15468/mcmp_spurious_2d_quick.json')
 "
 
 echo ""
 echo "=== Verdict ==="
 python -c "
 import json
-with open('artifacts/mcmp_spurious_2d_quick.json') as f:
+with open('outputs/audit/m15468/mcmp_spurious_2d_quick.json') as f:
     data = json.load(f)
 for method, r in data.items():
     status = 'PASS' if r['u_spurious'] < 1e-3 else 'FAIL'

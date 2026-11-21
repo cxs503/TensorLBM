@@ -125,7 +125,7 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         if separator and policy["schema_version"] == 2 and directory not in allowed_dirs:
             unexpected_dirs.add(directory)
         if directory == "audits" and "legacy_audit_files" in policy and name not in legacy_audits:
-            failures.append(f"legacy-audit: {name} — place new mission records under audit/")
+            failures.append(f"legacy-audit: {name} — place new mission records under development/audit/")
         if is_generated(name) and name not in generated:
             failures.append(f"generated-file: {name} — keep raw outputs out of Git")
         if PurePosixPath(name).suffix.lower() in MODEL_SUFFIXES and name not in models:

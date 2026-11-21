@@ -19,7 +19,7 @@
 
 | 项 | 判据 | 结果 |
 |---|---|---|
-| run_artifacts | 文件真实存在、内容与声称一致 | ✅ `xval/oracle_minimal_d2q9_fs/artifacts/r2_cj3032_maxima.json`（12 行标量）＋ `figures/fig_r2_error_vs_a_measured.png`（122 034 B）＋ `docs/XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2_RESOLUTION.md`，均在 `578410df6` 内。**12 行数值与 `cj3032.log` 的 12 条汇总行逐字段相等**（`audit/m20976/evidence/job_log_recovery.json`）⇒ 抽取链无篡改 |
+| run_artifacts | 文件真实存在、内容与声称一致 | ✅ `xval/oracle_minimal_d2q9_fs/artifacts/r2_cj3032_maxima.json`（12 行标量）＋ `figures/fig_r2_error_vs_a_measured.png`（122 034 B）＋ `docs/XVAL_LBM_ORACLE_MINIMAL_D2Q9_FS_R2_RESOLUTION.md`，均在 `578410df6` 内。**12 行数值与 `cj3032.log` 的 12 条汇总行逐字段相等**（`development/audit/m20976/evidence/job_log_recovery.json`）⇒ 抽取链无篡改 |
 | benchmark ref vs got | `SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS'` | ❌ **0 行**（全表 133 行/94 锚点，本锚从未登记）。`tensor_xval_cases`、`repro_pool` 同锚亦 0 行 ⇒ **机器裁判缺席**，只能以任务自带锚 M&M 1952 + 作者预声明 15 % 门作替代判据（与 m18218 同） |
 | repro_cmd | 可执行、无隐参 | ✅ `python xval/oracle_minimal_d2q9_fs/resolution_study.py --plan|--run|--analyze`（:602 main，:344 plan，:480 analyze）。本审计实跑最小档 `run_tensorlbm(a=16, T≤0.5)`：400 步、12.21 s、`Z_cell` 18.103 %／`Z_sub.05` 18.137 %，与声明 steps=ceil(T/√(g/h0)) 一致；全窗重算递交调度作业 **cj3101**（见 §5） |
 | 报告六段 | ①案例②方法③数字表④图⑤注意点⑥误差判定 | ✅ 六段齐全（`tensor_reports.id=18989`，4069 字符；树内 md 6350 B 同文）；⑥显式回答「<15 %？仅 a=32」「<3 %？否」——**honest** |
@@ -38,7 +38,7 @@
 
 * **误差非单调**（28.16→16.67→13.81→28.05→42.86），细化后变差 ⇒ 不支持「网格无关 <15 %」。
 * **H1 否证（本审计独立复算）**：把 5 个梯级最大误差喂给交付的 `fit_order`，`Z_cell` 与 `Z_sub.05` 均返回
-  `ok=false, reason="no admissible (E_inf, p) in grid"` ⇒ 不存在满足约束的收敛拟合（`audit/m20976/evidence/fit_and_richardson.json`）。
+  `ok=false, reason="no admissible (E_inf, p) in grid"` ⇒ 不存在满足约束的收敛拟合（`development/audit/m20976/evidence/fit_and_richardson.json`）。
 * **Richardson 外推不可交付**：`richardson()` 需要逐 T `points`，工件只存标量 → `NOT_COMPUTABLE_FROM_ARTEFACT (KeyError:'points')`。
   预声明（设计 §②3）的拟合与外推**在交付物上无法产出**，报告也未给 p / E_inf 数值。
 
@@ -68,8 +68,8 @@
 
 | 检查 | 结果 |
 |---|---|
-| 作业回执重建（`audit/m20976/parse_job_logs.py`） | `cj3032` 12 条汇总行全解析 ＆ 与工件 12 行逐字段相等；`cj3062` rc=0、tail 8 000 B 内含 τ 臂逐 T 序列；`cj3085/cj3087` 无日志 |
-| 拟合/外推复算（`audit/m20976/fit_from_artifact.py`） | `fits.Z_cell/Z_sub0.05 = ok:false（no admissible (E_inf,p)）`；`richardson = NOT_COMPUTABLE_FROM_ARTEFACT` |
+| 作业回执重建（`development/audit/m20976/parse_job_logs.py`） | `cj3032` 12 条汇总行全解析 ＆ 与工件 12 行逐字段相等；`cj3062` rc=0、tail 8 000 B 内含 τ 臂逐 T 序列；`cj3085/cj3087` 无日志 |
+| 拟合/外推复算（`development/audit/m20976/fit_from_artifact.py`） | `fits.Z_cell/Z_sub0.05 = ok:false（no admissible (E_inf,p)）`；`richardson = NOT_COMPUTABLE_FROM_ARTEFACT` |
 | pytest | `tests/test_xval_oracle_minimal_d2q9_fs.py -q` → **1 failed, 4 passed in 5.89 s**（F4） |
 | repro 实跑（本地短测，1 核） | `run_tensorlbm(a=16, T≤0.5)`：400 步 12.21 s，`Z_cell` 18.103 %／`Z_sub.05` 18.137 % |
 | 全窗独立重算（调度作业 cj3101） | 递交 `python repro/verify_r2.py`（a=16/32/48/64 四档重跑，比 28.16/13.81/28.05/42.86）→ 截至本单收尾仍在排队，结果如实标 **not_run**（见 evidence/repro_check.json 若已回传） |

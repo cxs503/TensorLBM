@@ -32,7 +32,7 @@ import torch
 
 HERE = pathlib.Path(__file__).resolve().parent
 REF = HERE / "refs"
-REPO = HERE.parent.parent          # worktree root
+REPO = HERE.parents[2]          # worktree root
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.d2q9 import C, W                      # noqa: E402

@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 ORIGIN = Path("/srv/tensor/agent/work/m21558/TensorLBM")   # 被核单原始工作树（只读，记录出处）
 SNAP = HERE / "snapshot"                                # 本次审计的只读快照
 ART = SNAP / "artifacts" / "xval_two_component_sc_layered_poiseuille_edm"

@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+ROOT = HERE.parents[2]
 COMPACT = ROOT / "xval/XVAL-LBM-SHAN-CHEN-EDM-LYCETT-LUO-R2/artifacts/compact.json"
 PROBE = HERE / "probe_m21378_results.json"
 SIGMA_LIB = 0.05611

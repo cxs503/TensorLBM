@@ -18,7 +18,7 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 
 | Looking for | Location |
 | --- | --- |
-| An audit with a mission number | [audit](../../audit/), for example [m18429](../../audit/m18429/). This groups the report, verdict SQL and reproduction material where available. |
+| An audit with a mission number | [audit](../../development/audit/), for example [m18429](../../development/audit/m18429/). This groups the report, verdict SQL and reproduction material where available. |
 | A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
 | Drop-entry technical reports and diagnostic history | [Water-entry reports](../reports/water_entry/) |
 | A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
@@ -27,13 +27,12 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 
 Run repository-relative commands from the checkout root. The original tree at
 [bce9c9c](https://github.com/cxs503/TensorLBM/tree/bce9c9c) supplies context for
-commands, cluster paths and output names quoted in historical evidence. The historical `.audit/` tree is now in
-[`development/audit/`](../../development/audit/). The `_scratch/` tree still
-has in-repository consumers.
-
-The former root `audits/` directory has been consolidated under `audit/`.
-The [migration manifest](migration_manifest.csv) records the original and
-current paths. Published audit narratives under `docs/` keep their URLs.
+commands, cluster paths and output names quoted in historical evidence. The
+former `.audit/`, `audits/` and `audit/` roots are consolidated under
+[`development/audit/`](../../development/audit/). Historical commands that
+require the old layout can use the source revision in the
+[audit migration ledger](migrations/audit-root-retirement-2026-11-21.json).
+Published audit narratives under `docs/` keep their URLs.
 
 The [source authority policy](source_authority_policy.json) records existing
 references to the nested source tree. The checker covers literal paths and
@@ -197,8 +196,8 @@ and limitations.
 ### Root inventory after the November 2026 consolidation
 
 The migration started at `bce9c9c` with 228 root files and 60 top-level
-directories. The [run archive migration](migrations/run-root-retirement-2026-11-21.json)
-brings the resulting tree to 20 root files and 15 directories.
+directories. The [audit archive migration](migrations/audit-root-retirement-2026-11-21.json)
+brings the resulting tree to 20 root files and 14 directories.
 The GitLab pipeline configuration and release entry point are root files in
 policy version 2. The tests exercise both this policy and version 1 checkouts.
 Raw-output, model and size exceptions still use exact paths and byte limits.

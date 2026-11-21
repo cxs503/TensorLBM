@@ -19,9 +19,9 @@
 1. 参考表 → 单调三次（PCHIP）主剖面；
 2. 造「完美解」场：节点 j 的值取主剖面在 `y_j` 处的值；
 3. 用候选约定 `y_j=(j+w)/(n-1+2w)`（`w=0` 壁面在节点上=历史默认；`w=+0.5` 节点在等分单元中心=半程反弹壁面；`w=-0.5` 壁面节点在内）重新评估同一场，得「约定地板」；
-4. `audit/m16339/ghia_metric_audit.py` → `audit/m16339/ghia_metric_audit.json` + 图。
+4. `development/audit/m16339/ghia_metric_audit.py` 生成 JSON 和图，重跑文件写入 `outputs/audit/m16339/`。
 
-## 3. 结果（`audit/m16339/ghia_metric_audit.json`，程序化输出）
+## 3. 结果（`development/audit/m16339/ghia_metric_audit.json`，程序化输出）
 
 历史默认 `w=0` 施加在「按半程反弹约定正确的完美解」上产生的 RMSE 地板（% of u_lid）：
 
@@ -68,9 +68,9 @@
 ## 7. 复现
 
 ```bash
-python audit/m16339/ghia_metric_audit.py                      # JSON + PNG
+python development/audit/m16339/ghia_metric_audit.py                      # JSON + PNG
 python -m pytest tests/test_ghia_metric_convention.py -q      # 13 项
 ```
 
-图：`audit/m16339/ghia_convention_bias.png`（(a) 地板 vs 网格；(b) 128² 上两套映射对 Re=1000 近盖
+重跑图：`outputs/audit/m16339/ghia_convention_bias.png`（(a) 地板 vs 网格；(b) 128² 上两套映射对 Re=1000 近盖
 剖面的采样位置偏移；(c) 三种约定在各网格的 RMSE 地板）。

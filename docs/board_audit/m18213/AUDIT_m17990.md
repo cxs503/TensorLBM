@@ -1,8 +1,8 @@
 # 交差审计 m17990 — XVAL-LBM-METHOD-SELECTION-FIRST-EVIDENCE
 
 审计单：m18213（TensorLBM，board-audit）｜被审：m17990（status=succeeded，worktree `/srv/tensor/agent/work/m17990`，commit `5f81352b`）
-审计脚本（可复跑）：`audit/m18213/verify_m17990.py`、`audit/m18213/nc_single_rung.py`
-原始输出：`audit/m18213/verify.json`、`audit/m18213/nc_single_rung.json`
+审计脚本（可复跑）：`development/audit/m18213/verify_m17990.py`、`development/audit/m18213/nc_single_rung.py`
+原始输出：`development/audit/m18213/verify.json`、`development/audit/m18213/nc_single_rung.json`
 
 **独立性声明**：不 import 被审的判定代码来产生被核数字。KPI 差值、TRT τ₋ 由本审计从
 `runs/*/result.json`、`runs/*/fail.json` 独立重算；被审代码只作"被核对象"跑一次
@@ -62,7 +62,7 @@ GET /api/v1/tensor/bench/l4-verdict/17990
 `analyze.py:289-290`：`bool(gap_ladder) and all(v["out_of_band_at_any_rung"] ...)`，而
 `out_of_band_at_any_rung` 是**单 rung 属性**（`analyze.py:150`）⇒ 一个 rung 即可 true。
 发布件 `summary.json::verdict.H_gap_survives_refinement = true`，但 `gap_ladder.A2.rungs = [10]`。
-**负控（端到端，未改被审代码）**：`audit/m18213/nc_single_rung.py` 把 D=14/20 工件移出 runs/ 后重跑
+**负控（端到端，未改被审代码）**：`development/audit/m18213/nc_single_rung.py` 把 D=14/20 工件移出 runs/ 后重跑
 analyze.py → `published rungs=[10]`，`H_gap_survives_refinement=True`，而按预注册语义（需 ≥2 rung）
 应为 `False`。对照证据：同文件 `H_fail_persists_at_higher_D`（`:291-293`）**正确**要求
 `len(resolutions)>=2` —— 说明这是漏写，不是设计。影响：下游读者（与 maturity gate）会把

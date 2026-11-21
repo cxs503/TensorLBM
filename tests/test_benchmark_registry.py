@@ -73,7 +73,7 @@ class BenchmarkRegistryTests(unittest.TestCase):
             cwd=ROOT, capture_output=True, check=True,
         )
         paths = json.loads(result.stdout)["paths"]
-        self.assertIn("audit/m17444/akai2018_repro/analytic_verification.json", paths)
+        self.assertIn("development/audit/m17444/akai2018_repro/analytic_verification.json", paths)
         self.assertEqual(paths, sorted(set(paths)))
         self.assertTrue(all((ROOT / path).is_file() for path in paths))
 

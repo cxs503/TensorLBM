@@ -45,7 +45,7 @@
 
 ## 3. 计算结果（程序化输出，零手抄）
 
-来源：`audit/m16740/cavity_metric_geometry.json`、`runs/m16740_cavity_metric/measured_transient.json`。
+来源：`development/audit/m16740/cavity_metric_geometry.json`、`runs/m16740_cavity_metric/measured_transient.json`。
 
 ### 3.1 完美解在 n=128 上的度量地板（RMSE，% of `u_lid`，全参考行）
 

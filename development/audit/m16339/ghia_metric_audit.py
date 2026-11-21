@@ -7,7 +7,7 @@ Produces (all numbers programmatic, nothing hand copied):
 * ``ghia_convention_bias.png`` -- (a) bias vs grid, (b) the node-map shift on
   the Re=1000 near-lid profile, (c) sensitivity bars at benchmark grids.
 
-Run:  python audit/m16339/ghia_metric_audit.py
+Run:  python development/audit/m16339/ghia_metric_audit.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.lid_driven_cavity import (  # noqa: E402
@@ -33,13 +33,14 @@ from tensorlbm.lid_driven_cavity import (  # noqa: E402
     ghia_coordinate_sensitivity,
 )
 
-OUT = Path(__file__).resolve().parent
+OUT = REPO / "outputs/audit/m16339"
 TABLES = {"Re100": GHIA_RE100, "Re400": GHIA_RE400, "Re1000": GHIA_RE1000}
 GRIDS = (64, 96, 128, 192, 256, 384)
 OFFSETS = (0.0, 0.5, -0.5)
 
 
 def main() -> int:
+    OUT.mkdir(parents=True, exist_ok=True)
     payload: dict[str, object] = {
         "case": "GHIA_METRIC_CONVENTION_AUDIT",
         "question": "how much of a reported Ghia RMSE is coordinate-convention, not solver error",

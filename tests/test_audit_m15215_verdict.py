@@ -1,6 +1,6 @@
 """Guard rails for the m15273 board-audit verdict on m15215 (XVAL-LBM-TAYLORGREEN).
 
-The audit verdict (`docs/audit/m15215/VERDICT.md` + `audit/m15215/verdict_m15215.sql`) may not
+The audit verdict (`docs/audit/m15215/VERDICT.md` + `development/audit/m15215/verdict_m15215.sql`) may not
 drift away from the machine-recomputed numbers in
 `docs/audit/m15215/audit_metrics.json`: the level, every PASS/FAIL and every
 headline number are re-derived here from that JSON alone.
@@ -24,7 +24,7 @@ import pytest
 REPO = Path(__file__).resolve().parents[1]
 AUDIT = REPO / "docs" / "audit" / "m15215"
 METRICS = AUDIT / "audit_metrics.json"
-VERDICT_SQL = REPO / "audit/m15215/verdict_m15215.sql"
+VERDICT_SQL = REPO / "development/audit/m15215/verdict_m15215.sql"
 DEFAULT_ARTIFACTS = Path("/srv/tensor/agent/work/m15215/benchmarks/xval_taylor_green_2d")
 
 REQUIRED_EVIDENCE_KEYS = {

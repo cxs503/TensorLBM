@@ -24,6 +24,12 @@ NOTE_END = "<!-- repository-layout-note:end -->"
 NOTE = re.compile(r"\n" + re.escape(NOTE_START) + r"\n.*?" + re.escape(NOTE_END) + r"\n", re.S)
 
 
+def current_archive_path(path: str) -> Path:
+    if path == "audit" or path.startswith("audit/"):
+        return REPO / "development" / path
+    return REPO / path
+
+
 class RepositoryReportMigrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -212,7 +218,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         report_path = REPO / "docs/report_m40.md"
         report = report_path.read_text(encoding="utf-8")
         for item in ledger["entries"]:
-            destination = REPO / item["new_path"]
+            destination = current_archive_path(item["new_path"])
             with self.subTest(path=item["new_path"]):
                 self.assert_fingerprint(destination, item["sha256"], item["size_bytes"])
                 self.assertEqual(manifest[item["old_path"]], item["new_path"])
@@ -220,7 +226,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 if destination.suffix == ".png":
                     target = destination.relative_to(report_path.parent).as_posix()
                     self.assertIn(f"]({target})", report)
-        index = REPO / "audit/m26765/README.md"
+        index = REPO / "development/audit/m26765/README.md"
         for target in re.findall(r"\]\(([^)]+)\)", index.read_text(encoding="utf-8")):
             with self.subTest(link=target):
                 self.assertTrue((index.parent / target).is_file())
@@ -229,8 +235,8 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         ledger = json.loads((LEDGER_PATH.parent / "audit-records-2026-11-21.json").read_text())
         for move in ledger["entries"]:
             with self.subTest(path=move["new_path"]):
-                self.assert_fingerprint(REPO / move["new_path"], move["sha256"], move["size_bytes"])
-        report = REPO / "audit/m18313/audit_m18313.md"
+                self.assert_fingerprint(current_archive_path(move["new_path"]), move["sha256"], move["size_bytes"])
+        report = REPO / "development/audit/m18313/audit_m18313.md"
         self.assertIn("numbers_from_artifact.json", report.read_text())
         self.assertTrue(report.with_name("numbers_from_artifact.json").is_file())
 
@@ -249,8 +255,8 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 # Local runners may recreate ignored scratch directories.
                 # Their tracked descendants, rather than filesystem presence,
                 # are governed by the repository layout checker.
-                self.assertTrue((REPO / new).exists())
-                if (REPO / new).is_file():
+                self.assertTrue((current_archive_path(new)).exists())
+                if (current_archive_path(new)).is_file():
                     self.assertFalse((REPO / old).is_file())
 
     def test_wave_one_archive_preserves_source_files_and_both_report_versions(self):
@@ -258,26 +264,26 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual(len(ledger["entries"]), 23)
         for item in ledger["entries"]:
             with self.subTest(path=item["new_path"]):
-                blob = (REPO / item["new_path"]).read_bytes()
+                blob = (current_archive_path(item["new_path"])).read_bytes()
                 self.assertEqual(hashlib.sha256(blob).hexdigest(), item["sha256"])
                 self.assertEqual(len(blob), item["size_bytes"])
                 self.assertEqual(
                     subprocess.check_output(
-                        ["git", "hash-object", item["new_path"]],
+                        ["git", "hash-object", str(current_archive_path(item["new_path"]))],
                         cwd=REPO,
                         text=True,
                     ).strip(),
                     item["git_blob"],
                 )
                 index_entry = subprocess.check_output(
-                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    ["git", "ls-files", "-s", "--", str(current_archive_path(item["new_path"]))],
                     cwd=REPO,
                     text=True,
                 ).split()
                 self.assertEqual(index_entry[0], item["git_mode"])
                 self.assertFalse((REPO / item["old_path"]).exists())
         for mission in ledger["report_missions"]:
-            report = json.loads((REPO / f"audit/m{mission}/report.json").read_text())
+            report = json.loads((REPO / f"development/audit/m{mission}/report.json").read_text())
             self.assertEqual(int(report["mission_id"]), mission)
 
     def test_reused_tmp_report_preserves_both_mission_versions(self):
@@ -319,10 +325,10 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for item in ledger["entries"]:
             destination = item["new_path"]
             with self.subTest(path=destination):
-                self.assert_fingerprint(REPO / destination, item["sha256"], item["size_bytes"])
+                self.assert_fingerprint(current_archive_path(destination), item["sha256"], item["size_bytes"])
                 self.assertEqual(manifest[item["old_path"]], destination)
                 self.assertFalse((REPO / item["old_path"]).exists())
-        for relative in ("audit/m17444/README.md", "audit/m18155/README.md"):
+        for relative in ("development/audit/m17444/README.md", "development/audit/m18155/README.md"):
             index = REPO / relative
             for target in re.findall(r"\]\(([^)]+)\)", index.read_text(encoding="utf-8")):
                 with self.subTest(index=relative, link=target):
@@ -337,7 +343,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for item in ledger["entries"]:
             with self.subTest(path=item["new_path"]):
                 destination = item["new_path"]
-                self.assert_fingerprint(REPO / destination, item["sha256"], item["size_bytes"])
+                self.assert_fingerprint(current_archive_path(destination), item["sha256"], item["size_bytes"])
                 self.assertEqual(manifest[item["old_path"]], destination)
                 self.assertFalse((REPO / item["old_path"]).exists())
         index = REPO / "docs/reports/water_entry/README.md"
@@ -345,6 +351,30 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             with self.subTest(link=target):
                 self.assertTrue((index.parent / target).exists())
 
+
+    def test_retired_audit_root_preserves_original_blobs_and_modes(self):
+        ledger_path = LEDGER_PATH.parent / "audit-root-retirement-2026-11-21.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        archive = ledger["archive"]
+        self.assertEqual(len(ledger["files"]), archive["tracked_files"])
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "--", "audit"], cwd=REPO))
+        records = subprocess.check_output(
+            ["git", "ls-files", "-s", "-z", "--", archive["new_path"]], cwd=REPO
+        )
+        indexed = {}
+        for entry in filter(None, records.split(b"\0")):
+            metadata, path = entry.decode().split("\t", 1)
+            mode, oid, stage = metadata.split()
+            self.assertEqual(stage, "0")
+            indexed[path] = (mode, oid)
+        for relative, (mode, original_oid) in ledger["files"].items():
+            destination = f"{archive['new_path']}/{relative}"
+            with self.subTest(path=destination):
+                expected = ledger["path_edits"].get(relative, original_oid)
+                self.assertEqual(indexed[destination], (mode, expected))
+                raw = (REPO / destination).read_bytes()
+                blob = f"blob {len(raw)}\0".encode() + raw
+                self.assertEqual(hashlib.sha1(blob).hexdigest(), expected)
 
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
