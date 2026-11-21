@@ -9,7 +9,7 @@ Round 4 (``benchmarks/xval_akai2018_wetting``) used the *ghost-value* form of
 the wetting condition together with a Kasa circle fit of the ``phi = 0``
 contour as the decision metric, ran 6000 steps (never converged: ``max|dphi|``
 was still ``2e-2``) and reported 41--108 % angle errors.  The audit
-``audits/m17444/verdict_m17444.md`` asked for three things to lift the anchor
+``audit/m17444/verdict_m17444.md`` asked for three things to lift the anchor
 to L4: (i) a registered benchmark case, (ii) end-to-end numbers produced on
 the cluster, (iii) a spurious-current / estimator fix plus a converged rerun.
 

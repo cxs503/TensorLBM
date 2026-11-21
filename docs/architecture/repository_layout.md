@@ -26,6 +26,10 @@ Run repository-relative commands from the checkout root. The original tree at
 commands, cluster paths and output names quoted in historical evidence. The
 existing `.audit/` and `_scratch/` trees still have in-repository consumers.
 
+The former root `audits/` directory has been consolidated under `audit/`.
+The [migration manifest](migration_manifest.csv) records the original and
+current paths. Published audit narratives under `docs/` keep their URLs.
+
 ## Where new work belongs
 
 | Area | Responsibility | Do not put here |

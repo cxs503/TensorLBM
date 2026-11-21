@@ -170,6 +170,24 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     {"migrated_pending_review", "deduplicated_pending_review", "accepted"},
                 )
 
+    def test_legacy_audits_are_preserved_under_missions(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "legacy-audit-root-2026-11-21.json").read_text()
+        )
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+        for item in ledger["entries"]:
+            destination = item["new_path"]
+            with self.subTest(path=destination):
+                self.assert_fingerprint(REPO / destination, item["sha256"], item["size_bytes"])
+                self.assertEqual(manifest[item["old_path"]], destination)
+                self.assertFalse((REPO / item["old_path"]).exists())
+        for relative in ("audit/m17444/README.md", "audit/m18155/README.md"):
+            index = REPO / relative
+            for target in re.findall(r"\]\(([^)]+)\)", index.read_text(encoding="utf-8")):
+                with self.subTest(index=relative, link=target):
+                    self.assertTrue((index.parent / target).is_file())
+
     def test_water_entry_report_layout_preserves_assets_and_index_links(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "water-entry-report-layout-2026-11-21.json").read_text()
