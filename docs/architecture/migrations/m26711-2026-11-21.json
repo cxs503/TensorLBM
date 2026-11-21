@@ -4,11 +4,14 @@
     2814,
     2817,
     2818,
-    2821
+    2821,
+    2826,
+    2828
   ],
   "report_missions": [
     26711,
-    26723
+    26723,
+    26707
   ],
   "entries": [
     {
@@ -109,8 +112,53 @@
       "size_bytes": 2010,
       "sha256": "5ccc46c93a3feeeab64314cb5691926e88e800af2e42af13adede30d975d2357",
       "source_revision": "7c86da1a41691c56333bff32c1723b5bfc78e1a7"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_MOM_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_MOM_W1.md",
+      "git_blob": "7e3568befd3ad915c1b3438d3fa4b66518518297",
+      "git_mode": "100644",
+      "size_bytes": 1307,
+      "sha256": "045f86f99bcd393d2b1bc4650a6d129c4c49b4718d3baf89911f98c6fb3e20c9",
+      "source_revision": "9f551086f9fab43d1b8b27e2ab2f124789c02b59"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-MOM-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-MOM-W1.draft.md",
+      "git_blob": "4ee59676b29859b24c97baa3f879e194d82cb74c",
+      "git_mode": "100644",
+      "size_bytes": 1074,
+      "sha256": "135ba28e4a6b987e3c5d99b8ebbb159bf2df144a76f215ef31166cb2defb9117",
+      "source_revision": "9f551086f9fab43d1b8b27e2ab2f124789c02b59"
+    },
+    {
+      "old_path": "tmp/report.json",
+      "new_path": "audit/m26707/report.json",
+      "git_blob": "988c7e72fbe02e145138183d18590f6223ae8408",
+      "git_mode": "100644",
+      "size_bytes": 1061,
+      "sha256": "23deea22a93710951cc0d53e0aaec3eddaf4f499e20710383ebfaefe457aa13f",
+      "source_revision": "9f551086f9fab43d1b8b27e2ab2f124789c02b59"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_FORCE_W1.md",
+      "new_path": "audit/drop_entry/BB/m26741/NEXT/TRACK_FORCE_W1.md",
+      "git_blob": "66a536efa39bb634bf536a30386b3a68bd9d33f9",
+      "git_mode": "100644",
+      "size_bytes": 1388,
+      "sha256": "913102866b2012c9239978138c8479f0ac3bde939c201748842aeb299de10c34",
+      "source_revision": "cd4e0f32046cf7d61ff292a4131e9e3488b7940f"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-FORCE-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/m26741/tmp/DE-NXT-FORCE-W1.draft.md",
+      "git_blob": "2a08cacda8ae15a3f8010d749f894d75c2c7198d",
+      "git_mode": "100644",
+      "size_bytes": 928,
+      "sha256": "6a5768496a9a361bc4f01fba5ec1f2a828cf07530c8715566d4cddbab5442681",
+      "source_revision": "cd4e0f32046cf7d61ff292a4131e9e3488b7940f"
     }
   ],
-  "compatibility": "Two versions of the same tmp/report.json path existed on main. The source revision and original Git blob in each mapping distinguish the two mission reports. Complete contents and modes are retained. No tracked consumer of an exact repository-relative source path was found outside these files. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
+  "compatibility": "Three versions of tmp/report.json and two versions of each FORCE file existed on main. Source revisions and Git blobs distinguish every version. Complete contents and modes are retained. No tracked consumer of an exact repository-relative source path was found outside these files. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
   "verification": "The base failed layout on drop_entry/ and tmp/. The candidate checks exact source Git blobs, modes, independent SHA-256 digests, mission identities and absence of all old root paths."
 }
