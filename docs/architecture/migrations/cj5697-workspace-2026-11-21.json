@@ -1,0 +1,15 @@
+{
+  "base_revision": "2f9647c14e1b58ea466b05ef61b75c422d59c13e",
+  "old_path": "cj5697/repo",
+  "new_path": "experiments/archived/workspaces/cj5697/repo",
+  "mapping": "Keep every relative suffix. All Git entry names, modes and contents are preserved.",
+  "tree": "385c0faff1ccb0d20e8d85ea40e8d2f10b18e675",
+  "files": 80,
+  "bytes": 1377505,
+  "different_from_base_checkout": [
+    ".github/workflows/ci.yml",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "external_consumers": "Unknown; old paths remain accessible through the base revision."
+}
