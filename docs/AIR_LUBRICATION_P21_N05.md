@@ -1,7 +1,7 @@
 # P21-N05 — Air-lubrication drag reduction: LBM two-phase bubble curtain under a ship bottom
 
 *Repository:* TensorLBM · *branch:* `agent/m5349` · *module:* `src/tensorlbm/air_lubrication.py`
-*tests:* `tests/test_air_lubrication.py` (17 tests) · *driver:* `experiments/air_lubrication_p21_n05/run_campaign.py`
+*tests:* `tests/test_air_lubrication.py` (17 tests) · *driver:* `development/experiments/air_lubrication_p21_n05/run_campaign.py`
 *all numbers below are injected from* `artifacts/p21_n05/*.json`.
 
 ## 1 Case, geometry and parameters

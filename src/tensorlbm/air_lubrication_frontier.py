@@ -44,7 +44,7 @@ Contents
    (criterion C5).
 7. :func:`re_scan_case` -- the single (Re, alpha_wall) case of the 3 x 5 lattice
    scan executed on the loong64 cluster (criterion C7); the driver script
-   ``experiments/air_lubrication_in45_n07/re_scan_worker.py`` wraps it.
+   ``development/experiments/air_lubrication_in45_n07/re_scan_worker.py`` wraps it.
 
 Evidence grading
 ----------------

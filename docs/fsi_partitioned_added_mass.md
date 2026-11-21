@@ -248,11 +248,11 @@ $\beta\in[0.25,2]$ 扫描 8 点，Aitken 第一次更新即给出 $\omega=1/(1+\
 ## 7. 复现
 
 ```bash
-PYTHONPATH=src python experiments/fsi_partitioned_scaling.py oned     # 1D 判据 (秒级)
-PYTHONPATH=src python experiments/fsi_partitioned_figures.py          # 图 + criteria.json
+PYTHONPATH=src python development/experiments/fsi_partitioned_scaling.py oned     # 1D 判据 (秒级)
+PYTHONPATH=src python development/experiments/fsi_partitioned_figures.py          # 图 + criteria.json
 PYTHONPATH=src python -m pytest tests/test_fsi_partitioned.py -q      # 19 条
 # VIV 探针（重计算，走集群；当前为 WITHHELD）
-python experiments/fsi_partitioned_scaling.py fixed
+python development/experiments/fsi_partitioned_scaling.py fixed
 ```
 
 ## 8. 参考文献

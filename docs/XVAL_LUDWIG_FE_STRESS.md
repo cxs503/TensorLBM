@@ -31,7 +31,7 @@ OSS 做法按其实现取证后移植进 TensorLBM，与现行做法在同一离
 `chemical_potential`、`bulk_pressure`、`pressure_tensor`、`stress_divergence_force`
 （`F=-∇·P`，中心差分）、`grad_mu_force`（`F=-φ∇μ`）、`surface_tension_analytic`、
 `planar_profile`、`droplet_profile`；梯度可选 `5pt` 与 `iso9`（Tomita 各向同性 9 点，
-ludwig 流体梯度默认类）。实验：`experiments/xval_ludwig_fe_stress/run_xval.py`
+ludwig 流体梯度默认类）。实验：`development/experiments/xval_ludwig_fe_stress/run_xval.py`
 （结果 `results.json`），图 `make_figures.py`。
 
 **差异清单（本仓 vs OSS）与移植取舍**
@@ -98,7 +98,7 @@ ludwig 流体梯度默认类）。实验：`experiments/xval_ludwig_fe_stress/ru
   需密度耦合的总压力（LBM 的 cs²ρ 项）才能观测 → 本单改以曲率平衡恒等式作替代判据。
 - 失败模式3：ludwig 侧无可用算例输入/运行入口（快照仅含 `target/a.out` 的 kerneltest 与
   不相关 `.o`），故 ref 采用"实现取证 + 解析基准"，而非跑 OSS 算例跑分；属证据等级限制，如实声明。
-- 工件：`src/tensorlbm/free_energy_stress.py`、`experiments/xval_ludwig_fe_stress/{run_xval.py,
+- 工件：`src/tensorlbm/free_energy_stress.py`、`development/experiments/xval_ludwig_fe_stress/{run_xval.py,
   make_figures.py,results.json,figures/xval_fe_stress.png}`、`tests/test_free_energy_stress.py`。
 
 ## 判据结论

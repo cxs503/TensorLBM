@@ -3,8 +3,8 @@
   "baseline_revision": "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc",
   "legacy_audit_files": [],
   "historical_checkouts": [
-    "experiments/archived/workspaces/cj5697/repo",
-    "experiments/archived/workspaces/m21672/cj3613/cj3613/repo"
+    "development/experiments/archived/workspaces/cj5697/repo",
+    "development/experiments/archived/workspaces/m21672/cj3613/cj3613/repo"
   ],
   "root_files": [
     ".dockerignore",
@@ -440,7 +440,6 @@
     "development",
     "docs",
     "examples",
-    "experiments",
     "models",
     "papers",
     "runs",

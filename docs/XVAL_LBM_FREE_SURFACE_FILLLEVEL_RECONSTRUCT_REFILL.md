@@ -47,7 +47,7 @@
 
 **实验装置**：D2Q9 Körner fill-level，锁释放溃坝，H/a = 2，全域固壁，域 `nx=8a+2, ny=2a+2`，
 `g = -1e-4`（格子 Mach ≈ 0.08），`T_max = 2.96`，波前判据 `Σ_y fill ≥ 0.5` 的最右列。
-单线程 CPU，脚本 `experiments/xval_filllevel_refill_2d/run_xval.py`。
+单线程 CPU，脚本 `development/experiments/xval_filllevel_refill_2d/run_xval.py`。
 
 ## 3. 参数表（无量纲）
 
@@ -142,10 +142,10 @@
 
 | 路径 | 内容 |
 |---|---|
-| `experiments/xval_filllevel_refill_2d/run_xval.py` | 实验脚本（--matrix / --variant，pre-declared design 内置）|
-| `experiments/xval_filllevel_refill_2d/artifacts/xval_results.json` | 设计+全部运行记录（含 14 点逐点对照）|
-| `experiments/xval_filllevel_refill_2d/artifacts/xval_summary.csv` | 7 行汇总表 |
-| `experiments/xval_filllevel_refill_2d/artifacts/xval_front_vs_mm.png` | Z(T) 曲线 + 逐点误差（含 15 % 门线）|
+| `development/experiments/xval_filllevel_refill_2d/run_xval.py` | 实验脚本（--matrix / --variant，pre-declared design 内置）|
+| `development/experiments/xval_filllevel_refill_2d/artifacts/xval_results.json` | 设计+全部运行记录（含 14 点逐点对照）|
+| `development/experiments/xval_filllevel_refill_2d/artifacts/xval_summary.csv` | 7 行汇总表 |
+| `development/experiments/xval_filllevel_refill_2d/artifacts/xval_front_vs_mm.png` | Z(T) 曲线 + 逐点误差（含 15 % 门线）|
 | `src/tensorlbm/free_surface_lbm_2d.py` | `refill_policy` opt-in（默认位级不变）|
 
 ### 未完成（honest）

@@ -24,7 +24,7 @@ tier B N=48, τ=0.7（Re=24）；tier C 复跑 `benchmarks/pending/collision_ker
    （Geier 2015 分块；另含 legacy `collide_cumulant_d3q27` 与 `collide_cumulant_geier_d3q27` 两个条目）。
 2. **碰撞级证据**：`tools/collision_claim_registry.py` 对注册表里每个 AVAILABLE 单元做一次 float64 碰撞冒烟——
    守恒（质量/动量）、剪切因子 Π_dev(post)/Π_dev(pre) 必须等于 1−1/τ；并把结果与解析式一起写进证据账本。
-3. **衰减率证据**：`experiments/m23154_kbc_cumulant_tg.py`（单点，可复现）+ `experiments/m23154_sweep.py`（41 个 run 分片），
+3. **衰减率证据**：`development/experiments/m23154_kbc_cumulant_tg.py`（单点，可复现）+ `development/experiments/m23154_sweep.py`（41 个 run 分片），
    递交集群（`stage_dir`=本工作树），结果落 `docs/m23154/runs/*.json`，由 `docs/m23154/build_artifacts.py` 汇总成表与图（零手抄）。
    同时 `tg_evidence()` 会吞入仓库内既有 benchmark 产物（先验证据），避免把「别的任务测过的」当作没测过。
 4. **一致性闸**：`tools/collision_claim_registry.py check` 对 README/README.zh-CN/两份能力文档做声明抽取，

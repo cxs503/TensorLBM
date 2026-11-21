@@ -15,7 +15,7 @@ Covered capabilities (see ``docs/IN62_N06_INLET_QUALITY.md``):
     - the Comte-Bellot & Corrsin decay-exponent fit on a synthetic power law.
 
 The tests are sized for CI (a few seconds); the full production run lives in
-``experiments/in62_n06_inlet_quality/run_inlet_quality.py``.
+``development/experiments/in62_n06_inlet_quality/run_inlet_quality.py``.
 """
 
 from __future__ import annotations

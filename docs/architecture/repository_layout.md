@@ -22,7 +22,7 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 | A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
 | Drop-entry technical reports and diagnostic history | [Water-entry reports](../reports/water_entry/) |
 | A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
-| An earlier experiment | [Archived experiments](../../experiments/archived/), including [mission workspaces](../../experiments/archived/workspaces/) and [staged snapshots](../../experiments/archived/staging/) |
+| An earlier experiment | [Archived experiments](../../development/experiments/archived/), including [mission workspaces](../../development/experiments/archived/workspaces/) and [staged snapshots](../../development/experiments/archived/staging/) |
 | An old repository path | Search the [migration manifest](migration_manifest.csv). A directory row maps its entire subtree, preserving the relative suffix. |
 
 Run repository-relative commands from the checkout root. The original tree at
@@ -51,8 +51,8 @@ require a runtime import trace to identify its actual source.
 | `tests/` | Automated library tests and small, documented reference fixtures | Unmarked long simulations or throughput claims on unsuitable hardware |
 | `examples/` | Maintained runnable demonstrations of supported APIs | Unreviewed research campaigns |
 | `benchmarks/` | Named benchmark runners, configuration, references, acceptance criteria and curated results | Unclassified dumps or verification claims based only on exit code |
-| `experiments/<topic>/` | Exploratory runners with environment, command and limitations documented | Claims that an experiment is already a verified benchmark |
-| `experiments/archived/` | Historically meaningful, explicitly unmaintained source | Unexplained deletion of the source of a published result |
+| `development/experiments/<topic>/` | Exploratory runners with environment, command and limitations documented | Claims that an experiment is already a verified benchmark |
+| `development/experiments/archived/` | Historically meaningful, explicitly unmaintained source | Unexplained deletion of the source of a published result |
 | `scripts/` | Maintained simulation/data/plot/developer workflow entry points; may depend on TensorLBM | One-off scripts with personal machine paths |
 | `tools/` | Repository maintenance and static governance tools; prefer Python stdlib | Simulation runners or solver implementations |
 | `docs/` | User/developer documentation, architecture, reports and selected illustration assets | Large raw trajectories or generated duplicate document formats without a source policy |

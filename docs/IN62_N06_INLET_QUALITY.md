@@ -182,9 +182,9 @@ The >3 % items are reported as such and are **not** rounded away: the inlet *pla
 Reproduce with:
 
 ```bash
-PYTHONPATH=src python experiments/in62_n06_inlet_quality/run_inlet_quality.py \
+PYTHONPATH=src python development/experiments/in62_n06_inlet_quality/run_inlet_quality.py \
     --stage all --out artifacts/in62_n06_inlet_quality --threads 8
-PYTHONPATH=src python experiments/in62_n06_inlet_quality/make_report_md.py \
+PYTHONPATH=src python development/experiments/in62_n06_inlet_quality/make_report_md.py \
     --run-dir artifacts/in62_n06_inlet_quality --out docs/IN62_N06_INLET_QUALITY.md
 ```
 

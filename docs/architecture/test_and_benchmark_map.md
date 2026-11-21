@@ -5,7 +5,7 @@
 - Package test configuration: `pyproject.toml` sets `testpaths = ["tests"]` and adds `src` to `pythonpath`.
 - Solver tests: `tests/`, including specialized folders such as `core/`, `backends/`, `runtime/`, `models/`, `ml/`, and `performance/`.
 - Platform tests: `app/tests/`, including API, job manager, CAD, engineering workflow, orchestration, and UI contract tests.
-- Benchmark assets: `benchmarks/pending/`, `benchmarks/verified/`, `benchmarks/archived/`, plus `docs/benchmarks/`, `runs/`, and `experiments/`.
+- Benchmark assets: `benchmarks/pending/`, `benchmarks/verified/`, `benchmarks/archived/`, plus `docs/benchmarks/`, `runs/`, and `development/experiments/`.
 
 ## Important finding
 
