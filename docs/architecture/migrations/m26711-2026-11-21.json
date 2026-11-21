@@ -1,0 +1,97 @@
+{
+  "base_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96",
+  "upstream_prs": [
+    2814,
+    2817,
+    2818
+  ],
+  "report_missions": [
+    26711,
+    26723
+  ],
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_FORCE_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_FORCE_W1.md",
+      "git_blob": "f39f089acd848b76595ff52fbb6e189db463a1d5",
+      "git_mode": "100644",
+      "size_bytes": 1388,
+      "sha256": "f765351457f77af822c5fe32d302210d082f338fdd0aa8bac2e7311fd52ec6d4",
+      "source_revision": "784ae70f8e2f99663b0652208359c9749f7edcab"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-FORCE-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-FORCE-W1.draft.md",
+      "git_blob": "bdbcbd987332fba229cc82990da2f2f0537121a8",
+      "git_mode": "100644",
+      "size_bytes": 928,
+      "sha256": "3e1a55011528d8b60a71ba221e6c49900d8f02499a4671dbdd4f631631962099",
+      "source_revision": "784ae70f8e2f99663b0652208359c9749f7edcab"
+    },
+    {
+      "old_path": "tmp/report.json",
+      "new_path": "audit/m26711/report.json",
+      "git_blob": "a6d29aab0430044ddda5702fb33aa2295b13c878",
+      "git_mode": "100644",
+      "size_bytes": 3439,
+      "sha256": "5814dc10d58fbfb3a90fe5640ba80c9976bc2dfdc0abef6132ed02d79601bc02",
+      "source_revision": "784ae70f8e2f99663b0652208359c9749f7edcab"
+    },
+    {
+      "old_path": "tmp/report.sh",
+      "new_path": "audit/m26711/report.sh",
+      "git_blob": "4d241ec24eb859d02e5d1f2465b18eb1b21897c6",
+      "git_mode": "100644",
+      "size_bytes": 411,
+      "sha256": "2cd676237ac3106d1fdbffae4c9be17a601b3d91ff9b7ec3bdaf82aa6e51cbac",
+      "source_revision": "784ae70f8e2f99663b0652208359c9749f7edcab"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_EV_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_EV_W1.md",
+      "git_blob": "5154c7bf04a9b2c0dbb491b9d1f8d8497593cffd",
+      "git_mode": "100644",
+      "size_bytes": 1442,
+      "sha256": "aa9e8e1387a4fc05b0473dffe5c8be4b8d54bc9adb54fdf5a1bf9fb23c36c728",
+      "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_TENS_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_TENS_W1.md",
+      "git_blob": "786efe508286fc686a21ac6dc151df504c38b43a",
+      "git_mode": "100644",
+      "size_bytes": 1357,
+      "sha256": "ecac18aa2f8224a735df8c5a9ee9b741673bfcce2810a1bb27b933ba232ffe46",
+      "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-EV-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-EV-W1.draft.md",
+      "git_blob": "184469ef2b6d6f701129deec3054340be61d9b59",
+      "git_mode": "100644",
+      "size_bytes": 761,
+      "sha256": "4704cc5436fc4a895fe384bb1c3f81ab74246a5a21ca01340c2017e3c22eda47",
+      "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-TENS-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-TENS-W1.draft.md",
+      "git_blob": "861d60ba9752f1b0d65f3b81a4d2f5a33dc41af8",
+      "git_mode": "100644",
+      "size_bytes": 1722,
+      "sha256": "2a4cf8d798a5e6003849fa799b5becf2c0a58b9900b3e339357b84fd734e1ce4",
+      "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    },
+    {
+      "old_path": "tmp/report.json",
+      "new_path": "audit/m26723/report.json",
+      "git_blob": "a3e94faf0d8df61a7a9638bda4eaaacc18ffcf2d",
+      "git_mode": "100644",
+      "size_bytes": 2264,
+      "sha256": "00d30a644734dc87bae04789bdb54699782d79f978e0236a508480286a804c48",
+      "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    }
+  ],
+  "compatibility": "Two versions of the same tmp/report.json path existed on main. The source revision and original Git blob in each mapping distinguish the two mission reports. Complete contents and modes are retained. No tracked consumer of an exact repository-relative source path was found outside these files. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
+  "verification": "The base failed layout on drop_entry/ and tmp/. The candidate checks exact source Git blobs, modes, independent SHA-256 digests, mission identities and absence of all old root paths."
+}
