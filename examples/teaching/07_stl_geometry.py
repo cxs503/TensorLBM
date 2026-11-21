@@ -11,7 +11,7 @@ Demonstrates the full STL workflow using the COMMON INTERFACE ONLY:
 7. drag_pressure_integration / drag_friction_integration → force
 
 Usage:
-    PYTHONPATH=src python teaching/07_stl_geometry.py [device_id]
+    PYTHONPATH=src python examples/teaching/07_stl_geometry.py [device_id]
 """
 from __future__ import annotations
 

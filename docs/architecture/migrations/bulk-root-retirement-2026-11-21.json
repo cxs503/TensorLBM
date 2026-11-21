@@ -1,0 +1,303 @@
+{
+  "source_revision": "6a957e70af72d655304c772d5a0532f51e78615c",
+  "original_root_count": 30,
+  "post_migration_root_count": 24,
+  "retired_roots": [
+    "configs",
+    "demos",
+    "notebooks",
+    "references",
+    "regression_rules",
+    "teaching"
+  ],
+  "compatibility": {
+    "configs": "Use case-specific input paths in the FSI evaluator and acoustic campaign test. Preserve the JSON bytes and any explicit caller-supplied overrides.",
+    "demos": "Serve the same Web UI at /demo and the same standalone page at /echo_slider.html. Run the standalone launcher from app/demos and the propeller example from examples.",
+    "notebooks": "Update the README Colab link. Preserve notebook bytes and repository-root setup cells.",
+    "references": "Read the same reference data from both air-layer scripts, preserving schema, source attribution and bytes.",
+    "regression_rules": "Retain contract identifiers, schema, thresholds and original bytes.",
+    "teaching": "Update published commands and checkout-relative source bootstraps. Keep companion material and script-local outputs together."
+  },
+  "entries": [
+    {
+      "old_path": "configs/acoustic_sdaa_campaign_20260710T141500Z_gate.json",
+      "new_path": "tests/fixtures/campaign_gates/acoustic_sdaa_campaign_20260710T141500Z_gate.json",
+      "git_mode": "100644",
+      "git_blob": "9f4a192a0ca80cb4ebe5257b78ed237b9beba4bb",
+      "size_bytes": 2552,
+      "sha256": "cef6cb043d3a199d070ca21760899808c1733ba0bc18777891f03c23b4ca0c49",
+      "post_move_sha256": "cef6cb043d3a199d070ca21760899808c1733ba0bc18777891f03c23b4ca0c49",
+      "content_change": "none"
+    },
+    {
+      "old_path": "configs/fsi_kpi_baselines.json",
+      "new_path": "scripts/data/fsi/fsi_kpi_baselines.json",
+      "git_mode": "100644",
+      "git_blob": "87d9dc7c32aba5dcf6ad9671545e95d9cce08406",
+      "size_bytes": 414,
+      "sha256": "e1c6e980023dcde645619723dde72cc6c97c8e1923d4a5a33ff9c8b7d9367eb2",
+      "post_move_sha256": "e1c6e980023dcde645619723dde72cc6c97c8e1923d4a5a33ff9c8b7d9367eb2",
+      "content_change": "none"
+    },
+    {
+      "old_path": "configs/fsi_observable_run_gate.json",
+      "new_path": "scripts/data/fsi/fsi_observable_run_gate.json",
+      "git_mode": "100644",
+      "git_blob": "9b041e68774542ab892b459246fefd9ac5d9eca6",
+      "size_bytes": 711,
+      "sha256": "e1708cc70958ddc691c9f6688e03fb3bae6de277bcb871ab8439747f4c07e7fb",
+      "post_move_sha256": "e1708cc70958ddc691c9f6688e03fb3bae6de277bcb871ab8439747f4c07e7fb",
+      "content_change": "none"
+    },
+    {
+      "old_path": "configs/fsi_regression_gate.json",
+      "new_path": "scripts/data/fsi/fsi_regression_gate.json",
+      "git_mode": "100644",
+      "git_blob": "81d24c3c0c4e385f3e06871413fbf93ed2619365",
+      "size_bytes": 916,
+      "sha256": "7d7fefbfe73991e0ed74c2cf3a1eaffce57cf4c90d54a073b79842034ff78acc",
+      "post_move_sha256": "7d7fefbfe73991e0ed74c2cf3a1eaffce57cf4c90d54a073b79842034ff78acc",
+      "content_change": "none"
+    },
+    {
+      "old_path": "demos/README.md",
+      "new_path": "app/demos/README.md",
+      "git_mode": "100644",
+      "git_blob": "76af905c3d8795fee81dc1c44f64d27d84bfe795",
+      "size_bytes": 5618,
+      "sha256": "ef4f506804cb7bb26702c24fdda4588073f017e7a8bc71fe9b4a74e4e455179d",
+      "post_move_sha256": "cb8973b7e02e091c38669ad9ad2cd0fbec9c6f0c7c7730a73a37da82e9b227ae",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "demos/echo_slider.html",
+      "new_path": "app/demos/echo_slider.html",
+      "git_mode": "100644",
+      "git_blob": "543ab48d8d80e63b70dc600fe6f1424831f31028",
+      "size_bytes": 47047,
+      "sha256": "43e49111a2fd6d749b78d2ffd8fe0bf8f87c22882a7804862d6e238c299a4c27",
+      "post_move_sha256": "11c0387e50a6d03c1fdb06e57f3ad56e66aa6950a9efbca9cf36e8849a4035d2",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "demos/propeller_ice_demo.py",
+      "new_path": "examples/propeller_ice_demo.py",
+      "git_mode": "100644",
+      "git_blob": "d811a69fd22e1ebd228daddac44682272fc4837d",
+      "size_bytes": 5553,
+      "sha256": "38ff53edc9883ca8b4b5d9d4539dc2bd46385c788836e7d556cb9fe3bd1e414c",
+      "post_move_sha256": "38ff53edc9883ca8b4b5d9d4539dc2bd46385c788836e7d556cb9fe3bd1e414c",
+      "content_change": "none"
+    },
+    {
+      "old_path": "demos/serve_demo.py",
+      "new_path": "app/demos/serve_demo.py",
+      "git_mode": "100644",
+      "git_blob": "c13a5e7adc17c42f69767edabe231bedc71a8b8f",
+      "size_bytes": 2776,
+      "sha256": "d4a96baa49426ce7f9ec868a8960e450048d07eaceea1586c9221668d24a5061",
+      "post_move_sha256": "600eda0733a03f029175ae1fd8a74e572aca01df5318fe5d318f4327e7d0e5dc",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "notebooks/quickstart.ipynb",
+      "new_path": "examples/notebooks/quickstart.ipynb",
+      "git_mode": "100644",
+      "git_blob": "9632020353221f33d9a6f012848c6bc439d1cd9b",
+      "size_bytes": 2060,
+      "sha256": "70b04c548155d6f96c9cd6f81027d9626d49b60d3390400bd6dca2798b10b675",
+      "post_move_sha256": "70b04c548155d6f96c9cd6f81027d9626d49b60d3390400bd6dca2798b10b675",
+      "content_change": "none"
+    },
+    {
+      "old_path": "references/air_lubrication_reference_points.json",
+      "new_path": "scripts/data/air_layer_drag/air_lubrication_reference_points.json",
+      "git_mode": "100644",
+      "git_blob": "349d3e34f258867f3eb34f3125887781bfff639a",
+      "size_bytes": 2229,
+      "sha256": "21b0ee54e120524edf8afe4b9cfa2a03cc11bc96e3c9c86fd1eaa8835b7eb78b",
+      "post_move_sha256": "21b0ee54e120524edf8afe4b9cfa2a03cc11bc96e3c9c86fd1eaa8835b7eb78b",
+      "content_change": "none"
+    },
+    {
+      "old_path": "regression_rules/multiphase3d_d3q27_forcing_velocity_contract.json",
+      "new_path": "tests/fixtures/regression_rules/multiphase3d_d3q27_forcing_velocity_contract.json",
+      "git_mode": "100644",
+      "git_blob": "1e5f22dbed0cde8f6dd4728ab829b863315fc7f7",
+      "size_bytes": 2020,
+      "sha256": "de5b5ab2e87d384104798814600f916bf5e7c62f760927912f570d56f00e66a0",
+      "post_move_sha256": "de5b5ab2e87d384104798814600f916bf5e7c62f760927912f570d56f00e66a0",
+      "content_change": "none"
+    },
+    {
+      "old_path": "regression_rules/rotating_duct_moving_wall_mass_contract.json",
+      "new_path": "tests/fixtures/regression_rules/rotating_duct_moving_wall_mass_contract.json",
+      "git_mode": "100644",
+      "git_blob": "701977eb4011ec91e4ec78ac2d2269b3ec9e800b",
+      "size_bytes": 3844,
+      "sha256": "ce8b70e73c69037670e4ae719dc47a5204f0f1515735bcea8087d1632d1797e9",
+      "post_move_sha256": "ce8b70e73c69037670e4ae719dc47a5204f0f1515735bcea8087d1632d1797e9",
+      "content_change": "none"
+    },
+    {
+      "old_path": "regression_rules/rotating_w3_gci_and_zero_anchor_contract.json",
+      "new_path": "tests/fixtures/regression_rules/rotating_w3_gci_and_zero_anchor_contract.json",
+      "git_mode": "100644",
+      "git_blob": "85eca0d1448f0bf87fc0ec11cfa80114805da472",
+      "size_bytes": 5026,
+      "sha256": "d92ac84af313ce007d8d0470fcee9385cb3521208d46136c2d49dcfdbdbfbac0",
+      "post_move_sha256": "d92ac84af313ce007d8d0470fcee9385cb3521208d46136c2d49dcfdbdbfbac0",
+      "content_change": "none"
+    },
+    {
+      "old_path": "teaching/01_couette_exact.py",
+      "new_path": "examples/teaching/01_couette_exact.py",
+      "git_mode": "100644",
+      "git_blob": "5dd8d932c88dfa7bf3ed1ed719bcfbb203c1981e",
+      "size_bytes": 6080,
+      "sha256": "5ed50edfe03f75b43e77b498d9970db66f37313868e9fca3d493d696d391bb89",
+      "post_move_sha256": "1029b2326ea125c41e695890cbd39f9f3e8327a494184b3881260bf14b36e28b",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/02_poiseuille_exact.py",
+      "new_path": "examples/teaching/02_poiseuille_exact.py",
+      "git_mode": "100644",
+      "git_blob": "1c171d06379b313eb2273e47286f642789373520",
+      "size_bytes": 5437,
+      "sha256": "a6418463ef337825d1b46eb8406943f403e6187c9781d5fe98b55b84c8e466b9",
+      "post_move_sha256": "4a536aff2246118c02b60385b821695edeb10a850a3e2caae999c4226fdf99eb",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/03_cylinder_drag.py",
+      "new_path": "examples/teaching/03_cylinder_drag.py",
+      "git_mode": "100644",
+      "git_blob": "e395ed887f270aebf43e6efeb5a556da8db48be5",
+      "size_bytes": 6025,
+      "sha256": "5f5c0a79e09480823be76984a48e67982aadb37eb2fd11a0272dc729a4673636",
+      "post_move_sha256": "bf69626763e41031462f9018344a57ba3cebf641b60cb26e6622c7c4dee7cfeb",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/04_sphere_drag.py",
+      "new_path": "examples/teaching/04_sphere_drag.py",
+      "git_mode": "100644",
+      "git_blob": "ed4d22a591cec198344b70c6ea4768c97650c3fb",
+      "size_bytes": 5394,
+      "sha256": "bb65179438e7b55a178fe4b01ce89ad860bd40c381cb5049dbfb0deb6be3c9e0",
+      "post_move_sha256": "de4096327fcf486b38903eb44f41de7ecc9f763f57a24aed4210436c41707dc0",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/05_suboff_best.py",
+      "new_path": "examples/teaching/05_suboff_best.py",
+      "git_mode": "100644",
+      "git_blob": "d8ffb835f8e6756944514babcb25993e43a10511",
+      "size_bytes": 5604,
+      "sha256": "fd4b19186b0a7f992325d94209971a477d7b110e4361c859d1b73688c25e0378",
+      "post_move_sha256": "709aa55fe4f2201e0ea088268a6f3d0eb099c8a1dfa2be970168f688fd3cbfa5",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/05_suboff_drag.py",
+      "new_path": "examples/teaching/05_suboff_drag.py",
+      "git_mode": "100644",
+      "git_blob": "6db518ef690eba3d322b2ef14f850ec7e0b8de7a",
+      "size_bytes": 8128,
+      "sha256": "21bd8c1e3cb6c9a7152635ab7b0cebc81ce21f21fada2fbfb290d8ce7c4cb8f0",
+      "post_move_sha256": "89e7be588836363f7d449678c1bc3fd02e8ee1a2798faabe7d8d930f0bc7b35c",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/06_bb_bug_fix.py",
+      "new_path": "examples/teaching/06_bb_bug_fix.py",
+      "git_mode": "100644",
+      "git_blob": "092e3e68c7aaaeec9eb97bc74f1d213a545730ac",
+      "size_bytes": 3524,
+      "sha256": "1c6f5802398482cfba825067cc95b509705cd616cbee24124c4be1eb35d7f4cb",
+      "post_move_sha256": "e8c8a298c482a24ece0592ea78ee652c6296b80ec2847b06f9d0a9a1965279dc",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/06_direction_agnostic.py",
+      "new_path": "examples/teaching/06_direction_agnostic.py",
+      "git_mode": "100644",
+      "git_blob": "c4b692b514f2ef1adf2ed68692a0cda739bb543f",
+      "size_bytes": 3831,
+      "sha256": "19521445789e1f8b44ac29f2d57591d5e492d0e43ecaf246bb6c2d2c7096c295",
+      "post_move_sha256": "fc8ea42a6b22fa66fb833224b11317b5eed736ff4404115eec0a2108efea37c3",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/07_stl_geometry.py",
+      "new_path": "examples/teaching/07_stl_geometry.py",
+      "git_mode": "100644",
+      "git_blob": "1ef9f7275f63a2d0ae9a87bbc531d342d44ba817",
+      "size_bytes": 5136,
+      "sha256": "db66bf8fd904e98d0577cf3ce325d07519856975bcd4b4e04d58bdf2639fd7d2",
+      "post_move_sha256": "a1c470ac06bc00c445291df9f04e45c3c304cd88701a8e4f749f1493682ec9e3",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/08_momentum_exchange.py",
+      "new_path": "examples/teaching/08_momentum_exchange.py",
+      "git_mode": "100644",
+      "git_blob": "1ef2c3bfbdd5ec5e9a8cff7f0da7d1a128244728",
+      "size_bytes": 6174,
+      "sha256": "420e532082d448673f9777f97dd7667410d1aa2f37c6678e2ffd4de215db26a1",
+      "post_move_sha256": "88ccf9ead69df1bdacaf4fa842f61c0e6a2b7e6dda3461180d2b028d412290f0",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/08_wall_function.py",
+      "new_path": "examples/teaching/08_wall_function.py",
+      "git_mode": "100644",
+      "git_blob": "168a679de25143908022d8c2c254ba7d7ec54f40",
+      "size_bytes": 7507,
+      "sha256": "79b6f3513687943a74d594dfcf52b8a478e5689e430f9c0cba67f4794d9f8526",
+      "post_move_sha256": "52fe2738865c2551b9a171592e0e20fa16cbd7e8f86dfa4c5cdb18219842b31f",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/09_wall_function.py",
+      "new_path": "examples/teaching/09_wall_function.py",
+      "git_mode": "100644",
+      "git_blob": "d096b2042ec0ed633b9018ea0233b5394ecb7d42",
+      "size_bytes": 5545,
+      "sha256": "f210ef4b05010891eada291570086b045f4165289a563373d48fa2ba26513faf",
+      "post_move_sha256": "e22f205b81e45a6e8060d665f3c7009cd716701a61e567498503e6b733d51344",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/10_bfl_interpolated.py",
+      "new_path": "examples/teaching/10_bfl_interpolated.py",
+      "git_mode": "100644",
+      "git_blob": "4704c5fb885e499f602c56bdf9e4b8a406bc959e",
+      "size_bytes": 6722,
+      "sha256": "c91ba54dfc4a2dcc6c583204d09eaa101d01c1c37c8eb99714c410e8f8df0b82",
+      "post_move_sha256": "649341d04aba1d290e94602a08b0414703e1443fe4352b9cf7d583b086d88ba4",
+      "content_change": "path references and launch instructions"
+    },
+    {
+      "old_path": "teaching/MEM_COMPARISON.md",
+      "new_path": "examples/teaching/MEM_COMPARISON.md",
+      "git_mode": "100644",
+      "git_blob": "76a0112e3cce7125baa3509d3ca915d7f5ccd8ee",
+      "size_bytes": 8030,
+      "sha256": "ae0a28909bf2622d2519955200a0b47920e404649a4bec4e040d9cb2a379580a",
+      "post_move_sha256": "ae0a28909bf2622d2519955200a0b47920e404649a4bec4e040d9cb2a379580a",
+      "content_change": "none"
+    },
+    {
+      "old_path": "teaching/run_mem_tests.py",
+      "new_path": "examples/teaching/run_mem_tests.py",
+      "git_mode": "100644",
+      "git_blob": "1cdc08ab2eda6dc53138130894c80903e7e6368d",
+      "size_bytes": 17383,
+      "sha256": "271a7ae0c704aa286ca181aecf57d68c98b39719be691b46dd17ec1e77a8daac",
+      "post_move_sha256": "14e67676d8bb291d30ef2e43c405189ec0e62facd811d8e0bb87c466cc84a48b",
+      "content_change": "path references and launch instructions"
+    }
+  ]
+}

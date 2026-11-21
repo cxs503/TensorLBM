@@ -1,4 +1,4 @@
-"""Tests for the drag-echo demo deliverables under ``demos/``.
+"""Tests for the drag-echo demo deliverables under ``app/demos/``.
 
 - ``echo_slider.html``: parses with the stdlib parser, targets the PR #241
   endpoints, contains no external URLs outside comments (offline lab), and
@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-DEMOS = REPO / "demos"
+DEMOS = REPO / "app" / "demos"
 PAGE = DEMOS / "echo_slider.html"
 LAUNCHER = DEMOS / "serve_demo.py"
 

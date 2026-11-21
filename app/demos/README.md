@@ -71,7 +71,7 @@ operator must not average away an out-of-corpus point.
 2. Serve the page and open the printed URL:
 
    ```bash
-   python demos/serve_demo.py 8765        # add --open to launch a browser
+   python app/demos/serve_demo.py 8765        # add --open to launch a browser
    # -> open http://localhost:8765/echo_slider.html?api=http://<lan-ip>:8000
    ```
 
@@ -87,7 +87,7 @@ the SPA catch-all). Start the backend as in mode (a) — minus the launcher —
 and open `http://<host>:8000/demo`. No CORS and no `?api=` needed: the page
 calls `/api/drag/echo/*` with relative URLs that resolve against the same
 origin. The route locates the file from the repo root, so it works from any
-working directory; when `demos/` is absent (e.g. a wheel-only install) it
+working directory; when `app/demos/` is absent (e.g. a wheel-only install) it
 answers a clear 404 instead of a bare 500.
 
 ### Mode (c) — behind a reverse proxy

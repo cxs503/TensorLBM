@@ -6,7 +6,7 @@ Every anchor carries
 * ``confidence``   -- ``"recalled"`` when the digit string was entered from
                       literature memory without a machine-readable source in
                       this sandbox (the same convention as
-                      ``references/air_lubrication_reference_points.json``),
+                      ``scripts/data/air_layer_drag/air_lubrication_reference_points.json``),
 * ``sha256``       -- digest of the numeric payload so any later correction is
                       detectable,
 * ``verification_gap`` -- what must be re-checked against the original paper.

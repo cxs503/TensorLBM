@@ -44,6 +44,6 @@ $\sum_{k\in\text{wall links}} w_k(\mathbf c_k\cdot\mathbf u_w)\ne0$：每个这�
 
 - `tests/test_rotating_duct.py`：平壁精确解 + 质量守恒、壁速切向性、力矩恒等式（幅值+r-无关）、
   涡对判据不可被单涡胞冒充、线性参考解对称性/线性/反号。
-- `regression_rules/rotating_duct_moving_wall_mass_contract.json`（validator = 上述 pytest）。
+- `tests/fixtures/regression_rules/rotating_duct_moving_wall_mass_contract.json`（validator = 上述 pytest）。
 
 **评审状态**：advisory（未经独立复判）；**最后核对日期** 2026-11-10。

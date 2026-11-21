@@ -78,7 +78,7 @@ def test_campaign_gate_rejects_missing_metric_and_escaped_status_log(tmp_path):
 def test_checked_in_campaign_spec_reports_rossiter_eight_of_eight_and_tail_edge_three_of_eight():
     root = Path(__file__).parents[1] / "validation_logs" / "acoustic_sdaa_campaign_20260710T141500Z"
     spec = (
-        Path(__file__).parents[1] / "configs" / "acoustic_sdaa_campaign_20260710T141500Z_gate.json"
+        Path(__file__).parent / "fixtures" / "campaign_gates" / "acoustic_sdaa_campaign_20260710T141500Z_gate.json"
     )
 
     report = evaluate_acoustic_campaign_gate(root, json.loads(spec.read_text(encoding="utf-8")))

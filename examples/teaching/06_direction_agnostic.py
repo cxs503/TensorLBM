@@ -16,7 +16,7 @@ Uses the COMMON INTERFACE ONLY:
   - momentum_exchange_standard for MEM cross-validation
 
 Usage:
-    PYTHONPATH=src python teaching/06_direction_agnostic.py [device_id]
+    PYTHONPATH=src python examples/teaching/06_direction_agnostic.py [device_id]
 """
 from __future__ import annotations
 

@@ -39,8 +39,8 @@ integrity verified before retiring a tracked copy.
 | `audits/` | Merge with mission archive | #2837 stages consolidation under `audit/` before the wider archive move. |
 | `benchmarks/` | Keep | One canonical entry per case. Preserve registered IDs and archived comparisons. |
 | `cases/` | Split by purpose | Benchmark cases to `benchmarks/`, supported demos to `examples/`, exploratory material to `development/`. Pilot includes m18115 and two case-pool runners with legacy CLI wrappers. |
-| `configs/` | Move to the consumer | Case inputs travel with cases, application inputs with the application. Review shared entry points first. |
-| `demos/` | `examples/` or `development/` | Preserve supported demo URLs and launch behavior. |
+| `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
+| `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
 | `evidence/` | Split by purpose | Case acceptance evidence stays discoverable from its case. Review, investigation and supporting records may live in `development/`. |
 | `examples/` | Keep | Preserve documented commands and supported entry points. |
@@ -48,20 +48,25 @@ integrity verified before retiring a tracked copy.
 | `figures/` | Split by owner | Published figures to their report or case. Keep plot indexes and generator paths together. #2839 stages the Sod figures. |
 | `frontend-vue/` | Under `app/` if supported | Audit package manager, static output, deployment and CI paths. |
 | `models/` | Split by role | Judge supported library, model-unit CI, case inputs and historical weights separately. Preserve discoverability for model-unit jobs. |
-| `notebooks/` | `examples/` or `development/` | Review launch URLs and data dependencies. |
+| `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Published material, supporting case assets and working drafts have separate owners. |
-| `references/` | With its consuming case or test | Verify data loaders and source attribution before movement. |
-| `regression_rules/` | `tests/` or owner case | Preserve machine-readable contract identity and every loader. |
+| `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
+| `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | Historical evidence or external storage | Retain existing Git evidence until exact provenance, checksums, consumers and retrieval are verified. New raw output is ignored. |
 | `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. |
 | `src/` | Keep | Keep the installable package and its published import surface stable. |
-| `teaching/` | `examples/`, `docs/` or `development/` | Place runnable teaching code with examples, prose with docs, and obsolete material in the archive. |
+| `teaching/` | `examples/teaching/` | Keep teaching commands and the companion comparison together. |
 | `tests/` | Keep | Preserve test collection and the semantics of fixtures and rules. |
 | `tmp/` | No tracked root | #2839 stages the publisher archive. Future local scratch should be ignored. |
 | `tools/` | Keep | Maintain shared tooling and repository policy together. |
 | `xval/` | `benchmarks/` and `development/verification/` | Move by campaign. Link formal evidence from the canonical benchmark entry and preserve method, references and historical verdicts. |
 
 ## Root files and rollout
+
+The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)
+records the paths, original Git objects, checksums and compatibility checks for
+`configs/`, `demos/`, `notebooks/`, `references/`, `regression_rules/`
+and `teaching/`.
 
 Keep public entry files (`README.md`, `README.zh-CN.md`, `CONTRIBUTING.md`,
 `CHANGELOG.md`, `LICENSE`, `CITATION.cff`, `AUTHORS`, `SECURITY.md`), contributor

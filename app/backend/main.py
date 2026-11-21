@@ -474,16 +474,16 @@ async def root() -> FileResponse:
     return FileResponse(_frontend_index())
 
 
-_DEMO_PAGE = _REPO_ROOT / "demos" / "echo_slider.html"
+_DEMO_PAGE = _REPO_ROOT / "app" / "demos" / "echo_slider.html"
 
 
 @app.get("/demo", include_in_schema=False)  # type: ignore[untyped-decorator]
 async def demo_page() -> FileResponse:
-    """Serve the drag-echo slider demo (``demos/echo_slider.html``).
+    """Serve the drag-echo slider demo (``app/demos/echo_slider.html``).
 
     Registered before the SPA catch-all so ``/demo`` is not swallowed by
     ``spa_fallback``.  The page targets ``/api/drag/echo/*`` with relative
-    URLs, so same-origin serving needs no ``?api=`` override.  ``demos/``
+    URLs, so same-origin serving needs no ``?api=`` override.  ``app/demos/``
     ships with the source checkout (not the tensorlbm wheel), hence the
     explicit existence check: a clear 404 beats a bare 500 from FileResponse.
     """
@@ -491,7 +491,7 @@ async def demo_page() -> FileResponse:
         raise HTTPException(
             status_code=404,
             detail=(
-                f"demo page not found at {_DEMO_PAGE}; demos/ ships with the "
+                f"demo page not found at {_DEMO_PAGE}; app/demos/ ships with the "
                 "source checkout, not the tensorlbm wheel"
             ),
         )

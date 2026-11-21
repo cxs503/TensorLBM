@@ -11,7 +11,7 @@ Key concepts:
   - lbm_step_correct() for verified-correct main loop
 
 Usage:
-  PYTHONPATH=src python teaching/02_poiseuille_exact.py [device_id]
+  PYTHONPATH=src python examples/teaching/02_poiseuille_exact.py [device_id]
 """
 from __future__ import annotations
 import sys, math
