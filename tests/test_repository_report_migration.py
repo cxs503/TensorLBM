@@ -364,5 +364,33 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertTrue((doc.parent / target).is_dir())
 
 
+    def test_experiment_archive_tree_and_navigation_survive_root_retirement(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "experiment-root-retirement-2026-11-21.json").read_text()
+        )
+        archive = ledger["archive"]
+        tree = subprocess.check_output(
+            ["git", "write-tree", f"--prefix={archive['new_path']}/"], cwd=REPO, text=True,
+        ).strip()
+        self.assertEqual(tree, archive["git_tree"])
+        for move in ledger["relocated_files"]:
+            if "relocated_sha256" not in move and Path(move["new_path"]).suffix != ".py":
+                with self.subTest(path=move["new_path"]):
+                    self.assertEqual(
+                        hashlib.sha256((REPO / move["new_path"]).read_bytes()).hexdigest(),
+                        move["original_sha256"],
+                    )
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "--", ledger["root_removed"]], cwd=REPO, text=True,
+        )
+        self.assertEqual(tracked, "")
+        for index in ("docs/README.md", "docs/architecture/repository_layout.md"):
+            doc = REPO / index
+            links = re.findall(r"\]\(([^)]+/development/experiments/[^)]*)\)", doc.read_text())
+            self.assertTrue(links, index)
+            for link in links:
+                self.assertTrue((doc.parent / link).is_dir(), link)
+
+
 if __name__ == "__main__":
     unittest.main()

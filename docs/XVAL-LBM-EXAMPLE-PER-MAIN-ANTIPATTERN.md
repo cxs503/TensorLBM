@@ -216,8 +216,8 @@ python tools/xval/example_runner.py --list --json --out artifacts/xval_example_p
 python tools/xval/example_runner.py --run minimal_d2q9
 
 # full controlled run (audit + sensitivity + A/B, ~3 min CPU)
-python experiments/xval_example_per_main/run_xval.py --listlbm /tmp/listlbm
-python experiments/xval_example_per_main/make_figures.py
+python development/experiments/xval_example_per_main/run_xval.py --listlbm /tmp/listlbm
+python development/experiments/xval_example_per_main/make_figures.py
 
 # tests
 python -m pytest tests/test_xval_example_per_main.py -q     # 14 passed

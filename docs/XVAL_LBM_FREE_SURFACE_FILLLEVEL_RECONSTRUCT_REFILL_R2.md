@@ -32,7 +32,7 @@ round-1's D0 finding), `T_max=2.96`, front criterion `Σ_y fill ≥ 0.5` rightmo
 Refill policy = `repo_average` (round-1 showed the three policies are numerically
 indistinguishable on this apparatus; the convergence question is policy-independent).
 
-Script `experiments/xval_filllevel_refill_2d/run_xval.py --variant repo_average --a {32,36,40,48}`;
+Script `development/experiments/xval_filllevel_refill_2d/run_xval.py --variant repo_average --a {32,36,40,48}`;
 a=48/64 submitted to the compute gate (cj2828/cj2829) because they exceed the 120 s tool wall-clock.
 
 ## 3. Results — resolution-convergence table (repo_average, ρ_g=1, τ=0.6)
@@ -82,12 +82,12 @@ The error is dominated by interface-discretisation resolution (≈1/a), not a mo
 
 | 路径 | 内容 |
 |---|---|
-| `experiments/xval_filllevel_refill_2d/run_xval.py` | 实验脚本（round-1 原样，--a 可扩展）|
-| `experiments/xval_filllevel_refill_2d/analyze_convergence.py` | 收敛分析 + 判定（本单新增）|
-| `experiments/xval_filllevel_refill_2d/gen_convergence_fig.py` | 收敛图生成（本单新增）|
-| `experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a{32,36,40,48}.json` | 本单运行记录（含 14 点逐点对照）|
-| `experiments/xval_filllevel_refill_2d/artifacts/xval_convergence_r2.csv` | 6 行收敛汇总表 |
-| `experiments/xval_filllevel_refill_2d/artifacts/xval_convergence_r2.png` | 收敛图（Z(T) + 误差 vs 1/a，含 15 % 门）|
+| `development/experiments/xval_filllevel_refill_2d/run_xval.py` | 实验脚本（round-1 原样，--a 可扩展）|
+| `development/experiments/xval_filllevel_refill_2d/analyze_convergence.py` | 收敛分析 + 判定（本单新增）|
+| `development/experiments/xval_filllevel_refill_2d/gen_convergence_fig.py` | 收敛图生成（本单新增）|
+| `development/experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a{32,36,40,48}.json` | 本单运行记录（含 14 点逐点对照）|
+| `development/experiments/xval_filllevel_refill_2d/artifacts/xval_convergence_r2.csv` | 6 行收敛汇总表 |
+| `development/experiments/xval_filllevel_refill_2d/artifacts/xval_convergence_r2.png` | 收敛图（Z(T) + 误差 vs 1/a，含 15 % 门）|
 
 ## 7. 结论（disposition）
 

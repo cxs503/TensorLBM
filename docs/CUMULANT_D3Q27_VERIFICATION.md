@@ -39,7 +39,7 @@
 * **同网格 τ 扫描**：Re 只由 τ 决定（`ν=c_s²(τ−½)`，`Re=U·2π/ν`），所以「稳定域边界」是直接测量，不是拟合；
 * **低 Mach 复核**：u₀=0.02 与 0.05 两套，把 Ma 与 Re 两个轴分开。
 
-工具链：PyTorch 2.7.1（loongarch64，float64），`experiments/cumulant_d3q27_verification.py` 分片跑（`--shard i/n`），每份结果自带 `meta.command / git_head / torch / threads` 审计链；报告由 `experiments/render_report.py` 从 JSON 程序化生成（零手抄）。
+工具链：PyTorch 2.7.1（loongarch64，float64），`development/experiments/cumulant_d3q27_verification.py` 分片跑（`--shard i/n`），每份结果自带 `meta.command / git_head / torch / threads` 审计链；报告由 `development/experiments/render_report.py` 从 JSON 程序化生成（零手抄）。
 
 ## ③ 计算结果
 

@@ -156,7 +156,7 @@ The regression reports listed under *Benchmarks & Validation* also live in
 ## See Also
 
 - **[Root README](../README.md)** — project overview, installation, quick-start
-- **[experiments/archived/](../experiments/archived/)** — retired one-off campaign / debug scripts (unmaintained, not on any import path)
+- **[development/experiments/archived/](../development/experiments/archived/)** — retired one-off campaign / debug scripts (unmaintained, not on any import path)
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** — contribution guidelines
 - **[CHANGELOG.md](../CHANGELOG.md)** — release history
 - **[examples/](../examples/)** — runnable code examples

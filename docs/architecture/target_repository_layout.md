@@ -44,7 +44,7 @@ integrity verified before retiring a tracked copy.
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
 | `evidence/` | Case data, document assets, development evidence and tools | The [migration ledger](migrations/evidence-root-retirement-2026-11-21.json) lists original blobs and updated replay commands. |
 | `examples/` | Keep | Preserve documented commands and supported entry points. |
-| `experiments/` | `development/experiments/` | Promote any maintained cases before moving exploratory and archived work. |
+| `experiments/` | `development/experiments/` | The [migration ledger](migrations/experiment-root-retirement-2026-11-21.json) traces archived and exploratory assets. Maintained benchmark entry points remain indexed by case. |
 | `figures/` | Case evidence, document assets, or development archives | The [migration ledger](migrations/figures-root-retirement-2026-11-21.json) preserves historical paths. Migrated commands use `outputs/figures/`. Unmigrated commands can still use the ignored local `figures/`. |
 | `frontend-vue/` | `app/frontend-vue/` | Keep Vue source and its build with the serving app. The [migration ledger](migrations/vue-application-root-2026-11-21.json) records file provenance. |
 | `models/` | Split by role | Judge supported library, model-unit CI, case inputs and historical weights separately. Preserve discoverability for model-unit jobs. |

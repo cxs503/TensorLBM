@@ -3,7 +3,7 @@
 节点：`p234w2-n05-inlet-turbulence-synthesis`　仓库：TensorLBM　分支：`agent/m9031`
 代码：`src/tensorlbm/turbulence/inlet_spectral_synthesis.py`（合成/统计/判据）、
 `src/tensorlbm/turbulence/inlet_downstream.py`（施加层 + D2Q9 接收器）、
-实验：`experiments/p234w2_n05_inlet_synthesis/run_inlet_synthesis.py`、
+实验：`development/experiments/p234w2_n05_inlet_synthesis/run_inlet_synthesis.py`、
 测试：`tests/test_inlet_spectral_synthesis_p234w2_n05.py`（14 passed, 17 s）。
 
 ## ① 案例介绍

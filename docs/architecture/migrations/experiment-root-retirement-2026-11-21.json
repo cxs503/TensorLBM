@@ -1,0 +1,384 @@
+{
+  "source_commit": "15806ca3336fe92781f2dc1c68a4e78d6fbc96b0",
+  "root_removed": "experiments",
+  "archive": {
+    "old_path": "experiments/archived",
+    "new_path": "development/experiments/archived",
+    "git_tree": "5367ae6a1ee17dba4b5bb339e939ba17a69e9caa",
+    "tracked_files": 805,
+    "replay": "The Git tree preserves every object and mode. Replay commands that require the original layout use the source commit."
+  },
+  "relocated_files": [
+    {
+      "old_path": "experiments/air_lubrication_in45_n07/build_report.py",
+      "new_path": "development/experiments/air_lubrication_in45_n07/build_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "88db7c1269bd7a668f7d6e01c781f824e628efb5",
+      "original_sha256": "fe3c9e95e0d8a9c6747148faafbb617183e686017b3c3a43f80810b150a69734",
+      "relocated_sha256": "68308e4bfd53cf97ba0f501ac0d34d717daa112ac56b62ec1fa2ea4e2f5cb89d"
+    },
+    {
+      "old_path": "experiments/air_lubrication_in45_n07/re_scan_worker.py",
+      "new_path": "development/experiments/air_lubrication_in45_n07/re_scan_worker.py",
+      "git_mode": "100644",
+      "original_git_blob": "babeba8aaf9bf1468fd96878cfd354e003261abb",
+      "original_sha256": "583b173bb97eec02ea5d7423c9c14d62a3cd23f883988762bd20e74d566a4e80",
+      "relocated_sha256": "d001b1c2179a4103d3c2f6ce1fe8e5e987fa4b32827f0b282e833c5b78e661cb"
+    },
+    {
+      "old_path": "experiments/air_lubrication_in45_n07/run_campaign.py",
+      "new_path": "development/experiments/air_lubrication_in45_n07/run_campaign.py",
+      "git_mode": "100644",
+      "original_git_blob": "c593b05ca760c1ac6ea7e47c6f7ee72d27aad249",
+      "original_sha256": "ca6ceb551df65cc1e9c6e6aa2fe4fb0b55af0c0ca5daa5b392ff0403e0979dcc",
+      "relocated_sha256": "3c694ce81f6ad480ac2c7b31cde8581372320e637631cc5a14f7f2395e5a6384"
+    },
+    {
+      "old_path": "experiments/air_lubrication_p21_n05/build_report.py",
+      "new_path": "development/experiments/air_lubrication_p21_n05/build_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "fd0fc95fbbbb12a1b716d1368f24174e5460386d",
+      "original_sha256": "0630b32ef00434529012b1079faa467c7038c5a0e0472983d988342ce97da296",
+      "relocated_sha256": "e137ca95b922d8c98d947a49540dc3092bc5c7a29f57194e6bd0a93fa3a014c1"
+    },
+    {
+      "old_path": "experiments/air_lubrication_p21_n05/run_campaign.py",
+      "new_path": "development/experiments/air_lubrication_p21_n05/run_campaign.py",
+      "git_mode": "100644",
+      "original_git_blob": "d16e0f64f888a712c5e582486a8b31ff112e2760",
+      "original_sha256": "0070290dc57b66d949fa267f40e8b822b0f44b2a824d1722b79ed4a39f50a6cb",
+      "relocated_sha256": "473ecd4ae8bb498c84e62cc6c024c6b6ed7804ccb480fe76c05fc7ac1181878e"
+    },
+    {
+      "old_path": "experiments/backstep/reproduce_re100.py",
+      "new_path": "development/experiments/backstep/reproduce_re100.py",
+      "git_mode": "100755",
+      "original_git_blob": "897ae0a63dc3e330d9c5289654ca37f587724a50",
+      "original_sha256": "aaa01fec1a06e3740bfc2b7b946c7d0a2b00207263b29d0791ea1cdbedd69e46",
+      "relocated_sha256": "249887c45e80f16017367d1479b54ba43dca1b25666a9d2ccc55fc2b97e494eb"
+    },
+    {
+      "old_path": "experiments/cumulant_d3q27_verification.py",
+      "new_path": "development/experiments/cumulant_d3q27_verification.py",
+      "git_mode": "100644",
+      "original_git_blob": "23f9b1bb300a2c67f52c24b48ea74c96675e6ec0",
+      "original_sha256": "3840c3f0cd4f8d4bc156e20e5d9b3bd0e4b60b3b81cc0004e03946deaa783c52",
+      "relocated_sha256": "d4adcd7bfa38e04c0a99f6c6c03ba630dd101b175e83367728a95c38cf5f7eab"
+    },
+    {
+      "old_path": "experiments/fsi_partitioned_figures.py",
+      "new_path": "development/experiments/fsi_partitioned_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "22cef41a5d13b37455e71925e95330ea3ddd0e21",
+      "original_sha256": "cb61f221853065424fc2912399065ed91f6e2da54030581c7a1007ab0066100d",
+      "relocated_sha256": "f17f2aa99bd5266b36a556290cbe072bbc7fab99aad40b058e610cd5ded13672"
+    },
+    {
+      "old_path": "experiments/fsi_partitioned_scaling.py",
+      "new_path": "development/experiments/fsi_partitioned_scaling.py",
+      "git_mode": "100644",
+      "original_git_blob": "0ac47f5ee2b2a6763cad0f41af3fd567ae00100f",
+      "original_sha256": "7b31efc5eca8dbc638d08fdf0b6089bb6821c22f8f4c8874aa817f39f1965e87",
+      "relocated_sha256": "c5e15a18275a560baed391075e6fd30113215f380fd57af4b6458759957fbce6"
+    },
+    {
+      "old_path": "experiments/in62_n06_inlet_quality/make_platform_report.py",
+      "new_path": "development/experiments/in62_n06_inlet_quality/make_platform_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "0828cdc1c5d39ca16c2596748be003c5bbfd75d0",
+      "original_sha256": "cfcf0fec86b93d55416a4ef7cea5c31295b8746a5cb417d8c9238185b845aa61",
+      "relocated_sha256": "b66f6eea7ab3fee75340a58fed6e93c312e900e57d32ff1383db06c696401001"
+    },
+    {
+      "old_path": "experiments/in62_n06_inlet_quality/make_report_md.py",
+      "new_path": "development/experiments/in62_n06_inlet_quality/make_report_md.py",
+      "git_mode": "100644",
+      "original_git_blob": "1dc075cf6c6c102412541da38405b9b1adfe8e42",
+      "original_sha256": "d867bc03e9b6416e66e43073ab4a942a34bf734e806b89e3c931c776648a6f4b",
+      "relocated_sha256": "99fe76bd4a9b1b7c546a9804f86868a87510829108936e610cfc966816d6156f"
+    },
+    {
+      "old_path": "experiments/in62_n06_inlet_quality/postprocess_ldev.py",
+      "new_path": "development/experiments/in62_n06_inlet_quality/postprocess_ldev.py",
+      "git_mode": "100644",
+      "original_git_blob": "2940ed570d06a2408b6c2421a8de54f7996de1b1",
+      "original_sha256": "05e526776b5a66bbb62eeb1fd4e0dfd2765a6329e530759fcd1648bd87c0cde3",
+      "relocated_sha256": "b0ba4d3eeda503bd755ed9961a5e9e49dcdc5b4995af6ddaa2658c98d83ddcbf"
+    },
+    {
+      "old_path": "experiments/in62_n06_inlet_quality/run_inlet_quality.py",
+      "new_path": "development/experiments/in62_n06_inlet_quality/run_inlet_quality.py",
+      "git_mode": "100644",
+      "original_git_blob": "054b1f54c5931a59751e255637710afafabb51e0",
+      "original_sha256": "329166615e4e7bf63b5b36e728fc7274d83157df8942e38fa51c358f4e44aa5d",
+      "relocated_sha256": "090a380ae19b39fee0633c2eb649b7e2f7f441de6a9f0b56cf4657413af9de5e"
+    },
+    {
+      "old_path": "experiments/m23154_kbc_cumulant_tg.py",
+      "new_path": "development/experiments/m23154_kbc_cumulant_tg.py",
+      "git_mode": "100644",
+      "original_git_blob": "822a29bb0fbac6d6d7b73a12b451287b8c1b0f52",
+      "original_sha256": "faae4a8129725568ef5a528636b48c82e34613563f96eff8b3d29a48de1537fd",
+      "relocated_sha256": "23c5f086cf5e2c140d46cdd3577d6fc4f8fd8b5fe168ad9bc66888b2f252c10d"
+    },
+    {
+      "old_path": "experiments/m23154_sweep.py",
+      "new_path": "development/experiments/m23154_sweep.py",
+      "git_mode": "100644",
+      "original_git_blob": "ef977c3bf0086240e27ac369db6f7e4c16048a6e",
+      "original_sha256": "0888679e4ea94f020611f00ff421e44649ff9e8ca25c198be1e330315ca5ebc4",
+      "relocated_sha256": "339b83a363a1654bd0395c6fa0e55658568890ecf36c4d3581afec6012aa2416"
+    },
+    {
+      "old_path": "experiments/p234w2_n05_inlet_synthesis/build_report.py",
+      "new_path": "development/experiments/p234w2_n05_inlet_synthesis/build_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "8902cbb5d826d0e14134f68d9a53f7f9aadc81d7",
+      "original_sha256": "bb69d4dc7010bc282561503a6ee8de163dd41ab39c876c37f5207656bc0e02cb",
+      "relocated_sha256": "4e98b07d1e0ff484efb2203125307c95667280dd0ca3afbf6a3a9c4bbc286a8a"
+    },
+    {
+      "old_path": "experiments/p234w2_n05_inlet_synthesis/run_inlet_synthesis.py",
+      "new_path": "development/experiments/p234w2_n05_inlet_synthesis/run_inlet_synthesis.py",
+      "git_mode": "100644",
+      "original_git_blob": "1ce66ded4e38223b892c174ae530f1fef63d4c85",
+      "original_sha256": "8c12e7597057fbd36b494692d126872e8de837c7ac8a7e8b5d2d970049d89df7",
+      "relocated_sha256": "a64eae640f1b4aac5100789bf739c91dc20fbc2c379018257e2da223b9eba0b4"
+    },
+    {
+      "old_path": "experiments/render_report.py",
+      "new_path": "development/experiments/render_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "fe84d24332bebc8f921f9cf483833ba591f5cba5",
+      "original_sha256": "ea35a7b4da41b9cc6d49b39382234354d007f3001a6b61a3b326297bc5aa095b",
+      "relocated_sha256": "40db5ab1107150d19e147eb417da96352f266ff3ee1c699df244398456446a70"
+    },
+    {
+      "old_path": "experiments/square_duct/bench_square_duct_poiseuille.py",
+      "new_path": "development/experiments/square_duct/bench_square_duct_poiseuille.py",
+      "git_mode": "100644",
+      "original_git_blob": "1df0b1e44d918839bba4fc460e5cbcb53370da53",
+      "original_sha256": "5b093518ae4fcb4b1db996c9dc5778a3f366ecb203d025315bcd9cbf8db88b7c",
+      "relocated_sha256": "3554fd02081197f1464585891da6d110704782cda249ce3f1630e840b2228118"
+    },
+    {
+      "old_path": "experiments/thermal_cavity/bench_rayleigh_benard_ra1e5.py",
+      "new_path": "development/experiments/thermal_cavity/bench_rayleigh_benard_ra1e5.py",
+      "git_mode": "100644",
+      "original_git_blob": "36a3e8e990d293e8573d7dcd87a9e577fb830c0b",
+      "original_sha256": "7d46919d0cee7867694e26cbe7d24959f59e10f323f448917f6395b174a78a89",
+      "relocated_sha256": "b4a10ff7e041aa989afa356195d1372302bd33b958d8252a7fe76cbd76b7d863"
+    },
+    {
+      "old_path": "experiments/thermal_cavity/gen_figures_ra1e5.py",
+      "new_path": "development/experiments/thermal_cavity/gen_figures_ra1e5.py",
+      "git_mode": "100644",
+      "original_git_blob": "a369746adbd5e8452578153f3d9e311cf288cc6b",
+      "original_sha256": "e9d221b8879259a0a2cc85de66cf4a501948f93174834b8d264a731d8edd0f8d",
+      "relocated_sha256": "31dff55c6cdbc9244f96c6a25edf3326650f7de9a2006f4b207fcdf500f2356f"
+    },
+    {
+      "old_path": "experiments/xval_average_surround_init/artifacts/xval_results.json",
+      "new_path": "development/experiments/xval_average_surround_init/artifacts/xval_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "e16c3b193ff76a4d30cc61dbba0dfafc65d07fb6",
+      "original_sha256": "4fb6b2989eb865c80e00e3f3d2d4fdb94de3859fea0d8078c6b4bde4d06c3328"
+    },
+    {
+      "old_path": "experiments/xval_average_surround_init/artifacts/xval_tables.md",
+      "new_path": "development/experiments/xval_average_surround_init/artifacts/xval_tables.md",
+      "git_mode": "100644",
+      "original_git_blob": "eb3434d50a72cabd350b4ec1a7247a5957de4bee",
+      "original_sha256": "35d9ed7180a70a37a50e50eeb45967a80c5380e308e38332f66a18a2105c4345"
+    },
+    {
+      "old_path": "experiments/xval_average_surround_init/make_tables.py",
+      "new_path": "development/experiments/xval_average_surround_init/make_tables.py",
+      "git_mode": "100644",
+      "original_git_blob": "f10e4b112ac43ccbd242b96bbe75a182a65494f8",
+      "original_sha256": "79a76025af0642ade811b49637af6351773cbe1c5bae4bd793bf27282eb07244",
+      "relocated_sha256": "124ea015f02ba9df12052412db2e36a064347a35f8c472c95a5ec808b17a09bb"
+    },
+    {
+      "old_path": "experiments/xval_average_surround_init/run_xval.py",
+      "new_path": "development/experiments/xval_average_surround_init/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "23f486f3a09fbba0dda5f73fb259b68c54174d00",
+      "original_sha256": "217a69733a7dcf3ab5ca7b31e0d04c6074cdc0f4c388a5c381a37aae651ff752",
+      "relocated_sha256": "8a1a3820826c26d9c38d1199553af28fce2639acb68b0a2a406c3a21b29e7a1a"
+    },
+    {
+      "old_path": "experiments/xval_example_per_main/make_figures.py",
+      "new_path": "development/experiments/xval_example_per_main/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "18796fa1414c939661eb08adbff99103d567c118",
+      "original_sha256": "5be597517bd959d66e539ac574b9a7a9b8109937a315978829f1ac04737f8ecf",
+      "relocated_sha256": "f56edf069c800b0fcc5829de89bd1d7d6fe90969df5b0a5c7b069baadc6facdc"
+    },
+    {
+      "old_path": "experiments/xval_example_per_main/run_xval.py",
+      "new_path": "development/experiments/xval_example_per_main/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "d6dd92099b6f8baeda02a159e14f64aa8f78bbaa",
+      "original_sha256": "43e70a29c653787d72c1a916e698e1fe85d71616401b40bff8d13269b740e3ff",
+      "relocated_sha256": "6b5ac08e765de4779b54ccb2845a9cf2338754688b053fcc9935441ba453d139"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/analyze_convergence.py",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/analyze_convergence.py",
+      "git_mode": "100644",
+      "original_git_blob": "b66ea7906ed778bb49343f2bc615e70ed4670c57",
+      "original_sha256": "d027072bd4ce8d2c464bc969925f8a1b4e0cc054ecda302891c5dffd609a7977",
+      "relocated_sha256": "e8692922627d910c2561fcb7294d51de6f62c7d13a054a02aa533e72cc47eabb"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg1_repo_average_a16.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg1_repo_average_a16.json",
+      "git_mode": "100644",
+      "original_git_blob": "c8526339e90b89b11976a56749da9ec31ef52fd8",
+      "original_sha256": "c3b668c7e563db4023e75ed47b83387ee341f6c79d4658419d464ecd811c0a2c"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg1_repo_average_a24.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg1_repo_average_a24.json",
+      "git_mode": "100644",
+      "original_git_blob": "f7618543dce2307ff2b40de839a3cf969f50ca5b",
+      "original_sha256": "ee4298edfe0354ffbcc47e71414715b7a8ecdb93e35e78d676dfd017d98018d7"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg1_walberla_equilibrium_a16.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg1_walberla_equilibrium_a16.json",
+      "git_mode": "100644",
+      "original_git_blob": "68a179934f8a3b4d3a67f291d0c5821d05de5a4f",
+      "original_sha256": "2c453c0313592855d2c65102833f33fb02afb2105c89d2620fc8c41bdc543e6a"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg1_walberla_equilibrium_a24.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg1_walberla_equilibrium_a24.json",
+      "git_mode": "100644",
+      "original_git_blob": "27179af344124581ed2c439289424506fd1fd4b7",
+      "original_sha256": "4d920bf20e2d323f20a9a6c27011b6cecb6304a0f056aa45831caba39dbebb18"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a32.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a32.json",
+      "git_mode": "100644",
+      "original_git_blob": "77a2338ed008bfd00cbc08ec395d25de82ee7be0",
+      "original_sha256": "54a195001a2296e8ce304f034f2761a3a16c95efa669a7d89c7b4954d0b84739"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a36.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a36.json",
+      "git_mode": "100644",
+      "original_git_blob": "3486911a13a4727dcb63e4ffc3f0d18427c624b1",
+      "original_sha256": "6cd957190b7a0f54c4bc365daf5a16268e40daa4de2d4acd3ee4f029643fab17"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a40.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a40.json",
+      "git_mode": "100644",
+      "original_git_blob": "a3af66295d9850ebfa2b6224a35c8ef4d9d55562",
+      "original_sha256": "e16fe0e9a25392b037548361592e3f3094b4c0665415b2c941e4ce3f97e99dbd"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a48.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/pg2_repo_average_a48.json",
+      "git_mode": "100644",
+      "original_git_blob": "9cbbdee3f22e831ad4ade57ec1d306cb68872d67",
+      "original_sha256": "79c837f227762e2ab3b572087dab275b987178af64014b106325dc312bd3e265"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/r_fixed_rho_a16.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/r_fixed_rho_a16.json",
+      "git_mode": "100644",
+      "original_git_blob": "f7a8d9ff9394968cc1b716c40dc445ecdf029506",
+      "original_sha256": "181e6b5f1a3cba01ba0638f8c16ff579d13e51d99f7810ca138db34ff25ea532"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/r_repo_average_a16.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/r_repo_average_a16.json",
+      "git_mode": "100644",
+      "original_git_blob": "bbe522ff9f8732245c48c2428a6789bbbecb833c",
+      "original_sha256": "db227d331131fe345bf4afb42be7ea169225b4aec70b4f369da5f4de6e817eb9"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/r_walberla_equilibrium_a16.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/r_walberla_equilibrium_a16.json",
+      "git_mode": "100644",
+      "original_git_blob": "2b17208fac80dd00581d205e6ff32ee5e110a6d4",
+      "original_sha256": "032a4f8a342aea3906a8d8cb8236c2739fbbbef2d56fe8909dd73f6f0dbfbedd"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/xval_convergence_r2.csv",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/xval_convergence_r2.csv",
+      "git_mode": "100644",
+      "original_git_blob": "385aed1cadf6dfbc3fcb683bd5bb161360e4e62e",
+      "original_sha256": "49fa61f14bebadc4a5102ad4ce9885fad4bf53b3902b276f6590c4fdbf739af3"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/xval_results.json",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/xval_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "ce4ecb3d7e6b54279741948b4bd872a07eea324d",
+      "original_sha256": "1ec5e2346e36ecfc246fc447f81bf8bb5183f03bb84fccb201155ff52350ec50"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/artifacts/xval_summary.csv",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/artifacts/xval_summary.csv",
+      "git_mode": "100644",
+      "original_git_blob": "afdf9576a2d94f0352664428aa6e945b866eaf5b",
+      "original_sha256": "e0b0da0e3263af66a25c865f788c88f74f8bd3a0fab91cd5ec874067d86fce86"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/gen_convergence_fig.py",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/gen_convergence_fig.py",
+      "git_mode": "100644",
+      "original_git_blob": "25a439f8658a1920e537155d9ada908c32201b2e",
+      "original_sha256": "72175f4e3c948bd8b1722f2ac39e990228d1fbf9ca8de4159cd3c11d79786fee"
+    },
+    {
+      "old_path": "experiments/xval_filllevel_refill_2d/run_xval.py",
+      "new_path": "development/experiments/xval_filllevel_refill_2d/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "33b73c17baad06798ec050bd240f130ba98852e9",
+      "original_sha256": "c54a9848916fefaeccf9d52b6781d6c57f271d69181a9784de29267ab64840f9",
+      "relocated_sha256": "0d94002a5d0f500750721030ad9b636dd0e601df9279f005c223e80dff217695"
+    },
+    {
+      "old_path": "experiments/xval_ludwig_fe_stress/make_figures.py",
+      "new_path": "development/experiments/xval_ludwig_fe_stress/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "d7a7c54c938f9d1f0dc0d2d6716a742a742b6f4d",
+      "original_sha256": "5eb32f9a037563670e0e112ab1a2c9fe9e57838de70992dda93c199aba95569b",
+      "relocated_sha256": "0cf1e82182ca43f7e5c6186274f4dc5130e7090c518b4578e4bdb1c34795dde4"
+    },
+    {
+      "old_path": "experiments/xval_ludwig_fe_stress/results.json",
+      "new_path": "development/experiments/xval_ludwig_fe_stress/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "7838fda29d9d03f7bd6879ccd3351939fbdc2d1b",
+      "original_sha256": "bfda1bd0994f9f1ae7050f57bac2a087493bc3b882c5ffb0978e7ca87650661d"
+    },
+    {
+      "old_path": "experiments/xval_ludwig_fe_stress/run_xval.py",
+      "new_path": "development/experiments/xval_ludwig_fe_stress/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "0f0d9acc1beebf0a0f1d7196a9bc9ea4bdebf649",
+      "original_sha256": "b19988764bcb50bb5f1bea946a31a305e48ac00ed8bd62091c91afb98c66314f",
+      "relocated_sha256": "8587864a8dd1c16021d241effa76b5d091d551870067fc5d9ce7a65db963693a"
+    }
+  ],
+  "compatibility": {
+    "python": "Adjust checkout-relative lookups, invocation text and the Ludwig compatibility runner. Keep adjacent evidence with its scripts.",
+    "registry": "The Ludwig case retains its canonical xval entry. Registered ancillary source and historical results use the new paths.",
+    "docs": "Retain published document URLs. Update replay paths and navigation. Historical ledgers, data and frozen workspaces retain their provenance strings.",
+    "history": "The old URLs resolve at the source commit. The root directory is removed from the CI allowlist."
+  },
+  "scientific_acceptance": "Deferred for the layout batch. Historical evidence is retained.",
+  "verification": {
+    "governance": "52 tests passed. The archive index reproduces the original tree SHA, and the registry validates 189 entries and the published manuals index.",
+    "cli": "30 moved Python files compiled and all 16 argparse entry points returned usage with --help, including the Ludwig forwarding entry point.",
+    "shell": "The cleanup script passed Bash syntax checking and a dry run toward the new archive.",
+    "scientific_replay": "Deferred for the directory-only batch."
+  }
+}

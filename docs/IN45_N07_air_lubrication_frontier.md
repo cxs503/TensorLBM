@@ -3,8 +3,8 @@
 *Repository:* TensorLBM · *branch:* `agent/m5688` · *new module:*
 `src/tensorlbm/air_lubrication_frontier.py` · *tests:*
 `tests/test_air_lubrication_frontier.py` (14 tests) · *driver:*
-`experiments/air_lubrication_in45_n07/run_campaign.py` · *cluster scan:*
-`experiments/air_lubrication_in45_n07/re_scan_worker.py` on loong64 (loongarch64).
+`development/experiments/air_lubrication_in45_n07/run_campaign.py` · *cluster scan:*
+`development/experiments/air_lubrication_in45_n07/re_scan_worker.py` on loong64 (loongarch64).
 Every number below is injected from `artifacts/in45_n07/campaign.json` and
 `artifacts/in45_n07/re_scan.json`.
 

@@ -2,8 +2,8 @@
   "source": [
     "xval/ludwig_fe_stress/run_xval.py",
     "src/tensorlbm/free_energy_stress.py",
-    "experiments/xval_ludwig_fe_stress/run_xval.py",
-    "experiments/xval_ludwig_fe_stress/make_figures.py"
+    "development/experiments/xval_ludwig_fe_stress/run_xval.py",
+    "development/experiments/xval_ludwig_fe_stress/make_figures.py"
   ],
   "config": [
     "xval/ludwig_fe_stress/run_xval.py"
@@ -17,7 +17,7 @@
     "src/tensorlbm/free_energy_stress.py"
   ],
   "results": [
-    "experiments/xval_ludwig_fe_stress/results.json",
+    "development/experiments/xval_ludwig_fe_stress/results.json",
     "xval/ludwig_fe_stress/replays/2026-11-21.json",
     "docs/architecture/migrations/ludwig-fe-stress-2026-11-21.json"
   ],

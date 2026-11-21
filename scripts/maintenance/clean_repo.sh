@@ -4,7 +4,7 @@
 # 1. Moves benchmark run artifacts (*.json, *.log, *.npy, log_*.txt) to
 #    artifacts/runs/ so they stop polluting the project root.
 # 2. Moves ad-hoc _* debug/benchmark Python scripts to
-#    experiments/archived/.
+#    development/experiments/archived/.
 # 3. Removes the tracking of all those files from the git index
 #    (git rm --cached) so they are no longer committed.
 # 4. Appends the corresponding glob patterns to .gitignore so future
@@ -77,7 +77,7 @@ done
 
 # ── 2. Ad-hoc worker / debug scripts ────────────────────────────────────────
 
-ARCHIVED_DIR="experiments/archived"
+ARCHIVED_DIR="development/experiments/archived"
 echo ""
 echo "=== Step 2: Moving _* debug/benchmark scripts to $ARCHIVED_DIR/ ==="
 
@@ -154,6 +154,6 @@ if $DRY_RUN; then
     echo "=== Dry-run complete. Re-run with --apply to make changes. ==="
 else
     echo "=== Done. Next steps: ==="
-    echo "  git add .gitignore artifacts/ experiments/"
+    echo "  git add .gitignore artifacts/ development/experiments/"
     echo "  git commit -m 'chore(cleanup): move root artifacts and worker scripts'"
 fi
