@@ -1,0 +1,233 @@
+{
+  "source_commit": "18a5d1d257344a9861c2541d9efcff1cffb7ddb7",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "mapping": {
+    "old_summary": "artifacts/sdaa_aircraft_icing_naca0012_rime.json",
+    "new_summary": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json",
+    "old_run_root": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime",
+    "new_run_root": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs"
+  },
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_compare.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/beta_compare.png",
+      "git_mode": "100644",
+      "original_git_blob": "3dd4587c75fd452c544b51c4f6fe8f52a2857801",
+      "size_bytes": 67200,
+      "original_sha256": "0e366f6013d36154caa2b56c8b6cd4318a52d1e2a085c77cf18590f261b22bad"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_curve.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/beta_curve.csv",
+      "git_mode": "100644",
+      "original_git_blob": "02f714f45c68c6a80dcaf17042b94d5c4419d919",
+      "size_bytes": 22,
+      "original_sha256": "31e3b0ca72b1202d86efde7d542aed3b343d922a63fdd2d6b7762a842f2a4f0d"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_curve.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/beta_curve.png",
+      "git_mode": "100644",
+      "original_git_blob": "deab386bd4ff6cc3c17258a3043f1bb8ea1619b4",
+      "size_bytes": 40633,
+      "original_sha256": "e48f96dcb1690a908f365934c357bc04b68069b790567f5b820b43363be9c422"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/beta_eulerian.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/beta_eulerian.csv",
+      "git_mode": "100644",
+      "original_git_blob": "54ff7c5f5da05e00135d00206c28eb55a7b9d1b2",
+      "size_bytes": 2217,
+      "original_sha256": "57749d3ae509ee10694859550f117b15cb122550f3f8e9d452d28173d99e9827"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/history.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/history.png",
+      "git_mode": "100644",
+      "original_git_blob": "203bac3ad9ad75334781f644099ca5d40847fd14",
+      "size_bytes": 48061,
+      "original_sha256": "9f5766d2850be1302afb91ed2b44f902db4e0a4815c2d9bba16169d11f38e157"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/ice_profile.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/ice_profile.csv",
+      "git_mode": "100644",
+      "original_git_blob": "e02cd71464fadfe3d9711fb2d19c8ca499101844",
+      "size_bytes": 153,
+      "original_sha256": "d13aaf33280fa3783c21867bdbeebf67ac096b462d5e7f2e58c2e148befc2157"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/ice_shape.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/ice_shape.png",
+      "git_mode": "100644",
+      "original_git_blob": "22c0141999518d328508240650937a1e00d45415",
+      "size_bytes": 36847,
+      "original_sha256": "546253ab13053ba6e5abfe9ffe9eb564d8a9ca71b8f11c5508ff45923e3acb08"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/b1_prod/icing_metrics.json",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/b1_prod/icing_metrics.json",
+      "git_mode": "100644",
+      "original_git_blob": "2a0cd39b70526ff2bce5de0f6dfec324dcb41be7",
+      "size_bytes": 3813,
+      "original_sha256": "642b6c8008fd34b77ab43404c17041aae1ed20f2aa55cf636dfe896c25774fb8"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_compare.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/beta_compare.png",
+      "git_mode": "100644",
+      "original_git_blob": "7b3b7cdcfd36d3bf0db05af01af7a59d87f71279",
+      "size_bytes": 66480,
+      "original_sha256": "47e0c39f5451a8c64b9ebff290861ff7f0802819a1455ed933e61ee93c5fed94"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_curve.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/beta_curve.csv",
+      "git_mode": "100644",
+      "original_git_blob": "02f714f45c68c6a80dcaf17042b94d5c4419d919",
+      "size_bytes": 22,
+      "original_sha256": "31e3b0ca72b1202d86efde7d542aed3b343d922a63fdd2d6b7762a842f2a4f0d"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_curve.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/beta_curve.png",
+      "git_mode": "100644",
+      "original_git_blob": "deab386bd4ff6cc3c17258a3043f1bb8ea1619b4",
+      "size_bytes": 40633,
+      "original_sha256": "e48f96dcb1690a908f365934c357bc04b68069b790567f5b820b43363be9c422"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/beta_eulerian.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/beta_eulerian.csv",
+      "git_mode": "100644",
+      "original_git_blob": "ab752da77c730cfc7c6fee386a32f668992f5e70",
+      "size_bytes": 2362,
+      "original_sha256": "e85047e41a282966a087f2d1b84b983f911b71bdca6280da81163b35d1f28ed9"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/history.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/history.png",
+      "git_mode": "100644",
+      "original_git_blob": "9ea5fcbbe4ce1127559901f2e6c70fc9a947e4d2",
+      "size_bytes": 45360,
+      "original_sha256": "2dc0ca00149c3ee28abee57e34599b4c58a19c9aa5396aad7595d3bef7706a39"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/ice_profile.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/ice_profile.csv",
+      "git_mode": "100644",
+      "original_git_blob": "6782fcee46c384747d2e25c2bbe181b7b10e97d0",
+      "size_bytes": 86,
+      "original_sha256": "bb7c0b23ae53c3229c0b39af4537612e6808631a84562f71cf263d9e1864eef7"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/ice_shape.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/ice_shape.png",
+      "git_mode": "100644",
+      "original_git_blob": "63081f6b7223e9bb1b2f9117f5ba7eb2ac191811",
+      "size_bytes": 36351,
+      "original_sha256": "38a85dff6a52884aa96e0b35fbf2c5305357575c64b4eab47b5f01382507f0a5"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc025/icing_metrics.json",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc025/icing_metrics.json",
+      "git_mode": "100644",
+      "original_git_blob": "7ad001313acd92b4381cf05f850a21dab6f59e01",
+      "size_bytes": 3623,
+      "original_sha256": "240b0c88c7a1b7d5c3dd629272ac0c3b377f95485cb95ca6aa17e7b03fe7fcf7"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_compare.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/beta_compare.png",
+      "git_mode": "100644",
+      "original_git_blob": "3943da627f56d260fa9e14b2be4fc4c47a3467b5",
+      "size_bytes": 67314,
+      "original_sha256": "2ffd021b63649eed0ceb1b57bab2365c3e9d43b5d392914c36daa913d5a27d0f"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_curve.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/beta_curve.csv",
+      "git_mode": "100644",
+      "original_git_blob": "02f714f45c68c6a80dcaf17042b94d5c4419d919",
+      "size_bytes": 22,
+      "original_sha256": "31e3b0ca72b1202d86efde7d542aed3b343d922a63fdd2d6b7762a842f2a4f0d"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_curve.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/beta_curve.png",
+      "git_mode": "100644",
+      "original_git_blob": "deab386bd4ff6cc3c17258a3043f1bb8ea1619b4",
+      "size_bytes": 40633,
+      "original_sha256": "e48f96dcb1690a908f365934c357bc04b68069b790567f5b820b43363be9c422"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/beta_eulerian.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/beta_eulerian.csv",
+      "git_mode": "100644",
+      "original_git_blob": "7132c1b666d998bf004fddde3eac22b353883a70",
+      "size_bytes": 2092,
+      "original_sha256": "2439ccfc7cd65557e6b29931258e4bed5bd4d76bd31bd99d7dce68fa27e37eb7"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/history.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/history.png",
+      "git_mode": "100644",
+      "original_git_blob": "8d0183f382d7c9af31603eb6acd096226010dfe1",
+      "size_bytes": 45982,
+      "original_sha256": "d8e390611995fdf9182d850fa89f2ac50afe8485f60d2a0081bdd3d1a674a2ba"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/ice_profile.csv",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/ice_profile.csv",
+      "git_mode": "100644",
+      "original_git_blob": "30d4d10227e5054a1638f0f6c38c7d655f5c3887",
+      "size_bytes": 238,
+      "original_sha256": "56a83b1a81e71b7aa7c63a61bc06eda9b43f1901bc3b6b46659022b2345e7892"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/ice_shape.png",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/ice_shape.png",
+      "git_mode": "100644",
+      "original_git_blob": "7b000902739221d56a28af074d72aac94ad932f9",
+      "size_bytes": 37528,
+      "original_sha256": "eb1201df2f2c328b5b6894c68b8d1b09d088e2dc9f7582f4c3add331c0cf6e4c"
+    },
+    {
+      "old_path": "artifacts/sdaa_runs/aircraft_icing_naca0012_rime/m20_lwc10/icing_metrics.json",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/m20_lwc10/icing_metrics.json",
+      "git_mode": "100644",
+      "original_git_blob": "1dd921581abb5b536430a6c2513f482714587f0f",
+      "size_bytes": 3797,
+      "original_sha256": "8f82a8cca1f9d8222df3d88e05813036acd23dfec61fe434267d87161eb46ce7"
+    },
+    {
+      "old_path": "artifacts/sdaa_aircraft_icing_naca0012_rime.json",
+      "new_path": "benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "7f18352a4378bf55b82f590f94150b7dfece95b1",
+      "size_bytes": 31756,
+      "original_sha256": "f697eca2877e63cf2ef7f4918fe1c227ff08d10dd7e0a5374e5fa68c59a7b5ae"
+    }
+  ],
+  "reference_scan": {
+    "tracked_consumers": [
+      "scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py",
+      "docs/sdaa_sweep/aircraft_icing_naca0012_rime.md",
+      "docs/report_m13.md"
+    ],
+    "embedded_historical_paths": "summary.json retains the original absolute /srv/tensor/agent/work/m13 paths byte-for-byte as run provenance."
+  },
+  "compatibility": {
+    "producer_default": "The SDAA runner now writes summary and per-run output under the owning benchmark evidence directory.",
+    "documentation": "Both published reports point to the new stable evidence path.",
+    "original_assets": "All 25 tracked assets retain their original Git blob, mode, byte size and SHA-256.",
+    "absent_raw_output": "The three result.npz files named by the historical report were not tracked at the source commit; no raw output was invented or claimed as migrated."
+  },
+  "scientific_status": {
+    "current_sdaa_verdict": "honest-FAIL",
+    "gates": "6/11 PASS",
+    "unchanged": true,
+    "note": "This is an ownership and path migration only; it is not a new scientific replay or acceptance."
+  }
+}

@@ -78,6 +78,8 @@ CUDA_VISIBLE_DEVICES=0 python benchmarks/verified/aircraft_icing_naca0012_rime/r
 - `figs/` — 6 图：beta_curve / alpha_impact / ice_overlay / history /
   convergence（B2 阶梯 + Richardson）/ g9_lwc_linearity
 - `result.json` — 机器组装汇总（门值 + 披露 + 9 案行 + 溯源 md5）
+- `evidence/sdaa_sweep/` — SDAA 设备复跑的主证据与三组已跟踪派生产物；该次复跑
+  仍为 6/11、honest-FAIL，不改变本案例原有 NVIDIA 内部一致性判定
 
 ## Notes
 

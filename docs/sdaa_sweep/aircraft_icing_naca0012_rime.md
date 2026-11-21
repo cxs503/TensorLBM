@@ -4,8 +4,8 @@
   网格收敛阶梯 + LWC 线性族 + 确定性对，状态 `verified`，2026-10-06）
 - **独立入口**：`scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py`（未改任何业务代码；
   不 import 案例 `run.py`，因为后者硬断言 `torch.cuda.is_available()`）
-- **机器输出**：`artifacts/sdaa_aircraft_icing_naca0012_rime.json`
-  （逐案 `artifacts/sdaa_runs/aircraft_icing_naca0012_rime/<run>/`）
+- **机器输出**：`benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json`
+  （逐案 `benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/<run>/`）
 - **总判定**：**FAIL** —— 6/11 判据 PASS，5 条（G7 确定性、G10a–d 收敛阶梯）在 20 min 墙钟内
   跑不到，按纪律记 FAIL + 原因，未降判据、未用 CPU 结果充数
 - **墙钟**：单次扫荡 **1048 s ≈ 17.5 min**（≤20 min 上限）
@@ -168,7 +168,8 @@ TRITON_INTERPRET=1 python scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py \
 ```bash
 python -m py_compile scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py   # OK
 TRITON_INTERPRET=1 python scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py --budget-s 1150
-# -> artifacts/sdaa_aircraft_icing_naca0012_rime.json, gates 6/11 PASS, overall=FAIL, wall=1048 s
+# -> benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/summary.json,
+#    gates 6/11 PASS, overall=FAIL, wall=1048 s
 ```
 
 - JSON 结构自检：`device_evidence_line` 含 `/dev/tcaicard24`；`gates` 共 11 条；
@@ -176,5 +177,5 @@ TRITON_INTERPRET=1 python scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py --b
 - **零手抄复核**：从 JSON 中 3 案存储值重算 G9a/G9b/G9c（0.9869524395629171 / 0.9998826455789217 /
   1.554259549798597）与 G1/G2，与 JSON 记录值差 0（逐位相等）——判据数值确由脚本现算，
   非从 NVIDIA 证据拷贝。
-- 产物：`artifacts/sdaa_runs/aircraft_icing_naca0012_rime/{b1_prod,m20_lwc025,m20_lwc10}/result.npz`
+- 产物：`benchmarks/verified/aircraft_icing_naca0012_rime/evidence/sdaa_sweep/runs/{b1_prod,m20_lwc025,m20_lwc10}/result.npz`
   三份设备侧 npz + 冰形/β/历史图 CSV/PNG；`git status` 仅显示 4 项新增（无业务代码改动）。
