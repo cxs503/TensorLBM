@@ -98,6 +98,19 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 case_readme = (REPO / "benchmarks" / case / "README.md").read_text(encoding="utf-8")
                 self.assertIn(f"](../../../docs/reports/{name})", case_readme)
 
+    def test_m26816_archive_preserves_root_assets(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "m26816-root-retirement-2026-11-21.json").read_text()
+        )
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+        for item in ledger["entries"]:
+            destination = REPO / item["new_path"]
+            with self.subTest(path=destination):
+                self.assert_fingerprint(destination, item["sha256"], item["size_bytes"])
+                self.assertEqual(manifest[item["old_path"]], item["new_path"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+
     def test_case_pool_entries_keep_compatibility_wrappers(self):
         ledger = json.loads(
             (LEDGER_PATH.parent / "case-pool-entrypoints-2026-11-21.json").read_text()
