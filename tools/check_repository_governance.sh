@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+
+python tests/test_repository_layout.py -v
+python tests/test_repository_report_migration.py -v
+python tools/check_repository_layout.py
+python tests/test_source_authority.py -v
+python tools/check_source_authority.py
+python tests/test_benchmark_manuals.py -v
+python tools/check_benchmark_manuals.py
+python tests/test_benchmark_registry.py -v
+python tools/benchmark_registry.py
+
+if [[ "$(git rev-parse HEAD:TensorLBM/pyproject.toml)" != 875366fe90ef34991a6c23eade68cd7fd840ed70 ]]; then
+    echo "Historical nested package metadata changed." >&2
+    exit 1
+fi
