@@ -161,10 +161,6 @@
       "matches": 2,
       "matching_lines_sha256": "42effb676ffd68213b1ac4e69484b5c308368da4bfbfbc2003018bde65afdae4"
     },
-    "scripts/w26_ghia/build_anchor_register.py": {
-      "matches": 1,
-      "matching_lines_sha256": "b560f181c1330c1438e5209b6fb1f8c3ebf8cbed6b9d468b8dec39432446c909"
-    },
     "tests/test_adjoint_inversion.py": {
       "matches": 2,
       "matching_lines_sha256": "d6a212f80520ee7444f2a2972f13ad8e59a14c02277a1fc19437a07f93a04e10"
@@ -176,10 +172,6 @@
     "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/run_xval.py": {
       "matches": 1,
       "matching_lines_sha256": "2da357fcbf4c667d8a8dcf2e04fea48af0d7320d15a516c9e39368f4f0dc2fce"
-    },
-    "xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/run_all.py": {
-      "matches": 1,
-      "matching_lines_sha256": "c90fb54de82044facec2c5508da2e5efa0b6fdcc7c9b9b8e37b9d569b6009d53"
     },
     "xval/model_matrix_ci_plus_coverage/run_matrix.py": {
       "matches": 1,

@@ -200,11 +200,8 @@ def validate(cells: dict) -> dict:
     out["cavity_invariants"] = inv
 
     # ---- 7. cross-check against the repo's existing secondary transcription --
-    sec_candidates = [os.path.join(REPO, "TensorLBM", "src", "tensorlbm", "verification",
-                                   "lid_driven_cavity", "reference_data.py"),
-                      os.path.join(REPO, "src", "tensorlbm", "verification",
-                                   "lid_driven_cavity", "reference_data.py")]
-    sec_path = next((q for q in sec_candidates if os.path.exists(q)), sec_candidates[0])
+    sec_path = os.path.join(REPO, "src", "tensorlbm", "verification",
+                            "lid_driven_cavity", "reference_data.py")
     cross = {"path": sec_path, "sha256": None, "per_re": {}, "note":
              "QC only: this file is a secondary transcription already in the repo; it is "
              "never used as the source of a registered number"}

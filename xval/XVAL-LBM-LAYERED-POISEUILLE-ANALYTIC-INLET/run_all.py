@@ -9,7 +9,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-sys.path.insert(0, os.path.join(ROOT, "TensorLBM", "src"))
+sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from tensorlbm.verification.layered_poiseuille import cases
 from tensorlbm.verification.layered_poiseuille.run_case import run_arm

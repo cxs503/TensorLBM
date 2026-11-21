@@ -31,7 +31,7 @@ integrity verified before retiring a tracked copy.
 | --- | --- | --- |
 | `.audit/` | `development/audit/` | The [archive ledger](migrations/hidden-audit-root-2026-11-21.json) maps historical replay data, drivers and the standalone audit client. |
 | `.github/` | Keep | Preserve workflow and branch-check names. |
-| `TensorLBM/` | `development/legacy/` | Frozen snapshot. Move only after old imports and execution paths have migrated or been documented as historical. |
+| `TensorLBM/` | `development/legacy/` | Frozen snapshot. The [dependency inventory](migrations/nested-source-dependencies-2026-11-21.json) records overlap and the compatibility checks required before the root can move. |
 | `_scratch/` | `development/archived/scratch/` | The [archive ledger](migrations/scratch-root-retirement-2026-11-21.json) records the prior paths and the output paths for current runs. |
 | `app/` | Keep if supported | Review product ownership, launch commands and deployment. |
 | `artifacts/` | Split by consumer | Keep curated evidence with cases or audits. Use ignored output paths or external storage for new raw output. |

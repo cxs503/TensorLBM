@@ -1,0 +1,48 @@
+{
+  "source_revision": "7cf2315aa9710ac5f3da46a1359f6a2b3c7f9ce0",
+  "top_level_directory_count": 21,
+  "nested_tree": {
+    "path": "TensorLBM",
+    "first_main_commit": "8d4f37474208cd5826d9a4b6d923aa2f5876530f",
+    "first_main_pull_request": 1495,
+    "files": 631,
+    "nested_package_paths": 142,
+    "same_path_identical": 55,
+    "same_path_different": 36,
+    "only_nested_relative_paths": 51,
+    "of_which_same_blob_at_other_canonical_path": 5
+  },
+  "changed_entrypoints": [
+    {
+      "path": "xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/run_all.py",
+      "old_input": "TensorLBM/src",
+      "new_input": "src",
+      "verification": {
+        "arm": "S32",
+        "backend": "PyTorch 2.9.1 CPU",
+        "steps": 5200,
+        "result_sha256_without_wall_seconds": "377c854331c7ea9071cb1f921af03e54eccd00318f496410473a4c89b250f03a",
+        "eps_inf": 0.0005081086864561126,
+        "eps_l2_rel": 0.0006917979095834757,
+        "q_total_err": 0.0007466395118126813
+      }
+    },
+    {
+      "path": "scripts/w26_ghia/build_anchor_register.py",
+      "old_input": "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/reference_data.py",
+      "new_input": "src/tensorlbm/verification/lid_driven_cavity/reference_data.py",
+      "verification": {
+        "old_git_blob": "1bf02d830be4e44a347482339a1cf8e2b5510461",
+        "new_git_blob": "1bf02d830be4e44a347482339a1cf8e2b5510461",
+        "original_pdf_reextraction": "Skipped because the source PDF was unavailable."
+      }
+    }
+  ],
+  "remaining_known_current_checkout_imports": [
+    "benchmarks/collision_operator_matrix/run_all.py",
+    "benchmarks/collision_operator_matrix/run_cluster.py",
+    "xval/model_matrix_ci_plus_coverage/run_matrix.py"
+  ],
+  "remaining_import_blocker": "These historical runners depend on legacy D2Q9 names that are absent from the canonical package. See canonical-xval-2026-11-21.json.",
+  "scientific_acceptance": "Path compatibility only. No labels or numerical methods changed."
+}
