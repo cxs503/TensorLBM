@@ -12,7 +12,7 @@
 Usage
 -----
     PYTHONPATH=src python3 benchmarks/case_pool/backward_step_armaly/make_cli_figures.py \\
-        --tag-dir artifacts/case_backward_step_armaly/cli_re100_m16 --out figures/CASE_BACKWARD_STEP_LBM_cli
+        --tag-dir artifacts/case_backward_step_armaly/cli_re100_m16 --out outputs/figures/backward_step_armaly
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def sha256(p: Path) -> str:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tag-dir", required=True)
-    ap.add_argument("--out", default=str(REPO / "figures" / "CASE_BACKWARD_STEP_LBM_cli"))
+    ap.add_argument("--out", default=str(REPO / "outputs" / "figures" / "backward_step_armaly"))
     args = ap.parse_args(argv)
 
     import matplotlib

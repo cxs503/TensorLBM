@@ -101,7 +101,7 @@ $$D_{\text{eff}} = D + \frac{a^2 U^2}{48D}$$
 
 ## 4. 结果图
 
-见 `figures/p96w2_n05/` 目录：
+历史图件保存在[图表清单](assets/taylor-aris/p96w2_n05/figures.json)。重新生成的图写入 `outputs/figures/p96w2_n05/`：
 - `c1_diffusion_validation.png`: 纯扩散 D_eff vs D
 - `c2_numerical_diffusion.png`: 数值扩散标定曲线
 - `c3_taylor_aris.png`: Taylor–Aris 实测 vs 解析
@@ -140,5 +140,5 @@ $$D_{\text{eff}} = D + \frac{a^2 U^2}{48D}$$
 - 代码：`src/tensorlbm/scalar.py`（新建，22KB）
 - 测试：`tests/test_scalar_taylor_aris.py`（新建，16KB）
 - 产物：`artifacts/p96w2_n05/*.json`, `artifacts/p96w2_n05/*.csv`
-- 图表：`figures/p96w2_n05/*.png`
+- 图表：[历史图表清单](assets/taylor-aris/p96w2_n05/figures.json)
 - 运行：`pytest tests/test_scalar_taylor_aris.py -v` → 11 passed

@@ -468,9 +468,9 @@ def main() -> int:
 
     A("### 4.3 图（matplotlib 生成，`scripts/audit_runtest_r6/make_figures.py`）")
     A("")
-    A("- `figures/audit_runtest_r6/conv_ladder.png` — 四臂 L2 相对误差 vs H（双对数），"
+    A("- `outputs/figures/audit_runtest_r6/conv_ladder.png` — 四臂 L2 相对误差 vs H（双对数），"
       "叠加 p=1/p=2 参考斜率和 HEAD（三臂相同）的星标点。")
-    A("- `figures/audit_runtest_r6/bench_gate.png` — 所有实测算例的 |误差|% 与 3% 验收门对照。")
+    A("- `outputs/figures/audit_runtest_r6/bench_gate.png` — 所有实测算例的 |误差|% 与 3% 验收门对照。")
     A("")
 
     # ---------------------------------------------------------------- claims

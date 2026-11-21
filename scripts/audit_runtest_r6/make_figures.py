@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 REPO = Path(__file__).resolve().parents[2]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
 VER = REPO / "benchmarks/verified"
-OUT = REPO / "figures/audit_runtest_r6"
+OUT = REPO / "outputs/figures/audit_runtest_r6"
 
 
 def jload(p: Path):
@@ -140,6 +140,7 @@ def fig_gate() -> Path | None:
 
 
 def main() -> int:
+    OUT.mkdir(parents=True, exist_ok=True)
     out = {}
     for fn in (fig_ladder, fig_gate):
         try:

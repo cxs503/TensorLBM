@@ -2,7 +2,7 @@
 
 Reads ``artifacts/P82W5-N04/*.json`` + the ``.npy`` fields written by
 ``scripts/bench_yield_stress_moving_wall_3d.py`` and writes PNGs into
-``figures/p82w5_n04/``.
+``outputs/figures/p82w5_n04/``.
 
     python scripts/gen_yield_stress_moving_wall_figures.py
 """
@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART = os.path.join(ROOT, "artifacts", "P82W5-N04")
-FIG = os.path.join(ROOT, "figures", "p82w5_n04")
+FIG = os.path.join(ROOT, "outputs", "figures", "p82w5_n04")
 
 
 def _load(name):
