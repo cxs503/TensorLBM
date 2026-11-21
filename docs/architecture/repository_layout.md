@@ -56,7 +56,7 @@ require a runtime import trace to identify its actual source.
 | `scripts/` | Maintained simulation/data/plot/developer workflow entry points; may depend on TensorLBM | One-off scripts with personal machine paths |
 | `tools/` | Repository maintenance and static governance tools; prefer Python stdlib | Simulation runners or solver implementations |
 | `docs/` | User/developer documentation, architecture, reports and selected illustration assets | Large raw trajectories or generated duplicate document formats without a source policy |
-| `evidence/<topic>/` | Small reproducible defect/audit bundles: README, reproducer, environment, result and short logs | Unbounded run dumps; evidence is not independent acceptance |
+| `development/evidence/<topic>/` | Small reproducible defect/audit bundles: README, reproducer, environment, result and short logs | Unbounded run dumps; evidence is not independent acceptance |
 | `outputs/` | New local simulation outputs (ignored) | Files required to reproduce a clean-checkout test |
 | `artifacts/runs/` | Local diagnostic/CI working outputs (ignored) | The sole copy of accepted, externally referenced evidence |
 

@@ -113,10 +113,9 @@ def test_run_py_holds_no_solver_loop_of_its_own():
         assert banned not in src, f"{banned!r} re-introduces the round-1 duplicate solver"
     assert "run_armaly_case" in src
 
-EVIDENCE = REPO / "evidence" / "case_backward_step_armaly_cli" / "cli_re100_m16"
+EVIDENCE = REPO / "benchmarks/case_pool/backward_step_armaly/evidence/cli_re100_m16"
 
 
-@pytest.mark.skipif(not (EVIDENCE / "result.json").is_file(), reason="CLI evidence artefact absent")
 def test_committed_cli_evidence_is_a_judgeable_transient_point():
     """The committed artefact of the documented reproduction command keeps its meaning.
 

@@ -130,10 +130,10 @@ set -o pipefail
 `baseline-contract-final.xml` 与修复后结果对照，避免重复计数。
 
 ```bash
-python evidence/platform_contract_fixes_20261026/summarize.py
+python development/evidence/platform_contract_fixes_20261026/summarize.py
 # 或指定包含 platform-baseline.xml、platform-final.xml、baseline-contract-final.xml
 # 及对应日志、environment.txt、governance.xml 的原始证据目录：
-python evidence/platform_contract_fixes_20261026/summarize.py /path/to/raw-artifacts
+python development/evidence/platform_contract_fixes_20261026/summarize.py /path/to/raw-artifacts
 ```
 
 `summary.json` 保留结果、恢复/失败清单及原始证据 SHA-256；汇总脚本依赖这些原始文件，

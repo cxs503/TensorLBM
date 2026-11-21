@@ -155,7 +155,7 @@ OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=src .venv/bin/python -m pytest \
 - `summary.json`：逐项失败分类、前后计数、七项恢复、AST 对比和原始文件 SHA-256。
 - `environment.txt`：实际安装版本。
 - `summarize.py`：读取本地 JUnit/Ruff 输出并重新生成摘要，缺少输入时直接失败，
-  不会自行编造测试结果。执行：`python evidence/ci_triage_20261026/summarize.py`。
+  不会自行编造测试结果。执行：`python development/evidence/ci_triage_20261026/summarize.py`。
 - 完整原始日志/XML 保存在忽略的 `artifacts/runs/ci-triage/`，不重复加入 Git；
   `summary.json` 记录其哈希和位置。全新 clone 需要按命令重新采集或从此次工作区取回。
 

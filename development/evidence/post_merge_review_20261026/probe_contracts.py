@@ -1,7 +1,7 @@
 """Isolated, dependency-free probes for three post-merge review findings.
 
 Run from the repository root:
-    python evidence/post_merge_review_20261026/probe_contracts.py
+    python development/evidence/post_merge_review_20261026/probe_contracts.py
 
 No API server, solver or real job is started. Files and job registries used by
 these probes are temporary. The source code under review is not modified.
@@ -20,7 +20,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 
 
 def main():

@@ -266,7 +266,7 @@ def test_paper_evidence_harness_registers_the_benchmark():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    path = root / "evidence" / "paper_benchmarks" / "run_all_benchmarks.py"
+    path = root / "tools/paper_benchmarks/run_all_benchmarks.py"
     spec = importlib.util.spec_from_file_location("paper_bench_harness", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

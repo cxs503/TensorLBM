@@ -18,7 +18,7 @@ from pathlib import Path
 BASELINE = "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc"
 MERGED = "49eabc4abc26bfdfe5805890e95fb41d180c95c5"
 RAW = Path("artifacts/runs/ci-triage")
-DEST = Path("evidence/ci_triage_20261026/summary.json")
+DEST = Path("outputs/ci-triage/summary.json")
 MECHANICAL_FILES = [
     "benchmarks/verified/suboff_sail_resistance/gen_tau_ladder_report.py",
     "benchmarks/verified/suboff_sail_resistance/run_tau_ladder.py",
@@ -176,6 +176,7 @@ def main():
                 "storage": "ignored local workspace output; not committed",
             }
         )
+    DEST.parent.mkdir(parents=True, exist_ok=True)
     DEST.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps(summary["platform_counts"], indent=2))
     print(json.dumps(summary["remaining_categories"], indent=2))

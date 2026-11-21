@@ -101,6 +101,20 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     REPO / item["new_path"], item["sha256"], item["size_bytes"]
                 )
 
+    def test_retired_evidence_root_preserves_its_recorded_assets(self):
+        ledger_path = LEDGER_PATH.parent / "evidence-root-retirement-2026-11-21.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertFalse(subprocess.check_output(
+            ["git", "ls-files", "evidence"], cwd=REPO, text=True
+        ))
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["new_path"]):
+                self.assert_fingerprint(
+                    REPO / entry["new_path"],
+                    entry["destination_sha256"],
+                    entry["destination_size_bytes"],
+                )
+
     def test_bulk_root_retirement_accounts_for_all_moved_assets(self):
         ledger_path = LEDGER_PATH.parent / "bulk-root-retirement-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
