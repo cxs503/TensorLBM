@@ -1,0 +1,9 @@
+{
+  "title": "DE·时间推进与次序专线 W2 设计报告：力项半步步长修正与界面亚循环",
+  "summary": "本单为DE战役TMG线W2设计卡。基于CAVSWEEP证明参数微调无法修复22.7%峰深缺口，设计两臂：①FORCE_HALF（Guo 2008半步步长速度修正）减少数值耗散；②SURF_SUB（界面亚循环）稳定表面张力刚性。预登记证伪判据：峰深误差>20%或Ma>0.3早死（FORCE_HALF）；存活<10ms或质量漂移>1e-4（SURF_SUB）。",
+  "scenario_key": "santini_case3",
+  "mission_id": 26843,
+  "tags": ["TMG", "W2", "FORCE_HALF", "SURF_SUB", "Design"],
+  "markdown": "# DE·时间推进与次序专线 W2 设计报告\n\n## 1. 案例介绍\n- **物理背景**：单滴入深水池（Santini case-3），D3Q19 CAC求解器。\n- **几何参数**：池深3D，跨度4D，滴径1D，间隙0.4D。\n- **参数表**：cells=8，speed=0.03，width=6.0，gap=0.4。\n- **基线结果**：峰深1.4352D（实验1.8574D，误差-22.7%），存活~10ms。\n\n## 2. 方法\n- **流程**：设计两臂处方赛马卡，不执行仿真。\n- **关键设置**：\n  - ARM1 FORCE_HALF：修改cac_lbm3d.py collide()，采用Guo(2008)半步步长速度修正。\n  - ARM2 SURF_SUB：修改cac_lbm3d.py step()，界面区（0.1<phi<0.9）执行2次collide/1次stream。\n- **工具链**：TensorLBM cac_lbm3d.py，Python 3.10，PyTorch。\n\n## 3. 计算结果\n- **基线数据**（来自CAVSWEEP/T5_DIGEST）：\n  | 量 | 值 | 出处 |\n  |---|---|---|\n  | peak_depth | 1.4352D | CAVSWEEP ctrl |\n  | peak_error | -22.7% | CAVSWEEP ctrl |\n  | postcontact_healthy_ms | ~10ms | T5_DIGEST |\n  | mach_max | 0.2598 | CAVSWEEP ctrl |\n\n## 4. 结果图\n- **说明**：本单为设计卡任务，未执行仿真，无场量云图/比较曲线。设计卡已预登记预测区间与证伪判据，待后续执行臂验证。\n\n## 5. 注意点\n- **踩坑**：CAVSWEEP 16臂证明参数微调无法修复峰深缺口，必须转向内核时序结构。\n- **局限**：FORCE_HALF假设Guo力项在CAC框架下可直接移植；SURF_SUB假设界面亚循环不破坏质量守恒。\n- **适用范围**：D3Q19 CAC求解器，cells=8，Ma<0.3。\n\n## 6. 误差判定\n- **关键量 vs 基准误差**：\n  - peak_error: -22.7%（基线）\n  - 预测FORCE_HALF: ≤15%（改进7.7pp）\n  - 预测SURF_SUB: 存活≥15ms（改进50%）\n- **是否<3%**：否。W2为结构改进首波，目标为显著降低误差（≤15%），3%门为战役终局目标。\n",
+  "figures": []
+}
