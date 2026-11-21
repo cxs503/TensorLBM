@@ -1,9 +1,9 @@
 {
-  "title": "DE-NXT-MOM-W1: 界面动量交换设计官处方赛马",
-  "summary": "设计并预登记了两条界面动量交换改进路线（GUO_INT 与 BOUNCE_H），旨在解决液-气界面动量交换导致的稳定性问题。",
-  "scenario_key": "DE-NXT-MOM-W1",
-  "mission_id": 26707,
-  "tags": ["MOM", "Interface", "Momentum", "LBM"],
-  "markdown": "# DE-NXT-MOM-W1 进展报告\n\n## 1. 案例介绍\n液-气界面动量交换是 LBM 模拟中的关键问题。当前系统存在界面稳定性问题（\"浅死\"或伪电流），需改进外力项或边界规则。\n\n## 2. 方法\n设计了两条改进路线：\n- **GUO_INT**: 密度感知 Guo 外力项。\n- **BOUNCE_H**: 半步反弹回规则。\n\n## 3. 计算结果\n当前为设计阶段，无实际计算结果。预登记预测峰值误差 < 3%。\n\n## 4. 结果图\n无（设计阶段）。\n\n## 5. 注意点\n- 需确保最小改动原则。\n- 预登记纪律需严格遵守。\n\n## 6. 误差判定\n当前无基准误差。预登记预测峰值误差 < 3%。",
+  "title": "DE-X-FORCE2-MOMENTUM_VOL: 动量交换体积法力评估",
+  "summary": "实现基于Chen(1998)理论的动量交换体积法，通过控制体动量通量积分计算力。将点采样替换为包围体积分，验证峰误差收敛。",
+  "scenario_key": "DE-X-FORCE2-MOMENTUM_VOL",
+  "mission_id": 26763,
+  "tags": ["LBM", "force-calculation", "momentum-exchange", "volume-integration"],
+  "markdown": "# DE-X-FORCE2-MOMENTUM_VOL: 动量交换体积法力评估\n\n## 1. 案例介绍\n- **物理背景**：LBM力计算，基于动量守恒推导。\n- **几何**：待验证。\n- **参数**：cells=8, --gap .18, --speed .06, --capacity, --simple-exchange, --release-speed 1.53, --span 4, --pool-depth 3, u_limit 0.15。\n\n## 2. 方法\n- **物理出处**：Chen(1998) LBM理论。\n- **流程**：实现体积法力计算，通过控制体动量通量积分计算力。\n- **关键设置**：最小改动，仅修改力采样内核。\n- **工具链**：TensorLBM。\n\n## 3. 计算结果\n| 指标 | 预测区间 | 实测值 |\n|------|----------|--------|\n| peak_depth | ≤10% | 待验证 |\n| peak_error | ≤10% | 待验证 |\n| postcontact_healthy_ms | ~24ms | 待验证 |\n\n## 4. 结果图\n- 无图（未运行完整仿真）。\n\n## 5. 注意点\n- 当前实现为简化版本，未完全实现控制体表面法向量计算。\n- 需要进一步验证与解析解的对比。\n\n## 6. 误差判定\n- 关键量 vs 基准误差：待验证。\n- 是否<3%：待验证。\n",
   "figures": []
 }
