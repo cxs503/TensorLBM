@@ -133,6 +133,9 @@ merge 后 main 内**不存在**（`ls benchmarks/case_pool/capillary_rise/artifa
 
 ## ⑤ 审计范围与独立性限制
 
+仓库快照见[原审计复跑脚本与结果](../../development/audit/m15893/repro/)。
+如需重放历史计算，请在隔离目录使用原审计修订的 `src/` 设置 `PYTHONPATH`。
+
 - 只读：m15469 工作树 + main 内合并结果 + `tensor_benchmark_cases` / `tensor_reports` / `tensor_maturity_verdicts`。
   未修改被审仓任何被审文件；审计复跑写在 `.audit/repro/`（隔离目录，`OUT` 相对脚本路径）。
 - 独立性限制：审计者与被审者共享同一 `tensorlbm` 库与同一 `sigma=0.05611` 标定来源

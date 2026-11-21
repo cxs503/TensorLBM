@@ -29,7 +29,7 @@ integrity verified before retiring a tracked copy.
 
 | Existing directory | Target | Constraint or decision |
 | --- | --- | --- |
-| `.audit/` | `development/audit/` | Audit import and command consumers first. |
+| `.audit/` | `development/audit/` | The [archive ledger](migrations/hidden-audit-root-2026-11-21.json) maps historical replay data, drivers and the standalone audit client. |
 | `.github/` | Keep | Preserve workflow and branch-check names. |
 | `TensorLBM/` | `development/legacy/` | Frozen snapshot. Move only after old imports and execution paths have migrated or been documented as historical. |
 | `_scratch/` | `development/archived/` | Check tracked assets and source references. Keep new local scratch ignored. |

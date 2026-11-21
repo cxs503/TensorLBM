@@ -431,7 +431,6 @@
     "models/suboff_v0.3.pt": 15901363
   },
   "root_directories": [
-    ".audit",
     ".github",
     "TensorLBM",
     "_scratch",

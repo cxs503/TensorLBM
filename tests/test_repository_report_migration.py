@@ -279,5 +279,32 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertTrue((index.parent / target).exists())
 
 
+    def test_hidden_audit_root_preserves_replay_files(self):
+        ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(manifest, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(REPO / item["new_path"], item["sha256"], item["size_bytes"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+        audit_links = {
+            "docs/board_audit/m23219/AUDIT-m23126.md":
+                "../../../development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/",
+            "docs/board_audit_m15893/M15893_BOARD_AUDIT.md":
+                "../../development/audit/m15893/repro/",
+        }
+        for name, target in audit_links.items():
+            with self.subTest(audit=name):
+                doc = REPO / name
+                self.assertIn(f"]({target})", doc.read_text(encoding="utf-8"))
+                self.assertTrue((doc.parent / target).is_dir())
+
+
 if __name__ == "__main__":
     unittest.main()

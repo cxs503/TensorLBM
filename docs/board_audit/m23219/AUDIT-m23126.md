@@ -44,6 +44,9 @@
 
 ## 2. 本审计实跑（可重放）
 
+仓库快照见[原审计复跑脚本与工件](../../../development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/)。
+以下命令保留当时的主机路径和运行条件。
+
 ```bash
 # 1) 测试（m23126 工作树）
 cd /srv/tensor/agent/work/m23126/TensorLBM && python -m pytest tests/test_mcmp_psi_field.py -q
