@@ -70,6 +70,7 @@ _curv2 = float(os.environ.get("WE_CURV2", "0") or 0)
 if _curv2: kw["curv2_dose"] = _curv2
 _stbf = os.environ.get("WE_STBF", "0") == "1"
 if os.environ.get("WE_DIAG_CAVITY", "0") == "1": kw["diag_cavity"] = True
+if os.environ.get("WE_CAV_CLOSURE", "0") == "1": kw["cav_closure"] = True
 if os.environ.get("WE_DIAG_BUDGET", "0") == "1": kw["diag_budget"] = True
 _momconv = os.environ.get("WE_MOMCONV", "") or None
 if _momconv: kw["momconv"] = _momconv
@@ -122,6 +123,8 @@ def parse_args():
                     help="dump the mid-plane fill/velocity at the registered post-contact times")
     ap.add_argument("--diag-budget", action="store_true",
                     help="enable the read-only momentum/energy budget ledger inside the probe")
+    ap.add_argument("--cav-closure", action="store_true",
+                    help="enable the read-only crater-closure point trajectory probe")
     ap.add_argument("--momconv", default="",
                     choices=["", "inherit", "redistribute", "redistribute_liq"],
                     help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV); empty=legacy")
@@ -162,7 +165,8 @@ def launch(a):
     env = (f"-e WE_DEV=sdaa -e WE_CELLS={a.cells} -e WE_STEPS={a.steps} -e WE_SPD={a.speed} "
            f"-e WE_GAP={a.gap} -e WE_PD={a.pd} -e WE_RS={a.rs} -e WE_UL={a.ul} "
            f"-e WE_DIAG_CAVITY={1 if a.diag_cavity else 0} -e WE_PLANES={1 if a.planes else 0} "
-           f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv}")
+           f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv} "
+           f"-e WE_CAV_CLOSURE={1 if a.cav_closure else 0}")
     cname = f"sdaa_{tag}"
     r = ssh(f"docker run -d --name {cname} --device /dev/tcaicard{card} "
             f"-v {wt}:/we -v {out}:/out {env} {IMG} bash -c "
@@ -173,6 +177,7 @@ def launch(a):
                              "out": out, "commit": head, "steps": a.steps, "cells": a.cells,
                              "diag_cavity": bool(a.diag_cavity), "planes": bool(a.planes),
                              "diag_budget": bool(a.diag_budget),
+                             "cav_closure": bool(a.cav_closure),
                              "momconv": a.momconv,
                              "launched_at": time.time()})
     print(f"[sdaa] launched arm={a.arm} card={card} commit={head} steps={a.steps} "

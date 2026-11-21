@@ -14,6 +14,8 @@ from benchmarks.water_entry.single_drop.budget_diag import budget_snapshot
 from benchmarks.water_entry.single_drop.cavity_diag import (
     DropMaterialMarkers,
     cavity_diagnostics,
+    closure_point,
+    headspace_mask,
 )
 from benchmarks.water_entry.single_drop.run import (
     DropTracker,
@@ -177,6 +179,62 @@ def _diag_summary(rows, history):
     }
 
 
+def _closure_summary(rows, history, contact_step, sc):
+    """Reduce the closure-point trajectory to the closure time and velocity.
+
+    The closure time is the first step after the depth peak where the closure
+    point (deepest open gas-liquid floor) starts moving up (z increasing, since
+    axis 0 points up and a smaller index is deeper).  The closure velocity is
+    the vertical speed of the closure point at that step.
+    """
+    if not rows:
+        return {"t_close": None, "U_close": None, "rows": 0}
+    # find the depth peak (deepest closure point)
+    peak_step = None
+    peak_depth = None
+    for row in rows:
+        d = row.get("depth")
+        if d is None:
+            continue
+        if peak_depth is None or d > peak_depth:
+            peak_depth = d
+            peak_step = row["step"]
+    # find the first step after the peak where z starts increasing (moving up)
+    t_close = None
+    U_close = None
+    prev_z = None
+    for row in rows:
+        if row["step"] <= peak_step:
+            prev_z = row.get("z")
+            continue
+        z = row.get("z")
+        if z is None or prev_z is None:
+            prev_z = z
+            continue
+        # axis 0 points up: smaller index = deeper, so moving up = z increasing
+        if z > prev_z:
+            t_close = row["time_ms"]
+            # velocity: (z - prev_z) * dx / dt in m/s (upward = positive)
+            dz = (z - prev_z) * sc["dx_m"]
+            dt = (row["time_ms"] - (row["step"] - 1) * 1000 * sc["dt_s"]) / 1000
+            U_close = dz / dt if dt > 0 else None
+            break
+        prev_z = z
+    # t_close in ms after contact
+    t_close_after = None
+    if t_close is not None and contact_step is not None:
+        t_contact = contact_step * 1000 * sc["dt_s"]
+        t_close_after = t_close - t_contact
+    return {
+        "t_close": t_close,
+        "t_close_after_contact_ms": t_close_after,
+        "U_close": U_close,
+        "peak_step": peak_step,
+        "peak_depth": peak_depth,
+        "rows": len(rows),
+    }
+
+
 def probe(
     n,
     speed,
@@ -198,6 +256,7 @@ def probe(
     gas_nu_ratio=1.0,
     diag_budget=False,
     momconv=None,
+    cav_closure=False,
 ):
     diag_cavity = diag_cavity_enabled(diag_cavity)
     diag_budget = bool(diag_budget)
@@ -264,6 +323,7 @@ def probe(
     marker_state = None
     last_drop_mask = None
     cavity_rows = []
+    closure_rows = []
     budget_rows = []
     prev_budget = None
     # the anti-bounce-back reconstruction carries the ambient gas pressure
@@ -349,7 +409,7 @@ def probe(
             )
 
         row["depth_over_D"] = open_depth(field, level - 1, 1.5 * n) / n
-        if (diag_cavity or diag_budget) and tracker.contact_step is not None:
+        if (diag_cavity or diag_budget or cav_closure) and tracker.contact_step is not None:
             uxi = ux[1:-1].numpy()
             uyi = uy[1:-1].numpy()
             uzi = uz[1:-1].numpy()
@@ -369,6 +429,18 @@ def probe(
                 diag_row["step"] = step
                 diag_row["time_ms"] = row["time_ms"]
                 cavity_rows.append(diag_row)
+            if cav_closure:
+                gas = field < 0.5
+                headspace = headspace_mask(gas)
+                side = field.shape[1]
+                center = (side - 1) / 2
+                yy, xx = np.indices(field.shape[1:])
+                roi = (yy - center) ** 2 + (xx - center) ** 2 <= (1.5 * n) ** 2
+                cp = closure_point(field, gas, headspace, roi, level - 1, n)
+                if cp is not None:
+                    cp["step"] = step
+                    cp["time_ms"] = row["time_ms"]
+                    closure_rows.append(cp)
             if diag_budget:
                 mass_np = mass[1:-1].numpy()
                 budget_row = budget_snapshot(
@@ -529,6 +601,20 @@ def probe(
             "summary": _diag_summary(cavity_rows, history),
             "rows": cavity_rows,
         }
+    if cav_closure:
+        result["cav_closure"] = {
+            "enabled": True,
+            "definitions": {
+                "z": "sub-cell z position of the deepest open gas-liquid floor (axis 0 = up)",
+                "x": "sub-cell x position of the deepest open gas-liquid floor",
+                "y": "sub-cell y position of the deepest open gas-liquid floor",
+                "depth": "depth of the closure point below the initial surface (D)",
+                "t_close": "closure time (ms after contact): first step after the depth peak where the closure point starts moving up",
+                "U_close": "closure velocity (m/s): vertical speed of the closure point at t_close",
+            },
+            "summary": _closure_summary(closure_rows, history, tracker.contact_step, sc),
+            "rows": closure_rows,
+        }
     return result
 
 
@@ -587,6 +673,13 @@ if __name__ == "__main__":
         "(read only; does not change the trajectory)",
     )
     parser.add_argument(
+        "--cav-closure",
+        action="store_true",
+        help="record the crater-closure point trajectory (deepest open "
+        "gas-liquid floor position and velocity; read only, does not "
+        "change the trajectory)",
+    )
+    parser.add_argument(
         "--diag-budget",
         action="store_true",
         help="record the momentum/energy budget ledger of the impact "
@@ -636,6 +729,7 @@ if __name__ == "__main__":
         args.gas_nu_ratio,
         args.diag_budget,
         args.momconv,
+        args.cav_closure,
     )
     for row in result["history"]:
         for key, value in row.items():

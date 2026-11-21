@@ -41,6 +41,7 @@ from scipy import ndimage
 __all__ = [
     "DropMaterialMarkers",
     "cavity_diagnostics",
+    "closure_point",
     "headspace_mask",
 ]
 
@@ -233,3 +234,34 @@ def cavity_diagnostics(
         out["markers"] = 0
         out["markers_alive"] = 0
     return out
+
+
+def closure_point(field, gas, headspace, roi, surf, n):
+    """Track the deepest open gas-liquid floor (closure point) and its position.
+
+    The closure point is the deepest headspace-connected gas-to-liquid floor
+    crossing inside the measurement ROI.  When the cavity is open (p_cav ~ 1)
+    this is the bottom of the open cavity; when the neck starts to pinch off
+    the deepest open point moves up toward the neck.
+
+    Returns a dict with the sub-cell (x, z) position, the depth in diameters,
+    or ``None`` when no open floor crossing exists.
+    """
+    k, j, i = np.where(headspace[1:] & ~gas[:-1] & roi[None])
+    if not len(k):
+        return None
+    below = field[k, j, i]
+    upper = field[k + 1, j, i]
+    span = below - upper
+    span = np.where(np.abs(span) < 1e-12, 1e-12, span)
+    crossing = k + (below - 0.5) / span
+    idx = np.argmin(crossing)
+    z = float(crossing[idx])
+    x = float(i[idx])
+    y = float(j[idx])
+    return {
+        "z": z,
+        "x": x,
+        "y": y,
+        "depth": (surf - z) / n,
+    }
