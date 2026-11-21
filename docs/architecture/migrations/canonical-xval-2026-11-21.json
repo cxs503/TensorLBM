@@ -1,0 +1,319 @@
+{
+  "base_revision": "2822dddb763c04b8dbe34572056329057bbe55e4",
+  "scope": "Promote the active ice-hydro, layered-Poiseuille and XVAL packages into src/tensorlbm without changing archived files or acceptance states.",
+  "path_mappings": [
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/ice_hydro/__init__.py",
+      "canonical_path": "src/tensorlbm/ice_hydro/__init__.py",
+      "historical_git_blob": "194c0fd77180116807b29b42f01fa15c8ac61b05",
+      "candidate_git_blob": "194c0fd77180116807b29b42f01fa15c8ac61b05",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/ice_hydro/analytical.py",
+      "canonical_path": "src/tensorlbm/ice_hydro/analytical.py",
+      "historical_git_blob": "615ffb37c305e0da9da2bb9e1f8b531277a238ce",
+      "candidate_git_blob": "615ffb37c305e0da9da2bb9e1f8b531277a238ce",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/ice_hydro/bonded_cover.py",
+      "canonical_path": "src/tensorlbm/ice_hydro/bonded_cover.py",
+      "historical_git_blob": "768b2f625cb850f5ffb569fa83599df10bb49d9e",
+      "candidate_git_blob": "768b2f625cb850f5ffb569fa83599df10bb49d9e",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/ice_hydro/coupled.py",
+      "canonical_path": "src/tensorlbm/ice_hydro/coupled.py",
+      "historical_git_blob": "d1e7f43251f13fd248841bf62ad9247e4c0f8e0e",
+      "candidate_git_blob": "d1e7f43251f13fd248841bf62ad9247e4c0f8e0e",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/ice_hydro/lbm_channel.py",
+      "canonical_path": "src/tensorlbm/ice_hydro/lbm_channel.py",
+      "historical_git_blob": "b6bf1f3823ce8476fa176e851a3a307c7573411e",
+      "candidate_git_blob": "b6bf1f3823ce8476fa176e851a3a307c7573411e",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/ice_hydro/run_study.py",
+      "canonical_path": "src/tensorlbm/ice_hydro/run_study.py",
+      "historical_git_blob": "150343acbbac351a1a1b3f7026afdeaffeaf8f12",
+      "candidate_git_blob": "150343acbbac351a1a1b3f7026afdeaffeaf8f12",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/__init__.py",
+      "canonical_path": "src/tensorlbm/verification/xval/__init__.py",
+      "historical_git_blob": "a1b6f50805881d8d7da623903e85fbce24a2001d",
+      "candidate_git_blob": "a1b6f50805881d8d7da623903e85fbce24a2001d",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/benchmark.py",
+      "canonical_path": "src/tensorlbm/verification/xval/benchmark.py",
+      "historical_git_blob": "8935bc31acd5bfba2775921183a0b2b5bebaa5fe",
+      "candidate_git_blob": "8935bc31acd5bfba2775921183a0b2b5bebaa5fe",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/bitwise_refdata.py",
+      "canonical_path": "src/tensorlbm/verification/xval/bitwise_refdata.py",
+      "historical_git_blob": "5844fdeb4a60c2298474661d62292c18814c67ce",
+      "candidate_git_blob": "5844fdeb4a60c2298474661d62292c18814c67ce",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/cases.py",
+      "canonical_path": "src/tensorlbm/verification/xval/cases.py",
+      "historical_git_blob": "11278af826bcf2e72c608fefc5ae5fd1868f1423",
+      "candidate_git_blob": "11278af826bcf2e72c608fefc5ae5fd1868f1423",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/continuous_error.py",
+      "canonical_path": "src/tensorlbm/verification/xval/continuous_error.py",
+      "historical_git_blob": "60889c510ac1cea2464c138de25ba24ff33e7c3c",
+      "candidate_git_blob": "60889c510ac1cea2464c138de25ba24ff33e7c3c",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/poiseuille_skeleton.py",
+      "canonical_path": "src/tensorlbm/verification/xval/poiseuille_skeleton.py",
+      "historical_git_blob": "8df29790d35b4e78a5821911f4b01abeac904c66",
+      "candidate_git_blob": "8df29790d35b4e78a5821911f4b01abeac904c66",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/refdata/manifest.json",
+      "canonical_path": "src/tensorlbm/verification/xval/refdata/manifest.json",
+      "historical_git_blob": "98fde16ccb86f537e9fb8d45dde2e81d4afb3c5b",
+      "candidate_git_blob": "98fde16ccb86f537e9fb8d45dde2e81d4afb3c5b",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/refdata/poiseuille_2d_H16_v1.npz",
+      "canonical_path": "src/tensorlbm/verification/xval/refdata/poiseuille_2d_H16_v1.npz",
+      "historical_git_blob": "6c9a6ac5ea528100bf16b017ac624f3f08d0a93d",
+      "candidate_git_blob": "6c9a6ac5ea528100bf16b017ac624f3f08d0a93d",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/xval/registry.py",
+      "canonical_path": "src/tensorlbm/verification/xval/registry.py",
+      "historical_git_blob": "067e0b2688149cfde1a9a780e62bef4b3e9fd7d1",
+      "candidate_git_blob": "067e0b2688149cfde1a9a780e62bef4b3e9fd7d1",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/__init__.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/__init__.py",
+      "historical_git_blob": "4b19a958bfc5a9c46b14f05ba31122dfad021a5a",
+      "candidate_git_blob": "4b19a958bfc5a9c46b14f05ba31122dfad021a5a",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/analytic.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/analytic.py",
+      "historical_git_blob": "257fe4121ec4a585f159ffa6f6b33805a1064182",
+      "candidate_git_blob": "257fe4121ec4a585f159ffa6f6b33805a1064182",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/benchmark.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/benchmark.py",
+      "historical_git_blob": "aea9b469872340f3b159fcee4f3b28eb4dc6f641",
+      "candidate_git_blob": "aea9b469872340f3b159fcee4f3b28eb4dc6f641",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/cases.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/cases.py",
+      "historical_git_blob": "8b82909bfe8d223cb6b408d4f00c9113eeb90db0",
+      "candidate_git_blob": "8b82909bfe8d223cb6b408d4f00c9113eeb90db0",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/metrics.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/metrics.py",
+      "historical_git_blob": "e156680ea5e755630731686d30b097c649f12845",
+      "candidate_git_blob": "e156680ea5e755630731686d30b097c649f12845",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/run_case.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/run_case.py",
+      "historical_git_blob": "73afd60320a7e2ff105b242ab9e838320af7bee2",
+      "candidate_git_blob": "73afd60320a7e2ff105b242ab9e838320af7bee2",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_val.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_val.py",
+      "historical_git_blob": "fc444589368b5646a3f9c009281efbdd675ce8a8",
+      "candidate_git_blob": "fc444589368b5646a3f9c009281efbdd675ce8a8",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/run_two_component_sc_validation.py",
+      "historical_git_blob": "9aa8cb3ee2e6d32dbdf959831361ba7f3df6a383",
+      "candidate_git_blob": "9aa8cb3ee2e6d32dbdf959831361ba7f3df6a383",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/solver.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/solver.py",
+      "historical_git_blob": "6fbb89abe04f02e655415ccea348eb8f2d92b3e9",
+      "candidate_git_blob": "6fbb89abe04f02e655415ccea348eb8f2d92b3e9",
+      "byte_identical": true
+    },
+    {
+      "historical_path": "TensorLBM/src/tensorlbm/verification/layered_poiseuille/two_component_sc.py",
+      "canonical_path": "src/tensorlbm/verification/layered_poiseuille/two_component_sc.py",
+      "historical_git_blob": "30a979bd8291ad7b361039d2b1fca18aa4e9d4ef",
+      "candidate_git_blob": "89bc25b43a29767c443a8fbda3b5b356bab4bd2d",
+      "byte_identical": false
+    }
+  ],
+  "compatibility": {
+    "historical_tree": "TensorLBM/src/tensorlbm",
+    "canonical_tree": "src/tensorlbm",
+    "mapped_files": 25,
+    "byte_identical_files": 24,
+    "adapted_file": "src/tensorlbm/verification/layered_poiseuille/two_component_sc.py only changes its private kernel import.",
+    "compatibility_kernel": "src/tensorlbm/verification/layered_poiseuille/_historical_multiphase.py contains the exact historical helper implementations used by that validation; production tensorlbm.multiphase is unchanged.",
+    "packaged_data": [
+      "src/tensorlbm/verification/xval/refdata/manifest.json",
+      "src/tensorlbm/verification/xval/refdata/poiseuille_2d_H16_v1.npz"
+    ],
+    "retained_history": "All TensorLBM/src paths and Git objects remain unchanged."
+  },
+  "active_entrypoints": [
+    {
+      "path": "xval/XVAL-LBM-SINGLE-PHASE-POISEUILLE-BASELINE-SKELETON/run_all.py",
+      "before": "TensorLBM/src",
+      "after": "src",
+      "comparison": "V16 TensorLBM arm: all scientific values equal; only timestamp and elapsed-time fields differed."
+    },
+    {
+      "path": "benchmarks/verified/poiseuille_2d_bodyforce/run.py",
+      "before": "TensorLBM/src",
+      "after": "src",
+      "comparison": "H=8, 1000 steps: every value equal except elapsed_s (0.19 vs 0.22)."
+    }
+  ],
+  "source_and_wheel_replay": {
+    "environment": {
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "threads": 1,
+      "device": "cpu"
+    },
+    "cases": {
+      "lid_cavity_re100_n33_bitwise": {
+        "metrics": {
+          "l2_u": 0.024736057291973465,
+          "l2_v": 0.058742409375683584
+        },
+        "passed": true,
+        "state_hash": "7607231ca05f94a9a10dd278894341b420f79764a0f025844d3b6f04a0214ceb",
+        "thresholds": {
+          "l2_u": 0.15,
+          "l2_v": 0.15
+        }
+      },
+      "lid_cavity_re100_n65": {
+        "metrics": {
+          "l2_u": 0.01279071374145976,
+          "l2_v": 0.06020655621500469
+        },
+        "passed": true,
+        "state_hash": "d99c6f728cf39795883f9542ae589c849493ec9e6634ff4562bd76d6dbbd9ce8",
+        "thresholds": {
+          "l2_u": 0.15,
+          "l2_v": 0.15
+        }
+      },
+      "poiseuille_2d_H16": {
+        "metrics": {
+          "eps_L2": 0.0049209117769905926,
+          "eps_inf": 0.003607843111901292,
+          "mass_drift": 3.0808688933348094e-13
+        },
+        "passed": true,
+        "state_hash": "c8acf2cc9ab91154a3f58051cd54e86abcfda532b1ea3ab33094f7338651188d",
+        "thresholds": {
+          "eps_L2": 0.02,
+          "eps_inf": 0.02,
+          "mass_drift": 1e-08
+        }
+      },
+      "poiseuille_2d_H16_bitwise": {
+        "metrics": {
+          "eps_L2": 0.0049209117769905926,
+          "eps_inf": 0.003607843111901292,
+          "mass_drift": 3.0808688933348094e-13
+        },
+        "passed": true,
+        "state_hash": "c8acf2cc9ab91154a3f58051cd54e86abcfda532b1ea3ab33094f7338651188d",
+        "thresholds": {
+          "eps_L2": 0.02,
+          "eps_inf": 0.02,
+          "mass_drift": 1e-08
+        }
+      },
+      "two_component_sc_layered_poiseuille": {
+        "metrics": {},
+        "passed": true,
+        "state_hash": "8b93acf1e9f1e3a5255cb8463ce6b8fa4985ebb2a724a46d039d6b6bf7ab334e",
+        "thresholds": {
+          "Q_err": 0.15,
+          "eps_inf": 0.15,
+          "eps_l2_rel": 0.15,
+          "u_peak_err": 0.15
+        }
+      },
+      "womersley_alpha5": {
+        "metrics": {
+          "amplitude_rel_pct": 0.0,
+          "phase_rel_pct": 0.0
+        },
+        "passed": true,
+        "state_hash": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "thresholds": {
+          "amplitude_rel_pct": 0.15,
+          "phase_rel_pct": 0.15
+        }
+      }
+    },
+    "baseline_json_sha256": "2b3983440be85b000f24a57296664d23213842da4f2ab4b3f565e8120c4aac64",
+    "candidate_json_sha256": "2b3983440be85b000f24a57296664d23213842da4f2ab4b3f565e8120c4aac64",
+    "isolated_wheel_json_sha256": "2b3983440be85b000f24a57296664d23213842da4f2ab4b3f565e8120c4aac64",
+    "comparison": "Nested source, canonical source and isolated wheel results are byte-identical."
+  },
+  "tests": {
+    "full_historical_suite_before": "96 passed, 2 failed, 1 xfailed. The failures assert l2_rel > 0.5 when it is exactly 0.5 and l2_rel == l2_abs for a zero reference although the definitions differ.",
+    "full_historical_suite_after": "96 passed, 2 failed, 1 xfailed with the same two failures.",
+    "promoted_current_tests": "84 passed, 1 xfailed. The paper evidence harness is promoted with its consumer test.",
+    "current_acceptance": "No historical Verified label or passing registry record is upgraded by this migration."
+  },
+  "remaining_nested_consumers": [
+    {
+      "paths": [
+        "xval/model_matrix_ci_plus_coverage/run_matrix.py"
+      ],
+      "blocker": "Canonical tensorlbm.d2q9 does not export collide_bgk/stream/CS2. A direct path switch aborts before TC01. The unchanged historical quick run had 1/6 passed and 5/6 failed."
+    },
+    {
+      "paths": [
+        "benchmarks/collision_operator_matrix/run_all.py",
+        "benchmarks/collision_operator_matrix/run_cluster.py"
+      ],
+      "blocker": "They import the same historical D2Q9 public surface. A smoke run was stopped before completion; no migration claim is made."
+    }
+  ]
+}
