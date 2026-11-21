@@ -241,9 +241,9 @@ python run.py --device sdaa:0 --resolution 68 --steps 406 \
 | `artifacts/sdaa_suboff_sail_resistance.json` | 主案例完整扫荡结果（含 gates/tiers/supplementary） |
 | `artifacts/suboff_best_rans_summary.json` | B1/B2/B3 辅助基准汇总 |
 | `artifacts/suboff_bench{1,2,3}_*.json` | 各基准详细结果 |
-| `artifacts/kbc_diagnostic_16cube_20steps.json` | KBC BGK 诊断 |
+| `development/evidence/kbc_cd_diagnostic/kbc_diagnostic_16cube_20steps.json` | KBC BGK 诊断 |
 | `docs/sdaa_sweep/suboff_sail_resistance.md` | 原扫荡报告 |
-| `artifacts/KBC_CD_ROOT_CAUSE_ANALYSIS.md` | KBC Cd 根因分析 |
+| `development/evidence/kbc_cd_diagnostic/KBC_CD_ROOT_CAUSE_ANALYSIS.md` | KBC Cd 根因分析 |
 
 ---
 
