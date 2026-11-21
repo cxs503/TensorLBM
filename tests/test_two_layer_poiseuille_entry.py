@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from tensorlbm.cases import run_two_layer_poiseuille
-from cases.mcmp_stratified_poiseuille.analytic import layer_viscosities, layered_poiseuille
+from benchmarks.verified.mcmp_stratified_poiseuille.analytic import layer_viscosities, layered_poiseuille
 
 
 def test_entry_point_is_importable():

@@ -67,7 +67,7 @@ exchange (`partial_bounce_back_force`) is recorded beside it as an independent c
 
 Key code pointers: `src/tensorlbm/volume_solid.py` (`vof_circle`, `blur_mask`,
 `mask_scale_to_sigma`, `signed_distance_from_fraction`, `partial_bounce_back`,
-`partial_bounce_back_force`, `interface_bounce_back`), `cases/GAP-DIFFLBM-SOLID-LIMIT/run_case.py`
+`partial_bounce_back_force`, `interface_bounce_back`), `benchmarks/pending/difflbm_solid_limit/run_case.py`
 (arms, control volume, `evaluate`), `campaign.py` (sharded matrix), `summarize.py` (verdict +
 figures), `tests/test_volume_solid.py`.
 
@@ -146,8 +146,8 @@ produced by `summarize.py` **as soon as the shards land** (they are not fabricat
 * **Artefacts**: `artifacts/GAP-DIFFLBM-SOLID-LIMIT/runs/*.json` (one per combo),
   `results.json` + `table.csv` (from `summarize.py`), `figures/solid_representation.png`,
   `figures/cd_vs_mask_scale.png`, `figures/criteria.png`.
-* **repro_cmd**: `bash cases/GAP-DIFFLBM-SOLID-LIMIT/repro.sh --full`
-  (sharded form: `PYTHONPATH=src python cases/GAP-DIFFLBM-SOLID-LIMIT/campaign.py --index {i}
+* **repro_cmd**: `bash benchmarks/pending/difflbm_solid_limit/repro.sh --full`
+  (sharded form: `PYTHONPATH=src python benchmarks/pending/difflbm_solid_limit/campaign.py --index {i}
   --out artifacts/GAP-DIFFLBM-SOLID-LIMIT/runs --resolutions 20 32 --scales 1.0 0.75 0.5
   --max-steps 50000 --min-steps 8000 --avg-window 2000 --plateau-tol 1e-3 --u-lb 0.1`, `{i}` in 0..13).
 * **Round-2 input**: finish the 13 remaining shards (same command), then `summarize.py` prints the

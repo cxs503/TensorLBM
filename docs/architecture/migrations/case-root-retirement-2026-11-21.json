@@ -1,0 +1,390 @@
+{
+  "source_commit": "1e80de6f87308a5cd856219983dd69495c2f4a00",
+  "root_removed": "cases",
+  "benchmark_directories": {
+    "GAP-DIFFLBM-SOLID-LIMIT": "benchmarks/pending/difflbm_solid_limit",
+    "free_energy_selection": "benchmarks/pending/free_energy_selection",
+    "kovasznay_2d": "benchmarks/verified/kovasznay_2d/reproduction",
+    "mcmp_3d_stability": "benchmarks/verified/mcmp_3d_stability",
+    "mcmp_stratified_poiseuille": "benchmarks/verified/mcmp_stratified_poiseuille",
+    "oscillatory_cylinder_inertia": "benchmarks/case_pool/oscillatory_cylinder_inertia",
+    "pressure_tensor_droplet": "benchmarks/case_pool/pressure_tensor_droplet",
+    "square_cylinder_norberg": "benchmarks/pending/square_cylinder_norberg",
+    "suboff_hybrid": "benchmarks/pending/suboff_hybrid"
+  },
+  "entries": [
+    {
+      "old_path": "cases/GAP-DIFFLBM-SOLID-LIMIT/campaign.py",
+      "new_path": "benchmarks/pending/difflbm_solid_limit/campaign.py",
+      "original_git_blob": "c2ee0cf7ab9e5a1e52d93137aa8c81458f8565b5",
+      "git_mode": "100644",
+      "original_sha256": "30bd89fb2a870e5211960c731bb1ef7fc4386bcdf2157fb0060d2a0191d74f47",
+      "relocated_sha256": "567ea29c7fe6f612ba6cd69df145605e2d7fa5f8da602a1ca619e8349cb26fc4"
+    },
+    {
+      "old_path": "cases/GAP-DIFFLBM-SOLID-LIMIT/repro.sh",
+      "new_path": "benchmarks/pending/difflbm_solid_limit/repro.sh",
+      "original_git_blob": "30075c810fc11675a518c45c446f423c47b8d8d9",
+      "git_mode": "100755",
+      "original_sha256": "e76e3428f588bdf2d70d7df56bee1f04ebbd9d37ce6c6145757580e75c0231cc",
+      "relocated_sha256": "609b51da0edccfc214eaac36949e64c89acdfc80952cd8a26cabf30aca395508"
+    },
+    {
+      "old_path": "cases/GAP-DIFFLBM-SOLID-LIMIT/run_case.py",
+      "new_path": "benchmarks/pending/difflbm_solid_limit/run_case.py",
+      "original_git_blob": "7efb71ef32ace032f4f3aef2a8675f1dd8714396",
+      "git_mode": "100644",
+      "original_sha256": "47151562be857337667ae68ab7d50fd5e2867dd84ba49f60ff325bcd45fb9508",
+      "relocated_sha256": "59e4c54dbe9aef5a4cbd06ab83bf64211f449091026eebc2fd09b27e33a6e9f4"
+    },
+    {
+      "old_path": "cases/GAP-DIFFLBM-SOLID-LIMIT/summarize.py",
+      "new_path": "benchmarks/pending/difflbm_solid_limit/summarize.py",
+      "original_git_blob": "df4cdf352c8ce6b4ca3092882c0728a9a9886b78",
+      "git_mode": "100644",
+      "original_sha256": "34c8bd3921aba697c290b0148a50f165a8d8d959c75243779e95e56d13ef334f",
+      "relocated_sha256": "88089e1c93485c8102c621039285ec0e965eea214fed16a66efba59b70b84193"
+    },
+    {
+      "old_path": "cases/free_energy_selection/selection.py",
+      "new_path": "benchmarks/pending/free_energy_selection/selection.py",
+      "original_git_blob": "f37bcf08834fae202515ae11f484d547b60c010e",
+      "git_mode": "100644",
+      "original_sha256": "9c5b08330864c3ff51429ea3e34d348621ffce44f5125344d6a241ce46d44c8c",
+      "relocated_sha256": "a560e6db49bbeced843cd38d8c65de6ab9fa9e9351541648ac586c1fc8722aff"
+    },
+    {
+      "old_path": "cases/free_energy_selection/static_interface.py",
+      "new_path": "benchmarks/pending/free_energy_selection/static_interface.py",
+      "original_git_blob": "26e34fa41354b5ec737ce0452a82917bc3e928dc",
+      "git_mode": "100644",
+      "original_sha256": "7b7abded689450aba25198f36cfb8ced81c5377d83da56821c8df07a66272e21",
+      "relocated_sha256": "3c3c9f36c6b8d726fd5215050e7df6a3e51b52c36dccfd53a35872dd1d1d892e"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/README.md",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/README.md",
+      "original_git_blob": "6691823748509ac876533c74bfa6053798bcb3b9",
+      "git_mode": "100644",
+      "original_sha256": "e63f9c06056d6b8a13aec63aaa3824f202ff85a5d6589c13334c16f4c269fc8f",
+      "relocated_sha256": "b77f1c1ac9d62a46b21ca0643d7a630165da079395f52fa32bd6e3ad89e60ded"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/RESULTS.md",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/RESULTS.md",
+      "original_git_blob": "6636a0bf032eac4904648f64ba2cdd10e140d044",
+      "git_mode": "100644",
+      "original_sha256": "8406904bbcbec7ce3138c48d709af528fc2b8a3702a7e44cc0c7991a4cc0de1f",
+      "relocated_sha256": "bdc64164df300ef4282c9c9e595891964b01cd3e5319e2768984a9678c80ef85"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/analytic.py",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/analytic.py",
+      "original_git_blob": "06f1b9fb5620046ba8c028da2f2472b5bc2db88f",
+      "git_mode": "100644",
+      "original_sha256": "44dffbb6abfd6466f6a61a48ee839f29cf429de79db94e930259622a24cb6391"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/make_report.py",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/make_report.py",
+      "original_git_blob": "1224c6dac8d4e5d5a1adfbc4e114af27d3bf7fdc",
+      "git_mode": "100644",
+      "original_sha256": "97004a1cf447f1a423fa75f807585f8eeb0d82d4aecb6b3fcf8447ea0eba2afd",
+      "relocated_sha256": "09e5e499a7bf591aea424c7b7cb7e6bca815ddd0385e4938e2d96b99347bc404"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/run.py",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/run.py",
+      "original_git_blob": "17087a21d049557087919173c10b953e12df898b",
+      "git_mode": "100644",
+      "original_sha256": "1b79af95afafa1f35d6b86c915bbfc3a616dec8946ab97ce5dbaf6a94b30963f",
+      "relocated_sha256": "2f1f95d1c88a10b43dd28bb63c2931c47fb1edeaf4942c350dde6b2c1b02d11e"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/trt_convergence.py",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py",
+      "original_git_blob": "f585d98aeeeb4b77c0bfd8fef5cb837c7f9196a1",
+      "git_mode": "100644",
+      "original_sha256": "ac62731cf6acda72783dcdabee930f5fa72650dad0f7473a0720929c68763e74",
+      "relocated_sha256": "d80b308a27cd62b8b91a84e5099be25e3b7b046c5742367f1b58e6a5bede1335"
+    },
+    {
+      "old_path": "cases/kovasznay_2d/trt_convergence_report.py",
+      "new_path": "benchmarks/verified/kovasznay_2d/reproduction/trt_convergence_report.py",
+      "original_git_blob": "908ad4a3d1038d84f58717f08f8952cfed98fbc4",
+      "git_mode": "100644",
+      "original_sha256": "af90806a7e04d6a2769173538083110e0de097cadf642840ff39a31e32ec4b17",
+      "relocated_sha256": "65ae4d05b1662c23ae1aec23514a950a7f813f47fde63810f3896d9df8c93710"
+    },
+    {
+      "old_path": "cases/mcmp_3d_stability/make_report.py",
+      "new_path": "benchmarks/verified/mcmp_3d_stability/make_report.py",
+      "original_git_blob": "33da8577a9351e4d4f9eb147c7b01ffb268ededa",
+      "git_mode": "100644",
+      "original_sha256": "531eed76d179b5f6e8e882b9b4d8f4bd025a450897f65080d4600848c31c881e",
+      "relocated_sha256": "3be64e3730ffe7ae8e0fa9a4e5fcac96481fc0fa430c31c08917a6d7e4dc33f2"
+    },
+    {
+      "old_path": "cases/mcmp_3d_stability/run_stability_scan.py",
+      "new_path": "benchmarks/verified/mcmp_3d_stability/run_stability_scan.py",
+      "original_git_blob": "fdc226e3c2c5d2743a83b54c112ed195df800db2",
+      "git_mode": "100644",
+      "original_sha256": "cc0a500c8bf4727ff2e716c4678a9807c8efb657210e17ec181c9ad20abddbc6",
+      "relocated_sha256": "8617b1b145d683b08257f64f6beb6234e79039f2d999f814b1666e9da4be3b3d"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/analytic.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py",
+      "original_git_blob": "b97deb9bd54cf663b297886c2d0606d827223862",
+      "git_mode": "100644",
+      "original_sha256": "25f6ce4387b6f25c15b0b17838f37939233ca464a8828b6f19cc2781279cafd8",
+      "relocated_sha256": "add2a6a1e65e5e7ea60b2b3ae1b905ef1104f0f40f979534748ec1c680f57bc6"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/analyze.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/analyze.py",
+      "original_git_blob": "6b2eafbaf6de3315cce67b115f62af31a96c1554",
+      "git_mode": "100644",
+      "original_sha256": "9935051cdb37c4be73bb6773e78dfa893a68803b9ab210374a82d9a2659e230f",
+      "relocated_sha256": "af32423edb4b229049498eef11877026e7f58406323ed9ad0cf1557988577d21"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/coexistence.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/coexistence.py",
+      "original_git_blob": "2426b024886ddfbbc4f22783f76af939ddc38d11",
+      "git_mode": "100644",
+      "original_sha256": "ca0be483ba7ace534832fc178ad012013a0f62d63f902ec2bda79ff478b3ff89",
+      "relocated_sha256": "f900719cda7104720a61f0c67f60109b6560275c022de6d2aafee612b5cc487a"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/gate_oc_run.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/gate_oc_run.py",
+      "original_git_blob": "293ac7a7024593685ed2658c2aae8deaaff5e135",
+      "git_mode": "100644",
+      "original_sha256": "72798607507c39b7c7cf0ca01e2d474f8de77f3dd09d8ae62d2da2fc00205c65",
+      "relocated_sha256": "e5daf832f896227ed4efaf80b0c0a794860c31527667a77f2c0cfb01ab8a7070"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/make_figures.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/make_figures.py",
+      "original_git_blob": "0e31d97952d10b886fe2bb467cbbea9d62735c84",
+      "git_mode": "100644",
+      "original_sha256": "a1375b4da6ec6af03118528005129fcec8d0a4671d60823ee445371d817c9f13",
+      "relocated_sha256": "b4c0821ff98e9570964cf6acded379ad98749e74cb7aab5d81f72aa86d1bb41c"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/r2_benchmark.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/r2_benchmark.py",
+      "original_git_blob": "322f58851be284f62521c71437397f1aa9df3e12",
+      "git_mode": "100644",
+      "original_sha256": "5134120607f1ed2b219f912154aee0da63fb4932eda709a633ea9e047a792744",
+      "relocated_sha256": "94f24ffa38ab308ff29c37ec5c18052ab098a51d9acdc5ec9a4eeb9c51930757"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/r3_benchmark.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/r3_benchmark.py",
+      "original_git_blob": "b2368c8dd090a9ace99ae333c346ff3c14c60909",
+      "git_mode": "100644",
+      "original_sha256": "4a9e5d143a3d58e8556873fb808d4dda01c5cd1b86036abe0a94e6ef675295fa",
+      "relocated_sha256": "7aeaafa7db0cb5c90c84027f2aa61dccdd86515713dbca583f23831dd67acaad"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/r4_benchmark.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/r4_benchmark.py",
+      "original_git_blob": "34c490be84ef9d4758206bc0a9f4990e5022b29c",
+      "git_mode": "100644",
+      "original_sha256": "5d54a4b2d7a14ccd86680688e42c75b54d90f70bf1a9430c97a4bd0079233e81",
+      "relocated_sha256": "84ecec0c866995b288a258f51547438cdeb50a933c0ea6e2dab5b5e6368f5a33"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/r4_matrix.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/r4_matrix.py",
+      "original_git_blob": "80acfefc3d7bd96a1d21f53e24363f6cd44ddf9a",
+      "git_mode": "100644",
+      "original_sha256": "22e39c1c0a6d2414e28e49e9cac72974251208cf4098129ba9bbc453ef14c724",
+      "relocated_sha256": "decfc96bac282c7041be8a9104c65d3c680d1286d338c6ddb1efb8cb03aca5f2"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/r4_probe_static.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/r4_probe_static.py",
+      "original_git_blob": "23f1f81127cae759af5efeab3dc6507a45f88a2b",
+      "git_mode": "100644",
+      "original_sha256": "b8ae25ceff6064b1013481cc3a4e15fe0a2982c2002cdc3330ecf27da4feb379",
+      "relocated_sha256": "f46a3fb9be0d9b5b693d6bc855af04d30c5d28c22605c6bc947b32fc354a3d73"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/r4_wrapup.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/r4_wrapup.py",
+      "original_git_blob": "7ac7e07da1845ff01c8fc6c761e5e70ebfb71ce6",
+      "git_mode": "100644",
+      "original_sha256": "eb6b074918a103ad06a512317ebab2ec3948c372e95a4ac8cbe143ea43b78d7e",
+      "relocated_sha256": "491d562d3f79343f6e3b0ad449341f569392f4e6258bc51f0794039ec83dc2b0"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/run_coupling.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/run_coupling.py",
+      "original_git_blob": "557d9f12fed99a6c3295ca7918ccda301bb991ce",
+      "git_mode": "100644",
+      "original_sha256": "153b689df8f1c0b527fe012052200379c67d92c389ba4cd0a772c41ead6a1d71",
+      "relocated_sha256": "5b526807c1baf968878d767facb334f69a6f4158971dce17b0f76ce0455387e3"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/run_final_matrix.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/run_final_matrix.py",
+      "original_git_blob": "b6c79a0a9f33735470273ff3d3f096a741c6aca2",
+      "git_mode": "100644",
+      "original_sha256": "b087c5a30b4ef5c4e23197d577a850e893657ae644def1eff14c18b1e1ae9b9b",
+      "relocated_sha256": "4f443bf943d060023e36e626124390f498eaf6abf25d62301f8683893a70f95e"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/run_matrix.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/run_matrix.py",
+      "original_git_blob": "d115fa7cd57c4df784628847f2292462f7f541ee",
+      "git_mode": "100644",
+      "original_sha256": "c3e4112605527cf3cba9987aa43659efcb9cddbebea3d341adba2c28f8212850",
+      "relocated_sha256": "02cae2b7750036a45eec3e1cd29af9cf03d1907ca02c2f4d842b7a30335c378e"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/run_r2_matrix.sh",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/run_r2_matrix.sh",
+      "original_git_blob": "5acffea060740cea5a9890bca5c56bd7777d4d20",
+      "git_mode": "100755",
+      "original_sha256": "dfcb30a99b3de61f6d6524bafe04b7f346ecf3371947df231f462e3f90e2fd13",
+      "relocated_sha256": "3f0363e7920d89dd178e42fec318e3c17177ccc4a1464f85f1407d178fc29c11"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/run_sweep.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/run_sweep.py",
+      "original_git_blob": "843e14a3f7fea75afa56abceab2c8e2a1bdf3c04",
+      "git_mode": "100644",
+      "original_sha256": "0227f10ccb763d6c577406737842d0325f0ccbd72ae95a3e37f00f93d6ebd96b",
+      "relocated_sha256": "e4dc45155de14c9f07f744f17917dcc2c552f1bde6bf6ee56daa9a3128792938"
+    },
+    {
+      "old_path": "cases/mcmp_stratified_poiseuille/spurious_diagnostic.py",
+      "new_path": "benchmarks/verified/mcmp_stratified_poiseuille/spurious_diagnostic.py",
+      "original_git_blob": "879b5f8028fd813d62541f9bd1f84c1b9e963d1d",
+      "git_mode": "100644",
+      "original_sha256": "719480632e3cbcfd779d2723095b9a11f0dc7499c5b54fa0b4d6d5124d633cae",
+      "relocated_sha256": "b95caf01744a3a0eb0f5019689bb816067095e5f340e52964695d01c02237d19"
+    },
+    {
+      "old_path": "cases/oscillatory_cylinder_inertia/run.py",
+      "new_path": "development/archived/case_entrypoints/oscillatory_cylinder_inertia/run.py",
+      "original_git_blob": "30988c9674dfd92f98837114c6f5b7b9aebb234a",
+      "git_mode": "100644",
+      "original_sha256": "31b1d4e83705484bf007be3faa5d85760badb2c32da6ba5bd967dd697d5fcf35",
+      "current_entrypoint": "benchmarks/case_pool/oscillatory_cylinder_inertia/run.py"
+    },
+    {
+      "old_path": "cases/pressure_tensor_droplet/run.py",
+      "new_path": "development/archived/case_entrypoints/pressure_tensor_droplet/run.py",
+      "original_git_blob": "68c11bf5127bb33d00ba99daa295fb432562edd7",
+      "git_mode": "100644",
+      "original_sha256": "f36d09c05fe787536a23e4a5f26f2a36a124f1a18e94e7d71f84a26dc7e4c164",
+      "current_entrypoint": "benchmarks/case_pool/pressure_tensor_droplet/run.py"
+    },
+    {
+      "old_path": "cases/square_cylinder_norberg/README.md",
+      "new_path": "benchmarks/pending/square_cylinder_norberg/README.md",
+      "original_git_blob": "e97f6bd04ce3ff2b93ebbcafa1d7f813580c1d45",
+      "git_mode": "100644",
+      "original_sha256": "90a5cebe0e5ce6bd9c93b930ec81f56d6539664be4e404ecb8e3b2df054b12d2",
+      "relocated_sha256": "4c7cb59c3220dce40fcc5dcb0f5f53cbce3e8e19acde6d2937fdcbacd5043cb0"
+    },
+    {
+      "old_path": "cases/square_cylinder_norberg/make_figures.py",
+      "new_path": "benchmarks/pending/square_cylinder_norberg/make_figures.py",
+      "original_git_blob": "8cf70cdeb457875dc7b40659ba7f32f17b835024",
+      "git_mode": "100644",
+      "original_sha256": "235ca930dd3793366626483ecab3c8655c136d775a0c6458d47ba7b4c0599d69",
+      "relocated_sha256": "70e57609dfaa16fe2ca1b2ab1fbe8d4951e2c77d2dd65af84264752129c59309"
+    },
+    {
+      "old_path": "cases/square_cylinder_norberg/refs/norberg1993.json",
+      "new_path": "benchmarks/pending/square_cylinder_norberg/refs/norberg1993.json",
+      "original_git_blob": "7a8100cf4d7a67ad54faf8e3a7d3971e59d411a1",
+      "git_mode": "100644",
+      "original_sha256": "96057075d55d0193a1c08e3580210a6971eeef97e7771f4ec854d928a38afa8d"
+    },
+    {
+      "old_path": "cases/square_cylinder_norberg/run_chunked.py",
+      "new_path": "benchmarks/pending/square_cylinder_norberg/run_chunked.py",
+      "original_git_blob": "704659740134c9f4bd576ad72c41302b08eebf74",
+      "git_mode": "100644",
+      "original_sha256": "bcfe9a7ffadff8235fec66da7efc4170332f4df560b82cef90efbb5d62df3cf2",
+      "relocated_sha256": "01a2bbe175654ddf0f3487490635f3123c79a2371558540ccb5ded9418c40ae6"
+    },
+    {
+      "old_path": "cases/suboff_hybrid/README.md",
+      "new_path": "benchmarks/pending/suboff_hybrid/README.md",
+      "original_git_blob": "3e4428c96be7e94eadc37359f806769bbd0bcb39",
+      "git_mode": "100644",
+      "original_sha256": "80f0df0b5c1ca98afc264db00e90056808cca6fa3d37eb0720f732fa1c957dfd",
+      "relocated_sha256": "6198e5560f3bd65cdf7970a20ce5fb2f3339e8cad8b4e8e9cf140904f2b6531b"
+    },
+    {
+      "old_path": "cases/suboff_hybrid/postprocess_suboff_hybrid.py",
+      "new_path": "benchmarks/pending/suboff_hybrid/postprocess_suboff_hybrid.py",
+      "original_git_blob": "3940df5cb9001a5c497795a283ce9396c22eba0b",
+      "git_mode": "100644",
+      "original_sha256": "8b3aa36f901923ebc912b1a9b9c50ddfcd3fe23e7c1449b525ba903120372d5f",
+      "relocated_sha256": "af1a5e5f1f7ba206142927f9252baa3338f8676f048a08f68f1a678d5515c62e"
+    },
+    {
+      "old_path": "cases/suboff_hybrid/run_suboff_hybrid.py",
+      "new_path": "benchmarks/pending/suboff_hybrid/run_suboff_hybrid.py",
+      "original_git_blob": "fe2a2ebcf986bb70fcab19e9b7a30bb2d3deb8db",
+      "git_mode": "100644",
+      "original_sha256": "cc86197cb2ccba76759638e18037636906332932fee81fcacef22e36e45bcbd3",
+      "relocated_sha256": "878208453ac3b86d00efc8d422a891b58600d8753ecf268898fad815e624a773"
+    }
+  ],
+  "current_consumers": [
+    "tests/test_case_pool_kovasznay_2d.py",
+    "tests/test_free_energy_selection_static_interface.py",
+    "tests/test_gate_oc_mcmp.py",
+    "tests/test_kovasznay_trt_convergence.py",
+    "tests/test_mcmp_coexistence_selection.py",
+    "tests/test_mcmp_stratified_poiseuille.py",
+    "tests/test_two_layer_poiseuille_entry.py",
+    "scripts/run_two_layer_poiseuille_check.py",
+    "src/tensorlbm/audit/gate_oc.py",
+    "src/tensorlbm/cases/two_layer_poiseuille.py",
+    "benchmarks/verified/kovasznay_2d/README.md",
+    "benchmarks/verified/square_cylinder/run.py",
+    "benchmarks/verified/mcmp_3d_stability/REPORT.md",
+    "benchmarks/verified/mcmp_stratified_poiseuille/REPORT.md",
+    "benchmarks/verified/mcmp_stratified_poiseuille/spec.json",
+    "benchmarks/verified/mcmp_stratified_poiseuille/assemble.py",
+    "benchmarks/verified/mcmp_stratified_poiseuille/report.py",
+    "docs/CASE-LBM-KOVASZNAY-TRT-CONVERGENCE.md",
+    "docs/GAP-DIFFLBM-SOLID-LIMIT.md",
+    "docs/GATE_OC_MCMP_STRATIFIED.md",
+    "docs/MCMP_STRATIFIED_POISEUILLE_R2.md",
+    "docs/MCMP_STRATIFIED_POISEUILLE_R3.md",
+    "docs/MCMP_STRATIFIED_POISEUILLE_R4.md",
+    "docs/MCMP_STRATIFIED_POISEUILLE_R5_FREE_ENERGY_SELECTION.md",
+    "docs/MCMP_STRATIFIED_POISEUILLE_SPEC.md",
+    "docs/mcmp3d_stability_findings.md"
+  ],
+  "compatibility": {
+    "entrypoints": "Use the mapped paths and original arguments. The two existing canonical case-pool commands keep their paths.",
+    "historical_refs": "Archived audit scripts and result files retain original paths and provenance. Use their recorded source worktrees, or the pre-migration commit for original paths in main.",
+    "manuals": "Published benchmark tutorial files and URLs are unchanged.",
+    "historical_consumers": [
+      "scripts/audit/m16351_board_audit.py reads the historical --source-tree delivery.",
+      "scripts/audit_m14689.py and tools/audit_m17981_verify.py consume historical agent worktrees.",
+      "Archived result JSON, historical publishing scripts and board-audit records retain original path strings."
+    ]
+  },
+  "scientific_acceptance": "Current scientific replays deferred for this layout-only batch.",
+  "verification": {
+    "original_objects": "All 41 tracked paths verified against the source commit and the migrated paths, including Git mode, original blob and SHA-256.",
+    "links": "12 pre-existing resolvable relative links preserved in updated or relocated documentation. Published tutorial, DOCX and PDF paths untouched.",
+    "governance": "53 repository governance tests. Registry validates 193 entries and finds the Kovasznay reproduction scripts and Norberg reference.",
+    "entrypoints": "Compiled 34 Python files, checked two shell scripts with Bash and ran 20 CLI help checks, including both unchanged case-pool commands.",
+    "focused_tests": "43 passed, 4 skipped, 1 failed. The same committed-evidence test failed on the unmodified source commit because artifacts/kovasznay_2d/results.json is absent.",
+    "acceptance_limit": "The missing Kovasznay reproduction result is distinct from benchmarks/verified/kovasznay_2d/result.json. Recover the original evidence or run the published protocol before judging the missing result."
+  }
+}

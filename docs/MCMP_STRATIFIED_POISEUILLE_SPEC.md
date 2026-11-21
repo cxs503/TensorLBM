@@ -4,7 +4,7 @@
 **作者**：agent/m14431（TensorLBM 域工人）
 **上游裁决**：`docs/REPORT_qr_pilot_a.md`（QR 独立盲裁：A 臂两相流量 FAIL 20.2%/16.8%，
 界面位置 PASS 4.06%/3.96%）
-**代码**：`cases/mcmp_stratified_poiseuille/`（`analytic.py` 参考解 +
+**代码**：`benchmarks/verified/mcmp_stratified_poiseuille/`（`analytic.py` 参考解 +
 `run_sweep.py` 单格运行器 + `run_matrix.py` 分片矩阵）
 **测试**：`tests/test_mcmp_stratified_poiseuille.py`
 

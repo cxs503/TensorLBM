@@ -1,6 +1,6 @@
 """Tests for the Kovasznay TRT convergence arm (CASE-LBM-KOVASZNAY-EXACT).
 
-These tests bind three claims made by ``cases/kovasznay_2d/trt_convergence.py``:
+These tests bind three claims made by ``benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py``:
 
 1. ``collide_trt`` is a *conservative* collision (mass and momentum preserved to
    round-off) -- i.e. the low-Ma arms are not being pushed by a leaking scheme;
@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-CASE = REPO / "cases" / "kovasznay_2d"
+CASE = REPO / "benchmarks/verified/kovasznay_2d/reproduction"
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(CASE))
 

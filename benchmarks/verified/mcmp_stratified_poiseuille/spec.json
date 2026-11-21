@@ -14,7 +14,7 @@
  },
  "physics": {
   "case": "two immiscible components in a plane channel, component 1 filling the lower half and component 2 the upper half, driven by a uniform body force per unit mixture volume",
-  "reference": "cases/mcmp_stratified_poiseuille/analytic.py::layered_poiseuille (velocity + shear-stress continuity at the interface, no-slip at the wall planes, u'' = -G/nu per layer)",
+  "reference": "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py::layered_poiseuille (velocity + shear-stress continuity at the interface, no-slip at the wall planes, u'' = -G/nu per layer)",
   "reference_viscosity_rules": {
    "component": "nu_layer = nu of the component occupying that layer (the QR-audit convention)",
    "mixture": "nu_layer = rho_1 nu_1 + rho_2 nu_2 (continuum limit of the co-moving two-component BGK model; primary)"
@@ -92,13 +92,13 @@
   "float32 CPU runs; differences below 1e-6 carry no physical meaning"
  ],
  "provenance": {
-  "runner": "cases/mcmp_stratified_poiseuille/run_matrix.py (matrix) and run_sweep.py (single cell)",
+  "runner": "benchmarks/verified/mcmp_stratified_poiseuille/run_matrix.py (matrix) and run_sweep.py (single cell)",
   "assemble": "benchmarks/verified/mcmp_stratified_poiseuille/assemble.py",
   "spec_doc": "docs/MCMP_STRATIFIED_POISEUILLE_SPEC.md",
   "tests": "tests/test_mcmp_stratified_poiseuille.py",
   "audit_report": "docs/REPORT_qr_pilot_a.md",
-  "analysis": "cases/mcmp_stratified_poiseuille/analyze.py -> artifacts/mcmp_stratified_poiseuille/analysis.json",
-  "figures": "cases/mcmp_stratified_poiseuille/make_figures.py"
+  "analysis": "benchmarks/verified/mcmp_stratified_poiseuille/analyze.py -> artifacts/mcmp_stratified_poiseuille/analysis.json",
+  "figures": "benchmarks/verified/mcmp_stratified_poiseuille/make_figures.py"
  },
  "reciprocal_reference_note": "the no-slip plane is decided by the wall-calibration control (mode=walls, same collision/streaming/bounce-back path): it is half-way, H = ny-2, u_max error 0.03-0.21% at ny=25/33/49, while H = ny-1 is 4.2-8.4% low. The reference below therefore uses H = ny-2 with the interface at the volume-conserving h = half-0.5.",
  "stages": [

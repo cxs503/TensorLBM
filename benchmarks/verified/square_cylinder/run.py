@@ -146,7 +146,7 @@ def analyze_forces(
     """Cd mean + Strouhal number from per-step force histories (numpy, post-run).
 
     Extracted from :func:`run_case` so chunked/restarted drivers can reuse the
-    exact same post-processing (``cases/square_cylinder_norberg/run_chunked.py``).
+    exact same post-processing (``benchmarks/pending/square_cylinder_norberg/run_chunked.py``).
 
     - ``q_dyn = 0.5 * rho * u_in^2 * D`` (rho = 1 in lattice units, D in cells)
     - Cd = mean of ``fx/q_dyn`` over the last ``1 - warmup_frac`` of the record

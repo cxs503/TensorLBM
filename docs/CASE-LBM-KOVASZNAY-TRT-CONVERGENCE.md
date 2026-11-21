@@ -2,7 +2,7 @@
 
 锚点 `CASE-LBM-KOVASZNAY-EXACT`（判据：Re=40、N≥128 速度场 L2 相对误差 <3%，ref Kovasznay 1948
 Proc. Camb. Phil. Soc. 44:58, DOI:10.1017/s0305004100023999）· 仓 TensorLBM · 分支 `agent/m18406` · mission **m18406**
-工装：`cases/kovasznay_2d/trt_convergence.py`（求解/实验）+ `trt_convergence_report.py`（表与图，程序化生成）
+工装：`benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py`（求解/实验）+ `trt_convergence_report.py`（表与图，程序化生成）
 数据：`artifacts/m18406/*.json`（含 `TRT_CONVERGENCE_TABLES.md` 与两张 png）
 测试：`tests/test_kovasznay_trt_convergence.py`
 
@@ -14,7 +14,7 @@ Proc. Camb. Phil. Soc. 44:58, DOI:10.1017/s0305004100023999）· 仓 TensorLBM �
   不是离散精度；换任何出口闭合（nscbc / NEE / 解析 Dirichlet）都不会更好。
 - **内部（剔除出口一个 y 周期）误差与网格无关**：u 0.1102 → 0.1023 → 0.1017 %（ny=32/64/128）。
   即该算例在出厂工况下 **给不出收敛阶**；成因经 Mach 阶梯定量定位为 **O(Ma²) 可压缩性底噪**。
-- 当时留下的明确后续（`cases/kovasznay_2d/README.md` 裁决第 5 条）：**「换碰撞模型（TRT / regularized）」**，
+- 当时留下的明确后续（`benchmarks/verified/kovasznay_2d/reproduction/README.md` 裁决第 5 条）：**「换碰撞模型（TRT / regularized）」**，
   因为固定 Re 降 Ma 就要降 τ₊，而 **BGK + Zou-He 入口 + 任意出口在 τ ≲ 0.57 发散（实测 NaN）**。本单做的就是这一步。
 
 **结论先说（详见 §3/§6）**：
@@ -64,18 +64,18 @@ Kovasznay (1948) 二维定常不可压 N-S 精确解（格栅后层流尾迹，y
 - 复现（本机 4–6 线程，实测耗时标注）：
 
 ```bash
-python cases/kovasznay_2d/trt_convergence.py check                                   # ~9 s
-python cases/kovasznay_2d/trt_convergence.py stability --ny 32 --threads 4 \
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py check                                   # ~9 s
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py stability --ny 32 --threads 4 \
     --out artifacts/m18406/stability.json                                            # ~90 s
-python cases/kovasznay_2d/trt_convergence.py ladder --grids 32 --threads 4 \
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py ladder --grids 32 --threads 4 \
     --out artifacts/m18406/ladder32.json                                             # ~120 s
-python cases/kovasznay_2d/trt_convergence.py ladder --grids 64 --threads 4 \
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py ladder --grids 64 --threads 4 \
     --max-steps 40000 --out artifacts/m18406/ladder64_40k.json                       # ~330 s
-python cases/kovasznay_2d/trt_convergence.py ladder --grids 128 --threads 6 \
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py ladder --grids 128 --threads 6 \
     --out artifacts/m18406/ladder128.json                                            # ~640 s
-python cases/kovasznay_2d/trt_convergence.py field --ny 64 --threads 4 \
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence.py field --ny 64 --threads 4 \
     --out artifacts/m18406/field_ny64.json                                           # ~270 s
-python cases/kovasznay_2d/trt_convergence_report.py                                  # 出表 + 出图
+python benchmarks/verified/kovasznay_2d/reproduction/trt_convergence_report.py                                  # 出表 + 出图
 ```
 
 ## ③ 计算结果（程序化注入，数字全部来自 `artifacts/m18406/*.json`）
@@ -96,7 +96,7 @@ python cases/kovasznay_2d/trt_convergence_report.py                             
 | 32 → 64 | 1.67 | **2.26** | 1.55 | 1.25 |
 | 64 → 128 | **0.81（触底）** | **1.87** | 0.89 | 1.22 |
 
-对照算例原状（BGK，U0=0.03）：内部 v 0.1764 → 0.1111 → 0.1152 %（三个网格基本不动，`cases/kovasznay_2d/README.md` 裁决第 4 条）。
+对照算例原状（BGK，U0=0.03）：内部 v 0.1764 → 0.1111 → 0.1152 %（三个网格基本不动，`benchmarks/verified/kovasznay_2d/reproduction/README.md` 裁决第 4 条）。
 本单把同一区域改成 TRT + Ma=0.026 后，v 变成 0.00755 → 0.00157 → 0.00043，**逐级下降 4.8× / 3.7×（p≈2）**。
 
 ### 3.3 步数对照（证明 3.1 的差异不是"没跑够"）
@@ -179,5 +179,5 @@ ny=64 同一配置 20000 步 vs 27500 步（判稳）：内部 u/U0 变化 **−
   and mixed boundary conditions. *Commun. Comput. Phys.* **3**(2), 427–478（magic Λ = 3/16）。
 - Zou, Q. & He, X. (1997). On pressure and velocity boundary conditions for the lattice Boltzmann BGK model.
   *Phys. Fluids* **9**, 1591–1598.
-- 同锚点前序工件：`cases/kovasznay_2d/README.md`（m17704）· `docs/CASE-LBM-KOVASZNAY-EXACT_independent_audit.md`（m16861）·
+- 同锚点前序工件：`benchmarks/verified/kovasznay_2d/reproduction/README.md`（m17704）· `docs/CASE-LBM-KOVASZNAY-EXACT_independent_audit.md`（m16861）·
   `docs/CASE-LBM-KOVASZNAY-OUTLET-BC-LADDER.md`（m16974）。

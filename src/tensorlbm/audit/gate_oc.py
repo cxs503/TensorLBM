@@ -13,7 +13,7 @@ threshold silently differs from the one the code compares against.
 
 This module supplies the machine for that, domain-agnostic (no physics, no case
 names — the domain gate set lives next to the case, e.g.
-``cases/mcmp_stratified_poiseuille/gate_oc_run.py``):
+``benchmarks/verified/mcmp_stratified_poiseuille/gate_oc_run.py``):
 
 1. **Declarative gate** — ``Gate(key, op, threshold)`` where ``op`` is one of
    ``le`` (PASS iff value <= t), ``ge`` (PASS iff value >= t), ``abs_le``

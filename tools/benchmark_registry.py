@@ -136,7 +136,8 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
 
     def assets(directory: str) -> dict:
         path = PurePosixPath(directory)
-        members = by_dir[path]
+        reproduction = by_dir[path / "reproduction"]
+        members = sorted(by_dir[path] + reproduction)
         result_paths = [
             p for p in members
             if p.suffix in {".json", ".csv", ".npz"}
@@ -147,6 +148,7 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
             if p.stem.lower().startswith(("refdata", "reference", "bibliography"))
             and p.suffix != ".py"
         ]
+        reference_paths.extend(p for p in by_dir[path / "refs"] if p.suffix != ".py")
         references = []
         for p in result_paths:
             if p.suffix != ".json":
@@ -165,7 +167,8 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
             "source": [str(p) for p in members if p.suffix == ".py"],
             "config": [str(p) for p in members if p.suffix in {".yaml", ".yml", ".toml"}
                        or p.suffix == ".json" and p.stem.startswith(("config", "case"))],
-            "documentation": [str(p) for p in members if p.name.lower() == "readme.md"],
+            "documentation": [str(p) for p in members
+                              if p.name.lower() in {"readme.md", "report.md", "results.md"}],
             "reference_files": list(map(str, reference_paths)),
             "references": references,
             "results": list(map(str, result_paths)),

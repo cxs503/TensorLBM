@@ -3,7 +3,7 @@
 Two groups:
 
 * **behaviour** (always run, ~15 s): the quiescent flat interface built by
-  ``cases/free_energy_selection/static_interface.py`` is periodic-consistent, stays
+  ``benchmarks/pending/free_energy_selection/static_interface.py`` is periodic-consistent, stays
   finite, reproduces the analytic tanh width / surface tension inside the owner 15 %
   band, does not drift, and its residual velocity decays (no steady parasitic current);
 * **selection record** (skipped when the run artifacts are absent): the committed
@@ -24,7 +24,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, os.path.join(_ROOT, "src"))
 
-from cases.free_energy_selection.static_interface import (  # noqa: E402
+from benchmarks.pending.free_energy_selection.static_interface import (  # noqa: E402
     TANH_10_90,
     _params,
     run_static_interface,
