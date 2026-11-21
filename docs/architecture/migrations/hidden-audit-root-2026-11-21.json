@@ -1,0 +1,114 @@
+{
+  "source_revision": "6a957e70af72d655304c772d5a0532f51e78615c",
+  "retired_roots": [
+    ".audit"
+  ],
+  "original_root_count": 30,
+  "post_migration_root_count": 29,
+  "entries": [
+    {
+      "old_path": ".audit/api.py",
+      "new_path": "development/audit/tools/api.py",
+      "git_blob": "5ebcf1ffe4db458665c6dd6ab6e270c0a9c8d772",
+      "sha256": "9073fe0692728332c41807754e02dbc0099315c7c6b7012b85541f4ef5b94408",
+      "size_bytes": 1841,
+      "compatibility": "Historical audit client, no checked-in consumer."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/REPORT.md",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/REPORT.md",
+      "git_blob": "c882c8e1e4ae263b81c399e78824a64be2aca64f",
+      "sha256": "b1e91c54887a62599e22d90330f056f1cc0ea4b6f1c9d1511c4779e72bfb69a0",
+      "size_bytes": 2492,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_acoustic.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_acoustic.json",
+      "git_blob": "7c29dcd200ff24e3db30c9cc5a825086900ebae1",
+      "sha256": "af3ce99581239f31a5fd5a62e0296094d6d16323d30a4f8d507177579cf31a6f",
+      "size_bytes": 1453,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_exact.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_exact.json",
+      "git_blob": "ec80b355b52a38cf085aa079247a041d9bce068f",
+      "sha256": "4935f07bc6e3873d9579d46067f85c8a00e1bc49c73a4f7a3b29570e32d8320a",
+      "size_bytes": 818,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R10.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R10.json",
+      "git_blob": "f2418c1881abe9123d28f7734777abfcede9256d",
+      "sha256": "8b308cf72dd48a9546530712eddd083508ffb64c19b10979c4577cf11ba56636",
+      "size_bytes": 243,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R12.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R12.json",
+      "git_blob": "91194e73a35c8f970f6532776454be5f2fd2b6cd",
+      "sha256": "4f5e7159d9c75cb44bcf74896a392c9f361bd990212338ff6064444d9a477d0f",
+      "size_bytes": 909,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R6.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R6.json",
+      "git_blob": "eb80f9e7af9e746e85dd3290557971ad8a914c02",
+      "sha256": "fc738b57b277e5531d78358c7d19cecbcbc7625a78687e4ae53d904b2c9f71bd",
+      "size_bytes": 1283,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R8.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/chunk_laplace_primary_R8.json",
+      "git_blob": "e5fc9e1824b7ab1b4d3314f24a998bf10c28fe4a",
+      "sha256": "01f318835fdada2c6cb352206c47366ec549084b36fa740ed107418a72836e6d",
+      "size_bytes": 904,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/results.json",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/results.json",
+      "git_blob": "9205a3eb79ded9d5c2fbe3e345c01135eb5b4f92",
+      "sha256": "7e9e2c3abe72d7b9e23a6a28d1ffa9cd6964085490ba64c6a5251ffa0caa0c03",
+      "size_bytes": 8910,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/run_xval.py",
+      "new_path": "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/run_xval.py",
+      "git_blob": "0305f63d5d45770ce8f7bb4217496800d4a0da10",
+      "sha256": "02b270804c912f02f6c5b00bbfff8bcc051bf6c20213eb23a206a6d081bbea5e",
+      "size_bytes": 21403,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m23219 audit and retain the original host and command as provenance."
+    },
+    {
+      "old_path": ".audit/repro/artifacts/jurin_closed_box.json",
+      "new_path": "development/audit/m15893/repro/artifacts/jurin_closed_box.json",
+      "git_blob": "89fce0e3bbf997e3dc325f9c8d8a1c45d5a65001",
+      "sha256": "76a16399a1fe9409a7bdb2639509afe0eb1e00bfbc69a155ae6ab82cf89dee12",
+      "size_bytes": 20007,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m15893 audit and use the chosen revision's src on PYTHONPATH for historical replay."
+    },
+    {
+      "old_path": ".audit/repro/artifacts/jurin_closed_box_report.md",
+      "new_path": "development/audit/m15893/repro/artifacts/jurin_closed_box_report.md",
+      "git_blob": "ca2afe8b8d4992127b6261a3c37efeb869acb490",
+      "sha256": "3403d72d9a91260cea32bce8d8941e9beeeb55cb738c3665f343842e0bcebcf8",
+      "size_bytes": 3981,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m15893 audit and use the chosen revision's src on PYTHONPATH for historical replay."
+    },
+    {
+      "old_path": ".audit/repro/sc_closed_box.py",
+      "new_path": "development/audit/m15893/repro/sc_closed_box.py",
+      "git_blob": "56cb52f299415bbac18a9a2e02576f47451f4c63",
+      "sha256": "e6fc3497977cf7f0bb284dc4b29a047e87fd07b02d54a604303588e1d7694259",
+      "size_bytes": 22745,
+      "compatibility": "Keep script and relative artifact paths together. Link from the m15893 audit and use the chosen revision's src on PYTHONPATH for historical replay."
+    }
+  ]
+}
