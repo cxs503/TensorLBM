@@ -1,0 +1,48 @@
+{
+  "base_revision": "dea862ea92236d46903e4085962524eb0337b7b3",
+  "entries": [
+    {
+      "old_path": "audits/m18313_pte_transplant/audit_m18313.md",
+      "new_path": "audit/m18313/audit_m18313.md",
+      "git_blob": "c2ad49ec244fed232302e7dad81657fc4377276e",
+      "sha256": "52997abbc47c2c488dbd251aa01451fb4ddf2256471ab24f7ccdfb0715d03efd",
+      "size_bytes": 5387
+    },
+    {
+      "old_path": "audits/m18313_pte_transplant/numbers_from_artifact.json",
+      "new_path": "audit/m18313/numbers_from_artifact.json",
+      "git_blob": "4648a6fd691a79824f7b989fe28a676dde3b3ea5",
+      "sha256": "6efda17992645e2bfaeb049654812fef64308049ec6514cb012e18474a446693",
+      "size_bytes": 1701
+    },
+    {
+      "old_path": "audits/m18313_pte_transplant/report_payload.json",
+      "new_path": "audit/m18313/report_payload.json",
+      "git_blob": "ef9db62576dff5450b8b6a0d61bdfa63617030f6",
+      "sha256": "eb8cd3a0f55193fd05338ff2183e9da4d77a1a2c1e2ea9e1a7063a6ed4e427fb",
+      "size_bytes": 615547
+    },
+    {
+      "old_path": "audits/m18313_pte_transplant/verdict_m18313.sql",
+      "new_path": "audit/m18313/verdict_m18313.sql",
+      "git_blob": "73defab0c6449c3d825d318579ea5f8f607cc42d",
+      "sha256": "265fee237aa763c190a8f65012e13e2fd86a857053fb59b3e2ddeaf7d82d2180",
+      "size_bytes": 6221
+    },
+    {
+      "old_path": "audits/m17970_xval_lbm_job_status_checkpoint_machine.md",
+      "new_path": "audit/m17970/m17970_xval_lbm_job_status_checkpoint_machine.md",
+      "git_blob": "73a6615e2831298dcb20c2738194366b0ab4b774",
+      "sha256": "d4f560c47169dda0c1e6e6cc8bc2c646efb68f31e9732030f146068a6088d844",
+      "size_bytes": 12926
+    }
+  ],
+  "verification": {
+    "base_tree": "845ac0f27a916b7a458e4d1504cea55309dda896",
+    "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=src python -m pytest -q tests/test_pressure_tensor_equilibrium_xval.py tests/test_xval_job_status_checkpoint_machine.py tests/test_xval_job_status_checkpoint_measured.py",
+    "baseline_passed": 45,
+    "candidate_passed": 45,
+    "layout_manual_registry_archive_tests_passed": 29,
+    "compatibility": "Moved sibling records together and verified bytes. Seven published or executable paths in audits/ retained. External consumers of the five moved paths unknown; use base_revision for historic URLs."
+  }
+}
