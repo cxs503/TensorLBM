@@ -169,6 +169,10 @@ jobs:
         run: python tests/test_repository_report_migration.py -v
       - name: Check repository layout
         run: python tools/check_repository_layout.py
+      - name: Test benchmark manual checker
+        run: python tests/test_benchmark_manuals.py -v
+      - name: Check published benchmark manual links
+        run: python tools/check_benchmark_manuals.py
 
   # Structural audit has an independent signal: it must run even when
   # the repository-wide Ruff gate is already red for unrelated legacy findings.

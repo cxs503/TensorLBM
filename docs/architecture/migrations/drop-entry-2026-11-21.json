@@ -1,0 +1,41 @@
+{
+  "base_revision": "2733d6870a552ce054faf977107a45fecc1215bc",
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/CROSS/T5_DIGEST.md",
+      "new_path": "audit/drop_entry/BB/CROSS/T5_DIGEST.md",
+      "git_blob": "5612f034b3bd56e307d1fe3b7575ddc89e08c282",
+      "size_bytes": 3496
+    },
+    {
+      "old_path": "drop_entry/BB/X/CAVSWEEP.md",
+      "new_path": "audit/drop_entry/BB/X/CAVSWEEP.md",
+      "git_blob": "398ca052f88f5044aef21e25effbbb2ef79de385",
+      "size_bytes": 4739
+    },
+    {
+      "old_path": "drop_entry/BB/teams/T3/P3_QW.md",
+      "new_path": "audit/drop_entry/BB/teams/T3/P3_QW.md",
+      "git_blob": "208271ac9e7a084979f0bfb2577c08295e23e54c",
+      "size_bytes": 3280
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-A5B-COMPACT.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-A5B-COMPACT.draft.md",
+      "git_blob": "7f946111f3669fb4e9d92eda0a699a139aab0b09",
+      "size_bytes": 1113
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-T3-P3R.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-T3-P3R.draft.md",
+      "git_blob": "70c70e0f68f3010b139caa3b5526b19dc119a222",
+      "size_bytes": 1357
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-DIGEST-T5.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-X-DIGEST-T5.draft.md",
+      "git_blob": "2f038684b921da93e89b7a3ecc10530439a36c4f",
+      "size_bytes": 1292
+    }
+  ]
+}

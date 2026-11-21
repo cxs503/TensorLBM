@@ -24,7 +24,7 @@ class CatalogueTests(unittest.TestCase):
             root = Path(tmp)
             directory = root / "docs/benchmarks/tutorials"
             directory.mkdir(parents=True)
-            row = "| [Demo（demo_case）](tutorials/demo_case.md) | Flow | [md](tutorials/demo_case.md) | — | — | `benchmarks/verified/demo_case` |\n"
+            row = "| [Demo（demo_case）](demo_case.md) | Flow | [md](demo_case.md) | — | — | `benchmarks/verified/demo_case` |\n"
             (directory / "README.md").write_text(row * 2, encoding="utf-8")
             result = module.check(root)
             self.assertEqual(result["count"], 2)
@@ -35,6 +35,7 @@ class CatalogueTests(unittest.TestCase):
     def test_published_catalogue_is_unchanged_and_complete(self):
         result = module.check()
         self.assertEqual(result["count"], 35)
+        self.assertEqual(result["pdf_count"], 33)
         self.assertEqual(result["errors"], [], "\n".join(result["errors"]))
 
 
