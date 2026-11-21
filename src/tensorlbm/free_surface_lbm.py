@@ -1022,6 +1022,10 @@ def free_surface_step(
     iface_tau_dose=0.0,
     momconv="off",
     momconv_state=None,
+    # Cumulant collision parameters
+    cumulant_omega_b=1.0,
+    cumulant_omega_odd=1.0,
+    cumulant_omega_even=1.0,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -1179,9 +1183,9 @@ def free_surface_step(
 
         f = collide_cascaded_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "cumulant":
-        from .advanced_collision_d3q19 import collide_cumulant_d3q19
+        from .collision_d3q19_advanced import collide_cumulant_d3q19
 
-        f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
+        f = collide_cumulant_d3q19(f_collide, tau, omega_b=cumulant_omega_b, omega_odd=cumulant_omega_odd, omega_even=cumulant_omega_even, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "mrt":
         # In moment space Guo forcing is (I - S/2) M Phi. Shifting
         # the collision target by -Phi/2 and adding Phi afterwards applies

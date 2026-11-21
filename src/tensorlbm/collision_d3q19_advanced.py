@@ -165,3 +165,24 @@ __all__ = [
     "collide_regularized_stress_d3q19",
     "collide_central_stress_d3q19",
 ]
+
+
+def collide_cumulant_d3q19(
+    f: torch.Tensor,
+    tau: float,
+    omega_b: float = 1.0,
+    omega_odd: float = 1.0,
+    omega_even: float = 1.0,
+    C_s: float = 0.0,
+) -> torch.Tensor:
+    """D3Q19 cumulant collision (Geier 2015) — re-export from cumulant module.
+
+    This is a thin re-export so that ``free_surface_lbm`` can import it from
+    the ``advanced_collision_d3q19`` package without changing its import path.
+
+    See :func:`tensorlbm.cumulant.collide_cumulant_d3q19` for the full
+    implementation and documentation.
+    """
+    from .cumulant import collide_cumulant_d3q19 as _inner
+
+    return _inner(f, tau, omega_b=omega_b, omega_odd=omega_odd, omega_even=omega_even, C_s=C_s)
