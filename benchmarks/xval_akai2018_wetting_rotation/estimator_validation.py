@@ -6,7 +6,7 @@ Kasa circle fit of the ``phi = 0`` contour, and its only "analytic verification"
 was a wall-boundary-condition identity: it fed an analytic ``tanh`` interface
 through the wetting kernel and read the angle back out with the inverse of the
 same construction.  That is an algebraic identity, not a validation (the audit
-``audits/m17444/verdict_m17444.md`` says so explicitly).
+``audit/m17444/verdict_m17444.md`` says so explicitly).
 
 This script validates the *measurement* instead, with fields that contain no
 boundary condition at all: an exact ``tanh`` circular cap

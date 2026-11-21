@@ -1,15 +1,7 @@
 {
   "schema_version": 2,
   "baseline_revision": "ad3d19ae6e5f55f02ac691f6719d4a5ae68f4cdc",
-  "legacy_audit_files": [
-    "audits/m17444/verdict_m17444.md",
-    "audits/m17444/verdict_m17444.sql",
-    "audits/m17444_akai2018_repro/benchmarks/xval_akai2018_wetting/analytic_verification.json",
-    "audits/m17444_akai2018_repro/benchmarks/xval_akai2018_wetting/verify_bc_analytic.py",
-    "audits/m18155/publish_report.py",
-    "audits/m18155/verify_tgv_reference.json",
-    "audits/m18155/verify_tgv_reference.py"
-  ],
+  "legacy_audit_files": [],
   "historical_checkouts": [
     "experiments/archived/workspaces/cj5697/repo",
     "experiments/archived/workspaces/m21672/cj3613/cj3613/repo"
@@ -446,7 +438,6 @@
     "app",
     "artifacts",
     "audit",
-    "audits",
     "benchmarks",
     "cases",
     "configs",

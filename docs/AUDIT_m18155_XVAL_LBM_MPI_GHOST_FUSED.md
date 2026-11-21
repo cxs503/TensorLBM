@@ -49,7 +49,7 @@ down **before** any arm ran. But the delivered initial condition is the 3-D ABC 
 velocity component carries the wave vector `(1,1,1)·(2π/n)`, i.e. `|k|² = 3k²`, so the leading-order
 Navier–Stokes decay is `exp(-3 nu k^2 t)`. `2 nu k^2` is the **2-D** TGV rate (`|k|² = 2k²`).
 
-Reproduced independently (`audits/m18155/verify_tgv_reference.py`, monolithic only, no MPI):
+Reproduced independently ([script](../audit/m18155/verify_tgv_reference.py), [archived result](../audit/m18155/verify_tgv_reference.json), monolithic only, no MPI):
 
 | n, steps | rel-L2 vs `exp(-2νk²t)` (delivered) | rel-L2 vs `exp(-3νk²t)` (corrected) | ν_eff fitted under 3k² | ν_eff vs ν=(τ−½)/3 |
 |---|---|---|---|---|

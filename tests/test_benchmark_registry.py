@@ -54,12 +54,11 @@ class BenchmarkRegistryTests(unittest.TestCase):
 
     def test_find_archived_assets_by_path(self):
         result = subprocess.run(
-            [sys.executable, "tools/benchmark_registry.py", "--find-asset", "M17444_AKAI2018_REPRO"],
+            [sys.executable, "tools/benchmark_registry.py", "--find-asset", "M17444/AKAI2018_REPRO"],
             cwd=ROOT, capture_output=True, check=True,
         )
         paths = json.loads(result.stdout)["paths"]
-        self.assertIn("audits/m17444_akai2018_repro/benchmarks/xval_akai2018_wetting/"
-                      "analytic_verification.json", paths)
+        self.assertIn("audit/m17444/akai2018_repro/analytic_verification.json", paths)
         self.assertEqual(paths, sorted(set(paths)))
         self.assertTrue(all((ROOT / path).is_file() for path in paths))
 

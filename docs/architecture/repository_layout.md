@@ -30,6 +30,10 @@ Run repository-relative commands from the checkout root. The original tree at
 commands, cluster paths and output names quoted in historical evidence. The
 existing `.audit/` and `_scratch/` trees still have in-repository consumers.
 
+The former root `audits/` directory has been consolidated under `audit/`.
+The [migration manifest](migration_manifest.csv) records the original and
+current paths. Published audit narratives under `docs/` keep their URLs.
+
 The [source authority policy](source_authority_policy.json) records existing
 references to the nested source tree. The checker covers literal paths and
 common static Python path joins. Entries identify locations to review, including
