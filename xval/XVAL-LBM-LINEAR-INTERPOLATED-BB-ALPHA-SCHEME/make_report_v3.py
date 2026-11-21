@@ -205,5 +205,7 @@ payload = {
     "markdown": md,
     "figures": figs,
 }
-(REPO / "_scratch" / "report_v3.json").write_text(json.dumps(payload))
-print("REPORT_V3.md + _scratch/report_v3.json written;", len(figs), "figures embedded")
+output = REPO / "outputs" / "xval" / "linear-interpolated-bb-alpha-scheme" / "report_v3.json"
+output.parent.mkdir(parents=True, exist_ok=True)
+output.write_text(json.dumps(payload))
+print(f"REPORT_V3.md + {output.relative_to(REPO)} written;", len(figs), "figures embedded")

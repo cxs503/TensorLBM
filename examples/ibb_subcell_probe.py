@@ -128,4 +128,6 @@ if __name__ == "__main__":
     for r in rows:
         print(f"{r['n']:>3} {r['q0']:>5} {r['name']:<16} {r['theta_pct']:>9.3f} "
               f"{r['Q_rel_pct']:>9.3f} {r['rho_mean']:>10.6f} {r['u_max_err_pct']:>8.3f}")
-    Path('_scratch/ibb_subcell.json').write_text(json.dumps(rows, indent=1))
+    output = Path(__file__).resolve().parents[1] / "outputs" / "ibb_subcell.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(rows, indent=1))
