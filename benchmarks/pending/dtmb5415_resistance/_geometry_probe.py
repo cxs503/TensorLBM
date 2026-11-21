@@ -3,7 +3,7 @@
 
 ``GeneralSimEngine.setup()`` is cheap (voxelisation only, no time stepping), so
 one probe per (STL, resolution) gives the geometry table used by
-``artifacts/sdaa_dtmb5415_diagnosis.json``:
+``evidence/sdaa_m452/diagnosis.json``:
 
     solid cells -> voxel displacement -> Cb error vs 0.507*L*B*T
     staircase wall faces vs smooth wetted area (the normalisation bias)
@@ -13,7 +13,7 @@ reconstructed after the fact.
 
 Usage
 -----
-  PYTHONPATH=src python _geometry_probe.py --out runs/.../geometry_probe.json
+  PYTHONPATH=src python _geometry_probe.py --out evidence/sdaa_m452/geometry_probe.json
 """
 
 from __future__ import annotations
@@ -102,7 +102,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--out",
-        default=str(_HERE.parents[2] / "runs" / "sdaa_dtmb5415_m452" / "geometry_probe.json"),
+        default=str(_HERE / "evidence" / "sdaa_m452" / "geometry_probe.json"),
     )
     ap.add_argument("--resolutions", type=int, nargs="*", default=[24, 32, 48, 64])
     args = ap.parse_args()
