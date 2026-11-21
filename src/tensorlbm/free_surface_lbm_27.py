@@ -640,7 +640,19 @@ def free_surface_step_27(
             + (ny_n.roll(-1, dims=1) - ny_n.roll(1, dims=1))
             + (nz_n.roll(-1, dims=0) - nz_n.roll(1, dims=0))
         )
-        delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
+        # 3-point sliding average filter on curvature (Brackbill et al. 1992 CSF)
+        # κ_smooth[i] = (κ[i-1] + κ[i] + κ[i+1]) / 3
+        # This reduces curvature noise that causes parasitic currents
+        kappa_smooth = (
+            kappa.roll(-1, dims=2) + kappa + kappa.roll(1, dims=2)
+        ) / 3.0
+        kappa_smooth = (
+            kappa_smooth.roll(-1, dims=1) + kappa_smooth + kappa_smooth.roll(1, dims=1)
+        ) / 3.0
+        kappa_smooth = (
+            kappa_smooth.roll(-1, dims=0) + kappa_smooth + kappa_smooth.roll(1, dims=0)
+        ) / 3.0
+        delta_rho = (3.0 * float(surface_tension) * kappa_smooth).clamp(-0.1, 0.1)
         rho_g_field = rho_g_field + torch.where(iface_abb, delta_rho, torch.zeros_like(delta_rho))
     # Standard Körner ABB: f_q(x) = f_eq_gas + f_eq_gas[opp] - f_post[opp].
     # Consistent only for rho_gas O(rho_liquid); use rho_gas = rho_liquid for
