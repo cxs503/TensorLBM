@@ -56,15 +56,15 @@
 
 ### 图 1：nx=2000, t=400 密度与速度剖面
 
-![density and velocity profiles nx=2000 t=400](figures/sod_nx2000_t400.png)
+![density and velocity profiles nx=2000 t=400](assets/sod-m40/sod_nx2000_t400.png)
 
 ### 图 2：nx=4000, t=800 密度与速度剖面
 
-![density and velocity profiles nx=4000 t=800](figures/sod_nx4000_t800.png)
+![density and velocity profiles nx=4000 t=800](assets/sod-m40/sod_nx4000_t800.png)
 
 ### 图 3：L2 误差收敛
 
-![L2 convergence](figures/sod_convergence.png)
+![L2 convergence](assets/sod-m40/sod_convergence.png)
 
 ## 5. 注意点与局限
 

@@ -96,6 +96,28 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 case_readme = (REPO / "benchmarks" / case / "README.md").read_text(encoding="utf-8")
                 self.assertIn(f"](../../../docs/reports/{name})", case_readme)
 
+    def test_sod_figures_and_m26765_publisher_preserve_assets(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "sod-figures-and-m26765-2026-11-21.json").read_text()
+        )
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+        report_path = REPO / "docs/report_m40.md"
+        report = report_path.read_text(encoding="utf-8")
+        for item in ledger["entries"]:
+            destination = REPO / item["new_path"]
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(destination, item["sha256"], item["size_bytes"])
+                self.assertEqual(manifest[item["old_path"]], item["new_path"])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                if destination.suffix == ".png":
+                    target = destination.relative_to(report_path.parent).as_posix()
+                    self.assertIn(f"]({target})", report)
+        index = REPO / "audit/m26765/README.md"
+        for target in re.findall(r"\]\(([^)]+)\)", index.read_text(encoding="utf-8")):
+            with self.subTest(link=target):
+                self.assertTrue((index.parent / target).is_file())
+
     def test_audit_records_retain_bytes_and_sibling_evidence(self):
         ledger = json.loads((LEDGER_PATH.parent / "audit-records-2026-11-21.json").read_text())
         for move in ledger["entries"]:
