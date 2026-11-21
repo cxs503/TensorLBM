@@ -1,0 +1,33 @@
+{
+  "source_commit": "52961eb6bcc0a2bdb3be20e89e87fc6c71701dc8",
+  "integration_base_commit": "402aae14f96a942a18e5aea1da064db17166cc13",
+  "root_directories_before": 15,
+  "root_directories_after": 14,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/X/EV1-ABB_DIAG.md",
+      "new_path": "development/audit/drop_entry/BB/m26734/X/EV1-ABB_DIAG.md",
+      "original_git_blob": "891e95f7a1052c28f5e2a2ae05e2fdabefac13e0",
+      "git_mode": "100644",
+      "original_sha256": "c956aff43408053594623a60b084dbe6c861e8fde8ecb7e9ee286487446217b8",
+      "published_duplicate": "docs/drop_entry_bb/X_EV1-ABB_DIAG.md"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-EV1-ABB_DIAG.draft.md",
+      "new_path": "development/audit/drop_entry/BB/m26734/tmp/DE-X-EV1-ABB_DIAG.draft.md",
+      "original_git_blob": "08c5f8c58e57ef975768d1cbd9506a4e4f2433e7",
+      "git_mode": "100644",
+      "original_sha256": "c0ce291f5274c3ae0224feb49c7de7084629dc9f8448ec3a20d9cc1d50e6fc6c"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-TENS1-CSF-SMOOTH.draft.md",
+      "new_path": "development/audit/drop_entry/BB/m26734/tmp/DE-X-TENS1-CSF-SMOOTH.draft.md",
+      "original_git_blob": "f9949eb01a9b60034f0ab650225ead4aade75200",
+      "git_mode": "100644",
+      "original_sha256": "945b7e6b47e744388c6a0032e1178e280634b6b72318f259303aba64947851c9"
+    }
+  ],
+  "reference_scan": "The only exact-path reference was the draft's instruction to publish the byte-identical document copy retained under docs/drop_entry_bb/. No import, CLI, CI, benchmark registry or package consumer referred to the retired root.",
+  "compatibility": "All three process records retain identical bytes. The stable documentation copy remains at docs/drop_entry_bb/X_EV1-ABB_DIAG.md.",
+  "scientific_scope": "No numerical source, configuration, result, acceptance state or solver API is changed by this migration."
+}

@@ -165,6 +165,7 @@ def csf_force(
     sigma: float,
     kappa: torch.Tensor | None = None,
     smooth: int = 0,
+    smooth_kappa: bool = False,
 ) -> torch.Tensor:
     """CSF surface-tension force ``f = sigma * kappa * grad(phi)``.
 
@@ -178,6 +179,10 @@ def csf_force(
             curvature is evaluated (see :func:`smooth_field`).  The force
             amplitude still uses the unfiltered ``grad(phi)`` so that the
             interface delta function keeps its sharp profile.
+        smooth_kappa: If True, apply a 3-point moving average filter to the
+            curvature field ``kappa`` after computation but before force
+            evaluation. This suppresses high-frequency noise in ``kappa``
+            which is a known source of spurious currents (Brackbill et al. 1992).
 
     Returns:
         Force density ``(ndim, *spatial)`` (component 0 = x).
@@ -185,6 +190,9 @@ def csf_force(
     if sigma == 0.0:
         return torch.zeros((phi.dim(), *phi.shape), dtype=phi.dtype, device=phi.device)
     k = curvature(phi, smooth=smooth) if kappa is None else kappa
+    if smooth_kappa:
+        for ax in range(k.dim()):
+            k = (torch.roll(k, 1, ax) + k + torch.roll(k, -1, ax)) / 3.0
     g = gradient(phi)
     coef = sigma * k
     return torch.stack([coef * gi for gi in g], dim=0)
@@ -220,9 +228,10 @@ def total_force(
     grad_sigma: Sequence[float] | None = None,
     kappa: torch.Tensor | None = None,
     smooth: int = 0,
+    smooth_kappa: bool = False,
 ) -> torch.Tensor:
     """Laplace (CSF) + optional Marangoni force."""
-    f = csf_force(phi, sigma, kappa=kappa, smooth=smooth)
+    f = csf_force(phi, sigma, kappa=kappa, smooth=smooth, smooth_kappa=smooth_kappa)
     if grad_sigma is not None and any(v != 0.0 for v in grad_sigma):
         f = f + marangoni_force(phi, grad_sigma)
     return f
@@ -309,62 +318,4 @@ def rayleigh_period_2fluid(
 def _coords(shape: Sequence[int], device, dtype) -> tuple[torch.Tensor, ...]:
     """Cell-centre coordinate grids in ``(x, y[, z])`` order."""
     axes = [torch.arange(n, device=device, dtype=dtype) + 0.5 for n in reversed(tuple(shape))]
-    grids = torch.meshgrid(*reversed(axes), indexing="ij")
-    return tuple(reversed(grids))
-
-
-def tanh_droplet_phi(
-    shape: Sequence[int],
-    center: Sequence[float],
-    radius: float,
-    width: float = 3.0,
-    dtype: torch.dtype = torch.float64,
-    device: torch.device | str = "cpu",
-) -> torch.Tensor:
-    """Circular (2-D) / spherical (3-D) droplet indicator ``phi = 0.5(1-tanh(2(r-R)/w))``."""
-    coords = _coords(shape, device, dtype)
-    r = torch.sqrt(sum((c - c0) ** 2 for c, c0 in zip(coords, center)) + 1e-30)
-    return 0.5 * (1.0 - torch.tanh(2.0 * (r - radius) / width))
-
-
-def tanh_ellipse_phi(
-    shape: Sequence[int],
-    center: Sequence[float],
-    semi_axes: Sequence[float],
-    width: float = 3.0,
-    dtype: torch.dtype = torch.float64,
-    device: torch.device | str = "cpu",
-) -> torch.Tensor:
-    """Ellipse indicator; ``width`` is the interface thickness of the tanh profile."""
-    coords = _coords(shape, device, dtype)
-    # normalised radius -> phi = 0.5(1 - tanh(2 (rho-1) R_eff / w))
-    rho_n = torch.sqrt(
-        sum(((c - c0) / a) ** 2 for c, c0, a in zip(coords, center, semi_axes)) + 1e-30
-    )
-    r_eff = sum(float(a) for a in semi_axes) / len(semi_axes)
-    return 0.5 * (1.0 - torch.tanh(2.0 * (rho_n - 1.0) * r_eff / width))
-
-
-def tanh_sphere_phi(
-    shape: Sequence[int],
-    center: Sequence[float],
-    radius: float,
-    width: float = 3.0,
-    dtype: torch.dtype = torch.float64,
-    device: torch.device | str = "cpu",
-) -> torch.Tensor:
-    """Alias of :func:`tanh_droplet_phi` kept for 3-D readability."""
-    return tanh_droplet_phi(shape, center, radius, width=width, dtype=dtype, device=device)
-
-
-def tanh_flat_phi(
-    shape: Sequence[int],
-    y0: float,
-    width: float = 3.0,
-    dtype: torch.dtype = torch.float64,
-    device: torch.device | str = "cpu",
-) -> torch.Tensor:
-    """Flat interface normal to ``y``: ``phi = 1`` for ``y < y0`` (liquid below)."""
-    coords = _coords(shape, device, dtype)
-    y = coords[1]
-    return 0.5 * (1.0 - torch.tanh(2.0 * (y - y0) / width))
+    grids = torch.meshg

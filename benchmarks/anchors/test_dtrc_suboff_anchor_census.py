@@ -42,7 +42,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 ANCHOR = ROOT / "benchmarks/anchors/dtrc-suboff-1989.json"
-CENSUS = ROOT / "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json"
+CENSUS = ROOT / "benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json"
 BUILDER_A = ROOT / "benchmarks/anchors/dtrc_suboff_1989_anchor.py"
 BUILDER_C = ROOT / "benchmarks/anchors/suboff_anchor_census.py"
 
@@ -208,8 +208,20 @@ def test_sensitivity_has_three_tiers_and_declares_the_admitted_one(census):
 
 
 def test_every_source_hash_still_matches(census):
+    manifest = json.loads(
+        (ROOT / "docs/architecture/migrations/suboff-w30-census-2026-11-21.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    recovered = {
+        item["old_path"]: item for item in manifest["recovered_inputs"]
+        if item["source_commit"] == census["git_commit"]
+    }
     for rel, digest in census["sources"].items():
-        assert _sha(rel) == digest, f"post-hoc edit of {rel}"
+        source = recovered[rel]["new_path"] if rel in recovered else rel
+        assert _sha(source) == digest, f"post-hoc edit of {source}"
+    for rel, item in recovered.items():
+        assert census["sources"][rel] == item["sha256"]
 
 
 def test_geometry_gate_passed_before_drag(census):

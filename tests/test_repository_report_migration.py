@@ -376,6 +376,53 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 blob = f"blob {len(raw)}\0".encode() + raw
                 self.assertEqual(hashlib.sha1(blob).hexdigest(), expected)
 
+    def test_concurrent_drop_entry_reintroductions_are_archived_and_pinned(self):
+        ledgers = [
+            LEDGER_PATH.parent / "m26734-drop-entry-reentry-2026-11-21.json",
+            LEDGER_PATH.parent / "m26856-audit-reentry-2026-11-21.json",
+        ]
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
+        self.assertFalse(subprocess.check_output(
+            ["git", "ls-files", "--", "audit", "drop_entry", "send_report.py"],
+            cwd=REPO,
+            text=True,
+        ))
+        for ledger_path in ledgers:
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            for item in ledger["entries"]:
+                with self.subTest(path=item["new_path"]):
+                    raw = (REPO / item["new_path"]).read_bytes()
+                    expected_sha = item.get("new_sha256", item["original_sha256"])
+                    self.assertEqual(hashlib.sha256(raw).hexdigest(), expected_sha)
+                    index = subprocess.check_output(
+                        ["git", "ls-files", "-s", "--", item["new_path"]],
+                        cwd=REPO,
+                        text=True,
+                    ).split()
+                    self.assertEqual(index[0], item["git_mode"])
+                    if "new_sha256" not in item:
+                        self.assertEqual(index[1], item["original_git_blob"])
+                    self.assertEqual(manifest[item["old_path"]]["new_path"], item["new_path"])
+                    self.assertFalse((REPO / item["old_path"]).exists())
+        m26734 = json.loads(ledgers[0].read_text(encoding="utf-8"))
+        published = m26734["entries"][0]["published_duplicate"]
+        self.assertEqual(
+            (REPO / published).read_bytes(),
+            (REPO / m26734["entries"][0]["new_path"]).read_bytes(),
+        )
+        publisher = ast.parse(
+            (REPO / "development/audit/drop_entry/BB/m26856/send_report.py").read_text()
+        )
+        self.assertTrue(any(
+            isinstance(node, ast.Subscript)
+            and isinstance(node.value, ast.Attribute)
+            and isinstance(node.value.value, ast.Name)
+            and node.value.value.id == "os"
+            and node.value.attr == "environ"
+            for node in ast.walk(publisher)
+        ))
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

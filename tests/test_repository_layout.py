@@ -23,11 +23,11 @@ def policy() -> dict:
             "benchmarks",
             "development",
             "docs",
-            "evidence",
-            "experiments",
+            "examples",
             "models",
-            "runs",
+            "scripts",
             "tests",
+            "tools",
         ],
         "baseline_revision": "test-fixture",
         "root_files": [".gitignore", "README.md"],
@@ -62,9 +62,9 @@ class RepositoryLayoutTests(unittest.TestCase):
         )
 
     def test_canonical_and_exact_legacy_root_paths_pass(self):
-        for name in ["README.md", "old_debug.py", "experiments/new.py"]:
+        for name in ["README.md", "old_debug.py", "examples/new.py"]:
             self.write(name)
-        self.assertEqual(self.check(["README.md", "old_debug.py", "experiments/new.py"]), [])
+        self.assertEqual(self.check(["README.md", "old_debug.py", "examples/new.py"]), [])
 
     def test_legacy_audit_directory_only_allows_retained_paths(self):
         config = policy()
@@ -79,22 +79,22 @@ class RepositoryLayoutTests(unittest.TestCase):
 
     def test_nested_checkout_in_an_allowed_directory_requires_review(self):
         config = policy()
-        config["historical_checkouts"] = ["experiments/archived/original"]
+        config["historical_checkouts"] = ["examples/archived/original"]
         names = []
-        for base in ("experiments/archived/original", "experiments/new_run/repo"):
+        for base in ("examples/archived/original", "examples/new_run/repo"):
             names.extend([f"{base}/CITATION.cff", f"{base}/.github/workflows/ci.yml"])
         for name in names:
             self.write(name)
         failures = self.check(names, config)
         self.assertEqual(len(failures), 1)
-        self.assertIn("nested-checkout: experiments/new_run/repo/", failures[0])
+        self.assertIn("nested-checkout: examples/new_run/repo/", failures[0])
 
     def test_new_root_path_fails(self):
         self.write("new_debug.py")
         self.assertIn("root-file:", self.check(["new_debug.py"])[0])
 
     def test_unknown_top_level_directory_is_reported_once(self):
-        names = ["scratch_m123/a.py", "scratch_m123/sub/b.json", "experiments/topic/a.py"]
+        names = ["scratch_m123/a.py", "scratch_m123/sub/b.json", "examples/topic/a.py"]
         for name in names:
             self.write(name)
         failures = self.check(names)
@@ -110,10 +110,12 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertEqual(self.check(["research/a.py"], LAYOUT.load_policy(path)), [])
 
     def test_generated_exception_is_not_a_directory_exemption(self):
+        config = policy()
+        config["root_directories"].append("runs")
         self.write("runs/old.log")
         self.write("runs/new.log")
-        self.assertEqual(self.check(["runs/old.log"]), [])
-        self.assertIn("generated-file:", self.check(["runs/new.log"])[0])
+        self.assertEqual(self.check(["runs/old.log"], config), [])
+        self.assertIn("generated-file:", self.check(["runs/new.log"], config)[0])
 
         archive = "development/archived/historical_runs/campaign"
         self.write(f"{archive}/old.log")
@@ -153,7 +155,7 @@ class RepositoryLayoutTests(unittest.TestCase):
 
     def test_small_evidence_and_reference_data_are_allowed(self):
         names = [
-            "evidence/case/result.json",
+            "development/evidence/case/result.json",
             "benchmarks/verified/case/reference.csv",
             "docs/assets/case/figure.png",
             "tests/fixtures/data.npz",
@@ -178,7 +180,9 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertIn("large-file:", self.check(["docs/assets/large.json"], config)[0])
 
     def test_deleted_legacy_file_does_not_require_a_placeholder(self):
-        self.assertEqual(self.check(["old_debug.py", "runs/old.log"]), [])
+        config = policy()
+        config["root_directories"].append("runs")
+        self.assertEqual(self.check(["old_debug.py", "runs/old.log"], config), [])
 
     def test_symlink_does_not_follow_external_target(self):
         path = self.repo / "docs" / "missing-link"
@@ -210,15 +214,24 @@ class RepositoryLayoutTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     LAYOUT.load_policy(config_path)
 
+    def test_retired_root_cannot_be_restored_through_policy_edit(self):
+        for retired in sorted(LAYOUT.RETIRED_ROOT_DIRECTORIES):
+            with self.subTest(retired=retired):
+                config = policy()
+                config["root_directories"].append(retired)
+                config_path = self.write("policy.json", json.dumps(config))
+                with self.assertRaisesRegex(ValueError, "Retired root directories"):
+                    LAYOUT.load_policy(config_path)
+
     def test_git_candidates_include_forced_ignored_files_but_not_local_outputs(self):
         self.git("init", "-q")
         self.write(".gitignore", "runs/\n")
         self.write("runs/local.log")
         self.write("runs/forced.log")
-        self.write("experiments/带 空格.py")
+        self.write("examples/带 空格.py")
         self.git("add", "-f", "runs/forced.log")
         names = LAYOUT.candidate_files(self.repo)
-        self.assertIn("experiments/带 空格.py", names)
+        self.assertIn("examples/带 空格.py", names)
         self.assertIn("runs/forced.log", names)
         self.assertNotIn("runs/local.log", names)
         self.assertIn("generated-file:", self.check(names)[0])

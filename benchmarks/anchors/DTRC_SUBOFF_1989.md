@@ -46,7 +46,7 @@ this checkout.
 
 | tool | artifact |
 |---|---|
-| `suboff_anchor_census.py` | `papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json` |
+| `suboff_anchor_census.py` | `benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json` |
 | `suboff_anchor_census_figs.py` | `figures/w30_suboff_anchor_census/*.png` |
 | `suboff_anchor_census_report.py` | `docs/W30_SUBOFF_ANCHOR_CENSUS.md` |
 | `test_dtrc_suboff_anchor_census.py` | guard suite |

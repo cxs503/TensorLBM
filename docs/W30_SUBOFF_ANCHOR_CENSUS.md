@@ -2,7 +2,7 @@
 
 - 任务号 `m21512`，仓库 `TensorLBM`，生成器 `benchmarks/anchors/suboff_anchor_census.py`，git commit `e3bf2f4c097a619c1e85d5d8bc4456371ac15b70`（构建时 HEAD，重建会刷新）
 - 本期清偿的任务键：`paper-exp-lbm-suboff-tau-3`, `paper-exp-lbm-suboff-tau-4`, `paper-exp-lbm-suboff-tau-6`（这三条此前 mission succeeded 但零报告、零工件）
-- 主工件：`papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json`
+- 主工件：`benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json`
 - 锚件：`benchmarks/anchors/dtrc-suboff-1989.json`（构建器 `benchmarks/anchors/dtrc_suboff_1989_anchor.py`）
 - 全部数值由 `benchmarks/anchors/suboff_anchor_census_report.py` 从工件程序化注入；工件内登记了 11 个源文件的 sha256，测试逐条核验。
 
