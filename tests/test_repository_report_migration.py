@@ -382,6 +382,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             LEDGER_PATH.parent / "m26856-audit-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26892-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26887-drop-entry-reentry-2026-11-22.json",
+            LEDGER_PATH.parent / "m26894-drop-entry-reentry-2026-11-22.json",
         ]
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
@@ -450,6 +451,11 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             and node.value.attr == "environ"
             for node in ast.walk(publisher)
         ))
+        m26894_generator = (
+            REPO / "benchmarks/water_entry/single_drop/tens1_csf_r2_card.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn('os.path.join(ROOT, "drop_entry"', m26894_generator)
+        self.assertIn('os.path.join(ROOT, "docs", "drop_entry_bb"', m26894_generator)
 
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
