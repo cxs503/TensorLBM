@@ -402,7 +402,7 @@ forchheimer/fibrous 的参考类裁决。
 <!-- STATUS_LEDGER:BEGIN -->
 ### 机器台账（自动生成，勿手改；`python benchmarks/status_ledger.py --write`）
 
-pending 目录 **60** · 已登记行 **36** · 带 result.json **31** · 机器判决 pass/fail/unknown = **1/19/40**
+pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器判决 pass/fail/unknown = **1/19/44**
 
 违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
@@ -449,11 +449,13 @@ pending 目录 **60** · 已登记行 **36** · 带 result.json **31** · 机器
 | `dam_break_mm_channel` | yes | yes | fail (`status`) | 1 | fail |
 | `dam_break_ritter_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
 | `dam_break_sc` | yes | yes | fail (`verified`) | 1 | closed |
+| `difflbm_solid_limit` | yes | **no** | unknown | 0 | **unregistered** |
 | `dit_turbulence` | yes | yes | fail (`verified`) | 2 | fail |
 | `droplet_impact_2d_pool` | yes | yes | unknown | 1 | unverified |
 | `droplet_impact_3d_pool` | yes | yes | fail (`passed_3pct_and_converged`) | 1 | fail |
 | `dtmb5415_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
 | `forchheimer` | yes | yes | unknown | 1 | fail |
+| `free_energy_selection` | yes | **no** | unknown | 0 | **unregistered** |
 | `hadamard_rybczynski_droplet` | yes | yes | unknown | 1 | fail |
 | `kcs_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
 | `naca0012_aero_polar` | yes | **no** | unknown | 0 | **unregistered** |
@@ -481,10 +483,12 @@ pending 目录 **60** · 已登记行 **36** · 带 result.json **31** · 机器
 | `sphere_re100_mem` | yes | **no** | unknown | 1 | closed |
 | `sphere_re200` | yes | **no** | unknown | 1 | unverified |
 | `sphere_settling_gcs` | yes | yes | unknown | 0 | **unregistered** |
+| `square_cylinder_norberg` | yes | **no** | unknown | 0 | **unregistered** |
 | `staircase_wall_offset` | **no** | **no** | unknown | 0 | **unregistered** |
 | `static_droplet_laplace_ci` | **no** | **no** | fail (`status`) | 0 | **unregistered** |
 | `stokes_second_problem` | yes | yes | pass (`status`) | 1 | unverified |
 | `suboff_highre_resistance` | yes | **no** | unknown | 0 | **unregistered** |
+| `suboff_hybrid` | yes | **no** | unknown | 0 | **unregistered** |
 | `taylor_aris_dispersion` | yes | yes | unknown | 1 | fail |
 | `taylor_aris_kh_extrapolation` | yes | **no** | unknown | 0 | **unregistered** |
 | `trt_wall_accuracy` | **no** | yes | unknown | 0 | **unregistered** |
