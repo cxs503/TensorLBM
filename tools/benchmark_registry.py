@@ -14,9 +14,12 @@ from check_benchmark_manuals import ROOT, check
 BUCKETS = {"verified", "pending", "archived", "case_pool"}
 
 
-def tracked_files(root: Path) -> set[PurePosixPath]:
+ASSET_ROOTS = ("benchmarks", "docs", "experiments", "xval", "audit", "audits")
+
+
+def tracked_files(root: Path, *areas: str) -> set[PurePosixPath]:
     raw = subprocess.check_output(
-        ["git", "ls-files", "-z", "--", "benchmarks", "docs/benchmarks/tutorials"],
+        ["git", "ls-files", "-z", "--", *areas],
         cwd=root,
     )
     return {PurePosixPath(path) for path in raw.decode().split("\0") if path}
@@ -27,7 +30,7 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
     errors = list(catalogue["errors"])
     if errors:
         return [], errors
-    files = tracked_files(root)
+    files = tracked_files(root, "benchmarks", "docs/benchmarks/tutorials")
     by_dir = defaultdict(list)
     for path in sorted(files):
         by_dir[path.parent].append(path)
@@ -107,7 +110,18 @@ def main() -> int:
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--json", action="store_true", help="export the complete registry")
     group.add_argument("--case", help="look up a case ID or registered case path")
+    group.add_argument("--find-asset", metavar="TEXT",
+                       help="search tracked paths across benchmarks, docs, experiments, xval and audits")
     args = parser.parse_args()
+    if args.find_asset is not None:
+        query = args.find_asset.strip().casefold()
+        if not query:
+            parser.error("asset search requires a nonempty path fragment")
+        matches = sorted(str(p) for p in tracked_files(ROOT, *ASSET_ROOTS)
+                         if query in str(p).casefold())
+        print(json.dumps({"query": args.find_asset, "paths": matches},
+                         ensure_ascii=False, indent=2))
+        return 0 if matches else 1
     records, errors = build_registry()
     if errors:
         parser.exit(1, "\n".join(errors) + "\n")
