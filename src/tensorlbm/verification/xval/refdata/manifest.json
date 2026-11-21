@@ -1,0 +1,19 @@
+{
+  "cases": {
+    "poiseuille_2d_H16": {
+      "version": "v1",
+      "npz_file": "poiseuille_2d_H16_v1.npz",
+      "sha256_first_array": "c59f049b5e83fd374477880ba72351288faa8d1bce9a9eda78fc1c4191e6207e",
+      "scalars": {
+        "eps_inf": 0.003607843111901292,
+        "eps_L2": 0.004920911776990591,
+        "mass_drift": 3.0808688933348094e-13
+      },
+      "thresholds": {
+        "eps_inf": 0.02,
+        "eps_L2": 0.02,
+        "mass_drift": 1e-08
+      }
+    }
+  }
+}

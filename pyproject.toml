@@ -87,6 +87,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "tensorlbm.verification.cavity_re3200" = ["ghia_re3200_reference.json"]
+"tensorlbm.verification.xval" = ["refdata/*.json", "refdata/*.npz"]
 
 [tool.setuptools.dynamic]
 version = {attr = "tensorlbm._version.__version__"}
