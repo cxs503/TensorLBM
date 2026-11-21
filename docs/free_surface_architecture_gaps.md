@@ -154,7 +154,7 @@ Guo（守恒形式）稳定域：τ ≳ 0.70（τ=0.60/0.65 于 step 20–1020 �
 配置网格：`a=8, g=1e-4, rho_gas ∈ {0.95,0.96,0.97,0.975,0.98,0.99}` ×
 `ABB ∈ {legacy,sumeq,eq}` × `LIQ_TO_IFACE ∈ {0,1}` × 变体（共 36+ 组，含 `v3_*` 全受控环境）。
 固定：`TL_FS_WALL_MODE=halfway`、`TL_FS_TOGAS_EPS=1e-6`、`TL_FS_APRIME=1`、
-`TL_FS_WALL_SLIP=1`、`TL_FS_SHELL_MODE=fill`。数据见 `runs/fs_verify_wallslip_20260929/`。
+`TL_FS_WALL_SLIP=1`、`TL_FS_SHELL_MODE=fill`。数据见 `development/archived/historical_runs/fs_verify_wallslip_20260929/`。
 
 **结论（自 commit `6615076`）**：**跨 36 组 a=8 配置，X 与 H 从不同时进入 ±3% 带。**
 
@@ -327,7 +327,7 @@ Guo（守恒形式）稳定域：τ ≳ 0.70（τ=0.60/0.65 于 step 20–1020 �
 | 壁面滑移（specular） | `TL_FS_WALL_SLIP=1` | 受控复核后**单独无效，H 仍 0.938** | 早期"H 解冻杠杆"结论已更正 |
 | 壳层初始化 | `TL_FS_SHELL_MODE=fill` | 消除 rho=1 壳层人为通量 | 辅助修复，非结构性 |
 | A′ 交换闭包 | `TL_FS_APRIME=1` | 质量守恒 1e-6 | 守恒达标，但 X/H 互斥不变 |
-| 组合扫描（36 组） | `runs/fs_verify_wallslip_20260929/` | **X 与 H 从不同时 ±3%** | **根因=同一质量通道** |
+| 组合扫描（36 组） | `development/archived/historical_runs/fs_verify_wallslip_20260929/` | **X 与 H 从不同时 ±3%** | **根因=同一质量通道** |
 
 ### 5.3 旁证（VOF `rayleigh_taylor`）
 
@@ -373,7 +373,7 @@ Guo（守恒形式）稳定域：τ ≳ 0.70（τ=0.60/0.65 于 step 20–1020 �
 | 障碍 A 主档 | `benchmarks/pending/dam_break_sc/README.md`、`REPORT_SCMP_vs_FS2D.md`、`force_form_sweep.json`、`guo_sweep.json`、`result.json` |
 | 障碍 A 代码（opt-in） | `src/tensorlbm/multiphase.py`（`forcing`, `scheme`, `make_psi_carnahan_starling`）、`scripts/measure_coexistence.py` |
 | 障碍 B 主档 | `benchmarks/pending/dam_break_3d_mm/README.md`、`result.json` |
-| 障碍 B 数据 | `runs/fs_verify_wallslip_20260929/`（36 组 a=8 + v3 受控环境）、`runs/fs_pclosure_20260929/`（三件套） |
+| 障碍 B 数据 | `development/archived/historical_runs/fs_verify_wallslip_20260929/`（36 组 a=8 + v3 受控环境）、`development/archived/historical_runs/fs_pclosure_20260929/`（三件套） |
 | 障碍 B 代码（opt-in） | `src/tensorlbm/free_surface_lbm.py`（`TL_FS_WALL_SLIP/SHELL_MODE/ABB_MODE/GAS_CHANNEL/LIQ_TO_IFACE/APRIME/TOGAS_EPS`） |
 | 旁证 VOF/RT | `benchmarks/pending/rayleigh_taylor/README.md`、`result.json` |
 | 参考表裁定 | `benchmarks/pending/dam_break_recompute_mm.json`；提交 `857bbe8`/`c3ac621`/`bbcb5d6` |

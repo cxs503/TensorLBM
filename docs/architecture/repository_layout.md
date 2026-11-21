@@ -57,10 +57,11 @@ require a runtime import trace to identify its actual source.
 | `tools/` | Repository maintenance and static governance tools; prefer Python stdlib | Simulation runners or solver implementations |
 | `docs/` | User/developer documentation, architecture, reports and selected illustration assets | Large raw trajectories or generated duplicate document formats without a source policy |
 | `development/evidence/<topic>/` | Small reproducible defect/audit bundles: README, reproducer, environment, result and short logs | Unbounded run dumps; evidence is not independent acceptance |
+| `development/archived/historical_runs/` | Frozen logs, results and probes from the former `runs/` root | New run output |
 | `outputs/` | New local simulation outputs (ignored) | Files required to reproduce a clean-checkout test |
 | `artifacts/runs/` | Local diagnostic/CI working outputs (ignored) | The sole copy of accepted, externally referenced evidence |
 
-Existing `runs/`, `docs/evidence/`, `agent_work/`, `agent_memory/`
+Existing `docs/evidence/`, `agent_work/`, `agent_memory/`
 and other historical paths remain subject to compatibility checks. Do not
 create additional parallel storage conventions. Keep benchmark evidence tied
 to its stable benchmark ID; keep agent-private scratch output ignored. Select
@@ -110,7 +111,8 @@ Rules:
 
 1. Root files and top-level directories must appear in the policy. Add a scientific topic under its existing area. Propose a new top-level area together with its purpose and consumers.
 2. No new tracked files in `runs/`, `runs_prop/`, `outputs/`, `artifacts/runs/`,
-   root `build/` or `dist/`, frontend `dist/`, or recognized cache/dependency directories.
+   `development/archived/historical_runs/`, root `build/` or `dist/`,
+   frontend `dist/`, or recognized cache/dependency directories.
 3. No new model-weight files (`.pt`, `.pth`, `.ckpt`, `.onnx`, `.safetensors`),
    unless an exact-path exception is deliberately reviewed.
 4. New files must be at most **5 MiB**. This is a repository maintenance threshold,
@@ -195,7 +197,8 @@ and limitations.
 ### Root inventory after the November 2026 consolidation
 
 The migration started at `bce9c9c` with 228 root files and 60 top-level
-directories. The resulting tree contains 20 root files and 30 directories.
+directories. The [run archive migration](migrations/run-root-retirement-2026-11-21.json)
+brings the resulting tree to 20 root files and 15 directories.
 The GitLab pipeline configuration and release entry point are root files in
 policy version 2. The tests exercise both this policy and version 1 checkouts.
 Raw-output, model and size exceptions still use exact paths and byte limits.

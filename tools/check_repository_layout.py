@@ -86,6 +86,7 @@ def is_generated(name: str) -> bool:
         parts[0] in GENERATED_ROOTS
         or bool(set(parts[:-1]) & GENERATED_PARTS)
         or parts[:2] == ("artifacts", "runs")
+        or parts[:3] == ("development", "archived", "historical_runs")
         or parts[:3] == ("app", "frontend-vue", "dist")
         or parts[0] in {"build", "dist"}
     )

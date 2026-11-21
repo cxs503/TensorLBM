@@ -3,6 +3,9 @@
 **状态：🔴 未达标（不入 verified/）** — G15 修复（bg_sub）实测无效；faces 摩擦公式
 （edd3e80）实测有效但不足达标（摩擦 +16%，压力 −49% 主导残余），见下。
 
+后续 surface-only 扫描的[历史日志](../../../../development/archived/historical_runs/sphere_re100_20260930/)
+对应 `result_mem_surface.json` 中原始的日志路径。
+
 ## 物理问题
 
 均匀来流绕球（直径 D=1.0 m），Re=100。阻力系数参考（库内公式，判定基准）：

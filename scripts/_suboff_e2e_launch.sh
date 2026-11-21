@@ -12,7 +12,7 @@ export TL_ISFINITE_INTERVAL=50
 # drop free-surface env leftovers (irrelevant to suboff, avoid stray overhead)
 unset TL_FS_TOGAS_EPS TL_FS_DIAG_FIELD TL_FS_WALL_MODE TL_FS_APRIME TL_FS_LIQ_TO_IFACE 2>/dev/null || true
 
-LOGDIR=/root/TensorLBM_feat2/runs/e2e_suboff_20260929
+LOGDIR=/root/TensorLBM_feat2/outputs/runs/e2e_suboff_20260929
 mkdir -p "$LOGDIR"
 
 launch () {

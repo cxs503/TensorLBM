@@ -21,6 +21,7 @@ def policy() -> dict:
         "schema_version": 2,
         "root_directories": [
             "benchmarks",
+            "development",
             "docs",
             "evidence",
             "experiments",
@@ -31,7 +32,10 @@ def policy() -> dict:
         "baseline_revision": "test-fixture",
         "root_files": [".gitignore", "README.md"],
         "legacy_root_files": ["old_debug.py"],
-        "legacy_generated_files": ["runs/old.log"],
+        "legacy_generated_files": [
+            "runs/old.log",
+            "development/archived/historical_runs/campaign/old.log",
+        ],
         "legacy_model_files": ["models/old.pt"],
         "large_files": {},
     }
@@ -110,6 +114,12 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.write("runs/new.log")
         self.assertEqual(self.check(["runs/old.log"]), [])
         self.assertIn("generated-file:", self.check(["runs/new.log"])[0])
+
+        archive = "development/archived/historical_runs/campaign"
+        self.write(f"{archive}/old.log")
+        self.write(f"{archive}/new.log")
+        self.assertEqual(self.check([f"{archive}/old.log"]), [])
+        self.assertIn("generated-file:", self.check([f"{archive}/new.log"])[0])
 
     def test_generated_directory_boundaries(self):
         for name in [
