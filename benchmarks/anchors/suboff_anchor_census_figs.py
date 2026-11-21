@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """W30 SUBOFF anchor census — figures.
 
-Every curve/point is read from ``papers/artifacts/w30/lbm-suboff-tau/
-suboff_anchor_census.json`` (built by ``benchmarks/anchors/suboff_anchor_census.py``);
+Every curve/point is read from ``benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json`` (built by ``benchmarks/anchors/suboff_anchor_census.py``);
 no number is re-typed here.
 
     python benchmarks/anchors/suboff_anchor_census_figs.py
@@ -21,7 +20,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-CENSUS = ROOT / "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json"
+CENSUS = ROOT / "benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json"
 OUT = ROOT / "figures/w30_suboff_anchor_census"
 
 

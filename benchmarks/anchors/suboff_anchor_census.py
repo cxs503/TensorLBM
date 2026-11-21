@@ -4,7 +4,7 @@ sensitivity.
 
 What this artifact is
 ---------------------
-`papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json` is the single
+`benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json` is the single
 machine-readable answer to the three W30 questions that the topic had been
 carrying without evidence:
 
@@ -48,13 +48,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT_PATH = ROOT / "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json"
+OUT_PATH = ROOT / "benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json"
 ANCHOR_PATH = ROOT / "benchmarks/anchors/dtrc-suboff-1989.json"
 
 VERIFIED_DIR = "benchmarks/verified/suboff_sail_resistance"
 VERIFIED_RESULT = f"{VERIFIED_DIR}/result.json"
 VERIFIED_VERDICT = f"{VERIFIED_DIR}/verdict.json"
 TAU_LADDER = f"{VERIFIED_DIR}/tau_ladder_verdict_m298.json"
+W30_SOURCE_COMMIT = "e3bf2f4c097a619c1e85d5d8bc4456371ac15b70"
+W30_FROZEN_INPUTS = {
+    VERIFIED_RESULT: OUT_PATH.parent / "inputs/result.json",
+    TAU_LADDER: OUT_PATH.parent / "inputs/tau_ladder_verdict_m298.json",
+}
 HIGHRE_DIR = "benchmarks/pending/suboff_highre_resistance"
 HIGHRE_VERDICT = f"{HIGHRE_DIR}/formal/formal_verdict.json"
 HIGHRE_REFS = f"{HIGHRE_DIR}/refs_lock.json"
@@ -673,8 +678,12 @@ def verify(path: Path = OUT_PATH) -> dict:
     for k in ("anchor", "error_table", "resolution_and_tau_sensitivity", "criteria", "verdict", "sources"):
         if k not in art:
             problems.append(f"missing {k}")
+    frozen_inputs = W30_FROZEN_INPUTS if art.get("git_commit") == W30_SOURCE_COMMIT else {}
     for rel, h in art.get("sources", {}).items():
-        if sha256_of(rel) != h:
+        source = frozen_inputs.get(rel, ROOT / rel)
+        if not source.is_file():
+            problems.append(f"missing source {rel}")
+        elif hashlib.sha256(source.read_bytes()).hexdigest() != h:
             problems.append(f"sha256 drift on {rel}")
     a = art["anchor"]
     if a["n_points"] < 3:

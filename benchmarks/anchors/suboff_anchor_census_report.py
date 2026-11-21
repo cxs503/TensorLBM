@@ -2,7 +2,7 @@
 """W30 SUBOFF anchor census — report generator (zero hand-copy of numbers).
 
 Every numeric string in ``docs/W30_SUBOFF_ANCHOR_CENSUS.md`` is formatted from
-``papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json``; the prose is
+``benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json``; the prose is
 fixed here.  Re-running regenerates the document, so a changed artifact can
 never leave a stale number in the report.
 
@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CENSUS = ROOT / "papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json"
+CENSUS = ROOT / "benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json"
 OUT = ROOT / "docs/W30_SUBOFF_ANCHOR_CENSUS.md"
 
 
@@ -42,7 +42,7 @@ def main() -> int:
       f"git commit `{a['git_commit']}`（构建时 HEAD，重建会刷新）")
     w(f"- 本期清偿的任务键：{', '.join('`%s`' % k for k in a['task_keys_closed'])}"
       "（这三条此前 mission succeeded 但零报告、零工件）")
-    w(f"- 主工件：`papers/artifacts/w30/lbm-suboff-tau/suboff_anchor_census.json`")
+    w(f"- 主工件：`benchmarks/anchors/evidence/suboff_w30/suboff_anchor_census.json`")
     w(f"- 锚件：`benchmarks/anchors/dtrc-suboff-1989.json`（构建器 "
       f"`benchmarks/anchors/dtrc_suboff_1989_anchor.py`）")
     w(f"- 全部数值由 `benchmarks/anchors/suboff_anchor_census_report.py` 从工件程序化注入；"
