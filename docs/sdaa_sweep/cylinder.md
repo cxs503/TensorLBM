@@ -95,7 +95,7 @@ All five criteria fail, but **not because of SDAA device errors**. The LBM compu
 
 ## Artifacts
 
-- `artifacts/sdaa_cylinder.json` — machine-readable results with device evidence, computed values, and PASS/FAIL criteria
+- [sdaa_cylinder.json](../../benchmarks/verified/cylinder/evidence/sdaa/sdaa_cylinder.json) — machine-readable results with device evidence, computed values, and PASS/FAIL criteria
 - `scripts/sdaa_sweep_cylinder.py` — independent run script (no business code modifications)
 
 ## Reproduction

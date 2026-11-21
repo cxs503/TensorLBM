@@ -18,7 +18,7 @@ Triton: the eager step chain uses pure PyTorch ops (collide_bgk3d, stream3d_roll
 bounce_back_cells_3d, far_field_bc_3d) — no triton kernels, so
 TRITON_INTERPRET is not needed.  Recorded as "not_required".
 
-Output: artifacts/sdaa_cylinder_3d.json
+Output: outputs/sdaa/cylinder_3d/sdaa_cylinder_3d.json
 """
 
 from __future__ import annotations
@@ -363,7 +363,7 @@ def main() -> int:
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
-    out_dir = _REPO / "artifacts"
+    out_dir = _REPO / "outputs" / "sdaa" / "cylinder_3d"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "sdaa_cylinder_3d.json"
     out_path.write_text(json.dumps(artifact, indent=2))

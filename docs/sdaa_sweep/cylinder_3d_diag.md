@@ -1,5 +1,7 @@
 # SDAA 验证案例扫荡：cylinder_3d 诊断报告
 
+[归档诊断记录](../../benchmarks/verified/cylinder_3d/evidence/sdaa/sdaa_cylinder_3d_diag.json)。
+
 ## 案例概述
 
 - **案例**: `benchmarks/verified/cylinder_3d` — 3D 轴向拉伸圆柱，Re=40，无限展向（z 周期）
@@ -122,5 +124,5 @@ PYTHONPATH=src python3 benchmarks/verified/cylinder_3d/run.py single 20 \
 
 ```bash
 PYTHONPATH=src python3 benchmarks/verified/cylinder_3d/sdaa_diag.py \
-    --device sdaa:0 --steps 30000 --out artifacts/sdaa_cylinder_3d_diag.json
+    --device sdaa:0 --steps 30000 --out outputs/sdaa/cylinder_3d/sdaa_cylinder_3d_diag.json
 ```

@@ -124,7 +124,7 @@ The failure is **not** a solver or device defect — it is a **step-budget limit
 
 | File | Description |
 |---|---|
-| `artifacts/sdaa_cylinder_3d.json` | Machine output: device evidence, per-grid Cd, convergence history, gate PASS/FAIL |
+| [sdaa_cylinder_3d.json](../../benchmarks/verified/cylinder_3d/evidence/sdaa/sdaa_cylinder_3d.json) | Machine output: device evidence, per-grid Cd, convergence history, gate PASS/FAIL |
 | `scripts/sdaa_sweep_cylinder_3d.py` | Independent sweep script (no business code modified) |
 
 ## 9. Reproduce
@@ -132,7 +132,7 @@ The failure is **not** a solver or device defect — it is a **step-budget limit
 ```bash
 cd /srv/tensor/agent/work/m20
 PYTHONPATH=src:benchmarks python scripts/sdaa_sweep_cylinder_3d.py
-# Output: artifacts/sdaa_cylinder_3d.json
+# Output: outputs/sdaa/cylinder_3d/sdaa_cylinder_3d.json
 # Wall clock: ~20 min on SDAA eager
 ```
 

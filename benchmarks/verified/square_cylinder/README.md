@@ -1,5 +1,7 @@
 # square_cylinder — 2D free-stream flow over a square cylinder, Re = 100  ✅ VERIFIED
 
+历史 SDAA 工件：[Re=100 扫掠](evidence/sdaa/sdaa_square_cylinder.json)。该次记录的 `PASS` 仅覆盖 D=8；D=4 因墙钟限制未执行。
+
 Status: **verified** (2026-09-29). Both grids within 3% of the reference cluster and
 mesh-converged. Strouhal number and drag coefficient are both validated.
 
