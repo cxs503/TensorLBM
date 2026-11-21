@@ -22,7 +22,7 @@ venv
 coverage.xml
 htmlcov
 node_modules
-frontend-vue/dist
+app/frontend-vue/dist
 *.pt
 *.pth
 *.ckpt

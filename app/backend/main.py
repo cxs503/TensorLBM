@@ -439,7 +439,7 @@ async def platform_status() -> dict:
 # Frontend static serving
 # ---------------------------------------------------------------------------
 
-_FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend-vue" / "dist"
+_FRONTEND_DIR = _REPO_ROOT / "app" / "frontend-vue" / "dist"
 _ASSETS_DIR = _FRONTEND_DIR / "assets"
 
 # Mount static assets before the SPA fallback so they are served correctly
@@ -450,7 +450,7 @@ if _ASSETS_DIR.exists():
 def _frontend_index() -> Path:
     """Return the built SPA entry point, or raise an actionable 404.
 
-    ``frontend-vue/dist`` is a git-ignored build artifact, so a plain source
+    ``app/frontend-vue/dist`` is a git-ignored build artifact, so a plain source
     checkout (and therefore CI) has no ``index.html`` unless the Vue app was
     built.  Returning ``FileResponse`` for a missing path raises a bare
     ``RuntimeError`` (HTTP 500); a 404 that names the build step is the honest
@@ -461,8 +461,8 @@ def _frontend_index() -> Path:
         raise HTTPException(
             status_code=404,
             detail=(
-                "frontend build not found at frontend-vue/dist/index.html; "
-                "build it with `npm ci && npm run build` inside frontend-vue/ "
+                "frontend build not found at app/frontend-vue/dist/index.html; "
+                "build it with `npm ci && npm run build` inside app/frontend-vue/ "
                 "(dist/ is a build artifact and is not tracked)"
             ),
         )

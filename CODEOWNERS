@@ -15,7 +15,7 @@
 /app/backend/         @cxs503
 
 # Vue frontend.
-/frontend-vue/        @cxs503
+/app/frontend-vue/    @cxs503
 
 # Benchmarks and experiment evidence (lifecycle: pending/verified/archived).
 /benchmarks/          @cxs503

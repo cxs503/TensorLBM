@@ -49,10 +49,10 @@ explicitly, e.g. `ruff check tools/check_repository_layout.py`.
 Frontend checks (Node/npm required):
 
 ```bash
-(cd frontend-vue && npm ci && npm run build)
+(cd app/frontend-vue && npm ci && npm run build)
 ```
 
-This builds ignored `frontend-vue/dist/`; do not commit that directory. The command
+This builds ignored `app/frontend-vue/dist/`; do not commit that directory. The command
 is a local verification entry point, not a claim that a frontend build CI job has
 already been added. Use the generated build when testing serving behavior.
 
