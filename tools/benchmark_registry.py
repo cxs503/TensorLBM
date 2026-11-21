@@ -14,7 +14,7 @@ from check_benchmark_manuals import ROOT, check
 BUCKETS = {"verified", "pending", "archived", "case_pool"}
 
 
-ASSET_ROOTS = ("benchmarks", "docs", "development", "xval", "audit", "audits")
+ASSET_ROOTS = ("benchmarks", "docs", "development", "xval")
 
 
 def tracked_files(root: Path, *areas: str) -> set[PurePosixPath]:
@@ -256,7 +256,7 @@ def main() -> int:
                        help="index every tracked benchmark file, with explicit and directory-based case links")
     group.add_argument("--case", help="look up a case ID or registered case path")
     group.add_argument("--find-asset", metavar="TEXT",
-                       help="search tracked paths across benchmarks, docs, development, xval and audits")
+                       help="search tracked paths across benchmarks, docs, development and xval")
     args = parser.parse_args()
     if args.find_asset is not None:
         query = args.find_asset.strip().casefold()

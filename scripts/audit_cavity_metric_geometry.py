@@ -14,8 +14,8 @@ map (the "metric floor"), plus the geometric facts behind it:
 
 Outputs (programmatic, no hand-copied numbers):
 
-* ``audit/m16740/cavity_metric_geometry.json``
-* ``figures/m16740_cavity_metric_geometry.png``
+* ``outputs/audit/m16740/cavity_metric_geometry.json``
+* ``outputs/figures/m16740_cavity_metric_geometry.png``
 
 Usage: ``python scripts/audit_cavity_metric_geometry.py``
 """
@@ -42,8 +42,8 @@ from tensorlbm.lid_driven_cavity import (
 
 RE_TABLES = {"100": GHIA_RE100, "400": GHIA_RE400, "1000": GHIA_RE1000}
 GRIDS = (32, 48, 64, 96, 128, 192, 256)
-OUT_DIR = Path("audit/m16740")
-FIG_DIR = Path("figures")
+OUT_DIR = Path("outputs/audit/m16740")
+FIG_DIR = Path("outputs/figures")
 
 
 def main() -> int:

@@ -129,7 +129,7 @@ sql = ("INSERT INTO tensor_maturity_verdicts (repo, scope, mission_id, level, ev
 (HERE / "insert_verdict.sql").write_text(sql)
 
 # ---------------- 报告 ----------------
-md = (HERE.parent.parent / "docs/board_audit/m18213/AUDIT_m17990.md").read_text(encoding="utf-8")
+md = (HERE.parents[2] / "docs/board_audit/m18213/AUDIT_m17990.md").read_text(encoding="utf-8")
 b64 = base64.b64encode(png.read_bytes()).decode()
 report = {
     "title": "m17990 交差审计（m18213）：XVAL-LBM 方法选型第一证据 = L2，且判定字段 H_gap_survives_refinement 单分辨率即真",

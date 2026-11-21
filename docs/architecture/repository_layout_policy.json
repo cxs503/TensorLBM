@@ -434,7 +434,6 @@
     ".github",
     "app",
     "artifacts",
-    "audit",
     "benchmarks",
     "development",
     "docs",

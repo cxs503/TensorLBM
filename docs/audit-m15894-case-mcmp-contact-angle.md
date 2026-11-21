@@ -4,7 +4,7 @@
 **审计单**：m15894（任务榜交差核验单，非重做）
 **裁定**：**L2（独立功能实现）**，`honest FAIL` 成立 —— 算例本身是可信的否证成果，但被检验的能力（Young 关系当接触角设定器）**未通过**。
 **落表**：`tensor_maturity_verdicts` id=383，`repo='TensorLBM'`, `scope='m15470 CASE-MCMP-CONTACT-ANGLE'`, `level=2`, `verdict_by='board-audit'`
-**审计证据包**：`audit/audit_m15894/evidence.json`（由 `audit/verify_m15470.py` 程序化生成）+ 复算工件 `audit/audit_m15894/audit_spot_a_coarse_70.json` + 图 `audit/audit_m15894/fig_m15894_contact_angle_audit.png`
+**审计证据包**：`development/audit/audit_m15894/evidence.json`（由 `development/audit/verify_m15470.py` 程序化生成）+ 复算工件 `development/audit/audit_m15894/audit_spot_a_coarse_70.json` + 图 `audit/audit_m15894/fig_m15894_contact_angle_audit.png`
 
 ---
 

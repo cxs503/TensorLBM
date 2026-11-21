@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 SRC = Path("/srv/tensor/agent/work/m18366")          # 被核单工作树（只读）
 OUT = HERE
 

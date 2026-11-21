@@ -29,7 +29,7 @@
 4. **测试裁判**：复跑交付的 `tests/test_case_pool_backward_step_armaly_verdict.py`。
 5. **机器裁定预览**：直接调用 `/srv/tensor/agent/maturity_gate.py::judge()` 复核本 verdict 的 evidence 键。
 
-所有原始指针在 `audit/m21631/verdict_evidence_m21548.json`；复现工件在 `audit/m21631/audit_repro/`；图脚本 `audit/m21631/make_figs.py`。
+所有原始指针在 `development/audit/m21631/verdict_evidence_m21548.json`；复现工件在 `development/audit/m21631/audit_repro/`；图脚本 `development/audit/m21631/make_figs.py`。
 
 ## ③ 计算结果（核验数字表，全部程序化注入）
 
