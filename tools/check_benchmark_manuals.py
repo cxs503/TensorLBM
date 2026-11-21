@@ -13,17 +13,18 @@ import sys
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
-INDEX = ROOT / "docs/benchmarks/tutorials/README.md"
-LINK = re.compile(r"\\[[^]]+\\]\\(([^)]+)\\)")
+INDEX = Path("docs/benchmarks/tutorials/README.md")
+LINK = re.compile(r"\[[^]]+\]\(([^)]+)\)")
 CASE = re.compile(r"[（(]([a-z][a-z0-9_]+)[）)]")
 
 
 def check(root: Path = ROOT) -> dict:
-    index = root / "docs/benchmarks/tutorials/README.md"
+    index = root / INDEX
     errors: list[str] = []
     records: list[dict] = []
     if not index.is_file():
-        return {"cases": [], "errors": [f"missing index: {index}"]}
+        return {"cases": [], "errors": [f"missing index: {index}"],
+                "count": 0, "pdf_count": 0, "word_count": 0}
     seen: set[str] = set()
     for line_no, line in enumerate(index.read_text(encoding="utf-8").splitlines(), 1):
         if not line.startswith("| ["):
@@ -43,8 +44,8 @@ def check(root: Path = ROOT) -> dict:
         seen.add(case_id)
         record = {"id": case_id, "category": category, "manual": None,
                   "word": None, "pdf": None, "benchmark_path": None}
-        for field, value in (("manual", md), ("word", word), ("pdf", pdf)):
-            if value == "—":
+        for field, value in (("title", title), ("manual", md), ("word", word), ("pdf", pdf)):
+            if value == "—" and field in {"word", "pdf"}:
                 continue
             link = LINK.search(value)
             if not link:
@@ -55,10 +56,12 @@ def check(root: Path = ROOT) -> dict:
             if path.is_absolute() or ".." in path.parts or "://" in rel or "#" in rel:
                 errors.append(f"line {line_no}: {case_id} unsafe {field} path {rel}")
                 continue
-            file = root / "docs/benchmarks" / rel
+            file = index.parent / rel
             if not file.is_file():
                 errors.append(f"line {line_no}: {case_id} missing {field}: {rel}")
             record[field] = file.relative_to(root).as_posix()
+        if record.pop("title", None) != record["manual"]:
+            errors.append(f"line {line_no}: {case_id} title and manual links differ")
         paths = re.findall(r"`([^`]+)`", target)
         if not paths:
             errors.append(f"line {line_no}: {case_id} missing benchmark target")
@@ -70,6 +73,7 @@ def check(root: Path = ROOT) -> dict:
                 elif not (root / target_path).is_dir():
                     errors.append(f"line {line_no}: {case_id} missing benchmark target {target_path}")
             record["benchmark_path"] = paths[0]
+            record["benchmark_paths"] = paths
         records.append(record)
     if len(records) != 35:
         errors.append(f"expected 35 indexed cases, found {len(records)}")
