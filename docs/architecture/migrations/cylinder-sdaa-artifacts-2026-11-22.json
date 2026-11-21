@@ -1,0 +1,44 @@
+{
+  "source_commit": "88451506a7fd586a8f1da43a22a851cc37e6a171",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 70,
+  "tracked_artifacts_after": 66,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_cylinder.json",
+      "new_path": "benchmarks/verified/cylinder/evidence/sdaa/sdaa_cylinder.json",
+      "git_mode": "100644",
+      "original_git_blob": "170be2b72b8bf5d85520e96f5fe4e71ba9fc9e38",
+      "size_bytes": 2912,
+      "original_sha256": "a2e6dfb789644598ebff0dd67e10468503c1f838a9730f9d6b3ed56d206fa270"
+    },
+    {
+      "old_path": "artifacts/sdaa_cylinder_3d.json",
+      "new_path": "benchmarks/verified/cylinder_3d/evidence/sdaa/sdaa_cylinder_3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "b69aec299123fc26e7e46424252c899b086e4dbf",
+      "size_bytes": 4784,
+      "original_sha256": "9a2db4d849dbe61b2463d6518fab653057a1d558b4d292ff7d6f39a63c68a884"
+    },
+    {
+      "old_path": "artifacts/sdaa_cylinder_3d_diag.json",
+      "new_path": "benchmarks/verified/cylinder_3d/evidence/sdaa/sdaa_cylinder_3d_diag.json",
+      "git_mode": "100644",
+      "original_git_blob": "2fdb88bece0d469a78c4b492cf6d7e85a612ab3e",
+      "size_bytes": 5431,
+      "original_sha256": "af827d487d7dec21ab13357f811dbce43530dcae9f3c41b9e0e54805de914f45"
+    },
+    {
+      "old_path": "artifacts/sdaa_square_cylinder.json",
+      "new_path": "benchmarks/verified/square_cylinder/evidence/sdaa/sdaa_square_cylinder.json",
+      "git_mode": "100644",
+      "original_git_blob": "ec2f0a7333c285d43bb8943988409d27f575ffcc",
+      "size_bytes": 2537,
+      "original_sha256": "abd1365f68ca624f97fbcd0389e2f280ebe0a64da210b62f9dbb96c5b3091757"
+    }
+  ],
+  "reference_scan": "Reviewed exact filenames, case configuration, active writers, and report links. Old narrative paths in archival mission reports identify their historical snapshots.",
+  "compatibility": "Published documents and runner commands remain stable. Fresh output goes under ignored outputs/sdaa/ paths. The original archive identifiers remain visible in the SDAA ledger.",
+  "scientific_scope": "Original numerical content and verdict fields are preserved. The 2D family sweep and m20 Re=40 sweep retain FAIL. The 3D diagnostic's surface/calibration analysis does not replace fresh-run evidence. The square-cylinder PASS covers only D=8."
+}

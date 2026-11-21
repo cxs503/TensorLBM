@@ -316,8 +316,8 @@ def assemble_artifact(grids, dev_name, dev_count, triton_imported,
     if skipped_grids:
         artifact["skipped_grids"] = skipped_grids
 
-    out_dir = _REPO / "artifacts"
-    out_dir.mkdir(exist_ok=True)
+    out_dir = _REPO / "outputs" / "sdaa" / "square_cylinder"
+    out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "sdaa_square_cylinder.json"
     out_path.write_text(json.dumps(artifact, indent=2, ensure_ascii=False))
     print(f"\nArtifact written to {out_path}", flush=True)

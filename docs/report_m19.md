@@ -3,7 +3,7 @@
 > **Mission ID**: 19  
 > **Repository**: TensorLBM  
 > **Verdict**: **honest-FAIL** (5/5 criteria fail; root cause = grid coarsening, not device error)  
-> **Artifact**: `artifacts/sdaa_cylinder.json`  
+> **Artifact**: [sdaa_cylinder.json](../benchmarks/verified/cylinder/evidence/sdaa/sdaa_cylinder.json)
 > **Date**: 2025-07 (backfill report)
 
 ---
@@ -170,6 +170,6 @@
 
 | 文件 | 说明 |
 |------|------|
-| `artifacts/sdaa_cylinder.json` | 机器可读结果（设备证据、计算值、PASS/FAIL 判据） |
+| [sdaa_cylinder.json](../benchmarks/verified/cylinder/evidence/sdaa/sdaa_cylinder.json) | 机器可读结果（设备证据、计算值、PASS/FAIL 判据） |
 | `scripts/sdaa_sweep_cylinder.py` | 独立运行脚本（未修改业务代码） |
 | `docs/sdaa_sweep/cylinder.md` | 详细运行记录与根因分析 |

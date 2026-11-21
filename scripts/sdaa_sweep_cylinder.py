@@ -582,7 +582,7 @@ def main() -> None:
     }
 
     # Write JSON
-    out_path = _REPO / "artifacts" / "sdaa_cylinder.json"
+    out_path = _REPO / "outputs" / "sdaa" / "cylinder" / "sdaa_cylinder.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2))
     print(f"\nResults written to {out_path}", flush=True)

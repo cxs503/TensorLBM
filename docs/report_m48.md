@@ -103,7 +103,7 @@ Triton 已安装 (v3.4.0) 但 eager 模式下**不被调用**——`collide_mrt`
 
 4. **编译绕行**：eager 模式是 SDAA teco-inductor 缺陷的临时绕行，不影响数值精度（与 compiled 模式 bit-identical）。
 
-5. **零手抄纪律**：所有数字均从 `artifacts/sdaa_square_cylinder.json` 程序化提取，报告与 artifact 完全一致。
+5. **零手抄纪律**：所有数字均从 [sdaa_square_cylinder.json](../benchmarks/verified/square_cylinder/evidence/sdaa/sdaa_square_cylinder.json) 程序化提取，报告与 artifact 完全一致。
 
 ---
 
@@ -123,6 +123,6 @@ Triton 已安装 (v3.4.0) 但 eager 模式下**不被调用**——`collide_mrt`
 | 文件 | 说明 |
 |------|------|
 | `scripts/sdaa_sweep_square_cylinder.py` | 独立运行脚本 |
-| `artifacts/sdaa_square_cylinder.json` | 完整数值结果 JSON |
+| [sdaa_square_cylinder.json](../benchmarks/verified/square_cylinder/evidence/sdaa/sdaa_square_cylinder.json) | 完整数值结果 JSON |
 | `docs/sdaa_sweep/square_cylinder.md` | 扫荡详细记录 |
 | `/tmp/sdaa_square_run2.log` | 运行日志 |

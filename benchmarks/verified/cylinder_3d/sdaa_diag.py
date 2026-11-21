@@ -6,7 +6,7 @@ a diagnostic JSON with per-criterion PASS/FAIL verdicts.
 
 Usage:
     PYTHONPATH=src python3 benchmarks/verified/cylinder_3d/sdaa_diag.py \
-        --device sdaa:0 --steps 30000 --out artifacts/sdaa_cylinder_3d_diag.json
+        --device sdaa:0 --steps 30000 --out outputs/sdaa/cylinder_3d/sdaa_cylinder_3d_diag.json
 """
 
 from __future__ import annotations
@@ -167,7 +167,7 @@ def main() -> int:
     ap.add_argument("--steps", type=int, default=30000)
     ap.add_argument("--lateral", type=float, default=40.0)
     ap.add_argument("--nz", type=int, default=1)
-    ap.add_argument("--out", default="artifacts/sdaa_cylinder_3d_diag.json")
+    ap.add_argument("--out", default="outputs/sdaa/cylinder_3d/sdaa_cylinder_3d_diag.json")
     a = ap.parse_args()
 
     grids = [20, 40]

@@ -89,7 +89,7 @@ copying.
 ## Artifacts
 
 - **Script**: `scripts/sdaa_sweep_square_cylinder.py`
-- **JSON**: `artifacts/sdaa_square_cylinder.json`
+- **JSON**: [sdaa_square_cylinder.json](../../benchmarks/verified/square_cylinder/evidence/sdaa/sdaa_square_cylinder.json)
 - **Log**: `/tmp/sdaa_square_run2.log`
 
 ## Notes

@@ -1,5 +1,7 @@
 # cylinder_3d — 3D extruded circular cylinder, Re = 40  ✅ VERIFIED
 
+历史 SDAA 工件：[m20 扫掠](evidence/sdaa/sdaa_cylinder_3d.json)和[后续诊断](evidence/sdaa/sdaa_cylinder_3d_diag.json)。m20 的 `FAIL` 保留。诊断中的参考结果、短程实际运行及按阻力口径重判应分别解读。
+
 Status: **verified** (2026-09-30). Two grids within 3% of the 2D infinite-span numerical
 cluster and mesh-converged (span 2.64%).
 
