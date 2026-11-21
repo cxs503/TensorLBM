@@ -6,8 +6,9 @@
 结果解析 PASS · **criteria validation FAIL（error > 3% threshold）**。
 
 本文数据段由 `benchmarks/pending/dtmb5415_resistance/make_diagnosis.py` 从
-`artifacts/sdaa_dtmb5415_m452/records/*/result.json` 与 `geometry_probe.json`
-程序化渲染（零手抄），机器可读版本见 `artifacts/sdaa_dtmb5415_diagnosis.json`。
+`benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/*/result.json`
+与 `geometry_probe.json` 程序化渲染（零手抄），机器可读版本见
+`benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/diagnosis.json`。
 
 ---
 
@@ -198,8 +199,8 @@ T/dx < 2 时体素 Cb 误差 > 18%，判 `WITHHELD_GEOMETRY`，不硬报 Cd。
 
 | 文件 | 内容 |
 |---|---|
-| `artifacts/sdaa_dtmb5415_diagnosis.json` | 机读诊断（§4/§5 两张表、根因链、判定、口径帧） |
-| `artifacts/sdaa_dtmb5415_m452/` | 各次运行 `result.json` 记录、`geometry_probe.json`、场量快照、图 |
+| `benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/diagnosis.json` | 机读诊断（§4/§5 两张表、根因链、判定、口径帧） |
+| `benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/` | 各次运行 `result.json` 记录、`geometry_probe.json`、场量快照、图 |
 | `docs/sdaa_triage/DTMB5415_DIAGNOSIS.md` | 本文 |
 | `_close_waterline.py` | 水线封口（几何修复）+ sidecar |
 | `_geometry_probe.py` | engine 体素几何探针（Cb / 阶梯面积比） |

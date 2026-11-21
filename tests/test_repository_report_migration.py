@@ -542,6 +542,64 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn('evidence_dir / "summary.json"', runner)
         self.assertIn('evidence_dir / "runs"', runner)
 
+    def test_dtmb5415_sdaa_evidence_belongs_to_the_pending_benchmark(self):
+        ledger_path = LEDGER_PATH.parent / "dtmb5415-sdaa-artifacts-2026-11-22.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(ledger["root_directories_before"], 13)
+        self.assertEqual(ledger["root_directories_after"], 13)
+        self.assertEqual(len(ledger["entries"]), 15)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(
+            manifest,
+            {item["old_path"]: item["new_path"] for item in ledger["entries"]},
+        )
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                raw = (REPO / item["new_path"]).read_bytes()
+                self.assertEqual(len(raw), item["size_bytes"])
+                self.assertEqual(
+                    hashlib.sha256(raw).hexdigest(), item["original_sha256"]
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(
+                    index[:2], [item["git_mode"], item["original_git_blob"]]
+                )
+                self.assertFalse((REPO / item["old_path"]).exists())
+
+        case = REPO / "benchmarks/pending/dtmb5415_resistance"
+        diagnosis = json.loads(
+            (case / "evidence/sdaa_m452/diagnosis.json").read_text(encoding="utf-8")
+        )
+        self.assertTrue(diagnosis["verdict"]["conclusion"].startswith("HONEST-FAIL"))
+        self.assertFalse(
+            diagnosis["verdict"]["in_frame_accuracy"]["within_3pct_band"]
+        )
+        self.assertEqual(
+            diagnosis["verdict"]["in_frame_accuracy"]["case_verdict"],
+            "WITHHELD_UNSTEADY",
+        )
+        self.assertIn("pending / honest-FAIL", (case / "README.md").read_text())
+
+        builder = (case / "make_diagnosis.py").read_text(encoding="utf-8")
+        probe = (case / "_geometry_probe.py").read_text(encoding="utf-8")
+        self.assertNotIn('_REPO_ROOT / "artifacts"', builder)
+        self.assertIn('_EVIDENCE_DIR / "records"', builder)
+        self.assertIn('_EVIDENCE_DIR / "diagnosis.json"', builder)
+        self.assertIn('_EVIDENCE_DIR / "figures"', builder)
+        self.assertNotIn('_HERE.parents[2] / "runs"', probe)
+        self.assertIn('_HERE / "evidence" / "sdaa_m452"', probe)
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

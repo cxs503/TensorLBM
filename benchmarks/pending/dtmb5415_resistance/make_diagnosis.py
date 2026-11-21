@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble artifacts/sdaa_dtmb5415_diagnosis.json from the run record.
+"""Assemble the case-owned SDAA diagnosis from the run record.
 
 Every number in the diagnosis is read from a ``result.json`` /
 ``geometry_probe.json`` written by the case itself - nothing is transcribed by
@@ -8,8 +8,8 @@ hand.  The companion markdown is ``docs/sdaa_triage/DTMB5415_DIAGNOSIS.md``.
 Usage
 -----
   PYTHONPATH=src python make_diagnosis.py \
-      --runs runs/sdaa_dtmb5415_m452 \
-      --out artifacts/sdaa_dtmb5415_diagnosis.json
+      --runs evidence/sdaa_m452/records \
+      --out evidence/sdaa_m452/diagnosis.json
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
 _REPO_ROOT = _HERE.parents[2]
+_EVIDENCE_DIR = _HERE / "evidence" / "sdaa_m452"
 LPP, BEAM, DRAFT, CB = 142.0, 19.06, 6.15, 0.507
 DISPLACEMENT_M3 = CB * LPP * BEAM * DRAFT
 C_T_EXP_FR028 = 4.2e-3
@@ -351,9 +352,9 @@ def inject_doc(path: Path, doc: dict) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
-        "--runs", default=str(_REPO_ROOT / "artifacts" / "sdaa_dtmb5415_m452" / "records")
+        "--runs", default=str(_EVIDENCE_DIR / "records")
     )
-    ap.add_argument("--out", default=str(_REPO_ROOT / "artifacts" / "sdaa_dtmb5415_diagnosis.json"))
+    ap.add_argument("--out", default=str(_EVIDENCE_DIR / "diagnosis.json"))
     ap.add_argument(
         "--doc", default=str(_REPO_ROOT / "docs" / "sdaa_triage" / "DTMB5415_DIAGNOSIS.md")
     )
@@ -382,7 +383,7 @@ def main() -> None:
 
     doc = {
         "case": "dtmb5415_resistance",
-        "benchmark_path": "TensorLBM/benchmarks/pending/dtmb5415_resistance",
+        "benchmark_path": "benchmarks/pending/dtmb5415_resistance",
         "shift": "m452 (fix B: SDAA validation-case triage)",
         "generated_at": _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "device_under_test": "sdaa:0 (torch_sdaa), CPU parity reference",
@@ -552,7 +553,7 @@ def main() -> None:
         }
 
     doc["tables_markdown"] = md_tables(rows, probe_rows)
-    figs = figures(rows, probe_rows, _REPO_ROOT / "artifacts" / "sdaa_dtmb5415_m452")
+    figs = figures(rows, probe_rows, _EVIDENCE_DIR / "figures")
     doc["artifacts"] = {
         "diagnosis": str(out.relative_to(_REPO_ROOT)),
         "doc": "docs/sdaa_triage/DTMB5415_DIAGNOSIS.md",

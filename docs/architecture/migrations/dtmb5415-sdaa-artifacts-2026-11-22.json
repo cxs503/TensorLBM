@@ -1,0 +1,156 @@
+{
+  "source_commit": "211b65075a13a287cd9cc53dc890c631c6d833e9",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "mapping": {
+    "old_root": "artifacts/sdaa_dtmb5415_m452",
+    "new_root": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452",
+    "old_diagnosis": "artifacts/sdaa_dtmb5415_diagnosis.json",
+    "new_diagnosis": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/diagnosis.json"
+  },
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_diagnosis.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/diagnosis.json",
+      "git_mode": "100644",
+      "original_git_blob": "55f517ea3cf4d4f8f2a8e275e70cd6b3e9dcc84e",
+      "size_bytes": 29387,
+      "original_sha256": "cfe9c7acb946ad4d0a51807a1e069ea18095eab6eea08389ec0ecde356f74b64"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/dtmb5415_cd_vs_resolution.png",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/figures/dtmb5415_cd_vs_resolution.png",
+      "git_mode": "100644",
+      "original_git_blob": "1ea58da1334ae64f478c070a5159f3ff7967b3ac",
+      "size_bytes": 68574,
+      "original_sha256": "7770d2230278bbeaf3af915f30a64890a0c492dd43ee27de4cf04fca46965321"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/dtmb5415_geometry_validation.png",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/figures/dtmb5415_geometry_validation.png",
+      "git_mode": "100644",
+      "original_git_blob": "1c8a9d3669e3d83ff4e4a1e2d71fa3fe390cd916",
+      "size_bytes": 70062,
+      "original_sha256": "e30345cec42cac23793c3a972e492281e8126da5a67cb311db13b6c45f4864f9"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/field_L32_closed.png",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/figures/field_L32_closed.png",
+      "git_mode": "100644",
+      "original_git_blob": "3850a48fe9cb945ccbcc178906881ed034cbc752",
+      "size_bytes": 89498,
+      "original_sha256": "0a2657b494f535e44177bd17bfbca9abcd8f116eea9dbc613ed96e0007d7bfb1"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/field_L32_open.png",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/figures/field_L32_open.png",
+      "git_mode": "100644",
+      "original_git_blob": "1ae362cab2dbc522dbaa46e4213ac19015604842",
+      "size_bytes": 102653,
+      "original_sha256": "f5b8349542256bca73078e4d22008f6785db78f5d132c1c04f5ff842da912085"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/geometry_probe.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/geometry_probe.json",
+      "git_mode": "100644",
+      "original_git_blob": "a90d3a6a4e4fd1100b6dba58411b2fe9a83fe640",
+      "size_bytes": 7164,
+      "original_sha256": "ffe13fb74a52e2d686c331415fc71c91f375cac345ba782cbfad5324b8311e46"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L24_cpu/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L24_cpu/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "820c8a0d2f4025e9f03ead985574a2529f2c9e32",
+      "size_bytes": 2741,
+      "original_sha256": "58113f88ead8104c6928dddbffa7bac3ee7443c037c7142e06ba65e9fc0c07f8"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L24_sdaa/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L24_sdaa/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "2bb1ed32cef5435b9cabd6f241aa3961efbe5411",
+      "size_bytes": 2740,
+      "original_sha256": "dcbfab9c9dff9a9114a319492f912bf8c432e1da21db2348fdffec087fb62a82"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L32/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L32/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "75a8621cb94aa4df76fbb61baffb11e247a885b1",
+      "size_bytes": 2739,
+      "original_sha256": "75b3ffc3511ae78f2d34a8f55cdd11b5976333b51760ccf10ea08739dd66d383"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L32_closed/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L32_closed/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "ffc21ce0cc14dd499da4ca58517bdab00fd5bafc",
+      "size_bytes": 2785,
+      "original_sha256": "431526d3e8417adc799e5f5995d972013d40a9f73b6953f46a7ef672782c985d"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L32_v2/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L32_v2/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "57094cb531a1a58c0424a8fd56c5f25b12c94259",
+      "size_bytes": 7892,
+      "original_sha256": "eaa0809d019dba54577f86994a8ab636e8a9fffa3faf1e948edbf7aa35455798"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L48_long/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L48_long/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "75cbd903258833a293634f172056fd9a48ecbd65",
+      "size_bytes": 7767,
+      "original_sha256": "7daa7b12c892723f14fd1b165ac15db73472cfbf936b0298d7797da86a239d1b"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L48_sdaa/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L48_sdaa/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "b6246829ee4166c21ae34fba5b5a7c387f1621eb",
+      "size_bytes": 2748,
+      "original_sha256": "72faeb47089f3d78be947499ca9c29fbbeffda2a0118b7786519c4e95cbb2c81"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/L48_v2/result.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/L48_v2/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "f08a61600fd7e9abf755ea87aa1125d558028254",
+      "size_bytes": 7774,
+      "original_sha256": "6d8fed1f9179cb42394f70870dba8bd6ec7821b3dbf848f453ab49f5681dede1"
+    },
+    {
+      "old_path": "artifacts/sdaa_dtmb5415_m452/records/index.json",
+      "new_path": "benchmarks/pending/dtmb5415_resistance/evidence/sdaa_m452/records/index.json",
+      "git_mode": "100644",
+      "original_git_blob": "7876960885182af6c42aeab6c0f5affdbabfbb31",
+      "size_bytes": 2083,
+      "original_sha256": "05cc329fa58d122dc6b55bf69d212b075ba94428af635730e9d767a0190b3bcb"
+    }
+  ],
+  "reference_scan": {
+    "tracked_consumers": [
+      "benchmarks/pending/dtmb5415_resistance/_geometry_probe.py",
+      "benchmarks/pending/dtmb5415_resistance/make_diagnosis.py",
+      "docs/sdaa_triage/DTMB5415_DIAGNOSIS.md"
+    ],
+    "embedded_historical_paths": [
+      "diagnosis.json retains its original artifact-path inventory byte-for-byte.",
+      "records/index.json retains original record paths and one absolute STL path as historical run provenance."
+    ]
+  },
+  "compatibility": {
+    "producer_defaults": "The geometry probe and diagnosis builder now write under the owning benchmark evidence directory.",
+    "published_report": "The diagnosis report points to the new stable evidence paths.",
+    "original_assets": "All 15 tracked assets retain their original Git blob, mode, byte size and SHA-256.",
+    "public_api": "No src/tensorlbm module or numerical algorithm changed."
+  },
+  "scientific_status": {
+    "benchmark_status": "pending",
+    "current_verdict": "HONEST-FAIL / WITHHELD_UNSTEADY",
+    "unchanged": true,
+    "note": "This is an ownership and path migration only; it is not a scientific replay or acceptance."
+  }
+}
