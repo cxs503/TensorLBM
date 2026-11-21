@@ -1,0 +1,32 @@
+name: Benchmark manual integrity
+
+on:
+  pull_request:
+    paths:
+      - 'docs/benchmarks/tutorials/**'
+      - 'benchmarks/verified/**'
+      - 'tools/check_benchmark_manuals.py'
+      - 'tests/test_benchmark_manuals.py'
+      - '.github/workflows/benchmark-manual-integrity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/benchmarks/tutorials/**'
+      - 'benchmarks/verified/**'
+      - 'tools/check_benchmark_manuals.py'
+      - 'tests/test_benchmark_manuals.py'
+      - '.github/workflows/benchmark-manual-integrity.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check tutorial assets and benchmark targets
+        run: python tools/check_benchmark_manuals.py
+      - name: Run integrity regression tests
+        run: python -m unittest discover -s tests -p test_benchmark_manuals.py -v
