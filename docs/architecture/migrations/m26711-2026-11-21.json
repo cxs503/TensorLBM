@@ -6,7 +6,9 @@
     2818,
     2821,
     2826,
-    2828
+    2828,
+    2829,
+    2830
   ],
   "report_missions": [
     26711,
@@ -157,8 +159,35 @@
       "size_bytes": 928,
       "sha256": "6a5768496a9a361bc4f01fba5ec1f2a828cf07530c8715566d4cddbab5442681",
       "source_revision": "cd4e0f32046cf7d61ff292a4131e9e3488b7940f"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_SURF_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_SURF_W1.md",
+      "git_blob": "4601402fbdfb317a62e6fe6f5e9098712e2758b1",
+      "git_mode": "100644",
+      "size_bytes": 1115,
+      "sha256": "513585deb74a5b761f042d03c6876c523bd7cb865ab2cd8eaf46fa5602e4567b",
+      "source_revision": "308c1ddef9bad0546518983d953391457a4347f7"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-SURF-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-SURF-W1.draft.md",
+      "git_blob": "f2818bf1a567596777377fc3686e539c876e0342",
+      "git_mode": "100644",
+      "size_bytes": 549,
+      "sha256": "bdb525d0ae7d80113a756236427f4b9e3515b879ad690e147dad13a68de24eb6",
+      "source_revision": "308c1ddef9bad0546518983d953391457a4347f7"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-RELX1-PHASETAU.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-X-RELX1-PHASETAU.draft.md",
+      "git_blob": "f3b1bb1cee6087bb27a84f770db7143b0372e03e",
+      "git_mode": "100644",
+      "size_bytes": 1073,
+      "sha256": "28690af26b6e806102ea1c9bf2c932a46fb7af553661c60c1233bc5bc2e7f554",
+      "source_revision": "b644104962548b924a64d04b97a34daca3333d4a"
     }
   ],
-  "compatibility": "Three versions of tmp/report.json and two versions of each FORCE file existed on main. Source revisions and Git blobs distinguish every version. Complete contents and modes are retained. No tracked consumer of an exact repository-relative source path was found outside these files. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
+  "compatibility": "Three versions of tmp/report.json and two versions of each FORCE file existed on main. Source revisions and Git blobs distinguish every version. The later SURF track/draft and RELX1-PHASETAU draft are also retained byte-for-byte. Complete contents and modes are retained. No runtime consumer of an exact repository-relative source path was found; archival cross-references remain historical evidence. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
   "verification": "The base failed layout on drop_entry/ and tmp/. The candidate checks exact source Git blobs, modes, independent SHA-256 digests, mission identities and absence of all old root paths."
 }
