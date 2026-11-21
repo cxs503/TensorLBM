@@ -5,8 +5,8 @@ import requests
 # Get token
 login_url = "http://127.0.0.1:8010/api/v1/tensor/login"
 login_data = {
-    "username": "eco_admin",
-    "password": "EcoTest!2026pass"
+    "username": os.environ["TENSORPLATFORM_REPORT_USERNAME"],
+    "password": os.environ["TENSORPLATFORM_REPORT_PASSWORD"],
 }
 response = requests.post(login_url, json=login_data)
 print(f"Login Response: {response.text}")

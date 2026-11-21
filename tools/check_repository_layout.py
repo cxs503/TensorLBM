@@ -19,6 +19,27 @@ GENERATED_ROOTS = {"runs", "runs_prop", "outputs"}
 GENERATED_PARTS = {"__pycache__", "node_modules", ".venv", ".pytest_cache", ".ruff_cache"}
 MODEL_SUFFIXES = {".pt", ".pth", ".ckpt", ".onnx", ".safetensors"}
 PATH_LISTS = ("root_files", "legacy_root_files", "legacy_generated_files", "legacy_model_files")
+RETIRED_ROOT_DIRECTORIES = {
+    ".audit",
+    "TensorLBM",
+    "_scratch",
+    "audit",
+    "audits",
+    "cases",
+    "configs",
+    "demos",
+    "drop_entry",
+    "evidence",
+    "experiments",
+    "figures",
+    "frontend-vue",
+    "notebooks",
+    "references",
+    "regression_rules",
+    "runs",
+    "teaching",
+    "tmp",
+}
 
 
 def validate_path(value: object) -> str:
@@ -59,6 +80,13 @@ def load_policy(path: Path) -> dict:
             raise ValueError(f"{key} may only contain top-level names")
     if set(policy["root_files"]) & set(policy["legacy_root_files"]):
         raise ValueError("Canonical and legacy root files must not overlap")
+    if policy["schema_version"] == 2:
+        restored = set(policy["root_directories"]) & RETIRED_ROOT_DIRECTORIES
+        if restored:
+            raise ValueError(
+                "Retired root directories may not be restored through policy edits: "
+                + ", ".join(sorted(restored))
+            )
     if not isinstance(policy["large_files"], dict):
         raise ValueError("large_files must map exact paths to reviewed byte ceilings")
     for name, limit in policy["large_files"].items():
