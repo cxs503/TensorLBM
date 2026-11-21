@@ -16,6 +16,7 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 | --- | --- |
 | An audit with a mission number | [audit](../../audit/), for example [m18429](../../audit/m18429/). This groups the report, verdict SQL and reproduction material where available. |
 | A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
+| Drop-entry technical reports and diagnostic history | [Water-entry reports](../reports/water_entry/) |
 | A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
 | An earlier experiment | [Archived experiments](../../experiments/archived/), including [mission workspaces](../../experiments/archived/workspaces/) and [staged snapshots](../../experiments/archived/staging/) |
 | An old repository path | Search the [migration manifest](migration_manifest.csv). A directory row maps its entire subtree, preserving the relative suffix. |
