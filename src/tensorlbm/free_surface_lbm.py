@@ -76,6 +76,11 @@ _OPP = torch.tensor([0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 1
 _C19_SHIFTS = [(int(C[q, 0]), int(C[q, 1]), int(C[q, 2])) for q in range(19)]
 _OPP_INDEX = tuple(int(v) for v in _OPP.tolist())
 
+# MRT relaxation rates (even-mode sweep)
+S_EPS_BASE = 1.4
+S_Q_BASE = 1.2
+S_PI_BASE = None  # defaults to s_e
+
 
 def _specular_wall_mirror_index(solid_mask, device):
     """Per-link specular (free-slip) reflected source indices for wall cells.
@@ -1022,6 +1027,7 @@ def free_surface_step(
     iface_tau_dose=0.0,
     momconv="off",
     momconv_state=None,
+    s_e=1.19,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -1214,13 +1220,13 @@ def free_surface_step(
             else:  # vreman
                 nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
-            f = _collide_mrt3d_with_tau_eff(f_collide, target, tau_eff, device)
+            f = _collide_mrt3d_with_tau_eff(f_collide, target, tau_eff, device, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
         elif has_force:
-            f = _collide_mrt3d_with_tau_eff(f_collide, target, f.new_tensor(tau), device)
+            f = _collide_mrt3d_with_tau_eff(f_collide, target, f.new_tensor(tau), device, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
         else:
             from .solver3d import collide_mrt3d
 
-            f = collide_mrt3d(f_collide, tau)
+            f = collide_mrt3d(f_collide, tau, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
     else:  # bgk
         if C_s > 0:
             if sgs_model == "smagorinsky":
