@@ -59,8 +59,8 @@ require a runtime import trace to identify its actual source.
 | `outputs/` | New local simulation outputs (ignored) | Files required to reproduce a clean-checkout test |
 | `artifacts/runs/` | Local diagnostic/CI working outputs (ignored) | The sole copy of accepted, externally referenced evidence |
 
-Existing `runs/`, `docs/evidence/`, `agent_work/`, `agent_memory/`, `demos/`,
-`teaching/` and other historical paths are not being deleted or renamed. Do not
+Existing `runs/`, `docs/evidence/`, `agent_work/`, `agent_memory/`
+and other historical paths remain subject to compatibility checks. Do not
 create additional parallel storage conventions. Keep benchmark evidence tied
 to its stable benchmark ID; keep agent-private scratch output ignored. Select
 one canonical location for each result and link to it rather than copying it.

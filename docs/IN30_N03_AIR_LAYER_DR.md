@@ -167,7 +167,7 @@ DR 序列：0.3496, 0.3794, 0.3715, 0.3753, 0.364；
 
 ### 3.6 闸 (e) 外部对标
 
-参考点文件 `references/air_lubrication_reference_points.json`，sha256 `21b0ee54e120524e…`；kodama2000_towing_tank: 文献 DR=0.25 @ C_q=0.03，仿真 0.369，相对误差 +47.47%；sanders2006_air_layer: 文献 DR=0.8 @ C_q=0.1，仿真 0.352，相对误差 -55.99%；elbing2008_bubbly: 文献 DR=0.25 @ C_q=0.1，仿真 0.352，相对误差 +40.83%。**判定：WITHHELD**（The reference points are recalled literature values without a retrievable machine-readable source in this sandbox, and the 2-D channel geometry cannot resolve the h_g/delta boundary-layer ratio of the experiments; gate (e) is therefore reported as WITHHELD rather than claimed as passed.）
+参考点文件 `scripts/data/air_layer_drag/air_lubrication_reference_points.json`，sha256 `21b0ee54e120524e…`；kodama2000_towing_tank: 文献 DR=0.25 @ C_q=0.03，仿真 0.369，相对误差 +47.47%；sanders2006_air_layer: 文献 DR=0.8 @ C_q=0.1，仿真 0.352，相对误差 -55.99%；elbing2008_bubbly: 文献 DR=0.25 @ C_q=0.1，仿真 0.352，相对误差 +40.83%。**判定：WITHHELD**（The reference points are recalled literature values without a retrievable machine-readable source in this sandbox, and the 2-D channel geometry cannot resolve the h_g/delta boundary-layer ratio of the experiments; gate (e) is therefore reported as WITHHELD rather than claimed as passed.）
 
 ## 4 图
 

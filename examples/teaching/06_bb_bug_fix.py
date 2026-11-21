@@ -11,7 +11,7 @@ The corrected BB gives 0.00% error.
 Runs both variants on the same Couette setup and compares.
 
 Usage:
-    PYTHONPATH=src python teaching/06_bb_bug_fix.py [--device sdaa:14]
+    PYTHONPATH=src python examples/teaching/06_bb_bug_fix.py [--device sdaa:14]
 
 Expected output:
     OLD BB:      u_max_err = 16.67%

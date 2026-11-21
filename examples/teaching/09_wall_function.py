@@ -17,7 +17,7 @@ Uses the COMMON INTERFACE ONLY:
   - drag_friction_integration() for friction drag
 
 Usage:
-    PYTHONPATH=src python teaching/09_wall_function.py [device_id]
+    PYTHONPATH=src python examples/teaching/09_wall_function.py [device_id]
 """
 from __future__ import annotations
 

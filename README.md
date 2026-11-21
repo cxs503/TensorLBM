@@ -18,7 +18,7 @@ TensorLBM is a PyTorch lattice Boltzmann solver for fluid dynamics.
 **System-wide overview:** [Tensor Ecosystem System Overview](https://github.com/cxs503/TensorPhysics/blob/main/docs/SYSTEM_OVERVIEW.md) — architecture, repository boundaries, shared contracts, end-to-end workflow and icebreaker application roadmap.
 
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/examples/notebooks/quickstart.ipynb)
 [![Quick Start](https://img.shields.io/badge/Quick%20Start-Get%20Started-blue)](#installation)
 [![AI4S Apps](https://img.shields.io/badge/AI4S%20Apps-Industry%20Workflows-6f42c1)](docs/AI4S_APPS.md)
 [![Browser Platform](https://img.shields.io/badge/Browser%20Platform-FastAPI%20%2B%20WebUI-0ea5e9)](docs/PLATFORM.md)

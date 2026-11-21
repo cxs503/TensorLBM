@@ -20,7 +20,7 @@ Uses the COMMON INTERFACE ONLY:
   - momentum_exchange_standard / momentum_exchange_bfl for MEM
 
 Usage:
-    PYTHONPATH=src python teaching/10_bfl_interpolated.py [device_id]
+    PYTHONPATH=src python examples/teaching/10_bfl_interpolated.py [device_id]
 """
 from __future__ import annotations
 

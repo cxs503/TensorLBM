@@ -88,6 +88,26 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     self.assertTrue(resolved.is_relative_to(REPO))
                     self.assertTrue(resolved.exists(), f"Missing link: {name} -> {target}")
 
+    def test_bulk_root_retirement_accounts_for_all_moved_assets(self):
+        ledger_path = LEDGER_PATH.parent / "bulk-root-retirement-2026-11-21.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            moves = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+        policy = json.loads((REPO / "docs/architecture/repository_layout_policy.json").read_text())
+        self.assertTrue(set(ledger["retired_roots"]).isdisjoint(policy["root_directories"]))
+        for item in ledger["entries"]:
+            destination = REPO / item["new_path"]
+            with self.subTest(path=destination):
+                self.assertTrue(destination.is_file())
+                self.assertFalse((REPO / item["old_path"]).exists())
+                if destination.suffix == ".json":
+                    self.assert_fingerprint(destination, item["sha256"], item["size_bytes"])
+
     def test_docs_index_and_benchmark_backlinks_point_to_archived_reports(self):
         index = (REPO / "docs/README.md").read_text(encoding="utf-8")
         cases = ["verified/couette_3d", "pending/capillary_invasion_washburn"]

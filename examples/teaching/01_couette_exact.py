@@ -18,7 +18,7 @@ requires a moving-wall correction applied between BB and streaming.
 The manual loop uses the same common-interface components.
 
 Usage:
-  PYTHONPATH=src python teaching/01_couette_exact.py [device_id]
+  PYTHONPATH=src python examples/teaching/01_couette_exact.py [device_id]
 """
 import sys, math
 sys.path.insert(0, 'src')

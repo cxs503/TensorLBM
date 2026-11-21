@@ -10,7 +10,7 @@ Runs all tests specified in the task:
 6. BB bug fix verification (SDAA:14-15): old BB vs corrected BB
 
 Usage:
-    PYTHONPATH=src python teaching/run_mem_tests.py
+    PYTHONPATH=src python examples/teaching/run_mem_tests.py
 """
 from __future__ import annotations
 

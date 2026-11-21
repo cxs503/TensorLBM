@@ -25,13 +25,13 @@ Uses the COMMON INTERFACE ONLY:
   - drag_pressure_integration / drag_friction_integration for PF
 
 Usage:
-    PYTHONPATH=src python teaching/08_momentum_exchange.py [device_id]
+    PYTHONPATH=src python examples/teaching/08_momentum_exchange.py [device_id]
 """
 from __future__ import annotations
 import sys, json, math, time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 import torch
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d

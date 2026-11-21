@@ -66,7 +66,7 @@ Comprehensive documentation including:
 - Acceptance criteria
 - Limitations and future work
 
-### 6. Demonstration Script (`demos/propeller_ice_demo.py`)
+### 6. Demonstration Script (`examples/propeller_ice_demo.py`)
 
 Three demonstrations:
 1. Single particle settling in fluid
@@ -168,7 +168,7 @@ pytest tests/test_propeller_ice_benchmark.py -v
 9. `tests/test_ice_particle_ibm.py`
 10. `tests/test_propeller_ice_benchmark.py`
 11. `docs/propeller_ice_lbm_dem.md`
-12. `demos/propeller_ice_demo.py`
+12. `examples/propeller_ice_demo.py`
 13. This summary report
 
 ### Modified Files (0)

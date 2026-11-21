@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Static launcher for the TensorLBM drag-echo demo page (stdlib only).
 
-Two run modes, detailed in demos/README.md: (a) DEV — start the PR #241
-backend (branch exp/b4-echo) separately, then `python demos/serve_demo.py
+Two run modes, detailed in app/demos/README.md: (a) DEV — start the PR #241
+backend (branch exp/b4-echo) separately, then `python app/demos/serve_demo.py
 8765` and open the printed URL, which carries ?api= pointing at that
 backend; (b) POST-MERGE — serve echo_slider.html from the SAME origin as
 the FastAPI app (documented in the README, not implemented here; no app/
@@ -20,7 +20,7 @@ DEMO_DIR = Path(__file__).resolve().parent
 
 
 class DemoHandler(SimpleHTTPRequestHandler):
-    """Static files from demos/ with permissive CORS (dev-mode cross-origin)."""
+    """Static files from app/demos/ with permissive CORS (dev-mode cross-origin)."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, directory=str(DEMO_DIR), **kwargs)
@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     httpd = serve(args.port)
     page = "http://localhost:%d/echo_slider.html" % args.port
     hint = page + "?api=http://%s:8000" % lan_ip()
-    print("serving demos/ at %s (Ctrl-C to stop)" % page)
+    print("serving app/demos/ at %s (Ctrl-C to stop)" % page)
     print("open with a backend on this machine:  %s" % hint)
     if args.open:
         webbrowser.open(hint)

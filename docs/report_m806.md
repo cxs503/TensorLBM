@@ -165,7 +165,7 @@ $$C_D = \frac{24}{Re}(1 + 0.15 Re^{0.687})$$
 2. IBM 耦合验证测试未通过，不宜生成误导性云图
 3. 补报任务预算有限（80 次工具调用），未分配给重计算+绘图
 
-如需补充：可运行 `demos/propeller_ice_demo.py` 生成颗粒沉降/螺旋桨-冰相互作用动画。
+如需补充：可运行 `examples/propeller_ice_demo.py` 生成颗粒沉降/螺旋桨-冰相互作用动画。
 
 ---
 
@@ -235,7 +235,7 @@ $$C_D = \frac{24}{Re}(1 + 0.15 Re^{0.687})$$
 | 基准算例 | `src/tensorlbm/propeller_ice_benchmark.py` | 400 | 完整基准 |
 | 测试套件 | `tests/test_dem_*.py` + `test_ice_*.py` + `test_propeller_*.py` | 774 | 23 项测试 |
 | 文档 | `docs/propeller_ice_lbm_dem.md` | 241 | 技术文档 |
-| 演示脚本 | `demos/propeller_ice_demo.py` | 176 | 3 个演示 |
+| 演示脚本 | `examples/propeller_ice_demo.py` | 176 | 3 个演示 |
 | 任务总结 | `MISSION_M5529_SUMMARY.md` | 201 | 交付说明 |
 | **合计** | **13 个新文件** | **2916 行** | 零修改已有文件 |
 
