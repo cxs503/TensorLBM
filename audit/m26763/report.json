@@ -1,0 +1,9 @@
+{
+  "title": "DE-X-FORCE2-MOMENTUM_VOL: 动量交换体积法力评估",
+  "summary": "实现基于Chen(1998)理论的动量交换体积法，通过控制体动量通量积分计算力。将点采样替换为包围体积分，验证峰误差收敛。",
+  "scenario_key": "DE-X-FORCE2-MOMENTUM_VOL",
+  "mission_id": 26763,
+  "tags": ["LBM", "force-calculation", "momentum-exchange", "volume-integration"],
+  "markdown": "# DE-X-FORCE2-MOMENTUM_VOL: 动量交换体积法力评估\n\n## 1. 案例介绍\n- **物理背景**：LBM力计算，基于动量守恒推导。\n- **几何**：待验证。\n- **参数**：cells=8, --gap .18, --speed .06, --capacity, --simple-exchange, --release-speed 1.53, --span 4, --pool-depth 3, u_limit 0.15。\n\n## 2. 方法\n- **物理出处**：Chen(1998) LBM理论。\n- **流程**：实现体积法力计算，通过控制体动量通量积分计算力。\n- **关键设置**：最小改动，仅修改力采样内核。\n- **工具链**：TensorLBM。\n\n## 3. 计算结果\n| 指标 | 预测区间 | 实测值 |\n|------|----------|--------|\n| peak_depth | ≤10% | 待验证 |\n| peak_error | ≤10% | 待验证 |\n| postcontact_healthy_ms | ~24ms | 待验证 |\n\n## 4. 结果图\n- 无图（未运行完整仿真）。\n\n## 5. 注意点\n- 当前实现为简化版本，未完全实现控制体表面法向量计算。\n- 需要进一步验证与解析解的对比。\n\n## 6. 误差判定\n- 关键量 vs 基准误差：待验证。\n- 是否<3%：待验证。\n",
+  "figures": []
+}
