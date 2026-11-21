@@ -84,13 +84,13 @@
 **判定 A：FAIL。** 最佳 SCMP（wall_psi=0.4, a=40）T=1 仍 **+36%（T_raw）/+41%（T_eff）**，
 距 ≤3% 差一个数量级；纯 SCMP 更差。**SCMP 对该基准是死路。**
 
-产物：`runs/dam_break_sc_fix/sc_{base,wall04,sqrt}_a{40,80}/case_*.json + hist_*.csv`。
+产物：`development/archived/historical_runs/dam_break_sc_fix/sc_{base,wall04,sqrt}_a{40,80}/case_*.json + hist_*.csv`。
 
 ---
 
 ## 2. 路线 B — 改用 2D 自由面模块（Körner 2D, `free_surface_lbm_2d`）
 
-探针：`runs/dam_break_sc_fix/probe_fs2d.py`（同几何 a×2a，多口径波前 X_any/X_fill50/X_toe，
+原始[探针](../../../development/archived/historical_runs/dam_break_sc_fix/probe_fs2d.py)（同几何 a×2a，多口径波前 X_any/X_fill50/X_toe，
 质量账本漂移 + inventory 漂移 + iface 计数）。**已把 3D 模块（commit db1642b）的两处修复
 移植到 2D 模块，全部 opt-in（默认 bit-identical，已用探针 A 与 `verify_koerner2d_cpu` 的
 X=1.7666 完全一致验证）**：
@@ -122,7 +122,7 @@ X=1.7666 完全一致验证）**：
 
 ## 3. 旁证 — 3D 自由面模块（`free_surface_lbm.py`，commit db1642b 的修复）
 
-用 `runs/fs_aprime_20260929/probe.py` 复现 3D 角柱 a×a×2a：
+历史 3D 角柱 a×a×2a [探针](../../../development/archived/historical_runs/fs_aprime_20260929/probe.py)及结果：
 
 | 配置 | a | X(T=1) | err vs 1.1 | H(T=1) vs 0.78 | drift | iface 增长 |
 |------|---|--------|-----------|----------------|-------|-----------|
@@ -171,5 +171,5 @@ X=1.7666 完全一致验证）**：
 - `run.py`：**修正 M&M 参考表**（1.5→1.1、2.7→1.8，加 T=3→2.7）；新增 `--psi {exp,sqrt}`。
 - `result.json`：更新为正确基准下的真实结果 + 两路线评估。
 - `REPORT_SCMP_vs_FS2D.md`（本文件）。
-- `runs/dam_break_sc_fix/`：SC 四配置 case/hist + `probe_fs2d.py` + FS 结果 JSON。
+- `development/archived/historical_runs/dam_break_sc_fix/`：SC 四配置 case/hist + `probe_fs2d.py` + FS 结果 JSON。
 - `src/tensorlbm/free_surface_lbm_2d.py`：3 处 **opt-in** 诊断开关（默认 bit-identical）。

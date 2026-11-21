@@ -86,16 +86,20 @@ surface-only 落在参考簇内，其余二者各偏一边。这与物理判据�
 
 ## 5. 复现
 
-```bash
-# 从已保存的收敛场分解三口径（与 run.py 内部公式逐位一致）
-PYTHONPATH=src python benchmarks/pending/cylinder_3d/_analyze_field_mem.py \
-    runs/cyl3d_40D/D20_L40.json.field.pt 20 --nz 1 --lateral 40
-# 输出：cd_mem(all)/cd_mem(surface)/cd_mem(interior)
+原始[运行日志和结果](../development/archived/historical_runs/cyl3d_40D/)已归档。
+收敛场张量需要通过运行命令重新生成。
 
-# run.py（已内置三口径，采纳口径 = surface）
+```bash
+mkdir -p outputs/cylinder_3d
+# 生成收敛场（SDAA）
 PYTHONPATH=src python benchmarks/verified/cylinder_3d/run.py single 20 \
-    --out /tmp/d20.json --save-field --steps 40000 --nz 1 --lateral 40 \
+    --out outputs/cylinder_3d/d20.json --save-field --steps 40000 --nz 1 --lateral 40 \
     --device sdaa:0 --compile-mode eager
+
+# 从收敛场分解三口径
+PYTHONPATH=src python benchmarks/verified/cylinder_3d/_analyze_field_mem.py \
+    outputs/cylinder_3d/d20.json.field.pt 20 --nz 1 --lateral 40
+# 输出：cd_mem(all)/cd_mem(surface)/cd_mem(interior)
 ```
 
 ## 6. 备注 / 边界条件

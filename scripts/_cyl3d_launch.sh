@@ -7,9 +7,9 @@ export FT_TIMEOUT=86400
 export OMP_NUM_THREADS=8
 unset TL_FS_TOGAS_EPS TL_FS_DIAG_FIELD TL_FS_WALL_MODE TL_FS_APRIME TL_FS_LIQ_TO_IFACE 2>/dev/null || true
 
-LOGDIR=/root/TensorLBM_feat2/runs/cyl3d_20260929
+LOGDIR=/root/TensorLBM_feat2/outputs/runs/cyl3d_20260929
 mkdir -p "$LOGDIR"
-B=/root/TensorLBM_feat2/benchmarks/pending/cylinder_3d
+B=/root/TensorLBM_feat2/benchmarks/verified/cylinder_3d
 
 launch () {
   local name="$1"; shift

@@ -1,0 +1,83 @@
+{
+  "source_commit": "0bed5aab9ed5a7b581296350831636ff2fa10000",
+  "root_removed": "runs",
+  "original_root_count": 16,
+  "post_migration_root_count": 15,
+  "archive": {
+    "old_path": "runs",
+    "new_path": "development/archived/historical_runs",
+    "git_tree": "4874ccdc6f7cb821d863f115a9fc88777f478e1b",
+    "tracked_files": 392,
+    "campaigns": [
+      {
+        "old_path": "runs/bfs_gartling",
+        "new_path": "development/archived/historical_runs/bfs_gartling",
+        "git_tree": "784df25eb727e1b5bfd677aaa4ced32ae9f44686",
+        "tracked_files": 3
+      },
+      {
+        "old_path": "runs/cyl3d_20260929",
+        "new_path": "development/archived/historical_runs/cyl3d_20260929",
+        "git_tree": "397586b1e67089c8b3683fe51f4daaffd0ff24a7",
+        "tracked_files": 12
+      },
+      {
+        "old_path": "runs/cyl3d_40D",
+        "new_path": "development/archived/historical_runs/cyl3d_40D",
+        "git_tree": "c19e4ae601699d158f40602f3dc3bd98196d6d42",
+        "tracked_files": 17
+      },
+      {
+        "old_path": "runs/dam_break_sc_fix",
+        "new_path": "development/archived/historical_runs/dam_break_sc_fix",
+        "git_tree": "fcb8746db7705cdcf774fbde3248001617217192",
+        "tracked_files": 12
+      },
+      {
+        "old_path": "runs/e2e_suboff_20260929",
+        "new_path": "development/archived/historical_runs/e2e_suboff_20260929",
+        "git_tree": "25ec90d9fe31de7a9ac273fc3da4f37ca9cf5a5d",
+        "tracked_files": 3
+      },
+      {
+        "old_path": "runs/fs_aprime_20260929",
+        "new_path": "development/archived/historical_runs/fs_aprime_20260929",
+        "git_tree": "15b766cbcc9a154201790ae9d913d050013c239c",
+        "tracked_files": 22
+      },
+      {
+        "old_path": "runs/fs_pclosure_20260929",
+        "new_path": "development/archived/historical_runs/fs_pclosure_20260929",
+        "git_tree": "c9b287f227b3ac78254beed55c8b76327dc3d29f",
+        "tracked_files": 233
+      },
+      {
+        "old_path": "runs/fs_verify_wallslip_20260929",
+        "new_path": "development/archived/historical_runs/fs_verify_wallslip_20260929",
+        "git_tree": "272f1c1b933a0c034c759d1749690ebdeacbe29b",
+        "tracked_files": 81
+      },
+      {
+        "old_path": "runs/sphere_re100_20260930",
+        "new_path": "development/archived/historical_runs/sphere_re100_20260930",
+        "git_tree": "1ce1e5390e6a2b9c71206f1901cc94af73a31303",
+        "tracked_files": 9
+      }
+    ]
+  },
+  "compatibility": {
+    "replay": "Archived files preserve every Git blob and mode. A checkout of the source commit supplies the historical path layout. Original device, inputs, and host dependencies may still be needed.",
+    "local_output": "Legacy untracked runs/ remains ignored. The cylinder and SUBOFF launchers write new logs under outputs/runs/.",
+    "pinned_result_json": [
+      {
+        "path": "benchmarks/verified/sphere_re100/staircase_surface_mem/result_mem_surface.json",
+        "sha256": "3c9503825c3979b05b7b3f5149a2f2f386a363507762ab0ab5758494a459b627"
+      },
+      {
+        "path": "benchmarks/verified/suboff_re1000/result.json",
+        "sha256": "e8fbd2bef96eb55c49afe72566a3b2998df1fb8e0d6872e5cbaf76ae9da202c6"
+      }
+    ],
+    "discovery": "python tools/benchmark_registry.py --find-asset historical_runs"
+  }
+}

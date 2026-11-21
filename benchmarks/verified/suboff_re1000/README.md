@@ -129,7 +129,7 @@ python benchmarks/verified/suboff_re1000/run.py \
 > 端到端长跑（L=80 需 ~3.4 h）：本仓库用
 > `scripts/_suboff_e2e_monitor.py`（monkeypatch 驱动循环外挂进度监控，
 > 不改 run.py）配合 `scripts/_suboff_e2e_launch.sh` 启动，
-> 日志在 `runs/e2e_suboff_20260929/`。
+> 历史日志见[运行档案](../../../development/archived/historical_runs/e2e_suboff_20260929/)。
 
 ## 耗时
 

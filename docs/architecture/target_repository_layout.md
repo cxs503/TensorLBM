@@ -52,7 +52,7 @@ integrity verified before retiring a tracked copy.
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Published material, supporting case assets and working drafts have separate owners. |
 | `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
-| `runs/` | Historical evidence or external storage | Retain existing Git evidence until exact provenance, checksums, consumers and retrieval are verified. New raw output is ignored. |
+| `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |
 | `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. |
 | `src/` | Keep | Keep the installable package and its published import surface stable. |
 | `teaching/` | `examples/teaching/` | Keep teaching commands and the companion comparison together. |
