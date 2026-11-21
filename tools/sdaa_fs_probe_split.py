@@ -71,6 +71,8 @@ if _curv2: kw["curv2_dose"] = _curv2
 _stbf = os.environ.get("WE_STBF", "0") == "1"
 if os.environ.get("WE_DIAG_CAVITY", "0") == "1": kw["diag_cavity"] = True
 if os.environ.get("WE_DIAG_BUDGET", "0") == "1": kw["diag_budget"] = True
+_momconv = os.environ.get("WE_MOMCONV", "") or None
+if _momconv: kw["momconv"] = _momconv
 if _stbf: kw["st_bodyforce"] = True
 _film = os.environ.get("WE_FILM", "0") == "1"
 if _film: kw["cavity_wall_film"] = True
@@ -120,6 +122,9 @@ def parse_args():
                     help="dump the mid-plane fill/velocity at the registered post-contact times")
     ap.add_argument("--diag-budget", action="store_true",
                     help="enable the read-only momentum/energy budget ledger inside the probe")
+    ap.add_argument("--momconv", default="",
+                    choices=["", "inherit", "redistribute", "redistribute_liq"],
+                    help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV); empty=legacy")
     return ap.parse_args()
 
 
@@ -157,7 +162,7 @@ def launch(a):
     env = (f"-e WE_DEV=sdaa -e WE_CELLS={a.cells} -e WE_STEPS={a.steps} -e WE_SPD={a.speed} "
            f"-e WE_GAP={a.gap} -e WE_PD={a.pd} -e WE_RS={a.rs} -e WE_UL={a.ul} "
            f"-e WE_DIAG_CAVITY={1 if a.diag_cavity else 0} -e WE_PLANES={1 if a.planes else 0} "
-           f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0}")
+           f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv}")
     cname = f"sdaa_{tag}"
     r = ssh(f"docker run -d --name {cname} --device /dev/tcaicard{card} "
             f"-v {wt}:/we -v {out}:/out {env} {IMG} bash -c "
@@ -168,10 +173,11 @@ def launch(a):
                              "out": out, "commit": head, "steps": a.steps, "cells": a.cells,
                              "diag_cavity": bool(a.diag_cavity), "planes": bool(a.planes),
                              "diag_budget": bool(a.diag_budget),
+                             "momconv": a.momconv,
                              "launched_at": time.time()})
     print(f"[sdaa] launched arm={a.arm} card={card} commit={head} steps={a.steps} "
           f"diag_cavity={bool(a.diag_cavity)} diag_budget={bool(a.diag_budget)} "
-          f"container={cname}", flush=True)
+          f"momconv={a.momconv!r} container={cname}", flush=True)
     return 0
 
 
@@ -194,7 +200,8 @@ def collect(a):
     rj = ssh(f"cat {out}/result.json 2>/dev/null")
     rp = ssh(f"cat {out}/planes.npz 2>/dev/null") if state.get("planes") else None
     header = (f"arm={a.arm} card={card} commit={state['commit']} steps={state['steps']} "
-              f"diag_cavity={state['diag_cavity']} diag_budget={state.get('diag_budget', False)}\n")
+              f"diag_cavity={state['diag_cavity']} diag_budget={state.get('diag_budget', False)} "
+              f"momconv={state.get('momconv', '')}\n")
     with open(f"{tree}/runs/{a.arm}/run.log", "w") as handle:
         handle.write(header + rlog.stdout.decode(errors="ignore"))
     if rp is not None and rp.stdout:

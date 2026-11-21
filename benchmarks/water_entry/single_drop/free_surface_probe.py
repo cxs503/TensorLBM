@@ -3,6 +3,7 @@
 import argparse
 import json
 import math
+import os
 from collections import defaultdict
 from pathlib import Path
 
@@ -94,6 +95,13 @@ def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
 # diagnosis stays off by default for every other user.
 DIAG_CAVITY_MARKER = Path(__file__).with_name("DIAG_CAVITY_ON")
 
+# Tree-local arm switch for the shared SDAA wrapper (same pattern as the
+# cavity-diagnosis marker): the file content is the momentum-carrying
+# conversion mode ("inherit" / "redistribute").  The file is not tracked, so
+# every other user keeps the legacy (bit-identical) behaviour.
+MOMCONV_MARKER = Path(__file__).with_name("MOMCONV_MODE")
+MOMCONV_MODES = ("off", "inherit", "redistribute", "redistribute_liq")
+
 
 def diag_cavity_enabled(request):
     """Resolve the cavity-diagnosis switch.
@@ -104,6 +112,25 @@ def diag_cavity_enabled(request):
     if request is None:
         return DIAG_CAVITY_MARKER.exists()
     return bool(request)
+
+
+def momconv_mode(request):
+    """Resolve the momentum-carrying conversion mode.
+
+    ``None`` means "auto": the mode is read from the ``TL_FS_MOMCONV``
+    environment variable, else from the tree-local ``MOMCONV_MODE`` marker
+    file, else the legacy mode "off" (bit-identical to the baseline).
+    """
+    if request is None:
+        request = os.environ.get("TL_FS_MOMCONV") or None
+        if request is None and MOMCONV_MARKER.exists():
+            request = MOMCONV_MARKER.read_text().strip()
+    mode = str(request or "off").strip().lower()
+    if mode in ("", "none", "off", "0", "false"):
+        return "off"
+    if mode in MOMCONV_MODES:
+        return mode
+    raise ValueError(f"momconv must be one of {MOMCONV_MODES}, got {request!r}")
 
 
 def _diag_summary(rows, history):
@@ -170,9 +197,13 @@ def probe(
     diag_cavity=None,
     gas_nu_ratio=1.0,
     diag_budget=False,
+    momconv=None,
 ):
     diag_cavity = diag_cavity_enabled(diag_cavity)
     diag_budget = bool(diag_budget)
+    momconv = momconv_mode(momconv)
+    # The inherited gas velocity has to survive between steps.
+    momconv_state = {}
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
@@ -397,6 +428,8 @@ def probe(
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
                     gas_nu_ratio=gas_nu_ratio,
+                    momconv=momconv,
+                    momconv_state=momconv_state,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -439,6 +472,7 @@ def probe(
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
         "gas_nu_ratio": gas_nu_ratio,
+        "momconv": momconv,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
@@ -559,6 +593,13 @@ if __name__ == "__main__":
         "(read only; does not change the trajectory)",
     )
     parser.add_argument("--gap", type=float, default=0.4)
+    parser.add_argument(
+        "--momconv",
+        default=None,
+        choices=list(MOMCONV_MODES),
+        help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV): "
+        "off (default, legacy bit-identical), inherit or redistribute",
+    )
     args = parser.parse_args()
     if (
         args.span < 3
@@ -594,6 +635,7 @@ if __name__ == "__main__":
         args.diag_cavity,
         args.gas_nu_ratio,
         args.diag_budget,
+        args.momconv,
     )
     for row in result["history"]:
         for key, value in row.items():
