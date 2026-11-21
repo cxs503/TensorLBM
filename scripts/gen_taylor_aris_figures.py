@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ARTIFACTS_DIR = Path(__file__).resolve().parent.parent / "artifacts" / "p96w2_n05"
-FIGURES_DIR = Path(__file__).resolve().parent.parent / "figures" / "p96w2_n05"
+FIGURES_DIR = Path(__file__).resolve().parent.parent / "outputs" / "figures" / "p96w2_n05"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 

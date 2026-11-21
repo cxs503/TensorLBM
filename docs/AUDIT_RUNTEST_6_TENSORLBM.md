@@ -199,3 +199,4 @@ test_wetting_n01::test_sweep_metadata  [failure] ValueError: no fit window produ
 - **未完成**：①集群 16 分片全量重算 `cj848` 与本机并行跑了同一套件，集群侧在预算内未派发（队列 250+）；②sphere Re=100 D40/D60 未复算（D40 递交后被让出 CPU，日志 `sphere_D40_local.log`）、`poiseuille_3d_pipe` R=20 的 CPU 复跑（`--device cpu --compile-mode eager`）在争抢下 80 min 未收敛到稳态，只留下 D4 的 CUDA 缺省缺陷证据；③`benchmarks/STATUS.md` 的 38 个 verified 算例未逐一复跑（本单按令「抽样」）。
 - 本报告不复述 PR 描述，只报实测；跑不通的按原样记录（见 §1 失败清单、§3 FAIL 探针）。
 
+原始图表清单见 [m14496 审计档案](../development/audit/m14496/figures.json)。重新生成的图表位于 `outputs/figures/audit_runtest_r6/`。

@@ -10,7 +10,7 @@ self-contained.
 Usage::
 
     PYTHONPATH=src python tools/kbc_build_report.py \
-        --root artifacts/kbc/p495w4-n03 --fig-dir figures/kbc_p495w4_n03 \
+        --root artifacts/kbc/p495w4-n03 --fig-dir outputs/figures/kbc_p495w4_n03 \
         --out /tmp/report.json [--post]
 """
 
@@ -469,7 +469,7 @@ def build_markdown(cases: dict[str, dict], calib: dict | None, grid_check: dict)
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="artifacts/kbc/p495w4-n03")
-    ap.add_argument("--fig-dir", default="figures/kbc_p495w4_n03")
+    ap.add_argument("--fig-dir", default="outputs/figures/kbc_p495w4_n03")
     ap.add_argument("--out", default="/tmp/report.json")
     ap.add_argument("--post", action="store_true")
     ap.add_argument("--mission", type=int, default=13945)

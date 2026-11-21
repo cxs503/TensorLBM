@@ -1,7 +1,7 @@
 # P82W5-N04 屈服应力 LBM 3D+移动壁（D3Q19 + Ladd 移动壁）
 
 > 本文件由 `scripts/make_report_p82w5_n04.py` 生成的报告正文自动落盘（数字零手抄）。
-> 判据数字与产物路径见 `artifacts/P82W5-N04/*.json`；图见 `figures/p82w5_n04/`。
+> 判据数字与产物路径见 `artifacts/P82W5-N04/*.json`；历史图表见[清单](figures/p82w5_n04/figures.json)。
 
 ## 1 案例介绍
 
@@ -169,6 +169,6 @@
 * 参考解：`src/tensorlbm/yield_stress_analytical_moving_wall.py`
 * 文档：`docs/yield_stress_moving_wall_3d.md`
 * 基准：`scripts/bench_yield_stress_moving_wall_3d.py`（JSON 落 `artifacts/P82W5-N04/`，场数据 `.npy` 同名）
-* 图：`scripts/gen_yield_stress_moving_wall_figures.py` → `figures/p82w5_n04/`
+* 图：`scripts/gen_yield_stress_moving_wall_figures.py` → `outputs/figures/p82w5_n04/`
 * 测试：`tests/test_yield_stress_moving_wall_3d.py`（11 项，含解析恒等式、AL 参考解交叉验证、移动壁牛顿锚、账本恒等式、质量守恒）
 

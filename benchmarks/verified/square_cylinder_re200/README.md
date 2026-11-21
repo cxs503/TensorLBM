@@ -57,3 +57,5 @@ pytest tests/test_square_cylinder.py -q
 
 Case narrative, parameter table, comparison table, convergence study and
 figures: `docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md` (generated).
+
+The [archived figure index](evidence/figure_index.json) preserves the original published figure references.

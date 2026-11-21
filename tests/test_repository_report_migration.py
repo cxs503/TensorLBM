@@ -88,6 +88,19 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     self.assertTrue(resolved.is_relative_to(REPO))
                     self.assertTrue(resolved.exists(), f"Missing link: {name} -> {target}")
 
+    def test_retired_figure_root_preserves_historical_assets(self):
+        ledger_path = LEDGER_PATH.parent / "figures-root-retirement-2026-11-21.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "figures"], cwd=REPO, text=True
+        )
+        self.assertEqual(tracked, "")
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["sha256"], item["size_bytes"]
+                )
+
     def test_bulk_root_retirement_accounts_for_all_moved_assets(self):
         ledger_path = LEDGER_PATH.parent / "bulk-root-retirement-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
