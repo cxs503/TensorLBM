@@ -4,6 +4,10 @@ This is the file-placement contract for contributors and coding agents. It
 implements the low-risk part of the [refactoring plan](REPOSITORY_REFACTORING_PLAN.md),
 not a new solver architecture. No source relocation is authorized by this document.
 
+See the [target layout and root migration map](target_repository_layout.md)
+for the intended separation between maintained deliverables and the
+[development archive](../../development/).
+
 ## Finding code, evidence and earlier work
 
 Install and import from [src/tensorlbm](../../src/tensorlbm/). The separate
