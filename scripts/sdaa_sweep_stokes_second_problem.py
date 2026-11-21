@@ -288,7 +288,7 @@ def main() -> None:
     }
 
     # Write artifact
-    artifact_path = _REPO_ROOT / "artifacts" / "sdaa_stokes_second_problem.json"
+    artifact_path = _REPO_ROOT / "outputs" / "sdaa" / "stokes_second_problem" / "sdaa_stokes_second_problem.json"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_text(json.dumps(output, indent=2))
     print(f"\nArtifact written to: {artifact_path}")

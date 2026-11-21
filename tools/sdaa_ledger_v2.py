@@ -489,6 +489,9 @@ def discover(root: Path, worktree_glob: str, strict_local: bool) -> Tuple[List[T
     art = root / "artifacts"
     if art.is_dir():
         roots.append(("self", art))
+    fresh = root / "outputs" / "sdaa"
+    if fresh.is_dir():
+        roots.append(("self", fresh))
     if not strict_local:
         for d in sorted(glob.glob(worktree_glob)):
             p = Path(d)
@@ -504,7 +507,8 @@ def discover(root: Path, worktree_glob: str, strict_local: bool) -> Tuple[List[T
             if rp in seen or EXCLUDE_RE.search(rp.name):
                 continue  # 台账产物自身不得进入语料
             seen.add(rp)
-            files.append((wid, rp, str(rp.relative_to(base.resolve()))))
+            rel_base = root if base == fresh else base
+            files.append((wid, rp, rp.relative_to(rel_base.resolve()).as_posix()))
 
     manifest = root / "docs/architecture/migration_manifest.csv"
     if manifest.is_file():
@@ -524,11 +528,11 @@ def discover(root: Path, worktree_glob: str, strict_local: bool) -> Tuple[List[T
     outside = sorted(set(glob.glob("/tmp/sdaa*.json")) - {str(f[1]) for f in files})
     corpus = {
         "roots": [{"worktree": wid, "path": str(base)} for wid, base in roots],
-        "worktree_count": len(roots),
+        "worktree_count": len({wid for wid, _ in roots} | {wid for wid, _, _ in files}),
         "outside_scope_instances": len(outside),
-        "outside_scope_note": "不在任何 mission worktree artifacts/ 或迁移台账内的同名副本（/tmp 临时产物等），"
+        "outside_scope_note": "不在任何 mission worktree artifacts/、outputs/sdaa/ 或迁移台账内的同名副本（/tmp 临时产物等），"
                               "不计入台账口径",
-        "pattern": "artifacts/**/sdaa*.json and registered relocations",
+        "pattern": "artifacts/**/sdaa*.json, outputs/sdaa/**/sdaa*.json and registered relocations",
     }
     return files, corpus
 
@@ -928,7 +932,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description="SDAA 工件台账 v2")
     ap.add_argument("--root", default=str(REPO_ROOT), help="工作树根（默认脚本所在仓）")
     ap.add_argument("--worktree-glob", default=DEFAULT_WORKTREE_GLOB, help="其他 mission worktree artifacts 通配")
-    ap.add_argument("--strict-local", action="store_true", help="只用本工作树 artifacts/")
+    ap.add_argument("--strict-local", action="store_true", help="只用本工作树的工件（含新输出及已迁移工件）")
     ap.add_argument("--out-json", default=None)
     ap.add_argument("--out-html", default=None)
     ap.add_argument("--check", action="store_true", help="只对现有台账跑机器判据自检")

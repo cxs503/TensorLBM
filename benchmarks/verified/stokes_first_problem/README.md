@@ -102,3 +102,5 @@ python run.py single 100 /tmp/x.json --tau 0.8              # 诊断：有限域
 实测（δ=25, t*=1.0, float64）：逐点 **0.0781%**（η∈[0.1,2]）、尾部 η=2 **0.0040%**、全窗口含壁面端点 **1.1282%**，
 δ=50 加密 **0.0154%**（阶 2.34）。关键结论：**float64 是硬需求**（float32 在 U=1e-3 时尾部误差 98%），
 且本题 Ma² 压缩性误差结构性为零（ρ≡1，偏差 1e-12）。
+
+See [historical SDAA run evidence](evidence/sdaa/) for the archived results and device records.

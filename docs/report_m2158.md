@@ -1,6 +1,6 @@
 # Mission 2158 补报：Stokes 第二问题（振荡平板）— TensorLBM 验证
 
-> **补报说明**：本单为 mission 2158（原 tp-paper-1 席）的论文级进展报告补发。原单已成功交付（status=VERIFIED），但未发布论文级报告。本报告基于原单工件（`benchmarks/pending/stokes_second_problem/result.json`、`caliber_audit.json`、`benchmarks/verified/stokes_second_problem/scan_out/result.json`、`artifacts/sdaa_stokes_second_problem.json`）程序化提取数据，零手抄。
+> **补报说明**：本单为 mission 2158（原 tp-paper-1 席）的论文级进展报告补发。原单已成功交付（status=VERIFIED），但未发布论文级报告。本报告基于原单工件（`benchmarks/pending/stokes_second_problem/result.json`、`caliber_audit.json`、`benchmarks/verified/stokes_second_problem/scan_out/result.json`、`benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json`）程序化提取数据，零手抄。
 
 ---
 

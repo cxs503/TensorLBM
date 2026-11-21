@@ -3,7 +3,7 @@
 
 Runs the Couette 2D analytic-profile validation on the 'sdaa' device,
 records device evidence, computes all criteria from the simulation output,
-and writes artifacts/sdaa_couette_2d.json.
+and writes outputs/sdaa/couette_2d/sdaa_couette_2d.json.
 
 Criteria (from README / result.json):
   1. max_rel_err_masked_pct <= 3.0   (per-grid pointwise relative error)
@@ -302,7 +302,7 @@ def main() -> None:
         "wall_clock_s": round(elapsed_total, 1),
     }
 
-    out_path = REPO / "artifacts" / "sdaa_couette_2d.json"
+    out_path = REPO / "outputs" / "sdaa" / "couette_2d" / "sdaa_couette_2d.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(artifact, indent=2))
     print(f"\n[sdaa_sweep] Artifact written to {out_path}")

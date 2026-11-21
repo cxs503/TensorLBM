@@ -8,7 +8,7 @@ and evaluates the original gate criteria.
 No business code is modified.  If triton were needed we would set
 TRITON_INTERPRET=1, but this case is pure torch ops → no triton绕行.
 
-Output: artifacts/sdaa_couette_3d.json
+Output: outputs/sdaa/couette_3d/sdaa_couette_3d.json
 """
 
 from __future__ import annotations
@@ -301,7 +301,7 @@ def main():
         "total_wall_clock_s": total_elapsed,
     }
 
-    out_path = REPO / "artifacts" / "sdaa_couette_3d.json"
+    out_path = REPO / "outputs" / "sdaa" / "couette_3d" / "sdaa_couette_3d.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2))
     print(f"\n[SDAA] results written to {out_path}")

@@ -66,9 +66,9 @@
 **Report 161 (m60)**:
 | 数字 | 报告值 | 工件证据 | 状态 |
 |------|--------|---------|------|
-| 复振幅误差(H=20,kH=6) | 1.437% | artifacts/sdaa_stokes_second_problem.json: 1.437340 | 命中 |
-| 复振幅误差(H=20,kH=8) | 2.355% | artifacts/sdaa_stokes_second_problem.json: 2.354823 | 命中 |
-| 总耗时 | 179.3s | artifacts/sdaa_stokes_second_problem.json: 179.3 | 命中 |
+| 复振幅误差(H=20,kH=6) | 1.437% | benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json: 1.437340 | 命中 |
+| 复振幅误差(H=20,kH=8) | 2.355% | benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json: 2.354823 | 命中 |
+| 总耗时 | 179.3s | benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json: 179.3 | 命中 |
 
 ---
 

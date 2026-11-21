@@ -139,7 +139,7 @@ compile_mode='eager' 完全绕过 torch.compile，因此不需要 TRITON_INTERPR
 
 ## 附录：工件清单
 
-- `artifacts/sdaa_couette_2d.json`：SDAA 扫荡完整结果（含逐网格 JSON、判据逐项）
+- `benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_2d.json`：SDAA 扫荡完整结果（含逐网格 JSON、判据逐项）
 - `benchmarks/verified/couette_2d/result.json`：CPU 入库基线
 - `benchmarks/verified/couette_2d/run.py`：运行入口（未修改）
 

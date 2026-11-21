@@ -88,3 +88,5 @@ python run.py --n 64 --steps 1000   # 单案例
 - 经典 LBM 验证：Krüger et al., *The Lattice Boltzmann Method*, §"validation"；
   剪切波是 LBM 粘性测量的标准测试（对比 TG 涡，纯 1D 耗散、无涡拉伸）
 - 判定标准：benchmarks/problems.md B30（验证 1D 粘性耗散，与 B17 互补）
+
+See [historical SDAA run evidence](evidence/sdaa/) for the archived results and device records.

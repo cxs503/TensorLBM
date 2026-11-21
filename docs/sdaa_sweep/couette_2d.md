@@ -30,7 +30,7 @@
 | min_steps | 10000 |
 | max_steps | 60000 |
 | 运行脚本 | scripts/sdaa_sweep_couette_2d.py |
-| 产物 | artifacts/sdaa_couette_2d.json |
+| 产物 | benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_2d.json |
 
 ## 结果表
 
@@ -84,5 +84,5 @@ SDAA 结果在量级上与 CPU 参考一致（均远小于 3% 阈值），但 H=
 
 ## 产物
 
-- `artifacts/sdaa_couette_2d.json` — 完整 JSON 产物（含设备证据、判据数值、逐条 PASS/FAIL）
+- `benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_2d.json` — 完整 JSON 产物（含设备证据、判据数值、逐条 PASS/FAIL）
 - `scripts/sdaa_sweep_couette_2d.py` — 独立运行脚本（不改业务代码）

@@ -83,7 +83,7 @@ device = sdaa
 | 文件 | 说明 |
 |------|------|
 | `scripts/sdaa_first_case.py` | 独立运行脚本（不修改已有业务代码） |
-| `artifacts/sdaa_couette_result.json` | 完整结果 JSON（含设备名、误差、剖面数据） |
+| `benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_result.json` | 完整结果 JSON（含设备名、误差、剖面数据） |
 
 ## 7. 运行方式
 
@@ -91,7 +91,7 @@ device = sdaa
 cd /srv/tensor/agent/work/m10
 PYTHONPATH=src python scripts/sdaa_first_case.py \
     --H 62 --tau 0.8 --u0 0.05 --steps 500 --avg 200 \
-    --out artifacts/sdaa_couette_result.json
+    --out outputs/sdaa/couette_2d/sdaa_couette_result.json
 ```
 
 ## 8. 结论

@@ -312,7 +312,7 @@ def main() -> None:
     }
 
     # 写入 artifacts
-    artifacts_dir = REPO_ROOT / "artifacts"
+    artifacts_dir = REPO_ROOT / "outputs" / "sdaa" / "shear_wave_decay"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     out_path = artifacts_dir / "sdaa_shear_wave_decay.json"
     with open(out_path, "w") as fh:

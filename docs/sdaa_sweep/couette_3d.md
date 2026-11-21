@@ -2,7 +2,7 @@
 
 > 案例来源：`benchmarks/verified/couette_3d`
 > 运行脚本：`scripts/sdaa_sweep_couette_3d.py`
-> 产物：`artifacts/sdaa_couette_3d.json`
+> 产物：`benchmarks/verified/couette_3d/evidence/sdaa/sdaa_couette_3d.json`
 > 运行日期：2026-01-XX（本轮 sweep）
 
 ---

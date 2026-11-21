@@ -5,7 +5,7 @@
 | 案例目录 | `benchmarks/verified/stokes_first_problem` |
 | 运行入口 | `benchmarks/verified/stokes_first_problem/run.py`（**未修改**，`git diff benchmarks/` 为空） |
 | 独立脚本 | `scripts/sdaa_sweep_stokes_first_problem.py`（import 案例 `run_case`/`compare_grids`，仅把模块级 `DEVICE` 指向 sdaa） |
-| 机器产物 | `artifacts/sdaa_stokes_first_problem.json` |
+| 机器产物 | `benchmarks/verified/stokes_first_problem/evidence/sdaa/sdaa_stokes_first_problem.json` |
 | 总体结论 | **PASS** — 14/14 条判据通过 |
 | 墙钟（整轮脚本） | 133.43 s（≪ 20 min 上限） |
 | 运行状态 | `OK` |
@@ -115,9 +115,9 @@ G1/G2 为案例 README **原判据**；D1/D2 为 README「结果」段记录量�
 ```bash
 cd /srv/tensor/agent/work/m50
 # 主判定（两档网格，约 2 min 墙钟）
-python scripts/sdaa_sweep_stokes_first_problem.py --out artifacts/sdaa_stokes_first_problem.json
+python scripts/sdaa_sweep_stokes_first_problem.py --out outputs/sdaa/stokes_first_problem/sdaa_stokes_first_problem.json
 # 附带 compile-mode=default 探测（记录 teco inductor 失败原因，约 +3 s）
-python scripts/sdaa_sweep_stokes_first_problem.py --out artifacts/sdaa_stokes_first_problem.json --probe-compile-default
+python scripts/sdaa_sweep_stokes_first_problem.py --out outputs/sdaa/stokes_first_problem/sdaa_stokes_first_problem.json --probe-compile-default
 ```
 
 每档网格墙钟：H=100 → 57.9 s（案例内部计时 57.9 s）；H=200 → 58.44 s（案例内部计时 58.4 s）。

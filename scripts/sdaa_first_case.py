@@ -192,7 +192,7 @@ def main() -> None:
     ap.add_argument("--u0", type=float, default=0.05)
     ap.add_argument("--steps", type=int, default=500, help="main stepping steps")
     ap.add_argument("--avg", type=int, default=200, help="time-averaging steps")
-    ap.add_argument("--out", type=str, default="artifacts/sdaa_couette_result.json")
+    ap.add_argument("--out", type=str, default="outputs/sdaa/couette_2d/sdaa_couette_result.json")
     args = ap.parse_args()
 
     # Ensure output directory exists

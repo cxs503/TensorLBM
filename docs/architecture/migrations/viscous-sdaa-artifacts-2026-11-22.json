@@ -1,0 +1,66 @@
+{
+  "source_commit": "6f0d0fc3bfb356cebd7a9d10673d732c57b3db2d",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "artifact_files_before": 84,
+  "artifact_files_after": 77,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_couette_2d.json",
+      "new_path": "benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_2d.json",
+      "git_mode": "100644",
+      "original_git_blob": "f1478511675ba48f95a3ba9272ae0992e4643655",
+      "size_bytes": 3274,
+      "original_sha256": "52d7c6afcf0a4df09d2d598bfffb71a44602ae6edbee5e26a1c24c514dad8cc9"
+    },
+    {
+      "old_path": "artifacts/sdaa_couette_3d.json",
+      "new_path": "benchmarks/verified/couette_3d/evidence/sdaa/sdaa_couette_3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "585f02f3b8e44c789ba447fe458bcce08390dfc7",
+      "size_bytes": 3111,
+      "original_sha256": "92166b3ba49713d4cfd0540944528e61433891df6d9510a10d0f16cbdc71ff61"
+    },
+    {
+      "old_path": "artifacts/sdaa_couette_result.json",
+      "new_path": "benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_result.json",
+      "git_mode": "100644",
+      "original_git_blob": "59ba779a0eb1fd797c64190af9238d281486b86b",
+      "size_bytes": 3116,
+      "original_sha256": "505cbb9c746d2d37f60302c7fa91531fc3eae1dcba60f23b49581386199c8f2a"
+    },
+    {
+      "old_path": "artifacts/sdaa_shear_wave_decay.json",
+      "new_path": "benchmarks/verified/shear_wave_decay/evidence/sdaa/sdaa_shear_wave_decay.json",
+      "git_mode": "100644",
+      "original_git_blob": "b5b06fb79508df4efb6a2a3da3792cab8e24e728",
+      "size_bytes": 3686,
+      "original_sha256": "cb21772aed2e8056d5745ce98e08e41d649745c73ae232ddf4dd90348c8562bb"
+    },
+    {
+      "old_path": "artifacts/sdaa_stokes_first_problem.json",
+      "new_path": "benchmarks/verified/stokes_first_problem/evidence/sdaa/sdaa_stokes_first_problem.json",
+      "git_mode": "100644",
+      "original_git_blob": "0857f56662c5288a7c831266ba00de09a7283ca7",
+      "size_bytes": 66355,
+      "original_sha256": "6c946433dd36d51892f48c0a280ee4a91e6b606e2827dccf22512c2269243c78"
+    },
+    {
+      "old_path": "artifacts/sdaa_stokes_second_problem.json",
+      "new_path": "benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json",
+      "git_mode": "100644",
+      "original_git_blob": "f1c1267b803775d1902258e8f610f483f2a17a26",
+      "size_bytes": 2629,
+      "original_sha256": "651c0a407e4c89504188afaf3cd1e78c8f569632dd1ed41a974308d0c702c2e0"
+    },
+    {
+      "old_path": "artifacts/sdaa_taylor_couette.json",
+      "new_path": "benchmarks/verified/taylor_couette/evidence/sdaa/sdaa_taylor_couette.json",
+      "git_mode": "100644",
+      "original_git_blob": "e276314efed4868dab5791c0901c1e36c977cb7a",
+      "size_bytes": 2565,
+      "original_sha256": "9f34a8a3ec6d1d3c06ccf2422c281cd2e7c9f2b0c6949651664f868ced119272"
+    }
+  ],
+  "acceptance": "Archived results preserve original status and scope; no scientific replay."
+}

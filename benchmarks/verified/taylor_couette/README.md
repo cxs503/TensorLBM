@@ -264,3 +264,5 @@ PYTHONPATH=/srv/tensor/shared/worktrees/bm_relaunch/src:/srv/tensor/shared/workt
 - 阶梯壁/数字圆柱有效半径：Sukop & Thorne, *Lattice Boltzmann Modeling* (2006)；
   Krüger et al., *The Lattice Boltzmann Method* (2017).
 - R_eff^Q 方法学先例：`benchmarks/verified/poiseuille_3d_pipe/`（本目录同款逻辑）。
+
+See [historical SDAA run evidence](evidence/sdaa/) for the archived results and device records.
