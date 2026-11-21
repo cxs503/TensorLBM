@@ -377,13 +377,15 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha1(blob).hexdigest(), expected)
 
     def test_concurrent_drop_entry_reintroductions_are_archived_and_pinned(self):
+        survey_ledger = LEDGER_PATH.parent / "m26963-bb-root-retirement-2026-11-22.json"
         ledgers = [
             LEDGER_PATH.parent / "m26734-drop-entry-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26856-audit-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26892-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26887-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26894-drop-entry-reentry-2026-11-22.json",
-            LEDGER_PATH.parent / "m26963-bb-root-retirement-2026-11-22.json",
+            survey_ledger,
+            LEDGER_PATH.parent / "m26954-bb-root-retirement-2026-11-22.json",
         ]
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
@@ -457,7 +459,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertNotIn('os.path.join(ROOT, "drop_entry"', m26894_generator)
         self.assertIn('os.path.join(ROOT, "docs", "drop_entry_bb"', m26894_generator)
-        survey = json.loads(ledgers[-1].read_text(encoding="utf-8"))["entries"][0]
+        survey = json.loads(survey_ledger.read_text(encoding="utf-8"))["entries"][0]
         for stage in ("probe", "report"):
             script = (REPO / f"scripts/de_x_surv1_mmreview_{stage}.py").read_text(
                 encoding="utf-8"
