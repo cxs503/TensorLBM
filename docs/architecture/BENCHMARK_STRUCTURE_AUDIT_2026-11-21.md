@@ -20,7 +20,7 @@ Read-only inspection of the `main` recursive tree at SHA `244139491515a78a9e971b
 ## Confirmed findings
 
 1. The authoritative installable library is `src/tensorlbm/` per `docs/architecture/repository_layout.md`. `TensorLBM/src/` is a historical nested copy, with its own `TensorLBM/pyproject.toml`. **Do not delete** without import/consumer and hash review.
-2. `docs/benchmarks/tutorials/README.md` explicitly indexes **33 tutorial cases** with Markdown, PDF/Word where available, and `benchmarks/verified/` case links. The tree contains 33 PDF files in `docs/benchmarks/tutorials/files/`. Some indexed cases have no PDF. Preserve these assets and their links.
+2. `docs/benchmarks/tutorials/README.md` explicitly indexes **35 indexed tutorial cases** with Markdown, PDF/Word where available, and `benchmarks/verified/` case links. The tree contains 33 PDF files in `docs/benchmarks/tutorials/files/`. Two indexed cases have no PDF; 33 PDF files are present. Preserve these assets and their links.
 3. `benchmarks/STATUS.md` reports 91 verified and 60 pending **directory inventory counts dated 2026-10-05**, explicitly not independent proof of scientifically validated capabilities. Never translate those counts into current acceptance passes.
 4. `benchmarks/` mixes lifecycle (`verified/`, `pending/`, `archived/`), subject (`water_entry/`, `wall_model_les/`), and mission-numbered campaign paths. `docs/` mixes public tutorials and many mission audit folders. This makes discoverability and ownership ambiguous.
 5. Existing governance is **not absent**: `REPOSITORY_REFACTORING_PLAN.md`, `repository_layout.md`, `repository_layout_policy.json`, `migration_manifest.csv`, `STRUCTURE_MAP_2026-10-26.md` and `test_and_benchmark_map.md` already exist. The plan forbids bulk moves. The manifest contains completed, proposed and blocked items; do not mark the entire refactor complete.
@@ -31,7 +31,7 @@ Read-only inspection of the `main` recursive tree at SHA `244139491515a78a9e971b
 - `src/tensorlbm/`: single supported numerical package.
 - `tests/`: code/unit/integration/regression tests; separate benchmark acceptance from ordinary green CI.
 - `benchmarks/`: canonical benchmark definitions, reference provenance, acceptance criteria and curated evidence.
-- `docs/benchmarks/tutorials/`: **canonical published case manuals** (33-case baseline). Do not copy them into runner folders.
+- `docs/benchmarks/tutorials/`: **canonical published case manuals** (35-index baseline). Do not copy them into runner folders.
 - `examples/`: maintained runnable user entrypoints; `experiments/`: unaccepted research.
 - `audit/` and existing historical paths: preserve pending verified archival migration; new mission artifacts must have an explicit owner and retention policy.
 
@@ -41,7 +41,7 @@ Prefer stable benchmark IDs and a registry mapping `id -> runner, tutorial, refe
 
 | Priority | Asset / path | Proposed action | Blocking verification |
 | --- | --- | --- | --- |
-| P0 | `docs/benchmarks/tutorials/README.md` and `files/` | Preserve 33-case baseline; generate case-to-manual inventory | Check all indexed links, byte hashes, tracked PDF/DOCX availability |
+| P0 | `docs/benchmarks/tutorials/README.md` and `files/` | Preserve 35-index baseline; generate case-to-manual inventory | Check all indexed links, byte hashes, tracked PDF/DOCX availability |
 | P0 | `TensorLBM/src/` and nested `pyproject.toml` | Compare with root package; classify historical vs live | Static imports, editable install, CI, external consumers, exact hashes |
 | P0 | `benchmarks/verified/` and `pending/` | Inventory case IDs and source/evidence/threshold completeness | Compare validation matrix and `validation_status.json`; no status promotion |
 | P1 | `benchmarks/case_pool/` and mission-named directories | Map to stable IDs; add registry aliases first | Search CI, docs, scripts and result consumers |
@@ -61,7 +61,7 @@ Prefer stable benchmark IDs and a registry mapping `id -> runner, tutorial, refe
 
 ## Immediate implementation PRs
 
-1. Machine-generated 33-case inventory with existence checks, checksums and links (read-only CI).
+1. Machine-generated 35-case inventory with existence checks, checksums and links (read-only CI).
 2. Canonical benchmark registry with aliases to existing paths and explicit acceptance scope.
 3. Nested-tree import/packaging comparison and reference search; only then propose deletion or archival.
 4. One small migration batch selected from existing manifest where external provenance and compatibility are resolved.
@@ -72,5 +72,5 @@ Prefer stable benchmark IDs and a registry mapping `id -> runner, tutorial, refe
 - [Current layout policy](repository_layout.md)
 - [Migration ledger](migration_manifest.csv)
 - [2026-10-26 structure map](STRUCTURE_MAP_2026-10-26.md)
-- [33-case tutorial index](../benchmarks/tutorials/README.md)
+- [35-case tutorial index](../benchmarks/tutorials/README.md)
 - [Benchmark status](../../benchmarks/STATUS.md)
