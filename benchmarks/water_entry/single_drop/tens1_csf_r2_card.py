@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""TENS1-CSF-SMOOTH-R2 判决卡生成器（m26894）：表从 runs/tens1_csf_r2/TENS1-CSF-R2.json 程序化渲染（零手抄）。
-用法：python3 benchmarks/water_entry/single_drop/tens1_csf_r2_card.py
-产出：/root/tp-agent/drop_entry/BB/X/TENS1-CSF-SMOOTH-R2.md（正典位）
-      + worktree drop_entry/BB/X/TENS1-CSF-SMOOTH-R2.md + docs/drop_entry_bb/X_TENS1-CSF-SMOOTH-R2.md（双写）
+"""TENS1-CSF-SMOOTH-R2 判决卡生成器（m26894）。
+
+表格从 ``runs/tens1_csf_r2/TENS1-CSF-R2.json`` 程序化渲染；稳定发布
+位置是 ``docs/drop_entry_bb/``。开发过程快照只由迁移台账保存在
+``development/audit/``，生成器不得重新创建已退役的根目录。
 """
 import json
 import os
@@ -11,11 +12,7 @@ import shutil
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SRC = os.path.join(ROOT, "runs", "tens1_csf_r2", "TENS1-CSF-R2.json")
-OUTS = [
-    "/root/tp-agent/drop_entry/BB/X/TENS1-CSF-SMOOTH-R2.md",
-    os.path.join(ROOT, "drop_entry", "BB", "X", "TENS1-CSF-SMOOTH-R2.md"),
-    os.path.join(ROOT, "docs", "drop_entry_bb", "X_TENS1-CSF-SMOOTH-R2.md"),
-]
+OUT = os.path.join(ROOT, "docs", "drop_entry_bb", "X_TENS1-CSF-SMOOTH-R2.md")
 
 
 def render_table(J):
@@ -124,12 +121,13 @@ def main():
     md = md.replace("__FALSJUDG__", falsj)
     md = md.replace("__MAXDIFF__", repr(d["max_abs_diff"]))
     md = md.replace("__NROW__", str(d.get("n_rows")))
-    for out in OUTS:
-        os.makedirs(os.path.dirname(out), exist_ok=True)
-        open(out, "w").write(md)
-        print("wrote", out, len(md), "bytes")
-    shutil.copy(SRC, OUTS[0].replace(".md", ".json"))
-    print("json ->", OUTS[0].replace(".md", ".json"))
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    with open(OUT, "w", encoding="utf-8") as stream:
+        stream.write(md)
+    print("wrote", OUT, len(md), "bytes")
+    machine_readable = OUT.replace(".md", ".json")
+    shutil.copy(SRC, machine_readable)
+    print("json ->", machine_readable)
 
 
 if __name__ == "__main__":

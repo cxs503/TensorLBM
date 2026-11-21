@@ -1,0 +1,19 @@
+{
+  "source_commit": "13e7dd5bac4cc6b4e683394f2651b93630e84be0",
+  "root_directories_before": 15,
+  "root_directories_after": 14,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/X/TENS1-CSF-SMOOTH-R2.md",
+      "new_path": "development/audit/drop_entry/BB/m26894/TENS1-CSF-SMOOTH-R2.md",
+      "original_git_blob": "d97cec02c54b5da16b68de4ef174acdf4a3c2f7c",
+      "git_mode": "100644",
+      "size_bytes": 6246,
+      "original_sha256": "639bbb41dc435533a203b0f411423bd54f1e889bc7d832807fd7596b332ddd86",
+      "published_duplicate": "docs/drop_entry_bb/X_TENS1-CSF-SMOOTH-R2.md"
+    }
+  ],
+  "reference_scan": "The m26894 card generator was the only tracked producer of the retired root path. It now writes only the stable docs/drop_entry_bb publication and cannot recreate drop_entry/.",
+  "compatibility": "The mission card retains identical bytes in development/audit and at its existing public documentation path. The generator keeps its command line and input contract while changing only its output location.",
+  "scientific_scope": "This migration does not modify the adjudication, numerical source, benchmark result, acceptance state or public API. The recorded result remains an honest falsification caused by a wiring defect, not a scientific validation."
+}
