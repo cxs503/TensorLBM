@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Collision Operator Matrix — cluster job.
+"""Historical replay using the frozen solver snapshot.
+
+Collision Operator Matrix — cluster job.
 
 Tests BGK, TRT, RLBM on 2D cases (MRT is MOCK/broken for 2D).
 Writes results to docs/m23039/.
@@ -20,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO / "docs" / "m23039"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-sys.path.insert(0, str(REPO / "TensorLBM" / "src"))
+sys.path.insert(0, str(REPO / "development/legacy/TensorLBM/src"))
 
 from tensorlbm.d2q9 import (
     C as C2Q9, W as W2Q9, OPPOSITE as OPP2Q9, CS2 as CS2_2D,

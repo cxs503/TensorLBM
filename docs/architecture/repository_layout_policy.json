@@ -432,7 +432,6 @@
   },
   "root_directories": [
     ".github",
-    "TensorLBM",
     "app",
     "artifacts",
     "audit",

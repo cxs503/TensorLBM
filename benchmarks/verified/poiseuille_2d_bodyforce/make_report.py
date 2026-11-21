@@ -122,7 +122,7 @@ u(y) = g/(2ν)·y(H−y) ,  u_max = gH²/(8ν) ,  ū = gH²/(12ν)
 
 **复现命令**：
 ```bash
-export PYTHONPATH=TensorLBM/src
+export PYTHONPATH=development/legacy/TensorLBM/src
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py res
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens --only tau,forcing
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens --only steps
@@ -130,7 +130,7 @@ python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens --only legacy
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py merge
 python benchmarks/verified/poiseuille_2d_bodyforce/make_figures.py
 python benchmarks/verified/poiseuille_2d_bodyforce/make_doc.py
-pytest TensorLBM/tests/test_poiseuille_2d_bodyforce.py -q
+pytest development/legacy/TensorLBM/tests/test_poiseuille_2d_bodyforce.py -q
 ```
 """
 

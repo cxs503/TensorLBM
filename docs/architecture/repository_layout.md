@@ -11,7 +11,7 @@ for the intended separation between maintained deliverables and the
 ## Finding code, evidence and earlier work
 
 Install and import from [src/tensorlbm](../../src/tensorlbm/). The separate
-[TensorLBM tree](../../TensorLBM/README.md) contains copies from earlier work.
+[legacy checkout](../../development/legacy/README.md) contains the frozen source, tests and evidence from earlier work.
 Start with [examples](../../examples/) to run a case and the
 [validation matrix](../../benchmarks/validation_matrix/README.md) to check its
 evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.

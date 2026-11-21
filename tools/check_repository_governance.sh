@@ -11,8 +11,3 @@ python tests/test_benchmark_manuals.py -v
 python tools/check_benchmark_manuals.py
 python tests/test_benchmark_registry.py -v
 python tools/benchmark_registry.py
-
-if [[ "$(git rev-parse HEAD:TensorLBM/pyproject.toml)" != 875366fe90ef34991a6c23eade68cd7fd840ed70 ]]; then
-    echo "Historical nested package metadata changed." >&2
-    exit 1
-fi

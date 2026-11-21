@@ -21,7 +21,7 @@ Four machine-checkable legs, all predeclared in
     so no recommendation can be issued for an operating point outside it.
 
 Run ``python -m tensorlbm.stability.envelope --stage all`` inside a checkout to
-regenerate ``TensorLBM/artifacts/p482_n05/``.
+regenerate ``outputs/p482_n05/``.
 """
 
 from __future__ import annotations
@@ -925,7 +925,7 @@ def verify_envelope(path: str | pathlib.Path) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", default="TensorLBM/artifacts/p482_n05", help="artefact directory")
+    parser.add_argument("--out", default="outputs/p482_n05", help="artefact directory")
     parser.add_argument("--quick", action="store_true", help="small grids, smoke test only")
     parser.add_argument("--no-measurements", action="store_true", help="prediction side only")
     parser.add_argument("--verify", default=None, help="verify an existing envelope JSON")

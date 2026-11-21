@@ -10,7 +10,7 @@ Existing stage outputs are reused, so a failed stage never costs the previous
 ones.  Usage::
 
     PYTHONPATH=src python scripts/run_p482_n05_stability_envelope.py --stage all \
-        --out TensorLBM/artifacts/p482_n05
+        --out outputs/p482_n05
 """
 
 from __future__ import annotations
@@ -64,7 +64,7 @@ def _foil_planes(planes_dir: pathlib.Path, quick: bool, force: bool) -> dict[str
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", default=str(ROOT / "TensorLBM" / "artifacts" / "p482_n05"))
+    parser.add_argument("--out", default=str(ROOT / "outputs" / "p482_n05"))
     parser.add_argument("--stage", default="all",
                         choices=("planes", "foils", "measure", "assemble", "all"))
     parser.add_argument("--quick", action="store_true")

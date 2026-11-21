@@ -286,7 +286,7 @@ def test_canonical_json_rounds_and_rejects_non_finite() -> None:
 
 
 @pytest.mark.parametrize("path", [
-    "TensorLBM/artifacts/p482_n05/stability_envelope.json",
+    "development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.json",
 ])
 def test_campaign_artefact_verifies_if_present(path: str) -> None:
     p = pathlib.Path(__file__).resolve().parents[1] / path

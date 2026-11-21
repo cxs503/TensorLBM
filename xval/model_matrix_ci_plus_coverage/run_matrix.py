@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""XVAL: model-matrix-ci-plus-coverage — TensorLBM × CFD-GO/TCLB.
+"""Historical replay using the frozen solver snapshot.
+
+XVAL: model-matrix-ci-plus-coverage — TensorLBM × CFD-GO/TCLB.
 
 Cross-validation of TensorLBM's model matrix coverage against the mature
 open-source practice of CFD-GO/TCLB's model-matrix-ci-plus-coverage approach.
@@ -33,7 +35,7 @@ from pathlib import Path
 import torch
 
 # Add TensorLBM src to path
-SRC = Path(__file__).resolve().parents[2] / "TensorLBM" / "src"
+SRC = Path(__file__).resolve().parents[2] / "development/legacy/TensorLBM/src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 

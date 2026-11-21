@@ -25,7 +25,7 @@ def test_mapped_files_and_historical_objects_are_retained() -> None:
     assert ledger["base_revision"] == "2822dddb763c04b8dbe34572056329057bbe55e4"
     assert len(ledger["path_mappings"]) == ledger["compatibility"]["mapped_files"]
     for row in ledger["path_mappings"]:
-        old = ROOT / row["historical_path"]
+        old = ROOT / "development" / "legacy" / row["historical_path"]
         new = ROOT / row["canonical_path"]
         assert old.is_file() and new.is_file()
         assert git_blob(old) == row["historical_git_blob"]

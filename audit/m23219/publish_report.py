@@ -17,8 +17,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 FIGS = ROOT / "docs/board_audit/m23219/figs"
-ART = ROOT / "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
-REPRO = ROOT / ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
+ART = ROOT / "development/legacy/TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
+REPRO = ROOT / "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
 API = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
 
 
