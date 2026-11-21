@@ -10,6 +10,7 @@ import csv
 import hashlib
 import json
 import re
+import subprocess
 import unittest
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -125,12 +126,26 @@ class RepositoryReportMigrationTests(unittest.TestCase):
 
     def test_wave_one_archive_preserves_source_files_and_both_report_versions(self):
         ledger = json.loads((REPO / "docs/architecture/migrations/m26711-2026-11-21.json").read_text())
-        self.assertEqual(len(ledger["entries"]), 16)
+        self.assertEqual(len(ledger["entries"]), 19)
         for item in ledger["entries"]:
             with self.subTest(path=item["new_path"]):
                 blob = (REPO / item["new_path"]).read_bytes()
                 self.assertEqual(hashlib.sha256(blob).hexdigest(), item["sha256"])
                 self.assertEqual(len(blob), item["size_bytes"])
+                self.assertEqual(
+                    subprocess.check_output(
+                        ["git", "hash-object", item["new_path"]],
+                        cwd=REPO,
+                        text=True,
+                    ).strip(),
+                    item["git_blob"],
+                )
+                index_entry = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index_entry[0], item["git_mode"])
                 self.assertFalse((REPO / item["old_path"]).exists())
         for mission in ledger["report_missions"]:
             report = json.loads((REPO / f"audit/m{mission}/report.json").read_text())
