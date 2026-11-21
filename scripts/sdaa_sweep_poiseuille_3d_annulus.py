@@ -27,7 +27,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 BENCH_DIR = REPO / "benchmarks" / "verified" / "poiseuille_3d_annulus"
-ARTIFACTS_DIR = REPO / "artifacts"
+ARTIFACTS_DIR = REPO / "outputs" / "sdaa" / "poiseuille_3d_annulus"
 DOCS_DIR = REPO / "docs" / "sdaa_sweep"
 
 # Feasible smaller档: min=1000, max=5000 (completes in ~80-150s on sdaa)

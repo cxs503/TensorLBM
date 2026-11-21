@@ -133,3 +133,5 @@ CUDA_VISIBLE_DEVICES=5 PYTHONPATH=../../../src python run.py single 20 <out>.jso
 {"v": 0.0401, "f": "benchmarks/verified/poiseuille_3d_annulus/result.json", "k": "delta_spread_o"},
 {"v": "verified", "f": "benchmarks/verified/poiseuille_3d_annulus/result.json", "k": "verdict"}]
 -->
+
+The [historical SDAA sweep records](evidence/sdaa/) include the v3 CUDA convergence study. The CUDA result does not establish SDAA acceptance.

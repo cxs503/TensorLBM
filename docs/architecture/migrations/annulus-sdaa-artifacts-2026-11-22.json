@@ -1,0 +1,27 @@
+{
+  "source_commit": "a221631df32a53b7e9934c498aa6372e05203da4",
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_poiseuille_3d_annulus.json",
+      "new_path": "benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus.json",
+      "git_mode": "100644",
+      "original_git_blob": "502fdfb2212d3d255e52da4d98a6841ec97f2b21",
+      "original_sha256": "36e1db179f860379652c4a592bd754be988283894f05a4c1b58c756f7b4536c4"
+    },
+    {
+      "old_path": "artifacts/sdaa_poiseuille_3d_annulus_v3.json",
+      "new_path": "benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3.json",
+      "git_mode": "100644",
+      "original_git_blob": "9551da3df918212071daeedca69acb4987652303",
+      "original_sha256": "9ce89587933f2acd3c2feeeb026fef55f077c66ff77a10d9a01ddbd18e88ad85"
+    },
+    {
+      "old_path": "artifacts/sdaa_poiseuille_3d_annulus_v3_report.json",
+      "new_path": "benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3_report.json",
+      "git_mode": "100644",
+      "original_git_blob": "2883c31a7353c3bb759dd583e6731f09d5b46e81",
+      "original_sha256": "8f9f848a21789624405c1ba1cb3c99ae7330f7549d36993b5fd66431645e45d8"
+    }
+  ],
+  "acceptance": "Historical evidence. The v3 CUDA claim remains unsupported as SDAA evidence."
+}

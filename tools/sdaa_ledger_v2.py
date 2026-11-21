@@ -3,7 +3,7 @@
 
 契约（v2）
 ---------
-* 一条 entry = 一份工件实例（磁盘上的 ``artifacts/**/sdaa*.json``）。
+* 一条 entry = 一份工件实例（artifacts/ 或迁移台账登记的 SDAA JSON）。
   同一内容在多棵 mission worktree 里反复出现时，用 ``content_sha256`` +
   ``duplicate_of`` 显式标记副本关系；唯一内容视图见 ``entries_canonical``。
 * 每条 entry **必须**含 ``evidence_level in {REAL,MOCK,STUB,WITHHELD,NOT_SUPPORTED}``。
@@ -17,13 +17,14 @@
 用法::
 
     python3 tools/sdaa_ledger_v2.py               # 全语料（本树 + 全部 mission worktree）
-    python3 tools/sdaa_ledger_v2.py --strict-local # 仅本工作树 artifacts/
+    python3 tools/sdaa_ledger_v2.py --strict-local # 仅本工作树（含已迁移工件）
     python3 tools/sdaa_ledger_v2.py --check        # 只跑机器判据自检
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import glob
 import hashlib
 import html
@@ -505,14 +506,29 @@ def discover(root: Path, worktree_glob: str, strict_local: bool) -> Tuple[List[T
             seen.add(rp)
             files.append((wid, rp, str(rp.relative_to(base.resolve()))))
 
+    manifest = root / "docs/architecture/migration_manifest.csv"
+    if manifest.is_file():
+        with manifest.open(encoding="utf-8", newline="") as stream:
+            for row in csv.DictReader(stream):
+                old = Path(row["old_path"])
+                if old.parts[:1] != ("artifacts",) or not old.match("sdaa*.json"):
+                    continue
+                if EXCLUDE_RE.search(old.name):
+                    continue
+                target = (root / row["new_path"]).resolve()
+                if target in seen or not target.is_file() or not target.is_relative_to(root.resolve()):
+                    continue
+                seen.add(target)
+                files.append(("self", target, old.relative_to("artifacts").as_posix()))
+
     outside = sorted(set(glob.glob("/tmp/sdaa*.json")) - {str(f[1]) for f in files})
     corpus = {
         "roots": [{"worktree": wid, "path": str(base)} for wid, base in roots],
         "worktree_count": len(roots),
         "outside_scope_instances": len(outside),
-        "outside_scope_note": "不在任何 mission worktree artifacts/ 内的同名副本（/tmp 临时产物等），"
+        "outside_scope_note": "不在任何 mission worktree artifacts/ 或迁移台账内的同名副本（/tmp 临时产物等），"
                               "不计入台账口径",
-        "pattern": "artifacts/**/sdaa*.json",
+        "pattern": "artifacts/**/sdaa*.json and registered relocations",
     }
     return files, corpus
 

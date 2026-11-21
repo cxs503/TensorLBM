@@ -13,7 +13,7 @@
 
 ## Deliverables
 
-### 1. Artifact: `artifacts/sdaa_poiseuille_3d_annulus_v3.json`
+### 1. Artifact: `benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3.json`
 - **Size**: 7.4 KB
 - **Content**: Complete SDAA verification artifact with:
   - Diagnosis of Mission 134 failure
@@ -23,7 +23,7 @@
   - Wall clock performance data
   - Conclusions and data provenance
 
-### 2. Report: `artifacts/sdaa_poiseuille_3d_annulus_v3_report.json`
+### 2. Report: `benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3_report.json`
 - **Size**: 8.8 KB
 - **Posted**: ✅ Successfully posted to `/tensor/reports` API
 - **Content**: Paper-grade report with 7 sections:
@@ -140,8 +140,8 @@ All numerical values programmatically extracted from:
 ## Files Modified/Created
 
 ### Created
-- `artifacts/sdaa_poiseuille_3d_annulus_v3.json` (7.4 KB)
-- `artifacts/sdaa_poiseuille_3d_annulus_v3_report.json` (8.8 KB)
+- `benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3.json` (7.4 KB)
+- `benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3_report.json` (8.8 KB)
 - `benchmarks/verified/poiseuille_3d_annulus/convergence_study_v3.py` (12 KB)
 - `SDAA_ROUND3_SUMMARY.md` (this file)
 
