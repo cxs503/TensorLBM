@@ -93,3 +93,5 @@ CUDA_VISIBLE_DEVICES=5 PYTHONPATH=src /srv/tensor/shared/venvs/tensorlbm/bin/pyt
   {"v": "REPLACED_BY_G2a_G2b", "f": "benchmarks/pending/couette_3d/w11/prereg.md", "k": "monotone_clause_disclosure"}
 ]
 ```
+
+See [historical SDAA run evidence](evidence/sdaa/) for the archived results and device records.

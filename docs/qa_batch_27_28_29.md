@@ -68,7 +68,7 @@
 #### ② 数字溯源抽查（3/3 命中）
 | # | 报告数字 | 工件路径 | 工件值 | 判定 |
 |---|---------|---------|--------|------|
-| 1 | couette_3d fp64 L2 误差 **1.62e-14** | `artifacts/sdaa_couette_3d.json` | `"l2_rel_err": 1.6165870021629923e-14` | ✅ 命中 |
+| 1 | couette_3d fp64 L2 误差 **1.62e-14** | `benchmarks/verified/couette_3d/evidence/sdaa/sdaa_couette_3d.json` | `"l2_rel_err": 1.6165870021629923e-14` | ✅ 命中 |
 | 2 | SUBOFF Cumulant 误差 **0.50%** | `artifacts/suboff_bench1_cumulant_sdaa20.json` | `"Cd_total": 0.041785936`, Cf_ref=0.041995 → 误差≈0.50% | ✅ 命中 |
 | 3 | KBC 最终 Cd **22.0622** | `artifacts/kbc_diagnostic_16cube_20steps.json` | `"kbc_final_Cd": 22.06220750870905` | ✅ 命中 |
 
@@ -102,8 +102,8 @@
 #### ② 数字溯源抽查（3/3 命中）
 | # | 报告数字 | 工件路径 | 工件值 | 判定 |
 |---|---------|---------|--------|------|
-| 1 | couette_2d H=40 max_rel_err **0.0202%** | `artifacts/sdaa_couette_2d.json` | `"max_rel_err_masked_pct": 0.020232588745828447` | ✅ 命中 |
-| 2 | couette_2d H=80 max_rel_err **0.0209%** | `artifacts/sdaa_couette_2d.json` | `"max_rel_err_masked_pct": 0.02089242865568622` | ✅ 命中 |
+| 1 | couette_2d H=40 max_rel_err **0.0202%** | `benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_2d.json` | `"max_rel_err_masked_pct": 0.020232588745828447` | ✅ 命中 |
+| 2 | couette_2d H=80 max_rel_err **0.0209%** | `benchmarks/verified/couette_2d/evidence/sdaa/sdaa_couette_2d.json` | `"max_rel_err_masked_pct": 0.02089242865568622` | ✅ 命中 |
 | 3 | CPU 基线 H=40 **0.0198%** | `benchmarks/verified/couette_2d/result.json` | `"max_rel_err_pct": 0.0198` | ✅ 命中 |
 
 #### ③ honest-FAIL 检查

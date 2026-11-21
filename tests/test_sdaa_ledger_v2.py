@@ -226,3 +226,22 @@ def test_local_discovery_preserves_relocated_artifact_identity():
     ):
         assert local[filename] == womersley / filename
         assert json.loads(local[filename].read_text())[field] == verdict
+
+
+def test_fresh_output_and_archived_record_keep_distinct_ids(tmp_path):
+    filename = "sdaa_couette_2d.json"
+    archived_path = Path("benchmarks/verified/couette_2d/evidence/sdaa") / filename
+    output_path = Path("outputs/sdaa/couette_2d") / filename
+    data = (REPO / archived_path).read_bytes()
+    for relative in (archived_path, output_path):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True)
+        path.write_bytes(data)
+    manifest = tmp_path / "docs/architecture/migration_manifest.csv"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(f"old_path,new_path\nartifacts/{filename},{archived_path}\n")
+
+    entries = ledger.build(tmp_path, "", strict_local=True)["entries"]
+    assert {entry["artifact_rel"] for entry in entries} == {filename, output_path.as_posix()}
+    assert len({entry["entry_id"] for entry in entries}) == 2
+    assert len({entry["artifact_sha256"] for entry in entries}) == 1

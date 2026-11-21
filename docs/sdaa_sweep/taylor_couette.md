@@ -128,7 +128,7 @@
 ## 工件
 
 - **脚本**: `scripts/sdaa_sweep_taylor_couette.py`
-- **结果**: `artifacts/sdaa_taylor_couette.json`
+- **结果**: `benchmarks/verified/taylor_couette/evidence/sdaa/sdaa_taylor_couette.json`
 - **文档**: `docs/sdaa_sweep/taylor_couette.md` (本文件)
 
 ## 结论

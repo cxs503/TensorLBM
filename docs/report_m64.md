@@ -123,7 +123,7 @@ Taylor-Couette 流是流体力学经典基准问题：同心圆柱环隙内流�
 
 > **说明**: 本补报单基于已入库的 `sdaa_taylor_couette.json` 工件数据撰写，未重新运行模拟，因此无新生成的场量云图或比较曲线。原案例教程文档（`docs/benchmarks/tutorials/taylor_couette.md`）包含完整的场量可视化（切向速度场、矢量场、分环剖面、网格收敛曲线、有效半径偏移、转矩交叉核对），详见该文档图 1–5。
 
-**无图理由**: 补报单的任务是整理已交付工件的论文级报告，而非重新执行计算。所有定量数据均从 `artifacts/sdaa_taylor_couette.json` 程序化提取，原案例教程已包含完整的可视化图表。
+**无图理由**: 补报单的任务是整理已交付工件的论文级报告，而非重新执行计算。所有定量数据均从 `benchmarks/verified/taylor_couette/evidence/sdaa/sdaa_taylor_couette.json` 程序化提取，原案例教程已包含完整的可视化图表。
 
 ---
 
@@ -189,7 +189,7 @@ SDAA 扫荡使用缩减步数（min_mult=0.1, max_mult=0.2, avg_steps=50），�
 - ✅ 本扫荡使用缩减步数，未满足所有判据
 - ✅ FAIL 原因是步数不足，非 SDAA 设备缺陷
 - ✅ 未降低判据阈值，未用 CPU 结果冒充 SDAA
-- ✅ 所有数值均由 `scripts/sdaa_sweep_taylor_couette.py` 计算并写入 `artifacts/sdaa_taylor_couette.json`，无手抄
+- ✅ 所有数值均由 `scripts/sdaa_sweep_taylor_couette.py` 计算并写入 `benchmarks/verified/taylor_couette/evidence/sdaa/sdaa_taylor_couette.json`，无手抄
 - ✅ 未改业务代码，仅使用独立运行脚本
 
 ---
@@ -197,7 +197,7 @@ SDAA 扫荡使用缩减步数（min_mult=0.1, max_mult=0.2, avg_steps=50），�
 ## 8. 工件清单
 
 - **脚本**: `scripts/sdaa_sweep_taylor_couette.py`
-- **结果 JSON**: `artifacts/sdaa_taylor_couette.json`
+- **结果 JSON**: `benchmarks/verified/taylor_couette/evidence/sdaa/sdaa_taylor_couette.json`
 - **文档**: `docs/sdaa_sweep/taylor_couette.md`
 - **教程**: `docs/benchmarks/tutorials/taylor_couette.md`（含完整可视化）
 

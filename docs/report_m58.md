@@ -139,7 +139,7 @@ $$u(y,t) = U e^{-ky} \cos(\omega t - ky), \quad k = \sqrt{\omega/(2\nu)}$$
 ---
 
 **工件清单**:
-- `artifacts/sdaa_stokes_second_problem.json`: SDAA 完整运行结果
+- `benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json`: SDAA 完整运行结果
 - `benchmarks/verified/stokes_second_problem/scan_out/result.json`: CUDA 基准扫描结果
 - `scripts/sdaa_sweep_stokes_second_problem.py`: 独立运行脚本（未改业务代码）
 

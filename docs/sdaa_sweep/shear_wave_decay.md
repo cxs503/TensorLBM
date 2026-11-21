@@ -99,5 +99,5 @@
 ## 产物
 
 - 运行脚本：`scripts/sdaa_sweep_shear_wave_decay.py`
-- 结果 JSON：`artifacts/sdaa_shear_wave_decay.json`
+- 结果 JSON：`benchmarks/verified/shear_wave_decay/evidence/sdaa/sdaa_shear_wave_decay.json`
 - 本文档：`docs/sdaa_sweep/shear_wave_decay.md`

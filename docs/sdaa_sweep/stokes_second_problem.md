@@ -115,4 +115,4 @@ torch.sdaa.device_count() = 1
 
 - 脚本: `scripts/sdaa_sweep_stokes_second_problem.py`
 - 单点运行器: `scripts/_sdaa_stokes2_single.py`
-- 产物 JSON: `artifacts/sdaa_stokes_second_problem.json`
+- 产物 JSON: `benchmarks/verified/stokes_second_problem/evidence/sdaa/sdaa_stokes_second_problem.json`

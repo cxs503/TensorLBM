@@ -165,6 +165,8 @@ def evaluate_criteria(result: dict) -> dict:
 # Main
 # --------------------------------------------------------------------------- #
 def main():
+    out_path = REPO_ROOT / "outputs" / "sdaa" / "taylor_couette" / "sdaa_taylor_couette.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
     print("SDAA Sweep: taylor_couette benchmark")
     print("=" * 70)
@@ -185,7 +187,6 @@ def main():
             "error": "SDAA device not available",
             "verdict": "FAIL",
         }
-        out_path = REPO_ROOT / "artifacts" / "sdaa_taylor_couette.json"
         out_path.write_text(json.dumps(output, indent=2))
         sys.exit(1)
 
@@ -209,7 +210,6 @@ def main():
             "traceback": traceback.format_exc(),
             "verdict": "FAIL",
         }
-        out_path = REPO_ROOT / "artifacts" / "sdaa_taylor_couette.json"
         out_path.write_text(json.dumps(output, indent=2))
         print(f"  Error details written to: {out_path}")
         sys.exit(1)
@@ -284,7 +284,6 @@ def main():
         ),
     }
 
-    out_path = REPO_ROOT / "artifacts" / "sdaa_taylor_couette.json"
     out_path.write_text(json.dumps(output, indent=2))
     print(f"  Results written to: {out_path}")
 

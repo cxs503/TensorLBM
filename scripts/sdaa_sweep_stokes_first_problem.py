@@ -23,7 +23,7 @@
 
 用法：
     python scripts/sdaa_sweep_stokes_first_problem.py \
-        --out artifacts/sdaa_stokes_first_problem.json [--H 100 200] [--steps 1000 4000 9000]
+        --out outputs/sdaa/stokes_first_problem/sdaa_stokes_first_problem.json [--H 100 200] [--steps 1000 4000 9000]
 """
 
 from __future__ import annotations
@@ -233,7 +233,7 @@ def main() -> int:
     ap.add_argument("--U", type=float, default=0.05)
     ap.add_argument("--nx", type=int, default=8)
     ap.add_argument("--compile-mode", default="eager")
-    ap.add_argument("--out", default=str(REPO / "artifacts" / "sdaa_stokes_first_problem.json"))
+    ap.add_argument("--out", default=str(REPO / "outputs" / "sdaa" / "stokes_first_problem" / "sdaa_stokes_first_problem.json"))
     ap.add_argument(
         "--probe-compile-default",
         action="store_true",

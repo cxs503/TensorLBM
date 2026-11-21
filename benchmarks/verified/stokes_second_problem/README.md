@@ -119,3 +119,5 @@
 
 远壁污染证据的诊断脚本（临时，非交付物）: /srv/tensor/shared/tmp/probe_deep.py
 （k=0.06 定波深域对照）与 /srv/tensor/shared/tmp/diag_stokes.log（H×kH×τ 扫描）。
+
+See [historical SDAA run evidence](evidence/sdaa/) for the archived results and device records.

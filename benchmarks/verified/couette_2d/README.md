@@ -34,3 +34,5 @@ PYTHONPATH=src python benchmarks/verified/couette_2d/run.py scan /tmp/couette_sc
 
 - 真实模拟（无外推），max_rel ≤3% 且两档网格收敛 → 达标
 - 这是最基础的边界+粘性验证（移动壁处理正确性的关键测试）
+
+See [historical SDAA run evidence](evidence/sdaa/) for the archived results and device records.
