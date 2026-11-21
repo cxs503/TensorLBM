@@ -42,9 +42,17 @@ env:
 
 jobs:
   matrix-contract:
-    runs-on: ci-loong64
+    # The PR tier is CPU-only. Keep native runner coverage on main and dispatch.
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || 'ci-loong64' }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        if: github.event_name == 'pull_request'
+        with:
+          python-version: "3.12"
+      - name: Install CPU torch for the PR runner
+        if: github.event_name == 'pull_request'
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Install package and test tools
         run: |
           python -m pip install --upgrade pip
