@@ -1,0 +1,74 @@
+{
+  "source_revision": "d2752d3f9c891fd31ef2333370bd07701aa671b4",
+  "retired_roots": [
+    "figures"
+  ],
+  "original_root_count": 21,
+  "post_migration_root_count": 20,
+  "new_output_directories": {
+    "backward_step_armaly": "outputs/figures/backward_step_armaly",
+    "square_cylinder_re200": "outputs/figures/square_cylinder_re200",
+    "audit_runtest_r6": "outputs/figures/audit_runtest_r6",
+    "kbc_p495w4_n03": "outputs/figures/kbc_p495w4_n03",
+    "p82w5_n04": "outputs/figures/p82w5_n04",
+    "p96w2_n05": "outputs/figures/p96w2_n05"
+  },
+  "entries": [
+    {
+      "old_path": "figures/CASE_BACKWARD_STEP_LBM_cli/provenance_cli_re100_m16.json",
+      "new_path": "benchmarks/case_pool/backward_step_armaly/evidence/provenance_cli_re100_m16.json",
+      "git_blob": "d97fa058981f03dc04a3460c6e4671c01d3ce5e3",
+      "size_bytes": 376,
+      "sha256": "46b5bece7f4f245fedc592a2e874825a2fd39024d9cad8cb0b2a2851bea78cae"
+    },
+    {
+      "old_path": "figures/audit_runtest_r6/figures.json",
+      "new_path": "development/audit/m14496/figures.json",
+      "git_blob": "74de09504cbc0fe0b825e7faf59452ca7f2a0e25",
+      "size_bytes": 179,
+      "sha256": "d548d15a65aac8fbfefef541cd83ef45727306ec27f03acc12f7f09c98850d47"
+    },
+    {
+      "old_path": "figures/fig1_b64.txt",
+      "new_path": "development/audit/m21139/figures/fig1_b64.txt",
+      "git_blob": "3597bd27c283bd8e088840aeff02f4d6a1a0a331",
+      "size_bytes": 114500,
+      "sha256": "aed7ea687ec82569e08afa9de950bd24bd1d10db63c34b1814d3afbb30e2e492"
+    },
+    {
+      "old_path": "figures/fig2_b64.txt",
+      "new_path": "development/audit/m21139/figures/fig2_b64.txt",
+      "git_blob": "a324afe5cd9df09d7aed453211c0ca33e161e877",
+      "size_bytes": 159200,
+      "sha256": "34353f92a2064fd3b9ed6977b3269d2c9101beb22ca13d5af9f618f22e342d5a"
+    },
+    {
+      "old_path": "figures/kbc_p495w4_n03/report.md",
+      "new_path": "docs/reports/kbc_p495w4_n03/report.md",
+      "git_blob": "066c6c998a466311f535c498ac0e26d86b720630",
+      "size_bytes": 9867,
+      "sha256": "e1aa138d382704c93de7d0991b03aa6ae968be887d735bbaef633c9e03deb152"
+    },
+    {
+      "old_path": "figures/p82w5_n04/figures.json",
+      "new_path": "docs/reports/figures/p82w5_n04/figures.json",
+      "git_blob": "817f03dc8e152336c45dc3a12cb1e0f1f990bfb4",
+      "size_bytes": 307,
+      "sha256": "5fbdc8848a04a50b3813fd5f1c1691f357b488d080f22e89b7a75de1a33a6992"
+    },
+    {
+      "old_path": "figures/p96w2_n05/figures.json",
+      "new_path": "docs/assets/taylor-aris/p96w2_n05/figures.json",
+      "git_blob": "b107189d33b9869a463214a3f35c3bf3f5fbd3f4",
+      "size_bytes": 312764,
+      "sha256": "f016fa69f670f67363a3a8cdc9d026c61b2e315f0cba220ba461c9e08dfa4be9"
+    },
+    {
+      "old_path": "figures/square_cylinder_re200/figure_index.json",
+      "new_path": "benchmarks/verified/square_cylinder_re200/evidence/figure_index.json",
+      "git_blob": "51718fab0774168a0ad6b65967477e07692bd095",
+      "size_bytes": 1051,
+      "sha256": "c0df24fda66cef2ce95ba32bfe89cfaeb505164f4c15b90f870907454f49cdeb"
+    }
+  ]
+}

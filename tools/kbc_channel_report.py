@@ -217,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
 
     f = sub.add_parser("figures", help="build report figures from saved cases")
     f.add_argument("--root", default="artifacts/kbc/p495w4-n03")
-    f.add_argument("--fig-dir", default="figures/kbc_p495w4_n03")
+    f.add_argument("--fig-dir", default="outputs/figures/kbc_p495w4_n03")
     f.set_defaults(func=cmd_figures)
 
     args = ap.parse_args(argv)

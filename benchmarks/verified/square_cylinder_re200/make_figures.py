@@ -7,7 +7,7 @@ Outputs PNGs plus a machine-readable figure index (sha256 per file).
 
 Usage:
     python benchmarks/verified/square_cylinder_re200/make_figures.py \
-        --runs runs/m16410_square_cyl_re200 --out figures/square_cylinder_re200
+        --runs runs/m16410_square_cyl_re200 --out outputs/figures/square_cylinder_re200
 """
 
 from __future__ import annotations
@@ -176,7 +176,7 @@ def fig_ladder(cases: dict[Path, tuple[dict, dict[str, dict]]], out: Path,
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", required=True, help="directory holding re*_D*/result.json")
-    ap.add_argument("--out", default=str(CASE_DIR.parents[2] / "figures" / "square_cylinder_re200"))
+    ap.add_argument("--out", default=str(CASE_DIR.parents[2] / "outputs" / "figures" / "square_cylinder_re200"))
     args = ap.parse_args()
 
     runs = Path(args.runs)

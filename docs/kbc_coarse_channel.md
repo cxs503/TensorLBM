@@ -115,7 +115,7 @@ not a usable implicit SGS at Δ+ ≈ 11–18.
 ## 5. Results
 
 See `artifacts/kbc/p495w4-n03/` (per-case `gates.json`, `meta.json`,
-`profiles.csv`, `history.csv`) and `figures/kbc_p495w4_n03/report.md`. The
+`profiles.csv`, `history.csv`) and [the original verification report](reports/kbc_p495w4_n03/report.md). The
 mission report is generated from those artefacts by
 `tools/kbc_build_report.py` — no number in it is typed by hand.
 

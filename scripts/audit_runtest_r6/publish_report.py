@@ -20,7 +20,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
-FIG = REPO / "figures/audit_runtest_r6"
+FIG = REPO / "outputs/figures/audit_runtest_r6"
 MISSION_ID = 14496
 
 

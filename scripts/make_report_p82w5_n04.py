@@ -16,7 +16,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART = os.path.join(ROOT, "artifacts", "P82W5-N04")
-FIG = os.path.join(ROOT, "figures", "p82w5_n04")
+FIG = os.path.join(ROOT, "outputs", "figures", "p82w5_n04")
 
 
 def load(name, case=None):
@@ -305,7 +305,7 @@ def main(argv=None):
         "* 文档：`docs/yield_stress_moving_wall_3d.md`\n"
         "* 基准：`scripts/bench_yield_stress_moving_wall_3d.py`（JSON 落 "
         "`artifacts/P82W5-N04/`，场数据 `.npy` 同名）\n"
-        "* 图：`scripts/gen_yield_stress_moving_wall_figures.py` → `figures/p82w5_n04/`\n"
+        "* 图：`scripts/gen_yield_stress_moving_wall_figures.py` → `outputs/figures/p82w5_n04/`\n"
         "* 测试：`tests/test_yield_stress_moving_wall_3d.py`（11 项，含解析恒等式、"
         "AL 参考解交叉验证、移动壁牛顿锚、账本恒等式、质量守恒）\n")
 

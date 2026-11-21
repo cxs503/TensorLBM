@@ -8,7 +8,7 @@ index — nothing is typed by hand (report discipline: 零手抄).
 Usage:
     python benchmarks/verified/square_cylinder_re200/make_report.py \
         --runs runs/m16410_square_cyl_re200 \
-        --figures figures/square_cylinder_re200 \
+        --figures outputs/figures/square_cylinder_re200 \
         --md docs/CASE-LBM-SQUARE-CYL-NORBERG-RE200.md \
         --payload /tmp/report.json --mission-id 16410
 """
@@ -266,7 +266,7 @@ def build_payload(md: str, cases, reference, figure_index, runs: Path, mission_i
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", default=str(REPO / "runs" / "m16410_square_cyl_re200"))
-    ap.add_argument("--figures", default=str(REPO / "figures" / "square_cylinder_re200"))
+    ap.add_argument("--figures", default=str(REPO / "outputs" / "figures" / "square_cylinder_re200"))
     ap.add_argument("--md", default=str(REPO / "docs" / "CASE-LBM-SQUARE-CYL-NORBERG-RE200.md"))
     ap.add_argument("--payload", default="/tmp/report.json")
     ap.add_argument("--mission-id", type=int, default=16410)
