@@ -1,0 +1,20 @@
+{
+  "source_commit": "b665300caeff0ef763703aba32e69fc162e2d14a",
+  "source_pr": 2900,
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "main_root_directories_expected": 13,
+  "entries": [
+    {
+      "old_path": "BB/X/DE-X-COL3-CUM.md",
+      "new_path": "development/audit/drop_entry/BB/m26959/DE-X-COL3-CUM.md",
+      "original_git_blob": "a39cc804d6b578cdd3ffe917bf4c66fe278a924b",
+      "git_mode": "100644",
+      "size_bytes": 3697,
+      "original_sha256": "6f3e6521a0846b64aac9de20b3a5ae34bd707c5c3b90bb8e6762b53b67d22213"
+    }
+  ],
+  "reference_scan": "Exact filename is absent from tracked consumers. The original card has no relative Markdown links.",
+  "compatibility": "Keep the internal work card byte-identical and leave the published documentation, solver, runners, tests and their paths intact. The root directory change applies to the PR tree before it enters main.",
+  "scientific_scope": "The original mission's statements and results are retained verbatim. This add-on only changes file ownership and makes no scientific claim."
+}
