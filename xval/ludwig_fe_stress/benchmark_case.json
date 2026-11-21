@@ -1,0 +1,38 @@
+{
+  "source": [
+    "xval/ludwig_fe_stress/run_xval.py",
+    "src/tensorlbm/free_energy_stress.py",
+    "experiments/xval_ludwig_fe_stress/run_xval.py",
+    "experiments/xval_ludwig_fe_stress/make_figures.py"
+  ],
+  "config": [
+    "xval/ludwig_fe_stress/run_xval.py"
+  ],
+  "documentation": [
+    "docs/XVAL_LUDWIG_FE_STRESS.md",
+    "docs/board_audit/m17881/AUDIT_m17763_FE_STRESS.md"
+  ],
+  "reference_files": [
+    "docs/XVAL_LUDWIG_FE_STRESS.md",
+    "src/tensorlbm/free_energy_stress.py"
+  ],
+  "results": [
+    "experiments/xval_ludwig_fe_stress/results.json",
+    "xval/ludwig_fe_stress/replays/2026-11-21.json",
+    "docs/architecture/migrations/ludwig-fe-stress-2026-11-21.json"
+  ],
+  "references": [
+    {
+      "source": "docs/XVAL_LUDWIG_FE_STRESS.md",
+      "field": "Method and comparator",
+      "value": "Symmetric binary-fluid analytic interfacial tension and the Ludwig stress-divergence formulation documented in the case report."
+    }
+  ],
+  "scope": "Static analytic planar and curved-interface tension on prescribed two-dimensional fields. The runner also reports discrete force differences. It does not run an external Ludwig binary.",
+  "criteria": {
+    "metric": "maximum relative surface-tension error across six planar and two curved-interface cases",
+    "operator": "<",
+    "threshold": 0.15,
+    "force_difference": "diagnostic only"
+  }
+}

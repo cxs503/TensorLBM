@@ -74,6 +74,48 @@ def attach_validation_matrix(records: list[dict], root: Path) -> list[str]:
     return errors
 
 
+def attach_xval_cases(records: list[dict], root: Path) -> list[str]:
+    """Register declared cross-validations and check each path against the Git index."""
+    manifests = sorted(tracked_files(root, ":(glob)xval/*/benchmark_case.json"))
+    if not manifests:
+        return []
+    tracked = tracked_files(root)
+    errors = []
+    for manifest in manifests:
+        definition = json.loads((root / manifest).read_text(encoding="utf-8"))
+        case_id = f"xval:{manifest.parent.name}"
+        fields = ("source", "config", "documentation", "reference_files", "results")
+        if not isinstance(definition, dict):
+            errors.append(f"{manifest}: expected a JSON object")
+            continue
+        previous_errors = len(errors)
+        if not isinstance(definition.get("scope"), str) or not definition["scope"].strip():
+            errors.append(f"{manifest}: missing cross-validation scope")
+        if not isinstance(definition.get("criteria"), dict) or not definition["criteria"]:
+            errors.append(f"{manifest}: missing cross-validation criteria")
+        for field in fields:
+            paths = definition.get(field)
+            if not isinstance(paths, list):
+                errors.append(f"{manifest}: expected a list of paths for {field}")
+                continue
+            for path in paths:
+                if not isinstance(path, str) or PurePosixPath(path) not in tracked or not (root / path).is_file():
+                    errors.append(f"{manifest}: missing tracked {field} asset {path!r}")
+        if not definition.get("source") or not definition.get("results"):
+            errors.append(f"{manifest}: a cross-validation requires a source and a result")
+        if len(errors) == previous_errors:
+            records.append({
+                "id": case_id, "category": "cross_validation", "tutorial": {},
+                "current_acceptance": "not_evaluated", "validation_matrix": [],
+                "variants": [{"path": str(manifest.parent), "archive_bucket": "xval",
+                              **{field: definition[field] for field in fields},
+                              "references": definition.get("references", [])}],
+                "cross_validation": {"manifest": str(manifest), "scope": definition["scope"],
+                                     "criteria": definition["criteria"]},
+            })
+    return errors
+
+
 def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
     catalogue = check(root)
     errors = list(catalogue["errors"])
@@ -152,6 +194,7 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
             "variants": [assets(str(path))], "current_acceptance": "not_evaluated",
         })
     errors.extend(attach_validation_matrix(records, root))
+    errors.extend(attach_xval_cases(records, root))
     return records, errors
 
 
