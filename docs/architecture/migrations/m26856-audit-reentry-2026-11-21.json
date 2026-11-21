@@ -1,0 +1,32 @@
+{
+  "source_commit": "41c814039f2198f80b5abeb805ced9191cd3e1db",
+  "root_directories_before": 15,
+  "root_directories_after": 14,
+  "entries": [
+    {
+      "old_path": "audit/drop_entry/BB/NEXT/TRACK_GAS_W2.md",
+      "new_path": "development/audit/drop_entry/BB/m26856/NEXT/TRACK_GAS_W2.md",
+      "original_git_blob": "d82c4d5925724fccd7e9b20b1b81824acf122e56",
+      "git_mode": "100644",
+      "original_sha256": "ce181c8fe8164de04c905f0b53359f258106240814f6d67e9100dcc54cdce5b5"
+    },
+    {
+      "old_path": "audit/drop_entry/BB/tmp/DE-NXT-GAS-W2.draft.md",
+      "new_path": "development/audit/drop_entry/BB/m26856/tmp/DE-NXT-GAS-W2.draft.md",
+      "original_git_blob": "71fd3596d09844ef7de6b5dd470799b776f04955",
+      "git_mode": "100644",
+      "original_sha256": "eb5a3a31b5aa44e53da3dcb9f2a83d0a29f04e641041706afe3a3a71eebad809"
+    },
+    {
+      "old_path": "send_report.py",
+      "new_path": "development/audit/drop_entry/BB/m26856/send_report.py",
+      "original_git_blob": "a4e9eb8461730278cc69b85619b3488311aa947a",
+      "git_mode": "100644",
+      "original_sha256": "7373def28b1bbf7e8c6a45ee037176c71be90528c81c3ab1e13d68d18e0c4e2a",
+      "new_sha256": "dd422f36832552d28490022377921ded55f5624ec8d05616df85b89cff50f0c4",
+      "difference": "Replace hard-coded login fields with environment variables in the archived publisher."
+    }
+  ],
+  "compatibility": "The two audit documents retain identical bytes. The mission publisher had no current executable caller. It was syntax-checked without sending a request.",
+  "credential_scope": "The archived publisher reads credentials from the environment. Existing repository history still contains the original hard-coded values."
+}
