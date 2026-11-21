@@ -19,8 +19,13 @@ New raw runs go to ignored output locations. Large data should have versioned
 external storage, SHA-256, a retrieval command and generating provenance. Do not
 externalize existing fixtures until consumers can retrieve and validate them.
 
-A common benchmark manifest/schema and automatic lifecycle validation are planned,
-not yet implemented by the repository layout gate. See the
+Use `python tools/benchmark_registry.py --case couette_2d` from the repository
+root to look up tracked runners, local references, results and tutorial downloads.
+Use `--json` to export all records from the published tutorial catalogue and
+the immediate lifecycle/case-pool directories. Nested campaign assets and
+standalone campaign folders still require manual registration. The registry
+lists available evidence and leaves current acceptance unevaluated.
+See the
 [test/benchmark map](../docs/architecture/test_and_benchmark_map.md),
 [layout policy](../docs/architecture/repository_layout.md) and
 [migration candidates](../docs/architecture/migration_manifest.csv).

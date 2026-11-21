@@ -243,4 +243,4 @@ def test_readme_links_tutorial():
     readme = (REPO / "README.md").read_text()
     assert "docs/benchmarks/tutorials/couette_poiseuille.md" in readme
     index = TUTORIAL_INDEX.read_text()
-    assert "tutorials/couette_poiseuille.md" in index
+    assert "](couette_poiseuille.md)" in index

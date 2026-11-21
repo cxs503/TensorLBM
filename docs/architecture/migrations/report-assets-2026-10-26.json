@@ -15,6 +15,12 @@
         "benchmarks/verified/couette_3d/figures/field_midplane_speed.png": "../../benchmarks/verified/couette_3d/figures/field_midplane_speed.png",
         "benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png": "../../benchmarks/verified/couette_3d/figures/curve_profile_vs_analytical.png",
         "benchmarks/verified/couette_3d/figures/curve_l2_convergence.png": "../../benchmarks/verified/couette_3d/figures/curve_l2_convergence.png"
+      },
+      "current_fingerprint": {
+        "revision": "2733d6870a552ce054faf977107a45fecc1215bc",
+        "reason": "Existing path-prefix substitutions verified against source_revision; all other bytes match. Report fingerprint excludes the declared link rewrites and layout note.",
+        "bytes": 6474,
+        "sha256": "2a433147cd9afe08be66050f1df98bf98adf2182cca29c415c86e03013da24c9"
       }
     },
     {
@@ -127,12 +133,24 @@
     {
       "path": "benchmarks/pending/couette_3d/w11/prereg.md",
       "sha256": "f7d70e47cfc84b1766292de8ca96e4be31013c8035a0f3ed5b950af1de0d784b",
-      "bytes": 10560
+      "bytes": 10560,
+      "current_fingerprint": {
+        "revision": "2733d6870a552ce054faf977107a45fecc1215bc",
+        "reason": "Existing path-prefix substitutions verified against source_revision; all other bytes match. Report fingerprint excludes the declared link rewrites and layout note.",
+        "bytes": 10607,
+        "sha256": "d29a762d6e77a7867c1e5e5f1976de32889b60a1269e9f2be749922ec8051b3f"
+      }
     },
     {
       "path": "benchmarks/verified/couette_3d/result.json",
       "sha256": "f0a1200f20022a30ffc00cf2e38198ccad6e4bc0fb9f81e5d10f822f3947bfaa",
-      "bytes": 4465
+      "bytes": 4465,
+      "current_fingerprint": {
+        "revision": "2733d6870a552ce054faf977107a45fecc1215bc",
+        "reason": "Existing path-prefix substitutions verified against source_revision; all other bytes match. Report fingerprint excludes the declared link rewrites and layout note.",
+        "bytes": 4507,
+        "sha256": "9f70349f1dc099200fed83e0fd2ff283b506120cb4928911b12b9ff2a35040ae"
+      }
     },
     {
       "path": "benchmarks/verified/couette_3d/gates.json",
