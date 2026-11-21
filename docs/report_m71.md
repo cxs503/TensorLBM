@@ -186,7 +186,7 @@ $$U(y) = \frac{a_0}{i\omega}\left[1 - \frac{\cosh(\lambda y')}{\cosh(\lambda)}\r
 
 ## 附录：工件清单
 
-- `artifacts/sdaa_womersley.json`：完整运行结果（4 配置 × 8 相位 × 3 准则）
+- [归档运行结果](../benchmarks/verified/womersley/evidence/sdaa/sdaa_womersley.json)：4 配置 × 8 相位 × 3 准则，机器终态 `FAIL`。
 - `scripts/sdaa_sweep_womersley.py`：独立运行脚本（未改业务代码）
 - `benchmarks/verified/womersley/README.md`：案例文档与判据口径
 

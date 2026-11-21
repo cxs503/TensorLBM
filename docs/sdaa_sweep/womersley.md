@@ -88,4 +88,4 @@ Total wall clock ≤ 20 min ✓
 
 ## Artifacts
 
-- `artifacts/sdaa_womersley.json` — full machine output with device evidence, per-grid metrics, phase tables, compile status, and PASS/FAIL verdicts
+- [Archived machine output](../../benchmarks/verified/womersley/evidence/sdaa/sdaa_womersley.json) — device evidence, per-grid metrics, phase tables, compile status, and the machine verdict `FAIL`. The [CPU diagnosis](../../benchmarks/verified/womersley/evidence/sdaa/sdaa_womersley_v2.json) records `honest-FAIL` for the default coarse-grid configuration.

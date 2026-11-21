@@ -219,3 +219,10 @@ def test_local_discovery_preserves_relocated_artifact_identity():
     assert local["sdaa_poiseuille_3d_annulus_v3.json"] == (
         REPO / "benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3.json"
     )
+    womersley = REPO / "benchmarks/verified/womersley/evidence/sdaa"
+    for filename, field, verdict in (
+        ("sdaa_womersley.json", "status", "FAIL"),
+        ("sdaa_womersley_v2.json", "verdict", "honest-FAIL"),
+    ):
+        assert local[filename] == womersley / filename
+        assert json.loads(local[filename].read_text())[field] == verdict

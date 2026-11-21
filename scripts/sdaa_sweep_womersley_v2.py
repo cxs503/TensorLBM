@@ -193,7 +193,7 @@ def run_case(
 
 
 def main() -> None:
-    out_dir = REPO_ROOT / "artifacts"
+    out_dir = REPO_ROOT / "outputs" / "sdaa" / "womersley"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     all_results = []

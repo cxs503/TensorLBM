@@ -306,7 +306,7 @@ def main() -> None:
         "status": "PASS" if overall_pass else "FAIL",
     }
 
-    out_path = REPO_ROOT / "artifacts" / "sdaa_womersley.json"
+    out_path = REPO_ROOT / "outputs" / "sdaa" / "womersley" / "sdaa_womersley.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2))
     print(f"\nResults written to {out_path}", flush=True)
