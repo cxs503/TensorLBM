@@ -229,6 +229,18 @@
    "validation_status_json": false
   },
   {
+   "case": "difflbm_solid_limit",
+   "dir": "benchmarks/pending/difflbm_solid_limit",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
    "case": "dit_turbulence",
    "dir": "benchmarks/pending/dit_turbulence",
    "index_class": "fail",
@@ -286,6 +298,18 @@
    "machine_source": null,
    "readme": true,
    "result_json": true,
+   "validation_status_json": false
+  },
+  {
+   "case": "free_energy_selection",
+   "dir": "benchmarks/pending/free_energy_selection",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
    "validation_status_json": false
   },
   {
@@ -613,6 +637,18 @@
    "validation_status_json": false
   },
   {
+   "case": "square_cylinder_norberg",
+   "dir": "benchmarks/pending/square_cylinder_norberg",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
    "case": "staircase_wall_offset",
    "dir": "benchmarks/pending/staircase_wall_offset",
    "index_class": null,
@@ -651,6 +687,18 @@
   {
    "case": "suboff_highre_resistance",
    "dir": "benchmarks/pending/suboff_highre_resistance",
+   "index_class": null,
+   "index_rows": 0,
+   "machine": "unknown",
+   "machine_key": null,
+   "machine_source": null,
+   "readme": true,
+   "result_json": false,
+   "validation_status_json": false
+  },
+  {
+   "case": "suboff_hybrid",
+   "dir": "benchmarks/pending/suboff_hybrid",
    "index_class": null,
    "index_rows": 0,
    "machine": "unknown",
@@ -722,14 +770,14 @@
   }
  ],
  "counts": {
-  "advertised_pending": 60,
+  "advertised_pending": 64,
   "advertised_verified": 91,
-  "pending_dirs": 60,
+  "pending_dirs": 64,
   "pending_index_rows": 36,
   "pending_machine_fail": 19,
   "pending_machine_pass": 1,
-  "pending_machine_unknown": 40,
-  "pending_with_readme": 44,
+  "pending_machine_unknown": 44,
+  "pending_with_readme": 48,
   "pending_with_result_json": 31,
   "status_md_verified_rows": 36,
   "verified_dirs": 91
