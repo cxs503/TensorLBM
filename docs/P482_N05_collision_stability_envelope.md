@@ -4,7 +4,7 @@
 *Module*: `tensorlbm.stability.collision_stability` (models, prediction, measurement)
 + `tensorlbm.stability.envelope` (campaign, envelope, gate)
 *Tests*: `tests/test_lbm_collision_stability_envelope.py`
-*Artefacts*: `TensorLBM/artifacts/p482_n05/` (envelope JSON, plane CSV, figure, manifest)
+*Artefacts*: `development/legacy/TensorLBM/artifacts/p482_n05/` (envelope JSON, plane CSV, figure, manifest)
 *Runner*: `scripts/run_p482_n05_stability_envelope.py` (staged, resumable)
 
 ## 0 Executive summary
@@ -161,13 +161,13 @@ outside the stable region.
 - 逐档 `lambda_max` 平面按 9 位小数归档，并各自带 `lambda_grid_sha256`；整个 envelope 再取
   `digest = sha256(canonical_json(envelope \ {digest}))`（canonical = 按键排序、无空白、浮点 12 位）。
 - `MANIFEST.json` 记录每个产物的 SHA-256（envelope JSON / 平面 CSV / 图）。
-- 复算校验：`python -m tensorlbm.stability.envelope --verify TensorLBM/artifacts/p482_n05/stability_envelope.json`
+- 复算校验：`python -m tensorlbm.stability.envelope --verify development/legacy/TensorLBM/artifacts/p482_n05/stability_envelope.json`
   应输出 `intact: true`；`m4_reproducibility.recompute_sample_*` 记录重算抽样点及其 sha256。
 - 复现命令：
 
 ```bash
 PYTHONPATH=src python scripts/run_p482_n05_stability_envelope.py --stage all \
-    --out TensorLBM/artifacts/p482_n05
+    --out outputs/p482_n05
 PYTHONPATH=src python -m pytest tests/test_lbm_collision_stability_envelope.py -q
 PYTHONPATH=src python scripts/p482_n05_write_docs.py
 ```

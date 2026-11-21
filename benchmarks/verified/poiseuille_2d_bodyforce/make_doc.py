@@ -190,7 +190,7 @@ u_max  = g H²/(8ν)        （通道中心）
 
 ```bash
 # 一键复现（约 100 s，CPU；全流程确定性、无随机数）
-export PYTHONPATH=TensorLBM/src
+export PYTHONPATH=development/legacy/TensorLBM/src
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py res            # 网格收敛
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens --only tau,forcing
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens --only steps
@@ -198,13 +198,13 @@ python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens --only legacy
 python benchmarks/verified/poiseuille_2d_bodyforce/run.py merge          # result.json
 python benchmarks/verified/poiseuille_2d_bodyforce/make_figures.py       # figs/*.png
 python benchmarks/verified/poiseuille_2d_bodyforce/make_doc.py           # 本文档
-pytest TensorLBM/tests/test_poiseuille_2d_bodyforce.py -q                # 回归电池
+pytest development/legacy/TensorLBM/tests/test_poiseuille_2d_bodyforce.py -q                # 回归电池
 ```
 
 - `benchmarks/verified/poiseuille_2d_bodyforce/result.json`
 - `benchmarks/verified/poiseuille_2d_bodyforce/res_raw.json`、`sens_raw_*.json`、`legacy_h64.json`
 - `benchmarks/verified/poiseuille_2d_bodyforce/figs/*.png`
-- 回归测试 `TensorLBM/tests/test_poiseuille_2d_bodyforce.py`（含"截断源项必须被检出"的负向对照）
+- 回归测试 `development/legacy/TensorLBM/tests/test_poiseuille_2d_bodyforce.py`（含"截断源项必须被检出"的负向对照）
 
 **参考文献**
 

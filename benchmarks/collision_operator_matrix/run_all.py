@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Collision Operator Applicability Matrix — m23039.
+"""Historical replay using the frozen solver snapshot.
+
+Collision Operator Applicability Matrix — m23039.
 
 Tests all *existing* collision operators in TensorLBM across three canonical
 benchmarks:
@@ -16,11 +18,11 @@ Operators:
   - Cumulant:   NOT_SUPPORTED
 
 Usage:
-    PYTHONPATH=TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py
-    PYTHONPATH=TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case tg2d
-    PYTHONPATH=TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case cylinder
-    PYTHONPATH=TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case channel
-    PYTHONPATH=TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --smoke
+    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py
+    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case tg2d
+    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case cylinder
+    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --case channel
+    PYTHONPATH=development/legacy/TensorLBM/src:. python benchmarks/collision_operator_matrix/run_all.py --smoke
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 # ---------------------------------------------------------------------------
 # Import TensorLBM kernels
 # ---------------------------------------------------------------------------
-sys.path.insert(0, str(REPO / "TensorLBM" / "src"))
+sys.path.insert(0, str(REPO / "development/legacy/TensorLBM/src"))
 
 from tensorlbm.d2q9 import (
     C as C2Q9, W as W2Q9, OPPOSITE as OPP2Q9, CS2 as CS2_2D,

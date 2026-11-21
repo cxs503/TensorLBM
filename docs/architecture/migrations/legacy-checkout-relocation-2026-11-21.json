@@ -1,0 +1,88 @@
+{
+  "source_revision": "8f61b90530e635888fccb56a4cd655b15fde7863",
+  "old_path": "TensorLBM/",
+  "new_path": "development/legacy/TensorLBM/",
+  "source_tree_oid": "f482f80c56e861d7a5c038d1b6647394edaa1ba2",
+  "destination_tree_oid": "f482f80c56e861d7a5c038d1b6647394edaa1ba2",
+  "tracked_files": 631,
+  "sha256_manifest": "development/legacy/TensorLBM.sha256",
+  "original_root_count": 21,
+  "post_migration_root_count": 20,
+  "archive_discovery": "tools/benchmark_registry.py --find-asset",
+  "numerical_replay": {
+    "backend": "PyTorch 2.9.1 CPU",
+    "comparison": "The two import probes and the three short execution outcomes match the pre-move checkout after normalizing provider path and wall time.",
+    "entries": [
+      {
+        "name": "collision_local",
+        "provider": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "result": {
+          "collider": "BGK",
+          "error": "'float' object cannot be interpreted as an integer",
+          "n": 16,
+          "re": 100,
+          "stable": false,
+          "u0": 0.05
+        }
+      },
+      {
+        "name": "collision_cluster",
+        "provider": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "result": {
+          "err_e_pct": -6.419,
+          "err_vel_pct": -5.3753,
+          "gamma_e_sim": 0.004618035091103071,
+          "gamma_e_theory": 0.004934802200544679,
+          "gamma_vel_sim": 0.002334769796983982,
+          "gamma_vel_theory": 0.0024674011002723396,
+          "mass_drift_rel": -0.0,
+          "n": 16,
+          "n_samples": 8,
+          "nu": 0.008,
+          "r2": 0.978682,
+          "re": 100,
+          "stable": true,
+          "tau": 0.524,
+          "u0": 0.05
+        }
+      },
+      {
+        "name": "model_matrix",
+        "provider": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "result": {
+          "collision": "BGK",
+          "l2_error": 0.03779607400083432,
+          "lattice": "D2Q9",
+          "name": "poiseuille_2d",
+          "pass": false,
+          "physics": "single_phase",
+          "re": 100,
+          "relative_error_pct": 75.59214800166863,
+          "steps": 20,
+          "tau": 19.25,
+          "test_id": "TC01",
+          "u_max_ref": 0.05,
+          "u_max_sim": 0.0
+        }
+      },
+      {
+        "name": "forcing",
+        "provider": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "result": {
+          "loaded": true
+        }
+      },
+      {
+        "name": "planar",
+        "provider": "development/legacy/TensorLBM/src/tensorlbm/__init__.py",
+        "result": {
+          "loaded": true
+        }
+      }
+    ],
+    "scope": "Path compatibility. Historical outcome fields remain unchanged and confer no new acceptance."
+  },
+  "current_output_routing": {
+    "P482-N05": "outputs/p482_n05/"
+  }
+}

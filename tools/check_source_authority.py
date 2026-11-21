@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Enforce the canonical source tree without deleting historical code.
 
-The nested ``TensorLBM/src`` tree is retained as a frozen research asset.  It
+The old checkout is retained as a complete, frozen research archive. It
 must not silently regain production consumers.  Existing consumers are an
 explicit migration backlog, recorded by matching-line digest rather than being
 mistaken for acceptable architecture.
@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "docs/architecture/source_authority_policy.json"
 TOKEN = "TensorLBM/src"
+ARCHIVE = "development/legacy/TensorLBM"
 CHECKOUT, SOURCE = TOKEN.split("/")
 SPLIT_PATH = re.compile(rf"""['"]{CHECKOUT}['"]\s*[/,]\s*['"]{SOURCE}['"]""")
 TEXT_SUFFIXES = {".py", ".sh", ".toml", ".yaml", ".yml"}
@@ -49,7 +50,7 @@ def _is_literal(node: ast.AST, value: str) -> bool:
 
 def matching_reference_lines(text: str, path: Path) -> list[str]:
     lines = text.splitlines()
-    matched = {number for number, line in enumerate(lines, 1) if TOKEN in line}
+    matched = {number for number, line in enumerate(lines, 1) if TOKEN in line or ARCHIVE in line}
     if path.suffix == ".py" and SPLIT_PATH.search(text):
         for node in ast.walk(ast.parse(text, filename=str(path))):
             pairs = ()
@@ -106,7 +107,7 @@ def validate(policy: dict) -> list[str]:
     actual_tree = _git("rev-parse", f"HEAD:{policy['historical_root']}")
     if actual_tree != policy["historical_tree_oid"]:
         errors.append(
-            "historical nested tree changed: "
+            "historical checkout tree changed: "
             f"expected {policy['historical_tree_oid']}, got {actual_tree}"
         )
 

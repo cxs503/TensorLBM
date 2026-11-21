@@ -1,4 +1,6 @@
-"""TensorLBM arm of XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE.
+"""Historical replay using the frozen solver snapshot.
+
+TensorLBM arm of XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE.
 
 Replicates the ``nfluids = 2`` branch of the OSS reference
 (``lbm-principles-practice/code`` chapter9/shanchen.cpp) with the in-repo
@@ -45,7 +47,7 @@ import torch
 # thread fan-out on a 64x64 tensor (measured 13.8 ms/step vs 175 ms/step)
 torch.set_num_threads(1)
 
-ROOT = Path(__file__).resolve().parents[1] / "TensorLBM"
+ROOT = Path(__file__).resolve().parents[2] / "development/legacy/TensorLBM"
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 

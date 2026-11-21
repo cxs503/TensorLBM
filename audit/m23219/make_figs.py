@@ -4,9 +4,9 @@
 Everything plotted is read from *shipped* artifacts or from this audit's own
 reproduction; nothing is typed in by hand:
 
-* ``TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/results.json``
+* ``development/legacy/TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/results.json``
   (delivered numbers, in the repo)
-* ``.audit/m23219/repro/...`` (auditor re-run of ``--only exact`` / ``--only
+* ``development/audit/m23219/repro/...`` (auditor re-run of ``--only exact`` / ``--only
   acoustic``; bit-exact copies of the shipped chunks)
 * ``tensor_benchmark_cases`` row for the anchor (read live from PostgreSQL —
   the benchmark judge)
@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-ART = ROOT / "TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
-REPRO = ROOT / ".audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
+ART = ROOT / "development/legacy/TensorLBM/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
+REPRO = ROOT / "development/audit/m23219/repro/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts"
 OUT = ROOT / "docs/board_audit/m23219/figs"
 OUT.mkdir(parents=True, exist_ok=True)
 

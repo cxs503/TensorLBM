@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Publish the P482-N05 stability-envelope report (numbers injected, no hand-copy).
 
-Reads ``TensorLBM/artifacts/p482_n05/stability_envelope.json`` (plus the figure),
+Reads the completed run under ``outputs/p482_n05/`` or the archived envelope and figure,
 builds the six-section markdown and POSTs it to ``$TENSOR_API_BASE/tensor/reports``.
 
     PYTHONPATH=src python scripts/p482_n05_publish_report.py --mission-id 9435 [--dry-run]
@@ -19,7 +19,9 @@ import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-ART = ROOT / "TensorLBM" / "artifacts" / "p482_n05"
+ARCHIVED_ART = ROOT / "development/legacy/TensorLBM/artifacts/p482_n05"
+RUN_ART = ROOT / "outputs" / "p482_n05"
+ART = RUN_ART if (RUN_ART / "MANIFEST.json").is_file() else ARCHIVED_ART
 BUDGET_B64 = 180_000
 
 

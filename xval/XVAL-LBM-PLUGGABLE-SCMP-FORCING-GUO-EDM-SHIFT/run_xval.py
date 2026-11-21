@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-"""XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT — Round 2 cross-benchmark.
+"""Historical replay using the frozen solver snapshot.
+
+XVAL-LBM-PLUGGABLE-SCMP-FORCING-GUO-EDM-SHIFT — Round 2 cross-benchmark.
 
 Cross-validate TensorLBM's pluggable SCMP forcing schemes (velocity_shift,
 EDM, Guo) against a clean reference implementation derived from the
@@ -32,7 +34,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Repo import — use the work directory directly
 # ---------------------------------------------------------------------------
-_REPO = (Path(__file__).resolve().parents[2] / "TensorLBM")  # TensorLBM root
+_REPO = Path(__file__).resolve().parents[2] / "development/legacy/TensorLBM"
 sys.path.insert(0, str(_REPO / "src"))
 
 from tensorlbm.d2q9 import C, W, equilibrium, macroscopic, stream  # noqa: E402
