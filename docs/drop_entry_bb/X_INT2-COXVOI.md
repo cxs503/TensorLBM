@@ -1,5 +1,7 @@
 # INT2-COXVOI: Cox-Voinov Dynamic Wetting Law
 
+> 本页保留 #2850 的研究记录。源码与验证脚本已归入[m26820 研究档案](../../development/experiments/m26820/cox_voinov/README.md)，其中记录了原始修订、复跑命令和稳定性结果。
+
 ## 物理出处
 Cox (1986) J. Fluid Mech. 168, 169: θ_d^3 = θ_e^3 + 9·Ca·ln(L/λ)
 - θ_d: 动态接触角, θ_e: 平衡(静态)接触角
