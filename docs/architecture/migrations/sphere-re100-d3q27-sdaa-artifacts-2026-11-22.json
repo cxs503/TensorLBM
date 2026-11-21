@@ -1,0 +1,98 @@
+{
+  "source_commit": "cc11695ac916d9f9da2af63bb601328ca6c2bb5c",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "mapping": {
+    "old_summary": "artifacts/sdaa_sphere_re100_d3q27.json",
+    "old_tier_root": "artifacts/sdaa_sphere_re100_d3q27_tiers",
+    "old_log_root": "artifacts/logs",
+    "new_root": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep"
+  },
+  "entries": [
+    {
+      "old_path": "artifacts/logs/probe.log",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/logs/probe.log",
+      "git_mode": "100644",
+      "original_git_blob": "a0132d626e70da39048a69f3f10396a18c277c4e",
+      "size_bytes": 1223,
+      "original_sha256": "79fc18f7839e071188f7876da5ef0afe57fd4221be953613551f8eebac48b468"
+    },
+    {
+      "old_path": "artifacts/logs/sweep.log",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/logs/sweep.log",
+      "git_mode": "100644",
+      "original_git_blob": "a39714b5f3bd1ab4393296b8b8042f566de752fe",
+      "size_bytes": 2513,
+      "original_sha256": "b71b8c6d734c004c58455b63629cd0315891f68a3f6dbc429b9c3533815644e7"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_d3q27.json",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "558d6d4514eafaf4a1bed6963db036788f9f7107",
+      "size_bytes": 15371,
+      "original_sha256": "fe6383e05e6d801eb336a783a8fb0a7a034250239fb0bdfc8921407dac282c26"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D12_s300.json",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/tiers/T_D12_s300.json",
+      "git_mode": "100644",
+      "original_git_blob": "0b257645f458d69f2dd05c59cf0ce6bf63ea27df",
+      "size_bytes": 1817,
+      "original_sha256": "779625374d116e19552f50e4c61dfda67651cca7251f4447a98147268d328f62"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D16_s1400.json",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/tiers/T_D16_s1400.json",
+      "git_mode": "100644",
+      "original_git_blob": "c00c783d38f51666bc91edbd4225240230432cfd",
+      "size_bytes": 4762,
+      "original_sha256": "2a77ff929c66b1d795b57e9273d305dadc09b41baa4e21cbda24c2551ee49176"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D16_s300.json",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/tiers/T_D16_s300.json",
+      "git_mode": "100644",
+      "original_git_blob": "3352326072eccf5597425a54072a9b0a4cb65d3e",
+      "size_bytes": 1826,
+      "original_sha256": "62c9ab26da250168e5bc18aff1bd4486c4301833701716344cafae26263d64f3"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D6_s40.json",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/tiers/T_D6_s40.json",
+      "git_mode": "100644",
+      "original_git_blob": "9b30f794be466ffcd5a9d06e5e10d207e0c8b10e",
+      "size_bytes": 957,
+      "original_sha256": "1863747defd314a467909d29ec851696ff51db710bdc9c33590083b139e24bba"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_d3q27_tiers/T_D8_s1200.json",
+      "new_path": "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/tiers/T_D8_s1200.json",
+      "git_mode": "100644",
+      "original_git_blob": "804ecfaf3e2e87ba2bf45696499165175c3655f3",
+      "size_bytes": 4261,
+      "original_sha256": "c542509f8ce987238ded90c5145668e233eb1d7cb91b99159b48a4df2667e7b8"
+    }
+  ],
+  "reference_scan": {
+    "tracked_consumers": [
+      "scripts/sdaa_sweep_sphere_re100_d3q27.py",
+      "tests/test_sdaa_sweep_sphere_re100_d3q27.py",
+      "docs/sdaa_sweep/sphere_re100_d3q27.md",
+      "docs/report_m42.md"
+    ],
+    "embedded_historical_paths": "The summary and logs retain original artifacts/ and /srv/tensor paths byte-for-byte as run provenance."
+  },
+  "compatibility": {
+    "producer_defaults": "The sweep now writes summary, tiers and reads logs under the owning case evidence directory.",
+    "self_check": "The artifact self-check accepts the historical recorded tier path and resolves its canonical migrated basename.",
+    "original_assets": "All 8 tracked assets retain their original Git blob, mode, byte size and SHA-256.",
+    "public_api": "No src/tensorlbm module or numerical algorithm changed."
+  },
+  "scientific_status": {
+    "case_archive_status": "verified on the archived CUDA gate tiers",
+    "sdaa_sweep_status": "FAIL",
+    "unchanged": true,
+    "note": "The moved SDAA evidence does not extend the archived CUDA verification claim to SDAA and is not a new replay."
+  }
+}

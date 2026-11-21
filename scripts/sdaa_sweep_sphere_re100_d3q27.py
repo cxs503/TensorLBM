@@ -14,7 +14,7 @@ verifier (``.../verify.py``) as modules and
      (``verify.tier_verdict``: Cd window on (0.8,1.0]*steps, drift < 0.3 %,
      cv_closure <= 1e-2, |mass drift| <= 100 ppm, finite, |err| <= 3 %), so no
      judgment number is hand-copied,
-  4. writes artifacts/sdaa_sphere_re100_d3q27.json + the markdown report.
+  4. writes case-owned SDAA evidence + the markdown report.
 
 No threshold is relaxed here: the gate constants live in the case's verify.py /
 prereg.md and are applied unchanged. Rows that do not apply to a reduced tier
@@ -42,9 +42,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 CASE_DIR = REPO / "benchmarks" / "verified" / "sphere_re100_d3q27"
 ARCHIVE = CASE_DIR / "diag" / "remote_pull" / "verified__sphere_re100"
-OUT_JSON = REPO / "artifacts" / "sdaa_sphere_re100_d3q27.json"
+EVIDENCE_DIR = CASE_DIR / "evidence" / "sdaa_sweep"
+OUT_JSON = EVIDENCE_DIR / "summary.json"
 OUT_MD = REPO / "docs" / "sdaa_sweep" / "sphere_re100_d3q27.md"
-TIER_JSON_DIR = REPO / "artifacts" / "sdaa_sphere_re100_d3q27_tiers"
+TIER_JSON_DIR = EVIDENCE_DIR / "tiers"
 
 # protocol constants, all taken from the case docs / run.py defaults
 U_LB = 0.05
@@ -142,7 +143,7 @@ def device_evidence() -> dict:
 def harness_wall_from_log() -> dict:
     """Machine-derived harness wall clock: the sweep log's own summary line plus
     the log file's birth/mtime delta (no hand-typed number)."""
-    log = REPO / "artifacts" / "logs" / "sweep.log"
+    log = EVIDENCE_DIR / "logs" / "sweep.log"
     out = {"log": str(log.relative_to(REPO)) if log.exists() else None,
            "parsed_wall_s": None, "file_delta_s": None}
     if not log.exists():
@@ -423,7 +424,7 @@ def main() -> int:
         "budget_s": args.budget_s,
         "measured_harness_wall_s": (harness_wall_from_log()["parsed_wall_s"]
                                     if args.assemble_only else wall_total),
-        "wall_source": ("parsed from artifacts/logs/sweep.log (the run's own summary "
+        "wall_source": ("parsed from the case-owned sweep.log (the run's own summary "
                         "line) + log file stat" if args.assemble_only
                         else "measured by this process"),
         "measured_in_this_process": not args.assemble_only,
@@ -431,7 +432,7 @@ def main() -> int:
         "per_tier_loop_s": {f"D{t['meta']['D']}": t["tier_wall_loop_s"] for t in ran},
         "per_tier_ms_per_step": {f"D{t['meta']['D']}": t["ms_per_step"] for t in ran},
     }
-    probe_log = REPO / "artifacts" / "logs" / "probe.log"
+    probe_log = EVIDENCE_DIR / "logs" / "probe.log"
     probe_timing = None
     if probe_log.exists():
         txt = probe_log.read_text(errors="ignore")

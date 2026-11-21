@@ -195,4 +195,4 @@ Cd
 
 ---
 
-*报告生成: mission 42 补报 | 数据来源: `artifacts/sdaa_sphere_re100_d3q27.json`, `benchmarks/verified/sphere_re100_d3q27/result.json`*
+*报告生成: mission 42 补报 | 数据来源: `benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/summary.json`, `benchmarks/verified/sphere_re100_d3q27/result.json`*

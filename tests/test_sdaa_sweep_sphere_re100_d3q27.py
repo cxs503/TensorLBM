@@ -1,7 +1,7 @@
 """Self-checks for the SDAA sweep artifact of case sphere_re100_d3q27.
 
 These tests do not touch the solver: they verify that the machine output in
-``artifacts/sdaa_sphere_re100_d3q27.json`` is internally consistent, i.e. that
+``evidence/sdaa_sweep/summary.json`` is internally consistent, i.e. that
 every judgment number can be re-derived from the recorded primitives and that
 each gate verdict follows from the frozen threshold.
 """
@@ -15,7 +15,8 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 CASE = REPO / "benchmarks" / "verified" / "sphere_re100_d3q27"
-ART = REPO / "artifacts" / "sdaa_sphere_re100_d3q27.json"
+EVIDENCE = CASE / "evidence" / "sdaa_sweep"
+ART = EVIDENCE / "summary.json"
 
 
 @pytest.fixture(scope="module")
@@ -84,7 +85,11 @@ def test_tier_histories_exist_and_are_consistent(payload: dict) -> None:
     for tier in payload["tiers"]:
         if tier.get("status") != "RAN":
             continue
+        # The migrated historical summary retains its original recorded path;
+        # new sweeps write the canonical path directly.
         tj = REPO / tier["tier_json"]
+        if not tj.exists():
+            tj = EVIDENCE / "tiers" / Path(tier["tier_json"]).name
         assert tj.exists()
         meta = json.loads(tj.read_text())["meta"]
         assert meta["domain_lu"] == tier["meta"]["domain_lu"]
