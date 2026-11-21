@@ -1,15 +1,35 @@
 # Benchmark restructuring acceptance report, 2026-11-21
 
-**Overall verdict: incomplete.** The manual-index repair and six audit-record
-moves are on main. Remote CI, broader directory migrations and scientific
-acceptance of the wider benchmark portfolio remain open.
+**Overall verdict: incomplete.** The checkpoint on main is `657473558e72cf19be86c8b17558356fe1dd1d0b`. Remote CI, remaining solver imports and case attribution are still open.
 
 | PR | Disposition | Evidence |
 | --- | --- | --- |
 | [2803](https://github.com/cxs503/TensorLBM/pull/2803) | Merged at `1da5c586` | Structure audit and proposed migration order |
 | [2804](https://github.com/cxs503/TensorLBM/pull/2804) | Merged at `2733d687` | Initial checker and tests; no workflow changes in the diff |
 | [2805](https://github.com/cxs503/TensorLBM/pull/2805) | Initial commit merged at `543d63a0` by the repository merge process | Repair of relative manual links, integration into layout CI and six byte-identical audit record moves |
-| [2806](https://github.com/cxs503/TensorLBM/pull/2806) | Draft targeting main | Registry, historical package guard, fresh Couette computation, and follow-up test fixes |
+| [2806](https://github.com/cxs503/TensorLBM/pull/2806) | Merged | Registry, historical package guard, fresh Couette computation, and follow-up test fixes |
+| [2807](https://github.com/cxs503/TensorLBM/pull/2807) | Merged | Published manual downloads and historical asset lookup |
+| [2808](https://github.com/cxs503/TensorLBM/pull/2808) | Merged | Mission audit record migration and CI guard |
+| [2809](https://github.com/cxs503/TensorLBM/pull/2809) | Merged | Validation matrix case, reference and evidence links |
+| [2811](https://github.com/cxs503/TensorLBM/pull/2811) | Merged | Canonical wheel for cavity and square-duct runners, plus CPU field comparisons |
+| [2812](https://github.com/cxs503/TensorLBM/pull/2812) | Merged | 80-file workspace archive with identical Git tree and recursive layout guard |
+| [2813](https://github.com/cxs503/TensorLBM/pull/2813) | Merged | Registered Ludwig stress runner and dated comparison on six planar and two curved interfaces |
+
+The three latest merged changes produced the same Git tree as the local integration run
+(`bd17a9632e62b695af08f09d33054287c8304761`), with 71 passing tests, 2 optional
+grid fixtures skipped and 327 passing subtests. GitHub returned zero check runs on
+all ten listed PR heads. On the main checkpoint it also returned zero workflow runs
+and zero commit statuses. The latest available main workflow was created on
+2026-11-06. Repository Actions settings and runner availability were unverified.
+
+The subsequent [standalone campaign inventory and replay](migrations/standalone-campaigns-2026-11-21.json)
+links five cases and 229 previously unassigned files. As of this candidate, the registry
+indexes all 3,557 tracked benchmark files, with 685 having no declared case link or
+registered parent directory. The direct Ritter finite-volume campaign was rerun at
+400, 800 and 1,600 cells and retains a different case ID from the validation-matrix CI case.
+The cavity and square-duct packaging replays retain their numerical failures against their
+case thresholds. Their input/output equivalence is recorded in the
+[packaging ledger](migrations/canonical-cavity-and-duct-2026-11-21.json).
 
 ## Migration and compatibility
 

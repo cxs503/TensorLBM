@@ -1,0 +1,91 @@
+{
+  "base_revision": "657473558e72cf19be86c8b17558356fe1dd1d0b",
+  "case_mapping": [
+    {
+      "original_directory": "benchmarks/p366w3_n02_frazil_mature",
+      "retained_directory": "benchmarks/p366w3_n02_frazil_mature",
+      "registry_id": "campaign:p366w3_n02_frazil_mature",
+      "manifest": "benchmarks/p366w3_n02_frazil_mature/benchmark_case.json"
+    },
+    {
+      "original_directory": "benchmarks/keel_drag",
+      "retained_directory": "benchmarks/keel_drag",
+      "registry_id": "campaign:keel_drag",
+      "manifest": "benchmarks/keel_drag/benchmark_case.json"
+    },
+    {
+      "original_directory": "benchmarks/p161w2_n05_oscillating_foil",
+      "retained_directory": "benchmarks/p161w2_n05_oscillating_foil",
+      "registry_id": "campaign:p161w2_n05_oscillating_foil",
+      "manifest": "benchmarks/p161w2_n05_oscillating_foil/benchmark_case.json"
+    },
+    {
+      "original_directory": "benchmarks/p162w1_n07_flapping_wing",
+      "retained_directory": "benchmarks/p162w1_n07_flapping_wing",
+      "registry_id": "campaign:p162w1_n07_flapping_wing",
+      "manifest": "benchmarks/p162w1_n07_flapping_wing/benchmark_case.json"
+    },
+    {
+      "original_directory": "benchmarks/dam_break_ritter",
+      "retained_directory": "benchmarks/dam_break_ritter",
+      "registry_id": "campaign:dam_break_ritter",
+      "manifest": "benchmarks/dam_break_ritter/benchmark_case.json"
+    }
+  ],
+  "compatibility": "All previous paths retained. Five tracked manifests identify independent campaigns. Explicit file links and nearest registered directory membership are distinct in the complete Git index. Original case IDs, historical verdicts and solver algorithms are preserved. The legacy Ritter CLI default and output destinations remain supported.",
+  "coverage": {
+    "base_benchmark_files": 3551,
+    "base_without_links": 914,
+    "existing_paths_newly_linked": 229,
+    "candidate_benchmark_files": 3557,
+    "candidate_without_links": 685,
+    "candidate_case_count": 187
+  },
+  "targeted_tests": "46 passed, including 327 subtests. See PR body for commands.",
+  "replay": {
+    "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python benchmarks/dam_break_ritter/self_similar.py --output-dir artifacts/runs/standalone-ritter",
+    "method": "1-D Rusanov finite-volume shallow-water solver",
+    "solver_blob": "cc949c2cb1c6d15717c9a438f67e2b97c249cefd",
+    "previous_driver_blob": "bab9f6fbace43d7cb61599d9d443fc4db107def7",
+    "candidate_driver_blob": "343d6d66e1f6bdb989e2178778142bb1156d3632",
+    "torch": "2.15.0+cpu",
+    "python": "3.12.14",
+    "cpu_arch": "x86_64",
+    "candidate_vs_base": "All result and per-grid JSON bytes match in this environment. Non-main function ASTs in driver match.",
+    "historical_result_sha256": "effeee0eed0fe99bd364dd971ef0fd5069580ad9fa4ccc2a362eb30d64acd835",
+    "replay_sha256": "2bdb17118d29a88b2dce756722beaf76f5ddf641ce82e5415248a36e65fb49ba",
+    "per_grid_sha256": {
+      "nx1600.json": "cd0ae7ef2c4bd182e5f901355618b0993d89f9eff4688eafbf3eb746b2bc02a1",
+      "nx400.json": "5d7b3a8d58e73837a7c6fcf0ef6e1187e12f7d2bb8aa366b2f79419fbf8be56a",
+      "nx800.json": "c194a123bbef5930892e8fd7d01024faea5cc6e927a763fe267a4b18dea1473e"
+    },
+    "previous_archive_vs_replay_differences": {
+      "/cases/1/front_err_mass_pct_mean": {
+        "historical": 2.7804906672249987,
+        "replay": 2.7804906672249983
+      }
+    },
+    "verdict": {
+      "declared_reference_resolution": 1600,
+      "front_err_mass_pct_max_at_reference": 3.6841139696981218,
+      "front_err_mass_pct_max_per_resolution": {
+        "1600": 3.6841139696981218,
+        "400": 6.411535830077675,
+        "800": 6.411535830077653
+      },
+      "front_err_mass_pct_mean_at_reference": 1.5488246750214447,
+      "front_gate_pass_all_resolutions": false,
+      "front_gate_pass_at_reference": true,
+      "geometric_front_err_pct_max_per_resolution": {
+        "1600": 25.468750000000007,
+        "400": 25.937500000000004,
+        "800": 25.937500000000025
+      },
+      "mass_drift_pct_at_reference": 1.1102230246251565e-13,
+      "mass_gate_pass_all_resolutions": true,
+      "note": "The front-law gate is evaluated at the declared reference resolution (finest grid); coarser grids are reported as the convergence study.  The direct tip tracker (front_geometric) is diffusion limited near h -> 0 and is reported for transparency, not used for the gate.",
+      "profile_l2_pct_at_reference": 5.912959085781814,
+      "status": "PASS"
+    }
+  }
+}

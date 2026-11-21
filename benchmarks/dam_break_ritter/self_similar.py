@@ -242,8 +242,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fast", action="store_true")
     parser.add_argument("--resolutions", type=int, nargs="*", default=list(RESOLUTIONS))
+    parser.add_argument("--output-dir", type=Path, help="write result.json and runs/ to this directory")
     args = parser.parse_args(argv)
-    report = run_ritter_suite(tuple(args.resolutions), fast=args.fast)
+    output = args.output_dir
+    report = run_ritter_suite(
+        tuple(args.resolutions), fast=args.fast,
+        output_root=output / "runs" if output else None,
+        result_path=output / "result.json" if output else None,
+    )
     print(json.dumps(report["verdict"], indent=2))
     return 0
 

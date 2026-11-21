@@ -1,0 +1,55 @@
+{
+  "scope": "Ice-keel form and skin drag across geometry and Reynolds-number sweeps.",
+  "criteria": {
+    "published_definition": "Predeclared scale, geometry and drag tests in the README and analyse.py."
+  },
+  "source": [
+    "benchmarks/keel_drag/run_campaign.py",
+    "benchmarks/keel_drag/analyse.py",
+    "src/tensorlbm/keel_drag.py"
+  ],
+  "config": [
+    "benchmarks/keel_drag/run_campaign.py"
+  ],
+  "documentation": [
+    "benchmarks/keel_drag/README.md",
+    "benchmarks/keel_drag/campaign/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/keel_drag/README.md",
+    "benchmarks/keel_drag/campaign/PROVENANCE.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/keel_drag/README.md",
+      "field": "Case reference and conditions",
+      "value": "Mission P46W3-N01 predeclared controls and scaling criteria; see campaign/PROVENANCE.md for the recorded setup."
+    }
+  ],
+  "results": [
+    "benchmarks/keel_drag/campaign/cases.json",
+    "benchmarks/keel_drag/campaign/verdicts.json",
+    "benchmarks/keel_drag/campaign/cases/depth_h01.0_b16_s32.json",
+    "benchmarks/keel_drag/campaign/cases/depth_h02.0_b16_s32.json",
+    "benchmarks/keel_drag/campaign/cases/depth_h03.0_b16_s32.json",
+    "benchmarks/keel_drag/campaign/cases/depth_h04.0_b16_s32.json",
+    "benchmarks/keel_drag/campaign/cases/depth_h06.0_b16_s32.json",
+    "benchmarks/keel_drag/campaign/cases/re_rt0004_h4.json",
+    "benchmarks/keel_drag/campaign/cases/re_rt0007_h4.json",
+    "benchmarks/keel_drag/campaign/cases/re_rt0013_h4.json",
+    "benchmarks/keel_drag/campaign/cases/re_rt0020_h4.json",
+    "benchmarks/keel_drag/campaign/cases/smooth_rt0004.json",
+    "benchmarks/keel_drag/campaign/cases/smooth_rt0007.json",
+    "benchmarks/keel_drag/campaign/cases/smooth_rt0013.json",
+    "benchmarks/keel_drag/campaign/cases/smooth_rt0020.json",
+    "benchmarks/keel_drag/campaign/cases/spacing_h2_b4_s08.0.json",
+    "benchmarks/keel_drag/campaign/cases/spacing_h2_b4_s16.0.json",
+    "benchmarks/keel_drag/campaign/cases/spacing_h2_b4_s32.0.json",
+    "benchmarks/keel_drag/campaign/cases/streamwise_h4_b8_s16.json",
+    "benchmarks/keel_drag/campaign/cases/width_h4_b08.0_s32.json",
+    "benchmarks/keel_drag/campaign/cases/width_h4_b12.0_s32.json",
+    "benchmarks/keel_drag/campaign/cases/width_h4_b16.0_s32.json",
+    "benchmarks/keel_drag/campaign/cases/width_h4_b20.0_s32.json",
+    "benchmarks/keel_drag/campaign/cases/width_h4_b24.0_s32.json"
+  ]
+}

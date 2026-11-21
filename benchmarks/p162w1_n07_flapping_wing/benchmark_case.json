@@ -1,0 +1,32 @@
+{
+  "scope": "Flapping-foil propulsion campaign P162W1 N07.",
+  "criteria": {
+    "published_definition": "Campaign criteria C1 through C8 in the sweep and its results."
+  },
+  "source": [
+    "benchmarks/p162w1_n07_flapping_wing/run_case.py",
+    "benchmarks/p162w1_n07_flapping_wing/run_sweep.py",
+    "src/tensorlbm/flapping_lbm_2d.py",
+    "src/tensorlbm/flapping_propulsion.py"
+  ],
+  "config": [
+    "benchmarks/p162w1_n07_flapping_wing/run_sweep.py"
+  ],
+  "documentation": [
+    "benchmarks/p162w1_n07_flapping_wing/README.md"
+  ],
+  "reference_files": [
+    "benchmarks/p162w1_n07_flapping_wing/README.md",
+    "benchmarks/p162w1_n07_flapping_wing/artifacts_p162n07/locked_ref.json"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/p162w1_n07_flapping_wing/README.md",
+      "field": "Case reference and conditions",
+      "value": "Theodorsen and Garrick analytic anchors and the campaign-specific locked-body measurements."
+    }
+  ],
+  "results": [
+    "benchmarks/p162w1_n07_flapping_wing/artifacts_p162n07/results.json"
+  ]
+}
