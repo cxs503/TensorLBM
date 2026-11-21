@@ -43,9 +43,9 @@ decrease at the expected second order under grid refinement?
 
 Usage
 -----
-    PYTHONPATH=TensorLBM/src python benchmarks/verified/poiseuille_2d_bodyforce/run.py res
-    PYTHONPATH=TensorLBM/src python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens
-    PYTHONPATH=TensorLBM/src python benchmarks/verified/poiseuille_2d_bodyforce/run.py merge
+    PYTHONPATH=src python benchmarks/verified/poiseuille_2d_bodyforce/run.py res
+    PYTHONPATH=src python benchmarks/verified/poiseuille_2d_bodyforce/run.py sens
+    PYTHONPATH=src python benchmarks/verified/poiseuille_2d_bodyforce/run.py merge
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-sys.path.insert(0, str(REPO / "TensorLBM" / "src"))
+sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.ice_hydro.lbm_channel import (  # noqa: E402
     CX,

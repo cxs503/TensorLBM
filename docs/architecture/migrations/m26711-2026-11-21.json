@@ -3,11 +3,19 @@
   "upstream_prs": [
     2814,
     2817,
-    2818
+    2818,
+    2821,
+    2826,
+    2828,
+    2829,
+    2830,
+    2831
   ],
   "report_missions": [
     26711,
-    26723
+    26723,
+    26707,
+    26763
   ],
   "entries": [
     {
@@ -90,8 +98,134 @@
       "size_bytes": 2264,
       "sha256": "00d30a644734dc87bae04789bdb54699782d79f978e0236a508480286a804c48",
       "source_revision": "05bc93403aad7224feb5d88ff10640a0bfe04c96"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_DIAG_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_DIAG_W1.md",
+      "git_blob": "3c1f31344e045b957f6eba3564901623e93d66b8",
+      "git_mode": "100644",
+      "size_bytes": 1852,
+      "sha256": "0561f4c0959d92635c5a3ca8ee9f5667e1bd9f1e2f438b593dba6f925a4676a2",
+      "source_revision": "7c86da1a41691c56333bff32c1723b5bfc78e1a7"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-DIAG-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-DIAG-W1.draft.md",
+      "git_blob": "7826a923cee34416ef73eaabcc7ce88d9edaf20e",
+      "git_mode": "100644",
+      "size_bytes": 2010,
+      "sha256": "5ccc46c93a3feeeab64314cb5691926e88e800af2e42af13adede30d975d2357",
+      "source_revision": "7c86da1a41691c56333bff32c1723b5bfc78e1a7"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_MOM_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_MOM_W1.md",
+      "git_blob": "7e3568befd3ad915c1b3438d3fa4b66518518297",
+      "git_mode": "100644",
+      "size_bytes": 1307,
+      "sha256": "045f86f99bcd393d2b1bc4650a6d129c4c49b4718d3baf89911f98c6fb3e20c9",
+      "source_revision": "9f551086f9fab43d1b8b27e2ab2f124789c02b59"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-MOM-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-MOM-W1.draft.md",
+      "git_blob": "4ee59676b29859b24c97baa3f879e194d82cb74c",
+      "git_mode": "100644",
+      "size_bytes": 1074,
+      "sha256": "135ba28e4a6b987e3c5d99b8ebbb159bf2df144a76f215ef31166cb2defb9117",
+      "source_revision": "9f551086f9fab43d1b8b27e2ab2f124789c02b59"
+    },
+    {
+      "old_path": "tmp/report.json",
+      "new_path": "audit/m26707/report.json",
+      "git_blob": "988c7e72fbe02e145138183d18590f6223ae8408",
+      "git_mode": "100644",
+      "size_bytes": 1061,
+      "sha256": "23deea22a93710951cc0d53e0aaec3eddaf4f499e20710383ebfaefe457aa13f",
+      "source_revision": "9f551086f9fab43d1b8b27e2ab2f124789c02b59"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_FORCE_W1.md",
+      "new_path": "audit/drop_entry/BB/m26741/NEXT/TRACK_FORCE_W1.md",
+      "git_blob": "66a536efa39bb634bf536a30386b3a68bd9d33f9",
+      "git_mode": "100644",
+      "size_bytes": 1388,
+      "sha256": "913102866b2012c9239978138c8479f0ac3bde939c201748842aeb299de10c34",
+      "source_revision": "cd4e0f32046cf7d61ff292a4131e9e3488b7940f"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-FORCE-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/m26741/tmp/DE-NXT-FORCE-W1.draft.md",
+      "git_blob": "2a08cacda8ae15a3f8010d749f894d75c2c7198d",
+      "git_mode": "100644",
+      "size_bytes": 928,
+      "sha256": "6a5768496a9a361bc4f01fba5ec1f2a828cf07530c8715566d4cddbab5442681",
+      "source_revision": "cd4e0f32046cf7d61ff292a4131e9e3488b7940f"
+    },
+    {
+      "old_path": "drop_entry/BB/NEXT/TRACK_SURF_W1.md",
+      "new_path": "audit/drop_entry/BB/NEXT/TRACK_SURF_W1.md",
+      "git_blob": "4601402fbdfb317a62e6fe6f5e9098712e2758b1",
+      "git_mode": "100644",
+      "size_bytes": 1115,
+      "sha256": "513585deb74a5b761f042d03c6876c523bd7cb865ab2cd8eaf46fa5602e4567b",
+      "source_revision": "308c1ddef9bad0546518983d953391457a4347f7"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-NXT-SURF-W1.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-NXT-SURF-W1.draft.md",
+      "git_blob": "f2818bf1a567596777377fc3686e539c876e0342",
+      "git_mode": "100644",
+      "size_bytes": 549,
+      "sha256": "bdb525d0ae7d80113a756236427f4b9e3515b879ad690e147dad13a68de24eb6",
+      "source_revision": "308c1ddef9bad0546518983d953391457a4347f7"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-RELX1-PHASETAU.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-X-RELX1-PHASETAU.draft.md",
+      "git_blob": "f3b1bb1cee6087bb27a84f770db7143b0372e03e",
+      "git_mode": "100644",
+      "size_bytes": 1073,
+      "sha256": "28690af26b6e806102ea1c9bf2c932a46fb7af553661c60c1233bc5bc2e7f554",
+      "source_revision": "b644104962548b924a64d04b97a34daca3333d4a"
+    },
+    {
+      "old_path": "tmp/report.json",
+      "new_path": "audit/m26763/report.json",
+      "git_blob": "22067641fd1284bc59ddd285ef310b4a3ac9959f",
+      "git_mode": "100644",
+      "size_bytes": 1525,
+      "sha256": "87febafa89fd2c7bc95ffb47d0a6a944129e8441fbc9b3b61c38c866f76e6554",
+      "source_revision": "d22a5604c1a92c3de0cf42c062e2998ca092b03a"
+    },
+    {
+      "old_path": "TensorLBM/src/tensorlbm/force_volume.py",
+      "new_path": "audit/m26763/force_volume.py",
+      "git_blob": "ac5d2355f9944936c6f480548ff87718db0e61a8",
+      "git_mode": "100644",
+      "size_bytes": 6925,
+      "sha256": "c333699f35c68dd8e38ec5d5dc84e4a68cea0ea673f62befa1d931fe83fffb4c",
+      "source_revision": "d22a5604c1a92c3de0cf42c062e2998ca092b03a"
+    },
+    {
+      "old_path": "drop_entry/BB/X/FORCE2-MOMENTUM_VOL.md",
+      "new_path": "audit/drop_entry/BB/X/FORCE2-MOMENTUM_VOL.md",
+      "git_blob": "928b22c62f4c7c4441ca0a1067afb18fcc6afabd",
+      "git_mode": "100644",
+      "size_bytes": 1124,
+      "sha256": "025c1dfbfb97a30a7cfa9b7972e8718f9a76280fa60301876dcff9198df7977b",
+      "source_revision": "d22a5604c1a92c3de0cf42c062e2998ca092b03a"
+    },
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-FORCE2-MOMENTUM_VOL.draft.md",
+      "new_path": "audit/drop_entry/BB/tmp/DE-X-FORCE2-MOMENTUM_VOL.draft.md",
+      "git_blob": "47c88b3dce18d5bed2c41fda63cd20e9c67fadc1",
+      "git_mode": "100644",
+      "size_bytes": 837,
+      "sha256": "37d14b952717353e40f9a92b2fada803abcf20c2762525d8a6e5116c452bad1a",
+      "source_revision": "d22a5604c1a92c3de0cf42c062e2998ca092b03a"
     }
   ],
-  "compatibility": "Two versions of the same tmp/report.json path existed on main. The source revision and original Git blob in each mapping distinguish the two mission reports. Complete contents and modes are retained. No tracked consumer of an exact repository-relative source path was found outside these files. Base-revision URLs remain available; external consumers are unknown. The historical publisher expects /tmp/report.json and is syntax checked only.",
+  "compatibility": "Four report revisions and both FORCE variants are preserved with source commits and Git blobs. The m26763 force-volume prototype is archived with its report. A tracked reference search at edbbe989 found mentions in two mission notes and no runtime consumer of force_volume. Source-revision URLs remain available. External consumers are unknown.",
   "verification": "The base failed layout on drop_entry/ and tmp/. The candidate checks exact source Git blobs, modes, independent SHA-256 digests, mission identities and absence of all old root paths."
 }
