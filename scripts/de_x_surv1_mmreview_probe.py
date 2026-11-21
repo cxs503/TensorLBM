@@ -2,7 +2,7 @@
 
 Purpose
 -------
-The survey card (BB/X/DE-X-SURV1-MMREVIEW.md) must quote *measured* numbers for
+The survey card (docs/drop_entry_bb/X_DE-X-SURV1-MMREVIEW.md) must quote *measured* numbers for
 "reachable density ratio" and "parasitic-current level" per multiphase family.
 This script measures them with the repository's own production kernels, on CPU,
 at small size so that it stays inside the compute budget.
