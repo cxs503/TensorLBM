@@ -41,7 +41,7 @@ integrity verified before retiring a tracked copy.
 | `cases/` | Split by purpose | The [migration ledger](migrations/case-root-retirement-2026-11-21.json) maps all case runners to their benchmark owners and records the two superseded case-pool wrappers. |
 | `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
 | `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
-| `drop_entry/` | `development/audit/drop_entry/` | Mission working notes and drafts are development records. The [m26734](migrations/m26734-drop-entry-reentry-2026-11-21.json) and [m26892](migrations/m26892-drop-entry-reentry-2026-11-22.json) re-entry ledgers preserve successive root regressions byte-for-byte while retaining their published document copies. |
+| `drop_entry/` | `development/audit/drop_entry/` | Mission working notes and drafts are development records. The [m26734](migrations/m26734-drop-entry-reentry-2026-11-21.json), [m26892](migrations/m26892-drop-entry-reentry-2026-11-22.json), and [m26887](migrations/m26887-drop-entry-reentry-2026-11-22.json) re-entry ledgers preserve successive root regressions byte-for-byte while retaining published document copies. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
 | `evidence/` | Case data, document assets, development evidence and tools | The [migration ledger](migrations/evidence-root-retirement-2026-11-21.json) lists original blobs and updated replay commands. |
 | `examples/` | Keep | Preserve documented commands and supported entry points. |

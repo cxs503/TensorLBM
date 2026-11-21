@@ -381,6 +381,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             LEDGER_PATH.parent / "m26734-drop-entry-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26856-audit-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26892-drop-entry-reentry-2026-11-22.json",
+            LEDGER_PATH.parent / "m26887-drop-entry-reentry-2026-11-22.json",
         ]
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
@@ -409,6 +410,10 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                             manifest[item["old_path"]]["new_path"], item["new_path"]
                         )
                     self.assertFalse((REPO / item["old_path"]).exists())
+                    if "published_duplicate" in item:
+                        self.assertEqual(
+                            (REPO / item["published_duplicate"]).read_bytes(), raw
+                        )
         m26734 = json.loads(ledgers[0].read_text(encoding="utf-8"))
         published = m26734["entries"][0]["published_duplicate"]
         self.assertEqual(
