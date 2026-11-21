@@ -6,7 +6,7 @@ Mission m109 / round 3: the frozen ladder L∈{90,100,110} all OOM on the
   1) Probes memory at L∈{48,56,64,72,80} to find the max feasible resolution
   2) Runs the highest feasible resolution with reduced steps (if needed)
   3) Records Cd_total vs Blasius reference and convergence windows
-  4) Writes artifacts/sdaa_suboff_sail_resistance_v3.json
+  4) Writes outputs/sdaa/suboff_sail_resistance/sdaa_suboff_sail_resistance_v3.json
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CASE_DIR = _REPO_ROOT / "benchmarks" / "verified" / "suboff_sail_resistance"
+_ARTIFACT = _REPO_ROOT / "outputs/sdaa/suboff_sail_resistance/sdaa_suboff_sail_resistance_v3.json"
 
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(_REPO_ROOT / "benchmarks"))
@@ -260,10 +261,9 @@ def main():
             "hardware": mem,
             "probe_results": {str(L): r for L, r in probe_results.items()},
         }
-        out_path = _REPO_ROOT / "artifacts" / "sdaa_suboff_sail_resistance_v3.json"
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(artifact, indent=1))
-        print(f"Artifact: {out_path}")
+        _ARTIFACT.parent.mkdir(parents=True, exist_ok=True)
+        _ARTIFACT.write_text(json.dumps(artifact, indent=1))
+        print(f"Artifact: {_ARTIFACT}")
         return
 
     max_L = max(feasible)
@@ -367,11 +367,10 @@ def main():
                 "No resolution could complete a run. Hardware bottleneck confirmed."
             )
 
-    out_path = _REPO_ROOT / "artifacts" / "sdaa_suboff_sail_resistance_v3.json"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(artifact, indent=1))
+    _ARTIFACT.parent.mkdir(parents=True, exist_ok=True)
+    _ARTIFACT.write_text(json.dumps(artifact, indent=1))
     print(f"\n{'=' * 70}")
-    print(f"Artifact: {out_path}")
+    print(f"Artifact: {_ARTIFACT}")
     print(f"Overall: {artifact['overall']}")
     print(f"{'=' * 70}")
 

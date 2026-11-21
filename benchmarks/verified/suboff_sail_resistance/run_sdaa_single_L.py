@@ -48,7 +48,7 @@ N_STEPS = int(sys.argv[2]) if len(sys.argv) > 2 else 500
 DEVICE = "sdaa:0"
 CF_REF = blasius_cf(1000.0)
 
-ARTIFACTS_DIR = Path(_REPO_ROOT) / "artifacts"
+ARTIFACTS_DIR = _REPO_ROOT / "outputs/sdaa/suboff_sail_resistance"
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 OUT_JSON = ARTIFACTS_DIR / "sdaa_suboff_sail_resistance_m289.json"
 

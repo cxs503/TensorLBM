@@ -8,7 +8,7 @@ Two anchors, both frozen before any seat ran (prereg):
   ``benchmarks/verified/suboff_sail_resistance/prereg.md``).
 * **ITTC-1957 5.5-power series** — ``Cf = 0.075/(log10(Re)-2)^2``, used for
   the Re>=1e5 turbulent seats (same convention as the repo's
-  ``artifacts/suboff_best_rans_summary.json`` bench2).
+  ``benchmarks/tournament_suboff/evidence/sdaa/suboff_best_rans_summary.json`` bench2).
 
 Convention (inherited from the verified benchmark): the bare SUBOFF hull is
 slender (L/D = 8.57) and friction-dominated, so the *total* drag coefficient
