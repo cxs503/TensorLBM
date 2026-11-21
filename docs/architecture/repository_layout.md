@@ -27,8 +27,9 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 
 Run repository-relative commands from the checkout root. The original tree at
 [bce9c9c](https://github.com/cxs503/TensorLBM/tree/bce9c9c) supplies context for
-commands, cluster paths and output names quoted in historical evidence. The
-existing `.audit/` and `_scratch/` trees still have in-repository consumers.
+commands, cluster paths and output names quoted in historical evidence. The historical `.audit/` tree is now in
+[`development/audit/`](../../development/audit/). The `_scratch/` tree still
+has in-repository consumers.
 
 The former root `audits/` directory has been consolidated under `audit/`.
 The [migration manifest](migration_manifest.csv) records the original and
@@ -46,7 +47,7 @@ require a runtime import trace to identify its actual source.
 |---|---|---|
 | Repository root | Project metadata, installation configuration, main README and contribution guide | New one-off Python scripts, figures, run logs or reports |
 | `src/tensorlbm/` | Installable numerical library and supported library extensions | Web routers, frontend lifecycle or one-off campaign scripts |
-| `app/`, `frontend-vue/` | Application backend, application tests, browser UI | Numerical kernels copied from the library |
+| `app/` | Application backend, application tests and the browser UI in `app/frontend-vue/` | Numerical kernels copied from the library |
 | `tests/` | Automated library tests and small, documented reference fixtures | Unmarked long simulations or throughput claims on unsuitable hardware |
 | `examples/` | Maintained runnable demonstrations of supported APIs | Unreviewed research campaigns |
 | `benchmarks/` | Named benchmark runners, configuration, references, acceptance criteria and curated results | Unclassified dumps or verification claims based only on exit code |

@@ -115,12 +115,12 @@ class RepositoryLayoutTests(unittest.TestCase):
         for name in [
             "outputs/a.json",
             "artifacts/runs/a.log",
-            "frontend-vue/dist/index.html",
+            "app/frontend-vue/dist/index.html",
             "build/a",
             "dist/a.whl",
             "pkg/__pycache__/a.pyc",
             ".venv/bin/python",
-            "frontend-vue/node_modules/a.js",
+            "app/frontend-vue/node_modules/a.js",
         ]:
             with self.subTest(name=name):
                 self.assertTrue(LAYOUT.is_generated(name))

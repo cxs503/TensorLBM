@@ -18,10 +18,10 @@ app/
 │       ├── postprocess.py Result analysis & metadata
 │       ├── benchmarks.py  Validation benchmark suites
 │       └── agent.py       Conversational LLM agent (chat / capabilities)
-├── backend/agent_core.py  Agent tool registry + intent parser
-└── frontend/
-    ├── index.html     Single-page app shell (Bootstrap 5)
-    └── static/js/     Domain-split frontend logic modules
+├── demos/             Standalone browser demos
+└── frontend-vue/      Vue 3 and Vite browser app
+    ├── index.html     Single-page app shell
+    └── src/           Vue components, routes and API clients
 ```
 
 ## Quick Start
@@ -34,6 +34,7 @@ Canonical developer setup and checks are documented in `../docs/development_work
 # From repository root
 pip install -e ".[dev]"
 pip install -r app/requirements.txt
+(cd app/frontend-vue && npm ci && npm run build)
 ```
 
 ### 2. Launch the server

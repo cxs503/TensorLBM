@@ -35,7 +35,7 @@ remediation plan within **30 days**, depending on severity.
 - TensorLBM ships research-grade numerical code. Model weights, datasets, and
   run artifacts are distributed via Release assets / Hugging Face Hub / Git LFS,
   never as executable code in-tree.
-- The `app/` FastAPI platform and `frontend-vue/` are separate deployable
+- The `app/backend/` service and `app/frontend-vue/` UI are separate deployable
   components; their own dependency and secret-handling policies apply at
   deployment time. Do not commit secrets, tokens, or credentials to the repo.
 - The solver library (`src/tensorlbm`) must not depend on application, web, or

@@ -46,7 +46,7 @@ integrity verified before retiring a tracked copy.
 | `examples/` | Keep | Preserve documented commands and supported entry points. |
 | `experiments/` | `development/experiments/` | Promote any maintained cases before moving exploratory and archived work. |
 | `figures/` | Split by owner | Published figures to their report or case. Keep plot indexes and generator paths together. #2839 stages the Sod figures. |
-| `frontend-vue/` | Under `app/` if supported | Audit package manager, static output, deployment and CI paths. |
+| `frontend-vue/` | `app/frontend-vue/` | Keep Vue source and its build with the serving app. The [migration ledger](migrations/vue-application-root-2026-11-21.json) records file provenance. |
 | `models/` | Split by role | Judge supported library, model-unit CI, case inputs and historical weights separately. Preserve discoverability for model-unit jobs. |
 | `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Published material, supporting case assets and working drafts have separate owners. |

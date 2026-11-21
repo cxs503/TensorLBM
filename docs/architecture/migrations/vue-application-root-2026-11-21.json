@@ -1,0 +1,284 @@
+{
+  "source_revision": "3c446a67b78715c9fd17700fcb3bc14fd5d8f36a",
+  "retired_roots": [
+    "frontend-vue"
+  ],
+  "original_root_count": 23,
+  "post_migration_root_count": 22,
+  "compatibility": "Keep Vue package and lockfile bytes and build relative to its new directory. Preserve FastAPI browser routes and static assets. Update deploy instructions, ownership and generated-file policy.",
+  "entries": [
+    {
+      "old_path": "frontend-vue/.gitignore",
+      "new_path": "app/frontend-vue/.gitignore",
+      "git_blob": "4609e81f58bffcbd905e89993d48eb0381abb596",
+      "sha256": "90a4c175acd8430e447d923a034a9d50557287d5cec267ff5c2b1c3d221871e0",
+      "size_bytes": 35
+    },
+    {
+      "old_path": "frontend-vue/auto-imports.d.ts",
+      "new_path": "app/frontend-vue/auto-imports.d.ts",
+      "git_blob": "1d89ee8c4833d5972293125ae111ea45d41f2e83",
+      "sha256": "edfb68f7efaa86fb770abe5dc977c0b4a3ee3cda77ac08080560b210de60d7ea",
+      "size_bytes": 163
+    },
+    {
+      "old_path": "frontend-vue/components.d.ts",
+      "new_path": "app/frontend-vue/components.d.ts",
+      "git_blob": "7f08544c33d57e6d0a963f604295e29004e8e493",
+      "sha256": "3f18648c466ff1ee40c83fcc0a51bdbd4e2d5be64286c3c5d62616c871101be9",
+      "size_bytes": 2868
+    },
+    {
+      "old_path": "frontend-vue/index.html",
+      "new_path": "app/frontend-vue/index.html",
+      "git_blob": "248a7e736002e81ef1420511f2e66a2387f2af5f",
+      "sha256": "8ef90ca4f957cb3a354dbe5f2caa2bfb074f0f3ad07c5f27500d1b72801e8922",
+      "size_bytes": 355
+    },
+    {
+      "old_path": "frontend-vue/package-lock.json",
+      "new_path": "app/frontend-vue/package-lock.json",
+      "git_blob": "5826f7db830d7c11b61b343c85ca922d31523a43",
+      "sha256": "61b8e6e9fb79c2b645b6d4cbdc70a006b744929b8f09154bc75e07da7093fd3a",
+      "size_bytes": 120616
+    },
+    {
+      "old_path": "frontend-vue/package.json",
+      "new_path": "app/frontend-vue/package.json",
+      "git_blob": "c487102f352ec5eecceedabd663f1ad481017c12",
+      "sha256": "07aa615dcd1c5eb7e2db23e16b42c3bcbf667c666dd20b761761d9a9351bc570",
+      "size_bytes": 952
+    },
+    {
+      "old_path": "frontend-vue/src/App.vue",
+      "new_path": "app/frontend-vue/src/App.vue",
+      "git_blob": "393c80b0b33eb76aa30f90ea457cef5277f083a6",
+      "sha256": "b3164b22f2d8052c7222fe6c4ad512b4c75c8442cf2916566e73135ec607b33f",
+      "size_bytes": 3912
+    },
+    {
+      "old_path": "frontend-vue/src/api/apps.ts",
+      "new_path": "app/frontend-vue/src/api/apps.ts",
+      "git_blob": "0422385164e160e40263e6abc038839b367fad70",
+      "sha256": "f4ecff459ec5af0d0338b3055244caf772c6c663d3b9718b312fe2b5e46f7d99",
+      "size_bytes": 3075
+    },
+    {
+      "old_path": "frontend-vue/src/api/data.ts",
+      "new_path": "app/frontend-vue/src/api/data.ts",
+      "git_blob": "8f06e034041dd15a9a70b2354111637d2077c675",
+      "sha256": "a8d5bab5d6c0edf63c34d93dee832951b3e646a2d78d8f009a42a04b6ba546e5",
+      "size_bytes": 4800
+    },
+    {
+      "old_path": "frontend-vue/src/api/production.ts",
+      "new_path": "app/frontend-vue/src/api/production.ts",
+      "git_blob": "4d175413e81efe5fb6f087a062b799870d57c4e9",
+      "sha256": "af0d506b2e89fda0cea8cdde4537746e384d567e40d8fa37a305a9f831072c8d",
+      "size_bytes": 9903
+    },
+    {
+      "old_path": "frontend-vue/src/api/projects.ts",
+      "new_path": "app/frontend-vue/src/api/projects.ts",
+      "git_blob": "2711cf1313dd635792b8fc8d806c265686036ed4",
+      "sha256": "c8c2bce4ff143b544c0072fe872f69d3c7b5c92b6b41b1628fca32d30158f07a",
+      "size_bytes": 3729
+    },
+    {
+      "old_path": "frontend-vue/src/api/reports.ts",
+      "new_path": "app/frontend-vue/src/api/reports.ts",
+      "git_blob": "d5d36d3e0598c6dde76e845644302d9a21054704",
+      "sha256": "21e73ba59eda0e0c3485894ae1c95d729c2c709834d9870ae9f2497b5284aef5",
+      "size_bytes": 2323
+    },
+    {
+      "old_path": "frontend-vue/src/api/request.ts",
+      "new_path": "app/frontend-vue/src/api/request.ts",
+      "git_blob": "0238c255413c786ead9ffc842582ed22cecfb0b1",
+      "sha256": "1abf6c0dba08f112b107e1ef9c73f71129b5773a9cbf273b9a3098d8a72cb1ff",
+      "size_bytes": 1024
+    },
+    {
+      "old_path": "frontend-vue/src/env.d.ts",
+      "new_path": "app/frontend-vue/src/env.d.ts",
+      "git_blob": "323c78a6cd85072d57bebe0e267e6c840a7d7a65",
+      "sha256": "cb3a8a70a87f0b1872244cd0bbe5bb5ddd602d820b7766a4d515b04eab8c40c7",
+      "size_bytes": 186
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/en.ts",
+      "new_path": "app/frontend-vue/src/i18n/en.ts",
+      "git_blob": "d1de737cc504fe1ae23b6fb9c2aafd2d387c009e",
+      "sha256": "c332a4525ed534430c9067e1641a354427f9807c566eeb35a2f372c9564c25bc",
+      "size_bytes": 630
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/index.ts",
+      "new_path": "app/frontend-vue/src/i18n/index.ts",
+      "git_blob": "aa347c88b58ca6ae4f1a1200f77cac7f0643ecf7",
+      "sha256": "c65426c0850e8f2aa6ab2c723a2ff914483edfe6f2273cb1751ae0b5a0125aa7",
+      "size_bytes": 1087
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/modules/ai4s.ts",
+      "new_path": "app/frontend-vue/src/i18n/modules/ai4s.ts",
+      "git_blob": "139da1b00971b1a62dc6a493d1c8c095e6bdbac6",
+      "sha256": "65cd8d803c3e07a7e75b99fe35fa513c338c873ff41157dbd4390411bde303d9",
+      "size_bytes": 4908
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/modules/data.ts",
+      "new_path": "app/frontend-vue/src/i18n/modules/data.ts",
+      "git_blob": "ca80ec753001c9d565edccbf77d72ed832b097ca",
+      "sha256": "2853bc353b9c4ace0e32ddaba1f5e410d8eb1afdc2968c4d2be74abe06231b14",
+      "size_bytes": 5298
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/modules/misc.ts",
+      "new_path": "app/frontend-vue/src/i18n/modules/misc.ts",
+      "git_blob": "408c0f6ab574be43d925f52ae9ec87bd907b048d",
+      "sha256": "174bf51e0230d6f48af95dc0a713f099fd2a86cf055bcde1eb22c42839e5577f",
+      "size_bytes": 9416
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/modules/production.ts",
+      "new_path": "app/frontend-vue/src/i18n/modules/production.ts",
+      "git_blob": "7ea12d734bdd7a03aad25b2369c9a9a72b3dcc9b",
+      "sha256": "17af4cd4c25d4a2ea7f6fd9be9889ab275dfae7e64499947ff31b7762cf6461f",
+      "size_bytes": 21915
+    },
+    {
+      "old_path": "frontend-vue/src/i18n/zh.ts",
+      "new_path": "app/frontend-vue/src/i18n/zh.ts",
+      "git_blob": "958a95b3654c9e9f4becbe0835767da2bfd0ee59",
+      "sha256": "54b9d8ea4ffa322907c0535dd0f4bf83331804ce2a2c1972ee6397d9b415e170",
+      "size_bytes": 599
+    },
+    {
+      "old_path": "frontend-vue/src/main.ts",
+      "new_path": "app/frontend-vue/src/main.ts",
+      "git_blob": "a46f89cbd122d8626e454782e6790c480ec4cb99",
+      "sha256": "4777301f422f716fdcec446524ac50b023a9e744bb4de5ec6818ac78618faefb",
+      "size_bytes": 518
+    },
+    {
+      "old_path": "frontend-vue/src/router/index.ts",
+      "new_path": "app/frontend-vue/src/router/index.ts",
+      "git_blob": "9701c71a5cdbab6f55e5233217f8774593b07304",
+      "sha256": "e30434bd2d5e492fca4c65d0e13ba06ba55fac3cbbc26f9636ea1d4ecc13b54d",
+      "size_bytes": 2467
+    },
+    {
+      "old_path": "frontend-vue/src/stores/ai4sRun.ts",
+      "new_path": "app/frontend-vue/src/stores/ai4sRun.ts",
+      "git_blob": "14ddb7600a00936b8cf689715f8247b1f5b54fe7",
+      "sha256": "86f4c0379d1fdf7479428fd8b500d58db9abf76d929873ae9ec6b2ed511ffaeb",
+      "size_bytes": 1034
+    },
+    {
+      "old_path": "frontend-vue/src/views/ai4s/AppLineageView.vue",
+      "new_path": "app/frontend-vue/src/views/ai4s/AppLineageView.vue",
+      "git_blob": "4313ebae96161100c692ed59a4110e0775e4c590",
+      "sha256": "e8a92d3d5d0b1dc278edcbfcf29456173642009af39d17a502072367d8030b17",
+      "size_bytes": 4555
+    },
+    {
+      "old_path": "frontend-vue/src/views/ai4s/AppRunView.vue",
+      "new_path": "app/frontend-vue/src/views/ai4s/AppRunView.vue",
+      "git_blob": "db1db8870a9298c6ee323d712320df5d885e95b3",
+      "sha256": "52cec7519fa9d888d5385ba480ef5d5c9b7644b4ddac0f350329330bccace261",
+      "size_bytes": 11382
+    },
+    {
+      "old_path": "frontend-vue/src/views/ai4s/AppsView.vue",
+      "new_path": "app/frontend-vue/src/views/ai4s/AppsView.vue",
+      "git_blob": "114582d16d08846be39d5ae383ab5331f2cefbc7",
+      "sha256": "c686f25b91619b386c226776edc2de29335d76fcf934b604844059d9a0276aab",
+      "size_bytes": 2640
+    },
+    {
+      "old_path": "frontend-vue/src/views/data/DataCatalogView.vue",
+      "new_path": "app/frontend-vue/src/views/data/DataCatalogView.vue",
+      "git_blob": "b8c496136eef4ca4d1b570f1ebf7538873282679",
+      "sha256": "82c9a49eb287605420797641c534789758bef094c56af1d695d702ae5ad4a7c5",
+      "size_bytes": 27679
+    },
+    {
+      "old_path": "frontend-vue/src/views/misc/ProjectsView.vue",
+      "new_path": "app/frontend-vue/src/views/misc/ProjectsView.vue",
+      "git_blob": "6d3c9a569675053661cf375adf1aef5d670b5c24",
+      "sha256": "430a9d3196c45787b59b8e497c088ea5bbc9cf384e0b9c902ca22e5da8db3fea",
+      "size_bytes": 21269
+    },
+    {
+      "old_path": "frontend-vue/src/views/misc/ReportsView.vue",
+      "new_path": "app/frontend-vue/src/views/misc/ReportsView.vue",
+      "git_blob": "562ae9c45abc301bfa1cc84c0084cf1207645268",
+      "sha256": "27011472877029d2534c3c718128f7859407da64dfa101f30b3b716e1df65902",
+      "size_bytes": 14685
+    },
+    {
+      "old_path": "frontend-vue/src/views/production/BenchmarksView.vue",
+      "new_path": "app/frontend-vue/src/views/production/BenchmarksView.vue",
+      "git_blob": "1597d707a02c392c597f8c10d8ab70b725f40862",
+      "sha256": "5f6c1baba95cd6811434e0ad136a335afde673c2033630097e6d042111d5d823",
+      "size_bytes": 14306
+    },
+    {
+      "old_path": "frontend-vue/src/views/production/CadView.vue",
+      "new_path": "app/frontend-vue/src/views/production/CadView.vue",
+      "git_blob": "c576ba3710183111fcc5cc3eff0e3afc1ee1a373",
+      "sha256": "7fb0d6d34491af4816a92c756e7281bd94239c1a2a38415fedda3dfa3da1e2ec",
+      "size_bytes": 15926
+    },
+    {
+      "old_path": "frontend-vue/src/views/production/DashboardView.vue",
+      "new_path": "app/frontend-vue/src/views/production/DashboardView.vue",
+      "git_blob": "a162d7c16ecf7f7e32b6d05d96c3e89b8c11b978",
+      "sha256": "f6473872de0fe2edfa69c587f0a82f71467414cf5707ee9157c7460b60ee61fd",
+      "size_bytes": 8462
+    },
+    {
+      "old_path": "frontend-vue/src/views/production/PostprocessView.vue",
+      "new_path": "app/frontend-vue/src/views/production/PostprocessView.vue",
+      "git_blob": "e1d64b8a08366375c4a84ea282ed96062a441765",
+      "sha256": "bcf3e5e1fbf94899238267b5e32ebd5b33d6dda960988880bf36a51c39f57992",
+      "size_bytes": 18132
+    },
+    {
+      "old_path": "frontend-vue/src/views/production/PreprocessView.vue",
+      "new_path": "app/frontend-vue/src/views/production/PreprocessView.vue",
+      "git_blob": "2dd1bb3cdcce1b719dcb0b838849b3604c6293d9",
+      "sha256": "e118576fb5a4d3f505298797fe67649f86a4aab4e1ee45a3cfe02cb7924d72f8",
+      "size_bytes": 15565
+    },
+    {
+      "old_path": "frontend-vue/src/views/production/SolveView.vue",
+      "new_path": "app/frontend-vue/src/views/production/SolveView.vue",
+      "git_blob": "667ee4ccfdb361c1350c1ba3b62dddf8bf35e069",
+      "sha256": "0c0d1757a84b8f5ca26217b81aaebb81767de4cffea53762e7bc5a0234b9afb5",
+      "size_bytes": 28128
+    },
+    {
+      "old_path": "frontend-vue/tsconfig.json",
+      "new_path": "app/frontend-vue/tsconfig.json",
+      "git_blob": "225df873cd6cc0923c225979dd8f349ba50cc1a8",
+      "sha256": "c311f5d52f9aec0593ad8f79775dc36509d3fb7ee09a17e108dcc6d488672be5",
+      "size_bytes": 706
+    },
+    {
+      "old_path": "frontend-vue/tsconfig.node.json",
+      "new_path": "app/frontend-vue/tsconfig.node.json",
+      "git_blob": "b940375d3edcb36f8bf5cd96de5286c457f7cd17",
+      "sha256": "e53527e04362772ec459ea551a82fde56eff961235677abf4384aa154f1389f7",
+      "size_bytes": 236
+    },
+    {
+      "old_path": "frontend-vue/vite.config.ts",
+      "new_path": "app/frontend-vue/vite.config.ts",
+      "git_blob": "1c390ed99de2c53c0ae47e1c88cd7567052adf71",
+      "sha256": "d08ad295e16c8e869b50efe4dfc8ea4f13259afee1f85819022138613d58daea",
+      "size_bytes": 808
+    }
+  ]
+}

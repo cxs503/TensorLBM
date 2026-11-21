@@ -29,11 +29,11 @@ def test_status(client):
 
 _FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend-vue" / "dist" / "index.html"
 _BUILT_SPA = _FRONTEND_INDEX.is_file()
-# frontend-vue/dist is a git-ignored build artifact: CI (and any source
+# app/frontend-vue/dist is a git-ignored build artifact: CI (and any source
 # checkout without `npm run build`) exercises the missing-bundle branch, a
 # developer machine with a build exercises the served-bundle branch.  Both
 # are real behaviour and both are asserted - no skip, no empty dist shim.
-_MISSING_BUNDLE_HINT = "frontend-vue/dist/index.html"
+_MISSING_BUNDLE_HINT = "app/frontend-vue/dist/index.html"
 
 
 def test_root_serves_spa(client):
