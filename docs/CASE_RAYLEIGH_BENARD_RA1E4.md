@@ -29,7 +29,7 @@ ref 值由该函数**程序化取出**并写入 JSON（`ref` 字段），不做�
 
 原表位置：Nu 见该文 Ra=10⁴ 行（benchmark solutions 表，Table 3 平均 Nu 列）；
 速度极大值见同一 benchmark 解的 u_max/y、v_max/x 列（Table 2）。本单引用经仓内
-`de_vahl_davis_reference()` + `artifacts/sdaa_cavity_natural_convection.json`（历史
+`de_vahl_davis_reference()` + [sdaa_cavity_natural_convection.json](../benchmarks/verified/cavity_natural_convection/evidence/sdaa/sdaa_cavity_natural_convection.json)（历史
 SDAA 记录，`reference: de Vahl Davis 1983, Ra=1e4, Pr=0.71`）双通道核对，数值一致。
 
 **判定容差（预注册）**：|Nu_got/Nu_ref − 1| < 5%。
@@ -86,7 +86,7 @@ nx=32、τ=0.90、60000 步（稳态，resid_u=4.2e-15）：
 数值工件：`runs/case_rayleigh_benard_ra1e4/local_nx32_tau0.9.json`（含 30 个采样点的 Nu 历史）、
 `runs/case_rayleigh_benard_ra1e4/local_nx24_tau0.9.json`（nx=24，Nu=1.7193，u_max_nd=16.935，v_max_nd=20.691）。
 历史一致性核对：本单 nx=32 结果 Nu=1.8897 与仓内历史 SDAA 粗网格记录
-（`artifacts/sdaa_cavity_natural_convection.json`，nx=32、Nu=1.8923、−15.63%）在 0.14% 内一致
+（[sdaa_cavity_natural_convection.json](../benchmarks/verified/cavity_natural_convection/evidence/sdaa/sdaa_cavity_natural_convection.json)，nx=32、Nu=1.8923、−15.63%）在 0.14% 内一致
 → **可复现性 ✓**，且证明历史记录并非「步数不足未稳态」，而是**收敛后的真实系统性偏差**（重要修正）。
 
 ## ⑤ 收敛性 / 参数敏感性

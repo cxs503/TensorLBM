@@ -1,5 +1,7 @@
 # 方腔流 Re=400（lid-driven cavity）— Ghia 1982 验证
 
+历史 SDAA 工件：[运行记录](evidence/sdaa/sdaa_cavity_evidence.json)与[原始对比图](evidence/sdaa/sdaa_cavity_re400_verification.png)。历史记录含 SDAA 短程一致性与独立 CPU 参考，两者的验收范围各自记录。
+
 **状态：✅ 已入库（2026-08-19，误差 1.50%→0.83% 单调收敛）**
 
 ## 物理问题

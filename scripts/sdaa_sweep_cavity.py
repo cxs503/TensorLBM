@@ -187,7 +187,7 @@ def main():
     print(f"  VERDICT: {'PASS' if verdict_pass else 'HONEST-FAIL'}", flush=True)
 
     # 证据文件
-    artifacts_dir = REPO_ROOT / "artifacts"
+    artifacts_dir = REPO_ROOT / "outputs" / "sdaa" / "cavity_re400"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     evidence = {

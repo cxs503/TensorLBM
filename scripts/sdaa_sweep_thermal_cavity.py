@@ -192,7 +192,7 @@ def main() -> None:
     }
     
     # Write output
-    out_path = Path(__file__).resolve().parents[1] / "artifacts" / "sdaa_thermal_cavity.json"
+    out_path = Path(__file__).resolve().parents[1] / "outputs" / "sdaa" / "thermal_cavity" / "sdaa_thermal_cavity.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)

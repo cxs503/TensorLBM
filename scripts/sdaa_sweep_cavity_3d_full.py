@@ -89,7 +89,7 @@ output = {
     }
 }
 
-out = Path(__file__).parent.parent / "artifacts" / "sdaa_cavity_3d_full.json"
-out.parent.mkdir(exist_ok=True)
+out = Path(__file__).resolve().parents[1] / "outputs" / "sdaa" / "cavity_3d_full" / "sdaa_cavity_3d_full.json"
+out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps(output, indent=2))
 print(f"u_min={u_min:.5f} err={err:.3f}% t={elapsed:.1f}s → {out}")

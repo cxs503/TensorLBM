@@ -1,5 +1,7 @@
 # T-A2: de Vahl Davis 自然对流方腔 — thermal 2D 壁 BC 修复 + 基准重扫
 
+历史 SDAA 工件：[运行记录](evidence/sdaa/sdaa_thermal_cavity.json)。历史 SDAA 扫掠六个档位中 0 个达到全部门槛。
+
 ## 概述
 
 - **问题**：方腔自然对流标准基准（de Vahl Davis 1983）：左壁等温 T_hot、右壁

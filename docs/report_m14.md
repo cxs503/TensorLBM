@@ -104,7 +104,7 @@ SDAA 设备上 Triton 编译器不可直接运行 kernel，需设置环境变量
 | Triton 绕行 | ✅ | `TRITON_INTERPRET=1`，已记录原值 `0` |
 | 判据口径一致 | ✅ | 与 NVIDIA 侧 `benchmarks/verified/cavity/re100` 相同 |
 | 业务代码未改 | ✅ | 仅新增 `scripts/sdaa_sweep_cavity.py` |
-| 产物可复现 | ✅ | `artifacts/sdaa_cavity.json` 含完整数据 |
+| 产物可复现 | ✅ | [sdaa_cavity.json](../benchmarks/verified/cavity/re100/evidence/sdaa/sdaa_cavity.json) 含完整数据 |
 
 ### 4.2 局限
 
@@ -136,4 +136,4 @@ Mission 14 SDAA 验证扫荡 cavity 案例 **PASS**：
 - Triton 解释模式绕行已如实记录；
 - 总墙钟 103.7 秒，远低于 20 分钟预算。
 
-**工件**：`artifacts/sdaa_cavity.json`（完整数据）、`scripts/sdaa_sweep_cavity.py`（独立运行脚本）。
+**工件**：[sdaa_cavity.json](../benchmarks/verified/cavity/re100/evidence/sdaa/sdaa_cavity.json)（完整数据）、`scripts/sdaa_sweep_cavity.py`（独立运行脚本）。

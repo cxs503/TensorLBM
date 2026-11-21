@@ -2,7 +2,7 @@
 """SDAA 验证案例扫荡 — thermal_cavity_3d (W9-A).
 
 独立运行脚本：不改业务代码，仅调用 benchmarks/verified/thermal_cavity_3d/run.py
-在 sdaa 设备上执行，采集判据并输出 artifacts JSON + 文档。
+在 sdaa 设备上执行，采集判据并在 outputs/sdaa/thermal_cavity_3d/ 输出 JSON 和报告。
 
 判据（来自 README.md / result.json）：
   1) finest-grid |Nu err| vs cluster median <= 3%  (per Ra ladder)
@@ -29,8 +29,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
 CASE_DIR = ROOT / "benchmarks" / "verified" / "thermal_cavity_3d"
-ARTIFACTS_DIR = ROOT / "artifacts"
-DOCS_DIR = ROOT / "docs" / "sdaa_sweep"
+ARTIFACTS_DIR = ROOT / "outputs" / "sdaa" / "thermal_cavity_3d"
 
 # 判据档推荐最小档（ra1e3 最小网格）
 RUN_CONFIGS = [
@@ -60,7 +59,7 @@ def get_device_name() -> str:
 
 def run_case(ra: float, n: int, steps: int, label: str, device: str = "sdaa:0") -> dict:
     """调用 run.py 运行单案，返回 probe JSON 内容。"""
-    out_dir = CASE_DIR / "out"
+    out_dir = ARTIFACTS_DIR / "probes"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [
@@ -297,8 +296,7 @@ def main() -> None:
     print(f"\n[artifact] written to {artifact_path}")
 
     # Write docs
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
-    doc_path = DOCS_DIR / "thermal_cavity_3d.md"
+    doc_path = ARTIFACTS_DIR / "thermal_cavity_3d.md"
     doc_lines = [
         "# SDAA Sweep: thermal_cavity_3d (W9-A)",
         "",

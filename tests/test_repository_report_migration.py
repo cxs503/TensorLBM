@@ -668,6 +668,36 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)
         self.assertIn('EVIDENCE_DIR / "logs" / "sweep.log"', runner)
 
+    def test_cavity_sdaa_evidence_preserves_bytes_links_and_scope(self):
+        ledger_path = LEDGER_PATH.parent / "cavity-sdaa-artifacts-2026-11-22.json"
+        entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]
+        self.assertEqual(len(entries), 7)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            paths = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+        evidence = {}
+        for entry in entries:
+            with self.subTest(path=entry["old_path"]):
+                target = REPO / entry["new_path"]
+                raw = target.read_bytes()
+                self.assertEqual(len(raw), entry["size_bytes"])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["original_sha256"])
+                indexed = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", entry["new_path"]],
+                    cwd=REPO, text=True,
+                ).split()
+                self.assertEqual(indexed[:2], [entry["git_mode"], entry["original_git_blob"]])
+                self.assertEqual(paths[entry["old_path"]], entry["new_path"])
+                self.assertFalse((REPO / entry["old_path"]).exists())
+                readme = (target.parents[2] / "README.md").read_text(encoding="utf-8")
+                self.assertIn(f"](evidence/sdaa/{target.name})", readme)
+                if target.suffix == ".json":
+                    evidence[target.stem] = json.loads(raw)
+        self.assertEqual(evidence["sdaa_cavity_natural_convection"]["overall_verdict"], "FAIL")
+        self.assertEqual(evidence["sdaa_thermal_cavity"]["summary"]["passed_cases"], 0)
+        re400 = evidence["sdaa_cavity_evidence"]
+        self.assertIn("cpu_reference", re400)
+        self.assertIn("sdaa_short_run", re400)
+
     def test_poiseuille_sdaa_evidence_preserves_bytes_links_and_scope(self):
         ledger_path = LEDGER_PATH.parent / "poiseuille-channel-duct-pipe-sdaa-2026-11-22.json"
         entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]

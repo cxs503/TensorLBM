@@ -156,7 +156,7 @@
 ## 产物清单
 
 - **脚本**: `scripts/sdaa_sweep_thermal_cavity.py`
-- **结果 JSON**: `artifacts/sdaa_thermal_cavity.json`
+- **结果 JSON**: [sdaa_thermal_cavity.json](../../benchmarks/verified/thermal_cavity/evidence/sdaa/sdaa_thermal_cavity.json)
 - **文档**: `docs/sdaa_sweep/thermal_cavity.md` (本文件)
 
 ## 参考

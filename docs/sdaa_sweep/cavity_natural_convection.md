@@ -73,7 +73,7 @@
 
 ## 产物
 
-- `artifacts/sdaa_cavity_natural_convection.json` — 完整 JSON 产物（设备证据、判据数值、逐门 PASS/FAIL）
+- [sdaa_cavity_natural_convection.json](../../benchmarks/verified/cavity_natural_convection/evidence/sdaa/sdaa_cavity_natural_convection.json) — 完整 JSON 产物（设备证据、判据数值、逐门 PASS/FAIL）
 - `scripts/sdaa_sweep_cavity_natural_convection.py` — 独立运行脚本（不改业务代码）
 
 ## 后续建议

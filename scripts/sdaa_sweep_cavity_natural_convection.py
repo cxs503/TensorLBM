@@ -211,8 +211,8 @@ def main():
     results["overall_verdict"] = "PASS" if all_gates_pass else "FAIL"
     results["run_error"] = run_error
 
-    artifact_dir = REPO_ROOT / "artifacts"
-    artifact_dir.mkdir(exist_ok=True)
+    artifact_dir = REPO_ROOT / "outputs" / "sdaa" / "cavity_natural_convection"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / "sdaa_cavity_natural_convection.json"
     artifact_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nArtifact written: {artifact_path}")

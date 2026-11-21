@@ -93,7 +93,7 @@
 
 ## ④ 结果图
 
-见 `artifacts/sdaa_cavity_re400_verification.png`：
+见 [sdaa_cavity_re400_verification.png](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_re400_verification.png)：
 - 左图：网格收敛柱状图（128²=1.50%, 192²=0.83%，均<3%阈值）
 - 右图：Ghia 1982 参考中线速度剖面
 
@@ -115,7 +115,7 @@
 ### 本补报处理
 
 - **诚实标注**：原报告 758 中 N=96 的具体误差数据**未留档**（工件目录未保留该网格的运行结果）
-- **仅引用可验证数据**：本 meta-报告仅引用工件 `artifacts/sdaa_cavity_evidence.json` 中明确记录的 128²/192² 数据
+- **仅引用可验证数据**：本 meta-报告仅引用工件 [sdaa_cavity_evidence.json](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_evidence.json) 中明确记录的 128²/192² 数据
 - **不编造缺失数据**：原报告中 3.05% 的来源无法溯源，本补报不重复该数字
 
 ### 技术局限
@@ -164,8 +164,8 @@
 
 | 工件 | 路径 | 说明 |
 |------|------|------|
-| 设备证据 | `artifacts/sdaa_cavity_evidence.json` | SDAA 设备信息 + 数值一致性 + 网格收敛 |
-| 验证图 | `artifacts/sdaa_cavity_re400_verification.png` | 网格收敛柱状图 + Ghia 参考剖面 |
+| 设备证据 | [sdaa_cavity_evidence.json](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_evidence.json) | SDAA 设备信息 + 数值一致性 + 网格收敛 |
+| 验证图 | [sdaa_cavity_re400_verification.png](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_re400_verification.png) | 网格收敛柱状图 + Ghia 参考剖面 |
 | 求解器代码 | `src/tensorlbm/lid_driven_cavity.py` | 2D LDC 求解器 |
 | 测试用例 | `tests/test_lid_driven_cavity.py` | 单元测试 |
 
@@ -173,4 +173,4 @@
 
 **报告状态**：✅ 完成（meta-报告，诚实标注缺失数据）  
 **原报告 758 缺陷**：已在本报告 §⑤ 列出并修正  
-**判定依据**：工件 `artifacts/sdaa_cavity_evidence.json` 程序化提取，零手抄
+**判定依据**：工件 [sdaa_cavity_evidence.json](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_evidence.json) 程序化提取，零手抄

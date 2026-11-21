@@ -67,7 +67,7 @@ torch.sdaa.device_count() = 1
 
 ## Artifact
 
-- 路径：`artifacts/sdaa_cavity.json`
+- 路径：[sdaa_cavity.json](../../benchmarks/verified/cavity/re100/evidence/sdaa/sdaa_cavity.json)
 - 含设备证据行、判据数值、逐条 PASS/FAIL 比对
 
 ## 备注
