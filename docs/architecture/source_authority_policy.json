@@ -9,6 +9,10 @@
     "xval"
   ],
   "allowed_active_references": {
+    ".github/workflows/ci.yml": {
+      "matches": 1,
+      "matching_lines_sha256": "64c3c8ccb8d2d5ad113a586f856972a236186a3980f012770084f3b7e7cda37f"
+    },
     "benchmarks/bench_dam_break_quant.py": {
       "matches": 1,
       "matching_lines_sha256": "29cc1692e04f1b91cf0a98a37fa304a1ac2bd85bcb0f7319787c4a730c40edca"
