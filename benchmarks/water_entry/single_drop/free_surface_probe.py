@@ -257,6 +257,7 @@ def probe(
     diag_budget=False,
     momconv=None,
     cav_closure=False,
+    gas_flow=False,
 ):
     diag_cavity = diag_cavity_enabled(diag_cavity)
     diag_budget = bool(diag_budget)
@@ -309,7 +310,20 @@ def probe(
     velocity = -release_lattice * (moving & active)
     # Ambient gas pressure is represented as a reference liquid density of one.
     rho = 1 + 3 * (sc["g"] * (level - z).clamp_min(0) + (4 * sc["sigma"] / n) * moving)
-    f = equilibrium3d(rho * active, torch.zeros_like(z), torch.zeros_like(z), velocity)
+    if gas_flow:
+        # Potential flow of the exterior of a translating sphere, decaying as r^-3
+        # (mirrors run.py --gas-flow so the SDAA-lane probe arm matches the CACSim arm).
+        r = ((x - mid) ** 2 + (y - mid) ** 2 + (z - center) ** 2).sqrt().clamp_min(n / 2)
+        pool_mask = (level - z + 0.5).clamp(0, 1)
+        scale = -0.5 * release_lattice * (n / (2 * r)) ** 3 * (1 - drop) * (1 - pool_mask)
+        ux = scale * 3 * (x - mid) * (z - center) / r**2
+        uy = scale * 3 * (y - mid) * (z - center) / r**2
+        uz = velocity + scale * (3 * ((z - center) / r) ** 2 - 1)
+    else:
+        ux = torch.zeros_like(z)
+        uy = torch.zeros_like(z)
+        uz = velocity
+    f = equilibrium3d(rho * active, ux, uy, uz)
     mass = init_mass_from_fill(fill, flags) * rho
     mass0 = total_liquid_inventory(f, fill, flags).item()
     geometric_volume0 = float(fill.sum())

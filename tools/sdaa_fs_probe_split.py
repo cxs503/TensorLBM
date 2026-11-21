@@ -71,6 +71,7 @@ if _curv2: kw["curv2_dose"] = _curv2
 _stbf = os.environ.get("WE_STBF", "0") == "1"
 if os.environ.get("WE_DIAG_CAVITY", "0") == "1": kw["diag_cavity"] = True
 if os.environ.get("WE_CAV_CLOSURE", "0") == "1": kw["cav_closure"] = True
+if os.environ.get("WE_GAS_FLOW", "0") == "1": kw["gas_flow"] = True
 if os.environ.get("WE_DIAG_BUDGET", "0") == "1": kw["diag_budget"] = True
 _momconv = os.environ.get("WE_MOMCONV", "") or None
 if _momconv: kw["momconv"] = _momconv
@@ -128,6 +129,8 @@ def parse_args():
     ap.add_argument("--momconv", default="",
                     choices=["", "inherit", "redistribute", "redistribute_liq"],
                     help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV); empty=legacy")
+    ap.add_argument("--gas-flow", action="store_true",
+                    help="exterior potential-flow gas coupling in the initial field (DE-X-EV1-GAS_FLOW)")
     return ap.parse_args()
 
 
@@ -166,7 +169,8 @@ def launch(a):
            f"-e WE_GAP={a.gap} -e WE_PD={a.pd} -e WE_RS={a.rs} -e WE_UL={a.ul} "
            f"-e WE_DIAG_CAVITY={1 if a.diag_cavity else 0} -e WE_PLANES={1 if a.planes else 0} "
            f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv} "
-           f"-e WE_CAV_CLOSURE={1 if a.cav_closure else 0}")
+           f"-e WE_CAV_CLOSURE={1 if a.cav_closure else 0} "
+           f"-e WE_GAS_FLOW={1 if a.gas_flow else 0}")
     cname = f"sdaa_{tag}"
     r = ssh(f"docker run -d --name {cname} --device /dev/tcaicard{card} "
             f"-v {wt}:/we -v {out}:/out {env} {IMG} bash -c "
@@ -178,11 +182,12 @@ def launch(a):
                              "diag_cavity": bool(a.diag_cavity), "planes": bool(a.planes),
                              "diag_budget": bool(a.diag_budget),
                              "cav_closure": bool(a.cav_closure),
+                             "gas_flow": bool(a.gas_flow),
                              "momconv": a.momconv,
                              "launched_at": time.time()})
     print(f"[sdaa] launched arm={a.arm} card={card} commit={head} steps={a.steps} "
           f"diag_cavity={bool(a.diag_cavity)} diag_budget={bool(a.diag_budget)} "
-          f"momconv={a.momconv!r} container={cname}", flush=True)
+          f"gas_flow={bool(a.gas_flow)} momconv={a.momconv!r} container={cname}", flush=True)
     return 0
 
 
@@ -206,7 +211,7 @@ def collect(a):
     rp = ssh(f"cat {out}/planes.npz 2>/dev/null") if state.get("planes") else None
     header = (f"arm={a.arm} card={card} commit={state['commit']} steps={state['steps']} "
               f"diag_cavity={state['diag_cavity']} diag_budget={state.get('diag_budget', False)} "
-              f"momconv={state.get('momconv', '')}\n")
+              f"gas_flow={state.get('gas_flow', False)} momconv={state.get('momconv', '')}\n")
     with open(f"{tree}/runs/{a.arm}/run.log", "w") as handle:
         handle.write(header + rlog.stdout.decode(errors="ignore"))
     if rp is not None and rp.stdout:
