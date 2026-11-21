@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 DEFAULT_RAW = REPO / "artifacts/runs/platform-contract-fixes"
 CONTRACT = "test_platform_contract_regressions"
 
@@ -92,7 +92,8 @@ def main() -> None:
     assert not newly_skipped
     assert counts(current_new) == {"passed": 61}
     assert len(recovered) == 17
-    output = Path(__file__).with_name("summary.json")
+    output = REPO / "outputs/platform-contract-fixes/summary.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(
         json.dumps(

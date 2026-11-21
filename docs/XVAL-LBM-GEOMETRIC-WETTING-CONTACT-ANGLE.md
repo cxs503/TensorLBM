@@ -127,7 +127,7 @@ color-gradient LBM 里固壁接触角不是自由参数，必须由壁面边界�
 | 实现 | `src/tensorlbm/cg_wetting_geometric.py`、`src/tensorlbm/cg_contact_angle.py` |
 | 主求解器接入 | `src/tensorlbm/color_gradient2d.py`（`wall_contact_angle*` 可选参数，缺省逐位兼容） |
 | 入口 | `benchmarks/xval_openlbmpm_wetting/run.py` |
-| 运行工件 | `results/results.json`（含 engine sha256、参考源码 sha256、repro_cmd）、`results/figures/*.png`、`evidence/geometric_wetting/results_log.txt` |
+| 运行工件 | `results/results.json`（含 engine sha256、参考源码 sha256、repro_cmd）、`results/figures/*.png`、[results_log.txt](../development/evidence/geometric_wetting/results_log.txt) |
 | 单测 | `tests/test_cg_geometric_wetting_xval.py` 实跑 **32 passed / 5 failed / 4 xfailed**（`PYTHONPATH=src pytest -q`）：失败 5 项全部是**合成锐界面（ξ=0.4）**上的全局圆拟合/面积反演检查（离散接触宽半格偏差 + tanh 曲率），与求解器路径/边界条件本体无关；xfail 4 项为该锐界面上的接触线局部估计器。真实界面宽 ξ≈2 的求解器输出上三估计器均返回数值（见 4.3 表）。诚实登记，未删除失败用例 |
 | 环境 | python 3.11.6 / torch 2.7.1 / numpy 2.4.6 / loongarch64 |
 

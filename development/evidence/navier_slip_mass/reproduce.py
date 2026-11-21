@@ -2,7 +2,7 @@
 
 Run from the repository root:
   OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONPATH=src \
-    .venv/bin/python evidence/navier_slip_mass/reproduce.py
+    .venv/bin/python development/evidence/navier_slip_mass/reproduce.py
 
 This is a CPU diagnostic, not a physical slip-length validation. Float64
 reductions measure changes in the stored populations; they do not remove

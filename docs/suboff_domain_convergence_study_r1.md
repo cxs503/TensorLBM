@@ -170,4 +170,4 @@ artifact = run_suboff_domain_convergence_study(
 ## Evidence Artifact
 
 The produced evidence artifact is at:
-`evidence/suboff_domain_convergence_artifact.json`
+[suboff_domain_convergence_artifact.json](assets/suboff-domain/suboff_domain_convergence_artifact.json)

@@ -76,7 +76,7 @@ float32 有边界轨迹的累计算子质量变化：
 
 ```bash
 python -m venv .venv
-.venv/bin/python -m pip install -r evidence/navier_slip_mass/environment.txt
+.venv/bin/python -m pip install -r development/evidence/navier_slip_mass/environment.txt
 ```
 
 保留 `pipefail`，避免 tee 掩盖 pytest 的失败退出码：
@@ -84,16 +84,17 @@ python -m venv .venv
 ```bash
 set -o pipefail
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
-PYTHONPATH=src .venv/bin/python evidence/navier_slip_mass/reproduce.py \
-  | tee evidence/navier_slip_mass/operator_audit.json
+mkdir -p outputs/navier_slip_mass
+PYTHONPATH=src .venv/bin/python development/evidence/navier_slip_mass/reproduce.py \
+  | tee outputs/navier_slip_mass/operator_audit.json
 .venv/bin/python -m pytest tests/test_navier_slip_bc.py -q -ra \
-  2>&1 | tee evidence/navier_slip_mass/target.log
+  2>&1 | tee outputs/navier_slip_mass/target.log
 .venv/bin/python -m pytest \
   tests/test_navier_slip_bc.py tests/test_d3q19.py \
   tests/test_low_memory_d3q19.py tests/test_boundaries3d_moving_lid.py \
   tests/test_boundary_registry.py tests/test_free_surface_application.py \
-  -q -ra --timeout=120 2>&1 | tee evidence/navier_slip_mass/regression.log
-.venv/bin/ruff check tests/test_navier_slip_bc.py evidence/navier_slip_mass/reproduce.py
+  -q -ra --timeout=120 2>&1 | tee outputs/navier_slip_mass/regression.log
+.venv/bin/ruff check tests/test_navier_slip_bc.py development/evidence/navier_slip_mass/reproduce.py
 git diff --check
 ```
 

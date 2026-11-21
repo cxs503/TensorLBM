@@ -177,7 +177,7 @@ python tests/test_repository_layout.py                 # 12 passed
 python tests/test_repository_report_migration.py       # 6 passed
 python tests/test_audit_import_graph.py                # 3 passed
 python tools/check_repository_layout.py               # passed
-python evidence/post_merge_review_20261026/probe_contracts.py
+python development/evidence/post_merge_review_20261026/probe_contracts.py
 ```
 
 `probe_contracts.py` 为标准库小探针，输出保存在 `probe_results.json`。它记录缺陷行为，

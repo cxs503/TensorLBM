@@ -209,7 +209,7 @@ defect, but as delivered it must count as not shipped.
 **F6 — medium: the delivery was not in the trunk at audit time.** `c48cacd31` is reachable
 only from `agent/m20177`; `origin/main` = `668b346af` has neither
 `src/tensorlbm/adjoint_verdict.py` nor the doc, so any gate verifying pointers from `main`
-fails until the merge. Raw artefacts are snapshotted in `evidence/m20231/`.
+fails until the merge. Raw artefacts are snapshotted in [m20231](../development/evidence/m20231/).
 
 **F7 — medium (registry): the anchor had no benchmark case at delivery time.**
 `SELECT … WHERE anchor_slug='GAP-DIFFLBM-ADJOINT-VERDICT'` returned 0 rows, so the

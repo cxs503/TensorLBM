@@ -42,7 +42,7 @@ integrity verified before retiring a tracked copy.
 | `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
 | `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
-| `evidence/` | Split by purpose | Case acceptance evidence stays discoverable from its case. Review, investigation and supporting records may live in `development/`. |
+| `evidence/` | Case data, document assets, development evidence and tools | The [migration ledger](migrations/evidence-root-retirement-2026-11-21.json) lists original blobs and updated replay commands. |
 | `examples/` | Keep | Preserve documented commands and supported entry points. |
 | `experiments/` | `development/experiments/` | Promote any maintained cases before moving exploratory and archived work. |
 | `figures/` | Case evidence, document assets, or development archives | The [migration ledger](migrations/figures-root-retirement-2026-11-21.json) preserves historical paths. Migrated commands use `outputs/figures/`. Unmigrated commands can still use the ignored local `figures/`. |
