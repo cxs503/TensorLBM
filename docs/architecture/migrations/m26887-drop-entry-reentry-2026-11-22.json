@@ -1,0 +1,19 @@
+{
+  "source_commit": "7f2e61e99a4b8d794a692bf84970bd6af8575615",
+  "root_directories_before": 15,
+  "root_directories_after": 14,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/X/DIAG2-CAVCLSE.md",
+      "new_path": "development/audit/drop_entry/BB/m26887/DIAG2-CAVCLSE.md",
+      "original_git_blob": "161f8bbb683856a59377a0a4846c61394dddd206",
+      "git_mode": "100644",
+      "size_bytes": 12510,
+      "original_sha256": "1e94d5dbd9eb35cf04add3341177a81fc1534f18f330e6550ceb5f3a2f82bbbb",
+      "published_duplicate": "docs/audits/diag2_cavclse_20261121/DIAG2-CAVCLSE.md"
+    }
+  ],
+  "reference_scan": "No import, CLI, CI or benchmark registry consumer referred to the root copy. PREREG records its former external publication path; the byte-identical published document remains under docs/audits/.",
+  "compatibility": "The mission card retains identical bytes in development/audit, while its public documentation path remains unchanged.",
+  "scientific_scope": "This migration does not modify the active diagnostic implementation, figure, numerical source, acceptance state or public API."
+}
