@@ -1,5 +1,7 @@
 # SDAA Sweep: thermal_cavity_3d (W9-A)
 
+[归档运行记录](../../benchmarks/verified/thermal_cavity_3d/evidence/sdaa/sdaa_thermal_cavity_3d.json)。仅覆盖 Ra=10³、N=32，单调收敛门未执行。
+
 ## 案例
 
 3D 差热立方腔自然对流（Pr=0.71），D3Q19 BGK + D3Q7 温度双分布。

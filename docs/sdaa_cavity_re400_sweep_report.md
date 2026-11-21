@@ -65,7 +65,7 @@
 
 ## ④ 结果图
 
-见 `artifacts/sdaa_cavity_re400_verification.png`：
+见 [sdaa_cavity_re400_verification.png](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_re400_verification.png)：
 - 左图：网格收敛柱状图（128²=1.50%, 192²=0.83%，均<3%阈值）
 - 右图：Ghia 1982 参考中线速度剖面
 
@@ -93,8 +93,8 @@
 | 文件 | 说明 |
 |------|------|
 | `scripts/sdaa_sweep_cavity.py` | SDAA 验证扫荡脚本 |
-| `artifacts/sdaa_cavity_evidence.json` | 证据文件（含设备证据行） |
-| `artifacts/sdaa_cavity_re400_verification.png` | 论文级验证图 |
+| [sdaa_cavity_evidence.json](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_evidence.json) | 证据文件（含设备证据行） |
+| [sdaa_cavity_re400_verification.png](../benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_re400_verification.png) | 论文级验证图 |
 | `runs/sdaa_cavity_debug.log` | 数值一致性验证日志 |
 | `runs/run_cavity_sdaa_128.sh` | 128² SDAA 运行脚本 |
 | `runs/run_cavity_sdaa_192.sh` | 192² SDAA 运行脚本 |

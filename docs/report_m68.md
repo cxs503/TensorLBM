@@ -128,7 +128,8 @@ de Vahl Davis (1983) 自然对流方腔是计算流体力学最经典的验证�
 
 ---
 
-**工件**: `artifacts/sdaa_thermal_cavity.json`  
+**工件**: [sdaa_thermal_cavity.json](../benchmarks/verified/thermal_cavity/evidence/sdaa/sdaa_thermal_cavity.json)
+
 **原始验证结论**: PARTIAL (N≥128 pass, N=64 fail)  
 **本次 SDAA sweep 结论**: 0/6 pass (步数不足，早期发展阶段)  
 **诚实声明**: 本补报如实保留 FAIL 结论，不粉饰。

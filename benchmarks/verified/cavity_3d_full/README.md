@@ -1,5 +1,7 @@
 # 全 3D 方腔流 cavity_3d_full（Re=1000，5 壁固定 + 顶盖移动）
 
+历史 SDAA 工件：[运行记录](evidence/sdaa/sdaa_cavity_3d_full.json)。历史 SDAA 文件覆盖 64³、96³ 两档。
+
 **状态：✅ 已晋级 verified（2026-08-20）**
 
 本案例是经典顶盖驱动方腔流的三维全尺寸版本：立方腔体 [0,1]³，五个静止壁面

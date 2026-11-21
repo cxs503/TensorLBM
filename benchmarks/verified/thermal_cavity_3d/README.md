@@ -1,5 +1,7 @@
 # W9-A: 3D 差热立方腔自然对流（Pr=0.71）— thermal_cavity_3d
 
+历史 SDAA 工件：[运行记录](evidence/sdaa/sdaa_thermal_cavity_3d.json)。历史 SDAA 仅执行 Ra=10³、N=32。文件自述通过，但单调收敛门未执行。
+
 ## 概述
 
 - 问题：立方腔差热自然对流——左壁等温 T_hot=1、右壁等温 T_cold=0、

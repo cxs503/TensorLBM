@@ -1,0 +1,68 @@
+{
+  "source_commit": "3b68186e98deb2ddc5b4bb2e8f7fc900d2a10f48",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 77,
+  "tracked_artifacts_after": 70,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_cavity.json",
+      "new_path": "benchmarks/verified/cavity/re100/evidence/sdaa/sdaa_cavity.json",
+      "git_mode": "100644",
+      "original_git_blob": "c0c8bd892d3c1a2cbb796d9aebca1ef2b393f93e",
+      "size_bytes": 2350,
+      "original_sha256": "4fd390104601d415b94e7e92058f0fb6b0d561dcb4fba6dd10ebb9fa41a6d772"
+    },
+    {
+      "old_path": "artifacts/sdaa_cavity_evidence.json",
+      "new_path": "benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_evidence.json",
+      "git_mode": "100644",
+      "original_git_blob": "e5d6570e5974b4c07ba16f3847841ac6e0464fb2",
+      "size_bytes": 3202,
+      "original_sha256": "bba0f867aa6cd2cc1aba754d2b9721979117cd704e2c19f8b2035f1f3a167fa0"
+    },
+    {
+      "old_path": "artifacts/sdaa_cavity_re400_verification.png",
+      "new_path": "benchmarks/verified/cavity/re400/evidence/sdaa/sdaa_cavity_re400_verification.png",
+      "git_mode": "100644",
+      "original_git_blob": "023404a3a13121848435b96b6ec654d87eae2386",
+      "size_bytes": 112282,
+      "original_sha256": "93ff41a4ee8d978ddb69d03bed3d077d78329ff87add6d841e7ab7d652bb9623"
+    },
+    {
+      "old_path": "artifacts/sdaa_cavity_3d_full.json",
+      "new_path": "benchmarks/verified/cavity_3d_full/evidence/sdaa/sdaa_cavity_3d_full.json",
+      "git_mode": "100644",
+      "original_git_blob": "d0aec603c5eb71ba625adb2e9dc7102433ec130d",
+      "size_bytes": 2034,
+      "original_sha256": "3e05e645aec8160d2b347764d29bbc714a919931ebbd57ad3888af550a675546"
+    },
+    {
+      "old_path": "artifacts/sdaa_cavity_natural_convection.json",
+      "new_path": "benchmarks/verified/cavity_natural_convection/evidence/sdaa/sdaa_cavity_natural_convection.json",
+      "git_mode": "100644",
+      "original_git_blob": "cb41af1ae676206f69c12eb9e77d162e5698fcc3",
+      "size_bytes": 2054,
+      "original_sha256": "9437ecf3ffeb45d75c64b73a9237872f51cc97adf0136378ffe158b3d2114fea"
+    },
+    {
+      "old_path": "artifacts/sdaa_thermal_cavity.json",
+      "new_path": "benchmarks/verified/thermal_cavity/evidence/sdaa/sdaa_thermal_cavity.json",
+      "git_mode": "100644",
+      "original_git_blob": "1d19d51f292204a93910ea1a50c1337a2d945e20",
+      "size_bytes": 5226,
+      "original_sha256": "dfd77c794d106b9c16a3ec22373509e5f10ae9749f79c3d5f75fcf561d7e72ce"
+    },
+    {
+      "old_path": "artifacts/sdaa_thermal_cavity_3d.json",
+      "new_path": "benchmarks/verified/thermal_cavity_3d/evidence/sdaa/sdaa_thermal_cavity_3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "3bd7b186002075e46d78b6d060d19a88f1d3c531",
+      "size_bytes": 2850,
+      "original_sha256": "45fe02d531897384ca27ed8750e9dade9dbe92a4a867a06e6cc7acdb3549830d"
+    }
+  ],
+  "reference_scan": "Reviewed exact artifact filenames, active producers, and owning cases. Historical mission QA citations may retain original run paths.",
+  "compatibility": "Commands and report locations remain stable. New output uses ignored outputs/sdaa/ paths. The SDAA ledger keeps original JSON identifiers.",
+  "scientific_scope": "Archival only. Existing FAILs and the unrun thermal 3D monotonicity gate remain explicit. Re=400 combines a short SDAA observation and separate CPU reference results."
+}

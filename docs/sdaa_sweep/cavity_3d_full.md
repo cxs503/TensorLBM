@@ -87,7 +87,7 @@
 ## 工件文件
 
 - **脚本**: `scripts/sdaa_sweep_cavity_3d_full.py`
-- **结果**: `artifacts/sdaa_cavity_3d_full.json`
+- **结果**: [sdaa_cavity_3d_full.json](../../benchmarks/verified/cavity_3d_full/evidence/sdaa/sdaa_cavity_3d_full.json)
 - **原始案例**: `benchmarks/verified/cavity_3d_full/`
 
 ## 运行命令
