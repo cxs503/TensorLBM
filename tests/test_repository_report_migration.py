@@ -43,8 +43,11 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     self.assertEqual(text.count(f"]({new})"), 1, new)
                     text = text.replace(f"]({new})", f"]({old})")
                 raw = text.encode("utf-8")
-                self.assertEqual(len(raw), item["original_bytes"])
-                self.assertEqual(hashlib.sha256(raw).hexdigest(), item["original_sha256"])
+                fingerprint = item.get("current_fingerprint", {
+                    "bytes": item["original_bytes"], "sha256": item["original_sha256"],
+                })
+                self.assertEqual(len(raw), fingerprint["bytes"])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), fingerprint["sha256"])
                 self.assertFalse((REPO / item["old_path"]).exists())
 
     def test_deduplicated_images_retain_original_bytes(self):
@@ -58,7 +61,10 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def test_archived_evidence_and_couette_images_are_unchanged(self):
         for item in self.ledger["preserved_files"]:
             with self.subTest(path=item["path"]):
-                self.assert_fingerprint(REPO / item["path"], item["sha256"], item["bytes"])
+                fingerprint = item.get("current_fingerprint", item)
+                self.assert_fingerprint(
+                    REPO / item["path"], fingerprint["sha256"], fingerprint["bytes"]
+                )
 
     def test_report_and_case_inline_local_links_resolve(self):
         # Deliberately scoped: this is not a repository-wide Markdown parser,
