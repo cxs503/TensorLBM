@@ -1,0 +1,20 @@
+{
+  "source_commit": "8ec6dc0ce9370710e49e67bee442ebf855106fa6",
+  "source_pr": 2899,
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "main_root_directories_expected": 13,
+  "entries": [
+    {
+      "old_path": "BB/X/DE-X-COL1-MRT.md",
+      "new_path": "development/audit/drop_entry/BB/m26957/DE-X-COL1-MRT.md",
+      "original_git_blob": "066d015cd1cf8ea5ab14a91c01fc134b31e92b15",
+      "git_mode": "100644",
+      "size_bytes": 1964,
+      "original_sha256": "6c1086d0fa73852fb464e890d1f94d31798652297d904c0b43a318ada32ed013"
+    }
+  ],
+  "reference_scan": "Exact filename is absent from tracked consumers. The original card has no relative Markdown links.",
+  "compatibility": "Keep the internal work card byte-identical and leave the published documentation, solver, runners, tests and their paths intact. The root directory change applies to the PR tree before it enters main.",
+  "scientific_scope": "The original mission's statements and results are retained verbatim. This add-on only changes file ownership and makes no scientific claim."
+}
