@@ -15,7 +15,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "docs/benchmarks/tutorials/README.md"
 LINK = re.compile(r"\\[[^]]+\\]\\(([^)]+)\\)")
-CASE = re.compile(r"\\(([a-z][a-z0-9_]+)\\)\\s*$")
+CASE = re.compile(r"[（(]([a-z][a-z0-9_]+)[）)]\\s*$")
 
 
 def check(root: Path = ROOT) -> dict:
