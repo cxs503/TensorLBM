@@ -1,4 +1,4 @@
-"""Regression tests for the published 33-case catalogue integrity gate."""
+"""Regression tests for the published 35-case catalogue integrity gate."""
 from __future__ import annotations
 
 import importlib.util
@@ -34,7 +34,7 @@ class CatalogueTests(unittest.TestCase):
 
     def test_published_catalogue_is_unchanged_and_complete(self):
         result = module.check()
-        self.assertEqual(result["count"], 33)
+        self.assertEqual(result["count"], 35)
         self.assertEqual(result["errors"], [], "\n".join(result["errors"]))
 
 
