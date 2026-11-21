@@ -1,0 +1,264 @@
+{
+  "source_revision": "2733d6870a552ce054faf977107a45fecc1215bc",
+  "canonical_tree": "src/tensorlbm",
+  "historical_tree": "TensorLBM/src/tensorlbm",
+  "canonical_file_count": 1454,
+  "historical_file_count": 142,
+  "counts": {
+    "identical": 21,
+    "different": 34,
+    "nested_only": 87
+  },
+  "paths": {
+    "identical": {
+      "aa_fused_push_pull.py": "f2c0924255a74d1db6adb328d1798e78d09a6a63",
+      "aa_fused_push_pull_inplace.py": "a99bf16c80b75d77d31ca2ebef5d46990fcd3846",
+      "aa_fused_stream_collide.py": "a1ed0a6c0106f36d03aa68fc81e13dbde35f30af",
+      "airfoil_benchmark.py": "36b71d5be28397fdeeb234eeae384e0f0e7691ce",
+      "boundary/d2q9.py": "cafbca4640950894fbbfd4452964e97e0d7ff2ff",
+      "bubble_turbulence/__init__.py": "5cdd5103554dff5f0e6d8ccb0a89be2ed21a6124",
+      "bubble_turbulence/campaign.py": "fffa98221d93d3940c6c0cdda794ea5479b5a67b",
+      "bubble_turbulence/statistics.py": "fcbe789c6b96695c21ee32f1a6a74a25c16e21aa",
+      "sediment_transport.py": "32fa81b57ee17d0713bfa7d2918a5b89463430f5",
+      "shallow_water.py": "cc949c2cb1c6d15717c9a438f67e2b97c249cefd",
+      "verification/asbl/__init__.py": "575e78418cfbd5ee426b4be365eeae6c76078d0a",
+      "verification/asbl/analytical.py": "0fadc6ef64c0e32447d9cf3aaf4032a73311966a",
+      "verification/asbl/power_accounting.py": "950f2d5d124ef0c856ae03d736949d23f383112d",
+      "verification/cdr_pnp/cdr_solver.py": "2cecf91b2e5c5ee3be652c11e7aac52c17de6a98",
+      "verification/turbulent_channel/__init__.py": "99bbb3b2348ec94095d761e2d16a97aa30ce9a57",
+      "verification/turbulent_channel/reference_data.py": "38edc0170ce5c738e705d01ac4428b59d6ee8c06",
+      "verification/turbulent_channel/verification.py": "434cca5b4e5deb5e8f7c0626fa6a9fd01b0f09db",
+      "verification/womersley_pulsatile/__init__.py": "4b545ecfd54025bf72fe027be2c66ed265814acc",
+      "verification/womersley_pulsatile/analytical.py": "eebfa00e2649abcb6579ab93ebc8b03e4e9ffc4b",
+      "verification/womersley_pulsatile/gates.py": "eb684a340ab95312db6440846a6ea4a144ebfc4d",
+      "verification/womersley_pulsatile/metrics.py": "abd16907a553b097b7489a4659f2754897bcea56"
+    },
+    "different": {
+      "__init__.py": {
+        "nested": "33f8bc67ec6b1644e7a673be65ff6be051062ff5",
+        "canonical": "1adc6a4c41a33bdbc74944587326140504c81c9b"
+      },
+      "boundary/__init__.py": {
+        "nested": "527abd428422aa243799e6f290e1c8e9e19c3736",
+        "canonical": "85c7158fc062f776a07b6899e1a21a9f5b43d7eb"
+      },
+      "boundary/inamuro_wetnode.py": {
+        "nested": "f36a655e49ada5fb185c2ded9a896ec3fd34ba79",
+        "canonical": "3411eecd2a58b68444aa21656f60775e1b6d385d"
+      },
+      "boundary/solver2d.py": {
+        "nested": "774a42fc98c16fdc4eaed1906375976417bbde97",
+        "canonical": "2afbf5758db9f9fce1495a7bdac7ebd7e73d60c0"
+      },
+      "boundary/suction.py": {
+        "nested": "e875ab832c2979ff375948539b6d8c7340f43335",
+        "canonical": "2e4cfa98643ccbae8a1cb98c4a7af53100cd6f48"
+      },
+      "bubble_turbulence/bubble_solver.py": {
+        "nested": "049f0c9eb742efa8fe53fcdf1233c670e8ffd653",
+        "canonical": "e845191af3ee3021c4fcf8de8d0607b637bb9860"
+      },
+      "bubble_turbulence/mechanisms.py": {
+        "nested": "10d3b90a36ddfb659817d0c4b3357af8fc5468c0",
+        "canonical": "e2eb668699a175df2da626cdba1c311c5ae56b50"
+      },
+      "d2q9.py": {
+        "nested": "7d2db1bae1c230111e9c8d335a943074e879c89e",
+        "canonical": "7bb3e524279afe7e1caef1d8c56fc96a3d9fcf85"
+      },
+      "d3q19.py": {
+        "nested": "d4de285b4529746c205ac1d0641e4f046767fff7",
+        "canonical": "025bd4dbae3d64a03ee1630f38fb0fc3fc72429b"
+      },
+      "ibm.py": {
+        "nested": "ed8b282bf7ccef13c9affff180c01168b0e14e90",
+        "canonical": "4074e18cf46e319f03a992d62d988d9787d289e1"
+      },
+      "lighthill_volume.py": {
+        "nested": "f33db837d141a266f8ec108f0d9053302092fb13",
+        "canonical": "d2bb37b0603a4da85fba8a365e1990b09bc688a5"
+      },
+      "porous/__init__.py": {
+        "nested": "d8706e173aa6eca219e4a6ec9d9944a72cd1e3b7",
+        "canonical": "51a3d19eda6fa50002c7b34935edc6216415c595"
+      },
+      "porous/fluid_node_table.py": {
+        "nested": "ddd2c8b7082f9527f1baa3c6002249def7357dc1",
+        "canonical": "8c5aa19b042d2ae5b66bdd318e5cc165dab81572"
+      },
+      "solver.py": {
+        "nested": "53da2e6436cbbd21cb2d933d3e122b08c4e90a84",
+        "canonical": "3f827f8ba2f0989825e3cb2edd7351bb27be5f4b"
+      },
+      "sparse_list_aos.py": {
+        "nested": "57343a1c6cac46959bb1a9b9e5ede91d7b33d32e",
+        "canonical": "ec6c16bec76f8d3bd9c616457079a7b5d9eb4a66"
+      },
+      "turbulence/__init__.py": {
+        "nested": "99e751b654307bca8e8da826d03da95563a67d52",
+        "canonical": "f06402970dfaa952c89b526c489b9a63f5865fe2"
+      },
+      "turbulence/les_channel_verification.py": {
+        "nested": "4f93d6d8fc6a589a30832ede861048b53c3f9bfb",
+        "canonical": "ed87ed40c749669c3a8b18c60a96148a40f02e22"
+      },
+      "verification/__init__.py": {
+        "nested": "79c49fed0a003960d86d190bd45a2c98e90e642a",
+        "canonical": "136ff2a9fe30363953d4f4f2c4d026794f1bf340"
+      },
+      "verification/asbl/simulation.py": {
+        "nested": "a51f611e82dfa7c135886c53de19dfcba757b847",
+        "canonical": "9a40ebd28171e53ea0390c32b6784e54f342047a"
+      },
+      "verification/cavity_re3200/__init__.py": {
+        "nested": "570ca7f0430b4d40a6c69d0f20569bb193278565",
+        "canonical": "c66bce36a2bdea745b1336421a58122450e09292"
+      },
+      "verification/cdr_pnp/__init__.py": {
+        "nested": "02a31de3313cc38b445e70e9b073f6a3a05a1f5c",
+        "canonical": "1ebca44540dae68596d394674edef329767deae4"
+      },
+      "verification/cdr_pnp/gates.py": {
+        "nested": "d01b832b8d493e63396adcdd6b12d645d8b7f058",
+        "canonical": "b1c3af16ff0d8d8603529c105207ae55bf1b5bee"
+      },
+      "verification/cdr_pnp/pnp_solver.py": {
+        "nested": "68b4f7f95d850a3ca9eac5c6473adf0bde5c04e3",
+        "canonical": "10ff02b57a6535af4919fe2623e69ca8105570b2"
+      },
+      "verification/perforated_plate/__init__.py": {
+        "nested": "f5d153cab34d1e6a1d62f8e06ae944e1310a6bbc",
+        "canonical": "9b7889366e415df500549b7ec7f82bd1c024472b"
+      },
+      "verification/perforated_plate/analysis.py": {
+        "nested": "a07b3d2dc711770bc56b2e390092008e198304ac",
+        "canonical": "b8619464e4bc66abab5b4c251fb55fd534992110"
+      },
+      "verification/perforated_plate/gates.py": {
+        "nested": "127831646dc782f4c5054b704871b7fc9b1024ea",
+        "canonical": "5b0d03eedf823ea4d214cc0f1e58c2cedaf686e9"
+      },
+      "verification/perforated_plate/reference.py": {
+        "nested": "d2282939cbd6a4cab19bdbc44b84cbfe7d1b09f6",
+        "canonical": "182424871b83d0fa9bc23c7d1750c75a1a71bc20"
+      },
+      "verification/perforated_plate/solver.py": {
+        "nested": "666e934c93b1abcd7774d62dceb25f0f81a04af3",
+        "canonical": "ab1c5bebf8639433ad90ee357edeed7829b8e199"
+      },
+      "verification/turbulent_channel/channel_solver.py": {
+        "nested": "9e1d2fa00350fbc274695e9353ab9c78426618a3",
+        "canonical": "f448377e41459da0a22c4d8b7f0315c08b0c32e2"
+      },
+      "verification/turbulent_channel/statistics.py": {
+        "nested": "f61eb448d238197ece26d20f82a0fd1fff85605b",
+        "canonical": "e042e0734595a8c60f655445b869a5e636f92127"
+      },
+      "verification/womersley_pulsatile/channel2d.py": {
+        "nested": "43e55f63245e8cea2bfcdf1f007604a7e0491928",
+        "canonical": "c5c0f72f5ecc711ff50658d132323e9672aa876d"
+      },
+      "verification/womersley_pulsatile/pipe3d.py": {
+        "nested": "fff714ab8ee5e3ffe51825655241d593cecb762f",
+        "canonical": "d22e58e8e10924f6178cc4f56629e111787ad40b"
+      },
+      "wetting/__init__.py": {
+        "nested": "fa2d2cd707e44c0504a958f0ec236395e0f71369",
+        "canonical": "c3bd33bb35aa7a4aa7896467137a5b693120daff"
+      },
+      "xval/__init__.py": {
+        "nested": "0f9406d7078b7e6af158005a16006d3a0f4dd625",
+        "canonical": "81136f355101c5113062be907dcb3bafd50f743c"
+      }
+    },
+    "nested_only": {
+      "aa_fused_push_pull_3d.py": "a29c3d54cb3b1ff0b685cac434dc30dc5b4ef3b9",
+      "aa_fused_xval_entry.py": "90059be6e683a0cce9a44459a281ac19577b0ea1",
+      "adjoint/README.md": "3d88162ab58b75cbf916a75d40f186dc58566e7d",
+      "adjoint/__init__.py": "3212a68f755e273340aec968cadfdedf56bac908",
+      "adjoint/bptt.py": "573fa1ad3f8c20e1079c5cb050f59d262a14fd10",
+      "adjoint/lbm2d.py": "33ce4bb42d48b8c52241ccec0b7b1b1da8542b1b",
+      "adjoint/ootc.py": "7baccddb514f6fcd1be22b02a2038aac227ec327",
+      "boundary/force_corrected_nebb.py": "54ab95e65aafb5c1284724046f77a478985054b4",
+      "boundary/zou_he_channel.py": "d6ebbae1392531f26f8687746cc11a9edafc800c",
+      "bubble_turbulence/bubble_turbulence/__init__.py": "5cdd5103554dff5f0e6d8ccb0a89be2ed21a6124",
+      "bubble_turbulence/bubble_turbulence/bubble_solver.py": "e845191af3ee3021c4fcf8de8d0607b637bb9860",
+      "bubble_turbulence/bubble_turbulence/campaign.py": "fffa98221d93d3940c6c0cdda794ea5479b5a67b",
+      "bubble_turbulence/bubble_turbulence/mechanisms.py": "e2eb668699a175df2da626cdba1c311c5ae56b50",
+      "bubble_turbulence/bubble_turbulence/statistics.py": "fcbe789c6b96695c21ee32f1a6a74a25c16e21aa",
+      "cac_lbm3d.py": "800ed63ca54050513c13584d4c529bf00ceb02ec",
+      "cac_lbm3d.py.bak": "152d8192445c5379e547cd1f5aa76571717891bd",
+      "examples/__init__.py": "cbab1d24c9d6a6758be237d7fd698ae9c421e3c0",
+      "examples/base.py": "d28268fd3402a32e0c9b207c5fef094cfba3291a",
+      "examples/lid_driven_cavity.py": "94c46cb5c67bd64f10dd1981b6a9248b71595bfc",
+      "examples/registry.py": "b6e822be68060d57453b5915ee5f0153f72f5b00",
+      "examples/runner.py": "5a22acec472572f47f0a3524059f5eea7d0f21a4",
+      "forcing/__init__.py": "5d80e35eb247d62a270a27746d44809f82ab6ad1",
+      "forcing/body_force_driver.py": "68b7925f2c844489e753136e244075511d3f706b",
+      "ice_hydro/__init__.py": "194c0fd77180116807b29b42f01fa15c8ac61b05",
+      "ice_hydro/analytical.py": "615ffb37c305e0da9da2bb9e1f8b531277a238ce",
+      "ice_hydro/bonded_cover.py": "768b2f625cb850f5ffb569fa83599df10bb49d9e",
+      "ice_hydro/coupled.py": "d1e7f43251f13fd248841bf62ad9247e4c0f8e0e",
+      "ice_hydro/lbm_channel.py": "b6bf1f3823ce8476fa176e851a3a307c7573411e",
+      "ice_hydro/run_study.py": "150343acbbac351a1a1b3f7026afdeaffeaf8f12",
+      "multiphase/__init__.py": "32be85448ee97cce8a3a08bf32caccf90d80fabf",
+      "multiphase/laplace.py": "843862a1136ef822db23d8e631e16e0a08327b22",
+      "multiphase/mcmp_psi.py": "d09f5369f7ff5d19ecfb5b395d02bf92e4042a68",
+      "porous/sparse_index_lbm.py": "45253305c1f2a01d11eb1083bee6f03c7819a27e",
+      "sparse_sublist_neighbor_list.py": "8b35a9d1a4bcdc89142c6e96715dcd0d4d2bb95f",
+      "turbulence/fast_les_channel.py": "0e18fe9988abe5507f59d085290e5ae7c73bb102",
+      "verification/benchmark_suite.py": "d1b4c4266f0d4c3edf72efe2031dd9bcb1863f4c",
+      "verification/cavity_re3200/__main__.py": "d5649724a999da79888332f7d6881aa4a4be8465",
+      "verification/cavity_re3200/reference.py": "ec8187e506d4c3a07089cc5f0b150e90e02f8342",
+      "verification/cavity_re3200/runner.py": "2898034fcbcecde2afa120893e98778a46da05c7",
+      "verification/cavity_re3200/scoring.py": "78426d5186be2483752f583a65ec95a2901942b8",
+      "verification/circular_poiseuille/__init__.py": "a0ec388659ee0972bf007a1cbc1f088bbb073fb4",
+      "verification/circular_poiseuille/analytical.py": "2442edb508be35b534348994bbb57ce3336d995c",
+      "verification/circular_poiseuille/solver.py": "7c3d64aa1de03ea179f40bc97e67aa0bfecb491a",
+      "verification/cylinder_flow/__init__.py": "8dd2fc46bd9bfaf687fdccc9c9faefe453a270be",
+      "verification/difflbm_benchmarks.py": "edde8787dbfd4f33bd9bc6f5cc2a1d156be5bffa",
+      "verification/figures/linear_interpolated_bb_alpha_figures.json": "30658f61dd2f4a0ac7eca911cbe76252c85e8a96",
+      "verification/layered_poiseuille/__init__.py": "4b19a958bfc5a9c46b14f05ba31122dfad021a5a",
+      "verification/layered_poiseuille/analytic.py": "257fe4121ec4a585f159ffa6f6b33805a1064182",
+      "verification/layered_poiseuille/benchmark.py": "aea9b469872340f3b159fcee4f3b28eb4dc6f641",
+      "verification/layered_poiseuille/cases.py": "8b82909bfe8d223cb6b408d4f00c9113eeb90db0",
+      "verification/layered_poiseuille/metrics.py": "e156680ea5e755630731686d30b097c649f12845",
+      "verification/layered_poiseuille/run_case.py": "73afd60320a7e2ff105b242ab9e838320af7bee2",
+      "verification/layered_poiseuille/run_two_component_sc_val.py": "fc444589368b5646a3f9c009281efbdd675ce8a8",
+      "verification/layered_poiseuille/run_two_component_sc_validation.py": "9aa8cb3ee2e6d32dbdf959831361ba7f3df6a383",
+      "verification/layered_poiseuille/solver.py": "6fbb89abe04f02e655415ccea348eb8f2d92b3e9",
+      "verification/layered_poiseuille/two_component_sc.py": "30a979bd8291ad7b361039d2b1fca18aa4e9d4ef",
+      "verification/lid_driven_cavity/__init__.py": "e019dc5385c1387a7307850862b142656b759605",
+      "verification/lid_driven_cavity/reference_data.py": "1bf02d830be4e44a347482339a1cf8e2b5510461",
+      "verification/lid_driven_cavity/solver.py": "10ab4737d9a26bee8c23f341abec61b4e3b7d98f",
+      "verification/lid_driven_cavity/verification.py": "c64bd8954beda5dd8f1517b35db4646dccc6f8c4",
+      "verification/linear_interpolated_bb_alpha/__init__.py": "c918861fe3d404091172decd8c814587a0482f3e",
+      "verification/linear_interpolated_bb_alpha/generate_figures.py": "1aae7ae1d8a2af4320e072a810d864fa193eeab1",
+      "verification/linear_interpolated_bb_alpha/metrics.py": "953b336f16c5421522bf8fd0e44019e6275784eb",
+      "verification/linear_interpolated_bb_alpha/solver.py": "001907818730b5f591297271fe1e2a880197dcee",
+      "verification/perforated_plate/assemble.py": "08586b6e75996783fde9b040004577a2a5b4a218",
+      "verification/perforated_plate/driver.py": "be7121a4f7c5bc1fa236e42ec7bb0ee20996d4c0",
+      "verification/square_duct_poiseuille/__init__.py": "b2e8449367e2fbbe375fe176ac8e3fffe6ddbbcf",
+      "verification/square_duct_poiseuille/analytical.py": "fcd99d0cd7c330b94c17319c6295be4f935a51a3",
+      "verification/square_duct_poiseuille/solver.py": "9f92660e1b30f2a19f5504613bb944a4387b0e0b",
+      "verification/xval/__init__.py": "a1b6f50805881d8d7da623903e85fbce24a2001d",
+      "verification/xval/benchmark.py": "8935bc31acd5bfba2775921183a0b2b5bebaa5fe",
+      "verification/xval/bitwise_refdata.py": "5844fdeb4a60c2298474661d62292c18814c67ce",
+      "verification/xval/cases.py": "11278af826bcf2e72c608fefc5ae5fd1868f1423",
+      "verification/xval/continuous_error.py": "60889c510ac1cea2464c138de25ba24ff33e7c3c",
+      "verification/xval/poiseuille_skeleton.py": "8df29790d35b4e78a5821911f4b01abeac904c66",
+      "verification/xval/refdata/manifest.json": "98fde16ccb86f537e9fb8d45dde2e81d4afb3c5b",
+      "verification/xval/refdata/poiseuille_2d_H16_v1.npz": "6c9a6ac5ea528100bf16b017ac624f3f08d0a93d",
+      "verification/xval/registry.py": "067e0b2688149cfde1a9a780e62bef4b3e9fd7d1",
+      "verification/zou_he_channel/__init__.py": "cd71119f3d688cac6bfb281bf42266f892c8a844",
+      "verification/zou_he_channel/solver.py": "ab2ebf27313fb072c2b3398ee913ca0c354d78d3",
+      "verification/zou_he_unsteady.py": "5bd898d238027e561439ae7850ca4668e1756f43",
+      "xval/pipeline/__init__.py": "68f09cfef9556b6ada8fb7e2a3af7906b4620b53",
+      "xval/pipeline/real_solvers.py": "6807b6a55777b871e968884412f3fab36da12166",
+      "xval/pipeline/runner.py": "c0e10705a4a0a3e218e37fb52d30c3b8f62403cd",
+      "xval/pipeline/xml_template.py": "995a41225300251d89278371414b9853e13c9b3f",
+      "xval/pipeline/yaml_schema.py": "10cf4565c3506d5641e45c18a1f120c8b6fd66b4",
+      "xval_vivsim_static_slice.py": "1dfa0f6d9c37c3ad0d6b8c3feb9d235228596330"
+    }
+  }
+}

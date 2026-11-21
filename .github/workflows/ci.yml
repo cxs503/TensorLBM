@@ -173,6 +173,14 @@ jobs:
         run: python tests/test_benchmark_manuals.py -v
       - name: Check published benchmark manual links
         run: python tools/check_benchmark_manuals.py
+      - name: Test the benchmark registry
+        run: python tests/test_benchmark_registry.py -v
+      - name: Validate the benchmark registry
+        run: python tools/benchmark_registry.py
+      - name: Guard the historical nested package
+        run: |
+          test "$(git rev-parse HEAD:TensorLBM/src)" = 2cd28eedf763534718f8161bd89732e894852ec5
+          test "$(git rev-parse HEAD:TensorLBM/pyproject.toml)" = 875366fe90ef34991a6c23eade68cd7fd840ed70
 
   # Structural audit has an independent signal: it must run even when
   # the repository-wide Ruff gate is already red for unrelated legacy findings.
