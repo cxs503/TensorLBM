@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "docs/architecture/source_authority_policy.json"
 TOKEN = "TensorLBM/src"
 TEXT_SUFFIXES = {".py", ".sh", ".toml", ".yaml", ".yml"}
+CONTROL_PATHS = {
+    Path(__file__).resolve().relative_to(ROOT).as_posix(),
+}
 
 
 def _git(*args: str) -> str:
@@ -41,7 +44,11 @@ def collect_active_references(policy: dict) -> dict[str, dict[str, object]]:
     result: dict[str, dict[str, object]] = {}
     for relative in tracked_paths():
         name = relative.as_posix()
-        if relative.suffix not in TEXT_SUFFIXES or not name.startswith(roots):
+        if (
+            name in CONTROL_PATHS
+            or relative.suffix not in TEXT_SUFFIXES
+            or not name.startswith(roots)
+        ):
             continue
         text = (ROOT / relative).read_text(encoding="utf-8", errors="strict")
         lines = [line.rstrip() for line in text.splitlines() if TOKEN in line]

@@ -848,6 +848,7 @@ def free_surface_step(
     capacity_redistribution=False,
     simple_mass_exchange=False,
     u_limit=0.0,
+    gas_nu_ratio=1.0,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -1055,7 +1056,19 @@ def free_surface_step(
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
             f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
         else:
-            f = f_collide - (f_collide - feq) / tau
+            if gas_nu_ratio != 1.0:
+                # Per-phase kinematic viscosity (DE-X-GAS1-GASVISC): GAS cells
+                # relax with nu_g = gas_nu_ratio * nu_l, i.e.
+                # tau_g = 0.5 + 3*nu_g = 0.5 + gas_nu_ratio*(tau - 0.5).
+                # Default 1.0 keeps the legacy single-tau path bit-identical.
+                tau_cell = torch.where(
+                    (flags == GAS).unsqueeze(0),
+                    0.5 + gas_nu_ratio * (tau - 0.5),
+                    tau,
+                )
+                f = f_collide - (f_collide - feq) / tau_cell
+            else:
+                f = f_collide - (f_collide - feq) / tau
 
     if has_force:
         if collision != "mrt":

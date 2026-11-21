@@ -19,6 +19,11 @@ def test_repository_matches_source_authority_policy() -> None:
     assert CHECKER.validate(policy) == []
 
 
+def test_checker_does_not_register_its_own_policy_literal() -> None:
+    policy = CHECKER.load_policy()
+    assert "tools/check_source_authority.py" not in CHECKER.collect_active_references(policy)
+
+
 def test_new_active_nested_consumer_is_rejected() -> None:
     policy = CHECKER.load_policy()
     policy = copy.deepcopy(policy)
