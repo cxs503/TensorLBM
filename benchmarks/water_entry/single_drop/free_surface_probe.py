@@ -3,13 +3,17 @@
 import argparse
 import json
 import math
-import os
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 import torch
 
+from benchmarks.water_entry.single_drop.budget_diag import budget_snapshot
+from benchmarks.water_entry.single_drop.cavity_diag import (
+    DropMaterialMarkers,
+    cavity_diagnostics,
+)
 from benchmarks.water_entry.single_drop.run import (
     DropTracker,
     equivalent_radius,
@@ -84,21 +88,66 @@ def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
     return out
 
 
-def _read_iface_tau_dose(base_dir=None):
-    """Dose channel for the shared SDAA lane (wrapper passes no new env).
+# Tree-local arm switch for the shared SDAA wrapper.  That wrapper fixes its
+# environment list, so the cavity-diagnosis switch travels inside the tree that
+# is transferred with the sources.  The file is deliberately not tracked: the
+# diagnosis stays off by default for every other user.
+DIAG_CAVITY_MARKER = Path(__file__).with_name("DIAG_CAVITY_ON")
 
-    Priority: env WE_IFACE_DOSE > phase_tau_dose.json next to this module
-    > 0.0 (off).  The JSON file is tarred with the tree by the lane wrapper,
-    so per-arm doses are set by writing the file before each arm run.
+
+def diag_cavity_enabled(request):
+    """Resolve the cavity-diagnosis switch.
+
+    ``None`` means "auto": the diagnosis runs when the tree-local marker file
+    exists.  ``True``/``False`` force it on/off.
     """
-    env = os.environ.get("WE_IFACE_DOSE")
-    if env not in (None, ""):
-        return float(env)
-    base = Path(base_dir) if base_dir is not None else Path(__file__).resolve().parent
-    cfg = base / "phase_tau_dose.json"
-    if cfg.exists():
-        return float(json.loads(cfg.read_text()).get("iface_tau_dose", 0.0))
-    return 0.0
+    if request is None:
+        return DIAG_CAVITY_MARKER.exists()
+    return bool(request)
+
+
+def _diag_summary(rows, history):
+    """Reduce the diagnostic time series to peaks, minima and the depth-peak row."""
+    def extreme(key, mode):
+        best = None
+        for row in rows:
+            value = row.get(key)
+            if value is None:
+                continue
+            if best is None or (value > best[0] if mode == "max" else value < best[0]):
+                best = (value, row["time_ms"])
+        if best is None:
+            return None
+        return {"value": best[0], "time_ms": best[1]}
+
+    peak_step = None
+    peak_value = None
+    for entry in history:
+        value = entry.get("depth_over_D")
+        if value is None:
+            continue
+        if peak_value is None or value > peak_value:
+            peak_value = value
+            peak_step = entry["step"]
+    at_peak = None
+    for row in rows:
+        if row["step"] == peak_step:
+            at_peak = row
+            break
+    return {
+        "depth_peak": {"value": peak_value, "step": peak_step, "time_ms": None},
+        "at_depth_peak": at_peak,
+        "peak_d_cav_open": extreme("d_cav_open", "max"),
+        "peak_d_cav_all": extreme("d_cav_all", "max"),
+        "peak_d_cav_gap": extreme("d_cav_gap", "max"),
+        "peak_d_drop": extreme("d_drop", "max"),
+        "peak_d_drop_any": extreme("d_drop_any", "max"),
+        "peak_d_ceil": extreme("d_ceil", "max"),
+        "min_p_cav": extreme("p_cav", "min"),
+        "peak_u_back": extreme("u_back", "max"),
+        "max_cav_pockets": extreme("cav_pockets", "max"),
+        "rows": len(rows),
+    }
 
 
 def probe(
@@ -118,12 +167,12 @@ def probe(
     ledger=False,
     diag_path=None,
     u_limit=None,
+    diag_cavity=None,
     gas_nu_ratio=1.0,
-    iface_tau_dose=None,
+    diag_budget=False,
 ):
-    if iface_tau_dose is None:
-        iface_tau_dose = _read_iface_tau_dose()
-    iface_tau_dose = float(iface_tau_dose)
+    diag_cavity = diag_cavity_enabled(diag_cavity)
+    diag_budget = bool(diag_budget)
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
@@ -180,6 +229,15 @@ def probe(
     sample_targets_ms = (1.39643, 6.4, 10.39446, 13.4)
 
     silhouette_samples = []
+    markers = None
+    marker_state = None
+    last_drop_mask = None
+    cavity_rows = []
+    budget_rows = []
+    prev_budget = None
+    # the anti-bounce-back reconstruction carries the ambient gas pressure
+    # rho_gas = 1.0 (pressure matched), so p_amb = cs^2 * rho_gas = 1/3
+    p_amb = 1.0 / 3.0
     tracker = DropTracker()
     last_speed = None
     impact_speed = None
@@ -242,8 +300,17 @@ def probe(
                         )
                     )
             last_speed = float(-uz[1:-1][detached].mean()) * sc["dx_m"] / sc["dt_s"]
+            if diag_cavity or diag_budget:
+                last_drop_mask = detached
         elif tracker.contact_step == step:
             impact_speed = last_speed
+            if (diag_cavity or diag_budget) and markers is None and last_drop_mask is not None:
+                markers = DropMaterialMarkers.from_mask(last_drop_mask)
+                marker_state = {
+                    "mass": np.asarray(
+                        mass[1:-1].numpy()[last_drop_mask], dtype=np.float64
+                    )
+                }
         if step and step % 50 == 0:
             print(
                 f"step {step}, t={row['time_ms']:.4f} ms, contact={tracker.contact_step}",
@@ -251,6 +318,53 @@ def probe(
             )
 
         row["depth_over_D"] = open_depth(field, level - 1, 1.5 * n) / n
+        if (diag_cavity or diag_budget) and tracker.contact_step is not None:
+            uxi = ux[1:-1].numpy()
+            uyi = uy[1:-1].numpy()
+            uzi = uz[1:-1].numpy()
+            if markers is not None:
+                markers.advect(uxi, uyi, uzi, field, surf=level - 1, n=n)
+            if diag_cavity:
+                diag_row = cavity_diagnostics(
+                    field,
+                    level - 1,
+                    n,
+                    ux=uxi,
+                    uy=uyi,
+                    uz=uzi,
+                    velocity_scale=sc["dx_m"] / sc["dt_s"],
+                    markers=markers,
+                )
+                diag_row["step"] = step
+                diag_row["time_ms"] = row["time_ms"]
+                cavity_rows.append(diag_row)
+            if diag_budget:
+                mass_np = mass[1:-1].numpy()
+                budget_row = budget_snapshot(
+                    field,
+                    flags[1:-1].numpy(),
+                    mass_np,
+                    uxi,
+                    uyi,
+                    uzi,
+                    level - 1,
+                    n,
+                    sigma=sc["sigma"],
+                    mu=sc["mu_l"],
+                    g=sc["g"],
+                    p_amb=p_amb,
+                    u_limit=u_limit,
+                    markers=markers,
+                    marker_state=marker_state,
+                    prev=prev_budget,
+                )
+                budget_row["step"] = step
+                budget_row["time_ms"] = row["time_ms"]
+                budget_rows.append(budget_row)
+                prev_budget = {
+                    "mass": np.asarray(mass_np, dtype=np.float64),
+                    "u2": uxi**2 + uyi**2 + uzi**2,
+                }
         if (
             planes_path is not None
             and tracker.contact_step is not None
@@ -283,7 +397,6 @@ def probe(
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
                     gas_nu_ratio=gas_nu_ratio,
-                    iface_tau_dose=iface_tau_dose,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -326,7 +439,6 @@ def probe(
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
         "gas_nu_ratio": gas_nu_ratio,
-        "iface_tau_dose": iface_tau_dose,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
@@ -335,6 +447,54 @@ def probe(
     }
     if ledger:
         result["mass_ledger_summary"] = _summarize_ledger(runtime_ledger)
+    if diag_budget:
+        result["budget_diag"] = {
+            "enabled": True,
+            "units": "lattice (dx=dt=1, rho_liquid=1); convert with rho_l*dx^3 (energy)",
+            "definitions": {
+                "ke_liq": "1/2 sum m|u|^2 over liquid+interface cells",
+                "ke_axial": "1/2 sum m u_z^2 (axial / water-column motion)",
+                "ke_lat": "1/2 sum m (u_x^2+u_y^2) (lateral / jet motion)",
+                "ke_rad": "radial part of ke_lat (u_r = e_r . u in the x-y plane)",
+                "ke_lat_roi": "ke_lat restricted to the crater footprint (r<=1.5 D, below the initial surface)",
+                "ke_drop": "1/2 sum m_marker|u_marker|^2 of the tracked drop material",
+                "area_total": "sum |grad phi| (smeared-interface area, lattice area units)",
+                "area_cav": "the cavity-wall part of area_total",
+                "cav_volume": "cavity gas volume (lattice volume units)",
+                "p_lap_mean": "mean Laplace pressure sigma*kappa on the cavity wall",
+                "gas_force_*": "force of the cavity gas on the liquid (item 1, momentum)",
+                "gas_power": "work rate of the cavity gas on the liquid (item 1, energy)",
+                "grav_power": "work rate of gravity on the liquid",
+                "diss_rate": "continuum viscous dissipation rate 2 mu |S|^2 (item 3)",
+                "diss_iface": "the interface-neighbourhood part of diss_rate",
+                "diss_bulk": "the bulk part of diss_rate",
+                "conv_loss": "kinetic energy carried away by liquid mass converted to gas",
+                "conv_gain": "kinetic energy created by gas mass converted back to liquid",
+                "n_at_cap": "number of interface cells sitting on the pseudo-current cap (u_limit)",
+                "ke_at_cap": "kinetic energy held by the cells sitting on the cap",
+                "p_liq_*": "total liquid momentum",
+                "p_drop_*": "momentum carried by the tracked drop material",
+            },
+            "rows": budget_rows,
+        }
+    if diag_cavity:
+        result["cavity_diag"] = {
+            "enabled": True,
+            "definitions": {
+                "d_cav_open": "deepest headspace-connected gas-to-liquid floor in r=1.5 D (D)",
+                "d_cav_all": "deepest gas-to-liquid floor in r=1.5 D ignoring connectivity (D)",
+                "d_cav_gap": "d_cav_all - d_cav_open, depth lost to closure (D)",
+                "d_drop": "deepest depth reached by drop-material markers still in liquid (D)",
+                "d_drop_any": "deepest depth reached by any drop-material marker (D)",
+                "d_ceil": "deepest liquid cell sitting directly above cavity gas (D)",
+                "p_cav": "d_cav_open / d_cav_all, vented depth fraction",
+                "cav_vent_ratio": "fraction of cavity gas cells connected to the headspace",
+                "cav_pockets": "number of connected cavity-gas pockets below the initial surface",
+                "u_back": "maximum upward liquid velocity below the initial surface (m/s)",
+            },
+            "summary": _diag_summary(cavity_rows, history),
+            "rows": cavity_rows,
+        }
     return result
 
 
@@ -387,12 +547,16 @@ if __name__ == "__main__":
         "(tau_g = 0.5 + ratio*(tau_l - 0.5); default 1.0 = legacy single tau)",
     )
     parser.add_argument(
-        "--iface-tau-dose",
-        type=float,
-        default=None,
-        help="fill-weighted interface relaxation dose: INTERFACE cells relax "
-        "with tau*(1+dose*(1-fill)); default None = read WE_IFACE_DOSE env or "
-        "phase_tau_dose.json, else 0.0 (off)",
+        "--diag-cavity",
+        action="store_true",
+        help="record the cavity-closure / drop-penetration diagnosis "
+        "(read only; does not change the trajectory)",
+    )
+    parser.add_argument(
+        "--diag-budget",
+        action="store_true",
+        help="record the momentum/energy budget ledger of the impact "
+        "(read only; does not change the trajectory)",
     )
     parser.add_argument("--gap", type=float, default=0.4)
     args = parser.parse_args()
@@ -427,8 +591,9 @@ if __name__ == "__main__":
         args.ledger,
         args.diag_out,
         args.u_limit,
+        args.diag_cavity,
         args.gas_nu_ratio,
-        args.iface_tau_dose,
+        args.diag_budget,
     )
     for row in result["history"]:
         for key, value in row.items():
