@@ -36,6 +36,6 @@
     "source_bytes": "The census is byte-identical. Recovered inputs match both the recorded source commit and both SHA-256 values in the census.",
     "focused": "W30 checks and W31 source hashes: 15 tests passed. Repository governance passed with zero hard status-ledger violations.",
     "presentation": "Generated a report and four plots from the preserved census in isolated temporary output. No new solver runs were required.",
-    "baseline_failures": "The W31 full suite still has two failures reproduced on the unchanged baseline: the rebuilt arbitration text differs from the stored artifact and two archived figures are unavailable in the expected path. The two W30 baseline hash failures are repaired."
+    "baseline_failures": "The W31 full suite still has two failures reproduced on the unchanged baseline: four rebuilt arbitration values differ from the stored artifact by at most 4e-15 and two archived figures are unavailable in the expected path. The two W30 baseline hash failures are repaired."
   }
 }
