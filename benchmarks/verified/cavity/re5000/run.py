@@ -62,7 +62,7 @@ import numpy as np
 import torch
 
 REPO = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(REPO / "TensorLBM" / "src"))
+sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.verification.lid_driven_cavity.solver import (  # noqa: E402
     CavityConfig,

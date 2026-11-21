@@ -1,0 +1,181 @@
+{
+  "base_revision": "2f9647c14e1b58ea466b05ef61b75c422d59c13e",
+  "source_policy": "The original nested files and admitted reference remain at their prior paths. The installed package owns the runtime implementations. Reference fallback and CLI output-directory resolution are the two adapted modules.",
+  "entries": [
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/cavity_re3200/__init__.py",
+        "git_blob": "570ca7f0430b4d40a6c69d0f20569bb193278565",
+        "size": 1080
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/cavity_re3200/__init__.py",
+        "git_blob": "570ca7f0430b4d40a6c69d0f20569bb193278565",
+        "size": 1080
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/cavity_re3200/__main__.py",
+        "git_blob": "d5649724a999da79888332f7d6881aa4a4be8465",
+        "size": 8484
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/cavity_re3200/__main__.py",
+        "git_blob": "cbe7dce81733b12360a5502708f842619cd30f02",
+        "size": 8482
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/cavity_re3200/reference.py",
+        "git_blob": "ec8187e506d4c3a07089cc5f0b150e90e02f8342",
+        "size": 5421
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/cavity_re3200/reference.py",
+        "git_blob": "70b920ad84b1cbda985ce54ed535f1bf5dfdc1d3",
+        "size": 5418
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/cavity_re3200/runner.py",
+        "git_blob": "2898034fcbcecde2afa120893e98778a46da05c7",
+        "size": 12917
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/cavity_re3200/runner.py",
+        "git_blob": "2898034fcbcecde2afa120893e98778a46da05c7",
+        "size": 12917
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/cavity_re3200/scoring.py",
+        "git_blob": "78426d5186be2483752f583a65ec95a2901942b8",
+        "size": 5452
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/cavity_re3200/scoring.py",
+        "git_blob": "78426d5186be2483752f583a65ec95a2901942b8",
+        "size": 5452
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/__init__.py",
+        "git_blob": "e019dc5385c1387a7307850862b142656b759605",
+        "size": 1180
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/lid_driven_cavity/__init__.py",
+        "git_blob": "e019dc5385c1387a7307850862b142656b759605",
+        "size": 1180
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/reference_data.py",
+        "git_blob": "1bf02d830be4e44a347482339a1cf8e2b5510461",
+        "size": 10431
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/lid_driven_cavity/reference_data.py",
+        "git_blob": "1bf02d830be4e44a347482339a1cf8e2b5510461",
+        "size": 10431
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/solver.py",
+        "git_blob": "10ab4737d9a26bee8c23f341abec61b4e3b7d98f",
+        "size": 13194
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/lid_driven_cavity/solver.py",
+        "git_blob": "10ab4737d9a26bee8c23f341abec61b4e3b7d98f",
+        "size": 13194
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/lid_driven_cavity/verification.py",
+        "git_blob": "c64bd8954beda5dd8f1517b35db4646dccc6f8c4",
+        "size": 3912
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/lid_driven_cavity/verification.py",
+        "git_blob": "c64bd8954beda5dd8f1517b35db4646dccc6f8c4",
+        "size": 3912
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/square_duct_poiseuille/__init__.py",
+        "git_blob": "b2e8449367e2fbbe375fe176ac8e3fffe6ddbbcf",
+        "size": 534
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/square_duct_poiseuille/__init__.py",
+        "git_blob": "b2e8449367e2fbbe375fe176ac8e3fffe6ddbbcf",
+        "size": 534
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/square_duct_poiseuille/analytical.py",
+        "git_blob": "fcd99d0cd7c330b94c17319c6295be4f935a51a3",
+        "size": 4175
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/square_duct_poiseuille/analytical.py",
+        "git_blob": "fcd99d0cd7c330b94c17319c6295be4f935a51a3",
+        "size": 4175
+      }
+    },
+    {
+      "original": {
+        "path": "TensorLBM/src/tensorlbm/verification/square_duct_poiseuille/solver.py",
+        "git_blob": "9f92660e1b30f2a19f5504613bb944a4387b0e0b",
+        "size": 8247
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/square_duct_poiseuille/solver.py",
+        "git_blob": "9f92660e1b30f2a19f5504613bb944a4387b0e0b",
+        "size": 8247
+      }
+    },
+    {
+      "original": {
+        "path": "benchmarks/verified/cavity/re3200/reference/ghia_re3200_reference.json",
+        "git_blob": "668f41d4bdcc1401e8de787ed783798ed977c65b",
+        "size": 14217
+      },
+      "package": {
+        "path": "src/tensorlbm/verification/cavity_re3200/ghia_re3200_reference.json",
+        "git_blob": "668f41d4bdcc1401e8de787ed783798ed977c65b",
+        "size": 14217
+      }
+    }
+  ],
+  "reproduction": {
+    "environment": {
+      "torch": "2.15.0+cpu",
+      "numpy": "2.5.5",
+      "threads": 1,
+      "device": "cpu"
+    },
+    "cavity_command": "python benchmarks/verified/cavity/re3200/run.py --n 32 --steps 400 --monitor-every 100 --threads 1 --out-dir <out> --save-fields",
+    "duct_command": "python experiments/square_duct/bench_square_duct_poiseuille.py --resolution 16 --steps 3000 --output-dir <out>",
+    "cavity_match": "ux and uy arrays and both reference scores matched across the original, candidate, and isolated wheel. The short run failed the 5% reference tolerance.",
+    "duct_match": "All three .npy arrays and all JSON fields except throughput and elapsed time matched.",
+    "duct_fRe": 30.959517522923395,
+    "duct_error_pct": 45.59724902839075,
+    "tests": "36 passed; 2 optional published-grid fixtures absent (N=192,256).",
+    "cavity_field_sha256": {
+      "ux": "8e0e204c80806ea98eb540fa9155f0ea2d79eaf2f16bf93232265a0b80b17c64",
+      "uy": "10da23c946cc4238af77c930897d979b4c67f0512bed28214ad04602d1af2019"
+    }
+  }
+}

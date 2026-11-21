@@ -23,7 +23,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "TensorLBM" / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from tensorlbm.verification.square_duct_poiseuille import (
     SquareDuctConfig, run_square_duct, shah_london_fRe, square_duct_velocity_profile

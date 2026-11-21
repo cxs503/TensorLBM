@@ -31,8 +31,6 @@ import pytest
 REPO = Path(__file__).resolve().parents[1]
 BENCH = REPO / "benchmarks" / "verified" / "cavity" / "re3200"
 
-# importing the shim extends the import path of the two `tensorlbm` trees in this
-# repository, so the solver import below also resolves under `pytest tests/`
 from tensorlbm.verification.cavity_re3200 import reference as refmod  # noqa: E402
 from tensorlbm.verification.cavity_re3200 import runner, scoring  # noqa: E402
 
@@ -321,3 +319,13 @@ def test_committed_run_artifacts_are_wellformed(n: int) -> None:
         assert block["max_abs_err_pct"] == pytest.approx(recomputed)
         assert block["pass"] == (recomputed <= block["tolerance_pct"])
     assert "repro_cmd" in rec and "--n" in rec["repro_cmd"]
+def test_cavity_modules_and_bundled_reference_use_the_installed_package():
+    import tensorlbm
+    from tensorlbm.verification.lid_driven_cavity import solver
+    from tensorlbm.verification.square_duct_poiseuille import analytical
+
+    root = Path(tensorlbm.__file__).resolve().parent
+    for module in (runner, scoring, refmod, solver, analytical):
+        assert Path(module.__file__).resolve().is_relative_to(root)
+    bundled = Path(refmod.__file__).with_name(refmod.REF_NAME)
+    assert bundled.read_bytes() == (BENCH / "reference" / refmod.REF_NAME).read_bytes()
