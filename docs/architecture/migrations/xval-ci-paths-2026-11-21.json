@@ -1,0 +1,67 @@
+{
+  "base_revision": "784ae70f8e2f99663b0652208359c9749f7edcab",
+  "workflow": ".github/workflows/ci.yml",
+  "old_test_target": "tests/test_xval_assert_gate.py",
+  "old_exit_code": 4,
+  "new_targets": [
+    {
+      "scope": "Canonical package",
+      "working_directory": ".",
+      "pythonpath": "src",
+      "paths": [
+        "tests/test_xval_poiseuille_force_anchor.py",
+        "tests/test_cavity_solver_bc_invariants.py"
+      ]
+    },
+    {
+      "scope": "Frozen historical package",
+      "working_directory": "TensorLBM",
+      "pythonpath": "src",
+      "paths": [
+        "TensorLBM/tests/test_xval_assert_gate.py"
+      ]
+    }
+  ],
+  "pinned_tests": {
+    "tests/test_xval_poiseuille_force_anchor.py": "fda95dfd3fac8c3a86acd3bf80db72fbc742dd9d",
+    "tests/test_cavity_solver_bc_invariants.py": "0b90e536c27360150717c8570110d2dc9f293fb4",
+    "TensorLBM/tests/test_xval_assert_gate.py": "3ad3dd5c02a0dafa76d6cac8354109a2e175870a"
+  },
+  "compatibility": "Only the workflow and this evidence record change. Each pytest process uses the src directory of its own checkout. The historical diagnostic log keeps its original artifact name. The added canonical diagnostic has a separate log. Scientific thresholds are retained.",
+  "cpu_reproduction": {
+    "common_environment": {
+      "OMP_NUM_THREADS": 1,
+      "MKL_NUM_THREADS": 1,
+      "Python": "3.12",
+      "torch": "2.15.0+cpu",
+      "pytest_timeout": "2.4.0"
+    },
+    "canonical_command": "PYTHONPATH=src python -m pytest -q --timeout=900 -o timeout_func_only=false tests/test_xval_poiseuille_force_anchor.py tests/test_cavity_solver_bc_invariants.py",
+    "canonical_result": "6 passed, 1 failed; test_reference_profile_is_symmetric_about_midplane",
+    "canonical_diagnostic": {
+      "ny": 32,
+      "nu": 0.1,
+      "body_force": 1.7777777777777783e-05,
+      "wall_origin": 0.5,
+      "same_y_coordinates": true,
+      "maximum_absolute_profile_difference": 0.0013111111111111114,
+      "observation": "The external-anchor parabola is symmetric on the sampled cell centers. The canonical helper and the anchor evaluate different velocities on the identical grid."
+    },
+    "historic_command": "cd TensorLBM && PYTHONPATH=src python -m pytest -q tests/test_xval_assert_gate.py --timeout=900 -o timeout_func_only=false",
+    "historic_result": "9 passed, 1 xfailed; the historical cavity assertion unconditionally calls pytest.xfail before advancing its solver",
+    "historic_poiseuille": {
+      "metrics": {
+        "eps_inf": 0.003607843111901292,
+        "eps_L2": 0.0049209117769905926,
+        "mass_drift": 3.0808688933348094e-13
+      },
+      "thresholds": {
+        "eps_inf": 0.02,
+        "eps_L2": 0.02,
+        "mass_drift": 1e-08
+      },
+      "state_hash": "c8acf2cc9ab91154a3f58051cd54e86abcfda532b1ea3ab33094f7338651188d",
+      "passed": true
+    }
+  }
+}
