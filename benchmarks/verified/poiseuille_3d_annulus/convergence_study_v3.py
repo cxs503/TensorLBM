@@ -35,7 +35,7 @@ def main():
     parser.add_argument("--device", default="cuda:0", help="Device")
     parser.add_argument(
         "--output",
-        default="artifacts/sdaa_poiseuille_3d_annulus_v3.json",
+        default="outputs/sdaa/poiseuille_3d_annulus/sdaa_poiseuille_3d_annulus_v3.json",
         help="Output artifact path",
     )
     add_compile_mode_arg(parser)

@@ -209,3 +209,13 @@ def test_ledger_artifact_contract():
     assert head.startswith("<!doctype html>")
     # 唯一内容视图与实例视图自洽
     assert st["unique_artifacts"] + st["duplicate_instances"] == st["entries"]
+
+def test_local_discovery_preserves_relocated_artifact_identity():
+    files, _ = ledger.discover(REPO, "", strict_local=True)
+    local = {rel: path for wid, path, rel in files if wid == "self"}
+    assert local["sdaa_sphere_re100_d3q27.json"] == (
+        REPO / "benchmarks/verified/sphere_re100_d3q27/evidence/sdaa_sweep/summary.json"
+    )
+    assert local["sdaa_poiseuille_3d_annulus_v3.json"] == (
+        REPO / "benchmarks/verified/poiseuille_3d_annulus/evidence/sdaa/sdaa_poiseuille_3d_annulus_v3.json"
+    )
