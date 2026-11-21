@@ -1,0 +1,47 @@
+{
+  "case": "santini_case3 (Santini et al. 2015, case 3)",
+  "config": {
+    "cells_per_D": 8,
+    "gap_over_D": 0.18,
+    "speed": 0.06,
+    "release": 1.53,
+    "pool_depth_over_D": 3.0,
+    "u_limit": 0.15,
+    "steps_limit": 10000,
+    "z_ref": 24.5
+  },
+  "experiment": {
+    "peak_D": 1.857434,
+    "peak_ms_pc": 10.394
+  },
+  "ctrl": {
+    "depth_over_D": 1.4352204748231814,
+    "time_ms_abs": 11.090571428571428,
+    "step": 912,
+    "expected_D": 1.43522,
+    "expected_ms_abs": 11.0906,
+    "bit_reproduced": true,
+    "err_vs_exp": -0.22731010909503038,
+    "stop_reason": "window_complete",
+    "contact_step": 45,
+    "contact_ms_abs": 0.5472321428571428
+  },
+  "hydro": {
+    "depth_over_D": 1.6366277885109421,
+    "time_ms_abs": 14.082107142857142,
+    "step": 1158,
+    "err_vs_exp": -0.11887701608189463,
+    "delta_vs_ctrl_D": 0.20140731368776077,
+    "delta_vs_ctrl_cells": 1.6112585095020862,
+    "stop_reason": "health_limit",
+    "last_time_ms_abs": 22.971589285714284,
+    "contact_step": 45,
+    "contact_ms_abs": 0.5472321428571428,
+    "survived_beyond_10p4ms": true
+  },
+  "verdict": "HIT",
+  "rules": {
+    "hit": "hydro |err|<12% AND survival>10.4ms",
+    "falsify": "deeper<=1cell(0.125D~6.7%) OR shallower OR early death"
+  }
+}
