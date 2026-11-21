@@ -404,7 +404,7 @@ forchheimer/fibrous 的参考类裁决。
 
 pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器判决 pass/fail/unknown = **1/19/44**
 
-违规：hard **0** · soft **17**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
+违规：hard **0** · soft **16**（hard 阻断 CI，soft 为已披露存量债，逐条列在下表/JSON）
 
 <details><summary>soft 存量债（逐条）</summary>
 
@@ -412,7 +412,6 @@ pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器
 - `missing_machine_verdict` `cavity_3d_re100` — no README and no machine verdict on disk
 - `status_claim_conflict` `cylinder_re40_st` — index class pass_candidate implies pass, machine verdict fail (verified=False in benchmarks/pending/cylinder_re40_st/result.json)
 - `duplicate_index_row` `dit_turbulence` — 2 index rows (lines [45, 47])
-- `missing_machine_verdict` `dtmb5415_resistance` — no README and no machine verdict on disk
 - `missing_machine_verdict` `kcs_resistance` — no README and no machine verdict on disk
 - `missing_machine_verdict` `nwt_stokes2_2d` — no README and no machine verdict on disk
 - `missing_machine_verdict` `porous_ladder` — no README and no machine verdict on disk
@@ -453,7 +452,7 @@ pending 目录 **64** · 已登记行 **36** · 带 result.json **31** · 机器
 | `dit_turbulence` | yes | yes | fail (`verified`) | 2 | fail |
 | `droplet_impact_2d_pool` | yes | yes | unknown | 1 | unverified |
 | `droplet_impact_3d_pool` | yes | yes | fail (`passed_3pct_and_converged`) | 1 | fail |
-| `dtmb5415_resistance` | **no** | **no** | unknown | 0 | **unregistered** |
+| `dtmb5415_resistance` | yes | **no** | unknown | 0 | **unregistered** |
 | `forchheimer` | yes | yes | unknown | 1 | fail |
 | `free_energy_selection` | yes | **no** | unknown | 0 | **unregistered** |
 | `hadamard_rybczynski_droplet` | yes | yes | unknown | 1 | fail |
