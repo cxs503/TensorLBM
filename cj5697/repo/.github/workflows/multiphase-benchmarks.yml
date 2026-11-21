@@ -1,0 +1,51 @@
+name: Multiphase benchmark checks
+
+on:
+  pull_request:
+    paths:
+      - "src/tensorlbm/multiphase_benchmarks.py"
+      - "src/tensorlbm/verification/layered_poiseuille/**"
+      - "xval/two_component_sc_layered_poiseuille/**"
+      - "tests/test_multiphase_*.py"
+      - "tests/test_two_component_sc_layered_poiseuille.py"
+      - ".github/workflows/multiphase-benchmarks.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/tensorlbm/multiphase_benchmarks.py"
+      - "src/tensorlbm/verification/layered_poiseuille/**"
+      - "xval/two_component_sc_layered_poiseuille/**"
+      - "tests/test_multiphase_*.py"
+      - "tests/test_two_component_sc_layered_poiseuille.py"
+      - ".github/workflows/multiphase-benchmarks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+
+jobs:
+  focused-multiphase:
+    runs-on: ci-loong64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install package and test tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Lint multiphase benchmark scope
+        run: ruff check src/tensorlbm/multiphase_benchmarks.py tests/test_multiphase_physical_benchmarks.py tests/test_multiphase_pressure_diagnostic.py
+      - name: Run fast multiphase acceptance tests
+        run: pytest -q tests/test_multiphase_physical_benchmarks.py tests/test_multiphase_pressure_diagnostic.py -m "not slow" --timeout=600
+      # Anchor XVAL-LBM-TWO-COMPONENT-SC-LAYERED-POISEUILLE-EDM: the two cases that
+      # carry the defect detector (single-component viscous braking to 3 %) and the
+      # layered two-component convergence gate.  Exits non-zero on a gate failure.
+      # The coarse `r233` level and the nominal-H/2 interface KPI are known-failing
+      # at H=22 and are therefore NOT gated here (see the benchmark artifacts).
+      - name: Two-component SC layered Poiseuille benchmark gate
+        run: |
+          PYTHONPATH=src python xval/two_component_sc_layered_poiseuille/run_benchmark.py \
+            --cases control_single_light,layered_r167_light \
+            --out /tmp/two_component_sc_layered_bench

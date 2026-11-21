@@ -1,0 +1,390 @@
+# TensorLBM GitLab CI — staged-gate ladder (ALT-2 design)
+#
+# Design rationale (XVAL-LBM-GITLAB-CI-STAGED-GATES):
+#   This pipeline follows the staged-gate pattern from lssfau/lbmpy's GitLab CI,
+#   adapted for TensorLBM's tooling and marker vocabulary.  The xval analysis
+#   showed that:
+#
+#   H1: TensorLBM's existing GitHub Actions CI already achieves functional
+#       parity (guard_fraction within 15%) with the OSS staged-gate ladder
+#       on every event (mr, branch_push, main_push, schedule).
+#
+#   H2: The OSS marker vocabulary ("not longrun") is NOT portable verbatim:
+#       it leaks 100% of TensorLBM's slow-tier tests into the fast gate.
+#       The adapted vocabulary ("not slow") leaks 0%.
+#
+#   Decision: ALT-2 — transplant the structural/declarative elements that
+#   survive the KPI test (gate-tier taxonomy, declared-disabled-gate hygiene,
+#   coverage-report aggregation, explicit marker-vocabulary adapter) while
+#   keeping TensorLBM's own tooling (ruff, mypy, pytest, pip).
+#
+# Stage ladder semantics:
+#   - Each stage is a quality gate: a failure in a blocking gate stops the
+#     pipeline from progressing to later stages.
+#   - `needs: []` means the job starts immediately (no DAG dependency), but
+#     the stage barrier still applies: the stage won't start until all jobs
+#     in the previous stage complete.
+#   - Advisory gates (allow_failure: true) run but cannot stop the pipeline.
+#   - Conditional gates (rules-restricted) only run on specific events.
+
+stages:
+  - quality        # Static analysis: lint, format, type check
+  - test           # Unit + fast integration tests
+  - reporting      # Coverage aggregation and reporting
+  - prerelease     # Pre-release dependency checks (advisory)
+  - integration    # Full integration tests (manual/disabled)
+  - nightly        # Scheduled full-suite runs
+  - docs           # Documentation build
+  - deploy         # Pages deployment
+
+# --------------------------------------------------------------------------- #
+# Global defaults
+# --------------------------------------------------------------------------- #
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
+
+# --------------------------------------------------------------------------- #
+# Stage: quality — static analysis gates
+# --------------------------------------------------------------------------- #
+.quality-base:
+  stage: quality
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+  tags:
+    - docker
+
+# Rung 1 runs a RATCHET, not a plain ruff gate.
+#
+# A plain `ruff check src tests examples benchmarks` rung is red by
+# construction (~3k findings) and `ruff format --check` wants to rewrite ~2k
+# files, so the first blocking rung could never pass and no pipeline would
+# reach stage 2 -- the ladder would be decorative (the anti-pattern this
+# anchor is about; see docs/ci/staged_gate_semantics.md).  The ratchet keeps
+# the full rule set at blocking strength ("no new debt") against a frozen
+# baseline that may only shrink: tools/ci_ratchet_baseline.json.
+lint:
+  extends: .quality-base
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - python tools/ci_ratchet.py ruff
+        --paths src tests examples benchmarks
+        --baseline tools/ci_ratchet_baseline.json
+        --json-out artifacts/ci/ci_ratchet_ruff.json
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/
+  allow_failure: false
+
+format-check:
+  extends: .quality-base
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - python tools/ci_ratchet.py format
+        --paths src tests examples benchmarks
+        --baseline tools/ci_ratchet_baseline.json
+        --json-out artifacts/ci/ci_ratchet_format.json
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/
+  allow_failure: false
+
+# Advisory twin of `lint`: the full rule set at full strength.  Informational
+# until the frozen baseline is burnt down, so debt stays visible without
+# blocking the ladder.
+lint-full:
+  extends: .quality-base
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - ruff check src tests examples benchmarks
+  allow_failure: true
+
+# The ladder checks itself: parses this file, falsifies the four header claims
+# (C1-C4) by fault injection, validates the artefact contracts, and probes the
+# cheap blocking gates.  Blocking, in the same stage it audits.
+gate-semantics:
+  stage: quality
+  needs: []
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - python tools/verify_ci_staged_gates.py --probe
+        --json-out artifacts/ci/staged_gate_semantics.json
+        --markdown-out artifacts/ci/staged_gate_semantics.md
+    # Anti-staleness: the committed receipt and the generated ladder table in
+    # the design doc must still describe *this* .gitlab-ci.yml, else the
+    # evidence chain is folklore.  Exit 1 = STALE.
+    - python tools/verify_ci_staged_gates.py
+        --check docs/ci/staged_gate_semantics_receipt.json
+        --check-doc docs/ci/gitlab_ci_staged_gates.md
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/staged_gate_semantics.json
+      - artifacts/ci/staged_gate_semantics.md
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+  tags:
+    - docker
+
+typecheck-core:
+  extends: .quality-base
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - mypy --follow-imports=silent
+        src/tensorlbm/d2q9.py
+        src/tensorlbm/d3q19.py
+        src/tensorlbm/solver.py
+        src/tensorlbm/utils.py
+        --ignore-missing-imports
+  allow_failure: false
+
+typecheck-full:
+  extends: .quality-base
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - mypy src/tensorlbm --ignore-missing-imports
+  allow_failure: true  # advisory: full-package findings are informational
+
+# --------------------------------------------------------------------------- #
+# Stage: test — unit and fast integration tests
+# --------------------------------------------------------------------------- #
+.test-base:
+  stage: test
+  needs: []
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - mkdir -p ~/.config/matplotlib
+    - echo "backend:template" > ~/.config/matplotlib/matplotlibrc
+  artifacts:
+    when: always
+    paths:
+      - .coverage.*
+      - artifacts/ci/
+    reports:
+      junit: artifacts/ci/junit.xml
+
+# Fast gate: runs on MRs and non-default-branch pushes.
+# Uses the adapted marker vocabulary: "not slow" (not "not longrun").
+testsuite-fast:
+  extends: .test-base
+  script:
+    - mkdir -p artifacts/ci
+    - pytest -q -m "not slow" --timeout=600 -o timeout_func_only=false
+        --cov=tensorlbm --cov-report=term-missing --cov-report=xml
+        --durations=30 --junitxml=artifacts/ci/junit.xml
+        2>&1 | tee artifacts/ci/pytest.log
+    - pytest -q tests/test_xval_assert_gate.py --timeout=900 -o timeout_func_only=false
+        2>&1 | tee artifacts/ci/xval_assert_gate.log
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+  coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
+
+# Platform test gate: separate dependency set, separate signal.
+platform-test:
+  extends: .test-base
+  script:
+    - pip install -r app/requirements.txt
+    - mkdir -p artifacts/ci
+    - PYTHONPATH=src pytest -q app/tests --timeout=600 -o timeout_func_only=false
+        --durations=30 --junitxml=artifacts/ci/junit.xml
+        2>&1 | tee artifacts/ci/pytest.log
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# Repository layout gate: structural hygiene (no root clutter).
+repository-layout:
+  stage: test
+  needs: []
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - python tests/test_repository_layout.py -v
+    - python tests/test_repository_report_migration.py -v
+    - python tools/check_repository_layout.py
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# Architecture audit gate: import graph hygiene.
+architecture-audit:
+  stage: test
+  needs: []
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - python tests/test_audit_import_graph.py
+    - mkdir -p artifacts/architecture
+    - python tools/audit_import_graph.py
+        --root src/tensorlbm=tensorlbm
+        --root app/backend=app.backend
+        --root tests=tests
+        --root app/tests=app.tests
+        --json-out artifacts/architecture/import-audit.json
+        --markdown-out artifacts/architecture/import-audit.md
+  artifacts:
+    when: always
+    paths:
+      - artifacts/architecture/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# Package build gate: sdist + wheel smoke test.
+package-build:
+  stage: test
+  needs: []
+  script:
+    - python -m pip install --upgrade pip build
+    - python -m build
+    - pip install dist/*.whl --force-reinstall --no-deps
+    - python -c "import importlib.metadata; v = importlib.metadata.version('tensorlbm'); print('tensorlbm', v, 'installed OK'); assert v"
+  artifacts:
+    paths:
+      - dist/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# --------------------------------------------------------------------------- #
+# Stage: reporting — coverage aggregation
+# --------------------------------------------------------------------------- #
+coverage-report:
+  stage: reporting
+  needs: ["testsuite-fast"]
+  script:
+    - python -m pip install --upgrade pip coverage
+    - coverage combine .coverage.*
+    - coverage html -d coverage_report
+    - coverage xml -o coverage.xml
+    - coverage report
+  coverage: /TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
+  artifacts:
+    when: always
+    paths:
+      - coverage_report
+      - coverage.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# --------------------------------------------------------------------------- #
+# Stage: prerelease — advisory pre-release dependency checks
+# --------------------------------------------------------------------------- #
+prerelease-pytorch-nightly:
+  stage: prerelease
+  needs: []
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - pip install --upgrade --pre torch
+    - pytest -q -m "not slow" --timeout=600 -o timeout_func_only=false
+        --durations=30
+  allow_failure: true  # advisory: pre-release deps may break
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# --------------------------------------------------------------------------- #
+# Stage: integration — full integration tests (declared-but-disabled)
+# --------------------------------------------------------------------------- #
+# Declared-but-disabled gate: preserved as documentation of the integration
+# test surface, following the lbmpy pattern (see oss_refs/lbmpy.gitlab-ci.yml
+# for the commented-out pycodegen-integration job).
+#
+# full-integration:
+#   stage: integration
+#   when: manual
+#   allow_failure: true
+#   script:
+#     - pip install -e ".[dev]"
+#     - pytest -q --timeout=3600 -o timeout_func_only=false
+#         --durations=50
+#   tags:
+#     - docker
+#     - AVX
+
+# --------------------------------------------------------------------------- #
+# Stage: nightly — scheduled full-suite runs
+# --------------------------------------------------------------------------- #
+nightly-full:
+  stage: nightly
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - mkdir -p ~/.config/matplotlib
+    - echo "backend:template" > ~/.config/matplotlib/matplotlibrc
+    - mkdir -p artifacts/ci
+    - pytest -q --timeout=1800 -o timeout_func_only=false
+        --cov=tensorlbm --cov-report=term-missing --cov-report=xml
+        --durations=50 --junitxml=artifacts/ci/junit.xml
+        2>&1 | tee artifacts/ci/pytest.log
+  artifacts:
+    when: always
+    paths:
+      - artifacts/ci/
+      - .coverage.*
+    reports:
+      junit: artifacts/ci/junit.xml
+
+# --------------------------------------------------------------------------- #
+# Stage: docs — documentation build
+# --------------------------------------------------------------------------- #
+build-documentation:
+  stage: docs
+  needs: []
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+    - mkdir -p html_doc
+    - sphinx-build -W -b html docs html_doc
+  artifacts:
+    paths:
+      - html_doc
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+# --------------------------------------------------------------------------- #
+# Stage: deploy — pages deployment
+# --------------------------------------------------------------------------- #
+pages:
+  stage: deploy
+  needs: ["coverage-report", "build-documentation"]
+  rules:
+    - if: $CI_PIPELINE_SOURCE != "schedule" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - mv html_doc public
+    - mv coverage_report public/coverage_report
+  artifacts:
+    paths:
+      - public
