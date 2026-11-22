@@ -1,0 +1,53 @@
+[
+  {
+    "file": "RELX1-PHASETAU-R1.md",
+    "arm": "pt_p15",
+    "mechanism": "界面胞fill加权弛豫率τ_iface=τ·g(fill)，dose+1.5",
+    "verdict": "FAIL",
+    "peak_depth_D": 1.433723,
+    "peak_time_ms": 15.870,
+    "key_numbers": [
+      {"1.435220": "ctrl峰深D(位级锚)"},
+      {"1.433723": "主臂p15峰深D击穿下界"},
+      {"1.618175": "p20峰深D超上界0.018D"},
+      {"22.731%": "ctrl峰深误差vs实验"},
+      {"12.881%": "p20峰深误差收回缺口43%"}
+    ],
+    "one_line_verdict": "剂量-效应非单调可辨识旋钮，但无臂同时满足深度与峰时刻3%门，honest-FAIL",
+    "open_gap": "单网格无收敛对；+1.5与+2.0间剂量前沿未补"
+  },
+  {
+    "file": "RELX1-PHASETAU-R2.md",
+    "arm": "pt_p20",
+    "mechanism": "界面胞fill加权弛豫率剂量矩阵，dose+2.0",
+    "verdict": "FAIL",
+    "peak_depth_D": 1.671619,
+    "peak_time_ms": 12.635,
+    "key_numbers": [
+      {"1.435220": "ctrl峰深D(位级锚)"},
+      {"1.230877": "p05峰深D变浅"},
+      {"1.671619": "p20峰深D超区间上界"},
+      {"1.356833": "m05峰深D略浅"},
+      {"-10.004%": "p20峰深误差最佳臂"}
+    ],
+    "one_line_verdict": "方向性支持、幅度超调、精度门未过；界面弛豫结构分离为真实有效旋钮",
+    "open_gap": "单网格无收敛对；负剂量受BGK稳定底钳制"
+  },
+  {
+    "file": "RELX1-TRTMAGIC.md",
+    "arm": "TRT",
+    "mechanism": "TRT魔数碰撞算子Λ=3/16弛豫奇数模",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 1.4352,
+    "peak_time_ms": 11.091,
+    "key_numbers": [
+      {"1.4352": "TRT峰深D与BGK逐位同值"},
+      {"1.4352": "BGK基线峰深D"},
+      {"22.73%": "峰深误差vs实验"},
+      {"24.005": "postcontact healthy窗口ms"},
+      {"4.73e-4": "几何体积漂移超1e-4门"}
+    ],
+    "one_line_verdict": "TRT碰撞算子正确实现但无可观测效应，证伪判据触发，与BGK逐位同值",
+    "open_gap": "奇数模贡献在此几何/参数下可忽略或根因不在弛豫率"
+  }
+]
