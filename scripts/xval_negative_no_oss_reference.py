@@ -2,7 +2,7 @@
 """XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE driver.
 
 Runs the predeclared design of
-``xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json``:
+``docs/board_audit/m18157/evidence/predeclared.json``:
 
 1. probe the OSS lattice-Boltzmann references resolvable in this interpreter
    (``tensorlbm.xval.oss_reference``),
@@ -434,7 +434,7 @@ repo: TensorLBM · mission 17996 · branch `agent/m17996`
 2. `src/tensorlbm/xval/runners.py`（扩展）：新增 `run_lbmpy()` OSS 适配器，消费**同一个** `TG2DSpec`，写出与 in-house 臂同名同格式的 `k_history_*.csv` / `field_*.csv` / `run_info_*.json`；数组索引在进出适配器时按 pystencils 的 `[ix,iy]` ↔ 我们的 `[iy,ix]` 规则转置，并用 step-0 场比对做**朝向自检**（见 ⑤）。
 3. `scripts/xval_negative_no_oss_reference.py`（新）：按 predeclared 设计跑 {len(records)} 个设计格 × 2 臂，算 KPI，过闸门，出图出表。
 
-判据（动手前写死在 `xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json`）：owner 带 15%；紧目标 5%；γ_K 拟合窗口固定 K/K0∈[0.2,0.9]；单臂 400 步、sample_every=10、每臂 wall 预算 600 s。
+判据（动手前写死在 `docs/board_audit/m18157/evidence/predeclared.json`）：owner 带 15%；紧目标 5%；γ_K 拟合窗口固定 K/K0∈[0.2,0.9]；单臂 400 步、sample_every=10、每臂 wall 预算 600 s。
 
 ## ③ 参数表（无量纲数完整）
 

@@ -1,6 +1,6 @@
 # XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE（生成报告快照）
 
-> 本文件是 `scripts/xval_negative_no_oss_reference.py` 生成的报告快照；设计/判据见 `xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json`，机器可读汇总见 `artifacts/xval_negative_no_oss_reference/summary.json`。
+> 本文件是 `scripts/xval_negative_no_oss_reference.py` 生成的报告快照。设计与判据见[审计保留的原始预注册](board_audit/m18157/evidence/predeclared.json)，机器可读结果见[审计汇总](board_audit/m18157/evidence/summary.json)。
 
 # XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE — 与成熟 OSS 实现的交叉对标 + 无参考能力的诚实登记
 

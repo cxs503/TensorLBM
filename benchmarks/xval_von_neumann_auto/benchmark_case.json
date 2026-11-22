@@ -1,0 +1,12 @@
+{
+  "scope": "D2Q9 von Neumann modal analysis compared with measured growth and phase from periodic LBM runs. Round 2 (m18789) repaired the first experiment. Its archived verdict remains scoped to that run.",
+  "criteria": {
+    "protocol": "benchmarks/xval_von_neumann_auto/predeclared.json",
+    "definition": "Round 2 requires all four predeclared groups to pass, including modal agreement, stability classification and equivalent-equation viscosity."
+  },
+  "source": ["benchmarks/xval_von_neumann_auto/run_xval.py"],
+  "config": ["benchmarks/xval_von_neumann_auto/predeclared.json"],
+  "documentation": ["benchmarks/xval_von_neumann_auto/REPORT.md"],
+  "reference_files": ["benchmarks/xval_von_neumann_auto/predeclared.json"],
+  "results": ["benchmarks/xval_von_neumann_auto/result.json"]
+}

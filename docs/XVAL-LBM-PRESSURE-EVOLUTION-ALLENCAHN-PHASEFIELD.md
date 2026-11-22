@@ -4,11 +4,13 @@
 **对标对象** CFD-GO/TCLB `models/multiphase/d2q9_pf_pressureEvolution`
 （文件头 `19/7/2016 - Model Developed: A. Fakhari, M. Geier, T. Lee`）= 动量群承载
 **压力**（`∂t p + ρc_s²∇·u = 0`，不用状态方程）+ 保守 Allen-Cahn 相场。
-**判据** <15%（owner 精度标准）｜**预注册** `xval/PF_PRESSURE_EVOLUTION_ALENCAHN/predeclared.json`（跑数前落盘）
+**判据** <15%（owner 精度标准）｜**预注册** [m18194 原始设计](../development/verification/phase-field/m18194/predeclared.json)（跑数前落盘）· [差异清单](../development/verification/phase-field/m18194/DIFF_OSS_VS_TENSORLBM.md)
 **工件** `artifacts/xval_m18194/{oss_extract,summary,figures}.json`、`fields.npz`、`fig1..fig4.png`
 **复现** `python scripts/xval_m18194_pf_pressure_evolution.py --workers 13 --steps 6000`（本机 333 s，无需集群）
 **源码出处** `Dynamics.c.Rt` sha256 `66251f644c0704e0…`（13556 B）、`Dynamics.R` sha256 `d758a77e262801cc…`（5937 B），
 行号见 `oss_extract.json`（GPL-3.0 → reference-only，未复制任何源码文本）
+
+归档保留了预注册原件。原文件第 69 行存在 JSON 语法错误，可按文本查阅。
 
 ---
 
