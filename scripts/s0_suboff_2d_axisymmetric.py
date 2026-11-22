@@ -399,8 +399,8 @@ def main():
     }
     
     # Save
-    artifact_dir = Path(__file__).parent.parent / "artifacts"
-    artifact_dir.mkdir(exist_ok=True)
+    artifact_dir = Path(__file__).resolve().parents[1] / "outputs/suboff/s0"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / "s0_suboff.json"
     
     with open(artifact_path, "w") as f:

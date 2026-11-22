@@ -10,7 +10,7 @@ Strategy (per mission directive):
      compare with Blasius Cf_ref = 1.328/sqrt(Re).
   5. Record everything programmatically — zero hand-copy.
 
-Output: artifacts/sdaa_suboff_sail_resistance_m289.json
+Output: outputs/sdaa/suboff_sail_resistance/sdaa_suboff_sail_resistance_m289.json
 """
 
 from __future__ import annotations
@@ -73,7 +73,7 @@ for L in L_LADDER:
 CF_REF = blasius_cf(1000.0)  # 0.041995047327036084
 GATE_THRESHOLD_PCT = 3.0
 
-ARTIFACTS_DIR = Path(_REPO_ROOT) / "artifacts"
+ARTIFACTS_DIR = _REPO_ROOT / "outputs/sdaa/suboff_sail_resistance"
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 OUT_JSON = ARTIFACTS_DIR / "sdaa_suboff_sail_resistance_m289.json"
 

@@ -62,7 +62,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CASE_DIR = REPO_ROOT / "benchmarks" / "verified" / "suboff_sail_resistance"
 RUN_PY = CASE_DIR / "run.py"
-ARTIFACT = REPO_ROOT / "artifacts" / "sdaa_suboff_sail_resistance.json"
+ARTIFACT = REPO_ROOT / "outputs/sdaa/suboff_sail_resistance/sdaa_suboff_sail_resistance.json"
 WORK_ROOT = REPO_ROOT / "runs" / "sdaa_sweep_suboff_sail_resistance"
 
 # ---------------------------------------------------------------- caliber ---

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Generate figures for the SDAA diagnostic report."""
 
+import argparse
 import base64
 import io
 import json
+from pathlib import Path
 
 import matplotlib
 
@@ -11,7 +13,22 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-with open("artifacts/sdaa_suboff_sail_resistance_m289.json") as f:
+case_dir = Path(__file__).resolve().parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument(
+    "--input",
+    type=Path,
+    default=case_dir / "evidence/sdaa/sdaa_suboff_sail_resistance_m289.json",
+    help="Complete m289 diagnostic JSON with all tiers (defaults to the archive).",
+)
+parser.add_argument(
+    "--out-dir",
+    type=Path,
+    default=case_dir.parents[2] / "outputs/sdaa/suboff_sail_resistance",
+)
+args = parser.parse_args()
+
+with args.input.open() as f:
     data = json.load(f)
 
 tiers = data["tiers"]
@@ -276,14 +293,15 @@ plt.close()
 fig3_b64 = base64.b64encode(buf.getvalue()).decode()
 
 # Save figures to files too
+args.out_dir.mkdir(parents=True, exist_ok=True)
 for name, b64 in [
     ("fig1_memory_scaling", fig1_b64),
     ("fig2_cd_vs_L", fig2_b64),
     ("fig3_oom_analysis", fig3_b64),
 ]:
-    with open(f"artifacts/{name}_m289.png", "wb") as f:
-        f.write(base64.b64decode(b64))
-    print(f"Saved artifacts/{name}_m289.png")
+    figure_path = args.out_dir / f"{name}_m289.png"
+    figure_path.write_bytes(base64.b64decode(b64))
+    print(f"Saved {figure_path}")
 
 # Save figure data for report
 fig_data = {
@@ -291,6 +309,6 @@ fig_data = {
     "fig2_cd_vs_L": fig2_b64,
     "fig3_oom_analysis": fig3_b64,
 }
-with open("/tmp/fig_data.json", "w") as f:
+with (args.out_dir / "fig_data.json").open("w") as f:
     json.dump(fig_data, f)
 print("Figures generated successfully")

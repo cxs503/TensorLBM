@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+OUT = _REPO_ROOT / "outputs/sdaa/suboff_sail_resistance/sdaa_suboff_sail_resistance_m289.json"
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -153,7 +154,7 @@ try:
         "total_cells": engine.nx * engine.ny * engine.nz,
     }
 
-    OUT = Path(_REPO_ROOT) / "artifacts" / "sdaa_suboff_sail_resistance_m289.json"
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(OUT) as f:
             data = json.load(f)
@@ -177,7 +178,7 @@ except torch.sdaa.OutOfMemoryError as e:
         "oom_error": str(e)[:300],
         "mem_at_oom": _mem(),
     }
-    OUT = Path(_REPO_ROOT) / "artifacts" / "sdaa_suboff_sail_resistance_m289.json"
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(OUT) as f:
             data = json.load(f)

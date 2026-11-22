@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 
-OUT = Path("artifacts/sdaa_suboff_sail_resistance_m289.json")
+OUT = Path(__file__).resolve().parents[3] / "outputs/sdaa/suboff_sail_resistance/reconstructed_m289.json"
 OUT.parent.mkdir(parents=True, exist_ok=True)
 
 CF_REF = 1.328 / math.sqrt(1000.0)  # 0.041995047327036084

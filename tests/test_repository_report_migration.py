@@ -730,6 +730,33 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertEqual((pipe["verdict"], pipe["config"]["R"]), ("PASS", 20))
         self.assertNotIn("verdict", preserved["sdaa_poiseuille_3d_pipe_case"])
 
+    def test_suboff_evidence_keeps_original_paths_in_the_ledger_and_exact_bytes(self):
+        ledger_path = LEDGER_PATH.parent / "suboff-evidence-2026-11-22.json"
+        entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]
+        self.assertEqual(len(entries), 10)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            paths = {row["old_path"]: row["new_path"] for row in csv.DictReader(stream)}
+
+        for entry in entries:
+            with self.subTest(path=entry["old_path"]):
+                target = REPO / entry["new_path"]
+                raw = target.read_bytes()
+                self.assertEqual(len(raw), entry["size_bytes"])
+                self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["original_sha256"])
+                self.assertEqual(paths[entry["old_path"]], entry["new_path"])
+                self.assertFalse((REPO / entry["old_path"]).exists())
+
+        case = REPO / "benchmarks/verified/suboff_sail_resistance"
+        evidence = case / "evidence/sdaa"
+        m288 = evidence / "sdaa_suboff_sail_resistance_m288.json"
+        m289 = evidence / "sdaa_suboff_sail_resistance_m289.json"
+        self.assertEqual(m288.read_bytes(), m289.read_bytes())
+        probe = json.loads((evidence / "sdaa_suboff_sail_resistance_v3.json").read_text())
+        self.assertEqual(probe["overall"], "HONEST-FAIL")
+        readme = (case / "README.md").read_text(encoding="utf-8")
+        for target in evidence.glob("sdaa_suboff_sail_resistance*.json"):
+            self.assertIn(f"](evidence/sdaa/{target.name})", readme)
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

@@ -2,7 +2,7 @@
 
 案例：`benchmarks/verified/suboff_sail_resistance`（SUBOFF AFF-3 with_sail，Re=1000，Cd vs Blasius）
 运行脚本：`scripts/sdaa_sweep_suboff_sail_resistance.py`（独立驱动，**未改任何业务代码**）
-机器产物：`artifacts/sdaa_suboff_sail_resistance.json`
+机器产物：[历史扫荡记录](../../benchmarks/verified/suboff_sail_resistance/evidence/sdaa/sdaa_suboff_sail_resistance.json)
 原始日志/结果：`runs/sdaa_sweep_suboff_sail_resistance/`
 执行日期：2026-10-29 · 设备 `sdaa:0` · 总墙钟 **485.3 s**（8.1 min，≤20 min 预算内）
 
@@ -161,7 +161,7 @@ python run.py --device sdaa:0 --resolution 68 --steps 406 \
               --friction standard --p0 near_wall --compile-mode eager   # 本卡可跑通的最小档
 ```
 
-产物：`artifacts/sdaa_suboff_sail_resistance.json`（含 `device_evidence_line`、`tiers`、`supplementary_reduced_grid`、
+新运行产物：`outputs/sdaa/suboff_sail_resistance/sdaa_suboff_sail_resistance.json`（含 `device_evidence_line`、`tiers`、`supplementary_reduced_grid`、
 `gates` 逐条 PASS/FAIL、`runs` 内嵌每次运行的完整 result JSON 与日志路径、`wall_clock_s`）。
 
 ---

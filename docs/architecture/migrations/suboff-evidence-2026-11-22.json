@@ -1,0 +1,92 @@
+{
+  "source_commit": "e4ec733c3bd95480121b8a743125309ea3cf8584",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 52,
+  "tracked_artifacts_after": 42,
+  "entries": [
+    {
+      "old_path": "artifacts/suboff_bench1_cumulant_sdaa20.json",
+      "new_path": "benchmarks/tournament_suboff/evidence/sdaa/suboff_bench1_cumulant_sdaa20.json",
+      "git_mode": "100644",
+      "original_git_blob": "449f670a1165e57e648ef17ec8fe64b88d3884f8",
+      "size_bytes": 835,
+      "original_sha256": "da9e646d0f4530773d1844f432172c4ed12ba53cb321509d7564c93c7886d0e2"
+    },
+    {
+      "old_path": "artifacts/suboff_bench2_rans_re1e5_sdaa21.json",
+      "new_path": "benchmarks/tournament_suboff/evidence/sdaa/suboff_bench2_rans_re1e5_sdaa21.json",
+      "git_mode": "100644",
+      "original_git_blob": "82d35ad8642bddc13f9f2ad55fc7b05584a33b65",
+      "size_bytes": 856,
+      "original_sha256": "e489d64e9ff0f8762a5ad699786549666ffb5b750df4fdfcbf831c97e3303548"
+    },
+    {
+      "old_path": "artifacts/suboff_bench3_rans_re1e4_sdaa22.json",
+      "new_path": "benchmarks/tournament_suboff/evidence/sdaa/suboff_bench3_rans_re1e4_sdaa22.json",
+      "git_mode": "100644",
+      "original_git_blob": "4a324380131ec4c02615b32f45ca50853631e836",
+      "size_bytes": 851,
+      "original_sha256": "1f8d3309f9b0f7436166f39eb2bc188f2e3c02eb0caeca957e9a67dbb43be22a"
+    },
+    {
+      "old_path": "artifacts/suboff_best_rans_summary.json",
+      "new_path": "benchmarks/tournament_suboff/evidence/sdaa/suboff_best_rans_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "37ac270c0ca65effb9e618e8091bba75f02da327",
+      "size_bytes": 4274,
+      "original_sha256": "9ce3566d36ebdddbedbc10bafa078098ee40f2137baa9026b270ff6bbea6e26d"
+    },
+    {
+      "old_path": "artifacts/sdaa_suboff_sail_resistance.json",
+      "new_path": "benchmarks/verified/suboff_sail_resistance/evidence/sdaa/sdaa_suboff_sail_resistance.json",
+      "git_mode": "100644",
+      "original_git_blob": "f3b87dc56a484241e664ce150d1d95786c445c5c",
+      "size_bytes": 39595,
+      "original_sha256": "da9f0a3f4d0556386b3fc193f24f242fcd3585cbae1961e72d4d1d87fe341049"
+    },
+    {
+      "old_path": "artifacts/sdaa_suboff_sail_resistance_m288.json",
+      "new_path": "benchmarks/verified/suboff_sail_resistance/evidence/sdaa/sdaa_suboff_sail_resistance_m288.json",
+      "git_mode": "100644",
+      "original_git_blob": "1f21f714af11718fa2a3305720fd3970e67f81b4",
+      "size_bytes": 9624,
+      "original_sha256": "056ef6ffa25b00ed48ed0260f1c19e3534aca007c50ca7cd7bea04f4914acd41"
+    },
+    {
+      "old_path": "artifacts/sdaa_suboff_sail_resistance_m289.json",
+      "new_path": "benchmarks/verified/suboff_sail_resistance/evidence/sdaa/sdaa_suboff_sail_resistance_m289.json",
+      "git_mode": "100644",
+      "original_git_blob": "1f21f714af11718fa2a3305720fd3970e67f81b4",
+      "size_bytes": 9624,
+      "original_sha256": "056ef6ffa25b00ed48ed0260f1c19e3534aca007c50ca7cd7bea04f4914acd41"
+    },
+    {
+      "old_path": "artifacts/sdaa_suboff_sail_resistance_v3.json",
+      "new_path": "benchmarks/verified/suboff_sail_resistance/evidence/sdaa/sdaa_suboff_sail_resistance_v3.json",
+      "git_mode": "100644",
+      "original_git_blob": "ac0a267249c4572ef241c84ce318c4f9a0c1fb2a",
+      "size_bytes": 5088,
+      "original_sha256": "a9341099a6691676938093c9c7a5eda82f7320ea2c079159bf39c4b35a26be90"
+    },
+    {
+      "old_path": "artifacts/s0_suboff.json",
+      "new_path": "development/verification/suboff/s0-m369/s0_suboff.json",
+      "git_mode": "100644",
+      "original_git_blob": "92f8802a0f5fb4ed22604469a2d58c678d5345a2",
+      "size_bytes": 2706,
+      "original_sha256": "f5a9e60748f047ecbcdad10bcebc3d9a8f525fb6e017a240fd733f873d74854f"
+    },
+    {
+      "old_path": "artifacts/s0_suboff_report.md",
+      "new_path": "development/verification/suboff/s0-m369/s0_suboff_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "d61e1e7c028e8e6729645cef3f64cd98f69c22db",
+      "size_bytes": 4114,
+      "original_sha256": "a7ea56e6ccccd03930f23738e6a659f33b6b668ac00f01400f884f4d79618ba8"
+    }
+  ],
+  "reference_scan": "Reviewed tracked filenames and executable readers and writers, report links, and workshop anchors. Historical mission QA and the archived S0 report retain their original path labels.",
+  "compatibility": "Existing run commands retain their entry points. New SDAA outputs and checkpoints go to ignored outputs/sdaa/suboff_sail_resistance/. The renderer defaults to the archived m289 record and accepts explicit input and output paths. The reconstruction helper uses a separate filename. New S0 results go to ignored outputs/suboff/s0/.",
+  "scientific_scope": "Archival only. Original SDAA allocation failures and S0 partial outcome retain their scope. The m288 and m289 records are byte-identical and both historical filenames are preserved."
+}

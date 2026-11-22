@@ -61,6 +61,17 @@ append-only chain incl. E1/E2), `verdict.json` (formal FAIL) +
 `e2_verdict.json` (E2 PASS), per-tier archives `formal_L*/ ey2_L* diag_bare_L*`
 (result JSON + full run.log), `result.json` (aggregate + provenance).
 
+### Historical SDAA evidence
+
+- [m63 resolution sweep](evidence/sdaa/sdaa_suboff_sail_resistance.json) and its [run report](../../../docs/sdaa_sweep/suboff_sail_resistance.md).
+- [m289 diagnostics](evidence/sdaa/sdaa_suboff_sail_resistance_m289.json) and the [diagnostic report with figures](../../../docs/sdaa_suboff_sail_resistance_m289.md). The historical [m288 filename](evidence/sdaa/sdaa_suboff_sail_resistance_m288.json) contains the same bytes.
+- [v3 hardware probe](evidence/sdaa/sdaa_suboff_sail_resistance_v3.json) records `HONEST-FAIL` at its allocation gate.
+
+These records retain the outcome of each reported device run. New diagnostic writes
+and checkpoints go to `outputs/sdaa/suboff_sail_resistance/` at the repository root.
+`gen_figures_m289.py` reads the archive by default and accepts `--input` for a complete
+new diagnostic and `--out-dir` for the three plots and `fig_data.json`.
+
 ## AMR-chain negative-drag re-run (paper-exp-lbm-suboff-tau-4, 2026-11-08)
 
 The m298 uniform-grid τ ladder (see `tau_ladder_report_m298.md`) closed with
