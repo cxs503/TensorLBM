@@ -103,6 +103,8 @@ def validate(policy: dict) -> list[str]:
     find = setuptools.get("packages", {}).get("find", {})
     if find.get("where") != [policy["canonical_root"]]:
         errors.append("pyproject package discovery no longer selects only src")
+    if set(find.get("include", ())) != {"tensorlbm", "tensorlbm.*", "lbm", "lbm.*"}:
+        errors.append("pyproject must restrict discovery to tensorlbm and the existing lbm package")
 
     actual_tree = _git("rev-parse", f"HEAD:{policy['historical_root']}")
     if actual_tree != policy["historical_tree_oid"]:

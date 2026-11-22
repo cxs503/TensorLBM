@@ -84,6 +84,8 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+# Keep the existing D3Q27 `lbm` imports working during the source migration.
+include = ["tensorlbm", "tensorlbm.*", "lbm", "lbm.*"]
 
 [tool.setuptools.package-data]
 "tensorlbm.verification.cavity_re3200" = ["ghia_re3200_reference.json"]
