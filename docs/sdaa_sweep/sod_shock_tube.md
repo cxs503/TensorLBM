@@ -22,7 +22,7 @@
 | 设备证据 | `torch.sdaa.get_device_name(0) = '/dev/tcaicard1'` |
 | Triton 绕行 | **无** — 核心路径 (equilibrium/stream/collide_bgk/macroscopic) 均为纯 torch ops，无 triton 依赖 |
 | 脚本 | `scripts/sdaa_sweep_sod_shock_tube.py` |
-| 产物 | `artifacts/sdaa_sod_shock_tube.json` |
+| 产物 | [历史结果 JSON](../../benchmarks/verified/sod_shock_tube/evidence/sdaa/sdaa_sod_shock_tube.json) |
 
 ## 墙钟时间
 

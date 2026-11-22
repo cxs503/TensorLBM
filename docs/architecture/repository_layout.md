@@ -58,7 +58,7 @@ require a runtime import trace to identify its actual source.
 | `development/evidence/<topic>/` | Small reproducible defect/audit bundles: README, reproducer, environment, result and short logs | Unbounded run dumps; evidence is not independent acceptance |
 | `development/archived/historical_runs/` | Frozen logs, results and probes from the former `runs/` root | New run output |
 | `outputs/` | New local simulation outputs (ignored) | Files required to reproduce a clean-checkout test |
-| `artifacts/runs/` | Local diagnostic/CI working outputs (ignored) | The sole copy of accepted, externally referenced evidence |
+| `artifacts/` | Local outputs from legacy commands and CI (ignored) | Tracked files. Curated evidence belongs to the case or experiment that owns it |
 
 Existing `docs/evidence/`, `agent_work/`, `agent_memory/`
 and other historical paths remain subject to compatibility checks. Do not

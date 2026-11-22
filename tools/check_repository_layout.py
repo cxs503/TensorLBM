@@ -25,6 +25,7 @@ RETIRED_ROOT_DIRECTORIES = {
     "BB",
     "TensorLBM",
     "_scratch",
+    "artifacts",
     "audit",
     "audits",
     "cases",

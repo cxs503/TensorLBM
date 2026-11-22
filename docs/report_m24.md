@@ -119,7 +119,7 @@ $$\Delta p = p_{in} - p_{out} = \frac{2\sigma}{R}, \quad \sigma_{rec} = \frac{\D
 
 | 文件 | 说明 |
 |---|---|
-| `artifacts/sdaa_laplace_cac_phasefield.json` | SDAA 扫荡完整输出（设备证据/配置/时间序列/门控） |
+| [历史 SDAA 输出](../benchmarks/verified/laplace_cac_phasefield/evidence/sdaa/sdaa_laplace_cac_phasefield.json) | SDAA 扫荡完整输出（设备证据/配置/时间序列/门控） |
 | `scripts/sdaa_sweep_laplace_cac_phasefield.py` | 独立运行脚本（不改业务代码） |
 | `benchmarks/verified/laplace_cac_phasefield/README.md` | 案例说明与判据 |
 | `benchmarks/verified/laplace_cac_phasefield/result.json` | NVIDIA 参考结果 |

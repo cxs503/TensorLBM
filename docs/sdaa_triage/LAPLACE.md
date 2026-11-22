@@ -104,7 +104,7 @@ Model input: σ_model = σ_target / bar_eff(W=4) = 0.01 / 0.9239 = 0.010824.
 
 ## 6. Artifacts
 
-- `artifacts/sdaa_laplace_recut.json` — Full results with `dp_r_sigma` field
-- `artifacts/db3d_intermediate/laplace_R10_64.json` — R=10 convergence series
-- `artifacts/db3d_intermediate/laplace_R16_64.json` — R=16 convergence series
+- [Full results](../../benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/sdaa_laplace_recut.json) with `dp_r_sigma`
+- Convergence data for [R=10](../../benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/laplace_R10_64.json), [R=16](../../benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/laplace_R16_64.json), and the [archived R=20 series](../../benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/laplace_R20_96.json)
+- [Archived convergence figure](../assets/sdaa-laplace-triage/laplace_convergence.png)
 - `benchmarks/verified/laplace_cac_phasefield/result.json` — Historical verified data

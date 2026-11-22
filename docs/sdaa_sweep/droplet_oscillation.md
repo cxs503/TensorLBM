@@ -93,7 +93,7 @@ The SDAA sweep is currently running. Full results will be updated upon completio
 
 ### Expected Results Structure
 
-The results JSON (`artifacts/sdaa_droplet_oscillation.json`) contains:
+The [archived results JSON](../../benchmarks/verified/droplet_oscillation/evidence/sdaa/sdaa_droplet_oscillation.json) contains:
 
 ```json
 {

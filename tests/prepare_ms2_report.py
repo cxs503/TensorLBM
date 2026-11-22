@@ -8,10 +8,15 @@ from pathlib import Path
 figure_data = json.loads(Path("/tmp/ms2_figure.json").read_text())
 
 # Load artifact
-artifact = json.loads(Path("artifacts/m_s2.json").read_text())
+artifact_path = Path("artifacts/m_s2.json")
+if not artifact_path.is_file():
+    artifact_path = Path(__file__).resolve().parents[1] / (
+        "benchmarks/pending/dam_break_3d_mm/evidence/m364-device-comparison/m_s2.json"
+    )
+artifact = json.loads(artifact_path.read_text())
 
 # Prepare markdown report
-markdown = """
+markdown = f"""
 # M-S2·P2: 自由面 Dam Break 3D 上卡报告
 
 ## 1. 案例介绍
@@ -130,9 +135,9 @@ DamBreak3DConfig(
 - **阈值**: 0.1%
 - **判定**: ✓ **PASS** (远优于阈值)
 
-### 判据③: 设备证据入artifacts/m_s2.json
+### 判据③: 记录设备证据
 - **状态**: ✓ 已完成
-- **文件**: `artifacts/m_s2.json`
+- **文件**: `{artifact_path}`
 - **内容**: 包含设备信息、CPU结果、GPU跳过原因
 
 ## 7. 结论
