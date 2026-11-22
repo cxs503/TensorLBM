@@ -1,0 +1,47 @@
+{
+  "scope": "Three-dimensional impact of one water drop into a deep pool, compared against Santini et al. experimental case 3 and the experimental markers in Guilizzoni and Frontera Figure 5.",
+  "criteria": {
+    "protocol": "benchmarks/water_entry/single_drop/protocol.json",
+    "definition": "Cover all experimental times and meet the 3% depth, peak-depth and impact-speed limits. Require decreasing point and peak error on at least two grids, and verify the volume, Mach, domain and material gates."
+  },
+  "source": [
+    "benchmarks/water_entry/single_drop/run.py",
+    "benchmarks/water_entry/single_drop/free_surface_probe.py",
+    "benchmarks/water_entry/single_drop/score.py",
+    "benchmarks/water_entry/single_drop/digitize.py"
+  ],
+  "config": ["benchmarks/water_entry/single_drop/protocol.json"],
+  "documentation": [
+    "benchmarks/pending/droplet_impact_3d_pool/README.md",
+    "benchmarks/water_entry/single_drop/README.md",
+    "docs/audits/spherical_entry_20261118/README.md"
+  ],
+  "reference_files": ["benchmarks/water_entry/single_drop/fig5_experiment.csv"],
+  "references": [
+    {
+      "source": "benchmarks/water_entry/single_drop/protocol.json",
+      "field": "original_experiment",
+      "value": "https://www.sciencedirect.com/science/article/abs/pii/S0997754616302977"
+    },
+    {
+      "source": "benchmarks/water_entry/single_drop/protocol.json",
+      "field": "reference",
+      "value": "https://doi.org/10.3390/fluids7020050"
+    }
+  ],
+  "results": [
+    "benchmarks/pending/droplet_impact_3d_pool/result.json",
+    "docs/audits/spherical_entry_20261118/histories.zip"
+  ],
+  "evidence": [
+    "docs/audits/spherical_entry_20261118/crater_depth.png",
+    "docs/audits/spherical_entry_20261118/entry_planes.png",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/README.md",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/preregistration.md",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/cmb5_verdict.json",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_d050/result.json.gz",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_d075/result.json.gz",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_ul13/result.json.gz",
+    "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_parity/result.json.gz"
+  ]
+}
