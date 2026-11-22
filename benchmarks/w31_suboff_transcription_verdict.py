@@ -19,12 +19,15 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timezone
+from os.path import relpath
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ART = ROOT / "benchmarks" / "artifacts" / "w31_suboff_transcription_verdict.json"
+ART = ROOT / "benchmarks/anchors/evidence/suboff_w31/w31_suboff_transcription_verdict.json"
 DOC = ROOT / "docs" / "w31-suboff-transcription.md"
-FIG_DIR = ROOT / "figures"
+OUTPUT_DIR = ROOT / "outputs/w31-suboff-transcription"
+ART_OUT = OUTPUT_DIR / ART.name
+FIG_DIR = OUTPUT_DIR / "figures"
 
 TASK_KEY = "paper-exp-lbm-suboff-tau-15"
 MISSION_ID = 22289
@@ -583,7 +586,7 @@ def _crit_measured(cr):
                m["doc_generated_from_artifact"], m["test_file"]))
 
 
-def render_doc(a):
+def render_doc(a, doc_path=DOC, artifact_path=ART):
     L = []
     c = a["constants_from_files"]
     ar = a["arbitration"]
@@ -596,10 +599,11 @@ def render_doc(a):
     L.append("")
     L.append("- 任务键 `%s`，mission `%d`，仓库 `TensorLBM`，分支 `%s`，git `%s`"
              % (a["task_key"], a["mission_id"], a["git"]["branch"], a["git"]["commit"]))
-    L.append("- 工件（本文件所有数字的唯一来源，禁手抄）：`benchmarks/artifacts/w31_suboff_transcription_verdict.json`")
+    L.append("- 工件（本文件所有数字的唯一来源，禁手抄）：[裁决 JSON](%s)"
+             % Path(relpath(artifact_path, doc_path.parent)).as_posix())
     L.append("- 构建器 `%s`；正文由 `--doc` 从工件注入；守卫测试 `tests/test_w31_suboff_verdict.py`"
              % a["generated_by"])
-    L.append("- 图：`figures/w31_ratio_vs_speed.png`、`figures/w31_lbm_same_re.png`")
+    L.append("- 图：由 `python benchmarks/w31_suboff_transcription_verdict.py --figs` 从归档生成，输出在 `outputs/w31-suboff-transcription/figures/`")
     L.append("- 锚等级 `%s` / `%s`（原始 DTRC 报告仍 WITHHELD；本工作树离线，无外网）"
              % (a["anchor_grade"]["anchor_grade"], a["anchor_grade"]["grade_letter"]))
     L.append("")
@@ -763,8 +767,8 @@ def render_doc(a):
     L.append("")
     for s in a["claim_boundary"]["what_this_does_not_prove"]:
         L.append("- " + s)
-    L.append("- 图 `figures/w31_ratio_vs_speed.png`（左：四源 R_T(V) 与裁决后配对；右：观测比值 vs ΔC_F 路径要求值）；"
-             "`figures/w31_lbm_same_re.png`（左：C_T(Re) 对照；右：|ΔC_T| 与 15%/3% 门）。")
+    L.append("- 图 `w31_ratio_vs_speed.png`（左：四源 R_T(V) 与裁决后配对；右：观测比值 vs ΔC_F 路径要求值）；"
+             "`w31_lbm_same_re.png`（左：C_T(Re) 对照；右：|ΔC_T| 与 15%/3% 门）。")
     L.append("")
     L.append("## ⑥ 误差判定（逐项，含是否 <3%）")
     L.append("")
@@ -791,12 +795,12 @@ def render_doc(a):
 
 
 # ----------------------------------------------------------------------- 图
-def render_figs(a):
+def render_figs(a, fig_dir=FIG_DIR):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    FIG_DIR.mkdir(parents=True, exist_ok=True)
+    fig_dir.mkdir(parents=True, exist_ok=True)
     ar = a["arbitration"]
     lbm = a["lbm_same_re_vs_arbitrated_anchor"]
     pw = a["three_family_pointwise"]
@@ -825,7 +829,7 @@ def render_figs(a):
     ax2.grid(alpha=0.3)
     ax2.legend(fontsize=8)
     fig.tight_layout()
-    p1 = FIG_DIR / "w31_ratio_vs_speed.png"
+    p1 = fig_dir / "w31_ratio_vs_speed.png"
     fig.savefig(p1, dpi=130)
     plt.close(fig)
 
@@ -853,24 +857,24 @@ def render_figs(a):
     ax2.legend(fontsize=8)
     ax2.tick_params(axis="x", labelrotation=20)
     fig.tight_layout()
-    p2 = FIG_DIR / "w31_lbm_same_re.png"
+    p2 = fig_dir / "w31_lbm_same_re.png"
     fig.savefig(p2, dpi=130)
     plt.close(fig)
-    return [str(p1.relative_to(ROOT)), str(p2.relative_to(ROOT))]
+    return [str(p.relative_to(ROOT) if p.is_relative_to(ROOT) else p) for p in (p1, p2)]
 
 
 # --------------------------------------------------------------------- main
 def write_artifact(a=None):
     a = a or build()
-    ART.parent.mkdir(parents=True, exist_ok=True)
-    ART.write_text(json.dumps(a, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    ART_OUT.parent.mkdir(parents=True, exist_ok=True)
+    ART_OUT.write_text(json.dumps(a, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return a
 
 
-def write_doc(a=None):
+def write_doc(a=None, doc_path=DOC, artifact_path=ART):
     a = a or json.loads(ART.read_text(encoding="utf-8"))
-    DOC.parent.mkdir(parents=True, exist_ok=True)
-    DOC.write_text(render_doc(a), encoding="utf-8")
+    doc_path.parent.mkdir(parents=True, exist_ok=True)
+    doc_path.write_text(render_doc(a, doc_path, artifact_path), encoding="utf-8")
     return a
 
 
@@ -878,10 +882,14 @@ def main(argv):
     args = set(argv[1:])
     if not args or "--all" in args or "--artifact" in args:
         a = write_artifact()
-        print("artifact:", ART.relative_to(ROOT))
+        print("artifact:", ART_OUT.relative_to(ROOT))
     else:
         a = json.loads(ART.read_text(encoding="utf-8"))
-    if "--all" in args or "--doc" in args:
+    if "--all" in args:
+        report = OUTPUT_DIR / DOC.name
+        write_doc(a, report, ART_OUT)
+        print("doc:", report.relative_to(ROOT))
+    elif "--doc" in args:
         write_doc(a)
         print("doc:", DOC.relative_to(ROOT))
     if "--all" in args or "--figs" in args:

@@ -11,6 +11,11 @@ failing verdict stays in the file, it is never overwritten by a later wave.
 |---|---|---|---|
 | `lbm-suboff-tau` | `lbm_suboff_tau_anchor.py` | `lbm-suboff-tau.json` | `TRANSCRIBED` / `acquisition_status=WITHHELD` |
 
+The [W31 transcription audit](../../docs/w31-suboff-transcription.md)
+links its [archived verdict](evidence/suboff_w31/w31_suboff_transcription_verdict.json).
+The verdict records the transcription conventions and the failed same-Re
+comparison.
+
 ## Gate contract (what a downstream anchor gate may rely on)
 
 Any new anchor file in this directory must expose these top-level keys so that a

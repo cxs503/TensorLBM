@@ -1,0 +1,60 @@
+{
+  "source_commit": "cdbcbf86143a222b6dfe7256f09d12794ee1db7b",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 13,
+  "second_level_directories": {
+    "docs": {
+      "before": 96,
+      "after": 94
+    },
+    "benchmarks": {
+      "before": 105,
+      "after": 104
+    }
+  },
+  "entries": [
+    {
+      "old_path": "benchmarks/artifacts/w31_suboff_transcription_verdict.json",
+      "new_path": "benchmarks/anchors/evidence/suboff_w31/w31_suboff_transcription_verdict.json",
+      "git_mode": "100644",
+      "original_git_blob": "4f4f6fcec8d4b200e38c56c3516dc743abe72113",
+      "original_sha256": "2a0256ad7718fdcbb085b837ae5ffb36c630c689a212ae4ea172cc9f05d547de",
+      "size_bytes": 49371
+    },
+    {
+      "old_path": "docs/BB/X/DE-X-PF2-CH6.md",
+      "new_path": "development/audit/drop_entry/BB/m26953/DE-X-PF2-CH6.md",
+      "git_mode": "100644",
+      "original_git_blob": "9dba46364faa8d3b048e7b0ae609743d767d4430",
+      "original_sha256": "a86194d3088ce41e3a460f7378f28f7bf06e9d95a9bceb22ff7a0509a40f9e11",
+      "size_bytes": 1590
+    },
+    {
+      "old_path": "docs/figs_m1984/frontier.png",
+      "new_path": "docs/assets/maneuvering-m1984/frontier.png",
+      "git_mode": "100644",
+      "original_git_blob": "a0e116dfeb07e30287a88359562e62bc50c14e82",
+      "original_sha256": "3d18c7fe5b3f1b2c52142a4c13beefaa1c896651d35b3f5c22b8cee083d1bdea",
+      "size_bytes": 57009
+    },
+    {
+      "old_path": "docs/figs_m1984/inflow.png",
+      "new_path": "docs/assets/maneuvering-m1984/inflow.png",
+      "git_mode": "100644",
+      "original_git_blob": "c5e9365a671b9dc3acd762af690e3ab5612ffa3e",
+      "original_sha256": "49f529352be53100fe4dd20a32454e59e923819f5f75908c20c00fce3836cb11",
+      "size_bytes": 46635
+    },
+    {
+      "old_path": "docs/figs_m1984/trajectories.png",
+      "new_path": "docs/assets/maneuvering-m1984/trajectories.png",
+      "git_mode": "100644",
+      "original_git_blob": "d3415aec949d1c6cd7909773fa3806feef69a899",
+      "original_sha256": "935ed1caab1f6747e5091659793a8ba07106c453bb2811818ec24f6e4c44b40f",
+      "size_bytes": 112365
+    }
+  ],
+  "reference_scan": "Checked exact paths, relative report references, W31 writer and tests, and the separate published CH6 report. The W31 figures were absent from the tracked source tree.",
+  "compatibility": "Keep the published report URLs and W31 command path. The W31 reader and report link resolve the archived JSON. A full regeneration writes JSON, report and plots to ignored outputs. The published W31 report still renders from the archive.",
+  "scientific_scope": "Archive bytes and original verdicts preserved. The W31 results rebuild on the source revision already differs at four floating-point values under Python 3.12; the strict check remains in place. No solver reruns."
+}
