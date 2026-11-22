@@ -122,8 +122,8 @@ def main():
     print(f"\nReference Cd (Schiller-Naumann): {cd_ref}")
 
     # Output paths
-    artifacts_dir = REPO_ROOT / "artifacts"
-    artifacts_dir.mkdir(exist_ok=True)
+    artifacts_dir = REPO_ROOT / "outputs/sdaa/sphere_re100"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
     t1_out = artifacts_dir / "sdaa_sphere_re100_mem_t1.json"
     t2_out = artifacts_dir / "sdaa_sphere_re100_mem_t2.json"
 

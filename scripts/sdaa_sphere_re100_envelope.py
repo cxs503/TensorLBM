@@ -9,7 +9,7 @@ Criteria:
 ② Peak VRAM ≤ 14.94 GiB (m75 measured single card capacity)
 ③ If OOM, must report 'OOM at which tensor operation'
 
-Output: artifacts/sdaa_sphere_re100_envelope.json
+Output: outputs/sdaa/sphere_re100/sdaa_sphere_re100_envelope.json
 """
 
 from __future__ import annotations
@@ -381,7 +381,7 @@ def main():
             }
     
     # Write JSON
-    out_path = Path("artifacts/sdaa_sphere_re100_envelope.json")
+    out_path = Path(__file__).resolve().parents[1] / "outputs/sdaa/sphere_re100/sdaa_sphere_re100_envelope.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(envelope, f, indent=2)

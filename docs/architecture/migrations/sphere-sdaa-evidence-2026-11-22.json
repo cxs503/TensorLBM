@@ -1,0 +1,53 @@
+{
+  "source_commit": "3e97a49c5c11f8a89abce1788d04c9f3f5866e3d",
+  "previous_batch_head": "1027a6aa0cbedb1388f723cc0d6c798ea5e14d2c",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 32,
+  "tracked_artifacts_after": 27,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_sphere_re100.json",
+      "new_path": "benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100.json",
+      "git_mode": "100644",
+      "original_git_blob": "a3f2ac01b7ebf8140b4604cce520ce0a7d65389a",
+      "size_bytes": 5798,
+      "original_sha256": "060dcd44bb7b113b5702f9b9afa42edd6d80a571d02ef1df3796554e7fde8564"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_envelope.json",
+      "new_path": "benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100_envelope.json",
+      "git_mode": "100644",
+      "original_git_blob": "c9839ab9da9d1cf2e0b511f0887b23e3b6dff1f9",
+      "size_bytes": 1335,
+      "original_sha256": "266ffcb5da4d1ba66314fbd79b628ea4118db7bca29b2c926d1005657b23d080"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re100_mem.json",
+      "new_path": "benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100_mem.json",
+      "git_mode": "100644",
+      "original_git_blob": "fb5788eaf93c3ca0ff7270f704da407f91af7d1e",
+      "size_bytes": 1947,
+      "original_sha256": "92a3ced1a99698149bf37f351214dd1593be13b6ea80851119124dba29fff51f"
+    },
+    {
+      "old_path": "artifacts/sdaa_sphere_re200.json",
+      "new_path": "benchmarks/verified/sphere_re200/evidence/sdaa/sdaa_sphere_re200.json",
+      "git_mode": "100644",
+      "original_git_blob": "e8fccb968f1fd5c31bb953dce01fb813d83ceebe",
+      "size_bytes": 2937,
+      "original_sha256": "eafd7f68848c8a457ffee7fb1b1c4923c43460d9b748c1c0d372f1478b0b8c8e"
+    },
+    {
+      "old_path": "artifacts/sdaa_stokes_sphere_dg.json",
+      "new_path": "benchmarks/verified/stokes_sphere_dg/evidence/sdaa/sdaa_stokes_sphere_dg.json",
+      "git_mode": "100644",
+      "original_git_blob": "d8cc1a797ca7276b2f20be3005d6e82ec2cbcaf4",
+      "size_bytes": 57892,
+      "original_sha256": "6a71fced370d628af2d11ad0a336860237e9260325bb4d39747443c1449e15f9"
+    }
+  ],
+  "reference_scan": "Reviewed exact filenames and tracked writers, the Stokes machine-evidence test and renderer, and case and sweep documentation. The unrelated host-bound D40 record remains at its original path.",
+  "compatibility": "Existing sweep commands retain their locations and write case-scoped JSON under ignored outputs/sdaa. The Stokes report defaults to the archived result for --from-json and retains explicit --out. It cannot write back to the case archive.",
+  "scientific_scope": "Archival only. Retain sphere failures and low-resolution envelope observations, and Stokes's partial coverage. The Stokes self-consistency test recomputes metrics from original samples without running a solver."
+}

@@ -99,6 +99,9 @@
 
 ## 备注
 
+[历史 SDAA 扫描结果](../../benchmarks/verified/kovasznay_2d/evidence/sdaa/sdaa_kovasznay_2d.json)。
+新运行输出为 `outputs/sdaa/kovasznay_2d/sdaa_kovasznay_2d.json`。
+
 1. SDAA 设备上三档网格的运行时间相近（~65s），因为稳态监测在 10000 步内已触发收敛（steady=True），实际计算步数由稳态条件决定而非固定步数。
 2. SDAA 结果与 CPU 参考值高度一致（差异 < 0.01%），证明 SDAA 设备上的浮点运算精度与 CPU 一致。
 3. 步数从 20000 缩减到 10000 不影响判据：实测 10000 步时 steady=True，误差与 20000 步参考值几乎相同。

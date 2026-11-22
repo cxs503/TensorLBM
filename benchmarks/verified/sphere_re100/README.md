@@ -150,3 +150,9 @@ python staircase_surface_mem/run_mem_surface.py single 12 --steps 7000 --lateral
 历史演化：+264.6% MEM（全 solid 求和）/ −16.6% 压力积分（B1）→ 力法修复后
 +11.28%/+11.21%（B52，入口钳制地板）→ 域形修复 +4.20%/+4.01%（B58，显存天花
 板挡住 D60 孪生）→ **W8-A 稀疏核解锁大域阶梯 +2.77%/+2.54%（本案）**。
+
+## 历史 SDAA 证据
+
+- [主扫荡](evidence/sdaa/sdaa_sphere_re100.json)与[运行报告](../../../docs/sdaa_sweep/sphere_re100.md)记录 OOM 和整体失败。
+- [MEM 扫荡](evidence/sdaa/sdaa_sphere_re100_mem.json)与[运行报告](../../../docs/sdaa_sweep/sphere_re100_mem.md)保留原判定。
+- [低分辨率包络](evidence/sdaa/sdaa_sphere_re100_envelope.json)与[诊断报告](../../../docs/sdaa_triage/SPHERE.md)保留 D10、D20 已执行档位和误差。

@@ -18,7 +18,7 @@ Bug 2: compute_retardation_function creates tensors with torch.linspace/torch.ze
 These are mutually exclusive bugs that cannot be worked around without modifying
 the business code. This script documents the failure honestly.
 
-Outputs: artifacts/sdaa_floating_body_free_decay.json
+Outputs: outputs/sdaa/floating_body_free_decay/sdaa_floating_body_free_decay.json
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ import torch
 
 # Ensure tensorlbm is importable
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SDAA_RESULT = REPO_ROOT / "outputs/sdaa/floating_body_free_decay/sdaa_floating_body_free_decay.json"
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from tensorlbm.rao_analysis import compute_natural_frequencies
@@ -247,7 +248,7 @@ def main() -> int:
             "fail_reason": "Cannot allocate tensor on sdaa device",
             "device_evidence": device_ev,
         }
-        out_path = REPO_ROOT / "artifacts" / "sdaa_floating_body_free_decay.json"
+        out_path = SDAA_RESULT
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(result, indent=2))
         return 1
@@ -334,7 +335,7 @@ def main() -> int:
         ),
     }
 
-    out_path = REPO_ROOT / "artifacts" / "sdaa_floating_body_free_decay.json"
+    out_path = SDAA_RESULT
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(f"\n[SDAA] Results written to {out_path}")

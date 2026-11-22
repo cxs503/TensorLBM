@@ -120,7 +120,8 @@
 
 ## 工件
 
-- `artifacts/sdaa_sphere_re100.json` - 设备证据 + 逐条判定
+- [历史结果 JSON](../../benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100.json) — 设备证据与逐条判定
+- 新运行输出：`outputs/sdaa/sphere_re100/sdaa_sphere_re100.json`
 - `benchmarks/verified/sphere_re100/test_quick.json.oom.json` - D=40 OOM 原始输出
 - `benchmarks/verified/sphere_re100/cpu_d10_test.json` - CPU baseline（非 SDAA）
 

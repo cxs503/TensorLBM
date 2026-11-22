@@ -44,3 +44,9 @@ diagnostic only.
 PYTHONPATH=src python benchmarks/verified/maneuvering_steady_turn/run.py
 ```
 Self-contained, deterministic, ~10 s on CPU, exit code 0.
+
+## Historical SDAA evidence
+
+[SDAA result](evidence/sdaa/sdaa_maneuvering_steady_turn.json) ·
+[Sweep report](../../../docs/sdaa_sweep/maneuvering_steady_turn.md).
+The archived sweep retains its device scope and recorded verdict.

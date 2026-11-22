@@ -188,3 +188,9 @@ a4 = −τ³/9 + τ²/6 − τ/12 + 1/72
 macroscopic`（+ `d2q9.OPPOSITE` 于次案 half-way BB 壁，与 verified/
 poiseuille_2d / couette_2d / womersley 同款 repo 已验证壁模式）。
 周期边界由 `stream()` 原生模运算 gather；run.py 铁律 grep 零命中。
+
+## 历史 SDAA 证据
+
+[扫描结果](evidence/sdaa/sdaa_acoustics.json) ·
+[运行报告](../../../docs/sdaa_sweep/acoustics.md)。
+新扫描将结果写入仓库根目录下的 `outputs/sdaa/acoustics/`。

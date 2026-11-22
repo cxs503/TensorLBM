@@ -18,6 +18,7 @@ from pathlib import Path
 
 # 确保 tensorlbm 可导入
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SDAA_RESULT = REPO_ROOT / "outputs/sdaa/kovasznay_2d/sdaa_kovasznay_2d.json"
 SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
@@ -265,7 +266,8 @@ def main():
             "error": "SDAA not available",
             "verdict": "FAIL",
         }
-        Path("artifacts/sdaa_kovasznay_2d.json").write_text(json.dumps(result, indent=2))
+        SDAA_RESULT.parent.mkdir(parents=True, exist_ok=True)
+        SDAA_RESULT.write_text(json.dumps(result, indent=2))
         return
 
     # 配置
@@ -421,11 +423,9 @@ def main():
         "verdict_reasons": verdict_reasons,
     }
 
-    # 写入 artifacts
-    out_path = Path("artifacts/sdaa_kovasznay_2d.json")
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(result, indent=2))
-    print(f"\n结果已写入: {out_path}")
+    SDAA_RESULT.parent.mkdir(parents=True, exist_ok=True)
+    SDAA_RESULT.write_text(json.dumps(result, indent=2))
+    print(f"\n结果已写入: {SDAA_RESULT}")
     print(f"Verdict: {verdict}")
     if verdict_reasons:
         print(f"原因: {verdict_reasons}")

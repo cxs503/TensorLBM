@@ -94,3 +94,9 @@ k_ref = d²/((1−φ)·f)（掩码体力驱动的 Darcy 定义）经独立 FD/MA
 
 复现（需空闲 CUDA 设备，d320 约 40 分钟）：
 `python run.py ladder --phi 0.5 --force-scale 10`
+
+## Historical SDAA evidence
+
+[SDAA result](evidence/sdaa/sdaa_permeability.json) ·
+[Sweep report](../../../docs/sdaa_sweep/permeability.md).
+历史 SDAA 扫描的整体判定为未通过，判据和原始数据见 JSON。

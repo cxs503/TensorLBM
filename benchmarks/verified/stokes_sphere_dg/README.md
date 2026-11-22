@@ -119,3 +119,9 @@ the appendix) — both byte-identical to the campaign-locked files (md5 pins
 asserted by run.py), result.json (aggregate verdict + provenance chain),
 verify.py (independent checker), run.py (formal runner; see
 result.json:provenance.in_repo_run_py_note for the portability port).
+
+The [historical SDAA sweep JSON](evidence/sdaa/sdaa_stokes_sphere_dg.json)
+and its [run report](../../../docs/sdaa_sweep/stokes_sphere_dg.md) retain
+the partial verdict and sampled series. From the repository root,
+`python scripts/sdaa_sweep_stokes_sphere_dg.py --from-json --render-doc <path>`
+renders a report from the archive on CPU.

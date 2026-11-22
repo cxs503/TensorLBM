@@ -90,7 +90,8 @@ torch.sdaa.get_device_name(0) -> '/dev/tcaicard14'
 
 ## 产物
 
-- `artifacts/sdaa_startup_poiseuille.json` — 完整 JSON 产物（含设备证据行、判据数值、逐条 PASS/FAIL、剖面表、中心线历史表）
+- [历史 SDAA 扫描 JSON](../../benchmarks/verified/startup_poiseuille/evidence/sdaa/sdaa_startup_poiseuille.json)（含设备证据行、判据数值、逐条 PASS/FAIL、剖面表、中心线历史表）
+- 新运行输出：`outputs/sdaa/startup_poiseuille/sdaa_startup_poiseuille.json`
 - `scripts/sdaa_sweep_startup_poiseuille.py` — 独立运行脚本
 
 ## 备注

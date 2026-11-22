@@ -68,5 +68,6 @@ torch.sdaa.get_device_properties(0) → _SDAADeviceProperties(name='/dev/tcaicar
 
 ## 产物
 
-- `artifacts/sdaa_permeability3d.json` — 完整 JSON 产物（含设备证据、判据数值、逐条比对）
+- [历史 SDAA 扫描 JSON](../../benchmarks/verified/permeability3d/evidence/sdaa/sdaa_permeability3d.json)（含设备证据、判据数值、逐条比对）
+- 新运行输出：`outputs/sdaa/permeability3d/sdaa_permeability3d.json`
 - `scripts/sdaa_sweep_permeability3d.py` — 独立运行脚本（不改业务代码）

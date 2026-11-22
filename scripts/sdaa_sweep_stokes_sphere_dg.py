@@ -40,7 +40,6 @@ if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
 import torch  # noqa: E402
-import torch_sdaa  # noqa: E402,F401  (registers the 'sdaa' device)
 
 from tensorlbm.bfl_common import (  # noqa: E402
     bfl_bounce_back_sparse,
@@ -55,7 +54,8 @@ from tensorlbm.solver3d import stream3d_roll  # noqa: E402
 
 CASE_DIR = os.path.join(REPO, "benchmarks", "verified", "stokes_sphere_dg")
 REF_TABLE = os.path.join(CASE_DIR, "reference_table.json")
-OUT_DEFAULT = os.path.join(REPO, "artifacts", "sdaa_stokes_sphere_dg.json")
+OUT_DEFAULT = os.path.join(REPO, "outputs", "sdaa", "stokes_sphere_dg", "sdaa_stokes_sphere_dg.json")
+ARCHIVE = os.path.join(CASE_DIR, "evidence", "sdaa", "sdaa_stokes_sphere_dg.json")
 
 # Round-trip / workaround log (emitted into both the artifact JSON and the doc).
 BYPASS_LOG = [
@@ -386,7 +386,7 @@ def judge(res, case_mod):
     }
 
 
-def render_doc(art: dict) -> str:
+def render_doc(art: dict, artifact_path: str = ARCHIVE) -> str:
     """Render the delivery markdown from the artifact only (no hand-copied numbers)."""
     d = art["device_evidence"]
     g = art["gauge_source"]
@@ -394,7 +394,7 @@ def render_doc(art: dict) -> str:
     a = L.append
     a("# SDAA 验证案例扫荡 — `stokes_sphere_dg`\n")
     a(f"- 案例: `{art['case']}`（TensorLBM benchmarks/verified，状态 verified）")
-    a(f"- 产物: `artifacts/sdaa_stokes_sphere_dg.json`（机器生成，判据数值零手抄）")
+    a(f"- 产物: `{os.path.relpath(artifact_path, REPO)}`（机器生成，判据数值零手抄）")
     a(f"- 驱动脚本: `{art['driver_script']}`（独立驱动，业务代码 `src/tensorlbm/**` 未修改："
       f"`business_code_modified={art['business_code_modified']}`）")
     a(f"- 仓库/分支/commit: `{art['host_repo']}` / `{art['git_branch']}` / "
@@ -567,12 +567,20 @@ def main() -> int:
                     help="cap steps per tier (probe only; breaks gauge validity)")
     ap.add_argument("--budget-min", type=float, default=18.0,
                     help="wall-clock budget minutes for the whole sweep")
-    ap.add_argument("--out", default=OUT_DEFAULT)
+    ap.add_argument("--out", help="new sweep destination or input for --from-json")
     ap.add_argument("--from-json", action="store_true",
-                    help="skip the simulation: load --out and only (re)render")
+                    help="skip the simulation and render the archived result or the file given by --out")
     ap.add_argument("--render-doc", default="",
                     help="write the delivery markdown to this path")
     args = ap.parse_args()
+    if args.out is None:
+        args.out = ARCHIVE if args.from_json else OUT_DEFAULT
+    archive_path = os.path.realpath(ARCHIVE)
+    uses_archive = os.path.realpath(args.out) == archive_path
+    if uses_archive and not args.from_json:
+        ap.error("--out must not overwrite the case archive")
+    if args.render_doc and os.path.realpath(os.path.join(REPO, args.render_doc)) == archive_path:
+        ap.error("--render-doc must not overwrite the case archive")
 
     if args.from_json:
         with open(args.out) as fh:
@@ -590,15 +598,17 @@ def main() -> int:
                 t["steps_run"] = t["steps_executed"]
                 t["steps_executed_backfilled"] = True
                 touched = True
-        if touched:
+        if touched and not uses_archive:
             with open(args.out, "w") as fh:
                 json.dump(art, fh, indent=1)
         if args.render_doc:
             os.makedirs(os.path.dirname(os.path.join(REPO, args.render_doc)), exist_ok=True)
             with open(os.path.join(REPO, args.render_doc), "w") as fh:
-                fh.write(render_doc(art))
+                fh.write(render_doc(art, args.out))
             print("doc written:", args.render_doc)
         return 0
+
+    import torch_sdaa  # noqa: F401  (registers the 'sdaa' device for the live sweep)
 
     case_mod = load_case_runner()
     ref = load_ref_table()

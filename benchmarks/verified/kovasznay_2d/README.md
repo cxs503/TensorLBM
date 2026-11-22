@@ -106,3 +106,9 @@ PYTHONPATH=/srv/tensor/operator-a/cxs/TensorLBM/src \
 - 全场误差 ≤3%（主配置 ny=64/128，u/v L2 + 掩模最大相对误差）：是。
 - ≥2 档网格（ny=64/128）收敛（四项指标单调下降）：是。
 - `result.json` 中 `extrap: "none"`，主配置 verdict = PASS。
+
+## 历史 SDAA 证据
+
+[扫描结果](evidence/sdaa/sdaa_kovasznay_2d.json) ·
+[运行报告](../../../docs/sdaa_sweep/kovasznay_2d.md)。
+新扫描将结果写入仓库根目录下的 `outputs/sdaa/kovasznay_2d/`。

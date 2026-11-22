@@ -4,7 +4,7 @@
 Runs the verified taylor_green_3d case on SDAA device, records device
 evidence, criterion values, and per-gate PASS/FAIL.
 
-Output: artifacts/sdaa_taylor_green_3d.json
+Output: outputs/sdaa/taylor_green_3d/sdaa_taylor_green_3d.json
 """
 
 from __future__ import annotations
@@ -231,7 +231,7 @@ def main():
         "total_wall_sec": total_wall,
     }
 
-    out_path = REPO_ROOT / "artifacts" / "sdaa_taylor_green_3d.json"
+    out_path = REPO_ROOT / "outputs/sdaa/taylor_green_3d/sdaa_taylor_green_3d.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
