@@ -1,0 +1,20 @@
+{
+  "source_commit": "28d1bf6315b5213da5388519b99726c36f9bbc12",
+  "introduced_by_commit": "39e0c12e797817060283ebf2138d2a09d1ef2eea",
+  "root_directories_before": 13,
+  "root_directories_after": 12,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-K1-CAVCLOS.draft.md",
+      "new_path": "development/audit/drop_entry/BB/m26737/tmp/DE-X-K1-CAVCLOS.draft.md",
+      "original_git_blob": "8ef7e6f9e04e9c2f19dd8cc99c4a07ad2d2a90b6",
+      "git_mode": "100644",
+      "size_bytes": 896,
+      "original_sha256": "1fb36c57dc336e800db08156a58df0d83c70cfc66364fec52dc78059130a9d47"
+    }
+  ],
+  "reference_scan": "At source_commit the draft had no tracked path or basename consumer outside itself. Existing historical references to drop_entry are absolute paths or frozen provenance text and do not consume this file.",
+  "compatibility": "The draft keeps its exact Git blob under the m26737 development archive. The concurrent benchmark and src changes from m26737 are deliberately untouched.",
+  "scientific_scope": "This migration changes no solver source, numerical algorithm, benchmark result, acceptance criterion or public API. The draft contains a preregistered prediction but no completed run, so it is not current scientific evidence.",
+  "ci_failure_repaired": "Repository governance run 45005141794 failed because test_concurrent_drop_entry_reintroductions_are_archived_and_pinned found the reintroduced root path."
+}

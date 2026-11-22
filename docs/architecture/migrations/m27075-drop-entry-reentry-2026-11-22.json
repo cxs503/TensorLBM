@@ -1,0 +1,20 @@
+{
+  "source_commit": "89a9360e5cd4d377b1139ea07763db82feae2e74",
+  "introduced_by_commit": "59c18dc0e55e76f2c7fc91c88e117c5f1240b17c",
+  "root_directories_before": 13,
+  "root_directories_after": 12,
+  "entries": [
+    {
+      "old_path": "drop_entry/BB/tmp/DE-X-K1-CAVCLOS-R2.draft.md",
+      "new_path": "development/audit/drop_entry/BB/m27075/tmp/DE-X-K1-CAVCLOS-R2.draft.md",
+      "original_git_blob": "6b94cd4f05a1526ff6e9902eed9fafb2e2184ab7",
+      "git_mode": "100644",
+      "size_bytes": 3581,
+      "original_sha256": "49d5a3f266a50b998eff5f83a1dc371e304beedbd2a8f90aa84265248a00dedb"
+    }
+  ],
+  "reference_scan": "At source_commit the draft had no tracked path or basename consumer outside itself. The published m27075 audit card, report, figures, result JSON and verification tools do not consume this working-note path.",
+  "compatibility": "The draft keeps its exact Git blob under the m27075 development archive. The published docs/audits/k1_cavclos_r2_20261122 evidence and tools/k1r2_* programs are deliberately untouched.",
+  "scientific_scope": "This migration changes no solver source, numerical algorithm, benchmark result, acceptance criterion or public API. Published m27075 result and verdict files remain in their merged locations and are not promoted to current scientific acceptance by this move.",
+  "ci_failure_repaired": "The m27075 merge reintroduced drop_entry while pull request 2927 was waiting for self-hosted checks. The existing hosted repository-layout gate rejects that retired root."
+}
