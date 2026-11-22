@@ -797,6 +797,47 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for path in ("docs/council", "docs/history", "docs/smoke"):
             self.assertFalse((REPO / path).exists())
 
+    def test_blasius_development_runner_is_archived_not_a_second_case(self):
+        ledger_path = (
+            LEDGER_PATH.parent / "blasius-dev-runner-retirement-2026-11-22.json"
+        )
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(ledger["second_level_directories"]["benchmarks"], {
+            "before": 103,
+            "after": 102,
+        })
+        self.assertEqual(
+            ledger["canonical_runner"],
+            "benchmarks/pending/blasius_flat_plate/run.py",
+        )
+        self.assertTrue((REPO / ledger["canonical_runner"]).is_file())
+        self.assertTrue((REPO / "benchmarks/pending/blasius_flat_plate/README.md").is_file())
+        self.assertFalse((REPO / "benchmarks/blasius_flat_plate_dev").exists())
+
+        item = ledger["entries"][0]
+        destination = REPO / item["new_path"]
+        self.assert_fingerprint(
+            destination, item["original_sha256"], item["size_bytes"]
+        )
+        indexed = subprocess.check_output(
+            ["git", "ls-files", "-s", "--", item["new_path"]],
+            cwd=REPO,
+            text=True,
+        ).split()
+        self.assertEqual(indexed[:2], [item["git_mode"], item["original_git_blob"]])
+
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            manifest = {row["old_path"]: row for row in csv.DictReader(stream)}
+        self.assertEqual(manifest[item["old_path"]]["new_path"], item["new_path"])
+        policy = json.loads(
+            (REPO / "docs/architecture/source_authority_policy.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertNotIn(item["old_path"], policy["allowed_active_references"])
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

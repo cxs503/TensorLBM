@@ -84,6 +84,12 @@ retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
 unchanged archive objects and proves that the three removed history files are
 byte-identical to their retained `docs/mission_summaries/` copies.
 
+The [Blasius development-runner ledger](migrations/blasius-dev-runner-retirement-2026-11-22.json)
+retires `benchmarks/blasius_flat_plate_dev/` in favour of the canonical
+`benchmarks/pending/blasius_flat_plate/` case. The earlier B25 runner remains
+byte-identical in the development experiment area and does not acquire a new
+scientific verdict through the move.
+
 ## Root files and rollout
 
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)
