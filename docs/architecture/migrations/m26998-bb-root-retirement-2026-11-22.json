@@ -1,0 +1,20 @@
+{
+  "source_commit": "3e97a49c5c11f8a89abce1788d04c9f3f5866e3d",
+  "source_pr": 2914,
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "retired_root": "BB",
+  "entries": [
+    {
+      "old_path": "BB/X/PF5-SWFE.md",
+      "new_path": "development/audit/drop_entry/BB/m26998/PF5-SWFE.md",
+      "git_mode": "100644",
+      "original_git_blob": "f3753a2f1412273501783bae64ff4051b58b7aeb",
+      "size_bytes": 4298,
+      "original_sha256": "24e7dfbc1104959b69d76a512d48cdef05e3675021d1b78c907db30965fa4954"
+    }
+  ],
+  "reference_scan": "No tracked basename references outside the original card. Its relative stability image was not tracked at the source commit. Report and figure scripts still share their existing output path.",
+  "compatibility": "Retain byte-exact card and identify the previously absent image in an archive index, with links to the tracked data and figure generator. Source, tests and benchmark paths from PR 2914 remain unchanged.",
+  "scientific_scope": "Archival only. Preserve the card's near-equal-density observations and high-density-ratio FAIL as recorded."
+}
