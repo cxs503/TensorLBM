@@ -21,7 +21,7 @@ Usage:
   # 4-card run (cards 14, 15, 16, 27):
   SDAA_VISIBLE_DEVICES=14,15,16,27 python scripts/cross_card_gate.py --n-cards 4 --steps 100
 
-Output: artifacts/cross_card_<N>card.json
+Output: outputs/sdaa/hardware/domain-decomposition/cross_card_<N>card.json
 """
 
 from __future__ import annotations
@@ -353,7 +353,9 @@ def main():
     ap.add_argument("--tau", type=float, default=0.8, help="Relaxation time")
     ap.add_argument("--U0", type=float, default=0.05, help="Wall velocity")
     ap.add_argument("--seed", type=int, default=42, help="Random seed")
-    ap.add_argument("--out-dir", type=str, default="artifacts", help="Output directory")
+    ap.add_argument("--out-dir", type=str,
+                    default=str(REPO_ROOT / "outputs/sdaa/hardware/domain-decomposition"),
+                    help="Output directory")
     args = ap.parse_args()
 
     # Check SDAA availability

@@ -4,7 +4,7 @@
 Tests:
 1. Correctness: 4-card vs single-card L2 < 1e-6
 2. Performance: 4-card speedup >= 2.8x (parallel efficiency >= 70%)
-3. Device evidence collection for artifacts/m4_dd.json
+3. Device evidence collection for outputs/sdaa/hardware/domain-decomposition/m4_dd.json
 
 Usage:
     python scripts/m4_dd_validation.py [--n-devices 4] [--grid 32 16 16] [--steps 20]
@@ -350,7 +350,8 @@ def main():
     parser.add_argument("--grid", type=int, nargs=3, default=[32, 16, 16],
                         help="Grid size (nz ny nx)")
     parser.add_argument("--steps", type=int, default=20, help="Number of steps")
-    parser.add_argument("--output", type=str, default="artifacts/m4_dd.json",
+    default_output = Path(__file__).resolve().parents[1] / "outputs/sdaa/hardware/domain-decomposition/m4_dd.json"
+    parser.add_argument("--output", type=str, default=str(default_output),
                         help="Output JSON file")
     args = parser.parse_args()
 

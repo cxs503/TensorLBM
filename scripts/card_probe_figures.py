@@ -430,7 +430,7 @@ floor, so **use all {dev['n_cards']} cards as independent workers**:
 > **Verdict: task-level parallelism (one independent case per card) — use it.
 > Domain decomposition — avoid.** DD on this platform relays halos through the
 > host and was previously measured as a 6.8× *slowdown* on 4 cards
-> (`artifacts/cross_card_4card.json`: 16.7 ms → 113.4 ms).
+> ([four-card evidence](../development/verification/sdaa-hardware/domain-decomposition/cross_card_4card.json): 16.7 ms → 113.4 ms).
 >
 > **Operating rule:** keep the frequent data path on-card. If a workflow must
 > stream host↔device traffic, budget ~2× less D2H bandwidth when all
