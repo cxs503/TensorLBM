@@ -1,0 +1,78 @@
+{
+ "smag01": {
+  "delta_peak_depth_D": -0.17184134796153638,
+  "delta_peak_time_ms_pc": -1.8119464285714297,
+  "one_cell_D": 0.125,
+  "hit": true
+ },
+ "smag02": {
+  "delta_peak_depth_D": -0.17589926879438522,
+  "delta_peak_time_ms_pc": -4.462982142857143,
+  "one_cell_D": 0.125,
+  "hit": true
+ },
+ "outcome": "HIT",
+ "hit_arms": [
+  "smag01",
+  "smag02"
+ ],
+ "verdict_point": {
+  "depth_D": 1.857434,
+  "time_ms_pc": 10.39446
+ },
+ "baseline_hydro": {
+  "peak_depth_D": 1.6366277885109421,
+  "peak_time_ms_pc": 13.534875,
+  "stop_reason": "health_limit"
+ },
+ "arms": {
+  "smag_hydro": {
+   "stop_reason": "health_limit",
+   "C_s": 0.0,
+   "contact_step": 45,
+   "dt_ms": 0.012160714285714285,
+   "peak_depth_D": 1.6366277885109421,
+   "peak_time_ms_abs": 14.082107142857142,
+   "peak_time_ms_pc": 13.534875,
+   "last_time_ms_abs": 22.95942857142857,
+   "last_time_ms_pc": 22.412196428571427,
+   "depth_at_verdict_pc": 1.5770670093292751,
+   "late_window_mean_resid": -0.11270391704965826,
+   "depth_pc_15": 1.597669027115034,
+   "depth_pc_18": 1.2517447210949413,
+   "depth_pc_21": 0.9102444686361237
+  },
+  "smag01": {
+   "stop_reason": "window_complete",
+   "C_s": 0.1,
+   "contact_step": 44,
+   "dt_ms": 0.012160714285714285,
+   "peak_depth_D": 1.4647864405494058,
+   "peak_time_ms_abs": 12.258,
+   "peak_time_ms_pc": 11.72292857142857,
+   "last_time_ms_abs": 24.540321428571428,
+   "last_time_ms_pc": 24.00525,
+   "depth_at_verdict_pc": 1.417271607103055,
+   "late_window_mean_resid": -0.20405608673355347,
+   "depth_pc_15": 1.2658471519588677,
+   "depth_pc_18": 0.9563006219685181,
+   "depth_pc_21": 0.6930794189897445
+  },
+  "smag02": {
+   "stop_reason": "health_limit",
+   "C_s": 0.2,
+   "contact_step": 45,
+   "dt_ms": 0.012160714285714285,
+   "peak_depth_D": 1.460728519716557,
+   "peak_time_ms_abs": 9.619124999999999,
+   "peak_time_ms_pc": 9.071892857142856,
+   "last_time_ms_abs": 9.619124999999999,
+   "last_time_ms_pc": 9.071892857142856,
+   "depth_at_verdict_pc": null,
+   "late_window_mean_resid": -0.20981770368097785,
+   "depth_pc_15": null,
+   "depth_pc_18": null,
+   "depth_pc_21": null
+  }
+ }
+}

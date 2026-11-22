@@ -101,7 +101,19 @@ def probe(
     diag_path=None,
     u_limit=None,
     cav_clos_alpha=0.0,
+    rr_tau=0.0,
+    C_s=0.0,
 ):
+    # DE-X-COL2-REG: regularized-collision arm.  rr_tau > 0 switches the
+    # free-surface collision from BGK to the regularized (RR) operator and
+    # overrides the physical relaxation time with rr_tau (stability-window
+    # scan).  rr_tau == 0 keeps the legacy BGK path bit-identical to ctrl.
+    rr_tau = float(rr_tau or 0.0)
+    if rr_tau < 0:
+        raise ValueError(f"rr_tau must be >= 0, got {rr_tau!r}")
+    rr_active = rr_tau > 0.0
+    # Smagorinsky SGS constant (DE-X-TURB1-SMAG): 0 = legacy bit-identical path.
+    C_s = float(C_s or 0.0)
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
@@ -251,16 +263,17 @@ def probe(
                     flags,
                     solid,
                     mass=mass,
-                    tau=0.5 + 3 * sc["mu_l"],
+                    tau=rr_tau if rr_active else 0.5 + 3 * sc["mu_l"],
                     gz=-sc["g"],
                     surface_tension=sc["sigma"],
                     rho_gas=1.0,
-                    collision="bgk",
+                    collision="rr" if rr_active else "bgk",
                     capacity_redistribution=capacity,
                     simple_mass_exchange=simple,
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
                     cav_clos_alpha=cav_clos_alpha,
+                    C_s=C_s,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -302,6 +315,8 @@ def probe(
         "nearest_surface_velocity": nearest,
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
+        "rr_tau": rr_tau if rr_active else None,
+        "C_s": C_s,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
