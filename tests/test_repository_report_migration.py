@@ -757,6 +757,44 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for target in evidence.glob("sdaa_suboff_sail_resistance*.json"):
             self.assertIn(f"](evidence/sdaa/{target.name})", readme)
 
+    def test_docs_process_directories_are_retired_with_exact_provenance(self):
+        ledger_path = LEDGER_PATH.parent / "docs-process-directories-2026-11-22.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        self.assertEqual(ledger["second_level_directories"]["docs"], {
+            "before": 91,
+            "after": 88,
+        })
+        self.assertEqual(len(ledger["entries"]), 8)
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(
+            manifest,
+            {item["old_path"]: item["new_path"] for item in ledger["entries"]},
+        )
+        for item in ledger["entries"]:
+            destination = REPO / item["new_path"]
+            with self.subTest(path=item["old_path"]):
+                self.assert_fingerprint(
+                    destination, item["original_sha256"], item["size_bytes"]
+                )
+                indexed = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(
+                    indexed[:2], [item["git_mode"], item["original_git_blob"]]
+                )
+                self.assertFalse((REPO / item["old_path"]).exists())
+        for path in ("docs/council", "docs/history", "docs/smoke"):
+            self.assertFalse((REPO / path).exists())
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))

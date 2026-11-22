@@ -44,6 +44,11 @@ RETIRED_ROOT_DIRECTORIES = {
     "teaching",
     "tmp",
 }
+RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("docs", "council"),
+    ("docs", "history"),
+    ("docs", "smoke"),
+}
 
 
 def validate_path(value: object) -> str:
@@ -161,6 +166,12 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         directory, separator, _ = name.partition("/")
         if separator and policy["schema_version"] == 2 and directory not in allowed_dirs:
             unexpected_dirs.add(directory)
+        parts = PurePosixPath(name).parts
+        if tuple(parts[:2]) in RETIRED_SECOND_LEVEL_DIRECTORIES:
+            failures.append(
+                f"retired-directory: {'/'.join(parts[:2])}/ — "
+                "use the mapped development or canonical documentation path"
+            )
         if directory == "audits" and "legacy_audit_files" in policy and name not in legacy_audits:
             failures.append(f"legacy-audit: {name} — place new mission records under development/audit/")
         if is_generated(name) and name not in generated:

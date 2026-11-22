@@ -69,6 +69,7 @@ integrity verified before retiring a tracked copy.
 | --- | --- |
 | Published documentation | Keep stable report and manual paths. Put static report assets in `docs/assets/<topic>/`, using topic names such as `maneuvering-m1984`. |
 | Development notes | Put internal work cards and mission scratch notes under `development/audit/` or `development/verification/`. Check incoming links before moving published audit reports. |
+| Historical process records | Put council deliberations and CI smoke receipts under `development/archived/` or `development/audit/ci/`. Keep one canonical copy of duplicate mission summaries. |
 | Formal benchmarks | Keep stable case IDs and documented runner paths. Use descriptive case directory names for new cases and put curated evidence with the owning case. |
 | Reference audits | Use `benchmarks/anchors/evidence/<topic>/` for curated anchor audits. Use ignored `outputs/` for newly generated material. |
 
@@ -77,6 +78,11 @@ records the original objects and compatibility checks for the CH6 card,
 maneuvering report figures and W31 transcription evidence.
 
 The [survey and Huang audit migration ledger](migrations/survey-and-huang-audit-layout-2026-11-22.json) records the SUBOFF report figures and the archived m17889 delivery snapshot. The [survey index](../surveys/README.md) links to the published surveys.
+
+The [documentation process-directory ledger](migrations/docs-process-directories-2026-11-22.json)
+retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
+unchanged archive objects and proves that the three removed history files are
+byte-identical to their retained `docs/mission_summaries/` copies.
 
 ## Root files and rollout
 
