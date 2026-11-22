@@ -193,8 +193,8 @@ def main():
         },
     }
 
-    artifacts_dir = REPO_ROOT / "artifacts"
-    artifacts_dir.mkdir(exist_ok=True)
+    artifacts_dir = REPO_ROOT / "outputs/sdaa/permeability"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
     output_path = artifacts_dir / "sdaa_permeability.json"
     output_path.write_text(json.dumps(output, indent=2) + "\n")
     print(f"\nResults written to: {output_path}")

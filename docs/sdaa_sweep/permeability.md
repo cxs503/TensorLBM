@@ -111,13 +111,13 @@ python3 scripts/sdaa_sweep_permeability.py
 ```
 
 **输出**:
-- `artifacts/sdaa_permeability.json`: 完整结果 JSON
+- `outputs/sdaa/permeability/sdaa_permeability.json`：新运行结果
 - 控制台: 逐案例输出与判定汇总
 
 ## 工件
 
 - **脚本**: `scripts/sdaa_sweep_permeability.py`
-- **结果**: `artifacts/sdaa_permeability.json`
+- **历史结果**: [SDAA 扫描 JSON](../../benchmarks/verified/permeability/evidence/sdaa/sdaa_permeability.json)
 - **文档**: `docs/sdaa_sweep/permeability.md`
 
 ## 备注

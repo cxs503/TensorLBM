@@ -99,7 +99,8 @@ TypeError: can't convert sdaa:0 device type tensor to numpy.
 | 文件 | 说明 |
 |---|---|
 | `scripts/sdaa_sweep_floating_body_free_decay.py` | 独立运行脚本（不改业务代码） |
-| `artifacts/sdaa_floating_body_free_decay.json` | 机器输出（含设备证据行、bug 描述、尝试记录） |
+| [历史结果 JSON](../../benchmarks/verified/floating_body_free_decay/evidence/sdaa/sdaa_floating_body_free_decay.json) | 机器输出（含设备证据行、bug 描述、尝试记录） |
+| `outputs/sdaa/floating_body_free_decay/sdaa_floating_body_free_decay.json` | 新运行输出 |
 | `docs/sdaa_sweep/floating_body_free_decay.md` | 本文档 |
 
 ## 墙钟

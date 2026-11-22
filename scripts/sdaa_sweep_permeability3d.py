@@ -2,7 +2,7 @@
 """SDAA sweep for permeability3d benchmark.
 
 Runs the φ=0.343档 on 'sdaa' device, computes all verdict numbers
-independently, and writes artifacts/sdaa_permeability3d.json.
+independently, and writes outputs/sdaa/permeability3d/sdaa_permeability3d.json.
 
 No business code is modified.  Physics kernels are imported from the
 local worktree src/tensorlbm.
@@ -389,7 +389,7 @@ def main():
     }
 
     # Write artifact
-    artifacts_dir = WORKTREE_ROOT / "artifacts"
+    artifacts_dir = WORKTREE_ROOT / "outputs/sdaa/permeability3d"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     out_path = artifacts_dir / "sdaa_permeability3d.json"
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False))

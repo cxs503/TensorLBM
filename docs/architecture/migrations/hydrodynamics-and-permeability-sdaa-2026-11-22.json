@@ -1,0 +1,53 @@
+{
+  "source_commit": "11f76f605cff58d4119c93deac6f388d5aacaeaf",
+  "previous_batch_head": "931ac839c207e506023ba0c04985c51903c24a10",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 37,
+  "tracked_artifacts_after": 32,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_floating_body_free_decay.json",
+      "new_path": "benchmarks/verified/floating_body_free_decay/evidence/sdaa/sdaa_floating_body_free_decay.json",
+      "git_mode": "100644",
+      "original_git_blob": "48f3f0ae73969a07026973976819244d7c018f92",
+      "size_bytes": 2418,
+      "original_sha256": "d696ba26160cac0fb42eba69513534227c9234dae31d760c2bf8c923ec9eaa9e"
+    },
+    {
+      "old_path": "artifacts/sdaa_maneuvering_steady_turn.json",
+      "new_path": "benchmarks/verified/maneuvering_steady_turn/evidence/sdaa/sdaa_maneuvering_steady_turn.json",
+      "git_mode": "100644",
+      "original_git_blob": "5fb4c214847efead8f66008c3f4edcd1a8e9d786",
+      "size_bytes": 10826,
+      "original_sha256": "b5707080160d03b4dcae681e7e8fc1eea20d6f10db418da5c291be120154b317"
+    },
+    {
+      "old_path": "artifacts/sdaa_permeability.json",
+      "new_path": "benchmarks/verified/permeability/evidence/sdaa/sdaa_permeability.json",
+      "git_mode": "100644",
+      "original_git_blob": "dddd21e2fa52b7418702edbd8199a0ba4783a70c",
+      "size_bytes": 3353,
+      "original_sha256": "d21e7c2f6b2432717b696e1cf06a4abe9b867c873a2e0447a52c2948600e7a05"
+    },
+    {
+      "old_path": "artifacts/sdaa_permeability3d.json",
+      "new_path": "benchmarks/verified/permeability3d/evidence/sdaa/sdaa_permeability3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "58ffbf4fd85bd7a1c9bcd76c6311fe86efb4300a",
+      "size_bytes": 2907,
+      "original_sha256": "9a4778e7c02cf91b58a6aca74040c0b62e7b4f8f4c68f7236df3e6be10da0356"
+    },
+    {
+      "old_path": "artifacts/sdaa_startup_poiseuille.json",
+      "new_path": "benchmarks/verified/startup_poiseuille/evidence/sdaa/sdaa_startup_poiseuille.json",
+      "git_mode": "100644",
+      "original_git_blob": "b13c9d2b8ca6d62bd3579fe29aa6aa16b0c99efa",
+      "size_bytes": 9671,
+      "original_sha256": "f76bb623cf1c8a8c437723466710ca71bfa87531424128ced2a6ca19b48387f6"
+    }
+  ],
+  "reference_scan": "Reviewed exact names and paths, active writers, case documentation, sweep reports, and historical report mentions.",
+  "compatibility": "The sweep commands retain their original paths. Fresh outputs are in ignored outputs/sdaa subdirectories. Existing SDAA ledger identifiers are retained by the manifest.",
+  "scientific_scope": "Archival only. Historical SDAA failures for free decay and both permeability cases and the skipped 3-D tiers are preserved."
+}

@@ -86,3 +86,9 @@
 
 库只读挂载: `/srv/tensor/shared/worktrees/bm_relaunch/src` (main @ 64a979de)。
 运行 2026-09-19, GPU 6, torch 2.11.0+cu128。
+
+## Historical SDAA evidence
+
+[SDAA result](evidence/sdaa/sdaa_startup_poiseuille.json) ·
+[Sweep report](../../../docs/sdaa_sweep/startup_poiseuille.md).
+历史 SDAA 扫描保留当时的设备、网格和判据。
