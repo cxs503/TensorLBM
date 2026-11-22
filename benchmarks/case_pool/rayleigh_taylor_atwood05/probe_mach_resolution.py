@@ -70,13 +70,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 BENCH_DIR = Path(__file__).resolve().parent
-if str(BENCH_DIR) not in sys.path:
-    sys.path.insert(0, str(BENCH_DIR))
-if str(BENCH_DIR / "ref") not in sys.path:
-    sys.path.insert(0, str(BENCH_DIR / "ref"))
+REPO_ROOT = BENCH_DIR.parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-import ref_lock  # noqa: E402
-from run_case import run_case as run_one  # noqa: E402  (inherited executor/estimator)
+from benchmarks.case_pool.rayleigh_taylor_atwood05.ref import ref_lock  # noqa: E402
+from benchmarks.case_pool.rayleigh_taylor_atwood05.run_case import run_case as run_one  # noqa: E402
 
 from tensorlbm.rayleigh_taylor import RTConfig  # noqa: E402
 

@@ -37,8 +37,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO))
 
 import matplotlib  # noqa: E402
 
@@ -46,8 +47,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from run import potential_cp_ellipse  # noqa: E402
-from surface import surface_loads  # noqa: E402
+from benchmarks.resistance_chain_cloud.run import potential_cp_ellipse  # noqa: E402
+from benchmarks.resistance_chain_cloud.surface import surface_loads  # noqa: E402
 
 # reference data (traceable, see docs/resistance_chain_cloud/README.md)
 REFERENCE = {

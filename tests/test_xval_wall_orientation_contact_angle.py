@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import math
 import sys
+from importlib import import_module
 from pathlib import Path
 
 import numpy as np
@@ -30,11 +31,12 @@ import torch
 REPO = Path(__file__).resolve().parents[1]
 XVAL = REPO / "xval" / "XVAL-LBM-WALL-ORIENTATION-CONTACT-ANGLE"
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(XVAL))
+sys.path.insert(0, str(REPO))
 
-import run_xval as X  # noqa: E402
 from tensorlbm import cac_lbm2d as cac  # noqa: E402
 from tensorlbm.wetting import metrics as M  # noqa: E402
+
+X = import_module(f"xval.{XVAL.name}.run_xval")
 
 SHAPE = (64, 64)
 THICK = 2

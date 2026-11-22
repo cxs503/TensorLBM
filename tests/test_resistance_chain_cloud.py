@@ -16,10 +16,14 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "benchmarks" / "resistance_chain_cloud"))
+sys.path.insert(0, str(REPO))
 
-from analyze import gci  # noqa: E402
-from run import boundary_nodes, ellipse_mask, potential_cp_ellipse  # noqa: E402
+from benchmarks.resistance_chain_cloud.analyze import gci  # noqa: E402
+from benchmarks.resistance_chain_cloud.run import (  # noqa: E402
+    boundary_nodes,
+    ellipse_mask,
+    potential_cp_ellipse,
+)
 
 
 # --------------------------------------------------------------- potential flow
