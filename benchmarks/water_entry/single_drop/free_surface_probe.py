@@ -83,6 +83,40 @@ def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
     return out
 
 
+
+def _cavgas_diagnostics(field, dens, level, radius, n, sc):
+    """Per-step cavity gas pressure diagnostics (pure observation).
+
+    ``field`` is the interior fill slice (``fill[1:-1]``); ``level`` is the
+    initial free surface in interior coordinates (``level - 1`` of the full
+    grid, the same convention as :func:`open_depth`).  Pure observation:
+    reads ``field``/``dens`` only, never mutates solver state.
+
+    * ``cav_volume``: volume (in cells) of gas (fill < 0.5) below the initial
+      surface inside the ROI r=1.5D (the air pocket the drop displaces).
+    * ``rho_g_field``: mean macroscopic density of the gas cells in the
+      cavity (lattice units; the model holds rho_gas=1.0 constant).
+    * ``pressure_ratio_adiabatic``: (V0/V)^gamma with gamma=1.4 (Rayleigh
+      1917 adiabatic cavity closure); None until V0 is established.
+    * ``pressure_ratio_isothermal``: V0/V (isothermal p=p0*V0/V).
+    """
+    out = {}
+    gas = field < 0.5
+    z_int = np.arange(field.shape[0])
+    ny, nx = field.shape[1:]
+    yy, xx = np.indices((ny, nx))
+    roi = (yy - (ny - 1) / 2) ** 2 + (xx - (nx - 1) / 2) ** 2 <= radius**2
+    below = z_int[:, None, None] < level
+    cav_gas = gas & below & roi[None]
+    cav_volume = float(cav_gas.sum())
+    out["cav_volume"] = cav_volume
+    if cav_gas.any():
+        out["rho_g_field"] = float(dens[1:-1][cav_gas].mean())
+    else:
+        out["rho_g_field"] = None
+    return out
+
+
 def probe(
     n,
     speed,
@@ -103,6 +137,7 @@ def probe(
     cav_clos_alpha=0.0,
     rr_tau=0.0,
     C_s=0.0,
+    diag_cavgas=False,
 ):
     # DE-X-COL2-REG: regularized-collision arm.  rr_tau > 0 switches the
     # free-surface collision from BGK to the regularized (RR) operator and
@@ -176,6 +211,8 @@ def probe(
     reason = "step_limit"
     runtime_ledger = {"steps": []} if ledger else None
     diag_rows = [] if diag_path is not None else None
+    cavgas_rows = [] if diag_cavgas else None
+    cav_volume0 = None
     for step in range(limit + 1):
         dens, ux, uy, uz = macroscopic3d(f)
         active = (flags != GAS) & (flags != SOLID)
@@ -241,6 +278,18 @@ def probe(
             )
 
         row["depth_over_D"] = open_depth(field, level - 1, 1.5 * n) / n
+        if diag_cavgas and tracker.contact_step is not None:
+            diag = _cavgas_diagnostics(field, dens, level - 1, 1.5 * n, n, sc)
+            if cav_volume0 is None:
+                cav_volume0 = diag["cav_volume"]
+            if cav_volume0 is not None and cav_volume0 > 0 and diag["cav_volume"] > 0:
+                diag["pressure_ratio_adiabatic"] = (cav_volume0 / diag["cav_volume"]) ** 1.4
+                diag["pressure_ratio_isothermal"] = cav_volume0 / diag["cav_volume"]
+            else:
+                diag["pressure_ratio_adiabatic"] = None
+                diag["pressure_ratio_isothermal"] = None
+            row.update(diag)
+            cavgas_rows.append(diag)
         if (
             planes_path is not None
             and tracker.contact_step is not None
@@ -325,6 +374,17 @@ def probe(
     }
     if ledger:
         result["mass_ledger_summary"] = _summarize_ledger(runtime_ledger)
+    if diag_cavgas and cavgas_rows:
+        result["cavgas_diag"] = {
+            "definitions": {
+                "cav_volume": "volume (cells) of gas (fill<0.5) below initial surface inside ROI r=1.5D",
+                "rho_g_field": "mean macroscopic density of gas cells in cavity (lattice units)",
+                "pressure_ratio_adiabatic": "(V0/V)^1.4 (Rayleigh 1917 adiabatic)",
+                "pressure_ratio_isothermal": "V0/V (isothermal)",
+            },
+            "cav_volume0": cav_volume0,
+            "rows": cavgas_rows,
+        }
     return result
 
 
@@ -371,6 +431,11 @@ if __name__ == "__main__":
     )
     parser.add_argument("--gap", type=float, default=0.4)
     parser.add_argument("--cav-clos-alpha", type=float, default=0.0, help="cavity closure delay factor: threshold = kappa*(1+alpha)")
+    parser.add_argument(
+        "--diag-cavgas",
+        action="store_true",
+        help="record per-step cavity volume and gas pressure ratio (diagnostic; off by default, zero behavior change)",
+    )
     args = parser.parse_args()
     if (
         args.span < 3
@@ -404,6 +469,7 @@ if __name__ == "__main__":
         args.diag_out,
         args.u_limit,
         args.cav_clos_alpha,
+        args.diag_cavgas,
     )
     for row in result["history"]:
         for key, value in row.items():
