@@ -612,6 +612,34 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertNotIn('_HERE.parents[2] / "runs"', probe)
         self.assertIn('_HERE / "evidence" / "sdaa_m452"', probe)
 
+    def test_m18430_audit_tools_preserve_provenance_and_report_url(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "m18430-audit-tools-2026-11-22.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(len(ledger["entries"]), 3)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["old_path"]):
+                target = REPO / item["new_path"]
+                self.assert_fingerprint(
+                    target,
+                    item.get("new_sha256", item["original_sha256"]),
+                    item.get("new_size_bytes", item["size_bytes"]),
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(
+                    index[:2],
+                    [item["git_mode"], item.get("new_git_blob", item["original_git_blob"])],
+                )
+                self.assertFalse((REPO / item["old_path"]).exists())
+        report = (REPO / ledger["published_report"]).read_text(encoding="utf-8")
+        self.assertIn("](../development/audit/m18430/)", report)
+
     def test_sphere_d3q27_sdaa_evidence_keeps_its_failure_scope(self):
         ledger_path = (
             LEDGER_PATH.parent / "sphere-re100-d3q27-sdaa-artifacts-2026-11-22.json"

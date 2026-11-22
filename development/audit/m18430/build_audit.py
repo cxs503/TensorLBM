@@ -22,7 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "artifacts" / "m18339_audit"
 M18339 = Path("/srv/tensor/agent/work/m18339")
 XVAL = M18339 / "xval" / "XVAL-LBM-LINEAR-INTERPOLATED-BB-ALPHA-SCHEME"
@@ -186,6 +186,8 @@ def main() -> int:
 
 审计单 m18430（board-audit）· 对象 = m18339（已 succeeded，fail_stage=budget_exhausted+forced_finish）
 性质 = **交差核验（非重做）**：逐项核验三件套真伪 + 以 `tensor_benchmark_cases` 为唯一裁判判级。
+
+审计工具现归档于 [m18430 审计目录](../development/audit/m18430/)。文中的原始路径保留供历史追溯。
 
 ## 0 判级（结论先行）
 

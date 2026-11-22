@@ -1,0 +1,40 @@
+{
+  "source_commit": "80514fd914a902f61c4e23cc7dd8b01f10055b57",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {"scripts": {"before": 16, "after": 15}},
+  "published_report": "docs/AUDIT_m18430_m18339.md",
+  "entries": [
+    {
+      "old_path": "scripts/audit_m18430/build_audit.py",
+      "new_path": "development/audit/m18430/build_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "e8239837d7d73435a02b6f1b2df67edba1299c6e",
+      "original_sha256": "e6001ed15781a38fa8803ac091a3f19f0f1e34b74953a028fcf6d0e6c3168bf8",
+      "size_bytes": 23914,
+      "new_git_blob": "b964e2e42e82c801a3b0721e8b25912aced2fc7b",
+      "new_sha256": "d64b912db050c2b03046d5bc23514e4242b112ef51c17e2b981e3a43950b3d55",
+      "new_size_bytes": 24041,
+      "change": "Adjust the checkout-root calculation for one additional path component and emit the archive link in the report."
+    },
+    {
+      "old_path": "scripts/audit_m18430/patch_run_figures.py",
+      "new_path": "development/audit/m18430/patch_run_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "9e9c9776c759d663d21f868eaa60e668f924c225",
+      "original_sha256": "b795472930f3505ee424f9c9cf9f0000787feb073fed88ceb730833142e77df3",
+      "size_bytes": 1627
+    },
+    {
+      "old_path": "scripts/audit_m18430/publish_report.py",
+      "new_path": "development/audit/m18430/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "172bff902421183cc111dbf7f3d7c8749fdc0023",
+      "original_sha256": "3ef58b1ca5dcfa6a294bb71344795c3073c7d8d81cb72409b39a1658fd184ed7",
+      "size_bytes": 1289
+    }
+  ],
+  "reference_scan": "Tracked references to the old directory occur in the report, generator, figure-patch docstring and archived verdict SQL. No tracked workflow invokes these paths.",
+  "compatibility": "The published report keeps its URL and links to the archive. Historical citations retain their original paths. The original file bytes remain accessible by the recorded source revision. External references to the old branch paths were not inventoried.",
+  "evidence_scope": "Historical audit tooling relocation only. The builder depends on an external mission worktree and database. This batch checks syntax, path resolution and provenance without running the builder, publisher or any numerical solver."
+}
