@@ -359,7 +359,8 @@ The implementation is production-ready for static and quasi-static capillary phe
 **Artifacts**:
 - `runs/m11185_quick.json`: Quick verification results
 - `runs/m11185_acceptance.json`: Full acceptance results (cluster)
-- `artifacts/m11185/fig*.png`: Verification figures
+- `artifacts/m11185/fig*.png`: Figure outputs referenced by the original report. These outputs are absent from the tracked tree.
+- [Historical plotting script](../development/verification/free-surface-tension/m11185/generate_figures.py). The script includes an illustrative convergence curve marked as placeholder data.
 - `tests/test_free_surface_surface_tension.py`: Test suite
 
 ---

@@ -6,7 +6,7 @@ Usage::
     python scripts/three_way_gates.py [--quick]
 
 Writes ``runs/three_way/gates.json``, ``runs/three_way/scenario.json`` and
-``docs/figs/three_way_*.png``.
+``docs/assets/three-way-ice-floe-coupling/three_way_*.png``.
 """
 
 from __future__ import annotations
@@ -139,7 +139,7 @@ def main() -> int:
         ),
         encoding="utf-8",
     )
-    figs = make_figures(sim, contacts, gates_out, ROOT / "docs" / "figs")
+    figs = make_figures(sim, contacts, gates_out, ROOT / "docs" / "assets" / "three-way-ice-floe-coupling")
     print(json.dumps({k: v["passed"] for k, v in gates_out["gates"].items()}, indent=1))
     print("aggregate:", "PASS" if gates_out["passed"] else "FAIL")
     print("figures:", [str(p) for p, _ in figs])

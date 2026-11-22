@@ -2,7 +2,7 @@
 
 **Repository** TensorLBM · **Module** `src/tensorlbm/three_way/` ·
 **Driver** `scripts/three_way_gates.py` · **Artefacts** `runs/three_way/`,
-`docs/figs/three_way_*.png` · **Campaign node** P35-N9
+`docs/assets/three-way-ice-floe-coupling/three_way_*.png` · **Campaign node** P35-N9
 
 ---
 
@@ -136,13 +136,13 @@ decaying whipping ringing at the first bending period:
 | peak tip deflection | 0.1880 |
 | floe surge range | -0.0465 … 0.0682 |
 
-![whipping](figs/three_way_whipping.png)
+![whipping](assets/three-way-ice-floe-coupling/three_way_whipping.png)
 
-![floe trajectory](figs/three_way_floe.png)
+![floe trajectory](assets/three-way-ice-floe-coupling/three_way_floe.png)
 
-![gate a](figs/three_way_gate_a.png)
+![gate a](assets/three-way-ice-floe-coupling/three_way_gate_a.png)
 
-![ledger](figs/three_way_ledger.png)
+![ledger](assets/three-way-ice-floe-coupling/three_way_ledger.png)
 
 ---
 
