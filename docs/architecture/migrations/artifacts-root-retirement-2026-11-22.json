@@ -1,0 +1,169 @@
+{
+  "source_commit": "0943fefe251d45843b1d7f7144f90a63009eafa8",
+  "root_directories_before": 13,
+  "root_directories_after": 12,
+  "tracked_artifacts_before": 19,
+  "tracked_artifacts_after": 0,
+  "entries": [
+    {
+      "old_path": "artifacts/db3d_intermediate/laplace_R10_64.json",
+      "new_path": "benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/laplace_R10_64.json",
+      "git_mode": "100644",
+      "original_git_blob": "63ac670ea92cbc6f52c7cfda2736089f6d6215c0",
+      "original_sha256": "0cc620894be9546060e1b2252e5f9211356fe303abd99ea42d8a3203f0eb0247",
+      "size_bytes": 1471
+    },
+    {
+      "old_path": "artifacts/db3d_intermediate/laplace_R16_64.json",
+      "new_path": "benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/laplace_R16_64.json",
+      "git_mode": "100644",
+      "original_git_blob": "679f2f5747df884e2c60cf220d9dac5a1b053f6b",
+      "original_sha256": "d8a9cc5aebf8aa57d2fa0607d996b496b39242f879e989868c40d776b5112ed6",
+      "size_bytes": 1474
+    },
+    {
+      "old_path": "artifacts/db3d_intermediate/laplace_R20_96.json",
+      "new_path": "benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/laplace_R20_96.json",
+      "git_mode": "100644",
+      "original_git_blob": "ffcc019b690994feaef98b69345b2741fda5d8ee",
+      "original_sha256": "e8942793626a2e8afafa8fe751ae7932f65f6d9ec4ca44e019d9a77c574cb450",
+      "size_bytes": 1848
+    },
+    {
+      "old_path": "artifacts/db3d_intermediate/series_cpu.json",
+      "new_path": "benchmarks/pending/dam_break_3d_mm/evidence/m407-triage/series_cpu.json",
+      "git_mode": "100644",
+      "original_git_blob": "056e94f2ba3ff00c178b384b5777b3d86c70d71a",
+      "original_sha256": "bcbcb0e2bd8aaa4f1352ac73d6efb034268ab81aa8680224e47453e2bd7d75b7",
+      "size_bytes": 1690
+    },
+    {
+      "old_path": "artifacts/db3d_intermediate/series_sdaa_0.json",
+      "new_path": "benchmarks/pending/dam_break_3d_mm/evidence/m407-triage/series_sdaa_0.json",
+      "git_mode": "100644",
+      "original_git_blob": "252b1fef2aa58f5ace0c357b298498e8fdac53f6",
+      "original_sha256": "89fd34a64b41c36294452b84a4c037d657ed1b7a9c133242e274a4f89cf7e509",
+      "size_bytes": 2073
+    },
+    {
+      "old_path": "artifacts/laplace_convergence.png",
+      "new_path": "docs/assets/sdaa-laplace-triage/laplace_convergence.png",
+      "git_mode": "100644",
+      "original_git_blob": "d4dcf1757695fa763ead5a6297ccde87e26ec8ad",
+      "original_sha256": "3749fb0b869038c85f624421506320d2147ea5ab4765292e1caf7f88a9562ff1",
+      "size_bytes": 101774
+    },
+    {
+      "old_path": "artifacts/m2m3_equiv.json",
+      "new_path": "development/verification/sdaa-hardware/m2m3-equivalence/m2m3_equiv.json",
+      "git_mode": "100644",
+      "original_git_blob": "abfd4965720de6a56dae1662aa39186207c248a4",
+      "original_sha256": "78ae8fa5fa43e6e2a135fe69efe896ee0c001d6dc01e4884ab25cfc266232fcc",
+      "size_bytes": 4392
+    },
+    {
+      "old_path": "artifacts/m_s1.json",
+      "new_path": "development/verification/sdaa-hardware/sphere-re100-d40/m_s1.json",
+      "git_mode": "100644",
+      "original_git_blob": "8ba91e6ade1b9727d09f7e8a967d35287efe399a",
+      "original_sha256": "7139fc056837b43414d4da1e21b1db00878d5479f3aafef61691b724d181bd16",
+      "size_bytes": 2108
+    },
+    {
+      "old_path": "artifacts/m_s2.json",
+      "new_path": "benchmarks/pending/dam_break_3d_mm/evidence/m364-device-comparison/m_s2.json",
+      "git_mode": "100644",
+      "original_git_blob": "7a784d909d6fee9603e4327819e38be7ea999b86",
+      "original_sha256": "8d05be472dd99a14dd3a8e4fab8da9a5a525c07625750e88c990b0c4c7207e13",
+      "size_bytes": 610
+    },
+    {
+      "old_path": "artifacts/report_m_s1.json",
+      "new_path": "development/verification/sdaa-hardware/sphere-re100-d40/report_m_s1.json",
+      "git_mode": "100644",
+      "original_git_blob": "ed240519b4c5a6f231f927bddfad70aaa5d56329",
+      "original_sha256": "b77879c4e1aa315c00d93926aee6569a7a41a8d26f164d4ff3a43d359e8ae82b",
+      "size_bytes": 5599
+    },
+    {
+      "old_path": "artifacts/sdaa_d40_2000steps.json",
+      "new_path": "development/verification/sdaa-hardware/sphere-re100-d40/sdaa_d40_2000steps.json",
+      "git_mode": "100644",
+      "original_git_blob": "5275292a090ef8dd535abbe3199aa04a19c6eea2",
+      "original_sha256": "0b8287f2b26c2fd1411fbee31b72c5173b9bcc9f5f05392220d7e769067da117",
+      "size_bytes": 46765
+    },
+    {
+      "old_path": "artifacts/sdaa_dambreak3d.json",
+      "new_path": "benchmarks/pending/dam_break_3d_mm/evidence/m407-triage/sdaa_dambreak3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "d77251c467c5d2f000ced2a434080031c03349b1",
+      "original_sha256": "5a287cf88e4a30246331788364b4fbb3158558841dca260c61ee577b5500a8c5",
+      "size_bytes": 5691
+    },
+    {
+      "old_path": "artifacts/sdaa_droplet_oscillation.json",
+      "new_path": "benchmarks/verified/droplet_oscillation/evidence/sdaa/sdaa_droplet_oscillation.json",
+      "git_mode": "100644",
+      "original_git_blob": "3874e4f0f2d4240f11def39b60b6fe048c232c07",
+      "original_sha256": "66952ac25256dd3fbde45987922188e5210aa30d5eb3f512b2516a3d39f55dd4",
+      "size_bytes": 1708
+    },
+    {
+      "old_path": "artifacts/sdaa_laplace_cac_phasefield.json",
+      "new_path": "benchmarks/verified/laplace_cac_phasefield/evidence/sdaa/sdaa_laplace_cac_phasefield.json",
+      "git_mode": "100644",
+      "original_git_blob": "ec77aaf9335ddbf5ae337f747da578c1d7ea25db",
+      "original_sha256": "23d48e0212d38cba3fb8d375160f442c81a5bb58dd1eafc89532510fa0e7f005",
+      "size_bytes": 16386
+    },
+    {
+      "old_path": "artifacts/sdaa_laplace_droplet.json",
+      "new_path": "benchmarks/verified/laplace_droplet/evidence/sdaa/sdaa_laplace_droplet.json",
+      "git_mode": "100644",
+      "original_git_blob": "4aadb3f6f0f7cd4701a457bad6344cde70fcff0b",
+      "original_sha256": "ee3c5d97538abb5c51d9359613bb7a5860339c5f860aff3bf9c84a8267931478",
+      "size_bytes": 6850
+    },
+    {
+      "old_path": "artifacts/sdaa_laplace_pr_eos.json",
+      "new_path": "benchmarks/verified/laplace_pr_eos/evidence/sdaa/sdaa_laplace_pr_eos.json",
+      "git_mode": "100644",
+      "original_git_blob": "6da340c0573208cf674472f501de6e9f8d99e1c2",
+      "original_sha256": "11fd4bf73ab3723db7ca2cce04e9c072c5b9ae81128c01a54f0dd6413b915ed5",
+      "size_bytes": 10468
+    },
+    {
+      "old_path": "artifacts/sdaa_laplace_recut.json",
+      "new_path": "benchmarks/verified/laplace_cac_phasefield/evidence/m407-recut/sdaa_laplace_recut.json",
+      "git_mode": "100644",
+      "original_git_blob": "8d2e89120ce5184114b171702107d4b2006cb7a9",
+      "original_sha256": "482f5c1f5408448d3b87db2e8cb0ca4e29aad3d638769fca74f986b70b1720ea",
+      "size_bytes": 4963
+    },
+    {
+      "old_path": "artifacts/sdaa_poiseuille_two_phase_cg.json",
+      "new_path": "benchmarks/verified/poiseuille_two_phase_cg/evidence/sdaa/sdaa_poiseuille_two_phase_cg.json",
+      "git_mode": "100644",
+      "original_git_blob": "b8ab5470485b11a04a57150bdd6dde4083035d08",
+      "original_sha256": "a85f6f37ed940bd83a2012724ae4c6542190183b1bafb373a75fc14a5f04abf4",
+      "size_bytes": 5059
+    },
+    {
+      "old_path": "artifacts/sdaa_sod_shock_tube.json",
+      "new_path": "benchmarks/verified/sod_shock_tube/evidence/sdaa/sdaa_sod_shock_tube.json",
+      "git_mode": "100644",
+      "original_git_blob": "b07f89b169ae4704f423b5de5fd8524af2a3f782",
+      "original_sha256": "a309ea579df8274ccc75421189865ac1467f3c23ba1124682512b0744fd5b15f",
+      "size_bytes": 5337
+    }
+  ],
+  "compatibility": "The SDAA ledger follows the migration manifest. Documentation and readers of historical equivalence and M-S2 evidence resolve the archived copies. M-S2 report tools still prefer a fresh local result. Existing scripts and CI keep their output paths in the ignored local artifacts directory.",
+  "replay_limits": "M407 height-field NPZ files were absent from main before migration. D40's historical m363 absolute worktree is required by the original one-off script. SDAA execution is not available in the local test environment.",
+  "scientific_scope": "All recorded result bytes, input parameters, and numerical algorithms are unchanged.",
+  "local_verification": [
+    "bash tools/check_repository_governance.sh passed. It covered 35 tutorial cases, 33 PDF manuals, 33 Word manuals and 193 benchmark registry entries. The status ledger reported zero hard violations and 16 existing soft findings.",
+    "Verified all 19 source Git blobs and SHA-256 values, 19 published evidence links, and nine SDAA ledger entries. Both M-S2 readers loaded the archived m364 JSON.",
+    "Checked the candidate Git tree has 12 root directories and no tracked artifacts root. The former root remains ignored for legacy run and CI outputs."
+  ]
+}

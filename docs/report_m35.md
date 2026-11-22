@@ -183,5 +183,5 @@ u_max_ratio (vs 解析) = 0.930，尾部 20 步冻结相对变化 = 3.55%
 | 文件 | 路径 |
 |------|------|
 | 扫荡脚本 | `scripts/sdaa_sweep_poiseuille_two_phase_cg.py` |
-| 结果 JSON | `artifacts/sdaa_poiseuille_two_phase_cg.json` |
+| 结果 JSON | [历史 SDAA 输出](../benchmarks/verified/poiseuille_two_phase_cg/evidence/sdaa/sdaa_poiseuille_two_phase_cg.json) |
 | 技术文档 | `docs/sdaa_sweep/poiseuille_two_phase_cg.md` |

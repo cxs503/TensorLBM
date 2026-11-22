@@ -130,7 +130,7 @@ than the reference.
 
 ## Artifacts
 
-- `artifacts/sdaa_laplace_pr_eos.json` — Full machine output with device
+- [Archived results JSON](../../benchmarks/verified/laplace_pr_eos/evidence/sdaa/sdaa_laplace_pr_eos.json) — Full machine output with device
   evidence, per-run data, sigma fits, and gate verdicts.
 - `scripts/sdaa_sweep_laplace_pr_eos.py` — Independent sweep script (no
   modification to business code).

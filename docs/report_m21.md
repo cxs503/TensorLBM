@@ -180,7 +180,7 @@ TensorLBM 的 `droplet_oscillation` 是一个经过严格预注册的验证基�
 - `scripts/sdaa_sweep_droplet_oscillation_minimal.py` — 最小验证脚本
 
 ### 工件
-- `artifacts/sdaa_droplet_oscillation.json` — SDAA 扫描结果（IN_PROGRESS）
+- [历史 SDAA 扫描结果](../benchmarks/verified/droplet_oscillation/evidence/sdaa/sdaa_droplet_oscillation.json)（IN_PROGRESS）
 - `artifacts/suboff_bench1_cumulant_sdaa20.json` — SUBOFF Cumulant Re=1000
 - `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` — SUBOFF RANS Re=1e5
 - `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` — SUBOFF RANS Re=1e4

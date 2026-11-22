@@ -111,10 +111,11 @@ print("✓ Fused operation: consistent with separate ops")
 print("=" * 70)
 
 # Load artifact
-with open('artifacts/m2m3_equiv.json', 'r') as f:
+evidence_path = "development/verification/sdaa-hardware/m2m3-equivalence/m2m3_equiv.json"
+with open(evidence_path, encoding="utf-8") as f:
     artifact = json.load(f)
 
-print(f"\nArtifact: artifacts/m2m3_equiv.json")
+print(f"\nArtifact: {evidence_path}")
 print(f"Status: {artifact['status']}")
 print(f"Modules completed: {len(artifact['modules_audited']['modules_completed'])}/4")
 print(f"Tests passed: {artifact['test_results']['tests_passed']}/{artifact['test_results']['tests_run']}")

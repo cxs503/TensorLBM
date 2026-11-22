@@ -12,7 +12,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 # Load artifact
-artifact = json.loads(Path("artifacts/m_s2.json").read_text())
+artifact_path = Path("artifacts/m_s2.json")
+if not artifact_path.is_file():
+    artifact_path = Path(__file__).resolve().parents[1] / (
+        "benchmarks/pending/dam_break_3d_mm/evidence/m364-device-comparison/m_s2.json"
+    )
+artifact = json.loads(artifact_path.read_text())
 
 # Create figure
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))

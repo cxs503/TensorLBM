@@ -4,7 +4,7 @@
 **设备**: SDAA (Hygon DCU) — `torch.sdaa.get_device_name(0)` = `/dev/accelerator-node-a`  
 **日期**: 2026-08-19  
 **脚本**: `scripts/sdaa_sweep_laplace_droplet.py`  
-**产物**: `artifacts/sdaa_laplace_droplet.json`  
+**产物**: [历史机器输出](../../benchmarks/verified/laplace_droplet/evidence/sdaa/sdaa_laplace_droplet.json)
 **墙钟**: 882.2 s (14.7 min)  
 **总体判定**: **FAIL**（2D PASS / 3D FAIL）
 

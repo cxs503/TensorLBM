@@ -35,7 +35,7 @@ integrity verified before retiring a tracked copy.
 | `TensorLBM/` | `development/legacy/TensorLBM/` | The full checkout is frozen and historical replay uses the archived solver. The [migration ledger](migrations/legacy-checkout-relocation-2026-11-21.json) records the exact tree and verified consumers. |
 | `_scratch/` | `development/archived/scratch/` | The [archive ledger](migrations/scratch-root-retirement-2026-11-21.json) records the prior paths and the output paths for current runs. |
 | `app/` | Keep if supported | Review product ownership, launch commands and deployment. |
-| `artifacts/` | Split by consumer | Keep curated evidence with cases or audits. The [migration manifest](migration_manifest.csv) maps original paths to their owners and per-batch provenance ledgers. Use ignored output paths or external storage for new raw output. |
+| `artifacts/` | Retire from the tracked tree | The [retirement ledger](migrations/artifacts-root-retirement-2026-11-22.json) maps the final 19 files to their owners. Existing scripts and CI can still write to the ignored local path. |
 | `audit/` | `development/audit/` | The [migration ledger](migrations/audit-root-retirement-2026-11-21.json) records original Git objects, updated launch paths and the historical checkout. |
 | `audits/` | `development/audit/` | The [original ledger](migrations/legacy-audit-root-2026-11-21.json) records the intermediate paths under `audit/`. |
 | `benchmarks/` | Keep | One canonical entry per case. Preserve registered IDs and archived comparisons. |

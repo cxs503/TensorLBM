@@ -109,7 +109,7 @@ Step  5000: u_max = 3.32e-04
 ## 产物
 
 - 脚本: `scripts/sdaa_sweep_poiseuille_two_phase_cg.py`
-- 数据: `artifacts/sdaa_poiseuille_two_phase_cg.json`
+- 数据: [历史结果 JSON](../../benchmarks/verified/poiseuille_two_phase_cg/evidence/sdaa/sdaa_poiseuille_two_phase_cg.json)
 - 文档: `docs/sdaa_sweep/poiseuille_two_phase_cg.md` (本文件)
 
 ## 绕行记录

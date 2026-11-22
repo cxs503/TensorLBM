@@ -111,7 +111,7 @@ U_max=0.729166（解析的 98.01%），Q 误差 **5.35%**（<10% 本可通过）
    且 "porous_media.py 两相 Poiseuille 达 L2~0.125（G₁₂=0.9）" 无存储证据支持——
    仓内该基准的存档证据（benchmarks/pending/two_phase_poiseuille/result.json）
    为 G₁₂=−2.5、max_rel_err 26.8%/33.2%、verdict=FAIL（u_max 高估 27%/31%）；
-   颜色梯度两相案例（artifacts/sdaa_poiseuille_two_phase_cg.json）relL2=0.1176 亦 FAIL。
+   [颜色梯度两相案例](../benchmarks/verified/poiseuille_two_phase_cg/evidence/sdaa/sdaa_poiseuille_two_phase_cg.json) relL2=0.1176 亦 FAIL。
 4. **SUMMARY 的"有效黏度高于名义值"假设被 QR 长跑否定**：稳态 U_max=解析的
    98.01%（非 50%），速度亏损是瞬态而非流变学效应；残余 2% 才是 SC 模型
    有效黏度偏差量级。

@@ -3,7 +3,7 @@
 - 仓库：TensorLBM（工作树 `/srv/tensor/agent/work/m24`，分支 `agent/m24`）
 - 案例：`benchmarks/verified/laplace_cac_phasefield`（CAC/HCH 相场两相 LBM，静态液滴 Young–Laplace）
 - 脚本：`scripts/sdaa_sweep_laplace_cac_phasefield.py`（独立运行脚本，**未改动任何业务代码**）
-- 机器输出：`artifacts/sdaa_laplace_cac_phasefield.json`
+- [历史机器输出](../../benchmarks/verified/laplace_cac_phasefield/evidence/sdaa/sdaa_laplace_cac_phasefield.json)
 - 结论速览：**单臂物理闭合 PASS（|Δσ| = 0.057% ≤ 1.5%），但整案判据整体 FAIL——5 臂扫描在本卡 20 分钟预算内不可行（外推需 ≈11.1 h），B1 半径阶梯未测 → 无法宣称本案例在 SDAA 上已验证。**
 
 ---

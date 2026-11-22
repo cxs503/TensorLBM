@@ -110,8 +110,7 @@ Specific fixes needed:
 
 ## 7. Artifacts
 
-- `artifacts/sdaa_dambreak3d.json` — Full results with `mass_drift_pct` and `l2_error` fields
-- `artifacts/db3d_intermediate/series_cpu.json` — CPU series data
-- `artifacts/db3d_intermediate/series_sdaa_0.json` — SDAA series data
-- `artifacts/db3d_intermediate/heights_cpu.npz` — CPU height fields
-- `artifacts/db3d_intermediate/heights_sdaa_0.npz` — SDAA height fields
+- [Full result](../../benchmarks/pending/dam_break_3d_mm/evidence/m407-triage/sdaa_dambreak3d.json) with `mass_drift_pct` and `l2_error` fields
+- [CPU series](../../benchmarks/pending/dam_break_3d_mm/evidence/m407-triage/series_cpu.json)
+- [SDAA series](../../benchmarks/pending/dam_break_3d_mm/evidence/m407-triage/series_sdaa_0.json)
+- The historical CPU and SDAA height-field NPZ files were generated in `artifacts/db3d_intermediate/` and are absent from the tracked source revision.
