@@ -1,0 +1,53 @@
+[
+  {
+    "file": "KERN-A-R2.md",
+    "arm": "KERN-A-R2",
+    "mechanism": "ABB 动量重建 Option3（7+/9- 邻居变体），f_abb=f_eq_gas 路线",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 1.3701,
+    "peak_time_ms": 22.947,
+    "key_numbers": [
+      {"n": 1.3701, "meaning": "重建臂峰值深度 D"},
+      {"n": 26.24, "meaning": "峰值误差 vs 实验 1.857434D (%)"},
+      {"n": 1.4352, "meaning": "ctrl 锚峰值深度 D"},
+      {"n": -0.065, "meaning": "相对 ctrl 变浅量 (D)"},
+      {"n": 24.552, "meaning": "满窗健康时长 (ms)"}
+    ],
+    "one_line_verdict": "重建模板削弱向下动量传输，1.4352→1.3701 变浅且峰漂到窗尾 22.9ms",
+    "open_gap": "MOM 线应转向二阶项（界面力分离/双弛豫）或让 DIAG/EV 定位动量去向"
+  },
+  {
+    "file": "KERN-B.md",
+    "arm": "B1@0.995",
+    "mechanism": "空穴压强亏缺 p_cav=p_ref·(V0/V)^γ 绝热 γ=1.4 入 ABB 气相平衡密度",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 0.5032,
+    "peak_time_ms": 3.150,
+    "key_numbers": [
+      {"n": 0.5032, "meaning": "B1 峰值深度 D"},
+      {"n": 72.91, "meaning": "峰值误差 vs 实验 (%)"},
+      {"n": 1.4352, "meaning": "ctrl 锚峰值深度 D"},
+      {"n": 3.393, "meaning": "早死时刻 (ms)"},
+      {"n": 0.995, "meaning": "压亏剂量（唯一稳定档）"}
+    ],
+    "one_line_verdict": "压亏使界面压差↑回流水加速→空穴闭合更快，变浅且早死，处方①证伪",
+    "open_gap": "定压闭包是模型稳定性要求；仅 1 全窗臂，跨平台浮点差"
+  },
+  {
+    "file": "MMC1-CURV2-R1.md",
+    "arm": "c2_dose05/c2_dose10",
+    "mechanism": "ABB 气相密度 Laplace 项注入二阶曲率修正 Δρ_curv2=dose·σ·κ·n_y",
+    "verdict": "PROGRESS",
+    "peak_depth_D": 1.487173,
+    "peak_time_ms": 11.103,
+    "key_numbers": [
+      {"n": 1.487173, "meaning": "dose10 本线峰值深度 D"},
+      {"n": 1.458917, "meaning": "dose05 本线峰值深度 D"},
+      {"n": 1.435220, "meaning": "ctrl 锚峰值深度 D（位级复现）"},
+      {"n": 0.0565, "meaning": "剂量-效应斜率 (D/dose)"},
+      {"n": 1.6716, "meaning": "dose=2.0 跨旋钮锚峰值深度 D"}
+    ],
+    "one_line_verdict": "二阶曲率动量项是真实可辨识加深旋钮，剂量-效应单调但本线未入命中带",
+    "open_gap": "本树 curv2 dose=2.0 满窗确认步未做；单网格无收敛对"
+  }
+]
