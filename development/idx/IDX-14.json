@@ -1,0 +1,53 @@
+[
+  {
+    "file": "MMC5-CURVMOM-B.md",
+    "arm": "CURV2",
+    "mechanism": "界面曲率二阶动量项（牵引/压通道全谱）",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 1.3093,
+    "peak_time_ms": 12.027,
+    "key_numbers": [
+      {"1.3093D@12.027ms": "主判读臂M005S峰深/时刻"},
+      {"-0.1259D": "相对锚偏差"},
+      {"29.51%": "相对实验误差"},
+      {"1.0330D@7.503ms": "压通道PP1S峰深/时刻"},
+      {"1.4352D@11.091ms": "ctrl位级锚"}
+    ],
+    "one_line_verdict": "界面曲率二阶动量项全谱被几何体积健康门否决或做浅，22.7%欠深不能归因于此",
+    "open_gap": "回DIAG实测空穴壁动量去向与GAS气相完整动力学"
+  },
+  {
+    "file": "MMC6-DYNANGLE-B.md",
+    "arm": "DCA",
+    "mechanism": "动态接触角Cox-Voinov滑移代理（触线项）",
+    "verdict": "DIAG",
+    "peak_depth_D": 1.35552,
+    "peak_time_ms": 10.531,
+    "key_numbers": [
+      {"1.35552D@10.531ms": "d60_k10满窗存活峰深/时刻"},
+      {"-5.553%": "Δpeak相对ctrl"},
+      {"+1.320%": "峰时刻误差（ctrl+6.70%→）"},
+      {"22.73%": "ctrl深度误差"},
+      {"5/14": "满窗存活臂数"}
+    ],
+    "one_line_verdict": "DCA触线项显著移动峰时刻（+6.70%→+1.32%）但使深度更浅，非欠深解",
+    "open_gap": "无固体球/无真三相线，结论仅限本模型代理口径"
+  },
+  {
+    "file": "PF1-CH4.md",
+    "arm": "CH4",
+    "mechanism": "Cahn-Hilliard四阶单分布相场LBE（He-Shan-Doolen）",
+    "verdict": "FAIL",
+    "peak_depth_D": null,
+    "peak_time_ms": null,
+    "key_numbers": [
+      {"4.24": "界面厚h(cells)在4-5带内"},
+      {"1.3e-5→1.3e-3": "寄生流随密度比线性"},
+      {"6e-7": "体积守恒"},
+      {"0.370": "mach_max越限触发"},
+      {"6/6": "单测通过"}
+    ],
+    "one_line_verdict": "CH四阶相场静态液滴通过但动态入水失稳（mach越限），honest FAIL",
+    "open_gap": "改伪势/色梯度或CH配压缩型流体"
+  }
+]
