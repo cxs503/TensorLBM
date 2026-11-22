@@ -10,8 +10,8 @@ mem_profile.py — 单卡显存/功耗画像脚本
          若均不可用则显式声明不可测。
 
 产出:
-  - artifacts/mem_table.json  (规模 → 峰值显存 MB)
-  - artifacts/mem_profile_curve.png (matplotlib 曲线)
+  - outputs/sdaa/hardware/memory/mem_table.json (规模 → 峰值显存 MB)
+  - outputs/sdaa/hardware/memory/mem_profile_curve.png (matplotlib 曲线)
 """
 
 import json
@@ -28,8 +28,8 @@ from datetime import datetime, timezone
 # 0. 路径 & 常量
 # ---------------------------------------------------------------------------
 WORK_DIR = Path(__file__).resolve().parent.parent
-ARTIFACTS = WORK_DIR / "artifacts"
-ARTIFACTS.mkdir(exist_ok=True)
+ARTIFACTS = WORK_DIR / "outputs/sdaa/hardware/memory"
+ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
 GRID_SIZES = [512, 1024, 2048, 4096]
 DTYPE = "float32"

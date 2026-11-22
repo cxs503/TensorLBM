@@ -1,0 +1,76 @@
+{
+  "source_commit": "cdbcbf86143a222b6dfe7256f09d12794ee1db7b",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 27,
+  "tracked_artifacts_after": 19,
+  "entries": [
+    {
+      "old_path": "artifacts/bench.json",
+      "new_path": "development/verification/sdaa-hardware/matmul/bench.json",
+      "git_mode": "100644",
+      "original_git_blob": "8f1c31111636746c0ebd8d15556ba1851ed184ee",
+      "size_bytes": 4185,
+      "original_sha256": "501192599f94e6cebd4fb5ef0cfb60aae93106e6a5ff1e41a2291ffb65ba6029"
+    },
+    {
+      "old_path": "artifacts/sdaa_matmul_bench.png",
+      "new_path": "development/verification/sdaa-hardware/matmul/sdaa_matmul_bench.png",
+      "git_mode": "100644",
+      "original_git_blob": "c61da506e756e6505ad9286d0eccdf3b2e2381fe",
+      "size_bytes": 158132,
+      "original_sha256": "9d906b5a4b087414a577f4a15a849c5269b3eeec7bf176f06d09f140ef6b05d9"
+    },
+    {
+      "old_path": "artifacts/mem_table.json",
+      "new_path": "development/verification/sdaa-hardware/memory/mem_table.json",
+      "git_mode": "100644",
+      "original_git_blob": "99bf2eaf8027885cb6dbc2b4a152d5786c7efbb8",
+      "size_bytes": 1856,
+      "original_sha256": "931e31efb9a02cd7a00e070917c96c3870de942f4d151dc03025069977b528f2"
+    },
+    {
+      "old_path": "artifacts/mem_profile_curve.png",
+      "new_path": "development/verification/sdaa-hardware/memory/mem_profile_curve.png",
+      "git_mode": "100644",
+      "original_git_blob": "223f5727e294f1e8b8fc49eca2e311c1d078a377",
+      "size_bytes": 51186,
+      "original_sha256": "a22765be9e481ebb4d960e897fdd42de0c8608c8a4ec904afa531787845395f9"
+    },
+    {
+      "old_path": "artifacts/sdaa_perf_baseline.json",
+      "new_path": "development/verification/sdaa-hardware/baseline/sdaa_perf_baseline.json",
+      "git_mode": "100644",
+      "original_git_blob": "93763880ba0faabd22a4f0e5b4a4c1b90e5ca5c8",
+      "size_bytes": 942,
+      "original_sha256": "f33b582aa2c975fd7420cffc5ec0879c582255bc7ba72fb8218910f0f0165288"
+    },
+    {
+      "old_path": "artifacts/cross_card_3card.json",
+      "new_path": "development/verification/sdaa-hardware/domain-decomposition/cross_card_3card.json",
+      "git_mode": "100644",
+      "original_git_blob": "c057baf0c4ce54a92d561e97e55fa106654f748f",
+      "size_bytes": 5927,
+      "original_sha256": "4c1754ab45db4c4cf0bc93c8fd637b4f99cd3cdc02ae43ce1eb0dec5c894e397"
+    },
+    {
+      "old_path": "artifacts/cross_card_4card.json",
+      "new_path": "development/verification/sdaa-hardware/domain-decomposition/cross_card_4card.json",
+      "git_mode": "100644",
+      "original_git_blob": "20cc88879a7a53a7634ad6bc070f2876eb123b1c",
+      "size_bytes": 6096,
+      "original_sha256": "53763d3e7ad1d01116d276bc1ec5aca4741bf7683b37fe46d72282316bad39de"
+    },
+    {
+      "old_path": "artifacts/m4_dd.json",
+      "new_path": "development/verification/sdaa-hardware/domain-decomposition/m4_dd.json",
+      "git_mode": "100644",
+      "original_git_blob": "74200ef8ce53479ad9198d8e237465118e2ed2a6",
+      "size_bytes": 2123,
+      "original_sha256": "ff433b6ed0360c9999172615d90fdc98f83a5b1768d8e0f6e1dda0afe8fe1400"
+    }
+  ],
+  "reference_scan": "Matched literal filenames and configurable cross_card_<N> output. Reviewed report/template links and both copies of the baseline launcher.",
+  "compatibility": "Retain current launcher paths and cross-card --out-dir and M4 --output overrides. New default output uses ignored outputs/sdaa/hardware. Preserve manifest-backed lookup of the archived SDAA perf baseline.",
+  "scientific_scope": "Historical engineering evidence only. The M4 CPU harness and measured cross-card runs have separate provenance. No accelerator or solver reruns."
+}

@@ -292,9 +292,8 @@ def main():
         },
     }
     
-    # Write artifacts/bench.json
-    artifacts_dir = Path(__file__).resolve().parent.parent / "artifacts"
-    artifacts_dir.mkdir(exist_ok=True)
+    artifacts_dir = Path(__file__).resolve().parent.parent / "outputs/sdaa/hardware/matmul"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
     out_path = artifacts_dir / "bench.json"
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)

@@ -5,7 +5,7 @@ Runs the cavity_3d_full case 5 times on a single SDAA card (exclusive),
 records wall-clock time, MLUPS, and peak device memory for each run.
 Computes CV (coefficient of variation) on wall-clock time.
 
-Output: artifacts/sdaa_perf_baseline.json
+Output: outputs/sdaa/hardware/baseline/sdaa_perf_baseline.json
 """
 
 import gc
@@ -22,6 +22,8 @@ os.environ["SDAA_VISIBLE_DEVICES"] = "0"
 
 import torch
 import torch_sdaa  # noqa: F401
+
+OUTPUT = Path(__file__).resolve().parents[1] / "outputs/sdaa/hardware/baseline/sdaa_perf_baseline.json"
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -147,7 +149,7 @@ def main():
             "mean_wall_s": round(mean_w, 4),
             "std_wall_s": round(std_w, 4),
         }
-        out_path = Path("artifacts/sdaa_perf_baseline.json")
+        out_path = OUTPUT
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(result, indent=2))
         print(f"\nResult written to {out_path}")
@@ -248,7 +250,7 @@ def main():
         "cv_pass": cv_pct <= 2.0,
     }
 
-    out_path = Path("artifacts/sdaa_perf_baseline.json")
+    out_path = OUTPUT
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2))
 

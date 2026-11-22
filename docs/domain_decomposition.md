@@ -138,7 +138,8 @@ pytest tests/test_domain_decomposition.py -v
 
 ## 产物
 
-- `artifacts/m4_dd.json`: 包含每卡设备证据和计时
+- [历史 M4 记录](../development/verification/sdaa-hardware/domain-decomposition/m4_dd.json)：包含每卡设备证据和计时
+- 新运行输出：`outputs/sdaa/hardware/domain-decomposition/m4_dd.json`
 - `src/tensorlbm/domain_decomposition.py`: 核心实现
 - `scripts/m4_dd_validation.py`: 验证脚本
 - `tests/test_domain_decomposition.py`: 单元测试
