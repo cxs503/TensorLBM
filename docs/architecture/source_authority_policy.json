@@ -121,10 +121,6 @@
       "matches": 1,
       "matching_lines_sha256": "31914315ce0d9e7dc2fd2e4a4bf1891f218bb73d45fb58e95466ef10e0bc4b45"
     },
-    "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/run_xval.py": {
-      "matches": 1,
-      "matching_lines_sha256": "31914315ce0d9e7dc2fd2e4a4bf1891f218bb73d45fb58e95466ef10e0bc4b45"
-    },
     "examples/highre_cylinder2d_accurate.py": {
       "matches": 1,
       "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"

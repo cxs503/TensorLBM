@@ -27,7 +27,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-FIGS = ROOT / "docs" / "survey" / "figs"
+FIGS = ROOT / "docs" / "assets" / "suboff-resistance-survey"
 
 FIG_CAPTIONS = (
     "图 1 SUBOFF 阻力锚车道 vs ITTC-1957：AFF-1/AFF-8 六点阶梯、湿面积区间带、"

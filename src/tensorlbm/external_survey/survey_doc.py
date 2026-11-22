@@ -260,20 +260,20 @@ def survey_markdown() -> str:
     # ------------------------------------------------------------ ④ 图
     add("## 4. 结果图")
     add("")
-    add("![图 1](figs/in25_t6_ct_ladder.png)")
+    add("![图 1](../assets/suboff-resistance-survey/in25_t6_ct_ladder.png)")
     add("")
     add("*图 1 · SUBOFF 阻力锚车道 vs ITTC-1957。圆点=裸体 AFF-1 的六个 EFD 阶梯点，方块=全附体 AFF-8，"
         "橙色带=AFF-8 湿面积区间导致的 CT 区间；绿色菱形=独立公开锚 0.0031（复现偏差 "
         f"{dev1.dev_pct:+.2f}%），红色叉=常引 0.004（在区间之外，需 S_wet≈"
         f"{sens['implied_s_wet_for_published_ct_m2']:.2f} m² 才成立）。*")
     add("")
-    add("![图 2](figs/in25_t6_friction_lines.png)")
+    add("![图 2](../assets/suboff-resistance-survey/in25_t6_friction_lines.png)")
     add("")
     add("*图 2 · 两条摩擦线的一致性：Re≥1e7（SUBOFF 阶梯带）内最大差 "
         f"{friction.max_rel_diff_pct_model_band:.2f}%，落在 ±3% 门内；Re<1e7 的发散是"
         "『模型-实船相关线 vs 平板摩擦线』的构造性差异，不影响锚点带。*")
     add("")
-    add("![图 3](figs/in25_t6_convention_sensitivity.png)")
+    add("![图 3](../assets/suboff-resistance-survey/in25_t6_convention_sensitivity.png)")
     add("")
     add("*图 3 · 约定敏感性龙卷风：湿面积 ±5.8%、密度 −2.6%，任一组合都够不到 0.004 —— 说明"
         "『0.004 不可复现』不是某个约定选错，而是量级不匹配。*")

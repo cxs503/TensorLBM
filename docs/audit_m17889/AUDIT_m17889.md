@@ -19,6 +19,8 @@
 | 交付 | `benchmarks/xval_huang2007_contact_angle_inversion/{run_xval.py, generate_figures.py, results.json, REPORT.md, figures/×3}` |
 | 登记基准 | **0 例**（`SELECT ... WHERE anchor_slug='XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION'` 返空；查询时刻全库 66 例）⇒ 唯一裁判缺位，本单按其自称判据复核 |
 
+本次审计的[原始交付快照](../../development/audit/huang2007-contact-angle/m17889-delivery-snapshot/)已归档。[正式案例](../../benchmarks/xval_huang2007_contact_angle_inversion/)仍从基准目录访问。
+
 ## ② 怎么做的（审计方法，工具链与关键设置）
 
 1. **取证**：读 m17845 工作树交付目录、`git status/log`、report#16774、`docs/CASE-MCMP-CONTACT-ANGLE.md`（m15470）；
@@ -119,6 +121,8 @@
 **结论**：判据 `<15%` **未通过**；`succeeded` 状态应予保留为"工程完成"，但**成熟度不达 L4**，声称的"对标 PASS"撤回。
 
 ## 复现
+
+在当前仓库读取冻结快照时，使用 `PYTHONPATH=development/legacy/TensorLBM/src`，以加载当时的多相流接口。以下完整复现流程仍依赖原始任务工作树、运行产物和平台数据库。
 
 ```bash
 cd /srv/tensor/agent/work/m17889

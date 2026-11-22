@@ -60,9 +60,9 @@ PRODUCTS: dict[str, str] = {
     "survey_report": "docs/survey/IN25_T6_external_mature_tech_survey.md",
     "survey_doc_module": "src/tensorlbm/external_survey/survey_doc.py",
     "acceptance_report": "artifacts/in25_t6/acceptance_report.json",
-    "figure_ct_ladder": "docs/survey/figs/in25_t6_ct_ladder.png",
-    "figure_friction_lines": "docs/survey/figs/in25_t6_friction_lines.png",
-    "figure_sensitivity": "docs/survey/figs/in25_t6_convention_sensitivity.png",
+    "figure_ct_ladder": "docs/assets/suboff-resistance-survey/in25_t6_ct_ladder.png",
+    "figure_friction_lines": "docs/assets/suboff-resistance-survey/in25_t6_friction_lines.png",
+    "figure_sensitivity": "docs/assets/suboff-resistance-survey/in25_t6_convention_sensitivity.png",
 }
 
 

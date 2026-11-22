@@ -3,7 +3,7 @@
 
 数据源（全部机器读，零手抄）：
   artifacts/m17889_audit/audit_m17889.json   —— 本单审计读数
-  benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/run_xval.py —— 交付标定表（模块常量）
+  development/audit/huang2007-contact-angle/m17889-delivery-snapshot/run_xval.py —— 交付标定表（模块常量）
 
 输出：docs/audit_m17889/fig_m17889_honest_vs_claimed.png
 """
@@ -22,7 +22,7 @@ import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 AUDIT = json.loads((ROOT / "artifacts" / "m17889_audit" / "audit_m17889.json").read_text())
-COPY = ROOT / "benchmarks" / "xval_huang2007_contact_angle_inversion_audit_copy"
+COPY = ROOT / "development" / "audit" / "huang2007-contact-angle" / "m17889-delivery-snapshot"
 OUTDIR = ROOT / "docs" / "audit_m17889"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
