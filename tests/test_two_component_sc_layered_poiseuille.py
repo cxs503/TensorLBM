@@ -229,7 +229,11 @@ def test_benchmark_artifact_writer_roundtrip(tmp_path):
     digest = hashlib.sha256(open(paths["json"], "rb").read()).hexdigest()
     assert digest == payload["sha256"]
     body = json.load(open(paths["json"]))
-    assert body["kpi_table"] and "repro_cmd" in body
+    assert body["kpi_table"]
+    assert body["repro_cmd"] == (
+        "PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.benchmark "
+        "--matrix light --cases control_single_light"
+    )
     assert "| case | KPI | ref (exact) | got | error | gate | verdict |" in open(paths["md"]).read()
 
 
