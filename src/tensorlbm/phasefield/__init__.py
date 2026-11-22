@@ -7,6 +7,13 @@ from .ch_validation import (
     run_closed_periodic_free_energy_diagnostic,
     uniform_phase_capillary_force,
 )
+from .ch6 import (
+    CH6FreeEnergy,
+    CH6_OPERATOR,
+    ch6_equilibrium,
+    ch6_step_3d,
+    validate_ch6_convention,
+)
 from .diagnostics import phase_volume_smoothed, phase_volume_threshold
 from .evolution_adapter import (
     COLLISION_ONLY_STAGE,
@@ -79,6 +86,8 @@ __all__ = [
     "ADAPTER_STREAM_LOOP_STAGE",
     "ADAPTER_STREAM_DIAGNOSTIC_ONLY",
     "AdapterStreamBoundaryCrossing",
+    "CH6FreeEnergy",
+    "CH6_OPERATOR",
     "COLLISION_ONLY_STAGE",
     "D3Q19_POPULATIONS",
     "DoubleWellFreeEnergy",
@@ -103,6 +112,8 @@ __all__ = [
     "LaplaceCriteria",
     "StaticDropletDiagnosticResult",
     "bulk_pressure_jump",
+    "ch6_equilibrium",
+    "ch6_step_3d",
     "droplet_phi0",
     "grade_case",
     "grade_report",
@@ -140,4 +151,5 @@ __all__ = [
     "run_free_energy_adapter_stream_loop",
     "run_free_energy_collision_only",
     "uniform_phase_capillary_force",
+    "validate_ch6_convention",
 ]

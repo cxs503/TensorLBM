@@ -84,6 +84,9 @@ def _diag_neighbor(
     boundary policy identical to the seven-point operators: with ``periodic``
     the two rolls wrap, and with ``no_flux`` / ``solid_mask`` each hop mirrors
     the invalid source, so a diagonal never reaches across a wall.
+
+    Note: _neighbor(field, dim, direction) returns field[dim-direction].
+    To get field[dim+off], we need _neighbor(field, dim, -off).
     """
     out = field
     for dim, step in enumerate(off):
