@@ -1,0 +1,53 @@
+[
+  {
+    "file": "SURF2-DAMP-R1",
+    "arm": "damp",
+    "mechanism": "界面速度低通钝化 u_iface_new=(1-α)u+αu_prev, α=0.3",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 0.894828,
+    "peak_time_ms": 9.947,
+    "key_numbers": [
+      {"0.894828": "damp臂峰深D，浅于ctrl"},
+      {"1.435220": "ctrl臂峰深D（位级锚）"},
+      {"-51.824": "damp峰深误差% vs 实验1.857434D"},
+      {"0.54039": "Δpeak vs ctrl (D)，浅4.32胞"},
+      {"0.1386": "damp mach_max，低通钝化生效"}
+    ],
+    "one_line_verdict": "界面速度钝化不是欠深通路；直接削掉穿透动量，深度反而恶化37.6%",
+    "open_gap": "单网格(cells=8)无收敛对；α=0.3单剂量无剂量矩阵"
+  },
+  {
+    "file": "SURF2-HYDRO-R1",
+    "arm": "hydro",
+    "mechanism": "界面胞静水压补偿 rho_g_cav += rho_l·gz·(z-z_ref)/cs²",
+    "verdict": "HIT",
+    "peak_depth_D": 1.6366277885,
+    "peak_time_ms": 14.082107,
+    "key_numbers": [
+      {"1.6366277885": "hydro臂峰深D"},
+      {"1.857434": "实验基准峰深D（Santini case-3）"},
+      {"-11.89": "hydro峰深误差%，<12% HIT门"},
+      {"+0.201407": "hydro-ctrl D，加深+1.611胞"},
+      {"22.9716": "末时刻ms（health_limit停跑）"}
+    ],
+    "one_line_verdict": "静水压头补偿命中：峰深误差-11.89%<12%且存活22.97ms>10.4ms，加深+1.611胞",
+    "open_gap": "峰时刻被推迟~3ms未修正到达时机；未跑满24ms窗"
+  },
+  {
+    "file": "SURV1-MMREVIEW",
+    "arm": "mmreview",
+    "mechanism": "多相族×碰撞算子×湍流闭合组合矩阵谱系对照",
+    "verdict": "DIAG",
+    "peak_depth_D": null,
+    "peak_time_ms": null,
+    "key_numbers": [
+      {"3715": "Re（case3_measurements）"},
+      {"8": "cells/格（网格分辨率）"},
+      {"0.2598": "Ma（已顶到0.3门）"},
+      {"24": "冲击时间窗ms"},
+      {"248.98": "K2 mass_exchange_conversion丢失份额%"}
+    ],
+    "one_line_verdict": "谱系对照：湍流轴不适配(Re3.7e3/8格/Ma0.26)，主推VOF换碰撞算子+补气相惯性",
+    "open_gap": "本卡不产生新物理结论，因果归W2双臂"
+  }
+]
