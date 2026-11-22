@@ -20,7 +20,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
 VER = REPO / "benchmarks/verified"
 OUT = REPO / "outputs/figures/audit_runtest_r6"

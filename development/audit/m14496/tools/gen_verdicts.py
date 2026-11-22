@@ -11,7 +11,7 @@ Levels (declared before looking at the pass rate, per the audit rubric):
 Writes runs/audit_runtest_r6/verdicts.sql (idempotent: ON CONFLICT DO UPDATE on
 the (repo, scope, verdict_by) unique key).
 
-Usage: python scripts/audit_runtest_r6/gen_verdicts.py
+Usage: python development/audit/m14496/tools/gen_verdicts.py
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
 MISSION = 14496
 
@@ -249,7 +249,7 @@ def main() -> int:
                 2,
                 {
                     "artifact": "runs/audit_runtest_r6/negative_probe.json",
-                    "script": "scripts/audit_runtest_r6/negative_probe.py",
+                    "script": "development/audit/m14496/tools/negative_probe.py",
                     "counts": s,
                     "silent_nan": [r["id"] for r in neg["rows"] if r["observed"] == "SILENT_NAN"],
                     "silent": [r["id"] for r in neg["rows"] if r["observed"] == "SILENT"],

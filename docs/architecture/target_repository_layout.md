@@ -90,6 +90,10 @@ retires `benchmarks/blasius_flat_plate_dev/` in favour of the canonical
 byte-identical in the development experiment area and does not acquire a new
 scientific verdict through the move.
 
+The [AUDIT-RUNTEST-6 ledger](migrations/runtest-r6-audit-tools-2026-11-23.json)
+retires `scripts/audit_runtest_r6/` and places its tools beside the archived
+m14496 figure manifest. The published audit retains its existing URL.
+
 ## Root files and rollout
 
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)

@@ -200,3 +200,5 @@ test_wetting_n01::test_sweep_metadata  [failure] ValueError: no fit window produ
 - 本报告不复述 PR 描述，只报实测；跑不通的按原样记录（见 §1 失败清单、§3 FAIL 探针）。
 
 原始图表清单见 [m14496 审计档案](../development/audit/m14496/figures.json)。重新生成的图表位于 `outputs/figures/audit_runtest_r6/`。
+
+该次审计的脚本已迁入 [m14496 工具目录](../development/audit/m14496/tools/)，上文保留原始执行记录中的路径。复现所需的运行输入和环境见 [归档说明](../development/audit/m14496/README.md)。

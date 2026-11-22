@@ -1,0 +1,163 @@
+{
+  "source_commit": "aee720a623639cf52eb97b3db1e18ef7dfcde64a",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 16,
+      "after": 15
+    }
+  },
+  "old_directory": "scripts/audit_runtest_r6",
+  "new_directory": "development/audit/m14496/tools",
+  "original_git_tree": "f65587bea8662a0fd6fd574f7984be5a5e54860e",
+  "entries": [
+    {
+      "old_path": "scripts/audit_runtest_r6/build_claim_table.py",
+      "new_path": "development/audit/m14496/tools/build_claim_table.py",
+      "git_mode": "100644",
+      "original_git_blob": "1b6b49d894771d4d12583f846194416a948d884c",
+      "original_sha256": "8506196ce69df6ae17cd5fb9bdc7979397227fbab565dcc52358806273e56abc",
+      "size_bytes": 9107,
+      "new_sha256": "a92f06f522e0548d8439cc718350f70edd9693af036fba4be7b6683b4e6f6a8c",
+      "new_size_bytes": 9119,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/build_report.py",
+      "new_path": "development/audit/m14496/tools/build_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "9006a99ad7d611255a3926ed1c410f7b53bb39dc",
+      "original_sha256": "503255facdc4edf8cc7442bf33b06900f7c1b3f4a21e7a1bbb5cbaf86ed406a7",
+      "size_bytes": 28932,
+      "new_sha256": "d256089ae726eb8b96cda797af7905e177bd00b18991267f9e9055c725435a59",
+      "new_size_bytes": 28956,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/gen_verdicts.py",
+      "new_path": "development/audit/m14496/tools/gen_verdicts.py",
+      "git_mode": "100644",
+      "original_git_blob": "f94ba0c088af99df7478535e34026d37354e60eb",
+      "original_sha256": "dfc693be2e3ba98d8d32dcc4aeb16ba0c2d5adb7e2b0693f564f0909e1f61154",
+      "size_bytes": 13006,
+      "new_sha256": "8bc2f4055e0354852d5f7d76af40b68cdfff57e4d7be21b871672e950151523a",
+      "new_size_bytes": 13018,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/make_figures.py",
+      "new_path": "development/audit/m14496/tools/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "19610d258248cc83cf02e149e1c6576fff52ffb4",
+      "original_sha256": "38b65a1aa8662bca5298846b192aa0e7f0342aae219c520058e4b92b431f634e",
+      "size_bytes": 5907,
+      "new_sha256": "91e9f2d1f28288902eb59e02d4ddbd2c7507797d227e33532fa3a89f156b9427",
+      "new_size_bytes": 5907,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/negative_probe.py",
+      "new_path": "development/audit/m14496/tools/negative_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "c19e7e77e7f6c0b67ee1e093356a1e7060d2790a",
+      "original_sha256": "7b909fc5292628b05b5c7aa79bab4f8691a911a8a513a066ad99d8628c148230",
+      "size_bytes": 11854,
+      "new_sha256": "a35ea05540bdbee706c834611088d05e0403c031fd6cb03d88d964c62bce4347",
+      "new_size_bytes": 11860,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/patch_conv_arms.py",
+      "new_path": "development/audit/m14496/tools/patch_conv_arms.py",
+      "git_mode": "100644",
+      "original_git_blob": "c7bf905378c074723a8ab4a1c5b051db0c51f313",
+      "original_sha256": "0c3c2caa253da02b2007388ff9f19bde2612e3ff2ad5b45b1a2c23d48a462bee",
+      "size_bytes": 9235,
+      "new_sha256": "0c3c2caa253da02b2007388ff9f19bde2612e3ff2ad5b45b1a2c23d48a462bee",
+      "new_size_bytes": 9235,
+      "change": "byte_exact"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/publish_report.py",
+      "new_path": "development/audit/m14496/tools/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "2a87f9de1f4256038527f5358d4e66250eaa254b",
+      "original_sha256": "41c968c94e08f3ee393e8d4a54c27a5f82a1db9529be866a4395a27d6d7a7924",
+      "size_bytes": 15142,
+      "new_sha256": "98f7b392bedba86c8265ab90e353d478a66feeac4e89bcaab22f4bb37d82f7de",
+      "new_size_bytes": 15160,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/run_conv_10_20_20k.sh",
+      "new_path": "development/audit/m14496/tools/run_conv_10_20_20k.sh",
+      "git_mode": "100644",
+      "original_git_blob": "b1726ef264bf12d10d03a654dd9a24bef68715d0",
+      "original_sha256": "00427890709d56b5341902ef0b6fc930339191f91e085bb2d050780428fd81cf",
+      "size_bytes": 515,
+      "new_sha256": "00427890709d56b5341902ef0b6fc930339191f91e085bb2d050780428fd81cf",
+      "new_size_bytes": 515,
+      "change": "byte_exact"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/run_conv_ladder.sh",
+      "new_path": "development/audit/m14496/tools/run_conv_ladder.sh",
+      "git_mode": "100644",
+      "original_git_blob": "0a0f4643f651a3a8ce7258638b093568dd39d9af",
+      "original_sha256": "d4455f3824340228c95afc336deac35283754529893987067ba5b739226a748b",
+      "size_bytes": 829,
+      "new_sha256": "d4455f3824340228c95afc336deac35283754529893987067ba5b739226a748b",
+      "new_size_bytes": 829,
+      "change": "byte_exact"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/run_local_bench_batch.sh",
+      "new_path": "development/audit/m14496/tools/run_local_bench_batch.sh",
+      "git_mode": "100755",
+      "original_git_blob": "97cd2b64a633d4677b754be8c2a9344ab0e70b04",
+      "original_sha256": "1cdbe7b394a4ffe566688cda1bc644501a1350e2c927ba357d31fd1ea5561e7c",
+      "size_bytes": 1411,
+      "new_sha256": "0eb3db39d1e07e48bf1a64af1d33eafe2283be9a08b5cd2083eaa5ae47fe2c91",
+      "new_size_bytes": 1417,
+      "change": "path_only"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/run_pipe_cpu.sh",
+      "new_path": "development/audit/m14496/tools/run_pipe_cpu.sh",
+      "git_mode": "100644",
+      "original_git_blob": "97a544852c3c070ddc33843727b3b01429b539b4",
+      "original_sha256": "4f844dc844d6fc40f1ab9450c2d1a89c35f7eb99e67761d8fafc09dc7305212e",
+      "size_bytes": 383,
+      "new_sha256": "4f844dc844d6fc40f1ab9450c2d1a89c35f7eb99e67761d8fafc09dc7305212e",
+      "new_size_bytes": 383,
+      "change": "byte_exact"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/run_prscope_suite.sh",
+      "new_path": "development/audit/m14496/tools/run_prscope_suite.sh",
+      "git_mode": "100644",
+      "original_git_blob": "48ce59e8324ce07284de936652d1b291a2ea5154",
+      "original_sha256": "be57db0460e9d463beb5b1453fc626cc0988638c5b802e4f7e7a907bad53d506",
+      "size_bytes": 358,
+      "new_sha256": "be57db0460e9d463beb5b1453fc626cc0988638c5b802e4f7e7a907bad53d506",
+      "new_size_bytes": 358,
+      "change": "byte_exact"
+    },
+    {
+      "old_path": "scripts/audit_runtest_r6/run_sample_suite.sh",
+      "new_path": "development/audit/m14496/tools/run_sample_suite.sh",
+      "git_mode": "100644",
+      "original_git_blob": "78f01dddb3c6a0479779274c678c811da46154de",
+      "original_sha256": "772857761811b6995294d5005dff64e65c054aab39712d817327b973238b70f3",
+      "size_bytes": 777,
+      "new_sha256": "772857761811b6995294d5005dff64e65c054aab39712d817327b973238b70f3",
+      "new_size_bytes": 777,
+      "change": "byte_exact"
+    }
+  ],
+  "reference_scan": "The only tracked references outside the legacy directory are in the published audit. Historical text retains its original commands and links to the new archive. No CI, maintained case, example or test called the retired path at the source revision.",
+  "compatibility": "Six Python scripts and one shell script have path-only adaptations. Five host-bound shell scripts and the historical in-place solver patch retain exact bytes. The destination, file modes and pre-move objects are recorded. The original commands can be recovered at source_commit.",
+  "validation": "Compared all bytes against source revision with only the recorded path edits. Compiled seven Python sources and checked six shell scripts with bash -n. Executed the claim-table and publisher CLI help from outside the checkout. Tested checkout-root discovery in four stdlib Python tools and the local shell driver.",
+  "scientific_scope": "Directory and entry-point checks only. Original workspace raw logs, run JSON and cluster inputs are unavailable in this checkout. No scientific run, solver patch or publication was executed."
+}

@@ -67,6 +67,24 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 )
                 self.assertFalse((REPO / item["old_path"]).exists())
 
+    def test_runtest_r6_tools_keep_paths_and_fingerprints(self):
+        ledger_path = LEDGER_PATH.parent / "runtest-r6-audit-tools-2026-11-23.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        root = REPO / ledger["new_directory"]
+        self.assertFalse((REPO / ledger["old_directory"]).exists())
+        self.assertEqual(
+            {path.name for path in root.iterdir() if path.is_file()},
+            {Path(entry["old_path"]).name for entry in ledger["entries"]},
+        )
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["new_path"]):
+                path = REPO / entry["new_path"]
+                self.assert_fingerprint(path, entry["new_sha256"], entry["new_size_bytes"])
+        for name in ("docs/AUDIT_RUNTEST_6_TENSORLBM.md", "development/audit/m14496/README.md"):
+            doc = REPO / name
+            links = re.findall(r"\]\(([^)]+)\)", doc.read_text(encoding="utf-8"))
+            self.assertTrue(any((doc.parent / link).resolve() == root for link in links))
+
     def test_archived_evidence_and_couette_images_are_unchanged(self):
         for item in self.ledger["preserved_files"]:
             with self.subTest(path=item["path"]):
