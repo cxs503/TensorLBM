@@ -5,7 +5,6 @@ on:
     paths:
       - "src/tensorlbm/multiphase_benchmarks.py"
       - "src/tensorlbm/verification/layered_poiseuille/**"
-      - "xval/two_component_sc_layered_poiseuille/**"
       - "tests/test_multiphase_*.py"
       - "tests/test_two_component_sc_layered_poiseuille.py"
       - ".github/workflows/multiphase-benchmarks.yml"
@@ -14,7 +13,6 @@ on:
     paths:
       - "src/tensorlbm/multiphase_benchmarks.py"
       - "src/tensorlbm/verification/layered_poiseuille/**"
-      - "xval/two_component_sc_layered_poiseuille/**"
       - "tests/test_multiphase_*.py"
       - "tests/test_two_component_sc_layered_poiseuille.py"
       - ".github/workflows/multiphase-benchmarks.yml"
@@ -46,6 +44,12 @@ jobs:
       # at H=22 and are therefore NOT gated here (see the benchmark artifacts).
       - name: Two-component SC layered Poiseuille benchmark gate
         run: |
-          PYTHONPATH=src python xval/two_component_sc_layered_poiseuille/run_benchmark.py \
+          PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.benchmark \
             --cases control_single_light,layered_r167_light \
             --out /tmp/two_component_sc_layered_bench
+      - name: Upload layered Poiseuille evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: two-component-sc-layered-poiseuille
+          path: /tmp/two_component_sc_layered_bench

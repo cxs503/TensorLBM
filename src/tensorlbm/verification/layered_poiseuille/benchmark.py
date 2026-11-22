@@ -8,11 +8,11 @@ into an explicit ``ref`` / ``got`` / ``err`` / ``threshold`` / ``pass`` table so
 that the numbers can be quoted, machine-checked and plotted without hand
 transcription.
 
-Callers (both are production code paths, not tests):
+Callers:
 
-* ``xval/two_component_sc_layered_poiseuille/run_benchmark.py`` -- CLI entry
+* ``python -m tensorlbm.verification.layered_poiseuille.benchmark`` -- CLI entry
   that writes ``benchmark.json`` / ``benchmark.csv`` / ``benchmark.md``;
-* ``evidence/paper_benchmarks/run_all_benchmarks.py`` --
+* ``tools/paper_benchmarks/run_all_benchmarks.py`` --
   ``run_two_component_sc_layered_poiseuille()`` is registered in the paper
   evidence harness next to the single-component layered-Poiseuille benchmark;
 * ``tensorlbm.verification.xval.cases`` -- the case is registered in the
@@ -116,7 +116,7 @@ _KPI_ROWS: Dict[str, List[tuple]] = {
 }
 
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                          "..", "..", "..", "..", ".."))
+                                          "..", "..", "..", ".."))
 
 
 # --------------------------------------------------------------------------- #
@@ -228,7 +228,7 @@ def run_benchmark(
             "git_commit": _git_commit(),
             "cwd": os.getcwd(),
         },
-        "repro_cmd": _repro_cmd(matrix),
+        "repro_cmd": _repro_cmd(matrix, cases),
         "kpi_table": rows,
         "records": records,
         "summary": {
@@ -259,11 +259,14 @@ def _worst(rows: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     return out
 
 
-def _repro_cmd(matrix: str) -> str:
-    return ("PYTHONPATH=TensorLBM/src python "
-            "TensorLBM/xval/two_component_sc_layered_poiseuille/run_benchmark.py "
-            f"--matrix {matrix} --out "
-            "TensorLBM/artifacts/xval_two_component_sc_layered_poiseuille_edm")
+def _repro_cmd(matrix: str, cases: Optional[Sequence[str]]) -> str:
+    command = (
+        "PYTHONPATH=src python -m tensorlbm.verification.layered_poiseuille.benchmark "
+        f"--matrix {matrix}"
+    )
+    if cases:
+        command += f" --cases {','.join(cases)}"
+    return command
 
 
 # --------------------------------------------------------------------------- #
@@ -348,14 +351,22 @@ def benchmark_single_case(case: str = "layered_r167_light", *, verbose: bool = F
     return {"case": case, "record": rec, "kpi_table": kpi_table(rec)}
 
 
-if __name__ == "__main__":  # pragma: no cover - thin CLI, see xval entry point
+if __name__ == "__main__":  # pragma: no cover - command-line entry
     import argparse
 
     ap = argparse.ArgumentParser(description="two-component SC layered Poiseuille benchmark")
     ap.add_argument("--matrix", default="light", choices=sorted(MATRICES))
+    ap.add_argument("--cases", help="Comma-separated case names overriding --matrix")
     ap.add_argument("--out", default="artifacts/xval_two_component_sc_layered_poiseuille_edm")
     a = ap.parse_args()
-    p = run_benchmark(a.matrix)
+    cases = None
+    if a.cases is not None:
+        cases = [name.strip() for name in a.cases.split(",")]
+        unknown = [name for name in cases if name not in LIGHT_CASES and name not in CASE_MATRIX]
+        if unknown:
+            ap.error(f"unknown benchmark case(s): {', '.join(repr(name) for name in unknown)}")
+    p = run_benchmark(a.matrix, cases=cases)
     for path in write_artifacts(p, a.out).values():
         print("wrote", path)
     print(to_markdown(p))
+    raise SystemExit(0 if p["summary"]["all_gates_pass"] else 1)
