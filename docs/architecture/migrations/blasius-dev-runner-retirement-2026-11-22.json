@@ -1,0 +1,30 @@
+{
+  "source_commit": "e103f38db2edd4ddd57be861a944cb7e9e7ad209",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "docs": {
+      "before": 88,
+      "after": 88
+    },
+    "benchmarks": {
+      "before": 103,
+      "after": 102
+    }
+  },
+  "entries": [
+    {
+      "old_path": "benchmarks/blasius_flat_plate_dev/run.py",
+      "new_path": "development/experiments/blasius_flat_plate/b25_initial_run.py",
+      "git_mode": "100644",
+      "original_git_blob": "36747f3299c225e9ed6048abd6e158a1a8c5fb37",
+      "original_sha256": "5d9025ba56450f488fc2c9e58c244c0fdc4d7cfe2a85ad322447baad64cdf824",
+      "size_bytes": 15923
+    }
+  ],
+  "canonical_case": "benchmarks/pending/blasius_flat_plate",
+  "canonical_runner": "benchmarks/pending/blasius_flat_plate/run.py",
+  "reference_scan": "The retired runner had two tracked exact-path mentions: its source-authority exception and a frozen m16069 audit verdict. The exception is removed because development archives are outside active source roots. The historical verdict remains unchanged as provenance text, not a runtime consumer.",
+  "compatibility": "The runnable pending case, README, current runner, result sets, gates, validation report and published docs/reports/report_blasius_flat_plate.md stay at their existing paths. The retired B25 runner keeps its exact Git blob under the development experiment area.",
+  "scientific_scope": "No solver, boundary condition, benchmark parameter, result or acceptance status changes. The canonical Blasius case remains pending and its existing failed numerical evidence is not promoted."
+}
