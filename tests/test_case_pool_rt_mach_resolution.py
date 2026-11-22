@@ -18,12 +18,12 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-BENCH = REPO / "benchmarks" / "case_pool" / "rayleigh_taylor_atwood05"
-for p in (str(REPO / "src"), str(BENCH), str(BENCH / "ref")):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
-probe = pytest.importorskip("probe_mach_resolution")
+from benchmarks.case_pool.rayleigh_taylor_atwood05 import (
+    probe_mach_resolution as probe,  # noqa: E402
+)
 
 
 def _by_axis(axis: str) -> list:
