@@ -1,0 +1,53 @@
+[
+  {
+    "file": "DIAG2-CAVCLSE.md",
+    "arm": "cavclse",
+    "mechanism": "闭合点运动学探针：深度峰后首上移步定t_close，3D连通传播",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 1.435220474823181,
+    "peak_time_ms": 11.09057142857143,
+    "key_numbers": [
+      {"10.5555": "t_close实测ms(pc)，越界早1.44ms"},
+      {"-22.73": "闭合点峰深vs实验1.8574D，欠深"},
+      {"1.4352": "深度峰D@step912(10.5433ms pc)"},
+      {"1107": "峰后步数，0步下移>0.05格(无重开)"},
+      {"0.119": "末步闭合点深D(窗内未完全闭合)"}
+    ],
+    "one_line_verdict": "预登记t_close区间[12,20]ms证伪(实测10.5555ms偏早)；方向预测自底向上成立，无空穴重开",
+    "open_gap": "t_close无独立实验基准，仅18点腔深曲线；欠深为基线物理非探针误差"
+  },
+  {
+    "file": "DIAG2-DISSMAP.md",
+    "arm": "dissmap",
+    "mechanism": "逐胞ε=2μ|S|²与conv(I→G)分区/径向分箱，只读探针",
+    "verdict": "HIT",
+    "peak_depth_D": 1.4352,
+    "peak_time_ms": 11.091,
+    "key_numbers": [
+      {"94.2": "conv损失界面胞份额%(iface机制成立)"},
+      {"73.7": "ABB界面胞conv份额%"},
+      {"0.3": "体相液conv份额%(证伪未触发)"},
+      {"305.8": "conv总量=1.5508e+00=305.8%E_scale"},
+      {"-22.731": "peak_error%，欠深原样未消除"}
+    ],
+    "one_line_verdict": "预登记命中：conv损失界面胞94.2%/ABB73.7%，体相液仅0.3%，界面机制成立",
+    "open_gap": "测量非修复，numeric_pass=False(3%门未过)；未跑12cells复核"
+  },
+  {
+    "file": "EV1-ABB_DIAG.md",
+    "arm": "abb_diag",
+    "mechanism": "ABB重建气相压力f_abb替换INTERFACE拉流，--ledger日志开关",
+    "verdict": "FAIL",
+    "peak_depth_D": 1.4352,
+    "peak_time_ms": 11.091,
+    "key_numbers": [
+      {"-22.73": "peak_error%，实验1.857434D@10.394ms"},
+      {"24": "postcontact_healthy_ms满窗"},
+      {"482391": "集群账tar KB但runs下无result.json"},
+      {"0.1": "预测ABB净漂移<0.1%总液量"},
+      {"0.3": "预测r<0.3"}
+    ],
+    "one_line_verdict": "基础设施FAIL：集群stage_dir机制致输出未被fetch捕获，非算法问题",
+    "open_gap": "建议改用SDAA车道或本地短测试验证；脚本逻辑已通过"
+  }
+]
