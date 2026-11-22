@@ -48,6 +48,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("benchmarks", "blasius_flat_plate_dev"),
     ("docs", "council"),
     ("docs", "history"),
+    ("docs", "m23777"),
+    ("docs", "m24569"),
     ("docs", "smoke"),
 }
 

@@ -84,6 +84,10 @@ retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
 unchanged archive objects and proves that the three removed history files are
 byte-identical to their retained `docs/mission_summaries/` copies.
 
+The [hotpatch records ledger](migrations/hotpatch-mission-records-2026-11-22.json)
+maps `docs/m23777/` and `docs/m24569/` into
+`development/audit/hotpatch-absorption/` and records the original checksums.
+
 The [Blasius development-runner ledger](migrations/blasius-dev-runner-retirement-2026-11-22.json)
 retires `benchmarks/blasius_flat_plate_dev/` in favour of the canonical
 `benchmarks/pending/blasius_flat_plate/` case. The earlier B25 runner remains

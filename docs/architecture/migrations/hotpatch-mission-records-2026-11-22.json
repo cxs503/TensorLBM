@@ -1,0 +1,30 @@
+{
+  "source_commit": "6335394c7eefa222a5e4d50486ed5eb1127ba7bb",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "docs": {"before": 88, "after": 86},
+    "benchmarks": {"before": 102, "after": 102}
+  },
+  "entries": [
+    {
+      "old_path": "docs/m23777/MISSION_REPORT.md",
+      "new_path": "development/audit/hotpatch-absorption/m23777/MISSION_REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "b173ed6f0dd1f3653acfd7f3aac74394a99e53ea",
+      "original_sha256": "3d3060abd50847c42f3fff536a24bfc89ad20cc7b17de97ab860a9945d289dbe",
+      "size_bytes": 3785
+    },
+    {
+      "old_path": "docs/m24569/VERIFICATION.md",
+      "new_path": "development/audit/hotpatch-absorption/m24569/VERIFICATION.md",
+      "git_mode": "100644",
+      "original_git_blob": "630609319dacf4cb7a69d46e8c7b0db9991c4a82",
+      "original_sha256": "c3368ed223eeea091d5bfa90b6a03d9569fa8ac2c2d0cece1198fdef87e80730",
+      "size_bytes": 4071
+    }
+  ],
+  "reference_scan": "Checked tracked text at the source commit for the directory paths, mission IDs, and common anchor. The references are contained in the two reports. Neither contains relative Markdown links.",
+  "compatibility": "The migration manifest maps both old paths and the source commit preserves the original revision URLs. External links to the old branch paths were not inventoried. The public case manuals retain their paths and the documentation homepage gains a direct link to their catalogue.",
+  "evidence_scope": "These records cover adoption and independent review of a historical input-contract hotfix. Their contents and historical verdicts are retained verbatim. This batch runs structural and documentation checks."
+}
