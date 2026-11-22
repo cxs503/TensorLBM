@@ -115,3 +115,9 @@ done
 - `field_solid_geometry.png`：孔隙结构切片（固体几何 φ=0.343, N=64）
 - `field_velocity_midplane.png`：渗透速度场云图（中剖面 z=0.5, N=64）
 - `curve_convergence_k_vs_N.png`：k vs N 收敛曲线（φ=0.343 四档）
+
+## Historical SDAA evidence
+
+[SDAA result](evidence/sdaa/sdaa_permeability3d.json) ·
+[Sweep report](../../../docs/sdaa_sweep/permeability3d.md).
+历史 SDAA 扫描的整体判定为未通过，N=128 和 N=160 因时间预算未运行。

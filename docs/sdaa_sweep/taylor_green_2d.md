@@ -9,7 +9,8 @@
 | 解析解 | 不可压 Navier–Stokes 精确解，纯粘性衰减 |
 | 来源 | `benchmarks/verified/taylor_green_2d/` |
 | 运行脚本 | `scripts/sdaa_sweep_taylor_green_2d.py` |
-| 结果文件 | `artifacts/sdaa_taylor_green_2d.json` |
+| 历史结果 | [SDAA 扫描 JSON](../../benchmarks/verified/taylor_green_2d/evidence/sdaa/sdaa_taylor_green_2d.json) |
+| 新运行输出 | `outputs/sdaa/taylor_green_2d/sdaa_taylor_green_2d.json` |
 
 ## 配置
 

@@ -204,7 +204,8 @@ def main():
         }
 
     # ── Write artifact ────────────────────────────────────────────────────
-    out_path = os.path.join(os.path.dirname(__file__), "..", "artifacts", "sdaa_wigley_hydrostatics.json")
+    out_path = os.path.join(os.path.dirname(__file__), "..", "outputs", "sdaa",
+                            "wigley_hydrostatics", "sdaa_wigley_hydrostatics.json")
     out_path = os.path.abspath(out_path)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:

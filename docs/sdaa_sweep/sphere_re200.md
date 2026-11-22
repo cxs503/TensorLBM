@@ -82,5 +82,6 @@ torch.sdaa.get_device_name(0) = /dev/tcaicard11
 ## 产物
 
 - 脚本: `scripts/sdaa_sweep_sphere_re200.py`
-- 产物: `artifacts/sdaa_sphere_re200.json`
+- [历史结果 JSON](../../benchmarks/verified/sphere_re200/evidence/sdaa/sdaa_sphere_re200.json)
+- 新运行输出：`outputs/sdaa/sphere_re200/sdaa_sphere_re200.json`
 - 本文档: `docs/sdaa_sweep/sphere_re200.md`

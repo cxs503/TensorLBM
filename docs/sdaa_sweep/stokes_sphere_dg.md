@@ -1,7 +1,8 @@
 # SDAA 验证案例扫荡 — `stokes_sphere_dg`
 
 - 案例: `benchmarks/verified/stokes_sphere_dg`（TensorLBM benchmarks/verified，状态 verified）
-- 产物: `artifacts/sdaa_stokes_sphere_dg.json`（机器生成，判据数值零手抄）
+- [历史结果 JSON](../../benchmarks/verified/stokes_sphere_dg/evidence/sdaa/sdaa_stokes_sphere_dg.json)（机器生成，判据数值零手抄）
+- 新运行输出：`outputs/sdaa/stokes_sphere_dg/sdaa_stokes_sphere_dg.json`
 - 驱动脚本: `scripts/sdaa_sweep_stokes_sphere_dg.py`（独立驱动，业务代码 `src/tensorlbm/**` 未修改：`business_code_modified=False`）
 - 仓库/分支/commit: `/srv/tensor/agent/work/m61` / `agent/m61` / `0d41766351ae`
 - 生成时间: 2026-10-29T13:59:30+0000

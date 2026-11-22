@@ -5,7 +5,7 @@ This script runs the verified ``maneuvering_steady_turn`` benchmark
 (``benchmarks/verified/maneuvering_steady_turn``) with all tensor computation
 on the **sdaa** device, records device evidence, and writes the results
 (including per-criterion PASS/FAIL) to
-``artifacts/sdaa_maneuvering_steady_turn.json``.
+``outputs/sdaa/maneuvering_steady_turn/sdaa_maneuvering_steady_turn.json``.
 
 Acceptance criteria (from the case README / result.json, original口径):
   C1  Each (rudder, dt, integrator) level: |R_err| <= 3 %
@@ -220,8 +220,8 @@ def run_case(model, delta_deg, level, dt, integrator) -> dict:
 # 4.  Main
 # --------------------------------------------------------------------------- #
 def main() -> int:
-    out_dir = _REPO / "artifacts"
-    out_dir.mkdir(exist_ok=True)
+    out_dir = _REPO / "outputs/sdaa/maneuvering_steady_turn"
+    out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "sdaa_maneuvering_steady_turn.json"
 
     t_start = time.time()

@@ -20,7 +20,7 @@
 3. 若 OOM，必须报告 OOM 发生在哪一行 tensor 操作
 
 **输出工件：**
-- `artifacts/sdaa_sphere_re100_envelope.json`
+- [历史包络 JSON](../../benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100_envelope.json)
 - `docs/sdaa_triage/SPHERE.md`（本文档）
 
 ---
@@ -196,7 +196,7 @@
 
 | 文件 | 路径 | 说明 |
 |------|------|------|
-| 包络 JSON | `artifacts/sdaa_sphere_re100_envelope.json` | 完整结果数据 |
+| 包络 JSON | [历史结果](../../benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100_envelope.json) | 再运行写入 `outputs/sdaa/sphere_re100/` |
 | 测试脚本 | `scripts/quick_sphere_test.py` | 快速可行性测试脚本 |
 | 完整脚本 | `scripts/sdaa_sphere_re100_envelope.py` | 完整测试脚本（未运行完成） |
 | 本文档 | `docs/sdaa_triage/SPHERE.md` | 测试报告 |

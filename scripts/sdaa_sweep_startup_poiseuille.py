@@ -13,7 +13,7 @@ teco_inductor 后端尚不完整，无法编译 LBM 整步链）。
   4. H→2H 误差单调下降（网格收敛）
 
 输出：
-  - artifacts/sdaa_startup_poiseuille.json（设备证据行 + 判据数值 + PASS/FAIL）
+  - outputs/sdaa/startup_poiseuille/sdaa_startup_poiseuille.json（设备证据行 + 判据数值 + PASS/FAIL）
   - 终端打印逐条比对结果
 """
 
@@ -178,7 +178,7 @@ artifact = {
 }
 
 # ── 写 artifacts ─────────────────────────────────────────────────────────
-artifacts_dir = REPO / "artifacts"
+artifacts_dir = REPO / "outputs/sdaa/startup_poiseuille"
 artifacts_dir.mkdir(parents=True, exist_ok=True)
 out_path = artifacts_dir / "sdaa_startup_poiseuille.json"
 out_path.write_text(json.dumps(artifact, indent=2, ensure_ascii=False))

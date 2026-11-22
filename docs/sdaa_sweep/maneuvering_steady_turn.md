@@ -123,4 +123,5 @@ Well within the 20-minute budget.
 ## Artifacts
 
 * Script: `scripts/sdaa_sweep_maneuvering_steady_turn.py`
-* Results JSON: `artifacts/sdaa_maneuvering_steady_turn.json`
+* [Archived results JSON](../../benchmarks/verified/maneuvering_steady_turn/evidence/sdaa/sdaa_maneuvering_steady_turn.json)
+* New output: `outputs/sdaa/maneuvering_steady_turn/sdaa_maneuvering_steady_turn.json`

@@ -87,5 +87,6 @@ SDAA 结果与原始 CPU 结果在有效数字内完全一致（差异 < 1e-10 �
 ## 工件
 
 - 脚本：`scripts/sdaa_sweep_acoustics.py`
-- 输出：`artifacts/sdaa_acoustics.json`
+- [历史运行结果](../../benchmarks/verified/acoustics/evidence/sdaa/sdaa_acoustics.json)
+- 新运行输出：`outputs/sdaa/acoustics/sdaa_acoustics.json`
 - 本文档：`docs/sdaa_sweep/acoustics.md`

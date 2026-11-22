@@ -1,7 +1,7 @@
 """Self-consistency tests for the SDAA sweep artifact of ``stokes_sphere_dg``.
 
 These tests never re-run the (14.9 min) simulation.  They check that every
-judged number in ``artifacts/sdaa_stokes_sphere_dg.json`` can be *recomputed*
+judged number in the case's archived JSON can be *recomputed*
 from the raw series that the same file stores, i.e. that no judgment value was
 hand-copied, and that the device evidence line is present.
 """
@@ -15,14 +15,12 @@ import os
 import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ART = os.path.join(REPO, "artifacts", "sdaa_stokes_sphere_dg.json")
 CASE = os.path.join(REPO, "benchmarks", "verified", "stokes_sphere_dg")
+ART = os.path.join(CASE, "evidence", "sdaa", "sdaa_stokes_sphere_dg.json")
 
 
 @pytest.fixture(scope="module")
 def art():
-    if not os.path.exists(ART):
-        pytest.skip("sweep artifact missing (run scripts/sdaa_sweep_stokes_sphere_dg.py)")
     with open(ART) as fh:
         return json.load(fh)
 

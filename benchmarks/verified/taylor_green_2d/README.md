@@ -89,3 +89,9 @@ python run.py --n 64 --re 100 --u0 0.05 --steps 3000   # 自定义案例
 - 解析解：Taylor (1937) 涡解；2D TG 涡经典 LBM 验证（Krüger et al.,
   *The Lattice Boltzmann Method*, §"validation"）。
 - 判定标准：benchmarks/problems.md B17（验证数值耗散，LBM 弱项）。
+
+## 历史 SDAA 证据
+
+[扫描结果](evidence/sdaa/sdaa_taylor_green_2d.json) ·
+[运行报告](../../../docs/sdaa_sweep/taylor_green_2d.md)。
+新扫描将结果写入仓库根目录下的 `outputs/sdaa/taylor_green_2d/`。

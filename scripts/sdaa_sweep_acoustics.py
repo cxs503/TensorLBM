@@ -3,7 +3,7 @@
 
 Runs the D2Q9 plane acoustic wave convergence cases (N=16,32,64, tau=1.0,
 eps=1e-3) on the SDAA device, computes the pre-registered verdict criteria,
-and writes artifacts/sdaa_acoustics.json.
+and writes outputs/sdaa/acoustics/sdaa_acoustics.json.
 
 No business code is modified.  The script imports the library kernels
 (tensorlbm.solver.collide_bgk / stream, tensorlbm.d2q9.equilibrium /
@@ -307,7 +307,7 @@ def main() -> None:
     }
 
     # Write artifact
-    artifact_path = REPO_ROOT / "artifacts" / "sdaa_acoustics.json"
+    artifact_path = REPO_ROOT / "outputs/sdaa/acoustics/sdaa_acoustics.json"
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.write_text(json.dumps(output, indent=2) + "\n")
     print(f"\n[sdaa_acoustics] Artifact written to {artifact_path}")

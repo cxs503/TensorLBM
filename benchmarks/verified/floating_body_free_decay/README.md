@@ -18,6 +18,12 @@
 无阻尼、无外力时单自由度 Cummins 方程退化为简谐振子，其**精确解析**固有频率为
 
 ```
+
+## Historical SDAA evidence
+
+[SDAA result](evidence/sdaa/sdaa_floating_body_free_decay.json) ·
+[Sweep report](../../../docs/sdaa_sweep/floating_body_free_decay.md).
+历史 SDAA 扫描记录为 FAIL，原始记录保留设备兼容问题及各次尝试。
 ω_n = sqrt( C_dof,dof / ( M_dof,dof + A∞_dof,dof ) )     ........ (A)
 ```
 
