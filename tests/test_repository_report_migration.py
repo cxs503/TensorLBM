@@ -287,6 +287,19 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn("numbers_from_artifact.json", report.read_text())
         self.assertTrue(report.with_name("numbers_from_artifact.json").is_file())
 
+    def test_xval_artifacts_preserved_without_tracked_generated_root(self):
+        ledger_path = LEDGER_PATH.parent / "xval-artifacts-retirement-2026-11-23.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "--", ledger["retired_path"]], cwd=REPO, text=True,
+        )
+        self.assertEqual(tracked, "")
+        for item in ledger["entries"]:
+            with self.subTest(path=item["old_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["original_sha256"], item["size_bytes"]
+                )
+
     def test_november_root_migration_destinations(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             moves = {

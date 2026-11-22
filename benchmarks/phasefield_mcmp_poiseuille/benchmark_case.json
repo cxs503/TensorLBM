@@ -1,0 +1,23 @@
+{
+  "scope": "Historical m18190 free-energy D2Q9 two-layer Poiseuille comparison against the analytical channel profile. The archived implementation and results are available for replay.",
+  "criteria": {
+    "metric": "Relative L2 error of the streamwise velocity on the fluid rows.",
+    "historical_threshold": "Strictly less than 0.15."
+  },
+  "source": ["xval/xval_phasefield_mcmp_poiseuille.py"],
+  "config": ["benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json"],
+  "documentation": [
+    "benchmarks/phasefield_mcmp_poiseuille/README.md",
+    "xval/DIFF_OSS_VS_TENSORLBM_PHASEFIELD_MCMP_POISEUILLE.md",
+    "development/audit/m18190/AUDIT_M18190.md"
+  ],
+  "reference_files": ["xval/xval_phasefield_mcmp_poiseuille.py"],
+  "references": [
+    {
+      "source": "xval/xval_phasefield_mcmp_poiseuille.py",
+      "field": "analytical_stratified_poiseuille",
+      "value": "Piecewise parabolic velocity with wall no-slip and continuous velocity and shear stress at the interface."
+    }
+  ],
+  "results": ["benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json"]
+}
