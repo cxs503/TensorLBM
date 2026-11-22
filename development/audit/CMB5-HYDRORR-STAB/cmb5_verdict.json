@@ -1,0 +1,130 @@
+{
+ "death_cause": {
+  "arm": "hydro_rr",
+  "stop_reason": "health_limit",
+  "critical_step": 1305,
+  "critical_time_ms_abs": 15.869732142857142,
+  "critical_time_ms_pc": 15.334660714285713,
+  "volume_drift_at_death": 0.00011240331204009912,
+  "geometric_volume_drift_at_death": 0.0005404269932409722,
+  "represented_mass_drift_at_death": 9.876831641575379e-05,
+  "mach_max_at_death": 0.10599370395558079,
+  "mach_max_whole_run": 0.1327639411087398,
+  "gate": "volume_drift > 1e-4",
+  "slope_last200_per_step": 1.065416332724334e-07,
+  "contact_step": 44,
+  "rr_tau": 0.5003877
+ },
+ "dose_ladder": {
+  "cmb5_d075": [
+   0.0029731228729867887,
+   0.03648214285714285,
+   null,
+   "health_limit",
+   0.12994825151173878,
+   0.0001206525403746328,
+   null
+  ],
+  "cmb5_d050": [
+   0.003752152416379495,
+   0.03648214285714285,
+   null,
+   "health_limit",
+   0.29571678256528594,
+   0.0003484238125496253,
+   null
+  ],
+  "cmb5_ul13": [
+   0.0029731228729867887,
+   0.03648214285714285,
+   null,
+   "health_limit",
+   0.12994825151173878,
+   0.0001206525403746328,
+   null
+  ]
+ },
+ "references": {
+  "ctrl": [
+   1.4352204748231856,
+   11.090571428571428,
+   10.543339285714286,
+   "window_complete",
+   0.2598076211353318,
+   4.805885601255611e-06,
+   45
+  ],
+  "combo_hydro": [
+   1.750541098537855,
+   14.84823214285714,
+   14.313160714285711,
+   "window_complete",
+   0.13519539853506635,
+   1.3436346512962771e-05,
+   44
+  ],
+  "hydro_rr": [
+   1.7771323912716592,
+   15.626517857142856,
+   15.091446428571427,
+   "health_limit",
+   0.1327639411087398,
+   0.00011240331204009912,
+   44
+  ],
+  "hydro_only": [
+   1.6366277885109517,
+   14.082107142857142,
+   13.534875,
+   "health_limit",
+   0.25980762113533173,
+   0.00011511675289521683,
+   45
+  ]
+ },
+ "verdicts": [
+  {
+   "arm": "cmb5_d075",
+   "peak_D": 0.0029731228729867887,
+   "peak_ms_abs": 0.03648214285714285,
+   "peak_ms_pc": null,
+   "stop": "health_limit",
+   "mach_max": 0.12994825151173878,
+   "end_drift": 0.0001206525403746328,
+   "depth_err_pct": -99.839933861823,
+   "time_err_pct": null,
+   "depth_gate_3pct": false,
+   "time_gate_3pct": null,
+   "verdict": "EARLY_DEATH"
+  },
+  {
+   "arm": "cmb5_d050",
+   "peak_D": 0.003752152416379495,
+   "peak_ms_abs": 0.03648214285714285,
+   "peak_ms_pc": null,
+   "stop": "health_limit",
+   "mach_max": 0.29571678256528594,
+   "end_drift": 0.0003484238125496253,
+   "depth_err_pct": -99.79799269226366,
+   "time_err_pct": null,
+   "depth_gate_3pct": false,
+   "time_gate_3pct": null,
+   "verdict": "EARLY_DEATH"
+  },
+  {
+   "arm": "cmb5_ul13",
+   "peak_D": 0.0029731228729867887,
+   "peak_ms_abs": 0.03648214285714285,
+   "peak_ms_pc": null,
+   "stop": "health_limit",
+   "mach_max": 0.12994825151173878,
+   "end_drift": 0.0001206525403746328,
+   "depth_err_pct": -99.839933861823,
+   "time_err_pct": null,
+   "depth_gate_3pct": false,
+   "time_gate_3pct": null,
+   "verdict": "EARLY_DEATH"
+  }
+ ],
+ "line_verdict": "LINE_CLOSED_HYDRORR_FRONTIER_UNSTABILIZABLE"
+}

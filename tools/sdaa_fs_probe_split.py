@@ -137,6 +137,10 @@ def parse_args():
                     default="benchmarks.water_entry.single_drop.free_surface_probe",
                     help="probe module to drive (must expose probe(**kw)); "
                          "default keeps the free-surface baseline bit-identical")
+    ap.add_argument("--cs", type=float, default=0.0,
+                    help="Smagorinsky constant C_s for the BGK SGS path (DE-X-TURB1-SMAG); 0=off, bit-identical")
+    ap.add_argument("--hydro-z-ref", type=float, default=0.0,
+                    help="hydrostatic pressure compensation z_ref (TL_FS_HYDRO_Z_REF, SURF2-HYDRO-R1); 0=off")
     return ap.parse_args()
 
 
@@ -177,7 +181,8 @@ def launch(a):
            f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv} "
            f"-e WE_CAV_CLOSURE={1 if a.cav_closure else 0} "
            f"-e WE_GAS_FLOW={1 if a.gas_flow else 0} "
-           f"-e WE_PROBE_MODULE={a.probe_module} -e WE_RR_TAU={a.rr_tau}")
+           f"-e WE_PROBE_MODULE={a.probe_module} -e WE_RR_TAU={a.rr_tau} "
+           f"-e TL_FS_CS={a.cs} -e TL_FS_HYDRO_Z_REF={a.hydro_z_ref if a.hydro_z_ref else ''}")
     cname = f"sdaa_{tag}"
     r = ssh(f"docker run -d --name {cname} --device /dev/tcaicard{card} "
             f"-v {wt}:/we -v {out}:/out {env} {IMG} bash -c "
@@ -193,10 +198,13 @@ def launch(a):
                              "probe_module": a.probe_module,
                              "rr_tau": float(a.rr_tau),
                              "momconv": a.momconv,
+                             "cs": a.cs,
+                             "hydro_z_ref": a.hydro_z_ref,
                              "launched_at": time.time()})
     print(f"[sdaa] launched arm={a.arm} card={card} commit={head} steps={a.steps} "
           f"diag_cavity={bool(a.diag_cavity)} diag_budget={bool(a.diag_budget)} "
-          f"gas_flow={bool(a.gas_flow)} rr_tau={a.rr_tau} momconv={a.momconv!r} container={cname}", flush=True)
+          f"gas_flow={bool(a.gas_flow)} rr_tau={a.rr_tau} momconv={a.momconv!r} "
+          f"cs={a.cs} hydro_z_ref={a.hydro_z_ref} container={cname}", flush=True)
     return 0
 
 
@@ -220,7 +228,9 @@ def collect(a):
     rp = ssh(f"cat {out}/planes.npz 2>/dev/null") if state.get("planes") else None
     header = (f"arm={a.arm} card={card} commit={state['commit']} steps={state['steps']} "
               f"diag_cavity={state['diag_cavity']} diag_budget={state.get('diag_budget', False)} "
-              f"gas_flow={state.get('gas_flow', False)} rr_tau={state.get('rr_tau', 0.0)} momconv={state.get('momconv', '')}\n")
+              f"gas_flow={state.get('gas_flow', False)} rr_tau={state.get('rr_tau', 0.0)} "
+              f"momconv={state.get('momconv', '')} cs={state.get('cs', 0.0)} "
+              f"hydro_z_ref={state.get('hydro_z_ref', 0.0)}\n")
     with open(f"{tree}/runs/{a.arm}/run.log", "w") as handle:
         handle.write(header + rlog.stdout.decode(errors="ignore"))
     if rp is not None and rp.stdout:

@@ -1039,6 +1039,17 @@ def free_surface_step(
             from .solver3d import collide_mrt3d
 
             f = collide_mrt3d(f_collide, tau)
+    elif collision == "rr":
+        # Regularized collision (DE-X-COL2-REG): the non-equilibrium part is
+        # projected back onto the equilibrium manifold through its second-order
+        # stress only (Ladd 1994); every higher-order non-equilibrium moment is
+        # discarded, which bounds the post-collision populations and widens the
+        # stable relaxation window below the BGK floor.  ``feq`` already carries
+        # the Guo half-step velocity shift, so the explicit Guo source below is
+        # applied exactly once, as for BGK.
+        from .collision_d3q19_advanced import collide_regularized_stress_d3q19
+
+        f = collide_regularized_stress_d3q19(f_collide, feq, tau)
     else:  # bgk
         if C_s > 0:
             if sgs_model == "smagorinsky":
@@ -1187,6 +1198,20 @@ def free_surface_step(
         )
         delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
         rho_g_field = rho_g_field + torch.where(iface_abb, delta_rho, torch.zeros_like(delta_rho))
+    # Hydrostatic pressure compensation (OPT-IN: TL_FS_HYDRO_Z_REF).
+    # Numerical schemes often break hydrostatic equilibrium (hydrostatic
+    # paradox): the interface-cell gas density is systematically biased,
+    # causing the cavity to under-deepen (MMC4: -22.7% gap concentrated in
+    # the late 7ms+ window).  Restore the hydrostatic head on interface cells:
+    #   rho_g_cav = rho_g_base + rho_l * gz * (z - z_ref) / cs2
+    # with z_ref = initial water-surface grid index.  Default off = bit-identical.
+    _hydro_z_ref = os.environ.get("TL_FS_HYDRO_Z_REF")
+    if _hydro_z_ref not in (None, "") and float(gz) != 0.0:
+        _cs2 = 1.0 / 3.0
+        _z_idx = torch.arange(rho.shape[0], device=device, dtype=rho.dtype).view(-1, 1, 1)
+        _dpos = _z_idx - float(_hydro_z_ref)  # (z - z_ref), <0 below surface
+        _hydro = float(rho_liquid) * float(gz) * _dpos / _cs2
+        rho_g_field = rho_g_field + torch.where(iface_abb, _hydro, torch.zeros_like(_hydro))
     f_eq_gas = equilibrium3d(rho_g_field, _ux_pc, _uy_pc, _uz_pc)
     # The reference ABB subtracts the *local post-collision* outgoing
     # population f_post[opp] (magnitude O(rho_liquid)).  This is consistent
