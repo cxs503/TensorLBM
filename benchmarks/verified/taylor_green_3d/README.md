@@ -113,3 +113,9 @@ python run.py --n 64 --re 24 --steps 2000 --device cuda:2   # 单案例（GPU）
 - 判定标准：benchmarks/problems.md B17（D3Q19 周期域）；用户硬标准
   （真实模拟、≤3%、≥2 档网格单调收敛）
 - 共性模块缺口（3D 周期）：/tmp/tg3d_gap.md（T1-T3）
+
+## 历史 SDAA 证据
+
+[扫描结果](evidence/sdaa/sdaa_taylor_green_3d.json) ·
+[运行报告](../../../docs/sdaa_sweep/taylor_green_3d.md)。
+新扫描将结果写入仓库根目录下的 `outputs/sdaa/taylor_green_3d/`。

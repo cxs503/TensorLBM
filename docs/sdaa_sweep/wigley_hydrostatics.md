@@ -10,7 +10,8 @@
 | **Reference** | Closed-form Wigley (1934) parabolic hull integrals — Faltinsen, Lewis; independently re-derived with sympy |
 | **Entry point** | `benchmarks/verified/wigley_hydrostatics/wigley_hydro_full.py` |
 | **Sweep script** | `scripts/sdaa_sweep_wigley_hydrostatics.py` |
-| **Artifact** | `artifacts/sdaa_wigley_hydrostatics.json` |
+| **Archived result** | [SDAA sweep JSON](../../benchmarks/verified/wigley_hydrostatics/evidence/sdaa/sdaa_wigley_hydrostatics.json) |
+| **New output** | `outputs/sdaa/wigley_hydrostatics/sdaa_wigley_hydrostatics.json` |
 
 ## Configuration
 

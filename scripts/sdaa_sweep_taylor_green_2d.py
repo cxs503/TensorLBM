@@ -10,7 +10,7 @@ triton，用 TRITON_INTERPRET=1 并如实记录绕行。网格/步数按案例�
   2. 速度衰减率偏差 |γ_vel_sim/γ_vel_theory − 1| ≤ 1%
   3. 指数衰减质量 ln E vs t 线性拟合 R² ≥ 0.999
 
-输出：artifacts/sdaa_taylor_green_2d.json
+输出：outputs/sdaa/taylor_green_2d/sdaa_taylor_green_2d.json
 """
 
 from __future__ import annotations
@@ -217,7 +217,7 @@ result = {
 }
 
 # ── 输出 ──────────────────────────────────────────────────────────────
-artifacts_dir = REPO / "artifacts"
+artifacts_dir = REPO / "outputs/sdaa/taylor_green_2d"
 artifacts_dir.mkdir(parents=True, exist_ok=True)
 out_path = artifacts_dir / "sdaa_taylor_green_2d.json"
 with open(out_path, "w") as fh:

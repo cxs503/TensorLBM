@@ -1,0 +1,52 @@
+{
+  "source_commit": "11f76f605cff58d4119c93deac6f388d5aacaeaf",
+  "root_directories_before": 13,
+  "root_directories_after": 13,
+  "tracked_artifacts_before": 42,
+  "tracked_artifacts_after": 37,
+  "entries": [
+    {
+      "old_path": "artifacts/sdaa_acoustics.json",
+      "new_path": "benchmarks/verified/acoustics/evidence/sdaa/sdaa_acoustics.json",
+      "git_mode": "100644",
+      "original_git_blob": "748c69c75bb0b9cc601285724df7ddfc7e0d49a0",
+      "size_bytes": 4576,
+      "original_sha256": "84acd7e132c4baddb9876f40a043e3f8ce731cfc5e8f44df9b3581099618e7b4"
+    },
+    {
+      "old_path": "artifacts/sdaa_taylor_green_2d.json",
+      "new_path": "benchmarks/verified/taylor_green_2d/evidence/sdaa/sdaa_taylor_green_2d.json",
+      "git_mode": "100644",
+      "original_git_blob": "50442bbc05d012ba801f5ef185454a18b8d35cd8",
+      "size_bytes": 1580,
+      "original_sha256": "0f1ad6dc7c74b4efc2f9b4e124f9b524ea213afab3fdef94250ef9cf58013970"
+    },
+    {
+      "old_path": "artifacts/sdaa_taylor_green_3d.json",
+      "new_path": "benchmarks/verified/taylor_green_3d/evidence/sdaa/sdaa_taylor_green_3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "ba0ab1460efc19f6cd73d780fcecef67cbc17185",
+      "size_bytes": 3734,
+      "original_sha256": "b9606c89cefc7cbac1ae7e317f69cf16f82e1424cab6c909d9deb5414fd51d94"
+    },
+    {
+      "old_path": "artifacts/sdaa_kovasznay_2d.json",
+      "new_path": "benchmarks/verified/kovasznay_2d/evidence/sdaa/sdaa_kovasznay_2d.json",
+      "git_mode": "100644",
+      "original_git_blob": "b62b904d4eaa09c367d279c2d23515925e515d47",
+      "size_bytes": 4748,
+      "original_sha256": "e5ed0833355007a9f2a07488e043e5ca4154e767eaaf4636b4468d7e2f3ea1b5"
+    },
+    {
+      "old_path": "artifacts/sdaa_wigley_hydrostatics.json",
+      "new_path": "benchmarks/verified/wigley_hydrostatics/evidence/sdaa/sdaa_wigley_hydrostatics.json",
+      "git_mode": "100644",
+      "original_git_blob": "a3c824f9c93f76a60b8cde754260ce53060d1d66",
+      "size_bytes": 3501,
+      "original_sha256": "18daec57ebacaec0741e9e4500ea0273d0d2fcd73472d58f0dacb8249aaa15b0"
+    }
+  ],
+  "reference_scan": "Reviewed exact names, tracked writers, case README and sweep report links. Mission QA and historical reports retain their source paths.",
+  "compatibility": "The five sweep commands keep their locations. New output goes to the case directory under ignored outputs/sdaa; archived identifiers and bytes remain available to the SDAA ledger and case registry.",
+  "scientific_scope": "Archival only. The original device runs and their configuration, verdicts and limits are carried forward unchanged."
+}

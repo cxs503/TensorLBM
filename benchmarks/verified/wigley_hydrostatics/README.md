@@ -39,3 +39,9 @@ uses L = 640/960.
 ```bash
 PYTHONPATH=src python benchmarks/verified/wigley_hydrostatics/wigley_hydro_full.py
 ```
+
+## 历史 SDAA 证据
+
+[扫描结果](evidence/sdaa/sdaa_wigley_hydrostatics.json) ·
+[运行报告](../../../docs/sdaa_sweep/wigley_hydrostatics.md)。
+新扫描将结果写入仓库根目录下的 `outputs/sdaa/wigley_hydrostatics/`。

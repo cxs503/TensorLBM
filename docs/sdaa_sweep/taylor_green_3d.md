@@ -100,5 +100,6 @@ SDAA 的 `teco_inductor` 后端（Torch-SDAA 3.1.1a3）对 LBM 完整步链（co
 ## 产物
 
 - 运行脚本：`scripts/sdaa_sweep_taylor_green_3d.py`
-- 结果 JSON：`artifacts/sdaa_taylor_green_3d.json`
+- [历史结果 JSON](../../benchmarks/verified/taylor_green_3d/evidence/sdaa/sdaa_taylor_green_3d.json)
+- 新运行输出：`outputs/sdaa/taylor_green_3d/sdaa_taylor_green_3d.json`
 - 本文档：`docs/sdaa_sweep/taylor_green_3d.md`
