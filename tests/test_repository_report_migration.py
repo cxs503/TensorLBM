@@ -380,6 +380,8 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         survey_ledger = LEDGER_PATH.parent / "m26963-bb-root-retirement-2026-11-22.json"
         ledgers = [
             LEDGER_PATH.parent / "m26734-drop-entry-reentry-2026-11-21.json",
+            LEDGER_PATH.parent / "m26737-drop-entry-reentry-2026-11-22.json",
+            LEDGER_PATH.parent / "m27075-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26856-audit-reentry-2026-11-21.json",
             LEDGER_PATH.parent / "m26892-drop-entry-reentry-2026-11-22.json",
             LEDGER_PATH.parent / "m26887-drop-entry-reentry-2026-11-22.json",
@@ -424,7 +426,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
             (REPO / published).read_bytes(),
             (REPO / m26734["entries"][0]["new_path"]).read_bytes(),
         )
-        m26892 = json.loads(ledgers[2].read_text(encoding="utf-8"))
+        m26892 = json.loads(ledgers[4].read_text(encoding="utf-8"))
         published = m26892["entries"][0]["published_duplicate"]
         self.assertEqual(
             (REPO / published).read_bytes(),
