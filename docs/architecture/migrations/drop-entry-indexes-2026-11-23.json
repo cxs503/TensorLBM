@@ -1,0 +1,91 @@
+{
+  "source_commit": "aee720a623639cf52eb97b3db1e18ef7dfcde64a",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "development": {
+      "before": 7,
+      "after": 6
+    }
+  },
+  "old_directory": "development/idx",
+  "new_directory": "development/audit/drop_entry/indexes",
+  "original_git_tree": "e7538c58da1ac85b5a63e96e5e2a69b6d474c950",
+  "entries": [
+    {
+      "old_path": "development/idx/IDX-02.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-02.json",
+      "git_mode": "100644",
+      "original_git_blob": "083a748b6fa5ddb851e131803a7d694e6cc37228",
+      "original_sha256": "755c74b52e757597135a5ff8e94340524403438d7ac0cb91399c232c5c5b3043",
+      "size_bytes": 2454
+    },
+    {
+      "old_path": "development/idx/IDX-04.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-04.json",
+      "git_mode": "100644",
+      "original_git_blob": "61aaa3697163c85bd5818061960e2e26857a680a",
+      "original_sha256": "2db30c4fecdbc7966f42ca67cb1ec0be0a763f60ae4225c339a3fe282c4e1b9a",
+      "size_bytes": 1980
+    },
+    {
+      "old_path": "development/idx/IDX-06.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-06.json",
+      "git_mode": "100644",
+      "original_git_blob": "c979fc3eaa02b551e97ef5be77731bab24fc9d7c",
+      "original_sha256": "2f75065ad96dc8d95cda41ceb81aa48a69c6cd3e40b437a2884b84426643e062",
+      "size_bytes": 2298
+    },
+    {
+      "old_path": "development/idx/IDX-10.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-10.json",
+      "git_mode": "100644",
+      "original_git_blob": "e4c12d938548b1150883a6748790df893a953cb7",
+      "original_sha256": "7e42c23776b8870b72bd64d8e5178eef67cbb4a418a5e2b36516ea277ae15171",
+      "size_bytes": 2269
+    },
+    {
+      "old_path": "development/idx/IDX-12.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-12.json",
+      "git_mode": "100644",
+      "original_git_blob": "af8c310260a50a2f487614c0f66668908728f7c1",
+      "original_sha256": "546c9db48133079d5196f020cb6ec151b3c9ef485e9539d7a1db5490c9c89e18",
+      "size_bytes": 2421
+    },
+    {
+      "old_path": "development/idx/IDX-14.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-14.json",
+      "git_mode": "100644",
+      "original_git_blob": "03e528c9f5cc57b5311ddf8438a746b0492e0014",
+      "original_sha256": "fe5ce6f2d572320633bdee7e7d05fcbd49d5ed34cf65b7fa9f3897f34460d2db",
+      "size_bytes": 1999
+    },
+    {
+      "old_path": "development/idx/IDX-16.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-16.json",
+      "git_mode": "100644",
+      "original_git_blob": "6324885c59b236090a62095f5c797aa0ad863c53",
+      "original_sha256": "7d206d62ac17aa073068d0ee5a6e946349df36bb923e5b44302908a3b03a9643",
+      "size_bytes": 2043
+    },
+    {
+      "old_path": "development/idx/IDX-18.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-18.json",
+      "git_mode": "100644",
+      "original_git_blob": "f2ad2d9a10082989c50d7d61d23cfdfc79af37b9",
+      "original_sha256": "aa3de6a34d79f68563d6a896a139687ba65479b1feb2510768aaba8b1668f01f",
+      "size_bytes": 2131
+    },
+    {
+      "old_path": "development/idx/IDX-20.json",
+      "new_path": "development/audit/drop_entry/indexes/IDX-20.json",
+      "git_mode": "100644",
+      "original_git_blob": "80087129c5108103bb2175079dc105d40d8fe020",
+      "original_sha256": "0061591ee1ee8b55f2dc62d7cdbb26916f783a1c8b537b731b302859cddc4415",
+      "size_bytes": 2500
+    }
+  ],
+  "consumer_scan": "Tracked text searches at the source commit found no repository references to the old directory or any of its nine full index filenames. External consumers of the old branch paths were not inventoried.",
+  "compatibility": "The complete subtree is reattached byte-for-byte under the drop-entry audit area. The original revision preserves old URLs. New links from development/README.md and the canonical single-drop case make the indexes discoverable.",
+  "scope": "The files describe historical exploratory campaign arms and verdicts. This placement change does not run the cases or promote any verdict to current benchmark acceptance."
+}
