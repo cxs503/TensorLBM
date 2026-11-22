@@ -58,7 +58,7 @@ kw = dict(n=int(os.environ["WE_CELLS"]), speed=float(os.environ["WE_SPD"]), limi
     gap_fraction=float(os.environ["WE_GAP"]), capacity=True, nearest=False, pilot=False, span=4.0,
     pool_depth=float(os.environ["WE_PD"]), simple=True, release=float(os.environ["WE_RS"]),
     planes_path=None, silhouette_path=None, ledger=os.environ.get("WE_LEDGER", "0") == "1", diag_path=None,
-    u_limit=float(os.environ["WE_UL"]))
+    u_limit=float(os.environ["WE_UL"]), rr_tau=float(os.environ.get("WE_RR_TAU", "0") or 0))
 _cav = float(os.environ.get("WE_CAV", "0") or 0)
 if _cav: kw["cav_deficit"] = _cav
 _cav_probe = os.environ.get("WE_CAV_PROBE", "0") == "1"
@@ -129,6 +129,8 @@ def parse_args():
     ap.add_argument("--momconv", default="",
                     choices=["", "inherit", "redistribute", "redistribute_liq"],
                     help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV); empty=legacy")
+    ap.add_argument("--rr-tau", type=float, default=0.0,
+                    help="DE-X-COL2-REG: regularized-collision relaxation time; 0=legacy BGK")
     ap.add_argument("--gas-flow", action="store_true",
                     help="exterior potential-flow gas coupling in the initial field (DE-X-EV1-GAS_FLOW)")
     ap.add_argument("--probe-module",
@@ -175,7 +177,7 @@ def launch(a):
            f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv} "
            f"-e WE_CAV_CLOSURE={1 if a.cav_closure else 0} "
            f"-e WE_GAS_FLOW={1 if a.gas_flow else 0} "
-           f"-e WE_PROBE_MODULE={a.probe_module}")
+           f"-e WE_PROBE_MODULE={a.probe_module} -e WE_RR_TAU={a.rr_tau}")
     cname = f"sdaa_{tag}"
     r = ssh(f"docker run -d --name {cname} --device /dev/tcaicard{card} "
             f"-v {wt}:/we -v {out}:/out {env} {IMG} bash -c "
@@ -189,11 +191,12 @@ def launch(a):
                              "cav_closure": bool(a.cav_closure),
                              "gas_flow": bool(a.gas_flow),
                              "probe_module": a.probe_module,
+                             "rr_tau": float(a.rr_tau),
                              "momconv": a.momconv,
                              "launched_at": time.time()})
     print(f"[sdaa] launched arm={a.arm} card={card} commit={head} steps={a.steps} "
           f"diag_cavity={bool(a.diag_cavity)} diag_budget={bool(a.diag_budget)} "
-          f"gas_flow={bool(a.gas_flow)} momconv={a.momconv!r} container={cname}", flush=True)
+          f"gas_flow={bool(a.gas_flow)} rr_tau={a.rr_tau} momconv={a.momconv!r} container={cname}", flush=True)
     return 0
 
 
@@ -217,7 +220,7 @@ def collect(a):
     rp = ssh(f"cat {out}/planes.npz 2>/dev/null") if state.get("planes") else None
     header = (f"arm={a.arm} card={card} commit={state['commit']} steps={state['steps']} "
               f"diag_cavity={state['diag_cavity']} diag_budget={state.get('diag_budget', False)} "
-              f"gas_flow={state.get('gas_flow', False)} momconv={state.get('momconv', '')}\n")
+              f"gas_flow={state.get('gas_flow', False)} rr_tau={state.get('rr_tau', 0.0)} momconv={state.get('momconv', '')}\n")
     with open(f"{tree}/runs/{a.arm}/run.log", "w") as handle:
         handle.write(header + rlog.stdout.decode(errors="ignore"))
     if rp is not None and rp.stdout:
