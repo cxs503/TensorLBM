@@ -1,9 +1,9 @@
 # W31 · DTRC SUBOFF 外部锚两族转录冲突的第三方裁决
 
 - 任务键 `paper-exp-lbm-suboff-tau-15`，mission `22289`，仓库 `TensorLBM`，分支 `agent/m22289`，git `d90b11fa43ac001e723d0ff3b18bb169c61c5544`
-- 工件（本文件所有数字的唯一来源，禁手抄）：`benchmarks/artifacts/w31_suboff_transcription_verdict.json`
+- 工件（本文件所有数字的唯一来源，禁手抄）：[裁决 JSON](../benchmarks/anchors/evidence/suboff_w31/w31_suboff_transcription_verdict.json)
 - 构建器 `benchmarks/w31_suboff_transcription_verdict.py`；正文由 `--doc` 从工件注入；守卫测试 `tests/test_w31_suboff_verdict.py`
-- 图：`figures/w31_ratio_vs_speed.png`、`figures/w31_lbm_same_re.png`
+- 图：由 `python benchmarks/w31_suboff_transcription_verdict.py --figs` 从归档生成，输出在 `outputs/w31-suboff-transcription/figures/`
 - 锚等级 `TRANSCRIBED-SECONDARY` / `C`（原始 DTRC 报告仍 WITHHELD；本工作树离线，无外网）
 
 ## ① 案例介绍
@@ -148,7 +148,7 @@ C3 读数：最大 |ΔC_T| = **2963.5%**；是否 <15%：否；**是否 <3%：�
 - 未证明 Table 14 的物理正确性(原始报告仍 WITHHELD，无法读原表)
 - F3 与 F1 同属 Table 14 转录链，二者数值一致只证明转录链自洽，不构成独立测量
 - 附体增阻 17% 的物理分解(摩阻 vs 形状/干扰)仍不可核，标 WITHHELD
-- 图 `figures/w31_ratio_vs_speed.png`（左：四源 R_T(V) 与裁决后配对；右：观测比值 vs ΔC_F 路径要求值）；`figures/w31_lbm_same_re.png`（左：C_T(Re) 对照；右：|ΔC_T| 与 15%/3% 门）。
+- 图 `w31_ratio_vs_speed.png`（左：四源 R_T(V) 与裁决后配对；右：观测比值 vs ΔC_F 路径要求值）；`w31_lbm_same_re.png`（左：C_T(Re) 对照；右：|ΔC_T| 与 15%/3% 门）。
 
 ## ⑥ 误差判定（逐项，含是否 <3%）
 

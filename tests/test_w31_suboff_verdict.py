@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "benchmarks"))
 
 import w31_suboff_transcription_verdict as W  # noqa: E402
 
-ART = ROOT / "benchmarks" / "artifacts" / "w31_suboff_transcription_verdict.json"
+ART = ROOT / "benchmarks/anchors/evidence/suboff_w31/w31_suboff_transcription_verdict.json"
 DOC = ROOT / "docs" / "w31-suboff-transcription.md"
 
 
@@ -33,7 +33,7 @@ def rebuilt():
 
 
 def test_artifact_paths_required_by_task(art):
-    assert ART.relative_to(ROOT).as_posix() == "benchmarks/artifacts/w31_suboff_transcription_verdict.json"
+    assert W.ART == ART
     assert DOC.relative_to(ROOT).as_posix() == "docs/w31-suboff-transcription.md"
     assert (ROOT / "tests" / "test_w31_suboff_verdict.py").exists()
     for sec in ("three_family_pointwise", "conflict_attribution", "lbm_same_re_vs_arbitrated_anchor"):
@@ -142,7 +142,7 @@ def test_c4_doc_is_generated_from_artifact_zero_handcopy(art):
     lbm = art["lbm_same_re_vs_arbitrated_anchor"]
     assert ("%.1f%%" % lbm["max_abs_dev_pct"]) in on_disk
     assert "`scale` / SCALE_REFERENCE_BODY" in on_disk
-    assert "benchmarks/artifacts/w31_suboff_transcription_verdict.json" in on_disk
+    assert "../" + ART.relative_to(ROOT).as_posix() in on_disk
 
 
 def test_claim_boundary_and_anchor_grade(art):
@@ -154,6 +154,7 @@ def test_claim_boundary_and_anchor_grade(art):
     assert "prereg" in art and art["prereg"]["alternatives"]
 
 
-def test_figures_exist():
+def test_figures_render_from_archived_samples(art, tmp_path):
+    W.render_figs(art, fig_dir=tmp_path)
     for name in ("w31_ratio_vs_speed.png", "w31_lbm_same_re.png"):
-        assert (ROOT / "figures" / name).exists(), name
+        assert (tmp_path / name).read_bytes().startswith(b"\x89PNG\r\n\x1a\n")

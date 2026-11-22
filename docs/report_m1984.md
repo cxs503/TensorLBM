@@ -172,8 +172,8 @@ OS ≤ 18° 需要 η≈1（adv 1.69L ≪ 2.70L 下限）；adv/tr/T_d/D_ss 入�
 D1：旧式（方块）随速度几乎持平（≈2.0–2.4，只经 K_T 弱变化），文献式（圆点）随 u′ 下降上升一个量级，
 二者在 u′=0.05 处差 ~1 个量级 —— 代数上不是同一个物理量。
 
-*注：三张图已落盘 docs/figs_m1984/{trajectories,frontier,inflow}.png，因 API 报告 figures 字段需 base64 内嵌，
-本补报在 markdown 中以文字描述代替，原图可在工作树查阅。*
+原图可直接查看：[轨迹与降速](assets/maneuvering-m1984/trajectories.png)、
+[η 前沿](assets/maneuvering-m1984/frontier.png)、[来流因子](assets/maneuvering-m1984/inflow.png)。
 
 ---
 

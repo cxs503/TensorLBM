@@ -63,6 +63,19 @@ integrity verified before retiring a tracked copy.
 | `tools/` | Keep | Maintain shared tooling and repository policy together. |
 | `xval/` | `benchmarks/` and `development/verification/` | Move by campaign. Link formal evidence from the canonical benchmark entry and preserve method, references and historical verdicts. |
 
+## Second-level placement
+
+| Area | Placement |
+| --- | --- |
+| Published documentation | Keep stable report and manual paths. Put static report assets in `docs/assets/<topic>/`, using topic names such as `maneuvering-m1984`. |
+| Development notes | Put internal work cards and mission scratch notes under `development/audit/` or `development/verification/`. Check incoming links before moving published audit reports. |
+| Formal benchmarks | Keep stable case IDs and documented runner paths. Use descriptive case directory names for new cases and put curated evidence with the owning case. |
+| Reference audits | Use `benchmarks/anchors/evidence/<topic>/` for curated anchor audits. Use ignored `outputs/` for newly generated material. |
+
+The [second-level migration ledger](migrations/second-level-docs-benchmarks-2026-11-22.json)
+records the original objects and compatibility checks for the CH6 card,
+maneuvering report figures and W31 transcription evidence.
+
 ## Root files and rollout
 
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)
