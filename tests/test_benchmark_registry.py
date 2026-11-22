@@ -59,6 +59,21 @@ class BenchmarkRegistryTests(unittest.TestCase):
         key = "benchmarks/p161w2_n05_oscillating_foil/artifacts/results.json"
         self.assertEqual(assets[key]["declared_case_ids"], ["campaign:p161w2_n05_oscillating_foil"])
 
+    def test_case_lookup_links_nested_evidence_to_the_owning_variant(self):
+        path = "benchmarks/verified/cavity/re400"
+        (case,) = self.registry("--case", path)
+        variants = {variant["path"]: variant for variant in case["variants"]}
+        evidence = f"{path}/evidence/sdaa/sdaa_cavity_evidence.json"
+        plot = f"{path}/evidence/sdaa/sdaa_cavity_re400_verification.png"
+        self.assertIn(evidence, variants[path]["evidence"])
+        self.assertIn(plot, variants[path]["evidence"])
+        self.assertNotIn(evidence, variants[path]["results"])
+        for directory, variant in variants.items():
+            self.assertTrue(all(asset.startswith(f"{directory}/evidence/") for asset in variant["evidence"]))
+            if directory != path:
+                self.assertNotIn(evidence, variant["evidence"])
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+
     def test_standalone_ritter_keeps_its_gate_separate_from_matrix_case(self):
         (campaign,) = self.registry("--case", "campaign:dam_break_ritter")
         (matrix,) = self.registry("--case", "matrix:dam_break_ritter_ci")

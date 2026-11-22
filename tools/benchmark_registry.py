@@ -206,6 +206,18 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
         })
     errors.extend(attach_validation_matrix(records, root))
     errors.extend(attach_declared_cases(records, root))
+
+    variants_by_dir = defaultdict(list)
+    for record in records:
+        for variant in record["variants"]:
+            variant["evidence"] = []
+            variants_by_dir[PurePosixPath(variant["path"])].append(variant)
+    for path in sorted(files | tracked_files(root, "xval")):
+        owner = next((parent.parent for parent in path.parents
+                      if parent.name == "evidence" and parent.parent in variants_by_dir), None)
+        if owner is not None:
+            for variant in variants_by_dir[owner]:
+                variant["evidence"].append(str(path))
     return records, errors
 
 
