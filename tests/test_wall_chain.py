@@ -21,11 +21,11 @@ from tensorlbm.wall_chain import (
 )
 
 _NZ, _NY, _NX = 12, 12, 14
-_SLICE_LO, _SLICE_HI = 2, 6  # slab interior: away from the roll-wrapped faces
+_SLICE_LO, _SLICE_HI = 2, 6  # slab interior, away from the z faces
 
 
 def _slab_solid() -> torch.Tensor:
-    """Fluid-bounded solid slab (torch.roll wraps at the domain faces)."""
+    """Solid slab bounded by fluid in z and spanning the x/y domain."""
     solid = torch.zeros((_NZ, _NY, _NX), dtype=torch.bool)
     solid[_SLICE_LO:_SLICE_HI] = True
     return solid
@@ -56,20 +56,20 @@ def test_halfway_links_flat_slab_count_and_location() -> None:
     assert not bool(others.any())
     # a direction-q link lives on the fluid cell whose q-neighbour is solid
     # (the halfway-BFL streaming target): cz>0 below the slab, cz<0 above,
-    # in-plane directions carry no links for the infinite slab
+    # with transverse offsets clipped at the nonperiodic x/y faces
     down = _down_directions()
     up = _up_directions()
     assert len(down) == 5 and len(up) == 5  # D3Q19 has no body diagonals
-    for direction in range(1, 19):
-        if direction in down:
-            assert bool(mask[direction][_SLICE_HI].all())
-            assert not bool(mask[direction][_SLICE_LO - 1].any())
-        elif direction in up:
-            assert bool(mask[direction][_SLICE_LO - 1].all())
-            assert not bool(mask[direction][_SLICE_HI].any())
-        else:
-            assert not bool(mask[direction].any())
-    assert int(mask.sum().item()) == 10 * _NY * _NX
+    for direction in range(19):
+        expected = torch.zeros_like(solid)
+        if direction in down or direction in up:
+            dx, dy, _ = map(int, C[direction].tolist())
+            z = _SLICE_HI if direction in down else _SLICE_LO - 1
+            expected[z, max(0, -dy):_NY - max(0, dy), max(0, -dx):_NX - max(0, dx)] = True
+        assert torch.equal(mask[direction], expected)
+    axial = _NY * _NX
+    diagonals = 2 * _NY * (_NX - 1) + 2 * (_NY - 1) * _NX
+    assert int(mask.sum().item()) == 2 * (axial + diagonals)
 
 
 def test_halfway_links_singleton_block_all_directions() -> None:

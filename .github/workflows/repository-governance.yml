@@ -20,5 +20,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Compile canonical Python source
+        run: python -m compileall -q src/tensorlbm
       - name: Check repository structure and benchmark assets
         run: bash tools/check_repository_governance.sh
