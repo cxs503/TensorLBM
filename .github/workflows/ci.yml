@@ -27,6 +27,9 @@ env:
   TORCH_DEVICE_BACKEND_AUTOLOAD: "0"
 
 jobs:
+# Portable gates (layout, AST architecture, wheel metadata) use GitHub-hosted Linux.
+# Numerical and platform solver suites remain on ci-loong64 and MUST NOT be
+# treated as passed when that architecture-specific runner is unavailable.
   # Static gates run once, on a single interpreter: they are interpreter
   # independent, so fanning them across the matrix only burns minutes.
   lint:
@@ -171,7 +174,7 @@ jobs:
   # File placement is a separate, dependency-free gate. Historical files are
   # grandfathered by exact path; new root clutter and raw outputs are rejected.
   repository-layout:
-    runs-on: ci-loong64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Check repository structure and benchmark assets
@@ -180,7 +183,7 @@ jobs:
   # Structural audit has an independent signal: it must run even when
   # the repository-wide Ruff gate is already red for unrelated legacy findings.
   architecture-audit:
-    runs-on: ci-loong64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Test AST import graph scanner
@@ -211,7 +214,7 @@ jobs:
           if-no-files-found: error
 
   package-build:
-    runs-on: ci-loong64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install build tools
