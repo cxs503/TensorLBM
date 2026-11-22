@@ -254,6 +254,7 @@ def probe(
     u_limit=None,
     diag_cavity=None,
     gas_nu_ratio=1.0,
+    contact_pin=0.0,
     diag_budget=False,
     momconv=None,
     cav_closure=False,
@@ -514,6 +515,7 @@ def probe(
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
                     gas_nu_ratio=gas_nu_ratio,
+                    contact_pin=contact_pin,
                     momconv=momconv,
                     momconv_state=momconv_state,
                 )
@@ -558,6 +560,7 @@ def probe(
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
         "gas_nu_ratio": gas_nu_ratio,
+        "contact_pin": contact_pin,
         "momconv": momconv,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
@@ -681,6 +684,14 @@ if __name__ == "__main__":
         "(tau_g = 0.5 + ratio*(tau_l - 0.5); default 1.0 = legacy single tau)",
     )
     parser.add_argument(
+        "--contact-pin",
+        type=float,
+        default=0.0,
+        help="cavity-mouth contact-line pinning strength K_pin in (0,1): "
+        "damps the ABB gas-reconstruction uz of closing cavity mouths "
+        "(INTERFACE with GAS above and uz>0) by (1-K_pin); 0 = off",
+    )
+    parser.add_argument(
         "--diag-cavity",
         action="store_true",
         help="record the cavity-closure / drop-penetration diagnosis "
@@ -741,6 +752,7 @@ if __name__ == "__main__":
         args.u_limit,
         args.diag_cavity,
         args.gas_nu_ratio,
+        args.contact_pin,
         args.diag_budget,
         args.momconv,
         args.cav_closure,

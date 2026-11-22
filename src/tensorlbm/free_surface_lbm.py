@@ -1024,6 +1024,7 @@ def free_surface_step(
     simple_mass_exchange=False,
     u_limit=0.0,
     gas_nu_ratio=1.0,
+    contact_pin=0.0,
     iface_tau_dose=0.0,
     momconv="off",
     momconv_state=None,
@@ -1386,6 +1387,17 @@ def free_surface_step(
         _ux_pc, _uy_pc, _uz_pc = _momconv_gas_velocity(
             momconv_state, _ux_pc, _uy_pc, _uz_pc, iface_abb
         )
+    if contact_pin > 0.0:
+        # Cavity-mouth contact-line pinning (Truscott deep-seal,
+        # DE-X-CONT2-CONT-PIN): an INTERFACE cell with GAS directly above and
+        # upward velocity is a closing cavity mouth.  Damping the velocity fed
+        # to the ABB gas equilibrium by (1 - contact_pin) slows the seal so
+        # the drop can penetrate deeper.  The triple gate (INTERFACE &
+        # GAS-above & uz>0) self-excludes the falling droplet (uz<0) and the
+        # open surface (no GAS above).  Default 0.0 = bit-identical legacy.
+        gas_above = flags.roll(-1, dims=0) == GAS
+        pin_mask = iface_abb & gas_above & (_uz_pc > 0.0)
+        _uz_pc = torch.where(pin_mask, _uz_pc * (1.0 - contact_pin), _uz_pc)
     # Gas reference density: the bubble pressure overrides rho_gas when given
     # (enclosed, possibly pressurised gas volume; waLBerla ``BubbleModel``).
     _rho_gas_base = float(bubble_pressure) if bubble_pressure is not None else float(rho_gas)
