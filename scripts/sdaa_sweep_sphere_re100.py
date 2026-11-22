@@ -2,7 +2,7 @@
 """SDAA sweep for sphere_re100 benchmark.
 
 This script runs the sphere Re=100 case on SDAA device and produces:
-1. artifacts/sdaa_sphere_re100.json - device evidence + gate judgments
+1. outputs/sdaa/sphere_re100/sdaa_sphere_re100.json - device evidence + gate judgments
 2. docs/sdaa_sweep/sphere_re100.md - documentation
 
 Budget discipline: minimal steps to get Cd + gate judgment, then finish.
@@ -20,7 +20,7 @@ import torch
 # Fixed paths
 WORK_DIR = Path("/srv/tensor/agent/work/m75")
 CASE_DIR = WORK_DIR / "benchmarks" / "verified" / "sphere_re100"
-ARTIFACTS_DIR = WORK_DIR / "artifacts"
+ARTIFACTS_DIR = WORK_DIR / "outputs/sdaa/sphere_re100"
 DOCS_DIR = WORK_DIR / "docs" / "sdaa_sweep"
 
 def get_device_evidence():

@@ -142,7 +142,8 @@ RTX 5090 具有 32 GiB 显存，足以容纳该案例。
 
 ## 产物清单
 
-- `artifacts/sdaa_sphere_re100_mem.json`: 完整运行记录与判据结果
+- [历史结果 JSON](../../benchmarks/verified/sphere_re100/evidence/sdaa/sdaa_sphere_re100_mem.json) — 完整运行记录与判据结果
+- 新运行输出：`outputs/sdaa/sphere_re100/sdaa_sphere_re100_mem.json`
 - `scripts/sdaa_sweep_sphere_re100_mem.py`: 独立运行脚本
 - `docs/sdaa_sweep/sphere_re100_mem.md`: 本文档
 

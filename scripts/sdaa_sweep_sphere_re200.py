@@ -3,7 +3,7 @@
 
 Runs the sphere Re=200 drag case on the 'sdaa' device, computes all
 verification criteria from the raw force history, and writes results
-to artifacts/sdaa_sphere_re200.json.
+to outputs/sdaa/sphere_re200/sdaa_sphere_re200.json.
 
 This script does NOT modify any business code. It invokes the existing
 run_case() from benchmarks/verified/sphere_re200/run.py with device
@@ -56,7 +56,7 @@ SAMPLE_INTERVAL = 50
 TAU = 0.5 + 3.0 * 0.05 * D / RE_LOCK  # 0.512
 U_LB = 0.05
 
-ARTIFACTS_DIR = os.path.join(REPO, "artifacts")
+ARTIFACTS_DIR = os.path.join(REPO, "outputs", "sdaa", "sphere_re200")
 OUT_JSON = os.path.join(ARTIFACTS_DIR, "sdaa_sphere_re200.json")
 
 

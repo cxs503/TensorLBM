@@ -50,3 +50,7 @@ PYTHONPATH=src python benchmarks/verified/sphere_re200/verify.py   # recompute f
 `README_legacy_staircase.md` records the superseded staircase surface-only Ladd-MEM
 route (~+9% on sphere, mesh-converged to the wrong value) — that negative result is
 why the BFL smooth-wall caliber was adopted.
+
+The [historical SDAA sweep JSON](evidence/sdaa/sdaa_sphere_re200.json)
+and its [run report](../../../docs/sdaa_sweep/sphere_re200.md) retain the
+device-specific failure.
