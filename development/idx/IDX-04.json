@@ -1,0 +1,52 @@
+[
+  {
+    "file": "CONT1-SLIP",
+    "arm": "SLIP",
+    "mechanism": "空穴壁面INTERFACE胞施加向上滑移U_slip=K·|u_z|·ẑ(K=0.3)减触线摩擦",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 0.003745,
+    "peak_time_ms": 0.1338,
+    "key_numbers": [
+      {"0.003745D": "SLIP臂峰深"},
+      {"0.1338ms": "SLIP臂峰时"},
+      {"1.4352D": "ctrl臂峰深"},
+      {"0.1459ms": "早死时刻"}
+    ],
+    "one_line_verdict": "处方证伪：nz<0掩码未门控空穴存在，下落液滴底部被扰动致数值失稳早死",
+    "open_gap": "掩码须加空穴存在门控（仅contact_step后且邻GAS胞在上方）再试"
+  },
+  {
+    "file": "CONT2-CONT-PIN",
+    "arm": "CONT-PIN",
+    "mechanism": "腔口闭合胞ABB重构用uz乘(1-K_pin)，K_pin=0.3增摩擦延迟封口",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 0.7548,
+    "peak_time_ms": 3.6,
+    "key_numbers": [
+      {"0.7548D": "0.3臂峰深下界"},
+      {"3.6ms": "0.3臂峰时"},
+      {"1.4352D": "ctrl峰深"},
+      {"1.4161D": "0.1臂峰深"},
+      {"10.714ms": "0.1臂峰时"}
+    ],
+    "one_line_verdict": "0.3剂量早死证伪；0.1稳定剂量无净加深，触线摩擦非欠深杠杆",
+    "open_gap": "0.3臂peak为下界真峰未知；pin mask自step2活跃为预接触扰动"
+  },
+  {
+    "file": "CONT2-CONT-RIM",
+    "arm": "RIM",
+    "mechanism": "只读探针：接触后每步测腔口INTERFACE胞uz均值/t_close/环带液质量",
+    "verdict": "DIAG",
+    "peak_depth_D": 1.4352,
+    "peak_time_ms": 11.091,
+    "key_numbers": [
+      {"1.4352D": "rim臂峰深=ctrl同"},
+      {"11.091ms": "rim臂峰时"},
+      {"11.103ms": "t_close"},
+      {"10.556ms": "t_close_after_contact"},
+      {"+6.82%": "t_close vs实验差分"}
+    ],
+    "one_line_verdict": "探针命中：模型封口晚于实验+6.8%，峰前腔口未反号→弱穿透动量问题",
+    "open_gap": "t_close定义构造上≥峰时；+6.8%在±10%边缘，靠三条同向证据合取"
+  }
+]
