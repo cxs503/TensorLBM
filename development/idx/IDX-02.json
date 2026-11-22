@@ -1,0 +1,53 @@
+[
+  {
+    "file": "CMB1-HYDRODCA",
+    "arm": "HYDRO×DCA 组合臂",
+    "mechanism": "HYDRO 静水压补偿 + DCA 减半组合，Z_REF=24.5 + θ_e=60°/K=0.1/static",
+    "verdict": "FAIL",
+    "peak_depth_D": 0.2479198871935666,
+    "peak_time_ms": 1.447125,
+    "key_numbers": [
+      {"0.2479198871935666 D": "死亡时深度（峰=末值）"},
+      {"1.447125 ms": "触 health_limit 终止时刻"},
+      {"45": "contact_step 已触水"},
+      {"120": "history 行数/终止 step"},
+      {"0.107": "mach_max 末值（非 mach 越限型死亡）"}
+    ],
+    "one_line_verdict": "组合臂全窗早死，深度不可判，判 FAIL 不入带；HYDRO 单臂 1.636628D HIT 与 TURB1 满窗双臂继续有效",
+    "open_gap": "缺集群 ctrl_full 对照，组合特异性 vs 配置回归不可分辨"
+  },
+  {
+    "file": "CMB3-REGSMAG",
+    "arm": "RR 正则化碰撞 x Smagorinsky 亚格子 x HYDRO 基线",
+    "mechanism": "RR 正则化碰撞 + Smagorinsky 亚格子 + HYDRO 静水压补偿三处方叠加",
+    "verdict": "PROGRESS",
+    "peak_depth_D": 1.750541,
+    "peak_time_ms": 14.313161,
+    "key_numbers": [
+      {"1.750541 D": "主臂 combo_hydro 峰深"},
+      {"-5.75%": "主臂峰深误差（vs 实验 1.857434D）"},
+      {"74.68%": "相对 ctrl 收回深度缺口（-22.73%→-5.75%）"},
+      {"+37.70%": "峰时刻误差（vs 实验 10.39446ms）"},
+      {"1.344e-05": "主臂末端漂移（加 SMAG 后 6.7× 降低）"}
+    ],
+    "one_line_verdict": "主臂预测命中预登记区间，深度门由 -22.73% 改善到 -5.75%（收回 74.68%），但时刻门 +37.70% 未过",
+    "open_gap": "时刻门未达标（+37.70%）；cells=8 单锚单车道，结论不外推其它分辨率/几何"
+  },
+  {
+    "file": "COL1-MRT",
+    "arm": "MRT 体黏度扫",
+    "mechanism": "MRT 碰撞换偶模，体黏度 c_s²(1/ω_bulk−0.5) 扫 {1×,5×,20×}",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": null,
+    "peak_time_ms": null,
+    "key_numbers": [
+      {"1.19": "基线 s_e（MRT 偶模松弛率）"},
+      {"0.0018%": "基线剪切黏度误差（验证通过）"},
+      {"5.95": "s_e 5× 体黏度（发散）"},
+      {"23.8": "s_e 20× 体黏度（发散）"},
+      {"-0.110644": "5× 体黏度值（负值非物理）"}
+    ],
+    "one_line_verdict": "MRT 基线 s_e=1.19 剪切黏度验证通过（0.0018%），高体黏度(5×,20×)因负体黏度数值发散，假设被证伪",
+    "open_gap": null
+  }
+]
