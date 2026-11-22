@@ -359,6 +359,8 @@ def write_report(payload: dict, rows: list[dict]) -> Path:
     )
     a("**判据** owner 精度标准 <15%（对「性质」本身逐项判定，见 ④）")
     a("")
+    a("[历史预注册记录（m17991）](../development/verification/model-units/m17991/predeclared.json)")
+    a("")
     a("## ① 问题与参考出处（零手抄）")
     a("")
     a(

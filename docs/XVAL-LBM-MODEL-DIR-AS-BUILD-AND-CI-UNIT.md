@@ -5,6 +5,8 @@
 **对标对象** CFD-GO/TCLB 的 model-dir-as-build-and-ci-unit 做法（checkout `/tmp/TCLB` @ `ded67cd768cf7e727bd078af139e3ec7895076e5`）
 **判据** owner 精度标准 <15%（对「性质」本身逐项判定，见 ④）
 
+[历史预注册记录（m17991）](../development/verification/model-units/m17991/predeclared.json)
+
 ## ① 问题与参考出处（零手抄）
 
 **问题**：TensorLBM 的构建/CI 组织是否具备 TCLB 的「模型目录即构建单元即 CI 单元」性质——新增一个模型是否只需新增一个目录、构建目标与 CI 矩阵是否由目录**枚举生成**、每个模型是否带自己的参考与容差？此前本仓的模型散落在 `src/tensorlbm/*.py`，CI 是单体 job + 手写矩阵，无「单元」概念。
