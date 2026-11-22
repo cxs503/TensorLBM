@@ -698,6 +698,28 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)
         self.assertIn('EVIDENCE_DIR / "logs" / "sweep.log"', runner)
 
+    def test_drop_entry_indexes_keep_original_assets_and_case_navigation(self):
+        ledger = json.loads(
+            (LEDGER_PATH.parent / "drop-entry-indexes-2026-11-23.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(len(ledger["entries"]), 9)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["old_path"]):
+                target = REPO / item["new_path"]
+                self.assert_fingerprint(target, item["original_sha256"], item["size_bytes"])
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["original_git_blob"]])
+                self.assertFalse((REPO / item["old_path"]).exists())
+        self.assertFalse((REPO / ledger["old_directory"]).exists())
+        case = REPO / "benchmarks/water_entry/single_drop/README.md"
+        self.assertIn(f"](../../../{ledger['new_directory']}/)", case.read_text(encoding="utf-8"))
+
     def test_cavity_sdaa_evidence_preserves_bytes_links_and_scope(self):
         ledger_path = LEDGER_PATH.parent / "cavity-sdaa-artifacts-2026-11-22.json"
         entries = json.loads(ledger_path.read_text(encoding="utf-8"))["entries"]

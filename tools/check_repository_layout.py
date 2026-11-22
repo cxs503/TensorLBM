@@ -47,6 +47,7 @@ RETIRED_ROOT_DIRECTORIES = {
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "audit_m18430"),
     ("benchmarks", "blasius_flat_plate_dev"),
+    ("development", "idx"),
     ("docs", "council"),
     ("docs", "history"),
     ("docs", "m23777"),

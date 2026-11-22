@@ -28,6 +28,8 @@ Santini、Fest-Santini 和 Cossali 的原始实验表 2 第 3 行是本算例。
 
 ## 复算
 
+[历史探索索引](../../../development/audit/drop_entry/indexes/) 收录不同入水研究分支的原始判定与待查缺口。当前案例按本页判据验收。
+
 在仓库根目录执行，使用提供 PyTorch、NumPy、SciPy、Pillow 和 Matplotlib 的 Python 环境。初始版的诊断组采用 2.29 mm 的邻近工况，可用 `--pilot` 复算；默认运行原始实验的单滴工况。仓库保留标量逐步历史、四个物理时刻的中剖面和对照图。
 
 ```bash
