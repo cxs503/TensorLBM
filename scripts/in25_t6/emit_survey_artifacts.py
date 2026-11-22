@@ -6,7 +6,7 @@ Products
 ``docs/survey/in25_t6_lit_anchor_table.json``   anchor table for the T5 red team
 ``docs/survey/in25_t6_playbook.md``             five-measure PLAYBOOK entries
 ``artifacts/in25_t6/acceptance_report.json``    criteria numbers + product paths
-``docs/survey/figs/*.png``                      three figures for the report
+``docs/assets/suboff-resistance-survey/*.png``                      three figures for the report
 
 Usage
 -----
@@ -31,7 +31,7 @@ from tensorlbm.external_survey.report import (  # noqa: E402
 )
 from tensorlbm.external_survey.survey_doc import survey_markdown  # noqa: E402
 
-FIGS = ROOT / "docs" / "survey" / "figs"
+FIGS = ROOT / "docs" / "assets" / "suboff-resistance-survey"
 
 
 def figure_ct_ladder() -> Path:

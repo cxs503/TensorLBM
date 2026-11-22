@@ -36,7 +36,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 AUDIT_DIR = ROOT / "artifacts" / "m17889_audit"
-COPY = ROOT / "benchmarks" / "xval_huang2007_contact_angle_inversion_audit_copy"
+COPY = ROOT / "development" / "audit" / "huang2007-contact-angle" / "m17889-delivery-snapshot"
 SRC_TREE = Path("/srv/tensor/agent/work/m17845")
 SRC_BENCH = SRC_TREE / "benchmarks" / "xval_huang2007_contact_angle_inversion"
 DOC_MCMP = ROOT / "docs" / "CASE-MCMP-CONTACT-ANGLE.md"

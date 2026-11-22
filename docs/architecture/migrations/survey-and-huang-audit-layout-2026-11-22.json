@@ -1,0 +1,114 @@
+{
+  "source_commit": "0b8c34bd5d949a9d6e986015dca8a93a099eab5c",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 13,
+  "second_level_directories": {
+    "docs": {
+      "before": 94,
+      "after": 94
+    },
+    "benchmarks": {
+      "before": 104,
+      "after": 103
+    }
+  },
+  "entries": [
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/REPORT.md",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "777e9e35155836bfb873c8979d5ddc9ba21fbca4",
+      "original_sha256": "3c752955a09c52973efdd274bd4945d729ea356bd9dacf2271df93599ac2d825",
+      "size_bytes": 11023,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/REPORT.md"
+    },
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/figures/calibration_curve.png.b64",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/figures/calibration_curve.png.b64",
+      "git_mode": "100644",
+      "original_git_blob": "f4fa1a50b424ebec26f9cb779fc77c1dd1deae55",
+      "original_sha256": "676c1ccf3934e7f1962c431f1e7b106bbdd0f74077422adfaabefebd6cc61972",
+      "size_bytes": 144436,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/figures/calibration_curve.png.b64"
+    },
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/figures/cos_theta_vs_fw.png.b64",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/figures/cos_theta_vs_fw.png.b64",
+      "git_mode": "100644",
+      "original_git_blob": "d0752c64fcc1e4769797c2760d88002665f9d13b",
+      "original_sha256": "38a5f7af35056d3ed3314dfcd6f6bf42011601250636041db856ed3ca660cdaa",
+      "size_bytes": 138760,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/figures/cos_theta_vs_fw.png.b64"
+    },
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/figures/error_comparison.png.b64",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/figures/error_comparison.png.b64",
+      "git_mode": "100644",
+      "original_git_blob": "84544b52a1ca9ceaa2dbf6ba30564f708997ba6b",
+      "original_sha256": "572a9a7030c89ad4f70666d040dcbeccf0655c3b92dbaf53c91ff6ae6f981709",
+      "size_bytes": 85820,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/figures/error_comparison.png.b64"
+    },
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/generate_figures.py",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/generate_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "0d8966b3b5b5488bb07db7546d0585678d49076c",
+      "original_sha256": "f489331e0ab30cc2aa3e8829a58e5b81ad6148e1ccadee1679ff422eba6afa97",
+      "size_bytes": 6799,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/generate_figures.py"
+    },
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/results.json",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "e39b848c19abf05b33a67ad91d0e73d36d922681",
+      "original_sha256": "b4eef6c877045a17a743437296ce7b3cad7dbd2d96d7036c4c19cb34b8dfba14",
+      "size_bytes": 3628,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/results.json"
+    },
+    {
+      "old_path": "benchmarks/xval_huang2007_contact_angle_inversion_audit_copy/run_xval.py",
+      "new_path": "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "1d78728d4f554fb6db31aa131adf4bbdb9cb777c",
+      "original_sha256": "46926fbe4e8a813cf6e654e918237cc8bcd8bd315ef31450f488ecd8dbcaaf89",
+      "size_bytes": 16636,
+      "matching_delivery_path_at_source_commit": "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py"
+    },
+    {
+      "old_path": "docs/survey/figs/in25_t6_convention_sensitivity.png",
+      "new_path": "docs/assets/suboff-resistance-survey/in25_t6_convention_sensitivity.png",
+      "git_mode": "100644",
+      "original_git_blob": "7cc21516baa59b0c6c8743966234ba7df794d41c",
+      "original_sha256": "766f83729af270a389614dcd4bca9a70678ec687c91a5f998edfd07e3218cc58",
+      "size_bytes": 69682
+    },
+    {
+      "old_path": "docs/survey/figs/in25_t6_ct_ladder.png",
+      "new_path": "docs/assets/suboff-resistance-survey/in25_t6_ct_ladder.png",
+      "git_mode": "100644",
+      "original_git_blob": "671f628d4b82cb5c919a21becf708ca876aa602e",
+      "original_sha256": "4bba16a868584f8560c67f2a942b82fc1fc2b469aeb78981030219df56d8dd87",
+      "size_bytes": 131694
+    },
+    {
+      "old_path": "docs/survey/figs/in25_t6_friction_lines.png",
+      "new_path": "docs/assets/suboff-resistance-survey/in25_t6_friction_lines.png",
+      "git_mode": "100644",
+      "original_git_blob": "87ee4df138631d0815c37437a954ca2a0356739a",
+      "original_sha256": "defb4fcbabe65cd548b946b6b3fa4a6b9350555b181f84a79eb7df7ff423519f",
+      "size_bytes": 68265
+    }
+  ],
+  "compatibility": "Published survey, playbook, anchor table, formal Huang case and independent audit URLs stay in place. The survey renderer, artifact emitter, acceptance report product paths and publisher consume the new figure paths. The m17889 audit and figure scripts read the frozen delivery snapshot from development/audit. The audit report preserves its historical path in the method narrative and links to the snapshot at its current location.",
+  "replay_limits": "The complete historical m17889 replay requires the original /srv/tensor/agent/work/m17845 worktree, its runtime artifacts and the tensorplatform PostgreSQL database. The frozen run_xval.py is importable with PYTHONPATH=development/legacy/TensorLBM/src. The current src package lacks the historical multiphase exports used by the frozen runner. The IN25-T6 renderer generates the three figures, but four original raw evidence files listed by the historical report are absent from main and render as MISSING.",
+  "scientific_scope": "The source formulas, solver kernels, numerical criteria and historical verdicts are preserved. This batch checks archive and document compatibility.",
+  "local_verification": [
+    "bash tools/check_repository_governance.sh",
+    "PYTHONPATH=src python -m pytest -q tests/test_external_survey_in25_t6.py (24 passed)",
+    "PYTHONPATH=src python scripts/in25_t6/publish_report.py --dry-run (158.9 KB, three embedded images)",
+    "Ran the survey artifact emitter in a temporary output tree and decoded the three regenerated images. Checked the generated report and product paths.",
+    "Verified 10 original SHA-256 checksums and new report links. Loaded the archive with the frozen solver and read 8 coarse and 7 fine calibration rows."
+  ]
+}

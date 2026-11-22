@@ -76,6 +76,8 @@ The [second-level migration ledger](migrations/second-level-docs-benchmarks-2026
 records the original objects and compatibility checks for the CH6 card,
 maneuvering report figures and W31 transcription evidence.
 
+The [survey and Huang audit migration ledger](migrations/survey-and-huang-audit-layout-2026-11-22.json) records the SUBOFF report figures and the archived m17889 delivery snapshot. The [survey index](../surveys/README.md) links to the published surveys.
+
 ## Root files and rollout
 
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)

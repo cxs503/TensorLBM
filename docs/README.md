@@ -4,6 +4,8 @@
 
 A navigable index of the documentation in this directory, grouped by topic.
 
+[Methods and software surveys](surveys/README.md) includes external solver comparisons and SUBOFF resistance references.
+
 ---
 
 ## Core / Lattice Models & Fundamentals

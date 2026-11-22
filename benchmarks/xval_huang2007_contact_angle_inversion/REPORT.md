@@ -1,5 +1,7 @@
 # XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION — 交叉对标报告
 
+[m17889 independent audit](../../docs/audit_m17889/AUDIT_m17889.md) records the limitations of the historical calibration comparison and links to the frozen delivery snapshot.
+
 **锚点**：`XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION`（第 1 轮·开源对标）
 **对标对象**：`je-santos/MPLBM-UT` 的 `huang2007-contact-angle-inversion` 做法
 **来源**：OSS je-santos/MPLBM-UT（inventoried）——关键做法从源码/文档查得（零手抄）

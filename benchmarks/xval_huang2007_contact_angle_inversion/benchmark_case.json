@@ -1,0 +1,35 @@
+{
+  "scope": "Historical Shan–Chen wetting benchmark for calibration-based contact-angle inversion. The independent m17889 audit rejected the original pass claim. The frozen delivery and both reports are retained for comparison.",
+  "criteria": {
+    "historical_threshold": "Relative error below 15 percent for the measured contact angle.",
+    "independence": "Evaluate against an independent measurement. A round trip through the same calibration table does not test this criterion."
+  },
+  "source": [
+    "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py",
+    "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/run_xval.py",
+    "scripts/audit/m17889_huang2007_audit.py"
+  ],
+  "config": [
+    "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py"
+  ],
+  "documentation": [
+    "benchmarks/xval_huang2007_contact_angle_inversion/REPORT.md",
+    "docs/audit_m17889/AUDIT_m17889.md"
+  ],
+  "reference_files": [
+    "benchmarks/xval_huang2007_contact_angle_inversion/REPORT.md",
+    "docs/CASE-MCMP-CONTACT-ANGLE.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/xval_huang2007_contact_angle_inversion/REPORT.md",
+      "field": "Wetting method reference",
+      "value": "Huang, Thorne, Schaap and Sukop, Phys. Rev. E 76, 066701 (2007)."
+    }
+  ],
+  "results": [
+    "benchmarks/xval_huang2007_contact_angle_inversion/results.json",
+    "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/results.json",
+    "docs/audit_m17889/verdict_m17889_evidence.json"
+  ]
+}
