@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from scipy import ndimage
 
 from benchmarks.water_entry.single_drop.run import (
     DropTracker,
@@ -117,6 +118,56 @@ def _cavgas_diagnostics(field, dens, level, radius, n, sc):
     return out
 
 
+def _find_cavity_center(field, level, radius):
+    """Deepest headspace-connected gas-to-liquid interface point (cavity bottom).
+
+    Ported from the unmerged agent/m26730 branch (DE-X-DIAG1-CAV_PRESSURE card
+    section 2).  ``field`` is the interior fill slice (``fill[1:-1]``); the
+    headspace is seeded at the top interior slice (same convention as
+    :func:`open_depth` in run.py) and propagated through the gas mask.
+    Returns (z_idx, y_idx, x_idx) in field coordinates, or None.
+    """
+    gas = field < 0.5
+    seeds = np.zeros_like(gas)
+    seeds[-1] = gas[-1]
+    atmosphere = ndimage.binary_propagation(seeds, mask=gas)
+    y, x = np.indices(gas.shape[1:])
+    roi = (y - (gas.shape[1] - 1) / 2) ** 2 + (x - (gas.shape[2] - 1) / 2) ** 2 <= radius**2
+    k, j, i = np.where(atmosphere[1:] & ~gas[:-1] & roi[None])
+    if not len(k):
+        return None
+    min_z_idx = k.argmin()
+    return (int(k[min_z_idx]), int(j[min_z_idx]), int(i[min_z_idx]))
+
+
+def _rayleigh_plesset_pressure(t, R0, p_inf, p_v, rho, sigma, mu, kappa=1.4, p_g0=0.0):
+    """Rayleigh (1917)/Plesset (1949) closed-bubble pressure reference line.
+
+    p_b = p_v + p_g0*(R0/R)^(3*kappa) - 2*sigma/R - 4*mu*R'/R with the
+    analytical empty-cavity Rayleigh trajectory R(t) = R0*sqrt(1-(t/T_c)^2),
+    T_c = 0.9147*R0*sqrt(rho/dp).  Reference line only: the K1-DIAG-B
+    adjudication shows the cavity is an open ventilated pit, not a closed
+    bubble, so this line is a deviation reference, not a prediction.
+    """
+    dp = max(abs(p_inf - p_v), 1e-30)
+    T_c = 0.9147 * R0 * np.sqrt(rho / dp)
+    t_clamped = min(t, T_c * 0.99)
+    R = R0 * np.sqrt(max(0.0, 1 - (t_clamped / T_c) ** 2))
+    if R < 1e-12:
+        R = 1e-12
+    Rdot = -R0**2 * t_clamped / (2 * R * T_c**2)
+    p_b = p_v - 2.0 * sigma / R
+    if p_g0:
+        p_b += p_g0 * (R0 / R) ** (3.0 * kappa)
+    p_b -= 4.0 * mu * Rdot / R
+    return p_b, R, Rdot, T_c
+
+
+def rayleigh_collapse_time_lattice(R0, dp, rho):
+    """Rayleigh (1917) collapse time in lattice units."""
+    return 0.9147 * R0 * np.sqrt(rho / max(dp, 1e-30))
+
+
 def probe(
     n,
     speed,
@@ -138,6 +189,8 @@ def probe(
     rr_tau=0.0,
     C_s=0.0,
     diag_cavgas=False,
+    cav_probe=False,
+    cav_probe_out=None,
 ):
     # DE-X-COL2-REG: regularized-collision arm.  rr_tau > 0 switches the
     # free-surface collision from BGK to the regularized (RR) operator and
@@ -203,6 +256,18 @@ def probe(
     history = []
     plane_times, plane_fill, plane_uz = [], [], []
     sample_targets_ms = (1.39643, 6.4, 10.39446, 13.4)
+
+    # Cavitation pressure probe (DE-X-GAS2-CAVPROBE-R1; read-only, off by default)
+    cav_probe_data = [] if cav_probe else None
+    cav_R0 = 0.5 * n * sc["dx_m"]  # Initial cavity radius ~ half drop radius
+    cav_p_inf = 1.0 + 3 * sc["g"] * level  # Ambient pressure at surface (lattice units)
+    cav_p_v = 1.0  # Vapor pressure ~ atmospheric (lattice units)
+    cav_rho = 1.0  # Liquid density (lattice units)
+    cav_sigma = sc["sigma"]
+    cav_mu = sc["mu_l"]
+    cav_contact_step = None
+    cav_collapse_time = None
+    cav_T_rayleigh = None
 
     silhouette_samples = []
     tracker = DropTracker()
@@ -278,6 +343,42 @@ def probe(
             )
 
         row["depth_over_D"] = open_depth(field, level - 1, 1.5 * n) / n
+        if cav_probe and tracker.contact_step is not None:
+            cavity_center = _find_cavity_center(field, level - 1, 1.5 * n)
+            if cavity_center is not None:
+                cz, cy, cx = cavity_center
+                p_cav_lattice = float(dens[1:-1][cz, cy, cx])
+                p_cav_pa = p_cav_lattice * sc["rho_g"] * sc["dx_m"] / sc["dt_s"] ** 2 * 1e3
+                if cav_contact_step is None:
+                    cav_contact_step = step
+                    cav_T_rayleigh = rayleigh_collapse_time_lattice(cav_R0, cav_p_inf - cav_p_v, cav_rho)
+                t_since_contact = (step - cav_contact_step) * sc["dt_s"]
+                p_rp, R_t, Rdot_t, T_c = _rayleigh_plesset_pressure(
+                    t_since_contact, cav_R0, cav_p_inf, cav_p_v, cav_rho, cav_sigma, cav_mu
+                )
+                p_rp_pa = p_rp * sc["rho_g"] * sc["dx_m"] / sc["dt_s"] ** 2 * 1e3
+                cav_probe_data.append(
+                    {
+                        "step": step,
+                        "time_ms": row["time_ms"],
+                        "time_since_contact_ms": t_since_contact * 1000,
+                        "p_cav_lattice": p_cav_lattice,
+                        "p_cav_pa": p_cav_pa,
+                        "p_ref_lattice": cav_p_v,
+                        "p_rp_lattice": p_rp,
+                        "p_rp_pa": p_rp_pa,
+                        "p_rp_pa_minus_p_atm_pa": p_rp_pa - 101325.0,
+                        "R_t": R_t,
+                        "Rdot_t": Rdot_t,
+                        "T_collapse_s": T_c,
+                        "cavity_center_z": cz,
+                        "cavity_center_y": cy,
+                        "cavity_center_x": cx,
+                        "depth_over_D": row["depth_over_D"],
+                    }
+                )
+                if cav_collapse_time is None and cav_T_rayleigh is not None:
+                    cav_collapse_time = cav_T_rayleigh
         if diag_cavgas and tracker.contact_step is not None:
             diag = _cavgas_diagnostics(field, dens, level - 1, 1.5 * n, n, sc)
             if cav_volume0 is None:
@@ -349,6 +450,25 @@ def probe(
     if diag_rows is not None:
         diag_path.parent.mkdir(parents=True, exist_ok=True)
         diag_path.write_text(json.dumps({"rows": diag_rows}, indent=1, allow_nan=False) + "\n")
+    if cav_probe and cav_probe_data:
+        cav_result = {
+            "probe": "cavitation_pressure",
+            "cavity_center_radius_m": cav_R0,
+            "ambient_pressure_lattice": cav_p_inf,
+            "vapor_pressure_lattice": cav_p_v,
+            "liquid_density_lattice": cav_rho,
+            "surface_tension_lattice": cav_sigma,
+            "viscosity_lattice": cav_mu,
+            "contact_step": cav_contact_step,
+            "T_rayleigh_s": cav_T_rayleigh if cav_T_rayleigh else None,
+            "data": cav_probe_data,
+        }
+        if cav_probe_out is not None:
+            cav_probe_out.parent.mkdir(parents=True, exist_ok=True)
+            cav_probe_out.write_text(json.dumps(cav_result, indent=2, allow_nan=False) + "\n")
+        result_cav_probe = cav_result
+    else:
+        result_cav_probe = None
     result = {
         "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
         "cells_per_D": n,
@@ -374,6 +494,14 @@ def probe(
     }
     if ledger:
         result["mass_ledger_summary"] = _summarize_ledger(runtime_ledger)
+    if cav_probe:
+        result["cavitation_probe"] = {
+            "contact_step": cav_contact_step,
+            "T_rayleigh_s": cav_T_rayleigh,
+            "n_samples": len(cav_probe_data) if cav_probe_data else 0,
+        }
+        if result_cav_probe is not None:
+            result["cav_probe"] = result_cav_probe
     if diag_cavgas and cavgas_rows:
         result["cavgas_diag"] = {
             "definitions": {
@@ -436,6 +564,17 @@ if __name__ == "__main__":
         action="store_true",
         help="record per-step cavity volume and gas pressure ratio (diagnostic; off by default, zero behavior change)",
     )
+    parser.add_argument(
+        "--cav-probe",
+        action="store_true",
+        help="enable cavitation pressure probe at cavity bottom (read-only; off by default, zero behavior change)",
+    )
+    parser.add_argument(
+        "--cav-probe-out",
+        type=Path,
+        default=None,
+        help="output path for cavitation pressure data (JSON)",
+    )
     args = parser.parse_args()
     if (
         args.span < 3
@@ -469,11 +608,15 @@ if __name__ == "__main__":
         args.diag_out,
         args.u_limit,
         args.cav_clos_alpha,
+        0.0,  # rr_tau: not exposed on the CLI; legacy BGK path
+        0.0,  # C_s: not exposed on the CLI; legacy path
         args.diag_cavgas,
+        args.cav_probe,
+        args.cav_probe_out,
     )
     for row in result["history"]:
         for key, value in row.items():
-            if not math.isfinite(value):
+            if value is None or not math.isfinite(value):
                 row[key] = None
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
