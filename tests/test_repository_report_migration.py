@@ -838,6 +838,40 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         )
         self.assertNotIn(item["old_path"], policy["allowed_active_references"])
 
+    def test_hotpatch_records_keep_provenance_and_manual_navigation(self):
+        ledger_path = LEDGER_PATH.parent / "hotpatch-mission-records-2026-11-22.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            entries = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(len(ledger["entries"]), 2)
+        self.assertEqual(
+            entries,
+            {item["old_path"]: item["new_path"] for item in ledger["entries"]},
+        )
+        for item in ledger["entries"]:
+            with self.subTest(path=item["old_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["original_sha256"], item["size_bytes"]
+                )
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["original_git_blob"]])
+                self.assertFalse((REPO / item["old_path"]).exists())
+
+        docs = REPO / "docs"
+        catalogue = "benchmarks/tutorials/README.md"
+        self.assertIn(f"]({catalogue})", (docs / "README.md").read_text(encoding="utf-8"))
+        self.assertTrue((docs / catalogue).is_file())
+
     def test_hidden_audit_root_preserves_replay_files(self):
         ledger_path = LEDGER_PATH.parent / "hidden-audit-root-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
