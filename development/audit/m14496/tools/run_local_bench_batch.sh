@@ -5,7 +5,7 @@
 # Heavy cases (sphere Re=100, 20k-step convergence ladder) are NOT here: they go
 # to the 702 cluster (see runs/audit_runtest_r6/CLUSTER_JOBS.md).
 set -u
-cd "$(dirname "$0")/../.." || exit 1
+cd "$(dirname "$0")/../../../.." || exit 1
 R=runs/audit_runtest_r6
 mkdir -p "$R"
 IDX=$R/bench_batch_index.txt

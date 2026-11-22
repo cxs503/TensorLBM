@@ -4,9 +4,9 @@
 Six mandatory elements (owner 2026-10-29): case intro / method / results table /
 figures / caveats / error verdict (explicit "<3%? yes/no" per key quantity).
 Every number comes from runs/audit_runtest_r6/* artifacts; figures are the PNGs
-from scripts/audit_runtest_r6/make_figures.py, embedded base64.
+from development/audit/m14496/tools/make_figures.py, embedded base64.
 
-Usage: python scripts/audit_runtest_r6/publish_report.py [--dry-run]
+Usage: python development/audit/m14496/tools/publish_report.py [--dry-run]
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
 FIG = REPO / "outputs/figures/audit_runtest_r6"
 MISSION_ID = 14496
@@ -98,7 +98,7 @@ def build_markdown() -> tuple[str, str, list[dict]]:
       "--junitxml=runs/audit_runtest_r6/junit_local.xml`，JUnit 解析出计数与失败清单。")
     A("3. 算例：直接调用 `benchmarks/verified/<case>/run.py`（各算例官方入口），JSON 结果落 "
       "`runs/audit_runtest_r6/`；与本仓 archive `result.json` 逐字段对照（脚本 `build_claim_table.py`，零手抄）。")
-    A("4. 负向：`scripts/audit_runtest_r6/negative_probe.py` 13 个探针（含 1 个正向对照 + 1 个枚举对照，"
+    A("4. 负向：`development/audit/m14496/tools/negative_probe.py` 13 个探针（含 1 个正向对照 + 1 个枚举对照，"
       "证明探针能看见「拒绝」），分类 REJECTED / LOW_LEVEL / SILENT / SILENT_NAN。")
     A("5. 收敛阶：`benchmarks/verified/poiseuille_convergence_order/run.py`（网格倍增 r=2）与 MMS 算例；"
       "守恒量取各算例自带的质量漂移。")

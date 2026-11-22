@@ -5,7 +5,7 @@ Every number in the generated document is read from an artifact produced by this
 audit's own runs (runs/audit_runtest_r6/*), never transcribed by hand.  If an
 artifact is missing the corresponding section says so (honest gap, not a guess).
 
-Usage: python scripts/audit_runtest_r6/build_report.py
+Usage: python development/audit/m14496/tools/build_report.py
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
 VER = REPO / "benchmarks/verified"
 DOC = REPO / "docs/AUDIT_RUNTEST_6_TENSORLBM.md"
@@ -158,7 +158,7 @@ def main() -> int:
     A("# AUDIT-RUNTEST-6 · TensorLBM 抽样运行测试审计（真跑，不读 PR 描述）")
     A("")
     A("锚点 `AUDIT-RUNTEST-6`（owner 2026-11-11 第三项令）· 仓库 `cxs503/TensorLBM` · "
-      "任务 m14496 · 本文件由 `scripts/audit_runtest_r6/build_report.py` 从原始工件程序化生成"
+      "任务 m14496 · 本文件由 `development/audit/m14496/tools/build_report.py` 从原始工件程序化生成"
       "（零手抄：表中每个数字都来自 `runs/audit_runtest_r6/` 下的日志/JSON）。")
     A("")
     A("## 0. 执行环境与勘误")
@@ -366,7 +366,7 @@ def main() -> int:
     A("")
     if neg:
         s = neg["summary"]
-        A(f"脚本 `scripts/audit_runtest_r6/negative_probe.py`（13 个探针 + 1 个正向对照 + 1 个枚举对照），"
+        A(f"脚本 `development/audit/m14496/tools/negative_probe.py`（13 个探针 + 1 个正向对照 + 1 个枚举对照），"
           f"原始结果 `runs/audit_runtest_r6/negative_probe.json`。判据先于执行：REJECTED 才算 PASS。")
         A("")
         A(md_table(
@@ -466,7 +466,7 @@ def main() -> int:
     A(md_table(["算例", "质量漂移", "对照"], cons) if cons else "（无工件）")
     A("")
 
-    A("### 4.3 图（matplotlib 生成，`scripts/audit_runtest_r6/make_figures.py`）")
+    A("### 4.3 图（matplotlib 生成，`development/audit/m14496/tools/make_figures.py`）")
     A("")
     A("- `outputs/figures/audit_runtest_r6/conv_ladder.png` — 四臂 L2 相对误差 vs H（双对数），"
       "叠加 p=1/p=2 参考斜率和 HEAD（三臂相同）的星标点。")

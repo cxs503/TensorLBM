@@ -3,10 +3,10 @@
 
 Every row is machine-generated from two files: the *claim* (a doc/artifact field
 in the repo) and the *measurement* (a JSON produced by this audit's own run,
-see scripts/audit_runtest_r6/).  Nothing is transcribed by hand: the markdown
+see development/audit/m14496/tools/).  Nothing is transcribed by hand: the markdown
 table in docs/AUDIT_RUNTEST_6_TENSORLBM.md is emitted by this script.
 
-Usage:  python scripts/audit_runtest_r6/build_claim_table.py [--out runs/audit_runtest_r6/claim_vs_measured.json]
+Usage:  python development/audit/m14496/tools/build_claim_table.py [--out runs/audit_runtest_r6/claim_vs_measured.json]
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import json
 import math
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 RUNS = REPO / "artifacts/audit_runtest_6" if (REPO / "artifacts/audit_runtest_6").exists() else REPO / "runs/audit_runtest_r6"
 VER = REPO / "benchmarks/verified"
 

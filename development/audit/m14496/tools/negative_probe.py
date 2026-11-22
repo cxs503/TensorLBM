@@ -21,7 +21,7 @@ One positive control (``N09``) is a module *known* to validate: it must come
 back REJECTED, otherwise the probe harness itself is broken and no negative
 result from this file may be believed.
 
-Usage:  PYTHONPATH=src python scripts/audit_runtest_r6/negative_probe.py [--out FILE]
+Usage:  PYTHONPATH=src python development/audit/m14496/tools/negative_probe.py [--out FILE]
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 
 
 # --------------------------------------------------------------------------
