@@ -1,0 +1,12 @@
+# DE-NXT-RELX-W3 verification log (local CPU, PYTHONPATH=src:.)
+2026-11-22T12:15:50Z
+
+$ python3 -m pytest tests/test_kbc_d3q19_lattice.py tests/test_cascaded_collision.py tests/test_kbc_diagnostic.py -q
+============================== collection-ignore ===============================
+none (every test file under tests/ is collectable here)
+62 passed, 1 warning in 19.11s
+
+$ python3 -c 'KBC alpha=1 vs solver BGK equivalence (float64 kernel vs float32 solver)'
+max abs diff = 1.677e-05 ; rel = 5.027e-05 ; scale = 3.336e-01
+lattice(19) weight sum = 1.0
+entropy-mode alpha range = [0.4380, 0.5239] (ghost damping < 1)

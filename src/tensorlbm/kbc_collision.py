@@ -96,17 +96,32 @@ class Lattice:
 
 
 def _weights(c: np.ndarray) -> np.ndarray:
-    """Qian weights from the velocity set (D2Q9 / D3Q19 / D3Q27)."""
+    """Lattice weights (D2Q9 / D3Q19 / D3Q27).
+
+    The D3Q19 velocity set carries the canonical weights (rest 1/3, face
+    1/18, edge 1/36).  The D3Q27 (Qian) formula applied to the 19-direction
+    set totals 26/27 (measured sum 0.9629629629629628) and tripped the
+    normalisation assertion below, which made :func:`lattice` unusable for
+    D3Q19 -- the entropic KBC kernel could not be used with the D3Q19
+    lattice of the free-surface solver at all.
+
+    The D3Q19 weights below are identical to ``tensorlbm.d3q19._W_VALUES``
+    and the D3Q19 ordering to ``tensorlbm.d3q19.C`` (asserted in
+    ``tests/test_kbc_d3q19_lattice.py``).
+    """
     csq = (c.astype(np.float64) ** 2).sum(axis=1)
-    w = np.where(
-        csq == 0,
-        8.0 / 27.0 if c.shape[1] == 3 else 4.0 / 9.0,
-        np.where(
-            csq == 1,
-            2.0 / 27.0 if c.shape[1] == 3 else 1.0 / 9.0,
-            np.where(csq == 2, 1.0 / 54.0 if c.shape[1] == 3 else 1.0 / 36.0, 1.0 / 216.0),
-        ),
-    )
+    if c.shape[0] == 19 and c.shape[1] == 3:
+        w = np.where(csq == 0, 1.0 / 3.0, np.where(csq == 1, 1.0 / 18.0, 1.0 / 36.0))
+    else:
+        w = np.where(
+            csq == 0,
+            8.0 / 27.0 if c.shape[1] == 3 else 4.0 / 9.0,
+            np.where(
+                csq == 1,
+                2.0 / 27.0 if c.shape[1] == 3 else 1.0 / 9.0,
+                np.where(csq == 2, 1.0 / 54.0 if c.shape[1] == 3 else 1.0 / 36.0, 1.0 / 216.0),
+            ),
+        )
     assert abs(w.sum() - 1.0) < 1e-14, w.sum()
     return w
 
