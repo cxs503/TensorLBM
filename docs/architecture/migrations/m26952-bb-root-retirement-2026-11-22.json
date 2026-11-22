@@ -1,0 +1,20 @@
+{
+  "source_commit": "b58c0722aadd82f6e1ae71790b70dc83a06d95dc",
+  "source_pr": 2907,
+  "root_directories_before": 14,
+  "root_directories_after": 13,
+  "retired_root": "BB",
+  "entries": [
+    {
+      "old_path": "BB/X/DE-X-PF1-CH4.md",
+      "new_path": "development/audit/drop_entry/BB/m26952/DE-X-PF1-CH4.md",
+      "original_git_blob": "b9cb41ce14ddf53681c139d39fec964e6237c485",
+      "git_mode": "100644",
+      "size_bytes": 5547,
+      "original_sha256": "05957f265a8670f0bc040ec763ffd3fd74aa90515e0711dc11a79a58c6b1ad35"
+    }
+  ],
+  "reference_scan": "The exact card basename has no tracked references outside the card at the source revision. The card has no repository-relative Markdown links.",
+  "compatibility": "Preserve the complete work card in the mission archive. The benchmark, solver, probe and test paths from PR 2907 are untouched.",
+  "scientific_scope": "Historical working evidence. The card's static droplet PASS and unresolved dynamic water-entry FAIL retain their separate scopes."
+}
