@@ -1228,6 +1228,17 @@ def free_surface_step(
             from .solver3d import collide_mrt3d
 
             f = collide_mrt3d(f_collide, tau, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
+    elif collision == "rr":
+        # Regularized collision (DE-X-COL2-REG): the non-equilibrium part is
+        # projected back onto the equilibrium manifold through its second-order
+        # stress only (Ladd 1994); every higher-order non-equilibrium moment is
+        # discarded, which bounds the post-collision populations and widens the
+        # stable relaxation window below the BGK floor.  ``feq`` already carries
+        # the Guo half-step velocity shift, so the explicit Guo source below is
+        # applied exactly once, as for BGK.
+        from .collision_d3q19_advanced import collide_regularized_stress_d3q19
+
+        f = collide_regularized_stress_d3q19(f_collide, feq, tau)
     else:  # bgk
         if C_s > 0:
             if sgs_model == "smagorinsky":
