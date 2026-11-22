@@ -9,7 +9,7 @@ Reads only committed/rerun numbers (no hand-copied values):
 
 Writes:
   artifacts/m18101_audit_evidence.json   -> the exact JSON inserted into tensor_maturity_verdicts
-  docs/audit_m18101/fig_reproduction.png -> committed vs reproduced parity + invariant margins
+  docs/assets/audit-m18101/fig_reproduction.png -> committed vs reproduced parity + invariant margins
   verdict_m18151.sql                     -> idempotent INSERT
   docs/AUDIT_m18101_VERDICT.md           -> review record
 """
@@ -24,7 +24,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 SRC = pathlib.Path("/srv/tensor/agent/work/m18101")
 XV = SRC / "xval/XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE"
 ANCHOR = "XVAL-LBM-MCMP-TWO-COMPONENT-CROSS-FORCE"
@@ -123,7 +123,7 @@ ax2.set_title("(b) Invariants: measured residual vs predeclared limit")
 ax2.legend(fontsize=7.5, loc="lower right")
 ax2.grid(axis="x", alpha=0.25)
 fig.tight_layout()
-figpath = ROOT / "docs/audit_m18101/fig_reproduction.png"
+figpath = ROOT / "docs/assets/audit-m18101/fig_reproduction.png"
 fig.savefig(figpath, dpi=150)
 plt.close(fig)
 
@@ -153,7 +153,7 @@ evidence = {
         f"{XV}/artifacts/fig_xval.png",
         f"{XV}/REPORT.md",
         f"{ROOT}/artifacts/m18101_rerun_slab_cases.json",
-        f"{ROOT}/docs/audit_m18101/fig_reproduction.png",
+        f"{ROOT}/docs/assets/audit-m18101/fig_reproduction.png",
     ],
     "integration_callers": [
         "collide_sc_two_component: production D2Q9 MCMP path, src/tensorlbm/multiphase.py:788 -> sc_two_component_force; "

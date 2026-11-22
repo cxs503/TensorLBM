@@ -1,0 +1,93 @@
+{
+  "source_commit": "4ef550ef4e65318022f4d711e902c73490d9e685",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 13,
+  "second_level_directories": {
+    "docs": {
+      "before": 94,
+      "after": 91
+    },
+    "benchmarks": {
+      "before": 104,
+      "after": 104
+    }
+  },
+  "removed_docs_directories": [
+    "audit_m18101",
+    "figs",
+    "m11185"
+  ],
+  "entries": [
+    {
+      "old_path": "docs/m11185/generate_figures.py",
+      "new_path": "development/verification/free-surface-tension/m11185/generate_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "e93f8b4e8f85b7a03c69b03e9fbb01e020f5392a",
+      "original_sha256": "9cd5e0f3b0484f37b44024e476f93eb84581975a87f222a067f30793604055b8",
+      "size_bytes": 3587
+    },
+    {
+      "old_path": "docs/audit_m18101/build_audit.py",
+      "new_path": "development/audit/m18101/build_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "b866da1948bfb70254a2a67aa6e8b0bd0df05922",
+      "original_sha256": "feb41f52bd2a54cee04eab4042a38ed02161a5d2975abaaeae6863c07154491b",
+      "current_sha256": "6eac650f02209dc08a1294541a3a4d56fd847c46a0f43830f5df19cf133261bb",
+      "compatibility_adjustments": [
+        "Resolve the repository root from the new archive depth.",
+        "Write and record the figure under docs/assets/audit-m18101."
+      ],
+      "size_bytes": 13816
+    },
+    {
+      "old_path": "docs/audit_m18101/fig_reproduction.png",
+      "new_path": "docs/assets/audit-m18101/fig_reproduction.png",
+      "git_mode": "100644",
+      "original_git_blob": "583867b6cc71a728a80b6411a27b21e25cb3c579",
+      "original_sha256": "4451c305677958c0cba2d9156b517a80c996879751e3e102da0f609c00298847",
+      "size_bytes": 135712
+    },
+    {
+      "old_path": "docs/figs/three_way_floe.png",
+      "new_path": "docs/assets/three-way-ice-floe-coupling/three_way_floe.png",
+      "git_mode": "100644",
+      "original_git_blob": "3538c5f7c3cca12d1e6ff7a1da748b940eea33fa",
+      "original_sha256": "09961d344b2f94f4d345244b6cc92d32198c3f672950085c347c606d463c9b59",
+      "size_bytes": 61469
+    },
+    {
+      "old_path": "docs/figs/three_way_gate_a.png",
+      "new_path": "docs/assets/three-way-ice-floe-coupling/three_way_gate_a.png",
+      "git_mode": "100644",
+      "original_git_blob": "0808a77b9070d39254c4119ac182ebf9f012d4f0",
+      "original_sha256": "5763b200fc172e534ddab784882f6e3bc093a8ba56c8f47cee894b97ae997d9d",
+      "size_bytes": 56674
+    },
+    {
+      "old_path": "docs/figs/three_way_ledger.png",
+      "new_path": "docs/assets/three-way-ice-floe-coupling/three_way_ledger.png",
+      "git_mode": "100644",
+      "original_git_blob": "8be63837caba6e05a768dca7522bb9b8066b5368",
+      "original_sha256": "26b7752ea928f6e0c4eaf635454f9c0dd3cf952f3c0f36ff4af661a55a6eda03",
+      "size_bytes": 28826
+    },
+    {
+      "old_path": "docs/figs/three_way_whipping.png",
+      "new_path": "docs/assets/three-way-ice-floe-coupling/three_way_whipping.png",
+      "git_mode": "100644",
+      "original_git_blob": "42980964cd44ca028f256a9278f557e493ca7a8e",
+      "original_sha256": "80922fa42989dfcc0ebc58d5368c8d6828c311f8323ea42f270b79bc6f3171ab",
+      "size_bytes": 112559
+    }
+  ],
+  "compatibility": "The three-way coupling report and its driver keep their paths. The driver writes the four figures to the new document asset directory. The historical free-surface tension report links to the archived plotting script. The m18101 public verdict keeps its path, links the relocated figure and records the archived builder plus its replay prerequisites.",
+  "scientific_scope": "The published results and simulation algorithms are preserved. The original m11185 image outputs are absent from main. The archived plotting script contains explicitly illustrative convergence values, which are not numerical evidence. The m18101 verdict remains historical L4 evidence and is not treated as a current scientific rerun.",
+  "local_verification": [
+    "Repository governance passed, with all 35 tutorial cases and 33 PDF and Word manuals.",
+    "PYTHONPATH=src python -m pytest -q tests/test_three_way_gates.py (6 passed)",
+    "Ran scripts/three_way_gates.py --quick in a temporary tree. Four figures and both JSON products were written. Gate a and gate g failed, so the aggregate scientific verdict was FAIL.",
+    "Verified five original Git blobs and SHA-256 values. All four published image links resolve to byte-matched assets and the regenerated images decode.",
+    "Ran the same quick command with the baseline driver. Both JSON products matched after excluding the measured wall time. Gates a and g failed on both revisions.",
+    "Compiled the relocated m18101 builder and verified its original blob, current path-only digest, public image link and exact image bytes. Full replay remains unavailable without the original m18101 worktree."
+  ]
+}

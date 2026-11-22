@@ -51,7 +51,12 @@ Scratch copy `/tmp/xval_audit`, `PYTHONPATH=/srv/tensor/agent/work/m18101/src`, 
 
 Primary claim **7.01 % / 6.43 % < 15 %** reproduces; the ≤0.001 pp drift on the n=96 cases is entirely explained by the different step counts (see finding F2).
 
-Figure: `docs/audit_m18101/fig_reproduction.png` — (a) every error metric committed vs rerun against the 15 % line, (b) invariant residuals vs predeclared limits.
+Figure: [committed vs reproduced parity and invariant margins](assets/audit-m18101/fig_reproduction.png) — (a) every error metric committed vs rerun against the 15 % line, (b) invariant residuals vs predeclared limits.
+
+The historical builder is retained at
+`development/audit/m18101/build_audit.py`. Its complete replay still depends
+on the original `/srv/tensor/agent/work/m18101` tree and the committed
+`artifacts/m18101_rerun_slab_cases.json` input.
 
 ## 3. Severity-ranked findings
 
