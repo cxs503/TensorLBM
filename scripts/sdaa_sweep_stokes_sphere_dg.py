@@ -575,6 +575,12 @@ def main() -> int:
     args = ap.parse_args()
     if args.out is None:
         args.out = ARCHIVE if args.from_json else OUT_DEFAULT
+    archive_path = os.path.realpath(ARCHIVE)
+    uses_archive = os.path.realpath(args.out) == archive_path
+    if uses_archive and not args.from_json:
+        ap.error("--out must not overwrite the case archive")
+    if args.render_doc and os.path.realpath(os.path.join(REPO, args.render_doc)) == archive_path:
+        ap.error("--render-doc must not overwrite the case archive")
 
     if args.from_json:
         with open(args.out) as fh:
@@ -592,7 +598,7 @@ def main() -> int:
                 t["steps_run"] = t["steps_executed"]
                 t["steps_executed_backfilled"] = True
                 touched = True
-        if touched and os.path.realpath(args.out) != os.path.realpath(ARCHIVE):
+        if touched and not uses_archive:
             with open(args.out, "w") as fh:
                 json.dump(art, fh, indent=1)
         if args.render_doc:
