@@ -1,0 +1,23 @@
+{
+ "triple": {
+  "stop_reason": "window_complete",
+  "contact_step": 45,
+  "n_history": 2020,
+  "last_step_index": 2019,
+  "last_time_ms_abs": 24.55248214285714,
+  "last_time_ms_pc": 24.005249999999997,
+  "peak_depth_D": 1.3740949746883493,
+  "peak_time_ms_abs": 11.953982142857141,
+  "peak_time_ms_pc": 11.406749999999999,
+  "peak_error_vs_exp_pct": -26.021868088537776,
+  "postcontact_healthy_ms": 24.005249999999997,
+  "mach_max": 0.2017225000728369
+ },
+ "verdict": {
+  "prereg_band_hit": false,
+  "falsify_near_ctrl": false,
+  "falsify_early_death": false,
+  "verdict": "OUT_OF_BAND",
+  "alpha": 0.15
+ }
+}
