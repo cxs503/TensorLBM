@@ -79,6 +79,11 @@ maneuvering report figures and W31 transcription evidence.
 
 The [survey and Huang audit migration ledger](migrations/survey-and-huang-audit-layout-2026-11-22.json) records the SUBOFF report figures and the archived m17889 delivery snapshot. The [survey index](../surveys/README.md) links to the published surveys.
 
+The [CMB5 migration ledger](migrations/cmb5-hydrorr-stability-2026-11-23.json)
+groups the m27100 drop-entry histories, preregistration and tooling under the
+drop-entry campaign. Its verdict and histories are discoverable from the
+existing 3D drop-entry registry entry alongside the formal comparison inputs.
+
 The [documentation process-directory ledger](migrations/docs-process-directories-2026-11-22.json)
 retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
 unchanged archive objects and proves that the three removed history files are

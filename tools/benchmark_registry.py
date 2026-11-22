@@ -77,14 +77,19 @@ def attach_validation_matrix(records: list[dict], root: Path) -> list[str]:
 def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
     """Register standalone benchmark and cross-validation manifests from the Git index."""
     manifests = sorted(tracked_files(root, ":(glob)xval/*/benchmark_case.json",
-                                     ":(glob)benchmarks/*/benchmark_case.json"))
+                                     ":(glob)benchmarks/*/benchmark_case.json",
+                                     *(f":(glob)benchmarks/{bucket}/*/benchmark_case.json"
+                                       for bucket in BUCKETS)))
     if not manifests:
         return []
     tracked = tracked_files(root)
     registered_directories = {variant["path"] for row in records for variant in row["variants"]}
+    inferred_cases = {row["id"]: row for row in records if row["id"].startswith("benchmarks/")}
     errors = []
     for manifest in manifests:
-        if str(manifest.parent) in registered_directories:
+        directory = str(manifest.parent)
+        inferred = inferred_cases.get(directory)
+        if directory in registered_directories and inferred is None:
             errors.append(f"{manifest}: directory already has a registered case")
             continue
         definition = json.loads((root / manifest).read_text(encoding="utf-8"))
@@ -92,10 +97,12 @@ def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
         namespace = "xval" if is_xval else "campaign"
         case_id = f"{namespace}:{manifest.parent.name}"
         category = "cross_validation" if is_xval else "standalone_campaign"
-        fields = ("source", "config", "documentation", "reference_files", "results")
         if not isinstance(definition, dict):
             errors.append(f"{manifest}: expected a JSON object")
             continue
+        fields = ("source", "config", "documentation", "reference_files", "results")
+        if "evidence" in definition:
+            fields += ("evidence",)
         previous_errors = len(errors)
         if not isinstance(definition.get("scope"), str) or not definition["scope"].strip():
             errors.append(f"{manifest}: missing case scope")
@@ -112,14 +119,20 @@ def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
         if not definition.get("source") or not definition.get("results"):
             errors.append(f"{manifest}: a case requires a source and a result")
         if len(errors) == previous_errors:
+            declared = {field: definition[field] for field in fields}
+            declared["references"] = definition.get("references", [])
+            metadata = {"manifest": str(manifest), "scope": definition["scope"],
+                        "criteria": definition["criteria"]}
+            if inferred is not None:
+                inferred["variants"][0].update(declared)
+                inferred[category] = metadata
+                continue
             records.append({
                 "id": case_id, "category": category, "tutorial": {},
                 "current_acceptance": "not_evaluated", "validation_matrix": [],
-                "variants": [{"path": str(manifest.parent), "archive_bucket": "xval" if is_xval else None,
-                              **{field: definition[field] for field in fields},
-                              "references": definition.get("references", [])}],
-                category: {"manifest": str(manifest), "scope": definition["scope"],
-                                     "criteria": definition["criteria"]},
+                "variants": [{"path": directory, "archive_bucket": "xval" if is_xval else None,
+                              **declared}],
+                category: metadata,
             })
     return errors
 
@@ -210,14 +223,15 @@ def build_registry(root: Path = ROOT) -> tuple[list[dict], list[str]]:
     variants_by_dir = defaultdict(list)
     for record in records:
         for variant in record["variants"]:
-            variant["evidence"] = []
+            variant.setdefault("evidence", [])
             variants_by_dir[PurePosixPath(variant["path"])].append(variant)
     for path in sorted(files | tracked_files(root, "xval")):
         owner = next((parent.parent for parent in path.parents
                       if parent.name == "evidence" and parent.parent in variants_by_dir), None)
         if owner is not None:
             for variant in variants_by_dir[owner]:
-                variant["evidence"].append(str(path))
+                if str(path) not in variant["evidence"]:
+                    variant["evidence"].append(str(path))
     return records, errors
 
 

@@ -1,0 +1,114 @@
+{
+  "source_commit": "aee720a623639cf52eb97b3db1e18ef7dfcde64a",
+  "source_pr": 2944,
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "old_directory": "development/audit/CMB5-HYDRORR-STAB",
+  "new_directory": "development/audit/drop_entry/cmb5_hydrorr_stability",
+  "entries": [
+    {
+      "old_path": "development/audit/CMB5-HYDRORR-STAB.prereg.md",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/preregistration.md",
+      "git_mode": "100644",
+      "original_git_blob": "feae764796f552e781c85df8048eb7166dd9818e",
+      "original_sha256": "ef7ff3a2e4cc562bbe11ded50172975d722d9fdaa06cde306b485e16c2e71172",
+      "size_bytes": 2548
+    },
+    {
+      "old_path": "development/audit/CMB5-HYDRORR-STAB/arms/cmb5_d050/result.json.gz",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_d050/result.json.gz",
+      "git_mode": "100644",
+      "original_git_blob": "d89b050081057cf0c7f933ba63c0cf31612800a3",
+      "original_sha256": "9c70044f00c1bdb858e984538992d984728de8d3c971af27ebd1ef1959b0c7d6",
+      "size_bytes": 906
+    },
+    {
+      "old_path": "development/audit/CMB5-HYDRORR-STAB/arms/cmb5_d075/result.json.gz",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_d075/result.json.gz",
+      "git_mode": "100644",
+      "original_git_blob": "8f3cb81caa2d210a4aabc271d8dd373365d85da9",
+      "original_sha256": "32d4cf9cf83e94204a0b9dc9bc873582325c6e30c072eb298ea377ed6d7e7853",
+      "size_bytes": 909
+    },
+    {
+      "old_path": "development/audit/CMB5-HYDRORR-STAB/arms/cmb5_parity/result.json.gz",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_parity/result.json.gz",
+      "git_mode": "100644",
+      "original_git_blob": "25e65044598fa16dd29b46d2cad804b0d9f7bf20",
+      "original_sha256": "c19264096f7b1b8a5db5e8748b4159b7802b10a3e097ced5f5422682444bdde6",
+      "size_bytes": 14767
+    },
+    {
+      "old_path": "development/audit/CMB5-HYDRORR-STAB/arms/cmb5_ul13/result.json.gz",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/arms/cmb5_ul13/result.json.gz",
+      "git_mode": "100644",
+      "original_git_blob": "29388c07ca30d358b9b9617c343b42cea72ea251",
+      "original_sha256": "0d8f4d83636f2495a72d3b9527866a06591a3d1b4b71a2cdaa9627bd1557c481",
+      "size_bytes": 906
+    },
+    {
+      "old_path": "development/audit/CMB5-HYDRORR-STAB/cmb5_verdict.json",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/cmb5_verdict.json",
+      "git_mode": "100644",
+      "original_git_blob": "a775a7fd8f041b15fd37620d3728e7d8ea4c0b2d",
+      "original_sha256": "37353111740b71108ab7b587bfff868ad694a5b3954f09d5349a6f099a3d89e4",
+      "size_bytes": 2972
+    },
+    {
+      "old_path": "development/audit/cmb5_analyze.py",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/original_tools/cmb5_analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "8c8c07e5aab580f47b3a23d2bb36b57291e4b684",
+      "original_sha256": "9788e9e7c0746733f91ebab539b9e6bb3e1d497ce040c3d9cce8591d7185bb78",
+      "size_bytes": 4598
+    },
+    {
+      "old_path": "development/audit/cmb5_figures.py",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/original_tools/cmb5_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "b3489e19fb293cb742afb3ae4b4bc788249776a9",
+      "original_sha256": "eebf44e0d67ba1ef62ddc93322d4bd662b27aab29307f0a60ca6cb4e39d8403b",
+      "size_bytes": 4817
+    },
+    {
+      "old_path": "development/audit/cmb5_report.py",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/original_tools/cmb5_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "905edc233f969b5f061266aca0ab6ec0a0780a4b",
+      "original_sha256": "620cbedca5338670447e3d42a6e982830f45221cc36a342a0e90d3149ed89a3a",
+      "size_bytes": 8218
+    },
+    {
+      "old_path": "development/audit/cmb5_verdict.json",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/cmb5_verdict.json",
+      "git_mode": "100644",
+      "original_git_blob": "a775a7fd8f041b15fd37620d3728e7d8ea4c0b2d",
+      "original_sha256": "37353111740b71108ab7b587bfff868ad694a5b3954f09d5349a6f099a3d89e4",
+      "size_bytes": 2972
+    },
+    {
+      "old_path": "development/audit/publish_report.sh",
+      "new_path": "development/audit/drop_entry/cmb5_hydrorr_stability/original_tools/publish_report.sh",
+      "git_mode": "100644",
+      "original_git_blob": "f57e561b69e1a754a76b9fffa863418057f59911",
+      "original_sha256": "380fba930134ad2879216abf4022303ded93c87ac05476f8d6dc27e81739c4b3",
+      "size_bytes": 696
+    }
+  ],
+  "duplicate": {
+    "old_path": "development/audit/cmb5_verdict.json",
+    "identical_at_source": "development/audit/CMB5-HYDRORR-STAB/cmb5_verdict.json",
+    "retained_path": "development/audit/drop_entry/cmb5_hydrorr_stability/cmb5_verdict.json"
+  },
+  "compatibility": "No tracked callers of the m27100 scripts or links to the moved paths outside the campaign were found. Internal references in the original scripts are historical. The merge and Git blob IDs preserve old-path retrieval. The case runner, published report paths and public imports are unchanged.",
+  "verification": "All four archived GZIP JSON histories decoded. For the three dose arms, independently extracted peak depth, absolute peak time, Mach maximum, end drift and stop reason matched the archive verdict. Each stopped on step 4 before contact. The parity arm retained 201 samples and contact step 44.",
+  "single_drop_score_replay": {
+    "archived_inputs": "docs/audits/spherical_entry_20261118/histories.zip",
+    "command": "python -m benchmarks.water_entry.single_drop.score <extracted-dir>/case3_*.json --output <extracted-dir>/score.json",
+    "status": "pending",
+    "exit_code": 1,
+    "matched": "benchmarks/pending/droplet_impact_3d_pool/result.json",
+    "sha256": "f1818ea113a5e9aceeba16018fa5223fc408d426d0d345ff36296f2b6dcdef0a"
+  },
+  "scientific_scope": "Offline verification of archived outputs. CMB3 raw inputs, the original m27100 solver branch and SDAA hardware were not used. No new solver result or current scientific verdict is claimed."
+}

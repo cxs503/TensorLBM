@@ -82,6 +82,24 @@ class BenchmarkRegistryTests(unittest.TestCase):
         self.assertIn("src/tensorlbm/shallow_water.py", campaign["variants"][0]["source"])
         self.assertIn("benchmarks/dam_break_ritter/replays/2026-11-21.json", campaign["variants"][0]["results"])
 
+    def test_single_drop_case_separates_formal_and_exploratory_histories(self):
+        case_id = "benchmarks/pending/droplet_impact_3d_pool"
+        (case,) = self.registry("--case", case_id)
+        self.assertEqual(case["id"], case_id)
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        self.assertEqual(case["tutorial"], {})
+        variant, = case["variants"]
+        self.assertEqual(variant["archive_bucket"], "pending")
+        directory = "benchmarks/water_entry/single_drop"
+        self.assertIn(f"{directory}/protocol.json", variant["config"])
+        self.assertIn(f"{directory}/fig5_experiment.csv", variant["reference_files"])
+        self.assertEqual(variant["results"], [
+            f"{case_id}/result.json", "docs/audits/spherical_entry_20261118/histories.zip",
+        ])
+        archive = "development/audit/drop_entry/cmb5_hydrorr_stability"
+        self.assertIn(f"{archive}/cmb5_verdict.json", variant["evidence"])
+        self.assertIn(f"{archive}/arms/cmb5_parity/result.json.gz", variant["evidence"])
+
     def test_find_archived_assets_by_path(self):
         result = subprocess.run(
             [sys.executable, "tools/benchmark_registry.py", "--find-asset", "M17444/AKAI2018_REPRO"],

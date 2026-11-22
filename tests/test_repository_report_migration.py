@@ -59,6 +59,24 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), fingerprint["sha256"])
                 self.assertFalse((REPO / item["old_path"]).exists())
 
+    def test_drop_entry_cmb5_archive_keeps_original_objects(self):
+        ledger_path = LEDGER_PATH.parent / "cmb5-hydrorr-stability-2026-11-23.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (LEDGER_PATH.parent.parent / "migration_manifest.csv").open(newline="") as source:
+            registered_paths = {
+                row["old_path"]: row["new_path"] for row in csv.DictReader(source)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(registered_paths, {
+            entry["old_path"]: entry["new_path"] for entry in ledger["entries"]
+        })
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["old_path"]):
+                self.assertFalse((REPO / entry["old_path"]).exists())
+                self.assert_fingerprint(
+                    REPO / entry["new_path"], entry["original_sha256"], entry["size_bytes"]
+                )
+
     def test_deduplicated_images_retain_original_bytes(self):
         for item in self.ledger["deduplicated_images"]:
             with self.subTest(image=item["old_path"]):

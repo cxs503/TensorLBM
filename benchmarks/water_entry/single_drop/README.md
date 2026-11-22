@@ -70,3 +70,7 @@ cmp "$out/reference.csv" benchmarks/water_entry/single_drop/fig5_experiment.csv
 ### 质量与体积的读数
 
 自由面求解器在液体内部用分布函数密度表示质量，在界面单元另外保存液体质量。记录中的 `volume_drift` 沿用库函数口径，等于归一化的「液体内部密度和 + 界面填充率和」漂移。对照修正组另外记录 `geometric_volume_drift`（全域填充率和）与 `represented_mass_drift`（液体内部密度和 + 界面存储质量）。程序在早期越过几何体积限值后仍可留下诊断轨迹；最终体积判据独立核查。运行到论文测量时刻只说明能计算该时刻的误差。
+
+### 历史探索
+
+[m27100 · RR 剂量稳定性](../../../development/audit/drop_entry/cmb5_hydrorr_stability/README.md) 归档了三条接触前触发健康限值的探索轨迹及一条短程对照。正式实验比较使用本页的筛查与验收条件。
