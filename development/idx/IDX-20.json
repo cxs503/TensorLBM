@@ -1,0 +1,53 @@
+[
+  {
+    "file": "TENS1-IF-SEP.md",
+    "arm": "IF-SEP",
+    "mechanism": "压力基CSF：把CSF体积力σκnδ_s吸收进压力梯度，界面力-压力精确平衡",
+    "verdict": "FAIL",
+    "peak_depth_D": 1.43522,
+    "peak_time_ms": 11.0906,
+    "key_numbers": [
+      {"num": 1.43522, "meaning": "peak_depth_D 压力基臂峰深"},
+      {"num": 22.731, "meaning": "peak_error% 气穴欠深误差"},
+      {"num": 24.552, "meaning": "window_complete_ms 满窗时长"},
+      {"num": 0.2598, "meaning": "mach_max 最大马赫数"},
+      {"num": 4.07, "meaning": "iface_p_std 比值 压力基vs体力"}
+    ],
+    "one_line_verdict": "压力基CSF逐位复现ctrl锚，但气穴欠深22.7%与表面张力承载方式无关",
+    "open_gap": "欠深根因在别处（物理内核问题，与CONV12/CAVSWEEP/KERN系一致）"
+  },
+  {
+    "file": "TENS2-CURV5.md",
+    "arm": "curv5",
+    "mechanism": "曲率双binomial滤波：对φ场在曲率计算前2次binomial(1/4,1/2,1/4)滤波（5点等效核）",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": 1.045269,
+    "peak_time_ms": 5.825,
+    "key_numbers": [
+      {"num": 1.045269, "meaning": "peak_depth_D 滤波臂峰深"},
+      {"num": -43.73, "meaning": "peak_error% 峰深误差"},
+      {"num": 5.837, "meaning": "health_limit_ms 早死时长"},
+      {"num": 8.66, "meaning": "mach降% 共窗伪电流抑制"},
+      {"num": 0.1432, "meaning": "mach_max 滤波臂最大马赫数"}
+    ],
+    "one_line_verdict": "曲率滤波方向证伪——不能把峰深推向1.8574D，反使欠深加剧(-22.7%→-43.7%)",
+    "open_gap": "滤波越强→界面越弥散→空穴越浅+质量漂移加速→越早死"
+  },
+  {
+    "file": "TMG1-PUSH_PULL.md",
+    "arm": "pull",
+    "mechanism": "碰撞/对流次序切换：界面子循环引入推式(Push)与拉式(Pull)，交换collision/stream调用顺序",
+    "verdict": "FALSIFIED",
+    "peak_depth_D": null,
+    "peak_time_ms": null,
+    "key_numbers": [
+      {"num": 0.024, "meaning": "pull存活ms 早死时长"},
+      {"num": 433, "meaning": "早死倍数 相对10ms底线"},
+      {"num": 1.4352, "meaning": "ctrl锚峰深D"},
+      {"num": 22.731, "meaning": "ctrl误差%"},
+      {"num": 1.53, "meaning": "释放速度m/s 与不稳定耦合"}
+    ],
+    "one_line_verdict": "pull式ABB用pre-streaming速度重构气相平衡致population变负，早死433倍于底线",
+    "open_gap": "pull+无释放速度未测，不稳定与释放速度耦合非纯次序效应"
+  }
+]
