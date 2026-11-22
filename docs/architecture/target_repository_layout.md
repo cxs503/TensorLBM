@@ -55,7 +55,7 @@ integrity verified before retiring a tracked copy.
 | `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |
-| `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. |
+| `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. The [m18430 ledger](migrations/m18430-audit-tools-2026-11-22.json) records the archived report builder and its companion scripts. |
 | `src/` | Keep | Keep the installable package and its published import surface stable. |
 | `teaching/` | `examples/teaching/` | Keep teaching commands and the companion comparison together. |
 | `tests/` | Keep | Preserve test collection and the semantics of fixtures and rules. |
