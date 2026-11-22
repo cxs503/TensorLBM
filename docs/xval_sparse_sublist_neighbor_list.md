@@ -3,6 +3,8 @@
 **锚点** XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST · mission 18377 · 分支 `agent/m18377`
 **对标对象** `sorush-khajepor/listLBM` @ `master`（本地克隆 `/tmp/listlbm`，GPLv3）——全部结论带 `文件:行`，源码取自本地克隆，未执行 OSS 二进制（Fortran，无编译器）。
 
+[历史预注册记录（m18377）](../development/verification/sparse-sublist-neighbor-list/m18377/predeclared.json)
+
 ## 1. 问题与参考出处
 
 多孔介质 LBM 在**每个**固体格点上浪费 9 个分布函数。`sorush-khajepor/listLBM`（博士课题，多孔介质多相流）把未知量压缩到**流体节点**上，并存储一张**邻接表**（neighbour list）做间接寻址：

@@ -49,6 +49,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "council"),
     ("docs", "history"),
     ("docs", "smoke"),
+    ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
+    ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
 }
 
 

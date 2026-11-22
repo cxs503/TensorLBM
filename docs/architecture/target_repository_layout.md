@@ -61,7 +61,7 @@ integrity verified before retiring a tracked copy.
 | `tests/` | Keep | Preserve test collection and the semantics of fixtures and rules. |
 | `tmp/` | No tracked root | Reused paths are recorded by source revision. See the [m26816](migrations/m26816-root-retirement-2026-11-21.json) and [m26843](migrations/m26843-root-report-2026-11-21.json) ledgers for distinct versions of `tmp/report.json`. |
 | `tools/` | Keep | Maintain shared tooling and repository policy together. |
-| `xval/` | `benchmarks/` and `development/verification/` | Move by campaign. Link formal evidence from the canonical benchmark entry and preserve method, references and historical verdicts. |
+| `xval/` | `benchmarks/` and `development/verification/` | Move by campaign. Link formal evidence from the canonical benchmark entry and preserve method, references and historical verdicts. The [preregistration ledger](migrations/xval-preregistrations-2026-11-22.json) records the first two preregistration-only directory retirements. |
 
 ## Second-level placement
 

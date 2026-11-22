@@ -29,6 +29,7 @@ def policy() -> dict:
             "src",
             "tests",
             "tools",
+            "xval",
         ],
         "baseline_revision": "test-fixture",
         "root_files": [".gitignore", "README.md"],

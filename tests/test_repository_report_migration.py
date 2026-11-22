@@ -797,6 +797,36 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         for path in ("docs/council", "docs/history", "docs/smoke"):
             self.assertFalse((REPO / path).exists())
 
+    def test_xval_preregistrations_keep_original_objects_and_report_links(self):
+        ledger_path = LEDGER_PATH.parent / "xval-preregistrations-2026-11-22.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (REPO / "docs/architecture/migration_manifest.csv").open(
+            encoding="utf-8"
+        ) as stream:
+            manifest = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(len(ledger["entries"]), 2)
+        self.assertEqual(
+            manifest,
+            {item["old_path"]: item["new_path"] for item in ledger["entries"]},
+        )
+        for item in ledger["entries"]:
+            with self.subTest(path=item["old_path"]):
+                target = REPO / item["new_path"]
+                self.assert_fingerprint(target, item["original_sha256"], item["size_bytes"])
+                index = subprocess.check_output(
+                    ["git", "ls-files", "-s", "--", item["new_path"]],
+                    cwd=REPO,
+                    text=True,
+                ).split()
+                self.assertEqual(index[:2], [item["git_mode"], item["original_git_blob"]])
+                self.assertFalse((REPO / item["old_path"]).exists())
+                report = (REPO / item["published_report"]).read_text(encoding="utf-8")
+                self.assertIn(f"](../{item['new_path']})", report)
+
     def test_blasius_development_runner_is_archived_not_a_second_case(self):
         ledger_path = (
             LEDGER_PATH.parent / "blasius-dev-runner-retirement-2026-11-22.json"

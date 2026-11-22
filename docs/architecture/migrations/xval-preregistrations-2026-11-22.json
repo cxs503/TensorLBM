@@ -1,0 +1,29 @@
+{
+  "source_commit": "6335394c7eefa222a5e4d50486ed5eb1127ba7bb",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {"xval": {"before": 110, "after": 108}},
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT/predeclared.json",
+      "new_path": "development/verification/model-units/m17991/predeclared.json",
+      "published_report": "docs/XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT.md",
+      "git_mode": "100644",
+      "original_git_blob": "cf00fcdb4ba6306bd65407715862e2d156253e52",
+      "original_sha256": "0d791bc47f2ae60e4cfcf4f3b6195236e17c5cddbceb73dc38f7633c325cd846",
+      "size_bytes": 4756
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST/predeclared.json",
+      "new_path": "development/verification/sparse-sublist-neighbor-list/m18377/predeclared.json",
+      "published_report": "docs/xval_sparse_sublist_neighbor_list.md",
+      "git_mode": "100644",
+      "original_git_blob": "72fdaa2d8555834e503af89f0fb3c1360ee5fa9e",
+      "original_sha256": "2dae5fec3e19be3c84bd387e58293d7f27b737f5a83a7e2bbe970b73a53fbcad",
+      "size_bytes": 2749
+    }
+  ],
+  "reference_scan": "Searched tracked paths, anchor names, and split source paths at the source commit. The model-unit CI and its report generator do not load the preregistration file. The sparse-sublist audit scripts resolve the old path inside the external m18377 delivery under /srv/tensor/agent/work. Those paths are preserved as historical evidence.",
+  "compatibility": "Both public reports retain their URLs and link to the relocated records. Original revision URLs remain accessible via source_commit. External links to old branch paths were not inventoried. The archived records remain searchable through benchmark_registry.py --find-asset and the migration manifest.",
+  "evidence_scope": "Original preregistration bytes and historical thresholds are preserved. No new scientific run or acceptance decision was made for this move."
+}
