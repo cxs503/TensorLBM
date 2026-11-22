@@ -48,7 +48,9 @@ from tensorlbm.wetting.wall_order_parameter_2d import young_cos_theta  # noqa: E
 CASE = REPO / "benchmarks" / "case_pool" / "two_impl_contact_angle"
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
-from benchmarks.case_pool.two_impl_contact_angle.run_case import theta_from_contact_normal  # noqa: E402
+from benchmarks.case_pool.two_impl_contact_angle.run_case import (
+    theta_from_contact_normal,  # noqa: E402
+)
 
 REFS = json.loads((CASE / "refs.json").read_text())
 

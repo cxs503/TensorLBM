@@ -76,7 +76,6 @@ if str(REPO_ROOT) not in sys.path:
 
 from benchmarks.case_pool.rayleigh_taylor_atwood05.ref import ref_lock  # noqa: E402
 from benchmarks.case_pool.rayleigh_taylor_atwood05.run_case import run_case as run_one  # noqa: E402
-
 from tensorlbm.rayleigh_taylor import RTConfig  # noqa: E402
 
 ATWOOD = ref_lock.ATWOOD               # 0.5 (anchor value)

@@ -71,14 +71,13 @@ for _p in (str(SRC_ROOT), str(REPO_ROOT)):
         sys.path.remove(_p)
     sys.path.insert(0, _p)
 from benchmarks.case_pool.rayleigh_taylor_atwood05.ref import ref_lock  # noqa: E402
-
 from tensorlbm.d2q9 import macroscopic  # noqa: E402
 from tensorlbm.rayleigh_taylor import (  # noqa: E402
     RTConfig,
     init_rt_state,
+    interface_zero_crossing,
     mode_amplitude,
     mode_amplitude_zc,
-    interface_zero_crossing,
     rt_step,
 )
 

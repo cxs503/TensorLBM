@@ -21,7 +21,9 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from benchmarks.case_pool.rayleigh_taylor_atwood05 import probe_mach_resolution as probe  # noqa: E402
+from benchmarks.case_pool.rayleigh_taylor_atwood05 import (
+    probe_mach_resolution as probe,  # noqa: E402
+)
 
 
 def _by_axis(axis: str) -> list:
