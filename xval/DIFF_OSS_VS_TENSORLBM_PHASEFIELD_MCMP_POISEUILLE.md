@@ -1,7 +1,7 @@
 # Diff list: TensorLBM vs ebinan92/Fingering_dynamics (phasefield-mcmp-poiseuille)
 
 Round 1 XVAL, anchor `XVAL-LBM-PHASEFIELD-MCMP-POISEUILLE`.
-Full narrative + numbers: `xval/artifacts/phasefield_mcmp_poiseuille/xval_poiseuille_results.json`.
+See the [case and archived comparison](../benchmarks/phasefield_mcmp_poiseuille/README.md) for the measured profiles, figures and replay command.
 
 ## Approach differences
 

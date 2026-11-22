@@ -1,0 +1,55 @@
+{
+  "source_commit": "aee720a623639cf52eb97b3db1e18ef7dfcde64a",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 110,
+      "after": 109
+    }
+  },
+  "retired_path": "xval/artifacts",
+  "original_git_tree": "dc7507754cb01f221fbff23a1a4dbc4b1196be32",
+  "entries": [
+    {
+      "old_path": "xval/artifacts/phasefield_mcmp_poiseuille/figures_b64.json",
+      "new_path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/figures_b64.json",
+      "git_mode": "100644",
+      "original_git_blob": "9f2577870bf7df1cb80ec5ee585770d857b6e0cc",
+      "original_sha256": "d6c2b3c2b23699dc02680dba6815e7e644684e5b42023eb644ccb5893aa85dfd",
+      "size_bytes": 386381,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/artifacts/phasefield_mcmp_poiseuille/xval_poiseuille_results.json",
+      "new_path": "benchmarks/phasefield_mcmp_poiseuille/evidence/m18190/xval_poiseuille_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "9c55731ce845044d9908f45394bba2da66f6ad0f",
+      "original_sha256": "86fa2256516699c27d3b8df618ca08d5ba88a5905cca9b30541d39183a30bf48",
+      "size_bytes": 4362,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/artifacts/primary_results.json",
+      "new_path": "docs/audit_m17877/evidence_snapshot/primary_results.json",
+      "git_mode": "100644",
+      "original_git_blob": "33cff9ec6f4997195b298ddf573bf101ca0d405c",
+      "original_sha256": "5f6db1d2838d83b138cafcc96f4bf4f775505be0d067f301bb6293c0bce5d8ef",
+      "size_bytes": 662,
+      "change": "byte_identical_duplicate"
+    }
+  ],
+  "compatibility": "The Round 1 script retains its CLI and module location for the Round 2 importer. Only the default output path moves into ignored outputs/phasefield_mcmp_poiseuille so a rerun cannot overwrite the tracked evidence. Published report paths are retained and the archived case is discoverable in the registry.",
+  "verification": {
+    "archive_rel_l2_recalculated": 0.05461155682659811,
+    "archive_rel_l2_reported": 0.054611556826598184,
+    "png_streams_crc_checked": [
+      "fig1_velocity_profile.png",
+      "fig2_psi_profile.png",
+      "fig3_convergence.png",
+      "fig4_sensitivity.png"
+    ],
+    "output_path_is_ignored": true
+  },
+  "scientific_scope": "Archive consistency checks using the recorded velocity profile. The solver was not rerun here and current benchmark acceptance remains not_evaluated. The original comparative audit used an analytical counterpart and did not run the external implementation."
+}

@@ -802,7 +802,7 @@ def plot_results(results: dict, out_dir: Path):
 if __name__ == "__main__":
     import json
 
-    out_dir = Path(__file__).parent / "artifacts" / "phasefield_mcmp_poiseuille"
+    out_dir = Path(__file__).resolve().parents[1] / "outputs" / "phasefield_mcmp_poiseuille"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 70)
