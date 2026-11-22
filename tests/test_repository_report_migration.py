@@ -35,6 +35,17 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.ledger = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
 
+    def test_retired_xval_design_directories_and_preserved_assets(self):
+        path = LEDGER_PATH.parent / "xval-reference-designs-2026-11-23.json"
+        ledger = json.loads(path.read_text(encoding="utf-8"))
+        for directory in ledger["retired_paths"]:
+            self.assertFalse((REPO / directory).exists(), directory)
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["original_sha256"], item["size_bytes"]
+                )
+
     def assert_fingerprint(self, path: Path, sha256: str, size: int):
         raw = path.read_bytes()
         self.assertEqual(len(raw), size, str(path))

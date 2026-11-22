@@ -1,0 +1,66 @@
+{
+  "source_commit": "aee720a623639cf52eb97b3db1e18ef7dfcde64a",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 110,
+      "after": 107
+    }
+  },
+  "retired_paths": [
+    "xval/PF_PRESSURE_EVOLUTION_ALENCAHN",
+    "xval/XVAL-LBM-VON-NEUMANN-AUTO",
+    "xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/PF_PRESSURE_EVOLUTION_ALENCAHN/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "development/verification/phase-field/m18194/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "618e4bdd094c825088f850f833dfa0215b99c60b",
+      "original_sha256": "98bde0c3e187b0beef8d7d4e8ed189166203ec38a7a44eff2ec3b5285c209543",
+      "size_bytes": 4193,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/PF_PRESSURE_EVOLUTION_ALENCAHN/predeclared.json",
+      "new_path": "development/verification/phase-field/m18194/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "ca685c0a27c9f27f0339ffa8e7b75f2e8c7958b6",
+      "original_sha256": "6b34d221581301ceb85baaa32ef4987f7a921402d9e845d20c4e1e0cea409726",
+      "size_bytes": 7105,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VON-NEUMANN-AUTO/oss_solutions.json",
+      "new_path": "benchmarks/xval_von_neumann_auto/evidence/round-1/oss_solutions.json",
+      "git_mode": "100644",
+      "original_git_blob": "889adadaa4192054af04f63d4659588564d84175",
+      "original_sha256": "083e6231b657b49f7e313563d6a15cd182238c60b9ce6a1e2861773846c98eb2",
+      "size_bytes": 3062,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-VON-NEUMANN-AUTO/predeclared.json",
+      "new_path": "benchmarks/xval_von_neumann_auto/evidence/round-1/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "493f2ce3e4e81f78eca7f958d087f8ba343ee713",
+      "original_sha256": "bd926434c1376bcf180c57e163113b06c4d9926ed492f539d8a65fc84615eacc",
+      "size_bytes": 3295,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json",
+      "new_path": "docs/board_audit/m18157/evidence/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "935f8e866b45a2fb386d48127bb702606d2b3d81",
+      "original_sha256": "1a51796221fa22662f95a7860f8a690e7cf9feb280c62c5586f05ba5cd1b3ee3",
+      "size_bytes": 9853,
+      "change": "byte_identical_duplicate"
+    }
+  ],
+  "compatibility": "The retired directories held only design or reference documents. The public reports retain their URLs and link to the relocated or retained evidence. The m18157 historical replay references point into the original m17996 workspace and remain as provenance.",
+  "verification": "Compared all five destinations against original objects. Three JSON designs/inventories parsed. The m18194 preregistration already failed JSON parsing at line 69, column 2 and remains byte-identical to the original evidence. The two m18157 preregistration paths had the same object ID. The von Neumann Round 1 preregistration differs from Round 2 and both original byte streams remain distinct.",
+  "scientific_scope": "Archival migration and registry discovery. Historical Round 2 verdicts do not establish current acceptance. No solver rerun was executed."
+}

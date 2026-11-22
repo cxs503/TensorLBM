@@ -131,6 +131,7 @@ PYTHONPATH=src python3 benchmarks/xval_von_neumann_auto/make_report.py
 **Artifacts**:
 - `benchmarks/xval_von_neumann_auto/result.json` - all numbers
 - `benchmarks/xval_von_neumann_auto/predeclared.json` - experimental design
+- [Round 1 preregistration](evidence/round-1/predeclared.json) and [reference inventory](evidence/round-1/oss_solutions.json) - original records for the earlier design
 - `benchmarks/xval_von_neumann_auto/von_neumann_parity.png` - parity plot
 - `benchmarks/xval_von_neumann_auto/von_neumann_convergence.png` - convergence
 - `benchmarks/xval_von_neumann_auto/von_neumann_stability.png` - stability boundary

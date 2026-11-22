@@ -488,7 +488,7 @@ class Claim:
 class XvalReferenceGate:
     """PASS / FAIL / WITHHELD verdict machine for XVAL claims.
 
-    Rules (predeclared in ``xval/XVAL-LBM-NEGATIVE-NO-OSS-REFERENCE/predeclared.json``):
+    Rules (predeclared in ``docs/board_audit/m18157/evidence/predeclared.json``):
 
     * ``oss`` reference -> must appear in the probe record with ``available`` true,
       otherwise the claim is ``WITHHELD`` and a negative-knowledge payload is
