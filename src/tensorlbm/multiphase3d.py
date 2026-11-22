@@ -764,8 +764,12 @@ def init_free_energy_g_3d(
         Equilibrium distribution g, shape ``(19, nz, ny, nx)``.
     """
     from .phasefield.ch_equilibrium import ch_equilibrium, validate_convention
+    from .phasefield.ch6 import CH6FreeEnergy, ch6_equilibrium, validate_ch6_convention
 
-    validate_convention(geq_convention)
+    if geq_convention == "ch6":
+        validate_ch6_convention(geq_convention)
+    else:
+        validate_convention(geq_convention)
     if geq_convention == "lee_lin":
         velocity = tuple(torch.zeros_like(phi) if u is None else u for u in (ux, uy, uz))
         return ch_equilibrium(phi, velocity, mu, Gamma)
@@ -831,7 +835,11 @@ def free_energy_step_3d(
         Gamma:      Phase-field mobility coupling.
         geq_convention: "swift" retains historical extra phi diffusion for
                     reproducibility; "lee_lin" uses CH moment closure without
-                    that diffusion. This changes g, not the momentum model.
+                    that diffusion; "ch6" uses D3Q19-isotropic operators for
+                    both chemical potential and Korteweg force (Lee-Lin
+                    consistency), eliminating spurious tangential capillary
+                    force on curved interfaces. This changes g and the force
+                    model when "ch6" is selected.
         gx:         x body-force acceleration.
         gy:         y body-force acceleration.
         gz:         z body-force acceleration.
@@ -852,8 +860,12 @@ def free_energy_step_3d(
     if sgs_model not in _VALID_SGS_MODELS:
         raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
     from .phasefield.ch_equilibrium import ch_equilibrium, validate_convention
+    from .phasefield.ch6 import CH6FreeEnergy, ch6_equilibrium, validate_ch6_convention
 
-    validate_convention(geq_convention)
+    if geq_convention == "ch6":
+        validate_ch6_convention(geq_convention)
+    else:
+        validate_convention(geq_convention)
     device = f.device
     c = _c_on_3d(device)
     w = _w_on_3d(device)
@@ -873,9 +885,18 @@ def free_energy_step_3d(
     else:
         rho_eff = rho
 
-    # Chemical potential and Korteweg force retain the legacy periodic stencil.
-    mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(phi, boundary="periodic")
-    force_x, force_y, force_z = force_minus_phi_grad_mu(phi, mu, boundary="periodic")
+    # Chemical potential and Korteweg force: use CH6 isotropic operators when selected.
+    if geq_convention == "ch6":
+        ch6_model = CH6FreeEnergy(A=A, B=B, kappa=kappa)
+        mu = ch6_model.chemical_potential(phi, boundary="periodic")
+        force_x, force_y, force_z = ch6_model.korteweg_force(
+            phi, mu, boundary="periodic"
+        )
+    else:
+        mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(
+            phi, boundary="periodic"
+        )
+        force_x, force_y, force_z = force_minus_phi_grad_mu(phi, mu, boundary="periodic")
     Fx = force_x + rho_eff * gx
     Fy = force_y + rho_eff * gy
     Fz = force_z + rho_eff * gz
@@ -917,6 +938,10 @@ def free_energy_step_3d(
         # Physical velocity, as in the corrected D2Q9 phase advection.
         velocity = (ux + 0.5 * Fx / rho_s, uy + 0.5 * Fy / rho_s, uz + 0.5 * Fz / rho_s)
         geq = ch_equilibrium(phi, velocity, mu, Gamma)
+    elif geq_convention == "ch6":
+        # CH6: Lee-Lin moment closure with isotropic operators.
+        velocity = (ux + 0.5 * Fx / rho_s, uy + 0.5 * Fy / rho_s, uz + 0.5 * Fz / rho_s)
+        geq = ch6_equilibrium(phi, velocity, mu, Gamma)
     g_out = g - (g - geq) / tau_g
 
     return f_out, g_out
