@@ -52,7 +52,7 @@ def _shim(self, *ar, **kw):
 torch.Tensor.numpy = _shim
 os.chdir("/we")
 import importlib, inspect
-fp = importlib.import_module("benchmarks.water_entry.single_drop.free_surface_probe")
+fp = importlib.import_module(os.environ.get("WE_PROBE_MODULE", "benchmarks.water_entry.single_drop.free_surface_probe"))
 t0 = time.time()
 kw = dict(n=int(os.environ["WE_CELLS"]), speed=float(os.environ["WE_SPD"]), limit=int(os.environ["WE_STEPS"]),
     gap_fraction=float(os.environ["WE_GAP"]), capacity=True, nearest=False, pilot=False, span=4.0,
@@ -131,6 +131,10 @@ def parse_args():
                     help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV); empty=legacy")
     ap.add_argument("--gas-flow", action="store_true",
                     help="exterior potential-flow gas coupling in the initial field (DE-X-EV1-GAS_FLOW)")
+    ap.add_argument("--probe-module",
+                    default="benchmarks.water_entry.single_drop.free_surface_probe",
+                    help="probe module to drive (must expose probe(**kw)); "
+                         "default keeps the free-surface baseline bit-identical")
     return ap.parse_args()
 
 
@@ -170,7 +174,8 @@ def launch(a):
            f"-e WE_DIAG_CAVITY={1 if a.diag_cavity else 0} -e WE_PLANES={1 if a.planes else 0} "
            f"-e WE_DIAG_BUDGET={1 if a.diag_budget else 0} -e WE_MOMCONV={a.momconv} "
            f"-e WE_CAV_CLOSURE={1 if a.cav_closure else 0} "
-           f"-e WE_GAS_FLOW={1 if a.gas_flow else 0}")
+           f"-e WE_GAS_FLOW={1 if a.gas_flow else 0} "
+           f"-e WE_PROBE_MODULE={a.probe_module}")
     cname = f"sdaa_{tag}"
     r = ssh(f"docker run -d --name {cname} --device /dev/tcaicard{card} "
             f"-v {wt}:/we -v {out}:/out {env} {IMG} bash -c "
@@ -183,6 +188,7 @@ def launch(a):
                              "diag_budget": bool(a.diag_budget),
                              "cav_closure": bool(a.cav_closure),
                              "gas_flow": bool(a.gas_flow),
+                             "probe_module": a.probe_module,
                              "momconv": a.momconv,
                              "launched_at": time.time()})
     print(f"[sdaa] launched arm={a.arm} card={card} commit={head} steps={a.steps} "
