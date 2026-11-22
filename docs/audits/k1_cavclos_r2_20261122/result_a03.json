@@ -1,0 +1,1389 @@
+{
+  "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
+  "cells_per_D": 8,
+  "case_id": "santini_case3",
+  "span_over_D": 4.0,
+  "pool_depth_over_D": 3.0,
+  "lattice_speed": 0.06,
+  "scales": {
+    "dx_m": 0.00028375,
+    "dt_s": 1.2160714285714285e-05,
+    "rho_g": 0.0011735205616850552,
+    "mu_l": 0.00012922341600004545,
+    "mu_g": 2.8177673359916127e-06,
+    "sigma": 0.00046369802566018645,
+    "g": 5.1127117346938765e-06
+  },
+  "stop_reason": "health_limit",
+  "contact_step": 45,
+  "gap_over_D": 0.18,
+  "capacity_redistribution": true,
+  "nearest_surface_velocity": false,
+  "simple_mass_exchange": true,
+  "u_limit": 0.15,
+  "release_speed_m_s": 1.53,
+  "prescribed_release_speed_m_s": 1.53,
+  "impact_speed_m_s": 1.404108544217291,
+  "side_view_measurement": null,
+  "history": [
+    {
+      "step": 0,
+      "time_ms": 0.0,
+      "volume_drift": 0.0,
+      "geometric_volume_drift": 0.0,
+      "represented_mass_drift": 1.6858736628933002e-12,
+      "mach_max": 0.11357304371512271,
+      "rho_min": 1.0000000000000002,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 1,
+      "time_ms": 0.012160714285714285,
+      "volume_drift": 6.238865527752324e-06,
+      "geometric_volume_drift": 5.95729871544215e-06,
+      "represented_mass_drift": 9.783986953948443e-10,
+      "mach_max": 0.11418275226691012,
+      "rho_min": 0.9995350237833311,
+      "depth_over_D": 7.992399853051779e-08
+    },
+    {
+      "step": 2,
+      "time_ms": 0.02432142857142857,
+      "volume_drift": 1.3297703210013445e-05,
+      "geometric_volume_drift": 2.552774158093296e-05,
+      "represented_mass_drift": 1.224868522164968e-07,
+      "mach_max": 0.11394910390427725,
+      "rho_min": 0.9953979748629829,
+      "depth_over_D": 0.0004082374075169426
+    },
+    {
+      "step": 3,
+      "time_ms": 0.03648214285714285,
+      "volume_drift": 8.457207640000242e-05,
+      "geometric_volume_drift": 8.931441921744554e-05,
+      "represented_mass_drift": 3.4228287410842384e-05,
+      "mach_max": 0.11524250661095596,
+      "rho_min": 0.9941880997940896,
+      "depth_over_D": 0.0029879355159225796
+    },
+    {
+      "step": 4,
+      "time_ms": 0.04864285714285714,
+      "volume_drift": 8.426076372003433e-05,
+      "geometric_volume_drift": 0.00010691909832805102,
+      "represented_mass_drift": 3.4240944183472344e-05,
+      "mach_max": 0.11619543919274544,
+      "rho_min": 0.9967785433665073,
+      "depth_over_D": 0.0032621021359728886
+    },
+    {
+      "step": 5,
+      "time_ms": 0.06080357142857142,
+      "volume_drift": 5.680846162692266e-05,
+      "geometric_volume_drift": 0.00010518718733143473,
+      "represented_mass_drift": 3.417085919010798e-05,
+      "mach_max": 0.11699472200744886,
+      "rho_min": 0.9877106478136399,
+      "depth_over_D": 0.0029569730816838558
+    },
+    {
+      "step": 6,
+      "time_ms": 0.0729642857142857,
+      "volume_drift": 3.727093091365763e-05,
+      "geometric_volume_drift": 0.00010437870444868214,
+      "represented_mass_drift": 3.4170859190219005e-05,
+      "mach_max": 0.11763302168437419,
+      "rho_min": 0.9613866693881726,
+      "depth_over_D": 0.0031150852378458715
+    },
+    {
+      "step": 7,
+      "time_ms": 0.08512499999999999,
+      "volume_drift": 3.0200099291222138e-05,
+      "geometric_volume_drift": 0.00010971593825226389,
+      "represented_mass_drift": 3.417085919044105e-05,
+      "mach_max": 0.12357284885798897,
+      "rho_min": 0.959516461989099,
+      "depth_over_D": 0.0035204644338304725
+    },
+    {
+      "step": 8,
+      "time_ms": 0.09728571428571428,
+      "volume_drift": 3.283506599105479e-05,
+      "geometric_volume_drift": 0.00011395606226483057,
+      "represented_mass_drift": 3.552743870327557e-05,
+      "mach_max": 0.13554840215854455,
+      "rho_min": 0.969928152947384,
+      "depth_over_D": 0.004565824752337022
+    },
+    {
+      "step": 9,
+      "time_ms": 0.10944642857142856,
+      "volume_drift": 4.647552065351057e-05,
+      "geometric_volume_drift": 0.00010393386374263347,
+      "represented_mass_drift": 3.5527438703497616e-05,
+      "mach_max": 0.12408732213966438,
+      "rho_min": 0.9682010120859506,
+      "depth_over_D": 0.005282005418120406
+    },
+    {
+      "step": 10,
+      "time_ms": 0.12160714285714284,
+      "volume_drift": 4.19618387537124e-05,
+      "geometric_volume_drift": 8.118163217374352e-05,
+      "represented_mass_drift": 3.3399329362637786e-05,
+      "mach_max": 0.12267057563754558,
+      "rho_min": 0.961332792840901,
+      "depth_over_D": 0.005218355949881737
+    },
+    {
+      "step": 11,
+      "time_ms": 0.13376785714285713,
+      "volume_drift": 2.491283531003141e-05,
+      "geometric_volume_drift": 5.915823152580213e-05,
+      "represented_mass_drift": 3.339932936274881e-05,
+      "mach_max": 0.12648263116423286,
+      "rho_min": 0.9602718043892939,
+      "depth_over_D": 0.004713900060107523
+    },
+    {
+      "step": 12,
+      "time_ms": 0.1459285714285714,
+      "volume_drift": 2.1025733692114912e-05,
+      "geometric_volume_drift": 5.2716657073959006e-05,
+      "represented_mass_drift": 3.6290063343824563e-05,
+      "mach_max": 0.12773162094792664,
+      "rho_min": 0.9703810324563953,
+      "depth_over_D": 0.00518813061822021
+    },
+    {
+      "step": 13,
+      "time_ms": 0.1580892857142857,
+      "volume_drift": 3.2082466326022185e-05,
+      "geometric_volume_drift": 5.397645367000159e-05,
+      "represented_mass_drift": 3.629006334404661e-05,
+      "mach_max": 0.13734108718793675,
+      "rho_min": 0.9742391400024613,
+      "depth_over_D": 0.00592554909939258
+    },
+    {
+      "step": 14,
+      "time_ms": 0.17024999999999998,
+      "volume_drift": 3.918125576951592e-05,
+      "geometric_volume_drift": 5.4934844040066544e-05,
+      "represented_mass_drift": 3.739509505362726e-05,
+      "mach_max": 0.13140281949237262,
+      "rho_min": 0.9654178450035822,
+      "depth_over_D": 0.007474592157822979
+    },
+    {
+      "step": 15,
+      "time_ms": 0.18241071428571426,
+      "volume_drift": 4.1652059803665153e-05,
+      "geometric_volume_drift": 5.0740343803257204e-05,
+      "represented_mass_drift": 3.7395095053516236e-05,
+      "mach_max": 0.13458116073532872,
+      "rho_min": 0.9687326012350922,
+      "depth_over_D": 0.007682659975011941
+    },
+    {
+      "step": 16,
+      "time_ms": 0.19457142857142856,
+      "volume_drift": 3.390151596838198e-05,
+      "geometric_volume_drift": 6.41655024806731e-05,
+      "represented_mass_drift": 3.739509505362726e-05,
+      "mach_max": 0.13483437225168696,
+      "rho_min": 0.9597528610684528,
+      "depth_over_D": 0.007894990841572636
+    },
+    {
+      "step": 17,
+      "time_ms": 0.20673214285714284,
+      "volume_drift": 3.1906699411665684e-05,
+      "geometric_volume_drift": 0.00010562058411345276,
+      "represented_mass_drift": 3.7395095053960326e-05,
+      "mach_max": 0.12906072257114054,
+      "rho_min": 0.952025876161792,
+      "depth_over_D": 0.008626481623399851
+    },
+    {
+      "step": 18,
+      "time_ms": 0.2188928571428571,
+      "volume_drift": 4.4894261604810914e-05,
+      "geometric_volume_drift": 0.0001614820465187794,
+      "represented_mass_drift": 3.739509505373828e-05,
+      "mach_max": 0.1337788727578025,
+      "rho_min": 0.9639637556286058,
+      "depth_over_D": 0.009249167109985912
+    },
+    {
+      "step": 19,
+      "time_ms": 0.2310535714285714,
+      "volume_drift": 4.8559978660489556e-05,
+      "geometric_volume_drift": 0.00019882851402763801,
+      "represented_mass_drift": 3.2238648740468e-05,
+      "mach_max": 0.13765268476795547,
+      "rho_min": 0.9686635131565213,
+      "depth_over_D": 0.009740873894159119
+    },
+    {
+      "step": 20,
+      "time_ms": 0.2432142857142857,
+      "volume_drift": 6.410608635443182e-05,
+      "geometric_volume_drift": 0.00021928300829177072,
+      "represented_mass_drift": 3.2238648740579023e-05,
+      "mach_max": 0.1347116716066321,
+      "rho_min": 0.974669611924317,
+      "depth_over_D": 0.010329216228710969
+    },
+    {
+      "step": 21,
+      "time_ms": 0.25537499999999996,
+      "volume_drift": 8.103363167433209e-05,
+      "geometric_volume_drift": 0.00023276410322115026,
+      "represented_mass_drift": 3.223864874080107e-05,
+      "mach_max": 0.1202034558128641,
+      "rho_min": 0.9703741388618913,
+      "depth_over_D": 0.010802519757662221
+    },
+    {
+      "step": 22,
+      "time_ms": 0.26753571428571427,
+      "volume_drift": 7.229110884277024e-05,
+      "geometric_volume_drift": 0.00024275793986361371,
+      "represented_mass_drift": 3.364702423558352e-05,
+      "mach_max": 0.12175067281534221,
+      "rho_min": 0.9813755456979454,
+      "depth_over_D": 0.011331161209978458
+    },
+    {
+      "step": 23,
+      "time_ms": 0.27969642857142857,
+      "volume_drift": 5.7952116632842277e-05,
+      "geometric_volume_drift": 0.000257901827040663,
+      "represented_mass_drift": 3.3647024235694545e-05,
+      "mach_max": 0.125207522814299,
+      "rho_min": 0.9846346112582333,
+      "depth_over_D": 0.01254947407832896
+    },
+    {
+      "step": 24,
+      "time_ms": 0.2918571428571428,
+      "volume_drift": 5.861568752230095e-05,
+      "geometric_volume_drift": 0.0002744346089983418,
+      "represented_mass_drift": 3.6442636823119656e-05,
+      "mach_max": 0.12406558213209032,
+      "rho_min": 0.9778561097805348,
+      "depth_over_D": 0.01379934377960046
+    },
+    {
+      "step": 25,
+      "time_ms": 0.3040178571428571,
+      "volume_drift": 5.706906945346368e-05,
+      "geometric_volume_drift": 0.00027964792398282867,
+      "represented_mass_drift": 3.813722746126569e-05,
+      "mach_max": 0.12473583262459058,
+      "rho_min": 0.9520240067251784,
+      "depth_over_D": 0.015163643007608307
+    },
+    {
+      "step": 26,
+      "time_ms": 0.3161785714285714,
+      "volume_drift": 6.164444481693288e-05,
+      "geometric_volume_drift": 0.00027911308250760936,
+      "represented_mass_drift": 3.813722746137671e-05,
+      "mach_max": 0.12536350615242173,
+      "rho_min": 0.9691717344316655,
+      "depth_over_D": 0.016700721674755226
+    },
+    {
+      "step": 27,
+      "time_ms": 0.32833928571428567,
+      "volume_drift": 4.644835103972955e-05,
+      "geometric_volume_drift": 0.0002745718764370908,
+      "represented_mass_drift": 3.147402106873365e-05,
+      "mach_max": 0.12590818501611153,
+      "rho_min": 0.973604535372905,
+      "depth_over_D": 0.018271874163352297
+    },
+    {
+      "step": 28,
+      "time_ms": 0.34049999999999997,
+      "volume_drift": 3.695747416032624e-05,
+      "geometric_volume_drift": 0.0002790474472046389,
+      "represented_mass_drift": 3.147402106873365e-05,
+      "mach_max": 0.12749540755014935,
+      "rho_min": 0.9717122821381895,
+      "depth_over_D": 0.01950535405016751
+    },
+    {
+      "step": 29,
+      "time_ms": 0.35266071428571427,
+      "volume_drift": 3.402140985753199e-05,
+      "geometric_volume_drift": 0.0002795203190271156,
+      "represented_mass_drift": 3.147402106884467e-05,
+      "mach_max": 0.13268384663825872,
+      "rho_min": 0.9713774460606099,
+      "depth_over_D": 0.020253357159140783
+    },
+    {
+      "step": 30,
+      "time_ms": 0.3648214285714285,
+      "volume_drift": 2.0986918145005085e-05,
+      "geometric_volume_drift": 0.0002690613131245412,
+      "represented_mass_drift": 2.550499840014986e-05,
+      "mach_max": 0.12630139416043254,
+      "rho_min": 0.9816411523547582,
+      "depth_over_D": 0.020758886371373464
+    },
+    {
+      "step": 31,
+      "time_ms": 0.3769821428571428,
+      "volume_drift": 1.701872810300209e-05,
+      "geometric_volume_drift": 0.0002765934170967377,
+      "represented_mass_drift": 2.550499840014986e-05,
+      "mach_max": 0.1274022358714193,
+      "rho_min": 0.9713657273328539,
+      "depth_over_D": 0.023309858062385835
+    },
+    {
+      "step": 32,
+      "time_ms": 0.3891428571428571,
+      "volume_drift": 3.628309224468218e-05,
+      "geometric_volume_drift": 0.0003174366824506558,
+      "represented_mass_drift": 3.0598538517168095e-05,
+      "mach_max": 0.12295735308709821,
+      "rho_min": 0.9673858013593015,
+      "depth_over_D": 0.024398786325980915
+    },
+    {
+      "step": 33,
+      "time_ms": 0.40130357142857137,
+      "volume_drift": 3.390800079661194e-05,
+      "geometric_volume_drift": 0.00036034850758781545,
+      "represented_mass_drift": 2.9944611756982376e-05,
+      "mach_max": 0.12490287770732122,
+      "rho_min": 0.980857424499713,
+      "depth_over_D": 0.025519480410030493
+    },
+    {
+      "step": 34,
+      "time_ms": 0.4134642857142857,
+      "volume_drift": 2.9887751434420906e-05,
+      "geometric_volume_drift": 0.0003920610647207834,
+      "represented_mass_drift": 3.060409164645783e-05,
+      "mach_max": 0.12674333471989271,
+      "rho_min": 0.9803933082480433,
+      "depth_over_D": 0.026623686419562365
+    },
+    {
+      "step": 35,
+      "time_ms": 0.425625,
+      "volume_drift": 2.8774908228945684e-05,
+      "geometric_volume_drift": 0.00039862398512502395,
+      "represented_mass_drift": 3.0604091646568854e-05,
+      "mach_max": 0.12991650202408436,
+      "rho_min": 0.9818692170989324,
+      "depth_over_D": 0.02769282187910571
+    },
+    {
+      "step": 36,
+      "time_ms": 0.4377857142857142,
+      "volume_drift": 2.097560793468123e-05,
+      "geometric_volume_drift": 0.0003834223424717953,
+      "represented_mass_drift": 3.06040916467909e-05,
+      "mach_max": 0.13298572929372596,
+      "rho_min": 0.9767337337592591,
+      "depth_over_D": 0.02874717978029384
+    },
+    {
+      "step": 37,
+      "time_ms": 0.4499464285714285,
+      "volume_drift": 1.60973635539019e-05,
+      "geometric_volume_drift": 0.0003712989736720518,
+      "represented_mass_drift": 2.8814997793391584e-05,
+      "mach_max": 0.12830244344999214,
+      "rho_min": 0.9839707968921522,
+      "depth_over_D": 0.029488737440380053
+    },
+    {
+      "step": 38,
+      "time_ms": 0.4621071428571428,
+      "volume_drift": 2.808787195351936e-05,
+      "geometric_volume_drift": 0.00038383009780307287,
+      "represented_mass_drift": 2.8814997793502606e-05,
+      "mach_max": 0.13590376852712752,
+      "rho_min": 0.974431311730832,
+      "depth_over_D": 0.030573375388036617
+    },
+    {
+      "step": 39,
+      "time_ms": 0.4742678571428571,
+      "volume_drift": 4.511836480336484e-05,
+      "geometric_volume_drift": 0.00040992377366544375,
+      "represented_mass_drift": 2.5428112600645036e-05,
+      "mach_max": 0.12324318567253714,
+      "rho_min": 0.9801430174650543,
+      "depth_over_D": 0.03218340972797362
+    },
+    {
+      "step": 40,
+      "time_ms": 0.4864285714285714,
+      "volume_drift": 6.625683576055863e-05,
+      "geometric_volume_drift": 0.00044420995314575773,
+      "represented_mass_drift": 2.5931196052986216e-05,
+      "mach_max": 0.12683310519594299,
+      "rho_min": 0.9852780866778847,
+      "depth_over_D": 0.03427424290946357
+    },
+    {
+      "step": 41,
+      "time_ms": 0.4985892857142857,
+      "volume_drift": 7.375812968712925e-05,
+      "geometric_volume_drift": 0.00047878652292665524,
+      "represented_mass_drift": 2.803723156552529e-05,
+      "mach_max": 0.12058200178036316,
+      "rho_min": 0.982520070971625,
+      "depth_over_D": 0.03685295665749777
+    },
+    {
+      "step": 42,
+      "time_ms": 0.5107499999999999,
+      "volume_drift": 5.72159437937092e-05,
+      "geometric_volume_drift": 0.0005066989911364228,
+      "represented_mass_drift": 2.8661686250153195e-05,
+      "mach_max": 0.12527159932774623,
+      "rho_min": 0.9879743554223409,
+      "depth_over_D": 0.04008409940532465
+    },
+    {
+      "step": 43,
+      "time_ms": 0.5229107142857142,
+      "volume_drift": 3.419527364389996e-05,
+      "geometric_volume_drift": 0.0005294078736065577,
+      "represented_mass_drift": 2.8661686250153195e-05,
+      "mach_max": 0.12590835988220705,
+      "rho_min": 0.9873552900766616,
+      "depth_over_D": 0.044823629196577564
+    },
+    {
+      "step": 44,
+      "time_ms": 0.5350714285714285,
+      "volume_drift": 2.0635169158067512e-05,
+      "geometric_volume_drift": 0.0005380177716813872,
+      "represented_mass_drift": 2.8661686250264218e-05,
+      "mach_max": 0.12810938424644755,
+      "rho_min": 0.9841984225414263,
+      "depth_over_D": 0.050649909263599024
+    },
+    {
+      "step": 45,
+      "time_ms": 0.5472321428571428,
+      "volume_drift": 2.3749040005460742e-05,
+      "geometric_volume_drift": 0.0005349707753042887,
+      "represented_mass_drift": 2.866168625037524e-05,
+      "mach_max": 0.13146995145343915,
+      "rho_min": 0.9851762420411023,
+      "depth_over_D": 0.05741870247653358
+    },
+    {
+      "step": 46,
+      "time_ms": 0.5593928571428571,
+      "volume_drift": 2.5828275713069004e-05,
+      "geometric_volume_drift": 0.0005267929816071826,
+      "represented_mass_drift": 2.866168625037524e-05,
+      "mach_max": 0.13226835213967356,
+      "rho_min": 0.9887548738636539,
+      "depth_over_D": 0.06395123084719279
+    },
+    {
+      "step": 47,
+      "time_ms": 0.5715535714285713,
+      "volume_drift": 2.5866054803813654e-05,
+      "geometric_volume_drift": 0.000528923521114999,
+      "represented_mass_drift": 2.8661686250597285e-05,
+      "mach_max": 0.1320624913981124,
+      "rho_min": 0.9907489321021227,
+      "depth_over_D": 0.06786123314739134
+    },
+    {
+      "step": 48,
+      "time_ms": 0.5837142857142856,
+      "volume_drift": 2.7859151977227548e-05,
+      "geometric_volume_drift": 0.0005438915062134786,
+      "represented_mass_drift": 2.8661686250708307e-05,
+      "mach_max": 0.12881423763538302,
+      "rho_min": 0.9871352499083915,
+      "depth_over_D": 0.07140051600695774
+    },
+    {
+      "step": 49,
+      "time_ms": 0.5958749999999999,
+      "volume_drift": 2.2223329854687002e-05,
+      "geometric_volume_drift": 0.0005567419745469149,
+      "represented_mass_drift": 2.5108948155661004e-05,
+      "mach_max": 0.12867174070145995,
+      "rho_min": 0.9856954853558466,
+      "depth_over_D": 0.0751156833152975
+    },
+    {
+      "step": 50,
+      "time_ms": 0.6080357142857142,
+      "volume_drift": 2.70012327593383e-05,
+      "geometric_volume_drift": 0.0005666570352228506,
+      "represented_mass_drift": 2.361866167688298e-05,
+      "mach_max": 0.1271973124576651,
+      "rho_min": 0.9764131554408484,
+      "depth_over_D": 0.07885309317691114
+    },
+    {
+      "step": 51,
+      "time_ms": 0.6201964285714285,
+      "volume_drift": 3.057076265466918e-05,
+      "geometric_volume_drift": 0.0005722233060656556,
+      "represented_mass_drift": 2.361866167688298e-05,
+      "mach_max": 0.1300126981773206,
+      "rho_min": 0.9828944541424186,
+      "depth_over_D": 0.08219979255783327
+    },
+    {
+      "step": 52,
+      "time_ms": 0.6323571428571428,
+      "volume_drift": 2.9048267341735823e-05,
+      "geometric_volume_drift": 0.0005852422065064644,
+      "represented_mass_drift": 2.4087399747130256e-05,
+      "mach_max": 0.13418597103936875,
+      "rho_min": 0.9875152466407847,
+      "depth_over_D": 0.08551568200541926
+    },
+    {
+      "step": 53,
+      "time_ms": 0.644517857142857,
+      "volume_drift": 2.2644743099653475e-05,
+      "geometric_volume_drift": 0.0006106270297504546,
+      "represented_mass_drift": 2.281685834037983e-05,
+      "mach_max": 0.13763026423575522,
+      "rho_min": 0.9865512916688212,
+      "depth_over_D": 0.08902360453669989
+    },
+    {
+      "step": 54,
+      "time_ms": 0.6566785714285713,
+      "volume_drift": 1.645832029162353e-05,
+      "geometric_volume_drift": 0.0006405535579798727,
+      "represented_mass_drift": 2.281685834037983e-05,
+      "mach_max": 0.13234138005304347,
+      "rho_min": 0.9875206017096371,
+      "depth_over_D": 0.0922039309858036
+    },
+    {
+      "step": 55,
+      "time_ms": 0.6688392857142856,
+      "volume_drift": 1.637552433442213e-05,
+      "geometric_volume_drift": 0.0006620995125289353,
+      "represented_mass_drift": 2.2816858340490853e-05,
+      "mach_max": 0.13725523977496354,
+      "rho_min": 0.9839676269748592,
+      "depth_over_D": 0.09511961262048363
+    },
+    {
+      "step": 56,
+      "time_ms": 0.6809999999999999,
+      "volume_drift": 2.6645025870797312e-05,
+      "geometric_volume_drift": 0.0006773578709322603,
+      "represented_mass_drift": 2.3859854380470225e-05,
+      "mach_max": 0.13580490156218,
+      "rho_min": 0.9877740609565366,
+      "depth_over_D": 0.09760065830317144
+    },
+    {
+      "step": 57,
+      "time_ms": 0.6931607142857142,
+      "volume_drift": 3.211319318185968e-05,
+      "geometric_volume_drift": 0.0006904355967209952,
+      "represented_mass_drift": 2.377386296625872e-05,
+      "mach_max": 0.1412347091797259,
+      "rho_min": 0.9879966479882429,
+      "depth_over_D": 0.09991184253996499
+    },
+    {
+      "step": 58,
+      "time_ms": 0.7053214285714285,
+      "volume_drift": 5.0156406900425665e-05,
+      "geometric_volume_drift": 0.0007188274232898806,
+      "represented_mass_drift": 3.067319272442859e-05,
+      "mach_max": 0.13208732188494834,
+      "rho_min": 0.9893469134367284,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 59,
+      "time_ms": 0.7174821428571428,
+      "volume_drift": 5.431273819112015e-05,
+      "geometric_volume_drift": 0.0007470785592234019,
+      "represented_mass_drift": 3.067319272453961e-05,
+      "mach_max": 0.13223922235546556,
+      "rho_min": 0.9860034716648639,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 60,
+      "time_ms": 0.729642857142857,
+      "volume_drift": 5.0702129922308714e-05,
+      "geometric_volume_drift": 0.0007600133926186636,
+      "represented_mass_drift": 3.211754597276517e-05,
+      "mach_max": 0.12952151665172157,
+      "rho_min": 0.9835711913078145,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 61,
+      "time_ms": 0.7418035714285713,
+      "volume_drift": 4.530622792253691e-05,
+      "geometric_volume_drift": 0.0007636340065132474,
+      "represented_mass_drift": 3.2317292891881344e-05,
+      "mach_max": 0.12902099479152096,
+      "rho_min": 0.9885102072909989,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 62,
+      "time_ms": 0.7539642857142856,
+      "volume_drift": 3.8606880201852434e-05,
+      "geometric_volume_drift": 0.0007674836275847197,
+      "represented_mass_drift": 3.2317292891881344e-05,
+      "mach_max": 0.12808229104700733,
+      "rho_min": 0.9867013298174258,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 63,
+      "time_ms": 0.766125,
+      "volume_drift": 3.5281295669209456e-05,
+      "geometric_volume_drift": 0.0007806230770440736,
+      "represented_mass_drift": 3.2317292891881344e-05,
+      "mach_max": 0.13373041788315643,
+      "rho_min": 0.9847450883388273,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 64,
+      "time_ms": 0.7782857142857142,
+      "volume_drift": 2.4549400673978816e-05,
+      "geometric_volume_drift": 0.0007980335677167938,
+      "represented_mass_drift": 3.0025756800000636e-05,
+      "mach_max": 0.1303587894459034,
+      "rho_min": 0.9868717026423991,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 65,
+      "time_ms": 0.7904464285714285,
+      "volume_drift": 2.3683160753074084e-05,
+      "geometric_volume_drift": 0.0008162293776063922,
+      "represented_mass_drift": 3.0025756799889614e-05,
+      "mach_max": 0.13306043760919928,
+      "rho_min": 0.9859996669297721,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 66,
+      "time_ms": 0.8026071428571427,
+      "volume_drift": 3.137416704190876e-05,
+      "geometric_volume_drift": 0.0008274059486557128,
+      "represented_mass_drift": 3.052902710198868e-05,
+      "mach_max": 0.12677806535956504,
+      "rho_min": 0.9887001997429417,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 67,
+      "time_ms": 0.814767857142857,
+      "volume_drift": 3.324636700696715e-05,
+      "geometric_volume_drift": 0.0008358798223980779,
+      "represented_mass_drift": 3.0529027102210726e-05,
+      "mach_max": 0.13321232577869305,
+      "rho_min": 0.9875291097831577,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 68,
+      "time_ms": 0.8269285714285713,
+      "volume_drift": 3.642567473804981e-05,
+      "geometric_volume_drift": 0.0008501335591456494,
+      "represented_mass_drift": 3.0529027102210726e-05,
+      "mach_max": 0.1274361005012832,
+      "rho_min": 0.9869683777875495,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 69,
+      "time_ms": 0.8390892857142856,
+      "volume_drift": 2.9582199088773464e-05,
+      "geometric_volume_drift": 0.0008681224471798199,
+      "represented_mass_drift": 2.791026132964447e-05,
+      "mach_max": 0.13546933330240862,
+      "rho_min": 0.9853839126072825,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 70,
+      "time_ms": 0.85125,
+      "volume_drift": 3.221722110446912e-05,
+      "geometric_volume_drift": 0.0008899985792930609,
+      "represented_mass_drift": 2.933537571780942e-05,
+      "mach_max": 0.12493675641392235,
+      "rho_min": 0.9886747335174052,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 71,
+      "time_ms": 0.8634107142857143,
+      "volume_drift": 3.6598934575970965e-05,
+      "geometric_volume_drift": 0.0009053124321025674,
+      "represented_mass_drift": 2.933537571780942e-05,
+      "mach_max": 0.13760214479023505,
+      "rho_min": 0.9892513648023956,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 72,
+      "time_ms": 0.8755714285714284,
+      "volume_drift": 3.353951511653186e-05,
+      "geometric_volume_drift": 0.0009141553457718832,
+      "represented_mass_drift": 2.9335375718142487e-05,
+      "mach_max": 0.13081228390998664,
+      "rho_min": 0.9890803049072283,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 73,
+      "time_ms": 0.8877321428571427,
+      "volume_drift": 3.466995433476505e-05,
+      "geometric_volume_drift": 0.0009236903305247512,
+      "represented_mass_drift": 2.7312963620573782e-05,
+      "mach_max": 0.14157842367542553,
+      "rho_min": 0.9900690065353245,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 74,
+      "time_ms": 0.899892857142857,
+      "volume_drift": 3.237368609321223e-05,
+      "geometric_volume_drift": 0.0009424235083127508,
+      "represented_mass_drift": 2.7312963620573782e-05,
+      "mach_max": 0.1295698950515336,
+      "rho_min": 0.9927273342866049,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 75,
+      "time_ms": 0.9120535714285714,
+      "volume_drift": 2.859728400772532e-05,
+      "geometric_volume_drift": 0.0009613363169281852,
+      "represented_mass_drift": 2.731296362046276e-05,
+      "mach_max": 0.1440520361127474,
+      "rho_min": 0.9923840005659472,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 76,
+      "time_ms": 0.9242142857142857,
+      "volume_drift": 4.313198122019024e-05,
+      "geometric_volume_drift": 0.000982284911188569,
+      "represented_mass_drift": 3.183883973290058e-05,
+      "mach_max": 0.1299186347824287,
+      "rho_min": 0.992414381509642,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 77,
+      "time_ms": 0.936375,
+      "volume_drift": 4.4692571496862676e-05,
+      "geometric_volume_drift": 0.0009942734306236378,
+      "represented_mass_drift": 3.1838839733122626e-05,
+      "mach_max": 0.14476432827609806,
+      "rho_min": 0.9919676673306503,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 78,
+      "time_ms": 0.9485357142857141,
+      "volume_drift": 4.5458057265412855e-05,
+      "geometric_volume_drift": 0.0010110063295835081,
+      "represented_mass_drift": 3.1838839733122626e-05,
+      "mach_max": 0.13070851085929674,
+      "rho_min": 0.9903400705727655,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 79,
+      "time_ms": 0.9606964285714285,
+      "volume_drift": 4.292553208340433e-05,
+      "geometric_volume_drift": 0.001031726986433057,
+      "represented_mass_drift": 3.183883973323365e-05,
+      "mach_max": 0.14514536864895763,
+      "rho_min": 0.9905279863836416,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 80,
+      "time_ms": 0.9728571428571428,
+      "volume_drift": 3.2941041046785635e-05,
+      "geometric_volume_drift": 0.0010501565534237756,
+      "represented_mass_drift": 3.183883973334467e-05,
+      "mach_max": 0.13296681213747147,
+      "rho_min": 0.989693851515071,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 81,
+      "time_ms": 0.9850178571428571,
+      "volume_drift": 4.6522103076873655e-05,
+      "geometric_volume_drift": 0.0010672155132374073,
+      "represented_mass_drift": 3.3915471472245606e-05,
+      "mach_max": 0.1462706138196052,
+      "rho_min": 0.9917047109209925,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 82,
+      "time_ms": 0.9971785714285714,
+      "volume_drift": 4.853972548357621e-05,
+      "geometric_volume_drift": 0.001080861084347684,
+      "represented_mass_drift": 3.391547147246765e-05,
+      "mach_max": 0.13280992521477195,
+      "rho_min": 0.9932878879194741,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 83,
+      "time_ms": 1.0093392857142856,
+      "volume_drift": 4.198451446968399e-05,
+      "geometric_volume_drift": 0.001100991868302259,
+      "represented_mass_drift": 3.391547147257867e-05,
+      "mach_max": 0.14318235985574426,
+      "rho_min": 0.9920790364233747,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 84,
+      "time_ms": 1.0214999999999999,
+      "volume_drift": 5.160095905643036e-05,
+      "geometric_volume_drift": 0.0011251665820288803,
+      "represented_mass_drift": 3.383844185844698e-05,
+      "mach_max": 0.1310030965008687,
+      "rho_min": 0.9914383590941316,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 85,
+      "time_ms": 1.0336607142857142,
+      "volume_drift": 5.307026264989023e-05,
+      "geometric_volume_drift": 0.0011535445531852817,
+      "represented_mass_drift": 4.2263916612439445e-05,
+      "mach_max": 0.14196346312862687,
+      "rho_min": 0.991061156314436,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 86,
+      "time_ms": 1.0458214285714285,
+      "volume_drift": 4.809210250977802e-05,
+      "geometric_volume_drift": 0.0011670085476109815,
+      "represented_mass_drift": 3.9758878911611006e-05,
+      "mach_max": 0.13245031876593902,
+      "rho_min": 0.994671131126402,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 87,
+      "time_ms": 1.0579821428571428,
+      "volume_drift": 5.7875154928610506e-05,
+      "geometric_volume_drift": 0.0011771943000132845,
+      "represented_mass_drift": 4.1670530766979574e-05,
+      "mach_max": 0.13991890117200567,
+      "rho_min": 0.9906471148872037,
+      "depth_over_D": 8.007169783086354e-05
+    },
+    {
+      "step": 88,
+      "time_ms": 1.070142857142857,
+      "volume_drift": 5.476644450796986e-05,
+      "geometric_volume_drift": 0.0011854760182345991,
+      "represented_mass_drift": 4.167053076731264e-05,
+      "mach_max": 0.13118083344145073,
+      "rho_min": 0.9894979683085068,
+      "depth_over_D": 0.0018533549635950664
+    },
+    {
+      "step": 89,
+      "time_ms": 1.0823035714285714,
+      "volume_drift": 5.1541393066512065e-05,
+      "geometric_volume_drift": 0.0012000107007306138,
+      "represented_mass_drift": 4.238262607281218e-05,
+      "mach_max": 0.13829362614995924,
+      "rho_min": 0.991202233783704,
+      "depth_over_D": 0.0
+    },
+    {
+      "step": 90,
+      "time_ms": 1.0944642857142857,
+      "volume_drift": 4.4983339393511734e-05,
+      "geometric_volume_drift": 0.0012079978501463584,
+      "represented_mass_drift": 3.849653704968148e-05,
+      "mach_max": 0.12787752367298974,
+      "rho_min": 0.9916445036818721,
+      "depth_over_D": 0.0012396877795013417
+    },
+    {
+      "step": 91,
+      "time_ms": 1.106625,
+      "volume_drift": 3.957399777254622e-05,
+      "geometric_volume_drift": 0.0012149326212357314,
+      "represented_mass_drift": 3.84965370497925e-05,
+      "mach_max": 0.134639793954209,
+      "rho_min": 0.9911327625147557,
+      "depth_over_D": 0.002538332360198403
+    },
+    {
+      "step": 92,
+      "time_ms": 1.1187857142857143,
+      "volume_drift": 4.481079659179876e-05,
+      "geometric_volume_drift": 0.0012187393182078177,
+      "represented_mass_drift": 3.943330501976483e-05,
+      "mach_max": 0.12838290990558535,
+      "rho_min": 0.9856935750827186,
+      "depth_over_D": 0.002831873989648681
+    },
+    {
+      "step": 93,
+      "time_ms": 1.1309464285714286,
+      "volume_drift": 3.842261843556294e-05,
+      "geometric_volume_drift": 0.001215206757436471,
+      "represented_mass_drift": 3.667809836382929e-05,
+      "mach_max": 0.13286992568884004,
+      "rho_min": 0.9889494461083003,
+      "depth_over_D": 0.0036263337974080656
+    },
+    {
+      "step": 94,
+      "time_ms": 1.1431071428571427,
+      "volume_drift": 4.100420513475367e-05,
+      "geometric_volume_drift": 0.0012212800777571253,
+      "represented_mass_drift": 3.542420187896411e-05,
+      "mach_max": 0.12690575528615267,
+      "rho_min": 0.9936187592064702,
+      "depth_over_D": 0.00467209904541388
+    },
+    {
+      "step": 95,
+      "time_ms": 1.155267857142857,
+      "volume_drift": 4.088032817539666e-05,
+      "geometric_volume_drift": 0.0012330486157574594,
+      "represented_mass_drift": 3.542420187929718e-05,
+      "mach_max": 0.13358247452268382,
+      "rho_min": 0.9930856600340322,
+      "depth_over_D": 0.005203157379393364
+    },
+    {
+      "step": 96,
+      "time_ms": 1.1674285714285713,
+      "volume_drift": 4.5650675067565594e-05,
+      "geometric_volume_drift": 0.001247832801575588,
+      "represented_mass_drift": 3.54242018794082e-05,
+      "mach_max": 0.13126298288507554,
+      "rho_min": 0.9892044016646151,
+      "depth_over_D": 0.007451175403982102
+    },
+    {
+      "step": 97,
+      "time_ms": 1.1795892857142856,
+      "volume_drift": 5.164176105032503e-05,
+      "geometric_volume_drift": 0.0012599271167613724,
+      "represented_mass_drift": 3.54242018794082e-05,
+      "mach_max": 0.1262742093557422,
+      "rho_min": 0.9897973726120801,
+      "depth_over_D": 0.00937249935996709
+    },
+    {
+      "step": 98,
+      "time_ms": 1.1917499999999999,
+      "volume_drift": 6.502513052253356e-05,
+      "geometric_volume_drift": 0.0012781318014845056,
+      "represented_mass_drift": 3.91104543767673e-05,
+      "mach_max": 0.127967657839636,
+      "rho_min": 0.9928136338681302,
+      "depth_over_D": 0.01247466765027827
+    },
+    {
+      "step": 99,
+      "time_ms": 1.2039107142857142,
+      "volume_drift": 6.0434572490608574e-05,
+      "geometric_volume_drift": 0.0012906697698616965,
+      "represented_mass_drift": 3.911045437687832e-05,
+      "mach_max": 0.12221742010724379,
+      "rho_min": 0.9906486436383094,
+      "depth_over_D": 0.014740858952326352
+    },
+    {
+      "step": 100,
+      "time_ms": 1.2160714285714285,
+      "volume_drift": 5.2091530469255964e-05,
+      "geometric_volume_drift": 0.001300839336524251,
+      "represented_mass_drift": 3.911045437687832e-05,
+      "mach_max": 0.12534545844895847,
+      "rho_min": 0.9905195362589029,
+      "depth_over_D": 0.018271504126597726
+    },
+    {
+      "step": 101,
+      "time_ms": 1.2282321428571428,
+      "volume_drift": 4.8005632421244115e-05,
+      "geometric_volume_drift": 0.0013047142292732516,
+      "represented_mass_drift": 3.8608143088203484e-05,
+      "mach_max": 0.11334893271394599,
+      "rho_min": 0.9924555763640382,
+      "depth_over_D": 0.021051503312166098
+    },
+    {
+      "step": 102,
+      "time_ms": 1.240392857142857,
+      "volume_drift": 4.282202877770036e-05,
+      "geometric_volume_drift": 0.0013010847645335,
+      "represented_mass_drift": 3.860814308809246e-05,
+      "mach_max": 0.11552428439049046,
+      "rho_min": 0.9919558574799794,
+      "depth_over_D": 0.025411677607363625
+    },
+    {
+      "step": 103,
+      "time_ms": 1.2525535714285714,
+      "volume_drift": 4.54300073468028e-05,
+      "geometric_volume_drift": 0.0012966406665717578,
+      "represented_mass_drift": 3.892526316084943e-05,
+      "mach_max": 0.1161739581014211,
+      "rho_min": 0.9922104074953975,
+      "depth_over_D": 0.028636546096814985
+    },
+    {
+      "step": 104,
+      "time_ms": 1.2647142857142857,
+      "volume_drift": 4.472478611483588e-05,
+      "geometric_volume_drift": 0.0012931081429378155,
+      "represented_mass_drift": 3.89252631611825e-05,
+      "mach_max": 0.12027016649224151,
+      "rho_min": 0.9933297240980087,
+      "depth_over_D": 0.03381840790548951
+    },
+    {
+      "step": 105,
+      "time_ms": 1.276875,
+      "volume_drift": 4.7818567589286154e-05,
+      "geometric_volume_drift": 0.001290638192026461,
+      "represented_mass_drift": 4.336312788688623e-05,
+      "mach_max": 0.11698640313437547,
+      "rho_min": 0.9933436266873349,
+      "depth_over_D": 0.03746673460389127
+    },
+    {
+      "step": 106,
+      "time_ms": 1.289035714285714,
+      "volume_drift": 5.318054367919878e-05,
+      "geometric_volume_drift": 0.0012852971789094614,
+      "represented_mass_drift": 4.4360028448542366e-05,
+      "mach_max": 0.11691982960721603,
+      "rho_min": 0.9811722625903578,
+      "depth_over_D": 0.04097786177850127
+    },
+    {
+      "step": 107,
+      "time_ms": 1.3011964285714284,
+      "volume_drift": 6.491996311475123e-05,
+      "geometric_volume_drift": 0.001276076573096141,
+      "represented_mass_drift": 4.7925312835817024e-05,
+      "mach_max": 0.11955225960041635,
+      "rho_min": 0.9870115138296928,
+      "depth_over_D": 0.04523823692061235
+    },
+    {
+      "step": 108,
+      "time_ms": 1.3133571428571427,
+      "volume_drift": 5.393716540103011e-05,
+      "geometric_volume_drift": 0.0012565657593623936,
+      "represented_mass_drift": 4.792531283592805e-05,
+      "mach_max": 0.12084952947538936,
+      "rho_min": 0.9893081464846498,
+      "depth_over_D": 0.04875562084344898
+    },
+    {
+      "step": 109,
+      "time_ms": 1.325517857142857,
+      "volume_drift": 4.888022183169305e-05,
+      "geometric_volume_drift": 0.0012388084111673026,
+      "represented_mass_drift": 4.792531283592805e-05,
+      "mach_max": 0.12085320329578889,
+      "rho_min": 0.9924095698724456,
+      "depth_over_D": 0.05243280568577813
+    },
+    {
+      "step": 110,
+      "time_ms": 1.3376785714285713,
+      "volume_drift": 5.2800047201317923e-05,
+      "geometric_volume_drift": 0.0012277041222893414,
+      "represented_mass_drift": 4.7925312836261114e-05,
+      "mach_max": 0.12025340124515262,
+      "rho_min": 0.9926478886697226,
+      "depth_over_D": 0.05600700197541464
+    },
+    {
+      "step": 111,
+      "time_ms": 1.3498392857142856,
+      "volume_drift": 5.8615905233372345e-05,
+      "geometric_volume_drift": 0.0012100322563387556,
+      "represented_mass_drift": 4.94976117646484e-05,
+      "mach_max": 0.12009069614259277,
+      "rho_min": 0.9927895108892859,
+      "depth_over_D": 0.06020135443274777
+    },
+    {
+      "step": 112,
+      "time_ms": 1.3619999999999999,
+      "volume_drift": 5.393621094473833e-05,
+      "geometric_volume_drift": 0.0011839632951480272,
+      "represented_mass_drift": 4.949761176487044e-05,
+      "mach_max": 0.12259792294473242,
+      "rho_min": 0.9913757710945434,
+      "depth_over_D": 0.13125249007513817
+    },
+    {
+      "step": 113,
+      "time_ms": 1.3741607142857142,
+      "volume_drift": 5.625166969858153e-05,
+      "geometric_volume_drift": 0.0011640430419169734,
+      "represented_mass_drift": 4.949761176487044e-05,
+      "mach_max": 0.12243878202485087,
+      "rho_min": 0.9933367014014898,
+      "depth_over_D": 0.21618492348599583
+    },
+    {
+      "step": 114,
+      "time_ms": 1.3863214285714285,
+      "volume_drift": 6.093143713070681e-05,
+      "geometric_volume_drift": 0.0011529910902222662,
+      "represented_mass_drift": 4.949761176487044e-05,
+      "mach_max": 0.12085733297148035,
+      "rho_min": 0.9911486771462789,
+      "depth_over_D": 0.2192165954107561
+    },
+    {
+      "step": 115,
+      "time_ms": 1.3984821428571428,
+      "volume_drift": 5.75108325178153e-05,
+      "geometric_volume_drift": 0.0011456863349301738,
+      "represented_mass_drift": 4.932882697528118e-05,
+      "mach_max": 0.1232696567343402,
+      "rho_min": 0.9921629278722841,
+      "depth_over_D": 0.22201763397985763
+    },
+    {
+      "step": 116,
+      "time_ms": 1.410642857142857,
+      "volume_drift": 5.712889950604261e-05,
+      "geometric_volume_drift": 0.0011451217182726348,
+      "represented_mass_drift": 5.07217879551769e-05,
+      "mach_max": 0.12332324965873706,
+      "rho_min": 0.9927547820674884,
+      "depth_over_D": 0.22477314061360332
+    },
+    {
+      "step": 117,
+      "time_ms": 1.4228035714285714,
+      "volume_drift": 6.14167511038266e-05,
+      "geometric_volume_drift": 0.0011449641807870226,
+      "represented_mass_drift": 5.07217879551769e-05,
+      "mach_max": 0.12309667420368765,
+      "rho_min": 0.9945301216472916,
+      "depth_over_D": 0.22759368662560364
+    },
+    {
+      "step": 118,
+      "time_ms": 1.4349642857142857,
+      "volume_drift": 7.843236434146306e-05,
+      "geometric_volume_drift": 0.0011580017547987431,
+      "represented_mass_drift": 5.598077372781507e-05,
+      "mach_max": 0.12319675390383154,
+      "rho_min": 0.9892322598496256,
+      "depth_over_D": 0.23020129515811316
+    },
+    {
+      "step": 119,
+      "time_ms": 1.4471249999999998,
+      "volume_drift": 8.25464353522154e-05,
+      "geometric_volume_drift": 0.0011659155853406267,
+      "represented_mass_drift": 5.6426151626043364e-05,
+      "mach_max": 0.12336193761926208,
+      "rho_min": 0.9917927818092641,
+      "depth_over_D": 0.23295071402580447
+    },
+    {
+      "step": 120,
+      "time_ms": 1.459285714285714,
+      "volume_drift": 7.579439017912915e-05,
+      "geometric_volume_drift": 0.0011697223946690594,
+      "represented_mass_drift": 5.6426151626154386e-05,
+      "mach_max": 0.12315404986455063,
+      "rho_min": 0.9916954982628227,
+      "depth_over_D": 0.23571929174002326
+    },
+    {
+      "step": 121,
+      "time_ms": 1.4714464285714284,
+      "volume_drift": 7.093479322806129e-05,
+      "geometric_volume_drift": 0.0011739813542716027,
+      "represented_mass_drift": 5.845214874788951e-05,
+      "mach_max": 0.12312927044408513,
+      "rho_min": 0.9913245572942041,
+      "depth_over_D": 0.2382688587335835
+    },
+    {
+      "step": 122,
+      "time_ms": 1.4836071428571427,
+      "volume_drift": 6.039935933088714e-05,
+      "geometric_volume_drift": 0.0011645218090288179,
+      "represented_mass_drift": 5.581977410684669e-05,
+      "mach_max": 0.1233586474313643,
+      "rho_min": 0.9896514355779038,
+      "depth_over_D": 0.2405814423661754
+    },
+    {
+      "step": 123,
+      "time_ms": 1.495767857142857,
+      "volume_drift": 5.2358181679923455e-05,
+      "geometric_volume_drift": 0.0011461705905654318,
+      "represented_mass_drift": 5.581977410684669e-05,
+      "mach_max": 0.12323399941484157,
+      "rho_min": 0.9932547464625338,
+      "depth_over_D": 0.24295425698305362
+    },
+    {
+      "step": 124,
+      "time_ms": 1.5079285714285713,
+      "volume_drift": 5.3454220261150986e-05,
+      "geometric_volume_drift": 0.0011294494470481808,
+      "represented_mass_drift": 5.581977410695771e-05,
+      "mach_max": 0.12308904761181226,
+      "rho_min": 0.9878849147110638,
+      "depth_over_D": 0.24508152588223586
+    },
+    {
+      "step": 125,
+      "time_ms": 1.5200892857142856,
+      "volume_drift": 5.1935141749615e-05,
+      "geometric_volume_drift": 0.0011277518441586976,
+      "represented_mass_drift": 5.5819774107179754e-05,
+      "mach_max": 0.12331441507245702,
+      "rho_min": 0.9906418468232909,
+      "depth_over_D": 0.2471305450693575
+    },
+    {
+      "step": 126,
+      "time_ms": 1.53225,
+      "volume_drift": 5.451063074612961e-05,
+      "geometric_volume_drift": 0.0011276799829726958,
+      "represented_mass_drift": 5.481152738495698e-05,
+      "mach_max": 0.12331379179066448,
+      "rho_min": 0.9928909096054805,
+      "depth_over_D": 0.2493831149148491
+    },
+    {
+      "step": 127,
+      "time_ms": 1.5444107142857142,
+      "volume_drift": 6.50062871596635e-05,
+      "geometric_volume_drift": 0.0011195740977176794,
+      "represented_mass_drift": 5.582954229410575e-05,
+      "mach_max": 0.1230901387096373,
+      "rho_min": 0.9910523801151851,
+      "depth_over_D": 0.25014179295811934
+    },
+    {
+      "step": 128,
+      "time_ms": 1.5565714285714285,
+      "volume_drift": 7.276801305566849e-05,
+      "geometric_volume_drift": 0.001108086215513504,
+      "represented_mass_drift": 6.277320959646726e-05,
+      "mach_max": 0.12324288824418805,
+      "rho_min": 0.9902972884552299,
+      "depth_over_D": 0.25065720207458453
+    },
+    {
+      "step": 129,
+      "time_ms": 1.5687321428571428,
+      "volume_drift": 6.199447286459048e-05,
+      "geometric_volume_drift": 0.0010796079499592048,
+      "represented_mass_drift": 6.479256516211951e-05,
+      "mach_max": 0.12337007661805793,
+      "rho_min": 0.9887285477383317,
+      "depth_over_D": 0.2509992380748898
+    },
+    {
+      "step": 130,
+      "time_ms": 1.580892857142857,
+      "volume_drift": 4.756532665306512e-05,
+      "geometric_volume_drift": 0.0010455065723161683,
+      "represented_mass_drift": 6.479256516245258e-05,
+      "mach_max": 0.12313438395069898,
+      "rho_min": 0.9879930867292808,
+      "depth_over_D": 0.27399909406684975
+    },
+    {
+      "step": 131,
+      "time_ms": 1.5930535714285712,
+      "volume_drift": 4.317140680643039e-05,
+      "geometric_volume_drift": 0.0010144231304409779,
+      "represented_mass_drift": 6.479256516245258e-05,
+      "mach_max": 0.12316640059157133,
+      "rho_min": 0.9918356919702717,
+      "depth_over_D": 0.27446971404509757
+    },
+    {
+      "step": 132,
+      "time_ms": 1.6052142857142855,
+      "volume_drift": 5.577115750465822e-05,
+      "geometric_volume_drift": 0.0009955871843175812,
+      "represented_mass_drift": 6.47925651625636e-05,
+      "mach_max": 0.12338605558915224,
+      "rho_min": 0.9922303058807699,
+      "depth_over_D": 0.2748487035878533
+    },
+    {
+      "step": 133,
+      "time_ms": 1.6173749999999998,
+      "volume_drift": 7.630994468499352e-05,
+      "geometric_volume_drift": 0.000988852455950373,
+      "represented_mass_drift": 6.479256516267462e-05,
+      "mach_max": 0.12321054026556272,
+      "rho_min": 0.9914778944134871,
+      "depth_over_D": 0.27544090158940326
+    },
+    {
+      "step": 134,
+      "time_ms": 1.629535714285714,
+      "volume_drift": 9.115747324950352e-05,
+      "geometric_volume_drift": 0.0009910543003611716,
+      "represented_mass_drift": 6.479256516289666e-05,
+      "mach_max": 0.12310930440745739,
+      "rho_min": 0.9937350085236273,
+      "depth_over_D": 0.2758483038105526
+    },
+    {
+      "step": 135,
+      "time_ms": 1.6416964285714284,
+      "volume_drift": 0.00010047170758287205,
+      "geometric_volume_drift": 0.0010003081394983626,
+      "represented_mass_drift": 6.769053701904948e-05,
+      "mach_max": 0.12335687668522653,
+      "rho_min": 0.9921969769795552
+    }
+  ]
+}

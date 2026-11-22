@@ -1,0 +1,23 @@
+{
+ "triple": {
+  "stop_reason": "health_limit",
+  "contact_step": 45,
+  "n_history": 136,
+  "last_step_index": 135,
+  "last_time_ms_abs": 1.6416964285714284,
+  "last_time_ms_pc": 1.0944642857142854,
+  "peak_depth_D": 0.2758483038105526,
+  "peak_time_ms_abs": 1.629535714285714,
+  "peak_time_ms_pc": 1.0823035714285711,
+  "peak_error_vs_exp_pct": -85.1489579812498,
+  "postcontact_healthy_ms": 1.0944642857142854,
+  "mach_max": 0.1462706138196052
+ },
+ "verdict": {
+  "prereg_band_hit": false,
+  "falsify_near_ctrl": false,
+  "falsify_early_death": true,
+  "verdict": "FAIL",
+  "alpha": 0.3
+ }
+}
