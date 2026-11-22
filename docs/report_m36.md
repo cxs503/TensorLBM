@@ -1,7 +1,7 @@
 # Mission 36 补报：议事会 session-001 架构视角提案
 
 > **mission_id**: 36 · **repo**: TensorLBM · **状态**: honest-FAIL（提案已交付，本报告为补发）
-> **日期**: 2026-10-29（补报） · **提案原文**: `docs/council/session-001/r1-proposal-strategy.md`
+> **日期**: 2026-10-29（补报） · **提案原文**: `development/archived/council/session-001/r1-proposal-strategy.md`
 
 ---
 
@@ -81,7 +81,7 @@ SDAA 平台（node099，32 卡满编）已完成 2D Couette 跨卡逐位复现�
 
 | 文件 | 内容 | 行数 |
 |------|------|------|
-| `docs/council/session-001/r1-proposal-strategy.md` | 完整提案（3 方向 + mission 拆解 + 卡位表 + 风险） | 266 |
+| `development/archived/council/session-001/r1-proposal-strategy.md` | 完整提案（3 方向 + mission 拆解 + 卡位表 + 风险） | 266 |
 | `artifacts/suboff_bench1_cumulant_sdaa20.json` | B1 benchmark 原始数据 | — |
 | `artifacts/suboff_bench2_rans_re1e5_sdaa21.json` | B2 benchmark 原始数据 | — |
 | `artifacts/suboff_bench3_rans_re1e4_sdaa22.json` | B3 benchmark 原始数据 | — |

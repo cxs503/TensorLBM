@@ -1,0 +1,99 @@
+{
+  "source_commit": "19b3a85ca8ced851226bccbd0c23d144ceb8b445",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "docs": {
+      "before": 91,
+      "after": 88
+    },
+    "benchmarks": {
+      "before": 103,
+      "after": 103
+    }
+  },
+  "entries": [
+    {
+      "old_path": "docs/council/session-001/r1-proposal-models.md",
+      "new_path": "development/archived/council/session-001/r1-proposal-models.md",
+      "git_mode": "100644",
+      "original_git_blob": "34a5c88e83ec27cd1d1215702c42a2a32a8da644",
+      "original_sha256": "810cfbac6a7a8d0696d8bbf6f788b8257886f7b9825228d6f70debdb367e5f71",
+      "size_bytes": 16931,
+      "canonical_duplicate": false
+    },
+    {
+      "old_path": "docs/council/session-001/r1-proposal-strategy.md",
+      "new_path": "development/archived/council/session-001/r1-proposal-strategy.md",
+      "git_mode": "100644",
+      "original_git_blob": "707ad9f72178215832882f3a926dc3f842291910",
+      "original_sha256": "23661edf03307c586fd3eb3fce567b3a5c106854d86bdbaa922107556e0220de",
+      "size_bytes": 15235,
+      "canonical_duplicate": false
+    },
+    {
+      "old_path": "docs/council/session-001/r2-critique-verifier.md",
+      "new_path": "development/archived/council/session-001/r2-critique-verifier.md",
+      "git_mode": "100644",
+      "original_git_blob": "d987045c435cdcb03abafb79426f80b4786ba823",
+      "original_sha256": "997a733bf0678c5d2cce179665d86590bbef135e526481ee9473c258f91b4e7c",
+      "size_bytes": 21798,
+      "canonical_duplicate": false
+    },
+    {
+      "old_path": "docs/council/session-001/r3-plan.md",
+      "new_path": "development/archived/council/session-001/r3-plan.md",
+      "git_mode": "100644",
+      "original_git_blob": "a51533f842d5af356c095b7cfba5282e8f9e83fc",
+      "original_sha256": "f2468d00493d929ee5aa138d4afb8efa2c03dac225ebe1c5e9e470f86e054bed",
+      "size_bytes": 15587,
+      "canonical_duplicate": false
+    },
+    {
+      "old_path": "docs/history/M1_P2_SUMMARY.md",
+      "new_path": "docs/mission_summaries/M1_P2_SUMMARY.md",
+      "git_mode": "100644",
+      "original_git_blob": "9230a7889366e2c205ee33b01c275ba84520e1ea",
+      "original_sha256": "8e0876b921c8eba72e832c7acf285482fb0024e5855cb4aa296ea24e626d43f3",
+      "size_bytes": 4446,
+      "canonical_duplicate": true
+    },
+    {
+      "old_path": "docs/history/MS2_SUMMARY.md",
+      "new_path": "docs/mission_summaries/MS2_SUMMARY.md",
+      "git_mode": "100644",
+      "original_git_blob": "8e932128a4e8c1210c0560882594df427bcc7766",
+      "original_sha256": "b1ab7480a9b475c3d53f7d4e1dc1c74b188da88ea50ae4783f48501dacbda7a6",
+      "size_bytes": 3566,
+      "canonical_duplicate": true
+    },
+    {
+      "old_path": "docs/history/SDAA_ROUND3_SUMMARY.md",
+      "new_path": "docs/mission_summaries/SDAA_ROUND3_SUMMARY.md",
+      "git_mode": "100644",
+      "original_git_blob": "5868ac959e2ca202e345e698a691a8e2a5e0f9cc",
+      "original_sha256": "07b5db8a814d7032091cc6244ec8dbf64d5cbdb00005f30e151b2b2beed5d9cf",
+      "size_bytes": 6862,
+      "canonical_duplicate": true
+    },
+    {
+      "old_path": "docs/smoke/smoke-m4629.md",
+      "new_path": "development/audit/ci/smoke/smoke-m4629.md",
+      "git_mode": "100644",
+      "original_git_blob": "aa0412c84e4f098ae3a9feaa76aaa78a3d367401",
+      "original_sha256": "61c50ef50c26cdf8917f2fa28cf0a04dfae45e90cc0783931657020d34f363d3",
+      "size_bytes": 43,
+      "canonical_duplicate": false
+    }
+  ],
+  "compatibility": "The m36 report now links to the archived council proposal. The council and CI smoke files retain their original Git blobs. The three history summaries have identical Git blobs and SHA-256 values at their canonical docs/mission_summaries paths.",
+  "replay_limits": "These are historical process records and duplicate summaries; this batch does not re-run their original numerical or hardware work.",
+  "scientific_scope": "No solver source, numerical algorithm, benchmark criterion or scientific verdict changes. The migration only separates process records from maintained public documentation.",
+  "local_verification": [
+    "python tests/test_repository_layout.py -v",
+    "python tools/check_repository_layout.py",
+    "bash tools/check_repository_governance.sh",
+    "Verified all eight original SHA-256 values and the five unchanged moved Git blobs",
+    "Verified the three docs/history blobs exactly match docs/mission_summaries"
+  ]
+}

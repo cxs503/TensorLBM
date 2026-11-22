@@ -21,6 +21,7 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 | An audit with a mission number | [audit](../../development/audit/), for example [m18429](../../development/audit/m18429/). This groups the report, verdict SQL and reproduction material where available. |
 | A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
 | Drop-entry technical reports and diagnostic history | [Water-entry reports](../reports/water_entry/) |
+| Historical council and CI process records | [Development archive](../../development/archived/council/) and [CI audit records](../../development/audit/ci/) |
 | A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
 | An earlier experiment | [Archived experiments](../../development/experiments/archived/), including [mission workspaces](../../development/experiments/archived/workspaces/) and [staged snapshots](../../development/experiments/archived/staging/) |
 | An old repository path | Search the [migration manifest](migration_manifest.csv). A directory row maps its entire subtree, preserving the relative suffix. |
@@ -117,6 +118,9 @@ Rules:
 4. New files must be at most **5 MiB**. This is a repository maintenance threshold,
    not a scientific acceptance criterion. The two existing oversized files have
    individual byte ceilings, so their historical exceptions do not permit growth.
+5. Retired second-level process paths (`docs/council/`, `docs/history/` and
+   `docs/smoke/`) may not reappear. Use their migration ledger to find the
+   development record or the byte-identical canonical summary.
 
 Directories whose retirement is recorded in the migration ledgers cannot be
 restored by merely adding them back to `root_directories`. Reintroductions must be

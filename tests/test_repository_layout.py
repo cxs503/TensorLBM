@@ -240,6 +240,15 @@ class RepositoryLayoutTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Retired root directories"):
                     LAYOUT.load_policy(config_path)
 
+    def test_retired_second_level_directories_cannot_reappear(self):
+        for parent, child in sorted(LAYOUT.RETIRED_SECOND_LEVEL_DIRECTORIES):
+            with self.subTest(path=f"{parent}/{child}"):
+                name = f"{parent}/{child}/new-record.md"
+                self.write(name)
+                failures = self.check([name])
+                self.assertEqual(len(failures), 1)
+                self.assertIn(f"retired-directory: {parent}/{child}/", failures[0])
+
     def test_git_candidates_include_forced_ignored_files_but_not_local_outputs(self):
         self.git("init", "-q")
         self.write(".gitignore", "runs/\n")

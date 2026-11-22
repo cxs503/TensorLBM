@@ -134,7 +134,7 @@
 3. **既有门禁的盲区**：`tests/test_readme_quickstart.py` 只 pin Python 片段，不覆盖 CLI/链接/数字。
    本单新增的门禁补的是这块；两者互补，不重复。
 4. **覆盖范围限制（诚实交代）**：仅扫描 4 份「带可执行命令」的文档；`docs/` 下其余 600+ 篇文档
-   未做命令级扫描（其中 `docs/council/…` 等为历史议事记录，本身不是契约文档）。
+   未做命令级扫描（其中 `development/archived/council/…` 等为历史议事记录，本身不是契约文档）。
 5. **`--device` 只校验「文档列出的值 ⊆ CLI choices」**，不保证该设备在目标机上真的可用
    （CUDA/SDAA 不可用时会显式报错，不静默降级——这属库层行为，已被既有测试覆盖）。
 6. **方腔降分辨率发散**：`scripts/make_demo_gif.py --nx 32 --n-steps 100` 出现 `mass=nan`
