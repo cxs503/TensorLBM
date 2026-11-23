@@ -1,5 +1,7 @@
 # XVAL: 自由能压强张量体力（ludwig `FE_FORCE_METHOD_STRESS_DIVERGENCE` vs TensorLBM `-φ∇μ`）
 
+[Current case and dated replay](../benchmarks/cross_validation/ludwig_fe_stress/README.md)
+
 锚点：`XVAL-LBM-FREE-ENERGY-PRESSURE-TENSOR-BODY-FORCE`（m17763，TensorLBM）
 判据：相对误差 < 15%（owner 精度标准）
 

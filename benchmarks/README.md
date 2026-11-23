@@ -32,7 +32,8 @@ including nested run logs and figures. The registry records these paths in
 Use `--case matrix:ship_resistance_suboff` to retrieve the matrix definition,
 reference provenance, reproduction command and archived comparison for that case.
 A missing comparison is returned as null.
-Use `--case xval:ludwig_fe_stress` to find the analytic criteria, both CLI paths, the archived result and the dated CPU replay. To register a cross-validation, add a tracked `xval/<case>/benchmark_case.json` using that case as the example.
+Use `--case xval:ludwig_fe_stress` to find the analytic criteria, both CLI paths, the archived result and the dated CPU replay.
+Register cross-validations under `benchmarks/cross_validation/<case>/benchmark_case.json`; case IDs retain the `xval:` prefix.
 Use `--asset-index` to export all Git-tracked benchmark files with their object IDs.
 Each entry distinguishes explicit case links from membership in the nearest
 registered case directory. Files with neither association remain listed and

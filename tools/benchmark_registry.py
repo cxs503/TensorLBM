@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 from check_benchmark_manuals import ROOT, check
 
 BUCKETS = {"verified", "pending", "archived", "case_pool"}
+XVAL_CASE_ROOT = PurePosixPath("benchmarks/cross_validation")
 
 
 ASSET_ROOTS = ("benchmarks", "docs", "development", "xval")
@@ -77,6 +78,7 @@ def attach_validation_matrix(records: list[dict], root: Path) -> list[str]:
 def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
     """Register standalone benchmark and cross-validation manifests from the Git index."""
     manifests = sorted(tracked_files(root, ":(glob)xval/*/benchmark_case.json",
+                                     f":(glob){XVAL_CASE_ROOT}/*/benchmark_case.json",
                                      ":(glob)benchmarks/*/benchmark_case.json",
                                      *(f":(glob)benchmarks/{bucket}/*/benchmark_case.json"
                                        for bucket in BUCKETS)))
@@ -84,6 +86,7 @@ def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
         return []
     tracked = tracked_files(root)
     registered_directories = {variant["path"] for row in records for variant in row["variants"]}
+    registered_ids = {row["id"] for row in records}
     inferred_cases = {row["id"]: row for row in records if row["id"].startswith("benchmarks/")}
     errors = []
     for manifest in manifests:
@@ -93,10 +96,13 @@ def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
             errors.append(f"{manifest}: directory already has a registered case")
             continue
         definition = json.loads((root / manifest).read_text(encoding="utf-8"))
-        is_xval = manifest.parts[0] == "xval"
+        is_xval = manifest.parent.parent in {PurePosixPath("xval"), XVAL_CASE_ROOT}
         namespace = "xval" if is_xval else "campaign"
         case_id = f"{namespace}:{manifest.parent.name}"
         category = "cross_validation" if is_xval else "standalone_campaign"
+        if inferred is None and case_id in registered_ids:
+            errors.append(f"{manifest}: case ID already registered: {case_id}")
+            continue
         if not isinstance(definition, dict):
             errors.append(f"{manifest}: expected a JSON object")
             continue
@@ -134,6 +140,7 @@ def attach_declared_cases(records: list[dict], root: Path) -> list[str]:
                               **declared}],
                 category: metadata,
             })
+            registered_ids.add(case_id)
     return errors
 
 
@@ -307,9 +314,13 @@ def main() -> int:
         print(json.dumps(inventory, ensure_ascii=False, indent=2))
         return 0
     if args.case:
+        case_keys = {args.case}
+        if args.case.startswith("xval/"):
+            case_keys.add(args.case.replace("xval/", "xval:", 1))
         records = [
             row for row in records
-            if row["id"] == args.case or any(v["path"] == args.case for v in row["variants"])
+            if row["id"] in case_keys
+            or any(v["path"] == args.case for v in row["variants"])
             or any(f"matrix:{entry['id']}" == args.case for entry in row["validation_matrix"])
         ]
         if not records:

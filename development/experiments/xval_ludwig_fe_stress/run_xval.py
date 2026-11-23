@@ -5,5 +5,5 @@ import runpy
 
 if __name__ == "__main__":
     directory = Path(__file__).resolve().parent
-    runner = directory.parents[2] / "xval/ludwig_fe_stress/run_xval.py"
+    runner = directory.parents[2] / "benchmarks/cross_validation/ludwig_fe_stress/run_xval.py"
     runpy.run_path(str(runner))["main"](default_output_dir=directory)

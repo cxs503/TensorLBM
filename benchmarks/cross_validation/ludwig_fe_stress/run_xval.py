@@ -1,13 +1,13 @@
 """XVAL: TensorLBM free-energy body force (-phi grad mu) vs ludwig
 FE_FORCE_METHOD_STRESS_DIVERGENCE (F = -div P from the free-energy pressure
-tensor).  Run: python xval/ludwig_fe_stress/run_xval.py"""
+tensor).  Run: python benchmarks/cross_validation/ludwig_fe_stress/run_xval.py"""
 from __future__ import annotations
 import argparse
 import json
 import pathlib
 import sys
 import torch
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "src"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
 from tensorlbm.free_energy_stress import (
     FreeEnergyParams, grad, laplacian, pressure_tensor, stress_divergence_force,
     grad_mu_force, surface_tension_analytic, interface_width, planar_profile,
@@ -91,7 +91,7 @@ def compute() -> dict:
 
 def main(default_output_dir=None) -> None:
     if default_output_dir is None:
-        default_output_dir = pathlib.Path(__file__).resolve().parents[2] / "artifacts/runs/xval/ludwig_fe_stress"
+        default_output_dir = pathlib.Path(__file__).resolve().parents[3] / "artifacts/runs/xval/ludwig_fe_stress"
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=pathlib.Path, default=default_output_dir)
     output_dir = parser.parse_args().output_dir

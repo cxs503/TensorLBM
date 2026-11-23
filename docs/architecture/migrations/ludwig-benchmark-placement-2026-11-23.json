@@ -1,0 +1,64 @@
+{
+  "source_commit": "d7428a9d8ffa0e8eb4d890671dde9c2082c06562",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 104,
+      "after": 103
+    }
+  },
+  "retired_paths": [
+    "xval/ludwig_fe_stress"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/ludwig_fe_stress/benchmark_case.json",
+      "new_path": "benchmarks/cross_validation/ludwig_fe_stress/benchmark_case.json",
+      "git_mode": "100644",
+      "original_git_blob": "127ee9cc25e16e1217f0d720ad2729cda05760c0",
+      "original_sha256": "10b5a5c80ebcb2e9114be7d4dff529c49cedbbdb437739df4004d16f65208a3d",
+      "size_bytes": 1411,
+      "change": "path_and_navigation",
+      "relocated_sha256": "247fd937cb28401160c4de2b8468ecabbd8031192cf67bf07f1c047638fcda27",
+      "relocated_size_bytes": 1641
+    },
+    {
+      "old_path": "xval/ludwig_fe_stress/replays/2026-11-21.json",
+      "new_path": "benchmarks/cross_validation/ludwig_fe_stress/replays/2026-11-21.json",
+      "git_mode": "100644",
+      "original_git_blob": "05fc619bc28bccc5c61e4e9f27b4181aaadb4316",
+      "original_sha256": "609cb9e8ab0e5614c4a817bcf8a54888e4027946c729a9af5fdf3aa633534836",
+      "size_bytes": 5110,
+      "change": "byte_exact_move"
+    },
+    {
+      "old_path": "xval/ludwig_fe_stress/run_xval.py",
+      "new_path": "benchmarks/cross_validation/ludwig_fe_stress/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "e3ce36bf5b33fae9eaa856303c4daa9c1888e61d",
+      "original_sha256": "b8dd56a78e1cb1130d03b8641d8b4cd64efd9ff5cf76579f4cfa62c63f9dd3a1",
+      "size_bytes": 6134,
+      "change": "path_only",
+      "relocated_sha256": "d0f75e83345f62d6ce51409958afd03dd8e30be4ebf40a34183276de1ceddf28",
+      "relocated_size_bytes": 6157
+    }
+  ],
+  "compatibility": {
+    "registry_id": "xval:ludwig_fe_stress",
+    "registry_path_alias": "xval/ludwig_fe_stress",
+    "canonical_runner": "benchmarks/cross_validation/ludwig_fe_stress/run_xval.py",
+    "report_runner": "development/experiments/xval_ludwig_fe_stress/run_xval.py",
+    "default_output": "artifacts/runs/xval/ludwig_fe_stress/results.json",
+    "stable_report": "docs/XVAL_LUDWIG_FE_STRESS.md",
+    "historical_ledger": "docs/architecture/migrations/ludwig-fe-stress-2026-11-21.json",
+    "numerical_source_git_blob": "3b715578e41b41780fc19c92d981a70ca4a83a73"
+  },
+  "scientific_scope": "The prior CPU replay is preserved byte-for-byte and remains historical. This path-only migration does not rerun the Torch calculation or evaluate current scientific acceptance.",
+  "local_verification": [
+    "Repository governance checks: 77 tests passed; 196 registry entries and zero hard benchmark ledger violations.",
+    "Stable case ID, relocated benchmark path and former registry path return the same record. Archived result and replay checksums match their original recorded values.",
+    "Changed Python files compile. The runner projects the new depth back to the checkout root; original default output and published wrapper remain available.",
+    "The original report link, its new case backlink, and the historical replay link resolve in the working tree."
+  ]
+}

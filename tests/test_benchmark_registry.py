@@ -132,7 +132,10 @@ class BenchmarkRegistryTests(unittest.TestCase):
         (case,) = self.registry("--case", "xval:ludwig_fe_stress")
         self.assertEqual(case["current_acceptance"], "not_evaluated")
         variant, = case["variants"]
-        self.assertEqual(variant["path"], "xval/ludwig_fe_stress")
+        canonical = "benchmarks/cross_validation/ludwig_fe_stress"
+        self.assertEqual(variant["path"], canonical)
+        self.assertEqual(self.registry("--case", canonical), [case])
+        self.assertEqual(self.registry("--case", "xval/ludwig_fe_stress"), [case])
         self.assertEqual(case["cross_validation"]["criteria"]["threshold"], 0.15)
         original, replay, ledger = (ROOT / path for path in variant["results"])
         evidence = json.loads(ledger.read_text())

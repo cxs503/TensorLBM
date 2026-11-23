@@ -56,6 +56,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "smoke"),
     ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
+    ("xval", "ludwig_fe_stress"),
 }
 
 

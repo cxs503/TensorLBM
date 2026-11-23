@@ -1,14 +1,15 @@
 {
   "source": [
-    "xval/ludwig_fe_stress/run_xval.py",
+    "benchmarks/cross_validation/ludwig_fe_stress/run_xval.py",
     "src/tensorlbm/free_energy_stress.py",
     "development/experiments/xval_ludwig_fe_stress/run_xval.py",
     "development/experiments/xval_ludwig_fe_stress/make_figures.py"
   ],
   "config": [
-    "xval/ludwig_fe_stress/run_xval.py"
+    "benchmarks/cross_validation/ludwig_fe_stress/run_xval.py"
   ],
   "documentation": [
+    "benchmarks/cross_validation/ludwig_fe_stress/README.md",
     "docs/XVAL_LUDWIG_FE_STRESS.md",
     "docs/board_audit/m17881/AUDIT_m17763_FE_STRESS.md"
   ],
@@ -18,7 +19,7 @@
   ],
   "results": [
     "development/experiments/xval_ludwig_fe_stress/results.json",
-    "xval/ludwig_fe_stress/replays/2026-11-21.json",
+    "benchmarks/cross_validation/ludwig_fe_stress/replays/2026-11-21.json",
     "docs/architecture/migrations/ludwig-fe-stress-2026-11-21.json"
   ],
   "references": [
@@ -34,5 +35,8 @@
     "operator": "<",
     "threshold": 0.15,
     "force_difference": "diagnostic only"
-  }
+  },
+  "evidence": [
+    "docs/architecture/migrations/ludwig-benchmark-placement-2026-11-23.json"
+  ]
 }
