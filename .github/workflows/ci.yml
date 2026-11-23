@@ -30,16 +30,20 @@ jobs:
 # Portable gates (layout, AST architecture, wheel metadata) use GitHub-hosted Linux.
 # Numerical and platform solver suites remain on ci-loong64 and MUST NOT be
 # treated as passed when that architecture-specific runner is unavailable.
-  # Static gates run once, on a single interpreter: they are interpreter
-  # independent, so fanning them across the matrix only burns minutes.
+  # Run the static gates once on hosted Linux so they can report separately
+  # from the native solver and platform tests.
   lint:
-    runs-on: ci-loong64
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install package with dev extras
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e ".[dev]" "ruff==0.15.0"
       # Debt ratchet rather than a zero-tolerance gate: `ruff check` over the
       # four core trees reports the legacy backlog (~3.0k findings accumulated
       # across the merged mission history), so a hard `ruff check` step was red
