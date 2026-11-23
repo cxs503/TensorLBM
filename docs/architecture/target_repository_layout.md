@@ -73,6 +73,10 @@ The [EOS and FSI report ledger](migrations/eos-fsi-xval-reports-2026-11-23.json)
 places the archived Maxwell stability and vivsim fixed-point evidence in their
 benchmark directories.
 
+The [Ghia W26 tool ledger](migrations/ghia-w26-tool-retirement-2026-11-23.json)
+places anchor extraction, analytic checks and report utilities beside the Ghia
+reference data. The archived register keeps its original provenance.
+
 ## Second-level placement
 
 | Area | Placement |

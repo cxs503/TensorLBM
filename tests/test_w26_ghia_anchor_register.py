@@ -26,7 +26,7 @@ import pytest
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ART = os.path.join(REPO, "benchmarks", "anchors", "ghia_w26",
                    "anchor_register.json")
-SCRIPT_DIR = os.path.join(REPO, "scripts", "w26_ghia")
+SCRIPT_DIR = os.path.join(os.path.dirname(ART), "tools")
 sys.path.insert(0, SCRIPT_DIR)
 
 

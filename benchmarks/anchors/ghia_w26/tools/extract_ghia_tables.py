@@ -24,9 +24,10 @@ Provenance per value: PDF sha256, page index, journal page, row y band, cell bbo
 verbatim OCR token, OCR digits, ink x-extent and the sign-cluster statistics.
 
 Usage:
-    GHIA_PDF=/tmp/ghia1982.pdf python3 scripts/w26_ghia/extract_ghia_tables.py \
+    GHIA_PDF=/tmp/ghia1982.pdf python3 benchmarks/anchors/ghia_w26/tools/extract_ghia_tables.py \
         --out benchmarks/anchors/ghia_w26/cells_raw.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,9 +37,9 @@ import os
 import re
 from typing import Dict, List, Tuple
 
+import fitz  # PyMuPDF
 import numpy as np
 import pypdf
-import fitz  # PyMuPDF
 
 # Table geometry (PDF points), calibrated on the word boxes of the two pages.
 TABLES = {
@@ -60,10 +61,10 @@ TABLES = {
     },
 }
 
-ROW_TOL = 2.5       # pt, clustering tolerance for row centres
-MERGE_GAP = 4.2     # pt, merge word fragments of one cell
-ZOOM = 8.0          # page raster zoom for the ink measurements (8 px/pt)
-INK_THR = 200       # grey level below which a pixel counts as ink
+ROW_TOL = 2.5  # pt, clustering tolerance for row centres
+MERGE_GAP = 4.2  # pt, merge word fragments of one cell
+ZOOM = 8.0  # page raster zoom for the ink measurements (8 px/pt)
+INK_THR = 200  # grey level below which a pixel counts as ink
 
 
 def sha256_file(path: str) -> str:
@@ -77,8 +78,12 @@ def sha256_file(path: str) -> str:
 def pdf_meta(path: str) -> Dict[str, object]:
     with open(path, "rb") as fh:
         n_pages = len(pypdf.PdfReader(fh).pages)
-    return {"path": path, "sha256": sha256_file(path), "n_pages": n_pages,
-            "bytes": os.path.getsize(path)}
+    return {
+        "path": path,
+        "sha256": sha256_file(path),
+        "n_pages": n_pages,
+        "bytes": os.path.getsize(path),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -105,9 +110,16 @@ def cells_of_row(words, y0: float, y1: float, x0: float, x1: float) -> List[Tupl
     sel.sort(key=lambda w: w[0])
     if not sel:
         return []
-    return [(min(w[0] for w in sel), min(w[1] for w in sel),
-             max(w[2] for w in sel), max(w[3] for w in sel),
-             "".join(w[4] for w in sel), len(sel))]
+    return [
+        (
+            min(w[0] for w in sel),
+            min(w[1] for w in sel),
+            max(w[2] for w in sel),
+            max(w[3] for w in sel),
+            "".join(w[4] for w in sel),
+            len(sel),
+        )
+    ]
 
 
 # --------------------------------------------------------------------------- #
@@ -131,8 +143,10 @@ class PageRaster:
         rows = np.where(ink.any(axis=1))[0]
         cols = np.where(ink.any(axis=0))[0]
         return {
-            "x0": x0 + cols.min() / ZOOM, "x1": x0 + (cols.max() + 1) / ZOOM,
-            "y0": y0 + rows.min() / ZOOM, "y1": y0 + (rows.max() + 1) / ZOOM,
+            "x0": x0 + cols.min() / ZOOM,
+            "x1": x0 + (cols.max() + 1) / ZOOM,
+            "y0": y0 + rows.min() / ZOOM,
+            "y1": y0 + (rows.max() + 1) / ZOOM,
         }
 
 
@@ -159,8 +173,9 @@ def two_cluster_split(widths: List[float]) -> Dict[str, object]:
         "n_signed": signed,
         "width_min_pt": round(float(w.min()), 2),
         "width_max_pt": round(float(w.max()), 2),
-        "separation_clean": bool(c[1] - c[0] > 2.5 and
-                                 np.min(w[labels == 1]) - np.max(w[labels == 0]) > 1.0),
+        "separation_clean": bool(
+            c[1] - c[0] > 2.5 and np.min(w[labels == 1]) - np.max(w[labels == 0]) > 1.0
+        ),
     }
 
 
@@ -181,19 +196,44 @@ def decode_digits(tok: str) -> Dict[str, object]:
         head, tail = digits.split(".", 1)
         digits = head + "." + tail.replace(".", "")
     if not digits:
-        return {"digits": "", "magnitude": None, "recovered_decimal": False, "magnitude_repaired": False}
+        return {
+            "digits": "",
+            "magnitude": None,
+            "recovered_decimal": False,
+            "magnitude_repaired": False,
+        }
     if "." not in digits:
         mag = int(digits) * 1e-5
-        return {"digits": digits, "magnitude": mag, "recovered_decimal": True, "magnitude_repaired": False}
+        return {
+            "digits": digits,
+            "magnitude": mag,
+            "recovered_decimal": True,
+            "magnitude_repaired": False,
+        }
     try:
         mag = float(digits)
     except ValueError:
-        return {"digits": digits, "magnitude": None, "recovered_decimal": False, "magnitude_repaired": False}
+        return {
+            "digits": digits,
+            "magnitude": None,
+            "recovered_decimal": False,
+            "magnitude_repaired": False,
+        }
     if mag > 1.0 + 1e-12:  # first character is the minus, not a digit
         rest = digits.replace(".", "")[1:]
         mag = float("0." + rest)
-        return {"digits": digits, "magnitude": mag, "recovered_decimal": True, "magnitude_repaired": True}
-    return {"digits": digits, "magnitude": mag, "recovered_decimal": False, "magnitude_repaired": False}
+        return {
+            "digits": digits,
+            "magnitude": mag,
+            "recovered_decimal": True,
+            "magnitude_repaired": True,
+        }
+    return {
+        "digits": digits,
+        "magnitude": mag,
+        "recovered_decimal": False,
+        "magnitude_repaired": False,
+    }
 
 
 def decode_coord(tok: str):
@@ -225,16 +265,22 @@ def extract(pdf_path: str) -> Dict[str, object]:
             coord_cells = cells_of_row(words, b0, b1, *spec["coord_col"])
             pt_cells = cells_of_row(words, b0, b1, 55.0, 80.0)
             pt_raw = pt_cells[0][4] if pt_cells else None
-            rows.append({
-                "row_index": bi,
-                "y_band_pt": [round(b0, 2), round(b1, 2)],
-                "pt_no_raw": pt_raw,
-                "pt_no": int(re.sub(r"[^0-9]", "", pt_raw)) if pt_raw and re.sub(r"[^0-9]", "", pt_raw) else None,
-                "coord_raw": [c[4] for c in coord_cells],
-                "coord": decode_coord(coord_cells[0][4]) if coord_cells else None,
-                "coord_bbox_pt": [[round(c[0], 2), round(c[1], 2), round(c[2], 2)] for c in coord_cells],
-                "values": {},
-            })
+            rows.append(
+                {
+                    "row_index": bi,
+                    "y_band_pt": [round(b0, 2), round(b1, 2)],
+                    "pt_no_raw": pt_raw,
+                    "pt_no": int(re.sub(r"[^0-9]", "", pt_raw))
+                    if pt_raw and re.sub(r"[^0-9]", "", pt_raw)
+                    else None,
+                    "coord_raw": [c[4] for c in coord_cells],
+                    "coord": decode_coord(coord_cells[0][4]) if coord_cells else None,
+                    "coord_bbox_pt": [
+                        [round(c[0], 2), round(c[1], 2), round(c[2], 2)] for c in coord_cells
+                    ],
+                    "values": {},
+                }
+            )
         # ---- pass 2: per-cell text + pixel ink extent -------------------------
         for re_key, (cx0, cx1) in spec["value_cols"].items():
             widths = []
@@ -271,16 +317,26 @@ def extract(pdf_path: str) -> Dict[str, object]:
                     "magnitude_repaired": dec["magnitude_repaired"],
                     "sign_from_ink": sign,
                     "ink_width_pt": None if wd != wd else round(wd, 2),
-                    "ink_bbox_pt": None if bbox is None else [round(bbox[k], 2) for k in ("x0", "y0", "x1", "y1")],
-                    "value": None if (dec["magnitude"] is None or sign is None) else sign * dec["magnitude"],
+                    "ink_bbox_pt": None
+                    if bbox is None
+                    else [round(bbox[k], 2) for k in ("x0", "y0", "x1", "y1")],
+                    "value": None
+                    if (dec["magnitude"] is None or sign is None)
+                    else sign * dec["magnitude"],
                 }
             out.setdefault("sign_split", {})[f"{name}_{int(re_key)}"] = split
         # ---- structural check: are the value columns right-aligned? ----------
-        right_edges = [v["ink_bbox_pt"][2] for r in rows for v in r["values"].values()
-                       if v.get("ink_bbox_pt")]
-        header_words = [{"text": w[4], "bbox_pt": [round(w[0], 2), round(w[1], 2),
-                                                   round(w[2], 2), round(w[3], 2)]}
-                        for w in words if 330.0 <= w[1] <= 372.0 and w[0] < 245.0]
+        right_edges = [
+            v["ink_bbox_pt"][2] for r in rows for v in r["values"].values() if v.get("ink_bbox_pt")
+        ]
+        header_words = [
+            {
+                "text": w[4],
+                "bbox_pt": [round(w[0], 2), round(w[1], 2), round(w[2], 2), round(w[3], 2)],
+            }
+            for w in words
+            if 330.0 <= w[1] <= 372.0 and w[0] < 245.0
+        ]
         header_words.sort(key=lambda d: (round(d["bbox_pt"][1], 1), d["bbox_pt"][0]))
         out["tables"][name] = {
             "page_index": spec["page_index"],
@@ -290,7 +346,9 @@ def extract(pdf_path: str) -> Dict[str, object]:
             "n_rows": len(rows),
             "rows": rows,
             "header_words": header_words,
-            "right_edge_spread_pt_all_columns": round(float(np.ptp(right_edges)), 3) if right_edges else None,
+            "right_edge_spread_pt_all_columns": round(float(np.ptp(right_edges)), 3)
+            if right_edges
+            else None,
         }
     return out
 
@@ -302,7 +360,9 @@ def summary(data) -> None:
             vals = []
             for k in ("100.0", "400.0", "1000.0"):
                 v = r["values"].get(k, {})
-                vals.append(f"{v.get('value')!s:>9}<-{v.get('ocr_token')!s:>8} w={v.get('ink_width_pt')!s:>6}")
+                vals.append(
+                    f"{v.get('value')!s:>9}<-{v.get('ocr_token')!s:>8} w={v.get('ink_width_pt')!s:>6}"
+                )
             print(f"  {str(r['coord_raw'][0] if r['coord_raw'] else '?'):>9} | " + " | ".join(vals))
         for k, sp in data.get("sign_split", {}).items():
             if k.startswith(name + "_"):
@@ -316,7 +376,7 @@ def main() -> None:
     args = ap.parse_args()
     data = extract(args.pdf)
     data["extractor"] = {
-        "script": "scripts/w26_ghia/extract_ghia_tables.py",
+        "script": "benchmarks/anchors/ghia_w26/tools/extract_ghia_tables.py",
         "script_sha256": sha256_file(os.path.abspath(__file__)),
         "pymupdf": fitz.__doc__.strip().splitlines()[0],
         "pypdf": pypdf.__version__,
