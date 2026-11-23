@@ -1,0 +1,24 @@
+{
+  "scope": "Linear heave cross-validation between TensorLBM and vivsim coupling variants using the analytic wet-system response.",
+  "criteria": {
+    "protocol": "benchmarks/xval_vivsim_fsi_fixed_point/REPORT.md",
+    "scope": "Compare each coupling arm against its declared analytic response and 15% error gate."
+  },
+  "source": [
+    "benchmarks/xval_vivsim_fsi_fixed_point/run_xval.py",
+    "benchmarks/xval_vivsim_fsi_fixed_point/make_report.py"
+  ],
+  "config": [
+    "benchmarks/xval_vivsim_fsi_fixed_point/run_xval.py"
+  ],
+  "documentation": [
+    "benchmarks/xval_vivsim_fsi_fixed_point/REPORT.md",
+    "benchmarks/xval_vivsim_fsi_fixed_point/DIFF_OSS_VS_TENSORLBM.md"
+  ],
+  "reference_files": [
+    "benchmarks/xval_vivsim_fsi_fixed_point/vendor/PROVENANCE.json"
+  ],
+  "results": [
+    "benchmarks/xval_vivsim_fsi_fixed_point/artifacts/xval_fsi_fixed_point.json"
+  ]
+}

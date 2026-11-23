@@ -69,6 +69,10 @@ moves the registered case into `benchmarks/cross_validation/` with the same
 `xval:ludwig_fe_stress` case ID. Use that directory for registered
 cross-validations and keep historical supporting material in development.
 
+The [EOS and FSI report ledger](migrations/eos-fsi-xval-reports-2026-11-23.json)
+places the archived Maxwell stability and vivsim fixed-point evidence in their
+benchmark directories.
+
 ## Second-level placement
 
 | Area | Placement |

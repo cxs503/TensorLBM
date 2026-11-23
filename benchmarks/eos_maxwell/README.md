@@ -1,5 +1,7 @@
 # EOS-Maxwell 构造稳定性探针（EOS-Maxwell construction stability probe）
 
+[历史 m18366 复核报告](evidence/m18366/REPORT.md) · [预注册记录](evidence/m18366/predeclared.json)
+
 **锚点**：GAP-LBM-MCMP-POISEUILLE 高密度比路判据 · **仓**：TensorLBM ·
 **性质**：工装/探针（instrument），不是通过式基准（见 §9 局限与 §11 路径声明）
 
