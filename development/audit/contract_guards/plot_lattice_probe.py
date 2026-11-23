@@ -1,7 +1,7 @@
 """Figure for docs/INPUT_CONTRACT_GUARDS_LATTICE_20261112.md.
 
 Reads the two probe JSONs produced by
-``scripts/contract_guards/lattice_feature_probe.py`` and plots the *measured*
+``development/audit/contract_guards/lattice_feature_probe.py`` and plots the *measured*
 fail-fast metric (no hand-typed numbers):
 
   panel A — bytes of ``f`` allocated before the rejection, per unsupported combo
@@ -9,7 +9,7 @@ fail-fast metric (no hand-typed numbers):
 
 Usage::
 
-    python scripts/contract_guards/plot_lattice_probe.py \
+    python development/audit/contract_guards/plot_lattice_probe.py \
         --before artifacts/contract_guards/lattice_probe_before.json \
         --after  artifacts/contract_guards/lattice_probe_after.json \
         --out    figures/lattice_contract_probe.png

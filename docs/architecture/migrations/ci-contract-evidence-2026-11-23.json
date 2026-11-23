@@ -1,0 +1,58 @@
+{
+  "source_commit": "d7428a9d8ffa0e8eb4d890671dde9c2082c06562",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 14,
+      "after": 12
+    }
+  },
+  "retired_paths": [
+    "scripts/ci",
+    "scripts/contract_guards"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/ci/main_red_clearance_evidence.py",
+      "new_path": "development/audit/ci/main_red_clearance_20261106/main_red_clearance_evidence.py",
+      "git_mode": "100644",
+      "original_git_blob": "b6b2d51c3d8069c4909909ae7ab74e9ae79d1ac2",
+      "original_sha256": "744871c305225c5e1d566f22f4a9cc2714d9536d0cc6bead0233e9160e579cec",
+      "size_bytes": 11020,
+      "new_sha256": "7889cec4e57fc2abe41c9c24234bdeabf02476d49ec476118db873eb47730be6",
+      "new_size_bytes": 11058
+    },
+    {
+      "old_path": "scripts/contract_guards/lattice_feature_probe.py",
+      "new_path": "development/audit/contract_guards/lattice_feature_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "dc6d0b9a203cfe2da307037780ded63c1ecedcf0",
+      "original_sha256": "7b9d6478526c9bc5ce4d9c9cf97f3f8de4a0d34c88d103fac9a7bb601b827fb7",
+      "size_bytes": 7665,
+      "new_sha256": "e7a0320b5029b010eee3cf08d3dfd86428f137d627505e07bb68c670d932c415",
+      "new_size_bytes": 7685
+    },
+    {
+      "old_path": "scripts/contract_guards/negative_probe.py",
+      "new_path": "development/audit/contract_guards/negative_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "634baeae5d67f706f25d69dc56b41073d35263c4",
+      "original_sha256": "0035e3ea2d38961bf1aac75a3d66c22fc4a0dbd4b2817fce4373727a823121fe",
+      "size_bytes": 6950,
+      "new_sha256": "5ab2a0e6d402a4032b10d1823cef55ccb08cedf59840ac848521067f7a924b5c",
+      "new_size_bytes": 6960
+    },
+    {
+      "old_path": "scripts/contract_guards/plot_lattice_probe.py",
+      "new_path": "development/audit/contract_guards/plot_lattice_probe.py",
+      "git_mode": "100644",
+      "original_git_blob": "a686eb550e0c597b6609af5d61709351b65406c7",
+      "original_sha256": "b1c6b11705faf46748da53408677e301ddafb934d4e42e09906fe20d8e1fb2a5",
+      "size_bytes": 3819,
+      "new_sha256": "ed408c2c17b3496f35d55b6a2af382a52a1f66ada19c565bd72e922c4ab2be93",
+      "new_size_bytes": 3839
+    }
+  ],
+  "compatibility": "Published reports retain their paths. Their commands point to the relocated scripts. CLI arguments and output paths are unchanged. The only executable source edits adapt checkout-root discovery. The historical m17965 SQL retains original workspace paths."
+}

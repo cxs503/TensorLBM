@@ -31,9 +31,9 @@ python -m pytest tests/test_general_sim_d3q27.py -q
    - `setup()` 首行调用它（在单位换算、几何体素化、`f` 分配之前）。
    - `is_d3q27` 属性；`setup()` 返回字典补 `"q"`（保留历史 `"Q"`，纯增量）。
    - `run()` 内既有的 wall-function 拒绝保留为纵深防御（它依赖 `solid.any()`，语义不同，未改）。
-2. 证据脚本 `scripts/contract_guards/lattice_feature_probe.py`（新，自包含、不依赖 pytest）：对每条组合记录 `stage`（config/setup/run/ran）、`cells`、`field_bytes`、`elapsed_s`、异常类型与消息；`expect` 字段区分「应拒」与「正向对照」。脚本记录 `tensorlbm.__file__` 作为出处（本机 editable install 会解析到兄弟 worktree，必须显式 `PYTHONPATH=<本树>/src`，否则测的不是本树代码）。
+2. 证据脚本 `development/audit/contract_guards/lattice_feature_probe.py`（新，自包含、不依赖 pytest）：对每条组合记录 `stage`（config/setup/run/ran）、`cells`、`field_bytes`、`elapsed_s`、异常类型与消息；`expect` 字段区分「应拒」与「正向对照」。脚本记录 `tensorlbm.__file__` 作为出处（本机 editable install 会解析到兄弟 worktree，必须显式 `PYTHONPATH=<本树>/src`，否则测的不是本树代码）。
 3. 前后对照：`git archive HEAD` 导出 pristine 树到 `/tmp/lattice_before`（**同一份探针脚本**、同一环境、同一 8 格分辨率配置），before/after 只差 `general_sim.py` 的守卫。
-4. 作图 `scripts/contract_guards/plot_lattice_probe.py` 读两份 JSON 直出图（零手抄）。
+4. 作图 `development/audit/contract_guards/plot_lattice_probe.py` 读两份 JSON 直出图（零手抄）。
 
 ## 3. 计算结果（程序化注入，零手抄）
 
@@ -71,7 +71,7 @@ python -m pytest tests/test_general_sim_d3q27.py -q
 
 ## 4. 结果图
 
-`figures/lattice_contract_probe.png`（由 `scripts/contract_guards/plot_lattice_probe.py` 从两份 JSON 直出）：
+`figures/lattice_contract_probe.png`（由 `development/audit/contract_guards/plot_lattice_probe.py` 从两份 JSON 直出）：
 
 - 面板 A：每条不受支持组合「被拒绝前已分配的 `f` 字节数」before（红）vs after（绿，全 0）。
 - 面板 B：拒绝发生阶段 before（全部 `run`）→ after（全部 `setup`）。

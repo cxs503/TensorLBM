@@ -21,7 +21,7 @@ m14496 的抽样审计把「同一非法输入，看路径决定是否报错」�
    - `check_positive_int(value, name, min_value)`：布尔/字符串/非整浮点拒收（`True` 不算 1）。
 2. 接线：`solver.collide_bgk`、`collide_bgk_fused`；四个 Zou-He 压力出口；`GeneralSimConfig.validate()`（新增，返回 `self`，并在 `GeneralSimEngine.__init__` 首行强制调用，`resolution>=4`、`max_steps>=0`、`viscosity>0`、`reference_length>0`、`inlet_velocity>=0`）。
 3. 基准 CLI：`poiseuille_2d.run_case` 入口显式校验 `H` 为正整数；`poiseuille_3d_pipe --device` 默认从 `cuda:2` 改为 `auto`（有 GPU→`cuda:0`，否则 `cpu`），消除 CPU-only 宿主上的 `AssertionError`（审计 D4）。
-4. 证据脚本：`scripts/contract_guards/negative_probe.py`（22 个负向探针，同一脚本在改动前后各跑一次，输出 `artifacts/contract_guards/probe_before.json` / `probe_after.json`）。改动前的基线是在**未修改的工作树上**先跑的，因此前后对照是同一探针、同一环境。
+4. 证据脚本：`development/audit/contract_guards/negative_probe.py`（22 个负向探针，同一脚本在改动前后各跑一次，输出 `artifacts/contract_guards/probe_before.json` / `probe_after.json`）。改动前的基线是在**未修改的工作树上**先跑的，因此前后对照是同一探针、同一环境。
 
 ## 3. 计算结果（程序化注入，零手抄）
 
@@ -41,7 +41,7 @@ m14496 的抽样审计把「同一非法输入，看路径决定是否报错」�
 
 ## 4. 结果图
 
-无图：本单是后端输入契约改造，产物是判定矩阵（上表）+ JSON 探针记录，不存在场量云图或与解析解的误差曲线；强行作图只会是表格的重绘。全部数字由 `scripts/contract_guards/negative_probe.py` 与 pytest 直接产生。
+无图：本单是后端输入契约改造，产物是判定矩阵（上表）+ JSON 探针记录，不存在场量云图或与解析解的误差曲线；强行作图只会是表格的重绘。全部数字由 `development/audit/contract_guards/negative_probe.py` 与 pytest 直接产生。
 
 ## 5. 注意点（坑与局限）
 

@@ -21,8 +21,8 @@ A good guard moves every row to ``stage=config/setup`` with ``field_bytes=0``.
 The script is self-contained (no pytest) so the *same* command can be run against
 the pre-fix and post-fix trees:
 
-    python scripts/contract_guards/lattice_feature_probe.py --out artifacts/contract_guards/lattice_probe_before.json --label before
-    python scripts/contract_guards/lattice_feature_probe.py --out artifacts/contract_guards/lattice_probe_after.json  --label after
+    python development/audit/contract_guards/lattice_feature_probe.py --out artifacts/contract_guards/lattice_probe_before.json --label before
+    python development/audit/contract_guards/lattice_feature_probe.py --out artifacts/contract_guards/lattice_probe_after.json  --label after
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 
 
 def _config(lattice: int, *, collision=None, wall=None, viscosity: float = 1.0e-6):

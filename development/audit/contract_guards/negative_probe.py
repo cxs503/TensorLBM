@@ -7,7 +7,7 @@ Each probe feeds a deliberately illegal value into a public entry point and reco
 The same script is run against the pre-fix tree and the post-fix tree; the two JSON
 files are the before/after evidence for docs/INPUT_CONTRACT_GUARDS_20261111.md.
 
-Usage:  python scripts/contract_guards/negative_probe.py --out artifacts/contract_guards/probe_after.json [--label after]
+Usage:  python development/audit/contract_guards/negative_probe.py --out artifacts/contract_guards/probe_after.json [--label after]
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 
 
 def _fingerprint(t: torch.Tensor) -> dict:
