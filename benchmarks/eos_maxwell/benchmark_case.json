@@ -1,0 +1,26 @@
+{
+  "scope": "EOS-Maxwell construction and static-droplet stability probe across 10, 100 and 1000 density ratios. Historical records include failed numerical tiers.",
+  "criteria": {
+    "protocol": "benchmarks/eos_maxwell/CRITERION.md",
+    "scope": "Maxwell equilibrium, density-ratio error, spurious Mach, hold time, mass drift and clamp checks"
+  },
+  "source": [
+    "benchmarks/eos_maxwell/run.py",
+    "benchmarks/eos_maxwell/probe_lib.py",
+    "src/tensorlbm/sc_eos_coexistence.py"
+  ],
+  "config": [
+    "benchmarks/eos_maxwell/evidence/m18366/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/eos_maxwell/README.md",
+    "benchmarks/eos_maxwell/evidence/m18366/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/eos_maxwell/CRITERION.md"
+  ],
+  "results": [
+    "benchmarks/eos_maxwell/out/results.json",
+    "benchmarks/eos_maxwell/evidence/m18366/results.json"
+  ]
+}

@@ -1,4 +1,4 @@
-"""Emit ``xval/XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT/REPORT.md`` from the
+"""Emit ``benchmarks/xval_vivsim_fsi_fixed_point/REPORT.md`` from the
 artifacts of ``benchmarks/xval_vivsim_fsi_fixed_point/run_xval.py``.
 
 Every number in the generated report is read back from
@@ -13,9 +13,8 @@ import math
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
 ART = HERE / "artifacts" / "xval_fsi_fixed_point.json"
-OUT = ROOT / "xval" / "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT" / "REPORT.md"
+OUT = HERE / "REPORT.md"
 
 LEGS = {
     "oss_plain_1": "OSS 固定点循环，`FSI_ITER=1`，无附加质量行（= 朴素显式交错）",

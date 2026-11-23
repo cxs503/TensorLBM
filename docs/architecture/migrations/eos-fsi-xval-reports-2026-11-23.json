@@ -1,0 +1,60 @@
+{
+  "source_commit": "b5ad602e5b5197b6bc83ea67397e8666ec28a4fa",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 103,
+      "after": 101
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT",
+    "xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "benchmarks/xval_vivsim_fsi_fixed_point/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "71557c208a56c9c274eaf9bff2dd190707ee3508",
+      "original_sha256": "764ff70931b62dbd60b3b19ca9032288ad7b5d1f6fbec690961bed33afebb4b2",
+      "size_bytes": 5098
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT/REPORT.md",
+      "new_path": "benchmarks/xval_vivsim_fsi_fixed_point/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "a92d5e7a27d4fd20f83353f25543a2e0226af3c3",
+      "original_sha256": "503e4b326bd282102e3a67157a764a87060b86a1b87b8a2d546bd91aee699a89",
+      "size_bytes": 18575
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO/REPORT.md",
+      "new_path": "benchmarks/eos_maxwell/evidence/m18366/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "026b399985f512441e87fe13d2c50d8e221bb208",
+      "original_sha256": "5128b2e22d7e78e49d63020d660c951ff5e40c173de52d52315ce0c372973087",
+      "size_bytes": 5339
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO/predeclared.json",
+      "new_path": "benchmarks/eos_maxwell/evidence/m18366/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "638e5a5a8144047a39026cbe3497218b27eb4f27",
+      "original_sha256": "b16de94ea9b2550accd081300be4526ae7b60df354c10bb8be4d8d36eadca4ab",
+      "size_bytes": 4171
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO/results.json",
+      "new_path": "benchmarks/eos_maxwell/evidence/m18366/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "9862e4a54aedb903beb1f1730d9a8a80363f036b",
+      "original_sha256": "5a075582296da48656e2963d1a1de91aabf4cd8556a23a22e5f069ff538c93a8",
+      "size_bytes": 1224
+    }
+  ],
+  "compatibility": "The FSI generator uses the same archived JSON as input and now writes beside its runner. Its original and relocated output match the archived report byte-for-byte. EOS historical board-audit literals retain their original meaning for the recorded m18366 worktree. The benchmark registry links both campaigns to their evidence.",
+  "report_generator_comparison_sha256": "503e4b326bd282102e3a67157a764a87060b86a1b87b8a2d546bd91aee699a89",
+  "scientific_scope": "Archived reports and verdicts retain their original bytes. Regeneration reads the existing real FSI result and does not rerun its scientific simulation."
+}
