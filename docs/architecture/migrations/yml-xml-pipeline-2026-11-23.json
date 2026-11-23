@@ -1,0 +1,33 @@
+{
+  "source_commit": "d7428a9d8ffa0e8eb4d890671dde9c2082c06562",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 14,
+      "after": 13
+    },
+    "benchmarks": {
+      "before": 103,
+      "after": 104
+    }
+  },
+  "retired_paths": [
+    "scripts/xval_yml_xml_pipeline"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/xval_yml_xml_pipeline/run_all.py",
+      "new_path": "benchmarks/xval_yml_xml_pipeline/run_all.py",
+      "git_mode": "100644",
+      "original_git_blob": "bc39d3063f9d36991c9e67e8d4de2e56e87fb881",
+      "original_sha256": "bd55b4bc43ee08fcfa0e304d651f04c1d8abd5b4e9e257dd524f5d93ce3ece88",
+      "size_bytes": 9273,
+      "relocated_sha256": "4beed1b705b0a5a19427e6c121a84dc1226c61b19bcf744a39a930a145bbcd4f",
+      "relocated_size_bytes": 9276
+    }
+  ],
+  "compatibility": "The runner remains at the same checkout depth. Both invocation arguments and the default output location are preserved. The runner itself changes only its usage example. The historical report has the same published URL and links to the new location. The original path is recorded at source_commit.",
+  "replay": "benchmarks/xval_yml_xml_pipeline/replays/2026-11-23.json",
+  "scientific_scope": "The existing analytic D2Q9 case gate was rerun before and after the move; no solver or acceptance threshold changed. The global registry acceptance remains not_evaluated."
+}

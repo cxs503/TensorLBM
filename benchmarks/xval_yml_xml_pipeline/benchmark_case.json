@@ -1,0 +1,26 @@
+{
+  "scope": "Four single-phase two-dimensional Poiseuille runs validate the YAML-to-XML input pipeline against the analytic solution.",
+  "criteria": {
+    "permeability_relative_error": "< 0.15 for every case",
+    "velocity_profile_l2_relative_error": "< 0.15 for every case",
+    "additional_checks": "Lossless XML round-trip, including metacharacters, and agreement with the parsed output log"
+  },
+  "source": [
+    "benchmarks/xval_yml_xml_pipeline/run_all.py",
+    "src/tensorlbm/yml_xml_pipeline.py"
+  ],
+  "config": ["benchmarks/xval_yml_xml_pipeline/run_all.py"],
+  "documentation": [
+    "benchmarks/xval_yml_xml_pipeline/README.md",
+    "docs/xval/XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.md"
+  ],
+  "reference_files": ["docs/xval/XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.md"],
+  "results": ["benchmarks/xval_yml_xml_pipeline/replays/2026-11-23.json"],
+  "references": [
+    {
+      "source": "docs/xval/XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.md",
+      "field": "Analytic comparator",
+      "value": "Plane Poiseuille flow in lattice units, with permeability H^2/12 and halfway bounce-back boundaries."
+    }
+  ]
+}

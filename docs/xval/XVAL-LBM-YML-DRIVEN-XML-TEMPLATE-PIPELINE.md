@@ -1,10 +1,12 @@
 # XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE — 第 2 轮（调研结合）验收报告
 
+当前复现入口和按版本记录的计算见[算例目录](../../benchmarks/xval_yml_xml_pipeline/README.md)。以下表格和历史结论保留原报告口径。
+
 - 锚点：`XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE`（feature_ledger #482，source=`je-santos/MPLBM-UT`）
 - 仓库/分支：TensorLBM @ `agent/m18791`，mission 18791
 - 验收判据（总账）：对标误差 **< 15 %**（owner 精度标准）
-- 机器复核工件：`artifacts/xval_yml_xml_pipeline/report.json`（由 `scripts/xval_yml_xml_pipeline/run_all.py` 程序化生成，判据数字零手抄）
-- 复现命令：`python scripts/xval_yml_xml_pipeline/run_all.py`（本地 ~85 s，4 算例）与 `python -m pytest tests/xval/test_yml_xml_pipeline.py -q`（26 passed，51 s）
+- 机器复核工件：`artifacts/xval_yml_xml_pipeline/report.json`（由 `benchmarks/xval_yml_xml_pipeline/run_all.py` 程序化生成，判据数字零手抄）
+- 复现命令：`python benchmarks/xval_yml_xml_pipeline/run_all.py`（本地 ~85 s，4 算例）与 `python -m pytest tests/xval/test_yml_xml_pipeline.py -q`（26 passed，51 s）
 - 结论：**PASS** —— 最差渗透率相对误差 **0.411 %**，最差速度剖面 L2 相对误差 **0.281 %**，4/4 算例 + XML 转义探针全过（判据 15 %）。
 
 ---
@@ -175,7 +177,7 @@ TensorLBM 侧是否存在等价管线？答案是 **部分**：`src/tensorlbm/co
 | 路径 | 内容 |
 |---|---|
 | `src/tensorlbm/yml_xml_pipeline.py` | 管线 + 求解器（489 行） |
-| `scripts/xval_yml_xml_pipeline/run_all.py` | 验收驱动，`all_pass=False` 时 `exit 1` |
+| `benchmarks/xval_yml_xml_pipeline/run_all.py` | 验收驱动，`all_pass=False` 时 `exit 1` |
 | `tests/xval/test_yml_xml_pipeline.py` | 26 项 pytest（schema 11 负例 + 往返 + 数值门禁 + 端到端） |
 | `artifacts/xval_yml_xml_pipeline/report.json` | 全部原始数字（K、K_ref、迭代、残差、剖面、sensitivity、convergence） |
 | `artifacts/xval_yml_xml_pipeline/cases/*.{xml,log}` | 渲染出的求解器文档 + 固定标记日志 |
@@ -185,7 +187,7 @@ TensorLBM 侧是否存在等价管线？答案是 **部分**：`src/tensorlbm/co
 **repro_cmd**
 
 ```bash
-python scripts/xval_yml_xml_pipeline/run_all.py          # ~85 s，4 算例，末行 all_pass=True
+python benchmarks/xval_yml_xml_pipeline/run_all.py          # ~85 s，4 算例，末行 all_pass=True
 python -m pytest tests/xval/test_yml_xml_pipeline.py -q  # 26 passed
 ```
 

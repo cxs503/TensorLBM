@@ -59,6 +59,24 @@ class BenchmarkRegistryTests(unittest.TestCase):
         key = "benchmarks/p161w2_n05_oscillating_foil/artifacts/results.json"
         self.assertEqual(assets[key]["declared_case_ids"], ["campaign:p161w2_n05_oscillating_foil"])
 
+    def test_yaml_xml_pipeline_links_its_analytic_replay(self):
+        directory = "benchmarks/xval_yml_xml_pipeline"
+        report = "docs/xval/XVAL-LBM-YML-DRIVEN-XML-TEMPLATE-PIPELINE.md"
+        (case,) = self.registry("--case", "campaign:xval_yml_xml_pipeline")
+        self.assertEqual(case["current_acceptance"], "not_evaluated")
+        (variant,) = case["variants"]
+        self.assertIn(f"{directory}/run_all.py", variant["source"])
+        self.assertIn(report, variant["reference_files"])
+        (replay_path,) = variant["results"]
+        replay = json.loads((ROOT / replay_path).read_text(encoding="utf-8"))
+        runner = replay["sources"]["relocated_runner"]
+        self.assertEqual(runner["path"], f"{directory}/run_all.py")
+        self.assertEqual(
+            hashlib.sha256((ROOT / runner["path"]).read_bytes()).hexdigest(),
+            runner["sha256"],
+        )
+        self.assertIn(f"](../../{directory}/README.md)", (ROOT / report).read_text())
+
     def test_case_lookup_links_nested_evidence_to_the_owning_variant(self):
         path = "benchmarks/verified/cavity/re400"
         (case,) = self.registry("--case", path)
