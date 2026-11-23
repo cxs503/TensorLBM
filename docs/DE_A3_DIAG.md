@@ -1,5 +1,7 @@
 # DE-A3 病理诊断 · 数据清点（DE-A3B 换血版；只读清点，不含修复建议）
-数据源（只读共享镜像）：D=benchmarks/pending/droplet_impact_3d_pool/result.json（13 run）；P=benchmarks/pending/phasefield_water_entry/result.json；E=…/evidence/s2_zeta4_dw100.json。
+数据源（只读共享镜像）：D=[单滴入水结果](../benchmarks/pending/droplet_impact_3d_pool/result.json)（13 run）；P=[相场入水结果](../benchmarks/pending/phasefield_water_entry/result.json)；E=[S2 运行证据](../benchmarks/pending/phasefield_water_entry/evidence/s2_zeta4_dw100.json)。
+
+[归档台账](architecture/migrations/drop-entry-raw-root-retirement-2026-11-23.json)记录了本报告修订时的 Git 提交与原始数据校验和。
 纪律：数字均标注 run 名+JSON 字段路径（表内列名即 D.runs.<run>.<列>）；倍数/比值为字段四则运算，标注（÷）。
 
 ## 1. 已跑 run 清单（D.runs.*，共 13）

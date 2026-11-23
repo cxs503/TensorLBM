@@ -52,6 +52,7 @@ integrity verified before retiring a tracked copy.
 | `models/` | Split by role | The [model-unit input ledger](migrations/model-unit-inputs-2026-11-23.json) maps regression units to `benchmarks/model_units/`. Retain the published SUBOFF checkpoint at its existing path until its retrieval and runtime compatibility are verified for retirement. |
 | `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Retired by the [papers migration ledger](migrations/papers-root-retirement-2026-11-22.json): 35 tracked assets moved to SUBOFF benchmark evidence or published report ownership; active path consumers were updated and unresolved external evidence gaps remain explicit. |
+| `raw/` | Retire | The [diagnostic duplicate ledger](migrations/drop-entry-raw-root-retirement-2026-11-23.json) maps the four byte-identical files back to their benchmark owners. |
 | `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |

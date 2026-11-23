@@ -1,0 +1,54 @@
+{
+  "source_commit": "2c59d259454d4d67948fd183a89b89249f7e789a",
+  "source_pr": 2960,
+  "retired_paths": [
+    "raw"
+  ],
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 12,
+  "entries": [
+    {
+      "old_path": "raw/droplet.json",
+      "new_path": "benchmarks/pending/droplet_impact_3d_pool/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "4726c3640b5d43bf1594680c968d861552cd08c4",
+      "original_sha256": "f1818ea113a5e9aceeba16018fa5223fc408d426d0d345ff36296f2b6dcdef0a",
+      "size_bytes": 47805,
+      "change": "byte_identical_duplicate"
+    },
+    {
+      "old_path": "raw/droplet_README.md",
+      "new_path": "benchmarks/pending/droplet_impact_3d_pool/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "58c063d9915baa0f83323e17caec2c898a4cafe2",
+      "original_sha256": "51d5ee27c9a8e6edc5041a3a0b74bc2e261ac645eaece6728f536a2d50fe2e9d",
+      "size_bytes": 817,
+      "change": "byte_identical_duplicate"
+    },
+    {
+      "old_path": "raw/phasefield.json",
+      "new_path": "benchmarks/pending/phasefield_water_entry/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "223be19d5e268350a6c12b031be715d91c0f1dc0",
+      "original_sha256": "f60e38b147c0b1f8145b92a133964e959952b72ae03feea9ecd4ed4df4e848d8",
+      "size_bytes": 1017,
+      "change": "byte_identical_duplicate"
+    },
+    {
+      "old_path": "raw/s2.json",
+      "new_path": "benchmarks/pending/phasefield_water_entry/evidence/s2_zeta4_dw100.json",
+      "git_mode": "100644",
+      "original_git_blob": "bf1c0d5ce4fa89b3d2b9686888d81af78c29633c",
+      "original_sha256": "1cba87c5ab9ca067c263d128293ad28cc95c0d1216ec15b51aa2fa052756ac34",
+      "size_bytes": 31412,
+      "change": "byte_identical_duplicate"
+    }
+  ],
+  "compatibility": "The historical report remains at docs/DE_A3_DIAG.md. Its source paths point to the maintained benchmark records and its ledger preserves the exact Git objects from the report revision. The tracked tree has no consumer of the four raw paths.",
+  "scientific_scope": "Remove the redundant paths after comparing Git objects and file bytes. No result, threshold, solver source, or scientific verdict changes. No calculation is rerun.",
+  "local_verification": [
+    "Reproduced the layout error for raw/ against the exact main revision before the change.",
+    "Verified four retained Git objects and SHA-256 values and resolved the four report links.",
+    "bash tools/check_repository_governance.sh: 77 tests passed, 196 registry entries and zero hard status ledger violations."
+  ]
+}
