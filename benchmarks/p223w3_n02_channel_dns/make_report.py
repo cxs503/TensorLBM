@@ -29,8 +29,17 @@ RESULTS = _HERE / "case_data"
 FIGURES = _HERE / "figures"
 DOCS = _REPO / "docs"
 ARTIFACTS = _REPO / "artifacts" / "p223w3_n02_channel_dns"
-CANONICAL = ["R180_dy3", "R180_dy3c", "R180_u02", "R180_u02c", "R180_dy4",
-             "R180_dy5", "R180_dy6", "R395_dy8", "R590_dy12"]
+CANONICAL = [
+    "R180_dy3",
+    "R180_dy3c",
+    "R180_u02",
+    "R180_u02c",
+    "R180_dy4",
+    "R180_dy5",
+    "R180_dy6",
+    "R395_dy8",
+    "R590_dy12",
+]
 CASES = []  # filled by build() from the case_data directory
 FIG_ORDER = [
     ("fig1_mean_velocity.png", "图 1 平均速度剖面与对数律误差（gate a）"),
@@ -60,16 +69,14 @@ def pct(x: float, nd: int = 2) -> str:
 
 
 def table(header: list[str], rows: list[list[str]]) -> str:
-    out = ["| " + " | ".join(header) + " |",
-           "|" + "|".join(["---"] * len(header)) + "|"]
+    out = ["| " + " | ".join(header) + " |", "|" + "|".join(["---"] * len(header)) + "|"]
     for row in rows:
         out.append("| " + " | ".join(row) + " |")
     return "\n".join(out)
 
 
 def discover_cases() -> list[str]:
-    have = {p.stem for p in RESULTS.glob("*.json")
-            if not p.stem.endswith((".failed", "gates"))}
+    have = {p.stem for p in RESULTS.glob("*.json") if not p.stem.endswith((".failed", "gates"))}
     return [c for c in CANONICAL if c in have]
 
 
@@ -81,26 +88,45 @@ def outcome_table() -> str:
         if rec.exists():
             data = json.loads(rec.read_text())
             g = data["geometry"]
-            rows.append([name, f"{g['dy_plus']:.0f}/{4 * g['re_tau'] / g['nx']:.0f}",
-                         f"{g['nx']}x{g['ny']}x{g['nz']}",
-                         f"{g['steps']:,}",
-                         (f"{data['wall_clock_seconds'] / 60:.0f} min"
-                          if data.get("wall_clock_seconds") else "-"), "**completed**",
-                         f"|u'v'| peak {data['diagnostics']['uv_minus_peak']['value']:.2f} "
-                         f"@ y+{data['diagnostics']['uv_minus_peak']['y_plus']:.0f}"])
+            rows.append(
+                [
+                    name,
+                    f"{g['dy_plus']:.0f}/{4 * g['re_tau'] / g['nx']:.0f}",
+                    f"{g['nx']}x{g['ny']}x{g['nz']}",
+                    f"{g['steps']:,}",
+                    (
+                        f"{data['wall_clock_seconds'] / 60:.0f} min"
+                        if data.get("wall_clock_seconds")
+                        else "-"
+                    ),
+                    "**completed**",
+                    f"|u'v'| peak {data['diagnostics']['uv_minus_peak']['value']:.2f} "
+                    f"@ y+{data['diagnostics']['uv_minus_peak']['y_plus']:.0f}",
+                ]
+            )
         elif fail.exists():
             data = json.loads(fail.read_text())
             g = data["geometry"]
-            rows.append([name, f"{g['dy_plus']:.0f}/{4 * g['re_tau'] / g['nx']:.0f}",
-                         f"{g['nx']}x{g['ny']}x{g['nz']}",
-                         f"{g['steps']:,}",
-                         (f"{data['wall_clock_seconds'] / 60:.0f} min"
-                          if data.get("wall_clock_seconds") else "-"), "**diverged**",
-                         data["error"].replace("les_chan failed: ", "")[:70]])
+            rows.append(
+                [
+                    name,
+                    f"{g['dy_plus']:.0f}/{4 * g['re_tau'] / g['nx']:.0f}",
+                    f"{g['nx']}x{g['ny']}x{g['nz']}",
+                    f"{g['steps']:,}",
+                    (
+                        f"{data['wall_clock_seconds'] / 60:.0f} min"
+                        if data.get("wall_clock_seconds")
+                        else "-"
+                    ),
+                    "**diverged**",
+                    data["error"].replace("les_chan failed: ", "")[:70],
+                ]
+            )
         else:
             rows.append([name, "-", "-", "-", "-", "not run", "-"])
-    return table(["case", r"$\Delta y^+$", "grid", "steps", "wall clock", "status",
-                  "evidence"], rows)
+    return table(
+        ["case", r"$\Delta y^+$", "grid", "steps", "wall clock", "status", "evidence"], rows
+    )
 
 
 def build() -> tuple[str, dict]:
@@ -115,30 +141,66 @@ def build() -> tuple[str, dict]:
     geo_rows = []
     for name in CASES:
         g = records[name]["geometry"]
-        geo_rows.append([
-            name, f"{g['re_tau']:.0f}", f"{g['dy_plus']:.1f}",
-            f"{g['nx']}x{g['ny']}x{g['nz']}", f"{g['cells']:,}",
-            f"{g['nu']:.5f}", f"{g['tau0']:.4f}", f"{g['steps']:,}",
-            f"{g['stat_eddy_turnovers']:.1f}",
-        ])
+        geo_rows.append(
+            [
+                name,
+                f"{g['re_tau']:.0f}",
+                f"{g['dy_plus']:.1f}",
+                f"{g['nx']}x{g['ny']}x{g['nz']}",
+                f"{g['cells']:,}",
+                f"{g['nu']:.5f}",
+                f"{g['tau0']:.4f}",
+                f"{g['steps']:,}",
+                f"{g['stat_eddy_turnovers']:.1f}",
+            ]
+        )
     geometry_table = table(
-        ["case", r"$Re_\tau$", r"$\Delta y^+$", "grid (nx x ny x nz)", "cells",
-         r"$\nu$", r"$\tau_0$", "steps", "统计涡周转数"], geo_rows)
+        [
+            "case",
+            r"$Re_\tau$",
+            r"$\Delta y^+$",
+            "grid (nx x ny x nz)",
+            "cells",
+            r"$\nu$",
+            r"$\tau_0$",
+            "steps",
+            "统计涡周转数",
+        ],
+        geo_rows,
+    )
 
     # ---------------- section 3: results -----------------------------------
     mean_rows = []
     for name in CASES:
         mf = records[name]["mean_flow"]
         routes = mf["u_tau_routes"]
-        mean_rows.append([
-            name, f"{mf['u_bulk']:.4f}", f"{mf['re_bulk']:.0f}",
-            f"{routes['body_force']:.5f}", f"{routes['stress_fit']:.5f}",
-            pct(routes["spread_rel"], 1), f"{mf['cf']:.5f}", f"{mf['cf_dean']:.5f}",
-            pct(mf["cf_error_vs_dean"], 1),
-        ])
+        mean_rows.append(
+            [
+                name,
+                f"{mf['u_bulk']:.4f}",
+                f"{mf['re_bulk']:.0f}",
+                f"{routes['body_force']:.5f}",
+                f"{routes['stress_fit']:.5f}",
+                pct(routes["spread_rel"], 1),
+                f"{mf['cf']:.5f}",
+                f"{mf['cf_dean']:.5f}",
+                pct(mf["cf_error_vs_dean"], 1),
+            ]
+        )
     mean_table = table(
-        ["case", r"$U_b$", r"$Re_b$", r"$u_\tau$ (体力)", r"$u_\tau$ (应力拟合)",
-         "二者散度", r"$C_f$", r"$C_f$ Dean", "vs Dean"], mean_rows)
+        [
+            "case",
+            r"$U_b$",
+            r"$Re_b$",
+            r"$u_\tau$ (体力)",
+            r"$u_\tau$ (应力拟合)",
+            "二者散度",
+            r"$C_f$",
+            r"$C_f$ Dean",
+            "vs Dean",
+        ],
+        mean_rows,
+    )
 
     log_rows = []
     for name in CASES:
@@ -146,17 +208,33 @@ def build() -> tuple[str, dict]:
         re_tau = records[name]["geometry"]["re_tau"]
         dns = gt.load_dns(int(re_tau))
         sel = (dns["y_plus"] >= 30) & (dns["y_plus"] <= 200)
-        dns_err = float(abs(dns["u_plus"][sel]
-                            - an.log_law(dns["y_plus"][sel])).max()
-                        / np_abs_max(an.log_law(dns["y_plus"][sel])))
-        log_rows.append([
-            name, str(lg["n_points"]), pct(lg["rms_rel_error"], 2),
-            pct(lg["max_rel_error"], 2), f"{lg['k_fit']:.3f}", f"{lg['b_fit']:.2f}",
-            pct(dns_err, 2),
-        ])
+        dns_err = float(
+            abs(dns["u_plus"][sel] - an.log_law(dns["y_plus"][sel])).max()
+            / np_abs_max(an.log_law(dns["y_plus"][sel]))
+        )
+        log_rows.append(
+            [
+                name,
+                str(lg["n_points"]),
+                pct(lg["rms_rel_error"], 2),
+                pct(lg["max_rel_error"], 2),
+                f"{lg['k_fit']:.3f}",
+                f"{lg['b_fit']:.2f}",
+                pct(dns_err, 2),
+            ]
+        )
     log_table = table(
-        ["case", "点数", r"RMS 误差", "最大误差", r"$\kappa$ 拟合", r"$B$ 拟合",
-         "DNS 自身 vs 对数律 (参考)"], log_rows)
+        [
+            "case",
+            "点数",
+            r"RMS 误差",
+            "最大误差",
+            r"$\kappa$ 拟合",
+            r"$B$ 拟合",
+            "DNS 自身 vs 对数律 (参考)",
+        ],
+        log_rows,
+    )
 
     stress_rows = []
     for name in CASES:
@@ -165,47 +243,84 @@ def build() -> tuple[str, dict]:
         re_tau = int(rec["geometry"]["re_tau"])
         dns = gt.load_dns(re_tau)
         i = int(np_argmax(dns["uu_plus"]))
-        stress_rows.append([
-            name, f"{d['uu_peak']['value']:.3f}",
-            f"{d['uu_peak']['y_plus']:.1f}",
-            f"{dns['uu_plus'][i]:.3f}", f"{dns['y_plus'][i]:.1f}",
-            pct((d["uu_peak"]["value"] - dns["uu_plus"][i]) / dns["uu_plus"][i], 1),
-            f"{d['uv_minus_peak']['value']:.3f}",
-            f"{d['uv_minus_peak']['y_plus']:.1f}",
-            f"{-dns['uv_plus'].min():.3f}",
-        ])
+        stress_rows.append(
+            [
+                name,
+                f"{d['uu_peak']['value']:.3f}",
+                f"{d['uu_peak']['y_plus']:.1f}",
+                f"{dns['uu_plus'][i]:.3f}",
+                f"{dns['y_plus'][i]:.1f}",
+                pct((d["uu_peak"]["value"] - dns["uu_plus"][i]) / dns["uu_plus"][i], 1),
+                f"{d['uv_minus_peak']['value']:.3f}",
+                f"{d['uv_minus_peak']['y_plus']:.1f}",
+                f"{-dns['uv_plus'].min():.3f}",
+            ]
+        )
     stress_table = table(
-        ["case", r"$u'u'^+_{max}$", r"$y^+_{max}$", "DNS $u'u'^+_{max}$",
-         "DNS $y^+$", "峰值误差", r"$-\langle u'v'\rangle^+_{max}$", r"$y^+$",
-         "DNS 剪切峰"], stress_rows)
+        [
+            "case",
+            r"$u'u'^+_{max}$",
+            r"$y^+_{max}$",
+            "DNS $u'u'^+_{max}$",
+            "DNS $y^+$",
+            "峰值误差",
+            r"$-\langle u'v'\rangle^+_{max}$",
+            r"$y^+$",
+            "DNS 剪切峰",
+        ],
+        stress_rows,
+    )
 
     spec_rows = []
     for name in CASES:
         f = records[name]["spectrum"]["fit"]
         rel = abs(f["slope"] + 5.0 / 3.0) / (5.0 / 3.0)
-        spec_rows.append([name, f"{f['slope']:.3f}", str(f["n"]),
-                          f"[{f['k_min']:.2f}, {f['k_max']:.2f}]", pct(rel, 1)])
+        spec_rows.append(
+            [
+                name,
+                f"{f['slope']:.3f}",
+                str(f["n"]),
+                f"[{f['k_min']:.2f}, {f['k_max']:.2f}]",
+                pct(rel, 1),
+            ]
+        )
     spec_table = table(["case", "拟合斜率", "频点数", r"$k^+$ 区间", "vs -5/3"], spec_rows)
 
     ladder_rows = []
-    ladder = sorted([n for n in CASES if records[n]["geometry"]["re_tau"] == 180.0],
-                    key=lambda n: -records[n]["geometry"]["dy_plus"])
+    ladder = sorted(
+        [n for n in CASES if records[n]["geometry"]["re_tau"] == 180.0],
+        key=lambda n: -records[n]["geometry"]["dy_plus"],
+    )
     for name in ladder:
         rec = records[name]
         r = rec["mean_flow"]["u_tau_routes"]
-        ladder_rows.append([name, f"{rec['geometry']['dy_plus']:.0f}",
-                            f"{rec['geometry']['ny']}",
-                            f"{r['stress_fit']:.5f}", pct(r["spread_rel"], 2)])
-    ladder_table = table(["case", r"$\Delta y^+$", "ny", r"$u_\tau$ (应力拟合)",
-                          "vs 体力 $u_\\tau$"], ladder_rows)
+        ladder_rows.append(
+            [
+                name,
+                f"{rec['geometry']['dy_plus']:.0f}",
+                f"{rec['geometry']['ny']}",
+                f"{r['stress_fit']:.5f}",
+                pct(r["spread_rel"], 2),
+            ]
+        )
+    ladder_table = table(
+        ["case", r"$\Delta y^+$", "ny", r"$u_\tau$ (应力拟合)", "vs 体力 $u_\\tau$"], ladder_rows
+    )
 
     lam_norm = lam["norm"]
     lam_row = table(
-        ["层流算例", "steps", r"$L_2$ 误差", "最大误差", r"$u_{max}$ 数值",
-         r"$u_{max}$ 解析"],
-        [["LAM_poiseuille", f"{lam['geometry']['steps']:,}",
-          pct(lam_norm["l2_rel_error"], 3), pct(lam_norm["max_rel_error"], 3),
-          fmt(lam_norm["u_max_sim"], 6), fmt(lam_norm["u_max_exact"], 6)]])
+        ["层流算例", "steps", r"$L_2$ 误差", "最大误差", r"$u_{max}$ 数值", r"$u_{max}$ 解析"],
+        [
+            [
+                "LAM_poiseuille",
+                f"{lam['geometry']['steps']:,}",
+                pct(lam_norm["l2_rel_error"], 3),
+                pct(lam_norm["max_rel_error"], 3),
+                fmt(lam_norm["u_max_sim"], 6),
+                fmt(lam_norm["u_max_exact"], 6),
+            ]
+        ],
+    )
 
     # ---------------- section 6: gate verdicts -----------------------------
     verdict_rows = []
@@ -220,12 +335,14 @@ def build() -> tuple[str, dict]:
     for key, (crit, _thr) in thresholds.items():
         g = gmap[key]
         ev = g["evidence"]
-        if not ev or key in ("a_log_law", "c_energy_spectrum",
-                            "d_friction_coefficient", "f_grid_convergence") and (
-                not ev or "grids" in ev and not ev["grids"]):
+        if (
+            not ev
+            or key
+            in ("a_log_law", "c_energy_spectrum", "d_friction_coefficient", "f_grid_convergence")
+            and (not ev or "grids" in ev and not ev["grids"])
+        ):
             value, detail = "—", "无完成算例"
-            verdict_rows.append([key, crit, value,
-                                 f"**{g['status']}**", detail])
+            verdict_rows.append([key, crit, value, f"**{g['status']}**", detail])
             continue
         if key == "a_log_law":
             worst = max(ev.values(), key=lambda r: r["rms_rel_error"])
@@ -233,12 +350,15 @@ def build() -> tuple[str, dict]:
             detail = f"最差算例 {max(ev, key=lambda k: ev[k]['rms_rel_error'])}"
         elif key == "b_reynolds_stress":
             if "relative_magnitude_error" not in ev:
-                verdict_rows.append([key, crit, "—", f"**{g['status']}**",
-                                     ev.get("reason", "无完成算例")])
+                verdict_rows.append(
+                    [key, crit, "—", f"**{g['status']}**", ev.get("reason", "无完成算例")]
+                )
                 continue
             value = pct(ev["relative_magnitude_error"], 1)
-            detail = (rf"峰位 $y^+$={ev['sim_peak_refined_y_plus']:.1f} "
-                      rf"(DNS {ev['dns_peak']['y_plus']:.1f})")
+            detail = (
+                rf"峰位 $y^+$={ev['sim_peak_refined_y_plus']:.1f} "
+                rf"(DNS {ev['dns_peak']['y_plus']:.1f})"
+            )
         elif key == "c_energy_spectrum":
             worst = max(ev.values(), key=lambda r: r["rel_error_vs_-5/3"])
             value = pct(worst["rel_error_vs_-5/3"], 1)
@@ -252,13 +372,16 @@ def build() -> tuple[str, dict]:
             detail = rf"$u_{{max}}$ {ev['u_max_sim']:.6f} vs {ev['u_max_exact']:.6f}"
         else:
             value = pct(ev["u_tau_spread_rel"], 1)
-            detail = rf"$\Delta y^+$ = 3/4/5"
+            detail = r"$\Delta y^+$ = 3/4/5"
         verdict_rows.append([key, crit, value, f"**{g['status']}**", detail])
     verdict = table(["gate", "判据", "实测", "结论", "备注"], verdict_rows)
     spread_f = gmap["f_grid_convergence"]["evidence"].get("u_tau_spread_rel")
     n_grids = len(gmap["f_grid_convergence"]["evidence"].get("grids", {}))
-    f_g_text = ("无完成网格（判据不可评估）" if not n_grids or spread_f != spread_f
-                else f"u_τ {n_grids} 档散度 {pct(spread_f, 1)}（阈值 3%）")
+    f_g_text = (
+        "无完成网格（判据不可评估）"
+        if not n_grids or spread_f != spread_f
+        else f"u_τ {n_grids} 档散度 {pct(spread_f, 1)}（阈值 3%）"
+    )
 
     # ---------------- narrative --------------------------------------------
     outcomes = outcome_table()
@@ -423,7 +546,7 @@ benchmarks/p223w3_n02_channel_dns/
 
 **是否 <3% 的显式回答**：
 
-* gate (e) 层流 Poiseuille：**是**（L2 = {pct(lam_norm['l2_rel_error'], 3)} < 1% < 3%）；
+* gate (e) 层流 Poiseuille：**是**（L2 = {pct(lam_norm["l2_rel_error"], 3)} < 1% < 3%）；
 * gate (f) 网格收敛：{f_g_text}；
 * gate (a) 对数律：按 **5%** 判据（不是 3%）判定，见上表；
 * gate (d) Cf vs Dean：按 **5%** 判据判定；注意 Dean 关联式自身与 MKM DNS 差
@@ -440,18 +563,22 @@ benchmarks/p223w3_n02_channel_dns/
 
     ev_rows = []
     for name in CASES:
-        ev_rows.append([f"`case_data/{name}.json`",
-                        sha256(RESULTS / f"{name}.json")[:16]])
-    ev_rows.append([f"`case_data/LAM_poiseuille.json`",
-                    sha256(RESULTS / "LAM_poiseuille.json")[:16]])
+        ev_rows.append([f"`case_data/{name}.json`", sha256(RESULTS / f"{name}.json")[:16]])
+    ev_rows.append(
+        ["`case_data/LAM_poiseuille.json`", sha256(RESULTS / "LAM_poiseuille.json")[:16]]
+    )
     ev_rows.append(["`case_data/gates.json`", sha256(RESULTS / "gates.json")[:16]])
-    ev_rows.append(["`src/tensorlbm/turbulence/les_chan.c`",
-                    sha256(_REPO / "src/tensorlbm/turbulence/les_chan.c")[:16]])
+    ev_rows.append(
+        [
+            "`src/tensorlbm/turbulence/les_chan.c`",
+            sha256(_REPO / "src/tensorlbm/turbulence/les_chan.c")[:16],
+        ]
+    )
     ev_rows.append(["`benchmarks/.../analysis.py`", sha256(_HERE / "analysis.py")[:16]])
     ev_rows.append(["`benchmarks/.../campaign.py`", sha256(_HERE / "campaign.py")[:16]])
     ev_rows.append(["`benchmarks/.../gates.py", sha256(_HERE / "gates.py")[:16]])
     md += table(["产物", "sha256(前16)"], ev_rows)
-    md += f"""
+    md += """
 
 ## 8. 结论（honest FAIL）与后续路线
 
@@ -503,14 +630,20 @@ pytest -q tests/test_p223w3_n02_channel_dns.py
         "repo": "TensorLBM",
         "solver": "src/tensorlbm/turbulence/les_chan.c",
         "solver_sha256": sha256(_REPO / "src/tensorlbm/turbulence/les_chan.c"),
-        "results": {n: {"path": f"case_data/{n}.json",
-                        "sha256": sha256(RESULTS / f"{n}.json")} for n in CASES},
-        "laminar": {"path": "case_data/LAM_poiseuille.json",
-                    "sha256": sha256(RESULTS / "LAM_poiseuille.json")},
-        "gates": {"path": "case_data/gates.json",
-                  "sha256": sha256(RESULTS / "gates.json"),
-                  "normative_passed": gates["normative_passed"],
-                  "normative_total": gates["normative_total"]},
+        "results": {
+            n: {"path": f"case_data/{n}.json", "sha256": sha256(RESULTS / f"{n}.json")}
+            for n in CASES
+        },
+        "laminar": {
+            "path": "case_data/LAM_poiseuille.json",
+            "sha256": sha256(RESULTS / "LAM_poiseuille.json"),
+        },
+        "gates": {
+            "path": "case_data/gates.json",
+            "sha256": sha256(RESULTS / "gates.json"),
+            "normative_passed": gates["normative_passed"],
+            "normative_total": gates["normative_total"],
+        },
         "figures": {f: sha256(FIGURES / f) for f, _ in FIG_ORDER if (FIGURES / f).exists()},
         "dns_reference": gates["dns_reference"],
         "reproduce": [
@@ -547,16 +680,21 @@ def main() -> int:
     for fname, caption in FIG_ORDER:
         path = FIGURES / fname
         if path.exists():
-            figures.append({"name": fname, "caption": caption,
-                            "png_base64": base64.b64encode(path.read_bytes()).decode()})
+            figures.append(
+                {
+                    "name": fname,
+                    "caption": caption,
+                    "png_base64": base64.b64encode(path.read_bytes()).decode(),
+                }
+            )
     payload = {
         "title": "p223w3-n02 湍流槽道验证面 Re_τ=180/395/590：两缺陷修复 + 7/7 湍流尝试发散（honest FAIL）",
         "title": "p223w3-n02 湍流槽道验证面（Re_τ=180/395/590）：默认碰撞支路发散+非法 JSON 两缺陷修复，湍流段 honest FAIL",
         "summary": "TensorLBM 原生 D3Q19 TRT 槽道内核：修复 --reg 默认支路必然发散"
-                   "（同状态 reg=0 稳定、reg=1 立即 NaN）与发散时写非法 JSON 两个缺陷，"
-                   "建立 (a)-(f) 机算判据链 + 46 条 pytest。结果：层流负控 L2=0.17% 通过、"
-                   "解析锚全绿；湍流段 7 次尝试（tau0=0.506-0.520，dy+=3-6）全部在 "
-                   "2e4-7e4 步发散，判据如实记 FAIL/WITHHELD，给出实测包络与修复路线。",
+        "（同状态 reg=0 稳定、reg=1 立即 NaN）与发散时写非法 JSON 两个缺陷，"
+        "建立 (a)-(f) 机算判据链 + 46 条 pytest。结果：层流负控 L2=0.17% 通过、"
+        "解析锚全绿；湍流段 7 次尝试（tau0=0.506-0.520，dy+=3-6）全部在 "
+        "2e4-7e4 步发散，判据如实记 FAIL/WITHHELD，给出实测包络与修复路线。",
         "scenario_key": "lbm_turbulent_channel_dns",
         "mission_id": 10557,
         "tags": ["TensorLBM", "湍流槽道", "DNS对标", "壁面律", "p223w3-n02"],

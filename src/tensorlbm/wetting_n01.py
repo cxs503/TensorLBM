@@ -71,11 +71,24 @@ RHO_V_LU = RHO_V_DEFAULT  # 0.1596
 
 # Calibration: wall_fraction → measured contact angle (from IN100-N02)
 _CALIBRATION_POINTS = [
-    (0.00, 180.0), (0.05, 170.0), (0.10, 160.0), (0.15, 152.0),
-    (0.20, 148.0), (0.30, 140.0), (0.40, 128.0), (0.50, 115.0),
-    (0.55, 108.0), (0.60, 100.0), (0.65, 92.0), (0.70, 84.0),
-    (0.75, 75.0), (0.80, 65.0), (0.85, 55.0), (0.90, 42.0),
-    (0.95, 30.0), (0.98, 20.0),
+    (0.00, 180.0),
+    (0.05, 170.0),
+    (0.10, 160.0),
+    (0.15, 152.0),
+    (0.20, 148.0),
+    (0.30, 140.0),
+    (0.40, 128.0),
+    (0.50, 115.0),
+    (0.55, 108.0),
+    (0.60, 100.0),
+    (0.65, 92.0),
+    (0.70, 84.0),
+    (0.75, 75.0),
+    (0.80, 65.0),
+    (0.85, 55.0),
+    (0.90, 42.0),
+    (0.95, 30.0),
+    (0.98, 20.0),
 ]
 
 THETA_TARGETS = (30.0, 60.0, 90.0, 120.0, 150.0)
@@ -126,8 +139,12 @@ def angle_to_wall_fraction(theta_deg: float) -> float:
 
 
 def capillary_rise_analytical(
-    sigma: float, rho_l: float, rho_v: float,
-    theta_deg: float, R_lu: float, g_lu: float = 1e-5,
+    sigma: float,
+    rho_l: float,
+    rho_v: float,
+    theta_deg: float,
+    R_lu: float,
+    g_lu: float = 1e-5,
 ) -> float:
     """Analytical capillary rise height (lattice units).
     h = 2 σ cos(θ_e) / (Δρ g R)
@@ -214,9 +231,13 @@ class N01SweepResult:
 
 
 def run_single_case(
-    theta_target_deg: float, R_mm: float,
-    *, G: float = 5.0, tau: float = 1.0,
-    relax_steps: int = 8000, device: str = "cpu",
+    theta_target_deg: float,
+    R_mm: float,
+    *,
+    G: float = 5.0,
+    tau: float = 1.0,
+    relax_steps: int = 8000,
+    device: str = "cpu",
     compile_step: bool = False,
 ) -> N01CaseResult:
     """Run a single wetting case."""
@@ -231,8 +252,13 @@ def run_single_case(
 
     ch = Channel(nx=nx, ny=ny, wall_rows=2, device=device)
     stepper = WallStepper(
-        ch, G=G, tau=tau, rho_l=RHO_L_LU, rho_v=RHO_V_LU,
-        wall_fraction=fw, compile_step=compile_step,
+        ch,
+        G=G,
+        tau=tau,
+        rho_l=RHO_L_LU,
+        rho_v=RHO_V_LU,
+        wall_fraction=fw,
+        compile_step=compile_step,
     )
 
     drop_radius = max(R_lu * 0.8, 6.0)
@@ -270,23 +296,33 @@ def run_single_case(
     elapsed = time.time() - t0
 
     return N01CaseResult(
-        theta_target_deg=theta_target_deg, wall_fraction=fw,
-        R_lu=R_lu, R_mm=R_mm,
-        theta_measured_deg=theta_measured, theta_unc_deg=est.unc_deg,
+        theta_target_deg=theta_target_deg,
+        wall_fraction=fw,
+        R_lu=R_lu,
+        R_mm=R_mm,
+        theta_measured_deg=theta_measured,
+        theta_unc_deg=est.unc_deg,
         theta_error_deg=theta_error,
-        capillary_rise_lu=h_measured, capillary_rise_analytical_lu=h_analytical,
+        capillary_rise_lu=h_measured,
+        capillary_rise_analytical_lu=h_analytical,
         capillary_rise_error_pct=h_error_pct,
-        bond_number=Bo, spurious_current_max=sp["max"],
-        n_points=est.n_points, rms_fit=est.rms,
-        relax_steps=relax_steps, elapsed_s=elapsed,
+        bond_number=Bo,
+        spurious_current_max=sp["max"],
+        n_points=est.n_points,
+        rms_fit=est.rms,
+        relax_steps=relax_steps,
+        elapsed_s=elapsed,
     )
 
 
 def run_parameter_sweep(
-    *, theta_targets: tuple[float, ...] = THETA_TARGETS,
+    *,
+    theta_targets: tuple[float, ...] = THETA_TARGETS,
     radii_mm: tuple[float, ...] = RADIUS_MM,
-    relax_steps: int = 8000, device: str = "cpu",
-    compile_step: bool = False, quick: bool = False,
+    relax_steps: int = 8000,
+    device: str = "cpu",
+    compile_step: bool = False,
+    quick: bool = False,
 ) -> N01SweepResult:
     """Run the full 25-case parameter sweep."""
     if quick:
@@ -296,28 +332,36 @@ def run_parameter_sweep(
     for theta in theta_targets:
         for R in radii_mm:
             result = run_single_case(
-                theta, R, relax_steps=relax_steps,
-                device=device, compile_step=compile_step,
+                theta,
+                R,
+                relax_steps=relax_steps,
+                device=device,
+                compile_step=compile_step,
             )
             cases.append(result)
 
     return N01SweepResult(
-        cases=cases, sigma_measured=SIGMA_LU,
+        cases=cases,
+        sigma_measured=SIGMA_LU,
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         metadata={
             "theta_targets": list(theta_targets),
             "radii_mm": list(radii_mm),
             "relax_steps": relax_steps,
-            "device": device, "quick": quick,
+            "device": device,
+            "quick": quick,
             "n_cases": len(cases),
         },
     )
 
 
 def run_grid_convergence(
-    theta_target_deg: float = 90.0, R_mm: float = 1.0,
-    *, resolution_factors: tuple[int, ...] = (10, 20, 40, 80),
-    relax_steps: int = 6000, device: str = "cpu",
+    theta_target_deg: float = 90.0,
+    R_mm: float = 1.0,
+    *,
+    resolution_factors: tuple[int, ...] = (10, 20, 40, 80),
+    relax_steps: int = 6000,
+    device: str = "cpu",
     compile_step: bool = False,
 ) -> N01ConvergenceResult:
     """Grid convergence study for a single case."""
@@ -337,8 +381,13 @@ def run_grid_convergence(
 
         ch = Channel(nx=nx, ny=ny, wall_rows=2, device=device)
         stepper = WallStepper(
-            ch, G=5.0, tau=1.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU,
-            wall_fraction=fw, compile_step=compile_step,
+            ch,
+            G=5.0,
+            tau=1.0,
+            rho_l=RHO_L_LU,
+            rho_v=RHO_V_LU,
+            wall_fraction=fw,
+            compile_step=compile_step,
         )
 
         drop_radius = max(R_lu_base * factor / resolution_factors[-1] * 0.8, 6.0)
@@ -352,11 +401,18 @@ def run_grid_convergence(
 
         theta_values.append(est.theta_deg)
         dx_values.append(dx)
-        resolutions.append({
-            "factor": factor, "dx_lu": dx, "nx": nx, "ny": ny,
-            "theta_deg": est.theta_deg, "unc_deg": est.unc_deg,
-            "n_points": est.n_points, "rms_fit": est.rms,
-        })
+        resolutions.append(
+            {
+                "factor": factor,
+                "dx_lu": dx,
+                "nx": nx,
+                "ny": ny,
+                "theta_deg": est.theta_deg,
+                "unc_deg": est.unc_deg,
+                "n_points": est.n_points,
+                "rms_fit": est.rms,
+            }
+        )
 
     orders = []
     for i in range(len(theta_values) - 1):
@@ -368,18 +424,26 @@ def run_grid_convergence(
             orders.append(p)
 
     conv_order = sum(orders) / len(orders) if orders else float("nan")
-    order_error_pct = abs(conv_order - 2.0) / 2.0 * 100.0 if not math.isnan(conv_order) else float("nan")
+    order_error_pct = (
+        abs(conv_order - 2.0) / 2.0 * 100.0 if not math.isnan(conv_order) else float("nan")
+    )
     passes = not math.isnan(conv_order) and order_error_pct < 20.0
 
     return N01ConvergenceResult(
-        theta_target_deg=theta_target_deg, R_lu=R_lu_base,
-        resolutions=resolutions, convergence_order=conv_order,
-        theoretical_order=2.0, order_error_pct=order_error_pct, passes=passes,
+        theta_target_deg=theta_target_deg,
+        R_lu=R_lu_base,
+        resolutions=resolutions,
+        convergence_order=conv_order,
+        theoretical_order=2.0,
+        order_error_pct=order_error_pct,
+        passes=passes,
     )
 
 
 def run_negative_controls(
-    *, device: str = "cpu", relax_steps: int = 4000,
+    *,
+    device: str = "cpu",
+    relax_steps: int = 4000,
 ) -> list[N01NegativeControlResult]:
     """Run three negative control tests."""
     results = []
@@ -390,7 +454,11 @@ def run_negative_controls(
     try:
         ch = Channel(nx=64, ny=40, wall_rows=2, device=device)
         stepper = WallStepper(
-            ch, G=-5.0, tau=1.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU,
+            ch,
+            G=-5.0,
+            tau=1.0,
+            rho_l=RHO_L_LU,
+            rho_v=RHO_V_LU,
             wall_fraction=0.7,
         )
         f, _ = sessile_drop_state(ch, 8.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU)
@@ -401,21 +469,24 @@ def run_negative_controls(
         rho_mean = float(rho_fluid.mean())
         if rho_std / max(rho_mean, 1e-6) < 0.1:
             nc1_passed = True
-            nc1_detail = f"Droplet dispersed (σ_ρ/μ_ρ={rho_std/rho_mean:.3f})"
+            nc1_detail = f"Droplet dispersed (σ_ρ/μ_ρ={rho_std / rho_mean:.3f})"
         else:
             nc1_passed = True
-            nc1_detail = f"Negative G produced unstable field (σ_ρ/μ_ρ={rho_std/rho_mean:.3f})"
+            nc1_detail = f"Negative G produced unstable field (σ_ρ/μ_ρ={rho_std / rho_mean:.3f})"
     except Exception as e:
         nc1_passed = True
         nc1_detail = f"Exception raised as expected: {type(e).__name__}: {e}"
 
-    results.append(N01NegativeControlResult(
-        test_name="negative_surface_tension",
-        description="G < 0 (repulsive) should cause droplet dispersion or error",
-        expected="Error or droplet dispersion",
-        actual="Passed" if nc1_passed else "Failed",
-        passed=nc1_passed, detail=nc1_detail,
-    ))
+    results.append(
+        N01NegativeControlResult(
+            test_name="negative_surface_tension",
+            description="G < 0 (repulsive) should cause droplet dispersion or error",
+            expected="Error or droplet dispersion",
+            actual="Passed" if nc1_passed else "Failed",
+            passed=nc1_passed,
+            detail=nc1_detail,
+        )
+    )
 
     # NC2: Superhydrophobic limit (θ_e → 180°)
     nc2_passed = False
@@ -425,7 +496,11 @@ def run_negative_controls(
         fw_super = angle_to_wall_fraction(175.0)
         ch = Channel(nx=80, ny=48, wall_rows=2, device=device)
         stepper = WallStepper(
-            ch, G=5.0, tau=1.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU,
+            ch,
+            G=5.0,
+            tau=1.0,
+            rho_l=RHO_L_LU,
+            rho_v=RHO_V_LU,
             wall_fraction=fw_super,
         )
         f, _ = sessile_drop_state(ch, 10.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU)
@@ -443,13 +518,16 @@ def run_negative_controls(
     except Exception as e:
         nc2_detail = f"Exception: {type(e).__name__}: {e}"
 
-    results.append(N01NegativeControlResult(
-        test_name="superhydrophobic_limit",
-        description="θ_e → 180°: droplet must not spread (θ_measured > 150°)",
-        expected="θ_measured > 150°",
-        actual=f"θ={est_nc2.theta_deg:.1f}°" if est_nc2 else "Error",
-        passed=nc2_passed, detail=nc2_detail,
-    ))
+    results.append(
+        N01NegativeControlResult(
+            test_name="superhydrophobic_limit",
+            description="θ_e → 180°: droplet must not spread (θ_measured > 150°)",
+            expected="θ_measured > 150°",
+            actual=f"θ={est_nc2.theta_deg:.1f}°" if est_nc2 else "Error",
+            passed=nc2_passed,
+            detail=nc2_detail,
+        )
+    )
 
     # NC3: Contact line pinning (hysteresis)
     nc3_passed = False
@@ -457,8 +535,13 @@ def run_negative_controls(
     try:
         ch = Channel(nx=80, ny=48, wall_rows=2, device=device)
         stepper = WallStepper(
-            ch, G=5.0, tau=1.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU,
-            wall_fraction=0.75, drive="liquid",
+            ch,
+            G=5.0,
+            tau=1.0,
+            rho_l=RHO_L_LU,
+            rho_v=RHO_V_LU,
+            wall_fraction=0.75,
+            drive="liquid",
         )
         grad_wall = stepper.gradient_wall(0.85, 0.65)
         stepper.set_wall_psi(grad_wall)
@@ -488,24 +571,31 @@ def run_negative_controls(
     except Exception as e:
         nc3_detail = f"Exception: {type(e).__name__}: {e}"
 
-    results.append(N01NegativeControlResult(
-        test_name="contact_line_pinning",
-        description="Hysteresis wall: advancing/receding angle difference > 10°",
-        expected="Δθ > 10°",
-        actual="Passed" if nc3_passed else "Failed",
-        passed=nc3_passed, detail=nc3_detail,
-    ))
+    results.append(
+        N01NegativeControlResult(
+            test_name="contact_line_pinning",
+            description="Hysteresis wall: advancing/receding angle difference > 10°",
+            expected="Δθ > 10°",
+            actual="Passed" if nc3_passed else "Failed",
+            passed=nc3_passed,
+            detail=nc3_detail,
+        )
+    )
 
     return results
 
 
 def generate_field_plots(
-    theta_target_deg: float = 90.0, R_mm: float = 1.0,
-    *, relax_steps: int = 6000, device: str = "cpu",
+    theta_target_deg: float = 90.0,
+    R_mm: float = 1.0,
+    *,
+    relax_steps: int = 6000,
+    device: str = "cpu",
     output_dir: Path | None = None,
 ) -> dict[str, Path]:
     """Generate density/velocity/phase field cloud maps."""
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import numpy as np
@@ -523,7 +613,11 @@ def generate_field_plots(
 
     ch = Channel(nx=nx, ny=ny, wall_rows=2, device=device)
     stepper = WallStepper(
-        ch, G=5.0, tau=1.0, rho_l=RHO_L_LU, rho_v=RHO_V_LU,
+        ch,
+        G=5.0,
+        tau=1.0,
+        rho_l=RHO_L_LU,
+        rho_v=RHO_V_LU,
         wall_fraction=fw,
     )
     drop_radius = max(R_lu * 0.8, 8.0)
@@ -554,7 +648,8 @@ def generate_field_plots(
     # Density field
     fig, ax = plt.subplots(figsize=(10, 5))
     im = ax.imshow(rho_plot, aspect="auto", cmap="viridis", origin="lower")
-    ax.set_xlabel("x (lu)"); ax.set_ylabel("y (lu)")
+    ax.set_xlabel("x (lu)")
+    ax.set_ylabel("y (lu)")
     ax.set_title(f"Density field (θ={theta_target_deg}°, R={R_mm}mm)")
     plt.colorbar(im, ax=ax, label="Density (lu)")
     if pts_np.shape[0] > 0:
@@ -562,24 +657,28 @@ def generate_field_plots(
         ax.legend()
     fig.tight_layout()
     p = output_dir / f"n01_density_theta{int(theta_target_deg)}_R{R_mm}mm.png"
-    fig.savefig(p, dpi=150); plt.close(fig)
+    fig.savefig(p, dpi=150)
+    plt.close(fig)
     files["density"] = p
 
     # Velocity magnitude
     fig, ax = plt.subplots(figsize=(10, 5))
     im = ax.imshow(speed_plot, aspect="auto", cmap="plasma", origin="lower")
-    ax.set_xlabel("x (lu)"); ax.set_ylabel("y (lu)")
+    ax.set_xlabel("x (lu)")
+    ax.set_ylabel("y (lu)")
     ax.set_title(f"Velocity magnitude (θ={theta_target_deg}°, R={R_mm}mm)")
     plt.colorbar(im, ax=ax, label="|u| (lu/step)")
     fig.tight_layout()
     p = output_dir / f"n01_velocity_theta{int(theta_target_deg)}_R{R_mm}mm.png"
-    fig.savefig(p, dpi=150); plt.close(fig)
+    fig.savefig(p, dpi=150)
+    plt.close(fig)
     files["velocity"] = p
 
     # Phase field
     fig, ax = plt.subplots(figsize=(10, 5))
     im = ax.imshow(phase_plot, aspect="auto", cmap="coolwarm", origin="lower", vmin=0, vmax=1)
-    ax.set_xlabel("x (lu)"); ax.set_ylabel("y (lu)")
+    ax.set_xlabel("x (lu)")
+    ax.set_ylabel("y (lu)")
     ax.set_title(f"Phase field (θ={theta_target_deg}°, R={R_mm}mm)")
     plt.colorbar(im, ax=ax, label="Liquid fraction")
     if pts_np.shape[0] > 0:
@@ -587,7 +686,8 @@ def generate_field_plots(
         ax.legend()
     fig.tight_layout()
     p = output_dir / f"n01_phase_theta{int(theta_target_deg)}_R{R_mm}mm.png"
-    fig.savefig(p, dpi=150); plt.close(fig)
+    fig.savefig(p, dpi=150)
+    plt.close(fig)
     files["phase"] = p
 
     return files
@@ -595,10 +695,12 @@ def generate_field_plots(
 
 def generate_comparison_curves(
     sweep_result: N01SweepResult,
-    *, output_dir: Path | None = None,
+    *,
+    output_dir: Path | None = None,
 ) -> dict[str, Path]:
     """Generate comparison curves: measured vs analytical."""
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import numpy as np
@@ -621,10 +723,13 @@ def generate_comparison_curves(
     ax.set_xlabel("Target contact angle (°)")
     ax.set_ylabel("Measured contact angle (°)")
     ax.set_title("Contact angle: target vs measured")
-    ax.legend(); ax.set_xlim(20, 160); ax.set_ylim(20, 160)
+    ax.legend()
+    ax.set_xlim(20, 160)
+    ax.set_ylim(20, 160)
     fig.tight_layout()
     p = output_dir / "n01_contact_angle_comparison.png"
-    fig.savefig(p, dpi=150); plt.close(fig)
+    fig.savefig(p, dpi=150)
+    plt.close(fig)
     files["contact_angle_comparison"] = p
 
     # Capillary rise comparison
@@ -632,7 +737,11 @@ def generate_comparison_curves(
     for i, R in enumerate(radii):
         cases_R = [c for c in sweep_result.cases if c.R_mm == R]
         h_m = [c.capillary_rise_lu for c in cases_R if not math.isnan(c.capillary_rise_lu)]
-        h_a = [c.capillary_rise_analytical_lu for c in cases_R if not math.isnan(c.capillary_rise_analytical_lu)]
+        h_a = [
+            c.capillary_rise_analytical_lu
+            for c in cases_R
+            if not math.isnan(c.capillary_rise_analytical_lu)
+        ]
         th = [c.theta_target_deg for c in cases_R if not math.isnan(c.capillary_rise_lu)]
         if h_m and h_a:
             ax.plot(th, h_m, "o-", color=colors[i], label=f"R={R}mm (meas)", markersize=6)
@@ -643,7 +752,8 @@ def generate_comparison_curves(
     ax.legend()
     fig.tight_layout()
     p = output_dir / "n01_capillary_rise_comparison.png"
-    fig.savefig(p, dpi=150); plt.close(fig)
+    fig.savefig(p, dpi=150)
+    plt.close(fig)
     files["capillary_rise_comparison"] = p
 
     # Error distribution
@@ -657,7 +767,8 @@ def generate_comparison_curves(
     ax.legend()
     fig.tight_layout()
     p = output_dir / "n01_error_distribution.png"
-    fig.savefig(p, dpi=150); plt.close(fig)
+    fig.savefig(p, dpi=150)
+    plt.close(fig)
     files["error_distribution"] = p
 
     return files
@@ -665,7 +776,8 @@ def generate_comparison_curves(
 
 def generate_report(
     sweep_result: N01SweepResult,
-    *, output_dir: Path | None = None,
+    *,
+    output_dir: Path | None = None,
 ) -> Path:
     """Generate paper-level six-element report."""
     if output_dir is None:
@@ -697,7 +809,9 @@ def generate_report(
     lines.append("### 物理背景\n")
     lines.append("颗粒润湿动力学是船舶总体性能中船体-水-气三相相互作用的基础物理过程。")
     lines.append("接触角决定了船体表面的润湿特性，进而影响摩擦阻力、兴波阻力和气泡附着行为。")
-    lines.append("本节点基于 Shan-Chen 赝势 LBM 模型，通过壁面赝势参数 f_w = ψ_w/ψ(ρ_l) 控制接触角。\n")
+    lines.append(
+        "本节点基于 Shan-Chen 赝势 LBM 模型，通过壁面赝势参数 f_w = ψ_w/ψ(ρ_l) 控制接触角。\n"
+    )
     lines.append("### 几何与参数\n")
     lines.append(f"- **模型**: D2Q9 Shan-Chen 单组分赝势 LBM")
     lines.append(f"- **表面张力**: σ = {SIGMA_LU:.5f} (lu)")
@@ -719,7 +833,9 @@ def generate_report(
     lines.append("\n## 2. 方法（流程/关键设置/工具链）\n")
     lines.append("1. **接触角标定**: 通过预计算的 wall_fraction → θ_e 标定曲线，二分法反推 f_w")
     lines.append("2. **液滴初始化**: 壁面上方放置圆形液滴，tanh 剖面初始化密度场")
-    lines.append(f"3. **弛豫**: {sweep_result.metadata.get('relax_steps', 8000)} 步 BGK + Streaming + 壁面反弹")
+    lines.append(
+        f"3. **弛豫**: {sweep_result.metadata.get('relax_steps', 8000)} 步 BGK + Streaming + 壁面反弹"
+    )
     lines.append("4. **接触角测量**: ρ=(ρ_l+ρ_v)/2 等值线，Kasa 圆拟合 + Gauss-Newton 精化")
     lines.append("5. **不确定度**: Bootstrap + 窗口扫描 + 壁面偏移\n")
 
@@ -727,7 +843,9 @@ def generate_report(
     lines.append(f"- **总工况数**: {n_cases}")
     lines.append(f"- **最大接触角误差**: {max_te:.2f}°")
     lines.append(f"- **平均接触角误差**: {mean_te:.2f}°")
-    lines.append(f"- **误差 < 5° 通过率**: {n_pass_te}/{len(valid_te)} ({n_pass_te/max(1,len(valid_te))*100:.0f}%)\n")
+    lines.append(
+        f"- **误差 < 5° 通过率**: {n_pass_te}/{len(valid_te)} ({n_pass_te / max(1, len(valid_te)) * 100:.0f}%)\n"
+    )
     lines.append(f"- **最大毛细上升误差**: {max_ce:.2f}%")
     lines.append(f"- **平均毛细上升误差**: {mean_ce:.2f}%")
     lines.append(f"- **误差 < 5% 通过率**: {n_pass_ce}/{len(valid_ce)}\n")
@@ -766,7 +884,11 @@ def generate_report(
     lines.append("|--------|------|--------|------|---------|")
     for c in sweep_result.cases:
         te_ok = "是" if c.theta_error_deg < 5.0 else "否"
-        ce_ok = "是" if not math.isnan(c.capillary_rise_error_pct) and c.capillary_rise_error_pct < 5.0 else "否"
+        ce_ok = (
+            "是"
+            if not math.isnan(c.capillary_rise_error_pct) and c.capillary_rise_error_pct < 5.0
+            else "否"
+        )
         lines.append(
             f"| θ_e={c.theta_target_deg}° | {c.theta_target_deg}° | "
             f"{c.theta_measured_deg:.1f}° | {c.theta_error_deg:.2f}° | {te_ok} |"

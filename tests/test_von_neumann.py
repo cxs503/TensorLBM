@@ -128,9 +128,7 @@ class TestC2Dissipation:
         assert result["relative_error"] < 0.01, (
             f"C2 failed: viscosity error = {result['relative_error']:.2%} > 1%"
         )
-        assert result["fit_quality"] > 0.99, (
-            f"C2 failed: R² = {result['fit_quality']:.4f} < 0.99"
-        )
+        assert result["fit_quality"] > 0.99, f"C2 failed: R² = {result['fit_quality']:.4f} < 0.99"
 
     def test_d2q9_trt_viscosity(self):
         """Test TRT viscosity fitting."""
@@ -190,9 +188,7 @@ class TestC3Isotropy:
         cs_mean = np.mean(cs_values)
         cs_variation = np.max(np.abs(cs_values - cs_mean)) / cs_mean
 
-        assert cs_variation < 1e-3, (
-            f"C3 failed: cs variation = {cs_variation:.2e} > 1e-3"
-        )
+        assert cs_variation < 1e-3, f"C3 failed: cs variation = {cs_variation:.2e} > 1e-3"
 
 
 class TestC4StabilityBoundary:
@@ -216,9 +212,7 @@ class TestC4StabilityBoundary:
                 eigs = von_neumann_eigenvalues(lat, coll, k)
                 max_lambda = max(max_lambda, np.max(np.abs(eigs)))
 
-        assert max_lambda <= 1.0 + 1e-12, (
-            f"C4 failed: τ=0.5001 unstable, max|λ| = {max_lambda:.6e}"
-        )
+        assert max_lambda <= 1.0 + 1e-12, f"C4 failed: τ=0.5001 unstable, max|λ| = {max_lambda:.6e}"
 
     def test_tau_2_stable(self):
         """Test that τ=2 is stable."""
@@ -237,9 +231,7 @@ class TestC4StabilityBoundary:
                 eigs = von_neumann_eigenvalues(lat, coll, k)
                 max_lambda = max(max_lambda, np.max(np.abs(eigs)))
 
-        assert max_lambda <= 1.0 + 1e-12, (
-            f"C4 failed: τ=2 unstable, max|λ| = {max_lambda:.6e}"
-        )
+        assert max_lambda <= 1.0 + 1e-12, f"C4 failed: τ=2 unstable, max|λ| = {max_lambda:.6e}"
 
 
 class TestC5TRTOptimality:
@@ -288,7 +280,7 @@ class TestC5TRTOptimality:
 
         # Negative control: suboptimal TRT should be worse than magic
         assert max_lam_trt_subopt >= max_lam_trt_magic, (
-            f"C5 negative control failed: suboptimal should be worse than magic"
+            "C5 negative control failed: suboptimal should be worse than magic"
         )
 
 

@@ -5,6 +5,7 @@ Runs one settling cell to steady state and stores the mid-plane slices of
 ``u_x``, ``|u|`` and ``ρ`` plus the control-surface circle, so the report
 figure is generated from a real field (no sketch).
 """
+
 from __future__ import annotations
 
 import json

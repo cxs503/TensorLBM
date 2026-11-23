@@ -6,6 +6,7 @@ Reads every record in ``benchmarks/sphere_curved_drag/out/*.json`` and emits
 ``docs/GAP-LBM-SPHERE_v3_converged_control_verdict.md``.  No number in the
 report is typed by hand: the doc is rendered from the JSON by ``render.py``.
 """
+
 from __future__ import annotations
 
 import glob
@@ -17,12 +18,35 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE.parent / "out"
 
 KEYS = [
-    "tag", "controller", "L", "R", "lambda", "Re_target", "Re_measured", "tau",
-    "u_target", "u_measured", "steps", "steady", "u_tail_drift", "g_tail_drift",
-    "g_tail", "F_momentum_balance", "F_bfl", "F_analytic", "bfl_rel_diff_pct",
-    "analytic_vs_mb_pct", "analytic_vs_bfl_pct", "cd_mb_fluid", "cd_mb_sup",
-    "cd_stokes_confined", "mfp_over_R", "hydrodynamic_regime", "diverged",
-    "wall_s", "n_bfl_links",
+    "tag",
+    "controller",
+    "L",
+    "R",
+    "lambda",
+    "Re_target",
+    "Re_measured",
+    "tau",
+    "u_target",
+    "u_measured",
+    "steps",
+    "steady",
+    "u_tail_drift",
+    "g_tail_drift",
+    "g_tail",
+    "F_momentum_balance",
+    "F_bfl",
+    "F_analytic",
+    "bfl_rel_diff_pct",
+    "analytic_vs_mb_pct",
+    "analytic_vs_bfl_pct",
+    "cd_mb_fluid",
+    "cd_mb_sup",
+    "cd_stokes_confined",
+    "mfp_over_R",
+    "hydrodynamic_regime",
+    "diverged",
+    "wall_s",
+    "n_bfl_links",
 ]
 
 
@@ -42,8 +66,11 @@ def load() -> list[dict]:
 
 def summarise(rows: list[dict]) -> dict:
     steady = [r for r in rows if r.get("steady") and not r.get("diverged")]
-    stokes = [r for r in steady if r.get("hydrodynamic_regime")
-              and abs(r.get("Re_target", 0) - 0.1) < 1e-9]
+    stokes = [
+        r
+        for r in steady
+        if r.get("hydrodynamic_regime") and abs(r.get("Re_target", 0) - 0.1) < 1e-9
+    ]
     verdict = {}
     for r in stokes:
         k = r["hasimoto_K"] if "hasimoto_K" in r else None
@@ -72,7 +99,11 @@ def main() -> int:
     rows = load()
     s = summarise(rows)
     (HERE / "three_instrument.json").write_text(json.dumps(s, indent=1))
-    print(json.dumps({k: s[k] for k in ("n_records", "n_steady", "steady_tags", "stokes_steady")}, indent=1))
+    print(
+        json.dumps(
+            {k: s[k] for k in ("n_records", "n_steady", "steady_tags", "stokes_steady")}, indent=1
+        )
+    )
     return 0
 
 

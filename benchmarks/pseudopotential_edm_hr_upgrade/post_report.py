@@ -1,4 +1,5 @@
 """Post the campaign report to the platform API (env credentials, no secrets on the CLI)."""
+
 import json
 import os
 import sys
@@ -20,8 +21,10 @@ def post(path, payload, token=None):
 
 
 def main():
-    payload_path = sys.argv[1] if len(sys.argv) > 1 else (
-        "artifacts/pseudopotential_edm_hr_upgrade/report_payload.json"
+    payload_path = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else ("artifacts/pseudopotential_edm_hr_upgrade/report_payload.json")
     )
     with open(payload_path) as fh:
         payload = json.load(fh)

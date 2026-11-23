@@ -101,6 +101,7 @@ class IceResistance3DConfig:
     output_dir : Path
         Output directory.
     """
+
     # Domain
     domain_size: Tuple[float, float, float] = (500.0, 100.0, 30.0)
     grid_resolution: Tuple[int, int, int] = (200, 40, 12)
@@ -136,6 +137,7 @@ class IceResistance3DConfig:
 @dataclass
 class IceResistanceResult:
     """Results from 3D ice resistance simulation."""
+
     # Resistance components
     R_friction: float = 0.0
     R_pressure: float = 0.0
@@ -200,19 +202,13 @@ class IceResistance3DSolver:
         self.ice_particles = generate_ice_field(c.ice_field)
 
         # Validate ice field
-        self.ice_validation = validate_ice_field(
-            self.ice_particles, c.ice_field
-        )
+        self.ice_validation = validate_ice_field(self.ice_particles, c.ice_field)
 
         # Create DEM solver
-        self.dem_solver = create_ice_field_dem_solver(
-            c.ice_field, self.ice_particles
-        )
+        self.dem_solver = create_ice_field_dem_solver(c.ice_field, self.ice_particles)
 
         # Compute ice concentration
-        ice_stats = compute_ice_concentration(
-            self.ice_particles, c.domain_size
-        )
+        ice_stats = compute_ice_concentration(self.ice_particles, c.domain_size)
         self.ice_stats = ice_stats
 
         # Map to porous medium
@@ -223,8 +219,10 @@ class IceResistance3DSolver:
             c.domain_size,
         )
 
-        print(f"Ice field: {len(self.ice_particles)} floes, "
-              f"C_i={ice_stats['C_i']:.3f}, D50={ice_stats['D50']:.2f}m")
+        print(
+            f"Ice field: {len(self.ice_particles)} floes, "
+            f"C_i={ice_stats['C_i']:.3f}, D50={ice_stats['D50']:.2f}m"
+        )
 
     def _init_lbm_fields(self):
         """Initialize LBM distribution function."""
@@ -259,7 +257,9 @@ class IceResistance3DSolver:
         # Store reference density
         self.rho_ref = 1.0
 
-        print(f"LBM initialized: τ={tau:.4f}, u_lattice={u_lattice:.4f}, u_phys={self.u_phys:.2f} m/s")
+        print(
+            f"LBM initialized: τ={tau:.4f}, u_lattice={u_lattice:.4f}, u_phys={self.u_phys:.2f} m/s"
+        )
 
     def _init_hull(self):
         """Initialize hull geometry and mask."""
@@ -274,9 +274,7 @@ class IceResistance3DSolver:
         )
 
         # Get surface cells
-        self.surface_mask, self.surface_normals = compute_hull_surface_cells(
-            self.hull_mask
-        )
+        self.surface_mask, self.surface_normals = compute_hull_surface_cells(self.hull_mask)
 
         n_surface = int(self.surface_mask.sum().item())
         print(f"Hull mask: {n_surface} surface cells")
@@ -315,10 +313,15 @@ class IceResistance3DSolver:
         c = C.to(f.device).float()
         w = W.to(f.device).float()
 
-        forcing = w.view(19, 1, 1, 1) * 3.0 * guo_factor * (
-            c[:, 0].view(19, 1, 1, 1) * sink_x.unsqueeze(0)
-            + c[:, 1].view(19, 1, 1, 1) * sink_y.unsqueeze(0)
-            + c[:, 2].view(19, 1, 1, 1) * sink_z.unsqueeze(0)
+        forcing = (
+            w.view(19, 1, 1, 1)
+            * 3.0
+            * guo_factor
+            * (
+                c[:, 0].view(19, 1, 1, 1) * sink_x.unsqueeze(0)
+                + c[:, 1].view(19, 1, 1, 1) * sink_y.unsqueeze(0)
+                + c[:, 2].view(19, 1, 1, 1) * sink_z.unsqueeze(0)
+            )
         )
 
         return f + forcing
@@ -516,16 +519,16 @@ class IceResistance3DSolver:
         """
         c = self.config
 
-        print(f"\n{'='*60}")
-        print(f"3D Ice Resistance Simulation (IN66-N05)")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print("3D Ice Resistance Simulation (IN66-N05)")
+        print(f"{'=' * 60}")
         print(f"Domain: {c.domain_size}")
         print(f"Grid: {c.grid_resolution}")
         print(f"Ship: KVLCC2, L_pp={c.ship_geometry.L_pp}m")
         print(f"Ice: h={c.ice_field.ice_thickness}m, C_i={c.ice_field.ice_concentration}")
         print(f"Speed: {c.ship_speed} m/s")
         print(f"Steps: {c.n_steps}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         t_start = time.perf_counter()
 
@@ -533,9 +536,11 @@ class IceResistance3DSolver:
             info = self.step()
 
             if step % 100 == 0:
-                print(f"Step {step}/{c.n_steps}: "
-                      f"R_total={info['R_total']:.1f} N, "
-                      f"mass_res={info['mass_residual']:.2e}")
+                print(
+                    f"Step {step}/{c.n_steps}: "
+                    f"R_total={info['R_total']:.1f} N, "
+                    f"mass_res={info['mass_residual']:.2e}"
+                )
 
         t_elapsed = time.perf_counter() - t_start
 
@@ -568,7 +573,9 @@ class IceResistance3DSolver:
             psi=c.ice_field.ice_concentration,
         )
 
-        error_vs_riska = abs(R_total - riska["R_total"]) / riska["R_total"] if riska["R_total"] > 0 else 0.0
+        error_vs_riska = (
+            abs(R_total - riska["R_total"]) / riska["R_total"] if riska["R_total"] > 0 else 0.0
+        )
 
         # Final mass/momentum residuals
         final_mass_res = self.mass_history[-1] if self.mass_history else 0.0
@@ -667,13 +674,15 @@ def run_grid_convergence_study(
         solver = IceResistance3DSolver(config)
         result = solver.run()
 
-        results.append({
-            "refinement": r,
-            "grid": (nx, ny, nz),
-            "R_total": result.R_total,
-            "C_T": result.C_T,
-            "mass_residual": result.mass_residual,
-        })
+        results.append(
+            {
+                "refinement": r,
+                "grid": (nx, ny, nz),
+                "R_total": result.R_total,
+                "C_T": result.C_T,
+                "mass_residual": result.mass_residual,
+            }
+        )
 
     # GCI analysis (Richardson extrapolation)
     if len(results) >= 3:
@@ -805,19 +814,17 @@ def run_in66_n05_validation(
     }
 
     # Save results
-    (output_dir / "validation.json").write_text(
-        json.dumps(validation, indent=2, default=str)
-    )
+    (output_dir / "validation.json").write_text(json.dumps(validation, indent=2, default=str))
 
-    print(f"\n{'='*60}")
-    print(f"IN66-N05 Validation Results")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("IN66-N05 Validation Results")
+    print(f"{'=' * 60}")
     print(f"R_total (LBM): {result.R_total:.1f} N")
     print(f"R_total (Riska): {result.R_riska:.1f} N")
-    print(f"Error vs Riska: {result.error_vs_riska*100:.1f}%")
+    print(f"Error vs Riska: {result.error_vs_riska * 100:.1f}%")
     print(f"C5 pass (<15%): {result.error_vs_riska < 0.15}")
     print(f"Mass residual: {result.mass_residual:.2e}")
     print(f"GCI pass (<5%): {gci_results.get('GCI_pass', False)}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     return validation

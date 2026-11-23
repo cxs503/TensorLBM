@@ -49,21 +49,30 @@ FIELD_DIR = ROOT / "artifacts" / "sphere_drag_bfl" / "fields"
 # field snapshot
 # --------------------------------------------------------------------------- #
 
+
 def make_field_snapshot(re: float = 100.0, diameter: int = 8, steps: int = 2500) -> Dict[str, Any]:
     cfg = SphereBFLConfig(
-        re=re, diameter=diameter, u_lb=0.1, max_steps=steps,
-        window=max(100, steps // 5), tol=1e9, threads=8,
-        output_dir=str(FIELD_DIR), save_fields=True,
+        re=re,
+        diameter=diameter,
+        u_lb=0.1,
+        max_steps=steps,
+        window=max(100, steps // 5),
+        tol=1e9,
+        threads=8,
+        output_dir=str(FIELD_DIR),
+        save_fields=True,
     )
     res = run_sphere_case(cfg, save_fields=True, progress=False)
     FIELD_DIR.mkdir(parents=True, exist_ok=True)
-    (FIELD_DIR / "snapshot_meta.json").write_text(json.dumps(
-        {k: v for k, v in res.items() if k != "cd_history"}, indent=2, default=float))
+    (FIELD_DIR / "snapshot_meta.json").write_text(
+        json.dumps({k: v for k, v in res.items() if k != "cd_history"}, indent=2, default=float)
+    )
     return res
 
 
 def _load_snapshot() -> Optional[Dict[str, Any]]:
     import torch
+
     for p in sorted(FIELD_DIR.glob("*_fields.pt")):
         return torch.load(p, map_location="cpu")
     return None
@@ -72,6 +81,7 @@ def _load_snapshot() -> Optional[Dict[str, Any]]:
 # --------------------------------------------------------------------------- #
 # figures
 # --------------------------------------------------------------------------- #
+
 
 def fig_cd_vs_re(results: Dict[str, Any], path: Path) -> None:
     rows = [r for r in results["summary"] if r.get("diameter") == 12]
@@ -86,15 +96,15 @@ def fig_cd_vs_re(results: Dict[str, Any], path: Path) -> None:
     cd_sn = np.array([schiller_naumann_cd(r) for r in re_sn])
 
     fig, ax = plt.subplots(figsize=(7.2, 5.2))
-    ax.loglog(re_sn, cd_sn, "-", color="0.6", lw=1.2,
-              label="Schiller–Naumann correlation")
-    ax.loglog(re_cgw, cd_cgw, "ks", ms=6, mfc="none",
-              label="Clift–Grace–Weber (1978) measurements")
-    ax.loglog(re_lbm, cd_lbm, "o-", color="tab:red", ms=6, lw=1.4,
-              label=f"LBM BFL/D3Q19 (D=12, u=0.1)")
+    ax.loglog(re_sn, cd_sn, "-", color="0.6", lw=1.2, label="Schiller–Naumann correlation")
+    ax.loglog(re_cgw, cd_cgw, "ks", ms=6, mfc="none", label="Clift–Grace–Weber (1978) measurements")
+    ax.loglog(
+        re_lbm, cd_lbm, "o-", color="tab:red", ms=6, lw=1.4, label="LBM BFL/D3Q19 (D=12, u=0.1)"
+    )
     for r, c in zip(re_lbm, cd_lbm):
-        ax.annotate(f"{r:g}", (r, c), textcoords="offset points", xytext=(4, 5),
-                    fontsize=7, color="tab:red")
+        ax.annotate(
+            f"{r:g}", (r, c), textcoords="offset points", xytext=(4, 5), fontsize=7, color="tab:red"
+        )
     ax.set_xlabel("Re = U D / ν")
     ax.set_ylabel("$C_D$")
     ax.set_title("Sphere drag coefficient: LBM (BFL bounce-back) vs literature")
@@ -112,8 +122,13 @@ def fig_grid_convergence(results: Dict[str, Any], path: Path) -> None:
     for k, (key, entry) in enumerate(sorted(grid.items())):
         ds = np.array(entry["diameters"], dtype=float)
         cds = np.array(entry["cd"], dtype=float)
-        ax.plot(ds, cds, marker=markers[k % 3], lw=1.3,
-                label=f"{key} (finest change {entry['finest_change_pct']:.2f} %)")
+        ax.plot(
+            ds,
+            cds,
+            marker=markers[k % 3],
+            lw=1.3,
+            label=f"{key} (finest change {entry['finest_change_pct']:.2f} %)",
+        )
         if entry.get("cd_ref") is not None:
             ax.axhline(entry["cd_ref"], ls=":", color="0.4", lw=0.9)
     ax.set_xlabel("lattice diameter D")
@@ -132,19 +147,27 @@ def fig_wake(snapshot: Dict[str, Any], path: Path) -> bool:
     uy = snapshot["uy"].numpy()
     uz = snapshot["uz"].numpy()
     solid = snapshot["solid"].numpy()
-    umag = np.sqrt(ux ** 2 + uy ** 2 + uz ** 2)
-    j = umag.shape[1] // 2            # symmetry plane z = const
-    slice_u = umag[:, j, :].T         # (nz, nx)
+    umag = np.sqrt(ux**2 + uy**2 + uz**2)
+    j = umag.shape[1] // 2  # symmetry plane z = const
+    slice_u = umag[:, j, :].T  # (nz, nx)
     slice_s = solid[:, j, :].T
 
     fig, ax = plt.subplots(figsize=(8.0, 3.6))
-    im = ax.imshow(slice_u, origin="lower", aspect="auto", cmap="viridis",
-                   vmin=0.0, vmax=float(np.percentile(slice_u[~slice_s], 99)))
+    im = ax.imshow(
+        slice_u,
+        origin="lower",
+        aspect="auto",
+        cmap="viridis",
+        vmin=0.0,
+        vmax=float(np.percentile(slice_u[~slice_s], 99)),
+    )
     ax.contour(slice_s, levels=[0.5], colors="w", linewidths=0.8)
     ax.set_xlabel("x / lattice unit")
     ax.set_ylabel("z / lattice unit")
-    ax.set_title(f"|u| in the symmetry plane, sphere Re={snapshot['cfg']['re']:g}, "
-                 f"D={snapshot['cfg']['diameter']} (white: sphere surface)")
+    ax.set_title(
+        f"|u| in the symmetry plane, sphere Re={snapshot['cfg']['re']:g}, "
+        f"D={snapshot['cfg']['diameter']} (white: sphere surface)"
+    )
     fig.colorbar(im, ax=ax, label="|u| / (lattice unit)")
     fig.tight_layout()
     fig.savefig(path, dpi=160)
@@ -156,18 +179,24 @@ def fig_wake(snapshot: Dict[str, Any], path: Path) -> bool:
 # documentation table (numbers injected programmatically)
 # --------------------------------------------------------------------------- #
 
+
 def write_docs(results: Dict[str, Any], path: Path, has_field: bool) -> None:
     rows = sorted(results["summary"], key=lambda r: (r["diameter"], r["re"]))
     lines: List[str] = []
     lines.append("# Sphere-drag anchor (GAP-LBM-SPHERE) — generated data table\n")
-    lines.append("Auto-generated by `benchmarks/verified/sphere_drag_bfl/generate_figures.py` "
-                 "from `results.json` (no hand-typed numbers).\n")
-    lines.append(f"- method: {results['method']['collision']}, "
-                 f"{results['method']['boundary']}, {results['method']['force']}")
+    lines.append(
+        "Auto-generated by `benchmarks/verified/sphere_drag_bfl/generate_figures.py` "
+        "from `results.json` (no hand-typed numbers).\n"
+    )
+    lines.append(
+        f"- method: {results['method']['collision']}, "
+        f"{results['method']['boundary']}, {results['method']['force']}"
+    )
     lines.append(f"- free-stream lattice velocity u = {results['method']['u_lb']:g}")
     lines.append(f"- external anchor: {results['external_anchor']['source']}")
-    lines.append(f"- generated: {results['generated_at']}, "
-                 f"total wall time {results['elapsed_s']:.0f} s\n")
+    lines.append(
+        f"- generated: {results['generated_at']}, total wall time {results['elapsed_s']:.0f} s\n"
+    )
     lines.append("## C_D vs anchor\n")
     lines.append("| case | D | Re | C_D (LBM) | C_D ref | err % | steps | converged | wall s |")
     lines.append("|---|---|---|---|---|---|---|---|---|")
@@ -178,21 +207,28 @@ def write_docs(results: Dict[str, Any], path: Path, has_field: bool) -> None:
             f"{r['converged']} | {r['wall_s']:.0f} |"
         )
     lines.append("\n## Grid refinement\n")
-    lines.append("| Re | diameters | C_D | successive change % | finest change % | monotone | pass <5% |")
+    lines.append(
+        "| Re | diameters | C_D | successive change % | finest change % | monotone | pass <5% |"
+    )
     lines.append("|---|---|---|---|---|---|---|")
     for key, g in sorted((results.get("grid_convergence") or {}).items()):
         cds = ", ".join(f"{c:.4f}" for c in g["cd"])
         ch = ", ".join(f"{c:.2f}" for c in g["successive_change_pct"])
-        lines.append(f"| {key} | {g['diameters']} | {cds} | {ch} | "
-                     f"{g['finest_change_pct']:.2f} | {g['monotone_convergence']} | "
-                     f"{g['pass_finest_5pct']} |")
+        lines.append(
+            f"| {key} | {g['diameters']} | {cds} | {ch} | "
+            f"{g['finest_change_pct']:.2f} | {g['monotone_convergence']} | "
+            f"{g['pass_finest_5pct']} |"
+        )
     acc = results["acceptance"]
     lines.append("\n## Acceptance (pre-declared bands)\n")
     lines.append(f"- criteria: `{json.dumps(acc['criteria'])}`")
-    lines.append(f"- laminar max error: {acc['laminar_max_err_pct']:.2f} % "
-                 f"(pass={acc['laminar_pass']})")
-    lines.append(f"- transitional max error: {acc['transitional_max_err_pct']:.2f} % "
-                 f"(pass={acc['transitional_pass']})")
+    lines.append(
+        f"- laminar max error: {acc['laminar_max_err_pct']:.2f} % (pass={acc['laminar_pass']})"
+    )
+    lines.append(
+        f"- transitional max error: {acc['transitional_max_err_pct']:.2f} % "
+        f"(pass={acc['transitional_pass']})"
+    )
     lines.append(f"- C_D decreases monotonically with Re: {acc['trend_monotone']}")
     lines.append(f"- all cases finite: {acc['all_finite']}")
     lines.append("\n## Figures\n")
@@ -210,6 +246,7 @@ def write_docs(results: Dict[str, Any], path: Path, has_field: bool) -> None:
 # main
 # --------------------------------------------------------------------------- #
 
+
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=str(BENCH / "results.json"))
@@ -223,8 +260,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.field_only:
         res = make_field_snapshot(args.field_re, args.field_diameter, args.field_steps)
-        print(f"field snapshot: Cd={res['cd']:.4f} steps={res['steps']} "
-              f"wall={res['wall_s']:.0f}s -> {res['fields']}")
+        print(
+            f"field snapshot: Cd={res['cd']:.4f} steps={res['steps']} "
+            f"wall={res['wall_s']:.0f}s -> {res['fields']}"
+        )
         return 0
 
     results = json.loads(Path(args.results).read_text())

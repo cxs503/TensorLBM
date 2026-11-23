@@ -32,14 +32,19 @@ def run_case(kh, ka, nx, ny, depth, n_periods, enable_absorption, label):
     record_interval = max(1, int(period_steps / 20))
 
     cfg = WaveTankConfig(
-        nx=nx, ny=ny, water_depth=depth,
-        wave_amplitude=amplitude, wave_kh=kh, gravity=1e-4,
-        tau=0.6, n_steps=n_steps, record_interval=record_interval,
+        nx=nx,
+        ny=ny,
+        water_depth=depth,
+        wave_amplitude=amplitude,
+        wave_kh=kh,
+        gravity=1e-4,
+        tau=0.6,
+        n_steps=n_steps,
+        record_interval=record_interval,
         enable_absorption=enable_absorption,
     )
 
-    print(f"[{label}] kh={kh}, ka={ka}, nx={nx}, ny={ny}, "
-          f"steps={n_steps}, abs={enable_absorption}")
+    print(f"[{label}] kh={kh}, ka={ka}, nx={nx}, ny={ny}, steps={n_steps}, abs={enable_absorption}")
 
     tank = WaveTank2D(cfg)
     t0 = time.time()
@@ -58,16 +63,19 @@ def run_case(kh, ka, nx, ny, depth, n_periods, enable_absorption, label):
     results["step_list"] = tank.step_list
     results["mass_history"] = tank.mass_history
 
-    print(f"  -> elapsed={elapsed:.1f}s, "
-          f"disp_err={results['dispersion_error']:.4%}, "
-          f"Kr={results['reflection']['Kr']:.4f}, "
-          f"mass_drift={results['mass_drift_relative']:.4%}")
+    print(
+        f"  -> elapsed={elapsed:.1f}s, "
+        f"disp_err={results['dispersion_error']:.4%}, "
+        f"Kr={results['reflection']['Kr']:.4f}, "
+        f"mass_drift={results['mass_drift_relative']:.4%}"
+    )
 
     return results
 
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--kh", type=float, default=1.5)
     parser.add_argument("--ka", type=float, default=0.02)
@@ -81,9 +89,14 @@ def main():
     args = parser.parse_args()
 
     results = run_case(
-        kh=args.kh, ka=args.ka, nx=args.nx, ny=args.ny,
-        depth=args.depth, n_periods=args.periods,
-        enable_absorption=not args.no_abs, label=args.label,
+        kh=args.kh,
+        ka=args.ka,
+        nx=args.nx,
+        ny=args.ny,
+        depth=args.depth,
+        n_periods=args.periods,
+        enable_absorption=not args.no_abs,
+        label=args.label,
     )
 
     with open(args.output, "w") as f:

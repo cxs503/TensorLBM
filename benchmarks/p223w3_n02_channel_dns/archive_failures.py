@@ -29,8 +29,8 @@ OUT = _HERE / "case_data"
 MESSAGE = re.compile(
     r"diverged: (?P<bad>\d+) of (?P<total>\d+) populations are non-finite "
     r"\(grid (?P<nx>\d+)x(?P<ny>\d+)x(?P<nz>\d+) tau0=(?P<tau0>[\d.]+) "
-    r"regularized=(?P<reg>\d+)\)")
-
+    r"regularized=(?P<reg>\d+)\)"
+)
 
 
 def main() -> int:
@@ -44,7 +44,9 @@ def main() -> int:
         msg = MESSAGE.search(text)
         case = campaign.case_matrix().get(name) or campaign.RETIRED.get(name)
         if not (msg and case):
-            print(f"skip {log.name}: cannot parse ({'no kernel message' if not msg else 'not in the campaign matrix'})")
+            print(
+                f"skip {log.name}: cannot parse ({'no kernel message' if not msg else 'not in the campaign matrix'})"
+            )
             continue
         ny = int(msg.group("ny"))
         nz, nx = int(msg.group("nz")), int(msg.group("nx"))
@@ -52,7 +54,10 @@ def main() -> int:
             "case": name,
             "source_log": str(log.relative_to(_REPO)),
             "geometry": {
-                "nx": nx, "ny": ny, "nz": nz, "cells": nx * ny * nz,
+                "nx": nx,
+                "ny": ny,
+                "nz": nz,
+                "cells": nx * ny * nz,
                 "re_tau": case.re_tau,
                 "u_tau": case.u_tau,
                 "half_height": 0.5 * (ny - 2),
@@ -64,8 +69,8 @@ def main() -> int:
                 "tau0": float(msg.group("tau0")),
             },
             "error": f"les_chan diverged: {msg.group('bad')} of {msg.group('total')} "
-                     f"populations non-finite (grid {nx}x{ny}x{nz} "
-                     f"tau0={msg.group('tau0')} regularized={msg.group('reg')})",
+            f"populations non-finite (grid {nx}x{ny}x{nz} "
+            f"tau0={msg.group('tau0')} regularized={msg.group('reg')})",
             "non_finite_fraction": int(msg.group("bad")) / int(msg.group("total")),
         }
         (OUT / f"{name}.failed.json").write_text(json.dumps(record, indent=1))

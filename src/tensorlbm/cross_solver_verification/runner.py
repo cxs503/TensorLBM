@@ -38,9 +38,9 @@ from .mms import ManufacturedSolution, TWOPI
 
 __all__ = ["BenchmarkConfig", "run_benchmark", "main"]
 
-MMS_B = 0.01       # velocity amplitude of the manufactured solution
-MMS_NU = 0.002     # viscosity  => MMS Reynolds number ~ B/(nu k) ~ 0.8
-MMS_Q = 0.0005    # pressure amplitude
+MMS_B = 0.01  # velocity amplitude of the manufactured solution
+MMS_NU = 0.002  # viscosity  => MMS Reynolds number ~ B/(nu k) ~ 0.8
+MMS_Q = 0.0005  # pressure amplitude
 MMS_TOL = 1e-9
 
 
@@ -82,9 +82,16 @@ def mms_study(cfg: BenchmarkConfig, log=print) -> dict:
     mms = ManufacturedSolution(
         nu=MMS_NU, amplitude=MMS_B / (2.0 * TWOPI), pressure_scale=MMS_Q, k=TWOPI
     )
-    result: dict = {"parameters": {"B": MMS_B, "nu": MMS_NU, "pressure_scale": MMS_Q,
-                                   "k": TWOPI, "re_mms": MMS_B / (MMS_NU * TWOPI)},
-                    "solvers": {}}
+    result: dict = {
+        "parameters": {
+            "B": MMS_B,
+            "nu": MMS_NU,
+            "pressure_scale": MMS_Q,
+            "k": TWOPI,
+            "re_mms": MMS_B / (MMS_NU * TWOPI),
+        },
+        "solvers": {},
+    }
 
     def exact(n):
         x = (np.arange(n) + 0.5) / n
@@ -100,28 +107,53 @@ def mms_study(cfg: BenchmarkConfig, log=print) -> dict:
         e = float(np.sqrt(np.mean((r.u - ue) ** 2 + (r.v - ve) ** 2)))
         sizes.append(n)
         errs.append(e)
-        rows.append({"n": n, "l2_error": e, "steps": r.steps, "converged": bool(r.converged),
-                     "residual": r.residual, "tau": r.tau, "wall_s": round(time.time() - t0, 1)})
+        rows.append(
+            {
+                "n": n,
+                "l2_error": e,
+                "steps": r.steps,
+                "converged": bool(r.converged),
+                "residual": r.residual,
+                "tau": r.tau,
+                "wall_s": round(time.time() - t0, 1),
+            }
+        )
         log(f"[MMS][LBM] n={n:4d} L2={e:.3e} steps={r.steps} conv={r.converged}")
-    result["solvers"]["lbm"] = {"rows": rows, "pairwise": _order_pairwise(errs, sizes),
-                                "error": errs, "sizes": sizes}
+    result["solvers"]["lbm"] = {
+        "rows": rows,
+        "pairwise": _order_pairwise(errs, sizes),
+        "error": errs,
+        "sizes": sizes,
+    }
 
     # --- FVM
     sizes, errs, rows = [], [], []
     for n in cfg.mms_sizes_fvm:
         t0 = time.time()
-        r = solve_psi_omega(n, MMS_NU, mode="periodic", mms=mms, max_iter=200000, tol=1e-12,
-                            check_every=200)
+        r = solve_psi_omega(
+            n, MMS_NU, mode="periodic", mms=mms, max_iter=200000, tol=1e-12, check_every=200
+        )
         ue, ve = exact(n)
         e = float(np.sqrt(np.mean((r.u - ue) ** 2 + (r.v - ve) ** 2)))
         sizes.append(n)
         errs.append(e)
-        rows.append({"n": n, "l2_error": e, "iterations": r.iterations,
-                     "converged": bool(r.converged), "residual": r.residual,
-                     "wall_s": round(time.time() - t0, 1)})
+        rows.append(
+            {
+                "n": n,
+                "l2_error": e,
+                "iterations": r.iterations,
+                "converged": bool(r.converged),
+                "residual": r.residual,
+                "wall_s": round(time.time() - t0, 1),
+            }
+        )
         log(f"[MMS][FVM] n={n:4d} L2={e:.3e} iters={r.iterations} conv={r.converged}")
-    result["solvers"]["fvm"] = {"rows": rows, "pairwise": _order_pairwise(errs, sizes),
-                                "error": errs, "sizes": sizes}
+    result["solvers"]["fvm"] = {
+        "rows": rows,
+        "pairwise": _order_pairwise(errs, sizes),
+        "error": errs,
+        "sizes": sizes,
+    }
 
     # --- FEM
     sizes, errs, rows = [], [], []
@@ -132,12 +164,24 @@ def mms_study(cfg: BenchmarkConfig, log=print) -> dict:
         e = float(np.sqrt(np.mean((r.u - ue) ** 2 + (r.v - ve) ** 2)))
         sizes.append(n)
         errs.append(e)
-        rows.append({"n": n, "l2_error": e, "newton": r.newton_iterations,
-                     "converged": bool(r.converged), "residual": r.residual,
-                     "dof": r.dof_count, "wall_s": round(time.time() - t0, 1)})
+        rows.append(
+            {
+                "n": n,
+                "l2_error": e,
+                "newton": r.newton_iterations,
+                "converged": bool(r.converged),
+                "residual": r.residual,
+                "dof": r.dof_count,
+                "wall_s": round(time.time() - t0, 1),
+            }
+        )
         log(f"[MMS][FEM] n={n:4d} L2={e:.3e} newton={r.newton_iterations} conv={r.converged}")
-    result["solvers"]["fem"] = {"rows": rows, "pairwise": _order_pairwise(errs, sizes),
-                                "error": errs, "sizes": sizes}
+    result["solvers"]["fem"] = {
+        "rows": rows,
+        "pairwise": _order_pairwise(errs, sizes),
+        "error": errs,
+        "sizes": sizes,
+    }
     return result
 
 
@@ -162,26 +206,52 @@ def cavity_study(cfg: BenchmarkConfig, log=print) -> dict:
                     from .lbm import _prolongate_velocity
 
                     seed = (_prolongate_velocity(prev[1], n), _prolongate_velocity(prev[2], n))
-                r = run_lbm_cavity(n=n, re=re, u_lid=cfg.u_lid_lbm, max_steps=400000,
-                                   tol=2e-7, check_every=300, init_velocity=seed)
+                r = run_lbm_cavity(
+                    n=n,
+                    re=re,
+                    u_lid=cfg.u_lid_lbm,
+                    max_steps=400000,
+                    tol=2e-7,
+                    check_every=300,
+                    init_velocity=seed,
+                )
                 ref = ghia_reference(re)
                 u_n = r.u / cfg.u_lid_lbm
                 v_n = r.v / cfg.u_lid_lbm
-                row = {"n": n, "re": re, "steps": r.steps, "converged": bool(r.converged),
-                       "residual": r.residual, "tau": r.tau, "max_speed": float(r.speed.max()),
-                       "wall_s": round(time.time() - t0, 1)}
+                row = {
+                    "n": n,
+                    "re": re,
+                    "steps": r.steps,
+                    "converged": bool(r.converged),
+                    "residual": r.residual,
+                    "tau": r.tau,
+                    "max_speed": float(r.speed.max()),
+                    "wall_s": round(time.time() - t0, 1),
+                }
                 if ref:
                     g = compare_ghia(u_n, v_n, 1.0, ref)
-                    row.update({k: g[k] for k in ("u_max_dev_pct", "u_rms_dev_pct",
-                                                  "v_max_dev_pct", "v_rms_dev_pct")})
-                    row["ghia"] = {k: g[k] for k in ("y_ref", "u_lbm", "u_ref", "x_ref",
-                                                     "v_lbm", "v_ref")}
+                    row.update(
+                        {
+                            k: g[k]
+                            for k in (
+                                "u_max_dev_pct",
+                                "u_rms_dev_pct",
+                                "v_max_dev_pct",
+                                "v_rms_dev_pct",
+                            )
+                        }
+                    )
+                    row["ghia"] = {
+                        k: g[k] for k in ("y_ref", "u_lbm", "u_ref", "x_ref", "v_lbm", "v_ref")
+                    }
                 out["lbm"].append(row)
                 fields[("lbm", re, n)] = (u_n, v_n)
-                log(f"[CAV][LBM] n={n:4d} Re={re:5d} steps={r.steps:7d} "
+                log(
+                    f"[CAV][LBM] n={n:4d} Re={re:5d} steps={r.steps:7d} "
                     f"u_dev={row.get('u_max_dev_pct', float('nan')):.2f}% "
                     f"v_dev={row.get('v_max_dev_pct', float('nan')):.2f}% "
-                    f"({row['wall_s']} s)")
+                    f"({row['wall_s']} s)"
+                )
                 prev = (n, r.u, r.v)
                 if cfg.out_path:
                     _dump(cfg, out, fields, log=None)
@@ -193,20 +263,43 @@ def cavity_study(cfg: BenchmarkConfig, log=print) -> dict:
         for n in cfg.cavity_sizes_fvm:
             try:
                 t0 = time.time()
-                r = solve_psi_omega(n, 1.0 / re, mode="cavity", u_lid=1.0,
-                                    max_iter=400000, tol=1e-9, check_every=400)
+                r = solve_psi_omega(
+                    n,
+                    1.0 / re,
+                    mode="cavity",
+                    u_lid=1.0,
+                    max_iter=400000,
+                    tol=1e-9,
+                    check_every=400,
+                )
                 ref = ghia_reference(re)
-                row = {"n": n, "re": re, "iterations": r.iterations,
-                       "converged": bool(r.converged), "residual": r.residual,
-                       "wall_s": round(time.time() - t0, 1)}
+                row = {
+                    "n": n,
+                    "re": re,
+                    "iterations": r.iterations,
+                    "converged": bool(r.converged),
+                    "residual": r.residual,
+                    "wall_s": round(time.time() - t0, 1),
+                }
                 if ref:
                     g = compare_ghia(r.u, r.v, 1.0, ref)
-                    row.update({k: g[k] for k in ("u_max_dev_pct", "u_rms_dev_pct",
-                                                  "v_max_dev_pct", "v_rms_dev_pct")})
+                    row.update(
+                        {
+                            k: g[k]
+                            for k in (
+                                "u_max_dev_pct",
+                                "u_rms_dev_pct",
+                                "v_max_dev_pct",
+                                "v_rms_dev_pct",
+                            )
+                        }
+                    )
                 out["fvm"].append(row)
                 fields[("fvm", re, n)] = (r.u, r.v)
-                log(f"[CAV][FVM] n={n:4d} Re={re:5d} iters={r.iterations:7d} "
-                    f"u_dev={row.get('u_max_dev_pct', float('nan')):.2f}% ({row['wall_s']} s)")
+                log(
+                    f"[CAV][FVM] n={n:4d} Re={re:5d} iters={r.iterations:7d} "
+                    f"u_dev={row.get('u_max_dev_pct', float('nan')):.2f}% ({row['wall_s']} s)"
+                )
                 if cfg.out_path:
                     _dump(cfg, out, fields, log=None)
             except Exception as exc:
@@ -217,21 +310,43 @@ def cavity_study(cfg: BenchmarkConfig, log=print) -> dict:
         for n in cfg.cavity_sizes_fem:
             try:
                 t0 = time.time()
-                r = solve_taylor_hood(n, 1.0 / re, bc="walls", u_lid=1.0,
-                                      max_newton=cfg.fem_cavity_newton,
-                                      tol=cfg.fem_cavity_tol)
+                r = solve_taylor_hood(
+                    n,
+                    1.0 / re,
+                    bc="walls",
+                    u_lid=1.0,
+                    max_newton=cfg.fem_cavity_newton,
+                    tol=cfg.fem_cavity_tol,
+                )
                 ref = ghia_reference(re)
-                row = {"n": n, "re": re, "newton": r.newton_iterations,
-                       "converged": bool(r.converged), "residual": r.residual,
-                       "dof": r.dof_count, "wall_s": round(time.time() - t0, 1)}
+                row = {
+                    "n": n,
+                    "re": re,
+                    "newton": r.newton_iterations,
+                    "converged": bool(r.converged),
+                    "residual": r.residual,
+                    "dof": r.dof_count,
+                    "wall_s": round(time.time() - t0, 1),
+                }
                 if ref:
                     g = compare_ghia(r.u, r.v, 1.0, ref)
-                    row.update({k: g[k] for k in ("u_max_dev_pct", "u_rms_dev_pct",
-                                                  "v_max_dev_pct", "v_rms_dev_pct")})
+                    row.update(
+                        {
+                            k: g[k]
+                            for k in (
+                                "u_max_dev_pct",
+                                "u_rms_dev_pct",
+                                "v_max_dev_pct",
+                                "v_rms_dev_pct",
+                            )
+                        }
+                    )
                 out["fem"].append(row)
                 fields[("fem", re, n)] = (r.u, r.v)
-                log(f"[CAV][FEM] n={n:4d} Re={re:5d} newton={r.newton_iterations:3d} "
-                    f"u_dev={row.get('u_max_dev_pct', float('nan')):.2f}% ({row['wall_s']} s)")
+                log(
+                    f"[CAV][FEM] n={n:4d} Re={re:5d} newton={r.newton_iterations:3d} "
+                    f"u_dev={row.get('u_max_dev_pct', float('nan')):.2f}% ({row['wall_s']} s)"
+                )
                 if cfg.out_path:
                     _dump(cfg, out, fields, log=None)
             except Exception as exc:
@@ -273,18 +388,23 @@ def cross_solver_and_ledgers(cfg: BenchmarkConfig, cavity: dict, log=print) -> d
         "lbm_vs_fem": relative_l2(v_l, v_e),
         "fvm_vs_fem": relative_l2(v_f, v_e),
     }
-    result["pairs"] = {"u_rel_l2": pairs, "v_rel_l2": pairs_v,
-                       "max_u_rel_l2": max(pairs.values()),
-                       "max_uv_rel_l2": max(max(pairs.values()), max(pairs_v.values())) + eps}
+    result["pairs"] = {
+        "u_rel_l2": pairs,
+        "v_rel_l2": pairs_v,
+        "max_u_rel_l2": max(pairs.values()),
+        "max_uv_rel_l2": max(max(pairs.values()), max(pairs_v.values())) + eps,
+    }
     h = 1.0 / n
     nu = 1.0 / re
     for name, (uu, vv) in (("lbm", (u_l, v_l)), ("fvm", (u_f, v_f)), ("fem", (u_e, v_e))):
         led = energy_ledger(uu, vv, h, nu, 1.0)
         mass = divergence_ledger(uu, vv, h, 1.0)
         result["ledger"][name] = {"energy": led, "mass": mass}
-        log(f"[LEDGER] {name}: P={led['power_in']:.6f} eps={led['dissipation']:.6f} "
+        log(
+            f"[LEDGER] {name}: P={led['power_in']:.6f} eps={led['dissipation']:.6f} "
             f"rel={led['rel_error_pct']:.3f}%  mass_flux={mass['flux_integral']:.3e} "
-            f"max|div|*L/U={mass['max_abs_div_scaled']:.2e}")
+            f"max|div|*L/U={mass['max_abs_div_scaled']:.2e}"
+        )
     return result
 
 
@@ -314,14 +434,16 @@ def negative_control(cfg: BenchmarkConfig, log=print) -> dict:
     stopped.  A positive Stokes control (``Re = 1``) is run alongside it to prove
     the gate is not vacuous.
     """
-    res: dict = {"interpretation":
-                 "Re=0 is degenerate (nu->inf); the zero-response control used here is "
-                 "u_lid=0 (no driving). A Re=1 Stokes control proves non-vacuity."}
+    res: dict = {
+        "interpretation": "Re=0 is degenerate (nu->inf); the zero-response control used here is "
+        "u_lid=0 (no driving). A Re=1 Stokes control proves non-vacuity."
+    }
     n = 32
     u_l = np.zeros((n, n))
     try:
-        r = solve_psi_omega(n, 1.0, mode="cavity", u_lid=0.0, max_iter=20000, tol=1e-10,
-                            check_every=200)
+        r = solve_psi_omega(
+            n, 1.0, mode="cavity", u_lid=0.0, max_iter=20000, tol=1e-10, check_every=200
+        )
         res["fvm"] = {"n": n, "u_lid": 0.0, "max_speed": float(r.speed.max())}
     except Exception as exc:
         res["fvm"] = {"error": repr(exc)}
@@ -337,10 +459,10 @@ def negative_control(cfg: BenchmarkConfig, log=print) -> dict:
         res["lbm"] = {"error": repr(exc)}
     # positive control (Stokes): must be clearly non-zero
     try:
-        r = solve_psi_omega(n, 1.0, mode="cavity", u_lid=1.0, max_iter=40000, tol=1e-10,
-                            check_every=400)
-        res["stokes_positive_control_fvm"] = {"n": n, "re": 1.0,
-                                              "max_speed": float(r.speed.max())}
+        r = solve_psi_omega(
+            n, 1.0, mode="cavity", u_lid=1.0, max_iter=40000, tol=1e-10, check_every=400
+        )
+        res["stokes_positive_control_fvm"] = {"n": n, "re": 1.0, "max_speed": float(r.speed.max())}
     except Exception as exc:
         res["stokes_positive_control_fvm"] = {"error": repr(exc)}
     vals = [res[k]["max_speed"] for k in ("lbm", "fvm", "fem") if "max_speed" in res.get(k, {})]
@@ -391,24 +513,37 @@ def make_figures(report: dict, cfg: BenchmarkConfig) -> dict:
         axes[0].plot(ref["u"], ref["y"], "ko", ms=4, label="Ghia et al. (1982)")
         axes[1].plot(ref["v"], ref["x"], "ko", ms=4, label="Ghia et al. (1982)")
     for solver, style in (("lbm", "-"), ("fvm", "--"), ("fem", ":")):
-        rows = [r for r in cav.get(solver, []) if r.get("re") == cfg.cross_re
-                and r.get("n") == cfg.cross_n and "ghia" in r]
+        rows = [
+            r
+            for r in cav.get(solver, [])
+            if r.get("re") == cfg.cross_re and r.get("n") == cfg.cross_n and "ghia" in r
+        ]
         if not rows:
             continue
         g = rows[0]["ghia"]
         yy = np.asarray(g["y_ref"], float)
         axes[0].plot(g["u_lbm"], yy, style, lw=1.4, label=f"{solver.upper()} n={cfg.cross_n}")
-        axes[1].plot(g["v_lbm"], np.asarray(g["x_ref"], float), style, lw=1.4,
-                     label=f"{solver.upper()} n={cfg.cross_n}")
-    axes[0].set_xlabel("u / U_lid"); axes[0].set_ylabel("y")
-    axes[1].set_xlabel("v / U_lid"); axes[1].set_ylabel("x")
+        axes[1].plot(
+            g["v_lbm"],
+            np.asarray(g["x_ref"], float),
+            style,
+            lw=1.4,
+            label=f"{solver.upper()} n={cfg.cross_n}",
+        )
+    axes[0].set_xlabel("u / U_lid")
+    axes[0].set_ylabel("y")
+    axes[1].set_xlabel("v / U_lid")
+    axes[1].set_ylabel("x")
     axes[0].set_title(f"Vertical centreline (Re={cfg.cross_re})")
     axes[1].set_title(f"Horizontal centreline (Re={cfg.cross_re})")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=7)
-    figs["ghia_profiles"] = (_fig_to_b64(fig),
-                             f"Centreline velocity profiles vs Ghia et al. (1982) at "
-                             f"Re={cfg.cross_re}, n={cfg.cross_n}, for LBM / FVM / FEM.")
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=7)
+    figs["ghia_profiles"] = (
+        _fig_to_b64(fig),
+        f"Centreline velocity profiles vs Ghia et al. (1982) at "
+        f"Re={cfg.cross_re}, n={cfg.cross_n}, for LBM / FVM / FEM.",
+    )
     plt.close(fig)
 
     # 2) MMS observed order
@@ -422,12 +557,16 @@ def make_figures(report: dict, cfg: BenchmarkConfig) -> dict:
         xs = np.array([16, 128], float)
         ax.loglog(xs, 3e-5 * (xs / 16.0) ** (-p), "k--", lw=0.8)
         ax.annotate(lab, (xs[-1], 3e-5 * (xs[-1] / 16.0) ** (-p)), fontsize=8)
-    ax.set_xlabel("n"); ax.set_ylabel("velocity L2 error"); ax.grid(alpha=0.3, which="both")
+    ax.set_xlabel("n")
+    ax.set_ylabel("velocity L2 error")
+    ax.grid(alpha=0.3, which="both")
     ax.legend(fontsize=8)
     ax.set_title("MMS convergence (periodic, same exact field)")
-    figs["mms_order"] = (_fig_to_b64(fig),
-                         "Manufactured-solution velocity L2 error vs grid: LBM and FVM "
-                         "second order, Q2-Q1 FEM third order (reference slopes h^2, h^3).")
+    figs["mms_order"] = (
+        _fig_to_b64(fig),
+        "Manufactured-solution velocity L2 error vs grid: LBM and FVM "
+        "second order, Q2-Q1 FEM third order (reference slopes h^2, h^3).",
+    )
     plt.close(fig)
 
     # 3) cross-solver field comparison
@@ -449,14 +588,16 @@ def make_figures(report: dict, cfg: BenchmarkConfig) -> dict:
                 ul, vl = fields[keys[0]]
                 d = np.hypot(u - ul, v - vl)
                 im2 = axes[1, col].pcolormesh(xx, yy, d, shading="auto", cmap="magma")
-                axes[1, col].set_title(f"|{s.upper()} - LBM|, L2={relative_l2(u, ul)*100:.2f}%")
+                axes[1, col].set_title(f"|{s.upper()} - LBM|, L2={relative_l2(u, ul) * 100:.2f}%")
                 axes[1, col].set_aspect("equal")
                 fig.colorbar(im2, ax=axes[1, col])
             else:
                 axes[1, col].axis("off")
-        figs["cross_fields"] = (_fig_to_b64(fig),
-                                f"Speed field at Re={cfg.cross_re}, n={n} for LBM/FVM/FEM "
-                                "and the pointwise difference against LBM.")
+        figs["cross_fields"] = (
+            _fig_to_b64(fig),
+            f"Speed field at Re={cfg.cross_re}, n={n} for LBM/FVM/FEM "
+            "and the pointwise difference against LBM.",
+        )
         plt.close(fig)
 
     # 4) energy ledger
@@ -469,34 +610,49 @@ def make_figures(report: dict, cfg: BenchmarkConfig) -> dict:
         idx = np.arange(len(names))
         ax.bar(idx - 0.18, P, 0.36, label="input power P")
         ax.bar(idx + 0.18, E, 0.36, label="dissipation $\\epsilon$")
-        ax.set_xticks(idx); ax.set_xticklabels([k.upper() for k in names])
+        ax.set_xticks(idx)
+        ax.set_xticklabels([k.upper() for k in names])
         ax.set_ylabel("non-dimensional")
         for i, k in enumerate(names):
-            ax.annotate(f"{led[k]['energy']['rel_error_pct']:.2f}%", (i, max(P[i], E[i])),
-                        ha="center", va="bottom", fontsize=8)
-        ax.legend(); ax.grid(alpha=0.3, axis="y")
+            ax.annotate(
+                f"{led[k]['energy']['rel_error_pct']:.2f}%",
+                (i, max(P[i], E[i])),
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
+        ax.legend()
+        ax.grid(alpha=0.3, axis="y")
         ax.set_title("Steady energy budget P vs $\\epsilon$")
-        figs["energy_ledger"] = (_fig_to_b64(fig),
-                                 "Input power from the moving lid versus volume viscous "
-                                 "dissipation at Re=100, n=128 (annotated relative error).")
+        figs["energy_ledger"] = (
+            _fig_to_b64(fig),
+            "Input power from the moving lid versus volume viscous "
+            "dissipation at Re=100, n=128 (annotated relative error).",
+        )
         plt.close(fig)
 
     # 5) Ghia deviation vs resolution
     fig, ax = plt.subplots(figsize=(5.4, 4.0))
     for solver, mk in (("lbm", "o-"), ("fvm", "s-"), ("fem", "^-")):
-        rows = [r for r in cav.get(solver, [])
-                if r.get("re") == cfg.cross_re and "u_max_dev_pct" in r]
+        rows = [
+            r for r in cav.get(solver, []) if r.get("re") == cfg.cross_re and "u_max_dev_pct" in r
+        ]
         if rows:
-            ax.plot([r["n"] for r in rows], [r["u_max_dev_pct"] for r in rows], mk,
-                    label=solver.upper())
+            ax.plot(
+                [r["n"] for r in rows], [r["u_max_dev_pct"] for r in rows], mk, label=solver.upper()
+            )
     ax.axhline(3.0, color="r", ls="--", lw=1.0, label="3 % criterion")
-    ax.set_xscale("log"); ax.set_xlabel("n")
+    ax.set_xscale("log")
+    ax.set_xlabel("n")
     ax.set_ylabel("max |u-u_Ghia| / U_lid  [%]")
-    ax.grid(alpha=0.3); ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=8)
     ax.set_title(f"Ghia deviation vs resolution (Re={cfg.cross_re})")
-    figs["ghia_convergence"] = (_fig_to_b64(fig),
-                                "Maximum centreline deviation from Ghia (1982) versus grid "
-                                "resolution for the three solvers.")
+    figs["ghia_convergence"] = (
+        _fig_to_b64(fig),
+        "Maximum centreline deviation from Ghia (1982) versus grid "
+        "resolution for the three solvers.",
+    )
     plt.close(fig)
     return figs
 
@@ -527,12 +683,16 @@ def evaluate_criteria(report: dict, cfg: BenchmarkConfig) -> dict:
                 if best is None or r["n"] > best["n"]:
                     best = r
         if best:
-            rows[solver] = {"n": best["n"], "u_max_dev_pct": best["u_max_dev_pct"],
-                            "v_max_dev_pct": best["v_max_dev_pct"]}
+            rows[solver] = {
+                "n": best["n"],
+                "u_max_dev_pct": best["u_max_dev_pct"],
+                "v_max_dev_pct": best["v_max_dev_pct"],
+            }
     vals = [v["u_max_dev_pct"] for v in rows.values()]
     c["C1_ghia_re100"] = {
         "criterion": "max centreline |u-u_Ghia|/U_lid < 3% at Re=100 (finest grid per solver)",
-        "value_pct": max(vals) if vals else None, "per_solver": rows,
+        "value_pct": max(vals) if vals else None,
+        "per_solver": rows,
         "pass": bool(vals) and max(vals) < 3.0,
     }
 
@@ -542,14 +702,18 @@ def evaluate_criteria(report: dict, cfg: BenchmarkConfig) -> dict:
     c["C2_cross_solver_l2"] = {
         "criterion": "max pairwise relative L2 (u and v) < 2% at n=128",
         "value_pct": None if mx is None else float(mx) * 100.0,
-        "pairs": cs.get("pairs", {}), "pass": bool(mx is not None and mx < 0.02),
+        "pairs": cs.get("pairs", {}),
+        "pass": bool(mx is not None and mx < 0.02),
     }
 
     # C3: MMS observed orders
     windows = {"lbm": (1.8, 2.2), "fvm": (1.8, 2.2), "fem": (2.8, 3.2)}
     mms = report.get("mms", {}).get("solvers", {})
-    c3 = {"criterion": "observed order: LBM in [1.8,2.2], FVM in [1.8,2.2], FEM in [2.8,3.2]",
-          "per_solver": {}, "pass": True}
+    c3 = {
+        "criterion": "observed order: LBM in [1.8,2.2], FVM in [1.8,2.2], FEM in [2.8,3.2]",
+        "per_solver": {},
+        "pass": True,
+    }
     for solver, (lo, hi) in windows.items():
         if solver not in mms:
             c3["per_solver"][solver] = {"order": None, "pass": False}
@@ -557,26 +721,36 @@ def evaluate_criteria(report: dict, cfg: BenchmarkConfig) -> dict:
             continue
         o = _observed_order(mms[solver])
         ok = bool(lo <= o <= hi)
-        c3["per_solver"][solver] = {"order": o, "window": [lo, hi], "pass": ok,
-                                    "pairwise": mms[solver]["pairwise"]}
+        c3["per_solver"][solver] = {
+            "order": o,
+            "window": [lo, hi],
+            "pass": ok,
+            "pairwise": mms[solver]["pairwise"],
+        }
         c3["pass"] = c3["pass"] and ok
     c["C3_mms_order"] = c3
 
     # C4: energy ledger
     led = cs.get("ledger", {})
     per = {k: led[k]["energy"]["rel_error_pct"] for k in led}
-    c["C4_energy"] = {"criterion": "|P-eps|/max(P,eps) < 1% per solver at n=128",
-                      "per_solver_pct": per, "value_pct": max(per.values()) if per else None,
-                      "pass": bool(per) and max(per.values()) < 1.0}
+    c["C4_energy"] = {
+        "criterion": "|P-eps|/max(P,eps) < 1% per solver at n=128",
+        "per_solver_pct": per,
+        "value_pct": max(per.values()) if per else None,
+        "pass": bool(per) and max(per.values()) < 1.0,
+    }
 
     # C5: mass conservation
     mass = {k: led[k]["mass"] for k in led}
     vals = [m["flux_integral"] for m in mass.values()]
-    c["C5_mass"] = {"criterion": "|int div(u) dV| < 1e-10 (signed global flux)",
-                    "per_solver": mass, "value": max(vals) if vals else None,
-                    "pass": bool(vals) and max(vals) < 1e-10,
-                    "note": "local divergence norms are reported as the physically "
-                            "meaningful metric for the weakly compressible LBM leg"}
+    c["C5_mass"] = {
+        "criterion": "|int div(u) dV| < 1e-10 (signed global flux)",
+        "per_solver": mass,
+        "value": max(vals) if vals else None,
+        "pass": bool(vals) and max(vals) < 1e-10,
+        "note": "local divergence norms are reported as the physically "
+        "meaningful metric for the weakly compressible LBM leg",
+    }
     return c, c3
 
 
@@ -586,7 +760,7 @@ def run_benchmark(cfg: BenchmarkConfig, log=print) -> dict:
         "report_schema": "cross-solver-verification/1.0",
         "node": "P78-N01",
         "title": "Cross-solver verification: lid-driven cavity (Ghia) + MMS + conservation "
-                 "ledgers for LBM / FVM / FEM",
+        "ledgers for LBM / FVM / FEM",
         "repo": "TensorLBM",
         "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "audit": {
@@ -596,11 +770,11 @@ def run_benchmark(cfg: BenchmarkConfig, log=print) -> dict:
             "platform": platform.platform(),
             "solver_modules": {
                 "lbm": "tensorlbm.cross_solver_verification.lbm (numpy D2Q9, BGK+Guo, "
-                       "half-way bounce-back, moving-lid momentum correction)",
+                "half-way bounce-back, moving-lid momentum correction)",
                 "fvm": "tensorlbm.cross_solver_verification.fvm (cell-centred psi-omega, "
-                       "exact discrete Poisson, Woods wall vorticity)",
+                "exact discrete Poisson, Woods wall vorticity)",
                 "fem": "tensorlbm.cross_solver_verification.fem (Q2-Q1 Taylor-Hood, "
-                       "Newton, structured quads)",
+                "Newton, structured quads)",
             },
         },
     }
@@ -650,9 +824,11 @@ def _json_safe(obj):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", type=Path,
-                    default=Path("artifacts/cross_solver_verification/"
-                                 "cross_solver_verification_report.json"))
+    ap.add_argument(
+        "--out",
+        type=Path,
+        default=Path("artifacts/cross_solver_verification/cross_solver_verification_report.json"),
+    )
     ap.add_argument("--stage", choices=("smoke", "full"), default="smoke")
     ap.add_argument("--cross-n", type=int, default=None)
     ap.add_argument("--quiet", action="store_true")
@@ -660,10 +836,19 @@ def main(argv=None) -> int:
     log = (lambda *a, **k: None) if args.quiet else print
     if args.stage == "smoke":
         cfg = BenchmarkConfig(
-            mms_sizes_lbm=(16, 32), mms_sizes_fvm=(16, 32), mms_sizes_fem=(8, 16),
-            cavity_sizes_lbm=(16, 32), cavity_sizes_fvm=(16, 32), cavity_sizes_fem=(16, 32),
-            reynolds=(100,), reynolds_fvm=(100,), reynolds_fem=(100,),
-            cross_n=32, ledger_n=32, out_path=args.out, verbose=not args.quiet,
+            mms_sizes_lbm=(16, 32),
+            mms_sizes_fvm=(16, 32),
+            mms_sizes_fem=(8, 16),
+            cavity_sizes_lbm=(16, 32),
+            cavity_sizes_fvm=(16, 32),
+            cavity_sizes_fem=(16, 32),
+            reynolds=(100,),
+            reynolds_fvm=(100,),
+            reynolds_fem=(100,),
+            cross_n=32,
+            ledger_n=32,
+            out_path=args.out,
+            verbose=not args.quiet,
         )
     else:
         cfg = BenchmarkConfig(out_path=args.out, verbose=not args.quiet)

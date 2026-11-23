@@ -66,10 +66,10 @@ ANCHOR_DIR = REPO / "benchmarks" / "anchors"
 ARTIFACTS = CASE_DIR / "artifacts"
 
 # --- pre-declared acceptance thresholds (do not tune after seeing results) ---
-MAX_POINT_DEV_TOL_PCT = 5.0   # M1
-MAX_POINT_REL_TOL_PCT = 5.0   # M2
-EXTREMUM_REL_TOL_PCT = 5.0    # M3
-REL_FLOOR = 0.05              # M2 ill-conditioning floor, fraction of max|ref|
+MAX_POINT_DEV_TOL_PCT = 5.0  # M1
+MAX_POINT_REL_TOL_PCT = 5.0  # M2
+EXTREMUM_REL_TOL_PCT = 5.0  # M3
+REL_FLOOR = 0.05  # M2 ill-conditioning floor, fraction of max|ref|
 SUPERSEDED_SUSPECTS = "GHIA_RE400 inline constants (see suspect_entries)"
 
 
@@ -112,9 +112,12 @@ def load_bound_anchor(re: int = 400) -> dict:
     missing = {"I", "II"} - set(tables)
     if missing:
         raise SystemExit(f"Re={re}: BOUND tables missing from csv_anchors: {sorted(missing)}")
-    return {"re": int(re), "tables": tables,
-            "witness_sha256": prov["primary_witness"]["sha256"],
-            "suspect_entries": prov.get("suspect_entries", [])}
+    return {
+        "re": int(re),
+        "tables": tables,
+        "witness_sha256": prov["primary_witness"]["sha256"],
+        "suspect_entries": prov.get("suspect_entries", []),
+    }
 
 
 def score_profile(run: dict, anchor: dict) -> dict:
@@ -135,40 +138,62 @@ def score_profile(run: dict, anchor: dict) -> dict:
         *((c, r, g, "I", "u") for c, r, g in zip(t1["coord"], u_ref, u_sim)),
         *((c, r, g, "II", "v") for c, r, g in zip(t2["coord"], v_ref, v_sim)),
     ):
-        points.append({
-            "table": tag, "profile": prof, "coord": float(coord),
-            "ref": float(ref), "got": float(got), "delta": float(got - ref),
-        })
+        points.append(
+            {
+                "table": tag,
+                "profile": prof,
+                "coord": float(coord),
+                "ref": float(ref),
+                "got": float(got),
+                "delta": float(got - ref),
+            }
+        )
 
-    max_dev = float(max(np.abs(du).max(), np.abs(dv).max())) * 100.0          # M1
+    max_dev = float(max(np.abs(du).max(), np.abs(dv).max())) * 100.0  # M1
     peak = max(float(np.abs(u_ref).max()), float(np.abs(v_ref).max()))
     floor = REL_FLOOR * peak
-    rel_all = np.concatenate([np.abs(du) / np.maximum(np.abs(u_ref), 1e-30),
-                              np.abs(dv) / np.maximum(np.abs(v_ref), 1e-30)])
+    rel_all = np.concatenate(
+        [
+            np.abs(du) / np.maximum(np.abs(u_ref), 1e-30),
+            np.abs(dv) / np.maximum(np.abs(v_ref), 1e-30),
+        ]
+    )
     ref_all = np.concatenate([u_ref, v_ref])
     conditioned = np.abs(ref_all) >= floor
-    max_rel = float(rel_all[conditioned].max()) * 100.0                       # M2
+    max_rel = float(rel_all[conditioned].max()) * 100.0  # M2
     ill = [
-        {"table": "I" if i < len(u_ref) else "II",
-         "coord": float((t1["coord"] if i < len(u_ref) else t2["coord"])[i % len(u_ref)]),
-         "ref": float(ref_all[i]), "rel_pct": float(rel_all[i]) * 100.0}
+        {
+            "table": "I" if i < len(u_ref) else "II",
+            "coord": float((t1["coord"] if i < len(u_ref) else t2["coord"])[i % len(u_ref)]),
+            "ref": float(ref_all[i]),
+            "rel_pct": float(rel_all[i]) * 100.0,
+        }
         for i in np.flatnonzero(~conditioned)
     ]
 
     iu = int(np.argmin(u_ref))
     iv = int(np.argmin(v_ref))
     extrema = {
-        "u_min": {"coord_y": float(t1["coord"][iu]), "ref": float(u_ref[iu]),
-                  "got": float(u_sim[iu]),
-                  "rel_pct": float(abs(u_sim[iu] - u_ref[iu]) / abs(u_ref[iu])) * 100.0},
-        "v_min": {"coord_x": float(t2["coord"][iv]), "ref": float(v_ref[iv]),
-                  "got": float(v_sim[iv]),
-                  "rel_pct": float(abs(v_sim[iv] - v_ref[iv]) / abs(v_ref[iv])) * 100.0},
+        "u_min": {
+            "coord_y": float(t1["coord"][iu]),
+            "ref": float(u_ref[iu]),
+            "got": float(u_sim[iu]),
+            "rel_pct": float(abs(u_sim[iu] - u_ref[iu]) / abs(u_ref[iu])) * 100.0,
+        },
+        "v_min": {
+            "coord_x": float(t2["coord"][iv]),
+            "ref": float(v_ref[iv]),
+            "got": float(v_sim[iv]),
+            "rel_pct": float(abs(v_sim[iv] - v_ref[iv]) / abs(v_ref[iv])) * 100.0,
+        },
     }
 
     return {
-        "n": run["nx"], "re": run.get("re", anchor["re"]), "u_lid": run.get("u_lid"),
-        "tau": run.get("tau"), "steps": run.get("steps"),
+        "n": run["nx"],
+        "re": run.get("re", anchor["re"]),
+        "u_lid": run.get("u_lid"),
+        "tau": run.get("tau"),
+        "steps": run.get("steps"),
         "last_resid": run.get("last_resid"),
         "metrics": {
             "M1_max_point_dev_pct": max_dev,
@@ -193,6 +218,7 @@ def score_profile(run: dict, anchor: dict) -> dict:
 
 def plot(anchor: dict, scored: list[dict], out_png: Path) -> None:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -205,16 +231,26 @@ def plot(anchor: dict, scored: list[dict], out_png: Path) -> None:
         prof = s["run"]
         y = np.asarray(prof["profiles"]["y"])
         x = np.asarray(prof["profiles"]["x"])
-        axes[0].plot(prof["profiles"]["u_cl"], y, "-", lw=1.3, color=colors[k % 4],
-                     label=f"LBM n={s['n']} (M1={s['metrics']['M1_max_point_dev_pct']:.2f}%)")
-        axes[1].plot(prof["profiles"]["v_cl"], x, "-", lw=1.3, color=colors[k % 4],
-                     label=f"LBM n={s['n']}")
-    axes[0].set_xlabel("u / U_lid"); axes[0].set_ylabel("y / H")
+        axes[0].plot(
+            prof["profiles"]["u_cl"],
+            y,
+            "-",
+            lw=1.3,
+            color=colors[k % 4],
+            label=f"LBM n={s['n']} (M1={s['metrics']['M1_max_point_dev_pct']:.2f}%)",
+        )
+        axes[1].plot(
+            prof["profiles"]["v_cl"], x, "-", lw=1.3, color=colors[k % 4], label=f"LBM n={s['n']}"
+        )
+    axes[0].set_xlabel("u / U_lid")
+    axes[0].set_ylabel("y / H")
     axes[0].set_title("Vertical centreline u (Re=400)")
-    axes[1].set_xlabel("v / U_lid"); axes[1].set_ylabel("x / H")
+    axes[1].set_xlabel("v / U_lid")
+    axes[1].set_ylabel("x / H")
     axes[1].set_title("Horizontal centreline v (Re=400)")
     for ax in axes:
-        ax.grid(alpha=0.3); ax.legend(fontsize=8)
+        ax.grid(alpha=0.3)
+        ax.legend(fontsize=8)
     fig.suptitle("Ghia et al. (1982) Re=400 anchor — TensorLBM D2Q9 MRT (V3 walls)", fontsize=11)
     fig.tight_layout()
     out_png.parent.mkdir(parents=True, exist_ok=True)
@@ -223,9 +259,7 @@ def plot(anchor: dict, scored: list[dict], out_png: Path) -> None:
 
 
 def write_report(path: Path, anchor: dict, scored: list[dict], repro_cmd: str) -> str:
-    crit_ok = all(
-        s["metrics"]["M1_pass"] and s["metrics"]["M3_pass"] for s in scored
-    )
+    crit_ok = all(s["metrics"]["M1_pass"] and s["metrics"]["M3_pass"] for s in scored)
     lines = [
         "# Ghia (1982) Re=400 external anchor — TensorLBM",
         "",
@@ -330,7 +364,7 @@ def write_report(path: Path, anchor: dict, scored: list[dict], repro_cmd: str) -
             f"on every grid (best {min(s['metrics']['M1_max_point_dev_pct'] for s in scored):.2f}%)."
         )
     else:
-        lines.append(f"* **M1: FAIL** (see table).")
+        lines.append("* **M1: FAIL** (see table).")
     lines.append(
         "* **M3 (extremum relative error) < "
         f"{EXTREMUM_REL_TOL_PCT:g}%: "
@@ -362,7 +396,9 @@ def write_report(path: Path, anchor: dict, scored: list[dict], repro_cmd: str) -
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-json", default=str(ARTIFACTS / "run_raw.json"))
-    ap.add_argument("--run", action="store_true", help="run the solver instead of reading --run-json")
+    ap.add_argument(
+        "--run", action="store_true", help="run the solver instead of reading --run-json"
+    )
     ap.add_argument("--nx", nargs="+", type=int, default=[128, 192])
     ap.add_argument("--steps", type=int, default=200000)
     ap.add_argument("--u-lid", type=float, default=0.06)
@@ -378,8 +414,11 @@ def main() -> int:
         runs = [run_case(nx, 400.0, args.u_lid, args.steps, args.device) for nx in args.nx]
     else:
         payload = json.loads(Path(args.run_json).read_text(encoding="utf-8"))
-        runs = [v for k, v in sorted(payload.items(), key=lambda kv: int(kv[0]))
-                if k.isdigit() and "profiles" in v]
+        runs = [
+            v
+            for k, v in sorted(payload.items(), key=lambda kv: int(kv[0]))
+            if k.isdigit() and "profiles" in v
+        ]
 
     if not runs:
         raise SystemExit(f"no runs with profiles in {args.run_json}")
@@ -396,8 +435,9 @@ def main() -> int:
             "citation": "Ghia, Ghia & Shin (1982) JCP 48(3):387-411, Tables I-II",
             "provenance": "BOUND (OCR witness sha256 pinned)",
             "witness_sha256": anchor["witness_sha256"],
-            "csv": {t: {"path": v["path"], "sha256": v["sha256"]}
-                    for t, v in anchor["tables"].items()},
+            "csv": {
+                t: {"path": v["path"], "sha256": v["sha256"]} for t, v in anchor["tables"].items()
+            },
         },
         "criteria": {
             "M1_max_point_dev_pct": MAX_POINT_DEV_TOL_PCT,
@@ -408,8 +448,14 @@ def main() -> int:
         "excluded_suspect_entries": anchor["suspect_entries"],
         "results": [{k: v for k, v in s.items() if k != "run"} for s in scored],
         "run_artifacts": [
-            {"n": s["n"], "steps": s["steps"], "last_resid": s["last_resid"],
-             "u_lid": s["u_lid"], "tau": s["tau"]} for s in scored
+            {
+                "n": s["n"],
+                "steps": s["steps"],
+                "last_resid": s["last_resid"],
+                "u_lid": s["u_lid"],
+                "tau": s["tau"],
+            }
+            for s in scored
         ],
     }
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
@@ -430,10 +476,12 @@ def main() -> int:
     keep = all(s["metrics"]["M1_pass"] and s["metrics"]["M3_pass"] for s in scored)
     for s in scored:
         m = s["metrics"]
-        print(f"n={s['n']:4d} M1={m['M1_max_point_dev_pct']:.2f}% "
-              f"M2={m['M2_max_point_rel_pct']:.2f}% "
-              f"M3(u_min)={m['M3_extremum_rel_pct']['u_min']:.2f}% "
-              f"M3(v_min)={m['M3_extremum_rel_pct']['v_min']:.2f}%")
+        print(
+            f"n={s['n']:4d} M1={m['M1_max_point_dev_pct']:.2f}% "
+            f"M2={m['M2_max_point_rel_pct']:.2f}% "
+            f"M3(u_min)={m['M3_extremum_rel_pct']['u_min']:.2f}% "
+            f"M3(v_min)={m['M3_extremum_rel_pct']['v_min']:.2f}%"
+        )
     print(f"artifacts: {out_json}, {ARTIFACTS / 'report.md'}, {ARTIFACTS / 'profiles.png'}")
     print("RESULT:", "PASS (M1 & M3)" if keep else "FAIL (M1/M3)")
     return 0 if keep else 1

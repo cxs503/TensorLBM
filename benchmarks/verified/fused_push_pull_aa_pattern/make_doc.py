@@ -24,24 +24,33 @@ def main() -> int:
 
     add("# XVAL m17902 — fused push-pull AA pattern: integration + machine referee")
     add("")
-    add("**Anchor**: `XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN` (OSS `lbm-principles-practice/code`, "
-        "chapter 13 GPU `gpu_stream_collide_save`).  ")
+    add(
+        "**Anchor**: `XVAL-LBM-FUSED-PUSH-PULL-AA-PATTERN` (OSS `lbm-principles-practice/code`, "
+        "chapter 13 GPU `gpu_stream_collide_save`).  "
+    )
     add(f"**Case**: {res['case']}  |  **Mission**: m17902  |  **Rendered from**: `result.json`")
     add("")
     add("## 1. Case, geometry and parameters")
     add("")
     add("Upstream kernel (quoted behaviour of the snapshot recorded under mission 17839): pull the")
     add("eight shifted neighbours of the **post-collision** field, rebuild `rho/ux/uy` from those")
-    add("nine numbers, relax, write the next buffer — no intermediate *streamed* field ever exists.")
+    add(
+        "nine numbers, relax, write the next buffer — no intermediate *streamed* field ever exists."
+    )
     add("")
     add("| parameter | value |")
     add("|---|---|")
-    add(f"| domain | periodic square {{n}}×{{n}}, n ∈ {[r['grid'] for r in res['ladder'][0]['rows']]} |")
+    add(
+        f"| domain | periodic square {{n}}×{{n}}, n ∈ {[r['grid'] for r in res['ladder'][0]['rows']]} |"
+    )
     add(f"| ν, τ | {par['nu']:.10f}, {par['tau']:.10f} |")
     add(f"| u_max, Ma | {par['u_max']}, {par['mach']:.4f} |")
     add(f"| ρ0 | {par['rho0']} |")
-    add(f"| steps | ∝ n² (fixed physical time): "
-        + ", ".join(f"n={r['grid']}: {r['steps']}" for r in res['ladder'][0]['rows']) + " |")
+    add(
+        "| steps | ∝ n² (fixed physical time): "
+        + ", ".join(f"n={r['grid']}: {r['steps']}" for r in res["ladder"][0]["rows"])
+        + " |"
+    )
     add(f"| dtype / boundary | {par['dtype']} / {par['boundary']} |")
     add(f"| reference | {res['reference']} |")
     add(f"| gates | owner {par['gate_pct']:.0%}; self target {par['target_pct']:.0%} |")
@@ -54,8 +63,8 @@ def main() -> int:
     add("first write-up:")
     add("")
     add("1. `tensorlbm.solver.step_stream_collide(f, tau, kernel=...)` is the new integration")
-    add("   point — `kernel=\"ab\"` is the existing `stream(collide_bgk(...))` path, ")
-    add("   `kernel=\"fused_push_pull\"` routes to `tensorlbm.fused_push_pull`.  Unknown kernels")
+    add('   point — `kernel="ab"` is the existing `stream(collide_bgk(...))` path, ')
+    add('   `kernel="fused_push_pull"` routes to `tensorlbm.fused_push_pull`.  Unknown kernels')
     add("   and illegal `τ` are rejected before any work happens.")
     add("2. `benchmarks/verified/fused_push_pull_aa_pattern/` runs both kernels on a Taylor-Green")
     add("   ladder plus two negative controls, and `verify.py` adjudicates every gate (exit 0).")
@@ -71,16 +80,20 @@ def main() -> int:
     add("| grid | steps | kernel | u_x rel.L2 | u_y rel.L2 | ρ rel.L2 | mass drift | wall |")
     add("|---|---|---|---|---|---|---|---|")
     for a in arms:
-        add(f"| {a['grid']} | {a['steps']} | `{a['kernel']}` | {pct(a['ux_lu2'])} | "
-            f"{pct(a['uy_lu2'])} | {a['rho_lu2']:.4e} | {a['mass_drift_rel']:.2e} | {a['wall_s']:.1f} s |")
+        add(
+            f"| {a['grid']} | {a['steps']} | `{a['kernel']}` | {pct(a['ux_lu2'])} | "
+            f"{pct(a['uy_lu2'])} | {a['rho_lu2']:.4e} | {a['mass_drift_rel']:.2e} | {a['wall_s']:.1f} s |"
+        )
     add("")
     add("### 3.2 Scheme equivalence (same grid, same steps)")
     add("")
     add("| quantity | value |")
     add("|---|---|")
     add(f"| `max\\|f_fused − collide_bgk(f_ab)\\|` | {eq['max_abs_fused_vs_collided_ab']:.3e} |")
-    add(f"| `max\\|f_fused − f_ab\\|` (one-collision label offset, **not** an error) | "
-        f"{eq['max_abs_fused_vs_raw_ab_state_label_offset']:.3e} |")
+    add(
+        f"| `max\\|f_fused − f_ab\\|` (one-collision label offset, **not** an error) | "
+        f"{eq['max_abs_fused_vs_raw_ab_state_label_offset']:.3e} |"
+    )
     add(f"| cross-arm velocity rel.L2 | {eq['rel_l2_velocity_cross_arm']:.3e} |")
     add(f"| fused vs analytic velocity rel.L2 | {eq['rel_l2_velocity_fused_vs_analytic']:.3e} |")
     add(f"| AB vs analytic velocity rel.L2 | {eq['rel_l2_velocity_ab_vs_analytic']:.3e} |")
@@ -97,15 +110,19 @@ def main() -> int:
     add("| grid | kernel | ν inverted | rel. error |")
     add("|---|---|---|---|")
     for a in arms:
-        add(f"| {a['grid']} | `{a['kernel']}` | {a['nu_inverted']:.6f} | "
-            f"{pct(a['nu_inversion_err_rel'])} |")
+        add(
+            f"| {a['grid']} | `{a['kernel']}` | {a['nu_inverted']:.6f} | "
+            f"{pct(a['nu_inversion_err_rel'])} |"
+        )
     add("")
     add("### 3.5 Negative controls (does the 15% gate bite?)")
     add("")
     add("| control | u_x rel.L2 | exceeds 15% gate |")
     add("|---|---|---|")
     for c in res["controls"]:
-        add(f"| `{c['name']}` ({c['note']}) | {pct(c['ux_lu2'])} | {'yes' if c['exceeds_gate'] else 'NO'} |")
+        add(
+            f"| `{c['name']}` ({c['note']}) | {pct(c['ux_lu2'])} | {'yes' if c['exceeds_gate'] else 'NO'} |"
+        )
     add("")
     add("### 3.6 Figures")
     add("")
@@ -117,7 +134,9 @@ def main() -> int:
     add("## 4. Points to watch")
     add("")
     add("* **State-label offset.** The fused kernel stores post-collision populations; the AB")
-    add("  reference stores post-stream ones.  Comparing the two raw states measures one collision,")
+    add(
+        "  reference stores post-stream ones.  Comparing the two raw states measures one collision,"
+    )
     add("  not an error.  Any future 'bit-identical' claim must state the level it compares at.")
     add("* **Periodic only.** Neither kernel is a boundary-condition implementation: the fused")
     add("  kernel wraps by index arithmetic (`%n`), exactly like upstream.  Walls, inlets and")
@@ -127,19 +146,26 @@ def main() -> int:
     add("  vectorised gather completes before any write.  No bandwidth/MLUPS number is claimed")
     add("  here: the measurement host was heavily loaded (load15 > 100) and timings in the table")
     add("  are wall-clock under that load, not a performance claim.")
-    add("* **Upstream CUDA was not executed** (no GPU in this sandbox); the equivalence is with the")
-    add("  repo's NumPy/torch transliteration of the snapshot, whose provenance hashes were checked")
+    add(
+        "* **Upstream CUDA was not executed** (no GPU in this sandbox); the equivalence is with the"
+    )
+    add(
+        "  repo's NumPy/torch transliteration of the snapshot, whose provenance hashes were checked"
+    )
     add("  by the earlier audit.")
     add("")
     add("## 5. Error judgement against the acceptance line (<15%)")
     add("")
     worst = max(a["ux_lu2"] for a in arms if a["grid"] == max(x["grid"] for x in arms))
-    add(f"* Finest-grid `u_x` relative L2, worst of the two kernels: **{pct(worst)}** — "
-        f"**< 3%** ✓ (owner gate 15%, self target 3%).")
+    add(
+        f"* Finest-grid `u_x` relative L2, worst of the two kernels: **{pct(worst)}** — "
+        f"**< 3%** ✓ (owner gate 15%, self target 3%)."
+    )
     add(f"* Cross-arm velocity difference: **{eq['rel_l2_velocity_cross_arm']:.3e}** — < 1e-10 ✓.")
-    add(f"* Same-level state equivalence: **{eq['max_abs_fused_vs_collided_ab']:.3e}** — < 1e-12 ✓.")
-    add("* Mass drift: max "
-        f"**{max(a['mass_drift_rel'] for a in arms):.2e}** — < 1e-12 ✓.")
+    add(
+        f"* Same-level state equivalence: **{eq['max_abs_fused_vs_collided_ab']:.3e}** — < 1e-12 ✓."
+    )
+    add(f"* Mass drift: max **{max(a['mass_drift_rel'] for a in arms):.2e}** — < 1e-12 ✓.")
     add("* Both negative controls exceed the 15% gate ✓ (the gate is not toothless).")
     add("")
     add("Verdict: **PASS** — `verify.py` exits 0 on this `result.json`.")

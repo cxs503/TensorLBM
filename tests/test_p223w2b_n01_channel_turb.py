@@ -76,8 +76,11 @@ def test_audit_payload_has_verdicts(tmp_path):
     payload = json.loads(Path(path).read_text())
     assert payload["schema"] == "tensorlbm-turbulent-channel-gate-audit-v1"
     assert set(payload["verdicts"]) == {
-        "a_log_law_5pct", "b_stress_10pct", "c_spectrum_slope_10pct",
-        "d_dean_5pct", "e_grid_convergence_3pct",
+        "a_log_law_5pct",
+        "b_stress_10pct",
+        "c_spectrum_slope_10pct",
+        "d_dean_5pct",
+        "e_grid_convergence_3pct",
     }
     assert payload["verdicts"]["d_dean_5pct"]["reference_attains"] is False
     assert payload["power_law"]["max_rel_dev"] < 0.01

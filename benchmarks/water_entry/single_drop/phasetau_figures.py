@@ -3,11 +3,13 @@
 Programmatic: reads runs/<arm>/result.json, overlays the Santini case-3
 experimental markers (fig5_experiment.csv), saves PNGs.  No hand-copied data.
 """
+
 import json
 import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,8 +17,13 @@ import numpy as np
 EXP_DEPTH = 1.857434
 ARMS = ["pt_ctrl", "pt_p05", "pt_p10", "pt_p20", "pt_m05"]
 DOSES = {"pt_ctrl": 0.0, "pt_p05": 0.5, "pt_p10": 1.0, "pt_p20": 2.0, "pt_m05": -0.5}
-COLORS = {"pt_ctrl": "black", "pt_p05": "tab:blue", "pt_p10": "tab:red",
-          "pt_p20": "tab:green", "pt_m05": "tab:orange"}
+COLORS = {
+    "pt_ctrl": "black",
+    "pt_p05": "tab:blue",
+    "pt_p10": "tab:red",
+    "pt_p20": "tab:green",
+    "pt_m05": "tab:orange",
+}
 
 
 def main():
@@ -44,12 +51,17 @@ def main():
         h = r.get("history") or []
         t = [row["time_ms"] for row in h]
         d = [row.get("depth_over_D", float("nan")) for row in h]
-        ax.plot(t, d, color=COLORS[arm], lw=1.2,
-                label=f"{arm} (dose {DOSES[arm]:+.1f})")
+        ax.plot(t, d, color=COLORS[arm], lw=1.2, label=f"{arm} (dose {DOSES[arm]:+.1f})")
         pk = max(h, key=lambda x: x.get("depth_over_D", -1))
         ax.plot([pk["time_ms"]], [pk["depth_over_D"]], "o", color=COLORS[arm], ms=5)
-        ax.annotate(f"{pk['depth_over_D']:.4f}D", (pk["time_ms"], pk["depth_over_D"]),
-                    textcoords="offset points", xytext=(6, 4), fontsize=8, color=COLORS[arm])
+        ax.annotate(
+            f"{pk['depth_over_D']:.4f}D",
+            (pk["time_ms"], pk["depth_over_D"]),
+            textcoords="offset points",
+            xytext=(6, 4),
+            fontsize=8,
+            color=COLORS[arm],
+        )
     ax.axhline(EXP_DEPTH, color="gray", ls=":", lw=0.8)
     ax.set_xlabel("t (ms)")
     ax.set_ylabel("cavity depth (D)")

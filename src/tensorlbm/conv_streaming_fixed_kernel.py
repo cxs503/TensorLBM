@@ -46,7 +46,9 @@ D2Q9_W = [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36]
 Q = 9
 
 
-def build_stream_kernels(device: torch.device | None = None, dtype: torch.dtype = torch.float64) -> torch.Tensor:
+def build_stream_kernels(
+    device: torch.device | None = None, dtype: torch.dtype = torch.float64
+) -> torch.Tensor:
     """Build the 9 fixed convolution kernels for D2Q9 streaming.
 
     Each kernel is 3x3 with a single 1.0 at the position that, when used
@@ -110,6 +112,7 @@ def compute_macroscopic(f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, to
 # Boundary conditions
 # ---------------------------------------------------------------------------
 
+
 def apply_lid_bc(f: torch.Tensor, rho_wall: torch.Tensor, u_lid: float) -> torch.Tensor:
     """Bounce-back + known-velocity BC for moving top wall.
 
@@ -147,9 +150,11 @@ def apply_wall_bc(f: torch.Tensor) -> torch.Tensor:
 # Solver
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ConvStreamingSolver2D:
     """LBM solver using conv-as-streaming fixed kernels + BGK collision."""
+
     nx: int
     ny: int
     tau: float
@@ -191,6 +196,7 @@ class ConvStreamingSolver2D:
 # Benchmarks
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class LidDrivenCavityConfig:
     nx: int = 128
@@ -229,24 +235,32 @@ def run_lid_driven_cavity(
         config = LidDrivenCavityConfig(**kwargs)
     dtype = torch.float64 if config.dtype == "float64" else torch.float32
     solver = ConvStreamingSolver2D(
-        nx=config.nx, ny=config.ny, tau=config.tau,
-        u_lid=config.u_lid, dtype=dtype,
+        nx=config.nx,
+        ny=config.ny,
+        tau=config.tau,
+        u_lid=config.u_lid,
+        dtype=dtype,
     )
     history = solver.run(config.n_steps, config.report_every)
     rho, ux, uy = compute_macroscopic(solver.f)
 
     cx, cy = config.nx // 2, config.ny // 2
     max_ux = history["max_ux"]
-    converged = (len(max_ux) >= 4 and
-                 max(abs(max_ux[i] - max_ux[i-1]) for i in range(1, len(max_ux))) < 1e-5)
+    converged = (
+        len(max_ux) >= 4
+        and max(abs(max_ux[i] - max_ux[i - 1]) for i in range(1, len(max_ux))) < 1e-5
+    )
 
     return LidDrivenCavityResult(
         config=config,
         final_ux_mid=ux[config.ny // 2, :].cpu().tolist(),
         final_uy_mid=uy[:, config.nx // 2].cpu().tolist(),
-        max_ux_history=max_ux, mass_history=history["mass"],
-        converged=converged, final_max_ux=max_ux[-1] if max_ux else 0.0,
-        center_vortex_ux=ux[cy, cx].item(), center_vortex_uy=uy[cy, cx].item(),
+        max_ux_history=max_ux,
+        mass_history=history["mass"],
+        converged=converged,
+        final_max_ux=max_ux[-1] if max_ux else 0.0,
+        center_vortex_ux=ux[cy, cx].item(),
+        center_vortex_uy=uy[cy, cx].item(),
         n_steps=config.n_steps,
     )
 
@@ -326,7 +340,9 @@ def run_poiseuille(
     rho, ux, uy = compute_macroscopic(f)
     numerical_ux = ux.mean(dim=1).cpu().tolist()
 
-    analytical_ux = [(config.body_force / (2.0 * nu)) * float(j) * (H - float(j)) for j in range(config.ny)]
+    analytical_ux = [
+        (config.body_force / (2.0 * nu)) * float(j) * (H - float(j)) for j in range(config.ny)
+    ]
 
     # Error computation: skip wall nodes (j=0 and j=H-1) where analytical is 0
     errors = []
@@ -340,8 +356,11 @@ def run_poiseuille(
     l2_error_pct = (sum(e * e for e in errors) / len(errors)) ** 0.5 if errors else 0.0
 
     return PoiseuilleResult(
-        config=config, numerical_ux=numerical_ux, analytical_ux=analytical_ux,
-        max_error_pct=max_error_pct, l2_error_pct=l2_error_pct,
+        config=config,
+        numerical_ux=numerical_ux,
+        analytical_ux=analytical_ux,
+        max_error_pct=max_error_pct,
+        l2_error_pct=l2_error_pct,
         converged=max_error_pct < 15.0,
     )
 
@@ -372,16 +391,30 @@ if __name__ == "__main__":
 
     artifact = {
         "poiseuille": {
-            "max_error_pct": p.max_error_pct, "l2_error_pct": p.l2_error_pct,
+            "max_error_pct": p.max_error_pct,
+            "l2_error_pct": p.l2_error_pct,
             "converged": p.converged,
             "numerical_max_ux": max(p.numerical_ux),
             "analytical_max_ux": max(p.analytical_ux),
-            "config": {"ny": p_cfg.ny, "tau": p_cfg.tau, "body_force": p_cfg.body_force, "n_steps": p_cfg.n_steps},
+            "config": {
+                "ny": p_cfg.ny,
+                "tau": p_cfg.tau,
+                "body_force": p_cfg.body_force,
+                "n_steps": p_cfg.n_steps,
+            },
         },
         "lid_driven_cavity": {
-            "center_vortex_ux": ldc.center_vortex_ux, "center_vortex_uy": ldc.center_vortex_uy,
-            "final_max_ux": ldc.final_max_ux, "converged": ldc.converged,
-            "config": {"nx": ldc_cfg.nx, "ny": ldc_cfg.ny, "tau": ldc_cfg.tau, "u_lid": ldc_cfg.u_lid, "n_steps": ldc_cfg.n_steps},
+            "center_vortex_ux": ldc.center_vortex_ux,
+            "center_vortex_uy": ldc.center_vortex_uy,
+            "final_max_ux": ldc.final_max_ux,
+            "converged": ldc.converged,
+            "config": {
+                "nx": ldc_cfg.nx,
+                "ny": ldc_cfg.ny,
+                "tau": ldc_cfg.tau,
+                "u_lid": ldc_cfg.u_lid,
+                "n_steps": ldc_cfg.n_steps,
+            },
         },
         "method": "conv_as_streaming_fixed_kernel",
         "lattice": "D2Q9",

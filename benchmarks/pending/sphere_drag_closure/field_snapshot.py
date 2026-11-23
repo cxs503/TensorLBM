@@ -44,11 +44,13 @@ def main() -> int:
     a_vol = (3.0 * n_solid / (4.0 * np.pi)) ** (1.0 / 3.0)
     force_factor = 1.0 - 0.5 / tau
     from tensorlbm.drag_closure import cd_oseen_bridge
+
     cd0 = cd_oseen_bridge(Re)
     g = 0.5 * cd0 * np.pi * a_vol**2 * u_target**2 / (v_fluid * force_factor)
     rho0 = torch.ones(L, L, L)
-    f = equilibrium3d(rho0, torch.full_like(rho0, u_target),
-                      torch.zeros_like(rho0), torch.zeros_like(rho0))
+    f = equilibrium3d(
+        rho0, torch.full_like(rho0, u_target), torch.zeros_like(rho0), torch.zeros_like(rho0)
+    )
     fluid = ~solid
     for step in range(1, steps + 1):
         rho, ux, uy, uz = macroscopic3d(f)

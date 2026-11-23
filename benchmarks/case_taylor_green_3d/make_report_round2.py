@@ -63,14 +63,20 @@ def main() -> int:
             if not rs:
                 continue
             h = rs[0]["history"]
-            ax.plot([p["t"] for p in h], [p["E_rel_err_pct"] for p in h], style,
-                    label=f"IC={ic} (l2={rs[0]['l2_final']:.2e})")
+            ax.plot(
+                [p["t"] for p in h],
+                [p["E_rel_err_pct"] for p in h],
+                style,
+                label=f"IC={ic} (l2={rs[0]['l2_final']:.2e})",
+            )
         ax.set_xlabel("lattice steps t")
         ax.set_ylabel(r"$E_{num}/E_{exact}-1$  [%]")
         ax.set_title(f"N={n}, tau=0.6, A=2e-3")
         ax.grid(alpha=0.3)
         ax.legend(fontsize=8)
-    fig.suptitle("Taylor-Green 3D: the equilibrium IC leaves an O(k^2) energy offset; the CE-consistent IC does not")
+    fig.suptitle(
+        "Taylor-Green 3D: the equilibrium IC leaves an O(k^2) energy offset; the CE-consistent IC does not"
+    )
     fig.tight_layout()
     fig.savefig(FIG / "fig1_startup_transient.png", dpi=130)
     plt.close(fig)
@@ -79,14 +85,19 @@ def main() -> int:
     eq = {str(r["n"]): r["M3_l2_field_rel_err_pct"] / 100.0 for r in r1["runs"]}
     ce = grid["l2_by_grid"]
     fig, ax = plt.subplots(figsize=(6.4, 4.6))
-    for series, label, marker in ((eq, "round-1 equilibrium IC", "o"), (ce, "CE-consistent IC (this round)", "s")):
+    for series, label, marker in (
+        (eq, "round-1 equilibrium IC", "o"),
+        (ce, "CE-consistent IC (this round)", "s"),
+    ):
         ns = sorted(series, key=int)
         ax.loglog([int(x) for x in ns], [series[x] for x in ns], marker + "-", label=label)
     ax.set_xlabel("grid N (lattice units per side)")
     ax.set_ylabel(r"$||u_{num}-u_{exact}||_2/||u_{exact}||_2$ at T=500")
     ax.grid(alpha=0.3, which="both")
     ax.legend(fontsize=9)
-    ax.set_title(f"order 24->48: eq {r1['M4_observed_order']:.2f}  vs  CE {grid['order_24_48']:.2f}")
+    ax.set_title(
+        f"order 24->48: eq {r1['M4_observed_order']:.2f}  vs  CE {grid['order_24_48']:.2f}"
+    )
     fig.tight_layout()
     fig.savefig(FIG / "fig2_l2_convergence.png", dpi=130)
     plt.close(fig)
@@ -99,7 +110,12 @@ def main() -> int:
             continue
         w = rs[0]["fit_windows"]
         xs = sorted(w, key=int)
-        ax.plot([int(x) for x in xs], [w[x]["decay_exponent_rel_err_pct"] for x in xs], style, label=f"IC={ic}")
+        ax.plot(
+            [int(x) for x in xs],
+            [w[x]["decay_exponent_rel_err_pct"] for x in xs],
+            style,
+            label=f"IC={ic}",
+        )
         ax.axhline(rs[0]["asym_rate_err_pct"], color="grey", ls=":", lw=1)
     ax.set_xlabel("fit window start t_start (lattice steps; 0 = round-1 metric M2)")
     ax.set_ylabel("fitted decay-exponent rel. error [%]")
@@ -118,7 +134,9 @@ def main() -> int:
     axes[0].loglog(amps, aerr, "o-")
     axes[0].set_xlabel("initial amplitude A  (Ma = A sqrt3)")
     axes[0].set_ylabel("|asymptotic rate error| [%]")
-    axes[0].set_title(f"amplitude (log-log slope {summary['R5_ma_scaling']['loglog_slope_vs_amp']:+.2f})")
+    axes[0].set_title(
+        f"amplitude (log-log slope {summary['R5_ma_scaling']['loglog_slope_vs_amp']:+.2f})"
+    )
     axes[0].grid(alpha=0.3, which="both")
     lams = [r["lambda_exact"] for r in rate["tau_runs"]]
     terr = [abs(r["asym_rate_err_pct"]) for r in rate["tau_runs"]]
@@ -140,7 +158,9 @@ def main() -> int:
     A = L.append
     A("# CASE-TAYLOR-GREEN-3D — round 2: where the round-1 error floor came from, and the fix")
     A("")
-    A("**Anchor:** `CASE-TAYLOR-GREEN-3D` (round 1 = mission 15374, `docs/CASE_TAYLOR_GREEN_3D.md`;")
+    A(
+        "**Anchor:** `CASE-TAYLOR-GREEN-3D` (round 1 = mission 15374, `docs/CASE_TAYLOR_GREEN_3D.md`;"
+    )
     A("round 2 = mission 17543, branch `agent/m17543`).  All numbers below are generated from")
     A("`benchmarks/case_taylor_green_3d/artifacts/attribution_*.json` by")
     A("`benchmarks/case_taylor_green_3d/make_report_round2.py`; the criteria were fixed in")
@@ -154,10 +174,16 @@ def main() -> int:
     A("* **M2** (energy decay-exponent error, least squares over the *whole* history) was")
     for n, v in sorted(summary["round1_reported"]["M2_pct"].items(), key=lambda kv: int(kv[0])):
         A(f"  {v:+.3f} % at N={n}" + ("," if n != "64" else " —"))
-    A(f"  i.e. *independent of the grid*; and")
-    A(f"* the consecutive L2 orders were {summary['round1_reported']['consecutive_orders']['24_32']:.2f} (24→32)")
-    A(f"  and {summary['round1_reported']['consecutive_orders']['48_64']:.2f} (48→64) while the 24→48 pair gave")
-    A(f"  {summary['round1_reported']['M4_order_24_48']:.2f} — round 1 called this 'a grid-independent error floor'.")
+    A("  i.e. *independent of the grid*; and")
+    A(
+        f"* the consecutive L2 orders were {summary['round1_reported']['consecutive_orders']['24_32']:.2f} (24→32)"
+    )
+    A(
+        f"  and {summary['round1_reported']['consecutive_orders']['48_64']:.2f} (48→64) while the 24→48 pair gave"
+    )
+    A(
+        f"  {summary['round1_reported']['M4_order_24_48']:.2f} — round 1 called this 'a grid-independent error floor'."
+    )
     A("")
     A("Round 2 tests the two *protocol* explanations (prereg_round2.json, H1/H2/H3):")
     A("")
@@ -175,7 +201,9 @@ def main() -> int:
     A("* **Initial conditions.** `eq`: `f = f^eq(rho=1, u0)` (round-1 protocol). `half`/`tau`: the")
     A("  first-order Chapman–Enskog part is added,")
     A("  `f_i = f_i^eq + K w_i Q_iab S_ab`, `Q_iab = e_ia e_ib - c_s^2 delta_ab`,")
-    A("  `S_ab = (d_a u_b + d_b u_a)/2` (spectral derivatives), with `K = -rho(tau_l - theta)/c_s^2`")
+    A(
+        "  `S_ab = (d_a u_b + d_b u_a)/2` (spectral derivatives), with `K = -rho(tau_l - theta)/c_s^2`"
+    )
     A("  and `theta = 1/2` (`half`) or `theta = 0` (`tau`). Both literature conventions are")
     A("  *measured*; the winner is read off the energy offset, not assumed.")
     A("* **Rate metrics.** `M2` = the round-1 least-squares slope of `ln E(t)` over the whole")
@@ -190,13 +218,33 @@ def main() -> int:
     A("")
     A("### 3.1 Initial-condition study (N=24, traces sampled every 5 steps)")
     A("")
-    A(row(["IC", "l2 field err at T", "energy offset at T [%]", "M2 (whole history) [%]", "asymptotic rate err [%]"]))
+    A(
+        row(
+            [
+                "IC",
+                "l2 field err at T",
+                "energy offset at T [%]",
+                "M2 (whole history) [%]",
+                "asymptotic rate err [%]",
+            ]
+        )
+    )
     A(row(["---"] * 5))
     for ic in ("eq", "half", "tau"):
         rs = [r for r in traces if r["n"] == 24 and r["ic"] == ic]
         if rs:
             r = rs[0]
-            A(row([ic, f"{r['l2_final']:.3e}", f"{r['offset_final_pct']:+.4f}", f"{r['M2_round1_pct']:+.4f}", f"{r['asym_rate_err_pct']:+.4f}"]))
+            A(
+                row(
+                    [
+                        ic,
+                        f"{r['l2_final']:.3e}",
+                        f"{r['offset_final_pct']:+.4f}",
+                        f"{r['M2_round1_pct']:+.4f}",
+                        f"{r['asym_rate_err_pct']:+.4f}",
+                    ]
+                )
+            )
     A("")
     A("![startup transient](figures/case_taylor_green_3d_round2/fig1_startup_transient.png)")
     A("")
@@ -221,7 +269,9 @@ def main() -> int:
     A(row(["---", "---", "---"]))
     for k in (5, 10, 25, 50, 100):
         if r32:
-            h = r32[0]["history"][:: max(1, k // r32[0]["sample_every"] + (1 if k > r32[0]["sample_every"] else 0))]
+            h = r32[0]["history"][
+                :: max(1, k // r32[0]["sample_every"] + (1 if k > r32[0]["sample_every"] else 0))
+            ]
             if k == 5:
                 h = r32[0]["history"]
             if len(h) >= 3:
@@ -239,10 +289,22 @@ def main() -> int:
     A(row(["---"] * 5))
     for n in sorted(grid["l2_by_grid"], key=int):
         rep = summary["R2_ic_repair"]["repair_factor_by_grid"].get(n)
-        A(row([n, f"{eq[n]:.4e}" if n in eq else "—", f"{grid['l2_by_grid'][n]:.4e}", f"{rep:.1f}x" if rep else "—",
-               f"{grid['order_24_48']:.3f}" if n == "64" and grid["order_24_48"] else ""]))
+        A(
+            row(
+                [
+                    n,
+                    f"{eq[n]:.4e}" if n in eq else "—",
+                    f"{grid['l2_by_grid'][n]:.4e}",
+                    f"{rep:.1f}x" if rep else "—",
+                    f"{grid['order_24_48']:.3f}" if n == "64" and grid["order_24_48"] else "",
+                ]
+            )
+        )
     A("")
-    A("consecutive orders with the CE IC: " + ", ".join(f"{k}: {v:.3f}" for k, v in grid["orders"].items()))
+    A(
+        "consecutive orders with the CE IC: "
+        + ", ".join(f"{k}: {v:.3f}" for k, v in grid["orders"].items())
+    )
     A("")
     A("![L2 convergence](figures/case_taylor_green_3d_round2/fig2_l2_convergence.png)")
     A("")
@@ -251,14 +313,36 @@ def main() -> int:
     A(row(["arm", "value", "lambda_exact [1/step]", "asymptotic rate err [%]"]))
     A(row(["---"] * 4))
     for r in rate["amp_runs"]:
-        A(row(["amplitude", f"A={r['amp']:.1e}", f"{r['lambda_exact']:.4e}", f"{r['asym_rate_err_pct']:+.4f}"]))
+        A(
+            row(
+                [
+                    "amplitude",
+                    f"A={r['amp']:.1e}",
+                    f"{r['lambda_exact']:.4e}",
+                    f"{r['asym_rate_err_pct']:+.4f}",
+                ]
+            )
+        )
     for r in rate["tau_runs"]:
-        A(row(["tau", f"tau={r['tau']}", f"{r['lambda_exact']:.4e}", f"{r['asym_rate_err_pct']:+.4f}"]))
+        A(
+            row(
+                [
+                    "tau",
+                    f"tau={r['tau']}",
+                    f"{r['lambda_exact']:.4e}",
+                    f"{r['asym_rate_err_pct']:+.4f}",
+                ]
+            )
+        )
     A("")
-    lam_slope = _slope([math.log(r["lambda_exact"]) for r in rate["tau_runs"]],
-                       [math.log(abs(r["asym_rate_err_pct"])) for r in rate["tau_runs"]])
+    lam_slope = _slope(
+        [math.log(r["lambda_exact"]) for r in rate["tau_runs"]],
+        [math.log(abs(r["asym_rate_err_pct"])) for r in rate["tau_runs"]],
+    )
     A("")
-    A(f"Log-log slope of the rate error against `lambda_exact` over the tau sweep: **{lam_slope:+.2f}**")
+    A(
+        f"Log-log slope of the rate error against `lambda_exact` over the tau sweep: **{lam_slope:+.2f}**"
+    )
     A("(2 means a second-order-in-Dt truncation error; the fitted one-parameter law is")
     A("`delta ~ 4.9 lambda^2`, which is consistent with both the tau arm and the grid arm since")
     A("`lambda ~ k^2` at fixed tau).")
@@ -270,15 +354,55 @@ def main() -> int:
     A(row(["criterion", "measured", "pass"]))
     A(row(["---", "---", "---"]))
     r = summary["R1_M2_inflation"]
-    A(row(["R1 M2 inflation ratio (N=32)", f"{r['value']:.1f}  (M2 {r['M2_pct']:+.4f} % vs asym {r['asym_pct']:+.4f} %)", _mark(r["pass"])]))
+    A(
+        row(
+            [
+                "R1 M2 inflation ratio (N=32)",
+                f"{r['value']:.1f}  (M2 {r['M2_pct']:+.4f} % vs asym {r['asym_pct']:+.4f} %)",
+                _mark(r["pass"]),
+            ]
+        )
+    )
     r = summary["R2_ic_repair"]
-    A(row(["R2 IC repair factor >= 5x", ", ".join(f"N={k}: {v:.1f}x" for k, v in r["repair_factor_by_grid"].items()), _mark(r["pass"])]))
+    A(
+        row(
+            [
+                "R2 IC repair factor >= 5x",
+                ", ".join(f"N={k}: {v:.1f}x" for k, v in r["repair_factor_by_grid"].items()),
+                _mark(r["pass"]),
+            ]
+        )
+    )
     r = summary["R3_order_recovery"]
-    A(row(["R3 order 24→48 >= 1.8 and min consecutive >= 1.7", f"{r['order_24_to_48']:.3f} / {r['min_consecutive_order']:.3f}", _mark(r["pass"])]))
+    A(
+        row(
+            [
+                "R3 order 24→48 >= 1.8 and min consecutive >= 1.7",
+                f"{r['order_24_to_48']:.3f} / {r['min_consecutive_order']:.3f}",
+                _mark(r["pass"]),
+            ]
+        )
+    )
     r = summary["R4_rate_accuracy"]
-    A(row(["R4 |asym rate err| < 0.1 % at every point", f"worst {r['worst_abs_asym_pct']:.4f} % over {r['n_points']} points", _mark(r["pass"])]))
+    A(
+        row(
+            [
+                "R4 |asym rate err| < 0.1 % at every point",
+                f"worst {r['worst_abs_asym_pct']:.4f} % over {r['n_points']} points",
+                _mark(r["pass"]),
+            ]
+        )
+    )
     r = summary["R5_ma_scaling"]
-    A(row(["R5 amplitude slope (Ma^2 would need ~2)", f"{r['loglog_slope_vs_amp']:+.2f}", _mark(not r["ma2_dominated"])]))
+    A(
+        row(
+            [
+                "R5 amplitude slope (Ma^2 would need ~2)",
+                f"{r['loglog_slope_vs_amp']:+.2f}",
+                _mark(not r["ma2_dominated"]),
+            ]
+        )
+    )
     A("")
     A("## ⑤ Caveats / limits")
     A("")
@@ -303,9 +427,17 @@ def main() -> int:
     A("* **Repaired:** the first-order Chapman–Enskog part of the IC (`ic='tau'`) removes the")
     A("  state error and cuts the L2 field error by 20–60x (R2 PASS). It is now the canonical")
     A("  builder `run_case.init_distribution(..., ic=...)`; `--ic eq` reproduces round 1 exactly.")
-    A("* **Honest FAILs.** R1 as predeclared failed (" + f"{summary['R1_M2_inflation']['value']:.2f} < 5" + ") because the prereg did not fix")
+    A(
+        "* **Honest FAILs.** R1 as predeclared failed ("
+        + f"{summary['R1_M2_inflation']['value']:.2f} < 5"
+        + ") because the prereg did not fix"
+    )
     A("  the recording cadence — the cadence table above shows the same run gives a")
-    A("  " + f"{cad_ratio:.0f}x" + " inflation at a 50-step cadence, so the conclusion stands but the criterion")
+    A(
+        "  "
+        + f"{cad_ratio:.0f}x"
+        + " inflation at a 50-step cadence, so the conclusion stands but the criterion"
+    )
     A("  as written did not. R3 failed: with the state error gone the L2 error falls faster than")
     A("  second order (24→48 slope 3.59) and becomes non-monotone at N>=48 (48→64 slope -0.56),")
     A("  i.e. no spatial order can be claimed in N=24..64 at T=500 — round 1's 2.045 was a")
@@ -320,10 +452,26 @@ def main() -> int:
     A("")
     A("| quantity | reference | error | < 3 % ? |")
     A("|---|---|---|---|")
-    A("| L2 velocity field, CE IC, N=24 | exact Fourier mode | " + f"{grid['l2_by_grid'].get('24', float('nan')):.3e} (relative)" + " | yes (0.03 %) |")
-    A("| L2 velocity field, CE IC, N=32 | exact Fourier mode | " + f"{grid['l2_by_grid'].get('32', float('nan')):.3e} (relative)" + " | yes |")
-    A("| decay exponent (asymptotic) | `2 nu |k|^2` | " + f"{summary['R4_rate_accuracy']['worst_abs_asym_pct']:.4f} % (worst over all arms)" + " | yes |")
-    A("| round-1 M2 (whole-history fit) | `2 nu |k|^2` | " + f"{summary['round1_reported']['M2_pct'].get('64', float('nan')):.3f} % (N=64)" + " | yes, but inflated by the startup transient |")
+    A(
+        "| L2 velocity field, CE IC, N=24 | exact Fourier mode | "
+        + f"{grid['l2_by_grid'].get('24', float('nan')):.3e} (relative)"
+        + " | yes (0.03 %) |"
+    )
+    A(
+        "| L2 velocity field, CE IC, N=32 | exact Fourier mode | "
+        + f"{grid['l2_by_grid'].get('32', float('nan')):.3e} (relative)"
+        + " | yes |"
+    )
+    A(
+        "| decay exponent (asymptotic) | `2 nu |k|^2` | "
+        + f"{summary['R4_rate_accuracy']['worst_abs_asym_pct']:.4f} % (worst over all arms)"
+        + " | yes |"
+    )
+    A(
+        "| round-1 M2 (whole-history fit) | `2 nu |k|^2` | "
+        + f"{summary['round1_reported']['M2_pct'].get('64', float('nan')):.3f} % (N=64)"
+        + " | yes, but inflated by the startup transient |"
+    )
     A("")
     A("All reference values are closed-form (`u(t) = u0 exp(-nu|k|^2 t)`), recomputed inside the")
     A("run — no table was transcribed.")
@@ -334,14 +482,35 @@ def main() -> int:
     # compact machine-readable tables for the platform report
     tables = {
         "traces": [
-            {k: r[k] for k in ("n", "ic", "l2_final", "offset_final_pct", "M2_round1_pct", "asym_rate_err_pct", "transient_settle_steps")}
+            {
+                k: r[k]
+                for k in (
+                    "n",
+                    "ic",
+                    "l2_final",
+                    "offset_final_pct",
+                    "M2_round1_pct",
+                    "asym_rate_err_pct",
+                    "transient_settle_steps",
+                )
+            }
             for r in traces
         ],
-        "grid": {"l2_by_grid": grid["l2_by_grid"], "orders": grid["orders"], "order_24_48": grid["order_24_48"],
-                 "eq_l2_by_grid": {k: v for k, v in eq.items()}},
+        "grid": {
+            "l2_by_grid": grid["l2_by_grid"],
+            "orders": grid["orders"],
+            "order_24_48": grid["order_24_48"],
+            "eq_l2_by_grid": {k: v for k, v in eq.items()},
+        },
         "rate": {
-            "amp": [{k: r[k] for k in ("amp", "ma", "lambda_exact", "asym_rate_err_pct", "l2_final")} for r in rate["amp_runs"]],
-            "tau": [{k: r[k] for k in ("tau", "lambda_exact", "asym_rate_err_pct", "l2_final")} for r in rate["tau_runs"]],
+            "amp": [
+                {k: r[k] for k in ("amp", "ma", "lambda_exact", "asym_rate_err_pct", "l2_final")}
+                for r in rate["amp_runs"]
+            ],
+            "tau": [
+                {k: r[k] for k in ("tau", "lambda_exact", "asym_rate_err_pct", "l2_final")}
+                for r in rate["tau_runs"]
+            ],
         },
         "criteria": {k: v for k, v in summary.items() if k.startswith("R")},
     }

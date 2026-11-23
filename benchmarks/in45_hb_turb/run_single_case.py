@@ -41,10 +41,16 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cfg = ViscoplasticChannelConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        tau_y=args.tau_y, K=args.K, n=args.n,
-        re_tau=args.re_tau, u_tau=args.u_tau,
-        steps=args.steps, warmup_steps=args.warmup,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau_y=args.tau_y,
+        K=args.K,
+        n=args.n,
+        re_tau=args.re_tau,
+        u_tau=args.u_tau,
+        steps=args.steps,
+        warmup_steps=args.warmup,
         output=out_dir / f"{args.name}_result.json",
     )
 

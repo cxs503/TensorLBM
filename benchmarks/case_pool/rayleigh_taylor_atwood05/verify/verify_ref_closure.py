@@ -59,8 +59,9 @@ def nu_eff_from_sigma(A: float, g: float, lam: float, s: float) -> float:
     return (c - s * s) / (2.0 * s) / (k * k)
 
 
-def gate_viscosity_interval(A: float, g: float, lam: float, nu: float,
-                            gate_pct: float = 15.0) -> dict:
+def gate_viscosity_interval(
+    A: float, g: float, lam: float, nu: float, gate_pct: float = 15.0
+) -> dict:
     """Viscosities whose *exact* growth rate still satisfies the gate."""
     s0 = sigma_visc(A, g, lam, nu)
     lo, hi = s0 * (1.0 - gate_pct / 100.0), s0 * (1.0 + gate_pct / 100.0)
@@ -71,7 +72,8 @@ def gate_viscosity_interval(A: float, g: float, lam: float, nu: float,
     return {
         "sigma_visc": s0,
         "sigma_inv": sigma_inv(A, g, lam),
-        "gate_lo": lo, "gate_hi": hi,
+        "gate_lo": lo,
+        "gate_hi": hi,
         "nu_eff_min_over_nu": nu_lo / nu,
         "nu_eff_max_over_nu": nu_hi / nu,
         "upper_side_reachable": bool(reachable),
@@ -97,20 +99,26 @@ def main() -> int:
         gate = gate_viscosity_interval(A, g, lam, nu)
         # inversion conditioning: |d nu_eff / d sigma|
         dnu = abs(1.0 / dsigma_dnu(A, g, lam, nu))
-        rows.append({
-            "label": e["label"], "lam": lam, "g": g, "nu": nu,
-            "sigma_inv_ref": e["sigma_inviscid"],
-            "sigma_inv_recomputed": s_inv,
-            "sigma_visc_ref": e["sigma_viscous"],
-            "sigma_visc_recomputed": s_vis,
-            "ref_agreement_abs": abs(s_vis - e["sigma_viscous"]) + abs(s_inv - e["sigma_inviscid"]),
-            "elasticity_nu": S_nu,
-            "elasticity_g": S_g,
-            "viscous_fraction_of_sigma": x / s_vis,
-            "gate": gate,
-            "dnu_eff_dsigma": dnu,
-            "nu_eff_uncertainty_3pct_sigma": dnu * 0.03 * s_vis / nu,
-        })
+        rows.append(
+            {
+                "label": e["label"],
+                "lam": lam,
+                "g": g,
+                "nu": nu,
+                "sigma_inv_ref": e["sigma_inviscid"],
+                "sigma_inv_recomputed": s_inv,
+                "sigma_visc_ref": e["sigma_viscous"],
+                "sigma_visc_recomputed": s_vis,
+                "ref_agreement_abs": abs(s_vis - e["sigma_viscous"])
+                + abs(s_inv - e["sigma_inviscid"]),
+                "elasticity_nu": S_nu,
+                "elasticity_g": S_g,
+                "viscous_fraction_of_sigma": x / s_vis,
+                "gate": gate,
+                "dnu_eff_dsigma": dnu,
+                "nu_eff_uncertainty_3pct_sigma": dnu * 0.03 * s_vis / nu,
+            }
+        )
 
     ref_err = max(r["ref_agreement_abs"] for r in rows)
     out = {
@@ -124,21 +132,25 @@ def main() -> int:
     }
     (ART / "ref_closure.json").write_text(json.dumps(out, indent=2) + "\n")
 
-    print(f"== 1. reference recheck (independent closed form vs ref_lock.json) ==")
+    print("== 1. reference recheck (independent closed form vs ref_lock.json) ==")
     print(f"   max |difference| over {len(rows)} suite rows: {ref_err:.3e}")
     print("\n== 2. can the +-15 % gate see a viscosity error? ==")
     print("   case                nu      S_nu     nu_eff/nu range implied by the gate   +side")
     for r in rows:
         g_ = r["gate"]
-        print(f"   {r['label']:<26s} {r['nu']:.4f} {r['elasticity_nu']*100:+6.2f}%  "
-              f"[{g_['nu_eff_min_over_nu']:.2f}, {g_['nu_eff_max_over_nu']:.2f}]"
-              f"   reachable={g_['upper_side_reachable']} "
-              f"(max +{g_['max_achievable_positive_pct']:.2f}%)")
+        print(
+            f"   {r['label']:<26s} {r['nu']:.4f} {r['elasticity_nu'] * 100:+6.2f}%  "
+            f"[{g_['nu_eff_min_over_nu']:.2f}, {g_['nu_eff_max_over_nu']:.2f}]"
+            f"   reachable={g_['upper_side_reachable']} "
+            f"(max +{g_['max_achievable_positive_pct']:.2f}%)"
+        )
     print("\n== 3. conditioning of the nu_eff inversion the accepted report quotes ==")
     for r in rows:
-        print(f"   {r['label']:<26s} |dnu_eff/dsigma|={r['dnu_eff_dsigma']:.1f}  "
-              f"=> a 3 % sigma error moves nu_eff by {r['nu_eff_uncertainty_3pct_sigma']:.1f} x nu")
-    print(f"\n[written] {ART/'ref_closure.json'}")
+        print(
+            f"   {r['label']:<26s} |dnu_eff/dsigma|={r['dnu_eff_dsigma']:.1f}  "
+            f"=> a 3 % sigma error moves nu_eff by {r['nu_eff_uncertainty_3pct_sigma']:.1f} x nu"
+        )
+    print(f"\n[written] {ART / 'ref_closure.json'}")
     return 0
 
 

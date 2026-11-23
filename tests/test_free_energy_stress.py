@@ -1,11 +1,19 @@
 """XVAL regression: ludwig pressure-tensor body force reproduces the analytic
 surface tension and a vanishing equilibrium body force (<15% criterion)."""
+
 import math
 import torch
 
 from tensorlbm.free_energy_stress import (
-    FreeEnergyParams, grad, interface_width, planar_profile, droplet_profile,
-    stress_divergence_force, grad_mu_force, surface_tension_analytic, pressure_tensor,
+    FreeEnergyParams,
+    grad,
+    interface_width,
+    planar_profile,
+    droplet_profile,
+    stress_divergence_force,
+    grad_mu_force,
+    surface_tension_analytic,
+    pressure_tensor,
 )
 
 torch.set_default_dtype(torch.float64)
@@ -28,7 +36,7 @@ def test_force_vanishes_on_equilibrium_profile():
     L, xi = 128, interface_width(p)
     phi = planar_profile(L, L, p)
     sl = slice(L // 2 - int(8 * xi), L // 2 + int(8 * xi))
-    fscale = surface_tension_analytic(p) / xi ** 2
+    fscale = surface_tension_analytic(p) / xi**2
     for F in (stress_divergence_force(phi, p, "iso9"), grad_mu_force(phi, p, "iso9")):
         assert max(float(f[0, sl].abs().max()) for f in F) / fscale < 0.15
 

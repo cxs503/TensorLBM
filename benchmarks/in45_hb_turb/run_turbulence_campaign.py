@@ -35,7 +35,7 @@ def generate_cluster_commands():
     for Y in Y_values:
         for n in n_values:
             # Compute tau_y from Y
-            tau_y = Y * rho * u_tau ** 2
+            tau_y = Y * rho * u_tau**2
 
             name = f"Y{Y:.0f}_n{n:.1f}"
             cmd = (
@@ -78,7 +78,9 @@ def main():
     with open(sh_path, "w") as f:
         f.write("#!/bin/bash\n")
         f.write("# Viscoplastic turbulent channel campaign\n")
-        f.write("# Submit with: run_cluster submit --cmd 'bash benchmarks/in45_hb_turb/artifacts/run_cluster.sh'\n\n")
+        f.write(
+            "# Submit with: run_cluster submit --cmd 'bash benchmarks/in45_hb_turb/artifacts/run_cluster.sh'\n\n"
+        )
         for cmd in commands:
             f.write(f"echo 'Running {cmd['name']}...'\n")
             f.write(f"{cmd['cmd']}\n\n")

@@ -10,6 +10,7 @@ Reads ``artifacts/cylinder_re100_D*/cylinder_re100_unconfined.json`` (emitted by
 Usage:
     python -m tests.validation.make_cylinder_re100_figures --artifacts-dir artifacts --out-dir figures
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,9 @@ REF = {"cd": 1.3796, "cl": 0.0005, "st": 0.164}
 def _load_all(art_dir: str) -> list[dict]:
     """Return a list of (run_dict, sample_dict) across all emitted artifacts."""
     out = []
-    for p in sorted(glob.glob(os.path.join(art_dir, "cylinder_re100_D*", "cylinder_re100_unconfined.json"))):
+    for p in sorted(
+        glob.glob(os.path.join(art_dir, "cylinder_re100_D*", "cylinder_re100_unconfined.json"))
+    ):
         with open(p) as fh:
             d = json.load(fh)
         runs = d.get("runs", [])
@@ -66,12 +69,14 @@ def main() -> None:
         fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
         im0 = axes[0].contourf(np.arange(nx), np.arange(ny), wz, levels=24, cmap="RdBu_r")
         axes[0].set_title(f"vorticity wz  ({name})")
-        axes[0].set_xlabel("x / lattice"); axes[0].set_ylabel("y / lattice")
+        axes[0].set_xlabel("x / lattice")
+        axes[0].set_ylabel("y / lattice")
         axes[0].set_aspect("auto")
         fig.colorbar(im0, ax=axes[0], label="wz")
         im1 = axes[1].contourf(np.arange(nx), np.arange(ny), speed, levels=24, cmap="viridis")
         axes[1].set_title("speed |u|")
-        axes[1].set_xlabel("x / lattice"); axes[1].set_ylabel("y / lattice")
+        axes[1].set_xlabel("x / lattice")
+        axes[1].set_ylabel("y / lattice")
         axes[1].set_aspect("auto")
         fig.colorbar(im1, ax=axes[1], label="|u|")
         fig.tight_layout()
@@ -87,8 +92,9 @@ def main() -> None:
             continue
         nm = r["config"]["name"]
         ax.plot(cd, lw=0.8, label=f"{nm} (mean {np.mean(cd):.4f})")
-    ax.axhline(REF["cd"], color="k", ls="--", lw=1.2,
-                 label=f"ref Cd = {REF['cd']} (Schäfer & Turek 1996)")
+    ax.axhline(
+        REF["cd"], color="k", ls="--", lw=1.2, label=f"ref Cd = {REF['cd']} (Schäfer & Turek 1996)"
+    )
     ax.axhspan(REF["cd"] * 0.95, REF["cd"] * 1.05, color="g", alpha=0.12, label="±5% band")
     ax.set_xlabel("sample index (post-warmup)")
     ax.set_ylabel("Cd")

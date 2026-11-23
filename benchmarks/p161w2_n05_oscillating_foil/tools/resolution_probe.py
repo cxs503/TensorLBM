@@ -8,6 +8,7 @@ needs; the Garrick closed form at these parameters is ``C_T = 0.30``.
 
 Writes ``artifacts/ext_<label>.json`` payloads (same schema as run_sweep).
 """
+
 from __future__ import annotations
 
 import json
@@ -24,12 +25,29 @@ import run_sweep as S  # noqa: E402
 
 
 SPECS = [
-    dict(label="ext_lock_c32_hat", mode="locked", k=2.0, chord=32, cycles=6, kernel="hat", passes=2),
-    dict(label="ext_heave_c32_hat", mode="heave", k=2.0, h0c=0.15, chord=32, cycles=8,
-         kernel="hat", passes=2),
+    dict(
+        label="ext_lock_c32_hat", mode="locked", k=2.0, chord=32, cycles=6, kernel="hat", passes=2
+    ),
+    dict(
+        label="ext_heave_c32_hat",
+        mode="heave",
+        k=2.0,
+        h0c=0.15,
+        chord=32,
+        cycles=8,
+        kernel="hat",
+        passes=2,
+    ),
     dict(label="ext_lock_c32_nosolid", mode="locked", k=2.0, chord=32, cycles=6, solid=False),
-    dict(label="ext_heave_c32_nosolid", mode="heave", k=2.0, h0c=0.15, chord=32, cycles=8,
-         solid=False),
+    dict(
+        label="ext_heave_c32_nosolid",
+        mode="heave",
+        k=2.0,
+        h0c=0.15,
+        chord=32,
+        cycles=8,
+        solid=False,
+    ),
     dict(label="ext_lock_c64", mode="locked", k=2.0, chord=64, cycles=6),
     dict(label="ext_heave_c64", mode="heave", k=2.0, h0c=0.15, chord=64, cycles=8),
     dict(label="ext_lock_c96", mode="locked", k=2.0, chord=96, cycles=6),

@@ -65,7 +65,7 @@ def _get_d2q9_mrt_matrices(
     return _mrt_matrix_cache[key]
 
 
-def _relaxation_time(tau, *, where: str):
+def _relaxation_time(tau: float | torch.Tensor, *, where: str) -> float | torch.Tensor:
     """Validate tau without detaching a graph-connected (0-dim tensor) tau.
 
     ``check_relaxation_time`` returns ``float(tau)`` for a 0-dim tensor -- it is
@@ -96,7 +96,9 @@ from .registry import capability
     test_path='tests/test_lbm_verification.py',
     evidence={'grade': 'MECHANICS', 'note': 'D2Q9 主力碰撞算子；Poiseuille 解析带仅在 D3Q19 侧登记，D2Q9 侧仅有机理/收敛测试'},
 )
-def collide_bgk(f: torch.Tensor, tau: float, tau_field: torch.Tensor | None = None) -> torch.Tensor:
+def collide_bgk(
+    f: torch.Tensor, tau: float | torch.Tensor, tau_field: torch.Tensor | None = None
+) -> torch.Tensor:
     """Single-relaxation-time BGK collision step.
 
     ``tau`` must be finite and > 0.5 (see :mod:`tensorlbm.input_contract`); the
@@ -124,7 +126,7 @@ def collide_bgk(f: torch.Tensor, tau: float, tau_field: torch.Tensor | None = No
     return f - (f - feq) / tau_field.to(device=f.device, dtype=f.dtype).unsqueeze(0)
 
 
-def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
+def collide_bgk_fused(f: torch.Tensor, tau: float | torch.Tensor) -> torch.Tensor:
     """Fused BGK collision: macroscopic + equilibrium + collision in one pass.
 
     Computes rho, ux, uy, then feq, then f_new = f - (f - feq)/tau

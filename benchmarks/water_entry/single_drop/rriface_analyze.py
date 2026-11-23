@@ -49,8 +49,18 @@ def main() -> int:
     tree = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
     arms = sys.argv[2:] or ["relx3_rriface_ctrl", "relx3_rriface"]
     rows = [triplet(load(tree, a), a) for a in arms]
-    hdr = ("arm", "stop", "peak_D", "peak_t_abs_ms", "peak_t_pc_ms", "peak_err_pct",
-           "contact", "mach_max", "drift_end", "t_end_ms")
+    hdr = (
+        "arm",
+        "stop",
+        "peak_D",
+        "peak_t_abs_ms",
+        "peak_t_pc_ms",
+        "peak_err_pct",
+        "contact",
+        "mach_max",
+        "drift_end",
+        "t_end_ms",
+    )
     for r in rows:
         print(
             f"{r['arm']:<20} {r['stop']:<16} {r['peak_D']:.6f} {r['peak_t_abs_ms']:.6f} "

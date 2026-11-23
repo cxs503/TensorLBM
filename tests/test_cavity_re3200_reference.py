@@ -33,8 +33,15 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 BUILDER = REPO / "benchmarks" / "verified" / "cavity" / "re5000" / "build_reference.py"
-REF3200 = (REPO / "benchmarks" / "verified" / "cavity" / "re3200" / "reference"
-           / "ghia_re3200_reference.json")
+REF3200 = (
+    REPO
+    / "benchmarks"
+    / "verified"
+    / "cavity"
+    / "re3200"
+    / "reference"
+    / "ghia_re3200_reference.json"
+)
 RUNNER = REPO / "benchmarks" / "verified" / "cavity" / "re5000" / "run.py"
 
 
@@ -50,8 +57,13 @@ def ref() -> dict:
 @pytest.mark.parametrize("re_col", ["3200", "5000"])
 def test_builder_gates_pass(re_col: str) -> None:
     """``--check`` exits 0 only when every witness/bracket/library gate passes."""
-    proc = subprocess.run([sys.executable, str(BUILDER), "--check", "--re", re_col],
-                          cwd=REPO, capture_output=True, text=True, timeout=300)
+    proc = subprocess.run(
+        [sys.executable, str(BUILDER), "--check", "--re", re_col],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
     assert proc.returncode == 0, proc.stderr[-2000:]
     assert "gates" in proc.stdout
 
@@ -60,8 +72,13 @@ def test_committed_json_is_reproducible_in_content(ref: dict) -> None:
     """Re-running the builder must reproduce the committed payload hash."""
     out = REF3200.parent.parent / "out" / "_regen_check.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    proc = subprocess.run([sys.executable, str(BUILDER), "--re", "3200", "--out", str(out)],
-                          cwd=REPO, capture_output=True, text=True, timeout=300)
+    proc = subprocess.run(
+        [sys.executable, str(BUILDER), "--re", "3200", "--out", str(out)],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
     assert proc.returncode == 0, proc.stderr[-2000:]
     regen = json.loads(out.read_text())
     out.unlink()
@@ -77,7 +94,7 @@ def test_committed_json_is_reproducible_in_content(ref: dict) -> None:
 # --------------------------------------------------------------------------- #
 def test_rows_and_reynolds(ref: dict) -> None:
     assert float(ref["re"]) == 3200.0
-    assert f"u_re3200" in ref and "v_re3200" in ref
+    assert "u_re3200" in ref and "v_re3200" in ref
     # 17 Ghia grid points, one of which is quarantined -> 16 scored u rows
     assert len(ref["u_re3200"]) == 16
     assert len(ref["v_re3200"]) == 17
@@ -88,10 +105,10 @@ def test_rows_and_reynolds(ref: dict) -> None:
 def test_endpoints_and_bounds(ref: dict) -> None:
     u = dict(map(tuple, ref["u_re3200"]))
     v = dict(map(tuple, ref["v_re3200"]))
-    assert u[1.0] == pytest.approx(1.0)      # lid
-    assert u[0.0] == pytest.approx(0.0)      # bottom wall
-    assert v[0.0] == pytest.approx(0.0)      # left wall
-    assert v[1.0] == pytest.approx(0.0)      # right wall
+    assert u[1.0] == pytest.approx(1.0)  # lid
+    assert u[0.0] == pytest.approx(0.0)  # bottom wall
+    assert v[0.0] == pytest.approx(0.0)  # left wall
+    assert v[1.0] == pytest.approx(0.0)  # right wall
     assert max(abs(x) for x in u.values()) <= 1.0
 
 
@@ -118,8 +135,8 @@ def test_quarantined_cell_lies_outside_its_bracket(ref: dict) -> None:
     assert not (lo <= as_transcribed <= hi), "a bracketed value must not be quarantined"
     # the paper's neighbouring rows really do bound it
     u = dict(map(tuple, ref["u_re3200"]))
-    assert lo == pytest.approx(u[0.2813])    # lower end: the y = 0.2813 row
-    assert hi == pytest.approx(u[0.5])       # upper end: the y = 0.5 row
+    assert lo == pytest.approx(u[0.2813])  # lower end: the y = 0.2813 row
+    assert hi == pytest.approx(u[0.5])  # upper end: the y = 0.5 row
     assert lo <= cell["reconstructed_as"] <= hi
 
 
@@ -128,7 +145,7 @@ def test_quarantined_cell_lies_outside_its_bracket(ref: dict) -> None:
 # --------------------------------------------------------------------------- #
 def test_column_sits_between_re1000_and_re5000(ref: dict) -> None:
     """Profiles may overshoot between sparse tabulated extrema, but not by much."""
-    slack = 0.05        # 5 % of the lid speed
+    slack = 0.05  # 5 % of the lid speed
     dropped = {0.4531}
     for tab in ("u_columns", "v_columns"):
         cols = ref[tab]
@@ -145,6 +162,7 @@ def test_column_sits_between_re1000_and_re5000(ref: dict) -> None:
 # --------------------------------------------------------------------------- #
 def _load_runner():
     import importlib.util
+
     spec = importlib.util.spec_from_file_location("cavity_run_mod", RUNNER)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -164,7 +182,6 @@ def test_runner_rejects_mislabelled_reference(tmp_path: Path) -> None:
     pytest.importorskip("torch")
     mod = _load_runner()
     bad = tmp_path / "bad.json"
-    bad.write_text(json.dumps({"re": 3200.0, "u_re5000": [[0.0, 0.0]],
-                               "v_re5000": [[0.0, 0.0]]}))
+    bad.write_text(json.dumps({"re": 3200.0, "u_re5000": [[0.0, 0.0]], "v_re5000": [[0.0, 0.0]]}))
     with pytest.raises(ValueError, match="u_re3200"):
         mod.load_reference(str(bad))

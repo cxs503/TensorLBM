@@ -15,5 +15,4 @@ Modules
 
 from __future__ import annotations
 
-__all__ = ["criteria", "reference_audit", "runner", "runledger",
-           "make_benchmark_table"]
+__all__ = ["criteria", "reference_audit", "runner", "runledger", "make_benchmark_table"]

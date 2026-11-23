@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """IN99-N03 cluster job: Run turbulent channel validation on compute node."""
-import sys, os, json, time, math
+
+import sys
+import os
+import json
+import time
+import math
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
@@ -20,7 +25,8 @@ def load_dns(re_tau):
     data = {}
     with open(DNS_DIR / fname) as f:
         header = f.readline().strip().split(",")
-        for k in header: data[k] = []
+        for k in header:
+            data[k] = []
         for line in f:
             vals = line.strip().split(",")
             for k, v in zip(header, vals):
@@ -31,16 +37,29 @@ def load_dns(re_tau):
 def run_and_analyze(re_tau, u_tau, nx, nz, ny, steps, warmup, cs, label, device="cpu"):
     """Run a single case and return analysis."""
     cfg = TurbulentChannel3DConfig(
-        nx=nx, nz=nz, ny=ny, re_tau=re_tau, u_tau=u_tau,
-        wall_origin=0.5, steps=steps, warmup_steps=warmup,
-        sample_interval=5, perturbation_amplitude=0.35,
-        perturbation_modes=8, seed=20261109, device=device,
-        dtype="float32", smagorinsky_cs=cs,
-        wall_scheme="interpolated", force_scheme="trt_split", label=label)
+        nx=nx,
+        nz=nz,
+        ny=ny,
+        re_tau=re_tau,
+        u_tau=u_tau,
+        wall_origin=0.5,
+        steps=steps,
+        warmup_steps=warmup,
+        sample_interval=5,
+        perturbation_amplitude=0.35,
+        perturbation_modes=8,
+        seed=20261109,
+        device=device,
+        dtype="float32",
+        smagorinsky_cs=cs,
+        wall_scheme="interpolated",
+        force_scheme="trt_split",
+        label=label,
+    )
 
     print(f"[{label}] {nx}x{ny}x{nz} Re={re_tau} Cs={cs} steps={steps}")
     print(f"  nu={cfg.nu:.6f} tau+={cfg.tau_plus:.4f} dy+={cfg.dy_plus:.2f}")
-    print(f"  Lx/h={nx/cfg.half_height:.2f} Lz/h={nz/cfg.half_height:.2f}")
+    print(f"  Lx/h={nx / cfg.half_height:.2f} Lz/h={nz / cfg.half_height:.2f}")
 
     t0 = time.time()
     sim = TurbulentChannel3D(cfg)
@@ -58,6 +77,7 @@ def run_and_analyze(re_tau, u_tau, nx, nz, ny, steps, warmup, cs, label, device=
     # Load DNS
     dns = load_dns(re_tau)
     from scipy.interpolate import interp1d
+
     f_up = interp1d(dns["y_plus"], dns["u_plus"], kind="linear", fill_value="extrapolate")
     f_uu = interp1d(dns["y_plus"], dns["uu_plus"], kind="linear", fill_value="extrapolate")
     f_vv = interp1d(dns["y_plus"], dns["vv_plus"], kind="linear", fill_value="extrapolate")
@@ -72,11 +92,23 @@ def run_and_analyze(re_tau, u_tau, nx, nz, ny, steps, warmup, cs, label, device=
 
     # Errors
     buf = (y_plus > 5) & (y_plus < 30)
-    buf_err = float(np.abs(u_plus[buf] - dns_up_i[buf]).mean() / dns_up_i[buf].mean() * 100) if buf.sum() > 0 else float("nan")
+    buf_err = (
+        float(np.abs(u_plus[buf] - dns_up_i[buf]).mean() / dns_up_i[buf].mean() * 100)
+        if buf.sum() > 0
+        else float("nan")
+    )
     log = (y_plus > 30) & (y_plus < 0.5 * re_tau)
-    log_err = float(np.abs(u_plus[log] - dns_up_i[log]).mean() / dns_up_i[log].mean() * 100) if log.sum() > 0 else float("nan")
+    log_err = (
+        float(np.abs(u_plus[log] - dns_up_i[log]).mean() / dns_up_i[log].mean() * 100)
+        if log.sum() > 0
+        else float("nan")
+    )
     rms = (y_plus > 30) & (y_plus < 100)
-    rms_err = float(np.sqrt(((u_plus[rms] - dns_up_i[rms])**2).mean()) / dns_up_i[rms].mean() * 100) if rms.sum() > 0 else float("nan")
+    rms_err = (
+        float(np.sqrt(((u_plus[rms] - dns_up_i[rms]) ** 2).mean()) / dns_up_i[rms].mean() * 100)
+        if rms.sum() > 0
+        else float("nan")
+    )
 
     # u_tau consistency
     u_tau_bf = result["u_tau_routes"]["body_force"]
@@ -95,27 +127,45 @@ def run_and_analyze(re_tau, u_tau, nx, nz, ny, steps, warmup, cs, label, device=
     dns_pk_mag = float(dns_uv_m[dns_pk])
 
     analysis = {
-        "label": label, "re_tau": re_tau, "elapsed_s": elapsed,
+        "label": label,
+        "re_tau": re_tau,
+        "elapsed_s": elapsed,
         "steps_per_s": steps / elapsed,
-        "buffer_error_pct": buf_err, "log_error_pct": log_err, "rms_error_pct": rms_err,
-        "u_tau_bf": u_tau_bf, "u_tau_fit": u_tau_fit, "u_tau_exch": u_tau_exch,
+        "buffer_error_pct": buf_err,
+        "log_error_pct": log_err,
+        "rms_error_pct": rms_err,
+        "u_tau_bf": u_tau_bf,
+        "u_tau_fit": u_tau_fit,
+        "u_tau_exch": u_tau_exch,
         "u_tau_consistency_pct": u_tau_sc,
-        "rs_peak_yplus": pk_yp, "rs_peak_mag": pk_mag,
-        "dns_peak_yplus": dns_pk_yp, "dns_peak_mag": dns_pk_mag,
+        "rs_peak_yplus": pk_yp,
+        "rs_peak_mag": pk_mag,
+        "dns_peak_yplus": dns_pk_yp,
+        "dns_peak_mag": dns_pk_mag,
         "peak_pos_err": abs(pk_yp - dns_pk_yp),
         "peak_mag_err_pct": abs(pk_mag - dns_pk_mag) / dns_pk_mag * 100,
         "anisotropy": bool(float(uu_plus[pk]) > float(ww_plus[pk]) > float(vv_plus[pk])),
-        "uu_peak": float(uu_plus[pk]), "vv_peak": float(vv_plus[pk]), "ww_peak": float(ww_plus[pk]),
+        "uu_peak": float(uu_plus[pk]),
+        "vv_peak": float(vv_plus[pk]),
+        "ww_peak": float(ww_plus[pk]),
         "samples": result["config"]["samples"],
         "eddy_turnovers": result["config"]["eddy_turnovers_averaged"],
-        "dy_plus": cfg.dy_plus, "Lx_over_h": nx / cfg.half_height, "Lz_over_h": nz / cfg.half_height,
+        "dy_plus": cfg.dy_plus,
+        "Lx_over_h": nx / cfg.half_height,
+        "Lz_over_h": nz / cfg.half_height,
         # Profiles for plotting
-        "y_plus": y_plus.tolist(), "u_plus": u_plus.tolist(),
-        "uu_plus": uu_plus.tolist(), "vv_plus": vv_plus.tolist(),
-        "ww_plus": ww_plus.tolist(), "uv_plus": uv_plus.tolist(),
-        "dns_y_plus": dns["y_plus"].tolist(), "dns_u_plus": dns["u_plus"].tolist(),
-        "dns_uu_plus": dns["uu_plus"].tolist(), "dns_vv_plus": dns["vv_plus"].tolist(),
-        "dns_ww_plus": dns["ww_plus"].tolist(), "dns_uv_plus": dns["uv_plus"].tolist(),
+        "y_plus": y_plus.tolist(),
+        "u_plus": u_plus.tolist(),
+        "uu_plus": uu_plus.tolist(),
+        "vv_plus": vv_plus.tolist(),
+        "ww_plus": ww_plus.tolist(),
+        "uv_plus": uv_plus.tolist(),
+        "dns_y_plus": dns["y_plus"].tolist(),
+        "dns_u_plus": dns["u_plus"].tolist(),
+        "dns_uu_plus": dns["uu_plus"].tolist(),
+        "dns_vv_plus": dns["vv_plus"].tolist(),
+        "dns_ww_plus": dns["ww_plus"].tolist(),
+        "dns_uv_plus": dns["uv_plus"].tolist(),
     }
     return analysis
 
@@ -136,18 +186,36 @@ def main():
 
     all_results = {}
     for re_tau, u_tau, nx, nz, ny, steps, warmup, cs, label in cases:
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         analysis = run_and_analyze(re_tau, u_tau, nx, nz, ny, steps, warmup, cs, label)
         all_results[label] = analysis
 
         # Save individual result
         out = OUT_DIR / f"{label}_analysis.json"
         with open(out, "w") as f:
-            json.dump({k: v for k, v in analysis.items()
-                      if k not in ("y_plus", "u_plus", "uu_plus", "vv_plus", "ww_plus", "uv_plus",
-                                   "dns_y_plus", "dns_u_plus", "dns_uu_plus", "dns_vv_plus",
-                                   "dns_ww_plus", "dns_uv_plus")},
-                      f, indent=2)
+            json.dump(
+                {
+                    k: v
+                    for k, v in analysis.items()
+                    if k
+                    not in (
+                        "y_plus",
+                        "u_plus",
+                        "uu_plus",
+                        "vv_plus",
+                        "ww_plus",
+                        "uv_plus",
+                        "dns_y_plus",
+                        "dns_u_plus",
+                        "dns_uu_plus",
+                        "dns_vv_plus",
+                        "dns_ww_plus",
+                        "dns_uv_plus",
+                    )
+                },
+                f,
+                indent=2,
+            )
         print(f"  Saved: {out}")
 
         # Print summary
@@ -155,7 +223,9 @@ def main():
         print(f"  Log err:    {analysis['log_error_pct']:.2f}%")
         print(f"  RMS err:    {analysis['rms_error_pct']:.2f}%")
         print(f"  u_tau cons: {analysis['u_tau_consistency_pct']:.2f}%")
-        print(f"  RS peak y+: {analysis['rs_peak_yplus']:.1f} (DNS: {analysis['dns_peak_yplus']:.1f})")
+        print(
+            f"  RS peak y+: {analysis['rs_peak_yplus']:.1f} (DNS: {analysis['dns_peak_yplus']:.1f})"
+        )
         print(f"  Anisotropy: {analysis['anisotropy']}")
 
     # Save summary

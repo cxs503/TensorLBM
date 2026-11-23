@@ -150,8 +150,11 @@ def front_state(phi: torch.Tensor, y0: float, lam: int) -> dict:
     """All front measurements of one sample (lengths in wavelengths)."""
     low = interface_zero_crossing(phi)
     top = topmost_crossing(phi)
-    mean = _q(low, 0.5) if bool(torch.isnan(low).all()) else float(
-        torch.nan_to_num(low, nan=0.0).sum() / max(1, int((~torch.isnan(low)).sum())))
+    mean = (
+        _q(low, 0.5)
+        if bool(torch.isnan(low).all())
+        else float(torch.nan_to_num(low, nan=0.0).sum() / max(1, int((~torch.isnan(low)).sum())))
+    )
     neg = phi < 0.0
     multi = int(((neg[:-1] & ~neg[1:]).sum(dim=0) > 1).sum())
     return {
@@ -171,12 +174,17 @@ def front_state(phi: torch.Tensor, y0: float, lam: int) -> dict:
 def late_specs(base: bool = False) -> tuple[CaseSpec, ...]:
     """Long runs of the case-definition suite (``tau_end = 6.5`` is already the
     value in ``run_case.CaseSpec``; here it is actually reached)."""
-    ref = CaseSpec("late_l064_g2e-4", lam=64, g=2.0e-4,
-                   note="reference point, terminal window reached")
-    ladder = CaseSpec("late_l096_g3e-4", lam=96, g=3.0e-4,
-                      note="1.5x grid at constant A g/lam")
-    wall = CaseSpec("late_l064_g2e-4_L10", lam=64, g=2.0e-4, layers=10.0,
-                    note="wall-confinement control (5 lam per side)")
+    ref = CaseSpec(
+        "late_l064_g2e-4", lam=64, g=2.0e-4, note="reference point, terminal window reached"
+    )
+    ladder = CaseSpec("late_l096_g3e-4", lam=96, g=3.0e-4, note="1.5x grid at constant A g/lam")
+    wall = CaseSpec(
+        "late_l064_g2e-4_L10",
+        lam=64,
+        g=2.0e-4,
+        layers=10.0,
+        note="wall-confinement control (5 lam per side)",
+    )
     return (ref,) if base else (ref, ladder, wall)
 
 
@@ -192,14 +200,28 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
     clearance = la.wall_clearance_lam(spec.layers)
     f, g, phi = init_rt_state(cfg)
     ny = phi.shape[0]
-    y0 = 0.5 * ny                     # fixed reference: initial interface mean
+    y0 = 0.5 * ny  # fixed reference: initial interface mean
     tau_unit = math.sqrt(spec.atwood * spec.g / spec.lam)
     mass0 = float(g[:, 1:-1, :].sum().item())
     ncell = g[:, 1:-1, :].numel()
 
-    keys = ("step", "tau", "h_bub", "h_spk", "h_bub_q90", "h_spk_q10", "h_up_zc",
-            "h_dn_zc", "mean_dev", "multi", "a_zc", "max_u", "phi_min", "phi_max",
-            "phi_drift")
+    keys = (
+        "step",
+        "tau",
+        "h_bub",
+        "h_spk",
+        "h_bub_q90",
+        "h_spk_q10",
+        "h_up_zc",
+        "h_dn_zc",
+        "mean_dev",
+        "multi",
+        "a_zc",
+        "max_u",
+        "phi_min",
+        "phi_max",
+        "phi_drift",
+    )
     rec: dict[str, list[float]] = {k: [] for k in keys}
     t0 = time.time()
     stop_reason = None
@@ -214,8 +236,16 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
             mass = float(g[:, 1:-1, :].sum().item())
             rec["step"].append(step)
             rec["tau"].append(step * tau_unit)
-            for k in ("h_bub", "h_spk", "h_bub_q90", "h_spk_q10", "h_up_zc",
-                      "h_dn_zc", "mean_dev", "multi"):
+            for k in (
+                "h_bub",
+                "h_spk",
+                "h_bub_q90",
+                "h_spk_q10",
+                "h_up_zc",
+                "h_dn_zc",
+                "mean_dev",
+                "multi",
+            ):
                 rec[k].append(fs[k])
             rec["a_zc"].append(a_zc)
             rec["max_u"].append(speed)
@@ -225,8 +255,9 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
             # integral is ~0 by construction, so report the drift per cell in
             # units of the +-1 amplitude instead of a meaningless percentage.
             rec["phi_drift"].append(100.0 * (mass - mass0) / ncell)
-            reason = la.late_stop_reason(max(fs["h_bub"], fs["h_spk"]), speed / math.sqrt(1.0 / 3.0),
-                                         spec.layers)
+            reason = la.late_stop_reason(
+                max(fs["h_bub"], fs["h_spk"]), speed / math.sqrt(1.0 / 3.0), spec.layers
+            )
             if reason is not None:
                 stop_reason = reason
                 break
@@ -253,10 +284,12 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
     fr_meas, fr_lz = u_mean / sq, la.layzer_froude(spec.atwood, spec.g, spec.lam, la.C_2D)
 
     # sub-window stability inside the gate window (is the velocity really constant?)
-    half = la.front_velocity(rec["tau"][:len(rec["tau"])], rec["h_bub"],
-                             la.TAU_LO, 0.5 * (la.TAU_LO + la.TAU_HI))["slope"]
-    half2 = la.front_velocity(rec["tau"], rec["h_bub"],
-                              0.5 * (la.TAU_LO + la.TAU_HI), la.TAU_HI)["slope"]
+    half = la.front_velocity(
+        rec["tau"][: len(rec["tau"])], rec["h_bub"], la.TAU_LO, 0.5 * (la.TAU_LO + la.TAU_HI)
+    )["slope"]
+    half2 = la.front_velocity(rec["tau"], rec["h_bub"], 0.5 * (la.TAU_LO + la.TAU_HI), la.TAU_HI)[
+        "slope"
+    ]
 
     # ---- two-fluid reference (structural: uniform inertia cannot produce it)
     asym = la.two_fluid_asymmetry(spec.atwood)
@@ -264,16 +297,21 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
 
     # ---- linear growth rate on the same (long) run: cross-check with run_case.py
     lin = [(t, a) for t, a in zip(rec["tau"], rec["a_zc"]) if t <= TAU_LINEAR_MAX]
-    sigmas = {w: window_slope([p[0] for p in lin], [p[1] for p in lin], lo, hi)
-              for w, (lo, hi) in WINDOWS.items()}
+    sigmas = {
+        w: window_slope([p[0] for p in lin], [p[1] for p in lin], lo, hi)
+        for w, (lo, hi) in WINDOWS.items()
+    }
     # the windows are fitted against tau, so convert the slope to d ln a / dt
     # (lattice units) before comparing with sigma_viscous
     tau_factor = math.sqrt(spec.lam / (spec.atwood * spec.g))
     sigma_primary = sigmas[PRIMARY_WINDOW]["sigma"] / tau_factor
     sig_ref = ref_lock.sigma_viscous(spec.atwood, spec.g, spec.lam, spec.nu)
 
-    asym_dev = [abs(a - b) / max(a, b) for a, b in zip(rec["h_bub"], rec["h_spk"])
-                if max(a, b) > 0.0 and math.isfinite(a) and math.isfinite(b)]
+    asym_dev = [
+        abs(a - b) / max(a, b)
+        for a, b in zip(rec["h_bub"], rec["h_spk"])
+        if max(a, b) > 0.0 and math.isfinite(a) and math.isfinite(b)
+    ]
     case = {
         "name": spec.name,
         "note": spec.note,
@@ -317,7 +355,9 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
         "multi_columns_max": int(max(rec["multi"])),
         # --- two-fluid (structurally unreachable: uniform inertia)
         "two_fluid_asymmetry_pred": asym,
-        "two_fluid_asymmetry_sim": (u_b / u_s) if (math.isfinite(u_s) and u_s > 0.0) else float("nan"),
+        "two_fluid_asymmetry_sim": (u_b / u_s)
+        if (math.isfinite(u_s) and u_s > 0.0)
+        else float("nan"),
         "u_spike_two_fluid_c1": u_s_2f,
         "err_u_spike_vs_two_fluid_pct": la.rel_pct(u_s, u_s_2f),
         "front_symmetry_max_rel_dev": max(asym_dev) if asym_dev else float("nan"),
@@ -336,32 +376,71 @@ def run_case(spec: CaseSpec, out_root: Path = OUT_ROOT, quick: bool = False) -> 
     }
     covered = v_b["tau_range"]
     case["window_covered"] = covered
-    complete = bool(all(math.isfinite(x) for x in covered)
-                    and covered[0] <= la.TAU_LO + 0.25 and covered[1] >= la.TAU_HI - 0.25)
+    complete = bool(
+        all(math.isfinite(x) for x in covered)
+        and covered[0] <= la.TAU_LO + 0.25
+        and covered[1] >= la.TAU_HI - 0.25
+    )
     case["window_complete"] = complete
-    case["gate_terminal_15pct"] = (None if not complete else bool(
-        math.isfinite(case["err_fr_vs_layzer_c1_pct"])
-        and abs(case["err_fr_vs_layzer_c1_pct"]) <= la.GATE_PCT))
+    case["gate_terminal_15pct"] = (
+        None
+        if not complete
+        else bool(
+            math.isfinite(case["err_fr_vs_layzer_c1_pct"])
+            and abs(case["err_fr_vs_layzer_c1_pct"]) <= la.GATE_PCT
+        )
+    )
 
     d = out_root / spec.name
     d.mkdir(parents=True, exist_ok=True)
     with (d / "history.csv").open("w", newline="", encoding="utf-8") as fh:
         wr = csv.writer(fh)
-        wr.writerow(["step", "tau", "h_bubble_over_lam", "h_spike_over_lam",
-                     "h_bubble_q90_over_lam", "h_spike_q10_over_lam",
-                     "h_up_zc_over_lam", "h_dn_zc_over_lam", "mean_dev_over_lam",
-                     "multi_columns", "a_zc_over_lam", "max_speed", "phi_min",
-                     "phi_max", "phi_integral_drift_pct_per_cell"])
+        wr.writerow(
+            [
+                "step",
+                "tau",
+                "h_bubble_over_lam",
+                "h_spike_over_lam",
+                "h_bubble_q90_over_lam",
+                "h_spike_q10_over_lam",
+                "h_up_zc_over_lam",
+                "h_dn_zc_over_lam",
+                "mean_dev_over_lam",
+                "multi_columns",
+                "a_zc_over_lam",
+                "max_speed",
+                "phi_min",
+                "phi_max",
+                "phi_integral_drift_pct_per_cell",
+            ]
+        )
         for i, s in enumerate(rec["step"]):
-            wr.writerow([int(s), f"{rec['tau'][i]:.6f}"] + [
-                f"{rec[k][i]:.6e}" for k in ("h_bub", "h_spk", "h_bub_q90",
-                                             "h_spk_q10", "h_up_zc", "h_dn_zc",
-                                             "mean_dev")] +
-                        [int(rec["multi"][i]), f"{rec['a_zc'][i]:.6e}",
-                         f"{rec['max_u'][i]:.6e}", f"{rec['phi_min'][i]:.6e}",
-                         f"{rec['phi_max'][i]:.6e}", f"{rec['phi_drift'][i]:.3e}"])
-    (d / "case.json").write_text(json.dumps(case, indent=2, sort_keys=True) + "\n",
-                                 encoding="utf-8")
+            wr.writerow(
+                [int(s), f"{rec['tau'][i]:.6f}"]
+                + [
+                    f"{rec[k][i]:.6e}"
+                    for k in (
+                        "h_bub",
+                        "h_spk",
+                        "h_bub_q90",
+                        "h_spk_q10",
+                        "h_up_zc",
+                        "h_dn_zc",
+                        "mean_dev",
+                    )
+                ]
+                + [
+                    int(rec["multi"][i]),
+                    f"{rec['a_zc'][i]:.6e}",
+                    f"{rec['max_u'][i]:.6e}",
+                    f"{rec['phi_min'][i]:.6e}",
+                    f"{rec['phi_max'][i]:.6e}",
+                    f"{rec['phi_drift'][i]:.3e}",
+                ]
+            )
+    (d / "case.json").write_text(
+        json.dumps(case, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return case
 
 
@@ -373,15 +452,16 @@ def aggregate(out_root: Path = OUT_ROOT) -> dict:
     for p in sorted(out_root.glob("*/case.json")):
         cases.append(json.loads(p.read_text(encoding="utf-8")))
     summary = {"cases": cases, "gate_pct": la.GATE_PCT, "window": [la.TAU_LO, la.TAU_HI]}
-    (out_root / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n",
-                                           encoding="utf-8")
+    (out_root / "summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     lines = [
         "# CASE-RT-INSTABILITY-ATWOOD -- late-time (nonlinear) front velocity",
         "",
         f"Gate: |Fr_meas / Fr_LZ(C=1) - 1| <= {la.GATE_PCT:.0f} %, window "
         f"tau in [{la.TAU_LO}, {la.TAU_HI}]; Fr = u / sqrt(A g lam), "
         "Fr_LZ = 1/sqrt(pi C) (Layzer-Goncharov, Boussinesq form).",
-        f"Measured C_eff = 1 / (pi Fr^2) (compare C = 0.90 from the sibling case at A = 1/2).",
+        "Measured C_eff = 1 / (pi Fr^2) (compare C = 0.90 from the sibling case at A = 1/2).",
         "",
         "| case | steps | tau_end | stop | Ma_peak | Fr_meas | Fr_LZ | err | gate | C_eff | "
         "robust Fr | subwindow drift |",
@@ -395,7 +475,8 @@ def aggregate(out_root: Path = OUT_ROOT) -> dict:
             f"{c['fr_meas']:.4f} | {c['fr_layzer_c1']:.4f} | "
             f"{c['err_fr_vs_layzer_c1_pct']:+.2f}% | "
             f"{'INCOMPLETE' if c['gate_terminal_15pct'] is None else ('PASS' if c['gate_terminal_15pct'] else 'FAIL')} | {c['c_eff']:.3f} | "
-            f"{rob:.4f} | {c['slope_subwindow_drift_pct']:+.2f}% |")
+            f"{rob:.4f} | {c['slope_subwindow_drift_pct']:+.2f}% |"
+        )
     lines += [
         "",
         "Front-velocity estimator comparison (same runs, same window):",
@@ -409,7 +490,8 @@ def aggregate(out_root: Path = OUT_ROOT) -> dict:
             f"| {c['name']} | {c['u_bubble_sim']:.4e} | {c['u_spike_sim']:.4e} | "
             f"{c['u_legacy_estimator']:.4e} | {c['err_legacy_estimator_vs_tip_pct']:+.2f}% | "
             f"{c['mean_dev_max_lam']:.3f} | {c['multi_columns_max']} | "
-            f"{c['front_symmetry_max_rel_dev']:.2e} |")
+            f"{c['front_symmetry_max_rel_dev']:.2e} |"
+        )
     lines += [
         "",
         "Two-fluid (finite-density-ratio) asymmetry -- measured, not assumed:",
@@ -421,7 +503,8 @@ def aggregate(out_root: Path = OUT_ROOT) -> dict:
         lines.append(
             f"| {c['name']} | {c['two_fluid_asymmetry_sim']:.4f} | "
             f"{c['two_fluid_asymmetry_pred']:.4f} | "
-            f"{c['err_u_spike_vs_two_fluid_pct']:+.2f}% |")
+            f"{c['err_u_spike_vs_two_fluid_pct']:+.2f}% |"
+        )
     (out_root / "acceptance_table.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return summary
 
@@ -440,11 +523,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     for spec in late_specs(base=(args.specs == "base")):
         case = run_case(spec, out_root, quick=args.quick)
-        print(f"[{case['name']}] steps={case['n_steps_run']} tau={case['tau_reached']:.2f} "
-              f"stop={case['stop_reason']} Fr={case['fr_meas']:.4f} "
-              f"C_eff={case['c_eff']:.3f} err={case['err_fr_vs_layzer_c1_pct']:+.2f}% "
-              f"gate={'INCOMPLETE' if case['gate_terminal_15pct'] is None else ('PASS' if case['gate_terminal_15pct'] else 'FAIL')} "
-              f"wall={case['wall_seconds']:.0f}s", flush=True)
+        print(
+            f"[{case['name']}] steps={case['n_steps_run']} tau={case['tau_reached']:.2f} "
+            f"stop={case['stop_reason']} Fr={case['fr_meas']:.4f} "
+            f"C_eff={case['c_eff']:.3f} err={case['err_fr_vs_layzer_c1_pct']:+.2f}% "
+            f"gate={'INCOMPLETE' if case['gate_terminal_15pct'] is None else ('PASS' if case['gate_terminal_15pct'] else 'FAIL')} "
+            f"wall={case['wall_seconds']:.0f}s",
+            flush=True,
+        )
     aggregate(out_root)
     return 0
 

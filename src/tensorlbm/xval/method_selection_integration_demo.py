@@ -15,6 +15,7 @@ Usage
 -----
   python src/tensorlbm/xval/method_selection_integration_demo.py
 """
+
 from __future__ import annotations
 
 import json
@@ -60,8 +61,10 @@ def demo_selection_api():
     assert sel_trt.lambda_trt is not None
     print(f"TRT selection: {sel_trt.as_dict()}")
     print(f"  Lambda = {sel_trt.lambda_trt:.6f} (magic Lambda would be {TRT_MAGIC_LAMBDA:.4f})")
-    print(f"  tau_minus = {trt_tau_minus(tau, sel_trt.lambda_trt):.4f} "
-          f"(magic Lambda would give {trt_tau_minus(tau, TRT_MAGIC_LAMBDA):.2f})")
+    print(
+        f"  tau_minus = {trt_tau_minus(tau, sel_trt.lambda_trt):.4f} "
+        f"(magic Lambda would give {trt_tau_minus(tau, TRT_MAGIC_LAMBDA):.2f})"
+    )
 
     return sel_mrt, sel_bgk, sel_trt
 
@@ -90,8 +93,7 @@ def demo_collide_dispatch():
         assert torch.isfinite(ux_new).all(), f"Non-finite ux for {prefer}"
         # Mass should be approximately conserved (MRT relaxes bulk moment differently)
         mass_ratio = (rho_new.sum() / rho.sum()).item()
-        assert 0.99 < mass_ratio < 1.01, \
-            f"Mass drift too large for {prefer}: ratio={mass_ratio}"
+        assert 0.99 < mass_ratio < 1.01, f"Mass drift too large for {prefer}: ratio={mass_ratio}"
         print(f"  {sel.collision}: finite output, mass_ratio={mass_ratio:.6f}")
 
 
@@ -122,14 +124,16 @@ def demo_solver_integration_pattern():
 
     # Time step loop (just a few steps to demonstrate the pattern)
     from tensorlbm.solver import stream
+
     for step in range(10):
         f = collide_dispatch(sel, f, tau, tau_field=tau_field if sel.sponge else None)
         f = stream(f)
         # BC would go here...
 
     rho_final, ux_final, uy_final = macroscopic(f)
-    print(f"  After 10 steps: mass={rho_final.sum().item():.6f}, "
-          f"mean_u={ux_final.mean().item():.6f}")
+    print(
+        f"  After 10 steps: mass={rho_final.sum().item():.6f}, mean_u={ux_final.mean().item():.6f}"
+    )
 
 
 def demo_xval_evidence_trace():

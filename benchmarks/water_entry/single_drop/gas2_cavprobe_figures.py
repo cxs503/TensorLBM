@@ -1,4 +1,5 @@
 """DE-X-GAS2-CAVPROBE-R1 figures: p_cav(t) vs constant-pressure closure & Rayleigh-Plesset line."""
+
 import json
 import sys
 from pathlib import Path
@@ -28,7 +29,9 @@ def main():
     ax.axhline(p_ref, color="g", ls="--", lw=1.4, label="constant-pressure closure p_ref = 1.0")
     ax.plot(t, prp, "r-", lw=1.4, label="Rayleigh-Plesset reference (closed bubble)")
     ax.axvline(data[pk_i]["time_ms"], color="k", ls=":", lw=1)
-    ax.text(data[pk_i]["time_ms"] + 0.1, ax.get_ylim()[1] * 0.98, "peak depth", rotation=90, fontsize=8)
+    ax.text(
+        data[pk_i]["time_ms"] + 0.1, ax.get_ylim()[1] * 0.98, "peak depth", rotation=90, fontsize=8
+    )
     ax.set_xlabel("absolute time (ms)")
     ax.set_ylabel("pressure (lattice units)")
     ax.set_title("Cavity-bottom pressure vs two reference lines (cells=8, ctrl flags)")

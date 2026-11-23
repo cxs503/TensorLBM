@@ -64,9 +64,7 @@ def fig_channel_profiles(rep, path):
     for r in rep["runs"]:
         if r["_case"] != "channel":
             continue
-        widths.setdefault(r["theta_requested_deg"], []).append(
-            (r["width"], abs(r["u_peak_error"]))
-        )
+        widths.setdefault(r["theta_requested_deg"], []).append((r["width"], abs(r["u_peak_error"])))
     for theta, seq in sorted(widths.items()):
         seq.sort()
         w = [1.0 / s[0] for s in seq]
@@ -131,10 +129,16 @@ def fig_tgv(rep, path):
     fig, ax = plt.subplots(1, 3, figsize=(14, 3.8))
     ax[0].semilogy(mas[1:], defects[1:], "o", ms=5, label="measured defect")
     mm = np.linspace(1e-3, mas.max() * 1.05, 50)
-    ax[0].semilogy(mm, abs(law["c_ma2"]) * mm**2, "k-", lw=1.5,
-                   label=f"c Ma^2 fit (c={law['c_ma2']:.4g})")
-    ax[0].semilogy(mm, mr(mm, law, defects, mas), "r--", lw=1.2,
-                   label=f"free power law p={law['free_exponent']:.3f}")
+    ax[0].semilogy(
+        mm, abs(law["c_ma2"]) * mm**2, "k-", lw=1.5, label=f"c Ma^2 fit (c={law['c_ma2']:.4g})"
+    )
+    ax[0].semilogy(
+        mm,
+        mr(mm, law, defects, mas),
+        "r--",
+        lw=1.2,
+        label=f"free power law p={law['free_exponent']:.3f}",
+    )
     ax[0].set_xlabel("Mach number of the boost")
     ax[0].set_ylabel("relative decay-rate defect")
     ax[0].set_title("Case 03: defect vs Ma (log-log)")
@@ -258,8 +262,12 @@ def build_markdown(rep, sha, figdir_rel):
         _entry = _levels.get(_finest, _levels.get(str(_finest)))
         used = _entry["per_angle"]
         used_deg = next(
-            (p["theta_used_deg"] for p in used if f"{p['theta_requested_deg']:.3f}" == theta
-             or abs(p["theta_requested_deg"] - float(theta)) < 1e-9),
+            (
+                p["theta_used_deg"]
+                for p in used
+                if f"{p['theta_requested_deg']:.3f}" == theta
+                or abs(p["theta_requested_deg"] - float(theta)) < 1e-9
+            ),
             float("nan"),
         )
         a(
@@ -324,11 +332,15 @@ def build_markdown(rep, sha, figdir_rel):
 
     a("## 4. 图\n")
     a(f"![case01 profiles]({figdir_rel}/fig1_channel_profiles.png)\n")
-    a("图1 左：不同倾角下壁面法向速度剖面与解析抛物线（最细网格）。右：峰值速度误差随 1/W 的双对数收敛。\n")
+    a(
+        "图1 左：不同倾角下壁面法向速度剖面与解析抛物线（最细网格）。右：峰值速度误差随 1/W 的双对数收敛。\n"
+    )
     a(f"![invariance summary]({figdir_rel}/fig2_invariance_summary.png)\n")
     a("图2：算例01 峰值速度、算例02 Cd 与 St 随网格朝向的变化（点线为文献参考值）。\n")
     a(f"![tgv]({figdir_rel}/fig3_tgv_ma2.png)\n")
-    a("图3：左：衰减率偏离随 Ma 的双对数图与 Ma² 拟合；中：不同推进速度下的涡动能衰减；右：衰减偏离与平移误差。\n")
+    a(
+        "图3：左：衰减率偏离随 Ma 的双对数图与 Ma² 拟合；中：不同推进速度下的涡动能衰减；右：衰减偏离与平移误差。\n"
+    )
 
     a("## 5. 注意点（踩过的坑 / 局限）\n")
     a(

@@ -3,10 +3,12 @@
 """TENS1-CSF-SMOOTH-R2 报告图生成（m26894）：从 runs/*/result.json 程序化绘图，零手抄。
 产出 runs/tens1_csf_r2/fig_depth.png + fig_mach.png（报告内嵌 base64 用）。
 """
+
 import json
 import os
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 

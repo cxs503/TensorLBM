@@ -59,7 +59,8 @@ def test_migration_is_registered_once() -> None:
     with (ROOT / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
     matches = [
-        row for row in rows
+        row
+        for row in rows
         if row["verification"] == "docs/architecture/migrations/canonical-xval-2026-11-21.json"
     ]
     assert len(matches) == 1

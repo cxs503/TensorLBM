@@ -77,18 +77,18 @@ def vf_parallel_rectangles(X: float, Y: float, n_quad: int = 32) -> float:
 
     # Gauss-Legendre quadrature
     pts, wts = np.polynomial.legendre.leggauss(n_quad)
-    
+
     # Transform to rectangle coordinates
     x1 = 0.5 * X * pts
     y1 = 0.5 * Y * pts
     wx1 = 0.5 * X * wts
     wy1 = 0.5 * Y * wts
-    
+
     x2 = 0.5 * X * pts
     y2 = 0.5 * Y * pts
     wx2 = 0.5 * X * wts
     wy2 = 0.5 * Y * wts
-    
+
     # Double integral over both rectangles
     F = 0.0
     for i in range(n_quad):
@@ -97,13 +97,13 @@ def vf_parallel_rectangles(X: float, Y: float, n_quad: int = 32) -> float:
                 for l in range(n_quad):
                     dx = x2[k] - x1[i]
                     dy = y2[l] - y1[j]
-                    r2 = dx*dx + dy*dy + 1.0
+                    r2 = dx * dx + dy * dy + 1.0
                     r = math.sqrt(r2)
                     dF = 1.0 / (math.pi * r2 * r2)
                     F += wx1[i] * wy1[j] * wx2[k] * wy2[l] * dF
-    
-    F /= (X * Y)
-    
+
+    F /= X * Y
+
     return max(0.0, min(1.0, F))
 
 
@@ -134,17 +134,17 @@ def vf_perpendicular_rectangles(X: float, Y: float, n_quad: int = 32) -> float:
         raise ValueError(f"X and Y must be positive, got X={X}, Y={Y}")
 
     pts, wts = np.polynomial.legendre.leggauss(n_quad)
-    
+
     x1 = 0.5 * X * (pts + 1)
     z1 = 0.5 * (pts + 1)
     wx1 = 0.5 * X * wts
     wz1 = 0.5 * wts
-    
+
     y2 = 0.5 * Y * (pts + 1)
     z2 = 0.5 * (pts + 1)
     wy2 = 0.5 * Y * wts
     wz2 = 0.5 * wts
-    
+
     F = 0.0
     for i in range(n_quad):
         for j in range(n_quad):
@@ -153,21 +153,19 @@ def vf_perpendicular_rectangles(X: float, Y: float, n_quad: int = 32) -> float:
                     dx = 0 - x1[i]
                     dy = y2[k] - 0
                     dz = z2[l] - z1[j]
-                    r2 = dx*dx + dy*dy + dz*dz
+                    r2 = dx * dx + dy * dy + dz * dz
                     r = math.sqrt(r2)
                     cos1 = abs(dy) / r
                     cos2 = abs(dx) / r
                     dF = cos1 * cos2 / (math.pi * r2)
                     F += wx1[i] * wz1[j] * wy2[k] * wz2[l] * dF
-    
+
     F /= X
-    
+
     return max(0.0, min(1.0, F))
 
 
-def vf_differential_to_rectangle(
-    a: float, b: float, c: float, n_quad: int = 32
-) -> float:
+def vf_differential_to_rectangle(a: float, b: float, c: float, n_quad: int = 32) -> float:
     """View factor from a differential element to a parallel rectangle.
 
     The differential element dA1 is located at distance c from a rectangle
@@ -235,7 +233,7 @@ def vf_parallel_coaxial_disks(R_i: float, R_j: float, S: float) -> float:
         View factor F_12 from disk 1 to disk 2.
     """
     if R_i <= 0 or R_j <= 0 or S <= 0:
-        raise ValueError(f"R_i, R_j, S must be positive")
+        raise ValueError("R_i, R_j, S must be positive")
 
     ri = R_i / S
     rj = R_j / S
@@ -262,7 +260,7 @@ def vf_infinite_plate_cylinder(radius: float, height: float) -> float:
         View factor from base plate to cylindrical wall.
     """
     if radius <= 0 or height <= 0:
-        raise ValueError(f"radius and height must be positive")
+        raise ValueError("radius and height must be positive")
 
     F_base_to_top = vf_parallel_coaxial_disks(radius, radius, height)
     F_base_to_wall = 1.0 - F_base_to_top
@@ -331,9 +329,7 @@ def normalize_view_factor_matrix(
     return F
 
 
-def enforce_reciprocity(
-    F: np.ndarray, areas: np.ndarray
-) -> np.ndarray:
+def enforce_reciprocity(F: np.ndarray, areas: np.ndarray) -> np.ndarray:
     """Enforce reciprocity relation A_i F_ij = A_j F_ji."""
     n = F.shape[0]
     F_out = F.copy().astype(np.float64)
@@ -396,6 +392,7 @@ class ViewFactorEnclosure:
     def to_torch(self):
         """Convert view factor matrix to torch tensor."""
         import torch
+
         return torch.from_numpy(self.F)
 
     def to_list(self) -> list[list[float]]:

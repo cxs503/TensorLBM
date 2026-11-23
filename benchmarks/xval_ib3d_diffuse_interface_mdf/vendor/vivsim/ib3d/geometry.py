@@ -38,11 +38,14 @@ def get_volume(vertex_coords, faces):
         jax.Array: Enclosed volume as a scalar array.
     """
     triangles = jnp.asarray(vertex_coords)[jnp.asarray(faces)]
-    signed_volumes = jnp.einsum(
-        "ij,ij->i",
-        triangles[:, 0],
-        jnp.cross(triangles[:, 1], triangles[:, 2]),
-    ) / 6.0
+    signed_volumes = (
+        jnp.einsum(
+            "ij,ij->i",
+            triangles[:, 0],
+            jnp.cross(triangles[:, 1], triangles[:, 2]),
+        )
+        / 6.0
+    )
     return jnp.abs(jnp.sum(signed_volumes))
 
 
@@ -62,6 +65,4 @@ def get_ds(vertex_coords, faces):
     faces = jnp.asarray(faces)
     triangle_areas = get_triangle_areas(vertex_coords, faces)
     vertex_dA = jnp.zeros((vertex_coords.shape[0],), dtype=vertex_coords.dtype)
-    return vertex_dA.at[faces.reshape(-1)].add(
-        jnp.repeat(triangle_areas / 3.0, 3)
-    )
+    return vertex_dA.at[faces.reshape(-1)].add(jnp.repeat(triangle_areas / 3.0, 3))

@@ -37,7 +37,5 @@ def get_ds(marker_coords, closed=True):
         return marker_ds
 
     segment_lengths = jnp.linalg.norm(marker_coords[1:] - marker_coords[:-1], axis=1)
-    marker_ds = jnp.pad(segment_lengths / 2, (1, 0)) + jnp.pad(
-        segment_lengths / 2, (0, 1)
-    )
+    marker_ds = jnp.pad(segment_lengths / 2, (1, 0)) + jnp.pad(segment_lengths / 2, (0, 1))
     return marker_ds

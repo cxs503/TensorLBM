@@ -82,7 +82,7 @@ def build_markdown(summary: dict, tables: str) -> str:
             break
 
     lines = []
-    lines.append(f"## 1. 案例介绍")
+    lines.append("## 1. 案例介绍")
     lines.append("")
     lines.append(
         "本节点(P127W2-N03)要求在 Re_τ=180/395/590 三工况下实现 D3Q19 平面槽道湍流的 "
@@ -132,7 +132,9 @@ def build_markdown(summary: dict, tables: str) -> str:
     lines.append("")
     lines.append("### 3.1 规格成本 vs 可负担包络（`feasibility.py`，纯算术）")
     lines.append("")
-    lines.append("| Re_τ | 规格壁面分辨 (Δy+=2, 均匀格) 格子数 | cell-updates (5000 h/U_bulk) | 本机实测速率下年数 | 预算内最高 h (Δy+) |")
+    lines.append(
+        "| Re_τ | 规格壁面分辨 (Δy+=2, 均匀格) 格子数 | cell-updates (5000 h/U_bulk) | 本机实测速率下年数 | 预算内最高 h (Δy+) |"
+    )
     lines.append("|---|---|---|---|---|")
     for re_tau, entry in wall_res.items():
         a = afford[re_tau]
@@ -148,7 +150,11 @@ def build_markdown(summary: dict, tables: str) -> str:
     )
     lines.append("")
     experiments_path = CAMPAIGN / "experiments.json"
-    experiments = json.loads(experiments_path.read_text()) if experiments_path.exists() else {"runs": [], "summary": {}}
+    experiments = (
+        json.loads(experiments_path.read_text())
+        if experiments_path.exists()
+        else {"runs": [], "summary": {}}
+    )
     lines.append("### 3.2 关键发现：亚格子应变估计在本分辨率下两端失衡")
     lines.append("")
     lines.append(
@@ -161,17 +167,27 @@ def build_markdown(summary: dict, tables: str) -> str:
         "由此产生两种失衡，全部来自 `artifacts/campaign/experiments.json`（18 个算例，数字由日志解析）："
     )
     lines.append("")
-    lines.append("| 算例 | Re_τ | h | Δy+ | 应变源 | 到达步数 | 涡翻转 | Ma_max | tke 首→末 | 结局 |")
+    lines.append(
+        "| 算例 | Re_τ | h | Δy+ | 应变源 | 到达步数 | 涡翻转 | Ma_max | tke 首→末 | 结局 |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for rec in experiments["runs"]:
-        outcome = "DIVERGED@{}".format(rec["diverged_at_step"]) if rec["diverged_at_step"] else (
-            "completed" if rec["completed"] else "stopped")
+        outcome = (
+            "DIVERGED@{}".format(rec["diverged_at_step"])
+            if rec["diverged_at_step"]
+            else ("completed" if rec["completed"] else "stopped")
+        )
         lines.append(
             "| {label} | {re_tau} | {h} | {dy_plus:.1f} | {strain_source} | {last_step_reached}/{planned_steps} | "
             "{te:.1f} | {ma} | {t0} → {t1} | {outcome} |".format(
-                label=rec["label"], re_tau=rec["re_tau"], h=rec["h"], dy_plus=rec["dy_plus"],
-                strain_source=rec["strain_source"], last_step_reached=rec["last_step_reached"],
-                planned_steps=rec["planned_steps"], te=rec["eddy_turnovers_reached"] or float("nan"),
+                label=rec["label"],
+                re_tau=rec["re_tau"],
+                h=rec["h"],
+                dy_plus=rec["dy_plus"],
+                strain_source=rec["strain_source"],
+                last_step_reached=rec["last_step_reached"],
+                planned_steps=rec["planned_steps"],
+                te=rec["eddy_turnovers_reached"] or float("nan"),
                 ma=_fmt(rec["max_mach_reached"], 2),
                 t0="{:.2e}".format(rec["tke_first"]) if rec["tke_first"] else "n/a",
                 t1="{:.2e}".format(rec["tke_last"]) if rec["tke_last"] else "n/a",
@@ -236,9 +252,7 @@ def build_markdown(summary: dict, tables: str) -> str:
     lines.append("")
     lines.append("## 6. 误差判定（逐项，是否达标）")
     lines.append("")
-    lines.append(
-        "| 判据 | 阈值 | 实测（最好算例） | 是否达标 |\n|---|---|---|---|"
-    )
+    lines.append("| 判据 | 阈值 | 实测（最好算例） | 是否达标 |\n|---|---|---|---|")
     lines.append(
         f"| (a) 平均剖面 y+=30-100 vs 对数律 | <5% | "
         f"{_fmt(best_vg.get('log_band_max_rel_error') if best_vg else None, 4)}"
@@ -279,13 +293,13 @@ def build_markdown(summary: dict, tables: str) -> str:
     lines.append("## 审计链")
     lines.append("")
     lines.append(
-        f"- 库：`src/tensorlbm/turbulence/les_channel3d.py`（壁模型 + 应变源选择）\n"
-        f"- 测试：`tests/test_les_wall_model.py`（16 项，含 Spalding 反演往返/黏性底层/对数层/端到端守恒）\n"
-        f"- 运行器：`benchmarks/p127w2_n03_les_channel/run_case.py`\n"
-        f"- 成本模型：`benchmarks/p127w2_n03_les_channel/feasibility.py` → `artifacts/campaign/feasibility.json`\n"
-        f"- 汇总：`benchmarks/p127w2_n03_les_channel/analyze_campaign.py` → "
-        f"`artifacts/campaign/campaign_summary.json` + `tables.md` + `figures/`\n"
-        f"- 每个算例的完整结果（含判据数字与逐时序历史）：`artifacts/campaign/<label>.json`\n"
+        "- 库：`src/tensorlbm/turbulence/les_channel3d.py`（壁模型 + 应变源选择）\n"
+        "- 测试：`tests/test_les_wall_model.py`（16 项，含 Spalding 反演往返/黏性底层/对数层/端到端守恒）\n"
+        "- 运行器：`benchmarks/p127w2_n03_les_channel/run_case.py`\n"
+        "- 成本模型：`benchmarks/p127w2_n03_les_channel/feasibility.py` → `artifacts/campaign/feasibility.json`\n"
+        "- 汇总：`benchmarks/p127w2_n03_les_channel/analyze_campaign.py` → "
+        "`artifacts/campaign/campaign_summary.json` + `tables.md` + `figures/`\n"
+        "- 每个算例的完整结果（含判据数字与逐时序历史）：`artifacts/campaign/<label>.json`\n"
     )
     return "\n".join(lines)
 
@@ -327,7 +341,16 @@ def main(argv: list[str] | None = None) -> int:
         ),
         "scenario_key": "tensorlbm-channel-les-turbulence",
         "mission_id": MISSION_ID,
-        "tags": ["TensorLBM", "turbulence", "LES", "channel-flow", "wall-model", "GCI", "honest-fail", NODE],
+        "tags": [
+            "TensorLBM",
+            "turbulence",
+            "LES",
+            "channel-flow",
+            "wall-model",
+            "GCI",
+            "honest-fail",
+            NODE,
+        ],
         "markdown": markdown,
         "figures": _figures(summary),
     }

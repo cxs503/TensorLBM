@@ -15,8 +15,10 @@ from pathlib import Path
 
 import pytest
 
-XVAL = Path(__file__).resolve().parents[1] / "xval" / (
-    "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION"
+XVAL = (
+    Path(__file__).resolve().parents[1]
+    / "xval"
+    / ("XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION")
 )
 if not (XVAL / "run_xval.py").is_file():  # pragma: no cover
     pytest.skip("xval driver not present", allow_module_level=True)

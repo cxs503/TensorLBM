@@ -15,6 +15,7 @@ enough to assert that (a) the corrected spreading is stable, (b) the deposited
 force is finite and of the expected sign, and (c) the corrected and control
 arms stay within the same order of magnitude.
 """
+
 import torch
 
 from tensorlbm.d2q9 import equilibrium, macroscopic
