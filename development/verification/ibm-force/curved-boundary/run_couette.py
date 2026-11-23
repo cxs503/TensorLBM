@@ -21,7 +21,7 @@ deliver and that a total-force check alone cannot separate:
 `Re_Ω = Ω R₁ (R₂ − R₁)/ν ≪ 1` keeps the flow in the Stokes regime, where the
 exact solution is valid.
 
-    PYTHONPATH=src python scripts/p399w2_n04_curved_force/run_couette.py
+    PYTHONPATH=src python development/verification/ibm-force/curved-boundary/run_couette.py
 """
 
 from __future__ import annotations
@@ -184,7 +184,7 @@ def main() -> None:
     res = run_couette(n_steps=args.steps, n_transient=args.transient)
     path = Path(args.out)
     if not path.is_absolute():
-        path = Path(__file__).resolve().parents[2] / path
+        path = Path(__file__).resolve().parents[4] / path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(res, indent=2))
     print(f"[couette] {path}")

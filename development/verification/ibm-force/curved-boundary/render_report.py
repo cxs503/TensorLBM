@@ -1,6 +1,6 @@
 """Render the P399W2-N04 markdown report from the artifacts (no hand-typed numbers).
 
-    PYTHONPATH=src python scripts/p399w2_n04_curved_force/render_report.py
+    PYTHONPATH=src python development/verification/ibm-force/curved-boundary/render_report.py
 
 Every table is generated from ``artifacts/p399w2_n04/*.json``; the narrative
 lives here so that the numbers cannot drift away from the evidence.
@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 ART = ROOT / "artifacts/p399w2_n04"
 FIG = ROOT / "figures/p399w2_n04"
 DOC = ROOT / "docs/P399W2_N04_IBM_CURVED_FORCE.md"
@@ -77,7 +77,7 @@ def main() -> None:
     A("")
     A("**Node** `p399w2-n04-lbm-curved-boundary-force` · **Repo** TensorLBM · "
       "**Module** `src/tensorlbm/ibm_curved_force.py` · "
-      "**Driver** `scripts/p399w2_n04_curved_force/run_validation.py`")
+      "**Driver** `development/verification/ibm-force/curved-boundary/run_validation.py`")
     A("")
     A("**Headline.** A curved-surface load on an immersed boundary is an *integral*, "
       "`∮ τ n dS`. The IBM kernels already in the repository carried no surface "
@@ -604,12 +604,12 @@ def main() -> None:
     A("")
     A("```bash")
     A("PYTHONPATH=src python -m pytest tests/test_ibm_curved_force.py -q")
-    A("PYTHONPATH=src python scripts/p399w2_n04_curved_force/run_validation.py \\")
+    A("PYTHONPATH=src python development/verification/ibm-force/curved-boundary/run_validation.py \\")
     A("    --cases quadrature --out artifacts/p399w2_n04")
-    A("bash scripts/p399w2_n04_curved_force/launch_local.sh   # or the cluster queue")
-    A("PYTHONPATH=src python scripts/p399w2_n04_curved_force/merge_cases.py")
-    A("PYTHONPATH=src python scripts/p399w2_n04_curved_force/make_figures.py")
-    A("PYTHONPATH=src python scripts/p399w2_n04_curved_force/render_report.py")
+    A("bash development/verification/ibm-force/curved-boundary/launch_local.sh   # or the cluster queue")
+    A("PYTHONPATH=src python development/verification/ibm-force/curved-boundary/merge_cases.py")
+    A("PYTHONPATH=src python development/verification/ibm-force/curved-boundary/make_figures.py")
+    A("PYTHONPATH=src python development/verification/ibm-force/curved-boundary/render_report.py")
     A("```")
     A("")
 

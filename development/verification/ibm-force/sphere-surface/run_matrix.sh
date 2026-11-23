@@ -4,19 +4,19 @@
 # Each shard writes one JSON record under artifacts/p387w2_n04/cases/; the
 # assembly step merges them into the acceptance report:
 #
-#   bash scripts/p387w2_n04_sphere_force/run_matrix.sh 4
-#   python scripts/p387w2_n04_sphere_force/run_validation.py assemble
+#   bash development/verification/ibm-force/sphere-surface/run_matrix.sh 4
+#   python development/verification/ibm-force/sphere-surface/run_validation.py assemble
 #
 # Wave 1 (this file): D = 8/10/12, box 5D lateral & streamwise, u = 0.10
 # (Ma = 0.17, compressibility error O(Ma^2) ~ 3 %), float32 for the sweep and
 # float64 for the fidelity re-run.
 set -u
 THREADS="${1:-4}"
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 OUT="$ROOT/artifacts/p387w2_n04/cases"
 LOG="$ROOT/runs/p387w2_n04"
 mkdir -p "$OUT" "$LOG"
-RUN="python3 -u $ROOT/scripts/p387w2_n04_sphere_force/run_validation.py"
+RUN="python3 -u $ROOT/development/verification/ibm-force/sphere-surface/run_validation.py"
 
 launch () {  # launch <shard-name> <args...>
   local name="$1"; shift

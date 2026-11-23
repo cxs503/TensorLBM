@@ -32,7 +32,7 @@ Reproduces the campaign artifacts in ``artifacts/p399w2_n04/`` and
 
 Usage::
 
-    PYTHONPATH=src python scripts/p399w2_n04_curved_force/run_validation.py \
+    PYTHONPATH=src python development/verification/ibm-force/curved-boundary/run_validation.py \
         --cases quadrature stokes cylinder --out artifacts/p399w2_n04
 """
 
@@ -74,7 +74,7 @@ _t = int(__import__("os").environ.get("P399_NUM_THREADS", "8"))
 torch.set_num_threads(max(1, _t))
 
 HERE = Path(__file__).resolve()
-ROOT = HERE.parents[2]
+ROOT = HERE.parents[4]
 
 
 # --------------------------------------------------------------------------- #

@@ -1,7 +1,7 @@
 # P387W2-N04 — A three-layer verification surface for the immersed-boundary *surface force* on a sphere
 
 **Node** `p387w2-n04` · **Repo** TensorLBM · **Module** `src/tensorlbm/ibm_sphere_surface_force.py`
-· **Driver** `scripts/p387w2_n04_sphere_force/run_validation.py` (matrix: `run_matrix.sh`,
+· **Driver** `development/verification/ibm-force/sphere-surface/run_validation.py` (matrix: `run_matrix.sh`,
 assembly: `make_report.py`) · **Acceptance record** `artifacts/p387w2_n04/acceptance.json`
 · **Figures** `artifacts/p387w2_n04/figures/`
 
@@ -262,9 +262,9 @@ Layer 2 carries no figure: the observed order was not established (fewer than th
 
 ```bash
 # whole matrix (one background process per shard)
-bash scripts/p387w2_n04_sphere_force/run_matrix.sh 4
+bash development/verification/ibm-force/sphere-surface/run_matrix.sh 4
 # acceptance record + figures + tables
-python scripts/p387w2_n04_sphere_force/make_report.py
+python development/verification/ibm-force/sphere-surface/make_report.py
 # unit + analytic verification surface
 python -m pytest tests/test_ibm_sphere_surface_force.py -q
 ```

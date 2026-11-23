@@ -5,8 +5,8 @@ Builds the six-element markdown from the machine-checked acceptance record (no
 hand-typed numbers) and posts it, with the figures embedded as base64 PNG, to
 the platform report API.
 
-    python scripts/p387w2_n04_sphere_force/publish_report.py            # dry run
-    python scripts/p387w2_n04_sphere_force/publish_report.py --post
+    python development/verification/ibm-force/sphere-surface/publish_report.py            # dry run
+    python development/verification/ibm-force/sphere-surface/publish_report.py --post
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 ART = ROOT / "artifacts" / "p387w2_n04"
 FIGS = ART / "figures"
 

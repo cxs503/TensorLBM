@@ -23,7 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import torch  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.drag_closure import cd_clift_gauvin, cd_schiller_naumann  # noqa: E402
@@ -277,7 +277,7 @@ def main() -> int:
         "node": "p387w2-n04",
         "repo": "TensorLBM",
         "module": "src/tensorlbm/ibm_sphere_surface_force.py",
-        "driver": "scripts/p387w2_n04_sphere_force/run_validation.py",
+        "driver": "development/verification/ibm-force/sphere-surface/run_validation.py",
         "generated_from": sorted(cases),
         "conventions": {
             "lattice": "D3Q19, dt = dx = rho0 = 1, u_lattice = 0.10 (Ma = 0.17)",
