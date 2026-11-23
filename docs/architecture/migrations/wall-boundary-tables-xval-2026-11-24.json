@@ -1,0 +1,88 @@
+{
+  "source_commit": "e6dcd764c7d9c1ab9b2fd14bfad9b29b5ed81876",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 101,
+      "after": 99
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-ISO8-WALL-NORMAL-TABLE",
+    "xval/XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES"
+  ],
+  "reference_scan": "Scanned full and constructed paths across tracked code, workflows, tests and reports. Retargeted the ISO8 harness and source citation. Board audit paths in the original mission's separately delivered checkout are retained as historical provenance.",
+  "compatibility": "Both published report URLs and the ISO8 launch command are unchanged. The indirect-addressing runner now lives beside its design file. It keeps the same arguments and default output location. Use source_commit for the original revisions.",
+  "scientific_scope": "This batch preserves preregistrations and does not promote archived verdicts. Only path compatibility and comparable CPU replay outputs were checked.",
+  "verification": {
+    "structural": "Verified source and destination SHA-256 and mode for all four files, parsed both preregistrations, compiled the relocated runner and checked that both public reports retain their previous content and link to tracked replacements.",
+    "governance": "82 repository governance tests passed, with 199 registry entries and zero hard ledger violations. Ruff 0.15.0 ratchet passed.",
+    "focused_tests": {
+      "command": "python -m pytest -q tests/test_wall_tables.py tests/test_wall_normal_iso8.py",
+      "passed": 25,
+      "skipped": 1,
+      "limitation": "The compiled Fortran fixture was unavailable. This environment has no gfortran."
+    },
+    "iso8_extraction": {
+      "command": "python scripts/xval_iso8_wall_normal_table.py extract",
+      "result": "Byte-identical JSON before and after, extracted from the real tracked Fortran file.",
+      "sha256": "03f8f39b97c4a145c7daefb9eff8f016fe4725750a280e60eaf5d0d870d79d4d"
+    },
+    "cpu_replay": {
+      "environment": "Python 3.12.14, PyTorch 2.15.0+cpu, x86_64, one torch thread",
+      "before_command": "python xval/XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES/run_arm.py --out outputs/wall-boundary-tables/before",
+      "after_command": "python development/verification/wall-boundary-tables/indirect-addressing/run_arm.py --out outputs/wall-boundary-tables/after",
+      "comparison": "Results match exactly after removing preregistration path and wall-clock fields. The same wall-force gate failures occur before and after.",
+      "observations": [
+        "Streamed fields are bitwise identical at H=8 and H=16 (tau=0.8). The recorded combined identity gate fails because it also checks relative wall force.",
+        "The dense reference wall force is zero at both heights. The table-control absolute differences are 9.11e-14 and 3.07e-13 respectively, inflated by division by the 1e-300 denominator floor.",
+        "Momentum-exchange shear has approximately 100% relative error in all four arms. The independent velocity-profile estimate has 2.08% to 9.50% error. No acceptance status was changed."
+      ],
+      "result_path": "development/verification/wall-boundary-tables/indirect-addressing/replay-cpu-2026-11-24.json",
+      "sha256": "dd8ffe2581a50ad0952aaff3523d44fe4088a90c42a2eae378437a7c20e9b910"
+    }
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-ISO8-WALL-NORMAL-TABLE/oss_src/wall_boundary_process.f90",
+      "new_path": "development/verification/wall-boundary-tables/iso8/oss_src/wall_boundary_process.f90",
+      "published_report": "docs/XVAL-LBM-ISO8-WALL-NORMAL-TABLE.md",
+      "git_mode": "100644",
+      "original_git_blob": "04c555f57be95efb91b625a9fc7bd37a6a6501d4",
+      "size_bytes": 29886,
+      "original_sha256": "01c2b27ef4e9e89c2b7dd7a9f69abbab68a1ff848feda20acec81a1b239de745",
+      "current_sha256": "01c2b27ef4e9e89c2b7dd7a9f69abbab68a1ff848feda20acec81a1b239de745"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ISO8-WALL-NORMAL-TABLE/predeclared.json",
+      "new_path": "development/verification/wall-boundary-tables/iso8/predeclared.json",
+      "published_report": "docs/XVAL-LBM-ISO8-WALL-NORMAL-TABLE.md",
+      "git_mode": "100644",
+      "original_git_blob": "77a9fa2093c5ad0f0c6eabb8ee7613b01d73d5df",
+      "size_bytes": 4925,
+      "original_sha256": "4a0a1b8a8fac2f9866d95c3769a014b2f44f3492fdd2159152d382b3491d0420",
+      "current_sha256": "4a0a1b8a8fac2f9866d95c3769a014b2f44f3492fdd2159152d382b3491d0420"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES/predeclared.json",
+      "new_path": "development/verification/wall-boundary-tables/indirect-addressing/predeclared.json",
+      "published_report": "docs/XVAL_m17863_INDIRECT_ADDRESSING_WALL_TABLES.md",
+      "git_mode": "100644",
+      "original_git_blob": "5e08ec2a3339e448cf4e8732f60fe1b0953dc185",
+      "size_bytes": 12406,
+      "original_sha256": "39b92d751f4ff34c3f965809da12a4c35a40faa052f5e420f3572daeee15932a",
+      "current_sha256": "39b92d751f4ff34c3f965809da12a4c35a40faa052f5e420f3572daeee15932a"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES/run_arm.py",
+      "new_path": "development/verification/wall-boundary-tables/indirect-addressing/run_arm.py",
+      "published_report": "docs/XVAL_m17863_INDIRECT_ADDRESSING_WALL_TABLES.md",
+      "git_mode": "100644",
+      "original_git_blob": "5c48eee26985ebfa0ab8bd28ce8e0d056a4a3180",
+      "size_bytes": 22353,
+      "original_sha256": "52428ecbe9ba114874ca0608858dc316a67df3e8fd2d5f1f452bcb00168c7ecd",
+      "current_sha256": "6a3faafe94205d5c7e4d9a55efad5f54339ddbde468e0b1ed25761cd138cd7e1"
+    }
+  ]
+}

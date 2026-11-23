@@ -13,7 +13,7 @@ Arms (see predeclared.json, written before this script was run):
 
 Usage::
 
-    python xval/XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES/run_arm.py \
+    python development/verification/wall-boundary-tables/indirect-addressing/run_arm.py \
         --out artifacts/xval_indirect_addressing_wall_tables
 
 Nothing here is tuned after looking at a KPI: step budgets, resolutions and
@@ -31,7 +31,7 @@ from pathlib import Path
 
 import torch
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.d3q19 import C, OPPOSITE, W_EXACT64  # noqa: E402
@@ -429,7 +429,7 @@ def main() -> int:
     out_dir = ROOT / args.out
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    results: dict = {"predeclared": str(Path("xval/XVAL-LBM-INDIRECT-ADDRESSING-WALL-TABLES/predeclared.json")),
+    results: dict = {"predeclared": str(Path(__file__).resolve().with_name("predeclared.json").relative_to(ROOT)),
                      "arms": {}}
 
     # --- channel physics + representation identity -----------------------

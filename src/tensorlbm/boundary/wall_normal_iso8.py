@@ -21,7 +21,7 @@ fraction smoothed by four D3Q27 convolutions.
 Provenance (zero hand-copy)
 ---------------------------
 Every constant in this module was extracted *programmatically* from
-``xval/XVAL-LBM-ISO8-WALL-NORMAL-TABLE/oss_src/wall_boundary_process.f90``
+``development/verification/wall-boundary-tables/iso8/oss_src/wall_boundary_process.f90``
 (lanl/MF-LBM, BSD-3-Clause, upstream commit 11be324):
 
 * ``ISO8_WEIGHTS``     <- ``ISO8(1:7)`` in that file
