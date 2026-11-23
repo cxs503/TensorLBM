@@ -63,6 +63,11 @@ integrity verified before retiring a tracked copy.
 | `tools/` | Keep | Maintain shared tooling and repository policy together. |
 | `xval/` | `benchmarks/` and `development/verification/` | Move by campaign. Link formal evidence from the canonical benchmark entry and preserve method, references and historical verdicts. The [preregistration ledger](migrations/xval-preregistrations-2026-11-22.json) records the first two preregistration-only directory retirements. |
 
+The [Ludwig placement ledger](migrations/ludwig-benchmark-placement-2026-11-23.json)
+moves the registered case into `benchmarks/cross_validation/` with the same
+`xval:ludwig_fe_stress` case ID. Use that directory for registered
+cross-validations and keep historical supporting material in development.
+
 ## Second-level placement
 
 | Area | Placement |
