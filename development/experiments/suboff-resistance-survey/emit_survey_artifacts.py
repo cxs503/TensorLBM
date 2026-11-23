@@ -10,7 +10,7 @@ Products
 
 Usage
 -----
-    python scripts/in25_t6/emit_survey_artifacts.py
+    python development/experiments/suboff-resistance-survey/emit_survey_artifacts.py
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.external_survey import consistency as cons  # noqa: E402

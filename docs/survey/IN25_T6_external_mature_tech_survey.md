@@ -67,11 +67,11 @@
 ### 2.3 工具链与复现
 
 ```bash
-python scripts/in25_t6/seat_a_lit_query.py          # 书目探针（Crossref）
-python scripts/in25_t6/seat_abc_verify.py           # DOI 级核验 + arXiv 摘要
-python scripts/in25_t6/emit_anchor_data.py          # 生成包内记录库（零手抄）
-python scripts/in25_t6/emit_survey_artifacts.py     # 报告/锚表/PLAYBOOK/图
-python scripts/in25_t6/seat_c_grid_convergence.py --resolutions 26 36 48 --steps 8000   # 未跑完
+python development/experiments/suboff-resistance-survey/seat_a_lit_query.py          # 书目探针（Crossref）
+python development/experiments/suboff-resistance-survey/seat_abc_verify.py           # DOI 级核验 + arXiv 摘要
+python development/experiments/suboff-resistance-survey/emit_anchor_data.py          # 生成包内记录库（零手抄）
+python development/experiments/suboff-resistance-survey/emit_survey_artifacts.py     # 报告/锚表/PLAYBOOK/图
+python development/experiments/suboff-resistance-survey/seat_c_grid_convergence.py --resolutions 26 36 48 --steps 8000   # 未跑完
 pytest tests/test_external_survey_in25_t6.py -q
 ```
 
@@ -203,7 +203,7 @@ AFF-1 的逐点形状因子 k 并非常数：最低 Re 处 0.076，中段升到 
 ## 8. honest FAIL / absent 明细（不粉饰）
 
 1. **自有 Re=2000 三网格收敛序列未交付**。no GPU on this host; measured 74-122 ms/step on CPU for 1e5-3e5 cells and the parametric hull needs L>=26 cells per hull length (max radius 0.058 L) before the body is resolved at 1.5 cells; a temporally converged three-grid ladder at L=26/36/48 x 8000 steps is ~3.4 h, beyond the per-invocation wall clock; the compute cluster is reachable but its torch build fails (libflexiblas.so.3)
-   关闭方式：run scripts/in25_t6/seat_c_grid_convergence.py --resolutions 26 36 48 --steps 8000 on a GPU node (or fix the cluster torch build); the driver already emits Richardson/GCI from the three grids
+   关闭方式：run development/experiments/suboff-resistance-survey/seat_c_grid_convergence.py --resolutions 26 36 48 --steps 8000 on a GPU node (or fix the cluster torch build); the driver already emits Richardson/GCI from the three grids
 2. **waLBerla / Palabos 在 1e4–1e5 核上的弱/强扩展效率具体百分比**（措施 `parallel_lbm`）：Crossref 记录不含摘要，正文不可离线核验；本次未做全文获取 → 并行实践只引用架构级结论（块结构+幽灵层），不得引用任何效率数字
 3. **LES-LBM 的 Smagorinsky 常数推荐区间及其在壁面约束高 Re 流动上的误差量化**（措施 `les`）：本次探针未检索到开放获取的定量结论（摘要级） → Cs 只能沿用本仓既有取值（0.05/0.1 族）并标注为本仓默认，不作为文献锚
 4. **OpenFOAM 对 SUBOFF 的网格收敛阶与 GCI 数值**（措施 `large_grid`）：本次 arXiv/Crossref 探针未命中带数值的开放摘要 → ‘成熟代码网格收敛数字’只能用本仓归档基准反算的 p≈2 与文献实践描述对照，并如实标注

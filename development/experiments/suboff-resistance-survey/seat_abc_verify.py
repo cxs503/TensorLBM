@@ -12,8 +12,8 @@ survey is either (a) from an arXiv abstract archived here, or (b) marked
 
 Usage
 -----
-    python scripts/in25_t6/seat_abc_verify.py
-    python scripts/in25_t6/seat_abc_verify.py --offline
+    python development/experiments/suboff-resistance-survey/seat_abc_verify.py
+    python development/experiments/suboff-resistance-survey/seat_abc_verify.py --offline
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "artifacts" / "in25_t6"
 RAW = OUT / "seat_bc_doi_records.json"
 AXIV = OUT / "seat_bc_arxiv_probes.json"

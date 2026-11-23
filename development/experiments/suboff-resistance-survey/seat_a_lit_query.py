@@ -12,8 +12,8 @@ what the report and the module carry.
 
 Usage
 -----
-    python scripts/in25_t6/seat_a_lit_query.py            # live queries
-    python scripts/in25_t6/seat_a_lit_query.py --offline   # replay archive
+    python development/experiments/suboff-resistance-survey/seat_a_lit_query.py            # live queries
+    python development/experiments/suboff-resistance-survey/seat_a_lit_query.py --offline   # replay archive
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "artifacts" / "in25_t6"
 RAW = OUT / "seat_a_crossref_raw.json"
 TABLE = OUT / "seat_a_lit_anchors.json"

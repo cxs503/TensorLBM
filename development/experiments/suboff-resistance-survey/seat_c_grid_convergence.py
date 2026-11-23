@@ -20,7 +20,7 @@ time-stepping route so the ladder is comparable with the verified Re=1000 case.
 
 Usage
 -----
-    python scripts/in25_t6/seat_c_grid_convergence.py --resolutions 20 28 40 --steps 6000
+    python development/experiments/suboff-resistance-survey/seat_c_grid_convergence.py --resolutions 20 28 40 --steps 6000
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "benchmarks"))
 
