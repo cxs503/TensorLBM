@@ -8,7 +8,7 @@ baseline list is from `bcdd5fa4`. The
 
 | Root | Ownership and acceptance |
 | --- | --- |
-| `src/` | The installable solver and supported public APIs. `src/tensorlbm/` is the canonical package. The existing `src/lbm/` D3Q27 modules remain available pending a compatibility-tested migration. |
+| `src/` | `src/tensorlbm/` holds the installable solver implementations. `src/lbm/` contains compatibility imports for the relocated D3Q27 implementation ([migration ledger](migrations/d3q27-canonical-source-2026-11-23.json)). The source-authority gate limits this compatibility package to five known files. |
 | `tests/` | Automated software verification, including fixtures and regression rules used only by tests. |
 | `benchmarks/` | Canonical entry for each benchmark. A case identifies its runnable command, configuration, reference data, acceptance criteria and evidence. |
 | `examples/` | Maintained user-facing demonstrations, including examples which a guide runs directly. |

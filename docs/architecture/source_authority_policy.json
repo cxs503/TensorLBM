@@ -196,5 +196,12 @@
   },
   "canonical_root": "src",
   "historical_root": "development/legacy/TensorLBM",
-  "historical_tree_oid": "f482f80c56e861d7a5c038d1b6647394edaa1ba2"
+  "historical_tree_oid": "f482f80c56e861d7a5c038d1b6647394edaa1ba2",
+  "legacy_import_shims": {
+    "src/lbm/__init__.py": "3d9c6f6fd540c9c510a0ddf00361c6d9ac40ba2706a25c623c0788b2600bd0c8",
+    "src/lbm/boundary/__init__.py": "498f2fef764b767766545c4b285dcff7fdb7d421b3f8d72cd34e9a9a2a4a28bb",
+    "src/lbm/boundary/spherical_force.py": "1daa8c2837c7c7d0b1ec40178a7056d28e47b057637656df12a7fb466889153a",
+    "src/lbm/collision/__init__.py": "b5bcd1aabeb3b9a8aa1e8e3bf0b006bcad1805e077f15ccd56bb5b73eaa86c01",
+    "src/lbm/collision/d3q27.py": "f00637e9501bba46b90b3c43352ea1624392adb8e9f1220e24c216699d0f92d2"
+  }
 }
