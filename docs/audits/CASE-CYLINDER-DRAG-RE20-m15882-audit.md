@@ -141,7 +141,7 @@ m15777 自己的 headline 也承认"平台报告未发"。
 
 **已跑**：
 - `psql` 直查 `tensor_benchmark_cases`（0 行）、`tensor_maturity_verdicts`（同锚点先例 id=368）、`tensor_reports`（无 15777 行）、`tensor_dev_missions` id=15777 全行。
-- `scripts/audit/m15882_cylinder_audit.py`：从 `series.csv`/`fields.npz` 独立重算 Cd 统计、散度、几何自检 → `runs/audit_m15882/independent_recompute.json`（同内容随提交入库：`docs/audits/CASE-CYLINDER-DRAG-RE20-m15882-recompute.json`）。
+- `development/audit/m15882/tools/m15882_cylinder_audit.py`：从 `series.csv`/`fields.npz` 独立重算 Cd 统计、散度、几何自检 → `runs/audit_m15882/independent_recompute.json`（同内容随提交入库：`docs/audits/CASE-CYLINDER-DRAG-RE20-m15882-recompute.json`）。
 - 图：`runs/audit_m15882/audit_cd_convergence.png`（Cd(t)+ref+±5 % 带）、`runs/audit_m15882/audit_field_cloudmap.png`（\|u\| + 涡量云图）。
 - `refs.json:quick_cmd` 实跑 → rc=1（F3 的直接复现）。
 - `fastapi.testclient` 起 `app.backend.main`：`/api/cylinder-bench/st2d1/validate` 路由存在（集成面核验）。

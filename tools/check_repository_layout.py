@@ -49,6 +49,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "audit_m18430"),
     ("benchmarks", "blasius_flat_plate_dev"),
     ("development", "idx"),
+    ("scripts", "audit"),
     ("docs", "council"),
     ("scripts", "audit_runtest_r6"),
     ("scripts", "xval_yml_xml_pipeline"),

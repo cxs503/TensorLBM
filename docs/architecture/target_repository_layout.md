@@ -56,7 +56,7 @@ integrity verified before retiring a tracked copy.
 | `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |
-| `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. The [m18430 ledger](migrations/m18430-audit-tools-2026-11-22.json) covers the report builder. The [CI and contract evidence ledger](migrations/ci-contract-evidence-2026-11-23.json) covers two retired audit-script directories. |
+| `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. The [audit script ledger](migrations/audit-script-directory-retirement-2026-11-24.json) retires the full mission-audit tool directory. The [m18430 ledger](migrations/m18430-audit-tools-2026-11-22.json) covers the report builder. The [CI and contract evidence ledger](migrations/ci-contract-evidence-2026-11-23.json) covers two retired audit-script directories. |
 | `src/` | Keep | Keep the installable package and its published import surface stable. |
 | `teaching/` | `examples/teaching/` | Keep teaching commands and the companion comparison together. |
 | `tests/` | Keep | Preserve test collection and the semantics of fixtures and rules. |

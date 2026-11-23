@@ -464,6 +464,24 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 blob = f"blob {len(raw)}\0".encode() + raw
                 self.assertEqual(hashlib.sha1(blob).hexdigest(), expected)
 
+    def test_audit_script_directory_preserves_mission_tools_and_provenance(self):
+        ledger_path = LEDGER_PATH.parent / "audit-script-directory-retirement-2026-11-24.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            moves = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+        self.assertEqual(len(moves), 17)
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "scripts/audit"], cwd=REPO))
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["migrated_sha256"], item["migrated_size_bytes"]
+                )
+
     def test_concurrent_drop_entry_reintroductions_are_archived_and_pinned(self):
         survey_ledger = LEDGER_PATH.parent / "m26963-bb-root-retirement-2026-11-22.json"
         ledgers = [

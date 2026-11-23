@@ -27,7 +27,7 @@ R6 runtime: analytic profile shape (ux vs parabola, wall value, symmetry)
 
 Usage::
 
-    python3 scripts/audit/m18748_sparse_sublist_board_audit.py
+    python3 development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ PREDECL = AUD / "xval" / "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST" / "predeclared.
 ANCHOR = "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"
 MISSION = 18377
 
-WS = Path(__file__).resolve().parents[2]
+WS = Path(__file__).resolve().parents[4]
 OUT = WS / "artifacts" / "m18748_audit"
 OUT.mkdir(parents=True, exist_ok=True)
 

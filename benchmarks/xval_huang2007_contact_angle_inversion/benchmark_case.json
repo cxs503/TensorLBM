@@ -7,7 +7,7 @@
   "source": [
     "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py",
     "development/audit/huang2007-contact-angle/m17889-delivery-snapshot/run_xval.py",
-    "scripts/audit/m17889_huang2007_audit.py"
+    "development/audit/huang2007-contact-angle/tools/m17889_huang2007_audit.py"
   ],
   "config": [
     "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py"

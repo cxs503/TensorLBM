@@ -8,7 +8,7 @@ own helpers.  Nothing is taken on trust from ``runs/t5_ice_coupling/*.json``.
 
 Outputs ``artifacts/m15955_audit/audit_matrix.json``.
 
-Run:  python3 scripts/audit/m15955_t5_ice_audit.py
+Run:  python3 development/audit/m15955/tools/m15955_t5_ice_audit.py
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 OUT = ROOT / "artifacts" / "m15955_audit"
 MISSION_RUNS = Path("/srv/tensor/agent/work/m15919/runs/t5_ice_coupling")
 

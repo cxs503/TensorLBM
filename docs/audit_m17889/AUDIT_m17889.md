@@ -126,8 +126,8 @@
 
 ```bash
 cd /srv/tensor/agent/work/m17889
-python scripts/audit/m17889_huang2007_audit.py     # 审计读数 → artifacts/m17889_audit/audit_m17889.json
-python scripts/audit/m17889_make_figure.py         # 图 → docs/audit_m17889/*.png
+python development/audit/huang2007-contact-angle/tools/m17889_huang2007_audit.py     # 审计读数 → artifacts/m17889_audit/audit_m17889.json
+python development/audit/huang2007-contact-angle/tools/m17889_make_figure.py         # 图 → docs/audit_m17889/*.png
 # 新跑 LBM 单例（43–47 s/例）
 python tests/benchmarks/wetting_contact_angle/run_case_cli.py --theta 90 --grid coarse \
     --law calibrated --fw 0.5241 --out /tmp/a.json       # theta_measured=103.735

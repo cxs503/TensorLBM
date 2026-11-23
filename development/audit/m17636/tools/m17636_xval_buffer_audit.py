@@ -19,7 +19,7 @@ D2 db      : mission row (status / accepted)
 
 Usage::
 
-    python scripts/audit/m17636_xval_buffer_audit.py
+    python development/audit/m17636/tools/m17636_xval_buffer_audit.py
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 OUT = REPO_ROOT / "artifacts" / "m17636_audit"
 AUDITED = Path("/srv/tensor/agent/work/m17599")
 DELIV = AUDITED / "benchmarks" / "xval_buffer_layer_2to1"

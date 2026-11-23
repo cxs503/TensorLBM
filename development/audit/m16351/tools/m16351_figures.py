@@ -20,7 +20,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 ART = ROOT / "artifacts/audit_m16351"
 OUT = ROOT / "docs/board_audit_m16351/figs"
 OUT.mkdir(parents=True, exist_ok=True)

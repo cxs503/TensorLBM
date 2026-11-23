@@ -25,8 +25,8 @@ D3 db     : tensor_reports row for the mission (report discipline)
 
 Usage::
 
-    python scripts/audit/m17856_fluctuating_ghost_audit.py            # full
-    python scripts/audit/m17856_fluctuating_ghost_audit.py --fast     # skip R1 re-run
+    python development/audit/m17856/tools/m17856_fluctuating_ghost_audit.py            # full
+    python development/audit/m17856/tools/m17856_fluctuating_ghost_audit.py --fast     # skip R1 re-run
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ import tempfile
 import time
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 OUT = REPO_ROOT / "artifacts" / "m17856_audit"
 AUDITED = Path("/srv/tensor/agent/work/m17758")
 DELIV = AUDITED / "xval" / "fluctuating_lbm_ghost_modes"

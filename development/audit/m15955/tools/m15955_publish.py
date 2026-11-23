@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 OUT = ROOT / "artifacts" / "m15955_audit"
 FIGS = OUT / "figs"
 API = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
@@ -121,7 +121,7 @@ def report_md(made: list[dict]) -> str:
                  "反查 LBM 腿数值来源；用 `git ls-tree` / `git diff` 检查工件归属与附带改动；跑 `pytest tests/test_three_way_interface3d.py`；"
                  "在 main（af412c6f）上执行 mission 的 repro_cmd。工具：psql（tensor_benchmark_cases / tensor_maturity_verdicts / tensor_reports）、git、pytest、numpy、matplotlib。\n")
     lines.append("复现：`PYTHONPATH=src python3 scripts/t5_ice_coupling_entry.py`（审计跑：rc=0，0.3 s，8/8 门禁 + 8/8 benchmark 通过）；"
-                 "`python3 scripts/audit/m15955_t5_ice_audit.py`（本审计重算，产出 audit_matrix.json）。\n\n")
+                 "`python3 development/audit/m15955/tools/m15955_t5_ice_audit.py`（本审计重算，产出 audit_matrix.json）。\n\n")
     lines.append("## 3 计算结果（程序化注入）\n")
     lines.append("**I1 半球压力合力：mission 数值 vs 审计独立重算 vs 解析锚 π a² p**\n\n")
     lines.append("| n_theta×n_phi | mission got | 审计重算 | \\|Δ\\| | 解析 π | 相对误差 |\n|---|---|---|---|---|---|\n")

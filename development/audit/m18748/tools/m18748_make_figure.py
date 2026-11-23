@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-WS = Path(__file__).resolve().parents[2]
+WS = Path(__file__).resolve().parents[4]
 AUD = json.loads((WS / "artifacts" / "m18748_audit" / "audit_m18748.json").read_text())
 OUT = WS / "artifacts" / "m18748_audit" / "figures"
 OUT.mkdir(parents=True, exist_ok=True)

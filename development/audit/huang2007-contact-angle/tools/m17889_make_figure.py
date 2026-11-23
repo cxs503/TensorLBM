@@ -20,7 +20,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 AUDIT = json.loads((ROOT / "artifacts" / "m17889_audit" / "audit_m17889.json").read_text())
 COPY = ROOT / "development" / "audit" / "huang2007-contact-angle" / "m17889-delivery-snapshot"
 OUTDIR = ROOT / "docs" / "audit_m17889"
