@@ -1,0 +1,30 @@
+{
+  "case": "phasefield_water_entry",
+  "status": "failed",
+  "scope": "S2 zeta4_dw100 diagnostic; later stages pending",
+  "solver_revision": "37366d8845bffbde4cd47e69d83959f827a5accd",
+  "scorer_sha256": "9e4986d2d490290b3505fbdea25d20393521710f279a15eaac3bd47225444385",
+  "environment": {
+    "python": "3.12.14",
+    "torch": "2.15.0+cpu",
+    "device": "cpu",
+    "threads": 1
+  },
+  "command": "PYTHONPATH=src python benchmarks/pending/phasefield_water_entry/run_s2_wedge.py --arm zeta4_dw100 --threads 1 --out-dir outputs/s2",
+  "exit_code": 1,
+  "arm_result": "evidence/s2_zeta4_dw100.json",
+  "source_doi": "10.1111/mice.12651",
+  "paper_observable": "pressure resultant on the semi-wedge, not the whole-body MEM force",
+  "paper_secant_h_over_Dw": [
+    0.002,
+    0.004
+  ],
+  "first_nonfinite_step": 141,
+  "requested_fit_window_steps": [
+    300,
+    1100
+  ],
+  "relative_slope_error": null,
+  "fit_r2": null,
+  "arm_result_sha256": "1cba87c5ab9ca067c263d128293ad28cc95c0d1216ec15b51aa2fa052756ac34"
+}
