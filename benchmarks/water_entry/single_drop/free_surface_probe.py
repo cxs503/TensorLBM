@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import math
 from collections import defaultdict
 from pathlib import Path
@@ -118,6 +119,44 @@ def _cavgas_diagnostics(field, dens, level, radius, n, sc):
     return out
 
 
+def _cavity_cross_section(field, level, mid_y):
+    """Mid-plane cavity cross-section (DE-X-RELX3-RRIFACE geometry attribution).
+
+    ``field`` is the (nz-2, ny-2, nx-2) fill array.  The cavity is the gas
+    region connected to the headspace (seeded from the top row of the
+    mid-plane) that lies below the initial free surface.  Returns the
+    cross-sectional area (cells), the horizontal width (cells) and the depth
+    below the surface (cells) of that region; all zero when no cavity exists.
+    """
+    from scipy import ndimage
+
+    plane = field[:, mid_y, :]
+    gas = plane < 0.5
+    # z grows upward: the headspace is the top row of the field (k = nz-3),
+    # so the cavity is the gas connected to that row and lying below the
+    # initial surface (k + 1 < level).
+    seeds = np.zeros_like(gas)
+    seeds[-1] = gas[-1]
+    connected = ndimage.binary_propagation(seeds, mask=gas)
+    k_idx = np.arange(plane.shape[0])[:, None]
+    cav = connected & (k_idx < level - 1)
+    area = int(cav.sum())
+    if area == 0:
+        return 0, 0, 0.0
+    k, j = np.where(cav)
+    width = int(j.max() - j.min() + 1)
+    depth = float(level - (k.min() + 1))
+    return area, width, max(0.0, depth)
+
+
+def _cs_from_cli(cs):
+    """Resolve the Smagorinsky constant: explicit CLI value wins; None reads
+    the TL_FS_CS environment channel (empty/absent = 0.0)."""
+    if cs is None:
+        cs = float(os.environ.get("TL_FS_CS") or 0.0)
+    return float(cs or 0.0)
+
+
 def _find_cavity_center(field, level, radius):
     """Deepest headspace-connected gas-to-liquid interface point (cavity bottom).
 
@@ -187,10 +226,12 @@ def probe(
     u_limit=None,
     cav_clos_alpha=0.0,
     rr_tau=0.0,
-    C_s=0.0,
+    C_s=None,
     diag_cavgas=False,
     cav_probe=False,
     cav_probe_out=None,
+    rr_iface=False,
+    cav_series_path=None,
 ):
     # DE-X-COL2-REG: regularized-collision arm.  rr_tau > 0 switches the
     # free-surface collision from BGK to the regularized (RR) operator and
@@ -200,8 +241,14 @@ def probe(
     if rr_tau < 0:
         raise ValueError(f"rr_tau must be >= 0, got {rr_tau!r}")
     rr_active = rr_tau > 0.0
-    # Smagorinsky SGS constant (DE-X-TURB1-SMAG): 0 = legacy bit-identical path.
-    C_s = float(C_s or 0.0)
+    # Smagorinsky SGS constant (DE-X-TURB1-SMAG): None -> read TL_FS_CS
+    # (empty/absent = 0.0 = legacy bit-identical path).
+    C_s = _cs_from_cli(C_s)
+    # DE-X-RELX3-RRIFACE: interface-local RR.  The RR projection is applied
+    # only to INTERFACE cells (0<fill<1); bulk cells keep BGK.  The physical
+    # tau is used unless rr_tau overrides it (same contract as the rr arm).
+    rr_iface = bool(rr_iface)
+    collision_mode = "rr_iface" if rr_iface else ("rr" if rr_active else "bgk")
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
@@ -257,6 +304,16 @@ def probe(
     plane_times, plane_fill, plane_uz = [], [], []
     sample_targets_ms = (1.39643, 6.4, 10.39446, 13.4)
 
+    silhouette_samples = []
+    tracker = DropTracker()
+    last_speed = None
+    impact_speed = None
+    reason = "step_limit"
+    runtime_ledger = {"steps": []} if ledger else None
+    diag_rows = [] if diag_path is not None else None
+    cavgas_rows = [] if diag_cavgas else None
+    cav_volume0 = None
+    cav_rows = [] if cav_series_path is not None else None
     # Cavitation pressure probe (DE-X-GAS2-CAVPROBE-R1; read-only, off by default)
     cav_probe_data = [] if cav_probe else None
     cav_R0 = 0.5 * n * sc["dx_m"]  # Initial cavity radius ~ half drop radius
@@ -268,16 +325,6 @@ def probe(
     cav_contact_step = None
     cav_collapse_time = None
     cav_T_rayleigh = None
-
-    silhouette_samples = []
-    tracker = DropTracker()
-    last_speed = None
-    impact_speed = None
-    reason = "step_limit"
-    runtime_ledger = {"steps": []} if ledger else None
-    diag_rows = [] if diag_path is not None else None
-    cavgas_rows = [] if diag_cavgas else None
-    cav_volume0 = None
     for step in range(limit + 1):
         dens, ux, uy, uz = macroscopic3d(f)
         active = (flags != GAS) & (flags != SOLID)
@@ -391,6 +438,17 @@ def probe(
                 diag["pressure_ratio_isothermal"] = None
             row.update(diag)
             cavgas_rows.append(diag)
+        if cav_series_path is not None:
+            area, width, cdepth = _cavity_cross_section(field, level, side // 2)
+            cav_rows.append(
+                {
+                    "step": step,
+                    "time_ms": row["time_ms"],
+                    "cav_area_cells": area,
+                    "cav_width_cells": width,
+                    "cav_depth_cells": cdepth,
+                }
+            )
         if (
             planes_path is not None
             and tracker.contact_step is not None
@@ -413,11 +471,11 @@ def probe(
                     flags,
                     solid,
                     mass=mass,
-                    tau=rr_tau if rr_active else 0.5 + 3 * sc["mu_l"],
+                    tau=rr_tau if (rr_active or rr_iface) and rr_tau > 0 else 0.5 + 3 * sc["mu_l"],
                     gz=-sc["g"],
                     surface_tension=sc["sigma"],
                     rho_gas=1.0,
-                    collision="rr" if rr_active else "bgk",
+                    collision=collision_mode,
                     capacity_redistribution=capacity,
                     simple_mass_exchange=simple,
                     runtime_ledger=runtime_ledger,
@@ -450,6 +508,9 @@ def probe(
     if diag_rows is not None:
         diag_path.parent.mkdir(parents=True, exist_ok=True)
         diag_path.write_text(json.dumps({"rows": diag_rows}, indent=1, allow_nan=False) + "\n")
+    if cav_rows is not None:
+        cav_series_path.parent.mkdir(parents=True, exist_ok=True)
+        cav_series_path.write_text(json.dumps({"rows": cav_rows}, indent=1, allow_nan=False) + "\n")
     if cav_probe and cav_probe_data:
         cav_result = {
             "probe": "cavitation_pressure",
@@ -469,6 +530,7 @@ def probe(
         result_cav_probe = cav_result
     else:
         result_cav_probe = None
+
     result = {
         "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
         "cells_per_D": n,
@@ -484,7 +546,9 @@ def probe(
         "nearest_surface_velocity": nearest,
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
-        "rr_tau": rr_tau if rr_active else None,
+        "rr_tau": rr_tau if (rr_active or rr_iface) else None,
+        "rr_iface": rr_iface if rr_iface else None,
+        "collision_mode": collision_mode if (rr_active or rr_iface) else "bgk",
         "C_s": C_s,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
@@ -502,6 +566,7 @@ def probe(
         }
         if result_cav_probe is not None:
             result["cav_probe"] = result_cav_probe
+
     if diag_cavgas and cavgas_rows:
         result["cavgas_diag"] = {
             "definitions": {
@@ -575,6 +640,29 @@ if __name__ == "__main__":
         default=None,
         help="output path for cavitation pressure data (JSON)",
     )
+    parser.add_argument(
+        "--rr-tau",
+        type=float,
+        default=0.0,
+        help="DE-X-COL2-REG: regularized-collision relaxation time; 0=legacy BGK",
+    )
+    parser.add_argument(
+        "--rr-iface",
+        action="store_true",
+        help="DE-X-RELX3-RRIFACE: interface-local RR (INTERFACE cells only, bulk BGK); off=bit-identical",
+    )
+    parser.add_argument(
+        "--cav-series",
+        type=Path,
+        default=None,
+        help="DE-X-RELX3-RRIFACE: write mid-plane cavity area/width/depth time series JSON",
+    )
+    parser.add_argument(
+        "--cs",
+        type=float,
+        default=None,
+        help="Smagorinsky SGS constant (DE-X-CMB8-IFACECOMBO); None -> TL_FS_CS env (absent = 0.0)",
+    )
     args = parser.parse_args()
     if (
         args.span < 3
@@ -608,15 +696,17 @@ if __name__ == "__main__":
         args.diag_out,
         args.u_limit,
         args.cav_clos_alpha,
-        0.0,  # rr_tau: not exposed on the CLI; legacy BGK path
-        0.0,  # C_s: not exposed on the CLI; legacy path
+        args.rr_tau,
+        args.cs,
         args.diag_cavgas,
         args.cav_probe,
         args.cav_probe_out,
+        args.rr_iface,
+        args.cav_series,
     )
     for row in result["history"]:
         for key, value in row.items():
-            if value is None or not math.isfinite(value):
+            if not math.isfinite(value):
                 row[key] = None
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
