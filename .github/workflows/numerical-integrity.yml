@@ -51,6 +51,13 @@ jobs:
             tests/test_validation_matrix.py \
             tests/test_validation_matrix_gated_display.py \
             tests/test_benchmarks_status_ledger.py
+      - name: D3Q27 source compatibility and numerical invariants
+        run: |
+          python -m pytest -q --timeout=300 --junitxml=artifacts/numerical-integrity/d3q27-tests.xml \
+            tests/test_d3q27_spherical.py::test_legacy_module_paths_resolve_to_canonical_implementations \
+            tests/test_d3q27_spherical.py::TestD3Q27Lattice \
+            tests/test_d3q27_spherical.py::TestCollisionBGK::test_conserves_mass_and_momentum \
+            tests/test_d3q27_spherical.py::TestBFLBounceBack::test_no_boundary_unchanged
       - name: Check ledger and reference consistency
         run: |
           python benchmarks/status_ledger.py --check

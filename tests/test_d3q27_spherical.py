@@ -16,7 +16,9 @@ Tests cover:
 from __future__ import annotations
 
 import math
+import pickle
 import sys
+from importlib import import_module
 from pathlib import Path
 
 import pytest
@@ -43,6 +45,16 @@ from lbm.boundary.spherical_force import (
     bfl_step,
     SphericalForceResult,
 )
+
+
+def test_legacy_module_paths_resolve_to_canonical_implementations():
+    for suffix in ("collision.d3q27", "boundary.spherical_force"):
+        old = import_module(f"lbm.{suffix}")
+        canonical = import_module(f"tensorlbm.verification.d3q27_spherical.{suffix}")
+        assert old is canonical
+    old_pickle_global = b"clbm.boundary.spherical_force\nSphericalForceResult\n."
+    assert pickle.loads(old_pickle_global) is SphericalForceResult
+
 
 # ── Test helpers ──────────────────────────────────────────────────────────
 
