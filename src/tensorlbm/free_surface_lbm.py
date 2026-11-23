@@ -808,6 +808,34 @@ def _capacity_redistribution(excess, mass, receivers, demoted_liquid, capture_li
     return flat_delta.reshape(mass.shape), tuple(evidence)
 
 
+def _sgs_tau_eff_3d(
+    tau: float,
+    f_collide: torch.Tensor,
+    feq: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    rho: torch.Tensor,
+    C_s: float,
+    sgs_model: str,
+) -> torch.Tensor:
+    """Per-cell effective relaxation time of the sub-grid models.
+
+    Returns a ``(nz, ny, nx)`` field of ``tau_eff`` values: the physical
+    relaxation time with the eddy viscosity of the requested sub-grid model
+    added.  Used by the BGK/MRT SGS paths and -- since the regularized (RR)
+    operator relaxes its second-order stress at ``omega = 1/tau`` -- by the
+    RR x SGS stack (DE-X-CMB3-REGSMAG) and the interface-local RR x SGS
+    stack (DE-X-CMB8-IFACECOMBO), where the SGS dissipation acts exactly on
+    the single mode RR retains.
+    """
+    if sgs_model == "smagorinsky":
+        return _smagorinsky_tau(tau, _neq_stress_norm_3d(f_collide - feq), rho, C_s)
+    if sgs_model == "wale":
+        return _nu_t_to_tau_eff(tau, _wale_nu_t_3d(ux, uy, uz, C_s))
+    return _nu_t_to_tau_eff(tau, _vreman_nu_t_3d(ux, uy, uz, C_s))
+
+
 def free_surface_step(
     f,
     fill,
@@ -1050,6 +1078,30 @@ def free_surface_step(
         from .collision_d3q19_advanced import collide_regularized_stress_d3q19
 
         f = collide_regularized_stress_d3q19(f_collide, feq, tau)
+    elif collision == "rr_iface":
+        # Interface-local regularized collision (DE-X-RELX3-RRIFACE): the RR
+        # projection (Ladd 1994) is applied only to INTERFACE cells (0<fill<1);
+        # bulk LIQUID/GAS cells keep the plain BGK relaxation.  Both branches
+        # share the caller-supplied ``feq`` (Guo half-step shifted), so the
+        # explicit Guo source below is applied exactly once, as for BGK.
+        # DE-X-CMB8-IFACECOMBO: with C_s > 0 the Smagorinsky per-cell
+        # eddy-viscosity relaxation time (CMB3 RR x SGS idiom) is handed to
+        # both sub-branches, so the SGS dissipation acts on the mode RR
+        # retains at the interface and on the bulk BGK mode alike; C_s == 0
+        # keeps the ported branch bit-identical.
+        from .collision_d3q19_advanced import collide_regularized_stress_d3q19
+
+        iface_mask = (flags == INTERFACE) & (fill > 0.0) & (fill < 1.0)
+        if C_s > 0:
+            tau_eff = _sgs_tau_eff_3d(
+                tau, f_collide, feq, ux, uy, uz, rho_s, C_s, sgs_model
+            )
+            f_bgk = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
+            f_rr = collide_regularized_stress_d3q19(f_collide, feq, tau_eff)
+        else:
+            f_bgk = f_collide - (f_collide - feq) / tau
+            f_rr = collide_regularized_stress_d3q19(f_collide, feq, tau)
+        f = torch.where(iface_mask.unsqueeze(0), f_rr, f_bgk)
     else:  # bgk
         if C_s > 0:
             if sgs_model == "smagorinsky":

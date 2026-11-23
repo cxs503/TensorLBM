@@ -20,7 +20,13 @@ from tensorlbm.collision_d3q19_advanced import (
     collide_regularized_stress_d3q19,
     second_order_stress_d3q19,
 )
-from tensorlbm.free_surface_lbm import free_surface_step, init_flags_from_fill, init_mass_from_fill
+from tensorlbm.free_surface_lbm import (
+    GAS,
+    SOLID,
+    free_surface_step,
+    init_flags_from_fill,
+    init_mass_from_fill,
+)
 
 
 def _lattice_views(shape):
@@ -119,3 +125,145 @@ def test_free_surface_step_rr_branch_runs_and_stays_finite() -> None:
         )
     assert torch.isfinite(f).all()
     assert torch.isfinite(mass).all()
+
+
+# ---------------------------------------------------------------------------
+# DE-X-RELX3-RRIFACE: interface-local RR (INTERFACE cells only, bulk BGK)
+# ---------------------------------------------------------------------------
+
+
+def _mixed_rr_iface(f, feq, tau, iface_mask):
+    """The solver's rr_iface mixing expression (mirrors free_surface_step)."""
+    from tensorlbm.collision_d3q19_advanced import collide_regularized_stress_d3q19
+
+    f_bgk = f - (f - feq) / tau
+    f_rr = collide_regularized_stress_d3q19(f, feq, tau)
+    return torch.where(iface_mask.unsqueeze(0), f_rr, f_bgk)
+
+
+def test_rr_iface_mixing_is_local_to_interface_cells() -> None:
+    """Bulk cells stay bit-identical to BGK; interface cells take the RR value."""
+    torch.manual_seed(1)
+    shape = (6, 6, 6)
+    r = 1.0 + 0.05 * torch.randn(shape)
+    u = 0.1 * torch.randn(shape)
+    v = 0.1 * torch.randn(shape)
+    w = 0.1 * torch.randn(shape)
+    feq = equilibrium3d(r, u, v, w)
+    # A valid non-equilibrium state with both second- and third-order content:
+    # the stress reconstruction is massless/momentumless by lattice isotropy,
+    # and cx*cy*cz is odd in every coordinate (zero mass/momentum/stress).
+    from tensorlbm.collision_d3q19_advanced import reconstruct_second_order_stress_d3q19
+
+    cx, cy, cz = _lattice_views(shape)
+    ones = torch.ones(shape)
+    f_neq = reconstruct_second_order_stress_d3q19(
+        0.02 * ones, -0.01 * ones, 0.015 * ones, 0.008 * ones, 0.0 * ones, 0.0 * ones
+    )
+    f = feq + f_neq + 0.03 * (cx * cy * cz)
+    iface_mask = torch.zeros(shape, dtype=torch.bool)
+    iface_mask[2:4, :, :] = True  # a slab of "interface" cells
+    out = _mixed_rr_iface(f, feq, 0.7, iface_mask)
+    f_bgk = f - (f - feq) / 0.7
+    f_rr = _rr_iface_rr_part(f, feq, 0.7)
+    bulk = ~iface_mask
+    # Locality: the where() selects f_bgk exactly at every non-interface cell.
+    assert torch.equal(out[:, bulk], f_bgk[:, bulk])
+    # Interface cells carry the RR projection, which differs from BGK there.
+    assert torch.equal(out[:, iface_mask], f_rr[:, iface_mask])
+    assert not torch.equal(out[:, iface_mask], f_bgk[:, iface_mask])
+
+
+def _rr_iface_rr_part(f, feq, tau):
+    from tensorlbm.collision_d3q19_advanced import collide_regularized_stress_d3q19
+
+    return collide_regularized_stress_d3q19(f, feq, tau)
+
+
+def test_rr_iface_mixed_collision_conserves_moments() -> None:
+    """The mask-mixed collision conserves mass and momentum (lattice isotropy)."""
+    torch.manual_seed(2)
+    shape = (5, 5, 5)
+    r = 1.0 + 0.05 * torch.randn(shape)
+    u = 0.1 * torch.randn(shape)
+    v = 0.1 * torch.randn(shape)
+    w = 0.1 * torch.randn(shape)
+    feq = equilibrium3d(r, u, v, w)
+    from tensorlbm.collision_d3q19_advanced import reconstruct_second_order_stress_d3q19
+
+    cx, cy, cz = _lattice_views(shape)
+    ones = torch.ones(shape)
+    f_neq = reconstruct_second_order_stress_d3q19(
+        0.02 * ones, -0.01 * ones, 0.015 * ones, 0.008 * ones, 0.0 * ones, 0.0 * ones
+    )
+    f = feq + f_neq + 0.03 * (cx * cy * cz)
+    iface_mask = torch.zeros(shape, dtype=torch.bool)
+    iface_mask[2:4, :, :] = True
+    out = _mixed_rr_iface(f, feq, 0.8, iface_mask)
+    assert torch.allclose(f.sum(0), out.sum(0), atol=1e-6)
+    assert torch.allclose((f * cx).sum(0), (out * cx).sum(0), atol=1e-6)
+    assert torch.allclose((f * cy).sum(0), (out * cy).sum(0), atol=1e-6)
+    assert torch.allclose((f * cz).sum(0), (out * cz).sum(0), atol=1e-6)
+
+
+def _flat_pool_field(nz=12, ny=12, nx=12, level=8.5):
+    z = torch.arange(nz).view(nz, 1, 1)
+    fill = (level - z + 0.5).clamp(0, 1)  # flat pool, gas above
+    fill = fill.expand(nz, ny, nx).contiguous()
+    solid = torch.zeros_like(fill, dtype=torch.bool)
+    solid[[0, -1]] = True
+    fill[solid] = 0
+    flags = init_flags_from_fill(fill, solid)
+    rho = (1.0 + 3.0 * (0.02 * (level - z).clamp_min(0))).expand(nz, ny, nx)
+    uz = (-0.05 * (z > level + 0.5)).expand(nz, ny, nx)
+    fluid = (flags != GAS) & (flags != SOLID)  # liquid + interface carry density
+    f = equilibrium3d(rho * fluid, torch.zeros_like(fill), torch.zeros_like(fill), uz)
+    mass = init_mass_from_fill(fill, flags)
+    return f, fill, flags, solid, mass
+
+
+def test_free_surface_step_rr_iface_runs_finite_and_diverges() -> None:
+    """The solver's rr_iface branch steps a small field: finite, and distinct
+    from both the plain BGK and the whole-field RR arms."""
+    from tensorlbm.free_surface_lbm import total_liquid_inventory
+
+    f0, fill0, flags0, solid, mass0 = _flat_pool_field()
+    inv0 = total_liquid_inventory(f0, fill0, flags0).item()
+    finals = {}
+    for mode in ("bgk", "rr", "rr_iface"):
+        f, fill, flags, mass = f0.clone(), fill0.clone(), flags0.clone(), mass0.clone()
+        for _ in range(30):
+            f, fill, flags, mass, _ = free_surface_step(
+                f, fill, flags, solid, mass=mass, tau=0.55, gz=-0.02,
+                surface_tension=0.01, rho_gas=1.0, collision=mode,
+            )
+        assert torch.isfinite(f).all()
+        assert torch.isfinite(mass).all()
+        finals[mode] = (f, fill, flags)
+    # The interface-local arm must not collapse onto either neighbour arm.
+    assert not torch.equal(finals["rr_iface"][0], finals["bgk"][0])
+    assert not torch.equal(finals["rr_iface"][0], finals["rr"][0])
+    # Bulk locality in action: the interface slab is thin, so the liquid
+    # inventory of the interface-local arm drifts far less than the
+    # whole-field RR arm (which rewrites every cell's higher-order modes).
+    def drift(mode):
+        f, fill, flags = finals[mode]
+        return abs(total_liquid_inventory(f, fill, flags).item() / inv0 - 1)
+
+    assert drift("rr_iface") < drift("rr")
+
+
+def test_free_surface_step_default_collision_is_bgk() -> None:
+    """Default-off contract: with no arm switches the solver path is plain BGK,
+    bit-identical to an explicit collision='bgk' call."""
+    f0, fill0, flags0, solid, mass0 = _flat_pool_field()
+    outs = []
+    for kwargs in ({}, {"collision": "bgk"}):
+        f, fill, flags, mass, _ = f0.clone(), fill0.clone(), flags0.clone(), mass0.clone(), None
+        for _ in range(10):
+            f, fill, flags, mass, _ = free_surface_step(
+                f, fill, flags, solid, mass=mass, tau=0.55, gz=-0.02,
+                surface_tension=0.01, rho_gas=1.0, **kwargs,
+            )
+        outs.append(f)
+    assert torch.equal(outs[0], outs[1])
