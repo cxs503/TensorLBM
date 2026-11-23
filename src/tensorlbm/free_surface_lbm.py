@@ -993,14 +993,54 @@ def free_surface_step(
     active_pre = liquid_pre | iface_pre
     force_weight = torch.where(iface_pre, fill.clamp(0.0, 1.0), torch.ones_like(fill))
     force_weight = torch.where(active_pre, force_weight, torch.zeros_like(force_weight))
-    # Second-order Guo forcing shifts the equilibrium velocity by F*dt/2rho
-    # (Guo et al. 2002).  The legacy ``tau * g`` shift double-counted gravity
-    # together with the explicit Guo source below (measured gain 1.5x/1.375x
-    # instead of 1.0x); a single Guo force with the half-step shift gives an
-    # exact momentum gain of F per step.
-    ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
-    uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
-    uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
+    # DE-X-MOM1-GUO_INT (Guo et al. 2003): density-gradient-aware Guo force
+    # at the interface (large |∇rho|).  Measured on this codebase: partially
+    # filled INTERFACE cells carry full-liquid populations (rho_s≈rho_liquid,
+    # verified 1.001 vs fill 0.13 at cells=8), so the legacy rho_s*fill force
+    # is already mass-consistent with the bookkeeping mass fill*rho_liquid.
+    # TL_FS_GUO_INT selects the interface force model:
+    #   unset/0   legacy fill-weighted force (bit-identical)
+    #   mass      force acts on the liquid mass fill*rho_liquid (≈ legacy
+    #             here, kept as the explicit mass-consistent reference)
+    #   full      force acts at full strength on partially filled interface
+    #             cells (0<fill<1): their populations carry the full liquid
+    #             mass, so the fill weighting double-counts the sub-cell
+    #             volume reduction and the interface liquid accelerates at
+    #             fill*g instead of g.  Envelope cells (fill==0) stay at zero.
+    _guo_mode = os.environ.get("TL_FS_GUO_INT", "").strip().lower()
+    if _guo_mode in ("1", "true", "yes", "mass"):
+        force_mass = torch.where(iface_pre, fill.clamp(0.0, 1.0) * rho_liquid, rho_s)
+        force_mass = torch.where(active_pre, force_mass, torch.zeros_like(fill))
+        _fx, _fy, _fz = force_mass * gx, force_mass * gy, force_mass * gz
+        ux_eq = (ux + 0.5 * force_mass * gx / rho_s).clamp(-0.5, 0.5)
+        uy_eq = (uy + 0.5 * force_mass * gy / rho_s).clamp(-0.5, 0.5)
+        uz_eq = (uz + 0.5 * force_mass * gz / rho_s).clamp(-0.5, 0.5)
+    elif _guo_mode == "full":
+        force_weight = torch.where(
+            iface_pre & (fill > 0.0) & (fill < 1.0), torch.ones_like(fill), force_weight
+        )
+        _fx, _fy, _fz = (
+            rho_s * gx * force_weight,
+            rho_s * gy * force_weight,
+            rho_s * gz * force_weight,
+        )
+        ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
+        uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
+        uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
+    else:
+        _fx, _fy, _fz = (
+            rho_s * gx * force_weight,
+            rho_s * gy * force_weight,
+            rho_s * gz * force_weight,
+        )
+        # Second-order Guo forcing shifts the equilibrium velocity by F*dt/2rho
+        # (Guo et al. 2002).  The legacy ``tau * g`` shift double-counted gravity
+        # together with the explicit Guo source below (measured gain 1.5x/1.375x
+        # instead of 1.0x); a single Guo force with the half-step shift gives an
+        # exact momentum gain of F per step.
+        ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
+        uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
+        uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
     feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
 
     has_force = gx != 0.0 or gy != 0.0 or gz != 0.0
@@ -1041,9 +1081,9 @@ def free_surface_step(
                 ux_eq,
                 uy_eq,
                 uz_eq,
-                rho_s * gx * force_weight,
-                rho_s * gy * force_weight,
-                rho_s * gz * force_weight,
+                _fx,
+                _fy,
+                _fz,
             )
             target = feq - 0.5 * force_source
         if C_s > 0:
@@ -1130,9 +1170,9 @@ def free_surface_step(
                 ux,
                 uy,
                 uz,
-                rho_s * gx * force_weight,
-                rho_s * gy * force_weight,
-                rho_s * gz * force_weight,
+                _fx,
+                _fy,
+                _fz,
             )
         f = f + force_source
 
