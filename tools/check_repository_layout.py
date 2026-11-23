@@ -50,6 +50,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("development", "idx"),
     ("docs", "council"),
     ("scripts", "audit_runtest_r6"),
+    ("scripts", "xval_yml_xml_pipeline"),
     ("docs", "history"),
     ("docs", "m23777"),
     ("docs", "m24569"),

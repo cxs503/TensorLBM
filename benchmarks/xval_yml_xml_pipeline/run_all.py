@@ -13,7 +13,7 @@ and on the L2 velocity-profile error, for every case in the table.
 
 Usage::
 
-    python scripts/xval_yml_xml_pipeline/run_all.py [--out DIR]
+    python benchmarks/xval_yml_xml_pipeline/run_all.py [--out DIR]
 
 Writes ``report.json``, ``cases/*.yml``, ``cases/*.xml``, ``cases/*.log`` and
 ``figure.png`` under ``artifacts/xval_yml_xml_pipeline/``.

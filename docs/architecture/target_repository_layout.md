@@ -103,6 +103,12 @@ The [AUDIT-RUNTEST-6 ledger](migrations/runtest-r6-audit-tools-2026-11-23.json)
 retires `scripts/audit_runtest_r6/` and places its tools beside the archived
 m14496 figure manifest. The published audit retains its existing URL.
 
+The [YAML-to-XML pipeline migration ledger](migrations/yml-xml-pipeline-2026-11-23.json)
+retires `scripts/xval_yml_xml_pipeline/`. The runnable driver, analytic
+comparison and versioned replay are discoverable from its
+[benchmark entry](../../benchmarks/xval_yml_xml_pipeline/README.md). The
+historical report keeps its published path.
+
 ## Root files and rollout
 
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)
