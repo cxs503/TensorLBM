@@ -1,5 +1,7 @@
 # Diff list: TensorLBM model units vs CFD-GO/TCLB model directories
 
+> 当前检出版本的模型单元位置和复现命令见[模型单元目录](../../benchmarks/model_units/README.md)。下文保留历史试验当时的路径和记录。
+
 Round 1 XVAL, anchor `XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT`.
 Full narrative + numbers: `XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT.md`.
 TCLB facts below were read from the local mirror `/tmp/TCLB` (file paths given);

@@ -33,7 +33,7 @@ from tensorlbm.models.ci_unit import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-UNIT_ROOT = REPO_ROOT / "models" / "units"
+UNIT_ROOT = REPO_ROOT / "benchmarks" / "model_units" / "units"
 
 # The cheapest unit in the repository (periodic box, no walls); the wall-bounded
 # units cost ~30 s each, which belongs in the CI target, not in the fast suite.
@@ -67,6 +67,10 @@ def test_repository_units_are_discoverable_and_valid() -> None:
         assert unit.unit_id == unit.path.parent.name
         assert unit.ci.gates, f"{unit.unit_id} declares no gate"
         assert unit.composition.lattice == "D2Q9"
+
+
+def test_legacy_checkout_root_discovers_the_same_json_units() -> None:
+    assert discover_units(REPO_ROOT / "models" / "units") == discover_units(UNIT_ROOT)
 
 
 def test_discovery_requires_a_manifest_in_every_directory(tmp_path: Path) -> None:

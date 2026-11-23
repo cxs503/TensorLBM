@@ -45,7 +45,7 @@ from tensorlbm.model_units import discover, makefile_targets  # noqa: E402
 # the module, not the ``build`` function re-exported by the package
 mu_build = importlib.import_module("tensorlbm.model_units.build")
 
-MODELS = REPO / "models"
+MODELS = REPO / cov.DEFAULT_MODELS_ROOT
 OUT = REPO / "artifacts" / "xval_model_unit_coverage"
 DOC = REPO / "docs" / "XVAL-LBM-MODEL-UNIT-KIND-COVERAGE.md"
 

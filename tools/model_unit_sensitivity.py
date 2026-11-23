@@ -31,7 +31,7 @@ if str(REPO_ROOT / "src") not in sys.path:
 
 from tensorlbm.models.ci_unit import load_manifest, run_ci  # noqa: E402
 
-UNIT_ROOT = REPO_ROOT / "models" / "units"
+UNIT_ROOT = REPO_ROOT / "benchmarks" / "model_units" / "units"
 BASE_STEPS = 24000
 BASE_NY = 32
 

@@ -13,7 +13,7 @@
 #   make layout         Run the repository-layout policy checker
 #   make audit          Generate the import-graph architecture audit
 #   make validation-matrix  Audit + judge + CI-tier run of the validation matrix (writes run ledger)
-#   make models         List the model units (models/lbm/*/model.toml)
+#   make models         List the model units (benchmarks/model_units/lbm/*/model.toml)
 #   make models-build   Build every model unit in isolation (writes build artifacts)
 #   make models-test    Run every model unit's own case against its reference
 #   make models-doctor  Registry consistency gates (discovery union, generated CI matrix)
@@ -84,7 +84,7 @@ validation-matrix:
 # directories (TCLB regenerates ``makefile.main`` when ``models/*`` changes), so
 # adding a model never requires editing this Makefile.
 MODELS_MK := artifacts/model_units/Makefile.models
-MODEL_MANIFESTS := $(wildcard models/lbm/*/model.toml)
+MODEL_MANIFESTS := $(wildcard benchmarks/model_units/lbm/*/model.toml benchmarks/model_units/units/*/model.json)
 
 -include $(MODELS_MK)
 

@@ -1,5 +1,7 @@
 # XVAL — model directory as build and CI unit: manifest-kind coverage
 
+> 当前检出版本的模型单元位置和复现命令见[模型单元目录](../benchmarks/model_units/README.md)。下文保留历史试验当时的路径和记录。
+
 **Anchor**: `XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT` (CFD-GO/TCLB).
 **Generated**: 2026-11-14T15:17:22+00:00 by `tools/xval_model_unit_kind_coverage.py` (every number below is measured at run time).
 

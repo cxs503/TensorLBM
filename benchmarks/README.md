@@ -10,6 +10,8 @@ already exist; their names alone are not independent proof of physical validity.
 
 - `validation_matrix/`: the nine-case validation matrix (registry, criteria,
   reference provenance gate, CI-tier cases, generated three-level table).
+- [model_units/](model_units/README.md): analytic regression cases used by the
+  generated model-unit CI matrix.
 - `pending/`: incomplete validation or unresolved acceptance blockers.
 - `verified/`: a recorded acceptance claim whose scope, source revision, references
   and metrics must be checked before reuse.

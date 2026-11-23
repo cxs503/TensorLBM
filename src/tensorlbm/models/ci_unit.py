@@ -24,16 +24,16 @@ with an independently-derived reference value and a declared tolerance.
 
 Layout::
 
-    models/units/<unit_id>/model.json     # one unit per directory
-    models/units/<unit_id>/README.md      # optional, human notes
+    benchmarks/model_units/units/<unit_id>/model.json     # one unit per directory
+    benchmarks/model_units/units/<unit_id>/README.md      # optional, human notes
 
 Manifest schema ``tensorlbm.model_unit/v1`` (strict: unknown keys are
 rejected, so a typo can never silently degrade into "no gate").
 
 Entry point::
 
-    python -m tensorlbm.models.ci_unit list --root models/units
-    python -m tensorlbm.models.ci_unit all  --root models/units --out artifacts/model_units
+    python -m tensorlbm.models.ci_unit list --root benchmarks/model_units/units
+    python -m tensorlbm.models.ci_unit all  --root benchmarks/model_units/units --out artifacts/model_units
 """
 
 from __future__ import annotations
@@ -49,6 +49,8 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 import torch
+
+from tensorlbm.model_units.paths import JSON_UNITS_ROOT, resolve_model_unit_root
 
 from ..d2q9 import OPPOSITE, C
 from ..d2q9 import equilibrium as _equilibrium
@@ -201,7 +203,7 @@ class CISpec:
 
 @dataclass(frozen=True)
 class ModelUnit:
-    """One ``models/units/<dir>/model.json`` directory."""
+    """One ``benchmarks/model_units/units/<dir>/model.json`` directory."""
 
     unit_id: str
     description: str
@@ -342,7 +344,7 @@ def discover_units(root: str | Path) -> list[ModelUnit]:
     CI under this convention.
     """
 
-    root = Path(root)
+    root = resolve_model_unit_root(root, Path(__file__).resolve().parents[3])
     if not root.is_dir():
         raise ManifestError(f"{root}: model-unit root is not a directory")
     units: list[ModelUnit] = []
@@ -1101,8 +1103,7 @@ def write_artifacts(runs: list[UnitRun], outdir: str | Path, *, repro_cmd: str) 
 
 
 def _default_root() -> Path:
-    # src/tensorlbm/models/ci_unit.py -> <repo>/models/units
-    return Path(__file__).resolve().parents[3] / "models" / "units"
+    return Path(__file__).resolve().parents[3] / JSON_UNITS_ROOT
 
 
 def _print_list(units: list[ModelUnit]) -> None:
@@ -1119,7 +1120,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Build and CI every model directory (a directory is a unit).",
     )
     parser.add_argument("command", choices=("list", "build", "ci", "all"), help="what to do")
-    parser.add_argument("--root", default=None, help="model-unit root (default models/units)")
+    parser.add_argument("--root", default=None, help="model-unit root (default benchmarks/model_units/units)")
     parser.add_argument("--out", default="artifacts/model_units", help="artefact directory")
     parser.add_argument("--only", nargs="*", default=(), help="restrict to these unit ids")
     parser.add_argument(
