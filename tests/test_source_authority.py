@@ -37,6 +37,18 @@ class SourceAuthorityTests(unittest.TestCase):
     def test_repository_matches_source_authority_policy(self) -> None:
         self.assertEqual(CHECKER.validate(CHECKER.load_policy()), [])
 
+    def test_unregistered_lbm_file_is_rejected(self) -> None:
+        policy = CHECKER.load_policy()
+        path = "src/lbm/collision/d3q27.py"
+        policy["legacy_import_shims"].pop(path)
+        self.assertIn(f"unexpected file in the lbm compatibility package: {path}",
+                      CHECKER.validate(policy))
+
+    def test_changed_lbm_shim_is_rejected(self) -> None:
+        policy = CHECKER.load_policy()
+        path = "src/lbm/boundary/spherical_force.py"
+        policy["legacy_import_shims"][path] = "0" * 64
+        self.assertIn(f"lbm compatibility shim changed: {path}", CHECKER.validate(policy))
 
     def test_checker_does_not_register_its_own_policy_literal(self) -> None:
         policy = CHECKER.load_policy()

@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY = ROOT / "docs/architecture/source_authority_policy.json"
 TOKEN = "TensorLBM/src"
 ARCHIVE = "development/legacy/TensorLBM"
+LEGACY_IMPORT_ROOT = Path("src/lbm")
 CHECKOUT, SOURCE = TOKEN.split("/")
 SPLIT_PATH = re.compile(rf"""['"]{CHECKOUT}['"]\s*[/,]\s*['"]{SOURCE}['"]""")
 TEXT_SUFFIXES = {".py", ".sh", ".toml", ".yaml", ".yml"}
@@ -105,6 +106,19 @@ def validate(policy: dict) -> list[str]:
         errors.append("pyproject package discovery no longer selects only src")
     if set(find.get("include", ())) != {"tensorlbm", "tensorlbm.*", "lbm", "lbm.*"}:
         errors.append("pyproject must restrict discovery to tensorlbm and the existing lbm package")
+
+    allowed_shims = policy["legacy_import_shims"]
+    tracked_shims = {
+        path.as_posix() for path in tracked_paths() if path.is_relative_to(LEGACY_IMPORT_ROOT)
+    }
+    for path in sorted(tracked_shims - allowed_shims.keys()):
+        errors.append(f"unexpected file in the lbm compatibility package: {path}")
+    for path, digest in sorted(allowed_shims.items()):
+        shim = ROOT / path
+        if path not in tracked_shims or not shim.is_file() or shim.is_symlink():
+            errors.append(f"missing tracked lbm compatibility shim: {path}")
+        elif hashlib.sha256(shim.read_bytes()).hexdigest() != digest:
+            errors.append(f"lbm compatibility shim changed: {path}")
 
     actual_tree = _git("rev-parse", f"HEAD:{policy['historical_root']}")
     if actual_tree != policy["historical_tree_oid"]:
