@@ -26,7 +26,17 @@ NOTE_END = "<!-- repository-layout-note:end -->"
 NOTE = re.compile(r"\n" + re.escape(NOTE_START) + r"\n.*?" + re.escape(NOTE_END) + r"\n", re.S)
 
 
+SCRIPT_HANDOFFS = {
+    item["old_path"]: item["new_path"]
+    for item in json.loads(
+        (LEDGER_PATH.parent / "legacy-plotting-maintenance-2026-11-24.json").read_text(encoding="utf-8")
+    )["entries"]
+}
+
+
 def current_archive_path(path: str) -> Path:
+    if path in SCRIPT_HANDOFFS:
+        return REPO / SCRIPT_HANDOFFS[path]
     if path == "audit" or path.startswith("audit/"):
         return REPO / "development" / path
     return REPO / path
