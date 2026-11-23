@@ -17,7 +17,7 @@ Nothing in the summary is typed by hand.
 
 Usage (from the repository root)::
 
-    python scripts/ci/main_red_clearance_evidence.py \
+    python development/audit/ci/main_red_clearance_20261106/main_red_clearance_evidence.py \
         --before artifacts/ci/main_red_clearance/before.xml \
         --after  artifacts/ci/main_red_clearance/after.xml \
         --outdir artifacts/ci/main_red_clearance
@@ -47,7 +47,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import torch  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 import sys  # noqa: E402
 
 sys.path.insert(0, str(REPO_ROOT / "src"))

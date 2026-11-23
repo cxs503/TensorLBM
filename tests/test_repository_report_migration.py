@@ -300,6 +300,18 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                     REPO / item["new_path"], item["original_sha256"], item["size_bytes"]
                 )
 
+    def test_ci_and_contract_audit_scripts_retain_migration_provenance(self):
+        ledger_path = LEDGER_PATH.parent / "ci-contract-evidence-2026-11-23.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "--", *ledger["retired_paths"]], cwd=REPO, text=True,
+        )
+        self.assertEqual(tracked, "")
+        for entry in ledger["entries"]:
+            with self.subTest(path=entry["new_path"]):
+                self.assert_fingerprint(REPO / entry["new_path"], entry["new_sha256"],
+                                        entry["new_size_bytes"])
+
     def test_november_root_migration_destinations(self):
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
             moves = {
