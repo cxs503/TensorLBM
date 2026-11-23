@@ -1,0 +1,29 @@
+{
+  "source_commit": "c48c99ddd157368e984f199e1bbbef9ac25e59ac",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "entries": [
+    {
+      "old_path": "src/lbm/collision/d3q27.py",
+      "new_path": "src/tensorlbm/verification/d3q27_spherical/collision/d3q27.py",
+      "git_mode": "100644",
+      "original_git_blob": "58d9c2ab4f6450c8f82202a3565cd6db75b8950a",
+      "original_sha256": "a191c82fc6d43de858cf3a8e28bd7b206611d4d1f95ee2642abf2239c0f6d125",
+      "size_bytes": 13915,
+      "compatibility_path": "src/lbm/collision/d3q27.py",
+      "compatibility_sha256": "f00637e9501bba46b90b3c43352ea1624392adb8e9f1220e24c216699d0f92d2"
+    },
+    {
+      "old_path": "src/lbm/boundary/spherical_force.py",
+      "new_path": "src/tensorlbm/verification/d3q27_spherical/boundary/spherical_force.py",
+      "git_mode": "100644",
+      "original_git_blob": "e49bcaaeb3c66ba9ab88397dc40ec52cf7649a24",
+      "original_sha256": "d352ae59a133965ae028751d28ce31172e6f155beb2141dd8b0ede3874ca3779",
+      "size_bytes": 14232,
+      "compatibility_path": "src/lbm/boundary/spherical_force.py",
+      "compatibility_sha256": "1daa8c2837c7c7d0b1ec40178a7056d28e47b057637656df12a7fb466889153a"
+    }
+  ],
+  "compatibility": "The old leaf imports alias the exact canonical modules, so imported symbols and mutable module state stay shared. The parent package exports and public manual URL are retained.",
+  "scientific_scope": "Historical D3Q27 implementation relocated byte-for-byte. Existing numerical limits and public validation status remain unchanged. Run the hosted D3Q27 compatibility check and scoped numerical invariants on the current commit."
+}

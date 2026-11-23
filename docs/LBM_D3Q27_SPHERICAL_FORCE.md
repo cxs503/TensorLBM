@@ -50,8 +50,8 @@ F = Σ (f_i_pre + f_opp_post) · c_i / q
 ### Implementation Files
 | File | Purpose |
 |------|---------|
-| `src/lbm/collision/d3q27.py` | D3Q27 collision operators (BGK, MRT, Cumulant) |
-| `src/lbm/boundary/spherical_force.py` | BFL q-value computation and force method |
+| [D3Q27 collision operators](../src/tensorlbm/verification/d3q27_spherical/collision/d3q27.py) | BGK, MRT and Cumulant |
+| [D3Q27 spherical force](../src/tensorlbm/verification/d3q27_spherical/boundary/spherical_force.py) | BFL q-value computation and force method |
 | `tests/test_d3q27_spherical.py` | 35 test cases |
 
 ## 3. Computational Results
