@@ -338,7 +338,16 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn("bench_t4_medium.py", moves)
         self.assertIn("audit_m18221", moves)
         self.assertIn("verdict_m15215.sql", moves)
+        path = LEDGER_PATH.parent / "t4-physics-ai-drivers-2026-11-24.json"
+        followup = json.loads(path.read_text(encoding="utf-8"))
+        handoffs = {item["old_path"]: item for item in followup["entries"]}
+        self.assertEqual(set(handoffs), {new for new in moves.values() if new.startswith("scripts/physics_ai/")})
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "scripts/physics_ai"], cwd=REPO))
+        for item in handoffs.values():
+            self.assert_fingerprint(REPO / item["new_path"], item["migrated_sha256"], item["migrated_size_bytes"])
         for old, new in moves.items():
+            if new in handoffs:
+                new = handoffs[new]["new_path"]
             with self.subTest(old=old, new=new):
                 # Local runners may recreate ignored scratch directories.
                 # Their tracked descendants, rather than filesystem presence,
