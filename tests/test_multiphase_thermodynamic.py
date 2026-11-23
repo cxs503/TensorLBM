@@ -57,15 +57,16 @@ from tensorlbm.d2q9 import equilibrium, macroscopic
 # C1: Maxwell solver self-check
 # ============================================================================
 
+
 class TestMaxwellSolver:
     """C1: Maxwell solver self-check — vdW three real roots + equal-area residual ≤ 1e-12."""
 
     def test_vdw_critical_point(self):
         """Verify vdW critical point: T_c = 8a/(27bR), rho_c = 1/(3b), p_c = a/(27b²)."""
-        eos = VDWEOS(a=1.0, b=1.0/3.0, R=1.0)
-        assert abs(eos.T_c - 8.0/9.0) < 1e-12
+        eos = VDWEOS(a=1.0, b=1.0 / 3.0, R=1.0)
+        assert abs(eos.T_c - 8.0 / 9.0) < 1e-12
         assert abs(eos.rho_c - 1.0) < 1e-12
-        assert abs(eos.p_c - 1.0/3.0) < 1e-12
+        assert abs(eos.p_c - 1.0 / 3.0) < 1e-12
 
     def test_vdw_three_real_roots_below_Tc(self):
         """Below T_c, the vdW isotherm has three real roots for p = p_sat."""
@@ -74,7 +75,7 @@ class TestMaxwellSolver:
         p_sat_test = 0.15
 
         a, b, R = eos.a, eos.b, eos.R
-        coeffs = [a*b, -a, R*T + p_sat_test*b, -p_sat_test]
+        coeffs = [a * b, -a, R * T + p_sat_test * b, -p_sat_test]
         roots = np.roots(coeffs)
         real_roots = sorted([r.real for r in roots if abs(r.imag) < 1e-10])
         assert len(real_roots) == 3, f"Expected 3 real roots, got {len(real_roots)}"
@@ -84,8 +85,9 @@ class TestMaxwellSolver:
         """Equal-area residual must be ≤ 1e-12 for vdW at multiple T_r."""
         for T_r in [0.90, 0.85, 0.80, 0.75, 0.70]:
             mc = maxwell_vdw(T_r, tol=1e-14)
-            assert mc.area_residual < 1e-12, \
+            assert mc.area_residual < 1e-12, (
                 f"T_r={T_r}: area_residual={mc.area_residual:.2e} > 1e-12"
+            )
             assert mc.rho_v < mc.rho_l
             assert mc.rho_v > 0 and mc.rho_l > 0
 
@@ -111,15 +113,16 @@ class TestMaxwellSolver:
 # C2: Coexistence densities vs Maxwell reference
 # ============================================================================
 
+
 class TestCoexistenceDensities:
     """C2: SCMP coexistence densities vs Maxwell reference."""
 
-    def _scmp_psi_exp_pressure(self, rho, G, rho0=1.0, cs2=1.0/3.0):
+    def _scmp_psi_exp_pressure(self, rho, G, rho0=1.0, cs2=1.0 / 3.0):
         """Mechanical pressure of SCMP with psi_exp."""
         psi = rho0 * (1.0 - np.exp(-np.asarray(rho) / rho0))
         return np.asarray(rho) * cs2 - 0.5 * G * cs2 * psi**2
 
-    def _scmp_maxwell(self, G, rho0=1.0, cs2=1.0/3.0, tol=1e-12):
+    def _scmp_maxwell(self, G, rho0=1.0, cs2=1.0 / 3.0, tol=1e-12):
         """Maxwell construction for SCMP mechanical EOS with psi_exp."""
         from scipy.optimize import brentq
 
@@ -160,17 +163,19 @@ class TestCoexistenceDensities:
         def equal_area(p_sat):
             def f_v(r):
                 return p_mech(r) - p_sat
+
             try:
                 rho_v = brentq(f_v, 1e-8, rho_sv * 0.999, xtol=tol)
             except ValueError:
-                return float('nan')
+                return float("nan")
 
             def f_l(r):
                 return p_mech(r) - p_sat
+
             try:
                 rho_l = brentq(f_l, rho_sl * 1.001, 20.0, xtol=tol)
             except ValueError:
-                return float('nan')
+                return float("nan")
 
             v_v = 1.0 / rho_v
             v_l = 1.0 / rho_l
@@ -198,18 +203,19 @@ class TestCoexistenceDensities:
             return None
 
         idx = sign_changes[0]
-        p_sat = brentq(equal_area, p_valid[idx], p_valid[idx+1], xtol=tol)
+        p_sat = brentq(equal_area, p_valid[idx], p_valid[idx + 1], xtol=tol)
 
         def f_v(r):
             return p_mech(r) - p_sat
+
         def f_l(r):
             return p_mech(r) - p_sat
+
         rho_v = brentq(f_v, 1e-8, rho_sv * 0.999, xtol=tol)
         rho_l = brentq(f_l, rho_sl * 1.001, 20.0, xtol=tol)
 
         return MaxwellCoexistence(
-            T=0, T_r=0, rho_v=rho_v, rho_l=rho_l,
-            p_sat=p_sat, area_residual=abs(equal_area(p_sat))
+            T=0, T_r=0, rho_v=rho_v, rho_l=rho_l, p_sat=p_sat, area_residual=abs(equal_area(p_sat))
         )
 
     def test_scmp_phase_separation_G1_5(self):
@@ -223,7 +229,7 @@ class TestCoexistenceDensities:
         f = init_phase_separation(rho_avg, 0.05, ny, nx)
         result = simulate_scmp(f, G, psi_exp, tau=tau, n_steps=1000, measure_interval=200)
 
-        rho_final = result['rho_final']
+        rho_final = result["rho_final"]
         rho_std = float(rho_final.std())
         assert rho_std > 0.1, f"Phase separation failed: rho_std={rho_std:.4f}"
 
@@ -242,7 +248,7 @@ class TestCoexistenceDensities:
         f = init_phase_separation(rho_avg, 0.05, ny, nx)
         result = simulate_scmp(f, G, psi_exp, tau=tau, n_steps=2000, measure_interval=400)
 
-        rho_final = result['rho_final'].numpy()
+        rho_final = result["rho_final"].numpy()
         rho_v_sim = float(np.percentile(rho_final, 10))
         rho_l_sim = float(np.percentile(rho_final, 90))
 
@@ -263,6 +269,7 @@ class TestCoexistenceDensities:
 # C3: Young-Laplace surface tension
 # ============================================================================
 
+
 class TestYoungLaplace:
     """C3: Young-Laplace Δp = 2σ/R."""
 
@@ -282,16 +289,13 @@ class TestYoungLaplace:
             ny_loc, nx_loc = domain_size, domain_size
 
             f = init_droplet(rho_v, rho_l, float(R_target), ny_loc, nx_loc)
-            result = simulate_scmp(f, G, psi_exp, tau=tau,
-                                   n_steps=1500, measure_interval=300)
+            result = simulate_scmp(f, G, psi_exp, tau=tau, n_steps=1500, measure_interval=300)
 
-            rho = result['rho_final']
-            ux = result['ux_final']
-            uy = result['uy_final']
+            rho = result["rho_final"]
+            ux = result["ux_final"]
+            uy = result["uy_final"]
 
-            p_in, p_out = measure_droplet_pressure(
-                rho, ux, uy, float(R_target), G, psi_exp
-            )
+            p_in, p_out = measure_droplet_pressure(rho, ux, uy, float(R_target), G, psi_exp)
             delta_p = p_in - p_out
             sigma_yl = delta_p * R_target / 2.0
 
@@ -307,8 +311,8 @@ class TestYoungLaplace:
         sigma_fit = slope / 2.0
 
         delta_p_pred = np.polyval(coeffs, inv_R)
-        ss_res = np.sum((delta_p_arr - delta_p_pred)**2)
-        ss_tot = np.sum((delta_p_arr - np.mean(delta_p_arr))**2)
+        ss_res = np.sum((delta_p_arr - delta_p_pred) ** 2)
+        ss_tot = np.sum((delta_p_arr - np.mean(delta_p_arr)) ** 2)
         R_squared = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
 
         print(f"\nYoung-Laplace fit: σ_fit={sigma_fit:.6f}, R²={R_squared:.6f}")
@@ -326,6 +330,7 @@ class TestYoungLaplace:
 # ============================================================================
 # C4: Spurious velocity scaling
 # ============================================================================
+
 
 class TestSpuriousVelocity:
     """C4: Spurious velocity scaling."""
@@ -345,10 +350,9 @@ class TestSpuriousVelocity:
             ny_loc, nx_loc = domain_size, domain_size
 
             f = init_droplet(rho_v, rho_l, float(R_target), ny_loc, nx_loc)
-            result = simulate_scmp(f, G, psi_exp, tau=tau,
-                                   n_steps=1500, measure_interval=300)
+            result = simulate_scmp(f, G, psi_exp, tau=tau, n_steps=1500, measure_interval=300)
 
-            max_u = measure_max_velocity(result['ux_final'], result['uy_final'])
+            max_u = measure_max_velocity(result["ux_final"], result["uy_final"])
             max_u_list.append(max_u)
             print(f"  R={R_target}: max|u|={max_u:.6e}")
 
@@ -368,6 +372,7 @@ class TestSpuriousVelocity:
 # C5: Negative control (G=0)
 # ============================================================================
 
+
 class TestNegativeControl:
     """C5: G=0 → no phase separation, density std ≤ 1e-6."""
 
@@ -382,11 +387,11 @@ class TestNegativeControl:
         f = init_uniform(rho0, ny, nx)
         result = simulate_scmp(f, G, psi_exp, tau=tau, n_steps=500, measure_interval=100)
 
-        rho_final = result['rho_final']
+        rho_final = result["rho_final"]
         rho_std = measure_density_std(rho_final)
-        max_u = measure_max_velocity(result['ux_final'], result['uy_final'])
+        max_u = measure_max_velocity(result["ux_final"], result["uy_final"])
 
-        print(f"\nNegative control (G=0):")
+        print("\nNegative control (G=0):")
         print(f"  rho_mean={float(rho_final.mean()):.10f}")
         print(f"  rho_std={rho_std:.2e}")
         print(f"  max|u|={max_u:.2e}")
@@ -398,6 +403,7 @@ class TestNegativeControl:
 # ============================================================================
 # C6: Grid independence
 # ============================================================================
+
 
 class TestGridIndependence:
     """C6: Surface tension σ grid independence."""
@@ -415,16 +421,13 @@ class TestGridIndependence:
             ny_loc, nx_loc = domain_size, domain_size
 
             f = init_droplet(rho_v, rho_l, float(R_target), ny_loc, nx_loc)
-            result = simulate_scmp(f, G, psi_exp, tau=tau,
-                                   n_steps=1500, measure_interval=300)
+            result = simulate_scmp(f, G, psi_exp, tau=tau, n_steps=1500, measure_interval=300)
 
-            rho = result['rho_final']
-            ux = result['ux_final']
-            uy = result['uy_final']
+            rho = result["rho_final"]
+            ux = result["ux_final"]
+            uy = result["uy_final"]
 
-            p_in, p_out = measure_droplet_pressure(
-                rho, ux, uy, float(R_target), G, psi_exp
-            )
+            p_in, p_out = measure_droplet_pressure(rho, ux, uy, float(R_target), G, psi_exp)
             delta_p = p_in - p_out
             sigma = delta_p * R_target / 2.0
             sigma_values[R_target] = sigma
@@ -434,8 +437,10 @@ class TestGridIndependence:
         sigma_16 = sigma_values[16]
         rel_change = abs(sigma_16 - sigma_10) / ((sigma_10 + sigma_16) / 2.0)
 
-        print(f"\nGrid independence: σ(10)={sigma_10:.6f}, σ(16)={sigma_16:.6f}, "
-              f"rel_change={rel_change:.2%}")
+        print(
+            f"\nGrid independence: σ(10)={sigma_10:.6f}, σ(16)={sigma_16:.6f}, "
+            f"rel_change={rel_change:.2%}"
+        )
 
         assert rel_change < 0.15, f"Grid dependence: σ relative change {rel_change:.2%} > 15%"
 
@@ -443,6 +448,7 @@ class TestGridIndependence:
 # ============================================================================
 # Report generation
 # ============================================================================
+
 
 def generate_verification_report(results: dict, output_path: str):
     """Generate JSON report with all verification results."""
@@ -452,7 +458,7 @@ def generate_verification_report(results: dict, output_path: str):
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "criteria": results,
     }
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(report, f, indent=2, default=str)
     return report
 

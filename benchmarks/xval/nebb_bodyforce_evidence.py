@@ -75,41 +75,39 @@ ENTRIES = [
         "path": "src/tensorlbm/nebb_bodyforce.py",
         "kind": "cli",
         "command": "python -m tensorlbm.nebb_bodyforce --ny 10 --scheme guo "
-                   f"--out {ARTIFACTS}/cli_guo_ny10.json",
+        f"--out {ARTIFACTS}/cli_guo_ny10.json",
         "note": "package CLI (`python -m tensorlbm.nebb_bodyforce`); prints the "
-                "error table and writes the JSON artifact",
+        "error table and writes the JSON artifact",
     },
     {
         "path": "src/tensorlbm/verification/nebb_bodyforce/run.py",
         "kind": "solver_verification",
         "command": "python -m tensorlbm.verification.nebb_bodyforce.run --ny 10 20 "
-                   f"--out {ARTIFACTS}/corepath",
+        f"--out {ARTIFACTS}/corepath",
         "note": "drives repo main core-path solver with wall_bc='nebb' (the L3 "
-                "call path); writes result.json + profiles.csv + figure",
+        "call path); writes result.json + profiles.csv + figure",
     },
     {
         "path": f"xval/{NODE}/run_xval_r4_invariants.py",
         "kind": "invariants",
         "command": f"python xval/{NODE}/run_xval_r4_invariants.py",
         "note": "mass conservation / arm-to-arm / grid-refinement invariants "
-                "(writes artifacts/r4_invariants.json)",
+        "(writes artifacts/r4_invariants.json)",
     },
     {
         "path": "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
         "kind": "benchmark",
-        "command": "python benchmarks/xval/xval_vivsim_nebb_bodyforce.py "
-                   f"--out {ARTIFACTS}",
+        "command": f"python benchmarks/xval/xval_vivsim_nebb_bodyforce.py --out {ARTIFACTS}",
         "note": "XVAL harness: OSS-transcription arm vs TensorLBM arm, wall/"
-                "scheme/grid sensitivity, results.json + figures",
+        "scheme/grid sensitivity, results.json + figures",
     },
     {
         "path": "benchmarks/xval/xval_nebb_startup_transient.py",
         "kind": "benchmark_transient",
-        "command": "python benchmarks/xval/xval_nebb_startup_transient.py "
-                   f"--out {STARTUP_ART}",
+        "command": f"python benchmarks/xval/xval_nebb_startup_transient.py --out {STARTUP_ART}",
         "note": "impulsive-start transient campaign against the closed-form start-up "
-                "series (Batchelor 1967 §4.2); writes STARTUP_ART/results.json + "
-                "figures.json + 3 PNGs",
+        "series (Batchelor 1967 §4.2); writes STARTUP_ART/results.json + "
+        "figures.json + 3 PNGs",
     },
 ]
 
@@ -119,38 +117,37 @@ INTEGRATION_CALLERS = [
         "file": "src/tensorlbm/gpu_core_path.py",
         "kind": "main_solver",
         "note": "repo main core-path solver (GPUCorePathSolver.step -> core_step) "
-                "dispatches wall_bc='nebb' to the force-corrected NEBB wall kernel; "
-                "added by m18182, dropped by the m18379 refactor, restored by m21204 "
-                "(regression pins: tests/test_gpu_core_path.py -k nebb)",
+        "dispatches wall_bc='nebb' to the force-corrected NEBB wall kernel; "
+        "added by m18182, dropped by the m18379 refactor, restored by m21204 "
+        "(regression pins: tests/test_gpu_core_path.py -k nebb)",
     },
     {
         "symbol": "channel_analytic_velocity_nebb",
         "file": "src/tensorlbm/verification/nebb_bodyforce/run.py",
         "kind": "solver_verification",
         "note": "solver-level driver: runs GPUCorePathSolver with wall_bc='nebb' to "
-                "steady state against the matching analytic reference",
+        "steady state against the matching analytic reference",
     },
     {
         "symbol": "corrected_wall_velocity",
         "file": "src/tensorlbm/boundary/antibb_channel_benchmark.py",
         "kind": "main_solver",
         "note": "D2Q9 channel benchmark harness (anti-bounceback study) gained "
-                "wall_mode='force_corrected_nebb', which calls the module wall kernel "
-                "and the half-force-step wall velocity",
+        "wall_mode='force_corrected_nebb', which calls the module wall kernel "
+        "and the half-force-step wall velocity",
     },
     {
         "symbol": "BodyForceChannel",
-        "file": f"benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
+        "file": "benchmarks/xval/xval_vivsim_nebb_bodyforce.py",
         "kind": "benchmark_driver",
-        "note": "the XVAL harness drives the module and compares it with the OSS "
-                "transcription",
+        "note": "the XVAL harness drives the module and compares it with the OSS transcription",
     },
     {
         "symbol": "nb.nebb_row",
         "file": "tests/test_nebb_bodyforce.py",
         "kind": "test",
         "note": "anchor tests (kernel moments, shift invariance, driver accuracy, "
-                "wall-model negative control, CLI)",
+        "wall-model negative control, CLI)",
     },
 ]
 
@@ -215,13 +212,19 @@ def audit_impl(rel_path: str) -> dict:
         return out
     src = path.read_text()
     tree = ast.parse(src)
-    funcs = [n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    funcs = [
+        n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
     classes = [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
     markers = [m for m in PLACEHOLDER_MARKERS if m in src]
     bare_pass = 0
     for n in ast.walk(tree):
         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            body = [s for s in n.body if not isinstance(s, ast.Expr) or not isinstance(s.value, ast.Constant)]
+            body = [
+                s
+                for s in n.body
+                if not isinstance(s, ast.Expr) or not isinstance(s.value, ast.Constant)
+            ]
             if len(body) == 1 and isinstance(body[0], ast.Pass):
                 bare_pass += 1
     out.update(
@@ -236,10 +239,7 @@ def audit_impl(rel_path: str) -> dict:
         }
     )
     out["ok"] = (
-        out["lines"] >= 40
-        and len(out["public_functions"]) >= 3
-        and not markers
-        and bare_pass == 0
+        out["lines"] >= 40 and len(out["public_functions"]) >= 3 and not markers and bare_pass == 0
     )
     return out
 
@@ -247,9 +247,13 @@ def audit_impl(rel_path: str) -> dict:
 def audit_caller(row: dict) -> dict:
     path = REPO / row["file"]
     src = path.read_text() if path.is_file() else ""
-    return {**row, "exists": path.is_file(), "symbol_found": row["symbol"] in src,
-            "verified": path.is_file() and row["symbol"] in src,
-            "sha256": sha256(path) if path.is_file() else None}
+    return {
+        **row,
+        "exists": path.is_file(),
+        "symbol_found": row["symbol"] in src,
+        "verified": path.is_file() and row["symbol"] in src,
+        "sha256": sha256(path) if path.is_file() else None,
+    }
 
 
 def figure_twin(rel_path: str) -> str | None:
@@ -270,8 +274,13 @@ def audit_figure(rel_path: str, role: str = "") -> dict:
     p = REPO / rel_path
     twin = figure_twin(rel_path)
     present = p.is_file() or twin is not None
-    used = p if p.is_file() else (p.with_suffix(".svg") if twin and p.suffix.lower() != ".svg"
-                                  else p.with_suffix(".png"))
+    used = (
+        p
+        if p.is_file()
+        else (
+            p.with_suffix(".svg") if twin and p.suffix.lower() != ".svg" else p.with_suffix(".png")
+        )
+    )
     return {
         "path": rel_path,
         "exists": present,
@@ -382,8 +391,11 @@ def recompute_transient(startup: dict, rerun: bool = True) -> tuple[list[dict], 
             got_max = max(s.errors["max_rel_to_scale"] for s in res.samples)
             got_final = res.samples[-1].errors["max_rel_to_scale"]
             got_dev = abs(got_max - row["max_err_rel_to_scale_all"]) / max(
-                abs(row["max_err_rel_to_scale_all"]), 1e-30)
-            got_dev = max(got_dev, abs(got_final - row["err_at_final"]) / max(abs(row["err_at_final"]), 1e-30))
+                abs(row["max_err_rel_to_scale_all"]), 1e-30
+            )
+            got_dev = max(
+                got_dev, abs(got_final - row["err_at_final"]) / max(abs(row["err_at_final"]), 1e-30)
+            )
             rerun_notes = {"recomputed": True, "max_err_rel_to_scale_all": got_max}
         else:
             got_max, got_final, got_dev = None, None, 0.0
@@ -391,14 +403,20 @@ def recompute_transient(startup: dict, rerun: bool = True) -> tuple[list[dict], 
 
         agrees = ref_dev < 1e-10 and rate_dev < 1e-10 and got_dev < 1e-9
         primary = row["wall"].startswith("force_corrected_nebb")
-        passes = row["max_err_rel_to_scale_all"] < (TRANSIENT_STRETCH if primary else TRANSIENT_OWNER)
+        passes = row["max_err_rel_to_scale_all"] < (
+            TRANSIENT_STRETCH if primary else TRANSIENT_OWNER
+        )
         ok = ok and agrees and (passes or not primary)
         rows.append(
             {
                 "case": row["arm"],
                 "primary": bool(primary),
-                "ny": ny, "nu": nu, "gx": gx, "H": H,
-                "scheme": row["scheme"], "wall": row["wall"],
+                "ny": ny,
+                "nu": nu,
+                "gx": gx,
+                "H": H,
+                "scheme": row["scheme"],
+                "wall": row["wall"],
                 "ref_kind": "plane_poiseuille_startup series (Batchelor 1967 §4.2)",
                 "t_final": arm["samples"][-1]["t"],
                 "n_samples": len(arm["samples"]),
@@ -438,24 +456,40 @@ def collect_tests() -> tuple[list[str], list[dict]]:
     rows = []
     for rel_path in TESTS:
         p = REPO / rel_path
-        proc = subprocess.run([sys.executable, "-m", "pytest", rel_path, "--collect-only", "-q"],
-                              cwd=REPO, capture_output=True, text=True)
+        proc = subprocess.run(
+            [sys.executable, "-m", "pytest", rel_path, "--collect-only", "-q"],
+            cwd=REPO,
+            capture_output=True,
+            text=True,
+        )
         found = [ln.strip() for ln in proc.stdout.splitlines() if "::" in ln]
         ids.extend(found)
-        rows.append({"path": rel_path, "exists": p.is_file(), "n_collected": len(found),
-                     "node_ids_sample": found[:3]})
+        rows.append(
+            {
+                "path": rel_path,
+                "exists": p.is_file(),
+                "n_collected": len(found),
+                "node_ids_sample": found[:3],
+            }
+        )
     return ids, rows
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--run-dir", default=str(REPO / ARTIFACTS),
-                    help="artifact directory the harness wrote into (default: the "
-                         "committed one, so a fresh clone verifies without re-running)")
+    ap.add_argument(
+        "--run-dir",
+        default=str(REPO / ARTIFACTS),
+        help="artifact directory the harness wrote into (default: the "
+        "committed one, so a fresh clone verifies without re-running)",
+    )
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--no-tests", action="store_true", help="skip pytest collection")
-    ap.add_argument("--no-rerun", action="store_true",
-                    help="do not re-integrate the transient arms (ref/rate checks only)")
+    ap.add_argument(
+        "--no-rerun",
+        action="store_true",
+        help="do not re-integrate the transient arms (ref/rate checks only)",
+    )
     args = ap.parse_args(argv)
     run_dir = Path(args.run_dir).resolve()
     results_path = run_dir / "results.json"
@@ -468,10 +502,13 @@ def main(argv=None) -> int:
     entries = [audit_file(e["path"], e["kind"]) for e in ENTRIES]
     callers = [audit_caller(r) for r in INTEGRATION_CALLERS]
 
-    run_artifacts = [audit_file(p, results.get("figures", {}).get(p.rsplit("/", 1)[-1], "run artifact"))
-                     for p in RUN_FILES]
-    figures = [audit_figure(p, "figure (PNG for the report, text SVG twin for the repo)")
-               for p in FIGURES]
+    run_artifacts = [
+        audit_file(p, results.get("figures", {}).get(p.rsplit("/", 1)[-1], "run artifact"))
+        for p in RUN_FILES
+    ]
+    figures = [
+        audit_figure(p, "figure (PNG for the report, text SVG twin for the repo)") for p in FIGURES
+    ]
     anchors = [audit_file(p, "external anchor") for p in EXTERNAL_ANCHOR]
 
     bench_rows, recomputed_ok = recompute_rows(results)
@@ -480,10 +517,16 @@ def main(argv=None) -> int:
         got = np.array(c["got"])
         ref = np.array(c["ref"])
         rel_diff = float(np.abs(got - ref).max() / max(np.abs(ref).max(), 1e-300))
-        cross_rows.append({"case": key, "metric": "max|armB-armA|/max|armA|",
-                           "rel_diff": rel_diff, "tolerance": c["tolerance"],
-                           "pass": bool(rel_diff < c["tolerance"]),
-                           "recomputed_matches_stored": abs(rel_diff - c["rel_diff"]) < 1e-12})
+        cross_rows.append(
+            {
+                "case": key,
+                "metric": "max|armB-armA|/max|armA|",
+                "rel_diff": rel_diff,
+                "tolerance": c["tolerance"],
+                "pass": bool(rel_diff < c["tolerance"]),
+                "recomputed_matches_stored": abs(rel_diff - c["rel_diff"]) < 1e-12,
+            }
+        )
         recomputed_ok = recomputed_ok and abs(rel_diff - c["rel_diff"]) < 1e-12
 
     # ---- transient (impulsive start) campaign: separate referee, separate run dir
@@ -497,8 +540,8 @@ def main(argv=None) -> int:
     transient = {
         "metric": "max_t max_y |u_LBM(y,t) - u_series(y,t)| / max_y u_steady(y)",
         "reference": "closed-form impulsively-started plane-Poiseuille series "
-                     "(Batchelor 1967 §4.2, 512 odd modes), referee independent of "
-                     "the steady benchmark's parabola",
+        "(Batchelor 1967 §4.2, 512 odd modes), referee independent of "
+        "the steady benchmark's parabola",
         "tolerance_owner_15pct": TRANSIENT_OWNER,
         "tolerance_stretch_3pct": TRANSIENT_STRETCH,
         "rows": transient_rows,
@@ -514,15 +557,16 @@ def main(argv=None) -> int:
     benchmark = {
         "metric": "max_y |u_x(y) - u_ref(y)| / max_y |u_ref(y)|",
         "reference": "closed-form plane-Poiseuille parabola on the node walls "
-                     "(Guo et al. 2002 body-force channel; Batchelor 1967 §4.2)",
+        "(Guo et al. 2002 body-force channel; Batchelor 1967 §4.2)",
         "tolerance_owner_15pct": results["thresholds"]["owner"],
         "tolerance_stretch_3pct": results["thresholds"]["stretch"],
         "cross_arm_tolerance": results["thresholds"]["cross_arm"],
         "rows": bench_rows,
         "cross_arm_rows": cross_rows,
         "n_primary_rows": len(primary_rows),
-        "all_pass": bool(all(r["pass"] for r in primary_rows)
-                         and all(r["pass"] for r in cross_rows)),
+        "all_pass": bool(
+            all(r["pass"] for r in primary_rows) and all(r["pass"] for r in cross_rows)
+        ),
         "source": results_path.name,
         "recomputed_from": rel(results_path),
         "reproduces_stored_rows": bool(recomputed_ok),
@@ -530,8 +574,18 @@ def main(argv=None) -> int:
     }
 
     if args.no_tests:
-        test_ids, test_rows = [], [{"path": p, "exists": (REPO / p).is_file(),
-                                    "n_collected": None, "node_ids_sample": []} for p in TESTS]
+        test_ids, test_rows = (
+            [],
+            [
+                {
+                    "path": p,
+                    "exists": (REPO / p).is_file(),
+                    "n_collected": None,
+                    "node_ids_sample": [],
+                }
+                for p in TESTS
+            ],
+        )
     else:
         test_ids, test_rows = collect_tests()
 
@@ -562,9 +616,15 @@ def main(argv=None) -> int:
         "transient_artifacts_present": startup is not None,
         "transient_rows_recomputed": benchmark_transient_ok(transient),
     }
-    mandatory = ["impl_files_ok", "entries_exist", "run_artifacts_exist",
-                 "integration_callers_verified", "benchmark_rows_recomputed",
-                 "transient_artifacts_present", "transient_rows_recomputed"]
+    mandatory = [
+        "impl_files_ok",
+        "entries_exist",
+        "run_artifacts_exist",
+        "integration_callers_verified",
+        "benchmark_rows_recomputed",
+        "transient_artifacts_present",
+        "transient_rows_recomputed",
+    ]
     if args.strict:
         checks["benchmark_all_pass"] = benchmark["all_pass"]
         checks["transient_all_pass"] = transient["all_pass"]
@@ -577,8 +637,12 @@ def main(argv=None) -> int:
         level = 2
         if checks["integration_callers_verified"]:
             level = 3
-            if (checks["benchmark_rows_recomputed"] and benchmark["all_pass"]
-                    and transient["all_pass"] and repro_cmd):
+            if (
+                checks["benchmark_rows_recomputed"]
+                and benchmark["all_pass"]
+                and transient["all_pass"]
+                and repro_cmd
+            ):
                 level = 4
                 if checks["external_anchor_present"]:
                     level = 5
@@ -604,8 +668,10 @@ def main(argv=None) -> int:
         "external_anchor": [r["path"] for r in anchors],
         # ---- human detail (ignored by the judge) --------------------------
         "impl_files_detail": impl,
-        "entry_detail": [{**e, **{k: v for k, v in row.items() if k != "path"}}
-                         for e, row in zip(ENTRIES, entries)],
+        "entry_detail": [
+            {**e, **{k: v for k, v in row.items() if k != "path"}}
+            for e, row in zip(ENTRIES, entries)
+        ],
         "run_artifacts_detail": run_artifacts + figures,
         "integration_callers_detail": callers,
         "tests_detail": test_rows,

@@ -4,30 +4,52 @@
 用法：python3 benchmarks/water_entry/single_drop/mmc3_card.py
 产出：/root/tp-agent/drop_entry/BB/X/MMC3-RUNSDIFF.md + 同目录 MMC3-RUNSDIFF.json 副本
 """
-import json, os, shutil
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "runs", "mmc3_diff"))
+import json
+import os
+import shutil
+
+ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "runs", "mmc3_diff")
+)
 OUT_MD = "/root/tp-agent/drop_entry/BB/X/MMC3-RUNSDIFF.md"
 OUT_JSON = "/root/tp-agent/drop_entry/BB/X/MMC3-RUNSDIFF.json"
 
+
 def render_table(J):
-    L = ["| 臂 | 系列 | 变量 | stop | 窗长 abs/pc ms | 峰深 D | 峰时 abs/pc ms | 误差% | ΔD vs ctrl | 方向 | 死因 |",
-         "|---|---|---|---|---|---|---|---|---|---|---|"]
+    L = [
+        "| 臂 | 系列 | 变量 | stop | 窗长 abs/pc ms | 峰深 D | 峰时 abs/pc ms | 误差% | ΔD vs ctrl | 方向 | 死因 |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
     for e in J["arms"]:
         pc = "%.3f" % e["peak_time_pc_ms"] if e["peak_time_pc_ms"] is not None else "—"
-        L.append("| %s | %s | %s | %s | %.3f/%.3f | %.4f | %.3f/%s | %.2f | %+.4f | %s | %s |" % (
-            e["arm"], e["series"], e["variable"], e["stop_reason"],
-            e["window_abs_ms"], e["postcontact_healthy_ms"] or 0.0,
-            e["peak_depth_D"], e["peak_time_abs_ms"], pc,
-            e["peak_err_pct"], e["delta_vs_ctrl_D"], e["direction_vs_ctrl"],
-            e["death_cause"] or "—"))
+        L.append(
+            "| %s | %s | %s | %s | %.3f/%.3f | %.4f | %.3f/%s | %.2f | %+.4f | %s | %s |"
+            % (
+                e["arm"],
+                e["series"],
+                e["variable"],
+                e["stop_reason"],
+                e["window_abs_ms"],
+                e["postcontact_healthy_ms"] or 0.0,
+                e["peak_depth_D"],
+                e["peak_time_abs_ms"],
+                pc,
+                e["peak_err_pct"],
+                e["delta_vs_ctrl_D"],
+                e["direction_vs_ctrl"],
+                e["death_cause"] or "—",
+            )
+        )
     return "\n".join(L)
+
 
 def render_trace(J):
     L = ["| 臂 | 镜像路径（m26746 工作树） | 原始出处 |", "|---|---|---|"]
     for e in J["arms"]:
         L.append("| %s | %s | %s |" % (e["arm"], e["source_mirror"], e["source_origin"]))
     return "\n".join(L)
+
 
 HEAD = """# MMC3-RUNSDIFF · 全臂差分诊断对照卡（诊断官 m26746）
 自检：5/5（文件在且非空✓ 数字可溯=runs/mmc3_diff/**/result.json 程序化提取✓ 双写=worktree+BB/X✓ 口径声明✓ 失败如实✓）
@@ -106,6 +128,7 @@ MID2 = """
 - 工件镜像：runs/mmc3_diff/（cavsweep 16 + kernb 2 + kern_a_r2 1 + abbs 3 + conv12 4 + figs 2）
 """
 
+
 def main():
     J = json.load(open(os.path.join(ROOT, "MMC3-RUNSDIFF.json")))
     md = HEAD + render_table(J) + "\n" + MID + render_trace(J) + "\n" + MID2
@@ -113,6 +136,7 @@ def main():
     open(OUT_MD, "w").write(md)
     shutil.copy(os.path.join(ROOT, "MMC3-RUNSDIFF.json"), OUT_JSON)
     print("wrote", OUT_MD, len(md), "bytes; json ->", OUT_JSON)
+
 
 if __name__ == "__main__":
     main()

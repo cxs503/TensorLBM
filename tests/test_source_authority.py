@@ -18,15 +18,15 @@ class SourceAuthorityTests(unittest.TestCase):
     def test_split_path_forms_are_detected(self) -> None:
         checkout, source = CHECKER.TOKEN.split("/")
         examples = [
-            f'path = repo / {checkout!r} / {source!r}',
-            f'path = Path(repo, {checkout!r}, {source!r})',
-            f'path = repo.joinpath({checkout!r}, {source!r})',
-            f'path = os.path.join(repo, {checkout!r}, {source!r})',
+            f"path = repo / {checkout!r} / {source!r}",
+            f"path = Path(repo, {checkout!r}, {source!r})",
+            f"path = repo.joinpath({checkout!r}, {source!r})",
+            f"path = os.path.join(repo, {checkout!r}, {source!r})",
         ]
         for line in examples:
             with self.subTest(line=line):
                 self.assertEqual(CHECKER.matching_reference_lines(line, Path("run.py")), [line])
-        split = f'path = os.path.join(\n    repo, {checkout!r},\n    {source!r}\n)'
+        split = f"path = os.path.join(\n    repo, {checkout!r},\n    {source!r}\n)"
         self.assertEqual(
             CHECKER.matching_reference_lines(split, Path("run.py")),
             split.splitlines()[1:3],
@@ -41,8 +41,9 @@ class SourceAuthorityTests(unittest.TestCase):
         policy = CHECKER.load_policy()
         path = "src/lbm/collision/d3q27.py"
         policy["legacy_import_shims"].pop(path)
-        self.assertIn(f"unexpected file in the lbm compatibility package: {path}",
-                      CHECKER.validate(policy))
+        self.assertIn(
+            f"unexpected file in the lbm compatibility package: {path}", CHECKER.validate(policy)
+        )
 
     def test_changed_lbm_shim_is_rejected(self) -> None:
         policy = CHECKER.load_policy()
@@ -52,8 +53,9 @@ class SourceAuthorityTests(unittest.TestCase):
 
     def test_checker_does_not_register_its_own_policy_literal(self) -> None:
         policy = CHECKER.load_policy()
-        self.assertNotIn("tools/check_source_authority.py", CHECKER.collect_active_references(policy))
-
+        self.assertNotIn(
+            "tools/check_source_authority.py", CHECKER.collect_active_references(policy)
+        )
 
     def test_new_active_nested_consumer_is_rejected(self) -> None:
         policy = CHECKER.load_policy()
@@ -62,15 +64,16 @@ class SourceAuthorityTests(unittest.TestCase):
         references.pop(path)
         self.assertIn(f"new active nested-source reference: {path}", CHECKER.validate(policy))
 
-
     def test_reference_line_drift_is_rejected(self) -> None:
         policy = CHECKER.load_policy()
         path, reference = next(iter(policy["allowed_active_references"].items()))
         reference["matching_lines_sha256"] = "0" * 64
-        self.assertTrue(any(
-            "reference lines changed" in error and path in error
-            for error in CHECKER.validate(policy)
-        ))
+        self.assertTrue(
+            any(
+                "reference lines changed" in error and path in error
+                for error in CHECKER.validate(policy)
+            )
+        )
 
 
 if __name__ == "__main__":

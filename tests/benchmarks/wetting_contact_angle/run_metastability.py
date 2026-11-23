@@ -26,8 +26,12 @@ INITS = (70.0, 110.0)
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--fw", type=float, default=0.51,
-                    help="wall fraction to probe (default sits between the 70/90 deg targets)")
+    ap.add_argument(
+        "--fw",
+        type=float,
+        default=0.51,
+        help="wall fraction to probe (default sits between the 70/90 deg targets)",
+    )
     ap.add_argument("--grid", default="coarse", choices=[g.name for g in wb.GRIDS])
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--out", default=str(HERE / "results" / "cases"))
@@ -37,13 +41,23 @@ def main(argv=None) -> int:
     outdir.mkdir(parents=True, exist_ok=True)
     records = []
     for init in INITS:
-        rec = wb.run_case(init, grid, wall_fraction=args.fw, law="metastability",
-                          init_deg=init, threads=args.threads, keep_points=True)
+        rec = wb.run_case(
+            init,
+            grid,
+            wall_fraction=args.fw,
+            law="metastability",
+            init_deg=init,
+            threads=args.threads,
+            keep_points=True,
+        )
         records.append(rec)
         path = outdir / f"c_{args.grid}_init{int(init)}.json"
         path.write_text(json.dumps(rec, indent=1) + "\n")
-        print(f"init={init:5.1f} f_w={args.fw:.3f} -> theta={rec['theta_measured']:.2f} "
-              f"status={rec['status']} drift={rec['drift_deg']:.3f}", flush=True)
+        print(
+            f"init={init:5.1f} f_w={args.fw:.3f} -> theta={rec['theta_measured']:.2f} "
+            f"status={rec['status']} drift={rec['drift_deg']:.3f}",
+            flush=True,
+        )
     finite = [r["theta_measured"] for r in records]
     print(f"split = {abs(finite[0] - finite[1]):.2f} deg between the two initial caps")
     return 0

@@ -123,14 +123,24 @@ def operators(M: int, a: float):
     cols: List[int] = []
     vals: List[float] = []
     # node 0 (wall): 2 psi_1 / h^2  -> column 0 (psi_1) is local index 0
-    rows.append(0); cols.append(0); vals.append(2.0 / h**2)
+    rows.append(0)
+    cols.append(0)
+    vals.append(2.0 / h**2)
     for i in range(1, M + 1):
-        rows.append(i); cols.append(i - 1); vals.append(-2.0 / h**2 - a2)
+        rows.append(i)
+        cols.append(i - 1)
+        vals.append(-2.0 / h**2 - a2)
         if i - 1 >= 1:  # psi_{i-1} is interior (node i-1 >= 1)
-            rows.append(i); cols.append(i - 2); vals.append(1.0 / h**2)
+            rows.append(i)
+            cols.append(i - 2)
+            vals.append(1.0 / h**2)
         if i + 1 <= M:  # psi_{i+1} interior
-            rows.append(i); cols.append(i); vals.append(1.0 / h**2)
-    rows.append(M + 1); cols.append(M - 1); vals.append(2.0 / h**2)
+            rows.append(i)
+            cols.append(i)
+            vals.append(1.0 / h**2)
+    rows.append(M + 1)
+    cols.append(M - 1)
+    vals.append(2.0 / h**2)
     E = csr_matrix((vals, (rows, cols)), shape=(M + 2, M))
 
     # D2 applied to a full node vector (0..M+1); Dirichlet for theta handled by E

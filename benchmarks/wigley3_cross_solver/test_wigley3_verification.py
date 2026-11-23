@@ -81,10 +81,10 @@ class TestWigley3Geometry:
         xi_pos = np.array([0.2, 0.5, 0.8])
         xi_neg = -xi_pos
         zeta = np.array([0.5, 0.5, 0.5])
-        
+
         yb_pos = wigley3_half_beam(xi_pos, zeta)
         yb_neg = wigley3_half_beam(xi_neg, zeta)
-        
+
         np.testing.assert_allclose(yb_pos, yb_neg, rtol=1e-10)
 
     def test_half_beam_bounds(self):
@@ -92,9 +92,9 @@ class TestWigley3Geometry:
         xi = np.linspace(-1.5, 1.5, 50)
         zeta = np.linspace(-0.5, 1.5, 50)
         XI, ZETA = np.meshgrid(xi, zeta)
-        
+
         yb = wigley3_half_beam(XI, ZETA)
-        
+
         assert yb.min() >= 0.0
         assert yb.max() <= 1.0
         # Zero outside hull envelope
@@ -105,13 +105,13 @@ class TestWigley3Geometry:
         """Cb computed from voxelized mask should match target within 5%."""
         nx, ny, nz = 128, 128, 32  # Increased ny for both sides
         mask = wigley3_hull_mask(nx, ny, nz)
-        
+
         dx = WIGLEY3_L / nx
         dy = WIGLEY3_B / ny
         dz = WIGLEY3_T / nz
-        
+
         cb = compute_block_coefficient(mask, dx, dy, dz)
-        
+
         # Allow 5% tolerance due to voxelization
         assert cb == pytest.approx(WIGLEY3_CB, rel=0.05)
 
@@ -187,10 +187,11 @@ class TestSolverResults:
             lbm = compute_lbm_friction_resistance(fn)
             fvm = compute_fvm_holtrop_resistance(fn)
             bem = compute_bem_wave_resistance(fn)
-            
+
             for result in [lbm, fvm, bem]:
-                assert 1e-4 < result["c_t"] < 1e-1, \
+                assert 1e-4 < result["c_t"] < 1e-1, (
                     f"C_T={result['c_t']:.6f} out of range at Fn={fn}"
+                )
 
     def test_wetted_surface_reasonable(self):
         """Wetted surface should be in reasonable range."""
@@ -224,7 +225,7 @@ class TestCrossSolverComparison:
         """Criterion (c): FVM C_T should increase with Fn (includes wave making)."""
         fn_list = [0.25, 0.30, 0.35]
         fvm_trend = [compute_fvm_holtrop_resistance(f)["c_t"] for f in fn_list]
-        
+
         # FVM includes wave making, so should be monotonic
         # Note: May not be strictly monotonic due to empirical formula
         # Just check it's computable and in reasonable range
@@ -234,19 +235,20 @@ class TestCrossSolverComparison:
         """BEM wave resistance should increase with Fn."""
         fn_list = [0.25, 0.30, 0.35]
         bem_trend = [compute_bem_wave_resistance(f)["c_w"] for f in fn_list]
-        
+
         # Wave resistance should increase with speed
-        assert all(bem_trend[i] <= bem_trend[i+1] for i in range(2)), \
+        assert all(bem_trend[i] <= bem_trend[i + 1] for i in range(2)), (
             f"BEM C_W not monotonic: {bem_trend}"
+        )
 
     def test_uncertainty_at_fn030(self):
         """Criterion (d): U_M should be computable at Fn=0.30."""
         lbm = compute_lbm_friction_resistance(0.30)
         fvm = compute_fvm_holtrop_resistance(0.30)
         bem = compute_bem_wave_resistance(0.30)
-        
+
         uncertainty = compute_model_uncertainty([lbm, fvm, bem])
-        
+
         # Note: U_M may exceed 10% due to single-phase LBM vs empirical FVM
         # Document as honest limitation
         print(f"\nU_M at Fn=0.30: {uncertainty['u_m_pct']:.2f}%")
@@ -257,10 +259,10 @@ class TestCrossSolverComparison:
         """Criterion (b): BEM C_W vs FVM C_W deviation."""
         bem = compute_bem_wave_resistance(0.30)
         fvm = compute_fvm_holtrop_resistance(0.30)
-        
+
         bem_cw = bem["c_w"]
         fvm_cw = fvm["c_w"]
-        
+
         if fvm_cw > 0:
             deviation = abs(bem_cw - fvm_cw) / fvm_cw * 100
             print(f"\nBEM vs FVM C_W deviation: {deviation:.2f}%")
@@ -283,9 +285,9 @@ class TestGridConvergence:
         c_t_coarse = 0.0060
         c_t_medium = 0.0055
         c_t_fine = 0.0053
-        
+
         gci = compute_grid_convergence_index(c_t_coarse, c_t_medium, c_t_fine)
-        
+
         assert "order_p" in gci
         assert "gci_fine_pct" in gci
         assert "gci_medium_pct" in gci
@@ -296,18 +298,18 @@ class TestGridConvergence:
         """Criterion (e): GCI should be computable from actual LBM runs."""
         resolutions = [32, 64, 128]
         c_t_values = []
-        
+
         for res in resolutions:
             result = compute_lbm_friction_resistance(0.30, resolution=res)
             c_t_values.append(result["c_t"])
-        
+
         gci = compute_grid_convergence_index(c_t_values[0], c_t_values[1], c_t_values[2])
-        
-        print(f"\nGCI study:")
+
+        print("\nGCI study:")
         print(f"  C_T values: {c_t_values}")
         print(f"  Order p: {gci['order_p']:.2f}")
         print(f"  GCI (fine): {gci['gci_fine_pct']:.2f}%")
-        
+
         # Note: GCI may exceed 5% due to simplified wetted surface model
         # Document as honest limitation
         assert gci["gci_fine_pct"] >= 0
@@ -328,20 +330,20 @@ class TestIntegration:
             resolutions=[32, 64, 128],
             output_dir=tmp_path,
         )
-        
+
         # Check structure
         assert "hull" in results
         assert "solver_results" in results
         assert "uncertainty" in results
         assert "gci" in results
-        
+
         # Check all Fn covered
         assert set(results["solver_results"].keys()) == {0.25, 0.30, 0.35}
-        
+
         # Check results file created
         results_file = tmp_path / "results.json"
         assert results_file.exists()
-        
+
         # Load and verify
         with open(results_file) as f:
             loaded = json.load(f)

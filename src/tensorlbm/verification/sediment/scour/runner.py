@@ -51,8 +51,13 @@ def gci_study(values: list[float], ratios: list[float], p_assumed: float = 2.0) 
     if not (0.5 <= p <= 4.0):
         p = p_assumed
     gci_fine = 1.25 * abs(eps) / (r21**p - 1.0) if r21 > 1.0 else float("nan")
-    return {"values": [f3, f2, f1], "refinement_ratios": [r32, r21], "observed_order": p,
-            "eps_fine": eps, "gci_fine": gci_fine}
+    return {
+        "values": [f3, f2, f1],
+        "refinement_ratios": [r32, r21],
+        "observed_order": p,
+        "eps_fine": eps,
+        "gci_fine": gci_fine,
+    }
 
 
 def run_all(
@@ -132,7 +137,7 @@ def run_all(
             "threshold": 0.15,
             "pass": bool(shields["theta_cr_deviation"] < 0.15),
             "note": "theta_cr(d=0.2 mm) via the Soulsby-Whitehouse parameterisation of "
-                    "the Shields curve, with u_* from the LBM momentum balance",
+            "the Shields curve, with u_* from the LBM momentum balance",
         },
         "C2_rouse": {
             "value": rouse["deviation_lpt"],
@@ -140,8 +145,8 @@ def run_all(
             "threshold": 0.20,
             "pass": bool(rouse["deviation_lpt"] < 0.20),
             "note": "max relative deviation of the Lagrangian Rouse profile from the "
-                    "closed form over the comparison window; the finite-volume solve "
-                    "gives the discretisation error separately",
+            "closed form over the comparison window; the finite-volume solve "
+            "gives the discretisation error separately",
         },
         "C3_scour_depth": {
             "value": zs,
@@ -152,15 +157,15 @@ def run_all(
             "converged": primary["converged"],
             "cap_hit": primary["max_scour_cap_hit"],
             "note": "2-D depth-averaged LBM+Exner; no finite equilibrium is reached "
-                    "(see honest-FAIL note) so the value is a lower bound set by the "
-                    "run-time cap",
+            "(see honest-FAIL note) so the value is a lower bound set by the "
+            "run-time cap",
         },
         "C4_mass_balance": {
             "value": max(r["mass_balance_rel_error"] for r in scour_runs),
             "threshold": 1e-4,
             "pass": bool(max(r["mass_balance_rel_error"] for r in scour_runs) < 1e-4),
             "note": "discrete Exner update vs the net face-flux integral "
-                    "(telescoping check, all morphodynamic cycles)",
+            "(telescoping check, all morphodynamic cycles)",
         },
         "C5_grid_convergence": {
             "value": gci.get("gci_fine"),
@@ -168,7 +173,7 @@ def run_all(
             "pass": bool(gci.get("gci_fine") is not None and gci["gci_fine"] < 0.10),
             "detail": gci,
             "note": "GCI on z_s/D over three grids; meaningful only because the "
-                    "8-cycle state is before the runaway, see the report",
+            "8-cycle state is before the runaway, see the report",
         },
         "C6_json_output": {
             "value": ["shields_curve", "rouse_profile", "scour_depth", "mass_balance"],
@@ -190,10 +195,15 @@ def run_all(
         "scour_depth": {
             "primary": primary,
             "by_grid": [
-                {"cells_per_D": cpd, "grid": r["parameters"]["grid"],
-                 "z_s_over_D": r["z_s_over_D"], "converged": r["converged"],
-                 "cap_hit": r["max_scour_cap_hit"], "history": r["history"],
-                 "mass_balance_rel_error": r["mass_balance_rel_error"]}
+                {
+                    "cells_per_D": cpd,
+                    "grid": r["parameters"]["grid"],
+                    "z_s_over_D": r["z_s_over_D"],
+                    "converged": r["converged"],
+                    "cap_hit": r["max_scour_cap_hit"],
+                    "history": r["history"],
+                    "mass_balance_rel_error": r["mass_balance_rel_error"],
+                }
                 for cpd, r in zip(levels, scour_runs)
             ],
             "no_depth_feedback": {
@@ -206,7 +216,7 @@ def run_all(
         "mass_balance": {
             "rel_error": criteria["C4_mass_balance"]["value"],
             "note": "sum(dz_b) matches the net flux integral to round-off because the "
-                    "face fluxes are shared between the update and the accounting",
+            "face fluxes are shared between the update and the accounting",
         },
     }
     if out_dir is not None:
@@ -218,12 +228,8 @@ def write_artifacts(results: dict, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     fig_dir = out / "figures"
     fig_dir.mkdir(exist_ok=True)
-    (out / "case.json").write_text(
-        json.dumps(_case_only(results), indent=1), encoding="utf-8"
-    )
-    (out / "results.json").write_text(
-        json.dumps(_strip_heavy(results), indent=1), encoding="utf-8"
-    )
+    (out / "case.json").write_text(json.dumps(_case_only(results), indent=1), encoding="utf-8")
+    (out / "results.json").write_text(json.dumps(_strip_heavy(results), indent=1), encoding="utf-8")
     try:
         make_figures(results, fig_dir)
     except Exception as exc:  # pragma: no cover - plotting must never gate the run
@@ -238,8 +244,14 @@ def _case_only(results: dict) -> dict:
         "rouse_parameters": results["rouse_profile"]["parameters"],
         "scour_parameters": results["scour_depth"]["primary"]["parameters"],
         "scour_grid_levels": [g["cells_per_D"] for g in results["scour_depth"]["by_grid"]],
-        "sediment": {"d_m": 2.0e-4, "rho_s": 2650.0, "rho_f": 1000.0, "nu": 1.0e-6,
-                     "porosity": 0.4, "repose_deg": 32.0},
+        "sediment": {
+            "d_m": 2.0e-4,
+            "rho_s": 2650.0,
+            "rho_f": 1000.0,
+            "nu": 1.0e-6,
+            "porosity": 0.4,
+            "repose_deg": 32.0,
+        },
         "references": {
             "shields": "Shields (1936); Soulsby & Whitehouse (1991) fit; Soulsby (1997) eq. 4.14",
             "rouse": "Rouse (1937)",
@@ -256,13 +268,14 @@ def _strip_heavy(results: dict) -> dict:
     keep_scour = {}
     for key, val in results["scour_depth"].items():
         if key in ("primary", "no_depth_feedback"):
-            v = {k: x for k, x in val.items() if k not in ("bed", "u_mean_field", "tau_pa", "pile_mask")}
+            v = {
+                k: x
+                for k, x in val.items()
+                if k not in ("bed", "u_mean_field", "tau_pa", "pile_mask")
+            }
             keep_scour[key] = v
         elif key == "by_grid":
-            keep_scour[key] = [
-                {k: x for k, x in g.items() if k not in ("bed",)}
-                for g in val
-            ]
+            keep_scour[key] = [{k: x for k, x in g.items() if k not in ("bed",)} for g in val]
         else:
             keep_scour[key] = val
     out = dict(results)
@@ -281,32 +294,64 @@ def make_figures(results: dict, fig_dir: Path) -> list[str]:
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
     sc = results["shields_curve"]
     ax = axes[0]
-    ax.loglog(sc["shields_curve"]["d_star"], sc["shields_curve"]["theta_cr"], "-",
-              label="Soulsby-Whitehouse fit (this module)")
-    ax.loglog(sc["shields_curve"]["digitised_d_star"], sc["shields_curve"]["digitised_theta_cr"],
-              "o", mfc="none", label="Shields (1936) digitised readings")
+    ax.loglog(
+        sc["shields_curve"]["d_star"],
+        sc["shields_curve"]["theta_cr"],
+        "-",
+        label="Soulsby-Whitehouse fit (this module)",
+    )
+    ax.loglog(
+        sc["shields_curve"]["digitised_d_star"],
+        sc["shields_curve"]["digitised_theta_cr"],
+        "o",
+        mfc="none",
+        label="Shields (1936) digitised readings",
+    )
     d02 = sc["parameters"]["d_star"]
-    ax.plot([d02], [sc["theta_cr_model"]], "r*", ms=14,
-            label=f"d=0.2 mm: theta_cr={sc['theta_cr_model']:.4f}")
-    ax.axhline(sc["theta_cr_classical"], color="k", ls=":", lw=1,
-               label=f"classical 0.045")
-    ax.set_xlabel("D* [-]"); ax.set_ylabel(r"$\theta_{cr}$ [-]")
+    ax.plot(
+        [d02],
+        [sc["theta_cr_model"]],
+        "r*",
+        ms=14,
+        label=f"d=0.2 mm: theta_cr={sc['theta_cr_model']:.4f}",
+    )
+    ax.axhline(sc["theta_cr_classical"], color="k", ls=":", lw=1, label=f"classical 0.045")
+    ax.set_xlabel("D* [-]")
+    ax.set_ylabel(r"$\theta_{cr}$ [-]")
     ax.set_title("(a) Shields threshold")
-    ax.legend(fontsize=7); ax.grid(alpha=0.3, which="both")
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3, which="both")
 
     rp = results["rouse_profile"]["profile"]
     ax = axes[1]
     zz = np.array(rp["z_over_h"])
     ax.semilogy(rp["C_analytic"], zz, "-", label="Rouse (1937) closed form")
-    ax.semilogy(rp["C_fv"], zz, "--", label=f"FV advection-diffusion (dev {results['rouse_profile']['deviation_fv']*100:.1f} %)")
-    ax.semilogy(rp["C_lpt"], zz, "o", ms=3,
-                label=f"Lagrangian grains (dev {results['rouse_profile']['deviation_lpt']*100:.1f} %)")
-    ax.set_xlabel("C / C_a [-]"); ax.set_ylabel("z / h [-]")
-    ax.set_title(f"(b) Rouse profile, Z={results['rouse_profile']['parameters']['rouse_number']:.2f}")
-    ax.set_ylim(0, 1); ax.legend(fontsize=7); ax.grid(alpha=0.3, which="both")
+    ax.semilogy(
+        rp["C_fv"],
+        zz,
+        "--",
+        label=f"FV advection-diffusion (dev {results['rouse_profile']['deviation_fv'] * 100:.1f} %)",
+    )
+    ax.semilogy(
+        rp["C_lpt"],
+        zz,
+        "o",
+        ms=3,
+        label=f"Lagrangian grains (dev {results['rouse_profile']['deviation_lpt'] * 100:.1f} %)",
+    )
+    ax.set_xlabel("C / C_a [-]")
+    ax.set_ylabel("z / h [-]")
+    ax.set_title(
+        f"(b) Rouse profile, Z={results['rouse_profile']['parameters']['rouse_number']:.2f}"
+    )
+    ax.set_ylim(0, 1)
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3, which="both")
     fig.tight_layout()
     p1 = fig_dir / "shields_rouse.png"
-    fig.savefig(p1, dpi=140); plt.close(fig); made.append(str(p1))
+    fig.savefig(p1, dpi=140)
+    plt.close(fig)
+    made.append(str(p1))
 
     # ---- figure 2: scour history + bed map -------------------------------
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
@@ -316,20 +361,25 @@ def make_figures(results: dict, fig_dir: Path) -> list[str]:
         ax.plot(np.arange(1, hist.size + 1), hist, "o-", ms=3, label=f"{g['cells_per_D']} cells/D")
     lo, hi = ZS_D_BAND
     ax.axhspan(lo, hi, color="g", alpha=0.15, label="Sumer & Fredsoe (2002) band")
-    ax.set_xlabel("morphodynamic cycle"); ax.set_ylabel(r"$z_s/D$ [-]")
+    ax.set_xlabel("morphodynamic cycle")
+    ax.set_ylabel(r"$z_s/D$ [-]")
     ax.set_title("(c) Scour depth history (2-D depth-averaged)")
-    ax.legend(fontsize=7); ax.grid(alpha=0.3)
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.3)
 
     ax = axes[1]
     bed = np.array(results["scour_depth"]["primary"]["bed"])
     D = results["scour_depth"]["primary"]["parameters"]["D_m"]
     im = ax.imshow((bed / D).T, origin="lower", cmap="viridis", aspect="auto")
-    ax.set_xlabel("x [cells]"); ax.set_ylabel("y [cells]")
+    ax.set_xlabel("x [cells]")
+    ax.set_ylabel("y [cells]")
     ax.set_title("(d) Bed elevation change $z_b/D$ (negative = scour)")
     fig.colorbar(im, ax=ax, label="$z_b/D$")
     fig.tight_layout()
     p2 = fig_dir / "scour.png"
-    fig.savefig(p2, dpi=140); plt.close(fig); made.append(str(p2))
+    fig.savefig(p2, dpi=140)
+    plt.close(fig)
+    made.append(str(p2))
     return made
 
 

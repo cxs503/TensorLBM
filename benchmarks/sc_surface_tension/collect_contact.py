@@ -4,6 +4,7 @@
 No number is typed in: each row is parsed from the probe's own JSON line and
 re-emitted with its calibration/hold-out role attached.
 """
+
 from __future__ import annotations
 
 import glob
@@ -24,7 +25,7 @@ def main() -> int:
         for line in Path(f).read_text().splitlines():
             if not line.startswith("RESULT "):
                 continue
-            d = json.loads(line[len("RESULT "):])
+            d = json.loads(line[len("RESULT ") :])
             rho_w = round(float(d["rho_w"]), 3)
             d["kind"] = "cal" if rho_w in CAL else ("holdout" if rho_w in HOLD else "other")
             # the probe stored the *supplementary* angle (old estimator convention
@@ -39,8 +40,10 @@ def main() -> int:
     (OUT / "contact_sweep_rows.json").write_text(json.dumps(rows, indent=1))
     print(f"collected {len(rows)} rows")
     for d in rows:
-        print(f"  rho_w={d['rho_w']:.3f} kind={d['kind']} young={d['theta_young_deg']:.1f} "
-              f"mask={d['theta_mask_deg']} status={d['status_mask']}")
+        print(
+            f"  rho_w={d['rho_w']:.3f} kind={d['kind']} young={d['theta_young_deg']:.1f} "
+            f"mask={d['theta_mask_deg']} status={d['status_mask']}"
+        )
     return 0
 
 

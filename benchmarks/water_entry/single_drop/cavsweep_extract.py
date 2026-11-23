@@ -2,7 +2,12 @@
 """DE-X-CAVSWEEP: per-arm extraction. Reads local copies of /tmp/cavsweep/<arm>.json,
 emits one summary row per arm. No interpolation, no resurrection: dead arms
 report their death facts as-is."""
-import json, glob, os, sys
+
+import json
+import glob
+import os
+import sys
+
 
 def extract(path):
     d = json.load(open(path))
@@ -23,8 +28,11 @@ def extract(path):
         "t_end_ms": h[-1]["time_ms"] if h else None,
     }
     if h:
-        depths = [(x["depth_over_D"], x["time_ms"], x["step"])
-                  for x in h if x.get("depth_over_D") is not None]
+        depths = [
+            (x["depth_over_D"], x["time_ms"], x["step"])
+            for x in h
+            if x.get("depth_over_D") is not None
+        ]
         if depths:
             pk = max(depths, key=lambda t: t[0])
             row["peak_D"] = pk[0]
@@ -39,11 +47,14 @@ def extract(path):
         row["svm_keys"] = list(svm.keys()) if isinstance(svm, dict) else type(svm).__name__
     return row
 
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         pat = sys.argv[1]
     else:
-        d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "runs", "cavsweep")
+        d = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "runs", "cavsweep"
+        )
         pat = os.path.join(os.path.abspath(d), "*.json")
     rows = [extract(f) for f in sorted(glob.glob(pat))]
     for r in rows:

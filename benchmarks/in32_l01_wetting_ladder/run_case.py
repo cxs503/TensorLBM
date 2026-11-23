@@ -46,11 +46,16 @@ def main() -> int:
     elif args.case == "laplace":
         res = L.laplace(sigma=args.sigma or 0.02, steps=args.steps or 4000)
     elif args.case == "contact":
-        res = L.contact(90.0 if args.theta is None else args.theta, sigma=args.sigma or 0.02,
-                        steps=args.steps or 3000)
+        res = L.contact(
+            90.0 if args.theta is None else args.theta,
+            sigma=args.sigma or 0.02,
+            steps=args.steps or 3000,
+        )
     elif args.case == "jurin":
         # theta is a required choice for Jurin (a neutral wall has zero drive)
-        res = L.jurin(theta_deg=60.0 if args.theta is None else args.theta, steps=args.steps or 6000)
+        res = L.jurin(
+            theta_deg=60.0 if args.theta is None else args.theta, steps=args.steps or 6000
+        )
     else:
         res = L.lamb(sigma=args.sigma or 0.06, steps=args.steps or 5000)
 

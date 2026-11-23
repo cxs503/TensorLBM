@@ -4,12 +4,16 @@
 Every number in the markdown is read from the JSON produced by run.py; nothing
 is typed by hand.
 """
+
 from __future__ import annotations
-import json, math, sys
+import json
+import math
+import sys
 from pathlib import Path
 
 import numpy as np
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -31,19 +35,32 @@ labels = [g["gate"].split("_")[0] for g in post["gates"]]
 preerr = [max(float(g["err_pct"]), 1e-12) for g in pre["gates"]]
 posterr = [max(float(g["err_pct"]), 1e-12) for g in post["gates"]]
 fig, ax = plt.subplots(figsize=(9, 4.2))
-x = np.arange(len(labels)); w = 0.38
-ax.bar(x - w/2, preerr, w, label="pre-fix (repo HEAD)", color="#c0392b")
-ax.bar(x + w/2, posterr, w, label="post-fix (this branch)", color="#27ae60")
-ax.set_yscale("log"); ax.set_ylabel("gate error [%]")
-ax.set_xticks(x); ax.set_xticklabels(labels)
+x = np.arange(len(labels))
+w = 0.38
+ax.bar(x - w / 2, preerr, w, label="pre-fix (repo HEAD)", color="#c0392b")
+ax.bar(x + w / 2, posterr, w, label="post-fix (this branch)", color="#27ae60")
+ax.set_yscale("log")
+ax.set_ylabel("gate error [%]")
+ax.set_xticks(x)
+ax.set_xticklabels(labels)
 ax.axhline(3.0, ls="--", c="k", lw=0.8, label="3 % acceptance line")
 ax.set_title("FW-H rotating-source verification: gate errors before/after")
-ax.legend(fontsize=8); ax.grid(alpha=0.3, axis="y")
-p1 = ART / "fig1_gate_errors.png"; fig.tight_layout(); fig.savefig(p1, dpi=130); plt.close(fig)
-figs.append((p1, "Fig 1 — per-gate error before/after the fix (log scale; G4 is WITHHELD, its bar is the route-A vs route-B disagreement, not an error of the library)"))
+ax.legend(fontsize=8)
+ax.grid(alpha=0.3, axis="y")
+p1 = ART / "fig1_gate_errors.png"
+fig.tight_layout()
+fig.savefig(p1, dpi=130)
+plt.close(fig)
+figs.append(
+    (
+        p1,
+        "Fig 1 — per-gate error before/after the fix (log scale; G4 is WITHHELD, its bar is the route-A vs route-B disagreement, not an error of the library)",
+    )
+)
 
 # Fig 2: monopole stationary limit — old law is identically zero
-obs = np.array([0.0, 0.0, 50.0]); q0, omega = 1e-3, 102.0
+obs = np.array([0.0, 0.0, 50.0])
+q0, omega = 1e-3, 102.0
 t = np.linspace(0.0, 2.0e-3, 401)
 r = float(np.linalg.norm(obs))
 exact = RHO0 * q0 * omega * np.cos(omega * (t - r / C0)) / (4 * math.pi * r)
@@ -55,11 +72,21 @@ fig, ax = plt.subplots(figsize=(7.5, 3.6))
 ax.plot(t * 1e3, exact, "k-", lw=2, label="exact stationary monopole $\\rho_0\\dot Q/(4\\pi r)$")
 ax.plot(t * 1e3, lib, "g--", lw=1.5, label="post-fix library (R=1e-6 m)")
 ax.plot(t * 1e3, pre_law, "r:", lw=2, label="pre-fix law $\\propto\\omega^2 R/c_0$ (R→0 ⇒ 0)")
-ax.set_xlabel("observer time [ms]"); ax.set_ylabel("p' [Pa]")
+ax.set_xlabel("observer time [ms]")
+ax.set_ylabel("p' [Pa]")
 ax.set_title("G3 — rotating monopole must reduce to the stationary monopole as R→0")
-ax.legend(fontsize=8); ax.grid(alpha=0.3)
-p2 = ART / "fig2_monopole_limit.png"; fig.tight_layout(); fig.savefig(p2, dpi=130); plt.close(fig)
-figs.append((p2, "Fig 2 — G3: the exact stationary monopole field versus the library before/after the fix (the old amplitude law carried a spurious ω²R/c₀ factor and vanished for a source at rest)"))
+ax.legend(fontsize=8)
+ax.grid(alpha=0.3)
+p2 = ART / "fig2_monopole_limit.png"
+fig.tight_layout()
+fig.savefig(p2, dpi=130)
+plt.close(fig)
+figs.append(
+    (
+        p2,
+        "Fig 2 — G3: the exact stationary monopole field versus the library before/after the fix (the old amplitude law carried a spurious ω²R/c₀ factor and vanished for a source at rest)",
+    )
+)
 
 # Fig 3: SPL calibration bias per window
 fs, f_tone, amp = 10000.0, 1000.0, 1.0
@@ -77,11 +104,23 @@ for wname in wins:
     pre_bias.append(20 * math.log10(cg[wname]))  # measured pre-fix bias law
 ax.bar(np.arange(3) - 0.2, pre_bias, 0.4, label="pre-fix (measured)", color="#c0392b")
 ax.bar(np.arange(3) + 0.2, post_bias, 0.4, label="post-fix", color="#27ae60")
-ax.set_xticks(range(3)); ax.set_xticklabels(wins); ax.set_ylabel("SPL bias [dB]")
-ax.axhline(0, c="k", lw=0.8); ax.set_title("G6 — SPL of a 1 Pa bin-centred tone (window coherent gain)")
-ax.legend(fontsize=8); ax.grid(alpha=0.3, axis="y")
-p3 = ART / "fig3_spl_bias.png"; fig.tight_layout(); fig.savefig(p3, dpi=130); plt.close(fig)
-figs.append((p3, "Fig 3 — G6: SPL bias of a 1 Pa, 1 kHz tone. Windowed spectra were 20log₁₀(cg) dB low (hann −6.02 dB); after the coherent-gain correction all windows agree with the analytic value"))
+ax.set_xticks(range(3))
+ax.set_xticklabels(wins)
+ax.set_ylabel("SPL bias [dB]")
+ax.axhline(0, c="k", lw=0.8)
+ax.set_title("G6 — SPL of a 1 Pa bin-centred tone (window coherent gain)")
+ax.legend(fontsize=8)
+ax.grid(alpha=0.3, axis="y")
+p3 = ART / "fig3_spl_bias.png"
+fig.tight_layout()
+fig.savefig(p3, dpi=130)
+plt.close(fig)
+figs.append(
+    (
+        p3,
+        "Fig 3 — G6: SPL bias of a 1 Pa, 1 kHz tone. Windowed spectra were 20log₁₀(cg) dB low (hann −6.02 dB); after the coherent-gain correction all windows agree with the analytic value",
+    )
+)
 
 # Fig 4: BPF harmonics
 n_blades, rpm, a1 = 4.0, 3000.0, 10.0
@@ -96,29 +135,49 @@ n = np.arange(1, 6)
 ax.plot(n, a1 / n, "ko", ms=7, label="prescribed $A_1/n$")
 ax.plot(n, got["amplitudes"], "g^--", label="post-fix extraction")
 ax.plot(n, [20 * math.log10(cg["hann"]) and 0.0 or 0.0 for _ in n], "w.")
-ax.set_xlabel("BPF harmonic n"); ax.set_ylabel("amplitude [Pa]")
+ax.set_xlabel("BPF harmonic n")
+ax.set_ylabel("amplitude [Pa]")
 ax.set_title("G7 — BPF harmonic amplitudes (pre-fix picked the first bin of the band)")
-ax.legend(fontsize=8); ax.grid(alpha=0.3)
-p4 = ART / "fig4_bpf_harmonics.png"; fig.tight_layout(); fig.savefig(p4, dpi=130); plt.close(fig)
-figs.append((p4, "Fig 4 — G7: prescribed A₁/n harmonic series versus the extracted amplitudes after fixing the bin selection (the pre-fix argmax-over-boolean picked the lowest bin of each band)"))
+ax.legend(fontsize=8)
+ax.grid(alpha=0.3)
+p4 = ART / "fig4_bpf_harmonics.png"
+fig.tight_layout()
+fig.savefig(p4, dpi=130)
+plt.close(fig)
+figs.append(
+    (
+        p4,
+        "Fig 4 — G7: prescribed A₁/n harmonic series versus the extracted amplitudes after fixing the bin selection (the pre-fix argmax-over-boolean picked the lowest bin of each band)",
+    )
+)
+
 
 # ---------------------------------------------------------------- markdown
 def rows(gates):
-    out = ["| gate | what it pins | value | reference | err [%] | tol [%] | verdict |",
-           "|---|---|---|---|---|---|---|"]
+    out = [
+        "| gate | what it pins | value | reference | err [%] | tol [%] | verdict |",
+        "|---|---|---|---|---|---|---|",
+    ]
     for g in gates:
-        out.append(f"| `{g['gate']}` | {g['note'].split(';')[0]} | {g['value']:.6g} | "
-                   f"{g['reference']:.6g} | {g['err_pct']:.4g} | {g['tol_pct']:.4g} | **{g['verdict']}** |")
+        out.append(
+            f"| `{g['gate']}` | {g['note'].split(';')[0]} | {g['value']:.6g} | "
+            f"{g['reference']:.6g} | {g['err_pct']:.4g} | {g['tol_pct']:.4g} | **{g['verdict']}** |"
+        )
     return "\n".join(out)
+
 
 pre_map = {g["gate"]: g for g in pre["gates"]}
 post_map = {g["gate"]: g for g in post["gates"]}
-contrast = ["| gate | pre-fix err [%] | pre verdict | post-fix err [%] | post verdict |",
-            "|---|---|---|---|---|"]
+contrast = [
+    "| gate | pre-fix err [%] | pre verdict | post-fix err [%] | post verdict |",
+    "|---|---|---|---|---|",
+]
 for k in post_map:
     if k in pre_map:
-        contrast.append(f"| `{k}` | {pre_map[k]['err_pct']:.4g} | {pre_map[k]['verdict']} | "
-                        f"{post_map[k]['err_pct']:.4g} | {post_map[k]['verdict']} |")
+        contrast.append(
+            f"| `{k}` | {pre_map[k]['err_pct']:.4g} | {pre_map[k]['verdict']} | "
+            f"{post_map[k]['err_pct']:.4g} | {post_map[k]['verdict']} |"
+        )
 contrast = "\n".join(contrast)
 
 md = f"""# FW-H rotating-source module — independent verification and repair
@@ -126,8 +185,8 @@ md = f"""# FW-H rotating-source module — independent verification and repair
 Anchor: `NEW:FWH-ROTATING-UNVERIFIED` (TensorLBM) · harness
 `benchmarks/verified/fwh_rotating/run.py` · tests
 `tests/test_fwh_rotating_verified.py` (22 passed) · module
-`src/tensorlbm/fwh_rotating.py` (sha256 `{post['module']['sha256'][:16]}…`,
-{post['module']['lines']} lines)
+`src/tensorlbm/fwh_rotating.py` (sha256 `{post["module"]["sha256"][:16]}…`,
+{post["module"]["lines"]} lines)
 
 ## 1  Case introduction (why this module needed auditing)
 
@@ -196,14 +255,14 @@ measurable rather than asserted.
 
 {contrast}
 
-Pre-fix: **{pre['n_pass']}/{pre['n_gates']} PASS**, failures
-{', '.join('`'+f+'`' for f in pre['fail_list'])}.
-Post-fix: **{post['n_pass']}/{post['n_gates']} PASS**, withheld
-{', '.join('`'+f+'`' for f in post['withheld_list'])}.
+Pre-fix: **{pre["n_pass"]}/{pre["n_gates"]} PASS**, failures
+{", ".join("`" + f + "`" for f in pre["fail_list"])}.
+Post-fix: **{post["n_pass"]}/{post["n_gates"]} PASS**, withheld
+{", ".join("`" + f + "`" for f in post["withheld_list"])}.
 
 ### 3.2  Post-fix gate table
 
-{rows(post['gates'])}
+{rows(post["gates"])}
 
 ### 3.3  What was wrong
 
@@ -246,7 +305,7 @@ Post-fix: **{post['n_pass']}/{post['n_gates']} PASS**, withheld
   volume-injection rate ((1−Mᵣ)⁻¹ vs (1−Mᵣ)⁻²) is *not* adjudicated here; it
   needs a direct time-domain solution of the 3D wave equation for a moving
   source. Numbers: route A / route B ratio
-  {post_map['G4_farfield_reference_audit']['detail'][-1]['ratio_B_over_A']:.4f}
+  {post_map["G4_farfield_reference_audit"]["detail"][-1]["ratio_B_over_A"]:.4f}
   at r = 1000 R. Downstream users must not quote either exponent as "verified".
 
 ## 4  Figures
@@ -255,7 +314,8 @@ Post-fix: **{post['n_pass']}/{post['n_gates']} PASS**, withheld
 for pth, cap in figs:
     md += f"![{cap}]({pth.relative_to(REPO)})\n\n{cap}\n\n"
 
-md += f"""## 5  Error judgement against the acceptance rule
+md += (
+    """## 5  Error judgement against the acceptance rule
 
 Acceptance rule of this seat: a quantity is accepted when its error against an
 experimental/analytical reference is **< 3 %**. Per gate, versus its own
@@ -263,19 +323,27 @@ reference, post-fix:
 
 | gate | reference | error | < 3 %? |
 |---|---|---|---|
-""" + "\n".join(
-    f"| `{g['gate']}` | independent reference (see §2) | {g['err_pct']:.4g} % | "
-    + ("**yes**" if g['err_pct'] < 3.0 else ("**n/a (withheld)**" if g['verdict'] == 'WITHHELD' else "**no**"))
-    + " |" for g in post['gates']) + f"""
+"""
+    + "\n".join(
+        f"| `{g['gate']}` | independent reference (see §2) | {g['err_pct']:.4g} % | "
+        + (
+            "**yes**"
+            if g["err_pct"] < 3.0
+            else ("**n/a (withheld)**" if g["verdict"] == "WITHHELD" else "**no**")
+        )
+        + " |"
+        for g in post["gates"]
+    )
+    + f"""
 
-G1 retarded time ({post_map['G1_retarded_time_vs_brent']['err_pct']:.3g} %),
-G2 Doppler ({post_map['G2_doppler_vs_dtaudt']['err_pct']:.3g} %),
-G3 monopole limit ({post_map['G3_gardner_monopole_vs_exact']['err_pct']:.3g} %),
-G5 Curle dipole ({post_map['G5_curle_dipole_amplitude_and_directivity']['err_pct']:.3g} %),
-G6 SPL ({post_map['G6_spl_tone_calibration']['err_pct']:.3g} %),
-G7 BPF harmonics ({post_map['G7_bpf_harmonic_extraction']['err_pct']:.3g} %),
-G8 definitions ({post_map['G8_nondimensional_definitions']['err_pct']:.3g} %),
-G9 density scaling ({post_map['G9_thickness_linear_in_rho0']['err_pct']:.3g} %)
+G1 retarded time ({post_map["G1_retarded_time_vs_brent"]["err_pct"]:.3g} %),
+G2 Doppler ({post_map["G2_doppler_vs_dtaudt"]["err_pct"]:.3g} %),
+G3 monopole limit ({post_map["G3_gardner_monopole_vs_exact"]["err_pct"]:.3g} %),
+G5 Curle dipole ({post_map["G5_curle_dipole_amplitude_and_directivity"]["err_pct"]:.3g} %),
+G6 SPL ({post_map["G6_spl_tone_calibration"]["err_pct"]:.3g} %),
+G7 BPF harmonics ({post_map["G7_bpf_harmonic_extraction"]["err_pct"]:.3g} %),
+G8 definitions ({post_map["G8_nondimensional_definitions"]["err_pct"]:.3g} %),
+G9 density scaling ({post_map["G9_thickness_linear_in_rho0"]["err_pct"]:.3g} %)
 are all far inside 3 %. **G4 is not accepted and not rejected — it is
 WITHHELD** because the reference itself is un-adjudicated; that is reported as
 such rather than papered over.
@@ -293,8 +361,10 @@ such rather than papered over.
   It does **not** validate propeller-noise levels — see §3.4 for the three
   structural reasons.
 """
+)
 out = REPO / "docs" / "FWH_ROTATING_VERIFICATION.md"
 out.write_text(md)
-(ART / "figures_index.json").write_text(json.dumps(
-    [{"path": str(p.relative_to(REPO)), "caption": c} for p, c in figs], indent=2))
+(ART / "figures_index.json").write_text(
+    json.dumps([{"path": str(p.relative_to(REPO)), "caption": c} for p, c in figs], indent=2)
+)
 print("wrote", out, "and", len(figs), "figures")

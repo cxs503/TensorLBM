@@ -29,14 +29,11 @@ def get_ib_stencil(
     marker_coords = jnp.asarray(marker_coords)
     if marker_coords.ndim != 2 or marker_coords.shape[1] != 3:
         raise ValueError(
-            "marker_coords must have shape (n_markers, 3), "
-            f"got {marker_coords.shape}."
+            f"marker_coords must have shape (n_markers, 3), got {marker_coords.shape}."
         )
 
     nx, ny, nz = grid_shape
-    stencil_offsets = jnp.arange(
-        -stencil_radius + 1, stencil_radius + 1, dtype=jnp.int32
-    )
+    stencil_offsets = jnp.arange(-stencil_radius + 1, stencil_radius + 1, dtype=jnp.int32)
     stencil_offset_x, stencil_offset_y, stencil_offset_z = jnp.meshgrid(
         stencil_offsets, stencil_offsets, stencil_offsets, indexing="ij"
     )

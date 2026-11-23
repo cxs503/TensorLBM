@@ -50,9 +50,18 @@ def main() -> int:
     # 1. static stratification
     t0 = time.perf_counter()
     r1 = run_stratified_probe(
-        64, 32, a.ratio, 1.0,
-        nu_a=a.nu, nu_b=a.nu, A=a.A, beta=a.beta,
-        steps=500, width=a.width, dev=dev, sample_every=100,
+        64,
+        32,
+        a.ratio,
+        1.0,
+        nu_a=a.nu,
+        nu_b=a.nu,
+        A=a.A,
+        beta=a.beta,
+        steps=500,
+        width=a.width,
+        dev=dev,
+        sample_every=100,
     )
     r1["wall_s"] = time.perf_counter() - t0
     out["stratified"] = r1
@@ -60,9 +69,18 @@ def main() -> int:
     # 2. static droplet
     t0 = time.perf_counter()
     r2 = run_droplet_probe(
-        64, 16.0, a.ratio, 1.0,
-        nu_a=a.nu, nu_b=a.nu, A=a.A, beta=a.beta,
-        steps=500, width=a.width, dev=dev, sample_every=100,
+        64,
+        16.0,
+        a.ratio,
+        1.0,
+        nu_a=a.nu,
+        nu_b=a.nu,
+        A=a.A,
+        beta=a.beta,
+        steps=500,
+        width=a.width,
+        dev=dev,
+        sample_every=100,
     )
     r2["wall_s"] = time.perf_counter() - t0
     out["droplet"] = r2
@@ -70,9 +88,18 @@ def main() -> int:
     # 3. coarse-band water entry
     t0 = time.perf_counter()
     r3 = run_water_entry(
-        20, a.ratio, 1.0,
-        nu_a=a.nu, nu_b=a.nu, A=a.A, beta=a.beta,
-        gy=1e-5, gap=1.0, steps=200, width=a.width, dev=dev,
+        20,
+        a.ratio,
+        1.0,
+        nu_a=a.nu,
+        nu_b=a.nu,
+        A=a.A,
+        beta=a.beta,
+        gy=1e-5,
+        gap=1.0,
+        steps=200,
+        width=a.width,
+        dev=dev,
     )
     r3["wall_s"] = time.perf_counter() - t0
     out["water_entry"] = r3
@@ -83,11 +110,13 @@ def main() -> int:
     # print a compact summary
     for name in ("stratified", "droplet", "water_entry"):
         r = out[name]
-        print(f"{name}: stable={r['stable']} nan={r.get('nan_step')} "
-              f"u_max={r.get('u_max', '-')} "
-              f"depth={r.get('max_depth_D', '-')} "
-              f"r_drift={r.get('radius_drift_rel', '-')} "
-              f"wall={r.get('wall_s', 0):.1f}s")
+        print(
+            f"{name}: stable={r['stable']} nan={r.get('nan_step')} "
+            f"u_max={r.get('u_max', '-')} "
+            f"depth={r.get('max_depth_D', '-')} "
+            f"r_drift={r.get('radius_drift_rel', '-')} "
+            f"wall={r.get('wall_s', 0):.1f}s"
+        )
     return 0
 
 

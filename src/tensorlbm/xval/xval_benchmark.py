@@ -51,37 +51,37 @@ from tensorlbm.xval.case_schema import CaseSchema, Physics, Discretisation, boot
 
 XVAL_CASES: dict[str, dict[str, float]] = {
     "poiseuille_water": {
-        "L": 1.0e-3,       # channel height [m]
-        "u_ref": 2.5e-3,   # max velocity [m/s]
-        "nu": 1.0e-6,      # water kinematic viscosity [m²/s]
-        "rho0": 998.0,     # water density [kg/m³]
+        "L": 1.0e-3,  # channel height [m]
+        "u_ref": 2.5e-3,  # max velocity [m/s]
+        "nu": 1.0e-6,  # water kinematic viscosity [m²/s]
+        "rho0": 998.0,  # water density [kg/m³]
         "nx": 48,
         "u_lb": 0.02,
         # Re = u*L/nu = 2.5, tau = 0.5 + 3*u_lb*nx/Re = 1.652
     },
     "cavity_air": {
-        "L": 0.1,          # cavity side [m]
-        "u_ref": 0.5,      # lid velocity [m/s]
-        "nu": 1.535e-5,    # air kinematic viscosity [m²/s]
-        "rho0": 1.1881,    # air density [kg/m³]
+        "L": 0.1,  # cavity side [m]
+        "u_ref": 0.5,  # lid velocity [m/s]
+        "nu": 1.535e-5,  # air kinematic viscosity [m²/s]
+        "rho0": 1.1881,  # air density [kg/m³]
         "nx": 64,
         "u_lb": 0.05,
         # Re = 3257, tau too low at nx=64; auto-fixed below
     },
     "taylor_green_oil": {
-        "L": 0.05,         # box size [m]
-        "u_ref": 0.01,     # initial amplitude [m/s]
-        "nu": 1.0e-4,      # oil kinematic viscosity [m²/s]
-        "rho0": 870.0,     # oil density [kg/m³]
+        "L": 0.05,  # box size [m]
+        "u_ref": 0.01,  # initial amplitude [m/s]
+        "nu": 1.0e-4,  # oil kinematic viscosity [m²/s]
+        "rho0": 870.0,  # oil density [kg/m³]
         "nx": 32,
         "u_lb": 0.04,
         # Re = 5, tau = 1.268
     },
     "channel_low_re": {
-        "L": 5.0e-3,       # channel height [m]
-        "u_ref": 1.0e-3,   # bulk velocity [m/s]
-        "nu": 5.0e-6,      # kinematic viscosity [m²/s]
-        "rho0": 998.0,     # water density [kg/m³]
+        "L": 5.0e-3,  # channel height [m]
+        "u_ref": 1.0e-3,  # bulk velocity [m/s]
+        "nu": 5.0e-6,  # kinematic viscosity [m²/s]
+        "rho0": 998.0,  # water density [kg/m³]
         "nx": 64,
         "u_lb": 0.03,
         # Re = 1, tau too high; auto-fixed below
@@ -95,8 +95,14 @@ def _check_case_viability(case: dict) -> dict[str, float]:
     nu_lb = case["u_lb"] * case["nx"] / re
     tau = 0.5 + 3.0 * nu_lb
     ma = case["u_lb"] * math.sqrt(3.0)
-    return {"Re": re, "nu_lb": nu_lb, "tau": tau, "Ma": ma,
-            "tau_ok": 0.51 <= tau <= 2.0, "ma_ok": ma < 0.1}
+    return {
+        "Re": re,
+        "nu_lb": nu_lb,
+        "tau": tau,
+        "Ma": ma,
+        "tau_ok": 0.51 <= tau <= 2.0,
+        "ma_ok": ma < 0.1,
+    }
 
 
 def _fix_cases():
@@ -158,6 +164,7 @@ def _make_lbt_converter(case: dict, bridge: LatticeBridge) -> LbtStyleConverter:
 # Comparison helpers
 # ---------------------------------------------------------------------------
 
+
 def _compare_roundtrip(
     bridge: LatticeBridge,
     lbt: LbtStyleConverter,
@@ -168,12 +175,12 @@ def _compare_roundtrip(
     then compute the relative difference.
     """
     test_values = {
-        "length": 1.0e-3,     # 1 mm
-        "velocity": 1.0e-2,   # 1 cm/s
-        "density": 1000.0,    # 1000 kg/m³
-        "time": 1.0,          # 1 s
-        "nu": 1.0e-6,         # 1e-6 m²/s
-        "pressure": 101325.0, # 1 atm
+        "length": 1.0e-3,  # 1 mm
+        "velocity": 1.0e-2,  # 1 cm/s
+        "density": 1000.0,  # 1000 kg/m³
+        "time": 1.0,  # 1 s
+        "nu": 1.0e-6,  # 1e-6 m²/s
+        "pressure": 101325.0,  # 1 atm
     }
 
     results = {}
@@ -270,27 +277,33 @@ def _compare_derived_quantities(
 
     results = {
         "dx": {
-            "bridge": dx_bridge, "lbt": dx_lbt,
+            "bridge": dx_bridge,
+            "lbt": dx_lbt,
             "rel_diff": abs(dx_bridge - dx_lbt) / abs(dx_bridge) if dx_bridge else 0.0,
         },
         "dt": {
-            "bridge": dt_bridge, "lbt": dt_lbt,
+            "bridge": dt_bridge,
+            "lbt": dt_lbt,
             "rel_diff": abs(dt_bridge - dt_lbt) / abs(dt_bridge) if dt_bridge else 0.0,
         },
         "nu_lb": {
-            "bridge": nu_lb_bridge, "lbt": nu_lb_lbt,
+            "bridge": nu_lb_bridge,
+            "lbt": nu_lb_lbt,
             "rel_diff": abs(nu_lb_bridge - nu_lb_lbt) / abs(nu_lb_bridge) if nu_lb_bridge else 0.0,
         },
         "tau": {
-            "bridge": tau_bridge, "lbt": tau_lbt,
+            "bridge": tau_bridge,
+            "lbt": tau_lbt,
             "rel_diff": abs(tau_bridge - tau_lbt) / abs(tau_bridge) if tau_bridge else 0.0,
         },
         "Ma": {
-            "bridge": ma_bridge, "lbt": ma_lbt,
+            "bridge": ma_bridge,
+            "lbt": ma_lbt,
             "rel_diff": abs(ma_bridge - ma_lbt) / abs(ma_bridge) if ma_bridge else 0.0,
         },
         "Re": {
-            "bridge": re_bridge, "lbt": re_lbt,
+            "bridge": re_bridge,
+            "lbt": re_lbt,
             "rel_diff": abs(re_bridge - re_lbt) / abs(re_bridge) if re_bridge else 0.0,
         },
     }
@@ -300,6 +313,7 @@ def _compare_derived_quantities(
 # ---------------------------------------------------------------------------
 # Schema-based validation
 # ---------------------------------------------------------------------------
+
 
 def _validate_schema_roundtrip(case_name: str, case: dict) -> dict[str, Any]:
     """Build a CaseSchema, bootstrap a bridge, and verify it matches direct bootstrap."""
@@ -337,6 +351,7 @@ def _validate_schema_roundtrip(case_name: str, case: dict) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Anchor cross-validation
 # ---------------------------------------------------------------------------
+
 
 def _anchor_xval(anchor_name: str, grid: int = 32) -> dict[str, Any]:
     """Run an analytic anchor and dimensionalise with both converters.
@@ -445,17 +460,22 @@ def _anchor_xval(anchor_name: str, grid: int = 32) -> dict[str, Any]:
 # Convergence / parameter sensitivity
 # ---------------------------------------------------------------------------
 
-def _grid_convergence_study(anchor_name: str, grids: tuple[int, ...] = (16, 32, 64)) -> dict[str, Any]:
+
+def _grid_convergence_study(
+    anchor_name: str, grids: tuple[int, ...] = (16, 32, 64)
+) -> dict[str, Any]:
     """Study how the anchor simulation error varies with grid resolution."""
     results = []
     for grid in grids:
         case = build_case(anchor_name, 0, grid)
         res = evaluate(case)
-        results.append({
-            "grid": grid,
-            "worst_rel_error": res["worst_rel_error"],
-            "passed": res["passed"],
-        })
+        results.append(
+            {
+                "grid": grid,
+                "worst_rel_error": res["worst_rel_error"],
+                "passed": res["passed"],
+            }
+        )
     return {"anchor": anchor_name, "grids": list(grids), "results": results}
 
 
@@ -470,13 +490,15 @@ def _u_lb_sensitivity(case_dict: dict) -> dict[str, Any]:
             bridge = _make_bridge(case)
             lbt = _make_lbt_converter(case, bridge)
             derived = _compare_derived_quantities(bridge, lbt, case)
-            results.append({
-                "u_lb": u_lb,
-                "tau": derived["tau"]["bridge"],
-                "Ma": derived["Ma"]["bridge"],
-                "max_rel_diff": max(v["rel_diff"] for v in derived.values()),
-                "passed": all(v["rel_diff"] < 1e-12 for v in derived.values()),
-            })
+            results.append(
+                {
+                    "u_lb": u_lb,
+                    "tau": derived["tau"]["bridge"],
+                    "Ma": derived["Ma"]["bridge"],
+                    "max_rel_diff": max(v["rel_diff"] for v in derived.values()),
+                    "passed": all(v["rel_diff"] < 1e-12 for v in derived.values()),
+                }
+            )
         except ValueError as e:
             results.append({"u_lb": u_lb, "error": str(e), "passed": False})
     return {"u_lb_values": u_lb_values, "results": results}
@@ -485,6 +507,7 @@ def _u_lb_sensitivity(case_dict: dict) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Main benchmark
 # ---------------------------------------------------------------------------
+
 
 def run_xval(
     *,
@@ -542,13 +565,8 @@ def run_xval(
     report["u_lb_sensitivity"] = _u_lb_sensitivity(first_case)
 
     # --- Summary ---
-    all_schema_pass = all(
-        report["cases"][n]["schema_validation"]["passed"]
-        for n in XVAL_CASES
-    )
-    all_anchor_pass = all(
-        report["anchor_xval"][a]["passed"] for a in ANCHORS
-    )
+    all_schema_pass = all(report["cases"][n]["schema_validation"]["passed"] for n in XVAL_CASES)
+    all_anchor_pass = all(report["anchor_xval"][a]["passed"] for a in ANCHORS)
 
     report["summary"] = {
         "max_cross_rel_diff": max_cross_diff,
@@ -556,11 +574,7 @@ def run_xval(
         "all_anchor_xval_pass": all_anchor_pass,
         "precision_threshold": 0.15,
         "machine_precision_threshold": 1e-12,
-        "overall_passed": bool(
-            max_cross_diff < 0.15
-            and all_schema_pass
-            and all_anchor_pass
-        ),
+        "overall_passed": bool(max_cross_diff < 0.15 and all_schema_pass and all_anchor_pass),
     }
 
     report["runtime_seconds"] = time.time() - t0
@@ -592,17 +606,23 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", type=Path, default=Path("artifacts/xval_lbt_converter"),
-                    help="output directory for report and artifacts")
+    ap.add_argument(
+        "--out",
+        type=Path,
+        default=Path("artifacts/xval_lbt_converter"),
+        help="output directory for report and artifacts",
+    )
     args = ap.parse_args(argv)
 
     report = run_xval(out_dir=args.out)
     s = report["summary"]
 
-    print(f"Cross-validation: TensorLBM LatticeBridge vs 2b-t/LB-t Converter")
-    print(f"=" * 70)
-    print(f"  max cross rel diff     : {s['max_cross_rel_diff']:.2e} "
-          f"(threshold < {s['precision_threshold']})")
+    print("Cross-validation: TensorLBM LatticeBridge vs 2b-t/LB-t Converter")
+    print("=" * 70)
+    print(
+        f"  max cross rel diff     : {s['max_cross_rel_diff']:.2e} "
+        f"(threshold < {s['precision_threshold']})"
+    )
     print(f"  schema roundtrip       : {'PASS' if s['all_schema_roundtrip_pass'] else 'FAIL'}")
     print(f"  anchor xval            : {'PASS' if s['all_anchor_xval_pass'] else 'FAIL'}")
     print(f"  OVERALL                : {'PASS' if s['overall_passed'] else 'FAIL'}")
@@ -615,34 +635,39 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n  [{name}] Re={viab['Re']:.1f} tau={viab['tau']:.3f} Ma={viab['Ma']:.4f}")
         for qty, vals in derived.items():
             status = "✓" if vals["rel_diff"] < 1e-12 else "✗"
-            print(f"    {qty:6s}: bridge={vals['bridge']:.6g}  lbt={vals['lbt']:.6g}  "
-                  f"diff={vals['rel_diff']:.2e} {status}")
+            print(
+                f"    {qty:6s}: bridge={vals['bridge']:.6g}  lbt={vals['lbt']:.6g}  "
+                f"diff={vals['rel_diff']:.2e} {status}"
+            )
 
     # Anchor details
-    print(f"\n  [Anchor XVAL]")
+    print("\n  [Anchor XVAL]")
     for anchor_name, adata in report["anchor_xval"].items():
         status = "✓" if adata["passed"] else "✗"
         sim_err = adata.get("anchor_sim_error", 0)
-        conv_diff = adata.get("converter_rel_diff",
-                              adata.get("rate_converter_rel_diff", 0))
-        print(f"    {anchor_name:13s}: sim_err={sim_err:.2e}  "
-              f"converter_diff={conv_diff:.2e}  {status}")
+        conv_diff = adata.get("converter_rel_diff", adata.get("rate_converter_rel_diff", 0))
+        print(
+            f"    {anchor_name:13s}: sim_err={sim_err:.2e}  "
+            f"converter_diff={conv_diff:.2e}  {status}"
+        )
 
     # Grid convergence
-    print(f"\n  [Grid Convergence]")
+    print("\n  [Grid Convergence]")
     for anchor_name, gc in report["grid_convergence"].items():
         vals = [r["worst_rel_error"] for r in gc["results"]]
         print(f"    {anchor_name:13s}: " + " -> ".join(f"{v:.2e}" for v in vals))
 
     # u_lb sensitivity
-    print(f"\n  [u_lb Sensitivity]")
+    print("\n  [u_lb Sensitivity]")
     for r in report["u_lb_sensitivity"]["results"]:
         if "error" in r:
             print(f"    u_lb={r['u_lb']:.2f}: SKIP ({r['error']})")
         else:
             status = "✓" if r["passed"] else "✗"
-            print(f"    u_lb={r['u_lb']:.2f}: tau={r['tau']:.3f} Ma={r['Ma']:.4f} "
-                  f"max_diff={r['max_rel_diff']:.2e} {status}")
+            print(
+                f"    u_lb={r['u_lb']:.2f}: tau={r['tau']:.3f} Ma={r['Ma']:.4f} "
+                f"max_diff={r['max_rel_diff']:.2e} {status}"
+            )
 
     return 0 if s["overall_passed"] else 1
 

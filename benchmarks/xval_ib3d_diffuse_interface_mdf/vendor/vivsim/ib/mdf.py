@@ -57,8 +57,6 @@ def multi_direct_forcing(
     )
 
     marker_reaction_force = -marker_force_total
-    grid_force = spread(
-        marker_force_total, grid_force_base, stencil_weights, stencil_indices
-    )
+    grid_force = spread(marker_force_total, grid_force_base, stencil_weights, stencil_indices)
 
     return grid_force, marker_reaction_force

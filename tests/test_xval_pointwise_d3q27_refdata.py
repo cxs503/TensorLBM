@@ -10,6 +10,7 @@ practice: any future change to ``collide_bgk27``, ``collide_trt27``,
 ``collide_mrt27``, ``collide_cumulant_geier_d3q27`` or ``stream27_roll`` that
 perturbs the operator beyond fp64 round-off fails here.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -68,12 +69,15 @@ def test_manifest_declares_all_gated_arms(bundle):
         assert manifest["arm_to_model"][arm] in manifest["models"]
 
 
-@pytest.mark.parametrize("arm", [
-    "A1_d3q27_bgk",
-    "A2_d3q27_trt",
-    "A3_d3q27_mrt_native",
-    "A4_d3q27_cumulant_geier",
-])
+@pytest.mark.parametrize(
+    "arm",
+    [
+        "A1_d3q27_bgk",
+        "A2_d3q27_trt",
+        "A3_d3q27_mrt_native",
+        "A4_d3q27_cumulant_geier",
+    ],
+)
 def test_arm_reproduces_frozen_reference(arm, bundle):
     """Replay the arm from the stored initial field and gate the worst step."""
     manifest, data = bundle

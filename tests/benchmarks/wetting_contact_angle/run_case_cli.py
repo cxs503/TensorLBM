@@ -25,9 +25,13 @@ import wetting_bench as wb  # noqa: E402
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--theta", type=float, required=True,
-                    help="prescribed angle (physical convention, deg); ignored for --law scan, "
-                         "where the initial cap is seeded from the Young angle of --fw")
+    ap.add_argument(
+        "--theta",
+        type=float,
+        required=True,
+        help="prescribed angle (physical convention, deg); ignored for --law scan, "
+        "where the initial cap is seeded from the Young angle of --fw",
+    )
     ap.add_argument("--grid", required=True, choices=[g.name for g in wb.GRIDS])
     ap.add_argument("--law", default="young", choices=["young", "scan", "calibrated"])
     ap.add_argument("--fw", type=float, default=None, help="wall fraction (overrides the law)")
@@ -45,14 +49,24 @@ def main(argv=None) -> int:
         psi_l, psi_v = wb._psi_pair()
         init = wb.theta_from_wall_fraction(args.fw, psi_l, psi_v)
         theta = init
-    rec = wb.run_case(theta, grid, wall_fraction=args.fw, law=args.law, init_deg=init,
-                      threads=args.threads, keep_points=True)
+    rec = wb.run_case(
+        theta,
+        grid,
+        wall_fraction=args.fw,
+        law=args.law,
+        init_deg=init,
+        threads=args.threads,
+        keep_points=True,
+    )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(rec, indent=1) + "\n")
-    print(f"[{rec['grid']:>6s}] law={rec['law']:<10s} theta_eq={rec['theta_eq']:6.1f} "
-          f"f_w={rec.get('wall_fraction')} theta_meas={rec.get('theta_measured')} "
-          f"status={rec['status']} ({rec['runtime_s']}s)", flush=True)
+    print(
+        f"[{rec['grid']:>6s}] law={rec['law']:<10s} theta_eq={rec['theta_eq']:6.1f} "
+        f"f_w={rec.get('wall_fraction')} theta_meas={rec.get('theta_measured')} "
+        f"status={rec['status']} ({rec['runtime_s']}s)",
+        flush=True,
+    )
     return 0
 
 

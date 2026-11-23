@@ -193,9 +193,7 @@ class PIVReference:
         self.n_r = n_radial
         self.n_theta = n_azimuthal
 
-    def axial_velocity_deficit(
-        self, x_over_D: float, r_over_R: torch.Tensor
-    ) -> torch.Tensor:
+    def axial_velocity_deficit(self, x_over_D: float, r_over_R: torch.Tensor) -> torch.Tensor:
         """Axial velocity deficit from momentum theory with empirical decay.
 
         U/U0 = 1 - delta_u(r) * exp(-x / (k * D))
@@ -227,9 +225,7 @@ class PIVReference:
 
         return 1.0 - delta_u_max * radial_profile * axial_decay
 
-    def tangential_velocity(
-        self, x_over_D: float, r_over_R: torch.Tensor
-    ) -> torch.Tensor:
+    def tangential_velocity(self, x_over_D: float, r_over_R: torch.Tensor) -> torch.Tensor:
         """Tangential (swirl) velocity from free-vortex model.
 
         V_theta ~ Gamma / (2*pi*r) * exp(-x / (k*D))
@@ -250,7 +246,9 @@ class PIVReference:
 
         # Tip correction
         tip_mask = r_over_R > 0.9
-        tip_decay = torch.where(tip_mask, torch.exp(-((r_over_R - 0.9) ** 2) / 0.005), torch.ones_like(r_over_R))
+        tip_decay = torch.where(
+            tip_mask, torch.exp(-((r_over_R - 0.9) ** 2) / 0.005), torch.ones_like(r_over_R)
+        )
         vortex_profile = vortex_profile * tip_decay
 
         # Axial decay
@@ -311,8 +309,10 @@ def run_body_force_wake(
     cz = config.propeller_cz
     u_in = config.inflow_velocity
 
-    print(f"Body-force wake: D={config.diameter}, J={config.advance_ratio:.3f}, "
-          f"KT={config.kt_target:.4f}, KQ={config.kq_target:.4f}")
+    print(
+        f"Body-force wake: D={config.diameter}, J={config.advance_ratio:.3f}, "
+        f"KT={config.kt_target:.4f}, KQ={config.kq_target:.4f}"
+    )
 
     # Initialize with uniform inflow
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
@@ -323,6 +323,7 @@ def run_body_force_wake(
 
     # Wall mask (channel walls)
     from .boundaries3d import make_channel_wall_mask_3d
+
     hub_mask = torch.zeros(nz, ny, nx, dtype=torch.bool, device=device)
     wall_mask = make_channel_wall_mask_3d(nz, ny, nx, hub_mask, device=device)
 
@@ -339,13 +340,18 @@ def run_body_force_wake(
 
         # Apply wall bounce-back
         from .boundaries3d import bounce_back_cells_3d
+
         f = bounce_back_cells_3d(f, wall_mask)
 
         # Apply body force (actuator disk)
         rho, ux, uy, uz = macroscopic3d(f)
         fx, fy, fz = apply_actuator_disk(
-            ux, uy, uz,
-            cx, cy, cz,
+            ux,
+            uy,
+            uz,
+            cx,
+            cy,
+            cz,
             config.diameter,
             config.hub_diameter_ratio,
             config.rpm_lu,
@@ -358,11 +364,12 @@ def run_body_force_wake(
         f = equilibrium3d(rho, ux, uy, uz)
 
         # Sample wake profiles
-        if step > config.warmup_steps and (step - config.warmup_steps) % config.sampling_interval == 0:
+        if (
+            step > config.warmup_steps
+            and (step - config.warmup_steps) % config.sampling_interval == 0
+        ):
             rho, ux, uy, uz = macroscopic3d(f)
-            profiles = _sample_wake_stations(
-                ux, uy, uz, u_in, config, cx, cy, cz, device
-            )
+            profiles = _sample_wake_stations(ux, uy, uz, u_in, config, cx, cy, cz, device)
             wake_profiles.extend(profiles)
             step_count += 1
 
@@ -412,8 +419,9 @@ def run_sliding_mesh_wake(
     u_in = config.inflow_velocity
     omega = 2.0 * math.pi * config.rpm_lu
 
-    print(f"Sliding-mesh wake: D={config.diameter}, J={config.advance_ratio:.3f}, "
-          f"omega={omega:.6f}")
+    print(
+        f"Sliding-mesh wake: D={config.diameter}, J={config.advance_ratio:.3f}, omega={omega:.6f}"
+    )
 
     # Initialize with uniform inflow
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
@@ -424,12 +432,20 @@ def run_sliding_mesh_wake(
 
     # Build propeller mask (at initial angle)
     prop_mask = build_propeller_mask(
-        nx, ny, nz, cx, cy, cz, angle_deg=0.0,
-        config=KP505_PRESET, device=device,
+        nx,
+        ny,
+        nz,
+        cx,
+        cy,
+        cz,
+        angle_deg=0.0,
+        config=KP505_PRESET,
+        device=device,
     )
 
     # Wall mask
     from .boundaries3d import make_channel_wall_mask_3d, bounce_back_cells_3d
+
     wall_mask = make_channel_wall_mask_3d(nz, ny, nx, prop_mask, device=device)
 
     # Sliding interface: annulus around propeller disk
@@ -444,8 +460,7 @@ def run_sliding_mesh_wake(
     r_sq = (yy - cy) ** 2 + (zz - cz) ** 2
     r = torch.sqrt(r_sq)
     interface_mask = (
-        (r >= R - interface_width) & (r <= R + interface_width) &
-        (torch.abs(xx - cx) <= 3.0)
+        (r >= R - interface_width) & (r <= R + interface_width) & (torch.abs(xx - cx) <= 3.0)
     )
 
     # Run simulation
@@ -470,11 +485,12 @@ def run_sliding_mesh_wake(
         f = _apply_sliding_mesh_3d(f, interface_mask, theta, omega, config.tau, device)
 
         # Sample wake profiles
-        if step > config.warmup_steps and (step - config.warmup_steps) % config.sampling_interval == 0:
+        if (
+            step > config.warmup_steps
+            and (step - config.warmup_steps) % config.sampling_interval == 0
+        ):
             rho, ux, uy, uz = macroscopic3d(f)
-            profiles = _sample_wake_stations(
-                ux, uy, uz, u_in, config, cx, cy, cz, device
-            )
+            profiles = _sample_wake_stations(ux, uy, uz, u_in, config, cx, cy, cz, device)
             wake_profiles.extend(profiles)
             step_count += 1
 
@@ -626,20 +642,24 @@ def _sample_wake_stations(
 
         u_axial = ux_plane[z_idx, y_idx] / max(u_in, 1e-10)
         # Tangential: projection onto theta direction
-        u_tangential = (-uy_plane[z_idx, y_idx] * torch.sin(tt) +
-                        uz_plane[z_idx, y_idx] * torch.cos(tt)) / max(u_in, 1e-10)
+        u_tangential = (
+            -uy_plane[z_idx, y_idx] * torch.sin(tt) + uz_plane[z_idx, y_idx] * torch.cos(tt)
+        ) / max(u_in, 1e-10)
         # Radial: projection onto r direction
-        u_radial = (uy_plane[z_idx, y_idx] * torch.cos(tt) +
-                    uz_plane[z_idx, y_idx] * torch.sin(tt)) / max(u_in, 1e-10)
+        u_radial = (
+            uy_plane[z_idx, y_idx] * torch.cos(tt) + uz_plane[z_idx, y_idx] * torch.sin(tt)
+        ) / max(u_in, 1e-10)
 
-        profiles.append(WakeProfile(
-            x_over_D=station.x_over_D,
-            r_over_R=rr,
-            theta=tt,
-            u_axial=u_axial,
-            u_tangential=u_tangential,
-            u_radial=u_radial,
-        ))
+        profiles.append(
+            WakeProfile(
+                x_over_D=station.x_over_D,
+                r_over_R=rr,
+                theta=tt,
+                u_axial=u_axial,
+                u_tangential=u_tangential,
+                u_radial=u_radial,
+            )
+        )
 
     return profiles
 
@@ -667,14 +687,16 @@ def _average_profiles(
         u_tangential_avg = torch.stack([p.u_tangential for p in station_profiles]).mean(dim=0)
         u_radial_avg = torch.stack([p.u_radial for p in station_profiles]).mean(dim=0)
 
-        avg_profiles.append(WakeProfile(
-            x_over_D=x_d,
-            r_over_R=station_profiles[0].r_over_R,
-            theta=station_profiles[0].theta,
-            u_axial=u_axial_avg,
-            u_tangential=u_tangential_avg,
-            u_radial=u_radial_avg,
-        ))
+        avg_profiles.append(
+            WakeProfile(
+                x_over_D=x_d,
+                r_over_R=station_profiles[0].r_over_R,
+                theta=station_profiles[0].theta,
+                u_axial=u_axial_avg,
+                u_tangential=u_tangential_avg,
+                u_radial=u_radial_avg,
+            )
+        )
 
     return avg_profiles
 
@@ -754,7 +776,9 @@ def validate_wake_results(
             break
 
     if bf_far is not None and sm_far is not None:
-        farfield_dev = float(((bf_far - sm_far).abs().mean() / (bf_far.abs().mean() + 1e-10)).item())
+        farfield_dev = float(
+            ((bf_far - sm_far).abs().mean() / (bf_far.abs().mean() + 1e-10)).item()
+        )
         validation["A3_farfield_deviation_pct"] = farfield_dev * 100
         validation["passed"]["A3"] = farfield_dev <= 0.05
 
@@ -778,7 +802,9 @@ def run_wake_validation(
 ) -> dict[str, Any]:
     """Run full wake validation: body-force + sliding-mesh + PIV comparison."""
     if config is None:
-        config = WakeValidationConfig(**{k: v for k, v in kwargs.items() if hasattr(WakeValidationConfig, k)})
+        config = WakeValidationConfig(
+            **{k: v for k, v in kwargs.items() if hasattr(WakeValidationConfig, k)}
+        )
 
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(

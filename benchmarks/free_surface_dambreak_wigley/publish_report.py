@@ -30,7 +30,10 @@ def main() -> int:
     md = (ROOT / "docs" / "free_surface_dambreak_vof_report.md").read_text()
     figures = []
     for name, caption in [
-        ("fig_front_vs_reference.png", "波前位置 vs Martin & Moyce (1952) 14 点实验表（两套壁面工况）"),
+        (
+            "fig_front_vs_reference.png",
+            "波前位置 vs Martin & Moyce (1952) 14 点实验表（两套壁面工况）",
+        ),
         ("fig_error_vs_reference.png", "逐点波前误差 %，绿带为 ±10% 验收带"),
         ("fig_mass_ledger.png", "各工况全程质量漂移与 2% 门（结构性守恒，未启用全局修正）"),
         ("fig_convergence.png", "界面输运 L2 收敛（含 1.5 阶目标斜率与拟合 R²）"),
@@ -39,8 +42,13 @@ def main() -> int:
         path = ROOT / "figures" / name
         if not path.exists():
             continue
-        figures.append({"name": name, "caption": caption,
-                        "png_base64": base64.b64encode(path.read_bytes()).decode()})
+        figures.append(
+            {
+                "name": name,
+                "caption": caption,
+                "png_base64": base64.b64encode(path.read_bytes()).decode(),
+            }
+        )
     payload = {
         "title": "自由面算法独立验证：2D NS+VOF 溃坝对 Martin & Moyce (1952)（RMSE 7.84%，质量 0.12%，收敛阶 0.94 honest-FAIL）",
         "summary": (
@@ -53,8 +61,16 @@ def main() -> int:
         ),
         "scenario_key": "p351w1_n07",
         "mission_id": 10726,
-        "tags": ["TensorLBM", "free-surface", "VOF", "dam-break", "Martin&Moyce",
-                 "verification", "honest-FAIL", "p351w1_n07"],
+        "tags": [
+            "TensorLBM",
+            "free-surface",
+            "VOF",
+            "dam-break",
+            "Martin&Moyce",
+            "verification",
+            "honest-FAIL",
+            "p351w1_n07",
+        ],
         "markdown": md,
         "figures": figures,
     }

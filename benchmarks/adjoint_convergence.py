@@ -49,26 +49,34 @@ def main():
         tracemalloc.stop()
 
         rel_err = abs(dJ_bptt - dJ_ootc) / max(abs(dJ_bptt), 1e-30)
-        print(f"rel_err={rel_err:.2e}, mem={peak/1024**3:.3f} GiB, time={t_ootc:.1f}s")
+        print(f"rel_err={rel_err:.2e}, mem={peak / 1024**3:.3f} GiB, time={t_ootc:.1f}s")
 
-        results.append({
-            "k": k,
-            "rel_err": float(rel_err),
-            "peak_mem_gib": round(peak / 1024**3, 4),
-            "time_s": round(t_ootc, 2),
-            "dJ_ootc": float(dJ_ootc),
-        })
+        results.append(
+            {
+                "k": k,
+                "rel_err": float(rel_err),
+                "peak_mem_gib": round(peak / 1024**3, 4),
+                "time_s": round(t_ootc, 2),
+                "dJ_ootc": float(dJ_ootc),
+            }
+        )
 
     out_dir = os.path.join(os.path.dirname(__file__), "..", "artifacts", "adjoint_ootc_bench")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "convergence_study.json")
     with open(out_path, "w") as f:
-        json.dump({
-            "N": N, "T": T, "tau": tau,
-            "dJ_bptt": float(dJ_bptt),
-            "J_bptt": float(J_bptt),
-            "k_sweep": results,
-        }, f, indent=2)
+        json.dump(
+            {
+                "N": N,
+                "T": T,
+                "tau": tau,
+                "dJ_bptt": float(dJ_bptt),
+                "J_bptt": float(J_bptt),
+                "k_sweep": results,
+            },
+            f,
+            indent=2,
+        )
     print(f"\n[conv] Results written to {out_path}")
 
 

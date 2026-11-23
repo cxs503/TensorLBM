@@ -34,10 +34,18 @@ def main(argv=None) -> int:
 
     db = DamBreakMoyce(cells_per_a=args.cells, wall=args.wall)
     db.cfg.poisson_tol = 1.0e-5
-    targets = [0.0, 0.41, 1.19, 1.97, 2.64, 2.96]      # experimental axis T
-    fields = {"F": [], "p": [], "T": targets, "dx": db.cfg.dx, "dy": db.cfg.dy,
-              "lx": db.cfg.lx, "ly": db.cfg.ly, "cells_per_a": args.cells,
-              "wall": args.wall}
+    targets = [0.0, 0.41, 1.19, 1.97, 2.64, 2.96]  # experimental axis T
+    fields = {
+        "F": [],
+        "p": [],
+        "T": targets,
+        "dx": db.cfg.dx,
+        "dy": db.cfg.dy,
+        "lx": db.cfg.lx,
+        "ly": db.cfg.ly,
+        "cells_per_a": args.cells,
+        "wall": args.wall,
+    }
     for T in targets:
         if T > 0.0:
             db.sim.run(T / np.sqrt(2.0))
@@ -46,10 +54,17 @@ def main(argv=None) -> int:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out, **{k: np.array(v) for k, v in fields.items()})
-    meta = {"cells_per_a": args.cells, "wall": args.wall, "targets": targets,
-            "n_steps": db.sim.n_steps, "mass": db.sim.ledger.as_dict(),
-            "front": [float(np.max(np.flatnonzero(np.any(f[:2, :] > 0.5, axis=0))) + 1) * db.cfg.dx
-                      for f in fields["F"]]}
+    meta = {
+        "cells_per_a": args.cells,
+        "wall": args.wall,
+        "targets": targets,
+        "n_steps": db.sim.n_steps,
+        "mass": db.sim.ledger.as_dict(),
+        "front": [
+            float(np.max(np.flatnonzero(np.any(f[:2, :] > 0.5, axis=0))) + 1) * db.cfg.dx
+            for f in fields["F"]
+        ],
+    }
     Path(out).with_suffix(".json").write_text(json.dumps(meta, indent=1))
     print(json.dumps(meta["front"]))
     return 0

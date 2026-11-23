@@ -35,8 +35,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from .floes import (DEMConfig, FloeDEM, FloeFieldConfig, audit_floe_field,
-                    generate_floe_field)
+from .floes import DEMConfig, FloeDEM, FloeFieldConfig, audit_floe_field, generate_floe_field
 from .flow import FlowConfig, HullFlow
 from .hull import ICE_LEVEL_Z, make_hull, outline_entrance_angle
 from . import reference as ref
@@ -79,8 +78,9 @@ def run_dem(field, dem_cfg: DEMConfig) -> Dict[str, object]:
     return {"summary": summary, "series": series, "dem": dem}
 
 
-def run_flow(n_hull: int, coverage: Optional[np.ndarray] = None,
-             max_steps: int = 2500, verbose: bool = False) -> Dict[str, object]:
+def run_flow(
+    n_hull: int, coverage: Optional[np.ndarray] = None, max_steps: int = 2500, verbose: bool = False
+) -> Dict[str, object]:
     cfg = FlowConfig(n_hull=n_hull)
     flow = HullFlow(cfg, ice_coverage=coverage)
     t0 = time.time()
@@ -120,15 +120,20 @@ def criterion_c2(runs: List[Dict[str, object]]) -> Dict[str, object]:
     for r in runs:
         decades = float(r["residual_decades"])
         flux = float(r["mass"]["flux_imbalance_rel"])
-        per.append({
-            "n_hull": r["n_hull"], "grid": r["grid"], "steps": r["steps"],
-            "residual_first": r["residual_first"], "residual_last": r["residual_last"],
-            "residual_decades": decades,
-            "flux_imbalance_rel": flux,
-            "mass_drift_rel": r["mass"]["mass_drift_rel"],
-            "pass_decades": bool(decades >= 3.0),
-            "pass_flux": bool(flux < 1e-4),
-        })
+        per.append(
+            {
+                "n_hull": r["n_hull"],
+                "grid": r["grid"],
+                "steps": r["steps"],
+                "residual_first": r["residual_first"],
+                "residual_last": r["residual_last"],
+                "residual_decades": decades,
+                "flux_imbalance_rel": flux,
+                "mass_drift_rel": r["mass"]["mass_drift_rel"],
+                "pass_decades": bool(decades >= 3.0),
+                "pass_flux": bool(flux < 1e-4),
+            }
+        )
     best = max(per, key=lambda d: d["residual_decades"])
     return {
         "per_grid": per,
@@ -163,7 +168,7 @@ def criterion_c3(field, dem_summary: Dict[str, object], D: float = 2.4) -> Dict[
     U = 1.5
     v_ice = float(dem_summary.get("vx_mean", U)) if "vx_mean" in dem_summary else U
     u_rel = U - v_ice
-    A_total = float((0.25 * math.pi * field.d ** 2).sum())
+    A_total = float((0.25 * math.pi * field.d**2).sum())
     band_volume = field.cfg.free_area() * draft
     # Lagrangian: drag on the floe population
     C_d = 1.2
@@ -171,9 +176,9 @@ def criterion_c3(field, dem_summary: Dict[str, object], D: float = 2.4) -> Dict[
     F_lag = 0.5 * RHO_W * C_d * A_front_total * abs(u_rel) * u_rel
     # Eulerian: Darcy-Forchheimer over the same band
     eps = max(1.0 - C_i, 1e-3)
-    K = field.cfg.d50 ** 2 * eps ** 3 / (150.0 * (1.0 - eps) ** 2)
-    C_F = 1.75 / math.sqrt(150.0 * eps ** 3)
-    alpha = A_total / max(field.cfg.free_area(), 1e-9)     # areal ice fraction
+    K = field.cfg.d50**2 * eps**3 / (150.0 * (1.0 - eps) ** 2)
+    C_F = 1.75 / math.sqrt(150.0 * eps**3)
+    alpha = A_total / max(field.cfg.free_area(), 1e-9)  # areal ice fraction
     f_eul = alpha * (1.0e-3 / K + RHO_W * C_F / math.sqrt(K) * abs(u_rel)) * u_rel
     F_eul = f_eul * band_volume
     resid = abs(F_eul - F_lag) / max(abs(F_lag), 1e-30) if F_lag != 0 else float("nan")
@@ -188,10 +193,14 @@ def criterion_c3(field, dem_summary: Dict[str, object], D: float = 2.4) -> Dict[
     def sink(cov):
         a = np.clip(cov, 0.0, 0.999) * frac
         e = np.clip(1.0 - np.clip(cov, 0.0, 0.999), 1e-3, 1.0)
-        kk = field.cfg.d50 ** 2 * e ** 3 / (150.0 * (1.0 - e) ** 2)
-        cf = 1.75 / np.sqrt(150.0 * e ** 3)
-        return float((a * (1.0e-3 / kk + RHO_W * cf / np.sqrt(kk) * abs(u_rel)) * u_rel).sum()
-                     * D * D * draft)
+        kk = field.cfg.d50**2 * e**3 / (150.0 * (1.0 - e) ** 2)
+        cf = 1.75 / np.sqrt(150.0 * e**3)
+        return float(
+            (a * (1.0e-3 / kk + RHO_W * cf / np.sqrt(kk) * abs(u_rel)) * u_rel).sum()
+            * D
+            * D
+            * draft
+        )
 
     s4, s16 = sink(c4), sink(c16)
     struct = abs(s4 - s16) / max(abs(s16), 1e-30)
@@ -208,9 +217,11 @@ def criterion_c3(field, dem_summary: Dict[str, object], D: float = 2.4) -> Dict[
         "sink_from_coverage_sub4_N": s4,
         "sink_from_coverage_sub16_N": s16,
         "pass": bool(np.isfinite(resid) and resid < 0.01),
-        "note": ("the two sides use different closures (Ergun/Darcy-Forchheimer "
-                 "versus per-floe quadratic drag); the residual quantifies the "
-                 "upscaling error of the porous-layer representation"),
+        "note": (
+            "the two sides use different closures (Ergun/Darcy-Forchheimer "
+            "versus per-floe quadratic drag); the residual quantifies the "
+            "upscaling error of the porous-layer representation"
+        ),
     }
 
 
@@ -229,17 +240,21 @@ def criterion_c7(dem_summary: Dict[str, object], dem, hull=None) -> Dict[str, ob
     import numpy as _np
     import torch as _torch
 
-    from ..three_way.coupled3d import (Coupled3DConfig,
-                                       hull_girder_from_contact_loads)
+    from ..three_way.coupled3d import Coupled3DConfig, hull_girder_from_contact_loads
 
     cfg = Coupled3DConfig()
     r_hull = float(dem_summary.get("R_ice_contact_mean", 0.0) or 0.0)
     l_bow = 0.25 * cfg.beam_length
     n_load = 9
-    ys = _torch.linspace(cfg.beam_length - l_bow, cfg.beam_length, n_load,
-                         dtype=_torch.float64)
-    positions = _torch.stack([_torch.zeros(n_load, dtype=_torch.float64), ys,
-                              _torch.zeros(n_load, dtype=_torch.float64)], dim=1)
+    ys = _torch.linspace(cfg.beam_length - l_bow, cfg.beam_length, n_load, dtype=_torch.float64)
+    positions = _torch.stack(
+        [
+            _torch.zeros(n_load, dtype=_torch.float64),
+            ys,
+            _torch.zeros(n_load, dtype=_torch.float64),
+        ],
+        dim=1,
+    )
     # uniform spread of the measured resultant over the bow patch
     forces = _torch.zeros((n_load, 3), dtype=_torch.float64)
     forces[:, 0] = r_hull / n_load
@@ -253,21 +268,27 @@ def criterion_c7(dem_summary: Dict[str, object], dem, hull=None) -> Dict[str, ob
 
 def criterion_c6(runs: List[Dict[str, object]]) -> Dict[str, object]:
     from .reference import gci
+
     runs = sorted(runs, key=lambda r: r["dx_m"])
     fine, mid, coarse = runs[0], runs[1], runs[2]
     r = fine["dx_m"] / mid["dx_m"]
-    total = {k: float(f["R_pressure_N"] + f["R_friction_N"] + f["R_ice_flow_N"])
-             for k, f in (("fine", fine), ("mid", mid), ("coarse", coarse))}
+    total = {
+        k: float(f["R_pressure_N"] + f["R_friction_N"] + f["R_ice_flow_N"])
+        for k, f in (("fine", fine), ("mid", mid), ("coarse", coarse))
+    }
     res = {}
-    for key, pick in (("R_total", lambda f: f["R_pressure_N"] + f["R_friction_N"] + f["R_ice_flow_N"]),
-                      ("R_pressure", lambda f: f["R_pressure_N"]),
-                      ("R_friction", lambda f: f["R_friction_N"]),
-                      ("R_ice_flow", lambda f: f["R_ice_flow_N"])):
+    for key, pick in (
+        ("R_total", lambda f: f["R_pressure_N"] + f["R_friction_N"] + f["R_ice_flow_N"]),
+        ("R_pressure", lambda f: f["R_pressure_N"]),
+        ("R_friction", lambda f: f["R_friction_N"]),
+        ("R_ice_flow", lambda f: f["R_ice_flow_N"]),
+    ):
         g = gci(pick(fine), pick(mid), pick(coarse), r=r)
         res[key] = g
     g_total = res["R_total"]
-    ok = bool(g_total.get("valid") and g_total.get("GCI_fine") is not None
-              and g_total["GCI_fine"] < 0.05)
+    ok = bool(
+        g_total.get("valid") and g_total.get("GCI_fine") is not None and g_total["GCI_fine"] < 0.05
+    )
     return {
         "refinement_ratio": float(r),
         "dx_m": [fine["dx_m"], mid["dx_m"], coarse["dx_m"]],
@@ -302,10 +323,14 @@ def criterion_c4(runs, dem_summary: Dict[str, object], c3: Dict[str, object]) ->
         "control_volume_total_N": cv,
         "closure_rel": closure,
         "pass_closure": bool(closure < 0.02),
-        "ice_phase": {"P_hull_W": P_hull, "P_drag_W": P_drag,
-                      "P_diss_floe_W": P_diss, "P_diss_hull_W": P_diss_hull,
-                      "residual_rel": ice_power_residual,
-                      "pass_power": bool(ice_power_residual < 0.02)},
+        "ice_phase": {
+            "P_hull_W": P_hull,
+            "P_drag_W": P_drag,
+            "P_diss_floe_W": P_diss,
+            "P_diss_hull_W": P_diss_hull,
+            "residual_rel": ice_power_residual,
+            "pass_power": bool(ice_power_residual < 0.02),
+        },
         "pass": bool(closure < 0.02 and ice_power_residual < 0.02),
         "fsi_residual_rel": c3.get("residual_rel"),
     }
@@ -327,39 +352,45 @@ def criterion_c5(dem_summary: Dict[str, object], hull, cfg_dem: DEMConfig) -> Di
         "R_ice_predict_N": R_pred,
         "R_ice_sem_N": dem_summary["R_ice_contact_sem"],
         "reference_first_principles": {
-            "clearing_momentum_N": clear, "comparison": comp_clear,
+            "clearing_momentum_N": clear,
+            "comparison": comp_clear,
             "provenance": "FIRST_PRINCIPLES",
         },
         "reference_submersion": {
-            "R_submersion_N": subm, "comparison": comp_subm,
+            "R_submersion_N": subm,
+            "comparison": comp_subm,
             "provenance": "FIRST_PRINCIPLES (Lindqvist family)",
         },
         "reference_in_repo_riska": {
             "R_total_N": baseline["R_total_N"],
             "components": {k: baseline[k] for k in ("R_c_N", "R_f_N", "R_s_N")},
-            "comparison": comp_base, "provenance": "IN_REPO_BASELINE",
+            "comparison": comp_base,
+            "provenance": "IN_REPO_BASELINE",
             "verdict": "out of domain for brash ice (level-ice crushing term "
-                       "scaled by C_i); not an experimental anchor",
+            "scaled by C_i); not an experimental anchor",
         },
         "experimental_anchor": {
             "status": "WITHHELD",
             "reason": "no citable Riska (1989) model-test curve for KVLCC2 in "
-                      "brash ice is available in this repository; no number is "
-                      "invented",
+            "brash ice is available in this repository; no number is "
+            "invented",
         },
         "pass_first_principles": bool(comp_clear["rel_error"] < 0.15),
         "pass_experiment": False,
         "pass": bool(comp_clear["rel_error"] < 0.15),
-        "criterion_note": ("C5 as specified requires experimental data; that part "
-                           "is WITHHELD -> honest FAIL. The physics comparison "
-                           "against the coefficient-free clearing momentum is "
-                           "reported as the available evidence."),
+        "criterion_note": (
+            "C5 as specified requires experimental data; that part "
+            "is WITHHELD -> honest FAIL. The physics comparison "
+            "against the coefficient-free clearing momentum is "
+            "reported as the available evidence."
+        ),
     }
 
 
 # ---------------------------------------------------------------------------
 def make_figures(chain: Dict[str, object], out_dir: str) -> List[str]:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -381,25 +412,34 @@ def make_figures(chain: Dict[str, object], out_dir: str) -> List[str]:
     ax.set_aspect("equal")
     ax.set_xlabel("x [m] (bow at x = 0)")
     ax.set_ylabel("y [m]")
-    ax.set_title(f"brash ice field: C_i = {c1['concentration_extrapolated']:.3f} (target 0.60), "
-                 f"D50 = {c1['d50_number']:.2f} m, N = {c1['n_floes']}")
+    ax.set_title(
+        f"brash ice field: C_i = {c1['concentration_extrapolated']:.3f} (target 0.60), "
+        f"D50 = {c1['d50_number']:.2f} m, N = {c1['n_floes']}"
+    )
     ax.legend(loc="upper right", fontsize=8)
     ax.set_xlim(-40, 120)
     p = os.path.join(out_dir, "fig1_floe_field.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
 
     # 2 -- velocity field
     flow: HullFlow = chain["_prod_flow"]
     u = flow.state["u"]
-    umag = np.sqrt((u ** 2).sum(axis=0)) * (flow.cfg.ship_speed / flow.cfg.u_lat)
+    umag = np.sqrt((u**2).sum(axis=0)) * (flow.cfg.ship_speed / flow.cfg.u_lat)
     k = 0
     fig, ax = plt.subplots(figsize=(10, 3.2))
     im = ax.pcolormesh(flow.xc, flow.yc, umag[k], shading="auto", cmap="viridis")
-    ax.set_xlabel("x [m]"); ax.set_ylabel("y [m]")
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
     ax.set_title(f"water speed at the ice level (n_hull={flow.cfg.n_hull}), ship frame")
     fig.colorbar(im, ax=ax, label="|u| [m/s]")
     p = os.path.join(out_dir, "fig2_velocity_ice_level.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
 
     # 3 -- residual convergence
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -407,11 +447,16 @@ def make_figures(chain: Dict[str, object], out_dir: str) -> List[str]:
         h = np.asarray(r["residual_history"], dtype=float)
         h = np.maximum(h, 1e-16)
         ax.semilogy(np.linspace(0, r["steps"], h.size), h, label=f"n_hull={r['n_hull']}")
-    ax.set_xlabel("LBM step"); ax.set_ylabel(r"$\||u^{n}-u^{n-1}\||/\||u^n\||$")
+    ax.set_xlabel("LBM step")
+    ax.set_ylabel(r"$\||u^{n}-u^{n-1}\||/\||u^n\||$")
     ax.set_title("water-phase convergence (criterion C2)")
-    ax.legend(fontsize=8); ax.grid(alpha=0.3)
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
     p = os.path.join(out_dir, "fig3_convergence.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
 
     # 4 -- resistance decomposition
     c4 = chain["C4"]
@@ -419,58 +464,95 @@ def make_figures(chain: Dict[str, object], out_dir: str) -> List[str]:
     vals = [c4["R_pressure_N"], c4["R_friction_N"], c4["R_ice_flow_N"]]
     fig, ax = plt.subplots(figsize=(6.2, 4))
     ax.bar(labels, vals, color=["tab:orange", "tab:green", "tab:blue"])
-    ax.axhline(c4["control_volume_total_N"], color="k", ls="--",
-               label=f"control-volume total = {c4['control_volume_total_N']:.0f} N")
+    ax.axhline(
+        c4["control_volume_total_N"],
+        color="k",
+        ls="--",
+        label=f"control-volume total = {c4['control_volume_total_N']:.0f} N",
+    )
     ax.set_ylabel("resistance [N]")
-    ax.set_title(f"resistance decomposition, closure {100*c4['closure_rel']:.2f} %")
-    ax.legend(fontsize=8); ax.grid(alpha=0.3, axis="y")
+    ax.set_title(f"resistance decomposition, closure {100 * c4['closure_rel']:.2f} %")
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3, axis="y")
     p = os.path.join(out_dir, "fig4_resistance_decomposition.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
 
     # 5 -- DEM resistance time series
     dem = chain["DEM"]["series"]
     fig, ax = plt.subplots(figsize=(6.4, 3.6))
     ax.plot(dem["t"], dem["R_hull"], lw=0.8, color="tab:purple")
-    ax.axhline(chain["C5"]["R_ice_predict_N"], color="k", ls="--", lw=1,
-               label=f"mean = {chain['C5']['R_ice_predict_N']:.0f} N")
-    ax.axhline(chain["C5"]["reference_first_principles"]["clearing_momentum_N"],
-               color="tab:red", ls=":", lw=1.2, label="clearing momentum (first principles)")
-    ax.set_xlabel("t [s]"); ax.set_ylabel("R_ice (hull-ice contact) [N]")
+    ax.axhline(
+        chain["C5"]["R_ice_predict_N"],
+        color="k",
+        ls="--",
+        lw=1,
+        label=f"mean = {chain['C5']['R_ice_predict_N']:.0f} N",
+    )
+    ax.axhline(
+        chain["C5"]["reference_first_principles"]["clearing_momentum_N"],
+        color="tab:red",
+        ls=":",
+        lw=1.2,
+        label="clearing momentum (first principles)",
+    )
+    ax.set_xlabel("t [s]")
+    ax.set_ylabel("R_ice (hull-ice contact) [N]")
     ax.set_title("DEM ice resistance history")
-    ax.legend(fontsize=8); ax.grid(alpha=0.3)
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
     p = os.path.join(out_dir, "fig5_dem_resistance.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
 
     # 6 -- grid convergence
     c6 = chain["C6"]
     fig, ax = plt.subplots(figsize=(6.4, 4))
     ax.plot(c6["dx_m"], c6["R_total_N"], "o-", label="R_total")
     for key, style in (("R_pressure", "s--"), ("R_friction", "^--")):
-        ys = [c6["metrics"][key]["f_fine"], c6["metrics"][key]["f_mid"],
-              c6["metrics"][key]["f_coarse"]]
+        ys = [
+            c6["metrics"][key]["f_fine"],
+            c6["metrics"][key]["f_mid"],
+            c6["metrics"][key]["f_coarse"],
+        ]
         ax.plot(c6["dx_m"], ys, style, lw=1, label=key)
-    ax.set_xlabel("cell size dx [m]"); ax.set_ylabel("resistance [N]")
-    ax.set_title(f"three-grid study, GCI(R_total) = "
-                 f"{100*(c6['GCI_fine_R_total'] or float('nan')):.1f} %")
-    ax.legend(fontsize=8); ax.grid(alpha=0.3)
+    ax.set_xlabel("cell size dx [m]")
+    ax.set_ylabel("resistance [N]")
+    ax.set_title(
+        f"three-grid study, GCI(R_total) = {100 * (c6['GCI_fine_R_total'] or float('nan')):.1f} %"
+    )
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
     p = os.path.join(out_dir, "fig6_grid_convergence.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
 
     # 7 -- reference comparison
     c5 = chain["C5"]
     fig, ax = plt.subplots(figsize=(6.6, 3.8))
     names = ["chain (DEM)", "clearing\nmomentum", "submersion\nestimate", "in-repo\nRiska"]
-    vals = [c5["R_ice_predict_N"],
-            c5["reference_first_principles"]["clearing_momentum_N"],
-            c5["reference_submersion"]["R_submersion_N"],
-            c5["reference_in_repo_riska"]["R_total_N"]]
+    vals = [
+        c5["R_ice_predict_N"],
+        c5["reference_first_principles"]["clearing_momentum_N"],
+        c5["reference_submersion"]["R_submersion_N"],
+        c5["reference_in_repo_riska"]["R_total_N"],
+    ]
     ax.bar(names, vals, color=["tab:purple", "tab:red", "tab:olive", "tab:gray"])
     ax.set_yscale("log")
     ax.set_ylabel("ice resistance [N]")
     ax.set_title("C5: chain versus reference models (log scale)")
     ax.grid(alpha=0.3, axis="y")
     p = os.path.join(out_dir, "fig7_reference_comparison.png")
-    fig.tight_layout(); fig.savefig(p, dpi=140); plt.close(fig); paths.append(p)
+    fig.tight_layout()
+    fig.savefig(p, dpi=140)
+    plt.close(fig)
+    paths.append(p)
     return paths
 
 
@@ -480,30 +562,38 @@ def run_chain(quick: bool = False, verbose: bool = True) -> Dict[str, object]:
     hull = make_hull()
     geo = hull.verify()
     if verbose:
-        print(f"[geometry] Cb={geo['cb']:.4f} (target {geo['cb_target']}, "
-              f"err {100*geo['cb_rel_error']:.3f}%)  Cwp={geo['cwp']:.4f}  "
-              f"entrance angle {outline_entrance_angle(hull):.1f} deg", flush=True)
+        print(
+            f"[geometry] Cb={geo['cb']:.4f} (target {geo['cb_target']}, "
+            f"err {100 * geo['cb_rel_error']:.3f}%)  Cwp={geo['cwp']:.4f}  "
+            f"entrance angle {outline_entrance_angle(hull):.1f} deg",
+            flush=True,
+        )
 
     # ---- C1 -------------------------------------------------------------
     floe_cfg = FloeFieldConfig(length=100.0, width=120.0, x_start=-40.0)
     c1, field = criterion_c1(floe_cfg)
     if verbose:
         a = c1["audit"]
-        print(f"[C1] C_i={a['concentration_extrapolated']:.4f} "
-              f"({100*a['concentration_rel_error']:.2f}%)  D50={a['d50_number']:.3f} "
-              f"({100*a['d50_rel_error']:.2f}%)  pass={c1['pass']}", flush=True)
+        print(
+            f"[C1] C_i={a['concentration_extrapolated']:.4f} "
+            f"({100 * a['concentration_rel_error']:.2f}%)  D50={a['d50_number']:.3f} "
+            f"({100 * a['d50_rel_error']:.2f}%)  pass={c1['pass']}",
+            flush=True,
+        )
 
     # ---- DEM ------------------------------------------------------------
-    dem_cfg = DEMConfig(dt=4.0e-4,
-                        t_end=1.2 if quick else 3.0,
-                        t_avg_start=0.6 if quick else 1.5,
-                        relax_steps=300)
+    dem_cfg = DEMConfig(
+        dt=4.0e-4, t_end=1.2 if quick else 3.0, t_avg_start=0.6 if quick else 1.5, relax_steps=300
+    )
     t0 = time.time()
     dem = run_dem(field, dem_cfg)
     if verbose:
         s = dem["summary"]
-        print(f"[DEM] R_ice={s['R_ice_contact_mean']:.0f} +- {s['R_ice_contact_sem']:.0f} N "
-              f"(SEM)  overlap={s['max_overlap_rel']:.3f}  {time.time()-t0:.0f}s", flush=True)
+        print(
+            f"[DEM] R_ice={s['R_ice_contact_mean']:.0f} +- {s['R_ice_contact_sem']:.0f} N "
+            f"(SEM)  overlap={s['max_overlap_rel']:.3f}  {time.time() - t0:.0f}s",
+            flush=True,
+        )
 
     # ---- flow: three grids ----------------------------------------------
     flow_runs = []
@@ -513,32 +603,40 @@ def run_chain(quick: bool = False, verbose: bool = True) -> Dict[str, object]:
         cfg = FlowConfig(n_hull=nh)
         x_lo = -cfg.up * cfg.dx
         x_hi = (cfg.n_hull + cfg.down) * cfg.dx
-        cov = field.coverage_map(ny=cfg.ny, nx=cfg.nx, x_lo=x_lo, x_hi=x_hi,
-                                 y_lo=0.5 * cfg.dx, y_hi=(cfg.ny - 0.5) * cfg.dx,
-                                 sub=8)
+        cov = field.coverage_map(
+            ny=cfg.ny,
+            nx=cfg.nx,
+            x_lo=x_lo,
+            x_hi=x_hi,
+            y_lo=0.5 * cfg.dx,
+            y_hi=(cfg.ny - 0.5) * cfg.dx,
+            sub=8,
+        )
         # outside the DEM window the ice field is the undisturbed one: the DEM
         # only resolves the bow region, so the far-field coverage is filled with
         # the measured undisturbed concentration (documented in the report)
         x_cells = x_lo + (np.arange(cfg.nx) + 0.5) * cfg.dx
         far = (x_cells < field.cfg.x_start) | (x_cells > field.cfg.x_start + field.cfg.length)
         cov[:, far] = c1["audit"]["concentration_extrapolated"]
-        run = run_flow(nh, coverage=None,
-                       max_steps=(400 if quick else STEPS.get(nh, 2500)),
-                       verbose=verbose)
+        run = run_flow(
+            nh, coverage=None, max_steps=(400 if quick else STEPS.get(nh, 2500)), verbose=verbose
+        )
         flow_runs.append(run)
         if verbose:
-            print(f"[flow n_hull={nh}] grid={run['grid']} steps={run['steps']} "
-                  f"dec={run['residual_decades']:.2f} Rp={run['R_pressure_N']:.0f} "
-                  f"Rf={run['R_friction_N']:.0f} Rice={run['R_ice_flow_N']:.1f} "
-                  f"CV={run['momentum_flux_N']:.0f} ({run['wall_clock_s']:.0f}s)", flush=True)
+            print(
+                f"[flow n_hull={nh}] grid={run['grid']} steps={run['steps']} "
+                f"dec={run['residual_decades']:.2f} Rp={run['R_pressure_N']:.0f} "
+                f"Rf={run['R_friction_N']:.0f} Rice={run['R_ice_flow_N']:.1f} "
+                f"CV={run['momentum_flux_N']:.0f} ({run['wall_clock_s']:.0f}s)",
+                flush=True,
+            )
 
     prod = max(flow_runs, key=lambda r: r["n_hull"])
     c2 = criterion_c2(flow_runs)
     c3 = criterion_c3(field, dem["summary"], D=max(G.cfg.dx for G in [prod["flow"]]))
     c4 = criterion_c4(flow_runs, dem["summary"], c3)
     c5 = criterion_c5(dem["summary"], hull, dem_cfg)
-    c6 = criterion_c6(flow_runs) if len(flow_runs) >= 3 else {"pass": False,
-                                                             "reason": "quick mode"}
+    c6 = criterion_c6(flow_runs) if len(flow_runs) >= 3 else {"pass": False, "reason": "quick mode"}
     # C7: the DEM hull-contact resistance is handed to the shared 3-D load-exchange
     # interface and turned into a hull-girder response (three_way.coupled3d consumer)
     c7 = criterion_c7(dem["summary"], dem.get("dem"), hull)
@@ -551,14 +649,24 @@ def run_chain(quick: bool = False, verbose: bool = True) -> Dict[str, object]:
         "geometry": geo,
         "entrance_angle_deg": outline_entrance_angle(hull),
         "ice_level_z_m": ICE_LEVEL_Z,
-        "C1": c1, "C2": c2, "C3": c3, "C4": c4, "C5": c5, "C6": c6, "C7": c7,
+        "C1": c1,
+        "C2": c2,
+        "C3": c3,
+        "C4": c4,
+        "C5": c5,
+        "C6": c6,
+        "C7": c7,
         "DEM": {"summary": dem["summary"], "series": dem["series"]},
         "flow_runs": [{k: v for k, v in r.items() if k != "flow"} for r in flow_runs],
         "wall_clock_s": time.time() - t_start,
     }
     chain["criteria_summary"] = {
-        "C1": c1["pass"], "C2": c2["pass"], "C3": c3["pass"],
-        "C4": c4["pass"], "C5": c5["pass"], "C6": c6.get("pass", False),
+        "C1": c1["pass"],
+        "C2": c2["pass"],
+        "C3": c3["pass"],
+        "C4": c4["pass"],
+        "C5": c5["pass"],
+        "C6": c6.get("pass", False),
     }
     chain["n_pass"] = int(sum(bool(v) for v in chain["criteria_summary"].values()))
 
@@ -573,8 +681,11 @@ def run_chain(quick: bool = False, verbose: bool = True) -> Dict[str, object]:
         chain.pop(k, None)
     _save_json(os.path.join(RUNS_DIR, "criteria.json"), chain)
     if verbose:
-        print(f"[done] criteria {chain['criteria_summary']}  n_pass={chain['n_pass']}/6  "
-              f"{chain['wall_clock_s']:.0f}s", flush=True)
+        print(
+            f"[done] criteria {chain['criteria_summary']}  n_pass={chain['n_pass']}/6  "
+            f"{chain['wall_clock_s']:.0f}s",
+            flush=True,
+        )
     return chain
 
 

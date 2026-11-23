@@ -35,8 +35,9 @@ STEPS = 600
 
 
 def _run(**kw) -> dict:
-    base = dict(n_fluid=8, nx=2, nu=0.3, wall="laminus", max_steps=STEPS,
-                tol=0.0, check_every=10**9)
+    base = dict(
+        n_fluid=8, nx=2, nu=0.3, wall="laminus", max_steps=STEPS, tol=0.0, check_every=10**9
+    )
     base.update(kw)
     return v5.run_case(**base)
 
@@ -44,8 +45,8 @@ def _run(**kw) -> dict:
 def test_correction_is_stable_and_halves_the_error_for_q_above_half():
     plain = _run(delta=0.75, closure="bfl", correction=False)
     corrected = _run(delta=0.75, closure="bfl", correction=True)
-    assert plain["l2_rel"] < 0.15 and corrected["l2_rel"] < 0.15   # owner acceptance
-    assert corrected["l2_rel"] < 0.6 * plain["l2_rel"]             # measured 0.45x
+    assert plain["l2_rel"] < 0.15 and corrected["l2_rel"] < 0.15  # owner acceptance
+    assert corrected["l2_rel"] < 0.6 * plain["l2_rel"]  # measured 0.45x
     assert corrected["rho_fluid_mean"] > 0.9
 
 
@@ -65,8 +66,8 @@ def test_uncorrected_bfl_is_stable_for_q_below_half():
 @pytest.mark.xfail(
     strict=False,
     reason="known defect REPORT_V5 §3.2: K_hat correction diverges for q<1/2 "
-           "(bfl is still finite at 600 steps and NaN by 1500; the arm below runs "
-           "2000 steps). Remove the xfail when the production operator is fixed.",
+    "(bfl is still finite at 600 steps and NaN by 1500; the arm below runs "
+    "2000 steps). Remove the xfail when the production operator is fixed.",
 )
 def test_correction_is_stable_for_q_below_half():
     r = _run(delta=0.25, closure="bfl", correction=True, max_steps=2000)

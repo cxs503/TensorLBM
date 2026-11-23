@@ -30,11 +30,25 @@ orig = P.free_surface_step
 P.free_surface_step = orig  # no probe-level spy needed
 try:
     P.probe(
-        8, 0.06, 20, 0.18,
-        capacity=True, nearest=False, pilot=False, span=4.0, pool_depth=3.0,
-        simple=True, release=1.53, planes_path=None, silhouette_path=None,
-        ledger=False, diag_path=None, u_limit=0.15, cav_clos_alpha=0.0,
-        rr_tau=0.0, rr_iface=True,
+        8,
+        0.06,
+        20,
+        0.18,
+        capacity=True,
+        nearest=False,
+        pilot=False,
+        span=4.0,
+        pool_depth=3.0,
+        simple=True,
+        release=1.53,
+        planes_path=None,
+        silhouette_path=None,
+        ledger=False,
+        diag_path=None,
+        u_limit=0.15,
+        cav_clos_alpha=0.0,
+        rr_tau=0.0,
+        rr_iface=True,
     )
 finally:
     ADV.collide_regularized_stress_d3q19 = orig_kernel

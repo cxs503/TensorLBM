@@ -18,7 +18,9 @@ from tensorlbm.boundaries import nonequilibrium_extrapolation_outlet_2d
 from tensorlbm.d2q9 import equilibrium
 
 
-def _analytic_state(ny: int = 24, nx: int = 48, re: float = 40.0, u0: float = 0.03, xmax: float = 3.0):
+def _analytic_state(
+    ny: int = 24, nx: int = 48, re: float = 40.0, u0: float = 0.03, xmax: float = 3.0
+):
     lam = re / 2.0 - math.sqrt(re * re / 4.0 + 4.0 * math.pi**2)
     y = torch.arange(ny, dtype=torch.float64).view(-1, 1)
     x = torch.arange(nx, dtype=torch.float64).view(1, -1)
@@ -26,7 +28,11 @@ def _analytic_state(ny: int = 24, nx: int = 48, re: float = 40.0, u0: float = 0.
     yp = y / ny
     e = torch.exp(lam * xp)
     u = (u0 * (1.0 - e * torch.cos(2.0 * math.pi * yp))).expand(ny, nx).contiguous()
-    v = (u0 * (lam / (2.0 * math.pi)) * e * torch.sin(2.0 * math.pi * yp)).expand(ny, nx).contiguous()
+    v = (
+        (u0 * (lam / (2.0 * math.pi)) * e * torch.sin(2.0 * math.pi * yp))
+        .expand(ny, nx)
+        .contiguous()
+    )
     rho = torch.ones((ny, nx), dtype=torch.float64)
     return equilibrium(rho, u, v)
 

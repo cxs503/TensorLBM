@@ -8,6 +8,7 @@ which was previously untested: the preset table (``GRID``) and the end-to-end
 The smoke run is a 16x174 lattice for 400 steps (~10 s on CPU): it is a pipeline
 sanity check, not a physics verdict -- no reference tolerance is applied here.
 """
+
 from __future__ import annotations
 
 import json

@@ -43,9 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--lattices", type=int, nargs="+", default=[19, 27])
     ap.add_argument("--tg-sizes", type=int, nargs="+", default=[16, 32, 64])
     ap.add_argument("--isotropy-n", type=int, default=32)
-    ap.add_argument(
-        "--threads", type=int, default=8, help="torch threads (also per sphere worker)"
-    )
+    ap.add_argument("--threads", type=int, default=8, help="torch threads (also per sphere worker)")
     ap.add_argument(
         "--sphere-workers",
         type=int,

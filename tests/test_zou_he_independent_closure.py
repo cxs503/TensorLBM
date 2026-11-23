@@ -23,8 +23,10 @@ from pathlib import Path
 
 import pytest
 
-XVAL = Path(__file__).resolve().parents[1] / "xval" / (
-    "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION"
+XVAL = (
+    Path(__file__).resolve().parents[1]
+    / "xval"
+    / ("XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTION")
 )
 
 pytest.importorskip("numpy")
@@ -33,9 +35,7 @@ pytest.importorskip("torch")
 if not (XVAL / "independent_zouhe.py").is_file():  # pragma: no cover
     pytest.skip("xval module not present", allow_module_level=True)
 
-_spec = importlib.util.spec_from_file_location(
-    "independent_zouhe", XVAL / "independent_zouhe.py"
-)
+_spec = importlib.util.spec_from_file_location("independent_zouhe", XVAL / "independent_zouhe.py")
 ind = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ind)
 

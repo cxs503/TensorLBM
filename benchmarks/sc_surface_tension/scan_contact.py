@@ -38,15 +38,22 @@ def main(argv=None) -> int:
     psi_w = psi_of_rho(args.rho_w)
     pl, pg = psi_of_rho(1.957), psi_of_rho(0.1596)
     theta_young = math.degrees(math.acos(max(-1.0, min(1.0, (psi_w - pg) / (pl - pg)))))
-    res = run_contact_angle(theta_young, R0=args.R0, ny=args.ny, nx=args.nx,
-                            steps=args.steps, sample=args.steps, verbose=not args.quiet,
-                            wall_override=psi_w)
+    res = run_contact_angle(
+        theta_young,
+        R0=args.R0,
+        ny=args.ny,
+        nx=args.nx,
+        steps=args.steps,
+        sample=args.steps,
+        verbose=not args.quiet,
+        wall_override=psi_w,
+    )
     table = synthetic_cap_bias(ny=args.ny, nx=args.nx)
     # mask-based (linear-fit) estimator -- the primary instrument
     rho = torch.tensor(res["rho_field"])
     solid = torch.zeros((args.ny, args.nx), dtype=torch.bool)
     solid[:2, :] = True
-    solid[args.ny - 2:, :] = True
+    solid[args.ny - 2 :, :] = True
     qm = contact_angle_from_mask(rho, solid)
     row = {
         "rho_w": args.rho_w,

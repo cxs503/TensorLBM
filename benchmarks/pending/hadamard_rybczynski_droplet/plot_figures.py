@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # 读取模拟数据
-with open("/srv/tensor/shared/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.json") as f:
+with open(
+    "/srv/tensor/shared/runs/bm_close/hadamard_rybczynski_droplet/terminal_buoyancy.json"
+) as f:
     data = json.load(f)
 
 # 提取时间序列

@@ -91,7 +91,7 @@ def run_shear_translation() -> dict:
     is the joint order of the advection discretisation.
     """
     levels = [
-        {"ny": 32, "nx": 64, "dt": 1.0, "steps": 200},   # total time 200
+        {"ny": 32, "nx": 64, "dt": 1.0, "steps": 200},  # total time 200
         {"ny": 64, "nx": 128, "dt": 1.0, "steps": 200},  # space-only refinement
         {"ny": 64, "nx": 128, "dt": 0.5, "steps": 400},  # space + time refinement
         {"ny": 128, "nx": 256, "dt": 0.5, "steps": 400},
@@ -159,7 +159,9 @@ def run_matrix() -> list[dict]:
             arms.append(
                 {
                     "arm": f"{'M2PE' if evolve else 'M2P'}-ny{ny}-r{_ratio_label(ratio)}",
-                    "model": "M2P-E (Allen-Cahn indicator)" if evolve else "M2P (frozen indicator, round 1)",
+                    "model": "M2P-E (Allen-Cahn indicator)"
+                    if evolve
+                    else "M2P (frozen indicator, round 1)",
                     "wall_s_total": time.time() - t0,
                     **_jsonable(res),
                 }
@@ -182,15 +184,23 @@ def run_informational() -> list[dict]:
     arms = []
     t0 = time.time()
     stress = run_two_phase_only_evolving(
-        96, G=4e-5, nu_lo=NU_LO, nu_hi=NU_LO / 2.0, width=2.0, rule="harmonic",
-        evolve=True, max_steps=MAX_STEPS, stop_tol=STOP_TOL, check_every=CHECK_EVERY,
+        96,
+        G=4e-5,
+        nu_lo=NU_LO,
+        nu_hi=NU_LO / 2.0,
+        width=2.0,
+        rule="harmonic",
+        evolve=True,
+        max_steps=MAX_STEPS,
+        stop_tol=STOP_TOL,
+        check_every=CHECK_EVERY,
     )
     arms.append(
         {
             "arm": "INFO-advective-stress-ny96-r2-G10x",
             "model": "M2P-E, body force 10x the matched matrix (Ma ~ 0.05)",
             "note": "informational only: the Stokes reference is amplitude-independent, "
-                    "so any deviation is inertia + advection error; not gated",
+            "so any deviation is inertia + advection error; not gated",
             "wall_s_total": time.time() - t0,
             **_jsonable(stress),
         }
@@ -199,8 +209,16 @@ def run_informational() -> list[dict]:
 
     t0 = time.time()
     mismatch = run_two_phase_only_evolving(
-        96, G=4e-6, nu_lo=NU_LO, nu_hi=NU_LO / 4.0, width=2.0, width_init=1.0,
-        rule="harmonic", evolve=True, max_steps=MAX_STEPS, stop_tol=STOP_TOL,
+        96,
+        G=4e-6,
+        nu_lo=NU_LO,
+        nu_hi=NU_LO / 4.0,
+        width=2.0,
+        width_init=1.0,
+        rule="harmonic",
+        evolve=True,
+        max_steps=MAX_STEPS,
+        stop_tol=STOP_TOL,
         check_every=CHECK_EVERY,
     )
     arms.append(
@@ -208,8 +226,8 @@ def run_informational() -> list[dict]:
             "arm": "INFO-width-mismatch-ny96-r4-winit1",
             "model": "M2P-E, initial layering thinner (w=1) than the AC equilibrium (W=2)",
             "note": "informational only: measures whether the OSS convention 'the layering is "
-                    "given only by the initial value of C' survives an initialisation that is "
-                    "not the AC equilibrium; not gated",
+            "given only by the initial value of C' survives an initialisation that is "
+            "not the AC equilibrium; not gated",
             "wall_s_total": time.time() - t0,
             **_jsonable(mismatch),
         }
@@ -232,9 +250,7 @@ def evaluate(matrix: list[dict], shear: dict, thr: dict) -> dict:
     worst_max = max(evolving, key=lambda a: a["max_rel_peak"])
     worst_uy = max(evolving, key=lambda a: a["uy_spurious_rel"])
     worst_budget = max(evolving, key=lambda a: a["phase_field_budget_rel"])
-    worst_centre = max(
-        evolving, key=lambda a: (a["interface"]["final"]["centre_shift"] or 0.0)
-    )
+    worst_centre = max(evolving, key=lambda a: a["interface"]["final"]["centre_shift"] or 0.0)
     worst_width = max(
         evolving,
         key=lambda a: abs(a["interface"]["width_growth_rel"] or 0.0),
@@ -368,20 +384,33 @@ def _figures(matrix: list[dict], shear: dict, verdict: dict) -> list[str]:
                 y,
                 style,
                 lw=1.6,
-                label=("M2P-E Allen-Cahn C" if arm["config"]["evolve"] else "M2P frozen C (round 1)"),
+                label=(
+                    "M2P-E Allen-Cahn C" if arm["config"]["evolve"] else "M2P frozen C (round 1)"
+                ),
             )
-        refs = [a for a in matrix if a["config"]["ny"] == 96 and abs(a["config"]["nu_ratio"] - ratio) <= 1e-12]
+        refs = [
+            a
+            for a in matrix
+            if a["config"]["ny"] == 96 and abs(a["config"]["nu_ratio"] - ratio) <= 1e-12
+        ]
         if not refs:
             continue
         ref = refs[0]
-        ax.plot(np.array(ref["profile_ana"]) * 1e3, np.arange(len(ref["profile_ana"])), "k:",
-                lw=1.4, label="two-layer Stokes (analytic)")
+        ax.plot(
+            np.array(ref["profile_ana"]) * 1e3,
+            np.arange(len(ref["profile_ana"])),
+            "k:",
+            lw=1.4,
+            label="two-layer Stokes (analytic)",
+        )
         ax.set_title(f"$\\nu_{{lo}}/\\nu_{{hi}}$ = {ratio:g}")
         ax.set_xlabel("$u_x$ [$10^{-3}$ lattice units]")
         ax.grid(alpha=0.3)
         ax.legend(fontsize=7)
     axes[0].set_ylabel("y [lattice]")
-    fig.suptitle("Evolved vs frozen phase indicator against the analytic two-layer Poiseuille profile")
+    fig.suptitle(
+        "Evolved vs frozen phase indicator against the analytic two-layer Poiseuille profile"
+    )
     fig.tight_layout()
     p1 = OUT_DIR / "fig1_profiles_evolving_vs_frozen.png"
     fig.savefig(p1, dpi=140)
@@ -392,10 +421,16 @@ def _figures(matrix: list[dict], shear: dict, verdict: dict) -> list[str]:
     labels, ev, fr = [], [], []
     keys = sorted({(a["config"]["ny"], a["config"]["nu_ratio"]) for a in matrix})
     for key in keys:
-        ev_arms = [a for a in matrix if a["config"]["evolve"]
-                   and (a["config"]["ny"], a["config"]["nu_ratio"]) == key]
-        fr_arms = [a for a in matrix if (not a["config"]["evolve"])
-                   and (a["config"]["ny"], a["config"]["nu_ratio"]) == key]
+        ev_arms = [
+            a
+            for a in matrix
+            if a["config"]["evolve"] and (a["config"]["ny"], a["config"]["nu_ratio"]) == key
+        ]
+        fr_arms = [
+            a
+            for a in matrix
+            if (not a["config"]["evolve"]) and (a["config"]["ny"], a["config"]["nu_ratio"]) == key
+        ]
         if not ev_arms or not fr_arms:
             continue
         labels.append(f"ny{key[0]} r{key[1]:g}")
@@ -453,8 +488,13 @@ def _figures(matrix: list[dict], shear: dict, verdict: dict) -> list[str]:
     orders = [v for v in shear["observed_orders"].values() if v is not None]
     if orders:
         p = min(orders)
-        ax.loglog(h, err[0] * (h / h[0]) ** p, "k--", lw=1.0,
-                  label=f"slope p = {p:.2f} (min observed order)")
+        ax.loglog(
+            h,
+            err[0] * (h / h[0]) ** p,
+            "k--",
+            lw=1.0,
+            label=f"slope p = {p:.2f} (min observed order)",
+        )
     ax.set_xlabel("h = 1/nx = 1/ny (dt refined in step)")
     ax.set_ylabel("relative L2 error vs exact solution")
     ax.set_title("Allen-Cahn advection: convergence to the exact shear-translation solution")
@@ -487,35 +527,47 @@ def render_report(results: dict) -> str:
     add = lines.append
     add("# XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY - round 3: the interface is no longer frozen")
     add("")
-    add(f"_Anchor_ `XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY` (OSS row `oss_solutions` 274, "
-        "`lssfau/walberla`, tag `no-mcmp-two-phase-only`)")
+    add(
+        "_Anchor_ `XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY` (OSS row `oss_solutions` 274, "
+        "`lssfau/walberla`, tag `no-mcmp-two-phase-only`)"
+    )
     add("")
-    add(f"_Mission_ {results['mission']} - round 3 closes the gap that round 1 declared "
-        "in its own limitations section.")
+    add(
+        f"_Mission_ {results['mission']} - round 3 closes the gap that round 1 declared "
+        "in its own limitations section."
+    )
     add("")
-    add("Every number below is rendered from "
+    add(
+        "Every number below is rendered from "
         "`outputs/xval_no_mcmp_evolving_round3/results_round3.json`; every threshold is "
         "read from `docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json`, which "
         "was written before the first run. Round-1 artifacts "
-        "(`xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/*`) are untouched by this round.")
+        "(`xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/*`) are untouched by this round."
+    )
     add("")
     add("## 1. Case: what the downgrade actually simplifies")
     add("")
-    add("The OSS row says, verbatim, that the repository has **no MCMP** (no component "
+    add(
+        "The OSS row says, verbatim, that the repository has **no MCMP** (no component "
         "index, no per-component transport equation), so the two-component layered "
         "Poiseuille benchmark cannot be mapped directly; only the *phase-field layered "
         "initialisation geometry* plus the *variable-density equilibrium assembly* can be "
-        "borrowed - i.e. \"two-component\" is downgraded to \"two-phase layered\".")
+        'borrowed - i.e. "two-component" is downgraded to "two-phase layered".'
+    )
     add("")
-    add("Round 1 of this anchor (mission 18067, with the mass-budget addendum of mission "
+    add(
+        "Round 1 of this anchor (mission 18067, with the mass-budget addendum of mission "
         "21325) implemented that downgrade as a **frozen** indicator: one distribution "
         "function, `C(y) = 0.5 (1 - tanh((y - y_int)/w))` set once at `t = 0`, local "
         "viscosity from `C`, Guo forcing, full-way bounce-back walls. It met the owner "
-        "band on the matched-density matrix and stated its own limitation: *\"Nothing here "
-        "validates interface dynamics\"*.")
+        'band on the matched-density matrix and stated its own limitation: *"Nothing here '
+        'validates interface dynamics"*.'
+    )
     add("")
-    add("Round 3 removes the freezing. The indicator is advected and relaxed by the "
-        "Allen-Cahn field that the library already ships and verifies:")
+    add(
+        "Round 3 removes the freezing. The indicator is advected and relaxed by the "
+        "Allen-Cahn field that the library already ships and verifies:"
+    )
     add("")
     add("```")
     add("dphi/dt + div(phi u) = -M mu ,   mu = beta phi (phi^2 - 1) - kappa lap(phi)")
@@ -526,81 +578,114 @@ def render_report(results: dict) -> str:
     add("")
     add("| item | value |")
     add("|---|---|")
-    add("| channel | plane Poiseuille, `ny` rows, periodic in `x`, walls at rows 0 and `ny-1` (full-way bounce-back) |")
+    add(
+        "| channel | plane Poiseuille, `ny` rows, periodic in `x`, walls at rows 0 and `ny-1` (full-way bounce-back) |"
+    )
     add("| interface | `y_int = (ny-1)/2`, initial tanh width `w = 2` cells |")
-    add("| viscosity | `nu_lo = 0.5`, `nu_hi = nu_lo / ratio`, ratio in {2, 4}, harmonic node-local mixing |")
-    add("| body force | `G = 4e-6` per unit mass (matched matrix), `4e-5` in the informational stress arm |")
+    add(
+        "| viscosity | `nu_lo = 0.5`, `nu_hi = nu_lo / ratio`, ratio in {2, 4}, harmonic node-local mixing |"
+    )
+    add(
+        "| body force | `G = 4e-6` per unit mass (matched matrix), `4e-5` in the informational stress arm |"
+    )
     add("| Allen-Cahn | `sigma = 0.1`, `W = 2` (equilibrium thickness), `M = 1e-2`, `dt = 1` |")
-    add(f"| stopping | `max_steps = {results['settings']['max_steps']}`, "
+    add(
+        f"| stopping | `max_steps = {results['settings']['max_steps']}`, "
         f"`|du_peak|/u_peak <= {results['settings']['stop_tol']:g}` checked every "
-        f"{results['settings']['check_every']} steps |")
+        f"{results['settings']['check_every']} steps |"
+    )
     add("")
     add("## 2. Method")
     add("")
-    add("1. **The advection term is verified first, without the LBM in the loop.** The "
+    add(
+        "1. **The advection term is verified first, without the LBM in the loop.** The "
         "velocity field is the solenoidal linear shear `u_x = gamma (y - y_c)`, `u_y = 0`, "
         "the relaxation is switched off (`M = 0`), and the initial interface `y_int(x)` is "
         "periodic in `x`. The exact solution of `dphi/dt + div(phi u) = 0` then carries the "
         "interface along the characteristic, `phi(x,y,t) = phi0((x - gamma (y-y_c) t) mod Lx, y)`, "
         "so the measured error is the discretisation error of the advection term alone and "
-        "the observed order is a property of the scheme, not of the reference.")
-    add("2. **The coupled arm is run twice through the same code path**, once with "
+        "the observed order is a property of the scheme, not of the reference."
+    )
+    add(
+        "2. **The coupled arm is run twice through the same code path**, once with "
         "`evolve=False` (round-1 frozen indicator - the control) and once with "
         "`evolve=True` (Allen-Cahn indicator), at identical `ny`, force, viscosity ratio, "
         "width and stopping rule. The difference between the two arms is therefore exactly "
-        "the cost of unfreezing the interface.")
-    add("3. **The reference is the same 4x4 solved two-layer Stokes problem as round 1** "
+        "the cost of unfreezing the interface."
+    )
+    add(
+        "3. **The reference is the same 4x4 solved two-layer Stokes problem as round 1** "
         "(`xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/two_phase_only.py`, imported, not "
-        "re-implemented), whose wall/continuity/stress residuals are reported per arm.")
+        "re-implemented), whose wall/continuity/stress residuals are reported per arm."
+    )
     add("")
     add("## 3. Results")
     add("")
     add("### 3.1 Allen-Cahn advection vs the exact shear-translation solution")
     add("")
-    add("| ny x nx | dt | steps | relative L2 vs exact | max abs error | phase-field budget drift | CFL |")
+    add(
+        "| ny x nx | dt | steps | relative L2 vs exact | max abs error | phase-field budget drift | CFL |"
+    )
     add("|---|---|---|---|---|---|---|")
     for lv in shear["levels"]:
-        add(f"| {lv['config']['ny']} x {lv['config']['nx']} | {lv['config']['dt']:g} | "
+        add(
+            f"| {lv['config']['ny']} x {lv['config']['nx']} | {lv['config']['dt']:g} | "
             f"{lv['config']['steps']} | {lv['l2_rel']:.3e} | {lv['max_abs_err']:.3e} | "
-            f"{lv['phase_budget_rel']:.2e} | {lv['max_advective_cfl']:.3f} |")
+            f"{lv['phase_budget_rel']:.2e} | {lv['max_advective_cfl']:.3f} |"
+        )
     add("")
-    add("Observed orders: " + ", ".join(
-        f"`{k}` = {v:.2f}" if v is not None else f"`{k}` = n/a"
-        for k, v in shear["observed_orders"].items()) + ".")
+    add(
+        "Observed orders: "
+        + ", ".join(
+            f"`{k}` = {v:.2f}" if v is not None else f"`{k}` = n/a"
+            for k, v in shear["observed_orders"].items()
+        )
+        + "."
+    )
     add("")
     add("### 3.2 Matched matrix: frozen control vs Allen-Cahn indicator")
     add("")
-    add("| arm | steps | L2 | max/peak | spurious uy / peak ux | interface centre shift [cells] | width growth | phase budget drift |")
+    add(
+        "| arm | steps | L2 | max/peak | spurious uy / peak ux | interface centre shift [cells] | width growth | phase budget drift |"
+    )
     add("|---|---|---|---|---|---|---|---|")
     for arm in matrix:
         fin = arm["interface"]["final"]
         cs = "n/a" if fin["centre_shift"] is None else f"{fin['centre_shift']:.2e}"
         wg = arm["interface"]["width_growth_rel"]
-        add(f"| {arm['arm']} | {arm['steps']} | {pct(arm['l2_rel'])} | {pct(arm['max_rel_peak'])} | "
+        add(
+            f"| {arm['arm']} | {arm['steps']} | {pct(arm['l2_rel'])} | {pct(arm['max_rel_peak'])} | "
             f"{arm['uy_spurious_rel']:.2e} | {cs} | "
-            f"{'n/a' if wg is None else f'{wg * 100:+.2f}%'} | {arm['phase_field_budget_rel']:.2e} |")
+            f"{'n/a' if wg is None else f'{wg * 100:+.2f}%'} | {arm['phase_field_budget_rel']:.2e} |"
+        )
     add("")
     add("### 3.3 Cost of unfreezing the interface (arm-by-arm)")
     add("")
     add("| arm | frozen L2 | Allen-Cahn L2 | delta (absolute) |")
     add("|---|---|---|---|")
     for d in verdict["degradations"]:
-        add(f"| {d['arm']} | {d['l2_frozen'] * 100:.3f}% | {d['l2_evolving'] * 100:.3f}% | "
-            f"{d['delta_l2_abs'] * 100:+.4f} pp |")
+        add(
+            f"| {d['arm']} | {d['l2_frozen'] * 100:.3f}% | {d['l2_evolving'] * 100:.3f}% | "
+            f"{d['delta_l2_abs'] * 100:+.4f} pp |"
+        )
     add("")
     add("### 3.4 Informational (ungated) arms")
     add("")
     add("| arm | L2 | max/peak | steps | note |")
     add("|---|---|---|---|---|")
     for arm in info:
-        add(f"| {arm['arm']} | {pct(arm['l2_rel'])} | {pct(arm['max_rel_peak'])} | {arm['steps']} | {arm['note']} |")
+        add(
+            f"| {arm['arm']} | {pct(arm['l2_rel'])} | {pct(arm['max_rel_peak'])} | {arm['steps']} | {arm['note']} |"
+        )
     add("")
     add("## 4. Figures")
     add("")
     add("![fig1](outputs/xval_no_mcmp_evolving_round3/fig1_profiles_evolving_vs_frozen.png)")
     add("")
-    add("_Steady velocity profiles at ny=96: the Allen-Cahn indicator (solid) and the frozen "
-        "indicator (dashed) against the two-layer Stokes solution (dotted)._")
+    add(
+        "_Steady velocity profiles at ny=96: the Allen-Cahn indicator (solid) and the frozen "
+        "indicator (dashed) against the two-layer Stokes solution (dotted)._"
+    )
     add("")
     add("![fig2](outputs/xval_no_mcmp_evolving_round3/fig2_error_evolving_vs_frozen.png)")
     add("")
@@ -608,13 +693,17 @@ def render_report(results: dict) -> str:
     add("")
     add("![fig3](outputs/xval_no_mcmp_evolving_round3/fig3_indicator_evolution.png)")
     add("")
-    add("_Indicator profile before and after the transient (ny=96, ratio 4): the interface "
-        "moves by a fraction of a cell and does not thicken._")
+    add(
+        "_Indicator profile before and after the transient (ny=96, ratio 4): the interface "
+        "moves by a fraction of a cell and does not thicken._"
+    )
     add("")
     add("![fig4](outputs/xval_no_mcmp_evolving_round3/fig4_shear_translation_convergence.png)")
     add("")
-    add("_Allen-Cahn advection error against the exact shear-translation solution, with the "
-        "measured minimum observed order._")
+    add(
+        "_Allen-Cahn advection error against the exact shear-translation solution, with the "
+        "measured minimum observed order._"
+    )
     add("")
     add("## 5. Predeclared checks and verdict")
     add("")
@@ -623,31 +712,48 @@ def render_report(results: dict) -> str:
     for c in verdict["checks"]:
         v = c["value"]
         vs = "n/a" if v is None else (f"{v:.4g}")
-        add(f"| {c['id']} | {vs} | {c['threshold']:.4g} | {'yes' if c['pass'] else '**NO**'} | "
-            f"{c['worst_arm']} | {c['meaning']} |")
+        add(
+            f"| {c['id']} | {vs} | {c['threshold']:.4g} | {'yes' if c['pass'] else '**NO**'} | "
+            f"{c['worst_arm']} | {c['meaning']} |"
+        )
     add("")
-    add(f"**Verdict: {'all predeclared checks pass' if verdict['all_pass'] else 'FAILED checks: ' + ', '.join(verdict['failed_checks'])}**")
+    add(
+        f"**Verdict: {'all predeclared checks pass' if verdict['all_pass'] else 'FAILED checks: ' + ', '.join(verdict['failed_checks'])}**"
+    )
     add("")
     add("## 6. Error judgement against the acceptance band")
     add("")
     band = thr["E1_l2_rel"]
     worst = max((a for a in matrix if a["config"]["evolve"]), key=lambda a: a["l2_rel"])
-    add(f"* Key quantity - steady profile L2 error of the Allen-Cahn arm vs the analytic "
+    add(
+        f"* Key quantity - steady profile L2 error of the Allen-Cahn arm vs the analytic "
         f"two-layer Stokes solution: **{pct(worst['l2_rel'])}** (worst arm "
-        f"`{worst['arm']}`) -> inside the owner {band * 100:.0f}% band, and **< 3%**.")
+        f"`{worst['arm']}`) -> inside the owner {band * 100:.0f}% band, and **< 3%**."
+    )
     add(f"* Peak-normalised maximum error: **{pct(worst['max_rel_peak'])}** -> **< 3%**.")
-    add(f"* Unfreezing the interface changes the profile L2 by at most "
-        f"**{verdict['degradations'] and max(verdict['degradations'], key=lambda d: d['delta_l2_abs'])['delta_l2_abs'] * 100:+.4f} percentage points**, "
-        "i.e. the frozen convention of round 1 is *justified a posteriori* rather than merely assumed.")
-    add(f"* Interface migration: at most "
+    add(
+        f"* Unfreezing the interface changes the profile L2 by at most "
+        f"**{
+            verdict['degradations']
+            and max(verdict['degradations'], key=lambda d: d['delta_l2_abs'])['delta_l2_abs']
+            * 100:+.4f} percentage points**, "
+        "i.e. the frozen convention of round 1 is *justified a posteriori* rather than merely assumed."
+    )
+    add(
+        f"* Interface migration: at most "
         f"**{max((a['interface']['final']['centre_shift'] or 0.0) for a in matrix if a['config']['evolve']):.2e} cells** "
-        "over the whole transient (threshold 1 cell) - well below the lattice resolution.")
-    add(f"* Allen-Cahn advection operator: relative L2 **{shear['levels'][-1]['l2_rel']:.2e}** "
+        "over the whole transient (threshold 1 cell) - well below the lattice resolution."
+    )
+    add(
+        f"* Allen-Cahn advection operator: relative L2 **{shear['levels'][-1]['l2_rel']:.2e}** "
         f"against the exact shear-translation solution at the finest level, observed order "
-        f"**{min(v for v in shear['observed_orders'].values() if v is not None):.2f}**.")
-    add("* No key quantity of this round rests on an unpublished benchmark: the velocity "
+        f"**{min(v for v in shear['observed_orders'].values() if v is not None):.2f}**."
+    )
+    add(
+        "* No key quantity of this round rests on an unpublished benchmark: the velocity "
         "reference is an analytic solution solved in-code and self-checked (residuals per "
-        "arm in the json), and the phase-field reference is an exact analytic solution.")
+        "arm in the json), and the phase-field reference is an exact analytic solution."
+    )
     add("")
     add("## 7. Points to note, limitations, honest caveats")
     add("")
@@ -658,47 +764,66 @@ def render_report(results: dict) -> str:
     if not_run:
         add("* **Not run in this round (reported as not_run, not as passed):**")
         for item in not_run:
-            label = item.get("arm") or f"matched pair ny={item.get('ny')} ratio={item.get('nu_ratio'):g}"
+            label = (
+                item.get("arm")
+                or f"matched pair ny={item.get('ny')} ratio={item.get('nu_ratio'):g}"
+            )
             add(f"  * `{label}` - {item['reason']}")
         add("")
-    add("* **The OSS arm is still specified, not compiled.** `lssfau/walberla` is not "
+    add(
+        "* **The OSS arm is still specified, not compiled.** `lssfau/walberla` is not "
         "reachable from this sandbox and not vendored; round 3 does not change that. What "
         "round 3 adds is that the *model class* is no longer a simplification of the "
         "inventory text: the indicator now evolves through an Allen-Cahn field, which is the "
-        "phase-field piece the inventory names.")
-    add("* **The benchmark flow is strictly parallel**, so the continuum answer has zero "
+        "phase-field piece the inventory names."
+    )
+    add(
+        "* **The benchmark flow is strictly parallel**, so the continuum answer has zero "
         "normal velocity at the interface and zero advection of a stratified indicator. The "
         "round-3 result therefore says: *in the flow the anchor is about*, the frozen "
         "convention costs almost nothing. It does **not** say the Allen-Cahn route is "
         "validated for interface dynamics in general - for that the interface must be "
-        "sheared or curved, which the layered Poiseuille benchmark by construction never does.")
-    add("* Where the interface *does* move, the verification is the shear-translation test "
+        "sheared or curved, which the layered Poiseuille benchmark by construction never does."
+    )
+    add(
+        "* Where the interface *does* move, the verification is the shear-translation test "
         "(section 3.1): an exact solution, but a single-interface, single-shear case. "
-        "Topology changes (coalescence, break-up) are outside this module and outside the anchor.")
-    add("* The Allen-Cahn relaxation is weak (`M = 1e-2`, `sigma = 0.1`), chosen so that the "
+        "Topology changes (coalescence, break-up) are outside this module and outside the anchor."
+    )
+    add(
+        "* The Allen-Cahn relaxation is weak (`M = 1e-2`, `sigma = 0.1`), chosen so that the "
         "relaxation term cannot dominate advection inside the predeclared step budget; the "
         "interface therefore returns a *weak* test of the double-well term. The strong test "
         "of that term already exists in the library "
         "(`tests/test_allen_cahn_phasefield.py`: stationary tanh, equilibrium thickness, "
-        "driven travelling-wave speed).")
-    add("* Round 1's `K6_mass_drift_rel` remains **failed** (float32, threshold 1e-6); the "
+        "driven travelling-wave speed)."
+    )
+    add(
+        "* Round 1's `K6_mass_drift_rel` remains **failed** (float32, threshold 1e-6); the "
         "mission-21325 addendum established by a float64 re-run that it is round-off, not a "
         "leak. Round 3 does not re-score it and does not relax it. The phase-field budget "
         "check `E5` is a different quantity (integral of `C`, not of `rho`) and is reported "
-        "under its own name.")
-    add("* The ratio-4 arms run `tau_hi = 0.833`; the near-`tau = 0.5` difficulty that round 1 "
-        "disclosed for ratio 10 is not reached here.")
+        "under its own name."
+    )
+    add(
+        "* The ratio-4 arms run `tau_hi = 0.833`; the near-`tau = 0.5` difficulty that round 1 "
+        "disclosed for ratio 10 is not reached here."
+    )
     add("")
     add("## 8. Reproduce")
     add("")
     add("```bash")
-    add("python examples/xval_no_mcmp_two_phase_only_evolving.py     # writes json + figures + this report")
+    add(
+        "python examples/xval_no_mcmp_two_phase_only_evolving.py     # writes json + figures + this report"
+    )
     add("python -m pytest tests/test_xval_no_mcmp_two_phase_only_evolving.py -q")
     add("```")
     add("")
-    add(f"_Environment_: python {results['environment']['python']}, torch "
+    add(
+        f"_Environment_: python {results['environment']['python']}, torch "
         f"{results['environment']['torch']}, tensorlbm {results['environment']['tensorlbm']}, "
-        f"{results['environment']['platform']}.")
+        f"{results['environment']['platform']}."
+    )
     add("")
     return "\n".join(lines)
 
@@ -715,18 +840,32 @@ def _run_matrix_arm(ny: int, ratio: float) -> list[dict]:
     for evolve in (False, True):
         t0 = time.time()
         res = run_two_phase_only_evolving(
-            ny, G=4e-6, nu_lo=NU_LO, nu_hi=nu_hi, width=2.0, rule="harmonic",
-            evolve=evolve, max_steps=MAX_STEPS, stop_tol=STOP_TOL,
+            ny,
+            G=4e-6,
+            nu_lo=NU_LO,
+            nu_hi=nu_hi,
+            width=2.0,
+            rule="harmonic",
+            evolve=evolve,
+            max_steps=MAX_STEPS,
+            stop_tol=STOP_TOL,
             check_every=CHECK_EVERY,
         )
-        arms.append({
-            "arm": f"{'M2PE' if evolve else 'M2P'}-ny{ny}-r{_ratio_label(ratio)}",
-            "model": "M2P-E (Allen-Cahn indicator)" if evolve else "M2P (frozen indicator, round 1)",
-            "wall_s_total": time.time() - t0,
-            **_jsonable(res),
-        })
-        print(f"  {arms[-1]['arm']}: l2={res['l2_rel']:.5f} max={res['max_rel_peak']:.5f} "
-              f"steps={res['steps']} ({time.time() - t0:.1f}s)", flush=True)
+        arms.append(
+            {
+                "arm": f"{'M2PE' if evolve else 'M2P'}-ny{ny}-r{_ratio_label(ratio)}",
+                "model": "M2P-E (Allen-Cahn indicator)"
+                if evolve
+                else "M2P (frozen indicator, round 1)",
+                "wall_s_total": time.time() - t0,
+                **_jsonable(res),
+            }
+        )
+        print(
+            f"  {arms[-1]['arm']}: l2={res['l2_rel']:.5f} max={res['max_rel_peak']:.5f} "
+            f"steps={res['steps']} ({time.time() - t0:.1f}s)",
+            flush=True,
+        )
     return arms
 
 
@@ -751,7 +890,10 @@ def main(argv: list[str] | None = None) -> int:
 
     for stage in stages:
         if stage == "shear":
-            print("[round3] shear-translation verification of the Allen-Cahn advection term", flush=True)
+            print(
+                "[round3] shear-translation verification of the Allen-Cahn advection term",
+                flush=True,
+            )
             _write(partials / "shear.json", run_shear_translation())
         elif stage.startswith("matrix:"):
             _, ny_s, ratio_s = stage.split(":")
@@ -762,19 +904,23 @@ def main(argv: list[str] | None = None) -> int:
             print("[round3] informational arms", flush=True)
             _write(partials / "info.json", run_informational())
         elif stage == "render":
-            expected_all = [(ny, r, partials / f"matrix_{ny}_{_ratio_label(r)}.json")
-                            for ny, r in MATRIX]
+            expected_all = [
+                (ny, r, partials / f"matrix_{ny}_{_ratio_label(r)}.json") for ny, r in MATRIX
+            ]
             if not (partials / "shear.json").is_file():
                 raise SystemExit("render needs shear.json; run the shear stage first")
             # A pair that was not run is reported as not_run, explicitly, in the
             # json and in the report - never silently dropped and never counted
             # as a pass.
             matrix_not_run = [
-                {"ny": ny, "nu_ratio": r,
-                 "reason": "not run: this host caps one process at 120 s wall time and the "
-                           "cluster queue was saturated (job cj4624 still queued after 38 min)"
-                 }
-                for ny, r, path in expected_all if not path.is_file()
+                {
+                    "ny": ny,
+                    "nu_ratio": r,
+                    "reason": "not run: this host caps one process at 120 s wall time and the "
+                    "cluster queue was saturated (job cj4624 still queued after 38 min)",
+                }
+                for ny, r, path in expected_all
+                if not path.is_file()
             ]
             expected = [path for _, _, path in expected_all if path.is_file()]
             predeclared = json.loads(PREDECLARED_PATH.read_text())
@@ -789,9 +935,11 @@ def main(argv: list[str] | None = None) -> int:
                 reasons = []
             else:
                 info = []
-                reasons = ["the two informational (ungated) arms were NOT run: the local "
-                           "process wall-time cap here is 120 s and the cluster queue was "
-                           "saturated for 38 min, so this is reported as not_run, not as passed"]
+                reasons = [
+                    "the two informational (ungated) arms were NOT run: the local "
+                    "process wall-time cap here is 120 s and the cluster queue was "
+                    "saturated for 38 min, so this is reported as not_run, not as passed"
+                ]
             verdict = evaluate(matrix, shear, thr)
             import tensorlbm
 
@@ -803,11 +951,13 @@ def main(argv: list[str] | None = None) -> int:
                 "predeclared_contract": str(PREDECLARED_PATH.relative_to(REPO)),
                 "thresholds": thr,
                 "settings": {
-                    "max_steps": MAX_STEPS, "stop_tol": STOP_TOL, "check_every": CHECK_EVERY,
+                    "max_steps": MAX_STEPS,
+                    "stop_tol": STOP_TOL,
+                    "check_every": CHECK_EVERY,
                     "matrix": [{"ny": ny, "nu_ratio": r} for ny, r in MATRIX],
                     "nu_lo": NU_LO,
                     "staged_run": "each matched pair was run as its own short process; the "
-                                  "stages share no state",
+                    "stages share no state",
                     "informational_not_run": reasons,
                     "matrix_not_run": matrix_not_run,
                 },
@@ -829,8 +979,10 @@ def main(argv: list[str] | None = None) -> int:
             _write(OUT_DIR / "results_round3.json", results)
             REPORT_PATH.write_text(render_report(results))
             print(f"[round3] wrote {OUT_DIR / 'results_round3.json'} and {REPORT_PATH}", flush=True)
-            print(f"[round3] all_pass={verdict['all_pass']} failed={verdict['failed_checks']}",
-                  flush=True)
+            print(
+                f"[round3] all_pass={verdict['all_pass']} failed={verdict['failed_checks']}",
+                flush=True,
+            )
         else:
             raise SystemExit(f"unknown stage {stage!r}")
 

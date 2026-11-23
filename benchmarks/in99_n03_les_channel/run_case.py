@@ -48,10 +48,20 @@ def main() -> int:
     args = ap.parse_args()
 
     config = LesChannelConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz, steps=args.steps, warmup=args.warmup,
-        sample=args.sample, re_tau=args.re_tau, u_tau=args.u_tau, cs=args.cs,
-        lambda_=args.lambda_, perturb=args.perturb, perturb_modes=args.modes,
-        seed=args.seed, threads=args.threads,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        steps=args.steps,
+        warmup=args.warmup,
+        sample=args.sample,
+        re_tau=args.re_tau,
+        u_tau=args.u_tau,
+        cs=args.cs,
+        lambda_=args.lambda_,
+        perturb=args.perturb,
+        perturb_modes=args.modes,
+        seed=args.seed,
+        threads=args.threads,
     )
     out_dir = Path(args.out_dir)
     if not out_dir.is_absolute():

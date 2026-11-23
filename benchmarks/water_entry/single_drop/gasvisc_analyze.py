@@ -55,8 +55,7 @@ def main():
         ),
         "delta_healthy_ms": (
             a["postcontact_healthy_ms"] - c["postcontact_healthy_ms"]
-            if (a["postcontact_healthy_ms"] is not None
-                and c["postcontact_healthy_ms"] is not None)
+            if (a["postcontact_healthy_ms"] is not None and c["postcontact_healthy_ms"] is not None)
             else None
         ),
     }

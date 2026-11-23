@@ -27,8 +27,9 @@ def test_counter_term_is_the_documented_anti_diffusion_source():
 
 
 def test_static_droplet_conserves_phase_and_stays_put():
-    sim = B.CACHPopulation((64, 64), width=4.0, mobility=1.0 / 3.0, stencil="d2q9",
-                           min_gradient=1e-8, dtype=DT)
+    sim = B.CACHPopulation(
+        (64, 64), width=4.0, mobility=1.0 / 3.0, stencil="d2q9", min_gradient=1e-8, dtype=DT
+    )
     sim.initialize(B.circle_phi((64, 64), 12.0, 4.0))
     m0 = sim.mass()
     r0 = math.sqrt(float((sim.phi > 0.5).sum()) / math.pi)
@@ -42,8 +43,9 @@ def test_arm_a_and_arm_b_agree_in_the_static_limit():
     """The two h-population kernels differ only by the d(phi u)/dt term."""
     st = B.get_stencil("d2q9")
     phi0 = B.circle_phi((48, 48), 10.0, 4.0)
-    simB = B.CACHPopulation((48, 48), width=4.0, mobility=1.0 / 3.0, stencil="d2q9",
-                            min_gradient=1e-8, dtype=DT)
+    simB = B.CACHPopulation(
+        (48, 48), width=4.0, mobility=1.0 / 3.0, stencil="d2q9", min_gradient=1e-8, dtype=DT
+    )
     simB.initialize(phi0)
     simB.step()
     wv = st.W.view(-1, 1, 1).to(DT)

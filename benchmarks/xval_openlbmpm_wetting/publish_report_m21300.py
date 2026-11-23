@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Publish the mission report to the TensorPlatform reports API."""
+
 import json
 import os
 import urllib.request

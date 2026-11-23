@@ -159,9 +159,7 @@ class TestRankineVortex:
         ratio = dp_rankine / dp_lo
         expected_ratio = 1.0 / math.log(2.0)
 
-        assert abs(ratio - expected_ratio) < 1e-10, (
-            f"Rankine/LO ratio: {ratio} vs {expected_ratio}"
-        )
+        assert abs(ratio - expected_ratio) < 1e-10, f"Rankine/LO ratio: {ratio} vs {expected_ratio}"
 
     def test_rankine_velocity_continuity(self):
         """Rankine velocity is continuous at r = r_c."""
@@ -230,7 +228,7 @@ class TestLBMLambOseenVortex:
 
         mask = r > 1e-10
         u_theta = np.zeros((y, x))
-        u_theta[mask] = (-ux[mask] * yg[mask] / r[mask] + uy[mask] * xg[mask] / r[mask])
+        u_theta[mask] = -ux[mask] * yg[mask] / r[mask] + uy[mask] * xg[mask] / r[mask]
 
         # Azimuthal average
         r_bins = np.linspace(1, 25, 25)
@@ -241,7 +239,7 @@ class TestLBMLambOseenVortex:
                 u_avg[ib] = np.abs(u_theta[annulus]).mean()
 
         r_centers = 0.5 * (r_bins[:-1] + r_bins[1:])
-        
+
         # Compare with analytical
         u_analytical = lamb_oseen_velocity(r_centers, config.gamma, config.r_c0)
 
@@ -249,9 +247,7 @@ class TestLBMLambOseenVortex:
         rel_errors = np.abs(u_avg - u_analytical) / np.maximum(u_analytical, 1e-10)
         mean_rel_error = rel_errors[rel_errors < 1.0].mean()  # exclude very small values
 
-        assert mean_rel_error < 0.10, (
-            f"LBM velocity profile: mean rel error = {mean_rel_error:.4%}"
-        )
+        assert mean_rel_error < 0.10, f"LBM velocity profile: mean rel error = {mean_rel_error:.4%}"
 
     def test_vortex_velocity_peak_location(self):
         """LBM should produce velocity peak near r ≈ 1.12 r_c for Lamb-Oseen."""
@@ -279,7 +275,7 @@ class TestLBMLambOseenVortex:
 
         mask = r > 1e-10
         u_theta = np.zeros((y, x))
-        u_theta[mask] = (-ux[mask] * yg[mask] / r[mask] + uy[mask] * xg[mask] / r[mask])
+        u_theta[mask] = -ux[mask] * yg[mask] / r[mask] + uy[mask] * xg[mask] / r[mask]
 
         # Azimuthal average
         r_bins = np.linspace(1, 20, 20)
@@ -295,7 +291,7 @@ class TestLBMLambOseenVortex:
 
         # Peak should be near 1.12 * r_c for Lamb-Oseen
         assert abs(r_peak / config.r_c0 - 1.12) < 0.3, (
-            f"Velocity peak at r/r_c = {r_peak/config.r_c0}, expected ≈ 1.12"
+            f"Velocity peak at r/r_c = {r_peak / config.r_c0}, expected ≈ 1.12"
         )
 
 
@@ -352,16 +348,13 @@ class TestCavitationInception:
         rho = 998.0  # kg/m³
 
         sigma_i = cavitation_inception_number(
-            gamma, r_c, V, rho, p_inf=101325.0, p_v=2330.0,
-            vortex_model="lamb_oseen"
+            gamma, r_c, V, rho, p_inf=101325.0, p_v=2330.0, vortex_model="lamb_oseen"
         )
 
         # Analytical: σ_i = Γ²ln(2)/(2π²r_c²V²)
         expected = gamma**2 * math.log(2.0) / (2.0 * math.pi**2 * r_c**2 * V**2)
 
-        assert abs(sigma_i - expected) / expected < 1e-10, (
-            f"σ_i mismatch: {sigma_i} vs {expected}"
-        )
+        assert abs(sigma_i - expected) / expected < 1e-10, f"σ_i mismatch: {sigma_i} vs {expected}"
 
     def test_inception_sigma_rankine_higher(self):
         """Rankine σ_i > Lamb-Oseen σ_i (Rankine has larger Δp)."""
@@ -370,12 +363,8 @@ class TestCavitationInception:
         V = 5.0
         rho = 998.0
 
-        sigma_lo = cavitation_inception_number(
-            gamma, r_c, V, rho, 101325.0, 2330.0, "lamb_oseen"
-        )
-        sigma_rk = cavitation_inception_number(
-            gamma, r_c, V, rho, 101325.0, 2330.0, "rankine"
-        )
+        sigma_lo = cavitation_inception_number(gamma, r_c, V, rho, 101325.0, 2330.0, "lamb_oseen")
+        sigma_rk = cavitation_inception_number(gamma, r_c, V, rho, 101325.0, 2330.0, "rankine")
 
         assert sigma_rk > sigma_lo, (
             f"Rankine σ_i ({sigma_rk}) should be > Lamb-Oseen σ_i ({sigma_lo})"
@@ -450,9 +439,7 @@ class TestMcCormickScaling:
 
         sigma_i = mccormick_inception_scaling(gamma, V, c, Re)
 
-        assert 0.1 < sigma_i < 10.0, (
-            f"McCormick σ_i = {sigma_i} outside typical range"
-        )
+        assert 0.1 < sigma_i < 10.0, f"McCormick σ_i = {sigma_i} outside typical range"
 
 
 # =============================================================================
@@ -534,8 +521,7 @@ class TestFullChain:
 
         # Inception number from Lamb-Oseen
         sigma_lo = cavitation_inception_number(
-            gamma, r_c, V, rho, p_inf=101325.0, p_v=2330.0,
-            vortex_model="lamb_oseen"
+            gamma, r_c, V, rho, p_inf=101325.0, p_v=2330.0, vortex_model="lamb_oseen"
         )
 
         # Inception number from McCormick
@@ -551,10 +537,10 @@ class TestFullChain:
         assert sigma_mcc > 0, f"McCormick σ_i should be positive: {sigma_mcc}"
 
         # Log the comparison (not a strict pass/fail — different models)
-        print(f"\nFull chain comparison:")
+        print("\nFull chain comparison:")
         print(f"  CL = {CL:.4f}")
         print(f"  Γ = {gamma:.4f} m²/s")
-        print(f"  r_c = {r_c*1000:.1f} mm")
+        print(f"  r_c = {r_c * 1000:.1f} mm")
         print(f"  Re = {Re:.2e}")
         print(f"  σ_i (Lamb-Oseen) = {sigma_lo:.4f}")
         print(f"  σ_i (McCormick)  = {sigma_mcc:.4f}")
@@ -573,7 +559,7 @@ class TestFullChain:
         for i in range(len(sigma_values) - 1):
             assert sigma_values[i] > sigma_values[i + 1], (
                 f"σ_i should decrease with Re: σ({Re_values[i]})={sigma_values[i]} "
-                f"vs σ({Re_values[i+1]})={sigma_values[i+1]}"
+                f"vs σ({Re_values[i + 1]})={sigma_values[i + 1]}"
             )
 
     def test_sigma_i_vs_circulation_sweep(self):
@@ -589,7 +575,7 @@ class TestFullChain:
         for i in range(len(sigma_values) - 1):
             assert sigma_values[i] < sigma_values[i + 1], (
                 f"σ_i should increase with Γ: σ({gamma_values[i]})={sigma_values[i]} "
-                f"vs σ({gamma_values[i+1]})={sigma_values[i+1]}"
+                f"vs σ({gamma_values[i + 1]})={sigma_values[i + 1]}"
             )
 
 
@@ -637,6 +623,4 @@ class TestLambOseenVelocity:
         r_max = r[np.argmax(u_theta)]
 
         # Maximum is at r ≈ 1.1209 r_c for Lamb-Oseen
-        assert abs(r_max / r_c - 1.12) < 0.05, (
-            f"u_θ max at r/r_c = {r_max/r_c}, expected ≈ 1.12"
-        )
+        assert abs(r_max / r_c - 1.12) < 0.05, f"u_θ max at r/r_c = {r_max / r_c}, expected ≈ 1.12"

@@ -6,12 +6,13 @@ prints the predeclared triple (peak_depth / peak_error / postcontact_healthy_ms)
 plus the preregistration verdict.  All numbers are read from the artifacts;
 nothing is hand-entered.
 """
+
 import json
 import sys
 from pathlib import Path
 
-EXP_PEAK_D = 1.857434   # Santini case-3 experimental peak depth (D)
-EXP_PEAK_MS = 10.394    # experimental peak time (ms after contact)
+EXP_PEAK_D = 1.857434  # Santini case-3 experimental peak depth (D)
+EXP_PEAK_MS = 10.394  # experimental peak time (ms after contact)
 CTRL_ANCHOR_PEAK_D = 1.4352  # established ctrl anchor (CAVSWEEP/KERN-B)
 
 
@@ -19,8 +20,13 @@ def triple(result: dict) -> dict:
     hist = result.get("history") or []
     rows = [r for r in hist if r.get("depth_over_D") is not None]
     if not rows:
-        return {"peak_depth_D": None, "peak_ms": None, "peak_error_pct": None,
-                "healthy_ms": None, "stop": result.get("stop_reason")}
+        return {
+            "peak_depth_D": None,
+            "peak_ms": None,
+            "peak_error_pct": None,
+            "healthy_ms": None,
+            "stop": result.get("stop_reason"),
+        }
     pk = max(rows, key=lambda r: r["depth_over_D"])
     last = hist[-1]
     return {

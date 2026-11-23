@@ -5,6 +5,7 @@
 用法：python3 benchmarks/water_entry/single_drop/ev1_gas_flow_figures.py --tree .
 输出：docs/audits/ev1_gas_flow_20261121/figs/gas_flow_depth.png
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,6 +36,7 @@ def main() -> int:
 
     tc, dc, _ = load("EV1-GAS_FLOW-CTRL")
     ta, da, da_raw = load("EV1-GAS_FLOW")
+
     # absolute-time copies for the pre-impact zoom (arm never reached contact)
     def load_abs(arm: str):
         d = json.loads((tree / "runs" / arm / "result.json").read_text())
@@ -56,8 +58,13 @@ def main() -> int:
     ax1.plot(ex, ed, "o", color="tab:red", ms=4, label="Santini case-3 (18 pts)")
     pkc = int(max(range(len(dc)), key=lambda i: dc[i]))
     ax1.plot([tc[pkc]], [dc[pkc]], "b^", ms=7)
-    ax1.annotate(f"ctrl {dc[pkc]:.4f}D@{tc[pkc]:.2f}ms", (tc[pkc], dc[pkc]),
-                 textcoords="offset points", xytext=(8, -12), fontsize=8)
+    ax1.annotate(
+        f"ctrl {dc[pkc]:.4f}D@{tc[pkc]:.2f}ms",
+        (tc[pkc], dc[pkc]),
+        textcoords="offset points",
+        xytext=(8, -12),
+        fontsize=8,
+    )
     ax1.set_xlabel("time (ms, post-contact)")
     ax1.set_ylabel("cavity depth (D)")
     ax1.set_title("Cavity depth vs time (full window)")

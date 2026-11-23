@@ -4,6 +4,7 @@
 Reads runs/cont2/{contpin,ctrl}.json and renders the cavity-depth trajectory
 of both arms against the experimental peak (1.857434 D @ 10.394 ms).
 """
+
 import json
 import sys
 from pathlib import Path
@@ -20,8 +21,11 @@ EXP_PEAK_MS = 10.394
 def series(p: Path):
     r = json.loads(p.read_text())
     h = r.get("history") or []
-    pts = [(row["time_ms"], row["depth_over_D"]) for row in h
-           if row.get("time_ms") is not None and row.get("depth_over_D") is not None]
+    pts = [
+        (row["time_ms"], row["depth_over_D"])
+        for row in h
+        if row.get("time_ms") is not None and row.get("depth_over_D") is not None
+    ]
     t = [x[0] for x in pts]
     d = [x[1] for x in pts]
     return t, d, r
@@ -37,10 +41,8 @@ def main() -> int:
     ax.plot(tc, dc, color="tab:blue", lw=1.6, label="ctrl (K_pin=0)")
     ax.plot(ta, da, color="tab:red", lw=1.6, ls="--", label="CONT-PIN (K_pin=0.3, died 3.6ms)")
     ax.plot(t1, d1, color="tab:green", lw=1.6, label="CONT-PIN (K_pin=0.1)")
-    ax.axhline(EXP_PEAK_D, color="k", ls="--", lw=1.0,
-                label=f"exp peak {EXP_PEAK_D} D")
-    ax.axvline(EXP_PEAK_MS, color="k", ls=":", lw=1.0,
-              label=f"exp peak time {EXP_PEAK_MS} ms")
+    ax.axhline(EXP_PEAK_D, color="k", ls="--", lw=1.0, label=f"exp peak {EXP_PEAK_D} D")
+    ax.axvline(EXP_PEAK_MS, color="k", ls=":", lw=1.0, label=f"exp peak time {EXP_PEAK_MS} ms")
     pk_c = max(dc) if dc else float("nan")
     pk_a = max(da) if da else float("nan")
     if dc:

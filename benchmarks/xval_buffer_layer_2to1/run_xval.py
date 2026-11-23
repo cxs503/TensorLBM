@@ -73,6 +73,7 @@ import numpy as np
 # TensorLBM implementation (import from repo)
 # ---------------------------------------------------------------------------
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from tensorlbm.amr_cavity2d import CavityAMR2D, CavityAMR2DConfig, ghia_comparison
@@ -95,7 +96,17 @@ _C = np.array(
     dtype=np.int32,
 )
 _W = np.array(
-    [4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0],
+    [
+        4.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 9.0,
+        1.0 / 36.0,
+        1.0 / 36.0,
+        1.0 / 36.0,
+        1.0 / 36.0,
+    ],
     dtype=np.float64,
 )
 _OPP = np.array([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=np.int64)
@@ -222,8 +233,8 @@ class VivsimBufferLayer2to1:
         self.top = (n - strip, n)
         self.bottom = (0, strip)
         # Initialize fine grids with simple upsampling (no FH at init)
-        self.f_top = np.repeat(np.repeat(self.f[:, self.top[0]:, :], 2, axis=1), 2, axis=2)
-        self.f_bottom = np.repeat(np.repeat(self.f[:, :self.bottom[1], :], 2, axis=1), 2, axis=2)
+        self.f_top = np.repeat(np.repeat(self.f[:, self.top[0] :, :], 2, axis=1), 2, axis=2)
+        self.f_bottom = np.repeat(np.repeat(self.f[:, : self.bottom[1], :], 2, axis=1), 2, axis=2)
 
         fine_shape = self.f_top.shape[1:]
         self.wall_top = np.zeros(fine_shape, dtype=bool)
@@ -246,8 +257,8 @@ class VivsimBufferLayer2to1:
     def inventory(self):
         n = self.coarse
         inside = np.zeros(n, dtype=bool)
-        inside[self.top[0]:self.top[1]] = True
-        inside[self.bottom[0]:self.bottom[1]] = True
+        inside[self.top[0] : self.top[1]] = True
+        inside[self.bottom[0] : self.bottom[1]] = True
         coarse_mass = float(self.f[:, ~inside, :].sum())
         fine_mass = 0.25 * float(self.f_top.sum() + self.f_bottom.sum())
         return {"coarse": coarse_mass, "fine": fine_mass, "total": coarse_mass + fine_mass}
@@ -264,9 +275,7 @@ class VivsimBufferLayer2to1:
         # OSS reference: single-time ghost fill (no time interpolation)
         for sub in range(2):
             # Top strip
-            recon_top = _fh_upsample(
-                f_old[:, self.top[0] - 1:self.top[0], :], tau_c, tau_f
-            )
+            recon_top = _fh_upsample(f_old[:, self.top[0] - 1 : self.top[0], :], tau_c, tau_f)
             pre_top = self.f_top.copy()
             top_new = _pre_bounce(pre_top, _collide_rlbm(pre_top, tau_f), self.wall_top)
             top_new = _stream(top_new)
@@ -275,7 +284,7 @@ class VivsimBufferLayer2to1:
 
             # Bottom strip
             recon_bottom = _fh_upsample(
-                f_old[:, self.bottom[1]:self.bottom[1] + 1, :], tau_c, tau_f
+                f_old[:, self.bottom[1] : self.bottom[1] + 1, :], tau_c, tau_f
             )
             pre_bot = self.f_bottom.copy()
             bot_new = _pre_bounce(pre_bot, _collide_rlbm(pre_bot, tau_f), self.wall_bottom)
@@ -286,8 +295,8 @@ class VivsimBufferLayer2to1:
         # Restrict fine to coarse
         coarse_top_new = _fh_restrict(self.f_top, tau_f, tau_c)
         coarse_bot_new = _fh_restrict(self.f_bottom, tau_f, tau_c)
-        f_new[:, self.top[0]:, :] = coarse_top_new
-        f_new[:, :self.bottom[1], :] = coarse_bot_new
+        f_new[:, self.top[0] :, :] = coarse_top_new
+        f_new[:, : self.bottom[1], :] = coarse_bot_new
 
         # No reflux in OSS reference - but apply simple mass correction to prevent blowup
         # This is a minimal correction to keep the simulation stable for comparison
@@ -319,7 +328,11 @@ class VivsimBufferLayer2to1:
         y_mid = np.arange(strip, n - strip) + 0.5
         k = n // 2
         u_col = np.concatenate(
-            [ux_b[:, 2 * k:2 * k + 2].mean(axis=1), ux_c[strip:n - strip, k], ux_t[:, 2 * k:2 * k + 2].mean(axis=1)],
+            [
+                ux_b[:, 2 * k : 2 * k + 2].mean(axis=1),
+                ux_c[strip : n - strip, k],
+                ux_t[:, 2 * k : 2 * k + 2].mean(axis=1),
+            ],
         )
         y_col = np.concatenate([y_bot, y_mid, y_top]) / n
         j = n // 2
@@ -332,6 +345,7 @@ class VivsimBufferLayer2to1:
 # Main experiment
 # ---------------------------------------------------------------------------
 
+
 def main():
     out = Path(__file__).parent / "artifacts"
     out.mkdir(parents=True, exist_ok=True)
@@ -343,25 +357,27 @@ def main():
     u_lid = 0.06
     steps = 60000
 
-    print(f"[xval] Running TensorLBM AMR cavity (coarse={coarse}, strip={strip}, Re={re}, steps={steps})")
+    print(
+        f"[xval] Running TensorLBM AMR cavity (coarse={coarse}, strip={strip}, Re={re}, steps={steps})"
+    )
     cfg = CavityAMR2DConfig(coarse=coarse, strip_coarse=strip, re=re, u_lid=u_lid, reflux=True)
     solver_tl = CavityAMR2D(cfg)
     t0 = time.time()
     for step in range(1, steps + 1):
         solver_tl.step()
         if step % 10000 == 0:
-            print(f"  TensorLBM step {step}/{steps}, t={time.time()-t0:.0f}s")
+            print(f"  TensorLBM step {step}/{steps}, t={time.time() - t0:.0f}s")
     t_tl = time.time() - t0
     prof_tl = solver_tl.centreline_profiles()
     inv_tl = solver_tl.inventory()
 
-    print(f"[xval] Running OSS reference (vivsim buffer-layer-2to1)")
+    print("[xval] Running OSS reference (vivsim buffer-layer-2to1)")
     solver_oss = VivsimBufferLayer2to1(coarse=coarse, strip_coarse=strip, re=re, u_lid=u_lid)
     t0 = time.time()
     for step in range(1, steps + 1):
         solver_oss.step()
         if step % 10000 == 0:
-            print(f"  OSS step {step}/{steps}, t={time.time()-t0:.0f}s")
+            print(f"  OSS step {step}/{steps}, t={time.time() - t0:.0f}s")
     t_oss = time.time() - t0
     prof_oss = solver_oss.centreline_profiles()
     inv_oss = solver_oss.inventory()
@@ -369,6 +385,7 @@ def main():
     # Compare profiles
     # Interpolate OSS profiles onto TensorLBM grid for fair comparison
     from scipy.interpolate import interp1d
+
     u_oss_interp = interp1d(prof_oss["y"], prof_oss["u"], kind="linear", fill_value="extrapolate")
     v_oss_interp = interp1d(prof_oss["x"], prof_oss["v"], kind="linear", fill_value="extrapolate")
 
@@ -387,7 +404,9 @@ def main():
 
     # Mass conservation comparison
     mass_drift_tl = abs(inv_tl["total"] - inv_tl["total"]) / inv_tl["total"]  # TensorLBM has reflux
-    mass_drift_oss = abs(inv_oss["total"] - (coarse * coarse)) / (coarse * coarse)  # OSS has no reflux
+    mass_drift_oss = abs(inv_oss["total"] - (coarse * coarse)) / (
+        coarse * coarse
+    )  # OSS has no reflux
 
     # Ghia comparison for both
     ghia_tl = ghia_comparison(prof_tl, GHIA_RE1000, u_lid)
@@ -449,12 +468,18 @@ def main():
 
     (out / "xval_buffer_layer_2to1.json").write_text(json.dumps(results, indent=2))
 
-    print(f"\n[xval] Results:")
+    print("\n[xval] Results:")
     print(f"  TensorLBM max|du|/U_lid = {max_du_pct:.2f}%")
     print(f"  TensorLBM max|dv|/U_lid = {max_dv_pct:.2f}%")
-    print(f"  Pass criterion (<15%): {'PASS' if results['comparison']['pass_criterion_15pct'] else 'FAIL'}")
-    print(f"  TensorLBM vs Ghia: max|du|={ghia_tl['max_abs_dev_u']:.4f}, max|dv|={ghia_tl['max_abs_dev_v']:.4f}")
-    print(f"  OSS vs Ghia: max|du|={ghia_oss['max_abs_dev_u']:.4f}, max|dv|={ghia_oss['max_abs_dev_v']:.4f}")
+    print(
+        f"  Pass criterion (<15%): {'PASS' if results['comparison']['pass_criterion_15pct'] else 'FAIL'}"
+    )
+    print(
+        f"  TensorLBM vs Ghia: max|du|={ghia_tl['max_abs_dev_u']:.4f}, max|dv|={ghia_tl['max_abs_dev_v']:.4f}"
+    )
+    print(
+        f"  OSS vs Ghia: max|du|={ghia_oss['max_abs_dev_u']:.4f}, max|dv|={ghia_oss['max_abs_dev_v']:.4f}"
+    )
     print(f"  Artifact: {out / 'xval_buffer_layer_2to1.json'}")
 
     return 0

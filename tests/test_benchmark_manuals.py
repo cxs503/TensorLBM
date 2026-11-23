@@ -1,4 +1,5 @@
 """Regression tests for the published 35-case catalogue integrity gate."""
+
 from __future__ import annotations
 
 import importlib.util

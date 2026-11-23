@@ -42,19 +42,27 @@ def main(argv=None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     tag = f"cells{args.cells}_{args.wall}_nu{args.nu:g}"
     t0 = time.time()
-    db = DamBreakMoyce(cells_per_a=args.cells, wall=args.wall, nu_l=args.nu,
-                       cfl=args.cfl, aspect=args.aspect)
+    db = DamBreakMoyce(
+        cells_per_a=args.cells, wall=args.wall, nu_l=args.nu, cfl=args.cfl, aspect=args.aspect
+    )
     db.cfg.poisson_tol = args.tol
     result = db.run(t_end_mm=args.t_end_mm)
     result["wall_seconds"] = time.time() - t0
     result["tag"] = tag
-    result["grid"] = {"nx": db.cfg.nx, "ny": db.cfg.ny,
-                      "lx": db.cfg.lx, "ly": db.cfg.ly, "dx": db.cfg.dx}
+    result["grid"] = {
+        "nx": db.cfg.nx,
+        "ny": db.cfg.ny,
+        "lx": db.cfg.lx,
+        "ly": db.cfg.ly,
+        "dx": db.cfg.dx,
+    }
     (out / f"{tag}.json").write_text(json.dumps(result, indent=1))
-    print(f"[{tag}] steps={result['n_steps']} rmse={result['rmse']:.4f} "
-          f"rel={result['rmse_relative_percent']:.2f}% "
-          f"mass={result['mass']['max_relative_drift']:.2e} "
-          f"wall={result['wall_seconds']:.1f}s")
+    print(
+        f"[{tag}] steps={result['n_steps']} rmse={result['rmse']:.4f} "
+        f"rel={result['rmse_relative_percent']:.2f}% "
+        f"mass={result['mass']['max_relative_drift']:.2e} "
+        f"wall={result['wall_seconds']:.1f}s"
+    )
     return 0
 
 

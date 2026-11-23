@@ -243,9 +243,7 @@ def _rel_l2(num: torch.Tensor, ana: torch.Tensor) -> float:
     return float(torch.linalg.norm(num - ana) / denom)
 
 
-def _interp_profile(
-    u: torch.Tensor, h_from: int, h_to: int, u_wall: float
-) -> torch.Tensor:
+def _interp_profile(u: torch.Tensor, h_from: int, h_to: int, u_wall: float) -> torch.Tensor:
     """Refine a channel profile ``N_from -> N_to`` (linear, walls pinned).
 
     Coordinates are the wall distance ``s = row index`` (the no-slip planes of
@@ -275,13 +273,9 @@ def _fluid_mask(gap_cells: int) -> torch.Tensor:
     return fluid
 
 
-def _discrete_shear_rate(
-    ux: torch.Tensor, gap_cells: int, u_wall: float = 0.0
-) -> torch.Tensor:
+def _discrete_shear_rate(ux: torch.Tensor, gap_cells: int, u_wall: float = 0.0) -> torch.Tensor:
     """The solver's own wall-consistent shear rate (same operator as the collision)."""
-    gamma = shear_rate_channel_consistent(
-        ux.to(torch.float64), _fluid_mask(gap_cells), 0.0, u_wall
-    )
+    gamma = shear_rate_channel_consistent(ux.to(torch.float64), _fluid_mask(gap_cells), 0.0, u_wall)
     return gamma[:, 0][1:-1]
 
 
@@ -359,9 +353,7 @@ def _drive_channel(
         if couette:
             beta_eff = tau_w_lat / H_disc  # analytic adverse gradient (gap H_disc)
             a_lat = -beta_eff * H_disc / level  # discrete force: tau_w/level
-            u_wall = float(
-                hb_couette_adverse_wall_velocity(beta_eff, H_disc, rheo)["U"]
-            )
+            u_wall = float(hb_couette_adverse_wall_velocity(beta_eff, H_disc, rheo)["U"])
         else:
             u_wall = 0.0
         if from_rest:
@@ -373,13 +365,9 @@ def _drive_channel(
             # The from-rest control shows the steady state does not depend on it.
             s_coord = torch.arange(level + 2, dtype=torch.float64)
             if couette:
-                u_init = hb_couette_adverse_profile(
-                    s_coord, tau_w_lat / H_disc, H_disc, rheo
-                )
+                u_init = hb_couette_adverse_profile(s_coord, tau_w_lat / H_disc, H_disc, rheo)
             else:
-                u_init = hb_plane_velocity_profile(
-                    s_coord - H_disc / 2.0, H_disc, tau_w_lat, rheo
-                )
+                u_init = hb_plane_velocity_profile(s_coord - H_disc / 2.0, H_disc, tau_w_lat, rheo)
         t0 = time.time()
         res = run_frazil_hb_channel(
             level,
@@ -413,8 +401,13 @@ def run_poiseuille(case: dict) -> dict:
     base = verification_case(case["n"], case["r_y"], gap_cells=gap)
     rheo, m = base["rheo"], base["m"]
     res, levels = _drive_channel(
-        rheo, base["tau_w_lat"], m, gap, case["ladder"],
-        from_rest=case.get("from_rest", False), label=case["id"],
+        rheo,
+        base["tau_w_lat"],
+        m,
+        gap,
+        case["ladder"],
+        from_rest=case.get("from_rest", False),
+        label=case["id"],
     )
     H = float(gap) + 1.0  # discrete gap of the node-based channel kernel
     y = res["y"].to(torch.float64)
@@ -457,9 +450,7 @@ def run_poiseuille(case: dict) -> dict:
             else abs(float(ys_num["y_yield_const"]) - y_c) / y_c
         ),
         "y_yield_rel_error_vs_analytic": abs(float(ys_num["y_yield"]) - y_c) / y_c,
-        "y_yield_rel_error_like_for_like": abs(
-            float(ys_num["y_yield"]) - float(ys_ana["y_yield"])
-        )
+        "y_yield_rel_error_like_for_like": abs(float(ys_num["y_yield"]) - float(ys_ana["y_yield"]))
         / y_c,
         "profile_s": [round(float(v), 8) for v in s_fluid],
         "profile_u_num": [round(float(v), 10) for v in u_n],
@@ -481,7 +472,13 @@ def run_couette(case: dict) -> dict:
     meta = hb_couette_adverse_wall_velocity(beta_eff, H, rheo)
     u_wall = float(meta["U"])
     res, levels = _drive_channel(
-        rheo, base["tau_w_lat"], m, gap, case["ladder"], couette=True, label=case["id"],
+        rheo,
+        base["tau_w_lat"],
+        m,
+        gap,
+        case["ladder"],
+        couette=True,
+        label=case["id"],
     )
     y = res["y"].to(torch.float64)
     u_num = res["u_profile"].to(torch.float64)
@@ -517,9 +514,7 @@ def run_couette(case: dict) -> dict:
             else abs(float(ys_num["y_yield_const"]) - y_c) / y_c
         ),
         "y_yield_rel_error_vs_analytic": abs(float(ys_num["y_yield"]) - y_c) / y_c,
-        "y_yield_rel_error_like_for_like": abs(
-            float(ys_num["y_yield"]) - float(ys_ana["y_yield"])
-        )
+        "y_yield_rel_error_like_for_like": abs(float(ys_num["y_yield"]) - float(ys_ana["y_yield"]))
         / y_c,
         "beta_eff": beta_eff,
         "beta_discrete": base["tau_w_lat"] / gap,
@@ -579,9 +574,17 @@ def run_couette_pure(case: dict) -> dict:
         u_init = gamma_wall * s_coord
         t0 = time.time()
         res = run_frazil_hb_channel(
-            level, rheo, 0.0, u_wall=u_wall_l, nx=1,
-            n_steps=MAX_STEPS.get(level, 40000), m=m, check_every=CHECK_EVERY,
-            tol=TOL, u_init=u_init, dtype=torch.float64,
+            level,
+            rheo,
+            0.0,
+            u_wall=u_wall_l,
+            nx=1,
+            n_steps=MAX_STEPS.get(level, 40000),
+            m=m,
+            check_every=CHECK_EVERY,
+            tol=TOL,
+            u_init=u_init,
+            dtype=torch.float64,
         )
         levels.append(_level_record(level, res, time.time() - t0))
         print(
@@ -601,9 +604,7 @@ def run_couette_pure(case: dict) -> dict:
         "u_wall_num": float(u_num[-1]),
         "l2_profile": _rel_l2(u_n, ana),
         "l2_shear_rate_yielded": _rel_l2(gamma_num, gamma_ana),
-        "max_abs_shear_rate_yielded": float(
-            (gamma_num - gamma_ana).abs().max() / gamma_wall
-        ),
+        "max_abs_shear_rate_yielded": float((gamma_num - gamma_ana).abs().max() / gamma_wall),
         "yield_surface": None,  # uniform stress -> whole gap yielded
         "tau_w_lat": tau_w_lat,
         "m": float(m),
@@ -622,9 +623,7 @@ def run_water(case: dict) -> dict:
     gap = case["gap_cells"]
     base = verification_case(1.0, 0.0, gap_cells=gap)
     rheo, m = base["rheo"], base["m"]
-    res, levels = _drive_channel(
-        rheo, base["tau_w_lat"], m, gap, case["ladder"], label=case["id"]
-    )
+    res, levels = _drive_channel(rheo, base["tau_w_lat"], m, gap, case["ladder"], label=case["id"])
     H = float(gap) + 1.0
     y = res["y"].to(torch.float64)
     s_coord = torch.arange(gap + 2, dtype=torch.float64)
@@ -657,8 +656,16 @@ def run_pure_couette(case: dict) -> dict:
     rheo = validate_rheology(1.0e-3, 1.0, 0.7)
     u_wall = 0.01
     res = run_frazil_hb_channel(
-        gap, rheo, 0.0, u_wall=u_wall, nx=1, n_steps=20000, m=1.0e4,
-        check_every=CHECK_EVERY, tol=TOL, dtype=torch.float64,
+        gap,
+        rheo,
+        0.0,
+        u_wall=u_wall,
+        nx=1,
+        n_steps=20000,
+        m=1.0e4,
+        check_every=CHECK_EVERY,
+        tol=TOL,
+        dtype=torch.float64,
     )
     u = res["u_profile"].to(torch.float64)[1:-1]
     spread = float((u - u_wall).abs().max() / u_wall)
@@ -704,6 +711,7 @@ def run_all(quick: bool = False) -> int:
         print(f"[case] {case['id']} ({case['kind']}, N={case['gap_cells']})", flush=True)
         run_case(case)
     return 0
+
 
 # ---------------------------------------------------------------------------
 # Gates and artifact assembly
@@ -837,9 +845,7 @@ def assemble(quick: bool = False) -> dict:
         "grids": ladder,
         "l2_profile_by_grid": l2_by_level,
     }
-    gci["gci_fine"] = max(
-        gci["profile_l2"]["gci_fine"], gci["yield_surface"]["gci_fine"]
-    )
+    gci["gci_fine"] = max(gci["profile_l2"]["gci_fine"], gci["yield_surface"]["gci_fine"])
     results["_gci"] = gci
 
     # --- shear-rate diagnostics: full yielded layer vs its smooth interior ---
@@ -932,11 +938,11 @@ def assemble(quick: bool = False) -> dict:
             f"worst relative L2 velocity error of the phi = 0.30 / 0.50 sweep at N={top}",
             max(
                 [
-                    results[f"poiseuille_phi{int(round(phi*100)):03d}_n{top}"]["metrics"][
+                    results[f"poiseuille_phi{int(round(phi * 100)):03d}_n{top}"]["metrics"][
                         "l2_profile"
                     ]
                     for phi in (0.30, 0.50)
-                    if f"poiseuille_phi{int(round(phi*100)):03d}_n{top}" in results
+                    if f"poiseuille_phi{int(round(phi * 100)):03d}_n{top}" in results
                 ]
                 or [float("inf")]
             ),
@@ -946,36 +952,36 @@ def assemble(quick: bool = False) -> dict:
             "G2_couette_shear_rate",
             "pure Couette (uniform stress, whole gap yielded): relative L2 error of the "
             "shear-rate distribution (normalised by the analytic wall value)",
-            results.get(f"couette_pure_phi040_n{top}", {}).get("metrics", {}).get(
-                "l2_shear_rate_yielded"
-            ),
+            results.get(f"couette_pure_phi040_n{top}", {})
+            .get("metrics", {})
+            .get("l2_shear_rate_yielded"),
             0.02,
         ),
         _gate(
             "G3a_yield_surface_poiseuille",
             "Poiseuille yield surface: the same shear-rate probe applied to the LBM and "
             "to the analytic profile, difference relative to analytic y_c = H/2 (1+r_y)",
-            results.get(f"poiseuille_phi040_n{top}", {}).get("metrics", {}).get(
-                "y_yield_rel_error_like_for_like"
-            ),
+            results.get(f"poiseuille_phi040_n{top}", {})
+            .get("metrics", {})
+            .get("y_yield_rel_error_like_for_like"),
             0.01,
         ),
         _gate(
             "G3b_yield_surface_couette_adverse",
             "adverse-gradient Couette-Poiseuille: interior yield-surface position, same "
             "probe on the LBM and the analytic profile (relative to y_c = H tau_y/tau_w)",
-            results.get(f"couette_phi040_n{top}", {}).get("metrics", {}).get(
-                "y_yield_rel_error_like_for_like"
-            ),
+            results.get(f"couette_phi040_n{top}", {})
+            .get("metrics", {})
+            .get("y_yield_rel_error_like_for_like"),
             0.01,
         ),
         _gate(
             "G3c_yield_surface_bingham",
             "Bingham (n=1, tau_y>0) yield-surface position: same probe on the LBM and "
             "the analytic profile",
-            results.get(f"bingham_n{top}", {}).get("metrics", {}).get(
-                "y_yield_rel_error_like_for_like"
-            ),
+            results.get(f"bingham_n{top}", {})
+            .get("metrics", {})
+            .get("y_yield_rel_error_like_for_like"),
             0.01,
         ),
         _gate(
@@ -1013,8 +1019,7 @@ def assemble(quick: bool = False) -> dict:
         ),
         _gate(
             "G8_si_lattice_similarity",
-            "worst residual of the SI <-> lattice mapping and the dimensionless "
-            "profile similarity",
+            "worst residual of the SI <-> lattice mapping and the dimensionless profile similarity",
             scaling["worst_residual"],
             1e-9,
         ),
@@ -1078,9 +1083,7 @@ def assemble(quick: bool = False) -> dict:
                 "sha256": results[cid]["sha256"],
                 "levels": results[cid]["levels"],
                 "metrics": {
-                    k: v
-                    for k, v in results[cid]["metrics"].items()
-                    if not k.startswith("profile_")
+                    k: v for k, v in results[cid]["metrics"].items() if not k.startswith("profile_")
                 },
                 "parameters": results[cid]["parameters"],
             }
@@ -1154,11 +1157,16 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
         u_n = torch.tensor(met["profile_u_num"])
         u_a = torch.tensor(met["profile_u_ana"])
         umax = float(u_a.max())
-        axes[0].plot(u_a / umax, y, "-", color=colour, lw=1.4,
-                     label=f"analytic, phi={phi:.2f} (n={results[cid]['parameters']['rheo']['n']:.2f})")
+        axes[0].plot(
+            u_a / umax,
+            y,
+            "-",
+            color=colour,
+            lw=1.4,
+            label=f"analytic, phi={phi:.2f} (n={results[cid]['parameters']['rheo']['n']:.2f})",
+        )
         axes[0].plot(u_n / umax, y, "o", ms=2.6, mfc="none", color=colour, mew=0.8)
-        axes[1].plot((u_n - u_a) / umax, y, "-", color=colour, lw=1.2,
-                     label=f"phi={phi:.2f}")
+        axes[1].plot((u_n - u_a) / umax, y, "-", color=colour, lw=1.2, label=f"phi={phi:.2f}")
     axes[0].set_xlabel("$u/u_{max}$")
     axes[0].set_ylabel("$y/H$")
     axes[0].set_title(f"H-B plane Poiseuille, $r_y=\\tau_y/\\tau_w={R_Y}$ (N={top})")
@@ -1186,8 +1194,16 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
         ga = torch.tensor(met["profile_gamma_ana"])
         gmax = float(ga.max())
         axes[0].plot(ga / gmax, y, "-", color="C0", lw=1.5, label="analytic")
-        axes[0].plot(gn / gmax, y, "o", ms=2.6, mfc="none", color="C3", mew=0.8,
-                     label="LBM (solver operator)")
+        axes[0].plot(
+            gn / gmax,
+            y,
+            "o",
+            ms=2.6,
+            mfc="none",
+            color="C3",
+            mew=0.8,
+            label="LBM (solver operator)",
+        )
         yc = met["y_c_analytic"] / h
         for sgn in (+1, -1):
             axes[0].axhline(0.5 + sgn * (0.5 - yc), color="k", ls=":", lw=0.8)
@@ -1205,14 +1221,13 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
         ga = torch.tensor(met["profile_gamma_ana"])
         gmax = float(ga.max())
         axes[1].plot(ga / gmax, y, "-", color="C0", lw=1.5, label="analytic")
-        axes[1].plot(gn / gmax, y, "o", ms=2.6, mfc="none", color="C3", mew=0.8,
-                     label="LBM")
+        axes[1].plot(gn / gmax, y, "o", ms=2.6, mfc="none", color="C3", mew=0.8, label="LBM")
         axes[1].axhline(met["y_c_analytic"] / h, color="k", ls=":", lw=0.8)
         axes[1].set_xlabel("$\\dot\\gamma/\\dot\\gamma_{wall}$")
         axes[1].set_ylabel("$y/h$")
         axes[1].set_title(
             "Couette-Poiseuille (adverse), shear rate; "
-            f"L2={met['l2_shear_rate_yielded']*100:.2f}%"
+            f"L2={met['l2_shear_rate_yielded'] * 100:.2f}%"
         )
         axes[1].legend(fontsize=8)
         axes[1].grid(alpha=0.3)
@@ -1226,8 +1241,12 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
     fig, axes = plt.subplots(1, 2, figsize=(10.0, 4.2))
     gci = artifact["gci"]
     lv = gci["grids"]
-    l2 = [gci["l2_profile_by_grid"][str(k)] if str(k) in gci["l2_profile_by_grid"]
-          else gci["l2_profile_by_grid"][k] for k in lv]
+    l2 = [
+        gci["l2_profile_by_grid"][str(k)]
+        if str(k) in gci["l2_profile_by_grid"]
+        else gci["l2_profile_by_grid"][k]
+        for k in lv
+    ]
     axes[0].loglog(lv, l2, "o-", label="L2 velocity error")
     ysl = [
         results[f"poiseuille_phi040_n{k}"]["metrics"]["y_yield_rel_error_vs_analytic"]
@@ -1251,6 +1270,7 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
     axes[0].legend(fontsize=8)
     axes[0].grid(alpha=0.3, which="both")
     axes[1].axis("off")
+
     def _fmt_gci(entry: dict, label: str) -> str:
         if not math.isfinite(entry.get("gci_fine", float("inf"))):
             return f"GCI({label}) = n/a"
@@ -1273,10 +1293,7 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
             f"gate: GCI < 1% -> {'PASS' if gci['gci_fine'] < 0.01 else 'FAIL'}",
             "",
             "SI <-> lattice mapping (phi=0.40)",
-            *[
-                f"{k}: {v:.3e}"
-                for k, v in artifact["si_lattice_similarity"]["checks"].items()
-            ],
+            *[f"{k}: {v:.3e}" for k, v in artifact["si_lattice_similarity"]["checks"].items()],
             f"worst = {artifact['si_lattice_similarity']['worst_residual']:.3e}",
         ]
     )
@@ -1300,8 +1317,7 @@ def make_figures(results: dict, artifact: dict) -> list[Path]:
     axes[1].set_xlabel("$\\phi$")
     axes[1].set_ylabel("n [-]")
     axes[1].set_title("W9-1215 flow index $n(\\phi)$")
-    axes[2].semilogy(phis, [row["K_Pa_sn"] for row in artifact["physical_chain"]], "^-",
-                     color="C2")
+    axes[2].semilogy(phis, [row["K_Pa_sn"] for row in artifact["physical_chain"]], "^-", color="C2")
     axes[2].set_xlabel("$\\phi$")
     axes[2].set_ylabel("K [Pa s$^n$]")
     axes[2].set_title("W9-1215 consistency $K(\\rho\\nu_w\\mu_r)$")
@@ -1331,8 +1347,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--all", action="store_true", help="run every case and assemble")
     parser.add_argument("--assemble", action="store_true", help="assemble artifact + figures")
     parser.add_argument("--quick", action="store_true", help="coarse smoke configuration")
-    parser.add_argument("--hash-only", action="store_true",
-                        help="print the payload sha256 only (reproducibility probe)")
+    parser.add_argument(
+        "--hash-only",
+        action="store_true",
+        help="print the payload sha256 only (reproducibility probe)",
+    )
     args = parser.parse_args(argv)
 
     torch.set_default_dtype(torch.float64)

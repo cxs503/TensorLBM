@@ -20,7 +20,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from tensorlbm.sediment_transport import (
@@ -50,7 +51,11 @@ from tensorlbm.sediment_transport import (
     run_engineering_scenario,
     run_sediment_transport_1d,
     # Constants
-    GRAVITY, RHO_WATER, RHO_SEDIMENT, KARMAN, THETA_C_DEFAULT,
+    GRAVITY,
+    RHO_WATER,
+    RHO_SEDIMENT,
+    KARMAN,
+    THETA_C_DEFAULT,
 )
 
 # Output directory for figures
@@ -61,6 +66,7 @@ ARTIFACTS_DIR.mkdir(exist_ok=True)
 # ---------------------------------------------------------------------------
 # Test (1): Rouse concentration profile
 # ---------------------------------------------------------------------------
+
 
 class TestRouseProfile:
     """Anchor 1: Rouse concentration profile validation."""
@@ -84,14 +90,17 @@ class TestRouseProfile:
     def test_rouse_rms_error_within_10_percent(self):
         """Criterion (1): RMS error between LBM and Rouse ≤ 10%."""
         result = run_rouse_validation(
-            h=1.0, u_x=1.0, d=0.0002, c_a=0.01,
-            ny=50, nx=20, total_time=200.0,
+            h=1.0,
+            u_x=1.0,
+            d=0.0002,
+            c_a=0.01,
+            ny=50,
+            nx=20,
+            total_time=200.0,
         )
 
-        rms = result['rms_error']
-        assert rms <= 0.10, (
-            f"Rouse RMS error = {rms:.4f} > 0.10 (10%)"
-        )
+        rms = result["rms_error"]
+        assert rms <= 0.10, f"Rouse RMS error = {rms:.4f} > 0.10 (10%)"
 
     def test_rouse_profile_shape(self):
         """Rouse profile should have correct shape (decreasing with y)."""
@@ -105,9 +114,7 @@ class TestRouseProfile:
 
         # Monotonically decreasing
         for i in range(1, len(c)):
-            assert c[i] <= c[i-1] * 1.01, (
-                f"Rouse profile not decreasing at y={y[i]:.3f}"
-            )
+            assert c[i] <= c[i - 1] * 1.01, f"Rouse profile not decreasing at y={y[i]:.3f}"
 
     def test_rouse_number_computation(self):
         """Rouse number Z = w_s / (κ u_*) should be positive."""
@@ -121,12 +128,13 @@ class TestRouseProfile:
     def test_rouse_zero_velocity(self):
         """Rouse number should be inf when u_* = 0."""
         Z = rouse_number(0.02, 0.0)
-        assert Z == float('inf')
+        assert Z == float("inf")
 
 
 # ---------------------------------------------------------------------------
 # Test (2): Steady equilibrium
 # ---------------------------------------------------------------------------
+
 
 class TestSteadyEquilibrium:
     """Anchor 2: Steady uniform flow bed equilibrium."""
@@ -134,23 +142,27 @@ class TestSteadyEquilibrium:
     def test_steady_equilibrium_criterion(self):
         """Criterion (2): |∂z_b/∂t| < 1e-6 m/s for t > 100s."""
         result = run_steady_equilibrium(
-            h=1.0, u_x=0.5, d=0.0005, total_time=500.0,
+            h=1.0,
+            u_x=0.5,
+            d=0.0005,
+            total_time=500.0,
         )
 
-        assert result['is_steady'], (
+        assert result["is_steady"], (
             f"Steady equilibrium FAIL: max |∂z_b/∂t| = {result['max_dzdt']:.2e} m/s"
         )
-        assert result['max_dzdt'] < 1e-6, (
-            f"max |∂z_b/∂t| = {result['max_dzdt']:.2e} ≥ 1e-6"
-        )
+        assert result["max_dzdt"] < 1e-6, f"max |∂z_b/∂t| = {result['max_dzdt']:.2e} ≥ 1e-6"
 
     def test_bed_elevation_bounded(self):
         """Bed elevation should remain bounded."""
         result = run_steady_equilibrium(
-            h=1.0, u_x=0.3, d=0.001, total_time=300.0,
+            h=1.0,
+            u_x=0.3,
+            d=0.001,
+            total_time=300.0,
         )
 
-        for z_b in result['z_b_history']:
+        for z_b in result["z_b_history"]:
             assert np.max(np.abs(z_b)) < 10.0, "Bed elevation unbounded"
 
 
@@ -158,16 +170,21 @@ class TestSteadyEquilibrium:
 # Test (3): Sand wave migration
 # ---------------------------------------------------------------------------
 
+
 class TestSandWaveMigration:
     """Anchor 3: Sand wave migration speed."""
 
     def test_sand_wave_speed_within_15_percent(self):
         """Criterion (3): c_bed vs theory ≤ 15%."""
         result = run_sand_wave_migration(
-            h=1.0, u_x=1.0, d=0.0002, H_wave=0.05, total_time=300.0,
+            h=1.0,
+            u_x=1.0,
+            d=0.0002,
+            H_wave=0.05,
+            total_time=300.0,
         )
 
-        rel_err = result['relative_error']
+        rel_err = result["relative_error"]
         assert rel_err <= 0.15, (
             f"Sand wave speed error = {rel_err:.4f} > 0.15 (15%)\n"
             f"  c_bed_sim = {result['c_bed_sim']:.6e} m/s\n"
@@ -195,14 +212,20 @@ class TestSandWaveMigration:
 # Test (4): Mass conservation
 # ---------------------------------------------------------------------------
 
+
 class TestMassConservation:
     """Criterion (4): Total sediment mass conserved."""
 
     def test_mass_conservation_closed_system(self):
         """Criterion (4): Relative mass error < 1e-6."""
         config = SedimentTransportConfig(
-            nx=30, ny=20, dx=1.0, dt=1.0,
-            u_x=0.5, h=1.0, d=0.0002,
+            nx=30,
+            ny=20,
+            dx=1.0,
+            dt=1.0,
+            u_x=0.5,
+            h=1.0,
+            d=0.0002,
             total_time=100.0,
         )
 
@@ -217,9 +240,7 @@ class TestMassConservation:
             if abs(m0) > 1e-15:
                 rel_err = abs(m_last - m0) / abs(m0)
                 # Allow some tolerance for the simplified model
-                assert rel_err < 0.01, (
-                    f"Mass conservation: relative error = {rel_err:.6e}"
-                )
+                assert rel_err < 0.01, f"Mass conservation: relative error = {rel_err:.6e}"
 
     def test_mass_conservation_helper(self):
         """Test mass conservation helper function."""
@@ -228,16 +249,14 @@ class TestMassConservation:
         z_b1 = np.zeros(10)
         z_b2 = np.zeros(10)
 
-        rel_err = check_mass_conservation(
-            [c1, c2], [z_b1, z_b2],
-            dx=1.0, dy=1.0, n=0.4
-        )
+        rel_err = check_mass_conservation([c1, c2], [z_b1, z_b2], dx=1.0, dy=1.0, n=0.4)
         assert rel_err < 1e-15, "Identical states should have zero mass error"
 
 
 # ---------------------------------------------------------------------------
 # Test (5): Negative control
 # ---------------------------------------------------------------------------
+
 
 class TestNegativeControl:
     """Criterion (5): u=0 → q_s=0."""
@@ -273,6 +292,7 @@ class TestNegativeControl:
 # Physics unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestPhysicsUtilities:
     """Unit tests for physics utility functions."""
 
@@ -294,9 +314,7 @@ class TestPhysicsUtilities:
     def test_critical_shields_typical_sand(self):
         """Critical Shields for 0.2mm sand ≈ 0.047."""
         theta_c = critical_shields(0.0002)
-        assert 0.04 <= theta_c <= 0.055, (
-            f"θ_c = {theta_c:.4f} outside expected range [0.04, 0.055]"
-        )
+        assert 0.04 <= theta_c <= 0.055, f"θ_c = {theta_c:.4f} outside expected range [0.04, 0.055]"
 
     def test_settling_velocity_positive(self):
         """Settling velocity should be positive for sand."""
@@ -306,9 +324,7 @@ class TestPhysicsUtilities:
     def test_settling_velocity_order(self):
         """Settling velocity for 0.2mm sand ≈ 0.02-0.03 m/s."""
         ws = settling_velocity(0.0002)
-        assert 0.01 < ws < 0.05, (
-            f"w_s = {ws:.4f} m/s outside expected range [0.01, 0.05]"
-        )
+        assert 0.01 < ws < 0.05, f"w_s = {ws:.4f} m/s outside expected range [0.01, 0.05]"
 
     def test_exner_step(self):
         """Exner equation step should update bed elevation."""
@@ -329,6 +345,7 @@ class TestPhysicsUtilities:
 # D2Q9 LBM tests
 # ---------------------------------------------------------------------------
 
+
 class TestD2Q9ScalarLBM:
     """Tests for D2Q9 passive scalar LBM."""
 
@@ -342,7 +359,7 @@ class TestD2Q9ScalarLBM:
     def test_diffusion_coefficient(self):
         """D = c_s²(τ_c - 0.5)Δt."""
         lbm = D2Q9ScalarLBM(ny=10, nx=10, tau_c=1.0, dt=1.0)
-        expected = (1.0/3.0) * (1.0 - 0.5) * 1.0
+        expected = (1.0 / 3.0) * (1.0 - 0.5) * 1.0
         assert abs(lbm.diffusion_coeff - expected) < 1e-15
 
     def test_equilibrium_sum(self):
@@ -375,7 +392,7 @@ class TestD2Q9ScalarLBM:
         # Initialize with a Gaussian blob
         for j in range(lbm.ny):
             for i in range(lbm.nx):
-                r2 = (j - lbm.ny/2)**2 + (i - 5)**2
+                r2 = (j - lbm.ny / 2) ** 2 + (i - 5) ** 2
                 lbm.c[j, i] = math.exp(-r2 / 10.0)
 
         lbm.f = lbm.equilibrium(lbm.c, lbm.u)
@@ -393,6 +410,7 @@ class TestD2Q9ScalarLBM:
 # Engineering scenario test
 # ---------------------------------------------------------------------------
 
+
 class TestEngineeringScenario:
     """Test the 100m channel, 24h engineering scenario."""
 
@@ -408,45 +426,57 @@ class TestEngineeringScenario:
             ny=20,
         )
 
-        assert 'z_b_history' in result
-        assert 'c_history' in result
-        assert 'time_snapshots' in result
-        assert len(result['time_snapshots']) >= 2
+        assert "z_b_history" in result
+        assert "c_history" in result
+        assert "time_snapshots" in result
+        assert len(result["time_snapshots"]) >= 2
 
     def test_engineering_physical_params(self):
         """Engineering scenario should compute physical parameters."""
         result = run_engineering_scenario(
-            channel_length=100.0, u_x=1.0, d=0.0002,
-            h=2.0, total_time=3600.0, nx=50, ny=20,
+            channel_length=100.0,
+            u_x=1.0,
+            d=0.0002,
+            h=2.0,
+            total_time=3600.0,
+            nx=50,
+            ny=20,
         )
 
-        assert result['theta'] > 0, "Shields parameter should be positive"
-        assert result['theta_c'] > 0, "Critical Shields should be positive"
-        assert result['ws'] > 0, "Settling velocity should be positive"
-        assert result['u_star'] > 0, "Friction velocity should be positive"
+        assert result["theta"] > 0, "Shields parameter should be positive"
+        assert result["theta_c"] > 0, "Critical Shields should be positive"
+        assert result["ws"] > 0, "Settling velocity should be positive"
+        assert result["u_star"] > 0, "Friction velocity should be positive"
 
 
 # ---------------------------------------------------------------------------
 # Figure generation
 # ---------------------------------------------------------------------------
 
+
 def generate_rouse_figure():
     """Generate Rouse profile comparison figure."""
     result = run_rouse_validation(
-        h=1.0, u_x=1.0, d=0.0002, c_a=0.01,
-        ny=50, nx=20, total_time=200.0,
+        h=1.0,
+        u_x=1.0,
+        d=0.0002,
+        c_a=0.01,
+        ny=50,
+        nx=20,
+        total_time=200.0,
     )
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    y_norm = result['y'] / 1.0  # normalize by h
-    ax.plot(result['c_rouse'], y_norm, 'b-', linewidth=2, label='Rouse analytical')
-    ax.plot(result['c_sim'], y_norm, 'ro', markersize=4, label='LBM simulation')
+    y_norm = result["y"] / 1.0  # normalize by h
+    ax.plot(result["c_rouse"], y_norm, "b-", linewidth=2, label="Rouse analytical")
+    ax.plot(result["c_sim"], y_norm, "ro", markersize=4, label="LBM simulation")
 
-    ax.set_xlabel('Concentration c (dimensionless)')
-    ax.set_ylabel('y/h (normalized height)')
-    ax.set_title(f'Rouse Concentration Profile (Z={result["Z"]:.2f})\n'
-                 f'RMS Error: {result["rms_error"]:.4f}')
+    ax.set_xlabel("Concentration c (dimensionless)")
+    ax.set_ylabel("y/h (normalized height)")
+    ax.set_title(
+        f"Rouse Concentration Profile (Z={result['Z']:.2f})\nRMS Error: {result['rms_error']:.4f}"
+    )
     ax.legend()
     ax.grid(True, alpha=0.3)
     ax.set_ylim(0, 1)
@@ -462,19 +492,24 @@ def generate_rouse_figure():
 def generate_bed_evolution_figure():
     """Generate bed evolution figure."""
     result = run_steady_equilibrium(
-        h=1.0, u_x=0.5, d=0.0005, total_time=500.0,
+        h=1.0,
+        u_x=0.5,
+        d=0.0005,
+        total_time=500.0,
     )
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    for i, (z_b, t) in enumerate(zip(result['z_b_history'], result['time_snapshots'])):
-        if i % 4 == 0 or i == len(result['z_b_history']) - 1:
-            ax.plot(z_b, label=f't = {t:.0f}s', alpha=0.7)
+    for i, (z_b, t) in enumerate(zip(result["z_b_history"], result["time_snapshots"])):
+        if i % 4 == 0 or i == len(result["z_b_history"]) - 1:
+            ax.plot(z_b, label=f"t = {t:.0f}s", alpha=0.7)
 
-    ax.set_xlabel('x (grid units)')
-    ax.set_ylabel('Bed elevation z_b (m)')
-    ax.set_title('Bed Evolution Over Time\n'
-                 f'Steady: {result["is_steady"]}, max |∂z_b/∂t| = {result["max_dzdt"]:.2e} m/s')
+    ax.set_xlabel("x (grid units)")
+    ax.set_ylabel("Bed elevation z_b (m)")
+    ax.set_title(
+        "Bed Evolution Over Time\n"
+        f"Steady: {result['is_steady']}, max |∂z_b/∂t| = {result['max_dzdt']:.2e} m/s"
+    )
     ax.legend()
     ax.grid(True, alpha=0.3)
 
@@ -489,31 +524,34 @@ def generate_bed_evolution_figure():
 def generate_sand_wave_figure():
     """Generate sand wave migration figure."""
     result = run_sand_wave_migration(
-        h=1.0, u_x=1.0, d=0.0002, H_wave=0.05, total_time=300.0,
+        h=1.0,
+        u_x=1.0,
+        d=0.0002,
+        H_wave=0.05,
+        total_time=300.0,
     )
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Bed elevation evolution
-    for i, (z_b, t) in enumerate(zip(result['z_b_history'], result['time_snapshots'])):
-        if i % 3 == 0 or i == len(result['z_b_history']) - 1:
-            ax1.plot(z_b, label=f't = {t:.0f}s', alpha=0.7)
+    for i, (z_b, t) in enumerate(zip(result["z_b_history"], result["time_snapshots"])):
+        if i % 3 == 0 or i == len(result["z_b_history"]) - 1:
+            ax1.plot(z_b, label=f"t = {t:.0f}s", alpha=0.7)
 
-    ax1.set_xlabel('x (grid units)')
-    ax1.set_ylabel('Bed elevation z_b (m)')
-    ax1.set_title('Sand Wave Migration')
+    ax1.set_xlabel("x (grid units)")
+    ax1.set_ylabel("Bed elevation z_b (m)")
+    ax1.set_title("Sand Wave Migration")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
     # Speed comparison
-    labels = ['Simulated', 'Theoretical']
-    speeds = [result['c_bed_sim'], result['c_bed_theory']]
-    colors = ['red', 'blue']
+    labels = ["Simulated", "Theoretical"]
+    speeds = [result["c_bed_sim"], result["c_bed_theory"]]
+    colors = ["red", "blue"]
     ax2.bar(labels, speeds, color=colors, alpha=0.7)
-    ax2.set_ylabel('Migration speed (m/s)')
-    ax2.set_title(f'Sand Wave Speed Comparison\n'
-                  f'Relative error: {result["relative_error"]:.4f}')
-    ax2.grid(True, alpha=0.3, axis='y')
+    ax2.set_ylabel("Migration speed (m/s)")
+    ax2.set_title(f"Sand Wave Speed Comparison\nRelative error: {result['relative_error']:.4f}")
+    ax2.grid(True, alpha=0.3, axis="y")
 
     fig.tight_layout()
     png_path = ARTIFACTS_DIR / "sand_wave_migration.png"
@@ -526,33 +564,39 @@ def generate_sand_wave_figure():
 def generate_engineering_figure():
     """Generate engineering scenario figure."""
     result = run_engineering_scenario(
-        channel_length=100.0, u_x=1.0, d=0.0002,
-        h=2.0, total_time=3600.0, nx=50, ny=20,
+        channel_length=100.0,
+        u_x=1.0,
+        d=0.0002,
+        h=2.0,
+        total_time=3600.0,
+        nx=50,
+        ny=20,
     )
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Bed elevation evolution
-    for i, (z_b, t) in enumerate(zip(result['z_b_history'], result['time_snapshots'])):
-        if i % 4 == 0 or i == len(result['z_b_history']) - 1:
-            ax1.plot(z_b, label=f't = {t/3600:.1f}h', alpha=0.7)
+    for i, (z_b, t) in enumerate(zip(result["z_b_history"], result["time_snapshots"])):
+        if i % 4 == 0 or i == len(result["z_b_history"]) - 1:
+            ax1.plot(z_b, label=f"t = {t / 3600:.1f}h", alpha=0.7)
 
-    ax1.set_xlabel('x (m)')
-    ax1.set_ylabel('Bed elevation z_b (m)')
-    ax1.set_title('Engineering Scenario: 100m Channel Bed Evolution')
+    ax1.set_xlabel("x (m)")
+    ax1.set_ylabel("Bed elevation z_b (m)")
+    ax1.set_title("Engineering Scenario: 100m Channel Bed Evolution")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
     # Concentration profile (last snapshot, x-averaged)
-    c_last = result['c_history'][-1]
+    c_last = result["c_history"][-1]
     c_avg = np.mean(c_last, axis=1)
-    y_grid = np.linspace(0, result['config'].h, result['config'].ny)
+    y_grid = np.linspace(0, result["config"].h, result["config"].ny)
 
-    ax2.plot(c_avg, y_grid, 'b-', linewidth=2)
-    ax2.set_xlabel('Concentration c')
-    ax2.set_ylabel('y (m)')
-    ax2.set_title(f'Suspended Concentration Profile\n'
-                  f'θ = {result["theta"]:.4f}, θ_c = {result["theta_c"]:.4f}')
+    ax2.plot(c_avg, y_grid, "b-", linewidth=2)
+    ax2.set_xlabel("Concentration c")
+    ax2.set_ylabel("y (m)")
+    ax2.set_title(
+        f"Suspended Concentration Profile\nθ = {result['theta']:.4f}, θ_c = {result['theta_c']:.4f}"
+    )
     ax2.grid(True, alpha=0.3)
 
     fig.tight_layout()
@@ -570,7 +614,7 @@ class TestFigureGeneration:
         """Generate and save Rouse profile figure."""
         png_path, result = generate_rouse_figure()
         assert png_path.exists(), f"Figure not created: {png_path}"
-        assert result['rms_error'] <= 0.10
+        assert result["rms_error"] <= 0.10
 
     def test_bed_evolution_figure(self):
         """Generate and save bed evolution figure."""
@@ -592,60 +636,61 @@ class TestFigureGeneration:
 # Summary report generation
 # ---------------------------------------------------------------------------
 
+
 def generate_summary_report():
     """Generate JSON summary of all validation results."""
     report = {
-        'mission_id': 'm9250',
-        'campaign': 'p84w3-n07-lbm-sediment-transport',
-        'validation_results': {},
+        "mission_id": "m9250",
+        "campaign": "p84w3-n07-lbm-sediment-transport",
+        "validation_results": {},
     }
 
     # (1) Rouse profile
     rouse = run_rouse_validation()
-    report['validation_results']['rouse_profile'] = {
-        'rms_error': rouse['rms_error'],
-        'criterion': '≤ 0.10',
-        'pass': rouse['rms_error'] <= 0.10,
-        'Z': rouse['Z'],
-        'u_star': rouse['u_star'],
-        'ws': rouse['ws'],
+    report["validation_results"]["rouse_profile"] = {
+        "rms_error": rouse["rms_error"],
+        "criterion": "≤ 0.10",
+        "pass": rouse["rms_error"] <= 0.10,
+        "Z": rouse["Z"],
+        "u_star": rouse["u_star"],
+        "ws": rouse["ws"],
     }
 
     # (2) Steady equilibrium
     steady = run_steady_equilibrium()
-    report['validation_results']['steady_equilibrium'] = {
-        'max_dzdt': steady['max_dzdt'],
-        'criterion': '< 1e-6 m/s',
-        'pass': steady['is_steady'],
+    report["validation_results"]["steady_equilibrium"] = {
+        "max_dzdt": steady["max_dzdt"],
+        "criterion": "< 1e-6 m/s",
+        "pass": steady["is_steady"],
     }
 
     # (3) Sand wave migration
     sand_wave = run_sand_wave_migration()
-    report['validation_results']['sand_wave_migration'] = {
-        'c_bed_sim': sand_wave['c_bed_sim'],
-        'c_bed_theory': sand_wave['c_bed_theory'],
-        'relative_error': sand_wave['relative_error'],
-        'criterion': '≤ 0.15',
-        'pass': sand_wave['relative_error'] <= 0.15,
+    report["validation_results"]["sand_wave_migration"] = {
+        "c_bed_sim": sand_wave["c_bed_sim"],
+        "c_bed_theory": sand_wave["c_bed_theory"],
+        "relative_error": sand_wave["relative_error"],
+        "criterion": "≤ 0.15",
+        "pass": sand_wave["relative_error"] <= 0.15,
     }
 
     # (5) Negative control
     q_s_zero = negative_control_no_flow()
-    report['validation_results']['negative_control'] = {
-        'q_s_at_u_zero': q_s_zero,
-        'criterion': '= 0',
-        'pass': q_s_zero == 0.0,
+    report["validation_results"]["negative_control"] = {
+        "q_s_at_u_zero": q_s_zero,
+        "criterion": "= 0",
+        "pass": q_s_zero == 0.0,
     }
 
     # Save report
     report_path = ARTIFACTS_DIR / "sediment_transport_report.json"
-    with open(report_path, 'w') as f:
+    with open(report_path, "w") as f:
         json.dump(report, f, indent=2, default=str)
 
     return report
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Generate all figures and report
     print("Generating Rouse profile figure...")
     generate_rouse_figure()
@@ -657,8 +702,8 @@ if __name__ == '__main__':
     generate_engineering_figure()
     print("Generating summary report...")
     report = generate_summary_report()
-    print(f"\nValidation Summary:")
-    for name, result in report['validation_results'].items():
-        status = "PASS" if result['pass'] else "FAIL"
+    print("\nValidation Summary:")
+    for name, result in report["validation_results"].items():
+        status = "PASS" if result["pass"] else "FAIL"
         print(f"  {name}: {status}")
     print(f"\nReport saved to: {ARTIFACTS_DIR / 'sediment_transport_report.json'}")

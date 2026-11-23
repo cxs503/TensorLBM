@@ -1,4 +1,5 @@
 """Unit contract for the ghost-mode resolved thermostat (XVAL extension)."""
+
 import numpy as np
 import pytest
 
@@ -61,8 +62,12 @@ def test_noise_amplitude_scales_with_kT_and_tau():
 def test_ghost_thermostat_excites_ghost_modes():
     """The transplant must raise the ghost-mode variance above the stress-only arm."""
     common = dict(shape=(12, 12), tau=0.8, kT=1e-6, seed=5)
-    stress = FluctuatingLBMGhost(thermostat="stress", **common).mode_variance_report(n_samples=400, n_skip=100)
-    ghosts = FluctuatingLBMGhost(thermostat="ghosts", **common).mode_variance_report(n_samples=400, n_skip=100)
+    stress = FluctuatingLBMGhost(thermostat="stress", **common).mode_variance_report(
+        n_samples=400, n_skip=100
+    )
+    ghosts = FluctuatingLBMGhost(thermostat="ghosts", **common).mode_variance_report(
+        n_samples=400, n_skip=100
+    )
     print("ghost ratios stress=%s ghosts=%s" % (stress.ratios["qx"], ghosts.ratios["qx"]))
     assert ghosts.ratios["qx"] > stress.ratios["qx"]
     assert ghosts.ratios["eps"] > stress.ratios["eps"]

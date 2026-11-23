@@ -166,7 +166,9 @@ def build_markdown(v: dict) -> str:
         f"| prescribed moving body in a periodic box (400 steps) | "
         f"{ac4['prescribed_body_relative_residual']:.3e} | 1e-6 |"
     )
-    add(f"| free body, fluid + solid momentum drift | {ac4['free_body_relative_drift']:.3e} | 1e-6 |")
+    add(
+        f"| free body, fluid + solid momentum drift | {ac4['free_body_relative_drift']:.3e} | 1e-6 |"
+    )
     add("")
     add("### 3.3 Grid convergence (AC5)")
     add("")
@@ -176,8 +178,7 @@ def build_markdown(v: dict) -> str:
         rec = ac5[key]
         errs = ", ".join(f"{e:.4f}" for e in rec["errors"])
         add(
-            f"| {key} | {rec['grids']} | {errs} | "
-            f"{'yes' if rec['monotone_decreasing'] else 'no'} |"
+            f"| {key} | {rec['grids']} | {errs} | {'yes' if rec['monotone_decreasing'] else 'no'} |"
         )
     add("")
     add("### 3.4 Ice load time history (AC3)")
@@ -264,10 +265,7 @@ def build_markdown(v: dict) -> str:
         f"{'PASS' if ac3['hydro_cd_error'] <= 0.15 else 'FAIL'} | "
         f"{'yes' if ac3['hydro_cd_error'] < 0.03 else 'no'} |"
     )
-    add(
-        f"| AC3 literature time series | not verifiable offline | 15 % | "
-        f"HONEST PARTIAL | n/a |"
-    )
+    add("| AC3 literature time series | not verifiable offline | 15 % | HONEST PARTIAL | n/a |")
     add("")
     return "\n".join(lines)
 
@@ -282,8 +280,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--emit-results-md",
         default="",
-        help="write the generated results tables (zero hand-copied numbers) "
-        "to this markdown file",
+        help="write the generated results tables (zero hand-copied numbers) to this markdown file",
     )
     args = ap.parse_args(argv)
 
@@ -312,9 +309,7 @@ def main(argv: list[str] | None = None) -> int:
         "figures": figures,
     }
     if args.emit_results_md:
-        digest = hashlib.sha256(
-            (Path(args.artifacts) / "verdicts.json").read_bytes()
-        ).hexdigest()
+        digest = hashlib.sha256((Path(args.artifacts) / "verdicts.json").read_bytes()).hexdigest()
         intro = (
             "# P233W2-N02 generated results\n\n"
             "> Auto-generated from `artifacts/ibm_ice_propeller/verdicts.json` "

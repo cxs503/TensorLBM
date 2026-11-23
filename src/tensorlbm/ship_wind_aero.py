@@ -60,23 +60,38 @@ from typing import Iterable, Mapping, Sequence
 import numpy as np
 
 __all__ = [
-    "BoxSpec", "ShipSuperstructure", "HullReference", "CD_HANDBOOK",
-    "container_ship_superstructure", "tanker_superstructure",
-    "bulk_carrier_superstructure", "catalogue", "validate_geometry",
-    "export_stl", "projected_areas", "component_buildup", "shadow_factor",
-    "blendermann_style", "blendermann_coefficients", "fit_blendermann_style",
-    "HybridWindEngine", "complexity_index", "sign_conventions",
-    "wind_rose_annual_resistance", "synthetic_wind_rose",
+    "BoxSpec",
+    "ShipSuperstructure",
+    "HullReference",
+    "CD_HANDBOOK",
+    "container_ship_superstructure",
+    "tanker_superstructure",
+    "bulk_carrier_superstructure",
+    "catalogue",
+    "validate_geometry",
+    "export_stl",
+    "projected_areas",
+    "component_buildup",
+    "shadow_factor",
+    "blendermann_style",
+    "blendermann_coefficients",
+    "fit_blendermann_style",
+    "HybridWindEngine",
+    "complexity_index",
+    "sign_conventions",
+    "wind_rose_annual_resistance",
+    "synthetic_wind_rose",
     "evaluate_acceptance",
 ]
 
-RHO_AIR = 1.225      # kg/m^3, 15 degC, 1013 hPa
-NU_AIR = 1.5e-5      # m^2/s
+RHO_AIR = 1.225  # kg/m^3, 15 degC, 1013 hPa
+NU_AIR = 1.5e-5  # m^2/s
 
 
 # ---------------------------------------------------------------------------
 # Geometry catalogues
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class BoxSpec:
@@ -103,9 +118,14 @@ class BoxSpec:
         return (self.x1 - self.x0, self.y1 - self.y0, self.z1 - self.z0)
 
     def to_dict(self) -> dict:
-        return {"name": self.name, "x": [self.x0, self.x1],
-                "y": [self.y0, self.y1], "z": [self.z0, self.z1],
-                "cd": self.cd, "porous": self.porous}
+        return {
+            "name": self.name,
+            "x": [self.x0, self.x1],
+            "y": [self.y0, self.y1],
+            "z": [self.z0, self.z1],
+            "cd": self.cd,
+            "porous": self.porous,
+        }
 
 
 @dataclass(frozen=True)
@@ -121,8 +141,7 @@ class HullReference:
 
     @property
     def displacement_m3(self) -> float:
-        return (self.length_pp_m * self.breadth_m * self.draught_m
-                * self.block_coefficient)
+        return self.length_pp_m * self.breadth_m * self.draught_m * self.block_coefficient
 
     def validate(self) -> list[str]:
         """Return a list of failed consistency checks (empty = pass)."""
@@ -194,12 +213,12 @@ class ShipSuperstructure:
         """Convert to :class:`tensorlbm.wind_load_lng.Box` (lazy import)."""
         from .wind_load_lng import Box
 
-        return [Box(b.x0, b.x1, b.y0, b.y1, b.z0, b.z1, b.name)
-                for b in self.boxes]
+        return [Box(b.x0, b.x1, b.y0, b.y1, b.z0, b.z1, b.name) for b in self.boxes]
 
     def to_dict(self) -> dict:
         return {
-            "key": self.key, "name": self.name,
+            "key": self.key,
+            "name": self.name,
             "hull": {
                 "Lpp_m": self.hull.length_pp_m,
                 "B_m": self.hull.breadth_m,
@@ -239,39 +258,27 @@ def container_ship_superstructure() -> ShipSuperstructure:
     """
 
     b: list[BoxSpec] = [
-        BoxSpec(-16.0, -14.0, -15.0, -6.5, 0.0, 3.0, "aft_bulwark_ps",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-16.0, -14.0, 6.5, 15.0, 0.0, 3.0, "aft_bulwark_sb",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-14.0, 0.0, -16.0, 16.0, 0.0, 24.0, "deck_house",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(-12.0, -2.0, -11.0, 11.0, 24.0, 27.0, "bridge_deck",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(-12.0, -2.0, -24.0, -11.0, 24.0, 26.0, "bridge_wing_ps",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-12.0, -2.0, 11.0, 24.0, 24.0, 26.0, "bridge_wing_sb",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-24.0, -14.0, -6.0, 6.0, 0.0, 32.0, "funnel_casing",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(-10.0, -9.0, -3.0, 3.0, 27.0, 33.0, "radar_mast",
-                CD_HANDBOOK["lattice"], True),
-        BoxSpec(2.0, 20.0, -18.0, 18.0, 0.0, 21.0, "stow_1",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(22.0, 24.0, -18.0, 18.0, 0.0, 3.0, "lashing_platform",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(24.0, 42.0, -18.0, 18.0, 0.0, 17.0, "stow_2",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(44.0, 58.0, -18.0, 18.0, 0.0, 9.0, "stow_3",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(2.0, 58.0, -21.0, -19.0, 0.0, 1.5, "pipe_run_ps",
-                CD_HANDBOOK["pipe_rack"]),
-        BoxSpec(2.0, 58.0, 19.0, 21.0, 0.0, 1.5, "pipe_run_sb",
-                CD_HANDBOOK["pipe_rack"]),
-        BoxSpec(64.0, 74.0, -9.0, 9.0, 0.0, 4.0, "forecastle_house",
-                CD_HANDBOOK["prism"]),
+        BoxSpec(-16.0, -14.0, -15.0, -6.5, 0.0, 3.0, "aft_bulwark_ps", CD_HANDBOOK["plate"]),
+        BoxSpec(-16.0, -14.0, 6.5, 15.0, 0.0, 3.0, "aft_bulwark_sb", CD_HANDBOOK["plate"]),
+        BoxSpec(-14.0, 0.0, -16.0, 16.0, 0.0, 24.0, "deck_house", CD_HANDBOOK["prism"]),
+        BoxSpec(-12.0, -2.0, -11.0, 11.0, 24.0, 27.0, "bridge_deck", CD_HANDBOOK["prism"]),
+        BoxSpec(-12.0, -2.0, -24.0, -11.0, 24.0, 26.0, "bridge_wing_ps", CD_HANDBOOK["plate"]),
+        BoxSpec(-12.0, -2.0, 11.0, 24.0, 24.0, 26.0, "bridge_wing_sb", CD_HANDBOOK["plate"]),
+        BoxSpec(-24.0, -14.0, -6.0, 6.0, 0.0, 32.0, "funnel_casing", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(-10.0, -9.0, -3.0, 3.0, 27.0, 33.0, "radar_mast", CD_HANDBOOK["lattice"], True),
+        BoxSpec(2.0, 20.0, -18.0, 18.0, 0.0, 21.0, "stow_1", CD_HANDBOOK["prism"]),
+        BoxSpec(22.0, 24.0, -18.0, 18.0, 0.0, 3.0, "lashing_platform", CD_HANDBOOK["plate"]),
+        BoxSpec(24.0, 42.0, -18.0, 18.0, 0.0, 17.0, "stow_2", CD_HANDBOOK["prism"]),
+        BoxSpec(44.0, 58.0, -18.0, 18.0, 0.0, 9.0, "stow_3", CD_HANDBOOK["prism"]),
+        BoxSpec(2.0, 58.0, -21.0, -19.0, 0.0, 1.5, "pipe_run_ps", CD_HANDBOOK["pipe_rack"]),
+        BoxSpec(2.0, 58.0, 19.0, 21.0, 0.0, 1.5, "pipe_run_sb", CD_HANDBOOK["pipe_rack"]),
+        BoxSpec(64.0, 74.0, -9.0, 9.0, 0.0, 4.0, "forecastle_house", CD_HANDBOOK["prism"]),
     ]
     hull = HullReference(
-        length_pp_m=399.9, breadth_m=61.5, draught_m=16.5, block_coefficient=0.66,
+        length_pp_m=399.9,
+        breadth_m=61.5,
+        draught_m=16.5,
+        block_coefficient=0.66,
         design_speed_kn=22.0,
         description="20 000 TEU class, aft accommodation, deck stow forward",
     )
@@ -282,31 +289,23 @@ def tanker_superstructure() -> ShipSuperstructure:
     """VLCC (double hull, aft house): deckhouse + pipe runs + manifold."""
 
     b: list[BoxSpec] = [
-        BoxSpec(-16.0, -6.0, -12.0, 12.0, 0.0, 20.0, "deck_house",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(-14.0, -4.0, -8.0, 8.0, 20.0, 23.0, "bridge_deck",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(-14.0, -4.0, -18.0, -8.0, 20.0, 22.0, "bridge_wing_ps",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-14.0, -4.0, 8.0, 18.0, 20.0, 22.0, "bridge_wing_sb",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-4.0, 4.0, -5.0, 5.0, 0.0, 26.0, "funnel_casing",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(-2.0, -1.0, -2.0, 2.0, 26.0, 33.0, "mast",
-                CD_HANDBOOK["lattice"], True),
-        BoxSpec(4.0, 190.0, -21.0, -18.0, 0.0, 1.6, "pipe_run_ps",
-                CD_HANDBOOK["pipe_rack"]),
-        BoxSpec(4.0, 190.0, 18.0, 21.0, 0.0, 1.6, "pipe_run_sb",
-                CD_HANDBOOK["pipe_rack"]),
-        BoxSpec(40.0, 58.0, -9.0, 9.0, 0.0, 4.0, "manifold",
-                CD_HANDBOOK["pipe_rack"]),
-        BoxSpec(38.0, 60.0, -12.0, 12.0, 4.0, 5.0, "manifold_platform",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(200.0, 210.0, -10.0, 10.0, 0.0, 6.0, "forecastle_house",
-                CD_HANDBOOK["prism"]),
+        BoxSpec(-16.0, -6.0, -12.0, 12.0, 0.0, 20.0, "deck_house", CD_HANDBOOK["prism"]),
+        BoxSpec(-14.0, -4.0, -8.0, 8.0, 20.0, 23.0, "bridge_deck", CD_HANDBOOK["prism"]),
+        BoxSpec(-14.0, -4.0, -18.0, -8.0, 20.0, 22.0, "bridge_wing_ps", CD_HANDBOOK["plate"]),
+        BoxSpec(-14.0, -4.0, 8.0, 18.0, 20.0, 22.0, "bridge_wing_sb", CD_HANDBOOK["plate"]),
+        BoxSpec(-4.0, 4.0, -5.0, 5.0, 0.0, 26.0, "funnel_casing", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(-2.0, -1.0, -2.0, 2.0, 26.0, 33.0, "mast", CD_HANDBOOK["lattice"], True),
+        BoxSpec(4.0, 190.0, -21.0, -18.0, 0.0, 1.6, "pipe_run_ps", CD_HANDBOOK["pipe_rack"]),
+        BoxSpec(4.0, 190.0, 18.0, 21.0, 0.0, 1.6, "pipe_run_sb", CD_HANDBOOK["pipe_rack"]),
+        BoxSpec(40.0, 58.0, -9.0, 9.0, 0.0, 4.0, "manifold", CD_HANDBOOK["pipe_rack"]),
+        BoxSpec(38.0, 60.0, -12.0, 12.0, 4.0, 5.0, "manifold_platform", CD_HANDBOOK["plate"]),
+        BoxSpec(200.0, 210.0, -10.0, 10.0, 0.0, 6.0, "forecastle_house", CD_HANDBOOK["prism"]),
     ]
     hull = HullReference(
-        length_pp_m=330.0, breadth_m=60.0, draught_m=21.0, block_coefficient=0.825,
+        length_pp_m=330.0,
+        breadth_m=60.0,
+        draught_m=21.0,
+        block_coefficient=0.825,
         design_speed_kn=15.5,
         description="VLCC class, aft accommodation, centre-line manifold",
     )
@@ -317,47 +316,31 @@ def bulk_carrier_superstructure() -> ShipSuperstructure:
     """Capesize bulk carrier: forward house, hatch covers, four cranes."""
 
     b: list[BoxSpec] = [
-        BoxSpec(-10.0, 0.0, -12.0, 12.0, 0.0, 18.0, "deck_house",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(-8.0, 2.0, -8.0, 8.0, 18.0, 21.0, "bridge_deck",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(-8.0, 2.0, -17.0, -8.0, 18.0, 20.0, "bridge_wing_ps",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(-8.0, 2.0, 8.0, 17.0, 18.0, 20.0, "bridge_wing_sb",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(2.0, 9.0, -4.5, 4.5, 0.0, 24.0, "funnel_casing",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(4.0, 5.0, -1.5, 1.5, 24.0, 31.0, "mast",
-                CD_HANDBOOK["lattice"], True),
-        BoxSpec(14.0, 44.0, -16.0, 16.0, 0.0, 3.0, "hatch_1",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(48.0, 78.0, -16.0, 16.0, 0.0, 3.0, "hatch_2",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(82.0, 112.0, -16.0, 16.0, 0.0, 3.0, "hatch_3",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(116.0, 146.0, -16.0, 16.0, 0.0, 3.0, "hatch_4",
-                CD_HANDBOOK["plate"]),
-        BoxSpec(44.0, 48.0, -5.0, 5.0, 0.0, 14.0, "crane_1_column",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(30.0, 62.0, -2.0, 2.0, 14.0, 17.0, "crane_1_jib",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(78.0, 82.0, -5.0, 5.0, 0.0, 14.0, "crane_2_column",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(64.0, 96.0, -2.0, 2.0, 14.0, 17.0, "crane_2_jib",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(112.0, 116.0, -5.0, 5.0, 0.0, 14.0, "crane_3_column",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(98.0, 130.0, -2.0, 2.0, 14.0, 17.0, "crane_3_jib",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(146.0, 150.0, -5.0, 5.0, 0.0, 14.0, "crane_4_column",
-                CD_HANDBOOK["tall_prism"]),
-        BoxSpec(132.0, 160.0, -2.0, 2.0, 14.0, 17.0, "crane_4_jib",
-                CD_HANDBOOK["prism"]),
-        BoxSpec(156.0, 166.0, -10.0, 10.0, 0.0, 5.0, "forecastle_house",
-                CD_HANDBOOK["prism"]),
+        BoxSpec(-10.0, 0.0, -12.0, 12.0, 0.0, 18.0, "deck_house", CD_HANDBOOK["prism"]),
+        BoxSpec(-8.0, 2.0, -8.0, 8.0, 18.0, 21.0, "bridge_deck", CD_HANDBOOK["prism"]),
+        BoxSpec(-8.0, 2.0, -17.0, -8.0, 18.0, 20.0, "bridge_wing_ps", CD_HANDBOOK["plate"]),
+        BoxSpec(-8.0, 2.0, 8.0, 17.0, 18.0, 20.0, "bridge_wing_sb", CD_HANDBOOK["plate"]),
+        BoxSpec(2.0, 9.0, -4.5, 4.5, 0.0, 24.0, "funnel_casing", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(4.0, 5.0, -1.5, 1.5, 24.0, 31.0, "mast", CD_HANDBOOK["lattice"], True),
+        BoxSpec(14.0, 44.0, -16.0, 16.0, 0.0, 3.0, "hatch_1", CD_HANDBOOK["plate"]),
+        BoxSpec(48.0, 78.0, -16.0, 16.0, 0.0, 3.0, "hatch_2", CD_HANDBOOK["plate"]),
+        BoxSpec(82.0, 112.0, -16.0, 16.0, 0.0, 3.0, "hatch_3", CD_HANDBOOK["plate"]),
+        BoxSpec(116.0, 146.0, -16.0, 16.0, 0.0, 3.0, "hatch_4", CD_HANDBOOK["plate"]),
+        BoxSpec(44.0, 48.0, -5.0, 5.0, 0.0, 14.0, "crane_1_column", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(30.0, 62.0, -2.0, 2.0, 14.0, 17.0, "crane_1_jib", CD_HANDBOOK["prism"]),
+        BoxSpec(78.0, 82.0, -5.0, 5.0, 0.0, 14.0, "crane_2_column", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(64.0, 96.0, -2.0, 2.0, 14.0, 17.0, "crane_2_jib", CD_HANDBOOK["prism"]),
+        BoxSpec(112.0, 116.0, -5.0, 5.0, 0.0, 14.0, "crane_3_column", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(98.0, 130.0, -2.0, 2.0, 14.0, 17.0, "crane_3_jib", CD_HANDBOOK["prism"]),
+        BoxSpec(146.0, 150.0, -5.0, 5.0, 0.0, 14.0, "crane_4_column", CD_HANDBOOK["tall_prism"]),
+        BoxSpec(132.0, 160.0, -2.0, 2.0, 14.0, 17.0, "crane_4_jib", CD_HANDBOOK["prism"]),
+        BoxSpec(156.0, 166.0, -10.0, 10.0, 0.0, 5.0, "forecastle_house", CD_HANDBOOK["prism"]),
     ]
     hull = HullReference(
-        length_pp_m=290.0, breadth_m=45.0, draught_m=18.2, block_coefficient=0.830,
+        length_pp_m=290.0,
+        breadth_m=45.0,
+        draught_m=18.2,
+        block_coefficient=0.830,
         design_speed_kn=14.5,
         description="Capesize bulk carrier, forward accommodation, 4 deck cranes",
     )
@@ -366,17 +349,24 @@ def bulk_carrier_superstructure() -> ShipSuperstructure:
 
 def catalogue() -> dict[str, ShipSuperstructure]:
     """The three catalogued ship types, keyed by short name."""
-    return {s.key: s for s in (container_ship_superstructure(),
-                               tanker_superstructure(),
-                               bulk_carrier_superstructure())}
+    return {
+        s.key: s
+        for s in (
+            container_ship_superstructure(),
+            tanker_superstructure(),
+            bulk_carrier_superstructure(),
+        )
+    }
 
 
 # ---------------------------------------------------------------------------
 # Geometry validation (projection areas, overlaps, hull particulars)
 # ---------------------------------------------------------------------------
 
-def projected_areas(ship: ShipSuperstructure, *, nx: int = 1200, ny: int = 600,
-                    nz: int = 300) -> dict:
+
+def projected_areas(
+    ship: ShipSuperstructure, *, nx: int = 1200, ny: int = 600, nz: int = 300
+) -> dict:
     """Analytic (box-union) projected areas of the above-deck assembly.
 
     ``A_F`` is the projection on the y-z plane (head wind), ``A_L`` on the x-z
@@ -394,20 +384,23 @@ def projected_areas(ship: ShipSuperstructure, *, nx: int = 1200, ny: int = 600,
         if axis == "x":
             grid = np.zeros((ny, nz), dtype=bool)
             for b in ship.boxes:
-                grid |= ((ys >= b.y0) & (ys <= b.y1))[:, None] & \
-                        ((zs >= b.z0) & (zs <= b.z1))[None, :]
+                grid |= ((ys >= b.y0) & (ys <= b.y1))[:, None] & ((zs >= b.z0) & (zs <= b.z1))[
+                    None, :
+                ]
             dA = (ys[1] - ys[0]) * (zs[1] - zs[0])
         elif axis == "y":
             grid = np.zeros((nx, nz), dtype=bool)
             for b in ship.boxes:
-                grid |= ((xs >= b.x0) & (xs <= b.x1))[:, None] & \
-                        ((zs >= b.z0) & (zs <= b.z1))[None, :]
+                grid |= ((xs >= b.x0) & (xs <= b.x1))[:, None] & ((zs >= b.z0) & (zs <= b.z1))[
+                    None, :
+                ]
             dA = (xs[1] - xs[0]) * (zs[1] - zs[0])
         else:
             grid = np.zeros((nx, ny), dtype=bool)
             for b in ship.boxes:
-                grid |= ((xs >= b.x0) & (xs <= b.x1))[:, None] & \
-                        ((ys >= b.y0) & (ys <= b.y1))[None, :]
+                grid |= ((xs >= b.x0) & (xs <= b.x1))[:, None] & ((ys >= b.y0) & (ys <= b.y1))[
+                    None, :
+                ]
             dA = (xs[1] - xs[0]) * (ys[1] - ys[0])
         return float(grid.sum()) * dA
 
@@ -421,13 +414,16 @@ def projected_areas(ship: ShipSuperstructure, *, nx: int = 1200, ny: int = 600,
         "breadth_m": ship.breadth,
         "height_m": ship.height,
         "slenderness_AL_over_AF": A_L / A_F if A_F else float("inf"),
-        "lateral_aspect_AL_over_H2": A_L / ship.height ** 2,
+        "lateral_aspect_AL_over_H2": A_L / ship.height**2,
     }
 
 
-def validate_geometry(ship: ShipSuperstructure, *,
-                      voxel_areas: Mapping[str, float] | None = None,
-                      rel_tol: float = 0.02) -> dict:
+def validate_geometry(
+    ship: ShipSuperstructure,
+    *,
+    voxel_areas: Mapping[str, float] | None = None,
+    rel_tol: float = 0.02,
+) -> dict:
     """Geometry-first validation (discipline rule: check the geometry first).
 
     Checks: hull particulars consistency, strictly positive box extents, no
@@ -437,22 +433,28 @@ def validate_geometry(ship: ShipSuperstructure, *,
     analytic silhouette within ``rel_tol``.
     """
 
-    problems: dict[str, list[str]] = {"hull": ship.hull.validate(), "boxes": [],
-                                      "overlap": [], "placement": [],
-                                      "symmetry": [], "voxel": []}
+    problems: dict[str, list[str]] = {
+        "hull": ship.hull.validate(),
+        "boxes": [],
+        "overlap": [],
+        "placement": [],
+        "symmetry": [],
+        "voxel": [],
+    }
     for b in ship.boxes:
         lx, ly, lz = b.extents
         if min(lx, ly, lz) <= 0.0:
             problems["boxes"].append(f"{b.name}: non-positive extent")
 
     for i, a in enumerate(ship.boxes):
-        for b in ship.boxes[i + 1:]:
+        for b in ship.boxes[i + 1 :]:
             ox = min(a.x1, b.x1) - max(a.x0, b.x0)
             oy = min(a.y1, b.y1) - max(a.y0, b.y0)
             oz = min(a.z1, b.z1) - max(a.z0, b.z0)
             if ox > 1e-9 and oy > 1e-9 and oz > 1e-9:
                 problems["overlap"].append(
-                    f"{a.name} x {b.name}: overlap volume {ox * oy * oz:.3g} m3")
+                    f"{a.name} x {b.name}: overlap volume {ox * oy * oz:.3g} m3"
+                )
 
     if abs(min(b.z0 for b in ship.boxes)) > 1e-9:
         problems["placement"].append("assembly does not start at z = 0")
@@ -470,26 +472,32 @@ def validate_geometry(ship: ShipSuperstructure, *,
             a = float(ref[key])
             if a > 0 and abs(v - a) / a > rel_tol:
                 problems["voxel"].append(
-                    f"{key}: voxel {v:.1f} vs analytic {a:.1f} "
-                    f"({100.0 * (v - a) / a:+.1f}%)")
+                    f"{key}: voxel {v:.1f} vs analytic {a:.1f} ({100.0 * (v - a) / a:+.1f}%)"
+                )
     ok = all(not v for v in problems.values())
-    return {"ship": ship.key, "ok": ok, "problems": problems,
-            "reference": ref, "hull_displacement_m3": ship.hull.displacement_m3,
-            "hull_checks_ok": not problems["hull"]}
+    return {
+        "ship": ship.key,
+        "ok": ok,
+        "problems": problems,
+        "reference": ref,
+        "hull_displacement_m3": ship.hull.displacement_m3,
+        "hull_checks_ok": not problems["hull"],
+    }
 
 
 def _tri(p0, p1, p2, n) -> str:
-    return ("facet normal {:.6e} {:.6e} {:.6e}\n"
-            "  outer loop\n"
-            "    vertex {:.6e} {:.6e} {:.6e}\n"
-            "    vertex {:.6e} {:.6e} {:.6e}\n"
-            "    vertex {:.6e} {:.6e} {:.6e}\n"
-            "  endloop\n"
-            "endfacet").format(*n, *p0, *p1, *p2)
+    return (
+        "facet normal {:.6e} {:.6e} {:.6e}\n"
+        "  outer loop\n"
+        "    vertex {:.6e} {:.6e} {:.6e}\n"
+        "    vertex {:.6e} {:.6e} {:.6e}\n"
+        "    vertex {:.6e} {:.6e} {:.6e}\n"
+        "  endloop\n"
+        "endfacet"
+    ).format(*n, *p0, *p1, *p2)
 
 
-def export_stl(ship: ShipSuperstructure, path: str, *,
-               name_prefix: str | None = None) -> str:
+def export_stl(ship: ShipSuperstructure, path: str, *, name_prefix: str | None = None) -> str:
     """Write the box assembly as an ASCII STL (CAD deliverable, 12 tris/box)."""
 
     prefix = name_prefix or ship.key
@@ -501,8 +509,16 @@ def export_stl(ship: ShipSuperstructure, path: str, *,
     out: list[str] = [f"solid {prefix}"]
     for b in ship.boxes:
         (x0, x1), (y0, y1), (z0, z1) = (b.x0, b.x1), (b.y0, b.y1), (b.z0, b.z1)
-        c = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
-             (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
+        c = [
+            (x0, y0, z0),
+            (x1, y0, z0),
+            (x1, y1, z0),
+            (x0, y1, z0),
+            (x0, y0, z1),
+            (x1, y0, z1),
+            (x1, y1, z1),
+            (x0, y1, z1),
+        ]
         quad(c[0], c[3], c[2], c[1], (0, 0, -1), out)
         quad(c[4], c[5], c[6], c[7], (0, 0, 1), out)
         quad(c[0], c[1], c[5], c[4], (0, -1, 0), out)
@@ -519,6 +535,7 @@ def export_stl(ship: ShipSuperstructure, path: str, *,
 # Layer 1: a-priori component build-up (handbook drag coefficients)
 # ---------------------------------------------------------------------------
 
+
 def _box_projected_shadow(box: BoxSpec, theta: float) -> float:
     """Projected area of a box onto the plane normal to the wind (m^2).
 
@@ -533,8 +550,7 @@ def _box_projected_shadow(box: BoxSpec, theta: float) -> float:
     return lz * (lx * s + ly * c)
 
 
-def shadow_factor(boxes: Sequence[BoxSpec], theta: float, *,
-                  kappa: float = 0.5) -> list[float]:
+def shadow_factor(boxes: Sequence[BoxSpec], theta: float, *, kappa: float = 0.5) -> list[float]:
     """Fraction of each box's drag that survives upstream shadowing.
 
     Engineering shadowing model: boxes are ordered along the wind direction; a
@@ -585,10 +601,13 @@ def shadow_factor(boxes: Sequence[BoxSpec], theta: float, *,
     return factors
 
 
-def component_buildup(ship: ShipSuperstructure, *,
-                      angles: Iterable[float] = (0, 30, 60, 90, 120, 150, 180),
-                      kappa: float = 0.5,
-                      reference: Mapping[str, float] | None = None) -> dict:
+def component_buildup(
+    ship: ShipSuperstructure,
+    *,
+    angles: Iterable[float] = (0, 30, 60, 90, 120, 150, 180),
+    kappa: float = 0.5,
+    reference: Mapping[str, float] | None = None,
+) -> dict:
     """A-priori engineering estimate of the wind coefficients (no fitting).
 
     Each box contributes ``0.5 rho U^2 C_d A_i(theta) f_i(theta)`` along the
@@ -597,8 +616,7 @@ def component_buildup(ship: ShipSuperstructure, *,
     areas, so the absolute level is a genuine prediction.
     """
 
-    ref = dict(reference) if reference is not None else dict(
-        projected_areas(ship))
+    ref = dict(reference) if reference is not None else dict(projected_areas(ship))
     A_F, A_L = ref["area_frontal_m2"], ref["area_lateral_m2"]
     B, H = ref["breadth_m"], ref["height_m"]
     rows = []
@@ -610,36 +628,49 @@ def component_buildup(ship: ShipSuperstructure, *,
             A_i = _box_projected_shadow(b, th)
             if A_i <= 0.0:
                 continue
-            d = 0.5 * b.cd * A_i * fac          # per unit q
+            d = 0.5 * b.cd * A_i * fac  # per unit q
             F += d
             Fx += d * math.cos(th)
             Fy += d * math.sin(th)
-            K += d * 0.5 * (b.z0 + b.z1)        # heel lever arm about x
-            N += d * 0.5 * (b.x0 + b.x1) * math.sin(th)   # yaw lever arm
-        rows.append({
-            "angle_deg": float(a),
-            "C_X": Fx / A_F,
-            "C_Y": Fy / A_L,
-            "C_K": K / (A_L * H),
-            "C_N": N / (A_L * B),
-            "C_F": F / A_F,
-            "method": "component_buildup",
-            "kappa": kappa,
-            "n_components": len(ship.boxes),
-        })
-    return {"ship": ship.key, "method": "component_buildup",
-            "reference": ref, "angles_deg": [r["angle_deg"] for r in rows],
-            "rows": rows}
+            K += d * 0.5 * (b.z0 + b.z1)  # heel lever arm about x
+            N += d * 0.5 * (b.x0 + b.x1) * math.sin(th)  # yaw lever arm
+        rows.append(
+            {
+                "angle_deg": float(a),
+                "C_X": Fx / A_F,
+                "C_Y": Fy / A_L,
+                "C_K": K / (A_L * H),
+                "C_N": N / (A_L * B),
+                "C_F": F / A_F,
+                "method": "component_buildup",
+                "kappa": kappa,
+                "n_components": len(ship.boxes),
+            }
+        )
+    return {
+        "ship": ship.key,
+        "method": "component_buildup",
+        "reference": ref,
+        "angles_deg": [r["angle_deg"] for r in rows],
+        "rows": rows,
+    }
 
 
 # ---------------------------------------------------------------------------
 # Layer 2: Blendermann-style closed-form correlation
 # ---------------------------------------------------------------------------
 
-def blendermann_style(theta_deg: float, *,
-                      cx0: float, cx90: float, cy0: float,
-                      p: float = 1.5, q: float = 1.5,
-                      cx180: float | None = None) -> dict:
+
+def blendermann_style(
+    theta_deg: float,
+    *,
+    cx0: float,
+    cx90: float,
+    cy0: float,
+    p: float = 1.5,
+    q: float = 1.5,
+    cx180: float | None = None,
+) -> dict:
     """Closed-form wind-coefficient correlation (Blendermann-type shape).
 
     The structural form used by Blendermann-type ship wind-load correlations is
@@ -705,29 +736,34 @@ def fit_blendermann_style(samples: Sequence[Mapping[str, float]]) -> dict:
     bestq = None
     for q in np.arange(0.8, 3.01, 0.05):
         basis = np.sign(np.sin(th)) * np.abs(np.sin(th)) ** q
-        denom = float(np.sum(basis ** 2))
+        denom = float(np.sum(basis**2))
         cy0 = float(np.sum(basis * cy) / denom) if denom else 0.0
         resid = float(np.sum((basis * cy0 - cy) ** 2))
         if bestq is None or resid < bestq[0]:
             bestq = (resid, float(q), cy0)
     _, q, cy0 = bestq
 
-    preds = [blendermann_style(a, cx0=cx0, cx90=cx90, cy0=cy0, p=p, q=q,
-                               cx180=cx180) for a in ang]
+    preds = [blendermann_style(a, cx0=cx0, cx90=cx90, cy0=cy0, p=p, q=q, cx180=cx180) for a in ang]
     mcx = np.array([d["C_X"] for d in preds])
     mcy = np.array([d["C_Y"] for d in preds])
     kfac = float(np.sum(ck * cx) / np.sum(cx * cx)) if np.any(cx) else 0.0
     nfac = float(np.sum(cn * cy) / np.sum(cy * cy)) if np.any(cy) else 0.0
     return {
-        "params": {"cx0": cx0, "cx90": cx90, "cx180": cx180, "cy0": cy0,
-                   "p": p, "q": q, "k_factor": kfac, "n_factor": nfac},
+        "params": {
+            "cx0": cx0,
+            "cx90": cx90,
+            "cx180": cx180,
+            "cy0": cy0,
+            "p": p,
+            "q": q,
+            "k_factor": kfac,
+            "n_factor": nfac,
+        },
         "n_samples": int(len(ang)),
         "rmse_C_X": float(np.sqrt(np.mean((mcx - cx) ** 2))),
         "rmse_C_Y": float(np.sqrt(np.mean((mcy - cy) ** 2))),
-        "max_rel_err_C_X": float(np.max(np.abs(mcx - cx) /
-                                       np.maximum(np.abs(cx), 1e-9))),
-        "max_rel_err_C_Y": float(np.max(np.abs(mcy - cy) /
-                                       np.maximum(np.abs(cy), 1e-9))),
+        "max_rel_err_C_X": float(np.max(np.abs(mcx - cx) / np.maximum(np.abs(cx), 1e-9))),
+        "max_rel_err_C_Y": float(np.max(np.abs(mcy - cy) / np.maximum(np.abs(cy), 1e-9))),
     }
 
 
@@ -735,44 +771,56 @@ def blendermann_coefficients(fit: Mapping[str, float], theta_deg: float) -> dict
     """Evaluate a fitted correlation at one angle (all four coefficients)."""
 
     p = fit["params"] if "params" in fit else fit
-    base = blendermann_style(theta_deg, cx0=p["cx0"], cx90=p["cx90"],
-                             cy0=p["cy0"], p=p["p"], q=p["q"],
-                             cx180=p.get("cx180"))
-    return {"angle_deg": float(theta_deg) % 360.0, "C_X": base["C_X"],
-            "C_Y": base["C_Y"],
-            "C_K": p["k_factor"] * base["C_X"],
-            "C_N": p["n_factor"] * base["C_Y"],
-            "method": "blendermann_style"}
+    base = blendermann_style(
+        theta_deg,
+        cx0=p["cx0"],
+        cx90=p["cx90"],
+        cy0=p["cy0"],
+        p=p["p"],
+        q=p["q"],
+        cx180=p.get("cx180"),
+    )
+    return {
+        "angle_deg": float(theta_deg) % 360.0,
+        "C_X": base["C_X"],
+        "C_Y": base["C_Y"],
+        "C_K": p["k_factor"] * base["C_X"],
+        "C_N": p["n_factor"] * base["C_Y"],
+        "method": "blendermann_style",
+    }
 
 
 # ---------------------------------------------------------------------------
 # Layer 3: hybrid engine
 # ---------------------------------------------------------------------------
 
-def _union_area(boxes: Sequence[BoxSpec], axis: str, *, nx: int = 800,
-                ny: int = 800) -> float:
+
+def _union_area(boxes: Sequence[BoxSpec], axis: str, *, nx: int = 800, ny: int = 800) -> float:
     """Rasterised area of the union of box silhouettes on a coordinate plane."""
 
-    if axis == "x":                        # frontal silhouette (y, z)
-        a_lo = min(b.y0 for b in boxes); a_hi = max(b.y1 for b in boxes)
-        c_lo = min(b.z0 for b in boxes); c_hi = max(b.z1 for b in boxes)
+    if axis == "x":  # frontal silhouette (y, z)
+        a_lo = min(b.y0 for b in boxes)
+        a_hi = max(b.y1 for b in boxes)
+        c_lo = min(b.z0 for b in boxes)
+        c_hi = max(b.z1 for b in boxes)
         pairs = [(b.y0, b.y1, b.z0, b.z1) for b in boxes]
-    else:                                  # lateral silhouette (x, z)
-        a_lo = min(b.x0 for b in boxes); a_hi = max(b.x1 for b in boxes)
-        c_lo = min(b.z0 for b in boxes); c_hi = max(b.z1 for b in boxes)
+    else:  # lateral silhouette (x, z)
+        a_lo = min(b.x0 for b in boxes)
+        a_hi = max(b.x1 for b in boxes)
+        c_lo = min(b.z0 for b in boxes)
+        c_hi = max(b.z1 for b in boxes)
         pairs = [(b.x0, b.x1, b.z0, b.z1) for b in boxes]
     av = np.linspace(a_lo, a_hi, nx)
     cv = np.linspace(c_lo, c_hi, ny)
     grid = np.zeros((nx, ny), dtype=bool)
     for a0, a1, c0, c1 in pairs:
-        grid |= ((av >= a0) & (av <= a1))[:, None] & \
-                ((cv >= c0) & (cv <= c1))[None, :]
+        grid |= ((av >= a0) & (av <= a1))[:, None] & ((cv >= c0) & (cv <= c1))[None, :]
     return float(grid.sum()) * (av[1] - av[0]) * (cv[1] - cv[0])
 
 
-def complexity_index(ship: ShipSuperstructure,
-                     reference: Mapping[str, float] | None = None,
-                     *, tall_m: float = 6.0) -> dict:
+def complexity_index(
+    ship: ShipSuperstructure, reference: Mapping[str, float] | None = None, *, tall_m: float = 6.0
+) -> dict:
     """Geometry complexity metrics used by the engine's routing rule.
 
     * ``distributed_blockage`` -- **routing metric**: union frontal silhouette
@@ -787,14 +835,17 @@ def complexity_index(ship: ShipSuperstructure,
     * ``blockage`` -- superstructure solid volume over its bounding volume.
     """
 
-    ref = dict(reference) if reference is not None else dict(
-        projected_areas(ship))
+    ref = dict(reference) if reference is not None else dict(projected_areas(ship))
     A_F = ref["area_frontal_m2"]
     lx, ly, lz = ship.extent
-    secondary = [b for b in ship.boxes
-                 if (b.z1 - b.z0) >= tall_m
-                 and "house" not in b.name and "bridge" not in b.name
-                 and "casing" not in b.name]
+    secondary = [
+        b
+        for b in ship.boxes
+        if (b.z1 - b.z0) >= tall_m
+        and "house" not in b.name
+        and "bridge" not in b.name
+        and "casing" not in b.name
+    ]
     if secondary:
         A_sec = _union_area(secondary, "x")
     else:
@@ -809,8 +860,7 @@ def complexity_index(ship: ShipSuperstructure,
     }
 
 
-def _pchip_periodic(theta_deg: float, table: Sequence[float],
-                    angles: Sequence[float]) -> float:
+def _pchip_periodic(theta_deg: float, table: Sequence[float], angles: Sequence[float]) -> float:
     """Shape-preserving (Fritsch-Carlson limited) periodic interpolation.
 
     Plain cubic (Catmull-Rom) interpolation overshoots badly across the 60 deg
@@ -853,8 +903,12 @@ def _pchip_periodic(theta_deg: float, table: Sequence[float],
     m0 = m[i]
     m1 = m[(i + 1) % n]
     u2, u3 = u * u, u * u * u
-    return float((2 * u3 - 3 * u2 + 1) * y0 + (u3 - 2 * u2 + u) * h_i * m0
-                 + (-2 * u3 + 3 * u2) * y1 + (u3 - u2) * h_i * m1)
+    return float(
+        (2 * u3 - 3 * u2 + 1) * y0
+        + (u3 - 2 * u2 + u) * h_i * m0
+        + (-2 * u3 + 3 * u2) * y1
+        + (u3 - u2) * h_i * m1
+    )
 
 
 def _mirror_table(samples: Sequence[Mapping[str, float]]) -> dict:
@@ -873,8 +927,11 @@ def _mirror_table(samples: Sequence[Mapping[str, float]]) -> dict:
         rows[a] = {k: float(s[k]) for k in ("C_X", "C_Y", "C_K", "C_N")}
         if 0.0 < a < 180.0:
             rows[round(360.0 - a, 6)] = {
-                "C_X": float(s["C_X"]), "C_Y": -float(s["C_Y"]),
-                "C_K": float(s["C_K"]), "C_N": -float(s["C_N"])}
+                "C_X": float(s["C_X"]),
+                "C_Y": -float(s["C_Y"]),
+                "C_K": float(s["C_K"]),
+                "C_N": -float(s["C_N"]),
+            }
     angles = sorted(rows)
     return {"angles_deg": angles, "rows": rows}
 
@@ -902,24 +959,32 @@ class HybridWindEngine:
         centred on ``complexity_threshold``.
     """
 
-    def __init__(self, ship: ShipSuperstructure, database: Sequence[Mapping] = (),
-                 correlation: Mapping | None = None, *, route: str = "auto",
-                 complexity_threshold: float = 0.30, blend_width: float = 0.10):
+    def __init__(
+        self,
+        ship: ShipSuperstructure,
+        database: Sequence[Mapping] = (),
+        correlation: Mapping | None = None,
+        *,
+        route: str = "auto",
+        complexity_threshold: float = 0.30,
+        blend_width: float = 0.10,
+    ):
         if route not in ("auto", "empirical", "lbm"):
             raise ValueError("route must be one of auto/empirical/lbm")
         self.ship = ship
         self.route = route
         self.threshold = float(complexity_threshold)
         self.blend_width = float(blend_width)
-        self.reference = dict(ship.reference) if ship.reference else dict(
-            projected_areas(ship))
+        self.reference = dict(ship.reference) if ship.reference else dict(projected_areas(ship))
         self.complexity = complexity_index(ship, self.reference)
 
         self.database = [dict(r) for r in database]
         self.table = _mirror_table(self.database) if self.database else None
-        self.correlation = (dict(correlation) if correlation is not None
-                            else (fit_blendermann_style(self.database)
-                                  if self.database else None))
+        self.correlation = (
+            dict(correlation)
+            if correlation is not None
+            else (fit_blendermann_style(self.database) if self.database else None)
+        )
         if self.route == "lbm" and self.table is None:
             raise ValueError("route='lbm' needs a non-empty LBM database")
 
@@ -944,14 +1009,16 @@ class HybridWindEngine:
 
     def routing_report(self) -> dict:
         w = self.lbm_weight()
-        branch = ("lbm" if w >= 0.999 else
-                  "empirical" if w <= 0.001 else "blend")
-        return {"branch": branch, "lbm_weight": w,
-                "threshold": self.threshold, "blend_width": self.blend_width,
-                "complexity": dict(self.complexity),
-                "has_lbm_table": self.table is not None,
-                "n_lbm_angles": 0 if self.table is None else
-                len(self.table["angles_deg"])}
+        branch = "lbm" if w >= 0.999 else "empirical" if w <= 0.001 else "blend"
+        return {
+            "branch": branch,
+            "lbm_weight": w,
+            "threshold": self.threshold,
+            "blend_width": self.blend_width,
+            "complexity": dict(self.complexity),
+            "has_lbm_table": self.table is not None,
+            "n_lbm_angles": 0 if self.table is None else len(self.table["angles_deg"]),
+        }
 
     # -- branches --------------------------------------------------------
     def _lbm_eval(self, theta_deg: float) -> dict:
@@ -986,8 +1053,7 @@ class HybridWindEngine:
             src = lbm
             out["method"] = "lbm_table"
         else:
-            src = {k: w * lbm[k] + (1.0 - w) * emp[k]
-                   for k in ("C_X", "C_Y", "C_K", "C_N")}
+            src = {k: w * lbm[k] + (1.0 - w) * emp[k] for k in ("C_X", "C_Y", "C_K", "C_N")}
             src["C_X_std"] = w * lbm.get("C_X_std", 0.0)
             src["C_Y_std"] = w * lbm.get("C_Y_std", 0.0)
             out["method"] = "blend"
@@ -1003,48 +1069,59 @@ class HybridWindEngine:
         ang = list(angles) if angles is not None else list(range(0, 361, 10))
         return [self.coefficients(a) for a in ang]
 
-    def force(self, theta_deg: float, wind_speed_ms: float, *,
-              rho_air: float = RHO_AIR) -> dict:
+    def force(self, theta_deg: float, wind_speed_ms: float, *, rho_air: float = RHO_AIR) -> dict:
         """Dimensional forces/moments from the coefficients (ship frame)."""
 
         c = self.coefficients(theta_deg)
-        q = 0.5 * rho_air * wind_speed_ms ** 2
+        q = 0.5 * rho_air * wind_speed_ms**2
         A_F = self.reference["area_frontal_m2"]
         A_L = self.reference["area_lateral_m2"]
         B = self.reference["breadth_m"]
         H = self.reference["height_m"]
-        return {"q_Pa": q, "X_N": c["C_X"] * q * A_F,
-                "Y_N": c["C_Y"] * q * A_L,
-                "K_Nm": c["C_K"] * q * A_L * H,
-                "N_Nm": c["C_N"] * q * A_L * B,
-                "coefficients": c}
+        return {
+            "q_Pa": q,
+            "X_N": c["C_X"] * q * A_F,
+            "Y_N": c["C_Y"] * q * A_L,
+            "K_Nm": c["C_K"] * q * A_L * H,
+            "N_Nm": c["C_N"] * q * A_L * B,
+            "coefficients": c,
+        }
 
     def to_dict(self) -> dict:
-        return {"ship": self.ship.key, "routing": self.routing_report(),
-                "correlation": self.correlation,
-                "reference": self.reference}
+        return {
+            "ship": self.ship.key,
+            "routing": self.routing_report(),
+            "correlation": self.correlation,
+            "reference": self.reference,
+        }
 
     @classmethod
-    def from_records(cls, ship: ShipSuperstructure,
-                     records: Sequence[Mapping], **kw) -> "HybridWindEngine":
+    def from_records(
+        cls, ship: ShipSuperstructure, records: Sequence[Mapping], **kw
+    ) -> "HybridWindEngine":
         """Build the engine from LBM run records (``coefficients`` sub-dict)."""
 
         samples = []
         for r in records:
             coeff = r.get("coefficients", r)
-            samples.append({"angle_deg": float(r["angle_deg"]),
-                            "C_X": float(coeff["C_X"]),
-                            "C_Y": float(coeff["C_Y"]),
-                            "C_K": float(coeff.get("C_K", 0.0)),
-                            "C_N": float(coeff.get("C_N", 0.0)),
-                            "C_X_std": float(coeff.get("C_X_std", 0.0)),
-                            "C_Y_std": float(coeff.get("C_Y_std", 0.0))})
+            samples.append(
+                {
+                    "angle_deg": float(r["angle_deg"]),
+                    "C_X": float(coeff["C_X"]),
+                    "C_Y": float(coeff["C_Y"]),
+                    "C_K": float(coeff.get("C_K", 0.0)),
+                    "C_N": float(coeff.get("C_N", 0.0)),
+                    "C_X_std": float(coeff.get("C_X_std", 0.0)),
+                    "C_Y_std": float(coeff.get("C_Y_std", 0.0)),
+                }
+            )
         return cls(ship, samples, **kw)
 
 
 # ---------------------------------------------------------------------------
 # Validation helpers
 # ---------------------------------------------------------------------------
+
 
 def sign_conventions(samples: Sequence[Mapping] | None = None) -> dict:
     """Document and (when data is supplied) check the coefficient conventions.
@@ -1067,13 +1144,12 @@ def sign_conventions(samples: Sequence[Mapping] | None = None) -> dict:
     """
 
     out: dict = {
-        "frame": {"x": "+forward (bow)", "y": "+starboard",
-                  "z": "+up (deck at z=0)"},
+        "frame": {"x": "+forward (bow)", "y": "+starboard", "z": "+up (deck at z=0)"},
         "theta_deg": "wind direction measured from the bow (0 = head wind, "
-                     "90 = beam wind from starboard)",
+        "90 = beam wind from starboard)",
         "C_X": "X_wind / (q A_F), positive = retarding",
         "C_Y": "Y_wind / (q A_L), sign follows the transverse force in +y; a "
-               "beam wind from starboard gives C_Y < 0 (force towards port)",
+        "beam wind from starboard gives C_Y < 0 (force towards port)",
         "C_K": "heel moment about +x / (q A_L H)",
         "C_N": "yaw moment about +z / (q A_L B)",
         "checks": [],
@@ -1087,18 +1163,22 @@ def sign_conventions(samples: Sequence[Mapping] | None = None) -> dict:
     for a in (0.0, 180.0):
         if a not in by:
             continue
-        checks.append({
-            "angle_deg": a,
-            "C_Y": float(by[a]["C_Y"]),
-            "C_N": float(by[a]["C_N"]),
-            "residual_side_force_rel": abs(float(by[a]["C_Y"])) / scale_y,
-            "residual_yaw_moment_rel": abs(float(by[a]["C_N"])) / scale_n,
-        })
+        checks.append(
+            {
+                "angle_deg": a,
+                "C_Y": float(by[a]["C_Y"]),
+                "C_N": float(by[a]["C_N"]),
+                "residual_side_force_rel": abs(float(by[a]["C_Y"])) / scale_y,
+                "residual_yaw_moment_rel": abs(float(by[a]["C_N"])) / scale_n,
+            }
+        )
     out["checks"] = checks
     out["max_residual_side_force_rel"] = max(
-        (c["residual_side_force_rel"] for c in checks), default=None)
+        (c["residual_side_force_rel"] for c in checks), default=None
+    )
     out["max_residual_yaw_moment_rel"] = max(
-        (c["residual_yaw_moment_rel"] for c in checks), default=None)
+        (c["residual_yaw_moment_rel"] for c in checks), default=None
+    )
     for a in (0.0, 90.0, 180.0):
         if a in by:
             out[f"C_X_at_{int(a)}"] = float(by[a]["C_X"])
@@ -1109,7 +1189,7 @@ def sign_conventions(samples: Sequence[Mapping] | None = None) -> dict:
 def _weibull_pdf(v: float, k: float, c: float) -> float:
     if v <= 0.0:
         return 0.0
-    return (k / c) * (v / c) ** (k - 1.0) * math.exp(-(v / c) ** k)
+    return (k / c) * (v / c) ** (k - 1.0) * math.exp(-((v / c) ** k))
 
 
 def synthetic_wind_rose(name: str = "north_atlantic") -> dict:
@@ -1134,17 +1214,26 @@ def synthetic_wind_rose(name: str = "north_atlantic") -> dict:
     mean = 0.0
     for p, kk, cc in zip(prob, k, c):
         mean += p * cc * math.gamma(1.0 + 1.0 / kk)
-    return {"name": name, "sectors_deg_from": sectors, "probability": prob,
-            "weibull_shape_k": k, "weibull_scale_c": c,
-            "mean_wind_speed_ms": mean,
-            "provenance": "representative North Atlantic route statistics "
-                          "(documented values, not measured data)"}
+    return {
+        "name": name,
+        "sectors_deg_from": sectors,
+        "probability": prob,
+        "weibull_shape_k": k,
+        "weibull_scale_c": c,
+        "mean_wind_speed_ms": mean,
+        "provenance": "representative North Atlantic route statistics "
+        "(documented values, not measured data)",
+    }
 
 
-def calm_water_resistance_estimate(hull: HullReference, speed_ms: float,
-                                   *, rho_water: float = 1025.0,
-                                   form_factor: float = 1.15,
-                                   wetted_area_factor: float = 0.90) -> dict:
+def calm_water_resistance_estimate(
+    hull: HullReference,
+    speed_ms: float,
+    *,
+    rho_water: float = 1025.0,
+    form_factor: float = 1.15,
+    wetted_area_factor: float = 0.90,
+) -> dict:
     """Order-of-magnitude calm-water resistance (ITTC-57 friction dominated).
 
     ``S = wetted_area_factor * Lpp (2T + B)`` (a coarse wetted-area
@@ -1157,18 +1246,29 @@ def calm_water_resistance_estimate(hull: HullReference, speed_ms: float,
     S = wetted_area_factor * hull.length_pp_m * (2.0 * hull.draught_m + hull.breadth_m)
     Re = speed_ms * hull.length_pp_m / 1.19e-6
     cf = 0.075 / (math.log10(Re) - 2.0) ** 2
-    r = 0.5 * rho_water * S * speed_ms ** 2 * cf * form_factor
-    return {"wetted_area_m2": S, "Re": Re, "C_F": cf,
-            "form_factor": form_factor, "R_calm_water_N": r,
-            "provenance": "ITTC-57 friction + coarse wetted-area estimate"}
+    r = 0.5 * rho_water * S * speed_ms**2 * cf * form_factor
+    return {
+        "wetted_area_m2": S,
+        "Re": Re,
+        "C_F": cf,
+        "form_factor": form_factor,
+        "R_calm_water_N": r,
+        "provenance": "ITTC-57 friction + coarse wetted-area estimate",
+    }
 
 
-def wind_rose_annual_resistance(engine: HybridWindEngine, rose: Mapping,
-                                *, ship_speed_ms: float, heading_deg: float = 0.0,
-                                rho_air: float = RHO_AIR,
-                                n_speed: int = 48, v_max_factor: float = 3.0,
-                                baseline_resistance_N: float | None = None,
-                                extra_frontal_area_m2: float = 0.0) -> dict:
+def wind_rose_annual_resistance(
+    engine: HybridWindEngine,
+    rose: Mapping,
+    *,
+    ship_speed_ms: float,
+    heading_deg: float = 0.0,
+    rho_air: float = RHO_AIR,
+    n_speed: int = 48,
+    v_max_factor: float = 3.0,
+    baseline_resistance_N: float | None = None,
+    extra_frontal_area_m2: float = 0.0,
+) -> dict:
     """Annual mean wind added resistance from a wind rose.
 
     For every rose sector the *apparent* wind is obtained from the true wind
@@ -1221,7 +1321,7 @@ def wind_rose_annual_resistance(engine: HybridWindEngine, rose: Mapping,
             # the bow for a wind blowing *from* the opposite direction
             theta = math.degrees(math.atan2(-ay, -ax)) % 360.0
             cx = engine.coefficients(theta)["C_X"]
-            dR = 0.5 * rho_air * A_F * cx * v_a ** 2
+            dR = 0.5 * rho_air * A_F * cx * v_a**2
             s_net += w * dR
             s_pos += w * max(dR, 0.0)
             s_thrust += w * (1.0 if dR < 0.0 else 0.0)
@@ -1233,9 +1333,15 @@ def wind_rose_annual_resistance(engine: HybridWindEngine, rose: Mapping,
         mean_net += p_s * s_net
         mean_pos += p_s * s_pos
         p_thrust += p_s * s_thrust
-        per_sector.append({"sector_from_deg": ang_from, "probability": p_s,
-                           "mean_dR_net_N": s_net, "mean_dR_positive_N": s_pos,
-                           "thrust_fraction": s_thrust})
+        per_sector.append(
+            {
+                "sector_from_deg": ang_from,
+                "probability": p_s,
+                "mean_dR_net_N": s_net,
+                "mean_dR_positive_N": s_pos,
+                "thrust_fraction": s_thrust,
+            }
+        )
         weights.append({"sector_from_deg": ang_from, "p": p_s})
 
     out = {
@@ -1262,6 +1368,7 @@ def wind_rose_annual_resistance(engine: HybridWindEngine, rose: Mapping,
 # Acceptance evaluation
 # ---------------------------------------------------------------------------
 
+
 def evaluate_acceptance(criteria: Sequence[Mapping]) -> dict:
     """Assemble the machine-checkable acceptance table.
 
@@ -1282,16 +1389,27 @@ def evaluate_acceptance(criteria: Sequence[Mapping]) -> dict:
         else:
             passed = {"<=": v <= th, "<": v < th, ">=": v >= th, ">": v > th}[op]
             verdict = "PASS" if passed else "FAIL"
-        rows.append({"id": c["id"], "description": c["description"],
-                     "value": v, "threshold": th, "operator": op,
-                     "unit": c.get("unit", ""), "hard": bool(c.get("hard", True)),
-                     "verdict": verdict, "passed": passed})
+        rows.append(
+            {
+                "id": c["id"],
+                "description": c["description"],
+                "value": v,
+                "threshold": th,
+                "operator": op,
+                "unit": c.get("unit", ""),
+                "hard": bool(c.get("hard", True)),
+                "verdict": verdict,
+                "passed": passed,
+            }
+        )
     hard = [r for r in rows if r["hard"] and r["passed"] is not None]
     soft = [r for r in rows if not r["hard"] and r["passed"] is not None]
-    return {"criteria": rows,
-            "all_hard_passed": all(r["passed"] for r in hard) if hard else False,
-            "n_hard": len(hard),
-            "n_hard_passed": sum(1 for r in hard if r["passed"]),
-            "n_soft": len(soft),
-            "n_soft_passed": sum(1 for r in soft if r["passed"]),
-            "n_not_evaluated": sum(1 for r in rows if r["passed"] is None)}
+    return {
+        "criteria": rows,
+        "all_hard_passed": all(r["passed"] for r in hard) if hard else False,
+        "n_hard": len(hard),
+        "n_hard_passed": sum(1 for r in hard if r["passed"]),
+        "n_soft": len(soft),
+        "n_soft_passed": sum(1 for r in soft if r["passed"]),
+        "n_not_evaluated": sum(1 for r in rows if r["passed"] is None),
+    }

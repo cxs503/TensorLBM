@@ -45,18 +45,24 @@ def main():
     ta, ha, ra = load_history(arm_path)
 
     fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=150)
-    ax.plot(tc, hc, "-", color="tab:blue", lw=1.6,
-            label=f"ctrl (gas_nu_ratio={rc.get('gas_nu_ratio')})")
-    ax.plot(ta, ha, "--", color="tab:red", lw=1.6,
-            label=f"arm (gas_nu_ratio={ra.get('gas_nu_ratio')})")
-    ax.plot(t_ref, h_ref, "o", color="k", ms=5, mfc="none", mew=1.4,
-            label="experiment (Santini case 3)")
+    ax.plot(
+        tc, hc, "-", color="tab:blue", lw=1.6, label=f"ctrl (gas_nu_ratio={rc.get('gas_nu_ratio')})"
+    )
+    ax.plot(
+        ta, ha, "--", color="tab:red", lw=1.6, label=f"arm (gas_nu_ratio={ra.get('gas_nu_ratio')})"
+    )
+    ax.plot(
+        t_ref, h_ref, "o", color="k", ms=5, mfc="none", mew=1.4, label="experiment (Santini case 3)"
+    )
     # experimental peak annotation
     ipk = int(np.argmax(h_ref))
-    ax.annotate(f"exp peak {h_ref[ipk]:.4f}D @ {t_ref[ipk]:.3f}ms",
-                xy=(t_ref[ipk], h_ref[ipk]),
-                xytext=(t_ref[ipk] + 1.5, h_ref[ipk] + 0.15),
-                arrowprops=dict(arrowstyle="->", color="k"), fontsize=8)
+    ax.annotate(
+        f"exp peak {h_ref[ipk]:.4f}D @ {t_ref[ipk]:.3f}ms",
+        xy=(t_ref[ipk], h_ref[ipk]),
+        xytext=(t_ref[ipk] + 1.5, h_ref[ipk] + 0.15),
+        arrowprops=dict(arrowstyle="->", color="k"),
+        fontsize=8,
+    )
     ax.set_xlabel("post-contact time (ms)")
     ax.set_ylabel("crater depth (D)")
     ax.set_title("DE-X-GAS1-GASVISC: gas-viscosity arm vs ctrl (cells=8)")

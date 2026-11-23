@@ -30,7 +30,12 @@ from tensorlbm.duct_poiseuille_validation import (
     run_duct_case,
 )
 
-ARTIFACT = Path(__file__).resolve().parents[1] / "artifacts" / "duct_poiseuille_validation" / "results.json"
+ARTIFACT = (
+    Path(__file__).resolve().parents[1]
+    / "artifacts"
+    / "duct_poiseuille_validation"
+    / "results.json"
+)
 
 
 @pytest.fixture(autouse=True)
@@ -62,7 +67,9 @@ def test_series_resistance_approaches_literature_value() -> None:
     """Integral functional of the closed form vs Shah & London f*Re = 56.91."""
     errors = []
     for length in (8, 10, 14):
-        u, _, _ = duct_profile_exact(length, 8.0 * (1 / 6.0) * 0.05 / length**2, 1 / 6.0, n_terms=401)
+        u, _, _ = duct_profile_exact(
+            length, 8.0 * (1 / 6.0) * 0.05 / length**2, 1 / 6.0, n_terms=401
+        )
         resistance = 8.0 * (1 / 6.0) * 0.05 / length**2 * length**2 / ((1 / 6.0) * float(u.mean()))
         errors.append(abs(resistance - LITERATURE_RESISTANCE) / LITERATURE_RESISTANCE)
     assert max(errors) < 0.03, errors
@@ -93,7 +100,11 @@ def test_duct_case_matches_closed_form_and_is_second_order() -> None:
     assert max(fine["max_uy"], fine["max_uz"]) / fine["u_max_num"] < 5e-2
     assert fine["mass_drift"] < 1e-8
     # Integral literature anchor.
-    assert abs(fine["poiseuille_number_num"] - LITERATURE_POISEUILLE_NUMBER) / LITERATURE_POISEUILLE_NUMBER < 0.03
+    assert (
+        abs(fine["poiseuille_number_num"] - LITERATURE_POISEUILLE_NUMBER)
+        / LITERATURE_POISEUILLE_NUMBER
+        < 0.03
+    )
 
 
 def test_profile_is_symmetric_about_the_duct_centre() -> None:
@@ -127,7 +138,7 @@ def test_mrt_reduces_to_bgk_in_the_all_rates_limit() -> None:
 
 
 def test_artifact_exists_and_its_checks_pass() -> None:
-    assert ARTIFACT.exists(), f"missing artifact: run python -m tensorlbm.duct_poiseuille_validation"
+    assert ARTIFACT.exists(), "missing artifact: run python -m tensorlbm.duct_poiseuille_validation"
     data = json.loads(ARTIFACT.read_text())
     assert data["all_checks_passed"] is True, [c for c in data["checks"] if not c["passed"]]
     assert len(data["checks"]) >= 9, "vacuous check list"
@@ -162,4 +173,6 @@ def test_artifact_records_withholding_and_forcing_convention_disclosure() -> Non
     controls = {c["control"]: c for c in data["controls"]}
     # the forcing convention on solid cells must be disclosed, not hidden
     assert "body_force_on_solid_cells" in controls
-    assert {"rel_error_fluid_only", "rel_error_force_everywhere"} <= set(controls["body_force_on_solid_cells"])
+    assert {"rel_error_fluid_only", "rel_error_force_everywhere"} <= set(
+        controls["body_force_on_solid_cells"]
+    )

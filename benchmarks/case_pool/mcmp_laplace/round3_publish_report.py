@@ -1,12 +1,22 @@
 """Publish the CASE-MCMP-LAPLACE round-3 report (six-element, figures embedded)."""
-import base64, json, os, urllib.request
+
+import base64
+import json
+import os
+import urllib.request
 from pathlib import Path
+
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
 doc = json.loads((ART / "round3_closed_virial.json").read_text())
-slab = doc["slabs"]["-2.75"]; drop = doc["droplet"]
+slab = doc["slabs"]["-2.75"]
+drop = doc["droplet"]
+
+
 def fig(name):
     return {"name": name, "png_base64": base64.b64encode((ART / name).read_bytes()).decode()}
+
+
 md = """# CASE-MCMP-LAPLACE 第 3 轮：闭合 virial 复裁 Route B —— 绝对 σ 锚定不可行（honest negative）
 
 ## ① 案例介绍
@@ -62,16 +72,30 @@ report = {
     "tags": ["CASE-MCMP-LAPLACE", "mcmp", "laplace", "pressure-tensor", "verification-debt"],
     "markdown": md,
     "figures": [
-        {**fig("fig_r3_normal_stress.png"), "caption": "hero 平板（G12=-2.75）P_NN/P_TT 剖面：sym 不守恒（下凹 45%），closed 守恒（0.78%）"},
-        {**fig("fig_r3_sigma_estimators.png"), "caption": "三估计器 vs 液滴 σ_Laplace 的 ±5% 带：均在外"},
+        {
+            **fig("fig_r3_normal_stress.png"),
+            "caption": "hero 平板（G12=-2.75）P_NN/P_TT 剖面：sym 不守恒（下凹 45%），closed 守恒（0.78%）",
+        },
+        {
+            **fig("fig_r3_sigma_estimators.png"),
+            "caption": "三估计器 vs 液滴 σ_Laplace 的 ±5% 带：均在外",
+        },
     ],
 }
-base = os.environ["TENSOR_API_BASE"]; user = os.environ["TENSOR_AGENT_USER"]; pw = os.environ["TENSOR_AGENT_PASS"]
+base = os.environ["TENSOR_API_BASE"]
+user = os.environ["TENSOR_AGENT_USER"]
+pw = os.environ["TENSOR_AGENT_PASS"]
 login = json.dumps({"username": user, "password": pw}).encode()
-req = urllib.request.Request(base + "/auth/login", data=login, headers={"Content-Type": "application/json"})
+req = urllib.request.Request(
+    base + "/auth/login", data=login, headers={"Content-Type": "application/json"}
+)
 tok = json.loads(urllib.request.urlopen(req, timeout=30).read())["access_token"]
 body = json.dumps(report).encode()
-req = urllib.request.Request(base + "/tensor/reports", data=body,
-    headers={"Content-Type": "application/json", "Authorization": f"Bearer {tok}"}, method="POST")
+req = urllib.request.Request(
+    base + "/tensor/reports",
+    data=body,
+    headers={"Content-Type": "application/json", "Authorization": f"Bearer {tok}"},
+    method="POST",
+)
 resp = json.loads(urllib.request.urlopen(req, timeout=60).read())
 print(json.dumps(resp, ensure_ascii=False)[:600])

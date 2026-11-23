@@ -33,13 +33,15 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default="runs/p351w1_n07/convergence.json")
     args = ap.parse_args(argv)
 
-    smooth = advect_interface_convergence(sizes=tuple(args.sizes), t_end=args.t_end,
-                                          width=0.02, cfl=0.3)
-    sharp = advect_interface_convergence(sizes=tuple(args.sizes), t_end=args.t_end,
-                                         width=0.004, cfl=0.3)
+    smooth = advect_interface_convergence(
+        sizes=tuple(args.sizes), t_end=args.t_end, width=0.02, cfl=0.3
+    )
+    sharp = advect_interface_convergence(
+        sizes=tuple(args.sizes), t_end=args.t_end, width=0.004, cfl=0.3
+    )
     payload = {
         "method": "single-vortex interface transport, MUSCL/superbee flux form, "
-                  "reference = RK4 backward flow map (n_rk=400)",
+        "reference = RK4 backward flow map (n_rk=400)",
         "t_end": args.t_end,
         "resolved_interface": smooth,
         "sharp_interface": sharp,
@@ -57,9 +59,14 @@ def main(argv=None) -> int:
     print(json.dumps(payload["criteria"], indent=1))
     for name in ("resolved_interface", "sharp_interface"):
         d = payload[name]
-        print(name, "h=", [round(h, 5) for h in d["h"]],
-              "l2=", [f"{e:.3e}" for e in d["l2"]],
-              f"order={d['order']:.2f} r2={d['r2']:.3f}")
+        print(
+            name,
+            "h=",
+            [round(h, 5) for h in d["h"]],
+            "l2=",
+            [f"{e:.3e}" for e in d["l2"]],
+            f"order={d['order']:.2f} r2={d['r2']:.3f}",
+        )
     return 0
 
 
