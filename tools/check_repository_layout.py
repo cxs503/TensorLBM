@@ -58,6 +58,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "smoke"),
     ("models", "lbm"),
     ("models", "units"),
+    ("scripts", "sdaa"),
     ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
