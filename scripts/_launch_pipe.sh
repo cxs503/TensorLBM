@@ -22,7 +22,7 @@ OUTPUT_DIR="outputs/sdaa/poiseuille_3d_pipe"
 LOG="$OUTPUT_DIR/sdaa_poiseuille_3d_pipe.log"
 mkdir -p "$OUTPUT_DIR"
 
-nohup python scripts/sdaa_sweep_poiseuille_3d_pipe.py \
+nohup python development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_poiseuille_3d_pipe.py \
   --R "$R" --min-steps "$MIN_STEPS" --max-steps "$MAX_STEPS" \
   --compile-mode eager \
   --out-json "$OUTPUT_DIR/sdaa_poiseuille_3d_pipe.json" \
