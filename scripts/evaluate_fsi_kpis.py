@@ -61,7 +61,12 @@ def evaluate_case(case: str, history: dict[str, np.ndarray], rules: dict[str, An
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--baseline", type=Path, default=Path(__file__).resolve().parent / "data/fsi/fsi_kpi_baselines.json")
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=Path(__file__).resolve().parents[1]
+        / "benchmarks/fsi_channel_validation/config/fsi_kpi_baselines.json",
+    )
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()

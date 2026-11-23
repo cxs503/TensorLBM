@@ -40,7 +40,7 @@ integrity verified before retiring a tracked copy.
 | `audits/` | `development/audit/` | The [original ledger](migrations/legacy-audit-root-2026-11-21.json) records the intermediate paths under `audit/`. |
 | `benchmarks/` | Keep | One canonical entry per case. Preserve registered IDs and archived comparisons. |
 | `cases/` | Split by purpose | The [migration ledger](migrations/case-root-retirement-2026-11-21.json) maps all case runners to their benchmark owners and records the two superseded case-pool wrappers. |
-| `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
+| `configs/` | `tests/fixtures/campaign_gates/`, `benchmarks/fsi_channel_validation/config/` | Acoustic campaign test fixture and FSI evaluator inputs. |
 | `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
 | `drop_entry/` | `development/audit/drop_entry/` | Mission working notes and drafts are development records. The [m26734](migrations/m26734-drop-entry-reentry-2026-11-21.json), [m26737](migrations/m26737-drop-entry-reentry-2026-11-22.json), [m27075](migrations/m27075-drop-entry-reentry-2026-11-22.json), [m26892](migrations/m26892-drop-entry-reentry-2026-11-22.json), [m26887](migrations/m26887-drop-entry-reentry-2026-11-22.json), and [m26894](migrations/m26894-drop-entry-reentry-2026-11-22.json) re-entry ledgers preserve successive root regressions byte-for-byte while retaining published document copies where they exist. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
@@ -53,7 +53,7 @@ integrity verified before retiring a tracked copy.
 | `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Retired by the [papers migration ledger](migrations/papers-root-retirement-2026-11-22.json): 35 tracked assets moved to SUBOFF benchmark evidence or published report ownership; active path consumers were updated and unresolved external evidence gaps remain explicit. |
 | `raw/` | Retire | The [diagnostic duplicate ledger](migrations/drop-entry-raw-root-retirement-2026-11-23.json) maps the four byte-identical files back to their benchmark owners. |
-| `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
+| `references/` | `benchmarks/air_layer_drag/reference/` | Air-layer reference JSON shared by the campaign and literature checker. The [script data ledger](migrations/scripts-data-retirement-2026-11-23.json) records the retirement of `scripts/data/`. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |
 | `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. The [m18430 ledger](migrations/m18430-audit-tools-2026-11-22.json) covers the report builder. The [CI and contract evidence ledger](migrations/ci-contract-evidence-2026-11-23.json) covers two retired audit-script directories. |

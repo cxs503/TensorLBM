@@ -187,17 +187,33 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def test_bulk_root_retirement_accounts_for_all_moved_assets(self):
         ledger_path = LEDGER_PATH.parent / "bulk-root-retirement-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        followup_path = LEDGER_PATH.parent / "scripts-data-retirement-2026-11-23.json"
+        followup = json.loads(followup_path.read_text(encoding="utf-8"))
+        handoffs = {item["old_path"]: item for item in followup["entries"]}
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = list(csv.DictReader(stream))
+        for path, batch in ((ledger_path, ledger), (followup_path, followup)):
             moves = {
                 row["old_path"]: row["new_path"]
-                for row in csv.DictReader(stream)
-                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+                for row in rows
+                if row["verification"] == path.relative_to(REPO).as_posix()
             }
-        self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+            self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in batch["entries"]})
         policy = json.loads((REPO / "docs/architecture/repository_layout_policy.json").read_text())
         self.assertTrue(set(ledger["retired_roots"]).isdisjoint(policy["root_directories"]))
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "scripts/data"], cwd=REPO))
+        self.assertEqual(set(handoffs), {
+            item["new_path"] for item in ledger["entries"] if item["new_path"].startswith("scripts/data/")
+        })
         for item in ledger["entries"]:
             destination = REPO / item["new_path"]
+            if item["new_path"] in handoffs:
+                next_move = handoffs[item["new_path"]]
+                self.assertEqual(next_move["original_git_blob"], item["git_blob"])
+                self.assertEqual(next_move["original_sha256"], item["sha256"])
+                self.assertEqual(next_move["size_bytes"], item["size_bytes"])
+                self.assertEqual(next_move["git_mode"], item["git_mode"])
+                destination = REPO / next_move["new_path"]
             with self.subTest(path=destination):
                 self.assertTrue(destination.is_file())
                 self.assertFalse((REPO / item["old_path"]).exists())

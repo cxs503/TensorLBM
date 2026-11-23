@@ -312,7 +312,7 @@ def _finish(args, t0, nx, ny, spin, meas, thickness, cfg, gate_a, gate_b0, gate_
     sat = (len(dr_qg) >= 3 and dr_qg[-1] - dr_qg[-2] < 0.5 * (dr_qg[-2] - dr_qg[0])
            and dr_qg[-1] < 0.95)
 
-    literature_path = ROOT / "scripts/data/air_layer_drag/air_lubrication_reference_points.json"
+    literature_path = ROOT / "benchmarks/air_layer_drag/reference/air_lubrication_reference_points.json"
     lit = None
     if literature_path.exists():
         raw = literature_path.read_bytes()
