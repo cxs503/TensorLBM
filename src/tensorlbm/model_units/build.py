@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from .manifest import ModelUnit
+from .paths import MODEL_UNITS_ROOT, resolve_model_unit_root
 from .registry import DEFAULT_ROOT, discover
 
 ARTIFACT_ROOT = Path("artifacts") / "model_units"
@@ -225,8 +226,8 @@ def doctor(
     """Consistency gates for the unit registry (the CI ``plan`` job's checks)."""
     from .registry import _filesystem_manifests, _git_tracked_manifests, manifest_paths
 
-    root_path = Path(root)
     repo = Path(repo_root) if repo_root is not None else Path.cwd()
+    root_path = resolve_model_unit_root(root, repo)
     fs = {p.resolve() for p in _filesystem_manifests(root_path)}
     git = set()
     for path in _git_tracked_manifests(repo):
@@ -305,7 +306,7 @@ def doctor(
     from .coverage import coverage_report
 
     cov = coverage_report(
-        models_root=models_root if models_root is not None else Path("models"),
+        models_root=models_root if models_root is not None else MODEL_UNITS_ROOT,
         repo_root=repo,
     )
     add(

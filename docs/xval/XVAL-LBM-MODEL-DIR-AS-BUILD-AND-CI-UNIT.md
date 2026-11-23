@@ -1,5 +1,7 @@
 # XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT — 模型目录即构建与 CI 单元
 
+> 当前检出版本的模型单元位置和复现命令见[模型单元目录](../../benchmarks/model_units/README.md)。下文保留历史试验当时的路径和记录。
+
 **锚点**：`XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT`（第 1 轮·任务榜·开源对标，owner 供给令）
 **对标对象**：CFD-GO/TCLB 的 *model directory = build unit = CI unit* 做法（本地镜像 `/tmp/TCLB`，逐条取自源码，零手抄）
 **判据**：owner 精度标准 <15%；本单实际最差单元误差 1.2268e-03（见 §④/§⑥）

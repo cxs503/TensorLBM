@@ -1,0 +1,125 @@
+{
+  "source_commit": "d7428a9d8ffa0e8eb4d890671dde9c2082c06562",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "retired_paths": [
+    "models/lbm",
+    "models/units"
+  ],
+  "second_level_directories": {
+    "models": {
+      "before": 2,
+      "after": 0
+    },
+    "benchmarks": {
+      "before": 103,
+      "after": 104
+    }
+  },
+  "entries": [
+    {
+      "old_path": "models/lbm/poiseuille2d_d2q9_guo/case.py",
+      "new_path": "benchmarks/model_units/lbm/poiseuille2d_d2q9_guo/case.py",
+      "git_mode": "100644",
+      "original_git_blob": "63e89c038e99bb7a9c83cfe1b3f68c556d1cabff",
+      "original_sha256": "c7bf722faeaf7d2426e0989563bbbd48263c42faa151eb521a3f02dfe2c4e4bf",
+      "size_bytes": 6039
+    },
+    {
+      "old_path": "models/lbm/poiseuille2d_d2q9_guo/model.toml",
+      "new_path": "benchmarks/model_units/lbm/poiseuille2d_d2q9_guo/model.toml",
+      "git_mode": "100644",
+      "original_git_blob": "abaf61d1b8d2d2ccb22c7b58c643f4c91dbe2622",
+      "original_sha256": "6c826e5990dee70f0358d6ce24c84337c328e4490accec84376a5557790c7a47",
+      "size_bytes": 822
+    },
+    {
+      "old_path": "models/lbm/poiseuille3d_d3q19_guo/case.py",
+      "new_path": "benchmarks/model_units/lbm/poiseuille3d_d3q19_guo/case.py",
+      "git_mode": "100644",
+      "original_git_blob": "8ce5c07dd1f3286943eb1848d618f39a112f3d9b",
+      "original_sha256": "a2c85dea3d1c7509de2faf9a72e299191c6bdefb90cc1420cfce7fb3ee73ed2c",
+      "size_bytes": 4957
+    },
+    {
+      "old_path": "models/lbm/poiseuille3d_d3q19_guo/model.toml",
+      "new_path": "benchmarks/model_units/lbm/poiseuille3d_d3q19_guo/model.toml",
+      "git_mode": "100644",
+      "original_git_blob": "39e5314c8a9f12bc30a6e58abaa0a42980ed5ccd",
+      "original_sha256": "4dee6ee4eda41aa911e030a9578b98a72c74cf10c795a02c1001da3bce558378",
+      "size_bytes": 676
+    },
+    {
+      "old_path": "models/lbm/tgv2d_d2q9_bgk/case.py",
+      "new_path": "benchmarks/model_units/lbm/tgv2d_d2q9_bgk/case.py",
+      "git_mode": "100644",
+      "original_git_blob": "5ce0b9d9499666dcff86e0e39bef3b2f13f2669e",
+      "original_sha256": "b5ca8aa33065e3ddb4631e83b91ac04919ed473a6e1aa47cc14fdeaf1c63c82f",
+      "size_bytes": 3607
+    },
+    {
+      "old_path": "models/lbm/tgv2d_d2q9_bgk/model.toml",
+      "new_path": "benchmarks/model_units/lbm/tgv2d_d2q9_bgk/model.toml",
+      "git_mode": "100644",
+      "original_git_blob": "17be278a06fdeede97885c9ba369b8f75a8ea31b",
+      "original_sha256": "1b446aa51b303a8c08bf6eb20299364fd10df57d35488d6e4afcbf6f0e8807a1",
+      "size_bytes": 621
+    },
+    {
+      "old_path": "models/units/README.md",
+      "new_path": "benchmarks/model_units/units/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "29e41b5aac821dc8d6f46d2210be7a1c47b36a81",
+      "original_sha256": "69b405660ae517f2984d0660af31e65431eb6c151b8875d9cf6b0a7b1c293d2c",
+      "size_bytes": 3039
+    },
+    {
+      "old_path": "models/units/d2q9_bgk_channel_poiseuille/model.json",
+      "new_path": "benchmarks/model_units/units/d2q9_bgk_channel_poiseuille/model.json",
+      "git_mode": "100644",
+      "original_git_blob": "eff1fd40829691f0a1d00728f993b815683246e2",
+      "original_sha256": "8b79cc07b7ef311499371f4e12a9fa66f99dde23941cab6d673e96b1c7c017c6",
+      "size_bytes": 956
+    },
+    {
+      "old_path": "models/units/d2q9_bgk_shear_wave/model.json",
+      "new_path": "benchmarks/model_units/units/d2q9_bgk_shear_wave/model.json",
+      "git_mode": "100644",
+      "original_git_blob": "8f567534d3213097cd7855da8e1753682c5ba92f",
+      "original_sha256": "e57c4935b921ff6e64bdadf1df0b70f15223ef285bea5bc0accc94e52120c6ec",
+      "size_bytes": 945
+    },
+    {
+      "old_path": "models/units/d2q9_mrt_shear_wave/model.json",
+      "new_path": "benchmarks/model_units/units/d2q9_mrt_shear_wave/model.json",
+      "git_mode": "100644",
+      "original_git_blob": "9bd4de67cd0b712298d51c8d9fb8bea40196d245",
+      "original_sha256": "6bfba0247edd0bf738dc3d1efa71422d25bf04f99dad9e330d81d1c307ec9aff",
+      "size_bytes": 961
+    },
+    {
+      "old_path": "models/units/d2q9_trt_channel_poiseuille/model.json",
+      "new_path": "benchmarks/model_units/units/d2q9_trt_channel_poiseuille/model.json",
+      "git_mode": "100644",
+      "original_git_blob": "d8716104cbab1348f54a3ad46f0dbcea15406ad0",
+      "original_sha256": "d39bd44c5518ebdae09d44026a93c4755aaa8bbc40b51a21db2f0ab6ae6377f0",
+      "size_bytes": 976
+    }
+  ],
+  "retained_checkpoint": {
+    "path": "models/suboff_v0.3.pt",
+    "git_blob": "63a422f55f4b3de519b3be8ac72409a1bf01db63",
+    "sha256": "61292065f3878fcd6a98c4f7a73256c3e4542717646ae3f4027a6bda0f4c06d5",
+    "size_bytes": 15901363,
+    "remaining_dependency": "The README and pretrained-model guide link this file. The SUBOFF platform pipeline and demo use it as their default input. Retirement requires a verified durable download and a real checkpoint load and inference against original input data."
+  },
+  "compatibility": "The two CLI families and their discovery APIs recognize the prior checkout roots when the relocated definitions are present. Custom and historical checkouts with their own definitions are respected. The generated CI cells retain their unit IDs and commands. Report URLs stay fixed.",
+  "scientific_scope": "Numerical source, case inputs, comparisons and thresholds are byte-identical. This batch checks structural and CLI compatibility. Local Torch is unavailable. Current execution status is recorded by the model-unit workflow on the PR.",
+  "local_verification": [
+    "All 11 moved files match their original Git blobs and SHA-256 values.",
+    "The baseline and relocated CI matrices have the same seven IDs and commands. Only the directory prefix changed. The generated Makefile fragment is byte-identical.",
+    "The default and explicit legacy-root matrix invocations return identical data. The registry verify command and make models succeed.",
+    "The remaining SUBOFF checkpoint matches its original Git blob and SHA-256, and its ZIP entries pass CRC validation. A Torch checkpoint load and inference were not run.",
+    "bash tools/check_repository_governance.sh passes all 78 tests with zero hard benchmark status violations."
+  ]
+}

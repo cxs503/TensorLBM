@@ -1,5 +1,7 @@
 # XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT — TensorLBM × CFD-GO/TCLB
 
+> 当前检出版本的模型单元位置和复现命令见[模型单元目录](../benchmarks/model_units/README.md)。下文保留历史试验当时的路径和记录。
+
 **任务** 17991（第 1 轮·开源对标 XVAL）｜**仓库** TensorLBM｜**生成方式** `python tools/xval_m17991_model_dir_ci_unit.py`（本文件由脚本程序化生成，数字零手抄，源：`artifacts/xval_m17991/xval.json`）
 
 **对标对象** CFD-GO/TCLB 的 model-dir-as-build-and-ci-unit 做法（checkout `/tmp/TCLB` @ `ded67cd768cf7e727bd078af139e3ec7895076e5`）

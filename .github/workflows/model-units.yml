@@ -3,9 +3,9 @@ name: Model units
 # Cross-validated against CFD-GO/TCLB (XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT):
 # in TCLB the model *directory* is the build unit (``CLB/<model>``) and the CI
 # unit; the model list comes from enumerating ``conf.mk`` files, never from a
-# hand-maintained matrix.  Here the same rule holds with ``model.toml``:
+# hand-maintained matrix.  Here the same rule holds with the model-unit manifests:
 #
-#   plan   enumerates models/lbm/*/model.toml and emits the matrix as a job output
+#   plan   enumerates both manifest formats under benchmarks/model_units/ and emits the matrix as a job output
 #   unit   one matrix cell per model directory: build in isolation + run its case
 #   drift  fails if the workflow's matrix were ever hand-written, or if a model
 #          directory did not make it onto the matrix

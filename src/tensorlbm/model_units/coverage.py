@@ -11,8 +11,8 @@ the other 45 are buildable but never exercised by CI.
 TensorLBM grew two manifest dialects for the same convention, from two
 independent deliveries of the same anchor:
 
-``models/lbm/<name>/model.toml``   (+ ``case.py``)   -> ``tensorlbm.model_units``
-``models/units/<id>/model.json``   (kernel + gates)  -> ``tensorlbm.models.ci_unit``
+``benchmarks/model_units/lbm/<name>/model.toml``   (+ ``case.py``)   -> ``tensorlbm.model_units``
+``benchmarks/model_units/units/<id>/model.json``   (kernel + gates)  -> ``tensorlbm.models.ci_unit``
 
 The generated matrix in ``.github/workflows/model-units.yml`` was produced from
 the first dialect only, so the ``model.json`` directories satisfied the
@@ -41,6 +41,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .paths import MODEL_UNITS_ROOT, resolve_model_unit_root
+
 TOML_KIND = "unit_toml"
 JSON_KIND = "unit_json"
 
@@ -53,7 +55,7 @@ MANIFEST_KINDS: dict[str, str] = {TOML_KIND: "model.toml", JSON_KIND: "model.jso
 #: can validate the manifest *without* importing torch).
 JSON_SCHEMA = "tensorlbm.model_unit/v1"
 
-DEFAULT_MODELS_ROOT = Path("models")
+DEFAULT_MODELS_ROOT = MODEL_UNITS_ROOT
 
 
 class CoverageError(RuntimeError):
@@ -151,8 +153,8 @@ def discover_directories(
 
     Sorted by ``(kind, unit_id)`` so the emitted matrix is reproducible.
     """
-    root = Path(models_root)
     repo = Path(repo_root) if repo_root is not None else Path.cwd()
+    root = resolve_model_unit_root(models_root, repo)
     manifest_to_kind = {name: kind for kind, name in MANIFEST_KINDS.items()}
 
     candidates: dict[Path, None] = {}

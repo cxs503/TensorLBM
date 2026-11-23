@@ -15,7 +15,7 @@ from tensorlbm.model_units import discover
 
 torch.set_num_threads(1)
 OUT = REPO / "artifacts" / "xval_m17991" / "sensitivity.json"
-units = {u.name: u for u in discover(REPO / "models" / "lbm", repo_root=REPO)}
+units = {u.name: u for u in discover(REPO / "benchmarks" / "model_units" / "lbm", repo_root=REPO)}
 
 
 def run(name, **over):

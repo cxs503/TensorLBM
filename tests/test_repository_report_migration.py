@@ -11,8 +11,10 @@ import ast
 import csv
 import hashlib
 import json
+import os
 import re
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -34,6 +36,20 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ledger = json.loads(LEDGER_PATH.read_text(encoding="utf-8"))
+
+    def test_model_unit_matrix_supports_legacy_roots_and_both_dialects(self):
+        command = [sys.executable, "-m", "tensorlbm.model_units"]
+        env = {**os.environ, "PYTHONPATH": str(REPO / "src")}
+        canonical = subprocess.check_output([*command, "ci-matrix"], cwd=REPO, env=env)
+        legacy = subprocess.check_output(
+            [*command, "--root", "models/lbm", "--models-root", "models", "ci-matrix"],
+            cwd=REPO,
+            env=env,
+        )
+        self.assertEqual(canonical, legacy)
+        cells = json.loads(canonical)["include"]
+        self.assertEqual({row["kind"] for row in cells}, {"unit_toml", "unit_json"})
+        self.assertTrue(all(row["dir"].startswith("benchmarks/model_units/") for row in cells))
 
     def test_retired_xval_design_directories_and_preserved_assets(self):
         path = LEDGER_PATH.parent / "xval-reference-designs-2026-11-23.json"

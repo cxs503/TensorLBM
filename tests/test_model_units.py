@@ -26,7 +26,7 @@ from tensorlbm.model_units import test as run_unit_case
 from tensorlbm.model_units.manifest import ManifestError, parse_manifest
 
 REPO = Path(__file__).resolve().parents[1]
-ROOT = REPO / "models" / "lbm"
+ROOT = REPO / "benchmarks" / "model_units" / "lbm"
 
 
 @pytest.fixture(scope="module")

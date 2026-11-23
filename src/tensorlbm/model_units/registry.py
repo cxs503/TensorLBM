@@ -20,8 +20,9 @@ import subprocess
 from pathlib import Path
 
 from .manifest import MANIFEST_NAME, ManifestError, ModelUnit, load_unit
+from .paths import TOML_UNITS_ROOT, resolve_model_unit_root
 
-DEFAULT_ROOT = Path("models") / "lbm"
+DEFAULT_ROOT = TOML_UNITS_ROOT
 
 
 def _git_tracked_manifests(repo_root: Path) -> list[Path]:
@@ -51,8 +52,8 @@ def _filesystem_manifests(root: Path) -> list[Path]:
 
 def manifest_paths(root: Path | str = DEFAULT_ROOT, *, repo_root: Path | None = None) -> list[Path]:
     """Return the discovered ``model.toml`` paths, union of git and filesystem."""
-    root_path = Path(root)
     repo = Path(repo_root) if repo_root is not None else Path.cwd()
+    root_path = resolve_model_unit_root(root, repo)
     found: dict[Path, None] = {}
     for path in _git_tracked_manifests(repo):
         # keep only manifests inside the requested root (git lists the whole repo)

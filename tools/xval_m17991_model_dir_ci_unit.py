@@ -44,7 +44,7 @@ from tensorlbm.model_units import build, ci_matrix, discover, doctor  # noqa: E4
 from tensorlbm.model_units import test as run_unit_case  # noqa: E402
 
 TCLB = Path(os.environ.get("TCLB_ROOT", "/tmp/TCLB"))
-UNIT_ROOT = REPO / "models" / "lbm"
+UNIT_ROOT = REPO / "benchmarks" / "model_units" / "lbm"
 OUT = REPO / "artifacts" / "xval_m17991"
 
 

@@ -49,7 +49,7 @@ integrity verified before retiring a tracked copy.
 | `experiments/` | `development/experiments/` | The [migration ledger](migrations/experiment-root-retirement-2026-11-21.json) traces archived and exploratory assets. Maintained benchmark entry points remain indexed by case. |
 | `figures/` | Case evidence, document assets, or development archives | The [migration ledger](migrations/figures-root-retirement-2026-11-21.json) preserves historical paths. Migrated commands use `outputs/figures/`. Unmigrated commands can still use the ignored local `figures/`. |
 | `frontend-vue/` | `app/frontend-vue/` | Keep Vue source and its build with the serving app. The [migration ledger](migrations/vue-application-root-2026-11-21.json) records file provenance. |
-| `models/` | Split by role | Judge supported library, model-unit CI, case inputs and historical weights separately. Preserve discoverability for model-unit jobs. |
+| `models/` | Split by role | The [model-unit input ledger](migrations/model-unit-inputs-2026-11-23.json) maps regression units to `benchmarks/model_units/`. Retain the published SUBOFF checkpoint at its existing path until its retrieval and runtime compatibility are verified for retirement. |
 | `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Retired by the [papers migration ledger](migrations/papers-root-retirement-2026-11-22.json): 35 tracked assets moved to SUBOFF benchmark evidence or published report ownership; active path consumers were updated and unresolved external evidence gaps remain explicit. |
 | `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |

@@ -42,7 +42,7 @@ from tensorlbm.model_units.coverage import (
 build_mod = importlib.import_module("tensorlbm.model_units.build")
 
 REPO = Path(__file__).resolve().parents[1]
-MODELS = REPO / "models"
+MODELS = REPO / "benchmarks" / "model_units"
 TOML_ROOT = MODELS / "lbm"
 JSON_UNIT = MODELS / "units" / "d2q9_bgk_shear_wave"  # cheapest json unit
 

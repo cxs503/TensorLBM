@@ -10,7 +10,7 @@ Public API::
 
     from tensorlbm.model_units import discover, build, test, ci_matrix
 
-    units = discover("models/lbm")
+    units = discover()
     for unit in units:
         build(unit)
         test(unit)
