@@ -294,7 +294,10 @@ def main() -> None:
         nu_lb=np.float64(nu_lb),
         eval_window=np.int64(n_win),
     )
-    case["raw_npz"] = str(npz_path.relative_to(_REPO))
+    try:
+        case["raw_npz"] = str(npz_path.resolve().relative_to(_REPO.resolve()))
+    except ValueError:
+        case["raw_npz"] = str(npz_path.resolve())
     case["raw_npz_sha256"] = sha256_file(npz_path)
     json_path = out_dir / f"case_{tag}.json"
     json_path.write_text(json.dumps(case, indent=1, sort_keys=True))
