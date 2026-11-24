@@ -1,0 +1,210 @@
+{
+  "source_commit": "0e6e65867c7dfa2b2ce1887bee08f16007fc8357",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/audit"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/audit/m15485_board_audit.py",
+      "new_path": "development/audit/m15485/tools/m15485_board_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "0f1c4b9824aeffe2eb366144f29489b82e03b6b1",
+      "original_sha256": "c153c8e6347bd2dce8ecc01c8419d775cba093ce13a812d381fcca37697c0a2b",
+      "original_size_bytes": 17893,
+      "migrated_sha256": "b1315ec526172ad4eacd05cc74665eafe5091a7255bedcf5bce91092cef8ea71",
+      "migrated_size_bytes": 17910
+    },
+    {
+      "old_path": "scripts/audit/m15882_cylinder_audit.py",
+      "new_path": "development/audit/m15882/tools/m15882_cylinder_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "b0e1022c08d76aa8ec9ddd98e8eab2615fc108ca",
+      "original_sha256": "11613214a545c5f61113f6bee67c3838f2215cc3c8ffa360bc45d97934993116",
+      "original_size_bytes": 5852,
+      "migrated_sha256": "11613214a545c5f61113f6bee67c3838f2215cc3c8ffa360bc45d97934993116",
+      "migrated_size_bytes": 5852
+    },
+    {
+      "old_path": "scripts/audit/m15939_board_audit.py",
+      "new_path": "development/audit/m15939/tools/m15939_board_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "b3071b4ff7e0b56ceca1f548123e0b6679d2e811",
+      "original_sha256": "4887cc337fdf758256cffbafb8a3e98afd15f36a7e98cd82244636fd9c4795bc",
+      "original_size_bytes": 28737,
+      "migrated_sha256": "ea55db865279cad26f3eeccaef7b667fbeae4bf4b7024d5d6c3667707266d43f",
+      "migrated_size_bytes": 28754
+    },
+    {
+      "old_path": "scripts/audit/m15955_publish.py",
+      "new_path": "development/audit/m15955/tools/m15955_publish.py",
+      "git_mode": "100644",
+      "original_git_blob": "c145b17ed23dcf65efd1242fbf971310a8ab67b1",
+      "original_sha256": "3c0d62db5acad2bd744fe40a95ffceb7f4d0306241c5f50c8df5c793b7ca9381",
+      "original_size_bytes": 14818,
+      "migrated_sha256": "119ba2b949327614fdf4e378be02e7f7546064ae5d264a6004b5981bb197688c",
+      "migrated_size_bytes": 14835
+    },
+    {
+      "old_path": "scripts/audit/m15955_t5_ice_audit.py",
+      "new_path": "development/audit/m15955/tools/m15955_t5_ice_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "c8f9e7c61babdaa8ec0381b5964aa5f243567629",
+      "original_sha256": "844d739ac4935d2960367b4af9692755f5912d854116a643139d2f7a55e5d2d7",
+      "original_size_bytes": 10128,
+      "migrated_sha256": "f3cf5b8f697761b126d110ad72b560294c87c0f0cd2209c86c998eded8d4c90f",
+      "migrated_size_bytes": 10145
+    },
+    {
+      "old_path": "scripts/audit/m16351_board_audit.py",
+      "new_path": "development/audit/m16351/tools/m16351_board_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "ad7e9de81bc52b4930b602b4ed6b2243b318a7da",
+      "original_sha256": "143cfae513c26c00a0ed475b50df3400b061c818d1667a1c3dd155e6924be281",
+      "original_size_bytes": 16126,
+      "migrated_sha256": "447401ab2d679a4ddcc96204147e8b79dda982ac753760ec39479f45e891796c",
+      "migrated_size_bytes": 16143
+    },
+    {
+      "old_path": "scripts/audit/m16351_figures.py",
+      "new_path": "development/audit/m16351/tools/m16351_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "c4c8c9097cc7e216cb3d1fe5d4f2e4871b31f4ee",
+      "original_sha256": "e824a1957212f9a0ac5bf5d40f1b7cbc8e885774dc6e6a0e413b4a817796fc0c",
+      "original_size_bytes": 6745,
+      "migrated_sha256": "373f75b18db373b5b498ff44238bc40beb11ff12a7e30c0db3473d577852b840",
+      "migrated_size_bytes": 6745
+    },
+    {
+      "old_path": "scripts/audit/m16351_report.py",
+      "new_path": "development/audit/m16351/tools/m16351_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "f8cf7100bbb8514a9d3c1363f8bf93371c59549d",
+      "original_sha256": "6821392929f2e4930e316e3a96237ffdfd12ba908c541821e36c3f867df71f40",
+      "original_size_bytes": 10815,
+      "migrated_sha256": "37b509691f42111a2136ad091409ec86c22c2290d41bf359a9106fc8975d58cc",
+      "migrated_size_bytes": 10866
+    },
+    {
+      "old_path": "scripts/audit/m17636_xval_buffer_audit.py",
+      "new_path": "development/audit/m17636/tools/m17636_xval_buffer_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "d90ae67afbe353ebaa3687b15245451dc08a4642",
+      "original_sha256": "aaed0817ed8d3f1e8fa004341ee6f73f51d14049dbe309611952e89bb07961b6",
+      "original_size_bytes": 12528,
+      "migrated_sha256": "996587f3a5b09bf3347c171fb70f12d379a85517855f9955e52072e1be61d4bf",
+      "migrated_size_bytes": 12545
+    },
+    {
+      "old_path": "scripts/audit/m17677_compressed_node_table_audit.py",
+      "new_path": "development/audit/m17677/tools/m17677_compressed_node_table_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "488bda30f8d8a4add38f9f834cc1989dbf030729",
+      "original_sha256": "ba0d3d061289e6f3e4c93b334b2560de3c44aed8227d6bf276088ddf7233059b",
+      "original_size_bytes": 31295,
+      "migrated_sha256": "6b105269e783d1e0753f9c2a69d9bdffc887b533f9c2fd40631a68d68f60af8c",
+      "migrated_size_bytes": 31333
+    },
+    {
+      "old_path": "scripts/audit/m17856_figures.py",
+      "new_path": "development/audit/m17856/tools/m17856_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "e2d1924cef9e1ebf9a0b46c90ade9d026b5182ec",
+      "original_sha256": "1ad6b77a576a24893a630d874a8bd6f2bd40c59b8dfca4c1b75485e20f4fc435",
+      "original_size_bytes": 2863,
+      "migrated_sha256": "7d08e0b5fd56a2314255b346d77f8d52e2c861cc2f3dcc81756e2fd6b5ccb636",
+      "migrated_size_bytes": 2863
+    },
+    {
+      "old_path": "scripts/audit/m17856_fluctuating_ghost_audit.py",
+      "new_path": "development/audit/m17856/tools/m17856_fluctuating_ghost_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "115252685efc42f73beeb2894b4c5978f52ffab3",
+      "original_sha256": "b47c19a3b37cfd31bc5e0a33046258460d201aeaf4c36ba817b835d12539bff1",
+      "original_size_bytes": 24181,
+      "migrated_sha256": "f84162d84072647bca20b4138c83eceef023ffead798c8fd8567edf7aa7ba482",
+      "migrated_size_bytes": 24215
+    },
+    {
+      "old_path": "scripts/audit/m17889_huang2007_audit.py",
+      "new_path": "development/audit/huang2007-contact-angle/tools/m17889_huang2007_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "45c453c408d7280c23b59135d1340856cc4cc029",
+      "original_sha256": "f94ea55a7e179a5f9b9f3705baac90064bec85014d656e63c8b66501ab1d9d9e",
+      "original_size_bytes": 20865,
+      "migrated_sha256": "40f7b0aecdf2f5b4e592524d0fadc4eadbfc7f8b2028b6864890cfd3c79eee62",
+      "migrated_size_bytes": 20899
+    },
+    {
+      "old_path": "scripts/audit/m17889_make_figure.py",
+      "new_path": "development/audit/huang2007-contact-angle/tools/m17889_make_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "4d27ad71fea3c795fd8b4aeb6497b45ea77dbade",
+      "original_sha256": "4aec64d2b483aad6ded2343e3550831e225d0bb3abcf345eda05c47fc4aa487a",
+      "original_size_bytes": 5636,
+      "migrated_sha256": "688368dac4389979fb40816acb80687e802b5bc381982a1131b9b60c731061a4",
+      "migrated_size_bytes": 5636
+    },
+    {
+      "old_path": "scripts/audit/m18748_make_field_figure.py",
+      "new_path": "development/audit/m18748/tools/m18748_make_field_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "fb4edad8ff77c06d1dd1ded9dc5b421d1e4d79ea",
+      "original_sha256": "d9f3a548e6d114cdfc9677ea6438f48a54aacfcbd71893754f00db547218aa0e",
+      "original_size_bytes": 2873,
+      "migrated_sha256": "b7d57ada45e3b66a271220a5851f2fa700d3368de0f5ee69b814f9bd58604f95",
+      "migrated_size_bytes": 2873
+    },
+    {
+      "old_path": "scripts/audit/m18748_make_figure.py",
+      "new_path": "development/audit/m18748/tools/m18748_make_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "af0118ce758a1681d757edff3010cc6954ab8341",
+      "original_sha256": "e53536f5ac365fdacbe70c3de113d1e1e95e7561365fdf8fe3c8b00ffadc6609",
+      "original_size_bytes": 3197,
+      "migrated_sha256": "99132908ff0b19e891a6b80c111dc054eeea67a3ff67e0166c044de90b9363c6",
+      "migrated_size_bytes": 3197
+    },
+    {
+      "old_path": "scripts/audit/m18748_sparse_sublist_board_audit.py",
+      "new_path": "development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "c84b36c8e6cb7c1a6f4bf711b823fa3cad323e6c",
+      "original_sha256": "07373c4bd63f98a78e429636e45321c4fa4a14fc9cfa383e66f73dee58305bd9",
+      "original_size_bytes": 19960,
+      "migrated_sha256": "3c3ae0266ed6070ac8ee1680eb327e6acf95b8b2960a99f15519ad2255afb230",
+      "migrated_size_bytes": 19977
+    }
+  ],
+  "compatibility": "Current report reproduction paths and the Huang registry pointer follow the relocated tools. Published report URLs, artifact paths, absolute historical source paths and verdict payloads are preserved. Historical SQL and JSON, and report publishers that serialize those frozen commands, retain their original text.",
+  "archived_source_references": {
+    "scripts/audit/m17677_compressed_node_table_audit.py": {
+      "new_path": "development/audit/m17677/tools/m17677_compressed_node_table_audit.py",
+      "matches": 1,
+      "matching_lines_sha256": "3eb3e76c5917e6ac8db58ff47bb5e4b24319b3bbf6513c8d26b588b1b4548c25"
+    },
+    "scripts/audit/m18748_make_field_figure.py": {
+      "new_path": "development/audit/m18748/tools/m18748_make_field_figure.py",
+      "matches": 1,
+      "matching_lines_sha256": "dc262ca5e68e092de94a8ef7dbf00aea2a2660876da237b522e748ea4dd4ce17"
+    },
+    "scripts/audit/m18748_sparse_sublist_board_audit.py": {
+      "new_path": "development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py",
+      "matches": 2,
+      "matching_lines_sha256": "8922c79de3b2980e3cf3c12dd66b4c39451e677b4d5b09bbd8f51fe0f200de47"
+    }
+  },
+  "scientific_scope": "This migration preserves archival tools and provenance. Running the historical audits may require original mission workspaces, a specific device, or read access to their evidence store. No publisher is run and no current scientific acceptance is assigned.",
+  "verification": [
+    "All 17 original Git blobs and SHA-256 values verified against the source revision; archived SHA-256 values and checkout path depth verified against the proposed tree.",
+    "Each relocated Python file compiled and matched byte-for-byte after the declared path substitutions. No audit script was executed.",
+    "Ruff, all 83 repository governance tests, source authority and the manual catalogue passed. The Huang case resolves the relocated audit with current acceptance not_evaluated."
+  ]
+}

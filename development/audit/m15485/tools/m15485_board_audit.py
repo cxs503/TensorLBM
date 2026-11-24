@@ -17,7 +17,7 @@ platform endpoints / DB, not from the mission's own report.
 
 Usage::
 
-    python scripts/audit/m15485_board_audit.py [--publish]
+    python development/audit/m15485/tools/m15485_board_audit.py [--publish]
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 OUT = REPO_ROOT / "artifacts" / "audit_m15485"

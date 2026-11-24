@@ -8,7 +8,7 @@ in by hand.
 
 Usage::
 
-    python scripts/audit/m15939_board_audit.py [--publish]
+    python development/audit/m15939/tools/m15939_board_audit.py [--publish]
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 OUT = REPO_ROOT / "artifacts" / "audit_m15939"
 AUDITED = Path("/srv/tensor/agent/work/m15920")
 ANCHOR = "GAP-LBM-T2-GPU-COREPATH"

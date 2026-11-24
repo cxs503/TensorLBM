@@ -1,7 +1,7 @@
 # 交差审计 m17699 → 对象 m17599 `XVAL-LBM-BUFFER-LAYER-2TO1-REFINEMENT`（TensorLBM）
 
 - 审计单：m17636（board-audit）｜被审单：m17599（status=succeeded, accepted=true, finished 2026-11-13 07:09:50Z）
-- 审计脚本：`scripts/audit/m17636_xval_buffer_audit.py`（可重跑，全数字程序化取自工件/重跑/DB，零手抄）
+- 审计脚本：`development/audit/m17636/tools/m17636_xval_buffer_audit.py`（可重跑，全数字程序化取自工件/重跑/DB，零手抄）
 - 机器读数：`artifacts/m17636_audit/audit_m17636.json`｜图：`docs/audit_m17636/fig_m17636_evidence.png`
 - 被审交付件：`/srv/tensor/agent/work/m17599/benchmarks/xval_buffer_layer_2to1/{run_xval.py, REPORT.md, artifacts/xval_buffer_layer_2to1.json}`
 
@@ -77,7 +77,7 @@ u_lid=0.06，但 2000 步后中心线峰值：TensorLBM |u|max/U_lid = **111×**
 
 ```bash
 cd /srv/tensor/agent/work/m17636
-python scripts/audit/m17636_xval_buffer_audit.py        # 全量核查（约 25 s）
+python development/audit/m17636/tools/m17636_xval_buffer_audit.py        # 全量核查（约 25 s）
 # 单点复核：TensorLBM coarse=32 strip=8 2000 步 -> inventory total 289.846 (初始 1024)
 ```
 

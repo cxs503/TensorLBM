@@ -19,7 +19,7 @@
   6. 基准登记核对：tensor_benchmark_cases 里本锚点登记的算例数（唯一裁判）；
   7. 声称工件的存在性核对。
 
-用法：python scripts/audit/m17889_huang2007_audit.py
+用法：python development/audit/huang2007-contact-angle/tools/m17889_huang2007_audit.py
 输出：artifacts/m17889_audit/audit_m17889.json（+ stdout 表格）
 """
 
@@ -34,7 +34,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 AUDIT_DIR = ROOT / "artifacts" / "m17889_audit"
 COPY = ROOT / "development" / "audit" / "huang2007-contact-angle" / "m17889-delivery-snapshot"
 SRC_TREE = Path("/srv/tensor/agent/work/m17845")

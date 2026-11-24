@@ -5,8 +5,8 @@ Every number in the markdown below is formatted from the JSON artifacts written
 by ``m16351_board_audit.py`` (judge.json / recompute.json / repro.json /
 referee.json / verdict.json) — nothing is typed in by hand.
 
-    python3 scripts/audit/m16351_report.py            # build + POST
-    python3 scripts/audit/m16351_report.py --dry-run  # build only
+    python3 development/audit/m16351/tools/m16351_report.py            # build + POST
+    python3 development/audit/m16351/tools/m16351_report.py --dry-run  # build only
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 ART = ROOT / "artifacts/audit_m16351"
 FIGS = ROOT / "docs/board_audit_m16351/figs"
 BASE = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
@@ -99,7 +99,7 @@ ref_source 自标 **WITHHELD**：闭源、数值为二手转述）。
 （**不 import** 仓内 `run.analyze_forces`），复算 Cd 与 St。
 3. **repro_cmd 实跑**：按文档命令以 300 步/60 s 预算跑通一段，确认可执行（returncode={rep['returncode']}）。
 4. **判级论证**：L0–L5 逐级判据核对（功能实质，不看报告篇幅）；对每条结论给出文件:行号指针。
-工具链：numpy（谱分析）+ psql（裁判行/落表）+ matplotlib（图），脚本 `scripts/audit/m16351_board_audit.py`、`m16351_figures.py`。
+工具链：numpy（谱分析）+ psql（裁判行/落表）+ matplotlib（图），脚本 `development/audit/m16351/tools/m16351_board_audit.py`、`m16351_figures.py`。
 
 ## ③ 计算结果（工件值 / 本审计重算值 / 裁判判定）
 

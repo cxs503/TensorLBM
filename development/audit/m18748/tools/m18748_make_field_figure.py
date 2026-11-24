@@ -14,7 +14,7 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 AUD = Path("/srv/tensor/agent/work/m18377")
-WS = Path(__file__).resolve().parents[2]
+WS = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(AUD / "TensorLBM" / "src"))
 torch.set_default_dtype(torch.float64)
 

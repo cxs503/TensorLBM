@@ -27,7 +27,7 @@ Outputs (inside this audit worktree)
     (--insert-verdict) one row in tensor_maturity_verdicts (mission_id=16351)
 
 Usage
-    python3 scripts/audit/m16351_board_audit.py \
+    python3 development/audit/m16351/tools/m16351_board_audit.py \
         --source-tree /srv/tensor/agent/work/m16321 --insert-verdict
 """
 from __future__ import annotations

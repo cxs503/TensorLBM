@@ -27,7 +27,7 @@
 5. **外部锚核验**：`/tmp/ludwig_tar/.../collision.o` 是否存在、sha256 是否等于申报值、符号是否真导出、**归档里是否还有源码**。
 6. **DB**：mission 行（status/fail_stage/质量门）、`tensor_reports` 是否发过报告。
 7. 工具链：Python 3.11 + numpy + pytest + matplotlib；DB 经 `su postgres -c psql -d tensorplatform`；
-   全流程封装为 `scripts/audit/m17856_fluctuating_ghost_audit.py`（`--fast` 可跳隔离重跑）。
+   全流程封装为 `development/audit/m17856/tools/m17856_fluctuating_ghost_audit.py`（`--fast` 可跳隔离重跑）。
 
 ## ③ 计算结果（数字表，全部由脚本注入）
 

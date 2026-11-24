@@ -24,8 +24,8 @@ S4 bit-exact reproduction of the delivered results.json with the delivered
 
 Usage
 -----
-  python scripts/audit/m17677_compressed_node_table_audit.py                # S1-S3 (~40 s)
-  python scripts/audit/m17677_compressed_node_table_audit.py --with-repro   # + S4 (~3 min)
+  python development/audit/m17677/tools/m17677_compressed_node_table_audit.py                # S1-S3 (~40 s)
+  python development/audit/m17677/tools/m17677_compressed_node_table_audit.py --with-repro   # + S4 (~3 min)
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ REPO = os.path.join(AUDIT_WS, "TensorLBM")           # the shadow tree the missi
 SHADOW_SRC = os.path.join(REPO, "src")
 XVAL = os.path.join(REPO, "xval", "XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE")
 ART = os.path.join(REPO, "artifacts", "xval_compressed_fluid_node_neighbour_table")
-ROOT_WS = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT_WS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 OUT = os.path.join(ROOT_WS, "artifacts", "m17677_audit")
 DOCS = os.path.join(ROOT_WS, "docs", "audit_m17677")
 
