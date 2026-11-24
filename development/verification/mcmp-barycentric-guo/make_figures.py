@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "artifacts" / "xval_lbm_shan_chen_mcmp"
 RES = json.loads((ART / "results.json").read_text())
 REF = json.loads((ART / "oss_ref_shan_chen_two_component.json").read_text())

@@ -1,8 +1,10 @@
 # XVAL-LBM-R4-COEXISTENCE round 2 — coexistence calibration + free-energy selection (re-verified)
 
+The [relocated verification tools](../development/verification/mcmp-coexistence/r4/) keep the original artifact directory and command options.
+
 > Anchor `XVAL-LBM-R4-COEXISTENCE-CALIBRATION-AND-FREE-ENER` · repo TensorLBM · mission m21542
 > Full report (programmatically injected numbers + figures): `artifacts/xval_lbm_r4_coexistence_r2/REPORT_R2.md`
-> Driver: `xval/XVAL-LBM-R4-COEXISTENCE/r2/run_xval_r2.py` (stages `M` / `S` / `C` / `merge`)
+> Driver: `development/verification/mcmp-coexistence/r4/r2/run_xval_r2.py` (stages `M` / `S` / `C` / `merge`)
 > Regression: `tests/test_xval_r4_coexistence_calibration_r2.py` (6 tests)
 
 ## What round 1 left open, and what round 2 found

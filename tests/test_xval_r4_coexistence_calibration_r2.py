@@ -11,7 +11,7 @@ honest FAIL on both arms; these tests pin the two fixes so they cannot regress:
 
 Sizes are deliberately small (a few thousand steps on 64x2 / 128x2 fields) so the
 whole file runs in ~30 s; the production sweep is
-``xval/XVAL-LBM-R4-COEXISTENCE/r2/run_xval_r2.py``.
+``development/verification/mcmp-coexistence/r4/r2/run_xval_r2.py``.
 """
 from __future__ import annotations
 

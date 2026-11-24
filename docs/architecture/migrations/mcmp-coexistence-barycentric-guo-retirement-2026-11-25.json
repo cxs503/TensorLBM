@@ -1,0 +1,115 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 84,
+      "after": 82
+    }
+  },
+  "compatibility": "Three public reports retain their URLs. Driven cases, external reference paths and CLI options retain their behavior. Coexistence deliver_all.py still loads its neighboring run_xval.py. The relocated scripts resolve the canonical solver package.",
+  "reference_scan": "Checked workflows, tests, public and archived reports. No tracked raw campaign artifact was in either retired directory. The Guo campaign continues to read the pinned lbmpy reference in the ignored artifacts directory.",
+  "scientific_scope": "Targeted software tests used the actual pinned comparator and analytical formulas. The full historical campaigns and their figure sets were not rerun. No current scientific verdict is assigned.",
+  "reference_test": {
+    "repo": "lssfau/lbmpy",
+    "commit": "0afc9d52896e23210874b4d56d2d11f4f934e0e8",
+    "path": "tests/shan_chen/test_shan_chen_two_component.py",
+    "git_blob": "e32b400adf9dae1dccc52a832b04229297014ae9",
+    "points_per_component": 64,
+    "timesteps": 1000,
+    "method": "Retrieved the exact source bytes from GitHub, verified Git blob identity, and extracted both published vectors using the repository parser. The optional test and the relocated extractor’s offline CLI read the real reference.",
+    "source_sha256": "7e88e89825a34a56e79723fa670a1114926d6282766bf98b918849577fa63415",
+    "ref_a_sha256": "3a2b6127f160d8dc300cf81f62ff460a03eb76f9a78154a6bc75aed23a71de15",
+    "ref_b_sha256": "cfee86961d54a5a75a793f586e517d3899bf61441c20da2bc672d42133e9afbc"
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-R4-COEXISTENCE/deliver_all.py",
+      "new_path": "development/verification/mcmp-coexistence/r4/deliver_all.py",
+      "git_mode": "100644",
+      "original_git_blob": "d74b104a9284a4539f2cd2aafb5c99db19da24bf",
+      "size_bytes": 6156,
+      "original_sha256": "b6e83433c2755640273f1b66b41afc26073ef643ef3f1580ca4c9cc2239288e0",
+      "new_sha256": "04739995de4b801ec9b27bef534a3d3f8ae528569f8720e12d81e4879666ec33",
+      "published_reports": [
+        "docs/XVAL-LBM-R4-COEXISTENCE.md",
+        "docs/XVAL-LBM-R4-COEXISTENCE_R2.md"
+      ]
+    },
+    {
+      "old_path": "xval/XVAL-LBM-R4-COEXISTENCE/r2/run_xval_r2.py",
+      "new_path": "development/verification/mcmp-coexistence/r4/r2/run_xval_r2.py",
+      "git_mode": "100644",
+      "original_git_blob": "10c59150fea2fccb2fdaf99b887be8a452c2c543",
+      "size_bytes": 34114,
+      "original_sha256": "2d4d062d8b5d98938a0d6742c576b8a334aab3ad1219c9d2ddf1785e62a63344",
+      "new_sha256": "7491a16d8eee69863a0a0a9ae4c40b5fa7e9d35294fd50a992f999c8b11a321d",
+      "published_reports": [
+        "docs/XVAL-LBM-R4-COEXISTENCE.md",
+        "docs/XVAL-LBM-R4-COEXISTENCE_R2.md"
+      ]
+    },
+    {
+      "old_path": "xval/XVAL-LBM-R4-COEXISTENCE/run_xval.py",
+      "new_path": "development/verification/mcmp-coexistence/r4/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "b19b4dc53a498fdcae940a1aa1d6e60990792f10",
+      "size_bytes": 13015,
+      "original_sha256": "fa28b05a1e4c13a43c31832de7e6aa6b31604d50aa7656e5e2d7d77d0feb3216",
+      "new_sha256": "8fbc43986552f6447d973f15fc64c3a588c500be6c5da756e1c801157358e48c",
+      "published_reports": [
+        "docs/XVAL-LBM-R4-COEXISTENCE.md",
+        "docs/XVAL-LBM-R4-COEXISTENCE_R2.md"
+      ]
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/fetch_oss_ref.py",
+      "new_path": "development/verification/mcmp-barycentric-guo/fetch_oss_ref.py",
+      "git_mode": "100644",
+      "original_git_blob": "477c87fc3d53d82eb04cd40bbd3888bc85c7c8f8",
+      "size_bytes": 7083,
+      "original_sha256": "1859b73537bc4c13e03f46961e8ef3fa874fefd535ef0c1876872c714868cb49",
+      "new_sha256": "33b32a49a4d6dafcf2a154525f0b958e4dfe357dc968fbcd7dabe2a1f72a4c77",
+      "published_reports": [
+        "docs/XVAL_LBM_SHAN_CHEN_MCMP_BARYCENTRIC_GUO.md"
+      ]
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/make_figures.py",
+      "new_path": "development/verification/mcmp-barycentric-guo/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "86a702d58091a51a94d66b3cf318d3c646331314",
+      "size_bytes": 6561,
+      "original_sha256": "f2ae0b46565a5deedd65fdbb4c495f18d743abc0dabed884964e0a1afd36a1d4",
+      "new_sha256": "4dc5c46f3fcafa412f3dfefae385eb024f32948d720b264d1b01c9a5591db390",
+      "published_reports": [
+        "docs/XVAL_LBM_SHAN_CHEN_MCMP_BARYCENTRIC_GUO.md"
+      ]
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/run_xval.py",
+      "new_path": "development/verification/mcmp-barycentric-guo/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "923299673bf2b97ba5248b37f4e3a1d280fde56a",
+      "size_bytes": 20227,
+      "original_sha256": "ddfabe0d168a22737fa11e234dd9c61f3f5ef208e3f69805c8169fa506593aca",
+      "new_sha256": "a1920710931f051a6d758ef2876aec90c1deda93bd68baa459258161ad0787e6",
+      "published_reports": [
+        "docs/XVAL_LBM_SHAN_CHEN_MCMP_BARYCENTRIC_GUO.md"
+      ]
+    }
+  ],
+  "commands": [
+    "python -m pytest -q -rs tests/test_xval_r4_coexistence_calibration_r2.py tests/test_xval_shan_chen_mcmp_barycentric_guo.py",
+    "python development/verification/mcmp-barycentric-guo/fetch_oss_ref.py --offline",
+    "bash tools/check_repository_governance.sh",
+    "python tools/lint_ratchet.py --check"
+  ],
+  "verification": [
+    "Verified all six original Git blobs, modes and SHA-256 values. AST comparison after known path substitutions confirms no numerical changes.",
+    "Resolved three public report links and ran three CLI help commands from outside the repository. Imported the moved coexistence baseline runner and verified canonical src/tensorlbm import.",
+    "Nine targeted tests passed, including the reference-gated test after loading both real lbmpy vectors from the pinned source. The test had initially skipped because the reference was not cached.",
+    "83 governance checks, layout re-entry test and Ruff passed. The registry continues to expose 208 entries with zero hard violations."
+  ]
+}

@@ -78,7 +78,7 @@ import time
 import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 torch.set_default_dtype(torch.float64)
 torch.set_num_threads(int(os.environ.get("XVAL_THREADS", "8")))
@@ -468,7 +468,7 @@ def write_report(summary: dict) -> None:
       "free-energy arm 4 sigma-checks FAIL at kappa=0.5)")
     A(f"> **Criterion**: relative error < 15 % (owner standard) on every compared quantity; "
       f"implementation-consistency gate: two sigma routes within {100 * summary['spread_gate']:.0f} %.")
-    A("> **Driver**: `xval/XVAL-LBM-R4-COEXISTENCE/r2/run_xval_r2.py` (stages M/S/C/merge); "
+    A("> **Driver**: `development/verification/mcmp-coexistence/r4/r2/run_xval_r2.py` (stages M/S/C/merge); "
       "every number below is injected from `artifacts/xval_lbm_r4_coexistence_r2/summary.json`.")
     A("")
     A("## ① 案例介绍")

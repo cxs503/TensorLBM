@@ -6,7 +6,7 @@ torch.set_default_dtype(torch.float64)
 torch.set_num_threads(4)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 spec = importlib.util.spec_from_file_location("rx", os.path.join(HERE, "run_xval.py"))
 rx = importlib.util.module_from_spec(spec)
