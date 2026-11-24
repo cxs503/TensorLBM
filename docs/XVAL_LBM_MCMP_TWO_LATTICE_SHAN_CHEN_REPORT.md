@@ -1,5 +1,17 @@
 # XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN: Cross-Validation Report
 
+## Related stratified channel campaign
+
+The [two-layer Poiseuille runner](../benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py) is registered as
+`xval:mcmp_two_lattice_shan_chen`. Its [archived summary](../benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/summary.json)
+records four nonconvergent channel cells. The [method survey](../benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/oss_solutions.json)
+records the 15% flow-rate criterion and distinguishes this runner from the separate
+stratified Poiseuille benchmark. New channel outputs go to `outputs/verification/mcmp-two-lattice-shan-chen/`.
+
+The results and verdict below are the historical droplet comparison. Its figure list
+identifies the original mission artifacts. See the [independent audit](audit_m20945_report.md)
+for the evidence available for each scope.
+
 ## 1. Case Introduction
 
 ### Physical Background

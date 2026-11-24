@@ -80,6 +80,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "ludwig_fe_stress"),
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
     ("xval", "fused_kernel_type_selector"),
+    ("xval", "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN"),
 }
 
 

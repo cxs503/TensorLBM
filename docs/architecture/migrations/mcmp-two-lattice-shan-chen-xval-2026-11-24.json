@@ -1,0 +1,52 @@
+{
+  "source_commit": "1c717d58ebf360f3b74a82e8600677ea133a418e",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 95,
+      "after": 94
+    }
+  },
+  "reference_scan": "Tracked consumers were checked. The old paths remaining inside historical JSON, audit records and the report historical figure list refer to archived mission assets. The public droplet report remains at its original URL. The current runner and all preserved channel evidence are linked in a separate section there.",
+  "compatibility": "The relocated runner loads the same src/tensorlbm modules. Existing --out and --quick options are retained at the new entry. Its new default output is under ignored outputs/. The source path and Git object for each historical asset are recorded here.",
+  "scientific_scope": "No new scientific campaign ran. The byte-exact archived channel summary records a 0/4 outcome and non-finite results. The droplet report and the separate established channel case have their own verdicts.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py",
+      "new_path": "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py",
+      "published_report": "docs/XVAL_LBM_MCMP_TWO_LATTICE_SHAN_CHEN_REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "9aa534c5dcd7626c86037689346dc6ea5a5cf737",
+      "size_bytes": 13484,
+      "original_sha256": "f72fc9fae5c8d4e71f57376e297e0da21e756ecce98d52e4bf39edea72d6d9fb",
+      "new_sha256": "e916aafd42cdc6f241e6985aceacb422f56dea1d532427401bd8f24b5ae455e7"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/artifacts/summary.json",
+      "new_path": "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/summary.json",
+      "published_report": "docs/XVAL_LBM_MCMP_TWO_LATTICE_SHAN_CHEN_REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "f3de4b2918b2ff0a1506def34a15309054e95009",
+      "size_bytes": 1958,
+      "original_sha256": "117e0a5062520fd953bfac20de0954bd982ca50b764cbfd09647207dc327c7c3",
+      "new_sha256": "117e0a5062520fd953bfac20de0954bd982ca50b764cbfd09647207dc327c7c3"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/oss_solutions.json",
+      "new_path": "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/oss_solutions.json",
+      "published_report": "docs/XVAL_LBM_MCMP_TWO_LATTICE_SHAN_CHEN_REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "b6fe66589389a2e3489a4496e09e07e7be179d52",
+      "size_bytes": 2916,
+      "original_sha256": "d2e2005124db28e2b39d484935e21ea008fe975713086775af1a413da63f919c",
+      "new_sha256": "d2e2005124db28e2b39d484935e21ea008fe975713086775af1a413da63f919c"
+    }
+  ],
+  "verification": [
+    "Verified original Git blobs, file modes and old and new SHA-256. The survey and the four-cell result retain original bytes. The runner AST matched after known path-only substitutions.",
+    "The new runner resolves the canonical src/tensorlbm import from outside the checkout. The --help check exposes --out and --quick without generating output. All three new report links resolve.",
+    "Two force and single-step equivalence tests passed. Three simulation-oriented tests were deselected for this placement-only batch. No claim is made about those tests or the channel rerun.",
+    "83 repository governance tests passed. The benchmark registry lookup found the case and its archived results and reports. Ruff ratchet and git diff --check passed."
+  ]
+}
