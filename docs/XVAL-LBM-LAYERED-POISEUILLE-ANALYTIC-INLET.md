@@ -2,7 +2,7 @@
 
 **Repo**: TensorLBM · **Mission**: 17869 · **Owner criterion**: error > 15% unacceptable
 **Verdict**: PASS — worst KPI 0.326% (owner band 15%, target 3%)
-Predeclaration written before the runs: `xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/predeclared.json`.
+Predeclaration written before the runs: [predeclared.json](../development/verification/layered-poiseuille/analytic-inlet/predeclared.json).
 
 ## 1. Problem and reference provenance (zero hand-transcription)
 
@@ -127,3 +127,21 @@ Figures: `artifacts/xval_layered_poiseuille_analytic_inlet/figures/`
 * Density contrast, surface tension, diffuse interface width: out of scope by construction.
 * Artefacts: `artifacts/xval_layered_poiseuille_analytic_inlet/arm_*.json` (one per arm,
   includes the full profile and the transient trace), `table.csv`, `summary.json`, `figures/`.
+
+### Reproduction paths
+
+Run both commands from the repository root. The first command selects the S32 arm.
+Omit the arm label to run the original active matrix. The archived
+[dependency ledger](architecture/migrations/nested-source-dependencies-2026-11-21.json)
+records an earlier S32 replay against the canonical solver.
+
+```bash
+python development/verification/layered-poiseuille/analytic-inlet/run_all.py S32
+python development/verification/layered-poiseuille/analytic-inlet/analyze.py
+```
+
+Outputs default to `outputs/verification/layered-poiseuille/analytic-inlet/`.
+Set `LP_OUT` consistently for both commands to select another directory.
+To analyze existing arm JSON without a new run, set `LP_OUT=artifacts/xval_layered_poiseuille_analytic_inlet`.
+The artefact locations above are historical. The migration includes a
+[single-arm S32 result](../development/verification/layered-poiseuille/analytic-inlet/evidence/arm_S32.json).

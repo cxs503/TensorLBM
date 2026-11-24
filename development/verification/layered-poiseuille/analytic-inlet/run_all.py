@@ -8,14 +8,13 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from tensorlbm.verification.layered_poiseuille import cases
 from tensorlbm.verification.layered_poiseuille.run_case import run_arm
 
-OUT = os.environ.get("LP_OUT", os.path.join(ROOT, "artifacts",
-                                            "xval_layered_poiseuille_analytic_inlet"))
+OUT = os.environ.get("LP_OUT", os.path.join(ROOT, "outputs/verification/layered-poiseuille/analytic-inlet"))
 
 if __name__ == "__main__":
     only = sys.argv[1:] or None
