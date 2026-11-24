@@ -91,6 +91,10 @@ The [second-level migration ledger](migrations/second-level-docs-benchmarks-2026
 records the original objects and compatibility checks for the CH6 card,
 maneuvering report figures and W31 transcription evidence.
 
+The [Ghia W26 tool ledger](migrations/ghia-w26-tool-retirement-2026-11-23.json)
+places anchor extraction, analytic checks and report utilities beside the Ghia
+reference data. The archived register keeps its original provenance.
+
 The [survey and Huang audit migration ledger](migrations/survey-and-huang-audit-layout-2026-11-22.json) records the SUBOFF report figures and the archived m17889 delivery snapshot. The [survey index](../surveys/README.md) links to the published surveys.
 
 The [CMB5 migration ledger](migrations/cmb5-hydrorr-stability-2026-11-23.json)

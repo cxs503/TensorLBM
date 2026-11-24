@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Build the W26 report payload from the artifact (numbers injected, not typed)."""
+
 import base64
 import json
 import os
 
-REPO = "/srv/tensor/agent/work/m17563"
-ART = os.path.join(REPO, "benchmarks", "anchors", "ghia_w26",
-                   "anchor_register.json")
+CASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ART = os.path.join(CASE_DIR, "anchor_register.json")
 d = json.load(open(ART, encoding="utf-8"))
 a1, a2, a3, a4 = (d["analytic_fourcase"][k] for k in ("case1", "case2", "case3", "case4"))
 val = d["validation"]
@@ -17,8 +17,11 @@ re_keys = ("100.0", "400.0", "1000.0")
 
 
 def table_md(tab, label):
-    head = "| y/L | u(Re=100) | u(Re=400) | u(Re=1000) |\n|---:|---:|---:|---:|" if label == "I" \
+    head = (
+        "| y/L | u(Re=100) | u(Re=400) | u(Re=1000) |\n|---:|---:|---:|---:|"
+        if label == "I"
         else "| x/L | v(Re=100) | v(Re=400) | v(Re=1000) |\n|---:|---:|---:|---:|"
+    )
     lines = [head]
     for r in tab["rows"]:
         vals = " | ".join("%.5f" % r["profile"][k]["value"] for k in re_keys)
@@ -74,12 +77,12 @@ md = f"""# W26 · Ghia (1982) 方腔剖面锚核销 + 解析四例（D3Q19-BGK �
 4. **解析四例**：闭式解回代算子算残差（mpmath 高精度求导 / FFT 谱导数），每例附**故意写错的解**
    作对照（对照项必须 O(1)，否则残差检查无判别力）；
 5. 工具链：Python 3.11 / PyMuPDF 1.27 / pypdf 6.19 / mpmath 1.3 / numpy 2.4 / scipy 1.16；
-   脚本 `scripts/w26_ghia/{{extract_ghia_tables,analytic_fourcase,build_anchor_register}}.py`，
+   脚本 `benchmarks/anchors/ghia_w26/tools/{{extract_ghia_tables,analytic_fourcase,build_anchor_register}}.py`，
    验收测试 `tests/test_w26_ghia_anchor_register.py`（9 passed）。
 
 ## 3. 计算结果（数字表）
 
-### 3.1 注册锚：Ghia 表 I/II，Re=100/400/1000（各 {n_rows} 点、共 {n_rows*3*2} 个值）
+### 3.1 注册锚：Ghia 表 I/II，Re=100/400/1000（各 {n_rows} 点、共 {n_rows * 3 * 2} 个值）
 
 **表 I — 竖直中心线 x/L=0.5 的 u/U_lid**
 
@@ -118,13 +121,13 @@ md = f"""# W26 · Ghia (1982) 方腔剖面锚核销 + 解析四例（D3Q19-BGK �
 抛物线解被二阶中心格式**精确**积分（N=8…512 上误差 ≤{max(r["linf_error_vs_analytic"] for r in a1["parabola_reproduced_exactly"]["rows"]):.1e}，
 即零离散误差），因此收敛阶必须用制造解 u=sin(πy)（−μu″=μπ²sin πy）测：
 
-| N | {' | '.join(str(n) for n, _ in errs)} |
-|---|{'---|' * len(errs)}
-| L∞ 误差 | {' | '.join("%.3e" % e for _, e in errs)} |
-| 逐对斜率 | {' | '.join("%.4f" % s for s in slopes)} |
+| N | {" | ".join(str(n) for n, _ in errs)} |
+|---|{"---|" * len(errs)}
+| L∞ 误差 | {" | ".join("%.3e" % e for _, e in errs)} |
+| 逐对斜率 | {" | ".join("%.4f" % s for s in slopes)} |
 
 拟合斜率 p = **{a1["convergence"]["fitted_slope_p_asymptotic"]:.5f}**（对标 2.0，相对偏差
-{a1["convergence"]["slope_error"]/2*100:.4f}%）。
+{a1["convergence"]["slope_error"] / 2 * 100:.4f}%）。
 
 ### 3.4 内部一致性（判据 C4）
 
@@ -165,11 +168,11 @@ Poiseuille/Couette 与二阶斜率（fig4）、Taylor-Green 涡量与能量衰�
 
 | 关键量 | 基准 | 观测 | 相对误差 | <3%? |
 |---|---|---|---:|---|
-| 注册锚值 vs 论文印刷值 | Ghia 表逐字 | 同值（4–5 位小数截断） | 0（截断 ≤5e-6 绝对，最坏相对 ~{5e-6/0.00332*100:.2f}%） | ✅ |
-| 二阶收敛斜率 | 2.0 | {a1["convergence"]["fitted_slope_p_asymptotic"]:.5f} | {a1["convergence"]["slope_error"]/2*100:.4f}% | ✅ |
-| Couette 壁面切应力 | μU/H | 离散一侧差分 | {a2["wall_shear"]["rel_error"]*100:.2e}% | ✅ |
-| Taylor-Green 能量 | 闭式 ¼U²e^{{−4νk²t}} | 谱计算 | {a3["energy"]["rel_error_E"]*100:.1e}% | ✅ |
-| 守恒不变量 ∫u dy、∫v dx | 0（精确） | ≤{max(abs(x["invariants"]["horizontal_centreline_int_v_dx"]["cubic_spline"]) for x in inv.values()):.1e}（量纲尺度 1） | ≤{max(abs(x["invariants"]["horizontal_centreline_int_v_dx"]["cubic_spline"]) for x in inv.values())*100:.2f}% | ⚠️ 名义上 <3%，但**采样不确定度**达 {max(x["invariants"]["horizontal_centreline_int_v_dx"]["quadrature_spread"] for x in inv.values())*100:.1f}%，故判"未定"，不作表错的证据（数据点稀疏所致） |
+| 注册锚值 vs 论文印刷值 | Ghia 表逐字 | 同值（4–5 位小数截断） | 0（截断 ≤5e-6 绝对，最坏相对 ~{5e-6 / 0.00332 * 100:.2f}%） | ✅ |
+| 二阶收敛斜率 | 2.0 | {a1["convergence"]["fitted_slope_p_asymptotic"]:.5f} | {a1["convergence"]["slope_error"] / 2 * 100:.4f}% | ✅ |
+| Couette 壁面切应力 | μU/H | 离散一侧差分 | {a2["wall_shear"]["rel_error"] * 100:.2e}% | ✅ |
+| Taylor-Green 能量 | 闭式 ¼U²e^{{−4νk²t}} | 谱计算 | {a3["energy"]["rel_error_E"] * 100:.1e}% | ✅ |
+| 守恒不变量 ∫u dy、∫v dx | 0（精确） | ≤{max(abs(x["invariants"]["horizontal_centreline_int_v_dx"]["cubic_spline"]) for x in inv.values()):.1e}（量纲尺度 1） | ≤{max(abs(x["invariants"]["horizontal_centreline_int_v_dx"]["cubic_spline"]) for x in inv.values()) * 100:.2f}% | ⚠️ 名义上 <3%，但**采样不确定度**达 {max(x["invariants"]["horizontal_centreline_int_v_dx"]["quadrature_spread"] for x in inv.values()) * 100:.1f}%，故判"未定"，不作表错的证据（数据点稀疏所致） |
 | LBM 消费口径（N vs N−1 的 Re 偏置） | Re=U·L/ν | 偏置 1/N | N=64: 1.56%；N=81: 1.23%；N=129: 0.78% | ✅ 但接近边界，必须在论文里声明 |
 | **仓内既有转录 vs 论文** | Ghia 表 | u(y=1)=0.0（应为 1.0）；v 差 0.26–0.46 | 100% / 26–46% | ❌ **>3% 不可接受 → 缺陷登记** |
 
@@ -184,24 +187,42 @@ for f in d["figures"]:
     p = os.path.join(os.path.dirname(ART), "figures", os.path.basename(f["path"]))
     with open(p, "rb") as fh:
         b64 = base64.b64encode(fh.read()).decode()
-    figs.append({"name": os.path.basename(f["path"]), "caption": f["caption"],
-                 "png_base64": b64})
+    figs.append({"name": os.path.basename(f["path"]), "caption": f["caption"], "png_base64": b64})
 
 payload = {
     "title": "W26 · Ghia (1982) 方腔剖面锚核销 + 解析四例：C1–C4 全 PASS，并登记仓内旧转录缺陷",
-    "summary": ("从原始论文 PDF（sha256 1d76e463…）机器提取 Ghia 表 I/II 的 Re=100/400/1000 共 102 个"
-                "表值（数字取文本层、符号取页面栅格墨水宽度，双见证 84 一致 0 冲突），"
-                "四例解析残差最差 1.84e-14（阈值 1e-12，对照项 0.030–25.1 证明判别力），"
-                "Poiseuille 二阶斜率 2.00005；附带登记仓内 lid_driven_cavity/reference_data.py "
-                "与论文表不符（u(y=1)=0 违反盖板边界条件，v 差 26–46%）。"
-                "未做 LBM 与 Ghia 的比对，不作求解器精度声明。"),
+    "summary": (
+        "从原始论文 PDF（sha256 1d76e463…）机器提取 Ghia 表 I/II 的 Re=100/400/1000 共 102 个"
+        "表值（数字取文本层、符号取页面栅格墨水宽度，双见证 84 一致 0 冲突），"
+        "四例解析残差最差 1.84e-14（阈值 1e-12，对照项 0.030–25.1 证明判别力），"
+        "Poiseuille 二阶斜率 2.00005；附带登记仓内 lid_driven_cavity/reference_data.py "
+        "与论文表不符（u(y=1)=0 违反盖板边界条件，v 差 26–46%）。"
+        "未做 LBM 与 Ghia 的比对，不作求解器精度声明。"
+    ),
     "scenario_key": "w26_d3q19_bgk_analytic_fourcase",
     "mission_id": 17563,
-    "tags": ["LBM", "D3Q19", "Ghia1982", "anchor-verification", "analytic-solutions",
-             "Poiseuille", "Couette", "Taylor-Green", "cavity", "provenance"],
+    "tags": [
+        "LBM",
+        "D3Q19",
+        "Ghia1982",
+        "anchor-verification",
+        "analytic-solutions",
+        "Poiseuille",
+        "Couette",
+        "Taylor-Green",
+        "cavity",
+        "provenance",
+    ],
     "markdown": md,
     "figures": figs,
 }
 with open("/tmp/report.json", "w", encoding="utf-8") as fh:
     json.dump(payload, fh, ensure_ascii=False)
-print("markdown chars", len(md), "figures", len(figs), "json bytes", os.path.getsize("/tmp/report.json"))
+print(
+    "markdown chars",
+    len(md),
+    "figures",
+    len(figs),
+    "json bytes",
+    os.path.getsize("/tmp/report.json"),
+)
