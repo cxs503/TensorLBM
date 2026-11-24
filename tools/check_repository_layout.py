@@ -61,6 +61,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "m24569"),
     ("scripts", "physics_ai"),
     ("docs", "smoke"),
+    ("scripts", "maintenance"),
+    ("scripts", "plotting"),
     ("models", "lbm"),
     ("models", "units"),
     ("scripts", "sdaa"),

@@ -105,6 +105,10 @@ groups the m27100 drop-entry histories, preregistration and tooling under the
 drop-entry campaign. Its verdict and histories are discoverable from the
 existing 3D drop-entry registry entry alongside the formal comparison inputs.
 
+The [plotting and maintenance ledger](migrations/legacy-plotting-maintenance-2026-11-24.json)
+records the final two script subdirectories and the maintained channel plotting
+entry point. The legacy cleanup and synthetic fixture sources are archived.
+
 The [documentation process-directory ledger](migrations/docs-process-directories-2026-11-22.json)
 retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
 unchanged archive objects and proves that the three removed history files are

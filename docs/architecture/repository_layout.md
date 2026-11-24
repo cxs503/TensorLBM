@@ -168,8 +168,9 @@ accepted ownership, not that the implementing agent can approve its own change.
    results to the baseline. Update the manifest and remove obsolete exceptions.
 5. Obtain independent review before calling the migration accepted.
 
-Do not use `scripts/maintenance/clean_repo.sh --apply` as a substitute for this procedure. Its glob
-matching and index changes cannot establish provenance or compatibility.
+The [legacy cleanup script](../../development/archived/repository-maintenance/clean_repo.sh)
+is preserved for provenance. Its original checkout assumptions and broad index
+operations make it unsuitable for the current migration procedure.
 
 ## Next batches, in order
 
