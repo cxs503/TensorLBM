@@ -1,0 +1,30 @@
+{
+  "scope": "Historical m17758 D2Q9 comparison of stress and ghost noise; the independent m17856 audit reports a mismatch with the delivered records. This registration makes both discoverable.",
+  "criteria": {
+    "mode_variance_ratio_target": 1.0,
+    "relative_band_percent": 15.0,
+    "zero_temperature_bitwise_check": true
+  },
+  "source": [
+    "benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py",
+    "src/tensorlbm/fluctuating_ghost_modes.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py"
+  ],
+  "documentation": [
+    "docs/audit_m17856/AUDIT_m17856.md"
+  ],
+  "reference_files": [
+    "docs/audit_m17856/evidence_snapshot/ludwig_reference.json"
+  ],
+  "results": [
+    "docs/audit_m17856/evidence_snapshot/results.json"
+  ],
+  "evidence": [
+    "docs/audit_m17856/evidence_snapshot/table_mode_variance.csv",
+    "docs/audit_m17856/evidence_snapshot/SHA256SUMS.txt",
+    "docs/audit_m17856/evidence_snapshot/run_xval.py",
+    "docs/audit_m17856/verdict_evidence.json"
+  ]
+}

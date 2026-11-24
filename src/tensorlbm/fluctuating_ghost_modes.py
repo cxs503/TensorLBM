@@ -23,8 +23,8 @@ its compiled object ``src/collision.o`` exports
 
 i.e. ludwig assigns an explicit, independently configured variance to the ghost
 modes (and lets them be switched off).  Evidence and the regeneration script are
-in ``xval/fluctuating_lbm_ghost_modes/extract_ludwig_reference.py`` and
-``xval/fluctuating_lbm_ghost_modes/artifacts/ludwig_reference.json``.
+in ``benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py`` and
+``docs/audit_m17856/evidence_snapshot/ludwig_reference.json``.
 
 This module transplants that practice into TensorLBM in the cheapest auditable
 way: work in the *weighted-orthonormal mode basis* of the lattice, classify the

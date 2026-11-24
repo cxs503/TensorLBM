@@ -14,8 +14,8 @@ Part 3  ``figures``  -- PNG evidence for the report.
 
 Usage
 -----
-    python xval/fluctuating_lbm_ghost_modes/run_xval.py            # all parts
-    python xval/fluctuating_lbm_ghost_modes/run_xval.py --skip-extract
+    python benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py            # all parts
+    python benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py --skip-extract
 
 Environment note: the OSS snapshot lives outside the repo; point
 ``--ludwig-obj`` at another build if the cached snapshot moves.
@@ -34,8 +34,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-OUT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[3]
+OUT = ROOT / "outputs" / "fluctuating_ghost_modes"
 sys.path.insert(0, str(ROOT / "src"))
 
 DEFAULT_LUDWIG_OBJ = "/tmp/ludwig_tar/ludwig-master/src/collision.o"
@@ -90,8 +90,14 @@ def _dwarf_functions(obj: Path, names: list[str]) -> dict:
             if "DW_AT_decl_file" in body
             else None,
             "decl_line": int(re.search(r"DW_AT_decl_line\s*:\s*(\d+)", body).group(1)),
-            "parameters": re.findall(r"DW_TAG_formal_parameter\)\n\s*<[^>]+>\s+DW_AT_name\s*:\s*(?:\(indirect string[^)]*\):\s*)?(\w+)", body),
-            "locals": re.findall(r"DW_TAG_variable\)\n\s*<[^>]+>\s+DW_AT_name\s*:\s*(?:\(indirect string[^)]*\):\s*)?(\w+)", body),
+            "parameters": re.findall(
+                r"DW_TAG_formal_parameter\)\n\s*<[^>]+>\s+DW_AT_name\s*:\s*(?:\(indirect string[^)]*\):\s*)?(\w+)",
+                body,
+            ),
+            "locals": re.findall(
+                r"DW_TAG_variable\)\n\s*<[^>]+>\s+DW_AT_name\s*:\s*(?:\(indirect string[^)]*\):\s*)?(\w+)",
+                body,
+            ),
         }
         out[name] = rec
     return out
@@ -160,11 +166,20 @@ def extract_reference(obj_path: str) -> dict:
     rec["symbols_fluctuations"] = sorted(s for s in symbols if "fluctuat" in s or "ghost" in s)
 
     consts = _rodata_doubles(obj)
-    rec["rodata_constants_used"] = {k: consts[k] for k in (".LC4", ".LC5", ".LC9", ".LC29") if k in consts}
+    rec["rodata_constants_used"] = {
+        k: consts[k] for k in (".LC4", ".LC5", ".LC9", ".LC29") if k in consts
+    }
 
-    funcs = ["lb_fluctuations_var_eta", "lb_fluctuations_var_bulk", "lb_fluctuations_var_ghost",
-             "lb_fluctuations_stress", "lb_fluctuations_ghosts", "lb_collision_noise_var_set",
-             "lb_collision_ghost_modes_on", "lb_collision_ghost_modes_off"]
+    funcs = [
+        "lb_fluctuations_var_eta",
+        "lb_fluctuations_var_bulk",
+        "lb_fluctuations_var_ghost",
+        "lb_fluctuations_stress",
+        "lb_fluctuations_ghosts",
+        "lb_collision_noise_var_set",
+        "lb_collision_ghost_modes_on",
+        "lb_collision_ghost_modes_off",
+    ]
     rec["dwarf_declarations"] = _dwarf_functions(obj, funcs)
     rec["disassembly_var_eta"] = _disassembly(obj, "lb_fluctuations_var_eta")
     rec["disassembly_var_ghost_head"] = _disassembly(obj, "lb_fluctuations_var_ghost", limit=40)
@@ -172,45 +187,100 @@ def extract_reference(obj_path: str) -> dict:
     # --- execution probe: call ludwig's own var_eta --------------------
     tmp = Path(tempfile.mkdtemp(prefix="xval_ludwig_"))
     try:
-        undef = [s.split()[-1] for s in _run(["nm", "-u", obj]).splitlines() if s.strip().endswith("U") or " U " in s]
-        libc = {"sqrt", "pow", "exp", "log", "fabs", "calloc", "malloc", "free", "printf", "fprintf",
-                "memcpy", "memset", "abort", "memmove", "strcmp", "strlen", "exp2", "sqrtf"}
+        undef = [
+            s.split()[-1]
+            for s in _run(["nm", "-u", obj]).splitlines()
+            if s.strip().endswith("U") or " U " in s
+        ]
+        libc = {
+            "sqrt",
+            "pow",
+            "exp",
+            "log",
+            "fabs",
+            "calloc",
+            "malloc",
+            "free",
+            "printf",
+            "fprintf",
+            "memcpy",
+            "memset",
+            "abort",
+            "memmove",
+            "strcmp",
+            "strlen",
+            "exp2",
+            "sqrtf",
+        }
         stubs = ["#include <stdlib.h>"] + [
-            f"void {s}(void) {{ abort(); }}" for s in undef if s not in libc and not s.startswith("__")
+            f"void {s}(void) {{ abort(); }}"
+            for s in undef
+            if s not in libc and not s.startswith("__")
         ]
         (tmp / "stubs.c").write_text("\n".join(stubs) + "\n")
         (tmp / "main.c").write_text(PROBE_MAIN)
         exe = tmp / "probe"
         build = subprocess.run(
-            ["gcc", "-O1", "-o", str(exe), str(tmp / "main.c"), str(tmp / "stubs.c"), str(obj), "-lm"],
-            capture_output=True, text=True)
-        rec["probe_build"] = {"rc": build.returncode, "stderr_tail": build.stderr.strip().splitlines()[-3:]}
+            [
+                "gcc",
+                "-O1",
+                "-o",
+                str(exe),
+                str(tmp / "main.c"),
+                str(tmp / "stubs.c"),
+                str(obj),
+                "-lm",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        rec["probe_build"] = {
+            "rc": build.returncode,
+            "stderr_tail": build.stderr.strip().splitlines()[-3:],
+        }
         eta, ghost = [], []
         if build.returncode == 0:
-            for line in subprocess.run([str(exe)], capture_output=True, text=True).stdout.splitlines():
+            for line in subprocess.run(
+                [str(exe)], capture_output=True, text=True
+            ).stdout.splitlines():
                 f = line.split()
                 if f[0] == "ETA" and f[3] != "ABORT":
                     eta.append({"tau": float(f[1]), "kt": float(f[2]), "value": float(f[3])})
                 elif f[0] == "GHOST" and f[4] != "ABORT":
-                    ghost.append({"a": float(f[1]), "b": float(f[2]), "c": float(f[3]), "value": float(f[4])})
+                    ghost.append(
+                        {"a": float(f[1]), "b": float(f[2]), "c": float(f[3]), "value": float(f[4])}
+                    )
                 elif f[0] == "GHOST":
-                    ghost.append({"a": float(f[1]), "b": float(f[2]), "c": float(f[3]), "value": None})
+                    ghost.append(
+                        {"a": float(f[1]), "b": float(f[2]), "c": float(f[3]), "value": None}
+                    )
         # closed form decoded from the disassembly:
         #   sqrt(3*kt) / 3 * sqrt((2*tau - 1) / tau^2)
         import math
 
         checks = []
         for row in eta:
-            cf = math.sqrt(3.0 * row["kt"]) / 3.0 * math.sqrt((2.0 * row["tau"] - 1.0) / row["tau"] ** 2)
-            checks.append({
-                "tau": row["tau"], "kt": row["kt"], "executed": row["value"], "closed_form": cf,
-                "rel_err": abs(cf - row["value"]) / abs(row["value"]) if row["value"] else None,
-            })
+            cf = (
+                math.sqrt(3.0 * row["kt"])
+                / 3.0
+                * math.sqrt((2.0 * row["tau"] - 1.0) / row["tau"] ** 2)
+            )
+            checks.append(
+                {
+                    "tau": row["tau"],
+                    "kt": row["kt"],
+                    "executed": row["value"],
+                    "closed_form": cf,
+                    "rel_err": abs(cf - row["value"]) / abs(row["value"]) if row["value"] else None,
+                }
+            )
         rec["executed_var_eta"] = checks
         rec["executed_var_eta_max_rel_err"] = (
             max(c["rel_err"] for c in checks if c["rel_err"] is not None) if checks else None
         )
-        rec["decoded_var_eta_formula"] = "sqrt(3*kt)/3 * sqrt((2*tau-1)/tau^2)   [= sqrt(3 kt (2tau-1)) / (3 tau)]"
+        rec["decoded_var_eta_formula"] = (
+            "sqrt(3*kt)/3 * sqrt((2*tau-1)/tau^2)   [= sqrt(3 kt (2tau-1)) / (3 tau)]"
+        )
         rec["executed_var_ghost"] = ghost
         rec["var_ghost_execution_note"] = (
             "out-of-line copy aborts the internal assert at collision.c:1859 for every probed "
@@ -234,21 +304,47 @@ def measure() -> dict:
 
     arms = []
     base = dict(shape=(32, 32), tau=0.8, kT=2.5e-4, n_samples=1200, n_skip=400)
-    arms.append(run_arm("A1_stress_only", thermostat="stress", bitwise_reference=True, **base).as_dict())
-    arms.append(run_arm("A2_ghost_thermostat", thermostat="ghosts", bitwise_reference=True, **base).as_dict())
+    arms.append(
+        run_arm("A1_stress_only", thermostat="stress", bitwise_reference=True, **base).as_dict()
+    )
+    arms.append(
+        run_arm(
+            "A2_ghost_thermostat", thermostat="ghosts", bitwise_reference=True, **base
+        ).as_dict()
+    )
     arms.append(run_arm("A3_all_modes", thermostat="all", **base).as_dict())
 
     # convergence of the estimator (sample length)
-    arms.append(run_arm("A1_stress_only_n600", thermostat="stress", **{**base, "n_samples": 600}).as_dict())
-    arms.append(run_arm("A2_ghost_thermostat_n600", thermostat="ghosts", **{**base, "n_samples": 600}).as_dict())
+    arms.append(
+        run_arm("A1_stress_only_n600", thermostat="stress", **{**base, "n_samples": 600}).as_dict()
+    )
+    arms.append(
+        run_arm(
+            "A2_ghost_thermostat_n600", thermostat="ghosts", **{**base, "n_samples": 600}
+        ).as_dict()
+    )
 
     # sensitivity: tau and kT
     for tau in (0.7, 1.0):
-        arms.append(run_arm(f"A1_stress_only_tau{tau}", thermostat="stress", **{**base, "tau": tau}).as_dict())
-        arms.append(run_arm(f"A2_ghost_thermostat_tau{tau}", thermostat="ghosts", **{**base, "tau": tau}).as_dict())
+        arms.append(
+            run_arm(
+                f"A1_stress_only_tau{tau}", thermostat="stress", **{**base, "tau": tau}
+            ).as_dict()
+        )
+        arms.append(
+            run_arm(
+                f"A2_ghost_thermostat_tau{tau}", thermostat="ghosts", **{**base, "tau": tau}
+            ).as_dict()
+        )
     for kt in (1e-4, 5e-4):
-        arms.append(run_arm(f"A1_stress_only_kt{kt}", thermostat="stress", **{**base, "kT": kt}).as_dict())
-        arms.append(run_arm(f"A2_ghost_thermostat_kt{kt}", thermostat="ghosts", **{**base, "kT": kt}).as_dict())
+        arms.append(
+            run_arm(f"A1_stress_only_kt{kt}", thermostat="stress", **{**base, "kT": kt}).as_dict()
+        )
+        arms.append(
+            run_arm(
+                f"A2_ghost_thermostat_kt{kt}", thermostat="ghosts", **{**base, "kT": kt}
+            ).as_dict()
+        )
 
     return {
         "unit": "per-mode variance ratio r_a = Var(m_a) / (3 rho kT); FDT target r_a = 1",
@@ -270,7 +366,9 @@ def summarise(result: dict) -> dict:
     return {
         "main_arms": main,
         "bitwise_kT0": {
-            a["arm"]: a.get("bitwise_identical_at_kT0") for a in arms if "bitwise_identical_at_kT0" in a
+            a["arm"]: a.get("bitwise_identical_at_kT0")
+            for a in arms
+            if "bitwise_identical_at_kT0" in a
         },
     }
 
@@ -296,14 +394,20 @@ def figures(result: dict) -> list[str]:
     fig, ax = plt.subplots(figsize=(7.2, 3.8))
     x = np.arange(len(names))
     for i, (arm, colour) in enumerate(
-        [("A1_stress_only", "#c0392b"), ("A2_ghost_thermostat", "#2471a3"), ("A3_all_modes", "#7d8a2e")]
+        [
+            ("A1_stress_only", "#c0392b"),
+            ("A2_ghost_thermostat", "#2471a3"),
+            ("A3_all_modes", "#7d8a2e"),
+        ]
     ):
         vals = [by[arm]["ratios"][n] for n in names]
         ax.bar(x + (i - 1) * 0.27, vals, width=0.27, label=arm, color=colour)
     ax.axhline(1.0, color="k", lw=1.0)
     ax.axhspan(0.85, 1.15, color="k", alpha=0.08, label="+/-15% owner band")
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{n}\n({'ghost' if n in result['ghost_modes'] else 'hydro'})" for n in names], fontsize=8)
+    ax.set_xticklabels(
+        [f"{n}\n({'ghost' if n in result['ghost_modes'] else 'hydro'})" for n in names], fontsize=8
+    )
     ax.set_ylabel(r"$Var(m_a)\,/\,3\rho k_BT$")
     ax.set_title("D2Q9 mode variance vs FDT target (tau=0.8, kT=2.5e-4, 32x32)")
     ax.legend(fontsize=7, ncol=2)
@@ -322,7 +426,12 @@ def figures(result: dict) -> list[str]:
         for arm, colour in (("A1_stress_only", "#c0392b"), ("A2_ghost_thermostat", "#2471a3")):
             xs, ys = [], []
             for a in result["arms"]:
-                if a["arm"].startswith(arm) and key in a["arm"] and "_n600" not in a["arm"] and "kt" not in a["arm"].replace(key, "") :
+                if (
+                    a["arm"].startswith(arm)
+                    and key in a["arm"]
+                    and "_n600" not in a["arm"]
+                    and "kt" not in a["arm"].replace(key, "")
+                ):
                     val = a["arm"].split(key)[-1]
                     try:
                         xs.append(float(val))
@@ -371,8 +480,10 @@ def main(argv: list[str] | None = None) -> int:
     if not args.skip_extract:
         ref = extract_reference(args.ludwig_obj)
         (outdir / "ludwig_reference.json").write_text(json.dumps(ref, indent=2) + "\n")
-        print(f"[extract] status={ref['status']} symbols={len(ref.get('symbols_fluctuations', []))} "
-              f"var_eta_max_rel_err={ref.get('executed_var_eta_max_rel_err')}")
+        print(
+            f"[extract] status={ref['status']} symbols={len(ref.get('symbols_fluctuations', []))} "
+            f"var_eta_max_rel_err={ref.get('executed_var_eta_max_rel_err')}"
+        )
 
     result = measure()
     result["summary"] = summarise(result)
@@ -384,8 +495,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{'mode':6s} {'kind':10s} {'A1 stress':>10s} {'A2 ghosts':>10s} {'A3 all':>10s}")
     for n in result["modes"]:
         kind = "ghost" if n in result["ghost_modes"] else "hydro"
-        print(f"{n:6s} {kind:10s} {s['A1_stress_only']['ratios'][n]:10.4f} "
-              f"{s['A2_ghost_thermostat']['ratios'][n]:10.4f} {s['A3_all_modes']['ratios'][n]:10.4f}")
+        print(
+            f"{n:6s} {kind:10s} {s['A1_stress_only']['ratios'][n]:10.4f} "
+            f"{s['A2_ghost_thermostat']['ratios'][n]:10.4f} {s['A3_all_modes']['ratios'][n]:10.4f}"
+        )
     print("ghost mean:", {k: round(v["ghost_ratio_mean"], 4) for k, v in s.items()})
     print("hydro mean:", {k: round(v["hydro_ratio_mean"], 4) for k, v in s.items()})
     print("bitwise kT=0:", result["summary"]["bitwise_kT0"])

@@ -76,6 +76,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "in25_t6"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
+    ("xval", "fluctuating_lbm_ghost_modes"),
     ("scripts", "p387w2_n04_sphere_force"),
     ("scripts", "p399w2_n04_curved_force"),
     ("xval", "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"),
