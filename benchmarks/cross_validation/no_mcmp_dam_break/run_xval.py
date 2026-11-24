@@ -18,6 +18,7 @@ Reference: src/artifacts/martin_moyce_1952_dam_break.json (digitized, sha256).
 Zero hand-copy: every number in results.json is computed here from the
 simulations and the reference file.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "benchmarks" / "dam_break"))
 
@@ -40,7 +41,7 @@ from tensorlbm.verification.dam_break_2d_validation import (  # noqa: E402
     run_dam_break_2d,
 )
 
-OUT = Path(__file__).resolve().parent
+OUT = ROOT / "outputs/no_mcmp_dam_break"
 MM_PATH = ROOT / "src" / "artifacts" / "martin_moyce_1952_dam_break.json"
 CHECKPOINTS = (1.0, 2.0, 3.0)
 FRONT_DEPTH_THRESHOLD = 0.5  # cells; predeclared
@@ -108,8 +109,11 @@ def main() -> None:
     for h0, L in ((25, 25), (50, 50)):
         print(f"[armA] fill-level h0={h0} L={L} ...", flush=True)
         armA[f"h0{h0}"] = arm_fill_level(h0, L)
-        print(f"[armA] h0={h0} done in {armA[f'h0{h0}']['wall_s']:.1f}s "
-              f"nan_step={armA[f'h0{h0}']['nan_step']}", flush=True)
+        print(
+            f"[armA] h0={h0} done in {armA[f'h0{h0}']['wall_s']:.1f}s "
+            f"nan_step={armA[f'h0{h0}']['nan_step']}",
+            flush=True,
+        )
     results["arms"]["A_fill_level"] = armA
 
     # ---- Arm B: color-gradient (different two-phase family) ----
@@ -126,8 +130,10 @@ def main() -> None:
             "criteria": res["criteria"],
             "samples": res["samples"],
         }
-        print(f"[armB] nx={nx} done, max_front_err={res['metrics']['max_front_error_pct_early']}%",
-              flush=True)
+        print(
+            f"[armB] nx={nx} done, max_front_err={res['metrics']['max_front_error_pct_early']}%",
+            flush=True,
+        )
     results["arms"]["B_color_gradient"] = armB
 
     # ---- M1: front error vs MM at matched t* ----
@@ -163,6 +169,7 @@ def main() -> None:
             }
     results["verdicts"] = verdicts
 
+    OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "results.json").write_text(json.dumps(results, indent=2, ensure_ascii=False))
     print(json.dumps(verdicts, indent=2))
     print(f"results -> {OUT / 'results.json'}")

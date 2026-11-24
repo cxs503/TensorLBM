@@ -3,7 +3,7 @@
 锚点：`XVAL-LBM-LBMCONFIG-SINGLE-POINT-CONFIG`（`feature_ledger`，验收线 <15%）
 仓：TensorLBM · 分支 `agent/m22858` · mission 22858
 新增生产代码：`src/tensorlbm/lbm_config.py` · 测试：`tests/test_lbm_config.py`(52 项)
-验证入口：`xval/lbmconfig_single_point/run_xval.py` · 工件：`xval/lbmconfig_single_point/out/*.json|csv`
+验证入口：[运行入口](../benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py) · [归档结果](../benchmarks/cross_validation/lbmconfig_poiseuille/evidence/run_main.json) · [剖面表](../benchmarks/cross_validation/lbmconfig_poiseuille/evidence/profiles.csv)
 
 ---
 
@@ -160,6 +160,8 @@ dataclass，派生量全为 property），并用**力驱动平面 Poiseuille 槽
 # 单元不变量测试
 PYTHONPATH=src python -m pytest tests/test_lbm_config.py -q          # 52 passed
 # 交叉验证台架（分阶段，单核；完整 all 建议递交调度系统）
-PYTHONPATH=src python xval/lbmconfig_single_point/run_xval.py --stage main --height 20 --steady-tol 1e-9
-PYTHONPATH=src python xval/lbmconfig_single_point/run_xval.py --stage convergence --heights 16,32
+PYTHONPATH=src python benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py --stage main --height 20 --steady-tol 1e-9
+PYTHONPATH=src python benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py --stage convergence --heights 16,32
 ```
+
+本次运行的结果和图默认写入 `outputs/lbmconfig_poiseuille/`。

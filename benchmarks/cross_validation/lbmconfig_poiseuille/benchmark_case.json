@@ -1,0 +1,27 @@
+{
+  "source": [
+    "benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py",
+    "src/tensorlbm/lbm_config.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py"
+  ],
+  "documentation": [
+    "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md"
+  ],
+  "reference_files": [
+    "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md"
+  ],
+  "results": [
+    "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/run_main.json"
+  ],
+  "evidence": [
+    "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/profiles.csv"
+  ],
+  "scope": "Archived mission 22858 main stage for the D2Q9 force-driven plane Poiseuille channel. Separate convergence and parameter-sweep results are outside this artifact.",
+  "criteria": {
+    "relative_error_acceptance_lt": 0.15,
+    "relative_error_target_lt": 0.03,
+    "reference": "Analytic plane Poiseuille velocity profile"
+  }
+}

@@ -6,6 +6,8 @@ Full study `xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/REPORT.md`; numbers
 `results.json` (rendered, not hand-typed); driver `run_xval.py`; model
 `two_phase_only.py`; tests `tests/test_xval_no_mcmp_two_phase_only.py`.
 
+The separate exploratory dam-break study for this anchor has a [driver](../benchmarks/cross_validation/no_mcmp_dam_break/run_xval.py), [preregistration](../benchmarks/cross_validation/no_mcmp_dam_break/predeclared.json) and [partial archived result](../benchmarks/cross_validation/no_mcmp_dam_break/evidence/results.json). That snapshot contains only the color-gradient arm at nx=48. It covers a different geometry from the layered Poiseuille study below.
+
 ## Question
 The OSS repository has no MCMP: only the phase-field layered initialisation
 geometry and the variable-density equilibrium assembly can be borrowed, i.e.

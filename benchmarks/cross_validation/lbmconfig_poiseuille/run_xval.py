@@ -40,7 +40,7 @@ Checks
 
 Usage::
 
-    python xval/lbmconfig_single_point/run_xval.py --out-dir <dir> --fig-dir <dir>
+    python benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py --out-dir <dir> --fig-dir <dir>
 """
 
 from __future__ import annotations
@@ -72,11 +72,11 @@ OPP = d2q9.OPPOSITE.to(torch.int64)
 class ChannelCase:
     """Force-driven plane-Poiseuille channel (lattice units)."""
 
-    height: int = 32          # fluid rows H; the array has H + 2 rows
-    nx: int = 8               # periodic in x (the flow is x-uniform)
-    force_x: float = 2.0e-7   # body force per unit mass
+    height: int = 32  # fluid rows H; the array has H + 2 rows
+    nx: int = 8  # periodic in x (the flow is x-uniform)
+    force_x: float = 2.0e-7  # body force per unit mass
     max_steps: int = 150_000
-    window_steps: int = 400   # averaging window once the steady state is found
+    window_steps: int = 400  # averaging window once the steady state is found
     steady_tol: float = 1e-12  # |du| over one chunk / u_scale
     chunk: int = 200
 
@@ -133,7 +133,7 @@ def _hand_step(
         ux = ux + 0.5 * fx / rho
 
     feq = d2q9.equilibrium(rho, ux, uy)
-    post = state - (state - feq) / tau          # SRT collision
+    post = state - (state - feq) / tau  # SRT collision
 
     cu = c[:, 0].view(9, 1, 1) * ux + c[:, 1].view(9, 1, 1) * uy
     cf = c[:, 0].view(9, 1, 1) * fx
@@ -249,8 +249,8 @@ def _lbmpy_status() -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out-dir", default="xval/lbmconfig_single_point/out")
-    ap.add_argument("--fig-dir", default="xval/lbmconfig_single_point/figs")
+    ap.add_argument("--out-dir", default="outputs/lbmconfig_poiseuille/results")
+    ap.add_argument("--fig-dir", default="outputs/lbmconfig_poiseuille/figures")
     ap.add_argument("--stage", default="all", choices=["all", "main", "convergence", "sweep"])
     ap.add_argument("--height", type=int, default=32, help="main-stage channel height")
     ap.add_argument("--steady-tol", type=float, default=None)
@@ -289,8 +289,11 @@ def main(argv: list[str] | None = None) -> int:
         "checks": {},
     }
     if args.stage in ("all", "main"):
-        case = ChannelCase(height=args.height) if args.steady_tol is None else \
-            ChannelCase(height=args.height, steady_tol=args.steady_tol)
+        case = (
+            ChannelCase(height=args.height)
+            if args.steady_tol is None
+            else ChannelCase(height=args.height, steady_tol=args.steady_tol)
+        )
         arms = {
             "srt_guo": base,
             "trt_guo": base.with_(method="TRT"),
@@ -301,9 +304,11 @@ def main(argv: list[str] | None = None) -> int:
         for name, cfg in arms.items():
             row = run_case(cfg, case)
             result["arms"][name] = row
-            print(f"[arm] {name:15s} rel={row['rel_error']:.3e} steps={row['steps']} "
-                  f"conv={row['converged']} resid={row['fixed_point_residual']:.1e}",
-                  flush=True)
+            print(
+                f"[arm] {name:15s} rel={row['rel_error']:.3e} steps={row['steps']} "
+                f"conv={row['converged']} resid={row['fixed_point_residual']:.1e}",
+                flush=True,
+            )
 
         explicit = run_case(base, case, mode="explicit")
         ref = result["arms"]["srt_guo"]
@@ -323,8 +328,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[arm] explicit_calls  bitwise_identical={same}", flush=True)
 
         # negative control: the inconsistent bookkeeping the config rejects
-        legacy = run_case(base, case, mode="legacy", corrected_source=True,
-                          half_step_equilibrium=False)
+        legacy = run_case(
+            base, case, mode="legacy", corrected_source=True, half_step_equilibrium=False
+        )
         result["arms"]["legacy_mixed"] = legacy
         print(f"[arm] legacy_mixed    rel={legacy['rel_error']:.3e}", flush=True)
 
@@ -389,15 +395,19 @@ def main(argv: list[str] | None = None) -> int:
             sweep[name] = {}
             for om in omegas:
                 cfg = spec["cfg"].with_(relaxation_rate=om)
-                row = run_case(cfg, sweep_case, mode=spec["mode"],
-                               corrected_source=True, half_step_equilibrium=False)
+                row = run_case(
+                    cfg,
+                    sweep_case,
+                    mode=spec["mode"],
+                    corrected_source=True,
+                    half_step_equilibrium=False,
+                )
                 sweep[name][f"{om:.2f}"] = {
                     "rel_error": row["rel_error"],
                     "rel_error_center": row["rel_error_center"],
                     "predicted_error_1_minus_scale": float(1.0 - row["force_source_scale"]),
                 }
-                print(f"[sweep] {name:12s} omega={om:.2f} rel={row['rel_error']:.3e}",
-                      flush=True)
+                print(f"[sweep] {name:12s} omega={om:.2f} rel={row['rel_error']:.3e}", flush=True)
         result["checks"]["C4_force_bookkeeping_sweep"] = {
             "height": sweep_case.height,
             "omegas": omegas,
@@ -411,13 +421,18 @@ def main(argv: list[str] | None = None) -> int:
         (out_dir / "run_main.json").write_text(json.dumps(result, indent=2))
         make_figures(result, fig_dir)
         acc = result["checks"]["C2_accuracy_vs_analytic"]
-        print(json.dumps({
-            "pass_15pct": acc["pass"],
-            "pass_3pct": acc["pass_3pct"],
-            "srt_guo_rel_error": result["arms"]["srt_guo"]["rel_error"],
-            "trt_guo_rel_error": result["arms"]["trt_guo"]["rel_error"],
-            "legacy_mixed_rel_error": result["arms"]["legacy_mixed"]["rel_error"],
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "pass_15pct": acc["pass"],
+                    "pass_3pct": acc["pass_3pct"],
+                    "srt_guo_rel_error": result["arms"]["srt_guo"]["rel_error"],
+                    "trt_guo_rel_error": result["arms"]["trt_guo"]["rel_error"],
+                    "legacy_mixed_rel_error": result["arms"]["legacy_mixed"]["rel_error"],
+                },
+                indent=2,
+            )
+        )
         return 0 if acc["pass"] else 1
     return 0
 
@@ -450,8 +465,7 @@ def make_figures(result: dict, fig_dir: Path) -> None:  # pragma: no cover
     fig, ax = plt.subplots(figsize=(5.4, 4.0))
     for name in ("srt_guo", "trt_guo"):
         hs = [h for h in sorted(conv[name]) if isinstance(h, int)]
-        ax.loglog(hs, [conv[name][h]["rel_error_center"] for h in hs], marker="s",
-                  label=name)
+        ax.loglog(hs, [conv[name][h]["rel_error_center"] for h in hs], marker="s", label=name)
     ax.set_xlabel("channel height H")
     ax.set_ylabel("centerline relative error")
     ax.set_title(r"Mesh convergence (SRT vs TRT magic $\Lambda=3/16$)")
@@ -465,10 +479,16 @@ def make_figures(result: dict, fig_dir: Path) -> None:  # pragma: no cover
     omegas = sw["omegas"]
     fig, ax = plt.subplots(figsize=(5.8, 4.0))
     for name, rows in sw["arms"].items():
-        ax.semilogy(omegas, [rows[f"{om:.2f}"]["rel_error_center"] for om in omegas],
-                    marker="o", label=name)
-    ax.semilogy(omegas, [0.5 * om for om in omegas], "k:", lw=1.2,
-                label=r"$\omega/2$ (predicted legacy error)")
+        ax.semilogy(
+            omegas, [rows[f"{om:.2f}"]["rel_error_center"] for om in omegas], marker="o", label=name
+        )
+    ax.semilogy(
+        omegas,
+        [0.5 * om for om in omegas],
+        "k:",
+        lw=1.2,
+        label=r"$\omega/2$ (predicted legacy error)",
+    )
     ax.set_xlabel(r"relaxation rate $\omega = 1/\tau$")
     ax.set_ylabel("centerline relative error")
     ax.set_title(f"Force bookkeeping error vs $\\omega$ (H={sw['height']})")

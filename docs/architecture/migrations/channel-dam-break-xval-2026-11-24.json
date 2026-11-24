@@ -1,0 +1,82 @@
+{
+  "source_commit": "1c717d58ebf360f3b74a82e8600677ea133a418e",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 95,
+      "after": 93
+    }
+  },
+  "reference_scan": "Checked tracked code, test and workflow paths. The lowercase no-MCMP directory is the exploratory dam-break study. The upper-case layered Poiseuille study is separate.",
+  "compatibility": "Both documents keep their published URLs. Existing command options and reference inputs remain available. New run artifacts go under outputs/ to preserve archived assets. The new manifests register the exact historical results with their distinct scopes.",
+  "scientific_scope": "Historical migration. No numerical replay or acceptance update. The no-MCMP dam-break snapshot is partial.",
+  "verification": [
+    "Verified all six original/resulting SHA-256 values, Git modes, and six published report links. The four archived non-Python files are byte-identical.",
+    "Verified numerical AST equality in both drivers after accounting for module root, documentation, and generated output paths. Reformatted relocated drivers to satisfy the benchmark lint ratchet.",
+    "Ran the channel --help and imported the dam-break runner outside the checkout. Both dam-break source imports and the original Martin\u2013Moyce reference digest verified.",
+    "83 governance tests and 52 LBMConfig unit tests passed. The registry validated 204 entries. Both new records have current_acceptance=not_evaluated."
+  ],
+  "entries": [
+    {
+      "old_path": "xval/lbmconfig_single_point/out/profiles.csv",
+      "new_path": "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/profiles.csv",
+      "published_report": "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "cf949c98b591729edc791b3daec8c9dac3466020",
+      "size_bytes": 7684,
+      "original_sha256": "84e9e8af7779d7e5dd5ac83a14afe7cd4b5eb7a8ec5e546d168ee9ea5af0c6f7",
+      "new_sha256": "84e9e8af7779d7e5dd5ac83a14afe7cd4b5eb7a8ec5e546d168ee9ea5af0c6f7"
+    },
+    {
+      "old_path": "xval/lbmconfig_single_point/out/run_main.json",
+      "new_path": "benchmarks/cross_validation/lbmconfig_poiseuille/evidence/run_main.json",
+      "published_report": "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "91853a559ae696aaa85e40ad0932fe08c3da356c",
+      "size_bytes": 17130,
+      "original_sha256": "cd2cc72a698e309f6656be579f5874965bf68dddb81d24c10a50c82b33f89be1",
+      "new_sha256": "cd2cc72a698e309f6656be579f5874965bf68dddb81d24c10a50c82b33f89be1"
+    },
+    {
+      "old_path": "xval/lbmconfig_single_point/run_xval.py",
+      "new_path": "benchmarks/cross_validation/lbmconfig_poiseuille/run_xval.py",
+      "published_report": "docs/XVAL_LBM_LBMCONFIG_SINGLE_POINT_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "2539b184648756f4a4d1d71c94394787c84abfb8",
+      "size_bytes": 19215,
+      "original_sha256": "747e343e8f3a47c90eba7ee30d73d1de00a219911163463faeed31364ea411a8",
+      "new_sha256": "a917116e1bd3c285a382d13ce4fcb73e4b58798967c379fbc118eedcf4ef8446"
+    },
+    {
+      "old_path": "xval/no_mcmp_two_phase_only/predeclared.json",
+      "new_path": "benchmarks/cross_validation/no_mcmp_dam_break/predeclared.json",
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md",
+      "git_mode": "100644",
+      "original_git_blob": "c5584d428f2af269c07f2d050ec500b74ca29451",
+      "size_bytes": 4780,
+      "original_sha256": "3ba2e60aa65b3ba7cf800da04eac36c4153347fdebe46c71d27abd2a26b89a5c",
+      "new_sha256": "3ba2e60aa65b3ba7cf800da04eac36c4153347fdebe46c71d27abd2a26b89a5c"
+    },
+    {
+      "old_path": "xval/no_mcmp_two_phase_only/results.json",
+      "new_path": "benchmarks/cross_validation/no_mcmp_dam_break/evidence/results.json",
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md",
+      "git_mode": "100644",
+      "original_git_blob": "b291f97ca0048312e86ea0529b81843be74b7f1f",
+      "size_bytes": 4241,
+      "original_sha256": "86190a512f2ff251850966310f5cc2508315ad03f10167e275422c152e3b389c",
+      "new_sha256": "86190a512f2ff251850966310f5cc2508315ad03f10167e275422c152e3b389c"
+    },
+    {
+      "old_path": "xval/no_mcmp_two_phase_only/run_xval.py",
+      "new_path": "benchmarks/cross_validation/no_mcmp_dam_break/run_xval.py",
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md",
+      "git_mode": "100644",
+      "original_git_blob": "c45514ba0e70789707e39b848aa230e599bcbbf9",
+      "size_bytes": 6336,
+      "original_sha256": "cb98d18e074b3c06eeef53c7604e47a0dec120fb1b5cc0a895c07172a6616e55",
+      "new_sha256": "4c7e359ed94ad094328027abf02775cf18d731508a5b373e8bbdfc19ec6d84e0"
+    }
+  ]
+}
