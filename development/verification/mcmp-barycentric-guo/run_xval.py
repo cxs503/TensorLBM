@@ -44,7 +44,7 @@ Everything is CPU, single-threaded, deterministic (no RNG anywhere).
 Usage::
 
     OMP_NUM_THREADS=1 PYTHONPATH=src python \
-        xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/run_xval.py [--stage all|arms|sensitivity]
+        development/verification/mcmp-barycentric-guo/run_xval.py [--stage all|arms|sensitivity]
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ from typing import Any, Callable
 import numpy as np
 import torch
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm import __version__ as TENSORLBM_VERSION  # noqa: E402

@@ -1,5 +1,7 @@
 # XVAL-LBM-R4-COEXISTENCE — coexistence calibration + free-energy selection cross-validation
 
+The [relocated verification tools](../development/verification/mcmp-coexistence/r4/) keep the original artifact directory and command options.
+
 Anchor `XVAL-LBM-R4-COEXISTENCE-CALIBRATION-AND-FREE-ENER` (mission 18238, repo TensorLBM, branch agent/m18238).
 Target做法 = TensorLBM R4 (`docs/MCMP_STRATIFIED_POISEUILLE_R4.md` §2.2/§6): (a) coexistence calibration of the
 lattice Shan–Chen EOS, (b) selection/transplant of the free-energy (Cahn–Hilliard) binary model.
@@ -64,7 +66,7 @@ this round; the gate summary below therefore covers the free-energy arm only.
   (not done here): Guo forcing with `(1-1/(2 tau))` factor or a force-balanced EDM with the density floor applied
   inside psi, plus a co-existence-seeded initial state.
 - Artifacts: `artifacts/xval_lbm_r4_coexistence/xval_r4_coexistence.json`, `xval_r4_coexistence.png`;
-  driver `xval/XVAL-LBM-R4-COEXISTENCE/run_xval.py` (+ `deliver_all.py`).
+  driver `development/verification/mcmp-coexistence/r4/run_xval.py` (+ `deliver_all.py`).
 - Gate summary: {"n_checks": 12, "n_pass": 6, "all_pass": false, "max_err": 0.17816499079549497}
 
 ## 7 本仓 vs OSS 差异清单 + 移植取舍

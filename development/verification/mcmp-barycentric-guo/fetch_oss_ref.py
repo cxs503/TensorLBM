@@ -19,7 +19,7 @@ of it programmatically.  The resulting JSON carries
 
 Usage::
 
-    python xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/fetch_oss_ref.py
+    python development/verification/mcmp-barycentric-guo/fetch_oss_ref.py
 
 Writes ``artifacts/xval_lbm_shan_chen_mcmp/oss_ref_shan_chen_two_component.json``.
 The script is idempotent and offline-safe when the artifact already exists
@@ -42,7 +42,7 @@ REPO = "lssfau/lbmpy"
 COMMIT = "0afc9d52896e23210874b4d56d2d11f4f934e0e8"
 OSS_PATH = "tests/shan_chen/test_shan_chen_two_component.py"
 
-OUT_DIR = Path(__file__).resolve().parents[2] / "artifacts" / "xval_lbm_shan_chen_mcmp"
+OUT_DIR = Path(__file__).resolve().parents[3] / "artifacts" / "xval_lbm_shan_chen_mcmp"
 OUT_FILE = OUT_DIR / "oss_ref_shan_chen_two_component.json"
 
 

@@ -42,7 +42,7 @@ import time
 import torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 torch.set_default_dtype(torch.float64)
 torch.set_num_threads(4)

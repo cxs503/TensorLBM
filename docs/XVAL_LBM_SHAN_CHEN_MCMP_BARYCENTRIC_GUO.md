@@ -1,5 +1,7 @@
 # XVAL — TensorLBM Shan-Chen MCMP (barycentric velocity + Guo forcing) vs `lssfau/lbmpy`
 
+[迁移后的验证工具](../development/verification/mcmp-barycentric-guo/)保留原产物目录和参数。外部参考仍需按报告中的固定版本获取。
+
 Anchor: **XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO** · 第 1 轮 · 开源对标 · repo TensorLBM · mission 18325
 结论：**PASS**，主臂相对 L2 误差 0.001068 ≪ 15 %
 
@@ -13,7 +15,7 @@ Anchor: **XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO** · 第 1 轮 · 开源对标
 参考解（零手抄，程序化抓取）：`lssfau/lbmpy` @ `0afc9d52896e`，文件
 `tests/shan_chen/test_shan_chen_two_component.py`，源文本 sha256 `7e88e89825a34a56...`，参考数组 sha256
 `3a2b6127f160d8dc...`。该测试断言 1000 步后 64x64 周期盒子两个组分密度剖面（参考值本身来自
-`lbm-principles-practice` 第 9 章独立 C++ 实现）。抓取器 `xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/fetch_oss_ref.py`
+`lbm-principles-practice` 第 9 章独立 C++ 实现）。抓取器 `development/verification/mcmp-barycentric-guo/fetch_oss_ref.py`
 走 GitHub contents API + base64 后**解析**（不誊写）。
 
 ## ② 方法与实现
@@ -132,9 +134,9 @@ Anchor: **XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO** · 第 1 轮 · 开源对标
 ## 复现与环境
 
 ```
-python xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/fetch_oss_ref.py
-OMP_NUM_THREADS=1 PYTHONPATH=src python xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/run_xval.py
-python xval/XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO/make_figures.py
+python development/verification/mcmp-barycentric-guo/fetch_oss_ref.py
+OMP_NUM_THREADS=1 PYTHONPATH=src python development/verification/mcmp-barycentric-guo/run_xval.py
+python development/verification/mcmp-barycentric-guo/make_figures.py
 OMP_NUM_THREADS=1 PYTHONPATH=src python -m pytest tests/test_xval_shan_chen_mcmp_barycentric_guo.py -q
 ```
 python 3.11.6 / torch 2.7.1 / numpy 2.4.6 / tensorlbm 0.3.0 / 单线程 CPU（Linux-6.6.52-1.7.lns23.loongarch64-loongarch64-with-glibc2.38）。
