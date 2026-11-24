@@ -1,0 +1,1 @@
+{"tag": "off", "steps": 40, "stop": "step_limit", "z_ref": null, "level": 24.5, "gz": -5.1127117346938765e-06, "corr_at_surface": 0.0, "corr_at_z12": 0.0, "corr_at_z14": 0.0, "mach_max": 0.11587990432068751, "depth_over_D": 0.016730585319421287, "fhash": "274ded2c6971869b"}
