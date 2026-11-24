@@ -10,8 +10,8 @@ login helper.  Credentials are never embedded here.
 
 Usage
 -----
-    python scripts/in25_t6/publish_report.py            # POST
-    python scripts/in25_t6/publish_report.py --dry-run  # size check only
+    python development/experiments/suboff-resistance-survey/publish_report.py            # POST
+    python development/experiments/suboff-resistance-survey/publish_report.py --dry-run  # size check only
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 FIGS = ROOT / "docs" / "assets" / "suboff-resistance-survey"
 
 FIG_CAPTIONS = (

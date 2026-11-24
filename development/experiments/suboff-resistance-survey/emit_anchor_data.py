@@ -12,7 +12,7 @@ Curated content (claims, applicability conditions, verification status) lives in
 
 Usage
 -----
-    python scripts/in25_t6/emit_anchor_data.py
+    python development/experiments/suboff-resistance-survey/emit_anchor_data.py
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "artifacts" / "in25_t6"
 DEST = ROOT / "src" / "tensorlbm" / "external_survey" / "data" / "lit_anchor_records.json"
 
@@ -29,7 +29,7 @@ def main() -> int:
     # seat-A probe payloads are the provenance for the DOI selection; the DOI
     # records below carry the strings that actually land in the store.
     if not (ART / "seat_a_crossref_raw.json").exists():
-        raise SystemExit("seat-A probe archive missing: run scripts/in25_t6/seat_a_lit_query.py first")
+        raise SystemExit("seat-A probe archive missing: run development/experiments/suboff-resistance-survey/seat_a_lit_query.py first")
     doi_records = json.loads((ART / "seat_bc_doi_records.json").read_text())
     arxiv = json.loads((ART / "seat_bc_arxiv_probes.json").read_text())
 
@@ -78,7 +78,7 @@ def main() -> int:
 
     DEST.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "generator": "scripts/in25_t6/emit_anchor_data.py",
+        "generator": "development/experiments/suboff-resistance-survey/emit_anchor_data.py",
         "note": "verbatim bibliographic records from Crossref / arXiv; no hand typing",
         "sources": {
             "crossref_probe": str((ART / "seat_a_crossref_raw.json").relative_to(ROOT)),

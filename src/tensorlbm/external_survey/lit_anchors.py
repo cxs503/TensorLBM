@@ -5,7 +5,7 @@ Design rules (owners' discipline, 2026-11-07):
 * **No hand-typed bibliography.**  Every title/author/year/venue record is
   copied programmatically from the archived Crossref / arXiv payloads into
   ``data/lit_anchor_records.json`` (see
-  ``scripts/in25_t6/emit_anchor_data.py``).  This module only adds the *curated*
+  ``development/experiments/suboff-resistance-survey/emit_anchor_data.py``).  This module only adds the *curated*
   layer: the claim, its applicability window, and how far the claim was
   actually verified.
 * **No unsourced numerical claim.**  A claim may be ``NUMERIC`` only when the

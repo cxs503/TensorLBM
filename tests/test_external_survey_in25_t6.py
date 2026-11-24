@@ -283,6 +283,10 @@ def test_acceptance_report_carries_criteria_numbers_and_paths():
     for key in ("package", "lit_anchors", "suboff_anchor", "consistency",
                 "playbook_module", "report_module", "record_store"):
         assert rep["products"][key]["exists"], (key, rep["products"][key])
+    for key in ("seat_a_script", "seat_abc_verify_script", "seat_c_script",
+                "emit_script", "artifact_script", "publish_script"):
+        product = rep["products"][key]
+        assert product["exists"], (key, product)
 
 
 def test_anchor_table_export_matches_module():

@@ -190,7 +190,7 @@ def own_ladder_status() -> dict:
         "geometry_constraint": measured.get("geometry_constraint", {}),
         "consequence": measured.get("consequence", {}),
         "what_would_close_it": (
-            "run scripts/in25_t6/seat_c_grid_convergence.py --resolutions 26 36 48 --steps 8000 "
+            "run development/experiments/suboff-resistance-survey/seat_c_grid_convergence.py --resolutions 26 36 48 --steps 8000 "
             "on a GPU node (or fix the cluster torch build); the driver already emits "
             "Richardson/GCI from the three grids"
         ),
