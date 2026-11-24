@@ -19,8 +19,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "artifacts" / "xval_life_geometry_config"
+ROOT = Path(__file__).resolve().parents[4]
+OUTPUT = ROOT / "outputs/verification/runtime-geometry/life-parity"
+INPUT = OUTPUT if (OUTPUT / "xval_parity.json").is_file() else ROOT / "runs/m17673"
+OUT = OUTPUT / "figures"
 OUT.mkdir(parents=True, exist_ok=True)
 
 import sys
@@ -68,7 +70,7 @@ def fig1_geometry(dx_D: int = 20) -> Path:
 
 
 def fig2_discretisation() -> Path:
-    par = json.loads((ROOT / "runs/m17673/xval_parity.json").read_text())
+    par = json.loads((INPUT / "xval_parity.json").read_text())
     rows = [r for r in par["rows"]]
     dx = np.array([r["dx_m"] for r in rows])
     per = np.array([r["perimeter_err_pct"] for r in rows])
@@ -98,8 +100,8 @@ def fig2_discretisation() -> Path:
 
 def fig3_cd() -> Path | None:
     runs = {
-        "runtime_config (geometry.config)": ROOT / "runs/m17673/xval_D20_config.json",
-        "hard_coded (verified path)": ROOT / "runs/m17673/xval_D20_hardcoded.json",
+        "runtime_config (geometry.config)": INPUT / "xval_D20_config.json",
+        "hard_coded (verified path)": INPUT / "xval_D20_hardcoded.json",
     }
     have = {k: v for k, v in runs.items() if v.is_file()}
     if not have:

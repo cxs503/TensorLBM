@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Generate docs/reports/XVAL_LIFE_GEOMETRY_CONFIG.md from run artifacts (no hand-copied numbers)."""
+"""Generate a local geometry report from run artifacts (no hand-copied numbers)."""
 from __future__ import annotations
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-PAR = ROOT / "runs/m17673/xval_parity.json"
+ROOT = Path(__file__).resolve().parents[4]
+OUTPUT = ROOT / "outputs/verification/runtime-geometry/life-parity"
+INPUT = OUTPUT if (OUTPUT / "xval_parity.json").is_file() else ROOT / "runs/m17673"
+PAR = INPUT / "xval_parity.json"
 RUNS = {
-    "runtime_config": ROOT / "runs/m17673/xval_D20_config.json",
-    "hard_coded": ROOT / "runs/m17673/xval_D20_hardcoded.json",
+    "runtime_config": INPUT / "xval_D20_config.json",
+    "hard_coded": INPUT / "xval_D20_hardcoded.json",
 }
-OUT = ROOT / "docs/reports/XVAL_LIFE_GEOMETRY_CONFIG.md"
+OUT = OUTPUT / "XVAL_LIFE_GEOMETRY_CONFIG.md"
 
 
 def main() -> None:
@@ -107,8 +109,8 @@ def main() -> None:
       "本次只解析出 `FilamentBody.beam_properties()`（A=dx·h，I=dx·h³/12），**未移植结构求解器**。")
     A("- 差异清单与移植取舍见 `docs/reports/XVAL_LIFE_GEOMETRY_CONFIG_diffs.md`。")
     A("- 工件：`src/tensorlbm/runtime_geometry.py`、`tests/test_runtime_geometry.py`（29 项）、"
-      "`xval/life_geometry_config/*`、`runs/m17673/xval_parity.json`、"
-      "`artifacts/xval_life_geometry_config/fig1_geometry_parity.png`、`fig2_dx_sensitivity.png`"
+      "`development/verification/runtime-geometry/life-parity/*`、`outputs/verification/runtime-geometry/life-parity/xval_parity.json`、"
+      "`outputs/verification/runtime-geometry/life-parity/figures/fig1_geometry_parity.png`、`fig2_dx_sensitivity.png`"
       "（+ 若物理运行完成则 `fig3_cd_history.png`）。")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(lines) + "\n", encoding="utf-8")

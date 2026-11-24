@@ -41,11 +41,11 @@ THRESHOLDS (predeclared): Δmask <= 0 cells is *expected* (exactness, not a
 
 Usage::
 
-    PYTHONPATH=src python3 xval/life_geometry_config/xval_life_geometry_config.py \
+    PYTHONPATH=src python3 development/verification/runtime-geometry/life-parity/xval_life_geometry_config.py \
         --mode parity
-    PYTHONPATH=src python3 xval/life_geometry_config/xval_life_geometry_config.py \
+    PYTHONPATH=src python3 development/verification/runtime-geometry/life-parity/xval_life_geometry_config.py \
         --mode run --grid D20 --source runtime_config --steps 120000 \
-        --out runs/m17673/xval_D20_config.json
+        --out outputs/verification/runtime-geometry/life-parity/xval_D20_config.json
 """
 
 from __future__ import annotations
@@ -74,7 +74,8 @@ from tensorlbm.runtime_geometry import (
     parse_geometry_config,
 )
 
-HERE = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[4]
+OUTPUT = ROOT / "outputs/verification/runtime-geometry/life-parity"
 
 #: LIFE ``input/geometry.config`` lines for the Turek–Hron set-up, reproduced
 #: verbatim from ``/tmp/LIFE-master/input/geometry.config`` (2 lines).
@@ -301,7 +302,7 @@ def main(argv: list[str] | None = None) -> int:
 
     payload = run_one(args.grid, args.source, args.steps)
     res, fields = payload["result"], payload["fields"]
-    out = Path(args.out) if args.out else HERE / f"xval_{args.grid}_{args.source}.json"
+    out = Path(args.out) if args.out else OUTPUT / f"xval_{args.grid}_{args.source}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1, default=str))
     if fields is not None:

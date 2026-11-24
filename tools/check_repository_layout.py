@@ -87,6 +87,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "no_mcmp_two_phase_only"),
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
     ("xval", "fused_kernel_type_selector"),
+    ("xval", "XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET"),
+    ("xval", "life_geometry_config"),
     ("xval", "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN"),
 }
 

@@ -66,4 +66,18 @@ ref 出处（零手抄，逐处 file:line，源码位于 `/tmp/LIFE-master`，GP
 - 失败模式（已处理）：关键字拼错/列数不符 → 抛 `ValueError`（LIFE 为静默错读）；体越界 → `validate_domain()` 拒绝（LIFE 静默截断）；两柔性体标记重叠 → 报错（同 LIFE）。
 - 失败模式（未处理）：本仓对标的是**刚性**几何→mask 路径；LIFE 的 `FLEXIBLE` 分支需要其 Newmark+Newton FEM 与 Aitken 子迭代（另一 slug `NEW:LBM-FSI-BLOCK-GS-AITKEN`），本次只解析出 `FilamentBody.beam_properties()`（A=dx·h，I=dx·h³/12），**未移植结构求解器**。
 - 差异清单与移植取舍见 `docs/reports/XVAL_LIFE_GEOMETRY_CONFIG_diffs.md`。
-- 工件：`src/tensorlbm/runtime_geometry.py`、`tests/test_runtime_geometry.py`（29 项）、`xval/life_geometry_config/*`、`runs/m17673/xval_parity.json`、`artifacts/xval_life_geometry_config/fig1_geometry_parity.png`、`fig2_dx_sensitivity.png`（+ 若物理运行完成则 `fig3_cd_history.png`）。
+- 工件：`src/tensorlbm/runtime_geometry.py`、`tests/test_runtime_geometry.py`（29 项）、[迁移后的验证脚本](../../development/verification/runtime-geometry/life-parity/xval_life_geometry_config.py)、`runs/m17673/xval_parity.json`、`artifacts/xval_life_geometry_config/fig1_geometry_parity.png`、`fig2_dx_sensitivity.png`（+ 若物理运行完成则 `fig3_cd_history.png`）。
+
+## 复现入口
+
+下列命令从仓库根目录执行。几何对照的[独立审计结果](../board_audit/m17742/parity_run1.json)保留在原路径。
+
+```bash
+PYTHONPATH=src python development/verification/runtime-geometry/life-parity/xval_life_geometry_config.py --mode parity --out outputs/verification/runtime-geometry/life-parity/xval_parity.json
+python development/verification/runtime-geometry/life-parity/make_figures.py
+python development/verification/runtime-geometry/life-parity/make_report.py
+```
+
+已有产物仍可由图表与报告生成器从 `runs/m17673/` 读取。新报告和图表写入
+`outputs/verification/runtime-geometry/life-parity/`，公开报告依然保留历史结果。
+迁移复跑的[几何对照原始数据](../../development/verification/runtime-geometry/life-parity/evidence/xval_parity.json)已保留。

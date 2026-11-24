@@ -14,8 +14,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-ART = os.path.join(ROOT, "artifacts", "xval_layered_poiseuille_analytic_inlet")
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
+ART = os.environ.get("LP_OUT", os.path.join(ROOT, "outputs/verification/layered-poiseuille/analytic-inlet"))
 FIG = os.path.join(ART, "figures")
 
 KPI = ["eps_inf", "eps_l2_rel", "q_total_err", "u_peak_err", "y_peak_err_abs"]

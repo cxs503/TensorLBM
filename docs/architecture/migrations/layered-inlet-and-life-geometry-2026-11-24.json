@@ -1,0 +1,102 @@
+{
+  "source_commit": "6d79ff9258c951bee4d933aef03ec2018b1d70de",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 87,
+      "after": 85
+    }
+  },
+  "reference_scan": "Checked the tracked public reports, workflows and audit scripts. The path in the earlier nested-source dependency ledger and in the two mission audit snapshots identifies original inputs and remains historical.",
+  "compatibility": "The layered runner imports canonical src/tensorlbm. LP_OUT still selects the run directory and now also selects the analyzer input/output directory. Geometry options and external legacy runs/m17673 evidence reads remain available. New output and rendered report go under outputs by default. Both published report URLs are unchanged.",
+  "scientific_scope": "Placement and compatibility only. S32 is one periodic single-layer arm and does not establish analytic-inlet stability or full layered acceptance. Geometry parity does not establish a converged drag result. Existing audit evidence and the documented open-inlet failure are preserved.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/analyze.py",
+      "new_path": "development/verification/layered-poiseuille/analytic-inlet/analyze.py",
+      "published_report": "docs/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET.md",
+      "git_mode": "100644",
+      "original_git_blob": "f951c2bda260f42170ac0ae4e7afaefe4de88bec",
+      "size_bytes": 6876,
+      "original_sha256": "30040904f7c25e64d8e7c989b286b6c27a9ad05b2ecc7911e08fae2fe745b797",
+      "new_sha256": "48ce40903a0750137b54449720fa474a1c4028fb28d65c9f97a803fd245363e5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/predeclared.json",
+      "new_path": "development/verification/layered-poiseuille/analytic-inlet/predeclared.json",
+      "published_report": "docs/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET.md",
+      "git_mode": "100644",
+      "original_git_blob": "3d62143088b245f1ba520331a105a4b2b00a1da1",
+      "size_bytes": 10729,
+      "original_sha256": "c2857d6af04d8ea4f0e2a4ba2c26b6aa93e8a92b8ef6e5e54876db99a50d0ff2",
+      "new_sha256": "c2857d6af04d8ea4f0e2a4ba2c26b6aa93e8a92b8ef6e5e54876db99a50d0ff2"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET/run_all.py",
+      "new_path": "development/verification/layered-poiseuille/analytic-inlet/run_all.py",
+      "published_report": "docs/XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET.md",
+      "git_mode": "100644",
+      "original_git_blob": "16e1efeacf46b1d972f15bcb7b47c9545c246fd4",
+      "size_bytes": 1129,
+      "original_sha256": "2afba25ddcfa2b7ea5d82c07fec748651015999adceee44b1d31b5f24a3160d8",
+      "new_sha256": "affdf5df2d7fc1b08210f8edd2e8478314e0228e312c07b42c6dd31617635a2b"
+    },
+    {
+      "old_path": "xval/life_geometry_config/make_figures.py",
+      "new_path": "development/verification/runtime-geometry/life-parity/make_figures.py",
+      "published_report": "docs/reports/XVAL_LIFE_GEOMETRY_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "fe6a0ec87838d36deaa0f42738b3e44197a414c4",
+      "size_bytes": 5076,
+      "original_sha256": "de18726fe0f5dc55d623729e5764bb858111e5a6138ff6be52f2935caee0393f",
+      "new_sha256": "6afd83a667cb5be9d8259f52b5ba2c3b33bf64f42f41a3bb0ab10e1c2badcb2e"
+    },
+    {
+      "old_path": "xval/life_geometry_config/make_report.py",
+      "new_path": "development/verification/runtime-geometry/life-parity/make_report.py",
+      "published_report": "docs/reports/XVAL_LIFE_GEOMETRY_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "cc57d5dbae3c2d284f1ff3fd637b9948697c9268",
+      "size_bytes": 8406,
+      "original_sha256": "da4c6f031e27542ccc1375ce76431baef10293612070a594b051754dcba850c2",
+      "new_sha256": "9af3011d4d0f47d83475834967b471ba4bbd28620ac7b6efb933c0aa2f18e6c0"
+    },
+    {
+      "old_path": "xval/life_geometry_config/xval_life_geometry_config.py",
+      "new_path": "development/verification/runtime-geometry/life-parity/xval_life_geometry_config.py",
+      "published_report": "docs/reports/XVAL_LIFE_GEOMETRY_CONFIG.md",
+      "git_mode": "100644",
+      "original_git_blob": "2f3086894a9dbf3a1e49fce611323642d2b741a2",
+      "size_bytes": 12734,
+      "original_sha256": "0e072d72315b31a9f91c1ec20d94c845ce9cb3daea25067008d4176a65de3f53",
+      "new_sha256": "e5d8efeca3b9ed51bb5051c71f9a72bf3e83bc22fe158db4b71b8a0953fb06a1"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "development/verification/layered-poiseuille/analytic-inlet/evidence/arm_S32.json",
+      "sha256": "4fd6d7f5f57178196e0b856ec6b4e9648727fc073d9747d72c5c17adc925cfa3"
+    },
+    {
+      "path": "development/verification/runtime-geometry/life-parity/evidence/xval_parity.json",
+      "sha256": "aba847c543508e7cfcbf56435ddcf1e3fab28fc66ee1cf83bd19f57f2ccb8f2e"
+    }
+  ],
+  "commands": [
+    "LP_OUT=<scratch-dir> python development/verification/layered-poiseuille/analytic-inlet/run_all.py S32",
+    "LP_OUT=<same-scratch-dir> python development/verification/layered-poiseuille/analytic-inlet/analyze.py",
+    "PYTHONPATH=src python development/verification/runtime-geometry/life-parity/xval_life_geometry_config.py --mode parity --out outputs/verification/runtime-geometry/life-parity/xval_parity.json",
+    "python development/verification/runtime-geometry/life-parity/make_figures.py",
+    "python development/verification/runtime-geometry/life-parity/make_report.py",
+    "python -m pytest -q tests/test_runtime_geometry.py tests/test_layered_poiseuille.py -k 'not test_solver_'",
+    "bash tools/check_repository_governance.sh",
+    "python tools/lint_ratchet.py --check"
+  ],
+  "verification": [
+    "Recorded original Git blobs, file modes and SHA-256. Preregistration bytes are unchanged. Numerical helper ASTs are unchanged. The solver package was not edited.",
+    "The relocated S32 runner and analyzer shared the same LP_OUT directory. The 5,200-step S32 run reproduced the earlier eps_inf, eps_l2_rel and flow-rate error: 0.0005081086864561126, 0.0006917979095834757 and 0.0007466395118126813. The reducer verdict applies to the selected arm only.",
+    "Geometry parity JSON was byte-identical before and after the move. The same real JSON supplied from the legacy and new output locations yields byte-identical report and figures. Five regenerated PNG files decoded.",
+    "45 focused tests passed and 5 solver-oriented tests were deselected. 83 directory governance tests and the Ruff ratchet passed."
+  ]
+}
