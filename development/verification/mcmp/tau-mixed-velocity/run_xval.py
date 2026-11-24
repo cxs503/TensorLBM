@@ -25,7 +25,7 @@ Arms (each writes JSON; ``--arm all`` runs everything):
                force ⇒ no phase separation) versus the library SC arm that has
                the force, over a ``G_12`` scan.
 
-All numbers land in ``results/xval_results.json``; figures in ``figures/``.
+All numbers land in ``outputs/mcmp_tau_mixed_velocity/xval_results.json`` with figures in its sibling directory.
 Thresholds are in ``predeclared.json`` and are never edited after a run.
 """
 
@@ -42,8 +42,9 @@ from pathlib import Path
 import torch
 
 HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parents[1]
+REPO_ROOT = HERE.parents[3]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+OUT_DIR = REPO_ROOT / "outputs" / "mcmp_tau_mixed_velocity"
 
 from tensorlbm.boundaries import bounce_back_cells  # noqa: E402
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
@@ -616,8 +617,8 @@ def environment() -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", default="all", choices=["all", "parity", "channel", "momentum", "separation"])
-    ap.add_argument("--out", default=str(HERE / "results" / "xval_results.json"))
-    ap.add_argument("--figures-dir", default=str(HERE / "figures"))
+    ap.add_argument("--out", default=str(OUT_DIR / "xval_results.json"))
+    ap.add_argument("--figures-dir", default=str(OUT_DIR / "figures"))
     args = ap.parse_args()
 
     decl = _declared()

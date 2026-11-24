@@ -1,0 +1,66 @@
+{
+  "source_commit": "1c717d58ebf360f3b74a82e8600677ea133a418e",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 95,
+      "after": 93
+    }
+  },
+  "compatibility": [
+    "The tau-mixed driver, original preregistration and published report remain available. The driver retains all arguments. Generated files now go under outputs/mcmp_tau_mixed_velocity by default.",
+    "The existing artifact test now reads that default result path. The test continues to require a complete run.",
+    "Both m18289 sources are byte-identical to the existing frozen audit refs, including file modes. Archive citations to the mission workspace are historical and remain intact."
+  ],
+  "science_scope": "Path compatibility and existing solver smoke checks. No full channel or separation replay and no change to historical or current scientific verdicts.",
+  "verification": [
+    "Checked original and resulting hashes and modes of all four files. Both retained audit copies match the original Git object and SHA-256. The preregistration is unchanged and both report links resolve.",
+    "Confirmed exact function AST equality outside argument and path handling in main.",
+    "Ran parity and momentum arms before and after the move, with the relocated run launched outside the checkout. Both arms produced identical numerical output and passed their existing checks. The float64 parity maximum relative deviation was 6.8908955404911685e-15.",
+    "Confirmed the artifact gate rejects the actual two-arm result. The focused suite passed 12 tests with one skipped check for the absent complete artifact. Channel and separation were not run.",
+    "All 83 governance tests passed with 202 registry entries and no hard violations. Ruff ratchet passed."
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/predeclared.json",
+      "new_path": "development/verification/mcmp/tau-mixed-velocity/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "c8b553b08eeb17c92e9be02b89537d47e71d1f50",
+      "original_sha256": "727557d4dfc4361cd2762a40e2eec7b7671bdc1dc5621ac65510a1efe972beb4",
+      "new_sha256": "727557d4dfc4361cd2762a40e2eec7b7671bdc1dc5621ac65510a1efe972beb4",
+      "size_bytes": 6986,
+      "change": "move"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/run_xval.py",
+      "new_path": "development/verification/mcmp/tau-mixed-velocity/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "8f9ead9ddd80650389f429a1eb24cdda02c76b37",
+      "original_sha256": "d00d0cac24bff8ce018c5e90baf17dd46fe27bcbb3531c4055eb0e9ede68cbae",
+      "new_sha256": "3b0403d1f629c41514c20594e2f66f8b8e9c0e6edea29bfbeac611cae6e8ed5b",
+      "size_bytes": 25514,
+      "change": "move"
+    },
+    {
+      "old_path": "xval/mcmp_cross_force/__init__.py",
+      "new_path": "development/audit/xval_mcmp_cross_force_m18289/refs/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "ab32e6968398a694c8c995f320eca39579c78831",
+      "original_sha256": "5d216a6ac0e2861ba7e74ee57c328c9bef63651cef337b0596cf9303353ff05b",
+      "new_sha256": "5d216a6ac0e2861ba7e74ee57c328c9bef63651cef337b0596cf9303353ff05b",
+      "size_bytes": 1435,
+      "change": "verified-identical-copy"
+    },
+    {
+      "old_path": "xval/mcmp_cross_force/operators.py",
+      "new_path": "development/audit/xval_mcmp_cross_force_m18289/refs/operators.py",
+      "git_mode": "100644",
+      "original_git_blob": "494b4e32444acba055a82792290402c57fef5139",
+      "original_sha256": "bcb03ce105513c1012a19707dac702b23c6ffcb72eff771587857a7030ea245c",
+      "new_sha256": "bcb03ce105513c1012a19707dac702b23c6ffcb72eff771587857a7030ea245c",
+      "size_bytes": 5398,
+      "change": "verified-identical-copy"
+    }
+  ]
+}
