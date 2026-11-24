@@ -1,0 +1,40 @@
+{
+  "scope": "Historical round 3. Two-layer Poiseuille and exact Allen-Cahn shear translation, with the frozen-indicator baseline. This run does not compare against an external waLBerla binary.",
+  "criteria": {
+    "E1_l2_rel": 0.15,
+    "E2_max_rel_peak": 0.15,
+    "E3_interface_centre_shift_cells": 1.0,
+    "E3_interface_width_growth_rel": 0.5,
+    "E4_uy_spurious_rel": 0.01,
+    "E5_phase_field_budget_rel": 0.001,
+    "E6_shear_translation_l2_rel": 0.05,
+    "E6_observed_order_min": 1.5,
+    "E7_degradation_vs_frozen_l2_abs": 0.05
+  },
+  "source": [
+    "examples/xval_no_mcmp_two_phase_only_evolving.py",
+    "src/tensorlbm/verification/two_phase_only_evolving.py"
+  ],
+  "config": [
+    "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json"
+  ],
+  "documentation": [
+    "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+  ],
+  "reference_files": [
+    "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md",
+    "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json"
+  ],
+  "results": [
+    "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/results_round3.json"
+  ],
+  "evidence": [
+    "docs/assets/no-mcmp-phase-field-round3/fig1_profiles_evolving_vs_frozen.png",
+    "docs/assets/no-mcmp-phase-field-round3/fig2_error_evolving_vs_frozen.png",
+    "docs/assets/no-mcmp-phase-field-round3/fig3_indicator_evolution.png",
+    "docs/assets/no-mcmp-phase-field-round3/fig4_shear_translation_convergence.png",
+    "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/partials/matrix_48_2.json",
+    "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/partials/matrix_48_4.json",
+    "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/partials/shear.json"
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "source_commit": "53b783a3ba951879aded9b96123417c6b6c914f6",
+  "remote_main_at_preparation": "877f8abd20bb00e0aac0ba981e8f8df698b62f6d",
+  "dependency": 2982,
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "docs": {
+      "before": 86,
+      "after": 84
+    }
+  },
+  "retired_paths": [
+    "docs/m23124",
+    "docs/m23233"
+  ],
+  "compatibility": "Both public reports retain their URLs. Links target the same archived figures and JSON bytes. The round-3 example keeps its invocation and writes a fresh report beside its generated JSON and figures. Scripts keep the same numerical settings and the R2 script keeps its existing output location. References embedded in archived machine records retain the original run paths.",
+  "science_scope": "Historical registry entries with current acceptance not evaluated. No numerical replay done.",
+  "verification": [
+    "All 12 archived Git blobs, SHA-256 digests and file modes match their source objects. Seven PNGs decode and five JSON records parse.",
+    "Both published reports preserve their filenames. Seven figure links and two JSON links resolve.",
+    "Rendered a fresh report from the original Round 3 result without running a numerical solver. Its five relative asset links resolve and its destination is outside the published docs.",
+    "Compared executable syntax trees outside the report renderer and output location. No solver computation changed.",
+    "Passed all 82 repository governance tests, the 201-entry benchmark registry and Ruff 0.15.0."
+  ],
+  "entries": [
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/fig1_profiles_evolving_vs_frozen.png",
+      "new_path": "docs/assets/no-mcmp-phase-field-round3/fig1_profiles_evolving_vs_frozen.png",
+      "git_mode": "100644",
+      "original_git_blob": "0c771e845928d8efe69819f7c97fc885086d1173",
+      "original_sha256": "191538a6020f2bd79ec06f4566a192b632c23951774b68e5464054891c03a1dd",
+      "size_bytes": 29787,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/fig2_error_evolving_vs_frozen.png",
+      "new_path": "docs/assets/no-mcmp-phase-field-round3/fig2_error_evolving_vs_frozen.png",
+      "git_mode": "100644",
+      "original_git_blob": "a19c65e622305bc50c41692af71740a0db2bfe10",
+      "original_sha256": "0bdad8615b1673d993a792f4480ecbcd0ba64263d9b4e0857d464aeb49d33418",
+      "size_bytes": 34992,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/fig3_indicator_evolution.png",
+      "new_path": "docs/assets/no-mcmp-phase-field-round3/fig3_indicator_evolution.png",
+      "git_mode": "100644",
+      "original_git_blob": "9907655bf26d8a21d1976df9b2c93f0f8c29f95c",
+      "original_sha256": "33d9bf1b4b304a3f180e6b7a9d1c38f407c2248e2756a3d3abda18ca75f5fc65",
+      "size_bytes": 49117,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/fig4_shear_translation_convergence.png",
+      "new_path": "docs/assets/no-mcmp-phase-field-round3/fig4_shear_translation_convergence.png",
+      "git_mode": "100644",
+      "original_git_blob": "dd9b07c4a92f67664fabba7999a9baaa80ae5d63",
+      "original_sha256": "0c1e95fe7b94f65c4085ce6475dd2df9228368af8398565897279d42eb1442ca",
+      "size_bytes": 61771,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/partials/matrix_48_2.json",
+      "new_path": "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/partials/matrix_48_2.json",
+      "git_mode": "100644",
+      "original_git_blob": "0308ac03eb8c6f6d65c5a3d84db325bada4b28cc",
+      "original_sha256": "0760a9f2fee9262eb59c327360dc1156751e266c83520a34414cb04b6969d7b9",
+      "size_bytes": 10845,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/partials/matrix_48_4.json",
+      "new_path": "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/partials/matrix_48_4.json",
+      "git_mode": "100644",
+      "original_git_blob": "71b7ab59ab18afe7d4edbc1fc3c576f742bb3a53",
+      "original_sha256": "cf1bb48c75d3efd067be9ca9c56a8e02260347a49255463c073c5c44fbdf6221",
+      "size_bytes": 11455,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/partials/shear.json",
+      "new_path": "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/partials/shear.json",
+      "git_mode": "100644",
+      "original_git_blob": "d397e091f929f6716467467dcd956913181c41c7",
+      "original_sha256": "ccaaf492e01fa235434b84a3df3c0ffd71555b0a00f83b82e5351f3acfb67fd0",
+      "size_bytes": 2075,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23124/outputs/xval_no_mcmp_evolving_round3/results_round3.json",
+      "new_path": "benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/results_round3.json",
+      "git_mode": "100644",
+      "original_git_blob": "2cbd522bde2ca5285072db65b9b161462a12ab91",
+      "original_sha256": "3dfd35d9c2b92d2618f33d6029976f206b010b13317a44a000e31eb6aa35abc5",
+      "size_bytes": 30184,
+      "published_report": "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+    },
+    {
+      "old_path": "docs/m23233/outputs/xval_pf_walls_r2/fig1_layered_profiles.png",
+      "new_path": "docs/assets/allen-cahn-pressure-walls-round2/fig1_layered_profiles.png",
+      "git_mode": "100644",
+      "original_git_blob": "7867885b5861ddd552ee6395618330d0ff9475de",
+      "original_sha256": "f411501ad9461229f65bdb205d61d4d2653366292d2328b6364ede8776c7db68",
+      "size_bytes": 61589,
+      "published_report": "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md"
+    },
+    {
+      "old_path": "docs/m23233/outputs/xval_pf_walls_r2/fig2_wall_bc_validations.png",
+      "new_path": "docs/assets/allen-cahn-pressure-walls-round2/fig2_wall_bc_validations.png",
+      "git_mode": "100644",
+      "original_git_blob": "ad69c95868ebc6b6ebb89e3b531c2cd8603a5d67",
+      "original_sha256": "a13b942e76c1586589d52e9ed1dc5e6926fec65ef0951fe97c07435788401c30",
+      "size_bytes": 57904,
+      "published_report": "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md"
+    },
+    {
+      "old_path": "docs/m23233/outputs/xval_pf_walls_r2/fig3_error_summary.png",
+      "new_path": "docs/assets/allen-cahn-pressure-walls-round2/fig3_error_summary.png",
+      "git_mode": "100644",
+      "original_git_blob": "3c1e4c8ee0bda1e2313b11dc59fe9a664b465062",
+      "original_sha256": "f7531422b08bd5fb95c4b159db27dd2de8eaec4e0bea443d82974f89077aaeb7",
+      "size_bytes": 38674,
+      "published_report": "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md"
+    },
+    {
+      "old_path": "docs/m23233/outputs/xval_pf_walls_r2/summary.json",
+      "new_path": "benchmarks/cross_validation/allen_cahn_pressure_walls_round2/evidence/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "2f0334ef9b23f8e01eaaf5657b6c626f70eeddf6",
+      "original_sha256": "e9fa87006b890c6a7dae7153b649bf78506838cf6de566f32614eba9aac1c29e",
+      "size_bytes": 8174,
+      "published_report": "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md"
+    }
+  ]
+}

@@ -54,6 +54,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "xval_yml_xml_pipeline"),
     ("docs", "history"),
     ("docs", "m23777"),
+    ("docs", "m23124"),
+    ("docs", "m23233"),
     ("docs", "m24569"),
     ("docs", "smoke"),
     ("models", "lbm"),
