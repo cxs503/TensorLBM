@@ -1,0 +1,54 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 84,
+      "after": 83
+    },
+    "benchmarks/cross_validation": {
+      "added": [
+        "static_immersed_markers"
+      ]
+    }
+  },
+  "reference_scan": "Searched tracked code, reports and workflows for the old anchor name and path. The board-audit collector reads the historical m18749 worktree and its original paths. Retained audit JSON and historical checkout text are provenance. No current tracked script or workflow calls the old runner path.",
+  "compatibility": "The original directory and file names remain available at the pinned source commit. The unchanged archival runner retains positional arm selection and reads A1_life_binary/TotalForces.out relative to itself. The new case index points to the Re=20 audit snapshot and machine-readable result. The existing audit report and figures retain their paths.",
+  "scientific_scope": "The Re=20 historical benchmark remains failed in the audit (88.137368% drag error and unconverged tail). The raw original mission artifact is absent. The Re=100 script has no tracked A1 LIFE binary output or validated result. No full simulation or fresh scientific acceptance was performed for this directory move.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/REPORT.md",
+      "new_path": "development/verification/static-immersed-markers/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "e6481dcb36bfe72d3cc99bf1daaa80c235ff40df",
+      "size_bytes": 6041,
+      "original_sha256": "ed92b1a139de148945fa56813237d6450c7c6748d17ddc6680a6599dccbcbf2f",
+      "new_sha256": "ed92b1a139de148945fa56813237d6450c7c6748d17ddc6680a6599dccbcbf2f"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/predeclared.json",
+      "new_path": "development/verification/static-immersed-markers/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "71f883666f0bc47671abc2f8b3e8f120ce788daa",
+      "size_bytes": 861,
+      "original_sha256": "888b8669e33cb731b27ca24b73d7153e562608bcb0738622ca457a2518eb8f92",
+      "new_sha256": "888b8669e33cb731b27ca24b73d7153e562608bcb0738622ca457a2518eb8f92"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES/run_xval.py",
+      "new_path": "development/verification/static-immersed-markers/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "83b735b651b4165a1cc2987abda01c21d58f94f9",
+      "size_bytes": 13561,
+      "original_sha256": "7fe95557ee34a725a55c0da571ab618018d2e4282a6a936a7d50e9b9ecf75867",
+      "new_sha256": "7fe95557ee34a725a55c0da571ab618018d2e4282a6a936a7d50e9b9ecf75867"
+    }
+  ],
+  "verification": [
+    "Matched every relocated file against the original Git blob and SHA-256. Matched the two audited source snapshot hashes against the board audit's recorded hashes. All relative catalogue links resolved.",
+    "Recomputed the archived relative error from recorded drag coefficients and confirmed that both the drag and convergence criteria were false.",
+    "Ran bash tools/check_repository_governance.sh (83 tests, 209 registry entries, 35 tutorial entries, 33 PDFs, zero hard layout or status-ledger violations).",
+    "Ran python -m pytest -q tests/test_ibm.py (20 passed), python tools/lint_ratchet.py --check (passed), and python tools/benchmark_registry.py --case xval:static_immersed_markers (resolved paths and current_acceptance=not_evaluated)."
+  ]
+}
