@@ -1,0 +1,31 @@
+{
+  "scope": "Akai-style rotational wetting for static droplet contact angles, with analytic estimator calibration, archived Round 4 field remeasurement and an unconverged Round 6 smoke run.",
+  "criteria": {
+    "protocol": "benchmarks/xval_akai2018_wetting_rotation/REPORT.md",
+    "scope": "Below 15% contact-angle error after convergence and single-component droplet checks. The reported smoke arm is unconverged."
+  },
+  "source": [
+    "benchmarks/xval_akai2018_wetting_rotation/run.py",
+    "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.py",
+    "benchmarks/xval_akai2018_wetting_rotation/remeasure_round4.py"
+  ],
+  "config": [
+    "benchmarks/xval_akai2018_wetting_rotation/run.py"
+  ],
+  "documentation": [
+    "benchmarks/xval_akai2018_wetting_rotation/REPORT.md"
+  ],
+  "reference_files": [
+    "docs/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING.md"
+  ],
+  "references": [
+    {
+      "title": "Akai et al., Physical Review E 98, 043302",
+      "doi": "10.1103/PhysRevE.98.043302"
+    }
+  ],
+  "results": [
+    "benchmarks/xval_akai2018_wetting_rotation/estimator_validation.json",
+    "benchmarks/xval_akai2018_wetting_rotation/round4_remeasure.json"
+  ]
+}

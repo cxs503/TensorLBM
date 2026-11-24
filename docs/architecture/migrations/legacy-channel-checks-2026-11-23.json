@@ -1,0 +1,37 @@
+{
+  "source_commit": "707c6b90ade8a219923b23c058997a41540bf285",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/verification"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/verification/test_drag_momentum_verification.py",
+      "new_path": "development/verification/legacy-channel-checks/test_drag_momentum_verification.py",
+      "git_mode": "100644",
+      "original_git_blob": "ff312fabda958011758dd37174378ea544b8b246",
+      "original_sha256": "3aef210b91126ce4e20f5af012465bf04c9255459529643bbdbb8bcce0dbc4d4",
+      "size_bytes": 11609,
+      "relocated_sha256": "bd45ac4e8d6729eaaec069fce4c3cb5f432099363838b178230ab15661d9c940"
+    },
+    {
+      "old_path": "scripts/verification/test_wall_function_poiseuille.py",
+      "new_path": "development/verification/legacy-channel-checks/test_wall_function_poiseuille.py",
+      "git_mode": "100644",
+      "original_git_blob": "ee62d9d0d834f8d502d17e6e1e111752488e3f40",
+      "original_sha256": "8db440e31f634244ccc80d75ce6f4a9d10475edcc5a26ea46414c0b614964fa9",
+      "size_bytes": 9247,
+      "relocated_sha256": "11fb4ab7674a329b3c2c187e7ac17cd51d8d126d0c4029bfe1eed0a7ddb9089a"
+    }
+  ],
+  "compatibility": "Both archived scripts retain their original flags, logic and imports and still use the repository-root invocation. Only their usage docstrings change. Previous bytes remain available at source_commit.",
+  "scientific_scope": "Both channel probes are historical diagnostic scripts. Their executables were compiled but not rerun.",
+  "deferred": "scripts/maintenance links from an immutable experiments archive, and an earlier migration test expects its existing destination. Its cleanup dry-run matched after a provisional relocation. Keep the path until those compatibility requirements can be addressed together."
+}

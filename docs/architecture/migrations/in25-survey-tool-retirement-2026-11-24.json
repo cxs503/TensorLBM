@@ -1,0 +1,83 @@
+{
+  "source_commit": "e6dcd764c7d9c1ab9b2fd14bfad9b29b5ed81876",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/in25_t6"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/in25_t6/emit_anchor_data.py",
+      "new_path": "development/experiments/suboff-resistance-survey/emit_anchor_data.py",
+      "git_mode": "100644",
+      "original_git_blob": "491474c9a8fd356094d15debd62e6eca5cd487bc",
+      "original_sha256": "abb1791cb5a4afc4c0f7e10efb7bca7eb953733dc438be597c15ded134cdfd5d",
+      "original_size_bytes": 3860,
+      "migrated_sha256": "8420249f3f1e6c9fb5af7a1924213ad76280ee46d9cbd8837b599b114db1f55d",
+      "migrated_size_bytes": 3959
+    },
+    {
+      "old_path": "scripts/in25_t6/emit_survey_artifacts.py",
+      "new_path": "development/experiments/suboff-resistance-survey/emit_survey_artifacts.py",
+      "git_mode": "100644",
+      "original_git_blob": "f4055ab0df58cf96c559dc7459bc72cc3580ce54",
+      "original_sha256": "f8f50c90be08892b63171ac18453c1d183c9abbb3ca72dc6ea88afb54e4c396c",
+      "original_size_bytes": 7746,
+      "migrated_sha256": "44dd302a9d959d0542508b5aec455741f251ebb144bf022336f8bae80821634a",
+      "migrated_size_bytes": 7779
+    },
+    {
+      "old_path": "scripts/in25_t6/publish_report.py",
+      "new_path": "development/experiments/suboff-resistance-survey/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "567e7bc2ec2ff6aa13abf0d86b0e55e04490ca97",
+      "original_sha256": "53f8c38edccb91929683844cd3679d7b78a1b1a1086c15e56d05759718e223b0",
+      "original_size_bytes": 5336,
+      "migrated_sha256": "955dbcde206f853779862b149dc31ad8b8872fa0c4d0ebe37fb2db9998f67f79",
+      "migrated_size_bytes": 5402
+    },
+    {
+      "old_path": "scripts/in25_t6/seat_a_lit_query.py",
+      "new_path": "development/experiments/suboff-resistance-survey/seat_a_lit_query.py",
+      "git_mode": "100644",
+      "original_git_blob": "f71b807c48d4b1594b3ae661f119a78782edeb50",
+      "original_sha256": "770c8e75c16e257abcc85af0608fb50c4caebf1a5a4c7bbbd4a57eb9bd71f47f",
+      "original_size_bytes": 6060,
+      "migrated_sha256": "81744ceac91a55b551338d04c24d3c3508e1548c70c027e3ab3c87e059f099ce",
+      "migrated_size_bytes": 6126
+    },
+    {
+      "old_path": "scripts/in25_t6/seat_abc_verify.py",
+      "new_path": "development/experiments/suboff-resistance-survey/seat_abc_verify.py",
+      "git_mode": "100644",
+      "original_git_blob": "7609edb3cff8f0689defb6c61ee4e26a0d3bcbdf",
+      "original_sha256": "d747aaf9ed6b03d9288e8dc482534ef44592af14f20d68cd950201b531d951df",
+      "original_size_bytes": 6858,
+      "migrated_sha256": "0c154c8b0d1cb29b7183eca658c8783f634f51df3ac8f261870556cd1aea0196",
+      "migrated_size_bytes": 6924
+    },
+    {
+      "old_path": "scripts/in25_t6/seat_c_grid_convergence.py",
+      "new_path": "development/experiments/suboff-resistance-survey/seat_c_grid_convergence.py",
+      "git_mode": "100644",
+      "original_git_blob": "706597be72812b2a789eb749102e9e8668f564d1",
+      "original_sha256": "e62a50279b1be5ab515bafb6ee11a6b76df5b1b8e24098e91d574781cbd1eabc",
+      "original_size_bytes": 9283,
+      "migrated_sha256": "b601e6cdf3f45147aceb82c75601844660661019b342f0353644682ee3c99e55",
+      "migrated_size_bytes": 9316
+    }
+  ],
+  "compatibility": "Published report URLs, figure locations, CLI flags and default artifact locations stay stable. Active reproduction commands and package report metadata resolve the new paths. The tracked literature record retains its historical generator string and original bytes.",
+  "scientific_scope": "This is an archival relocation. No new grid-convergence, reference-validity or current benchmark acceptance is claimed.",
+  "verification": [
+    "All six original Git blobs and SHA-256 values were retained in the ledger. Both versions matched after the documented path-only substitutions and compiled.",
+    "All 24 external survey tests passed, including the six current script pointers. The report publisher assembled its 159.1 KB payload without sending it, and the grid driver help ran.",
+    "Ruff and all 82 local governance tests passed. The raw literature record and all survey figure blobs were unchanged."
+  ]
+}

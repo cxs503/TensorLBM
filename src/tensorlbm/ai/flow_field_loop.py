@@ -55,7 +55,7 @@ This module makes both ends objects you can check:
    once the solver is back in charge ("healing"), and the wall-clock saved.
 
 Everything is deterministic given ``seed``/``torch.manual_seed``; the driver
-``scripts/physics_ai/bench_t4_physics_ai_loop.py`` writes the artifacts and figures.
+``benchmarks/t4_physics_ai_loop/bench_t4_physics_ai_loop.py`` writes the artifacts and figures.
 """
 
 from __future__ import annotations

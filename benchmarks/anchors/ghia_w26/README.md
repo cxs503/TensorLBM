@@ -9,6 +9,8 @@
 | `anchor_register.json` | 主交付：Ghia 表 I/II 三 Re 逐项数值 + 逐项溯源（PDF sha256 / 页 / 行带 / 单元格 bbox / 逐字 OCR token / 墨水证据）+ 判据 C1–C4 逐条裁决 + 解析四例残差 + 内部校验 + 图 sha256 |
 | `figures/fig1..fig6` | 锚剖面、符号见证聚类、守恒不变量、Poiseuille/Couette 与二阶斜率、Taylor-Green 场与残差、方腔 Stokes 极限模态 |
 
+已归档的 `anchor_register.json` 保留初次生成时的脚本位置与哈希。当前复现命令见下文。
+
 ## 方法（零手抄）
 
 1. 取原始论文 PDF（哈希 `1d76e463…19f2d93`，与仓内
@@ -25,9 +27,9 @@
 curl -s -H 'Accept: application/vnd.github.raw' -o /tmp/ghia1982.pdf \
   https://api.github.com/repos/nilot-pal/Lid-driven-cavity/contents/ghia1982.pdf
 sha256sum /tmp/ghia1982.pdf        # 1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93
-GHIA_PDF=/tmp/ghia1982.pdf python3 scripts/w26_ghia/extract_ghia_tables.py --out /tmp/cells_raw.json
-python3 scripts/w26_ghia/analytic_fourcase.py --out /tmp/analytic.json
-GHIA_PDF=/tmp/ghia1982.pdf python3 scripts/w26_ghia/build_anchor_register.py
+GHIA_PDF=/tmp/ghia1982.pdf python3 benchmarks/anchors/ghia_w26/tools/extract_ghia_tables.py --out /tmp/cells_raw.json
+python3 benchmarks/anchors/ghia_w26/tools/analytic_fourcase.py --out /tmp/analytic.json
+GHIA_PDF=/tmp/ghia1982.pdf python3 benchmarks/anchors/ghia_w26/tools/build_anchor_register.py
 python3 -m pytest tests/test_w26_ghia_anchor_register.py -q
 ```
 

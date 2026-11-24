@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   placement, and `C_M = 8/Re_omega` is the analytic anchor of the rotation layer.  Layers
   1-3 (drag over `Re in [1,1000]` against the mutually adjudicated Schiller-Naumann /
   Clift-Gauvin band, observed grid order at `Re = 100`, rotating-sphere torque) run through
-  `scripts/p387w2_n04_sphere_force/`; the acceptance record with every criterion number is
+  `development/verification/ibm-force/sphere-surface/`; the acceptance record with every criterion number is
   `artifacts/p387w2_n04/acceptance.json` and the report is
   `docs/P387W2_N04_IBM_SPHERE_SURFACE_FORCE.md` (drag verified at `Re = 1` (+2.7 %) and
   resolution-limited above, with the requirement `D >= 2 sqrt(Re)` measured, not assumed).

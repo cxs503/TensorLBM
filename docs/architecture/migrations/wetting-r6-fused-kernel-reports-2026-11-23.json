@@ -1,0 +1,41 @@
+{
+  "source_commit": "84493abcac2d433f42cec7ef03290cf01f728a38",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 101,
+      "after": 99
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6",
+    "xval/fused_kernel_type_selector"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6/REPORT.md",
+      "new_path": "benchmarks/xval_akai2018_wetting_rotation/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "c7d87ddb976c73377b02412ef76aab31cf2923a8",
+      "original_sha256": "b13bef50da96920d30effdb8fb75c4d72bdc42ffb743b4fd988f096bb90418fb",
+      "size_bytes": 10740
+    },
+    {
+      "old_path": "xval/fused_kernel_type_selector/REPORT.md",
+      "new_path": "development/verification/fused-kernel-type-selector/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "40e9da740b2f29c34e0fb3cd0761a444c1f20d48",
+      "original_sha256": "1747745b7a4f8778bad7f3d9bc1527cc1bbf06f2e760bfb4a51d18384bc55619",
+      "size_bytes": 4248
+    }
+  ],
+  "compatibility": "Both reports retain their original bytes. Update the archived Round 6 report publishing script\u2019s input path without executing the external publish action. The original figure was already absent from Git. Fused-kernel source audit paths refer to archived mission worktrees and are retained verbatim.",
+  "scientific_scope": "Archived evidence and criteria stay unchanged. The rotational-wetting smoke case was unconverged, and the fused-kernel report stays historical.",
+  "validation": [
+    "git diff --check passed. Both destination bytes, Git modes and SHA-256 checks agree with the base revision.",
+    "Verified relative links and parsed the archived publisher without sending a request.",
+    "bash tools/check_repository_governance.sh passed with 200 registered cases and zero hard status-ledger violations.",
+    "python -m pytest -q tests/test_xval_akai2018_wetting_rotation.py passed all 9 CPU estimator regressions. The registry keeps current acceptance not_evaluated."
+  ]
+}

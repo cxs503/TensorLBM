@@ -4,7 +4,7 @@
 Reproduces the 120-epoch one-step numbers quoted in
 ``docs/T4_FLOW_MAP_RESIDUAL_m18630.md`` against an existing
 ``artifacts/t4_physics_ai_loop_medium/dataset`` (build it with
-``python scripts/physics_ai/bench_t4_medium.py --stage produce``).  Kept separate from the bench so
+``python benchmarks/t4_physics_ai_loop/bench_t4_medium.py --stage produce``).  Kept separate from the bench so
 the parameterisation comparison (residual vs direct at equal budget) is
 re-runnable without regenerating the LBM corpus.
 

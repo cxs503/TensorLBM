@@ -1,0 +1,66 @@
+{
+  "source_commit": "0e6e65867c7dfa2b2ce1887bee08f16007fc8357",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/w26_ghia"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/w26_ghia/analytic_fourcase.py",
+      "new_path": "benchmarks/anchors/ghia_w26/tools/analytic_fourcase.py",
+      "git_mode": "100644",
+      "original_git_blob": "941a550e52344896e6917598942db714b69d5d3f",
+      "original_sha256": "ce60296943f97ebd46a7a00b2d10fd724924090aa32d9d4dcfa3ca6674a854be",
+      "migrated_sha256": "7f975995dde68620db9a78471888f2e2cbc97fdfc2f9231ad81a235ee0e63c9d",
+      "original_size_bytes": 22687
+    },
+    {
+      "old_path": "scripts/w26_ghia/build_anchor_register.py",
+      "new_path": "benchmarks/anchors/ghia_w26/tools/build_anchor_register.py",
+      "git_mode": "100644",
+      "original_git_blob": "a0023b9a45517d24f5299d4902aadd5c58336129",
+      "original_sha256": "7786c7333ae35046121ff5ca032e7cb99103dfffecd689ae8d5a50c89a37132f",
+      "migrated_sha256": "9cfdaaf413aa5c010828a3e7ac146290418ab13618ea85b14a39f18ef2bb0897",
+      "original_size_bytes": 34066
+    },
+    {
+      "old_path": "scripts/w26_ghia/build_report_payload.py",
+      "new_path": "benchmarks/anchors/ghia_w26/tools/build_report_payload.py",
+      "git_mode": "100644",
+      "original_git_blob": "fa2e05f518997b762a9ebbdad104204044c2d02f",
+      "original_sha256": "80a1efa26b92bf5a548467c6561b0298ec1ef7c43955385e3b318b5149999c73",
+      "migrated_sha256": "0e32837c9fba68abbff52571f56680dc84cef2d38868cd62f4a88bbbeb275d97",
+      "original_size_bytes": 14815
+    },
+    {
+      "old_path": "scripts/w26_ghia/extract_ghia_tables.py",
+      "new_path": "benchmarks/anchors/ghia_w26/tools/extract_ghia_tables.py",
+      "git_mode": "100644",
+      "original_git_blob": "ab9c84b4512da7e360955ed0ffc35323de9bee91",
+      "original_sha256": "a0f332e1657a680072c43fb0567ece097d084d8d7a09feebc00bb3e107366729",
+      "migrated_sha256": "3fda393830a5dc09c30ae12b0a34a8fb4442447e4e41b8ffdad26413ed4c6f25",
+      "original_size_bytes": 14760
+    }
+  ],
+  "compatibility": "The same README URL documents current commands and links to the provenance recorded at generation time. The builder and payload read inputs from the case and the tests import from the new path. Historical strings in the frozen register, nested checkout and audit fixtures remain verbatim.",
+  "archived_register": {
+    "path": "benchmarks/anchors/ghia_w26/anchor_register.json",
+    "git_blob": "446da267776d0b01c35d3c29fcc4fdb5a9c2f557",
+    "sha256": "ea6ea673b969d27456d394e3a23af0bdf9c37a34cc1d8dad8d04146f2062cf99"
+  },
+  "pdf_sha256": "1d76e4636d24d0fad41c7bdb5ed383e9b224b0bfe3aa0317ce7dfc50619f2d93",
+  "verification": [
+    "git diff --check, Ruff debt ratchet and bash tools/check_repository_governance.sh passed.",
+    "GHIA_PDF=<PDF with registered SHA-256> python -m pytest -q tests/test_w26_ghia_anchor_register.py: 9 passed, including exact extraction of 102 values from the reference PDF.",
+    "Original and relocated build_anchor_register.py ran with the verified PDF in separate scratch directories. Archive values, criteria and all six image SHA-256 values matched after excluding runtime paths, source hashes, commands and timestamps. Maximum analytic residual was 1.6296016513578175e-14 before and after.",
+    "The relocated build_report_payload.py rendered all six replay figures into a local payload without any external publishing action."
+  ],
+  "scientific_scope": "This migration verifies reference extraction and analytic replay. It does not establish current acceptance of a TensorLBM numerical cavity run."
+}

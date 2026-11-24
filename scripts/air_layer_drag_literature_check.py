@@ -2,7 +2,7 @@
 """External benchmark (gate e): compare the simulated DR(C_q) with literature points.
 
 Reads ``artifacts/air_layer_drag/results.json`` and
-``scripts/data/air_layer_drag/air_lubrication_reference_points.json`` (sha256 anchored), then
+``benchmarks/air_layer_drag/reference/air_lubrication_reference_points.json`` (sha256 anchored), then
 reports the relative error of the simulated drag reduction at each reference
 ``C_q`` (linear interpolation on the simulated DR(C_q) curve).
 """
@@ -34,7 +34,7 @@ def interpolate(curve, cq):
 
 def main() -> int:
     res = json.loads((ROOT / "artifacts/air_layer_drag/results.json").read_text())
-    ref_path = ROOT / "scripts/data/air_layer_drag/air_lubrication_reference_points.json"
+    ref_path = ROOT / "benchmarks/air_layer_drag/reference/air_lubrication_reference_points.json"
     raw = ref_path.read_bytes()
     refs = json.loads(raw.decode())
     curve = [(r["cq"], r["drag_reduction"]) for r in res["theta_sweep"]]

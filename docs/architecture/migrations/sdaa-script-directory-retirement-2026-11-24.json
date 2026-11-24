@@ -1,0 +1,48 @@
+{
+  "source_commit": "0e6e65867c7dfa2b2ce1887bee08f16007fc8357",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/sdaa"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/sdaa/bench_sdaa_baseline.py",
+      "new_path": "development/verification/sdaa-hardware/baseline/bench_sdaa_baseline_legacy.py",
+      "git_mode": "100644",
+      "original_git_blob": "17482c890abb13691b8f15cdf495981c20865969",
+      "original_sha256": "974b55aa8b18df452132b3b49dd52deeada557a20ee1252631cf22e76fdccaca",
+      "size_bytes": 9523
+    },
+    {
+      "old_path": "scripts/sdaa/debug_trace.py",
+      "new_path": "development/verification/sdaa-hardware/diagnostics/debug_trace.py",
+      "git_mode": "100644",
+      "original_git_blob": "4116cc4b49147206ee516611533bb9adb0e00161",
+      "original_sha256": "f0276899504eca7872c13ff04148b1ba92706978f537b6745080a5ea0a05a299",
+      "size_bytes": 3151
+    },
+    {
+      "old_path": "scripts/sdaa/validate_m2m3.py",
+      "new_path": "development/verification/sdaa-hardware/m2m3-equivalence/validate_m2m3.py",
+      "git_mode": "100644",
+      "original_git_blob": "0dbb9644aae2db1899aed83ca793ef9ea87f055e",
+      "original_sha256": "f1599f8590b827eb8e860448c5c0636add3ca30380dc02f657a04a57dcfc2a0d",
+      "size_bytes": 4103
+    }
+  ],
+  "compatibility": "The archived baseline driver differs from the maintained launcher only in its checkout and output-path expressions. New runs use tools/bench_sdaa_baseline.py. The M2/M3 script keeps the original repository-root inputs. The debug trace still requires the historical m366 checkout.",
+  "scientific_scope": "All scripts and historical results retain their original bytes. No SDAA hardware result or current scientific verdict is inferred from relocation.",
+  "verification": [
+    "All three scripts matched their original Git objects and SHA-256 values and compiled without importing or executing the harnesses.",
+    "A full-text comparison verified that the preserved baseline and the maintained launcher differ only in checkout-relative import and output paths.",
+    "Ruff, all 82 governance tests and every SDAA archive README link passed. The M2/M3 script is discoverable through registry asset search.",
+    "SDAA numerical and performance replay was not run in this environment."
+  ]
+}

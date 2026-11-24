@@ -13,7 +13,7 @@ def post(url, payload, token=None):
 st, body = post(BASE + "/auth/login", {"username": U, "password": P})
 tok = json.loads(body)["access_token"]
 
-md = pathlib.Path("xval/XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6/REPORT.md").read_text()
+md = pathlib.Path("benchmarks/xval_akai2018_wetting_rotation/REPORT.md").read_text()
 png = pathlib.Path("benchmarks/xval_akai2018_wetting_rotation/fig_estimator_and_round4.png")
 payload = {
     "title": "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING R6：接触角量测门与旋转润湿路径",

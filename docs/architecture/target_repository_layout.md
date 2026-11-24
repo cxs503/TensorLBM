@@ -6,6 +6,9 @@ baseline list is from `bcdd5fa4`. The
 
 ## Maintained deliverables
 
+The [T4 migration ledger](migrations/t4-physics-ai-drivers-2026-11-24.json)
+places the two physics-AI campaign drivers beside their benchmark entry.
+
 | Root | Ownership and acceptance |
 | --- | --- |
 | `src/` | `src/tensorlbm/` holds the installable solver implementations. `src/lbm/` contains compatibility imports for the relocated D3Q27 implementation ([migration ledger](migrations/d3q27-canonical-source-2026-11-23.json)). The source-authority gate limits this compatibility package to five known files. |
@@ -40,23 +43,23 @@ integrity verified before retiring a tracked copy.
 | `audits/` | `development/audit/` | The [original ledger](migrations/legacy-audit-root-2026-11-21.json) records the intermediate paths under `audit/`. |
 | `benchmarks/` | Keep | One canonical entry per case. Preserve registered IDs and archived comparisons. |
 | `cases/` | Split by purpose | The [migration ledger](migrations/case-root-retirement-2026-11-21.json) maps all case runners to their benchmark owners and records the two superseded case-pool wrappers. |
-| `configs/` | `tests/fixtures/campaign_gates/`, `scripts/data/fsi/` | Acoustic campaign test fixture and FSI evaluator inputs. |
+| `configs/` | `tests/fixtures/campaign_gates/`, `benchmarks/fsi_channel_validation/config/` | Acoustic campaign test fixture and FSI evaluator inputs. |
 | `demos/` | `app/demos/`, `examples/` | Drag-echo Web assets stay with the application. The propeller example lives with other Python examples. |
 | `drop_entry/` | `development/audit/drop_entry/` | Mission working notes and drafts are development records. The [m26734](migrations/m26734-drop-entry-reentry-2026-11-21.json), [m26737](migrations/m26737-drop-entry-reentry-2026-11-22.json), [m27075](migrations/m27075-drop-entry-reentry-2026-11-22.json), [m26892](migrations/m26892-drop-entry-reentry-2026-11-22.json), [m26887](migrations/m26887-drop-entry-reentry-2026-11-22.json), and [m26894](migrations/m26894-drop-entry-reentry-2026-11-22.json) re-entry ledgers preserve successive root regressions byte-for-byte while retaining published document copies where they exist. |
 | `docs/` | Keep | Published manual and report paths are compatibility contracts. |
 | `evidence/` | Case data, document assets, development evidence and tools | The [migration ledger](migrations/evidence-root-retirement-2026-11-21.json) lists original blobs and updated replay commands. |
 | `examples/` | Keep | Preserve documented commands and supported entry points. |
-| `experiments/` | `development/experiments/` | The [migration ledger](migrations/experiment-root-retirement-2026-11-21.json) traces archived and exploratory assets. Maintained benchmark entry points remain indexed by case. |
+| `experiments/` | `development/experiments/` | The [migration ledger](migrations/experiment-root-retirement-2026-11-21.json) traces archived and exploratory assets. Maintained benchmark entry points remain indexed by case. The [IN25 survey tool ledger](migrations/in25-survey-tool-retirement-2026-11-24.json) records tools archived with the SUBOFF survey. |
 | `figures/` | Case evidence, document assets, or development archives | The [migration ledger](migrations/figures-root-retirement-2026-11-21.json) preserves historical paths. Migrated commands use `outputs/figures/`. Unmigrated commands can still use the ignored local `figures/`. |
 | `frontend-vue/` | `app/frontend-vue/` | Keep Vue source and its build with the serving app. The [migration ledger](migrations/vue-application-root-2026-11-21.json) records file provenance. |
 | `models/` | Split by role | The [model-unit input ledger](migrations/model-unit-inputs-2026-11-23.json) maps regression units to `benchmarks/model_units/`. Retain the published SUBOFF checkpoint at its existing path until its retrieval and runtime compatibility are verified for retirement. |
 | `notebooks/` | `examples/notebooks/` | Quickstart and its Colab entry. |
 | `papers/` | `docs/`, `benchmarks/` or `development/` | Retired by the [papers migration ledger](migrations/papers-root-retirement-2026-11-22.json): 35 tracked assets moved to SUBOFF benchmark evidence or published report ownership; active path consumers were updated and unresolved external evidence gaps remain explicit. |
 | `raw/` | Retire | The [diagnostic duplicate ledger](migrations/drop-entry-raw-root-retirement-2026-11-23.json) maps the four byte-identical files back to their benchmark owners. |
-| `references/` | `scripts/data/air_layer_drag/` | Air-layer reference JSON shared by the campaign and literature checker. |
+| `references/` | `benchmarks/air_layer_drag/reference/` | Air-layer reference JSON shared by the campaign and literature checker. The [script data ledger](migrations/scripts-data-retirement-2026-11-23.json) records the retirement of `scripts/data/`. |
 | `regression_rules/` | `tests/fixtures/regression_rules/` | Preserve the machine-readable contracts. |
 | `runs/` | `development/archived/historical_runs/` | The [migration ledger](migrations/run-root-retirement-2026-11-21.json) records the original Git tree and all nine campaign paths. Local run output stays ignored. |
-| `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. The [m18430 ledger](migrations/m18430-audit-tools-2026-11-22.json) covers the report builder. The [CI and contract evidence ledger](migrations/ci-contract-evidence-2026-11-23.json) covers two retired audit-script directories. |
+| `scripts/` | `tools/`, owner case or `development/` | Separate maintained workflow tooling from case-specific and one-off scripts. The [audit script ledger](migrations/audit-script-directory-retirement-2026-11-24.json) retires the full mission-audit tool directory. The [m18430 ledger](migrations/m18430-audit-tools-2026-11-22.json) covers the report builder. The [CI and contract evidence ledger](migrations/ci-contract-evidence-2026-11-23.json) covers two retired audit-script directories. |
 | `src/` | Keep | Keep the installable package and its published import surface stable. |
 | `teaching/` | `examples/teaching/` | Keep teaching commands and the companion comparison together. |
 | `tests/` | Keep | Preserve test collection and the semantics of fixtures and rules. |
@@ -73,6 +76,10 @@ The [EOS and FSI report ledger](migrations/eos-fsi-xval-reports-2026-11-23.json)
 places the archived Maxwell stability and vivsim fixed-point evidence in their
 benchmark directories.
 
+The [wetting and kernel report ledger](migrations/wetting-r6-fused-kernel-reports-2026-11-23.json)
+places the Round 6 wetting report with its benchmark and preserves the fused
+kernel comparison under development with its independent audits.
+
 ## Second-level placement
 
 | Area | Placement |
@@ -87,12 +94,20 @@ The [second-level migration ledger](migrations/second-level-docs-benchmarks-2026
 records the original objects and compatibility checks for the CH6 card,
 maneuvering report figures and W31 transcription evidence.
 
+The [Ghia W26 tool ledger](migrations/ghia-w26-tool-retirement-2026-11-23.json)
+places anchor extraction, analytic checks and report utilities beside the Ghia
+reference data. The archived register keeps its original provenance.
+
 The [survey and Huang audit migration ledger](migrations/survey-and-huang-audit-layout-2026-11-22.json) records the SUBOFF report figures and the archived m17889 delivery snapshot. The [survey index](../surveys/README.md) links to the published surveys.
 
 The [CMB5 migration ledger](migrations/cmb5-hydrorr-stability-2026-11-23.json)
 groups the m27100 drop-entry histories, preregistration and tooling under the
 drop-entry campaign. Its verdict and histories are discoverable from the
 existing 3D drop-entry registry entry alongside the formal comparison inputs.
+
+The [plotting and maintenance ledger](migrations/legacy-plotting-maintenance-2026-11-24.json)
+records the final two script subdirectories and the maintained channel plotting
+entry point. The legacy cleanup and synthetic fixture sources are archived.
 
 The [documentation process-directory ledger](migrations/docs-process-directories-2026-11-22.json)
 retires `docs/council/`, `docs/history/` and `docs/smoke/`. It records the
@@ -102,6 +117,10 @@ byte-identical to their retained `docs/mission_summaries/` copies.
 The [hotpatch records ledger](migrations/hotpatch-mission-records-2026-11-22.json)
 maps `docs/m23777/` and `docs/m24569/` into
 `development/audit/hotpatch-absorption/` and records the original checksums.
+
+The [IBM force campaign ledger](migrations/ibm-force-campaign-tools-2026-11-24.json)
+locates the archived sphere and curved-boundary force runners beside their
+verification index and keeps the published report paths stable.
 
 The [Blasius development-runner ledger](migrations/blasius-dev-runner-retirement-2026-11-22.json)
 retires `benchmarks/blasius_flat_plate_dev/` in favour of the canonical
@@ -119,7 +138,14 @@ comparison and versioned replay are discoverable from its
 [benchmark entry](../../benchmarks/xval_yml_xml_pipeline/README.md). The
 historical report keeps its published path.
 
+The [legacy script ledger](migrations/legacy-channel-checks-2026-11-23.json)
+archives the standalone channel verification probes under development.
+
 ## Root files and rollout
+
+The [SDAA script ledger](migrations/sdaa-script-directory-retirement-2026-11-24.json)
+preserves the hardware scripts alongside their verification records and
+identifies the maintained baseline launcher.
 
 The [six-root migration ledger](migrations/bulk-root-retirement-2026-11-21.json)
 records the paths, original Git objects, checksums and compatibility checks for

@@ -1,0 +1,457 @@
+{
+  "source_commit": "e6dcd764c7d9c1ab9b2fd14bfad9b29b5ed81876",
+  "root_directories_before": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "root_directories_after": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "tracked_direct_scripts_before": 653,
+  "tracked_direct_scripts_after": 608,
+  "compatibility": {
+    "launchers": [
+      "scripts/_launch_pipe.sh",
+      "scripts/launch_sweep.sh"
+    ],
+    "reproduction_index": "docs/sdaa_sweep/README.md",
+    "historical_records": "Retain original reports and evidence verbatim; resolve recorded paths at source_commit."
+  },
+  "scientific_reproduction": "Pending on an SDAA runner; historical verdicts retain their run scope.",
+  "verification": [
+    "Checked the 45 original and current SHA-256 hashes, Git modes and checkout roots.",
+    "Compiled all drivers and confirmed changes were limited to path and provenance adjustments.",
+    "Checked both retained shell entry points with bash -n.",
+    "Ran the pipe-flow driver's --help from outside the checkout and resolved the real benchmark input and output directories.",
+    "Passed 82 repository governance tests and six sphere sweep evidence checks. The latter read archived output.",
+    "Passed Ruff 0.15.0 lint ratchet and resolved the new navigation links."
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/sdaa_sweep_acoustics.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_acoustics.py",
+      "git_mode": "100644",
+      "original_git_blob": "2efc6338e017495afe02dbb6d75c9fcb97db5232",
+      "size_bytes": 11391,
+      "original_sha256": "501921fd33165429b0c63e03a9efb5725790ead04524b97210fd595a6e281aaf",
+      "new_sha256": "ed77d7dec607716b9ab02b7649f989a8cc95144ef6812ff472c460d9805c6b81"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_aircraft_icing_naca0012_rime.py",
+      "git_mode": "100644",
+      "original_git_blob": "2f3c84db562f33108c9bb1e636162c9aa142618f",
+      "size_bytes": 24090,
+      "original_sha256": "4c5cad8c1475fe7b4b2e22c10c16b2f2a09d27cfce5a25b08ad3ec899c414283",
+      "new_sha256": "ab8a545578b3c3f7e8d1a2f8c958d6026cf014f28f4e8654cca80a0befd5e515"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_cavity.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_cavity.py",
+      "git_mode": "100644",
+      "original_git_blob": "38c845106d4610316309310b4e5030523ac2e83d",
+      "size_bytes": 8198,
+      "original_sha256": "fa1434089cbfc5ee96e3a015d2a2010039c9a43c73f8b4f945d2e7f7ae85e689",
+      "new_sha256": "9b51508991bfdb2d41c5c1d41f972ce36ff549d2ff13633b414b824adfd3b671"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_cavity_3d_full.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_cavity_3d_full.py",
+      "git_mode": "100644",
+      "original_git_blob": "8b4ba683c6c25ffc646e4caec921494fdaefa224",
+      "size_bytes": 3572,
+      "original_sha256": "71df246f2b438a305b1ad9972f108afc3bc2159724a41c6aaca08bc5e3fd7e4e",
+      "new_sha256": "76f4a6401f0e793e8e7bbfda41139d1931661865119a10e3826a5e33dad7cc1c"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_cavity_natural_convection.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_cavity_natural_convection.py",
+      "git_mode": "100644",
+      "original_git_blob": "daf8f55ab10e3ea3eb4150e37450d8db77d9c9e7",
+      "size_bytes": 9145,
+      "original_sha256": "626a802d973dc0c1b58ed6f358a6e6dc7f89fde634862e9910a08004deb54d28",
+      "new_sha256": "83e14875b1f25ccfdc4616e24db55e999223b8d4ce74d92a6071e2b590ae35aa"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_couette_2d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_couette_2d.py",
+      "git_mode": "100644",
+      "original_git_blob": "7712292dcb035cdd70cc884d51943130aab009d7",
+      "size_bytes": 10916,
+      "original_sha256": "a6d4f8928e253ba24f18f7213a7e5d16c2694dc9080951ae5f16f4fd5017c027",
+      "new_sha256": "a9760ff0ab2a779a45e85e666c2ae7fbc96d47ac6d436d3c4c053b7e251039fe"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_couette_3d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_couette_3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "dd06202fa5919e2b8b8f2b22c9456188c1a5c5dc",
+      "size_bytes": 11388,
+      "original_sha256": "ce2de1fbe047a0945b2c5bbddf87be48ca2b26ed7f1057c0a075c2af549af970",
+      "new_sha256": "05b2da8f450ac77e215838eedc31a65aedc7d1bcc3e516f6505d6c31d26082f7"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_cylinder.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_cylinder.py",
+      "git_mode": "100644",
+      "original_git_blob": "f1fdae731e824771438f718d56bebbdb6c3892f3",
+      "size_bytes": 23085,
+      "original_sha256": "272998425ba0cbab18e45b171e9fe98f5d1bfa0a60b9583195d169216089561e",
+      "new_sha256": "bd5a8342ab331e9444db9c183214068b6c76c1ab08950af053bda542d8a475ee"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_cylinder_3d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_cylinder_3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "d19f39a892fc822be1b9f840e2824bf67f55ef8f",
+      "size_bytes": 15029,
+      "original_sha256": "eeb352498d3de67a642604c28dcd3a3683d11e70c389d46824e555895e841444",
+      "new_sha256": "85fc59ec6b0671e1839c3621ab093b1afbedd409e9df2d8740c99ff782fd453f"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_droplet_oscillation.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_droplet_oscillation.py",
+      "git_mode": "100644",
+      "original_git_blob": "afba92d175dfd5e399e475c0724390b90488bb9b",
+      "size_bytes": 9421,
+      "original_sha256": "9e860333991311da8fc4825dd060c2729964b3bbbed9f0e1c09bc43cc99aad39",
+      "new_sha256": "a538b4d356fac0b94591052aa7498d21acc675e4428f239706b3d10c4e5610f5"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_droplet_oscillation_minimal.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_droplet_oscillation_minimal.py",
+      "git_mode": "100644",
+      "original_git_blob": "c97330cc392867312c076e3f701e8639d479fb2d",
+      "size_bytes": 5723,
+      "original_sha256": "d419a66a0907474437268043ca4e9b9ff01d2be9ecc693f90a02886808d7e141",
+      "new_sha256": "f24e72e24e562f56ea7aca4f31ad13ee9dbcf2db41f43bde9ec8f4b7c0442d32"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_floating_body_free_decay.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_floating_body_free_decay.py",
+      "git_mode": "100644",
+      "original_git_blob": "8cae3ff1b0b61aba5bd2ab3bcd9ea569652c9233",
+      "size_bytes": 13148,
+      "original_sha256": "207fe263275d6c16c169aec26e9bd63e8c5f98b3c9bc974283478dce675ae649",
+      "new_sha256": "4b89ba600603c3debb4a2a94e1c980328ac856316a5acf6c8d3a549877cfe6b2"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_kovasznay_2d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_kovasznay_2d.py",
+      "git_mode": "100644",
+      "original_git_blob": "41f1a2d0934ab86fc99320d8152fbc7f9da8ffd1",
+      "size_bytes": 14879,
+      "original_sha256": "8a8b913d4235e5c39bef8284dc05e326c5226e6e34ca7959021c8b23212c3478",
+      "new_sha256": "569b2250c63463b93e489b23745168fb53bab4603a574923c18fdf95b56fe730"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_laplace_cac_phasefield.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_laplace_cac_phasefield.py",
+      "git_mode": "100644",
+      "original_git_blob": "81d18821b1744d42db2a3ea3af2c3e027655bc1d",
+      "size_bytes": 22139,
+      "original_sha256": "3b07acb55b0d3c6a0caacf7b5c326d3dacfa3fa8ec385ee0ecfdf220b26a2806",
+      "new_sha256": "0cc7a3bf17c29bfa3d6fa560bb114ce9c4c14d537cb63edcac9c6ff029d52394"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_laplace_droplet.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_laplace_droplet.py",
+      "git_mode": "100644",
+      "original_git_blob": "6b4397b37cc794feaa24efd6716813885664573d",
+      "size_bytes": 18802,
+      "original_sha256": "9f3cdf99bf03dd16ca090f9fcbbf20be16c0d16320e67999ebb2a237dfc61093",
+      "new_sha256": "123effc18c007df5d8a4394d8893afdd78d7b7f58fba13a34a89124adc2e67aa"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_laplace_pr_eos.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_laplace_pr_eos.py",
+      "git_mode": "100644",
+      "original_git_blob": "9540773d359bac09c1e5c757f3f7da8127f78c97",
+      "size_bytes": 16573,
+      "original_sha256": "c69b44480dfdca3a4fef59cf58326a54d427dc7ac7b3545528095cf6cb4495a5",
+      "new_sha256": "1487b29f691ae0227d25539a43720fe22865af189b5acbb4086a1f6c499e5f26"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_maneuvering_steady_turn.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_maneuvering_steady_turn.py",
+      "git_mode": "100644",
+      "original_git_blob": "8b0c5dcf4f3f961f0388b3191e45177e9d3dc98a",
+      "size_bytes": 17396,
+      "original_sha256": "f0362bdc980ceb1cdf10297d27adbcb3a2323b97e2a2b04940f1f9bd4074c797",
+      "new_sha256": "570df87e66f6c578869f2262c0dd3c496093c699a995f2d76297e1fab0c52960"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_permeability.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_permeability.py",
+      "git_mode": "100644",
+      "original_git_blob": "07cd5b6fc801f75b325ba5f7c89f18f4ff857c90",
+      "size_bytes": 6653,
+      "original_sha256": "852f807f26dc16dd83a6a40cc75cf3dd3fe2f370f6b69a4c3cc1c5e19aba6e11",
+      "new_sha256": "d4e84825df1c3f0b213b7f446a27b4aa463790259390b261922f90940442aa1d"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_permeability3d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_permeability3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "e6477b65953ecd8394ae6030a3b752a832b037a6",
+      "size_bytes": 13709,
+      "original_sha256": "6648b60292ee5390188e5686a673da770f8bfbbbed9fbd771bd6bb2ea830b434",
+      "new_sha256": "249d3d14ba3216151224a7c5380f512b639ee5259c1ced77168313edbad68aa5"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_poiseuille_2d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_poiseuille_2d.py",
+      "git_mode": "100644",
+      "original_git_blob": "9326d0171bb7d29caae06d2e35d60f528f7f0912",
+      "size_bytes": 9902,
+      "original_sha256": "c1d720432c97e0a3267e265d54cc42b350509fb70ff4e3b87e43531821f769af",
+      "new_sha256": "c38f6d47cd373e5b44518980c64c01f17dedef0a99fc8d00c8fc6ee86ebabdfc"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_poiseuille_3d_annulus.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_poiseuille_3d_annulus.py",
+      "git_mode": "100644",
+      "original_git_blob": "00493f0288aa9552efb9d044698207410956512a",
+      "size_bytes": 16035,
+      "original_sha256": "052cf523a5f8d475a1bd44dff3ecca65b9ec959afb286af2d79f93fbc6d809bf",
+      "new_sha256": "d937eb905648bf18cc678159e2812af3f0ba47839ed30e8bfe685f0d54efb1f4"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_poiseuille_3d_duct.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_poiseuille_3d_duct.py",
+      "git_mode": "100644",
+      "original_git_blob": "9cd3f7a0630916c2bdb9acca5d269490fd72f14d",
+      "size_bytes": 11809,
+      "original_sha256": "c18f2c9e720d90f8cd17474f024559f3c068ad803b20aff789da89fdea3e70db",
+      "new_sha256": "9b50ec23ae7191d647ed2e8226e68c58461bdc39dd923fd261f643a15cb3b530"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_poiseuille_3d_pipe.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_poiseuille_3d_pipe.py",
+      "git_mode": "100644",
+      "original_git_blob": "25b1a7d10a0babdf28b59f1d0d43541cc2258fa2",
+      "size_bytes": 12856,
+      "original_sha256": "3480cad09c584908b5f1e79dbcc30e1a3ece1dc9e77338a2900f2deadc884525",
+      "new_sha256": "506b9e3c48f2aed12e0b3872f45699bd632f000816f8ed2a8abd1bac98934f98"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_poiseuille_two_phase_cg.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_poiseuille_two_phase_cg.py",
+      "git_mode": "100644",
+      "original_git_blob": "6de45bb1b6140b95d22adef7950325b98315b4cc",
+      "size_bytes": 11900,
+      "original_sha256": "ad1de6ebdf428792690517c158ccbfdafe5d5de88e45a19cd77c0a9b9f92d61e",
+      "new_sha256": "0e30fc2ded6f57a8eb31aef0c645bb47862bc88f2bda59286311ef3983e5d6de"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_shear_wave_decay.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_shear_wave_decay.py",
+      "git_mode": "100644",
+      "original_git_blob": "f7aab404e5a464b8f4da5f7abd85f83faad97db8",
+      "size_bytes": 12108,
+      "original_sha256": "e8876512c80c3251e32401a56e460d6f7ef1ef91e1ec9a838549a8b1e3bc5f8e",
+      "new_sha256": "00560ea5b87c8f8b16ffe155d4059aa31e70b13032246f3e8bc50cf0abc31d5e"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_sod_shock_tube.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_sod_shock_tube.py",
+      "git_mode": "100644",
+      "original_git_blob": "e0863578ca846fbbd7a58a60cc7ec26db1a7c8c4",
+      "size_bytes": 11321,
+      "original_sha256": "4c7ffb5c6a2b0c2960af98516f44103b029bdaa689e17802245559820e9d39bf",
+      "new_sha256": "3f355c2fdd4f5838bb36cf2ac873c7b4c53f60eea47a849b4aa5934565051fc5"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_sphere_re100.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_sphere_re100.py",
+      "git_mode": "100644",
+      "original_git_blob": "29fd62f81cb71e0ab52a6c840b519f25a8a2c783",
+      "size_bytes": 9751,
+      "original_sha256": "a4db33969a112d4d146940b8fed89e9e119dcb13a89e0795e2623986009092e8",
+      "new_sha256": "a4db33969a112d4d146940b8fed89e9e119dcb13a89e0795e2623986009092e8"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_sphere_re100_d3q27.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_sphere_re100_d3q27.py",
+      "git_mode": "100644",
+      "original_git_blob": "236e9d4523db64fad142229da9629289007856e8",
+      "size_bytes": 35189,
+      "original_sha256": "135778dabeae8b081374bcfc5e42b15fe29fb85af27ab2428c082a8c6f423cfe",
+      "new_sha256": "2a1c3910c8bd96ee7faf6d580a3a756d0c5463fe8cfe2f2f858a0d55cc95a2c6"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_sphere_re100_mem.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_sphere_re100_mem.py",
+      "git_mode": "100644",
+      "original_git_blob": "be686ca150fa4d43cbb6b1ce060016ab23a0cca0",
+      "size_bytes": 9731,
+      "original_sha256": "3aee342267d32ee183ae57972376bd9995fa1d150fc12bd5336b4e56876979cc",
+      "new_sha256": "33ea0be8101f583a9a8d533d0789f29d0b90b9344457e64ede819da44c4097ce"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_sphere_re200.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_sphere_re200.py",
+      "git_mode": "100644",
+      "original_git_blob": "4e12614dad9f15af0051a86773dc023c1dcc34b6",
+      "size_bytes": 10291,
+      "original_sha256": "126f5d7755c024616792c0bd49abc0b95e8c70aeb777dddbf34ca04b66ae13c6",
+      "new_sha256": "93cd17f4e3b1a50f375864ae6b51651d529128dd9956b9cad32fc00cd7a5f8dd"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_square_cylinder.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_square_cylinder.py",
+      "git_mode": "100644",
+      "original_git_blob": "c709f311369df5f729903a6940d52052ebfa8a7d",
+      "size_bytes": 13859,
+      "original_sha256": "be98572d6888b8cfc60b8466968aec756c8e8fa55c242763dd13c674a117c5a3",
+      "new_sha256": "2cfbe4c66c1084f70d3b8d67bd6ba6a128078d4140633f50e14037ae96682f2f"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_startup_poiseuille.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_startup_poiseuille.py",
+      "git_mode": "100644",
+      "original_git_blob": "88c7bc04003426191e54fd8b7d080434fee04545",
+      "size_bytes": 8861,
+      "original_sha256": "b5cadec0d956735390317c31556e80b6f170c1f54100dcd0d0b3be86b38f1a61",
+      "new_sha256": "b6c221f701a7225231a80b539a5121cdfb3ee7a17456caa053e84f90418bc3d0"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_stokes_first_problem.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_stokes_first_problem.py",
+      "git_mode": "100644",
+      "original_git_blob": "9d69fe3080b372579d435ef6635deb4cd82f2060",
+      "size_bytes": 18956,
+      "original_sha256": "824c364df2ec7eecf4dfe736496fb161c524fe0482b706ad2b20dec9b5a9bb56",
+      "new_sha256": "687c0659875f5a82cefe2aec667f22204bb5c708c743505d2753823d8ed457ae"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_stokes_second_problem.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_stokes_second_problem.py",
+      "git_mode": "100644",
+      "original_git_blob": "2140b3fa7690cad633a08766d85d9d5a67fb55d1",
+      "size_bytes": 11366,
+      "original_sha256": "188464db64024c7a69e40a2faab4d4a62300c6580e1e26d9801d9d15bb838341",
+      "new_sha256": "e188c8ec13009ffb4c279156ddf2f3ccdfbd3895a8b8e55e83f001e83d995a5f"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_stokes_sphere_dg.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_stokes_sphere_dg.py",
+      "git_mode": "100644",
+      "original_git_blob": "18374be648f6d44efcf50af8b869cc036b0c48d3",
+      "size_bytes": 36500,
+      "original_sha256": "09b0fec70dd47ba193d768a53b71e889830f60a2287b454f9773df3cde3fc214",
+      "new_sha256": "ab40de5f2d212dfd6801ba266d0716484fdadd6c1ee46addff2e8263a41c74e7"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_suboff_sail_resistance.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_suboff_sail_resistance.py",
+      "git_mode": "100644",
+      "original_git_blob": "cbd134911affedf611f811646e65ec0de91795be",
+      "size_bytes": 28939,
+      "original_sha256": "306ec47e376c1a6431a65255c26a137b8bd09d0131d05ad9d21bae65409844d4",
+      "new_sha256": "05f9d2f038e6ab42055099604ce8c508229c29f369d0671fb642578f4b3e746a"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_suboff_sail_resistance_v3.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_suboff_sail_resistance_v3.py",
+      "git_mode": "100644",
+      "original_git_blob": "8fa6204ba3cd17a60f85d3111cc64474113afcf0",
+      "size_bytes": 14678,
+      "original_sha256": "58d69a68fa84f629940cec69d4c6bd667e2b04d7d082bb03d586f0677a546918",
+      "new_sha256": "b5bdad5d04500f625f7323b4a8659fbd5c7090ab282bcd0ae2385d4eebb7300f"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_taylor_couette.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_taylor_couette.py",
+      "git_mode": "100644",
+      "original_git_blob": "e9589740deac93f878bd5c20bd164a70cdbb38c7",
+      "size_bytes": 11554,
+      "original_sha256": "72f507041201dff7b4bd5751dd09b5d66d9befcc5f46e4e112d8f5247918f3ba",
+      "new_sha256": "a542e08a1d5d00dc45b25b155ae2638cf34b662c21b65c94535bf6bf0b8a4de8"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_taylor_green_2d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_taylor_green_2d.py",
+      "git_mode": "100644",
+      "original_git_blob": "1dfed3141623121d9953485a1819b32aadd387ae",
+      "size_bytes": 8899,
+      "original_sha256": "69b782fc9f4220e2c43d13313674651e5674616f2392e5af7a2b646f3a42dcbc",
+      "new_sha256": "39745fd61e53eac6dbe9ce1d5ae4e670377350330b95ab715b43305276939dc4"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_taylor_green_3d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_taylor_green_3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "e1e6779723cb398c218f27fb075add7a5f6239db",
+      "size_bytes": 7760,
+      "original_sha256": "cf4c57ff6e24ce5cfdbce4cb6e96984f5473f44edce5f707b1a34264d1b4426a",
+      "new_sha256": "d78f3742d331f14782df26956acf2d9f338c0084734ffa07c2ba64ba5b4d6c59"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_thermal_cavity.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_thermal_cavity.py",
+      "git_mode": "100644",
+      "original_git_blob": "6bcf0786165b80f324d8f5c4e3b2ff216c8a2e32",
+      "size_bytes": 7106,
+      "original_sha256": "ef642e6b2435e0c6dbeda7eaa09e7e17e096ee2cc23200fe78e6cac6eb746df8",
+      "new_sha256": "2c7fb4db614f068ba75c1a7d8ed0202420730b3ee800bf4cd542536ac5ff8a33"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_thermal_cavity_3d.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_thermal_cavity_3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "35a327df9006a3a630c2b5817cd5a7691b943161",
+      "size_bytes": 13373,
+      "original_sha256": "f80cc453faecba6d359fb95f22791a3e1660ccacf9ea3152263f08124362e8db",
+      "new_sha256": "50c7300e48b383590ca951f8fd00646242a0215f74313bcae0778beae3a8460a"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_wigley_hydrostatics.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_wigley_hydrostatics.py",
+      "git_mode": "100644",
+      "original_git_blob": "99bc2a8e640be7a12e4560d9035667189ebfcba5",
+      "size_bytes": 8770,
+      "original_sha256": "94fcd7274d06462f705b27d0df2b9edb91e45427661174981efca7002c0c304e",
+      "new_sha256": "d0ed7d8bbd6683a380f3c637bd72c835554a3dc7b2b22a2b3411430fb1afbd24"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_womersley.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_womersley.py",
+      "git_mode": "100644",
+      "original_git_blob": "b9153daa8f1ae2ab00db1546302b1bb7b3be15fe",
+      "size_bytes": 11670,
+      "original_sha256": "a69a62eda5d40d1a5cb7a97782c2f4264c12a3f3c5bc3f957e1fb33105fd40c7",
+      "new_sha256": "ccd6a6ad6382a92d819ae2b429418adedcc017c8606ba59a631d0b79200e0423"
+    },
+    {
+      "old_path": "scripts/sdaa_sweep_womersley_v2.py",
+      "new_path": "development/verification/sdaa-hardware/sweep-drivers/sdaa_sweep_womersley_v2.py",
+      "git_mode": "100644",
+      "original_git_blob": "c8cc839c6c81b046499c98dfe6cee8cfb79ac1cb",
+      "size_bytes": 17660,
+      "original_sha256": "ea39a71c13d1ee296bfe7577511f084360378e887b92cd2bb50f1a1a3df29349",
+      "new_sha256": "f63a06824bcf01c313c15cf72b328dd283a0588dd1d91b7d28dd68a954b21580"
+    }
+  ]
+}

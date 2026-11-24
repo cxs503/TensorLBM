@@ -20,13 +20,24 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 REPO = Path(__file__).resolve().parents[1]
+SDAA_SWEEP_DRIVERS = REPO / "development/verification/sdaa-hardware/sweep-drivers"
 LEDGER_PATH = REPO / "docs/architecture/migrations/report-assets-2026-10-26.json"
 NOTE_START = "<!-- repository-layout-note:start -->"
 NOTE_END = "<!-- repository-layout-note:end -->"
 NOTE = re.compile(r"\n" + re.escape(NOTE_START) + r"\n.*?" + re.escape(NOTE_END) + r"\n", re.S)
 
 
+SCRIPT_HANDOFFS = {
+    item["old_path"]: item["new_path"]
+    for item in json.loads(
+        (LEDGER_PATH.parent / "legacy-plotting-maintenance-2026-11-24.json").read_text(encoding="utf-8")
+    )["entries"]
+}
+
+
 def current_archive_path(path: str) -> Path:
+    if path in SCRIPT_HANDOFFS:
+        return REPO / SCRIPT_HANDOFFS[path]
     if path == "audit" or path.startswith("audit/"):
         return REPO / "development" / path
     return REPO / path
@@ -187,17 +198,33 @@ class RepositoryReportMigrationTests(unittest.TestCase):
     def test_bulk_root_retirement_accounts_for_all_moved_assets(self):
         ledger_path = LEDGER_PATH.parent / "bulk-root-retirement-2026-11-21.json"
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        followup_path = LEDGER_PATH.parent / "scripts-data-retirement-2026-11-23.json"
+        followup = json.loads(followup_path.read_text(encoding="utf-8"))
+        handoffs = {item["old_path"]: item for item in followup["entries"]}
         with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            rows = list(csv.DictReader(stream))
+        for path, batch in ((ledger_path, ledger), (followup_path, followup)):
             moves = {
                 row["old_path"]: row["new_path"]
-                for row in csv.DictReader(stream)
-                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+                for row in rows
+                if row["verification"] == path.relative_to(REPO).as_posix()
             }
-        self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+            self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in batch["entries"]})
         policy = json.loads((REPO / "docs/architecture/repository_layout_policy.json").read_text())
         self.assertTrue(set(ledger["retired_roots"]).isdisjoint(policy["root_directories"]))
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "scripts/data"], cwd=REPO))
+        self.assertEqual(set(handoffs), {
+            item["new_path"] for item in ledger["entries"] if item["new_path"].startswith("scripts/data/")
+        })
         for item in ledger["entries"]:
             destination = REPO / item["new_path"]
+            if item["new_path"] in handoffs:
+                next_move = handoffs[item["new_path"]]
+                self.assertEqual(next_move["original_git_blob"], item["git_blob"])
+                self.assertEqual(next_move["original_sha256"], item["sha256"])
+                self.assertEqual(next_move["size_bytes"], item["size_bytes"])
+                self.assertEqual(next_move["git_mode"], item["git_mode"])
+                destination = REPO / next_move["new_path"]
             with self.subTest(path=destination):
                 self.assertTrue(destination.is_file())
                 self.assertFalse((REPO / item["old_path"]).exists())
@@ -338,7 +365,16 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn("bench_t4_medium.py", moves)
         self.assertIn("audit_m18221", moves)
         self.assertIn("verdict_m15215.sql", moves)
+        path = LEDGER_PATH.parent / "t4-physics-ai-drivers-2026-11-24.json"
+        followup = json.loads(path.read_text(encoding="utf-8"))
+        handoffs = {item["old_path"]: item for item in followup["entries"]}
+        self.assertEqual(set(handoffs), {new for new in moves.values() if new.startswith("scripts/physics_ai/")})
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "scripts/physics_ai"], cwd=REPO))
+        for item in handoffs.values():
+            self.assert_fingerprint(REPO / item["new_path"], item["migrated_sha256"], item["migrated_size_bytes"])
         for old, new in moves.items():
+            if new in handoffs:
+                new = handoffs[new]["new_path"]
             with self.subTest(old=old, new=new):
                 # Local runners may recreate ignored scratch directories.
                 # Their tracked descendants, rather than filesystem presence,
@@ -463,6 +499,24 @@ class RepositoryReportMigrationTests(unittest.TestCase):
                 raw = (REPO / destination).read_bytes()
                 blob = f"blob {len(raw)}\0".encode() + raw
                 self.assertEqual(hashlib.sha1(blob).hexdigest(), expected)
+
+    def test_audit_script_directory_preserves_mission_tools_and_provenance(self):
+        ledger_path = LEDGER_PATH.parent / "audit-script-directory-retirement-2026-11-24.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        with (REPO / "docs/architecture/migration_manifest.csv").open(encoding="utf-8") as stream:
+            moves = {
+                row["old_path"]: row["new_path"]
+                for row in csv.DictReader(stream)
+                if row["verification"] == ledger_path.relative_to(REPO).as_posix()
+            }
+        self.assertEqual(moves, {item["old_path"]: item["new_path"] for item in ledger["entries"]})
+        self.assertEqual(len(moves), 17)
+        self.assertFalse(subprocess.check_output(["git", "ls-files", "scripts/audit"], cwd=REPO))
+        for item in ledger["entries"]:
+            with self.subTest(path=item["new_path"]):
+                self.assert_fingerprint(
+                    REPO / item["new_path"], item["migrated_sha256"], item["migrated_size_bytes"]
+                )
 
     def test_concurrent_drop_entry_reintroductions_are_archived_and_pinned(self):
         survey_ledger = LEDGER_PATH.parent / "m26963-bb-root-retirement-2026-11-22.json"
@@ -635,7 +689,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertFalse(list(run_root.rglob("result.npz")))
 
         runner = (
-            REPO / "scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py"
+            SDAA_SWEEP_DRIVERS / "sdaa_sweep_aircraft_icing_naca0012_rime.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn('REPO / "artifacts" / "sdaa_runs"', runner)
         self.assertNotIn("sdaa_aircraft_icing_naca0012_rime.json", runner)
@@ -780,7 +834,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn("not extend", readme)
         self.assertIn("sweep remains FAIL", readme)
 
-        runner = (REPO / "scripts/sdaa_sweep_sphere_re100_d3q27.py").read_text()
+        runner = (SDAA_SWEEP_DRIVERS / "sdaa_sweep_sphere_re100_d3q27.py").read_text()
         self.assertNotIn('REPO / "artifacts"', runner)
         self.assertIn('EVIDENCE_DIR / "summary.json"', runner)
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)

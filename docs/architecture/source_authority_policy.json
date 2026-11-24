@@ -137,18 +137,6 @@
       "matches": 1,
       "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
     },
-    "scripts/audit/m17677_compressed_node_table_audit.py": {
-      "matches": 1,
-      "matching_lines_sha256": "3eb3e76c5917e6ac8db58ff47bb5e4b24319b3bbf6513c8d26b588b1b4548c25"
-    },
-    "scripts/audit/m18748_make_field_figure.py": {
-      "matches": 1,
-      "matching_lines_sha256": "dc262ca5e68e092de94a8ef7dbf00aea2a2660876da237b522e748ea4dd4ce17"
-    },
-    "scripts/audit/m18748_sparse_sublist_board_audit.py": {
-      "matches": 2,
-      "matching_lines_sha256": "8922c79de3b2980e3cf3c12dd66b4c39451e677b4d5b09bbd8f51fe0f200de47"
-    },
     "scripts/audit_m17855_probe.py": {
       "matches": 2,
       "matching_lines_sha256": "1e779bbd7a3daeffd8fd1accb7ac9b883fcc81db47c3b62f9f54f554fbc7b0c0"

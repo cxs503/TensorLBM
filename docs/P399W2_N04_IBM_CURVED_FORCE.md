@@ -1,6 +1,6 @@
 # P399W2-N04 — LBM curved-boundary force integration in an immersed-boundary framework: exact surface quadrature, conservation closures and cylinder verification
 
-**Node** `p399w2-n04-lbm-curved-boundary-force` · **Repo** TensorLBM · **Module** `src/tensorlbm/ibm_curved_force.py` · **Driver** `scripts/p399w2_n04_curved_force/run_validation.py`
+**Node** `p399w2-n04-lbm-curved-boundary-force` · **Repo** TensorLBM · **Module** `src/tensorlbm/ibm_curved_force.py` · **Driver** `development/verification/ibm-force/curved-boundary/run_validation.py`
 
 **Headline.** A curved-surface load on an immersed boundary is an *integral*, `∮ τ n dS`. The IBM kernels already in the repository carried no surface measure, so the marker sum they return is not a quadrature of the traction field. This node adds the measure (exact to round-off for any marker count), makes the Lagrangian momentum budget an identity, adds a normal-projection pass for the mass closure, and measures all of it on a cylinder: the measure-consistent drag is marker-count independent to `4.2e-4` while the legacy unweighted sum breaks down at `M = 128` (boundary flux 12 % of the reference flux). The Re = 100 literature anchor is met in two of the three box configurations; the primary one is 27 % low and the box-length test explains it — reported as measured, not adjusted.
 
@@ -256,11 +256,11 @@ Geometry: R₁ = 20, R₂ = 38, Ω = 0.0002, ν = 0.5 → `Re_Ω = 0.1440` (Stok
 
 ```bash
 PYTHONPATH=src python -m pytest tests/test_ibm_curved_force.py -q
-PYTHONPATH=src python scripts/p399w2_n04_curved_force/run_validation.py \
+PYTHONPATH=src python development/verification/ibm-force/curved-boundary/run_validation.py \
     --cases quadrature --out artifacts/p399w2_n04
-bash scripts/p399w2_n04_curved_force/launch_local.sh   # or the cluster queue
-PYTHONPATH=src python scripts/p399w2_n04_curved_force/merge_cases.py
-PYTHONPATH=src python scripts/p399w2_n04_curved_force/make_figures.py
-PYTHONPATH=src python scripts/p399w2_n04_curved_force/render_report.py
+bash development/verification/ibm-force/curved-boundary/launch_local.sh   # or the cluster queue
+PYTHONPATH=src python development/verification/ibm-force/curved-boundary/merge_cases.py
+PYTHONPATH=src python development/verification/ibm-force/curved-boundary/make_figures.py
+PYTHONPATH=src python development/verification/ibm-force/curved-boundary/render_report.py
 ```
 

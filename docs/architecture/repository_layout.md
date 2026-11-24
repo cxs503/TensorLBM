@@ -22,7 +22,7 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 | A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
 | Drop-entry technical reports and diagnostic history | [Water-entry reports](../reports/water_entry/) |
 | Historical council and CI process records | [Development archive](../../development/archived/council/) and [CI audit records](../../development/audit/ci/) |
-| A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
+| A T4 workflow | [Physics-AI drivers](../../benchmarks/t4_physics_ai_loop/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
 | An earlier experiment | [Archived experiments](../../development/experiments/archived/), including [mission workspaces](../../development/experiments/archived/workspaces/) and [staged snapshots](../../development/experiments/archived/staging/) |
 | An old repository path | Search the [migration manifest](migration_manifest.csv). A directory row maps its entire subtree, preserving the relative suffix. |
 
@@ -168,8 +168,9 @@ accepted ownership, not that the implementing agent can approve its own change.
    results to the baseline. Update the manifest and remove obsolete exceptions.
 5. Obtain independent review before calling the migration accepted.
 
-Do not use `scripts/maintenance/clean_repo.sh --apply` as a substitute for this procedure. Its glob
-matching and index changes cannot establish provenance or compatibility.
+The [legacy cleanup script](../../development/archived/repository-maintenance/clean_repo.sh)
+is preserved for provenance. Its original checkout assumptions and broad index
+operations make it unsuitable for the current migration procedure.
 
 ## Next batches, in order
 

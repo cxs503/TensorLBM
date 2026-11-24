@@ -6,7 +6,7 @@
 **唯一裁判** `tensor_benchmark_cases`：该 anchor **0 行**（全表 110 行）——基准裁判无数据，因此本单的判级**不靠报告好看**，而靠①工件能否被审计者逐位复跑 ②代码是否可 import/被调用。
 
 机读读数：`artifacts/m18748_audit/audit_m18748.json`；图：`artifacts/m18748_audit/figures/fig_m18748_evidence.png`；
-审计脚本：`scripts/audit/m18748_sparse_sublist_board_audit.py`（唯一命令，≈90 s，单线程 CPU）。
+审计脚本：`development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py`（唯一命令，≈90 s，单线程 CPU）。
 
 ---
 
@@ -16,7 +16,7 @@
 |---|---|---|---|
 | run_artifacts | `TensorLBM/artifacts/xval_sparse_sublist_neighbor_list/results.json`（1797 B）+ `figures/fig1_channel_profile.png`（76 318 B，1540×560 RGBA，1989 色） | 两件均真实存在、非空、图是真矢量渲染位图 | ✅ 存在 |
 | ref vs got | k_ref=10.666667（解析 slab `(H/ny)H²/12`）vs k_got=10.654330，误差 0.1157% | 审计者独立重跑：k=**10.654330145418363**，与工件**相对差 0.0（逐位相同）** | ✅ 可复现 |
-| repro_cmd | 交付内**无**任何 runner（`xval/XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST/` 只有 `predeclared.json`；artifacts 目录下无生成脚本） | 审计者用本单脚本 `scripts/audit/m18748_sparse_sublist_board_audit.py` 复跑得到同一数值 | ⚠️ 工件真，但**产生工件的命令未随交付**（F3） |
+| repro_cmd | 交付内**无**任何 runner（`xval/XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST/` 只有 `predeclared.json`；artifacts 目录下无生成脚本） | 审计者用本单脚本 `development/audit/m18748/tools/m18748_sparse_sublist_board_audit.py` 复跑得到同一数值 | ⚠️ 工件真，但**产生工件的命令未随交付**（F3） |
 | 报告六段 | `docs/xval_sparse_sublist_neighbor_list.md` 7 节 | 六要素齐全（问题/方法/参数表/对照表/收敛敏感性/失败模式），但**未发布**到 `tensor_reports`（mission 18377 0 行，F6） | ⚠️ 文档在，报告纪律缺 |
 | 基准裁判 | — | `SELECT case_name,metric,tolerance FROM tensor_benchmark_cases WHERE anchor_slug='XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST'` → **空** | ❌ 无判据（F5） |
 

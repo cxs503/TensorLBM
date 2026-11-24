@@ -22,7 +22,7 @@ ART = EVIDENCE / "summary.json"
 @pytest.fixture(scope="module")
 def payload() -> dict:
     if not ART.exists():
-        pytest.skip(f"{ART} absent (run scripts/sdaa_sweep_sphere_re100_d3q27.py)")
+        pytest.skip(f"{ART} absent (see docs/sdaa_sweep/README.md for the current sweep driver)")
     return json.loads(ART.read_text())
 
 

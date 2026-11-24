@@ -45,7 +45,7 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "artifacts" / "xval_iso8_wall_normal_table"
-OSS = REPO / "xval" / "XVAL-LBM-ISO8-WALL-NORMAL-TABLE" / "oss_src" / "wall_boundary_process.f90"
+OSS = REPO / "development/verification/wall-boundary-tables/iso8/oss_src/wall_boundary_process.f90"
 BUILD = OUT / "oss_build"
 
 sys.path.insert(0, str(REPO / "src"))

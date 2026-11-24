@@ -1,0 +1,48 @@
+{
+  "source_commit": "e6dcd764c7d9c1ab9b2fd14bfad9b29b5ed81876",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 9
+    }
+  },
+  "retired_paths": [
+    "scripts/maintenance",
+    "scripts/plotting"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/maintenance/clean_repo.sh",
+      "new_path": "development/archived/repository-maintenance/clean_repo.sh",
+      "git_mode": "100644",
+      "original_git_blob": "24bfb8c7374b016b70b90edbf1c8083eb4472837",
+      "original_sha256": "7ed2cb3c451002b5392f8b47c093b492a68b9cb57b61d929d6007a48ea9bcc48",
+      "size_bytes": 5397
+    },
+    {
+      "old_path": "scripts/plotting/generate_channel_figures.py",
+      "new_path": "tools/generate_channel_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "9a7abe70452f1f6e7478d374edc6805dc46910e5",
+      "original_sha256": "06759b437427f1c163fcd75ed3f7408738a15a64bd7cc733d34c18ade904c3b1",
+      "size_bytes": 10442
+    },
+    {
+      "old_path": "scripts/plotting/generate_synthetic_results.py",
+      "new_path": "development/verification/channel-evidence/fixtures/generate_synthetic_results.py",
+      "git_mode": "100644",
+      "original_git_blob": "e9e9c077656f92534a16301cbd5acf7eae370c2a",
+      "original_sha256": "b0ca230f5a89d830a71ab1c3b3e9d65207e58957a9395fad6de92ec776829412",
+      "size_bytes": 12050
+    }
+  ],
+  "compatibility": "The channel plotter keeps its CLI and authentic-evidence admission guard. Its existing tests now refer to the new tool path and archived test-only fixture. The historical cleanup script keeps its original bytes and is archival only. The previous November relocation check follows the new handoffs.",
+  "scientific_scope": "No synthetic artifact is used for validation, and no scientific verdict follows from this relocation.",
+  "verification": [
+    "Three original file bytes, Git objects and SHA-256 checked, both Python files compiled, and the archived shell script passed bash -n without execution.",
+    "The moved plotter returned CLI help and its evidence loader returned the unchanged contents of the committed channel_turb_3d result.",
+    "The actual-artifact evidence-admission regression, Ruff and all 82 governance tests passed. The archived fixture generator and cleanup script were not run."
+  ]
+}

@@ -140,3 +140,9 @@ the support radius (18) exceeds half a 40³ box, so **no** row of the plane case
   BC wiring (D11) and upstream's non-converged 4 smoothing iterations.
 * Limitation: the OSS binary is a *preprocessing* code, so this is a geometry/algorithm XVAL (normals vs
   analytic); hydrodynamic acceptance must come from a 3-D wetting/droplet run (follow-up).
+
+The existing ISO8 [harness](../scripts/xval_iso8_wall_normal_table.py) reads the relocated
+[original Fortran excerpt](../development/verification/wall-boundary-tables/iso8/oss_src/wall_boundary_process.f90) archived alongside the
+[preregistration](../development/verification/wall-boundary-tables/iso8/predeclared.json). See the
+[migration ledger](architecture/migrations/wall-boundary-tables-xval-2026-11-24.json)
+for their original Git paths.
