@@ -88,6 +88,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
     ("xval", "fused_kernel_type_selector"),
     ("xval", "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN"),
+    ("xval", "XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE"),
+    ("benchmarks", "xval_free_energy_binary_equilibrium"),
 }
 
 

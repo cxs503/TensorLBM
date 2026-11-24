@@ -2,7 +2,7 @@
 
 Anchor: ``XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE``.
 Acceptance band: owner's ``< 15 %`` on every physical KPI, declared before the
-run in ``xval/predeclared.json``.
+run in a band-and-droplet criteria file. Supply that file to the report renderer.
 
 Arms
 ----
@@ -15,13 +15,13 @@ Arms
            ``p_in - p_out`` from the measured pressure fields and compares it
            with ``sigma / R``.
 
-Every number written to ``artifacts/xval_free_energy_binary_equilibrium/*.json``
+Every number written to ``outputs/verification/free-energy-pressure/band-droplet/*.json``
 is computed here from the populations; nothing is hand-typed.
 
 Usage::
 
-    python benchmarks/xval_free_energy_binary_equilibrium/run_xval.py --arm flat
-    python benchmarks/xval_free_energy_binary_equilibrium/run_xval.py --arm all
+    python development/verification/free-energy-pressure/band-droplet/run_xval.py --arm flat
+    python development/verification/free-energy-pressure/band-droplet/run_xval.py --arm all
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ import time
 import torch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.dirname(os.path.dirname(_HERE))
+_ROOT = os.path.abspath(os.path.join(_HERE, "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(_ROOT, "src"))
 
 from tensorlbm.phasefield.free_energy_pressure import (  # noqa: E402
@@ -58,7 +58,7 @@ from tensorlbm.phasefield.free_energy_pressure import (  # noqa: E402
 )
 
 OUT_DIR = os.path.join(
-    _ROOT, "artifacts", "xval_free_energy_binary_equilibrium"
+    _ROOT, "outputs", "verification", "free-energy-pressure", "band-droplet"
 )
 
 #: declared arm table (resolution analogy: interface width xi in lattice units)

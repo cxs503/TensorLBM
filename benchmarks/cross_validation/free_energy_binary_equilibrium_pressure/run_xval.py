@@ -5,8 +5,8 @@ Measures the equilibrium pressure of the symmetric free-energy (binary-fluid)
 LBM model and grades it against closed forms, using the criteria pre-declared in
 ``predeclared.json`` (read at run time; never tuned after the fact).
 
-    python xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py \
-        --out xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/artifacts
+    python benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py \
+        --out outputs/verification/free-energy-pressure/planar
 
 Artifacts (written into ``--out``):
     xval_binary_equilibrium_pressure.json   full numeric report (all rows)
@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import torch  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.free_energy_stress import FreeEnergyParams, pressure_tensor  # noqa: E402
@@ -48,7 +48,7 @@ def load_criteria() -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(HERE / "artifacts"))
+    ap.add_argument("--out", default=str(REPO / "outputs/verification/free-energy-pressure/planar"))
     ap.add_argument("--nx", type=int, default=None)
     ap.add_argument("--ny", type=int, default=None)
     ap.add_argument("--steps", type=int, default=None)
@@ -162,15 +162,15 @@ def main() -> int:
     ax = axes[1]
     xs = [row["interface_cells"] for row in report["rows"]]
     for scheme, marker in (("iso9", "o"), ("5pt", "s")):
-        errs = [100.0 * abs(row["schemes"][scheme]["sigma_relative_error"]) for row in report["rows"]]
+        errs = [
+            100.0 * abs(row["schemes"][scheme]["sigma_relative_error"]) for row in report["rows"]
+        ]
         ax.plot(xs, errs, marker + "-", label=f"$\\sigma$ error ({scheme})")
     ax.axhline(15.0, color="r", ls="--", lw=1, label="15% acceptance")
     ax2 = ax.twinx()
     for row in report["rows"]:
         hist = row["lbm_run"]["max_velocity_history"]
-        ax2.semilogy(
-            [row["interface_cells"]] * len(hist), hist, "x", color="0.4"
-        )
+        ax2.semilogy([row["interface_cells"]] * len(hist), hist, "x", color="0.4")
     ax2.set_ylabel("residual $\\max|u|$ (LBM, grey x)")
     ax.set_xlabel("interface resolution $\\xi/h$ (cells)")
     ax.set_ylabel("$|\\sigma_{measured}/\\sigma_{analytic}-1|$ (%)")
@@ -197,9 +197,14 @@ def main() -> int:
     for c in checks:
         m = c["metric"] if "metric" in c else c["measured"]
         m_str = f"{m:.3e}" if isinstance(m, float) else str(m)
-        print(f"{c['criterion']:42s} {c['resolution_interface_cells']:5g} {m_str:>12s} {c['tolerance']:8.3g}  {c['passed']}")
+        print(
+            f"{c['criterion']:42s} {c['resolution_interface_cells']:5g} {m_str:>12s} {c['tolerance']:8.3g}  {c['passed']}"
+        )
     print(f"\nVERDICT: {results['verdict']}  (artifacts: {out})")
-    print("CH phase-flux gap diagnostic:", json.dumps(report.get("ch_phase_flux_gap", {}), sort_keys=True))
+    print(
+        "CH phase-flux gap diagnostic:",
+        json.dumps(report.get("ch_phase_flux_gap", {}), sort_keys=True),
+    )
     return 0 if passed else 1
 
 

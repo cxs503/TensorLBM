@@ -1,26 +1,34 @@
-"""Aggregate the xval arm artefacts into results.json + figures (zero hand-typed numbers)."""
+"""Render the historical band-and-droplet campaign from its own raw arms and criteria."""
 
 from __future__ import annotations
+import argparse
 import json
 import os
-import sys
+from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(os.path.dirname(HERE))
-ART = os.path.join(ROOT, "artifacts", "xval_free_energy_binary_equilibrium")
-FIG = os.path.join(ROOT, "docs", "figures")
-PRE = json.load(
-    open(
-        os.path.join(
-            ROOT, "xval", "XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE", "predeclared.json"
-        )
-    )
-)
-TH = PRE["predeclared_thresholds"]
+ROOT = Path(__file__).resolve().parents[4]
+OUTPUT = ROOT / "outputs/verification/free-energy-pressure/band-droplet"
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--criteria", type=Path, required=True, help="original band-and-droplet criteria JSON")
+parser.add_argument("--artifacts", type=Path, default=OUTPUT, help="raw arm JSON directory")
+args = parser.parse_args()
+PRE = json.loads(args.criteria.read_text(encoding="utf-8"))
+required = {
+    "closure_rel_max",
+    "sigma_rel_error_max",
+    "Pnn_uniformity_rel_max",
+    "laplace_rel_error_max",
+    "spurious_velocity_max",
+}
+TH = PRE.get("predeclared_thresholds") if isinstance(PRE, dict) else None
+if not isinstance(TH, dict) or not required <= TH.keys() or not PRE.get("anchor"):
+    parser.error("--criteria must contain the original band-and-droplet anchor and predeclared_thresholds")
+ART = args.artifacts
+FIG = OUTPUT / "figures"
 
 
 def load(name):
@@ -29,7 +37,9 @@ def load(name):
 
 
 arms = {n: load(n) for n in ("flat", "dropR16", "dropR24", "dropR36")}
-os.makedirs(FIG, exist_ok=True)
+if not any(arms.values()):
+    parser.error("--artifacts has no flat or droplet arm JSON")
+FIG.mkdir(parents=True, exist_ok=True)
 
 flat = arms["flat"]
 rows = []
@@ -129,7 +139,7 @@ out = dict(
         else None
     ),
 )
-json.dump(out, open(os.path.join(ART, "results.json"), "w"), indent=1)
+(OUTPUT / "results.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
 
 # figures
 if flat:

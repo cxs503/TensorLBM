@@ -1,0 +1,112 @@
+{
+  "source_commit": "6d79ff9258c951bee4d933aef03ec2018b1d70de",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 87,
+      "after": 86
+    },
+    "benchmarks": {
+      "retired": [
+        "xval_free_energy_binary_equilibrium"
+      ]
+    }
+  },
+  "reference_scan": "Checked tracked current consumers and workflows. Board audit m18207 reads the original external m18114 mission worktree. Historical audit snapshots and internal provenance strings retain the original paths.",
+  "compatibility": "The planar runner keeps its flags and reads the byte-exact preregistration beside it. Public report URL and audit figure path remain stable. The band-and-droplet runner keeps its flags. Its renderer now requires an explicit original criteria file and can read old raw arms with --artifacts. Regenerated outputs stay under outputs/.",
+  "scientific_scope": "Historical planar PASS is unchanged. Only compatibility checks and the small CPU quick configuration were used for this migration. The band-and-droplet criteria are absent from the current Git tree and its full report was not reproduced. There is no new full-matrix scientific acceptance.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py",
+      "new_path": "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "c5787c567edfc4c96599c8da6094f0ee4678ebe8",
+      "size_bytes": 8208,
+      "published_report": "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+      "original_sha256": "4ae95da9a918abfade7e5e4ebfcd5344369507683a3ef645bd96649bf4f70d75",
+      "new_sha256": "e3b34be393ebff8e5aa43f48210848c42d7a5b90f478bdd2664c649f73e82e77"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/predeclared.json",
+      "new_path": "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "2698bf5e2359bc8295671f801443d882ff781649",
+      "size_bytes": 3098,
+      "published_report": "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+      "original_sha256": "cdc69af146390e9bee871fdd51cab638c9ae5acb089a70b4b160d6abad42c471",
+      "new_sha256": "cdc69af146390e9bee871fdd51cab638c9ae5acb089a70b4b160d6abad42c471"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/artifacts/xval_binary_equilibrium_pressure.json",
+      "new_path": "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/evidence/xval_binary_equilibrium_pressure.json",
+      "git_mode": "100644",
+      "original_git_blob": "a6b08ab4b08272e5038f1e8e1bf3a58e424d8a52",
+      "size_bytes": 13871,
+      "published_report": "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+      "original_sha256": "efc9213925e408d20d80505bc6578c72139db08273ef69af8bb27bb3f0f8414a",
+      "new_sha256": "efc9213925e408d20d80505bc6578c72139db08273ef69af8bb27bb3f0f8414a"
+    },
+    {
+      "old_path": "benchmarks/xval_free_energy_binary_equilibrium/make_report.py",
+      "new_path": "development/verification/free-energy-pressure/band-droplet/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "3075c00bd5ca548a66b0c177c5a887c74ee7cc75",
+      "size_bytes": 7001,
+      "published_report": "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+      "original_sha256": "7c1e3ee571d25ec2f3d62887fffff26a6ad4aaf4e189c112a4b5042cb1471962",
+      "new_sha256": "8eb8483c64bd16bae2983ca499d7ce2ab9d800f8ece9df0c8eceb39fec5b793c"
+    },
+    {
+      "old_path": "benchmarks/xval_free_energy_binary_equilibrium/run_xval.py",
+      "new_path": "development/verification/free-energy-pressure/band-droplet/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "71e6030d260c09ebe7f49c1839e11c0d78135e31",
+      "size_bytes": 15920,
+      "published_report": "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+      "original_sha256": "9b0d0beebc882abf8266e203cbcfe822fd9ece5c30dbc9be697cbcd1c746f867",
+      "new_sha256": "61482cd43e8d6511543925fea11a6ab428c2dddab9654c192bcc79b271d0ba1c"
+    }
+  ],
+  "verification": [
+    "The preregistration and historical result remain byte-exact and match the independent m18207 audit copies. Checked original Git blobs, modes, SHA-256 and all new public report links.",
+    "Seven targeted planar tests and 83 repository governance tests passed. Ruff ratchet passed. The registry lookup found the case, archived data and figure under 208 records with zero hard violations.",
+    "The original and relocated runners both exited 1 on the real CPU --quick input. Their entire numerical JSON payloads match after excluding the absolute criteria_source path. Their PNGs are byte-identical and decode.",
+    "Both legacy CLIs expose --help. The report renderer exits 2 with a usage message when the real planar preregistration is supplied. No original band-and-droplet criteria were available for a positive renderer run."
+  ],
+  "quick_run": {
+    "command": "python benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py --quick",
+    "environment": "Linux x86_64, Python 3.12.14, PyTorch 2.15.0+cpu, NumPy 2.5.5, Matplotlib 3.11.2",
+    "baseline_exit_code": 1,
+    "migrated_exit_code": 1,
+    "baseline_and_migrated_verdict": "FAIL",
+    "normalized_json_sha256": "ac39eba27110d75b5c164a4726ce6653dcafd87276bb47a8803a1621ef36aff5",
+    "figure_sha256": "73487133420be4eb01260a5493923a99ccb29a0da6489cc7657a7511ddcdd85c",
+    "failed_checks": [
+      {
+        "criterion": "C1_coexistence_pressure",
+        "measured": [
+          0.24999909971961515,
+          0.24999954985955442
+        ],
+        "metric": 3.601121539409391e-06,
+        "passed": false,
+        "reference": 0.25,
+        "resolution_interface_cells": 2.0,
+        "tolerance": 1e-06
+      },
+      {
+        "criterion": "C1_coexistence_pressure",
+        "measured": [
+          0.24981357065001542,
+          0.24990677446090181
+        ],
+        "metric": 0.0007457173999383393,
+        "passed": false,
+        "reference": 0.25,
+        "resolution_interface_cells": 3.0,
+        "tolerance": 1e-06
+      }
+    ]
+  }
+}
