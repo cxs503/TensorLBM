@@ -1,0 +1,113 @@
+{
+  "source_commit": "877f8abd20bb00e0aac0ba981e8f8df698b62f6d",
+  "concurrent_pull_requests": [
+    2983,
+    2984
+  ],
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 12,
+  "tracked_root_files_before": 22,
+  "tracked_root_files_after": 20,
+  "separate_root_file_migration": "m23309-report-client-2026-11-24.json",
+  "retired_root": "TensorLBM",
+  "original_and_archived_tree": "f3c569b0e603c14afa8b1d5f0a8c189e09b5f8e8",
+  "reference_scan": "Checked exact paths, active nested-source references and canonical counterparts. Historical citations to earlier TensorLBM paths remain at their published URLs and refer to their original revisions.",
+  "compatibility": "The archive retains the complete relative directory hierarchy and original object ID. The existing canonical case, published documentation and historical full checkout are untouched. The standalone m23657 report generator is kept as an archive record and is not auto-executed.",
+  "scientific_scope": "No numerical algorithm, existing result, current acceptance verdict or official solver entry point is changed.",
+  "entries": [
+    {
+      "old_path": "TensorLBM/benchmarks/xval_compressed_node_table_prod/results.json",
+      "new_path": "development/audit/m22809/deliveries/m25431/benchmarks/xval_compressed_node_table_prod/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "f01aeeec0ea17859146c1d160ec2b29a23d755e0",
+      "original_sha256": "23255afe6119a985f0f4a50a5111f5d781190828a8eb4ddd9031378071d4bc00",
+      "size_bytes": 828,
+      "retained_current_path": "benchmarks/xval_compressed_node_table_prod/results.json",
+      "retained_current_git_blob": "6fe42055a0e198d70cad5d959904688081127bb1"
+    },
+    {
+      "old_path": "TensorLBM/benchmarks/xval_compressed_node_table_prod/run_bench.py",
+      "new_path": "development/audit/m22809/deliveries/m25431/benchmarks/xval_compressed_node_table_prod/run_bench.py",
+      "git_mode": "100644",
+      "original_git_blob": "b51452ca59d71220a2d23c400389865cff8fca7a",
+      "original_sha256": "ecd280cb308ce5694e71eefd2cf892dd44c3676c3c6c22181c87bd8a28a0c42b",
+      "size_bytes": 4892,
+      "retained_current_path": "benchmarks/xval_compressed_node_table_prod/run_bench.py",
+      "retained_current_git_blob": "36e3cd29081bf56f2123dc238c357bb97c295365"
+    },
+    {
+      "old_path": "TensorLBM/docs/maturity/m22809_evidence.json",
+      "new_path": "development/audit/m22809/deliveries/m25431/docs/maturity/m22809_evidence.json",
+      "git_mode": "100644",
+      "original_git_blob": "2190f4630bef3a6090dd976c3f6fa2bb34bcdae6",
+      "original_sha256": "ed2b66a6f8d9cb157f9b77c47017c9338eb697d9909594e640672b1c2ab9b332",
+      "size_bytes": 1823,
+      "retained_current_path": "docs/maturity/m22809_evidence.json",
+      "retained_current_git_blob": "4d4e57d9440a3c56e421e54c785c09fcf4fe58f3"
+    },
+    {
+      "old_path": "TensorLBM/docs/xval_compressed_node_table_prod_integration.md",
+      "new_path": "development/audit/m22809/deliveries/m25431/docs/xval_compressed_node_table_prod_integration.md",
+      "git_mode": "100644",
+      "original_git_blob": "7fe653f11383e4b4161b26728622dec1b225cbe4",
+      "original_sha256": "bf37adf9aa40c92225764e28eba65121e6c7017770e56cd43dd0fb01f54d9e23",
+      "size_bytes": 3146,
+      "retained_current_path": "docs/xval_compressed_node_table_prod_integration.md",
+      "retained_current_git_blob": "a7081d76d83e9c33682013e785cea77f209622f7"
+    },
+    {
+      "old_path": "TensorLBM/src/tensorlbm/__init__.py",
+      "new_path": "development/audit/m22809/deliveries/m25431/src/tensorlbm/__init__.py",
+      "git_mode": "100644",
+      "original_git_blob": "148b421339d2e7a7ad946b27c8c926c9e111601a",
+      "original_sha256": "97bf1a7fd5d9082e4e28abdbdb222de9465c62143da7ad0faa4f782324f28645",
+      "size_bytes": 1297,
+      "retained_current_path": "src/tensorlbm/__init__.py",
+      "retained_current_git_blob": "1adc6a4c41a33bdbc74944587326140504c81c9b"
+    },
+    {
+      "old_path": "TensorLBM/src/tensorlbm/porous_media.py",
+      "new_path": "development/audit/m22809/deliveries/m25431/src/tensorlbm/porous_media.py",
+      "git_mode": "100644",
+      "original_git_blob": "da7127929d901d5c38a876f1e8b0c30bec224184",
+      "original_sha256": "63285aed5027250c9ab6b7590d67a1878d112622f001390fa93281c93463e27a",
+      "size_bytes": 806,
+      "retained_current_path": "src/tensorlbm/porous_media.py",
+      "retained_current_git_blob": "fb767eca783c9e888c5b755b508b3468755266c1"
+    },
+    {
+      "old_path": "TensorLBM/tests/test_porous_darcy_layouts.py",
+      "new_path": "development/audit/m22809/deliveries/m25431/tests/test_porous_darcy_layouts.py",
+      "git_mode": "100644",
+      "original_git_blob": "9aa37384bd7b31e14de0fafdd8a98bc5c7801bb2",
+      "original_sha256": "8e60d25008fb1fdfce4ee8caee46c6ece4ad5d6fa5da72ac443b6b70c91699d6",
+      "size_bytes": 8277,
+      "retained_current_path": "tests/test_porous_darcy_layouts.py",
+      "retained_current_git_blob": "917a7db051d7afec4c854ec83068bc72a0047d8c"
+    },
+    {
+      "old_path": "TensorLBM/verdicts/verdict_m22809_compressed_node_table_prod.sql",
+      "new_path": "development/audit/m22809/deliveries/m25431/verdicts/verdict_m22809_compressed_node_table_prod.sql",
+      "git_mode": "100644",
+      "original_git_blob": "e989a4241828d23807e2620b2323484f827b3bf1",
+      "original_sha256": "b703e1ba81dc1fd953c6a487ae7c509e5653d2bd8394ba196781c15b5be92fd7",
+      "size_bytes": 632,
+      "retained_current_path": "development/audit/m22809/verdict_m22809_compressed_node_table_prod.sql",
+      "retained_current_git_blob": "f92005202a95808989130f88439e4f8c145c93b2"
+    },
+    {
+      "old_path": "gen_result.py",
+      "new_path": "development/audit/m23657/gen_result.py",
+      "git_mode": "100644",
+      "original_git_blob": "d89fb1e06cca62dc0bf12cd7e40c4fa59eb03cb2",
+      "original_sha256": "1ae0b4ec2184f44eed88bf4d31d698b522786b43cc03214194407d8afd44cee5",
+      "size_bytes": 8022
+    }
+  ],
+  "verification": [
+    "All nine originals retained exact Git object IDs, SHA-256 checksums and modes. The eight-file delivery tree also retained its exact object ID.",
+    "Archived Python files compiled and both archived JSON records parsed. The archived report generator was not executed.",
+    "The canonical tensorlbm.porous_media import resolved under src/tensorlbm. Both governance gates accepted the original source and historical checkout.",
+    "All 82 governance tests passed with 199 registered cases and zero hard benchmark ledger violations."
+  ]
+}
