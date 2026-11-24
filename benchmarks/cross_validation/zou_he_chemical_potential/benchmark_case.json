@@ -1,0 +1,47 @@
+{
+  "scope": "D2Q9 force-consistent Zou/He boundary reconstruction with chemical-potential forcing. Current CPU rerun reproduces the exact one-column invariants and the half-force defect law. The coupled free-energy channel remains a failed case, with 83/86-step blow-up and an out-of-range order parameter for impose. No external binary, layered Poiseuille reference or long-horizon production stability is covered.",
+  "criteria": {
+    "corrected_conserved_flux_relative_error_lt": 0.15,
+    "classical_half_force_defect_law_relative_mismatch_lt": 0.05,
+    "channel_finite_over_200_steps": true,
+    "channel_order_parameter_abs_max": 1.0
+  },
+  "source": [
+    "benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py",
+    "development/verification/zou-he-channel/two-conservation/make_report.py",
+    "src/tensorlbm/phasefield/zouhe_two_conservation.py",
+    "src/tensorlbm/phasefield/free_energy_channel.py",
+    "tests/test_zouhe_two_conservation_chemical_potential.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py"
+  ],
+  "documentation": [
+    "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
+    "docs/audit_m18753/AUDIT_m18753.md"
+  ],
+  "reference_files": [
+    "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
+    "docs/oss_solutions_XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.sql"
+  ],
+  "references": [
+    {
+      "source": "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
+      "field": "Analytic comparators",
+      "value": "Zou & He (1997), Guo et al. (2002) half-force convention, Swift et al. (1995) free-energy formulation."
+    },
+    {
+      "source": "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
+      "field": "Upstream method comparison",
+      "value": "ebinan92/Fingering_dynamics, deficit-split order-parameter reconstruction."
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/zou_he_chemical_potential/evidence/results.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/zou-he-chemical-potential-xval-2026-11-24.json",
+    "docs/oss_solutions_XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.sql",
+    "docs/audit_m18753/AUDIT_m18753.md"
+  ]
+}

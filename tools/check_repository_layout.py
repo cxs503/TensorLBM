@@ -79,6 +79,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
     ("xval", "fluctuating_lbm_ghost_modes"),
     ("scripts", "p387w2_n04_sphere_force"),
+    ("xval", "XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT"),
     ("scripts", "p399w2_n04_curved_force"),
     ("xval", "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"),
     ("xval", "ludwig_fe_stress"),
