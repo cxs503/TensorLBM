@@ -6,9 +6,9 @@ Every number in the generated document comes from
 ``table.csv``/``summary.json`` (written by analyze.py); nothing is typed by
 hand, so the document cannot drift from the runs. Re-run after new arms::
 
-    python xval/component_protocol_codegen/run_arm.py --arm A1 --out ...
-    python xval/component_protocol_codegen/analyze.py
-    python xval/component_protocol_codegen/make_doc.py
+    python benchmarks/cross_validation/component_protocol_codegen/run_arm.py --arm A1 --out ...
+    python benchmarks/cross_validation/component_protocol_codegen/analyze.py
+    python benchmarks/cross_validation/component_protocol_codegen/make_doc.py
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 ART = REPO_ROOT / "artifacts" / "xval_component_protocol_codegen"
 DOC = REPO_ROOT / "docs" / "codegen_component_protocol.md"
-DECL = json.loads((REPO_ROOT / "xval" / "component_protocol_codegen" / "predeclared.json").read_text())
+DECL = json.loads((Path(__file__).with_name("predeclared.json")).read_text())
 
 
 def load() -> tuple[list[dict], dict]:
@@ -108,7 +108,9 @@ def fmt_posthoc(summary: dict) -> str:
     for c in summary["criteria"]:
         if c["id"] == "T4c_div_scaled_diagnostic":
             for arm, d in c["detail"].items():
-                rows.append(f"| {arm} | {d['div_max']:.3e} | {d['div_over_u0k']:.4%} | {d['div_analytic_operator']:.1e} |")
+                rows.append(
+                    f"| {arm} | {d['div_max']:.3e} | {d['div_over_u0k']:.4%} | {d['div_analytic_operator']:.1e} |"
+                )
     head = "| arm | max abs(div u) | div/(u0 k_lat) | same operator on analytic field |\n|---|---|---|---|\n"
     return head + "\n".join(rows)
 
@@ -142,7 +144,7 @@ Status: **anchor criterion met** (`{verdict_anchor}`); one self-imposed side cri
 recorded FAIL (`{failed}`) and diagnosed below -- never retuned after the run.
 
 Package: `src/tensorlbm/codegen/` (`protocol.py`, `components.py`, `templates.py`, `generate.py`,
-`reference.py`). Harness: `xval/component_protocol_codegen/`. Tests:
+`reference.py`). Harness: `benchmarks/cross_validation/component_protocol_codegen/`. Tests:
 `tests/test_component_protocol_codegen.py`.
 
 ---
@@ -212,7 +214,7 @@ sha256 of the source is the provenance handle (`kernel.sha256`, recorded per arm
 by averaging against the opposite direction (`feq_plus = (feq + feq_opp)/2`) instead of the analytic
 even/odd forms, per-direction `np.roll` streaming. Different code path = real cross-check.
 
-**Case driver (`xval/component_protocol_codegen/run_arm.py`).** One arm = (family, N, u0), 120 steps,
+**Case driver (`benchmarks/cross_validation/component_protocol_codegen/run_arm.py`).** One arm = (family, N, u0), 120 steps,
 samples every 2 steps, viscosity from a least-squares fit of `ln E` over `t in [20, 120]`,
 `nu_meas = -slope/(4 k_lat^2)`. Thresholds are in `predeclared.json`, written before the first run.
 
@@ -308,9 +310,9 @@ equilibrium split assumes the standard second-order D2Q9 form.
 Reproduce (all commands from the repository root, total < 10 s):
 
 ```bash
-for a in A1 A2 A3 A4 A5 A6; do python xval/component_protocol_codegen/run_arm.py --arm $a; done
-python xval/component_protocol_codegen/analyze.py
-python xval/component_protocol_codegen/make_doc.py
+for a in A1 A2 A3 A4 A5 A6; do python benchmarks/cross_validation/component_protocol_codegen/run_arm.py --arm $a; done
+python benchmarks/cross_validation/component_protocol_codegen/analyze.py
+python benchmarks/cross_validation/component_protocol_codegen/make_doc.py
 python -m pytest tests/test_component_protocol_codegen.py -q
 ```
 
@@ -338,15 +340,15 @@ unchanged, which is the reusability that makes this a knowledge asset rather tha
 if __name__ == "__main__":
     arms, _summary = load()
     by = {a["arm"]: a for a in arms}
-    text = build().replace("{A2:.6f}", f"{by['A2']['nu_measured']:.6f}").replace(
-        "{A5:.6f}", f"{by['A5']['nu_measured']:.6f}"
+    text = (
+        build()
+        .replace("{A2:.6f}", f"{by['A2']['nu_measured']:.6f}")
+        .replace("{A5:.6f}", f"{by['A5']['nu_measured']:.6f}")
     )
-    text = text.replace(
-        "{d_a5:.3f}", f"{by['A5']['nu_error_pct'] - by['A2']['nu_error_pct']:.3f}"
-    ).replace(
-        "{f2:.3e}", f"{by['A2']['field_l2_rel']:.3e}"
-    ).replace(
-        "{f5:.3e}", f"{by['A5']['field_l2_rel']:.3e}"
+    text = (
+        text.replace("{d_a5:.3f}", f"{by['A5']['nu_error_pct'] - by['A2']['nu_error_pct']:.3f}")
+        .replace("{f2:.3e}", f"{by['A2']['field_l2_rel']:.3e}")
+        .replace("{f5:.3e}", f"{by['A5']['field_l2_rel']:.3e}")
     )
     DOC.write_text(text)
     print(f"wrote {DOC.relative_to(REPO_ROOT)} ({len(text.splitlines())} lines)")

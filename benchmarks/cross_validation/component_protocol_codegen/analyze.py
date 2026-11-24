@@ -11,7 +11,7 @@ and writes:
 
 Usage::
 
-    python xval/component_protocol_codegen/analyze.py
+    python benchmarks/cross_validation/component_protocol_codegen/analyze.py
 """
 
 from __future__ import annotations
@@ -26,9 +26,11 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-if str(HERE) not in sys.path:  # allow `python xval/component_protocol_codegen/analyze.py`
+if (
+    str(HERE) not in sys.path
+):  # allow `python benchmarks/cross_validation/component_protocol_codegen/analyze.py`
     sys.path.insert(0, str(HERE))
-REPO_ROOT = HERE.parents[1]
+REPO_ROOT = HERE.parents[2]
 DEFAULT_ARM_DIR = REPO_ROOT / "artifacts" / "xval_component_protocol_codegen"
 
 
@@ -215,8 +217,11 @@ def criteria(arms: list[dict], decl: dict) -> list[dict]:
     fam_pairs: list[dict] = []
     for n in (32, 64):
         for u0 in (0.02, 0.04):
-            got = {a["config"]["family"]: a for a in arms
-                   if a["config"]["n"] == n and a["config"]["u0"] == u0}
+            got = {
+                a["config"]["family"]: a
+                for a in arms
+                if a["config"]["n"] == n and a["config"]["u0"] == u0
+            }
             if {"BGK", "TRT"} <= set(got):
                 b, t = got["BGK"]["nu_measured"], got["TRT"]["nu_measured"]
                 fam_pairs.append(
@@ -234,7 +239,8 @@ def criteria(arms: list[dict], decl: dict) -> list[dict]:
             "description": "BGK and TRT arms at identical (N, u0) recover the same viscosity (cross-component check)",
             "threshold_pct": th["owner_acceptance_pct"],
             "detail": fam_pairs,
-            "passed": all(p["delta_pct"] < th["owner_acceptance_pct"] for p in fam_pairs) and bool(fam_pairs),
+            "passed": all(p["delta_pct"] < th["owner_acceptance_pct"] for p in fam_pairs)
+            and bool(fam_pairs),
         }
     )
     return out
@@ -322,19 +328,25 @@ def write_figures(arms: list[dict], out_dir: Path) -> list[str]:
     fig, ax = plt.subplots(figsize=(6.6, 4.0))
     labels, vals, errs = [], [], []
     for a in arms:
-        labels.append(f"{a['arm']}\n{a['config']['family']} N={a['config']['n']}\nu0={a['config']['u0']}")
+        labels.append(
+            f"{a['arm']}\n{a['config']['family']} N={a['config']['n']}\nu0={a['config']['u0']}"
+        )
         vals.append(a["nu_measured"])
         errs.append(a["nu_error_pct"])
     xpos = np.arange(len(arms))
     ax.bar(xpos, vals, yerr=[1e-4] * len(vals), color="#4472c4", alpha=0.85)
-    ax.axhline(arms[0]["case"]["nu_declared"], color="k", ls="--", lw=1.0, label="declared nu = 0.02")
+    ax.axhline(
+        arms[0]["case"]["nu_declared"], color="k", ls="--", lw=1.0, label="declared nu = 0.02"
+    )
     for xi, (v, er) in enumerate(zip(vals, errs)):
         ax.text(xi, v * 1.0004, f"{er:.2f}%", ha="center", fontsize=7)
     ax.set_xticks(xpos)
     ax.set_xticklabels(labels, fontsize=6.5)
     ax.set_ylim(0.019, 0.0205)
     ax.set_ylabel("nu_measured (lattice)")
-    ax.set_title("Viscosity recovered from Taylor-Green decay vs the value the\nComponentSpec declares (15% criterion)")
+    ax.set_title(
+        "Viscosity recovered from Taylor-Green decay vs the value the\nComponentSpec declares (15% criterion)"
+    )
     ax.legend(fontsize=7)
     ax.grid(alpha=0.3, axis="y")
     fig.tight_layout()
@@ -378,14 +390,26 @@ def main(argv: list[str] | None = None) -> int:
         "verdict": "PASS"
         if all(c["passed"] for c in crit if c.get("passed") is not None)
         else "FAIL",
-        "anchor_criteria_ids": ["T1_nu_vs_declared", "T2_codegen_vs_reference",
-                                "T3_field_l2_vs_analytic", "T5_grid_convergence",
-                                "T6_family_agreement"],
+        "anchor_criteria_ids": [
+            "T1_nu_vs_declared",
+            "T2_codegen_vs_reference",
+            "T3_field_l2_vs_analytic",
+            "T5_grid_convergence",
+            "T6_family_agreement",
+        ],
         "verdict_anchor_criterion": "PASS"
-        if all(c["passed"] for c in crit if c["id"] in
-               ("T1_nu_vs_declared", "T2_codegen_vs_reference",
-                "T3_field_l2_vs_analytic", "T5_grid_convergence",
-                "T6_family_agreement"))
+        if all(
+            c["passed"]
+            for c in crit
+            if c["id"]
+            in (
+                "T1_nu_vs_declared",
+                "T2_codegen_vs_reference",
+                "T3_field_l2_vs_analytic",
+                "T5_grid_convergence",
+                "T6_family_agreement",
+            )
+        )
         else "FAIL",
         "failed_declared_criteria": [c["id"] for c in crit if c["passed"] is False],
         "figures": figs,
@@ -396,7 +420,12 @@ def main(argv: list[str] | None = None) -> int:
         ),
     }
     (arm_dir / "summary.json").write_text(json.dumps(summary, indent=2))
-    print(json.dumps({k: summary[k] for k in ("verdict", "max_nu_error_pct", "max_codegen_ref_abs")}, indent=2))
+    print(
+        json.dumps(
+            {k: summary[k] for k in ("verdict", "max_nu_error_pct", "max_codegen_ref_abs")},
+            indent=2,
+        )
+    )
     for c in crit:
         tag = "INFO" if c["passed"] is None else ("PASS" if c["passed"] else "FAIL")
         print(f"  [{tag}] {c['id']}: {c['description']}")

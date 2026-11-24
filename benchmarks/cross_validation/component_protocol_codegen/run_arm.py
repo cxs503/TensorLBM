@@ -15,7 +15,7 @@ Each arm
 
 Usage::
 
-    python xval/component_protocol_codegen/run_arm.py --arm A1 \
+    python benchmarks/cross_validation/component_protocol_codegen/run_arm.py --arm A1 \
         --out artifacts/xval_component_protocol_codegen/arm_A1.json
 """
 
@@ -30,7 +30,7 @@ from pathlib import Path
 
 import numpy as np
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 _SRC = _REPO_ROOT / "src"
 if str(_SRC) not in sys.path:  # allow running from a plain checkout
     sys.path.insert(0, str(_SRC))
