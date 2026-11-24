@@ -94,17 +94,9 @@ def test_fractional_limits_are_bitwise():
     assert abs(w["eps_0.5"] - expected) < 1e-12
     assert all(w[f"eps_{k}"] < float(k) for k in ("0.25", "0.5", "0.75"))
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "known limitation: the post-collision NT operator does not reduce to bounce-back "
-        "at eps_s=1 (measured 0.40 dx interface displacement, plane Couette). Fixing it "
-        "changes the solid-limit semantics of the operator; the number is pinned by "
-        "docs/XVAL-LBM-PER-STEP-SETUP-HOOK-AND-MASK-BLEND-R3-FRACTIONAL-MASK.md section 6."
-    ),
-)
+
 def test_nt_post_collapses_to_bounce_back_at_eps_one():
-    """The library docstring used to claim this limit unconditionally -- it does not hold."""
+    """The post-collision NT operator now correctly collapses to bounce-back at eps_s=1."""
     r = R.run_fractional_wall("couette", NY, NX, TAU, 1.0, "nt_post")
     assert abs(r["offset_err_dx"]) <= OFFSET_TOL_DX, (
         f"eps_s=1 post-collision interface displaced by {r['offset_err_dx']:+.4f} dx"

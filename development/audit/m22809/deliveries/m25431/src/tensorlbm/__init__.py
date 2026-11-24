@@ -1,0 +1,46 @@
+"""TensorLBM: Lattice Boltzmann Method solver library.
+
+Provides:
+- D3Q19 MRT collision with Smagorinsky SGS model for LES
+- D2Q9 single-phase flow with regularized BGK (RLBM) for high-Re stability
+- D2Q9 MRT collision (Guo/Shyy moment basis)
+- Shan-Chen multiphase model (SCMP) with EDM forcing
+- Wetting/diffuse-interface verification (three-anchor: contact angle, Ca scaling, Young-Laplace)
+- Adjoint / differentiable LBM (BPTT reference + out-of-core checkpointed gradient)
+- Porous-media LBM (compressed fluid-node neighbour table, Darcy permeability)
+"""
+
+from .d3q19 import C, W, OPPOSITE, CS2
+from .solver import (
+    equilibrium3d,
+    macroscopic3d,
+    stream3d,
+    collide_mrt,
+    collide_smagorinsky_mrt3d,
+    collide_rlbm_2d,
+)
+from .d2q9 import (
+    equilibrium,
+    macroscopic,
+    stream,
+    collide_bgk,
+    collide_mrt as collide_mrt_2d,
+    CS2 as CS2_2D,
+)
+from . import adjoint
+from . import porous_media
+
+__all__ = [
+    # 3D
+    "C", "W", "OPPOSITE", "CS2",
+    "equilibrium3d", "macroscopic3d", "stream3d",
+    "collide_mrt", "collide_smagorinsky_mrt3d",
+    # 2D
+    "equilibrium", "macroscopic", "stream", "collide_bgk", "CS2_2D",
+    "collide_mrt_2d",
+    "collide_rlbm_2d",
+    # Adjoint / differentiable
+    "adjoint",
+    # Porous media
+    "porous_media",
+]
