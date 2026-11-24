@@ -29,7 +29,7 @@ reproduces the OSS practice -- but ends with a machine-checkable verdict
 
 Usage
 -----
-    PYTHONPATH=src python benchmarks/xval/xval_vivsim_cylinder_re200.py \\
+    PYTHONPATH=src python benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py \\
         --D 16 --u 0.1 --out out.json --series series.npz
 """
 

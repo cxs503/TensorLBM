@@ -1,0 +1,58 @@
+{
+  "scope": "Re=200 cylinder-flow method comparison against pinned vivsim references. The historical matched runs terminated on non-finite fields and their verdict was withheld. The frozen comparisons use a different setup and are reported separately. Current scientific acceptance remains unevaluated.",
+  "criteria": {
+    "mean_drag": {
+      "metric": "Relative error in mean drag coefficient over the second half of the force record",
+      "reference": 1.389,
+      "strict_relative_tolerance": 0.15
+    },
+    "peak_lift": {
+      "metric": "Relative error in maximum absolute lift coefficient over the second half of the force record",
+      "reference": 0.718,
+      "strict_relative_tolerance": 0.15
+    }
+  },
+  "source": [
+    "benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py",
+    "benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_re200_report.py",
+    "tests/test_xval_vivsim_cylinder_re200.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py",
+    "docs/XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS.md"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/vivsim_cylinder_re200/README.md",
+    "docs/XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS.md",
+    "docs/board_audit/m17747/AUDIT_m17747.md"
+  ],
+  "reference_files": [
+    "docs/board_audit/m17747/evidence/oss_flow_pass_cylinder.py",
+    "docs/board_audit/m17747/evidence/oss_LICENSE.txt"
+  ],
+  "references": [
+    {
+      "source": "docs/XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS.md",
+      "field": "upstream_reference_revision",
+      "value": "haimingz/vivsim@fb84b12 examples/2d/flow_pass_cylinder.py:78-85"
+    },
+    {
+      "source": "docs/XVAL-LBM-CONTINUOUS-ERROR-PRINT-VS-DOI-REFS.md",
+      "field": "citations_carried_by_upstream_reference",
+      "value": "10.1016/j.ijmecsci.2024.108961; 10.1016/j.camwa.2014.05.013; 10.1017/S0022112086003014"
+    }
+  ],
+  "results": [
+    "docs/board_audit/m17747/evidence/summary.json",
+    "docs/board_audit/m17747/evidence/m17747_repro_D10.json",
+    "docs/board_audit/m17747/evidence/xval_D10_u010.json",
+    "docs/board_audit/m17747/evidence/xval_D12_u010.json",
+    "docs/board_audit/m17747/evidence/xval_D12_u030.json"
+  ],
+  "evidence": [
+    "docs/board_audit/m17747/evidence/m17747_repro_D10.npz",
+    "docs/board_audit/m17747/evidence/MANIFEST.sha256",
+    "docs/figures/xval_vivsim_re200_frozen_ladder.png",
+    "docs/architecture/migrations/vivsim-cylinder-re200-2026-11-25.json"
+  ]
+}

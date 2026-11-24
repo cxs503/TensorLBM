@@ -1,0 +1,45 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "benchmarks": {
+      "before": 107,
+      "after": 107
+    },
+    "benchmarks/xval": {
+      "files_before": 7,
+      "files_after": 5
+    }
+  },
+  "reference_scan": "Checked tracked current paths and split Python imports. The live unit test and user-facing report point at the new location. The board audit, SQL and snapshot refer to original external worktrees or original recorded source paths.",
+  "compatibility": "Both runner and report builder preserve flags, defaults, numerical logic and output schemas. Only embedded path descriptions changed. The public report retains its original URL and links to the new case. The original command remains reproducible from the pinned source commit.",
+  "scientific_scope": "Prior matched trials hit non-finite values and the audit withheld the comparison. Frozen evidence came from a different setup. A 16-step CPU smoke was used for relocation parity only. Full scientific reproduction was deferred.",
+  "remaining_directory_blocker": "benchmarks/xval retains five NEBB files. Baseline evidence tests expect artifacts/xval_nebb_startup/results.json, which is absent. The remaining paths are also consumed by the tracked NEBB evidence manifests and launchers.",
+  "entries": [
+    {
+      "old_path": "benchmarks/xval/xval_vivsim_cylinder_re200.py",
+      "new_path": "benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py",
+      "git_mode": "100644",
+      "original_git_blob": "a0d2c727084fb144a48f6cbecf6345d9a4164d20",
+      "size_bytes": 15968,
+      "original_sha256": "2b0b6c5bfa0e6ce536b807ff23d9201f1f8fc74bbc5d7db537df610b047c5c00",
+      "new_sha256": "c5e5b390809f1cfb4fbceff54ad9ba504e15789215dfd5d1c03df2584985f994"
+    },
+    {
+      "old_path": "benchmarks/xval/xval_vivsim_re200_report.py",
+      "new_path": "benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_re200_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "5c2681f9be078a08e8abc7f574a935025be39611",
+      "size_bytes": 8140,
+      "original_sha256": "57b016181bba78d73ed7d27c5f2a8db7307c4ca3b7c7da5074065bf6f440cb97",
+      "new_sha256": "078d1400cccb50dcccc3ba17b7cab58057262ef052e5d9b3c0764d4e2e6c1ba5"
+    }
+  ],
+  "verification": [
+    "Before and after, PYTHONPATH=src python -m pytest -q tests/test_xval_vivsim_cylinder_re200.py passed all 11 tests.",
+    "Before and after, ran the runner with --D 8 --steps 16 --threads 1 --out results.json --series series.npz in separate scratch output directories. The CSV and JSON diagnostics matched, excluding wall time and MLUPS. The short run failed the coefficient gate in both locations.",
+    "Both report builders read docs/board_audit/m17747/evidence/m17747_repro_D10.json and its NPZ sidecar using --out report.json --figdir plots in separate scratch output directories. They emitted identical tables after excluding output paths and two byte-identical PNGs. The archived run's failed gate and NaN at step 2000 remained visible.",
+    "The 83 governance tests and Ruff lint ratchet passed. The registry held 209 cases. New links and selected original audit hashes matched the recorded files."
+  ]
+}

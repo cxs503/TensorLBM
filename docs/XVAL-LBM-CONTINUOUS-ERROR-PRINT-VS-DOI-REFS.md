@@ -42,8 +42,8 @@ DOI 一起写进源码（"零手抄参考值"的好习惯），**但全仓无 as
 
 | 文件 | 作用 |
 |---|---|
-| `benchmarks/xval/xval_vivsim_cylinder_re200.py` | 复刻 vivsim 工况（30D×20D、球心 10D、Re=200、150 D/U0），用 TensorLBM 基元跑；**连续打印** `err%` vs `CD_REF/CL_REF`（复刻 OSS 做法），结尾给**机器可判的 gate**（补上 OSS 缺的那半）；同时输出两套口径：vivsim 口径（后一半记录的均值/`max|Cl|`）与本文口径（谐波幅值 + 逐周期半分峰峰值中位数 + St） |
-| `benchmarks/xval/xval_vivsim_re200_report.py` | 汇总各档 JSON → 对照表 + 三张图（历史曲线/误差柱/网格收敛），全部程序化注入 |
+| [`xval_vivsim_cylinder_re200.py`](../benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py) | 复刻 vivsim 工况（30D×20D、球心 10D、Re=200、150 D/U0），用 TensorLBM 基元跑；**连续打印** `err%` vs `CD_REF/CL_REF`（复刻 OSS 做法），结尾给**机器可判的 gate**（补上 OSS 缺的那半）；同时输出两套口径：vivsim 口径（后一半记录的均值/`max|Cl|`）与本文口径（谐波幅值 + 逐周期半分峰峰值中位数 + St） |
+| [`xval_vivsim_re200_report.py`](../benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_re200_report.py) | 汇总各档 JSON → 对照表 + 三张图（历史曲线/误差柱/网格收敛），全部程序化注入 |
 | `tests/test_xval_vivsim_cylinder_re200.py` | 11 条测试：参考值出处的钉死、两套口径在半解析序列上的行为、gate 的严格不等号边界（15% 本身判 FAIL） |
 
 移植取舍：**只移植"做法"不移植"代码"**。vivsim 的 MDF/EDM/KBC 算子不搬——TensorLBM 自己的
@@ -148,7 +148,7 @@ vivsim 的算例规模 = 1800×1200 格 × 180000 步 ≈ **3.9×10¹¹ 格点�
   `oss_solutions` 端点在本平台不存在（只有盘点报告可查，本次用报告 #9586 + `/tmp/vivsim_src` 源码）。
 
 **工件清单**
-- `benchmarks/xval/xval_vivsim_cylinder_re200.py`、`benchmarks/xval/xval_vivsim_re200_report.py`
+- [`xval_vivsim_cylinder_re200.py`](../benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py)、[`xval_vivsim_re200_report.py`](../benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_re200_report.py)
 - `tests/test_xval_vivsim_cylinder_re200.py`（11 passed）
 - `artifacts/xval_vivsim_re200/`（summary.json、figures）、`docs/figures/xval_vivsim_re200_*.png`
 - `runs/`（两次 NaN 跑的 JSON 与日志——honest FAIL 原始记录，不覆盖）
@@ -183,5 +183,5 @@ vivsim 在 D=60 且 u=0.05 下运行，其稳定域与本仓低分辨率稳定�
 ---
 
 **判级：capability_extension（部分）——做法与门已移植并可裁决，但"口径匹配的直接对标"这一半没做成，如实记 FAIL。**
-第二轮接棒建议：①集群恢复后跑 cj1637/cj1638（脚本已备好，命令见 `benchmarks/xval/README` 摘要行）；
+第二轮接棒建议：①集群恢复后跑 cj1637/cj1638（脚本已备好，命令见 [案例入口](../benchmarks/cross_validation/vivsim_cylinder_re200/README.md) 摘要行）；
 ②把 D 提到 36–40 以满足 τ≥0.55（u=0.1），或改用 KBC/RLBM 碰撞以解除 τ 下界；③若要对齐 vivsim 的 u=0.05，则必须上 GPU。

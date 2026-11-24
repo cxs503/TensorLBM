@@ -2,7 +2,7 @@
 """Assemble the XVAL-vs-vivsim artifacts: comparison table + figures.
 
 Reads the shard JSONs / series produced by
-``benchmarks/xval/xval_vivsim_cylinder_re200.py`` and writes
+``benchmarks/cross_validation/vivsim_cylinder_re200/xval_vivsim_cylinder_re200.py`` and writes
 
   * ``docs/figures/xval_vivsim_re200_cd_cl.png``    -- Cd/Cl history vs the
     OSS DOI references (with the +-15% band) -- the "comparison curve";

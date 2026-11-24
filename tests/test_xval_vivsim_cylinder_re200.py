@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MOD_PATH = ROOT / "benchmarks" / "xval" / "xval_vivsim_cylinder_re200.py"
+MOD_PATH = ROOT / "benchmarks" / "cross_validation" / "vivsim_cylinder_re200" / "xval_vivsim_cylinder_re200.py"
 
 
 def _load():
