@@ -1,0 +1,72 @@
+{
+  "scope": "CPU comparison of the periodic ternary free-energy and chemical-potential kernel against a local evaluation of CudaPhaseField formulae. No upstream CUDA execution or multiphase flow acceptance.",
+  "criteria": {
+    "lambda_consistency": {
+      "metric": "Relative error in each lambda and the harmonic mean for the equal-tension case",
+      "tolerance": 1e-12
+    },
+    "laplacian_operator": {
+      "metric": "Mean absolute relative error on the analytic Laplacian check",
+      "tolerance": 0.01
+    },
+    "gradient_operator": {
+      "metric": "Maximum absolute relative error on each analytic gradient component",
+      "tolerance": 0.01
+    },
+    "chemical_potential_planar": {
+      "metric": "All components finite and maximum absolute first-component chemical potential below the limit",
+      "limit": 10.0
+    },
+    "chemical_potential_pointwise": {
+      "metric": "Relative error for each component against the local reference formula",
+      "tolerance": 1e-10
+    },
+    "droplet_equilibrium": {
+      "metric": "Chemical potentials finite and standard deviation of the first-component chemical potential inside the initialized droplet below the limit",
+      "limit": 0.01
+    },
+    "nonuniform_sigma": {
+      "metric": "Absolute error in each lambda and harmonic mean for the unequal-tension case",
+      "tolerance": 1e-12
+    },
+    "full_field_comparison": {
+      "metric": "Maximum relative error in each chemical-potential component over the 24 by 24 field against the local reference formula",
+      "tolerance": 1e-10
+    }
+  },
+  "source": [
+    "benchmarks/cross_validation/ternary_double_well/run_xval.py",
+    "src/tensorlbm/phasefield/ternary_free_energy.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/ternary_double_well/run_xval.py"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/ternary_double_well/README.md",
+    "benchmarks/cross_validation/ternary_double_well/evidence/historical-report.md",
+    "benchmarks/cross_validation/ternary_double_well/evidence/DIFF_OSS_VS_TENSORLBM.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/ternary_double_well/evidence/DIFF_OSS_VS_TENSORLBM.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/cross_validation/ternary_double_well/evidence/historical-report.md",
+      "field": "reference_implementation",
+      "value": "https://github.com/AminZar69/CudaPhaseField"
+    },
+    {
+      "source": "benchmarks/cross_validation/ternary_double_well/evidence/historical-report.md",
+      "field": "historical_citation_doi",
+      "value": "10.1016/j.camwa.2022.01.005"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/ternary_double_well/evidence/2026-11-25-cpu.json"
+  ],
+  "evidence": [
+    "benchmarks/cross_validation/ternary_double_well/evidence/historical-report.md",
+    "benchmarks/cross_validation/ternary_double_well/evidence/DIFF_OSS_VS_TENSORLBM.md",
+    "docs/architecture/migrations/ternary-double-well-xval-2026-11-25.json"
+  ]
+}

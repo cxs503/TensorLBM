@@ -1,0 +1,144 @@
+{
+  "xval_id": "XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA",
+  "oss_reference": "AminZar69/CudaPhaseField (Zarareh et al. 2022, CMAM 109)",
+  "oss_source": "https://github.com/AminZar69/CudaPhaseField",
+  "oss_paper_doi": "10.1016/j.camwa.2022.01.005",
+  "criterion": "\u5bf9\u6807\u8bef\u5dee < 15%",
+  "results": [
+    {
+      "test": "lambda_consistency",
+      "tensorlbm_lambda": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "oss_lambda": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "lambda_rel_error": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tensorlbm_lambdat": 0.1,
+      "oss_lambdat": 0.1,
+      "lambdat_rel_error": 0.0,
+      "pass": true
+    },
+    {
+      "test": "laplacian_operator",
+      "analytic_laplacian_mean": 1.045556294267027e-20,
+      "computed_mean": -2.098731473429409e-18,
+      "mean_abs_rel_error": 0.0016048336255267545,
+      "pass": true
+    },
+    {
+      "test": "gradient_operator",
+      "max_abs_rel_error_x": 0.003208120928186294,
+      "max_abs_rel_error_y": 0.003208120928186294,
+      "pass": true
+    },
+    {
+      "test": "chemical_potential_planar",
+      "mu1_mean": 6.5052130349130266e-18,
+      "mu2_mean": 0.0,
+      "mu3_mean": 2.168404344971009e-18,
+      "mu1_max_abs": 0.30000000000000004,
+      "mu2_max_abs": 0.0,
+      "mu3_max_abs": 0.30000000000000004,
+      "all_finite": true,
+      "pass": true
+    },
+    {
+      "test": "chemical_potential_pointwise",
+      "center_phi": [
+        0.25,
+        0.1,
+        0.65
+      ],
+      "center_mu_tensorlbm": [
+        0.018375000000000002,
+        0.011850000000000003,
+        -0.030225000000000002
+      ],
+      "center_mu_manual_oss": [
+        0.018375000000000002,
+        0.011850000000000003,
+        -0.030225000000000002
+      ],
+      "rel_error": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pass": 1.0
+    },
+    {
+      "test": "droplet_equilibrium",
+      "droplet_radius": 30.0,
+      "mu1_inside_mean": 4.489764033926944e-05,
+      "mu1_outside_mean": -3.961784619829576e-06,
+      "mu1_inside_std": 0.00010400770560151151,
+      "mu_jump": 4.885942495909902e-05,
+      "all_finite": true,
+      "pass": true
+    },
+    {
+      "test": "nonuniform_sigma",
+      "sigma": [
+        [
+          0.0,
+          0.1,
+          0.15
+        ],
+        [
+          0.1,
+          0.0,
+          0.08
+        ],
+        [
+          0.15,
+          0.08,
+          0.0
+        ]
+      ],
+      "tensorlbm_lambda": [
+        0.16999999999999998,
+        0.03,
+        0.12999999999999998
+      ],
+      "expected_lambda": [
+        0.17,
+        0.03,
+        0.13
+      ],
+      "lambda_abs_error": [
+        2.7755575615628914e-17,
+        0.0,
+        2.7755575615628914e-17
+      ],
+      "tensorlbm_lambdat": 0.06395498392282958,
+      "expected_lambdat": 0.06395498392282958,
+      "lambdat_abs_error": 0.0,
+      "pass": true
+    },
+    {
+      "test": "full_field_comparison",
+      "grid_size": [
+        24,
+        24
+      ],
+      "max_rel_error": [
+        1.3076606858236306e-17,
+        2.396154998771924e-16,
+        1.4015957652003495e-17
+      ],
+      "pass": true
+    }
+  ],
+  "all_pass": true,
+  "mode": "full",
+  "tensorlbm_module": "src/tensorlbm/phasefield/ternary_free_energy.py"
+}

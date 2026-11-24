@@ -21,7 +21,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.phasefield.ternary_free_energy import (  # noqa: E402

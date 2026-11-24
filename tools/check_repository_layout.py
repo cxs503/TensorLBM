@@ -91,6 +91,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "fused_kernel_type_selector"),
     ("xval", "XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET"),
     ("xval", "life_geometry_config"),
+    ("xval", "XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA"),
     ("xval", "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN"),
     ("xval", "XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE"),
     ("benchmarks", "xval_free_energy_binary_equilibrium"),
