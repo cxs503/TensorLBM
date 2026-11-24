@@ -1,0 +1,63 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 84,
+      "after": 83
+    },
+    "benchmarks/cross_validation": {
+      "added": [
+        "component_protocol_codegen"
+      ]
+    }
+  },
+  "reference_scan": "Checked tracked Python import paths, documentation and workflow references. The current unit test, codegen module docstring and published report follow the relocated harness. The board-audit reproducer deliberately uses the pinned historical source and its original paths, as do its archived verdict payloads.",
+  "compatibility": "Keep filenames, arguments and default artifact paths. Resolve the repository root at the new depth and load the unchanged preregistration beside the harness. The published report and historical audit URLs remain available.",
+  "scope": "No numerical code, inputs, acceptance thresholds or historical artifacts changed. Compatibility replay exercises the original six arms on CPU. The declared divergence criterion is retained and is distinct from the selected anchor subset.",
+  "entries": [
+    {
+      "old_path": "xval/component_protocol_codegen/analyze.py",
+      "new_path": "benchmarks/cross_validation/component_protocol_codegen/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "4fd4d39a0eb0738102ff1f6683bc4f18975de1b8",
+      "size_bytes": 15497,
+      "original_sha256": "715e727d67a1f87c29ba9e0e451fcfd33a85a8a5e8a9a8c7a88b8e5e86c981d1",
+      "new_sha256": "904ce918b63fc4bd11b2c4894d05c37f683d15ebf2b9507724cb7e9d509cbc65"
+    },
+    {
+      "old_path": "xval/component_protocol_codegen/make_doc.py",
+      "new_path": "benchmarks/cross_validation/component_protocol_codegen/make_doc.py",
+      "git_mode": "100644",
+      "original_git_blob": "cc6f84be2783d467e02e96a8e713ccddc0e58cb8",
+      "size_bytes": 17718,
+      "original_sha256": "78deb059f01a7002764643ed8c98b6f0a2c46dbdb86006336f403542e46286c7",
+      "new_sha256": "ea93c3853360f234e1d650c36be350c00b62982a64bf3ea4f5359e6609ae72e3"
+    },
+    {
+      "old_path": "xval/component_protocol_codegen/predeclared.json",
+      "new_path": "benchmarks/cross_validation/component_protocol_codegen/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "b54420b52fa368c26febd9e23830c2bf0f6631e8",
+      "size_bytes": 5492,
+      "original_sha256": "acd2cefac1a04c010de527bf1e04bc1d46670cc457baf65f513a41f32d1523ac",
+      "new_sha256": "acd2cefac1a04c010de527bf1e04bc1d46670cc457baf65f513a41f32d1523ac"
+    },
+    {
+      "old_path": "xval/component_protocol_codegen/run_arm.py",
+      "new_path": "benchmarks/cross_validation/component_protocol_codegen/run_arm.py",
+      "git_mode": "100644",
+      "original_git_blob": "064e0fd74ffc50e117d3880142994a7aef106f7b",
+      "size_bytes": 9143,
+      "original_sha256": "f898d7ad111cc1627ede8e4efa198d4c83d924717e42821a176cd18f34565191",
+      "new_sha256": "43d69eb00576d1d57f6d1392c433604d90d12e7d3e8d0ad355bd86fe3b3639be"
+    }
+  ],
+  "verification": [
+    "The original and relocated CPU harnesses each ran A1–A6 for 120 steps. All six arm JSONs and numeric CSV rows match after excluding measured runtimes. Summaries and two generated PNGs agree after accounting for figure paths. Isolated report renders differ only in the case path text.",
+    "Max viscosity error: 1.570913593338072%; max generated/reference kernel difference: 1.1102230246251565e-16. Both full verdicts failed T4b_div_magnitude, and the selected anchor subset passed. No current overall benchmark acceptance is inferred.",
+    "18 focused tests and all 83 governance tests passed. The benchmark registry resolves the preregistration, reference, executable paths and three historical result files. New relative case links resolve.",
+    "Moving from xval into the Ruff-scanned benchmarks tree initially exceeded the formatting ceiling. Reformatted the three moved Python tools, verified identical ASTs across formatting, and reran the lint ratchet."
+  ]
+}

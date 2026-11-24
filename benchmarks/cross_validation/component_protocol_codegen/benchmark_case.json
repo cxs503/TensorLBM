@@ -1,0 +1,50 @@
+{
+  "scope": "D2Q9 template-generated BGK/TRT equivalence with an independent NumPy kernel and analytic periodic Taylor-Green decay. The declared divergence criterion failed in the historical audit. The selected anchor criteria and the full preregistered verdict are distinct.",
+  "criteria": {
+    "owner_acceptance_pct": 15.0,
+    "nu_error_pct_max": 15.0,
+    "codegen_ref_max_abs_max": 1e-12,
+    "field_l2_rel_max": 0.15,
+    "div_max_max": 1e-10,
+    "mass_drift_max": 1e-12,
+    "convergence_rule": "a family is treated as grid-converged when |nu(N=32) - nu(N=64)| / |nu(N=64)| < 10%; otherwise both values and the delta are reported as a resolution-sensitivity result",
+    "mag_parameter": 0.1875
+  },
+  "source": [
+    "benchmarks/cross_validation/component_protocol_codegen/run_arm.py",
+    "benchmarks/cross_validation/component_protocol_codegen/analyze.py",
+    "benchmarks/cross_validation/component_protocol_codegen/make_doc.py",
+    "src/tensorlbm/codegen/reference.py",
+    "src/tensorlbm/codegen/generate.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/component_protocol_codegen/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/component_protocol_codegen/README.md",
+    "docs/codegen_component_protocol.md",
+    "docs/board_audit/M17824_XVAL_LBM_COMPONENT_PROTOCOL_BOARD_AUDIT.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/component_protocol_codegen/predeclared.json",
+    "docs/board_audit/m17824/referee.json"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/cross_validation/component_protocol_codegen/predeclared.json",
+      "field": "analytic_anchor",
+      "value": "Taylor, G. I. (1923) 'On the decay of vortices in a viscous fluid', Phil. Mag. 46:671-674 (vortex decay rate exp(-2 nu k^2 t)); equilibrium/Chapman-Enskog form of the LBM viscosity nu=(tau-1/2)cs^2: Succi, 'The Lattice Boltzmann Equation' (2001) ch.5; Kruger et al., 'The Lattice Boltzmann Method: Principles and Practice' (2017) sec. 5.2 & 9.1; TRT/magic parameter: Ginzburg, Verhaeghe & d'Humieres (2008) Commun. Comput. Phys. 3:427-478"
+    }
+  ],
+  "results": [
+    "docs/board_audit/m17824/referee.json",
+    "docs/board_audit/m17824/repro_compare.json",
+    "docs/board_audit/m17824/verdict.json"
+  ],
+  "evidence": [
+    "docs/board_audit/m17824/audit.json",
+    "docs/board_audit/m17824/fig1_nu_referee.png",
+    "docs/board_audit/m17824/fig2_repro_equivalence.png",
+    "docs/architecture/migrations/component-protocol-codegen-xval-2026-11-25.json"
+  ]
+}

@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO_ROOT / "xval" / "component_protocol_codegen"))
+sys.path.insert(0, str(REPO_ROOT / "benchmarks" / "cross_validation" / "component_protocol_codegen"))
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from tensorlbm.codegen import (  # noqa: E402

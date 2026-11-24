@@ -5,7 +5,7 @@ Status: **anchor criterion met** (`PASS`); one self-imposed side criterion kept 
 recorded FAIL (`T4b_div_magnitude`) and diagnosed below -- never retuned after the run.
 
 Package: `src/tensorlbm/codegen/` (`protocol.py`, `components.py`, `templates.py`, `generate.py`,
-`reference.py`). Harness: `xval/component_protocol_codegen/`. Tests:
+`reference.py`). Harness: `benchmarks/cross_validation/component_protocol_codegen/`. Tests:
 `tests/test_component_protocol_codegen.py`.
 
 ---
@@ -75,7 +75,7 @@ sha256 of the source is the provenance handle (`kernel.sha256`, recorded per arm
 by averaging against the opposite direction (`feq_plus = (feq + feq_opp)/2`) instead of the analytic
 even/odd forms, per-direction `np.roll` streaming. Different code path = real cross-check.
 
-**Case driver (`xval/component_protocol_codegen/run_arm.py`).** One arm = (family, N, u0), 120 steps,
+**Case driver (`benchmarks/cross_validation/component_protocol_codegen/run_arm.py`).** One arm = (family, N, u0), 120 steps,
 samples every 2 steps, viscosity from a least-squares fit of `ln E` over `t in [20, 120]`,
 `nu_meas = -slope/(4 k_lat^2)`. Thresholds are in `predeclared.json`, written before the first run.
 
@@ -204,9 +204,9 @@ equilibrium split assumes the standard second-order D2Q9 form.
 Reproduce (all commands from the repository root, total < 10 s):
 
 ```bash
-for a in A1 A2 A3 A4 A5 A6; do python xval/component_protocol_codegen/run_arm.py --arm $a; done
-python xval/component_protocol_codegen/analyze.py
-python xval/component_protocol_codegen/make_doc.py
+for a in A1 A2 A3 A4 A5 A6; do python benchmarks/cross_validation/component_protocol_codegen/run_arm.py --arm $a; done
+python benchmarks/cross_validation/component_protocol_codegen/analyze.py
+python benchmarks/cross_validation/component_protocol_codegen/make_doc.py
 python -m pytest tests/test_component_protocol_codegen.py -q
 ```
 

@@ -11,7 +11,7 @@ Public surface::
 
 The generated kernel is cross-validated against the independent
 :mod:`tensorlbm.codegen.reference` implementation and against the analytic
-two-dimensional Taylor-Green decay (see ``xval/component_protocol_codegen``).
+two-dimensional Taylor-Green decay (see ``benchmarks/cross_validation/component_protocol_codegen``).
 """
 
 from __future__ import annotations
