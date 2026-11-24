@@ -114,6 +114,10 @@ The [hotpatch records ledger](migrations/hotpatch-mission-records-2026-11-22.jso
 maps `docs/m23777/` and `docs/m24569/` into
 `development/audit/hotpatch-absorption/` and records the original checksums.
 
+The [IBM force campaign ledger](migrations/ibm-force-campaign-tools-2026-11-24.json)
+locates the archived sphere and curved-boundary force runners beside their
+verification index and keeps the published report paths stable.
+
 The [Blasius development-runner ledger](migrations/blasius-dev-runner-retirement-2026-11-22.json)
 retires `benchmarks/blasius_flat_plate_dev/` in favour of the canonical
 `benchmarks/pending/blasius_flat_plate/` case. The earlier B25 runner remains

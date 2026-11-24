@@ -1,0 +1,175 @@
+{
+  "source_commit": "e6dcd764c7d9c1ab9b2fd14bfad9b29b5ed81876",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 9
+    }
+  },
+  "retired_paths": [
+    "scripts/p387w2_n04_sphere_force",
+    "scripts/p399w2_n04_curved_force"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/finalize_doc.py",
+      "new_path": "development/verification/ibm-force/sphere-surface/finalize_doc.py",
+      "git_mode": "100644",
+      "original_git_blob": "4f912dddd6febb777146a5666c70aa14fa8ab099",
+      "original_sha256": "6ddb12b5f1780f42af193b29244af16b9b8fc17bdd7e3cd82aa14b25e13246cb",
+      "original_size_bytes": 7329,
+      "migrated_sha256": "617a6bee38d8677903631e888fc4fea73ba6dfe81150ab93faa96eb7fb42b263",
+      "migrated_size_bytes": 7329
+    },
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/make_field_figure.py",
+      "new_path": "development/verification/ibm-force/sphere-surface/make_field_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "c763c1b6c7a15363aff58c7809ff7634dc3b535b",
+      "original_sha256": "9fd9b7a9bea6cfa9b61bd1ff55069965eee3f0d1cc7def06356ddb3057180edd",
+      "original_size_bytes": 2123,
+      "migrated_sha256": "475c20ff9c465451c18a7e0266b853a619fa81b86b730acd2ee7c13aafeb4c65",
+      "migrated_size_bytes": 2123
+    },
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/make_report.py",
+      "new_path": "development/verification/ibm-force/sphere-surface/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "2179bd64b41beb13caaad5480fceff851d6c5867",
+      "original_sha256": "698630d60b1ef60cf1295c68868cff0135cdbcf5e58fe711bb2e218654e8027c",
+      "original_size_bytes": 24037,
+      "migrated_sha256": "5fe8ee0b562d54bf535671e9e8d80a79a2941ba92a48d36494edc20513bcf031",
+      "migrated_size_bytes": 24055
+    },
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/publish_report.py",
+      "new_path": "development/verification/ibm-force/sphere-surface/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "4ec974ca41736e63f82d1e4b58e6f9e003d74323",
+      "original_sha256": "a5fa6cdb9fb0b885b79ce5f9dbfe065c1b84c064c2c0de501d448d2cdd1b188a",
+      "original_size_bytes": 12407,
+      "migrated_sha256": "2552bac3bdce155ec366f822441044028e59e3e4ab267b572003f11fdd8cf323",
+      "migrated_size_bytes": 12443
+    },
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/run_matrix.sh",
+      "new_path": "development/verification/ibm-force/sphere-surface/run_matrix.sh",
+      "git_mode": "100644",
+      "original_git_blob": "691f4850ed0f603c7a8cc2e1c8cd7ea8c384bd2f",
+      "original_sha256": "eee9efe58f916d4a764f2a6e8c14b0ec132377df5b16f9ebbc38160095d1dbc8",
+      "original_size_bytes": 3561,
+      "migrated_sha256": "971e40bfea07a9f3f6f73c1a1f3aa93c575f1718874f2c21799e454f0ab0d994",
+      "migrated_size_bytes": 3621
+    },
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/run_validation.py",
+      "new_path": "development/verification/ibm-force/sphere-surface/run_validation.py",
+      "git_mode": "100644",
+      "original_git_blob": "cdff965d9b4ac8e91a39167a919b9b53020ad550",
+      "original_sha256": "21b4ca4ba1b77f7f81bf05cc1d2862c93fffaa3d7128e230840a16a4b29f6512",
+      "original_size_bytes": 10269,
+      "migrated_sha256": "b8e06147bc49df5aa8e46081e8e474a7ebc6ab61545ea87c7304c35af5048be7",
+      "migrated_size_bytes": 10305
+    },
+    {
+      "old_path": "scripts/p387w2_n04_sphere_force/salvage_from_log.py",
+      "new_path": "development/verification/ibm-force/sphere-surface/salvage_from_log.py",
+      "git_mode": "100644",
+      "original_git_blob": "95f69a091799a843ef5cf0e295e7aa7788e7259e",
+      "original_sha256": "9488b55775916055c3071ea4d1c93a17f39fdcf674931eb8687acf153a32941d",
+      "original_size_bytes": 5129,
+      "migrated_sha256": "25f215a9ee8bfe90f33a6edf769f901ca5ba098c2dc26a803fd025491c2d0870",
+      "migrated_size_bytes": 5147
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/launch_local.sh",
+      "new_path": "development/verification/ibm-force/curved-boundary/launch_local.sh",
+      "git_mode": "100755",
+      "original_git_blob": "3e541841f86cacd5afd0a28f62b2832b7d5ed57c",
+      "original_sha256": "b8f105615cc27aa1279f46b94926296b53164c66a871ad46d03565d195789a7d",
+      "original_size_bytes": 2214,
+      "migrated_sha256": "adfc6b237b9f9003f2df746a14cd48a34e4658e8fe68169dc52cedb17a3bc0dd",
+      "migrated_size_bytes": 2239
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/make_figures.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "1974245d8c252df665c2d13b39cdcd93b1fe83b7",
+      "original_sha256": "a354a71926d84258e20613f952fe18c007e1f819779c01ebe398c6adcb9b3207",
+      "original_size_bytes": 13765,
+      "migrated_sha256": "9a98e26e3417030834894fda3139fda858ddf5da5eb347354a2e78f8a436b1e3",
+      "migrated_size_bytes": 13784
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/merge_cases.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/merge_cases.py",
+      "git_mode": "100644",
+      "original_git_blob": "d62133faeec2d3e95fa0d6affc5477761183a23c",
+      "original_sha256": "f94ec76d9e0b72bdec8edd447207a6270a97167e0ae13e9175cd43b5e7d13917",
+      "original_size_bytes": 3535,
+      "migrated_sha256": "f94ec76d9e0b72bdec8edd447207a6270a97167e0ae13e9175cd43b5e7d13917",
+      "migrated_size_bytes": 3535
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/post_report.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/post_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "362bd71248356562527a880894ec474ad8165d4e",
+      "original_sha256": "68f0c8eaf0f05267d5954aeb23ce37f94bb41f8146169f7ce02362e576ab835e",
+      "original_size_bytes": 3615,
+      "migrated_sha256": "3329ab74cba18ab986272fddd051d30d565097415082324973364772284ff56d",
+      "migrated_size_bytes": 3634
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/render_report.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/render_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "b7f0867a6a87063944339bc0a62909f34f53e460",
+      "original_sha256": "ebd3c421b6baf1a29f9ca26ef047bd45ee04a02a568e30749cbac0b66396d0a6",
+      "original_size_bytes": 35200,
+      "migrated_sha256": "1d91f93069ea84f7995ff68335ecde075835619b0b5e9b65d531a14b32e2c03a",
+      "migrated_size_bytes": 35333
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/run_case.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/run_case.py",
+      "git_mode": "100644",
+      "original_git_blob": "802df1095d90155b1f994324bb71a3ec9dbd63fe",
+      "original_sha256": "5d49c413aab2a41fa333abe20574cfbf97ffd06191aa904b08beef5ace0efaaf",
+      "original_size_bytes": 2685,
+      "migrated_sha256": "11d78d8f048f16912d6dba0258d1f9a199de5f570b5787e3114b8eafac14f619",
+      "migrated_size_bytes": 2704
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/run_couette.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/run_couette.py",
+      "git_mode": "100644",
+      "original_git_blob": "d94f2184ec36095ac5b4d6239b6c91d5c716bf1f",
+      "original_sha256": "ff43053e1d0d3ea1d075ef3b3d18bb3c2929d655121729e9663a1e27245b99cf",
+      "original_size_bytes": 7959,
+      "migrated_sha256": "23c9e760985dd7c18e27b3ff7cef605a26c4bf39a08261e10dc99bad4d6cbcd2",
+      "migrated_size_bytes": 7978
+    },
+    {
+      "old_path": "scripts/p399w2_n04_curved_force/run_validation.py",
+      "new_path": "development/verification/ibm-force/curved-boundary/run_validation.py",
+      "git_mode": "100644",
+      "original_git_blob": "e3871b10120e96743a4cb375a79408ac835d7258",
+      "original_sha256": "95b7b20ef4eb5575aa1f6481c8502c6a727a3eaa433bb864b10bf12e7a3531d0",
+      "original_size_bytes": 37798,
+      "migrated_sha256": "8cc509a235f2b5a050e9a7bd153bcb4168251a0e6fe946595c56188279b580c9",
+      "migrated_size_bytes": 37817
+    }
+  ],
+  "compatibility": "Published report URLs, CLI flags, solver sources, and default artifact roots are preserved. Launchers resolve the repository from the new depth. The current reports, changelog and test documentation use the new paths. Historical checkout copies are untouched.",
+  "scientific_scope": "This relocation checks path compatibility. Full sphere and curved-boundary campaign reproduction is deferred, and historical claims keep their original scope.",
+  "verification": [
+    "All 15 original hashes and Git objects checked, migrated hashes checked, and all differences limited to documented path substitutions.",
+    "Thirteen Python sources compiled, both shell launchers passed bash -n, four Python entry points returned --help, and all archive links resolved.",
+    "The existing IBM sphere-surface and curved-force test suites passed, 63 tests total on CPU.",
+    "Ruff and all 82 governance tests passed. No campaign renderer or publisher was executed."
+  ]
+}

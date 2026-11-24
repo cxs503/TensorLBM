@@ -68,6 +68,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "in25_t6"),
     ("xval", "XVAL-LBM-SPARSE-SUBLIST-NEIGHBOR-LIST"),
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
+    ("scripts", "p387w2_n04_sphere_force"),
+    ("scripts", "p399w2_n04_curved_force"),
     ("xval", "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"),
     ("xval", "ludwig_fe_stress"),
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),

@@ -4,7 +4,7 @@ Logs in with ``$TENSOR_AGENT_USER`` / ``$TENSOR_AGENT_PASS``, embeds the rendere
 markdown and the generated figures (base64 PNG), and posts to
 ``$TENSOR_API_BASE/tensor/reports``.
 
-    python scripts/p399w2_n04_curved_force/post_report.py [--dry-run]
+    python development/verification/ibm-force/curved-boundary/post_report.py [--dry-run]
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import requests
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 DOC = ROOT / "docs/P399W2_N04_IBM_CURVED_FORCE.md"
 FIG = ROOT / "figures/p399w2_n04"
 ART = ROOT / "artifacts/p399w2_n04"

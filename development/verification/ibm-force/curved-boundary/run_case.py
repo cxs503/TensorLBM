@@ -2,7 +2,7 @@
 
 Used to spread the case matrix over several processes / cluster slots::
 
-    PYTHONPATH=src python scripts/p399w2_n04_curved_force/run_case.py \
+    PYTHONPATH=src python development/verification/ibm-force/curved-boundary/run_case.py \
         --label re100_quad_M64 --re 100 --diameter 16 --box 15 10 \
         --markers 64 --scheme quadrature --normal-passes 1 \
         --steps 9000 --transient 4000 --u-target 0.06 --save-fields

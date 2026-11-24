@@ -21,7 +21,7 @@ solution, and each is pinned here:
    bit-for-bit (backward compatibility).
 
 The physical validation (cylinder drag vs literature, Hasimoto square-array
-analytic drag) lives in ``scripts/p399w2_n04_curved_force/run_validation.py``
+analytic drag) lives in ``development/verification/ibm-force/curved-boundary/run_validation.py``
 and its artifacts; it is not duplicated here (a flow solve does not belong in
 the unit-test suite).
 """

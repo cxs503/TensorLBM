@@ -8,11 +8,11 @@
 #   viscous diffusion time L^2/nu is crossed ~5x — the low-Re runs of the first
 #   sweep were not converged (see docs §6).
 set -u
-cd "$(dirname "$0")/../.." || exit 1
+cd "$(dirname "$0")/../../../.." || exit 1
 mkdir -p runs/p399w2_n04/logs artifacts/p399w2_n04
 L=runs/p399w2_n04/logs
 C="--re 100 --diameter 16 --box 15 10 --steps 16000 --transient 6000 --u-target 0.06 --sample-every 20"
-PY="env PYTHONPATH=src P399_NUM_THREADS=4 python scripts/p399w2_n04_curved_force/run_case.py"
+PY="env PYTHONPATH=src P399_NUM_THREADS=4 python development/verification/ibm-force/curved-boundary/run_case.py"
 
 run() {  # run <label> <args...>
   local label="$1"; shift

@@ -4,7 +4,7 @@ Reads ``artifacts/p399w2_n04/*.json`` (produced by ``run_validation.py`` /
 ``run_case.py``) and writes publication figures to ``figures/p399w2_n04/``.
 Every number plotted comes from the artifacts; nothing is hand-typed.
 
-    PYTHONPATH=src python scripts/p399w2_n04_curved_force/make_figures.py
+    PYTHONPATH=src python development/verification/ibm-force/curved-boundary/make_figures.py
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 ART = ROOT / "artifacts/p399w2_n04"
 FIG = ROOT / "figures/p399w2_n04"
 

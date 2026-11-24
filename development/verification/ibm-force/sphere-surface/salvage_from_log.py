@@ -7,7 +7,7 @@ reconstructed from the periodic report lines the runner prints, using the
 ``"partial_from_log": true`` and carries the sample count and step range so the
 provenance of every number stays visible; nothing is extrapolated.
 
-    python scripts/p387w2_n04_sphere_force/salvage_from_log.py runs/p387w2_n04/conv_d8.log \
+    python development/verification/ibm-force/sphere-surface/salvage_from_log.py runs/p387w2_n04/conv_d8.log \
         --layer drag --out artifacts/p387w2_n04/cases
 """
 
@@ -20,7 +20,7 @@ import re
 import statistics
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 
 DRAG_RE = re.compile(
     r"step\s+(\d+)\s+Re=\s*([\d.]+)\s+Cd=\s*([\d.]+)\s+Cd_drive=\s*([\d.]+)\s+g=\s*([\d.eE+-]+)\s+mass=\s*([\d.eE+-]+)"

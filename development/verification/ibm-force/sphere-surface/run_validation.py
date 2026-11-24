@@ -4,8 +4,8 @@
 Each invocation runs **one** case and writes one JSON record, so the whole
 matrix can be sharded over the cluster:
 
-    python scripts/p387w2_n04_sphere_force/run_validation.py drag   --re 100 --diameter 12 --out cases/
-    python scripts/p387w2_n04_sphere_force/run_validation.py torque --re-omega 1 --diameter 12 --out cases/
+    python development/verification/ibm-force/sphere-surface/run_validation.py drag   --re 100 --diameter 12 --out cases/
+    python development/verification/ibm-force/sphere-surface/run_validation.py torque --re-omega 1 --diameter 12 --out cases/
 
 Cases
 -----
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import torch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "src"))
 
 from tensorlbm.ibm_sphere_surface_force import (  # noqa: E402
     SphereDragConfig,
@@ -41,7 +41,7 @@ from tensorlbm.ibm_sphere_surface_force import (  # noqa: E402
     surface_traction,
 )
 
-CASES = Path(__file__).resolve().parents[2] / "artifacts" / "p387w2_n04" / "cases"
+CASES = Path(__file__).resolve().parents[4] / "artifacts" / "p387w2_n04" / "cases"
 
 
 def _write(record: dict, out: Path) -> Path:
