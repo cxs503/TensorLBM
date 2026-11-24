@@ -3,9 +3,9 @@
 
 Reads via the TensorPlatform HTTP API (DB tables are permission-gated for the
 agent role). Usage:
-    python3 scripts/m18159_api.py login
-    python3 scripts/m18159_api.py get  <path-without-/api/v1>
-    python3 scripts/m18159_api.py post <path> <json-file>
+    python3 development/audit/m18159/m18159_api.py login
+    python3 development/audit/m18159/m18159_api.py get  <path-without-/api/v1>
+    python3 development/audit/m18159/m18159_api.py post <path> <json-file>
 """
 import json
 import os

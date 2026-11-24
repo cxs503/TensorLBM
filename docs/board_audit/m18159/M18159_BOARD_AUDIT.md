@@ -26,7 +26,7 @@
 | 基准算例（tensor_benchmark_cases） | 0 条（全平台共 91 条） |
 
 ## ② 怎么做的（方法/流程/工具链）
-**判据先于取证**（预声明于 `scripts/m18159_audit.py` docstring，未在看到结果后调整）：
+**判据先于取证**（预声明于 `development/audit/m18159/m18159_audit.py` docstring，未在看到结果后调整）：
 
 | 规则 | 内容 |
 |---|---|
@@ -45,7 +45,7 @@
 3. `tensor_reports`（mission_id 精确匹配）→ 是否发布六段报告；
 4. 对象工作树 `/srv/tensor/agent/work/m18068` 的 git 状态 → 提交数(`git rev-list --count origin/main..HEAD`)、未跟踪文件及其 sha256。
 
-**工具链**：`scripts/m18159_audit.py`（采集→`evidence.json`）→ `scripts/m18159_figures.py`（作图）→ `scripts/m18159_render_report.py`（六段报告，assert 绑定）→ `docs/board_audit/m18159/insert_verdict.py`（幂等 upsert verdict）。复跑 `scripts/m18159_verify.py` 可重判。
+**工具链**：`development/audit/m18159/m18159_audit.py`（采集→`evidence.json`）→ `development/audit/m18159/m18159_figures.py`（作图）→ `development/audit/m18159/m18159_render_report.py`（六段报告，assert 绑定）→ `docs/board_audit/m18159/insert_verdict.py`（幂等 upsert verdict）。复跑 `development/audit/m18159/m18159_verify.py` 可重判。
 
 ## ③ 计算结果（核验矩阵，数字表）
 

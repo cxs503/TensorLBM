@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "docs/board_audit/m18159"
 EV = json.loads((OUT / "evidence.json").read_text())
 
@@ -73,7 +73,7 @@ w(f"| 基准算例（tensor_benchmark_cases） | {A['benchmark_case_count']} 条
 
 # ── ② 怎么做的 ───────────────────────────────────────────────────────────────
 w("\n## ② 怎么做的（方法/流程/工具链）\n")
-w("**判据先于取证**（预声明于 `scripts/m18159_audit.py` docstring，未在看到结果后调整）：\n\n")
+w("**判据先于取证**（预声明于 `development/audit/m18159/m18159_audit.py` docstring，未在看到结果后调整）：\n\n")
 w("| 规则 | 内容 |\n|---|---|\n"
   "| R1 唯一裁判 | 数值主张只有存在 `tensor_benchmark_cases` 行（ref/metric/tolerance）且 got 落在容差内才成立；"
   "无行 ⇒ 不可判 |\n"
@@ -89,9 +89,9 @@ w("2. `tensor_benchmark_cases`（按 anchor_slug 精确匹配）→ 是否存在
 w("3. `tensor_reports`（mission_id 精确匹配）→ 是否发布六段报告；\n")
 w(f"4. 对象工作树 `{EV['subject_worktree']}` 的 git 状态 → 提交数(`git rev-list --count origin/main..HEAD`)、"
   "未跟踪文件及其 sha256。\n")
-w("\n**工具链**：`scripts/m18159_audit.py`（采集→`evidence.json`）→ `scripts/m18159_figures.py`（作图）→ "
-  "`scripts/m18159_render_report.py`（六段报告，assert 绑定）→ `docs/board_audit/m18159/insert_verdict.py`"
-  "（幂等 upsert verdict）。复跑 `scripts/m18159_verify.py` 可重判。\n")
+w("\n**工具链**：`development/audit/m18159/m18159_audit.py`（采集→`evidence.json`）→ `development/audit/m18159/m18159_figures.py`（作图）→ "
+  "`development/audit/m18159/m18159_render_report.py`（六段报告，assert 绑定）→ `docs/board_audit/m18159/insert_verdict.py`"
+  "（幂等 upsert verdict）。复跑 `development/audit/m18159/m18159_verify.py` 可重判。\n")
 
 # ── ③ 计算结果 ───────────────────────────────────────────────────────────────
 w("\n## ③ 计算结果（核验矩阵，数字表）\n")

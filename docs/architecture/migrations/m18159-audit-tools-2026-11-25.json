@@ -1,0 +1,80 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "scripts_tracked_files_before": 604,
+  "scripts_tracked_files_after": 597,
+  "reference_scan": "Checked tracked Python and shell callers, workflows, published documentation and dependency path literals. Consumers are restricted to the mission's scripts, published report and verdict writer.",
+  "compatibility": "Retain the seven script filenames, command arguments, published report and artifact URLs. Updated runtime root resolution to keep reading the existing audit evidence. The old script paths are accessible at the pinned revision.",
+  "execution_boundary": "The report renderer and figure generator use the existing evidence.json offline. Database, authenticated API, verdict writes and report publishing are mission-local historical operations and were not executed.",
+  "entries": [
+    {
+      "old_path": "scripts/m18159_api.py",
+      "new_path": "development/audit/m18159/m18159_api.py",
+      "git_mode": "100644",
+      "original_git_blob": "d4a0271b4e1dbbefbb2fc39ef4b7c22c879f266f",
+      "size_bytes": 2209,
+      "original_sha256": "55828f82f19e35371c44213361b6870bfe5c3db615e15a9cc43be227a449b77e",
+      "new_sha256": "29202e9733b56a55038f9a1fc32011dafac13f2881d1fa11f3c888df89e0868f"
+    },
+    {
+      "old_path": "scripts/m18159_audit.py",
+      "new_path": "development/audit/m18159/m18159_audit.py",
+      "git_mode": "100644",
+      "original_git_blob": "66298630fba2e848d05c6071aaaea3e5dfb38baa",
+      "size_bytes": 12483,
+      "original_sha256": "aba7edf047dd3ddacf9945107d6f124b40ea52167565957325e4efd19955d16b",
+      "new_sha256": "bae078f738f61212bf0fb7d5ff1229d7d10813d5f35bfd7e23e9eb6851efa11b"
+    },
+    {
+      "old_path": "scripts/m18159_db.py",
+      "new_path": "development/audit/m18159/m18159_db.py",
+      "git_mode": "100644",
+      "original_git_blob": "fd84aba11e033093a9ede59611c8c37d441169fa",
+      "size_bytes": 1244,
+      "original_sha256": "27f6484cf83576feddbc5a09d1e998e44cceedd76738d5d07f7349490210b29d",
+      "new_sha256": "a160528cc487bd16607111507939c52aa7ddd5b4da89655b679312472c9ce17f"
+    },
+    {
+      "old_path": "scripts/m18159_figures.py",
+      "new_path": "development/audit/m18159/m18159_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "80828522924f13d70ef69266fb4f9bbccf9051db",
+      "size_bytes": 4033,
+      "original_sha256": "7664bca4a0bddfcc803f6c8e18794512faa9dd8c7996b17c0b163a91ac6161ad",
+      "new_sha256": "e7fd0788b5d7f6f2854105a29715021c6bd6ec6a903961146fb58609f0791a5b"
+    },
+    {
+      "old_path": "scripts/m18159_publish_report.py",
+      "new_path": "development/audit/m18159/m18159_publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "45c3c0535a6e0b486e88146808d2221ab5bbe465",
+      "size_bytes": 3304,
+      "original_sha256": "25a314080723149486b1c1ea7cb592983009f4baeb4e52758749783611c1bb02",
+      "new_sha256": "f1d6bc74c7c2d84b61e9831c6bec04a8e358fa66b97056aef0bcfd20326c7987"
+    },
+    {
+      "old_path": "scripts/m18159_render_report.py",
+      "new_path": "development/audit/m18159/m18159_render_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "11c56b17fd69de280f102511dcb46c911f997d10",
+      "size_bytes": 15115,
+      "original_sha256": "1b811e55781160ec5f0af67d9e91e373a0d4b409326dee29f3158bccc8d82932",
+      "new_sha256": "2a9e3e994497eda7ca087e9de74bbfdae270272fe8189f92f9b17f944493fde5"
+    },
+    {
+      "old_path": "scripts/m18159_verify.py",
+      "new_path": "development/audit/m18159/m18159_verify.py",
+      "git_mode": "100644",
+      "original_git_blob": "bf958b133263802d5b8772099a32ecbadf4618c1",
+      "size_bytes": 3916,
+      "original_sha256": "b07ef4918f99a6a963141e249b0b942c3770f1ec524005c283902c084b6d0362",
+      "new_sha256": "715c270f27cf8e74bdb2b34abd0c3ca9189d65d9263ac19b9707bbb576cc2cd1"
+    }
+  ],
+  "verification": [
+    "Parsed seven relocated Python files and the dependent verdict script with ast.parse. Checked all local links in the archive index and published report.",
+    "Ran both versions of the report renderer and figure generator in isolated trees with the same tracked evidence.json. The source renderer reproduced the original tracked report. The target renderer matched it after substituting only the seven moved paths. Both generated PNGs were byte-identical across the runs.",
+    "All 83 repository governance tests, the layout and source-authority gates, the manual catalogue and 208-entry registry checks, and the Ruff ratchet passed. No scientific calculation, database or HTTP operation was performed."
+  ]
+}
