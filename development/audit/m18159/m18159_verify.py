@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Re-runnable assertions for the m18159 verdict (self-check, not a physics test).
 
-Fails loudly if the evidence collected by scripts/m18159_audit.py no longer
+Fails loudly if the evidence collected by development/audit/m18159/m18159_audit.py no longer
 supports the verdict that was written into tensor_maturity_verdicts. Run it
 after any re-audit:
 
-    python3 scripts/m18159_audit.py && python3 scripts/m18159_verify.py
+    python3 development/audit/m18159/m18159_audit.py && python3 development/audit/m18159/m18159_verify.py
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import psycopg
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "docs/board_audit/m18159"
 EV = json.loads((OUT / "evidence.json").read_text())
 LOCAL_DSN_FALLBACK = "/srv/tensor/agent/work/m15815/docs/board_audit/m15314/insert_verdict.py"

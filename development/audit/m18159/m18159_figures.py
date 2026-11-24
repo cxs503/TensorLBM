@@ -16,7 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 EV = json.loads((ROOT / "docs/board_audit/m18159/evidence.json").read_text())
 OUT = ROOT / "docs/board_audit/m18159/figures"
 OUT.mkdir(parents=True, exist_ok=True)

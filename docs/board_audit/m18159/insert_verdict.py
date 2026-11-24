@@ -3,7 +3,7 @@
 
 Idempotent: one row per (repo, scope, verdict_by); re-running updates it.
 Every value is built from docs/board_audit/m18159/evidence.json (collected by
-scripts/m18159_audit.py from the mission DB, the benchmark-case table, the
+development/audit/m18159/m18159_audit.py from the mission DB, the benchmark-case table, the
 report lake and the subject git worktree) — nothing is typed by hand.
 
 Run:  python3 docs/board_audit/m18159/insert_verdict.py [--dry-run]
@@ -129,7 +129,7 @@ def build_evidence() -> dict:
             "docs/board_audit/m18159/M18159_BOARD_AUDIT.md (report, six sections)",
             "docs/board_audit/m18159/figures/fig1_evidence_matrix.png",
             "docs/board_audit/m18159/figures/fig2_budget_utilization.png",
-            "scripts/m18159_audit.py (collector), scripts/m18159_verify.py (re-runnable checks)",
+            "development/audit/m18159/m18159_audit.py (collector), development/audit/m18159/m18159_verify.py (re-runnable checks)",
         ],
     }
 

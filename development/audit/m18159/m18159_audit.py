@@ -30,7 +30,7 @@ the task brief; the audit does not tune them afterwards):
   R7 (honesty)   A failure narrative must not overstate its cause; a
                  "budget exhausted" claim is checked against the budget numbers.
 
-Run:  python3 scripts/m18159_audit.py
+Run:  python3 development/audit/m18159/m18159_audit.py
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ from pathlib import Path
 
 import psycopg
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SUBJECT_MISSION = 18068
 SUBJECT_WT = Path("/srv/tensor/agent/work/m18068")
 ANCHOR = "XVAL-LBM-NO-MULTIPHASE-LAYOUT-PATTERN-ONLY"

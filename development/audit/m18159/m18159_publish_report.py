@@ -16,7 +16,7 @@ BASE = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
 USER = os.environ["TENSOR_AGENT_USER"]
 PASS = os.environ["TENSOR_AGENT_PASS"]
 MISSION_ID = 18159
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 ART = ROOT / "docs/board_audit/m18159"
 EV = json.loads((ART / "evidence.json").read_text())
 

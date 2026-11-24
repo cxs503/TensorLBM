@@ -7,7 +7,7 @@ Connection string resolution (no secret ever stored in this repo):
      script on this machine (used only because the agent role has no SELECT
      grant on tensor_benchmark_cases / tensor_maturity_verdicts).
 
-Usage: python3 scripts/m18159_db.py "SELECT ..."
+Usage: python3 development/audit/m18159/m18159_db.py "SELECT ..."
 """
 from __future__ import annotations
 
