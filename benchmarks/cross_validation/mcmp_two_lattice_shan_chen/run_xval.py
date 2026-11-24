@@ -46,8 +46,8 @@ closed-form two-layer solution, under the *measured* half-way wall convention
 
 Usage::
 
-    PYTHONPATH=src python3 xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py \
-        --out xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/artifacts
+    PYTHONPATH=src python3 benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py \
+        --out outputs/verification/mcmp-two-lattice-shan-chen
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ from pathlib import Path
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from tensorlbm.d2q9 import equilibrium, macroscopic
@@ -185,7 +185,9 @@ def run_stratified(
     benchmark (--wall-calibration).
     """
     dev = torch.device(device)
-    f1, f2 = init_stratified(ny, nx, rho_heavy, rho_light, interface_width=interface_width, device=dev)
+    f1, f2 = init_stratified(
+        ny, nx, rho_heavy, rho_light, interface_width=interface_width, device=dev
+    )
     # solid mask: wall rows 0 and ny-1
     wall = torch.zeros((ny, nx), dtype=torch.bool, device=dev)
     wall[0, :] = True
@@ -197,8 +199,16 @@ def run_stratified(
     steps_run = 0
     for step in range(1, steps + 1):
         f1, f2 = collide_sc_two_component(
-            f1, f2, G_12=G_12, tau1=tau1, tau2=tau2, u_eq=u_eq,
-            force_scheme=force_scheme, gx=G_x, gy=0.0, solid_mask=wall,
+            f1,
+            f2,
+            G_12=G_12,
+            tau1=tau1,
+            tau2=tau2,
+            u_eq=u_eq,
+            force_scheme=force_scheme,
+            gx=G_x,
+            gy=0.0,
+            solid_mask=wall,
         )
         f1, f2 = stream(f1), stream(f2)
         steps_run = step
@@ -224,7 +234,7 @@ def run_stratified(
     rho_tot = rho1 + rho2
     u_mix = (rho1 * ux1 + rho2 * ux2) / rho_tot
     # flow rate per row (mixture velocity), summed over fluid rows (1..ny-2)
-    Q_mix = float(u_mix[1:ny - 1, 0].sum())
+    Q_mix = float(u_mix[1 : ny - 1, 0].sum())
     # interface position: rho1 = 0.5 crossing
     rho1_col = rho1[:, 0]
     y_cross = None
@@ -272,9 +282,17 @@ def cross_validate(
 ) -> dict:
     """Run one cell and compare against the closed-form reference."""
     run = run_stratified(
-        G_12=G_12, ny=ny, G_x=G_x, rho_heavy=rho_heavy, rho_light=rho_light,
-        tau1=tau1, tau2=tau2, u_eq=u_eq, force_scheme=force_scheme,
-        steps=steps, device=device,
+        G_12=G_12,
+        ny=ny,
+        G_x=G_x,
+        rho_heavy=rho_heavy,
+        rho_light=rho_light,
+        tau1=tau1,
+        tau2=tau2,
+        u_eq=u_eq,
+        force_scheme=force_scheme,
+        steps=steps,
+        device=device,
     )
     # reference under the mixture viscosity rule (primary) and component rule
     u_ref_mix, Q_ref_mix = layered_poiseuille(
@@ -298,7 +316,9 @@ def cross_validate(
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", default=str(Path(__file__).resolve().parent / "artifacts"))
+    ap.add_argument(
+        "--out", default=str(REPO_ROOT / "outputs/verification/mcmp-two-lattice-shan-chen")
+    )
     ap.add_argument("--quick", action="store_true", help="smoke protocol (fewer steps)")
     args = ap.parse_args()
     out = Path(args.out)
@@ -318,11 +338,11 @@ def main() -> int:
     summary = {
         "anchor": "XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN",
         "model": "two-lattice (two distribution functions) Shan-Chen MCMP, "
-                 "linear psi, BGK, viscous velocity coupling, Guo forcing",
+        "linear psi, BGK, viscous velocity coupling, Guo forcing",
         "external_anchor": {
             "analytic": "two-layer co-moving Poiseuille, u''=-G/nu per layer "
-                         "with velocity + shear-stress continuity "
-                         "(xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py::layered_poiseuille)",
+            "with velocity + shear-stress continuity "
+            "(benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py::layered_poiseuille)",
             "references": [
                 "Shan & Chen (1993) Phys. Rev. E 47, 1815",
                 "Shan & Doolen (1995) J. Stat. Phys. 81, 379",
@@ -332,7 +352,7 @@ def main() -> int:
             ],
         },
         "acceptance": "err_Q_mix < 15% against closed-form two-layer solution "
-                       "under measured half-way wall convention (H=ny-2)",
+        "under measured half-way wall convention (H=ny-2)",
         "cells": [
             {
                 "G_12": c["G_12"],
@@ -351,12 +371,16 @@ def main() -> int:
         "all_pass_15pct": all(c["pass_15pct"] for c in cells),
         "elapsed_s": round(time.time() - t_start, 1),
         "repro_cmd": (
-            "PYTHONPATH=src python3 xval/XVAL-LBM-MCMP-TWO-LATTICE-SHAN-CHEN/run_xval.py"
+            "PYTHONPATH=src python3 benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py"
         ),
     }
 
     (out / "summary.json").write_text(json.dumps(summary, indent=1))
-    print(json.dumps({"all_pass_15pct": summary["all_pass_15pct"], "cells": summary["cells"]}, indent=1))
+    print(
+        json.dumps(
+            {"all_pass_15pct": summary["all_pass_15pct"], "cells": summary["cells"]}, indent=1
+        )
+    )
     print(f"wrote {out / 'summary.json'}")
     return 0 if summary["all_pass_15pct"] else 1
 

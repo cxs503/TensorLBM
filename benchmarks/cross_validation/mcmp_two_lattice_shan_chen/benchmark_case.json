@@ -1,0 +1,47 @@
+{
+  "scope": "Stratified two-layer Poiseuille cross-validation for two-lattice Shan–Chen MCMP. The archived channel summary records four nonconvergent cells. The separate historical droplet validation in the linked report and the maintained stratified benchmark have independent protocols and verdicts. This registration does not provide a fresh verdict.",
+  "criteria": {
+    "quantity": "Mixture volume flow rate against the closed-form two-layer Poiseuille solution with half-way wall convention H=ny-2.",
+    "relative_flow_rate_error_lt": 0.15,
+    "requires_converged_result": true
+  },
+  "source": [
+    "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py",
+    "src/tensorlbm/multiphase.py",
+    "src/tensorlbm/solver.py",
+    "src/tensorlbm/d2q9.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/run_xval.py"
+  ],
+  "documentation": [
+    "docs/XVAL_LBM_MCMP_TWO_LATTICE_SHAN_CHEN_REPORT.md",
+    "docs/audit_m20945_report.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/oss_solutions.json",
+    "benchmarks/verified/mcmp_stratified_poiseuille/analytic.py"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/oss_solutions.json",
+      "field": "Literature and independent implementation",
+      "value": [
+        "Shan & Chen (1993) Phys. Rev. E 47, 1815",
+        "Shan & Doolen (1995) J. Stat. Phys. 81, 379",
+        "Martys & Chen (1996) J. Comput. Phys. 126, 276",
+        "Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308",
+        "OSS: geoelements/mcmp-lbm (commit 015a26f) two-PDF SC structure"
+      ]
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/summary.json"
+  ],
+  "evidence": [
+    "benchmarks/cross_validation/mcmp_two_lattice_shan_chen/evidence/oss_solutions.json",
+    "docs/audit_m20945_report.md",
+    "development/audit/m20945/verdict_m20945.sql",
+    "docs/architecture/migrations/mcmp-two-lattice-shan-chen-xval-2026-11-24.json"
+  ]
+}
