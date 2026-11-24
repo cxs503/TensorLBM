@@ -44,15 +44,22 @@ Comprehensive test suite (`test_contact_angle_geodesic_branch.py`):
 - ✅ Test 5: Committed golden fields inside owner gate — PASS
 
 ### 4. Documentation
-- `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md`:
+- [REPORT_R4.md](../../development/verification/contact-angle/round-4/REPORT_R4.md):
   Root cause analysis with mathematical derivation, round-5 closed form
-- `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/REPORT_R5.md`:
+- [REPORT_R5.md](../../development/verification/contact-angle/round-5/REPORT_R5.md):
   Full round-5 evidence and falsifiability argument
 - `experiments/archived/geodesic_angle/analyze_convention_issue.py`, `experiments/archived/geodesic_angle/demo_geodesic_fix.py`,
   `experiments/archived/geodesic_angle/final_geodesic_fix_demo.py`: analysis and demonstration scripts using the
   round-5 closed form
 
 ## Validation Results
+
+The [Round 4 revision reviewed by the audit](https://github.com/cxs503/TensorLBM/blob/d90b11fa43ac001e723d0ff3b18bb169c61c5544/xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/results_r4.json) records **18 pass / 12 fail**.
+The [later Round 4 snapshot](../../development/verification/contact-angle/round-4/results_r4.json) in the migration base records **30 pass / 0 fail** for its synthetic-cap sweep.
+The [independent Round 5 audit](../AUDIT_XVAL_TWO_IMPL_CONTACT_ANGLE_R5.md) addresses the reviewed revision.
+Both snapshots are retained as historical evidence.
+Original path snapshots remain available as [Round 4](https://github.com/cxs503/TensorLBM/blob/32bf22f8074b9232d70fa5675089e7c1756dd9cd/xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md)
+and [Round 5](https://github.com/cxs503/TensorLBM/blob/32bf22f8074b9232d70fa5675089e7c1756dd9cd/xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/REPORT_R5.md).
 
 ### Two Independent Implementations (from R2/R3)
 - **neumann_flux**: 10/10 measurable rows pass < 15% gate
@@ -90,7 +97,7 @@ Comprehensive test suite (`test_contact_angle_geodesic_branch.py`):
    - `contact_angle_geodesic()` uses the round-5 closed form `θ = 2 atan(h/a)`
    - `lbm_convention` deprecated and ignored (emits `DeprecationWarning`)
 
-2. `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/`
+2. `development/verification/contact-angle/round-4/`
    - `REPORT_R4.md`: Fix report (round-5 closed form)
    - `run_r4.py`: Validation script (matured, no hard-coded paths)
    - `results_r4.json`: Validation results
@@ -135,9 +142,9 @@ The XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS anchor is now fully validated:
 ## Evidence Pointers
 
 - Commit: (to be added after git commit)
-- Report: `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md`
+- Report: [REPORT_R4.md](../../development/verification/contact-angle/round-4/REPORT_R4.md)
 - Test results: `tests/test_contact_angle_geodesic_branch.py` output
-- Validation data: `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/results_r4.json`
+- Validation data: [results_r4.json](../../development/verification/contact-angle/round-4/results_r4.json)
 
 ## Next Steps for Self-Start Missions
 

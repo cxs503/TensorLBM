@@ -1,0 +1,58 @@
+{
+  "scope": "Contact-angle estimator audit. Round 5 measures committed Round 3 fields offline, separately from its analytic estimator calibration. The earlier and later Round 4 records describe different revisions. The archive does not establish current scientific acceptance or cover experimental wetting and spreading.",
+  "criteria": {
+    "analytic_fine_deg": 0.5,
+    "analytic_coarse_deg": 2.0,
+    "xi_over_R_fine": 0.12,
+    "xi_over_R_coarse": 0.25,
+    "cross_estimator_deg": 2.0,
+    "accept_pct": 15.0,
+    "third_estimator_gap_deg": 10.0,
+    "reproduce_deg": 0.01,
+    "mirror_identity_deg": 1e-06,
+    "mislabel_recovery_deg": 0.5
+  },
+  "source": [
+    "development/verification/contact-angle/round-5/run_r5.py",
+    "src/tensorlbm/cg_contact_angle.py",
+    "src/tensorlbm/wetting/metrics.py"
+  ],
+  "config": [
+    "development/verification/contact-angle/round-5/predeclared_r5.json"
+  ],
+  "documentation": [
+    "development/verification/contact-angle/round-4/REPORT_R4.md",
+    "development/verification/contact-angle/round-5/REPORT_R5.md",
+    "docs/AUDIT_XVAL_TWO_IMPL_CONTACT_ANGLE_R5.md",
+    "docs/reports/XVAL_SUMMARY.md"
+  ],
+  "reference_files": [
+    "development/verification/contact-angle/round-5/predeclared_r5.json",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/predeclared_r3.json",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/summary_r3.json"
+  ],
+  "references": [
+    {
+      "source": "development/verification/contact-angle/round-5/predeclared_r5.json",
+      "field": "Reference geometry",
+      "value": "Prescribed Young angle and an independent circle fit on archived fields."
+    }
+  ],
+  "results": [
+    "development/verification/contact-angle/round-4/results_r4.json",
+    "development/verification/contact-angle/round-5/results_r5.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/contact-angle-r4-r5-retirement-2026-11-25.json",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th045.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th070.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th090.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th110.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/geometric_ghost__th135.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th045.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th070.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th090.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th110.0__baseline__xi3.npz",
+    "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/runs_r3/neumann_flux__th135.0__baseline__xi3.npz"
+  ]
+}

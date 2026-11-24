@@ -19,7 +19,7 @@ falsifiable:
 
 Usage
 -----
-    python3 run_r5.py measure     # gates -> results_r5.json + summary_r5.json
+    python3 run_r5.py measure     # gates -> results_r5.json
     python3 run_r5.py figures     # figures_r5/*.png
     python3 run_r5.py report      # REPORT_R5.md from the JSON (no hand-typed numbers)
     python3 run_r5.py all
@@ -35,11 +35,12 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
+OUTPUT = REPO / "outputs/verification/contact-angle/round-5"
 sys.path.insert(0, str(REPO / "src"))
 
-R3 = HERE.parent / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3"
-R2 = HERE.parent / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS"
+R3 = REPO / "xval" / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3"
+R2 = REPO / "xval" / "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS"
 PRED = json.loads((HERE / "predeclared_r5.json").read_text())
 PRED2 = json.loads((R2 / "predeclared.json").read_text()) if (R2 / "predeclared.json").exists() else {}
 TH = PRED["thresholds"]
@@ -385,7 +386,8 @@ def measure() -> dict:
         "mislabel": mislabel,
         "fields": fields,
     }
-    (HERE / "results_r5.json").write_text(json.dumps(summary, indent=2))
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    (OUTPUT / "results_r5.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps({k: summary[k] for k in ("verdict", "failed_gates", "gates")}, indent=2))
     print("analytic  max_err_phys %.4f  max_err_ratio %.4f  max_cross %.4f  mirror %.2e"
           % (analytic["max_err_phys_deg"], analytic["max_err_ratio_deg"],
@@ -403,6 +405,12 @@ def measure() -> dict:
     return summary
 
 
+def load_result() -> dict:
+    current = OUTPUT / "results_r5.json"
+    source = current if current.is_file() else HERE / "results_r5.json"
+    return json.loads(source.read_text())
+
+
 # ---------------------------------------------------------------------------
 # figures
 # ---------------------------------------------------------------------------
@@ -412,9 +420,9 @@ def figures() -> None:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    s = json.loads((HERE / "results_r5.json").read_text())
-    out = HERE / "figures_r5"
-    out.mkdir(exist_ok=True)
+    s = load_result()
+    out = OUTPUT / "figures_r5"
+    out.mkdir(parents=True, exist_ok=True)
 
     # fig 1: two committed fields, mid-level contour and fitted circle
     tags = ["geometric_ghost__th070.0__baseline__xi3", "geometric_ghost__th110.0__baseline__xi3"]
@@ -485,7 +493,7 @@ def figures() -> None:
 # report
 # ---------------------------------------------------------------------------
 def report() -> None:
-    s = json.loads((HERE / "results_r5.json").read_text())
+    s = load_result()
     a, ml, f = s["analytic"], s["mislabel"], s["fields"]
     lines = []
     w = lines.append
@@ -638,8 +646,9 @@ def report() -> None:
     w("prescribed angle within the owner's 15 % gate on all 8 measurable audited rows, and agree")
     w("with an independent circle fit; the two `theta = 45 deg` rows remain not measurable.")
     w("")
-    (HERE / "REPORT_R5.md").write_text("\n".join(lines) + "\n")
-    print("report ->", HERE / "REPORT_R5.md")
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    (OUTPUT / "REPORT_R5.md").write_text("\n".join(lines) + "\n")
+    print("report ->", OUTPUT / "REPORT_R5.md")
 
 
 if __name__ == "__main__":

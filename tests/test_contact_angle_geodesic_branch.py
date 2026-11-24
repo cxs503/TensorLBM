@@ -6,7 +6,7 @@ the third contact-angle estimator with ``theta = 2 atan(a/h)``, which is the
 72 % FAIL of that estimator and R4 "fixed" it with a caller-supplied
 ``lbm_convention`` boolean plus an ``a/h > 1`` conditional.
 
-The exact geometry (round 5, ``xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5``)
+The exact geometry (round 5, ``development/verification/contact-angle/round-5``)
 is ``z_c = -R cos t``, ``h = R (1 - cos t)``, ``a = R sin t`` for **every**
 ``t in (0, 180)``, so
 
