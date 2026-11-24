@@ -10,7 +10,7 @@ Checks the two things that can be fast and are load-bearing:
   with its own continuum limit (parabola with ν_eff, walls at node centres).
 
 The expensive channel/separation arms live in
-``xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/run_xval.py``; their JSON is
+``development/verification/mcmp/tau-mixed-velocity/run_xval.py``; their JSON is
 checked here when present, so a stale or failing artifact cannot masquerade as
 a pass.
 """
@@ -36,8 +36,8 @@ from tensorlbm.mcmp_tau_mixed import (
 from tensorlbm.multiphase import collide_sc_two_component
 from tensorlbm.solver import stream
 
-XVAL_DIR = (
-    Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY"
+RESULT_PATH = (
+    Path(__file__).resolve().parents[1] / "outputs/mcmp_tau_mixed_velocity/xval_results.json"
 )
 
 
@@ -136,10 +136,10 @@ def test_momentum_conservation_of_coupling_modes(mode, expect_conserved):
 
 
 def test_xval_artifact_is_consistent_when_present():
-    path = XVAL_DIR / "results" / "xval_results.json"
-    if not path.exists():
+    if not RESULT_PATH.exists():
         pytest.skip("xval results not generated in this checkout")
-    res = json.loads(path.read_text())
+    res = json.loads(RESULT_PATH.read_text())
+    assert set(res["verdicts"]) == {"parity", "channel", "momentum", "separation"}
     decl = res["predeclared"]["predeclared_thresholds"]
     assert res["parity"]["worst_rel_dev_float64"] <= decl["parity"]["max_rel_dev_float64"]
     for case in res["channel"]["cases"]:

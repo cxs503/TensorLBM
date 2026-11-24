@@ -35,7 +35,7 @@ repo `loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow`，feature
   解析槽道参考解 `channel_poiseuille_profile()`，以及**黑盒探针**
   `collision_momentum_probe()`：一次无外力碰撞后由 `ΔJ_k = −(J_k − ρ_k u_visc)/τ_k`
   反解出"碰撞实际使用的 u_mix"，再与 REF-OSS 公式比对——**不是比对两个我写的函数，而是量库内部真正用的速度**。
-* `xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/{predeclared.json, run_xval.py}` —— 四臂实验 + 图 + JSON。
+* [预注册](../development/verification/mcmp/tau-mixed-velocity/predeclared.json) · [运行入口](../development/verification/mcmp/tau-mixed-velocity/run_xval.py) —— 四臂实验 + 图 + JSON。
 * `tests/test_mcmp_tau_mixed_xval.py` —— pytest 门（公式、守恒、解析自洽、artifact 一致性）。
 
 **连续极限（REF-OSS 公式的物理含义，本单推导）**：两组分共用 τ-mixed 平衡速度时，
@@ -159,16 +159,16 @@ OSS 值得借鉴的只有"用 τ 加权避免不等 τ 下的动量源"这一**�
 ## ⑦ 工件 / 复现
 
 ```
-xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/predeclared.json     # 阈值/设计（动手前写死）
-xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/run_xval.py          # 四臂驱动
-xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/results/xval_results.json
-xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/figures/(channel_profiles, convergence_viscosity, momentum).png
+development/verification/mcmp/tau-mixed-velocity/predeclared.json     # 阈值/设计（动手前写死）
+development/verification/mcmp/tau-mixed-velocity/run_xval.py          # 四臂驱动
+outputs/mcmp_tau_mixed_velocity/xval_results.json
+outputs/mcmp_tau_mixed_velocity/figures/(channel_profiles, convergence_viscosity, momentum).png
 src/tensorlbm/mcmp_tau_mixed.py                                       # REF-OSS 公式 + 解析基准 + 黑盒探针
 tests/test_mcmp_tau_mixed_xval.py                                     # pytest 门
 ```
 
 环境：3.11.6 / torch 2.7.1 / loongarch64 / 128 threads / git `56aafaaf9888`。
-运行：`python xval/XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY/run_xval.py --arm all`（本轮总墙钟 326s，
+运行：`python development/verification/mcmp/tau-mixed-velocity/run_xval.py --arm all`（本轮总墙钟 326s，
 channel 臂 8 例约 315 s，全部在控制面跑，未上集群——预声明预算 1800 s）。
 
 **失败模式（本单实际踩到的）**：①沙箱无 GitHub → 只能对公式不能对 OSS 数字；

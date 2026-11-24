@@ -69,6 +69,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("models", "units"),
     ("xval", "model_matrix_ci_plus_coverage"),
     ("xval", "model_matrix_wall_axis"),
+    ("xval", "mcmp_cross_force"),
+    ("xval", "XVAL-LBM-SHAN-CHEN-MCMP-TAU-MIXED-VELOCITY"),
     ("scripts", "sdaa"),
     ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
     ("scripts", "in25_t6"),
