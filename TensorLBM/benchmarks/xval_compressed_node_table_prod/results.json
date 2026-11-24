@@ -1,0 +1,33 @@
+{
+  "accuracy": {
+    "seed_1": {
+      "ux_max_err": 2.012245350815206e-16,
+      "uy_max_err": 1.8733319474655008e-16,
+      "rho_max_err": 6.661338147750939e-16,
+      "pass": true
+    },
+    "seed_5": {
+      "ux_max_err": 1.352999607967184e-16,
+      "uy_max_err": 1.144968316121528e-16,
+      "rho_max_err": 6.661338147750939e-16,
+      "pass": true
+    },
+    "seed_13": {
+      "ux_max_err": 1.7694857081321236e-16,
+      "uy_max_err": 1.6652516865275815e-16,
+      "rho_max_err": 4.440892098500626e-16,
+      "pass": true
+    }
+  },
+  "permeability": {
+    "k_intrinsic": 21.309999999989977,
+    "k_ref": 21.333333333333332,
+    "err": 0.0010937500004697953,
+    "pass": true
+  },
+  "performance": {
+    "compressed_time": 5.9975080490112305,
+    "dense_time": 5.506927490234375,
+    "speedup": 0.9182026010189792
+  }
+}
