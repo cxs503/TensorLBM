@@ -1,0 +1,63 @@
+{
+  "source_commit": "1c717d58ebf360f3b74a82e8600677ea133a418e",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 95,
+      "after": 94
+    }
+  },
+  "reference_scan": "Checked executable references, report navigation and the source citation. The audit tools point to a separate m17758 workspace. Its historical paths are unchanged.",
+  "compatibility": "Verified all four exact originals in the existing checksum-pinned audit snapshot. The maintained replay entry point and its CLI now live under the registered case. New result files cannot overwrite the archived copy. The published audit URL is unchanged.",
+  "scientific_scope": "Historical records and their independent audit are registered together. The existing numerical discrepancy is unresolved. No new numerical replay or change to acceptance status.",
+  "verification": [
+    "Verified four exact originals and all six members of the existing SHA256SUMS snapshot. The runner AST differs only by module root and output changes, and the library AST differs only in its source citation.",
+    "The published audit preserves its original text. All four new links resolve. The runner's help works outside the checkout.",
+    "Regenerated two figures and the byte-identical variance table from the genuine archived JSON, without running the numerical scheme or the external Ludwig object.",
+    "83 repository governance tests passed, 203 registry entries validated, and Ruff ratchet passed.",
+    "Focused pytest on the exact main tree and the migrated tree both return 6 passed and 1 failed. test_noise_amplitude_scales_with_kT_and_tau observed 1.0000000000000004e-06 versus 1.2e-05 expected. The pre-existing failure remains open."
+  ],
+  "entries": [
+    {
+      "old_path": "xval/fluctuating_lbm_ghost_modes/artifacts/ludwig_reference.json",
+      "preserved_original_path": "docs/audit_m17856/evidence_snapshot/ludwig_reference.json",
+      "original_git_blob": "c5434674c63a7d543a2e84cfe6af2147cbfdf9ef",
+      "git_mode": "100644",
+      "original_sha256": "803429a070ac0ec3aa8b90eed294b00b48fecfa0107f40cb68ddef83571a6c13",
+      "size_bytes": 12907,
+      "new_path": "docs/audit_m17856/evidence_snapshot/ludwig_reference.json",
+      "new_sha256": "803429a070ac0ec3aa8b90eed294b00b48fecfa0107f40cb68ddef83571a6c13"
+    },
+    {
+      "old_path": "xval/fluctuating_lbm_ghost_modes/artifacts/results.json",
+      "preserved_original_path": "docs/audit_m17856/evidence_snapshot/results.json",
+      "original_git_blob": "239ac3b0362dded7313c1585a84ac8db571c2ce0",
+      "git_mode": "100644",
+      "original_sha256": "ae4c407313bc02b24719d09af194ea4fdad8fe006f5cf6cf74462e445d3a2b68",
+      "size_bytes": 25339,
+      "new_path": "docs/audit_m17856/evidence_snapshot/results.json",
+      "new_sha256": "ae4c407313bc02b24719d09af194ea4fdad8fe006f5cf6cf74462e445d3a2b68"
+    },
+    {
+      "old_path": "xval/fluctuating_lbm_ghost_modes/artifacts/table_mode_variance.csv",
+      "preserved_original_path": "docs/audit_m17856/evidence_snapshot/table_mode_variance.csv",
+      "original_git_blob": "a10a7d6eef0a71c34ed368ead463758033be4290",
+      "git_mode": "100644",
+      "original_sha256": "8e0616083728c65d7eb1612b96ecd016738b571ada234e69c74510e5399019db",
+      "size_bytes": 1569,
+      "new_path": "docs/audit_m17856/evidence_snapshot/table_mode_variance.csv",
+      "new_sha256": "8e0616083728c65d7eb1612b96ecd016738b571ada234e69c74510e5399019db"
+    },
+    {
+      "old_path": "xval/fluctuating_lbm_ghost_modes/run_xval.py",
+      "preserved_original_path": "docs/audit_m17856/evidence_snapshot/run_xval.py",
+      "original_git_blob": "173f8724115a821eec9648d4df5fd84dad782b46",
+      "git_mode": "100644",
+      "original_sha256": "cd204923f168d27d0a08e0a981ca57fd7969c35eaf463068c28914618d5eb9b8",
+      "size_bytes": 17330,
+      "new_path": "benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py",
+      "new_sha256": "05573b8b0dc9baced4ad00d3a45af30377a2a26c4493b4e7910f43a52a79afd2"
+    }
+  ]
+}

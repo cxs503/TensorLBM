@@ -135,3 +135,7 @@ m17758 自己的 submission 已如实写「部分完成（honest 部分 FAIL，�
 
 **处置（adversarial-review disposition）：request changes**——判级 L2 落表（`tensor_maturity_verdicts` id=642, verdict_by=board-audit），
 不返修到位不得升 L3/L4；返修清单见 verdict.evidence.verdict。
+
+## 当前检出树中的复现入口
+
+[运行脚本](../../benchmarks/cross_validation/fluctuating_ghost_modes/run_xval.py) 将新产物写入 `outputs/fluctuating_ghost_modes/`。历史[结果](evidence_snapshot/results.json)、[参考提取](evidence_snapshot/ludwig_reference.json)和[方差表](evidence_snapshot/table_mode_variance.csv)保留在审计快照中。上面的工作树路径和复跑记录保留原始出处。
