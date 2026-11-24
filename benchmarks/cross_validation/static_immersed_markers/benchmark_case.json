@@ -1,0 +1,44 @@
+{
+  "scope": "Archived Re=20 static immersed-marker cylinder verification from missions m18749 and m18779. The board audit recorded a failed drag comparison and a failed convergence criterion. The separately archived Re=100 LIFE script does not reproduce this case. Current acceptance remains unevaluated.",
+  "criteria": {
+    "drag_relative_error": {
+      "metric": "Percent error versus the historical 2.05 drag reference",
+      "tolerance_pct": 15.0
+    },
+    "drag_variation": {
+      "metric": "Drag coefficient variation over the last 2000 time steps",
+      "stopping_threshold": 0.01
+    }
+  },
+  "source": [
+    "docs/board_audit/m18779/audited_source_snapshot/cylinder_flow/__init__.py",
+    "docs/board_audit/m18779/audited_source_snapshot/ibm.py"
+  ],
+  "config": [
+    "development/verification/static-immersed-markers/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/static_immersed_markers/README.md",
+    "development/verification/static-immersed-markers/REPORT.md",
+    "docs/board_audit/m18779/audit_report.md"
+  ],
+  "reference_files": [
+    "development/verification/static-immersed-markers/predeclared.json",
+    "development/verification/static-immersed-markers/REPORT.md"
+  ],
+  "references": [
+    {
+      "source": "development/verification/static-immersed-markers/REPORT.md",
+      "field": "historical_drag_reference",
+      "value": "Dennis and Chang (1970), Journal of Fluid Mechanics 42:471, Cd=2.05 as recorded by mission m18749"
+    }
+  ],
+  "results": [
+    "docs/board_audit/m18779/verify_output.json"
+  ],
+  "evidence": [
+    "docs/board_audit/m18779/figures/fig1_cd_history.png",
+    "docs/board_audit/m18779/figures/fig2_field_snapshot.png",
+    "docs/architecture/migrations/static-immersed-markers-xval-2026-11-25.json"
+  ]
+}
