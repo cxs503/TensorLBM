@@ -1,7 +1,7 @@
 """Campaign: Zou/He-driven 3D plane channel vs the analytic Poiseuille parabola.
 
 Runs the resolution ladder of the pressure/pressure closure pair plus one
-parabolic-inflow arm, writes ``artifacts/zou_he_channel3d/metrics.json`` and
+parabolic-inflow arm, writes ``outputs/verification/zou-he-channel/d3q19-ladder/metrics.json`` and
 the report figures.  Every number in the report is read back from that JSON.
 """
 from __future__ import annotations
@@ -16,9 +16,9 @@ import numpy as np
 
 from tensorlbm.verification.zou_he_channel3d import simulate_channel_3d
 
-OUT = pathlib.Path("artifacts/zou_he_channel3d")
+OUT = pathlib.Path("outputs/verification/zou-he-channel/d3q19-ladder")
 OUT.mkdir(parents=True, exist_ok=True)
-FIG = pathlib.Path("xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/figures")
+FIG = OUT / "figures"
 FIG.mkdir(parents=True, exist_ok=True)
 
 runs = []

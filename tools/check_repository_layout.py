@@ -46,6 +46,7 @@ RETIRED_ROOT_DIRECTORIES = {
     "tmp",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),
     ("scripts", "w26_ghia"),
