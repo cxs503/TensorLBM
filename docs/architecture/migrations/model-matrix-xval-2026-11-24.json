@@ -1,0 +1,73 @@
+{
+  "source_commit": "a4a26eb06dbeff1ad106dbd743f7ef75008bc650",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 97,
+      "after": 95
+    }
+  },
+  "reference_scan": "Checked tracked consumers, documentation, tests, workflows, and historical source allowlist. The separate m18152 board audit describes the original mission checkout and retains its paths.",
+  "compatibility": "Both published report URLs and existing CLI options remain available. The R3 wall-axis study imports the canonical source with PYTHONPATH=src. The archived coverage driver intentionally uses the original frozen historical solver, and is no longer an active xval source exception. Fresh outputs go under outputs/. Figure generation reads the newly generated result if present or falls back to the exact archived JSON.",
+  "scientific_scope": "Placement and compatibility only. The archived six-arm quick result retains its historical verdict. No current scientific acceptance decision was made.",
+  "verification": [
+    "Verified five original and current SHA-256 values, file modes and the two report links. Both archived JSON documents have unchanged bytes.",
+    "Compared the solver runners' function ASTs to their originals. Only placement, bootstrap and output paths changed.",
+    "Ran the coverage --help and confirmed the frozen source import. Rendered three PNGs from the original result in a clean output directory and verified that they decode.",
+    "Imported the wall-axis runner from outside the checkout and confirmed that it selects src/tensorlbm and its documented output path.",
+    "All 83 governance tests passed, covering 202 benchmark entries, 35 manual cases and 42 listed active historical-source references. Ruff ratchet passed."
+  ],
+  "entries": [
+    {
+      "old_path": "xval/model_matrix_ci_plus_coverage/artifacts/result.json",
+      "new_path": "development/verification/model-units/coverage/evidence/result.json",
+      "published_report": "docs/XVAL-LBM-MODEL-MATRIX-CI-PLUS-COVERAGE.md",
+      "git_mode": "100644",
+      "original_git_blob": "fd97a3e08795cb78e642e2e647e0b62c05d22554",
+      "size_bytes": 5336,
+      "original_sha256": "683bf8c9c1f7f41aa39e005f2c4672da9d9c441252bb5e163bf64d6740d4d39a",
+      "new_sha256": "683bf8c9c1f7f41aa39e005f2c4672da9d9c441252bb5e163bf64d6740d4d39a"
+    },
+    {
+      "old_path": "xval/model_matrix_ci_plus_coverage/make_figures.py",
+      "new_path": "development/verification/model-units/coverage/make_figures.py",
+      "published_report": "docs/XVAL-LBM-MODEL-MATRIX-CI-PLUS-COVERAGE.md",
+      "git_mode": "100644",
+      "original_git_blob": "ecaad24be32bdfe451cda7abf563222f89151f19",
+      "size_bytes": 4095,
+      "original_sha256": "b396e20ea4189d750d37b9ce9ec88fd8954f72768a09cb6fe23150c59af3b3be",
+      "new_sha256": "28ce08dff54c6dd5c0e18509c0b877646690e6fc021ccdfa588a7c999b62dff8"
+    },
+    {
+      "old_path": "xval/model_matrix_ci_plus_coverage/model_matrix.json",
+      "new_path": "development/verification/model-units/coverage/model_matrix.json",
+      "published_report": "docs/XVAL-LBM-MODEL-MATRIX-CI-PLUS-COVERAGE.md",
+      "git_mode": "100644",
+      "original_git_blob": "ade6fe3ab534a81b5d96365fe08288bc16b0214a",
+      "size_bytes": 5512,
+      "original_sha256": "ee4cffeae7357ef0ebf259583de81d0f08a9675b4a5e2959c6270ba1629ab064",
+      "new_sha256": "ee4cffeae7357ef0ebf259583de81d0f08a9675b4a5e2959c6270ba1629ab064"
+    },
+    {
+      "old_path": "xval/model_matrix_ci_plus_coverage/run_matrix.py",
+      "new_path": "development/verification/model-units/coverage/run_matrix.py",
+      "published_report": "docs/XVAL-LBM-MODEL-MATRIX-CI-PLUS-COVERAGE.md",
+      "git_mode": "100644",
+      "original_git_blob": "f3b820e6a4ed82faf5597ce2d9d9a8330ac6acd3",
+      "size_bytes": 22554,
+      "original_sha256": "2eaaab853336e2c65091c137a0268919e67160f72c1d0ab8f58677109e22ddea",
+      "new_sha256": "2586ef9ec7728514f5bcd541cb06c7c6cee8a900008424dcc700053aa105db03"
+    },
+    {
+      "old_path": "xval/model_matrix_wall_axis/run_study.py",
+      "new_path": "development/verification/model-units/wall-axis/run_study.py",
+      "published_report": "docs/MODEL_MATRIX_CI_PLUS_COVERAGE_R3.md",
+      "git_mode": "100644",
+      "original_git_blob": "393882cfcefa79c2da29472e2f1c2b6b8d9e8fa6",
+      "size_bytes": 5820,
+      "original_sha256": "2a62335bbb3800341ea3e4d335d4de7e36cf4e31a87f8f446de1c85533246546",
+      "new_sha256": "f04095719d4e0818fe73f97328f610df4d12892de1312f2b1101d0303ac6ab5c"
+    }
+  ]
+}

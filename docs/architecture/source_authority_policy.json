@@ -176,10 +176,6 @@
     "xval/XVAL-LBM-SCMP-TWO-COMPONENT-PLANAR-INTERFACE/tl_arm.py": {
       "matches": 1,
       "matching_lines_sha256": "683d874325c3145d822f8cdadabb1573c4ab23d6caf9d16f71b9f55fdb51f369"
-    },
-    "xval/model_matrix_ci_plus_coverage/run_matrix.py": {
-      "matches": 1,
-      "matching_lines_sha256": "657a06f624dafa8dcb52ae45e0c17646dbdd6d01a96cda8b1f8e4bc91f697ac2"
     }
   },
   "canonical_root": "src",

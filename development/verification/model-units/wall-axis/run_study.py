@@ -5,7 +5,7 @@ single-rate (BGK) and one two-relaxation-time (TRT, Lambda = 3/16) model,
 fits the observed convergence order, and writes the machine-generated table
 used in ``docs/MODEL_MATRIX_CI_PLUS_COVERAGE_R3.md``.
 
-    PYTHONPATH=src python xval/model_matrix_wall_axis/run_study.py
+    PYTHONPATH=src python development/verification/model-units/wall-axis/run_study.py
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import torch
 from tensorlbm.model_matrix.cases import Grid, run_wall_poiseuille
 from tensorlbm.model_matrix.registry import WALL_CASE, get_model, registry
 
-OUT = Path("artifacts/model_matrix_wall_axis")
+OUT = Path(__file__).resolve().parents[4] / "outputs" / "model_matrix_wall_axis"
 TAU = 0.8
 PLAN = [("d3q19/bgk", 10), ("d3q19/bgk", 18), ("d3q19/bgk", 34), ("d3q19/trt", 10), ("d3q19/trt", 18)]
 

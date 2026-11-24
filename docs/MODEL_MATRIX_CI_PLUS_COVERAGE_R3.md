@@ -25,7 +25,7 @@ missing NoDynamics restore or a mass-leaking wall.
 * `tests/test_model_matrix_wall.py` — 8 tests: reference geometry, gate +
   second-order convergence, 1/H wall-offset shrinkage, cross-check against the
   validated `RotatingFrameLBM` Guo stepper, and three negative controls.
-* `xval/model_matrix_wall_axis/` — resolution sweep, `result.json`,
+* [Resolution sweep driver](../development/verification/model-units/wall-axis/run_study.py) writes `result.json`,
   `BENCHMARK_REF_VS_GOT.md`, `fig1_wall_axis.png`.
 
 ## 2. Reference (a priori, nothing fitted)
@@ -43,7 +43,7 @@ wall position reported below *is* obtained by fitting (a parabola through the
 interior nodes), and that fitted position is then compared with the ideal
 half-lattice location — the fit is the measurement, not the reference.
 
-## 3. Measured (machine-generated: `artifacts/model_matrix_wall_axis/`)
+## 3. Measured (new runs write to `outputs/model_matrix_wall_axis/`)
 
 `tau = 0.8`, `g = 1e-5`, `u_max/Ma ~ 3.2e-3 / 5.5e-3`.
 
@@ -133,6 +133,6 @@ velocity.  Using it with `u_raw` scales the effective force by
 ```
 python -m tensorlbm.model_matrix list                      # 14 keys, 61 declared cells
 python -m tensorlbm.model_matrix run --res 18 --out artifacts/model_matrix_r3
-PYTHONPATH=src python xval/model_matrix_wall_axis/run_study.py
+PYTHONPATH=src python development/verification/model-units/wall-axis/run_study.py
 python -m pytest -q tests/test_model_matrix_wall.py tests/test_model_matrix.py
 ```

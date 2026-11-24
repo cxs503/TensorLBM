@@ -19,7 +19,7 @@ This script:
 4. Compares against TCLB's approach
 5. Produces artifacts: result.json, coverage.json, figures
 
-Run:  python xval/model_matrix_ci_plus_coverage/run_matrix.py [--quick]
+Run:  python development/verification/model-units/coverage/run_matrix.py [--quick]
 """
 
 from __future__ import annotations
@@ -34,16 +34,16 @@ from pathlib import Path
 
 import torch
 
-# Add TensorLBM src to path
-SRC = Path(__file__).resolve().parents[2] / "development/legacy/TensorLBM/src"
+# Use the frozen solver paired with this historical campaign.
+REPO = Path(__file__).resolve().parents[4]
+SRC = REPO / "development/legacy/TensorLBM/src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import tensorlbm
 from tensorlbm import d2q9, d3q19, solver
 
-REPO = Path(__file__).resolve().parents[2]
-ART = REPO / "xval" / "model_matrix_ci_plus_coverage" / "artifacts"
+ART = REPO / "outputs" / "model_matrix_ci_plus_coverage"
 ART.mkdir(parents=True, exist_ok=True)
 
 DTYPE = torch.float64
