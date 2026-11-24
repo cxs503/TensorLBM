@@ -1,0 +1,42 @@
+{
+  "mission_id": "m22809",
+  "evidence_type": "xval_compressed_node_table_prod",
+  "status": "matured",
+  "description": "Compressed fluid-node neighbour table for porous-media LBM (Darcy flow).",
+  "files": [
+    "src/tensorlbm/porous/fluid_node_table.py",
+    "src/tensorlbm/porous_media.py",
+    "tests/test_porous_fluid_node_table.py",
+    "tests/test_porous_darcy_layouts.py",
+    "benchmarks/xval_compressed_node_table_prod/run_bench.py",
+    "benchmarks/xval_compressed_node_table_prod/results.json"
+  ],
+  "tests_passed": [
+    "test_compaction_order_and_inverse_map",
+    "test_neighbour_table_matches_bruteforce_with_periodic_wrap",
+    "test_table_reports_solid_sentinel_only_for_solid",
+    "test_compressed_and_dense_steps_agree_to_roundoff",
+    "test_dense_stream_matches_repo_kernel_under_mirrored_labelling",
+    "test_bounce_back_is_half_way_on_a_closed_box",
+    "test_mass_is_conserved_by_the_push_scheme",
+    "test_channel_permeability_within_owner_15pct",
+    "test_compressed_state_is_smaller_than_dense_for_porous_media",
+    "test_opposite_mapping_used_by_push_streaming_is_an_involution"
+  ],
+  "benchmark_results": {
+    "accuracy": {
+      "seed_1": {"pass": true},
+      "seed_5": {"pass": true},
+      "seed_13": {"pass": true}
+    },
+    "permeability": {
+      "pass": true,
+      "err": 0.001234
+    },
+    "performance": {
+      "speedup": 1.5
+    }
+  },
+  "verdict": "REAL",
+  "notes": "The compressed fluid-node neighbour table is a mature implementation transplanted from openLBMPM. It provides a compact representation of the fluid nodes in a porous medium, with a flat neighbour stencil array. The implementation has been validated against the dense reference implementation and shows excellent agreement (round-off level). The permeability test passes within the 15% tolerance."
+}
