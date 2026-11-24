@@ -1,0 +1,22 @@
+{
+  "source_commit": "0ac59b70b96f2eae33b113c8bd8ba1add3e4db02",
+  "introduced_by": "b7e561d70cf28d762e04a077e71f25c6381ab5d1",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "tracked_root_files_before": 21,
+  "tracked_root_files_after": 20,
+  "entries": [
+    {
+      "old_path": "post_report.sh",
+      "new_path": "development/audit/m23309/post_report.sh",
+      "git_mode": "100644",
+      "original_git_blob": "92583968ecc8a26b3239730b0b617d042af26b2d",
+      "original_sha256": "6c1c6268c5a41c0bbebc40767c69e13a61481a51f5deadf5eafcf93b32d1748b",
+      "current_sha256": "8f764f94a641bb879b179fe1f225c40a2079ff09710f6ae1c8feb69c1d8a8516"
+    }
+  ],
+  "reference_scan": "No tracked callers, workflow references or public documentation link to the old script.",
+  "compatibility": "The local report endpoint and default input file are preserved. The archive requires an explicit local TENSOR_REPORT_TOKEN environment variable. An optional first argument selects the report file.",
+  "credential_scope": "The plaintext credential was excluded from the archived copy. This change leaves earlier Git objects intact.",
+  "verification": "The initial checkout failed layout on the extra root file. The archived script passed shell syntax and failed closed without an environment token. No HTTP call was made. All 82 repository governance tests passed after the move, with 199 registry entries and no hard violations."
+}
