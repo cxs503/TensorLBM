@@ -1,0 +1,14 @@
+[
+  {
+    "name": "fig_startup_profiles",
+    "caption": "Transient velocity profiles (force-corrected NEBB + EDM body force) normalised by the steady peak, against the closed-form start-up series."
+  },
+  {
+    "name": "fig_startup_errors",
+    "caption": "Relative transient error vs dimensionless time for every arm and grid; all arms stay two orders of magnitude below the 3 % threshold."
+  },
+  {
+    "name": "fig_startup_decay",
+    "caption": "Left: projected slowest-mode amplitude with the theoretical exponential; right: viscosity recovered from the fitted decay rate vs the nominal value."
+  }
+]

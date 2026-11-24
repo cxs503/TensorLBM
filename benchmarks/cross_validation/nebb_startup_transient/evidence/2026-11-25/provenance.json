@@ -1,0 +1,36 @@
+{
+  "generated_on": "2026-11-25",
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "command": "OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=src python benchmarks/xval/xval_nebb_startup_transient.py --out outputs/nebb-startup-replay",
+  "environment": {
+    "architecture": "x86_64",
+    "python": "3.12.14",
+    "numpy": "2.5.5",
+    "torch": "2.15.0+cpu",
+    "matplotlib": "3.11.2"
+  },
+  "historical_evidence": "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/evidence.json",
+  "historical_raw_artifacts_absent_from_main": {
+    "artifacts/xval_nebb_startup/results.json": {
+      "sha256": "64d80a1dc0d1125ac721edd6c69a3d3d22a6b0a0ca80e4e6aadaf6a578f2b11a",
+      "bytes": 140267
+    },
+    "artifacts/xval_nebb_startup/figures.json": {
+      "sha256": "650043c5d3f03566d7cede92f4bb13e05277e669fea4f4b5fb28c14bad192680",
+      "bytes": 606
+    }
+  },
+  "replay_sha256": {
+    "figures.json": "650043c5d3f03566d7cede92f4bb13e05277e669fea4f4b5fb28c14bad192680",
+    "results.json": "a9b9a8349dc0fed3c33eae1330728a0c1c7989ed5e2f5b92edf87307eb77ba35"
+  },
+  "historical_comparison": {
+    "summary_arms": 10,
+    "primary_arms_passing": 8,
+    "maximum_primary_relative_error": 0.004688365895084718,
+    "primary_relative_tolerance": 0.03,
+    "maximum_delta_in_relative_error_vs_historical_summary": 0,
+    "results_bytes_match_historical_hash": false,
+    "figure_index_bytes_match_historical_hash": true
+  }
+}

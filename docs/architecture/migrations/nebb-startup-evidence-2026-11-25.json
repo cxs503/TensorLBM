@@ -1,0 +1,16 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "paths_moved": [],
+  "dependency": "The historical evidence contract records transient results.json and figures.json under an ignored artifact path. The paths are missing from the source checkout. Their recorded hashes remain in the original run_artifacts_detail.",
+  "compatibility": "The original evidence JSON, runner and reference report retain their paths and checksums. The dated evidence provides fresh CPU output for tests and registry discovery while preserving the original path metadata. It is not installed under the historical paths.",
+  "replay": "benchmarks/cross_validation/nebb_startup_transient/evidence/2026-11-25/provenance.json",
+  "remaining_directory_work": "benchmarks/xval still owns the NEBB runner scripts while the archived consumers and the external evidence judge's path contract are investigated. This replay covers only the CPU startup campaign.",
+  "verification": [
+    "Ran the original transient runner on CPU and recomputed the closed-form reference and numerical errors with recompute_transient(..., rerun=True). All ten arms agreed with the dated output. The eight primary arms passed the 3% criterion, with maximum error 0.46884%.",
+    "Compared the original artifact hashes with the fresh CPU output. The results JSON differs bytewise while all ten tabulated relative errors match the historical evidence exactly. The figure index hash matches the original.",
+    "Ran pytest -q tests/test_nebb_bodyforce_evidence.py tests/test_nebb_bodyforce_startup.py tests/test_xval_r7_drive_width_evidence.py. The baseline was 1 failed, 31 passed, 7 skipped, 2 xfailed. With the dated evidence, the same test modules reported 33 passed, 6 skipped, 2 xfailed. The remaining skips include missing R6/R7 cases and an opt-in core-path run.",
+    "All 83 repository governance tests and the lint ratchet passed. Registry lookup resolves the dated evidence, original report and reference while leaving the overall case acceptance unevaluated."
+  ]
+}
