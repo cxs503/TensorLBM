@@ -67,6 +67,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "plotting"),
     ("models", "lbm"),
     ("models", "units"),
+    ("xval", "model_matrix_ci_plus_coverage"),
+    ("xval", "model_matrix_wall_axis"),
     ("scripts", "sdaa"),
     ("xval", "XVAL-LBM-MODEL-DIR-AS-BUILD-AND-CI-UNIT"),
     ("scripts", "in25_t6"),

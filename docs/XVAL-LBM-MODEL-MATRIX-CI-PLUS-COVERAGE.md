@@ -3,7 +3,7 @@
 **任务** m17992（第 1 轮·开源对标，XVAL）｜**仓库** TensorLBM｜**分支** `agent/m17992`
 **对标对象** CFD-GO/TCLB 的 **model-matrix-ci-plus-coverage** 做法
 **判据** <15%（owner 精度标准）｜**日期** 2026-11-13
-**工件** `xval/model_matrix_ci_plus_coverage/artifacts/result.json`、`figures/fig1..fig3`
+**工件** [归档结果](../development/verification/model-units/coverage/evidence/result.json)、`figures/fig1..fig3`
 
 ---
 
@@ -134,20 +134,20 @@ CFD-GO/TCLB 的 model-matrix-ci-plus-coverage 做法相比，差距在哪里？�
 
 | 文件 | 内容 |
 |---|---|
-| `xval/model_matrix_ci_plus_coverage/model_matrix.json` | 模型矩阵定义 |
-| `xval/model_matrix_ci_plus_coverage/run_matrix.py` | 测试运行脚本 |
-| `xval/model_matrix_ci_plus_coverage/make_figures.py` | 图表生成脚本 |
-| `xval/model_matrix_ci_plus_coverage/artifacts/result.json` | 测试结果 JSON |
-| `xval/model_matrix_ci_plus_coverage/figures/fig1_model_matrix_comparison.png` | 模型矩阵对比图 |
-| `xval/model_matrix_ci_plus_coverage/figures/fig2_coverage_radar.png` | 覆盖度雷达图 |
-| `xval/model_matrix_ci_plus_coverage/figures/fig3_test_results.png` | 测试结果柱状图 |
+| `development/verification/model-units/coverage/model_matrix.json` | 模型矩阵定义 |
+| `development/verification/model-units/coverage/run_matrix.py` | 测试运行脚本 |
+| `development/verification/model-units/coverage/make_figures.py` | 图表生成脚本 |
+| [归档结果](../development/verification/model-units/coverage/evidence/result.json) | 测试结果 JSON |
+| `outputs/model_matrix_ci_plus_coverage/figures/fig1_model_matrix_comparison.png` | 模型矩阵对比图 |
+| `outputs/model_matrix_ci_plus_coverage/figures/fig2_coverage_radar.png` | 覆盖度雷达图 |
+| `outputs/model_matrix_ci_plus_coverage/figures/fig3_test_results.png` | 测试结果柱状图 |
 
 ### 复现命令
 
 ```bash
 cd /srv/tensor/agent/work/m17992
-python xval/model_matrix_ci_plus_coverage/run_matrix.py --quick
-python xval/model_matrix_ci_plus_coverage/make_figures.py
+python development/verification/model-units/coverage/run_matrix.py --quick
+python development/verification/model-units/coverage/make_figures.py
 ```
 
 ---
@@ -163,3 +163,5 @@ CI 实践方面，TCLB 的全矩阵测试+覆盖追踪做法值得借鉴。
 **综合覆盖度 67%**，主要差距在 D3Q27 格子和 Cascaded/Entropic 碰撞算子。
 
 **移植建议**：引入模型矩阵覆盖追踪机制，补充 D3Q27 格子，建立回归门。
+
+归档驱动保留该轮运行所用的冻结求解器。图表脚本优先读取本次复跑结果，否则读取归档 JSON，并把生成的图写到 `outputs/model_matrix_ci_plus_coverage/figures/`。

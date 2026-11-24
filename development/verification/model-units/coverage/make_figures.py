@@ -8,12 +8,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-ART = Path(__file__).resolve().parent / "artifacts"
-FIGS = Path(__file__).resolve().parent / "figures"
-FIGS.mkdir(exist_ok=True)
+HERE = Path(__file__).resolve().parent
+OUT = HERE.parents[3] / "outputs" / "model_matrix_ci_plus_coverage"
+FIGS = OUT / "figures"
+FIGS.mkdir(parents=True, exist_ok=True)
 
-# Load results
-result = json.loads((ART / "result.json").read_text())
+result_path = OUT / "result.json"
+if not result_path.is_file():
+    result_path = HERE / "evidence" / "result.json"
+result = json.loads(result_path.read_text())
 
 # Figure 1: Model Matrix Coverage Comparison
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
