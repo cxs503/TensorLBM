@@ -103,3 +103,12 @@ la_weight 连续化（ref = 精确抛物剖面；H=16 收敛场）：
 | 表/稠密表示等价 | 0.0e+00 | ✅（逐位相同） |
 | 平面壁法向（投影式） | 0.0e+00 | ✅ |
 | 球面法向 mean cos（投影式） | 角误差 2.02° | ✅（≈0.08% 偏差） |
+
+当前检出的 [复跑入口](../development/verification/wall-boundary-tables/indirect-addressing/run_arm.py) 和
+[原预注册](../development/verification/wall-boundary-tables/indirect-addressing/predeclared.json) 已归档到同一位置。
+原报告的参数、门槛和工件记录保留。旧路径见[迁移台账](architecture/migrations/wall-boundary-tables-xval-2026-11-24.json)。
+
+2026-11-24 的 [CPU 路径兼容复跑](../development/verification/wall-boundary-tables/indirect-addressing/replay-cpu-2026-11-24.json)
+在迁移前后得到相同数值。H=8 和 H=16 的流场逐位相同，但程序的综合门槛还检查壁力相对差，
+而稠密对照的壁力为零，导致该门槛未通过。动量交换剪切误差约 100%，报告中单独列出的速度剖面法
+误差为 2.08%–9.50%。本次复跑未改变验收状态。
