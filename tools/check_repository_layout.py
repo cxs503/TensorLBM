@@ -64,6 +64,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-PURE-FUNCTION-FSI-FIXED-POINT"),
     ("xval", "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"),
     ("xval", "ludwig_fe_stress"),
+    ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
+    ("xval", "fused_kernel_type_selector"),
 }
 
 

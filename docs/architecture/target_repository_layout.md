@@ -73,6 +73,10 @@ The [EOS and FSI report ledger](migrations/eos-fsi-xval-reports-2026-11-23.json)
 places the archived Maxwell stability and vivsim fixed-point evidence in their
 benchmark directories.
 
+The [wetting and kernel report ledger](migrations/wetting-r6-fused-kernel-reports-2026-11-23.json)
+places the Round 6 wetting report with its benchmark and preserves the fused
+kernel comparison under development with its independent audits.
+
 ## Second-level placement
 
 | Area | Placement |
