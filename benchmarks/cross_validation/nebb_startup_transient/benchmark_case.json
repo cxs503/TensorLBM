@@ -1,0 +1,45 @@
+{
+  "scope": "CPU replay of impulsively started plane Poiseuille flow with force-corrected NEBB at wall nodes. The historical launcher's other steady and GPU campaigns are outside this replay.",
+  "criteria": {
+    "primary_transient_profile_error": {
+      "metric": "Maximum over space and sampled time of absolute velocity error relative to the steady analytical peak",
+      "strict_relative_tolerance": 0.03
+    },
+    "other_transient_profile_error": {
+      "metric": "Owner error bound for the other arms, including negative controls",
+      "strict_relative_tolerance": 0.15
+    }
+  },
+  "source": [
+    "benchmarks/xval/xval_nebb_startup_transient.py",
+    "src/tensorlbm/nebb_bodyforce_startup.py",
+    "benchmarks/xval/nebb_bodyforce_evidence.py"
+  ],
+  "config": [
+    "benchmarks/xval/xval_nebb_startup_transient.py"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/nebb_startup_transient/README.md",
+    "docs/xval_nebb_bodyforce_transient.md"
+  ],
+  "reference_files": [
+    "docs/xval_nebb_bodyforce_transient.md",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/evidence.json"
+  ],
+  "references": [
+    {
+      "source": "docs/xval_nebb_bodyforce_transient.md",
+      "field": "analytic_reference",
+      "value": "Batchelor (1967), An Introduction to Fluid Dynamics, §4.2, impulsively started plane Poiseuille series"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/nebb_startup_transient/evidence/2026-11-25/results.json"
+  ],
+  "evidence": [
+    "benchmarks/cross_validation/nebb_startup_transient/evidence/2026-11-25/provenance.json",
+    "benchmarks/cross_validation/nebb_startup_transient/evidence/2026-11-25/figures.json",
+    "xval/XVAL-LBM-FORCE-CORRECTED-NEBB-BODY-FORCE-DRIVER-S/artifacts/evidence.json",
+    "docs/architecture/migrations/nebb-startup-evidence-2026-11-25.json"
+  ]
+}
