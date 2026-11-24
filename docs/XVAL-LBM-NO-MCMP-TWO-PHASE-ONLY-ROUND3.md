@@ -4,7 +4,7 @@ _Anchor_ `XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY` (OSS row `oss_solutions` 274, `lssfau
 
 _Mission_ 23124 - round 3 closes the gap that round 1 declared in its own limitations section.
 
-Every number below is rendered from `outputs/xval_no_mcmp_evolving_round3/results_round3.json`; every threshold is read from `docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json`, which was written before the first run. Round-1 artifacts (`xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/*`) are untouched by this round.
+Every number below is rendered from [the archived run JSON](../benchmarks/cross_validation/no_mcmp_phase_field_round3/evidence/results_round3.json); every threshold is read from `docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json`, which was written before the first run. Round-1 artifacts (`xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/*`) are untouched by this round.
 
 ## 1. Case: what the downgrade actually simplifies
 
@@ -72,19 +72,19 @@ Observed orders: `space_only_32x64_to_64x128` = 3.28, `space_and_time_32x64_to_6
 
 ## 4. Figures
 
-![fig1](outputs/xval_no_mcmp_evolving_round3/fig1_profiles_evolving_vs_frozen.png)
+![fig1](assets/no-mcmp-phase-field-round3/fig1_profiles_evolving_vs_frozen.png)
 
 _Steady velocity profiles at ny=96: the Allen-Cahn indicator (solid) and the frozen indicator (dashed) against the two-layer Stokes solution (dotted)._
 
-![fig2](outputs/xval_no_mcmp_evolving_round3/fig2_error_evolving_vs_frozen.png)
+![fig2](assets/no-mcmp-phase-field-round3/fig2_error_evolving_vs_frozen.png)
 
 _Profile L2 error per arm at identical settings, with the owner 15% band._
 
-![fig3](outputs/xval_no_mcmp_evolving_round3/fig3_indicator_evolution.png)
+![fig3](assets/no-mcmp-phase-field-round3/fig3_indicator_evolution.png)
 
 _Indicator profile before and after the transient (ny=96, ratio 4): the interface moves by a fraction of a cell and does not thicken._
 
-![fig4](outputs/xval_no_mcmp_evolving_round3/fig4_shear_translation_convergence.png)
+![fig4](assets/no-mcmp-phase-field-round3/fig4_shear_translation_convergence.png)
 
 _Allen-Cahn advection error against the exact shear-translation solution, with the measured minimum observed order._
 
@@ -130,7 +130,7 @@ _Allen-Cahn advection error against the exact shear-translation solution, with t
 ## 8. Reproduce
 
 ```bash
-python examples/xval_no_mcmp_two_phase_only_evolving.py     # writes json + figures + this report
+python examples/xval_no_mcmp_two_phase_only_evolving.py     # writes JSON, figures and a new report under outputs/
 python -m pytest tests/test_xval_no_mcmp_two_phase_only_evolving.py -q
 ```
 
