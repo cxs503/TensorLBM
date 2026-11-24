@@ -20,6 +20,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 REPO = Path(__file__).resolve().parents[1]
+SDAA_SWEEP_DRIVERS = REPO / "development/verification/sdaa-hardware/sweep-drivers"
 LEDGER_PATH = REPO / "docs/architecture/migrations/report-assets-2026-10-26.json"
 NOTE_START = "<!-- repository-layout-note:start -->"
 NOTE_END = "<!-- repository-layout-note:end -->"
@@ -688,7 +689,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertFalse(list(run_root.rglob("result.npz")))
 
         runner = (
-            REPO / "scripts/sdaa_sweep_aircraft_icing_naca0012_rime.py"
+            SDAA_SWEEP_DRIVERS / "sdaa_sweep_aircraft_icing_naca0012_rime.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn('REPO / "artifacts" / "sdaa_runs"', runner)
         self.assertNotIn("sdaa_aircraft_icing_naca0012_rime.json", runner)
@@ -833,7 +834,7 @@ class RepositoryReportMigrationTests(unittest.TestCase):
         self.assertIn("not extend", readme)
         self.assertIn("sweep remains FAIL", readme)
 
-        runner = (REPO / "scripts/sdaa_sweep_sphere_re100_d3q27.py").read_text()
+        runner = (SDAA_SWEEP_DRIVERS / "sdaa_sweep_sphere_re100_d3q27.py").read_text()
         self.assertNotIn('REPO / "artifacts"', runner)
         self.assertIn('EVIDENCE_DIR / "summary.json"', runner)
         self.assertIn('EVIDENCE_DIR / "tiers"', runner)

@@ -13,3 +13,6 @@ Existing scripts are not all certified by this convention. Validate a script bef
 advertising it as maintained; do not bulk rename legacy diagnostics. Follow the
 [development workflow](../docs/development_workflow.md) and
 [layout policy](../docs/architecture/repository_layout.md).
+
+SDAA case sweep drivers are cataloged with the [historical hardware
+reports](../docs/sdaa_sweep/README.md).
