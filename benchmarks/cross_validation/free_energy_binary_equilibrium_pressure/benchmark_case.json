@@ -1,0 +1,67 @@
+{
+  "scope": "Periodic planar two-interface free-energy equilibrium. The preregistration and historical full-matrix result are archived. Curved-interface Laplace law is diagnostic only. The independent band-and-droplet runner is a separate development study.",
+  "criteria": {
+    "C1_coexistence_pressure": {
+      "metric": "relative error of the numerically constructed Maxwell coexistence pressure (Newton on equal mu and equal p0, no closed form) and of p0(phi_bulk) measured on the equilibrium field, vs p_coex = A^2/(4B)",
+      "tolerance_relative": 1e-06,
+      "owner_accuracy_standard_relative": 0.15
+    },
+    "C2_normal_pressure_uniformity": {
+      "metric": "max|P_nn - mean(P_nn)| / p_coex over the periodic domain (continuum limit is 0; measures spurious pressure oscillation at the interface)",
+      "tolerance_relative_to_p_coex": 0.25,
+      "note": "acceptance band for the discrete interface; the continuum value is exactly 0, so any finite value is discretisation error. Same band at every resolution (not tuned per case)."
+    },
+    "C3_surface_tension_from_pressure_tensor": {
+      "metric": "sigma_measured = 0.5 * sum_x (P_nn - P_tt) over one period (== 2 sigma for two interfaces) vs sigma_analytic",
+      "tolerance_relative": 0.15,
+      "source": "owner accuracy standard (error > 15% unacceptable)"
+    },
+    "C4_lbm_mechanical_equilibrium": {
+      "metric": "time-stepped production free-energy LBM (Korteweg force), total normal pressure deviation max|P_nn^tot - mean|/p_coex and residual (spurious) velocity max|u|",
+      "tolerance_relative_to_p_coex": 0.25,
+      "tolerance_max_velocity_in_cs": 0.15,
+      "note": "|u|/c_s <= 0.15 keeps the spurious flow in the low-Mach regime the model assumes"
+    }
+  },
+  "source": [
+    "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py",
+    "src/tensorlbm/phasefield/binary_equilibrium_pressure.py",
+    "src/tensorlbm/multiphase_benchmarks.py",
+    "src/tensorlbm/free_energy_stress.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json"
+  ],
+  "documentation": [
+    "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md",
+    "docs/board_audit/m18207/AUDIT.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json",
+    "docs/XVAL_LBM_FREE_ENERGY_BINARY_EQUILIBRIUM_PRESSURE.md"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json",
+      "field": "pressure_tensor_and_sigma",
+      "value": "src/tensorlbm/free_energy_stress.py (ludwig ludwig-cf/ludwig parity port: fe_symm_str / fe_symm_interfacial_tension)"
+    },
+    {
+      "source": "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json",
+      "field": "closed_forms",
+      "value": "Swift, Orlandini, Osborn & Yeomans, Phys. Rev. Lett. 78, 19 (1996); Briant & Yeomans, PRE 69, 031602 (2004): sigma = (2 sqrt2 / 3) sqrt(kappa A^3)/B, xi = sqrt(2 kappa/A), p_coex = A^2/(4B)"
+    },
+    {
+      "source": "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json",
+      "field": "mechanical_equilibrium",
+      "value": "div P = 0 => P_nn = p_coex uniform across a flat interface (Rowlinson & Widom, J. Chem. Phys. 76, 1878 (1982) pressure-tensor form)"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/evidence/xval_binary_equilibrium_pressure.json"
+  ],
+  "evidence": [
+    "docs/board_audit/m18207/evidence/artifact_png__fig_convergence_and_lbm.png",
+    "docs/architecture/migrations/free-energy-pressure-xval-2026-11-24.json"
+  ]
+}

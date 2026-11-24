@@ -2,9 +2,9 @@
 
 **Anchor:** `XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE` ｜ **Repo:** TensorLBM ｜ **Criterion (owner):** benchmark error < 15 % (stretch 3 %)
 
-**Verdict:** **PASS** — every pre-declared criterion met at all three interface resolutions (C1 ≤ 1.7e-8, C2 ≤ 23.1 %, C3 ≤ 10.2 % ≤ 15 %, C4 pressure ≤ 15.0 % / residual |u| ≤ 1.3e-2). Curved-interface Laplace law is **not graded** (documented limitation, §6).
+**Historical planar verdict:** **PASS** — every pre-declared criterion met at all three interface resolutions (C1 ≤ 1.7e-8, C2 ≤ 23.1 %, C3 ≤ 10.2 % ≤ 15 %, C4 pressure ≤ 15.0 % / residual |u| ≤ 1.3e-2). Curved-interface Laplace law is **not graded** (documented limitation, §6).
 
-**Entry / repro:** `python xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py` ｜ **Artifacts:** `xval/.../artifacts/xval_binary_equilibrium_pressure.json`, `xval/.../artifacts/fig_convergence_and_lbm.png` ｜ **Tests:** `pytest tests/test_binary_equilibrium_pressure_xval.py` (7 passed)
+**Entry / repro:** `python benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py` ｜ **Artifacts:** [archived results](../benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/evidence/xval_binary_equilibrium_pressure.json), [archived figure](board_audit/m18207/evidence/artifact_png__fig_convergence_and_lbm.png) ｜ **Tests:** `pytest tests/test_binary_equilibrium_pressure_xval.py` (7 passed)
 
 ---
 
@@ -44,7 +44,7 @@ Rowlinson & Widom, JCP **76**, 1878 (1982) for the pressure-tensor (Korteweg) fo
 | production LBM | `src/tensorlbm/multiphase.py::free_energy_step` + `solver.stream` | Korteweg-force momentum collision (`F = -phi grad(mu)`) + periodic streaming |
 | integrated caller | `src/tensorlbm/multiphase_benchmarks.py::run_binary_equilibrium_pressure_benchmark` | production driver, writes `report.json` |
 | exports | `src/tensorlbm/phasefield/__init__.py` | public API |
-| entry + criteria | `xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py`, `predeclared.json` | machine-checked verdict |
+| entry + criteria | [runner](../benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py), [preregistration](../benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/predeclared.json) | machine-checked verdict |
 | tests | `tests/test_binary_equilibrium_pressure_xval.py` | 7 numeric tests |
 
 **Key numerical trap (avoided):** a single flat interface is not periodic — the wrap step produced a
@@ -127,9 +127,14 @@ budget. Declared up front in `predeclared.json`; reported here as an honest non-
 acceptance number.
 
 **Artifacts / repro:**
-* `xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/artifacts/xval_binary_equilibrium_pressure.json` — all rows, all schemes, verdicts
-* `xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/artifacts/fig_convergence_and_lbm.png` — `P_nn(x)/p_coex` at three resolutions + `sigma` error convergence + LBM residual history
-* repro: `python xval/XVAL-LBM-FREE-ENERGY-BINARY-EQUILIBRIUM-PRESSURE/run_xval.py` (CPU, ~90 s, single thread)
+* [archived JSON](../benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/evidence/xval_binary_equilibrium_pressure.json) — all rows, all schemes, verdicts
+* [archived figure](board_audit/m18207/evidence/artifact_png__fig_convergence_and_lbm.png) — `P_nn(x)/p_coex` at three resolutions + `sigma` error convergence + LBM residual history
+* repro: `python benchmarks/cross_validation/free_energy_binary_equilibrium_pressure/run_xval.py` (CPU, ~90 s, single thread)
 * tests: `pytest tests/test_binary_equilibrium_pressure_xval.py` → 7 passed
 * production integration: `run_binary_equilibrium_pressure_benchmark(...)` in `multiphase_benchmarks.py`
 
+The planar runner writes fresh results under `outputs/verification/free-energy-pressure/planar/` by default and retains `--out`.
+For the distinct band-and-droplet study, see the [archived runner](../development/verification/free-energy-pressure/band-droplet/run_xval.py)
+and [report renderer](../development/verification/free-energy-pressure/band-droplet/make_report.py). That renderer requires the original
+band-and-droplet criteria, which were not found in the current Git tree. It rejects
+the planar preregistration because that file describes a different experiment.
