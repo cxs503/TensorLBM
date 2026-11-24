@@ -1,0 +1,112 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 84,
+      "after": 82
+    }
+  },
+  "compatibility": "Both historic round reports and all tracked data have byte-identical contents. The public summary and audit stay at their former URLs and link the new locations. Old round-report paths have revision-pinned links. Round 5 keeps the original Round 2 and Round 3 inputs and uses its tracked results when no fresh result has been generated.",
+  "reference_scan": "Checked tracked launch instructions, code references and CI. The historical audit, preregistration, and result records keep the paths they originally used.",
+  "historical_r4": {
+    "reviewed_revision": "d90b11fa43ac001e723d0ff3b18bb169c61c5544",
+    "reviewed_blob": "2e8e3e4d8fc653868b3ef26bccd090ed79a966d0",
+    "reviewed_result": "https://github.com/cxs503/TensorLBM/blob/d90b11fa43ac001e723d0ff3b18bb169c61c5544/xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/results_r4.json",
+    "reviewed_counts": {
+      "pass": 18,
+      "fail": 12
+    },
+    "migration_base_counts": {
+      "pass": 30,
+      "fail": 0
+    }
+  },
+  "scientific_scope": "Offline archived field checks and artifact rendering only. No new multiphase solver campaign or scientific acceptance decision was made.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/REPORT_R4.md",
+      "new_path": "development/verification/contact-angle/round-4/REPORT_R4.md",
+      "git_mode": "100644",
+      "size_bytes": 2784,
+      "original_git_blob": "fa9befb170743f4f6de0e4907b39af708f5c72fd",
+      "original_sha256": "fd256dd9b07c1c7e318328cd6c3c7f1e2eba237e711a7927310f5ac2845afc3c",
+      "new_sha256": "fd256dd9b07c1c7e318328cd6c3c7f1e2eba237e711a7927310f5ac2845afc3c",
+      "published_report": "development/verification/contact-angle/round-4/REPORT_R4.md"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/results_r4.json",
+      "new_path": "development/verification/contact-angle/round-4/results_r4.json",
+      "git_mode": "100644",
+      "size_bytes": 8913,
+      "original_git_blob": "145dc72a239cecedb4e0639553f621438cd510a6",
+      "original_sha256": "54ce689078c0a986fcba33a5e65b3e8f91b59b32151869f90efb4aa66d9462db",
+      "new_sha256": "54ce689078c0a986fcba33a5e65b3e8f91b59b32151869f90efb4aa66d9462db",
+      "published_report": "development/verification/contact-angle/round-4/REPORT_R4.md"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4/run_r4.py",
+      "new_path": "development/verification/contact-angle/round-4/run_r4.py",
+      "git_mode": "100644",
+      "size_bytes": 11761,
+      "original_git_blob": "59b419bdcc783ed1e353c4e69c6c9f786d817fa6",
+      "original_sha256": "b59c47205f478ff4ce8cbb0a30b5b9618dbe6343f37ce7fdbe173a8e46e3c07f",
+      "new_sha256": "7a7e55e07c448b87c1c87522c03d51d02c67345f2535771871e2e452627108b5",
+      "published_report": "development/verification/contact-angle/round-4/REPORT_R4.md"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/REPORT_R5.md",
+      "new_path": "development/verification/contact-angle/round-5/REPORT_R5.md",
+      "git_mode": "100644",
+      "size_bytes": 7770,
+      "original_git_blob": "3dea9dabe2e275af9f2e88cf7fdda1c384f3e706",
+      "original_sha256": "394776a07508295bfa2a9c8edc17578b961ab3c14f24f1d59f56620beeb7f096",
+      "new_sha256": "394776a07508295bfa2a9c8edc17578b961ab3c14f24f1d59f56620beeb7f096",
+      "published_report": "development/verification/contact-angle/round-5/REPORT_R5.md"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/predeclared_r5.json",
+      "new_path": "development/verification/contact-angle/round-5/predeclared_r5.json",
+      "git_mode": "100644",
+      "size_bytes": 6181,
+      "original_git_blob": "d3987e0fec329d8a3e114f27f62ce533eaf2d484",
+      "original_sha256": "e92a76f9dceee9d60fd550cba719b5ce4e667b85042651d41f91033da19141c7",
+      "new_sha256": "e92a76f9dceee9d60fd550cba719b5ce4e667b85042651d41f91033da19141c7",
+      "published_report": "development/verification/contact-angle/round-5/REPORT_R5.md"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/results_r5.json",
+      "new_path": "development/verification/contact-angle/round-5/results_r5.json",
+      "git_mode": "100644",
+      "size_bytes": 28395,
+      "original_git_blob": "849058d2bc008f19994e5f0e167f823e45bb7607",
+      "original_sha256": "527183cbc94c62c4c08f2391d6c0719ff51e39d851457cb40d43cd81d901864e",
+      "new_sha256": "527183cbc94c62c4c08f2391d6c0719ff51e39d851457cb40d43cd81d901864e",
+      "published_report": "development/verification/contact-angle/round-5/REPORT_R5.md"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/run_r5.py",
+      "new_path": "development/verification/contact-angle/round-5/run_r5.py",
+      "git_mode": "100644",
+      "size_bytes": 30944,
+      "original_git_blob": "2b3a8af94eb7fd576e5e89b2b83e27094b82d3a8",
+      "original_sha256": "e7d0b09a504d04a11eda749441663bfa7423831ab3506536df4ca401558c3dd5",
+      "new_sha256": "76fa098fc4f38d1a64fcdd3e2543ca12f2366730e6fd619a10baeec68bf0afc9",
+      "published_report": "development/verification/contact-angle/round-5/REPORT_R5.md"
+    }
+  ],
+  "commands": [
+    "python development/verification/contact-angle/round-5/run_r5.py figures",
+    "python development/verification/contact-angle/round-5/run_r5.py report",
+    "python -m pytest -q tests/test_contact_angle_geodesic_branch.py -k committed_golden_fields",
+    "bash tools/check_repository_governance.sh",
+    "python tools/lint_ratchet.py --check"
+  ],
+  "verification": [
+    "Verified seven original Git blobs, modes and SHA-256 values. The five archived report, result and preregistration files are byte-identical.",
+    "Four focused tests passed on real committed Round 3 fields, without running the multiphase solver. From outside the checkout, generated three valid PNGs and a linked report from archived results. Fresh outputs remain ignored.",
+    "83 governance checks, Ruff and report link verification passed. The registry found 209 entries with zero hard status violations. The new case links all ten archived Round 3 fields and remains not evaluated for current acceptance.",
+    "Read the immutable Round 4 result reviewed by the audit and the later migration-base result. Their counts differ. No new judgement is attached to either historical snapshot."
+  ]
+}

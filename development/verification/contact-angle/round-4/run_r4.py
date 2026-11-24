@@ -21,6 +21,8 @@ import json
 import numpy as np
 from pathlib import Path
 
+OUTPUT = Path(__file__).resolve().parents[4] / "outputs/verification/contact-angle/round-4"
+
 
 def crossing_along(profile, level, last=True):
     d = profile - level
@@ -274,7 +276,7 @@ The XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS anchor is now fully validated:
 **Verdict: PASS** - All probes pass, all gates met.
 """
 
-    report_path = Path(__file__).resolve().parent / "REPORT_R4.md"
+    report_path = OUTPUT / "REPORT_R4.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(report)
     print(f"\nReport written to: {report_path}")
@@ -288,7 +290,7 @@ def main():
     compare_with_r3()
     report = generate_report()
 
-    results_path = Path(__file__).resolve().parent / "results_r4.json"
+    results_path = OUTPUT / "results_r4.json"
     results_path.parent.mkdir(parents=True, exist_ok=True)
     with open(results_path, "w") as f:
         json.dump({

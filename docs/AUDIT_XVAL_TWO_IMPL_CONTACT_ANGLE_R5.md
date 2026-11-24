@@ -1,5 +1,7 @@
 # Audit — XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS, round 5
 
+[Later Round 4 snapshot in the migration base](../development/verification/contact-angle/round-4/results_r4.json) · [Round 5 evidence and runner](../development/verification/contact-angle/round-5/)
+
 **Subject under review.** `xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R3/run_r3.py::geodesic_angle`
 (merge #2479 / m21577), `xval/...-R4/run_r4.py` + `results_r4.json` (merge #2536 / m22257, 2026-11-16
 02:49 +0800) and `src/tensorlbm/cg_contact_angle.py::contact_angle_geodesic` (the `lbm_convention`

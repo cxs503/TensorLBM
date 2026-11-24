@@ -502,7 +502,7 @@ def contact_angle_geodesic(
        (analytic caps built in both templates, cross-checked against the
        independent circle fit of :func:`tensorlbm.wetting.metrics.contact_angle_circle_fit`,
        plus the ten committed round-3 golden fields) are in
-       ``xval/XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5/REPORT_R5.md``.
+       ``development/verification/contact-angle/round-5/REPORT_R5.md``.
 
     Parameters
     ----------
