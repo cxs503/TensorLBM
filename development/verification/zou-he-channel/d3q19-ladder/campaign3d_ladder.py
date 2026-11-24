@@ -20,13 +20,13 @@ This script turns that into evidence a reviewer can re-derive from numbers:
   review of this same anchor).
 
 Everything printed or plotted is read back from
-``artifacts/zou_he_channel3d/ladder.json``; nothing is re-typed.  The raw
+``outputs/verification/zou-he-channel/d3q19-ladder/ladder.json``; nothing is re-typed.  The raw
 streamwise profiles are stored in the artifact so the error can be recomputed
 without re-running the solver.
 
 Usage::
 
-    PYTHONPATH=src python xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/campaign3d_ladder.py --arms ladder
+    PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py --arms ladder
     PYTHONPATH=src python .../campaign3d_ladder.py --arms thickness,march --figures
 """
 from __future__ import annotations
@@ -40,9 +40,8 @@ import numpy as np
 
 from tensorlbm.verification.zou_he_channel3d import simulate_channel_3d
 
-HERE = pathlib.Path(__file__).resolve().parent
-OUT = pathlib.Path("artifacts/zou_he_channel3d")
-FIG = HERE / "figures"
+OUT = pathlib.Path("outputs/verification/zou-he-channel/d3q19-ladder")
+FIG = OUT / "figures"
 JSON_PATH = OUT / "ladder.json"
 
 # tag -> kwargs for simulate_channel_3d

@@ -1,0 +1,60 @@
+{
+  "source_commit": "1c717d58ebf360f3b74a82e8600677ea133a418e",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 95,
+      "after": 94
+    }
+  },
+  "reference_scan": "Checked tracked consumers, reports, workflows and tests. The full-suffix 2-D campaign and the frozen legacy snapshot are separate.",
+  "compatibility": "The report URL and solver imports stay stable. Both drivers keep their options and numerical settings. New files write under outputs. The artifact tests can consume the legacy output directory and select a complete location at the directory level.",
+  "scientific_scope": "Current x86_64 CPU runs reproduce the three baseline arms and the two coarse ladder arms. H32, H48, the thickness group and the long march were outside this run. No case was promoted to scientifically accepted.",
+  "environment": "Linux x86_64, Python 3.12.14, PyTorch 2.15.0+cpu, NumPy 2.5.5, Matplotlib 3.11.2; OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1.",
+  "commands": [
+    "PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d.py",
+    "PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py --arms L08,L16 --figures",
+    "PYTHONPATH=src python -m pytest -q tests/test_zou_he_3d_inlet_outlet.py tests/test_zou_he_channel3d_ladder_gate.py",
+    "bash tools/check_repository_governance.sh",
+    "python tools/lint_ratchet.py --check"
+  ],
+  "evidence": [
+    {
+      "path": "development/verification/zou-he-channel/d3q19-ladder/evidence/ladder.json",
+      "sha256": "dcaf46b9f23c109e5f08d6391223bc44739b6013b7aff78e2e83182808fd0734"
+    },
+    {
+      "path": "development/verification/zou-he-channel/d3q19-ladder/evidence/metrics.json",
+      "sha256": "5fc27be6130c3abdab0560057a24e104e3fdf0938a96a5ffa66c1db177fbb29a"
+    }
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/campaign3d.py",
+      "new_path": "development/verification/zou-he-channel/d3q19-ladder/campaign3d.py",
+      "published_report": "docs/XVAL-ZOU-HE-CHANNEL-3D-D3Q19-LADDER.md",
+      "git_mode": "100644",
+      "original_git_blob": "927fd16906e16a19815d6cdf85772e04bb1e8b09",
+      "size_bytes": 3035,
+      "original_sha256": "491e728e354b5f7948ec613489ee59e1665ed04c2651e81770d6ad547d8e61b4",
+      "new_sha256": "9aaf7148a52994cf7e6af67c251893c693f237331f5acc226b64dc38bf805496"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/campaign3d_ladder.py",
+      "new_path": "development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py",
+      "published_report": "docs/XVAL-ZOU-HE-CHANNEL-3D-D3Q19-LADDER.md",
+      "git_mode": "100644",
+      "original_git_blob": "6922fed8cd5215592d924d35786ae7fde4bd4b78",
+      "size_bytes": 9588,
+      "original_sha256": "3f6a96c401b7a1b23be5f4f8f455d5862d6198a55efed68d6893fb168a895e2a",
+      "new_sha256": "0dcd8f9f4367f56a1dfcb970f3acb7613b63fcc8b8367a28d4d5fdd136e3ad81"
+    }
+  ],
+  "verification": [
+    "Compared the scripts’ ASTs after excluding docstrings and output path assignments. The numerical settings and computation statements match the original drivers.",
+    "Regenerated both JSON artifacts and decoded three PNGs. Resolved four report links and checked SHA-256, file modes and original Git blobs. Checked artifact lookup from the older output directory and the tracked rerun evidence.",
+    "24 focused tests passed, including comparisons against the analytical Poiseuille profile. Two artifact checks skipped because the spanwise thickness and long-march arms were not generated.",
+    "83 repository governance tests passed. Layout CI rejects recreation of the retired directory. The registry still has 202 entries with zero hard violations. The catalogue covers 35 manual cases and 33 PDFs. Ruff ratchet passed."
+  ]
+}

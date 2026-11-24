@@ -49,13 +49,13 @@ mass + 法向动量平衡里解出来；3-D 面（D3Q19）有 5 个未知方向�
 2. **让 artifact 可审**：`Channel3DResult.as_dict()` 原来只序列化 `metrics` 标量，无法从
    产物重算误差（这正是 2-D round-3 复核 F5 那类"证据指针指向不存在的文件"的同类缺陷）。
    已补上 `u_profile` / `u_exact` / `u_profile_inlet_plane` / `trace`。
-3. 新阶梯脚本 `xval/.../campaign3d_ladder.py`：三组臂
+3. 阶梯脚本 [campaign3d_ladder.py](../development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py)：三组臂
    - `ladder` = H 8/16/32/48（固定 nx/tau/Δρ/steps），用来量观测收敛阶；
    - `thickness` = H=16 下 `nz=2` vs `nz=8`——此前**所有** 3-D 数字都来自两格周期薄板，
      若闭合有展向缺陷薄板可能掩盖它；这臂把这个假设的大小量出来；
    - `march` = H=16、`nx=64`、24000 步（4× 预算）、2000 步平均块，用来证明数字不是在
      还没松弛完的流场上取的（2-D round-2 的失败模式）。
-4. 产物：`artifacts/zou_he_channel3d/metrics.json`（3 臂，已提交）、
+4. 产物：`artifacts/zou_he_channel3d/metrics.json`（历史报告中的 3 臂）、
    `artifacts/zou_he_channel3d/ladder.json`（阶梯，追加写）、
    `xval/XVAL-...-RECONSTRUCTI/figures/fig1_profiles.png`、`fig2_convergence.png`。
 5. 回归门 `tests/test_zou_he_channel3d_ladder_gate.py`：从**原始剖面**重算 `L∞`
@@ -125,18 +125,27 @@ owner 判据（>15% 不可接受）：**三个已测臂全部远低于 15%，且
 
 ## 7. 未完成 / honest not-run
 
-- **集群作业 `cj4291` 仍在排队**（递交 5.5 min 后位置约 52，68 个作业在跑）：它承担
+- **原任务记录集群作业 `cj4291` 排队中**（递交 5.5 min 后位置约 52，68 个作业在跑）：它承担
   `ladder` 剩下的 **H=32、H=48**，`thickness`（nz=8）与 `march`（24000 步）。
-  本单提交的 `ladder.json` 只有 H8/H16 两臂；回归门里针对厚度/长行军的两个测试因此在当前
+  原任务报告中的 `ladder.json` 只有 H8/H16 两臂；回归门里针对厚度/长行军的两个测试因此在当时的
   产物上 `skip`（不是 pass）。补齐命令已写死在脚本里：
-  `PYTHONPATH=src python xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/campaign3d_ladder.py --arms ladder,thickness,march`
+  `PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py --arms ladder,thickness,march`
 - 单点未被本单覆盖：D3Q27 通道（只有面闭合的逐格精确性测试）、MRT/TRT 碰撞、
   D3Q19 其它三对面（north/south/front/back）的闭合——仍是 `not_checked`。
 
 ## 8. 复现
 
+从仓库根目录运行。[三臂驱动](../development/verification/zou-he-channel/d3q19-ladder/campaign3d.py)与阶梯驱动的新增产物统一写入
+`outputs/verification/zou-he-channel/d3q19-ladder/`，图写入其 `figures/` 子目录。
+上文 §2–§7 的路径是原任务的输出位置。迁移基线的 Git 树未跟踪这些历史 JSON 和 PNG。
+回归测试依次读取本地新结果、旧目录 `artifacts/zou_he_channel3d/`、本次迁移的 CPU 复跑记录。
+每次从同一目录读取两份产物。上文数值为历史报告结果。本次复跑保留
+[三臂原始剖面](../development/verification/zou-he-channel/d3q19-ladder/evidence/metrics.json)与
+[H8/H16 阶梯原始剖面](../development/verification/zou-he-channel/d3q19-ladder/evidence/ladder.json)。
+H32/H48、厚度对照和长行军仍待复跑。
+
 ```bash
-PYTHONPATH=src python xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/campaign3d.py          # 3 臂 + fig1/fig2
-PYTHONPATH=src python xval/XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI/campaign3d_ladder.py --arms ladder
+PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d.py          # 3 臂 + fig1/fig2
+PYTHONPATH=src python development/verification/zou-he-channel/d3q19-ladder/campaign3d_ladder.py --arms ladder
 python -m pytest tests/test_zou_he_channel3d_ladder_gate.py tests/test_zou_he_3d_inlet_outlet.py -q
 ```
