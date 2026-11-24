@@ -1,0 +1,56 @@
+{
+  "source_commit": "0e6e65867c7dfa2b2ce1887bee08f16007fc8357",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/data"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/data/air_layer_drag/air_lubrication_reference_points.json",
+      "new_path": "benchmarks/air_layer_drag/reference/air_lubrication_reference_points.json",
+      "original_git_blob": "349d3e34f258867f3eb34f3125887781bfff639a",
+      "git_mode": "100644",
+      "original_sha256": "21b0ee54e120524edf8afe4b9cfa2a03cc11bc96e3c9c86fd1eaa8835b7eb78b",
+      "size_bytes": 2229
+    },
+    {
+      "old_path": "scripts/data/fsi/fsi_kpi_baselines.json",
+      "new_path": "benchmarks/fsi_channel_validation/config/fsi_kpi_baselines.json",
+      "original_git_blob": "87d9dc7c32aba5dcf6ad9671545e95d9cce08406",
+      "git_mode": "100644",
+      "original_sha256": "e1c6e980023dcde645619723dde72cc6c97c8e1923d4a5a33ff9c8b7d9367eb2",
+      "size_bytes": 414
+    },
+    {
+      "old_path": "scripts/data/fsi/fsi_observable_run_gate.json",
+      "new_path": "benchmarks/fsi_channel_validation/config/fsi_observable_run_gate.json",
+      "original_git_blob": "9b041e68774542ab892b459246fefd9ac5d9eca6",
+      "git_mode": "100644",
+      "original_sha256": "e1708cc70958ddc691c9f6688e03fb3bae6de277bcb871ab8439747f4c07e7fb",
+      "size_bytes": 711
+    },
+    {
+      "old_path": "scripts/data/fsi/fsi_regression_gate.json",
+      "new_path": "benchmarks/fsi_channel_validation/config/fsi_regression_gate.json",
+      "original_git_blob": "81d24c3c0c4e385f3e06871413fbf93ed2619365",
+      "git_mode": "100644",
+      "original_sha256": "7d7fefbfe73991e0ed74c2cf3a1eaffce57cf4c90d54a073b79842034ff78acc",
+      "size_bytes": 916
+    }
+  ],
+  "compatibility": "Original JSON bytes and CLI entry points are preserved. The FSI evaluator default and the air-layer campaign and checker now resolve the benchmark-owned files. The published air-layer report URL is unchanged. Historical migration records preserve the old paths.",
+  "scientific_scope": "The comparison keeps its archived withheld verdict. No new simulation result is admitted.",
+  "verification": [
+    "Original Git blob, mode and SHA-256 retained for all four assets and checked against both migration ledgers.",
+    "Ruff ratchet, all 82 repository governance tests, local links and asset search passed.",
+    "The FSI evaluator read its default and explicit --baseline outside the checkout. Both gate manifests were consumed through --manifest. Missing real histories were reported as failures, with no substituted data.",
+    "Air-layer CLI help and the active reference path were verified. The full air-layer comparison needs completed campaign artifacts."
+  ]
+}
