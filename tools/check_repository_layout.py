@@ -80,6 +80,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("scripts", "p399w2_n04_curved_force"),
     ("xval", "XVAL-LBM-PF-EOS-MAXWELL-HIGH-DENSITY-RATIO"),
     ("xval", "ludwig_fe_stress"),
+    ("xval", "lbmconfig_single_point"),
+    ("xval", "no_mcmp_two_phase_only"),
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
     ("xval", "fused_kernel_type_selector"),
 }
