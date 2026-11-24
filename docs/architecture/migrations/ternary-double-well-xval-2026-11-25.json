@@ -1,0 +1,68 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 84,
+      "after": 83
+    },
+    "benchmarks/cross_validation": {
+      "added": [
+        "ternary_double_well"
+      ]
+    }
+  },
+  "reference_scan": "Searched the tracked tree and workflows for the legacy directory name and output token. Only the original case files contained those strings. The pre-migration case path is reachable at the pinned source commit.",
+  "compatibility": "Runner flags and default output path are unchanged. The Python root lookup points to the same installable src/tensorlbm implementation from the deeper case directory. The two historical reports retain their original bytes and the public case manual catalogue remains at its existing path.",
+  "scientific_scope": "Both full local CPU formula checks passed 8 of 8 diagnostics. Their result JSON is byte-identical. The upstream CUDA implementation was not run and the registry leaves overall scientific acceptance unevaluated.",
+  "replay": {
+    "command": "OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/cross_validation/ternary_double_well/run_xval.py --out outputs/verification/ternary-double-well",
+    "source_revision": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+    "baseline_command": "OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python xval/XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA/run_xval.py --out outputs/verification/ternary-double-well-before",
+    "environment": {
+      "python": "3.12.14",
+      "architecture": "x86_64",
+      "pytorch": "2.15.0+cpu"
+    },
+    "result_path": "benchmarks/cross_validation/ternary_double_well/evidence/2026-11-25-cpu.json",
+    "result_sha256": "6b0053b0f783d6ac8c7ba7ba024d2e04ea6c68c57da05f24df10ad039f70cc8b",
+    "maximum_full_field_relative_error": 2.396154998771924e-16,
+    "full_field_relative_tolerance": 1e-10
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA/README.md",
+      "new_path": "benchmarks/cross_validation/ternary_double_well/evidence/historical-report.md",
+      "git_mode": "100644",
+      "original_git_blob": "d6fb5537e163deca41c53de53d7486bdb5119f28",
+      "size_bytes": 2246,
+      "original_sha256": "64a12ae5aafb758b2b80ade02b270f59b838a5978f63af4f41dc5f4114156d5b",
+      "new_sha256": "64a12ae5aafb758b2b80ade02b270f59b838a5978f63af4f41dc5f4114156d5b"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA/DIFF_OSS_VS_TENSORLBM.md",
+      "new_path": "benchmarks/cross_validation/ternary_double_well/evidence/DIFF_OSS_VS_TENSORLBM.md",
+      "git_mode": "100644",
+      "original_git_blob": "2b3ab0b6190c6f0c666faeb4a53a1bcde3e2faa3",
+      "size_bytes": 2618,
+      "original_sha256": "4488ba3e2827e8c2731478866116e7e729f07a3a39654afbefe105864ec6ea31",
+      "new_sha256": "4488ba3e2827e8c2731478866116e7e729f07a3a39654afbefe105864ec6ea31"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA/run_xval.py",
+      "new_path": "benchmarks/cross_validation/ternary_double_well/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "909e2d0767e8a86b1d68781b1ccd519de74c93d9",
+      "size_bytes": 19834,
+      "original_sha256": "ac4c66e7c380de5123db4dba2d1be7b37ac7ded950d69ea120a91097686966fa",
+      "new_sha256": "b143e7418b6056e79773fa7ba8c5bead04fc7c429c8c679ba93c029e8725a99c"
+    }
+  ],
+  "verification": [
+    "The original and relocated full CPU runs both exited 0. Comparing the two raw result files with cmp produced a byte-identical match. The tracked replay is that same result file.",
+    "Both historical document SHA-256 values match their original Git blobs. The only runner change is the relative repository-root depth.",
+    "tools/check_repository_governance.sh passed 83 tests and all four layout, source-authority, manuals and benchmark-registry checks, plus the status-ledger check. The registry reported 209 cases, zero hard violations and 16 existing soft violations.",
+    "tools/lint_ratchet.py --check passed. The case lookup resolved the runner, source, evidence and criteria; all relative links in the case README resolve."
+  ]
+}
