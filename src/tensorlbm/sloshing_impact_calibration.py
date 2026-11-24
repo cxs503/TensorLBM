@@ -64,7 +64,7 @@ Measurements
 
 Usage
 -----
-The production driver is ``scripts/run_sloshing_impact_calibration.py``; this
+The production driver is ``development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py``; this
 module is import-safe (no I/O, no plotting) so the numerics stay unit-testable.
 
 References

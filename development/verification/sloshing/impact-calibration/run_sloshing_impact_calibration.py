@@ -8,11 +8,11 @@ by ``--mode post``.
 Examples
 --------
     # single case (what a shard runs)
-    python scripts/run_sloshing_impact_calibration.py case \
+    python development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py case \
         --case impact --nx 40 --out artifacts/sloshing_impact_lbm/impact_nx40.json
 
     # assemble the report (GCI, spectra, criteria) from the case files
-    python scripts/run_sloshing_impact_calibration.py post \
+    python development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py post \
         --case-dir artifacts/sloshing_impact_lbm \
         --swe-reference artifacts/sloshing_impact_lbm/sw_swe_reference.json \
         --out artifacts/sloshing_impact_lbm/report.json
@@ -29,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[4]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
@@ -73,7 +73,7 @@ def _scaling(nx: int) -> LbmScaling:
     return LbmScaling(anchor=ANCHOR, nx=nx)
 
 
-_CASE_DIR = Path(__file__).resolve().parents[1] / "artifacts" / "sloshing_impact_lbm"
+_CASE_DIR = ROOT / "artifacts" / "sloshing_impact_lbm"
 
 
 def _still_water_profile(nx: int) -> list[float] | None:

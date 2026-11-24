@@ -13,9 +13,10 @@ import argparse
 import json
 import math
 import sys
+from os.path import relpath
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.sloshing_resonance.theory import linear_wall_pressure_amplitude  # noqa: E402
@@ -83,7 +84,7 @@ def _sub(n: int) -> str:
     return {1: "₁", 2: "₂", 3: "₃"}.get(n, str(n))
 
 
-def build(campaign_path: Path, extra_dir: Path, figdir: Path) -> tuple[str, dict]:
+def build(campaign_path: Path, extra_dir: Path, figdir: Path, doc_dir: Path) -> tuple[str, dict]:
     camp = json.loads(campaign_path.read_text())
     spec = camp["spec"]
     crit = camp["criteria"]
@@ -118,10 +119,10 @@ def build(campaign_path: Path, extra_dir: Path, figdir: Path) -> tuple[str, dict
     )
     A("")
     A(
-        "> 本报告全部数字由 `scripts/gen_sloshing_resonance_report.py` 从 "
+        "> 本报告全部数字由 `development/verification/sloshing/resonance-p87w2-n01/gen_sloshing_resonance_report.py` 从 "
         f"`artifacts/p87w2_n01/campaign.json`（{len(camp['records'])} 个算例）与 "
       "`artifacts/p87w2_n01/extra/*.json` "
-        "程序化注入，零手抄。图由 `scripts/make_sloshing_resonance_figures.py` 由同一批工件的 npz 生成。"
+        "程序化注入，零手抄。图由 `development/verification/sloshing/resonance-p87w2-n01/make_sloshing_resonance_figures.py` 由同一批工件的 npz 生成。"
     )
     A("")
     A("## 1. 案例介绍")
@@ -524,7 +525,7 @@ def build(campaign_path: Path, extra_dir: Path, figdir: Path) -> tuple[str, dict
         if p.exists():
             A(f"**{cap}**")
             A("")
-            A(f"![{name}](figures/{name})")
+            A(f"![{name}]({relpath(figdir / name, doc_dir)})")
             A("")
     A("## 5. 注意点（踩过的坑 / 局限 / 适用范围）")
     A("")
@@ -706,9 +707,9 @@ def build(campaign_path: Path, extra_dir: Path, figdir: Path) -> tuple[str, dict
     A("")
     A("- 代码：`src/tensorlbm/sloshing_resonance/{theory,tank2d,identify,campaign}.py`")
     A(
-        "- 驱动：`scripts/run_sloshing_resonance_campaign.py`（分片跑算例）/ "
-        "`scripts/run_sloshing_resonance_extras.py`（波形、无滑移、冲击时历）"
-        "/ `scripts/make_sloshing_resonance_figures.py`（图）/ 本脚本（报告）"
+        "- 驱动：`development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py`（分片跑算例）/ "
+        "`development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_extras.py`（波形、无滑移、冲击时历）"
+        "/ `development/verification/sloshing/resonance-p87w2-n01/make_sloshing_resonance_figures.py`（图）/ 本脚本（报告）"
     )
     A(
         "- 工件：`artifacts/p87w2_n01/case_*.json`（每算例一个）、`campaign.json`（判据）、"
@@ -771,23 +772,22 @@ def pressure_metrics(extra_dir: Path, spec: dict) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=ROOT / "artifacts" / "p87w2_n01")
-    ap.add_argument(
-        "--doc", type=Path, default=ROOT / "docs" / "P87W2_N01_sloshing_resonance_report.md"
-    )
+    ap.add_argument("--doc", type=Path, help="report path (default: inside --out)")
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args(argv)
     camp_path = args.out / "campaign.json"
     if not camp_path.exists():
         raise SystemExit(f"missing {camp_path}: run the campaign and --aggregate first")
-    md, camp = build(camp_path, args.out / "extra", args.out / "figures")
-    args.doc.parent.mkdir(parents=True, exist_ok=True)
-    args.doc.write_text(md, encoding="utf-8")
+    doc = args.doc or (args.out / "P87W2_N01_sloshing_resonance_report.md")
+    md, camp = build(camp_path, args.out / "extra", args.out / "figures", doc.parent)
+    doc.parent.mkdir(parents=True, exist_ok=True)
+    doc.write_text(md, encoding="utf-8")
     pm = pressure_metrics(args.out / "extra", camp["spec"])
     crit = camp["criteria"]
     summary = {
         "criteria": crit,
         "n_pass": camp["n_criteria_pass"],
-        "report_md": str(args.doc.relative_to(ROOT)),
+        "report_md": relpath(doc, ROOT),
         "summary_text": (
             "P87W2-N01 LNG 液舱晃荡验证面：1.0x0.5 m 矩形舱 20-90% 部分充装，Körner 自由液面 LBM "
             "单模态自由衰减（一阶/二阶）+ 共振大振幅冲击算例。一阶共振频率 vs Abramson 最差 "
@@ -803,7 +803,7 @@ def main(argv=None) -> int:
         "pressure_metrics": pm,
     }
     (args.out / "report_summary.json").write_text(json.dumps(summary, indent=2, default=float))
-    print(f"report -> {args.doc}")
+    print(f"report -> {doc}")
     return 0
 
 

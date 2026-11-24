@@ -5,7 +5,7 @@ estimator round-trips, scaling consistency, judging logic) and run in
 milliseconds.  Four exercise the free-surface LBM on a deliberately coarse grid
 (``cells_per_height = 16``) so the whole file stays inside a normal CI budget;
 the production-resolution campaign is
-``scripts/run_sloshing_resonance_campaign.py``.
+``development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py``.
 """
 
 from __future__ import annotations

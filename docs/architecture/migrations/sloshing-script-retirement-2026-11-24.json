@@ -1,0 +1,102 @@
+{
+  "source_commit": "32bf22f8074b9232d70fa5675089e7c1756dd9cd",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "tracked_files_under_scripts": {
+    "before": 604,
+    "after": 596
+  },
+  "reference_scan": "Checked workflows, tracked launch instructions, solver and test documentation and the two public reports. The old generator paths in the resonance report preamble are original provenance. The hydrostatic still-water input directory and external SWE anchor contract retain their original paths.",
+  "compatibility": "Existing CLI options and artifact input paths remain available. The resonance renderer defaults to a report beside campaign.json and preserves --doc. The impact renderer retains its explicit --out. Both generate figure references relative to the generated report. Both continue to import canonical src/tensorlbm. The impact hydrostatic artifact path and external SWE reference contract stay intact.",
+  "scientific_scope": "No full campaign, experimental comparison, or new scientific verdict. Original report and expected results remain historical. An end-to-end renderer run needs original campaign JSON/NPZ, which is absent from this Git tree. The cross-repository SWE anchor was not regenerated because the pinned external worktree was unavailable.",
+  "entries": [
+    {
+      "old_path": "scripts/gen_sloshing_resonance_report.py",
+      "new_path": "development/verification/sloshing/resonance-p87w2-n01/gen_sloshing_resonance_report.py",
+      "published_report": "docs/P87W2_N01_sloshing_resonance_report.md",
+      "git_mode": "100644",
+      "size_bytes": 36095,
+      "original_git_blob": "25b316dbf8b47e3ee5e6ddeb0c524231024c292d",
+      "original_sha256": "ae9acd220e81b6b1ab05ca9399209ac4df55ba8c25187c7f960273a24e53740b",
+      "new_sha256": "dde1dc033cb3bfcab048eab5e6b47f938c75aea55848c44f281934f6cd42ad2d"
+    },
+    {
+      "old_path": "scripts/make_sloshing_resonance_figures.py",
+      "new_path": "development/verification/sloshing/resonance-p87w2-n01/make_sloshing_resonance_figures.py",
+      "published_report": "docs/P87W2_N01_sloshing_resonance_report.md",
+      "git_mode": "100644",
+      "size_bytes": 14259,
+      "original_git_blob": "a76e53e161bf89bc9844f414051286130a448110",
+      "original_sha256": "5c1ed784056f96e841f18bdfd6fd44b382654784e1548e60a9fec1c861a9373e",
+      "new_sha256": "6677ec5f889baa4b8c211894e917bbcafd3ea720e97e501a844df2c1ddf68484"
+    },
+    {
+      "old_path": "scripts/run_sloshing_resonance_campaign.py",
+      "new_path": "development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py",
+      "published_report": "docs/P87W2_N01_sloshing_resonance_report.md",
+      "git_mode": "100644",
+      "size_bytes": 4025,
+      "original_git_blob": "168a5d5a3433157e87dd4dfe8b33596e06e03ad7",
+      "original_sha256": "c835552413a382c7ae27f9bb01ce34a6efda68ea25afef34d8408df328fe2814",
+      "new_sha256": "a7f66badce3bfce249a0a522f074d08152ee5917f1e4741ce928a47eed81facb"
+    },
+    {
+      "old_path": "scripts/run_sloshing_resonance_extras.py",
+      "new_path": "development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_extras.py",
+      "published_report": "docs/P87W2_N01_sloshing_resonance_report.md",
+      "git_mode": "100644",
+      "size_bytes": 5807,
+      "original_git_blob": "02256b3a536fe1badfc129e142f74f7db1374e27",
+      "original_sha256": "6ad9e85ec2f8bd48ad56bfedee66b50c18a3ecf36a2b67fccb5e1deb6576ec3a",
+      "new_sha256": "d37c787b0733befcf4e89e9403de2ccfafb4becb9f92d8f86c5efe0aba39f0bd"
+    },
+    {
+      "old_path": "scripts/gen_swe_reference_anchor.py",
+      "new_path": "development/verification/sloshing/impact-calibration/gen_swe_reference_anchor.py",
+      "published_report": "docs/SLOSHING_IMPACT_LBM_CALIBRATION.md",
+      "git_mode": "100644",
+      "size_bytes": 5952,
+      "original_git_blob": "5e0f3440f1aea28d91acf2f80c215a98d10708e7",
+      "original_sha256": "123f3c115d3220d5323e3e142a2880d403fb2cae71fbf7c0be0093a6b1820524",
+      "new_sha256": "8ef9c69bece15bd0fd4729481402790b7e5e74eb8c71b9a2e0ab133f7160771c"
+    },
+    {
+      "old_path": "scripts/make_sloshing_calibration_figures.py",
+      "new_path": "development/verification/sloshing/impact-calibration/make_sloshing_calibration_figures.py",
+      "published_report": "docs/SLOSHING_IMPACT_LBM_CALIBRATION.md",
+      "git_mode": "100644",
+      "size_bytes": 11146,
+      "original_git_blob": "096b4792597aeb6024cc934412560bb023d94af2",
+      "original_sha256": "df4cce57a59d47cfec9141b7de548745d976a7cda6e61aa27ec754f8ed387e5c",
+      "new_sha256": "17cbd2c5e5a5577dd9417cbf538c84df73e40b2b6c042b151e8b061975249138"
+    },
+    {
+      "old_path": "scripts/make_sloshing_calibration_report.py",
+      "new_path": "development/verification/sloshing/impact-calibration/make_sloshing_calibration_report.py",
+      "published_report": "docs/SLOSHING_IMPACT_LBM_CALIBRATION.md",
+      "git_mode": "100644",
+      "size_bytes": 22476,
+      "original_git_blob": "7124b0118e91ec3e165f894424f68d0b913b42f9",
+      "original_sha256": "51c2dd1480d36a54fc6da45ad2de799c5774ade7edbdfe7a6c1973a91d2fc256",
+      "new_sha256": "cd11101e4bb4142a4c4f61af0917348775d74f2afcfee9a681e693c7e144f6a2"
+    },
+    {
+      "old_path": "scripts/run_sloshing_impact_calibration.py",
+      "new_path": "development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py",
+      "published_report": "docs/SLOSHING_IMPACT_LBM_CALIBRATION.md",
+      "git_mode": "100644",
+      "size_bytes": 20711,
+      "original_git_blob": "649b2696d797c2ab5fa266bf5bcf9a03687be7c6",
+      "original_sha256": "9dc74419a87fb3fac83c1a78301967d59ddf43e8611f641d489a21ee11010907",
+      "new_sha256": "091e36a1b9b690026b45bba1627c7042b58317690f556320cf94a5837ef8a3f1"
+    }
+  ],
+  "verification": [
+    "Verified eight source blobs and old and new SHA-256 values. AST comparisons allow only the recorded path substitutions in both runners, both figure programs and the SWE anchor extractor. Changes in the solver module and two tests are documentation references only.",
+    "All eight CLI help commands ran from outside the checkout. The original and relocated list commands returned byte-identical output for the 18 cases in the current runner. The historical report described its original 17-case run.",
+    "The resonance renderer reported the missing campaign input and did not create a new report. Its output was not tested with a complete set of original campaign data.",
+    "83 governance checks, 15 targeted unit tests, both public report links, Ruff and git diff --check passed. 20 unselected tests were not part of the migration run."
+  ],
+  "list_command": "python development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py --list --out <scratch-directory>",
+  "list_output_sha256": "57baa33ca94416b6cf759844850a787bb4a6f74dfc10e94f73036f7a1159e162"
+}

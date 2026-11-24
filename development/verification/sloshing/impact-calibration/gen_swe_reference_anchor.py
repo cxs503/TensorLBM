@@ -20,7 +20,7 @@ Cases (both on the IN48-N07 tank: L = 20 m, h_l = 4 m, rho = 1025, g = 9.80665):
 Usage
 -----
     M5744_ROOT=/path/to/ship-performance-platform \
-    python scripts/gen_swe_reference_anchor.py --out artifacts/sloshing_impact_lbm/sw_swe_reference.json
+    python development/verification/sloshing/impact-calibration/gen_swe_reference_anchor.py --out artifacts/sloshing_impact_lbm/sw_swe_reference.json
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[4]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
