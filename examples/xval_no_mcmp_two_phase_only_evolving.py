@@ -20,8 +20,8 @@ What it does
    the body force, and a width-mismatch arm whose initial layering is thinner
    than the Allen-Cahn equilibrium thickness.
 5. Writes ``outputs/xval_no_mcmp_evolving_round3/results_round3.json``, four
-   figures and renders ``docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md`` from
-   that json (every number in the report is rendered, none is hand-typed).
+   figures and a report in the same output directory. Every number in that
+   report is rendered from the JSON.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ from tensorlbm.verification.two_phase_only_evolving import (  # noqa: E402
 
 PREDECLARED_PATH = REPO / "docs" / "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json"
 OUT_DIR = REPO / "outputs" / "xval_no_mcmp_evolving_round3"
-REPORT_PATH = REPO / "docs" / "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
+REPORT_PATH = OUT_DIR / "XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3.md"
 
 # Matched matrix: identical to round 1's M1 matrix so the frozen and evolving
 # arms can be compared arm by arm.
@@ -539,7 +539,7 @@ def render_report(results: dict) -> str:
     add("")
     add(
         "Every number below is rendered from "
-        "`outputs/xval_no_mcmp_evolving_round3/results_round3.json`; every threshold is "
+        "[results_round3.json](results_round3.json); every threshold is "
         "read from `docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY-ROUND3-predeclared.json`, which "
         "was written before the first run. Round-1 artifacts "
         "(`xval/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY/*`) are untouched by this round."
@@ -680,25 +680,25 @@ def render_report(results: dict) -> str:
     add("")
     add("## 4. Figures")
     add("")
-    add("![fig1](outputs/xval_no_mcmp_evolving_round3/fig1_profiles_evolving_vs_frozen.png)")
+    add("![fig1](fig1_profiles_evolving_vs_frozen.png)")
     add("")
     add(
         "_Steady velocity profiles at ny=96: the Allen-Cahn indicator (solid) and the frozen "
         "indicator (dashed) against the two-layer Stokes solution (dotted)._"
     )
     add("")
-    add("![fig2](outputs/xval_no_mcmp_evolving_round3/fig2_error_evolving_vs_frozen.png)")
+    add("![fig2](fig2_error_evolving_vs_frozen.png)")
     add("")
     add("_Profile L2 error per arm at identical settings, with the owner 15% band._")
     add("")
-    add("![fig3](outputs/xval_no_mcmp_evolving_round3/fig3_indicator_evolution.png)")
+    add("![fig3](fig3_indicator_evolution.png)")
     add("")
     add(
         "_Indicator profile before and after the transient (ny=96, ratio 4): the interface "
         "moves by a fraction of a cell and does not thicken._"
     )
     add("")
-    add("![fig4](outputs/xval_no_mcmp_evolving_round3/fig4_shear_translation_convergence.png)")
+    add("![fig4](fig4_shear_translation_convergence.png)")
     add("")
     add(
         "_Allen-Cahn advection error against the exact shear-translation solution, with the "
@@ -814,7 +814,7 @@ def render_report(results: dict) -> str:
     add("")
     add("```bash")
     add(
-        "python examples/xval_no_mcmp_two_phase_only_evolving.py     # writes json + figures + this report"
+        "python examples/xval_no_mcmp_two_phase_only_evolving.py     # writes JSON, figures and a new report under outputs/"
     )
     add("python -m pytest tests/test_xval_no_mcmp_two_phase_only_evolving.py -q")
     add("```")

@@ -58,6 +58,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("docs", "history"),
     ("scripts", "data"),
     ("docs", "m23777"),
+    ("docs", "m23124"),
+    ("docs", "m23233"),
     ("docs", "m24569"),
     ("scripts", "physics_ai"),
     ("docs", "smoke"),

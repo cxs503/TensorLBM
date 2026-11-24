@@ -54,7 +54,7 @@ C3 无量纲数：Re_H = u_max·H/ν ≈ 0.0088×28/0.05 ≈ 4.9；毛细数 Ca 
 **流程**：解析 → 初始化 f/h（`initialize`，p=0）→ 每步 collision（f 先、h 用已碰撞 f 的速度）→ stream（含反弹）
 → 壁面相场镜像 → 记录 u(y)、φ(y)、质量误差、法向速度。所有数字由脚本写 `summary.json`，图由 matplotlib 直接出。
 
-## ③ 计算结果（机器写入 `outputs/xval_pf_walls_r2/summary.json`）
+## ③ 计算结果（[本轮归档 JSON](../benchmarks/cross_validation/allen_cahn_pressure_walls_round2/evidence/summary.json)）
 
 | 判据 | 参考 | 数值 | 误差 | 判 |
 |---|---|---|---|---|
@@ -77,14 +77,14 @@ C3 无量纲数：Re_H = u_max·H/ν ≈ 0.0088×28/0.05 ≈ 4.9；毛细数 Ca 
 
 ## ④ 结果图
 
-![fig2](outputs/xval_pf_walls_r2/fig2_wall_bc_validations.png)
+![fig2](assets/allen-cahn-pressure-walls-round2/fig2_wall_bc_validations.png)
 *图 2*：C1 移动壁 Couette（左）与 C2 单相 Poiseuille（右），圆点=LBM，实线=解析解。
 
-![fig1](outputs/xval_pf_walls_r2/fig1_layered_profiles.png)
+![fig1](assets/allen-cahn-pressure-walls-round2/fig1_layered_profiles.png)
 *图 1*：C3 分层 Poiseuille 终态剖面 vs 三条参考（sharp-dyn / sharp-kin / diffuse-FD）。LBM 与 sharp-dyn、
 diffuse-FD 重合，与 sharp-kin 明显分离（20.5%）。
 
-![fig3](outputs/xval_pf_walls_r2/fig3_error_summary.png)
+![fig3](assets/allen-cahn-pressure-walls-round2/fig3_error_summary.png)
 *图 3*：各算例对三条参考的相对偏差（对数纵轴，含 15% 验收线与 3% 目标线）。
 
 ## ⑤ 注意点（踩过的坑，全部为实测定位）

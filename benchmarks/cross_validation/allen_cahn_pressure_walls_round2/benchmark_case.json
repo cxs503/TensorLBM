@@ -1,0 +1,30 @@
+{
+  "scope": "Historical round 2. The recorded C1, C2, C3 and C5 runs cover a moving wall, single-phase and layered channel flow, and static wall phase-field behavior. Full parameter scans and external solver replay are outside the archived result.",
+  "criteria": {
+    "relative_error_acceptance_lt": 0.15,
+    "relative_error_target_lt": 0.03,
+    "comparators": "See the published report for case-specific metrics and reference profiles."
+  },
+  "source": [
+    "scripts/xval_pf_pressure_walls_r2.py",
+    "src/tensorlbm/phasefield/pf_pressure_evolution.py"
+  ],
+  "config": [
+    "scripts/xval_pf_pressure_walls_r2.py"
+  ],
+  "documentation": [
+    "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md"
+  ],
+  "reference_files": [
+    "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD-R2-WALLS.md",
+    "docs/XVAL-LBM-PRESSURE-EVOLUTION-ALLENCAHN-PHASEFIELD.md"
+  ],
+  "results": [
+    "benchmarks/cross_validation/allen_cahn_pressure_walls_round2/evidence/summary.json"
+  ],
+  "evidence": [
+    "docs/assets/allen-cahn-pressure-walls-round2/fig1_layered_profiles.png",
+    "docs/assets/allen-cahn-pressure-walls-round2/fig2_wall_bc_validations.png",
+    "docs/assets/allen-cahn-pressure-walls-round2/fig3_error_summary.png"
+  ]
+}
