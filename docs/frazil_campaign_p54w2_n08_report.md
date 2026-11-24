@@ -162,6 +162,7 @@ Semi-log plot of μ_r vs φ showing the characteristic divergence near φ_max=0.
 
 - **Test file**: `tests/test_frazil_campaign_p54w2_n08.py`
 - **Results JSON**: `artifacts/frazil_campaign_p54w2_n08_results.json`
-- **Figures**: `figures/frazil_campaign_*.png`
+- **Figures**: `figures/frazil_campaign_*.png` (historical location)
+- **Reproduce figures from the original JSON**: [generate_frazil_figures.py](../development/verification/frazil-rheology/p54w2-n08/generate_frazil_figures.py) writes to `outputs/verification/frazil-rheology/p54w2-n08/figures/`
 - **Modules**: `src/tensorlbm/frazil_rheology.py`, `frazil_suspension.py`, `frazil_lbm.py`, `frazil_settling_lbm.py`
 - **All pytest tests pass**: 22 tests across 5 criterion classes

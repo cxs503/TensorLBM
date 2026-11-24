@@ -10,14 +10,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[4]
 
 def main():
     json_path = ROOT / "artifacts" / "frazil_campaign_p54w2_n08_results.json"
     with open(json_path) as f:
         results = json.load(f)
     
-    fig_dir = ROOT / "figures"
+    fig_dir = ROOT / "outputs/verification/frazil-rheology/p54w2-n08/figures"
     fig_dir.mkdir(parents=True, exist_ok=True)
 
     # Figure 1: mu_eff and n vs c_v

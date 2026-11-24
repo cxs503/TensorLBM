@@ -13,7 +13,7 @@ Runs the four machine-checked criteria of
 
 Reproduce from the repository root::
 
-    PYTHONPATH=src python scripts/run_h2_frazil_rheology.py --out artifacts/h2_frazil_rheology
+    PYTHONPATH=src python development/verification/frazil-rheology/h2/run_h2_frazil_rheology.py --out outputs/verification/frazil-rheology/h2
 
 Exit code is 0 only when every criterion passes; a failing run still writes the
 artifacts (honest FAIL is data, not a crash).
@@ -36,7 +36,7 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(_REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT / "src"))
 
@@ -302,7 +302,7 @@ def write_benchmark_md(report: dict, out: Path, repro_cmd: str, figures: dict) -
 
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", default="artifacts/h2_frazil_rheology", help="artifact directory")
+    ap.add_argument("--out", default="outputs/verification/frazil-rheology/h2", help="artifact directory")
     ap.add_argument("--H", type=int, default=16, help="channel half-height in cells")
     ap.add_argument("--nx", type=int, default=2, help="streamwise cells (flow is x-homogeneous)")
     ap.add_argument("--max-steps", type=int, default=20000)
@@ -338,9 +338,11 @@ def main(argv=None) -> int:
     wall = time.time() - t0
 
     module_path = Path(rheo.__file__)
-    repro_cmd = ("PYTHONPATH=src python scripts/run_h2_frazil_rheology.py "
+    repro_cmd = ("PYTHONPATH=src python development/verification/frazil-rheology/h2/run_h2_frazil_rheology.py "
                  "--out %s --H %d --nx %d --max-steps %d --tol %g"
                  % (args.out, args.H, args.nx, args.max_steps, args.tol))
+    if args.skip_channels:
+        repro_cmd += " --skip-channels"
     report["repro_cmd"] = repro_cmd
     report["provenance"] = {
         "commit": _git_commit(),

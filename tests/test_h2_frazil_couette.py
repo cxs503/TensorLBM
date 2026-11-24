@@ -1,4 +1,4 @@
-"""Guards for the reworked H2 Couette face (``scripts/run_h2_frazil_couette.py``).
+"""Guards for the reworked H2 Couette face (``development/verification/frazil-rheology/h2/run_h2_frazil_couette.py``).
 
 The face exists because the first attempt at a particle-resolved relative
 viscosity was audited L1 (``docs/AUDIT_m14882_H2_FRAZIL_RHEOLOGY.md``): a
@@ -34,7 +34,7 @@ NU = 0.2
 
 def _load_script():
     spec = importlib.util.spec_from_file_location(
-        "run_h2_frazil_couette", ROOT / "scripts" / "run_h2_frazil_couette.py"
+        "run_h2_frazil_couette", ROOT / "development/verification/frazil-rheology/h2/run_h2_frazil_couette.py"
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
