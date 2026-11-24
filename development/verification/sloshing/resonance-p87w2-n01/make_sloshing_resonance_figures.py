@@ -2,7 +2,7 @@
 """Figures for the P87W2-N01 sloshing-resonance report.
 
 Reads (never recomputes) ``artifacts/p87w2_n01/campaign.json`` plus the extra
-``.npz`` records from ``scripts/run_sloshing_resonance_extras.py`` and writes the
+``.npz`` records from ``development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_extras.py`` and writes the
 PNG set into ``artifacts/p87w2_n01/figures``.
 
 Every number drawn here comes from those two artefacts, so the report figures are
@@ -23,7 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.sloshing_resonance.theory import (  # noqa: E402

@@ -13,7 +13,7 @@ Three records, each saved as ``.npz`` under ``artifacts/p87w2_n01/extra``:
 
 Usage::
 
-    python scripts/run_sloshing_resonance_extras.py --out artifacts/p87w2_n01/extra --job waveform
+    python development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_extras.py --out artifacts/p87w2_n01/extra --job waveform
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ import torch
 
 torch.set_num_threads(int(os.environ.get("TL_THREADS", "1")))
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.sloshing_resonance import (  # noqa: E402

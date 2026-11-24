@@ -4,9 +4,9 @@
 Usage::
 
     # run one shard of the campaign (cases are deterministic, so sharding is safe)
-    python scripts/run_sloshing_resonance_campaign.py --out artifacts/p87w2_n01 --shard 0/4
+    python development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py --out artifacts/p87w2_n01 --shard 0/4
     # judge + write campaign.json once every case JSON is present
-    python scripts/run_sloshing_resonance_campaign.py --out artifacts/p87w2_n01 --aggregate
+    python development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py --out artifacts/p87w2_n01 --aggregate
 
 Each case writes ``case_<id>.json``; the aggregation step re-reads them, applies
 criteria (a)-(h) and writes ``campaign.json``.  Nothing is recomputed twice, so
@@ -26,7 +26,7 @@ import torch
 
 torch.set_num_threads(int(os.environ.get("TL_THREADS", "1")))
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "src"))
 
 from tensorlbm.sloshing_resonance.campaign import (  # noqa: E402

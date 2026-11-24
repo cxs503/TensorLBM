@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Figures for the sloshing-impact LBM calibration campaign.
 
-Reads the case JSONs written by ``scripts/run_sloshing_impact_calibration.py``
+Reads the case JSONs written by ``development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py``
 plus the assembled ``report.json`` and writes publication figures to
 ``artifacts/sloshing_impact_lbm/figures/``.
 
-    python scripts/make_sloshing_calibration_figures.py \
+    python development/verification/sloshing/impact-calibration/make_sloshing_calibration_figures.py \
         --case-dir artifacts/sloshing_impact_lbm \
         --fig-dir artifacts/sloshing_impact_lbm/figures
 """
@@ -24,7 +24,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[4]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 

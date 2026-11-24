@@ -4,7 +4,7 @@ The tests are deliberately cheap: they gate the *measurement chain* (anchor
 port, lattice scaling, wall extrapolation, GCI, harmonic analysis, cushion
 closure, hydrostatic baseline) on analytic references and one small LBM run.
 The production 3-grid campaign lives in
-``scripts/run_sloshing_impact_calibration.py`` and its artifacts.
+``development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py`` and its artifacts.
 """
 
 from __future__ import annotations

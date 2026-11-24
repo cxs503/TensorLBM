@@ -4,9 +4,9 @@
 Every number in the generated report is read from ``report.json`` / the case
 JSONs - nothing is typed by hand, so the document cannot drift from the data.
 
-    python scripts/make_sloshing_calibration_report.py \
+    python development/verification/sloshing/impact-calibration/make_sloshing_calibration_report.py \
         --case-dir artifacts/sloshing_impact_lbm \
-        --out docs/SLOSHING_IMPACT_LBM_CALIBRATION.md
+        --out artifacts/sloshing_impact_lbm/SLOSHING_IMPACT_LBM_CALIBRATION.md
 """
 
 from __future__ import annotations
@@ -15,9 +15,10 @@ import argparse
 import json
 import math
 import sys
+from os.path import relpath
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[4]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
@@ -157,21 +158,21 @@ def build(case_dir: Path, fig_rel: str) -> str:
     A("")
     A("```")
     A("# 1) SWE 锚（跨仓只读导入 m5744 impact.py，只落派生时历）")
-    A("M5744_ROOT=<ship-performance-platform> python3 scripts/gen_swe_reference_anchor.py \\")
+    A("M5744_ROOT=<ship-performance-platform> python3 development/verification/sloshing/impact-calibration/gen_swe_reference_anchor.py \\")
     A("    --out artifacts/sloshing_impact_lbm/sw_swe_reference.json")
     A("# 2) 各算例（可单进程=一个 shard）")
-    A("python3 scripts/run_sloshing_impact_calibration.py campaign --shard i --shards 6 \\")
+    A("python3 development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py campaign --shard i --shards 6 \\")
     A("    --out-dir artifacts/sloshing_impact_lbm")
     A("# 3) 汇总（GCI/谱/判据）")
-    A("python3 scripts/run_sloshing_impact_calibration.py post \\")
+    A("python3 development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py post \\")
     A("    --case-dir artifacts/sloshing_impact_lbm \\")
     A("    --swe-reference artifacts/sloshing_impact_lbm/sw_swe_reference.json \\")
     A("    --out artifacts/sloshing_impact_lbm/report.json")
     A("# 4) 图 + 本报告")
-    A("python3 scripts/make_sloshing_calibration_figures.py --case-dir artifacts/sloshing_impact_lbm \\")
+    A("python3 development/verification/sloshing/impact-calibration/make_sloshing_calibration_figures.py --case-dir artifacts/sloshing_impact_lbm \\")
     A("    --fig-dir artifacts/sloshing_impact_lbm/figures")
-    A("python3 scripts/make_sloshing_calibration_report.py --case-dir artifacts/sloshing_impact_lbm \\")
-    A("    --out docs/SLOSHING_IMPACT_LBM_CALIBRATION.md")
+    A("python3 development/verification/sloshing/impact-calibration/make_sloshing_calibration_report.py --case-dir artifacts/sloshing_impact_lbm \\")
+    A("    --out artifacts/sloshing_impact_lbm/SLOSHING_IMPACT_LBM_CALIBRATION.md")
     A("```")
     A("")
     A("## 3. 计算结果")
@@ -394,16 +395,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--case-dir", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--fig-rel", default=None,
-                    help="figure path prefix inside the doc (default: relative to repo root)")
+                    help="figure path prefix inside the doc (default: relative to the report)")
     args = ap.parse_args(argv)
     case_dir = Path(args.case_dir)
     out = Path(args.out)
-    fig_rel = args.fig_rel
-    if fig_rel is None:
-        try:
-            fig_rel = str(case_dir.resolve().relative_to(ROOT))
-        except ValueError:
-            fig_rel = str(case_dir)
+    fig_rel = args.fig_rel if args.fig_rel is not None else relpath(case_dir, out.parent)
     text = build(case_dir, fig_rel)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(text)

@@ -56,23 +56,25 @@
 
 ### 2.4 工具链
 
+[验证脚本](../development/verification/sloshing/impact-calibration/)保留原来的输入路径和选项。重新生成的报告默认按下列命令写入本地产物目录。
+
 ```
 # 1) SWE 锚（跨仓只读导入 m5744 impact.py，只落派生时历）
-M5744_ROOT=<ship-performance-platform> python3 scripts/gen_swe_reference_anchor.py \
+M5744_ROOT=<ship-performance-platform> python3 development/verification/sloshing/impact-calibration/gen_swe_reference_anchor.py \
     --out artifacts/sloshing_impact_lbm/sw_swe_reference.json
 # 2) 各算例（可单进程=一个 shard）
-python3 scripts/run_sloshing_impact_calibration.py campaign --shard i --shards 6 \
+python3 development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py campaign --shard i --shards 6 \
     --out-dir artifacts/sloshing_impact_lbm
 # 3) 汇总（GCI/谱/判据）
-python3 scripts/run_sloshing_impact_calibration.py post \
+python3 development/verification/sloshing/impact-calibration/run_sloshing_impact_calibration.py post \
     --case-dir artifacts/sloshing_impact_lbm \
     --swe-reference artifacts/sloshing_impact_lbm/sw_swe_reference.json \
     --out artifacts/sloshing_impact_lbm/report.json
 # 4) 图 + 本报告
-python3 scripts/make_sloshing_calibration_figures.py --case-dir artifacts/sloshing_impact_lbm \
+python3 development/verification/sloshing/impact-calibration/make_sloshing_calibration_figures.py --case-dir artifacts/sloshing_impact_lbm \
     --fig-dir artifacts/sloshing_impact_lbm/figures
-python3 scripts/make_sloshing_calibration_report.py --case-dir artifacts/sloshing_impact_lbm \
-    --out docs/SLOSHING_IMPACT_LBM_CALIBRATION.md
+python3 development/verification/sloshing/impact-calibration/make_sloshing_calibration_report.py --case-dir artifacts/sloshing_impact_lbm \
+    --out artifacts/sloshing_impact_lbm/SLOSHING_IMPACT_LBM_CALIBRATION.md
 ```
 
 ## 3. 计算结果

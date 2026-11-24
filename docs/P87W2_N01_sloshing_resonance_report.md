@@ -228,7 +228,9 @@ Abramson 锚是无粘势流解，而格子 BGK 的粘性远大于水（格子 ν
 
 ## 9. 审计链
 
+[验证脚本](../development/verification/sloshing/resonance-p87w2-n01/)保留原来的产物布局。报告生成器默认将新报告放在该次运行的产物目录。
+
 - 代码：`src/tensorlbm/sloshing_resonance/{theory,tank2d,identify,campaign}.py`
-- 驱动：`scripts/run_sloshing_resonance_campaign.py`（分片跑算例）/ `scripts/run_sloshing_resonance_extras.py`（波形、无滑移、冲击时历）/ `scripts/make_sloshing_resonance_figures.py`（图）/ 本脚本（报告）
+- 驱动：`development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_campaign.py`（分片跑算例）/ `development/verification/sloshing/resonance-p87w2-n01/run_sloshing_resonance_extras.py`（波形、无滑移、冲击时历）/ `development/verification/sloshing/resonance-p87w2-n01/make_sloshing_resonance_figures.py`（图）/ 本脚本（报告）
 - 工件：`artifacts/p87w2_n01/case_*.json`（每算例一个）、`campaign.json`（判据）、`extra/*.npz|json`、`figures/*.png`、`logs/*.log`
 - 测试：`tests/test_sloshing_resonance_p87w2.py`
