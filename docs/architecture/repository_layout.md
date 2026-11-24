@@ -22,7 +22,7 @@ evidence. [Benchmark status](../../benchmarks/STATUS.md) records maturity.
 | A published narrative | [Reports](../reports/) or the [documentation index](../README.md) |
 | Drop-entry technical reports and diagnostic history | [Water-entry reports](../reports/water_entry/) |
 | Historical council and CI process records | [Development archive](../../development/archived/council/) and [CI audit records](../../development/audit/ci/) |
-| A T4 workflow | [Physics-AI drivers](../../scripts/physics_ai/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
+| A T4 workflow | [Physics-AI drivers](../../benchmarks/t4_physics_ai_loop/) and [reproduction commands](../T4_PHYSICS_AI_LOOP.md) |
 | An earlier experiment | [Archived experiments](../../development/experiments/archived/), including [mission workspaces](../../development/experiments/archived/workspaces/) and [staged snapshots](../../development/experiments/archived/staging/) |
 | An old repository path | Search the [migration manifest](migration_manifest.csv). A directory row maps its entire subtree, preserving the relative suffix. |
 

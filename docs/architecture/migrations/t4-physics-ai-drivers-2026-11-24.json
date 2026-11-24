@@ -1,0 +1,44 @@
+{
+  "source_commit": "0e6e65867c7dfa2b2ce1887bee08f16007fc8357",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "scripts": {
+      "before": 11,
+      "after": 10
+    }
+  },
+  "retired_paths": [
+    "scripts/physics_ai"
+  ],
+  "entries": [
+    {
+      "old_path": "scripts/physics_ai/bench_t4_medium.py",
+      "new_path": "benchmarks/t4_physics_ai_loop/bench_t4_medium.py",
+      "git_mode": "100644",
+      "original_git_blob": "15bb24df4c822a52e47d86ac391336298058ec9d",
+      "original_sha256": "273d3d51315db8429cea09d17eeef98a6f38b2f95c565d56a7240f0c0ec7548a",
+      "original_size_bytes": 13912,
+      "migrated_sha256": "ab81e25b0f2c67c61ffcf98e7792432024aa99425a6dde26bdb243e5eb3082c6",
+      "migrated_size_bytes": 14135
+    },
+    {
+      "old_path": "scripts/physics_ai/bench_t4_physics_ai_loop.py",
+      "new_path": "benchmarks/t4_physics_ai_loop/bench_t4_physics_ai_loop.py",
+      "git_mode": "100644",
+      "original_git_blob": "cdf7a909f34188e9a98ac0464a077702e77e7a26",
+      "original_sha256": "50619dc695138c3eb913353587c73ea8f26a006f7ced8c0e38a5e89f5f74b094",
+      "original_size_bytes": 16963,
+      "migrated_sha256": "8bad2f0a0352c2577e9070a29318a2703e1275614459807f9d459e5f2d5f634f",
+      "migrated_size_bytes": 17184
+    }
+  ],
+  "compatibility": "The two published report paths and CLI arguments remain unchanged. Reproduction commands point to the relocated drivers. Both drivers still resolve src/ and their default artifact directories from the repository root. The archived checkout and the historical publisher retain their original text.",
+  "scientific_scope": "This migration verifies execution entry points and provenance. Full production, training and holdout evaluation are deferred, and published results retain their historical scope.",
+  "verification": [
+    "Both original Git blobs and SHA-256 values were checked against the base revision and the migrated SHA-256 values against the proposed tree.",
+    "AST comparison confirmed only the intended path literals and Ruff's import ordering and unused-import fixes changed the parsed drivers.",
+    "Both CLI help commands ran outside the checkout with real CPU PyTorch. Linked reports and both asset-search results resolve.",
+    "All 82 governance tests and the Ruff debt ratchet passed. No case was promoted to current scientific acceptance."
+  ]
+}

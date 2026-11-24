@@ -6,6 +6,9 @@ baseline list is from `bcdd5fa4`. The
 
 ## Maintained deliverables
 
+The [T4 migration ledger](migrations/t4-physics-ai-drivers-2026-11-24.json)
+places the two physics-AI campaign drivers beside their benchmark entry.
+
 | Root | Ownership and acceptance |
 | --- | --- |
 | `src/` | `src/tensorlbm/` holds the installable solver implementations. `src/lbm/` contains compatibility imports for the relocated D3Q27 implementation ([migration ledger](migrations/d3q27-canonical-source-2026-11-23.json)). The source-authority gate limits this compatibility package to five known files. |
