@@ -46,7 +46,7 @@ Machine-checked criteria (thresholds pre-declared in ``CRITERIA`` below)
 
 Usage (repository root)::
 
-    PYTHONPATH=src python scripts/run_h2_frazil_couette.py --out artifacts/h2_frazil_rheology
+    PYTHONPATH=src python development/verification/frazil-rheology/h2/run_h2_frazil_couette.py --out outputs/verification/frazil-rheology/h2
 
 Writes ``couette_measurement.json`` and ``fig4_couette_eta_r.png`` next to the
 other H2 artifacts.  Exit code 0 only when all criteria pass; a failing run
@@ -64,7 +64,7 @@ from pathlib import Path
 
 import numpy as np
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(_REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT / "src"))
 
@@ -273,8 +273,8 @@ def run(out: Path, *, factor: float = 1.0, with_convergence: bool = True) -> dic
                        "n_defined": len(checks),
                        "verdict": "PASS" if n_pass == len(checks) else "FAIL"},
         "repro": {
-            "command": "PYTHONPATH=src python scripts/run_h2_frazil_couette.py "
-                       "--out artifacts/h2_frazil_rheology",
+            "command": "PYTHONPATH=src python development/verification/frazil-rheology/h2/run_h2_frazil_couette.py "
+                       "--out outputs/verification/frazil-rheology/h2",
             "python": platform.python_version(),
             "numpy": np.__version__,
             "wall_seconds": round(time.time() - t0, 1),
@@ -334,7 +334,7 @@ def make_figure(report: dict, path: Path) -> Path:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--out", default="artifacts/h2_frazil_rheology")
+    ap.add_argument("--out", default="outputs/verification/frazil-rheology/h2")
     ap.add_argument("--steps-factor", type=float, default=1.0,
                     help="scale the diffusion-time budget (quick smoke runs)")
     ap.add_argument("--no-convergence", action="store_true")

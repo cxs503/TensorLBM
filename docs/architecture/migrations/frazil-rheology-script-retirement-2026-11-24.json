@@ -1,0 +1,73 @@
+{
+  "source_commit": "6d79ff9258c951bee4d933aef03ec2018b1d70de",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "tracked_files_under_scripts": {
+    "before": 608,
+    "after": 604
+  },
+  "reference_scan": "Checked tracked path references and workflow definitions. The H2 Couette guard dynamically loads the moved script. The first H2 report line names the original generator as historical provenance. The P54W2-N08 report has its original historical results path and links the relocated renderer.",
+  "compatibility": "Both H2 runners retain options and canonical src/tensorlbm bootstrap. The H2 renderer can read original artifacts and generates a local report. P54W2-N08 retains its original input path and writes figures under outputs. Published report URLs remain stable.",
+  "scientific_scope": "No full campaign or acceptance run. The H2 closure-only smoke explicitly leaves the LBM channel criterion undefined. The four moved scripts do not alter the solver or numerical thresholds. The archived P54W2-N08 results JSON is absent from the tracked tree, so the associated renderer was not exercised end-to-end.",
+  "entries": [
+    {
+      "old_path": "scripts/run_h2_frazil_rheology.py",
+      "new_path": "development/verification/frazil-rheology/h2/run_h2_frazil_rheology.py",
+      "published_report": "docs/H2_FRAZIL_RHEOLOGY.md",
+      "git_mode": "100644",
+      "original_git_blob": "24e51709f78df49120c9a5da5c618c146724457c",
+      "size_bytes": 18308,
+      "original_sha256": "38e0dc6868f076a66c861ba51c132c88b4eb11abe7e628c09a113ed699df0bdf",
+      "new_sha256": "4abf21f2eacacdaa0e7cb67e4c412244d6bab21f34004b072cac778342f19585"
+    },
+    {
+      "old_path": "scripts/run_h2_frazil_couette.py",
+      "new_path": "development/verification/frazil-rheology/h2/run_h2_frazil_couette.py",
+      "published_report": "docs/H2_FRAZIL_RHEOLOGY.md",
+      "git_mode": "100644",
+      "original_git_blob": "705ca2934a657e27c55c7750dc0e783b29b39153",
+      "size_bytes": 16890,
+      "original_sha256": "f80492443d492d537dceb92e8b33b7f4f75bdf9c5d1a67af38c688fd198b8426",
+      "new_sha256": "b0c9f351dd4540b7d3f159020cd7f3491a2906b96f7fea34ed9647a9aae3d4f4"
+    },
+    {
+      "old_path": "scripts/make_h2_frazil_doc.py",
+      "new_path": "development/verification/frazil-rheology/h2/make_h2_frazil_doc.py",
+      "published_report": "docs/H2_FRAZIL_RHEOLOGY.md",
+      "git_mode": "100644",
+      "original_git_blob": "e6f879f4053370da6047477dc63cbc4d8316be7e",
+      "size_bytes": 26345,
+      "original_sha256": "42f632a1050e62d9ac0b00f6efc6dfc49306fcbbc09eff2415973ace8b8ead82",
+      "new_sha256": "18a7c3344307107201a2be81ddf2c21cba59de4ca75b329f9ae6da900f00fdf9"
+    },
+    {
+      "old_path": "scripts/generate_frazil_figures.py",
+      "new_path": "development/verification/frazil-rheology/p54w2-n08/generate_frazil_figures.py",
+      "published_report": "docs/frazil_campaign_p54w2_n08_report.md",
+      "git_mode": "100644",
+      "original_git_blob": "3fe5b9e9c0ecacc6bbaceae278f59a4ba5b7f980",
+      "size_bytes": 6071,
+      "original_sha256": "33089a0b877427365a32e87e47b4f61152f3b742eb990def2cabfb86a165df29",
+      "new_sha256": "199f91d39f6f86ca943a196880a3933a48cc3b5cad805d337a35834c36ff4e27"
+    }
+  ],
+  "commands": [
+    "python development/verification/frazil-rheology/h2/run_h2_frazil_rheology.py --skip-channels",
+    "python development/verification/frazil-rheology/h2/make_h2_frazil_doc.py",
+    "python -m pytest -q tests/test_h2_frazil_couette.py",
+    "bash tools/check_repository_governance.sh",
+    "python tools/lint_ratchet.py --check"
+  ],
+  "verification": [
+    "Compared original and moved runners with AST path normalization. The solver sources and numerical thresholds were unchanged. Both runner CLIs expose their existing options from outside the checkout.",
+    "Four public report links resolved and all four entries record verified source Git blobs, modes and SHA-256. Updated the existing Couette test loader and passed its five tests.",
+    "Ran the real H2 constitutive relations with --skip-channels. The runner wrote three defined checks and left the fourth undefined. The renderer read both current and legacy locations and its two generated image links decoded with identical PNG bytes.",
+    "83 repository governance tests passed; 207 registry entries and zero hard violations. Ruff ratchet and git diff --check passed."
+  ],
+  "h2_local_smoke": {
+    "defined_checks_passed": 3,
+    "defined_checks": 3,
+    "channel_criterion": "undefined",
+    "generated_campaign_sha256": "3f12b65798c1a6f1d6e2dbc053179e07c24fb00b8e803285567314ff377c8078"
+  }
+}
