@@ -2,22 +2,22 @@
 """Generate the paper-grade report for
 XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT from results.json (no hand-typed numbers).
 
-Writes:
-  docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md
-  docs/oss_solutions_XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.sql
-  /tmp/report.json   (platform /tensor/reports payload, figure embedded as base64)
+Reads a generated results.json and companion PNG from ``outputs/verification/zou-he-channel/two-conservation``.
+Accepts the original ``artifacts/xval_two_conservation`` directory if no new JSON exists.
+Writes the regenerated Markdown, SQL and platform payload under the new output directory.
 """
 
 from __future__ import annotations
 
 import base64
 import json
-import os
 from pathlib import Path
 
-ART = Path("artifacts/xval_two_conservation")
-DOC = Path("docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md")
-SQL = Path("docs/oss_solutions_XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.sql")
+ART = Path("outputs/verification/zou-he-channel/two-conservation")
+LEGACY_ART = Path("artifacts/xval_two_conservation")
+DOC = ART / "XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md"
+SQL = ART / "oss_solutions_XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.sql"
+PAYLOAD = ART / "report.json"
 KEYS = ("mass_flux_rel", "ux_rel", "uy_abs", "psi_flux_err", "psi_flux_rel", "psi_err")
 
 
@@ -34,7 +34,10 @@ def fmt(v, nd=3):
 
 
 def main() -> None:
-    d = json.loads((ART / "results.json").read_text())
+    source = ART if (ART / "results.json").is_file() else LEGACY_ART
+    d = json.loads((source / "results.json").read_text())
+    fig = (source / "fig_conservation.png").read_bytes()
+    ART.mkdir(parents=True, exist_ok=True)
     b1, b2, b4, v, gate = d["b1"], d["b2"], d["b4"], d["verdict"], d["gate_15pct"]
     by = {(r["ny"], r["mode"]): r for r in b1}
 
@@ -132,7 +135,7 @@ g1  = g3 + (2/3) psi u_x,  g5,g8 = [psi - K_g - g1 ± (-g2 - g6 + g4 + g7)]/2
   `FreeEnergyChannel2D`（f/g collide + Guo 源、半程反弹墙壁、开边界接线、
   `equilibrate_interface` 离散界面对齐）
 * `tests/test_zouhe_two_conservation_chemical_potential.py`（4 个 gate，全绿）
-* `xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/run_xval.py`（本节全部数字）
+* `benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py`（本节全部数字）
 
 ## 3. 参数表
 
@@ -210,11 +213,12 @@ g1  = g3 + (2/3) psi u_x,  g5,g8 = [psi - K_g - g1 ± (-g2 - g6 + g4 + g7)]/2
 
 ```bash
 cd <worktree> && PYTHONPATH=src python3 -m pytest tests/test_zouhe_two_conservation_chemical_potential.py -q
-PYTHONPATH=src python3 xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/run_xval.py
+PYTHONHASHSEED=0 PYTHONPATH=src python3 benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py
+python3 development/verification/zou-he-channel/two-conservation/make_report.py
 ```
 
-工件：`artifacts/xval_two_conservation/results.json`、
-`artifacts/xval_two_conservation/fig_conservation.png`。
+工件：`outputs/verification/zou-he-channel/two-conservation/results.json`、
+`outputs/verification/zou-he-channel/two-conservation/fig_conservation.png`。
 """
     DOC.write_text(md)
 
@@ -227,7 +231,7 @@ VALUES (
  'XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT',
  'two-conservation-zouhe-with-chemical-potential-flux',
  'Free-energy two-distribution LBM: force-consistent Zou-He inlet/outlet. rho=(Kf+f3+f6+f7-Fx/2)/(1-ux) with Kf=sum known f; f1=f3+(2/3)rho ux; f5,f8 from the two momentum balances with the Guo half-force rho u = sum c f + F/2. Order parameter uses the same algebra on g: psi=((g0+g2+g4)+2(g3+g6+g7))/(1-ux) so that sum g = psi AND sum c_x g = psi u_x. Outlet psi closure must be pressure/back-pressure type; keep corners and avoid the (1+ux) division near interface (see failure record).',
- 'src/tensorlbm/phasefield/zouhe_two_conservation.py, src/tensorlbm/phasefield/free_energy_channel.py, tests/test_zouhe_two_conservation_chemical_potential.py, xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/run_xval.py',
+ 'src/tensorlbm/phasefield/zouhe_two_conservation.py, src/tensorlbm/phasefield/free_energy_channel.py, tests/test_zouhe_two_conservation_chemical_potential.py, benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py',
  'mu = a psi (1-psi^2) - kappa lap psi, a=-2kappa/xi^2, kappa=0.75 sigma xi; p = rho/3 + psi mu/3; g^eq carries 3 gamma mu; F = mu grad psi; float64; half-way bounce-back walls.',
  'adapt xval:XVAL-LBM-CUPY-DROPIN-NO-KERNEL-FUSION',
  '{json.dumps(d["verdict"], sort_keys=True)}'
@@ -236,7 +240,6 @@ VALUES (
     SQL.write_text(sql)
 
     # platform report payload
-    fig = (ART / "fig_conservation.png").read_bytes()
     payload = {
         "title": "LBM 双守恒 Zou-He 边界（含化学势力）：解析缺陷律命中，通道耦合 honest-FAIL",
         "summary": (
@@ -257,8 +260,8 @@ VALUES (
             }
         ],
     }
-    Path("/tmp/report.json").write_text(json.dumps(payload))
-    print("doc", DOC, "sql", SQL, "payload bytes", os.path.getsize("/tmp/report.json"))
+    PAYLOAD.write_text(json.dumps(payload))
+    print("doc", DOC, "sql", SQL, "payload bytes", PAYLOAD.stat().st_size)
 
 
 if __name__ == "__main__":

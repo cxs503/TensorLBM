@@ -1,0 +1,54 @@
+{
+  "source_commit": "1c717d58ebf360f3b74a82e8600677ea133a418e",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 95,
+      "after": 94
+    }
+  },
+  "reference_scan": "Checked tracked paths and callers. The old path in the published SQL is a historical source pointer at the recorded source commit. The public report, independent audit and SQL deposit keep their URLs.",
+  "compatibility": "The benchmark imports the same canonical solver package. Both drivers retain their no-argument commands at the new paths. The report generator accepts the legacy artifact pair and writes refreshed Markdown, SQL and platform payload only under outputs/. It does not deploy or upload its payload.",
+  "scientific_scope": "Migration parity run with identical seeded inputs on previous and relocated CPU drivers. It reproduces corrected and classic channel blow-ups at steps 83 and 86; impose is finite at step 200 but reaches max absolute order parameter 1.1242179268. The historical report and SQL are not the new numerical record. Full channel acceptance remains failed in the tested configuration.",
+  "environment": "Linux x86_64, Python 3.12.14, PyTorch 2.15.0+cpu, NumPy 2.5.5, Matplotlib 3.11.2; PYTHONHASHSEED=0, OMP_NUM_THREADS=1, OPENBLAS_NUM_THREADS=1.",
+  "commands": [
+    "PYTHONHASHSEED=0 PYTHONPATH=src python benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py",
+    "python development/verification/zou-he-channel/two-conservation/make_report.py",
+    "PYTHONPATH=src python -m pytest -q tests/test_zouhe_two_conservation_chemical_potential.py",
+    "bash tools/check_repository_governance.sh",
+    "python tools/lint_ratchet.py --check"
+  ],
+  "evidence": {
+    "tracked_results": "benchmarks/cross_validation/zou_he_chemical_potential/evidence/results.json",
+    "results_sha256": "a1e7bfc7663180a16b516eef0c9fcc14ac14a9be5d1d6d2de1dbd4385f825e48",
+    "regenerated_figure_sha256": "542e0329d17af651a90dc222aa9e6de97e0c2c002ba8adc2e82d7378feb0f043"
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/run_xval.py",
+      "new_path": "benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py",
+      "published_report": "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
+      "git_mode": "100644",
+      "original_git_blob": "918896aaadd867f640d3fdd76f849b6c01c70aa3",
+      "size_bytes": 8185,
+      "original_sha256": "3546581c2b2c8a57a438bbd6067b980a90464284dc5165a2edea4d3294c1da11",
+      "new_sha256": "fd6c031f982849fcbb4a0a0513eba9b92b1ac922d5953c7c095611c6331ac63e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/make_report.py",
+      "new_path": "development/verification/zou-he-channel/two-conservation/make_report.py",
+      "published_report": "docs/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT.md",
+      "git_mode": "100644",
+      "original_git_blob": "4d769cda8e7dc6fc919e006f180aaf263bab543f",
+      "size_bytes": 14109,
+      "original_sha256": "b78db3c10fd400d78cf3d4398d9ef13bd305782c90af7345d5da0831665e872a",
+      "new_sha256": "a85432621d50b498b598770d52d65fe66bd7d5d81d3a3a9c364ac5dd77d285df"
+    }
+  ],
+  "verification": [
+    "Old and moved runner ASTs match after substituting the output directory. Independently executed both using the same Python hash seed and runtime. The two JSONs and PNGs are byte-identical.",
+    "Regenerated reports, SQL and payload from the current and legacy output locations. The two sets of outputs are byte-identical and the payload PNG decodes. Published report links resolve and the archived SQL and independent audit are unchanged.",
+    "4 targeted phase-field boundary tests passed. 83 repository governance tests passed. The case and its evidence resolve through the registry and the overall registry has 203 entries and zero hard violations. Ruff ratchet passed."
+  ]
+}

@@ -73,7 +73,7 @@ g1  = g3 + (2/3) psi u_x,  g5,g8 = [psi - K_g - g1 ± (-g2 - g6 + g4 + g7)]/2
   `FreeEnergyChannel2D`（f/g collide + Guo 源、半程反弹墙壁、开边界接线、
   `equilibrate_interface` 离散界面对齐）
 * `tests/test_zouhe_two_conservation_chemical_potential.py`（4 个 gate，全绿）
-* `xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/run_xval.py`（本节全部数字）
+* 原验证的[求解入口](../benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py)（本节全部数字）
 
 ## 3. 参数表
 
@@ -166,8 +166,11 @@ g1  = g3 + (2/3) psi u_x,  g5,g8 = [psi - K_g - g1 ± (-g2 - g6 + g4 + g7)]/2
 
 ```bash
 cd <worktree> && PYTHONPATH=src python3 -m pytest tests/test_zouhe_two_conservation_chemical_potential.py -q
-PYTHONPATH=src python3 xval/XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT/run_xval.py
+PYTHONHASHSEED=0 PYTHONPATH=src python3 benchmarks/cross_validation/zou_he_chemical_potential/run_xval.py
+python3 development/verification/zou-he-channel/two-conservation/make_report.py
 ```
 
-工件：`artifacts/xval_two_conservation/results.json`、
-`artifacts/xval_two_conservation/fig_conservation.png`。
+从仓库根目录运行。新结果、图和重新生成的报告写入
+`outputs/verification/zou-he-channel/two-conservation/`。
+[本次迁移复跑的 JSON](../benchmarks/cross_validation/zou_he_chemical_potential/evidence/results.json)包含实际计算数据。
+该复跑保留通道耦合失败的结论。原任务的 SQL 存档保留当时的路径与数值。

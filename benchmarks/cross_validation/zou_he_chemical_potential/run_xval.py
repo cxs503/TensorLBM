@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """XVAL-LBM-TWO-CONSERVATION-ZOUHE-WITH-CHEMICAL-POT -- driver.
 
-Produces ``artifacts/xval_two_conservation/{results.json,fig_conservation.png}``.
+Produces ``outputs/verification/zou-he-channel/two-conservation/{results.json,fig_conservation.png}``.
 Every number in the report is read from ``results.json`` (nothing hand-typed).
 
 Benchmarks (predeclared before the runs, see the report section 1):
@@ -38,7 +38,7 @@ from tensorlbm.phasefield.zouhe_two_conservation import (
 )
 
 torch.set_num_threads(1)
-OUT = Path("artifacts/xval_two_conservation")
+OUT = Path("outputs/verification/zou-he-channel/two-conservation")
 OUT.mkdir(parents=True, exist_ok=True)
 DT = torch.float64
 
@@ -75,7 +75,9 @@ def b1_invariants():
                     "ux_err": float((st.ux - u).abs().max()),
                     "ux_rel": float(((st.ux - u).abs() / u.abs()).max()),
                     "uy_abs": float(st.uy.abs().max()),
-                    "psi_err": float((st.psi - psi_target).abs().max()) if mode == "impose" else None,
+                    "psi_err": float((st.psi - psi_target).abs().max())
+                    if mode == "impose"
+                    else None,
                     "psi_flux_err": float((st.psi_flux - st.psi * u).abs().max()),
                     "psi_flux_rel": float(
                         ((st.psi_flux - st.psi * u).abs() / (st.psi.abs() * u).abs()).max()
@@ -121,8 +123,16 @@ def b4_channel_probe(steps: int = 200):
                 blew = k + 1
                 break
         if blew:
-            rows.append({"mode": mode, "steps": blew, "stable": False, "psi_max": None,
-                         "profile_l2_rel": None, "max_abs_uy": None})
+            rows.append(
+                {
+                    "mode": mode,
+                    "steps": blew,
+                    "stable": False,
+                    "psi_max": None,
+                    "profile_l2_rel": None,
+                    "max_abs_uy": None,
+                }
+            )
             continue
         rho, ux, uy, mu, (fx, fy), p = sim.macroscopic()
         mid = ux[1:-1, cfg.nx // 2]
@@ -145,13 +155,22 @@ def b4_channel_probe(steps: int = 200):
 def figure(b1, b2):
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
     modes = ["corrected", "classic", "impose"]
-    labels = ["corrected\n(force-consistent)", "classic\n(half-force dropped)", "impose\n(deficit split)"]
+    labels = [
+        "corrected\n(force-consistent)",
+        "classic\n(half-force dropped)",
+        "impose\n(deficit split)",
+    ]
     colors = ["#2b7bba", "#c0392b", "#e08a1e"]
     for j, key in enumerate(("mass_flux_rel", "psi_flux_rel")):
         vals = [max(min(r[key] for r in b1 if r["mode"] == m), 1e-18) for m in modes]
-        ax[0].bar([x + 0.36 * (j - 0.5) for x in range(3)], vals, width=0.34,
-                  color=colors, alpha=0.9 if j == 0 else 0.45,
-                  label="fluid mass  rho u" if j == 0 else "order parameter  psi u")
+        ax[0].bar(
+            [x + 0.36 * (j - 0.5) for x in range(3)],
+            vals,
+            width=0.34,
+            color=colors,
+            alpha=0.9 if j == 0 else 0.45,
+            label="fluid mass  rho u" if j == 0 else "order parameter  psi u",
+        )
     ax[0].set_yscale("log")
     ax[0].set_xticks(range(3))
     ax[0].set_xticklabels(labels, fontsize=8)
@@ -162,10 +181,16 @@ def figure(b1, b2):
     ax[0].legend(fontsize=7, loc="upper left")
 
     fs = [r["fmax"] for r in b2]
-    ax[1].loglog(fs, [r["measured_ux_defect"] for r in b2], "o-", c="#c0392b",
-                 label="classic: measured velocity defect")
-    ax[1].loglog(fs, [r["predicted_half_force"] for r in b2], "k--",
-                 label="analytic  |F| / (2 rho)")
+    ax[1].loglog(
+        fs,
+        [r["measured_ux_defect"] for r in b2],
+        "o-",
+        c="#c0392b",
+        label="classic: measured velocity defect",
+    )
+    ax[1].loglog(
+        fs, [r["predicted_half_force"] for r in b2], "k--", label="analytic  |F| / (2 rho)"
+    )
     ax[1].set_xlabel("chemical-potential force  |F| = |mu grad psi|")
     ax[1].set_ylabel("max |u_reconstructed - u_target|")
     ax[1].set_title("B2 classical Zou-He defect law")
@@ -187,8 +212,12 @@ def main():
         "b2": b2,
         "b4": b4,
         "verdict": {
-            "corrected_mass_flux_rel_max": max(r["mass_flux_rel"] for r in b1 if r["mode"] == "corrected"),
-            "corrected_psi_flux_rel_max": max(r["psi_flux_rel"] for r in b1 if r["mode"] == "corrected"),
+            "corrected_mass_flux_rel_max": max(
+                r["mass_flux_rel"] for r in b1 if r["mode"] == "corrected"
+            ),
+            "corrected_psi_flux_rel_max": max(
+                r["psi_flux_rel"] for r in b1 if r["mode"] == "corrected"
+            ),
             "classic_ux_rel_max": max(r["ux_rel"] for r in b1 if r["mode"] == "classic"),
             "impose_psi_flux_rel_max": max(r["psi_flux_rel"] for r in b1 if r["mode"] == "impose"),
             "b2_max_rel_mismatch": max(r["rel_mismatch"] for r in b2),
