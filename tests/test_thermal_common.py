@@ -1033,3 +1033,27 @@ def test_halfway_film_flux_matches_reconstructed_wall_temperature(axis):
         incoming = updated[1+2*direction+side].select(dim, 0 if side==0 else -1)
         escaped = g[2+2*direction-side].select(dim, -1 if side==0 else 0)
         torch.testing.assert_close(flux[side], coeff*(temp-4*(incoming+escaped)))
+
+
+@pytest.mark.parametrize("tau", [.75, 1., 1.5])
+def test_curvature_corrected_first_wall_step(tau):
+    from tensorlbm import thermal_common as lbm
+
+    dx = .125
+    alpha, capacity = .08, 1.7
+    dt = (tau-.5)*dx**2/(4*alpha)
+    x = (torch.arange(8, dtype=torch.float64)+.5)*dx
+    y = x[:,None]
+    # T=x²+.3y²-.2x+.1+2.6*alpha*t; use exact physical cell averages.
+    field = (x*x+.3*y*y-.2*x+.1+1.3*dx**2/12)[None]
+    zero = torch.zeros_like(field)
+    grad = torch.stack(((2*x-.2).expand_as(field), (.6*y).expand_as(field), zero))
+    g = lbm.thermal_gradient_initialization_3d(field,zero,zero,zero,grad,tau_T=tau,spacing=dx)
+    post = lbm.thermal_collide_bgk_3d(g,field,zero,zero,zero,tau)
+    walls = [lbm.thermal_startup_wall_temperature_3d(
+        .3*(x*x+dx**2/12)[None]+side**2-.2*side+.1+1.3*alpha*dt,
+        2.,2.6,tau_T=tau,spacing=dx) for side in (0,1)]
+    _, flux = lbm.thermal_temperature_wall_pair_3d(lbm.thermal_stream_3d(post),"x",walls,
+        dt=dt,spacing=dx,volumetric_heat_capacity=capacity)
+    for q,expected in zip(flux,(.2*capacity*alpha,1.8*capacity*alpha)):
+        torch.testing.assert_close(q,torch.full_like(q,expected),atol=1e-13,rtol=0.)

@@ -58,6 +58,7 @@ __all__ = [
     "thermal_adiabatic_walls_3d",
     "thermal_flux_wall_pair_3d",
     "thermal_temperature_wall_pair_3d",
+    "thermal_startup_wall_temperature_3d",
     "thermal_mixed_wall_pair_3d",
     "thermal_fixed_temp_mask_3d",
     # Diagnostics
@@ -653,6 +654,27 @@ def thermal_flux_wall_pair_3d(
     updated[positive].select(dim,0).copy_(g[negative].select(dim,-1)+fluxes[0]*scale)
     updated[negative].select(dim,-1).copy_(g[positive].select(dim,0)+fluxes[1]*scale)
     return updated
+
+
+def thermal_startup_wall_temperature_3d(
+    wall_mean: float | torch.Tensor, normal_curvature: float | torch.Tensor,
+    laplacian: float | torch.Tensor, *, tau_T: float, spacing: float = 1.,
+) -> float | torch.Tensor:
+    """Effective half-way Dirichlet input for the first gradient-initialized BGK step.
+
+    For smooth, source-free, constant-diffusivity D3Q7 conduction at zero
+    velocity, supply the physical step-mean face temperature (K), initial
+    face-averaged normal second derivative and Laplacian (both K/m²). Use
+    scalar or conforming face data and the same spacing and relaxation time
+    as thermal_gradient_initialization_3d. Pass this effective value to the
+    temperature wall update only on the first step. The correction targets
+    first-step link heat flux. Subsequent steps use the physical wall data.
+    """
+    if not math.isfinite(tau_T) or tau_T <= .5 or not math.isfinite(spacing) or spacing <= 0:
+        raise ValueError("require finite tau_T > 0.5 and positive finite spacing")
+    # For D3Q7, alpha*dt=(tau_T-.5)*spacing²/4.
+    return wall_mean + spacing**2*((1/6+(tau_T-1)/2)*normal_curvature
+                                  - (tau_T-.5)*laplacian/8)
 
 
 def thermal_temperature_wall_pair_3d(
