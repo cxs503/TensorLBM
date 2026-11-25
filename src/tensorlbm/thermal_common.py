@@ -673,12 +673,15 @@ def thermal_temperature_wall_pair_3d(
 
 def thermal_mixed_wall_pair_3d(
     g: torch.Tensor, axis: str, wall_types: tuple[str, str], wall_values: tuple[float | torch.Tensor, float | torch.Tensor], *,
+    film_coefficients: tuple[float | torch.Tensor, float | torch.Tensor] = (0., 0.),
     dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
 ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
     """Apply independent half-way conditions on the lower and upper faces after periodic streaming.
 
     Each face accepts a temperature in K ("temperature") or step-averaged inward
-    heat flux in W/m² ("flux"). Face arrays follow the remaining (z,y,x) axes.
+    heat flux in W/m² ("flux"). For "film", supply ambient temperature in K and
+    a nonnegative film coefficient in W/(m² K) for that side. The half-way
+    temperature and inward heat flux satisfy q=h*(ambient-T_wall). Face arrays follow the remaining (z,y,x) axes.
     Returns updated populations and the actual lower and upper inward link fluxes
     over this step. The cell-centered diffusion model assumes zero normal velocity.
     """
@@ -688,8 +691,10 @@ def thermal_mixed_wall_pair_3d(
         raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
     if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
         raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
-    if any(kind not in ("temperature", "flux") for kind in wall_types):
-        raise ValueError("each wall type must be temperature or flux")
+    if any(kind not in ("temperature", "flux", "film") for kind in wall_types):
+        raise ValueError("each wall type must be temperature, flux or film")
+    if "film" in wall_types and len(film_coefficients) != 2:
+        raise ValueError("provide lower and upper film coefficients")
     direction = "xyz".index(axis)
     positive = 1+2*direction
     negative = positive+1
@@ -706,6 +711,17 @@ def thermal_mixed_wall_pair_3d(
             raise ValueError("provide a finite scalar or one value per face cell")
         if wall_types[side] == "temperature":
             reflected = 2*_w_thermal(g.device)[incoming]*value - escaped
+        elif wall_types[side] == "film":
+            coefficient = film_coefficients[side]
+            if torch.is_complex(torch.as_tensor(coefficient)):
+                raise ValueError("film coefficients must be real")
+            h = torch.as_tensor(coefficient, dtype=g.dtype, device=g.device)
+            if h.shape not in ((), escaped.shape) or not torch.isfinite(h).all() or (h < 0).any():
+                raise ValueError("provide a finite nonnegative scalar or film coefficient per face cell")
+            # Enforce the film law with T_wall=(incoming+escaped)/(2*w).
+            weight = _w_thermal(g.device)[incoming].to(g.dtype)
+            conductance = 2*weight*(volumetric_heat_capacity*spacing/dt)
+            reflected = escaped + (h/(h+conductance))*(2*weight*value-2*escaped)
         else:
             reflected = escaped + value*(dt/(volumetric_heat_capacity*spacing))
         updated[incoming].select(dim, index).copy_(reflected)

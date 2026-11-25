@@ -1015,3 +1015,21 @@ def test_mixed_halfway_walls_match_individual_links(axis, flux_side):
         expected = escaped+vals[side]/3 if side==flux_side else .25*vals[side]-escaped
         torch.testing.assert_close(updated[incoming].select(dim,0 if side==0 else -1),expected)
         torch.testing.assert_close(fluxes[side],3*(expected-escaped))
+
+
+@pytest.mark.parametrize("axis", list("xyz"))
+def test_halfway_film_flux_matches_reconstructed_wall_temperature(axis):
+    from tensorlbm.thermal_common import thermal_mixed_wall_pair_3d
+
+    g = torch.randn((7,3,4,5), dtype=torch.float64, generator=torch.Generator().manual_seed(302))
+    direction = "xyz".index(axis)
+    dim = 2-direction
+    shape = g[0].select(dim,0).shape
+    h = torch.arange(math.prod(shape), dtype=g.dtype).reshape(shape)/3
+    ambient = torch.cos(h)
+    updated, flux = thermal_mixed_wall_pair_3d(g, axis, ("film","film"), (ambient,-.6),
+        film_coefficients=(h,.7), dt=.2,spacing=.3,volumetric_heat_capacity=2.)
+    for side, (coeff, temp) in enumerate(((h,ambient),(.7,-.6))):
+        incoming = updated[1+2*direction+side].select(dim, 0 if side==0 else -1)
+        escaped = g[2+2*direction-side].select(dim, -1 if side==0 else 0)
+        torch.testing.assert_close(flux[side], coeff*(temp-4*(incoming+escaped)))
