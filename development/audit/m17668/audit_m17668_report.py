@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(HERE / "scripts"))
 import audit_fetch as A  # noqa: E402
 
@@ -47,7 +47,7 @@ L2/L3 的实质代码为 PRE-EXISTING，不计入本单。
 2. 基准裁判先行：SQL 查 `tensor_benchmark_cases`，确认本锚无注册基准 ⇒ 报告里的「误差 0%」无机器可裁证据。
 3. 复跑验收：`python3 -m pytest tests/test_xval_case_schema_json_units_converter.py -q`（在 m17640 工作树，独立于作者会话）。
 4. 外部锚核真：`python3 -c "import lettuce"` 判参照方是否在场；读测试文件头部与 `LettuceUnitConversion` 定义处，判定其为「重建实现」而非第三方 import。
-5. 独立数值复算：`scripts/audit_m17668_figure.py` 直接用**真** `LBMUnitConverter` 算 nx 四档的 τ/ν_lb/dx/dt/Ma，并以审计侧独立解析式作 ref，量化偏差底；同时对 phys→lattice→phys 往返做残差谱（速度/时间）。
+5. 独立数值复算：`development/audit/m17668/audit_m17668_figure.py` 直接用**真** `LBMUnitConverter` 算 nx 四档的 τ/ν_lb/dx/dt/Ma，并以审计侧独立解析式作 ref，量化偏差底；同时对 phys→lattice→phys 往返做残差谱（速度/时间）。
 6. 落表：`verdict_m17668.sql` → `tensor_maturity_verdicts`（repo/scope/mission_id/level/evidence/verdict_by），evidence 8 键均为真实指针。
 7. 工具链：psql(直接读 tensorplatform) · pytest · matplotlib(Agg) · 自写 `scripts/audit_fetch.py`（平台 API 鉴权读取）。
 

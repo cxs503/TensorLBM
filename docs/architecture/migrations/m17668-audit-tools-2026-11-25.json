@@ -1,0 +1,71 @@
+{
+  "source_commit": "2c0e59025789674154597a64dfb6d1ca4d2e10ec",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "scripts_tracked_files_before": 589,
+  "scripts_tracked_files_after": 587,
+  "reference_scan": "Searched tracked paths, workflow callers and published documentation. Updated the published audit's replay link. Historical paths remain in prior ledgers.",
+  "compatibility": {
+    "published_report": "docs/AUDIT_m17640_VERDICT.md",
+    "verdict": "development/audit/m17668/verdict_m17668.sql",
+    "original_scripts": [
+      "https://github.com/cxs503/TensorLBM/blob/2c0e59025789674154597a64dfb6d1ca4d2e10ec/scripts/audit_m17668_figure.py",
+      "https://github.com/cxs503/TensorLBM/blob/2c0e59025789674154597a64dfb6d1ca4d2e10ec/scripts/audit_m17668_report.py"
+    ],
+    "publisher_dependencies": "The publisher still resolves the shared scripts/audit_fetch.py client and reads the same repository-local probe output. Publishing remains an external authenticated operation.",
+    "replay_output": "The converter probe still writes to ignored artifacts/m17668."
+  },
+  "execution_scope": "The converter audit was run offline before and after relocation. The publisher was compiled and its client resolution was checked without running the authenticated POST. No numerical solver source changes and no new scientific acceptance claim.",
+  "replay": {
+    "baseline_command": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python scripts/audit_m17668_figure.py",
+    "candidate_command": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python development/audit/m17668/audit_m17668_figure.py",
+    "environment": {
+      "python": "3.12",
+      "architecture": "x86_64"
+    },
+    "byte_identical_outputs_sha256": {
+      "artifacts/m17668/units_equivalence_probe.json": "2f949f7ee42abac49bc5b2a43350c2e0aede5275502f991fa55a255cd0389d4b",
+      "artifacts/m17668/units_equivalence_probe.png": "5fee90b614c05c07b2c731ee6be7ce75fff17e12f383177125c346d54b1ef35a"
+    }
+  },
+  "entries": [
+    {
+      "old_path": "scripts/audit_m17668_figure.py",
+      "new_path": "development/audit/m17668/audit_m17668_figure.py",
+      "git_mode": "100644",
+      "original_git_blob": "97e94f3bdd5d2a328797f30e441c7bdb5eb56ceb",
+      "size_bytes": 4926,
+      "original_sha256": "722b9c25c9df56f031ba9aec83192521c983c2b39978a8c323575c084e330252",
+      "new_sha256": "9206ac9983b24769c74ab1b4067aa23bec68494f68ca3884a1fb0d6676a23234"
+    },
+    {
+      "old_path": "scripts/audit_m17668_report.py",
+      "new_path": "development/audit/m17668/audit_m17668_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "fa0c3cb5e9fb607dfa3d5006245277944c7ed9aa",
+      "size_bytes": 8903,
+      "original_sha256": "3e1e0a13f418eab652041af93a88f433744fdd982741d6fc272ecb9172e77ff9",
+      "new_sha256": "21b7724aa2bfa6215c9d9b8734e6109cc535ed5bfc1c445c727ed57e27996eb7"
+    }
+  ],
+  "verification": [
+    "Both generated JSON and PNG files compare byte-for-byte. The worst reported round-trip residual is unchanged at 0.21875.",
+    "Compiled both moved scripts. Their ASTs match the originals after normalizing the expected path changes. The shared client and source tree have no diff.",
+    "The published report's new replay link resolves. The layout gate rejects reintroduction of either retired file and its 20 layout tests passed.",
+    "All 84 repository governance tests passed, with 215 benchmark cases, 35 tutorial records, 33 PDFs, 33 Word documents, zero hard violations and 16 existing advisories. The lint ratchet passed."
+  ]
+}

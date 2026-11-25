@@ -241,6 +241,14 @@ class RepositoryLayoutTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Retired root directories"):
                     LAYOUT.load_policy(config_path)
 
+    def test_retired_files_cannot_reappear(self):
+        for name in sorted(LAYOUT.RETIRED_FILES):
+            with self.subTest(path=name):
+                self.write(name)
+                failures = self.check([name])
+                self.assertEqual(len(failures), 1)
+                self.assertIn(f"retired-file: {name}", failures[0])
+
     def test_retired_second_level_directories_cannot_reappear(self):
         for parent, child in sorted(LAYOUT.RETIRED_SECOND_LEVEL_DIRECTORIES):
             with self.subTest(path=f"{parent}/{child}"):

@@ -22,7 +22,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-HERE = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parents[3]
 
 
 def load_converter():

@@ -45,6 +45,10 @@ RETIRED_ROOT_DIRECTORIES = {
     "teaching",
     "tmp",
 }
+RETIRED_FILES = {
+    "scripts/audit_m17668_figure.py",
+    "scripts/audit_m17668_report.py",
+}
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"),
     ("scripts", "verification"),
@@ -220,6 +224,8 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         directory, separator, _ = name.partition("/")
         if separator and policy["schema_version"] == 2 and directory not in allowed_dirs:
             unexpected_dirs.add(directory)
+        if name in RETIRED_FILES:
+            failures.append(f"retired-file: {name} — use the mapped audit path")
         parts = PurePosixPath(name).parts
         if tuple(parts[:2]) in RETIRED_SECOND_LEVEL_DIRECTORIES:
             failures.append(
