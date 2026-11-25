@@ -29,20 +29,15 @@ def _lattice_views(f: torch.Tensor) -> tuple[torch.Tensor, ...]:
 
 
 def second_order_stress_d3q19(f_neq: torch.Tensor) -> tuple[torch.Tensor, ...]:
-    """Return ``(xx, yy, zz, xy, xz, yz)`` of the second-order Hermite moments.
-
-    This computes the Hermite moments ``M_alpha = sum_i w_i h_alpha(c_i) f_neq,i``,
-    which is required for the correct inverse Hermite reconstruction.
-    """
-    cx, cy, cz, w = _lattice_views(f_neq)
-    h_xx, h_yy, h_zz = cx * cx - _CS2, cy * cy - _CS2, cz * cz - _CS2
+    """Return the six raw second-order moments of the non-equilibrium populations."""
+    cx, cy, cz, _ = _lattice_views(f_neq)
     return (
-        (w * h_xx * f_neq).sum(0),
-        (w * h_yy * f_neq).sum(0),
-        (w * h_zz * f_neq).sum(0),
-        (w * cx * cy * f_neq).sum(0),
-        (w * cx * cz * f_neq).sum(0),
-        (w * cy * cz * f_neq).sum(0),
+        (cx * cx * f_neq).sum(0),
+        (cy * cy * f_neq).sum(0),
+        (cz * cz * f_neq).sum(0),
+        (cx * cy * f_neq).sum(0),
+        (cx * cz * f_neq).sum(0),
+        (cy * cz * f_neq).sum(0),
     )
 
 
@@ -54,48 +49,25 @@ def reconstruct_second_order_stress_d3q19(
     pi_xz: torch.Tensor,
     pi_yz: torch.Tensor,
 ) -> torch.Tensor:
-    """Reconstruct the D3Q19 second-order Hermite non-equilibrium projection.
-
-    The reconstruction uses the inverse Hermite normalization:
-    f_neq = sum_alpha (h_alpha(c) / theta_alpha) * pi_alpha
-    where theta_xx = theta_yy = theta_zz = 2/9, theta_xy = theta_xz = theta_yz = 1/9.
-
-    The result is projected to have zero unweighted mass and momentum, ensuring
-    that adding it to the equilibrium distribution preserves those quantities.
-    """
-    # Construct a lightweight shape carrier; all six components must be fields.
+    """Reconstruct the D3Q19 second-order Hermite non-equilibrium projection."""
     shape = pi_xx.shape
     if not all(p.shape == shape for p in (pi_yy, pi_zz, pi_xy, pi_xz, pi_yz)):
         raise ValueError("all D3Q19 stress components must have identical shapes")
     carrier = pi_xx.new_empty((19, *shape))
     cx, cy, cz, w = _lattice_views(carrier)
     h_xx, h_yy, h_zz = cx * cx - _CS2, cy * cy - _CS2, cz * cz - _CS2
-    # theta_xx = 2/9, so 1/theta_xx = 9/2 = 4.5
-    # theta_xy = 1/9, so 1/theta_xy = 9
-    f_neq = (
-        4.5 * h_xx * pi_xx.unsqueeze(0)
-        + 4.5 * h_yy * pi_yy.unsqueeze(0)
-        + 4.5 * h_zz * pi_zz.unsqueeze(0)
-        + 9.0 * h_xy(cx, cy) * pi_xy.unsqueeze(0)
-        + 9.0 * h_xy(cx, cz) * pi_xz.unsqueeze(0)
-        + 9.0 * h_xy(cy, cz) * pi_yz.unsqueeze(0)
+    return (
+        4.5
+        * w
+        * (
+            h_xx * pi_xx.unsqueeze(0)
+            + h_yy * pi_yy.unsqueeze(0)
+            + h_zz * pi_zz.unsqueeze(0)
+            + 2.0 * h_xy(cx, cy) * pi_xy.unsqueeze(0)
+            + 2.0 * h_xy(cx, cz) * pi_xz.unsqueeze(0)
+            + 2.0 * h_xy(cy, cz) * pi_yz.unsqueeze(0)
+        )
     )
-    # Project out unweighted mass and momentum.
-    # The Hermite polynomials h_xx, h_yy, h_zz, h_xy, h_xz, h_yz are orthogonal
-    # to the mass (1) and momentum (cx, cy, cz) modes with respect to the weight w,
-    # but their unweighted sums are not zero. We subtract the unweighted mass
-    # and momentum to ensure f_neq has zero unweighted mass and momentum.
-    mass = f_neq.sum(0)
-    momentum_x = (cx * f_neq).sum(0)
-    momentum_y = (cy * f_neq).sum(0)
-    momentum_z = (cz * f_neq).sum(0)
-    # Subtract unweighted mass: f_neq -= mass / 19
-    f_neq = f_neq - mass.unsqueeze(0) / 19.0
-    # Subtract unweighted momentum: f_neq -= sum_j (c_ij * momentum_j) / (sum_i c_ij^2)
-    # For D3Q19, sum_i c_ix^2 = sum_i c_iy^2 = sum_i c_iz^2 = 10
-    # (not 19 * cs2 = 6.33, because the lattice is not isotropic in the unweighted sense)
-    f_neq = f_neq - (cx * momentum_x + cy * momentum_y + cz * momentum_z) / 10.0
-    return f_neq
 
 
 def h_xy(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
@@ -195,6 +167,77 @@ __all__ = [
 ]
 
 
+# The free-surface cumulant approximation uses its own weighted projection.
+def _weighted_hermite_moments(f_neq: torch.Tensor) -> tuple[torch.Tensor, ...]:
+    """Return ``(xx, yy, zz, xy, xz, yz)`` of the second-order Hermite moments.
+
+    This computes the Hermite moments ``M_alpha = sum_i w_i h_alpha(c_i) f_neq,i``,
+    which is required for the correct inverse Hermite reconstruction.
+    """
+    cx, cy, cz, w = _lattice_views(f_neq)
+    h_xx, h_yy, h_zz = cx * cx - _CS2, cy * cy - _CS2, cz * cz - _CS2
+    return (
+        (w * h_xx * f_neq).sum(0),
+        (w * h_yy * f_neq).sum(0),
+        (w * h_zz * f_neq).sum(0),
+        (w * cx * cy * f_neq).sum(0),
+        (w * cx * cz * f_neq).sum(0),
+        (w * cy * cz * f_neq).sum(0),
+    )
+
+
+def _reconstruct_weighted_hermite(
+    pi_xx: torch.Tensor,
+    pi_yy: torch.Tensor,
+    pi_zz: torch.Tensor,
+    pi_xy: torch.Tensor,
+    pi_xz: torch.Tensor,
+    pi_yz: torch.Tensor,
+) -> torch.Tensor:
+    """Reconstruct the D3Q19 second-order Hermite non-equilibrium projection.
+
+    The reconstruction uses the inverse Hermite normalization:
+    f_neq = sum_alpha (h_alpha(c) / theta_alpha) * pi_alpha
+    where theta_xx = theta_yy = theta_zz = 2/9, theta_xy = theta_xz = theta_yz = 1/9.
+
+    The result is projected to have zero unweighted mass and momentum, ensuring
+    that adding it to the equilibrium distribution preserves those quantities.
+    """
+    # Construct a lightweight shape carrier; all six components must be fields.
+    shape = pi_xx.shape
+    if not all(p.shape == shape for p in (pi_yy, pi_zz, pi_xy, pi_xz, pi_yz)):
+        raise ValueError("all D3Q19 stress components must have identical shapes")
+    carrier = pi_xx.new_empty((19, *shape))
+    cx, cy, cz, _ = _lattice_views(carrier)
+    h_xx, h_yy, h_zz = cx * cx - _CS2, cy * cy - _CS2, cz * cz - _CS2
+    # theta_xx = 2/9, so 1/theta_xx = 9/2 = 4.5
+    # theta_xy = 1/9, so 1/theta_xy = 9
+    f_neq = (
+        4.5 * h_xx * pi_xx.unsqueeze(0)
+        + 4.5 * h_yy * pi_yy.unsqueeze(0)
+        + 4.5 * h_zz * pi_zz.unsqueeze(0)
+        + 9.0 * h_xy(cx, cy) * pi_xy.unsqueeze(0)
+        + 9.0 * h_xy(cx, cz) * pi_xz.unsqueeze(0)
+        + 9.0 * h_xy(cy, cz) * pi_yz.unsqueeze(0)
+    )
+    # Project out unweighted mass and momentum.
+    # The Hermite polynomials h_xx, h_yy, h_zz, h_xy, h_xz, h_yz are orthogonal
+    # to the mass (1) and momentum (cx, cy, cz) modes with respect to the weight w,
+    # but their unweighted sums are not zero. We subtract the unweighted mass
+    # and momentum to ensure f_neq has zero unweighted mass and momentum.
+    mass = f_neq.sum(0)
+    momentum_x = (cx * f_neq).sum(0)
+    momentum_y = (cy * f_neq).sum(0)
+    momentum_z = (cz * f_neq).sum(0)
+    # Subtract unweighted mass: f_neq -= mass / 19
+    f_neq = f_neq - mass.unsqueeze(0) / 19.0
+    # Subtract unweighted momentum: f_neq -= sum_j (c_ij * momentum_j) / (sum_i c_ij^2)
+    # For D3Q19, sum_i c_ix^2 = sum_i c_iy^2 = sum_i c_iz^2 = 10
+    # (not 19 * cs2 = 6.33, because the lattice is not isotropic in the unweighted sense)
+    f_neq = f_neq - (cx * momentum_x + cy * momentum_y + cz * momentum_z) / 10.0
+    return f_neq
+
+
 def collide_cumulant_d3q19(
     f: torch.Tensor,
     tau: float,
@@ -212,9 +255,9 @@ def collide_cumulant_d3q19(
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
     f_neq = f - feq
-    pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz = second_order_stress_d3q19(f_neq)
+    pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz = _weighted_hermite_moments(f_neq)
     omega = 1.0 / tau
-    return feq + reconstruct_second_order_stress_d3q19(
+    return feq + _reconstruct_weighted_hermite(
         (1.0 - omega) * pi_xx,
         (1.0 - omega) * pi_yy,
         (1.0 - omega) * pi_zz,
