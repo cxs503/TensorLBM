@@ -144,22 +144,27 @@ def thermal_equilibrium_3d(
 
 
 def thermal_gradient_initialization_3d(T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-                                       uz: torch.Tensor, gradient_xyz: torch.Tensor, *,
+                                       uz: torch.Tensor, gradient_xyz: torch.Tensor | None = None, *,
                                        tau_T: float, spacing: float = 1.) -> torch.Tensor:
     """Initialize pre-collision D3Q7 populations for smooth BGK diffusion.
 
     Supply a real temperature gradient in K/m shaped (3,nz,ny,nx), with
-    x,y,z components, and velocities in lattice units. Under diffusive
+    x,y,z components, and velocities in lattice units. Omit the gradient
+    for a fully periodic cubic-cell grid to estimate it from T with centered
+    differences across all three seams. For walls, supply the gradient. Under diffusive
     scaling the leading correction is -tau*w_i*spacing*c_i.grad(T).
     Opposite directions cancel in temperature and supply the diffusive
     first moment at startup. Use the same tau and cubic spacing in the solve.
     """
-    if T.ndim != 3 or not T.is_floating_point() or gradient_xyz.shape != (3, *T.shape):
-        raise ValueError("expected real T[nz,ny,nx] and gradients shaped (3,nz,ny,nx)")
-    if not gradient_xyz.is_floating_point() or gradient_xyz.device != T.device:
-        raise ValueError("gradients must be real floating point on the temperature device")
+    if T.ndim != 3 or not T.is_floating_point():
+        raise ValueError("expected a real temperature field shaped (nz,ny,nx)")
     if not math.isfinite(tau_T) or tau_T <= .5 or not math.isfinite(spacing) or spacing <= 0:
         raise ValueError("require finite tau_T > 0.5 and positive finite spacing")
+    if gradient_xyz is None:
+        gradient_xyz = torch.stack([(T.roll(-1, dim)-T.roll(1, dim))/(2*spacing)
+                                    for dim in (2, 1, 0)])
+    elif gradient_xyz.shape != (3, *T.shape) or not gradient_xyz.is_floating_point() or gradient_xyz.device != T.device:
+        raise ValueError("expected real gradients shaped (3,nz,ny,nx) on the temperature device")
     g = thermal_equilibrium_3d(T, ux, uy, uz)
     correction = gradient_xyz.to(g.dtype)*_w_thermal(T.device)[1]*(tau_T*spacing)
     g[1::2] -= correction

@@ -934,3 +934,20 @@ def test_initialized_linear_gradient_gives_fourier_flux_on_first_stream(tau):
     fluxes = thermal_link_fluxes_3d(post,dt=dt,spacing=dx,volumetric_heat_capacity=capacity)
     for flux, slope in zip(fluxes, (.63,-.31,.18)):
         torch.testing.assert_close(flux, torch.full_like(flux, -capacity*alpha*slope), atol=1e-13, rtol=0)
+
+
+def test_periodic_gradient_start_matches_discrete_fourier_derivative():
+    from tensorlbm.thermal_common import thermal_gradient_initialization_3d
+
+    nz, ny, nx = 5, 6, 9
+    spacing = .12
+    z, y, x = torch.meshgrid(*(torch.arange(n, dtype=torch.float64) for n in (nz, ny, nx)), indexing="ij")
+    theta = torch.tensor([4*torch.pi/nx, -2*torch.pi/ny, 2*torch.pi/nz], dtype=x.dtype)
+    phase = theta[0]*x + theta[1]*y + theta[2]*z
+    field = .7 + phase.cos()
+    grad = -theta.sin()[:, None, None, None]*phase.sin()/spacing
+    zero = torch.zeros_like(field)
+    actual = thermal_gradient_initialization_3d(field, zero, zero, zero, spacing=spacing, tau_T=.8)
+    expected = thermal_gradient_initialization_3d(field, zero, zero, zero, grad, spacing=spacing, tau_T=.8)
+    torch.testing.assert_close(actual, expected, atol=2e-15, rtol=0.)
+    torch.testing.assert_close(actual.sum(0), field, atol=2e-15, rtol=0.)
