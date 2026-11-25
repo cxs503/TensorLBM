@@ -122,6 +122,26 @@ def scalar_stream(g: torch.Tensor) -> torch.Tensor:
     return g[q_idx, y_idx, x_idx]
 
 
+def scalar_link_transfer(g: torch.Tensor, axis: str, *, periodic: bool = False) -> torch.Tensor:
+    """Return signed transfer toward increasing x or y across each D2Q5 face.
+
+    Use post-collision populations. Index j denotes the face between cells j
+    and j+1 along the named axis. With periodic=True the last face wraps to
+    cell zero. Multiply by cell volume for the scalar amount per time step.
+    """
+    if g.ndim != 3 or g.shape[0] != 5:
+        raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
+    if axis == "x":
+        if periodic:
+            return g[1] - torch.roll(g[3], -1, dims=1)
+        return g[1,:,:-1] - g[3,:,1:]
+    if axis == "y":
+        if periodic:
+            return g[2] - torch.roll(g[4], -1, dims=0)
+        return g[2,:-1,:] - g[4,1:,:]
+    raise ValueError("axis must be x or y")
+
+
 def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch.Tensor]:
     """Stream post-collision D2Q5 populations with halfway walls in x and periodic y.
 
