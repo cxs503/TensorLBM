@@ -118,12 +118,13 @@ Best end-to-end row: 0.21 %. Rows inside the 15 % gate: 6/6; inside 3 %: 5/6.
 ## ⑧ Reproduce
 
 ```bash
-cd xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET
+cd benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget
 python run_xval.py synthetic --threads 4   # analytic caps, ~6 s
 python run_xval.py dense     --threads 4   # 8 nodes, 64x32, ~104 s
 python run_xval.py fine      --threads 4   # production grid: 7 nodes + 6 eval rows
 python run_xval.py budget                   # leave-one-out + budget
 python run_xval.py report                   # REPORT.md + figures
+cd ../../..
 pytest tests/test_contact_angle_estimator_budget.py -q
 ```
 

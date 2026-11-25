@@ -61,19 +61,7 @@
       "matches": 1,
       "matching_lines_sha256": "e188b3eca1309dc637322b0d02900b1cd4305383e31287e314de9e73f739473d"
     },
-    "benchmarks/pending/rayleigh_benard/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/pending/rayleigh_taylor/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
     "benchmarks/verified/cavity_3d_full/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/verified/cavity_natural_convection/run.py": {
       "matches": 1,
       "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
     },
@@ -116,26 +104,6 @@
     "benchmarks/xval_huang2007_contact_angle_inversion/run_xval.py": {
       "matches": 1,
       "matching_lines_sha256": "31914315ce0d9e7dc2fd2e4a4bf1891f218bb73d45fb58e95466ef10e0bc4b45"
-    },
-    "examples/highre_cylinder2d_accurate.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_cylinder3d_amr.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_cylinder_bench.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_sphere3d_accurate.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_sphere_bench.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
     },
     "scripts/audit_m17855_probe.py": {
       "matches": 2,

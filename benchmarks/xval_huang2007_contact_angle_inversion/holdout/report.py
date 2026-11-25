@@ -25,7 +25,10 @@ cos = cal["cos_values"]
 theta = [math.degrees(math.acos(max(-1.0, min(1.0, c)))) for c in cos]
 young = A["young_theta_at_same_fw"]
 fold_segs = A["fold_segments"]
-fold_txt = "；".join(f"f_w∈[{g['segment'][0]:.2f},{g['segment'][1]:.2f}] 上 d(cos)={g['d_cos']:+.4f}" for g in fold_segs)
+fold_txt = "；".join(
+    f"f_w∈[{g['segment'][0]:.2f},{g['segment'][1]:.2f}] 上 d(cos)={g['d_cos']:+.4f}"
+    for g in fold_segs
+)
 fold = [f for f in A["fold_points"] if f["fold"] == "cos-min"][0]
 rows = S["rows"]
 GATE = S["gate_pct"]
@@ -39,8 +42,13 @@ def b64(path: Path) -> str:
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.2))
 ax1.plot(fw, theta, "o-", color="#1f4e79", lw=1.8, ms=7, label=r"LBM sweep $\theta(f_w)$")
 ax1.plot(fw, young, "s--", color="#c00000", lw=1.5, ms=5, label="Young relation (same $f_w$)")
-ax1.axhspan(theta[4], theta[5], color="orange", alpha=0.22,
-            label=f"non-monotone band {theta[5]:.1f}–{theta[4]:.1f}$^\\circ$")
+ax1.axhspan(
+    theta[4],
+    theta[5],
+    color="orange",
+    alpha=0.22,
+    label=f"non-monotone band {theta[5]:.1f}–{theta[4]:.1f}$^\\circ$",
+)
 ax1.set_xlabel(r"wall fraction $f_w=\psi_w/\psi_l$")
 ax1.set_ylabel(r"contact angle [deg]")
 ax1.set_title("(a) calibrated wall law vs Young (64x32, G=5, $\\tau$=1)")
@@ -93,8 +101,16 @@ w = 0.35
 for k, (t, ra, rb) in enumerate(pairs):
     ea = next(r["err_pct"] for r in rows if r["row_id"] == ra)
     eb = next(r["err_pct"] for r in rows if r["row_id"] == rb)
-    ax.bar(k - w / 2, ea, w, color="#1f4e79", label="in-band (calibration grid)" if k == 0 else None)
-    ax.bar(k + w / 2, eb, w, color="#e07b00", label="coarse calib. applied on fine grid" if k == 0 else None)
+    ax.bar(
+        k - w / 2, ea, w, color="#1f4e79", label="in-band (calibration grid)" if k == 0 else None
+    )
+    ax.bar(
+        k + w / 2,
+        eb,
+        w,
+        color="#e07b00",
+        label="coarse calib. applied on fine grid" if k == 0 else None,
+    )
     ax.text(k - w / 2, ea + 0.15, f"{ea:.2f}", ha="center", fontsize=8)
     ax.text(k + w / 2, eb + 0.15, f"{eb:.2f}", ha="center", fontsize=8)
 ax.axhline(GATE, color="crimson", ls="--", lw=1.3, label=f"gate {GATE:.0f}%")
@@ -112,15 +128,19 @@ plt.close(fig)
 
 # ---------------------------------------------------------------- report body
 def row_table(rs, arm_filter=None):
-    out = ["| row | arm | θ_target | branches | f_w | θ_measured | err [deg] | err [%] | gate |",
-           "|---|---|---|---|---|---|---|---|---|"]
+    out = [
+        "| row | arm | θ_target | branches | f_w | θ_measured | err [deg] | err [%] | gate |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
     for r in rs:
         if arm_filter and r["arm"] != arm_filter:
             continue
         flag = "✅" if r.get("within_gate") else "❌"
-        out.append(f"| `{r['row_id']}` | {r['arm']} | {r['theta_target']:.1f} | {r['n_branches']} | "
-                   f"{r['f_w']:.4f} | {r['theta_measured']:.2f} | {r['err_deg']:.2f} | "
-                   f"{r['err_pct']:.2f} | {flag} |")
+        out.append(
+            f"| `{r['row_id']}` | {r['arm']} | {r['theta_target']:.1f} | {r['n_branches']} | "
+            f"{r['f_w']:.4f} | {r['theta_measured']:.2f} | {r['err_deg']:.2f} | "
+            f"{r['err_pct']:.2f} | {flag} |"
+        )
     return "\n".join(out)
 
 
@@ -128,11 +148,14 @@ gc = S["gate_counts"]
 arm_rows = S["arms"]
 checks = []
 for r in rows:
-    checks.append(f"| {r['row_id']} | {r['theta_target']:.1f} | {r['err_pct']:.2f} % | "
-                  f"{'是' if r['err_pct'] < 3 else '否'} |")
+    checks.append(
+        f"| {r['row_id']} | {r['theta_target']:.1f} | {r['err_pct']:.2f} % | "
+        f"{'是' if r['err_pct'] < 3 else '否'} |"
+    )
 young_off = [r["theta_measured"] - r["young_theta_at_fw"] for r in rows]
 
-md = f"""# XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION — hold-out + transferability round
+md = (
+    f"""# XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION — hold-out + transferability round
 
 **锚点**: `XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION`（je-santos/MPLBM-UT `huang2007-contact-angle-inversion`：
 先扫 θ(f_w) 标定曲线，再反解 f_w）
@@ -160,8 +183,8 @@ cos θ = (ψ_w − ψ_v)/(ψ_l − ψ_v) 在单排壁面格子上系统性失效
 | 步数 | 5000 | 5000 | 6000 | 5000 |
 | τ | 1.0 | 1.0 | 1.0 | **1.2** |
 | G | 5.0 | 5.0 | 5.0 | 5.0 |
-| 共存密度 | ρ_l={cal.get('points') and 1.957 or 1.957:.3f}, ρ_v=0.1596 | | | |
-| ψ_l, ψ_v | {cal['psi_l']:.4f}, {cal['psi_v']:.4f} | | | |
+| 共存密度 | ρ_l={cal.get("points") and 1.957 or 1.957:.3f}, ρ_v=0.1596 | | | |
+| ψ_l, ψ_v | {cal["psi_l"]:.4f}, {cal["psi_v"]:.4f} | | | |
 | 壁面 | 2 行固体，半程反弹，f_w ∈ {{0.40,0.45,…,0.70}} | | | |
 | 角度测量 | `contact_angle_from_mask(mid=½(ρ_l+ρ_v))`（与交付标定同一估计器） | | | |
 
@@ -185,39 +208,45 @@ cos θ = (ψ_w − ψ_v)/(ψ_l − ψ_v) 在单排壁面格子上系统性失效
 
 | f_w | θ_LBM [deg] | cos θ | θ_Young（同 f_w） | θ_LBM − θ_Young |
 |---|---|---|---|---|
-""" + "\n".join(
-    f"| {f:.2f} | {t:.2f} | {c:+.4f} | {y:.2f} | {t - y:+.2f} |"
-    for f, t, c, y in zip(fw, theta, cos, young)) + f"""
+"""
+    + "\n".join(
+        f"| {f:.2f} | {t:.2f} | {c:+.4f} | {y:.2f} | {t - y:+.2f} |"
+        for f, t, c, y in zip(fw, theta, cos, young)
+    )
+    + f"""
 
 折叠段（与整体上升趋势相反）：{fold_txt}。
-故 cos 落在 [{fold['ambiguous_cos_window'][0]:+.4f}, {fold['ambiguous_cos_window'][1]:+.4f}]
-（θ∈[{fold['ambiguous_theta_window_deg'][0]:.2f}°, {fold['ambiguous_theta_window_deg'][1]:.2f}°]）的目标角有 **3 个一致性解**
+故 cos 落在 [{fold["ambiguous_cos_window"][0]:+.4f}, {fold["ambiguous_cos_window"][1]:+.4f}]
+（θ∈[{fold["ambiguous_theta_window_deg"][0]:.2f}°, {fold["ambiguous_theta_window_deg"][1]:.2f}°]）的目标角有 **3 个一致性解**
 （`evidence/analysis.json` 由程序判定，非手抄）。
 
 ### 3.2 Hold-out 结果（11 行全部实测）
 
 {row_table(rows)}
 
-汇总：**{gc['within_gate']}/{gc['measured_rows']} 实测行在 15 % 门内**，最大误差
-{max(r['err_pct'] for r in rows):.2f} %；未测行 {gc['not_measured']} 个。
+汇总：**{gc["within_gate"]}/{gc["measured_rows"]} 实测行在 15 % 门内**，最大误差
+{max(r["err_pct"] for r in rows):.2f} %；未测行 {gc["not_measured"]} 个。
 
 | arm | 实测行 | 门内 | 最大误差 [%] | 平均误差 [%] |
 |---|---|---|---|---|
-""" + "\n".join(
-    f"| {k} | {v['n_measured']} | {v['n_within_gate']} | {v['max_err_pct']:.2f} | {v['mean_err_pct']:.2f} |"
-    for k, v in arm_rows.items()) + f"""
+"""
+    + "\n".join(
+        f"| {k} | {v['n_measured']} | {v['n_within_gate']} | {v['max_err_pct']:.2f} | {v['mean_err_pct']:.2f} |"
+        for k, v in arm_rows.items()
+    )
+    + f"""
 
 ### 3.3 非单调带的分支诊断（H1）
 
-目标 θ=95.5° 在标定带内有 3 个解：f_w = {", ".join(f"{b:.4f}" for b in next(r for r in rows if r['row_id']=='A_th0955_first')['branches'])}。
-取最低解实测 {next(r for r in rows if r['row_id']=='A_th0955_first')['theta_measured']:.2f}°，
-取最高解实测 {next(r for r in rows if r['row_id']=='A_th0955_last')['theta_measured']:.2f}°：
-**分支跨度 {abs(next(r for r in rows if r['row_id']=='A_th0955_last')['theta_measured'] - next(r for r in rows if r['row_id']=='A_th0955_first')['theta_measured']):.2f}°**，
+目标 θ=95.5° 在标定带内有 3 个解：f_w = {", ".join(f"{b:.4f}" for b in next(r for r in rows if r["row_id"] == "A_th0955_first")["branches"])}。
+取最低解实测 {next(r for r in rows if r["row_id"] == "A_th0955_first")["theta_measured"]:.2f}°，
+取最高解实测 {next(r for r in rows if r["row_id"] == "A_th0955_last")["theta_measured"]:.2f}°：
+**分支跨度 {abs(next(r for r in rows if r["row_id"] == "A_th0955_last")["theta_measured"] - next(r for r in rows if r["row_id"] == "A_th0955_first")["theta_measured"]):.2f}°**，
 两者都落在目标 ±0.4 % 内。即：非单调性来自标定曲线的测量抖动（0.7° 量级），
 **不是物理上的两个润湿分支**——但它确实让 `invert()` 的解不唯一，故仍应显式暴露（本轮的库改动）。
 
 ### 3.4 τ 迁移
-τ=1.2 与 τ=1.0 在同一 f_w 下实测角**逐位相同**（{next(r for r in rows if r['row_id']=='C_th090')['theta_measured']:.2f}° / {next(r for r in rows if r['row_id']=='C_th108')['theta_measured']:.2f}°），
+τ=1.2 与 τ=1.0 在同一 f_w 下实测角**逐位相同**（{next(r for r in rows if r["row_id"] == "C_th090")["theta_measured"]:.2f}° / {next(r for r in rows if r["row_id"] == "C_th108")["theta_measured"]:.2f}°），
 静态接触角与黏性无关，标定在 τ 上可迁移（差异 < 0.005 %）。
 
 ### 3.5 分辨率迁移
@@ -244,7 +273,9 @@ cos θ = (ψ_w − ψ_v)/(ψ_l − ψ_v) 在单排壁面格子上系统性失效
 
 | row | θ_target [deg] | 误差 | < 3 % ? |
 |---|---|---|---|
-""" + "\n".join(checks) + f"""
+"""
+    + "\n".join(checks)
+    + f"""
 
 - 同网格（Arm A）6 行：最大 7.71 %，**3/6 行 < 3 %**（95.5° 两支 0.36 %/0.38 %、108° 2.57 %）。
 - 分辨率迁移（Arm B）3 行：最大 11.03 %，**0/3 < 3 %**，但 3/3 < 15 %。
@@ -258,18 +289,21 @@ cos θ = (ψ_w − ψ_v)/(ψ_l − ψ_v) 在单排壁面格子上系统性失效
 ## ⑥ 可复现
 
 ```
-cd xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT
+cd benchmarks/xval_huang2007_contact_angle_inversion/holdout
 python run_xval.py calibrate --threads 4     # 106.7 s
 python run_xval.py analyse
 python run_xval.py matrix --workers 4        # ~2 min
 python run_xval.py report
+cd ../../..
 pytest tests/test_contact_angle_inversion_ambiguity.py -q   # 6 passed
 ```
 产物：`evidence/cal_coarse.json`、`evidence/analysis.json`、`evidence/<row>.json` ×9、`summary.json`、本文件、`figures/`。
 """
+)
 
 (HERE / "REPORT.md").write_text(md)
 print("REPORT.md written")
 print(json.dumps({"figures": [str(f1), str(f2), str(f3)]}, indent=1))
-Path(HERE / "figures" / "b64.json").write_text(json.dumps(
-    {"fig1": b64(f1), "fig2": b64(f2), "fig3": b64(f3)}))
+Path(HERE / "figures" / "b64.json").write_text(
+    json.dumps({"fig1": b64(f1), "fig2": b64(f2), "fig3": b64(f3)})
+)

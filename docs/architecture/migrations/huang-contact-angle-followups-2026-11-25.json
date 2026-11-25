@@ -1,0 +1,320 @@
+{
+  "source_commit": "995470096c6a0815b005339c5ed9fb968b4e1935",
+  "migration_base": "PR #3025 head",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 64,
+      "after": 62
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET",
+    "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/REPORT.md",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "bc7f8f9138d96c071dc6336f98fdcd6b5a914672",
+      "original_sha256": "1c5de0974c3548602ee6b9055ba16472d43c4dfe9c3e8fb356a2ad4e57570382",
+      "current_sha256": "b27facd9ff4fae64ce13a3f5335a80148e59c8c6d2fd187111c3d309f82b4ab0",
+      "size_bytes": 8996,
+      "content_change": "path references only"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/evidence/D_budget.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/evidence/D_budget.json",
+      "git_mode": "100644",
+      "original_git_blob": "48702b66e0f2e32fb14735cd730da77d2553e2fc",
+      "original_sha256": "7af511286efaa11e18f9abd81a2ebd521da286ff7fb64fcdfc4e4e5291b69846",
+      "current_sha256": "7af511286efaa11e18f9abd81a2ebd521da286ff7fb64fcdfc4e4e5291b69846",
+      "size_bytes": 12571,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/evidence/D_dense.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/evidence/D_dense.json",
+      "git_mode": "100644",
+      "original_git_blob": "89ae9ca0db7e480464388ea150f6a8a4049fdcac",
+      "original_sha256": "9ebf046884827456c3c863ac78dbdfb218f097e4c6f60b7d3daf7cbc4ac19c00",
+      "current_sha256": "9ebf046884827456c3c863ac78dbdfb218f097e4c6f60b7d3daf7cbc4ac19c00",
+      "size_bytes": 1387,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/evidence/E_delivered.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/evidence/E_delivered.json",
+      "git_mode": "100644",
+      "original_git_blob": "3ffcb6c232c427f50bb3f6d02365731e58eadf53",
+      "original_sha256": "d8b3cf4a7586125babc8eecb68f85584d80026fa0329acd7740d04e0ca22f3b7",
+      "current_sha256": "d8b3cf4a7586125babc8eecb68f85584d80026fa0329acd7740d04e0ca22f3b7",
+      "size_bytes": 1919,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/evidence/E_refined.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/evidence/E_refined.json",
+      "git_mode": "100644",
+      "original_git_blob": "c31c84b8e830ac49db6b42cba79f86554f40115f",
+      "original_sha256": "cc3967eaa83e3ab9dbfb06115a1b6e16b180fbef7551d7cb93c6bb7e6c692ea5",
+      "current_sha256": "cc3967eaa83e3ab9dbfb06115a1b6e16b180fbef7551d7cb93c6bb7e6c692ea5",
+      "size_bytes": 1913,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/evidence/E_refined_linear.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/evidence/E_refined_linear.json",
+      "git_mode": "100644",
+      "original_git_blob": "647ffb5039c0e941c3f0ef31b431004c27de2922",
+      "original_sha256": "fde4a28da8890f2268a92ccc63821ef4241a717e2b1d2376528e8f7e22505d12",
+      "current_sha256": "fde4a28da8890f2268a92ccc63821ef4241a717e2b1d2376528e8f7e22505d12",
+      "size_bytes": 1922,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/evidence/S_synthetic.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/evidence/S_synthetic.json",
+      "git_mode": "100644",
+      "original_git_blob": "43ab3abe40ada9d85e23ab75b5fff9f8f34653e9",
+      "original_sha256": "7e0a8f91e712d0a26abbe98c1d314b1f49a58eee7c3e2def814a33ef1d5aaebc",
+      "current_sha256": "7e0a8f91e712d0a26abbe98c1d314b1f49a58eee7c3e2def814a33ef1d5aaebc",
+      "size_bytes": 126426,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/predeclared.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "6bf37aebb1be37112f8267d5118750517a7b8344",
+      "original_sha256": "9611deaaabb984f419ec9d919aade5a3af0ec8c31fee3085acf18baaddfe1f06",
+      "current_sha256": "9611deaaabb984f419ec9d919aade5a3af0ec8c31fee3085acf18baaddfe1f06",
+      "size_bytes": 2808,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/report.py",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/report.py",
+      "git_mode": "100644",
+      "original_git_blob": "7abe6d3cc1df3122b2ecae5f0e4aca511afd7448",
+      "original_sha256": "114fc7242c3f791196da3dd58221b00a14134e2908cfcc861e458761b5d587e1",
+      "current_sha256": "dbd08e41e13f3d4c833c4308c3dbd4a3eab9017af0fc64ee6c0cec0480443af2",
+      "size_bytes": 21055,
+      "content_change": "path and lint/format adjustments"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET/run_xval.py",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/estimator_budget/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "150624a06926d64d28336fee03413e6f3e12f2fc",
+      "original_sha256": "df2c0594caec28477bceb6343eccce425726c2f1af0cfd2d130b045d465c9eb7",
+      "current_sha256": "f26723a2519f8a84f8a34a7f43802b976324285d00b34747def8862361d5d8c5",
+      "size_bytes": 22744,
+      "content_change": "path and lint/format adjustments"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/.gitignore",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/.gitignore",
+      "git_mode": "100644",
+      "original_git_blob": "13ea3fe0334512311e9c568e4835e9ec2c534df2",
+      "original_sha256": "ecad68c212158b2b8b92833d902c55a7366e121e01f5a2afb262a8bc11548641",
+      "current_sha256": "ecad68c212158b2b8b92833d902c55a7366e121e01f5a2afb262a8bc11548641",
+      "size_bytes": 88,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/REPORT.md",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "0b24974108c03c22f7f811abb533106890194440",
+      "original_sha256": "3fbeea519f48e3775d280da85a4b85f7fa113c5b5c5e7f83603edcf8653e6a18",
+      "current_sha256": "032abb58304da388fa802e3d065eaf5bb61d16da68e99adb42ce008d5e1dd06d",
+      "size_bytes": 8753,
+      "content_change": "path references only"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/A_th090.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/A_th090.json",
+      "git_mode": "100644",
+      "original_git_blob": "cd59f9a3343b429e5e794d2bb70f674624e4b5fc",
+      "original_sha256": "2b14aead23db2ecab1071ca803baff31110c27673869fd94bd636aa1986ab43b",
+      "current_sha256": "2b14aead23db2ecab1071ca803baff31110c27673869fd94bd636aa1986ab43b",
+      "size_bytes": 1576,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/A_th0955_first.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/A_th0955_first.json",
+      "git_mode": "100644",
+      "original_git_blob": "3f01effab215dcd0b60f841d888113977bf116d1",
+      "original_sha256": "146b14be916624cf884b5a32a4b95c41d8e039c2977b0a80aa7f3589cdf12359",
+      "current_sha256": "146b14be916624cf884b5a32a4b95c41d8e039c2977b0a80aa7f3589cdf12359",
+      "size_bytes": 1631,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/A_th0955_last.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/A_th0955_last.json",
+      "git_mode": "100644",
+      "original_git_blob": "c29ea227f779acfba4ce820e1489674cf43af4a2",
+      "original_sha256": "ec6ef18cb44d2158a20a4128ac43ad6d75cd1975220e6ee080b9ffb96a16aa3f",
+      "current_sha256": "ec6ef18cb44d2158a20a4128ac43ad6d75cd1975220e6ee080b9ffb96a16aa3f",
+      "size_bytes": 1630,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/A_th096.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/A_th096.json",
+      "git_mode": "100644",
+      "original_git_blob": "90f5424addcca30067cdfc491ccda5b2383f6b29",
+      "original_sha256": "16e4e932bdbdc103b93a94c5ccb38e0e3c43a9d49d773e0ada37f615a6548af4",
+      "current_sha256": "16e4e932bdbdc103b93a94c5ccb38e0e3c43a9d49d773e0ada37f615a6548af4",
+      "size_bytes": 1599,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/A_th096_last.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/A_th096_last.json",
+      "git_mode": "100644",
+      "original_git_blob": "f7c17e3d6214757fa0a3a2ab525f6e8cef587b6b",
+      "original_sha256": "9f3761d8f6e5b45addec7ab4de498dc0a716957da716b8eba3ac3d171da136e4",
+      "current_sha256": "9f3761d8f6e5b45addec7ab4de498dc0a716957da716b8eba3ac3d171da136e4",
+      "size_bytes": 1603,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/A_th108.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/A_th108.json",
+      "git_mode": "100644",
+      "original_git_blob": "ff260d16365adfb700e127d224427bdd5e646047",
+      "original_sha256": "eea3b473435420c0f67ef66de6418f5c219b5d9ac08a1b2013294ac7c8c78d17",
+      "current_sha256": "eea3b473435420c0f67ef66de6418f5c219b5d9ac08a1b2013294ac7c8c78d17",
+      "size_bytes": 1602,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/B_th090.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/B_th090.json",
+      "git_mode": "100644",
+      "original_git_blob": "c4b7b960847208e73c73b3fc6cbbfb5ed761996c",
+      "original_sha256": "78cb0134b8db542934e3c45caafed06ab955347ecfcf52ce5a6c6bfe5ae3989d",
+      "current_sha256": "78cb0134b8db542934e3c45caafed06ab955347ecfcf52ce5a6c6bfe5ae3989d",
+      "size_bytes": 1738,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/B_th108.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/B_th108.json",
+      "git_mode": "100644",
+      "original_git_blob": "a6b46aec7f00c205cd20d76411d0e9d410e2b066",
+      "original_sha256": "b002a1ddf1103d3fc0c9d86cdb3704f9e981c6aac93e696e38b5ed104884be5f",
+      "current_sha256": "b002a1ddf1103d3fc0c9d86cdb3704f9e981c6aac93e696e38b5ed104884be5f",
+      "size_bytes": 1762,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/B_th120.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/B_th120.json",
+      "git_mode": "100644",
+      "original_git_blob": "4c0644375ba3bc3b9032bbaeec4c9cb02dcc7ede",
+      "original_sha256": "2810deeb6c0ca0797e94ad1c6d1ea68b0503c09e7ac31ece364dc0a2726e0ca6",
+      "current_sha256": "2810deeb6c0ca0797e94ad1c6d1ea68b0503c09e7ac31ece364dc0a2726e0ca6",
+      "size_bytes": 1763,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/C_th090.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/C_th090.json",
+      "git_mode": "100644",
+      "original_git_blob": "72eb2e7faf4b461700dcc46c6fe91b29fe5bf327",
+      "original_sha256": "48b2f91e666e397d5eebf9c9558d355d793e21ee8f749fa0aa61f31b7eac6441",
+      "current_sha256": "48b2f91e666e397d5eebf9c9558d355d793e21ee8f749fa0aa61f31b7eac6441",
+      "size_bytes": 1576,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/C_th108.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/C_th108.json",
+      "git_mode": "100644",
+      "original_git_blob": "638ffb774997c1f2ba45c2a9bcf91b7416bc7444",
+      "original_sha256": "cc1ba169c642a3a30bfbd84d6fc336bc9880195613b8faf6794d5b929268bdcb",
+      "current_sha256": "cc1ba169c642a3a30bfbd84d6fc336bc9880195613b8faf6794d5b929268bdcb",
+      "size_bytes": 1602,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/analysis.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/analysis.json",
+      "git_mode": "100644",
+      "original_git_blob": "da9276bd49d6ff6c38c3ad56f18ca6ffedb74820",
+      "original_sha256": "4c6933a868cd75f6422485e15d6aed8d63b2797d4e59e1324350dd50cf742511",
+      "current_sha256": "4c6933a868cd75f6422485e15d6aed8d63b2797d4e59e1324350dd50cf742511",
+      "size_bytes": 1394,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/evidence/cal_coarse.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/evidence/cal_coarse.json",
+      "git_mode": "100644",
+      "original_git_blob": "bdfe48e38db5cd04e64983d0a9a0a5d27b7ed837",
+      "original_sha256": "29511a742fd503682ca2435773ed1723ec05221abfdd7321c43e3c992f3cc041",
+      "current_sha256": "29511a742fd503682ca2435773ed1723ec05221abfdd7321c43e3c992f3cc041",
+      "size_bytes": 1909,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/predeclared.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "14df1e58cf15f730fdf0d1b6b00f9b26d985246b",
+      "original_sha256": "28df00962d6d51178ffff62811871958c3eb132344a7b780aaff9e83870df34f",
+      "current_sha256": "28df00962d6d51178ffff62811871958c3eb132344a7b780aaff9e83870df34f",
+      "size_bytes": 3206,
+      "content_change": "byte-identical"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/report.py",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/report.py",
+      "git_mode": "100644",
+      "original_git_blob": "a82be0171053dd78aac1926526992296994b2cf5",
+      "original_sha256": "cadd94a868279d031e2d8d5d93d0606194b269152bd9feee772bfb295a002d30",
+      "current_sha256": "49db65013239cf6e9b6418fe0fa42013f6e4754484093f87766eee0b9a3eaffc",
+      "size_bytes": 13885,
+      "content_change": "path and lint/format adjustments"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/run_xval.py",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "0014d8100a03f949c9a2a1fa4ad53d6a7de89b8c",
+      "original_sha256": "ba4309213200575bb9bc961188a6b4849142ab59d86d51f743f194428f39eaf2",
+      "current_sha256": "b9a99fcf44ab31c34bf0ec4a52ac748797e87dc3bb17aa629fa50c81aad57cc8",
+      "size_bytes": 15437,
+      "content_change": "path and lint/format adjustments"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/summary.json",
+      "new_path": "benchmarks/xval_huang2007_contact_angle_inversion/holdout/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "74746976c8ea397292ff56d4a638371e1ae44b98",
+      "original_sha256": "b8af2fb97e74f758353ba02d8a8621d57978123c5499ce87aa1a0db2c2286531",
+      "current_sha256": "b8af2fb97e74f758353ba02d8a8621d57978123c5499ce87aa1a0db2c2286531",
+      "size_bytes": 23687,
+      "content_change": "byte-identical"
+    }
+  ],
+  "compatibility": [
+    "The published docs/XVAL_LBM_HUANG2007_CONTACT_ANGLE_INVERSION_HOLDOUT.md URL is unchanged. Its report link and reproduction commands follow the relocated assets.",
+    "Historical raw paths remain accessible at the pinned source commit. Both repository tests use the case-owned evidence paths.",
+    "The registered case ID is unchanged. Both follow-ups retain their own preregistration, evidence, report and runner."
+  ],
+  "scientific_scope": "Historical metrics, thresholds, verdicts and committed evidence are unchanged. Current scientific acceptance was not evaluated in this directory migration.",
+  "validation": [
+    "23 CPU contact-angle tests passed and one existing test was skipped. Archived inputs and thresholds were unchanged.",
+    "Both relocated runners returned help successfully. In temporary copies, run_xval.py report for the holdout and run_xval.py budget for the estimator budget each regenerated byte-identical JSON compared to their old paths from the same recorded evidence.",
+    "The full repository governance check and Ruff ratchet passed. The registry still contains 224 cases. The link from the existing published hold-out page resolves to the relocated report.",
+    "No new LBM calibration sweep or hold-out simulation was run in this migration."
+  ]
+}

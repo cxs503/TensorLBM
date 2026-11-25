@@ -1,0 +1,198 @@
+{
+  "source_commit": "995470096c6a0815b005339c5ed9fb968b4e1935",
+  "original_main_revision": "52b3cf9a21fbfe7d2605e9d9c2ba18f2b9f5362d",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 64,
+      "after": 63
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/antipattern/case_a.py",
+      "new_path": "development/verification/example_harness/m17895/fixtures/antipattern/case_a.py",
+      "git_mode": "100644",
+      "original_git_blob": "55e9b2e3b837f32845cd89a773d84fc95a99409e",
+      "original_sha256": "1f373bf01919361e900c41d741fc272f55d453bb22df010d26429032c5153c8c",
+      "current_sha256": "1f373bf01919361e900c41d741fc272f55d453bb22df010d26429032c5153c8c",
+      "size_bytes": 2263
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/antipattern/case_b.py",
+      "new_path": "development/verification/example_harness/m17895/fixtures/antipattern/case_b.py",
+      "git_mode": "100644",
+      "original_git_blob": "49df5cfd57de68c0694441d641de1da2abedba23",
+      "original_sha256": "e8d382f08a118fc2068d1e60eeffd681e70b6da4fef8ae279e19f3e067737ca8",
+      "current_sha256": "e8d382f08a118fc2068d1e60eeffd681e70b6da4fef8ae279e19f3e067737ca8",
+      "size_bytes": 2263
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/antipattern/case_c.py",
+      "new_path": "development/verification/example_harness/m17895/fixtures/antipattern/case_c.py",
+      "git_mode": "100644",
+      "original_git_blob": "874e4de1bc6ec6bdc22a53b8cd4dc99198a3a607",
+      "original_sha256": "b5caacf6497d8768a1cfeb2755ea1385aef864272b7ab8fcd69986739e37181e",
+      "current_sha256": "b5caacf6497d8768a1cfeb2755ea1385aef864272b7ab8fcd69986739e37181e",
+      "size_bytes": 2263
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/consolidated/case_channel.py",
+      "new_path": "development/verification/example_harness/m17895/fixtures/consolidated/case_channel.py",
+      "git_mode": "100644",
+      "original_git_blob": "333c9cf2dd1202a0e03ee276bf235cc651d7b628",
+      "original_sha256": "aca5566b4a5924e5ec44c43ba33a3c64d29cd1b3bb4e06c9e41b1dcef13a7e57",
+      "current_sha256": "aca5566b4a5924e5ec44c43ba33a3c64d29cd1b3bb4e06c9e41b1dcef13a7e57",
+      "size_bytes": 542
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/consolidated/case_poise48.py",
+      "new_path": "development/verification/example_harness/m17895/fixtures/consolidated/case_poise48.py",
+      "git_mode": "100644",
+      "original_git_blob": "333c9cf2dd1202a0e03ee276bf235cc651d7b628",
+      "original_sha256": "aca5566b4a5924e5ec44c43ba33a3c64d29cd1b3bb4e06c9e41b1dcef13a7e57",
+      "current_sha256": "aca5566b4a5924e5ec44c43ba33a3c64d29cd1b3bb4e06c9e41b1dcef13a7e57",
+      "size_bytes": 542
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/fixtures/consolidated/case_taylor.py",
+      "new_path": "development/verification/example_harness/m17895/fixtures/consolidated/case_taylor.py",
+      "git_mode": "100644",
+      "original_git_blob": "14ff9902cc3e99eec965c7e05d2ddcc45b4f4831",
+      "original_sha256": "0709c30a328edf5c2ff6214fa386b1f16eac21e1238d0d1da067c13ca00c4c07",
+      "current_sha256": "0709c30a328edf5c2ff6214fa386b1f16eac21e1238d0d1da067c13ca00c4c07",
+      "size_bytes": 539
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/predeclared.json",
+      "new_path": "development/verification/example_harness/m17895/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "af1072cd3ff408821fe555339a4f4bd3fbf8431f",
+      "original_sha256": "8591ec35daaf08b67456c8a65d954d0a907d746df9552de9e6a0511871b7b989",
+      "current_sha256": "8591ec35daaf08b67456c8a65d954d0a907d746df9552de9e6a0511871b7b989",
+      "size_bytes": 6917
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/reference_main_channel.py",
+      "new_path": "development/verification/example_harness/m17895/reference_main_channel.py",
+      "git_mode": "100644",
+      "original_git_blob": "030bd0ce15694e78db86d8e06a96d7fb3930cbb9",
+      "original_sha256": "0ade395c1ca4d2a76db99a2b85506047a66dba2134ebba5466b5a84fed916bd4",
+      "current_sha256": "0ade395c1ca4d2a76db99a2b85506047a66dba2134ebba5466b5a84fed916bd4",
+      "size_bytes": 4531
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a1_channel_ny16.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a1_channel_ny16.json",
+      "git_mode": "100644",
+      "original_git_blob": "5416650b29f5db46ba04d6cb6e2a9a7023f50697",
+      "original_sha256": "245d19f1b8c20604d0353bc00533f5358a1b044a931f43d63c0fa8cc8691d2c2",
+      "current_sha256": "245d19f1b8c20604d0353bc00533f5358a1b044a931f43d63c0fa8cc8691d2c2",
+      "size_bytes": 1929
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a1_channel_ny32.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a1_channel_ny32.json",
+      "git_mode": "100644",
+      "original_git_blob": "bb8f817bf0bab2a4980d7b2af291eb18553fd5bf",
+      "original_sha256": "3a25acee20ab140faed7bc5dfbbb57f05f868b0ebdf1551bf4e779b1926accb4",
+      "current_sha256": "3a25acee20ab140faed7bc5dfbbb57f05f868b0ebdf1551bf4e779b1926accb4",
+      "size_bytes": 2337
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a1_channel_ny48.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a1_channel_ny48.json",
+      "git_mode": "100644",
+      "original_git_blob": "d437b933f9fef0e3ccde6ccf5030a12c797a95fb",
+      "original_sha256": "1f382cbe4582d4bb8b714baea39864fddba847cf267dbadc2b78aff2269d7992",
+      "current_sha256": "1f382cbe4582d4bb8b714baea39864fddba847cf267dbadc2b78aff2269d7992",
+      "size_bytes": 2750
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a2_reference_main_ny32.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a2_reference_main_ny32.json",
+      "git_mode": "100644",
+      "original_git_blob": "43438208f5da5032060e7d4989e7bb8b92a6b2e7",
+      "original_sha256": "6ed16573e7d1ceeb6e1d09b6d7c85136c6df91447814bfdaec94829c3964e326",
+      "current_sha256": "6ed16573e7d1ceeb6e1d09b6d7c85136c6df91447814bfdaec94829c3964e326",
+      "size_bytes": 1180
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a3_taylor_green_32x32.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a3_taylor_green_32x32.json",
+      "git_mode": "100644",
+      "original_git_blob": "54cecb9f5438fa814e7573cf7f1c6312f73364db",
+      "original_sha256": "cd4264f6af2fba126766e90dc781d3406c00fe52615d6d10cd9bed9b4768a10e",
+      "current_sha256": "cd4264f6af2fba126766e90dc781d3406c00fe52615d6d10cd9bed9b4768a10e",
+      "size_bytes": 2710
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a4_determinism.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a4_determinism.json",
+      "git_mode": "100644",
+      "original_git_blob": "89245d49be59844440fd81d01e22bd446dcab140",
+      "original_sha256": "a1995a40462b990c8c45c1ac43b93a3d22f73160cfb706b25fd679c95307dafd",
+      "current_sha256": "a1995a40462b990c8c45c1ac43b93a3d22f73160cfb706b25fd679c95307dafd",
+      "size_bytes": 859
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a5_examples_audit.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a5_examples_audit.json",
+      "git_mode": "100644",
+      "original_git_blob": "6d4bb225c89caf8d3f99d98109a8451f9a53443f",
+      "original_sha256": "328ea239d337fb35c2cfe765b292ea2bd09edfcafc906adefcee38be2baf032b",
+      "current_sha256": "328ea239d337fb35c2cfe765b292ea2bd09edfcafc906adefcee38be2baf032b",
+      "size_bytes": 37198
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/arm_a6_detector_control.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/arm_a6_detector_control.json",
+      "git_mode": "100644",
+      "original_git_blob": "c71aad092c6b4ce8b438e136c5f57b28b5b1ad21",
+      "original_sha256": "0764f8a8c838e6bead2f39a7badd1e400603c0a5a8dc3a16a9ab1e08dd6b8c3f",
+      "current_sha256": "0764f8a8c838e6bead2f39a7badd1e400603c0a5a8dc3a16a9ab1e08dd6b8c3f",
+      "size_bytes": 3040
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/summary.json",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "f5c4a24a0a1a96e6fc360c4c11aba1beebee8993",
+      "original_sha256": "bad773320bbbd14123cab6374e14205c15253c68c4b96baa4a3800db2b507081",
+      "current_sha256": "bad773320bbbd14123cab6374e14205c15253c68c4b96baa4a3800db2b507081",
+      "size_bytes": 14100
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/summary.md",
+      "new_path": "development/verification/example_harness/m17895/run_artifacts/summary.md",
+      "git_mode": "100644",
+      "original_git_blob": "27ceb7f1726d19b37b82e579e5669dfa4e0af548",
+      "original_sha256": "4a1f9810b2abfdb1a97ade54e0b64e690d1cecacad4edc6e3ec6f6d68337e951",
+      "current_sha256": "4a1f9810b2abfdb1a97ade54e0b64e690d1cecacad4edc6e3ec6f6d68337e951",
+      "size_bytes": 1611
+    },
+    {
+      "old_path": "xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_xval.py",
+      "new_path": "development/verification/example_harness/m17895/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "d12728e60804e383b7e816ddabc0b8de68a989ef",
+      "original_sha256": "5d64c84813a6b834e800d694d654b9672ac89a39a8513a84efa79db6eb48acea",
+      "current_sha256": "d528a396fbc867829814bba25eb6c5d65808fcdf39fbab6df4a01260781f0cbd",
+      "size_bytes": 20335
+    }
+  ],
+  "published_report": "docs/xval_example_per_main/REPORT.md",
+  "reference_scan": "Update the published report, its figure generator and the active fixture test. The board audit reads the old m17895 checkout and preserves its historical references, as do the stored result JSONs. The earlier development/experiments/xval_example_per_main runner differs from the m17895 driver and remains separate.",
+  "compatibility": "The published report keeps its URL and links to the moved summary. The historical sources remain accessible at the original_main_revision. Explicit --out and --repo-root options are preserved. With --out omitted, new runs write to the ignored outputs/verification/example_harness_m17895 directory under --repo-root.",
+  "evidence_scope": "All historical numerical evidence, fixture bytes, and preregistered thresholds are preserved. No simulation was rerun for this layout change.",
+  "verification": {
+    "governance": "Directory, report migration, source authority, manual catalogue, registry and status-ledger checks passed. Ruff ratchet passed.",
+    "path_tests": "32 real software tests passed across the example fixture auditor, example CLI, example harness and xval example runner. The local dependency path was configured in the Python user site so the cylinder CLI subprocess could import the installed Torch package.",
+    "detector": "Before and after relocation, ran --arms a6 against the same checkout. Both outputs match after excluding the two absolute fixture roots.",
+    "report_figures": "Regenerated both published figures in a temporary tree using the relocated archived JSON. The report link resolves. The tracked public figures were not rewritten."
+  }
+}

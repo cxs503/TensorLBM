@@ -101,6 +101,7 @@ places anchor extraction, analytic checks and report utilities beside the Ghia
 reference data. The archived register keeps its original provenance.
 
 The [survey and Huang audit migration ledger](migrations/survey-and-huang-audit-layout-2026-11-22.json) records the SUBOFF report figures and the archived m17889 delivery snapshot. The [survey index](../surveys/README.md) links to the published surveys.
+The [Huang contact-angle follow-up ledger](migrations/huang-contact-angle-followups-2026-11-25.json) moves the hold-out and estimator-budget evidence to the registered case and preserves the published guide URL.
 
 The [CMB5 migration ledger](migrations/cmb5-hydrorr-stability-2026-11-23.json)
 groups the m27100 drop-entry histories, preregistration and tooling under the

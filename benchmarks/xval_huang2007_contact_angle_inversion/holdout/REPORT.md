@@ -150,11 +150,12 @@ cos θ = (ψ_w − ψ_v)/(ψ_l − ψ_v) 在单排壁面格子上系统性失效
 ## ⑥ 可复现
 
 ```
-cd xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT
+cd benchmarks/xval_huang2007_contact_angle_inversion/holdout
 python run_xval.py calibrate --threads 4     # 106.7 s
 python run_xval.py analyse
 python run_xval.py matrix --workers 4        # ~2 min
 python run_xval.py report
+cd ../../..
 pytest tests/test_contact_angle_inversion_ambiguity.py -q   # 6 passed
 ```
 产物：`evidence/cal_coarse.json`、`evidence/analysis.json`、`evidence/<row>.json` ×9、`summary.json`、本文件、`figures/`。

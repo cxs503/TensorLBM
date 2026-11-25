@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """High-Re quantitative benchmark v2: sphere drag with proper resolution.
 
 LBM high-Re constraints:
@@ -13,8 +13,9 @@ import json
 import math
 import sys
 import time
+from pathlib import Path
 
-sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
 
