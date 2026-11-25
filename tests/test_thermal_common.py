@@ -902,3 +902,17 @@ def test_periodic_link_flux_includes_seam_and_single_cell_directions():
         torch.testing.assert_close(flux.narrow(dim, 0, flux.shape[dim]-1), internal)
         divergence += flux-flux.roll(1, dims=dim)
     torch.testing.assert_close(thermal_stream_3d(post).sum(0)-post.sum(0), -divergence)
+
+
+@pytest.mark.parametrize("axes", ["x", "y", "z", "xy", "zx", "yz"])
+def test_link_flux_mixed_periodic_axes(axes):
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    post = torch.arange(7*3*2, dtype=torch.float64).reshape(7, 3, 2, 1)
+    internal = thermal_link_fluxes_3d(post)
+    wrapped = thermal_link_fluxes_3d(post, periodic=True)
+    actual = thermal_link_fluxes_3d(post, periodic=axes)
+    for axis, name in enumerate("xyz"):
+        torch.testing.assert_close(actual[axis], wrapped[axis] if name in axes else internal[axis])
+    with pytest.raises(ValueError, match="distinct"):
+        thermal_link_fluxes_3d(post, periodic="xx")
