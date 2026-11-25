@@ -2,7 +2,7 @@
 
 **Mission** m17895 (TensorLBM) · anchor: sorush-khajepor/listLBM 的 *example-per-main*
 反模式 · owner 精度标准 15%（目标 3%）· 全部数字由
-`xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts/summary.json` 与各 arm JSON 程序化导出，
+[历史汇总](../../development/verification/example_harness/m17895/run_artifacts/summary.json) 与各 arm JSON 程序化导出，
 并可用一条命令重跑。
 
 ---
@@ -140,7 +140,7 @@
 
 ```bash
 cd <repo>; export PYTHONPATH=src
-python xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_xval.py --repo-root .   # 全部 8 臂 ~2 min CPU
+python development/verification/example_harness/m17895/run_xval.py --repo-root .   # 全部 8 臂 ~2 min CPU
 python -m pytest tests/test_example_harness.py tests/test_example_antipattern_audit.py -q
 python -m tensorlbm.audit example-antipattern --root examples --out /tmp/ap.json
 python examples/channel_poiseuille_thin.py --ny 32
