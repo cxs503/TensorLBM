@@ -7,7 +7,7 @@ from scipy import sparse
 from scipy.sparse.linalg import spsolve
 import torch
 
-from .scalar import _C5, _CY5, _OPP5, _W5_EXACT, scalar_link_transfer, scalar_stream_slab
+from .scalar import _C5, _CY5, _OPP5, _W5_EXACT, scalar_collide_diffusion, scalar_link_transfer, scalar_stream_slab
 
 
 @dataclass(frozen=True)
@@ -21,7 +21,7 @@ class HarmonicScalarSlab:
         return self.populations.sum(dim=0)
 
 
-def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east):
+def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east, *, tau_y=None, tau_even=None):
     """Solve the discrete D2Q5 collision/streaming equations at one frequency.
 
     frequency is radians per lattice step, 0 <= frequency < π. Wall phasors
@@ -30,6 +30,7 @@ def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east):
     Returns CPU complex128 populations at integer times and oriented link
     transfers at midpoints. x_transfer includes both wall faces toward +x;
     the last row of y_transfer crosses the periodic seam toward +y.
+    tau sets x diffusivity; tau_y and tau_even default to tau (BGK).
     """
     if any(not isinstance(n, (int,np.integer)) or n < 1 for n in (nx,ny)):
         raise ValueError("nx and ny must be positive integers")
@@ -50,7 +51,10 @@ def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east):
             wall_values.append(field)
     west, east = wall_values
     weights = np.asarray(_W5_EXACT)
-    collision = (1-1/tau)*np.eye(5) + weights[:,None]*np.ones((1,5))/tau
+    # Apply the same linear collision to the five basis populations.
+    basis = torch.eye(5,dtype=torch.float64).reshape(5,1,5)
+    collision = scalar_collide_diffusion(basis,tau,tau if tau_y is None else tau_y,
+                                         tau if tau_even is None else tau_even)[:,0].numpy()
     collide = sparse.kron(sparse.csr_matrix(collision), sparse.eye(nx), format="csr")
     phase = np.exp(1j*frequency)
     midpoint = np.exp(.5j*frequency)

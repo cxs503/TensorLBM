@@ -42,3 +42,10 @@ independent one-cycle time/frequency agreement check. On the fixed 64-cell
 grid the maximum temperature and x-flux differences are 6.93e-15 K and
 1.31e-13 W/m². The same two 8→16 continuum rate misses persist, so an
 equilibrium-population startup transient does not explain them.
+
+For grid-aligned material axes, `scalar_collide_diffusion` conserves the
+scalar while independently relaxing the x and y antisymmetric moments.
+The physical diffusivities are (τx−0.5)dx²/(3dt) and (τy−0.5)dx²/(3dt).
+The even relaxation time is independent. The harmonic slab solver accepts
+`tau_y` and `tau_even` as keywords and constructs its local operator from
+the same collision update. Equal relaxation times recover stationary BGK.

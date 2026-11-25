@@ -34,3 +34,18 @@ def test_dc_solution_reproduces_linear_field_and_insulated_degeneracy():
     torch.testing.assert_close(sol.x_transfer.real,torch.full((1,6),.02,dtype=x.dtype))
     with pytest.raises(ValueError,match="reference"):
         solve_harmonic_scalar_slab(5,1,.8,0.,None,None)
+
+
+def test_anisotropic_collision_conserves_density_and_relaxes_first_moments():
+    from tensorlbm.scalar import scalar_collide_diffusion
+
+    g = torch.arange(40,dtype=torch.float64).cos().reshape(5,2,4)
+    post = scalar_collide_diffusion(g,.82,1.14,.95)
+    torch.testing.assert_close(post.sum(0),g.sum(0))
+    for pos, neg, tau in ((1,3,.82),(2,4,1.14)):
+        torch.testing.assert_close(post[pos]-post[neg],(1-1/tau)*(g[pos]-g[neg]))
+    zero = torch.zeros_like(g[0])
+    torch.testing.assert_close(scalar_collide_diffusion(g,.82,.82,.82),
+                               scalar_collide_bgk(g,g.sum(0),zero,zero,.82))
+    with pytest.raises(ValueError,match="relaxation"):
+        scalar_collide_diffusion(g,.8,.5,1.)

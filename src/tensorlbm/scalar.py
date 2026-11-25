@@ -104,6 +104,26 @@ def scalar_collide_bgk(
     return g - (g - g_eq) / tau_s
 
 
+def scalar_collide_diffusion(g: torch.Tensor, tau_x: float, tau_y: float,
+                             tau_even: float) -> torch.Tensor:
+    """Stationary grid-aligned D2Q5 diffusion with independent odd-mode rates.
+
+    The two flux moments have diffusivities (tau_axis-0.5)/3 in lattice
+    units. Even populations relax toward the zero-velocity equilibrium.
+    Equal relaxation times recover stationary BGK.
+    """
+    if g.ndim != 3 or g.shape[0] != 5:
+        raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
+    if any(not math.isfinite(t) or t <= .5 for t in (tau_x,tau_y,tau_even)):
+        raise ValueError("all diffusion relaxation times must be finite and greater than 0.5")
+    opposite = g[_OPP5.to(g.device)]
+    odd = .5*(g-opposite)
+    even = .5*(g+opposite)
+    equilibrium = _w5_tensor(g.dtype,g.device)[:,None,None]*g.sum(0)
+    rates = g.new_tensor([0.,1/tau_x,1/tau_y,1/tau_x,1/tau_y])[:,None,None]
+    return g - (even-equilibrium)/tau_even - odd*rates
+
+
 def scalar_stream(g: torch.Tensor) -> torch.Tensor:
     """Periodic streaming for D2Q5 scalar distributions."""
     ny, nx = g.shape[1], g.shape[2]
