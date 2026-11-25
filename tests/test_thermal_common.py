@@ -871,3 +871,21 @@ def test_reversing_heat_flux_against_travelling_thermal_wave(record_property):
         errors.append(worst_field)
         assert worst_balance < 1e-13
     assert all(coarse / fine > 3.7 for coarse, fine in zip(errors, errors[1:]))
+
+
+def test_internal_link_flux_is_conservative_for_arbitrary_populations():
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d, thermal_flux_wall_pair_3d
+
+    post = torch.randn((7, 3, 1, 4), generator=torch.Generator().manual_seed(41), dtype=torch.float64)
+    units = dict(spacing=.35, dt=.012, volumetric_heat_capacity=2.1)
+    fluxes = thermal_link_fluxes_3d(post, **units)
+    streamed = thermal_stream_3d(post)
+    loss = torch.zeros_like(post[0])
+    for axis, flux in enumerate(fluxes):
+        dim = 2-axis
+        low, high = .21+axis, -.12*axis
+        streamed = thermal_flux_wall_pair_3d(streamed, "xyz"[axis], (low, high), **units)
+        edge = loss.narrow(dim, 0, 1)
+        faces = torch.cat((torch.full_like(edge,low), flux, torch.full_like(edge,-high)), dim=dim)
+        loss += faces.diff(dim=dim)
+    torch.testing.assert_close(streamed.sum(0)-post.sum(0), -loss*.012/(2.1*.35), atol=2e-14, rtol=0.)

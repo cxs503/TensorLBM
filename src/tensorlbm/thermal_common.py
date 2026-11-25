@@ -48,6 +48,7 @@ __all__ = [
     "thermal_collide_bgk_3d",
     "thermal_stream_3d",
     "thermal_macroscopic_3d",
+    "thermal_link_fluxes_3d",
     "apply_buoyancy_3d",
     "thermal_step",
     "conjugate_ht_step",
@@ -192,6 +193,29 @@ def thermal_stream_3d(g: torch.Tensor) -> torch.Tensor:
 
     q_idx, z_idx, y_idx, x_idx = _stream_thermal_cache[cache_key]
     return g[q_idx, z_idx, y_idx, x_idx]
+
+
+def thermal_link_fluxes_3d(post_collision: torch.Tensor, *, dt: float = 1.,
+                           spacing: float = 1., volumetric_heat_capacity: float = 1.
+                           ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return net x, y, z energy flux density across internal D3Q7 faces.
+
+    Use populations immediately after collision and before streaming. Each
+    output keeps (z, y, x) order with one fewer entry on its normal axis.
+    Positive flux points along the positive coordinate axis. For cubic cells
+    the population difference transports C*spacing/dt times its value in
+    W/m² during one step. Includes advective transport when velocity is nonzero.
+    """
+    if post_collision.ndim != 4 or post_collision.shape[0] != 7 or min(post_collision.shape[1:]) < 1:
+        raise ValueError("expected D3Q7 populations shaped (7,nz,ny,nx)")
+    if not post_collision.is_floating_point():
+        raise ValueError("populations must be real floating point")
+    if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
+        raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    scale = volumetric_heat_capacity*spacing/dt
+    return (scale*(post_collision[1,...,:-1]-post_collision[2,...,1:]),
+            scale*(post_collision[3,:,:-1,:]-post_collision[4,:,1:,:]),
+            scale*(post_collision[5,:-1]-post_collision[6,1:]))
 
 
 def thermal_macroscopic_3d(g: torch.Tensor) -> torch.Tensor:
