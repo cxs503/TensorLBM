@@ -435,3 +435,45 @@ def test_second_order_wall_gradient_requires_three_nodes():
 
     with pytest.raises(ValueError, match="3 nodes"):
         nusselt_hot_wall_3d(torch.ones(4, 4, 2), 1., 0., order=2)
+
+
+def test_wall_heat_rate_on_six_rectangular_faces(record_property):
+    from tensorlbm.thermal_common import wall_heat_rate_3d
+
+    lengths = (2., 1.5, .75)  # x, y, z in meters
+    counts = (9, 6, 7)
+    axes = [torch.linspace(0., L, n, dtype=torch.float64) for L,n in zip(lengths,counts)]
+    z,y,x = torch.meshgrid(*reversed(axes), indexing="ij")
+    spacing = tuple(L/(n-1) for L,n in zip(reversed(lengths),reversed(counts)))
+    k = 2.75
+    a, b = (.7,-.4,.9), (1.2,-.6,.3)
+    field = (a[0]*x*x + a[1]*y*y + a[2]*z*z + b[0]*x+b[1]*y+b[2]*z + .8*x*y*z)
+    total = 0.
+    for i, label in enumerate("xyz"):
+        area = lengths[(i+1)%3]*lengths[(i+2)%3]
+        for sign, side in ((-1,"-"), (1,"+")):
+            wall = label+side
+            rate = wall_heat_rate_3d(field,k,wall,spacing_zyx=spacing)
+            position = 0. if sign < 0 else lengths[i]
+            exact = -sign*k*area*(2*a[i]*position+b[i]+.8*area/4)
+            record_property(f"absolute_heat_rate_error_{wall}_W",abs(rate-exact))
+            assert abs(rate-exact) < 2e-13
+            total += rate
+    volume = lengths[0]*lengths[1]*lengths[2]
+    residual = abs(total+2*k*sum(a)*volume)
+    record_property("divergence_balance_error_W",residual)
+    assert residual < 3e-13
+
+
+def test_wall_heat_rate_weights_face_edges_by_area(record_property):
+    from tensorlbm.thermal_common import wall_heat_rate_3d
+
+    errors = []
+    for intervals in (4,8,16):
+        y = torch.linspace(0., 1., intervals+1, dtype=torch.float64)
+        x = torch.tensor([0., .5, 1.],dtype=torch.float64)
+        field = (y[:,None]**2*x).expand(3,-1,-1)
+        rate = wall_heat_rate_3d(field,1.,"x+",spacing_zyx=(.5,1/intervals,.5),order=1)
+        errors.append(abs(rate+1/3))
+        record_property(f"wall_quadrature_error_{intervals}_W",errors[-1])
+        assert errors[-1] == pytest.approx(1/(6*intervals**2))

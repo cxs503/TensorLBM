@@ -35,6 +35,7 @@ He, X., Chen, S., & Doolen, G. D. (1998).
 from __future__ import annotations
 
 import functools
+import math
 from typing import Any
 
 import torch
@@ -56,6 +57,7 @@ __all__ = [
     "thermal_fixed_temp_mask_3d",
     # Diagnostics
     "nusselt_hot_wall_3d",
+    "wall_heat_rate_3d",
     "nusselt_cylinder_3d",
     "heat_flux_at_interface_3d",
     # Benchmark runners (common-module integrated)
@@ -547,6 +549,47 @@ def thermal_fixed_temp_mask_3d(
 # ---------------------------------------------------------------------------
 
 
+def _wall_temperature_difference(T, wall, order):
+    axes = {"x": 2, "y": 1, "z": 0}
+    if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
+        raise ValueError(f"unknown hot wall {wall!r}")
+    normal = T.movedim(axes[wall[0]], -1)
+    L = normal.shape[-1] - 1
+    if L < order:
+        raise ValueError(f"wall-normal direction needs at least {order + 1} nodes")
+    boundary, first, second = (0, 1, 2) if wall[1] == "-" else (-1, -2, -3)
+    grad = normal[..., boundary] - normal[..., first]
+    if order == 2:
+        grad = grad + 0.5 * (grad - (normal[..., first] - normal[..., second]))
+    return grad, axes[wall[0]]
+
+
+def wall_heat_rate_3d(
+    T: torch.Tensor, conductivity: float, wall: str, *,
+    spacing_zyx: tuple[float, float, float], order: int = 2,
+) -> float:
+    """Outward conductive heat rate on one face of a wall-node Cartesian grid.
+
+    Supply T in K with shape (nz, ny, nx), constant isotropic conductivity
+    in W/(m K), and uniform spacings (dz, dy, dx) in meters. A one-sided
+    normal difference and composite trapezoidal integration over the face
+    give watts, positive when heat leaves the domain.
+    """
+    if T.ndim != 3 or min(T.shape) < 2 or not T.is_floating_point():
+        raise ValueError("provide a real floating 3D temperature field with at least two nodes per axis")
+    if len(spacing_zyx) != 3 or not all(math.isfinite(h) and h > 0 for h in spacing_zyx):
+        raise ValueError("provide three positive finite spacings in (dz, dy, dx) order")
+    if not math.isfinite(conductivity) or conductivity < 0:
+        raise ValueError("conductivity must be finite and nonnegative")
+    if order not in (1, 2):
+        raise ValueError("wall gradient order must be 1 or 2")
+    difference, axis = _wall_temperature_difference(T, wall, order)
+    tangential = [h for i,h in enumerate(spacing_zyx) if i != axis]
+    flux = -conductivity*difference/spacing_zyx[axis]
+    strips = torch.trapezoid(flux, dx=tangential[1], dim=1)
+    return torch.trapezoid(strips, dx=tangential[0], dim=0).item()
+
+
 def nusselt_hot_wall_3d(
     T: torch.Tensor,
     T_hot: float,
@@ -576,17 +619,8 @@ def nusselt_hot_wall_3d(
     dT = T_hot - T_cold
     if abs(dT) < 1e-12:
         return 0.0
-    axes = {"x": 2, "y": 1, "z": 0}
-    if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
-        raise ValueError(f"unknown hot wall {wall!r}")
-    normal = T.movedim(axes[wall[0]], -1)
-    L = normal.shape[-1] - 1
-    if L < order:
-        raise ValueError(f"wall-normal direction needs at least {order + 1} nodes")
-    boundary, first, second = (0, 1, 2) if wall[1] == "-" else (-1, -2, -3)
-    grad = normal[..., boundary] - normal[..., first]
-    if order == 2:
-        grad = grad + 0.5 * (grad - (normal[..., first] - normal[..., second]))
+    grad, axis = _wall_temperature_difference(T, wall, order)
+    L = T.shape[axis] - 1
     nu = float((grad * L / dT).mean().item())
     return nu
 
