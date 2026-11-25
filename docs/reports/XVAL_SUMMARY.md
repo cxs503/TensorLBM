@@ -151,6 +151,6 @@ The XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS anchor is now fully validated:
 Suggested anchors for future self-start work:
 1. **XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE**: Validate Young-Laplace pressure
 2. **XVAL-LBM-SHAN-CHEN-LAPLACE-PRESSURE-CALIBRATION**: Calibrate Shan-Chen pressure
-3. **XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19**: Extend phase-field to 3D
+3. **[XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19](../../benchmarks/cross_validation/allen_cahn_d3q15_d3q19/REPORT.md)**: Extend phase-field to 3D
 
 See `feature_ledger` for full list of planned validations.

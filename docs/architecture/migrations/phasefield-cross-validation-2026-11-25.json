@@ -1,0 +1,218 @@
+{
+  "source_commit": "af0f507563101a04b133ae4b8de1f3191ba31db2",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 64,
+      "after": 61
+    }
+  },
+  "scripts_tracked_files_removed_from_root": 1,
+  "retired_paths": [
+    "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT",
+    "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL",
+    "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19",
+    "scripts/xval_cudaphasefield_not_pseudopot.py"
+  ],
+  "compatibility": [
+    "The ternary methods audit is archived with its driver, vendored upstream files, license, and provenance. No original scientific output for the ternary driver was tracked at the source revision.",
+    "The historical model applicability comparison and the D3Q15/D3Q19 study have separate registry IDs; the former retains historical NOT_APPLICABLE and the latter retains the parameter/stencil probe with explicit missing full arm data.",
+    "The original xval report and launcher URLs remain available at source_commit. The stable XVAL summary now links the relocated Allen–Cahn report; source and test references point at the moved audit files.",
+    "Runners write to ignored outputs by default and accept --out. The Allen–Cahn aggregator rejects control-only input, and summarizes which preregistered arms are missing when it has a computed Laplace result."
+  ],
+  "scientific_scope": "Only uniform-fluid controls and existing software tests were run. No current scientific acceptance is claimed for capillary, phase-field vs pseudopotential, or ternary audit campaigns.",
+  "verification": {
+    "structural": "All 16 modes, Git objects and SHA-256 pairs recorded. Eleven are byte-identical. Core tensorlbm source changes are confined to references in the module docstring. Both supported runners' numerical function ASTs match the original.",
+    "focused_tests": {
+      "command": "python -m pytest -q tests/test_ac_lattice_generic.py tests/test_ternary_ac_oss.py",
+      "passed": 29
+    },
+    "control_replay": {
+      "command": "PYTHONPATH=src python benchmarks/cross_validation/allen_cahn_d3q15_d3q19/run_xval.py --threads 1 --arm <CTRL_uniform15 or CTRL_uniform19> --out DIR",
+      "comparison": "Before and after results are identical except wall-clock time. Both pressure spans are zero. Raw relocated control results are tracked.",
+      "results": [
+        {
+          "arm": "CTRL_uniform15",
+          "steps": 400,
+          "p_span": 0.0,
+          "u_max": 7.280015189783699e-34,
+          "path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform15.json",
+          "sha256": "adaedef83decbc9aa84d3ac21ab6a23cbb141840edda914f066692a2af0b268e"
+        },
+        {
+          "arm": "CTRL_uniform19",
+          "steps": 400,
+          "p_span": 0.0,
+          "u_max": 0.0,
+          "path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform19.json",
+          "sha256": "94318ca4fd36fe21b6b9b3b6b67a16eb3dfee98a8b73bf13ad555df317a87416"
+        }
+      ]
+    },
+    "control_only_aggregate": "Invoked on both actual uniform controls, the aggregator rejects the input with exit code 2 and emits no summary without computed Laplace data.",
+    "governance": "84 governance tests and Ruff passed. The index has 226 cases. Validated the 35 tutorial entries, 33 PDFs and 33 Word documents with zero hard status-ledger violations."
+  },
+  "entries": [
+    {
+      "old_path": "scripts/xval_cudaphasefield_not_pseudopot.py",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "916815cadf82e4a5b05118dbb165db49ee172240",
+      "original_sha256": "e8027bb4a33c01ff3d152a2f8c3a860c8249bf0c46e369e0ebd2420e93ac29f1",
+      "current_sha256": "c6534499aa9433d7de2d748f742a6b8c11a502a9d3ec8daa5a7848999b9a7d2b",
+      "size_bytes": 28257,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/LICENSE",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/oss_src/LICENSE",
+      "git_mode": "100644",
+      "original_git_blob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "original_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "current_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size_bytes": 35149,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/PROVENANCE.txt",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/oss_src/PROVENANCE.txt",
+      "git_mode": "100644",
+      "original_git_blob": "01acbcae30c86293412f82f784a228165929f60d",
+      "original_sha256": "db3c553bf775df92b31b933b07b83dfa8b60bbdcfc98801c613a10a75f2c0b80",
+      "current_sha256": "db3c553bf775df92b31b933b07b83dfa8b60bbdcfc98801c613a10a75f2c0b80",
+      "size_bytes": 318,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/device_var.f90",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/oss_src/device_var.f90",
+      "git_mode": "100644",
+      "original_git_blob": "25a1713791e48d707172d609f58293606d0fe93a",
+      "original_sha256": "48ce987fa77a035a820e66a466d410aa27532d9b4b4875a6609f439aad67be79",
+      "current_sha256": "48ce987fa77a035a820e66a466d410aa27532d9b4b4875a6609f439aad67be79",
+      "size_bytes": 7636,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/global_subroutines.f90",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/oss_src/global_subroutines.f90",
+      "git_mode": "100644",
+      "original_git_blob": "76688380846c2534b279ff62354d8f8347e0bafa",
+      "original_sha256": "5ddf7ef457d3b023122f4c55965b75bfe2fb15b406ed65a5678d0f65d626a0e5",
+      "current_sha256": "5ddf7ef457d3b023122f4c55965b75bfe2fb15b406ed65a5678d0f65d626a0e5",
+      "size_bytes": 47982,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/precision_m.f90",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/oss_src/precision_m.f90",
+      "git_mode": "100644",
+      "original_git_blob": "0f3a5051a0836bf0884ba795bb2db3276c2d9330",
+      "original_sha256": "3736e3ca502af9bd574a67c95e2e15ff4fd4fe76e82b035698012aa7153a7678",
+      "current_sha256": "3736e3ca502af9bd574a67c95e2e15ff4fd4fe76e82b035698012aa7153a7678",
+      "size_bytes": 262,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/predeclared.json",
+      "new_path": "development/verification/cudaphasefield_ternary_method_audit/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "8aa452f3d8980b961242e1e4efeea1f0c7c18a4f",
+      "original_sha256": "7d068b5a293fdd99236fff3c0fd0a60a0a0be044e753398ce12b165634f84a43",
+      "current_sha256": "7d068b5a293fdd99236fff3c0fd0a60a0a0be044e753398ce12b165634f84a43",
+      "size_bytes": 4024,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL/REPORT.md",
+      "new_path": "benchmarks/cross_validation/phasefield_vs_pseudopotential/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "7e5222d3a00307db5d99a1ab89f358ee0b1ea8f9",
+      "original_sha256": "b0e59f907175dcb16ce89ae4470e85dfd2207a6d9de79720fb8e32092ec273c7",
+      "current_sha256": "b0e59f907175dcb16ce89ae4470e85dfd2207a6d9de79720fb8e32092ec273c7",
+      "size_bytes": 11934,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL/comparison.json",
+      "new_path": "benchmarks/cross_validation/phasefield_vs_pseudopotential/comparison.json",
+      "git_mode": "100644",
+      "original_git_blob": "422d00847de2b1bdf0f9fc10ea4f74d88ae4bcd2",
+      "original_sha256": "7bc0c173d2a32f3f72448c8ec6d04bdd75747c27228bab6bca3a263b777a4555",
+      "current_sha256": "7bc0c173d2a32f3f72448c8ec6d04bdd75747c27228bab6bca3a263b777a4555",
+      "size_bytes": 4284,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL/make_figures.py",
+      "new_path": "benchmarks/cross_validation/phasefield_vs_pseudopotential/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "464ab878cada86e0e33ec7f5039973bc4da7305a",
+      "original_sha256": "43de58a8a04f1e52a5cf5eff0ded77ff5f4c7c0897eace67bf1e325549562a31",
+      "current_sha256": "5218c5f1274795f3d544f8de8e62b0e1598cc01a31f81af5025d6075167eba49",
+      "size_bytes": 7686,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL/run_xval.py",
+      "new_path": "benchmarks/cross_validation/phasefield_vs_pseudopotential/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "f77a9ef2f898b1afd8da212880fa993cfc8c5c70",
+      "original_sha256": "e93d7847eaa18fb9bc15dbe055aee56c0df20332ebc1e0eb933429474632b5b6",
+      "current_sha256": "8420efdad36228eb9a300d4d2f5da972b4af9d87cfa3a9f05d2566f86bf910bd",
+      "size_bytes": 21294,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/REPORT.md",
+      "new_path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "89ffb7d72a4223dec914c614c3638a0f2dc5b75d",
+      "original_sha256": "454a662562b01965094f8e661c3d5cc40396793da20bad5962d4f01979873da1",
+      "current_sha256": "454a662562b01965094f8e661c3d5cc40396793da20bad5962d4f01979873da1",
+      "size_bytes": 5791,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/aggregate.py",
+      "new_path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/aggregate.py",
+      "git_mode": "100644",
+      "original_git_blob": "3f3dcf34658a19c9165a4de355d6f5033d7fb267",
+      "original_sha256": "3ade8e0590adc32bb5045b2cc39ed1e10ceb3205b33cca12cb0323c8d36af9f6",
+      "current_sha256": "ec9e42e9db13361503fee729fd2efb36548a2ed264e059a1610bb3fd855959bf",
+      "size_bytes": 15736,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/artifacts/probe.json",
+      "new_path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/artifacts/probe.json",
+      "git_mode": "100644",
+      "original_git_blob": "ec455a708ede86531bdd2ded54bb755db9f8edf3",
+      "original_sha256": "28809b35c355fc93aef149e7660bfd210ccc6edc68961cd0ccf2c1d9c39b30d6",
+      "current_sha256": "28809b35c355fc93aef149e7660bfd210ccc6edc68961cd0ccf2c1d9c39b30d6",
+      "size_bytes": 5975,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/predeclared.json",
+      "new_path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "b428d79e3988c03304e88a939776f487ceaa5bec",
+      "original_sha256": "009473b15dcb2dbe23f3af89b5544689eeefe878752e3bd7a9f25a77bedceff5",
+      "current_sha256": "009473b15dcb2dbe23f3af89b5544689eeefe878752e3bd7a9f25a77bedceff5",
+      "size_bytes": 13494,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19/run_xval.py",
+      "new_path": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "542526f4a15fd4a8775ab012863cd5ff65c29140",
+      "original_sha256": "aac702006814f26bdaeea2fd1a851e2ed8152fde9ac589ca5f3a57f6cf03ef86",
+      "current_sha256": "e87baf762026c0effb239c26e668495bd3b61a801f18534ad132554f0f6d0664",
+      "size_bytes": 13582,
+      "byte_identical": false
+    }
+  ]
+}

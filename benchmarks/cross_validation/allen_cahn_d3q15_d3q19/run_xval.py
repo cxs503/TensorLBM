@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -32,13 +31,12 @@ from pathlib import Path
 import torch
 
 HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parents[1]
+REPO_ROOT = HERE.parents[2]
 if str(REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from tensorlbm.phasefield.ac_lattice_generic import (  # noqa: E402
     ACPhaseFieldSim,
-    diagnostics,
     droplet_pressure_jump,
     init_phi_droplet,
     init_phi_layers,
@@ -62,7 +60,7 @@ def _common(cfg: dict) -> dict:
     return dict(
         rho_l=rho_l,
         rho_g=rho_g,
-        mu_l=float(cfg["nu"]) * rho_l,            # equal kinematic viscosity
+        mu_l=float(cfg["nu"]) * rho_l,  # equal kinematic viscosity
         mu_g=float(cfg["nu"]) * rho_g,
         sigma=float(cfg["sigma"]),
         width=float(cfg["width"]),
@@ -102,7 +100,11 @@ def run_laplace_arm(name: str, cfg: dict, out_dir: Path) -> dict:
         if it % sample_every == 0:
             phi, rho, grad, mu_phi, u, p = sim.macro()
             jm = droplet_pressure_jump(
-                phi, p, radius=R, inner_band=tuple(cfg["inner_band"]), outer_band=tuple(cfg["outer_band"])
+                phi,
+                p,
+                radius=R,
+                inner_band=tuple(cfg["inner_band"]),
+                outer_band=tuple(cfg["outer_band"]),
             )
             umax = (u[0] ** 2 + u[1] ** 2 + u[2] ** 2).sqrt().max().item()
             rec = {
@@ -200,7 +202,12 @@ def _fit_radial_tanh(prof: dict, width: float) -> dict:
     ok = torch.isfinite(ph)
     band = ok & (ph > 0.05) & (ph < 0.95)
     if int(band.sum()) < 4:
-        return {"W_fit": float("nan"), "R_fit": float("nan"), "max_dev": float("nan"), "n_band": int(band.sum())}
+        return {
+            "W_fit": float("nan"),
+            "R_fit": float("nan"),
+            "max_dev": float("nan"),
+            "n_band": int(band.sum()),
+        }
     rr, pp = r[band], ph[band]
     arg = (1.0 - 2.0 * pp).clamp(-0.999999, 0.999999)
     art = 0.5 * torch.log((1.0 + arg) / (1.0 - arg))  # = 2 (r - R)/W
@@ -242,8 +249,16 @@ def run_profile_arm(name: str, cfg: dict, out_dir: Path) -> dict:
         if it % int(cfg["sample_every"]) == 0:
             phi, *_ = sim.macro()
             fit = interface_width_fit(phi, W)
-            series.append({"step": it, **fit, "phi_drift_rel": abs(float(phi.sum().item()) - phi_int0) / abs(phi_int0)})
-            print(f"[{name}] step {it} W_fit={fit['W_fit']:.4f} dev={fit['max_dev']:.2e}", flush=True)
+            series.append(
+                {
+                    "step": it,
+                    **fit,
+                    "phi_drift_rel": abs(float(phi.sum().item()) - phi_int0) / abs(phi_int0),
+                }
+            )
+            print(
+                f"[{name}] step {it} W_fit={fit['W_fit']:.4f} dev={fit['max_dev']:.2e}", flush=True
+            )
     phi, rho, grad, mu_phi, u, p = sim.macro()
     fit = interface_width_fit(phi, W)
     result = {
@@ -290,7 +305,9 @@ def run_control_arm(name: str, cfg: dict, out_dir: Path) -> dict:
             phi, rho, grad, mu_phi, u, p = sim.macro()
             umax = float(((u[0] ** 2 + u[1] ** 2 + u[2] ** 2).sqrt()).max().item())
             dp = float(p.max().item() - p.min().item())
-            series.append({"step": it, "p_span": dp, "u_max": umax, "phi_min": float(phi.min().item())})
+            series.append(
+                {"step": it, "p_span": dp, "u_max": umax, "phi_min": float(phi.min().item())}
+            )
             print(f"[{name}] step {it} p_span={dp:.3e} umax={umax:.2e}", flush=True)
     phi, rho, grad, mu_phi, u, p = sim.macro()
     result = {
@@ -327,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--arm", help="single arm name")
     ap.add_argument("--shard", type=int, help="shard index (0-based)")
     ap.add_argument("--nshards", type=int, default=1)
-    ap.add_argument("--out", default=str(HERE / "artifacts"))
+    ap.add_argument("--out", default="outputs/cross_validation/allen_cahn_d3q15_d3q19")
     ap.add_argument("--threads", type=int, default=0, help="torch CPU threads (0 = leave default)")
     args = ap.parse_args(argv)
 

@@ -46,11 +46,15 @@ RETIRED_ROOT_DIRECTORIES = {
     "tmp",
 }
 RETIRED_FILES = {
+    "scripts/xval_cudaphasefield_not_pseudopot.py",
     "scripts/audit_m17668_figure.py",
     "scripts/audit_m17668_report.py",
     "src/tensorlbm/dg_verification.py",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("xval", "XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT"),
+    ("xval", "XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL"),
+    ("xval", "XVAL-LBM-PHASE-FIELD-ALLEN-CAHN-D3Q15-D3Q19"),
     ("src", "artifacts"),
     ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"),
     ("xval", "XVAL-LBM-MASK-INDEXED-BOUNCEBACK"),

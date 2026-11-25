@@ -1,0 +1,87 @@
+{
+  "revision": "48ecef2b1cab18cbca05cded2e541d923f6c8b94",
+  "tree": "a5d31f7f5854540ee8c45f44917b64020df603ae",
+  "date": "2026-11-26",
+  "scope": "Partial CPU replay of both preregistered planar profiles. Laplace and remaining scientific arms are outside this evidence record.",
+  "environment": {
+    "python": "3.12.14",
+    "torch": "2.15.0+cpu",
+    "machine": "x86_64",
+    "torch_threads": 2,
+    "dtype": "float64"
+  },
+  "command": "python benchmarks/cross_validation/allen_cahn_d3q15_d3q19/run_xval.py --arm <P15_planar_W4|P19_planar_W4> --threads 2 --out outputs/cross_validation/phasefield-recheck",
+  "preregistration_sha256": "009473b15dcb2dbe23f3af89b5544689eeefe878752e3bd7a9f25a77bedceff5",
+  "existing_readout": {
+    "width_relative_error_limit_pct": 15.0,
+    "profile_max_dev_limit": 0.05,
+    "both_arms_meet_current_readout": false,
+    "diagnosis": "The full-line fit mixes the falling interior transition with the rising interface across the periodic seam; these transitions have opposite slopes."
+  },
+  "interface_diagnostic": {
+    "method": "Perform separate ordinary least-squares fits to atanh(1-2*phi) = slope*y + intercept over 0.05 < phi < 0.95 using final profile_line. W = 2/abs(slope); max_dev is the maximum |phi - (0.5-0.5*tanh(slope*y+intercept))| of these samples. Periodic samples use profile_line[y % 64].",
+    "windows_inclusive": {
+      "center_interface": [
+        16,
+        47
+      ],
+      "periodic_seam_interface": [
+        -16,
+        15
+      ]
+    },
+    "use": "Post-run diagnosis of the measurement. This separate fit is not a replacement gate or scientific acceptance."
+  },
+  "laplace_readout_review": "The R=12, W=4 preregistered inner shell spans r/R = 0.95..1.05. At initialization the tanh profile has |phi-0.5| <= 0.14566 in that shell, while the preregistration describes skipping |phi-0.5| < 0.45. The implemented pressure sampler averages the radial shell without the stated phase mask. Resolve the measurement contract before accepting a Laplace verdict.",
+  "results": [
+    {
+      "arm": "P15_planar_W4",
+      "data": "P15_planar_W4.json",
+      "sha256": "ffd1d7aaabe4fba26b6eb61dd841ecabe8fcc622cd31532338600f9e511c51d1",
+      "full_line": {
+        "W_fit": 80.85755411186658,
+        "max_dev": 0.3561070528646251,
+        "W_rel_err_pct": 1921.4388527966644
+      },
+      "center_interface": {
+        "sample_count": 5,
+        "slope": 0.49154371445427286,
+        "W_fit": 4.068814107857045,
+        "max_dev": 0.003055276887283409
+      },
+      "periodic_seam_interface": {
+        "sample_count": 6,
+        "slope": -0.49572103211547575,
+        "W_fit": 4.034527224848733,
+        "max_dev": 0.003819662498120935
+      },
+      "u_max_final": 0.00011084039382458293,
+      "phi_drift_rel": 3.4302816997156846e-13
+    },
+    {
+      "arm": "P19_planar_W4",
+      "data": "P19_planar_W4.json",
+      "sha256": "ab7c599a17a2551f4fcb015e9fa43002cc3246654190c46b2b8b883a828af0f9",
+      "full_line": {
+        "W_fit": 80.83355383219939,
+        "max_dev": 0.35818578213201313,
+        "W_rel_err_pct": 1920.8388458049847
+      },
+      "center_interface": {
+        "sample_count": 5,
+        "slope": 0.4915699520702795,
+        "W_fit": 4.068596934326167,
+        "max_dev": 0.003074351926552532
+      },
+      "periodic_seam_interface": {
+        "sample_count": 6,
+        "slope": -0.495792152025651,
+        "W_fit": 4.033948483913326,
+        "max_dev": 0.003955298290368003
+      },
+      "u_max_final": 0.00012764139042249743,
+      "phi_drift_rel": 3.460889694486889e-13
+    }
+  ],
+  "current_scientific_acceptance": "not_evaluated"
+}

@@ -1,0 +1,31 @@
+{
+  "scope": "Historical applicability comparison. The tracked result is NOT_APPLICABLE for direct model-to-model numerical validation. No new scientific verdict is assigned.",
+  "criteria": {
+    "direct_validation_requires_equivalent_governing_equations": true
+  },
+  "source": [
+    "benchmarks/cross_validation/phasefield_vs_pseudopotential/run_xval.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/phasefield_vs_pseudopotential/run_xval.py"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/phasefield_vs_pseudopotential/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/phasefield_vs_pseudopotential/REPORT.md"
+  ],
+  "references": [
+    {
+      "title": "CudaPhaseField phase-field implementation",
+      "repository": "AminZar69/CudaPhaseField",
+      "source": "benchmarks/cross_validation/phasefield_vs_pseudopotential/REPORT.md"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/phasefield_vs_pseudopotential/comparison.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/phasefield-cross-validation-2026-11-25.json"
+  ]
+}

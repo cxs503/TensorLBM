@@ -35,7 +35,7 @@ Outputs (all under ``--out``):
 
 Usage
 -----
-    python scripts/xval_cudaphasefield_not_pseudopot.py --out artifacts/xval/m18180
+    python development/verification/cudaphasefield_ternary_method_audit/run_xval.py --out outputs/verification/cudaphasefield_ternary_method_audit
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.phasefield.ternary_ac_oss import (  # noqa: E402
@@ -73,7 +73,7 @@ from tensorlbm.phasefield.ternary_ac_oss import (  # noqa: E402
 ANCHOR = "XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT"
 OWNER_TOL = 0.15  # owner precision band: >15% is unacceptable
 
-OSS_SRC = REPO / "xval" / ANCHOR / "oss_src"
+OSS_SRC = Path(__file__).resolve().with_name("oss_src")
 
 
 # ---------------------------------------------------------------------------
@@ -495,7 +495,7 @@ def run(args: argparse.Namespace) -> dict:
     results["acceptance_pass"] = all(checks.values())
     results["wall_s_total"] = round(time.time() - t_start, 2)
     results["repro_cmd"] = (
-        "python scripts/xval_cudaphasefield_not_pseudopot.py --out artifacts/xval/m18180"
+        "python development/verification/cudaphasefield_ternary_method_audit/run_xval.py --out outputs/verification/cudaphasefield_ternary_method_audit"
     )
     results["environment"] = {
         "python": sys.version.split()[0],
@@ -599,7 +599,7 @@ def make_figures(out: Path, results: dict, fields: dict, w: float, nx: int, lam0
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", default=str(REPO / "artifacts" / "xval" / "m18180"))
+    ap.add_argument("--out", default=str(REPO / "outputs" / "verification" / "cudaphasefield_ternary_method_audit"))
     ap.add_argument("--steps", type=int, default=900)
     args = ap.parse_args()
     res = run(args)

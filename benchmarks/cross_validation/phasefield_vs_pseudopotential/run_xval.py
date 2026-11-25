@@ -15,21 +15,21 @@ the structural differences, parameter mappings, and why direct number comparison
 is not meaningful.
 """
 
+import argparse
 import json
-import math
 import os
-import sys
 import time
 
-import numpy as np
 import torch
 
 # ---------------------------------------------------------------------------
 # TensorLBM Shan-Chen pseudopotential (SCMP)
 # ---------------------------------------------------------------------------
 
-def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
-                     steps=5000, sample=250, device="cpu"):
+
+def run_scmp_laplace(
+    nx=128, ny=128, radius=20.0, G=5.0, tau=1.0, steps=5000, sample=250, device="cpu"
+):
     """Shan-Chen pseudopotential static droplet (Laplace test).
 
     Returns dict with sigma_recovered, rho_l, rho_v, dp, R_eq, history.
@@ -38,11 +38,12 @@ def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
     cs2 = 1.0 / 3.0
 
     # D2Q9
-    C = torch.tensor([
-        [0, 0], [1, 0], [0, 1], [-1, 0], [0, -1],
-        [1, 1], [-1, 1], [-1, -1], [1, -1]
-    ], device=dev)
-    W = torch.tensor([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36], device=dev)
+    C = torch.tensor(
+        [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]], device=dev
+    )
+    W = torch.tensor(
+        [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36], device=dev
+    )
     OPP = [0, 3, 4, 1, 2, 7, 8, 5, 6]
 
     def equilibrium(rho, ux, uy):
@@ -81,7 +82,11 @@ def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
         cu = C[:, 0].view(9, 1, 1) * uxp.unsqueeze(0) + C[:, 1].view(9, 1, 1) * uyp.unsqueeze(0)
         cf = C[:, 0].view(9, 1, 1) * fx.unsqueeze(0) + C[:, 1].view(9, 1, 1) * fy.unsqueeze(0)
         uf = uxp * fx + uyp * fy
-        src = W.view(9, 1, 1) * (1.0 - 1.0 / (2.0 * tau_val)) * ((cf - uf.unsqueeze(0)) / cs2 + cu * cf / cs2**2)
+        src = (
+            W.view(9, 1, 1)
+            * (1.0 - 1.0 / (2.0 * tau_val))
+            * ((cf - uf.unsqueeze(0)) / cs2 + cu * cf / cs2**2)
+        )
         return f - (f - feq) / tau_val + src
 
     def stream_periodic(f):
@@ -98,7 +103,7 @@ def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
         indexing="ij",
     )
     cx_c, cy_c = nx / 2.0, ny / 2.0
-    dist = torch.sqrt((xx - cx_c)**2 + (yy - cy_c)**2)
+    dist = torch.sqrt((xx - cx_c) ** 2 + (yy - cy_c) ** 2)
     rho_l, rho_v = 1.957, 0.1596  # coexistence for G=5, psi_exp, tau=1
     rho = rho_v + (rho_l - rho_v) * 0.5 * (1.0 - torch.tanh(2.0 * (dist - radius) / 3.0))
     zero = torch.zeros_like(rho)
@@ -120,7 +125,7 @@ def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
             # Measure droplet radius and pressure difference
             threshold = 0.5 * (rho_l + rho_v)
             # Find interface by radial average
-            r_field = torch.sqrt((xx - cx_c)**2 + (yy - cy_c)**2)
+            r_field = torch.sqrt((xx - cx_c) ** 2 + (yy - cy_c) ** 2)
             # Inner region (r < 0.5*radius)
             inner = r_field < 0.5 * radius
             outer = r_field > 1.5 * radius
@@ -144,15 +149,17 @@ def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
 
             sigma_laplace = dp * r_at_interface  # 2D: dp = sigma/R
 
-            history.append({
-                "step": step,
-                "rho_in": rho_in,
-                "rho_out": rho_out,
-                "dp": dp,
-                "R_eq": r_at_interface,
-                "sigma_laplace": sigma_laplace,
-                "u_max": u_max,
-            })
+            history.append(
+                {
+                    "step": step,
+                    "rho_in": rho_in,
+                    "rho_out": rho_out,
+                    "dp": dp,
+                    "R_eq": r_at_interface,
+                    "sigma_laplace": sigma_laplace,
+                    "u_max": u_max,
+                }
+            )
 
     return {
         "model": "SCMP (Shan-Chen pseudopotential)",
@@ -170,10 +177,21 @@ def run_scmp_laplace(nx=128, ny=128, radius=20.0, G=5.0, tau=1.0,
 # Fakhari-style phase-field (2D adaptation of CudaPhaseField approach)
 # ---------------------------------------------------------------------------
 
-def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
-                              sigma=0.01, W=4.0, M=0.02,
-                              tau_g=0.8, rho_l=0.1, rho_h=1.0,
-                              steps=5000, sample=250, device="cpu"):
+
+def run_fakhari_phasefield_2d(
+    nx=128,
+    ny=128,
+    radius=20.0,
+    sigma=0.01,
+    W=4.0,
+    M=0.02,
+    tau_g=0.8,
+    rho_l=0.1,
+    rho_h=1.0,
+    steps=5000,
+    sample=250,
+    device="cpu",
+):
     """Fakhari phase-field LBM for static droplet (2D adaptation).
 
     This implements the key features of the Fakhari/CudaPhaseField approach:
@@ -188,11 +206,12 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
     cs2 = 1.0 / 3.0
 
     # D2Q9
-    C = torch.tensor([
-        [0, 0], [1, 0], [0, 1], [-1, 0], [0, -1],
-        [1, 1], [-1, 1], [-1, -1], [1, -1]
-    ], device=dev)
-    W = torch.tensor([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36], device=dev)
+    C = torch.tensor(
+        [[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]], device=dev
+    )
+    W = torch.tensor(
+        [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36], device=dev
+    )
     OPP = [0, 3, 4, 1, 2, 7, 8, 5, 6]
 
     # Phase-field parameters
@@ -209,7 +228,7 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
         indexing="ij",
     )
     cx_c, cy_c = nx / 2.0, ny / 2.0
-    dist = torch.sqrt((xx - cx_c)**2 + (yy - cy_c)**2)
+    dist = torch.sqrt((xx - cx_c) ** 2 + (yy - cy_c) ** 2)
     C_field = 0.5 - 0.5 * torch.tanh(2.0 * (dist - radius) / W)
     C_field = C_field.clamp(0.0, 1.0)
 
@@ -246,26 +265,40 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
         dx = (torch.roll(phi, -1, dims=1) - torch.roll(phi, 1, dims=1)) / 3.0
         dy = (torch.roll(phi, -1, dims=0) - torch.roll(phi, 1, dims=0)) / 3.0
         # Add diagonal contributions
-        dx += (torch.roll(torch.roll(phi, -1, dims=0), -1, dims=1) -
-               torch.roll(torch.roll(phi, 1, dims=0), 1, dims=1)) / 12.0
-        dx += (torch.roll(torch.roll(phi, -1, dims=0), 1, dims=1) -
-               torch.roll(torch.roll(phi, 1, dims=0), -1, dims=1)) / 12.0
-        dy += (torch.roll(torch.roll(phi, -1, dims=0), -1, dims=1) -
-               torch.roll(torch.roll(phi, 1, dims=0), 1, dims=1)) / 12.0
-        dy += (torch.roll(torch.roll(phi, -1, dims=0), 1, dims=1) -
-               torch.roll(torch.roll(phi, 1, dims=0), -1, dims=1)) / 12.0
+        dx += (
+            torch.roll(torch.roll(phi, -1, dims=0), -1, dims=1)
+            - torch.roll(torch.roll(phi, 1, dims=0), 1, dims=1)
+        ) / 12.0
+        dx += (
+            torch.roll(torch.roll(phi, -1, dims=0), 1, dims=1)
+            - torch.roll(torch.roll(phi, 1, dims=0), -1, dims=1)
+        ) / 12.0
+        dy += (
+            torch.roll(torch.roll(phi, -1, dims=0), -1, dims=1)
+            - torch.roll(torch.roll(phi, 1, dims=0), 1, dims=1)
+        ) / 12.0
+        dy += (
+            torch.roll(torch.roll(phi, -1, dims=0), 1, dims=1)
+            - torch.roll(torch.roll(phi, 1, dims=0), -1, dims=1)
+        ) / 12.0
         return dx, dy
 
     def laplacian_iso_2d(phi):
         """9-point isotropic Laplacian."""
-        lap = (torch.roll(phi, -1, dims=0) + torch.roll(phi, 1, dims=0) +
-               torch.roll(phi, -1, dims=1) + torch.roll(phi, 1, dims=1) -
-               4.0 * phi) / 3.0
-        lap += (torch.roll(torch.roll(phi, -1, dims=0), -1, dims=1) +
-                torch.roll(torch.roll(phi, -1, dims=0), 1, dims=1) +
-                torch.roll(torch.roll(phi, 1, dims=0), -1, dims=1) +
-                torch.roll(torch.roll(phi, 1, dims=0), 1, dims=1) -
-                4.0 * phi) / 12.0
+        lap = (
+            torch.roll(phi, -1, dims=0)
+            + torch.roll(phi, 1, dims=0)
+            + torch.roll(phi, -1, dims=1)
+            + torch.roll(phi, 1, dims=1)
+            - 4.0 * phi
+        ) / 3.0
+        lap += (
+            torch.roll(torch.roll(phi, -1, dims=0), -1, dims=1)
+            + torch.roll(torch.roll(phi, -1, dims=0), 1, dims=1)
+            + torch.roll(torch.roll(phi, 1, dims=0), -1, dims=1)
+            + torch.roll(torch.roll(phi, 1, dims=0), 1, dims=1)
+            - 4.0 * phi
+        ) / 12.0
         return lap
 
     def stream_2d(f):
@@ -299,9 +332,8 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
 
         # Collision h (phase field with anti-diffusion)
         heq = equilibrium_h(C_field, ux, uy)
-        eF = (1.0 - 4.0 * (C_field - 0.5)**2) / W
-        c_dot_n = (C[:, 0].view(9, 1, 1) * ni.unsqueeze(0) +
-                   C[:, 1].view(9, 1, 1) * nj.unsqueeze(0))
+        eF = (1.0 - 4.0 * (C_field - 0.5) ** 2) / W
+        c_dot_n = C[:, 0].view(9, 1, 1) * ni.unsqueeze(0) + C[:, 1].view(9, 1, 1) * nj.unsqueeze(0)
         hlp_h = W.view(9, 1, 1) * eF.unsqueeze(0) * c_dot_n
         h = h * (1.0 - w_c) + heq * w_c + hlp_h
 
@@ -332,7 +364,7 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
 
             # Measure droplet properties
             threshold = 0.5
-            r_field = torch.sqrt((xx - cx_c)**2 + (yy - cy_c)**2)
+            r_field = torch.sqrt((xx - cx_c) ** 2 + (yy - cy_c) ** 2)
             inner = r_field < 0.5 * radius
             outer = r_field > 1.5 * radius
 
@@ -358,15 +390,17 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
 
             sigma_laplace = dp * r_at_interface if r_at_interface > 0 else 0.0
 
-            history.append({
-                "step": step,
-                "C_in": C_in,
-                "C_out": C_out,
-                "dp": dp,
-                "R_eq": r_at_interface,
-                "sigma_laplace": sigma_laplace,
-                "u_max": u_max,
-            })
+            history.append(
+                {
+                    "step": step,
+                    "C_in": C_in,
+                    "C_out": C_out,
+                    "dp": dp,
+                    "R_eq": r_at_interface,
+                    "sigma_laplace": sigma_laplace,
+                    "u_max": u_max,
+                }
+            )
 
     return {
         "model": "Fakhari phase-field (CudaPhaseField family)",
@@ -386,7 +420,11 @@ def run_fakhari_phasefield_2d(nx=128, ny=128, radius=20.0,
 # Main: run both and compare
 # ---------------------------------------------------------------------------
 
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", default="outputs/cross_validation/phasefield_vs_pseudopotential")
+    args = parser.parse_args()
     print("=" * 70)
     print("XVAL: Phase-field vs Pseudopotential — NOT APPLICABLE")
     print("Anchor: XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOTENTIAL")
@@ -401,32 +439,51 @@ def main():
     # --- Run SCMP (pseudopotential) ---
     print("\n[1/2] Running Shan-Chen pseudopotential (SCMP)...")
     t0 = time.time()
-    scmp_result = run_scmp_laplace(nx=nx, ny=ny, radius=radius, G=5.0, tau=1.0,
-                                    steps=steps, sample=sample, device=device)
+    scmp_result = run_scmp_laplace(
+        nx=nx, ny=ny, radius=radius, G=5.0, tau=1.0, steps=steps, sample=sample, device=device
+    )
     t_scmp = time.time() - t0
     print(f"  SCMP done in {t_scmp:.1f}s")
-    print(f"  rho_l={scmp_result['final'].get('rho_in', 'N/A'):.4f}, "
-          f"rho_v={scmp_result['final'].get('rho_out', 'N/A'):.4f}")
-    print(f"  dp={scmp_result['final'].get('dp', 0):.6f}, "
-          f"R={scmp_result['final'].get('R_eq', 0):.2f}, "
-          f"sigma={scmp_result['final'].get('sigma_laplace', 0):.6f}")
+    print(
+        f"  rho_l={scmp_result['final'].get('rho_in', 'N/A'):.4f}, "
+        f"rho_v={scmp_result['final'].get('rho_out', 'N/A'):.4f}"
+    )
+    print(
+        f"  dp={scmp_result['final'].get('dp', 0):.6f}, "
+        f"R={scmp_result['final'].get('R_eq', 0):.2f}, "
+        f"sigma={scmp_result['final'].get('sigma_laplace', 0):.6f}"
+    )
 
     # --- Run Fakhari phase-field ---
     print("\n[2/2] Running Fakhari phase-field (CudaPhaseField family)...")
     t0 = time.time()
     # Match surface tension: for SCMP G=5, sigma ≈ 0.0561 (lattice units)
     sigma_target = 0.0561
-    pf_result = run_fakhari_phasefield_2d(nx=nx, ny=ny, radius=radius,
-                                           sigma=sigma_target, W=4.0, M=0.02,
-                                           tau_g=0.8, rho_l=0.1, rho_h=1.0,
-                                           steps=steps, sample=sample, device=device)
+    pf_result = run_fakhari_phasefield_2d(
+        nx=nx,
+        ny=ny,
+        radius=radius,
+        sigma=sigma_target,
+        W=4.0,
+        M=0.02,
+        tau_g=0.8,
+        rho_l=0.1,
+        rho_h=1.0,
+        steps=steps,
+        sample=sample,
+        device=device,
+    )
     t_pf = time.time() - t0
     print(f"  Phase-field done in {t_pf:.1f}s")
-    print(f"  C_in={pf_result['final'].get('C_in', 'N/A'):.4f}, "
-          f"C_out={pf_result['final'].get('C_out', 'N/A'):.4f}")
-    print(f"  dp={pf_result['final'].get('dp', 0):.6f}, "
-          f"R={pf_result['final'].get('R_eq', 0):.2f}, "
-          f"sigma={pf_result['final'].get('sigma_laplace', 0):.6f}")
+    print(
+        f"  C_in={pf_result['final'].get('C_in', 'N/A'):.4f}, "
+        f"C_out={pf_result['final'].get('C_out', 'N/A'):.4f}"
+    )
+    print(
+        f"  dp={pf_result['final'].get('dp', 0):.6f}, "
+        f"R={pf_result['final'].get('R_eq', 0):.2f}, "
+        f"sigma={pf_result['final'].get('sigma_laplace', 0):.6f}"
+    )
 
     # --- Comparison ---
     print("\n" + "=" * 70)
@@ -483,8 +540,8 @@ def main():
         },
         "parameter_mapping": {
             "note": "No direct 1:1 mapping exists. SCMP's G controls phase separation strength "
-                    "and emergent σ; PF's σ is an explicit input parameter. Matching σ requires "
-                    "calibration, not formula.",
+            "and emergent σ; PF's σ is an explicit input parameter. Matching σ requires "
+            "calibration, not formula.",
             "scmp_sigma_emergent": "~0.0561 for G=5, psi_exp, tau=1",
             "pf_sigma_explicit": sigma_target,
         },
@@ -500,7 +557,8 @@ def main():
     }
 
     # Save results
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = args.out
+    os.makedirs(os.path.join(out_dir, "runs"), exist_ok=True)
     with open(os.path.join(out_dir, "runs", "scmp_result.json"), "w") as f:
         json.dump(scmp_result, f, indent=2, default=str)
     with open(os.path.join(out_dir, "runs", "pf_result.json"), "w") as f:
