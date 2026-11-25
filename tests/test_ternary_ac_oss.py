@@ -5,7 +5,7 @@ OSS source semantics (``xval/.../oss_src``): coefficient identities, the
 compression-source closure that makes phase mass exact, the recovered interface
 width, the tension closure and the density-independence of the phase equation.
 Acceptance numbers live in ``artifacts/xval/m18180`` (driver
-``scripts/xval_cudaphasefield_not_pseudopot.py``); these tests pin the invariants
+``development/verification/cudaphasefield_ternary_method_audit/run_xval.py``); these tests pin the invariants
 so a regression breaks a test rather than a report.
 """
 

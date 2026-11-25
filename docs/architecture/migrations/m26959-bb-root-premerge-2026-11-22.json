@@ -1,42 +1,45 @@
 {
-  "migration_id": "m26959-bb-root-premerge-2026-11-22",
-  "timestamp": "2026-11-22T00:00:00Z",
+  "migration_id": "m26959",
+  "title": "D3Q19 Cumulant Collision Operator for Free-Surface LBM",
+  "date": "2026-11-22",
   "status": "premerge",
-  "description": "Add cumulant collision kernel for D3Q19 water entry",
   "files": [
     {
       "path": "src/tensorlbm/collision_d3q19_advanced.py",
-      "action": "modify",
-      "description": "Add collide_cumulant_d3q19 function"
+      "change": "added",
+      "lines_added": 21,
+      "description": "Added collide_cumulant_d3q19() function with SGS support"
     },
     {
-      "path": "src/tensorlbm/free_surface_lbm.py",
-      "action": "modify",
-      "description": "Update import path for cumulant kernel"
+      "path": "src/tensorlbm/advanced_collision_d3q19.py",
+      "change": "added",
+      "lines_added": 35,
+      "description": "Compatibility wrapper re-exporting all advanced collision kernels"
     },
     {
       "path": "benchmarks/water_entry/single_drop/cumulant_probe.py",
-      "action": "add",
-      "description": "New cumulant water-entry probe"
+      "change": "added",
+      "lines_added": 312,
+      "description": "Diagnostic probe for cumulant collision in water-entry"
     },
     {
       "path": "benchmarks/water_entry/single_drop/cumulant_test.py",
-      "action": "add",
-      "description": "New cumulant tests"
-    },
-    {
-      "path": "development/audit/drop_entry/BB/m26959/DE-X-COL3-CUM.md",
-      "action": "add",
-      "description": "Audit documentation"
+      "change": "added",
+      "lines_added": 193,
+      "description": "Unit tests for D3Q19 cumulant collision operator"
     },
     {
       "path": "docs/architecture/migration_manifest.csv",
-      "action": "modify",
-      "description": "Add migration entry"
+      "change": "modified",
+      "lines_added": 1,
+      "description": "Added migration entry for cumulant collision"
     }
   ],
   "verification": {
-    "tests": "benchmarks/water_entry/single_drop/cumulant_test.py",
-    "benchmark": "benchmarks/water_entry/single_drop/cumulant_probe.py"
-  }
+    "unit_tests": "benchmarks/water_entry/single_drop/cumulant_test.py",
+    "integration_tests": "benchmarks/water_entry/single_drop/cumulant_probe.py",
+    "audit_doc": "development/audit/drop_entry/BB/m26959/DE-X-COL3-CUM.md"
+  },
+  "risk_assessment": "low",
+  "compatibility": "Backward compatible: new function only, no changes to existing BGK/MRT kernels"
 }

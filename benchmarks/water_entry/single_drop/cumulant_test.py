@@ -7,20 +7,17 @@ This module verifies:
 """
 
 import json
-import os
 import tempfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
 from benchmarks.water_entry.single_drop.cumulant_probe import probe
 from tensorlbm.collision_d3q19_advanced import (
-    collide_cumulant_d3q19,
     collide_bgk_d3q19,
+    collide_cumulant_d3q19,
     second_order_stress_d3q19,
-    reconstruct_second_order_stress_d3q19,
 )
 from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d
 
@@ -39,7 +36,7 @@ def _d3q19_state(shape=(16, 16, 16), dtype=torch.float64, seed=42):
 def _momentum(f: torch.Tensor) -> torch.Tensor:
     """Compute momentum vector (3, nz, ny, nx) from distribution f (19, nz, ny, nx)."""
     c = C.to(f.dtype).to(f.device)
-    return torch.einsum('im,ijkl->mjkl', c, f)
+    return torch.einsum("im,ijkl->mjkl", c, f)
 
 
 class TestCollideCumulantD3Q19:
@@ -52,8 +49,9 @@ class TestCollideCumulantD3Q19:
         f_after = collide_cumulant_d3q19(f, tau=1.0)
         mass_before = f_before.sum()
         mass_after = f_after.sum()
-        assert torch.allclose(mass_before, mass_after, atol=1e-6), \
+        assert torch.allclose(mass_before, mass_after, atol=1e-6), (
             f"Mass drift: {mass_before} -> {mass_after}"
+        )
 
     def test_momentum_conservation(self):
         """Cumulant collision must conserve momentum (sum of c_i f_i)."""
@@ -62,8 +60,9 @@ class TestCollideCumulantD3Q19:
         f_after = collide_cumulant_d3q19(f, tau=1.0)
         momentum_before = _momentum(f_before)
         momentum_after = _momentum(f_after)
-        assert torch.allclose(momentum_before, momentum_after, atol=1e-6), \
+        assert torch.allclose(momentum_before, momentum_after, atol=1e-6), (
             f"Momentum drift: {momentum_before.mean()} -> {momentum_after.mean()}"
+        )
 
     def test_equilibrium_preservation(self):
         """If f is already equilibrium, collision should return f unchanged."""
@@ -74,8 +73,7 @@ class TestCollideCumulantD3Q19:
         uz = torch.zeros_like(rho)
         f_eq = equilibrium3d(rho, ux, uy, uz)
         f_after = collide_cumulant_d3q19(f_eq, tau=1.0)
-        assert torch.allclose(f_eq, f_after, atol=1e-6), \
-            "Equilibrium not preserved"
+        assert torch.allclose(f_eq, f_after, atol=1e-6), "Equilibrium not preserved"
 
     def test_stress_relaxation(self):
         """Cumulant kernel should relax the 2nd-order stress relative to the new equilibrium."""
@@ -84,16 +82,17 @@ class TestCollideCumulantD3Q19:
         f_eq = equilibrium3d(rho, ux, uy, uz)
         f_neq = f - f_eq
         pi_before = second_order_stress_d3q19(f_neq)
-        
+
         f_after = collide_cumulant_d3q19(f, tau=2.0)
         rho_a, ux_a, uy_a, uz_a = macroscopic3d(f_after)
         f_eq_a = equilibrium3d(rho_a, ux_a, uy_a, uz_a)
         pi_after = second_order_stress_d3q19(f_after - f_eq_a)
-        
+
         for i, (p_b, p_a) in enumerate(zip(pi_before, pi_after)):
             # For tau=2.0, omega=0.5, stress should be relaxed by (1 - omega) = 0.5
-            assert torch.allclose(p_a, 0.5 * p_b, atol=1e-4), \
+            assert torch.allclose(p_a, 0.5 * p_b, atol=1e-4), (
                 f"Stress component {i} not relaxed correctly: {p_a.mean()} vs {0.5 * p_b.mean()}"
+            )
 
 
 class TestCumulantProbe:
@@ -143,16 +142,17 @@ class TestCumulantVsBGK:
         f = _d3q19_state((16, 16, 16), seed=44)
         rho, ux, uy, uz = macroscopic3d(f)
         f_eq = equilibrium3d(rho, ux, uy, uz)
-        
+
         f_cumulant = collide_cumulant_d3q19(f, tau=1.5)
         f_bgk = collide_bgk_d3q19(f, tau=1.5)
-        
+
         # Both should relax the 2nd-order stress by the same factor
         pi_cum = second_order_stress_d3q19(f_cumulant - f_eq)
         pi_bgk = second_order_stress_d3q19(f_bgk - f_eq)
         for i, (p_c, p_b) in enumerate(zip(pi_cum, pi_bgk)):
-            assert torch.allclose(p_c, p_b, atol=1e-5), \
+            assert torch.allclose(p_c, p_b, atol=1e-5), (
                 f"Stress component {i} differs: cum={p_c.mean()}, bgk={p_b.mean()}"
+            )
 
 
 if __name__ == "__main__":

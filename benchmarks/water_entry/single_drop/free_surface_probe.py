@@ -90,13 +90,16 @@ def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
         )
     return out
 
+
 def _dca_config(level, sc):
     """Load DCA config from dca_config.json, inject level and vel_si, return None if disabled."""
     path = Path(os.environ.get("TL_DCA_CONFIG") or Path(__file__).with_name("dca_config.json"))
     cfg = json.loads(path.read_text()) if path.exists() else {}
-    return dict(cfg, level=float(level), vel_si=float(sc["dx_m"] / sc["dt_s"])) if cfg.get("enabled") else None
-
-
+    return (
+        dict(cfg, level=float(level), vel_si=float(sc["dx_m"] / sc["dt_s"]))
+        if cfg.get("enabled")
+        else None
+    )
 
 
 # Tree-local arm switch for the shared SDAA wrapper.  That wrapper fixes its
@@ -145,6 +148,7 @@ def momconv_mode(request):
 
 def _diag_summary(rows, history):
     """Reduce the diagnostic time series to peaks, minima and the depth-peak row."""
+
     def extreme(key, mode):
         best = None
         for row in rows:
@@ -420,9 +424,7 @@ def probe(
             if (diag_cavity or diag_budget) and markers is None and last_drop_mask is not None:
                 markers = DropMaterialMarkers.from_mask(last_drop_mask)
                 marker_state = {
-                    "mass": np.asarray(
-                        mass[1:-1].numpy()[last_drop_mask], dtype=np.float64
-                    )
+                    "mass": np.asarray(mass[1:-1].numpy()[last_drop_mask], dtype=np.float64)
                 }
         if step and step % 50 == 0:
             print(

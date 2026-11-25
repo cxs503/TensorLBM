@@ -1,0 +1,51 @@
+{
+ "arm": "CTRL_uniform15",
+ "kind": "control",
+ "config": {
+  "kind": "control",
+  "lattice": "D3Q15",
+  "grid": 16,
+  "rho_ratio": 10.0,
+  "nu": 0.1,
+  "sigma": 0.01,
+  "width": 4.0,
+  "mobility": 0.05,
+  "p0": 0.01,
+  "max_steps": 400,
+  "sample_every": 100
+ },
+ "lattice": "D3Q15/D3Q15",
+ "lap_scheme": "lbmpy",
+ "steps_done": 400,
+ "wall_s": 1.7667453289031982,
+ "p_span": 0.0,
+ "u_max_final": 7.280015189783699e-34,
+ "phi_min": 0.9999999999999972,
+ "nan": false,
+ "series": [
+  {
+   "step": 100,
+   "p_span": 0.0,
+   "u_max": 7.280015189783699e-34,
+   "phi_min": 0.9999999999999972
+  },
+  {
+   "step": 200,
+   "p_span": 0.0,
+   "u_max": 7.280015189783699e-34,
+   "phi_min": 0.9999999999999972
+  },
+  {
+   "step": 300,
+   "p_span": 0.0,
+   "u_max": 7.280015189783699e-34,
+   "phi_min": 0.9999999999999972
+  },
+  {
+   "step": 400,
+   "p_span": 0.0,
+   "u_max": 7.280015189783699e-34,
+   "phi_min": 0.9999999999999972
+  }
+ ]
+}
