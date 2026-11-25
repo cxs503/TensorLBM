@@ -1,0 +1,45 @@
+{
+  "scope": "Historical oscillatory-cylinder inertia campaign and OSS survey. The historical headline error exceeded the 15% criterion. This directory migration does not evaluate current scientific acceptance.",
+  "source": [
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/run.py",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/run_arm.py",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey.py",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/analyze.py",
+    "src/tensorlbm/oscillatory_cylinder_inertia.py"
+  ],
+  "config": [
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/README.md",
+    "docs/XVAL_LBM_HORIZONTAL_SURVEY_EMPTY.md",
+    "docs/board_audit/m18089/AUDIT_m17981.md"
+  ],
+  "reference_files": [
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/predeclared.json",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/PROVENANCE.json",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_solutions_dump.csv",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_inventory_dump.csv"
+  ],
+  "references": [
+    {
+      "title": "Morison, O'Brien, Johnson & Schaaf (1950); Sarpkaya (1986) -- ideal-fluid circular cylinder C_a = 1, m_a = rho*pi*D^2/4",
+      "source": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/predeclared.json"
+    }
+  ],
+  "criteria": {
+    "accept_pct": 15.0,
+    "pass_rule": "|C_M(E1, D_halfway) - 2.00| / 2.00 <= 15% at the finest resolution run AND at least two of the three resolutions pass",
+    "stability_rule": "a run that produces a non-finite force/momentum or |C_M| > 10 is declared failed and excluded, not tuned",
+    "no_post_hoc_tuning": "geometry convention (D_halfway headline, D_area and D_input reported), fit window and thresholds are fixed before any run"
+  },
+  "results": [
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/summary.json",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/table.csv",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey_summary.json",
+    "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey_table.csv"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/oscillatory-inertia-survey-xval-2026-11-25.json"
+  ]
+}

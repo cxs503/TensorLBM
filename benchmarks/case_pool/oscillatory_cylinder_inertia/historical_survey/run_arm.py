@@ -32,9 +32,10 @@ Numerics (all predeclared in ``predeclared.json``):
     assumed.
 
 Usage:
-  python xval/horizontal_survey_empty/run_arm.py --case base
-  python xval/horizontal_survey_empty/run_arm.py --case base --shard 0 --shards 4
+  python benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/run_arm.py --case base
+  python benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/run_arm.py --case base --shard 0 --shards 4
 """
+
 from __future__ import annotations
 
 import argparse
@@ -42,10 +43,10 @@ import json
 import math
 import sys
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO / "src"))
 
 import numpy as np  # noqa: E402
@@ -63,11 +64,11 @@ from tensorlbm.solver import stream  # noqa: E402
 @dataclass(frozen=True)
 class Case:
     name: str
-    D: int = 24          # obstacle reference diameter, lattice cells
-    kc: float = 1.0      # Keulegan-Carpenter number (nominal, from a0/omega)
+    D: int = 24  # obstacle reference diameter, lattice cells
+    kc: float = 1.0  # Keulegan-Carpenter number (nominal, from a0/omega)
     beta: float = 100.0  # Stokes number D^2/(nu*T)
-    u0: float = 0.04     # far-field velocity amplitude (nominal)
-    box: float = 12.0    # box side in D (doubly periodic, so this is a period)
+    u0: float = 0.04  # far-field velocity amplitude (nominal)
+    box: float = 12.0  # box side in D (doubly periodic, so this is a period)
     transient: float = 1.5
     measure: float = 3.0
 
@@ -149,7 +150,7 @@ def harmonic_fit(y: np.ndarray, omega: float, t: np.ndarray, nh: int = 2) -> dic
 
 def morison_ls(F: np.ndarray, U: np.ndarray, dU: np.ndarray, D_h: float, rho: float = 1.0) -> dict:
     """Least-squares Morison decomposition -> (C_M, C_D) with 2x2 normal equations."""
-    V = math.pi * D_h ** 2 / 4.0
+    V = math.pi * D_h**2 / 4.0
     b1 = rho * V * dU
     b2 = 0.5 * rho * D_h * U * np.abs(U)
     B = np.stack([b1, b2], axis=1)
@@ -178,10 +179,10 @@ def run(case: Case, threads: int = 8) -> dict:
     device = torch.device("cpu")
     D = case.D
     nx = ny = int(round(case.box * D))
-    T = case.kc * D / case.u0           # period (steps), KC = U_max*T/D
+    T = case.kc * D / case.u0  # period (steps), KC = U_max*T/D
     omega = 2.0 * math.pi / T
-    a0 = omega * case.u0                # body-force amplitude for U_max = u0
-    nu = D ** 2 / (case.beta * T)
+    a0 = omega * case.u0  # body-force amplitude for U_max = u0
+    nu = D**2 / (case.beta * T)
     tau = 0.5 + 3.0 * nu
     if tau <= 0.505:
         raise ValueError(f"tau={tau:.4f} too close to 0.5 for a stable BGK run")
@@ -214,7 +215,7 @@ def run(case: Case, threads: int = 8) -> dict:
         t = float(step)
         a_t = a0 * math.cos(omega * t)
         Fx_field[fluid] = a_t
-        old_solid = f[:, mask].clone()   # keep the scheduled wall populations through collision
+        old_solid = f[:, mask].clone()  # keep the scheduled wall populations through collision
         f = apply_guo_forcing(f, torch.stack([Fx_field, Fy_field]), tau)
         f[:, mask] = old_solid
         f = stream(f)
@@ -247,7 +248,9 @@ def run(case: Case, threads: int = 8) -> dict:
     sl_m = slice(i0, len(t) - 1)  # drop last sample: central difference is NaN there
     u_fit = harmonic_fit(U[sl], omega, t[sl], nh=2)
     # d/dt[a_c cos(wt) + b_s sin(wt)] = -w a_c sin + w b_s cos
-    dU = -omega * u_fit["u_cos"] * np.sin(omega * t[sl_m]) + omega * u_fit["u_sin"] * np.cos(omega * t[sl_m])
+    dU = -omega * u_fit["u_cos"] * np.sin(omega * t[sl_m]) + omega * u_fit["u_sin"] * np.cos(
+        omega * t[sl_m]
+    )
     U_meas = U[sl_m]
     F1_meas = F1[sl_m]
     F2_meas = F2[sl_m]
@@ -265,10 +268,21 @@ def run(case: Case, threads: int = 8) -> dict:
     out = {
         "case": asdict(case),
         "numerics": {
-            "nx": nx, "ny": ny, "n_fluid": n_fluid, "D": D, "nu": nu, "tau": tau,
-            "T_steps": T, "omega": omega, "a0": a0, "nu": nu,
-            "n_steps": n_steps, "transient_steps": i0, "measure_steps": int(n_steps - i0),
-            "Ma": case.u0 * math.sqrt(3.0), "wall_s": round(wall, 1),
+            "nx": nx,
+            "ny": ny,
+            "n_fluid": n_fluid,
+            "D": D,
+            "nu": nu,
+            "tau": tau,
+            "T_steps": T,
+            "omega": omega,
+            "a0": a0,
+            "nu": nu,
+            "n_steps": n_steps,
+            "transient_steps": i0,
+            "measure_steps": int(n_steps - i0),
+            "Ma": case.u0 * math.sqrt(3.0),
+            "wall_s": round(wall, 1),
             "ms_per_step": round(1000.0 * wall / n_steps, 3),
         },
         "geometry": geo,
@@ -278,8 +292,9 @@ def run(case: Case, threads: int = 8) -> dict:
             "KC": math.pi * 2.0 * u_fit["amp"] / (omega * geo["D_halfway"]),
             "beta": geo["D_halfway"] ** 2 / (nu * T),
             "U_fit_resid_rel": u_fit["resid_rel"],
-            "U_harmonic2_rel": float(math.hypot(u_fit["coef"][3], u_fit["coef"][4])
-                                     / (u_fit["amp"] + 1e-30)),
+            "U_harmonic2_rel": float(
+                math.hypot(u_fit["coef"][3], u_fit["coef"][4]) / (u_fit["amp"] + 1e-30)
+            ),
         },
         "kpi": kpis,
         "reference": {"C_M": ref, "source": "Morison 1950 / Sarpkaya 1986 ideal-fluid cylinder"},
@@ -294,7 +309,9 @@ def run(case: Case, threads: int = 8) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--case", default="", choices=["", *CASE_ORDER])
-    ap.add_argument("--index", type=int, default=-1, help="shard picker: run CASE_ORDER[index::shards]")
+    ap.add_argument(
+        "--index", type=int, default=-1, help="shard picker: run CASE_ORDER[index::shards]"
+    )
     ap.add_argument("--shards", type=int, default=1)
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--out", default="")
@@ -324,9 +341,23 @@ def main() -> int:
         d.mkdir(parents=True, exist_ok=True)
         (d / "result.json").write_text(json.dumps(res, indent=2) + "\n")
         np.savez_compressed(d / "trace.npz", **trace)
-        print(json.dumps({k: res[k] for k in
-                          ("case", "achieved", "kpi", "err_E1_halfway_pct",
-                           "estimator_spread_pct", "numerics")}, indent=2), flush=True)
+        print(
+            json.dumps(
+                {
+                    k: res[k]
+                    for k in (
+                        "case",
+                        "achieved",
+                        "kpi",
+                        "err_E1_halfway_pct",
+                        "estimator_spread_pct",
+                        "numerics",
+                    )
+                },
+                indent=2,
+            ),
+            flush=True,
+        )
     return 0
 
 

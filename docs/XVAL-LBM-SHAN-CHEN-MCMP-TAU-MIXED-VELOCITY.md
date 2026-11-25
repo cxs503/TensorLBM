@@ -24,7 +24,7 @@ repo `loliverhennigh/Lattice-Boltzmann-fluid-flow-in-Tensorflow`，feature
 因此对标对象是**清单里被核验过的公式与源码行引用**，而不是跑 OSS 代码得到的数字——
 这一点限制了结论强度，已在 §6 的"适用范围"里写明。开工三查中
 `knowledge_base`（shan-chen / tau mixed velocity）与 `negative_knowledge_ledger`（MCMP、loliverhennigh）
-**均 0 命中**，只有仓内 `xval/horizontal_survey_empty/data/oss_solutions_dump.csv` 有货（即上面的 id=35）。
+**均 0 命中**，只有仓内 `benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_solutions_dump.csv` 有货（即上面的 id=35）。
 
 ## ② 方法与实现
 

@@ -1,0 +1,150 @@
+{
+  "source_commit": "2c0e59025789674154597a64dfb6d1ca4d2e10ec",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 74,
+      "after": 73
+    }
+  },
+  "reference_scan": "Searched tracked files, CI and current consumers. Updated the canonical case index, current audit tool, and active human-readable references to the OSS snapshot. Prior mission records and result metadata retain their original old paths.",
+  "compatibility": {
+    "registry_id": "benchmarks/case_pool/oscillatory_cylinder_inertia",
+    "original_tree": "https://github.com/cxs503/TensorLBM/tree/2c0e59025789674154597a64dfb6d1ca4d2e10ec/xval/horizontal_survey_empty",
+    "published_report": "docs/XVAL_LBM_HORIZONTAL_SURVEY_EMPTY.md",
+    "audit_tool": "tools/audit_m17981_verify.py resolves both the historical xval layout and the current canonical case layout. Missing result JSONs and time traces are reported as missing_artifacts; no gate judgment or comparison figure is emitted for an empty input set.",
+    "cli": "Runner flags and round-local paths for the source inputs and results are retained. For a standalone census replay use the explicit out-dir shown in the README."
+  },
+  "scientific_scope": "Historical inertia headline error was -21.29% against the 15% threshold. The offline census replay uses the actual two tracked inventory snapshots and production source tree. The upstream OSS cache and original numerical traces were unavailable for this run. The full scientific campaign and its acceptance were not rerun.",
+  "replay": {
+    "baseline_command": "mkdir -p outputs/survey-before && python xval/horizontal_survey_empty/survey.py --out-dir outputs/survey-before",
+    "candidate_command": "mkdir -p outputs/survey-after && python benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey.py --out-dir outputs/survey-after",
+    "byte_identical_outputs_sha256": {
+      "survey_table.csv": "ffa1802d6067de5606ef00cd294f783aefd48fff133ab8339512c3fb1d56bdcd",
+      "survey_summary.json": "521ffba8bca97dd6b3bea01b33e9755b349d5b6eff80ff530d93f3853abcc839"
+    }
+  },
+  "entries": [
+    {
+      "old_path": "xval/horizontal_survey_empty/analyze.py",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "861b82ee1fedab93abb53f953f95ed7ca5519d17",
+      "size_bytes": 15923,
+      "original_sha256": "61a24d85f1cd563e31377137c12ba07ec402d891114bfb9ac59daa288c455d2a",
+      "new_sha256": "ad707de7693b9d06cafea21da7cd0bb07f6cc38712a89ee94171c53ed579ac7a"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/data/PROVENANCE.json",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/PROVENANCE.json",
+      "git_mode": "100644",
+      "original_git_blob": "d1704b12d9e39f1c1badc7ad082295cc539f8e86",
+      "size_bytes": 1343,
+      "original_sha256": "54cb914111ce41c7c6c94b00e16ef77ec339f5e189714ac85f9fcc595b90b174",
+      "new_sha256": "54cb914111ce41c7c6c94b00e16ef77ec339f5e189714ac85f9fcc595b90b174"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/data/oss_inventory_dump.csv",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_inventory_dump.csv",
+      "git_mode": "100644",
+      "original_git_blob": "6d6818119a4002d42cf34f06134418f178bfe5cd",
+      "size_bytes": 44018,
+      "original_sha256": "37359bac38a3700d5c84ba0a73f3ca8b544117ff2c747bef8a1d6d68fe6725df",
+      "new_sha256": "37359bac38a3700d5c84ba0a73f3ca8b544117ff2c747bef8a1d6d68fe6725df"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/data/oss_solutions_dump.csv",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_solutions_dump.csv",
+      "git_mode": "100644",
+      "original_git_blob": "0d203e51c68c346844e62e8deea467ed0fac969a",
+      "size_bytes": 223443,
+      "original_sha256": "9ab9e3cfce0d9a1cae329634f9d84e2a16a160c8f55e611d7158cb3814196a15",
+      "new_sha256": "9ab9e3cfce0d9a1cae329634f9d84e2a16a160c8f55e611d7158cb3814196a15"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/predeclared.json",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "234a62016150ebf1bb430cb77e90630e75504791",
+      "size_bytes": 5412,
+      "original_sha256": "7a39feb760e88c1d9abc9e8659cf768e2f7e423cec992c59128e3d77050b9a89",
+      "new_sha256": "7a39feb760e88c1d9abc9e8659cf768e2f7e423cec992c59128e3d77050b9a89"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/run_arm.py",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/run_arm.py",
+      "git_mode": "100644",
+      "original_git_blob": "e73fe37d5564c2ab8037c28ef7da9d6517c272fe",
+      "size_bytes": 13878,
+      "original_sha256": "0674dfbaac49271786625ea2c3d40c18d5b4930b48c593ea3f8f3141bdecade9",
+      "new_sha256": "b22536ce2259d411301b04616c3c63c3ffaf9b0f13270d22e027603782e38bb3"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/summary.json",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "86374d01d61795cea92134ba7102cb8f8a206c01",
+      "size_bytes": 4280,
+      "original_sha256": "9a3c327f060871e8acdd30fb52103ea7de5e095e05d53860d82b3faa54743f76",
+      "new_sha256": "9a3c327f060871e8acdd30fb52103ea7de5e095e05d53860d82b3faa54743f76"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/survey.py",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey.py",
+      "git_mode": "100644",
+      "original_git_blob": "a1e63d80ff39f28dd59d5c78bfed5b674755e018",
+      "size_bytes": 9738,
+      "original_sha256": "1cecfe2bbb1eb59a60cbc6705eee32f5f3c23f1160c94f751e376e3d8771bfeb",
+      "new_sha256": "8a2752de3eadbae9a589410c8a4d9594ee02a6a8232de3712c65bf08a17ca718"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/survey_summary.json",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "eb9ca13aecc40f15120cab12fc86cf9e969683f1",
+      "size_bytes": 23839,
+      "original_sha256": "57152da2060a12ce204cd6921156638f09cd52391883028d8f95136b29ddd78d",
+      "new_sha256": "57152da2060a12ce204cd6921156638f09cd52391883028d8f95136b29ddd78d"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/survey_table.csv",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey_table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "822e68bb743388ca41b81eabfc01a1bc262f0249",
+      "size_bytes": 1600,
+      "original_sha256": "fd664c6f49768bb0b4c555b62868f4a84a7d1e1ee3f4b0e94e19b3044bb93510",
+      "new_sha256": "fd664c6f49768bb0b4c555b62868f4a84a7d1e1ee3f4b0e94e19b3044bb93510"
+    },
+    {
+      "old_path": "xval/horizontal_survey_empty/table.csv",
+      "new_path": "benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "2b1e538fc8964d974d8d2d5cedafa66224ff7071",
+      "size_bytes": 1111,
+      "original_sha256": "c08af409a1141617d5371e851c9213ea068e26ad1a90bc1f5e677be8495f50b8",
+      "new_sha256": "c08af409a1141617d5371e851c9213ea068e26ad1a90bc1f5e677be8495f50b8"
+    }
+  ],
+  "verification": [
+    "Reran the census on the actual CSV inputs. The generated JSON and CSV are byte-identical before and after the move.",
+    "All eight non-Python original blobs remain identical. Path adjustments and import formatting are confined to the three moved Python scripts.",
+    "Eleven existing oscillatory-cylinder-inertia tests passed. The audit CLI ran against the current worktree and a real checkout with the original xval layout, found all four study assets on both layouts, and returned an unevaluated gate when traces were absent.",
+    "The three documented images resolve beside the same published report. The lint ratchet passed.",
+    "All 83 repository governance tests passed, covering 215 registered cases, 35 tutorial entries, 33 PDFs and 33 Word files. The case lookup preserves its ID, returns four result paths, and leaves acceptance unevaluated."
+  ]
+}

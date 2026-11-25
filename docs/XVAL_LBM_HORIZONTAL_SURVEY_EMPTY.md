@@ -80,9 +80,9 @@ E2（动量收支）在本实现里给出非物理值（见 ⑤），不参与�
 
 ## ⑤ 收敛性 / 参数敏感性（至少两点）
 
-![fig1](docs/assets/xval_lbm_horizontal_survey_empty/fig1_convergence.png)
-![fig2](docs/assets/xval_lbm_horizontal_survey_empty/fig2_sensitivity.png)
-![fig3](docs/assets/xval_lbm_horizontal_survey_empty/fig3_velocity_trace.png)
+![fig1](assets/xval_lbm_horizontal_survey_empty/fig1_convergence.png)
+![fig2](assets/xval_lbm_horizontal_survey_empty/fig2_sensitivity.png)
+![fig3](assets/xval_lbm_horizontal_survey_empty/fig3_velocity_trace.png)
 
 1. **分辨率收敛**（D=16/24/32，KC=1，beta=100）：`C_M` 随 D 的走向与 1/D 外推见 fig1 右图；
    若几何约定是主误差源，则 1/D 外推应在 D→∞ 处收敛到同一截距（数值见 `summary.json`）。
@@ -120,3 +120,5 @@ E2（动量收支）在本实现里给出非物理值（见 ⑤），不参与�
 **生态摩擦**：①`oss_inventory` 仅 33 行（该参考行记录的普查是 218 行/140 feature slug），
 说明普查表已缩水，跨域可对标面变窄；②`oss_solutions`/`oss_inventory` 对普通 shell 角色无 SELECT 权限，
 dump 需 `runuser -u postgres`，调查脚本只能吃离线 dump（已在 PROVENANCE 记录）。
+
+[算例入口与迁移证据](../benchmarks/case_pool/oscillatory_cylinder_inertia/README.md)

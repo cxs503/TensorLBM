@@ -18,7 +18,7 @@ own momentum `j_σ = ρ_σ u_σ` and its own interaction force `F_σ`; the equil
 "mixed" velocity, and there is no unique prescription for it. TensorLBM ships three conventions
 (`u_eq = "self" | "mixture" | "viscous"`, `tensorlbm/multiphase.py:collide_sc_two_component`);
 `sorush-khajepor/listLBM` ships a fourth, inventoried as `shan-chen-mcmp-velocity-mixing`
-(oss_solutions id **44**, in-repo dump `xval/horizontal_survey_empty/data/oss_solutions_dump.csv`
+(oss_solutions id **44**, in-repo dump `benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_solutions_dump.csv`
 line 40):
 
 > 多组分 SC：初始化时预计算 othercomp/othercomppotid 索引表，每步对 ncomps-1 个其它组分求相互作用力并叠加体积力

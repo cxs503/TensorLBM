@@ -9,7 +9,7 @@ The OSS reference
 -----------------
 ``sorush-khajepor/listLBM``, technique ``shan-chen-mcmp-velocity-mixing``
 (inventory id 44, dumped at
-``xval/horizontal_survey_empty/data/oss_solutions_dump.csv`` line 40).  The
+``benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/data/oss_solutions_dump.csv`` line 40).  The
 inventoried method text and its source citations are::
 
     mcmp: per-step interaction force over the (ncomps-1) other components via

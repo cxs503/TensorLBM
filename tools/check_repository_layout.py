@@ -70,6 +70,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("models", "units"),
     ("xval", "model_matrix_ci_plus_coverage"),
     ("xval", "XVAL-LBM-R4-COEXISTENCE"),
+    ("xval", "horizontal_survey_empty"),
     ("xval", "XVAL-LBM-SHAN-CHEN-MCMP-BARYCENTRIC-GUO"),
     ("xval", "model_matrix_wall_axis"),
     ("xval", "mcmp_cross_force"),
