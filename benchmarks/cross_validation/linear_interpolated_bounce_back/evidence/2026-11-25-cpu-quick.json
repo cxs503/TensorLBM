@@ -1,0 +1,213 @@
+{
+  "source_commit": "2c0e59025789674154597a64dfb6d1ca4d2e10ec",
+  "scope": "Four reduced CPU arms, n_fluid=8, for migration compatibility. Full acceptance remains unevaluated.",
+  "environment": {
+    "python": "3.12.14",
+    "architecture": "x86_64",
+    "pytorch": "2.15.0+cpu"
+  },
+  "commands": {
+    "source": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/run_xval.py --quick --out outputs/ibb-before",
+    "candidate": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/cross_validation/linear_interpolated_bounce_back/run_xval.py --quick --out outputs/ibb-after"
+  },
+  "process_exit_codes": {
+    "source": 0,
+    "candidate": 0
+  },
+  "comparison": {
+    "table_csv_sha256": "9a4caec5ba475bd11abbfb434f6282e53df62c71b61a4a80cdc05e4fe779cb08",
+    "summary_fields_excluded": [
+      "generated_at",
+      "cases[*].wall_time_s"
+    ],
+    "numerical_summaries_equal": true
+  },
+  "primary_gate": {
+    "scope": "interpolated arms in the CPU quick sweep",
+    "metric": "l2_rel",
+    "threshold_exclusive": 0.15,
+    "status": "failed"
+  },
+  "result": {
+    "anchor": "XVAL-LBM-LINEAR-INTERPOLATED-BB",
+    "setup": {
+      "tau": 0.8,
+      "nu": 0.10000000000000002,
+      "deltas": [
+        0.5,
+        0.9
+      ],
+      "n_fluid": [
+        8
+      ],
+      "arms": [
+        "halfway",
+        "interp"
+      ],
+      "nx": 2,
+      "u_max_target": 0.02
+    },
+    "cases": [
+      {
+        "wall": "halfway",
+        "n_fluid": 8,
+        "delta": 0.5,
+        "H": 8.0,
+        "nu": 0.10000000000000002,
+        "tau": 0.8,
+        "g": 0.00025000000000000006,
+        "u_max_target": 0.02,
+        "steps": 1800,
+        "converged": true,
+        "u": [
+          0.008482353191793926,
+          0.015982353413991273,
+          0.02098235356206122,
+          0.02348235363607672,
+          0.023482353636076696,
+          0.020982353562061153,
+          0.01598235341399124,
+          0.008482353191793895
+        ],
+        "u_ref": [
+          0.0046875,
+          0.0121875,
+          0.0171875,
+          0.0196875,
+          0.0196875,
+          0.0171875,
+          0.0121875,
+          0.0046875
+        ],
+        "q_num": 0.13785882760784612,
+        "q_ref": 0.10750000000000001,
+        "q_rel_err": 0.2824076986776382,
+        "delta_eff": 0.714154843423799,
+        "delta_eff_pred_halfway": 0.0,
+        "l2_rel": 0.25978810780925965,
+        "max_rel": 0.19275447040389687,
+        "max_cross_flow": 3.3306690736349094e-16
+      },
+      {
+        "wall": "interp",
+        "n_fluid": 8,
+        "delta": 0.5,
+        "H": 8.0,
+        "nu": 0.10000000000000002,
+        "tau": 0.8,
+        "g": 0.00025000000000000006,
+        "u_max_target": 0.02,
+        "steps": 1800,
+        "converged": true,
+        "u": [
+          0.009400000277901392,
+          0.016900000499448446,
+          0.021900000646997562,
+          0.0244000007207251,
+          0.024400000720725096,
+          0.0219000006469975,
+          0.016900000499448484,
+          0.009400000277901454
+        ],
+        "u_ref": [
+          0.0046875,
+          0.0121875,
+          0.0171875,
+          0.0196875,
+          0.0196875,
+          0.0171875,
+          0.0121875,
+          0.0046875
+        ],
+        "q_num": 0.14520000429014504,
+        "q_ref": 0.10750000000000001,
+        "q_rel_err": 0.3506977143269305,
+        "delta_eff": 0.8661679853458786,
+        "delta_eff_pred_halfway": 0.0,
+        "l2_rel": 0.3226083992916288,
+        "max_rel": 0.23936511597333837,
+        "max_cross_flow": 2.8449465006022866e-16
+      },
+      {
+        "wall": "halfway",
+        "n_fluid": 8,
+        "delta": 0.9,
+        "H": 8.8,
+        "nu": 0.10000000000000002,
+        "tau": 0.8,
+        "g": 0.0002066115702479339,
+        "u_max_target": 0.02,
+        "steps": 1700,
+        "converged": true,
+        "u": [
+          0.007010209247708035,
+          0.013208556537112864,
+          0.0173407880632001,
+          0.0194069038261861,
+          0.0194069038261861,
+          0.017340788063200118,
+          0.013208556537112944,
+          0.0070102092477080285
+        ],
+        "u_ref": [
+          0.007345041322314048,
+          0.013543388429752064,
+          0.017675619834710745,
+          0.01974173553719008,
+          0.01974173553719008,
+          0.017675619834710745,
+          0.013543388429752067,
+          0.007345041322314051
+        ],
+        "q_num": 0.1139329153484143,
+        "q_ref": 0.1166115702479339,
+        "q_rel_err": -0.022970747189360142,
+        "delta_eff": -0.08584515734031051,
+        "delta_eff_pred_halfway": -0.8,
+        "l2_rel": 0.02184740747349964,
+        "max_rel": 0.016960620000974893,
+        "max_cross_flow": 4.649058915282052e-16
+      },
+      {
+        "wall": "interp",
+        "n_fluid": 8,
+        "delta": 0.9,
+        "H": 8.8,
+        "nu": 0.10000000000000002,
+        "tau": 0.8,
+        "g": 0.0002066115702479339,
+        "u_max_target": 0.02,
+        "steps": 2500,
+        "converged": true,
+        "u": [
+          0.014214876453541934,
+          0.020413223744268388,
+          0.02454545527134302,
+          0.026611571034856552,
+          0.026611571034856556,
+          0.024545455271343008,
+          0.020413223744268422,
+          0.014214876453541914
+        ],
+        "u_ref": [
+          0.007345041322314048,
+          0.013543388429752064,
+          0.017675619834710745,
+          0.01974173553719008,
+          0.01974173553719008,
+          0.017675619834710745,
+          0.013543388429752067,
+          0.007345041322314051
+        ],
+        "q_num": 0.17157025300801979,
+        "q_ref": 0.1166115702479339,
+        "q_rel_err": 0.4712969960290852,
+        "delta_eff": 1.1882529710363272,
+        "delta_eff_pred_halfway": -0.8,
+        "l2_rel": 0.4482491330561604,
+        "max_rel": 0.34798538784621397,
+        "max_cross_flow": 3.2265856653173335e-16
+      }
+    ]
+  }
+}
