@@ -750,3 +750,44 @@ def test_halfway_prescribed_flux_slab_against_transient_solution(axis,record_pro
         record_property(f"max_heat_budget_error_{n}_J",worst_balance)
         assert worst_balance < 5e-14
     assert all(a/b > 3.8 for a,b in zip(errors,errors[1:]))
+
+
+@pytest.mark.parametrize("tau", [0.75, 1.5])
+def test_opposed_fluxes_preserve_steady_fourier_field(tau, record_property):
+    from tensorlbm.thermal_common import thermal_flux_wall_pair_3d
+
+    spacing, capacity, conductivity = 0.125, 3.0, 2.0
+    flux = (1.25, -0.5, 0.75)
+    dt = (tau - 0.5) * spacing**2 * capacity / (4 * conductivity)
+    z, y, x = torch.meshgrid(
+        *((torch.arange(n, dtype=torch.float64) + 0.5) * spacing for n in (4, 6, 8)),
+        indexing="ij",
+    )
+    exact = 2.0 - sum(q * pos for q, pos in zip(flux, (x, y, z))) / conductivity
+    zero = torch.zeros_like(exact)
+    g = thermal_equilibrium_3d(exact, zero, zero, zero)
+    # For linear T, streaming shifts equilibrium by exactly one lattice
+    # gradient. The steady pre-collision offset is -tau*w_i*c_i.grad(T)*dx.
+    for i, velocity in enumerate(C_D3Q7):
+        projected_flux = sum(c * q for c, q in zip(velocity, flux))
+        g[i] += tau * W_D3Q7[i] * spacing * projected_flux / conductivity
+
+    max_field_error = max_flux_error = 0.0
+    for _ in range(64):
+        g = thermal_stream_3d(thermal_collide_bgk_3d(
+            g, thermal_macroscopic_3d(g), zero, zero, zero, tau
+        ))
+        for axis, q in zip("xyz", flux):
+            g = thermal_flux_wall_pair_3d(
+                g, axis, (q, -q), dt=dt, spacing=spacing, volumetric_heat_capacity=capacity
+            )
+        field = thermal_macroscopic_3d(g)
+        max_field_error = max(max_field_error, (field - exact).abs().max().item())
+        for dim, q in zip((2, 1, 0), flux):
+            measured = -conductivity * field.diff(dim=dim) / spacing
+            max_flux_error = max(max_flux_error, (measured - q).abs().max().item())
+
+    record_property("max_temperature_error_K", max_field_error)
+    record_property("max_fourier_flux_error_W_m2", max_flux_error)
+    assert max_field_error < 5e-14
+    assert max_flux_error < 5e-13
