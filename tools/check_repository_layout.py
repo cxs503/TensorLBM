@@ -91,6 +91,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "component_protocol_codegen"),
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
     ("xval", "fused_kernel_type_selector"),
+    ("xval", "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER"),
+    ("xval", "XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD"),
     ("xval", "XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET"),
     ("xval", "life_geometry_config"),
     ("xval", "XVAL-LBM-TERNARY-DOUBLE-WELL-WITH-HARMONIC-LAMBDA"),

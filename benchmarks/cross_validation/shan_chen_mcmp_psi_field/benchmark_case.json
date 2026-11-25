@@ -1,0 +1,37 @@
+{
+  "scope": "Historical two-component Shan-Chen linear versus exponential pseudopotential comparison. Reported agreement was not within the historical primary threshold. Current scientific acceptance is unevaluated.",
+  "source": [
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/xval_driver.py",
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/quick_smoke.py",
+    "src/tensorlbm/mcmp_verification.py"
+  ],
+  "config": [
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/xval_summary.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/shan_chen_mcmp_psi_field/README.md",
+    "docs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD.md",
+    "docs/board_audit/m23219/AUDIT-m23126.md"
+  ],
+  "reference_files": [
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/xval_summary.json",
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/README.md"
+  ],
+  "references": [
+    {
+      "title": "Palabos Shan–Chen multicomponent psi-field case",
+      "source": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/xval_summary.json"
+    }
+  ],
+  "criteria": {
+    "primary_gate": 0.15,
+    "secondary_gate": 0.1
+  },
+  "results": [
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/xval_summary.json",
+    "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/report.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/porter-and-psi-field-xval-audit-dedup-2026-11-25.json"
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "source_commit": "2c0e59025789674154597a64dfb6d1ca4d2e10ec",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 74,
+      "after": 72
+    }
+  },
+  "reference_scan": "Searched tracked callers, workflows, and stored audit evidence for both old roots. The published reports now link to the registry index. The Porter forced-channel test built the old path from separate segments; it now imports the same driver bytes from the audit. Other historical path mentions describe frozen worktrees.",
+  "compatibility": {
+    "cases": [
+      "xval:porter_explicit_forcing",
+      "xval:shan_chen_mcmp_psi_field"
+    ],
+    "original_trees": [
+      "https://github.com/cxs503/TensorLBM/tree/2c0e59025789674154597a64dfb6d1ca4d2e10ec/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+      "https://github.com/cxs503/TensorLBM/tree/2c0e59025789674154597a64dfb6d1ca4d2e10ec/xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD"
+    ],
+    "published_reports": [
+      "docs/board_audit/m18311/AUDIT.md",
+      "docs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD.md"
+    ],
+    "drivers": "The read-only reference bundles retain their relative layout. For a full local run, copy a bundle to scratch and set PYTHONPATH explicitly to the canonical src tree as documented."
+  },
+  "scientific_scope": "This batch deduplicates historical verification assets. Neither full scientific campaign was repeated. Historical aggregate results and their limitations remain visible and current acceptance is unevaluated.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/REPORT.md",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "2e5e3dbd5ac42bdf6241f63276ed7f6a84aaeb9e",
+      "size_bytes": 11737,
+      "original_sha256": "fe6aac967c69cd7f494ab69fbd623889126c104bd4c29edcff2d48e04f2afe92",
+      "new_sha256": "fe6aac967c69cd7f494ab69fbd623889126c104bd4c29edcff2d48e04f2afe92"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/result.json",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/result.json",
+      "git_mode": "100644",
+      "original_git_blob": "ed9ad5c30dc8aa07335c2ee39504ba3ca4e118c3",
+      "size_bytes": 68445,
+      "original_sha256": "22610482d6ad492cb3155cc68ac1ea3a8cbdf94b549cf339b785486fdf620fc0",
+      "new_sha256": "22610482d6ad492cb3155cc68ac1ea3a8cbdf94b549cf339b785486fdf620fc0"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/table.md",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/table.md",
+      "git_mode": "100644",
+      "original_git_blob": "55b656ba3321302c713cdb6f0f9d636a0f8c6705",
+      "size_bytes": 3937,
+      "original_sha256": "8a3d53dc801cb9501f20427ea5b2ec7e3e41c1c1d67b368a2aed53eada87cdfd",
+      "new_sha256": "8a3d53dc801cb9501f20427ea5b2ec7e3e41c1c1d67b368a2aed53eada87cdfd"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/got_driver.py",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/got_driver.py",
+      "git_mode": "100644",
+      "original_git_blob": "d41f4603d93790dcf6655de07f08ee639ac6bb54",
+      "size_bytes": 6505,
+      "original_sha256": "b589f5ea4000f26dac1bbd977532d5b0e28c972e8c7ee724cd319d71ed5a50ca",
+      "new_sha256": "b589f5ea4000f26dac1bbd977532d5b0e28c972e8c7ee724cd319d71ed5a50ca"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/make_figures.py",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "71620cf4fdef75f11a0d75b7b8a3059b50b7d907",
+      "size_bytes": 4695,
+      "original_sha256": "755165ecfa921fe24c49b025f275773cf4de2b2fbe97aa8c68da687b913a1995",
+      "new_sha256": "755165ecfa921fe24c49b025f275773cf4de2b2fbe97aa8c68da687b913a1995"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/predeclared.json",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "4e834580d52f39cb4877b17839bb997a7fdad35f",
+      "size_bytes": 5367,
+      "original_sha256": "23f81742af9aadbaf3f55f98840cc188683eaf03e285ad7a6f52272f174a58bd",
+      "new_sha256": "23f81742af9aadbaf3f55f98840cc188683eaf03e285ad7a6f52272f174a58bd"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/ref/porter_ref.py",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/ref/porter_ref.py",
+      "git_mode": "100644",
+      "original_git_blob": "e4036fa940881192cdb773d70965157e44ad7fd9",
+      "size_bytes": 6284,
+      "original_sha256": "86e3164c2fcf113fef889d637345611769ebe46acf70dca7daf3a6a705b68b23",
+      "new_sha256": "86e3164c2fcf113fef889d637345611769ebe46acf70dca7daf3a6a705b68b23"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py",
+      "new_path": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "c6490549fc13cbb9d164d3878a7cc768996b1931",
+      "size_bytes": 9433,
+      "original_sha256": "77a64f98b50c797650a1e98ed211501e5935ebb66168caa8523316773c9e5bd6",
+      "new_sha256": "77a64f98b50c797650a1e98ed211501e5935ebb66168caa8523316773c9e5bd6"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/README.md",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/README.md",
+      "git_mode": "100644",
+      "original_git_blob": "9da301fd7094380eefba74d387684ed72f1b0b0e",
+      "size_bytes": 8468,
+      "original_sha256": "b00f8d38699c2a3bff2a5b338f5bc75b342e7ca03e1c87d1c0d909ffedc1b696",
+      "new_sha256": "b00f8d38699c2a3bff2a5b338f5bc75b342e7ca03e1c87d1c0d909ffedc1b696"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/report.json",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/report.json",
+      "git_mode": "100644",
+      "original_git_blob": "faf951aa38459c13951e40e6c5222cad3f4c9b49",
+      "size_bytes": 382384,
+      "original_sha256": "e0240d10d0c98b8de47ead71dc747de23bf686c235890f3cce73ea63010ff912",
+      "new_sha256": "e0240d10d0c98b8de47ead71dc747de23bf686c235890f3cce73ea63010ff912"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/xval_summary.json",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/artifacts/xval_summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "e653b12a97602418eafe58a5681d1b33e22bf2ee",
+      "size_bytes": 3677,
+      "original_sha256": "e8de5eb521f67d8d19756248261aeaca10bb447939bbb4e18ac256c55567748e",
+      "new_sha256": "e8de5eb521f67d8d19756248261aeaca10bb447939bbb4e18ac256c55567748e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/build_report.py",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/build_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "6794b0ac03cd4ebbf692226bb41b87ac3699688b",
+      "size_bytes": 6389,
+      "original_sha256": "0d41db0e4989b4602f452d12d9d8c93af5795ef6a091bee1e652be7b42850ec5",
+      "new_sha256": "0d41db0e4989b4602f452d12d9d8c93af5795ef6a091bee1e652be7b42850ec5"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/generate_report.py",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/generate_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "6ede37aa7789c4a81bf650cd047c1c8fbe76062d",
+      "size_bytes": 16562,
+      "original_sha256": "6273e9f9a40f134bac5f37ca2dc94ce1a4a85e85595034ddffdd14e46df411f0",
+      "new_sha256": "6273e9f9a40f134bac5f37ca2dc94ce1a4a85e85595034ddffdd14e46df411f0"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/quick_smoke.py",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/quick_smoke.py",
+      "git_mode": "100644",
+      "original_git_blob": "cc14ae97a6f58e68b2149c7ef23e4e0e799395c5",
+      "size_bytes": 1957,
+      "original_sha256": "1c39793f5785f2fc6058787eeee3d783944456b84940d0dc3d86eb6797232727",
+      "new_sha256": "1c39793f5785f2fc6058787eeee3d783944456b84940d0dc3d86eb6797232727"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/xval_driver.py",
+      "new_path": "docs/board_audit/m18359/refs/XVAL-LBM-SHAN-CHEN-MCMP-PSI-FIELD/xval_driver.py",
+      "git_mode": "100644",
+      "original_git_blob": "66c8b701e51fd39e3b89b3d64fa30f8e30b9a7f7",
+      "size_bytes": 15136,
+      "original_sha256": "a0f974ca3e625a5ffae79c5a8d228764a1796bda5ac52fc5bcf46ee718d35d9c",
+      "new_sha256": "a0f974ca3e625a5ffae79c5a8d228764a1796bda5ac52fc5bcf46ee718d35d9c"
+    }
+  ],
+  "verification": [
+    "Every retired path matches an already-tracked audit blob exactly. Verified all 15 Git object IDs, modes, file lengths and SHA-256 checksums.",
+    "Both archived main entry points load from disposable copied trees with the current canonical src path.",
+    "The first focused test pass exposed the path-built Porter test import. After redirecting that import, all 16 targeted tests passed, including the existing real forced-channel analytic comparison.",
+    "All 83 repository governance tests and the lint ratchet passed. Both registered case lookups report unevaluated current acceptance and all new relative case links resolve."
+  ]
+}

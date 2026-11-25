@@ -202,8 +202,13 @@ def test_forced_channel_reproduces_analytic_poiseuille():
     import os
     import sys
 
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "xval",
-                                    "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER"))
+    sys.path.insert(
+        0,
+        os.path.join(
+            os.path.dirname(__file__), "..", "docs", "board_audit", "m18311", "refs", "xval",
+            "XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER",
+        ),
+    )
     import got_driver as G
 
     ny, tau, g = 18, 1.0, 5e-6
