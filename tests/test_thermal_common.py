@@ -3,8 +3,8 @@
 Verifies the composable DDF thermal LBM step (D3Q7 + D3Q19/D3Q27),
 buoyancy coupling, and conjugate heat transfer.
 
-Contract tests verify operator algebra (shape, finite, mass/temperature
-conservation, equilibrium identity), NOT thermal physics correctness.
+The operator tests check shape, finiteness, conservation, and equilibrium.
+Wall diagnostics are also checked against manufactured fields and transient slab cooling.
 """
 
 from __future__ import annotations
@@ -477,3 +477,49 @@ def test_wall_heat_rate_weights_face_edges_by_area(record_property):
         errors.append(abs(rate+1/3))
         record_property(f"wall_quadrature_error_{intervals}_W",errors[-1])
         assert errors[-1] == pytest.approx(1/(6*intervals**2))
+
+
+def test_d3q7_slab_cooling_wall_heat_and_storage(record_property):
+    from tensorlbm.thermal_common import wall_heat_rate_3d
+
+    # Odd periodic extension puts stationary zero-temperature planes at x=0,1.
+    # The second sine mode yields unequal wall heat while adding zero net heat.
+    # Physical k=C=1. At tau=1 D3Q7 has lattice diffusivity 1/8.
+    end = 1/64
+    decay = math.exp(-math.pi**2*end)
+    first_heat = (1-decay)/math.pi
+    second_heat = .1*(1-decay**4)/math.pi
+    exact_walls = torch.tensor([first_heat+second_heat, first_heat-second_heat],
+                               dtype=torch.float64)
+    errors = []
+    for n in (8,16,32):
+        dx = 1/n
+        dt = dx*dx/8
+        x = torch.arange(2*n, dtype=torch.float64)*dx
+        initial = (torch.sin(math.pi*x)+.2*torch.sin(2*math.pi*x)).expand(3,3,-1)
+        zero = torch.zeros_like(initial)
+        g = thermal_equilibrium_3d(initial,zero,zero,zero)
+        powers = []
+        steps = round(end/dt)
+        for step in range(steps+1):
+            field = thermal_macroscopic_3d(g)
+            slab = field[:,:,:n+1]
+            powers.append([wall_heat_rate_3d(slab,1.,wall,spacing_zyx=(.5,.5,dx))
+                           for wall in ("x-","x+")])
+            if step < steps:
+                g = thermal_stream_3d(thermal_collide_bgk_3d(g,field,zero,zero,zero,1.))
+
+        heat = torch.trapezoid(torch.tensor(powers,dtype=torch.float64),dx=dt,dim=0)
+        # All rows are identical, and transverse cross-sectional area is 1 m².
+        stored = torch.trapezoid(slab[1,1],dx=dx).item()
+        initial_heat = torch.trapezoid(initial[1,1,:n+1],dx=dx).item()
+        wall_error = (heat-exact_walls).abs().max().item()
+        storage_error = abs(stored-2*decay/math.pi)
+        balance = abs(initial_heat-stored-heat.sum().item())
+        record_property(f"max_cumulative_wall_heat_error_{n}_J",wall_error)
+        record_property(f"final_storage_error_{n}_J",storage_error)
+        record_property(f"heat_balance_residual_{n}_J",balance)
+        errors.append((wall_error,storage_error,balance))
+    for coarse,fine in zip(errors,errors[1:]):
+        assert all(a/b > 3.4 for a,b in zip(coarse,fine))
+    assert max(errors[-1]) < 4.5e-4
