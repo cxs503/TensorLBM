@@ -122,6 +122,32 @@ def scalar_stream(g: torch.Tensor) -> torch.Tensor:
     return g[q_idx, y_idx, x_idx]
 
 
+def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch.Tensor]:
+    """Stream post-collision D2Q5 populations with halfway walls in x and periodic y.
+
+    For a stationary wall, a scalar or (ny,) value prescribes the diffusing
+    field by anti-bounce-back. None reflects the outgoing population for zero
+    normal flux. The second return has shape (2, ny): incoming minus outgoing
+    population per wall link, ordered west then east. Multiply by cell volume
+    and capacity to obtain heat supplied over the step.
+    """
+    if g.ndim != 3 or g.shape[0] != 5 or min(g.shape[1:]) < 1:
+        raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
+    streamed = scalar_stream(g)
+    transfers = []
+    for wall, incoming, outgoing, col in ((west, 1, 3, 0), (east, 3, 1, -1)):
+        leaving = g[outgoing, :, col]
+        arriving = leaving
+        if wall is not None:
+            value = torch.as_tensor(wall, dtype=g.dtype, device=g.device)
+            if value.ndim and value.shape != leaving.shape:
+                raise ValueError("wall scalar must be uniform or have one value per row")
+            arriving = 2 * _W5_EXACT[incoming] * value - leaving
+        streamed[incoming, :, col] = arriving
+        transfers.append(arriving - leaving)
+    return streamed, torch.stack(transfers)
+
+
 def scalar_macroscopic(g: torch.Tensor) -> torch.Tensor:
     """Recover concentration: C = Σ_i g_i."""
     return g.sum(dim=0)
