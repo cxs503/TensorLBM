@@ -519,14 +519,15 @@ def thermal_adiabatic_walls_3d(
 
 
 def thermal_flux_wall_pair_3d(
-    g: torch.Tensor, axis: str, inward_flux: tuple[float, float], *,
+    g: torch.Tensor, axis: str, inward_flux: tuple[float | torch.Tensor, float | torch.Tensor], *,
     dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
 ) -> torch.Tensor:
-    """Impose uniform inward heat fluxes on two opposite half-way walls.
+    """Impose inward heat fluxes on two opposite half-way walls.
 
     Apply immediately after periodic streaming in a cell-centered D3Q7
     diffusion solve. The two fluxes (lower, upper) are positive into the
-    domain in W/m². Supply dt in seconds, normal cell spacing in meters,
+    domain in W/m². Each flux may be a scalar or a real tensor with the exact
+    face shape in the remaining (z, y, x) dimension order. Supply dt in seconds, normal cell spacing in meters,
     and volumetric heat capacity in J/(m³ K), or use consistent lattice
     units. Each incoming population reflects the outgoing one from its own
     face and adds flux*dt/(spacing*capacity) to the boundary cell.
@@ -535,19 +536,32 @@ def thermal_flux_wall_pair_3d(
         raise ValueError("axis must be x, y or z")
     if g.ndim != 4 or g.shape[0] != 7 or min(g.shape[1:]) < 1 or not g.is_floating_point():
         raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
-    if len(inward_flux) != 2 or not all(math.isfinite(q) for q in inward_flux):
-        raise ValueError("provide two finite inward fluxes")
+    if len(inward_flux) != 2:
+        raise ValueError("provide two inward fluxes")
     if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
         raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
     direction = "xyz".index(axis)
     positive = 1+2*direction
     negative = positive+1
     dim = 2-direction
+    face_shape = g[positive].select(dim, 0).shape
+    fluxes = []
+    for flux in inward_flux:
+        if isinstance(flux, torch.Tensor):
+            if flux.is_complex() or (flux.ndim and flux.shape != face_shape):
+                raise ValueError(f"expected a real scalar or flux tensor of shape {tuple(face_shape)}")
+            flux = flux.to(device=g.device, dtype=g.dtype)
+            finite = torch.isfinite(flux).all().item()
+        else:
+            finite = math.isfinite(flux)
+        if not finite:
+            raise ValueError("inward flux must be finite")
+        fluxes.append(flux)
     scale = dt/(spacing*volumetric_heat_capacity)
     updated = g.clone()
     # Periodic streaming put each outgoing population on the opposite face.
-    updated[positive].select(dim,0).copy_(g[negative].select(dim,-1)+inward_flux[0]*scale)
-    updated[negative].select(dim,-1).copy_(g[positive].select(dim,0)+inward_flux[1]*scale)
+    updated[positive].select(dim,0).copy_(g[negative].select(dim,-1)+fluxes[0]*scale)
+    updated[negative].select(dim,-1).copy_(g[positive].select(dim,0)+fluxes[1]*scale)
     return updated
 
 

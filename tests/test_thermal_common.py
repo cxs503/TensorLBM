@@ -791,3 +791,44 @@ def test_opposed_fluxes_preserve_steady_fourier_field(tau, record_property):
     record_property("max_fourier_flux_error_W_m2", max_flux_error)
     assert max_field_error < 5e-14
     assert max_flux_error < 5e-13
+
+
+def test_face_flux_maps_preserve_harmonic_polynomial(record_property):
+    from tensorlbm.thermal_common import thermal_flux_wall_pair_3d
+
+    dx, capacity, conductivity = 0.1, 1.8, 2.5
+    dt = dx**2 * capacity / (8 * conductivity)
+    coordinates = [(torch.arange(n, dtype=torch.float64) + 0.5) * dx for n in (5, 7, 9)]
+    z, y, x = torch.meshgrid(*coordinates, indexing="ij")
+    exact = 1 + x*x - y*y + x*y*z
+    zero = torch.zeros_like(exact)
+    g = thermal_equilibrium_3d(exact, zero, zero, zero)
+    # Inward flux is -k*dT/dx at x=0 and +k*dT/dx at x=L (likewise y,z).
+    yz = (y*z)[:, :, 0]
+    xz = (x*z)[:, 0, :]
+    xy = (x*y)[0, :, :]
+    faces = [
+        (-conductivity*yz, conductivity*(2*x.shape[2]*dx + yz)),
+        (-conductivity*xz, conductivity*(-2*y.shape[1]*dx + xz)),
+        (-conductivity*xy, conductivity*xy),
+    ]
+    worst = 0.0
+    for _ in range(64):
+        g = thermal_stream_3d(thermal_collide_bgk_3d(
+            g, thermal_macroscopic_3d(g), zero, zero, zero, 1.0
+        ))
+        for axis, pair in zip("xyz", faces):
+            g = thermal_flux_wall_pair_3d(
+                g, axis, pair, dt=dt, spacing=dx, volumetric_heat_capacity=capacity
+            )
+        worst = max(worst, (thermal_macroscopic_3d(g) - exact).abs().max().item())
+    record_property("max_temperature_error_K", worst)
+    assert worst < 5e-14
+
+
+@pytest.mark.parametrize("flux", [torch.zeros(5, 1), torch.full((5, 7), float("nan"))])
+def test_invalid_face_flux_map(flux):
+    from tensorlbm.thermal_common import thermal_flux_wall_pair_3d
+
+    with pytest.raises(ValueError):
+        thermal_flux_wall_pair_3d(torch.zeros(7, 5, 7, 9), "x", (flux, 0.0))
