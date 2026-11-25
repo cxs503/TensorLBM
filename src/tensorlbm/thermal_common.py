@@ -488,35 +488,32 @@ def thermal_dirichlet_wall_3d(
     return g_new
 
 
-def thermal_adiabatic_walls_3d(g: torch.Tensor, walls: list[str]) -> torch.Tensor:
-    """Apply adiabatic (zero normal gradient) conditions on domain walls.
+def thermal_adiabatic_walls_3d(
+    g: torch.Tensor, walls: list[str], *, method: str = "copy",
+) -> torch.Tensor:
+    """Apply insulating conditions after streaming a D3Q7 field.
 
-    Copies the interior neighbour value to the boundary cell so that the
-    normal temperature gradient is zero.
-
-    Args:
-        g:     Thermal distribution, shape ``(7, nz, ny, nx)``.
-        walls: List of wall specifiers (e.g. ``["y-", "y+", "z-", "z+"]``).
-
-    Returns:
-        Updated distribution (same shape).
+    "copy" copies the neighboring interior slab onto each selected face.
+    For pure diffusion, "even_reflection" places the zero-flux plane on the
+    wall nodes. It mirrors the population arriving from inside the domain
+    into the opposite direction. Each axis updates its own normal pair,
+    including at edges and corners shared by multiple insulating walls.
     """
+    if method not in ("copy", "even_reflection"):
+        raise ValueError("method must be copy or even_reflection")
     g_new = g.clone()
     for wall in walls:
-        if wall == "x-":
-            g_new[:, :, :, 0] = g[:, :, :, 1]
-        elif wall == "x+":
-            g_new[:, :, :, -1] = g[:, :, :, -2]
-        elif wall == "y-":
-            g_new[:, :, 0, :] = g[:, :, 1, :]
-        elif wall == "y+":
-            g_new[:, :, -1, :] = g[:, :, -2, :]
-        elif wall == "z-":
-            g_new[:, 0, :, :] = g[:, 1, :, :]
-        elif wall == "z+":
-            g_new[:, -1, :, :] = g[:, -2, :, :]
-        else:
+        if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
             raise ValueError(f"wall must be x-/x+/y-/y+/z-/z+, got {wall!r}")
+        axis = "xyz".index(wall[0])
+        index, neighbour = (0, 1) if wall[1] == "-" else (-1, -2)
+        face = g_new.select(3-axis, index)
+        if method == "copy":
+            face[:] = g.select(3-axis, neighbour)
+        else:
+            positive = 1+2*axis
+            arriving, reflected = (positive+1, positive) if index == 0 else (positive, positive+1)
+            face[reflected] = g.select(3-axis, index)[arriving]
     return g_new
 
 

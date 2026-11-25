@@ -616,3 +616,49 @@ def test_direct_wall_populations_match_odd_extension(tau,record_property):
         worst = max(worst,(direct-full[box]).abs().max().item())
     record_property("maximum_population_difference",worst)
     assert worst < 3e-14
+
+
+@pytest.mark.parametrize("tau", [.75, 1.5])
+def test_insulated_box_even_reflection_and_cosine_decay(tau,record_property):
+    from tensorlbm.thermal_common import thermal_adiabatic_walls_3d
+
+    faces = ["x-", "x+", "y-", "y+", "z-", "z+"]
+    errors = []
+    for n in (8,16):
+        dx = 1/n
+        dt = (tau-.5)*dx**2/4
+        end = 1/64
+        s = torch.arange(2*n,dtype=torch.float64)*math.pi/n
+        z,y,x = torch.meshgrid(s,s,s,indexing="ij")
+        mode = torch.cos(z)*torch.cos(y)*torch.cos(2*x)
+        initial = 1.25+mode
+        zero = torch.zeros_like(initial)
+        extended = thermal_equilibrium_3d(initial,zero,zero,zero)
+        box = (slice(0,n+1),)*3
+        direct = extended[(slice(None),)+box].clone()
+        box_zero = zero[box]
+        discrepancy = drift = normal_flux = 0.
+        for _ in range(round(end/dt)):
+            extended = thermal_stream_3d(thermal_collide_bgk_3d(
+                extended,thermal_macroscopic_3d(extended),zero,zero,zero,tau))
+            direct = thermal_stream_3d(thermal_collide_bgk_3d(
+                direct,thermal_macroscopic_3d(direct),box_zero,box_zero,box_zero,tau))
+            direct = thermal_adiabatic_walls_3d(direct,faces,method="even_reflection")
+            discrepancy = max(discrepancy,(direct-extended[(slice(None),)+box]).abs().max().item())
+            for axis in range(3):
+                current = direct[1+2*axis]-direct[2+2*axis]
+                for boundary in (0,-1):
+                    normal_flux = max(normal_flux,current.select(2-axis,boundary).abs().max().item())
+            heat = thermal_macroscopic_3d(direct)
+            for _ in range(3):
+                heat = torch.trapezoid(heat,dx=dx,dim=-1)
+            drift = max(drift,abs(heat.item()-1.25))
+        exact = 1.25 + math.exp(-6*math.pi**2*end)*mode[box]
+        error = (thermal_macroscopic_3d(direct)-exact).abs().max().item()
+        errors.append(error)
+        record_property(f"max_temperature_error_{n}_K",error)
+        record_property(f"max_population_discrepancy_{n}",discrepancy)
+        record_property(f"max_normal_population_flux_{n}",normal_flux)
+        record_property(f"max_heat_drift_{n}_J",drift)
+        assert normal_flux == 0 and discrepancy < 2e-14 and drift < 2e-14
+    assert errors[0]/errors[1] > 3.5
