@@ -255,6 +255,12 @@ def thermal_collide_trt_3d(
     The odd relaxation time tau_T sets the lattice diffusivity (tau_T-0.5)/4.
     tau_even controls the symmetric populations, including the rest mode.
     T is the population sum, as in thermal_collide_bgk_3d.
+
+    For source-free, zero-velocity periodic diffusion on a uniform cubic
+    lattice, tau_T = 1/2 + sqrt(3)/6 and tau_even = 1/2 + sqrt(3)/3
+    cancel the leading directional error in the slow-mode decay rate.
+    At physical diffusivity alpha, use dt = (tau_T-1/2)*dx**2/(4*alpha).
+
     """
     if not all(math.isfinite(t) and t > .5 for t in (tau_T, tau_even)):
         raise ValueError("both relaxation times must be finite and greater than 0.5")
