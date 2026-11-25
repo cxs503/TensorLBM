@@ -267,7 +267,7 @@ def test_poiseuille_profile_and_permeability():
     assert 1.0 < k_num / k_ref < 1.5, (k_num, k_ref)
     # parabolic profile through the wall mid-planes (y = 0.5 and y = h + 0.5)
     y = torch.arange(ny, dtype=f.dtype) - 0.5
-    prof = g / (2.0 * nu) * y * (h - y)
+    prof = (g / (2.0 * nu) * y * (h - y))[:, None].expand_as(ux)
     rel = float((ux[fluid] - prof[fluid]).abs().max() / prof[fluid].abs().max())
     assert rel < 0.15, rel  # half-way wall offset: ~5-10% of u_max at H=32 (REPORT.md)
     assert float(uy[fluid].abs().max()) < 1e-3

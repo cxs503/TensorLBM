@@ -53,6 +53,7 @@ RETIRED_FILES = {
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("src", "artifacts"),
     ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"),
+    ("xval", "XVAL-LBM-MASK-INDEXED-BOUNCEBACK"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),
     ("scripts", "w26_ghia"),

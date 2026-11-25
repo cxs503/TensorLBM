@@ -1,0 +1,70 @@
+{
+  "scope": "Mask-indexed bounce-back comparison, with a vivsim rule port and an analytic Poiseuille reference. The archived result contains identity, channel and timing data. The fresh CPU check covers only the identity block.",
+  "criteria": {
+    "H1": {
+      "metric": "max |A2 - A1|_inf over the (Q, *spatial) array",
+      "threshold": "== 0.0 (bitwise; a representation change must be exact)"
+    },
+    "H2": {
+      "metric": "max |A2 - A4|_inf on a body-force channel after 1500 steps, run twice (g=0 and g=1e-5)",
+      "threshold": "g=0: == 0.0 (bitwise); g>0: <= 1e-4 absolute on populations of order 0.1 (deviation is reported, not tuned)"
+    },
+    "H3": {
+      "metric": "err_pct = (k_measured - H^2/12)/(H^2/12) * 100 for H in {8,16,32,64}, tau=0.8",
+      "threshold": "|err| < 15% (owner band) at every H, and |err| < 1% for H >= 16; monotone decrease of |err| with H is reported but NOT required to pass (the previous verified case showed non-monotone behaviour and it is kept visible)"
+    },
+    "H4": {
+      "metric": "err_pct_if_H_eq_ny at the same H sweep",
+      "threshold": "reported as a trap; predicted |err| ~ (ny/H)^2 - 1 -> 12% at H=8, 3% at H=32 (checked, not tuned)"
+    },
+    "H5": {
+      "metric": "wall time per application on a 512x512 float64 field, solid fraction in {0.005,0.02,0.05,0.10,0.25,0.50}",
+      "threshold": "speedup >= 1.5x vs dense where at solid fraction <= 0.10; speedup is reported for all fractions (both crossings reported)"
+    },
+    "H6": {
+      "metric": "|err Cd| (%) for D in {16, 24} against the in-repo anchor ref_cd = 5.57953523384 (benchmarks/verified/cylinder/re20_st/result.json)",
+      "threshold": "owner band 15% applies to each arm; the *comparison* is reported as the adoption trade-off (no threshold invented to force a winner)"
+    }
+  },
+  "source": [
+    "benchmarks/cross_validation/mask_indexed_bounceback/run_xval.py",
+    "src/tensorlbm/boundary/mask_indexed_bounceback.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/mask_indexed_bounceback/predeclared.json"
+  ],
+  "documentation": [
+    "docs/XVAL-LBM-MASK-INDEXED-BOUNCEBACK.md",
+    "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/mask_indexed_bounceback/predeclared.json",
+    "benchmarks/verified/cylinder/re20_st/result.json"
+  ],
+  "references": [
+    {
+      "title": "vivsim obstacle bounce-back",
+      "repository": "haimingz/vivsim",
+      "commit": "fb84b12f02e18f3b9dfdf738d6a1a318d81539f9",
+      "source": "benchmarks/cross_validation/mask_indexed_bounceback/predeclared.json"
+    },
+    {
+      "title": "Analytic plane Poiseuille permeability",
+      "source": "docs/XVAL-LBM-MASK-INDEXED-BOUNCEBACK.md",
+      "law": "H²/12"
+    },
+    {
+      "title": "Schaefer–Turek cylinder Re=20 in-repository comparison",
+      "source": "benchmarks/verified/cylinder/re20_st/result.json"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/identity.json",
+    "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/channel.json",
+    "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/cost.json",
+    "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/summary.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/mask-indexed-bounceback-xval-2026-11-25.json"
+  ]
+}
