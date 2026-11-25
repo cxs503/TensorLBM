@@ -525,8 +525,9 @@ def test_d3q7_slab_cooling_wall_heat_and_storage(record_property):
     assert max(errors[-1]) < 4.5e-4
 
 
-def test_d3q7_cuboid_cooling_six_face_energy_budget(record_property):
-    from tensorlbm.thermal_common import wall_heat_rate_3d
+@pytest.mark.parametrize(("direct_walls", "tau"), [(False,1.), (True,1.), (True,.75), (True,1.5)])
+def test_d3q7_cuboid_cooling_six_face_energy_budget(direct_walls, tau, record_property):
+    from tensorlbm.thermal_common import thermal_dirichlet_wall_3d, wall_heat_rate_3d
 
     lengths = (.75, 1.25, 1.)  # z, y, x in meters
     modes = ((1., (1,1,1)), (.08, (2,1,1)), (-.12, (1,2,1)), (.16, (1,1,2)))
@@ -550,9 +551,9 @@ def test_d3q7_cuboid_cooling_six_face_energy_budget(record_property):
     errors = []
     for n in (8,16,24):
         dx = 1/n
-        dt = dx**2/8  # tau=1, k=C=1
+        dt = (tau-.5)*dx**2/4  # physical diffusivity k/C=1
         intervals = [round(L*n) for L in lengths]
-        coordinates = [torch.arange(2*m,dtype=torch.float64)*dx for m in intervals]
+        coordinates = [torch.arange(m+1 if direct_walls else 2*m,dtype=torch.float64)*dx for m in intervals]
         z,y,x = torch.meshgrid(*coordinates,indexing="ij")
         initial = torch.zeros_like(x)
         for amplitude, orders in modes:
@@ -568,7 +569,10 @@ def test_d3q7_cuboid_cooling_six_face_energy_budget(record_property):
             powers.append([wall_heat_rate_3d(field[box],1.,face,spacing_zyx=(dx,dx,dx))
                            for face in faces])
             if step < steps:
-                g = thermal_stream_3d(thermal_collide_bgk_3d(g,field,zero,zero,zero,1.))
+                g = thermal_stream_3d(thermal_collide_bgk_3d(g,field,zero,zero,zero,tau))
+                if direct_walls:
+                    for face in faces:
+                        g = thermal_dirichlet_wall_3d(g, 0., face, method="odd_reflection")
         heat = torch.trapezoid(torch.tensor(powers,dtype=torch.float64),dx=dt,dim=0)
         def storage(values):
             for _ in range(3):
@@ -584,4 +588,31 @@ def test_d3q7_cuboid_cooling_six_face_energy_budget(record_property):
         record_property(f"balance_error_{n}_J",balance)
         errors.append((max(wall_errors),energy_error,balance))
     for a,b,c in zip(*errors):
-        assert a/b > 3 and b/c > 2
+        assert a/b > (2.5 if tau == .75 else 3.) and b/c > 2
+
+
+@pytest.mark.parametrize("tau", [.75, 1.5])
+def test_direct_wall_populations_match_odd_extension(tau,record_property):
+    from tensorlbm.thermal_common import thermal_dirichlet_wall_3d
+
+    n = 8
+    wall_temp = 2.5
+    s = torch.arange(2*n,dtype=torch.float64)*math.pi/n
+    z,y,x = torch.meshgrid(s,s,s,indexing="ij")
+    initial = wall_temp + torch.sin(z)*torch.sin(2*y)*torch.sin(x)
+    full_zero = torch.zeros_like(initial)
+    full = thermal_equilibrium_3d(initial,full_zero,full_zero,full_zero)
+    box = (slice(None),) + (slice(0,n+1),)*3
+    direct = full[box].clone()
+    zero = torch.zeros_like(direct[0])
+    worst = 0.
+    for _ in range(12):
+        full = thermal_stream_3d(thermal_collide_bgk_3d(
+            full,thermal_macroscopic_3d(full),full_zero,full_zero,full_zero,tau))
+        direct = thermal_stream_3d(thermal_collide_bgk_3d(
+            direct,thermal_macroscopic_3d(direct),zero,zero,zero,tau))
+        for face in ("x-","x+","y-","y+","z-","z+"):
+            direct = thermal_dirichlet_wall_3d(direct,wall_temp,face,method="odd_reflection")
+        worst = max(worst,(direct-full[box]).abs().max().item())
+    record_property("maximum_population_difference",worst)
+    assert worst < 3e-14

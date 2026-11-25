@@ -451,12 +451,15 @@ def thermal_dirichlet_wall_3d(
     g: torch.Tensor,
     T_wall: float,
     wall: str,
+    *, method: str = "equilibrium",
 ) -> torch.Tensor:
     """Apply a Dirichlet (fixed-temperature) condition on one domain wall.
 
-    Sets the equilibrium distribution at the wall cells to the prescribed
-    temperature with zero velocity, which is the standard anti-bounce-back
-    equivalent for the D3Q7 passive-scalar lattice.
+    Apply after streaming. The default resets all populations to the
+    zero-velocity wall equilibrium. For pure diffusion at a uniform wall,
+    "odd_reflection" preserves the population arriving from the interior
+    and mirrors its departure from equilibrium into the opposite direction.
+    This places the prescribed temperature on the wall node.
 
     Args:
         g:       Thermal distribution, shape ``(7, nz, ny, nx)``.
@@ -466,24 +469,22 @@ def thermal_dirichlet_wall_3d(
     Returns:
         Updated distribution (same shape).
     """
-    g_new = g.clone()
-    # Equilibrium at T_wall with zero velocity: g_eq = w_i * T_wall
-    w = _w_thermal(g.device).to(g.dtype)
-    geq_scalar = (w * T_wall).view(7, 1, 1, 1)  # (7,1,1,1) broadcastable to 3D slices
-    if wall == "x-":
-        g_new[:, :, :, 0] = geq_scalar.squeeze(-1)
-    elif wall == "x+":
-        g_new[:, :, :, -1] = geq_scalar.squeeze(-1)
-    elif wall == "y-":
-        g_new[:, :, 0, :] = geq_scalar.squeeze(-1)
-    elif wall == "y+":
-        g_new[:, :, -1, :] = geq_scalar.squeeze(-1)
-    elif wall == "z-":
-        g_new[:, 0, :, :] = geq_scalar.squeeze(-1)
-    elif wall == "z+":
-        g_new[:, -1, :, :] = geq_scalar.squeeze(-1)
-    else:
+    if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
         raise ValueError(f"wall must be x-/x+/y-/y+/z-/z+, got {wall!r}")
+    if method not in ("equilibrium", "odd_reflection"):
+        raise ValueError("method must be equilibrium or odd_reflection")
+    axis = "xyz".index(wall[0])
+    index = 0 if wall[1] == "-" else -1
+    g_new = g.clone()
+    face = g_new.select(3-axis, index)
+    w = _w_thermal(g.device).to(g.dtype)
+    face[:] = (w*T_wall)[:, None, None]
+    if method == "odd_reflection":
+        positive = 1+2*axis
+        arriving, reflected = (positive+1, positive) if index == 0 else (positive, positive+1)
+        incoming_value = g.select(3-axis, index)[arriving]
+        face[arriving] = incoming_value
+        face[reflected] = 2*w[arriving]*T_wall - incoming_value
     return g_new
 
 
