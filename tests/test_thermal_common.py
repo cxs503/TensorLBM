@@ -951,3 +951,26 @@ def test_periodic_gradient_start_matches_discrete_fourier_derivative():
     expected = thermal_gradient_initialization_3d(field, zero, zero, zero, grad, spacing=spacing, tau_T=.8)
     torch.testing.assert_close(actual, expected, atol=2e-15, rtol=0.)
     torch.testing.assert_close(actual.sum(0), field, atol=2e-15, rtol=0.)
+
+
+@pytest.mark.parametrize("dim", [0, 1, 2])
+@pytest.mark.parametrize("length", [2, 5])
+def test_sampled_wall_gradient_uses_one_sided_derivatives(dim, length):
+    from tensorlbm.thermal_common import thermal_gradient_initialization_3d
+
+    shape = [3, 3, 3]
+    shape[dim] = length
+    h = .23
+    coord = (torch.arange(length, dtype=torch.float64)+.5)*h
+    view = [1, 1, 1]
+    view[dim] = length
+    x = coord.reshape(view).expand(shape)
+    field = x*x+2*x if length > 2 else 2*x
+    grad = field.new_zeros((3, *shape))
+    grad[2-dim] = 2*x+2 if length > 2 else 2.
+    zero = torch.zeros_like(field)
+    opts = dict(spacing=h, tau_T=1.4)
+    actual = thermal_gradient_initialization_3d(field, zero, zero, zero,
+        periodic="xyz".replace("xyz"[2-dim], ""), **opts)
+    expected = thermal_gradient_initialization_3d(field, zero, zero, zero, grad, **opts)
+    torch.testing.assert_close(actual, expected, atol=2e-15, rtol=0.)

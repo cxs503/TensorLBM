@@ -143,15 +143,26 @@ def thermal_equilibrium_3d(
     return w * T.unsqueeze(0) * (1.0 + 4.0 * cu)
 
 
+def _periodic_axes(periodic: bool | str) -> str:
+    if isinstance(periodic, str):
+        if set(periodic)-set("xyz") or len(set(periodic)) != len(periodic):
+            raise ValueError("periodic axes must be distinct letters from xyz")
+        return periodic
+    return "xyz" if periodic else ""
+
+
 def thermal_gradient_initialization_3d(T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
                                        uz: torch.Tensor, gradient_xyz: torch.Tensor | None = None, *,
-                                       tau_T: float, spacing: float = 1.) -> torch.Tensor:
+                                       tau_T: float, spacing: float = 1., periodic: bool | str = True) -> torch.Tensor:
     """Initialize pre-collision D3Q7 populations for smooth BGK diffusion.
 
     Supply a real temperature gradient in K/m shaped (3,nz,ny,nx), with
     x,y,z components, and velocities in lattice units. Omit the gradient
-    for a fully periodic cubic-cell grid to estimate it from T with centered
-    differences across all three seams. For walls, supply the gradient. Under diffusive
+    to estimate it on a cubic-cell grid. Centered differences wrap on periodic
+    axes (True for all, False for none, or a string such as "yz"). On other axes
+    use one-sided second-order differences at the end cells, or the common
+    secant for a two-cell axis. A single nonperiodic cell requires a supplied
+    gradient. The estimate uses cell temperatures only. Under diffusive
     scaling the leading correction is -tau*w_i*spacing*c_i.grad(T).
     Opposite directions cancel in temperature and supply the diffusive
     first moment at startup. Use the same tau and cubic spacing in the solve.
@@ -161,8 +172,18 @@ def thermal_gradient_initialization_3d(T: torch.Tensor, ux: torch.Tensor, uy: to
     if not math.isfinite(tau_T) or tau_T <= .5 or not math.isfinite(spacing) or spacing <= 0:
         raise ValueError("require finite tau_T > 0.5 and positive finite spacing")
     if gradient_xyz is None:
-        gradient_xyz = torch.stack([(T.roll(-1, dim)-T.roll(1, dim))/(2*spacing)
-                                    for dim in (2, 1, 0)])
+        axes = _periodic_axes(periodic)
+        components = []
+        for axis, dim in zip("xyz", (2, 1, 0)):
+            if axis in axes:
+                derivative = (T.roll(-1, dim)-T.roll(1, dim))/(2*spacing)
+            else:
+                if T.size(dim) < 2:
+                    raise ValueError("a nonperiodic derivative needs at least two temperature samples")
+                order = 2 if T.size(dim) >= 3 else 1
+                derivative, = torch.gradient(T, spacing=spacing, dim=(dim,), edge_order=order)
+            components.append(derivative)
+        gradient_xyz = torch.stack(components)
     elif gradient_xyz.shape != (3, *T.shape) or not gradient_xyz.is_floating_point() or gradient_xyz.device != T.device:
         raise ValueError("expected real gradients shaped (3,nz,ny,nx) on the temperature device")
     g = thermal_equilibrium_3d(T, ux, uy, uz)
@@ -246,12 +267,7 @@ def thermal_link_fluxes_3d(post_collision: torch.Tensor, *, dt: float = 1.,
     if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
         raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
     scale = volumetric_heat_capacity*spacing/dt
-    if isinstance(periodic, str):
-        if set(periodic)-set("xyz") or len(set(periodic)) != len(periodic):
-            raise ValueError("periodic axes must be distinct letters from xyz")
-        axes = periodic
-    else:
-        axes = "xyz" if periodic else ""
+    axes = _periodic_axes(periodic)
     fluxes = []
     for axis, name in enumerate("xyz"):
         dim = 2-axis
