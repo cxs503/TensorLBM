@@ -29,7 +29,7 @@
 
 **F5（轻）告警实体化。** 复跑实体化 `UserWarning: Ma = 0.1039 ≥ 0.1 压缩性误差可能显著`（`test_case_units_vs_converter_cavity`）；报告未讨论该算例的可压缩性适用边界。
 
-**F7（中·审计侧新算）报告口径掩盖了量化残差。** 用真换算器复算 phys→lattice→phys 往返（`scripts/audit_m17668_figure.py`，产物 `artifacts/m17668/units_equivalence_probe.json`）：速度往返最差 0.0e0（≤1e-16 舍入），而**时间往返最差 21.9%**——`phys_time_to_steps` 返回整数步，t_back = n_steps·dt 的量化误差 O(dt) 而非舍入级。报告 ④ 的「所有核心量误差=0%」仅对连续量成立，时间维度须单列量化误差。
+**F7（中·审计侧新算）报告口径掩盖了量化残差。** 用真换算器复算 phys→lattice→phys 往返（[复算脚本](../development/audit/m17668/audit_m17668_figure.py)，产物 `artifacts/m17668/units_equivalence_probe.json`）：速度往返最差 0.0e0（≤1e-16 舍入），而**时间往返最差 21.9%**——`phys_time_to_steps` 返回整数步，t_back = n_steps·dt 的量化误差 O(dt) 而非舍入级。报告 ④ 的「所有核心量误差=0%」仅对连续量成立，时间维度须单列量化误差。
 
 **F6（轻）无物理算例。** 全单不含流场计算，故无场量云图；锚名含 "CASE-SCHEMA-JSON"，但 JSON 面仅覆盖 `summary()/to dict` 可序列化往返（`test_xval_…py:374-388`），未验证 case-schema JSON 的**反序列化重建 + units 块校验**（读入 JSON→构造 converter→回算物理量闭环缺位）。
 
