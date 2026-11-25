@@ -18,12 +18,14 @@ C = torch.tensor(
         [1, -1],
     ],
     dtype=torch.int64,
+    device="cpu"
 )
 W = torch.tensor(
     [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36],
     dtype=torch.float32,
+    device="cpu",
 )
-OPPOSITE = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
+OPPOSITE = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64, device="cpu")
 
 
 @functools.cache
