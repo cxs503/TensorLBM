@@ -2,7 +2,7 @@
 
 **Mission** 17957 · **Repo** TensorLBM · **Branch** `agent/m17957` · **类型** 开源对标（XVAL）
 **对标对象** `AminZar69/CudaPhaseField` @ `d6181e677c413bbec443570010bca60d896022b5`（GPL-3.0，inventoried）
-**判据** owner 精度标准 <15%；本单另有预登记阈值（`xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/predeclared.json`）
+**判据** owner 精度标准 <15%；本单另有预登记阈值（[预登记文件](../development/verification/maxregcount_pinned/predeclared.json)）
 **结论（先给）** 协议移植**成立**；"钉预算即得可复现计时"在共享主机上**按预登记阈值不成立**（honest partial）：
 
 | 判据 | 预登记 | 实测 | 判 |
@@ -125,9 +125,9 @@
 - 与另一个并发计时作业（`m17863`）同机竞争 CPU，双方计时互相污染 → 计时类 XVAL 应有独占节点门（建议入平台侧机制，不属本仓）。
 
 **(iv) 工件清单**
-- 预登记：`xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/predeclared.json`（含 2 条 amendments）
+- 预登记：[预登记文件](../development/verification/maxregcount_pinned/predeclared.json)（含 2 条 amendments）
 - 机制：`src/tensorlbm/bench_pinning.py`（+ `tests/test_bench_pinning.py`，8 tests 全绿）
-- 运行器/分析：`run_arm.py` / `analyze.py` / `drive.sh`（串行驱动，禁并行）
+- 运行器/分析：[单臂入口](../development/verification/maxregcount_pinned/run_arm.py) / [分析](../development/verification/maxregcount_pinned/analyze.py) / [串行驱动](../development/verification/maxregcount_pinned/drive.sh)（串行驱动，禁并行）
 - 原始：`artifacts/xval_maxregcount_pinned/tune_{U,P}_{0..4}.json`、`ladder.json`、`summary.json`、`convergence.json`、`table_arms.csv`、`table_ladder.csv`、`table_registers.csv`、`oss_citation.json`
 - 图：`figures/xval_maxregcount_pinned/fig1_tuning_winner_vs_budget.png`（胜者随预算变化）、`fig2_selection_stability.png`（两臂 5 次启动）、`fig3_poiseuille_pin_neutrality.png`（物理中性）、`fig4_register_budget_vs_oss_cap.png`（钉值不可抄）
 

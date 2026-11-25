@@ -7,7 +7,7 @@ thresholds predeclared in ``predeclared.json``, writes ``summary.json`` +
 
 Usage::
 
-    python xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/analyze.py \
+    python development/verification/maxregcount_pinned/analyze.py \
         --artifacts artifacts/xval_maxregcount_pinned \
         --figures figures/xval_maxregcount_pinned \
         --oss-docs /srv/tensor/workspace/TensorPlatform/docs/oss_inventory
@@ -22,7 +22,7 @@ import statistics
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 import matplotlib  # noqa: E402

@@ -1,0 +1,42 @@
+{
+  "scope": "Historical unpacked MPI halo and overlap audit, with preregistration and measured evidence. Native MPI and current scientific acceptance remain unevaluated.",
+  "source": [
+    "docs/audit_m17994/evidence/run_xval.py",
+    "src/tensorlbm/parallel/slab_unpacked.py"
+  ],
+  "config": [
+    "docs/audit_m17994/evidence/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/mpi_slab_unpacked_halo/README.md",
+    "docs/audit_m17994/AUDIT_REPORT.md",
+    "docs/audit_m17994/evidence/RESULTS.md"
+  ],
+  "reference_files": [
+    "docs/audit_m17994/evidence/predeclared.json",
+    "docs/audit_m17994/evidence/SNAPSHOT_slab_unpacked_m17994.py"
+  ],
+  "references": [
+    {
+      "title": "lbm-principles-practice/code",
+      "source": "docs/audit_m17994/evidence/predeclared.json"
+    }
+  ],
+  "criteria": {
+    "owner_acceptance_pct": 15.0,
+    "identity_rel": 1e-12,
+    "bytes_ratio_expected": 1.3333333333333333,
+    "interpretation": "H1/H3 hold iff every NP>1 arm matches NP=1 within 1e-12 relative (nine orders stricter than the owner band: a decomposition change must be exact, only the physics-vs-continuum comparison uses the 15% band). H2 uses the acceptance grid N=128; coarser grids are reported as convergence evidence, never as a pass.",
+    "stability_rule": "a run producing a non-finite population, rho outside [0.95, 1.05] or max|u| > 0.1 cs is declared failed and reported, never tuned away",
+    "stopping_rule": "every arm runs the step count fixed before the run (600 at N=128); the step count is NOT extended after looking at a KPI. Wall budget 600 s per arm, above which the arm moves to the cluster queue"
+  },
+  "results": [
+    "docs/audit_m17994/evidence/audit_rerun_results.json",
+    "docs/audit_m17994/evidence/kpi.csv",
+    "docs/audit_m17994/evidence/kpi_audit_rerun.csv"
+  ],
+  "evidence": [
+    "development/audit/m17994/verdict_m17994.sql",
+    "docs/architecture/migrations/mpi-and-pinning-verification-xval-2026-11-25.json"
+  ]
+}
