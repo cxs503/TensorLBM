@@ -15,6 +15,7 @@ on:
       - "src/tensorlbm/model_matrix/**"
       - "src/tensorlbm/lbm_step_correct.py"
       - "scripts/model_matrix_integration.py"
+      - "tools/model_matrix_integration.py"
       - "tests/test_model_matrix.py"
       - ".github/workflows/model-matrix-ci.yml"
   push:
@@ -23,6 +24,7 @@ on:
       - "src/tensorlbm/model_matrix/**"
       - "src/tensorlbm/lbm_step_correct.py"
       - "scripts/model_matrix_integration.py"
+      - "tools/model_matrix_integration.py"
       - "tests/test_model_matrix.py"
       - ".github/workflows/model-matrix-ci.yml"
   workflow_dispatch:
@@ -48,7 +50,7 @@ jobs:
       - name: Model x case matrix (gate on 3% analytic viscosity + coverage)
         run: PYTHONPATH=src python -m tensorlbm.model_matrix run --out artifacts/model_matrix_ci/run --tau 0.6,0.8 --res 16 --min-coverage 0.85
       - name: Integration through the shared stepper (bit-identical binding)
-        run: PYTHONPATH=src python scripts/model_matrix_integration.py --out artifacts/model_matrix_ci/integration.json
+        run: PYTHONPATH=src python tools/model_matrix_integration.py --out artifacts/model_matrix_ci/integration.json
       - name: Matrix tests
         run: PYTHONPATH=src pytest -q tests/test_model_matrix.py --timeout=900
       - name: Upload coverage and benchmark evidence

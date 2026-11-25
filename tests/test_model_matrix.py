@@ -201,20 +201,25 @@ def test_coverage_accounting_and_reports(tmp_path):
         progress=False,
     )
     summary = summarize(run, min_coverage=0.85)
-    # bgk: 4 declared cases (feq, shear, acoustic, tg since R2);
-    # mrt-smag: 1 declared + 3 declared-inapplicable (LES has no molecular
-    # reference for either the shear or the bulk channel)
-    # The boundary-condition axis (round 3, `wall_poiseuille`) is declared
-    # automatically for every lattice-capable spec, so the declared-cell count
-    # is >= the number of cases written out by this fixture.
-    assert summary["cells_declared"] >= 5
+    # Both models declare the wall case. It gates BGK and remains a guard
+    # for the LES model, alongside the LES equilibrium fixed-point check.
+    assert summary["cells_declared"] == 7
     assert summary["cells_not_applicable"] == 3
-    assert summary["cells_covered"] == 5
+    assert summary["cells_covered"] == 7
     assert summary["coverage_fraction"] == 1.0
     assert summary["verdict"] == "PASS", summary["gate_failures"]
-    # guard model never claims a gate pass
-    guard_cells = [c for c in summary["cells"] if c["model"] == "d3q19/mrt-smag"]
-    assert all(c["status"] in ("GUARD", "NOT_APPLICABLE") for c in guard_cells), guard_cells
+    assert {(cell["model"], cell["case"]): cell["status"] for cell in summary["cells"]} == {
+        ("d3q19/bgk", "acoustic_decay"): "PASS",
+        ("d3q19/bgk", "feq_fixed_point"): "PASS",
+        ("d3q19/bgk", "shear_decay"): "PASS",
+        ("d3q19/bgk", "tg_decay"): "PASS",
+        ("d3q19/bgk", "wall_poiseuille"): "PASS",
+        ("d3q19/mrt-smag", "acoustic_decay"): "NOT_APPLICABLE",
+        ("d3q19/mrt-smag", "feq_fixed_point"): "GUARD",
+        ("d3q19/mrt-smag", "shear_decay"): "NOT_APPLICABLE",
+        ("d3q19/mrt-smag", "tg_decay"): "NOT_APPLICABLE",
+        ("d3q19/mrt-smag", "wall_poiseuille"): "GUARD",
+    }
 
     cov.write_json(run, summary, tmp_path / "model_matrix.json", repro_cmd="test")
     cov.write_csv(run, tmp_path / "matrix.csv")

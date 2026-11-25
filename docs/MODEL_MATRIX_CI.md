@@ -31,7 +31,7 @@ model directory, the case spec replaces `tests/external/*.test`.
 | `src/tensorlbm/model_matrix/coverage.py` | matrix driver, coverage accounting, ref-vs-got + coverage tables, figures |
 | `src/tensorlbm/model_matrix/__main__.py` | entry point `python -m tensorlbm.model_matrix {list,guard,run}`; **exit code is the gate** |
 | `src/tensorlbm/lbm_step_correct.py` | **integration caller**: `collide_fn` may be a registry key string, resolved at the single point where the shared stepper invokes the operator |
-| `scripts/model_matrix_integration.py` | integration run: real stepper driven by key strings, bit-identical vs the legacy raw-function call |
+| `tools/model_matrix_integration.py` | integration run: real stepper driven by key strings, bit-identical vs the legacy raw-function call |
 | `tests/test_model_matrix.py` | 39 invariant tests (incl. two negative controls) |
 | `.github/workflows/model-matrix-ci.yml`, `Makefile:model-matrix` | CI wiring |
 
@@ -155,6 +155,6 @@ PYTHONPATH=src python -m tensorlbm.model_matrix list
 PYTHONPATH=src python -m tensorlbm.model_matrix guard --out artifacts/model_matrix_ci
 PYTHONPATH=src python -m tensorlbm.model_matrix run --out artifacts/model_matrix_ci/run \
     --tau 0.6,0.8 --res 16 --min-coverage 0.85
-PYTHONPATH=src python scripts/model_matrix_integration.py --out artifacts/model_matrix_ci/integration.json
+PYTHONPATH=src python tools/model_matrix_integration.py --out artifacts/model_matrix_ci/integration.json
 PYTHONPATH=src pytest -q tests/test_model_matrix.py     # 39 passed in ~17 s
 ```
