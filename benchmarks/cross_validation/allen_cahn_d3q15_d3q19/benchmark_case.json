@@ -1,5 +1,5 @@
 {
-  "scope": "D3Q15/D3Q19 conservative Allen–Cahn phase-field comparison. The tracked JSON is the historical parameter and stencil probe. Full numerical arm outputs for the report are not tracked in the source revision. Two uniform controls were replayed during migration. The full scientific acceptance state is unevaluated.",
+  "scope": "D3Q15/D3Q19 conservative Allen–Cahn phase-field comparison. The tracked JSON is the historical parameter and stencil probe. Full numerical arm outputs for the report are not tracked in the source revision. Two uniform controls were replayed during migration. Two preregistered planar replays and a measurement diagnostic are linked. The full scientific acceptance state is unevaluated.",
   "criteria": {
     "sigma_rel_err_pct_max": 15.0,
     "sigma_rel_err_pct_target": 3.0,
@@ -41,9 +41,12 @@
   "results": [
     "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/artifacts/probe.json",
     "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform15.json",
-    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform19.json"
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform19.json",
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-26/P15_planar_W4.json",
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-26/P19_planar_W4.json"
   ],
   "evidence": [
-    "docs/architecture/migrations/phasefield-cross-validation-2026-11-25.json"
+    "docs/architecture/migrations/phasefield-cross-validation-2026-11-25.json",
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-26/profile_readout_diagnostic.json"
   ]
 }
