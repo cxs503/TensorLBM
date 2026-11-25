@@ -1,0 +1,130 @@
+{
+  "source_commit": "868bd101ccfc1073788d69234cb550ed7375ab47",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 68,
+      "after": 67
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE"
+  ],
+  "reference_scan": "Scanned tracked source, workflows, tests, docs and development scripts for the original runner and directory. The current public report and source-authority policy now point to the new paths. Archived audit and SQL references describe the original delivered checkout and retain their provenance.",
+  "compatibility": "The published docs URL is unchanged. The runner writes fresh output to the ignored outputs tree by default and accepts --output. The three historical files preserve their exact bytes. The original directory and invocation remain available in the source commit.",
+  "scientific_scope": "Real CPU replay before and after relocation gave identical numerical arrays, convergence flags and gate outcomes after excluding timing and throughput. The H=32 arm reaches the existing 12000-step cap without satisfying the convergence stopping criterion. External CUDA execution and independently reviewed scientific acceptance remain unevaluated.",
+  "verification": {
+    "structural": "Compared Git object modes, verified original and retained SHA-256 values, and confirmed identical Python function ASTs for the runner's numerical functions.",
+    "focused_tests": {
+      "command": "python -m pytest -q tests/test_porous_fluid_node_table.py tests/test_porous_darcy_layouts.py",
+      "passed": 28
+    },
+    "cpu_replay": {
+      "environment": {
+        "Python": "3.12.14",
+        "PyTorch": "2.15.0+cpu",
+        "device": "CPU x86_64",
+        "torch_threads": 1
+      },
+      "before": "Import xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/run_xval.py with runpy.run_path, call main() with one torch thread.",
+      "after": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py --output outputs/cross_validation/compressed_fluid_node_table/results.json",
+      "results": "benchmarks/cross_validation/compressed_fluid_node_table/evidence/2026-11-25-cpu-replay.json",
+      "results_sha256": "c0a5188109beee58b760b1e89701f4d3d31e90cf8334f931630a22496245eaa2",
+      "case_gates": {
+        "G1_representation_identity_lt_1e-8": {
+          "pass": true,
+          "ux_maxabs_rel": 1.7651071164214899e-12,
+          "ux_l2_rel": 8.510860454203697e-13,
+          "k_rel_diff": 1.4904888496506432e-13
+        },
+        "G2_physics_lt_15pct": {
+          "pass": true,
+          "err_pct": [
+            0.10937503947983651,
+            0.02827219324186281
+          ]
+        },
+        "G2_target_lt_3pct": {
+          "pass": true,
+          "err_pct": [
+            0.10937503947983651,
+            0.02827219324186281
+          ]
+        },
+        "G3_forcing_linearity_lt_5pct": {
+          "pass": true,
+          "k_rel_diff_g_admissible_pair": 3.836127626038432e-15,
+          "ma_max_admissible_pair": 0.05507154456567774,
+          "k_rel_diff_g_wide_pair_not_admitted": 5.504009202576902e-15,
+          "ma_max_wide_pair_not_admitted": 0.11014308913135601
+        },
+        "resolution_delta_on_rel_error": 0.000811028462379737,
+        "resolution_converged_lt_5pct": true,
+        "channel_arms": [
+          {
+            "case": "C2a_channel_H16",
+            "steps": 5600,
+            "converged": true,
+            "err_pct": -0.10937503947983651
+          },
+          {
+            "case": "C2b_channel_H32",
+            "steps": 12000,
+            "converged": false,
+            "err_pct": -0.02827219324186281
+          }
+        ],
+        "converged_all_channel_arms": false
+      },
+      "timing_fields_ignored_for_equivalence": [
+        "wall_s",
+        "elapsed_s",
+        "mlups"
+      ]
+    },
+    "governance": "84 repository governance tests passed; 220 cases indexed, 35 tutorials and 33 PDF/33 Word links verified, zero hard status-ledger violations."
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/run_xval.py",
+      "new_path": "benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "6e2e790943a95dd40ef4e62cc1941576bd7fcb8b",
+      "original_sha256": "eb0cee1b4288b430ebba791b07852da894f6f88966737425f726a9e35ab7a777",
+      "current_sha256": "9c0ce49c1086104805ef8bfbd4e58043a3a7353097ab29d87d413c3aa5cfd8f0",
+      "size_bytes": 15231,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/predeclared.json",
+      "new_path": "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "ea7670802a883f90712bd299ff5779d5a25bb7bf",
+      "original_sha256": "7265848d5f56feabd2d8522f0586d7d09560cb4d83ef0a671ef4a4b04ef04a4d",
+      "current_sha256": "7265848d5f56feabd2d8522f0586d7d09560cb4d83ef0a671ef4a4b04ef04a4d",
+      "size_bytes": 9270,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/REPORT.md",
+      "new_path": "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "37e8d99ff4885c4cb2ed0b2448b3880df7670367",
+      "original_sha256": "e01bed0dc4af843b08576586212c93ed03ae3cca2fea716be87bc0278c48d62f",
+      "current_sha256": "e01bed0dc4af843b08576586212c93ed03ae3cca2fea716be87bc0278c48d62f",
+      "size_bytes": 4808,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/results.json",
+      "new_path": "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "6911c8bb994c028a65d4cfd5a7f538325a309ea0",
+      "original_sha256": "ed23a54c83ae70a88ef10e03ec5481d6546e3891a234d0a91e3c64502670521f",
+      "current_sha256": "ed23a54c83ae70a88ef10e03ec5481d6546e3891a234d0a91e3c64502670521f",
+      "size_bytes": 118094,
+      "byte_identical": true
+    }
+  ]
+}

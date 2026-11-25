@@ -1,0 +1,44 @@
+{
+  "scope": "D2Q9 compressed neighbour-table versus dense control and analytic plane-channel permeability. The historical campaign translated the OpenLBMPM indexing semantics and did not execute the external CUDA solver.",
+  "criteria": {
+    "primary_analytic_error_percent_strictly_below": 15.0,
+    "representation_relative_error_strictly_below": 1e-08,
+    "admitted_mach_number_upper_bound": 0.1
+  },
+  "source": [
+    "benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py",
+    "src/tensorlbm/porous/fluid_node_table.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json"
+  ],
+  "documentation": [
+    "docs/xval_compressed_fluid_node_neighbour_table.md",
+    "docs/audit_m17677/AUDIT_m17677.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json",
+    "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/REPORT.md"
+  ],
+  "references": [
+    {
+      "title": "Analytic plane Poiseuille permeability",
+      "source": "docs/xval_compressed_fluid_node_neighbour_table.md",
+      "section": "1"
+    },
+    {
+      "title": "OpenLBMPM neighbour-table semantics",
+      "url": "https://github.com/PorousMediaSimulation/openLBMPM",
+      "source": "benchmarks/cross_validation/compressed_fluid_node_table/predeclared.json"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/results.json",
+    "benchmarks/cross_validation/compressed_fluid_node_table/evidence/2026-11-25-cpu-replay.json"
+  ],
+  "evidence": [
+    "benchmarks/cross_validation/compressed_fluid_node_table/evidence/historical/REPORT.md",
+    "development/audit/m22754/verdict_m22754_compressed_node_table.sql",
+    "docs/architecture/migrations/compressed-fluid-node-table-xval-2026-11-25.json"
+  ]
+}
