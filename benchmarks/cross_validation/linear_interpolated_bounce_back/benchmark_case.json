@@ -1,0 +1,45 @@
+{
+  "scope": "Two-dimensional straight-wall Poiseuille flow. The historical campaign reports that its primary linear-interpolation velocity-profile gate failed. The migration reproduces only the reduced CPU sweep. Full scientific acceptance remains unevaluated.",
+  "source": [
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/run_xval.py",
+    "src/tensorlbm/boundary/interpolated_bounce_back.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/results.json",
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/run_xval.py"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/README.md",
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/REPORT.md"
+  ],
+  "references": [
+    {
+      "title": "Momentum transfer of a Boltzmann-lattice fluid with boundaries",
+      "authors": "Bouzidi, Firdaouss and Lallemand",
+      "year": 2001,
+      "section": "III.A",
+      "source": "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/REPORT.md"
+    },
+    {
+      "title": "Fully developed plane Poiseuille profile",
+      "source": "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/REPORT.md",
+      "section": "1"
+    }
+  ],
+  "criteria": {
+    "primary_metric": "relative L2 velocity-profile error",
+    "primary_error_strictly_below": 0.15,
+    "stretch_error_strictly_below": 0.03
+  },
+  "results": [
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/results.json",
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/table.csv",
+    "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/2026-11-25-cpu-quick.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/linear-interpolated-bounce-back-xval-2026-11-25.json"
+  ]
+}

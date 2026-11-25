@@ -58,9 +58,9 @@ Observables (no free parameters, no tuning)
 
 Usage
 -----
-    PYTHONPATH=src python3 xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/run_xval.py \
-        --out artifacts            # full sweep, writes results.json + table.csv
-    ... run_xval.py --quick --out artifacts_quick   # 2 configs, for tests
+    PYTHONPATH=src python3 benchmarks/cross_validation/linear_interpolated_bounce_back/run_xval.py \
+        --out outputs/linear-ibb            # full sweep, writes results.json + table.csv
+    ... run_xval.py --quick --out outputs/linear-ibb-quick   # 2 configs, for tests
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.boundaries import bounce_back_cells  # noqa: E402
@@ -209,7 +209,10 @@ def run_arm(
     q_ref = float(u_ref.sum())
     # continuous-flux inversion: per unit width, walls at y = 0 and y = H
     h_eff = (12.0 * nu * q_num / g) ** (1.0 / 3.0)
-    l2 = float(torch.linalg.vector_norm(torch.tensor(u - u_ref)).item() / torch.linalg.vector_norm(torch.tensor(u_ref)).item())
+    l2 = float(
+        torch.linalg.vector_norm(torch.tensor(u - u_ref)).item()
+        / torch.linalg.vector_norm(torch.tensor(u_ref)).item()
+    )
     max_rel = float(abs(u - u_ref).max() / u_ref.max())
 
     return {
@@ -296,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{r['steps']},{int(r['converged'])}"
         )
     (out / "table.csv").write_text("\n".join(lines) + "\n")
-    print(f"wrote {out/'results.json'} and {out/'table.csv'}")
+    print(f"wrote {out / 'results.json'} and {out / 'table.csv'}")
     return 0
 
 

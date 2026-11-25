@@ -1,0 +1,86 @@
+{
+  "source_commit": "2c0e59025789674154597a64dfb6d1ca4d2e10ec",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 74,
+      "after": 73
+    }
+  },
+  "reference_scan": "Scanned the tracked tree, test imports and workflow paths. No active caller uses the retired directory. The runner docstring and new case index show the maintained command. The historical report and scratch references retain old paths.",
+  "compatibility": {
+    "registry_id": "xval:linear_interpolated_bounce_back",
+    "original_tree": "https://github.com/cxs503/TensorLBM/tree/2c0e59025789674154597a64dfb6d1ca4d2e10ec/xval/XVAL-LBM-LINEAR-INTERPOLATED-BB",
+    "runner": "The CLI retains all flags and a default case-local artifacts directory. The runner uses the same canonical solver modules from its new location. Tracked historical evidence lives separately from fresh output.",
+    "manuals": "Published case-manual paths are retained. The archived report remains available at an immutable source revision and under the registered case."
+  },
+  "scientific_scope": "Four real reduced CPU arms converged before and after relocation. Both interpolation arms failed the 15% relative L2 profile threshold, with errors 32.26% and 44.82%. The full campaign was deferred.",
+  "replay": {
+    "commands": {
+      "source": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/run_xval.py --quick --out outputs/ibb-before",
+      "candidate": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/cross_validation/linear_interpolated_bounce_back/run_xval.py --quick --out outputs/ibb-after"
+    },
+    "result_path": "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/2026-11-25-cpu-quick.json",
+    "result_sha256": "080aab983d55e0c852a1b15fca1f58b3f43623e436cf08a9b61f11a8ca15cced"
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/run_xval.py",
+      "new_path": "benchmarks/cross_validation/linear_interpolated_bounce_back/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "e341a34f18f3998ee9674ed2e58ae9cf775fb43e",
+      "size_bytes": 12068,
+      "original_sha256": "ee84ff5937d9013d3043d1bb3aaf0d86b1897be6aaaefefa179cbf1aa1c88490",
+      "new_sha256": "fb56f118bde6d82fae5c2b54e5e18b98574ad4e590178c2ff16de17572116ec2"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/REPORT.md",
+      "new_path": "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "376d833250b006e3891fe7766f181c6da6ef1145",
+      "size_bytes": 12891,
+      "original_sha256": "4a0f4fcef0c7462aebd35c14ebecda681404214c7433cad7bbbc79ae8ba2912f",
+      "new_sha256": "4a0f4fcef0c7462aebd35c14ebecda681404214c7433cad7bbbc79ae8ba2912f"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/artifacts/results.json",
+      "new_path": "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "ff26ab9e8f42cb17f6119fac91ca4b2050b2c1a9",
+      "size_bytes": 1950,
+      "original_sha256": "940e24c1c97ffaca386079b3732392394857db75107701ea9fe67e0a825a6caa",
+      "new_sha256": "940e24c1c97ffaca386079b3732392394857db75107701ea9fe67e0a825a6caa"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-LINEAR-INTERPOLATED-BB/artifacts/table.csv",
+      "new_path": "benchmarks/cross_validation/linear_interpolated_bounce_back/evidence/historical/table.csv",
+      "git_mode": "100644",
+      "original_git_blob": "28ba011fde1e3aa7231c106020acc1bee75a3f0e",
+      "size_bytes": 617,
+      "original_sha256": "8e2435f700c8a675b432bcfb2277be9b5151bdfb13dc93ec1f1af0394416b78e",
+      "new_sha256": "8e2435f700c8a675b432bcfb2277be9b5151bdfb13dc93ec1f1af0394416b78e"
+    }
+  ],
+  "verification": [
+    "The CPU quick output CSV is byte-identical. Both result JSONs are equal after removing the generation timestamp and each run's wall-time measurement.",
+    "Twenty-one existing interpolated bounce-back and moving-wall tests passed. The format-only step preserves the relocated runner AST.",
+    "The historical report and both historical data files have the same Git blobs as the source commit.",
+    "Repository governance passed all 83 tests, with 216 registry entries, 35 tutorial records, 33 PDFs, 33 Word files, zero hard violations and 16 existing advisories.",
+    "The new case resolves to the expected three evidence paths and two references, all links in its index resolve, the default generated output is ignored, the lint ratchet passed and src/ has no diff."
+  ]
+}
