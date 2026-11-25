@@ -48,6 +48,7 @@ __all__ = [
     "thermal_gradient_initialization_3d",
     "thermal_pulse_increments_3d",
     "thermal_collide_bgk_3d",
+    "thermal_collide_trt_3d",
     "thermal_stream_3d",
     "thermal_macroscopic_3d",
     "thermal_link_fluxes_3d",
@@ -243,6 +244,27 @@ def thermal_collide_bgk_3d(
     """
     geq = thermal_equilibrium_3d(T, ux, uy, uz)
     return g - (g - geq) / tau_T
+
+
+def thermal_collide_trt_3d(
+    g: torch.Tensor, T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
+    uz: torch.Tensor, tau_T: float, *, tau_even: float,
+) -> torch.Tensor:
+    """Relax odd and even D3Q7 non-equilibrium populations independently.
+
+    The odd relaxation time tau_T sets the lattice diffusivity (tau_T-0.5)/4.
+    tau_even controls the symmetric populations, including the rest mode.
+    T is the population sum, as in thermal_collide_bgk_3d.
+    """
+    if not all(math.isfinite(t) and t > .5 for t in (tau_T, tau_even)):
+        raise ValueError("both relaxation times must be finite and greater than 0.5")
+    deviation = g - thermal_equilibrium_3d(T, ux, uy, uz)
+    odd = .5*(deviation[1::2] - deviation[2::2])
+    correction = (1/tau_even - 1/tau_T)*odd
+    post = g - deviation/tau_even
+    post[1::2] += correction
+    post[2::2] -= correction
+    return post
 
 
 def thermal_stream_3d(g: torch.Tensor) -> torch.Tensor:

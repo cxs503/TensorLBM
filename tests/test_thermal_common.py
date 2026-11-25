@@ -22,6 +22,7 @@ from tensorlbm.thermal_common import (
     apply_buoyancy_3d,
     conjugate_ht_step,
     thermal_collide_bgk_3d,
+    thermal_collide_trt_3d,
     thermal_equilibrium_3d,
     thermal_macroscopic_3d,
     thermal_pulse_increments_3d,
@@ -1070,3 +1071,23 @@ def test_pulse_increments_preserve_amount_and_time_moment(start, stop, early, la
     weights = W_D3Q7.double().view(7, 1, 1, 1)
     torch.testing.assert_close(a, weights*rate*early)
     torch.testing.assert_close(b, weights*rate*late)
+
+def test_trt_collision_conserves_temperature_and_relaxes_each_parity():
+    g = torch.arange(42, dtype=torch.float64).reshape(7, 1, 2, 3)/40
+    temperature = g.sum(0)
+    velocity = torch.full_like(temperature, .03)
+    args = (g, temperature, velocity, -velocity, velocity)
+    eq = thermal_equilibrium_3d(*args[1:])
+    tau = 1.5
+    torch.testing.assert_close(thermal_collide_trt_3d(*args, tau, tau_even=tau),
+                               thermal_collide_bgk_3d(*args, tau))
+    post = thermal_collide_trt_3d(*args, tau, tau_even=.8)
+    torch.testing.assert_close(post.sum(0), temperature)
+    before, after = g-eq, post-eq
+    torch.testing.assert_close(after[0], (1-1/.8)*before[0])
+    for sign, relaxation in ((1, .8), (-1, tau)):
+        torch.testing.assert_close(after[1::2]+sign*after[2::2],
+                                   (1-1/relaxation)*(before[1::2]+sign*before[2::2]))
+    for bad in (.5, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            thermal_collide_trt_3d(*args, tau, tau_even=bad)
