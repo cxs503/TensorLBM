@@ -76,6 +76,11 @@ _OPP = torch.tensor([0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 1
 _C19_SHIFTS = [(int(C[q, 0]), int(C[q, 1]), int(C[q, 2])) for q in range(19)]
 _OPP_INDEX = tuple(int(v) for v in _OPP.tolist())
 
+# MRT relaxation rates (even-mode sweep)
+S_EPS_BASE = 1.4
+S_Q_BASE = 1.2
+S_PI_BASE = None  # defaults to s_e
+
 
 def _specular_wall_mirror_index(solid_mask, device):
     """Per-link specular (free-slip) reflected source indices for wall cells.
@@ -808,32 +813,174 @@ def _capacity_redistribution(excess, mass, receivers, demoted_liquid, capture_li
     return flat_delta.reshape(mass.shape), tuple(evidence)
 
 
-def _sgs_tau_eff_3d(
-    tau: float,
-    f_collide: torch.Tensor,
-    feq: torch.Tensor,
-    ux: torch.Tensor,
-    uy: torch.Tensor,
-    uz: torch.Tensor,
-    rho: torch.Tensor,
-    C_s: float,
-    sgs_model: str,
-) -> torch.Tensor:
-    """Per-cell effective relaxation time of the sub-grid models.
 
-    Returns a ``(nz, ny, nx)`` field of ``tau_eff`` values: the physical
-    relaxation time with the eddy viscosity of the requested sub-grid model
-    added.  Used by the BGK/MRT SGS paths and -- since the regularized (RR)
-    operator relaxes its second-order stress at ``omega = 1/tau`` -- by the
-    RR x SGS stack (DE-X-CMB3-REGSMAG) and the interface-local RR x SGS
-    stack (DE-X-CMB8-IFACECOMBO), where the SGS dissipation acts exactly on
-    the single mode RR retains.
+_MOMCONV_MODES = ("off", "inherit", "redistribute", "redistribute_liq")
+
+
+def _momconv_mode(value):
+    """Normalise the momentum-carrying-conversion switch.
+
+    ``off`` (default) keeps the legacy behaviour bit-for-bit: the I->G
+    conversion zeroes the donor populations and the converted mass loses its
+    momentum (the model-level churn measured by DE-X-K2-BUDGET-B).
     """
-    if sgs_model == "smagorinsky":
-        return _smagorinsky_tau(tau, _neq_stress_norm_3d(f_collide - feq), rho, C_s)
-    if sgs_model == "wale":
-        return _nu_t_to_tau_eff(tau, _wale_nu_t_3d(ux, uy, uz, C_s))
-    return _nu_t_to_tau_eff(tau, _vreman_nu_t_3d(ux, uy, uz, C_s))
+    mode = str("off" if value is None else value).strip().lower()
+    if mode in ("", "none", "off", "0", "false"):
+        return "off"
+    if mode in _MOMCONV_MODES:
+        return mode
+    raise ValueError(
+        f"momconv must be one of {_MOMCONV_MODES}, got {value!r}"
+    )
+
+
+def _momconv_donor_momentum(f_pre, mass_pre):
+    """Momentum of the *tracked liquid mass* of a converting cell.
+
+    The Körner model tracks the liquid mass (``mass``) separately from the
+    population density; the mass that the I->G conversion destroys carries
+    the momentum ``m * u`` of that tracked mass (the quantity the
+    DE-X-K2-BUDGET-B ledger books as the conversion channel).
+    """
+    _rho, ux, uy, uz = macroscopic3d(f_pre)
+    return torch.stack([mass_pre * comp for comp in (ux, uy, uz)], dim=0)
+
+
+def _momconv_receiver_weights(mass, flags, donor, mode):
+    """Per-link share of a donor's momentum for each moving D3Q19 direction.
+
+    ``inherit`` shares the momentum with the INTERFACE neighbours (the cavity
+    wall the converted cell touches) with an even split - the gas-wall
+    injection.  ``redistribute`` shares it with the LIQUID neighbours weighted
+    by their tracked mass - the mass-proportional hand-over to the bulk liquid.
+    """
+    if mode == "inherit":
+        recv = (flags == INTERFACE) & ~donor
+        weight = torch.ones_like(mass)
+    elif mode == "redistribute_liq":
+        # the whole liquid phase (bulk + interface) is the receiver set
+        recv = ((flags == LIQUID) | (flags == INTERFACE)) & ~donor
+        weight = mass
+    else:
+        recv = (flags == LIQUID) & ~donor
+        weight = mass
+    nb = torch.stack(
+        [roll_to_neighbor(recv.to(mass.dtype) * weight, q) for q in D3Q19_MOVING_Q]
+    )
+    total = nb.sum(dim=0)
+    share = nb / total.clamp(min=1e-12).unsqueeze(0)
+    # Only a converting donor hands momentum over.
+    return share * donor.to(mass.dtype).unsqueeze(0)
+
+
+def _apply_momentum_carrying_conversion(
+    *,
+    f,
+    f_pre,
+    mass_pre,
+    flags,
+    mass,
+    to_gas,
+    solid_mask,
+    c_dev,
+    mode,
+    rho_gas,
+    rho_liquid,
+    device,
+    state=None,
+):
+    """Carry the momentum of the mass that the I->G conversion destroys.
+
+    The legacy conversion zeroes the donor populations, so the momentum of the
+    converted mass disappears (DE-X-K2-BUDGET-B channel 7).  Here that
+    momentum is handed over instead of destroyed:
+
+    ``inherit``       the converting cell hands its momentum to the INTERFACE
+                      cells it touches (even split): the gas cell inherits the
+                      liquid velocity and the interface injection delivers it.
+    ``redistribute``  the converting cell hands its momentum to the LIQUID
+                      cells next to it, weighted by their tracked mass.
+    ``redistribute_liq``
+                      the same, but the receiver set is the whole liquid
+                      phase (bulk LIQUID + INTERFACE cells); the bulk-LIQUID
+                      set alone is empty at every I->G conversion of this
+                      case, so this variant is the non-degenerate one.
+
+    The hand-over is momentum conserving: the receiver cells receive a
+    density-preserving momentum kick ``df_q = 3 w_q (dP . c_q)``, which adds
+    exactly ``dP`` to the cell momentum and nothing to its density.
+    """
+    donor = to_gas & ~solid_mask
+    momentum = _momconv_donor_momentum(f_pre, mass_pre)
+    share = _momconv_receiver_weights(mass, flags, donor, mode)
+    # Momentum sent along each moving link (18, 3, nz, ny, nx).
+    sent = share.unsqueeze(1) * momentum.unsqueeze(0)
+    # Momentum received by every cell: the donor at x feeds the neighbour at
+    # x - c_q (the pull-source convention used by the transaction).
+    received = torch.stack(
+        [
+            torch.stack([roll_to_neighbor(sent[idx, k], q) for k in range(3)], dim=0)
+            for idx, q in enumerate(D3Q19_MOVING_Q)
+        ],
+        dim=0,
+    ).sum(dim=0)
+    weights = W.to(device=device, dtype=f.dtype).view(19, 1, 1, 1)
+    kick = torch.zeros_like(f)
+    for q in range(19):
+        cx = float(c_dev[q, 0])
+        cy = float(c_dev[q, 1])
+        cz = float(c_dev[q, 2])
+        proj = cx * received[0] + cy * received[1] + cz * received[2]
+        kick[q] = 3.0 * weights[q, 0, 0, 0] * proj
+    f = f + kick
+    if mode == "inherit" and state is not None:
+        # The gas cell inherits the liquid velocity of the converted cell; the
+        # anti-bounce-back reconstruction then uses it as the gas velocity.
+        # Guard: a nearly empty interface cell has an ill-conditioned
+        # macroscopic velocity (u = p / rho with rho -> 0) and a donor without
+        # tracked liquid mass has nothing to inherit; both would inject a
+        # meaningless velocity into the anti-bounce-back reconstruction and
+        # blow the populations up.  The inherited velocity is therefore taken
+        # only from donors with tracked mass and is clamped to the same stable
+        # lattice range as the input guard.
+        _rho_pre, ux_pre, uy_pre, uz_pre = macroscopic3d(f_pre)
+        gas_vel = state.get("gas_vel")
+        gas_keep = state.get("gas_keep")
+        if gas_vel is None or gas_keep is None:
+            gas_vel = torch.zeros((3,) + tuple(f.shape[1:]), dtype=f.dtype, device=f.device)
+            gas_keep = torch.zeros(f.shape[1:], dtype=torch.bool, device=f.device)
+        inherit = donor & (mass_pre > 0.05)
+        for k, comp in enumerate((ux_pre, uy_pre, uz_pre)):
+            gas_vel[k] = torch.where(inherit, comp.clamp(-0.5, 0.5), gas_vel[k])
+        gas_keep = inherit | gas_keep
+        state["gas_vel"] = gas_vel
+        state["gas_keep"] = gas_keep
+    return f
+
+
+def _momconv_gas_velocity(state, ux, uy, uz, iface_abb):
+    """Replace the anti-bounce-back gas velocity by the inherited one.
+
+    The gas cell that took over the converted liquid carries the velocity of
+    that liquid.  The anti-bounce-back reconstruction is the only gas/liquid
+    coupling of this model, so the inherited velocity is injected there.
+    """
+    gas_keep = state.get("gas_keep")
+    gas_vel = state.get("gas_vel")
+    if gas_keep is None or gas_vel is None:
+        return ux, uy, uz
+    inh = torch.stack(
+        [roll_from_pull_source(gas_keep, q) for q in D3Q19_MOVING_Q]
+    ).to(ux.dtype)
+    den = inh.sum(dim=0)
+    out = []
+    for k, comp in enumerate((ux, uy, uz)):
+        num = (
+            inh * torch.stack([roll_from_pull_source(gas_vel[k], q) for q in D3Q19_MOVING_Q])
+        ).sum(dim=0)
+        use = (den > 0) & iface_abb
+        out.append(torch.where(use, num / den.clamp(min=1.0), comp))
+    return tuple(out)
 
 
 def free_surface_step(
@@ -876,7 +1023,11 @@ def free_surface_step(
     capacity_redistribution=False,
     simple_mass_exchange=False,
     u_limit=0.0,
-    cav_clos_alpha=0.0,
+    gas_nu_ratio=1.0,
+    iface_tau_dose=0.0,
+    momconv="off",
+    momconv_state=None,
+    s_e=1.19,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -902,6 +1053,14 @@ def free_surface_step(
           receivers (local donor density)
       5b. Topology transaction: conversion (I→L keeps PDFs), conversion-driven
           envelope + LIQUID demotion, no clamp, no isolation stage
+
+    ``momconv`` selects the momentum-carrying I->G conversion
+    (DE-X-K3-MOMCONV): ``off`` (default, bit-identical to the legacy model),
+    ``inherit`` (the converted momentum is injected into the INTERFACE cells
+    the converting cell touches, the gas cell inheriting the liquid velocity)
+    or ``redistribute`` (the converted momentum is distributed to the
+    neighbouring LIQUID cells weighted by their tracked mass).  The optional
+    ``momconv_state`` dict carries the inherited gas velocity between steps.
 
     ``paired_liquid_interface_debit`` and ``enable_i_to_g_ownership_closure``
     are deprecated no-ops retained for call compatibility.
@@ -947,6 +1106,7 @@ def free_surface_step(
     ownership_flags = None if ownership_ledger is None else flags.clone()
 
     device = f.device
+    _momconv = _momconv_mode(momconv)
     _assert_no_direct_liquid_gas_links(flags)
     c_dev = _C.to(device).float()
     non_gas = ~(flags == GAS)
@@ -993,54 +1153,14 @@ def free_surface_step(
     active_pre = liquid_pre | iface_pre
     force_weight = torch.where(iface_pre, fill.clamp(0.0, 1.0), torch.ones_like(fill))
     force_weight = torch.where(active_pre, force_weight, torch.zeros_like(force_weight))
-    # DE-X-MOM1-GUO_INT (Guo et al. 2003): density-gradient-aware Guo force
-    # at the interface (large |∇rho|).  Measured on this codebase: partially
-    # filled INTERFACE cells carry full-liquid populations (rho_s≈rho_liquid,
-    # verified 1.001 vs fill 0.13 at cells=8), so the legacy rho_s*fill force
-    # is already mass-consistent with the bookkeeping mass fill*rho_liquid.
-    # TL_FS_GUO_INT selects the interface force model:
-    #   unset/0   legacy fill-weighted force (bit-identical)
-    #   mass      force acts on the liquid mass fill*rho_liquid (≈ legacy
-    #             here, kept as the explicit mass-consistent reference)
-    #   full      force acts at full strength on partially filled interface
-    #             cells (0<fill<1): their populations carry the full liquid
-    #             mass, so the fill weighting double-counts the sub-cell
-    #             volume reduction and the interface liquid accelerates at
-    #             fill*g instead of g.  Envelope cells (fill==0) stay at zero.
-    _guo_mode = os.environ.get("TL_FS_GUO_INT", "").strip().lower()
-    if _guo_mode in ("1", "true", "yes", "mass"):
-        force_mass = torch.where(iface_pre, fill.clamp(0.0, 1.0) * rho_liquid, rho_s)
-        force_mass = torch.where(active_pre, force_mass, torch.zeros_like(fill))
-        _fx, _fy, _fz = force_mass * gx, force_mass * gy, force_mass * gz
-        ux_eq = (ux + 0.5 * force_mass * gx / rho_s).clamp(-0.5, 0.5)
-        uy_eq = (uy + 0.5 * force_mass * gy / rho_s).clamp(-0.5, 0.5)
-        uz_eq = (uz + 0.5 * force_mass * gz / rho_s).clamp(-0.5, 0.5)
-    elif _guo_mode == "full":
-        force_weight = torch.where(
-            iface_pre & (fill > 0.0) & (fill < 1.0), torch.ones_like(fill), force_weight
-        )
-        _fx, _fy, _fz = (
-            rho_s * gx * force_weight,
-            rho_s * gy * force_weight,
-            rho_s * gz * force_weight,
-        )
-        ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
-        uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
-        uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
-    else:
-        _fx, _fy, _fz = (
-            rho_s * gx * force_weight,
-            rho_s * gy * force_weight,
-            rho_s * gz * force_weight,
-        )
-        # Second-order Guo forcing shifts the equilibrium velocity by F*dt/2rho
-        # (Guo et al. 2002).  The legacy ``tau * g`` shift double-counted gravity
-        # together with the explicit Guo source below (measured gain 1.5x/1.375x
-        # instead of 1.0x); a single Guo force with the half-step shift gives an
-        # exact momentum gain of F per step.
-        ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
-        uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
-        uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
+    # Second-order Guo forcing shifts the equilibrium velocity by F*dt/2rho
+    # (Guo et al. 2002).  The legacy ``tau * g`` shift double-counted gravity
+    # together with the explicit Guo source below (measured gain 1.5x/1.375x
+    # instead of 1.0x); a single Guo force with the half-step shift gives an
+    # exact momentum gain of F per step.
+    ux_eq = (ux + 0.5 * force_weight * gx).clamp(-0.5, 0.5)
+    uy_eq = (uy + 0.5 * force_weight * gy).clamp(-0.5, 0.5)
+    uz_eq = (uz + 0.5 * force_weight * gz).clamp(-0.5, 0.5)
     feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
 
     has_force = gx != 0.0 or gy != 0.0 or gz != 0.0
@@ -1057,15 +1177,15 @@ def free_surface_step(
         f_collide = f
 
     if collision == "kbc":
-        from .advanced_collision_d3q19 import collide_kbc_d3q19
+        from .collision_d3q19_advanced import collide_kbc_d3q19
 
         f = collide_kbc_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "cascaded":
-        from .advanced_collision_d3q19 import collide_cascaded_d3q19
+        from .collision_d3q19_advanced import collide_cascaded_d3q19
 
         f = collide_cascaded_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "cumulant":
-        from .advanced_collision_d3q19 import collide_cumulant_d3q19
+        from .collision_d3q19_advanced import collide_cumulant_d3q19
 
         f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "mrt":
@@ -1081,9 +1201,9 @@ def free_surface_step(
                 ux_eq,
                 uy_eq,
                 uz_eq,
-                _fx,
-                _fy,
-                _fz,
+                rho_s * gx * force_weight,
+                rho_s * gy * force_weight,
+                rho_s * gz * force_weight,
             )
             target = feq - 0.5 * force_source
         if C_s > 0:
@@ -1100,48 +1220,13 @@ def free_surface_step(
             else:  # vreman
                 nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
-            f = _collide_mrt3d_with_tau_eff(f_collide, target, tau_eff, device)
+            f = _collide_mrt3d_with_tau_eff(f_collide, target, tau_eff, device, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
         elif has_force:
-            f = _collide_mrt3d_with_tau_eff(f_collide, target, f.new_tensor(tau), device)
+            f = _collide_mrt3d_with_tau_eff(f_collide, target, f.new_tensor(tau), device, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
         else:
             from .solver3d import collide_mrt3d
 
-            f = collide_mrt3d(f_collide, tau)
-    elif collision == "rr":
-        # Regularized collision (DE-X-COL2-REG): the non-equilibrium part is
-        # projected back onto the equilibrium manifold through its second-order
-        # stress only (Ladd 1994); every higher-order non-equilibrium moment is
-        # discarded, which bounds the post-collision populations and widens the
-        # stable relaxation window below the BGK floor.  ``feq`` already carries
-        # the Guo half-step velocity shift, so the explicit Guo source below is
-        # applied exactly once, as for BGK.
-        from .collision_d3q19_advanced import collide_regularized_stress_d3q19
-
-        f = collide_regularized_stress_d3q19(f_collide, feq, tau)
-    elif collision == "rr_iface":
-        # Interface-local regularized collision (DE-X-RELX3-RRIFACE): the RR
-        # projection (Ladd 1994) is applied only to INTERFACE cells (0<fill<1);
-        # bulk LIQUID/GAS cells keep the plain BGK relaxation.  Both branches
-        # share the caller-supplied ``feq`` (Guo half-step shifted), so the
-        # explicit Guo source below is applied exactly once, as for BGK.
-        # DE-X-CMB8-IFACECOMBO: with C_s > 0 the Smagorinsky per-cell
-        # eddy-viscosity relaxation time (CMB3 RR x SGS idiom) is handed to
-        # both sub-branches, so the SGS dissipation acts on the mode RR
-        # retains at the interface and on the bulk BGK mode alike; C_s == 0
-        # keeps the ported branch bit-identical.
-        from .collision_d3q19_advanced import collide_regularized_stress_d3q19
-
-        iface_mask = (flags == INTERFACE) & (fill > 0.0) & (fill < 1.0)
-        if C_s > 0:
-            tau_eff = _sgs_tau_eff_3d(
-                tau, f_collide, feq, ux, uy, uz, rho_s, C_s, sgs_model
-            )
-            f_bgk = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
-            f_rr = collide_regularized_stress_d3q19(f_collide, feq, tau_eff)
-        else:
-            f_bgk = f_collide - (f_collide - feq) / tau
-            f_rr = collide_regularized_stress_d3q19(f_collide, feq, tau)
-        f = torch.where(iface_mask.unsqueeze(0), f_rr, f_bgk)
+            f = collide_mrt3d(f_collide, tau, s_e=s_e, s_eps=S_EPS_BASE, s_q=S_Q_BASE, s_pi=S_PI_BASE)
     else:  # bgk
         if C_s > 0:
             if sgs_model == "smagorinsky":
@@ -1159,7 +1244,34 @@ def free_surface_step(
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
             f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
         else:
-            f = f_collide - (f_collide - feq) / tau
+            if iface_tau_dose != 0.0:
+                # Fill-weighted interface relaxation (DE-X-RELX1-PHASETAU):
+                # INTERFACE cells (0<=fill<1) relax with
+                # tau_iface = tau * g(fill), g(fill) = 1 + dose*(1-fill);
+                # LIQUID cells keep the physical tau (structural spatial
+                # separation, not a global tau_s retune).  dose=0 takes the
+                # legacy scalar path (bit-identical).  The clamp guards the
+                # BGK stability floor tau>0.5 for negative doses.
+                g_fill = 1.0 + iface_tau_dose * (1.0 - fill)
+                tau_cell = torch.where(
+                    (flags == INTERFACE).unsqueeze(0),
+                    (tau * g_fill).clamp_min(0.5 + 1e-4),
+                    tau,
+                )
+                f = f_collide - (f_collide - feq) / tau_cell
+            elif gas_nu_ratio != 1.0:
+                # Per-phase kinematic viscosity (DE-X-GAS1-GASVISC): GAS cells
+                # relax with nu_g = gas_nu_ratio * nu_l, i.e.
+                # tau_g = 0.5 + 3*nu_g = 0.5 + gas_nu_ratio*(tau - 0.5).
+                # Default 1.0 keeps the legacy single-tau path bit-identical.
+                tau_cell = torch.where(
+                    (flags == GAS).unsqueeze(0),
+                    0.5 + gas_nu_ratio * (tau - 0.5),
+                    tau,
+                )
+                f = f_collide - (f_collide - feq) / tau_cell
+            else:
+                f = f_collide - (f_collide - feq) / tau
 
     if has_force:
         if collision != "mrt":
@@ -1170,9 +1282,9 @@ def free_surface_step(
                 ux,
                 uy,
                 uz,
-                _fx,
-                _fy,
-                _fz,
+                rho_s * gx * force_weight,
+                rho_s * gy * force_weight,
+                rho_s * gz * force_weight,
             )
         f = f + force_source
 
@@ -1268,6 +1380,12 @@ def free_surface_step(
         _ux_pc = _ux_pc.clamp(-0.5, 0.5)
         _uy_pc = _uy_pc.clamp(-0.5, 0.5)
         _uz_pc = _uz_pc.clamp(-0.5, 0.5)
+    if _momconv == "inherit" and momconv_state is not None:
+        # The gas cell that took over the converted liquid carries its
+        # velocity: the anti-bounce-back reconstruction injects it here.
+        _ux_pc, _uy_pc, _uz_pc = _momconv_gas_velocity(
+            momconv_state, _ux_pc, _uy_pc, _uz_pc, iface_abb
+        )
     # Gas reference density: the bubble pressure overrides rho_gas when given
     # (enclosed, possibly pressurised gas volume; waLBerla ``BubbleModel``).
     _rho_gas_base = float(bubble_pressure) if bubble_pressure is not None else float(rho_gas)
@@ -1290,20 +1408,6 @@ def free_surface_step(
         )
         delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
         rho_g_field = rho_g_field + torch.where(iface_abb, delta_rho, torch.zeros_like(delta_rho))
-    # Hydrostatic pressure compensation (OPT-IN: TL_FS_HYDRO_Z_REF).
-    # Numerical schemes often break hydrostatic equilibrium (hydrostatic
-    # paradox): the interface-cell gas density is systematically biased,
-    # causing the cavity to under-deepen (MMC4: -22.7% gap concentrated in
-    # the late 7ms+ window).  Restore the hydrostatic head on interface cells:
-    #   rho_g_cav = rho_g_base + rho_l * gz * (z - z_ref) / cs2
-    # with z_ref = initial water-surface grid index.  Default off = bit-identical.
-    _hydro_z_ref = os.environ.get("TL_FS_HYDRO_Z_REF")
-    if _hydro_z_ref not in (None, "") and float(gz) != 0.0:
-        _cs2 = 1.0 / 3.0
-        _z_idx = torch.arange(rho.shape[0], device=device, dtype=rho.dtype).view(-1, 1, 1)
-        _dpos = _z_idx - float(_hydro_z_ref)  # (z - z_ref), <0 below surface
-        _hydro = float(rho_liquid) * float(gz) * _dpos / _cs2
-        rho_g_field = rho_g_field + torch.where(iface_abb, _hydro, torch.zeros_like(_hydro))
     f_eq_gas = equilibrium3d(rho_g_field, _ux_pc, _uy_pc, _uz_pc)
     # The reference ABB subtracts the *local post-collision* outgoing
     # population f_post[opp] (magnitude O(rho_liquid)).  This is consistent
@@ -1623,8 +1727,7 @@ def free_surface_step(
     _kappa = float(cell_conversion_threshold)
     _kappa_f = float(cell_conversion_force_threshold)
     to_iface = torch.zeros_like(gas_mask)
-    _cav_clos = _kappa * (1.0 + cav_clos_alpha) if cav_clos_alpha > 0 else _kappa
-    to_liq = interface_mask & (fill > 1.0 + _cav_clos)
+    to_liq = interface_mask & (fill > 1.0 + _kappa)
     to_gas = interface_mask & (fill < -_kappa)
     # neighbor_flags still describes the pre-conversion flags (flags are
     # untouched between the ABB section and here).
@@ -1710,6 +1813,10 @@ def free_surface_step(
                         }
                     )
             redistribution_link_evidence = tuple(links)
+    # Pre-conversion populations and tracked mass: the momentum the I->G
+    # conversion destroys.
+    f_pre_conversion = f
+    mass_pre_conversion = mass
     plan = build_topology_transaction(
         f,
         fill,
@@ -1744,6 +1851,22 @@ def free_surface_step(
         capture_replay_stages=capture_replay_stages,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
+    if _momconv != "off":
+        f = _apply_momentum_carrying_conversion(
+            f=f,
+            f_pre=f_pre_conversion,
+            mass_pre=mass_pre_conversion,
+            flags=flags,
+            mass=mass,
+            to_gas=to_gas,
+            solid_mask=solid_mask,
+            c_dev=c_dev,
+            mode=_momconv,
+            rho_gas=rho_gas,
+            rho_liquid=rho_liquid,
+            device=device,
+            state=momconv_state,
+        )
     if replay_capture is not None and plan.replay_evidence is not None:
         replay_capture["evidence"] = plan.replay_evidence
     if inventory_reconciliation_ledger is not None:

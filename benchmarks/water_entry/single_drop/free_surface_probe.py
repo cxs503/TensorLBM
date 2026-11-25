@@ -2,15 +2,21 @@
 
 import argparse
 import json
-import os
 import math
+import os
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
 import torch
-from scipy import ndimage
 
+from benchmarks.water_entry.single_drop.budget_diag import budget_snapshot
+from benchmarks.water_entry.single_drop.cavity_diag import (
+    DropMaterialMarkers,
+    cavity_diagnostics,
+    closure_point,
+    headspace_mask,
+)
 from benchmarks.water_entry.single_drop.run import (
     DropTracker,
     equivalent_radius,
@@ -85,126 +91,160 @@ def _top_mach_cells(dens, ux, uy, uz, flags, fill, k=5):
     return out
 
 
+def _dca_config(level, sc):
+    """Load DCA config from dca_config.json, inject level and vel_si, return None if disabled."""
+    path = Path(os.environ.get("TL_DCA_CONFIG") or Path(__file__).with_name("dca_config.json"))
+    cfg = json.loads(path.read_text()) if path.exists() else {}
+    return (
+        dict(cfg, level=float(level), vel_si=float(sc["dx_m"] / sc["dt_s"]))
+        if cfg.get("enabled")
+        else None
+    )
 
-def _cavgas_diagnostics(field, dens, level, radius, n, sc):
-    """Per-step cavity gas pressure diagnostics (pure observation).
 
-    ``field`` is the interior fill slice (``fill[1:-1]``); ``level`` is the
-    initial free surface in interior coordinates (``level - 1`` of the full
-    grid, the same convention as :func:`open_depth`).  Pure observation:
-    reads ``field``/``dens`` only, never mutates solver state.
+# Tree-local arm switch for the shared SDAA wrapper.  That wrapper fixes its
+# environment list, so the cavity-diagnosis switch travels inside the tree that
+# is transferred with the sources.  The file is deliberately not tracked: the
+# diagnosis stays off by default for every other user.
+DIAG_CAVITY_MARKER = Path(__file__).with_name("DIAG_CAVITY_ON")
 
-    * ``cav_volume``: volume (in cells) of gas (fill < 0.5) below the initial
-      surface inside the ROI r=1.5D (the air pocket the drop displaces).
-    * ``rho_g_field``: mean macroscopic density of the gas cells in the
-      cavity (lattice units; the model holds rho_gas=1.0 constant).
-    * ``pressure_ratio_adiabatic``: (V0/V)^gamma with gamma=1.4 (Rayleigh
-      1917 adiabatic cavity closure); None until V0 is established.
-    * ``pressure_ratio_isothermal``: V0/V (isothermal p=p0*V0/V).
+# Tree-local arm switch for the shared SDAA wrapper (same pattern as the
+# cavity-diagnosis marker): the file content is the momentum-carrying
+# conversion mode ("inherit" / "redistribute").  The file is not tracked, so
+# every other user keeps the legacy (bit-identical) behaviour.
+MOMCONV_MARKER = Path(__file__).with_name("MOMCONV_MODE")
+MOMCONV_MODES = ("off", "inherit", "redistribute", "redistribute_liq")
+
+
+def diag_cavity_enabled(request):
+    """Resolve the cavity-diagnosis switch.
+
+    ``None`` means "auto": the diagnosis runs when the tree-local marker file
+    exists.  ``True``/``False`` force it on/off.
     """
-    out = {}
-    gas = field < 0.5
-    z_int = np.arange(field.shape[0])
-    ny, nx = field.shape[1:]
-    yy, xx = np.indices((ny, nx))
-    roi = (yy - (ny - 1) / 2) ** 2 + (xx - (nx - 1) / 2) ** 2 <= radius**2
-    below = z_int[:, None, None] < level
-    cav_gas = gas & below & roi[None]
-    cav_volume = float(cav_gas.sum())
-    out["cav_volume"] = cav_volume
-    if cav_gas.any():
-        out["rho_g_field"] = float(dens[1:-1][cav_gas].mean())
-    else:
-        out["rho_g_field"] = None
-    return out
+    if request is None:
+        return DIAG_CAVITY_MARKER.exists()
+    return bool(request)
 
 
-def _cavity_cross_section(field, level, mid_y):
-    """Mid-plane cavity cross-section (DE-X-RELX3-RRIFACE geometry attribution).
+def momconv_mode(request):
+    """Resolve the momentum-carrying conversion mode.
 
-    ``field`` is the (nz-2, ny-2, nx-2) fill array.  The cavity is the gas
-    region connected to the headspace (seeded from the top row of the
-    mid-plane) that lies below the initial free surface.  Returns the
-    cross-sectional area (cells), the horizontal width (cells) and the depth
-    below the surface (cells) of that region; all zero when no cavity exists.
+    ``None`` means "auto": the mode is read from the ``TL_FS_MOMCONV``
+    environment variable, else from the tree-local ``MOMCONV_MODE`` marker
+    file, else the legacy mode "off" (bit-identical to the baseline).
     """
-    from scipy import ndimage
-
-    plane = field[:, mid_y, :]
-    gas = plane < 0.5
-    # z grows upward: the headspace is the top row of the field (k = nz-3),
-    # so the cavity is the gas connected to that row and lying below the
-    # initial surface (k + 1 < level).
-    seeds = np.zeros_like(gas)
-    seeds[-1] = gas[-1]
-    connected = ndimage.binary_propagation(seeds, mask=gas)
-    k_idx = np.arange(plane.shape[0])[:, None]
-    cav = connected & (k_idx < level - 1)
-    area = int(cav.sum())
-    if area == 0:
-        return 0, 0, 0.0
-    k, j = np.where(cav)
-    width = int(j.max() - j.min() + 1)
-    depth = float(level - (k.min() + 1))
-    return area, width, max(0.0, depth)
+    if request is None:
+        request = os.environ.get("TL_FS_MOMCONV") or None
+        if request is None and MOMCONV_MARKER.exists():
+            request = MOMCONV_MARKER.read_text().strip()
+    mode = str(request or "off").strip().lower()
+    if mode in ("", "none", "off", "0", "false"):
+        return "off"
+    if mode in MOMCONV_MODES:
+        return mode
+    raise ValueError(f"momconv must be one of {MOMCONV_MODES}, got {request!r}")
 
 
-def _cs_from_cli(cs):
-    """Resolve the Smagorinsky constant: explicit CLI value wins; None reads
-    the TL_FS_CS environment channel (empty/absent = 0.0)."""
-    if cs is None:
-        cs = float(os.environ.get("TL_FS_CS") or 0.0)
-    return float(cs or 0.0)
+def _diag_summary(rows, history):
+    """Reduce the diagnostic time series to peaks, minima and the depth-peak row."""
+
+    def extreme(key, mode):
+        best = None
+        for row in rows:
+            value = row.get(key)
+            if value is None:
+                continue
+            if best is None or (value > best[0] if mode == "max" else value < best[0]):
+                best = (value, row["time_ms"])
+        if best is None:
+            return None
+        return {"value": best[0], "time_ms": best[1]}
+
+    peak_step = None
+    peak_value = None
+    for entry in history:
+        value = entry.get("depth_over_D")
+        if value is None:
+            continue
+        if peak_value is None or value > peak_value:
+            peak_value = value
+            peak_step = entry["step"]
+    at_peak = None
+    for row in rows:
+        if row["step"] == peak_step:
+            at_peak = row
+            break
+    return {
+        "depth_peak": {"value": peak_value, "step": peak_step, "time_ms": None},
+        "at_depth_peak": at_peak,
+        "peak_d_cav_open": extreme("d_cav_open", "max"),
+        "peak_d_cav_all": extreme("d_cav_all", "max"),
+        "peak_d_cav_gap": extreme("d_cav_gap", "max"),
+        "peak_d_drop": extreme("d_drop", "max"),
+        "peak_d_drop_any": extreme("d_drop_any", "max"),
+        "peak_d_ceil": extreme("d_ceil", "max"),
+        "min_p_cav": extreme("p_cav", "min"),
+        "peak_u_back": extreme("u_back", "max"),
+        "max_cav_pockets": extreme("cav_pockets", "max"),
+        "rows": len(rows),
+    }
 
 
-def _find_cavity_center(field, level, radius):
-    """Deepest headspace-connected gas-to-liquid interface point (cavity bottom).
+def _closure_summary(rows, history, contact_step, sc):
+    """Reduce the closure-point trajectory to the closure time and velocity.
 
-    Ported from the unmerged agent/m26730 branch (DE-X-DIAG1-CAV_PRESSURE card
-    section 2).  ``field`` is the interior fill slice (``fill[1:-1]``); the
-    headspace is seeded at the top interior slice (same convention as
-    :func:`open_depth` in run.py) and propagated through the gas mask.
-    Returns (z_idx, y_idx, x_idx) in field coordinates, or None.
+    The closure time is the first step after the depth peak where the closure
+    point (deepest open gas-liquid floor) starts moving up (z increasing, since
+    axis 0 points up and a smaller index is deeper).  The closure velocity is
+    the vertical speed of the closure point at that step.
     """
-    gas = field < 0.5
-    seeds = np.zeros_like(gas)
-    seeds[-1] = gas[-1]
-    atmosphere = ndimage.binary_propagation(seeds, mask=gas)
-    y, x = np.indices(gas.shape[1:])
-    roi = (y - (gas.shape[1] - 1) / 2) ** 2 + (x - (gas.shape[2] - 1) / 2) ** 2 <= radius**2
-    k, j, i = np.where(atmosphere[1:] & ~gas[:-1] & roi[None])
-    if not len(k):
-        return None
-    min_z_idx = k.argmin()
-    return (int(k[min_z_idx]), int(j[min_z_idx]), int(i[min_z_idx]))
-
-
-def _rayleigh_plesset_pressure(t, R0, p_inf, p_v, rho, sigma, mu, kappa=1.4, p_g0=0.0):
-    """Rayleigh (1917)/Plesset (1949) closed-bubble pressure reference line.
-
-    p_b = p_v + p_g0*(R0/R)^(3*kappa) - 2*sigma/R - 4*mu*R'/R with the
-    analytical empty-cavity Rayleigh trajectory R(t) = R0*sqrt(1-(t/T_c)^2),
-    T_c = 0.9147*R0*sqrt(rho/dp).  Reference line only: the K1-DIAG-B
-    adjudication shows the cavity is an open ventilated pit, not a closed
-    bubble, so this line is a deviation reference, not a prediction.
-    """
-    dp = max(abs(p_inf - p_v), 1e-30)
-    T_c = 0.9147 * R0 * np.sqrt(rho / dp)
-    t_clamped = min(t, T_c * 0.99)
-    R = R0 * np.sqrt(max(0.0, 1 - (t_clamped / T_c) ** 2))
-    if R < 1e-12:
-        R = 1e-12
-    Rdot = -R0**2 * t_clamped / (2 * R * T_c**2)
-    p_b = p_v - 2.0 * sigma / R
-    if p_g0:
-        p_b += p_g0 * (R0 / R) ** (3.0 * kappa)
-    p_b -= 4.0 * mu * Rdot / R
-    return p_b, R, Rdot, T_c
-
-
-def rayleigh_collapse_time_lattice(R0, dp, rho):
-    """Rayleigh (1917) collapse time in lattice units."""
-    return 0.9147 * R0 * np.sqrt(rho / max(dp, 1e-30))
+    if not rows:
+        return {"t_close": None, "U_close": None, "rows": 0}
+    # find the depth peak (deepest closure point)
+    peak_step = None
+    peak_depth = None
+    for row in rows:
+        d = row.get("depth")
+        if d is None:
+            continue
+        if peak_depth is None or d > peak_depth:
+            peak_depth = d
+            peak_step = row["step"]
+    # find the first step after the peak where z starts increasing (moving up)
+    t_close = None
+    U_close = None
+    prev_z = None
+    for row in rows:
+        if row["step"] <= peak_step:
+            prev_z = row.get("z")
+            continue
+        z = row.get("z")
+        if z is None or prev_z is None:
+            prev_z = z
+            continue
+        # axis 0 points up: smaller index = deeper, so moving up = z increasing
+        if z > prev_z:
+            t_close = row["time_ms"]
+            # velocity: (z - prev_z) * dx / dt in m/s (upward = positive)
+            dz = (z - prev_z) * sc["dx_m"]
+            dt = (row["time_ms"] - (row["step"] - 1) * 1000 * sc["dt_s"]) / 1000
+            U_close = dz / dt if dt > 0 else None
+            break
+        prev_z = z
+    # t_close in ms after contact
+    t_close_after = None
+    if t_close is not None and contact_step is not None:
+        t_contact = contact_step * 1000 * sc["dt_s"]
+        t_close_after = t_close - t_contact
+    return {
+        "t_close": t_close,
+        "t_close_after_contact_ms": t_close_after,
+        "U_close": U_close,
+        "peak_step": peak_step,
+        "peak_depth": peak_depth,
+        "rows": len(rows),
+    }
 
 
 def probe(
@@ -224,31 +264,18 @@ def probe(
     ledger=False,
     diag_path=None,
     u_limit=None,
-    cav_clos_alpha=0.0,
-    rr_tau=0.0,
-    C_s=None,
-    diag_cavgas=False,
-    cav_probe=False,
-    cav_probe_out=None,
-    rr_iface=False,
-    cav_series_path=None,
+    diag_cavity=None,
+    gas_nu_ratio=1.0,
+    diag_budget=False,
+    momconv=None,
+    cav_closure=False,
+    gas_flow=False,
 ):
-    # DE-X-COL2-REG: regularized-collision arm.  rr_tau > 0 switches the
-    # free-surface collision from BGK to the regularized (RR) operator and
-    # overrides the physical relaxation time with rr_tau (stability-window
-    # scan).  rr_tau == 0 keeps the legacy BGK path bit-identical to ctrl.
-    rr_tau = float(rr_tau or 0.0)
-    if rr_tau < 0:
-        raise ValueError(f"rr_tau must be >= 0, got {rr_tau!r}")
-    rr_active = rr_tau > 0.0
-    # Smagorinsky SGS constant (DE-X-TURB1-SMAG): None -> read TL_FS_CS
-    # (empty/absent = 0.0 = legacy bit-identical path).
-    C_s = _cs_from_cli(C_s)
-    # DE-X-RELX3-RRIFACE: interface-local RR.  The RR projection is applied
-    # only to INTERFACE cells (0<fill<1); bulk cells keep BGK.  The physical
-    # tau is used unless rr_tau overrides it (same contract as the rr arm).
-    rr_iface = bool(rr_iface)
-    collision_mode = "rr_iface" if rr_iface else ("rr" if rr_active else "bgk")
+    diag_cavity = diag_cavity_enabled(diag_cavity)
+    diag_budget = bool(diag_budget)
+    momconv = momconv_mode(momconv)
+    # The inherited gas velocity has to survive between steps.
+    momconv_state = {}
     # Cell volume quadrature for the initial spherical volume fraction.
     case = load_case(pilot)
     sc = scales(case, n, speed)
@@ -295,7 +322,20 @@ def probe(
     velocity = -release_lattice * (moving & active)
     # Ambient gas pressure is represented as a reference liquid density of one.
     rho = 1 + 3 * (sc["g"] * (level - z).clamp_min(0) + (4 * sc["sigma"] / n) * moving)
-    f = equilibrium3d(rho * active, torch.zeros_like(z), torch.zeros_like(z), velocity)
+    if gas_flow:
+        # Potential flow of the exterior of a translating sphere, decaying as r^-3
+        # (mirrors run.py --gas-flow so the SDAA-lane probe arm matches the CACSim arm).
+        r = ((x - mid) ** 2 + (y - mid) ** 2 + (z - center) ** 2).sqrt().clamp_min(n / 2)
+        pool_mask = (level - z + 0.5).clamp(0, 1)
+        scale = -0.5 * release_lattice * (n / (2 * r)) ** 3 * (1 - drop) * (1 - pool_mask)
+        ux = scale * 3 * (x - mid) * (z - center) / r**2
+        uy = scale * 3 * (y - mid) * (z - center) / r**2
+        uz = velocity + scale * (3 * ((z - center) / r) ** 2 - 1)
+    else:
+        ux = torch.zeros_like(z)
+        uy = torch.zeros_like(z)
+        uz = velocity
+    f = equilibrium3d(rho * active, ux, uy, uz)
     mass = init_mass_from_fill(fill, flags) * rho
     mass0 = total_liquid_inventory(f, fill, flags).item()
     geometric_volume0 = float(fill.sum())
@@ -305,26 +345,22 @@ def probe(
     sample_targets_ms = (1.39643, 6.4, 10.39446, 13.4)
 
     silhouette_samples = []
+    markers = None
+    marker_state = None
+    last_drop_mask = None
+    cavity_rows = []
+    closure_rows = []
+    budget_rows = []
+    prev_budget = None
+    # the anti-bounce-back reconstruction carries the ambient gas pressure
+    # rho_gas = 1.0 (pressure matched), so p_amb = cs^2 * rho_gas = 1/3
+    p_amb = 1.0 / 3.0
     tracker = DropTracker()
     last_speed = None
     impact_speed = None
     reason = "step_limit"
     runtime_ledger = {"steps": []} if ledger else None
     diag_rows = [] if diag_path is not None else None
-    cavgas_rows = [] if diag_cavgas else None
-    cav_volume0 = None
-    cav_rows = [] if cav_series_path is not None else None
-    # Cavitation pressure probe (DE-X-GAS2-CAVPROBE-R1; read-only, off by default)
-    cav_probe_data = [] if cav_probe else None
-    cav_R0 = 0.5 * n * sc["dx_m"]  # Initial cavity radius ~ half drop radius
-    cav_p_inf = 1.0 + 3 * sc["g"] * level  # Ambient pressure at surface (lattice units)
-    cav_p_v = 1.0  # Vapor pressure ~ atmospheric (lattice units)
-    cav_rho = 1.0  # Liquid density (lattice units)
-    cav_sigma = sc["sigma"]
-    cav_mu = sc["mu_l"]
-    cav_contact_step = None
-    cav_collapse_time = None
-    cav_T_rayleigh = None
     for step in range(limit + 1):
         dens, ux, uy, uz = macroscopic3d(f)
         active = (flags != GAS) & (flags != SOLID)
@@ -381,8 +417,15 @@ def probe(
                         )
                     )
             last_speed = float(-uz[1:-1][detached].mean()) * sc["dx_m"] / sc["dt_s"]
+            if diag_cavity or diag_budget:
+                last_drop_mask = detached
         elif tracker.contact_step == step:
             impact_speed = last_speed
+            if (diag_cavity or diag_budget) and markers is None and last_drop_mask is not None:
+                markers = DropMaterialMarkers.from_mask(last_drop_mask)
+                marker_state = {
+                    "mass": np.asarray(mass[1:-1].numpy()[last_drop_mask], dtype=np.float64)
+                }
         if step and step % 50 == 0:
             print(
                 f"step {step}, t={row['time_ms']:.4f} ms, contact={tracker.contact_step}",
@@ -390,65 +433,65 @@ def probe(
             )
 
         row["depth_over_D"] = open_depth(field, level - 1, 1.5 * n) / n
-        if cav_probe and tracker.contact_step is not None:
-            cavity_center = _find_cavity_center(field, level - 1, 1.5 * n)
-            if cavity_center is not None:
-                cz, cy, cx = cavity_center
-                p_cav_lattice = float(dens[1:-1][cz, cy, cx])
-                p_cav_pa = p_cav_lattice * sc["rho_g"] * sc["dx_m"] / sc["dt_s"] ** 2 * 1e3
-                if cav_contact_step is None:
-                    cav_contact_step = step
-                    cav_T_rayleigh = rayleigh_collapse_time_lattice(cav_R0, cav_p_inf - cav_p_v, cav_rho)
-                t_since_contact = (step - cav_contact_step) * sc["dt_s"]
-                p_rp, R_t, Rdot_t, T_c = _rayleigh_plesset_pressure(
-                    t_since_contact, cav_R0, cav_p_inf, cav_p_v, cav_rho, cav_sigma, cav_mu
+        if (diag_cavity or diag_budget or cav_closure) and tracker.contact_step is not None:
+            uxi = ux[1:-1].numpy()
+            uyi = uy[1:-1].numpy()
+            uzi = uz[1:-1].numpy()
+            if markers is not None:
+                markers.advect(uxi, uyi, uzi, field, surf=level - 1, n=n)
+            if diag_cavity:
+                diag_row = cavity_diagnostics(
+                    field,
+                    level - 1,
+                    n,
+                    ux=uxi,
+                    uy=uyi,
+                    uz=uzi,
+                    velocity_scale=sc["dx_m"] / sc["dt_s"],
+                    markers=markers,
                 )
-                p_rp_pa = p_rp * sc["rho_g"] * sc["dx_m"] / sc["dt_s"] ** 2 * 1e3
-                cav_probe_data.append(
-                    {
-                        "step": step,
-                        "time_ms": row["time_ms"],
-                        "time_since_contact_ms": t_since_contact * 1000,
-                        "p_cav_lattice": p_cav_lattice,
-                        "p_cav_pa": p_cav_pa,
-                        "p_ref_lattice": cav_p_v,
-                        "p_rp_lattice": p_rp,
-                        "p_rp_pa": p_rp_pa,
-                        "p_rp_pa_minus_p_atm_pa": p_rp_pa - 101325.0,
-                        "R_t": R_t,
-                        "Rdot_t": Rdot_t,
-                        "T_collapse_s": T_c,
-                        "cavity_center_z": cz,
-                        "cavity_center_y": cy,
-                        "cavity_center_x": cx,
-                        "depth_over_D": row["depth_over_D"],
-                    }
+                diag_row["step"] = step
+                diag_row["time_ms"] = row["time_ms"]
+                cavity_rows.append(diag_row)
+            if cav_closure:
+                gas = field < 0.5
+                headspace = headspace_mask(gas)
+                side = field.shape[1]
+                center = (side - 1) / 2
+                yy, xx = np.indices(field.shape[1:])
+                roi = (yy - center) ** 2 + (xx - center) ** 2 <= (1.5 * n) ** 2
+                cp = closure_point(field, gas, headspace, roi, level - 1, n)
+                if cp is not None:
+                    cp["step"] = step
+                    cp["time_ms"] = row["time_ms"]
+                    closure_rows.append(cp)
+            if diag_budget:
+                mass_np = mass[1:-1].numpy()
+                budget_row = budget_snapshot(
+                    field,
+                    flags[1:-1].numpy(),
+                    mass_np,
+                    uxi,
+                    uyi,
+                    uzi,
+                    level - 1,
+                    n,
+                    sigma=sc["sigma"],
+                    mu=sc["mu_l"],
+                    g=sc["g"],
+                    p_amb=p_amb,
+                    u_limit=u_limit,
+                    markers=markers,
+                    marker_state=marker_state,
+                    prev=prev_budget,
                 )
-                if cav_collapse_time is None and cav_T_rayleigh is not None:
-                    cav_collapse_time = cav_T_rayleigh
-        if diag_cavgas and tracker.contact_step is not None:
-            diag = _cavgas_diagnostics(field, dens, level - 1, 1.5 * n, n, sc)
-            if cav_volume0 is None:
-                cav_volume0 = diag["cav_volume"]
-            if cav_volume0 is not None and cav_volume0 > 0 and diag["cav_volume"] > 0:
-                diag["pressure_ratio_adiabatic"] = (cav_volume0 / diag["cav_volume"]) ** 1.4
-                diag["pressure_ratio_isothermal"] = cav_volume0 / diag["cav_volume"]
-            else:
-                diag["pressure_ratio_adiabatic"] = None
-                diag["pressure_ratio_isothermal"] = None
-            row.update(diag)
-            cavgas_rows.append(diag)
-        if cav_series_path is not None:
-            area, width, cdepth = _cavity_cross_section(field, level, side // 2)
-            cav_rows.append(
-                {
-                    "step": step,
-                    "time_ms": row["time_ms"],
-                    "cav_area_cells": area,
-                    "cav_width_cells": width,
-                    "cav_depth_cells": cdepth,
+                budget_row["step"] = step
+                budget_row["time_ms"] = row["time_ms"]
+                budget_rows.append(budget_row)
+                prev_budget = {
+                    "mass": np.asarray(mass_np, dtype=np.float64),
+                    "u2": uxi**2 + uyi**2 + uzi**2,
                 }
-            )
         if (
             planes_path is not None
             and tracker.contact_step is not None
@@ -471,17 +514,19 @@ def probe(
                     flags,
                     solid,
                     mass=mass,
-                    tau=rr_tau if (rr_active or rr_iface) and rr_tau > 0 else 0.5 + 3 * sc["mu_l"],
+                    tau=0.5 + 3 * sc["mu_l"],
                     gz=-sc["g"],
                     surface_tension=sc["sigma"],
                     rho_gas=1.0,
-                    collision=collision_mode,
+                    collision="bgk",
                     capacity_redistribution=capacity,
                     simple_mass_exchange=simple,
                     runtime_ledger=runtime_ledger,
                     u_limit=u_limit,
-                    cav_clos_alpha=cav_clos_alpha,
-                    C_s=C_s,
+                    dca=_dca_config(level, sc),
+                    gas_nu_ratio=gas_nu_ratio,
+                    momconv=momconv,
+                    momconv_state=momconv_state,
                 )
             except TopologyTransactionError as error:
                 reason = f"topology_step_{step + 1}: {error}"
@@ -508,29 +553,6 @@ def probe(
     if diag_rows is not None:
         diag_path.parent.mkdir(parents=True, exist_ok=True)
         diag_path.write_text(json.dumps({"rows": diag_rows}, indent=1, allow_nan=False) + "\n")
-    if cav_rows is not None:
-        cav_series_path.parent.mkdir(parents=True, exist_ok=True)
-        cav_series_path.write_text(json.dumps({"rows": cav_rows}, indent=1, allow_nan=False) + "\n")
-    if cav_probe and cav_probe_data:
-        cav_result = {
-            "probe": "cavitation_pressure",
-            "cavity_center_radius_m": cav_R0,
-            "ambient_pressure_lattice": cav_p_inf,
-            "vapor_pressure_lattice": cav_p_v,
-            "liquid_density_lattice": cav_rho,
-            "surface_tension_lattice": cav_sigma,
-            "viscosity_lattice": cav_mu,
-            "contact_step": cav_contact_step,
-            "T_rayleigh_s": cav_T_rayleigh if cav_T_rayleigh else None,
-            "data": cav_probe_data,
-        }
-        if cav_probe_out is not None:
-            cav_probe_out.parent.mkdir(parents=True, exist_ok=True)
-            cav_probe_out.write_text(json.dumps(cav_result, indent=2, allow_nan=False) + "\n")
-        result_cav_probe = cav_result
-    else:
-        result_cav_probe = None
-
     result = {
         "solver": "free_surface_step/D3Q19, constant atmospheric pressure",
         "cells_per_D": n,
@@ -546,10 +568,8 @@ def probe(
         "nearest_surface_velocity": nearest,
         "simple_mass_exchange": simple,
         "u_limit": u_limit,
-        "rr_tau": rr_tau if (rr_active or rr_iface) else None,
-        "rr_iface": rr_iface if rr_iface else None,
-        "collision_mode": collision_mode if (rr_active or rr_iface) else "bgk",
-        "C_s": C_s,
+        "gas_nu_ratio": gas_nu_ratio,
+        "momconv": momconv,
         "release_speed_m_s": release_lattice * sc["dx_m"] / sc["dt_s"],
         "prescribed_release_speed_m_s": release,
         "impact_speed_m_s": impact_speed,
@@ -558,25 +578,67 @@ def probe(
     }
     if ledger:
         result["mass_ledger_summary"] = _summarize_ledger(runtime_ledger)
-    if cav_probe:
-        result["cavitation_probe"] = {
-            "contact_step": cav_contact_step,
-            "T_rayleigh_s": cav_T_rayleigh,
-            "n_samples": len(cav_probe_data) if cav_probe_data else 0,
-        }
-        if result_cav_probe is not None:
-            result["cav_probe"] = result_cav_probe
-
-    if diag_cavgas and cavgas_rows:
-        result["cavgas_diag"] = {
+    if diag_budget:
+        result["budget_diag"] = {
+            "enabled": True,
+            "units": "lattice (dx=dt=1, rho_liquid=1); convert with rho_l*dx^3 (energy)",
             "definitions": {
-                "cav_volume": "volume (cells) of gas (fill<0.5) below initial surface inside ROI r=1.5D",
-                "rho_g_field": "mean macroscopic density of gas cells in cavity (lattice units)",
-                "pressure_ratio_adiabatic": "(V0/V)^1.4 (Rayleigh 1917 adiabatic)",
-                "pressure_ratio_isothermal": "V0/V (isothermal)",
+                "ke_liq": "1/2 sum m|u|^2 over liquid+interface cells",
+                "ke_axial": "1/2 sum m u_z^2 (axial / water-column motion)",
+                "ke_lat": "1/2 sum m (u_x^2+u_y^2) (lateral / jet motion)",
+                "ke_rad": "radial part of ke_lat (u_r = e_r . u in the x-y plane)",
+                "ke_lat_roi": "ke_lat restricted to the crater footprint (r<=1.5 D, below the initial surface)",
+                "ke_drop": "1/2 sum m_marker|u_marker|^2 of the tracked drop material",
+                "area_total": "sum |grad phi| (smeared-interface area, lattice area units)",
+                "area_cav": "the cavity-wall part of area_total",
+                "cav_volume": "cavity gas volume (lattice volume units)",
+                "p_lap_mean": "mean Laplace pressure sigma*kappa on the cavity wall",
+                "gas_force_*": "force of the cavity gas on the liquid (item 1, momentum)",
+                "gas_power": "work rate of the cavity gas on the liquid (item 1, energy)",
+                "grav_power": "work rate of gravity on the liquid",
+                "diss_rate": "continuum viscous dissipation rate 2 mu |S|^2 (item 3)",
+                "diss_iface": "the interface-neighbourhood part of diss_rate",
+                "diss_bulk": "the bulk part of diss_rate",
+                "conv_loss": "kinetic energy carried away by liquid mass converted to gas",
+                "conv_gain": "kinetic energy created by gas mass converted back to liquid",
+                "n_at_cap": "number of interface cells sitting on the pseudo-current cap (u_limit)",
+                "ke_at_cap": "kinetic energy held by the cells sitting on the cap",
+                "p_liq_*": "total liquid momentum",
+                "p_drop_*": "momentum carried by the tracked drop material",
             },
-            "cav_volume0": cav_volume0,
-            "rows": cavgas_rows,
+            "rows": budget_rows,
+        }
+    if diag_cavity:
+        result["cavity_diag"] = {
+            "enabled": True,
+            "definitions": {
+                "d_cav_open": "deepest headspace-connected gas-to-liquid floor in r=1.5 D (D)",
+                "d_cav_all": "deepest gas-to-liquid floor in r=1.5 D ignoring connectivity (D)",
+                "d_cav_gap": "d_cav_all - d_cav_open, depth lost to closure (D)",
+                "d_drop": "deepest depth reached by drop-material markers still in liquid (D)",
+                "d_drop_any": "deepest depth reached by any drop-material marker (D)",
+                "d_ceil": "deepest liquid cell sitting directly above cavity gas (D)",
+                "p_cav": "d_cav_open / d_cav_all, vented depth fraction",
+                "cav_vent_ratio": "fraction of cavity gas cells connected to the headspace",
+                "cav_pockets": "number of connected cavity-gas pockets below the initial surface",
+                "u_back": "maximum upward liquid velocity below the initial surface (m/s)",
+            },
+            "summary": _diag_summary(cavity_rows, history),
+            "rows": cavity_rows,
+        }
+    if cav_closure:
+        result["cav_closure"] = {
+            "enabled": True,
+            "definitions": {
+                "z": "sub-cell z position of the deepest open gas-liquid floor (axis 0 = up)",
+                "x": "sub-cell x position of the deepest open gas-liquid floor",
+                "y": "sub-cell y position of the deepest open gas-liquid floor",
+                "depth": "depth of the closure point below the initial surface (D)",
+                "t_close": "closure time (ms after contact): first step after the depth peak where the closure point starts moving up",
+                "U_close": "closure velocity (m/s): vertical speed of the closure point at t_close",
+            },
+            "summary": _closure_summary(closure_rows, history, tracker.contact_step, sc),
+            "rows": closure_rows,
         }
     return result
 
@@ -622,46 +684,39 @@ if __name__ == "__main__":
         default=None,
         help="interface pseudo-current speed cap in lattice units (default 2.5*speed; 0 disables)",
     )
+    parser.add_argument(
+        "--gas-nu-ratio",
+        type=float,
+        default=1.0,
+        help="gas/liquid kinematic-viscosity ratio for GAS-cell collision "
+        "(tau_g = 0.5 + ratio*(tau_l - 0.5); default 1.0 = legacy single tau)",
+    )
+    parser.add_argument(
+        "--diag-cavity",
+        action="store_true",
+        help="record the cavity-closure / drop-penetration diagnosis "
+        "(read only; does not change the trajectory)",
+    )
+    parser.add_argument(
+        "--cav-closure",
+        action="store_true",
+        help="record the crater-closure point trajectory (deepest open "
+        "gas-liquid floor position and velocity; read only, does not "
+        "change the trajectory)",
+    )
+    parser.add_argument(
+        "--diag-budget",
+        action="store_true",
+        help="record the momentum/energy budget ledger of the impact "
+        "(read only; does not change the trajectory)",
+    )
     parser.add_argument("--gap", type=float, default=0.4)
-    parser.add_argument("--cav-clos-alpha", type=float, default=0.0, help="cavity closure delay factor: threshold = kappa*(1+alpha)")
     parser.add_argument(
-        "--diag-cavgas",
-        action="store_true",
-        help="record per-step cavity volume and gas pressure ratio (diagnostic; off by default, zero behavior change)",
-    )
-    parser.add_argument(
-        "--cav-probe",
-        action="store_true",
-        help="enable cavitation pressure probe at cavity bottom (read-only; off by default, zero behavior change)",
-    )
-    parser.add_argument(
-        "--cav-probe-out",
-        type=Path,
+        "--momconv",
         default=None,
-        help="output path for cavitation pressure data (JSON)",
-    )
-    parser.add_argument(
-        "--rr-tau",
-        type=float,
-        default=0.0,
-        help="DE-X-COL2-REG: regularized-collision relaxation time; 0=legacy BGK",
-    )
-    parser.add_argument(
-        "--rr-iface",
-        action="store_true",
-        help="DE-X-RELX3-RRIFACE: interface-local RR (INTERFACE cells only, bulk BGK); off=bit-identical",
-    )
-    parser.add_argument(
-        "--cav-series",
-        type=Path,
-        default=None,
-        help="DE-X-RELX3-RRIFACE: write mid-plane cavity area/width/depth time series JSON",
-    )
-    parser.add_argument(
-        "--cs",
-        type=float,
-        default=None,
-        help="Smagorinsky SGS constant (DE-X-CMB8-IFACECOMBO); None -> TL_FS_CS env (absent = 0.0)",
+        choices=list(MOMCONV_MODES),
+        help="momentum-carrying I->G conversion (DE-X-K3-MOMCONV): "
+        "off (default, legacy bit-identical), inherit or redistribute",
     )
     args = parser.parse_args()
     if (
@@ -695,14 +750,11 @@ if __name__ == "__main__":
         args.ledger,
         args.diag_out,
         args.u_limit,
-        args.cav_clos_alpha,
-        args.rr_tau,
-        args.cs,
-        args.diag_cavgas,
-        args.cav_probe,
-        args.cav_probe_out,
-        args.rr_iface,
-        args.cav_series,
+        args.diag_cavity,
+        args.gas_nu_ratio,
+        args.diag_budget,
+        args.momconv,
+        args.cav_closure,
     )
     for row in result["history"]:
         for key, value in row.items():

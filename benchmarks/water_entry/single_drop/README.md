@@ -76,3 +76,5 @@ cmp "$out/reference.csv" benchmarks/water_entry/single_drop/fig5_experiment.csv
 ### 历史探索
 
 [m27100 · RR 剂量稳定性](../../../development/audit/drop_entry/cmb5_hydrorr_stability/README.md) 归档了三条接触前触发健康限值的探索轨迹及一条短程对照。正式实验比较使用本页的筛查与验收条件。
+
+[m26991 · CMB2 组合稳定性探索](../../../development/audit/drop_entry/BB/m26991/DE-X-CMB2-COMBSTAB-R2.md) 保存了原始工作卡和计算记录。该记录按历史探索保留。

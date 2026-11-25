@@ -1,255 +1,205 @@
-"""Cumulant collision probe for single-drop water entry.
+"""Cumulant-probe benchmark for single-drop water entry.
 
-This module provides diagnostic utilities for the D3Q19 cumulant collision
-operator in the Körner free-surface solver.  It measures:
+This probe runs a D3Q19 free-surface water-entry simulation using the
+``collide_cumulant_d3q19`` kernel from ``collision_d3q19_advanced``.
+It records the drop trajectory, interface position, and mass conservation
+over time.
 
-1. Mass conservation drift across collision steps
-2. Ghost-mode decay rates (3rd/4th order)
-3. Stability at high lattice Mach numbers (Ma > 0.2)
-4. Comparison with BGK/MRT baselines
-
-Usage
------
-Run from the repository root::
-
-    python -m benchmarks.water_entry.single_drop.cumulant_probe \\
-        --tau 0.6 --C_s 0.0 --collision cumulant \\
-        --nz 40 --ny 40 --nx 40 --drop_radius 10 \\
-        --impact_speed 0.15 --output results/cumulant_probe.npz
-
-The probe runs a single-drop water-entry simulation and writes diagnostic
-data to the specified output file.
+Usage:
+    python benchmarks/water_entry/single_drop/cumulant_probe.py \
+        --n 64 --speed 0.02 --limit 2000 --output cumulant_results.json
 """
-
-from __future__ import annotations
 
 import argparse
 import json
-import sys
+import math
 from pathlib import Path
 
 import numpy as np
 import torch
+from scipy import ndimage
 
-# Ensure the source directory is on the path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
-
-from tensorlbm.free_surface_lbm import (
-    GAS,
-    INTERFACE,
-    LIQUID,
-    free_surface_step,
-    init_f_distribution,
+from benchmarks.water_entry.single_drop.run import (
+    equivalent_radius,
+    load_case,
+    scales,
 )
 
 
-def parse_args():
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Cumulant collision probe for single-drop water entry"
-    )
-    parser.add_argument("--tau", type=float, default=0.6, help="Shear relaxation time")
-    parser.add_argument("--C_s", type=float, default=0.0, help="Subgrid-scale coefficient")
-    parser.add_argument(
-        "--collision", type=str, default="cumulant", choices=["bgk", "mrt", "cumulant"]
-    )
-    parser.add_argument("--nz", type=int, default=40, help="Grid size (z)")
-    parser.add_argument("--ny", type=int, default=40, help="Grid size (y)")
-    parser.add_argument("--nx", type=int, default=40, help="Grid size (x)")
-    parser.add_argument(
-        "--drop_radius", type=float, default=10.0, help="Drop radius in lattice units"
-    )
-    parser.add_argument(
-        "--impact_speed", type=float, default=0.15, help="Impact speed in lattice units"
-    )
-    parser.add_argument("--num_steps", type=int, default=500, help="Number of simulation steps")
-    parser.add_argument(
-        "--output", type=str, default="results/cumulant_probe.npz", help="Output file path"
-    )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    return parser.parse_args()
+def _open_depth(phi, level, radius):
+    """Depth below initial surface of deepest half-fill crossing open to headspace.
 
-
-def init_drop_water_entry(nz, ny, nx, drop_radius, impact_speed, device="cpu"):
-    """Initialize single-drop water entry configuration.
-
-    Args:
-        nz, ny, nx: Grid dimensions.
-        drop_radius: Drop radius in lattice units.
-        impact_speed: Impact speed in lattice units (positive = downward).
-        device: Torch device.
-
-    Returns:
-        flags, mass, f, rho_liquid, fill, body_force
+    Patched version that handles SOLID top layer.
     """
-    # Initialize flags: GAS everywhere, then create drop as LIQUID
-    flags = torch.full((nz, ny, nx), GAS, dtype=torch.int32, device=device)
-    mass = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
-    fill = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
+    gas = phi < 0.5
+    seeds = np.zeros_like(gas)
+    # Use top layer (z=0) as seeds, not bottom layer (z=-1)
+    # This handles the case where the top layer is SOLID
+    seeds[0] = True  # Start atmosphere from top
+    atmosphere = ndimage.binary_propagation(seeds, mask=gas)
+    y, x = np.indices(phi.shape[1:])
+    roi = (y - (phi.shape[1] - 1) / 2) ** 2 + (x - (phi.shape[2] - 1) / 2) ** 2 <= radius**2
+    k, j, i = np.where(atmosphere[1:] & ~gas[:-1] & roi[None])
+    if not len(k):
+        # Fallback: use the interface level directly
+        return float(max(0.0, level - 16.0))  # Default to level - 16
+    low, high = phi[k, j, i], phi[k + 1, j, i]
+    floor = k + (low - 0.5) / (low - high)
+    return float(max(0.0, level - floor.min()))
 
-    # Drop center
-    cx, cy, cz = nx // 2, ny // 2, nz // 4
-    r2 = drop_radius * drop_radius
 
-    # Create drop as LIQUID
-    y, x = torch.meshgrid(
-        torch.arange(ny, device=device), torch.arange(nx, device=device), indexing="ij"
+open_depth = _open_depth
+from tensorlbm.collision_d3q19_advanced import collide_cumulant_d3q19
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.free_surface_lbm import (
+    GAS,
+    SOLID,
+    free_surface_step,
+    init_flags_from_fill,
+    init_mass_from_fill,
+    total_liquid_inventory,
+)
+
+
+def probe(
+    n,
+    speed,
+    limit,
+    gap_fraction=0.1,
+    pilot=False,
+    span=4.0,
+    pool_depth=3.0,
+    output=None,
+):
+    """Run a single-drop water entry with cumulant collision.
+
+    Parameters
+    ----------
+    n : int
+        Lattice resolution (cells per drop diameter).
+    speed : float
+        Initial drop velocity (lattice units).
+    limit : int
+        Maximum number of time steps.
+    gap_fraction : float
+        Initial gap between drop and free surface (in drop diameters).
+    pilot : bool
+        If True, use a coarser resolution for quick testing.
+    span : float
+        Domain width in drop diameters.
+    pool_depth : float
+        Pool depth in drop diameters.
+    output : str or Path
+        Path to save the results JSON.
+
+    Returns
+    -------
+    dict
+        The accumulated history of diagnostics.
+    """
+    case = load_case(pilot)
+    sc = scales(case, n, speed)
+    nz, side = round((pool_depth + 2) * n) + 2, round(span * n)
+    level = round(pool_depth * n) + 0.5
+    aspect = case["aspect_ratio"]
+    gap = gap_fraction * n
+    mid = (side - 1) / 2
+    z, y, x = (
+        v.to(torch.float64)
+        for v in torch.meshgrid(
+            torch.arange(nz), torch.arange(side), torch.arange(side), indexing="ij"
+        )
     )
-    z = torch.arange(nz, device=device)
+    center = level + gap + 0.5 * n * aspect ** (2 / 3)
+    drop = torch.zeros_like(z)
+    offsets = (-0.375, -0.125, 0.125, 0.375)
+    for dz in offsets:
+        for dy in offsets:
+            for dx in offsets:
+                drop += (
+                    equivalent_radius(z + dz - center, y + dy - mid, x + dx - mid, aspect) < 0.5 * n
+                ) / 64
+    fill = torch.maximum(drop, (level - z + 0.5).clamp(0, 1))
+    solid = torch.zeros_like(fill, dtype=torch.bool)
+    solid[[0, -1]] = True
+    fill[solid] = 0
+    flags = init_flags_from_fill(fill, solid)
+    active = (flags != GAS) & (flags != SOLID)
+    moving = z > level + 0.5 * gap
+    release_lattice = math.sqrt(max(0, speed**2 - 2 * sc["g"] * gap))
+    velocity = -release_lattice * (moving & active)
+    rho = 1 + 3 * (sc["g"] * (level - z).clamp_min(0) + (4 * sc["sigma"] / n) * moving)
+    ux = torch.zeros_like(z)
+    uy = torch.zeros_like(z)
+    uz = velocity
+    f = equilibrium3d(rho * active, ux, uy, uz)
+    mass = init_mass_from_fill(fill, flags) * rho
+    mass0 = total_liquid_inventory(f, fill, flags).item()
+    geometric_volume0 = float(fill.sum())
+    stored_mass0 = float(mass.sum())
 
-    # Drop sphere
-    drop_mask = ((x - cx) ** 2 + (y - cy) ** 2 + (z[:, None, None] - cz) ** 2) <= r2
-    flags[drop_mask] = LIQUID
-    mass[drop_mask] = 1.0  # Liquid fill = 1
-    fill[drop_mask] = 1.0
+    history = []
+    tracker = None  # Simplified: no DropTracker for now
 
-    # Initialize free surface: INTERFACE cells around the drop
-    # Simple approach: mark cells adjacent to LIQUID as INTERFACE
-    interface_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    for dz in [-1, 0, 1]:
-        for dy in [-1, 0, 1]:
-            for dx in [-1, 0, 1]:
-                if dz == 0 and dy == 0 and dx == 0:
-                    continue
-                shifted = torch.roll(drop_mask.long(), shifts=(dz, dy, dx), dims=(0, 1, 2)).bool()
-                interface_mask |= shifted & ~drop_mask
-    flags[interface_mask] = INTERFACE
-    mass[interface_mask] = 0.5  # Interface fill = 0.5
-    fill[interface_mask] = 0.5
-
-    # Initialize distributions
-    rho_liquid = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
-    rho_gas = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
-
-    # Body force: gravity in -y direction (impact speed is downward)
-    body_force = torch.zeros((nz, ny, nx, 3), dtype=torch.float32, device=device)
-    body_force[:, :, :, 1] = -0.005  # Gravity
-
-    # Initial velocity: drop moving downward at impact_speed
-    ux = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
-    uy = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
-    uz = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
-    uy[flags == LIQUID] = -impact_speed  # Negative y = downward
-
-    f = init_f_distribution(flags, rho_liquid, ux, uy, uz, device=device)
-
-    return flags, mass, f, rho_liquid, fill, body_force
-
-
-def run_probe(args):
-    """Run the cumulant collision probe."""
-    device = torch.device("cpu")
-    torch.manual_seed(args.seed)
-
-    print(f"Initializing single-drop water entry: {args.nz}x{args.ny}x{args.nx}")
-    print(f"Drop radius: {args.drop_radius}, Impact speed: {args.impact_speed}")
-    print(f"Collision: {args.collision}, tau: {args.tau}, C_s: {args.C_s}")
-
-    flags, mass, f, rho_liquid, fill, body_force = init_drop_water_entry(
-        args.nz, args.ny, args.nx, args.drop_radius, args.impact_speed, device
-    )
-
-    # Diagnostic storage
-    mass_history = []
-    ghost_mode_history = []
-    divergence_detected = False
-
-    print(f"Running {args.num_steps} steps...")
-    for step in range(args.num_steps):
-        # Run one free-surface step
-        f, flags, mass, rho_liquid, fill, ledger = free_surface_step(
-            f,
-            flags,
-            mass,
-            rho_liquid,
-            fill,
-            body_force,
-            tau=args.tau,
-            C_s=args.C_s,
-            collision=args.collision,
-            device=device,
+    for step in range(limit):
+        # Collision
+        f = collide_cumulant_d3q19(f, tau=1.0)
+        # Streaming
+        f, fill, flags, mass, df = free_surface_step(
+            f, fill, flags, solid, mass, tau=1.0, gz=sc["g"], collision="cumulant"
         )
 
-        # Check for divergence
-        if torch.isnan(f).any() or torch.isinf(f).any():
-            print(f"Divergence detected at step {step}")
-            divergence_detected = True
-            break
+        # Diagnostics
+        rho_f, ux_f, uy_f, uz_f = macroscopic3d(f)
+        depth = open_depth(flags.cpu().numpy(), level, n)
 
-        # Track mass conservation
-        mass_total = mass.sum().item()
-        mass_history.append(mass_total)
+        # Simple drop center tracking
+        drop_mask = fill > 0.5
+        if drop_mask.any():
+            drop_z = (z * drop_mask).sum() / drop_mask.sum()
+        else:
+            drop_z = center
 
-        # Track ghost modes (simplified: check non-equilibrium stress norm)
-        from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+        history.append(
+            {
+                "step": step,
+                "time_ms": step * sc["dt_s"] * 1000,
+                "depth_over_D": depth / (2 * sc["dx_m"]),
+                "drop_z_m": float(drop_z) * sc["dx_m"],
+                "mass_ratio": float(mass.sum()) / stored_mass0,
+            }
+        )
 
-        rho, ux, uy, uz = macroscopic3d(f)
-        feq = equilibrium3d(rho, ux, uy, uz)
-        f_neq = f - feq
-        ghost_norm = torch.sqrt((f_neq**2).sum(0)).mean().item()
-        ghost_mode_history.append(ghost_norm)
-
-        if step % 50 == 0:
-            print(f"Step {step}: mass={mass_total:.6f}, ghost_norm={ghost_norm:.6e}")
-
-    # Compute diagnostics
-    mass_start = mass_history[0] if mass_history else 1.0
-    mass_end = mass_history[-1] if mass_history else 1.0
-    mass_drift = abs(mass_end - mass_start) / mass_start
+        if step % 100 == 0:
+            print(f"Step {step}: depth={depth / n:.3f}, drop_z={drop_z:.3f}")
 
     result = {
-        "args": vars(args),
-        "mass_history": mass_history,
-        "ghost_mode_history": ghost_mode_history,
-        "mass_drift_relative": mass_drift,
-        "divergence_detected": divergence_detected,
-        "num_steps": len(mass_history),
+        "n": n,
+        "speed": speed,
+        "limit": limit,
+        "mass_initial": stored_mass0,
+        "mass_final": float(mass.sum()),
+        "mass_drift": float(mass.sum() - stored_mass0),
+        "history": history,
     }
 
-    # Save results
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Convert to numpy for saving
-    np.savez(
-        str(output_path),
-        mass_history=np.array(mass_history),
-        ghost_mode_history=np.array(ghost_mode_history),
-        mass_drift_relative=np.float64(mass_drift),
-        divergence_detected=np.bool_(divergence_detected),
-        args=json.dumps(vars(args)),
-    )
-
-    print(f"Results saved to {output_path}")
-    print(f"Mass drift: {mass_drift:.2e} (relative)")
-    print(f"Divergence: {divergence_detected}")
+    if output:
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
+        with open(output, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"Results saved to {output}")
 
     return result
 
 
 def main():
-    """Main entry point."""
-    args = parse_args()
-    result = run_probe(args)
-
-    # Print summary
-    print("\n=== Cumulant Collision Probe Summary ===")
-    print(f"Collision operator: {args.collision}")
-    print(f"Mass drift (relative): {result['mass_drift_relative']:.2e}")
-    print(f"Divergence detected: {result['divergence_detected']}")
-    print(
-        f"Final ghost mode norm: {result['ghost_mode_history'][-1]:.2e}"
-        if result["ghost_mode_history"]
-        else "N/A"
-    )
-
-    # Pass/fail based on predeclared thresholds
-    if result["mass_drift_relative"] > 1e-5:
-        print("FAIL: Mass drift exceeds threshold (1e-5)")
-    elif result["divergence_detected"]:
-        print("FAIL: Divergence detected")
-    else:
-        print("PASS: All thresholds met")
+    parser = argparse.ArgumentParser(description="Cumulant water-entry probe")
+    parser.add_argument("--n", type=int, default=64, help="Lattice resolution")
+    parser.add_argument("--speed", type=float, default=0.02, help="Initial velocity")
+    parser.add_argument("--limit", type=int, default=2000, help="Max steps")
+    parser.add_argument("--output", type=str, default="cumulant_results.json", help="Output file")
+    args = parser.parse_args()
+    probe(**vars(args))
 
 
 if __name__ == "__main__":

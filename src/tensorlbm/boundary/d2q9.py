@@ -13,7 +13,8 @@ C2Q9 = torch.tensor([
     [-1,  1],  # 6: NW
     [ 1, -1],  # 7: SE
     [-1, -1],  # 8: SW
-], dtype=torch.int64)
+],
+    device="cpu", dtype=torch.int64)
 
 # D2Q9 weights
 W2Q9 = torch.tensor([
@@ -26,7 +27,8 @@ W2Q9 = torch.tensor([
     1.0 / 36.0,
     1.0 / 36.0,
     1.0 / 36.0,
-], dtype=torch.float64)
+],
+    device="cpu", dtype=torch.float64)
 
 # Opposite direction indices for D2Q9
 OPPOSITE_2Q9 = torch.tensor([
@@ -39,7 +41,7 @@ OPPOSITE_2Q9 = torch.tensor([
     7,  # 6 -> 7
     6,  # 7 -> 6
     5,  # 8 -> 5
-], dtype=torch.int64)
+], dtype=torch.int64, device="cpu")
 
 # Speed of sound squared for D2Q9
 CS2_2Q9 = 1.0 / 3.0
