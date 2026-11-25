@@ -916,3 +916,21 @@ def test_link_flux_mixed_periodic_axes(axes):
         torch.testing.assert_close(actual[axis], wrapped[axis] if name in axes else internal[axis])
     with pytest.raises(ValueError, match="distinct"):
         thermal_link_fluxes_3d(post, periodic="xx")
+
+
+@pytest.mark.parametrize("tau", [.65, 1., 1.4])
+def test_initialized_linear_gradient_gives_fourier_flux_on_first_stream(tau):
+    from tensorlbm.thermal_common import thermal_gradient_initialization_3d, thermal_link_fluxes_3d
+
+    dx, capacity, alpha = .13, 1.7, .08
+    dt = (tau-.5)*dx**2/(4*alpha)
+    z,y,x = torch.meshgrid(*(torch.arange(n, dtype=torch.float64)*dx for n in (3,4,5)), indexing="ij")
+    t = .7+.63*x-.31*y+.18*z
+    zero = torch.zeros_like(t)
+    grad = torch.stack([torch.full_like(t, v) for v in (.63,-.31,.18)])
+    g = thermal_gradient_initialization_3d(t, zero, zero, zero, grad, tau_T=tau, spacing=dx)
+    torch.testing.assert_close(g.sum(0), t, atol=1e-14, rtol=0)
+    post = thermal_collide_bgk_3d(g,t,zero,zero,zero,tau)
+    fluxes = thermal_link_fluxes_3d(post,dt=dt,spacing=dx,volumetric_heat_capacity=capacity)
+    for flux, slope in zip(fluxes, (.63,-.31,.18)):
+        torch.testing.assert_close(flux, torch.full_like(flux, -capacity*alpha*slope), atol=1e-13, rtol=0)

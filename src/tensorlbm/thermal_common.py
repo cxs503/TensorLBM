@@ -45,6 +45,7 @@ __all__ = [
     "C_D3Q7",
     "W_D3Q7",
     "thermal_equilibrium_3d",
+    "thermal_gradient_initialization_3d",
     "thermal_collide_bgk_3d",
     "thermal_stream_3d",
     "thermal_macroscopic_3d",
@@ -140,6 +141,30 @@ def thermal_equilibrium_3d(
     cz = c[:, 2].view(7, 1, 1, 1).float()
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
     return w * T.unsqueeze(0) * (1.0 + 4.0 * cu)
+
+
+def thermal_gradient_initialization_3d(T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
+                                       uz: torch.Tensor, gradient_xyz: torch.Tensor, *,
+                                       tau_T: float, spacing: float = 1.) -> torch.Tensor:
+    """Initialize pre-collision D3Q7 populations for smooth BGK diffusion.
+
+    Supply a real temperature gradient in K/m shaped (3,nz,ny,nx), with
+    x,y,z components, and velocities in lattice units. Under diffusive
+    scaling the leading correction is -tau*w_i*spacing*c_i.grad(T).
+    Opposite directions cancel in temperature and supply the diffusive
+    first moment at startup. Use the same tau and cubic spacing in the solve.
+    """
+    if T.ndim != 3 or not T.is_floating_point() or gradient_xyz.shape != (3, *T.shape):
+        raise ValueError("expected real T[nz,ny,nx] and gradients shaped (3,nz,ny,nx)")
+    if not gradient_xyz.is_floating_point() or gradient_xyz.device != T.device:
+        raise ValueError("gradients must be real floating point on the temperature device")
+    if not math.isfinite(tau_T) or tau_T <= .5 or not math.isfinite(spacing) or spacing <= 0:
+        raise ValueError("require finite tau_T > 0.5 and positive finite spacing")
+    g = thermal_equilibrium_3d(T, ux, uy, uz)
+    correction = gradient_xyz.to(g.dtype)*_w_thermal(T.device)[1]*(tau_T*spacing)
+    g[1::2] -= correction
+    g[2::2] += correction
+    return g
 
 
 def thermal_collide_bgk_3d(
