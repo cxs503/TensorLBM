@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """3D cylinder with static-block AMR (2:1) + MRT+Smag LES — quantitative drag.
 
 Validates: local refinement gives the equivalent of a fine global grid at
@@ -11,8 +11,9 @@ Reference for 3D cylinder (Luo et al. 2007 / Schlanderer & Sandberg 2011):
 import json
 import sys
 import time
+from pathlib import Path
 
-sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
 
