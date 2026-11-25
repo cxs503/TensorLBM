@@ -1,5 +1,7 @@
 # cavity_natural_convection — 自然对流方腔（de Vahl Davis 1983）
 
+相关历史研究：[BEM 开源库存调查及方腔自然对流对照](../../../development/verification/oss_inventory/README.md#bem)。该对照保留原有研究口径。
+
 历史 SDAA 工件：[运行记录](evidence/sdaa/sdaa_cavity_natural_convection.json)。历史 SDAA 扫掠总判定为 `FAIL`。
 
 **状态**: ✅ 已晋级（2026-10-20）

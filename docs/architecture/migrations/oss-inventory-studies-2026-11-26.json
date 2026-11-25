@@ -1,0 +1,245 @@
+{
+  "source_commit": "632cd8ca36ac28d4b8709453af6653ac0224cc98",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 57,
+      "after": 55
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY",
+    "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/analyze.py",
+      "new_path": "development/verification/oss_inventory/bem_cavity_convection/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "ee13fc2eabfc1af3b4848e7f4d05e6568e1b7277",
+      "original_sha256": "61c900dc3e7d49c5e1c1dede830dd958b72b675b8c32db1087ebc0c15fb3c20b",
+      "original_size_bytes": 11575,
+      "current_sha256": "b8a345ad61adba6af047e3d5b0b91daa8dd667b8cee160ad1db1bea6ce938cf2",
+      "current_size_bytes": 11572,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/finalize.py",
+      "new_path": "development/verification/oss_inventory/bem_cavity_convection/finalize.py",
+      "git_mode": "100644",
+      "original_git_blob": "ad652f78499f83fd129465001f414c2b928a36e3",
+      "original_sha256": "d5a06f3714650994553bd3bee82dd715c60632de344b9d6bbd5b862aee6f8cc6",
+      "original_size_bytes": 8211,
+      "current_sha256": "9e5bce041117a7a356e057ddf804d8c4d2feee0cff5140b4b8ba86089a596313",
+      "current_size_bytes": 8208,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/make_doc.py",
+      "new_path": "development/verification/oss_inventory/bem_cavity_convection/make_doc.py",
+      "git_mode": "100644",
+      "original_git_blob": "0956482f6788131d506c17952d8bf97a71bd5b85",
+      "original_sha256": "827b5de8371ff1a22f09d5f7c6bda8a9e78b6d617c43b59072d7bac42af5e6f5",
+      "original_size_bytes": 7317,
+      "current_sha256": "97a101729c1b52b3c2eac0d0a420581c898fde89d8a32754086fb3fdf22b558e",
+      "current_size_bytes": 7314,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/predeclared.json",
+      "new_path": "development/verification/oss_inventory/bem_cavity_convection/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "1031521e43a73d4f8fd8764d76196156c1bb1fad",
+      "original_sha256": "c449cbdf47e4fcf22c191932182b4337542c15847e8e935b208c5b4883f91a14",
+      "original_size_bytes": 3710,
+      "current_sha256": "c449cbdf47e4fcf22c191932182b4337542c15847e8e935b208c5b4883f91a14",
+      "current_size_bytes": 3710,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-BEM-CP-REPO-IN-OSS-INVENTORY/run_xval.py",
+      "new_path": "development/verification/oss_inventory/bem_cavity_convection/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "8915ec02145565be0987e38c96886f0427918a6c",
+      "original_sha256": "d995747ddcb0bd25e78feab4544276972c906fd317305fe8c9e56f42c08cafe9",
+      "original_size_bytes": 4228,
+      "current_sha256": "6976a961085bf3e09677b335e1ba0708c7040df3d67d6e4d7524e0c4baddb981",
+      "current_size_bytes": 4225,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/REPORT.md",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "395ad68a313a1c4c0ef04e469b3ed49e90e35c15",
+      "original_sha256": "c4fe0a4da42d61dd38a2f5287e4411dc53cb68ab8f814c72b066f00824a07e93",
+      "original_size_bytes": 11186,
+      "current_sha256": "c4fe0a4da42d61dd38a2f5287e4411dc53cb68ab8f814c72b066f00824a07e93",
+      "current_size_bytes": 11186,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/REPORT_R3.md",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/REPORT_R3.md",
+      "git_mode": "100644",
+      "original_git_blob": "0b9605bf6110d2f7c79055847ba2ee5c20b7752e",
+      "original_sha256": "b7c16cf581d7a4cc142ae5fe61922be71e5800141d4a4cf004d2db5d88f4bb6f",
+      "original_size_bytes": 3482,
+      "current_sha256": "b7c16cf581d7a4cc142ae5fe61922be71e5800141d4a4cf004d2db5d88f4bb6f",
+      "current_size_bytes": 3482,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/lineage.md",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/lineage.md",
+      "git_mode": "100644",
+      "original_git_blob": "760c9b647bd3b9c4e26947596429e28e2c82404a",
+      "original_sha256": "fefecbe107c1288d01b65da8f381ea33508b30575e19abd4c206ee9780ab1f33",
+      "original_size_bytes": 4285,
+      "current_sha256": "fefecbe107c1288d01b65da8f381ea33508b30575e19abd4c206ee9780ab1f33",
+      "current_size_bytes": 4285,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/make_figures.py",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/make_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "db717ba4ab546fa427c0a2586e946cd2965936bb",
+      "original_sha256": "cf3118a42c2b86b48d43834fea11b7e540cf8be58d63e85358a34c94d2e54bc9",
+      "original_size_bytes": 2979,
+      "current_sha256": "cf3118a42c2b86b48d43834fea11b7e540cf8be58d63e85358a34c94d2e54bc9",
+      "current_size_bytes": 2979,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/make_final_figures.py",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/make_final_figures.py",
+      "git_mode": "100644",
+      "original_git_blob": "abfb91ae54925e2008a37f582895f93045e804ec",
+      "original_sha256": "19f233bd2959904e8bdd47d749dae6ffc8231ec99d5de51261ba540a28f0ef1d",
+      "original_size_bytes": 9223,
+      "current_sha256": "19f233bd2959904e8bdd47d749dae6ffc8231ec99d5de51261ba540a28f0ef1d",
+      "current_size_bytes": 9223,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/oss_solutions.jsonl",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/oss_solutions.jsonl",
+      "git_mode": "100644",
+      "original_git_blob": "929209e6dc3a7587ca6c389c309557675fd3ad06",
+      "original_sha256": "4dc76d1ce8ba051c2b0311b61b98d75e9e827ec7886184f7fd291f969ebcdeed",
+      "original_size_bytes": 1424,
+      "current_sha256": "4dc76d1ce8ba051c2b0311b61b98d75e9e827ec7886184f7fd291f969ebcdeed",
+      "current_size_bytes": 1424,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/predeclared.json",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "60c297ef31bc316a764280422642859adbeb61fc",
+      "original_sha256": "6490c24e49abb152ad37e5ce76e2e11e31502f47f8d091b583e7c1e59d4e81bd",
+      "original_size_bytes": 6359,
+      "current_sha256": "6490c24e49abb152ad37e5ce76e2e11e31502f47f8d091b583e7c1e59d4e81bd",
+      "current_size_bytes": 6359,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/publish_report.py",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/publish_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "5e80f2f9456bc57688a35eae19fb5eade944a2d5",
+      "original_sha256": "1de7aee1a52fae7bc2b3e9fd06095c1ca54d4b9ec45a81600cdfc57fe1bc0bc0",
+      "original_size_bytes": 8039,
+      "current_sha256": "1de7aee1a52fae7bc2b3e9fd06095c1ca54d4b9ec45a81600cdfc57fe1bc0bc0",
+      "current_size_bytes": 8039,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/results.json",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "7e4371d3f6b8371ced115843ff324d306cba26ca",
+      "original_sha256": "cb98b75429e984775bdea7e2d2eb47306ee839c9b5e2e00540bf5d6e211909b5",
+      "original_size_bytes": 20284,
+      "current_sha256": "cb98b75429e984775bdea7e2d2eb47306ee839c9b5e2e00540bf5d6e211909b5",
+      "current_size_bytes": 20284,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/round3_lbm_cd.json",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/round3_lbm_cd.json",
+      "git_mode": "100644",
+      "original_git_blob": "4a4de13c9f1692bd5495f95920e66739effa6eb7",
+      "original_sha256": "3bdb5752e34771a65a1c8ef62f148080d560bfcf578186227ac94f29987799a7",
+      "original_size_bytes": 3075,
+      "current_sha256": "3bdb5752e34771a65a1c8ef62f148080d560bfcf578186227ac94f29987799a7",
+      "current_size_bytes": 3075,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/round3_lbm_cd.py",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/round3_lbm_cd.py",
+      "git_mode": "100644",
+      "original_git_blob": "12f308af1db3b2805955d07807260733b3eb8374",
+      "original_sha256": "79263e7b5b8ab68407d12ee9b612341e61bdf3ba3c690f885be574392863cc71",
+      "original_size_bytes": 9550,
+      "current_sha256": "68dbe0949951f235539afd710c245c058fd1bb0013345e1c547e0dfcd33d8669",
+      "current_size_bytes": 9550,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/run_xval.py",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "836a4bb61b72605a20886ea7e94150a8d073002d",
+      "original_sha256": "771a1a7da0817a8952f776f4bc31f4495fe0a9fe6037b082fe5ce35d44d41046",
+      "original_size_bytes": 17365,
+      "current_sha256": "5fa9a2c1e5f758ac454368527feadefd649661e6218bb8371a67ea49f8478fe4",
+      "current_size_bytes": 17365,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-NO-DEM-REPO-IN-OSS-INVENTORY/survey_oss.md",
+      "new_path": "development/verification/oss_inventory/dem_literature_anchors/survey_oss.md",
+      "git_mode": "100644",
+      "original_git_blob": "4332f3058abeeb51e2fccc6ff5b344f89c80314f",
+      "original_sha256": "32d0b4e45761883894730d25de33458c67d6cc1c2ca59dc5ada99853b6c6b249",
+      "original_size_bytes": 3221,
+      "current_sha256": "32d0b4e45761883894730d25de33458c67d6cc1c2ca59dc5ada99853b6c6b249",
+      "current_size_bytes": 3221,
+      "byte_identical": true
+    }
+  ],
+  "dependency_review": {
+    "bem": "The solver driver imports tensorlbm.thermal from this checkout. Historical analysis reads the per-grid runs and original OSS cache. The report and publication utilities require historical derived artifacts. The frozen board generator retains historical paths.",
+    "dem": "The numerical driver uses this checkout's tensorlbm.dem. Round 3 reads benchmarks/pending/sphere_drag_closure/results.json. The active regression tests import the relocated driver. The existing published report retains its URL and its historical paths as text."
+  },
+  "compatibility": "Six archived Python files update checkout-root discovery by one exact path expression each. All other moved assets are byte-identical. The archive index and the two related benchmark README files provide navigation without assigning either study to the benchmark verdict.",
+  "verification": {
+    "runtime": {
+      "machine": "x86_64",
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu"
+    },
+    "bem_smoke": {
+      "normalized_json_sha256": "b6b85f415cda4065568b6732343f786af8265eda6af8a6ba91792bcb42df1112",
+      "excluded_fields": [
+        "elapsed_s"
+      ],
+      "arguments": "--nx 16 --ra 1000 --steps 6 --report-every 2 --threads 1 --out <temp-path>",
+      "result": "The old and new CLI runs from outside the checkout produce equal outputs after dropping elapsed_s."
+    },
+    "dem_smoke": {
+      "normalized_json_sha256": "45d7c093bca3d460b238eb92c3e5dab78a51ddd2ffbd85f942e03f170ba8ff1a",
+      "excluded_fields": [],
+      "arguments": "--quick --out <temp-path>",
+      "result": "The old and new CLI runs from outside the checkout produce equal outputs."
+    },
+    "dem_round3": "Both drivers regenerated byte-identical JSON, Markdown and PNG using the exact tracked sphere-drag input in an isolated directory.",
+    "focused_tests": "tests/test_xval_dem_literature_anchors.py: 6 passed, 1 XPASS both before and after the move. The historical expected-failure marker was preserved.",
+    "governance": "85 tests passed. Repository layout, source-authority check, manual catalogue and benchmark registry passed. Status ledger reported zero hard violations and 16 pre-existing soft violations. Ruff 0.15.0 ratchet passed."
+  },
+  "scope": "Migration and executable compatibility only. No historical status was promoted, no full scientific acceptance was rerun, and no test threshold or numerical algorithm changed."
+}

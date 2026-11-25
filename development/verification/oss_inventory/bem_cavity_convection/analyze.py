@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[3]
 RUNS = HERE / "runs"
 OUT = HERE / "artifacts"
 PREDECL = json.loads((HERE / "predeclared.json").read_text())

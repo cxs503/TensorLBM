@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[3]
 ART = HERE / "artifacts"
 PREDECL = json.loads((HERE / "predeclared.json").read_text())
 S = json.loads((ART / "summary.json").read_text())
