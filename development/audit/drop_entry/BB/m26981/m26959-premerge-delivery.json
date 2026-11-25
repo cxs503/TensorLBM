@@ -1,0 +1,42 @@
+{
+  "migration_id": "m26959-bb-root-premerge-2026-11-22",
+  "timestamp": "2026-11-22T00:00:00Z",
+  "status": "premerge",
+  "description": "Add cumulant collision kernel for D3Q19 water entry",
+  "files": [
+    {
+      "path": "src/tensorlbm/collision_d3q19_advanced.py",
+      "action": "modify",
+      "description": "Add collide_cumulant_d3q19 function"
+    },
+    {
+      "path": "src/tensorlbm/free_surface_lbm.py",
+      "action": "modify",
+      "description": "Update import path for cumulant kernel"
+    },
+    {
+      "path": "benchmarks/water_entry/single_drop/cumulant_probe.py",
+      "action": "add",
+      "description": "New cumulant water-entry probe"
+    },
+    {
+      "path": "benchmarks/water_entry/single_drop/cumulant_test.py",
+      "action": "add",
+      "description": "New cumulant tests"
+    },
+    {
+      "path": "development/audit/drop_entry/BB/m26959/DE-X-COL3-CUM.md",
+      "action": "add",
+      "description": "Audit documentation"
+    },
+    {
+      "path": "docs/architecture/migration_manifest.csv",
+      "action": "modify",
+      "description": "Add migration entry"
+    }
+  ],
+  "verification": {
+    "tests": "benchmarks/water_entry/single_drop/cumulant_test.py",
+    "benchmark": "benchmarks/water_entry/single_drop/cumulant_probe.py"
+  }
+}

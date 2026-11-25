@@ -1,0 +1,79 @@
+{
+  "source_commit": "52b3cf9a21fbfe7d2605e9d9c2ba18f2b9f5362d",
+  "last_intact_manifest_commit": "af0f507563101a04b133ae4b8de1f3191ba31db2",
+  "top_level_directories_before": 13,
+  "top_level_directories_after": 12,
+  "retired_paths": [
+    "BB"
+  ],
+  "origin_pull_requests": [
+    3023,
+    3024
+  ],
+  "migration_manifest": {
+    "path": "docs/architecture/migration_manifest.csv",
+    "intact_rows": 1244,
+    "regressed_rows": 718,
+    "restored_rows": 526,
+    "after_rows": 1245,
+    "intact_sha256": "4dc479089fb464bf8a5e78208669cfbcb80f6f1c31d013ba9ab660a76ac1acd5",
+    "regressed_sha256": "8b0864152664ac859b9d79f9c92659c469cb2f90e53cfdb112e55199e920b119",
+    "repaired_sha256": "c5dafbc51c8005683257f6c1a52ea2c4f1d1c8601a1dd715c09468b4a7128624",
+    "preservation": "Restored all intact rows byte-for-byte, then appended the new BB mapping. The incoming alternate cumulant metadata is preserved in the source revision, and its companion JSON remains available under the m26981 audit."
+  },
+  "restored_metadata": {
+    "path": "docs/architecture/migrations/m26959-bb-root-premerge-2026-11-22.json",
+    "sha256": "0835e38a07f33e33d64a99e03f9c29fa4057c9e7916ac419b73f461aa43b9763"
+  },
+  "compatibility": "The m26991 report remains byte-identical. The canonical single-drop README links to the archived report. Unverified source probe inputs remain tracked at their existing paths.",
+  "verification": {
+    "reproduction": "The source tree reported 7 migration assertion failures, 19 missing mapping errors and a BB root layout violation. The Ruff ratchet also regressed.",
+    "numerical_source": "No src/ path changed. Cumulant probe/test ASTs are unchanged after normalizing imports and docstring whitespace. The entire free-surface probe AST is unchanged.",
+    "governance": "84 local governance tests and Ruff pass, with 224 registry entries, 35 tutorial entries, 33 PDFs, 33 Word manuals and zero hard status-ledger violations.",
+    "focused_tests": {
+      "command": "python -m pytest -q tests/test_collision_d3q19_advanced.py tests/test_cumulant_d3q19.py",
+      "af0f5075_before_3023": {
+        "passed": 43,
+        "skipped": 1
+      },
+      "d707e6ce_after_3023": {
+        "passed": 43,
+        "skipped": 1
+      },
+      "52b3cf9a_after_3024": {
+        "passed": 33,
+        "failed": 10,
+        "skipped": 1
+      },
+      "repair": {
+        "passed": 33,
+        "failed": 10,
+        "skipped": 1
+      },
+      "finding": "The new failures are all the legacy color-gradient public API bitwise replay cases. #3024 changed the shared D3Q19 stress extraction and reconstruction used by those APIs. This structural repair preserves the solver and reference thresholds. The regression requires separate numerical compatibility resolution."
+    }
+  },
+  "scientific_scope": "Historical claims and simulation parameters were retained. No scientific acceptance is assigned.",
+  "entries": [
+    {
+      "old_path": "BB/X/PF/DE-X-CMB2-COMBSTAB-R2.md",
+      "new_path": "development/audit/drop_entry/BB/m26991/DE-X-CMB2-COMBSTAB-R2.md",
+      "git_mode": "100644",
+      "original_git_blob": "c95f9e35d1a609f42bbaef7136de6febeb981dc2",
+      "size_bytes": 7246,
+      "original_sha256": "ed5c61c0525d373c52ef3e5daad6bf6aafe08906eae73153271cde10893993f7",
+      "current_sha256": "ed5c61c0525d373c52ef3e5daad6bf6aafe08906eae73153271cde10893993f7",
+      "byte_identical": true
+    },
+    {
+      "old_path": "docs/architecture/migrations/m26959-bb-root-premerge-2026-11-22.json",
+      "new_path": "development/audit/drop_entry/BB/m26981/m26959-premerge-delivery.json",
+      "git_mode": "100644",
+      "original_git_blob": "fc975a44ad3bd38f5703846a3db6fda72b4d81a0",
+      "size_bytes": 1284,
+      "original_sha256": "4ff4f29fc06ec0a9a94bb0d856b45094eb97874a6ebac5eee7401760e6a0415b",
+      "current_sha256": "4ff4f29fc06ec0a9a94bb0d856b45094eb97874a6ebac5eee7401760e6a0415b",
+      "byte_identical": true
+    }
+  ]
+}

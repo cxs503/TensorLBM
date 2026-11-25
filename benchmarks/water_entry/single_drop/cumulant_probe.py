@@ -13,24 +13,22 @@ Usage:
 import argparse
 import json
 import math
-import os
 from pathlib import Path
 
 import numpy as np
 import torch
+from scipy import ndimage
 
 from benchmarks.water_entry.single_drop.run import (
     equivalent_radius,
     load_case,
     scales,
 )
-from scipy import ndimage
-import numpy as np
 
 
 def _open_depth(phi, level, radius):
     """Depth below initial surface of deepest half-fill crossing open to headspace.
-    
+
     Patched version that handles SOLID top layer.
     """
     gas = phi < 0.5
@@ -55,8 +53,6 @@ from tensorlbm.collision_d3q19_advanced import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.free_surface_lbm import (
     GAS,
-    INTERFACE,
-    LIQUID,
     SOLID,
     free_surface_step,
     init_flags_from_fill,
@@ -152,28 +148,30 @@ def probe(
         f, fill, flags, mass, df = free_surface_step(
             f, fill, flags, solid, mass, tau=1.0, gz=sc["g"], collision="cumulant"
         )
-        
+
         # Diagnostics
         rho_f, ux_f, uy_f, uz_f = macroscopic3d(f)
         depth = open_depth(flags.cpu().numpy(), level, n)
-        
+
         # Simple drop center tracking
         drop_mask = fill > 0.5
         if drop_mask.any():
             drop_z = (z * drop_mask).sum() / drop_mask.sum()
         else:
             drop_z = center
-        
-        history.append({
-            "step": step,
-            "time_ms": step * sc["dt_s"] * 1000,
-            "depth_over_D": depth / (2 * sc["dx_m"]),
-            "drop_z_m": float(drop_z) * sc["dx_m"],
-            "mass_ratio": float(mass.sum()) / stored_mass0,
-        })
-        
+
+        history.append(
+            {
+                "step": step,
+                "time_ms": step * sc["dt_s"] * 1000,
+                "depth_over_D": depth / (2 * sc["dx_m"]),
+                "drop_z_m": float(drop_z) * sc["dx_m"],
+                "mass_ratio": float(mass.sum()) / stored_mass0,
+            }
+        )
+
         if step % 100 == 0:
-            print(f"Step {step}: depth={depth/n:.3f}, drop_z={drop_z:.3f}")
+            print(f"Step {step}: depth={depth / n:.3f}, drop_z={drop_z:.3f}")
 
     result = {
         "n": n,
@@ -184,13 +182,13 @@ def probe(
         "mass_drift": float(mass.sum() - stored_mass0),
         "history": history,
     }
-    
+
     if output:
         Path(output).parent.mkdir(parents=True, exist_ok=True)
         with open(output, "w") as f:
             json.dump(result, f, indent=2)
         print(f"Results saved to {output}")
-        
+
     return result
 
 
