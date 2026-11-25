@@ -58,6 +58,7 @@ __all__ = [
     "thermal_adiabatic_walls_3d",
     "thermal_flux_wall_pair_3d",
     "thermal_temperature_wall_pair_3d",
+    "thermal_mixed_wall_pair_3d",
     "thermal_fixed_temp_mask_3d",
     # Diagnostics
     "nusselt_hot_wall_3d",
@@ -666,27 +667,47 @@ def thermal_temperature_wall_pair_3d(
     order. Returns the updated populations and the lower and upper net fluxes
     into the material during this step (W/m²). Wall-normal velocity is zero.
     """
-    if axis not in ("x", "y", "z") or len(wall_temperatures) != 2:
-        raise ValueError("provide a coordinate axis and two wall temperatures")
+    return thermal_mixed_wall_pair_3d(g, axis, ("temperature", "temperature"), wall_temperatures,
+        dt=dt, spacing=spacing, volumetric_heat_capacity=volumetric_heat_capacity)
+
+
+def thermal_mixed_wall_pair_3d(
+    g: torch.Tensor, axis: str, wall_types: tuple[str, str], wall_values: tuple[float | torch.Tensor, float | torch.Tensor], *,
+    dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    """Apply independent half-way conditions on the lower and upper faces after periodic streaming.
+
+    Each face accepts a temperature in K ("temperature") or step-averaged inward
+    heat flux in W/m² ("flux"). Face arrays follow the remaining (z,y,x) axes.
+    Returns updated populations and the actual lower and upper inward link fluxes
+    over this step. The cell-centered diffusion model assumes zero normal velocity.
+    """
+    if axis not in ("x", "y", "z") or len(wall_values) != 2 or len(wall_types) != 2:
+        raise ValueError("provide a coordinate axis, two wall types and two wall values")
     if g.ndim != 4 or g.shape[0] != 7 or min(g.shape[1:]) < 1 or not g.is_floating_point():
         raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
     if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
         raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    if any(kind not in ("temperature", "flux") for kind in wall_types):
+        raise ValueError("each wall type must be temperature or flux")
     direction = "xyz".index(axis)
     positive = 1+2*direction
     negative = positive+1
     dim = 2-direction
     updated = g.clone()
     fluxes = []
-    for wall, incoming, outgoing, index in ((wall_temperatures[0], positive, negative, 0),
-                                             (wall_temperatures[1], negative, positive, -1)):
+    for side, (incoming, outgoing, index) in enumerate(((positive, negative, 0), (negative, positive, -1))):
+        wall = wall_values[side]
         escaped = g[outgoing].select(dim, -1 if index == 0 else 0)
         if torch.is_complex(torch.as_tensor(wall)):
-            raise ValueError("wall temperatures must be real")
-        temperature = torch.as_tensor(wall, dtype=g.dtype, device=g.device)
-        if temperature.shape not in ((), escaped.shape) or not torch.isfinite(temperature).all():
-            raise ValueError("provide a finite scalar or a temperature for each face cell")
-        reflected = 2*_w_thermal(g.device)[incoming]*temperature - escaped
+            raise ValueError("wall data must be real")
+        value = torch.as_tensor(wall, dtype=g.dtype, device=g.device)
+        if value.shape not in ((), escaped.shape) or not torch.isfinite(value).all():
+            raise ValueError("provide a finite scalar or one value per face cell")
+        if wall_types[side] == "temperature":
+            reflected = 2*_w_thermal(g.device)[incoming]*value - escaped
+        else:
+            reflected = escaped + value*(dt/(volumetric_heat_capacity*spacing))
         updated[incoming].select(dim, index).copy_(reflected)
         fluxes.append((reflected-escaped)*(volumetric_heat_capacity*spacing/dt))
     return updated, (fluxes[0], fluxes[1])

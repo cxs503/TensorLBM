@@ -993,3 +993,25 @@ def test_halfway_temperature_pair_tracks_local_wall_heat(axis):
         torch.testing.assert_close(returned, .25*temp-escaped)
         torch.testing.assert_close(flux[i], 3*(returned-escaped))
     torch.testing.assert_close(updated.sum()-post.sum(), (flux[0].sum()+flux[1].sum())/3)
+
+
+@pytest.mark.parametrize("axis", list("xyz"))
+@pytest.mark.parametrize("flux_side", [0,1])
+def test_mixed_halfway_walls_match_individual_links(axis, flux_side):
+    from tensorlbm.thermal_common import thermal_mixed_wall_pair_3d
+
+    g = torch.randn((7,3,4,5), dtype=torch.float64, generator=torch.Generator().manual_seed(930))
+    direction = "xyz".index(axis)
+    dim = 2-direction
+    shape = g[0].select(dim,0).shape
+    vals = [torch.arange(math.prod(shape), dtype=g.dtype).reshape(shape)*.025-.2, .35]
+    kinds = ["temperature","temperature"]
+    kinds[flux_side] = "flux"
+    updated, fluxes = thermal_mixed_wall_pair_3d(g,axis,kinds,vals,spacing=.3,dt=.2,volumetric_heat_capacity=2.)
+    for side in (0,1):
+        incoming = 1+2*direction+side
+        outgoing = 1+2*direction+1-side
+        escaped = g[outgoing].select(dim, -1 if side==0 else 0)
+        expected = escaped+vals[side]/3 if side==flux_side else .25*vals[side]-escaped
+        torch.testing.assert_close(updated[incoming].select(dim,0 if side==0 else -1),expected)
+        torch.testing.assert_close(fluxes[side],3*(expected-escaped))
