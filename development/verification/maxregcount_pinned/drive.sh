@@ -3,10 +3,10 @@
 # One process at a time on purpose: the arms are timed, and running them in
 # parallel would make the host-load confounder worse, not better.
 set -u
-cd "$(dirname "$0")/../.." || exit 1
+cd "$(dirname "$0")/../../.." || exit 1
 OUT=artifacts/xval_maxregcount_pinned
 mkdir -p "$OUT"
-RUN=xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/run_arm.py
+RUN=development/verification/maxregcount_pinned/run_arm.py
 
 echo "[driver] ladder $(date -u +%H:%M:%S)"
 python3 "$RUN" --mode ladder --out "$OUT/ladder.json" > "$OUT/ladder.log" 2>&1 || echo "[driver] ladder FAILED"

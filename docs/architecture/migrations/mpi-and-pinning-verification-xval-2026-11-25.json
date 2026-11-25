@@ -1,0 +1,118 @@
+{
+  "source_commit": "2c0e59025789674154597a64dfb6d1ca4d2e10ec",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 74,
+      "after": 72
+    }
+  },
+  "reference_scan": "Searched current workflows, source, tests, docs and manifests for the old directory names. The two public reports retain their URLs. Old absolute and relative paths in frozen audit evidence and SQL records remain as provenance.",
+  "compatibility": {
+    "mpi": "The registered case uses the existing audit snapshot. Explicit PYTHONPATH=src points the retained entry to the canonical source and the argument contract is unchanged. Use an explicit generated-output directory.",
+    "maxregcount": "The historical single-arm and analysis arguments and default artifact paths are unchanged. The serial shell driver resolves the new repo depth and runner path.",
+    "original_trees": [
+      "https://github.com/cxs503/TensorLBM/tree/2c0e59025789674154597a64dfb6d1ca4d2e10ec/xval/XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA",
+      "https://github.com/cxs503/TensorLBM/tree/2c0e59025789674154597a64dfb6d1ca4d2e10ec/xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING"
+    ]
+  },
+  "scientific_scope": "The published MPI evidence is historical and the archived harness does not establish native MPI execution. Pinning timing and register-tuning outputs are not vendored on the source tree. Full scientific campaigns were deferred.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA/make_report.py",
+      "new_path": "docs/audit_m17994/evidence/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "1753c3e82e3f70526ade785a3619852fa957289e",
+      "size_bytes": 6125,
+      "original_sha256": "1aca1e2f8e88e3bf4243042657fba69031d632449a5912a63187f04b7bc2b482",
+      "new_sha256": "1aca1e2f8e88e3bf4243042657fba69031d632449a5912a63187f04b7bc2b482",
+      "disposition": "existing byte-identical audit copy"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA/predeclared.json",
+      "new_path": "docs/audit_m17994/evidence/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "7ca1630a4e4d0753a77d3b12e80501d3482bd05e",
+      "size_bytes": 8939,
+      "original_sha256": "12598ee74afea820d334ee1c8cff6d59cf28d9cb6987bbddb7c66a302b342b61",
+      "new_sha256": "12598ee74afea820d334ee1c8cff6d59cf28d9cb6987bbddb7c66a302b342b61",
+      "disposition": "existing byte-identical audit copy"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA/run_xval.py",
+      "new_path": "docs/audit_m17994/evidence/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "50534af9a038501c2d7ef1a6b07f7f798cfa6407",
+      "size_bytes": 15555,
+      "original_sha256": "17352ad8ab7af01f9f31f57073fa5522c7fd421c27c0f2f6d55f737594e2e77d",
+      "new_sha256": "17352ad8ab7af01f9f31f57073fa5522c7fd421c27c0f2f6d55f737594e2e77d",
+      "disposition": "existing byte-identical audit copy"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/analyze.py",
+      "new_path": "development/verification/maxregcount_pinned/analyze.py",
+      "git_mode": "100644",
+      "original_git_blob": "96bac8d8bf6244207caf4b893a1042352a7144ab",
+      "size_bytes": 20587,
+      "original_sha256": "647e415876c4768cd4e6b7933b25b9d18fac4a0c1675dc67dd7bb01725dc2470",
+      "new_sha256": "6b682d7298328cacceffbf72dc0cf8374cd1dea2097d4ef20f7f3208a327ac98",
+      "disposition": "relocated to development"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/drive.sh",
+      "new_path": "development/verification/maxregcount_pinned/drive.sh",
+      "git_mode": "100755",
+      "original_git_blob": "9dc2a8269c7eb1f0292c2974de326cc751dfc388",
+      "size_bytes": 1000,
+      "original_sha256": "2a998d9dbccc816748d32679b3cc4e0d333f77808a361ba36c2b52ffde67cf7c",
+      "new_sha256": "9c7bb0919c946942b1e981219fcbea348c117cc810ff9c5c285112bdebfa3935",
+      "disposition": "relocated to development"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/predeclared.json",
+      "new_path": "development/verification/maxregcount_pinned/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "7901598363ff42c41de47ad061fb93e196d23a99",
+      "size_bytes": 12498,
+      "original_sha256": "b926e41ec7c2504ae35d3905032e8a600d6aef702965e8f53f34a6ea01a12734",
+      "new_sha256": "b926e41ec7c2504ae35d3905032e8a600d6aef702965e8f53f34a6ea01a12734",
+      "disposition": "relocated to development"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING/run_arm.py",
+      "new_path": "development/verification/maxregcount_pinned/run_arm.py",
+      "git_mode": "100644",
+      "original_git_blob": "bf42710cb0219ef071577c1078dececa472c231f",
+      "size_bytes": 15174,
+      "original_sha256": "5e5211e08ce416c41d519ca2bf003ec9af8168bc1e35295714edcd369ddfc00b",
+      "new_sha256": "36c22652de3bd964f7094d27d6deff82d3b1490646be20926641b040f4fae80f",
+      "disposition": "relocated to development"
+    }
+  ],
+  "verification": [
+    "The three MPI assets exactly match the mode and contents of the retained audit copies. The moved maxregcount protocol is byte-identical. No published audit evidence was removed.",
+    "Compiled the Python entry points, verified shell syntax and compared the real Python --help bytes for each moved or deduplicated entry point.",
+    "All 83 repository governance tests passed and the lint ratchet passed. The registry returns the new MPI case with three archived result paths. Published relative links resolve.",
+    "Ran python -m pytest -q tests/test_bench_pinning.py tests/test_parallel_slab_unpacked.py -k 'not staging': 17 passed. The no-op transport staging test was deselected. The scoped tests do not qualify native MPI or timing performance."
+  ],
+  "cli_help_sha256": {
+    "mpi": "cc8c892c24678222d99118d990736c6bd81c172f8da0ba2463c8a59a0160b26a",
+    "pin": "bb7b106da2b90af5c1cf228fd6df1e1e7e0f38fdf316995f954e21c4fcd2d7b5",
+    "analyze": "a3d50f1990f0f12b09204396ecb805b13ad20802b82464d904be49c9ed4ca182"
+  }
+}

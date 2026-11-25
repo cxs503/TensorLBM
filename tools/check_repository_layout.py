@@ -89,6 +89,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("xval", "XVAL-LBM-STATIC-IMMERSED-MARKER-OBSTACLES"),
     ("xval", "no_mcmp_two_phase_only"),
     ("xval", "component_protocol_codegen"),
+    ("xval", "XVAL-LBM-MPI-1D-SLAB-UNPACKED-HALO-TESTALL-OVERLA"),
+    ("xval", "XVAL-LBM-MAXREGCOUNT-PINNED-BEFORE-TUNING"),
     ("xval", "XVAL-LBM-AKAI2018-GEOMETRICAL-WETTING-ROTATION-R6"),
     ("xval", "fused_kernel_type_selector"),
     ("xval", "XVAL-LBM-LAYERED-POISEUILLE-ANALYTIC-INLET"),

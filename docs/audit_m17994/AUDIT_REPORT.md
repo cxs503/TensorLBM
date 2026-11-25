@@ -92,6 +92,8 @@
 
 ## 5. 检查项与命令（可复算）
 
+当前仓库的只读证据与运行入口见[基准索引](../../benchmarks/cross_validation/mpi_slab_unpacked_halo/README.md)。下方命令记录原任务工作区。
+
 ```
 cd /srv/tensor/agent/work/m17994
 python -m pytest tests/test_parallel_slab_unpacked.py -q            # 10 passed
