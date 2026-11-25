@@ -24,6 +24,7 @@ from tensorlbm.thermal_common import (
     thermal_collide_bgk_3d,
     thermal_equilibrium_3d,
     thermal_macroscopic_3d,
+    thermal_pulse_increments_3d,
     thermal_step,
     thermal_stream_3d,
 )
@@ -1057,3 +1058,15 @@ def test_curvature_corrected_first_wall_step(tau):
         dt=dt,spacing=dx,volumetric_heat_capacity=capacity)
     for q,expected in zip(flux,(.2*capacity*alpha,1.8*capacity*alpha)):
         torch.testing.assert_close(q,torch.full_like(q,expected),atol=1e-13,rtol=0.)
+
+@pytest.mark.parametrize("start,stop,early,late", [
+    (-2., -1., 0., 0.), (2., 3., 0., 0.), (.5, .5, 0., 0.),
+    (-1., 2., .5, .5), (.25, .5, .15625, .09375),
+    (-1., .5, .375, .125), (.5, 2., .125, .375),
+])
+def test_pulse_increments_preserve_amount_and_time_moment(start, stop, early, late):
+    rate = torch.tensor([[[-2., 3.]]], dtype=torch.float64)
+    a, b = thermal_pulse_increments_3d(rate, time=0., dt=1., start=start, stop=stop)
+    weights = W_D3Q7.double().view(7, 1, 1, 1)
+    torch.testing.assert_close(a, weights*rate*early)
+    torch.testing.assert_close(b, weights*rate*late)

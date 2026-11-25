@@ -46,6 +46,7 @@ __all__ = [
     "W_D3Q7",
     "thermal_equilibrium_3d",
     "thermal_gradient_initialization_3d",
+    "thermal_pulse_increments_3d",
     "thermal_collide_bgk_3d",
     "thermal_stream_3d",
     "thermal_macroscopic_3d",
@@ -144,6 +145,29 @@ def thermal_equilibrium_3d(
     cz = c[:, 2].view(7, 1, 1, 1).float()
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
     return w * T.unsqueeze(0) * (1.0 + 4.0 * cu)
+
+
+def thermal_pulse_increments_3d(temperature_rate: torch.Tensor, *, time: float, dt: float,
+                                start: float, stop: float) -> tuple[torch.Tensor, torch.Tensor]:
+    """D3Q7 population increments for a rectangular source in stationary conduction.
+
+    Supply a temperature rate (volumetric power divided by heat capacity) on
+    (nz, ny, nx). Add the first increment after collision, before streaming,
+    and the second after applying wall conditions. The linear time weights
+    integrate the source amount and its first time moment over the active
+    part of the step. Both outputs have shape (7, nz, ny, nx).
+    """
+    if temperature_rate.ndim != 3 or not temperature_rate.is_floating_point():
+        raise ValueError("temperature_rate must be a floating-point 3-D field")
+    if not all(math.isfinite(t) for t in (time, dt, start, stop)) or dt <= 0 or stop < start:
+        raise ValueError("finite times, dt > 0 and stop >= start are required")
+    begin = min(dt, max(0., start-time))
+    end = min(dt, max(0., stop-time))
+    active = end-begin
+    late = active*((begin/dt + end/dt)/2)
+    weights = W_D3Q7.to(temperature_rate).view(7, 1, 1, 1)
+    populations = weights*temperature_rate
+    return populations*(active-late), populations*late
 
 
 def _periodic_axes(periodic: bool | str) -> str:
