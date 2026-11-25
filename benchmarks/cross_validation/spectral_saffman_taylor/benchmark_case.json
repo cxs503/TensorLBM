@@ -1,0 +1,48 @@
+{
+  "scope": "Historical spectral Saffman–Taylor port-fidelity and independent linear-stability rounds. Round 2 reports a scientific mismatch. Round 3 is a published narrative with missing tracked reproduction assets. Current full-protocol acceptance is unevaluated.",
+  "source": [
+    "src/tensorlbm/spectral_saffman_taylor.py",
+    "benchmarks/cross_validation/spectral_saffman_taylor/round1/xval_spectral_st.py",
+    "benchmarks/cross_validation/spectral_saffman_taylor/round2/xval_linear_theory.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/results.json",
+    "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R2.md"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/spectral_saffman_taylor/README.md",
+    "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR.md",
+    "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R2.md",
+    "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R3.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/spectral_saffman_taylor/round1/oss_spectral_reference.py",
+    "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R2.md"
+  ],
+  "references": [
+    {
+      "title": "Fingering_dynamics spectrum_method",
+      "url": "https://github.com/ebinan92/Fingering_dynamics/tree/150a573",
+      "scope": "Round 1 port fidelity"
+    },
+    {
+      "title": "Exact linearised curl–Darcy eigenproblem",
+      "source": "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R2.md",
+      "scope": "Round 2 independent anchor"
+    }
+  ],
+  "criteria": {
+    "round1_relative_error_limit": 0.15,
+    "round2_neutral_diffusion_relative_error_limit": 0.01,
+    "round2_growth_rate_relative_error_limit": 0.15,
+    "scope": "Historical declared thresholds. Refer to each report for metric-specific definitions."
+  },
+  "results": [
+    "benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/results.json",
+    "benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/metrics_growth.json",
+    "benchmarks/cross_validation/spectral_saffman_taylor/round2/artifacts/linear_theory.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/spectral-saffman-taylor-xval-2026-11-25.json"
+  ]
+}

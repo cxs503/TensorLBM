@@ -27,7 +27,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent.parent
-                   / "xval" / "XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR"))
+                   / "benchmarks" / "cross_validation" / "spectral_saffman_taylor" / "round1"))
 
 from tensorlbm.spectral_saffman_taylor import SpectralSaffmanTaylor2D  # noqa: E402
 import oss_spectral_reference as ossref                              # noqa: E402

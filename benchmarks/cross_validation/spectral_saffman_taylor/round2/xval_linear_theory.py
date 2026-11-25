@@ -43,7 +43,7 @@ the anchor itself are performed below:
      when R < 0 for ``mu = exp(R c)`` with ``c = 1`` upstream -- the analytic
      relation reproduces exactly that criterion.
 
-Run: ``python xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT/xval_linear_theory.py``
+Run: ``python benchmarks/cross_validation/spectral_saffman_taylor/round2/xval_linear_theory.py``
 Outputs: ``artifacts/linear_theory.json`` (all numbers injected into the report)
 and ``artifacts/fig_linear_theory_*.png``.
 """
@@ -58,7 +58,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 import matplotlib
@@ -73,8 +73,8 @@ ART.mkdir(exist_ok=True)
 
 # --- parameters of the round-1 growth-rate study (identical, for comparability)
 NY, NX, ASPECT, PE, MODE = 128, 256, 2.0, 500.0, 4
-K_MODE = 2.0 * np.pi * MODE / PE          # transverse wavenumber of the fitted mode
-W_FRONT = 4.0                             # tanh width of the round-1 IC
+K_MODE = 2.0 * np.pi * MODE / PE  # transverse wavenumber of the fitted mode
+W_FRONT = 4.0  # tanh width of the round-1 IC
 DT = 0.1
 T_FIT = (2.0, 8.0)
 LOG: list[str] = []
@@ -86,8 +86,7 @@ def log(msg: str) -> None:
 
 
 # --------------------------------------------------------------- anchor solver
-def exact_linear_sigma(k: float, R: float, w: float, N: int = 1201,
-                       L: float = 800.0) -> dict:
+def exact_linear_sigma(k: float, R: float, w: float, N: int = 1201, L: float = 800.0) -> dict:
     """Growth rate of the exact variable-coefficient curl-Darcy linearisation.
 
     Second-order finite differences in xi on [-L, L] with homogeneous Dirichlet
@@ -110,8 +109,7 @@ def exact_linear_sigma(k: float, R: float, w: float, N: int = 1201,
     i = int(np.argmax(ev.real))
     mode = np.zeros(N, dtype=complex)
     mode[1:-1] = vec[:, i]
-    return {"sigma": complex(ev[i]), "xi": xi, "mode": mode, "h": h,
-            "n_eig": int(ev.size)}
+    return {"sigma": complex(ev[i]), "xi": xi, "mode": mode, "h": h, "n_eig": int(ev.size)}
 
 
 def step_analytic_sigma(R: float, k: float) -> dict:
@@ -124,16 +122,18 @@ def step_analytic_sigma(R: float, k: float) -> dict:
     if not adm:
         return {"kappa": None, "sigma": None, "admissible": False}
     kap = adm[0]
-    return {"kappa": kap, "sigma": kap ** 2 - k * k, "admissible": True}
+    return {"kappa": kap, "sigma": kap**2 - k * k, "admissible": True}
 
 
 # ------------------------------------------------- module growth-rate measurement
 def module_growth_rate(R: float, dt: float = DT, ny: int = NY, nx: int = NX) -> dict:
     """Fit sigma from the amplitude of the fitted transverse mode (round-1 method)."""
-    sim = SpectralSaffmanTaylor2D(ny, nx, aspect=ASPECT, pe=PE, viscosity_ratio=R,
-                                  dt=dt, mode_index=MODE)
-    sim.set_concentration(sim.single_mode_ic(x0=0.5 * ASPECT * PE, width=W_FRONT,
-                                            amplitude=1e-3, n_mode=MODE))
+    sim = SpectralSaffmanTaylor2D(
+        ny, nx, aspect=ASPECT, pe=PE, viscosity_ratio=R, dt=dt, mode_index=MODE
+    )
+    sim.set_concentration(
+        sim.single_mode_ic(x0=0.5 * ASPECT * PE, width=W_FRONT, amplitude=1e-3, n_mode=MODE)
+    )
     ts, amps = [], []
     for _ in range(int(round(T_FIT[1] / dt)) + 1):
         d = sim.diagnostics()
@@ -143,9 +143,17 @@ def module_growth_rate(R: float, dt: float = DT, ny: int = NY, nx: int = NX) -> 
     ts, amps = np.array(ts), np.array(amps)
     mask = (ts >= T_FIT[0]) & (ts <= T_FIT[1]) & (amps > 0)
     slope = float(np.polyfit(ts[mask], np.log(amps[mask]), 1)[0])
-    return {"R": R, "dt": dt, "ny": ny, "nx": nx, "sigma": slope,
-            "n_fit": int(mask.sum()), "amp_end": float(amps[-1]),
-            "ts": ts.tolist(), "amps": amps.tolist()}
+    return {
+        "R": R,
+        "dt": dt,
+        "ny": ny,
+        "nx": nx,
+        "sigma": slope,
+        "n_fit": int(mask.sum()),
+        "amp_end": float(amps[-1]),
+        "ts": ts.tolist(),
+        "amps": amps.tolist(),
+    }
 
 
 # ------------------------------------------------------------------- the study
@@ -153,13 +161,15 @@ def main() -> dict:
     t0 = time.time()
     k = K_MODE
     log(f"== XVAL round 2: independent linear-stability anchor ==")
-    log(f"   k (mode {MODE}) = {k:.6e}, k^2 = {k*k:.6e}, front width w = {W_FRONT}")
+    log(f"   k (mode {MODE}) = {k:.6e}, k^2 = {k * k:.6e}, front width w = {W_FRONT}")
 
     # ---- V1: R = 0 must reproduce -k^2 (pure transverse diffusion)
     v1 = exact_linear_sigma(k, 0.0, W_FRONT)
     v1_rel = abs(v1["sigma"].real + k * k) / (k * k)
-    log(f"V1 R=0: sigma_theory = {v1['sigma'].real:+.6e} vs -k^2 = {-k*k:+.6e} "
-        f"-> rel.dev {v1_rel:.2e} {'PASS' if v1_rel < 1e-3 else 'FAIL'}")
+    log(
+        f"V1 R=0: sigma_theory = {v1['sigma'].real:+.6e} vs -k^2 = {-k * k:+.6e} "
+        f"-> rel.dev {v1_rel:.2e} {'PASS' if v1_rel < 1e-3 else 'FAIL'}"
+    )
 
     # ---- V2: sharp-step limit vs the hand-derived analytic relation
     v2 = {"rows": []}
@@ -168,23 +178,33 @@ def main() -> dict:
         for w in (8.0, 4.0, 2.0, 1.0):
             s = exact_linear_sigma(k, R, w)
             rel = abs(s["sigma"].real - step["sigma"].real) / abs(step["sigma"].real)
-            v2["rows"].append({"R": R, "w": w, "k_w": k * w,
-                               "sigma_num": s["sigma"].real,
-                               "sigma_step": step["sigma"].real,
-                               "rel_dev": rel})
-            log(f"V2 R={R:<5} w={w:<4} k*w={k*w:.3f} sigma_num={s['sigma'].real:+.6e} "
-                f"sigma_step={step['sigma'].real:+.6e} rel.dev={100*rel:.2f}%")
+            v2["rows"].append(
+                {
+                    "R": R,
+                    "w": w,
+                    "k_w": k * w,
+                    "sigma_num": s["sigma"].real,
+                    "sigma_step": step["sigma"].real,
+                    "rel_dev": rel,
+                }
+            )
+            log(
+                f"V2 R={R:<5} w={w:<4} k*w={k * w:.3f} sigma_num={s['sigma'].real:+.6e} "
+                f"sigma_step={step['sigma'].real:+.6e} rel.dev={100 * rel:.2f}%"
+            )
         v2[f"step_R{R}"] = {"kappa": str(step["kappa"]), "sigma": step["sigma"]}
     # convergence must be monotone towards the step value as w -> 0
     v2["monotone"] = all(
         abs(r2["rel_dev"]) <= abs(r1["rel_dev"]) + 1e-12
-        for r1, r2 in zip([r for r in v2["rows"] if r["R"] == -1.0],
-                          [r for r in v2["rows"] if r["R"] == -1.0][1:]))
+        for r1, r2 in zip(
+            [r for r in v2["rows"] if r["R"] == -1.0], [r for r in v2["rows"] if r["R"] == -1.0][1:]
+        )
+    )
     log(f"   w->0 convergence monotone: {v2['monotone']}")
 
     # ---- grid / domain sensitivity of the anchor
     sens = []
-    for (N, L) in ((401, 800.0), (801, 800.0), (801, 400.0), (1201, 800.0)):
+    for N, L in ((401, 800.0), (801, 800.0), (801, 400.0), (1201, 800.0)):
         s = exact_linear_sigma(k, -1.0, W_FRONT, N=N, L=L)
         sens.append({"N": N, "L": L, "h": s["h"], "sigma": s["sigma"].real})
         log(f"   sensitivity N={N:<5} L={L:<6} h={s['h']:.3f} sigma={s['sigma'].real:+.6e}")
@@ -203,17 +223,26 @@ def main() -> dict:
         st_sig = st["sigma"].real if st["admissible"] else float("nan")
         ref = th["sigma"].real
         scale = abs(ref) if abs(ref) > 1e-6 else 1.0
-        rows.append({"R": R, "sigma_module": g["sigma"], "sigma_theory": ref,
-                     "sigma_step_analytic": st_sig,
-                     "k2_diffusive": k * k,
-                     "abs_err_module_vs_theory": abs(g["sigma"] - ref),
-                     "rel_err_module_vs_theory": abs(g["sigma"] - ref) / abs(ref)
-                     if abs(ref) > 1e-6 else float("nan"),
-                     "sign_agree": bool(np.sign(g["sigma"]) == np.sign(ref)),
-                     "pass_15pct": bool(abs(g["sigma"] - ref) / scale < 0.15)})
-        log(f"X  R={R:<5} sigma_module={g['sigma']:+.6e} sigma_theory={ref:+.6e} "
+        rows.append(
+            {
+                "R": R,
+                "sigma_module": g["sigma"],
+                "sigma_theory": ref,
+                "sigma_step_analytic": st_sig,
+                "k2_diffusive": k * k,
+                "abs_err_module_vs_theory": abs(g["sigma"] - ref),
+                "rel_err_module_vs_theory": abs(g["sigma"] - ref) / abs(ref)
+                if abs(ref) > 1e-6
+                else float("nan"),
+                "sign_agree": bool(np.sign(g["sigma"]) == np.sign(ref)),
+                "pass_15pct": bool(abs(g["sigma"] - ref) / scale < 0.15),
+            }
+        )
+        log(
+            f"X  R={R:<5} sigma_module={g['sigma']:+.6e} sigma_theory={ref:+.6e} "
             f"sigma_step={st_sig:+.6e} sign_agree={rows[-1]['sign_agree']} "
-            f"rel.dev={100*rows[-1]['rel_err_module_vs_theory']:.1f}%")
+            f"rel.dev={100 * rows[-1]['rel_err_module_vs_theory']:.1f}%"
+        )
 
     # mirrored comparison: module(R) against theory(-R) (the OSS symbol looks
     # like the exact coupling with the sign of R reversed)
@@ -223,25 +252,46 @@ def main() -> dict:
         if R == 0.0:
             continue
         th = exact_linear_sigma(k, -R, W_FRONT)["sigma"].real
-        mirror.append({"R": R, "sigma_module": g["sigma"], "sigma_theory_minusR": th,
-                       "rel_dev": abs(g["sigma"] - th) / abs(th),
-                       "pass_15pct": bool(abs(g["sigma"] - th) / abs(th) < 0.15)})
-        log(f"Y  R={R:<5} sigma_module={g['sigma']:+.6e} vs sigma_theory(-R)={th:+.6e} "
-            f"rel.dev={100*mirror[-1]['rel_dev']:.1f}%")
+        mirror.append(
+            {
+                "R": R,
+                "sigma_module": g["sigma"],
+                "sigma_theory_minusR": th,
+                "rel_dev": abs(g["sigma"] - th) / abs(th),
+                "pass_15pct": bool(abs(g["sigma"] - th) / abs(th) < 0.15),
+            }
+        )
+        log(
+            f"Y  R={R:<5} sigma_module={g['sigma']:+.6e} vs sigma_theory(-R)={th:+.6e} "
+            f"rel.dev={100 * mirror[-1]['rel_dev']:.1f}%"
+        )
 
     # ---- figures
     fig_paths = make_figures(k, rows, mirror, v2, mod)
 
-    res = {"k": k, "k2": k * k, "mode": MODE, "pe": PE, "w_front": W_FRONT,
-           "dt": DT, "ny": NY, "nx": NX, "t_fit": list(T_FIT),
-           "V1_sigma_R0": v1["sigma"].real, "V1_rel_dev_vs_minus_k2": v1_rel,
-           "V2_sharp_step": v2, "anchor_sensitivity": sens,
-           "module_runs": [{kk: vv for kk, vv in g.items() if kk not in ("ts", "amps")}
-                           for g in mod],
-           "comparison": rows, "mirror_comparison": mirror,
-           "figures": fig_paths, "wall_s": time.time() - t0, "log": LOG}
+    res = {
+        "k": k,
+        "k2": k * k,
+        "mode": MODE,
+        "pe": PE,
+        "w_front": W_FRONT,
+        "dt": DT,
+        "ny": NY,
+        "nx": NX,
+        "t_fit": list(T_FIT),
+        "V1_sigma_R0": v1["sigma"].real,
+        "V1_rel_dev_vs_minus_k2": v1_rel,
+        "V2_sharp_step": v2,
+        "anchor_sensitivity": sens,
+        "module_runs": [{kk: vv for kk, vv in g.items() if kk not in ("ts", "amps")} for g in mod],
+        "comparison": rows,
+        "mirror_comparison": mirror,
+        "figures": fig_paths,
+        "wall_s": time.time() - t0,
+        "log": LOG,
+    }
     (ART / "linear_theory.json").write_text(json.dumps(res, indent=1))
-    log(f"artifacts written: {ART/'linear_theory.json'} ({time.time()-t0:.1f}s)")
+    log(f"artifacts written: {ART / 'linear_theory.json'} ({time.time() - t0:.1f}s)")
     return res
 
 
@@ -264,8 +314,7 @@ def make_figures(k, rows, mirror, v2, mod):
     # right: mirrored comparison |sigma_module(R)| vs theory(-R)
     Rm = [m["R"] for m in mirror]
     ax[1].plot(Rm, [m["sigma_module"] for m in mirror], "o-", label=r"module $\sigma(R)$")
-    ax[1].plot(Rm, [m["sigma_theory_minusR"] for m in mirror], "s-",
-               label=r"theory $\sigma(-R)$")
+    ax[1].plot(Rm, [m["sigma_theory_minusR"] for m in mirror], "s-", label=r"theory $\sigma(-R)$")
     ax[1].set_xlabel("R")
     ax[1].set_ylabel(r"growth rate $\sigma$")
     ax[1].set_title("mirror test: module(R) vs theory(-R)")
@@ -300,8 +349,12 @@ def make_figures(k, rows, mirror, v2, mod):
     fig, ax = plt.subplots(figsize=(6.4, 4))
     for R, mk in ((-2.0, "o"), (-1.0, "s"), (-0.5, "^")):
         rr = [r for r in v2["rows"] if r["R"] == R]
-        ax.semilogx([r["w"] for r in rr], [r["sigma_num"] for r in rr], mk + "-",
-                    label=f"exact theory, R={R}")
+        ax.semilogx(
+            [r["w"] for r in rr],
+            [r["sigma_num"] for r in rr],
+            mk + "-",
+            label=f"exact theory, R={R}",
+        )
         ax.semilogx([r["w"] for r in rr], [r["sigma_step"] for r in rr], "k--", lw=0.8)
     ax.set_xlabel("front width w  (step limit: w $\\to$ 0)")
     ax.set_ylabel(r"$\sigma$")

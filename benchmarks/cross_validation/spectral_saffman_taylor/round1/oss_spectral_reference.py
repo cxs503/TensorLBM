@@ -41,7 +41,7 @@ class OSSCompute:
         self.kn = np.append(c, np.append(0, d))
         self.km_km = np.tile(self.km, (ny, 1))
         self.kn_kn = np.tile(self.kn, (nx, 1)).T
-        self.km2kn2 = self.km_km ** 2 + self.kn_kn ** 2
+        self.km2kn2 = self.km_km**2 + self.kn_kn**2
         self.x = np.array([(m / (nx / 2)) * 0.5 * aspect * pe for m in range(nx)])
         self.y = np.array([(n / ny) * pe for n in range(ny)])
         self.c = np.zeros((ny, nx))
