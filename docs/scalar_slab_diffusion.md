@@ -25,3 +25,20 @@ refinement falls short of the factor-three reduction gate. Both subsequent
 refinements pass and both finest runs meet the absolute targets. The
 thermal attenuation length is about one cell on the coarsest grid. The
 command reports all error reductions and keeps both failing rows.
+
+### Discrete periodic response
+
+`tensorlbm.scalar_harmonic.solve_harmonic_scalar_slab` solves the complex
+frequency response of the BGK collision and halfway-wall streaming update.
+Specify radians per lattice step and complex midpoint wall phasors. The
+solver separates transverse Fourier components, solves the sparse linear
+system along x and returns complex populations plus midpoint link transfers.
+It runs on CPU with NumPy, SciPy and PyTorch; multiply transfers by dx/dt
+for flux at unit capacity. Zero frequency requires a fixed wall.
+
+Run the oscillating slab command with `--periodic-start` to start the
+time march from the real part of those populations. Every grid passes the
+independent one-cycle time/frequency agreement check. On the fixed 64-cell
+grid the maximum temperature and x-flux differences are 6.93e-15 K and
+1.31e-13 W/m². The same two 8→16 continuum rate misses persist, so an
+equilibrium-population startup transient does not explain them.

@@ -4,13 +4,14 @@ import math
 
 import torch
 
+from tensorlbm.scalar_harmonic import solve_harmonic_scalar_slab
 from tensorlbm.scalar import (
     scalar_collide_bgk, scalar_diffusivity, scalar_equilibrium, scalar_link_transfer,
     scalar_stream_slab, tau_from_diffusivity,
 )
 
 
-def measure(n, insulated):
+def measure(n, insulated, *, periodic_start=False):
     dx, period = 1/n, .08
     steps = math.ceil(period/(scalar_diffusivity(.9)*dx**2))
     dt = period/steps
@@ -34,9 +35,13 @@ def measure(n, insulated):
     exact = y_mode[:,None]*x_mode
     ref_x = y_mode[:,None]*qx
     ref_y = b*torch.sin(b*faces[1:,None])*x_mode
+    periodic = solve_harmonic_scalar_slab(n,n,tau,omega*dt,y_mode,None if insulated else 0.)
     field = exact.real.clone()
     zero = torch.zeros_like(field)
     g = scalar_equilibrium(field,zero,zero)
+    if periodic_start:
+        g = periodic.populations.real.clone()
+        field = g.sum(0)
     temp = torch.zeros_like(exact)
     power_x = torch.zeros_like(ref_x)
     power_y = torch.zeros_like(ref_y)
@@ -58,21 +63,32 @@ def measure(n, insulated):
                  + complex(math.cos(omega*(i+1)*dt),-math.sin(omega*(i+1)*dt))*next_field)/steps
         field = next_field
     scale = 2*dx/(steps*dt)
-    return dict(n=n, east_wall="insulated" if insulated else "fixed", steps=steps,
+    result = dict(n=n, east_wall="insulated" if insulated else "fixed", steps=steps,
                 temperature_error_K=float((temp-exact).abs().max()),
                 x_flux_error_W_m2=float((power_x*scale-ref_x).abs().max()),
                 y_flux_error_W_m2=float((power_y*scale-ref_y).abs().max()),
-                cell_balance_J=float(max_residual))
+                cell_balance_J=float(max_residual),
+                periodic_start=periodic_start,
+                periodic_temperature_error_K=float((periodic.scalar-exact).abs().max()),
+                periodic_x_flux_error_W_m2=float((periodic.x_transfer*dx/dt-ref_x).abs().max()),
+                periodic_y_flux_error_W_m2=float((periodic.y_transfer*dx/dt-ref_y).abs().max()),
+                cycle_to_periodic_temperature_K=float((temp-periodic.scalar).abs().max()),
+                cycle_to_periodic_x_flux_W_m2=float((power_x*scale-periodic.x_transfer*dx/dt).abs().max()),
+                cycle_to_periodic_y_flux_W_m2=float((power_y*scale-periodic.y_transfer*dx/dt).abs().max()))
+    return result
 
 
-def main():
+def main(periodic_start=False):
     rows = []
     for insulated in (False,True):
         previous = None
         for n in (8,16,32,64):
-            row = measure(n,insulated)
+            row = measure(n,insulated,periodic_start=periodic_start)
             errors = [row[k] for k in ("temperature_error_K","x_flux_error_W_m2","y_flux_error_W_m2")]
             passed = all(math.isfinite(e) for e in errors) and row["cell_balance_J"] < 1e-14
+            if periodic_start:
+                passed &= max(row[key] for key in ("cycle_to_periodic_temperature_K",
+                              "cycle_to_periodic_x_flux_W_m2","cycle_to_periodic_y_flux_W_m2")) < 1e-10
             if previous:
                 row["error_reduction"] = [old/e for old,e in zip(previous,errors)]
                 passed &= all(ratio > 3 for ratio in row["error_reduction"])
@@ -86,4 +102,7 @@ def main():
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--periodic-start", action="store_true", help="start the time march in its discrete periodic state")
+    raise SystemExit(main(parser.parse_args().periodic_start))
