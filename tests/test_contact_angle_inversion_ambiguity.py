@@ -5,7 +5,7 @@ Two things are asserted on numbers, not merely executed:
 1. ``inversion_branches`` / ``is_monotone`` expose a **non-monotone** calibration
    instead of letting ``invert`` silently return one of several solutions.
 2. The committed hold-out evidence
-   (``xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/``) really satisfies
+   (``benchmarks/xval_huang2007_contact_angle_inversion/holdout/``) really satisfies
    the owner 15 % gate on every measured row.
 """
 
@@ -27,7 +27,7 @@ from tensorlbm.contact_angle_inversion import (
 )
 
 REPO = Path(__file__).resolve().parents[1]
-XVAL = REPO / "xval" / "XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT"
+XVAL = REPO / "benchmarks" / "xval_huang2007_contact_angle_inversion" / "holdout"
 
 
 def _cal(fw, cos, psi_l=0.8587, psi_v=0.1475) -> CalibrationResult:
