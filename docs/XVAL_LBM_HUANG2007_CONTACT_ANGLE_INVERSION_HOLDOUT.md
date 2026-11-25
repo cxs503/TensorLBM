@@ -4,8 +4,8 @@ Anchor: `XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION` (je-santos/MPLBM-UT
 `huang2007-contact-angle-inversion`: calibrate θ(f_w), then invert).
 
 Deliverable directory:
-[`xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/`](../xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/REPORT.md)
-(`predeclared.json` gates → `run_xval.py` → `runs/*.json` → `summary.json` → `REPORT.md`).
+[`benchmarks/xval_huang2007_contact_angle_inversion/holdout/`](../benchmarks/xval_huang2007_contact_angle_inversion/holdout/REPORT.md)
+(`predeclared.json` gates → `run_xval.py` → `evidence/*.json` → `summary.json` → `REPORT.md`).
 
 ## What this round checked (verification debt of the merged m18090 deliverable)
 
@@ -35,10 +35,11 @@ every committed hold-out row is inside the gate, so the evidence cannot silently
 ## Reproduce
 
 ```bash
-cd xval/XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT
+cd benchmarks/xval_huang2007_contact_angle_inversion/holdout
 python run_xval.py calibrate --threads 4   # 106.7 s, 7 points
 python run_xval.py analyse
 python run_xval.py matrix --workers 4      # 9 rows, ~2 min
 python run_xval.py report
+cd ../../..
 pytest tests/test_contact_angle_inversion_ambiguity.py -q
 ```

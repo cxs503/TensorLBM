@@ -44,12 +44,12 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
+REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "src"))
 
 EVID = os.path.join(HERE, "evidence")
-GATE_PCT = 15.0          # owner precision standard
-STRICT_PCT = 3.0         # the stricter band the platform report asks about
+GATE_PCT = 15.0  # owner precision standard
+STRICT_PCT = 3.0  # the stricter band the platform report asks about
 
 
 def _dump(name: str, obj) -> str:
@@ -70,8 +70,10 @@ def _load(name: str):
 # Arm S -- estimator bias against analytic caps
 # ---------------------------------------------------------------------------
 
+
 def arm_synthetic(thetas=None, radii=None, widths=None, phases=None) -> dict:
     import torch
+
     from tensorlbm.contact_angle_inversion.synthetic import sessile_cap_field
     from tensorlbm.sc_surface_tension import contact_angle_from_mask
 
@@ -88,25 +90,30 @@ def arm_synthetic(thetas=None, radii=None, widths=None, phases=None) -> dict:
         for R in radii:
             for th in thetas:
                 for ph in phases:
-                    f = sessile_cap_field(th, R, wall_rows=2, x_phase=ph,
-                                          rho_l=rho_l, rho_v=rho_v, interface_width=w)
+                    f = sessile_cap_field(
+                        th, R, wall_rows=2, x_phase=ph, rho_l=rho_l, rho_v=rho_v, interface_width=w
+                    )
                     m = contact_angle_from_mask(f["rho"], f["solid"], mid=mid)
                     ok = m.get("status") == "ok"
-                    rows.append({
-                        "theta_true": float(th),
-                        "radius": float(R),
-                        "interface_width": float(w),
-                        "x_phase": float(ph),
-                        "grid": [int(f["rho"].shape[1]), int(f["rho"].shape[0])],
-                        "theta_meas": m.get("theta_deg") if ok else None,
-                        "bias_deg": (m["theta_deg"] - th) if ok else None,
-                        "bias_pct": (abs(m["theta_deg"] - th) / th * 100.0) if ok else None,
-                        "R_fit": m.get("R_fit") if ok else None,
-                        "n_rows": m.get("n_rows"),
-                        "status": m.get("status"),
-                    })
-                    print(f"  S th={th:5.1f} R={R:4.1f} w={w} ph={ph:.2f} "
-                          f"-> {('%.2f' % m['theta_deg']) if ok else m.get('status')}")
+                    rows.append(
+                        {
+                            "theta_true": float(th),
+                            "radius": float(R),
+                            "interface_width": float(w),
+                            "x_phase": float(ph),
+                            "grid": [int(f["rho"].shape[1]), int(f["rho"].shape[0])],
+                            "theta_meas": m.get("theta_deg") if ok else None,
+                            "bias_deg": (m["theta_deg"] - th) if ok else None,
+                            "bias_pct": (abs(m["theta_deg"] - th) / th * 100.0) if ok else None,
+                            "R_fit": m.get("R_fit") if ok else None,
+                            "n_rows": m.get("n_rows"),
+                            "status": m.get("status"),
+                        }
+                    )
+                    print(
+                        f"  S th={th:5.1f} R={R:4.1f} w={w} ph={ph:.2f} "
+                        f"-> {('%.2f' % m['theta_deg']) if ok else m.get('status')}"
+                    )
 
     # aggregate: mean bias per (radius, theta) over phases, at the base width
     agg = {}
@@ -118,12 +125,17 @@ def arm_synthetic(thetas=None, radii=None, widths=None, phases=None) -> dict:
     summary = []
     for key, vals in agg.items():
         R, th, w = key.split("|")
-        summary.append({
-            "radius": float(R), "theta_true": float(th), "interface_width": float(w),
-            "bias_mean_deg": sum(vals) / len(vals),
-            "bias_spread_deg": max(vals) - min(vals),
-            "n_ok": len(vals), "n_phase": len(phases),
-        })
+        summary.append(
+            {
+                "radius": float(R),
+                "theta_true": float(th),
+                "interface_width": float(w),
+                "bias_mean_deg": sum(vals) / len(vals),
+                "bias_spread_deg": max(vals) - min(vals),
+                "n_ok": len(vals),
+                "n_phase": len(phases),
+            }
+        )
     summary.sort(key=lambda d: (d["interface_width"], d["radius"], d["theta_true"]))
 
     measured = [r for r in rows if r["bias_deg"] is not None]
@@ -131,8 +143,15 @@ def arm_synthetic(thetas=None, radii=None, widths=None, phases=None) -> dict:
         "arm": "S_synthetic_estimator",
         "operator": "tensorlbm.sc_surface_tension.contact_angle_from_mask(mid=0.5*(rho_l+rho_v))",
         "ground_truth": "analytic circular arc, tanh diffuse profile, mask boundary == arc",
-        "config": {"thetas": thetas, "radii": radii, "widths": widths, "phases": phases,
-                   "rho_l": rho_l, "rho_v": rho_v, "wall_rows": 2},
+        "config": {
+            "thetas": thetas,
+            "radii": radii,
+            "widths": widths,
+            "phases": phases,
+            "rho_l": rho_l,
+            "rho_v": rho_v,
+            "wall_rows": 2,
+        },
         "rows": rows,
         "summary": summary,
         "coverage": {
@@ -143,10 +162,10 @@ def arm_synthetic(thetas=None, radii=None, widths=None, phases=None) -> dict:
         },
     }
     for R in radii:
-        oks = [r["theta_true"] for r in rows
-               if r["radius"] == R and r["bias_deg"] is not None]
+        oks = [r["theta_true"] for r in rows if r["radius"] == R and r["bias_deg"] is not None]
         out["coverage"]["measurable_theta_range_per_radius"][str(R)] = (
-            [min(oks), max(oks)] if oks else None)
+            [min(oks), max(oks)] if oks else None
+        )
     if measured:
         worst = max(measured, key=lambda r: abs(r["bias_deg"]))
         out["worst"] = worst
@@ -162,6 +181,7 @@ def arm_synthetic(thetas=None, radii=None, widths=None, phases=None) -> dict:
 # ---------------------------------------------------------------------------
 # Arm D -- interpolation (leave-one-out) on the delivered vs refined curve
 # ---------------------------------------------------------------------------
+
 
 def _pchip_slopes(x, y):
     """Fritsch-Carlson monotone-preserving knot slopes (no overshoot)."""
@@ -188,10 +208,10 @@ def _pchip_eval(x, y, m, xq):
     i = max(0, min(len(x) - 2, next(k for k in range(len(x) - 1) if x[k + 1] >= xq)))
     h = x[i + 1] - x[i]
     t = (xq - x[i]) / h
-    h00 = 2 * t ** 3 - 3 * t ** 2 + 1
-    h10 = t ** 3 - 2 * t ** 2 + t
-    h01 = -2 * t ** 3 + 3 * t ** 2
-    h11 = t ** 3 - t ** 2
+    h00 = 2 * t**3 - 3 * t**2 + 1
+    h10 = t**3 - 2 * t**2 + t
+    h01 = -2 * t**3 + 3 * t**2
+    h11 = t**3 - t**2
     return h00 * y[i] + h10 * h * m[i] + h01 * y[i + 1] + h11 * h * m[i + 1]
 
 
@@ -238,15 +258,21 @@ def arm_dense(fw_extra, nx=64, ny=32, radius=8.0, steps=5000, threads=4, tag="D_
     from tensorlbm.contact_angle_inversion import calibrate
 
     t0 = time.time()
-    cal = calibrate(fw_values=fw_extra, nx=nx, ny=ny, radius=radius,
-                    steps=steps, threads=threads)
+    cal = calibrate(fw_values=fw_extra, nx=nx, ny=ny, radius=radius, steps=steps, threads=threads)
     out = {
         "arm": "D_dense_calibration",
         "config": {"nx": nx, "ny": ny, "radius": radius, "steps": steps},
         "fw_values": fw_extra,
-        "points": [{"f_w": p.f_w, "theta_measured": p.theta_measured,
-                    "cos_measured": p.cos_measured, "status": p.status,
-                    "drift_deg": p.drift_deg} for p in cal.points],
+        "points": [
+            {
+                "f_w": p.f_w,
+                "theta_measured": p.theta_measured,
+                "cos_measured": p.cos_measured,
+                "status": p.status,
+                "drift_deg": p.drift_deg,
+            }
+            for p in cal.points
+        ],
         "seconds": time.time() - t0,
     }
     out["tag"] = tag
@@ -256,26 +282,41 @@ def arm_dense(fw_extra, nx=64, ny=32, radius=8.0, steps=5000, threads=4, tag="D_
 
 def arm_budget() -> dict:
     """Leave-one-out interpolation error of the delivered vs the refined curve."""
-    base = _load("../../XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/summary.json")
+    base = _load("../../holdout/summary.json")
     dense = _load("D_dense.json")
 
     def curve(points):
-        pts = [p for p in points
-               if p.get("status", "ok") == "ok"
-               and p.get("cos_measured") is not None
-               and p.get("theta_measured") is not None
-               and p["theta_measured"] == p["theta_measured"]]
+        pts = [
+            p
+            for p in points
+            if p.get("status", "ok") == "ok"
+            and p.get("cos_measured") is not None
+            and p.get("theta_measured") is not None
+            and p["theta_measured"] == p["theta_measured"]
+        ]
         pts.sort(key=lambda p: p["f_w"])
-        return ([p["f_w"] for p in pts], [p["cos_measured"] for p in pts],
-                [p["theta_measured"] for p in pts])
+        return (
+            [p["f_w"] for p in pts],
+            [p["cos_measured"] for p in pts],
+            [p["theta_measured"] for p in pts],
+        )
 
-    delivered = [(p["f_w"], p["theta_measured"], p["cos_measured"])
-                 for p in base["calibration"]["points"]]
+    delivered = [
+        (p["f_w"], p["theta_measured"], p["cos_measured"]) for p in base["calibration"]["points"]
+    ]
     refined = [(p["f_w"], p["theta_measured"], p["cos_measured"]) for p in dense["points"]]
-    allpts = sorted({round(p[0], 4): {"f_w": p[0], "theta_measured": p[1],
-                                      "cos_measured": p[2], "status": "ok"}
-                     for p in delivered + refined
-                     if p[1] is not None and p[1] == p[1]}.items())
+    allpts = sorted(
+        {
+            round(p[0], 4): {
+                "f_w": p[0],
+                "theta_measured": p[1],
+                "cos_measured": p[2],
+                "status": "ok",
+            }
+            for p in delivered + refined
+            if p[1] is not None and p[1] == p[1]
+        }.items()
+    )
     allpts = [v for _, v in allpts]
 
     def loo(points, method):
@@ -300,26 +341,32 @@ def arm_budget() -> dict:
                 m = _pchip_slopes(fw, cos)
                 c = _pchip_eval(fw, cos, m, x)
             pred = math.degrees(math.acos(max(-1.0, min(1.0, c))))
-            res.append({
-                "f_w_held": x, "theta_true": hold["theta_measured"],
-                "theta_pred": pred,
-                "err_deg": pred - hold["theta_measured"],
-                "err_pct": abs(pred - hold["theta_measured"]) / hold["theta_measured"] * 100.0,
-                "extrapolated": not inside,
-                "in_dense_band": bool(0.55 <= x <= 0.72),
-            })
+            res.append(
+                {
+                    "f_w_held": x,
+                    "theta_true": hold["theta_measured"],
+                    "theta_pred": pred,
+                    "err_deg": pred - hold["theta_measured"],
+                    "err_pct": abs(pred - hold["theta_measured"]) / hold["theta_measured"] * 100.0,
+                    "extrapolated": not inside,
+                    "in_dense_band": bool(0.55 <= x <= 0.72),
+                }
+            )
         return res
 
     rep = {
         "arm": "D_budget",
         "delivered_curve": {"points": delivered, "n": len(delivered)},
-        "refined_curve": {"points": refined, "n": len(refined),
-                          "extra": dense["fw_values"]},
+        "refined_curve": {"points": refined, "n": len(refined), "extra": dense["fw_values"]},
         "loo": {
-            "delivered_linear": loo([{"f_w": f, "theta_measured": t, "cos_measured": c}
-                                     for f, t, c in delivered], "linear"),
-            "delivered_pchip": loo([{"f_w": f, "theta_measured": t, "cos_measured": c}
-                                    for f, t, c in delivered], "pchip"),
+            "delivered_linear": loo(
+                [{"f_w": f, "theta_measured": t, "cos_measured": c} for f, t, c in delivered],
+                "linear",
+            ),
+            "delivered_pchip": loo(
+                [{"f_w": f, "theta_measured": t, "cos_measured": c} for f, t, c in delivered],
+                "pchip",
+            ),
             "refined_linear": loo(allpts, "linear"),
             "refined_pchip": loo(allpts, "pchip"),
         },
@@ -335,43 +382,50 @@ def arm_budget() -> dict:
             "max_err_pct_all": max((r["err_pct"] for r in scored), default=None),
             "max_err_pct_band": max((r["err_pct"] for r in band), default=None),
             "mean_abs_err_pct_all": (sum(r["err_pct"] for r in scored) / len(scored))
-                                    if scored else None,
+            if scored
+            else None,
         }
     # ---- measured transfer pair: identical f_w, coarse vs production grid ----
-    hold_ev = os.path.join(HERE, "..", "XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT",
-                           "evidence")
+    hold_ev = os.path.join(HERE, "..", "holdout", "evidence")
     pair = {}
     for tag in ("A_th090", "B_th090"):
         path = os.path.join(hold_ev, tag + ".json")
         if os.path.exists(path):
             with open(path) as fh:
                 d = json.load(fh)
-            pair[tag] = {k: d.get(k) for k in ("theta_target", "f_w", "theta_measured",
-                                               "err_deg", "err_pct", "config")}
+            pair[tag] = {
+                k: d.get(k)
+                for k in ("theta_target", "f_w", "theta_measured", "err_deg", "err_pct", "config")
+            }
     rep["transfer_pair"] = pair
     if len(pair) == 2 and pair["A_th090"]["f_w"] and pair["B_th090"]["f_w"]:
         same_fw = abs(pair["A_th090"]["f_w"] - pair["B_th090"]["f_w"]) < 1e-6
         rep["transfer_pair"]["same_f_w"] = bool(same_fw)
         if same_fw:
-            rep["transfer_pair"]["delta_deg"] = (pair["B_th090"]["theta_measured"]
-                                                 - pair["A_th090"]["theta_measured"])
+            rep["transfer_pair"]["delta_deg"] = (
+                pair["B_th090"]["theta_measured"] - pair["A_th090"]["theta_measured"]
+            )
 
     # ---- estimator term between the two grids (Arm S) ----------------------
     try:
         synth = _load("S_synthetic.json")
         bias = {}
         for R in (8.0, 15.0):
-            vals = [r["bias_mean_deg"] for r in synth["summary"]
-                    if abs(r["radius"] - R) < 1e-9 and abs(r["theta_true"] - 90.0) < 1e-9]
+            vals = [
+                r["bias_mean_deg"]
+                for r in synth["summary"]
+                if abs(r["radius"] - R) < 1e-9 and abs(r["theta_true"] - 90.0) < 1e-9
+            ]
             if vals:
                 bias[str(R)] = vals[0]
         if len(bias) == 2:
             rep["estimator_term_deg"] = {
-                "bias_at_R8": bias["8.0"], "bias_at_R15": bias["15.0"],
+                "bias_at_R8": bias["8.0"],
+                "bias_at_R15": bias["15.0"],
                 "difference": bias["8.0"] - bias["15.0"],
                 "note": "same-angle estimator bias at the two grid radii; the coarse "
-                        "calibration carries this extra offset when it is used on the "
-                        "production grid",
+                "calibration carries this extra offset when it is used on the "
+                "production grid",
             }
     except FileNotFoundError:
         pass
@@ -390,8 +444,8 @@ def arm_budget() -> dict:
                 "transfer": (tot - incon) / tot * 100.0,
             },
             "interpretation": "the in-config term is present with no transfer at all, "
-                              "so it cannot be Huang2007/resolution; it is the angle "
-                              "operator plus node spacing",
+            "so it cannot be Huang2007/resolution; it is the angle "
+            "operator plus node spacing",
         }
     rep["gate_pct"] = GATE_PCT
     _dump("D_budget.json", rep)
@@ -402,11 +456,21 @@ def arm_budget() -> dict:
 # Arm E -- end-to-end hold-out with the refined curve
 # ---------------------------------------------------------------------------
 
-def arm_eval(targets, fw_table, nx=64, ny=32, radius=8.0, steps=5000,
-             threads=4, tag="refined", method="pchip") -> dict:
+
+def arm_eval(
+    targets,
+    fw_table,
+    nx=64,
+    ny=32,
+    radius=8.0,
+    steps=5000,
+    threads=4,
+    tag="refined",
+    method="pchip",
+) -> dict:
     """Run real LBM drops at the f_w the (refined) curve prescribes."""
     import torch
-    from tensorlbm.contact_angle_inversion import calibrate
+
     from tensorlbm.contact_line.engine import Channel, WallStepper, sessile_drop_state
     from tensorlbm.sc_surface_tension import contact_angle_from_mask
 
@@ -427,10 +491,15 @@ def arm_eval(targets, fw_table, nx=64, ny=32, radius=8.0, steps=5000,
         solid = channel.solid_mask()
         y_wall = channel.y_wall()
         f, _ = sessile_drop_state(channel, radius=radius, height=0.0)
-        stepper = WallStepper(channel, G=5.0, tau=1.0, rho_l=rho_l, rho_v=rho_v,
-                              psi_fn=__import__("tensorlbm.sc_surface_tension",
-                                                fromlist=["psi_exp"]).psi_exp,
-                              wall_fraction=f_w)
+        stepper = WallStepper(
+            channel,
+            G=5.0,
+            tau=1.0,
+            rho_l=rho_l,
+            rho_v=rho_v,
+            psi_fn=__import__("tensorlbm.sc_surface_tension", fromlist=["psi_exp"]).psi_exp,
+            wall_fraction=f_w,
+        )
         hist = []
         for step in range(1, steps + 1):
             f = stepper.step(f)
@@ -444,22 +513,34 @@ def arm_eval(targets, fw_table, nx=64, ny=32, radius=8.0, steps=5000,
         drift = abs(hist[-1][1] - hist[-4][1]) if len(hist) >= 4 else float("nan")
         ok = m.get("status") == "ok" and (not math.isfinite(drift) or drift <= 1.0)
         err = abs(m["theta_deg"] - th) if ok else float("nan")
-        rows.append({
-            "theta_target": float(th), "f_w": float(f_w), "method": method,
-            "theta_measured": m.get("theta_deg") if ok else None,
-            "err_deg": err if ok else None,
-            "err_pct": (err / th * 100.0) if ok else None,
-            "within_gate": bool(ok and err / th * 100.0 < GATE_PCT),
-            "within_strict": bool(ok and err / th * 100.0 < STRICT_PCT),
-            "drift_deg": drift, "R_fit": m.get("R_fit"), "n_rows": m.get("n_rows"),
-            "status": "ok" if ok else m.get("status"),
-            "history": hist,
-        })
-        print(f"  E[{tag}] th={th} f_w={f_w:.4f} -> {rows[-1]['theta_measured']} "
-              f"err={rows[-1]['err_pct']}")
-    out = {"arm": "E_eval_" + tag, "method": method,
-           "config": {"nx": nx, "ny": ny, "radius": radius, "steps": steps},
-           "rows": rows, "seconds": time.time() - t0}
+        rows.append(
+            {
+                "theta_target": float(th),
+                "f_w": float(f_w),
+                "method": method,
+                "theta_measured": m.get("theta_deg") if ok else None,
+                "err_deg": err if ok else None,
+                "err_pct": (err / th * 100.0) if ok else None,
+                "within_gate": bool(ok and err / th * 100.0 < GATE_PCT),
+                "within_strict": bool(ok and err / th * 100.0 < STRICT_PCT),
+                "drift_deg": drift,
+                "R_fit": m.get("R_fit"),
+                "n_rows": m.get("n_rows"),
+                "status": "ok" if ok else m.get("status"),
+                "history": hist,
+            }
+        )
+        print(
+            f"  E[{tag}] th={th} f_w={f_w:.4f} -> {rows[-1]['theta_measured']} "
+            f"err={rows[-1]['err_pct']}"
+        )
+    out = {
+        "arm": "E_eval_" + tag,
+        "method": method,
+        "config": {"nx": nx, "ny": ny, "radius": radius, "steps": steps},
+        "rows": rows,
+        "seconds": time.time() - t0,
+    }
     ok_rows = [r for r in rows if r.get("err_pct") is not None]
     out["n_ok"] = len(ok_rows)
     out["max_err_pct"] = max((r["err_pct"] for r in ok_rows), default=None)
@@ -475,12 +556,28 @@ def arm_fine(threads=4) -> dict:
     Tests whether the f_w-insensitive plateau seen at R=8 is a small-drop
     artefact or survives at the production resolution.
     """
-    dense = arm_dense([0.56, 0.58, 0.60, 0.62, 0.64, 0.66, 0.68], nx=128, ny=64,
-                      radius=15.0, steps=6000, threads=threads, tag="D_dense_fine")
+    dense = arm_dense(
+        [0.56, 0.58, 0.60, 0.62, 0.64, 0.66, 0.68],
+        nx=128,
+        ny=64,
+        radius=15.0,
+        steps=6000,
+        threads=threads,
+        tag="D_dense_fine",
+    )
     table = [p for p in dense["points"] if p.get("status") == "ok"]
     for tag, method in (("fine_pchip", "pchip"), ("fine_linear", "linear")):
-        arm_eval([90.0, 105.0], table, nx=128, ny=64, radius=15.0, steps=6000,
-                 threads=threads, tag=tag, method=method)
+        arm_eval(
+            [90.0, 105.0],
+            table,
+            nx=128,
+            ny=64,
+            radius=15.0,
+            steps=6000,
+            threads=threads,
+            tag=tag,
+            method=method,
+        )
     return dense
 
 
@@ -500,20 +597,25 @@ def main() -> int:
         arm_budget()
     elif args.cmd == "eval":
         dense = _load("D_dense.json")
-        base = _load("../../XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-HOLDOUT/summary.json")
+        base = _load("../../holdout/summary.json")
         merged = {}
         for p in base["calibration"]["points"] + dense["points"]:
             if p.get("status") == "ok":
                 merged[round(p["f_w"], 4)] = p
         table = [merged[k] for k in sorted(merged)]
         # delivered behaviour, for a like-for-like comparison on the same targets
-        arm_eval([90.0, 105.0], base["calibration"]["points"], threads=args.threads,
-                 tag="delivered", method="linear")
+        arm_eval(
+            [90.0, 105.0],
+            base["calibration"]["points"],
+            threads=args.threads,
+            tag="delivered",
+            method="linear",
+        )
         arm_eval([90.0, 105.0], table, threads=args.threads, tag="refined", method="pchip")
-        arm_eval([90.0, 105.0], table, threads=args.threads, tag="refined_linear",
-                 method="linear")
+        arm_eval([90.0, 105.0], table, threads=args.threads, tag="refined_linear", method="linear")
     elif args.cmd == "report":
         import report as rep
+
         rep.build()
     return 0
 

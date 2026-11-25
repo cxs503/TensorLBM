@@ -33,8 +33,8 @@ from tensorlbm.contact_angle_inversion.synthetic import (  # noqa: E402
 from tensorlbm.sc_surface_tension import contact_angle_from_mask  # noqa: E402
 
 MID = 0.5 * (1.957 + 0.1596)
-EVID = os.path.join(REPO, "xval", "XVAL-LBM-HUANG2007-CONTACT-ANGLE-INVERSION-BUDGET",
-                    "evidence")
+EVID = os.path.join(REPO, "benchmarks", "xval_huang2007_contact_angle_inversion",
+                    "estimator_budget", "evidence")
 
 
 def test_cap_geometry_matches_circle_formulae():
