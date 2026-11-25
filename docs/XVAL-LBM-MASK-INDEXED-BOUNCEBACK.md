@@ -28,8 +28,8 @@ A1 `oss_boolean`（OSS 字面式）/ A2 `mask_indexed`（本仓新增：预计�
 A3 `production`（既有 `boundaries.bounce_back_cells` 稠密 where）/ A4 `fluid_side`（独立书写的流体侧半程反弹）。
 
 产物：`src/tensorlbm/boundary/mask_indexed_bounceback.py`；`tests/test_mask_indexed_bounceback.py`（11 项）；
-`xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/predeclared.json`、`run_xval.py`、`artifacts/{identity,channel,cost}.json`、
-`artifacts/figures/{fig1_channel,fig2_cost}.png`。
+[预注册](../benchmarks/cross_validation/mask_indexed_bounceback/predeclared.json)、[复跑入口](../benchmarks/cross_validation/mask_indexed_bounceback/run_xval.py)、
+[历史结果](../benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/summary.json)。图表文件名见[原始报告](../benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/REPORT.md)。
 
 ## 3 参数表（无量纲数完整）
 

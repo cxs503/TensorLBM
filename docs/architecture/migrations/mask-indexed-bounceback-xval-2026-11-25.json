@@ -1,0 +1,107 @@
+{
+  "source_commit": "868bd101ccfc1073788d69234cb550ed7375ab47",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 68,
+      "after": 67
+    }
+  },
+  "retired_paths": [
+    "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK"
+  ],
+  "reference_scan": "The exact old directory and asset names were scanned in tracked code, tests, CI and the published report. The published report's internal links were updated. Frozen reports and preregistration retain historical text. Figure filenames cited historically are not tracked in the source revision.",
+  "compatibility": "Published docs URL and public imports are retained. The relocated runner retains --out and directs default writes to the ignored outputs tree. The legacy paths remain available at source_commit.",
+  "scientific_scope": "The migration reran only the CPU identity block. Its numeric results matched exactly; no current scientific verdict was granted for the channel, timing or cylinder blocks.",
+  "verification": {
+    "structural": "All seven Git modes and old/new checksums verified. All six historical files are byte-identical. Numerical function ASTs match before and after.",
+    "focused_tests": {
+      "command": "python -m pytest -q tests/test_mask_indexed_bounceback.py",
+      "baseline": "10 passed, 1 failed. The Poiseuille test applied a two-dimensional fluid mask to a one-dimensional analytical profile and raised IndexError.",
+      "result": "11 passed after broadcasting the existing analytical profile across the x dimension before masking. The physical test thresholds and solver source are unchanged."
+    },
+    "cpu_replay": {
+      "environment": "Python 3.12, real PyTorch, CPU x86-64, one thread",
+      "before_command": "PYTHONPATH=src python xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/run_xval.py --blocks identity --out <before_dir>",
+      "after_command": "PYTHONPATH=src python benchmarks/cross_validation/mask_indexed_bounceback/run_xval.py --blocks identity --out <after_dir>",
+      "result": "identity.json and summary.json matched byte-for-byte. D2Q9 and D3Q19 maximum absolute errors were both zero. The fresh identity JSON also matched the archived identity file byte-for-byte, so the retained file is the exact replay output.",
+      "evidence": "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/identity.json",
+      "sha256": "0bce3eaed7591c9e6f02eea336e8da39121f9135932d90590c28a20f287eb15f",
+      "default_output": "The CLI also produced the same identity result without --out in an isolated working directory, under outputs/cross_validation/mask_indexed_bounceback."
+    },
+    "governance": "84 tests and Ruff ratchet passed; 220 cases indexed; 35 tutorials, 33 PDFs and 33 Word documents checked; zero hard ledger violations."
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/predeclared.json",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "23dbd77fe0115c92d4f6166955450ba0a44505d7",
+      "original_sha256": "2dd8f4a25fd23c620bbbdebd4b71c0dc35787e3e110e2c93bf4bd4122eea7b47",
+      "current_sha256": "2dd8f4a25fd23c620bbbdebd4b71c0dc35787e3e110e2c93bf4bd4122eea7b47",
+      "size_bytes": 8103,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/REPORT.md",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/REPORT.md",
+      "git_mode": "100644",
+      "original_git_blob": "49ed11c1102a327e9397329b5b5d06931b153c78",
+      "original_sha256": "bf3d1c101805de83ad32ed1804c8747d9ce28874b0715df3c7995d6d8246b85d",
+      "current_sha256": "bf3d1c101805de83ad32ed1804c8747d9ce28874b0715df3c7995d6d8246b85d",
+      "size_bytes": 7971,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/run_xval.py",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "180a2fa511d2af36c838d861c23afae1eff5d5b2",
+      "original_sha256": "985a1c5f2bb0d6aa166f3c46a60910be9a1ec55b7d051d53c496fade53b7faf5",
+      "current_sha256": "1ea0bd3d7bb127f7b508e9b6cfef7ec955e9f481fd50c038c871e8a3b740ff65",
+      "size_bytes": 16390,
+      "byte_identical": false
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/artifacts/identity.json",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/identity.json",
+      "git_mode": "100644",
+      "original_git_blob": "5d9a53bbec533a78624abd62618a2bc0e8e69645",
+      "original_sha256": "0bce3eaed7591c9e6f02eea336e8da39121f9135932d90590c28a20f287eb15f",
+      "current_sha256": "0bce3eaed7591c9e6f02eea336e8da39121f9135932d90590c28a20f287eb15f",
+      "size_bytes": 569,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/artifacts/channel.json",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/channel.json",
+      "git_mode": "100644",
+      "original_git_blob": "09a0a7cd7fddee6c047331bb5dd4dffded282c46",
+      "original_sha256": "d6d013249824406ebcdc50d8f1d730ebaa07724cdae42ee03fae6299cf7603ef",
+      "current_sha256": "d6d013249824406ebcdc50d8f1d730ebaa07724cdae42ee03fae6299cf7603ef",
+      "size_bytes": 5303,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/artifacts/cost.json",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/cost.json",
+      "git_mode": "100644",
+      "original_git_blob": "98eca731bf2b1235c7f4f0fdecc6a8b4b836d489",
+      "original_sha256": "21182d8d0489d6d3d8cd25ccbe7d560e441041dfb2325ac5f0d49ef1166bd4b4",
+      "current_sha256": "21182d8d0489d6d3d8cd25ccbe7d560e441041dfb2325ac5f0d49ef1166bd4b4",
+      "size_bytes": 2932,
+      "byte_identical": true
+    },
+    {
+      "old_path": "xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/artifacts/summary.json",
+      "new_path": "benchmarks/cross_validation/mask_indexed_bounceback/evidence/historical/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "268c89c39b47cd4acdb438c4dea6a61f81379d00",
+      "original_sha256": "8331e1fffa5e7a308c18d5f58863da89d970d7a90b62cb0793b5519573e48c34",
+      "current_sha256": "8331e1fffa5e7a308c18d5f58863da89d970d7a90b62cb0793b5519573e48c34",
+      "size_bytes": 8909,
+      "byte_identical": true
+    }
+  ]
+}

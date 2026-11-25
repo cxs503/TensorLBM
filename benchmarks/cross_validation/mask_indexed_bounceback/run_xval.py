@@ -23,7 +23,7 @@ Blocks (each writes its own JSON so a partial run is still evidence):
              ref_cd = 5.57953523384)
 
 Usage:
-    PYTHONPATH=src python xval/XVAL-LBM-MASK-INDEXED-BOUNCEBACK/run_xval.py --out <dir>
+    PYTHONPATH=src python benchmarks/cross_validation/mask_indexed_bounceback/run_xval.py --out <dir>
 """
 
 from __future__ import annotations
@@ -36,13 +36,6 @@ from pathlib import Path
 
 import torch
 
-from tensorlbm.boundary.interpolated_bounce_back import interpolated_bounce_back_2d
-from tensorlbm.boundary.mask_indexed_bounceback import (
-    boolean_mask_bounce_back,
-    build_solid_mask_index,
-    mask_indexed_bounce_back,
-    mask_indexed_bounce_back_,
-)
 from tensorlbm.boundaries import (
     bounce_back_cells,
     compute_obstacle_forces,
@@ -51,8 +44,15 @@ from tensorlbm.boundaries import (
     zou_he_inlet_velocity,
     zou_he_outlet_pressure,
 )
-from tensorlbm.d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from tensorlbm.boundary.interpolated_bounce_back import interpolated_bounce_back_2d
+from tensorlbm.boundary.mask_indexed_bounceback import (
+    boolean_mask_bounce_back,
+    build_solid_mask_index,
+    mask_indexed_bounce_back,
+    mask_indexed_bounce_back_,
+)
 from tensorlbm.boussinesq import apply_guo_forcing
+from tensorlbm.d2q9 import OPPOSITE, C, equilibrium, macroscopic
 from tensorlbm.solver import stream
 
 DTYPE = torch.float64
@@ -110,7 +110,7 @@ def block_identity() -> dict:
 
             opp = OPP3
         q = int(torch.as_tensor(opp).numel())
-        f = (torch.rand((q, *shape), generator=g, dtype=DTYPE) + 0.05)
+        f = torch.rand((q, *shape), generator=g, dtype=DTYPE) + 0.05
         mask = torch.rand(shape, generator=g) < 0.23
         mask[0, ...] = True  # touches the domain border
         a1 = boolean_mask_bounce_back(f, mask, opp)
@@ -196,8 +196,15 @@ def block_channel(h_list=(8, 16, 32), steps: int = 5000, nx: int = 6) -> dict:
         k_num = nu * float(ux[fluid].mean()) / g
         k_ref = h * h / 12.0
         tau_rows.append(
-            {"tau": tau, "nu": nu, "H": h, "g": g, "k_measured": k_num,
-             "k_analytic": k_ref, "err_pct": (k_num - k_ref) / k_ref * 100.0}
+            {
+                "tau": tau,
+                "nu": nu,
+                "H": h,
+                "g": g,
+                "k_measured": k_num,
+                "k_analytic": k_ref,
+                "err_pct": (k_num - k_ref) / k_ref * 100.0,
+            }
         )
     for scale in (1.0, 2.0):
         h, ny, nu = 32, 34, (TAU_DEFAULT - 0.5) / 3.0
@@ -205,8 +212,12 @@ def block_channel(h_list=(8, 16, 32), steps: int = 5000, nx: int = 6) -> dict:
         _, solid, ux, _ = _channel_arm(ny, nx, TAU_DEFAULT, g, steps)
         fluid = ~solid
         linearity.append(
-            {"g": g, "u_mean": float(ux[fluid].mean()),
-             "k_measured": nu * float(ux[fluid].mean()) / g, "k_analytic": h * h / 12.0}
+            {
+                "g": g,
+                "u_mean": float(ux[fluid].mean()),
+                "k_measured": nu * float(ux[fluid].mean()) / g,
+                "k_analytic": h * h / 12.0,
+            }
         )
     k0 = linearity[0]["k_measured"]
     linearity_delta = abs(linearity[1]["k_measured"] - k0) / abs(k0) * 100.0
@@ -287,7 +298,10 @@ def _st2d1(d_cells: int, steps: int, closure: str) -> dict:
     wall = make_channel_wall_mask(ny, nx, solid, torch.device("cpu"))
     fluid = ~solid
     surface = solid & (
-        torch.roll(fluid, 1, 0) | torch.roll(fluid, -1, 0) | torch.roll(fluid, 1, 1) | torch.roll(fluid, -1, 1)
+        torch.roll(fluid, 1, 0)
+        | torch.roll(fluid, -1, 0)
+        | torch.roll(fluid, 1, 1)
+        | torch.roll(fluid, -1, 1)
     )
     allmask = solid | wall
     idx = build_solid_mask_index(allmask, OPPOSITE)
@@ -353,7 +367,7 @@ def collide_only(f, tau):
 # ----------------------------------------------------------------------- main
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=str(Path(__file__).resolve().parent / "artifacts"))
+    ap.add_argument("--out", default="outputs/cross_validation/mask_indexed_bounceback")
     ap.add_argument("--blocks", default="identity,channel,cost,st2d1")
     ap.add_argument("--steps", type=int, default=5000)
     ap.add_argument("--st-steps", type=int, default=12000)
@@ -383,7 +397,9 @@ def main() -> int:
                 r = _st2d1(d, a.st_steps, closure)
                 rows.append(r)
                 (out / "st2d1.json").write_text(json.dumps({"rows": rows}, indent=2))
-                print("st2d1", json.dumps({k: v for k, v in r.items() if k != "series"}), flush=True)
+                print(
+                    "st2d1", json.dumps({k: v for k, v in r.items() if k != "series"}), flush=True
+                )
         summary["st2d1"] = {"rows": rows}
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
     return 0
