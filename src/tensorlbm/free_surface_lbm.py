@@ -17,7 +17,6 @@ Maarten-vd-Sande/lbm
 
 from __future__ import annotations
 
-import math
 import os
 from copy import deepcopy
 
@@ -813,35 +812,6 @@ def _capacity_redistribution(excess, mass, receivers, demoted_liquid, capture_li
             )
     return flat_delta.reshape(mass.shape), tuple(evidence)
 
-def _dca_slip(ux, uy, uz, fill, flags, dca):
-    """Cox-Voinov contact-line slip: surrogate for Truscott's wetting control
-    of cavity formation (one-fluid model => no Young angle at the impact line).
-    """
-    fld = fill.clamp(0.0, 1.0)
-    nz = -0.5 * (fld.roll(-1, 0) - fld.roll(1, 0))
-    gx = -0.5 * (fld.roll(-1, 2) - fld.roll(1, 2))
-    gy = -0.5 * (fld.roll(-1, 1) - fld.roll(1, 1))
-    mag = (gx**2 + gy**2 + nz**2).sqrt().clamp(min=1e-10)
-    nz = nz / mag
-    zz = torch.arange(ux.shape[0], device=ux.device)[:, None, None]
-    cl = (flags == INTERFACE) & (nz < 0.0) & (zz <= float(dca["level"]) + 0.5)
-    if not bool(cl.any()):
-        return ux, uy, uz
-    u_ref = uz[cl].abs().mean().clamp(min=1e-9)
-    te = math.radians(float(dca["theta_e_deg"]))
-    if dca.get("dynamic", True):
-        ca = float(dca["mu_si"]) * float(u_ref) * float(dca["vel_si"]) / float(dca["sigma_si"])
-        td = min((te**3 + 9.0 * ca * float(dca["log_ratio"])) ** (1.0 / 3.0), math.pi)
-        coef = math.cos(te) - math.cos(td)
-    else:
-        coef = math.cos(te)
-    slip = float(dca["K"]) * coef * float(u_ref)
-    if os.environ.get("TL_DCA_DEBUG"):
-        print("dca cl=%d u_ref=%.5f coef=%+.4f slip=%+.5f" % (int(cl.sum()), float(u_ref), coef, slip), flush=True)
-    return ux, uy, uz + cl.to(ux.dtype) * slip
-
-
-
 
 
 _MOMCONV_MODES = ("off", "inherit", "redistribute", "redistribute_liq")
@@ -1053,7 +1023,6 @@ def free_surface_step(
     capacity_redistribution=False,
     simple_mass_exchange=False,
     u_limit=0.0,
-    dca=None,
     gas_nu_ratio=1.0,
     iface_tau_dose=0.0,
     momconv="off",
@@ -1208,15 +1177,15 @@ def free_surface_step(
         f_collide = f
 
     if collision == "kbc":
-        from .advanced_collision_d3q19 import collide_kbc_d3q19
+        from .collision_d3q19_advanced import collide_kbc_d3q19
 
         f = collide_kbc_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "cascaded":
-        from .advanced_collision_d3q19 import collide_cascaded_d3q19
+        from .collision_d3q19_advanced import collide_cascaded_d3q19
 
         f = collide_cascaded_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "cumulant":
-        from .advanced_collision_d3q19 import collide_cumulant_d3q19
+        from .collision_d3q19_advanced import collide_cumulant_d3q19
 
         f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == "mrt":
@@ -1411,9 +1380,6 @@ def free_surface_step(
         _ux_pc = _ux_pc.clamp(-0.5, 0.5)
         _uy_pc = _uy_pc.clamp(-0.5, 0.5)
         _uz_pc = _uz_pc.clamp(-0.5, 0.5)
-    # DCA: Cox-Voinov contact-line slip (OPT-IN: dca dict, default None=off)
-    if dca is not None:
-        _ux_pc, _uy_pc, _uz_pc = _dca_slip(_ux_pc, _uy_pc, _uz_pc, fill, flags, dca)
     if _momconv == "inherit" and momconv_state is not None:
         # The gas cell that took over the converted liquid carries its
         # velocity: the anti-bounce-back reconstruction injects it here.
@@ -1442,20 +1408,6 @@ def free_surface_step(
         )
         delta_rho = (3.0 * float(surface_tension) * kappa).clamp(-0.1, 0.1)
         rho_g_field = rho_g_field + torch.where(iface_abb, delta_rho, torch.zeros_like(delta_rho))
-    # Hydrostatic pressure compensation (OPT-IN: TL_FS_HYDRO_Z_REF).
-    # Numerical schemes often break hydrostatic equilibrium (hydrostatic
-    # paradox): the interface-cell gas density is systematically biased,
-    # causing the cavity to under-deepen (MMC4: -22.7% gap concentrated in
-    # the late 7ms+ window).  Restore the hydrostatic head on interface cells:
-    #   rho_g_cav = rho_g_base + rho_l * gz * (z - z_ref) / cs2
-    # with z_ref = initial water-surface grid index.  Default off = bit-identical.
-    _hydro_z_ref = os.environ.get("TL_FS_HYDRO_Z_REF")
-    if _hydro_z_ref not in (None, "") and float(gz) != 0.0:
-        _cs2 = 1.0 / 3.0
-        _z_idx = torch.arange(rho.shape[0], device=device, dtype=rho.dtype).view(-1, 1, 1)
-        _dpos = _z_idx - float(_hydro_z_ref)  # (z - z_ref), <0 below surface
-        _hydro = float(rho_liquid) * float(gz) * _dpos / _cs2
-        rho_g_field = rho_g_field + torch.where(iface_abb, _hydro, torch.zeros_like(_hydro))
     f_eq_gas = equilibrium3d(rho_g_field, _ux_pc, _uy_pc, _uz_pc)
     # The reference ABB subtracts the *local post-collision* outgoing
     # population f_post[opp] (magnitude O(rho_liquid)).  This is consistent
