@@ -889,3 +889,16 @@ def test_internal_link_flux_is_conservative_for_arbitrary_populations():
         faces = torch.cat((torch.full_like(edge,low), flux, torch.full_like(edge,-high)), dim=dim)
         loss += faces.diff(dim=dim)
     torch.testing.assert_close(streamed.sum(0)-post.sum(0), -loss*.012/(2.1*.35), atol=2e-14, rtol=0.)
+
+
+def test_periodic_link_flux_includes_seam_and_single_cell_directions():
+    from tensorlbm.thermal_common import thermal_link_fluxes_3d
+
+    post = torch.randn((7, 1, 3, 4), generator=torch.Generator().manual_seed(73), dtype=torch.float64)
+    all_faces = thermal_link_fluxes_3d(post, periodic=True)
+    divergence = torch.zeros_like(post[0])
+    for axis, (flux, internal) in enumerate(zip(all_faces, thermal_link_fluxes_3d(post))):
+        dim = 2-axis
+        torch.testing.assert_close(flux.narrow(dim, 0, flux.shape[dim]-1), internal)
+        divergence += flux-flux.roll(1, dims=dim)
+    torch.testing.assert_close(thermal_stream_3d(post).sum(0)-post.sum(0), -divergence)

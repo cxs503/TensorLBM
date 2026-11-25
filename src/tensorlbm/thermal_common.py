@@ -196,12 +196,14 @@ def thermal_stream_3d(g: torch.Tensor) -> torch.Tensor:
 
 
 def thermal_link_fluxes_3d(post_collision: torch.Tensor, *, dt: float = 1.,
-                           spacing: float = 1., volumetric_heat_capacity: float = 1.
-                           ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                           spacing: float = 1., volumetric_heat_capacity: float = 1.,
+                           periodic: bool = False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Return net x, y, z energy flux density across internal D3Q7 faces.
 
     Use populations immediately after collision and before streaming. Each
     output keeps (z, y, x) order with one fewer entry on its normal axis.
+    For a fully periodic lattice, periodic=True includes the wraparound face
+    as the final entry on each axis: index j reports flux from j to (j+1) mod n.
     Positive flux points along the positive coordinate axis. For cubic cells
     the population difference transports C*spacing/dt times its value in
     W/m² during one step. Includes advective transport when velocity is nonzero.
@@ -213,6 +215,9 @@ def thermal_link_fluxes_3d(post_collision: torch.Tensor, *, dt: float = 1.,
     if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
         raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
     scale = volumetric_heat_capacity*spacing/dt
+    if periodic:
+        return tuple(scale*(post_collision[1+2*axis]-post_collision[2+2*axis].roll(-1, dims=2-axis))
+                     for axis in range(3))
     return (scale*(post_collision[1,...,:-1]-post_collision[2,...,1:]),
             scale*(post_collision[3,:,:-1,:]-post_collision[4,:,1:,:]),
             scale*(post_collision[5,:-1]-post_collision[6,1:]))
