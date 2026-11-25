@@ -1,0 +1,45 @@
+{
+  "migration_id": "m26959",
+  "title": "D3Q19 Cumulant Collision Operator for Free-Surface LBM",
+  "date": "2026-11-22",
+  "status": "premerge",
+  "files": [
+    {
+      "path": "src/tensorlbm/collision_d3q19_advanced.py",
+      "change": "added",
+      "lines_added": 21,
+      "description": "Added collide_cumulant_d3q19() function with SGS support"
+    },
+    {
+      "path": "src/tensorlbm/advanced_collision_d3q19.py",
+      "change": "added",
+      "lines_added": 35,
+      "description": "Compatibility wrapper re-exporting all advanced collision kernels"
+    },
+    {
+      "path": "benchmarks/water_entry/single_drop/cumulant_probe.py",
+      "change": "added",
+      "lines_added": 312,
+      "description": "Diagnostic probe for cumulant collision in water-entry"
+    },
+    {
+      "path": "benchmarks/water_entry/single_drop/cumulant_test.py",
+      "change": "added",
+      "lines_added": 193,
+      "description": "Unit tests for D3Q19 cumulant collision operator"
+    },
+    {
+      "path": "docs/architecture/migration_manifest.csv",
+      "change": "modified",
+      "lines_added": 1,
+      "description": "Added migration entry for cumulant collision"
+    }
+  ],
+  "verification": {
+    "unit_tests": "benchmarks/water_entry/single_drop/cumulant_test.py",
+    "integration_tests": "benchmarks/water_entry/single_drop/cumulant_probe.py",
+    "audit_doc": "development/audit/drop_entry/BB/m26959/DE-X-COL3-CUM.md"
+  },
+  "risk_assessment": "low",
+  "compatibility": "Backward compatible: new function only, no changes to existing BGK/MRT kernels"
+}
