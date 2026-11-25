@@ -62,3 +62,14 @@ def test_legacy_scalar_populations_stream_in_their_declared_directions():
     torch.testing.assert_close((eq * transport.C5[:,0,None,None]).sum(0), ux)
     torch.testing.assert_close((eq * transport.C5[:,1,None,None]).sum(0), uy)
     torch.testing.assert_close(transport.scalar_collision(eq, c, ux, uy, .8), eq)
+
+
+def test_step_mean_preserves_substep_pulse_and_rowwise_wall_levels():
+    import numpy as np
+    from tensorlbm.scalar import scalar_wall_step_means
+
+    # Both short-pulse edges lie before the midpoint of the first step.
+    means = scalar_wall_step_means([0., 1., 3.], [-2., .1, .3, 1., 4.],
+                                   [[99., 99.], [0., 1.], [2., -1.], [0., 1.], [3., 4.], [9., 9.]])
+    np.testing.assert_allclose(means, [[.4, .6], [3., 4.]])
+    np.testing.assert_allclose(scalar_wall_step_means([0., .2, 1.], [], [5.]), [5., 5.])
