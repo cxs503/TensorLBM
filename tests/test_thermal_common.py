@@ -523,3 +523,65 @@ def test_d3q7_slab_cooling_wall_heat_and_storage(record_property):
     for coarse,fine in zip(errors,errors[1:]):
         assert all(a/b > 3.4 for a,b in zip(coarse,fine))
     assert max(errors[-1]) < 4.5e-4
+
+
+def test_d3q7_cuboid_cooling_six_face_energy_budget(record_property):
+    from tensorlbm.thermal_common import wall_heat_rate_3d
+
+    lengths = (.75, 1.25, 1.)  # z, y, x in meters
+    modes = ((1., (1,1,1)), (.08, (2,1,1)), (-.12, (1,2,1)), (.16, (1,1,2)))
+    end = 1/64
+    faces = ("z-", "z+", "y-", "y+", "x-", "x+")
+    exact_heat = dict.fromkeys(faces, 0.)
+    exact_storage = 0.
+    for amplitude, orders in modes:
+        waves = [m*math.pi/L for m,L in zip(orders,lengths)]
+        decay_rate = sum(w*w for w in waves)
+        # The integral of a sine factor along its side vanishes for even modes.
+        integrals = [(1-(-1)**m)/w for m,w in zip(orders,waves)]
+        exact_storage += amplitude*math.exp(-end*decay_rate)*math.prod(integrals)
+        time_integral = -math.expm1(-end*decay_rate)/decay_rate
+        for axis,w in enumerate(waves):
+            area_integral = math.prod(integrals[i] for i in range(3) if i != axis)
+            heat = amplitude*time_integral*w*area_integral
+            exact_heat[faces[2*axis]] += heat
+            exact_heat[faces[2*axis+1]] -= (-1)**orders[axis]*heat
+
+    errors = []
+    for n in (8,16,24):
+        dx = 1/n
+        dt = dx**2/8  # tau=1, k=C=1
+        intervals = [round(L*n) for L in lengths]
+        coordinates = [torch.arange(2*m,dtype=torch.float64)*dx for m in intervals]
+        z,y,x = torch.meshgrid(*coordinates,indexing="ij")
+        initial = torch.zeros_like(x)
+        for amplitude, orders in modes:
+            kz,ky,kx = [m*math.pi/L for m,L in zip(orders,lengths)]
+            initial += amplitude*torch.sin(kz*z)*torch.sin(ky*y)*torch.sin(kx*x)
+        zero = torch.zeros_like(initial)
+        g = thermal_equilibrium_3d(initial,zero,zero,zero)
+        box = tuple(slice(0,m+1) for m in intervals)
+        powers = []
+        steps = round(end/dt)
+        for step in range(steps+1):
+            field = thermal_macroscopic_3d(g)
+            powers.append([wall_heat_rate_3d(field[box],1.,face,spacing_zyx=(dx,dx,dx))
+                           for face in faces])
+            if step < steps:
+                g = thermal_stream_3d(thermal_collide_bgk_3d(g,field,zero,zero,zero,1.))
+        heat = torch.trapezoid(torch.tensor(powers,dtype=torch.float64),dx=dt,dim=0)
+        def storage(values):
+            for _ in range(3):
+                values = torch.trapezoid(values,dx=dx,dim=-1)
+            return values.item()
+        final = storage(field[box])
+        wall_errors = [abs(q.item()-exact_heat[face]) for face,q in zip(faces,heat)]
+        for face,error in zip(faces,wall_errors):
+            record_property(f"wall_heat_error_{face}_{n}_J",error)
+        energy_error = abs(final-exact_storage)
+        balance = abs(final+heat.sum().item()-storage(initial[box]))
+        record_property(f"storage_error_{n}_J",energy_error)
+        record_property(f"balance_error_{n}_J",balance)
+        errors.append((max(wall_errors),energy_error,balance))
+    for a,b,c in zip(*errors):
+        assert a/b > 3 and b/c > 2
