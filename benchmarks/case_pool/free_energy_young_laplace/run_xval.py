@@ -16,7 +16,7 @@ against two references of the *same* free-energy functional:
 Criteria live in ``predeclared.json`` next to this file and are never tuned after
 looking at the numbers.
 
-    PYTHONPATH=src python xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/run_xval.py
+    PYTHONPATH=src python benchmarks/case_pool/free_energy_young_laplace/run_xval.py
     PYTHONPATH=src python .../run_xval.py --smoke --out /tmp/yl_smoke
 
 Artifacts: ``summary.json`` (every measured row, per-criterion table, noise
@@ -25,7 +25,7 @@ diagnostics), ``ref_vs_got.json`` (benchmark rows: ref / got / error / band),
 Exit code 0 on PASS, 1 on FAIL (the table is printed either way).
 
 Repro (full campaign, CPU, ~4 min on one thread):
-    PYTHONPATH=src python xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/run_xval.py
+    PYTHONPATH=src python benchmarks/case_pool/free_energy_young_laplace/run_xval.py
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 
 from tensorlbm.phasefield.laplace_droplet_calibration import (  # noqa: E402

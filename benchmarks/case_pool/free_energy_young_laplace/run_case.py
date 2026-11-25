@@ -26,10 +26,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-XVAL = REPO / "xval" / "XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D"
 
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(XVAL))
 
 from tensorlbm.phasefield.laplace_droplet_calibration import (  # noqa: E402
     LaplaceCriteria,
@@ -37,10 +35,13 @@ from tensorlbm.phasefield.laplace_droplet_calibration import (  # noqa: E402
     smoke_cases,
 )
 
-import run_xval  # noqa: E402  (the XVal entry: same protocol, same criteria file)
+if __package__:
+    from . import run_xval
+else:
+    import run_xval
 
 ANCHOR = "XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D"
-PREDECLARED = XVAL / "predeclared.json"
+PREDECLARED = HERE / "predeclared.json"
 
 
 def main(argv: list[str] | None = None) -> int:

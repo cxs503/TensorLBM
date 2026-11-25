@@ -39,8 +39,11 @@
 * `xi_fit` vs sqrt(2κ/A)：+2.66% / +0.16% → **<3%：是**。
 
 ## 7 复现
+
+[算例与验收记录](../benchmarks/case_pool/free_energy_young_laplace/README.md) · [m20929 历史结果](../benchmarks/case_pool/free_energy_young_laplace/evidence/m20929/summary.json)
+
 ```bash
-PYTHONPATH=src python xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/run_xval.py   # 全三例
+PYTHONPATH=src python benchmarks/case_pool/free_energy_young_laplace/run_xval.py --out outputs/young-laplace   # 全三例
 PYTHONPATH=src python3 benchmarks/case_pool/run_pool.py --case free_energy_young_laplace --smoke
 PYTHONPATH=src python -m pytest tests/test_laplace_droplet_calibration.py -q   # 22 passed
 ```

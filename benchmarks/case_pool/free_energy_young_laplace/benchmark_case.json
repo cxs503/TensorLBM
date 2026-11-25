@@ -1,0 +1,72 @@
+{
+  "scope": "2-D Young-Laplace free-energy droplet calibration. The archived m20929 measurements and the current CPU smoke are separate. The CPU smoke fails the steady-window pressure noise criterion. Full-protocol scientific acceptance remains unevaluated.",
+  "source": [
+    "benchmarks/case_pool/free_energy_young_laplace/run_case.py",
+    "benchmarks/case_pool/free_energy_young_laplace/run_xval.py",
+    "src/tensorlbm/phasefield/laplace_droplet_calibration.py"
+  ],
+  "config": [
+    "benchmarks/case_pool/free_energy_young_laplace/predeclared.json"
+  ],
+  "documentation": [
+    "docs/XVAL_LBM_FREE_ENERGY_LBM_ANALYTIC_YOUNG_LAPLACE_D.md",
+    "benchmarks/case_pool/free_energy_young_laplace/README.md"
+  ],
+  "reference_files": [
+    "benchmarks/case_pool/free_energy_young_laplace/predeclared.json"
+  ],
+  "references": [
+    {
+      "source": "benchmarks/case_pool/free_energy_young_laplace/predeclared.json",
+      "field": "free_energy_and_tension",
+      "value": "Swift, Orlandini, Osborn & Yeomans, Phys. Rev. Lett. 78, 19 (1996); Briant & Yeomans & Yeomans PRE 69, 031602 (2004): f = A(-phi^2/2 + phi^4/4) + kappa|grad phi|^2/2, xi = sqrt(2 kappa/A), sigma = (2/3) sqrt(2 kappa A) = (4/3) kappa/xi"
+    },
+    {
+      "source": "benchmarks/case_pool/free_energy_young_laplace/predeclared.json",
+      "field": "laplace_law",
+      "value": "Young-Laplace: p_in - p_out = sigma (1/R1 + 1/R2); for the 2-D (cylinder) droplet one curvature => dp = sigma/R, NOT 2 sigma/R"
+    },
+    {
+      "source": "benchmarks/case_pool/free_energy_young_laplace/predeclared.json",
+      "field": "pressure_tensor_moment_balance",
+      "value": "Rowlinson & Widom, J. Chem. Phys. 76, 1878 (1982): radial balance dP_rr/dr + (P_rr - P_tt)/r = 0 => dp = integral (P_rr - P_tt)/r dr, sigma = integral (P_rr - P_tt) dr"
+    },
+    {
+      "source": "benchmarks/case_pool/free_energy_young_laplace/predeclared.json",
+      "field": "surface_of_tension",
+      "value": "Rowlinson & Widom (1982): R_sigma = integral r (P_rr - P_tt) dr / integral (P_rr - P_tt) dr -- the radius the Laplace law refers to in the sharp-interface limit"
+    }
+  ],
+  "criteria": {
+    "owner_band": 0.15,
+    "stretch_band": 0.03,
+    "sigma_integral_band": 0.15,
+    "dp_tensor_band": 0.15,
+    "xi_band": 0.15,
+    "contour_consistency_cells": 0.35,
+    "spurious_velocity_over_cs": 0.01,
+    "conservation_drift": 1e-08,
+    "meaning": {
+      "C1_sigma_capillary_vs_analytic": "headline KPI: |dp_mean * R_fit - sigma_analytic| / sigma_analytic <= 0.15 (owner standard; 0.03 stretch)",
+      "C2_sigma_integral_vs_analytic": "independent route: sigma = integral (P_rr-P_tt) dr from the measured pressure tensor (one interface) vs analytic sigma",
+      "C3_tensor_capillary_vs_sigma_over_R": "dp from the exact polar moment balance integral (P_rr-P_tt)/r dr vs sigma_analytic/R_sigma",
+      "C4_interface_width_recovered": "atanh tanh-fit of the measured profile returns the model xi = sqrt(2 kappa/A)",
+      "C5_radius_definition_consistency": "R_fit - R_contour stays below 0.35 cells (the diffuse interface has no unique radius; the report states which one the KPI uses)",
+      "C6_spurious_current": "max|u|/c_s <= 0.01 (low-Mach assumption of the model)",
+      "C7_conservation": "|Delta mean phi| and |Delta mean rho| <= 1e-8 over the run (rest populations f0 = rho - sum, g0 = phi - sum)",
+      "C2_sigma_integral_vs_discrete_reference": "measured pressure tensor: sigma = integral (P_rr-P_tt) dr over one interface vs the SAME post-processing applied to the analytic tanh field at the measured R (cancels the nine-point stencil bias; the raw continuum comparison is reported too)",
+      "C3_tensor_capillary_vs_discrete_reference": "measured dp from the exact polar moment balance vs the same-pipeline analytic reference",
+      "C8_steady_window_noise": "std/(|mean| sqrt(n)) of the dp samples inside the steady window <= noise_band"
+    },
+    "noise_band": 0.02
+  },
+  "results": [
+    "benchmarks/case_pool/free_energy_young_laplace/evidence/m20929/summary.json",
+    "benchmarks/case_pool/free_energy_young_laplace/evidence/m20929/ref_vs_got.json",
+    "benchmarks/case_pool/free_energy_young_laplace/evidence/2026-11-25-cpu-smoke.json"
+  ],
+  "evidence": [
+    "docs/board_audit/m20915/AUDIT_M20809.md",
+    "docs/architecture/migrations/young-laplace-case-pool-2026-11-25.json"
+  ]
+}
