@@ -14,8 +14,8 @@ That classification is a claim about *semantics*, and a claim about semantics is
 only worth something if the semantics can be re-executed.  This module is the
 executable form of the OSS phase-field model: every coefficient below is traced
 to a source line (vendored at
-``xval/XVAL-LBM-NOT-APPLICABLE-PHASE-FIELD-NOT-PSEUDOPOT/oss_src/``), and the
-driver ``scripts/xval_cudaphasefield_not_pseudopot.py`` measures the module
+``development/verification/cudaphasefield_ternary_method_audit/oss_src/``), and the
+driver ``development/verification/cudaphasefield_ternary_method_audit/run_xval.py`` measures the module
 against analytic references (interface width, surface tension, mass closure,
 density independence).
 

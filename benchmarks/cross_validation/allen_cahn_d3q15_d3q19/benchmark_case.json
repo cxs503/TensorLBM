@@ -1,0 +1,49 @@
+{
+  "scope": "D3Q15/D3Q19 conservative Allen–Cahn phase-field comparison. The tracked JSON is the historical parameter and stencil probe. Full numerical arm outputs for the report are not tracked in the source revision. Two uniform controls were replayed during migration. The full scientific acceptance state is unevaluated.",
+  "criteria": {
+    "sigma_rel_err_pct_max": 15.0,
+    "sigma_rel_err_pct_target": 3.0,
+    "cross_lattice_pct_max": 15.0,
+    "cross_lattice_pct_target": 3.0,
+    "W_fit_rel_err_pct_max": 15.0,
+    "profile_max_dev_max": 0.05,
+    "phi_drift_rel_max": 1.0,
+    "phi_drift_rel_max_conservative": 1e-06,
+    "u_max_max": 0.05,
+    "control_dp_max": 1e-06,
+    "nan_allowed": 0
+  },
+  "source": [
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/run_xval.py",
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/aggregate.py",
+    "src/tensorlbm/phasefield/ac_lattice_generic.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/REPORT.md",
+    "docs/reports/XVAL_SUMMARY.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/predeclared.json"
+  ],
+  "references": [
+    {
+      "title": "Young–Laplace law and conservative Allen–Cahn profile",
+      "source": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/predeclared.json"
+    },
+    {
+      "doi": "10.1103/PhysRevE.97.033309",
+      "source": "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/predeclared.json"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/artifacts/probe.json",
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform15.json",
+    "benchmarks/cross_validation/allen_cahn_d3q15_d3q19/replays/2026-11-25/CTRL_uniform19.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/phasefield-cross-validation-2026-11-25.json"
+  ]
+}
