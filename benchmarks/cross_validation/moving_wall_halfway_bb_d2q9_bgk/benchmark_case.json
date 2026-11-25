@@ -1,0 +1,63 @@
+{
+  "scope": "Historical D2Q9 BGK half-way moving-wall study with analytical Couette and Stokes' second problem references.",
+  "criteria": {
+    "stokes_resolved_velocity_error_max_percent": 15,
+    "couette_reference_pointwise_max_percent": 2,
+    "case_mass_drift_max_percent": 1e-06,
+    "complete_criteria": "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/PREREG.md"
+  },
+  "source": [
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/run_xval.py",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/mwbb.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/PREREG.md"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/REPORT.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/PREREG.md",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/OSS_DIFF.md"
+  ],
+  "references": [
+    {
+      "title": "Analytical Couette and Stokes second problem",
+      "source": "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/PREREG.md"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_couette_H16_tau0.8_U0.05_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_couette_H32_tau0.8_U0.05_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_couette_H32_tau0.8_U0.05_static_bb.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_couette_H32_tau1.2_U0.05_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_REF.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_U0.005.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_U0.1.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_abl_eq_wall_node.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_abl_ladd_pre_unitrho.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_abl_ladd_precollision.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_abl_ladd_sign_flip.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_abl_static_bb.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_res_d4.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/case_stokes2_tau1.8.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_couette_H16_tau0.8_U0.05_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_couette_H32_tau0.8_U0.05_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_couette_H32_tau0.8_U0.05_static_bb.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_couette_H32_tau1.2_U0.05_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_REF.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_U0.005.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_U0.1.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_abl_eq_wall_node.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_abl_ladd_pre_unitrho.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_abl_ladd_precollision.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_abl_ladd_sign_flip.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_abl_static_bb.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_res_d4.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/slim_stokes2_tau1.8.json",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/artifacts/summary.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/moving-wall-benchmarks-2026-11-25.json"
+  ]
+}

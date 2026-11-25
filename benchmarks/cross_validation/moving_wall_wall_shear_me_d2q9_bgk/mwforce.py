@@ -3,7 +3,7 @@
 Anchor: ``XVAL-LBM-MOVING-WALL-WALL-SHEAR-ME-D2Q9-BGK``.
 
 This module adds to the merged kinematic study
-(``xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK``, #2342) the piece that study
+(``benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk``, #2342) the piece that study
 explicitly left out: the **wall force** (momentum exchange) produced by the same
 closure, and its momentum-accounting identity.
 
@@ -63,20 +63,20 @@ import numpy as np
 import torch
 
 _HERE = Path(__file__).resolve().parent
-_SIBLING = _HERE.parent / "XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK"
+_SIBLING = _HERE.parent / "moving_wall_halfway_bb_d2q9_bgk"
 for _p in (str(_SIBLING),):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
 import mwbb  # noqa: E402  (also installs repo root + src on sys.path)
 
-from tensorlbm.d2q9 import C, OPPOSITE, equilibrium, macroscopic  # noqa: E402
+from tensorlbm.d2q9 import OPPOSITE, C, equilibrium, macroscopic  # noqa: E402
 from tensorlbm.solver import collide_bgk, stream  # noqa: E402
 
 CS2 = mwbb.CS2
 DTYPE = mwbb.DTYPE
 DOWN = (4, 7, 8)  # c_qy = -1 : fluid -> bottom wall
-UP = (2, 5, 6)    # c_qy = +1 : bottom wall -> fluid
+UP = (2, 5, 6)  # c_qy = +1 : bottom wall -> fluid
 
 VARIANTS = mwbb.VARIANTS
 
@@ -89,10 +89,9 @@ def inject(rho_w: torch.Tensor, u_wall: torch.Tensor) -> torch.Tensor:
     """
     c = C.to(DTYPE)
     w = mwbb._w_for(DTYPE, torch.device("cpu")).view(9, 1, 1)
-    cu = (
-        c[:, 0].view(9, 1, 1) * u_wall[0].unsqueeze(0)
-        + c[:, 1].view(9, 1, 1) * u_wall[1].unsqueeze(0)
-    )
+    cu = c[:, 0].view(9, 1, 1) * u_wall[0].unsqueeze(0) + c[:, 1].view(9, 1, 1) * u_wall[
+        1
+    ].unsqueeze(0)
     return 2.0 * w * rho_w.unsqueeze(0) * cu / CS2
 
 
@@ -126,7 +125,8 @@ def make_step_flux(ny: int, nx: int, tau: float, variant: str = "ladd_pre_local"
             raise NotImplementedError(
                 "ablation not re-implemented in the force-instrumented step; "
                 "the merged study pins its behaviour (term added before collision "
-                "is annihilated by the bounce-back) -- see mwbb.make_step")
+                "is annihilated by the bounce-back) -- see mwbb.make_step"
+            )
         else:
             f_new = torch.where(wmask, f[opp], f_post)
             if variant != "static_bb":
@@ -138,13 +138,15 @@ def make_step_flux(ny: int, nx: int, tau: float, variant: str = "ladd_pre_local"
         f_next = stream(f_new)
 
         # ---- momentum exchange across the two walls ----
-        f_bot_out = f_post[idn][:, 1, :]          # fluid -> bottom wall
-        f_bot_in = f_new[iu][:, 0, :]             # bottom wall -> fluid
-        f_top_out = f_post[iu][:, ny - 2, :]      # fluid -> top wall
-        f_top_in = f_new[idn][:, ny - 1, :]       # top wall -> fluid
+        f_bot_out = f_post[idn][:, 1, :]  # fluid -> bottom wall
+        f_bot_in = f_new[iu][:, 0, :]  # bottom wall -> fluid
+        f_top_out = f_post[iu][:, ny - 2, :]  # fluid -> top wall
+        f_top_in = f_new[idn][:, ny - 1, :]  # top wall -> fluid
         F_bot = c[idn].T @ f_bot_out.sum(dim=1) - c[iu].T @ f_bot_in.sum(dim=1)
         F_top = c[iu].T @ f_top_out.sum(dim=1) - c[idn].T @ f_top_in.sum(dim=1)
-        dP = ((f_next[:, fluid, :] - f_post[:, fluid, :]).unsqueeze(1) * c.view(9, 2, 1, 1)).sum(dim=(0, 2, 3))
+        dP = ((f_next[:, fluid, :] - f_post[:, fluid, :]).unsqueeze(1) * c.view(9, 2, 1, 1)).sum(
+            dim=(0, 2, 3)
+        )
         rho_w = float(f.sum(dim=0)[0].mean()) if variant != "eq_wall_node" else 1.0
         return f_next, F_bot, F_top, dP, torch.tensor(rho_w, dtype=DTYPE)
 
@@ -221,9 +223,16 @@ def _wall_field(ny: int, nx: int, ubot: tuple[float, float], utop: tuple[float, 
     return u
 
 
-def run_couette_shear(ny: int, nx: int, tau: float, u0: float,
-                      variant: str = "ladd_pre_local", n_steps: int = 20000,
-                      avg_steps: int = 400, tol: float = 1e-9) -> dict:
+def run_couette_shear(
+    ny: int,
+    nx: int,
+    tau: float,
+    u0: float,
+    variant: str = "ladd_pre_local",
+    n_steps: int = 20000,
+    avg_steps: int = 400,
+    tol: float = 1e-9,
+) -> dict:
     """Steady plane Couette driven by the bottom wall (u=U0), top wall at rest."""
     nu = (tau - 0.5) / 3.0
     h_eff = ny - 2.0
@@ -261,17 +270,29 @@ def run_couette_shear(ny: int, nx: int, tau: float, u0: float,
     u_num = ux[:, nx // 2].detach().numpy()
     _, u_ana = mwbb.couette_analytic(ny, u0)
     # wall shear *magnitude*: both walls must report +rho nu U0/H_eff
-    tau_num_top = -float(F_top[0]) / nx   # moving wall drags fluid +x -> reaction -x
-    tau_num_bot = float(F_bot[0]) / nx    # static wall reaction is +x
+    tau_num_top = -float(F_top[0]) / nx  # moving wall drags fluid +x -> reaction -x
+    tau_num_bot = float(F_bot[0]) / nx  # static wall reaction is +x
     tau_ana = couette_tau(nu, u0, h_eff, rho=float(rho_w))
     return {
-        "case": "couette_shear", "variant": variant,
-        "ny": ny, "nx": nx, "tau": tau, "nu": nu, "H_eff": h_eff,
-        "U0": u0, "Ma": u0 / math.sqrt(CS2), "Re": u0 * h_eff / nu,
-        "n_steps": n_done, "steady": steady, "avg_steps": avg_steps,
+        "case": "couette_shear",
+        "variant": variant,
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
+        "nu": nu,
+        "H_eff": h_eff,
+        "U0": u0,
+        "Ma": u0 / math.sqrt(CS2),
+        "Re": u0 * h_eff / nu,
+        "n_steps": n_done,
+        "steady": steady,
+        "avg_steps": avg_steps,
         "rho_w": float(rho_w),
-        "F_bot": [float(v) for v in F_bot], "F_top": [float(v) for v in F_top],
-        "tau_num": tau_num_top, "tau_num_bot": tau_num_bot, "tau_ana": tau_ana,
+        "F_bot": [float(v) for v in F_bot],
+        "F_top": [float(v) for v in F_top],
+        "tau_num": tau_num_top,
+        "tau_num_bot": tau_num_bot,
+        "tau_ana": tau_ana,
         "tau_err_pct": (tau_num_top - tau_ana) / tau_ana * 100.0,
         "tau_bot_err_pct": (tau_num_bot - tau_ana) / tau_ana * 100.0,
         "force_balance_rel": abs(float(F_bot[0] + F_top[0])) / max(abs(float(F_bot[0])), 1e-30),
@@ -283,13 +304,20 @@ def run_couette_shear(ny: int, nx: int, tau: float, u0: float,
     }
 
 
-def run_stokes2_shear(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
-                      variant: str = "ladd_pre_local", n_periods: float = 6.0,
-                      nu: float | None = None) -> dict:
+def run_stokes2_shear(
+    ny: int,
+    nx: int,
+    tau: float,
+    u0: float,
+    delta_bl: float,
+    variant: str = "ladd_pre_local",
+    n_periods: float = 6.0,
+    nu: float | None = None,
+) -> dict:
     """Stokes' 2nd problem: bottom wall oscillates ``U0 cos(omega t)``; ME force history."""
     if nu is None:
         nu = (tau - 0.5) / 3.0
-    omega = 2.0 * nu / delta_bl ** 2
+    omega = 2.0 * nu / delta_bl**2
     period = 2.0 * math.pi / omega
     n_steps = int(round(n_periods * period))
     step = make_step_flux(ny, nx, tau, variant)
@@ -306,7 +334,7 @@ def run_stokes2_shear(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
         fscale = max(fscale, abs(float(Fb[0])))
         if k > n_steps - n_last:
             ts.append(t)
-            fxs.append(float(Fb[0]) / nx)                       # force on wall / area
+            fxs.append(float(Fb[0]) / nx)  # force on wall / area
             fx_ana.append(stokes2_tau(t, u0, omega, nu, rho=float(rho_w)))
     ts = np.array(ts)
     fxs = np.array(fxs)
@@ -314,13 +342,24 @@ def run_stokes2_shear(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
     fit_num = harmonic(ts, fxs, omega)
     fit_ana = harmonic(ts, fx_ana, omega)
     return {
-        "case": "stokes2_shear", "variant": variant,
-        "ny": ny, "nx": nx, "tau": tau, "nu": nu, "U0": u0,
-        "Ma": u0 / math.sqrt(CS2), "omega": omega, "period_steps": period,
-        "delta_bl": delta_bl, "n_steps": n_steps, "rho_w": float(rho_w),
-        "amp_num": fit_num["amp"], "amp_ana": fit_ana["amp"],
+        "case": "stokes2_shear",
+        "variant": variant,
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
+        "nu": nu,
+        "U0": u0,
+        "Ma": u0 / math.sqrt(CS2),
+        "omega": omega,
+        "period_steps": period,
+        "delta_bl": delta_bl,
+        "n_steps": n_steps,
+        "rho_w": float(rho_w),
+        "amp_num": fit_num["amp"],
+        "amp_ana": fit_ana["amp"],
         "amp_err_pct": (fit_num["amp"] - fit_ana["amp"]) / fit_ana["amp"] * 100.0,
-        "phase_num_deg": fit_num["phase_deg"], "phase_ana_deg": fit_ana["phase_deg"],
+        "phase_num_deg": fit_num["phase_deg"],
+        "phase_ana_deg": fit_ana["phase_deg"],
         "phase_err_deg": _wrap_deg(fit_num["phase_deg"] - fit_ana["phase_deg"]),
         "me_identity_res_abs": id_res,
         "me_identity_res_rel": id_res / max(fscale, 1e-30),
@@ -332,9 +371,15 @@ def run_stokes2_shear(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
     }
 
 
-def run_rayleigh_shear(ny: int, nx: int, tau: float, u0: float,
-                       n_steps: int = 2000, win: tuple[int, int] = (400, 1600),
-                       nu: float | None = None) -> dict:
+def run_rayleigh_shear(
+    ny: int,
+    nx: int,
+    tau: float,
+    u0: float,
+    n_steps: int = 2000,
+    win: tuple[int, int] = (400, 1600),
+    nu: float | None = None,
+) -> dict:
     """Impulsive start of the bottom wall from rest (half-space similarity solution)."""
     if nu is None:
         nu = (tau - 0.5) / 3.0
@@ -357,9 +402,16 @@ def run_rayleigh_shear(ny: int, nx: int, tau: float, u0: float,
     sel = (ts >= lo) & (ts <= hi)
     rel = np.abs(fxs[sel] - fx_ana[sel]) / np.max(np.abs(fx_ana[sel]))
     return {
-        "case": "rayleigh_shear", "variant": "ladd_pre_local",
-        "ny": ny, "nx": nx, "tau": tau, "nu": nu, "U0": u0,
-        "Ma": u0 / math.sqrt(CS2), "n_steps": n_steps, "win": [lo, hi],
+        "case": "rayleigh_shear",
+        "variant": "ladd_pre_local",
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
+        "nu": nu,
+        "U0": u0,
+        "Ma": u0 / math.sqrt(CS2),
+        "n_steps": n_steps,
+        "win": [lo, hi],
         "depth_over_bl_at_hi": float(math.sqrt(nu * hi) / (ny - 2.0)),
         "err_pct_max_in_win": float(np.max(rel) * 100.0),
         "err_pct_mean_in_win": float(np.mean(rel) * 100.0),
@@ -374,8 +426,7 @@ def run_rayleigh_shear(ny: int, nx: int, tau: float, u0: float,
     }
 
 
-def run_normal_wall_drift(ny: int, nx: int, tau: float, uw_n: float,
-                          n_steps: int = 400) -> dict:
+def run_normal_wall_drift(ny: int, nx: int, tau: float, uw_n: float, n_steps: int = 400) -> dict:
     """Diagnostic D1: wall with a **normal** velocity component (u_w . n != 0).
 
     The Ladd term is a no-slip closure; a wall moving along its own normal is a
@@ -397,14 +448,19 @@ def run_normal_wall_drift(ny: int, nx: int, tau: float, uw_n: float,
     dm = hist[-1][1] if hist else 0.0
     rate_meas = dm / n_steps
     return {
-        "case": "normal_wall_drift", "uw_n": uw_n, "n_steps": n_steps,
-        "ny": ny, "nx": nx, "tau": tau,
+        "case": "normal_wall_drift",
+        "uw_n": uw_n,
+        "n_steps": n_steps,
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
         "dm_fluid": dm,
         "dm_fluid_rel_pct": dm / m0 * 100.0,
         "rate_per_step": rate_meas,
-        "rate_predicted_rho_uw_n_x_nx": uw_n * nx,   # see REPORT: sum_{UP} inj = rho u_w,n
+        "rate_predicted_rho_uw_n_x_nx": uw_n * nx,  # see REPORT: sum_{UP} inj = rho u_w,n
         "rate_ratio": rate_meas / (uw_n * nx) if uw_n else float("nan"),
-        "hist_t": [h[0] for h in hist], "hist_dm": [h[1] for h in hist],
+        "hist_t": [h[0] for h in hist],
+        "hist_dm": [h[1] for h in hist],
     }
 
 
@@ -433,21 +489,22 @@ def impulse_identity(seed: int = 7, ny: int = 9, nx: int = 5) -> dict:
     inj = inject(rho, uw)
     c = C.to(DTYPE)
     iu = torch.tensor(UP)
-    lhs = torch.stack([
-        (c[iu, 0].view(3, 1, 1) * inj[iu]).sum(dim=0),
-        (c[iu, 1].view(3, 1, 1) * inj[iu]).sum(dim=0),
-    ])
+    lhs = torch.stack(
+        [
+            (c[iu, 0].view(3, 1, 1) * inj[iu]).sum(dim=0),
+            (c[iu, 1].view(3, 1, 1) * inj[iu]).sum(dim=0),
+        ]
+    )
     rhs = torch.stack([rho * uw[0] * CS2, rho * uw[1]])
     ex = lhs - rhs
-    lhs_all = (c.view(9, 2, 1, 1) * inj.unsqueeze(1)).sum(dim=0)      # (2, ny, nx)
+    lhs_all = (c.view(9, 2, 1, 1) * inj.unsqueeze(1)).sum(dim=0)  # (2, ny, nx)
     rhs_all = 2.0 * rho.unsqueeze(0) * uw
     return {
         "case": "impulse_identity",
         "rel_res": float(ex.abs().max()) / float(rhs.abs().max()),
         "abs_res": float(ex.abs().max()),
         "identity": "sum_{q in UP} c_q inj_q = rho_w (cs^2 u_x, u_y)",
-        "all_dirs_rel_res": float((lhs_all - rhs_all).abs().max())
-        / float(rhs_all.abs().max()),
+        "all_dirs_rel_res": float((lhs_all - rhs_all).abs().max()) / float(rhs_all.abs().max()),
         "all_dirs_identity": "sum_{all q} c_q inj_q = 2 rho_w u_w",
     }
 
