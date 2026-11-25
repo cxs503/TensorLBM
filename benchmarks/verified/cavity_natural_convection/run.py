@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """自然对流方腔（左热右冷、上下绝热）— de Vahl Davis 1983 验证。
 
 模型：双分布函数热 LBM（src/tensorlbm/thermal.py）
@@ -28,7 +28,7 @@ from pathlib import Path
 
 import torch
 
-sys.path.insert(0, "/srv/tensor/operator-a/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from tensorlbm.thermal import simulate_natural_convection  # noqa: E402
 

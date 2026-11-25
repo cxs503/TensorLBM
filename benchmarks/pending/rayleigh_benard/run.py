@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """Rayleigh-Bénard 对流（水平板间温差驱动）— 热 LBM 扩展验证。
 
 模型：双分布函数热 LBM（src/tensorlbm/thermal.py 的底层原语）
@@ -42,7 +42,7 @@ from pathlib import Path
 
 import torch
 
-sys.path.insert(0, "/srv/tensor/operator-a/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: E402
 from tensorlbm.solver import stream  # noqa: E402

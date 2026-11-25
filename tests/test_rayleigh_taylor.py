@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import runpy
 import sys
 from pathlib import Path
 
@@ -181,26 +182,27 @@ def test_ac_scheme_keeps_phase_bounded() -> None:
 
 
 def test_reference_velocity_is_boussinesq_symmetric() -> None:
-    """Reference velocities: C_2D = 1, bubble == spike, geometric-mean relation."""
-    import sys as _sys
+    """The locked primary and alternate conventions both preserve symmetry."""
+    driver = Path(__file__).resolve().parents[1] / "benchmarks/case_pool/rayleigh_taylor/run_case.py"
+    reference = runpy.run_path(str(driver))
+    assert reference["C_2D"] == 3.0
+    assert reference["C_2D_ALT"] == 1.0
 
-    _sys.path.insert(0, str(Path(__file__).resolve().parents[1]
-                           / "benchmarks" / "case_pool" / "rayleigh_taylor"))
-    import run_case as rc
-
-    assert rc.C_2D == 1.0
-    a, g, lam = 0.5, 2.0e-4, 64.0
-    ub = rc.boussinesq_velocity(a, g, lam)
-    assert ub == pytest.approx(math.sqrt(2.0 * a * g / (2.0 * math.pi / lam)), rel=1e-12)
-    gb = rc.goncharov_velocity(a, g, lam, "b")
-    gs = rc.goncharov_velocity(a, g, lam, "s")
-    # sqrt(u_b^G u_s^G) = sqrt(2 A g/(C k)) (1-A^2)^(-1/4): the Boussinesq value
-    # is the geometric mean of the two two-fluid branches up to that factor.
-    assert ub == pytest.approx(math.sqrt(gb * gs) * (1.0 - a * a) ** 0.25, rel=1e-12)
-    # the product invariant u_b u_s = 2 A g /(C k) is Atwood-independent
-    for a2 in (0.1, 0.25, 1.0 / 3.0):
-        assert rc.boussinesq_velocity(a2, g, lam) ** 2 * (2.0 * math.pi / lam) / (2.0 * a2 * g) == (
-            pytest.approx(1.0 / rc.C_2D, rel=1e-12))
+    g, lam = 2.0e-4, 64.0
+    k = 2.0 * math.pi / lam
+    goncharov = reference["goncharov_velocity"]
+    for atwood in (0.1, 0.25, 1.0 / 3.0, 0.5):
+        for c, velocity in (
+            (3.0, reference["boussinesq_velocity"]),
+            (1.0, reference["boussinesq_velocity_alt"]),
+        ):
+            u_symmetric = velocity(atwood, g, lam)
+            assert u_symmetric == pytest.approx(math.sqrt(2.0 * atwood * g / (c * k)), rel=1e-12)
+            bubble = goncharov(atwood, g, lam, "b", c=c)
+            spike = goncharov(atwood, g, lam, "s", c=c)
+            assert u_symmetric == pytest.approx(
+                math.sqrt(bubble * spike) * (1.0 - atwood * atwood) ** 0.25, rel=1e-12
+            )
 
 
 # ---------------------------------------------------------------------------

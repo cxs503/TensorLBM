@@ -6,7 +6,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 XV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
-                  "xval", "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN", "run_artifacts")
+                  "development", "verification", "example_harness", "m17895", "run_artifacts")
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figs")
 os.makedirs(OUT, exist_ok=True)
 

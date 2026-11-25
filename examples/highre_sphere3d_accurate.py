@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """3D sphere drag — grid convergence at Re=100, then high-Re push.
 
 Establishes the 3D baseline (history: Re=100 Cd=1.0651, 2.3% error at
@@ -10,8 +10,9 @@ import json
 import math
 import sys
 import time
+from pathlib import Path
 
-sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
 

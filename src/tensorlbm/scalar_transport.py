@@ -154,9 +154,7 @@ def _projectors(device, dtype):
     return _P_SYM[1], _P_SYM[2]
 
 
-def dispersion_rates(
-    k: float, tau_sym: float, tau_odd: float, n_theta: int = 8
-) -> list[float]:
+def dispersion_rates(k: float, tau_sym: float, tau_odd: float, n_theta: int = 8) -> list[float]:
     """Exact decay rates ``-ln|lambda| / k^2`` of the linearised D2Q5 scheme.
 
     Builds the 5x5 amplification matrix of ``stream o collide`` for a Fourier
@@ -215,9 +213,7 @@ def calibrate_magic(
         rows[lam] = max(devs)
         if best is None or rows[lam] < best[1]:
             best = (lam, max(devs))
-    bgk = max(
-        abs(dispersion_rates(k, tau_odd, tau_odd)[0] / diffusivity - 1.0) for k in k_band
-    )
+    bgk = max(abs(dispersion_rates(k, tau_odd, tau_odd)[0] / diffusivity - 1.0) for k in k_band)
     return {
         "diffusivity": diffusivity,
         "magic_best": float(best[0]),
@@ -259,7 +255,11 @@ def equilibrium_scalar_d2q5(
     cu = cx * ux + cy * uy
     eq = w * c * (1.0 + cu / CS2_D2Q5)
     if second_order:
-        q2 = (cx * cx - 1.0 / 3.0) * ux * ux + 2.0 * cx * cy * ux * uy + (cy * cy - 1.0 / 3.0) * uy * uy
+        q2 = (
+            (cx * cx - 1.0 / 3.0) * ux * ux
+            + 2.0 * cx * cy * ux * uy
+            + (cy * cy - 1.0 / 3.0) * uy * uy
+        )
         eq = eq + w * c * (q2 / (2.0 * CS2_D2Q5 * CS2_D2Q5))
     return eq
 
@@ -353,8 +353,6 @@ def stream_scalar(
     return out, outflux
 
 
-
-
 def bounce_back_scalar_d2q5(g: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Bounce-back for D2Q5 scalar populations on masked cells.
 
@@ -362,6 +360,7 @@ def bounce_back_scalar_d2q5(g: torch.Tensor, mask: torch.Tensor) -> torch.Tensor
     """
     opp = _vec(OPP_D2Q5, torch.long, g.device)
     return torch.where(mask.unsqueeze(0), g[opp], g)
+
 
 # ---------------------------------------------------------------------------
 # Macroscopic + boundary helpers
@@ -545,14 +544,12 @@ def gaussian_pulse_1d(
     if t <= 0.0:
         raise ValueError("t must be positive")
     var = sigma0**2 + 2.0 * diffusivity * t
-    return mass / math.sqrt(2.0 * math.pi * var) * torch.exp(
-        -((x - velocity * t) ** 2) / (2.0 * var)
+    return (
+        mass / math.sqrt(2.0 * math.pi * var) * torch.exp(-((x - velocity * t) ** 2) / (2.0 * var))
     )
 
 
-def erfc_half_space(
-    x: torch.Tensor, level: float, diffusivity: float, t: float
-) -> torch.Tensor:
+def erfc_half_space(x: torch.Tensor, level: float, diffusivity: float, t: float) -> torch.Tensor:
     """Semi-infinite Dirichlet solution ``C = C0 erfc(x / sqrt(4 D t))``."""
     if t <= 0.0:
         raise ValueError("t must be positive")
@@ -574,9 +571,7 @@ def gaussian_moments(c: torch.Tensor, x: torch.Tensor) -> tuple[float, float, fl
     return float(mass), float(centroid), float(var)
 
 
-def effective_diffusivity(
-    c: torch.Tensor, x: torch.Tensor, t: float, sigma0: float = 0.0
-) -> float:
+def effective_diffusivity(c: torch.Tensor, x: torch.Tensor, t: float, sigma0: float = 0.0) -> float:
     """``D_eff = (sigma^2 - sigma0^2) / (2 t)`` measured from the profile."""
     _, _, var = gaussian_moments(c, x)
     return (var - sigma0**2) / (2.0 * t)
@@ -739,9 +734,7 @@ def run_pulse_1d(
     x = torch.arange(nx, dtype=cfg.dtype)
     if x0 is None:
         x0 = 0.5 * nx
-    c0 = gaussian_pulse_1d(
-        x - x0, mass, cfg.diffusivity, cfg.ux, 1e-30, sigma0=sigma0
-    )
+    c0 = gaussian_pulse_1d(x - x0, mass, cfg.diffusivity, cfg.ux, 1e-30, sigma0=sigma0)
     c0 = c0 * (mass / c0.sum())
     ux = torch.full((ny, nx), cfg.ux, dtype=cfg.dtype)
     uy = torch.zeros((ny, nx), dtype=cfg.dtype)
@@ -766,7 +759,7 @@ def run_erfc_half_space(
     from .scalar import scalar_stream_slab
 
     ny, nx = cfg.ny, cfg.nx
-    x = torch.arange(nx, dtype=cfg.dtype) + .5
+    x = torch.arange(nx, dtype=cfg.dtype) + 0.5
     ux = torch.zeros((ny, nx), dtype=cfg.dtype)
     uy = torch.zeros((ny, nx), dtype=cfg.dtype)
     g = torch.zeros((5, ny, nx), dtype=cfg.dtype)
@@ -775,8 +768,8 @@ def run_erfc_half_space(
         post = collide_scalar_trt(g, scalar_field(g), ux, uy, cfg.tau_odd, cfg.tau_sym)
         g, _ = scalar_stream_slab(post, level, None)
         # Track populations crossing the driven face in each direction.
-        budget.outflux += float(post[3,:,0].sum())
-        budget.injected += float(g[1,:,0].sum())
+        budget.outflux += float(post[3, :, 0].sum())
+        budget.injected += float(g[1, :, 0].sum())
     budget.mass_final = float(scalar_field(g).sum())
     budget.steps = int(steps)
     return ScalarRunResult(c=scalar_field(g), x=x, budget=budget, steps=int(steps))
@@ -1085,18 +1078,18 @@ def run_lfl_wind_sweep(
     """
     results = []
     for ux_val in wind_speeds:
-        cfg = ScalarTransportConfig(
-            nx=nx, ny=ny, diffusivity=diffusivity, ux=ux_val, dtype=dtype
-        )
+        cfg = ScalarTransportConfig(nx=nx, ny=ny, diffusivity=diffusivity, ux=ux_val, dtype=dtype)
         res = run_crosswind_release(cfg, steps, source_rate)
         metrics = lfl_contour_metrics(res.c, lfl_level)
-        results.append({
-            "ux": ux_val,
-            "extent_x": metrics["extent_x"],
-            "max_width": metrics["max_width"],
-            "area": metrics["area"],
-            "count": metrics["count"],
-        })
+        results.append(
+            {
+                "ux": ux_val,
+                "extent_x": metrics["extent_x"],
+                "max_width": metrics["max_width"],
+                "area": metrics["area"],
+                "count": metrics["count"],
+            }
+        )
     return results
 
 

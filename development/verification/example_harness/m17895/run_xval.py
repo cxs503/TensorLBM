@@ -17,8 +17,8 @@ That keeps a long run restartable without losing completed arms.
 
 Usage::
 
-    PYTHONPATH=src python3 xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_xval.py \
-        --repo-root . --out xval/XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN/run_artifacts
+    PYTHONPATH=src python3 development/verification/example_harness/m17895/run_xval.py \
+        --repo-root . --out outputs/verification/example_harness_m17895
 """
 
 from __future__ import annotations
@@ -409,12 +409,13 @@ class Runner:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo-root", default=".")
-    ap.add_argument("--out", default=os.path.join(HERE, "run_artifacts"))
+    ap.add_argument("--out", help="output directory (default: outputs/verification/example_harness_m17895 under --repo-root)")
     ap.add_argument("--arms", default=",".join(ALL_ARMS))
     ns = ap.parse_args(argv)
 
-    os.makedirs(ns.out, exist_ok=True)
-    runner = Runner(ns.repo_root, ns.out)
+    out = ns.out or os.path.join(ns.repo_root, "outputs", "verification", "example_harness_m17895")
+    os.makedirs(out, exist_ok=True)
+    runner = Runner(ns.repo_root, out)
     arms = [a.strip() for a in ns.arms.split(",") if a.strip()]
     for a in arms:
         if a not in ALL_ARMS:

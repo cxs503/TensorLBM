@@ -1,0 +1,80 @@
+{
+  "source_commit": "995470096c6a0815b005339c5ed9fb968b4e1935",
+  "original_main_revision": "52b3cf9a21fbfe7d2605e9d9c2ba18f2b9f5362d",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "xval": {
+      "before": 64,
+      "after": 63
+    }
+  },
+  "retired_paths": [
+    "xval/round2_method_selection_3d"
+  ],
+  "entries": [
+    {
+      "old_path": "xval/round2_method_selection_3d/kernel_xval_3d.py",
+      "new_path": "development/verification/round2_method_selection_3d/kernel_xval_3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "86bff3a2fa128b78b7e52b7515c3df59f33ff39c",
+      "original_sha256": "145ccf821a5a453aa837693240a645df12eaaa83f210d678eeba60f62b68f11b",
+      "current_sha256": "b5f0547f675adb4b31a4aae446426d4356f9311b018f4b7cab27e90176d85a99",
+      "byte_identical": false,
+      "size_bytes": 11701
+    },
+    {
+      "old_path": "xval/round2_method_selection_3d/oss_pylbm_ref.py",
+      "new_path": "development/verification/round2_method_selection_3d/oss_pylbm_ref.py",
+      "git_mode": "100644",
+      "original_git_blob": "bd7d3885d078a7e316ed38b2d5c08928fa6045bb",
+      "original_sha256": "00ce04457538681da7137e593ff02d08a1b847677803dcccc79c6fc0c45889d1",
+      "current_sha256": "6a869db48268db1c3322b2dcfd9a720abdb2332d465a24cdf60f251f8e1bdf1f",
+      "byte_identical": false,
+      "size_bytes": 10658
+    },
+    {
+      "old_path": "xval/round2_method_selection_3d/predeclared_3d.json",
+      "new_path": "development/verification/round2_method_selection_3d/predeclared_3d.json",
+      "git_mode": "100644",
+      "original_git_blob": "056968fb55d674e8493d0499fdacfec1a1b1bcf2",
+      "original_sha256": "9094604aa72809fc65977a47c82816a5c05ed1bccb1006229b3148c317a805f9",
+      "current_sha256": "9094604aa72809fc65977a47c82816a5c05ed1bccb1006229b3148c317a805f9",
+      "byte_identical": true,
+      "size_bytes": 3830
+    },
+    {
+      "old_path": "xval/round2_method_selection_3d/run_matrix3d.py",
+      "new_path": "development/verification/round2_method_selection_3d/run_matrix3d.py",
+      "git_mode": "100644",
+      "original_git_blob": "1a0422d0532f4ef0a3ca4e061269bb5dde80e8ba",
+      "original_sha256": "a66161b81337fe4cb83c4823ded555c7337104e0cda9e8c9ac48d608bd37f86f",
+      "current_sha256": "cbb1e7103fa14bf2d6c34b5817f9398a7db29ce3379b0bbbe3a1ee27ff9de8e0",
+      "byte_identical": false,
+      "size_bytes": 8704
+    }
+  ],
+  "reference_scan": "The published original audit, its generator and its original verifier retain their historical paths. A new note links to the archive without rewriting the point-in-time audit. The ABC Taylor\u2013Green companion case links to the archive without combining evidence or verdicts.",
+  "compatibility": "The archive location is discoverable by the benchmark asset index. Source discovery remains relative to this checkout. New outputs use the ignored outputs/historical_xval/round2_method_selection_3d directory. The preregistration and solver code are unchanged.",
+  "verification": {
+    "command": "OMP_NUM_THREADS=1 python development/verification/round2_method_selection_3d/run_matrix3d.py --smoke",
+    "environment": {
+      "machine": "x86_64",
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "threads": 1
+    },
+    "result": "Both paths ran from /tmp with no checkout src in PYTHONPATH. Their computed JSON summaries match after removing wall-clock timings and the known path change in the preregistration field. All driver function and main block ASTs match after normalizing the archive path.",
+    "smoke_cell": {
+      "collision": "BGK",
+      "N": 16,
+      "tau": 0.56,
+      "initialization": "tau",
+      "steps": 200,
+      "viscosity_relative_error_pct": 1.2742877521109373
+    },
+    "companion_tests": "4 tests passed in tests/test_case_taylor_green_3d.py.",
+    "oracle_check": "Running the kernel comparison without a real pylbm reference fails explicitly and produces no kernel evidence."
+  },
+  "scientific_scope": "The single-cell run is a relocation check. Full matrix and independent pylbm comparison are not evaluated."
+}

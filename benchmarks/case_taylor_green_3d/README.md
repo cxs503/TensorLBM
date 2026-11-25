@@ -82,3 +82,4 @@ The case validates the **D3Q27 bulk/periodic decay path** (equilibrium, BGK coll
 streaming, macroscopic recovery) against an exact solution, i.e. the numerical
 viscosity/compressibility behaviour of the solver. It is not a wall-boundary or
 turbulence-resolution test.
+The related [historical D3Q19 method-selection study](../../development/verification/round2_method_selection_3d/README.md) reuses this case's analytic ABC initialization. Its evidence and acceptance are tracked separately.

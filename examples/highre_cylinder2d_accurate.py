@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """2D cylinder drag at Re=100/1000 — grid convergence + long-run statistics.
 
 Goal: establish an ACCURATE drag baseline for the high-Re fixes.
@@ -11,8 +11,9 @@ import json
 import math
 import sys
 import time
+from pathlib import Path
 
-sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
 
