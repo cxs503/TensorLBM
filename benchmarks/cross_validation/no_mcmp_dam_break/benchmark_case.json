@@ -11,7 +11,7 @@
     "docs/XVAL-LBM-NO-MCMP-TWO-PHASE-ONLY.md"
   ],
   "reference_files": [
-    "src/artifacts/martin_moyce_1952_dam_break.json"
+    "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json"
   ],
   "results": [
     "benchmarks/cross_validation/no_mcmp_dam_break/evidence/results.json"

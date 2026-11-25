@@ -20,15 +20,10 @@ studies require production runs on finer grids and are documented separately.
 import json
 import math
 from pathlib import Path
-from typing import Callable
-
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from .dg_advection import get_ops, lobatto_nodes
+from ..dg_advection import get_ops, lobatto_nodes
 
 
 # ============================================================================
@@ -112,7 +107,7 @@ def test_mass_conservation_1d():
     We test this by advecting a smooth periodic function and checking that
     the integral is preserved.
     """
-    from .dg_advection import get_ops, lobatto_nodes
+    from ..dg_advection import get_ops, lobatto_nodes
     
     results = {}
     
@@ -201,7 +196,7 @@ def test_convergence_smooth():
     
     Theory: P_k DG should give O(h^{k+1}) convergence in L2 norm.
     """
-    from .dg_advection import get_ops, lobatto_nodes
+    from ..dg_advection import get_ops, lobatto_nodes
     
     results = {}
     
@@ -288,7 +283,8 @@ def test_convergence_smooth():
 def generate_verification_report(output_path: str | Path | None = None):
     """Generate a comprehensive verification report.
     
-    Runs all verification tests and produces a JSON report with results.
+    Runs all verification tests and writes a JSON report. The default path is
+    outputs/dg_verification/dg_verification_report.json in the current directory.
     """
     report = {
         "title": "DG Verification Suite for TensorLBM",
@@ -343,7 +339,7 @@ def generate_verification_report(output_path: str | Path | None = None):
     
     # Save report
     if output_path is None:
-        output_path = Path(__file__).parent.parent / "artifacts" / "dg_verification_report.json"
+        output_path = Path("outputs/dg_verification") / "dg_verification_report.json"
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
@@ -353,7 +349,3 @@ def generate_verification_report(output_path: str | Path | None = None):
     print(f"\nReport saved to: {output_path}")
     
     return report
-
-
-if __name__ == "__main__":
-    generate_verification_report()

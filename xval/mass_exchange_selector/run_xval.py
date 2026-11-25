@@ -55,7 +55,7 @@ ART = HERE / "artifacts"
 ART.mkdir(parents=True, exist_ok=True)
 OSS_CACHE = Path("/root/oss-cache/Maarten-vd-Sande_lbm")
 
-MM = json.loads((REPO / "src" / "artifacts" / "martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 MM_T = [d["t_star"] for d in MM["data"]]
 MM_Z = [d["X_star"] for d in MM["data"]]
 
@@ -128,7 +128,7 @@ DESIGN = {
     "experiment_reference": {
         "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324, Fig. 4",
         "doi": "10.1098/rsta.1952.0006",
-        "artifact": "src/artifacts/martin_moyce_1952_dam_break.json",
+        "artifact": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
     },
     "arms": {
         "A_repo": {"kappa": 1e-2, "kappa_f": 0.1},

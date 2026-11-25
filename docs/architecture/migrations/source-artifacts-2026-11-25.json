@@ -1,0 +1,90 @@
+{
+  "source_commit": "868bd101ccfc1073788d69234cb550ed7375ab47",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "second_level_directories": {
+    "src": {
+      "before": 3,
+      "after": 2
+    }
+  },
+  "retired_paths": [
+    "src/artifacts",
+    "src/tensorlbm/dg_verification.py"
+  ],
+  "compatibility": [
+    "The public Martin–Moyce loader retains its signature and explicit file override, and reads the same fixture from the installed tensorlbm package by default.",
+    "Active benchmark and audit consumers use the relocated references; benchmark and audit report URLs remain in place.",
+    "DG reports use outputs/dg_verification for newly generated results. Callers can still set output_path; the historical report is preserved as benchmark evidence.",
+    "Published historical artifacts and the checksum-pinned m18218 source snapshot retain their original bytes and historical paths. The source commit retains the old paths for replay.",
+    "Move the shadowed DG report module into the existing package. The package exports the report and the three original diagnostics, and python -m tensorlbm.dg_verification writes a report. All three numerical function ASTs match after normalizing package-relative import levels."
+  ],
+  "scientific_scope": "This migration preserves reference data and historical diagnostic outputs without changing numerical algorithms or claiming scientific acceptance.",
+  "entries": [
+    {
+      "old_path": "src/artifacts/martin_moyce_1952_dam_break.json",
+      "new_path": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
+      "git_mode": "100644",
+      "original_git_blob": "f3bfca2f54371f521d1f2a43b97115b9964e609b",
+      "original_sha256": "6f766bfa461dc0d723eb5478f48444908ae740d5eddf6aefd4630dedcb22a66a",
+      "current_sha256": "6f766bfa461dc0d723eb5478f48444908ae740d5eddf6aefd4630dedcb22a66a",
+      "size_bytes": 1418,
+      "byte_identical": true
+    },
+    {
+      "old_path": "src/artifacts/ritter_1892_dam_break_analytical.json",
+      "new_path": "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json",
+      "git_mode": "100644",
+      "original_git_blob": "7aa75896fac5f5f7e023c24cc2df629a908e6d38",
+      "original_sha256": "80ad4064898b26bb59d32481ac1c79d344ca1f1cf6c360d8b5d33ffdaaa2bf72",
+      "current_sha256": "80ad4064898b26bb59d32481ac1c79d344ca1f1cf6c360d8b5d33ffdaaa2bf72",
+      "size_bytes": 1169,
+      "byte_identical": true
+    },
+    {
+      "old_path": "src/artifacts/dg_verification_report.json",
+      "new_path": "benchmarks/dg_advection/evidence/historical/dg_verification_report.json",
+      "git_mode": "100644",
+      "original_git_blob": "907061a626f7b98a9a2f00eda50c5c2dabb09887",
+      "original_sha256": "7d3c2e4128517b4c902894cd2cdf7eba5418c95751e70ff75d337127bfc76d13",
+      "current_sha256": "7d3c2e4128517b4c902894cd2cdf7eba5418c95751e70ff75d337127bfc76d13",
+      "size_bytes": 2941,
+      "byte_identical": true
+    },
+    {
+      "old_path": "src/tensorlbm/dg_verification.py",
+      "new_path": "src/tensorlbm/dg_verification/report.py",
+      "git_mode": "100644",
+      "original_git_blob": "70318a6589d8a0e5c522b64263be6b569c62fad9",
+      "original_sha256": "4ed90723670f9f89007fc5f260bd75484dc9e2fb4fbd6d11f4f5c52e76994bc8",
+      "current_sha256": "06aa54fb2ffdd46c556685f09fe1168ee71d28e84f77440061f5c49836219317",
+      "size_bytes": 13197,
+      "byte_identical": false
+    }
+  ],
+  "verification": {
+    "source_scan": "Updated all maintained Python readers of the three assets. The only remaining executable old paths are inside the immutable, checksum-pinned m18218 snapshot; its original revision is in source_commit.",
+    "governance": "84 tests passed; the registry indexes 220 cases; 35 tutorial entries, 33 PDFs and 33 Word documents passed, with zero hard status-ledger violations.",
+    "lint": "Ruff 0.15.0 ratchet passed with three fewer findings and unchanged formatting counts.",
+    "software_tests": {
+      "command": "python -m pytest -q tests/test_dam_break_2d_validation.py tests/test_dg_convection_verification.py -m 'not slow'",
+      "passed": 25,
+      "baseline": "DG suite collection failed on the source revision because tensorlbm.dg_verification resolved to a package without the report exports."
+    },
+    "wheel": {
+      "command": "python -m pip wheel --no-deps --no-build-isolation .",
+      "result": "Installed wheel outside the checkout. Default and explicit Martin–Moyce loads returned the same 17 samples and original SHA-256. CLI and explicit DG report output were byte-identical. wheel contains only the DG package for that import path."
+    },
+    "dg_compatibility_replay": {
+      "baseline": "Explicitly import the shadowed source module from source_commit using importlib.util.spec_from_file_location, then call generate_verification_report with an explicit path.",
+      "relocated": "Run python -m tensorlbm.dg_verification from the installed wheel with one CPU thread in a clean working directory.",
+      "output": "benchmarks/dg_advection/replays/2026-11-25-compatibility.json",
+      "sha256": "3a27cf703708b4ea266750e691117165d79871e20614b38907a34e917f5acde8",
+      "comparison": "Reports are byte-identical. P2 conservation still reports failure."
+    },
+    "no_mcmp_dam_break": {
+      "command": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/cross_validation/no_mcmp_dam_break/run_xval.py",
+      "result": "Both worktrees load the fixture, then fail in the first fill-level arm with the existing topology candidate fill is outside [-0.1, 10] exception."
+    }
+  }
+}

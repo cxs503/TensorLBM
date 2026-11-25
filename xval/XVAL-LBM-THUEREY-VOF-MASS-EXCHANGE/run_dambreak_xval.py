@@ -21,7 +21,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-MM = json.loads((REPO / "src" / "artifacts" / "martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 MM_T = [d["t_star"] for d in MM["data"]]
 MM_Z = [d["X_star"] for d in MM["data"]]
 

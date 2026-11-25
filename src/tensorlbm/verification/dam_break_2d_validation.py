@@ -103,7 +103,7 @@ class DamBreak2DConfig:
 def load_martin_moyce_data(data_path: Path | None = None) -> tuple[list[dict], str]:
     """Load digitized Martin & Moyce (1952) experimental data."""
     if data_path is None:
-        data_path = Path(__file__).parent.parent.parent / "artifacts" / "martin_moyce_1952_dam_break.json"
+        data_path = Path(__file__).with_name("refdata") / "martin_moyce_1952_dam_break.json"
 
     if not data_path.exists():
         import sys
