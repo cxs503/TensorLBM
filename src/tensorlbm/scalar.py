@@ -68,6 +68,7 @@ def _w5_tensor(dtype: torch.dtype, device: torch.device) -> torch.Tensor:
 
 # ── Core LBM operators ───────────────────────────────────────────────────────
 
+
 def scalar_equilibrium(
     c: torch.Tensor,
     ux: torch.Tensor,
@@ -104,8 +105,9 @@ def scalar_collide_bgk(
     return g - (g - g_eq) / tau_s
 
 
-def scalar_collide_diffusion(g: torch.Tensor, tau_x: float, tau_y: float,
-                             tau_even: float, *, tau_xy: float = 0.) -> torch.Tensor:
+def scalar_collide_diffusion(
+    g: torch.Tensor, tau_x: float, tau_y: float, tau_even: float, *, tau_xy: float = 0.0
+) -> torch.Tensor:
     """Stationary D2Q5 diffusion with a constant symmetric relaxation tensor.
 
     For T = [[tau_x, tau_xy], [tau_xy, tau_y]], the lattice diffusivity
@@ -113,22 +115,22 @@ def scalar_collide_diffusion(g: torch.Tensor, tau_x: float, tau_y: float,
     """
     if g.ndim != 3 or g.shape[0] != 5:
         raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
-    if any(not math.isfinite(t) or t <= .5 for t in (tau_x,tau_y,tau_even)):
+    if any(not math.isfinite(t) or t <= 0.5 for t in (tau_x, tau_y, tau_even)):
         raise ValueError("all diffusion relaxation times must be finite and greater than 0.5")
-    if not math.isfinite(tau_xy) or tau_xy**2 >= (tau_x-.5)*(tau_y-.5):
+    if not math.isfinite(tau_xy) or tau_xy**2 >= (tau_x - 0.5) * (tau_y - 0.5):
         raise ValueError("diffusivity tensor must be finite and positive definite")
     opposite = g[_OPP5.to(g.device)]
-    odd = .5*(g-opposite)
-    even = .5*(g+opposite)
-    equilibrium = _w5_tensor(g.dtype,g.device)[:,None,None]*g.sum(0)
+    odd = 0.5 * (g - opposite)
+    even = 0.5 * (g + opposite)
+    equilibrium = _w5_tensor(g.dtype, g.device)[:, None, None] * g.sum(0)
     if tau_xy:
-        determinant = tau_x*tau_y - tau_xy**2
-        rx = (tau_y*odd[1] - tau_xy*odd[2])/determinant
-        ry = (tau_x*odd[2] - tau_xy*odd[1])/determinant
+        determinant = tau_x * tau_y - tau_xy**2
+        rx = (tau_y * odd[1] - tau_xy * odd[2]) / determinant
+        ry = (tau_x * odd[2] - tau_xy * odd[1]) / determinant
         relaxed = torch.stack((torch.zeros_like(rx), rx, ry, -rx, -ry))
-        return g - (even-equilibrium)/tau_even - relaxed
-    rates = g.new_tensor([0.,1/tau_x,1/tau_y,1/tau_x,1/tau_y])[:,None,None]
-    return g - (even-equilibrium)/tau_even - odd*rates
+        return g - (even - equilibrium) / tau_even - relaxed
+    rates = g.new_tensor([0.0, 1 / tau_x, 1 / tau_y, 1 / tau_x, 1 / tau_y])[:, None, None]
+    return g - (even - equilibrium) / tau_even - odd * rates
 
 
 def scalar_stream(g: torch.Tensor) -> torch.Tensor:
@@ -161,11 +163,11 @@ def scalar_link_transfer(g: torch.Tensor, axis: str, *, periodic: bool = False) 
     if axis == "x":
         if periodic:
             return g[1] - torch.roll(g[3], -1, dims=1)
-        return g[1,:,:-1] - g[3,:,1:]
+        return g[1, :, :-1] - g[3, :, 1:]
     if axis == "y":
         if periodic:
             return g[2] - torch.roll(g[4], -1, dims=0)
-        return g[2,:-1,:] - g[4,1:,:]
+        return g[2, :-1, :] - g[4, 1:, :]
     raise ValueError("axis must be x or y")
 
 
@@ -182,32 +184,41 @@ def scalar_wall_step_means(step_edges, switch_times, levels, *, interpolation="c
     edges = np.asarray(step_edges, dtype=float)
     switches = np.asarray(switch_times, dtype=float)
     levels = np.asarray(levels, dtype=float)
-    if edges.ndim != 1 or edges.size < 2 or not np.isfinite(edges).all() or np.any(np.diff(edges) <= 0):
+    if (
+        edges.ndim != 1
+        or edges.size < 2
+        or not np.isfinite(edges).all()
+        or np.any(np.diff(edges) <= 0)
+    ):
         raise ValueError("step_edges must contain strictly increasing finite times")
     if switches.ndim != 1 or not np.isfinite(switches).all() or np.any(np.diff(switches) <= 0):
         raise ValueError("switch_times must contain strictly increasing finite times")
     if levels.ndim == 0 or not np.isfinite(levels).all():
         raise ValueError("supply finite wall levels")
     times = np.union1d(edges, switches[(edges[0] < switches) & (switches < edges[-1])])
-    trailing = (1,)*(levels.ndim-1)
-    durations = np.diff(times).reshape((-1,)+trailing)
+    trailing = (1,) * (levels.ndim - 1)
+    durations = np.diff(times).reshape((-1,) + trailing)
     if interpolation == "constant":
-        if len(levels) != switches.size+1:
+        if len(levels) != switches.size + 1:
             raise ValueError("supply one finite wall level for each plateau")
         segment_means = levels[np.searchsorted(switches, times[:-1], side="right")]
     elif interpolation == "linear":
         if not switches.size or len(levels) != switches.size:
             raise ValueError("linear interpolation requires one level per knot")
-        right = np.searchsorted(switches, times).clip(0, switches.size-1)
-        left = (right-1).clip(0)
-        span = switches[right]-switches[left]
-        weight = np.divide(times-switches[left], span, out=np.zeros_like(times), where=span>0).clip(0, 1)
-        values = levels[left]+weight.reshape((-1,)+trailing)*(levels[right]-levels[left])
-        segment_means = .5*(values[:-1]+values[1:])
+        right = np.searchsorted(switches, times).clip(0, switches.size - 1)
+        left = (right - 1).clip(0)
+        span = switches[right] - switches[left]
+        weight = np.divide(
+            times - switches[left], span, out=np.zeros_like(times), where=span > 0
+        ).clip(0, 1)
+        values = levels[left] + weight.reshape((-1,) + trailing) * (levels[right] - levels[left])
+        segment_means = 0.5 * (values[:-1] + values[1:])
     else:
         raise ValueError("interpolation must be constant or linear")
-    integral = np.add.reduceat(segment_means*durations, np.searchsorted(times, edges[:-1]), axis=0)
-    return integral/np.diff(edges).reshape((-1,)+trailing)
+    integral = np.add.reduceat(
+        segment_means * durations, np.searchsorted(times, edges[:-1]), axis=0
+    )
+    return integral / np.diff(edges).reshape((-1,) + trailing)
 
 
 def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch.Tensor]:
@@ -252,6 +263,7 @@ def tau_from_diffusivity(D: float) -> float:
 
 
 # ── Conservation & non-negativity ────────────────────────────────────────────
+
 
 def project_mass_conservation(g: torch.Tensor, target_mass: float | None = None) -> torch.Tensor:
     """Rescale all populations so that ΣC = target_mass (or initial mass).
@@ -304,6 +316,7 @@ def enforce_nonnegativity(g: torch.Tensor, floor: float = 0.0) -> torch.Tensor:
 
 # ── Boundary conditions ──────────────────────────────────────────────────────
 
+
 def scalar_bounce_back(g: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Zero-flux (bounce-back) for D2Q5 scalar on solid cells."""
     opp = _OPP5.to(g.device)
@@ -316,8 +329,9 @@ def momentum_bounce_back(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
-def scalar_dirichlet(g: torch.Tensor, c_val: float, mask: torch.Tensor,
-                     ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
+def scalar_dirichlet(
+    g: torch.Tensor, c_val: float, mask: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor
+) -> torch.Tensor:
     """Dirichlet BC: set scalar to c_val at masked cells."""
     c_bc = torch.full_like(ux, c_val)
     g_eq = scalar_equilibrium(c_bc, ux, uy)
@@ -326,6 +340,7 @@ def scalar_dirichlet(g: torch.Tensor, c_val: float, mask: torch.Tensor,
 
 
 # ── Poiseuille body force ────────────────────────────────────────────────────
+
 
 def poiseuille_velocity_profile(y: torch.Tensor, ny: int, u_max: float) -> torch.Tensor:
     """Parabolic Poiseuille profile: u(y) = 4 u_max (y/H)(1 − y/H).
@@ -342,8 +357,9 @@ def poiseuille_velocity_profile(y: torch.Tensor, ny: int, u_max: float) -> torch
     return 4.0 * u_max * y_norm * (1.0 - y_norm)
 
 
-def apply_body_force(f: torch.Tensor, fx: float, fy: float,
-                     solid_mask: torch.Tensor | None = None) -> torch.Tensor:
+def apply_body_force(
+    f: torch.Tensor, fx: float, fy: float, solid_mask: torch.Tensor | None = None
+) -> torch.Tensor:
     """Apply uniform body force to momentum distribution via velocity shift.
 
     u' = u + F/ρ, then re-equilibrate the change.
@@ -361,6 +377,7 @@ def apply_body_force(f: torch.Tensor, fx: float, fy: float,
 
 
 # ── Second moment analysis ───────────────────────────────────────────────────
+
 
 def second_moment_x(c: torch.Tensor, dx: float = 1.0) -> dict[str, float]:
     """Compute the x-direction second central moment σ²_x of concentration.
@@ -400,8 +417,9 @@ def second_moment_x(c: torch.Tensor, dx: float = 1.0) -> dict[str, float]:
     }
 
 
-def fit_diffusivity(times: list[float], variances: list[float],
-                    t_min: float = 0.0) -> dict[str, float]:
+def fit_diffusivity(
+    times: list[float], variances: list[float], t_min: float = 0.0
+) -> dict[str, float]:
     """Fit D_eff from σ²(t) = σ²₀ + 2 D_eff t (linear regression).
 
     Args:
@@ -433,8 +451,9 @@ def fit_diffusivity(times: list[float], variances: list[float],
     return {"D_eff": float(D_eff), "r_squared": float(r_squared), "intercept": float(intercept)}
 
 
-def fit_early_slope(times: list[float], variances: list[float],
-                    t_max: float = float("inf")) -> dict[str, float]:
+def fit_early_slope(
+    times: list[float], variances: list[float], t_max: float = float("inf")
+) -> dict[str, float]:
     """Fit log-log slope of σ²(t) in early-time regime.
 
     Expected: σ² ∝ t² → slope ≈ 2.
@@ -469,6 +488,7 @@ def fit_early_slope(times: list[float], variances: list[float],
 
 # ── Taylor–Aris analytical solution ──────────────────────────────────────────
 
+
 def taylor_aris_deff(D: float, U_mean: float, half_height: float) -> float:
     """Taylor–Aris effective diffusivity: D_eff = D + a²U²/(48D).
 
@@ -482,14 +502,16 @@ def taylor_aris_deff(D: float, U_mean: float, half_height: float) -> float:
     """
     if D <= 0:
         return float("inf")
-    return D + (half_height ** 2) * (U_mean ** 2) / (48.0 * D)
+    return D + (half_height**2) * (U_mean**2) / (48.0 * D)
 
 
 # ── Simulation runners ───────────────────────────────────────────────────────
 
+
 @dataclass
 class ScalarSimState:
     """Runtime state for scalar simulation."""
+
     f: torch.Tensor  # momentum distributions (9, ny, nx)
     g: torch.Tensor  # scalar distributions (5, ny, nx)
     solid_mask: torch.Tensor
@@ -502,7 +524,10 @@ class ScalarSimState:
 
 
 def init_channel_flow(
-    ny: int, nx: int, u_max: float, tau_f: float,
+    ny: int,
+    nx: int,
+    u_max: float,
+    tau_f: float,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Initialize Poiseuille flow in a 2D channel.
@@ -525,8 +550,10 @@ def init_channel_flow(
 
 def init_scalar_pulse(
     g: torch.Tensor,
-    ux: torch.Tensor, uy: torch.Tensor,
-    x_center: int, y_center: int,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    x_center: int,
+    y_center: int,
     sigma: float = 3.0,
     total_mass: float = 1.0,
 ) -> torch.Tensor:
@@ -540,8 +567,10 @@ def init_scalar_pulse(
         torch.arange(nx, device=device, dtype=dtype),
         indexing="ij",
     )
-    c_init = total_mass / (2 * math.pi * sigma ** 2) * torch.exp(
-        -0.5 * ((xx - x_center) ** 2 + (yy - y_center) ** 2) / sigma ** 2
+    c_init = (
+        total_mass
+        / (2 * math.pi * sigma**2)
+        * torch.exp(-0.5 * ((xx - x_center) ** 2 + (yy - y_center) ** 2) / sigma**2)
     )
 
     g = scalar_equilibrium(c_init, ux, uy)
@@ -550,7 +579,8 @@ def init_scalar_pulse(
 
 def init_scalar_line(
     g: torch.Tensor,
-    ux: torch.Tensor, uy: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
     x_center: int,
     sigma: float = 2.0,
     total_mass: float = 1.0,
@@ -561,9 +591,11 @@ def init_scalar_line(
     dtype = g.dtype
 
     x = torch.arange(nx, device=device, dtype=dtype)
-    c_init = total_mass / (math.sqrt(2 * math.pi) * sigma * ny) * torch.exp(
-        -0.5 * ((x - x_center) ** 2) / sigma ** 2
-    ).unsqueeze(0).expand(ny, nx)
+    c_init = (
+        total_mass
+        / (math.sqrt(2 * math.pi) * sigma * ny)
+        * torch.exp(-0.5 * ((x - x_center) ** 2) / sigma**2).unsqueeze(0).expand(ny, nx)
+    )
 
     g = scalar_equilibrium(c_init, ux, uy)
     return g
@@ -617,7 +649,8 @@ def run_scalar_step(
 
 
 def run_poiseuille_dispersion(
-    ny: int, nx: int,
+    ny: int,
+    nx: int,
     u_max: float,
     tau_f: float,
     tau_s: float,
@@ -664,30 +697,36 @@ def run_poiseuille_dispersion(
     g = init_scalar_line(g, ux, uy, x_center, sigma, total_mass)
 
     state = ScalarSimState(
-        f=f, g=g, solid_mask=solid_mask,
-        tau_f=tau_f, tau_s=tau_s,
+        f=f,
+        g=g,
+        solid_mask=solid_mask,
+        tau_f=tau_f,
+        tau_s=tau_s,
         initial_mass=total_mass,
     )
 
     for step in range(n_steps):
-        state = run_scalar_step(state, force_x=force_x,
-                                conserve_mass=conserve_mass,
-                                enforce_nonneg=enforce_nonneg)
+        state = run_scalar_step(
+            state, force_x=force_x, conserve_mass=conserve_mass, enforce_nonneg=enforce_nonneg
+        )
 
         if (step + 1) % record_interval == 0 or step == 0:
             c = scalar_macroscopic(state.g)
             mom = second_moment_x(c)
-            state.history.append({
-                "step": step + 1,
-                "time": float(step + 1),
-                **mom,
-            })
+            state.history.append(
+                {
+                    "step": step + 1,
+                    "time": float(step + 1),
+                    **mom,
+                }
+            )
 
     return state
 
 
 def run_pure_diffusion(
-    nx: int, ny: int,
+    nx: int,
+    ny: int,
     tau_s: float,
     n_steps: int,
     sigma0: float = 5.0,
@@ -716,8 +755,11 @@ def run_pure_diffusion(
     solid_mask = torch.zeros(ny, nx, dtype=torch.bool, device=device)
 
     state = ScalarSimState(
-        f=f, g=g, solid_mask=solid_mask,
-        tau_f=1.0, tau_s=tau_s,
+        f=f,
+        g=g,
+        solid_mask=solid_mask,
+        tau_f=1.0,
+        tau_s=tau_s,
         initial_mass=total_mass,
     )
 
@@ -731,19 +773,21 @@ def run_pure_diffusion(
         if (step + 1) % record_interval == 0 or step == 0:
             c_now = scalar_macroscopic(state.g)
             mom = second_moment_x(c_now)
-            state.history.append({
-                "step": step + 1,
-                "time": float(step + 1),
-                **mom,
-            })
-            state.min_concentration = min(state.min_concentration,
-                                          float(c_now.min().item()))
+            state.history.append(
+                {
+                    "step": step + 1,
+                    "time": float(step + 1),
+                    **mom,
+                }
+            )
+            state.min_concentration = min(state.min_concentration, float(c_now.min().item()))
 
     return state
 
 
 def run_pure_convection(
-    nx: int, ny: int,
+    nx: int,
+    ny: int,
     ux_val: float,
     tau_s: float,
     n_steps: int,
@@ -769,8 +813,11 @@ def run_pure_convection(
     solid_mask = torch.zeros(ny, nx, dtype=torch.bool, device=device)
 
     state = ScalarSimState(
-        f=f, g=g, solid_mask=solid_mask,
-        tau_f=1.0, tau_s=tau_s,
+        f=f,
+        g=g,
+        solid_mask=solid_mask,
+        tau_f=1.0,
+        tau_s=tau_s,
         initial_mass=1.0,
     )
 
@@ -783,13 +830,14 @@ def run_pure_convection(
         if (step + 1) % record_interval == 0 or step == 0:
             c_now = scalar_macroscopic(state.g)
             mom = second_moment_x(c_now)
-            state.history.append({
-                "step": step + 1,
-                "time": float(step + 1),
-                **mom,
-            })
-            state.min_concentration = min(state.min_concentration,
-                                          float(c_now.min().item()))
+            state.history.append(
+                {
+                    "step": step + 1,
+                    "time": float(step + 1),
+                    **mom,
+                }
+            )
+            state.min_concentration = min(state.min_concentration, float(c_now.min().item()))
 
     return state
 
