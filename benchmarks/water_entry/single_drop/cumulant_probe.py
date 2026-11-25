@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -37,11 +36,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
 from tensorlbm.free_surface_lbm import (
     GAS,
-    LIQUID,
     INTERFACE,
-    SOLID,
+    LIQUID,
     free_surface_step,
-    init_flags_and_mass,
     init_f_distribution,
 )
 
@@ -53,14 +50,22 @@ def parse_args():
     )
     parser.add_argument("--tau", type=float, default=0.6, help="Shear relaxation time")
     parser.add_argument("--C_s", type=float, default=0.0, help="Subgrid-scale coefficient")
-    parser.add_argument("--collision", type=str, default="cumulant", choices=["bgk", "mrt", "cumulant"])
+    parser.add_argument(
+        "--collision", type=str, default="cumulant", choices=["bgk", "mrt", "cumulant"]
+    )
     parser.add_argument("--nz", type=int, default=40, help="Grid size (z)")
     parser.add_argument("--ny", type=int, default=40, help="Grid size (y)")
     parser.add_argument("--nx", type=int, default=40, help="Grid size (x)")
-    parser.add_argument("--drop_radius", type=float, default=10.0, help="Drop radius in lattice units")
-    parser.add_argument("--impact_speed", type=float, default=0.15, help="Impact speed in lattice units")
+    parser.add_argument(
+        "--drop_radius", type=float, default=10.0, help="Drop radius in lattice units"
+    )
+    parser.add_argument(
+        "--impact_speed", type=float, default=0.15, help="Impact speed in lattice units"
+    )
     parser.add_argument("--num_steps", type=int, default=500, help="Number of simulation steps")
-    parser.add_argument("--output", type=str, default="results/cumulant_probe.npz", help="Output file path")
+    parser.add_argument(
+        "--output", type=str, default="results/cumulant_probe.npz", help="Output file path"
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
 
@@ -87,7 +92,9 @@ def init_drop_water_entry(nz, ny, nx, drop_radius, impact_speed, device="cpu"):
     r2 = drop_radius * drop_radius
 
     # Create drop as LIQUID
-    y, x = torch.meshgrid(torch.arange(ny, device=device), torch.arange(nx, device=device), indexing="ij")
+    y, x = torch.meshgrid(
+        torch.arange(ny, device=device), torch.arange(nx, device=device), indexing="ij"
+    )
     z = torch.arange(nz, device=device)
 
     # Drop sphere
@@ -151,8 +158,15 @@ def run_probe(args):
     for step in range(args.num_steps):
         # Run one free-surface step
         f, flags, mass, rho_liquid, fill, ledger = free_surface_step(
-            f, flags, mass, rho_liquid, fill, body_force,
-            tau=args.tau, C_s=args.C_s, collision=args.collision,
+            f,
+            flags,
+            mass,
+            rho_liquid,
+            fill,
+            body_force,
+            tau=args.tau,
+            C_s=args.C_s,
+            collision=args.collision,
             device=device,
         )
 
@@ -168,10 +182,11 @@ def run_probe(args):
 
         # Track ghost modes (simplified: check non-equilibrium stress norm)
         from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+
         rho, ux, uy, uz = macroscopic3d(f)
         feq = equilibrium3d(rho, ux, uy, uz)
         f_neq = f - feq
-        ghost_norm = torch.sqrt((f_neq ** 2).sum(0)).mean().item()
+        ghost_norm = torch.sqrt((f_neq**2).sum(0)).mean().item()
         ghost_mode_history.append(ghost_norm)
 
         if step % 50 == 0:
@@ -222,12 +237,16 @@ def main():
     print(f"Collision operator: {args.collision}")
     print(f"Mass drift (relative): {result['mass_drift_relative']:.2e}")
     print(f"Divergence detected: {result['divergence_detected']}")
-    print(f"Final ghost mode norm: {result['ghost_mode_history'][-1]:.2e}" if result['ghost_mode_history'] else "N/A")
+    print(
+        f"Final ghost mode norm: {result['ghost_mode_history'][-1]:.2e}"
+        if result["ghost_mode_history"]
+        else "N/A"
+    )
 
     # Pass/fail based on predeclared thresholds
-    if result['mass_drift_relative'] > 1e-5:
+    if result["mass_drift_relative"] > 1e-5:
         print("FAIL: Mass drift exceeds threshold (1e-5)")
-    elif result['divergence_detected']:
+    elif result["divergence_detected"]:
         print("FAIL: Divergence detected")
     else:
         print("PASS: All thresholds met")

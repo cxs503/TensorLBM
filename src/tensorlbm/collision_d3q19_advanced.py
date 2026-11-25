@@ -296,7 +296,9 @@ def collide_cumulant_d3q19(
         Post-collision distribution tensor of shape ``(19, nz, ny, nx)``.
     """
     if f.ndim != 4 or f.shape[0] != 19:
-        raise ValueError(f"D3Q19 populations must have shape (19, nz, ny, nx), got {tuple(f.shape)}")
+        raise ValueError(
+            f"D3Q19 populations must have shape (19, nz, ny, nx), got {tuple(f.shape)}"
+        )
     if isinstance(tau, torch.Tensor):
         if (tau <= 0.5).any():
             raise ValueError("all tau values must be > 0.5")

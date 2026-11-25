@@ -79,16 +79,18 @@ class TestCumulantMassConservation:
         rho_before, _, _, _ = macroscopic3d(f_uniform)
         f_collided = collide_cumulant_d3q19(f_uniform, tau=0.6)
         rho_after, _, _, _ = macroscopic3d(f_collided)
-        assert torch.allclose(rho_before, rho_after, atol=1e-6), \
+        assert torch.allclose(rho_before, rho_after, atol=1e-6), (
             f"Mass drift: {torch.abs(rho_before - rho_after).max():.2e}"
+        )
 
     def test_mass_conserved_moving(self, f_moving):
         """Mass should be invariant for moving equilibrium."""
         rho_before, _, _, _ = macroscopic3d(f_moving)
         f_collided = collide_cumulant_d3q19(f_moving, tau=0.6)
         rho_after, _, _, _ = macroscopic3d(f_collided)
-        assert torch.allclose(rho_before, rho_after, atol=1e-6), \
+        assert torch.allclose(rho_before, rho_after, atol=1e-6), (
             f"Mass drift: {torch.abs(rho_before - rho_after).max():.2e}"
+        )
 
 
 class TestCumulantMomentumConservation:
@@ -99,12 +101,15 @@ class TestCumulantMomentumConservation:
         _, ux_before, uy_before, uz_before = macroscopic3d(f_moving)
         f_collided = collide_cumulant_d3q19(f_moving, tau=0.6)
         _, ux_after, uy_after, uz_after = macroscopic3d(f_collided)
-        assert torch.allclose(ux_before, ux_after, atol=1e-6), \
+        assert torch.allclose(ux_before, ux_after, atol=1e-6), (
             f"ux drift: {torch.abs(ux_before - ux_after).max():.2e}"
-        assert torch.allclose(uy_before, uy_after, atol=1e-6), \
+        )
+        assert torch.allclose(uy_before, uy_after, atol=1e-6), (
             f"uy drift: {torch.abs(uy_before - uy_after).max():.2e}"
-        assert torch.allclose(uz_before, uz_after, atol=1e-6), \
+        )
+        assert torch.allclose(uz_before, uz_after, atol=1e-6), (
             f"uz drift: {torch.abs(uz_before - uz_after).max():.2e}"
+        )
 
 
 class TestCumulantFixedPoint:
@@ -113,14 +118,16 @@ class TestCumulantFixedPoint:
     def test_equilibrium_fixed_point(self, f_uniform):
         """f_eq should collide to f_eq."""
         f_collided = collide_cumulant_d3q19(f_uniform, tau=0.6)
-        assert torch.allclose(f_uniform, f_collided, atol=1e-6), \
+        assert torch.allclose(f_uniform, f_collided, atol=1e-6), (
             f"Max deviation: {torch.abs(f_uniform - f_collided).max():.2e}"
+        )
 
     def test_moving_equilibrium_fixed_point(self, f_moving):
         """Moving f_eq should collide to f_eq."""
         f_collided = collide_cumulant_d3q19(f_moving, tau=0.6)
-        assert torch.allclose(f_moving, f_collided, atol=1e-6), \
+        assert torch.allclose(f_moving, f_collided, atol=1e-6), (
             f"Max deviation: {torch.abs(f_moving - f_collided).max():.2e}"
+        )
 
 
 class TestCumulantGhostModeRelaxation:
@@ -133,8 +140,9 @@ class TestCumulantGhostModeRelaxation:
         f_neq_before = f_neq - equilibrium3d(*macroscopic3d(f_neq))
         f_neq_after = f_collided - equilibrium3d(*macroscopic3d(f_collided))
         # Check that the perturbation direction is damped (use max over grid)
-        assert torch.abs(f_neq_after[7]).max().item() < torch.abs(f_neq_before[7]).max().item() + 1e-6, \
-            "Ghost mode 7 should decay"
+        assert (
+            torch.abs(f_neq_after[7]).max().item() < torch.abs(f_neq_before[7]).max().item() + 1e-6
+        ), "Ghost mode 7 should decay"
 
 
 class TestCumulantSGS:
@@ -148,8 +156,10 @@ class TestCumulantSGS:
         f_neq_no_sgs = f_no_sgs - equilibrium3d(*macroscopic3d(f_no_sgs))
         f_neq_with_sgs = f_with_sgs - equilibrium3d(*macroscopic3d(f_with_sgs))
         # Check that SGS increases damping (ghost modes closer to zero)
-        assert torch.abs(f_neq_with_sgs[7]).max().item() <= torch.abs(f_neq_no_sgs[7]).max().item() + 1e-6, \
-            "SGS should increase ghost-mode damping"
+        assert (
+            torch.abs(f_neq_with_sgs[7]).max().item()
+            <= torch.abs(f_neq_no_sgs[7]).max().item() + 1e-6
+        ), "SGS should increase ghost-mode damping"
 
 
 class TestCumulantComparison:
