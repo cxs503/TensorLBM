@@ -169,12 +169,14 @@ def scalar_link_transfer(g: torch.Tensor, axis: str, *, periodic: bool = False) 
     raise ValueError("axis must be x or y")
 
 
-def scalar_wall_step_means(step_edges, switch_times, levels):
-    """Average piecewise-constant prescribed wall data over each lattice step.
+def scalar_wall_step_means(step_edges, switch_times, levels, *, interpolation="constant"):
+    """Average prescribed wall data over each lattice step.
 
     Supply CPU times in a common unit and one level before the first switch
     and after each switch. Trailing dimensions of levels may index walls or
-    transverse rows. Returns a NumPy float64 array indexed first by step.
+    transverse rows. With interpolation="linear", supply one level per knot
+    in switch_times. Interpolate linearly between knots and hold the nearest
+    level outside the knot range. Returns a NumPy float64 array indexed first by step.
     Its values can be passed to the linear halfway Dirichlet boundary rule.
     """
     edges = np.asarray(step_edges, dtype=float)
@@ -184,13 +186,27 @@ def scalar_wall_step_means(step_edges, switch_times, levels):
         raise ValueError("step_edges must contain strictly increasing finite times")
     if switches.ndim != 1 or not np.isfinite(switches).all() or np.any(np.diff(switches) <= 0):
         raise ValueError("switch_times must contain strictly increasing finite times")
-    if levels.ndim == 0 or len(levels) != switches.size+1 or not np.isfinite(levels).all():
-        raise ValueError("supply one finite wall level for each plateau")
+    if levels.ndim == 0 or not np.isfinite(levels).all():
+        raise ValueError("supply finite wall levels")
     times = np.union1d(edges, switches[(edges[0] < switches) & (switches < edges[-1])])
-    plateau = np.searchsorted(switches, times[:-1], side="right")
     trailing = (1,)*(levels.ndim-1)
     durations = np.diff(times).reshape((-1,)+trailing)
-    integral = np.add.reduceat(levels[plateau]*durations, np.searchsorted(times, edges[:-1]), axis=0)
+    if interpolation == "constant":
+        if len(levels) != switches.size+1:
+            raise ValueError("supply one finite wall level for each plateau")
+        segment_means = levels[np.searchsorted(switches, times[:-1], side="right")]
+    elif interpolation == "linear":
+        if not switches.size or len(levels) != switches.size:
+            raise ValueError("linear interpolation requires one level per knot")
+        right = np.searchsorted(switches, times).clip(0, switches.size-1)
+        left = (right-1).clip(0)
+        span = switches[right]-switches[left]
+        weight = np.divide(times-switches[left], span, out=np.zeros_like(times), where=span>0).clip(0, 1)
+        values = levels[left]+weight.reshape((-1,)+trailing)*(levels[right]-levels[left])
+        segment_means = .5*(values[:-1]+values[1:])
+    else:
+        raise ValueError("interpolation must be constant or linear")
+    integral = np.add.reduceat(segment_means*durations, np.searchsorted(times, edges[:-1]), axis=0)
     return integral/np.diff(edges).reshape((-1,)+trailing)
 
 

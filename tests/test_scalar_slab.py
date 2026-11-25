@@ -73,3 +73,13 @@ def test_step_mean_preserves_substep_pulse_and_rowwise_wall_levels():
                                    [[99., 99.], [0., 1.], [2., -1.], [0., 1.], [3., 4.], [9., 9.]])
     np.testing.assert_allclose(means, [[.4, .6], [3., 4.]])
     np.testing.assert_allclose(scalar_wall_step_means([0., .2, 1.], [], [5.]), [5., 5.])
+
+
+def test_linear_wall_step_means_integrate_short_ramps_and_hold_end_values():
+    import numpy as np
+    from tensorlbm.scalar import scalar_wall_step_means
+
+    means = scalar_wall_step_means([-1., 0., 1., 2.], [.1, .2, .4],
+                                   [[1., 0.], [3., -2.], [2., 1.]], interpolation="linear")
+    np.testing.assert_allclose(means, [[1., 0.], [2., .4], [2., 1.]])
+    np.testing.assert_allclose(scalar_wall_step_means([0., 1.], [.3], [7.], interpolation="linear"), [7.])
