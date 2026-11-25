@@ -1,0 +1,166 @@
+{
+  "source_commit": "995470096c6a0815b005339c5ed9fb968b4e1935",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "files_with_recorded_legacy_references_before": 42,
+  "files_with_recorded_legacy_references_after": 37,
+  "entries": [
+    {
+      "old_path": "examples/highre_cylinder2d_accurate.py",
+      "new_path": "examples/highre_cylinder2d_accurate.py",
+      "original_git_blob": "6d107802c01f6886e255772e1535c9cdc0c32fe9",
+      "original_sha256": "bfeb777dd268969db8903f5d960d51597a9ab918d88221c5abeecdfc6d8cedc2",
+      "current_sha256": "9265020cea4984f13fcca2aff53bd5868548bdf26647401de80e2560266a5c38",
+      "entrypoint": "run_cylinder",
+      "arguments": {
+        "device": "cpu",
+        "re": 100,
+        "nx": 48,
+        "ny": 24,
+        "D": 8,
+        "u_in": 0.05,
+        "n_steps": 6
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "D": 8,
+        "cd": 29.522149711847298,
+        "cd_rms": 14.041499170946185,
+        "nx": 48,
+        "ny": 24,
+        "re": 100,
+        "st": "nan",
+        "steps": 6,
+        "tau": 0.512
+      }
+    },
+    {
+      "old_path": "examples/highre_cylinder3d_amr.py",
+      "new_path": "examples/highre_cylinder3d_amr.py",
+      "original_git_blob": "f7b16239cca4d1b733a008691d681645d41a685a",
+      "original_sha256": "bf68edab9861e0035b07c77ecf531a5a7e8d3721dc4384116a594b9ae35571d3",
+      "current_sha256": "fc6a00a08df5c062bd7f13585694ce8c6407326ff9dff1a6561ff995c9ec03dc",
+      "entrypoint": "run",
+      "arguments": {
+        "device": "cpu",
+        "re": 40,
+        "nx": 40,
+        "ny": 28,
+        "nz": 8,
+        "D_c": 6,
+        "u_in": 0.05,
+        "n_steps": 3,
+        "tau_coarse": 0.53
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "cd": 11.341311534245808,
+        "re": 40,
+        "steps": 3,
+        "tau": 0.53
+      }
+    },
+    {
+      "old_path": "examples/highre_cylinder_bench.py",
+      "new_path": "examples/highre_cylinder_bench.py",
+      "original_git_blob": "50ab04fc10ef47a1fb67a04fc2b59dbed29ed1aa",
+      "original_sha256": "f1d25e73eab8c17071b4721725ef77d8dab5ac501bb7be079b3f558224cc73d2",
+      "current_sha256": "9d0e4f5e90568380085d61cec1ce2b21f793623313d55d59d1d596035d9f3797",
+      "entrypoint": "run_cylinder",
+      "arguments": {
+        "device": "cpu",
+        "re": 100,
+        "nx": 48,
+        "ny": 24,
+        "D": 8,
+        "u_in": 0.05,
+        "n_steps": 6
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "cd": 26.994793675839897,
+        "cd_ref": 1.0,
+        "err_pct": 2599.4793675839896,
+        "re": 100,
+        "st": "nan",
+        "st_ref": 0.21,
+        "steps": 6,
+        "tau": 0.512
+      }
+    },
+    {
+      "old_path": "examples/highre_sphere3d_accurate.py",
+      "new_path": "examples/highre_sphere3d_accurate.py",
+      "original_git_blob": "a50e0a41d73cdede520616ff45e37473719d7d97",
+      "original_sha256": "a276f67b7a2598a7d476a202ddfbcde4701feec8eab66bb2be4dd788c4caacca",
+      "current_sha256": "f8bd262af970dfb8806619291599cb48534fa2655cebe924621c2842342ce6ed",
+      "entrypoint": "run_sphere",
+      "arguments": {
+        "device": "cpu",
+        "re": 40,
+        "nx": 32,
+        "ny": 24,
+        "nz": 24,
+        "radius": 4,
+        "u_in": 0.05,
+        "n_steps": 6
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "cd": 18.16403052945312,
+        "cd_ref": 1.8090280736651079,
+        "err_pct": 904.0767633115072,
+        "grid": [
+          32,
+          24,
+          24
+        ],
+        "radius": 4,
+        "re": 40,
+        "steps": 6,
+        "tau": 0.53
+      }
+    },
+    {
+      "old_path": "examples/highre_sphere_bench.py",
+      "new_path": "examples/highre_sphere_bench.py",
+      "original_git_blob": "dbf84c4a4c899434904ee4aba0560e315ba44af3",
+      "original_sha256": "d9882ec430b60525e69fe9bb8de59301fca2af2c0412e22c140c57ab1b414e2c",
+      "current_sha256": "b993d69e6afd09d3613be0bcd5b4fe21691df3095ab575c5a1c2876b19a46d25",
+      "entrypoint": "run_sphere",
+      "arguments": {
+        "device": "cpu",
+        "re": 20,
+        "nx": 32,
+        "ny": 24,
+        "nz": 24,
+        "u_in": 0.05,
+        "tau0": 0.53,
+        "n_steps": 6
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "D": 4.0000000000000036,
+        "cd": 13.228685245589974,
+        "cd_ref": 2.7146686715558435,
+        "err_pct": 387.30386084310936,
+        "re": 20,
+        "re_actual": 20,
+        "steps": 6,
+        "tau": 0.53
+      }
+    }
+  ],
+  "compatibility": "Run examples via the current Python 3 environment. They resolve the checkout's src relative to __file__, including when launched from outside the repository. Public file paths and function signatures are preserved.",
+  "verification": {
+    "environment": {
+      "device": "CPU x86_64",
+      "python": "3.12.14",
+      "torch": "2.15.0+cpu",
+      "torch_threads": 1
+    },
+    "method": "From outside the checkout with CPU Torch installed and no repository src in PYTHONPATH, load each example with runpy.run_path and assert tensorlbm.__file__ resolves under the checkout src. Invoke each listed function with the recorded arguments. Compare all returned values with the original example loaded in a process using that same TensorLBM solver. Treat NaN Strouhal as 'nan' on both sides.",
+    "solver_change": "The function bodies and __main__ blocks have identical ASTs, and no file under src changed."
+  },
+  "scientific_scope": "Three- or six-step smoke tests establish source compatibility. They do not establish quantitative drag, vortex shedding or accelerator parity."
+}

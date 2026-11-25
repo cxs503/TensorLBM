@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """High-Re quantitative benchmark: 2D cylinder Re=3900 (classic LES case).
 
 Literature (Beaudan & Moin 1994; Kravchenko & Moin 2000; Franke et al.):
@@ -11,8 +11,9 @@ Uses the high-Re fixes: tau_eff upper clamp + MRT+Smag LES.
 import json
 import sys
 import time
+from pathlib import Path
 
-sys.path.insert(0, "/DATA/cxs_host/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import torch
 

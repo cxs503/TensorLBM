@@ -117,26 +117,6 @@
       "matches": 1,
       "matching_lines_sha256": "31914315ce0d9e7dc2fd2e4a4bf1891f218bb73d45fb58e95466ef10e0bc4b45"
     },
-    "examples/highre_cylinder2d_accurate.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_cylinder3d_amr.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_cylinder_bench.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_sphere3d_accurate.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
-    "examples/highre_sphere_bench.py": {
-      "matches": 1,
-      "matching_lines_sha256": "42feee7075a973c0f51c47472a117042ddc884b014a2647b35eea3c2e2647cfa"
-    },
     "scripts/audit_m17855_probe.py": {
       "matches": 2,
       "matching_lines_sha256": "1e779bbd7a3daeffd8fd1accb7ac9b883fcc81db47c3b62f9f54f554fbc7b0c0"
