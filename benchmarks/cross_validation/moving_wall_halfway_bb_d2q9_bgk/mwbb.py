@@ -44,12 +44,12 @@ from pathlib import Path
 import numpy as np
 import torch
 
-_REPO = Path(__file__).resolve().parents[2]
+_REPO = Path(__file__).resolve().parents[3]
 for _p in (str(_REPO), str(_REPO / "src")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from tensorlbm.d2q9 import C, OPPOSITE, _w_for, equilibrium, macroscopic  # noqa: E402
+from tensorlbm.d2q9 import OPPOSITE, C, _w_for, equilibrium, macroscopic  # noqa: E402
 from tensorlbm.solver import collide_bgk, stream  # noqa: E402
 
 CS2 = 1.0 / 3.0
@@ -57,12 +57,12 @@ DTYPE = torch.float64
 
 #: Ablation variants of the moving-wall closure.
 VARIANTS = (
-    "ladd_pre_local",     # reference: pre-streaming BB + Ladd term with local rho
-    "ladd_pre_unitrho",   # same, but rho_w := 1
+    "ladd_pre_local",  # reference: pre-streaming BB + Ladd term with local rho
+    "ladd_pre_unitrho",  # same, but rho_w := 1
     "ladd_precollision",  # Ladd term added to f before collision (ordering error)
-    "static_bb",          # no momentum term at all (wall treated as at rest)
-    "ladd_sign_flip",     # momentum term with the opposite sign
-    "eq_wall_node",       # wall cell reset to equilibrium(1, u_w) each step
+    "static_bb",  # no momentum term at all (wall treated as at rest)
+    "ladd_sign_flip",  # momentum term with the opposite sign
+    "eq_wall_node",  # wall cell reset to equilibrium(1, u_w) each step
 )
 
 
@@ -157,8 +157,16 @@ def stokes2_analytic(y: np.ndarray, t: float, u0: float, omega: float, nu: float
     return u0 * np.exp(-k * eta) * np.cos(omega * t - k * eta)
 
 
-def run_couette(ny: int, nx: int, tau: float, u0: float, variant: str = "ladd_pre_local",
-                n_steps: int = 4000, tol: float = 1e-9, avg_steps: int = 200) -> dict:
+def run_couette(
+    ny: int,
+    nx: int,
+    tau: float,
+    u0: float,
+    variant: str = "ladd_pre_local",
+    n_steps: int = 4000,
+    tol: float = 1e-9,
+    avg_steps: int = 200,
+) -> dict:
     """Steady Couette (top wall u=U0, bottom at rest) with half-way bounce-back."""
     nu = (tau - 0.5) / 3.0
     h_eff = ny - 2.0
@@ -196,12 +204,20 @@ def run_couette(ny: int, nx: int, tau: float, u0: float, variant: str = "ladd_pr
     return {
         "case": "couette",
         "variant": variant,
-        "ny": ny, "nx": nx, "tau": tau, "nu": nu, "H_eff": h_eff,
-        "U0": u0, "Ma": u0 / math.sqrt(CS2), "Re": u0 * h_eff / nu,
-        "n_steps": n_done, "steady": steady,
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
+        "nu": nu,
+        "H_eff": h_eff,
+        "U0": u0,
+        "Ma": u0 / math.sqrt(CS2),
+        "Re": u0 * h_eff / nu,
+        "n_steps": n_done,
+        "steady": steady,
         "l2_rel": float(np.linalg.norm(un - ua) / np.linalg.norm(ua)),
         "max_rel_pct_cf_umax": float(np.max(np.abs(un - ua)) / umax * 100.0),
-        "slope_num": float(a), "slope_ana": u0 / h_eff,
+        "slope_num": float(a),
+        "slope_ana": u0 / h_eff,
         "slope_err_pct": float((a - u0 / h_eff) / (u0 / h_eff) * 100.0),
         "y_wall_fit": float(-b / a) if abs(a) > 0 else float("nan"),
         "mass_drift_pct": (float(f.sum()) - m0) / m0 * 100.0,
@@ -210,9 +226,17 @@ def run_couette(ny: int, nx: int, tau: float, u0: float, variant: str = "ladd_pr
     }
 
 
-def run_stokes2(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
-                variant: str = "ladd_pre_local", n_periods: float = 6.0,
-                sample_stride: int = 4, nu: float | None = None) -> dict:
+def run_stokes2(
+    ny: int,
+    nx: int,
+    tau: float,
+    u0: float,
+    delta_bl: float,
+    variant: str = "ladd_pre_local",
+    n_periods: float = 6.0,
+    sample_stride: int = 4,
+    nu: float | None = None,
+) -> dict:
     """Stokes' second problem: plate at y=0.5 oscillating as U0 cos(omega t).
 
     ``delta_bl = sqrt(2 nu / omega)`` is the viscous penetration depth in lattice
@@ -220,7 +244,7 @@ def run_stokes2(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
     """
     if nu is None:
         nu = (tau - 0.5) / 3.0
-    omega = 2.0 * nu / delta_bl ** 2
+    omega = 2.0 * nu / delta_bl**2
     k_wave = math.sqrt(omega / (2.0 * nu))  # = 1/delta_bl
     period = 2.0 * math.pi / omega
     n_steps = int(round(n_periods * period))
@@ -241,22 +265,29 @@ def run_stokes2(ny: int, nx: int, tau: float, u0: float, delta_bl: float,
             samples.append((t, ux[:, nx // 2].detach().numpy().copy()))
 
     ts = np.array([s[0] for s in samples], dtype=float)
-    U = np.array([s[1] for s in samples])          # (nt, ny)
+    U = np.array([s[1] for s in samples])  # (nt, ny)
     ana = np.array([stokes2_analytic(y, t, u0, omega, nu) for t in ts])
     fluid = slice(1, ny - 1)
     dU = U[:, fluid] - ana[:, fluid]
-    err_row_max_pct = np.max(np.abs(dU), axis=0) / u0 * 100.0   # per fluid row
+    err_row_max_pct = np.max(np.abs(dU), axis=0) / u0 * 100.0  # per fluid row
     rows = np.arange(1, ny - 1)
     eta = rows - 0.5
     resolved = eta <= 3.0 * delta_bl
     return {
         "case": "stokes2",
         "variant": variant,
-        "ny": ny, "nx": nx, "tau": tau, "nu": nu,
-        "U0": u0, "Ma": u0 / math.sqrt(CS2),
-        "omega": omega, "period_steps": period, "delta_bl": delta_bl,
+        "ny": ny,
+        "nx": nx,
+        "tau": tau,
+        "nu": nu,
+        "U0": u0,
+        "Ma": u0 / math.sqrt(CS2),
+        "omega": omega,
+        "period_steps": period,
+        "delta_bl": delta_bl,
         "gap_over_delta": (ny - 2.0) / delta_bl,
-        "n_steps": n_steps, "sample_stride": sample_stride,
+        "n_steps": n_steps,
+        "sample_stride": sample_stride,
         "max_err_pct_U0_full": float(np.max(err_row_max_pct)),
         "max_err_pct_U0_resolved": float(np.max(err_row_max_pct[resolved])),
         "argmax_row_resolved": int(rows[resolved][int(np.argmax(err_row_max_pct[resolved]))]),

@@ -1,0 +1,67 @@
+{
+  "scope": "Historical D2Q9 BGK wall shear and momentum exchange study. The archived report records a failed unscaled Rayleigh sensitivity window at tau=1.2.",
+  "criteria": {
+    "couette_wall_shear_max_error_percent": 15,
+    "stokes_wall_force_max_amplitude_error_percent": 15,
+    "stokes_max_phase_error_degrees": 15,
+    "rayleigh_wall_shear_max_error_percent": 15,
+    "complete_criteria": "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/PREREG.md"
+  },
+  "source": [
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/run_xval.py",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/mwforce.py",
+    "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/mwbb.py"
+  ],
+  "config": [
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/PREREG.md"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/REPORT.md",
+    "docs/XVAL-LBM-MOVING-WALL-WALL-SHEAR-ME-D2Q9-BGK.md"
+  ],
+  "reference_files": [
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/PREREG.md"
+  ],
+  "references": [
+    {
+      "title": "Analytical Couette and Stokes second problem",
+      "source": "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/PREREG.md"
+    },
+    {
+      "title": "Rayleigh startup shear",
+      "source": "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/PREREG.md"
+    }
+  ],
+  "results": [
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_abl_eq_wall_node.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_abl_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_abl_static_bb.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_shear_ny18_tau0.8.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_shear_ny34_tau0.6.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_shear_ny34_tau0.8.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_couette_shear_ny34_tau1.2.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_impulse_identity.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_normal_drift_0.0.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_normal_drift_0.002.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_normal_drift_0.005.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_normal_drift_0.01.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_normal_drift_0.02.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_normal_velocity_diagnostic.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_rayleigh_shear_REF.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_rayleigh_shear_tau1.2.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_abl_eq_wall_node.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_abl_ladd_pre_local.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_abl_ladd_pre_unitrho.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_abl_ladd_sign_flip.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_abl_static_bb.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_shear_REF.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_shear_res_d4.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_shear_tau1.2.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/case_stokes2_shear_tau1.8.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/summary.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/moving-wall-benchmarks-2026-11-25.json",
+    "benchmarks/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/artifacts/figures.json"
+  ]
+}

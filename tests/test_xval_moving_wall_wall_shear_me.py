@@ -3,7 +3,7 @@
 What is pinned here (fast subset, <60 s):
 
 1. **Driver equivalence** — the force-instrumented step is *bit-identical* to the
-   merged reference closure ``xval/XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK/mwbb.py::make_step``.
+   merged reference closure ``benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk/mwbb.py::make_step``.
    Without this the whole study would verify a re-implementation, not the
    adjudicated closure.
 2. **Impulse identity** (M7) — ``sum_{c_q.n>0} c_q inj_q == rho_w u_w`` cell-wise
@@ -30,9 +30,9 @@ import numpy as np
 import pytest
 import torch
 
-XV = Path(__file__).resolve().parents[1] / "xval"
-sys.path.insert(0, str(XV / "XVAL-LBM-MOVING-WALL-WALL-SHEAR-ME-D2Q9-BGK"))
-sys.path.insert(0, str(XV / "XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK"))
+XV = Path(__file__).resolve().parents[1] / "benchmarks/cross_validation"
+sys.path.insert(0, str(XV / "moving_wall_wall_shear_me_d2q9_bgk"))
+sys.path.insert(0, str(XV / "moving_wall_halfway_bb_d2q9_bgk"))
 
 import mwbb  # noqa: E402
 import mwforce as mf  # noqa: E402

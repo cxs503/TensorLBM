@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -19,8 +18,8 @@ import mwforce as mf  # noqa: E402
 
 ART = HERE / "artifacts"
 S = json.loads((ART / "summary.json").read_text())
-FIG = HERE / "figures"
-FIG.mkdir(exist_ok=True)
+FIG = Path("outputs/cross_validation/moving_wall_wall_shear_me_d2q9_bgk/figures").resolve()
+FIG.mkdir(parents=True, exist_ok=True)
 
 
 def fig1_couette() -> dict:
@@ -32,16 +31,19 @@ def fig1_couette() -> dict:
     r = mf.run_couette_shear(ny=34, nx=4, tau=0.8, u0=0.05, n_steps=8000, avg_steps=20)
     y = np.arange(34, dtype=float)
     ax[0].plot(r["u_num"], y, "o", ms=3.0, label="LBM (halfway moving wall)")
-    ax[0].plot(0.05 * np.clip((y - 0.5) / 32.0, 0, 1), y, "-", lw=1.2,
-               label=r"analytic $U_0(y-0.5)/H$")
+    ax[0].plot(
+        0.05 * np.clip((y - 0.5) / 32.0, 0, 1), y, "-", lw=1.2, label=r"analytic $U_0(y-0.5)/H$"
+    )
     ax[0].set_xlabel(r"$u_x$  [lattice]")
     ax[0].set_ylabel(r"$y$  [lattice]")
-    ax[0].set_title(f"steady Couette, $H$=32, $\\tau$=0.8\n(max |$\\Delta u$| = "
-                    f"{ref['u_max_err_pct']:.1e} % of $U_0$)")
+    ax[0].set_title(
+        f"steady Couette, $H$=32, $\\tau$=0.8\n(max |$\\Delta u$| = "
+        f"{ref['u_max_err_pct']:.1e} % of $U_0$)"
+    )
     ax[0].legend(loc="upper left", fontsize=8)
     ax[0].grid(alpha=0.3)
 
-    labels = [f"H={int(c['ny']-2)}, τ={c['tau']}" for c in cases]
+    labels = [f"H={int(c['ny'] - 2)}, τ={c['tau']}" for c in cases]
     errs = [max(abs(c["tau_err_pct"]), abs(c["tau_bot_err_pct"])) for c in cases]
     ax[1].bar(labels, errs)
     ax[1].set_yscale("log")
@@ -56,11 +58,14 @@ def fig1_couette() -> dict:
     p = FIG / "fig1_couette.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    return {"name": "fig1_couette.png", "path": p,
-            "caption": "Steady plane Couette: velocity profile (left) and wall shear from "
-                       "momentum exchange vs the exact N-S value for four grids "
-                       "(right). Errors are at round-off, i.e. the discrete ME force of the "
-                       "halfway moving-wall closure equals rho*nu*U0/H_eff to machine precision."}
+    return {
+        "name": "fig1_couette.png",
+        "path": p,
+        "caption": "Steady plane Couette: velocity profile (left) and wall shear from "
+        "momentum exchange vs the exact N-S value for four grids "
+        "(right). Errors are at round-off, i.e. the discrete ME force of the "
+        "halfway moving-wall closure equals rho*nu*U0/H_eff to machine precision.",
+    }
 
 
 def fig2_stokes() -> dict:
@@ -73,9 +78,11 @@ def fig2_stokes() -> dict:
     ax[0].plot(t, fa, "--", lw=1.1, label="analytic $-\\tau_{fluid}$ free (derived)")
     ax[0].set_xlabel("time step  $t$  [lattice]")
     ax[0].set_ylabel(r"$F_{wall}/A$  [lattice]")
-    ax[0].set_title("Stokes' 2nd problem: wall force over one period\n"
-                    f"amp err {ref['amp_err_pct']:+.3f} %, phase err "
-                    f"{ref['phase_err_deg']:+.3f}°")
+    ax[0].set_title(
+        "Stokes' 2nd problem: wall force over one period\n"
+        f"amp err {ref['amp_err_pct']:+.3f} %, phase err "
+        f"{ref['phase_err_deg']:+.3f}°"
+    )
     ax[0].legend(fontsize=8)
     ax[0].grid(alpha=0.3)
 
@@ -97,10 +104,13 @@ def fig2_stokes() -> dict:
     p = FIG / "fig2_stokes2.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    return {"name": "fig2_stokes2.png", "path": p,
-            "caption": "Stokes' second problem (oscillating wall, delta_bl = 8): measured wall "
-                       "force over one period vs the analytic viscous traction (left); "
-                       "amplitude/phase error over the parameter sweep (right)."}
+    return {
+        "name": "fig2_stokes2.png",
+        "path": p,
+        "caption": "Stokes' second problem (oscillating wall, delta_bl = 8): measured wall "
+        "force over one period vs the analytic viscous traction (left); "
+        "amplitude/phase error over the parameter sweep (right).",
+    }
 
 
 def fig3_rayleigh() -> dict:
@@ -128,17 +138,21 @@ def fig3_rayleigh() -> dict:
     p = FIG / "fig3_rayleigh.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    return {"name": "fig3_rayleigh.png", "path": p,
-            "caption": "Impulsive (Rayleigh) start-up of the wall: |tau_w| vs the half-space "
-                       "similarity solution on log-log axes, and the relative error history; "
-                       "the power-law decay is reproduced without any rescaling."}
+    return {
+        "name": "fig3_rayleigh.png",
+        "path": p,
+        "caption": "Impulsive (Rayleigh) start-up of the wall: |tau_w| vs the half-space "
+        "similarity solution on log-log axes, and the relative error history; "
+        "the power-law decay is reproduced without any rescaling.",
+    }
 
 
 def fig4_ablation() -> dict:
     abl = {c["variant"]: c for c in S["ablation_stokes2"]}
     order = ["ladd_pre_local", "ladd_pre_unitrho", "eq_wall_node", "static_bb", "ladd_sign_flip"]
-    vals = [abs(abl[v]["amp_err_pct"]) if np.isfinite(abl[v]["amp_err_pct"]) else 100.0
-            for v in order]
+    vals = [
+        abs(abl[v]["amp_err_pct"]) if np.isfinite(abl[v]["amp_err_pct"]) else 100.0 for v in order
+    ]
     fig, ax = plt.subplots(1, 2, figsize=(10.5, 4.0))
     ax[0].barh(order, vals, color=["C2"] + ["C0"] * (len(order) - 1))
     ax[0].set_xlabel("wall-force amplitude error  [%]")
@@ -155,28 +169,38 @@ def fig4_ablation() -> dict:
     fit = S["normal_velocity_diagnostic"]["fit_rate_vs_uw_n"]
     ax[1].set_xlabel(r"normal wall speed  $u_w\cdot n$")
     ax[1].set_ylabel("fluid-mass loss rate  [per step]")
-    ax[1].set_title("D1: closure is not mass-neutral for $u_w\\cdot n\\neq0$\n"
-                    f"linear fit slope {fit['slope']:.4f}, $R^2$={fit['r2']:.4f}")
+    ax[1].set_title(
+        "D1: closure is not mass-neutral for $u_w\\cdot n\\neq0$\n"
+        f"linear fit slope {fit['slope']:.4f}, $R^2$={fit['r2']:.4f}"
+    )
     ax[1].grid(alpha=0.3)
     fig.tight_layout()
     p = FIG / "fig4_ablation_drift.png"
     fig.savefig(p, dpi=140)
     plt.close(fig)
-    return {"name": "fig4_ablation_drift.png", "path": p,
-            "caption": "Left: wall-force amplitude error of the reference closure vs four "
-                       "ablations (the case discriminates). Right: measured fluid-mass loss "
-                       "rate when the wall carries a velocity component along its own normal "
-                       "(out of contract; quantified, not corrected)."}
+    return {
+        "name": "fig4_ablation_drift.png",
+        "path": p,
+        "caption": "Left: wall-force amplitude error of the reference closure vs four "
+        "ablations (the case discriminates). Right: measured fluid-mass loss "
+        "rate when the wall carries a velocity component along its own normal "
+        "(out of contract; quantified, not corrected).",
+    }
 
 
 def main() -> None:
     figs = [fig1_couette(), fig2_stokes(), fig3_rayleigh(), fig4_ablation()]
     meta = []
     for f in figs:
-        meta.append({"name": f["name"], "caption": f["caption"],
-                     "png": str(Path(f["path"]).relative_to(HERE))})
+        meta.append(
+            {
+                "name": f["name"],
+                "caption": f["caption"],
+                "png": str(Path(f["path"]).relative_to(FIG.parent)),
+            }
+        )
         print("wrote", f["path"])
-    (ART / "figures.json").write_text(json.dumps(meta, indent=1))
+    (FIG.parent / "figures.json").write_text(json.dumps(meta, indent=1))
 
 
 if __name__ == "__main__":

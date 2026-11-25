@@ -54,6 +54,8 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("src", "artifacts"),
     ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"),
     ("xval", "XVAL-LBM-MASK-INDEXED-BOUNCEBACK"),
+    ("xval", "XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK"),
+    ("xval", "XVAL-LBM-MOVING-WALL-WALL-SHEAR-ME-D2Q9-BGK"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),
     ("scripts", "w26_ghia"),

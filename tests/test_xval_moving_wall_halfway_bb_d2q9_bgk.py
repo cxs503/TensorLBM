@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-XV = Path(__file__).resolve().parents[1] / "xval" / "XVAL-LBM-MOVING-WALL-HALFWAY-BB-D2Q9-BGK"
+XV = Path(__file__).resolve().parents[1] / "benchmarks/cross_validation/moving_wall_halfway_bb_d2q9_bgk"
 sys.path.insert(0, str(XV))
 
 import mwbb  # noqa: E402
