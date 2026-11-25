@@ -15,7 +15,7 @@ import os
 from tensorlbm.audit.example_antipattern import audit_tree, format_summary, main
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-XV = os.path.join(os.path.dirname(HERE), "xval", "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN")
+XV = os.path.join(os.path.dirname(HERE), "development", "verification", "example_harness", "m17895")
 
 
 def test_detector_fires_on_planted_antipattern():

@@ -118,6 +118,7 @@ RETIRED_SECOND_LEVEL_DIRECTORIES = {
     ("benchmarks", "xval_free_energy_binary_equilibrium"),
     ("xval", "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R4"),
     ("xval", "XVAL-LBM-TWO-INDEPENDENT-CONTACT-ANGLE-IMPLS-R5"),
+    ("xval", "XVAL-LBM-EXAMPLE-PER-MAIN-ANTIPATTERN"),
 }
 
 
