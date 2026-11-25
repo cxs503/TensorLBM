@@ -105,21 +105,28 @@ def scalar_collide_bgk(
 
 
 def scalar_collide_diffusion(g: torch.Tensor, tau_x: float, tau_y: float,
-                             tau_even: float) -> torch.Tensor:
-    """Stationary grid-aligned D2Q5 diffusion with independent odd-mode rates.
+                             tau_even: float, *, tau_xy: float = 0.) -> torch.Tensor:
+    """Stationary D2Q5 diffusion with a constant symmetric relaxation tensor.
 
-    The two flux moments have diffusivities (tau_axis-0.5)/3 in lattice
-    units. Even populations relax toward the zero-velocity equilibrium.
-    Equal relaxation times recover stationary BGK.
+    For T = [[tau_x, tau_xy], [tau_xy, tau_y]], the lattice diffusivity
+    is (T - 0.5 I)/3. Even populations relax at the scalar tau_even.
     """
     if g.ndim != 3 or g.shape[0] != 5:
         raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
     if any(not math.isfinite(t) or t <= .5 for t in (tau_x,tau_y,tau_even)):
         raise ValueError("all diffusion relaxation times must be finite and greater than 0.5")
+    if not math.isfinite(tau_xy) or tau_xy**2 >= (tau_x-.5)*(tau_y-.5):
+        raise ValueError("diffusivity tensor must be finite and positive definite")
     opposite = g[_OPP5.to(g.device)]
     odd = .5*(g-opposite)
     even = .5*(g+opposite)
     equilibrium = _w5_tensor(g.dtype,g.device)[:,None,None]*g.sum(0)
+    if tau_xy:
+        determinant = tau_x*tau_y - tau_xy**2
+        rx = (tau_y*odd[1] - tau_xy*odd[2])/determinant
+        ry = (tau_x*odd[2] - tau_xy*odd[1])/determinant
+        relaxed = torch.stack((torch.zeros_like(rx), rx, ry, -rx, -ry))
+        return g - (even-equilibrium)/tau_even - relaxed
     rates = g.new_tensor([0.,1/tau_x,1/tau_y,1/tau_x,1/tau_y])[:,None,None]
     return g - (even-equilibrium)/tau_even - odd*rates
 

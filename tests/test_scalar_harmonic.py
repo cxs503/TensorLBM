@@ -49,3 +49,38 @@ def test_anisotropic_collision_conserves_density_and_relaxes_first_moments():
                                scalar_collide_bgk(g,g.sum(0),zero,zero,.82))
     with pytest.raises(ValueError,match="relaxation"):
         scalar_collide_diffusion(g,.8,.5,1.)
+
+
+@pytest.mark.parametrize("tau_xy", [.3, -.3])
+def test_rotated_flux_relaxation(tau_xy):
+    from tensorlbm.scalar import scalar_collide_diffusion
+
+    g = torch.arange(40, dtype=torch.float64).sin().reshape(5, 2, 4)
+    matrix = g.new_tensor([[1.2, tau_xy], [tau_xy, .85]])
+    post = scalar_collide_diffusion(g, 1.2, .85, .94, tau_xy=tau_xy)
+    moments = (g[1:3]-g[3:5]).reshape(2, -1)
+    expected = moments-torch.linalg.solve(matrix, moments)
+    torch.testing.assert_close((post[1:3]-post[3:5]).reshape(2, -1), expected)
+    torch.testing.assert_close(post.sum(0), g.sum(0))
+    with pytest.raises(ValueError, match="positive definite"):
+        scalar_collide_diffusion(g, .75, .75, 1., tau_xy=.25)
+
+
+@pytest.mark.parametrize("direction", [-1, 1])
+def test_oblique_periodic_decay_converges(direction):
+    from tensorlbm.scalar import scalar_collide_diffusion, scalar_equilibrium, scalar_stream
+
+    errors = []
+    for n in (16, 32, 64):
+        x = torch.arange(n, dtype=torch.float64)*2*math.pi/n
+        mode = torch.cos(x[None, :]+direction*x[:, None])
+        zero = torch.zeros_like(mode)
+        g = scalar_equilibrium(mode, zero, zero)
+        steps = n*n//16
+        for _ in range(steps):
+            g = scalar_stream(scalar_collide_diffusion(g, 1.2, .85, 1., tau_xy=.21))
+        decay = math.exp(-steps*(2*math.pi/n)**2*(.7+.35+2*direction*.21)/3)
+        reference = decay*mode
+        errors.append(float((g.sum(0)-reference).norm()/reference.norm()))
+    assert max(errors[1]/errors[0], errors[2]/errors[1]) < .28
+    assert errors[-1] < .001
