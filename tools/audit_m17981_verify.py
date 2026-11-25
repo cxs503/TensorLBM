@@ -93,13 +93,20 @@ def main() -> int:
     rep: dict = {"work_tree": str(work), "gate_pct": GATE_PCT}
 
     # ---------------------------------------------------------------- A1 presence
+    case_dir = work / "benchmarks/case_pool/oscillatory_cylinder_inertia"
+    survey_dir = case_dir / "historical_survey"
+    if not survey_dir.is_dir():
+        survey_dir = work / "xval/horizontal_survey_empty"
+    case_runner = case_dir / "run.py"
+    if not case_runner.is_file():
+        case_runner = work / "cases/oscillatory_cylinder_inertia/run.py"
     impl = {
         "module": work / "src/tensorlbm/oscillatory_cylinder_inertia.py",
-        "case_runner": work / "cases/oscillatory_cylinder_inertia/run.py",
-        "survey": work / "xval/horizontal_survey_empty/survey.py",
-        "arm_harness": work / "xval/horizontal_survey_empty/run_arm.py",
-        "analysis": work / "xval/horizontal_survey_empty/analyze.py",
-        "predeclared": work / "xval/horizontal_survey_empty/predeclared.json",
+        "case_runner": case_runner,
+        "survey": survey_dir / "survey.py",
+        "arm_harness": survey_dir / "run_arm.py",
+        "analysis": survey_dir / "analyze.py",
+        "predeclared": survey_dir / "predeclared.json",
     }
     docs = {
         "report": work / "docs/XVAL_LBM_HORIZONTAL_SURVEY_EMPTY.md",
@@ -116,18 +123,21 @@ def main() -> int:
                        [{"path": str(p), "exists": p.exists(), "bytes": p.stat().st_size if p.exists() else 0} for p in v])
                    for k, v in docs.items()}
     runs = {}
+    runs_root = work / "runs/oscillatory_cylinder_inertia"
+    if not runs_root.is_dir():
+        runs_root = survey_dir / "runs"
     for case in CASES:
-        d = work / "runs/oscillatory_cylinder_inertia" / case
-        runs[case] = {f.name: {"exists": f.exists(), "bytes": f.stat().st_size}
+        d = runs_root / case
+        runs[case] = {f.name: {"exists": f.is_file(), "bytes": f.stat().st_size if f.is_file() else 0}
                       for f in (d / "result.json", d / "trace.npz")}
-    runs["benchmark_table.json"] = {"exists": (work / "runs/oscillatory_cylinder_inertia/benchmark_table.json").exists()}
+    runs["benchmark_table.json"] = {"exists": (runs_root / "benchmark_table.json").is_file()}
     rep["run_artifacts"] = runs
 
     # ------------------------------------------------------------- A2 trace re-fit
     refits = {}
     for case, (transient, measure) in CASES.items():
-        rp = work / "runs/oscillatory_cylinder_inertia" / case / "result.json"
-        tp = work / "runs/oscillatory_cylinder_inertia" / case / "trace.npz"
+        rp = runs_root / case / "result.json"
+        tp = runs_root / case / "trace.npz"
         if not (rp.exists() and tp.exists()):
             refits[case] = {"status": "missing_artifacts"}
             continue
@@ -193,7 +203,7 @@ def main() -> int:
             "pass_analytic": abs(err_an) <= GATE_PCT,
         }
     # the pre-module arm used the Morison convention C_M = 2; recompute that too
-    bm = work / "runs/oscillatory_cylinder_inertia/base_m17844/result.json"
+    bm = runs_root / "base_m17844/result.json"
     if bm.exists():
         b = json.loads(bm.read_text())
         k = b.get("kpi", {})
@@ -208,8 +218,9 @@ def main() -> int:
                         "this row shows the -21.29% number quoted by the benchmark registry",
             })
     rep["error_judgment"] = judged
-    rep["gate_all_fail"] = all(not (v.get("pass_same_mask") or v.get("pass_analytic"))
-                              for v in judged.values())
+    rep["gate_all_fail"] = (
+        all(not (v.get("pass_same_mask") or v.get("pass_analytic")) for v in judged.values()) if judged else None
+    )
 
     # -------------------------------------------------- A5 registry cross-check
     if args.bench_row and Path(args.bench_row).exists():
@@ -236,50 +247,52 @@ def main() -> int:
         grep = []
         rep["integration_grep_error"] = str(exc)
     self_files = ("src/tensorlbm/oscillatory_cylinder_inertia.py", "tests/test_oscillatory_cylinder_inertia.py",
-                  "cases/oscillatory_cylinder_inertia/", "docs/XVAL_LBM_HORIZONTAL_SURVEY_EMPTY.md")
+                  "cases/oscillatory_cylinder_inertia/", "benchmarks/case_pool/oscillatory_cylinder_inertia/",
+                  "docs/XVAL_LBM_HORIZONTAL_SURVEY_EMPTY.md")
     callers = [ln for ln in grep if not any(s in ln for s in self_files)]
     rep["integration_callers"] = callers
     rep["integration_verdict"] = "none (0 non-self callers) -> L3 not met" if not callers else "callers present"
 
     # ------------------------------------------------------------------ A7 figure
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+    if judged:
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
 
-        order = [c for c in ("quick", "base_m17844", "res16") if c in judged]
-        labels = {"quick": "quick\nD=12, box 6D", "base_m17844": "base (m17844 arm)\nD=24, box 12D",
-                  "res16": "res16\nD=16, box 12D"}
-        got = [judged[c]["got_E1_area"] if "got_E1_area" in judged[c] else judged[c]["got_E1_halfway"] for c in order]
-        ref = [refs[c]["c_a_area_normalised"] for c in order]
-        fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
-        x = range(len(order))
-        ax[0].bar([i - 0.2 for i in x], ref, width=0.4, label="same-mask potential $C_a$ (ref)", color="#4c72b0")
-        ax[0].bar([i + 0.2 for i in x], got, width=0.4, label="measured $C_I$ (E1, m17981 artifacts)", color="#c44e52")
-        ax[0].set_xticks(list(x))
-        ax[0].set_xticklabels([labels[c] for c in order], fontsize=8)
-        ax[0].set_ylabel("inertia coefficient [-]")
-        ax[0].set_title("got vs reference (auditor re-fit from trace.npz)")
-        ax[0].legend(fontsize=8)
-        errs = [100.0 * (g - r) / r for g, r in zip(got, ref)]
-        ax[1].axhspan(-GATE_PCT, GATE_PCT, color="#8fce8f", alpha=0.35, label="±15% gate")
-        ax[1].axhline(0, color="k", lw=0.8)
-        ax[1].plot(list(x), errs, "o-", color="#c44e52", label="vs same-mask $C_a$")
-        an_err = [judged[c].get("err_vs_analytic_Ca1_pct") for c in order]
-        ax[1].plot(list(x), [e if e is not None else float("nan") for e in an_err], "s--", color="#555555",
-                   label="vs analytic $C_a=1$")
-        ax[1].set_xticks(list(x))
-        ax[1].set_xticklabels([labels[c] for c in order], fontsize=8)
-        ax[1].set_ylabel("error [%]")
-        ax[1].set_title("error judgment: every arm outside the gate")
-        ax[1].legend(fontsize=8)
-        fig.suptitle("AUDIT m17981  XVAL-LBM-HORIZONTAL-SURVEY-EMPTY", fontsize=10)
-        fig.tight_layout()
-        figp = out / "fig_audit_m17981.png"
-        fig.savefig(figp, dpi=130)
-        rep["figure"] = str(figp)
-    except Exception as exc:  # pragma: no cover
-        rep["figure_error"] = str(exc)
+            order = [c for c in ("quick", "base_m17844", "res16") if c in judged]
+            labels = {"quick": "quick\nD=12, box 6D", "base_m17844": "base (m17844 arm)\nD=24, box 12D",
+                      "res16": "res16\nD=16, box 12D"}
+            got = [judged[c]["got_E1_area"] if "got_E1_area" in judged[c] else judged[c]["got_E1_halfway"] for c in order]
+            ref = [refs[c]["c_a_area_normalised"] for c in order]
+            fig, ax = plt.subplots(1, 2, figsize=(11, 4.2))
+            x = range(len(order))
+            ax[0].bar([i - 0.2 for i in x], ref, width=0.4, label="same-mask potential $C_a$ (ref)", color="#4c72b0")
+            ax[0].bar([i + 0.2 for i in x], got, width=0.4, label="measured $C_I$ (E1, m17981 artifacts)", color="#c44e52")
+            ax[0].set_xticks(list(x))
+            ax[0].set_xticklabels([labels[c] for c in order], fontsize=8)
+            ax[0].set_ylabel("inertia coefficient [-]")
+            ax[0].set_title("got vs reference (auditor re-fit from trace.npz)")
+            ax[0].legend(fontsize=8)
+            errs = [100.0 * (g - r) / r for g, r in zip(got, ref)]
+            ax[1].axhspan(-GATE_PCT, GATE_PCT, color="#8fce8f", alpha=0.35, label="±15% gate")
+            ax[1].axhline(0, color="k", lw=0.8)
+            ax[1].plot(list(x), errs, "o-", color="#c44e52", label="vs same-mask $C_a$")
+            an_err = [judged[c].get("err_vs_analytic_Ca1_pct") for c in order]
+            ax[1].plot(list(x), [e if e is not None else float("nan") for e in an_err], "s--", color="#555555",
+                       label="vs analytic $C_a=1$")
+            ax[1].set_xticks(list(x))
+            ax[1].set_xticklabels([labels[c] for c in order], fontsize=8)
+            ax[1].set_ylabel("error [%]")
+            ax[1].set_title("error judgment: every arm outside the gate")
+            ax[1].legend(fontsize=8)
+            fig.suptitle("AUDIT m17981  XVAL-LBM-HORIZONTAL-SURVEY-EMPTY", fontsize=10)
+            fig.tight_layout()
+            figp = out / "fig_audit_m17981.png"
+            fig.savefig(figp, dpi=130)
+            rep["figure"] = str(figp)
+        except Exception as exc:  # pragma: no cover
+            rep["figure_error"] = str(exc)
 
     (out / "audit_m17981.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False))
     print(json.dumps({"json": str(out / "audit_m17981.json"),

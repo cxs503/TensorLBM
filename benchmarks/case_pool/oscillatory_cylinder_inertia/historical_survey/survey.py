@@ -28,9 +28,10 @@ Nothing here is hand-copied: every hit carries the row id and the matched
 snippet, and the verdict of a family is a pure function of the hit count.
 
 Usage:
-  python xval/horizontal_survey_empty/survey.py            # full table
-  python xval/horizontal_survey_empty/survey.py --focus added_mass_pmm
+  python benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey.py            # full table
+  python benchmarks/case_pool/oscillatory_cylinder_inertia/historical_survey/survey.py --focus added_mass_pmm
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,10 +54,16 @@ FAMILIES: dict[str, dict] = {
     "added_mass_pmm": {
         "label": "oscillatory-flow inertia coefficient / added mass / PMM derivatives",
         "patterns": [
-            r"added[ -]?mass", r"\bpmm\b", r"planar motion mechanism",
+            r"added[ -]?mass",
+            r"\bpmm\b",
+            r"planar motion mechanism",
             r"oscillat\w* (?:flow|cylinder|free[ -]?stream)",
-            r"morison", r"inertia coefficient", r"keulegan", r"\bkc\b.*\btheta\b",
-            r"force oscillation test", r"captive (?:model )?test",
+            r"morison",
+            r"inertia coefficient",
+            r"keulegan",
+            r"\bkc\b.*\btheta\b",
+            r"force oscillation test",
+            r"captive (?:model )?test",
         ],
         "src_probe": r"added|pmm|manoeu|maneu|oscillat",
     },
@@ -119,9 +126,7 @@ def _scan_rows(rows: list[dict], fields: tuple[str, ...], patterns: list[str]) -
             {
                 "id": row.get("id"),
                 "repo": row.get("repo"),
-                "field": next(
-                    (k for k in fields if re.search(rx, str(row.get(k) or ""))), "?"
-                ),
+                "field": next((k for k in fields if re.search(rx, str(row.get(k) or ""))), "?"),
                 "matched": m.group(0),
                 "snippet": re.sub(r"\s+", " ", blob[lo : m.end() + 60]).strip(),
             }
@@ -136,7 +141,9 @@ def _scan_sources(root: Path, patterns: list[str]) -> dict:
     try:
         out = subprocess.run(
             ["grep", "-rIl", "-i", "-E", rx, str(root)],
-            capture_output=True, text=True, timeout=180,
+            capture_output=True,
+            text=True,
+            timeout=180,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:  # pragma: no cover
         return {"available": False, "root": str(root), "reason": str(exc)}
@@ -144,16 +151,25 @@ def _scan_sources(root: Path, patterns: list[str]) -> dict:
         return {"available": False, "root": str(root), "reason": out.stderr[:200]}
     files = [str(Path(p).relative_to(root)) for p in out.stdout.split("\n") if p.strip()]
     repos = sorted({f.split(os.sep)[0] for f in files})
-    return {"available": True, "root": str(root), "n_files": len(files), "repos": repos,
-            "files": files[:40]}
+    return {
+        "available": True,
+        "root": str(root),
+        "n_files": len(files),
+        "repos": repos,
+        "files": files[:40],
+    }
 
 
 def _src_probe(pattern: str) -> dict:
-    root = HERE.parents[1] / "src" / "tensorlbm"
+    root = HERE.parents[3] / "src" / "tensorlbm"
     if not root.is_dir():
         return {"available": False}
-    out = subprocess.run(["grep", "-rIl", "-i", "-E", pattern, str(root)],
-                         capture_output=True, text=True, timeout=180)
+    out = subprocess.run(
+        ["grep", "-rIl", "-i", "-E", pattern, str(root)],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
     files = [str(Path(p).relative_to(root)) for p in out.stdout.split("\n") if p.strip()]
     return {"available": True, "n_files": len(files), "files": files[:25]}
 
@@ -170,12 +186,20 @@ def main() -> int:
 
     result = {
         "sources": {
-            "oss_inventory": {"path": "data/oss_inventory_dump.csv", "n_rows": len(inv),
-                              "sha256": hashlib.sha256(
-                                  (DATA / "oss_inventory_dump.csv").read_bytes()).hexdigest()},
-            "oss_solutions": {"path": "data/oss_solutions_dump.csv", "n_rows": len(led),
-                              "sha256": hashlib.sha256(
-                                  (DATA / "oss_solutions_dump.csv").read_bytes()).hexdigest()},
+            "oss_inventory": {
+                "path": "data/oss_inventory_dump.csv",
+                "n_rows": len(inv),
+                "sha256": hashlib.sha256(
+                    (DATA / "oss_inventory_dump.csv").read_bytes()
+                ).hexdigest(),
+            },
+            "oss_solutions": {
+                "path": "data/oss_solutions_dump.csv",
+                "n_rows": len(led),
+                "sha256": hashlib.sha256(
+                    (DATA / "oss_solutions_dump.csv").read_bytes()
+                ).hexdigest(),
+            },
         },
         "families": {},
     }
@@ -185,19 +209,33 @@ def main() -> int:
         led_hits = _scan_rows(led, LEDGER_FIELDS, fam["patterns"])
         src = _scan_sources(Path(args.oss_cache), fam["patterns"])
         own = _src_probe(fam["src_probe"])
-        verdict = "empty" if (not inv_hits and not led_hits and not src.get("n_files")) else "covered"
+        verdict = (
+            "empty" if (not inv_hits and not led_hits and not src.get("n_files")) else "covered"
+        )
         result["families"][key] = {
-            "label": fam["label"], "patterns": fam["patterns"], "verdict": verdict,
-            "census_hits": inv_hits, "ledger_hits": led_hits, "source_scan": src,
+            "label": fam["label"],
+            "patterns": fam["patterns"],
+            "verdict": verdict,
+            "census_hits": inv_hits,
+            "ledger_hits": led_hits,
+            "source_scan": src,
             "tensorlbm_src": own,
         }
-        table.append({
-            "family": key, "label": fam["label"], "verdict": verdict,
-            "census_hits": len(inv_hits), "census_repos": ";".join(sorted({h["repo"] for h in inv_hits})),
-            "ledger_hits": len(led_hits), "ledger_slugs": ";".join(sorted({h["repo"] + "/" + str(h["id"]) for h in led_hits})),
-            "oss_cache_hits": src.get("n_files", "unavailable"),
-            "tensorlbm_src_files": own.get("n_files", 0),
-        })
+        table.append(
+            {
+                "family": key,
+                "label": fam["label"],
+                "verdict": verdict,
+                "census_hits": len(inv_hits),
+                "census_repos": ";".join(sorted({h["repo"] for h in inv_hits})),
+                "ledger_hits": len(led_hits),
+                "ledger_slugs": ";".join(
+                    sorted({h["repo"] + "/" + str(h["id"]) for h in led_hits})
+                ),
+                "oss_cache_hits": src.get("n_files", "unavailable"),
+                "tensorlbm_src_files": own.get("n_files", 0),
+            }
+        )
 
     out_dir = Path(args.out_dir)
     with (out_dir / "survey_table.csv").open("w", newline="") as fh:
@@ -207,13 +245,23 @@ def main() -> int:
     (out_dir / "survey_summary.json").write_text(json.dumps(result, indent=2) + "\n")
 
     focus = result["families"][args.focus]
-    print(json.dumps({
-        "focus": args.focus, "label": focus["label"], "verdict": focus["verdict"],
-        "census_hits": len(focus["census_hits"]), "ledger_hits": len(focus["ledger_hits"]),
-        "source_scan": {k: focus["source_scan"].get(k) for k in ("available", "n_files", "root")},
-        "tensorlbm_src_n_files": focus["tensorlbm_src"].get("n_files"),
-        "table": table,
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "focus": args.focus,
+                "label": focus["label"],
+                "verdict": focus["verdict"],
+                "census_hits": len(focus["census_hits"]),
+                "ledger_hits": len(focus["ledger_hits"]),
+                "source_scan": {
+                    k: focus["source_scan"].get(k) for k in ("available", "n_files", "root")
+                },
+                "tensorlbm_src_n_files": focus["tensorlbm_src"].get("n_files"),
+                "table": table,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 
