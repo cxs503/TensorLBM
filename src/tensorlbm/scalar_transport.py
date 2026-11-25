@@ -763,19 +763,20 @@ def run_erfc_half_space(
     Initial field is zero; the inflow face is held at ``C = level`` and the far
     face uses zero-gradient outflow.  Reference: :func:`erfc_half_space`.
     """
+    from .scalar import scalar_stream_slab
+
     ny, nx = cfg.ny, cfg.nx
-    x = torch.arange(nx, dtype=cfg.dtype)
+    x = torch.arange(nx, dtype=cfg.dtype) + .5
     ux = torch.zeros((ny, nx), dtype=cfg.dtype)
     uy = torch.zeros((ny, nx), dtype=cfg.dtype)
     g = torch.zeros((5, ny, nx), dtype=cfg.dtype)
     budget = MassBudget(mass_initial=0.0)
     for _ in range(int(steps)):
-        g, flux = _step(g, cfg, ux, uy, "open", "periodic", ("xlo", "xhi"))
-        budget.outflux += float(flux)
-        g, injected = apply_inlet_dirichlet(g, level)
-        budget.injected += float(injected)
-        g, refill = apply_outlet_zero_gradient(g)
-        budget.injected += float(refill)
+        post = collide_scalar_trt(g, scalar_field(g), ux, uy, cfg.tau_odd, cfg.tau_sym)
+        g, _ = scalar_stream_slab(post, level, None)
+        # Track populations crossing the driven face in each direction.
+        budget.outflux += float(post[3,:,0].sum())
+        budget.injected += float(g[1,:,0].sum())
     budget.mass_final = float(scalar_field(g).sum())
     budget.steps = int(steps)
     return ScalarRunResult(c=scalar_field(g), x=x, budget=budget, steps=int(steps))
@@ -1110,7 +1111,9 @@ def run_lfl_wind_sweep(
 # ``collide_scalar_trt`` (``tau_sym = None`` -> ``tau_s == tau_o``).
 import torch as _torch  # noqa: E402
 
-C5 = _torch.tensor([CX_D2Q5, CY_D2Q5], dtype=_torch.long).T.contiguous()  # (5, 2)
+# Legacy order: rest, +x, -x, +y, -y. TRT swaps slots 2 and 3.
+_LEGACY_TRT_ORDER = [0, 1, 3, 2, 4]
+C5 = _torch.tensor([CX_D2Q5, CY_D2Q5], dtype=_torch.long).T[_LEGACY_TRT_ORDER].contiguous()
 W5 = _torch.tensor(W_D2Q5, dtype=_torch.float32)
 
 
@@ -1120,12 +1123,12 @@ def _get_w5(dtype=_torch.float32, device=None):
 
 def scalar_equilibrium(c, ux, uy):
     """Legacy alias of :func:`equilibrium_scalar_d2q5`."""
-    return equilibrium_scalar_d2q5(c, ux, uy)
+    return equilibrium_scalar_d2q5(c, ux, uy)[_LEGACY_TRT_ORDER]
 
 
 def scalar_collision(g, c, ux, uy, tau):
     """Legacy BGK collision: single relaxation time."""
-    return collide_scalar_trt(g, c, ux, uy, tau, None)
+    return collide_scalar_trt(g[_LEGACY_TRT_ORDER], c, ux, uy, tau, None)[_LEGACY_TRT_ORDER]
 
 
 def scalar_macroscopic(g):
@@ -1135,8 +1138,8 @@ def scalar_macroscopic(g):
 
 def scalar_stream(g, *args, **kwargs):
     """Legacy streaming: pre-rewrite callers expect only the streamed field."""
-    out = stream_scalar(g, *args, **kwargs)
-    return out[0] if isinstance(out, tuple) else out
+    out, _ = stream_scalar(g[_LEGACY_TRT_ORDER], *args, **kwargs)
+    return out[_LEGACY_TRT_ORDER]
 
 
 def scalar_diffusivity(tau):
@@ -1144,4 +1147,4 @@ def scalar_diffusivity(tau):
     return CS2_D2Q5 * (tau - 0.5)
 
 
-OPPOSITE5 = OPP_D2Q5  # legacy name (pre-TRT-rewrite) for the D2Q5 opposite map
+OPPOSITE5 = tuple(_LEGACY_TRT_ORDER[OPP_D2Q5[i]] for i in _LEGACY_TRT_ORDER)

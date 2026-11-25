@@ -104,6 +104,33 @@ def scalar_collide_bgk(
     return g - (g - g_eq) / tau_s
 
 
+def scalar_collide_diffusion(g: torch.Tensor, tau_x: float, tau_y: float,
+                             tau_even: float, *, tau_xy: float = 0.) -> torch.Tensor:
+    """Stationary D2Q5 diffusion with a constant symmetric relaxation tensor.
+
+    For T = [[tau_x, tau_xy], [tau_xy, tau_y]], the lattice diffusivity
+    is (T - 0.5 I)/3. Even populations relax at the scalar tau_even.
+    """
+    if g.ndim != 3 or g.shape[0] != 5:
+        raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
+    if any(not math.isfinite(t) or t <= .5 for t in (tau_x,tau_y,tau_even)):
+        raise ValueError("all diffusion relaxation times must be finite and greater than 0.5")
+    if not math.isfinite(tau_xy) or tau_xy**2 >= (tau_x-.5)*(tau_y-.5):
+        raise ValueError("diffusivity tensor must be finite and positive definite")
+    opposite = g[_OPP5.to(g.device)]
+    odd = .5*(g-opposite)
+    even = .5*(g+opposite)
+    equilibrium = _w5_tensor(g.dtype,g.device)[:,None,None]*g.sum(0)
+    if tau_xy:
+        determinant = tau_x*tau_y - tau_xy**2
+        rx = (tau_y*odd[1] - tau_xy*odd[2])/determinant
+        ry = (tau_x*odd[2] - tau_xy*odd[1])/determinant
+        relaxed = torch.stack((torch.zeros_like(rx), rx, ry, -rx, -ry))
+        return g - (even-equilibrium)/tau_even - relaxed
+    rates = g.new_tensor([0.,1/tau_x,1/tau_y,1/tau_x,1/tau_y])[:,None,None]
+    return g - (even-equilibrium)/tau_even - odd*rates
+
+
 def scalar_stream(g: torch.Tensor) -> torch.Tensor:
     """Periodic streaming for D2Q5 scalar distributions."""
     ny, nx = g.shape[1], g.shape[2]
@@ -120,6 +147,93 @@ def scalar_stream(g: torch.Tensor) -> torch.Tensor:
         _stream5_cache[key] = (q_idx, y_idx, x_idx)
     q_idx, y_idx, x_idx = _stream5_cache[key]
     return g[q_idx, y_idx, x_idx]
+
+
+def scalar_link_transfer(g: torch.Tensor, axis: str, *, periodic: bool = False) -> torch.Tensor:
+    """Return signed transfer toward increasing x or y across each D2Q5 face.
+
+    Use post-collision populations. Index j denotes the face between cells j
+    and j+1 along the named axis. With periodic=True the last face wraps to
+    cell zero. Multiply by cell volume for the scalar amount per time step.
+    """
+    if g.ndim != 3 or g.shape[0] != 5:
+        raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
+    if axis == "x":
+        if periodic:
+            return g[1] - torch.roll(g[3], -1, dims=1)
+        return g[1,:,:-1] - g[3,:,1:]
+    if axis == "y":
+        if periodic:
+            return g[2] - torch.roll(g[4], -1, dims=0)
+        return g[2,:-1,:] - g[4,1:,:]
+    raise ValueError("axis must be x or y")
+
+
+def scalar_wall_step_means(step_edges, switch_times, levels, *, interpolation="constant"):
+    """Average prescribed wall data over each lattice step.
+
+    Supply CPU times in a common unit and one level before the first switch
+    and after each switch. Trailing dimensions of levels may index walls or
+    transverse rows. With interpolation="linear", supply one level per knot
+    in switch_times. Interpolate linearly between knots and hold the nearest
+    level outside the knot range. Returns a NumPy float64 array indexed first by step.
+    Its values can be passed to the linear halfway Dirichlet boundary rule.
+    """
+    edges = np.asarray(step_edges, dtype=float)
+    switches = np.asarray(switch_times, dtype=float)
+    levels = np.asarray(levels, dtype=float)
+    if edges.ndim != 1 or edges.size < 2 or not np.isfinite(edges).all() or np.any(np.diff(edges) <= 0):
+        raise ValueError("step_edges must contain strictly increasing finite times")
+    if switches.ndim != 1 or not np.isfinite(switches).all() or np.any(np.diff(switches) <= 0):
+        raise ValueError("switch_times must contain strictly increasing finite times")
+    if levels.ndim == 0 or not np.isfinite(levels).all():
+        raise ValueError("supply finite wall levels")
+    times = np.union1d(edges, switches[(edges[0] < switches) & (switches < edges[-1])])
+    trailing = (1,)*(levels.ndim-1)
+    durations = np.diff(times).reshape((-1,)+trailing)
+    if interpolation == "constant":
+        if len(levels) != switches.size+1:
+            raise ValueError("supply one finite wall level for each plateau")
+        segment_means = levels[np.searchsorted(switches, times[:-1], side="right")]
+    elif interpolation == "linear":
+        if not switches.size or len(levels) != switches.size:
+            raise ValueError("linear interpolation requires one level per knot")
+        right = np.searchsorted(switches, times).clip(0, switches.size-1)
+        left = (right-1).clip(0)
+        span = switches[right]-switches[left]
+        weight = np.divide(times-switches[left], span, out=np.zeros_like(times), where=span>0).clip(0, 1)
+        values = levels[left]+weight.reshape((-1,)+trailing)*(levels[right]-levels[left])
+        segment_means = .5*(values[:-1]+values[1:])
+    else:
+        raise ValueError("interpolation must be constant or linear")
+    integral = np.add.reduceat(segment_means*durations, np.searchsorted(times, edges[:-1]), axis=0)
+    return integral/np.diff(edges).reshape((-1,)+trailing)
+
+
+def scalar_stream_slab(g: torch.Tensor, west, east) -> tuple[torch.Tensor, torch.Tensor]:
+    """Stream post-collision D2Q5 populations with halfway walls in x and periodic y.
+
+    For a stationary wall, a scalar or (ny,) value prescribes the diffusing
+    field by anti-bounce-back. None reflects the outgoing population for zero
+    normal flux. The second return has shape (2, ny): incoming minus outgoing
+    population per wall link, ordered west then east. Multiply by cell volume
+    and capacity to obtain heat supplied over the step.
+    """
+    if g.ndim != 3 or g.shape[0] != 5 or min(g.shape[1:]) < 1:
+        raise ValueError("expected D2Q5 populations shaped (5, ny, nx)")
+    streamed = scalar_stream(g)
+    transfers = []
+    for wall, incoming, outgoing, col in ((west, 1, 3, 0), (east, 3, 1, -1)):
+        leaving = g[outgoing, :, col]
+        arriving = leaving
+        if wall is not None:
+            value = torch.as_tensor(wall, dtype=g.dtype, device=g.device)
+            if value.ndim and value.shape != leaving.shape:
+                raise ValueError("wall scalar must be uniform or have one value per row")
+            arriving = 2 * _W5_EXACT[incoming] * value - leaving
+        streamed[incoming, :, col] = arriving
+        transfers.append(arriving - leaving)
+    return streamed, torch.stack(transfers)
 
 
 def scalar_macroscopic(g: torch.Tensor) -> torch.Tensor:

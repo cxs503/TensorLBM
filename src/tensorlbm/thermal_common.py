@@ -35,6 +35,7 @@ He, X., Chen, S., & Doolen, G. D. (1998).
 from __future__ import annotations
 
 import functools
+import math
 from typing import Any
 
 import torch
@@ -44,18 +45,27 @@ __all__ = [
     "C_D3Q7",
     "W_D3Q7",
     "thermal_equilibrium_3d",
+    "thermal_gradient_initialization_3d",
+    "thermal_pulse_increments_3d",
     "thermal_collide_bgk_3d",
+    "thermal_collide_trt_3d",
     "thermal_stream_3d",
     "thermal_macroscopic_3d",
+    "thermal_link_fluxes_3d",
     "apply_buoyancy_3d",
     "thermal_step",
     "conjugate_ht_step",
     # Boundary-condition helpers
     "thermal_dirichlet_wall_3d",
     "thermal_adiabatic_walls_3d",
+    "thermal_flux_wall_pair_3d",
+    "thermal_temperature_wall_pair_3d",
+    "thermal_startup_wall_temperature_3d",
+    "thermal_mixed_wall_pair_3d",
     "thermal_fixed_temp_mask_3d",
     # Diagnostics
     "nusselt_hot_wall_3d",
+    "wall_heat_rate_3d",
     "nusselt_cylinder_3d",
     "heat_flux_at_interface_3d",
     # Benchmark runners (common-module integrated)
@@ -138,6 +148,79 @@ def thermal_equilibrium_3d(
     return w * T.unsqueeze(0) * (1.0 + 4.0 * cu)
 
 
+def thermal_pulse_increments_3d(temperature_rate: torch.Tensor, *, time: float, dt: float,
+                                start: float, stop: float) -> tuple[torch.Tensor, torch.Tensor]:
+    """D3Q7 population increments for a rectangular source in stationary conduction.
+
+    Supply a temperature rate (volumetric power divided by heat capacity) on
+    (nz, ny, nx). Add the first increment after collision, before streaming,
+    and the second after applying wall conditions. The linear time weights
+    integrate the source amount and its first time moment over the active
+    part of the step. Both outputs have shape (7, nz, ny, nx).
+    """
+    if temperature_rate.ndim != 3 or not temperature_rate.is_floating_point():
+        raise ValueError("temperature_rate must be a floating-point 3-D field")
+    if not all(math.isfinite(t) for t in (time, dt, start, stop)) or dt <= 0 or stop < start:
+        raise ValueError("finite times, dt > 0 and stop >= start are required")
+    begin = min(dt, max(0., start-time))
+    end = min(dt, max(0., stop-time))
+    active = end-begin
+    late = active*((begin/dt + end/dt)/2)
+    weights = W_D3Q7.to(temperature_rate).view(7, 1, 1, 1)
+    populations = weights*temperature_rate
+    return populations*(active-late), populations*late
+
+
+def _periodic_axes(periodic: bool | str) -> str:
+    if isinstance(periodic, str):
+        if set(periodic)-set("xyz") or len(set(periodic)) != len(periodic):
+            raise ValueError("periodic axes must be distinct letters from xyz")
+        return periodic
+    return "xyz" if periodic else ""
+
+
+def thermal_gradient_initialization_3d(T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
+                                       uz: torch.Tensor, gradient_xyz: torch.Tensor | None = None, *,
+                                       tau_T: float, spacing: float = 1., periodic: bool | str = True) -> torch.Tensor:
+    """Initialize pre-collision D3Q7 populations for smooth BGK diffusion.
+
+    Supply a real temperature gradient in K/m shaped (3,nz,ny,nx), with
+    x,y,z components, and velocities in lattice units. Omit the gradient
+    to estimate it on a cubic-cell grid. Centered differences wrap on periodic
+    axes (True for all, False for none, or a string such as "yz"). On other axes
+    use one-sided second-order differences at the end cells, or the common
+    secant for a two-cell axis. A single nonperiodic cell requires a supplied
+    gradient. The estimate uses cell temperatures only. Under diffusive
+    scaling the leading correction is -tau*w_i*spacing*c_i.grad(T).
+    Opposite directions cancel in temperature and supply the diffusive
+    first moment at startup. Use the same tau and cubic spacing in the solve.
+    """
+    if T.ndim != 3 or not T.is_floating_point():
+        raise ValueError("expected a real temperature field shaped (nz,ny,nx)")
+    if not math.isfinite(tau_T) or tau_T <= .5 or not math.isfinite(spacing) or spacing <= 0:
+        raise ValueError("require finite tau_T > 0.5 and positive finite spacing")
+    if gradient_xyz is None:
+        axes = _periodic_axes(periodic)
+        components = []
+        for axis, dim in zip("xyz", (2, 1, 0)):
+            if axis in axes:
+                derivative = (T.roll(-1, dim)-T.roll(1, dim))/(2*spacing)
+            else:
+                if T.size(dim) < 2:
+                    raise ValueError("a nonperiodic derivative needs at least two temperature samples")
+                order = 2 if T.size(dim) >= 3 else 1
+                derivative, = torch.gradient(T, spacing=spacing, dim=(dim,), edge_order=order)
+            components.append(derivative)
+        gradient_xyz = torch.stack(components)
+    elif gradient_xyz.shape != (3, *T.shape) or not gradient_xyz.is_floating_point() or gradient_xyz.device != T.device:
+        raise ValueError("expected real gradients shaped (3,nz,ny,nx) on the temperature device")
+    g = thermal_equilibrium_3d(T, ux, uy, uz)
+    correction = gradient_xyz.to(g.dtype)*_w_thermal(T.device)[1]*(tau_T*spacing)
+    g[1::2] -= correction
+    g[2::2] += correction
+    return g
+
+
 def thermal_collide_bgk_3d(
     g: torch.Tensor,
     T: torch.Tensor,
@@ -161,6 +244,33 @@ def thermal_collide_bgk_3d(
     """
     geq = thermal_equilibrium_3d(T, ux, uy, uz)
     return g - (g - geq) / tau_T
+
+
+def thermal_collide_trt_3d(
+    g: torch.Tensor, T: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
+    uz: torch.Tensor, tau_T: float, *, tau_even: float,
+) -> torch.Tensor:
+    """Relax odd and even D3Q7 non-equilibrium populations independently.
+
+    The odd relaxation time tau_T sets the lattice diffusivity (tau_T-0.5)/4.
+    tau_even controls the symmetric populations, including the rest mode.
+    T is the population sum, as in thermal_collide_bgk_3d.
+
+    For source-free, zero-velocity periodic diffusion on a uniform cubic
+    lattice, tau_T = 1/2 + sqrt(3)/6 and tau_even = 1/2 + sqrt(3)/3
+    cancel the leading directional error in the slow-mode decay rate.
+    At physical diffusivity alpha, use dt = (tau_T-1/2)*dx**2/(4*alpha).
+
+    """
+    if not all(math.isfinite(t) and t > .5 for t in (tau_T, tau_even)):
+        raise ValueError("both relaxation times must be finite and greater than 0.5")
+    deviation = g - thermal_equilibrium_3d(T, ux, uy, uz)
+    odd = .5*(deviation[1::2] - deviation[2::2])
+    correction = (1/tau_even - 1/tau_T)*odd
+    post = g - deviation/tau_even
+    post[1::2] += correction
+    post[2::2] -= correction
+    return post
 
 
 def thermal_stream_3d(g: torch.Tensor) -> torch.Tensor:
@@ -189,6 +299,41 @@ def thermal_stream_3d(g: torch.Tensor) -> torch.Tensor:
 
     q_idx, z_idx, y_idx, x_idx = _stream_thermal_cache[cache_key]
     return g[q_idx, z_idx, y_idx, x_idx]
+
+
+def thermal_link_fluxes_3d(post_collision: torch.Tensor, *, dt: float = 1.,
+                           spacing: float = 1., volumetric_heat_capacity: float = 1.,
+                           periodic: bool | str = False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return net x, y, z energy flux density across internal D3Q7 faces.
+
+    Use populations immediately after collision and before streaming. Each
+    output keeps (z, y, x) order with one fewer entry on its normal axis.
+    For a fully periodic lattice, periodic=True includes the wraparound face
+    as the final entry on each axis: index j reports flux from j to (j+1) mod n.
+    A string selects wraparound faces only on the named axes (e.g. "yz").
+    Positive flux points along the positive coordinate axis. For cubic cells
+    the population difference transports C*spacing/dt times its value in
+    W/m² during one step. Includes advective transport when velocity is nonzero.
+    """
+    if post_collision.ndim != 4 or post_collision.shape[0] != 7 or min(post_collision.shape[1:]) < 1:
+        raise ValueError("expected D3Q7 populations shaped (7,nz,ny,nx)")
+    if not post_collision.is_floating_point():
+        raise ValueError("populations must be real floating point")
+    if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
+        raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    scale = volumetric_heat_capacity*spacing/dt
+    axes = _periodic_axes(periodic)
+    fluxes = []
+    for axis, name in enumerate("xyz"):
+        dim = 2-axis
+        positive, negative = post_collision[1+2*axis:3+2*axis]
+        if name in axes:
+            difference = positive-negative.roll(-1, dims=dim)
+        else:
+            length = positive.shape[dim]-1
+            difference = positive.narrow(dim, 0, length)-negative.narrow(dim, 1, length)
+        fluxes.append(scale*difference)
+    return tuple(fluxes)
 
 
 def thermal_macroscopic_3d(g: torch.Tensor) -> torch.Tensor:
@@ -449,12 +594,15 @@ def thermal_dirichlet_wall_3d(
     g: torch.Tensor,
     T_wall: float,
     wall: str,
+    *, method: str = "equilibrium",
 ) -> torch.Tensor:
     """Apply a Dirichlet (fixed-temperature) condition on one domain wall.
 
-    Sets the equilibrium distribution at the wall cells to the prescribed
-    temperature with zero velocity, which is the standard anti-bounce-back
-    equivalent for the D3Q7 passive-scalar lattice.
+    Apply after streaming. The default resets all populations to the
+    zero-velocity wall equilibrium. For pure diffusion at a uniform wall,
+    "odd_reflection" preserves the population arriving from the interior
+    and mirrors its departure from equilibrium into the opposite direction.
+    This places the prescribed temperature on the wall node.
 
     Args:
         g:       Thermal distribution, shape ``(7, nz, ny, nx)``.
@@ -464,57 +612,195 @@ def thermal_dirichlet_wall_3d(
     Returns:
         Updated distribution (same shape).
     """
-    g_new = g.clone()
-    # Equilibrium at T_wall with zero velocity: g_eq = w_i * T_wall
-    w = _w_thermal(g.device).to(g.dtype)
-    geq_scalar = (w * T_wall).view(7, 1, 1, 1)  # (7,1,1,1) broadcastable to 3D slices
-    if wall == "x-":
-        g_new[:, :, :, 0] = geq_scalar.squeeze(-1)
-    elif wall == "x+":
-        g_new[:, :, :, -1] = geq_scalar.squeeze(-1)
-    elif wall == "y-":
-        g_new[:, :, 0, :] = geq_scalar.squeeze(-1)
-    elif wall == "y+":
-        g_new[:, :, -1, :] = geq_scalar.squeeze(-1)
-    elif wall == "z-":
-        g_new[:, 0, :, :] = geq_scalar.squeeze(-1)
-    elif wall == "z+":
-        g_new[:, -1, :, :] = geq_scalar.squeeze(-1)
-    else:
+    if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
         raise ValueError(f"wall must be x-/x+/y-/y+/z-/z+, got {wall!r}")
+    if method not in ("equilibrium", "odd_reflection"):
+        raise ValueError("method must be equilibrium or odd_reflection")
+    axis = "xyz".index(wall[0])
+    index = 0 if wall[1] == "-" else -1
+    g_new = g.clone()
+    face = g_new.select(3-axis, index)
+    w = _w_thermal(g.device).to(g.dtype)
+    face[:] = (w*T_wall)[:, None, None]
+    if method == "odd_reflection":
+        positive = 1+2*axis
+        arriving, reflected = (positive+1, positive) if index == 0 else (positive, positive+1)
+        incoming_value = g.select(3-axis, index)[arriving]
+        face[arriving] = incoming_value
+        face[reflected] = 2*w[arriving]*T_wall - incoming_value
     return g_new
 
 
-def thermal_adiabatic_walls_3d(g: torch.Tensor, walls: list[str]) -> torch.Tensor:
-    """Apply adiabatic (zero normal gradient) conditions on domain walls.
+def thermal_adiabatic_walls_3d(
+    g: torch.Tensor, walls: list[str], *, method: str = "copy",
+) -> torch.Tensor:
+    """Apply insulating conditions after streaming a D3Q7 field.
 
-    Copies the interior neighbour value to the boundary cell so that the
-    normal temperature gradient is zero.
-
-    Args:
-        g:     Thermal distribution, shape ``(7, nz, ny, nx)``.
-        walls: List of wall specifiers (e.g. ``["y-", "y+", "z-", "z+"]``).
-
-    Returns:
-        Updated distribution (same shape).
+    "copy" copies the neighboring interior slab onto each selected face.
+    For pure diffusion, "even_reflection" places the zero-flux plane on the
+    wall nodes. It mirrors the population arriving from inside the domain
+    into the opposite direction. Each axis updates its own normal pair,
+    including at edges and corners shared by multiple insulating walls.
     """
+    if method not in ("copy", "even_reflection"):
+        raise ValueError("method must be copy or even_reflection")
     g_new = g.clone()
     for wall in walls:
-        if wall == "x-":
-            g_new[:, :, :, 0] = g[:, :, :, 1]
-        elif wall == "x+":
-            g_new[:, :, :, -1] = g[:, :, :, -2]
-        elif wall == "y-":
-            g_new[:, :, 0, :] = g[:, :, 1, :]
-        elif wall == "y+":
-            g_new[:, :, -1, :] = g[:, :, -2, :]
-        elif wall == "z-":
-            g_new[:, 0, :, :] = g[:, 1, :, :]
-        elif wall == "z+":
-            g_new[:, -1, :, :] = g[:, -2, :, :]
-        else:
+        if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
             raise ValueError(f"wall must be x-/x+/y-/y+/z-/z+, got {wall!r}")
+        axis = "xyz".index(wall[0])
+        index, neighbour = (0, 1) if wall[1] == "-" else (-1, -2)
+        face = g_new.select(3-axis, index)
+        if method == "copy":
+            face[:] = g.select(3-axis, neighbour)
+        else:
+            positive = 1+2*axis
+            arriving, reflected = (positive+1, positive) if index == 0 else (positive, positive+1)
+            face[reflected] = g.select(3-axis, index)[arriving]
     return g_new
+
+
+def thermal_flux_wall_pair_3d(
+    g: torch.Tensor, axis: str, inward_flux: tuple[float | torch.Tensor, float | torch.Tensor], *,
+    dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
+) -> torch.Tensor:
+    """Impose inward heat fluxes on two opposite half-way walls.
+
+    Apply immediately after periodic streaming in a cell-centered D3Q7
+    diffusion solve. The two fluxes (lower, upper) are positive into the
+    domain in W/m². Each flux may be a scalar or a real tensor with the exact
+    face shape in the remaining (z, y, x) dimension order. For time-varying
+    loads, supply the average inward flux over the streaming step. Supply dt
+    in seconds, normal cell spacing in meters and volumetric heat capacity
+    in J/(m³ K), or use consistent lattice units. Each incoming population reflects the outgoing one from its own
+    face and adds flux*dt/(spacing*capacity) to the boundary cell.
+    """
+    if axis not in ("x", "y", "z"):
+        raise ValueError("axis must be x, y or z")
+    if g.ndim != 4 or g.shape[0] != 7 or min(g.shape[1:]) < 1 or not g.is_floating_point():
+        raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
+    if len(inward_flux) != 2:
+        raise ValueError("provide two inward fluxes")
+    if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
+        raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    direction = "xyz".index(axis)
+    positive = 1+2*direction
+    negative = positive+1
+    dim = 2-direction
+    face_shape = g[positive].select(dim, 0).shape
+    fluxes = []
+    for flux in inward_flux:
+        if isinstance(flux, torch.Tensor):
+            if flux.is_complex() or (flux.ndim and flux.shape != face_shape):
+                raise ValueError(f"expected a real scalar or flux tensor of shape {tuple(face_shape)}")
+            flux = flux.to(device=g.device, dtype=g.dtype)
+            finite = torch.isfinite(flux).all().item()
+        else:
+            finite = math.isfinite(flux)
+        if not finite:
+            raise ValueError("inward flux must be finite")
+        fluxes.append(flux)
+    scale = dt/(spacing*volumetric_heat_capacity)
+    updated = g.clone()
+    # Periodic streaming put each outgoing population on the opposite face.
+    updated[positive].select(dim,0).copy_(g[negative].select(dim,-1)+fluxes[0]*scale)
+    updated[negative].select(dim,-1).copy_(g[positive].select(dim,0)+fluxes[1]*scale)
+    return updated
+
+
+def thermal_startup_wall_temperature_3d(
+    wall_mean: float | torch.Tensor, normal_curvature: float | torch.Tensor,
+    laplacian: float | torch.Tensor, *, tau_T: float, spacing: float = 1.,
+) -> float | torch.Tensor:
+    """Effective half-way Dirichlet input for the first gradient-initialized BGK step.
+
+    For smooth, source-free, constant-diffusivity D3Q7 conduction at zero
+    velocity, supply the physical step-mean face temperature (K), initial
+    face-averaged normal second derivative and Laplacian (both K/m²). Use
+    scalar or conforming face data and the same spacing and relaxation time
+    as thermal_gradient_initialization_3d. Pass this effective value to the
+    temperature wall update only on the first step. The correction targets
+    first-step link heat flux. Subsequent steps use the physical wall data.
+    """
+    if not math.isfinite(tau_T) or tau_T <= .5 or not math.isfinite(spacing) or spacing <= 0:
+        raise ValueError("require finite tau_T > 0.5 and positive finite spacing")
+    # For D3Q7, alpha*dt=(tau_T-.5)*spacing²/4.
+    return wall_mean + spacing**2*((1/6+(tau_T-1)/2)*normal_curvature
+                                  - (tau_T-.5)*laplacian/8)
+
+
+def thermal_temperature_wall_pair_3d(
+    g: torch.Tensor, axis: str, wall_temperatures: tuple[float | torch.Tensor, float | torch.Tensor], *,
+    dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    """Apply two half-way Dirichlet walls in cell-centered D3Q7 diffusion.
+
+    After periodic streaming, anti-bounce-back replaces each incoming population
+    by 2*w*T_wall minus the population leaving that same face. Supply lower and
+    upper wall temperatures as scalars or face arrays in remaining (z,y,x)
+    order. Returns the updated populations and the lower and upper net fluxes
+    into the material during this step (W/m²). Wall-normal velocity is zero.
+    """
+    return thermal_mixed_wall_pair_3d(g, axis, ("temperature", "temperature"), wall_temperatures,
+        dt=dt, spacing=spacing, volumetric_heat_capacity=volumetric_heat_capacity)
+
+
+def thermal_mixed_wall_pair_3d(
+    g: torch.Tensor, axis: str, wall_types: tuple[str, str], wall_values: tuple[float | torch.Tensor, float | torch.Tensor], *,
+    film_coefficients: tuple[float | torch.Tensor, float | torch.Tensor] = (0., 0.),
+    dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    """Apply independent half-way conditions on the lower and upper faces after periodic streaming.
+
+    Each face accepts a temperature in K ("temperature") or step-averaged inward
+    heat flux in W/m² ("flux"). For "film", supply ambient temperature in K and
+    a nonnegative film coefficient in W/(m² K) for that side. The half-way
+    temperature and inward heat flux satisfy q=h*(ambient-T_wall). Face arrays follow the remaining (z,y,x) axes.
+    Returns updated populations and the actual lower and upper inward link fluxes
+    over this step. The cell-centered diffusion model assumes zero normal velocity.
+    """
+    if axis not in ("x", "y", "z") or len(wall_values) != 2 or len(wall_types) != 2:
+        raise ValueError("provide a coordinate axis, two wall types and two wall values")
+    if g.ndim != 4 or g.shape[0] != 7 or min(g.shape[1:]) < 1 or not g.is_floating_point():
+        raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
+    if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
+        raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    if any(kind not in ("temperature", "flux", "film") for kind in wall_types):
+        raise ValueError("each wall type must be temperature, flux or film")
+    if "film" in wall_types and len(film_coefficients) != 2:
+        raise ValueError("provide lower and upper film coefficients")
+    direction = "xyz".index(axis)
+    positive = 1+2*direction
+    negative = positive+1
+    dim = 2-direction
+    updated = g.clone()
+    fluxes = []
+    for side, (incoming, outgoing, index) in enumerate(((positive, negative, 0), (negative, positive, -1))):
+        wall = wall_values[side]
+        escaped = g[outgoing].select(dim, -1 if index == 0 else 0)
+        if torch.is_complex(torch.as_tensor(wall)):
+            raise ValueError("wall data must be real")
+        value = torch.as_tensor(wall, dtype=g.dtype, device=g.device)
+        if value.shape not in ((), escaped.shape) or not torch.isfinite(value).all():
+            raise ValueError("provide a finite scalar or one value per face cell")
+        if wall_types[side] == "temperature":
+            reflected = 2*_w_thermal(g.device)[incoming]*value - escaped
+        elif wall_types[side] == "film":
+            coefficient = film_coefficients[side]
+            if torch.is_complex(torch.as_tensor(coefficient)):
+                raise ValueError("film coefficients must be real")
+            h = torch.as_tensor(coefficient, dtype=g.dtype, device=g.device)
+            if h.shape not in ((), escaped.shape) or not torch.isfinite(h).all() or (h < 0).any():
+                raise ValueError("provide a finite nonnegative scalar or film coefficient per face cell")
+            # Enforce the film law with T_wall=(incoming+escaped)/(2*w).
+            weight = _w_thermal(g.device)[incoming].to(g.dtype)
+            conductance = 2*weight*(volumetric_heat_capacity*spacing/dt)
+            reflected = escaped + (h/(h+conductance))*(2*weight*value-2*escaped)
+        else:
+            reflected = escaped + value*(dt/(volumetric_heat_capacity*spacing))
+        updated[incoming].select(dim, index).copy_(reflected)
+        fluxes.append((reflected-escaped)*(volumetric_heat_capacity*spacing/dt))
+    return updated, (fluxes[0], fluxes[1])
 
 
 def thermal_fixed_temp_mask_3d(
@@ -547,11 +833,54 @@ def thermal_fixed_temp_mask_3d(
 # ---------------------------------------------------------------------------
 
 
+def _wall_temperature_difference(T, wall, order):
+    axes = {"x": 2, "y": 1, "z": 0}
+    if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
+        raise ValueError(f"unknown hot wall {wall!r}")
+    normal = T.movedim(axes[wall[0]], -1)
+    L = normal.shape[-1] - 1
+    if L < order:
+        raise ValueError(f"wall-normal direction needs at least {order + 1} nodes")
+    boundary, first, second = (0, 1, 2) if wall[1] == "-" else (-1, -2, -3)
+    grad = normal[..., boundary] - normal[..., first]
+    if order == 2:
+        grad = grad + 0.5 * (grad - (normal[..., first] - normal[..., second]))
+    return grad, axes[wall[0]]
+
+
+def wall_heat_rate_3d(
+    T: torch.Tensor, conductivity: float, wall: str, *,
+    spacing_zyx: tuple[float, float, float], order: int = 2,
+) -> float:
+    """Outward conductive heat rate on one face of a wall-node Cartesian grid.
+
+    Supply T in K with shape (nz, ny, nx), constant isotropic conductivity
+    in W/(m K), and uniform spacings (dz, dy, dx) in meters. A one-sided
+    normal difference and composite trapezoidal integration over the face
+    give watts, positive when heat leaves the domain.
+    """
+    if T.ndim != 3 or min(T.shape) < 2 or not T.is_floating_point():
+        raise ValueError("provide a real floating 3D temperature field with at least two nodes per axis")
+    if len(spacing_zyx) != 3 or not all(math.isfinite(h) and h > 0 for h in spacing_zyx):
+        raise ValueError("provide three positive finite spacings in (dz, dy, dx) order")
+    if not math.isfinite(conductivity) or conductivity < 0:
+        raise ValueError("conductivity must be finite and nonnegative")
+    if order not in (1, 2):
+        raise ValueError("wall gradient order must be 1 or 2")
+    difference, axis = _wall_temperature_difference(T, wall, order)
+    tangential = [h for i,h in enumerate(spacing_zyx) if i != axis]
+    flux = -conductivity*difference/spacing_zyx[axis]
+    strips = torch.trapezoid(flux, dx=tangential[1], dim=1)
+    return torch.trapezoid(strips, dx=tangential[0], dim=0).item()
+
+
 def nusselt_hot_wall_3d(
     T: torch.Tensor,
     T_hot: float,
     T_cold: float,
     wall: str = "x-",
+    *,
+    order: int = 1,
 ) -> float:
     """Average Nusselt number at a hot wall.
 
@@ -563,27 +892,19 @@ def nusselt_hot_wall_3d(
         T:       Temperature field ``(nz, ny, nx)``.
         T_hot:   Hot wall temperature.
         T_cold:  Cold wall temperature.
-        wall:    Which wall is hot (``"x-"`` or ``"x+"``).
+        wall:    Hot face (x, y or z followed by - or +).
+        order:   Wall-normal difference order on a uniform, wall-node grid (1 or 2).
 
     Returns:
         Average Nusselt number (float).
     """
+    if order not in (1, 2):
+        raise ValueError("wall gradient order must be 1 or 2")
     dT = T_hot - T_cold
     if abs(dT) < 1e-12:
         return 0.0
-    L = T.shape[2] - 1  # characteristic length in x
-    if wall == "x-":
-        # Forward difference: ∂T/∂x ≈ (T[1] - T[0]) at x=0
-        # Nu = -∂T/∂x * L / ΔT (hot wall, heat flows into fluid → Nu > 0)
-        # grad = T[0] - T[1] = -∂T/∂x, so Nu = grad * L / ΔT
-        grad = T[:, :, 0] - T[:, :, 1]  # = -∂T/∂x at x=0
-    elif wall == "x+":
-        # Backward difference: ∂T/∂x ≈ (T[-1] - T[-2]) at x=nx-1
-        # For cold wall: grad = T[-1] - T[-2] = -∂T/∂x, Nu = grad * L / ΔT
-        grad = T[:, :, -1] - T[:, :, -2]
-    else:
-        raise ValueError(f"wall must be x- or x+, got {wall!r}")
-    # Nu = -∂T/∂n * L / ΔT; grad already = -∂T/∂n, so no extra minus
+    grad, axis = _wall_temperature_difference(T, wall, order)
+    L = T.shape[axis] - 1
     nu = float((grad * L / dT).mean().item())
     return nu
 
@@ -695,12 +1016,15 @@ def run_thermal_cavity_common(
     Ra: float = 1e4,
     Pr: float = 0.71,
     n_steps: int = 8000,
+    *,
+    nusselt_order: int = 1,
 ) -> dict[str, object]:
     """Differentially heated cavity using common modules.
 
     Hot wall at x=0 (T=1), cold wall at x=nx-1 (T=0).
     All other walls: no-slip + adiabatic.
-    Buoyancy via Boussinesq approximation.
+    Buoyancy via Boussinesq approximation. nusselt_order selects the wall
+    gradient stencil used for both the recorded history and the final value.
 
     Reference: de Vahl Davis (1983), Nu ≈ 2.0 at Ra=10^4.
     """
@@ -784,13 +1108,14 @@ def run_thermal_cavity_common(
 
         if step % 200 == 0 or step == n_steps - 1:
             T = thermal_macroscopic_3d(g)
-            nu_val = nusselt_hot_wall_3d(T, T_hot, T_cold, wall="x-")
+            nu_val = nusselt_hot_wall_3d(T, T_hot, T_cold, wall="x-", order=nusselt_order)
             nu_hist.append(nu_val)
 
     T_final = thermal_macroscopic_3d(g)
-    nu_final = nusselt_hot_wall_3d(T_final, T_hot, T_cold, wall="x-")
+    nu_final = nusselt_hot_wall_3d(T_final, T_hot, T_cold, wall="x-", order=nusselt_order)
     return {
         "nusselt": nu_final,
+        "nusselt_order": nusselt_order,
         "nusselt_ref": 2.0,
         "nusselt_history": nu_hist,
         "Ra": Ra,
