@@ -5,7 +5,7 @@
 **Round 1** (m18378): `docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR.md`,
 module `src/tensorlbm/spectral_saffman_taylor.py`
 **This round's artifacts** (all numbers below are injected from them, nothing hand-copied):
-`xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT/`
+`benchmarks/cross_validation/spectral_saffman_taylor/round2/`
 — `xval_linear_theory.py` (anchor + study driver), `artifacts/linear_theory.json`,
 `artifacts/xval_r2_run.log`, `artifacts/fig_linear_theory_{sigma_vs_R,eigenmode,step_limit}.png`
 **Tests**: `tests/test_spectral_saffman_taylor_linear_theory.py` (5 tests, pass)

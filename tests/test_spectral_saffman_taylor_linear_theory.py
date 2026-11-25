@@ -29,7 +29,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "src"))
-sys.path.insert(0, str(REPO / "xval" / "XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT"))
+sys.path.insert(0, str(REPO / "benchmarks" / "cross_validation" / "spectral_saffman_taylor" / "round2"))
 
 from tensorlbm.spectral_saffman_taylor import SpectralSaffmanTaylor2D  # noqa: E402
 from xval_linear_theory import (  # noqa: E402

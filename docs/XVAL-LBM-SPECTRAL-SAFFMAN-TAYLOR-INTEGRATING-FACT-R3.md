@@ -5,11 +5,12 @@
 **Round 1** m18378 (`…-FACTOR.md`, port fidelity) · **Round 2** m21044 (`…-FACT-R2.md`, honest FAIL:
 frozen closure flips the sign of the growth rate). **This round** ships the remediation registered
 there.
-**Artifacts** (every number below is injected from them):
-`xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT/` — `xval_exact_darcy_r3.py` (study driver),
+**Historical artifact references**: `xval_exact_darcy_r3.py` (study driver),
 `artifacts/exact_darcy.json`, `artifacts/r3_parts.json` (chunked execution record),
-`artifacts/fig_r3_*.png`, `write_r3_doc.py`, `publish_r3_report.py`
-**Tests**: `tests/test_spectral_saffman_taylor_exact_darcy.py` (7 tests, pass)
+`artifacts/fig_r3_*.png`, `write_r3_doc.py`, `publish_r3_report.py`, and
+`tests/test_spectral_saffman_taylor_exact_darcy.py` (reported as 7 tests).
+The listed round 3 files were absent from the pre-migration `main` tree.
+The [benchmark index](../benchmarks/cross_validation/spectral_saffman_taylor/README.md) links the tracked evidence for rounds 1 and 2.
 
 ---
 

@@ -13,15 +13,19 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
+REPO = HERE.parents[3]
 ART = HERE / "artifacts"
 DOC = REPO / "docs" / "XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR.md"
 
 d = json.loads((ART / "results.json").read_text())
 cfg = d["config"]
-m1, m1b, m2, m5, m7 = (d["M1_port_fidelity"], d["M1b_port_fidelity_R"],
-                       d["M2_diffusion_analytic"], d["M5_M6_elliptic_instability"],
-                       d["M7_growth_rate"])
+m1, m1b, m2, m5, m7 = (
+    d["M1_port_fidelity"],
+    d["M1b_port_fidelity_R"],
+    d["M2_diffusion_analytic"],
+    d["M5_M6_elliptic_instability"],
+    d["M7_growth_rate"],
+)
 
 # ---- analytic-anchored growth metric: sigma = C*R - k^2 (km = 0 for this mode)
 k2 = float(m2["k_squared"])
@@ -35,36 +39,50 @@ for g in m7["by_R"]:
     g["C_rel_dev"] = abs(g["C_advective"] - C_ref) / abs(C_ref)
 C_maxdev = max(g["C_rel_dev"] for g in m7["by_R"])
 m7.update(C_anchor=C_ref, C_max_rel_dev=C_maxdev, pass_15pct=bool(C_maxdev < 0.15))
-(ART / "metrics_growth.json").write_text(json.dumps(
-    {g["R"]: {k: g[k] for k in ("sigma", "k2_diffusive", "C_advective", "C_rel_dev")}
-     for g in m7["by_R"]}, indent=1))
+(ART / "metrics_growth.json").write_text(
+    json.dumps(
+        {
+            g["R"]: {k: g[k] for k in ("sigma", "k2_diffusive", "C_advective", "C_rel_dev")}
+            for g in m7["by_R"]
+        },
+        indent=1,
+    )
+)
 
 rows_R = "\n".join(
     f"| {g['R']:g} | {g['sigma']:+.4e} | {g['k2_diffusive']:.4e} | "
-    f"{g['C_advective']:.5e} | {100*g['C_rel_dev']:.2f}% | "
-    f"{'✓' if g['C_rel_dev'] < 0.15 else '✗'} |" for g in m7["by_R"])
+    f"{g['C_advective']:.5e} | {100 * g['C_rel_dev']:.2f}% | "
+    f"{'✓' if g['C_rel_dev'] < 0.15 else '✗'} |"
+    for g in m7["by_R"]
+)
 rows_dt = "\n".join(
     f"| {g['dt']:g} | {g['sigma']:+.6e} | "
-    f"{100*abs(g['sigma']-m7['sigma_extrapolated'])/abs(m7['sigma_extrapolated']):.4f}% |"
-    for g in m7["by_dt"])
+    f"{100 * abs(g['sigma'] - m7['sigma_extrapolated']) / abs(m7['sigma_extrapolated']):.4f}% |"
+    for g in m7["by_dt"]
+)
 rows_res = "\n".join(f"| {r['R']:g} | {r['residual']:.3e} |" for r in m5["curl_darcy_residual"])
 rows_amp = "\n".join(
     f"| {a['R']:g} | {a['ny']}x{a['nx']} | {a['seed_separation']:.1e} | "
-    f"{a['separation_after']:.1e} | {a['amplification']:.3f} |" for a in m5["amplification_vs_R"])
+    f"{a['separation_after']:.1e} | {a['amplification']:.3f} |"
+    for a in m5["amplification_vs_R"]
+)
 rows_grid_amp = "\n".join(
-    f"| {a['ny']}x{a['nx']} | {a['amplification']:.3f} |" for a in m5["amplification_vs_grid"])
+    f"| {a['ny']}x{a['nx']} | {a['amplification']:.3f} |" for a in m5["amplification_vs_grid"]
+)
 rows_diff = "\n".join(
     f"| {c['dt']:g} | {c['t_end']:g} | {c['rel_l2']:.3e} | {c['amplitude_ratio']:.9f} | "
-    f"{'✓' if c['pass_15pct'] else '✗'} |" for c in m2["cases"])
+    f"{'✓' if c['pass_15pct'] else '✗'} |"
+    for c in m2["cases"]
+)
 
 md = f"""# XVAL: TensorLBM spectral Saffman--Taylor (integrating factor) vs
 `ebinan92/Fingering_dynamics` `spectrum_method`
 
 **Mission**: m18378 · **Layer**: cross-validation (XVAL) · **Repo**: TensorLBM ·
-**OSS reference**: `ebinan92/Fingering_dynamics` @ `{d.get('oss_sha')}`,
+**OSS reference**: `ebinan92/Fingering_dynamics` @ `{d.get("oss_sha")}`,
 file `spectrum_method/main.py` (executed directly from the clone as the
 reference; numbers in this report are injected from
-`xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/artifacts/results.json`).
+`benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/results.json`).
 
 ---
 
@@ -101,10 +119,10 @@ integrating-factor structure is exactly what makes the diffusion part exact).
 * Port: `src/tensorlbm/spectral_saffman_taylor.py::SpectralSaffmanTaylor2D`
   (PyTorch, float64, CPU/GPU).  Every formula, operation order and array layout
   follows the OSS `Compute` class.
-* Reference harness: `xval/.../oss_spectral_st.py::oss_reference_field` executes
+* Reference harness: `benchmarks/cross_validation/spectral_saffman_taylor/round1/xval_spectral_st.py::oss_reference_field` executes
   the **OSS `Compute` object from the clone** (its `main()` loop body replayed
   verbatim, no plotting); a self-contained NumPy transcription
-  (`xval/.../oss_spectral_reference.py`) is kept for offline/CI reproduction and
+  (`benchmarks/cross_validation/spectral_saffman_taylor/round1/oss_spectral_reference.py`) is kept for offline/CI reproduction and
   as a second implementation check.
 * Tool chain: python, torch, numpy, matplotlib; pytest for the regression suite
   (`tests/test_spectral_saffman_taylor.py`, 7 tests, all passing).
@@ -118,15 +136,15 @@ integrating-factor structure is exactly what makes the diffusion part exact).
 
 | Quantity | Symbol | Value | Note |
 |---|---|---|---|
-| Grid | ny x nx | {cfg['ny']} x {cfg['nx']} | vertical x streamwise collocation points |
-| Aspect ratio | A | {cfg['aspect']:g} | x extent = A*Pe |
-| Peclet (domain scaling) | Pe | {cfg['pe']:g} | diffusion coefficient = 1 |
+| Grid | ny x nx | {cfg["ny"]} x {cfg["nx"]} | vertical x streamwise collocation points |
+| Aspect ratio | A | {cfg["aspect"]:g} | x extent = A*Pe |
+| Peclet (domain scaling) | Pe | {cfg["pe"]:g} | diffusion coefficient = 1 |
 | Log-viscosity ratio | R | 0 (M1--M4), 0.05--4 (M7) | OSS default is R = 0 |
-| Time step | dt | {cfg['dt']:g} (0.2/0.1/0.05 in M7) | integrating factor + AB2 + CN |
-| Transverse mode | n | {cfg['mode']} | k = 2*pi*{cfg['mode']}/Pe = {np.sqrt(k2_mode):.6e} |
+| Time step | dt | {cfg["dt"]:g} (0.2/0.1/0.05 in M7) | integrating factor + AB2 + CN |
+| Transverse mode | n | {cfg["mode"]} | k = 2*pi*{cfg["mode"]}/Pe = {np.sqrt(k2_mode):.6e} |
 | k^2 of the extracted mode | k^2 | {k2_mode:.6e} | diffusive decay rate |
-| Fidelity window | T | {m1['t_end']:g} ({m1['n_steps']} steps) | M1, M1b (T={m1b['t_end']:g}) |
-| IC (M1) | -- | OSS random front, seed {cfg['seed']} | `hstack([rand(ny, nx/2), zeros])` |
+| Fidelity window | T | {m1["t_end"]:g} ({m1["n_steps"]} steps) | M1, M1b (T={m1b["t_end"]:g}) |
+| IC (M1) | -- | OSS random front, seed {cfg["seed"]} | `hstack([rand(ny, nx/2), zeros])` |
 | IC (M7) | -- | tanh front + one transverse mode, amplitude 1e-3 | linear regime |
 
 ## ④ Comparison table (ref vs got, ✓/✗ against the predeclared <15% rule)
@@ -135,14 +153,14 @@ integrating-factor structure is exactly what makes the diffusion part exact).
 
 | Quantity | Value | Threshold | Verdict |
 |---|---|---|---|
-| relative L2 (port vs OSS, {m1['n_steps']} steps) | {m1['rel_l2']:.3e} | < 1.5e-1 | {'✓' if m1['pass_15pct'] else '✗'} |
-| max |difference| | {m1['max_abs_diff']:.3e} | -- | -- |
-| mass drift | {m1['mass_drift']:.3e} | -- | conserved |
-| max|div u|/max|u| | {m1['divergence_error']:.3e} | -- | machine precision |
+| relative L2 (port vs OSS, {m1["n_steps"]} steps) | {m1["rel_l2"]:.3e} | < 1.5e-1 | {"✓" if m1["pass_15pct"] else "✗"} |
+| max |difference| | {m1["max_abs_diff"]:.3e} | -- | -- |
+| mass drift | {m1["mass_drift"]:.3e} | -- | conserved |
+| max|div u|/max|u| | {m1["divergence_error"]:.3e} | -- | machine precision |
 
-**M1b -- port fidelity at R = 2 (smooth IC, {m1b['n_steps']} steps)**:
-relative L2 = **{m1b['rel_l2']:.3e}** {'✓' if m1b['pass_15pct'] else '✗'}
-(max |diff| = {m1b['max_abs_diff']:.3e}) -- the port is faithful also with the
+**M1b -- port fidelity at R = 2 (smooth IC, {m1b["n_steps"]} steps)**:
+relative L2 = **{m1b["rel_l2"]:.3e}** {"✓" if m1b["pass_15pct"] else "✗"}
+(max |diff| = {m1b["max_abs_diff"]:.3e}) -- the port is faithful also with the
 vorticity coupling active.
 
 **M2 -- integrating factor vs the analytic Fourier decay exp(-k^2 t):**
@@ -161,7 +179,7 @@ M2).  Extracting C from the measured sigma:
 {rows_R}
 
 Anchor C = **{C_ref:.5e}** (mean over R >= 0.2), maximum deviation
-**{100*C_maxdev:.2f}%** -> {'PASS' if C_maxdev < 0.15 else 'FAIL'}.
+**{100 * C_maxdev:.2f}%** -> {"PASS" if C_maxdev < 0.15 else "FAIL"}.
 
 **Elliptic defect (M5):** the OSS frozen-coefficient symbol is not the exact
 curl-Darcy operator; its normalised residual `lap(psi)+R(c.psi)+R c_y` is
@@ -179,17 +197,17 @@ faithful transcription rather than as an accurate Darcy solver.
 
 **(a) Time step** (R = 2, mode {mode}):
 
-| dt | sigma | rel. deviation from Richardson value {m7['sigma_extrapolated']:+.6e} |
+| dt | sigma | rel. deviation from Richardson value {m7["sigma_extrapolated"]:+.6e} |
 |---|---|---|
 {rows_dt}
 
 The scheme is time-step insensitive at the 1e-4 level over a factor-4 range of
 dt (integrating factor + Crank--Nicolson): observed order noise-level
-({m7['observed_order']}).
+({m7["observed_order"]}).
 
 **(b) Grid**: sigma(128x256) vs sigma(256x512) differ by
-**{100*m7['grid_rel_diff']:.2f}%** at fixed dt
-(sigma_fine = {m7['fine_grid']['sigma']:+.6e}).
+**{100 * m7["grid_rel_diff"]:.2f}%** at fixed dt
+(sigma_fine = {m7["fine_grid"]["sigma"]:+.6e}).
 
 **(c) Round-off amplification** (two trajectories seeded apart, 2 steps):
 
@@ -211,7 +229,7 @@ but not enough to destroy smooth solutions (M1b holds at 1e-15 over 100 steps).
 * **What is verified**: the OSS scheme's time integrator is reproduced exactly;
   the integrating factor is exact for diffusion (1e-11 vs analytic); the linear
   growth rate follows the analytic decomposition `C*R - k^2` with C constant to
-  {100*C_maxdev:.1f}% over R in [0.05, 4].
+  {100 * C_maxdev:.1f}% over R in [0.05, 4].
 * **What is NOT verified / not delivered**: an *exact* variable-coefficient
   Darcy solve.  A spectral-Richardson prototype stagnated at a 14% residual and
   a spectral CG prototype diverged, so it was **not shipped** (no dead code in
@@ -220,7 +238,7 @@ but not enough to destroy smooth solutions (M1b holds at 1e-15 over 100 steps).
   not be quoted from this module.
 * **Dimensionless range**: Pe = 500, R <= 4, ny x nx <= 256 x 512, l2 error of
   the closure defect grows for larger R (residual 2.0 at R = 0.05).
-* **Artifacts**: `xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/`
+* **Artifacts**: `benchmarks/cross_validation/spectral_saffman_taylor/round1/`
   (`xval_spectral_st.py`, `oss_spectral_reference.py`, `make_report.py`,
   `artifacts/results.json`, `artifacts/metrics_growth.json`, `run.log`,
   `artifacts/fig1..fig5 PNGs`); module
@@ -245,7 +263,6 @@ but not enough to destroy smooth solutions (M1b holds at 1e-15 over 100 steps).
 DOC.write_text(md)
 print("wrote", DOC)
 print("C_anchor", C_ref, "max dev", C_maxdev, "pass", C_maxdev < 0.15)
-print("M1", m1["rel_l2"], "M1b", m1b["rel_l2"],
-      "M2", [c["rel_l2"] for c in m2["cases"]])
+print("M1", m1["rel_l2"], "M1b", m1b["rel_l2"], "M2", [c["rel_l2"] for c in m2["cases"]])
 print("sigma(R)", [(g["R"], round(g["sigma"], 6)) for g in m7["by_R"]])
 print("grid rel diff", m7["grid_rel_diff"])

@@ -1,0 +1,121 @@
+{
+  "source_commit": "81dc4b46bc25a52e8fafeaaddb5331414972b87c",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 76,
+      "after": 74
+    }
+  },
+  "reference_scan": "Scanned the entire tracked tree and CI for both previous paths and the runner filenames. Updated the two directly importing test modules, report generator template and three published report bodies. Retained the archived scratch prototype with its original historical path.",
+  "compatibility": {
+    "registry_id": "xval:spectral_saffman_taylor",
+    "published_reports": [
+      "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR.md",
+      "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R2.md",
+      "docs/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT-R3.md"
+    ],
+    "original_trees": [
+      "https://github.com/cxs503/TensorLBM/tree/81dc4b46bc25a52e8fafeaaddb5331414972b87c/xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR",
+      "https://github.com/cxs503/TensorLBM/tree/81dc4b46bc25a52e8fafeaaddb5331414972b87c/xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT"
+    ],
+    "runner_paths": "Both scripts reach the same canonical solver. The two rounds retain the original round-local artifacts layout, which is also used by the report generator and historical publishing helper."
+  },
+  "scientific_scope": "Twelve pre-existing port-fidelity and analytic-reference tests exercise the relocated imports. The full rounds and publishing command were not executed. Round 2's independent reference disagreement remains documented. The Round 3 artifacts and test named in the historical report were not found in the source Git tree. Full-protocol acceptance remains unevaluated.",
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/artifacts/metrics_growth.json",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/metrics_growth.json",
+      "git_mode": "100644",
+      "original_git_blob": "51397b24af2aecd8bfa606af31967ba7c4cc7a9b",
+      "size_bytes": 973,
+      "original_sha256": "dc0e09b4207bbc53c2adebb6f3c2c64e07910a4cb5bbf081dfe495234b73e2b2",
+      "new_sha256": "dc0e09b4207bbc53c2adebb6f3c2c64e07910a4cb5bbf081dfe495234b73e2b2"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/artifacts/results.json",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/results.json",
+      "git_mode": "100644",
+      "original_git_blob": "782f58f95e13b24d7b0fa66c95b1d6c82b3db82f",
+      "size_bytes": 3294396,
+      "original_sha256": "ab54ce2cdab93f4c489b672d6f68d52c26c8b47b646b31442713cff413241579",
+      "new_sha256": "ab54ce2cdab93f4c489b672d6f68d52c26c8b47b646b31442713cff413241579"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/make_report.py",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round1/make_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "c7327e0d535e5bf9b7dea143e89f6d6498a5b868",
+      "size_bytes": 12274,
+      "original_sha256": "96f1d86a467b3f9224f1e960034e5eaae5cb801a929c5dc4a29f58b40e278ea4",
+      "new_sha256": "5e1224ae77b9858b99ac379cafdd57d360d727847e7489ad30797bcda0555352"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/oss_spectral_reference.py",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round1/oss_spectral_reference.py",
+      "git_mode": "100644",
+      "original_git_blob": "83bdd1dd3643c0e309c09e0912b0dfba4ae28ef0",
+      "size_bytes": 6302,
+      "original_sha256": "79d73e997d8d1ede694acf13059f981b9a6e489424b02f57cae90a9405809af0",
+      "new_sha256": "83e364b2ecef05820b9b871a132ac980bc99fb02cd9330fe5096450df63ab12e"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/xval_spectral_st.py",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round1/xval_spectral_st.py",
+      "git_mode": "100644",
+      "original_git_blob": "124469838cd6ffea2d7483881203db3db0f70d4b",
+      "size_bytes": 22418,
+      "original_sha256": "0db3591cac55773d5961e62204618537477466c1ba6d237d092b93be5713efc4",
+      "new_sha256": "7517d323a0957232811806f9667ae5813d8fbc56a50ef0e261434c1608e2eaa9"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT/artifacts/linear_theory.json",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round2/artifacts/linear_theory.json",
+      "git_mode": "100644",
+      "original_git_blob": "18f415287bdb34f8e216e760474cca8107aacc7d",
+      "size_bytes": 10154,
+      "original_sha256": "1788ca28b77d0bc932c716bea42f5ed11e7d6112e1b9939fb653767b42fc19e4",
+      "new_sha256": "1788ca28b77d0bc932c716bea42f5ed11e7d6112e1b9939fb653767b42fc19e4"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT/publish_r2_report.py",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round2/publish_r2_report.py",
+      "git_mode": "100644",
+      "original_git_blob": "7c1f3de447affccd09cff8e5e0331b7da36502da",
+      "size_bytes": 7401,
+      "original_sha256": "f723ebbb580ad383b3440cd63304e2cb6337d2bb06ec38d33bb818708d1f87de",
+      "new_sha256": "c576d04e00d3863c0fd4081ccf7fed259989b4309933e0589b9c2a49991ea251"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACT/xval_linear_theory.py",
+      "new_path": "benchmarks/cross_validation/spectral_saffman_taylor/round2/xval_linear_theory.py",
+      "git_mode": "100644",
+      "original_git_blob": "54bfc3e7c742817c4f93676ed944de9ddb61efda",
+      "size_bytes": 14416,
+      "original_sha256": "9f8add053ce39a71467673b1086a1683e9b0c723fa043327c31327cb1f7731d0",
+      "new_sha256": "3fac1a6aeddac3d3807fe02d8ed00f5cb8a872aac956a14631ee8a15bde4269e"
+    }
+  ],
+  "verification": [
+    "The same 12 scoped tests passed on the source and relocated trees using Python 3.12 and CPU PyTorch, with OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1.",
+    "Regenerated the round 1 report in two disposable directories from the unchanged tracked results. The report differs only in its three expected path substitutions. The two freshly generated metrics JSON files are byte-identical (SHA-256 dc0e09b4207bbc53c2adebb6f3c2c64e07910a4cb5bbf081dfe495234b73e2b2).",
+    "Ruff formatting of the five relocated Python files preserved the AST of each file. All three historical data files retain their original Git blobs.",
+    "Repository governance passed 83 checks including 35 tutorial entries, 33 PDFs and 33 Word files. The registry contained 215 entries and the status ledger reported zero hard violations and 16 existing advisories.",
+    "The case lookup returned the registered ID, three historical data paths and four documentation paths. Local links in the new case index and the updated Round 3 report resolve. The lint ratchet and diff whitespace check passed."
+  ]
+}

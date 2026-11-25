@@ -5,7 +5,7 @@
 **OSS reference**: `ebinan92/Fingering_dynamics` @ `150a573`,
 file `spectrum_method/main.py` (executed directly from the clone as the
 reference; numbers in this report are injected from
-`xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/artifacts/results.json`).
+`benchmarks/cross_validation/spectral_saffman_taylor/round1/artifacts/results.json`).
 
 ---
 
@@ -42,10 +42,10 @@ integrating-factor structure is exactly what makes the diffusion part exact).
 * Port: `src/tensorlbm/spectral_saffman_taylor.py::SpectralSaffmanTaylor2D`
   (PyTorch, float64, CPU/GPU).  Every formula, operation order and array layout
   follows the OSS `Compute` class.
-* Reference harness: `xval/.../oss_spectral_st.py::oss_reference_field` executes
+* Reference harness: `benchmarks/cross_validation/spectral_saffman_taylor/round1/xval_spectral_st.py::oss_reference_field` executes
   the **OSS `Compute` object from the clone** (its `main()` loop body replayed
   verbatim, no plotting); a self-contained NumPy transcription
-  (`xval/.../oss_spectral_reference.py`) is kept for offline/CI reproduction and
+  (`benchmarks/cross_validation/spectral_saffman_taylor/round1/oss_spectral_reference.py`) is kept for offline/CI reproduction and
   as a second implementation check.
 * Tool chain: python, torch, numpy, matplotlib; pytest for the regression suite
   (`tests/test_spectral_saffman_taylor.py`, 7 tests, all passing).
@@ -175,7 +175,7 @@ but not enough to destroy smooth solutions (M1b holds at 1e-15 over 100 steps).
   not be quoted from this module.
 * **Dimensionless range**: Pe = 500, R <= 4, ny x nx <= 256 x 512, l2 error of
   the closure defect grows for larger R (residual 2.0 at R = 0.05).
-* **Artifacts**: `xval/XVAL-LBM-SPECTRAL-SAFFMAN-TAYLOR-INTEGRATING-FACTOR/`
+* **Artifacts**: `benchmarks/cross_validation/spectral_saffman_taylor/round1/`
   (`xval_spectral_st.py`, `oss_spectral_reference.py`, `make_report.py`,
   `artifacts/results.json`, `artifacts/metrics_growth.json`, `run.log`,
   `artifacts/fig1..fig5 PNGs`); module
