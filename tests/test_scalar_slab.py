@@ -46,3 +46,19 @@ def test_d2q5_links_balance_every_cell_including_wall_and_periodic_seam():
     torch.testing.assert_close(after.sum(0)-g.sum(0), -x.diff(dim=1)+torch.roll(y,1,0)-y)
     torch.testing.assert_close(scalar_link_transfer(g, "y"), y[:-1])
     torch.testing.assert_close(scalar_link_transfer(g, "x", periodic=True)[:,:-1], internal)
+
+
+def test_legacy_scalar_populations_stream_in_their_declared_directions():
+    from tensorlbm import scalar_transport as transport
+
+    g = torch.zeros(5,5,5,dtype=torch.float64)
+    g[:,2,2] = 1.
+    streamed = transport.scalar_stream(g)
+    for i,(cx,cy) in enumerate(transport.C5.tolist()):
+        assert streamed[i,2+cy,2+cx] == 1
+    c = torch.ones_like(g[0])
+    ux, uy = .05*c, -.03*c
+    eq = transport.scalar_equilibrium(c, ux, uy)
+    torch.testing.assert_close((eq * transport.C5[:,0,None,None]).sum(0), ux)
+    torch.testing.assert_close((eq * transport.C5[:,1,None,None]).sum(0), uy)
+    torch.testing.assert_close(transport.scalar_collision(eq, c, ux, uy, .8), eq)
