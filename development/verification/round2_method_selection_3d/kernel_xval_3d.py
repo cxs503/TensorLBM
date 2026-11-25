@@ -24,8 +24,8 @@ expected magnitude is ~1e-15, the 15 % band only guards against a real block):
 
 Usage::
 
-    PYTHONPATH=tools/xval_pylbm_stub:/root/oss-cache/pylbm \
-        python3 xval/round2_method_selection_3d/kernel_xval_3d.py
+    PYTHONPATH=/root/oss-cache/pylbm \
+        python3 development/verification/round2_method_selection_3d/kernel_xval_3d.py
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ import json
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 
 import numpy as np  # noqa: E402
@@ -48,7 +48,7 @@ from tensorlbm.solver3d import (  # noqa: E402
     collide_trt3d,
 )
 
-RUNS = REPO / "xval" / "round2_method_selection_3d" / "runs"
+RUNS = REPO / "outputs" / "historical_xval" / "round2_method_selection_3d"
 REF_PATH = RUNS / "oss_pylbm_ref_3d.json"
 
 

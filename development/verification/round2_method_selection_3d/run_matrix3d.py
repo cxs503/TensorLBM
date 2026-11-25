@@ -12,8 +12,8 @@ closed-form reference is recomputed inside each run (no hand-copied tables).
 
 Usage::
 
-    python3 xval/round2_method_selection_3d/run_matrix3d.py --smoke   # 1 arm, 1 grid
-    python3 xval/round2_method_selection_3d/run_matrix3d.py           # full matrix
+    python3 development/verification/round2_method_selection_3d/run_matrix3d.py --smoke   # 1 arm, 1 grid
+    python3 development/verification/round2_method_selection_3d/run_matrix3d.py           # full matrix
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "benchmarks" / "case_taylor_green_3d"))
 
@@ -43,8 +43,8 @@ from tensorlbm.solver3d import (  # noqa: E402
 
 import run_case as tg3d  # noqa: E402  (existing case: analytic ABC fields + l2_rel)
 
-HERE = REPO / "xval" / "round2_method_selection_3d"
-RUNS = HERE / "runs"
+HERE = Path(__file__).resolve().parent
+RUNS = REPO / "outputs" / "historical_xval" / "round2_method_selection_3d"
 DT = torch.float64
 CS2 = 1.0 / 3.0
 AMP = 0.02
@@ -189,7 +189,7 @@ def main() -> dict:
     summary = {
         "schema": "xval-round2-method-selection-3d/summary/v1",
         "anchor": pre["anchor"],
-        "predeclared": "xval/round2_method_selection_3d/predeclared_3d.json",
+        "predeclared": "development/verification/round2_method_selection_3d/predeclared_3d.json",
         "case": pre["case"],
         "band_pct": 100 * pre["acceptance"]["band"],
         "runs": len(runs),

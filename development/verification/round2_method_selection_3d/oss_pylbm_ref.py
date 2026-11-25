@@ -27,8 +27,8 @@ and are cited in the doc/report.
 
 Usage::
 
-    PYTHONPATH=tools/xval_pylbm_stub:/root/oss-cache/pylbm \
-        python3 xval/round2_method_selection_3d/oss_pylbm_ref.py
+    PYTHONPATH=/root/oss-cache/pylbm \
+        python3 development/verification/round2_method_selection_3d/oss_pylbm_ref.py
 """
 from __future__ import annotations
 
@@ -39,9 +39,9 @@ import sys
 from fractions import Fraction
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 PYLBM_ROOT = Path("/root/oss-cache/pylbm")
-OUT_DIR = REPO / "xval" / "round2_method_selection_3d" / "runs"
+OUT_DIR = REPO / "outputs" / "historical_xval" / "round2_method_selection_3d"
 
 
 # --------------------------------------------------------------------------- #
