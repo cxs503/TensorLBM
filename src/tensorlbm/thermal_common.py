@@ -527,9 +527,10 @@ def thermal_flux_wall_pair_3d(
     Apply immediately after periodic streaming in a cell-centered D3Q7
     diffusion solve. The two fluxes (lower, upper) are positive into the
     domain in W/m². Each flux may be a scalar or a real tensor with the exact
-    face shape in the remaining (z, y, x) dimension order. Supply dt in seconds, normal cell spacing in meters,
-    and volumetric heat capacity in J/(m³ K), or use consistent lattice
-    units. Each incoming population reflects the outgoing one from its own
+    face shape in the remaining (z, y, x) dimension order. For time-varying
+    loads, supply the average inward flux over the streaming step. Supply dt
+    in seconds, normal cell spacing in meters and volumetric heat capacity
+    in J/(m³ K), or use consistent lattice units. Each incoming population reflects the outgoing one from its own
     face and adds flux*dt/(spacing*capacity) to the boundary cell.
     """
     if axis not in ("x", "y", "z"):

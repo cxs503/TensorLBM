@@ -832,3 +832,42 @@ def test_invalid_face_flux_map(flux):
 
     with pytest.raises(ValueError):
         thermal_flux_wall_pair_3d(torch.zeros(7, 5, 7, 9), "x", (flux, 0.0))
+
+
+def test_reversing_heat_flux_against_travelling_thermal_wave(record_property):
+    import cmath
+
+    from tensorlbm.thermal_common import thermal_flux_wall_pair_3d
+
+    # Unit diffusivity, conductivity, heat capacity, length and cross-section.
+    # The real part of exp(8it - (2+2i)x) solves the heat equation.
+    decay = 2 + 2j
+    slab_integral = (1 - cmath.exp(-decay)) / decay
+    errors = []
+    for n in (8, 16, 32):
+        dx = 1 / n
+        dt = dx**2 / 8
+        x = (torch.arange(n, dtype=torch.float64) + 0.5) * dx
+        mode = torch.exp(-decay * x).reshape(1, 1, n)
+        initial = mode.real
+        zero = torch.zeros_like(initial)
+        g = thermal_equilibrium_3d(initial, zero, zero, zero)
+        worst_field = worst_balance = 0.0
+        for step in range(1, round(0.5 / dt) + 1):
+            phase = cmath.exp(8j * step * dt)
+            average_phase = cmath.exp(8j * (step - 0.5) * dt) * math.sin(4 * dt) / (4 * dt)
+            inward = ((decay * average_phase).real,
+                      -(decay * average_phase * cmath.exp(-decay)).real)
+            g = thermal_stream_3d(thermal_collide_bgk_3d(
+                g, thermal_macroscopic_3d(g), zero, zero, zero, 1.0
+            ))
+            g = thermal_flux_wall_pair_3d(g, "x", inward, dt=dt, spacing=dx)
+            field = thermal_macroscopic_3d(g)
+            worst_field = max(worst_field, (field - (mode * phase).real).abs().max().item())
+            exact_storage_change = ((phase - 1) * slab_integral).real
+            worst_balance = max(worst_balance, abs((field - initial).mean().item() - exact_storage_change))
+        record_property(f"max_temperature_error_{n}_K", worst_field)
+        record_property(f"max_storage_error_{n}_J", worst_balance)
+        errors.append(worst_field)
+        assert worst_balance < 1e-13
+    assert all(coarse / fine > 3.7 for coarse, fine in zip(errors, errors[1:]))
