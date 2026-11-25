@@ -662,3 +662,53 @@ def test_insulated_box_even_reflection_and_cosine_decay(tau,record_property):
         record_property(f"max_heat_drift_{n}_J",drift)
         assert normal_flux == 0 and discrepancy < 2e-14 and drift < 2e-14
     assert errors[0]/errors[1] > 3.5
+
+
+@pytest.mark.parametrize("tau", [.75, 1.5])
+def test_mixed_wall_intersections_against_extended_mode(tau, record_property):
+    from tensorlbm.thermal_common import thermal_adiabatic_walls_3d, thermal_dirichlet_wall_3d
+
+    # On a unit cube this mode is odd about x=0 and y=1 (fixed T),
+    # even about x=1, y=0 and both z faces (insulating). Opposite
+    # boundary types on each of x and y yield a four-length period.
+    fixed = ("x-", "y+")
+    insulated = ["x+", "y-", "z-", "z+"]
+    wall = 1.75
+    end = 1/64
+    errors = []
+    for n in (8,16):
+        dx = 1/n
+        dt = (tau-.5)*dx**2/4
+        z,y,x = torch.meshgrid(*(torch.arange(period*n,dtype=torch.float64)*math.pi*dx
+                                  for period in (2,4,4)), indexing="ij")
+        mode = torch.sin(x/2)*torch.cos(y/2)*torch.cos(z)
+        full_zero = torch.zeros_like(mode)
+        full = thermal_equilibrium_3d(wall+mode,full_zero,full_zero,full_zero)
+        box = (slice(0,n+1),)*3
+        direct = full[(slice(None),)+box].clone()
+        zero = full_zero[box]
+        population_error = order_error = wall_error = 0.
+        for _ in range(round(end/dt)):
+            full = thermal_stream_3d(thermal_collide_bgk_3d(
+                full,thermal_macroscopic_3d(full),full_zero,full_zero,full_zero,tau))
+            streamed = thermal_stream_3d(thermal_collide_bgk_3d(
+                direct,thermal_macroscopic_3d(direct),zero,zero,zero,tau))
+            direct = thermal_adiabatic_walls_3d(streamed,insulated,method="even_reflection")
+            other = streamed
+            for face in fixed:
+                direct = thermal_dirichlet_wall_3d(direct,wall,face,method="odd_reflection")
+                other = thermal_dirichlet_wall_3d(other,wall,face,method="odd_reflection")
+            other = thermal_adiabatic_walls_3d(other,insulated,method="even_reflection")
+            order_error = max(order_error, (direct-other).abs().max().item())
+            population_error = max(population_error, (direct-full[(slice(None),)+box]).abs().max().item())
+            temperature = thermal_macroscopic_3d(direct)
+            wall_error = max(wall_error, (temperature[:,:,0]-wall).abs().max().item(),
+                             (temperature[:,-1,:]-wall).abs().max().item())
+        exact = wall + math.exp(-1.5*math.pi**2*end)*mode[box]
+        errors.append((temperature-exact).abs().max().item())
+        record_property(f"field_error_{n}_K", errors[-1])
+        record_property(f"population_error_{n}", population_error)
+        record_property(f"boundary_order_error_{n}", order_error)
+        record_property(f"fixed_wall_error_{n}_K", wall_error)
+        assert max(population_error,order_error,wall_error) < 3e-14
+    assert errors[0]/errors[1] > 3.5
