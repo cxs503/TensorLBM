@@ -974,3 +974,22 @@ def test_sampled_wall_gradient_uses_one_sided_derivatives(dim, length):
         periodic="xyz".replace("xyz"[2-dim], ""), **opts)
     expected = thermal_gradient_initialization_3d(field, zero, zero, zero, grad, **opts)
     torch.testing.assert_close(actual, expected, atol=2e-15, rtol=0.)
+
+
+@pytest.mark.parametrize("axis", list("xyz"))
+def test_halfway_temperature_pair_tracks_local_wall_heat(axis):
+    from tensorlbm.thermal_common import thermal_stream_3d, thermal_temperature_wall_pair_3d
+
+    post = torch.randn(7, 3, 5, 4, dtype=torch.float64, generator=torch.Generator().manual_seed(421))
+    streamed = thermal_stream_3d(post)
+    dim = 2-"xyz".index(axis)
+    pos = 1+2*"xyz".index(axis)
+    shape = post[0].select(dim,0).shape
+    wall = torch.arange(math.prod(shape), dtype=post.dtype).reshape(shape)/9
+    updated, flux = thermal_temperature_wall_pair_3d(streamed, axis, (wall,.31), dt=.2, spacing=.3, volumetric_heat_capacity=2.)
+    for i, (incoming, outgoing, index, temp) in enumerate(((pos,pos+1,0,wall),(pos+1,pos,-1,.31))):
+        escaped = post[outgoing].select(dim,index)
+        returned = updated[incoming].select(dim,index)
+        torch.testing.assert_close(returned, .25*temp-escaped)
+        torch.testing.assert_close(flux[i], 3*(returned-escaped))
+    torch.testing.assert_close(updated.sum()-post.sum(), (flux[0].sum()+flux[1].sum())/3)

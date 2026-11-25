@@ -57,6 +57,7 @@ __all__ = [
     "thermal_dirichlet_wall_3d",
     "thermal_adiabatic_walls_3d",
     "thermal_flux_wall_pair_3d",
+    "thermal_temperature_wall_pair_3d",
     "thermal_fixed_temp_mask_3d",
     # Diagnostics
     "nusselt_hot_wall_3d",
@@ -651,6 +652,44 @@ def thermal_flux_wall_pair_3d(
     updated[positive].select(dim,0).copy_(g[negative].select(dim,-1)+fluxes[0]*scale)
     updated[negative].select(dim,-1).copy_(g[positive].select(dim,0)+fluxes[1]*scale)
     return updated
+
+
+def thermal_temperature_wall_pair_3d(
+    g: torch.Tensor, axis: str, wall_temperatures: tuple[float | torch.Tensor, float | torch.Tensor], *,
+    dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    """Apply two half-way Dirichlet walls in cell-centered D3Q7 diffusion.
+
+    After periodic streaming, anti-bounce-back replaces each incoming population
+    by 2*w*T_wall minus the population leaving that same face. Supply lower and
+    upper wall temperatures as scalars or face arrays in remaining (z,y,x)
+    order. Returns the updated populations and the lower and upper net fluxes
+    into the material during this step (W/m²). Wall-normal velocity is zero.
+    """
+    if axis not in ("x", "y", "z") or len(wall_temperatures) != 2:
+        raise ValueError("provide a coordinate axis and two wall temperatures")
+    if g.ndim != 4 or g.shape[0] != 7 or min(g.shape[1:]) < 1 or not g.is_floating_point():
+        raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
+    if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
+        raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    direction = "xyz".index(axis)
+    positive = 1+2*direction
+    negative = positive+1
+    dim = 2-direction
+    updated = g.clone()
+    fluxes = []
+    for wall, incoming, outgoing, index in ((wall_temperatures[0], positive, negative, 0),
+                                             (wall_temperatures[1], negative, positive, -1)):
+        escaped = g[outgoing].select(dim, -1 if index == 0 else 0)
+        if torch.is_complex(torch.as_tensor(wall)):
+            raise ValueError("wall temperatures must be real")
+        temperature = torch.as_tensor(wall, dtype=g.dtype, device=g.device)
+        if temperature.shape not in ((), escaped.shape) or not torch.isfinite(temperature).all():
+            raise ValueError("provide a finite scalar or a temperature for each face cell")
+        reflected = 2*_w_thermal(g.device)[incoming]*temperature - escaped
+        updated[incoming].select(dim, index).copy_(reflected)
+        fluxes.append((reflected-escaped)*(volumetric_heat_capacity*spacing/dt))
+    return updated, (fluxes[0], fluxes[1])
 
 
 def thermal_fixed_temp_mask_3d(
