@@ -399,3 +399,39 @@ class TestThermalComposability:
         assert torch.isfinite(f).all()
         assert torch.isfinite(g).all()
         assert torch.isfinite(T).all()
+
+
+@pytest.mark.parametrize("axis,letter", [(0, "z"), (1, "y"), (2, "x")])
+def test_hot_wall_nusselt_on_rectangular_lattice(axis, letter):
+    from tensorlbm.thermal_common import nusselt_hot_wall_3d
+
+    shape = (4, 7, 9)
+    dims = [1, 1, 1]
+    dims[axis] = shape[axis]
+    t = torch.linspace(1., 0., shape[axis], dtype=torch.float64).reshape(dims).expand(shape)
+    assert nusselt_hot_wall_3d(t, 1., 0., letter + "-") == pytest.approx(1.)
+    assert nusselt_hot_wall_3d(1-t, 1., 0., letter + "+") == pytest.approx(1.)
+
+
+@pytest.mark.parametrize("axis,letter", [(0, "z"), (1, "y"), (2, "x")])
+@pytest.mark.parametrize("side", ["-", "+"])
+def test_wall_gradient_convergence_on_cubic_field(axis, letter, side):
+    from tensorlbm.thermal_common import nusselt_hot_wall_3d
+
+    errors = []
+    for intervals in (8, 16, 32):
+        s = torch.linspace(0, 1, intervals + 1, dtype=torch.float64)
+        profile = (1 - s)**3 if side == "-" else s**3
+        t = profile.expand(3, 5, -1).movedim(-1, axis)
+        nu = nusselt_hot_wall_3d(t, 1., 0., letter + side, order=2)
+        errors.append(abs(nu - 3.))
+    assert errors[0] / errors[1] == pytest.approx(4.)
+    assert errors[1] / errors[2] == pytest.approx(4.)
+    assert errors[-1] == pytest.approx(2 / 32**2)
+
+
+def test_second_order_wall_gradient_requires_three_nodes():
+    from tensorlbm.thermal_common import nusselt_hot_wall_3d
+
+    with pytest.raises(ValueError, match="3 nodes"):
+        nusselt_hot_wall_3d(torch.ones(4, 4, 2), 1., 0., order=2)

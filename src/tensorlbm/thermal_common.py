@@ -552,6 +552,8 @@ def nusselt_hot_wall_3d(
     T_hot: float,
     T_cold: float,
     wall: str = "x-",
+    *,
+    order: int = 1,
 ) -> float:
     """Average Nusselt number at a hot wall.
 
@@ -563,27 +565,28 @@ def nusselt_hot_wall_3d(
         T:       Temperature field ``(nz, ny, nx)``.
         T_hot:   Hot wall temperature.
         T_cold:  Cold wall temperature.
-        wall:    Which wall is hot (``"x-"`` or ``"x+"``).
+        wall:    Hot face (x, y or z followed by - or +).
+        order:   Wall-normal difference order on a uniform, wall-node grid (1 or 2).
 
     Returns:
         Average Nusselt number (float).
     """
+    if order not in (1, 2):
+        raise ValueError("wall gradient order must be 1 or 2")
     dT = T_hot - T_cold
     if abs(dT) < 1e-12:
         return 0.0
-    L = T.shape[2] - 1  # characteristic length in x
-    if wall == "x-":
-        # Forward difference: ∂T/∂x ≈ (T[1] - T[0]) at x=0
-        # Nu = -∂T/∂x * L / ΔT (hot wall, heat flows into fluid → Nu > 0)
-        # grad = T[0] - T[1] = -∂T/∂x, so Nu = grad * L / ΔT
-        grad = T[:, :, 0] - T[:, :, 1]  # = -∂T/∂x at x=0
-    elif wall == "x+":
-        # Backward difference: ∂T/∂x ≈ (T[-1] - T[-2]) at x=nx-1
-        # For cold wall: grad = T[-1] - T[-2] = -∂T/∂x, Nu = grad * L / ΔT
-        grad = T[:, :, -1] - T[:, :, -2]
-    else:
-        raise ValueError(f"wall must be x- or x+, got {wall!r}")
-    # Nu = -∂T/∂n * L / ΔT; grad already = -∂T/∂n, so no extra minus
+    axes = {"x": 2, "y": 1, "z": 0}
+    if wall not in ("x-", "x+", "y-", "y+", "z-", "z+"):
+        raise ValueError(f"unknown hot wall {wall!r}")
+    normal = T.movedim(axes[wall[0]], -1)
+    L = normal.shape[-1] - 1
+    if L < order:
+        raise ValueError(f"wall-normal direction needs at least {order + 1} nodes")
+    boundary, first, second = (0, 1, 2) if wall[1] == "-" else (-1, -2, -3)
+    grad = normal[..., boundary] - normal[..., first]
+    if order == 2:
+        grad = grad + 0.5 * (grad - (normal[..., first] - normal[..., second]))
     nu = float((grad * L / dT).mean().item())
     return nu
 
@@ -695,12 +698,15 @@ def run_thermal_cavity_common(
     Ra: float = 1e4,
     Pr: float = 0.71,
     n_steps: int = 8000,
+    *,
+    nusselt_order: int = 1,
 ) -> dict[str, object]:
     """Differentially heated cavity using common modules.
 
     Hot wall at x=0 (T=1), cold wall at x=nx-1 (T=0).
     All other walls: no-slip + adiabatic.
-    Buoyancy via Boussinesq approximation.
+    Buoyancy via Boussinesq approximation. nusselt_order selects the wall
+    gradient stencil used for both the recorded history and the final value.
 
     Reference: de Vahl Davis (1983), Nu ≈ 2.0 at Ra=10^4.
     """
@@ -784,13 +790,14 @@ def run_thermal_cavity_common(
 
         if step % 200 == 0 or step == n_steps - 1:
             T = thermal_macroscopic_3d(g)
-            nu_val = nusselt_hot_wall_3d(T, T_hot, T_cold, wall="x-")
+            nu_val = nusselt_hot_wall_3d(T, T_hot, T_cold, wall="x-", order=nusselt_order)
             nu_hist.append(nu_val)
 
     T_final = thermal_macroscopic_3d(g)
-    nu_final = nusselt_hot_wall_3d(T_final, T_hot, T_cold, wall="x-")
+    nu_final = nusselt_hot_wall_3d(T_final, T_hot, T_cold, wall="x-", order=nusselt_order)
     return {
         "nusselt": nu_final,
+        "nusselt_order": nusselt_order,
         "nusselt_ref": 2.0,
         "nusselt_history": nu_hist,
         "Ra": Ra,
