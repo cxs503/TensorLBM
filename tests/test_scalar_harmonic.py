@@ -84,3 +84,23 @@ def test_oblique_periodic_decay_converges(direction):
         errors.append(float((g.sum(0)-reference).norm()/reference.norm()))
     assert max(errors[1]/errors[0], errors[2]/errors[1]) < .28
     assert errors[-1] < .001
+
+
+@pytest.mark.parametrize("omega", [0., .27])
+def test_volume_heat_increment_matches_population_step_and_local_balance(omega):
+    from tensorlbm.scalar import scalar_equilibrium
+
+    source = torch.arange(15, dtype=torch.float64).reshape(3, 5).sin()+.37j
+    west = torch.tensor([1., 2., -.4], dtype=torch.float64)
+    solution = solve_harmonic_scalar_slab(5, 3, .83, omega, west, None, source=source)
+    phase = complex(math.cos(.6), math.sin(.6))
+    mid = phase*complex(math.cos(omega/2), math.sin(omega/2))
+    end = phase*complex(math.cos(omega), math.sin(omega))
+    g = (phase*solution.populations).real
+    zero = torch.zeros_like(g[0])
+    post = scalar_collide_bgk(g, g.sum(0), zero, zero, .83)
+    new, _ = scalar_stream_slab(post, (mid*west).real, None)
+    new += scalar_equilibrium((mid*source).real, zero, zero)
+    torch.testing.assert_close(new, (end*solution.populations).real, rtol=0, atol=2e-14)
+    div = solution.x_transfer.diff(dim=1)+solution.y_transfer-solution.y_transfer.roll(1, 0)
+    torch.testing.assert_close(2j*math.sin(omega/2)*solution.scalar+div, source)

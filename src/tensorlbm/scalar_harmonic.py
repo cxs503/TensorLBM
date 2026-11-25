@@ -21,7 +21,8 @@ class HarmonicScalarSlab:
         return self.populations.sum(dim=0)
 
 
-def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east, *, tau_y=None, tau_even=None, tau_xy=0.):
+def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east, *, tau_y=None, tau_even=None,
+                               tau_xy=0., source=None):
     """Solve the discrete D2Q5 collision/streaming equations at one frequency.
 
     frequency is radians per lattice step, 0 <= frequency < π. Wall phasors
@@ -31,7 +32,10 @@ def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east, *, tau_y=None
     transfers at midpoints. x_transfer includes both wall faces toward +x;
     the last row of y_transfer crosses the periodic seam toward +y.
     tau sets the x relaxation time. tau_y and tau_even default to tau.
-    tau_xy/3 sets the lattice cross diffusivity.
+    tau_xy/3 sets the lattice cross diffusivity. source is a complex midpoint
+    temperature increment per lattice step, broadcastable to (ny,nx). Add it
+    locally after streaming using the five equilibrium weights. For physical
+    heat generation Q, supply Q*dt/(rho*cp).
     """
     if any(not isinstance(n, (int,np.integer)) or n < 1 for n in (nx,ny)):
         raise ValueError("nx and ny must be positive integers")
@@ -70,6 +74,11 @@ def solve_harmonic_scalar_slab(nx, ny, tau, frequency, west, east, *, tau_y=None
     for wall,q,col in ((west,1,0),(east,3,-1)):
         if wall is not None:
             forcing[q,:,col] = 2*weights[q]*midpoint*np.fft.fft(wall)
+    if source is not None:
+        increment = np.broadcast_to(np.asarray(source, dtype=complex), (ny, nx))
+        if not np.isfinite(increment).all():
+            raise ValueError("source phasors must be finite")
+        forcing += weights[:, None, None]*midpoint*np.fft.fft(increment, axis=0)
     modes = np.zeros_like(forcing)
     for j in range(ny):
         rhs = forcing[:,j,:].ravel()
