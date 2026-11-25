@@ -2,7 +2,7 @@
 
 Each test pins one link of the measurement chain (alias ``XVAL-LBM-FREE-ENERGY-LBM-
 ANALYTIC-YOUNG-LAPLACE-D``).  The *physics verdict* lives in
-``xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/artifacts/summary.json`` and is
+``benchmarks/case_pool/free_energy_young_laplace/evidence/m20929/summary.json`` and is
 produced by ``run_xval.py``; here we assert the invariants that would otherwise break
 silently and turn a physics mismatch into a post-processing artefact:
 

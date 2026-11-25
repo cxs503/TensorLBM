@@ -1,0 +1,90 @@
+{
+  "source_commit": "0dc7be4c070407acdce29793fd6c94d41dc72903",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "top_level_directories": [
+    ".github",
+    "app",
+    "benchmarks",
+    "development",
+    "docs",
+    "examples",
+    "models",
+    "scripts",
+    "src",
+    "tests",
+    "tools",
+    "xval"
+  ],
+  "second_level_directories": {
+    "xval": {
+      "before": 77,
+      "after": 76
+    }
+  },
+  "reference_scan": "Searched the tracked tree and workflows for the legacy path. Updated the maintained case adapter, published case guide and test docstring. The archived m20929 patch was retained as historical provenance.",
+  "compatibility": {
+    "registry_id": "benchmarks/case_pool/free_energy_young_laplace",
+    "published_document": "docs/XVAL_LBM_FREE_ENERGY_LBM_ANALYTIC_YOUNG_LAPLACE_D.md",
+    "original_tree": "https://github.com/cxs503/TensorLBM/tree/0dc7be4c070407acdce29793fd6c94d41dc72903/xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D",
+    "cli": "The case-pool command and both entry points preserve flags and exit semantics. The direct XVAL runner now lives beside the maintained case.",
+    "historical_results": "Original m20929 reports and predeclared criteria retain their bytes. Subsequent runs use the case-local artifacts directory or an explicit --out."
+  },
+  "scientific_scope": "The same real CPU smoke failed before and after the move, with 6/7 comparison rows passing. N48_R8:C8_steady_window_noise failed at 2.4197468663476725% versus 2%. The direct runner also reported the existing third analytic precheck mismatch (0.28284271247495474 vs 0.4). Full case acceptance remains unevaluated.",
+  "replay": {
+    "commands": {
+      "baseline_direct": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/run_xval.py --smoke --out outputs/young-laplace-before-direct",
+      "relocated_direct": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/case_pool/free_energy_young_laplace/run_xval.py --smoke --out outputs/young-laplace-after-direct",
+      "baseline_pool_adapter": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/case_pool/free_energy_young_laplace/run_case.py --smoke --out outputs/young-laplace-before",
+      "relocated_pool_adapter": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/case_pool/free_energy_young_laplace/run_case.py --smoke --out outputs/young-laplace-after",
+      "pool_cli": "PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 python benchmarks/case_pool/run_pool.py --case free_energy_young_laplace --smoke"
+    },
+    "result_path": "benchmarks/case_pool/free_energy_young_laplace/evidence/2026-11-25-cpu-smoke.json",
+    "result_sha256": "16fce644f0b1c0edf636875c49fbfd4874143abdbaf32f1cf115e71138633b70"
+  },
+  "entries": [
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/run_xval.py",
+      "new_path": "benchmarks/case_pool/free_energy_young_laplace/run_xval.py",
+      "git_mode": "100644",
+      "original_git_blob": "0d84be71ea597029f5b98477653a7225bf281ab6",
+      "size_bytes": 14056,
+      "original_sha256": "bd8e8d0c8cd33b33dd4c46b7daeb54701d4df705079715145bdd6b15ad2e093a",
+      "new_sha256": "f2ec6a15e9a9af695d8966aa1b48ae6a9dd8ba21353581d7da2cd2d5a0dc5957"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/predeclared.json",
+      "new_path": "benchmarks/case_pool/free_energy_young_laplace/predeclared.json",
+      "git_mode": "100644",
+      "original_git_blob": "86f6e19c0627f5557550451a5138763cac52968f",
+      "size_bytes": 5966,
+      "original_sha256": "9d774a5db475c549898eb648c7efa5b7b9687d699e5edd5867603170caa196bc",
+      "new_sha256": "9d774a5db475c549898eb648c7efa5b7b9687d699e5edd5867603170caa196bc"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/artifacts/summary.json",
+      "new_path": "benchmarks/case_pool/free_energy_young_laplace/evidence/m20929/summary.json",
+      "git_mode": "100644",
+      "original_git_blob": "12e68d95ce1a5eb444dac8904c7204841aee7511",
+      "size_bytes": 40782,
+      "original_sha256": "8977c9c0f0fb83f71fb1790a856d5708686ced808d4964559de78965301de328",
+      "new_sha256": "8977c9c0f0fb83f71fb1790a856d5708686ced808d4964559de78965301de328"
+    },
+    {
+      "old_path": "xval/XVAL-LBM-FREE-ENERGY-LBM-ANALYTIC-YOUNG-LAPLACE-D/artifacts/ref_vs_got.json",
+      "new_path": "benchmarks/case_pool/free_energy_young_laplace/evidence/m20929/ref_vs_got.json",
+      "git_mode": "100644",
+      "original_git_blob": "1a17b916985e747190d54ad1a53c18f22f929a29",
+      "size_bytes": 2196,
+      "original_sha256": "c2b8f80a3c426f45495c06f17a41c3fa1db22b9759c04ec380340bac52d74fca",
+      "new_sha256": "c2b8f80a3c426f45495c06f17a41c3fa1db22b9759c04ec380340bac52d74fca"
+    }
+  ],
+  "verification": [
+    "Both before/after reference-comparison pairs and all three generated figures were byte-identical. The pool CLI outputs were byte-identical to the relocated adapter outputs.",
+    "The direct summaries differed only in wall_seconds; the adapter summaries differed only in criteria_source.",
+    "The 22 tests in tests/test_laplace_droplet_calibration.py passed. Lint ratchet passed.",
+    "Repository governance passed 83 tests, with 214 registry entries, 35 manual records, 33 PDFs, 33 Word files, zero hard violations and 16 existing advisory findings.",
+    "The case lookup returns the existing ID, three results and four reference records. The case-pool list still includes the original name, and all local links in both case documents resolve."
+  ]
+}
