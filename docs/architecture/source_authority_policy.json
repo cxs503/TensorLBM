@@ -165,7 +165,7 @@
       "matches": 1,
       "matching_lines_sha256": "2aef46ca98735517aff2fc66c3fc956a0345bc0a2573a85f9591aad6dd32c3a6"
     },
-    "xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/run_xval.py": {
+    "benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py": {
       "matches": 1,
       "matching_lines_sha256": "2da357fcbf4c667d8a8dcf2e04fea48af0d7320d15a516c9e39368f4f0dc2fce"
     },

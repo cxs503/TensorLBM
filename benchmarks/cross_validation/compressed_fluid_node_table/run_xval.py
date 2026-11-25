@@ -25,11 +25,12 @@ number, and a failed arm is written out as failed.
 
 Usage::
 
-    PYTHONPATH=src python3 xval/XVAL-LBM-COMPRESSED-FLUID-NODE-NEIGHBOUR-TABLE/run_xval.py
+    PYTHONPATH=src python3 benchmarks/cross_validation/compressed_fluid_node_table/run_xval.py
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import time
@@ -46,7 +47,6 @@ from tensorlbm.porous import (
     permeability,
 )
 
-OUT = Path(__file__).resolve().parent
 STEPS_CAP = 4000
 STEADY_TOL = 1e-9
 CHECK_EVERY = 200
@@ -71,8 +71,10 @@ def square_grain_mask(ny: int, nx: int, porosity: float, grain: int = 4) -> torc
     side = max(side, 1)
     for y0 in range(0, ny, grain):
         for x0 in range(0, nx, grain):
-            solid[y0 + grain // 2 - side // 2: y0 + grain // 2 + side - side // 2,
-                  x0 + grain // 2 - side // 2: x0 + grain // 2 + side - side // 2] = True
+            solid[
+                y0 + grain // 2 - side // 2 : y0 + grain // 2 + side - side // 2,
+                x0 + grain // 2 - side // 2 : x0 + grain // 2 + side - side // 2,
+            ] = True
     return solid
 
 
@@ -193,7 +195,7 @@ def analytic_profile(ny: int, h_fluid: int, g: float) -> list:
     """u_x(y) of plane Poiseuille, walls 0.5 dx outside the outermost fluid rows."""
     y0 = ny - h_fluid
     yc = y0 + (h_fluid - 1) / 2.0
-    umax = g * h_fluid ** 2 / (8.0 * NU)
+    umax = g * h_fluid**2 / (8.0 * NU)
     return [umax * (1.0 - ((y - yc) / (h_fluid / 2.0)) ** 2) for y in range(y0, ny)]
 
 
@@ -222,54 +224,76 @@ def main() -> dict:
     solid = torch.rand((24, 24), generator=gen) < 0.35
     a1 = compressed_arm(solid, G_DEFAULT, steps_cap=1200)
     a2 = dense_arm(solid, G_DEFAULT, steps_cap=1200)
-    cases.append({
-        "case": "C1_random_porous_identity",
-        "case_cfg": {"ny": 24, "nx": 24, "porosity_target": 0.65, "g": G_DEFAULT, "steps_cap": 1200},
-        "k_reference": None,
-        "reference_kind": "none (representation-identity control)",
-        "A1": strip(a1),
-        "A2": strip(a2),
-        "compare": compare_arms(a1, a2),
-    })
+    cases.append(
+        {
+            "case": "C1_random_porous_identity",
+            "case_cfg": {
+                "ny": 24,
+                "nx": 24,
+                "porosity_target": 0.65,
+                "g": G_DEFAULT,
+                "steps_cap": 1200,
+            },
+            "k_reference": None,
+            "reference_kind": "none (representation-identity control)",
+            "A1": strip(a1),
+            "A2": strip(a2),
+            "compare": compare_arms(a1, a2),
+        }
+    )
 
     # ---- C2: plane channel vs analytic, resolution pair H=16 / H=32 ----------
     for tag, ny, h in (("C2a_channel_H16", 32, 16), ("C2b_channel_H32", 64, 32)):
         solid = slab_mask(ny, ny, h)
         arm = compressed_arm(solid, G_DEFAULT, steps_cap=12000)
-        k_ref = (h / ny) * h ** 2 / 12.0
+        k_ref = (h / ny) * h**2 / 12.0
         perr = profile_error(arm, ny, h, G_DEFAULT)
-        cases.append({
-            "case": tag,
-            "case_cfg": {"ny": ny, "nx": ny, "h_fluid": h, "g": G_DEFAULT, "steps_cap": STEPS_CAP},
-            "k_reference": k_ref,
-            "reference_kind": "analytic_slab: k_super=(H/ny)*H^2/12",
-            "A1": strip(arm),
-            "k_err_vs_ref_pct": (arm["k_darcy_super"] - k_ref) / k_ref * 100.0,
-            "poiseuille": perr,
-        })
+        cases.append(
+            {
+                "case": tag,
+                "case_cfg": {
+                    "ny": ny,
+                    "nx": ny,
+                    "h_fluid": h,
+                    "g": G_DEFAULT,
+                    "steps_cap": STEPS_CAP,
+                },
+                "k_reference": k_ref,
+                "reference_kind": "analytic_slab: k_super=(H/ny)*H^2/12",
+                "A1": strip(arm),
+                "k_err_vs_ref_pct": (arm["k_darcy_super"] - k_ref) / k_ref * 100.0,
+                "poiseuille": perr,
+            }
+        )
 
     # ---- C3: forcing linearity (Darcy regime) --------------------------------
     solid = slab_mask(32, 32, 16)
     lin = {}
     for g in (5e-5, 1e-4, 2e-4):
         arm = compressed_arm(solid, g, steps_cap=2000)
-        lin[f"g={g:g}"] = {"k_darcy_super": arm["k_darcy_super"], "ma": arm["ma"],
-                           "steps": arm["steps"], "converged": arm["converged"]}
+        lin[f"g={g:g}"] = {
+            "k_darcy_super": arm["k_darcy_super"],
+            "ma": arm["ma"],
+            "steps": arm["steps"],
+            "converged": arm["converged"],
+        }
     k_lo = lin["g=5e-05"]["k_darcy_super"]
     k_mid = lin["g=0.0001"]["k_darcy_super"]
     k_hi = lin["g=0.0002"]["k_darcy_super"]
-    cases.append({
-        "case": "C3_forcing_linearity",
-        "case_cfg": {"ny": 32, "h_fluid": 16, "g": [5e-5, 1e-4, 2e-4]},
-        "k_reference": None,
-        "reference_kind": "self (Darcy linearity)",
-        "arms": lin,
-        "k_rel_diff_g_admissible_pair": abs(k_mid - k_lo) / k_lo,
-        "ma_max_admissible_pair": max(lin["g=5e-05"]["ma"], lin["g=0.0001"]["ma"]),
-        "k_rel_diff_g_wide_pair": abs(k_hi - k_mid) / k_mid,
-        "ma_max_wide_pair": lin["g=0.0002"]["ma"],
-        "admissibility_note": "the pre-declared stability rule requires Ma < 0.1; at H=16 and g=2e-4 the analytic centreline speed gives Ma=0.111, so that pair is reported but NOT admitted as a linearity test. The admitted pair is (5e-5, 1e-4), both Ma < 0.1.",
-    })
+    cases.append(
+        {
+            "case": "C3_forcing_linearity",
+            "case_cfg": {"ny": 32, "h_fluid": 16, "g": [5e-5, 1e-4, 2e-4]},
+            "k_reference": None,
+            "reference_kind": "self (Darcy linearity)",
+            "arms": lin,
+            "k_rel_diff_g_admissible_pair": abs(k_mid - k_lo) / k_lo,
+            "ma_max_admissible_pair": max(lin["g=5e-05"]["ma"], lin["g=0.0001"]["ma"]),
+            "k_rel_diff_g_wide_pair": abs(k_hi - k_mid) / k_mid,
+            "ma_max_wide_pair": lin["g=0.0002"]["ma"],
+            "admissibility_note": "the pre-declared stability rule requires Ma < 0.1; at H=16 and g=2e-4 the analytic centreline speed gives Ma=0.111, so that pair is reported but NOT admitted as a linearity test. The admitted pair is (5e-5, 1e-4), both Ma < 0.1.",
+        }
+    )
 
     # ---- C4: porosity sensitivity (informational) ---------------------------
     por = {}
@@ -284,27 +308,36 @@ def main() -> dict:
             "converged": arm["converged"],
             "steps": arm["steps"],
         }
-    cases.append({
-        "case": "C4_porosity_sensitivity",
-        "case_cfg": {"ny": 32, "nx": 32, "grain": 4, "g": G_DEFAULT, "steps_cap": 2000},
-        "k_reference": None,
-        "reference_kind": "none (informational; no acceptance metric)",
-        "arms": por,
-        "int32_table_total_ratio": {
-            k: (v["mem"]["dense_total_bytes"] /
-                (v["mem"]["compressed_pdf_bytes"] + 8 * v["mem"]["compressed_table_bytes"] // 8
-                 - 4 * 0)) for k, v in por.items()
-        },
-    })
+    cases.append(
+        {
+            "case": "C4_porosity_sensitivity",
+            "case_cfg": {"ny": 32, "nx": 32, "grain": 4, "g": G_DEFAULT, "steps_cap": 2000},
+            "k_reference": None,
+            "reference_kind": "none (informational; no acceptance metric)",
+            "arms": por,
+            "int32_table_total_ratio": {
+                k: (
+                    v["mem"]["dense_total_bytes"]
+                    / (
+                        v["mem"]["compressed_pdf_bytes"]
+                        + 8 * v["mem"]["compressed_table_bytes"] // 8
+                        - 4 * 0
+                    )
+                )
+                for k, v in por.items()
+            },
+        }
+    )
 
     # ---- gates -------------------------------------------------------------
     c1 = cases[0]["compare"]
-    g1 = (c1["ux_maxabs_rel"] < 1e-8 and c1["ux_l2_rel"] < 1e-8 and c1["k_rel_diff"] < 1e-8)
+    g1 = c1["ux_maxabs_rel"] < 1e-8 and c1["ux_l2_rel"] < 1e-8 and c1["k_rel_diff"] < 1e-8
     errs = [abs(c["k_err_vs_ref_pct"]) for c in cases[1:3]]
     g2 = all(e < 15.0 for e in errs)
     g2_target = all(e < 3.0 for e in errs)
-    g3 = (cases[3]["k_rel_diff_g_admissible_pair"] < 0.05
-          and cases[3]["ma_max_admissible_pair"] < 0.1)
+    g3 = (
+        cases[3]["k_rel_diff_g_admissible_pair"] < 0.05 and cases[3]["ma_max_admissible_pair"] < 0.1
+    )
     # a resolution delta must be taken on the RELATIVE ERROR: k_super itself
     # scales as H^2, so |k(H32)-k(H16)|/k(H32) = 0.74 is geometry, not error.
     resolution_delta = abs(errs[1] - errs[0]) / 100.0
@@ -321,9 +354,15 @@ def main() -> dict:
         },
         "resolution_delta_on_rel_error": resolution_delta,
         "resolution_converged_lt_5pct": bool(resolution_delta < 0.05),
-        "channel_arms": [{"case": c["case"], "steps": c["A1"]["steps"],
-                          "converged": c["A1"]["converged"],
-                          "err_pct": c["k_err_vs_ref_pct"]} for c in cases[1:3]],
+        "channel_arms": [
+            {
+                "case": c["case"],
+                "steps": c["A1"]["steps"],
+                "converged": c["A1"]["converged"],
+                "err_pct": c["k_err_vs_ref_pct"],
+            }
+            for c in cases[1:3]
+        ],
         "converged_all_channel_arms": all(c["A1"]["converged"] for c in cases[1:3]),
     }
 
@@ -356,9 +395,20 @@ def main() -> dict:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Reproduce the compressed fluid-node table comparison."
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("outputs/cross_validation/compressed_fluid_node_table/results.json"),
+        help="Result JSON path",
+    )
+    output = parser.parse_args().output
     t0 = time.perf_counter()
     res = main()
     res["wall_s"] = time.perf_counter() - t0
-    (OUT / "results.json").write_text(json.dumps(res, indent=1))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(res, indent=1))
     print(json.dumps(res["gates"], indent=1))
-    print(f"wall {res['wall_s']:.1f}s -> {OUT / 'results.json'}")
+    print(f"wall {res['wall_s']:.1f}s -> {output}")
