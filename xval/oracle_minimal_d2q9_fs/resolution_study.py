@@ -71,7 +71,7 @@ sys.path.insert(0, str(HERE))
 ART = HERE / "artifacts"
 ART.mkdir(parents=True, exist_ok=True)
 
-MM = json.loads((REPO / "src" / "artifacts" / "martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 MM_T = np.array([d["t_star"] for d in MM["data"]], dtype=float)
 MM_Z = np.array([d["X_star"] for d in MM["data"]], dtype=float)
 
@@ -85,7 +85,7 @@ DESIGN = {
     "experiment_reference": {
         "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324, Fig. 4",
         "doi": "10.1098/rsta.1952.0006",
-        "artifact": "src/artifacts/martin_moyce_1952_dam_break.json",
+        "artifact": "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json",
         "sha256": MM.get("sha256"),
     },
     "nondim": {"Z": "x_front / a", "T": "t * sqrt(g / h0)"},
@@ -149,7 +149,7 @@ def re_reference(g: float | None = None) -> float:
 # ---------------------------------------------------------------------------
 # metrics
 # ---------------------------------------------------------------------------
-RITTER = json.loads((REPO / "src" / "artifacts" / "ritter_1892_dam_break_analytical.json").read_text())
+RITTER = json.loads((REPO / "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json").read_text())
 RIT_T = np.array([d["t_star"] for d in RITTER["data"]], dtype=float)
 RIT_Z = np.array([d["X_star"] for d in RITTER["data"]], dtype=float)
 

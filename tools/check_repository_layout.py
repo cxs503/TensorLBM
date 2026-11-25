@@ -48,8 +48,10 @@ RETIRED_ROOT_DIRECTORIES = {
 RETIRED_FILES = {
     "scripts/audit_m17668_figure.py",
     "scripts/audit_m17668_report.py",
+    "src/tensorlbm/dg_verification.py",
 }
 RETIRED_SECOND_LEVEL_DIRECTORIES = {
+    ("src", "artifacts"),
     ("xval", "XVAL-LBM-ZOU-HE-CHANNEL-INLET-OUTLET-RECONSTRUCTI"),
     ("scripts", "verification"),
     ("scripts", "audit_m18430"),
@@ -232,7 +234,7 @@ def check_files(repo: Path, names: list[str], policy: dict) -> list[str]:
         if separator and policy["schema_version"] == 2 and directory not in allowed_dirs:
             unexpected_dirs.add(directory)
         if name in RETIRED_FILES:
-            failures.append(f"retired-file: {name} — use the mapped audit path")
+            failures.append(f"retired-file: {name} — use the mapped path")
         parts = PurePosixPath(name).parts
         if tuple(parts[:2]) in RETIRED_SECOND_LEVEL_DIRECTORIES:
             failures.append(

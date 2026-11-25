@@ -20,8 +20,7 @@ import torch
 from tensorlbm.dg_advection import get_ops, lobatto_nodes
 from tensorlbm.dg_verification import (
     generate_verification_report,
-    test_dg_operators,
-    test_mass_conservation_1d,
+    test_mass_conservation_1d as measure_mass_conservation,
 )
 
 
@@ -90,7 +89,7 @@ class TestMassConservation:
 
     def test_p1_conservation(self):
         """P1 DG should conserve mass for smooth advection."""
-        results = test_mass_conservation_1d()
+        results = measure_mass_conservation()
         p1_result = results.get("P1", {})
         
         # Check that P1 conservation test passed

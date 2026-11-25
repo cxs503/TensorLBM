@@ -37,6 +37,12 @@ from .scalar import (
     node_coords_2d,
     ssp_rk3,
 )
+from .report import (
+    generate_verification_report,
+    test_convergence_smooth,
+    test_dg_operators,
+    test_mass_conservation_1d,
+)
 from .stability import operator_spectra_1d, spectral_report, stable_dt
 from .euler1d import (
     EulerDG1D,
@@ -72,4 +78,8 @@ __all__ = [
     "stable_dt",
     "operator_spectra_1d",
     "spectral_report",
+    "generate_verification_report",
+    "test_convergence_smooth",
+    "test_dg_operators",
+    "test_mass_conservation_1d",
 ]

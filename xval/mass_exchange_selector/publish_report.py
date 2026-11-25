@@ -136,7 +136,7 @@ of the same Körner/Thürey family are compared:
 Physical test case (identical lattice for both selectors): 2-D dam-break in a
 walled box, liquid column of height $h_0=2a$ and width $5a$, one-cell gas
 headroom, gravity $g$, scored against the digitised Martin & Moyce (1952)
-experiment (`src/artifacts/martin_moyce_1952_dam_break.json`).
+experiment (`src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json`).
 
 ### Dimensionless groups (complete)
 

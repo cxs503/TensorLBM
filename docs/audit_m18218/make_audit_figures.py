@@ -21,8 +21,7 @@ ROOT = HERE.parents[1]
 
 def load():
     art = json.loads((SNAP / "artifacts" / "xval_results.json").read_text())
-    mm = json.loads((ROOT / "src" / "artifacts" /
-                     "martin_moyce_1952_dam_break.json").read_text())
+    mm = json.loads((ROOT / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
     repro = json.loads((HERE / "repro_results.json").read_text())
     return art, mm, repro
 

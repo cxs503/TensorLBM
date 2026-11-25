@@ -15,7 +15,7 @@ BUCKETS = {"verified", "pending", "archived", "case_pool"}
 XVAL_CASE_ROOT = PurePosixPath("benchmarks/cross_validation")
 
 
-ASSET_ROOTS = ("benchmarks", "docs", "development", "xval")
+ASSET_ROOTS = ("benchmarks", "docs", "development", "xval", "src/tensorlbm/verification/refdata")
 
 
 def tracked_files(root: Path, *areas: str) -> set[PurePosixPath]:

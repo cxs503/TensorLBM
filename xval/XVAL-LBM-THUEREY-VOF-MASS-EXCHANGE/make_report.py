@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
 REPO = HERE.parents[1]
-MM = json.loads((REPO / "src" / "artifacts" / "martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 
 
 def load(name):
@@ -122,7 +122,7 @@ LIQUID/INTERFACE（体相→界面，全权重）与 INTERFACE/INTERFACE（界�
 * Körner et al. 2005, *J. Comput. Phys.* **202**:616–628, eq. 9（成对交换）；
 * Thürey 2007 博士论文（Univ. Erlangen）table 4.1（选择器）、eq. 4.5（ABB）；
 * Martin & Moyce 1952, *Phil. Trans. R. Soc. A* **244**:312–324，14 个数字化点
-  （本仓 `src/artifacts/martin_moyce_1952_dam_break.json`，闸门 Z(T) 判据）；
+  （本仓 `src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json`，闸门 Z(T) 判据）；
 * 开源横向：`Maarten-vd-Sande/lbm`（Thürey 最小 D2Q9 实现，inventoried 快照于
   `/root/oss-cache`），选择器在 `lbm/streamcollide.py::interface_mass_exchange`。
 

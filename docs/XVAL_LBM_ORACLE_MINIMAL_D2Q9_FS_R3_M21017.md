@@ -7,7 +7,7 @@
 ## ① 案例介绍
 二维矩形水柱瞬时坍塌（Körner/Thürey 自由面 D2Q9 + BGK）：水柱宽 `a`、高 `h0=2a`，域 `nx=5a`、`ny=3a`（顶部 1a 气相裕量），
 四边固壁、无表面张力；`g=5e-5`、`τ=1`。无量纲 `Z=x_front/a`、`T=t·√(g/h0)`。
-基准：Martin & Moyce (1952) 实验前锋（`src/artifacts/martin_moyce_1952_dam_break.json`，17 个数字化点）。
+基准：Martin & Moyce (1952) 实验前锋（[Martin–Moyce digitization](../src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json)，17 个数字化点）。
 本轮算例：`a=16`（`nx=80, ny=48`），`steps=3200`，覆盖声明窗口 `T∈[0,4]` 全程；另有 CI 档 `a=16, T≤1`。
 
 ## ② 怎么做的（本轮实际改动）

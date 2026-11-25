@@ -21,10 +21,10 @@ HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
 REPO = HERE.parent.parent
 
-MM = json.loads((REPO / "src" / "artifacts" / "martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 MM_T = np.array([d["t_star"] for d in MM["data"]])
 MM_Z = np.array([d["X_star"] for d in MM["data"]])
-RIT = json.loads((REPO / "src" / "artifacts" / "ritter_1892_dam_break_analytical.json").read_text())
+RIT = json.loads((REPO / "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json").read_text())
 RIT_T = np.array([d["t_star"] for d in RIT["data"]])
 RIT_Z = np.array([d["X_star"] for d in RIT["data"]])
 

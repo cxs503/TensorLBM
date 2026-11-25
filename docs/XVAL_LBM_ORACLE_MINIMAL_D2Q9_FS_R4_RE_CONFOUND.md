@@ -16,7 +16,7 @@
 | 重力（格子） | `g = 5e-5` | 全阶梯同一值 |
 | 松弛时间 | `τ = 1`（阶梯）/ `0.6…1.4`（a=32 扫描） | `ν=(τ−1/2)/3` |
 | 窗口 | `T∈[0.5,4.0]`，ΔT=0.25 | `T=t√(g/h0)`, `Z=x_front/a` |
-| 基准 | Martin & Moyce (1952) 17 点数字化前锋 | `src/artifacts/martin_moyce_1952_dam_break.json` |
+| 基准 | Martin & Moyce (1952) 17 点数字化前锋 | [Martin–Moyce digitization](../src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json) |
 | 验收 | 窗口内 `max|rel err| ≤ 15 %`（owner 标准），目标 3 % | 台账 `XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS` |
 
 ## ② 怎么做的（本轮的方法与关键设置）

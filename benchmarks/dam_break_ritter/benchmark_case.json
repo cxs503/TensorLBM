@@ -15,6 +15,7 @@
     "benchmarks/dam_break_ritter/README.md"
   ],
   "reference_files": [
+    "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json",
     "benchmarks/dam_break_ritter/README.md"
   ],
   "references": [

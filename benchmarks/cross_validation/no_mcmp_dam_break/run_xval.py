@@ -13,7 +13,7 @@ A (primary): TensorLBM fill-level Korner free surface, D3Q19 slab
 B (secondary): TensorLBM color-gradient pseudo-potential dam break
    (tensorlbm.verification.dam_break_2d_validation), two resolutions.
 
-Reference: src/artifacts/martin_moyce_1952_dam_break.json (digitized, sha256).
+Reference: src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json (digitized, sha256).
 
 Zero hand-copy: every number in results.json is computed here from the
 simulations and the reference file.
@@ -42,7 +42,7 @@ from tensorlbm.verification.dam_break_2d_validation import (  # noqa: E402
 )
 
 OUT = ROOT / "outputs/no_mcmp_dam_break"
-MM_PATH = ROOT / "src" / "artifacts" / "martin_moyce_1952_dam_break.json"
+MM_PATH = ROOT / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json"
 CHECKPOINTS = (1.0, 2.0, 3.0)
 FRONT_DEPTH_THRESHOLD = 0.5  # cells; predeclared
 

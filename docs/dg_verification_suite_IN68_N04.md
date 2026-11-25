@@ -183,9 +183,10 @@ Legend: ✓ Pass, ✗ Fail, △ In Progress, - Not Started
 - **Repository**: TensorLBM
 - **Branch**: agent/m7185
 - **Artifacts**: 
-  - `src/tensorlbm/dg_verification.py` - Verification framework
+  - `src/tensorlbm/dg_verification/report.py` - Verification framework
   - `tests/test_dg_convection_verification.py` - Pytest test suite
-  - `artifacts/dg_verification_report.json` - Machine-readable results
+  - [Historical machine-readable report](../benchmarks/dg_advection/evidence/historical/dg_verification_report.json)
+  - New reports from `python -m tensorlbm.dg_verification` are written to `outputs/dg_verification/dg_verification_report.json`.
 
 ## Conclusions
 

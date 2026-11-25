@@ -21,6 +21,8 @@ places the two physics-AI campaign drivers beside their benchmark entry.
 | `app/` (conditional) | A supported application can retain one product root with its backend, frontend and integration tests. Confirm the released product and deployment contract before consolidating. |
 | `.github/` | GitHub CI and contributor automation. |
 
+The [source artifacts migration ledger](migrations/source-artifacts-2026-11-25.json) records the retirement of `src/artifacts/`, the packaged Martin–Moyce reference and the relocated Ritter and DG evidence.
+
 The benchmark registry is the discovery contract. A benchmark entry may link
 to a retained audit, a published report or an immutable external dataset.
 Preserve the distinction between archive verdicts and current acceptance. Record

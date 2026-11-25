@@ -1,0 +1,24 @@
+{
+  "scope": "Historical IN68-N04 DG advection verification ladder. The archived report records operator, conservation and smooth-convergence diagnostics.",
+  "criteria": {
+    "suite": "Lobatto differentiation, one-dimensional periodic conservation and smooth-advection convergence"
+  },
+  "source": [
+    "src/tensorlbm/dg_verification/report.py",
+    "src/tensorlbm/dg_advection.py"
+  ],
+  "config": [
+    "src/tensorlbm/dg_verification/report.py"
+  ],
+  "documentation": [
+    "docs/dg_verification_suite_IN68_N04.md"
+  ],
+  "reference_files": [],
+  "results": [
+    "benchmarks/dg_advection/evidence/historical/dg_verification_report.json",
+    "benchmarks/dg_advection/replays/2026-11-25-compatibility.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/source-artifacts-2026-11-25.json"
+  ]
+}
