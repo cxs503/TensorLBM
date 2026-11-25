@@ -712,3 +712,41 @@ def test_mixed_wall_intersections_against_extended_mode(tau, record_property):
         record_property(f"fixed_wall_error_{n}_K", wall_error)
         assert max(population_error,order_error,wall_error) < 3e-14
     assert errors[0]/errors[1] > 3.5
+
+
+@pytest.mark.parametrize("axis", ["x","y","z"])
+def test_halfway_prescribed_flux_slab_against_transient_solution(axis,record_property):
+    from tensorlbm.thermal_common import thermal_flux_wall_pair_3d
+
+    # C=2, k=2, length and cross-sectional area both one. The quadratic
+    # profile accepts unequal signed wall fluxes; a cosine adds transient decay.
+    capacity, end = 2., 1/32
+    inward = (1.4,-.4)
+    tau = 1.
+    errors = []
+    for n in (8,16,32):
+        dx = 1/n
+        dt = dx**2/8
+        x = (torch.arange(n,dtype=torch.float64)+.5)*dx
+        steady_part = (.5*sum(inward)*x*x-inward[0]*x)/capacity
+        mode = .25*torch.cos(math.pi*x)
+        dim = 2-"xyz".index(axis)
+        initial = (steady_part+mode).expand(3,2,n).movedim(-1,dim)
+        zero = torch.zeros_like(initial)
+        g = thermal_equilibrium_3d(initial,zero,zero,zero)
+        worst_balance = 0.
+        for step in range(1,round(end/dt)+1):
+            g = thermal_stream_3d(thermal_collide_bgk_3d(
+                g,thermal_macroscopic_3d(g),zero,zero,zero,tau))
+            g = thermal_flux_wall_pair_3d(g,axis,inward,dt=dt,spacing=dx,
+                                          volumetric_heat_capacity=capacity)
+            field = thermal_macroscopic_3d(g)
+            energy_change = capacity*(field-initial).mean().item()
+            worst_balance = max(worst_balance,abs(energy_change-step*dt*sum(inward)))
+        exact = steady_part+end*sum(inward)/capacity+math.exp(-math.pi**2*end)*mode
+        error = (field.movedim(dim,-1)-exact).abs().max().item()
+        errors.append(error)
+        record_property(f"temperature_error_{n}_K",error)
+        record_property(f"max_heat_budget_error_{n}_J",worst_balance)
+        assert worst_balance < 5e-14
+    assert all(a/b > 3.8 for a,b in zip(errors,errors[1:]))

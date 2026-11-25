@@ -54,6 +54,7 @@ __all__ = [
     # Boundary-condition helpers
     "thermal_dirichlet_wall_3d",
     "thermal_adiabatic_walls_3d",
+    "thermal_flux_wall_pair_3d",
     "thermal_fixed_temp_mask_3d",
     # Diagnostics
     "nusselt_hot_wall_3d",
@@ -515,6 +516,39 @@ def thermal_adiabatic_walls_3d(
             arriving, reflected = (positive+1, positive) if index == 0 else (positive, positive+1)
             face[reflected] = g.select(3-axis, index)[arriving]
     return g_new
+
+
+def thermal_flux_wall_pair_3d(
+    g: torch.Tensor, axis: str, inward_flux: tuple[float, float], *,
+    dt: float = 1., spacing: float = 1., volumetric_heat_capacity: float = 1.,
+) -> torch.Tensor:
+    """Impose uniform inward heat fluxes on two opposite half-way walls.
+
+    Apply immediately after periodic streaming in a cell-centered D3Q7
+    diffusion solve. The two fluxes (lower, upper) are positive into the
+    domain in W/m². Supply dt in seconds, normal cell spacing in meters,
+    and volumetric heat capacity in J/(m³ K), or use consistent lattice
+    units. Each incoming population reflects the outgoing one from its own
+    face and adds flux*dt/(spacing*capacity) to the boundary cell.
+    """
+    if axis not in ("x", "y", "z"):
+        raise ValueError("axis must be x, y or z")
+    if g.ndim != 4 or g.shape[0] != 7 or min(g.shape[1:]) < 1 or not g.is_floating_point():
+        raise ValueError("provide real floating D3Q7 populations shaped (7,nz,ny,nx)")
+    if len(inward_flux) != 2 or not all(math.isfinite(q) for q in inward_flux):
+        raise ValueError("provide two finite inward fluxes")
+    if not all(math.isfinite(v) and v > 0 for v in (dt, spacing, volumetric_heat_capacity)):
+        raise ValueError("dt, spacing and volumetric heat capacity must be positive and finite")
+    direction = "xyz".index(axis)
+    positive = 1+2*direction
+    negative = positive+1
+    dim = 2-direction
+    scale = dt/(spacing*volumetric_heat_capacity)
+    updated = g.clone()
+    # Periodic streaming put each outgoing population on the opposite face.
+    updated[positive].select(dim,0).copy_(g[negative].select(dim,-1)+inward_flux[0]*scale)
+    updated[negative].select(dim,-1).copy_(g[positive].select(dim,0)+inward_flux[1]*scale)
+    return updated
 
 
 def thermal_fixed_temp_mask_3d(
