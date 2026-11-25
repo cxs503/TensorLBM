@@ -1,0 +1,130 @@
+{
+  "source_commit": "995470096c6a0815b005339c5ed9fb968b4e1935",
+  "top_level_directories_before": 12,
+  "top_level_directories_after": 12,
+  "files_with_recorded_legacy_references_before": 42,
+  "files_with_recorded_legacy_references_after": 39,
+  "entries": [
+    {
+      "old_path": "benchmarks/pending/rayleigh_benard/run.py",
+      "new_path": "benchmarks/pending/rayleigh_benard/run.py",
+      "original_git_blob": "3b05a4204758d5010ec05c2e12db3192dee884c9",
+      "original_sha256": "ded35ff68973e7250a11992112c1e22baebbbfb8f5e45cb7abb559310c8d6c3d",
+      "current_sha256": "97e358ad0bb6aa69d8e8ee6115fb9dbce997cd0b8282b9012d111dc18991c050",
+      "entrypoint": "simulate_rb",
+      "arguments": {
+        "device": "cpu",
+        "nx": 24,
+        "ny": 12,
+        "ra": 10000.0,
+        "steps": 6,
+        "report_every": 3
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "nu_grad2": 1.593883991241455,
+        "u_max": 0.004725263454020023
+      },
+      "normalized_output_sha256": "b67869f77c76cf4a4378c547e1f61371d7ffb1117e7347e215424d31565fa1f2"
+    },
+    {
+      "old_path": "benchmarks/pending/rayleigh_taylor/run.py",
+      "new_path": "benchmarks/pending/rayleigh_taylor/run.py",
+      "original_git_blob": "36f2ebab6426ff2b395973c01247e5c52c02851d",
+      "original_sha256": "ce5b0e4b80ee0871f478242538d97ba2ee3b39cc4a676369d268ed452c4d431a",
+      "current_sha256": "864e8b513856e2d10bee7eef8b0d23254b1abfdde19065374d4d6dcd850f0e8e",
+      "entrypoint": "run_rt",
+      "arguments": {
+        "device": "cpu",
+        "grid": 8,
+        "steps": 6,
+        "sample": 2
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "fits": {
+          "gamma_sim_full": 0.07027343789204092,
+          "r2_full": 0.9636350007539991,
+          "gamma_sim_lin_window_200_2000": null,
+          "r2_lin": null
+        },
+        "measurements": {
+          "a_t": [
+            1.27064,
+            1.53599,
+            1.79651,
+            1.92666
+          ],
+          "umax_t": [
+            1.41421,
+            1.16797,
+            1.11439,
+            1.04437
+          ],
+          "mixing_t": [
+            0.0,
+            3.0,
+            6.0,
+            8.0
+          ],
+          "phi_min": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "phi_max": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "times": [
+            0,
+            2,
+            4,
+            6
+          ]
+        }
+      },
+      "normalized_output_sha256": "ef5b19cfc6beea0ce13b4549ea56bc4d96cc2b1bf955f68c9e75894137ecbfb3"
+    },
+    {
+      "old_path": "benchmarks/verified/cavity_natural_convection/run.py",
+      "new_path": "benchmarks/verified/cavity_natural_convection/run.py",
+      "original_git_blob": "d0cd27175a68231dfbff475a0a22ebe2feac4408",
+      "original_sha256": "eb49fb56111da342707f73464ca704de76b19b7485793d0f2f3e7e56f0552fab",
+      "current_sha256": "2abda217c172816d82a387dcc33e4765abd21a85277e8dc77c0bc5910d2cdef4",
+      "entrypoint": "run_case",
+      "arguments": {
+        "device": "cpu",
+        "nx": 24,
+        "ra": 10000.0,
+        "pr": 0.71,
+        "tau": 0.6,
+        "steps": 6
+      },
+      "old_new_observables_equal": true,
+      "observables": {
+        "nu": 18.621604919433594,
+        "u_max": 0.006055756006389856
+      },
+      "normalized_output_sha256": "3c12ea62a04a31e1b17bdb02963a132717e4e2facb414117fb3f3cfbf3e99a64"
+    }
+  ],
+  "compatibility": "The three user-visible script paths and flags remain stable. Python 3 is selected through the caller environment. Each runner resolves src relative to its own file. Historical case data and case labels were preserved.",
+  "verification": {
+    "method": "Use real CPU Torch 2.15.0, Python 3.12.14, one Torch thread. From a working directory outside the checkout with no local src on PYTHONPATH, run each script with --help, then load with runpy.run_path. Assert tensorlbm.__file__ comes from the current checkout's src. Call the listed entrypoints directly. Compare all returned values to the same original entrypoints using the same solver and inputs, excluding elapsed_s, first_step_ms, time_s and wall_s, and stringify non-finite floats. Hash json.dumps(normalized_outputs, sort_keys=True). Function bodies and main block ASTs are identical to the original.",
+    "focused_tests": "56 thermal-common and Rayleigh–Taylor tests passed. The obsolete C = 1 primary assertion is corrected to separately test the locked primary C = 3 and alternate C = 1, without changing the reference or solver.",
+    "extended_baseline": {
+      "passed": 63,
+      "failed": 2
+    },
+    "extended_candidate": {
+      "passed": 64,
+      "failed": 1
+    },
+    "extended_remaining_failure": "The existing round-three regrade test requires R3_A033_l064_w2/history.csv from the historical m23291 execution. The summary exists, but the original history is unavailable in the tracked tree and local Git history. The failure remains active; no values were substituted."
+  },
+  "scientific_scope": "Comparison of bootstrap compatibility only. Short transients are not terminal Nusselt, instability growth or engineering acceptance evidence."
+}

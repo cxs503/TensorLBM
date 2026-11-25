@@ -61,19 +61,7 @@
       "matches": 1,
       "matching_lines_sha256": "e188b3eca1309dc637322b0d02900b1cd4305383e31287e314de9e73f739473d"
     },
-    "benchmarks/pending/rayleigh_benard/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/pending/rayleigh_taylor/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
     "benchmarks/verified/cavity_3d_full/run.py": {
-      "matches": 1,
-      "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
-    },
-    "benchmarks/verified/cavity_natural_convection/run.py": {
       "matches": 1,
       "matching_lines_sha256": "eedc2c916c591d001a3cc1025da5d8f68ce8b3321bb66c94d21eaa2dde7fc5f4"
     },

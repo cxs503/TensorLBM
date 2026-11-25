@@ -1,4 +1,4 @@
-#!/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python
+#!/usr/bin/env python3
 """Rayleigh-Taylor 不稳定性 benchmark — VOF 自由表面共性模块首次验证（真实模拟，无外推）。
 
 模型路径（共性模块三路径之物理模块/库路径组合）：
@@ -39,11 +39,12 @@ import json
 import math
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
 
-sys.path.insert(0, "/srv/tensor/operator-a/cxs/TensorLBM/src")
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 # ---- 共性模块顶层导入（验证 da550e5 导出；本 benchmark 首次使用）----
 from tensorlbm import (  # noqa: E402
