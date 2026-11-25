@@ -763,19 +763,20 @@ def run_erfc_half_space(
     Initial field is zero; the inflow face is held at ``C = level`` and the far
     face uses zero-gradient outflow.  Reference: :func:`erfc_half_space`.
     """
+    from .scalar import scalar_stream_slab
+
     ny, nx = cfg.ny, cfg.nx
-    x = torch.arange(nx, dtype=cfg.dtype)
+    x = torch.arange(nx, dtype=cfg.dtype) + .5
     ux = torch.zeros((ny, nx), dtype=cfg.dtype)
     uy = torch.zeros((ny, nx), dtype=cfg.dtype)
     g = torch.zeros((5, ny, nx), dtype=cfg.dtype)
     budget = MassBudget(mass_initial=0.0)
     for _ in range(int(steps)):
-        g, flux = _step(g, cfg, ux, uy, "open", "periodic", ("xlo", "xhi"))
-        budget.outflux += float(flux)
-        g, injected = apply_inlet_dirichlet(g, level)
-        budget.injected += float(injected)
-        g, refill = apply_outlet_zero_gradient(g)
-        budget.injected += float(refill)
+        post = collide_scalar_trt(g, scalar_field(g), ux, uy, cfg.tau_odd, cfg.tau_sym)
+        g, _ = scalar_stream_slab(post, level, None)
+        # Track populations crossing the driven face in each direction.
+        budget.outflux += float(post[3,:,0].sum())
+        budget.injected += float(g[1,:,0].sum())
     budget.mass_final = float(scalar_field(g).sum())
     budget.steps = int(steps)
     return ScalarRunResult(c=scalar_field(g), x=x, budget=budget, steps=int(steps))
