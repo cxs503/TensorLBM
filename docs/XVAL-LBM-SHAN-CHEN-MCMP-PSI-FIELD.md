@@ -174,3 +174,5 @@ Surface tension values differ by 354% because TensorLBM uses linear psi (psi=rho
 TensorLBM 的线性伪势 MCMP 实现在其自身模型约定下是**正确且自洽的**
 （Young-Laplace 律 R² > 0.999，半径偏差 < 2.6%）。
 若需与 Palabos 直接对标，需实现 `psi_exp` 伪势选项。
+
+[当前算例索引与复现入口](../benchmarks/cross_validation/shan_chen_mcmp_psi_field/README.md)

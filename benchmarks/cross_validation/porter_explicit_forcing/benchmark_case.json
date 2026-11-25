@@ -1,0 +1,41 @@
+{
+  "scope": "Historical Porter explicit-forcing verification in analytic Poiseuille and layered Stokes channel cases. Current full-protocol scientific acceptance is unevaluated.",
+  "source": [
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/run_xval.py",
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/got_driver.py",
+    "src/tensorlbm/porter_forcing.py"
+  ],
+  "config": [
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/predeclared.json"
+  ],
+  "documentation": [
+    "benchmarks/cross_validation/porter_explicit_forcing/README.md",
+    "docs/board_audit/m18311/AUDIT.md",
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/REPORT.md"
+  ],
+  "reference_files": [
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/ref/porter_ref.py",
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/predeclared.json"
+  ],
+  "references": [
+    {
+      "title": "Porter et al., Physical Review E 86, 036701 (2012)",
+      "source": "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/predeclared.json"
+    }
+  ],
+  "criteria": {
+    "PASS": "err_u <= 0.15 (owner criterion) for A1/A2 at M=1 and M=10 on the finest grid",
+    "STRETCH": "err_u <= 0.03",
+    "port_fidelity": "got_vs_ref <= 1e-6",
+    "discrimination": "legacy A4 err_u(M=10) >= 3 x A2 err_u(M=10)",
+    "convergence": "observed order >= 1.5 between NY=34 and NY=66 (second order expected, first order accepted as a defect note)"
+  },
+  "results": [
+    "docs/board_audit/m18311/refs/xval/XVAL-LBM-PORTER-EXPLICIT-FORCING-4TH-ORDER/artifacts/result.json",
+    "docs/board_audit/m18311/refs/rerun_result.json",
+    "docs/board_audit/m18311/audit_repro.json"
+  ],
+  "evidence": [
+    "docs/architecture/migrations/porter-and-psi-field-xval-audit-dedup-2026-11-25.json"
+  ]
+}

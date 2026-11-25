@@ -102,3 +102,4 @@ docs/board_audit/m18311/insert_rows.py           幂等落库（benchmark 行 + 
 docs/board_audit/m18311/refs/                    commit bcf10687 快照 + MANIFEST.json（sha256）+ rerun_result.json（审计侧重跑原件）
 docs/board_audit/m18311/figures/                 报告用图（由 audit_repro.json 程序化生成）
 ```
+[当前算例索引与复现入口](../../../benchmarks/cross_validation/porter_explicit_forcing/README.md)
