@@ -1,5 +1,7 @@
 # XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS · R3（m21017 返修轮1）：指标定义审计 + 逐 run 工件/可复现链路硬化
 
+> Repository migration note: the live harness and committed evidence now reside in [benchmarks/xval_oracle_minimal_d2q9_fs/reference_study](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/). Historical source paths refer to the original checkout. The linked generated figure was already absent from the tracked migration base; see the migration ledger for reproduction prerequisites.
+
 **锚点** `XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS` · 仓 `TensorLBM` · 轮次 R3 · 承接 R2（m20893，`cj3032/cj3062`）
 **本轮性质**：返修轮（原单交付经 maturity_gate 复核仅 L1：impl_files/entry/run_artifacts 三键无机器可核工件）。
 本轮**不重做**物理扫描，而是把交付变成机器可核的形态，并修掉审计列出的阻塞项（red tests、0 行基准登记、逐 T 序列丢失）。
@@ -66,7 +68,7 @@
 R2 的核心否证结论不变：误差随 `a` 非单调（a=16→32 降到 13.81 %，a=48/64 回升），H1（E_inf<3 %）被否证。
 
 ## ④ 结果图
-![r3 a16](../xval/oracle_minimal_d2q9_fs/figures/fig_r3_a16_series.png)
+![r3 a16](../benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/figures/fig_r3_a16_series.png)
 *左：前锋 `Z(T)` 与 M&M 数字化点（cell / 亚格子趾两种度量）；右：三个度量定义各自的 |相对误差|，红虚线 15 % 验收、绿点线 3 % 目标。*
 
 ## ⑤ 注意点（踩过的坑 / 局限）

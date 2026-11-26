@@ -46,9 +46,9 @@ hypothesis  H1: E(a) -> E_inf with E_inf < 3 % (the scheme is validated and
             the fitted E_inf >= 3 % or the fit is non-monotone.
 
 Usage
-    python xval/oracle_minimal_d2q9_fs/resolution_study.py --plan
-    python xval/oracle_minimal_d2q9_fs/resolution_study.py --run --workers 12
-    python xval/oracle_minimal_d2q9_fs/resolution_study.py --analyze
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py --plan
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py --run --workers 12
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py --analyze
 """
 
 from __future__ import annotations
@@ -64,14 +64,16 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 
 ART = HERE / "artifacts"
 ART.mkdir(parents=True, exist_ok=True)
 
-MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads(
+    (REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text()
+)
 MM_T = np.array([d["t_star"] for d in MM["data"]], dtype=float)
 MM_Z = np.array([d["X_star"] for d in MM["data"]], dtype=float)
 
@@ -81,7 +83,7 @@ PRIMARY_FRAC = 0.05
 DESIGN = {
     "anchor": "XVAL-LBM-ORACLE-MINIMAL-D2Q9-FS",
     "round": "R3",
-    "parent_artifact": "xval/oracle_minimal_d2q9_fs/artifacts/xval_results.json (R1, 8 runs)",
+    "parent_artifact": "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/xval_results.json (R1, 8 runs)",
     "experiment_reference": {
         "source": "Martin & Moyce (1952) Phil. Trans. R. Soc. A 244, 312-324, Fig. 4",
         "doi": "10.1098/rsta.1952.0006",
@@ -89,26 +91,34 @@ DESIGN = {
         "sha256": MM.get("sha256"),
     },
     "nondim": {"Z": "x_front / a", "T": "t * sqrt(g / h0)"},
-    "case": {"aspect_h0_over_a": 2.0, "width_in_a": 5.0, "headroom_in_a": 1.0,
-             "walls": "solid on all four sides", "g": 5e-5, "tau": 1.0},
+    "case": {
+        "aspect_h0_over_a": 2.0,
+        "width_in_a": 5.0,
+        "headroom_in_a": 1.0,
+        "walls": "solid on all four sides",
+        "g": 5e-5,
+        "tau": 1.0,
+    },
     "window_T": [0.5, 4.0],
     "sample_dT": 0.25,
     "ladder_tensorlbm": [16, 24, 32, 48, 64],
     "ladder_oss_port": [48],
     "tau_sweep": {"a": 32, "tau": [0.6, 0.8, 1.0, 1.2, 1.4]},
-    "thresholds_pct": {"z_max_rel_err": 15.0, "inventory_drift": 1.0,
-                       "asymptotic_target": 3.0},
+    "thresholds_pct": {"z_max_rel_err": 15.0, "inventory_drift": 1.0, "asymptotic_target": 3.0},
     "control": {"hydrostatic_steps": 400, "u_max_gate": 1e-6},
-    "front_metric": {"Z_cell": "rightmost LIQUID|INTERFACE column / a (R1, "
-                              "counts the leading INTERFACE layer => +1 cell)",
-                     "Z_cell_flag": "rightmost LIQUID|INTERFACE column / a (legacy "
-                                    "R1 run_xval convention). It also counts the empty "
-                                    "one-cell INTERFACE envelope in front of the block, "
-                                    "so Z_cell_flag(t=0) = (a+1)/a: a +1 cell (+1/a) high "
-                                    "bias, recorded to quantify the metric-definition "
-                                    "error instead of assuming it",
-                     "Z_sub": "sub-cell toe, depth threshold = f*h0",
-                     "f_fracs": list(THRESH_FRACS), "f_primary": PRIMARY_FRAC},
+    "front_metric": {
+        "Z_cell": "rightmost LIQUID|INTERFACE column / a (R1, "
+        "counts the leading INTERFACE layer => +1 cell)",
+        "Z_cell_flag": "rightmost LIQUID|INTERFACE column / a (legacy "
+        "R1 run_xval convention). It also counts the empty "
+        "one-cell INTERFACE envelope in front of the block, "
+        "so Z_cell_flag(t=0) = (a+1)/a: a +1 cell (+1/a) high "
+        "bias, recorded to quantify the metric-definition "
+        "error instead of assuming it",
+        "Z_sub": "sub-cell toe, depth threshold = f*h0",
+        "f_fracs": list(THRESH_FRACS),
+        "f_primary": PRIMARY_FRAC,
+    },
     "hypothesis": "H1: E(a) = E_inf + C a^-p with E_inf < 3 % on Z_sub(f=0.05)",
 }
 
@@ -122,7 +132,7 @@ DESIGN = {
 # problem:  Re(a, tau) = U0 * h0 / nu  with  nu = (tau - 1/2)/3  grows like
 # a**(3/2).  ``tau_for_re`` inverts that relation so a resolution ladder can be
 # run at *matched* Re (R4 fixed-Re trio).
-RE_REF_A = 32.0        # the declared tau = 1 rung used as the Re reference
+RE_REF_A = 32.0  # the declared tau = 1 rung used as the Re reference
 
 
 def reynolds(a: float, tau: float, g: float | None = None) -> float:
@@ -149,7 +159,11 @@ def re_reference(g: float | None = None) -> float:
 # ---------------------------------------------------------------------------
 # metrics
 # ---------------------------------------------------------------------------
-RITTER = json.loads((REPO / "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json").read_text())
+RITTER = json.loads(
+    (
+        REPO / "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json"
+    ).read_text()
+)
 RIT_T = np.array([d["t_star"] for d in RITTER["data"]], dtype=float)
 RIT_Z = np.array([d["X_star"] for d in RITTER["data"]], dtype=float)
 
@@ -194,8 +208,9 @@ def front_subcell(depth: np.ndarray, thr: float) -> float:
     return float(i) + min(max(frac, 0.0), 1.0)
 
 
-def snapshot_metrics(fill: np.ndarray, a: float, h0: float,
-                     fluid_mask: np.ndarray | None = None) -> dict:
+def snapshot_metrics(
+    fill: np.ndarray, a: float, h0: float, fluid_mask: np.ndarray | None = None
+) -> dict:
     """Front metrics for one snapshot.
 
     ``Z_cell``  = rightmost column with liquid content (fill > 1e-6), the
@@ -223,14 +238,26 @@ def pixel_z(umag: np.ndarray, fill: np.ndarray, mask: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # arm A: TensorLBM Körner free surface (identical setup to run_xval.py)
 # ---------------------------------------------------------------------------
-def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float,
-                  snapshots: bool = False, width_in_a: float = 5.0):
+def run_tensorlbm(
+    a: int,
+    tau: float,
+    g: float,
+    t_max: float,
+    sample_dt: float,
+    snapshots: bool = False,
+    width_in_a: float = 5.0,
+):
     import torch
+
     torch.set_num_threads(1)
     from tensorlbm.d2q9 import equilibrium
     from tensorlbm.free_surface_lbm_2d import (
-        INTERFACE, LIQUID, free_surface_step_2d, init_fill_rectangular_2d,
-        init_flags_from_fill_2d, total_liquid_inventory_2d,
+        INTERFACE,
+        LIQUID,
+        free_surface_step_2d,
+        init_fill_rectangular_2d,
+        init_flags_from_fill_2d,
+        total_liquid_inventory_2d,
     )
 
     h0, nx = int(round(2.0 * a)), int(round(float(width_in_a) * a))
@@ -248,41 +275,82 @@ def run_tensorlbm(a: int, tau: float, g: float, t_max: float, sample_dt: float,
     u_max = 0.0
     last = None
     for step in range(n_steps + 1):
-        fill_now = torch.where(flags == LIQUID, torch.ones_like(mass),
-                               torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0),
-                                           torch.zeros_like(mass)))
+        fill_now = torch.where(
+            flags == LIQUID,
+            torch.ones_like(mass),
+            torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0), torch.zeros_like(mass)),
+        )
         if step % sample_every == 0 or step == n_steps:
-            m = snapshot_metrics(fill_now.cpu().numpy(), float(a), float(h0),
-                                 fluid_mask=((flags == LIQUID) | (flags == INTERFACE)
-                                             ).cpu().numpy())
+            m = snapshot_metrics(
+                fill_now.cpu().numpy(),
+                float(a),
+                float(h0),
+                fluid_mask=((flags == LIQUID) | (flags == INTERFACE)).cpu().numpy(),
+            )
             m.update({"step": step, "T": step * dtT})
             series.append(m)
-            inv_tr.append({"step": step,
-                           "drift_pct": 100.0 * (total_liquid_inventory_2d(f, mass, flags)
-                                                 - inv0) / inv0})
+            inv_tr.append(
+                {
+                    "step": step,
+                    "drift_pct": 100.0 * (total_liquid_inventory_2d(f, mass, flags) - inv0) / inv0,
+                }
+            )
         if step == n_steps:
             break
         f, mass, flags = free_surface_step_2d(
-            f, fill_now, flags, solid, tau=tau, gy=-g, rho_liquid=1.0, rho_gas=1.0,
-            mass=mass, return_mass=True)
+            f,
+            fill_now,
+            flags,
+            solid,
+            tau=tau,
+            gy=-g,
+            rho_liquid=1.0,
+            rho_gas=1.0,
+            mass=mass,
+            return_mass=True,
+        )
         rho = f.sum(0).clamp(min=1e-9)
         ux = f[[1, 5, 8]].sum(0) / rho
         uy = f[[2, 6, 7]].sum(0) / rho
         fluid = (flags == LIQUID) | (flags == INTERFACE)
-        u_max = max(u_max, float(((ux ** 2 + uy ** 2).sqrt() * fluid).max()))
+        u_max = max(u_max, float(((ux**2 + uy**2).sqrt() * fluid).max()))
         if not torch.isfinite(f).all():
-            return {"arm": "tensorlbm_koerner", "a": a, "tau": tau, "g": g,
-                    "status": "nan", "nan_at_step": step, "series": series,
-                    "inventory": inv_tr, "wall_seconds": round(time.time() - t0, 2),
-                    "width_in_a": float(width_in_a), "re": reynolds(a, tau, g)}
+            return {
+                "arm": "tensorlbm_koerner",
+                "a": a,
+                "tau": tau,
+                "g": g,
+                "status": "nan",
+                "nan_at_step": step,
+                "series": series,
+                "inventory": inv_tr,
+                "wall_seconds": round(time.time() - t0, 2),
+                "width_in_a": float(width_in_a),
+                "re": reynolds(a, tau, g),
+            }
         if snapshots:
-            last = (np.round(((ux ** 2 + uy ** 2).sqrt() * fluid).cpu().numpy(), 5),
-                    np.round(fill_now.cpu().numpy(), 4))
-    out = {"arm": "tensorlbm_koerner", "a": a, "tau": tau, "g": g, "status": "ok",
-           "h0": h0, "nx": nx, "ny": ny, "steps": n_steps, "nu": (tau - 0.5) / 3.0,
-           "width_in_a": float(width_in_a), "re": reynolds(a, tau, g),
-           "u_max": u_max, "series": series, "inventory": inv_tr,
-           "wall_seconds": round(time.time() - t0, 2)}
+            last = (
+                np.round(((ux**2 + uy**2).sqrt() * fluid).cpu().numpy(), 5),
+                np.round(fill_now.cpu().numpy(), 4),
+            )
+    out = {
+        "arm": "tensorlbm_koerner",
+        "a": a,
+        "tau": tau,
+        "g": g,
+        "status": "ok",
+        "h0": h0,
+        "nx": nx,
+        "ny": ny,
+        "steps": n_steps,
+        "nu": (tau - 0.5) / 3.0,
+        "width_in_a": float(width_in_a),
+        "re": reynolds(a, tau, g),
+        "u_max": u_max,
+        "series": series,
+        "inventory": inv_tr,
+        "wall_seconds": round(time.time() - t0, 2),
+    }
     if snapshots and last is not None:
         out["final_umag"] = last[0].tolist()
         out["final_fill"] = last[1].tolist()
@@ -308,14 +376,17 @@ def run_oss_port(a: int, tau: float, g: float, t_max: float, sample_dt: float):
     u_max = 0.0
     for step in range(n_steps + 1):
         if step % sample_every == 0 or step == n_steps:
-            fill = np.where(st.flags() == P.FLUID, 1.0,
-                            np.where(st.flags() == P.INTERFACE, P.I(st.mass), 0.0))
-            m = snapshot_metrics(fill, float(a), float(h0),
-                                 fluid_mask=((st.flags() & (P.FLUID | P.INTERFACE)) != 0))
+            fill = np.where(
+                st.flags() == P.FLUID, 1.0, np.where(st.flags() == P.INTERFACE, P.I(st.mass), 0.0)
+            )
+            m = snapshot_metrics(
+                fill, float(a), float(h0), fluid_mask=((st.flags() & (P.FLUID | P.INTERFACE)) != 0)
+            )
             m.update({"step": step, "T": step * dtT})
             series.append(m)
-            inv_tr.append({"step": step,
-                           "drift_pct": 100.0 * (st.liquid_inventory() - inv0) / inv0})
+            inv_tr.append(
+                {"step": step, "drift_pct": 100.0 * (st.liquid_inventory() - inv0) / inv0}
+            )
         if step == n_steps:
             break
         P.step(st, omega=omega, gravity=(0.0, -g))
@@ -323,51 +394,88 @@ def run_oss_port(a: int, tau: float, g: float, t_max: float, sample_dt: float):
         if um.size:
             u_max = max(u_max, float(um.max()))
         if not np.isfinite(P.I(st.fin)).all():
-            return {"arm": "oss_port", "a": a, "tau": tau, "g": g, "status": "nan",
-                    "nan_at_step": step, "series": series, "inventory": inv_tr,
-                    "wall_seconds": round(time.time() - t0, 2)}
-    return {"arm": "oss_port", "a": a, "tau": tau, "g": g, "status": "ok",
-            "h0": h0, "nx": nx, "ny": ny, "steps": n_steps, "omega": omega,
-            "nu": (tau - 0.5) / 3.0, "u_max": u_max, "series": series,
-            "inventory": inv_tr, "wall_seconds": round(time.time() - t0, 2)}
+            return {
+                "arm": "oss_port",
+                "a": a,
+                "tau": tau,
+                "g": g,
+                "status": "nan",
+                "nan_at_step": step,
+                "series": series,
+                "inventory": inv_tr,
+                "wall_seconds": round(time.time() - t0, 2),
+            }
+    return {
+        "arm": "oss_port",
+        "a": a,
+        "tau": tau,
+        "g": g,
+        "status": "ok",
+        "h0": h0,
+        "nx": nx,
+        "ny": ny,
+        "steps": n_steps,
+        "omega": omega,
+        "nu": (tau - 0.5) / 3.0,
+        "u_max": u_max,
+        "series": series,
+        "inventory": inv_tr,
+        "wall_seconds": round(time.time() - t0, 2),
+    }
 
 
 # ---------------------------------------------------------------------------
-def hydrostatic_control(arm: str, a: int = 32, tau: float = 1.0, g: float = 5e-5,
-                        steps: int = 400) -> dict:
+def hydrostatic_control(
+    arm: str, a: int = 32, tau: float = 1.0, g: float = 5e-5, steps: int = 400
+) -> dict:
     """Declared control: a settled column must not generate spurious currents."""
     h0, nx = int(round(2.0 * a)), int(round(5.0 * a))
     ny = h0 + a
     if arm == "tensorlbm_koerner":
         import torch
+
         torch.set_num_threads(1)
         from tensorlbm.d2q9 import equilibrium
         from tensorlbm.free_surface_lbm_2d import (
-            INTERFACE, LIQUID, free_surface_step_2d, init_fill_rectangular_2d,
+            INTERFACE,
+            LIQUID,
+            free_surface_step_2d,
+            init_fill_rectangular_2d,
             init_flags_from_fill_2d,
         )
+
         fill, solid = init_fill_rectangular_2d(ny, nx, float(nx // 2), float(h0 + 1), "cpu")
         flags = init_flags_from_fill_2d(fill, solid)
         f = equilibrium(torch.ones_like(fill), torch.zeros_like(fill), torch.zeros_like(fill))
         mass = fill.clone()
         u_max = 0.0
         for _ in range(steps):
-            fill_now = torch.where(flags == LIQUID, torch.ones_like(mass),
-                                   torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0),
-                                               torch.zeros_like(mass)))
-            f, mass, flags = free_surface_step_2d(f, fill_now, flags, solid, tau=tau,
-                                                  gy=-g, mass=mass, return_mass=True)
+            fill_now = torch.where(
+                flags == LIQUID,
+                torch.ones_like(mass),
+                torch.where(flags == INTERFACE, mass.clamp(0.0, 1.0), torch.zeros_like(mass)),
+            )
+            f, mass, flags = free_surface_step_2d(
+                f, fill_now, flags, solid, tau=tau, gy=-g, mass=mass, return_mass=True
+            )
             rho = f.sum(0).clamp(min=1e-9)
             ux = f[[1, 5, 8]].sum(0) / rho
             uy = f[[2, 6, 7]].sum(0) / rho
             fluid = (flags == LIQUID) | (flags == INTERFACE)
-            u_max = max(u_max, float(((ux ** 2 + uy ** 2).sqrt() * fluid).max()))
+            u_max = max(u_max, float(((ux**2 + uy**2).sqrt() * fluid).max()))
             if not torch.isfinite(f).all():
                 return {"control": "hydrostatic", "arm": arm, "steps": _, "status": "nan"}
-        return {"control": "hydrostatic", "arm": arm, "a": a, "steps": steps,
-                "u_max_lattice": u_max, "status": "ok",
-                "pass": bool(u_max < DESIGN["control"]["u_max_gate"])}
+        return {
+            "control": "hydrostatic",
+            "arm": arm,
+            "a": a,
+            "steps": steps,
+            "u_max_lattice": u_max,
+            "status": "ok",
+            "pass": bool(u_max < DESIGN["control"]["u_max_gate"]),
+        }
     import oss_oracle_port as P
+
     st = P.make_dambreak(nx=nx, ny=ny, a=a, h0=h0)
     u_max = 0.0
     for _ in range(steps):
@@ -377,9 +485,15 @@ def hydrostatic_control(arm: str, a: int = 32, tau: float = 1.0, g: float = 5e-5
             u_max = max(u_max, float(um.max()))
         if not np.isfinite(P.I(st.fin)).all():
             return {"control": "hydrostatic", "arm": arm, "steps": _, "status": "nan"}
-    return {"control": "hydrostatic", "arm": arm, "a": a, "steps": steps,
-            "u_max_lattice": u_max, "status": "ok",
-            "pass": bool(u_max < DESIGN["control"]["u_max_gate"])}
+    return {
+        "control": "hydrostatic",
+        "arm": arm,
+        "a": a,
+        "steps": steps,
+        "u_max_lattice": u_max,
+        "status": "ok",
+        "pass": bool(u_max < DESIGN["control"]["u_max_gate"]),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -392,16 +506,16 @@ def run_task(task: dict) -> dict:
             fn = run_tensorlbm if arm == "tensorlbm_koerner" else run_oss_port
             out = fn(**task)
             w = float(out.get("width_in_a", 5.0) or 5.0)
-            out["label"] = (f"{arm}_a{task['a']}_tau{task['tau']:g}"
-                            + (f"_w{w:g}" if w != 5.0 else ""))
+            out["label"] = f"{arm}_a{task['a']}_tau{task['tau']:g}" + (
+                f"_w{w:g}" if w != 5.0 else ""
+            )
             return out
         out = hydrostatic_control(**task)
         out["kind"] = "control"
         out["label"] = f"control_{out.get('arm', task.get('arm', 'arm'))}"
         return out
     except Exception as exc:
-        return {"kind": kind, "status": "error", **task,
-                "error": f"{type(exc).__name__}: {exc}"}
+        return {"kind": kind, "status": "error", **task, "error": f"{type(exc).__name__}: {exc}"}
 
 
 def result_label(r: dict) -> str:
@@ -411,8 +525,9 @@ def result_label(r: dict) -> str:
     if r.get("kind") == "control":
         return f"control_{r.get('arm', 'arm')}"
     w = float(r.get("width_in_a", 5.0) or 5.0)
-    return (f"{r.get('arm', 'arm')}_a{r.get('a')}_tau{r.get('tau', 1.0):g}"
-            + (f"_w{w:g}" if w != 5.0 else ""))
+    return f"{r.get('arm', 'arm')}_a{r.get('a')}_tau{r.get('tau', 1.0):g}" + (
+        f"_w{w:g}" if w != 5.0 else ""
+    )
 
 
 SER_KEYS = ("Z_cell", "Z_cell_flag", "Z_sub0.02", "Z_sub0.05", "Z_sub0.1")
@@ -456,43 +571,81 @@ def plan_re() -> list[dict]:
          (Z(4) = 4.19 / 4.72 of a 4a-long run), so the late-window overshoot is
          confounded with wall reflection.
     """
-    common = {"g": DESIGN["case"]["g"], "t_max": DESIGN["window_T"][1],
-              "sample_dt": DESIGN["sample_dT"]}
+    common = {
+        "g": DESIGN["case"]["g"],
+        "t_max": DESIGN["window_T"][1],
+        "sample_dt": DESIGN["sample_dT"],
+    }
     re0 = re_reference()
     tasks = []
     for a in (24, 48):
-        tasks.append({"kind": "arm", "arm": "tensorlbm_koerner", "a": a,
-                      "tau": round(tau_for_re(a, re0), 6), **common})
+        tasks.append(
+            {
+                "kind": "arm",
+                "arm": "tensorlbm_koerner",
+                "a": a,
+                "tau": round(tau_for_re(a, re0), 6),
+                **common,
+            }
+        )
     for tau in DESIGN["tau_sweep"]["tau"]:
         if tau == 1.0:
             continue  # a = 32 / tau = 1 already in the R2 ladder
-        tasks.append({"kind": "arm", "arm": "tensorlbm_koerner",
-                      "a": DESIGN["tau_sweep"]["a"], "tau": tau, **common})
-    tasks.append({"kind": "arm", "arm": "tensorlbm_koerner", "a": 64, "tau": 1.0,
-                  "width_in_a": 8.0, **common})
+        tasks.append(
+            {
+                "kind": "arm",
+                "arm": "tensorlbm_koerner",
+                "a": DESIGN["tau_sweep"]["a"],
+                "tau": tau,
+                **common,
+            }
+        )
+    tasks.append(
+        {
+            "kind": "arm",
+            "arm": "tensorlbm_koerner",
+            "a": 64,
+            "tau": 1.0,
+            "width_in_a": 8.0,
+            **common,
+        }
+    )
     return tasks
 
 
 def plan(campaign: str = "default") -> list[dict]:
     if campaign == "re":
         return plan_re()
-    common = {"g": DESIGN["case"]["g"], "t_max": DESIGN["window_T"][1],
-              "sample_dt": DESIGN["sample_dT"]}
+    common = {
+        "g": DESIGN["case"]["g"],
+        "t_max": DESIGN["window_T"][1],
+        "sample_dt": DESIGN["sample_dT"],
+    }
     tasks = []
     for a in DESIGN["ladder_tensorlbm"]:
-        tasks.append({"kind": "arm", "arm": "tensorlbm_koerner", "a": a, "tau": 1.0,
-                      "snapshots": a == DESIGN["tau_sweep"]["a"], **common})
+        tasks.append(
+            {
+                "kind": "arm",
+                "arm": "tensorlbm_koerner",
+                "a": a,
+                "tau": 1.0,
+                "snapshots": a == DESIGN["tau_sweep"]["a"],
+                **common,
+            }
+        )
     for a in DESIGN["ladder_oss_port"]:
         tasks.append({"kind": "arm", "arm": "oss_port", "a": a, "tau": 1.0, **common})
     sw = DESIGN["tau_sweep"]
     for tau in sw["tau"]:
         if tau == 1.0:
             continue  # already in the ladder at a = 32
-        tasks.append({"kind": "arm", "arm": "tensorlbm_koerner", "a": sw["a"], "tau": tau,
-                      **common})
+        tasks.append(
+            {"kind": "arm", "arm": "tensorlbm_koerner", "a": sw["a"], "tau": tau, **common}
+        )
     for arm in ("tensorlbm_koerner", "oss_port"):
-        tasks.append({"kind": "control", "arm": arm,
-                      "steps": DESIGN["control"]["hydrostatic_steps"]})
+        tasks.append(
+            {"kind": "control", "arm": arm, "steps": DESIGN["control"]["hydrostatic_steps"]}
+        )
     return tasks
 
 
@@ -522,9 +675,10 @@ def eval_run(res: dict, ref: str = "mm") -> dict:
         res["vs_" + ref][k] = {
             "max_abs_rel_err_pct": round(float(errs.max()), 3) if errs.size else None,
             "mean_abs_rel_err_pct": round(float(errs.mean()), 3) if errs.size else None,
-            "rmse_rel_pct": round(float(np.sqrt((errs ** 2).mean())), 3) if errs.size else None,
+            "rmse_rel_pct": round(float(np.sqrt((errs**2).mean())), 3) if errs.size else None,
             "pass_15pct": bool(errs.max() <= DESIGN["thresholds_pct"]["z_max_rel_err"])
-            if errs.size else None,
+            if errs.size
+            else None,
         }
     inv = res.get("inventory") or []
     if inv:
@@ -551,21 +705,26 @@ def fit_order(samples: list[tuple[float, float]]) -> dict:
         X = np.column_stack([np.ones_like(a), a ** (-p)])
         coef, *_ = np.linalg.lstsq(X, E, rcond=None)
         resid = float(np.sqrt(((X @ coef - E) ** 2).mean()))
-        cand = {"p": float(p), "E_inf_pct": float(coef[0]), "C": float(coef[1]),
-                "rms_pct": resid}
+        cand = {"p": float(p), "E_inf_pct": float(coef[0]), "C": float(coef[1]), "rms_pct": resid}
         if not (0.0 <= cand["E_inf_pct"] <= E.min() + 1e-9):
             continue
         if best is None or cand["rms_pct"] < best["rms_pct"]:
             best = cand
     if best is None:
-        return {"ok": False, "reason": "no admissible (E_inf, p) in grid",
-                "n": len(pts), "samples": pts}
+        return {
+            "ok": False,
+            "reason": "no admissible (E_inf, p) in grid",
+            "n": len(pts),
+            "samples": pts,
+        }
     best["ok"] = True
     best["n"] = len(pts)
     best["samples"] = [[float(x), float(y)] for x, y in pts]
     best["monotone_falling"] = bool(all(np.diff(E) < 0))
     best["hypothesis_H1_supported"] = bool(
-        best["monotone_falling"] and best["E_inf_pct"] < DESIGN["thresholds_pct"]["asymptotic_target"])
+        best["monotone_falling"]
+        and best["E_inf_pct"] < DESIGN["thresholds_pct"]["asymptotic_target"]
+    )
     return best
 
 
@@ -592,23 +751,36 @@ def richardson(runs: dict, key: str, ref: str = "mm") -> dict:
         else:
             p_obs = float("nan")
         p_use = p_obs if math.isfinite(p_obs) and 0.2 <= p_obs <= 4.0 else 1.0
-        z_inf = e3 + (e3 - e2) / (r23 ** p_use - 1.0)
+        z_inf = e3 + (e3 - e2) / (r23**p_use - 1.0)
         zref = interp(T)
-        rows.append({"T": round(T, 4), "Z_a1": e1, "Z_a2": e2, "Z_a3": e3,
-                     "p_obs": None if not math.isfinite(p_obs) else round(p_obs, 3),
-                     "p_used": round(p_use, 3), "Z_inf": round(z_inf, 4),
-                     "Z_ref": round(zref, 4),
-                     "Z_inf_err_pct": round(100.0 * (z_inf - zref) / zref, 3)})
+        rows.append(
+            {
+                "T": round(T, 4),
+                "Z_a1": e1,
+                "Z_a2": e2,
+                "Z_a3": e3,
+                "p_obs": None if not math.isfinite(p_obs) else round(p_obs, 3),
+                "p_used": round(p_use, 3),
+                "Z_inf": round(z_inf, 4),
+                "Z_ref": round(zref, 4),
+                "Z_inf_err_pct": round(100.0 * (z_inf - zref) / zref, 3),
+            }
+        )
         if math.isfinite(p_obs):
             orders.append(p_obs)
     errs = np.array([abs(r["Z_inf_err_pct"]) for r in rows])
-    return {"ok": True, "ref": ref, "grids": [a1, a2, a3], "refinement": [r12, r23],
-            "p_obs_mean": round(float(np.mean(orders)), 3) if orders else None,
-            "p_obs_median": round(float(np.median(orders)), 3) if orders else None,
-            "Z_inf_max_abs_rel_err_pct": round(float(errs.max()), 3),
-            "Z_inf_mean_abs_rel_err_pct": round(float(errs.mean()), 3),
-            "pass_3pct": bool(errs.max() < DESIGN["thresholds_pct"]["asymptotic_target"]),
-            "rows": rows}
+    return {
+        "ok": True,
+        "ref": ref,
+        "grids": [a1, a2, a3],
+        "refinement": [r12, r23],
+        "p_obs_mean": round(float(np.mean(orders)), 3) if orders else None,
+        "p_obs_median": round(float(np.median(orders)), 3) if orders else None,
+        "Z_inf_max_abs_rel_err_pct": round(float(errs.max()), 3),
+        "Z_inf_mean_abs_rel_err_pct": round(float(errs.mean()), 3),
+        "pass_3pct": bool(errs.max() < DESIGN["thresholds_pct"]["asymptotic_target"]),
+        "rows": rows,
+    }
 
 
 def analyze(payload: dict) -> dict:
@@ -626,12 +798,14 @@ def analyze(payload: dict) -> dict:
     out = {"ladder": {}, "fits": {}, "richardson": {}, "tau_sweep": {}, "controls": []}
     keys = ["Z_cell", "Z_cell_flag"] + [f"Z_sub{f:g}" for f in THRESH_FRACS]
     for a, r in sorted(runs.items()):
-        out["ladder"][a] = {"steps": r["steps"], "u_max": round(r["u_max"], 4),
-                            "wall_seconds": r["wall_seconds"],
-                            "inventory_drift_max_pct": r.get("inventory_drift_max_pct"),
-                            "errors_mm": {k: r["vs_mm"][k]["max_abs_rel_err_pct"] for k in keys},
-                            "errors_ritter": {k: r["vs_ritter"][k]["max_abs_rel_err_pct"]
-                                              for k in keys}}
+        out["ladder"][a] = {
+            "steps": r["steps"],
+            "u_max": round(r["u_max"], 4),
+            "wall_seconds": r["wall_seconds"],
+            "inventory_drift_max_pct": r.get("inventory_drift_max_pct"),
+            "errors_mm": {k: r["vs_mm"][k]["max_abs_rel_err_pct"] for k in keys},
+            "errors_ritter": {k: r["vs_ritter"][k]["max_abs_rel_err_pct"] for k in keys},
+        }
     for ref in ("mm", "ritter"):
         out["fits"][ref], out["richardson"][ref] = {}, {}
         for k in keys:
@@ -639,15 +813,20 @@ def analyze(payload: dict) -> dict:
             out["fits"][ref][k] = fit_order(samples)
             out["richardson"][ref][k] = richardson(runs, k, ref)
     for r in payload["runs"]:
-        if r.get("kind") == "arm" and r.get("arm") == "tensorlbm_koerner" \
-                and r.get("a") == DESIGN["tau_sweep"]["a"] and r.get("status") == "ok":
+        if (
+            r.get("kind") == "arm"
+            and r.get("arm") == "tensorlbm_koerner"
+            and r.get("a") == DESIGN["tau_sweep"]["a"]
+            and r.get("status") == "ok"
+        ):
             ev = eval_run(eval_run(r, "mm"), "ritter")
             out["tau_sweep"][r["tau"]] = {
                 "Z_sub0.05_max_err_pct": ev["vs_mm"]["Z_sub0.05"]["max_abs_rel_err_pct"],
                 "Z_sub0.05_ritter_pct": ev["vs_ritter"]["Z_sub0.05"]["max_abs_rel_err_pct"],
                 "Z_cell_max_err_pct": ev["vs_mm"]["Z_cell"]["max_abs_rel_err_pct"],
                 "inventory_drift_max_pct": ev.get("inventory_drift_max_pct"),
-                "u_max": round(ev["u_max"], 4)}
+                "u_max": round(ev["u_max"], 4),
+            }
     for r in payload["runs"]:
         if r.get("kind") == "control":
             out["controls"].append(r)
@@ -655,33 +834,41 @@ def analyze(payload: dict) -> dict:
         if r.get("kind") == "arm" and r.get("arm") == "oss_port" and r.get("status") == "ok":
             ev = eval_run(eval_run(r, "mm"), "ritter")
             out.setdefault("oss_port_rungs", {})[r["a"]] = {
-                "steps": r["steps"], "u_max": round(r["u_max"], 4),
+                "steps": r["steps"],
+                "u_max": round(r["u_max"], 4),
                 "Z_cell_max_err_pct": ev["vs_mm"]["Z_cell"]["max_abs_rel_err_pct"],
                 "Z_sub0.05_max_err_pct": ev["vs_mm"]["Z_sub0.05"]["max_abs_rel_err_pct"],
                 "Z_sub0.05_ritter_pct": ev["vs_ritter"]["Z_sub0.05"]["max_abs_rel_err_pct"],
-                "inventory_drift_max_pct": ev.get("inventory_drift_max_pct")}
+                "inventory_drift_max_pct": ev.get("inventory_drift_max_pct"),
+            }
     return out
 
 
 def render_numbers_md(analysis: dict, payload: dict) -> str:
     L = ["# R2 resolution study — numbers (programmatic dump, do not hand-edit)", ""]
-    L.append(f"* window T = {DESIGN['window_T']}, dT = {DESIGN['sample_dT']}, "
-             f"g = {DESIGN['case']['g']}, tau = 1, h0 = 2a, nx = 5a, ny = 3a")
+    L.append(
+        f"* window T = {DESIGN['window_T']}, dT = {DESIGN['sample_dT']}, "
+        f"g = {DESIGN['case']['g']}, tau = 1, h0 = 2a, nx = 5a, ny = 3a"
+    )
     L.append(f"* hypothesis: {DESIGN['hypothesis']}")
     L.append(f"* thresholds: {DESIGN['thresholds_pct']}")
-    L.append(f"* references: M&M (experiment, T <= 4), Ritter (exact shallow water, T <= 2)")
+    L.append("* references: M&M (experiment, T <= 4), Ritter (exact shallow water, T <= 2)")
     L.append("")
     L.append("## Ladder (TensorLBM Körner, tau = 1) — max |rel err| % vs M&M / Ritter")
     L.append("")
-    L.append("| a | steps | u_max | inv drift % | Z_cell M&M | Z_cell Ritter | "
-             "Z_sub.02 M&M | Z_sub.05 M&M | Z_sub.10 M&M | Z_sub.05 Ritter | wall s |")
+    L.append(
+        "| a | steps | u_max | inv drift % | Z_cell M&M | Z_cell Ritter | "
+        "Z_sub.02 M&M | Z_sub.05 M&M | Z_sub.10 M&M | Z_sub.05 Ritter | wall s |"
+    )
     L.append("|---|---|---|---|---|---|---|---|---|---|---|")
     for a, r in sorted(analysis["ladder"].items(), key=lambda kv: int(kv[0])):
         em, er = r["errors_mm"], r["errors_ritter"]
-        L.append(f"| {a} | {r['steps']} | {r['u_max']} | {r['inventory_drift_max_pct']} | "
-                 f"{em.get('Z_cell')} | {er.get('Z_cell')} | {em.get('Z_sub0.02')} | "
-                 f"{em.get('Z_sub0.05')} | {em.get('Z_sub0.1', em.get('Z_sub0.10'))} | "
-                 f"{er.get('Z_sub0.05')} | {r['wall_seconds']} |")
+        L.append(
+            f"| {a} | {r['steps']} | {r['u_max']} | {r['inventory_drift_max_pct']} | "
+            f"{em.get('Z_cell')} | {er.get('Z_cell')} | {em.get('Z_sub0.02')} | "
+            f"{em.get('Z_sub0.05')} | {em.get('Z_sub0.1', em.get('Z_sub0.10'))} | "
+            f"{er.get('Z_sub0.05')} | {r['wall_seconds']} |"
+        )
     L.append("")
     for ref, name in (("mm", "Martin & Moyce 1952"), ("ritter", "Ritter 1892 exact SW")):
         L.append(f"## Observed-order fits E(a) = E_inf + C a^-p — vs {name}")
@@ -692,9 +879,11 @@ def render_numbers_md(analysis: dict, payload: dict) -> str:
             if not f.get("ok"):
                 L.append(f"| {k} | — | — | — | — | — | fit failed: {f.get('reason')} |")
                 continue
-            L.append(f"| {k} | {f['p']} | {f['E_inf_pct']} | {f['C']:.3f} | "
-                     f"{f['rms_pct']} | {f['monotone_falling']} | "
-                     f"{f['hypothesis_H1_supported']} |")
+            L.append(
+                f"| {k} | {f['p']} | {f['E_inf_pct']} | {f['C']:.3f} | "
+                f"{f['rms_pct']} | {f['monotone_falling']} | "
+                f"{f['hypothesis_H1_supported']} |"
+            )
         L.append("")
         L.append(f"## Richardson extrapolation — vs {name}")
         L.append("")
@@ -702,35 +891,45 @@ def render_numbers_md(analysis: dict, payload: dict) -> str:
             if not r.get("ok"):
                 L.append(f"* `{k}`: not available ({r.get('reason')})")
                 continue
-            L.append(f"* `{k}`: grids {r['grids']}, p_obs median {r['p_obs_median']}, "
-                     f"Z_inf max err {r['Z_inf_max_abs_rel_err_pct']} %, "
-                     f"mean {r['Z_inf_mean_abs_rel_err_pct']} %, pass3%={r['pass_3pct']}")
+            L.append(
+                f"* `{k}`: grids {r['grids']}, p_obs median {r['p_obs_median']}, "
+                f"Z_inf max err {r['Z_inf_max_abs_rel_err_pct']} %, "
+                f"mean {r['Z_inf_mean_abs_rel_err_pct']} %, pass3%={r['pass_3pct']}"
+            )
         L.append("")
     L.append("## tau sweep at a = 32")
     L.append("")
-    L.append("| tau | nu | Z_sub.05 M&M % | Z_sub.05 Ritter % | Z_cell M&M % | inv drift % | u_max |")
+    L.append(
+        "| tau | nu | Z_sub.05 M&M % | Z_sub.05 Ritter % | Z_cell M&M % | inv drift % | u_max |"
+    )
     L.append("|---|---|---|---|---|---|---|")
     for tau, r in sorted(analysis["tau_sweep"].items(), key=lambda kv: float(kv[0])):
         nu = (float(tau) - 0.5) / 3.0
-        L.append(f"| {tau} | {nu:.4f} | {r['Z_sub0.05_max_err_pct']} | "
-                 f"{r['Z_sub0.05_ritter_pct']} | {r['Z_cell_max_err_pct']} | "
-                 f"{r['inventory_drift_max_pct']} | {r['u_max']} |")
+        L.append(
+            f"| {tau} | {nu:.4f} | {r['Z_sub0.05_max_err_pct']} | "
+            f"{r['Z_sub0.05_ritter_pct']} | {r['Z_cell_max_err_pct']} | "
+            f"{r['inventory_drift_max_pct']} | {r['u_max']} |"
+        )
     L.append("")
     L.append("## OSS port rungs (matrix completion)")
     L.append("")
     for a, r in sorted(analysis.get("oss_port_rungs", {}).items(), key=lambda kv: int(kv[0])):
-        L.append(f"* a = {a}: steps {r['steps']}, Z_cell M&M {r['Z_cell_max_err_pct']} %, "
-                 f"Z_sub.05 M&M {r['Z_sub0.05_max_err_pct']} %, Z_sub.05 Ritter "
-                 f"{r['Z_sub0.05_ritter_pct']} %, inv drift {r['inventory_drift_max_pct']} %, "
-                 f"u_max {r['u_max']}")
+        L.append(
+            f"* a = {a}: steps {r['steps']}, Z_cell M&M {r['Z_cell_max_err_pct']} %, "
+            f"Z_sub.05 M&M {r['Z_sub0.05_max_err_pct']} %, Z_sub.05 Ritter "
+            f"{r['Z_sub0.05_ritter_pct']} %, inv drift {r['inventory_drift_max_pct']} %, "
+            f"u_max {r['u_max']}"
+        )
     L.append("")
     L.append("## Hydrostatic control (declared in R1 design, never executed there)")
     L.append("")
     L.append("| arm | steps | |u|_max | gate | pass |")
     L.append("|---|---|---|---|---|")
     for c in analysis["controls"]:
-        L.append(f"| {c.get('arm')} | {c.get('steps')} | {c.get('u_max_lattice')} | "
-                 f"{DESIGN['control']['u_max_gate']} | {c.get('pass')} |")
+        L.append(
+            f"| {c.get('arm')} | {c.get('steps')} | {c.get('u_max_lattice')} | "
+            f"{DESIGN['control']['u_max_gate']} | {c.get('pass')} |"
+        )
     L.append("")
     return "\n".join(L)
 
@@ -743,11 +942,16 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=12)
     ap.add_argument("--shard", choices=["all", "ladder", "extras"], default="all")
     ap.add_argument("--tag", default="resolution_ladder.json")
-    ap.add_argument("--campaign", choices=["default", "re"], default="default",
-                    help="default = R2 ladder+tau sweep; re = R4 fixed-Re trio + "
-                         "tau sweep + domain-width control")
-    ap.add_argument("--only", default="",
-                    help="comma-separated label substrings (e.g. a16,a32); default all")
+    ap.add_argument(
+        "--campaign",
+        choices=["default", "re"],
+        default="default",
+        help="default = R2 ladder+tau sweep; re = R4 fixed-Re trio + "
+        "tau sweep + domain-width control",
+    )
+    ap.add_argument(
+        "--only", default="", help="comma-separated label substrings (e.g. a16,a32); default all"
+    )
     args = ap.parse_args()
 
     if args.plan:
@@ -758,16 +962,25 @@ def main() -> int:
     if args.run:
         tasks = plan(args.campaign)
         if args.shard == "ladder":
-            tasks = [t for t in tasks if t["kind"] == "arm" and t["arm"] == "tensorlbm_koerner"
-                     and t["tau"] == 1.0]
+            tasks = [
+                t
+                for t in tasks
+                if t["kind"] == "arm" and t["arm"] == "tensorlbm_koerner" and t["tau"] == 1.0
+            ]
         elif args.shard == "extras":
-            tasks = [t for t in tasks if not (t["kind"] == "arm"
-                                              and t["arm"] == "tensorlbm_koerner"
-                                              and t["tau"] == 1.0 and t["a"] != DESIGN["tau_sweep"]["a"])]
+            tasks = [
+                t
+                for t in tasks
+                if not (
+                    t["kind"] == "arm"
+                    and t["arm"] == "tensorlbm_koerner"
+                    and t["tau"] == 1.0
+                    and t["a"] != DESIGN["tau_sweep"]["a"]
+                )
+            ]
         if args.only:
             sel = [x for x in args.only.split(",") if x]
-            tasks = [t for t in tasks
-                     if any(k in result_label(t) for k in sel)]
+            tasks = [t for t in tasks if any(k in result_label(t) for k in sel)]
         if not tasks:
             print("[r3] no task selected", flush=True)
             return 2
@@ -777,8 +990,10 @@ def main() -> int:
             results = pool.map(run_task, tasks)
         for r in results:
             if r.get("status") != "ok":
-                print(f"  {r.get('label', r.get('arm'))}: {r['status']} "
-                      f"{r.get('error', '')}", flush=True)
+                print(
+                    f"  {r.get('label', r.get('arm'))}: {r['status']} {r.get('error', '')}",
+                    flush=True,
+                )
                 continue
             if "label" not in r:
                 print(f"  control {r.get('arm')}: u_max={r.get('u_max_lattice')}", flush=True)
@@ -790,69 +1005,111 @@ def main() -> int:
                 # cj3126 died here on a NoneType __format__)
                 return "   n/a" if v is None else f"{v:>6.2f}"
 
-            print(f"  {r['label']:<40} Z_cell {_fmt(ev['vs_mm']['Z_cell']['max_abs_rel_err_pct'])}%  "
-                  f"Z_sub.05 {_fmt(ev['vs_mm']['Z_sub0.05']['max_abs_rel_err_pct'])}%  "
-                  f"u_max {r.get('u_max', float('nan')):.4f}  "
-                  f"inv {ev.get('inventory_drift_max_pct')}%  "
-                  f"{r.get('wall_seconds')}s", flush=True)
+            print(
+                f"  {r['label']:<40} Z_cell {_fmt(ev['vs_mm']['Z_cell']['max_abs_rel_err_pct'])}%  "
+                f"Z_sub.05 {_fmt(ev['vs_mm']['Z_sub0.05']['max_abs_rel_err_pct'])}%  "
+                f"u_max {r.get('u_max', float('nan')):.4f}  "
+                f"inv {ev.get('inventory_drift_max_pct')}%  "
+                f"{r.get('wall_seconds')}s",
+                flush=True,
+            )
         runs_dir = ART / "runs_r3"
         runs_dir.mkdir(parents=True, exist_ok=True)
         for r in results:
             lab = result_label(r)
-            slim = {k: v for k, v in r.items()
-                    if k not in ("final_fill", "final_umag")}
+            slim = {k: v for k, v in r.items() if k not in ("final_fill", "final_umag")}
             slim["label"] = lab
-            slim["artifact"] = f"xval/oracle_minimal_d2q9_fs/artifacts/runs_r3/{lab}.json"
+            slim["artifact"] = (
+                f"benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/artifacts/runs_r3/{lab}.json"
+            )
             (runs_dir / f"{lab}.json").write_text(json.dumps(slim, indent=1))
             if "final_fill" in r:
-                np.savez_compressed(runs_dir / f"{lab}_fields.npz",
-                                    fill=np.asarray(r["final_fill"], dtype=np.float32),
-                                    umag=np.asarray(r["final_umag"], dtype=np.float32))
-        payload = {"design": DESIGN,
-                   "env": {"python": sys.version.split()[0], "numpy": np.__version__,
-                           "workers": args.workers},
-                   "runs": [{k: v for k, v in r.items()
-                             if k not in ("final_fill", "final_umag")} for r in results],
-                   "run_artifacts": [f"artifacts/runs_r3/{result_label(r)}.json"
-                                     for r in results],
-                   "wall_seconds": round(time.time() - t0, 1)}
+                np.savez_compressed(
+                    runs_dir / f"{lab}_fields.npz",
+                    fill=np.asarray(r["final_fill"], dtype=np.float32),
+                    umag=np.asarray(r["final_umag"], dtype=np.float32),
+                )
+        payload = {
+            "design": DESIGN,
+            "env": {
+                "python": sys.version.split()[0],
+                "numpy": np.__version__,
+                "workers": args.workers,
+            },
+            "runs": [
+                {k: v for k, v in r.items() if k not in ("final_fill", "final_umag")}
+                for r in results
+            ],
+            "run_artifacts": [f"artifacts/runs_r3/{result_label(r)}.json" for r in results],
+            "wall_seconds": round(time.time() - t0, 1),
+        }
         (ART / args.tag).write_text(json.dumps(payload, indent=1))
         print(f"[r2] wrote {ART / args.tag} in {payload['wall_seconds']}s", flush=True)
         # one short line per run: the cluster log keeps only ~9 kB of the tail
-        print("R2HEAD:" + json.dumps({"wall_seconds": payload["wall_seconds"],
-                                      "env": payload["env"],
-                                      "total_wall_seconds": payload["wall_seconds"]},
-                                     separators=(",", ":")), flush=True)
-        keep = ("kind", "arm", "a", "tau", "g", "status", "steps", "u_max",
-                "wall_seconds", "u_max_lattice", "pass", "label")
+        print(
+            "R2HEAD:"
+            + json.dumps(
+                {
+                    "wall_seconds": payload["wall_seconds"],
+                    "env": payload["env"],
+                    "total_wall_seconds": payload["wall_seconds"],
+                },
+                separators=(",", ":"),
+            ),
+            flush=True,
+        )
+        keep = (
+            "kind",
+            "arm",
+            "a",
+            "tau",
+            "g",
+            "status",
+            "steps",
+            "u_max",
+            "wall_seconds",
+            "u_max_lattice",
+            "pass",
+            "label",
+        )
         for r in results:
             slim = {k: v for k, v in r.items() if k in keep}
             if "series" in r:
-                slim["series"] = [{k: (round(v, 4) if isinstance(v, float) else v)
-                                   for k, v in s.items()} for s in r["series"]]
+                slim["series"] = [
+                    {k: (round(v, 4) if isinstance(v, float) else v) for k, v in s.items()}
+                    for s in r["series"]
+                ]
             if "inventory" in r:
                 inv = [p["drift_pct"] for p in r["inventory"] if isinstance(p, dict)]
-                slim["inventory_drift_max_pct"] = round(max(abs(x) for x in inv), 4) if inv else None
+                slim["inventory_drift_max_pct"] = (
+                    round(max(abs(x) for x in inv), 4) if inv else None
+                )
             print("R2RUN:" + json.dumps(slim, separators=(",", ":")), flush=True)
         for r in results:
             lab = result_label(r)
-            rec = {"l": lab, "k": r.get("kind", "arm"), "a": r.get("a"),
-                   "tau": r.get("tau"), "st": r.get("status"),
-                   "steps": r.get("steps"), "wall": r.get("wall_seconds"),
-                   "u": (round(float(r["u_max"]), 5) if r.get("u_max") is not None else None),
-                   "art": f"artifacts/runs_r3/{lab}.json"}
+            rec = {
+                "l": lab,
+                "k": r.get("kind", "arm"),
+                "a": r.get("a"),
+                "tau": r.get("tau"),
+                "st": r.get("status"),
+                "steps": r.get("steps"),
+                "wall": r.get("wall_seconds"),
+                "u": (round(float(r["u_max"]), 5) if r.get("u_max") is not None else None),
+                "art": f"artifacts/runs_r3/{lab}.json",
+            }
             if r.get("series"):
                 rec["S"] = [series_row(m) for m in r["series"]]
             if r.get("inventory"):
                 rec["inv"] = round(max(abs(p["drift_pct"]) for p in r["inventory"]), 4)
-            print("R2SER:" + json.dumps(rec, separators=(",", ":"), allow_nan=True),
-                  flush=True)
+            print("R2SER:" + json.dumps(rec, separators=(",", ":"), allow_nan=True), flush=True)
         print("R2END:" + args.shard, flush=True)
         return 0
 
     if args.analyze:
-        payload = (json.loads((ART / args.tag).read_text())
-                   if (ART / args.tag).exists() else {"runs": []})
+        payload = (
+            json.loads((ART / args.tag).read_text()) if (ART / args.tag).exists() else {"runs": []}
+        )
         seen = {result_label(r) for r in payload["runs"]}
         runs_dir = ART / "runs_r3"
         if runs_dir.exists():
@@ -860,20 +1117,27 @@ def main() -> int:
                 r = json.loads(f.read_text())
                 if result_label(r) not in seen:
                     payload["runs"].append(r)
-        print(f"[r3] analysing {len(payload['runs'])} runs "
-              f"({len(seen)} from {args.tag}, rest from artifacts/runs_r3/)", flush=True)
+        print(
+            f"[r3] analysing {len(payload['runs'])} runs "
+            f"({len(seen)} from {args.tag}, rest from artifacts/runs_r3/)",
+            flush=True,
+        )
         analysis = analyze(payload)
         (ART / "resolution_analysis.json").write_text(json.dumps(analysis, indent=1))
         (ART / "resolution_numbers.md").write_text(render_numbers_md(analysis, payload))
         for ref in ("mm", "ritter"):
             for k, f in analysis["fits"][ref].items():
                 if f.get("ok"):
-                    print(f"  fit[{ref}] {k}: p={f['p']} E_inf={f['E_inf_pct']}% "
-                          f"H1={f['hypothesis_H1_supported']}")
+                    print(
+                        f"  fit[{ref}] {k}: p={f['p']} E_inf={f['E_inf_pct']}% "
+                        f"H1={f['hypothesis_H1_supported']}"
+                    )
             for k, r in analysis["richardson"][ref].items():
                 if r.get("ok"):
-                    print(f"  richardson[{ref}] {k}: Z_inf max err "
-                          f"{r['Z_inf_max_abs_rel_err_pct']}% pass3%={r['pass_3pct']}")
+                    print(
+                        f"  richardson[{ref}] {k}: Z_inf max err "
+                        f"{r['Z_inf_max_abs_rel_err_pct']}% pass3%={r['pass_3pct']}"
+                    )
         print("[r2] wrote artifacts/resolution_analysis.json + resolution_numbers.md")
         return 0
 

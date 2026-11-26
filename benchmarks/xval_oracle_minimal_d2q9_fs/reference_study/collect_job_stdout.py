@@ -12,8 +12,8 @@ written (``artifacts/runs_r3/<label>.json``), so ``--analyze`` is
 source-agnostic and sharded jobs compose.
 
 Usage:
-    python xval/oracle_minimal_d2q9_fs/collect_job_stdout.py cj3120 [cj3121 ...]
-    python xval/oracle_minimal_d2q9_fs/resolution_study.py --analyze
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/collect_job_stdout.py cj3120 [cj3121 ...]
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/resolution_study.py --analyze
 """
 
 from __future__ import annotations
@@ -55,15 +55,22 @@ def parse_job(jid: str) -> dict:
     head, runs, complete = {}, {}, False
     for line in _log_text(jid).splitlines():
         if line.startswith("R2HEAD:"):
-            head = json.loads(line[len("R2HEAD:"):])
+            head = json.loads(line[len("R2HEAD:") :])
         elif line.startswith("R2SER:"):
-            rec = json.loads(line[len("R2SER:"):])
+            rec = json.loads(line[len("R2SER:") :])
             lab = rec["l"]
-            run = {"label": lab, "arm": rec.get("k", "arm"), "kind": rec.get("k", "arm"),
-                   "a": rec.get("a"), "tau": rec.get("tau"),
-                   "status": rec.get("st") or "ok", "steps": rec.get("steps"),
-                   "wall_seconds": rec.get("wall"), "u_max": rec.get("u"),
-                   "recovered_from_job": jid}
+            run = {
+                "label": lab,
+                "arm": rec.get("k", "arm"),
+                "kind": rec.get("k", "arm"),
+                "a": rec.get("a"),
+                "tau": rec.get("tau"),
+                "status": rec.get("st") or "ok",
+                "steps": rec.get("steps"),
+                "wall_seconds": rec.get("wall"),
+                "u_max": rec.get("u"),
+                "recovered_from_job": jid,
+            }
             if rec.get("S"):
                 run["series"] = _R.series_from_rows(rec["S"])
             if rec.get("inv") is not None:
@@ -95,12 +102,12 @@ def main() -> int:
             (RUNS / f"{lab}.json").write_text(json.dumps(run, indent=1))
             merged[lab] = jid
             total += 1
-        print(f"[collect] {jid}: {len(got['runs'])} runs, complete={got['complete']}",
-              flush=True)
+        print(f"[collect] {jid}: {len(got['runs'])} runs, complete={got['complete']}", flush=True)
     if not total:
         raise SystemExit("nothing recovered")
-    (ART / "r3_recovery.json").write_text(json.dumps(
-        {"source_jobs": jids, "runs": sorted(merged), "per_job": merged}, indent=1))
+    (ART / "r3_recovery.json").write_text(
+        json.dumps({"source_jobs": jids, "runs": sorted(merged), "per_job": merged}, indent=1)
+    )
     print(f"[collect] {total} per-run artifacts -> artifacts/runs_r3/*.json", flush=True)
     return 0
 

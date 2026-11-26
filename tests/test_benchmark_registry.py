@@ -48,6 +48,22 @@ class BenchmarkRegistryTests(unittest.TestCase):
             self.assertIn(f"{archive}/{item}", evidence)
         self.assertEqual(record["current_acceptance"], "not_evaluated")
 
+    def test_free_surface_case_links_replay_and_historical_campaigns(self):
+        case_path = "benchmarks/xval_oracle_minimal_d2q9_fs"
+        (record,) = self.registry("--case", case_path)
+        variant = record["variants"][0]
+        self.assertIn(f"{case_path}/reference_study/resolution_study.py", variant["source"])
+        self.assertIn(f"{case_path}/replays/2026-11-26-ci-tier.json", variant["results"])
+        self.assertIn(
+            "development/verification/thuerey_vof_mass_exchange/artifacts/operator_audit.json",
+            variant["evidence"],
+        )
+        self.assertIn(
+            "development/verification/mass_exchange_selector/run_xval.py",
+            variant["evidence"],
+        )
+        self.assertEqual(record["current_acceptance"], "not_evaluated")
+
     def test_asset_index_covers_every_tracked_benchmark_path(self):
         data = subprocess.check_output([sys.executable, "tools/benchmark_registry.py", "--asset-index"], cwd=ROOT)
         inventory = json.loads(data)

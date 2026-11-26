@@ -13,22 +13,32 @@ import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 
-MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
+MM = json.loads(
+    (REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text()
+)
 MM_T = np.array([d["t_star"] for d in MM["data"]])
 MM_Z = np.array([d["X_star"] for d in MM["data"]])
-RIT = json.loads((REPO / "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json").read_text())
+RIT = json.loads(
+    (
+        REPO / "benchmarks/dam_break_ritter/reference/ritter_1892_dam_break_analytical.json"
+    ).read_text()
+)
 RIT_T = np.array([d["t_star"] for d in RIT["data"]])
 RIT_Z = np.array([d["X_star"] for d in RIT["data"]])
 
-LABEL = {"tensorlbm_koerner": "TensorLBM Körner (D2Q9)", "oss_port": "OSS oracle port (Maarten-vd-Sande/lbm)"}
+LABEL = {
+    "tensorlbm_koerner": "TensorLBM Körner (D2Q9)",
+    "oss_port": "OSS oracle port (Maarten-vd-Sande/lbm)",
+}
 COLOR = {"tensorlbm_koerner": "C0", "oss_port": "C3"}
 STYLE = {"tensorlbm_koerner": "-", "oss_port": "--"}
 
@@ -64,8 +74,7 @@ def fig_front(payload, out):
             continue
         T = [s["T"] for s in r["series"]]
         Z = [s["Z"] for s in r["series"]]
-        ax.plot(T, Z, STYLE[arm], color=COLOR[arm], lw=1.8,
-                label=f"{LABEL[arm]} (a=32, τ=1)")
+        ax.plot(T, Z, STYLE[arm], color=COLOR[arm], lw=1.8, label=f"{LABEL[arm]} (a=32, τ=1)")
     ax.set_xlim(0, 4.2)
     ax.set_ylim(0.8, 4.5)
     ax.set_xlabel(r"$T = t\sqrt{g/h_0}$")
@@ -79,9 +88,15 @@ def fig_front(payload, out):
         if not r or "vs_mm" not in r:
             continue
         pts = r["vs_mm"]["points"]
-        ax.plot([p["T"] for p in pts], [p["rel_err_pct"] for p in pts],
-                STYLE[arm], color=COLOR[arm], marker="s", ms=3,
-                label=f"{LABEL[arm]}: max {r['vs_mm']['max_abs_rel_err_pct']:.1f}%")
+        ax.plot(
+            [p["T"] for p in pts],
+            [p["rel_err_pct"] for p in pts],
+            STYLE[arm],
+            color=COLOR[arm],
+            marker="s",
+            ms=3,
+            label=f"{LABEL[arm]}: max {r['vs_mm']['max_abs_rel_err_pct']:.1f}%",
+        )
     ax.axhline(15, color="r", ls=":", lw=1.2, label="pre-declared 15 % gate")
     ax.axhline(-15, color="r", ls=":", lw=1.2)
     ax.axhline(0, color="k", lw=0.5)
@@ -136,8 +151,13 @@ def fig_convergence(payload, out):
         if xs:
             ax.plot(xs, ys, marker="o", ls=STYLE[arm], color=COLOR[arm], label=LABEL[arm])
             for x, y in zip(xs, ys):
-                ax.annotate(f"a={int(round(1/x))}", (x, y), fontsize=7,
-                            textcoords="offset points", xytext=(3, 4))
+                ax.annotate(
+                    f"a={int(round(1 / x))}",
+                    (x, y),
+                    fontsize=7,
+                    textcoords="offset points",
+                    xytext=(3, 4),
+                )
     ax.axhline(15, color="r", ls=":", lw=1.2, label="15 % gate")
     ax.set_xlabel("1/a  (lattice cells per column width)")
     ax.set_ylabel("max |rel err| vs M&M [%]")
@@ -172,9 +192,15 @@ def fig_tau(payload, out):
             r = pick(payload, arm, 32, tau=tau)
             if not r:
                 continue
-            ax.plot([s["T"] for s in r["series"]], [s["Z"] for s in r["series"]],
-                    STYLE[arm], color=COLOR[arm], alpha=alpha, lw=1.4,
-                    label=f"{arm} τ={tau:g}")
+            ax.plot(
+                [s["T"] for s in r["series"]],
+                [s["Z"] for s in r["series"]],
+                STYLE[arm],
+                color=COLOR[arm],
+                alpha=alpha,
+                lw=1.4,
+                label=f"{arm} τ={tau:g}",
+            )
     ax.set_xlabel(r"$T = t\sqrt{g/h_0}$")
     ax.set_ylabel(r"$Z = x_{front}/a$")
     ax.set_title("Relaxation-time sensitivity (a = 32)")
@@ -193,10 +219,13 @@ def fig_inventory(payload, out):
         if not r or not r.get("inventory"):
             continue
         dt = np.sqrt(r["g"] / r["h0"])
-        ax.semilogy([p["step"] * dt for p in r["inventory"]],
-                    [max(abs(p["drift_pct"]), 1e-9) for p in r["inventory"]],
-                    STYLE[arm], color=COLOR[arm],
-                    label=f"{LABEL[arm]} (max {r.get('inventory_drift_max_pct', float('nan')):.2f} %)")
+        ax.semilogy(
+            [p["step"] * dt for p in r["inventory"]],
+            [max(abs(p["drift_pct"]), 1e-9) for p in r["inventory"]],
+            STYLE[arm],
+            color=COLOR[arm],
+            label=f"{LABEL[arm]} (max {r.get('inventory_drift_max_pct', float('nan')):.2f} %)",
+        )
     ax.set_xlabel(r"$T = t\sqrt{g/h_0}$")
     ax.set_ylabel("|liquid-inventory drift| [%]")
     ax.set_title("Mass ledger drift (a = 32)")
@@ -215,9 +244,14 @@ def fig_mach(payload, out):
         r = pick(payload, arm, 16, g=0.1)
         if not r:
             continue
-        ax.plot([s["T"] for s in r["series"]], [s["Z"] for s in r["series"]],
-                STYLE[arm], color=COLOR[arm], lw=1.6,
-                label=f"{LABEL[arm]} g=0.1 (OSS shipped)")
+        ax.plot(
+            [s["T"] for s in r["series"]],
+            [s["Z"] for s in r["series"]],
+            STYLE[arm],
+            color=COLOR[arm],
+            lw=1.6,
+            label=f"{LABEL[arm]} g=0.1 (OSS shipped)",
+        )
     ax.set_xlabel(r"$T = t\sqrt{g/h_0}$")
     ax.set_ylabel(r"$Z = x_{front}/a$")
     ax.set_title("OSS shipped gravity (g=0.1, Ma≈6, clamp active)")
@@ -232,13 +266,17 @@ def fig_mach(payload, out):
 def numbers(payload) -> str:
     lines = ["# XVAL numbers (programmatic dump — do not hand-edit)\n"]
     lines.append("## Run table\n")
-    lines.append("| label | arm | a | τ | g | ν | steps | u_max | Z max err % | mean err % | "
-                 "pass 15% | inventory drift % | wall s |")
+    lines.append(
+        "| label | arm | a | τ | g | ν | steps | u_max | Z max err % | mean err % | "
+        "pass 15% | inventory drift % | wall s |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in payload["runs"]:
         if r.get("status") != "ok":
-            lines.append(f"| {r.get('label', r['arm'])} | {r['arm']} | - | - | - | - | - | - | - | - | "
-                         f"{r.get('status')} {r.get('error', '')} | - | - |")
+            lines.append(
+                f"| {r.get('label', r['arm'])} | {r['arm']} | - | - | - | - | - | - | - | - | "
+                f"{r.get('status')} {r.get('error', '')} | - | - |"
+            )
             continue
         m = r.get("vs_mm", {})
         lines.append(
@@ -246,11 +284,14 @@ def numbers(payload) -> str:
             f"{r.get('nu', float('nan')):.4f} | {r.get('steps')} | {r.get('u_max', 0):.4f} | "
             f"{m.get('max_abs_rel_err_pct', float('nan'))} | {m.get('mean_abs_rel_err_pct', float('nan'))} | "
             f"{m.get('pass_15pct')} | {r.get('inventory_drift_max_pct', float('nan'))} | "
-            f"{r.get('wall_seconds')} |")
+            f"{r.get('wall_seconds')} |"
+        )
     lines.append("\n## Arm-to-arm (TensorLBM vs OSS oracle)\n")
     for g in payload.get("arm_vs_arm", []):
-        lines.append(f"* a={g['a']} τ={g['tau']:g}: max {g['max_abs_rel_diff_pct']} %, "
-                     f"mean {g['mean_abs_rel_diff_pct']} %, pass15={g['pass_15pct']}")
+        lines.append(
+            f"* a={g['a']} τ={g['tau']:g}: max {g['max_abs_rel_diff_pct']} %, "
+            f"mean {g['mean_abs_rel_diff_pct']} %, pass15={g['pass_15pct']}"
+        )
     lines.append("\n## Controls\n")
     for c in payload.get("controls", []):
         lines.append(f"* {c['arm']}: u_max = {c['u_max_lattice']:.4e} ({c['steps']} steps)")

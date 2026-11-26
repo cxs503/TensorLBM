@@ -7,7 +7,7 @@ was read.  Three experiments, all on the same lattice-unit dam-break case:
 
 E1  port fidelity      the selector extracted in ``oss_selector.py`` must
                        reproduce the *fidelity-checked* full port
-                       (``xval/oracle_minimal_d2q9_fs/oss_oracle_port.py``)
+                       (``benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port.py``)
                        exactly on randomized states — otherwise the
                        differential test below measures my transcription, not
                        the OSS rule.
@@ -23,9 +23,9 @@ E3  downstream consequence
                        Moyce (1952) curve, plus a kappa / tau / resolution scan.
 
 Usage
-    python xval/mass_exchange_selector/run_xval.py --fidelity
-    python xval/mass_exchange_selector/run_xval.py --matrix
-    python xval/mass_exchange_selector/run_xval.py --analyse
+    python development/verification/mass_exchange_selector/run_xval.py --fidelity
+    python development/verification/mass_exchange_selector/run_xval.py --matrix
+    python development/verification/mass_exchange_selector/run_xval.py --analyse
 """
 
 from __future__ import annotations
@@ -42,10 +42,10 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(REPO / "xval" / "oracle_minimal_d2q9_fs"))
+sys.path.insert(0, str(REPO / "benchmarks" / "xval_oracle_minimal_d2q9_fs" / "reference_study"))
 
 import oss_selector as S            # noqa: E402
 import repo_selector as R           # noqa: E402
@@ -76,7 +76,7 @@ DESIGN = {
             "excess_distribution": "lbm/update_types.py:72-116",
             "neigh_flags": "lbm/update_types.py:118-136",
         },
-        "carrier_port": "xval/oracle_minimal_d2q9_fs/oss_oracle_port.py "
+        "carrier_port": "benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port.py "
                         "(fidelity-checked against the unmodified upstream code)",
     },
     "repo_reference": {

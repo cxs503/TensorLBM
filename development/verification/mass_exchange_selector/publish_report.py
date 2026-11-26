@@ -18,7 +18,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
 FIG = ART / "figures"
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 BASE = os.environ.get("TENSOR_API_BASE", "http://127.0.0.1:8010/api/v1")
 
 
@@ -128,9 +128,9 @@ of the same Körner/Thürey family are compared:
   `/root/oss-cache/Maarten-vd-Sande_lbm`, `lbm/update_types.py:12,13,18-27`
   (marking), `:34-70` (envelope), `:72-116` (excess distribution), `:118-136`
   (neighbour flags). Every constant and rule in
-  `xval/mass_exchange_selector/oss_selector.py` is transcribed from those
+  `development/verification/mass_exchange_selector/oss_selector.py` is transcribed from those
   lines; the lattice primitives are imported from the already fidelity-checked
-  numpy port `xval/oracle_minimal_d2q9_fs/oss_oracle_port.py` (no hand copy,
+  numpy port `benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/oss_oracle_port.py` (no hand copy,
   no re-derived coordinate convention).
 
 Physical test case (identical lattice for both selectors): 2-D dam-break in a
@@ -329,7 +329,7 @@ only with a resolution study at a ≥ 32.
 
 ## Artifacts
 
-`xval/mass_exchange_selector/{{oss_selector.py, repo_selector.py, run_xval.py, make_figures.py,
+`development/verification/mass_exchange_selector/{{oss_selector.py, repo_selector.py, run_xval.py, make_figures.py,
 DIFF_OSS_VS_TENSORLBM_MASS_EXCHANGE_SELECTOR.md}}`,
 `artifacts/{{fidelity.json, fidelity_both.json, runs.json, analysis.json, differential.json,
 numbers.md, states_*.npz, figures/*.png}}`.

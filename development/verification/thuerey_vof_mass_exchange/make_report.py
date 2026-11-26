@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
-REPO = HERE.parents[1]
+REPO = HERE.parents[2]
 MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 
 
@@ -142,8 +142,8 @@ LIQUID/INTERFACE（体相→界面，全权重）与 INTERFACE/INTERFACE（界�
 * 选择器与观测账本：`src/tensorlbm/free_surface_lbm_2d.py`（`INTERFACE_EXCHANGE_RULES`、
   `koerner_step_2d(... interface_exchange_rule=)`，ledger 通道
   `exchange_interface_delta` / `exchange_ii_dead_links`）；
-* 算子审计：`xval/XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE/run_operator_audit.py`；
-* 积分对标：`xval/XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE/run_dambreak_xval.py`；
+* 算子审计：`development/verification/thuerey_vof_mass_exchange/run_operator_audit.py`；
+* 积分对标：`development/verification/thuerey_vof_mass_exchange/run_dambreak_xval.py`；
 * 不变量测试：`tests/test_fs_mass_exchange_pair_symmetry.py`。
 
 ## ③ 参数表（格子单位，无量纲）
@@ -175,7 +175,7 @@ LIQUID/INTERFACE（体相→界面，全权重）与 INTERFACE/INTERFACE（界�
 * OSS 选择器在 `surface_band` 构型上 `net_rel = 1.000`（Σ|dm_II| 与 net 同量级，即整段
   通量单向累加），同时末态库存漂移与 `repo` 相差约
   {abs(runs.get('oss_a24', {}).get('inventory_drift_pct', 0) - runs.get('repo_a24', {}).get('inventory_drift_pct', 0)):.3f} 个百分点（a=24）；
-  这复现了上一轮 XVAL（`xval/oracle_minimal_d2q9_fs/DIFF_OSS_VS_TENSORLBM.md` §5）指出的
+  这复现了上一轮 XVAL（`benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/DIFF_OSS_VS_TENSORLBM.md` §5）指出的
   OSS 质量守恒缺口，是本单**不移植** OSS 选择器的量化依据。
 
 ## ⑤ 收敛性与参数敏感性
@@ -189,10 +189,10 @@ LIQUID/INTERFACE（体相→界面，全权重）与 INTERFACE/INTERFACE（界�
 ## ⑥ 失败模式与工件
 
 * 复现命令：
-  `python3 xval/XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE/run_operator_audit.py`；
+  `python3 development/verification/thuerey_vof_mass_exchange/run_operator_audit.py`；
   `bash /tmp/db_matrix.sh`（等价于逐条 `run_dambreak_xval.py --rule R --cells A`）；
   `python3 -m pytest tests/test_fs_mass_exchange_pair_symmetry.py -q`；
-  `python3 xval/XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE/make_report.py`。
+  `python3 development/verification/thuerey_vof_mass_exchange/make_report.py`。
 * 工件：本目录 `artifacts/operator_audit.json`、`artifacts/db_*.json`、
   `fig_dambreak_front.png`、`fig_error_vs_resolution.png`、`predeclared.json`。
 * 已知失败/局限：

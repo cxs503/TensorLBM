@@ -5,7 +5,7 @@
 Every number in ``artifacts/numbers.md`` is read from the JSON the runs wrote —
 nothing is hand-typed (owner rule: programmatic injection, zero hand-copy).
 
-    python xval/mass_exchange_selector/make_figures.py
+    python development/verification/mass_exchange_selector/make_figures.py
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ HERE = Path(__file__).resolve().parent
 ART = HERE / "artifacts"
 FIG = ART / "figures"
 FIG.mkdir(parents=True, exist_ok=True)
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 
 MM = json.loads((REPO / "src/tensorlbm/verification/refdata/martin_moyce_1952_dam_break.json").read_text())
 MM_T = [d["t_star"] for d in MM["data"]]

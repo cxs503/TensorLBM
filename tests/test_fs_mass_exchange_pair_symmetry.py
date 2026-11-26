@@ -7,7 +7,7 @@ neighbour count against the *receiver* gas neighbour state, which is not
 symmetric under ``i <-> j``; ``interface_exchange_rule="pair_symmetric"`` keeps
 the intent with a pair-symmetric predicate.  These tests bind the shipped
 solver to the audit in
-``xval/XVAL-LBM-THUEREY-VOF-MASS-EXCHANGE/run_operator_audit.py``.
+``development/verification/thuerey_vof_mass_exchange/run_operator_audit.py``.
 """
 from __future__ import annotations
 

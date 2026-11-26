@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 HERE = Path(__file__).resolve().parent
-XV = HERE.parent / "xval" / "oracle_minimal_d2q9_fs"
+XV = HERE.parent / "benchmarks" / "xval_oracle_minimal_d2q9_fs" / "reference_study"
 sys.path.insert(0, str(XV))
 sys.path.insert(0, str(HERE.parent / "src"))
 

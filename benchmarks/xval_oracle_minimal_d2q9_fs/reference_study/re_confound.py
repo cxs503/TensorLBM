@@ -44,7 +44,7 @@ series); it is used only for magnitude, never for sign, and the re-run cj3218
 supersedes it wherever both exist.
 
 Usage
-    python xval/oracle_minimal_d2q9_fs/re_confound.py
+    python benchmarks/xval_oracle_minimal_d2q9_fs/reference_study/re_confound.py
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 
@@ -105,35 +105,52 @@ def metrics(r: dict) -> dict:
         zref = R.mm_interp(T)
         if zref is None:
             continue
-        rows.append({"T": round(T, 4), "Z_ref": round(float(zref), 4),
-                     "Z_cell": round(float(s["Z_cell"]), 4),
-                     "Z_sub": round(float(s[KEY_PRIMARY]), 4),
-                     "e_cell_pct": round(100.0 * (s["Z_cell"] - zref) / zref, 3),
-                     "e_sub_pct": round(100.0 * (s[KEY_PRIMARY] - zref) / zref, 3)})
-    out = {"label": r.get("label") or R.result_label(r), "a": a, "tau": tau,
-           "width_in_a": w, "nx": r.get("nx"), "ny": r.get("ny"),
-           "steps": r.get("steps"), "re": round(R.reynolds(a, tau), 4),
-           "nu": round((tau - 0.5) / 3.0, 6),
-           "u_max": round(float(r["u_max"]), 5) if r.get("u_max") is not None else None,
-           "source": r.get("source", "recovered"),
-           "points": rows}
+        rows.append(
+            {
+                "T": round(T, 4),
+                "Z_ref": round(float(zref), 4),
+                "Z_cell": round(float(s["Z_cell"]), 4),
+                "Z_sub": round(float(s[KEY_PRIMARY]), 4),
+                "e_cell_pct": round(100.0 * (s["Z_cell"] - zref) / zref, 3),
+                "e_sub_pct": round(100.0 * (s[KEY_PRIMARY] - zref) / zref, 3),
+            }
+        )
+    out = {
+        "label": r.get("label") or R.result_label(r),
+        "a": a,
+        "tau": tau,
+        "width_in_a": w,
+        "nx": r.get("nx"),
+        "ny": r.get("ny"),
+        "steps": r.get("steps"),
+        "re": round(R.reynolds(a, tau), 4),
+        "nu": round((tau - 0.5) / 3.0, 6),
+        "u_max": round(float(r["u_max"]), 5) if r.get("u_max") is not None else None,
+        "source": r.get("source", "recovered"),
+        "points": rows,
+    }
     if rows:
         e = np.array([p["e_sub_pct"] for p in rows])
         i = int(np.argmax(np.abs(e)))
-        out.update({"max_abs_err_pct": round(float(abs(e[i])), 3),
-                    "signed_err_at_max_pct": round(float(e[i]), 3),
-                    "T_at_max": rows[i]["T"],
-                    "signed_err_end_pct": rows[-1]["e_sub_pct"],
-                    "Z_cell_end": rows[-1]["Z_cell"],
-                    "T_end": rows[-1]["T"],
-                    "late_signed_mean_pct": round(float(e[np.array(
-                        [p["T"] for p in rows]) >= 2.0 - 1e-9].mean()), 3)
-                    if any(p["T"] >= 2.0 - 1e-9 for p in rows) else None,
-                    "pass_15pct": bool(abs(e[i]) <= R.DESIGN["thresholds_pct"]["z_max_rel_err"]),
-                    "pass_3pct": bool(abs(e[i]) <= R.DESIGN["thresholds_pct"]["asymptotic_target"])})
+        out.update(
+            {
+                "max_abs_err_pct": round(float(abs(e[i])), 3),
+                "signed_err_at_max_pct": round(float(e[i]), 3),
+                "T_at_max": rows[i]["T"],
+                "signed_err_end_pct": rows[-1]["e_sub_pct"],
+                "Z_cell_end": rows[-1]["Z_cell"],
+                "T_end": rows[-1]["T"],
+                "late_signed_mean_pct": round(
+                    float(e[np.array([p["T"] for p in rows]) >= 2.0 - 1e-9].mean()), 3
+                )
+                if any(p["T"] >= 2.0 - 1e-9 for p in rows)
+                else None,
+                "pass_15pct": bool(abs(e[i]) <= R.DESIGN["thresholds_pct"]["z_max_rel_err"]),
+                "pass_3pct": bool(abs(e[i]) <= R.DESIGN["thresholds_pct"]["asymptotic_target"]),
+            }
+        )
         if r.get("nx"):
-            out["wall_clearance_a"] = round((float(r["nx"]) - 2.0
-                                             - rows[-1]["Z_cell"] * a) / a, 3)
+            out["wall_clearance_a"] = round((float(r["nx"]) - 2.0 - rows[-1]["Z_cell"] * a) / a, 3)
     return out
 
 
@@ -165,8 +182,12 @@ def zero_crossing(pooled: list[dict], key: str = "late_signed_mean_pct") -> dict
     for (r0, e0, l0), (r1, e1, l1) in zip(pts, pts[1:]):
         if e0 == 0 or e0 * e1 < 0:
             re_star = r0 - e0 * (r1 - r0) / (e1 - e0)
-            return {"re_star": round(float(re_star), 3), "bracket": [l0, l1],
-                    "bracket_re": [r0, r1], "bracket_err_pct": [e0, e1]}
+            return {
+                "re_star": round(float(re_star), 3),
+                "bracket": [l0, l1],
+                "bracket_re": [r0, r1],
+                "bracket_err_pct": [e0, e1],
+            }
     return {"re_star": None, "reason": "no sign change in the available Re range"}
 
 
@@ -175,33 +196,49 @@ def analyze(runs: list[dict], salvaged: list[dict]) -> dict:
     # a run with no sample inside the declared window carries no error and must
     # not enter any error aggregate (cj3126 regression)
     ms = [m for m in allruns if m.get("points")]
-    ladder = sorted([m for m in ms if m["tau"] == 1.0 and m["width_in_a"] == 5.0],
-                    key=lambda m: m["a"])
-    sweeps = sorted([m for m in ms if m["a"] == R.DESIGN["tau_sweep"]["a"]
-                     and m["width_in_a"] == 5.0], key=lambda m: m["tau"])
+    ladder = sorted(
+        [m for m in ms if m["tau"] == 1.0 and m["width_in_a"] == 5.0], key=lambda m: m["a"]
+    )
+    sweeps = sorted(
+        [m for m in ms if m["a"] == R.DESIGN["tau_sweep"]["a"] and m["width_in_a"] == 5.0],
+        key=lambda m: m["tau"],
+    )
     wide = [m for m in ms if m["width_in_a"] != 5.0]
     re0 = R.re_reference()
     tol = 0.02 * re0
-    trio = sorted([m for m in ms if m["width_in_a"] == 5.0 and abs(m["re"] - re0) <= tol],
-                  key=lambda m: m["a"])
+    trio = sorted(
+        [m for m in ms if m["width_in_a"] == 5.0 and abs(m["re"] - re0) <= tol],
+        key=lambda m: m["a"],
+    )
     pooled = ladder + [m for m in sweeps if all(m["label"] != x["label"] for x in ladder)]
-    out = {"design": {"re_reference": round(re0, 4), "re_reference_rung": "a=32, tau=1",
-                      "re_formula": "Re = sqrt(g*h0)*h0/nu, h0=2a, nu=(tau-0.5)/3",
-                      "window_T": R.DESIGN["window_T"],
-                      "thresholds_pct": R.DESIGN["thresholds_pct"],
-                      "primary_metric": KEY_PRIMARY},
-           "runs": allruns,
-           "ladder_tau1_w5": ladder,
-           "tau_sweep_a32_w5": sweeps,
-           "fixed_re_trio": trio,
-           "width_control": wide,
-           "widening_pairs": widening_pairs(ms),
-           "salvaged_cj3126": salvaged}
+    out = {
+        "design": {
+            "re_reference": round(re0, 4),
+            "re_reference_rung": "a=32, tau=1",
+            "re_formula": "Re = sqrt(g*h0)*h0/nu, h0=2a, nu=(tau-0.5)/3",
+            "window_T": R.DESIGN["window_T"],
+            "thresholds_pct": R.DESIGN["thresholds_pct"],
+            "primary_metric": KEY_PRIMARY,
+        },
+        "runs": allruns,
+        "ladder_tau1_w5": ladder,
+        "tau_sweep_a32_w5": sweeps,
+        "fixed_re_trio": trio,
+        "width_control": wide,
+        "widening_pairs": widening_pairs(ms),
+        "salvaged_cj3126": salvaged,
+    }
     # pooled E(Re) collapse
-    out["collapse"] = [{"label": m["label"], "re": m["re"], "max_abs_err_pct": m["max_abs_err_pct"],
-                        "signed_err_at_max_pct": m["signed_err_at_max_pct"],
-                        "late_signed_mean_pct": m.get("late_signed_mean_pct")}
-                       for m in sorted(pooled, key=lambda m: m["re"])]
+    out["collapse"] = [
+        {
+            "label": m["label"],
+            "re": m["re"],
+            "max_abs_err_pct": m["max_abs_err_pct"],
+            "signed_err_at_max_pct": m["signed_err_at_max_pct"],
+            "late_signed_mean_pct": m.get("late_signed_mean_pct"),
+        }
+        for m in sorted(pooled, key=lambda m: m["re"])
+    ]
     out["zero_crossing"] = zero_crossing(pooled)
     # spread of the error at fixed Re vs the spread over the whole ladder
     concl = {}
@@ -214,12 +251,15 @@ def analyze(runs: list[dict], salvaged: list[dict]) -> dict:
             lv = [m["max_abs_err_pct"] for m in ladder]
             concl["ladder_spread_pct_points"] = round(max(lv) - min(lv), 3)
             concl["trio_over_ladder_spread_ratio"] = round(
-                (max(vals) - min(vals)) / max(max(lv) - min(lv), 1e-12), 3)
+                (max(vals) - min(vals)) / max(max(lv) - min(lv), 1e-12), 3
+            )
         if len(trio) == 3:
             concl["H2_fixed_re_flat"] = bool(max(vals) - min(vals) <= 3.0)
-            concl["H2_rule"] = ("H2 (residual error is Re mismatch, not discretisation) "
-                                "is supported if the a-spread at matched Re is <= 3 "
-                                "percentage points")
+            concl["H2_rule"] = (
+                "H2 (residual error is Re mismatch, not discretisation) "
+                "is supported if the a-spread at matched Re is <= 3 "
+                "percentage points"
+            )
     if out["widening_pairs"]:
         concl["width_effect"] = out["widening_pairs"]
     total = [m for m in ms if ms]
@@ -227,8 +267,11 @@ def analyze(runs: list[dict], salvaged: list[dict]) -> dict:
         concl["all_runs_pass_15pct"] = all(m["pass_15pct"] for m in total)
         concl["n_runs"] = len(total)
         best = min(total, key=lambda m: m["max_abs_err_pct"])
-        concl["best_run"] = {"label": best["label"], "re": best["re"],
-                             "max_abs_err_pct": best["max_abs_err_pct"]}
+        concl["best_run"] = {
+            "label": best["label"],
+            "re": best["re"],
+            "max_abs_err_pct": best["max_abs_err_pct"],
+        }
     out["conclusions"] = concl
     return out
 
@@ -236,38 +279,52 @@ def analyze(runs: list[dict], salvaged: list[dict]) -> dict:
 def render_md(an: dict) -> str:
     L = ["# R4 — Re-confound analysis of the a-ladder (programmatic dump)", ""]
     d = an["design"]
-    L.append(f"* Re = sqrt(g h0) h0 / nu, h0 = 2a, nu = (tau-1/2)/3; "
-             f"Re reference (a=32, tau=1) = **{d['re_reference']}**")
-    L.append(f"* window T = {d['window_T']}, primary metric = {d['primary_metric']}, "
-             f"gates = {d['thresholds_pct']}")
-    L.append(f"* reference: Martin & Moyce (1952), 17 digitised points")
+    L.append(
+        f"* Re = sqrt(g h0) h0 / nu, h0 = 2a, nu = (tau-1/2)/3; "
+        f"Re reference (a=32, tau=1) = **{d['re_reference']}**"
+    )
+    L.append(
+        f"* window T = {d['window_T']}, primary metric = {d['primary_metric']}, "
+        f"gates = {d['thresholds_pct']}"
+    )
+    L.append("* reference: Martin & Moyce (1952), 17 digitised points")
     L.append("")
     L.append("## Runs (signed error sign is reported; a '<' zero run lags the experiment)")
     L.append("")
-    L.append("| label | a | tau | Re | max \\|err\\| % | signed err @ max % | T@max | err @ T_end % | "
-             "late mean % | wall clearance (a) |")
+    L.append(
+        "| label | a | tau | Re | max \\|err\\| % | signed err @ max % | T@max | err @ T_end % | "
+        "late mean % | wall clearance (a) |"
+    )
     L.append("|---|---|---|---|---|---|---|---|---|---|")
     for m in an["runs"]:
         if "max_abs_err_pct" not in m:  # no sample inside the declared window
-            L.append(f"| {m['label']} | {m['a']:g} | {m['tau']:g} | {m['re']:.2f} | "
-                     f"n/a | n/a | n/a | n/a | n/a | n/a |")
+            L.append(
+                f"| {m['label']} | {m['a']:g} | {m['tau']:g} | {m['re']:.2f} | "
+                f"n/a | n/a | n/a | n/a | n/a | n/a |"
+            )
             continue
-        L.append(f"| {m['label']} | {m['a']:g} | {m['tau']:g} | {m['re']:.2f} | "
-                 f"{m['max_abs_err_pct']:.2f} | {m['signed_err_at_max_pct']:+.2f} | "
-                 f"{m['T_at_max']:.2f} | {m['signed_err_end_pct']:+.2f} | "
-                 f"{m.get('late_signed_mean_pct')} | {m.get('wall_clearance_a')} |")
+        L.append(
+            f"| {m['label']} | {m['a']:g} | {m['tau']:g} | {m['re']:.2f} | "
+            f"{m['max_abs_err_pct']:.2f} | {m['signed_err_at_max_pct']:+.2f} | "
+            f"{m['T_at_max']:.2f} | {m['signed_err_end_pct']:+.2f} | "
+            f"{m.get('late_signed_mean_pct')} | {m.get('wall_clearance_a')} |"
+        )
     L.append("")
     L.append("## E(Re) collapse (ladder tau=1 + a=32 tau sweep)")
     L.append("")
     L.append("| Re | run | max \\|err\\| % | signed @ max % | late mean % |")
     L.append("|---|---|---|---|---|")
     for c in an["collapse"]:
-        L.append(f"| {c['re']:.2f} | {c['label']} | {c['max_abs_err_pct']:.2f} | "
-                 f"{c['signed_err_at_max_pct']:+.2f} | {c.get('late_signed_mean_pct')} |")
+        L.append(
+            f"| {c['re']:.2f} | {c['label']} | {c['max_abs_err_pct']:.2f} | "
+            f"{c['signed_err_at_max_pct']:+.2f} | {c.get('late_signed_mean_pct')} |"
+        )
     L.append("")
     zc = an["zero_crossing"]
-    L.append(f"* zero crossing of the signed late-window error: Re* = {zc.get('re_star')} "
-             f"({zc.get('bracket_re')}, {zc.get('bracket_err_pct')})")
+    L.append(
+        f"* zero crossing of the signed late-window error: Re* = {zc.get('re_star')} "
+        f"({zc.get('bracket_re')}, {zc.get('bracket_err_pct')})"
+    )
     L.append("")
     L.append("## Fixed-Re trio (decisive resolution test)")
     L.append("")
@@ -275,8 +332,10 @@ def render_md(an: dict) -> str:
         L.append("| a | tau | Re | max \\|err\\| % | signed @ max % |")
         L.append("|---|---|---|---|---|")
         for m in an["fixed_re_trio"]:
-            L.append(f"| {m['a']:g} | {m['tau']:g} | {m['re']:.2f} | "
-                     f"{m['max_abs_err_pct']:.2f} | {m['signed_err_at_max_pct']:+.2f} |")
+            L.append(
+                f"| {m['a']:g} | {m['tau']:g} | {m['re']:.2f} | "
+                f"{m['max_abs_err_pct']:.2f} | {m['signed_err_at_max_pct']:+.2f} |"
+            )
     else:
         L.append("* (no run yet at Re = Re_ref)")
     L.append("")
@@ -284,9 +343,11 @@ def render_md(an: dict) -> str:
     L.append("")
     if an["widening_pairs"]:
         for k, v in an["widening_pairs"].items():
-            L.append(f"* {k}: max|err| by width {v['max_abs_err_pct']}, "
-                     f"signed end error {v['signed_err_end_pct']}, "
-                     f"wall clearance {v['wall_clearance_a']}")
+            L.append(
+                f"* {k}: max|err| by width {v['max_abs_err_pct']}, "
+                f"signed end error {v['signed_err_end_pct']}, "
+                f"wall clearance {v['wall_clearance_a']}"
+            )
     else:
         L.append("* (no widened run yet)")
     L.append("")
